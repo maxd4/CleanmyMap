@@ -5,6 +5,8 @@ export type PolicyView = "world" | "france";
 export type PolicyTerritoryScope = "international" | "national" | "regional" | "departmental" | "communal";
 export type PolicyLegalStatus = "adopted" | "in_force" | "application_scheduled" | "transposition" | "implementation";
 export type PolicyCollection = "international" | "france";
+export type PolicyLifecycleStatus = "current" | "modified" | "suspended" | "repealed" | "execution_undocumented";
+export type PolicyImplementationStatus = "not_assessed" | "partially_documented" | "documented" | "execution_undocumented";
 
 export type PolicyDate = {
   value: string | null;
@@ -21,7 +23,7 @@ export type PolicyTerritory = {
 
 export type PolicyMilestone = {
   id: string;
-  kind: "decision" | "entry_into_force" | "application";
+  kind: "decision" | "publication" | "entry_into_force" | "application" | "objective" | "administrative_deployment" | "observed_result";
   label: LocalizedText;
   date: PolicyDate;
   note: LocalizedText;
@@ -59,6 +61,8 @@ export type EnvironmentalPolicyRecord = {
   decisionDate: PolicyDate;
   applicationDate: PolicyDate | null;
   legalStatus: PolicyLegalStatus;
+  lifecycleStatus: PolicyLifecycleStatus;
+  implementationStatus: PolicyImplementationStatus;
   officialSource: { name: LocalizedText; url: string };
   detail: LocalizedText;
   validation: ContentValidationRecord;
@@ -92,11 +96,16 @@ const reviewPending = (id: string, sourceDetails: ReturnType<typeof source>, cla
   claims: { fact: claims, estimate: [], recommendation: [] },
 });
 
-type PolicyInput = Omit<EnvironmentalPolicyRecord, "collection" | "territories" | "measure" | "milestones" | "officialSources" | "lastConsultedAt" | "lastVerifiedAt" | "limitations" | "versions" | "validation" | "territory"> & {
+type PolicyInput = Omit<EnvironmentalPolicyRecord, "collection" | "territories" | "measure" | "milestones" | "officialSources" | "lastConsultedAt" | "lastVerifiedAt" | "limitations" | "versions" | "validation" | "territory" | "lifecycleStatus" | "implementationStatus"> & {
   territory: Omit<PolicyTerritory, "memberCount" | "membership"> & Partial<Pick<PolicyTerritory, "memberCount" | "membership">>;
   validation: ContentValidationRecord;
   collection?: PolicyCollection;
   milestoneOverrides?: PolicyMilestone[];
+  sourceOverrides?: PolicyOfficialSource[];
+  versionOverrides?: PolicyVersion[];
+  limitations?: LocalizedText[];
+  lifecycleStatus?: PolicyLifecycleStatus;
+  implementationStatus?: PolicyImplementationStatus;
 };
 
 const territoryFor = (territory: PolicyInput["territory"]): PolicyTerritory => ({
@@ -106,7 +115,7 @@ const territoryFor = (territory: PolicyInput["territory"]): PolicyTerritory => (
 });
 
 const policy = (record: PolicyInput): EnvironmentalPolicyRecord => {
-  const { milestoneOverrides, ...baseRecord } = record;
+  const { milestoneOverrides, sourceOverrides, versionOverrides, limitations, lifecycleStatus, implementationStatus, ...baseRecord } = record;
   const territory = territoryFor(record.territory);
   const collection = record.collection ?? (territory.countryCode === "FR" ? "france" : "international");
   const decisionMilestone: PolicyMilestone = {
@@ -124,15 +133,17 @@ const policy = (record: PolicyInput): EnvironmentalPolicyRecord => {
   return {
     ...baseRecord,
     collection,
+    lifecycleStatus: lifecycleStatus ?? "current",
+    implementationStatus: implementationStatus ?? "execution_undocumented",
     territory,
     territories: [territory],
     measure: record.summary,
     milestones,
-    officialSources: [{ name: record.officialSource.name, url: record.officialSource.url, consultedAt: CONSULTED_AT, date: record.decisionDate }],
+    officialSources: [{ name: record.officialSource.name, url: record.officialSource.url, consultedAt: CONSULTED_AT, date: record.decisionDate }, ...(sourceOverrides ?? [])],
     lastConsultedAt: CONSULTED_AT,
     lastVerifiedAt: null,
-    limitations: [{ fr: "La fiche résume les jalons principaux ; les obligations par disposition et les transpositions nationales peuvent suivre des calendriers distincts.", en: "This record summarizes the main milestones; provision-level obligations and national transpositions may follow separate schedules." }],
-    versions: [],
+    limitations: limitations ?? [{ fr: "La fiche résume les jalons principaux ; les obligations par disposition et les transpositions nationales peuvent suivre des calendriers distincts.", en: "This record summarizes the main milestones; provision-level obligations and national transpositions may follow separate schedules." }],
+    versions: versionOverrides ?? [{ id: `${record.id}-initial`, recordedAt: record.decisionDate, note: { fr: "Version initiale du texte ou du dispositif telle que documentée dans la fiche.", en: "Initial version of the text or scheme documented in this record." } }],
   };
 };
 
@@ -292,9 +303,33 @@ export const ENVIRONMENTAL_POLICY_REGISTRY: EnvironmentalPolicyRecord[] = [
     decisionDate: { value: "2020-02-10", precision: "day" },
     applicationDate: null,
     legalStatus: "in_force",
+    lifecycleStatus: "modified",
+    implementationStatus: "partially_documented",
+    milestoneOverrides: [{ id: "fr-agec-law-publication", kind: "publication", label: { fr: "Publication au Journal officiel", en: "Publication in the Official Journal" }, date: { value: "2020-02-11", precision: "day" }, note: { fr: "La publication est distincte de la promulgation du 10 février 2020.", en: "Publication is distinct from promulgation on 10 February 2020." } }, { id: "fr-agec-law-deployment", kind: "administrative_deployment", label: { fr: "Déploiement par disposition", en: "Provision-level deployment" }, date: { value: null, precision: "unknown" }, note: { fr: "Les mesures ont des calendriers et textes d’application distincts ; aucun déploiement global n’est déduit ici.", en: "Measures have separate schedules and implementing texts; no global deployment is inferred here." } }],
+    limitations: [{ fr: "Les obligations, décrets et calendriers d’application varient selon les dispositions. La fiche ne présente aucun résultat environnemental mesuré comme acquis.", en: "Obligations, decrees and application schedules vary by provision. This record presents no environmental result as established." }],
+    versionOverrides: [{ id: "fr-agec-law-original", recordedAt: { value: "2020-02-10", precision: "day" }, note: { fr: "Version initiale de la loi n° 2020-105.", en: "Initial version of Law No. 2020-105." } }, { id: "fr-agec-law-current-consultation", recordedAt: { value: "2026-11-13", precision: "day" }, note: { fr: "Version en vigueur consultée sur Légifrance ; cette date est une consultation, pas une date d’amendement.", en: "Version in force consulted on Légifrance; this is a consultation date, not an amendment date." } }],
     officialSource: { name: { fr: "Légifrance — loi n° 2020-105", en: "Légifrance — Law No. 2020-105" }, url: "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000041553759/" },
     detail: { fr: "La loi est en vigueur avec des dispositions et calendriers d’application différenciés. Le registre ne réduit pas ces échéanciers à une date unique.", en: "The law is in force with differentiated provisions and implementation schedules. The registry does not reduce these schedules to a single date." },
     validation: reviewPending("fr-agec-law", source("Légifrance", "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000041553759/", "2020-02-10", "day"), [claim("promulgation", "La loi a été promulguée le 10 février 2020.", "The law was enacted on 10 February 2020.")]),
+  }),
+  policy({
+    id: "fr-biodechets-source-separation",
+    title: { fr: "Généralisation du tri à la source des biodéchets", en: "Nationwide Source Separation of Biowaste" },
+    summary: { fr: "Depuis le 1er janvier 2024, tous les producteurs de biodéchets sont concernés par le tri à la source ; les solutions concrètes relèvent notamment des collectivités compétentes.", en: "Since 1 January 2024, all biowaste producers are covered by source separation; concrete solutions are notably organized by competent local authorities." },
+    institution: { fr: "État et collectivités compétentes en matière de déchets", en: "The State and local authorities competent for waste management" },
+    themes: [{ fr: "Déchets et économie circulaire", en: "Waste and circular economy" }],
+    territory: { scope: "national", label: { fr: "France entière", en: "All of France" }, countryCode: "FR" },
+    decisionDate: { value: null, precision: "unknown" },
+    applicationDate: { value: "2024-01-01", precision: "day" },
+    legalStatus: "in_force",
+    lifecycleStatus: "current",
+    implementationStatus: "partially_documented",
+    milestoneOverrides: [{ id: "fr-biodechets-source-separation-objective", kind: "objective", label: { fr: "Objectif de solution pour chaque citoyen", en: "Objective of a solution for every citizen" }, date: { value: "2024-01-01", precision: "day" }, note: { fr: "L’objectif concerne la mise à disposition d’une solution de tri à la source ; il ne prouve pas qu’un service identique est disponible dans chaque commune.", en: "The objective concerns making a source-separation solution available; it does not prove that an identical service is available in every municipality." } }, { id: "fr-biodechets-source-separation-deployment", kind: "administrative_deployment", label: { fr: "Déploiement local", en: "Local deployment" }, date: { value: null, precision: "unknown" }, note: { fr: "La collectivité compétente organise la solution selon son territoire ; la disponibilité effective locale n’est pas documentée par cette fiche.", en: "The competent local authority organizes the solution for its territory; effective local availability is not documented by this record." } }],
+    limitations: [{ fr: "L’obligation juridique et l’objectif de service ne valent pas preuve d’une collecte ou d’un compostage effectivement disponible dans chaque commune. Aucun résultat de valorisation n’est mesuré ici.", en: "The legal obligation and service objective do not prove that collection or composting is available in every municipality. No recovery result is measured here." }],
+    versionOverrides: [{ id: "fr-biodechets-source-separation-current", recordedAt: { value: "2026-09-15", precision: "day" }, note: { fr: "Page ministérielle mise à jour le 15 septembre 2026, utilisée pour le suivi éditorial ; ce n’est pas une date d’entrée en vigueur.", en: "Ministry page updated on 15 September 2026, used for editorial tracking; this is not an effective date." } }],
+    officialSource: { name: { fr: "Ministère de la Transition écologique — biodéchets", en: "Ministry for Ecological Transition — biowaste" }, url: "https://www.ecologie.gouv.fr/politiques-publiques/biodechets" },
+    detail: { fr: "Depuis le 1er janvier 2024, le tri à la source est généralisé pour tous les producteurs de biodéchets. Les collectivités doivent proposer des solutions adaptées, sans que cette fiche ne conclue à leur disponibilité effective commune par commune.", en: "Since 1 January 2024, source separation has been generalized for all biowaste producers. Local authorities must offer suitable solutions, without this record concluding that they are effectively available in every municipality." },
+    validation: reviewPending("fr-biodechets-source-separation", source("Ministère de la Transition écologique — biodéchets", "https://www.ecologie.gouv.fr/politiques-publiques/biodechets", null, "unknown"), [claim("obligation", "Depuis le 1er janvier 2024, le tri à la source des biodéchets est généralisé pour tous les producteurs.", "Since 1 January 2024, source separation of biowaste has been generalized for all producers.")]),
   }),
   policy({
     id: "fr-climate-resilience-law",
@@ -306,9 +341,34 @@ export const ENVIRONMENTAL_POLICY_REGISTRY: EnvironmentalPolicyRecord[] = [
     decisionDate: { value: "2021-08-22", precision: "day" },
     applicationDate: null,
     legalStatus: "in_force",
+    lifecycleStatus: "modified",
+    implementationStatus: "partially_documented",
+    milestoneOverrides: [{ id: "fr-climate-resilience-law-publication", kind: "publication", label: { fr: "Publication au Journal officiel", en: "Publication in the Official Journal" }, date: { value: "2021-08-24", precision: "day" }, note: { fr: "La publication du 24 août 2021 est distincte de la promulgation du 22 août 2021.", en: "Publication on 24 August 2021 is distinct from promulgation on 22 August 2021." } }, { id: "fr-climate-resilience-law-g-rental", kind: "application", label: { fr: "Décence énergétique — logements classés G", en: "Energy decency — G-rated homes" }, date: { value: "2025-01-01", precision: "day" }, note: { fr: "Concerne les contrats de location signés, renouvelés ou reconduits tacitement selon les conditions applicables ; la métropole et les collectivités d’outre-mer ont des calendriers distincts.", en: "Applies to leases signed, renewed or tacitly extended under the applicable conditions; metropolitan France and overseas territories have different schedules." } }, { id: "fr-climate-resilience-law-f-rental", kind: "application", label: { fr: "Décence énergétique — logements classés F", en: "Energy decency — F-rated homes" }, date: { value: "2028-01-01", precision: "day" }, note: { fr: "Échéance annoncée pour la métropole selon les conditions de décence et de location applicables.", en: "Scheduled for metropolitan France under the applicable rental and decency conditions." } }, { id: "fr-climate-resilience-law-e-rental", kind: "application", label: { fr: "Décence énergétique — logements classés E", en: "Energy decency — E-rated homes" }, date: { value: "2034-01-01", precision: "day" }, note: { fr: "Échéance annoncée pour la métropole selon les conditions applicables.", en: "Scheduled for metropolitan France under the applicable conditions." } }],
+    limitations: [{ fr: "Les échéances DPE concernent ici l’exemple de décence énergétique et ses conditions de location ; elles ne constituent ni un calendrier unique de toute la loi ni un résultat de rénovation observé. Les outre-mer ont des échéances distinctes.", en: "The EPC dates are shown here as an example of energy decency and rental conditions; they are neither a single timetable for the whole law nor an observed renovation result. Overseas territories have separate dates." }],
+    sourceOverrides: [{ name: { fr: "Service-Public.fr — logements classés G, F et E", en: "Service-Public.fr — G, F and E-rated homes" }, url: "https://www.service-public.gouv.fr/particuliers/actualites/A17975", consultedAt: "2026-11-13", date: { value: "2025-01-03", precision: "day" } }],
+    versionOverrides: [{ id: "fr-climate-resilience-law-original", recordedAt: { value: "2021-08-22", precision: "day" }, note: { fr: "Version initiale de la loi n° 2021-1104.", en: "Initial version of Law No. 2021-1104." } }, { id: "fr-climate-resilience-law-current-consultation", recordedAt: { value: "2026-11-13", precision: "day" }, note: { fr: "Version et échéances vérifiées dans les sources officielles consultées ; les modifications ultérieures doivent être réexaminées avant publication.", en: "Version and dates checked against consulted official sources; later amendments must be rechecked before publication." } }],
     officialSource: { name: { fr: "Légifrance — loi n° 2021-1104", en: "Légifrance — Law No. 2021-1104" }, url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000043956924" },
     detail: { fr: "Le texte a été promulgué le 22 août 2021 et comporte de nombreux calendriers d’application. Les dispositions territoriales ne sont pas présentées comme une rubrique parisienne autonome.", en: "The text was enacted on 22 August 2021 and contains many implementation schedules. Territorial provisions are not presented as a separate Paris section." },
     validation: reviewPending("fr-climate-resilience-law", source("Légifrance", "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000043956924", "2021-08-22", "day"), [claim("promulgation", "La loi a été promulguée le 22 août 2021.", "The law was enacted on 22 August 2021.")]),
+  }),
+  policy({
+    id: "fr-renewable-energy-acceleration-law",
+    title: { fr: "Loi d’accélération des énergies renouvelables", en: "Renewable Energy Acceleration Law" },
+    summary: { fr: "La loi organise la planification du développement des énergies renouvelables, les zones d’accélération et l’adaptation de certaines procédures.", en: "The law organizes renewable-energy planning, acceleration zones and adaptations to certain procedures." },
+    institution: { fr: "Parlement français et autorités publiques compétentes", en: "French Parliament and competent public authorities" },
+    themes: [{ fr: "Énergie et aménagement", en: "Energy and planning" }],
+    territory: { scope: "national", label: { fr: "France entière", en: "All of France" }, countryCode: "FR" },
+    decisionDate: { value: "2023-03-10", precision: "day" },
+    applicationDate: null,
+    legalStatus: "implementation",
+    lifecycleStatus: "modified",
+    implementationStatus: "execution_undocumented",
+    milestoneOverrides: [{ id: "fr-renewable-energy-acceleration-law-publication", kind: "publication", label: { fr: "Publication", en: "Publication" }, date: { value: null, precision: "unknown" }, note: { fr: "La date de publication n’est pas retenue ici sans preuve primaire suffisamment précise dans la fiche ; elle reste inconnue.", en: "The publication date is not retained here without sufficiently precise primary evidence in the record; it remains unknown." } }, { id: "fr-renewable-energy-acceleration-law-deployment", kind: "administrative_deployment", label: { fr: "Procédures territoriales et textes d’exécution", en: "Territorial procedures and implementing texts" }, date: { value: null, precision: "unknown" }, note: { fr: "Une zone d’accélération identifiée n’est ni une installation construite ni une production énergétique mesurée.", en: "An identified acceleration zone is neither a built installation nor measured energy production." } }],
+    limitations: [{ fr: "La loi prévoit des mécanismes de planification et de procédure ; cette fiche n’attribue aucune réduction d’émissions, installation construite ou production énergétique à la loi sans données indépendantes.", en: "The law provides planning and procedural mechanisms; this record attributes no emissions reduction, built installation or energy production to the law without independent data." }],
+    versionOverrides: [{ id: "fr-renewable-energy-acceleration-law-original", recordedAt: { value: "2023-03-10", precision: "day" }, note: { fr: "Version initiale de la loi n° 2023-175.", en: "Initial version of Law No. 2023-175." } }, { id: "fr-renewable-energy-acceleration-law-current-consultation", recordedAt: { value: "2026-01-16", precision: "day" }, note: { fr: "Dernière modification affichée par le dossier législatif consulté ; les dispositions d’exécution restent à vérifier avant publication.", en: "Last modification displayed by the consulted legislative record; implementing provisions remain to be checked before publication." } }],
+    officialSource: { name: { fr: "Légifrance — loi n° 2023-175", en: "Légifrance — Law No. 2023-175" }, url: "https://www.legifrance.gouv.fr/loda/id/LEGIARTI000047296655/" },
+    detail: { fr: "La loi du 10 mars 2023 organise notamment les zones d’accélération et l’adaptation des procédures. Son application passe par des procédures territoriales et des textes d’exécution ; aucun résultat énergétique n’est déduit.", en: "The law of 10 March 2023 notably organizes acceleration zones and procedural adaptations. Its application relies on territorial procedures and implementing texts; no energy result is inferred." },
+    validation: reviewPending("fr-renewable-energy-acceleration-law", source("Légifrance — loi n° 2023-175", "https://www.legifrance.gouv.fr/loda/id/LEGIARTI000047296655/", "2023-03-10", "day"), [claim("law", "La loi n° 2023-175 du 10 mars 2023 organise l’accélération de la production d’énergies renouvelables.", "Law No. 2023-175 of 10 March 2023 organizes the acceleration of renewable energy production.")]),
   }),
   policy({
     id: "fr-green-industry-law",
@@ -320,13 +380,18 @@ export const ENVIRONMENTAL_POLICY_REGISTRY: EnvironmentalPolicyRecord[] = [
     decisionDate: { value: "2023-10-23", precision: "day" },
     applicationDate: null,
     legalStatus: "in_force",
+    lifecycleStatus: "modified",
+    implementationStatus: "execution_undocumented",
+    milestoneOverrides: [{ id: "fr-green-industry-law-publication", kind: "publication", label: { fr: "Publication au Journal officiel", en: "Publication in the Official Journal" }, date: { value: "2023-10-24", precision: "day" }, note: { fr: "La publication du 24 octobre 2023 est distincte de la promulgation du 23 octobre 2023.", en: "Publication on 24 October 2023 is distinct from promulgation on 23 October 2023." } }, { id: "fr-green-industry-law-deployment", kind: "administrative_deployment", label: { fr: "Décrets et procédures d’application", en: "Implementing decrees and procedures" }, date: { value: null, precision: "unknown" }, note: { fr: "L’application dépend des dispositions et de leurs textes d’exécution ; aucun résultat industriel ou climatique n’est mesuré dans la fiche.", en: "Application depends on provisions and their implementing texts; no industrial or climate result is measured in this record." } }],
+    limitations: [{ fr: "La loi et ses textes d’exécution ne constituent pas une mesure d’émissions évitées. Aucun résultat environnemental n’est attribué automatiquement au dispositif.", en: "The law and its implementing texts are not a measure of avoided emissions. No environmental result is automatically attributed to the scheme." }],
+    versionOverrides: [{ id: "fr-green-industry-law-original", recordedAt: { value: "2023-10-23", precision: "day" }, note: { fr: "Version initiale de la loi n° 2023-973.", en: "Initial version of Law No. 2023-973." } }, { id: "fr-green-industry-law-current-consultation", recordedAt: { value: "2026-11-13", precision: "day" }, note: { fr: "Version en vigueur consultée sur Légifrance ; la fiche ne déduit pas la totalité de l’exécution réglementaire.", en: "Version in force consulted on Légifrance; the record does not infer complete regulatory implementation." } }],
     officialSource: { name: { fr: "Légifrance — loi n° 2023-973", en: "Légifrance — Law No. 2023-973" }, url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000048242288" },
     detail: { fr: "La loi a été promulguée le 23 octobre 2023. Certaines mesures renvoient à des décrets et à des calendriers propres à chaque procédure.", en: "The law was enacted on 23 October 2023. Some measures refer to decrees and schedules specific to each procedure." },
     validation: reviewPending("fr-green-industry-law", source("Légifrance", "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000048242288", "2023-10-23", "day"), [claim("promulgation", "La loi a été promulguée le 23 octobre 2023.", "The law was enacted on 23 October 2023.")]),
   }),
 ];
 
-const primaryMilestone = (record: EnvironmentalPolicyRecord): PolicyMilestone => record.milestones.find((milestone) => milestone.kind === "decision") ?? record.milestones[0];
+const primaryMilestone = (record: EnvironmentalPolicyRecord): PolicyMilestone => record.milestones.find((milestone) => milestone.kind === "decision" && milestone.date.value) ?? record.milestones.find((milestone) => milestone.date.value) ?? record.milestones[0];
 
 const dateValue = (date: PolicyDate): string => date.value ?? "";
 

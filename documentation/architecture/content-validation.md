@@ -111,7 +111,11 @@ fiches `published` ; les enregistrements `draft` et `in_review` restent
 disponibles pour le travail éditorial mais sont exclus de la chronologie
 publique. Chaque fiche porte explicitement ses territoires, jalons, sources
 officielles, date de consultation, dernière vérification nullable, limites et
-versions. Les dates de décision, d’entrée en vigueur et d’application gardent
-leur précision déclarée (`day`, `month`, `year`, `unknown`) sans jour inventé.
+versions. Les dates de décision, de publication, d’entrée en vigueur,
+d’application, d’objectif et de déploiement gardent leur précision déclarée
+(`day`, `month`, `year`, `unknown`) sans jour inventé. Les états juridiques et
+d’exécution restent séparés : `modified`, `suspended`, `repealed` et
+`execution_undocumented` ne constituent pas un résultat environnemental ni un
+abandon implicite.
 Les ressources territoriales du Mode École sont validées par
 `apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.test.ts`.
