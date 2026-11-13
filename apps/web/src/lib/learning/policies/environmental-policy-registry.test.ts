@@ -57,7 +57,7 @@ describe("environmental policy registry", () => {
     expect(ENVIRONMENTAL_POLICY_REGISTRY.every((record) => record.lastConsultedAt === "2026-11-13" && record.lastVerifiedAt === null && record.versions.length > 0)).toBe(true);
   });
 
-  it("does not expose records before human publication approval or when a source is removed", () => {
+  it("does not expose records before human publication approval or with an incomplete history", () => {
     expect(getPublishedEnvironmentalPolicies()).toEqual([]);
     expect(ENVIRONMENTAL_POLICY_REGISTRY.every((record) => !validateContentRecord(record.validation).readyForPublication)).toBe(true);
 
@@ -68,14 +68,24 @@ describe("environmental policy registry", () => {
     expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), reviewStatus: "needs_review", validation: { ...packaging.validation, status: "in_review" } }])).toEqual([]);
     expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), validation: { ...reviewed(packaging).validation, status: "rejected" as const } }])).toEqual([]);
     expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), validation: { ...reviewed(packaging).validation, reviewedBy: null } }])).toEqual([]);
+    expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), versions: [] }])).toEqual([]);
+    expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), milestones: [{ ...reviewed(packaging).milestones[0], versionId: "missing-version" }] }])).toEqual([]);
+    expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), versions: reviewed(packaging).versions.slice(1) }])).toEqual([]);
+    expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), versions: [{ ...reviewed(packaging).versions[0], id: "" }, ...reviewed(packaging).versions.slice(1)] }])).toEqual([]);
+    expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), versions: [reviewed(packaging).versions[0], reviewed(packaging).versions[0]] }])).toEqual([]);
+    expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), milestones: [{ ...reviewed(packaging).milestones[0], id: reviewed(packaging).milestones[1].id }, ...reviewed(packaging).milestones.slice(1)] }])).toEqual([]);
+    const needsReview = { ...reviewed(packaging), milestones: reviewed(packaging).milestones.map((milestone, index) => index === 0 ? { ...milestone, verificationStatus: "needs_review" as const } : milestone) };
+    expect(getPublishedEnvironmentalPolicies([needsReview])).toEqual([]);
   });
 
   it("keeps the past and sorts a chronology with same-day stages without deduplication", () => {
     const packaging = ENVIRONMENTAL_POLICY_REGISTRY.find((record) => record.id === "eu-packaging-packaging-waste-regulation")!;
     const before = getPolicyTimeline(packaging).map((milestone) => milestone.id);
-    const sameDay = { ...packaging, milestones: [...packaging.milestones, { ...packaging.milestones[0], id: "eu-packaging-same-day-publication", kind: "publication" as const, category: "publication" as const }] };
+    const sameDay = { ...packaging, milestones: [{ ...packaging.milestones[0], id: "eu-packaging-same-day-z" }, { ...packaging.milestones[0], id: "eu-packaging-same-day-a", kind: "publication" as const, category: "publication" as const }, ...packaging.milestones] };
     const timeline = getPolicyTimeline(sameDay);
-    expect(timeline.filter((milestone) => milestone.date.value === "2024-12-19")).toHaveLength(2);
+    const sameDayIds = timeline.filter((milestone) => milestone.date.value === packaging.milestones[0].date.value).map((milestone) => milestone.id);
+    expect(sameDayIds).toEqual([packaging.milestones[0].id, "eu-packaging-same-day-a", "eu-packaging-same-day-z"]);
+    expect(getPolicyTimeline({ ...sameDay, milestones: [...sameDay.milestones].reverse() }).map((milestone) => milestone.id)).toEqual(timeline.map((milestone) => milestone.id));
     expect(getPolicyTimeline(packaging).map((milestone) => milestone.id)).toEqual(before);
     expect(packaging.previousLastVerifiedAt).toBeNull();
   });

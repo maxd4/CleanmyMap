@@ -125,9 +125,11 @@ stable, une `category` (`adoption`, `publication`, `entry_into_force`,
 `application`, `amendment`, `suspension` ou `repeal` lorsque ces catégories
 sont établies), des `sourceIds`, une `versionId` et un
 `verificationStatus`. Les jalons antérieurs ne sont pas remplacés lorsqu’une
-nouvelle étape est ajoutée ; `getPolicyTimeline` les ordonne en conservant
-l’ordre déclaré pour deux étapes le même jour. Les versions portent leurs
-liens de sources. `reviewStatus`, `lastVerifiedAt` et
+nouvelle étape est ajoutée ; `getPolicyTimeline` les ordonne par date puis par
+identifiant stable, indépendamment de l’ordre d’insertion pour deux étapes le
+même jour. Une publication exige des identifiants de sources, versions et
+jalons non vides et uniques, des `versionId` existants pour chaque jalon et des
+`sourceIds` résolus. Les versions portent leurs liens de sources. `reviewStatus`, `lastVerifiedAt` et
 `previousLastVerifiedAt` distinguent une revue à refaire d’une nouvelle
 décision. `filterEnvironmentalPolicies` rattache une année à tout jalon daté
 de cette année, quelle que soit sa catégorie, tandis que `getPolicyTimeline`

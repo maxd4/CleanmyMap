@@ -453,13 +453,24 @@ export const ENVIRONMENTAL_POLICY_REGISTRY: EnvironmentalPolicyRecord[] = [
 ];
 
 function hasCompletePublicHistory(record: EnvironmentalPolicyRecord): boolean {
-  const sourceIds = new Set(record.officialSources.filter((sourceDetails) => sourceDetails.url.trim().length > 0).map((sourceDetails) => sourceDetails.id));
+  const sourceIds = record.officialSources.map((sourceDetails) => sourceDetails.id.trim());
+  const versionIds = record.versions.map((version) => version.id.trim());
+  const milestoneIds = record.milestones.map((milestone) => milestone.id.trim());
+  const hasUniqueNonEmptyIds = (ids: string[]): boolean => ids.length > 0 && ids.every(Boolean) && new Set(ids).size === ids.length;
+  const sourceIdSet = new Set(sourceIds);
+  const versionIdSet = new Set(versionIds);
   return record.reviewStatus === "verified"
     && Boolean(record.lastVerifiedAt)
-    && record.officialSources.length > 0
+    && hasUniqueNonEmptyIds(sourceIds)
+    && hasUniqueNonEmptyIds(versionIds)
+    && hasUniqueNonEmptyIds(milestoneIds)
     && record.officialSources.every((sourceDetails) => sourceDetails.url.trim().length > 0)
-    && record.milestones.every((milestone) => milestone.verificationStatus !== "needs_review" && milestone.sourceIds.length > 0 && milestone.sourceIds.every((sourceId) => sourceIds.has(sourceId)))
-    && record.versions.every((version) => version.sourceIds.length > 0 && version.sourceIds.every((sourceId) => sourceIds.has(sourceId)));
+    && record.milestones.every((milestone) => milestone.verificationStatus !== "needs_review"
+      && Boolean(milestone.versionId)
+      && versionIdSet.has(milestone.versionId ?? "")
+      && milestone.sourceIds.length > 0
+      && milestone.sourceIds.every((sourceId) => sourceIdSet.has(sourceId)))
+    && record.versions.every((version) => version.sourceIds.length > 0 && version.sourceIds.every((sourceId) => sourceIdSet.has(sourceId)));
 }
 
 export function getPublishedEnvironmentalPolicies(registry = ENVIRONMENTAL_POLICY_REGISTRY): EnvironmentalPolicyRecord[] {

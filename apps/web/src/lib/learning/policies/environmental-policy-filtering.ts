@@ -29,10 +29,8 @@ export function getEnvironmentalPolicyThemeOptions(
 }
 
 export function getPolicyTimeline(record: EnvironmentalPolicyRecord): PolicyMilestone[] {
-  return record.milestones
-    .map((milestone, index) => ({ milestone, index }))
-    .sort((a, b) => dateValue(a.milestone.date).localeCompare(dateValue(b.milestone.date)) || a.index - b.index)
-    .map(({ milestone }) => milestone);
+  return [...record.milestones]
+    .sort((a, b) => dateValue(a.date).localeCompare(dateValue(b.date)) || a.id.localeCompare(b.id))
 }
 
 export function filterEnvironmentalPolicies(records: EnvironmentalPolicyRecord[], filters: EnvironmentalPolicyFilters): EnvironmentalPolicyRecord[] {
