@@ -41,7 +41,8 @@ export function buildTerritoryNominatimSearchUrl(query: string): string | null {
 export function buildTerritoryNominatimSearchUrlWithLimit(
   query: string,
   limit: number,
-  viewbox = buildTerritoryViewbox(),
+  viewbox: string | null = buildTerritoryViewbox(),
+  countryCode = "fr",
 ): string | null {
   const normalizedQuery = query.trim();
   if (!normalizedQuery) {
@@ -53,10 +54,12 @@ export function buildTerritoryNominatimSearchUrlWithLimit(
     q: normalizedQuery,
     limit: String(Math.max(1, Math.min(10, Math.trunc(limit) || 1))),
     addressdetails: "1",
-    countrycodes: "fr",
-    bounded: "1",
-    viewbox,
+    countrycodes: countryCode.toLowerCase(),
   });
+  if (viewbox) {
+    params.set("bounded", "1");
+    params.set("viewbox", viewbox);
+  }
 
   return `https://nominatim.openstreetmap.org/search?${params.toString()}`;
 }

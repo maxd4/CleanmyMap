@@ -178,4 +178,36 @@ describe("/api/geo/address-suggestions", () => {
     expect(nonSuccess.status).toBe(200);
     expect((await nonSuccess.json()).items).toEqual([]);
   });
+
+  it("uses the requested country for an international suggestion", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([{
+        display_name: "Québec, Canada",
+        lat: "46.8139",
+        lon: "-71.2080",
+        importance: 0.7,
+        address: { state: "Québec", country: "Canada" },
+      }]),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Québec&limit=3&country=CA"),
+    );
+    const body = await response.json();
+
+    expect(body.items).toEqual([
+      expect.objectContaining({
+        label: "Québec, Canada",
+        subtitle: "Québec",
+        latitude: 46.8139,
+        longitude: -71.208,
+      }),
+    ]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("countrycodes=ca"),
+      expect.objectContaining({ headers: expect.objectContaining({ "User-Agent": expect.any(String) }) }),
+    );
+  });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 import {
   getArrondissementCityCount,
@@ -51,25 +52,47 @@ const LEVEL_OPTIONS: Array<{
     description: "Pour les villes qui ont des arrondissements.",
     placeholder: "Ex. Paris 11e, Lyon 2e, Marseille 1er",
   },
+  {
+    value: "locality",
+    label: "Localité",
+    description: "Pour une ville, municipalité ou localité.",
+    placeholder: "Ex. Montréal, Dakar, Bruxelles",
+  },
+  {
+    value: "administrative_area",
+    label: "Autre niveau",
+    description: "Pour un niveau administratif propre au pays.",
+    placeholder: "Ex. canton, province, district",
+  },
 ];
 
 export function getTerritoryLevelConfig(level: TerritoryLocationLevel) {
-  return LEVEL_OPTIONS.find((option) => option.value === level) ?? LEVEL_OPTIONS[2];
+  return LEVEL_OPTIONS.find((option) => option.value === level) ?? {
+    value: level,
+    label: level.replace(/_/g, " "),
+    description: "Pour cibler un niveau administratif propre au pays.",
+    placeholder: "Rechercher un territoire",
+  };
 }
 
 export function TerritoryLevelControl({
   selectedLevel,
   onLevelChange,
+  countryCode,
+  onCountryCodeChange,
   isLight,
   controlClassName,
 }: {
   selectedLevel: TerritoryLocationLevel;
   onLevelChange: (level: TerritoryLocationLevel) => void;
+  countryCode: string;
+  onCountryCodeChange: (value: string) => void;
   isLight: boolean;
   controlClassName: string;
 }) {
+  const countryCodeListId = useId();
   return (
-    <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
+    <div className="grid gap-3 lg:grid-cols-[minmax(12rem,0.7fr)_1.4fr]">
       <label className="block space-y-2">
         <span
           className={cn(
@@ -77,17 +100,26 @@ export function TerritoryLevelControl({
             isLight ? "text-slate-800" : "text-white",
           )}
         >
-          Pays
+          Code pays ISO 3166-1
         </span>
-        <select
-          value="France"
-          onChange={() => {
-            /* France only for now */
-          }}
+        <input
+          list={countryCodeListId}
+          inputMode="text"
+          autoCapitalize="characters"
+          maxLength={2}
+          value={countryCode}
+          onChange={(event) => onCountryCodeChange(event.target.value.toUpperCase())}
           className={controlClassName}
-        >
-          <option value="France">France</option>
-        </select>
+          aria-label="Code pays ISO 3166-1 alpha-2"
+        />
+        <datalist id={countryCodeListId}>
+          <option value="FR">France</option>
+          <option value="BE">Belgique</option>
+          <option value="CA">Canada</option>
+          <option value="CH">Suisse</option>
+          <option value="LU">Luxembourg</option>
+          <option value="SN">Sénégal</option>
+        </datalist>
       </label>
 
       <fieldset className="space-y-2">
@@ -99,7 +131,7 @@ export function TerritoryLevelControl({
         >
           Niveau de territoire
         </legend>
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-7">
           {LEVEL_OPTIONS.map((option) => {
             const isSelected = option.value === selectedLevel;
             return (
@@ -205,7 +237,7 @@ export function TerritoryLevelDetails({
                 const parsed = parseTerritoryArrondissement(arrondissementValue);
                 if (parsed) {
                   commitSelection({
-                    country: "France",
+                    country: "FR",
                     level: "arrondissement",
                     label: getArrondissementMunicipalLabel(nextCity, parsed),
                     subtitle: getArrondissementHelpLabel(nextCity, parsed),
@@ -242,7 +274,7 @@ export function TerritoryLevelDetails({
               const parsed = parseTerritoryArrondissement(nextValue);
               if (parsed) {
                 commitSelection({
-                  country: "France",
+                  country: "FR",
                   level: "arrondissement",
                   label: getArrondissementMunicipalLabel(arrondissementCity, parsed),
                   subtitle: getArrondissementHelpLabel(arrondissementCity, parsed),

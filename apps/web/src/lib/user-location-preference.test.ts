@@ -10,6 +10,7 @@ import {
   extractResidenceLocationPreferenceFromMetadata,
   extractUserLocationPreferenceFromMetadata,
   extractLocationPreferencesFromMetadata,
+  parseCountryCode,
 } from "./user-location-preference";
 
 it("extracts a complete preference from metadata", () => {
@@ -23,7 +24,7 @@ it("extracts a complete preference from metadata", () => {
 
 it("normalizes a legacy arrondissement into the canonical territory selection", () => {
   expect(createTerritoryLocationSelectionFromLegacyArrondissement(11)).toEqual({
-    country: "France",
+    country: "FR",
     level: "arrondissement",
     label: "Paris 11e arrondissement",
     subtitle: "Compatibilité historique",
@@ -43,7 +44,7 @@ it("normalizes a legacy arrondissement into the canonical territory selection", 
     });
 
     expect(result).toEqual({
-      country: "France",
+      country: "FR",
       level: "department",
       label: "Rhône",
       subtitle: "Auvergne-Rhône-Alpes",
@@ -61,7 +62,7 @@ it("normalizes a legacy arrondissement into the canonical territory selection", 
     });
 
     expect(result).toEqual({
-      country: "France",
+      country: "FR",
       level: "arrondissement",
       label: "Lyon 2e",
       subtitle: "Lyon",
@@ -150,7 +151,7 @@ it("keeps arrondissement preference compatibility through the national extractor
     });
 
     expect(result).toEqual({
-      country: "France",
+      country: "FR",
       level: "arrondissement",
       label: "Paris 11e",
       subtitle: null,
@@ -179,7 +180,7 @@ it("reads independent residence and work selections from the canonical object", 
   const result = extractLocationPreferencesFromMetadata({
     ...createLocationPreferencesMetadata({
       residence: {
-        country: "France",
+      country: "FR",
         level: "commune",
         label: "Lyon",
         subtitle: null,
@@ -187,7 +188,7 @@ it("reads independent residence and work selections from the canonical object", 
         arrondissementCity: "Lyon",
       },
       work: {
-        country: "France",
+      country: "FR",
         level: "arrondissement",
         label: "Paris 11e",
         subtitle: "Paris",
@@ -217,4 +218,63 @@ it("clears location keys without touching unrelated Clerk metadata", () => {
     territoryLocationType: "residence",
   });
   expect(result).toEqual({ keepMe: "yes" });
+});
+
+it("canonicalizes the legacy France label and accepts ISO country codes", () => {
+  expect(parseCountryCode("France")).toBe("FR");
+  expect(parseCountryCode("ca")).toBe("CA");
+  expect(parseCountryCode("CAN")).toBeNull();
+  expect(parseCountryCode("ZZ")).toBeNull();
+  expect(
+    extractLocationPreferencesFromMetadata({
+      territoryPreferences: {
+        residence: {
+          country: "CA",
+          level: "province",
+          label: "Québec",
+          subtitle: "Canada",
+          arrondissement: null,
+          arrondissementCity: null,
+          administrativeCode: "QC",
+        },
+        work: null,
+      },
+    }),
+  ).toEqual({
+    residence: {
+      country: "CA",
+      level: "province",
+      label: "Québec",
+      subtitle: "Canada",
+      arrondissement: null,
+      arrondissementCity: null,
+      administrativeCode: "QC",
+    },
+    work: null,
+  });
+});
+
+it("keeps country-specific administrative levels without French fields", () => {
+  expect(
+    extractLocationPreferencesFromMetadata({
+      territoryPreferences: {
+        residence: {
+          country: "SN",
+          level: "district",
+          label: "Dakar",
+          subtitle: null,
+          arrondissement: null,
+          arrondissementCity: null,
+        },
+        work: null,
+      },
+    }).residence,
+  ).toEqual({
+    country: "SN",
+    level: "district",
+    label: "Dakar",
+    subtitle: null,
+    arrondissement: null,
+    arrondissementCity: null,
+  });
 });

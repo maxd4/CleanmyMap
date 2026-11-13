@@ -11,7 +11,7 @@ vi.mock("@/lib/auth/sync", () => ({ syncClerkUserToSupabase: syncMock, trySyncCl
 vi.mock("@/lib/rate-limit/server", () => ({ enforceServerRateLimitForAuthenticatedUser: rateLimitMock }));
 
 const paris = {
-  country: "France" as const,
+  country: "FR" as const,
   level: "commune" as const,
   label: "Paris",
   subtitle: null,
@@ -74,6 +74,31 @@ describe("PATCH /api/account/locations", () => {
     expect(response.status).toBe(200);
     expect(clerk.users.updateUserMetadata).toHaveBeenCalledWith("user-1", {
       unsafeMetadata: { territoryPreferences: { residence: null, work: null } },
+    });
+  });
+
+  it("persists a foreign country and its local administrative level", async () => {
+    const clerk = await clerkClientMock();
+    const { PATCH } = await import("./route");
+    const foreign = {
+      country: "CA",
+      level: "province",
+      label: "Québec",
+      subtitle: "Canada",
+      arrondissement: null,
+      arrondissementCity: null,
+      administrativeCode: "QC",
+    };
+    const response = await PATCH(new Request("http://localhost/api/account/locations", {
+      method: "PATCH",
+      body: JSON.stringify({ residence: foreign }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(clerk.users.updateUserMetadata).toHaveBeenCalledWith("user-1", {
+      unsafeMetadata: expect.objectContaining({
+        territoryPreferences: { residence: foreign, work: paris },
+      }),
     });
   });
 

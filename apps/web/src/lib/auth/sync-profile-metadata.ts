@@ -7,6 +7,7 @@ import {
   parseParisArrondissement,
 } from "@/lib/geo/paris-arrondissements";
 import {
+  DEFAULT_COUNTRY_CODE,
   createTerritoryLocationMetadataFromLabel,
   extractTerritoryLocationPreferenceFromMetadata,
 } from "@/lib/user-location-preference";
@@ -160,6 +161,7 @@ function buildTerritoryCompatibilityMetadata(
   mergedMetadata: Record<string, unknown>,
   existingParisArrondissement: number | null | undefined,
 ): Record<string, unknown> | null {
+  const primaryLocation = extractTerritoryLocationPreferenceFromMetadata(mergedMetadata);
   const resolvedArrondissement =
     resolveProfileArrondissement(mergedMetadata) ?? existingParisArrondissement ?? null;
   const resolvedParisArrondissement = parseParisArrondissement(resolvedArrondissement);
@@ -177,7 +179,7 @@ function buildTerritoryCompatibilityMetadata(
       "zoneDepartment",
       "zoneAreaType",
     ]) ??
-    extractTerritoryLocationPreferenceFromMetadata(mergedMetadata)?.subtitle;
+    primaryLocation?.subtitle;
   const resolvedLabel = resolveTerritoryLabel(mergedMetadata, resolvedParisArrondissement);
   if (!resolvedLabel) return null;
 
@@ -185,9 +187,12 @@ function buildTerritoryCompatibilityMetadata(
     resolvedLabel,
     resolvedLocationType,
     {
+      country: primaryLocation?.country,
       subtitle: resolvedSubtitle,
       arrondissement: resolvedArrondissement ?? undefined,
-      level: resolvedArrondissement ? "arrondissement" : "commune",
+      level: primaryLocation?.level ?? (resolvedArrondissement ? "arrondissement" : "commune"),
+      arrondissementCity: primaryLocation?.arrondissementCity,
+      administrativeCode: primaryLocation?.administrativeCode,
     },
   );
   return {
@@ -197,11 +202,14 @@ function buildTerritoryCompatibilityMetadata(
     zoneLocationType: resolvedLocationType,
     territorySubtitle: resolvedSubtitle,
     territoryLocationType: resolvedLocationType,
-    territoryCountry: "France",
-    territoryLevel: resolvedArrondissement ? "arrondissement" : "commune",
+    territoryCountry: primaryLocation?.country ?? DEFAULT_COUNTRY_CODE,
+    territoryLevel: primaryLocation?.level ?? (resolvedArrondissement ? "arrondissement" : "commune"),
     territoryLabel: resolvedLabel,
     ...(resolvedArrondissement !== null
       ? { territoryArrondissement: resolvedArrondissement }
+      : {}),
+    ...(primaryLocation?.administrativeCode
+      ? { territoryAdministrativeCode: primaryLocation.administrativeCode }
       : {}),
     ...(resolvedArrondissement !== null && isParisArrondissementLabel(resolvedLabel)
       ? { parisArrondissement: resolvedArrondissement }

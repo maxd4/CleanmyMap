@@ -7,6 +7,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import {
+  DEFAULT_COUNTRY_CODE,
   extractLocationPreferencesFromMetadata,
   type TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
@@ -76,7 +77,7 @@ function selectionFromLabel(label: string | null): TerritoryLocationSelection | 
   const normalized = label?.trim() ?? "";
   if (!normalized) return null;
   return {
-    country: "France",
+    country: DEFAULT_COUNTRY_CODE,
     level: "commune",
     label: normalized,
     subtitle: null,

@@ -400,7 +400,7 @@ describe("syncClerkUserToSupabase", () => {
       expect.objectContaining({
         paris_arrondissement: 15,
         metadata: expect.objectContaining({
-          territoryCountry: "France",
+          territoryCountry: "FR",
           territoryLevel: "arrondissement",
           territoryLabel: "Paris 15e",
           territoryArrondissement: 15,

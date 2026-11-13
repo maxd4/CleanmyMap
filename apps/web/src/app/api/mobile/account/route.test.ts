@@ -160,7 +160,7 @@ describe("/api/mobile/account", () => {
     expect(metadataCall?.[1].unsafeMetadata).toMatchObject({
       profileSetupCompleted: true,
       territoryPreferences: {
-        residence: { label: "Paris", country: "France" },
+        residence: { label: "Paris", country: "FR" },
         work: null,
       },
     });

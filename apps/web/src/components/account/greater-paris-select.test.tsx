@@ -7,7 +7,7 @@ describe("GreaterParisSelect", () => {
     const markup = renderToStaticMarkup(
       <GreaterParisSelect
         value={{
-          country: "France",
+          country: "FR",
           level: "arrondissement",
           label: "Marseille 1er arrondissement",
           subtitle: "Mairie de secteur",
@@ -38,5 +38,27 @@ describe("GreaterParisSelect", () => {
 
     expect(markup).toContain('placeholder="Rechercher une commune"');
     expect(markup).not.toContain("Niveau de territoire");
+  });
+
+  it("exposes an ISO country control and keeps a foreign selection", () => {
+    const markup = renderToStaticMarkup(
+      <GreaterParisSelect
+        value={{
+          country: "CA",
+          level: "province",
+          label: "Québec",
+          subtitle: "Canada",
+          arrondissement: null,
+          arrondissementCity: null,
+        }}
+        onChange={vi.fn()}
+        appearance="light"
+      />,
+    );
+
+    expect(markup).toContain("Code pays ISO 3166-1");
+    expect(markup).toContain('value="CA"');
+    expect(markup).toContain("Localité");
+    expect(markup).toContain("Québec");
   });
 });

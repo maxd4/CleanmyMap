@@ -12,6 +12,7 @@ import type { TerritoryLocationLevel } from "@/lib/user-location-preference";
 export function useTerritorySuggestions(
   query: string,
   level: TerritoryLocationLevel,
+  countryCode = "FR",
 ) {
   const [suggestions, setSuggestions] = useState<GeoAddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,12 +20,12 @@ export function useTerritorySuggestions(
   const [resolvedRequestKey, setResolvedRequestKey] = useState("");
   const trimmedQuery = query.trim();
   const hasActiveQuery = level !== "country" && trimmedQuery.length >= 2;
-  const requestKey = `${level}:${trimmedQuery}`;
+  const requestKey = `${countryCode}:${level}:${trimmedQuery}`;
 
   useEffect(() => {
     const nextTrimmedQuery = query.trim();
     const nextHasActiveQuery = level !== "country" && nextTrimmedQuery.length >= 2;
-    const nextRequestKey = `${level}:${nextTrimmedQuery}`;
+    const nextRequestKey = `${countryCode}:${level}:${nextTrimmedQuery}`;
 
     if (!nextHasActiveQuery) {
       return;
@@ -37,7 +38,9 @@ export function useTerritorySuggestions(
       setErrorMessage(null);
 
       const localSuggestions = filterSuggestionsForLevel(
-        getLocalGeoAddressSuggestions(nextTrimmedQuery, 8),
+        countryCode === "FR"
+          ? getLocalGeoAddressSuggestions(nextTrimmedQuery, 8)
+          : [],
         level,
       );
       setSuggestions(localSuggestions);
@@ -47,7 +50,7 @@ export function useTerritorySuggestions(
         return;
       }
 
-      fetch(`/api/geo/address-suggestions?q=${encodeURIComponent(nextTrimmedQuery)}&limit=8`, {
+      fetch(`/api/geo/address-suggestions?q=${encodeURIComponent(nextTrimmedQuery)}&limit=8&country=${encodeURIComponent(countryCode)}`, {
         signal: controller.signal,
         headers: {
           Accept: "application/json",
@@ -95,7 +98,7 @@ export function useTerritorySuggestions(
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [level, query]);
+  }, [countryCode, level, query]);
 
   return {
     suggestions: hasActiveQuery && resolvedRequestKey === requestKey ? suggestions : [],

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireAccountPatchBody } from "@/lib/auth/account-request";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import {
+  isCountryCode,
   createLocationPreferencesMetadata,
   extractLocationPreferencesFromMetadata,
   type TerritoryLocationSelection,
@@ -20,12 +21,16 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 
 const selectionSchema = z.object({
-  country: z.literal("France"),
-  level: z.enum(["country", "region", "department", "commune", "arrondissement"]),
+  country: z.preprocess(
+    (value) => value === "France" ? "FR" : value,
+    z.string().trim().toUpperCase().refine(isCountryCode, "Code pays ISO 3166-1 alpha-2 invalide."),
+  ),
+  level: z.string().trim().toLowerCase().regex(/^[a-z][a-z0-9_-]{0,63}$/, "Niveau administratif invalide."),
   label: z.string().trim().min(1).max(160),
   subtitle: z.string().trim().max(160).nullable(),
   arrondissement: z.number().int().min(1).max(20).transform((value) => value as ParisArrondissement).nullable(),
   arrondissementCity: z.enum(["Paris", "Lyon", "Marseille"]).nullable(),
+  administrativeCode: z.string().trim().max(160).nullable().optional(),
 }).strict() satisfies z.ZodType<TerritoryLocationSelection>;
 
 const locationsSchema = z.object({

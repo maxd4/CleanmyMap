@@ -4,8 +4,13 @@ import {
   mergeGeoAddressSuggestions,
   type GeoAddressSuggestion,
 } from "@/lib/geo/address-suggestions";
+import {
+  buildTerritoryNominatimSearchUrlWithLimit,
+  isWithinTerritoryBounds,
+  parseTerritoryCoordinates,
+} from "@/lib/geo/territory";
+import { DEFAULT_COUNTRY_CODE, parseCountryCode, type CountryCode } from "@/lib/user-location-preference";
 import { withServerRateLimit } from "@/lib/rate-limit/server";
-import { isWithinTerritoryBounds } from "@/lib/geo/territory";
 
 export const runtime = "nodejs";
 const ADDRESS_SUGGESTIONS_CACHE_HEADERS = {
@@ -162,12 +167,74 @@ async function loadCachedRemoteAddressSuggestions(
   return items;
 }
 
+type NominatimResult = {
+  display_name?: unknown;
+  lat?: unknown;
+  lon?: unknown;
+  importance?: unknown;
+  address?: Record<string, unknown>;
+};
+
+function formatNominatimSubtitle(result: NominatimResult): string {
+  const address = result.address ?? {};
+  return [
+    address.city,
+    address.town,
+    address.village,
+    address.state,
+    address.country,
+  ]
+    .find((value) => typeof value === "string" && value.trim()) as string | undefined ?? "";
+}
+
+async function loadInternationalAddressSuggestions(
+  query: string,
+  limit: number,
+  countryCode: CountryCode,
+): Promise<GeoAddressSuggestion[]> {
+  const endpoint = buildTerritoryNominatimSearchUrlWithLimit(
+    query,
+    limit,
+    null,
+    countryCode,
+  );
+  if (!endpoint) return [];
+
+  const response = await fetch(endpoint, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "CleanMyMap territory search",
+    },
+  });
+  if (!response.ok) return [];
+
+  const payload = (await response.json()) as unknown;
+  if (!Array.isArray(payload)) return [];
+
+  return payload.flatMap((item) => {
+    const result = item as NominatimResult;
+    const coordinates = parseTerritoryCoordinates(result);
+    const label = typeof result.display_name === "string" ? result.display_name.trim() : "";
+    if (!coordinates || !label) return [];
+    return [{
+      label,
+      subtitle: formatNominatimSubtitle(result),
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+      importance: typeof result.importance === "number" && Number.isFinite(result.importance)
+        ? result.importance
+        : null,
+    }];
+  });
+}
+
 export async function GET(request: Request) {
   return withServerRateLimit(request, { limit: 60, window: 60 }, async () => {
 
   const url = new URL(request.url);
   const query = url.searchParams.get("q")?.trim() ?? "";
   const limit = parseLimit(url.searchParams.get("limit"));
+  const countryCode = parseCountryCode(url.searchParams.get("country")) ?? DEFAULT_COUNTRY_CODE;
 
   if (query.length < 3) {
     return NextResponse.json({
@@ -177,12 +244,16 @@ export async function GET(request: Request) {
     });
   }
 
-  const localSuggestions = getLocalGeoAddressSuggestions(query, limit);
+  const localSuggestions = countryCode === DEFAULT_COUNTRY_CODE
+    ? getLocalGeoAddressSuggestions(query, limit)
+    : [];
 
   try {
-    const remoteSuggestions = localSuggestions.length >= limit
-      ? []
-      : await loadCachedRemoteAddressSuggestions(query, limit);
+    const remoteSuggestions = countryCode === DEFAULT_COUNTRY_CODE
+      ? localSuggestions.length >= limit
+        ? []
+        : await loadCachedRemoteAddressSuggestions(query, limit)
+      : await loadInternationalAddressSuggestions(query, limit, countryCode);
     const items = mergeGeoAddressSuggestions(localSuggestions, remoteSuggestions, limit);
 
     return NextResponse.json({

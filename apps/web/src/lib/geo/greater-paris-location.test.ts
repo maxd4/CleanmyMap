@@ -27,7 +27,7 @@ describe("greater-paris-location", () => {
 
   it("builds the canonical country selection", () => {
     expect(buildCountrySelection()).toEqual({
-      country: "France",
+      country: "FR",
       level: "country",
       label: "France",
       subtitle: "Territoire national",
@@ -49,6 +49,23 @@ describe("greater-paris-location", () => {
       arrondissement: 11,
       arrondissementCity: "Paris",
     });
+  });
+
+  it("keeps the selected foreign country on a generic territory suggestion", () => {
+    expect(
+      buildSelectionFromSuggestion("province", {
+        ...suggestion,
+        label: "Québec, Canada",
+        subtitle: "Québec · Canada",
+      }, "", null, "CA"),
+    ).toMatchObject({
+      country: "CA",
+      level: "province",
+      label: "Québec, Canada",
+      arrondissement: null,
+      arrondissementCity: null,
+    });
+    expect(buildCountrySelection("BE")).toMatchObject({ country: "BE", level: "country" });
   });
 
   it("prioritizes arrondissement suggestions without changing other levels", () => {

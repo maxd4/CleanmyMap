@@ -8,9 +8,11 @@ import {
   type ParisArrondissement,
 } from "@/lib/geo/paris-arrondissements";
 import type { GeoAddressSuggestion } from "@/lib/geo/address-suggestions";
-import type {
-  TerritoryLocationLevel,
-  TerritoryLocationSelection,
+import {
+  DEFAULT_COUNTRY_CODE,
+  type CountryCode,
+  type TerritoryLocationLevel,
+  type TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
 
 export function normalizeTerritorySearchText(value: string): string {
@@ -21,12 +23,12 @@ export function normalizeTerritorySearchText(value: string): string {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-export function buildCountrySelection(): TerritoryLocationSelection {
+export function buildCountrySelection(country: CountryCode = DEFAULT_COUNTRY_CODE): TerritoryLocationSelection {
   return {
-    country: "France",
+    country,
     level: "country",
-    label: "France",
-    subtitle: "Territoire national",
+    label: country === DEFAULT_COUNTRY_CODE ? "France" : country,
+    subtitle: country === DEFAULT_COUNTRY_CODE ? "Territoire national" : "National territory",
     arrondissement: null,
     arrondissementCity: null,
   };
@@ -45,6 +47,7 @@ export function buildSelectionFromSuggestion(
   suggestion: GeoAddressSuggestion,
   arrondissementValue: string,
   arrondissementCity: ArrondissementCity | null,
+  country: CountryCode = DEFAULT_COUNTRY_CODE,
 ): TerritoryLocationSelection {
   const parsedFromLabel = extractArrondissementFromLabel(suggestion.label);
   const parsedFromDraft = extractArrondissementFromLabel(arrondissementValue);
@@ -58,7 +61,7 @@ export function buildSelectionFromSuggestion(
     arrondissementCity;
 
   return {
-    country: "France",
+    country,
     level,
     label: suggestion.label,
     subtitle: suggestion.subtitle || null,
@@ -107,6 +110,7 @@ function getCompactArrondissement(
 
 export function buildCompactSelectionFromSuggestion(
   suggestion: GeoAddressSuggestion,
+  country: CountryCode = DEFAULT_COUNTRY_CODE,
 ): TerritoryLocationSelection {
   const arrondissement = getCompactArrondissement(suggestion);
   const inferredCity =
@@ -127,7 +131,7 @@ export function buildCompactSelectionFromSuggestion(
     : subtitleCity || labelCity || suggestion.label;
 
   return {
-    country: "France",
+    country,
     level: arrondissement ? "arrondissement" : "commune",
     label,
     subtitle: inferredCity ?? null,

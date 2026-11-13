@@ -13,7 +13,7 @@ import {
 } from "./user-location";
 
 const residence = {
-  country: "France",
+  country: "FR",
   level: "arrondissement",
   label: "Paris 1er",
   subtitle: null,

@@ -12,9 +12,12 @@ import {
   inferArrondissementCityFromLabel,
   type ArrondissementCity,
 } from "@/lib/geo/paris-arrondissements";
-import type {
-  TerritoryLocationLevel,
-  TerritoryLocationSelection,
+import {
+  DEFAULT_COUNTRY_CODE,
+  parseCountryCode,
+  type CountryCode,
+  type TerritoryLocationLevel,
+  type TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
 import { getTerritoryLevelConfig } from "./greater-paris-select-controls";
 import { TerritoryLocationShell } from "./greater-paris-select-shell";
@@ -38,6 +41,12 @@ function TerritoryLocationSelector({
   const [selectedLevel, setSelectedLevel] = useState<TerritoryLocationLevel>(
     compact ? "commune" : value?.level ?? "commune",
   );
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(
+    parseCountryCode(value?.country) ?? DEFAULT_COUNTRY_CODE,
+  );
+  const [countryDraft, setCountryDraft] = useState(
+    parseCountryCode(value?.country) ?? DEFAULT_COUNTRY_CODE,
+  );
   const [searchQuery, setSearchQuery] = useState(value?.label ?? "");
   const [arrondissementCity, setArrondissementCity] = useState<ArrondissementCity>(
     parseSelectedArrondissementCity(value?.arrondissementCity) ??
@@ -53,6 +62,7 @@ function TerritoryLocationSelector({
   const { suggestions, isLoading, errorMessage, trimmedQuery } = useTerritorySuggestions(
     searchQuery,
     compact ? "commune" : selectedLevel,
+    selectedCountry,
   );
 
   useEffect(() => {
@@ -66,6 +76,9 @@ function TerritoryLocationSelector({
         return;
       }
       setSelectedLevel(compact ? "commune" : value.level);
+      const nextCountry = parseCountryCode(value.country) ?? DEFAULT_COUNTRY_CODE;
+      setSelectedCountry(nextCountry);
+      setCountryDraft(nextCountry);
       setSearchQuery(value.label);
       setArrondissementCity(
         parseSelectedArrondissementCity(value.arrondissementCity) ??
@@ -103,7 +116,7 @@ function TerritoryLocationSelector({
     setIsSearchOpen(false);
 
     if (nextLevel === "country") {
-      commitSelection(buildCountrySelection());
+      commitSelection(buildCountrySelection(selectedCountry));
       return;
     }
 
@@ -114,14 +127,31 @@ function TerritoryLocationSelector({
     onChange(null);
   };
 
+  const handleCountryChange = (draft: string) => {
+    setCountryDraft(draft);
+    const parsedCountry = parseCountryCode(draft);
+    if (!parsedCountry) {
+      return;
+    }
+    setSelectedCountry(parsedCountry);
+    setSearchQuery("");
+    setIsSearchOpen(false);
+    if (selectedLevel === "country") {
+      commitSelection(buildCountrySelection(parsedCountry));
+    } else {
+      onChange(null);
+    }
+  };
+
   const handlePickSuggestion = (suggestion: GeoAddressSuggestion) => {
     const nextSelection = compact
-      ? buildCompactSelectionFromSuggestion(suggestion)
+      ? buildCompactSelectionFromSuggestion(suggestion, selectedCountry)
       : buildSelectionFromSuggestion(
           selectedLevel,
           suggestion,
           arrondissementValue,
           arrondissementCity,
+          selectedCountry,
         );
     commitSelection(nextSelection);
     setIsSearchOpen(false);
@@ -141,6 +171,8 @@ function TerritoryLocationSelector({
       isLight={isLight}
       selectedLevel={selectedLevel}
       onLevelChange={handleLevelChange}
+      countryCode={countryDraft}
+      onCountryCodeChange={handleCountryChange}
       currentConfig={currentConfig}
       controlClassName={controlClassName}
       arrondissementCity={arrondissementCity}

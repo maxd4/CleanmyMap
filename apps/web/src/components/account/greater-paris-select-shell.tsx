@@ -27,6 +27,8 @@ type ShellProps = {
   isLight: boolean;
   selectedLevel: TerritoryLocationLevel;
   onLevelChange: (level: TerritoryLocationLevel) => void;
+  countryCode: string;
+  onCountryCodeChange: (value: string) => void;
   currentConfig: TerritoryLevelConfig;
   controlClassName: string;
   arrondissementCity: ArrondissementCity;
@@ -231,6 +233,8 @@ export function TerritoryLocationShell(props: ShellProps) {
     isLight,
     selectedLevel,
     onLevelChange,
+    countryCode,
+    onCountryCodeChange,
     currentConfig,
     controlClassName,
     arrondissementCity,
@@ -268,6 +272,8 @@ export function TerritoryLocationShell(props: ShellProps) {
         <TerritoryLevelControl
           selectedLevel={selectedLevel}
           onLevelChange={onLevelChange}
+          countryCode={countryCode}
+          onCountryCodeChange={onCountryCodeChange}
           isLight={isLight}
           controlClassName={controlClassName}
         />
@@ -285,7 +291,7 @@ export function TerritoryLocationShell(props: ShellProps) {
           commitSelection={commitSelection}
           onChange={onChange}
         />
-      ) : !compact && selectedLevel === "arrondissement" ? (
+      ) : !compact && selectedLevel === "arrondissement" && countryCode === "FR" ? (
         <TerritoryLevelDetails
           mode="arrondissement"
           isLight={isLight}
