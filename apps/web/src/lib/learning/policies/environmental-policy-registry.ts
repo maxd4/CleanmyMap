@@ -7,6 +7,9 @@ export type PolicyLegalStatus = "adopted" | "in_force" | "application_scheduled"
 export type PolicyCollection = "international" | "france";
 export type PolicyLifecycleStatus = "current" | "modified" | "suspended" | "repealed" | "execution_undocumented";
 export type PolicyImplementationStatus = "not_assessed" | "partially_documented" | "documented" | "execution_undocumented";
+export type PolicyEventCategory = "adoption" | "publication" | "entry_into_force" | "application" | "amendment" | "suspension" | "repeal" | "objective" | "administrative_deployment" | "observed_result";
+export type PolicyEventVerificationStatus = "verified" | "needs_review" | "unknown";
+export type PolicyReviewStatus = "verified" | "needs_review" | "source_unavailable";
 
 export type PolicyDate = {
   value: string | null;
@@ -23,24 +26,36 @@ export type PolicyTerritory = {
 
 export type PolicyMilestone = {
   id: string;
-  kind: "decision" | "publication" | "entry_into_force" | "application" | "objective" | "administrative_deployment" | "observed_result";
+  kind: "decision" | "publication" | "entry_into_force" | "application" | "amendment" | "suspension" | "repeal" | "objective" | "administrative_deployment" | "observed_result";
+  category: PolicyEventCategory;
   label: LocalizedText;
   date: PolicyDate;
   note: LocalizedText;
+  sourceIds: string[];
+  versionId: string | null;
+  verificationStatus: PolicyEventVerificationStatus;
 };
 
+type PolicyMilestoneInput = Omit<PolicyMilestone, "category" | "sourceIds" | "versionId" | "verificationStatus"> & Partial<Pick<PolicyMilestone, "category" | "sourceIds" | "versionId" | "verificationStatus">>;
+
 export type PolicyOfficialSource = {
+  id: string;
   name: LocalizedText;
   url: string;
   consultedAt: string | null;
   date: PolicyDate;
 };
 
+type PolicyOfficialSourceInput = Omit<PolicyOfficialSource, "id"> & Partial<Pick<PolicyOfficialSource, "id">>;
+
 export type PolicyVersion = {
   id: string;
   recordedAt: PolicyDate;
   note: LocalizedText;
+  sourceIds: string[];
 };
+
+type PolicyVersionInput = Omit<PolicyVersion, "sourceIds"> & Partial<Pick<PolicyVersion, "sourceIds">>;
 
 export type EnvironmentalPolicyRecord = {
   id: string;
@@ -56,6 +71,8 @@ export type EnvironmentalPolicyRecord = {
   officialSources: PolicyOfficialSource[];
   lastConsultedAt: string | null;
   lastVerifiedAt: string | null;
+  previousLastVerifiedAt: string | null;
+  reviewStatus: PolicyReviewStatus;
   limitations: LocalizedText[];
   versions: PolicyVersion[];
   decisionDate: PolicyDate;
@@ -96,16 +113,18 @@ const reviewPending = (id: string, sourceDetails: ReturnType<typeof source>, cla
   claims: { fact: claims, estimate: [], recommendation: [] },
 });
 
-type PolicyInput = Omit<EnvironmentalPolicyRecord, "collection" | "territories" | "measure" | "milestones" | "officialSources" | "lastConsultedAt" | "lastVerifiedAt" | "limitations" | "versions" | "validation" | "territory" | "lifecycleStatus" | "implementationStatus"> & {
+type PolicyInput = Omit<EnvironmentalPolicyRecord, "collection" | "territories" | "measure" | "milestones" | "officialSources" | "lastConsultedAt" | "lastVerifiedAt" | "previousLastVerifiedAt" | "reviewStatus" | "limitations" | "versions" | "validation" | "territory" | "lifecycleStatus" | "implementationStatus"> & {
   territory: Omit<PolicyTerritory, "memberCount" | "membership"> & Partial<Pick<PolicyTerritory, "memberCount" | "membership">>;
   validation: ContentValidationRecord;
   collection?: PolicyCollection;
-  milestoneOverrides?: PolicyMilestone[];
-  sourceOverrides?: PolicyOfficialSource[];
-  versionOverrides?: PolicyVersion[];
+  milestoneOverrides?: PolicyMilestoneInput[];
+  sourceOverrides?: PolicyOfficialSourceInput[];
+  versionOverrides?: PolicyVersionInput[];
   limitations?: LocalizedText[];
   lifecycleStatus?: PolicyLifecycleStatus;
   implementationStatus?: PolicyImplementationStatus;
+  previousLastVerifiedAt?: string | null;
+  reviewStatus?: PolicyReviewStatus;
 };
 
 const territoryFor = (territory: PolicyInput["territory"]): PolicyTerritory => ({
@@ -115,20 +134,31 @@ const territoryFor = (territory: PolicyInput["territory"]): PolicyTerritory => (
 });
 
 const policy = (record: PolicyInput): EnvironmentalPolicyRecord => {
-  const { milestoneOverrides, sourceOverrides, versionOverrides, limitations, lifecycleStatus, implementationStatus, ...baseRecord } = record;
+  const { milestoneOverrides, sourceOverrides, versionOverrides, limitations, lifecycleStatus, implementationStatus, previousLastVerifiedAt, reviewStatus, ...baseRecord } = record;
   const territory = territoryFor(record.territory);
   const collection = record.collection ?? (territory.countryCode === "FR" ? "france" : "international");
-  const decisionMilestone: PolicyMilestone = {
+  const primarySourceId = `${record.id}-source-primary`;
+  const officialSources: PolicyOfficialSource[] = [{ id: primarySourceId, name: record.officialSource.name, url: record.officialSource.url, consultedAt: CONSULTED_AT, date: record.decisionDate }, ...(sourceOverrides ?? []).map((sourceDetails, index) => ({ ...sourceDetails, id: sourceDetails.id ?? `${record.id}-source-${index + 2}` }))];
+  const initialVersionId = versionOverrides?.[0]?.id ?? `${record.id}-initial`;
+  const versions: PolicyVersion[] = (versionOverrides ?? [{ id: initialVersionId, recordedAt: record.decisionDate, note: { fr: "Version initiale du texte ou du dispositif telle que documentée dans la fiche.", en: "Initial version of the text or scheme documented in this record." } }]).map((version) => ({ ...version, sourceIds: version.sourceIds ?? [primarySourceId] }));
+  const normalizeMilestone = (milestone: PolicyMilestoneInput): PolicyMilestone => ({
+    ...milestone,
+    category: milestone.category ?? (milestone.kind === "decision" ? "adoption" : milestone.kind),
+    sourceIds: milestone.sourceIds ?? [primarySourceId],
+    versionId: milestone.versionId ?? initialVersionId,
+    verificationStatus: milestone.verificationStatus ?? (milestone.date.value ? "verified" : "unknown"),
+  });
+  const decisionMilestone = normalizeMilestone({
     id: `${record.id}-decision`,
     kind: "decision",
     label: { fr: "Décision ou adoption", en: "Decision or adoption" },
     date: record.decisionDate,
     note: { fr: "Jalon documentaire utilisé pour la chronologie ; il ne remplace pas les autres étapes juridiques.", en: "Documented milestone used for the chronology; it does not replace other legal steps." },
-  };
-  const milestones = [
+  });
+  const milestones: PolicyMilestone[] = [
     decisionMilestone,
-    ...(record.applicationDate ? [{ id: `${record.id}-application`, kind: "application" as const, label: { fr: "Entrée en vigueur ou application", en: "Entry into force or application" }, date: record.applicationDate, note: record.detail }] : []),
-    ...(milestoneOverrides ?? []),
+    ...(record.applicationDate ? [normalizeMilestone({ id: `${record.id}-application`, kind: "application", label: { fr: "Entrée en vigueur ou application", en: "Entry into force or application" }, date: record.applicationDate, note: record.detail })] : []),
+    ...(milestoneOverrides ?? []).map(normalizeMilestone),
   ];
   return {
     ...baseRecord,
@@ -139,11 +169,13 @@ const policy = (record: PolicyInput): EnvironmentalPolicyRecord => {
     territories: [territory],
     measure: record.summary,
     milestones,
-    officialSources: [{ name: record.officialSource.name, url: record.officialSource.url, consultedAt: CONSULTED_AT, date: record.decisionDate }, ...(sourceOverrides ?? [])],
+    officialSources,
     lastConsultedAt: CONSULTED_AT,
     lastVerifiedAt: null,
+    previousLastVerifiedAt: previousLastVerifiedAt ?? null,
+    reviewStatus: reviewStatus ?? (record.validation.status === "published" ? "verified" : "needs_review"),
     limitations: limitations ?? [{ fr: "La fiche résume les jalons principaux ; les obligations par disposition et les transpositions nationales peuvent suivre des calendriers distincts.", en: "This record summarizes the main milestones; provision-level obligations and national transpositions may follow separate schedules." }],
-    versions: versionOverrides ?? [{ id: `${record.id}-initial`, recordedAt: record.decisionDate, note: { fr: "Version initiale du texte ou du dispositif telle que documentée dans la fiche.", en: "Initial version of the text or scheme documented in this record." } }],
+    versions,
   };
 };
 
@@ -157,7 +189,7 @@ export const ENVIRONMENTAL_POLICY_REGISTRY: EnvironmentalPolicyRecord[] = [
     territory: { scope: "international", label: { fr: "Union européenne", en: "European Union" }, countryCode: null },
     decisionDate: { value: "2024-12-19", precision: "day" },
     applicationDate: { value: "2026-08-12", precision: "day" },
-    milestoneOverrides: [{ id: "eu-packaging-packaging-waste-regulation-2030", kind: "application", label: { fr: "Obligations ultérieures prévues", en: "Later obligations scheduled" }, date: { value: "2030", precision: "year" }, note: { fr: "Certaines interdictions, obligations de contenu recyclé et exigences de recyclabilité sont prévues à partir de 2030 selon les dispositions concernées.", en: "Some bans, recycled-content obligations and recyclability requirements are scheduled from 2030 depending on the provision." } }],
+    milestoneOverrides: [{ id: "eu-packaging-packaging-waste-regulation-entry", kind: "entry_into_force", category: "entry_into_force", label: { fr: "Entrée en vigueur", en: "Entry into force" }, date: { value: "2025-02-11", precision: "day" }, note: { fr: "L’entrée en vigueur du règlement est distincte de son application générale et des obligations propres à certaines dispositions.", en: "The regulation's entry into force is distinct from its general application and provision-specific obligations." } }, { id: "eu-packaging-packaging-waste-regulation-2030", kind: "application", label: { fr: "Obligations ultérieures prévues", en: "Later obligations scheduled" }, date: { value: "2030", precision: "year" }, note: { fr: "Certaines interdictions, obligations de contenu recyclé et exigences de recyclabilité sont prévues à partir de 2030 selon les dispositions concernées.", en: "Some bans, recycled-content obligations and recyclability requirements are scheduled from 2030 depending on the provision." } }],
     legalStatus: "application_scheduled",
     officialSource: { name: { fr: "Règlement (UE) 2025/40 — EUR-Lex", en: "Regulation (EU) 2025/40 — EUR-Lex" }, url: "https://eur-lex.europa.eu/eli/reg/2025/40/oj" },
     detail: { fr: "Le texte est entré en vigueur le 11 février 2025 et prévoit une application générale à partir du 12 août 2026. Ces deux dates ne décrivent pas la même étape juridique.", en: "The text entered into force on 11 February 2025 and provides for general application from 12 August 2026. These are distinct legal steps." },
@@ -236,6 +268,22 @@ export const ENVIRONMENTAL_POLICY_REGISTRY: EnvironmentalPolicyRecord[] = [
     validation: reviewPending("china-national-carbon-market-expansion", source("Ministère chinois — avis du 26 mars 2025", "https://www.mee.gov.cn/xxgk2018/xxgk/xxgk03/202503/t20250326_1104736.html", "2025-03-20", "day"), [claim("expansion", "L’extension décidée le 20 mars 2025 concerne l’acier, le ciment et l’aluminium primaire.", "The expansion decided on 20 March 2025 covers steel, cement and primary aluminum.")]),
   }),
   policy({
+    id: "china-ets-quotas-2026-pending",
+    title: { fr: "Quotas 2025-2026 du marché carbone chinois", en: "China Carbon Market 2025-2026 Allowances" },
+    summary: { fr: "Un avis officiel publie un dispositif de quotas pour plusieurs secteurs ; les détails d’allocation restent à contrôler avant publication.", en: "An official notice publishes an allowance scheme for several sectors; allocation details remain to be checked before publication." },
+    institution: { fr: "Ministère chinois de l’Écologie et de l’Environnement", en: "China's Ministry of Ecology and Environment" },
+    themes: [{ fr: "Climat et industrie", en: "Climate and industry" }],
+    territory: { scope: "national", label: { fr: "Chine", en: "China" }, countryCode: "CN" },
+    decisionDate: { value: null, precision: "unknown" },
+    applicationDate: null,
+    milestoneOverrides: [{ id: "china-ets-quotas-2026-publication", kind: "publication", category: "publication", label: { fr: "Publication de l’avis de quotas", en: "Quota notice publication" }, date: { value: "2026-09-03", precision: "day" }, note: { fr: "La publication officielle est documentée ; les règles détaillées d’allocation et toute date d’effet restent à valider. Aucun statut d’entrée en vigueur n’est déduit.", en: "The official publication is documented; detailed allocation rules and any effective date remain to be validated. No entry-into-force status is inferred." }, verificationStatus: "needs_review" }],
+    legalStatus: "implementation",
+    reviewStatus: "needs_review",
+    officialSource: { name: { fr: "Ministère chinois — avis de quotas du 1er septembre 2026", en: "China MEE — 1 September 2026 quota notice" }, url: "https://www.mee.gov.cn/xxgk2018/xxgk/xxgk03/202609/t20260903_1165029.html" },
+    detail: { fr: "Le ministère publie un avis relatif aux quotas 2025-2026 pour l’électricité et 2026 pour l’acier, le ciment et l’aluminium. La fiche reste en revue tant que les annexes d’allocation et les catégories ne sont pas contrôlées.", en: "The ministry publishes a notice on 2025-2026 allowances for power and 2026 allowances for steel, cement and aluminum. The record remains under review until allocation annexes and categories are checked." },
+    validation: reviewPending("china-ets-quotas-2026-pending", source("Ministère chinois — avis de quotas du 1er septembre 2026", "https://www.mee.gov.cn/xxgk2018/xxgk/xxgk03/202609/t20260903_1165029.html", "2026-09-03", "day"), [claim("publication", "Un avis officiel sur les quotas a été publié en septembre 2026 ; ses détails d’allocation restent à contrôler.", "An official quota notice was published in September 2026; its allocation details remain to be checked.")]),
+  }),
+  policy({
     id: "australia-new-vehicle-efficiency-standard",
     title: { fr: "Norme australienne sur l’efficacité des véhicules neufs", en: "Australian New Vehicle Efficiency Standard" },
     summary: { fr: "Une norme nationale encadre progressivement l’efficacité moyenne des véhicules neufs vendus en Australie.", en: "A national standard progressively regulates the average efficiency of new vehicles sold in Australia." },
@@ -259,6 +307,7 @@ export const ENVIRONMENTAL_POLICY_REGISTRY: EnvironmentalPolicyRecord[] = [
     territory: { scope: "national", label: { fr: "Brésil", en: "Brazil" }, countryCode: "BR" },
     decisionDate: { value: "2024-12-11", precision: "day" },
     applicationDate: null,
+    milestoneOverrides: [{ id: "brazil-regulated-carbon-market-entry", kind: "entry_into_force", label: { fr: "Entrée en vigueur du cadre légal", en: "Legal framework entry into force" }, date: { value: "2024-12-12", precision: "day" }, note: { fr: "Cette entrée en vigueur du cadre légal ne signifie pas que le marché est entièrement opérationnel ; la loi prévoit une mise en œuvre par phases.", en: "The legal framework's entry into force does not mean that the market is fully operational; the law provides for phased implementation." } }, { id: "brazil-regulated-carbon-market-operation", kind: "administrative_deployment", label: { fr: "Opérationnalisation complète du marché", en: "Full market operationalization" }, date: { value: null, precision: "unknown" }, note: { fr: "Aucune date de marché entièrement opérationnel n’est déduite de la seule entrée en vigueur de la loi.", en: "No date for a fully operational market is inferred from the law's entry into force alone." } }],
     legalStatus: "implementation",
     officialSource: { name: { fr: "Sénat brésilien — loi n° 15.042/2024", en: "Brazilian Senate — Law No. 15,042/2024" }, url: "https://legis.senado.gov.br/norma/39923461/publicacao/39925974" },
     detail: { fr: "La loi n° 15.042 du 11 décembre 2024 institue le SBCE. Le ministère précise que sa mise en œuvre est progressive et que le système n’est pas encore totalement opérationnel.", en: "Law No. 15,042 of 11 December 2024 establishes the SBCE. The ministry says implementation is gradual and the system is not yet fully operational." },
@@ -273,6 +322,9 @@ export const ENVIRONMENTAL_POLICY_REGISTRY: EnvironmentalPolicyRecord[] = [
     territory: { scope: "national", label: { fr: "Inde", en: "India" }, countryCode: "IN" },
     decisionDate: { value: "2024-09-29", precision: "day" },
     applicationDate: { value: "2024-10-01", precision: "day" },
+    milestoneOverrides: [{ id: "india-pm-e-drive-revision-august-2026", kind: "amendment", category: "amendment", label: { fr: "Notification d’août 2026 à recontrôler", en: "August 2026 notification to recheck" }, date: { value: "2026-08", precision: "month" }, note: { fr: "Le portail officiel signale des notifications d’août 2026 ; le texte et les catégories concernés n’ont pas été contrôlés dans cette fiche. Aucun changement de statut n’est déduit.", en: "The official portal lists August 2026 notifications; the text and categories concerned have not been controlled in this record. No status change is inferred." }, verificationStatus: "needs_review", versionId: "india-pm-e-drive-august-2026-pending", sourceIds: ["india-pm-e-drive-source-notifications-2026"] }],
+    sourceOverrides: [{ id: "india-pm-e-drive-source-notifications-2026", name: { fr: "Portail PM E-DRIVE — notifications d’août 2026", en: "PM E-DRIVE portal — August 2026 notifications" }, url: "https://pmedrive.heavyindustries.gov.in/policy_document", consultedAt: CONSULTED_AT, date: { value: "2026-08", precision: "month" } }],
+    versionOverrides: [{ id: "india-pm-e-drive-initial", recordedAt: { value: "2024-09-29", precision: "day" }, note: { fr: "Notification initiale du programme PM E-DRIVE.", en: "Initial PM E-DRIVE scheme notification." } }, { id: "india-pm-e-drive-august-2026-pending", recordedAt: { value: "2026-08", precision: "month" }, note: { fr: "Version candidate signalée par le portail ; le texte et les catégories restent à contrôler avant toute publication.", en: "Candidate version listed by the portal; the text and categories must be controlled before publication." }, sourceIds: ["india-pm-e-drive-source-notifications-2026"] }],
     legalStatus: "implementation",
     officialSource: { name: { fr: "Portail officiel PM E-DRIVE", en: "Official PM E-DRIVE portal" }, url: "https://pmedrive.heavyindustries.gov.in/" },
     detail: { fr: "La notification du 29 septembre 2024 prévoyait une mise en œuvre à partir du 1er octobre 2024. Le portail officiel indique des extensions ultérieures : le calendrier doit donc rester distingué de la décision initiale.", en: "The 29 September 2024 notification provided for implementation from 1 October 2024. The official portal indicates later extensions, so the initial decision must remain distinct from the current schedule." },
@@ -391,15 +443,32 @@ export const ENVIRONMENTAL_POLICY_REGISTRY: EnvironmentalPolicyRecord[] = [
   }),
 ];
 
-const primaryMilestone = (record: EnvironmentalPolicyRecord): PolicyMilestone => record.milestones.find((milestone) => milestone.kind === "decision" && milestone.date.value) ?? record.milestones.find((milestone) => milestone.date.value) ?? record.milestones[0];
+const primaryMilestone = (record: EnvironmentalPolicyRecord): PolicyMilestone => record.milestones.find((milestone) => milestone.category === "adoption" && milestone.date.value) ?? getPolicyTimeline(record).find((milestone) => milestone.date.value) ?? record.milestones[0];
 
 const dateValue = (date: PolicyDate): string => date.value ?? "";
+
+export function getPolicyTimeline(record: EnvironmentalPolicyRecord): PolicyMilestone[] {
+  return record.milestones
+    .map((milestone, index) => ({ milestone, index }))
+    .sort((a, b) => dateValue(a.milestone.date).localeCompare(dateValue(b.milestone.date)) || a.index - b.index)
+    .map(({ milestone }) => milestone);
+}
+
+function hasCompletePublicHistory(record: EnvironmentalPolicyRecord): boolean {
+  const sourceIds = new Set(record.officialSources.filter((sourceDetails) => sourceDetails.url.trim().length > 0).map((sourceDetails) => sourceDetails.id));
+  return record.reviewStatus === "verified"
+    && Boolean(record.lastVerifiedAt)
+    && record.officialSources.length > 0
+    && record.officialSources.every((sourceDetails) => sourceDetails.url.trim().length > 0)
+    && record.milestones.every((milestone) => milestone.verificationStatus !== "needs_review" && milestone.sourceIds.length > 0 && milestone.sourceIds.every((sourceId) => sourceIds.has(sourceId)))
+    && record.versions.every((version) => version.sourceIds.length > 0 && version.sourceIds.every((sourceId) => sourceIds.has(sourceId)));
+}
 
 export function getPublishedEnvironmentalPolicies(registry = ENVIRONMENTAL_POLICY_REGISTRY): EnvironmentalPolicyRecord[] {
   return registry.filter((record) => {
     try {
       assertPublishedContent(record.validation);
-      return true;
+      return hasCompletePublicHistory(record);
     } catch {
       return false;
     }
@@ -428,7 +497,10 @@ export function filterEnvironmentalPolicies(records: EnvironmentalPolicyRecord[]
     .filter((record) => filters.year === "all" || primaryMilestone(record).date.value?.startsWith(filters.year))
     .filter((record) => filters.legalStatus === "all" || record.legalStatus === filters.legalStatus)
     .filter((record) => !query || [record.title.fr, record.title.en, record.measure.fr, record.measure.en, record.institution.fr, record.institution.en, ...record.territories.flatMap((territory) => [territory.label.fr, territory.label.en])].join(" ").toLocaleLowerCase().includes(query))
-    .sort((a, b) => dateValue(primaryMilestone(b).date).localeCompare(dateValue(primaryMilestone(a).date)));
+    .sort((a, b) => {
+      const dateOrder = dateValue(primaryMilestone(b).date).localeCompare(dateValue(primaryMilestone(a).date));
+      return dateOrder || a.id.localeCompare(b.id);
+    });
 }
 
 export function formatPolicyDate(date: PolicyDate | null, locale: "fr" | "en"): string {

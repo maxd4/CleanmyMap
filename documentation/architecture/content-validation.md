@@ -117,5 +117,18 @@ d’application, d’objectif et de déploiement gardent leur précision déclar
 d’exécution restent séparés : `modified`, `suspended`, `repealed` et
 `execution_undocumented` ne constituent pas un résultat environnemental ni un
 abandon implicite.
+Pour le cycle de vie des politiques, chaque jalon porte en plus un identifiant
+stable, une `category` (`adoption`, `publication`, `entry_into_force`,
+`application`, `amendment`, `suspension` ou `repeal` lorsque ces catégories
+sont établies), des `sourceIds`, une `versionId` et un
+`verificationStatus`. Les jalons antérieurs ne sont pas remplacés lorsqu’une
+nouvelle étape est ajoutée ; `getPolicyTimeline` les ordonne en conservant
+l’ordre déclaré pour deux étapes le même jour. Les versions portent leurs
+liens de sources. `reviewStatus`, `lastVerifiedAt` et
+`previousLastVerifiedAt` distinguent une revue à refaire d’une nouvelle
+décision. `getPublishedEnvironmentalPolicies` bloque aussi une fiche dont une
+source est retirée, dont un événement reste `needs_review` ou dont l’historique
+ne peut plus relier ses sources. L’état juridique n’est jamais déduit de la
+seule date de publication d’un avis.
 Les ressources territoriales du Mode École sont validées par
 `apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.test.ts`.
