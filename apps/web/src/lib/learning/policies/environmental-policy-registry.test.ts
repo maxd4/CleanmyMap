@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 import { validateContentRecord } from "@/lib/content/content-validation";
 import {
   ENVIRONMENTAL_POLICY_REGISTRY,
@@ -65,6 +66,8 @@ describe("environmental policy registry", () => {
     const sourceRemoved = { ...reviewed(packaging), officialSources: packaging.officialSources.map((source) => ({ ...source, url: "" })) };
     expect(getPublishedEnvironmentalPolicies([sourceRemoved])).toEqual([]);
     expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), reviewStatus: "needs_review", validation: { ...packaging.validation, status: "in_review" } }])).toEqual([]);
+    expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), validation: { ...reviewed(packaging).validation, status: "rejected" as const } }])).toEqual([]);
+    expect(getPublishedEnvironmentalPolicies([{ ...reviewed(packaging), validation: { ...reviewed(packaging).validation, reviewedBy: null } }])).toEqual([]);
   });
 
   it("keeps the past and sorts a chronology with same-day stages without deduplication", () => {

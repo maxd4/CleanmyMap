@@ -6,6 +6,7 @@ import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-track
 import { EnvironmentalPolicyExplorer } from "@/components/learn/environmental-policy-explorer";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import type { EnvironmentalPolicyRecord } from "@/lib/learning/policies/environmental-policy-registry";
 import {
   LearnDeepDiveSection,
   LearnDirectPathSection,
@@ -14,7 +15,11 @@ import {
   LearnScaleSection,
 } from "./learn-comprendre-sections";
 
-export default function LearnComprendrePageContent() {
+type LearnComprendrePageContentProps = {
+  publishedPolicies: EnvironmentalPolicyRecord[];
+};
+
+export default function LearnComprendrePageContent({ publishedPolicies }: LearnComprendrePageContentProps) {
   const { locale } = useSitePreferences();
   const understandCard = LEARN_OVERVIEW_CARDS[locale][0];
 
@@ -59,7 +64,7 @@ export default function LearnComprendrePageContent() {
           }}
           className="border-amber-200 bg-white/88"
         />
-        <EnvironmentalPolicyExplorer />
+        <EnvironmentalPolicyExplorer publishedPolicies={publishedPolicies} />
         <LearnDirectPathSection locale={locale} />
         <LearnReadingFlowSection locale={locale} />
         <LearnScaleSection locale={locale} />

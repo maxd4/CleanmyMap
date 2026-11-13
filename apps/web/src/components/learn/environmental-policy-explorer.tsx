@@ -4,16 +4,12 @@ import { useMemo, useState } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { PresidentialEnvironmentalArchive } from "@/components/learn/presidential-environmental-archive";
 import {
-  ENVIRONMENTAL_POLICY_REGISTRY,
   filterEnvironmentalPolicies,
   formatPolicyDate,
   getEnvironmentalPolicyThemeOptions,
   getPolicyTimeline,
-  getPublishedEnvironmentalPolicies,
-  type EnvironmentalPolicyFilters,
-  type PolicyLegalStatus,
-  type PolicyTerritoryScope,
-} from "@/lib/learning/policies/environmental-policy-registry";
+} from "@/lib/learning/policies/environmental-policy-filtering";
+import type { EnvironmentalPolicyFilters, EnvironmentalPolicyRecord, PolicyLegalStatus, PolicyTerritoryScope } from "@/lib/learning/policies/environmental-policy-registry";
 
 const legalStatusLabels: Record<PolicyLegalStatus, { fr: string; en: string }> = {
   adopted: { fr: "Adoptée", en: "Adopted" },
@@ -48,10 +44,14 @@ const scopeLabels: Record<PolicyTerritoryScope, { fr: string; en: string }> = {
 
 const initialFilters: EnvironmentalPolicyFilters = { view: "world", query: "", territory: "all", theme: "all", year: "all", legalStatus: "all" };
 
-export function EnvironmentalPolicyExplorer() {
+type EnvironmentalPolicyExplorerProps = {
+  publishedPolicies: EnvironmentalPolicyRecord[];
+};
+
+export function EnvironmentalPolicyExplorer({ publishedPolicies }: EnvironmentalPolicyExplorerProps) {
   const { locale } = useSitePreferences();
   const [filters, setFilters] = useState<EnvironmentalPolicyFilters>(initialFilters);
-  const published = useMemo(() => getPublishedEnvironmentalPolicies(ENVIRONMENTAL_POLICY_REGISTRY), []);
+  const published = publishedPolicies;
   const visiblePublished = useMemo(() => published.filter((record) => (filters.view === "world" ? record.collection === "international" : record.collection === "france")), [filters.view, published]);
   const records = useMemo(() => filterEnvironmentalPolicies(published, filters), [filters, published]);
   const themes = getEnvironmentalPolicyThemeOptions(visiblePublished, locale);

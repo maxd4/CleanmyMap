@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { buildPageMetadata } from "@/lib/metadata";
+import { ENVIRONMENTAL_POLICY_REGISTRY, getPublishedEnvironmentalPolicies } from "@/lib/learning/policies/environmental-policy-registry";
 import LearnComprendrePageContent from "./client";
 
 export const metadata: Metadata = buildPageMetadata("/learn/comprendre", {
@@ -13,5 +14,7 @@ export const metadata: Metadata = buildPageMetadata("/learn/comprendre", {
 export const revalidate = 86400;
 
 export default function LearnVulgarisationPage() {
-  return <LearnComprendrePageContent />;
+  const publishedPolicies = getPublishedEnvironmentalPolicies(ENVIRONMENTAL_POLICY_REGISTRY);
+
+  return <LearnComprendrePageContent publishedPolicies={publishedPolicies} />;
 }

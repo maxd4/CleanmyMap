@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { formatPolicyDate } from "@/lib/learning/policies/environmental-policy-registry";
+import { formatPolicyDate } from "@/lib/learning/policies/environmental-policy-filtering";
 import {
   filterPresidentialCommitments,
   getPresidentialCandidates,

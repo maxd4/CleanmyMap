@@ -2,6 +2,8 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 type IntroProps = {
   question: string;
   clue: string;
@@ -18,6 +20,7 @@ type JourneyProps = {
 
 const introCalls: IntroProps[] = [];
 const journeyCalls: JourneyProps[] = [];
+const explorerCalls: Array<{ publishedPolicies: unknown[] }> = [];
 
 vi.mock("@/components/ui/site-preferences-provider", async () => {
   const helpers = await import("@/app/learn/test-helpers");
@@ -69,7 +72,10 @@ vi.mock("@/components/learn/learn-page-visit-tracker", () => ({
 }));
 
 vi.mock("@/components/learn/environmental-policy-explorer", () => ({
-  EnvironmentalPolicyExplorer: () => React.createElement("section", { "data-testid": "environmental-policies" }),
+  EnvironmentalPolicyExplorer: (props: { publishedPolicies: unknown[] }) => {
+    explorerCalls.push(props);
+    return React.createElement("section", { "data-testid": "environmental-policies" });
+  },
 }));
 
 import Page from "./page";
@@ -78,6 +84,7 @@ describe("LearnVulgarisationPage", () => {
   beforeEach(() => {
     introCalls.length = 0;
     journeyCalls.length = 0;
+    explorerCalls.length = 0;
   });
 
   it("publishes stable metadata and an ISR window for the public guide", async () => {
@@ -138,5 +145,7 @@ describe("LearnVulgarisationPage", () => {
     expect(journeyCalls).toHaveLength(1);
     expect(journeyCalls[0].currentPageId).toBe("comprendre");
     expect(journeyCalls[0].compact).toBe(true);
+    expect(explorerCalls).toHaveLength(1);
+    expect(explorerCalls[0].publishedPolicies).toEqual([]);
   });
 });
