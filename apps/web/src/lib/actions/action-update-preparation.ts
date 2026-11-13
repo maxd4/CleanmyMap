@@ -14,6 +14,7 @@ const SERVER_MANAGED_ROUTE_FIELDS = [
   "routeNetworkDistanceKm",
   "routeGeometryMode",
   "routeGeometryProvider",
+  "routeGeometryProvenance",
 ] as const;
 
 /** Route-provider metadata and planner evidence are server-owned projections. */

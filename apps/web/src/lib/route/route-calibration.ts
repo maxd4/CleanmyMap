@@ -21,6 +21,7 @@ import {
 } from "./route-calibration-validation";
 import { operationalRouteMatchesPlannerSnapshot } from "./route-provenance";
 import { isCryptographicallyVerifiedPlannerSnapshotContext } from "./route-calibration-server-validation";
+import { isActionRouteVersioning } from "./route-active-version";
 import type {
   ApprovedActionForCalibration,
   RouteCalibrationDataset,
@@ -80,6 +81,16 @@ export function buildCalibrationDataset(
   };
 }
 
+function hasServerVerifiedActiveRoute(
+  preparationData: ApprovedActionForCalibration["preparationData"],
+): boolean {
+  return Boolean(
+    preparationData?.routeGeometryProvenance === "server_verified" &&
+      isActionRouteVersioning(preparationData.routeVersioning) &&
+      preparationData.routeVersioning.active.operationalRoute.routes.length > 0,
+  );
+}
+
 function buildCalibrationDatasetEntry(
   action: ApprovedActionForCalibration,
   options: { requireVerifiedPlannerProvenance?: boolean },
@@ -128,6 +139,7 @@ function buildCalibrationDatasetEntry(
   if (
     operationalRoute &&
     plannerSnapshot &&
+    !hasServerVerifiedActiveRoute(preparationData) &&
     !operationalRouteMatchesPlannerSnapshot(operationalRoute, plannerSnapshot)
   ) {
     return {

@@ -124,4 +124,17 @@ describe("public map preparation projection", () => {
       gpxImportProvenance: "planned",
     });
   });
+
+  it("does not project a client-declared server route provenance marker", () => {
+    expect(parsePublicObservedPreparationData({
+      public_preparation_data: {
+        routeGeometryProvenance: "server_verified",
+        routeGeometryMode: "network",
+        routeGeometryProvider: "osrm",
+      },
+    })).toEqual({
+      routeGeometryMode: "network",
+      routeGeometryProvider: "osrm",
+    });
+  });
 });

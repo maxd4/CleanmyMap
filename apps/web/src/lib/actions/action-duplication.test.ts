@@ -8,6 +8,7 @@ import {
 import { createRoutePlannerProof } from "@/lib/route/route-planner-proof";
 import { createRoutePlannerSnapshotInput } from "@/lib/route/route-calibration-test-fixtures";
 import { createOperationalRouteFromRecommendation } from "@/lib/route/route-operational";
+import { buildActionRouteVersioning } from "@/lib/route/route-active-version";
 
 function action(overrides: Partial<ActionRow> = {}): ActionRow {
   return {
@@ -118,5 +119,52 @@ describe("action duplication contract", () => {
     expect(buildActionDuplicatePrefill(action({
       preparation_data: { operationalRoute: mismatched, routeCalibrationContext: context },
     })).operationalRoute).toBeNull();
+  });
+
+  it("reuses a server-applied active version without carrying the old proof", () => {
+    const snapshot = buildRoutePlannerSnapshot(createRoutePlannerSnapshotInput(1.2));
+    const proof = createRoutePlannerProof({
+      snapshot,
+      now: new Date("2026-09-01T09:00:00.000Z"),
+    });
+    const initialRoute = createOperationalRouteFromRecommendation({
+      generatedAt: snapshot.generatedAt,
+      groupCount: snapshot.parameters.groupCount,
+      routeGeometry: snapshot.geometry,
+      stops: [],
+      groupRoutes: [],
+    });
+    const activeRoute = structuredClone(initialRoute);
+    activeRoute.routes[0]!.geometry = {
+      ...activeRoute.routes[0]!.geometry,
+      distanceKm: activeRoute.routes[0]!.geometry.distanceKm + 0.1,
+    };
+    const versioning = buildActionRouteVersioning({
+      snapshot,
+      operationalRoute: activeRoute,
+      appliedAt: "2026-09-02T09:00:00.000Z",
+      appliedByUserId: "owner-1",
+      snapshotHash: proof.snapshotHash,
+    });
+    const prefill = buildActionDuplicatePrefill(action({
+      preparation_data: {
+        operationalRoute: activeRoute,
+        routeCalibrationContext: {
+          version: "action-route-calibration-v3",
+          generatedAt: "2026-01-01T00:00:00.000Z",
+          routeEngineVersion: "old-engine",
+          cleanupWorkloadVersion: "cleanup-workload-v1",
+          volunteersExpected: 1,
+          groupCount: 1,
+          candidates: [],
+          plannerSnapshot: snapshot,
+        } as never,
+        routeVersioning: versioning,
+        routeGeometryProvenance: "server_verified",
+      },
+    }));
+
+    expect(prefill.operationalRoute).toEqual(activeRoute);
+    expect(prefill.routeCalibrationContext).toBeNull();
   });
 });

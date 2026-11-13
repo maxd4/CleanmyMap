@@ -134,9 +134,9 @@ function hasDemonstratedNetworkRoute(item: ActionMapItem): boolean {
   const activeVersion = preparationData.routeVersioning;
   const hasServerAppliedVersion =
     isActionRouteVersioning(activeVersion) &&
-    typeof activeVersion.active.calculation?.snapshotHash === "string" &&
-    Boolean(activeVersion.active.operationalRoute);
-  return hasServerAppliedVersion;
+    activeVersion.active.provenance === "server_verified" &&
+    activeVersion.active.operationalRoute.routes.length > 0;
+  return preparationData.routeGeometryProvenance === "server_verified" || hasServerAppliedVersion;
 }
 
 function isUnprovenCompletedRoutedGeometry(

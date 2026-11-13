@@ -1,5 +1,6 @@
 import type { ActionGeometrySource, ActionPreparationData } from "@/lib/actions/types";
 import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
+import { isActionRouteVersioning } from "@/lib/route/route-active-version";
 
 const PUBLIC_ROUTE_GEOMETRY_MODES = new Set(["network", "fallback"]);
 const PUBLIC_ROUTE_GEOMETRY_PROVIDERS = new Set(["osrm", "fossgis-osrm", "none"]);
@@ -90,6 +91,17 @@ function copyPublicOperationalRoute(input: Record<string, unknown>, output: Reco
   if (operationalRoute.length > 0) output.operationalRoute = { routes: operationalRoute };
 }
 
+function copyServerRouteProvenance(input: Record<string, unknown>, output: Record<string, unknown>): void {
+  const versioning = input.routeVersioning;
+  if (
+    isActionRouteVersioning(versioning) &&
+    versioning.active.provenance === "server_verified" &&
+    versioning.active.operationalRoute.routes.length > 0
+  ) {
+    output.routeGeometryProvenance = "server_verified";
+  }
+}
+
 /** Public map contracts expose only the bounded cartographic preparation allowlist. */
 export function sanitizePublicObservedPreparationData(
   raw: unknown,
@@ -101,6 +113,7 @@ export function sanitizePublicObservedPreparationData(
   if (observedCoverage) output.observedCoverage = observedCoverage;
   copyPublicRouteMetadata(input, output);
   copyPublicOperationalRoute(input, output);
+  copyServerRouteProvenance(input, output);
 
   return Object.keys(output).length > 0 ? output as ActionPreparationData : undefined;
 }

@@ -4,6 +4,8 @@ import type { ActionContext } from "./action-context";
 import { normalizeActionPreparationData, normalizeOperationalRoute } from "@/lib/route/route-operational";
 import { isRouteCalibrationContext } from "@/lib/route/route-calibration";
 import { hasCryptographicallyVerifiedPlannerRouteInPreparation } from "@/lib/route/route-provenance-server";
+import { isActionRouteVersioning } from "@/lib/route/route-active-version";
+import { isOperationalRoute } from "@/lib/route/route-operational";
 
 export type ActionDuplicatePrefill = {
   title: string;
@@ -54,20 +56,31 @@ function reusableRoute(preparation: ActionPreparationData): Pick<ActionDuplicate
     preparation.routeVersioning?.active?.operationalRoute ?? preparation.operationalRoute,
   );
   const context = preparation.routeCalibrationContext;
-  if (
-    !operationalRoute ||
-    !context ||
-    !isRouteCalibrationContext(context) ||
-    !hasCryptographicallyVerifiedPlannerRouteInPreparation({
-      operationalRoute,
-      routeCalibrationContext: context,
-    })
-  ) {
+  if (!operationalRoute || !isOperationalRoute(operationalRoute)) {
+    return { operationalRoute: null, routeCalibrationContext: null };
+  }
+  const matchesInitialSnapshot = Boolean(
+    context &&
+      isRouteCalibrationContext(context) &&
+      hasCryptographicallyVerifiedPlannerRouteInPreparation({
+        operationalRoute,
+        routeCalibrationContext: context,
+      }),
+  );
+  const hasAppliedServerVersion = Boolean(
+    preparation.routeGeometryProvenance === "server_verified" &&
+      preparation.routeVersioning &&
+      isActionRouteVersioning(preparation.routeVersioning) &&
+      preparation.routeVersioning.active.operationalRoute.routes.length > 0,
+  );
+  if (!matchesInitialSnapshot && !hasAppliedServerVersion) {
     return { operationalRoute: null, routeCalibrationContext: null };
   }
   return {
     operationalRoute,
-    routeCalibrationContext: structuredClone(context),
+    // A duplicate may reuse the geometry, but never carries the source
+    // action's proof as a new creation authority.
+    routeCalibrationContext: null,
   };
 }
 

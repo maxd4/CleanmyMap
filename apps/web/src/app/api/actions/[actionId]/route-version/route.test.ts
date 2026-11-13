@@ -398,7 +398,10 @@ describe("POST /api/actions/:actionId/route-version", () => {
     expect(body).toMatchObject({
       status: "applied",
       actionId: "action-1",
-      activeRouteVersion: { appliedByUserId: "owner-1" },
+      activeRouteVersion: {
+        appliedByUserId: "owner-1",
+        provenance: "estimated",
+      },
       history: [expect.anything()],
     });
     const updateCall = firstMockArgument(supabase.chain.update);
@@ -407,6 +410,7 @@ describe("POST /api/actions/:actionId/route-version", () => {
         routeCalibrationContext: current.preparation_data.routeCalibrationContext,
         operationalRoute: nextOperationalRoute,
         customPreparationKey: "preserve-me",
+        routeGeometryProvenance: undefined,
       },
       geometry_confidence: 0.6,
       geometry_source: "estimated_route",
@@ -429,6 +433,9 @@ describe("POST /api/actions/:actionId/route-version", () => {
     expect(firstMockArgument(supabase.chain.update)).toMatchObject({
       geometry_confidence: 0.78,
       geometry_source: "routed",
+    });
+    expect(firstMockArgument(supabase.chain.update)).toMatchObject({
+      preparation_data: { routeGeometryProvenance: "server_verified" },
     });
   });
 

@@ -120,6 +120,7 @@ describe("actions map export utils", () => {
       preparationData: {
         routeGeometryMode: "network",
         routeGeometryProvider: "osrm",
+        routeGeometryProvenance: "server_verified",
       },
       manualDrawing: {
         kind: "polyline",

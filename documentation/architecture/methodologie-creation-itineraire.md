@@ -386,6 +386,13 @@ groupes et bénévoles, préférence de collecte, versions moteur/modèles,
 provenance et métriques disponibles. `history` ne contient que les versions
 effectivement appliquées. Le contexte complet initial reste dans
 `routeCalibrationContext` et n’est jamais remplacé par une actualisation.
+Chaque version active porte une provenance serveur propre à cette application :
+`server_verified` est réservé à une géométrie réseau non estimée, tandis qu’un
+fallback reste `estimated`. La projection cartographique publique
+`routeGeometryProvenance` n’est produite qu’à partir d’une version active
+structurellement valide ; elle ne transporte ni la preuve HMAC ni un hash seul.
+Une duplication peut reprendre la géométrie active comme hypothèse, mais ne
+réutilise jamais la preuve de l’action source comme autorisation de création.
 
 `Actualiser l’itinéraire` appelle exclusivement `POST /api/route/recommend`
 avec les paramètres de la version active. Le résultat est une proposition

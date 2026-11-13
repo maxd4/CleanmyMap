@@ -4,6 +4,7 @@ import {
   type ActionRouteVersioning,
 } from "@/lib/route/route-active-version";
 import { hashRoutePlannerSnapshot } from "@/lib/route/route-planner-snapshot-hash";
+import { hasCryptographicallyVerifiedPlannerRouteInPreparation } from "@/lib/route/route-provenance-server";
 
 export function initializeActionRouteVersioning(params: {
   preparationData: ActionPreparationData | null | undefined;
@@ -23,5 +24,14 @@ export function initializeActionRouteVersioning(params: {
     appliedByUserId: params.appliedByUserId,
     snapshotHash: hashRoutePlannerSnapshot(snapshot),
   });
-  return { ...preparationData, routeVersioning };
+  return {
+    ...preparationData,
+    routeVersioning,
+    ...(routeVersioning.active.provenance === "server_verified" && hasCryptographicallyVerifiedPlannerRouteInPreparation({
+      operationalRoute,
+      routeCalibrationContext: preparationData.routeCalibrationContext,
+    })
+      ? { routeGeometryProvenance: "server_verified" as const }
+      : {}),
+  };
 }

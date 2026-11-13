@@ -10,6 +10,10 @@ export function preserveHistoricalRouteCalibrationContext(
   if (!currentContext) {
     const withoutIncomingContext = { ...next };
     delete withoutIncomingContext.routeCalibrationContext;
+    if (!currentVersioning) {
+      delete withoutIncomingContext.routeVersioning;
+      delete withoutIncomingContext.routeGeometryProvenance;
+    }
     return {
       ...withoutIncomingContext,
       ...(current?.operationalRoute && next.operationalRoute === undefined
@@ -25,7 +29,7 @@ export function preserveHistoricalRouteCalibrationContext(
   ) {
     throw new Error("Le contexte historique de calibration ne peut pas être réécrit.");
   }
-  return {
+  const preserved = {
     ...next,
     routeCalibrationContext: structuredClone(currentContext),
     ...(current?.operationalRoute && next.operationalRoute === undefined
@@ -35,4 +39,9 @@ export function preserveHistoricalRouteCalibrationContext(
       ? { routeVersioning: structuredClone(currentVersioning) }
       : {}),
   };
+  if (!currentVersioning) {
+    delete preserved.routeVersioning;
+    delete preserved.routeGeometryProvenance;
+  }
+  return preserved;
 }

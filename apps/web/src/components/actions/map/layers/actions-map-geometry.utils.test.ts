@@ -160,6 +160,7 @@ describe("actions map geometry utils", () => {
         preparationData: {
           routeGeometryMode: "network",
           routeGeometryProvider: "fossgis-osrm",
+          routeGeometryProvenance: "server_verified",
         },
       }),
     );
@@ -654,6 +655,7 @@ describe("actions map geometry utils", () => {
         preparationData: {
           routeGeometryMode: "network",
           routeGeometryProvider: "osrm",
+        routeGeometryProvenance: "server_verified",
           routeNetworkDistanceKm: 2.1,
         },
       }),

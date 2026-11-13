@@ -1,4 +1,6 @@
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import { isOperationalRoute } from "./route-operational";
+import { resolvePersistedRouteGeometrySource } from "./route-provenance";
 
 const ACTION_ROUTE_VERSIONING_SCHEMA_VERSION =
   "action-route-versioning-v1" as const;
@@ -38,6 +40,8 @@ export type ActionRouteVersion = {
   appliedByUserId: string;
   calculation: ActionRouteVersionCalculation;
   operationalRoute: import("./route-operational").OperationalRoute;
+  /** Server attestation set only after the signed planner proposal was applied. */
+  provenance?: "server_verified" | "estimated";
 };
 
 export type ActionRouteVersioning = {
@@ -130,6 +134,10 @@ export function buildActionRouteVersioning(input: {
       appliedByUserId: input.appliedByUserId,
       calculation,
       operationalRoute: structuredClone(input.operationalRoute),
+      provenance: input.operationalRoute.routes[0] &&
+        resolvePersistedRouteGeometrySource(input.operationalRoute.routes[0].geometry) === "routed"
+        ? "server_verified"
+        : "estimated",
     },
     history: [],
   };
@@ -141,6 +149,23 @@ export function isActionRouteVersioning(value: unknown): value is ActionRouteVer
   return (
     candidate.schemaVersion === ACTION_ROUTE_VERSIONING_SCHEMA_VERSION &&
     Boolean(candidate.active) &&
+    isValidActionRouteVersion(candidate.active) &&
     Array.isArray(candidate.history)
+  );
+}
+
+function isValidActionRouteVersion(value: unknown): value is ActionRouteVersion {
+  if (!value || typeof value !== "object") return false;
+  const version = value as Partial<ActionRouteVersion>;
+  return (
+    typeof version.versionId === "string" &&
+    typeof version.appliedAt === "string" &&
+    typeof version.appliedByUserId === "string" &&
+    (version.provenance === undefined || version.provenance === "server_verified" || version.provenance === "estimated") &&
+    typeof version.calculation === "object" &&
+    version.calculation !== null &&
+    typeof version.calculation.snapshotHash === "string" &&
+    /^[a-f0-9]{64}$/.test(version.calculation.snapshotHash) &&
+    isOperationalRoute(version.operationalRoute)
   );
 }

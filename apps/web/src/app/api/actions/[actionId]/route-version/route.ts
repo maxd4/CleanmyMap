@@ -513,6 +513,14 @@ export async function POST(
       departureLocationLabel: preparationData.pointDeRendezVous,
       arrivalLocationLabel: preparationData.zoneCiblePrevue,
     });
+    const nextPreparationData = {
+      ...preparationData,
+      operationalRoute: parsed.data.operationalRoute,
+      routeVersioning: nextVersioning,
+      ...(geometrySource === "routed"
+        ? { routeGeometryProvenance: "server_verified" as const }
+        : { routeGeometryProvenance: undefined }),
+    };
     const persistenceConflict = await persistRouteVersionUpdate({
       supabase,
       actionId: trimmedActionId,
@@ -520,11 +528,7 @@ export async function POST(
       currentUpdatedAt,
       actorUserId: access.userId,
       updateData: {
-        preparation_data: {
-          ...preparationData,
-          operationalRoute: parsed.data.operationalRoute,
-          routeVersioning: nextVersioning,
-        },
+        preparation_data: nextPreparationData,
         derived_geometry_kind: persistedGeometry.kind,
         derived_geometry_geojson: persistedGeometry.geojson,
         geometry_confidence: persistedGeometry.confidence,

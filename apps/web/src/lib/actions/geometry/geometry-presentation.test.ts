@@ -46,10 +46,36 @@ describe("geometry presentation provenance", () => {
         schemaVersion: "action-route-versioning-v1",
         active: {
           calculation: { snapshotHash: "a".repeat(64) },
-          operationalRoute: {},
+          provenance: "server_verified",
+          operationalRoute: {
+            version: "operational-route-v1",
+            initializedAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-01T00:00:00.000Z",
+            source: "planner",
+            state: "planner_copy",
+            plannerGroupCount: 1,
+            routes: [{
+              routeId: "route-1",
+              groupIndex: 1,
+              geometry: {
+                mode: "network",
+                provider: "fossgis-osrm",
+                estimated: false,
+                distanceKm: 1,
+                coordinates: [[48.85, 2.35], [48.851, 2.351]],
+              },
+              plannerTechnicalStops: [],
+            }],
+            zones: {
+              departure: { label: null, coordinate: null },
+              midpoint: { label: null, coordinate: null },
+              arrival: { label: null, coordinate: null },
+            },
+          },
         },
         history: [],
       } as never,
+      routeGeometryProvenance: "server_verified",
     }, "post_action_complete"))).toMatchObject({
       reality: "planned",
       strokeStyle: "dashed",
@@ -71,6 +97,14 @@ describe("geometry presentation provenance", () => {
       routeGeometryMode: "network",
       routeGeometryProvider: "osrm",
       routeNetworkDistanceKm: 1.4,
+      routeVersioning: {
+        schemaVersion: "action-route-versioning-v1",
+        active: {
+          calculation: { snapshotHash: "a".repeat(64) },
+          operationalRoute: {},
+        },
+        history: [],
+      } as never,
     }, "post_action_complete"))).toMatchObject({
       label: "Localisation seule · itinéraire non démontré",
       reality: "location_only",

@@ -213,6 +213,8 @@ export type ActionPreparationData = {
   operationalRoute?: OperationalRoute;
   /** Server-managed active route version and applied-version history. */
   routeVersioning?: ActionRouteVersioning;
+  /** Public projection of a server-attested active route version. */
+  routeGeometryProvenance?: "server_verified";
   /** @deprecated Read compatibility only; normalize to operationalRoute. */
   actualRoute?: LegacyOperationalRoute;
   /** User target only; never treated as the measured provider distance. */

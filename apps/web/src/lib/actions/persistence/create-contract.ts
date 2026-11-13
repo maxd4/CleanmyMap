@@ -180,6 +180,10 @@ function normalizeInsertPreparationData(
     ...(payload.preparationData ?? {}),
     ...(routeTopology ? { routeTopology } : {}),
   }));
+  // These fields are server-owned. A client may provide a route candidate,
+  // but never an active-version attestation or its public projection.
+  delete preparation.routeVersioning;
+  delete preparation.routeGeometryProvenance;
   if (routeTopology === undefined) {
     for (const key of [
       "routeTopology",
@@ -288,7 +292,15 @@ function resolveInsertPreparationData(
   const withGpx = appendGpxPreparationData(withTarget, params, routeTopology);
   const routeGeometry = routeTopology === undefined || params.payload.geometrySource === "gpx_import" ? null : params.routeGeometry;
   const withRoute = routeTopology !== undefined && routeGeometry
-    ? { ...withGpx, routeNetworkDistanceKm: routeGeometry.distanceKm, routeGeometryMode: routeGeometry.mode, routeGeometryProvider: routeGeometry.provider }
+    ? {
+        ...withGpx,
+        routeNetworkDistanceKm: routeGeometry.distanceKm,
+        routeGeometryMode: routeGeometry.mode,
+        routeGeometryProvider: routeGeometry.provider,
+        ...(activeGeometry?.source === "routed" && hasCryptographicallyVerifiedPlannerRouteInPreparation(inputPreparation)
+          ? { routeGeometryProvenance: "server_verified" as const }
+          : {}),
+      }
     : withGpx;
   return sanitizeAdministrativeRequirementsForCreation(params.payload.actionPhase, withRoute);
 }
