@@ -63,6 +63,51 @@ describe("server-side action route reconstruction", () => {
     expect(result?.drawing.coordinates.at(-1)).toEqual([48.85, 2.35]);
   });
 
+  it.each([
+    [60, 10, 3, [5, 5]],
+    [90, 15, 4.5, [8, 7]],
+  ])("reconstructs %s minutes as explicitly hypothetical multi-group coverage", async (durationMinutes, participantsCount, targetDistanceKm, groupParticipantCounts) => {
+    routeProviderMock.mockImplementation(async (waypoints: [number, number][]) => ({
+      ...networkGeometry,
+      coordinates: waypoints,
+      distanceKm: targetDistanceKm,
+    }));
+
+    const result = await reconstructActionRoute({
+      latitude: 48.85,
+      longitude: 2.35,
+      locationLabel: "Rue de test, Paris",
+      durationMinutes,
+      participantsCount,
+    });
+
+    expect(result?.simulatedRouteCoverage).toMatchObject({
+      groupCount: 2,
+      groupParticipantCounts,
+      durationMinutes,
+      targetDistanceKm,
+      speedKmPerHour: 3,
+      geometrySource: "estimated_route",
+      provenance: "estimated",
+      status: "hypothetical",
+    });
+    expect(result?.simulatedRouteCoverage?.coordinates).toHaveLength(2);
+    expect(result?.geometrySource).toBe("routed");
+  });
+
+  it("records an explicit exception instead of simulating nine participants", async () => {
+    routeProviderMock.mockResolvedValue(networkGeometry);
+    const result = await reconstructActionRoute({
+      latitude: 48.85,
+      longitude: 2.35,
+      locationLabel: "Rue de test, Paris",
+      durationMinutes: 60,
+      participantsCount: 9,
+    });
+    expect(result?.simulatedRouteCoverage).toBeUndefined();
+    expect(result?.simulationUnavailableReason).toContain("incompatible");
+  });
+
   it("uses the explicit target without changing the measured provider distance", async () => {
     routeProviderMock.mockResolvedValue(networkGeometry);
 
@@ -150,7 +195,7 @@ describe("server-side action route reconstruction", () => {
 
     expect(routeProviderMock).toHaveBeenCalledTimes(4);
     expect(result?.geometrySource).toBe("routed");
-    expect(result?.routeGeometry?.distanceKm).toBe(0.91);
+    expect(result?.routeGeometry?.distanceKm).toBe(1.42);
     expect(result?.drawing.coordinates[0]).toEqual(result?.drawing.coordinates.at(-1));
   });
 

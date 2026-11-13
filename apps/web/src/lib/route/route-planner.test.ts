@@ -396,10 +396,10 @@ describe("route planner V1", () => {
     expect(fromB.stops[0]?.candidate.id).toBe("near-origin-b");
   });
 
-  it("counts the origin-to-first-stop movement at 4.5 km/h", () => {
+  it("counts the origin-to-first-stop movement at 3 km/h", () => {
     const stop = candidate("first", 0.01, 0, 80);
     const result = planRoute(
-      plannerInput({ candidates: [stop], maxStops: 1, travelBudgetMinutes: 40 }),
+      plannerInput({ candidates: [stop], maxStops: 1, travelBudgetMinutes: 50 }),
     );
     const planned = result.stops[0];
 
@@ -414,7 +414,7 @@ describe("route planner V1", () => {
     expect(planned?.loopTravelMinutes).toBe(
       planned?.incrementalTravelMinutes + planned?.returnTravelMinutes,
     );
-    expect(planned?.loopTravelMinutes).toBeLessThanOrEqual(40);
+    expect(planned?.loopTravelMinutes).toBeLessThanOrEqual(50);
   });
 
   it("plans an open route without reserving a fictitious return", () => {
@@ -422,7 +422,7 @@ describe("route planner V1", () => {
     const result = planRoute(plannerInput({
       candidates: [stop],
       maxStops: 1,
-      travelBudgetMinutes: 20,
+      travelBudgetMinutes: 50,
       routeTopology: "open",
     }));
     const planned = result.stops[0];
@@ -430,7 +430,7 @@ describe("route planner V1", () => {
     expect(planned?.returnDistanceKm).toBe(0);
     expect(planned?.returnTravelMinutes).toBe(0);
     expect(planned?.loopTravelMinutes).toBe(planned?.incrementalTravelMinutes);
-    expect(planned?.loopTravelMinutes).toBeLessThanOrEqual(20);
+    expect(planned?.loopTravelMinutes).toBeLessThanOrEqual(50);
   });
 
   it("refuses a distant stop when the return would exceed the budget", () => {
@@ -456,13 +456,13 @@ describe("route planner V1", () => {
           candidate("one", 0.005, 0, 80),
           candidate("two", 0.01, 0, 70),
         ],
-        travelBudgetMinutes: 20,
+        travelBudgetMinutes: 80,
         maxStops: 2,
       }),
     );
 
     expect(result.stops.length).toBeGreaterThan(0);
-    expect(result.stops.every((stop) => stop.loopTravelMinutes <= 20)).toBe(true);
+    expect(result.stops.every((stop) => stop.loopTravelMinutes <= 80)).toBe(true);
     expect(result.stops.at(-1)?.returnTravelMinutes).toBeGreaterThan(0);
   });
 
@@ -485,11 +485,11 @@ describe("route planner V1", () => {
           candidate("two", 0.01, 0, 70),
           candidate("three", 0.015, 0, 60),
         ],
-        travelBudgetMinutes: 20,
+        travelBudgetMinutes: 80,
       }),
     );
 
-    expect(result.stops.every((stop) => stop.cumulativeTravelMinutes <= 20)).toBe(
+    expect(result.stops.every((stop) => stop.cumulativeTravelMinutes <= 80)).toBe(
       true,
     );
   });
@@ -515,10 +515,10 @@ describe("route planner V1", () => {
     ];
 
     const travelFirst = planRoute(
-      plannerInput({ candidates, priorityVsTravel: 0, maxStops: 1 }),
+      plannerInput({ candidates, priorityVsTravel: 0, maxStops: 1, travelBudgetMinutes: 180 }),
     );
     const priorityFirst = planRoute(
-      plannerInput({ candidates, priorityVsTravel: 100, maxStops: 1 }),
+      plannerInput({ candidates, priorityVsTravel: 100, maxStops: 1, travelBudgetMinutes: 180 }),
     );
 
     expect(travelFirst.stops[0]?.candidate.id).toBe("near-low-priority");

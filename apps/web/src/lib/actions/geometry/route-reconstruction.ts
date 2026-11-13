@@ -8,6 +8,7 @@ import type {
   ActionLocationCoordinates,
   ActionRecordType,
   ActionRouteTopology,
+  ActionSimulatedRouteCoverage,
   LegacyActionRecordType,
 } from "@/lib/actions/types";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
@@ -18,10 +19,15 @@ import {
 } from "@/lib/geo/territory";
 import { findMatchingGeometry } from "@/lib/geo/geometry-reference";
 import { areCoordinatesClose } from "@/lib/geo/coordinate-comparison";
+import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
 import { routePolylineThroughFossgisFoot } from "@/lib/route/fossgis-foot-routing";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import { resolvePersistedRouteGeometrySource } from "@/lib/route/route-provenance";
-import { resolveRouteTargetDistance } from "../route-target-distance";
+import {
+  deriveRouteTargetDistanceKm,
+  resolveRouteTargetDistance,
+} from "../route-target-distance";
+import { resolveHypotheticalGroupPlan } from "@/lib/route/route-group-partition";
 
 type GeoPoint = {
   latitude: number;
@@ -45,6 +51,8 @@ export type ReconstructedActionRoute = {
   geometrySource: Extract<ActionGeometrySource, "reference" | "routed" | "estimated_route">;
   routeGeometry: RouteGeometry | null;
   origin: [number, number];
+  simulatedRouteCoverage?: ActionSimulatedRouteCoverage;
+  simulationUnavailableReason?: string;
 };
 
 function isCoordinatePair(value: unknown): value is [number, number] {
@@ -130,9 +138,10 @@ export function buildClosedLoopWaypoints(
 function buildLoopHypotheses(
   origin: [number, number],
   targetDistanceKm: number,
+  rotationOffsetDegrees = 0,
 ): [number, number][][] {
   return LOOP_HYPOTHESIS_ROTATIONS_DEGREES.map((rotation) =>
-    buildClosedLoopWaypointsForRotation(origin, targetDistanceKm, rotation),
+    buildClosedLoopWaypointsForRotation(origin, targetDistanceKm, rotation + rotationOffsetDegrees),
   );
 }
 
@@ -210,10 +219,11 @@ async function routeLoopHypotheses(
   origin: [number, number],
   targetDistanceKm: number,
   midpoint: [number, number] | null,
+  rotationOffsetDegrees = 0,
 ): Promise<RouteGeometry> {
   const hypotheses = midpoint
     ? [[origin, midpoint, origin]]
-    : buildLoopHypotheses(origin, targetDistanceKm);
+    : buildLoopHypotheses(origin, targetDistanceKm, rotationOffsetDegrees);
   let fallbackRoute: RouteGeometry | null = null;
   const networkCandidates: Array<{ routeGeometry: RouteGeometry; index: number }> = [];
 
@@ -241,6 +251,61 @@ async function routeLoopHypotheses(
   }
 
   return fallbackRoute ?? routePolylineThroughFossgisFoot(hypotheses[0]!);
+}
+
+function routeOverlapRatio(route: RouteGeometry, selected: RouteGeometry[]): number {
+  if (selected.length === 0 || route.coordinates.length < 2) return 0;
+  const nearPoints = route.coordinates.filter((point) => selected.some((other) =>
+    other.coordinates.some((otherPoint) => haversineDistanceKm(point, otherPoint) <= 0.035),
+  ));
+  return nearPoints.length / route.coordinates.length;
+}
+
+async function reconstructHypotheticalCoverage(params: {
+  origin: [number, number];
+  durationMinutes: number | null | undefined;
+  participantsCount?: number | null;
+  midpointPair: [number, number] | null;
+}): Promise<{ coverage?: ActionSimulatedRouteCoverage; reason?: string }> {
+  const participants = params.participantsCount;
+  if (participants === null || participants === undefined) return {};
+  if (!Number.isFinite(params.durationMinutes) || (params.durationMinutes ?? 0) <= 0) {
+    return { reason: "durée d'action insuffisante pour une reconstruction hypothétique." };
+  }
+  const plan = resolveHypotheticalGroupPlan(participants);
+  if (plan.kind === "incompatible") return { reason: plan.reason };
+  const targetDistanceKm = deriveRouteTargetDistanceKm(params.durationMinutes);
+  const routes: RouteGeometry[] = [];
+  for (const [index] of plan.counts.entries()) {
+    const route = await routeLoopHypotheses(
+      params.origin,
+      targetDistanceKm,
+      params.midpointPair,
+      index * 45,
+    );
+    if (!isValidNetworkLoop(route) || route.mode !== "network" || route.provider === "none") {
+      return { reason: "routage piéton indisponible pour toutes les équipes hypothétiques." };
+    }
+    if (routeOverlapRatio(route, routes) > 0.75) {
+      return { reason: "les alternatives de routage disponibles se recouvrent trop pour être distinguées." };
+    }
+    routes.push(route);
+  }
+  return {
+    coverage: {
+      type: "MultiLineString",
+      coordinates: routes.map((route) => route.coordinates),
+      groupCount: plan.counts.length,
+      groupParticipantCounts: plan.counts,
+      durationMinutes: Number(params.durationMinutes),
+      targetDistanceKm,
+      speedKmPerHour: 3,
+      geometrySource: "estimated_route",
+      provenance: "estimated",
+      status: "hypothetical",
+      coverageVersion: "simulated-routes-v1",
+    },
+  };
 }
 
 async function geocodeLabel(label: string): Promise<GeoPoint | null> {
@@ -312,6 +377,7 @@ type ReconstructActionRouteParams = {
   durationMinutesDeclared?: boolean;
   routeTargetDistanceKm?: number | null;
   routeTargetDistanceSource?: "derived" | "manual" | null;
+  participantsCount?: number | null;
 };
 
 type OriginResolution =
@@ -429,6 +495,14 @@ export async function reconstructActionRoute(
     routeTargetDistanceSource: params.routeTargetDistanceSource,
   }).distanceKm;
   const { midpointPair, arrivalPair } = await resolveRouteStopPairs(params, topology);
+  const hypothetical = topology === "loop"
+    ? await reconstructHypotheticalCoverage({
+        origin: originPair,
+        durationMinutes: params.durationMinutes,
+        participantsCount: params.participantsCount,
+        midpointPair,
+      })
+    : { reason: "la reconstruction multi-groupes est réservée aux boucles d'action." };
   const routeGeometry = topology === "point_to_point"
     ? await routePolylineThroughFossgisFoot([
         originPair,
@@ -445,5 +519,7 @@ export async function reconstructActionRoute(
     geometrySource: resolvePersistedRouteGeometrySource(routeGeometry),
     routeGeometry,
     origin: originPair,
+    ...(hypothetical.coverage ? { simulatedRouteCoverage: hypothetical.coverage } : {}),
+    ...(hypothetical.reason ? { simulationUnavailableReason: hypothetical.reason } : {}),
   };
 }

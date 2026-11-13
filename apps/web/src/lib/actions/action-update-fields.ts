@@ -94,6 +94,9 @@ function buildPhaseAndPreparationFields(
       durationMinutesDeclared: nextPreparationData.durationMinutesDeclared,
       routeTargetDistanceKm: nextPreparationData.routeTargetDistanceKm,
       routeTargetDistanceSource: nextPreparationData.routeTargetDistanceSource,
+      routeTargetDistancePolicyVersion: body.durationMinutes === undefined
+        ? nextPreparationData.routeTargetDistancePolicyVersion
+        : undefined,
     });
     updateData["preparation_data"] = persistResolvedRouteTargetDistance(
       nextPreparationData,
@@ -179,6 +182,7 @@ function buildTimingFields(
         durationMinutesDeclared: preparationDataForUpdate.durationMinutesDeclared,
         routeTargetDistanceKm: preparationDataForUpdate.routeTargetDistanceKm,
         routeTargetDistanceSource: preparationDataForUpdate.routeTargetDistanceSource,
+        routeTargetDistancePolicyVersion: undefined,
       });
       updateData["preparation_data"] = persistResolvedRouteTargetDistance(
         preparationDataForUpdate,

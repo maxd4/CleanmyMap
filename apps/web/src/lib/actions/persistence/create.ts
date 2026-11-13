@@ -3,6 +3,7 @@ import type {
   ActionGeometryMethod,
   ActionGeometrySource,
   ActionStatus,
+  ActionSimulatedRouteCoverage,
   CreateActionPayload,
 } from "@/lib/actions/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -67,6 +68,7 @@ type ResolvedCreateActionDrawing = {
   geometrySource: ActionGeometrySource | null;
   routeGeometry: RouteGeometry | null;
   origin: [number, number] | null;
+  simulatedRouteCoverage?: ActionSimulatedRouteCoverage;
 };
 
 type ActionCreationResult = {
@@ -254,6 +256,7 @@ async function resolveReconstructedCreateActionDrawing(
     durationMinutesDeclared: payload.preparationData?.durationMinutesDeclared,
     routeTargetDistanceKm: payload.preparationData?.routeTargetDistanceKm,
     routeTargetDistanceSource: payload.preparationData?.routeTargetDistanceSource,
+    participantsCount: payload.volunteersCount,
   });
   return route
     ? {
@@ -261,6 +264,7 @@ async function resolveReconstructedCreateActionDrawing(
         geometrySource: route.geometrySource,
         routeGeometry: route.routeGeometry,
         origin: route.origin,
+        ...(route.simulatedRouteCoverage ? { simulatedRouteCoverage: route.simulatedRouteCoverage } : {}),
       }
     : { drawing: null, geometrySource: null, routeGeometry: null, origin: null };
 }
@@ -337,6 +341,9 @@ async function resolveCreateActionPersistenceContext(
     ...payloadWithRouteTarget,
     latitude: payload.latitude ?? resolvedDrawing.origin?.[0],
     longitude: payload.longitude ?? resolvedDrawing.origin?.[1],
+    preparationData: resolvedDrawing.simulatedRouteCoverage
+      ? { ...(payloadWithRouteTarget.preparationData ?? {}), simulatedRouteCoverage: resolvedDrawing.simulatedRouteCoverage }
+      : payloadWithRouteTarget.preparationData,
   };
   const finalDrawing = resolvedDrawing.drawing;
   const routeGeometryVerified = Boolean(

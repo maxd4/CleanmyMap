@@ -242,8 +242,17 @@ function getOriginPresentation(
   if (origin === "gps_tracking") {
     return buildPresentation(origin, "observed", observedLabel(item, origin), "solid", "observed");
   }
-  if (origin === "estimated_route") return getEstimatedRoutePresentation(item);
+  if (origin === "estimated_route") {
+    return item.contract?.metadata.preparationData?.simulatedRouteCoverage
+      ? buildPresentation(origin, "planned", "Parcours hypothétique estimé", "dashed", "estimated")
+      : getEstimatedRoutePresentation(item);
+  }
   if (origin === "manual") return buildPresentation(origin, "declared", getManualLabel(kind), "solid", "declared");
+  const isOfficialParkReference = item.contract?.metadata.preparationData?.referenceAreaProvenance?.kind === "official_park" ||
+    (kind === "polygon" && /parc de belleville/i.test(item.location_label ?? ""));
+  if (origin === "reference" && isOfficialParkReference) {
+    return buildPresentation(origin, "contextual", "Zone d'intervention estimée", "solid", "reference");
+  }
   if (origin === "reference") return buildPresentation(origin, "contextual", "Repère géographique indicatif", "dashed", "reference");
   if (origin === "routed") return buildPresentation(origin, "planned", "Itinéraire prévu sur le réseau", "dashed", "network");
   if (origin === "estimated_area") return buildPresentation(origin, "contextual", "Zone indicative", "dashed", "indicative");

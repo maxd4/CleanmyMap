@@ -45,6 +45,29 @@ export const MAX_ROUTE_PARTITION_CANDIDATES = 72;
 const ROUTE_GROUP_SHARED_ORIGIN_RADIUS_KM = 0.35;
 const ROUTE_GROUP_CORRIDOR_OVERLAP_RADIUS_KM = 0.35;
 
+export type HypotheticalGroupPlan =
+  | { kind: "compatible"; counts: number[] }
+  | { kind: "incompatible"; reason: string };
+
+/** Chooses the smallest number of hypothetical teams with 5–8 participants each. */
+export function resolveHypotheticalGroupPlan(participants: number): HypotheticalGroupPlan {
+  if (!Number.isInteger(participants) || participants < 5) {
+    return { kind: "incompatible", reason: "Effectif connu inférieur à 5 participants." };
+  }
+  for (let groupCount = 1; groupCount <= MAX_ROUTE_GROUP_COUNT; groupCount += 1) {
+    const base = Math.floor(participants / groupCount);
+    const remainder = participants % groupCount;
+    const counts = Array.from({ length: groupCount }, (_, index) => base + (index < remainder ? 1 : 0));
+    if (counts.every((count) => count >= 5 && count <= 8)) {
+      return { kind: "compatible", counts };
+    }
+  }
+  return {
+    kind: "incompatible",
+    reason: "Effectif connu incompatible avec des groupes hypothétiques de 5 à 8 participants.",
+  };
+}
+
 export type RouteGroupPartitionInput = {
   origin: RoutePlannerOrigin;
   arrival?: RoutePlannerOrigin;

@@ -11,6 +11,7 @@ runtime. Il ne remplace pas la gouvernance des données.
   mapping historique (non normatif), qualité, stockage et restitution.
 - [Import administrateur Google Sheet](./google-sheet-admin-import.md) :
   parcours d'exploitation et limites de synchronisation.
+- [Candidate Citizen Day L'Oréal 2025 — Parc de Belleville](./citizen-day-loreal-2025-belleville-candidate.json) : manifeste vérifiable en attente de date et d'autorisation de publication ; il n'est pas un enregistrement Supabase.
 - [Pré-cutover dry-run](./pre-cutover-dry-run.md) : compte rendu historique
   daté ; ne prouve pas un déploiement ni une validation actuelle.
 

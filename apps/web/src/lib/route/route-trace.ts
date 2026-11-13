@@ -5,6 +5,7 @@ import type {
   RouteGeometryStep,
   RouteTopology,
 } from "./route-contract";
+import { HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR } from "@/lib/actions/route-target-distance";
 import {
   routeDistanceKm,
   travelMinutesForDistance,
@@ -221,7 +222,7 @@ export type RouteRecommendationTrace = {
     mode: RouteGeometry["mode"];
     estimated: boolean;
     parameters: {
-      walkingSpeedKmPerHour: 4.5;
+      walkingSpeedKmPerHour: 3;
       coordinateCount: number;
       budgetPrefixApplied: boolean;
     };
@@ -577,7 +578,7 @@ export function buildRouteRecommendationTrace(
   }
   if (input.routeGeometry.mode === "fallback") {
     fallbacks.push("fallback_route_geometry");
-    approximations.push("distance et durée de déplacement estimées à 4,5 km/h");
+    approximations.push("distance et durée de déplacement estimées à 3 km/h");
   }
   if (input.budgetPrefixApplied) {
     fallbacks.push("budget_compatible_prefix");
@@ -680,7 +681,7 @@ export function buildRouteRecommendationTrace(
       mode: input.routeGeometry.mode,
       estimated: input.routeGeometry.estimated,
       parameters: {
-        walkingSpeedKmPerHour: 4.5,
+        walkingSpeedKmPerHour: HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
         coordinateCount: input.routeGeometry.coordinates.length,
         budgetPrefixApplied: input.budgetPrefixApplied,
       },

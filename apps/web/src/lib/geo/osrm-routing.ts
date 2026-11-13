@@ -7,6 +7,7 @@ import type {
   RouteTopology,
 } from "@/lib/route/route-contract";
 import { areCoordinatesClose } from "@/lib/geo/coordinate-comparison";
+import { HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR } from "@/lib/actions/route-target-distance";
 
 const OSRM_PROVIDER = "osrm" as const;
 const OSRM_PROFILE = "foot" as const;
@@ -259,7 +260,7 @@ export function createFallbackRouteGeometry(
       fromStopIndex: index - 1,
       toStopIndex: index,
       distanceKm: Number(distance.toFixed(2)),
-      estimatedMinutes: Math.max(0, Math.round((distance / 4.5) * 60)),
+      estimatedMinutes: Math.max(0, Math.round((distance / HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR) * 60)),
     }];
   });
   const distance = legs.reduce((total, leg) => total + leg.distanceKm, 0);

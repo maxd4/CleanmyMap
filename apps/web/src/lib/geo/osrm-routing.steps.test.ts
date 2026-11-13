@@ -46,7 +46,7 @@ describe("OSRM geometry steps", () => {
       fromStopIndex: 0,
       toStopIndex: 1,
       distanceKm: 0.13,
-      estimatedMinutes: 2,
+      estimatedMinutes: 3,
     }]);
   });
 });

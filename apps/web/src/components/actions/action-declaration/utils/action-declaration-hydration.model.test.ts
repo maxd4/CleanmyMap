@@ -242,7 +242,7 @@ describe("action declaration hydration model", () => {
     expect(explicitZero.durationMinutes).toBe("0");
     expect(explicitZero.routeTargetDistanceKm).toBe("0");
     expect(positive.durationMinutes).toBe("60");
-    expect(positive.routeTargetDistanceKm).toBe("1");
+    expect(positive.routeTargetDistanceKm).toBe("3");
     expect(historical.durationMinutes).toBe("0");
     expect(manual.durationMinutes).toBe("");
     expect(manual.routeTargetDistanceKm).toBe("2.25");

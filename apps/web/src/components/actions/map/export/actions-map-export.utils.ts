@@ -160,6 +160,7 @@ function shouldExportPublicDrawing(item: ActionMapItem): boolean {
 type ResolvedExportGeometry = {
   geometry: GeoJsonGeometry | null;
   observedCoverage: ObservedCoverageGeometry | null;
+  simulatedGroupCount: number | null;
   presentation: ReturnType<typeof getGeometryPresentation>;
   effectiveKind: ActionGeometryKind | null;
   effectiveSource: ActionGeometrySource | null;
@@ -202,6 +203,7 @@ function resolveObservedExportGeometry(
   return {
     geometry: { type: "MultiLineString", coordinates: observedCoverage.coordinates },
     observedCoverage,
+    simulatedGroupCount: null,
     presentation: {
       origin: effectiveSource ?? "fallback_point",
       reality: "observed",
@@ -227,11 +229,12 @@ function resolveFallbackExportGeometry(
 ): ResolvedExportGeometry {
   const coords = mapItemCoordinates(item);
   if (coords.latitude === null || coords.longitude === null) {
-    return { geometry: null, observedCoverage: null, presentation: getFallbackPointPresentation(item), effectiveKind: null, effectiveSource: null, effectiveSources: null, effectiveConfidence: null, historicalKind, historicalSource, historicalConfidence };
+    return { geometry: null, observedCoverage: null, simulatedGroupCount: null, presentation: getFallbackPointPresentation(item), effectiveKind: null, effectiveSource: null, effectiveSources: null, effectiveConfidence: null, historicalKind, historicalSource, historicalConfidence };
   }
   return {
     geometry: { type: "Point", coordinates: [coords.longitude, coords.latitude] },
     observedCoverage: null,
+    simulatedGroupCount: null,
     presentation: getFallbackPointPresentation(item),
     effectiveKind: "point",
     effectiveSource: "fallback_point",
@@ -255,11 +258,39 @@ function resolveContractExportGeometry(
   return {
     geometry,
     observedCoverage: null,
+    simulatedGroupCount: null,
     presentation,
     effectiveKind: geometryKind(geometry),
     effectiveSource: contextualPoint ? "fallback_point" : historicalSource,
     effectiveSources: null,
     effectiveConfidence: contextualPoint ? null : historicalConfidence,
+    historicalKind,
+    historicalSource,
+    historicalConfidence,
+  };
+}
+
+function resolveSimulatedExportGeometry(
+  item: ActionMapItem,
+  historicalKind: ActionGeometryKind | null,
+  historicalSource: ActionGeometrySource | null,
+  historicalConfidence: number | null,
+): ResolvedExportGeometry | null {
+  const simulated = item.contract?.metadata.preparationData?.simulatedRouteCoverage;
+  if (!simulated || simulated.type !== "MultiLineString" || simulated.status !== "hypothetical") return null;
+  const coordinates = simulated.coordinates
+    .filter((line) => Array.isArray(line) && line.length >= 2)
+    .map((line) => line.map(([latitude, longitude]) => [longitude, latitude] as [number, number]));
+  if (coordinates.length === 0) return null;
+  return {
+    geometry: { type: "MultiLineString", coordinates },
+    observedCoverage: null,
+    simulatedGroupCount: simulated.groupCount,
+    presentation: getGeometryPresentation(item),
+    effectiveKind: "multiline",
+    effectiveSource: "estimated_route",
+    effectiveSources: null,
+    effectiveConfidence: historicalConfidence,
     historicalKind,
     historicalSource,
     historicalConfidence,
@@ -297,6 +328,9 @@ function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
     return resolveObservedExportGeometry(observedCoverage, historicalKind, historicalSource, historicalConfidence);
   }
 
+  const simulated = resolveSimulatedExportGeometry(item, historicalKind, historicalSource, historicalConfidence);
+  if (simulated) return simulated;
+
   const contractGeometry = item.contract?.geometry.geojson ?? item.geometry_geojson ?? null;
   const geometry = shouldExportPublicDrawing(item)
     ? parseGeoJsonGeometry(contractGeometry) ?? parseGeoJsonGeometry(buildManualDrawingGeoJson(item))
@@ -332,6 +366,7 @@ function buildFeatureProperties(
     geometry_reality: resolved.presentation.reality,
     geometry_variant: resolved.presentation.variant ?? null,
     observed_trace_count: resolved.observedCoverage?.traceCount ?? null,
+    simulated_group_count: resolved.simulatedGroupCount,
     historical_geometry_kind: resolved.historicalKind,
     historical_geometry_confidence: resolved.historicalConfidence,
     historical_geometry_source: resolved.historicalSource,

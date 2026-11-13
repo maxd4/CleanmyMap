@@ -94,6 +94,20 @@ function resolveObservedCoverage(item: ActionMapItem): {
   };
 }
 
+function resolveSimulatedCoverage(item: ActionMapItem): {
+  positions: CoordinatePair[][];
+  groupCount: number;
+} {
+  const coverage = item.contract?.metadata.preparationData?.simulatedRouteCoverage;
+  if (!coverage || coverage.type !== "MultiLineString" || coverage.status !== "hypothetical") {
+    return { positions: [], groupCount: 0 };
+  }
+  const positions = coverage.coordinates
+    .map((line) => line.map(normalizeCoordinatePair).filter((point): point is CoordinatePair => point !== null))
+    .filter((line) => line.length >= 2);
+  return { positions, groupCount: coverage.groupCount };
+}
+
 function shouldRenderPublicDrawing(
   item: ActionMapItem,
   presentation: GeometryPresentation,
@@ -119,6 +133,7 @@ export function resolveActionMapGeometryViewModel(
 ): ActionMapGeometryViewModel {
   const presentation = getGeometryPresentation(item);
   const coverage = resolveObservedCoverage(item);
+  const simulatedCoverage = resolveSimulatedCoverage(item);
   const storedDrawing = mapItemDrawing(item);
   const drawing = shouldRenderPublicDrawing(item, presentation) ? storedDrawing : null;
   const coordinates = buildDrawingLeafletPositions(drawing);
@@ -134,6 +149,25 @@ export function resolveActionMapGeometryViewModel(
       positions: [],
       multiLinePositions: coverage.positions,
       coverageTraceCount: coverage.traceCount,
+      anchor: resolveAnchorFromCoordinates(allCoordinates),
+      pointCount: allCoordinates.length,
+      confidence,
+      metrics: resolveGeometryMetric(kind, allCoordinates, item, presentation),
+      label: formatGeometryModeLabel(kind, presentation),
+      presentation,
+      drawing: null,
+    };
+  }
+
+  if (simulatedCoverage.positions.length > 0) {
+    const allCoordinates = simulatedCoverage.positions.flat();
+    const kind = "multiline" as const;
+    return {
+      kind,
+      renderMode: "drawing",
+      positions: [],
+      multiLinePositions: simulatedCoverage.positions,
+      coverageTraceCount: simulatedCoverage.groupCount,
       anchor: resolveAnchorFromCoordinates(allCoordinates),
       pointCount: allCoordinates.length,
       confidence,

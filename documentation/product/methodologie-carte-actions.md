@@ -1016,12 +1016,15 @@ centralisés par compatibilité : arrivée présente sans topologie →
 résolue est une erreur explicite.
 
 La distance cible est éditable dans `/actions/new`. La politique métier
-actuelle est versionnée `route-distance-v1` et applique `1 km par heure d'action`.
-La règle est donc : `routeTargetDistanceKm = durée × 1 km/h`.
+actuelle est versionnée `route-distance-v2` et applique `3 km par heure d'action`
+pour les cibles hypothétiques. La règle est donc : `routeTargetDistanceKm = durée × 3 km/h`.
 
 Une cible automatique est persistée avec `routeTargetDistanceSource =
 "derived"` et cette version de politique ; une modification explicite devient
 `"manual"` et sa valeur n'est jamais recalculée par une nouvelle politique.
+Une action historique qui porte déjà une version de policy conserve sa cible et
+sa version lors d'une lecture ou d'un patch partiel ; seul un changement
+explicite de durée produit une nouvelle cible à 3 km/h.
 Cette valeur est une contrainte de reconstruction, pas la preuve de la
 distance parcourue. Il faut distinguer strictement :
 

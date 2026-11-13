@@ -83,7 +83,7 @@ function dataFor(mode: "network" | "fallback"): RouteExplanationData {
         profile: mode === "network" ? "foot" : null,
         mode,
         estimated: mode === "fallback",
-        parameters: { walkingSpeedKmPerHour: 4.5, coordinateCount: 3, budgetPrefixApplied: false },
+        parameters: { walkingSpeedKmPerHour: 3, coordinateCount: 3, budgetPrefixApplied: false },
         opaqueProviderDecisions: [],
         degradations: [],
       },

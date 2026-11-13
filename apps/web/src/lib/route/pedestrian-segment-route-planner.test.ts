@@ -214,11 +214,11 @@ describe("pedestrian segment route planner", () => {
     const result = plan([
       candidate("a", "s-0", 90, 20),
       candidate("b", "s-1", 80, 20),
-    ], "waste", { travelBudgetMinutes: 8, maxStops: 2 });
+    ], "waste", { travelBudgetMinutes: 12, maxStops: 2 });
     expect(result).not.toBeNull();
     expect(result!.routeGeometry.mode).toBe("network");
     expect(result!.routeGeometry.coordinates[0]).toEqual(result!.routeGeometry.coordinates.at(-1));
-    expect(result!.routeGeometry.durationMinutes).toBeLessThanOrEqual(8);
+    expect(result!.routeGeometry.durationMinutes).toBeLessThanOrEqual(12);
     expect(result!.metrics.safetyStatus).toBe("network_access_allowed_safety_unknown");
   });
 

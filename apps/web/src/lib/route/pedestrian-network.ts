@@ -1,4 +1,5 @@
 import type { RouteGeometry, RouteGeometryLeg, RouteTopology } from "./route-contract";
+import { HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR } from "@/lib/actions/route-target-distance";
 
 export const PEDESTRIAN_NETWORK_IMPORTER_VERSION = "pedestrian-network-v2" as const;
 export const PEDESTRIAN_NETWORK_KEY = "paris-pantheon-jardin-des-plantes" as const;
@@ -693,11 +694,11 @@ export function routeThroughPedestrianNetwork(
       fromStopIndex: index,
       toStopIndex: index + 1,
       distanceKm: Number((route.distanceM / 1000).toFixed(2)),
-      estimatedMinutes: Math.max(0, Math.round((route.distanceM / 1000 / 4.5) * 60)),
+      estimatedMinutes: Math.max(0, Math.round((route.distanceM / 1000 / HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR) * 60)),
       steps: route.edges.map((edge) => ({
         name: edge.name,
         distanceKm: Number((edge.lengthM / 1000).toFixed(2)),
-        durationMinutes: Math.max(0, Math.round((edge.lengthM / 1000 / 4.5) * 60)),
+        durationMinutes: Math.max(0, Math.round((edge.lengthM / 1000 / HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR) * 60)),
         maneuver: null,
         segmentReference: edge.edgeKey,
         geometry: edge.coordinates,
@@ -714,7 +715,7 @@ export function routeThroughPedestrianNetwork(
     returnLeg: isLoop ? legs.at(-1) ?? null : null,
     coordinates,
     distanceKm: Number((totalDistanceM / 1000).toFixed(2)),
-    durationMinutes: Math.max(0, Math.round((totalDistanceM / 1000 / 4.5) * 60)),
+    durationMinutes: Math.max(0, Math.round((totalDistanceM / 1000 / HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR) * 60)),
     legs,
     provider: "stored-network",
     profile: "foot",

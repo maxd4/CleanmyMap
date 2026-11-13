@@ -135,7 +135,8 @@ strictement départ = arrivée et sa trace ajoute le retour comme dernier
 segment explicable. Un trajet ouvert conserve son arrivée distincte, sans
 `returnLeg` artificiel ; si elle n’est pas fournie, le planner la choisit dans
 les contraintes du parcours. Un fallback conserve la topologie demandée et
-estime les legs à 4,5 km/h.
+estime les legs à 3 km/h, vitesse hypothétique canonique ; cette estimation ne
+devient jamais une distance observée.
 
 `startLocation` distingue une adresse précise (`precise`, adresse ou GPS,
 origine obligatoire et inchangée) d’une zone (`zone`, emprise confirmée et

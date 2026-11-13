@@ -172,9 +172,9 @@ describe("canonical department attribution", () => {
     const contract = toActionContract(row as never, policy);
 
     expect(contract.metadata.preparationData).toMatchObject({
-      routeTargetDistanceKm: 3,
+      routeTargetDistanceKm: 1.5,
       routeTargetDistanceSource: "derived",
-      routeTargetDistancePolicyVersion: "route-distance-v2",
+      routeTargetDistancePolicyVersion: "route-distance-v1",
     });
     expect(buildActionEditorPayload(row as never)?.preparationData).toMatchObject({
       routeTargetDistanceKm: 1.5,
@@ -272,7 +272,7 @@ describe("canonical department attribution", () => {
     const manualContract = toActionContract(manualRow as never, policy);
 
     expect(gpxContract.metadata.preparationData).toMatchObject({
-      routeTargetDistanceKm: 3,
+      routeTargetDistanceKm: 1.5,
       routeTargetDistanceSource: "derived",
       routeObservedDistanceKm: gpxImport.observedDistanceKm,
       gpxImport,

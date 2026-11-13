@@ -8,8 +8,21 @@ import {
   balancedVolunteerCounts,
   partitionRouteCandidates,
   validateRouteGroupInput,
+  resolveHypotheticalGroupPlan,
 } from "./route-group-partition";
 import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "./route-planning-mode";
+
+describe("hypothetical historical group sizing", () => {
+  it.each([
+    [5, [5]], [8, [8]], [10, [5, 5]], [12, [6, 6]], [15, [8, 7]], [20, [7, 7, 6]],
+  ])("keeps %s participants in groups of 5 to 8", (participants, counts) => {
+    expect(resolveHypotheticalGroupPlan(participants)).toEqual({ kind: "compatible", counts });
+  });
+
+  it.each([9, 4, 97])("marks %s participants as an explicit exception", (participants) => {
+    expect(resolveHypotheticalGroupPlan(participants)).toMatchObject({ kind: "incompatible" });
+  });
+});
 
 const origin: RoutePlannerOrigin = {
   latitude: 48.8566,

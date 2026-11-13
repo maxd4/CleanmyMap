@@ -132,6 +132,20 @@ export type ActionObservedCoverage = {
   coverageDistanceKm: null;
   coverageVersion: string;
 };
+export type ActionSimulatedRouteCoverage = {
+  type: "MultiLineString";
+  /** Leaflet order: [latitude, longitude]. These are estimated, not observed traces. */
+  coordinates: [number, number][][];
+  groupCount: number;
+  groupParticipantCounts: number[];
+  durationMinutes: number;
+  targetDistanceKm: number;
+  speedKmPerHour: 3;
+  geometrySource: "estimated_route";
+  provenance: "estimated";
+  status: "hypothetical";
+  coverageVersion: "simulated-routes-v1";
+};
 export type ActionSubmissionMode = "quick" | "complete";
 export type ActionPhase =
   | "pre_action"
@@ -259,10 +273,19 @@ export type ActionPreparationData = {
   };
   /** Recomputable multi-trace coverage; never an itinerary or summed distance. */
   observedCoverage?: ActionObservedCoverage;
+  /** Hypothetical multi-group coverage; never an observed surface or distance. */
+  simulatedRouteCoverage?: ActionSimulatedRouteCoverage;
   /** Measured or estimated result of the server-side route provider. */
   routeNetworkDistanceKm?: number;
   routeGeometryMode?: RouteGeometryMode;
   routeGeometryProvider?: RouteGeometryProvider;
+  referenceAreaProvenance?: {
+    kind: "official_park";
+    source: "ville_de_paris";
+    attribution: string;
+    license: "ODbL";
+    sourceUrl: string;
+  };
 };
 
 export type ActionFieldRoleIntention = {

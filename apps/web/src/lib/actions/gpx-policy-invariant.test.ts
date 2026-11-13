@@ -99,9 +99,9 @@ describe("GPX policy invariant", () => {
     });
 
     expect(rebased).toMatchObject({
-      routeTargetDistanceKm: 3,
+      routeTargetDistanceKm: 1,
       routeTargetDistanceSource: "derived",
-      routeTargetDistancePolicyVersion: "route-distance-v2",
+      routeTargetDistancePolicyVersion: "route-distance-v1",
       routeObservedDistanceKm: gpxImport.observedDistanceKm,
       gpxImport,
     });
@@ -120,9 +120,9 @@ describe("GPX policy invariant", () => {
     });
 
     expect(prepared.updateData.preparation_data).toMatchObject({
-      routeTargetDistanceKm: 1.5,
+      routeTargetDistanceKm: 4.5,
       routeTargetDistanceSource: "derived",
-      routeTargetDistancePolicyVersion: "route-distance-v1",
+      routeTargetDistancePolicyVersion: "route-distance-v2",
       routeObservedDistanceKm: gpxImport.observedDistanceKm,
       gpxImport,
     });
@@ -220,7 +220,7 @@ describe("GPX policy invariant", () => {
     });
 
     expect(prepared.updateData.preparation_data).toMatchObject({
-      routeTargetDistanceKm: 1.5,
+      routeTargetDistanceKm: 4.5,
       routeTargetDistanceSource: "derived",
       routeObservedDistanceKm: 2.345,
     });

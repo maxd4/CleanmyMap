@@ -13,23 +13,23 @@ describe("route target distance policy", () => {
     [undefined, 1],
     [null, 1],
     ["0", 0],
-    ["60", 1],
+    ["60", 3],
   ] as const)("distinguishes an absent duration from an explicit zero (%s)", (durationMinutes, distanceKm) => {
     expect(deriveRouteTargetDistanceKm(durationMinutes)).toBe(distanceKm);
   });
 
-  it("resolves 60 minutes to 1 km with route-distance-v1", () => {
+  it("resolves 60 minutes to 3 km with route-distance-v2", () => {
     expect(
       resolveRouteTargetDistance({ durationMinutes: 60 }),
     ).toEqual({
-      distanceKm: 1,
+      distanceKm: 3,
       source: "derived",
       policyVersion: CURRENT_ROUTE_DISTANCE_POLICY_VERSION,
     });
   });
 
-  it("resolves 90 minutes to 1.5 km with route-distance-v1", () => {
-    expect(resolveRouteTargetDistance({ durationMinutes: 90 }).distanceKm).toBe(1.5);
+  it("resolves 90 minutes to 4.5 km with route-distance-v2", () => {
+    expect(resolveRouteTargetDistance({ durationMinutes: 90 }).distanceKm).toBe(4.5);
   });
 
   it("uses the same resolver regardless of route topology", () => {
@@ -58,7 +58,7 @@ describe("route target distance policy", () => {
   it("recalculates derived values with a future policy without changing manual values", () => {
     const nextPolicy = {
       ...CURRENT_ROUTE_DISTANCE_POLICY,
-      version: "route-distance-v2",
+      version: "route-distance-v3",
       kilometersPerHour: 2,
     };
 
@@ -67,7 +67,7 @@ describe("route target distance policy", () => {
     ).toEqual({
       distanceKm: 3,
       source: "derived",
-      policyVersion: "route-distance-v2",
+      policyVersion: "route-distance-v3",
     });
     expect(
       resolveRouteTargetDistance({
@@ -86,7 +86,7 @@ describe("route target distance policy", () => {
         preparationData: { routeTargetDistanceKm: 2.25 },
       }),
     ).toEqual({
-      distanceKm: 1.5,
+      distanceKm: 4.5,
       source: "derived",
       policyVersion: CURRENT_ROUTE_DISTANCE_POLICY_VERSION,
     });

@@ -56,6 +56,9 @@ export function resolveGeometryRenderStyle(
   }
 
   if (geometry.kind === "polygon") {
+    if (geometry.presentation.origin === "reference" && geometry.presentation.strokeStyle === "solid") {
+      return resolvePolygonRenderStyle(false);
+    }
     const isIndicative =
       geometry.presentation.variant === "indicative" ||
       geometry.presentation.reality === "contextual" ||

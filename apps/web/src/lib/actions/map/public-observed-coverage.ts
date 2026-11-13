@@ -1,4 +1,4 @@
-import type { ActionGeometrySource, ActionPreparationData } from "@/lib/actions/types";
+import type { ActionGeometrySource, ActionPreparationData, ActionSimulatedRouteCoverage } from "@/lib/actions/types";
 import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
 import { isActionRouteVersioning } from "@/lib/route/route-active-version";
 
@@ -27,6 +27,38 @@ function parseCoverageSources(raw: unknown): ActionGeometrySource[] | undefined 
       source === "gpx_import" || source === "gps_tracking",
   );
   return sources.length > 0 ? sources : undefined;
+}
+
+function parseSimulatedRouteCoverage(raw: unknown): ActionSimulatedRouteCoverage | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const candidate = raw as Record<string, unknown>;
+  if (candidate.type !== "MultiLineString" || candidate.geometrySource !== "estimated_route" ||
+      candidate.provenance !== "estimated" || candidate.status !== "hypothetical" ||
+      candidate.speedKmPerHour !== 3 || candidate.coverageVersion !== "simulated-routes-v1") return undefined;
+  const coordinates = parseCoverageCoordinates(candidate.coordinates)
+    ?.map((line) => line.map(([longitude, latitude]) => [latitude, longitude] as [number, number]));
+  const groupCount = finiteInteger(candidate.groupCount, 1, 12);
+  const durationMinutes = finitePositive(candidate.durationMinutes);
+  const targetDistanceKm = finiteNonNegativeNumber(candidate.targetDistanceKm);
+  const counts = Array.isArray(candidate.groupParticipantCounts)
+    ? candidate.groupParticipantCounts.filter((count): count is number => finiteInteger(count, 5, 8) !== undefined)
+    : [];
+  if (!coordinates || groupCount === undefined || durationMinutes === undefined ||
+      targetDistanceKm === undefined || counts.length !== groupCount || coordinates.length !== groupCount ||
+      coordinates.some((line) => line.length < 2)) return undefined;
+  return {
+    type: "MultiLineString",
+    coordinates,
+    groupCount,
+    groupParticipantCounts: counts,
+    durationMinutes,
+    targetDistanceKm,
+    speedKmPerHour: 3,
+    geometrySource: "estimated_route",
+    provenance: "estimated",
+    status: "hypothetical",
+    coverageVersion: "simulated-routes-v1",
+  };
 }
 
 function readCoverageCandidate(raw: unknown): Record<string, unknown> | undefined {
@@ -71,6 +103,14 @@ function finiteNonNegativeNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
+function finitePositive(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function finiteInteger(value: unknown, minimum: number, maximum: number): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) && value >= minimum && value <= maximum ? value : undefined;
+}
+
 function copyPublicRouteNumbers(input: Record<string, unknown>, output: Record<string, unknown>): void {
   for (const key of ["routeTargetDistanceKm", "routeNetworkDistanceKm", "routeObservedDistanceKm"] as const) {
     const value = finiteNonNegativeNumber(input[key]);
@@ -84,6 +124,21 @@ function copyPublicRouteMetadata(input: Record<string, unknown>, output: Record<
   copyPublicRouteNumbers(input, output);
   if (typeof input.routeGeometryMode === "string" && PUBLIC_ROUTE_GEOMETRY_MODES.has(input.routeGeometryMode)) output.routeGeometryMode = input.routeGeometryMode;
   if (typeof input.routeGeometryProvider === "string" && PUBLIC_ROUTE_GEOMETRY_PROVIDERS.has(input.routeGeometryProvider)) output.routeGeometryProvider = input.routeGeometryProvider;
+  const reference = input.referenceAreaProvenance;
+  if (reference && typeof reference === "object" && !Array.isArray(reference)) {
+    const value = reference as Record<string, unknown>;
+    if (value.kind === "official_park" && value.source === "ville_de_paris" &&
+        value.license === "ODbL" && typeof value.attribution === "string" &&
+        typeof value.sourceUrl === "string") {
+      output.referenceAreaProvenance = {
+        kind: "official_park",
+        source: "ville_de_paris",
+        attribution: value.attribution,
+        license: "ODbL",
+        sourceUrl: value.sourceUrl,
+      };
+    }
+  }
 }
 
 function copyPublicOperationalRoute(input: Record<string, unknown>, output: Record<string, unknown>): void {
@@ -111,6 +166,8 @@ export function sanitizePublicObservedPreparationData(
   const output: Record<string, unknown> = {};
   const observedCoverage = parsePublicObservedCoverage(input.observedCoverage)?.observedCoverage;
   if (observedCoverage) output.observedCoverage = observedCoverage;
+  const simulatedCoverage = parseSimulatedRouteCoverage(input.simulatedRouteCoverage);
+  if (simulatedCoverage) output.simulatedRouteCoverage = simulatedCoverage;
   copyPublicRouteMetadata(input, output);
   copyPublicOperationalRoute(input, output);
   copyServerRouteProvenance(input, output);

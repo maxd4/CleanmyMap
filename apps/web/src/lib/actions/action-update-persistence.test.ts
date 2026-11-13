@@ -99,9 +99,9 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
 
     expect(prepared.updateData.preparation_data).toMatchObject({
       durationMinutesDeclared: true,
-      routeTargetDistanceKm: 1.5,
+      routeTargetDistanceKm: 4.5,
       routeTargetDistanceSource: "derived",
-      routeTargetDistancePolicyVersion: "route-distance-v1",
+      routeTargetDistancePolicyVersion: "route-distance-v2",
     });
   });
 
@@ -665,7 +665,7 @@ describe("prepareActionUpdate duration declaration boundary", () => {
       estimatedDurationMinutes: 45,
       routeTargetDistanceKm: 1,
       routeTargetDistanceSource: "derived",
-      routeTargetDistancePolicyVersion: "route-distance-v1",
+      routeTargetDistancePolicyVersion: "route-distance-v2",
     });
   });
 
@@ -731,7 +731,7 @@ describe("prepareActionUpdate duration declaration boundary", () => {
       durationMinutesDeclared: false,
       routeTargetDistanceKm: 1,
       routeTargetDistanceSource: "derived",
-      routeTargetDistancePolicyVersion: "route-distance-v1",
+      routeTargetDistancePolicyVersion: "route-distance-v2",
     });
   });
 });

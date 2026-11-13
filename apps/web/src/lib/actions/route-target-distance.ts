@@ -1,6 +1,7 @@
 import type { ActionPreparationData } from "./types";
 
-export const CURRENT_ROUTE_DISTANCE_POLICY_VERSION = "route-distance-v1" as const;
+export const CURRENT_ROUTE_DISTANCE_POLICY_VERSION = "route-distance-v2" as const;
+export const HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR = 3 as const;
 export type RouteTargetDistanceSource = "derived" | "manual";
 
 export type RouteDistancePolicy = {
@@ -10,7 +11,7 @@ export type RouteDistancePolicy = {
 
 export const CURRENT_ROUTE_DISTANCE_POLICY: RouteDistancePolicy = {
   version: CURRENT_ROUTE_DISTANCE_POLICY_VERSION,
-  kilometersPerHour: 1,
+  kilometersPerHour: HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
 };
 const DEFAULT_ROUTE_TARGET_DISTANCE_KM = 1;
 
@@ -55,6 +56,7 @@ export function resolveRouteTargetDistance(params: {
   durationMinutesDeclared?: boolean;
   routeTargetDistanceKm?: number | string | null;
   routeTargetDistanceSource?: RouteTargetDistanceSource | null;
+  routeTargetDistancePolicyVersion?: string | null;
   policy?: RouteDistancePolicy;
 }): ResolvedRouteTargetDistance {
   const policy = params.policy ?? CURRENT_ROUTE_DISTANCE_POLICY;
@@ -66,6 +68,21 @@ export function resolveRouteTargetDistance(params: {
         source: "manual",
       };
     }
+  }
+
+  const persistedDistance = normalizeRouteTargetDistanceKm(params.routeTargetDistanceKm);
+  if (
+    params.routeTargetDistanceSource === "derived" &&
+    params.durationMinutesDeclared !== false &&
+    persistedDistance !== undefined &&
+    typeof params.routeTargetDistancePolicyVersion === "string" &&
+    params.routeTargetDistancePolicyVersion.trim() !== ""
+  ) {
+    return {
+      distanceKm: persistedDistance,
+      source: "derived",
+      policyVersion: params.routeTargetDistancePolicyVersion,
+    };
   }
 
   return {
@@ -82,7 +99,7 @@ export function resolveRouteTargetDistanceFromPreparationData(params: {
   durationMinutes: number | string | null | undefined;
   preparationData?: Pick<
     ActionPreparationData,
-    "durationMinutesDeclared" | "routeTargetDistanceKm" | "routeTargetDistanceSource"
+    "durationMinutesDeclared" | "routeTargetDistanceKm" | "routeTargetDistanceSource" | "routeTargetDistancePolicyVersion"
   > | null;
   policy?: RouteDistancePolicy;
 }): ResolvedRouteTargetDistance {
@@ -91,6 +108,7 @@ export function resolveRouteTargetDistanceFromPreparationData(params: {
     durationMinutesDeclared: params.preparationData?.durationMinutesDeclared,
     routeTargetDistanceKm: params.preparationData?.routeTargetDistanceKm,
     routeTargetDistanceSource: params.preparationData?.routeTargetDistanceSource,
+    routeTargetDistancePolicyVersion: params.preparationData?.routeTargetDistancePolicyVersion,
     policy: params.policy,
   });
 }

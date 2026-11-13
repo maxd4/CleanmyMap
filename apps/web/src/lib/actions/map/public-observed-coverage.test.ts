@@ -44,6 +44,60 @@ function buildRoutePreparationData({
 }
 
 describe("public map preparation projection", () => {
+  it("projects hypothetical multiline routes without treating them as observed", () => {
+    const preparation = parsePublicObservedPreparationData({
+      public_preparation_data: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [
+            [[48.85, 2.35], [48.851, 2.351]],
+            [[48.85, 2.35], [48.849, 2.349]],
+          ],
+          groupCount: 2,
+          groupParticipantCounts: [5, 5],
+          durationMinutes: 60,
+          targetDistanceKm: 3,
+          speedKmPerHour: 3,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v1",
+          observedDistanceKm: 99,
+        },
+      },
+    });
+    expect(preparation?.simulatedRouteCoverage).toMatchObject({
+      groupCount: 2,
+      targetDistanceKm: 3,
+      speedKmPerHour: 3,
+      provenance: "estimated",
+    });
+    expect(preparation?.observedCoverage).toBeUndefined();
+    expect(JSON.stringify(preparation)).not.toContain("observedDistanceKm");
+  });
+
+  it("keeps official park attribution in the bounded public allowlist", () => {
+    expect(parsePublicObservedPreparationData({
+      public_preparation_data: {
+        referenceAreaProvenance: {
+          kind: "official_park",
+          source: "ville_de_paris",
+          attribution: "Ville de Paris",
+          license: "ODbL",
+          sourceUrl: "https://example.test/park",
+        },
+      },
+    })).toEqual({
+      referenceAreaProvenance: {
+        kind: "official_park",
+        source: "ville_de_paris",
+        attribution: "Ville de Paris",
+        license: "ODbL",
+        sourceUrl: "https://example.test/park",
+      },
+    });
+  });
+
   it("reads the feed allowlist and drops private preparation data", () => {
     const expectedRoutePreparation = buildRoutePreparationData({
       routeTargetDistanceKm: 3,

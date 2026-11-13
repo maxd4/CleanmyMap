@@ -364,7 +364,7 @@ describe("action declaration payload géométrie", () => {
       observedDistanceKm: 2.35,
       fileName: "terrain.gpx",
     });
-    expect(payload.preparationData?.routeTargetDistanceKm).toBe(1.25);
+    expect(payload.preparationData?.routeTargetDistanceKm).toBe(3.75);
   });
 
   it("uses the editable operational route as routed geometry without observations", () => {

@@ -12,6 +12,48 @@ import {
 } from "./actions-map-export.utils";
 
 describe("actions map export utils", () => {
+  it("exports hypothetical multi-group routes as estimated MultiLineString geometry", () => {
+    const item = toActionMapItem(buildActionDataContract({
+      id: "action-simulated-export",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Parc test",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "estimated_route",
+      manualDrawing: { kind: "polyline", coordinates: [[48.85, 2.34], [48.851, 2.341]] },
+      preparationData: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [
+            [[48.85, 2.34], [48.851, 2.341]],
+            [[48.85, 2.34], [48.849, 2.339]],
+          ],
+          groupCount: 2,
+          groupParticipantCounts: [5, 5],
+          durationMinutes: 60,
+          targetDistanceKm: 3,
+          speedKmPerHour: 3,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v1",
+        },
+      },
+    }));
+    const geojson = JSON.parse(buildActionsMapGeoJsonString([item])) as {
+      features: Array<{ geometry: { type: string }; properties: Record<string, unknown> }>;
+    };
+    expect(geojson.features[0]?.geometry.type).toBe("MultiLineString");
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_source: "estimated_route",
+      geometry_reality: "planned",
+      simulated_group_count: 2,
+    });
+  });
+
   it("maps filtered actions to the report csv schema", () => {
     const contract = buildActionDataContract({
       id: "action-export",

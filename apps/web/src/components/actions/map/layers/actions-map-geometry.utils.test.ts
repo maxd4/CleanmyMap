@@ -129,6 +129,56 @@ describe("actions map geometry utils", () => {
     expect(formatActionGeometryTooltipTitle("polygon")).toBe("Zone d'action");
   });
 
+  it("prioritizes hypothetical multiline coverage over the persisted primary drawing", () => {
+    const item = buildContractMapItem({
+      geometrySource: "estimated_route",
+      preparationData: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [
+            [[48.85, 2.35], [48.851, 2.351]],
+            [[48.85, 2.35], [48.849, 2.349]],
+          ],
+          groupCount: 2,
+          groupParticipantCounts: [5, 5],
+          durationMinutes: 60,
+          targetDistanceKm: 3,
+          speedKmPerHour: 3,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v1",
+        },
+      },
+    });
+    const model = resolveActionMapGeometryViewModel(item);
+    expect(model.kind).toBe("multiline");
+    expect(model.multiLinePositions).toHaveLength(2);
+    expect(model.presentation.label).toBe("Parcours hypothétique estimé");
+    expect(model.presentation.strokeStyle).toBe("dashed");
+  });
+
+  it("renders an official park reference as a filled continuous estimated zone", () => {
+    const item = buildContractMapItem({
+      geometrySource: "reference",
+      kind: "polygon",
+      preparationData: {
+        referenceAreaProvenance: {
+          kind: "official_park",
+          source: "ville_de_paris",
+          attribution: "Ville de Paris",
+          license: "ODbL",
+          sourceUrl: "https://example.test/park",
+        },
+      },
+    });
+    const presentation = getGeometryPresentation(item);
+    const style = resolveGeometryRenderStyle({ kind: "polygon", presentation });
+    expect(presentation.label).toBe("Zone d'intervention estimée");
+    expect(style.fillOpacity).toBeGreaterThan(0);
+    expect(style.dashArray).toBeUndefined();
+  });
+
   it("renders independent accepted observations as separate coverage lines", () => {
     const item = buildMultiTraceMapItem("multi-trace-action", "Parc test", {
       observedCoverage: buildObservedCoverage(),

@@ -10,8 +10,8 @@ import { prepareActionDeclarationFormUpdate } from "./hooks/action-declaration-f
 
 describe("action declaration payload temporalité", () => {
   it("derives an editable route target from duration and ignores legacy unproven values", () => {
-    expect(deriveRouteTargetDistanceKm(60)).toBe(1);
-    expect(deriveRouteTargetDistanceKm(90)).toBe(1.5);
+    expect(deriveRouteTargetDistanceKm(60)).toBe(3);
+    expect(deriveRouteTargetDistanceKm(90)).toBe(4.5);
 
     const form = createInitialFormState("Alice");
     const prepared = applyPreparationDataToForm(form, {
@@ -19,7 +19,7 @@ describe("action declaration payload temporalité", () => {
       routeTargetDistanceKm: 2.25,
     });
 
-    expect(prepared.routeTargetDistanceKm).toBe("1.5");
+    expect(prepared.routeTargetDistanceKm).toBe("4.5");
     expect(prepared.routeTargetDistanceKmManuallySet).toBe(false);
 
     const absent = applyPreparationDataToForm(createInitialFormState("Alice", "action"), {
@@ -83,9 +83,9 @@ describe("action declaration payload temporalité", () => {
       linkedEventId: undefined,
     });
 
-    expect(payload.preparationData?.routeTargetDistanceKm).toBe(1.5);
+    expect(payload.preparationData?.routeTargetDistanceKm).toBe(4.5);
     expect(payload.preparationData?.routeTargetDistanceSource).toBe("derived");
-    expect(payload.preparationData?.routeTargetDistancePolicyVersion).toBe("route-distance-v1");
+    expect(payload.preparationData?.routeTargetDistancePolicyVersion).toBe("route-distance-v2");
   });
 
   it("recalculates the displayed target to the fallback when duration is erased", () => {
