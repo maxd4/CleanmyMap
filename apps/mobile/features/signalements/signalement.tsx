@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
@@ -23,20 +23,27 @@ export function SignalementScreen({ onSessionExpired }: SignalementProps) {
   const [items, setItems] = useState<Awaited<ReturnType<typeof loadMyMobileSignalements>>['items']>([])
   const [busy, setBusy] = useState(false)
   const [observationsLoadState, setObservationsLoadState] = useState<ObservationsLoadState>('loading')
+  const [observationsError, setObservationsError] = useState<string | null>(null)
+  const observationsRefreshGeneration = useRef(0)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [photos, setPhotos] = useState<MobilePickedPhoto[]>([])
   const [evidence, setEvidence] = useState<Record<string, MobileMediaItem[]>>({})
 
   const refreshAsync = useCallback(async () => {
-    setObservationsLoadState('loading'); setError(null)
+    const generation = observationsRefreshGeneration.current + 1
+    observationsRefreshGeneration.current = generation
+    setObservationsLoadState('loading'); setObservationsError(null)
     try {
-      setItems((await loadMyMobileSignalements()).items)
+      const result = await loadMyMobileSignalements()
+      if (generation !== observationsRefreshGeneration.current) return
+      setItems(result.items)
       setObservationsLoadState('success')
     } catch (value) {
+      if (generation !== observationsRefreshGeneration.current) return
       setObservationsLoadState('error')
       if ((value as { status?: number }).status === 401) onSessionExpired()
-      else setError(value instanceof Error ? value.message : 'Mes observations sont indisponibles.')
+      else setObservationsError(value instanceof Error ? value.message : 'Mes observations sont indisponibles.')
     }
   }, [onSessionExpired])
   const refresh = useCallback((): void => {
@@ -111,8 +118,12 @@ export function SignalementScreen({ onSessionExpired }: SignalementProps) {
     <Text style={styles.body}>Les observations sont écrites dans la source canonique trash_spotter_spots. Le statut et la modération restent serveur.</Text>
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}{message ? <Text style={styles.success}>{message}</Text> : null}
     <View style={styles.card}><Text style={styles.cardTitle}>Nouvelle observation</Text><View style={styles.segment}><TouchableOpacity onPress={() => setType('spot')} accessibilityRole="radio" accessibilityState={{ checked: type === 'spot' }} style={[styles.segmentButton, type === 'spot' && styles.segmentSelected]}><Text style={styles.segmentLabel}>Déchet à traiter</Text></TouchableOpacity><TouchableOpacity onPress={() => setType('clean_place')} accessibilityRole="radio" accessibilityState={{ checked: type === 'clean_place' }} style={[styles.segmentButton, type === 'clean_place' && styles.segmentSelected]}><Text style={styles.segmentLabel}>Lieu propre</Text></TouchableOpacity></View><MobileFormField label="Lieu ou repère" value={label} onChangeText={setLabel} placeholder="Rue, parc, repère" /><View style={styles.row}><MobileFormField label="Latitude" value={latitude} onChangeText={setLatitude} keyboardType="numeric" placeholder="48.8566" /><MobileFormField label="Longitude" value={longitude} onChangeText={setLongitude} keyboardType="numeric" placeholder="2.3522" /></View><TouchableOpacity style={styles.outlineButton} onPress={() => void getCurrentPosition()} accessibilityRole="button"><Ionicons name="locate-outline" size={18} color="#a7f3d0" /><Text style={styles.secondaryLabel}>Utiliser ma position actuelle</Text></TouchableOpacity>{type === 'spot' ? <><Text style={styles.label}>Catégories observées</Text><View style={styles.chips}>{CATEGORY_OPTIONS.map(([value, display]) => <TouchableOpacity key={value} onPress={() => toggleCategory(value)} accessibilityRole="checkbox" accessibilityState={{ checked: categories.includes(value) }} style={[styles.chip, categories.includes(value) && styles.chipSelected]}><Text style={styles.chipLabel}>{display}</Text></TouchableOpacity>)}</View></> : null}<MobileFormField label="Observations" value={notes} onChangeText={setNotes} placeholder="Précisions utiles, sans donnée personnelle" multiline /><TouchableOpacity style={styles.outlineButton} onPress={() => void choosePhotos()} accessibilityRole="button"><Ionicons name="camera-outline" size={18} color="#a7f3d0" /><Text style={styles.secondaryLabel}>{photos.length > 0 ? `${photos.length} photo(s) sélectionnée(s)` : 'Ajouter des preuves photo (facultatif)'}</Text></TouchableOpacity><Text style={styles.helper}>Les photos sont compressées et transmises séparément. En cas de succès partiel, vous pouvez reprendre sans recréer le signalement.</Text><TouchableOpacity style={styles.primaryButton} disabled={busy} onPress={() => void submit()} accessibilityRole="button" accessibilityState={{ disabled: busy }}><Text style={styles.primaryLabel}>{busy ? 'Transmission...' : 'Transmettre le signalement'}</Text></TouchableOpacity></View>
-    <View style={styles.card}><View style={styles.listHeader}><Text style={styles.listHeaderTitle}>Mes observations</Text><TouchableOpacity onPress={() => void refresh()} accessibilityRole="button" accessibilityLabel="Actualiser mes observations" style={styles.refreshButton}><Ionicons name="refresh-outline" size={20} color="#a7f3d0" /></TouchableOpacity></View>{observationsLoadState === 'loading' ? <ActivityIndicator color="#34d399" /> : observationsLoadState === 'success' && items.length === 0 ? <Text style={styles.helper}>Aucune observation transmise depuis ce compte.</Text> : items.map((item) => <View key={item.id} style={styles.item}><View style={styles.itemCopy}><Text style={styles.itemTitle}>{item.label}</Text><Text style={styles.itemMeta}>{item.type === 'spot' ? 'Déchet' : 'Lieu propre'} · {new Date(item.createdAt).toLocaleDateString('fr-FR')}</Text>{evidence[item.id] !== undefined ? <>{evidence[item.id].length === 0 ? <Text style={styles.itemMeta}>Aucune preuve photo accessible.</Text> : <View style={styles.evidenceGrid}>{evidence[item.id].map((media) => <Image key={media.id} source={{ uri: media.signedUrl }} style={styles.evidenceImage} accessibilityLabel={`Preuve photo ${media.originalName}`} />)}</View>}</> : null}<TouchableOpacity onPress={() => void showEvidence(item.id)} accessibilityRole="button" style={styles.evidenceButton}><Text style={styles.evidenceLink}>Voir les preuves photo</Text></TouchableOpacity></View><Text style={styles.status}>{item.status}</Text></View>)}</View>
+    <View style={styles.card}><View style={styles.listHeader}><Text style={styles.listHeaderTitle}>Mes observations</Text><TouchableOpacity onPress={() => void refresh()} accessibilityRole="button" accessibilityLabel="Actualiser mes observations" style={styles.refreshButton}><Ionicons name="refresh-outline" size={20} color="#a7f3d0" /></TouchableOpacity></View>{observationsLoadState === 'loading' ? <ActivityIndicator color="#34d399" /> : observationsLoadState === 'error' ? <>{observationsError ? <Text style={styles.error} accessibilityRole="alert">{observationsError}</Text> : null}{items.map((item) => <ObservationItem key={item.id} item={item} evidence={evidence} onShowEvidence={showEvidence} />)}</> : observationsLoadState === 'success' && items.length === 0 ? <Text style={styles.helper}>Aucune observation transmise depuis ce compte.</Text> : items.map((item) => <ObservationItem key={item.id} item={item} evidence={evidence} onShowEvidence={showEvidence} />)}</View>
   </View>
+}
+
+function ObservationItem({ item, evidence, onShowEvidence }: { item: Awaited<ReturnType<typeof loadMyMobileSignalements>>['items'][number]; evidence: Record<string, MobileMediaItem[]>; onShowEvidence: (signalementId: string) => void }) {
+  return <View style={styles.item}><View style={styles.itemCopy}><Text style={styles.itemTitle}>{item.label}</Text><Text style={styles.itemMeta}>{item.type === 'spot' ? 'Déchet' : 'Lieu propre'} · {new Date(item.createdAt).toLocaleDateString('fr-FR')}</Text>{evidence[item.id] !== undefined ? <>{evidence[item.id].length === 0 ? <Text style={styles.itemMeta}>Aucune preuve photo accessible.</Text> : <View style={styles.evidenceGrid}>{evidence[item.id].map((media) => <Image key={media.id} source={{ uri: media.signedUrl }} style={styles.evidenceImage} accessibilityLabel={`Preuve photo ${media.originalName}`} />)}</View>}</> : null}<TouchableOpacity onPress={() => onShowEvidence(item.id)} accessibilityRole="button" style={styles.evidenceButton}><Text style={styles.evidenceLink}>Voir les preuves photo</Text></TouchableOpacity></View><Text style={styles.status}>{item.status}</Text></View>
 }
 
 

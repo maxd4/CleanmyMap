@@ -66,6 +66,16 @@ async function settle() {
   await Promise.resolve()
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+  return { promise, resolve, reject }
+}
+
 async function renderScreen(onSessionExpired = vi.fn()) {
   let renderer!: TestRenderer.ReactTestRenderer
   await act(async () => {
@@ -136,6 +146,67 @@ describe('mobile signalement runtime', () => {
     expect(textContent(failed.renderer.root)).toContain('Observation reprise')
     expect(textContent(failed.renderer.root)).toContain('réseau interrompu')
     expect(textContent(failed.renderer.root)).not.toContain('Aucune observation transmise depuis ce compte.')
+  })
+
+  it('keeps an observations load error visible across successful photo selection and an independent form error', async () => {
+    state.loadMyMobileSignalements.mockReset().mockRejectedValueOnce(new Error('observations indisponibles'))
+    state.pickSignalementPhotos.mockResolvedValueOnce([{ uri: 'file:///retry.jpg', fileName: 'retry.jpg' }])
+    const { renderer } = await renderScreen()
+
+    expect(textContent(renderer.root)).toContain('observations indisponibles')
+    await act(async () => { await callTestHandler(findButton(renderer, 'Ajouter des preuves photo'), 'onPress'); await settle() })
+    expect(textContent(renderer.root)).toContain('1 photo(s) sélectionnée(s)')
+    expect(textContent(renderer.root)).toContain('observations indisponibles')
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Transmettre le signalement'), 'onPress'); await settle() })
+    expect(textContent(renderer.root)).toContain('Indiquez un lieu et une position valide')
+    expect(textContent(renderer.root)).toContain('observations indisponibles')
+  })
+
+  it('ignores an older observations refresh when overlapping requests resolve in reverse order', async () => {
+    state.loadMyMobileSignalements.mockReset().mockResolvedValueOnce({ status: 'ok', items: [] })
+    const { renderer } = await renderScreen()
+    const older = deferred<{ status: 'ok'; items: Array<{ id: string; label: string; type: 'spot'; createdAt: string; status: string }> }>()
+    const newer = deferred<{ status: 'ok'; items: Array<{ id: string; label: string; type: 'spot'; createdAt: string; status: string }> }>()
+    state.loadMyMobileSignalements.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
+    const refresh = () => renderer.root.findByProps({ accessibilityLabel: 'Actualiser mes observations' })
+
+    await act(async () => {
+      await callTestHandler(refresh(), 'onPress')
+      await callTestHandler(refresh(), 'onPress')
+    })
+
+    await act(async () => {
+      newer.resolve({ status: 'ok', items: [{ id: 'spot-new', label: 'Observation récente', type: 'spot', createdAt: '2026-10-20T10:00:00.000Z', status: 'new' }] })
+      await settle()
+    })
+    expect(textContent(renderer.root)).toContain('Observation récente')
+
+    await act(async () => {
+      older.resolve({ status: 'ok', items: [{ id: 'spot-old', label: 'Observation obsolète', type: 'spot', createdAt: '2026-10-20T10:00:00.000Z', status: 'new' }] })
+      await settle()
+    })
+    expect(textContent(renderer.root)).toContain('Observation récente')
+    expect(textContent(renderer.root)).not.toContain('Observation obsolète')
+
+    const staleAfterError = deferred<{ status: 'ok'; items: Array<{ id: string; label: string; type: 'spot'; createdAt: string; status: string }> }>()
+    const latestFailure = deferred<{ status: 'ok'; items: Array<{ id: string; label: string; type: 'spot'; createdAt: string; status: string }> }>()
+    state.loadMyMobileSignalements.mockReturnValueOnce(staleAfterError.promise).mockReturnValueOnce(latestFailure.promise)
+    await act(async () => {
+      await callTestHandler(refresh(), 'onPress')
+      await callTestHandler(refresh(), 'onPress')
+    })
+    await act(async () => {
+      latestFailure.reject(new Error('dernier rafraîchissement indisponible'))
+      await settle()
+    })
+    expect(textContent(renderer.root)).toContain('dernier rafraîchissement indisponible')
+    await act(async () => {
+      staleAfterError.resolve({ status: 'ok', items: [{ id: 'spot-stale-error', label: 'Résultat obsolète après erreur', type: 'spot', createdAt: '2026-10-20T10:00:00.000Z', status: 'new' }] })
+      await settle()
+    })
+    expect(textContent(renderer.root)).not.toContain('Résultat obsolète après erreur')
+    expect(textContent(renderer.root)).toContain('dernier rafraîchissement indisponible')
   })
 
   it('creates a spot with categories and reports partial photo upload without claiming all evidence succeeded', async () => {

@@ -240,8 +240,11 @@ sous-vues existantes.
   confirmation serveur. `Mes observations` distingue le chargement, le succès
   vide et l'erreur initiale ; une erreur de rafraîchissement conserve les
   observations précédemment chargées, tandis qu'une réussite seule peut afficher
-  l'état vide. Le contrôle `Actualiser mes observations` conserve une cible
-  tactile minimale de 44 × 44 points, séparée du titre et des données.
+  l'état vide. Seule la réponse du dernier rafraîchissement est appliquée ; les
+  réponses obsolètes sont ignorées et les erreurs de liste restent séparées des
+  erreurs du formulaire, de la localisation et des médias. Le contrôle
+  `Actualiser mes observations` conserve une cible tactile minimale de 44 × 44
+  points, séparée du titre et des données.
 
 Les sous-vues Agir restent montées pendant les changements d'onglet afin de
 préserver les saisies, les chargements et les brouillons. Le bouton de retour
