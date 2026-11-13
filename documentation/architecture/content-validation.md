@@ -184,8 +184,10 @@ sans candidature officielle ni politique imputée. Un engagement validé peut
 être fabriqué pour un candidat non élu. Lorsqu’il est présent, il sépare
 l’objectif initial, la décision juridique ou budgétaire, la mise en œuvre
 administrative et financière et le résultat observé ; un texte adopté n’est
-jamais traité comme un objectif atteint. Un écart n’est renseigné que pour des
-indicateurs comparables. Chaque bilan porte les institutions responsables,
+jamais traité comme un objectif atteint. Un écart n’est renseigné que si un
+résultat observé vérifié existe et que les indicateurs sont effectivement
+comparables ; sinon l’écart reste non déterminé. Un mandat officiellement en
+cours ne peut pas publier un bilan définitif : il reste provisoire. Chaque bilan porte les institutions responsables,
 facteurs externes, hypothèses, limites d’attribution causale, sources et date
 de revue. Un rapprochement vers le registre juridique exige un identifiant
 existant et une identité confirmée ; les autres rapprochements restent non

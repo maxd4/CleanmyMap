@@ -13,6 +13,7 @@ import {
   type PresidentialEnvironmentalAssessment,
   type PresidentialEnvironmentalClassification,
   type PresidentialCommitmentOutcome,
+  type PresidentialPolicyIdentityStatus,
   type PresidentialFinancialRecord,
   sortPresidentialCommitments,
 } from "./presidential-environmental-corpus";
@@ -301,6 +302,36 @@ describe("presidential environmental preparation corpus", () => {
     const validPolicyLink = makePublished("favorable", "valid-policy-link");
     validPolicyLink.outcome = { ...reviewedOutcome("realized"), legalDecision: { summary: { fr: "Décision contrôlée.", en: "Checked decision." }, date: { value: "2023-01-01", precision: "day" }, institution: { fr: "Institution publique", en: "Public institution" }, source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/legal", version: "LEGAL-1" }, budgetOrAmount: null, policyId: "eu-carbon-border-adjustment-mechanism", policyIdentity: "confirmed" } };
     expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [validPolicyLink] })).toHaveLength(1);
+
+    const observedResult = { summary: { fr: "Résultat observé.", en: "Observed result." }, unit: { fr: "unité", en: "unit" }, period: { value: "2024-01-01", precision: "day" as const }, source: { ...sourceCommitment.source, type: "SOURCE_PRIMAIRE_OFFICIELLE" as const, status: "verified" as const, url: "https://example.test/result", version: "RESULT-1" } };
+    const incomparableGap = makePublished("neutral", "incomparable-gap");
+    incomparableGap.outcome = { ...reviewedOutcome("partially_realized"), objectiveResultGap: { summary: { fr: "Écart non comparable.", en: "Non-comparable gap." }, comparableIndicators: false }, legalDecision: validPolicyLink.outcome!.legalDecision };
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [incomparableGap] })).toEqual([]);
+    const absentResultGap = makePublished("neutral", "absent-result-gap");
+    absentResultGap.outcome = { ...reviewedOutcome("partially_realized"), objectiveResultGap: { summary: { fr: "Écart sans résultat.", en: "Gap without result." }, comparableIndicators: true }, legalDecision: validPolicyLink.outcome!.legalDecision };
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [absentResultGap] })).toEqual([]);
+    const comparableGap = makePublished("neutral", "comparable-gap");
+    comparableGap.outcome = { ...reviewedOutcome("partially_realized"), objectiveResultGap: { summary: { fr: "Écart comparable.", en: "Comparable gap." }, comparableIndicators: true }, observedResult, legalDecision: validPolicyLink.outcome!.legalDecision };
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [comparableGap] })).toHaveLength(1);
+
+    const ongoingCandidate = makePublished("neutral", "ongoing-provisional");
+    ongoingCandidate.electionYear = 2022;
+    ongoingCandidate.candidateId = "2022-emmanuel-macron";
+    ongoingCandidate.outcome = reviewedOutcome("in_progress");
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [ongoingCandidate] })).toHaveLength(1);
+    const ongoingDefinitive = { ...ongoingCandidate, id: "ongoing-definitive", deduplicationKey: "ongoing-definitive", outcome: { ...ongoingCandidate.outcome!, provisional: false } };
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [ongoingDefinitive] })).toEqual([]);
+
+    for (const [electionYear, candidateId] of [[2012, "2012-francois-hollande"], [2017, "2017-emmanuel-macron"]] as const) {
+      const completedCandidate = { ...makePublished("neutral", `completed-${electionYear}`), electionYear, candidateId, outcome: { ...reviewedOutcome("realized"), legalDecision: validPolicyLink.outcome!.legalDecision } };
+      expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [completedCandidate] })).toHaveLength(1);
+    }
+
+    const invalidIdentity = makePublished("neutral", "invalid-policy-identity");
+    invalidIdentity.outcome = { ...reviewedOutcome("in_progress"), legalDecision: { ...validPolicyLink.outcome!.legalDecision!, policyIdentity: "unknown" as PresidentialPolicyIdentityStatus } };
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [invalidIdentity] })).toEqual([]);
+    const invalidIdentityWithoutPolicy = { ...invalidIdentity, id: "invalid-policy-identity-without-policy", deduplicationKey: "invalid-policy-identity-without-policy", outcome: { ...invalidIdentity.outcome!, legalDecision: { ...invalidIdentity.outcome!.legalDecision!, policyId: null } } };
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [invalidIdentityWithoutPolicy] })).toEqual([]);
 
     for (const status of ["realized", "partially_realized", "modified", "abandoned"] as const) {
       const statusCandidate = makePublished("neutral", `status-${status}`);

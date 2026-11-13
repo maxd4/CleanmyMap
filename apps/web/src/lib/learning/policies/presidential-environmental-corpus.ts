@@ -237,17 +237,19 @@ const isVerifiedPrimarySource = (source: PresidentialSource): boolean => ["SOURC
 
 function isCompleteOutcomeStage(stage: PresidentialOutcomeStage | null): boolean {
   if (!stage || !isNonEmptyLocalizedText(stage.summary) || !isValidPolicyDate(stage.date) || !isNonEmptyLocalizedText(stage.institution) || !isVerifiedPrimarySource(stage.source)) return false;
+  if (!["confirmed", "not_confirmed", "not_applicable"].includes(stage.policyIdentity)) return false;
   if (stage.policyIdentity === "confirmed") return Boolean(stage.policyId && ENVIRONMENTAL_POLICY_REGISTRY.some((policy) => policy.id === stage.policyId));
   if (stage.policyIdentity === "not_confirmed") return stage.policyId === null || ENVIRONMENTAL_POLICY_REGISTRY.some((policy) => policy.id === stage.policyId) === false;
-  return stage.policyId === null;
+  return stage.policyIdentity === "not_applicable" && stage.policyId === null;
 }
 
-function isCompletePresidentialOutcome(outcome: PresidentialCommitmentOutcome | null): boolean {
+function isCompletePresidentialOutcome(outcome: PresidentialCommitmentOutcome | null, election: PresidentialElectionRecord | undefined, candidateId: string): boolean {
   if (!outcome || !["realized", "partially_realized", "in_progress", "modified", "abandoned", "not_documented"].includes(outcome.status) || typeof outcome.provisional !== "boolean" || !isNonEmptyLocalizedText(outcome.objective) || !isValidPolicyDate(outcome.initialDeadline) || !isNonEmptyLocalizedText(outcome.externalFactors) || !isNonEmptyLocalizedText(outcome.hypotheses) || !isNonEmptyLocalizedText(outcome.causalAttributionLimits) || !isNonEmptyLocalizedText(outcome.limitations) || !isValidPolicyDate({ value: outcome.reviewedAt, precision: "day" }) || !outcome.reviewedBy.trim()) return false;
+  if (election?.mandate?.status === "ongoing" && election.electedCandidateId === candidateId && !outcome.provisional) return false;
   if (outcome.legalDecision && !isCompleteOutcomeStage(outcome.legalDecision)) return false;
   if (outcome.implementation && !isCompleteOutcomeStage(outcome.implementation)) return false;
   if (outcome.observedResult && (!isNonEmptyLocalizedText(outcome.observedResult.summary) || !isNonEmptyLocalizedText(outcome.observedResult.unit) || !isValidPolicyDate(outcome.observedResult.period) || !isVerifiedPrimarySource(outcome.observedResult.source))) return false;
-  if (outcome.objectiveResultGap && (!isNonEmptyLocalizedText(outcome.objectiveResultGap.summary) || typeof outcome.objectiveResultGap.comparableIndicators !== "boolean")) return false;
+  if (outcome.objectiveResultGap && (!isNonEmptyLocalizedText(outcome.objectiveResultGap.summary) || outcome.objectiveResultGap.comparableIndicators !== true || !outcome.observedResult)) return false;
   if (["realized", "partially_realized", "modified", "abandoned"].includes(outcome.status) && !outcome.legalDecision && !outcome.implementation && !outcome.observedResult) return false;
   return true;
 }
@@ -741,7 +743,7 @@ export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRO
         && isValidPolicyDate(commitmentRecord.deadline)
         && Boolean(commitmentRecord.lastCheckedAt)
         && isCompleteEnvironmentalAssessment(commitmentRecord.environmentalAssessment)
-        && (!commitmentRecord.outcome || isCompletePresidentialOutcome(commitmentRecord.outcome))
+        && (!commitmentRecord.outcome || isCompletePresidentialOutcome(commitmentRecord.outcome, corpus.elections.find((election) => election.year === commitmentRecord.electionYear), commitmentRecord.candidateId))
         && new Set(commitmentRecord.financialRecords.map((record) => record.id)).size === commitmentRecord.financialRecords.length
         && commitmentRecord.financialRecords.every(isCompleteFinancialRecord);
     } catch {
