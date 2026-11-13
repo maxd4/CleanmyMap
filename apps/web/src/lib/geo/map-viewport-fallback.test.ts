@@ -43,6 +43,8 @@ describe("map viewport fallback", () => {
 
     try {
       const viewport = await resolveMapViewportFallback(preference);
+      const requestedUrl = String((fetchMock.mock.calls as unknown[][])[0]?.[0]);
+      expect(requestedUrl).toContain("limit=4");
 
       expect(fetchMock).toHaveBeenCalled();
       expect(viewport).not.toBeNull();

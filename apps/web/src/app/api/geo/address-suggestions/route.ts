@@ -272,13 +272,13 @@ async function loadFranceAddressSuggestions(
 ): Promise<GeoAddressSuggestion[]> {
   const frenchSuggestions = await loadCachedRemoteAddressSuggestions(query, limit);
   const merged = mergeGeoAddressSuggestions(localSuggestions, frenchSuggestions, limit);
-  if (localSuggestions.length > 0 || frenchSuggestions.length > 0 || merged.length >= limit) {
+  if (merged.length >= limit) {
     return merged;
   }
 
   return mergeGeoAddressSuggestions(
     merged,
-    await loadPhotonAddressSuggestions(query, limit, DEFAULT_COUNTRY_CODE),
+    await loadPhotonAddressSuggestions(query, limit - merged.length, DEFAULT_COUNTRY_CODE),
     limit,
   );
 }

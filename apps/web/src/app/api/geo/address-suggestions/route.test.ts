@@ -8,6 +8,7 @@ import { GET } from "./route";
 describe("/api/geo/address-suggestions", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("returns stable exact address labels within the national cache", async () => {
@@ -37,7 +38,7 @@ describe("/api/geo/address-suggestions", () => {
     expect(body.status).toBe("ok");
     expect(body.query).toBe("Rivoli");
     expect(response.headers.get("cache-control")).toContain("private");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(body.items).toHaveLength(1);
     expect(body.items[0]).toMatchObject({
       label: "12 Rue de Rivoli, 75004 Paris",
@@ -93,7 +94,7 @@ describe("/api/geo/address-suggestions", () => {
 
     expect(body.status).toBe("ok");
     expect(body.query).toBe("Metz");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(body.items).toHaveLength(1);
     expect(body.items[0]).toMatchObject({
       label: "Metz, 57000 Metz",
@@ -137,6 +138,71 @@ describe("/api/geo/address-suggestions", () => {
     expect(response.status).toBe(200);
     expect(body.items).toHaveLength(1);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("fills a partial local France result with Photon after an empty Geoplateforme response", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ results: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [2.34, 48.86] },
+            properties: { name: "Rivoli complément", countrycode: "fr" },
+          }],
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Rivoli&limit=4&country=FR"),
+    );
+    const body = await response.json();
+
+    expect(body.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: "12 Rue de Rivoli, 75004 Paris" }),
+      expect.objectContaining({ label: "Rivoli complément" }),
+    ]));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1]?.[0]).toContain("photon.komoot.io/api");
+  });
+
+  it("keeps Photon reachable after Geoplateforme times out", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+      const signal = init?.signal as AbortSignal;
+      if (fetchMock.mock.calls.length === 1) {
+        return new Promise<Response>((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [2.3522, 48.8566] },
+            properties: { name: "Paris Photon", countrycode: "fr" },
+          }],
+        }),
+      } as Response);
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const responsePromise = GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Timeout&limit=3&country=FR"),
+    );
+    await vi.advanceTimersByTimeAsync(4_000);
+    const response = await responsePromise;
+
+    expect((await response.json()).items).toEqual([
+      expect.objectContaining({ label: "Paris Photon" }),
+    ]);
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeDefined();
+    expect((fetchMock.mock.calls[0]?.[1]?.signal as AbortSignal).aborted).toBe(true);
+    expect(fetchMock.mock.calls[1]?.[0]).toContain("photon.komoot.io/api");
   });
 
   it("deduplicates valid remote labels and preserves safe fallbacks", async () => {
@@ -320,7 +386,7 @@ describe("/api/geo/address-suggestions", () => {
 
     expect(body.items[0]).toMatchObject({ label: "Paris", latitude: 48.8566, longitude: 2.3522 });
     expect(fetchMock.mock.calls[0]?.[0]).toContain("data.geopf.fr");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it.each([

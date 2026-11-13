@@ -389,7 +389,7 @@ describe("presidential environmental preparation corpus", () => {
       financialRecord({ id: "direct-announcement", aggregationKey: "direct-announcement", isEstimate: false, estimateMethod: null }),
     ] };
     const sameCandidateSecondCommitment = { ...aggregateCandidate, id: "same-candidate-second-commitment", financialRecords: [financialRecord({ id: "envelope-1", aggregationKey: "  same-envelope-3  ", amountMin: 8, amountMax: 9, horizon: { precision: "year", value: "2025" }, scope: { en: "National scope", fr: "Périmètre national" } })] };
-    const secondCandidate = { ...aggregateCandidate, id: "second-candidate", candidateId: "2022-jean-luc-melenchon", financialRecords: [financialRecord({ id: "envelope-1", aggregationKey: "candidate-local-id", isEstimate: false, estimateMethod: null })] };
+    const secondCandidate = { ...aggregateCandidate, candidateId: "2022-jean-luc-melenchon", financialRecords: [financialRecord({ id: "envelope-1", aggregationKey: "candidate-local-id", isEstimate: false, estimateMethod: null })] };
     const aggregateChart = buildPresidentialChartData([aggregateCandidate, sameCandidateSecondCommitment, secondCandidate], getPresidentialCandidates(2022), 2022);
     expect(aggregateChart.financialRows).toHaveLength(4);
     expect(aggregateChart.financialRows.find((row) => row.candidateId === "2022-emmanuel-macron" && row.isEstimate)?.amountMin).toBe(23);
@@ -397,6 +397,47 @@ describe("presidential environmental preparation corpus", () => {
     expect(aggregateChart.financialRows.some((row) => row.candidateId === "2022-jean-luc-melenchon")).toBe(true);
     expect(aggregateChart.financialExclusions.duplicateEnvelope).toBe(1);
     expect(aggregateChart.nonAggregatedFinancialRecords).toBe(1);
+
+    const provenanceCandidate = { ...aggregateCandidate, id: "provenance-candidate", financialRecords: [
+      financialRecord({ id: "provenance-main", aggregationKey: "same-provenance-envelope", source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/provenance-a", page: 2, version: "PROVENANCE-A" } }),
+      financialRecord({ id: "provenance-reference-b", aggregationKey: "same-provenance-envelope", amountMin: 99, amountMax: 99, source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/provenance-b", page: 8, version: "PROVENANCE-B" } }),
+      financialRecord({ id: "provenance-reference-b-copy", aggregationKey: "same-provenance-envelope", amountMin: 101, amountMax: 101, source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/provenance-b", page: 8, version: "PROVENANCE-B" } }),
+    ] };
+    const provenanceChart = buildPresidentialChartData([provenanceCandidate], getPresidentialCandidates(2022), 2022);
+    const provenanceRow = provenanceChart.financialRows[0];
+    expect(provenanceRow).toMatchObject({ amountMin: 10, amountMax: 20, recordCount: 1 });
+    expect(provenanceRow.sources).toHaveLength(2);
+    expect(provenanceRow.sources.map((source) => source.url)).toEqual(["https://example.test/provenance-a", "https://example.test/provenance-b"]);
+    expect(provenanceChart.financialExclusions.duplicateEnvelope).toBe(2);
+  });
+
+  it("keeps financial record identity local to each candidate at the validated boundary", () => {
+    const sourceCommitment = getPresidentialCommitments(2022).find((commitment) => commitment.id === "2022-jean-luc-melenchon-renewables")!;
+    const financialRecord: PresidentialFinancialRecord = {
+      id: "shared-financial-id", aggregationKey: "shared-envelope", aggregationMode: "additive", instrument: "investment", amountMin: 10, amountMax: 20, currency: "EUR", priceYear: 2022,
+      horizon: { value: "2025", precision: "year" }, scope: { fr: "Périmètre national", en: "National scope" }, cadence: "multiannual",
+      source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/shared-finance", version: "SHARED-FINANCE-1" }, status: "announced", isEstimate: true,
+      estimateMethod: { formula: { fr: "a × b", en: "a × b" }, variables: { fr: "a et b", en: "a and b" }, units: { fr: "EUR", en: "EUR" }, assumptions: { fr: "Hypothèse", en: "Assumption" }, references: { fr: "Référence", en: "Reference" }, exclusions: { fr: "Exclusion", en: "Exclusion" }, uncertainty: { fr: "Fourchette", en: "Range" } },
+      budgetReductionBaseline: null,
+    };
+    const makePublished = (candidateId: string, deduplicationKey: string) => ({
+      ...sourceCommitment,
+      id: "shared-commitment-id",
+      candidateId,
+      deduplicationKey,
+      documentationStatus: "validated" as const,
+      source: { ...sourceCommitment.source, status: "verified" as const, url: "https://example.test/shared-commitment", publishedAt: { value: "2022-04-01", precision: "day" as const } },
+      environmentalAssessment: reviewedAssessment(sourceCommitment.source),
+      lastCheckedAt: "2026-11-13",
+      outcome: reviewedOutcome(),
+      financialRecords: [financialRecord],
+      validation: { ...sourceCommitment.validation, status: "published" as const, lastReviewedAt: "2026-11-13", reviewedBy: "Human editor", source: { ...sourceCommitment.validation.source, url: "https://example.test/shared-commitment", date: "2022-04-01", datePrecision: "day" as const } },
+    });
+    const sharedCommitmentId = "shared-commitment-id";
+    const firstCandidate = makePublished("2022-jean-luc-melenchon", "candidate-a-envelope");
+    const secondCandidate = makePublished("2022-marine-le-pen", "candidate-b-envelope");
+    expect(firstCandidate.id).toBe(sharedCommitmentId);
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [firstCandidate, secondCandidate] })).toHaveLength(2);
   });
 
   it("does not confuse an absence of collection with an absence of engagement", () => {

@@ -12,6 +12,7 @@ import type { ActionCreationSectionId } from "@/lib/actions/action-creation-sect
 import type { FormState } from "../model";
 import type { BeforeActionFieldUpdater } from "./model";
 import type { ActiveRole } from "@/lib/domain-language";
+import type { CountryCode } from "@/lib/user-location-preference";
 import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import { ActionBeforePersistenceStatus, type BeforeActionPersistenceStatus } from "./persistence-status";
 
@@ -22,6 +23,7 @@ export function ActionBeforeFormView({
   validationIssues,
   validationIssueFields,
   errorMessage,
+  countryCode,
   userMetadata,
   updateField,
   updateFields,
@@ -45,6 +47,7 @@ export function ActionBeforeFormView({
   validationIssues: string[];
   validationIssueFields: readonly string[];
   errorMessage: string | null;
+  countryCode?: CountryCode;
   userMetadata: {
     userId: string;
     activeRole?: ActiveRole;
@@ -84,6 +87,7 @@ export function ActionBeforeFormView({
               form={form}
               updateField={updateField}
               updateFields={updateFields}
+              countryCode={countryCode}
               userMetadata={userMetadata}
               showGroupJoinHelp={showGroupJoinHelp}
               onToggleGroupJoinHelp={onToggleGroupJoinHelp}
@@ -104,7 +108,7 @@ export function ActionBeforeFormView({
             <>
               <div className="space-y-6">
                 <IdentityAndSharingSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} actionId={actionId} isExistingAction={isExistingAction} />
-                <PlannedActionSection form={form} updateField={updateField} updateFields={updateFields} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
+                <PlannedActionSection form={form} updateField={updateField} updateFields={updateFields} countryCode={countryCode} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
                 <PreparationAndSafetySection form={form} updateField={updateField} />
               </div>
               {validationIssues.length > 0 || errorMessage ? <div className="rounded-[1.5rem] border border-rose-200/70 bg-[#FFF7F8] px-4 py-3 text-sm leading-6 text-rose-950"><div className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} className="text-rose-500" />La préparation n&apos;a pas encore pu être enregistrée</div>{validationIssues.length > 0 ? <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-rose-800/80">{validationIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul> : null}{errorMessage && validationIssues.length === 0 ? <p className="mt-2 text-xs text-rose-800/80">{errorMessage}</p> : null}{!isAuthenticated ? <div className="mt-3 flex flex-wrap gap-2">{signInHref ? <CmmButton href={signInHref} tone="primary" variant="pill" size="sm">Se connecter et reprendre</CmmButton> : null}{signUpHref ? <CmmButton href={signUpHref} tone="secondary" variant="pill" size="sm">Créer un compte</CmmButton> : null}</div> : null}</div> : null}

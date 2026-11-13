@@ -7,12 +7,14 @@ import type { FormState } from "../model";
 import type { ActiveRole } from "@/lib/domain-language";
 import type { BeforeActionFieldUpdater } from "./model";
 import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
+import type { CountryCode } from "@/lib/user-location-preference";
 
 type SectionedContentProps = {
   activeSection: ActionCreationSectionId;
   form: FormState;
   updateField: BeforeActionFieldUpdater;
   updateFields: (updates: Partial<FormState>) => void;
+  countryCode?: CountryCode;
   userMetadata: {
     userId: string;
     activeRole?: ActiveRole;
@@ -41,6 +43,7 @@ export function ActionBeforeSectionedContent({
   form,
   updateField,
   updateFields,
+  countryCode,
   userMetadata,
   showGroupJoinHelp,
   onToggleGroupJoinHelp,
@@ -63,6 +66,7 @@ export function ActionBeforeSectionedContent({
         form={form}
         updateField={updateField}
         updateFields={updateFields}
+        countryCode={countryCode}
         hasAttemptedSubmit={validationIssueFields.length > 0}
         validationIssueFields={validationIssueFields}
       />
@@ -76,6 +80,7 @@ export function ActionBeforeSectionedContent({
           form={form}
           updateField={updateField}
           updateFields={updateFields}
+          countryCode={countryCode}
           hasAttemptedSubmit={validationIssueFields.length > 0}
           validationIssueFields={validationIssueFields}
         />

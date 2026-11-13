@@ -14,13 +14,14 @@ import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./secti
 
 type EssentialActionSectionProps = Pick<
   BaseSectionProps,
-  "form" | "updateField" | "updateFields" | "hasAttemptedSubmit" | "validationIssueFields"
+  "form" | "updateField" | "updateFields" | "countryCode" | "hasAttemptedSubmit" | "validationIssueFields"
 >;
 
 export function EssentialActionSection({
   form,
   updateField,
   updateFields,
+  countryCode,
   hasAttemptedSubmit = false,
   validationIssueFields = [],
 }: EssentialActionSectionProps) {
@@ -94,6 +95,7 @@ export function EssentialActionSection({
             updateFields={updateFields}
             hasAttemptedSubmit={hasAttemptedSubmit}
             validationIssueFields={validationIssueFields}
+            countryCode={countryCode}
           />
           <CmmDisclosure summary={<ActionFormDisclosureSummary label="Arrivée du parcours" detail={form.routeTopology === "point_to_point" ? (form.arrivalLocationLabel.trim() || "à compléter") : "aucune arrivée pour une boucle"} />} tone="emerald" size="sm">
             <RouteDestinationField
@@ -102,6 +104,7 @@ export function EssentialActionSection({
               updateFields={updateFields}
               hasAttemptedSubmit={hasAttemptedSubmit}
               validationIssueFields={validationIssueFields}
+              countryCode={countryCode}
             />
           </CmmDisclosure>
         </section>

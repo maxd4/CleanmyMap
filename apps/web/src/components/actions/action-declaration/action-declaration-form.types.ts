@@ -5,6 +5,7 @@ export type ActionDeclarationFormProps = Pick<
   | "actorNameOptions"
   | "defaultActorName"
   | "isAuthenticated"
+  | "countryCode"
   | "userMetadata"
   | "linkedEventId"
   | "initialRecordType"

@@ -6,6 +6,7 @@ import type { ActionEditorRecord } from "@/lib/actions/http";
 import type { ActionPreparationData, ActionStatus } from "@/lib/actions/types";
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 import type { ActiveRole } from "@/lib/domain-language";
+import type { CountryCode } from "@/lib/user-location-preference";
 import { normalizeParticipantAccounts, parseOrganizerAccounts } from "../payload";
 import {
   normalizeAssociationSelectionForPrefill,
@@ -24,6 +25,8 @@ export type ActionBeforeDeclarationFormProps = {
   actorNameOptions: string[];
   defaultActorName: string;
   isAuthenticated: boolean;
+  /** Default country hint for address search; it never constrains manual coordinates. */
+  countryCode?: CountryCode;
   userMetadata: {
     userId: string;
     activeRole?: ActiveRole;

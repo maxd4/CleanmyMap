@@ -19,6 +19,7 @@ export function TerrainActionSection({
   form,
   updateField,
   updateFields,
+  countryCode,
   hasAttemptedSubmit,
   validationIssueFields,
 }: BaseSectionProps) {
@@ -99,6 +100,7 @@ export function TerrainActionSection({
             updateFields={updateFields}
             hasAttemptedSubmit={hasAttemptedSubmit}
             validationIssueFields={validationIssueFields}
+            countryCode={countryCode}
           />
           {isRouteInterventionMode(mode) ? <>
             <RouteTopologyFieldset form={form} updateField={updateField} />
@@ -108,6 +110,7 @@ export function TerrainActionSection({
               updateFields={updateFields}
               hasAttemptedSubmit={hasAttemptedSubmit}
               validationIssueFields={validationIssueFields}
+              countryCode={countryCode}
             />
           </> : <p className="rounded-2xl border border-sky-200/70 bg-sky-50/70 px-4 py-3 text-sm leading-6 text-sky-950">Zone fixe : secteur et rendez-vous.</p>}
         </div>

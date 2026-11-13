@@ -70,6 +70,7 @@ function buildActionDeclarationSectionProps(
     gpsMessage: smartAssist.gpsMessage,
     onAutofillGps: smartAssist.autofillGps,
     recordType: form.recordType,
+    countryCode: props.countryCode,
   };
   return {
     form,

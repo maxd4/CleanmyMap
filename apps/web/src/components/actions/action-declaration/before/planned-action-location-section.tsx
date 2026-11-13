@@ -16,6 +16,7 @@ export function PlannedActionLocationSection({
   form,
   updateField,
   updateFields,
+  countryCode,
   hasAttemptedSubmit,
   validationIssueFields,
 }: BaseSectionProps) {
@@ -39,6 +40,7 @@ export function PlannedActionLocationSection({
           updateFields={updateFields}
           hasAttemptedSubmit={hasAttemptedSubmit}
           validationIssueFields={validationIssueFields}
+          countryCode={countryCode}
         />
       </div>
       <RouteDestinationField
@@ -47,6 +49,7 @@ export function PlannedActionLocationSection({
         updateFields={updateFields}
         hasAttemptedSubmit={hasAttemptedSubmit}
         validationIssueFields={validationIssueFields}
+        countryCode={countryCode}
       />
       {form.operationalRoute ? (
         <CmmDisclosure summary={<ActionFormDisclosureSummary label="Parcours existant" detail="parcours calculé conservé" />} tone="emerald" size="sm">
@@ -71,6 +74,7 @@ export function PlannedActionLocationSection({
 export function MeetingLocationFields({
   form,
   updateFields,
+  countryCode,
   hasAttemptedSubmit,
   validationIssueFields,
 }: BaseSectionProps) {
@@ -94,6 +98,7 @@ export function MeetingLocationFields({
         placeholder="Ex. Entrée principale, côté métro"
         value={form.departureLocationLabel}
         onChange={updateDepartureLocation}
+        countryCode={countryCode}
         helperText="Adresse exacte du rendez-vous"
         ariaInvalid={missingDeparture}
         ariaDescribedBy={missingDeparture ? "before-departure-location-error" : "before-location-status"}
@@ -110,6 +115,7 @@ export function MeetingLocationFields({
 export function RouteDestinationField({
   form,
   updateFields,
+  countryCode,
   hasAttemptedSubmit,
   validationIssueFields,
 }: BaseSectionProps) {
@@ -131,6 +137,7 @@ export function RouteDestinationField({
         placeholder="Ex. Place de la République"
         value={form.arrivalLocationLabel}
         onChange={(value, coordinates) => updateFields?.({ arrivalLocationLabel: value, arrivalCoordinates: coordinates ?? null })}
+        countryCode={countryCode}
         helperText="Adresse exacte de l’arrivée"
         ariaInvalid={missingArrival}
         ariaDescribedBy={missingArrival ? "before-arrival-location-error" : undefined}

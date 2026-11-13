@@ -5,12 +5,14 @@ import {
   isWithinFranceTerritoryBounds,
   parsePhotonCoordinates,
 } from "@/lib/geo/territory";
+import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
 
 export const runtime = "nodejs";
 const REVERSE_LOCATION_CACHE_HEADERS = {
   "Cache-Control": "private, max-age=300, stale-while-revalidate=86400",
 };
 const REVERSE_LOCATION_TIMEOUT_MS = 4_000;
+const REVERSE_RESULT_MAX_DISTANCE_KM = 10;
 
 type ReverseLocation = {
   label: string;
@@ -50,7 +52,13 @@ type PhotonReverseFeature = {
     village?: unknown;
     state?: unknown;
     country?: unknown;
+    countrycode?: unknown;
   };
+};
+
+type PhotonReverseLookup = {
+  location: ReverseLocation;
+  countryCode: string | null;
 };
 
 function parseCoordinate(value: string | null): number | null {
@@ -148,7 +156,21 @@ function formatPhotonReverseLocation(feature: PhotonReverseFeature): ReverseLoca
   };
 }
 
-async function loadPhotonReverseLocation(latitude: number, longitude: number): Promise<ReverseLocation | null> {
+function isNearRequestedPoint(
+  location: ReverseLocation,
+  latitude: number,
+  longitude: number,
+): boolean {
+  return haversineDistanceKm(
+    [latitude, longitude],
+    [location.latitude, location.longitude],
+  ) <= REVERSE_RESULT_MAX_DISTANCE_KM;
+}
+
+async function loadPhotonReverseLocation(
+  latitude: number,
+  longitude: number,
+): Promise<PhotonReverseLookup | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REVERSE_LOCATION_TIMEOUT_MS);
   try {
@@ -158,7 +180,18 @@ async function loadPhotonReverseLocation(latitude: number, longitude: number): P
     });
     if (!response.ok) return null;
     const payload = (await response.json()) as { features?: PhotonReverseFeature[] };
-    return payload.features?.map(formatPhotonReverseLocation).find(Boolean) ?? null;
+    for (const feature of payload.features ?? []) {
+      const location = formatPhotonReverseLocation(feature);
+      if (!location || !isNearRequestedPoint(location, latitude, longitude)) continue;
+      const rawCountryCode = feature.properties?.countrycode;
+      return {
+        location,
+        countryCode: typeof rawCountryCode === "string" && rawCountryCode.trim()
+          ? rawCountryCode.trim().toLowerCase()
+          : null,
+      };
+    }
+    return null;
   } catch {
     return null;
   } finally {
@@ -180,7 +213,13 @@ async function loadGeoplateformeReverseLocation(
     });
     if (!response.ok) return null;
     const payload = (await response.json()) as { features?: GeoplateformeReverseFeature[] };
-    return payload.features?.map(formatReverseLocation).find(Boolean) ?? null;
+    for (const feature of payload.features ?? []) {
+      const location = formatReverseLocation(feature);
+      if (location && isNearRequestedPoint(location, latitude, longitude)) {
+        return location;
+      }
+    }
+    return null;
   } catch {
     return null;
   } finally {
@@ -226,10 +265,19 @@ export async function GET(request: Request) {
   }
 
   try {
-    const geoplateformeLocation = isWithinFranceTerritoryBounds(lat, lon)
+    // The bbox only decides whether Geoplateforme is worth probing. Photon
+    // country metadata remains the required France check before its result is
+    // accepted as the metropolitan reverse provider.
+    const shouldProbeGeoplateforme = isWithinFranceTerritoryBounds(lat, lon);
+    const geoplateformeLocation = shouldProbeGeoplateforme
       ? await loadGeoplateformeReverseLocation(lat, lon)
       : null;
-    const location = geoplateformeLocation ?? await loadPhotonReverseLocation(lat, lon);
+    const photonLookup = await loadPhotonReverseLocation(lat, lon);
+    const location = !shouldProbeGeoplateforme
+      ? photonLookup?.location ?? null
+      : photonLookup?.countryCode === "fr"
+        ? geoplateformeLocation ?? photonLookup.location
+        : photonLookup?.location ?? null;
 
     return NextResponse.json({
       status: "ok",

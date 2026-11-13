@@ -16,6 +16,8 @@ export type GeoPoint = {
   longitude: number;
 };
 
+const MAP_VIEWPORT_FALLBACK_CANDIDATE_LIMIT = 4;
+
 function toRadians(value: number): number {
   return (value * Math.PI) / 180;
 }
@@ -84,7 +86,7 @@ async function geocodeTerritoryLabel(label: string, countryCode: string): Promis
   } catch {
     // Keep the ISO code as a provider query hint when Intl is unavailable.
   }
-  const url = buildPhotonSearchUrl(label, 1, countryName);
+  const url = buildPhotonSearchUrl(label, MAP_VIEWPORT_FALLBACK_CANDIDATE_LIMIT, countryName);
   if (!url) {
     return null;
   }
@@ -124,7 +126,7 @@ async function geocodeTerritoryLabel(label: string, countryCode: string): Promis
 async function resolvePreferencePoint(
   preference: TerritoryLocationPreference,
 ): Promise<GeoPoint | null> {
-  if (preference.level === "arrondissement" && preference.arrondissement !== null) {
+  if (preference.country === "FR" && preference.level === "arrondissement" && preference.arrondissement !== null) {
     if (preference.arrondissementCity === "Paris") {
       const center = getTerritoryArrondissementCenter(preference.arrondissement);
       return {

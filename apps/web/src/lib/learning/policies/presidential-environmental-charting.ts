@@ -81,7 +81,7 @@ export function buildPresidentialChartData(commitments: PresidentialPublicCommit
 
   const financialRows = new Map<string, PresidentialFinancialChartRow>();
   const seenFinancialIds = new Set<string>();
-  const seenEnvelopeKeys = new Set<string>();
+  const seenEnvelopeRows = new Map<string, PresidentialFinancialChartRow>();
   const financialExclusions: PresidentialFinancialExclusionCounts = { notAnnounced: 0, duplicateEnvelope: 0 };
   let nonAggregatedFinancialRecords = 0;
   for (const commitment of yearCommitments) {
@@ -92,7 +92,7 @@ export function buildPresidentialChartData(commitments: PresidentialPublicCommit
         financialExclusions.notAnnounced += 1;
         continue;
       }
-      const scopedRecordId = `${commitment.id}|${record.id}`;
+      const scopedRecordId = `${commitment.candidateId}|${commitment.id}|${record.id}`;
       if (seenFinancialIds.has(scopedRecordId)) {
         financialExclusions.duplicateEnvelope += 1;
         continue;
@@ -101,11 +101,12 @@ export function buildPresidentialChartData(commitments: PresidentialPublicCommit
       const compatibilityKey = `${commitment.candidateId}|${record.instrument}|${financialCompatibilityKey(record)}`;
       const normalizedAggregationKey = normalizeAggregationKey(record.aggregationKey);
       const envelopeKey = `${compatibilityKey}|${normalizedAggregationKey}`;
-      if (seenEnvelopeKeys.has(envelopeKey)) {
+      const existingEnvelopeRow = seenEnvelopeRows.get(envelopeKey);
+      if (existingEnvelopeRow) {
         financialExclusions.duplicateEnvelope += 1;
+        addSource(existingEnvelopeRow, record);
         continue;
       }
-      seenEnvelopeKeys.add(envelopeKey);
       const aggregationKey = record.aggregationMode === "exclusive" ? `${compatibilityKey}|exclusive|${normalizedAggregationKey}` : `${compatibilityKey}|additive`;
       const existing = financialRows.get(aggregationKey);
       if (existing) {
@@ -115,8 +116,11 @@ export function buildPresidentialChartData(commitments: PresidentialPublicCommit
         existing.aggregationKeys.push(normalizedAggregationKey);
         addSource(existing, record);
         if (record.estimateMethod) existing.estimateMethods.push(record.estimateMethod);
+        seenEnvelopeRows.set(envelopeKey, existing);
       } else {
-        financialRows.set(aggregationKey, { candidateId: commitment.candidateId, candidateName: candidate.name, instrument: record.instrument, currency: record.currency, priceYear: record.priceYear, horizon: record.horizon.value ?? "unknown", cadence: record.cadence, scope: record.scope, status: record.status, isEstimate: record.isEstimate, amountMin: record.amountMin, amountMax: record.amountMax, recordCount: 1, aggregationKeys: [normalizedAggregationKey], sources: [{ name: record.source.name, url: record.source.url!, page: record.source.page, version: record.source.version }], budgetReductionBaselines: record.budgetReductionBaseline ? [record.budgetReductionBaseline] : [], estimateMethods: record.estimateMethod ? [record.estimateMethod] : [] });
+        const row = { candidateId: commitment.candidateId, candidateName: candidate.name, instrument: record.instrument, currency: record.currency, priceYear: record.priceYear, horizon: record.horizon.value ?? "unknown", cadence: record.cadence, scope: record.scope, status: record.status, isEstimate: record.isEstimate, amountMin: record.amountMin, amountMax: record.amountMax, recordCount: 1, aggregationKeys: [normalizedAggregationKey], sources: [{ name: record.source.name, url: record.source.url!, page: record.source.page, version: record.source.version }], budgetReductionBaselines: record.budgetReductionBaseline ? [record.budgetReductionBaseline] : [], estimateMethods: record.estimateMethod ? [record.estimateMethod] : [] };
+        financialRows.set(aggregationKey, row);
+        seenEnvelopeRows.set(envelopeKey, row);
       }
       if (record.aggregationMode === "exclusive") nonAggregatedFinancialRecords += 1;
     }

@@ -22,24 +22,30 @@ describe("/api/geo/reverse-location", () => {
   });
 
   it("returns a selected city from geoplateforme reverse geocoding", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        features: [
-          {
-            geometry: {
-              coordinates: [2.3522, 48.8566],
-            },
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [2.3522, 48.8566] },
             properties: {
               city: "Paris",
               postcode: "75001",
               label: "1 Rue de Rivoli, 75001 Paris",
               score: 0.98,
             },
-          },
-        ],
-      }),
-    });
+          }],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [2.3522, 48.8566] },
+            properties: { name: "Paris", countrycode: "fr" },
+          }],
+        }),
+      });
     vi.stubGlobal("fetch", fetchMock as typeof fetch);
 
     const response = await GET(
@@ -58,7 +64,8 @@ describe("/api/geo/reverse-location", () => {
 
     expect(body.status).toBe("ok");
     expect(response.headers.get("cache-control")).toContain("private");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1]?.[0]).toContain("photon.komoot.io/reverse");
     expect(fetchMock.mock.calls[0]?.[1]).toEqual(
       expect.objectContaining({
         method: "GET",
@@ -165,6 +172,69 @@ describe("/api/geo/reverse-location", () => {
     expect(body.location).toMatchObject({ label: "Paris", latitude: 48.8566, longitude: 2.3522 });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0]?.[1]?.signal).not.toBe(fetchMock.mock.calls[1]?.[1]?.signal);
+  });
+
+  it.each([
+    ["Bruxelles", "50.8466", "4.3528", "be"],
+    ["Lausanne", "46.5197", "6.6323", "ch"],
+  ])("does not present %s as a French Geoplateforme result", async (label, rawLat, rawLon, countrycode) => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [Number(rawLon), Number(rawLat)] },
+            properties: { city: "Résultat français incohérent", score: 0.99 },
+          }],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [Number(rawLon), Number(rawLat)] },
+            properties: { name: label, countrycode },
+          }],
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request(`http://localhost/api/geo/reverse-location?lat=${rawLat}&lon=${rawLon}`),
+    );
+
+    expect((await response.json()).location).toMatchObject({ label, latitude: Number(rawLat), longitude: Number(rawLon) });
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("data.geopf.fr");
+    expect(fetchMock.mock.calls[1]?.[0]).toContain("photon.komoot.io/reverse");
+  });
+
+  it("uses Geoplateforme only after Photon confirms metropolitan France", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [2.3522, 48.8566] },
+            properties: { city: "Paris", postcode: "75001", score: 0.98 },
+          }],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [2.3522, 48.8566] },
+            properties: { name: "Paris Photon", countrycode: "fr" },
+          }],
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/reverse-location?lat=48.8566&lon=2.3522"),
+    );
+
+    expect((await response.json()).location).toMatchObject({ label: "Paris", subtitle: "75001 Paris" });
   });
 
   it.each([

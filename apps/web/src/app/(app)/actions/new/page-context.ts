@@ -17,6 +17,8 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import type { UserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { getCurrentUserTerritoryLocationPreference } from "@/lib/auth/user-territory";
+import { DEFAULT_COUNTRY_CODE, type CountryCode } from "@/lib/user-location-preference";
 
 export type NewActionPageSearchParams = Record<
   string,
@@ -48,6 +50,7 @@ export type NewActionPageContext = {
   actorNameOptions: string[];
   defaultActorName: string;
   userMetadata: ActionUserMetadata;
+  countryCode: CountryCode;
   signInHref: string;
   signUpHref: string;
   pageTemplateV2Enabled: boolean;
@@ -95,6 +98,9 @@ export async function resolveNewActionPageContext(
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const actionCreationSectionsEnabled = isFeatureEnabled("actionCreationSections");
   const { fallbackActorName, actorNameOptions, isAuthenticated } = resolveActionIdentity({ identity, userId });
+  const territoryPreference = userId
+    ? await getCurrentUserTerritoryLocationPreference()
+    : null;
 
   return {
     params,
@@ -112,6 +118,7 @@ export async function resolveNewActionPageContext(
     actorNameOptions,
     defaultActorName: actorNameOptions[0] ?? fallbackActorName,
     userMetadata: buildActionUserMetadata({ userId, identity, fallbackActorName }),
+    countryCode: territoryPreference?.country ?? DEFAULT_COUNTRY_CODE,
     signInHref: buildSignInRedirectHref(returnUrl),
     signUpHref: buildSignUpRedirectHref(returnUrl),
     pageTemplateV2Enabled,

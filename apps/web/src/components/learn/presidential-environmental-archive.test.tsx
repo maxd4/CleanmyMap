@@ -83,7 +83,7 @@ const displayFinancialRecord: PresidentialFinancialRecord = {
 
 const financialArchive = {
   ...classifiedArchive,
-  validatedCommitments: classifiedArchive.validatedCommitments.map((commitment, index) => index === 0 ? { ...commitment, financialRecords: [displayFinancialRecord] } : commitment),
+  validatedCommitments: classifiedArchive.validatedCommitments.map((commitment, index) => index === 0 ? { ...commitment, financialRecords: [displayFinancialRecord, { ...displayFinancialRecord, id: "display-finance-source-2", source: { ...displayFinancialRecord.source, url: "https://example.test/financial-source-2", page: 7, version: "FIN-DISPLAY-2" } }] } : commitment),
 };
 
 describe("PresidentialEnvironmentalArchive", () => {
@@ -184,6 +184,8 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(frMarkup).toContain("Budget 2022 documenté");
     expect(frMarkup).toContain("vFIN-DISPLAY-1");
     expect(frMarkup).toContain("p. 3");
+    expect(frMarkup).toContain("https://example.test/financial-source-2");
+    expect(frMarkup).toContain("vFIN-DISPLAY-2");
     expect(frMarkup).toContain("Périmètre national");
     expect(frMarkup).toContain("Méthode et hypothèses de l’estimation");
     expect(frMarkup).toContain("Valeurs des montants environnementaux par candidat");
@@ -193,6 +195,7 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(enMarkup).toContain("CleanMyMap estimate");
     expect(enMarkup).toContain("upper bound unknown");
     expect(enMarkup).toContain("National scope");
+    expect(enMarkup).toContain("https://example.test/financial-source-2");
   });
 
   it("keeps 2027 empty and explicitly preparatory", async () => {
