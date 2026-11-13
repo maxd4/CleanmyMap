@@ -35,7 +35,8 @@ describe("territory geography", () => {
   it("requires country evidence for foreign Photon searches while preserving justified France compatibility", () => {
     expect(matchesPhotonCountry({ properties: {} }, "CA")).toBe(false);
     expect(matchesPhotonCountry({ properties: { countrycode: "ca" } }, "CA")).toBe(true);
-    expect(matchesPhotonCountry({ properties: {} }, "FR")).toBe(true);
+    expect(matchesPhotonCountry({ geometry: { coordinates: [2.35, 48.85] }, properties: {} }, "FR")).toBe(true);
+    expect(matchesPhotonCountry({ geometry: { coordinates: [-73.56, 45.5] }, properties: {} }, "FR")).toBe(false);
     expect(matchesPhotonCountry({ properties: { countrycode: "be" } }, "FR")).toBe(false);
   });
 });
