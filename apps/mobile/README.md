@@ -202,7 +202,8 @@ sous-vues existantes.
   reliée à une action éligible via `createLinkedMission` et sa réconciliation
   serveur. Le mobile ne calcule ni la distance ni la durée ;
 - `Rejoindre une action` est natif et passe par la frontière HTTP mobile
-  `/api/mobile/actions` ;
+  `/api/mobile/actions` ; ses contrôles de fermeture du détail et des demandes
+  conservent une cible tactile minimale de 44 × 44 points et un nom accessible ;
 - `Organiser une action` réutilise les validations Actions côté serveur. Le
   premier écran demande le type d'organisateur du contrat canonique (`Action
   spontanée`, `Entreprise`, `Association`, `Association étudiante`, `Collectif`
@@ -236,7 +237,11 @@ sous-vues existantes.
   ignoré et un refus d'accès efface le briefing précédemment affiché.
 - `Signaler un déchet` écrit uniquement dans `trash_spotter_spots`, transmet les
   photos via les intents média canoniques et n'affiche jamais un statut avant
-  confirmation serveur.
+  confirmation serveur. `Mes observations` distingue le chargement, le succès
+  vide et l'erreur initiale ; une erreur de rafraîchissement conserve les
+  observations précédemment chargées, tandis qu'une réussite seule peut afficher
+  l'état vide. Le contrôle `Actualiser mes observations` conserve une cible
+  tactile minimale de 44 × 44 points, séparée du titre et des données.
 
 Les sous-vues Agir restent montées pendant les changements d'onglet afin de
 préserver les saisies, les chargements et les brouillons. Le bouton de retour

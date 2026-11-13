@@ -68,6 +68,11 @@ function findButton(renderer: TestRenderer.ReactTestRenderer, label: string) {
   return renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').find((node) => textContent(node).includes(label))
 }
 
+function flattenStyle(node: TestRenderer.ReactTestInstance): Record<string, unknown> {
+  const styles = Array.isArray(node.props.style) ? node.props.style : [node.props.style]
+  return styles.filter(Boolean).reduce<Record<string, unknown>>((result, style) => ({ ...result, ...style }), {})
+}
+
 async function settle() {
   await Promise.resolve()
   await Promise.resolve()
@@ -118,6 +123,30 @@ describe('mobile action join runtime', () => {
     await act(async () => { await callTestHandler(details, 'onPress'); await settle() })
     expect(state.loadMobileActionDetail).toHaveBeenCalledWith('past-1')
     expect(renderer.root.findAll((node) => textContent(node).includes('Détail'))).not.toHaveLength(0)
+
+    const closeDetails = renderer.root.findByProps({ accessibilityLabel: 'Fermer le détail' })
+    expect(closeDetails.props.accessibilityRole).toBe('button')
+    expect(flattenStyle(closeDetails).minWidth).toBeGreaterThanOrEqual(44)
+    expect(flattenStyle(closeDetails).minHeight).toBeGreaterThanOrEqual(44)
+    await act(async () => { await callTestHandler(closeDetails, 'onPress') })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Responsabilités terrain'))).toHaveLength(0)
+  })
+
+  it('keeps both detail and request close controls tactile and accessible', async () => {
+    state.loadMobileActionDetail.mockResolvedValue({ action: futureAction, participation: null, canJoin: true, canClaim: false })
+    const { renderer } = await renderScreen()
+
+    await act(async () => { await callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Voir le détail de Nettoyage du parc' }), 'onPress'); await settle() })
+    const closeDetails = renderer.root.findByProps({ accessibilityLabel: 'Fermer le détail' })
+    expect(flattenStyle(closeDetails)).toMatchObject({ minWidth: 44, minHeight: 44, flexShrink: 0 })
+    await act(async () => { await callTestHandler(closeDetails, 'onPress') })
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Demandes organisateur'), 'onPress'); await settle() })
+    const closeRequests = renderer.root.findByProps({ accessibilityLabel: 'Fermer les demandes' })
+    expect(closeRequests.props.accessibilityRole).toBe('button')
+    expect(flattenStyle(closeRequests)).toMatchObject({ minWidth: 44, minHeight: 44, flexShrink: 0 })
+    await act(async () => { await callTestHandler(closeRequests, 'onPress') })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Demandes à traiter'))).toHaveLength(0)
   })
 
   it('runs join and cancel with a pending mutation that cannot be submitted twice', async () => {

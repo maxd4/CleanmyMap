@@ -56,6 +56,11 @@ function findButton(renderer: TestRenderer.ReactTestRenderer, label: string) {
   return renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').find((node) => textContent(node).includes(label))
 }
 
+function flattenStyle(node: TestRenderer.ReactTestInstance): Record<string, unknown> {
+  const styles = Array.isArray(node.props.style) ? node.props.style : [node.props.style]
+  return styles.filter(Boolean).reduce<Record<string, unknown>>((result, style) => ({ ...result, ...style }), {})
+}
+
 async function settle() {
   await Promise.resolve()
   await Promise.resolve()
@@ -92,6 +97,45 @@ describe('mobile signalement runtime', () => {
     const locate = findButton(renderer, 'Utiliser ma position actuelle')
     await act(async () => { await callTestHandler(locate, 'onPress'); await settle() })
     expect(renderer.root.findAll((node) => textContent(node).includes('La permission de localisation est nécessaire'))).not.toHaveLength(0)
+  })
+
+  it('keeps loading, success-empty, initial failure and retry states distinct', async () => {
+    let resolveInitial!: (value: unknown) => void
+    state.loadMyMobileSignalements.mockReset().mockReturnValueOnce(new Promise((resolve) => { resolveInitial = resolve }))
+    let pendingRenderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      pendingRenderer = TestRenderer.create(<SignalementScreen onSessionExpired={vi.fn()} />)
+      await Promise.resolve()
+    })
+
+    const refresh = pendingRenderer.root.findByProps({ accessibilityLabel: 'Actualiser mes observations' })
+    expect(refresh?.props.accessibilityRole).toBe('button')
+    expect(flattenStyle(refresh!)).toMatchObject({ minWidth: 44, minHeight: 44, flexShrink: 0, marginLeft: 8 })
+    expect(flattenStyle(refresh!.parent!)).toMatchObject({ gap: 8 })
+    expect(pendingRenderer.root.findAll((node) => String(node.type) === 'ActivityIndicator')).not.toHaveLength(0)
+    expect(textContent(pendingRenderer.root)).not.toContain('Aucune observation transmise depuis ce compte.')
+
+    resolveInitial({ status: 'ok', items: [] })
+    await act(async () => { await settle() })
+    expect(textContent(pendingRenderer.root)).toContain('Aucune observation transmise depuis ce compte.')
+    pendingRenderer.unmount()
+
+    state.loadMyMobileSignalements.mockReset().mockRejectedValueOnce(new Error('réseau indisponible'))
+    const failed = await renderScreen()
+    expect(textContent(failed.renderer.root)).toContain('réseau indisponible')
+    expect(textContent(failed.renderer.root)).not.toContain('Aucune observation transmise depuis ce compte.')
+
+    const observed = { id: 'spot-retry', label: 'Observation reprise', type: 'spot', createdAt: '2026-10-20T10:00:00.000Z', status: 'new' }
+    state.loadMyMobileSignalements.mockResolvedValueOnce({ status: 'ok', items: [observed] })
+    await act(async () => { await callTestHandler(failed.renderer.root.findByProps({ accessibilityLabel: 'Actualiser mes observations' }), 'onPress'); await settle() })
+    expect(textContent(failed.renderer.root)).toContain('Observation reprise')
+    expect(textContent(failed.renderer.root)).not.toContain('réseau indisponible')
+
+    state.loadMyMobileSignalements.mockRejectedValueOnce(new Error('réseau interrompu'))
+    await act(async () => { await callTestHandler(failed.renderer.root.findByProps({ accessibilityLabel: 'Actualiser mes observations' }), 'onPress'); await settle() })
+    expect(textContent(failed.renderer.root)).toContain('Observation reprise')
+    expect(textContent(failed.renderer.root)).toContain('réseau interrompu')
+    expect(textContent(failed.renderer.root)).not.toContain('Aucune observation transmise depuis ce compte.')
   })
 
   it('creates a spot with categories and reports partial photo upload without claiming all evidence succeeded', async () => {
@@ -145,6 +189,7 @@ describe('mobile signalement runtime', () => {
     const second = await renderScreen(expired)
     expect(expired).toHaveBeenCalledOnce()
     expect(second.renderer.root.findAll((node) => textContent(node).includes('Observation existante'))).toHaveLength(0)
+    expect(textContent(second.renderer.root)).not.toContain('Aucune observation transmise depuis ce compte.')
   })
 
   it('keeps the form editable after a server rejection and exposes a generic non-Error failure', async () => {
