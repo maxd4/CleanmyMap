@@ -37,6 +37,32 @@ describe("presidential environmental preparation corpus", () => {
     expect(getPresidentialCandidates(2022).find((candidate) => candidate.id === "2022-nicolas-dupont-aignan")?.partyOrCoalition).toBe("Debout la France");
   });
 
+  it("identifies the elected candidate and mandate period from official results", () => {
+    expect(getPresidentialElection(2012)).toMatchObject({
+      electedCandidateId: "2012-francois-hollande",
+      secondRoundDate: { value: "2012-05-06", precision: "day" },
+      mandate: { start: { value: "2012", precision: "year" }, end: { value: "2017", precision: "year" }, status: "completed" },
+    });
+    expect(getPresidentialElection(2012)?.resultSource?.documentNature).toBe("election_result");
+    expect(getPresidentialElection(2012)?.resultSource?.url).toContain("PR2012/FE.php");
+
+    expect(getPresidentialElection(2017)).toMatchObject({
+      electedCandidateId: "2017-emmanuel-macron",
+      secondRoundDate: { value: "2017-05-07", precision: "day" },
+      mandate: { start: { value: "2017", precision: "year" }, end: { value: "2022", precision: "year" }, status: "completed" },
+    });
+    expect(getPresidentialElection(2017)?.resultSource?.url).toContain("presidentielle-2017/FE.php");
+
+    expect(getPresidentialElection(2022)).toMatchObject({
+      electedCandidateId: "2022-emmanuel-macron",
+      secondRoundDate: { value: "2022-04-24", precision: "day" },
+      mandate: { start: { value: "2022", precision: "year" }, end: { value: "2027", precision: "year" }, status: "ongoing" },
+    });
+    expect(getPresidentialElection(2022)?.resultSource?.url).toContain("presidentielle-2022/FE.php");
+
+    expect(getPresidentialElection(2027)).toMatchObject({ electedCandidateId: null, secondRoundDate: null, mandate: null, resultSource: null });
+  });
+
   it("matches the official 2012 and 2017 candidate rosters", () => {
     expect(getPresidentialCandidates(2012).map((candidate) => candidate.name.fr)).toEqual(expect.arrayContaining([
       "Nathalie Arthaud", "François Bayrou", "Jacques Cheminade", "Nicolas Dupont-Aignan", "Eva Joly",

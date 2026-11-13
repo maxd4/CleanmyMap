@@ -10,10 +10,17 @@ export type PresidentialCandidateDocumentationStatus = "not_collected" | "draft"
 export type PresidentialCommitmentDocumentationStatus = "not_collected" | "no_measure_identified_after_review" | "not_quantified" | "deadline_unspecified" | "source_insufficient" | "draft" | "validated";
 export type PresidentialSourceType = "SOURCE_PRIMAIRE_OFFICIELLE" | "SOURCE_PRIMAIRE_ARCHIVEE" | "PRIMARY_ARCHIVED" | "PRIMARY_PARTY_PROGRAM" | "DISCOURS_OFFICIEL" | "SOURCE_SECONDAIRE" | "EN_ATTENTE_DE_PREUVE";
 export type PresidentialSourceStatus = "verified" | "needs_review" | "insufficient" | "missing";
-export type PresidentialDocumentNature = "candidate_list" | "programme" | "profession_de_foi" | "speech" | "proposal" | "secondary_summary" | "unknown";
+export type PresidentialDocumentNature = "candidate_list" | "election_result" | "programme" | "profession_de_foi" | "speech" | "proposal" | "secondary_summary" | "unknown";
 export type PresidentialHistoryAction = "first_collected" | "substantive_amendment" | "withdrawn" | "rechecked";
 export type PresidentialCommitmentFollowUpStatus = "realized" | "in_progress" | "modified" | "abandoned" | "not_documented";
 export type PresidentialComparisonView = "theme" | "candidate";
+export type PresidentialMandateStatus = "completed" | "ongoing";
+
+export type PresidentialMandatePeriod = {
+  start: PolicyDate;
+  end: PolicyDate;
+  status: PresidentialMandateStatus;
+};
 
 export type PresidentialSource = {
   type: PresidentialSourceType;
@@ -44,6 +51,10 @@ export type PresidentialElectionRecord = {
   label: LocalizedText;
   candidateListStatus: "official_list" | "not_published";
   candidateListSource: PresidentialSource;
+  resultSource: PresidentialSource | null;
+  secondRoundDate: PolicyDate | null;
+  electedCandidateId: string | null;
+  mandate: PresidentialMandatePeriod | null;
   candidateIds: string[];
 };
 
@@ -194,6 +205,40 @@ const officialListSources: Record<PresidentialElectionYear, PresidentialSource> 
   }),
 };
 
+const officialResultSources: Record<PresidentialElectionYear, PresidentialSource | null> = {
+  2012: sourceRef({
+    type: "SOURCE_PRIMAIRE_ARCHIVEE",
+    name: localized("Ministère de l’Intérieur — résultats officiels présidentielle 2012", "Ministry of the Interior — official 2012 presidential results"),
+    url: "https://www.archives-resultats-elections.interieur.gouv.fr/resultats/PR2012/FE.php",
+    documentNature: "election_result",
+    version: "PR2012-FE-2T",
+    publishedAt: { value: "2012-05-06", precision: "day" },
+    status: "verified",
+    note: localized("Résultats officiels du second tour : François Hollande est arrivé en tête avec 51,64 % des suffrages exprimés.", "Official second-round results: François Hollande came first with 51.64% of votes cast."),
+  }),
+  2017: sourceRef({
+    type: "SOURCE_PRIMAIRE_ARCHIVEE",
+    name: localized("Ministère de l’Intérieur — résultats officiels présidentielle 2017", "Ministry of the Interior — official 2017 presidential results"),
+    url: "https://www.archives-resultats-elections.interieur.gouv.fr/resultats/presidentielle-2017/FE.php",
+    documentNature: "election_result",
+    version: "PRES2017-FE-2T",
+    publishedAt: { value: "2017-05-07", precision: "day" },
+    status: "verified",
+    note: localized("Résultats officiels du second tour : Emmanuel Macron est arrivé en tête avec 66,10 % des suffrages exprimés.", "Official second-round results: Emmanuel Macron came first with 66.10% of votes cast."),
+  }),
+  2022: sourceRef({
+    type: "SOURCE_PRIMAIRE_ARCHIVEE",
+    name: localized("Ministère de l’Intérieur — résultats officiels présidentielle 2022", "Ministry of the Interior — official 2022 presidential results"),
+    url: "https://www.archives-resultats-elections.interieur.gouv.fr/resultats/presidentielle-2022/FE.php",
+    documentNature: "election_result",
+    version: "PRES2022-FE-2T",
+    publishedAt: { value: "2022-04-24", precision: "day" },
+    status: "verified",
+    note: localized("Résultats officiels du second tour : Emmanuel Macron est arrivé en tête avec 58,55 % des suffrages exprimés.", "Official second-round results: Emmanuel Macron came first with 58.55% of votes cast."),
+  }),
+  2027: null,
+};
+
 const candidate = (electionYear: PresidentialElectionYear, id: string, frName: string, partyOrCoalition: string, documentationStatus: PresidentialCandidateDocumentationStatus = "not_collected"): PresidentialCandidateRecord => {
   const source = officialListSources[electionYear];
   return {
@@ -244,11 +289,39 @@ const candidateRecords: PresidentialCandidateRecord[] = [
   candidate(2022, "eric-zemmour", "Éric Zemmour", "Reconquête !"),
 ];
 
+const electionOutcome: Record<PresidentialElectionYear, Pick<PresidentialElectionRecord, "resultSource" | "secondRoundDate" | "electedCandidateId" | "mandate">> = {
+  2012: {
+    resultSource: officialResultSources[2012],
+    secondRoundDate: { value: "2012-05-06", precision: "day" },
+    electedCandidateId: "2012-francois-hollande",
+    mandate: { start: { value: "2012", precision: "year" }, end: { value: "2017", precision: "year" }, status: "completed" },
+  },
+  2017: {
+    resultSource: officialResultSources[2017],
+    secondRoundDate: { value: "2017-05-07", precision: "day" },
+    electedCandidateId: "2017-emmanuel-macron",
+    mandate: { start: { value: "2017", precision: "year" }, end: { value: "2022", precision: "year" }, status: "completed" },
+  },
+  2022: {
+    resultSource: officialResultSources[2022],
+    secondRoundDate: { value: "2022-04-24", precision: "day" },
+    electedCandidateId: "2022-emmanuel-macron",
+    mandate: { start: { value: "2022", precision: "year" }, end: { value: "2027", precision: "year" }, status: "ongoing" },
+  },
+  2027: {
+    resultSource: null,
+    secondRoundDate: null,
+    electedCandidateId: null,
+    mandate: null,
+  },
+};
+
 const election = (year: PresidentialElectionYear): PresidentialElectionRecord => ({
   year,
   label: localized(`Présidentielle ${year}`, `${year} presidential election`),
   candidateListStatus: year === 2027 ? "not_published" : "official_list",
   candidateListSource: officialListSources[year],
+  ...electionOutcome[year],
   candidateIds: candidateRecords.filter((record) => record.electionYear === year).map((record) => record.id),
 });
 

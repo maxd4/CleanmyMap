@@ -7,10 +7,12 @@ import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+const testLocale = vi.hoisted(() => ({ value: "fr" as "fr" | "en" }));
+
 vi.mock("server-only", () => ({}));
 
 vi.mock("@/components/ui/site-preferences-provider", () => ({
-  useSitePreferences: () => ({ locale: "fr" }),
+  useSitePreferences: () => ({ locale: testLocale.value }),
 }));
 
 import { PresidentialEnvironmentalArchive } from "./presidential-environmental-archive";
@@ -28,16 +30,36 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(markup).toContain("2022");
     expect(markup).toContain("2027");
     expect(markup).toContain("Source de la liste officielle");
+    expect(markup).toContain("Résultat officiel et mandat");
+    expect(markup).toContain("Mandat 2012–2017 · Mandat terminé");
+    expect(markup).toContain("Élu");
+    expect(markup).toContain("border-blue-400");
+    expect(markup.indexOf("François Hollande")).toBeLessThan(markup.indexOf("Nicolas Sarkozy"));
     expect(markup).toContain("Ministère de l’Intérieur");
     expect(markup).toContain("Filtrer les engagements par candidat");
     expect(markup).toContain("Filtrer par niveau de documentation");
     expect(markup).toContain("Par thème");
     expect(markup).toContain("Par candidature");
+    expect(markup).toContain('role="tablist"');
+    expect(markup).toContain('aria-label="Année du scrutin"');
+    expect(markup).toContain('aria-selected="true"');
+    expect(markup).toContain("sm:grid-cols-2");
     expect(markup).toContain("Corpus non encore collecté");
     expect(markup).toContain("Aucun engagement validé n’est affiché");
     expect(markup).toContain("ne signifie pas l’absence de position");
     expect(markup).not.toContain("Porter la part du nucléaire à 50 % en 2025");
     expect(markup).not.toContain("100 % d’énergies renouvelables dès que possible");
+  });
+
+  it("keeps elected labels and mandate status localized", () => {
+    testLocale.value = "en";
+    const markup = renderToStaticMarkup(<PresidentialEnvironmentalArchive {...presidentialArchive} />);
+
+    expect(markup).toContain("Official result and term");
+    expect(markup).toContain("Term 2012–2017 · Term completed");
+    expect(markup).toContain("Elected");
+    expect(markup).not.toContain("Élu");
+    testLocale.value = "fr";
   });
 
   it("keeps 2027 empty and explicitly preparatory", async () => {
@@ -58,6 +80,29 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(container.textContent).toContain("Présidentielle 2027 : dossier en préparation");
     expect(container.textContent).toContain("0 candidats recensés");
     expect(container.textContent).toContain("Aucun engagement validé n’est affiché pour ce millésime.");
+    root.unmount();
+    container.remove();
+  });
+
+  it("moves the elected candidate first for 2017 and 2022", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<PresidentialEnvironmentalArchive {...presidentialArchive} />);
+    });
+
+    for (const [year, electedName, mandate] of [["2017", "Emmanuel Macron", "Mandat 2017–2022 · Mandat terminé"], ["2022", "Emmanuel Macron", "Mandat 2022–2027 · Mandat en cours"]] as const) {
+      const yearButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.trim() === year);
+      await act(async () => {
+        yearButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+      expect(container.textContent).toContain(`${electedName}`);
+      expect(container.textContent).toContain(mandate);
+      expect(container.querySelector("ol[aria-label^='Candidats officiels'] li")?.textContent).toContain("Élu");
+    }
+
     root.unmount();
     container.remove();
   });

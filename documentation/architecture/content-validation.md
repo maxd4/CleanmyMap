@@ -153,7 +153,12 @@ URLs directes, tandis que cinq candidatures restent `not_collected`. 2027 ne
 contient aucune candidature ni mesure. Le consommateur public de
 `/learn/comprendre` n'expose que les listes officielles 2012/2017/2022 et une
 projection publique des candidatures sans leurs validations internes, ainsi que
-des engagements passés par `getValidatedPresidentialCommitments` ; cette projection
+les résultats officiels du second tour : Hollande est élu en 2012, Macron en
+2017 et 2022, avec les périodes de mandat 2012–2017, 2017–2022 et 2022–2027
+distinguées par leur état terminé/en cours. Cette information électorale est
+indépendante de toute appréciation environnementale. Les résultats sont
+versionnés par les archives officielles du ministère de l'Intérieur ; les
+engagements passent toujours par `getValidatedPresidentialCommitments` ; cette projection
 rejette aussi toute échéance `PolicyDate` mal formée et conserve une durée
 annoncée dans `announcedUnits` sans la convertir en année civile. Une source
 secondaire, un discours ou un programme sans revue humaine effective ne peut
