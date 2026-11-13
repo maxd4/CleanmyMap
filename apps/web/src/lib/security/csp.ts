@@ -53,6 +53,7 @@ const STATIC_CONNECT_SOURCES = [
   "https://api.open-meteo.com",
   "https://geo.api.gouv.fr",
   "https://nominatim.openstreetmap.org",
+  "https://photon.komoot.io",
   "https://routing.openstreetmap.de",
   ...CLERK_CONNECT_SOURCES,
 ];

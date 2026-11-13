@@ -83,6 +83,37 @@ describe("/api/geo/reverse-location", () => {
     expect(body.location).toBeNull();
   });
 
+  it("falls back to Photon for a non-metropolitan coordinate", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ features: [] }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [-149.5585, -17.5516] },
+            properties: {
+              name: "Papeete",
+              country: "French Polynesia",
+              countrycode: "pf",
+            },
+          }],
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/reverse-location?lat=-17.5516&lon=-149.5585"),
+    );
+    const body = await response.json();
+
+    expect(body.location).toMatchObject({
+      label: "Papeete",
+      latitude: -17.5516,
+      longitude: -149.5585,
+    });
+    expect(fetchMock.mock.calls[1]?.[0]).toContain("photon.komoot.io/reverse");
+  });
+
   it.each([
     ["latitude above the valid range", "91", "2.3522"],
     ["longitude below the valid range", "48.8566", "-181"],

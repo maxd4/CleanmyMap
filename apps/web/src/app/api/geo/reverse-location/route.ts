@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withServerRateLimit } from "@/lib/rate-limit/server";
+import { buildPhotonReverseUrl } from "@/lib/geo/territory";
 
 export const runtime = "nodejs";
 const REVERSE_LOCATION_CACHE_HEADERS = {
@@ -30,6 +31,21 @@ type GeoplateformeReverseFeature = {
     _type?: string;
     score?: number;
     distance?: number;
+  };
+};
+
+type PhotonReverseFeature = {
+  geometry?: { coordinates?: unknown };
+  properties?: {
+    name?: unknown;
+    street?: unknown;
+    housenumber?: unknown;
+    postcode?: unknown;
+    city?: unknown;
+    town?: unknown;
+    village?: unknown;
+    state?: unknown;
+    country?: unknown;
   };
 };
 
@@ -93,6 +109,50 @@ function formatReverseLocation(feature: GeoplateformeReverseFeature): ReverseLoc
   };
 }
 
+function formatPhotonReverseLocation(feature: PhotonReverseFeature): ReverseLocation | null {
+  const coordinates = feature.geometry?.coordinates;
+  if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
+  const longitude = Number(coordinates[0]);
+  const latitude = Number(coordinates[1]);
+  if (!isValidLatitude(latitude) || !isValidLongitude(longitude)) return null;
+
+  const properties = feature.properties ?? {};
+  const street = [properties.housenumber, properties.street]
+    .filter((value) => typeof value === "string" && value.trim())
+    .join(" ");
+  const city = cleanPart(
+    [properties.city, properties.town, properties.village]
+      .find((value) => typeof value === "string" && value.trim()) as string | undefined,
+  );
+  const label = cleanPart(String(properties.name ?? "")) || street || city || "Position détectée";
+  const subtitle = [
+    cleanPart(String(properties.postcode ?? "")),
+    city,
+    cleanPart(String(properties.state ?? "")),
+    cleanPart(String(properties.country ?? "")),
+  ].filter(Boolean).join(" · ") || "Lieu géocodé";
+
+  return { label, subtitle, latitude, longitude, importance: null };
+}
+
+async function loadPhotonReverseLocation(
+  latitude: number,
+  longitude: number,
+  signal: AbortSignal,
+): Promise<ReverseLocation | null> {
+  try {
+    const response = await fetch(buildPhotonReverseUrl(latitude, longitude), {
+      headers: { Accept: "application/json" },
+      signal,
+    });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as { features?: PhotonReverseFeature[] };
+    return payload.features?.map(formatPhotonReverseLocation).find(Boolean) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
   return withServerRateLimit(request, { limit: 60, window: 60 }, async () => {
 
@@ -131,10 +191,11 @@ export async function GET(request: Request) {
       headers: { Accept: "application/json" },
       signal: controller.signal,
     });
-    const location = response.ok
+    const geoplateformeLocation = response.ok
       ? ((await response.json()) as { features?: GeoplateformeReverseFeature[] })
           .features?.map(formatReverseLocation).find(Boolean) ?? null
       : null;
+    const location = geoplateformeLocation ?? await loadPhotonReverseLocation(lat, lon, controller.signal);
 
     return NextResponse.json({
       status: "ok",

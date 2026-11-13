@@ -1,4 +1,4 @@
-import { buildTerritoryNominatimSearchUrlWithLimit, parseTerritoryCoordinates } from "./territory";
+import { buildPhotonSearchUrl, parsePhotonCoordinates } from "./territory";
 import type { TerritoryLocationPreference } from "@/lib/user-location-preference";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import {
@@ -73,8 +73,14 @@ export function buildViewportFromPoints(points: GeoPoint[]): MapViewportState | 
   };
 }
 
-async function geocodeTerritoryLabel(label: string): Promise<GeoPoint | null> {
-  const url = buildTerritoryNominatimSearchUrlWithLimit(label, 1);
+async function geocodeTerritoryLabel(label: string, countryCode: string): Promise<GeoPoint | null> {
+  let countryName = countryCode;
+  try {
+    countryName = new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode) ?? countryCode;
+  } catch {
+    // Keep the ISO code as a provider query hint when Intl is unavailable.
+  }
+  const url = buildPhotonSearchUrl(label, 1, countryName);
   if (!url) {
     return null;
   }
@@ -91,11 +97,11 @@ async function geocodeTerritoryLabel(label: string): Promise<GeoPoint | null> {
     }
 
     const payload = (await response.json()) as unknown;
-    if (!Array.isArray(payload) || payload.length === 0) {
+    if (!payload || typeof payload !== "object" || !Array.isArray((payload as { features?: unknown }).features)) {
       return null;
     }
 
-    const coordinates = parseTerritoryCoordinates(payload[0]);
+    const coordinates = parsePhotonCoordinates((payload as { features: unknown[] }).features[0]);
     return coordinates ? {
       latitude: coordinates.latitude,
       longitude: coordinates.longitude,
@@ -121,7 +127,7 @@ async function resolvePreferencePoint(
       const cityCenter = getArrondissementCityCenter(
         preference.arrondissementCity as ArrondissementCity,
       );
-      const geocoded = await geocodeTerritoryLabel(preference.label);
+      const geocoded = await geocodeTerritoryLabel(preference.label, preference.country);
       return geocoded ?? {
         latitude: cityCenter.lat,
         longitude: cityCenter.lng,
@@ -129,7 +135,7 @@ async function resolvePreferencePoint(
     }
   }
 
-  const geocoded = await geocodeTerritoryLabel(preference.label);
+  const geocoded = await geocodeTerritoryLabel(preference.label, preference.country);
   if (geocoded) {
     return geocoded;
   }

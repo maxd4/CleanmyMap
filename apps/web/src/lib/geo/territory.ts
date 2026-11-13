@@ -5,9 +5,9 @@ type TerritoryBounds = {
   north: number;
 };
 
-// Metropolitan France bbox. Kept intentionally broad so territory-level geocoding
-// is no longer biased toward Île-de-France.
-const TERRITORY_BOUNDS: TerritoryBounds = {
+// Retained for the France-specific Geoplateforme response filter. Generic map
+// selection is world-wide and no longer uses this bbox as an interaction limit.
+const FRANCE_TERRITORY_BOUNDS: TerritoryBounds = {
   west: -5.5,
   south: 41.0,
   east: 10.0,
@@ -18,10 +18,10 @@ export const TERRITORY_CENTER: [number, number] = [46.603354, 1.888334];
 
 function buildTerritoryViewbox(): string {
   return [
-    TERRITORY_BOUNDS.west,
-    TERRITORY_BOUNDS.north,
-    TERRITORY_BOUNDS.east,
-    TERRITORY_BOUNDS.south,
+    FRANCE_TERRITORY_BOUNDS.west,
+    FRANCE_TERRITORY_BOUNDS.north,
+    FRANCE_TERRITORY_BOUNDS.east,
+    FRANCE_TERRITORY_BOUNDS.south,
   ]
     .map(String)
     .join(",");
@@ -29,9 +29,47 @@ function buildTerritoryViewbox(): string {
 
 export function buildTerritoryLeafletBounds(): [[number, number], [number, number]] {
   return [
-    [TERRITORY_BOUNDS.south, TERRITORY_BOUNDS.west],
-    [TERRITORY_BOUNDS.north, TERRITORY_BOUNDS.east],
+    [-90, -180],
+    [90, 180],
   ];
+}
+
+export function buildPhotonSearchUrl(
+  query: string,
+  limit: number,
+  countryName?: string,
+): string | null {
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery) return null;
+
+  const params = new URLSearchParams({
+    q: countryName ? `${normalizedQuery}, ${countryName}` : normalizedQuery,
+    limit: String(Math.max(1, Math.min(10, Math.trunc(limit) || 1))),
+    lang: "en",
+  });
+  return `https://photon.komoot.io/api/?${params.toString()}`;
+}
+
+export function buildPhotonReverseUrl(latitude: number, longitude: number): string {
+  const params = new URLSearchParams({
+    lat: String(latitude),
+    lon: String(longitude),
+  });
+  return `https://photon.komoot.io/reverse?${params.toString()}`;
+}
+
+export function parsePhotonCoordinates(
+  result: unknown,
+): { latitude: number; longitude: number } | null {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return null;
+  const geometry = (result as { geometry?: { coordinates?: unknown } }).geometry;
+  const coordinates = geometry?.coordinates;
+  if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
+  const longitude = Number(coordinates[0]);
+  const latitude = Number(coordinates[1]);
+  return isWithinTerritoryBounds(latitude, longitude)
+    ? { latitude, longitude }
+    : null;
 }
 
 export function buildTerritoryNominatimSearchUrl(query: string): string | null {
@@ -227,9 +265,21 @@ export function isWithinTerritoryBounds(
   longitude: number,
 ): boolean {
   return (
-    latitude >= TERRITORY_BOUNDS.south &&
-    latitude <= TERRITORY_BOUNDS.north &&
-    longitude >= TERRITORY_BOUNDS.west &&
-    longitude <= TERRITORY_BOUNDS.east
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
+}
+
+export function isWithinFranceTerritoryBounds(
+  latitude: number,
+  longitude: number,
+): boolean {
+  return (
+    latitude >= FRANCE_TERRITORY_BOUNDS.south &&
+    latitude <= FRANCE_TERRITORY_BOUNDS.north &&
+    longitude >= FRANCE_TERRITORY_BOUNDS.west &&
+    longitude <= FRANCE_TERRITORY_BOUNDS.east
   );
 }

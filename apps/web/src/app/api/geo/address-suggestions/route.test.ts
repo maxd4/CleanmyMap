@@ -182,13 +182,17 @@ describe("/api/geo/address-suggestions", () => {
   it("uses the requested country for an international suggestion", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ([{
-        display_name: "Québec, Canada",
-        lat: "46.8139",
-        lon: "-71.2080",
-        importance: 0.7,
-        address: { state: "Québec", country: "Canada" },
-      }]),
+      json: async () => ({
+        features: [{
+          geometry: { coordinates: [-71.208, 46.8139] },
+          properties: {
+            name: "Québec",
+            state: "Québec",
+            country: "Canada",
+            countrycode: "ca",
+          },
+        }],
+      }),
     });
     vi.stubGlobal("fetch", fetchMock as typeof fetch);
 
@@ -199,15 +203,95 @@ describe("/api/geo/address-suggestions", () => {
 
     expect(body.items).toEqual([
       expect.objectContaining({
-        label: "Québec, Canada",
+        label: "Québec",
         subtitle: "Québec",
         latitude: 46.8139,
         longitude: -71.208,
       }),
     ]);
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("countrycodes=ca"),
-      expect.objectContaining({ headers: expect.objectContaining({ "User-Agent": expect.any(String) }) }),
+      expect.stringContaining("photon.komoot.io/api"),
+      expect.objectContaining({ headers: { Accept: "application/json" }, signal: expect.any(AbortSignal) }),
     );
+  });
+
+  it("keeps Paris on the Geoplateforme France path", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [{
+          x: 2.3522,
+          y: 48.8566,
+          fulltext: "Paris",
+          city: "Paris",
+          country: "France",
+        }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Paris%2015e&limit=3&country=FR"),
+    );
+    const body = await response.json();
+
+    expect(body.items[0]).toMatchObject({ label: "Paris", latitude: 48.8566, longitude: 2.3522 });
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("data.geopf.fr");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["Bruxelles", "BE", 50.8466, 4.3528, "be"],
+    ["Lausanne", "CH", 46.5197, 6.6323, "ch"],
+    ["Montréal", "CA", 45.5019, -73.5674, "ca"],
+    ["Dakar", "SN", 14.7167, -17.4677, "sn"],
+    ["Papeete", "PF", -17.5516, -149.5585, "pf"],
+  ])("resolves %s through the international provider", async (label, country, latitude, longitude, countrycode) => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        features: [{
+          geometry: { coordinates: [longitude, latitude] },
+          properties: { name: label, countrycode },
+        }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request(`http://localhost/api/geo/address-suggestions?q=${encodeURIComponent(label)}&limit=3&country=${country}`),
+    );
+    const body = await response.json();
+
+    expect(body.items[0]).toMatchObject({ label, latitude, longitude });
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("photon.komoot.io/api");
+  });
+
+  it("keeps Geoplateforme as the France provider and falls back to overseas France", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ results: [] }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [55.4504, -20.8789] },
+            properties: { name: "Saint-Denis", countrycode: "fr", country: "France" },
+          }],
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Saint-Denis%20La%20Réunion&limit=3&country=FR"),
+    );
+    const body = await response.json();
+
+    expect(body.items[0]).toMatchObject({
+      label: "Saint-Denis",
+      latitude: -20.8789,
+      longitude: 55.4504,
+    });
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("data.geopf.fr");
+    expect(fetchMock.mock.calls[1]?.[0]).toContain("photon.komoot.io/api");
   });
 });

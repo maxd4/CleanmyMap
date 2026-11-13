@@ -5,9 +5,9 @@ import {
   type GeoAddressSuggestion,
 } from "@/lib/geo/address-suggestions";
 import {
-  buildTerritoryNominatimSearchUrlWithLimit,
-  isWithinTerritoryBounds,
-  parseTerritoryCoordinates,
+  buildPhotonSearchUrl,
+  isWithinFranceTerritoryBounds,
+  parsePhotonCoordinates,
 } from "@/lib/geo/territory";
 import { DEFAULT_COUNTRY_CODE, parseCountryCode, type CountryCode } from "@/lib/user-location-preference";
 import { withServerRateLimit } from "@/lib/rate-limit/server";
@@ -142,7 +142,7 @@ async function loadCachedRemoteAddressSuggestions(
       typeof item.y !== "number" ||
       !Number.isFinite(item.x) ||
       !Number.isFinite(item.y) ||
-      !isWithinTerritoryBounds(item.y, item.x)
+      !isWithinFranceTerritoryBounds(item.y, item.x)
     ) {
       continue;
     }
@@ -167,16 +167,26 @@ async function loadCachedRemoteAddressSuggestions(
   return items;
 }
 
-type NominatimResult = {
-  display_name?: unknown;
-  lat?: unknown;
-  lon?: unknown;
-  importance?: unknown;
-  address?: Record<string, unknown>;
+type PhotonFeature = {
+  geometry?: {
+    coordinates?: unknown;
+  };
+  properties?: {
+    name?: unknown;
+    street?: unknown;
+    housenumber?: unknown;
+    postcode?: unknown;
+    city?: unknown;
+    town?: unknown;
+    village?: unknown;
+    state?: unknown;
+    country?: unknown;
+    countrycode?: unknown;
+  };
 };
 
-function formatNominatimSubtitle(result: NominatimResult): string {
-  const address = result.address ?? {};
+function formatPhotonSubtitle(result: PhotonFeature): string {
+  const address = result.properties ?? {};
   return [
     address.city,
     address.town,
@@ -187,45 +197,91 @@ function formatNominatimSubtitle(result: NominatimResult): string {
     .find((value) => typeof value === "string" && value.trim()) as string | undefined ?? "";
 }
 
-async function loadInternationalAddressSuggestions(
+function formatPhotonLabel(result: PhotonFeature): string {
+  const properties = result.properties ?? {};
+  const street = [properties.housenumber, properties.street]
+    .filter((part) => typeof part === "string" && part.trim())
+    .join(" ");
+  const primary = [properties.name, street, properties.city, properties.town, properties.village]
+    .find((part) => typeof part === "string" && part.trim());
+  const locality = [properties.postcode, properties.city ?? properties.town ?? properties.village]
+    .filter((part) => typeof part === "string" && part.trim())
+    .join(" ");
+  return [primary, locality && locality !== primary ? locality : null]
+    .filter(Boolean)
+    .join(", ") || "Lieu sans libellé";
+}
+
+function countryDisplayName(countryCode: CountryCode): string {
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode) ?? countryCode;
+  } catch {
+    return countryCode;
+  }
+}
+
+async function loadPhotonAddressSuggestions(
   query: string,
   limit: number,
   countryCode: CountryCode,
 ): Promise<GeoAddressSuggestion[]> {
-  const endpoint = buildTerritoryNominatimSearchUrlWithLimit(
+  const endpoint = buildPhotonSearchUrl(
     query,
     limit,
-    null,
-    countryCode,
+    countryDisplayName(countryCode),
   );
   if (!endpoint) return [];
 
-  const response = await fetch(endpoint, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "CleanMyMap territory search",
-    },
-  });
-  if (!response.ok) return [];
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ADDRESS_SUGGESTIONS_TIMEOUT_MS);
+  try {
+    const response = await fetch(endpoint, {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    if (!response.ok) return [];
 
-  const payload = (await response.json()) as unknown;
-  if (!Array.isArray(payload)) return [];
+    const payload = (await response.json()) as { features?: PhotonFeature[] };
+    const expectedCountry = countryCode.toLowerCase();
 
-  return payload.flatMap((item) => {
-    const result = item as NominatimResult;
-    const coordinates = parseTerritoryCoordinates(result);
-    const label = typeof result.display_name === "string" ? result.display_name.trim() : "";
-    if (!coordinates || !label) return [];
-    return [{
-      label,
-      subtitle: formatNominatimSubtitle(result),
-      latitude: coordinates.latitude,
-      longitude: coordinates.longitude,
-      importance: typeof result.importance === "number" && Number.isFinite(result.importance)
-        ? result.importance
-        : null,
-    }];
-  });
+    return (payload.features ?? []).flatMap((result) => {
+      const resultCountry = result.properties?.countrycode;
+      if (typeof resultCountry === "string" && resultCountry.toLowerCase() !== expectedCountry) {
+        return [];
+      }
+      const coordinates = parsePhotonCoordinates(result);
+      if (!coordinates) return [];
+      return [{
+        label: formatPhotonLabel(result),
+        subtitle: formatPhotonSubtitle(result),
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        importance: null,
+      } satisfies GeoAddressSuggestion];
+    });
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function loadFranceAddressSuggestions(
+  query: string,
+  limit: number,
+  localSuggestions: GeoAddressSuggestion[],
+): Promise<GeoAddressSuggestion[]> {
+  const frenchSuggestions = await loadCachedRemoteAddressSuggestions(query, limit);
+  const merged = mergeGeoAddressSuggestions(localSuggestions, frenchSuggestions, limit);
+  if (localSuggestions.length > 0 || frenchSuggestions.length > 0 || merged.length >= limit) {
+    return merged;
+  }
+
+  return mergeGeoAddressSuggestions(
+    merged,
+    await loadPhotonAddressSuggestions(query, limit, DEFAULT_COUNTRY_CODE),
+    limit,
+  );
 }
 
 export async function GET(request: Request) {
@@ -252,8 +308,8 @@ export async function GET(request: Request) {
     const remoteSuggestions = countryCode === DEFAULT_COUNTRY_CODE
       ? localSuggestions.length >= limit
         ? []
-        : await loadCachedRemoteAddressSuggestions(query, limit)
-      : await loadInternationalAddressSuggestions(query, limit, countryCode);
+        : await loadFranceAddressSuggestions(query, limit, localSuggestions)
+      : await loadPhotonAddressSuggestions(query, limit, countryCode);
     const items = mergeGeoAddressSuggestions(localSuggestions, remoteSuggestions, limit);
 
     return NextResponse.json({

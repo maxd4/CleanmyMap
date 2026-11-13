@@ -24,18 +24,15 @@ describe("map viewport fallback", () => {
   it("resolves a strict local fallback viewport from a geocoded territory label", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
-      json: async () => [
-        {
-          lat: "45.764",
-          lon: "4.8357",
-        },
-      ],
+      json: async () => ({
+        features: [{ geometry: { coordinates: [4.8357, 45.764] } }],
+      }),
     }));
     const originalFetch = global.fetch;
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const preference: TerritoryLocationPreference = {
-      country: "France",
+      country: "FR",
       level: "commune",
       label: "Lyon",
       subtitle: "Rhône",

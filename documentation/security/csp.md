@@ -61,7 +61,8 @@ pas à partir d'une allowlist générique :
   hébergée renvoyée par le serveur et ne constitue ni un formulaire externe ni
   un iframe dans l'application actuelle ;
 - APIs consommées par le navigateur : GitHub, Open-Meteo, `geo.api.gouv.fr`,
-  Nominatim, routage OpenStreetMap ;
+  Photon, Nominatim pour les flux historiques hors autocomplétion, et routage
+  OpenStreetMap ;
 - images et cartes : hôtes configurés dans `next.config.ts`, images de contenu
   explicitement utilisées et tuiles OpenStreetMap/CARTO.
 
