@@ -101,13 +101,5 @@ responsable identifié, puis seulement passer à `published`. Les enregistrement
 de sobriété numérique sont centralisés dans
 `apps/web/src/lib/learning/practice/numerique.ts` et validés par
 `apps/web/src/lib/learning/practice/numerique.test.ts`.
-
-Le registre des politiques environnementales est centralisé dans
-`apps/web/src/lib/learning/environmental-policy-registry.ts`. Il réutilise ce
-contrat pour conserver la provenance et l’état de revue de chaque décision.
-La page `/learn/comprendre` ne consomme que les fiches `published` ; les
-enregistrements `draft` et `in_review` restent disponibles pour le travail
-éditorial mais sont exclus de la chronologie publique. Les dates de décision et
-d’application sont des champs distincts et gardent leur précision déclarée.
 Les ressources territoriales du Mode École sont validées par
 `apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.test.ts`.

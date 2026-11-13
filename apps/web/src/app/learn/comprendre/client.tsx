@@ -3,7 +3,6 @@
 import { LearnComprendreVisualIntro } from "@/components/learn/learn-comprendre-visual-intro";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
 import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
-import { EnvironmentalPolicyExplorer } from "@/components/learn/environmental-policy-explorer";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
@@ -59,7 +58,6 @@ export default function LearnComprendrePageContent() {
           }}
           className="border-amber-200 bg-white/88"
         />
-        <EnvironmentalPolicyExplorer />
         <LearnDirectPathSection locale={locale} />
         <LearnReadingFlowSection locale={locale} />
         <LearnScaleSection locale={locale} />
