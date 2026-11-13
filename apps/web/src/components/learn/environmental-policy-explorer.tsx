@@ -7,6 +7,7 @@ import {
   ENVIRONMENTAL_POLICY_REGISTRY,
   filterEnvironmentalPolicies,
   formatPolicyDate,
+  getEnvironmentalPolicyThemeOptions,
   getPolicyTimeline,
   getPublishedEnvironmentalPolicies,
   type EnvironmentalPolicyFilters,
@@ -53,7 +54,7 @@ export function EnvironmentalPolicyExplorer() {
   const published = useMemo(() => getPublishedEnvironmentalPolicies(ENVIRONMENTAL_POLICY_REGISTRY), []);
   const visiblePublished = useMemo(() => published.filter((record) => (filters.view === "world" ? record.collection === "international" : record.collection === "france")), [filters.view, published]);
   const records = useMemo(() => filterEnvironmentalPolicies(published, filters), [filters, published]);
-  const themes = Array.from(new Set(visiblePublished.flatMap((record) => record.themes.map((theme) => theme[locale]))));
+  const themes = getEnvironmentalPolicyThemeOptions(visiblePublished, locale);
   const years = Array.from(new Set(visiblePublished.flatMap((record) => getPolicyTimeline(record).map((milestone) => milestone.date.value?.slice(0, 4)).filter((year): year is string => Boolean(year))))).sort().reverse();
   const isFrench = locale === "fr";
   const text = (fr: string, en: string) => (isFrench ? fr : en);
@@ -84,7 +85,7 @@ export function EnvironmentalPolicyExplorer() {
       <div className="grid gap-3 rounded-2xl border border-amber-100 bg-amber-50/60 p-4 md:grid-cols-2 xl:grid-cols-5">
         <label className="space-y-1 text-sm font-bold text-slate-800 md:col-span-2 xl:col-span-1"><span>{text("Rechercher", "Search")}</span><input aria-label={text("Rechercher dans les fiches", "Search records")} value={filters.query} onChange={(event) => updateFilters({ query: event.target.value })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2" placeholder={text("Titre, institution, territoire…", "Title, institution, territory…")} /></label>
         <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("Territoire", "Territory")}</span><select aria-label={text("Filtrer par territoire", "Filter by territory")} value={filters.territory} onChange={(event) => updateFilters({ territory: event.target.value as EnvironmentalPolicyFilters["territory"] })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Tous les niveaux", "All levels")}</option>{(Object.keys(scopeLabels) as PolicyTerritoryScope[]).map((scope) => <option key={scope} value={scope}>{scopeLabels[scope][locale]}</option>)}</select></label>
-        <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("Thème", "Theme")}</span><select aria-label={text("Filtrer par thème", "Filter by theme")} value={filters.theme} onChange={(event) => updateFilters({ theme: event.target.value })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Tous les thèmes", "All themes")}</option>{themes.map((theme) => <option key={theme} value={theme}>{theme}</option>)}</select></label>
+        <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("Thème", "Theme")}</span><select aria-label={text("Filtrer par thème", "Filter by theme")} value={filters.theme} onChange={(event) => updateFilters({ theme: event.target.value })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Tous les thèmes", "All themes")}</option>{themes.map((theme) => <option key={theme.value} value={theme.value}>{theme.label}</option>)}</select></label>
         <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("Année du jalon", "Milestone year")}</span><select aria-label={text("Filtrer par année", "Filter by year")} value={filters.year} onChange={(event) => updateFilters({ year: event.target.value })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Toutes les années", "All years")}</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
         <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("État juridique", "Legal status")}</span><select aria-label={text("Filtrer par état juridique", "Filter by legal status")} value={filters.legalStatus} onChange={(event) => updateFilters({ legalStatus: event.target.value as PolicyLegalStatus | "all" })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Tous les états", "All statuses")}</option>{(Object.keys(legalStatusLabels) as PolicyLegalStatus[]).map((status) => <option key={status} value={status}>{legalStatusLabels[status][locale]}</option>)}</select></label>
       </div>

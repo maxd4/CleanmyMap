@@ -447,6 +447,21 @@ const primaryMilestone = (record: EnvironmentalPolicyRecord): PolicyMilestone =>
 
 const dateValue = (date: PolicyDate): string => date.value ?? "";
 
+export function getPolicyThemeKey(theme: LocalizedText): string {
+  return theme.fr.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+export function getEnvironmentalPolicyThemeOptions(
+  records: EnvironmentalPolicyRecord[],
+  locale: keyof LocalizedText,
+): Array<{ value: string; label: string }> {
+  const themes = new Map<string, LocalizedText>();
+  records.flatMap((record) => record.themes).forEach((theme) => themes.set(getPolicyThemeKey(theme), theme));
+  return Array.from(themes.entries())
+    .sort((left, right) => left[1][locale].localeCompare(right[1][locale], locale))
+    .map(([value, theme]) => ({ value, label: theme[locale] }));
+}
+
 export function getPolicyTimeline(record: EnvironmentalPolicyRecord): PolicyMilestone[] {
   return record.milestones
     .map((milestone, index) => ({ milestone, index }))
@@ -493,8 +508,8 @@ export function filterEnvironmentalPolicies(records: EnvironmentalPolicyRecord[]
   return [...records]
     .filter((record) => filters.view === "world" ? record.collection === "international" : record.collection === "france")
     .filter((record) => filters.territory === "all" || record.territory.scope === filters.territory)
-    .filter((record) => filters.theme === "all" || record.themes.some((theme) => theme.fr === filters.theme || theme.en === filters.theme))
-    .filter((record) => filters.year === "all" || primaryMilestone(record).date.value?.startsWith(filters.year))
+    .filter((record) => filters.theme === "all" || record.themes.some((theme) => getPolicyThemeKey(theme) === filters.theme))
+    .filter((record) => filters.year === "all" || getPolicyTimeline(record).some((milestone) => milestone.date.value?.startsWith(filters.year)))
     .filter((record) => filters.legalStatus === "all" || record.legalStatus === filters.legalStatus)
     .filter((record) => !query || [record.title.fr, record.title.en, record.measure.fr, record.measure.en, record.institution.fr, record.institution.en, ...record.territories.flatMap((territory) => [territory.label.fr, territory.label.en])].join(" ").toLocaleLowerCase().includes(query))
     .sort((a, b) => {

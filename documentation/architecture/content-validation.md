@@ -126,7 +126,11 @@ nouvelle étape est ajoutée ; `getPolicyTimeline` les ordonne en conservant
 l’ordre déclaré pour deux étapes le même jour. Les versions portent leurs
 liens de sources. `reviewStatus`, `lastVerifiedAt` et
 `previousLastVerifiedAt` distinguent une revue à refaire d’une nouvelle
-décision. `getPublishedEnvironmentalPolicies` bloque aussi une fiche dont une
+décision. `filterEnvironmentalPolicies` rattache une année à tout jalon daté
+de cette année, quelle que soit sa catégorie, tandis que `getPolicyTimeline`
+conserve le tri chronologique stable. Les thèmes utilisent une clé dérivée
+stable distincte du libellé localisé afin qu’une sélection survive au passage
+fr/en. `getPublishedEnvironmentalPolicies` bloque aussi une fiche dont une
 source est retirée, dont un événement reste `needs_review` ou dont l’historique
 ne peut plus relier ses sources. L’état juridique n’est jamais déduit de la
 seule date de publication d’un avis.

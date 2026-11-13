@@ -4,6 +4,7 @@ import {
   ENVIRONMENTAL_POLICY_REGISTRY,
   filterEnvironmentalPolicies,
   formatPolicyDate,
+  getEnvironmentalPolicyThemeOptions,
   getInternationalEnvironmentalPolicies,
   getPolicyTimeline,
   getPublishedEnvironmentalPolicies,
@@ -92,6 +93,28 @@ describe("environmental policy registry", () => {
   it("combines search, territory, year and legal status filters", () => {
     const result = filterEnvironmentalPolicies(ENVIRONMENTAL_POLICY_REGISTRY.map(reviewed), { ...filters("france"), query: "industrie", territory: "national", year: "2023", legalStatus: "in_force" });
     expect(result.map((record) => record.id)).toEqual(["fr-green-industry-law"]);
+  });
+
+  it("matches a policy when any dated milestone falls in the selected year", () => {
+    const publishedPackaging = reviewed(ENVIRONMENTAL_POLICY_REGISTRY.find((record) => record.id === "eu-packaging-packaging-waste-regulation")!);
+    const publishedBrazil = reviewed(ENVIRONMENTAL_POLICY_REGISTRY.find((record) => record.id === "brazil-regulated-carbon-market")!);
+
+    expect(filterEnvironmentalPolicies([publishedPackaging], { ...filters("world"), year: "2030" }).map((record) => record.id)).toEqual(["eu-packaging-packaging-waste-regulation"]);
+    expect(filterEnvironmentalPolicies([publishedPackaging], { ...filters("world"), year: "2026" }).map((record) => record.id)).toEqual(["eu-packaging-packaging-waste-regulation"]);
+    expect(filterEnvironmentalPolicies([publishedBrazil], { ...filters("world"), year: "2025" })).toEqual([]);
+    expect(filterEnvironmentalPolicies([publishedBrazil], { ...filters("world"), year: "2024" }).map((record) => record.id)).toEqual(["brazil-regulated-carbon-market"]);
+  });
+
+  it("keeps theme filter values stable while labels change with locale", () => {
+    const published = ENVIRONMENTAL_POLICY_REGISTRY.map(reviewed);
+    const frenchOptions = getEnvironmentalPolicyThemeOptions(published, "fr");
+    const englishOptions = getEnvironmentalPolicyThemeOptions(published, "en");
+    const frenchTheme = frenchOptions.find((option) => option.label === "Déchets et économie circulaire")!;
+    const englishTheme = englishOptions.find((option) => option.value === frenchTheme.value)!;
+
+    expect(englishTheme.value).toBe(frenchTheme.value);
+    expect(englishTheme.label).toBe("Waste and circular economy");
+    expect(filterEnvironmentalPolicies(published, { ...filters("world"), theme: frenchTheme.value }).map((record) => record.id)).toContain("eu-packaging-packaging-waste-regulation");
   });
 
   it("formats day, month and year precision without inventing a day", () => {
