@@ -72,6 +72,9 @@ describe("presidential environmental preparation corpus", () => {
     });
     expect(getPresidentialElection(2012)?.resultSource?.documentNature).toBe("election_result");
     expect(getPresidentialElection(2012)?.resultSource?.url).toContain("PR2012/FE.php");
+    expect(getPresidentialElection(2012)?.resultSource?.publishedAt).toEqual({ value: null, precision: "unknown" });
+    expect(getPresidentialElection(2012)?.resultProclamationDate).toEqual({ value: "2012-05-10", precision: "day" });
+    expect(getPresidentialElection(2012)?.resultProclamationSource?.url).toContain("CONSTEXT000025911752");
 
     expect(getPresidentialElection(2017)).toMatchObject({
       electedCandidateId: "2017-emmanuel-macron",
@@ -79,6 +82,9 @@ describe("presidential environmental preparation corpus", () => {
       mandate: { start: { value: "2017", precision: "year" }, end: { value: "2022", precision: "year" }, status: "completed" },
     });
     expect(getPresidentialElection(2017)?.resultSource?.url).toContain("presidentielle-2017/FE.php");
+    expect(getPresidentialElection(2017)?.resultSource?.publishedAt).toEqual({ value: null, precision: "unknown" });
+    expect(getPresidentialElection(2017)?.resultProclamationDate).toEqual({ value: "2017-05-10", precision: "day" });
+    expect(getPresidentialElection(2017)?.resultProclamationSource?.url).toContain("CONSTEXT000034823505");
 
     expect(getPresidentialElection(2022)).toMatchObject({
       electedCandidateId: "2022-emmanuel-macron",
@@ -86,8 +92,11 @@ describe("presidential environmental preparation corpus", () => {
       mandate: { start: { value: "2022", precision: "year" }, end: { value: "2027", precision: "year" }, status: "ongoing" },
     });
     expect(getPresidentialElection(2022)?.resultSource?.url).toContain("presidentielle-2022/FE.php");
+    expect(getPresidentialElection(2022)?.resultSource?.publishedAt).toEqual({ value: null, precision: "unknown" });
+    expect(getPresidentialElection(2022)?.resultProclamationDate).toEqual({ value: "2022-04-27", precision: "day" });
+    expect(getPresidentialElection(2022)?.resultProclamationSource?.url).toContain("CONSTEXT000045802101");
 
-    expect(getPresidentialElection(2027)).toMatchObject({ electedCandidateId: null, secondRoundDate: null, mandate: null, resultSource: null });
+    expect(getPresidentialElection(2027)).toMatchObject({ electedCandidateId: null, secondRoundDate: null, resultProclamationDate: null, resultProclamationSource: null, mandate: null, resultSource: null });
   });
 
   it("matches the official 2012 and 2017 candidate rosters", () => {

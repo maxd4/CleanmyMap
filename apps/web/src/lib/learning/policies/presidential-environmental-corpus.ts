@@ -80,6 +80,8 @@ export type PresidentialElectionRecord = {
   candidateListSource: PresidentialSource;
   resultSource: PresidentialSource | null;
   secondRoundDate: PolicyDate | null;
+  resultProclamationDate: PolicyDate | null;
+  resultProclamationSource: PresidentialSource | null;
   electedCandidateId: string | null;
   mandate: PresidentialMandatePeriod | null;
   candidateIds: string[];
@@ -241,7 +243,7 @@ const officialResultSources: Record<PresidentialElectionYear, PresidentialSource
     url: "https://www.archives-resultats-elections.interieur.gouv.fr/resultats/PR2012/FE.php",
     documentNature: "election_result",
     version: "PR2012-FE-2T",
-    publishedAt: { value: "2012-05-06", precision: "day" },
+    publishedAt: UNKNOWN_DATE,
     status: "verified",
     note: localized("Résultats officiels du second tour : François Hollande est arrivé en tête avec 51,64 % des suffrages exprimés.", "Official second-round results: François Hollande came first with 51.64% of votes cast."),
   }),
@@ -251,7 +253,7 @@ const officialResultSources: Record<PresidentialElectionYear, PresidentialSource
     url: "https://www.archives-resultats-elections.interieur.gouv.fr/resultats/presidentielle-2017/FE.php",
     documentNature: "election_result",
     version: "PRES2017-FE-2T",
-    publishedAt: { value: "2017-05-07", precision: "day" },
+    publishedAt: UNKNOWN_DATE,
     status: "verified",
     note: localized("Résultats officiels du second tour : Emmanuel Macron est arrivé en tête avec 66,10 % des suffrages exprimés.", "Official second-round results: Emmanuel Macron came first with 66.10% of votes cast."),
   }),
@@ -261,9 +263,43 @@ const officialResultSources: Record<PresidentialElectionYear, PresidentialSource
     url: "https://www.archives-resultats-elections.interieur.gouv.fr/resultats/presidentielle-2022/FE.php",
     documentNature: "election_result",
     version: "PRES2022-FE-2T",
-    publishedAt: { value: "2022-04-24", precision: "day" },
+    publishedAt: UNKNOWN_DATE,
     status: "verified",
     note: localized("Résultats officiels du second tour : Emmanuel Macron est arrivé en tête avec 58,55 % des suffrages exprimés.", "Official second-round results: Emmanuel Macron came first with 58.55% of votes cast."),
+  }),
+  2027: null,
+};
+
+const officialResultProclamationSources: Record<PresidentialElectionYear, PresidentialSource | null> = {
+  2012: sourceRef({
+    type: "SOURCE_PRIMAIRE_OFFICIELLE",
+    name: localized("Conseil constitutionnel — proclamation des résultats 2012", "Constitutional Council — proclamation of the 2012 result"),
+    url: "https://www.legifrance.gouv.fr/juri/id/CONSTEXT000025911752",
+    documentNature: "election_result",
+    version: "CONSTEXT000025911752",
+    publishedAt: { value: "2012-05-10", precision: "day" },
+    status: "verified",
+    note: localized("Décision de proclamation distincte de la date du second tour et de la date de publication de l’archive du ministère.", "Proclamation decision distinct from the second-round date and the publication date of the Ministry archive."),
+  }),
+  2017: sourceRef({
+    type: "SOURCE_PRIMAIRE_OFFICIELLE",
+    name: localized("Conseil constitutionnel — proclamation des résultats 2017", "Constitutional Council — proclamation of the 2017 result"),
+    url: "https://www.legifrance.gouv.fr/juri/id/CONSTEXT000034823505",
+    documentNature: "election_result",
+    version: "CONSTEXT000034823505",
+    publishedAt: { value: "2017-05-10", precision: "day" },
+    status: "verified",
+    note: localized("Décision de proclamation distincte de la date du second tour et de la date de publication de l’archive du ministère.", "Proclamation decision distinct from the second-round date and the publication date of the Ministry archive."),
+  }),
+  2022: sourceRef({
+    type: "SOURCE_PRIMAIRE_OFFICIELLE",
+    name: localized("Conseil constitutionnel — proclamation des résultats 2022", "Constitutional Council — proclamation of the 2022 result"),
+    url: "https://www.legifrance.gouv.fr/juri/id/CONSTEXT000045802101",
+    documentNature: "election_result",
+    version: "CONSTEXT000045802101",
+    publishedAt: { value: "2022-04-27", precision: "day" },
+    status: "verified",
+    note: localized("Décision de proclamation distincte de la date du second tour et de la date de publication de l’archive du ministère.", "Proclamation decision distinct from the second-round date and the publication date of the Ministry archive."),
   }),
   2027: null,
 };
@@ -318,28 +354,36 @@ const candidateRecords: PresidentialCandidateRecord[] = [
   candidate(2022, "eric-zemmour", "Éric Zemmour", "Reconquête !"),
 ];
 
-const electionOutcome: Record<PresidentialElectionYear, Pick<PresidentialElectionRecord, "resultSource" | "secondRoundDate" | "electedCandidateId" | "mandate">> = {
+const electionOutcome: Record<PresidentialElectionYear, Pick<PresidentialElectionRecord, "resultSource" | "secondRoundDate" | "resultProclamationDate" | "resultProclamationSource" | "electedCandidateId" | "mandate">> = {
   2012: {
     resultSource: officialResultSources[2012],
     secondRoundDate: { value: "2012-05-06", precision: "day" },
+    resultProclamationDate: { value: "2012-05-10", precision: "day" },
+    resultProclamationSource: officialResultProclamationSources[2012],
     electedCandidateId: "2012-francois-hollande",
     mandate: { start: { value: "2012", precision: "year" }, end: { value: "2017", precision: "year" }, status: "completed" },
   },
   2017: {
     resultSource: officialResultSources[2017],
     secondRoundDate: { value: "2017-05-07", precision: "day" },
+    resultProclamationDate: { value: "2017-05-10", precision: "day" },
+    resultProclamationSource: officialResultProclamationSources[2017],
     electedCandidateId: "2017-emmanuel-macron",
     mandate: { start: { value: "2017", precision: "year" }, end: { value: "2022", precision: "year" }, status: "completed" },
   },
   2022: {
     resultSource: officialResultSources[2022],
     secondRoundDate: { value: "2022-04-24", precision: "day" },
+    resultProclamationDate: { value: "2022-04-27", precision: "day" },
+    resultProclamationSource: officialResultProclamationSources[2022],
     electedCandidateId: "2022-emmanuel-macron",
     mandate: { start: { value: "2022", precision: "year" }, end: { value: "2027", precision: "year" }, status: "ongoing" },
   },
   2027: {
     resultSource: null,
     secondRoundDate: null,
+    resultProclamationDate: null,
+    resultProclamationSource: null,
     electedCandidateId: null,
     mandate: null,
   },

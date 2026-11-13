@@ -52,6 +52,12 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(markup).toContain("2027");
     expect(markup).toContain("Source de la liste officielle");
     expect(markup).toContain("Résultat officiel et mandat");
+    expect(markup).toContain("Date du second tour");
+    expect(markup).toContain("6 mai 2012");
+    expect(markup).toContain("Publication de l’archive documentaire");
+    expect(markup).toContain("Non précisée");
+    expect(markup).toContain("Proclamation du résultat");
+    expect(markup).toContain("10 mai 2012");
     expect(markup).toContain("Mandat 2012–2017 · Mandat terminé");
     expect(markup).toContain("Élu");
     expect(markup).toContain("border-blue-400");
@@ -77,6 +83,10 @@ describe("PresidentialEnvironmentalArchive", () => {
     const markup = renderToStaticMarkup(<PresidentialEnvironmentalArchive {...presidentialArchive} />);
 
     expect(markup).toContain("Official result and term");
+    expect(markup).toContain("Second-round date");
+    expect(markup).toContain("6 May 2012");
+    expect(markup).toContain("Publication of the documentary archive");
+    expect(markup).toContain("Not specified");
     expect(markup).toContain("Term 2012–2017 · Term completed");
     expect(markup).toContain("Elected");
     expect(markup).not.toContain("Élu");

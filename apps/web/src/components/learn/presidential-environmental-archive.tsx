@@ -135,7 +135,12 @@ export function PresidentialEnvironmentalArchive({ elections, candidates, valida
             </div>
             {resultSource ? <div className="rounded-2xl border border-blue-100 bg-blue-50/40 p-4 text-sm text-slate-700">
               <p className="font-black text-slate-900">{text("Résultat officiel et mandat", "Official result and term")}</p>
-              <p className="mt-1">{resultSource.name[locale]} · {resultSource.publishedAt.value}</p>
+              <p className="mt-1">{resultSource.name[locale]}</p>
+              <dl className="mt-2 space-y-1">
+                <div><dt className="font-black">{text("Date du second tour", "Second-round date")}</dt><dd>{formatPolicyDate(election?.secondRoundDate ?? { value: null, precision: "unknown" }, locale)}</dd></div>
+                <div><dt className="font-black">{text("Publication de l’archive documentaire", "Publication of the documentary archive")}</dt><dd>{formatPolicyDate(resultSource.publishedAt, locale)}</dd></div>
+                {election?.resultProclamationDate && election.resultProclamationSource ? <div><dt className="font-black">{text("Proclamation du résultat", "Result proclamation")}</dt><dd>{formatPolicyDate(election.resultProclamationDate, locale)} · {election.resultProclamationSource.name[locale]}</dd></div> : null}
+              </dl>
               {mandateLabel && mandateStatusLabel ? <p className="mt-1 font-bold text-blue-900">{mandateLabel} · {mandateStatusLabel}</p> : null}
               {electedCandidate ? <p className="mt-1">{text("Élu : ", "Elected: ")}{electedCandidate.name[locale]}</p> : null}
               {resultSource.url ? <a href={resultSource.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-black text-blue-800 underline">{text("Vérifier le résultat officiel", "Verify official result")}</a> : null}
