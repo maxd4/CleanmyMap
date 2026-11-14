@@ -118,14 +118,14 @@ select ok(
   'waste changes are recorded in the application audit'
 );
 select is(
-  (select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
-    - (select waste_kg from propagation_state_before),
+  ((select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
+    - (select waste_kg from propagation_state_before))::numeric,
   24::numeric,
   'the aggregate contains the new quantity exactly once'
 );
 select is(
-  (select participants_total from public.public_impact_action_aggregate_state where state_id = true)
-    - (select participants_total from propagation_state_before),
+  ((select participants_total from public.public_impact_action_aggregate_state where state_id = true)
+    - (select participants_total from propagation_state_before))::bigint,
   12::bigint,
   'the aggregate contains the new participant count exactly once'
 );
