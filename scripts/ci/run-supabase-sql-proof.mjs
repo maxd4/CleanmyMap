@@ -287,7 +287,7 @@ export function supabaseNetworkArgs(env = process.env) {
 }
 
 export function pgtapCliPath(recordPath) {
-  return String(recordPath).split("/").at(-1);
+  return String(recordPath).replaceAll("\\", "/");
 }
 
 function runCommand(command, args, { logName, env = trustedCommandEnvironment(process.env, [command]) } = {}) {

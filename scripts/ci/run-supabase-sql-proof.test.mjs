@@ -366,10 +366,10 @@ test("local Supabase proofs reuse the workflow's isolated Docker network when pr
   );
 });
 
-test("pgTAP CLI paths are relative to the mounted supabase/tests root", () => {
+test("pgTAP CLI paths resolve from the checkout root to the canonical test files", () => {
   assert.equal(
     pgtapCliPath("apps/web/supabase/tests/action-buddy-contract.pgtap.sql"),
-    "action-buddy-contract.pgtap.sql",
+    "apps/web/supabase/tests/action-buddy-contract.pgtap.sql",
   );
 });
 
