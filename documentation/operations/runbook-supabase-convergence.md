@@ -1,9 +1,11 @@
 # Runbook CURRENT — convergence Supabase publiée
 
 Le workflow `.github/workflows/supabase-convergence.yml` maintient le projet
-lié avec toute la file canonique de migrations de `main`. Il s'exécute sur
-publication dans `main`, manuellement et chaque jour à 03:15 UTC. Il n'a pas de
-déclencheur `pull_request` et utilise l'environnement GitHub protégé
+lié avec toute la file canonique de migrations de `main`. Il démarre, pour une
+application éventuelle, uniquement après le succès du workflow
+`e2e-supabase-ephemeral` via `workflow_run`. Les déclenchements manuel et
+quotidien restent des contrôles read-only. Il n'a pas de déclencheur
+`pull_request` et utilise l'environnement GitHub protégé
 `supabase-production`.
 
 ## Préconditions et références
@@ -13,11 +15,16 @@ L'environnement fournit uniquement `SUPABASE_ACCESS_TOKEN` et
 `main`, ses permissions GitHub sont `contents: read`, et sa concurrence est
 sérialisée par `supabase-production-migrations`.
 
-La référence décisionnelle est le `main` vérifié et l'historique du projet
-Supabase lié. Pour une file non vide, `READY_TO_APPLY` exige que la
-rétrocompatibilité des consommateurs existants soit établie lorsqu'une migration
-modifie ou supprime un contrat SQL. Cette décision ne dépend ni d'un déploiement
-Web externe, ni d'un manifeste, ni d'un SHA de déploiement.
+La publication Git et l'application Production sont deux étapes indépendantes :
+un défaut Supabase, un préflight bloqué ou une preuve manquante ne retient pas
+un commit/push autrement publiable. Les protections Git, secrets, intégrité,
+concurrence et fast-forward restent obligatoires. Pour une file non vide,
+`READY_TO_APPLY` exige que la rétrocompatibilité des consommateurs existants
+soit établie lorsqu'une migration modifie ou supprime un contrat SQL. Avant le
+préflight, le garde vérifie strictement la source `e2e-supabase-ephemeral`, le
+dépôt, la branche `main`, la conclusion `success`, le SHA testé et le `HEAD`
+distant courant. Cette décision ne dépend ni d'un déploiement Web externe, ni
+d'un manifeste de déploiement.
 
 ## Décision et application
 
@@ -46,9 +53,12 @@ commande mutative :
 npx supabase db push --linked --yes
 ```
 
-`BLOCKED` et `DIVERGED` n'appliquent rien. Le résumé publie le statut, la
-première migration concernée, les causes et les alertes. Aucun retry automatique
-n'est effectué après une erreur. Après application, le workflow rejoue le
+`BLOCKED` et `DIVERGED`, une preuve absente, un contrôle bloquant ou un SHA
+obsolète n'appliquent rien. Le diagnostic reste assaini et publie le statut, la
+première migration concernée, les causes et les alertes ; toute la file reste
+en attente. Le contrôle préalable ne retient pas le push Git. Après correction
+validée, la reprise est automatique au prochain succès de la preuve éphémère ;
+aucune confirmation manuelle répétitive n'est requise. Après application, le workflow rejoue le
 préflight et exige `ALIGNED`, puis relit les Advisors, les arbres de migration
 et les contrats statiques critiques Web. La lane SQL éphémère reste le seul
 endroit autorisé pour exécuter les pgTAP mutatifs ; ce workflow ne lance jamais
@@ -61,7 +71,9 @@ d'historique, sortie CLI ambiguë, mutation réelle, incompatibilité SQL, risqu
 Advisor critique ou revue obligatoire. Il est interdit de réparer l'historique,
 de modifier une migration déjà appliquée, d'exécuter une DDL manuelle, de reset
 la base ou de relancer aveuglément. Après une correction forward-only validée,
-relancer le workflow manuellement ou attendre le rattrapage quotidien.
+la publication de la migration reste possible indépendamment de son application ;
+la convergence reprend automatiquement après une nouvelle preuve éphémère
+réussie, ou peut être inspectée manuellement sans contourner les preuves.
 
 Les validations locales du contrat de workflow sont :
 

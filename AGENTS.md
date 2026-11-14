@@ -162,6 +162,14 @@ refetcher pour caractériser, **ne pas** intégrer silencieusement, réconcilier
 les fichiers étrangers ou forcer l'historique ; aucun `force-push`. Respecter tout blocage de garde,
 d'attribution, de sécurité ou d'index avant commit/push.
 
+Un défaut, un préflight Supabase `BLOCKED`/`DIVERGED` ou une validation Supabase
+manquante ne retient jamais un commit ou un push Git autrement publiable. Les
+protections Git, secrets, intégrité, concurrence et fast-forward restent
+obligatoires. Une migration peut donc être publiée indépendamment de son
+application ; la convergence Production automatique attend ensuite les preuves
+et contrôles requis. Si un contrôle bloquant échoue ou manque, la file reste
+entièrement en attente et le défaut est corrigé avant toute application.
+
 Une interdiction explicite de committer ou pousser donnée par l'utilisateur
 reste prioritaire et doit être signalée comme exception. Le mode de
 développement rapide ne supprime pas l'exigence de commit et push ; il ne peut
@@ -428,20 +436,24 @@ concurrence. Si la CLI liée ou ses permissions sont indisponibles, ne pas
 installer ni démarrer Docker en repli : classer le blocage précisément.
 
 La convergence automatique publiée est portée par
-`.github/workflows/supabase-convergence.yml` : déclenchement sur publication
-dans `main`, manuel et quotidien, environnement protégé
-`supabase-production`, concurrence sérialisée et aucun déclencheur PR. Le
-workflow réutilise le préflight canonique, bloque `BLOCKED`/`DIVERGED` et
-n'applique la file complète que pour `READY_TO_APPLY`, sur la référence `main`
-et l'historique Supabase lié. Pour une file en attente, il exige en plus une
-vérification de la rétrocompatibilité des contrats SQL consommés par les
-applications existantes ; cette vérification est indépendante de l'état d'un
-déploiement Web externe.
+`.github/workflows/supabase-convergence.yml` : elle attend le succès du
+workflow `e2e-supabase-ephemeral` via `workflow_run`, puis vérifie le dépôt,
+la branche `main`, le SHA testé et le `HEAD` distant courant. Les déclenchements
+manuel et quotidien restent read-only. L'environnement protégé
+`supabase-production`, la concurrence sérialisée et l'absence de déclencheur PR
+sont conservés. Le workflow réutilise le préflight canonique et n'applique la
+file complète que pour `READY_TO_APPLY`, sur la référence `main` et l'historique
+Supabase lié. Pour une file en attente, il exige en plus une vérification de la
+rétrocompatibilité des contrats SQL consommés par les applications existantes ;
+cette vérification est indépendante de l'état d'un déploiement Web externe.
+Une publication Git reste indépendante de cette application automatique.
 Les WARN/INFO Advisors historiques restent rapportés ; un risque critique ou
 une régression explicitement attribuée reste bloquant. Après application, il vérifie un préflight
 `ALIGNED`, les Advisors et les contrats statiques critiques. Il ne réalise
 jamais de `migration repair`, reset, DDL manuelle, correction SQL automatique
-ou retry aveugle ; voir `documentation/operations/runbook-supabase-convergence.md`.
+ou retry aveugle. En cas de preuve absente, de SHA obsolète, de contrôle
+bloquant, de `BLOCKED` ou de `DIVERGED`, il n'applique rien et conserve toute la
+file ; voir `documentation/operations/runbook-supabase-convergence.md`.
 
 Les dispositifs de *security deception* ou leurres actifs ne sont pas du
 dead-code gratuit : exiger owner, aucune permission/secret réel, absence

@@ -166,8 +166,9 @@ l'état distant. L'arbre de migrations éditable est
 désactivation RLS, garde d'accès uniquement côté UI ou permissions implicites.
 Le mode CURRENT demandé pour les migrations est **Supabase lié uniquement** :
 les prompts ne demandent pas à Codex d'installer, démarrer ou sonder Docker,
-WSL ou Supabase local. Pour une application explicitement autorisée, le prompt
-demande d'abord le préflight read-only de toute la file canonique en attente
+WSL ou Supabase local. La publication Git reste indépendante de l'application
+Production. Pour une application autorisée, le prompt demande d'abord le
+préflight read-only de toute la file canonique en attente
 (`npm run supabase:migration:preflight -- --dry-run`) : cible, identité CLI,
 historiques et ordre, sorties CLI non ambiguës, dry-run, dépendances SQL,
 mutations réellement exécutées, RLS, grants, compatibilité des contrats SQL
@@ -175,12 +176,14 @@ consommés et Advisors. Pour une file non vide, il exige aussi une observation
 de la rétrocompatibilité des contrats SQL consommés par les applications
 existantes, sans dépendre d'un SHA ou d'un manifeste de déploiement Web. Le préflight produit
 `ALIGNED`, `READY_TO_APPLY`, `BLOCKED` ou `DIVERGED` et ne traite jamais la
-seule migration du dernier commit. Une application autorisée utilise ensuite
-la CLI Supabase liée, sur la file complète, avec vérification
-post-application et distinction entre migration appliquée et preuve
-PostgreSQL/pgTAP. Si l'accès ou la CLI manque, le prompt
-conserve le blocage et `DB_SEMANTICS_NOT_EXECUTED` au lieu de proposer Docker
-comme repli.
+seule migration du dernier commit. Après le succès exact de la preuve SQL
+éphémère et du préflight de la file complète, l'application automatique utilise
+la CLI Supabase liée, avec vérification post-application et distinction entre
+migration appliquée et preuve PostgreSQL/pgTAP ; elle ne demande pas de
+confirmation manuelle répétitive. Si l'accès, la preuve ou la CLI manque, la
+file reste en attente et `DB_SEMANTICS_NOT_EXECUTED` est conservé au lieu de
+proposer Docker comme repli. Ce blocage Supabase ne retient jamais un commit ou
+un push Git autrement publiable.
 Le propriétaire, l'organisateur, le modérateur et l'administrateur ne sont pas
 interchangeables. Voir `documentation/security/` et les scoped applicables.
 
@@ -272,6 +275,10 @@ Pour chaque exécution de travail qui produit un lot, le prompt demande à Codex
 validation → commit isolé → push `main` → vérification de convergence. Le mode
 de développement rapide ne supprime pas cette publication ; seule une
 interdiction explicite de l'utilisateur autorise un commit local sans push.
+
+Les protections Git, secrets, intégrité, concurrence et fast-forward restent
+obligatoires, mais un défaut, un préflight Supabase bloqué ou une validation
+manquante ne retient pas un push autrement publiable.
 
 ## 8. Exécution, tests, qualité et publication
 

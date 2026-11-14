@@ -44,6 +44,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/community-helper-skills-contract.pgtap.sql",
     "apps/web/supabase/tests/community-subscriptions-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/gamification-progression-boundary.pgtap.sql",
+    "apps/web/supabase/tests/gamification-progression-grants.pgtap.sql",
     "apps/web/supabase/tests/gps-point-lifecycle-boundary.pgtap.sql",
     "apps/web/supabase/tests/newsletter-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/notifications-decision-boundary.pgtap.sql",

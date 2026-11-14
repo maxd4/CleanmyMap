@@ -7,19 +7,11 @@ concurrency:
   cancel-in-progress: false
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "apps/web/supabase/migrations/**"
-      - "apps/web/supabase/config.toml"
-      - "scripts/ci/audit-supabase-release.mjs"
-      - "scripts/ci/supabase-migration-preflight.mjs"
-      - "scripts/ci/supabase-migration-preflight.test.mjs"
-      - "scripts/ci/supabase-migration-sql.mjs"
-      - ".github/workflows/supabase-convergence.yml"
-      - "package.json"
-      - "package-lock.json"
+  workflow_run:
+    workflows:
+      - e2e-supabase-ephemeral
+    types:
+      - completed
   workflow_dispatch:
   schedule:
     - cron: "15 3 * * *"
@@ -29,9 +21,72 @@ env:
   SUPABASE_PROJECT_REF: trktzkgujgpgsgkoyndn
 
 jobs:
+  gate:
+    name: Gate Supabase convergence on exact ephemeral proof
+    if: >-
+      github.event_name == 'workflow_run' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout tested candidate
+        if: github.event_name == 'workflow_run'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download sanitized ephemeral proof
+        if: github.event_name == 'workflow_run'
+        id: proof_download
+        continue-on-error: true
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e
+        with:
+          name: cleanmymap-public-e2e-evidence
+          path: artifacts/ci-public-evidence
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Validate sanitized ephemeral proof envelope
+        if: always() && github.event_name == 'workflow_run'
+        continue-on-error: true
+        run: node scripts/checks/check-public-e2e-artifact.mjs artifacts/ci-public-evidence
+
+      - name: Validate trigger, remote HEAD, and exact proof
+        id: gate
+        if: always()
+        env:
+          CMM_SUPABASE_SOURCE_REPOSITORY: ${{ github.event.workflow_run.repository.full_name }}
+          CMM_SUPABASE_SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
+          CMM_SUPABASE_SOURCE_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          CMM_SUPABASE_SOURCE_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          CMM_SUPABASE_REMOTE_HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          CMM_SUPABASE_EVIDENCE_PATH: artifacts/ci-public-evidence/evidence/supabase-sql.json
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_run" ]; then
+            test "${CMM_SUPABASE_SOURCE_REPOSITORY}" = "${GITHUB_REPOSITORY}"
+            test "${{ github.event.workflow_run.head_repository.full_name }}" = "${GITHUB_REPOSITORY}"
+            CMM_SUPABASE_REMOTE_HEAD_SHA="$(git ls-remote origin refs/heads/main | cut -f1)"
+            export CMM_SUPABASE_REMOTE_HEAD_SHA
+          fi
+          node scripts/ci/supabase-convergence-gate.mjs
+
+      - name: Record read-only control mode
+        if: github.event_name != 'workflow_run'
+        run: echo "Manual and scheduled convergence controls are read-only; no migration can be applied."
+
   converge:
     name: Preflight and converge Supabase migrations
-    if: github.ref == 'refs/heads/main'
+    needs: gate
+    if: needs.gate.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: supabase-production
@@ -39,12 +94,22 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout main candidate
+      - name: Checkout verified main candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Recheck exact remote main before application
+        if: github.event_name == 'workflow_run'
+        env:
+          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          current_main_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
+          test -n "$current_main_sha"
+          test "$current_main_sha" = "$CMM_SUPABASE_CANDIDATE_SHA"
 
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
@@ -101,8 +166,8 @@ jobs:
             exit 1
           fi
 
-      - name: Apply the complete canonical queue
-        if: steps.preflight.outputs.status == 'READY_TO_APPLY'
+      - name: Apply the complete canonical queue after exact ephemeral proof
+        if: github.event_name == 'workflow_run' && steps.preflight.outputs.status == 'READY_TO_APPLY'
         working-directory: apps/web
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
