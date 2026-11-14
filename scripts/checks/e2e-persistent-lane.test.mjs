@@ -59,6 +59,8 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.doesNotMatch(workflow, /run-github-actions-persistent\.mjs require-clerk/);
   assert.match(workflow, /apps\/web\/supabase\/migrations/);
   assert.match(workflow, /apps\/web\/supabase\/seed\.sql/);
+  const seed = read("apps/web/supabase/seed.sql");
+  assert.match(seed, /set_config\('request\.jwt\.claim\.role',\s*'service_role'/);
   assert.match(workflow, /push:\s*\n\s+branches:\s*\n\s+- main/);
   assert.match(workflow, /apps\/web\/supabase\/tests\/\*\*/);
   assert.match(workflow, /e2e\/\*\.sql/);

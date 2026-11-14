@@ -2,6 +2,11 @@
 -- never applied to a linked or remote project by the test harness.
 -- Marker: E2E_FIXTURE:group-join:v1
 
+-- The published action exercises service-role-only projection triggers during
+-- local seeding. Keep the synthetic claims transaction-local to this fixture.
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"e2e-seed"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+
 insert into public.actions (
   id,
   created_by_clerk_id,
