@@ -418,6 +418,7 @@ describe("ShapeLayers", () => {
         cigaretteButts: 25,
         volunteersCount: 1,
         durationMinutes: 30,
+        actionPhase: overrides.geometrySource === "routed" ? "pre_action" : undefined,
         manualDrawing: {
           kind,
           coordinates: overrides.coordinates ??
@@ -435,7 +436,10 @@ describe("ShapeLayers", () => {
         geometryConfidence: overrides.geometryConfidence,
         geometrySource: overrides.geometrySource,
         preparationData: overrides.preparationData ?? (overrides.geometrySource === "routed"
-          ? { routeGeometryMode: "network", routeGeometryProvider: "osrm" }
+          ? {
+              routeGeometryMode: "network",
+              routeGeometryProvider: "osrm",
+            }
           : undefined),
       }),
     );

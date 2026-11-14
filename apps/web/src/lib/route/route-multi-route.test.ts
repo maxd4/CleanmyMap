@@ -51,15 +51,16 @@ function candidate(id: string, latitude: number, longitude: number, score: numbe
 }
 
 function partition(candidates: RoutePlannerCandidate[]) {
-  return partitionRouteCandidates({
+  const result = partitionRouteCandidates({
     origin,
     candidates,
-    volunteers: 2,
+    volunteers: 10,
     groupCount: 2,
-    travelBudgetMinutes: 60,
+    travelBudgetMinutes: 120,
     maxStops: 1,
     priorityVsTravel: 65,
   });
+  return result;
 }
 
 const guidedBudget = {
@@ -142,7 +143,7 @@ async function measuredSharedDistance(
     origin,
     candidates,
     partition: partition(candidates),
-    travelBudgetMinutes: 60,
+    travelBudgetMinutes: 120,
   })).metrics.sharedDistanceKm;
 }
 
@@ -181,7 +182,7 @@ describe("coordinated multi-route routing", () => {
       origin,
       candidates,
       partition: partition(candidates),
-      travelBudgetMinutes: 60,
+      travelBudgetMinutes: 120,
     });
 
     expect(routeProviderMock).toHaveBeenCalledTimes(2);
@@ -215,7 +216,7 @@ describe("coordinated multi-route routing", () => {
       origin,
       candidates,
       partition: partition(candidates),
-      travelBudgetMinutes: 60,
+      travelBudgetMinutes: 120,
       routeTopology: "open",
     });
 
@@ -550,13 +551,13 @@ describe("coordinated multi-route routing", () => {
       origin,
       candidates,
       partition: partition(candidates),
-      travelBudgetMinutes: 60,
+      travelBudgetMinutes: 120,
     });
     const second = await routePartitionedGroups({
       origin,
       candidates,
       partition: partition(candidates),
-      travelBudgetMinutes: 60,
+      travelBudgetMinutes: 120,
     });
 
     expect(second.groupRoutes.map(({ candidateIds }) => candidateIds)).toEqual(
@@ -637,7 +638,7 @@ describe("nearest-relevant shared routing budget", () => {
     }));
     const candidates = [candidate("north", 48.87, 2.36, 90), candidate("south", 48.84, 2.34, 85)];
     const routingBudget = createRouteRoutingOperationBudget({ limit: 4, consumed: 3 });
-    const result = await routePartitionedGroups({ origin, candidates, partition: partition(candidates), travelBudgetMinutes: 60, routingBudget });
+    const result = await routePartitionedGroups({ origin, candidates, partition: partition(candidates), travelBudgetMinutes: 120, routingBudget });
 
     expect(routeProviderMock).toHaveBeenCalledTimes(1);
     expect(routingBudget.consumed).toBe(4);

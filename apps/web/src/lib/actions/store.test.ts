@@ -251,8 +251,10 @@ describe("administrative requirements persistence", () => {
 
     expect(row.preparation_data).toEqual({
       actionTitle: "Résultat terrain",
-      routeTargetDistanceKm: 0.5,
-      routeTargetDistancePolicyVersion: "route-distance-v1",
+      gpxImport: undefined,
+      routeObservedDistanceKm: undefined,
+      routeTargetDistanceKm: 1.5,
+      routeTargetDistancePolicyVersion: "route-distance-v2",
       routeTargetDistanceSource: "derived",
       routeTopology: "loop",
     });

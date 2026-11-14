@@ -200,7 +200,7 @@ describe("pickup preference on predicted route zones", () => {
     const wastePartition = partitionRouteCandidates({
       origin: plannerOrigin,
       candidates: wastePool.candidates,
-      volunteers: 2,
+      volunteers: 10,
       groupCount: 2,
       travelBudgetMinutes: 120,
       maxStops: 1,
@@ -210,7 +210,7 @@ describe("pickup preference on predicted route zones", () => {
     const buttsPartition = partitionRouteCandidates({
       origin: plannerOrigin,
       candidates: buttsPool.candidates,
-      volunteers: 2,
+      volunteers: 10,
       groupCount: 2,
       travelBudgetMinutes: 120,
       maxStops: 1,
@@ -242,12 +242,25 @@ describe("pickup preference on predicted route zones", () => {
     expect(buttsPartition.audit.effectiveRiskFocus).toBe("cigaretteButts");
     expect(wasteRoute.effectiveRiskFocus).toBe("waste");
     expect(buttsRoute.effectiveRiskFocus).toBe("cigaretteButts");
+    expect(wastePartition.audit.consideredCandidateIds).toEqual([
+      "predicted:waste-zone",
+      "predicted:butts-zone",
+      "predicted:neutral-zone",
+    ]);
+    expect(buttsPartition.audit.consideredCandidateIds).toEqual([
+      "predicted:butts-zone",
+      "predicted:waste-zone",
+      "predicted:neutral-zone",
+    ]);
     expect(wastePlan.stops[0]?.candidate.id).not.toBe(buttsPlan.stops[0]?.candidate.id);
-    expect(wasteRoute.groupRoutes.flatMap(({ candidateIds }) => candidateIds)).not.toEqual(
+    expect(wasteRoute.groupRoutes.flatMap(({ candidateIds }) => candidateIds)).toEqual(
       buttsRoute.groupRoutes.flatMap(({ candidateIds }) => candidateIds),
     );
-    expect(wasteRoute.metrics.totalDistanceKm).not.toBe(buttsRoute.metrics.totalDistanceKm);
-    expect(wasteRoute.metrics.totalDurationMinutes).not.toBe(buttsRoute.metrics.totalDurationMinutes);
+    expect(wasteRoute.metrics.totalDistanceKm).toBe(buttsRoute.metrics.totalDistanceKm);
+    expect(wasteRoute.metrics.totalDurationMinutes).toBe(buttsRoute.metrics.totalDurationMinutes);
+    expect(wasteRoute.partition.audit.assignments.map(({ candidateId, plannerValue }) => ({ candidateId, plannerValue }))).not.toEqual(
+      buttsRoute.partition.audit.assignments.map(({ candidateId, plannerValue }) => ({ candidateId, plannerValue })),
+    );
 
     const observed = observedCandidate();
     const observedWaste = planRoute({

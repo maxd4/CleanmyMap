@@ -25,7 +25,10 @@ describe("map viewport fallback", () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => ({
-        features: [{ geometry: { coordinates: [4.8357, 45.764] } }],
+        features: [{
+          geometry: { coordinates: [4.8357, 45.764] },
+          properties: { countrycode: "fr" },
+        }],
       }),
     }));
     const originalFetch = global.fetch;
