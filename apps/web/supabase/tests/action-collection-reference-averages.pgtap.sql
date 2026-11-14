@@ -173,8 +173,8 @@ select is(
 
 select is(
   (select count(*)::integer from public.actions where created_by_clerk_id = 'collection-reference-fixture'),
-  11,
-  'the fixture contains five eligible and six excluded rows'
+  13,
+  'the fixture contains five eligible and eight excluded rows'
 );
 
 insert into public.actions (
