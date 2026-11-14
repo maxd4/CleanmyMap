@@ -17,6 +17,7 @@ npm run precommit:guard
 npm run prepush:guard
 npm run pre-release:check
 npm run release:check -- --sha=<sha-valide> --target=production
+npm run supabase:migration:preflight -- --dry-run
 ```
 
 `checks:full` et les vérifications de release sont proportionnées au candidat
@@ -35,3 +36,10 @@ sécurité et d'accès de son domaine.
 Les fichiers de preuve et artefacts générés restent dans les emplacements
 prévus par les scripts ; ne pas déposer de secrets, tokens, cookies,
 `storageState` ou données privées dans ce dossier.
+
+Le préflight Supabase est read-only et caractérise la file complète des
+migrations canoniques en attente. Il vérifie la cible liée, les historiques,
+l'ordre, `db push --dry-run`, les dépendances SQL, les risques, RLS, grants,
+les Advisors et la compatibilité runtime. Il émet `ALIGNED`,
+`READY_TO_APPLY`, `BLOCKED` ou `DIVERGED` ; il ne peut ni appliquer une
+migration, ni faire un `repair`, un reset ou une DDL manuelle.

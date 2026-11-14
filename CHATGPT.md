@@ -167,11 +167,17 @@ désactivation RLS, garde d'accès uniquement côté UI ou permissions implicite
 Le mode CURRENT demandé pour les migrations est **Supabase lié uniquement** :
 les prompts ne demandent pas à Codex d'installer, démarrer ou sonder Docker,
 WSL ou Supabase local. Pour une application explicitement autorisée, le prompt
-demande les contrôles read-only de cible/historique/dry-run, puis la CLI
-Supabase liée, la vérification post-application et la distinction entre
-migration appliquée et preuve PostgreSQL/pgTAP. Si l'accès ou la CLI manque,
-le prompt conserve le blocage et `DB_SEMANTICS_NOT_EXECUTED` au lieu de proposer
-Docker comme repli.
+demande d'abord le préflight read-only de toute la file canonique en attente
+(`npm run supabase:migration:preflight -- --dry-run`) : cible, identité CLI,
+historiques et ordre, dry-run, dépendances SQL, risques, RLS, grants, Advisors
+et compatibilité du runtime réellement déployé. Le préflight produit
+`ALIGNED`, `READY_TO_APPLY`, `BLOCKED` ou `DIVERGED` et ne traite jamais la
+seule migration du dernier commit. Une application autorisée utilise ensuite
+la CLI Supabase liée, sur la file complète, avec vérification
+post-application et distinction entre migration appliquée et preuve
+PostgreSQL/pgTAP. Si l'accès, la preuve runtime ou la CLI manque, le prompt
+conserve le blocage et `DB_SEMANTICS_NOT_EXECUTED` au lieu de proposer Docker
+comme repli.
 Le propriétaire, l'organisateur, le modérateur et l'administrateur ne sont pas
 interchangeables. Voir `documentation/security/` et les scoped applicables.
 

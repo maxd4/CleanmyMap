@@ -63,7 +63,7 @@ export function parseArgs(argv = [], options = {}) {
   };
 }
 
-function runSupabase(args) {
+export function runSupabase(args) {
   const executable = process.platform === "win32" ? "npx.cmd" : "npx";
   return spawnSync(executable, ["supabase", ...args], {
     cwd: webRoot,
@@ -76,16 +76,24 @@ function runSupabase(args) {
   });
 }
 
-function parseJson(result, label) {
+export function parseSupabaseJson(result, label) {
   if (result.status !== 0) throw new Error(`${label} unavailable`);
-  try {
-    return JSON.parse(result.stdout || "null");
-  } catch {
-    throw new Error(`${label} returned invalid JSON`);
+  const output = result.stdout || "";
+  const candidates = [];
+  for (let index = 0; index < output.length; index += 1) {
+    if (output[index] === "{" || output[index] === "[") candidates.push(index);
   }
+  for (const objectStart of candidates) {
+    try {
+      return JSON.parse(output.slice(objectStart));
+    } catch {
+      // Supabase CLI may prefix JSON with informational log lines.
+    }
+  }
+  throw new Error(`${label} returned invalid JSON`);
 }
 
-function projectMatches(projects, projectRef) {
+export function projectMatches(projects, projectRef) {
   const values = Array.isArray(projects) ? projects.flatMap((entry) => (Array.isArray(entry) ? entry : [entry])) : [];
   return values.some((project) => [project?.id, project?.ref, project?.project_ref].includes(projectRef));
 }
@@ -121,7 +129,7 @@ function main() {
   }
 
   try {
-    const projects = parseJson(runSupabase(["projects", "list", "--output", "json"]), "Supabase projects list");
+    const projects = parseSupabaseJson(runSupabase(["projects", "list", "--output", "json"]), "Supabase projects list");
     const commands = [
       runSupabase(["branches", "list", "--project-ref", args.projectRef, "--output", "json"]),
       runSupabase(["migration", "list", "--linked"]),

@@ -167,7 +167,8 @@
     "session:budget": "node scripts/dev/context-budget-check.mjs",
     "screenshots": "node documentation/pages_site/screen/capture-pages.mjs",
     "screenshots:screen": "node documentation/pages_site/screen/capture-pages.mjs",
-    "audit:supabase-migration-trees": "node scripts/audits/audit-supabase-migration-trees.mjs"
+    "audit:supabase-migration-trees": "node scripts/audits/audit-supabase-migration-trees.mjs",
+    "supabase:migration:preflight": "node scripts/ci/supabase-migration-preflight.mjs"
   },
   "repository": {
     "type": "git",

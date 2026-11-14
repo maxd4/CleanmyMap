@@ -162,6 +162,42 @@ migrations canoniques ; il ne nécessite pas une confirmation supplémentaire
 par lot. Cette autonomie ne couvre ni `migration repair`, ni une DDL manuelle,
 ni un reset, ni une mutation distante hors migration versionnée.
 
+### Préflight de convergence — toute la file en attente
+
+Le contrôle normal porte sur **toutes** les migrations locales qui manquent à
+l'historique lié, et non sur la seule migration du dernier commit. Depuis la
+racine du dépôt, exécuter :
+
+```bash
+npm run supabase:migration:preflight -- --dry-run
+```
+
+Le script réutilise l'owner `audit-supabase-release.mjs` et n'exécute que des
+commandes CLI read-only : identité et projet, branches, `migration list`,
+`db push --dry-run` et Advisors security/performance. Il inspecte aussi les
+dépendances SQL, les risques de données, RLS/grants et la compatibilité avec
+un manifeste du runtime effectivement déployé via `--runtime-proof=<path>`.
+Il émet un des statuts suivants :
+
+- `ALIGNED` : aucun pending, historiques et runtime compatibles ;
+- `READY_TO_APPLY` : la file complète est ordonnée et le dry-run correspond,
+  sans blocage détecté ;
+- `BLOCKED` : accès, sécurité, risque, preuve runtime ou autre précondition
+  insuffisante ;
+- `DIVERGED` : l'historique ou la liste du dry-run ne forme pas le préfixe
+  canonique attendu.
+
+Le préflight ne possède aucun mode d'application et ne doit jamais être
+remplacé par `migration repair`, `db reset`, une DDL manuelle ou une écriture
+hors du workflow CLI canonique. Un statut favorable autorise seulement la
+décision séparée d'application complète avec `db push --linked --yes`, après
+relecture des contrôles et autorisation correspondante. Les tests du contrat
+du préflight sont exécutables par :
+
+```bash
+node --test scripts/ci/supabase-migration-preflight.test.mjs
+```
+
 Une migration déjà appliquée se corrige exclusivement par une migration
 forward-only. Une migration publiée mais absente de l'historique du projet lié
 peut être corrigée avant application uniquement si un replay ou un push autorisé

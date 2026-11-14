@@ -134,12 +134,18 @@ La procédure obligatoire est la suivante :
 
 La restauration stricte d'une réécriture accidentelle est une réparation
 exceptionnelle et traçable ; elle ne donne pas l'autorisation de modifier une
-migration publiée pour y placer un correctif runtime. L'application normale
-des migrations canoniques est automatique dès que la cible, l'historique, le
-dry-run et les contrôles de sécurité ont été réconciliés selon les règles
-Supabase du dépôt ; elle ne nécessite pas une confirmation supplémentaire par
-lot. `migration repair`, une DDL manuelle et toute autre écriture distante
-restent hors de cette délégation. Le garde
+migration publiée pour y placer un correctif runtime. Avant toute application,
+le préflight canonique
+`npm run supabase:migration:preflight -- --dry-run` caractérise toute la file
+canonique en attente, et non la seule migration du dernier commit. Il vérifie
+la cible et l'authentification CLI, l'ordre local/distant, le dry-run, les
+dépendances SQL, les risques de données, RLS, grants, Advisors et la
+compatibilité du runtime déployé. Ses seuls statuts décisionnels favorables
+sont `ALIGNED` et `READY_TO_APPLY` ; `BLOCKED` et `DIVERGED` arrêtent la
+mutation et indiquent leurs causes. Le préflight ne fait aucune écriture et ne
+remplace pas la preuve PostgreSQL/pgTAP. Une application autorisée porte alors
+la file complète par la CLI liée. `migration repair`, une DDL manuelle et
+toute autre écriture distante restent hors de cette délégation. Le garde
 `npm run audit:supabase-migration-trees` et les hooks de publication doivent
 être exécutés sur le candidat exact ; ils complètent la revue et ne remplacent
 pas la vérification de convergence des deux historiques.

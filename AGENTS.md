@@ -399,16 +399,21 @@ calculée/proxy en mesure. Séparer intentions d'architecture, versionnement,
 sans pouvoir supplémentaire suivent `CHATGPT.md` et
 `documentation/security/`.
 
-**Migrations Supabase versionnées** : le workflow normal peut appliquer, sans
-confirmation supplémentaire, une migration de
-`apps/web/supabase/migrations/` **uniquement** si la cible liée est identifiée,
-`npx supabase migration list --linked` a été comparé au dépôt,
-`npx supabase db push --dry-run` donne la liste exacte, que les préconditions
-SQL, l'historique, la sécurité et les contrôles avant/après sont établis, puis
-que la convergence distante peut être vérifiée. Sinon STOP. Cette délégation
-**n'autorise pas** `migration repair`, DDL manuelle, reset/seed destructif,
-suppression de données, modification de secrets ou autre mutation distante.
-Toute migration déjà appliquée se corrige par une migration forward-only.
+**Migrations Supabase versionnées** : le workflow normal ne raisonne jamais sur
+la seule migration du dernier commit. Avant toute application, le préflight
+canonique doit caractériser **toute la file des migrations canoniques en
+attente** :
+`npm run supabase:migration:preflight -- --dry-run`. Il vérifie l'identité CLI,
+la cible liée, les deux historiques et leur ordre, le `db push --dry-run`, les
+dépendances SQL, les risques de données, RLS, grants, Advisors et la
+compatibilité du runtime réellement déployé. Il produit un statut explicite
+`ALIGNED`, `READY_TO_APPLY`, `BLOCKED` ou `DIVERGED`, avec les migrations et
+causes concernées. Seuls `ALIGNED` et `READY_TO_APPLY` constituent une
+précondition de décision ; le préflight lui-même est toujours read-only et ne
+publie rien. Sinon STOP. Cette délégation **n'autorise pas**
+`migration repair`, DDL manuelle, reset/seed destructif, suppression de
+données, modification de secrets ou autre mutation distante. Toute migration
+déjà appliquée se corrige par une migration forward-only.
 
 **Mode Supabase lié uniquement — Docker local en pause** : le poste utilisateur
 n'utilise ni Docker, ni WSL, ni conteneur, ni `supabase start`, `supabase status`
