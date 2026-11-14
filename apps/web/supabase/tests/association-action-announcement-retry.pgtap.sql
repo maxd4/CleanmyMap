@@ -32,7 +32,7 @@ select set_config('request.jwt.claims', '{"role":"service_role","sub":"fanout-se
 
 insert into public.profiles (id, display_name)
 select 'fanout-recipient-' || n, 'Fanout recipient ' || n
-from generate_series(1, 255) n
+from generate_series(1, 254) n
 on conflict (id) do nothing;
 insert into public.profiles (id, display_name)
 values ('fanout-sender', 'Fanout sender'), ('fanout-other-sender', 'Other sender')
