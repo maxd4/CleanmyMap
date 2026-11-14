@@ -28,20 +28,33 @@ complète de la plateforme. Les migrations versionnées dans Git restent la
 source de reconstruction du schéma.
 
 Le Storage est exporté par l'API officielle avec le secret protégé
-`SUPABASE_BACKUP_STORAGE_READ_KEY`, autorisé pour les lectures, listes et
-téléchargements nécessaires. Le workflow n'accepte pas une clé `service_role`
-nommée ni ne la publie ; si une permission de lecture dédiée n'est pas disponible,
-le job s'arrête. La valeur n'est jamais affichée, écrite dans Git, incluse dans
-le manifeste ou publiée.
+`SUPABASE_BACKUP_STORAGE_READ_KEY`. Sa valeur doit être une clé récente
+`sb_secret_...`. Le script envoie cette valeur uniquement dans `apikey` et
+n'en fabrique jamais un JWT `Authorization: Bearer`. Les autres types de clé,
+notamment `service_role`, `anon`, une clé JWT ou une valeur vide, sont rejetés.
+
+Une clé `sb_secret_...` est une capacité privilégiée de la plateforme : elle
+contourne la RLS lorsqu'elle est utilisée par l'API. Elle n'est donc pas une clé
+Supabase intrinsèquement read-only. La restriction read-only vient uniquement
+du code du workflow, qui n'utilise que la liste des buckets, la liste des
+objets et les téléchargements d'objets ; il n'ouvre aucune policy Storage aux
+utilisateurs ordinaires et n'appelle aucun endpoint mutateur.
+
+La valeur n'est jamais affichée, écrite dans Git, incluse dans le manifeste ou
+publiée. Une erreur HTTP, une page de listing invalide, un téléchargement
+manquant, une erreur réseau ou une pagination incomplète fait échouer l'export
+avant toute publication d'archive.
 
 ## Préconditions et exécution
 
 Dans l'environnement protégé GitHub `supabase-production`, configurer les secrets
 existants `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`,
-`SUPABASE_BACKUP_STORAGE_READ_KEY` et `SUPABASE_BACKUP_GPG_PUBLIC_KEY`. La clé publique
-doit être vérifiée hors GitHub par son empreinte avec la personne qui conserve la
-clé privée. La CI calcule et consigne seulement cette empreinte ; elle ne possède
-ni clé privée ni phrase secrète.
+`SUPABASE_BACKUP_STORAGE_READ_KEY` et `SUPABASE_BACKUP_GPG_PUBLIC_KEY`, ainsi que
+la variable d'environnement protégée `SUPABASE_BACKUP_GPG_EXPECTED_FINGERPRINT`.
+La variable doit contenir les 40 caractères hexadécimaux majuscules de
+l'empreinte attendue, vérifiée hors GitHub avec la personne qui conserve la clé
+privée. La CI importe la clé publique, calcule son empreinte et refuse toute
+divergence avant l'export ; elle ne possède ni clé privée ni phrase secrète.
 
 Depuis l'onglet Actions, choisir **Supabase encrypted backup**, sélectionner la
 branche `main` et saisir exactement `BACKUP_PRODUCTION_NOW`. Toute autre branche
@@ -49,8 +62,10 @@ ou valeur arrête le job avant l'export. Le job est séquentiel et l'artefact es
 conservé trois jours.
 
 Le workflow vérifie que le dump de rôles, de schéma, de données et l'inventaire
-Storage sont non vides. Il rejoue schéma et données dans une base PostgreSQL
-éphémère isolée du runner et contrôle contraintes, fonctions et RLS. Cette
+Storage sont non vides. Il construit ensuite un manifeste de SHA-256, vérifie
+que chaque fichier présent est déclaré et que chaque empreinte correspond avant
+la restauration et le chiffrement. Il rejoue schéma et données dans une base
+PostgreSQL éphémère isolée du runner et contrôle contraintes, fonctions et RLS. Cette
 preuve ne vaut pas restauration complète de la plateforme : les rôles gérés,
 Auth, Storage distant et configuration Supabase demandent une procédure séparée.
 
@@ -99,9 +114,13 @@ restaurer sur une cible isolée. Ne jamais restaurer directement sur Production
 pour contourner une indisponibilité ; la bascule applicative et la récupération
 Auth/Storage restent des décisions séparées.
 
-Un run absent, un secret manquant, une empreinte non vérifiée, un échec de replay
-ou un périmètre non couvert doit être classé comme blocage. Aucun artefact réussi
-ne doit être annoncé sur la seule présence d'un fichier chiffré.
+Un run absent, un secret manquant, une empreinte non vérifiée, un échec de replay,
+un manifeste incohérent ou un périmètre non couvert doit être classé comme
+blocage. `EPHEMERAL_RESTORE: PASS` n'est produit qu'après exécution réelle du
+rejeu et des contrôles d'intégrité ; aucun backup réussi ne doit être annoncé
+sur la seule présence d'un fichier chiffré. Tant qu'un run réel n'a pas réussi,
+que son artefact n'a pas été vérifié et que son déchiffrement local avec
+Kleopatra n'a pas été effectué, l'état reste `PARTIAL`.
 
 Voir aussi la stratégie de sortie fournisseur dans
 [`vendor-exit-strategy.md`](vendor-exit-strategy.md) ; ce document reste la

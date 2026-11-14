@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, posix } from 'node:path';
 
 const DEFAULT_PAGE_SIZE = 1000;
+const STORAGE_SECRET_KEY_PREFIX = 'sb_secret_';
 
 function assertSafePath(value) {
   if (typeof value !== 'string' || !value || value.includes('\0') || value.includes('\\')) {
@@ -15,8 +16,15 @@ function assertSafePath(value) {
   return value;
 }
 
+export function validateStorageReadKey(storageReadKey) {
+  if (typeof storageReadKey !== 'string' || !storageReadKey.startsWith(STORAGE_SECRET_KEY_PREFIX) || storageReadKey.length <= STORAGE_SECRET_KEY_PREFIX.length) {
+    throw new Error('Unsupported Storage read key type; expected an sb_secret_ key.');
+  }
+  return storageReadKey;
+}
+
 function apiHeaders(storageReadKey) {
-  return { apikey: storageReadKey, Authorization: `Bearer ${storageReadKey}` };
+  return { apikey: validateStorageReadKey(storageReadKey) };
 }
 
 async function requestJson(fetchImpl, url, options, label) {
@@ -36,42 +44,49 @@ function objectPath(bucket, name) {
   return assertSafePath(name);
 }
 
-async function listObjects(fetchImpl, baseUrl, bucket, headers, prefix = '') {
+async function listObjects(fetchImpl, baseUrl, bucket, headers, prefix = '', pageSize = DEFAULT_PAGE_SIZE) {
   const result = [];
-  for (let offset = 0; ; offset += DEFAULT_PAGE_SIZE) {
+  for (let offset = 0; ; offset += pageSize) {
     const objects = await requestJson(
       fetchImpl,
       `${baseUrl}/storage/v1/object/list/${encodeURIComponent(bucket)}`,
       {
         method: 'POST',
         headers: { ...headers, 'content-type': 'application/json' },
-        body: JSON.stringify({ prefix, limit: DEFAULT_PAGE_SIZE, offset, sortBy: { column: 'name', order: 'asc' } }),
+        body: JSON.stringify({ prefix, limit: pageSize, offset, sortBy: { column: 'name', order: 'asc' } }),
       },
       'Storage object listing',
     );
+    if (!Array.isArray(objects)) throw new Error('Storage object listing returned an invalid page.');
     for (const entry of objects) {
       const name = objectPath(bucket, `${prefix}${entry.name ?? ''}`);
       if (entry.id == null) {
-        result.push(...await listObjects(fetchImpl, baseUrl, bucket, headers, `${name}/`));
+        result.push(...await listObjects(fetchImpl, baseUrl, bucket, headers, `${name}/`, pageSize));
       } else {
         result.push({ ...entry, name });
       }
     }
-    if (objects.length < DEFAULT_PAGE_SIZE) return result;
+    if (objects.length < pageSize) return result;
   }
 }
 
-export async function exportStorage({ supabaseUrl, storageReadKey, outDir, fetchImpl = fetch }) {
+export async function exportStorage({ supabaseUrl, storageReadKey, outDir, fetchImpl = fetch, pageSize = DEFAULT_PAGE_SIZE }) {
   if (!supabaseUrl || !storageReadKey || !outDir) throw new Error('Storage export configuration is incomplete.');
+  if (!Number.isInteger(pageSize) || pageSize < 1) throw new Error('Storage page size is invalid.');
   const baseUrl = supabaseUrl.replace(/\/$/, '');
   const headers = apiHeaders(storageReadKey);
   const buckets = await requestJson(fetchImpl, `${baseUrl}/storage/v1/bucket`, { headers }, 'Storage bucket listing');
+  if (!Array.isArray(buckets)) throw new Error('Storage bucket listing returned an invalid response.');
   const inventory = { format: 1, buckets: [], objects: [] };
+  const seenBuckets = new Set();
+  const seenObjects = new Set();
   let totalBytes = 0;
 
   for (const bucket of buckets) {
     const bucketName = assertSafePath(bucket.name);
-    const entries = await listObjects(fetchImpl, baseUrl, bucketName, headers);
+    if (seenBuckets.has(bucketName)) throw new Error(`Storage bucket listing contains a duplicate bucket: ${bucketName}`);
+    seenBuckets.add(bucketName);
+    const entries = await listObjects(fetchImpl, baseUrl, bucketName, headers, '', pageSize);
     inventory.buckets.push({
       id: bucket.id,
       name: bucketName,
@@ -81,6 +96,9 @@ export async function exportStorage({ supabaseUrl, storageReadKey, outDir, fetch
     });
     for (const entry of entries) {
       const name = objectPath(bucketName, entry.name);
+      const objectKey = `${bucketName}/${name}`;
+      if (seenObjects.has(objectKey)) throw new Error(`Storage object listing contains a duplicate object: ${objectKey}`);
+      seenObjects.add(objectKey);
       const bytes = await requestBytes(
         fetchImpl,
         `${baseUrl}/storage/v1/object/${encodeURIComponent(bucketName)}/${name.split('/').map(encodeURIComponent).join('/')}`,

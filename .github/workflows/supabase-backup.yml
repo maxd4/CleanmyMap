@@ -50,9 +50,10 @@ jobs:
         id: prepare
         env:
           SUPABASE_BACKUP_GPG_PUBLIC_KEY: ${{ secrets.SUPABASE_BACKUP_GPG_PUBLIC_KEY }}
+          SUPABASE_BACKUP_GPG_EXPECTED_FINGERPRINT: ${{ vars.SUPABASE_BACKUP_GPG_EXPECTED_FINGERPRINT }}
         run: |
           set -euo pipefail
-          for required in SUPABASE_BACKUP_GPG_PUBLIC_KEY; do
+          for required in SUPABASE_BACKUP_GPG_PUBLIC_KEY SUPABASE_BACKUP_GPG_EXPECTED_FINGERPRINT; do
             if [ -z "${!required:-}" ]; then
               echo "$required is missing from the protected supabase-production environment. No export was started."
               exit 1
@@ -64,12 +65,13 @@ jobs:
           mkdir -p "$backup_root/database" "$backup_root/storage" "$backup_root/metadata" "$gnupg_home"
           chmod 700 "$backup_root" "$gnupg_home"
           printf '%s' "$SUPABASE_BACKUP_GPG_PUBLIC_KEY" > "$key_file"
-          fingerprint=$(GNUPGHOME="$gnupg_home" gpg --batch --with-colons --import-options show-only --import "$key_file" 2>/dev/null | awk -F: '$1 == "fpr" { print $10; exit }')
-          if ! [[ "$fingerprint" =~ ^[A-F0-9]{40}$ ]]; then
-            echo "The configured GPG value is not a single usable public key. No export was started."
+          if ! fingerprint=$(node scripts/ci/verify-supabase-backup-gpg.mjs \
+            --key "$key_file" \
+            --expected "$SUPABASE_BACKUP_GPG_EXPECTED_FINGERPRINT" \
+            --gnupg-home "$gnupg_home"); then
+            echo "The configured GPG public key is unusable or does not match the protected expected fingerprint. No export was started."
             exit 1
           fi
-          GNUPGHOME="$gnupg_home" gpg --batch --import "$key_file" >/dev/null 2>&1
           rm -f "$key_file"
           {
             echo "BACKUP_ROOT=$backup_root"
@@ -136,6 +138,13 @@ jobs:
             --cli-version "$(head -n 1 "$BACKUP_ROOT/metadata/supabase-cli-version.txt")" \
             --recipient-fingerprint "$RECIPIENT_FINGERPRINT"
 
+      - name: Verify backup manifest integrity before restore and encryption
+        run: |
+          set -euo pipefail
+          node scripts/ci/verify-supabase-backup-manifest.mjs \
+            --root "$BACKUP_ROOT" \
+            --manifest "$BACKUP_ROOT/manifest.json"
+
       - name: Restore-check schema and data on isolated ephemeral PostgreSQL
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -183,15 +192,16 @@ jobs:
       - name: Summarize the non-sensitive proof
         if: always()
         run: |
+          archive_sha256="${{ steps.encrypt.outputs.archive_sha256 || '' }}"
           {
             echo "## Supabase encrypted backup"
-            echo "- Project: `$SUPABASE_PROJECT_REF`"
-            echo "- Commit: `$GITHUB_SHA`"
-            echo "- Recipient fingerprint: `$RECIPIENT_FINGERPRINT`"
-            echo "- Archive SHA-256: `${{ steps.encrypt.outputs.archive_sha256 || 'NOT_PRODUCED' }}`"
-            echo "- Plaintext publication: `NONE`"
-            echo "- Production writes: `NONE`"
-            echo "- Auth platform records and managed service configuration: `NOT_INCLUDED`"
+            printf '%s\n' "- Project: $SUPABASE_PROJECT_REF"
+            printf '%s\n' "- Commit: $GITHUB_SHA"
+            printf '%s\n' "- Recipient fingerprint: $RECIPIENT_FINGERPRINT"
+            printf '%s\n' "- Archive SHA-256: ${archive_sha256:-NOT_PRODUCED}"
+            echo "- Plaintext publication: NONE"
+            echo "- Production writes: NONE"
+            echo "- Auth platform records and managed service configuration: NOT_INCLUDED"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Stop ephemeral services and remove all temporary plaintext

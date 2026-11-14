@@ -22,6 +22,18 @@ test('workflow creates all dump classes, encrypts before upload and cleans up', 
   assert.match(workflow, /upload-artifact@/);
   assert.match(workflow, /if: always\(\)/);
   assert.match(workflow, /rm -rf/);
+  assert.match(workflow, /verify-supabase-backup-manifest\.mjs/);
+  assert.match(workflow, /verify-supabase-backup-gpg\.mjs/);
+  assert.match(workflow, /EPHEMERAL_RESTORE: PASS schema=data=executed/);
+  assert.match(workflow, /steps\.encrypt\.outputs\.encrypted_archive/);
+  const publication = workflow.slice(workflow.indexOf('- name: Publish encrypted artifact only'), workflow.indexOf('- name: Summarize the non-sensitive proof'));
+  assert.doesNotMatch(publication, /BACKUP_ROOT|\.tar(?!\.gpg)/);
   assert.doesNotMatch(workflow, /echo\s+.*\$SUPABASE_SERVICE_ROLE_KEY/);
   assert.doesNotMatch(workflow, /db push|migration repair/);
+});
+
+test('workflow verifies the protected GPG fingerprint and cannot run shell substitutions in its summary', () => {
+  assert.match(workflow, /SUPABASE_BACKUP_GPG_EXPECTED_FINGERPRINT: \$\{\{ vars\.SUPABASE_BACKUP_GPG_EXPECTED_FINGERPRINT \}\}/);
+  assert.doesNotMatch(workflow, /echo\s+[^\n]*`[^\n]*`/);
+  assert.doesNotMatch(workflow, /printf\s+[^\n]*`[^\n]*`/);
 });
