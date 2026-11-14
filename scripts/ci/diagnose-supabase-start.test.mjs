@@ -199,8 +199,33 @@ test("emits bounded machine evidence without returning Docker or Supabase output
   assert.ok(evidence.evidenceCodes.includes("NO_CLASSIFIABLE_START_LOG_SIGNAL"));
   assert.equal(evidence.requiredServicesState, "incomplete");
   assert.equal(evidence.healthState, "failed");
+  assert.equal(evidence.firstErrorSignal, "NONE");
   assert.match(diagnostic, /evidence_codes=/);
   assert.doesNotMatch(diagnostic, /private-token|DockerRootDir|supabase_db/);
+});
+
+test("publishes only the first bounded startup error signal", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: [
+      "supabase start: preparing services",
+      "Error: failed to create container db: password=do-not-publish",
+      "Error: container db exited with code 1",
+    ].join("\n"),
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: SUPABASE_START_CATEGORIES.UNCLASSIFIED,
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+
+  assert.equal(evidence.firstErrorSignal, "CONTAINER_CREATE");
+  assert.match(diagnostic, /first_error_signal=CONTAINER_CREATE/);
+  assert.doesNotMatch(diagnostic, /password=do-not-publish|db exited/);
 });
 
 test("renders the bounded startup observation timeline without publishing raw snapshots", () => {
@@ -594,6 +619,7 @@ test("renders all evidence fields while withholding raw logs and sensitive conta
     evidenceCodes: ["CODE_A", "CODE_B"],
     startPhase: "UNKNOWN",
     failureService: "db",
+    firstErrorSignal: "NONE",
     dockerContainers: null,
     dockerContainerStates: { running: "unavailable", exited: "unavailable", created: "unavailable", restarting: "unavailable", other: "unavailable" },
     dockerImages: null,

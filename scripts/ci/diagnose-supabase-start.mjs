@@ -28,6 +28,19 @@ const categoryPatterns = [
   [SUPABASE_START_CATEGORIES.CLI_CONFIGURATION_INCOMPATIBILITY, /(unknown option|unknown flag|invalid configuration|could not find.*config|project_id|unsupported .*version|cannot find module|could not determine executable|command not found)/i],
 ];
 
+const firstErrorSignalPatterns = [
+  ["NETWORK", /(failed to (create|connect|resolve).*network|network .*(not found|unavailable|fail|error|timeout|denied|refused|reset|exceeded)|dns|name resolution|no such host|connection reset|connection refused|i\/o timeout|context deadline exceeded|tls handshake|proxy|registry)/i],
+  ["IMAGE_PULL", /(pull access denied|manifest unknown|failed to (resolve|pull|copy)|error response from daemon:.*(get|pull)|image .*not found)/i],
+  ["PORT_BIND", /(port is already allocated|address already in use|bind:.*address|listen tcp.*already)/i],
+  ["HEALTHCHECK", /(health.?check|unhealthy|timed out waiting|container .* failed to become healthy)/i],
+  ["RESOURCE", /(no space left on device|out of memory|cannot allocate memory|disk quota|insufficient (memory|resources))/i],
+  ["CLI_CONFIGURATION", /(unknown option|unknown flag|invalid configuration|could not find.*config|project_id|unsupported .*version|cannot find module|could not determine executable|command not found)/i],
+  ["PERMISSION", /(permission denied|access denied|forbidden)/i],
+  ["CONTAINER_CREATE", /((failed|error|unable|cannot).*(create|start).*(container|service)|failed to create (container|service))/i],
+  ["CONTAINER_EXIT", /(container .* (exited|stopped|terminated)|exit (status|code)|exited with code)/i],
+  ["UNKNOWN_ERROR", /\b(error|failed|fatal|panic)\b/i],
+];
+
 const dockerUnavailablePattern = /(cannot connect to the docker daemon|is the docker daemon running|docker daemon.*(not running|unavailable)|docker command not found|error during connect)/i;
 const containerStateNames = Object.freeze(["running", "exited", "created", "restarting", "other"]);
 const serviceAliases = Object.freeze([
@@ -168,6 +181,16 @@ function inferStartStep(log) {
 function inferFailureService(log) {
   const match = String(log ?? "").match(/\b(?:db|postgres|auth|gotrue|rest|postgrest|storage(?:-api)?|realtime|kong|studio|mailpit|inbucket|edge-runtime|logflare|vector|supavisor|imgproxy)\b/i);
   return normalizeServiceName(match?.[0]);
+}
+
+function inferFirstErrorSignal(log) {
+  for (const line of String(log ?? "").split(/\r?\n/)) {
+    const normalized = line.replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "");
+    if (!normalized.trim()) continue;
+    const signal = firstErrorSignalPatterns.find(([, pattern]) => pattern.test(normalized))?.[0];
+    if (signal) return signal;
+  }
+  return "NONE";
 }
 
 function requiredServiceState(containerServices, containerCount) {
@@ -343,6 +366,7 @@ export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = n
     configuredPorts: configContract.ports,
     startPhase: inferStartStep(log),
     failureService: inferFailureService(log),
+    firstErrorSignal: inferFirstErrorSignal(log),
     durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
     startObservationCount: progressSnapshots.length,
     startObservationTimeline: progressSnapshots.map((snapshot) => `${snapshot.elapsedSeconds ?? "unknown"}:${snapshot.observationState}`).join(","),
@@ -390,6 +414,7 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`evidence_codes=${evidence.evidenceCodes.join(",")}`);
     lines.push(`start_phase=${evidence.startPhase}`);
     lines.push(`failure_service=${evidence.failureService ?? "unavailable"}`);
+    lines.push(`first_error_signal=${evidence.firstErrorSignal ?? "unavailable"}`);
     lines.push(`docker_containers=${evidence.dockerContainers ?? "unavailable"}`);
     lines.push(`docker_container_states=${Object.entries(evidence.dockerContainerStates).map(([state, count]) => `${state}:${count}`).join(",")}`);
     lines.push(`docker_images=${evidence.dockerImages ?? "unavailable"}`);
