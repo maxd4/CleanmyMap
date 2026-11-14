@@ -6,6 +6,7 @@ create temp table formalities_workflow_fixture (
   name text primary key,
   workflow jsonb not null
 );
+grant select on formalities_workflow_fixture to service_role;
 
 insert into formalities_workflow_fixture (name, workflow)
 values
