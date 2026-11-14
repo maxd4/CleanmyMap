@@ -322,7 +322,7 @@ select is(
     - (select coalesce(sum(participants_total), 0::bigint)
        from public.public_impact_action_contributions
        where eligible_temporal),
-  0::bigint,
+  0::numeric,
   'the rebuilt participant aggregate equals the sum of current temporal contributions'
 );
 
