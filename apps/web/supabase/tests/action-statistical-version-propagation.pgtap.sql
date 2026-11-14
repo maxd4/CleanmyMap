@@ -126,7 +126,7 @@ select is(
 select is(
   (select participants_total from public.public_impact_action_aggregate_state where state_id = true)
     - (select participants_total from propagation_state_before),
-  12::bigint,
+  12::numeric,
   'the aggregate contains the new participant count exactly once'
 );
 
