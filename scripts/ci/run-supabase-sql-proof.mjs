@@ -93,6 +93,27 @@ function parseSummaryCounter(output, label) {
   return matches[0] ?? null;
 }
 
+const proofDiagnosticLine = /\b(?:not ok|error|fatal|panic|bail out|failed|result|files|tests|detail|context|hint|permission denied|forbidden|does not exist|violates|duplicate key|assertion)\b/i;
+
+export function sanitizeProofFailureExcerpt(output) {
+  const lines = String(output ?? "")
+    .split(/\r?\n/u)
+    .map((line) => line
+      .replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "")
+      .replace(/\s+/g, " ")
+      .trim())
+    .filter((line) => line && proofDiagnosticLine.test(line))
+    .slice(-8)
+    .map((line) => line
+      .replace(/\b(?:bearer|basic)\s+\S+/gi, "$1 <redacted>")
+      .replace(/\b(?:token|password|secret|api[_-]?key|authorization|cookie|jwt|access[_-]?key)\b\s*[:=]\s*\S+/gi, "<redacted-secret>")
+      .replace(/https?:\/\/\S+/gi, "<url>")
+      .replace(/(?:\/home\/runner|\/github|\/workspace|[A-Za-z]:\\)\S*/g, "<path>")
+      .replace(/\b[0-9a-f]{32,}\b/gi, "<id>")
+      .slice(0, 240));
+  return lines.join(" | ").slice(0, 1200) || "unavailable";
+}
+
 function parsePgProveSummary(output, expectedPlan) {
   const filesMatches = [...output.matchAll(/\bFiles\s*=\s*(\d+)\b/gi)];
   const testsMatches = [...output.matchAll(/\bTests\s*=\s*(\d+)\b/gi)];
@@ -315,7 +336,7 @@ export function attestProofResult(record, result, validate) {
   if (result.code !== 0) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
-    record.reason = `command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}`;
+    record.reason = `command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
     throw new Error(record.reason);
   }
   try {

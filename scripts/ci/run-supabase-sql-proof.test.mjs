@@ -10,6 +10,7 @@ import {
   reportMainRejection,
   runSupabaseSqlProof,
   assertEphemeralSupabaseTestEnvironment,
+  sanitizeProofFailureExcerpt,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
 import { parseTerritorialRevisionNotice } from "../../e2e/territorial-legend-revision-concurrency.mjs";
@@ -325,8 +326,8 @@ test("proof attestation maps verified and failed executions to explicit statuses
 
   const failedRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
   assert.throws(
-    () => attestProofResult(failedRecord, { code: 1, output: "Result: FAIL" }, () => ({ unreachable: true })),
-    /command exited with 1/,
+    () => attestProofResult(failedRecord, { code: 1, output: "ERROR: permission denied\nResult: FAIL" }, () => ({ unreachable: true })),
+    /command exited with 1; diagnostic=.*permission denied/,
   );
   assert.equal(failedRecord.status, "INTEGRATION_PROOF");
   assert.equal(failedRecord.outcome, "FAIL");
@@ -338,6 +339,21 @@ test("proof attestation maps verified and failed executions to explicit statuses
   );
   assert.equal(incompleteRecord.status, "INTEGRATION_PROOF");
   assert.equal(incompleteRecord.outcome, "FAIL");
+});
+
+test("proof failure excerpts are bounded and redact sensitive values", () => {
+  const excerpt = sanitizeProofFailureExcerpt([
+    "NOTICE: an ordinary non-diagnostic line",
+    "ERROR: password=super-secret-value at /home/runner/work/project",
+    "not ok 4 - assertion failed for 0123456789abcdef0123456789abcdef",
+    "Result: FAIL",
+  ].join("\n"));
+  assert.match(excerpt, /ERROR/);
+  assert.match(excerpt, /<redacted-secret>/);
+  assert.match(excerpt, /<path>/);
+  assert.doesNotMatch(excerpt, /super-secret-value/);
+  assert.doesNotMatch(excerpt, /0123456789abcdef0123456789abcdef/);
+  assert.ok(excerpt.length <= 1200);
 });
 
 test("rejected proof reaches the runner failure exit code", async () => {
