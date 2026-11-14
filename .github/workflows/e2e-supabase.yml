@@ -76,9 +76,8 @@ env:
 jobs:
   persistent-e2e:
     name: Persistent E2E on ephemeral Supabase
-    # ubuntu-latest repeatedly failed before Supabase creation with a missing
-    # Docker network; keep the same isolated lane while using a distinct hosted
-    # runner image for the infrastructure retry.
+    # Hosted runner only. The generated Supabase network was absent in recent
+    # failures, so the existing CLI lane receives one run-scoped bridge network.
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     permissions:
@@ -113,6 +112,16 @@ jobs:
           test -d apps/web/supabase/migrations
           test -f apps/web/supabase/seed.sql
 
+      - name: Prepare isolated Supabase Docker network
+        id: supabase_network
+        run: |
+          set -euo pipefail
+          network_name="cleanmymap-supabase-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          network_id="$(docker network create --driver bridge --label com.cleanmymap.ci=ephemeral "$network_name")"
+          test -n "$network_id"
+          echo "network_id=$network_id" >> "$GITHUB_OUTPUT"
+          echo "network_name=$network_name" >> "$GITHUB_OUTPUT"
+
       - name: Start ephemeral Supabase
         id: start_supabase
         run: |
@@ -123,7 +132,7 @@ jobs:
           trap 'rm -f "$start_log" "$start_progress_file"' EXIT
           : > "$start_progress_file"
           start_started_at="$(date +%s)"
-          ./node_modules/.bin/supabase start --workdir apps/web --yes --output-format json > "$start_log" 2>&1 &
+          ./node_modules/.bin/supabase start --workdir apps/web --yes --output-format json --network-id="${{ steps.supabase_network.outputs.network_id }}" > "$start_log" 2>&1 &
           start_pid=$!
           node scripts/ci/diagnose-supabase-start.mjs \
             --watch-pid="$start_pid" \
@@ -282,6 +291,20 @@ jobs:
             exit 0
           fi
           ./node_modules/.bin/supabase stop --workdir apps/web --no-backup > artifacts/ci/supabase-stop.log 2>&1
+
+      - name: Remove isolated Supabase Docker network
+        if: always()
+        run: |
+          network_id="${{ steps.supabase_network.outputs.network_id }}"
+          if [ -z "$network_id" ]; then
+            echo "No isolated Supabase Docker network was created; skipping removal."
+            exit 0
+          fi
+          if ! docker network inspect "$network_id" >/dev/null 2>&1; then
+            echo "Isolated Supabase Docker network is already absent; skipping removal."
+            exit 0
+          fi
+          docker network rm "$network_id"
 
       - name: Remove ephemeral credentials
         if: always()
