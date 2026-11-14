@@ -97,7 +97,7 @@ select is(
 select is(
   (select waste_kg from public.public_impact_action_contributions
    where action_id = '00000000-0000-0000-0000-000000000301'),
-  24::bigint,
+  24::numeric,
   'the old contribution is replaced by the complete new payload'
 );
 select is(
@@ -120,7 +120,7 @@ select ok(
 select is(
   (select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
     - (select waste_kg from propagation_state_before),
-  24::numeric,
+  24::bigint,
   'the aggregate contains the new quantity exactly once'
 );
 select is(
