@@ -29,7 +29,7 @@ const categoryPatterns = [
 ];
 
 const firstErrorSignalPatterns = [
-  ["NETWORK", /(failed to (create|connect|resolve).*network|network .*(not found|unavailable|fail|error|timeout|denied|refused|reset|exceeded)|dns|name resolution|no such host|connection reset|connection refused|i\/o timeout|context deadline exceeded|tls handshake|proxy|registry)/i],
+  ["NETWORK", /(failed to (create|connect|resolve).*network|network .*(not found|unavailable|fail|error|timeout|denied|refused|reset|exceeded)|(?:dns|name resolution|no such host|connection reset|connection refused|i\/o timeout|context deadline exceeded|tls handshake|proxy|registry).*(?:error|fail|timeout|denied|refused|reset|exceeded|unavailable|not found)|(?:error|failed|unable|cannot|could not).*(?:dns|name resolution|proxy|registry))/i],
   ["IMAGE_PULL", /(pull access denied|manifest unknown|failed to (resolve|pull|copy)|error response from daemon:.*(get|pull)|image .*not found)/i],
   ["PORT_BIND", /(port is already allocated|address already in use|bind:.*address|listen tcp.*already)/i],
   ["HEALTHCHECK", /(health.?check|unhealthy|timed out waiting|container .* failed to become healthy)/i],
@@ -170,7 +170,7 @@ function parseListeningPorts(output) {
 function inferStartStep(log) {
   const text = String(log ?? "");
   if (/(pull access denied|manifest unknown|failed to (resolve|pull|copy)|image .*not found)/i.test(text)) return "IMAGE_PULL";
-  if (/(network|dns|name resolution|connection reset|i\/o timeout|proxy|registry)/i.test(text)) return "NETWORK";
+  if (/(?:network|dns|name resolution|connection reset|i\/o timeout|proxy|registry).*(?:error|fail|timeout|denied|refused|reset|exceeded|unavailable|not found)|(?:error|failed|unable|cannot|could not).*(?:network|dns|name resolution|proxy|registry)/i.test(text)) return "NETWORK";
   if (/(port is already allocated|address already in use|bind:.*address)/i.test(text)) return "PORT_BIND";
   if (/(health.?check|unhealthy|timed out waiting|failed to become healthy)/i.test(text)) return "HEALTH_CHECK";
   if (/(unknown option|unknown flag|invalid configuration|could not find.*config|project_id)/i.test(text)) return "CLI_CONFIGURATION";

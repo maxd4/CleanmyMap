@@ -231,6 +231,18 @@ test("publishes only the first bounded startup error signal", () => {
   assert.doesNotMatch(diagnostic, /password=do-not-publish|<redacted-secret>.*password/);
 });
 
+test("does not classify a benign migration filename as a network error", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "Applying migration 20261101000004_scientific_projection_volume_proxy_v2.sql...",
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+
+  assert.equal(evidence.firstErrorSignal, "NONE");
+  assert.equal(evidence.firstErrorExcerpt, "none");
+  assert.equal(evidence.startPhase, "UNKNOWN");
+});
+
 test("renders the bounded startup observation timeline without publishing raw snapshots", () => {
   const evidence = collectBoundedStartEvidence({
     log: "opaque startup failure private-token",
