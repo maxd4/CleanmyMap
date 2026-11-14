@@ -97,7 +97,7 @@ select is(
 select is(
   (select waste_kg from public.public_impact_action_contributions
    where action_id = '00000000-0000-0000-0000-000000000301'),
-  24::numeric,
+  24::bigint,
   'the old contribution is replaced by the complete new payload'
 );
 select is(
