@@ -1,6 +1,6 @@
 begin;
 
-select plan(51);
+select plan(54);
 
 select has_table('public', 'action_need_offers', 'action need offers table exists');
 select has_column('public', 'action_need_offers', 'need_id', 'need foreign key column exists');
