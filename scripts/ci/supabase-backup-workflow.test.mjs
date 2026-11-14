@@ -19,7 +19,7 @@ test('workflow creates all dump classes, encrypts before upload and cleans up', 
   assert.match(workflow, /--data-only/);
   assert.match(workflow, /export-supabase-storage\.mjs/);
   assert.match(workflow, /gpg .*--encrypt/);
-  assert.match(workflow, /gpg --list-packets "\$encrypted_archive" 2>\/dev\/null \| grep -q ':pubkey enc packet:'/);
+  assert.match(workflow, /gpg --batch --list-only --list-packets "\$encrypted_archive" 2>\/dev\/null \| grep -q ':pubkey enc packet:'/);
   assert.doesNotMatch(workflow, /public key encrypted packet/);
   assert.match(workflow, /upload-artifact@/);
   assert.match(workflow, /if: always\(\)/);

@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -9,16 +9,31 @@ const execFileAsync = promisify(execFile);
 const packetMarker = ':pubkey enc packet:';
 const gpgPath = process.platform === 'win32' ? 'gpg.exe' : 'gpg';
 
-async function hasGpg() {
+async function assertGnuPGAvailable() {
   try {
     await execFileAsync(gpgPath, ['--version']);
-    return true;
-  } catch {
-    return false;
+  } catch (error) {
+    assert.fail(`GnuPG is required for the real backup packet test: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
-test('accepts the packet marker emitted by GnuPG list-packets', () => {
+async function createGnuPGHome(path) {
+  await mkdir(path, { recursive: true, mode: 0o700 });
+  await chmod(path, 0o700);
+}
+
+async function listPackets(home, archive) {
+  return execFileAsync(gpgPath, [
+    '--batch',
+    '--list-only',
+    '--list-packets',
+    '--homedir',
+    home,
+    archive,
+  ]);
+}
+
+test('accepts the packet marker emitted by GnuPG list-only list-packets', () => {
   const realGnuPGOutput = ':pubkey enc packet: version 3, algo 1, keyid 0123456789ABCDEF\n:encrypted data packet:';
   assert.match(realGnuPGOutput, new RegExp(packetMarker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
@@ -29,22 +44,89 @@ test('rejects absent packet markers and invalid encryption output', () => {
   }
 });
 
-test('observes the marker on a real ephemeral GnuPG encryption', { skip: !(await hasGpg()) }, async () => {
+test('verifies a real encrypted archive with only the imported public key', async () => {
+  await assertGnuPGAvailable();
   const root = await mkdtemp(join(process.env.TEMP ?? process.env.TMP ?? '.', 'cmm-gpg-packet-'));
-  const home = join(root, 'gnupg');
+  const makerHome = join(root, 'maker-gnupg');
+  const verifierHome = join(root, 'verifier-gnupg');
   const plaintext = join(root, 'payload.txt');
+  const publicKey = join(root, 'public-key.asc');
   const archive = join(root, 'payload.gpg');
+  const packetMissing = join(root, 'packet-missing.gpg');
+  const invalidArchive = join(root, 'invalid.gpg');
+
   try {
+    await createGnuPGHome(makerHome);
+    await createGnuPGHome(verifierHome);
     await writeFile(plaintext, 'ephemeral backup payload\n');
-    await execFileAsync(gpgPath, ['--batch', '--yes', '--homedir', home, '--quick-generate-key', 'CMM backup test', 'rsa2048', 'encrypt', '0']);
-    const { stdout: keys } = await execFileAsync(gpgPath, ['--batch', '--with-colons', '--homedir', home, '--list-keys']);
+    await execFileAsync(gpgPath, [
+      '--batch',
+      '--pinentry-mode',
+      'loopback',
+      '--passphrase',
+      '',
+      '--homedir',
+      makerHome,
+      '--quick-generate-key',
+      'CMM backup test',
+      'rsa2048',
+      'encrypt',
+      '0',
+    ]);
+
+    const { stdout: keys } = await execFileAsync(gpgPath, [
+      '--batch',
+      '--with-colons',
+      '--homedir',
+      makerHome,
+      '--list-keys',
+    ]);
     const fingerprint = keys.split(/\r?\n/).find((line) => line.startsWith('fpr:'))?.split(':')[9];
     assert.match(fingerprint ?? '', /^[A-F0-9]{40}$/);
-    await execFileAsync(gpgPath, ['--batch', '--yes', '--homedir', home, '--trust-model', 'always', '--recipient', fingerprint, '--output', archive, '--encrypt', plaintext]);
-    const { stdout } = await execFileAsync(gpgPath, ['--batch', '--list-packets', archive]);
-    assert.equal(stdout.includes(packetMarker), true);
-    await writeFile(archive, 'not an encrypted OpenPGP archive');
-    await assert.rejects(execFileAsync(gpgPath, ['--batch', '--list-packets', archive]));
+
+    const { stdout: exportedPublicKey } = await execFileAsync(gpgPath, [
+      '--batch',
+      '--homedir',
+      makerHome,
+      '--armor',
+      '--export',
+      fingerprint,
+    ]);
+    await writeFile(publicKey, exportedPublicKey);
+    await execFileAsync(gpgPath, ['--batch', '--homedir', verifierHome, '--import', publicKey]);
+
+    const { stdout: secretKeys } = await execFileAsync(gpgPath, [
+      '--batch',
+      '--with-colons',
+      '--homedir',
+      verifierHome,
+      '--list-secret-keys',
+    ]);
+    assert.doesNotMatch(secretKeys, /^sec:/m);
+
+    await execFileAsync(gpgPath, [
+      '--batch',
+      '--yes',
+      '--homedir',
+      verifierHome,
+      '--trust-model',
+      'always',
+      '--recipient',
+      fingerprint,
+      '--output',
+      archive,
+      '--encrypt',
+      plaintext,
+    ]);
+    const { stdout: packets } = await listPackets(verifierHome, archive);
+    assert.match(packets, new RegExp(packetMarker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+
+    await writeFile(packetMissing, ':encrypted data packet:\n');
+    await assert.rejects(listPackets(verifierHome, packetMissing));
+    await assert.rejects(listPackets(verifierHome, join(root, 'missing.gpg')));
+
+    await writeFile(invalidArchive, 'not an encrypted OpenPGP archive');
+    await assert.rejects(listPackets(verifierHome, invalidArchive));
   } finally {
     await rm(root, { recursive: true, force: true });
   }
