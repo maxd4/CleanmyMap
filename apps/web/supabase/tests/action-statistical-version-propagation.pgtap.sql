@@ -93,6 +93,21 @@ set status = 'approved', action_phase = 'post_action_complete', review_state = '
     retired_count = 1, duration_minutes = 45
 where id = '00000000-0000-0000-0000-000000000301';
 
+select diag(format(
+  'statistical-final detail delta_waste_kg=%s delta_participants_total=%s contribution_waste_kg=%s contribution_participants_total=%s initialized=%s',
+  ((select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
+    - (select waste_kg from propagation_state_before))::numeric,
+  ((select participants_total from public.public_impact_action_aggregate_state where state_id = true)
+    - (select participants_total from propagation_state_before))::bigint,
+  (select waste_kg from public.public_impact_action_contributions
+   where action_id = '00000000-0000-0000-0000-000000000301'),
+  (select participants_total from public.public_impact_action_contributions
+   where action_id = '00000000-0000-0000-0000-000000000301'),
+  (select initialized_at is not null
+   from public.public_impact_action_aggregate_state
+   where state_id = true)
+));
+
 select is(
   (select count(*) from public.action_statistical_versions
    where action_id = '00000000-0000-0000-0000-000000000301'),
