@@ -229,7 +229,7 @@ select throws_ok($$select public.apply_gamification_reconciliation(
   ) order by id), '[]'::jsonb) from public.progression_events where user_id = 'm7c-owner-a'),
   '[{"event_type":"action_declare_validation","source_table":"actions","source_id":"m7c-rollback-event","status_phase":"validated","weight":1,"xp_base":1,"xp_awarded":1,"occurred_on":"2026-10-26","metadata":{}}]'::jsonb,
   '[]'::jsonb, '{}'::bigint[], null,
-  '{"xp_total":"not-a-number","xp_pending":0,"xp_validated":5,"current_level":1,"potential_level":3,"current_applied_rules_revision":16}'::jsonb,
+  '{"xp_total":{"invalid":"numeric"},"xp_pending":0,"xp_validated":5,"current_level":1,"potential_level":3,"current_applied_rules_revision":16}'::jsonb,
   null, null
 )$$, '22P02', null, 'an invalid profile projection aborts the reconciliation');
 select is((select count(*)::integer from public.progression_events where user_id = 'm7c-owner-a' and source_id = 'm7c-rollback-event'), 0, 'the failed reconciliation rolls back its ledger event');
