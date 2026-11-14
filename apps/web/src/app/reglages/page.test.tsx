@@ -12,7 +12,9 @@ describe("/reglages canonical settings contract", () => {
 
   it("renders the canonical editable preferences and account controls", () => {
     expect(pageSource).toContain("<AccountSettingsEditor");
-    expect(pageSource).toContain("extractLocationPreferencesFromMetadata");
+    expect(pageSource).toContain("extractLocationPreferencesFromMetadataSources");
+    expect(pageSource).toContain("user.publicMetadata");
+    expect(pageSource).toContain("user.privateMetadata");
     expect(pageSource).not.toContain("Section réservée pour une prochaine phase");
   });
 

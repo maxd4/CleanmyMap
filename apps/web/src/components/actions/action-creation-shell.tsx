@@ -21,6 +21,7 @@ export function ActionCreationShell({
   tabSearchParams,
   localDevAuth = INACTIVE_LOCAL_DEV_AUTH,
   sectionsEnabled = true,
+  territoryPreference,
   ...formProps
 }: ActionCreationShellProps) {
   const { locale } = useSitePreferences();
@@ -35,7 +36,7 @@ export function ActionCreationShell({
     defaultActorName: formProps.defaultActorName,
     sectionsEnabled,
   });
-  return <ActionCreationShellView controller={controller} fr={fr} formProps={formProps} initialPanel={initialPanel} initialSubsection={initialSubsection} initialTab={initialTab} initialSpace={initialSpace} localDevAuth={localDevAuth} sectionsEnabled={sectionsEnabled} />;
+  return <ActionCreationShellView controller={controller} fr={fr} formProps={formProps} initialPanel={initialPanel} initialSubsection={initialSubsection} initialTab={initialTab} initialSpace={initialSpace} localDevAuth={localDevAuth} sectionsEnabled={sectionsEnabled} territoryPreference={territoryPreference} />;
 }
 type ActionCreationShellController = ReturnType<typeof useActionCreationShellController>;
 
@@ -49,6 +50,7 @@ function ActionCreationShellView({
   initialSpace,
   localDevAuth,
   sectionsEnabled,
+  territoryPreference,
 }: {
   controller: ActionCreationShellController;
   fr: boolean;
@@ -59,6 +61,7 @@ function ActionCreationShellView({
   initialSpace: NonNullable<ActionCreationShellProps["initialSpace"]>;
   localDevAuth: NonNullable<ActionCreationShellProps["localDevAuth"]>;
   sectionsEnabled: boolean;
+  territoryPreference: ActionCreationShellProps["territoryPreference"];
 }) {
   const {
     actionCreationSearchParams,
@@ -107,6 +110,7 @@ function ActionCreationShellView({
     onPreparationValidated: handlePreparationValidated,
     onPreparationSelection: handlePreparationSelection,
     onPreparationContextChange: handlePreparationContextChange,
+    territoryPreference,
   };
 
   if (initialSpace === "day" && actionIdForRender) {

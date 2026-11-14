@@ -6,6 +6,7 @@ import { useUser } from "@clerk/nextjs";
 import {
   DEFAULT_COUNTRY_CODE,
   extractTerritoryLocationPreferenceFromMetadataSources,
+  type TerritoryLocationPreference,
 } from "@/lib/user-location-preference";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
@@ -51,6 +52,7 @@ type WeatherDraftContext = {
   latitude?: string;
   longitude?: string;
   contextReady?: boolean;
+  territoryPreference?: TerritoryLocationPreference | null;
 };
 
 const WEATHER_FORECAST_OPTIONS = {
@@ -109,12 +111,17 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
   const preparationContextWithoutLocation = draftContext?.contextReady === true
     && !draftLocationLabel
     && !hasCanonicalActionLocation;
+  const serverTerritoryPreference = draftContext?.territoryPreference;
+  const hasServerTerritoryPreference = draftContext !== undefined
+    && Object.prototype.hasOwnProperty.call(draftContext, "territoryPreference");
   const locationPreference = useMemo(
-    () => extractTerritoryLocationPreferenceFromMetadataSources([
-      user?.unsafeMetadata,
-      user?.publicMetadata,
-    ]),
-    [user?.publicMetadata, user?.unsafeMetadata],
+    () => hasServerTerritoryPreference
+      ? serverTerritoryPreference ?? null
+      : extractTerritoryLocationPreferenceFromMetadataSources([
+        user?.unsafeMetadata,
+        user?.publicMetadata,
+      ]),
+    [hasServerTerritoryPreference, serverTerritoryPreference, user?.publicMetadata, user?.unsafeMetadata],
   );
   const initialLocation = buildInitialWeatherLocation({
     contextReady,

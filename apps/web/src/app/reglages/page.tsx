@@ -7,7 +7,7 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerLocale } from "@/lib/server-preferences";
 import { AccountSettingsEditor } from "@/components/account/account-settings-editor";
-import { extractLocationPreferencesFromMetadata } from "@/lib/user-location-preference";
+import { extractLocationPreferencesFromMetadataSources } from "@/lib/user-location-preference";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { HOME_ROUTE } from "@/lib/home-routes";
@@ -101,7 +101,11 @@ function ReglagesPageContent({
                 imageUrl: user.imageUrl ?? null,
                 handle: identity.handle,
                 displayNameMode: identity.displayNameMode ?? "full_name",
-                locationPreferences: extractLocationPreferencesFromMetadata(user.unsafeMetadata),
+                locationPreferences: extractLocationPreferencesFromMetadataSources([
+                  user.unsafeMetadata,
+                  user.publicMetadata,
+                  user.privateMetadata,
+                ]),
                 activityStatus: user.unsafeMetadata?.activity_status === "inactive" ? "inactive" : "active",
                 ageBand: consentEligibility.ageBand,
               }}

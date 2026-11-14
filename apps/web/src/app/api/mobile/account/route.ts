@@ -10,7 +10,7 @@ import {
   DEFAULT_COUNTRY_CODE,
   isCountryCode,
   parseCountryCode,
-  extractLocationPreferencesFromMetadata,
+  extractLocationPreferencesFromMetadataSources,
   type TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
 import { getSwitchableProfiles } from "@/lib/profiles";
@@ -126,8 +126,10 @@ function hasCountryChangeWithoutReplacement(
   );
 }
 
-function locationPayloadFromMetadata(metadata: Record<string, unknown> | null | undefined): LocationPayload {
-  const preferences = extractLocationPreferencesFromMetadata(metadata);
+function locationPayloadFromMetadataSources(
+  sources: readonly (Record<string, unknown> | null | undefined)[],
+): LocationPayload {
+  const preferences = extractLocationPreferencesFromMetadataSources(sources);
   return { residence: preferences.residence, work: preferences.work };
 }
 
@@ -208,7 +210,11 @@ async function loadAccountProjection(userId: string) {
         : null,
       currentVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
     },
-    locationPreferences: locationPayloadFromMetadata(unsafeMetadata),
+    locationPreferences: locationPayloadFromMetadataSources([
+      user.unsafeMetadata,
+      user.publicMetadata,
+      user.privateMetadata,
+    ]),
     activityStatus: unsafeMetadata.activity_status === "inactive" ? "inactive" : "active",
     notifications,
     history,
@@ -265,7 +271,11 @@ export async function PATCH(request: Request) {
     const clerk = await clerkClient();
     const currentUser = await clerk.users.getUser(access.userId);
     const currentUnsafeMetadata = (currentUser.unsafeMetadata ?? {}) as Record<string, unknown>;
-    const currentLocations = locationPayloadFromMetadata(currentUnsafeMetadata);
+    const currentLocations = locationPayloadFromMetadataSources([
+      currentUser.unsafeMetadata,
+      currentUser.publicMetadata,
+      currentUser.privateMetadata,
+    ]);
     if (
       hasCountryChangeWithoutReplacement(
         currentLocations.residence,

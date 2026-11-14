@@ -111,8 +111,12 @@ export function shouldHydrateAccountSetupLocations(
   hasInitialResidence: boolean,
   hasInitialWork: boolean,
   hasHydratedLocations: boolean,
+  hasAuthoritativeInitialLocations = false,
 ): boolean {
-  return !hasHydratedLocations && !hasInitialResidence && !hasInitialWork;
+  return !hasHydratedLocations
+    && !hasAuthoritativeInitialLocations
+    && !hasInitialResidence
+    && !hasInitialWork;
 }
 
 export function resolveAccountSetupDisplayMode(

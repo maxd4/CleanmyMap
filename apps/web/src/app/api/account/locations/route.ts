@@ -7,7 +7,7 @@ import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import {
   isCountryCode,
   createLocationPreferencesMetadata,
-  extractLocationPreferencesFromMetadata,
+  extractLocationPreferencesFromMetadataSources,
   type TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
 import type { ParisArrondissement } from "@/lib/geo/paris-arrondissements";
@@ -65,7 +65,11 @@ export async function PATCH(request: Request) {
     const client = await clerkClient();
     const currentUser = await client.users.getUser(access.userId);
     const currentUnsafeMetadata = (currentUser.unsafeMetadata ?? {}) as Record<string, unknown>;
-    const currentLocations = extractLocationPreferencesFromMetadata(currentUnsafeMetadata);
+    const currentLocations = extractLocationPreferencesFromMetadataSources([
+      currentUser.unsafeMetadata,
+      currentUser.publicMetadata,
+      currentUser.privateMetadata,
+    ]);
     const nextLocations = {
       residence: access.data.residence === undefined ? currentLocations.residence : access.data.residence,
       work: access.data.work === undefined ? currentLocations.work : access.data.work,

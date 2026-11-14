@@ -41,6 +41,7 @@ export default async function NewActionPage({
       actorNameOptions={context.actorNameOptions}
       defaultActorName={context.defaultActorName}
       countryCode={context.countryCode}
+      territoryPreference={context.territoryPreference}
       userMetadata={context.userMetadata}
       linkedEventId={context.fromEventId}
       initialActionId={context.actionId ?? null}

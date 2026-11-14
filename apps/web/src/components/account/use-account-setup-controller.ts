@@ -7,7 +7,7 @@ import type { DisplayMode } from "@/lib/ui/preferences";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   createTerritoryLocationSelectionFromLegacyArrondissement,
-  extractLocationPreferencesFromMetadata,
+  extractLocationPreferencesFromMetadataSources,
   type TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
 import { resolveAccountDisplayName, type AppProfile, type DisplayNameMode } from "@/lib/profiles";
@@ -132,11 +132,12 @@ function readDisplayNameMode(metadata: Record<string, unknown> | null | undefine
   return resolveAccountSetupDisplayNameMode(typeof value === "string" ? value : undefined);
 }
 
-function useAccountSetupHydration({ user, isLoaded, resolvedInitialResidence, resolvedInitialWork, initialDisplayNameMode, setResidence, setWork, setResidenceEnabled, setWorkEnabled, setNoneSelected, setDisplayNameMode, hasHydratedLocationsRef, hasHydratedDisplayNameModeRef }: {
+function useAccountSetupHydration({ user, isLoaded, resolvedInitialResidence, resolvedInitialWork, hasAuthoritativeInitialLocations, initialDisplayNameMode, setResidence, setWork, setResidenceEnabled, setWorkEnabled, setNoneSelected, setDisplayNameMode, hasHydratedLocationsRef, hasHydratedDisplayNameModeRef }: {
   user: ReturnType<typeof useUser>["user"];
   isLoaded: boolean;
   resolvedInitialResidence: TerritoryLocationSelection | null;
   resolvedInitialWork: TerritoryLocationSelection | null;
+  hasAuthoritativeInitialLocations: boolean;
   initialDisplayNameMode?: DisplayNameMode | null;
   initialAgeBand?: AgeBand | null;
   setResidence: (value: TerritoryLocationSelection | null) => void;
@@ -149,15 +150,18 @@ function useAccountSetupHydration({ user, isLoaded, resolvedInitialResidence, re
   hasHydratedDisplayNameModeRef: MutableRefObject<boolean>;
 }) {
   useEffect(() => {
-    if (!isLoaded || !user || !shouldHydrateAccountSetupLocations(Boolean(resolvedInitialResidence), Boolean(resolvedInitialWork), hasHydratedLocationsRef.current)) return;
-    const preferences = extractLocationPreferencesFromMetadata(user.unsafeMetadata as Record<string, unknown> | undefined);
+    if (!isLoaded || !user || !shouldHydrateAccountSetupLocations(Boolean(resolvedInitialResidence), Boolean(resolvedInitialWork), hasHydratedLocationsRef.current, hasAuthoritativeInitialLocations)) return;
+    const preferences = extractLocationPreferencesFromMetadataSources([
+      user.unsafeMetadata as Record<string, unknown> | undefined,
+      user.publicMetadata as Record<string, unknown> | undefined,
+    ]);
     setResidence(preferences.residence);
     setWork(preferences.work);
     setResidenceEnabled(Boolean(preferences.residence));
     setWorkEnabled(Boolean(preferences.work));
     setNoneSelected(!preferences.residence && !preferences.work);
     hasHydratedLocationsRef.current = true;
-  }, [hasHydratedLocationsRef, isLoaded, resolvedInitialResidence, resolvedInitialWork, setNoneSelected, setResidence, setResidenceEnabled, setWork, setWorkEnabled, user]);
+  }, [hasAuthoritativeInitialLocations, hasHydratedLocationsRef, isLoaded, resolvedInitialResidence, resolvedInitialWork, setNoneSelected, setResidence, setResidenceEnabled, setWork, setWorkEnabled, user]);
 
   useEffect(() => {
     if (!isLoaded || !user || !shouldHydrateAccountSetupDisplayNameMode(initialDisplayNameMode, hasHydratedDisplayNameModeRef.current)) return;
@@ -255,8 +259,8 @@ function useAccountSetupNavigation({
 function useResolvedInitialLocations(initialArrondissement: AccountSetupFormProps["initialArrondissement"], initialLocationType: AccountSetupFormProps["initialLocationType"], initialResidence: TerritoryLocationSelection | null | undefined, initialWork: TerritoryLocationSelection | null | undefined) {
   const legacySelection = useMemo(() => createTerritoryLocationSelectionFromLegacyArrondissement(initialArrondissement), [initialArrondissement]);
   return {
-    resolvedInitialResidence: initialResidence ?? (initialLocationType !== "work" ? legacySelection : null),
-    resolvedInitialWork: initialWork ?? (initialLocationType === "work" ? legacySelection : null),
+    resolvedInitialResidence: initialResidence !== undefined ? initialResidence : (initialLocationType !== "work" ? legacySelection : null),
+    resolvedInitialWork: initialWork !== undefined ? initialWork : (initialLocationType === "work" ? legacySelection : null),
   };
 }
 
@@ -278,6 +282,7 @@ export function useAccountSetupController({
   const { user, isLoaded } = useUser();
   const { locale, displayMode, setDisplayMode } = useSitePreferences();
   const { resolvedInitialResidence, resolvedInitialWork } = useResolvedInitialLocations(initialArrondissement, initialLocationType, initialResidence, initialWork);
+  const hasAuthoritativeInitialLocations = initialResidence !== undefined || initialWork !== undefined;
 
   const profileOptions = useMemo(
     () => getAccountSetupProfileOptions(initialRole),
@@ -299,7 +304,7 @@ export function useAccountSetupController({
   const [workEnabled, setWorkEnabled] = useState(Boolean(resolvedInitialWork));
   const [noneSelected, setNoneSelected] = useState(!resolvedInitialResidence && !resolvedInitialWork);
   const [currentStep, setCurrentStep] = useState<AccountSetupStep>("identity");
-  const hasHydratedLocations = useRef(Boolean(resolvedInitialResidence || resolvedInitialWork));
+  const hasHydratedLocations = useRef(hasAuthoritativeInitialLocations || Boolean(resolvedInitialResidence || resolvedInitialWork));
   const hasHydratedDisplayNameMode = useRef(initialDisplayNameMode != null);
   const completedPersistenceSteps = useRef<Set<AccountSetupPersistenceStep>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
@@ -309,7 +314,7 @@ export function useAccountSetupController({
   const [error, setError] = useState<AppError | null>(null);
   const saveInFlight = useRef(false);
 
-  useAccountSetupHydration({ user, isLoaded, resolvedInitialResidence, resolvedInitialWork, initialDisplayNameMode, setResidence, setWork, setResidenceEnabled, setWorkEnabled, setNoneSelected, setDisplayNameMode, hasHydratedLocationsRef: hasHydratedLocations, hasHydratedDisplayNameModeRef: hasHydratedDisplayNameMode });
+  useAccountSetupHydration({ user, isLoaded, resolvedInitialResidence, resolvedInitialWork, hasAuthoritativeInitialLocations, initialDisplayNameMode, setResidence, setWork, setResidenceEnabled, setWorkEnabled, setNoneSelected, setDisplayNameMode, hasHydratedLocationsRef: hasHydratedLocations, hasHydratedDisplayNameModeRef: hasHydratedDisplayNameMode });
 
   const { markFormDirty, touchField, shouldShowFieldError, handleProfileChange, handleFirstNameChange, handleLastNameChange, handleDisplayModeChange, handleDisplayNameModeChange, updateResidence, updateWork, updateResidenceEnabled, updateWorkEnabled, updateNoneSelected } = useAccountSetupFieldHandlers({ completedPersistenceSteps, setIsDirty, setTouchedFields, submitAttempted, touchedFields, setSelectedProfileCandidate, setFirstNameOverride, setLastNameOverride, setManualDisplayMode, setDisplayNameMode, setResidence, setWork, setResidenceEnabled, setWorkEnabled, setNoneSelected });
 

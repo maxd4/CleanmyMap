@@ -14,6 +14,7 @@ import type {
 } from "@/lib/actions/action-creation-routes";
 import type { ActionBeforeDeclarationForm } from "./action-declaration/before/form";
 import type { FormState } from "./action-declaration/model";
+import type { TerritoryLocationPreference } from "@/lib/user-location-preference";
 
 export type ActionCreationShellProps = Omit<
   ComponentProps<typeof ActionBeforeDeclarationForm>,
@@ -27,6 +28,7 @@ export type ActionCreationShellProps = Omit<
   tabSearchParams?: Record<string, string | string[] | undefined>;
   localDevAuth?: LocalDevAuthState;
   sectionsEnabled?: boolean;
+  territoryPreference?: TerritoryLocationPreference | null;
 };
 export type ActionCreationSectionFormProps = Omit<
   ComponentProps<typeof ActionBeforeDeclarationForm>,
@@ -74,4 +76,5 @@ export type ActionCreationSharedViewProps = ActionCreationCallbacks & {
   formProps: ActionCreationSectionFormProps;
   localDevAuth: LocalDevAuthState;
   preparationPersistenceStatus: ActionPreparationPersistenceStatus;
+  territoryPreference?: TerritoryLocationPreference | null;
 };

@@ -6,6 +6,8 @@ type ClerkUserMock = {
   firstName: string | null;
   lastName: string | null;
   unsafeMetadata: Record<string, unknown>;
+  publicMetadata?: Record<string, unknown>;
+  privateMetadata?: Record<string, unknown>;
 };
 type ClerkMethod<Args extends unknown[], Result> = Mock<(...args: Args) => Promise<Result>>;
 
@@ -141,6 +143,81 @@ describe("/api/mobile/account", () => {
     expect(payload.identity).toMatchObject({ grantedRole: "benevole", activeRole: "benevole", currentLevel: 2 });
     expect(payload.onboarding.completed).toBe(false);
     expect(payload.counts).toEqual({ registrations: 0, confirmedParticipations: 0, missions: 0, createdActions: 0 });
+  });
+
+  it("projects a canonical public location over unsafe legacy metadata", async () => {
+    const clerk = await clerkClientMock();
+    clerk.users.getUser.mockResolvedValue({
+      id: "user-1",
+      firstName: "Ada",
+      lastName: "Curie",
+      unsafeMetadata: { territoryLabel: "Paris", territoryCountry: "FR", territoryLocationType: "residence" },
+      publicMetadata: {
+        territoryPreferences: {
+          residence: { country: "CA", level: "province", label: "Québec", subtitle: "Canada", arrondissement: null, arrondissementCity: null, administrativeCode: "QC" },
+          work: null,
+        },
+      },
+    });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/mobile/account", { headers: { Authorization: "Bearer clerk" } }));
+    const body = await response.json() as { locationPreferences: { residence: { country: string } | null } };
+    expect(response.status).toBe(200);
+    expect(body.locationPreferences.residence?.country).toBe("CA");
+    expect(JSON.stringify(body)).not.toContain("privateMetadata");
+  });
+
+  it("projects a canonical private location without exposing the private source", async () => {
+    const clerk = await clerkClientMock();
+    clerk.users.getUser.mockResolvedValue({
+      id: "user-1",
+      firstName: "Ada",
+      lastName: "Curie",
+      unsafeMetadata: { territoryLabel: "Paris", territoryCountry: "FR", territoryLocationType: "residence" },
+      privateMetadata: {
+        privateOnly: "must-not-leak",
+        territoryPreferences: {
+          residence: { country: "SN", level: "commune", label: "Dakar", subtitle: "Sénégal", arrondissement: null, arrondissementCity: null, administrativeCode: "SN-DAK" },
+          work: null,
+        },
+      },
+    });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/mobile/account", { headers: { Authorization: "Bearer clerk" } }));
+    const body = await response.json() as { locationPreferences: { residence: { country: string } | null } };
+    expect(response.status).toBe(200);
+    expect(body.locationPreferences.residence?.country).toBe("SN");
+    expect(JSON.stringify(body)).not.toContain("must-not-leak");
+  });
+
+  it("preserves the canonical public residence during a partial work update", async () => {
+    const clerk = await clerkClientMock();
+    clerk.users.getUser.mockResolvedValue({
+      id: "user-1",
+      firstName: "Ada",
+      lastName: "Curie",
+      unsafeMetadata: { territoryLabel: "Paris", territoryCountry: "FR", territoryLocationType: "residence" },
+      publicMetadata: {
+        territoryPreferences: {
+          residence: { country: "CA", level: "province", label: "Québec", subtitle: "Canada", arrondissement: null, arrondissementCity: null, administrativeCode: "QC" },
+          work: null,
+        },
+      },
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/mobile/account", {
+      method: "PATCH",
+      body: JSON.stringify({ workLabel: "Dakar", workCountry: "SN" }),
+    }));
+    expect(response.status).toBe(200);
+    expect(clerk.users.updateUserMetadata).toHaveBeenCalledWith("user-1", expect.objectContaining({
+      unsafeMetadata: expect.objectContaining({
+        territoryPreferences: expect.objectContaining({
+          residence: expect.objectContaining({ country: "CA", label: "Québec" }),
+          work: expect.objectContaining({ country: "SN", label: "Dakar" }),
+        }),
+      }),
+    }));
   });
 
   it("updates profile metadata through Clerk and synchronizes the canonical profile", async () => {

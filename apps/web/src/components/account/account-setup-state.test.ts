@@ -27,6 +27,7 @@ describe("account setup initial state", () => {
 
   it("hydrates the display name independently from existing locations", () => {
     expect(shouldHydrateAccountSetupLocations(true, true, false)).toBe(false);
+    expect(shouldHydrateAccountSetupLocations(false, false, false, true)).toBe(false);
     expect(shouldHydrateAccountSetupDisplayNameMode(undefined, false)).toBe(true);
     expect(resolveAccountSetupDisplayNameMode("pseudo")).toBe("pseudo");
   });

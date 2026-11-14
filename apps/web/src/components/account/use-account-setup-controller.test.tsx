@@ -120,6 +120,25 @@ describe("useAccountSetupController", () => {
     hook.unmount();
   });
 
+  it("ne ressuscite pas une résidence legacy lorsque le serveur fournit une suppression canonique explicite", async () => {
+    mocks.clerk.user = user({
+      unsafeMetadata: {
+        territoryLabel: "Paris",
+        territoryCountry: "FR",
+        territoryLocationType: "residence",
+      },
+      publicMetadata: {
+        territoryPreferences: { residence: null, work: null },
+      },
+    });
+    const hook = renderHook(props({ initialResidence: null, initialWork: null }));
+    await act(async () => { await Promise.resolve(); });
+
+    expect(hook.result.residence).toBeNull();
+    expect(hook.result.work).toBeNull();
+    hook.unmount();
+  });
+
   it("rejette un profil initial non disponible et affiche les erreurs après interaction", () => {
     const hook = renderHook(props({ initialProfile: "max", initialRole: "benevole" }));
     expect(hook.result.selectedProfile).toBe("benevole");

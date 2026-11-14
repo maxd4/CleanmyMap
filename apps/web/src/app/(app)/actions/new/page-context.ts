@@ -18,7 +18,7 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import type { UserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { getCurrentUserTerritoryLocationPreference } from "@/lib/auth/user-territory";
-import { DEFAULT_COUNTRY_CODE, type CountryCode } from "@/lib/user-location-preference";
+import { DEFAULT_COUNTRY_CODE, type CountryCode, type TerritoryLocationPreference } from "@/lib/user-location-preference";
 
 export type NewActionPageSearchParams = Record<
   string,
@@ -51,6 +51,7 @@ export type NewActionPageContext = {
   defaultActorName: string;
   userMetadata: ActionUserMetadata;
   countryCode: CountryCode;
+  territoryPreference: TerritoryLocationPreference | null;
   signInHref: string;
   signUpHref: string;
   pageTemplateV2Enabled: boolean;
@@ -119,6 +120,7 @@ export async function resolveNewActionPageContext(
     defaultActorName: actorNameOptions[0] ?? fallbackActorName,
     userMetadata: buildActionUserMetadata({ userId, identity, fallbackActorName }),
     countryCode: territoryPreference?.country ?? DEFAULT_COUNTRY_CODE,
+    territoryPreference,
     signInHref: buildSignInRedirectHref(returnUrl),
     signUpHref: buildSignUpRedirectHref(returnUrl),
     pageTemplateV2Enabled,

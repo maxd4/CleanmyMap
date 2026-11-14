@@ -11,9 +11,10 @@ import { PreparationForecastBlock, PreparationLocationBlock } from "./weather-se
 import { useWeatherData } from "../use-weather-data";
 import type { ActionPreparationContext, ActionPreparationPersistenceStatus, PreparationSelection } from "@/lib/actions/action-preparation-context";
 import type { resolvePreparationSelection } from "@/lib/actions/action-preparation-context";
+import type { TerritoryLocationPreference } from "@/lib/user-location-preference";
 
 type WeatherData = ReturnType<typeof useWeatherData>;
-type WeatherDraftContext = { locationLabel?: string; actionDate?: string; departureTime?: string; latitude?: string; longitude?: string; contextReady?: boolean };
+type WeatherDraftContext = { locationLabel?: string; actionDate?: string; departureTime?: string; latitude?: string; longitude?: string; contextReady?: boolean; territoryPreference?: TerritoryLocationPreference | null };
 
 function firstNonEmpty(...values: Array<string | undefined>): string {
   return values.find((value) => typeof value === "string" && value.trim().length > 0)?.trim() ?? "";
@@ -111,10 +112,12 @@ export function WeatherSection({
   draftContext,
   preparationContext,
   onPreparationSelection,
+  territoryPreference,
 }: {
   draftContext?: WeatherDraftContext;
   preparationContext?: ActionPreparationContext;
   onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
+  territoryPreference?: TerritoryLocationPreference | null;
   onPreparationValidated?: (validated: boolean) => void;
   onPreparationContextChange?: (update: Partial<Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials">>) => void;
   preparationPersistenceStatus?: ActionPreparationPersistenceStatus;
@@ -125,6 +128,9 @@ export function WeatherSection({
   const pageFamily = resolvePageFamily(pathname);
 
   const context = buildWeatherSectionContext(draftContext, preparationContext);
+  if (territoryPreference !== undefined) {
+    context.weatherContext.territoryPreference = territoryPreference;
+  }
   const weather = useWeatherData(context.weatherContext);
 
   return <WeatherSectionView

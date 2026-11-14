@@ -18,6 +18,24 @@ const paris = {
   arrondissement: null,
   arrondissementCity: "Paris" as const,
 };
+const quebec = {
+  country: "CA" as const,
+  level: "province" as const,
+  label: "Québec",
+  subtitle: "Canada",
+  arrondissement: null,
+  arrondissementCity: null,
+  administrativeCode: "QC",
+};
+const dakar = {
+  country: "SN" as const,
+  level: "commune" as const,
+  label: "Dakar",
+  subtitle: "Sénégal",
+  arrondissement: null,
+  arrondissementCity: null,
+  administrativeCode: "SN-DAK",
+};
 
 describe("PATCH /api/account/locations", () => {
   beforeEach(() => {
@@ -74,6 +92,51 @@ describe("PATCH /api/account/locations", () => {
     expect(response.status).toBe(200);
     expect(clerk.users.updateUserMetadata).toHaveBeenCalledWith("user-1", {
       unsafeMetadata: { territoryPreferences: { residence: null, work: null } },
+    });
+  });
+
+  it("keeps a canonical public residence when a partial work update is written to unsafe metadata", async () => {
+    const clerk = await clerkClientMock();
+    clerk.users.getUser.mockResolvedValue({
+      id: "user-1",
+      unsafeMetadata: { territoryLabel: "Paris", territoryCountry: "FR", territoryLocationType: "residence" },
+      publicMetadata: { territoryPreferences: { residence: quebec, work: null } },
+      privateMetadata: {},
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/account/locations", {
+      method: "PATCH",
+      body: JSON.stringify({ work: dakar }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(clerk.users.updateUserMetadata).toHaveBeenCalledWith("user-1", {
+      unsafeMetadata: expect.objectContaining({
+        territoryPreferences: { residence: quebec, work: dakar },
+      }),
+    });
+    expect(JSON.stringify(await response.json())).not.toContain("privateMetadata");
+  });
+
+  it("keeps an explicit canonical empty location instead of resurrecting unsafe legacy data", async () => {
+    const clerk = await clerkClientMock();
+    clerk.users.getUser.mockResolvedValue({
+      id: "user-1",
+      unsafeMetadata: { territoryLabel: "Paris", territoryCountry: "FR", territoryLocationType: "residence" },
+      publicMetadata: { territoryPreferences: { residence: null, work: null } },
+      privateMetadata: {},
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/account/locations", {
+      method: "PATCH",
+      body: JSON.stringify({ work: dakar }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(clerk.users.updateUserMetadata).toHaveBeenCalledWith("user-1", {
+      unsafeMetadata: expect.objectContaining({
+        territoryPreferences: { residence: null, work: dakar },
+      }),
     });
   });
 

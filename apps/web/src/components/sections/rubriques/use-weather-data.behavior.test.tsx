@@ -196,6 +196,48 @@ describe("useWeatherData asynchronous location lifecycle", () => {
     expect(mocks.useSuggestions).not.toHaveBeenCalledWith("Paris 11e", "FR");
   });
 
+  it("uses the authenticated server projection for a private canonical location", () => {
+    mocks.useUser.mockReturnValue({
+      isLoaded: true,
+      user: {
+        unsafeMetadata: { territoryLabel: "Paris", territoryLocationType: "residence" },
+        publicMetadata: {},
+      },
+    });
+
+    renderHook({
+      contextReady: true,
+      territoryPreference: {
+        country: "SN",
+        level: "commune",
+        label: "Dakar",
+        subtitle: "Sénégal",
+        arrondissement: null,
+        arrondissementCity: null,
+        administrativeCode: "SN-DAK",
+        locationType: "residence",
+      },
+    });
+
+    expect(mocks.useSuggestions).toHaveBeenCalledWith("Dakar", "SN");
+    expect(mocks.useSuggestions).not.toHaveBeenCalledWith("Paris", "FR");
+  });
+
+  it("keeps an authenticated explicit empty projection empty", () => {
+    mocks.useUser.mockReturnValue({
+      isLoaded: true,
+      user: {
+        unsafeMetadata: { territoryLabel: "Paris", territoryLocationType: "residence" },
+        publicMetadata: {},
+      },
+    });
+
+    renderHook({ contextReady: true, territoryPreference: null });
+
+    expect(mocks.useSuggestions).toHaveBeenCalledWith("", undefined);
+    expect(mocks.useSuggestions).not.toHaveBeenCalledWith("Paris", "FR");
+  });
+
   it("resolves a draft location before Clerk is loaded", async () => {
     mocks.useUser.mockReturnValue({ isLoaded: false, user: null });
     const request = deferred<Response>();
