@@ -8,7 +8,7 @@ select ok(has_column('public.action_need_offers', 'offered_by_clerk_id'), 'offer
 select ok(has_column('public.action_need_offers', 'message'), 'offer message column exists');
 select ok(has_column('public.action_need_offers', 'status'), 'offer status column exists');
 select has_index('public', 'action_need_offers', 'action_need_offers_active_member_unique_idx', 'active offer uniqueness exists');
-select has_index('public', 'action_need_offers', 'action_need_offer_acceptance_notification_unique_idx', 'acceptance notification uniqueness exists');
+select has_index('public', 'app_notifications', 'action_need_offer_acceptance_notification_unique_idx', 'acceptance notification uniqueness exists');
 select ok(
   exists (select 1 from pg_class where oid = 'public.action_need_offers'::regclass and relrowsecurity),
   'row level security is enabled for offers'
