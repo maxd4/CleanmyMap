@@ -87,6 +87,13 @@ utilise exclusivement des identifiants Clerk Development ; l'absence de ces
 identifiants fait échouer la lane avant tout E2E. Aucun projet Supabase distant,
 URL de production ou clé de production ne doit être injecté dans cette lane.
 
+La chronologie documentée de l'incident de démarrage et de replay du
+14 novembre 2026 est conservée dans
+[`supabase-ephemeral-validation-2026-11-14.md`](../operations/audits/supabase-ephemeral-validation-2026-11-14.md).
+Elle distingue les causes démontrées, les corrections publiées, les preuves
+partielles et les écarts restant non attribués ; elle ne constitue pas une
+validation permanente ni une autorisation de relance aveugle.
+
 Cette lane utilise donc Clerk Development réel et une instance Supabase
 éphémère. Les sorties Playwright authentifiées restent locales au runner pour le
 diagnostic et ne sont jamais téléversées. L'artefact public est construit dans

@@ -81,7 +81,8 @@ gouvernance ou une preuve de production.
 | SonarQube/SonarCloud | `CleanMyMap_SonarQube_*.md`, `CleanMyMap_SonarCloud_*.md` | [Règles qualité](../../development/repo-quality-rules.md), config et CI |
 | Incidents de sécurité/concurrence | `audit-securite-zero-day-*.md`, `audit-race-conditions-*.md` | [Sécurité](../../security/README.md) et tests des frontières concernées |
 | Vercel, invocations et quotas | `vercel-*.md` | [Coûts](../platform-cost-governance.md), [déploiement](../runbook-deploiement.md) |
-| Supabase | `supabase-refresh-strategy-audit.md` | [Données](../../architecture/data-governance.md), [DB](../../database/README.md) |
+| Supabase — données et actualisation | `supabase-refresh-strategy-audit.md` | [Données](../../architecture/data-governance.md), [DB](../../database/README.md) |
+| Supabase — validation éphémère CI | `supabase-ephemeral-validation-2026-11-14.md` | [Plateformes de test](../../development/testing-platforms.md), [guide de tests](../../development/TESTING.md) |
 | Agents et performance locale | `codex-execution-latency-*.md`, `local-workspace-performance-*.md` | Gouvernance racine et [tests](../../development/TESTING.md) |
 | Parcours et interactions | `validation-transverse-interactions-2026-08-29.md` | Code, tests et fiche route CURRENT concernés |
 
