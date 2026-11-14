@@ -118,13 +118,13 @@ with inserted as (
   insert into public.actions (
     created_by_clerk_id, action_date, location_label, status, action_phase,
     moderation_visibility, access_mode, review_state, published_at,
-    data_provenance, action_context, waste_kg, cigarette_butts,
+    data_provenance, action_context, action_context_source, waste_kg, cigarette_butts,
     volunteers_count, children_count, adult_count, retired_count,
     duration_minutes
   ) values (
     'statistical-revocation-retention-test', current_date - 1,
     'Current eligibility boundary', 'approved', 'post_action_complete',
-    'visible', 'public', 'approved', timezone('utc', now()), 'real', 'citizen',
+    'visible', 'public', 'approved', timezone('utc', now()), 'real', 'citizen', 'explicit',
     20, 100, 10, 2, 7, 1, 30
   ) returning id
 )
@@ -227,7 +227,8 @@ update public.actions
 set status = 'approved', action_phase = 'post_action_complete', review_state = 'approved',
     moderation_visibility = 'visible', access_mode = 'public',
     published_at = timezone('utc', now()), data_provenance = 'real',
-    action_context = 'citizen', waste_kg = 20, cigarette_butts = 100,
+    action_context = 'citizen', action_context_source = 'explicit',
+    waste_kg = 20, cigarette_butts = 100,
     volunteers_count = 10, children_count = 2, adult_count = 7,
     retired_count = 1, duration_minutes = 30
 where id = (select id from reference_action);
