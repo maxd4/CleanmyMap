@@ -3,10 +3,10 @@ begin;
 select plan(51);
 
 select has_table('public', 'action_need_offers', 'action need offers table exists');
-select ok(has_column('public.action_need_offers', 'need_id'), 'need foreign key column exists');
-select ok(has_column('public.action_need_offers', 'offered_by_clerk_id'), 'offer author column exists');
-select ok(has_column('public.action_need_offers', 'message'), 'offer message column exists');
-select ok(has_column('public.action_need_offers', 'status'), 'offer status column exists');
+select has_column('public.action_need_offers', 'need_id', 'need foreign key column exists');
+select has_column('public.action_need_offers', 'offered_by_clerk_id', 'offer author column exists');
+select has_column('public.action_need_offers', 'message', 'offer message column exists');
+select has_column('public.action_need_offers', 'status', 'offer status column exists');
 select has_index('public', 'action_need_offers', 'action_need_offers_active_member_unique_idx', 'active offer uniqueness exists');
 select has_index('public', 'app_notifications', 'action_need_offer_acceptance_notification_unique_idx', 'acceptance notification uniqueness exists');
 select ok(
