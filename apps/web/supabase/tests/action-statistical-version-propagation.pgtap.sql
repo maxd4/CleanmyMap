@@ -67,6 +67,17 @@ select diag(format(
   (select eligible_temporal from public.public_impact_action_contributions
    where action_id = '00000000-0000-0000-0000-000000000301')
 ));
+select diag(format(
+  'statistical-trigger detail action_trigger_count=%s action_trigger_names=%s',
+  (select count(*)
+   from pg_trigger
+   where tgrelid = 'public.actions'::regclass
+     and not tgisinternal),
+  (select string_agg(tgname, ',' order by tgname)
+   from pg_trigger
+   where tgrelid = 'public.actions'::regclass
+     and not tgisinternal)
+));
 
 update public.actions
 set status = 'pending', action_phase = 'post_action_draft', review_state = 'draft',
