@@ -47,7 +47,7 @@ create temp table action_server_boundary_fixture (
   private_action_id uuid not null,
   public_action_id uuid not null
 );
-grant select on action_server_boundary_fixture to anon, authenticated;
+grant select on action_server_boundary_fixture to anon, authenticated, service_role;
 grant insert on action_server_boundary_fixture to service_role;
 
 set local role service_role;
