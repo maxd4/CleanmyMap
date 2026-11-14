@@ -96,7 +96,7 @@ update action_ride_transition_fixture
 set close_ride_id = (select id from public.action_rides where driver_user_id = 'ride-transition-driver' and status = 'open');
 select lives_ok($$select * from public.update_action_ride_details(
     (select close_ride_id from action_ride_transition_fixture), 'ride-transition-driver',
-    '2e arrondissement', ((current_date + 14)::timestamp + time '08:15') at time zone 'Europe/Paris', 2, 'Horaire ajusté')$$,
+    '2e arrondissement', ((current_date + 14)::timestamp + time '08:15') at time zone 'Europe/Paris', 2::smallint, 'Horaire ajusté')$$,
   'open ride can be modified');
 select is((select note from public.action_rides where id = (select close_ride_id from action_ride_transition_fixture)),
   'Horaire ajusté', 'open ride modification is persisted');
@@ -108,7 +108,7 @@ select lives_ok($$select * from public.transition_action_ride(
   'closing a ride resolves pending requests');
 select throws_ok($$select * from public.update_action_ride_details(
     (select close_ride_id from action_ride_transition_fixture), 'ride-transition-driver',
-    '2e arrondissement', ((current_date + 14)::timestamp + time '08:20') at time zone 'Europe/Paris', 2, 'Ne doit pas changer')$$,
+    '2e arrondissement', ((current_date + 14)::timestamp + time '08:20') at time zone 'Europe/Paris', 2::smallint, 'Ne doit pas changer')$$,
   'P0001', null, 'closed ride cannot be modified');
 select is((select note from public.action_rides where id = (select close_ride_id from action_ride_transition_fixture)),
   'Horaire ajusté', 'closed ride remains unchanged');
@@ -129,7 +129,7 @@ select lives_ok($$select * from public.transition_action_ride(
   'cancellation resolves accepted ride state');
 select throws_ok($$select * from public.update_action_ride_details(
     (select cancel_ride_id from action_ride_transition_fixture), 'ride-transition-driver',
-    '2e arrondissement', ((current_date + 14)::timestamp + time '08:20') at time zone 'Europe/Paris', 2, 'Ne doit pas changer')$$,
+    '2e arrondissement', ((current_date + 14)::timestamp + time '08:20') at time zone 'Europe/Paris', 2::smallint, 'Ne doit pas changer')$$,
   'P0001', null, 'cancelled ride cannot be modified');
 select is((select status from public.action_rides where id = (select cancel_ride_id from action_ride_transition_fixture)),
   'cancelled', 'cancelled ride remains terminal');
