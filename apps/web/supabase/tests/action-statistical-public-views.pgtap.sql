@@ -43,6 +43,17 @@ insert into public.actions (
   48.8566, 2.3522
 );
 
+-- Cancellation is a terminal tombstone, so keep its exclusion check on a
+-- dedicated approved action instead of reusing the statistical fixture.
+insert into public.actions (
+  id, created_by_clerk_id, action_date, location_label, status, action_phase,
+  moderation_visibility, access_mode, review_state, published_at
+) values (
+  '00000000-0000-0000-0000-000000000706', 'statistical-public-views-test',
+  current_date - 1, 'Cancelled statistical view fixture', 'approved',
+  'post_action_complete', 'visible', 'public', 'approved', timezone('utc', now())
+);
+
 select is(
   (select count(*) from public.action_statistical_versions
    where action_id = '00000000-0000-0000-0000-000000000705'),
@@ -174,14 +185,18 @@ select is(
 
 set local role service_role;
 update public.actions
-set status = 'cancelled', review_state = 'approved'
-where id = '00000000-0000-0000-0000-000000000705';
+set status = 'cancelled', review_state = 'approved',
+    cancelled_at = timezone('utc', now()),
+    cancelled_by_clerk_id = 'statistical-public-views-test',
+    cancellation_reason = 'other',
+    cancelled_from_status = 'approved'
+where id = '00000000-0000-0000-0000-000000000706';
 set local role anon;
 select ok(
   not exists (
     select 1 from public.actions_map_feed(
       null, null, null, null, 12, null, null, array['action'], null, 80
-    ) where id = '00000000-0000-0000-0000-000000000705'
+    ) where id = '00000000-0000-0000-0000-000000000706'
   ),
   'cancelled actions are excluded from the map RPC'
 );
