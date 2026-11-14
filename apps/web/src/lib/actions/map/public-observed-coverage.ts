@@ -20,6 +20,28 @@ function parseCoverageCoordinates(raw: unknown): [number, number][][] | undefine
   return coordinates.length > 0 ? coordinates : undefined;
 }
 
+/** Simulated route coordinates are persisted in Leaflet order: [latitude, longitude]. */
+function parseSimulatedCoordinates(raw: unknown): [number, number][][] | undefined {
+  if (!Array.isArray(raw) || raw.length < 1 || raw.length > 12) return undefined;
+  const coordinates: [number, number][][] = [];
+  for (const rawLine of raw) {
+    if (!Array.isArray(rawLine) || rawLine.length < 2 || rawLine.length > 1000) return undefined;
+    const line: [number, number][] = [];
+    for (const rawPoint of rawLine) {
+      if (!Array.isArray(rawPoint) || rawPoint.length !== 2) return undefined;
+      const latitude = rawPoint[0];
+      const longitude = rawPoint[1];
+      if (
+        typeof latitude !== "number" || !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+        typeof longitude !== "number" || !Number.isFinite(longitude) || longitude < -180 || longitude > 180
+      ) return undefined;
+      line.push([latitude, longitude]);
+    }
+    coordinates.push(line);
+  }
+  return coordinates;
+}
+
 function parseCoverageSources(raw: unknown): ActionGeometrySource[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const sources = raw.filter(
@@ -39,7 +61,7 @@ function parseSimulatedRouteCoverage(
       candidate.provenance !== "estimated" || candidate.status !== "hypothetical" ||
       candidate.speedKmPerHour !== 3 ||
       (candidate.coverageVersion !== "simulated-routes-v1" && candidate.coverageVersion !== "simulated-routes-v2")) return undefined;
-  const coordinates = parseCoverageCoordinates(candidate.coordinates)
+  const coordinates = parseSimulatedCoordinates(candidate.coordinates)
     ?.map((line) => line.map(([longitude, latitude]) =>
       (coordinateOrder === "geojson"
         ? [latitude, longitude]

@@ -497,9 +497,13 @@ export function getPublicOperationalRouteSegments(
       const coordinates = Array.isArray(candidate.coordinates)
         ? candidate.coordinates
         : candidate.geometry?.coordinates;
+      const groupIndex = candidate.groupIndex;
       if (
         typeof candidate.routeId !== "string" ||
-        !Number.isInteger(candidate.groupIndex) ||
+        typeof groupIndex !== "number" ||
+        !Number.isInteger(groupIndex) ||
+        groupIndex < 1 ||
+        groupIndex > 12 ||
         !Array.isArray(coordinates)
       ) {
         return null;
@@ -510,11 +514,15 @@ export function getPublicOperationalRouteSegments(
           coordinate.length >= 2 &&
           typeof coordinate[0] === "number" &&
           Number.isFinite(coordinate[0]) &&
+          coordinate[0] >= -90 &&
+          coordinate[0] <= 90 &&
           typeof coordinate[1] === "number" &&
-          Number.isFinite(coordinate[1]),
+          Number.isFinite(coordinate[1]) &&
+          coordinate[1] >= -180 &&
+          coordinate[1] <= 180,
       ).map(([latitude, longitude]) => [latitude, longitude] as [number, number]);
       return normalized.length >= 2
-        ? { routeId: candidate.routeId, groupIndex: candidate.groupIndex, coordinates: normalized }
+        ? { routeId: candidate.routeId, groupIndex, coordinates: normalized }
         : null;
     })
     .filter((segment): segment is { routeId: string; groupIndex: number; coordinates: [number, number][] } => segment !== null);

@@ -157,7 +157,7 @@ export function resolveActionMapGeometryViewModel(
       anchor: resolveAnchorFromCoordinates(allCoordinates),
       pointCount: allCoordinates.length,
       confidence,
-      metrics: resolveGeometryMetric(kind, allCoordinates, item, presentation),
+      metrics: resolveGeometryMetric(kind, allCoordinates, item, presentation, coverage.traceCount),
       label: formatGeometryModeLabel(kind, presentation),
       presentation,
       drawing: null,

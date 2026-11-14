@@ -2,7 +2,7 @@
 -- Never execute this fixture against the linked or production project.
 
 begin;
-select plan(11);
+select plan(17);
 
 select ok(
   to_regprocedure('public.public_action_map_preparation(jsonb)') is not null,
@@ -84,6 +84,34 @@ select is(
 select ok(
   (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupSizePolicy":"explicit_exception","groupParticipantCounts":[4],"durationMinutes":90,"targetDistanceKm":4.5,"individualSimulatedDistancesKm":[4.5],"totalSimulatedDistanceKm":4.5,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v2"}}$json$::jsonb) ? 'simulatedRouteCoverage',
   'explicit exception remains accepted for a bounded v2 reconstruction'
+);
+select lives_ok(
+  $$select public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":999999999999999999999999999999999999,"groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v1"}}$json$::jsonb)$$,
+  'an oversized group count does not raise integer overflow'
+);
+select is(
+  public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":999999999999999999999999999999999999,"groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v1"}}$json$::jsonb),
+  '{}'::jsonb,
+  'an oversized group count is omitted'
+);
+select is(
+  public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount": 5.5,"groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v1"}}$json$::jsonb),
+  '{}'::jsonb,
+  'a fractional group count is omitted'
+);
+select is(
+  public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupParticipantCounts":[5.5],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v1"}}$json$::jsonb),
+  '{}'::jsonb,
+  'a fractional participant count is omitted'
+);
+select is(
+  public.public_action_map_preparation($json${"operationalRoute":{"routes":[{"routeId":"overflow-group","groupIndex":999999999999999999999999999999999999,"geometry":{"coordinates":[[48.8,2.3],[48.81,2.31]]}}]}}$json$::jsonb) #> '{operationalRoute,routes}',
+  '[]'::jsonb,
+  'an oversized operational group index is omitted without overflow'
+);
+select lives_ok(
+  $$select public.public_action_map_preparation($json${"operationalRoute":{"routes":[{"routeId":"malformed","groupIndex":1,"geometry":{"coordinates":[[95,2.3],[48.81,2.31]]}}]}}$json$::jsonb)$$,
+  'malformed operational coordinates do not interrupt the projection'
 );
 select * from finish();
 rollback;

@@ -324,6 +324,7 @@ describe("actions map geometry utils", () => {
     expect(geometry.multiLinePositions).toHaveLength(2);
     expect(geometry.positions).toEqual([]);
     expect(geometry.coverageTraceCount).toBe(2);
+    expect(geometry.metrics.label).toContain("2 traces");
   });
 
   it("promotes observed coverage over a persisted primary drawing", () => {

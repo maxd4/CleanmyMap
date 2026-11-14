@@ -244,6 +244,36 @@ describe("public map preparation projection", () => {
     expect(JSON.stringify(preparation)).not.toContain("private.gpx");
   });
 
+  it("rejects malformed simulated coordinates and out-of-range operational groups", () => {
+    const preparation = parsePublicObservedPreparationData({
+      public_preparation_data: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [[[95, 2.3], [48.81, 2.31]]],
+          groupCount: 1,
+          groupParticipantCounts: [6],
+          durationMinutes: 60,
+          targetDistanceKm: 3,
+          speedKmPerHour: 3,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v1",
+        },
+        operationalRoute: {
+          routes: [{
+            routeId: "route-99",
+            groupIndex: 99,
+            geometry: { coordinates: [[48.85, 2.35], [48.86, 2.36]] },
+          }],
+        },
+      },
+    });
+
+    expect(preparation?.simulatedRouteCoverage).toBeUndefined();
+    expect(preparation?.operationalRoute).toBeUndefined();
+  });
+
   it("merges the sanitized feed coverage column with public route preparation", () => {
     const preparation = parsePublicObservedPreparationData({
       observed_coverage: buildCoverage(

@@ -256,6 +256,7 @@ function resolvePolygonMetric(
 function resolveMultiLineMetric(
   item: ActionMapItem,
   presentation: GeometryPresentation,
+  selectedObservedTraceCount?: number,
 ): ActionMapGeometryMetric {
   const coverage = item.contract?.metadata.preparationData?.observedCoverage;
   const isObserved = presentation.reality === "observed" || presentation.variant === "observed";
@@ -273,7 +274,7 @@ function resolveMultiLineMetric(
       };
     }
   }
-  const traceCount = Math.max(0, Math.trunc(Number(coverage?.traceCount) || 0));
+  const traceCount = Math.max(0, Math.trunc(Number(selectedObservedTraceCount ?? coverage?.traceCount) || 0));
   return {
     kind: null,
     value: null,
@@ -288,12 +289,13 @@ export function resolveGeometryMetric(
   coordinates: CoordinatePair[],
   item: ActionMapItem,
   presentation: GeometryPresentation,
+  selectedObservedTraceCount?: number,
 ): ActionMapGeometryMetric {
   if (kind === "polyline") {
     return resolvePolylineMetric(coordinates, item, presentation);
   }
   if (kind === "multiline") {
-    return resolveMultiLineMetric(item, presentation);
+    return resolveMultiLineMetric(item, presentation, selectedObservedTraceCount);
   }
   if (kind === "polygon") {
     return resolvePolygonMetric(coordinates, presentation);
