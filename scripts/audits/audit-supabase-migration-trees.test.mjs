@@ -184,6 +184,13 @@ it("approves only the bounded pre-application projection revision repair", () =>
   assert.doesNotMatch(source, /dd7675f2808232612bb84987145729d94bb44b31802e9c20dfe9de233a9edeb9/);
 });
 
+it("approves only the bounded pre-application SPOGOMI signature repair", () => {
+  const source = readFileSync(auditScript, "utf8");
+  assert.match(source, /20261109152000_spogomi_terminal_admission_immutability_and_actor_context\.sql/);
+  assert.match(source, /6ab6cf64c84f4967c2e0142fd5d314fe98bf1e24422017923cdd2f34005aae4a/);
+  assert.doesNotMatch(source, /6bd027f71baf58e821045deb32a80b6730fc91a0c7b5b77dd11cdae1e2a577dd/);
+});
+
 it("normalizes Buffer and UTF-8 string contents before comparing migrations", () => {
   const name = "20260101000000_published.sql";
   assert.deepEqual(

@@ -510,6 +510,37 @@ pas opérationnelle.
 20261105000015_AFTER_HASH:  AF7E5DD0F3464DE70445CC30FE5CB55B04BCF3BCDEC7C16D861B5A6D257DA48A
 ```
 
+## Exception de replay bornée — `20261109152000`
+
+La migration `20261109152000_spogomi_terminal_admission_immutability_and_actor_context.sql`
+est publiée dans Git mais reste absente de l'historique du projet Supabase lié
+`trktzkgujgpgsgkoyndn` : la lecture `migration list --linked` confirme que la
+cible s'arrête à `20261109143630`. Un replay Supabase Preview sur le candidat
+`a9f5804a8570495f188ad7973f3cbee06e851775` a échoué avec `SQLSTATE 42883` dès
+le premier `REVOKE` : la fonction renommée
+`public.spogomi_update_event_metadata_apply` possède onze arguments, tandis que
+la référence de privilèges en indiquait dix.
+
+La correction autorisée avant la première application est limitée à réaligner
+les signatures de l'implémentation renommée et de la RPC publique dans les
+`REVOKE`, `GRANT` et `COMMENT` concernés. Elle ne change ni le corps des
+fonctions, ni les contrôles d'acteur, ni les consommateurs RPC, ni les rôles
+autorisés : `public`, `anon` et `authenticated` restent révoqués et seul
+`service_role` conserve l'exécution de la frontière serveur. La signature de
+`spogomi_update_division_regulation` (neuf arguments), ainsi que les migrations
+`20261109143630` et `20261109160000`, restent inchangées.
+
+Cette exception pré-application est donc distincte d'une réécriture d'une
+migration appliquée. Elle n'autorise ni `migration repair`, ni DDL manuelle,
+ni application distante implicite. Le replay doit être vérifié dans la lane
+PostgreSQL éphémère autorisée ; aucune mutation du projet Supabase lié n'est
+requise pour établir cette correction.
+
+```text
+20261109152000_BEFORE_HASH: 6BD027F71BAF58E821045DEB32A80B6730FC91A0C7B5B77DD11CDAE1E2A577DD
+20261109152000_AFTER_HASH:  6AB6CF64C84F4967C2E0142FD5D314FE98BF1E24422017923CDD2F34005AAE4A
+```
+
 ## Interdiction
 
 Ne pas maintenir indéfiniment deux copies manuelles sans contrôle de synchronisation.

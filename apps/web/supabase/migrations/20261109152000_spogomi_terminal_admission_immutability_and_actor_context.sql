@@ -58,7 +58,7 @@ alter function public.spogomi_update_event_metadata(
 ) rename to spogomi_update_event_metadata_apply;
 
 revoke all on function public.spogomi_update_event_metadata_apply(
-  uuid, bigint, text, text, timestamptz, timestamptz, text, jsonb, text, text
+  uuid, bigint, text, text, text, timestamptz, timestamptz, text, jsonb, text, text
 ) from public, anon, authenticated, service_role;
 
 create or replace function public.spogomi_update_event_metadata(
@@ -96,14 +96,14 @@ end;
 $$;
 
 revoke all on function public.spogomi_update_event_metadata(
-  uuid, bigint, text, text, timestamptz, timestamptz, text, jsonb, text, text
+  uuid, bigint, text, text, text, timestamptz, timestamptz, text, jsonb, text, text
 ) from public, anon, authenticated;
 grant execute on function public.spogomi_update_event_metadata(
-  uuid, bigint, text, text, timestamptz, timestamptz, text, jsonb, text, text
+  uuid, bigint, text, text, text, timestamptz, timestamptz, text, jsonb, text, text
 ) to service_role;
 
 comment on function public.spogomi_update_event_metadata(
-  uuid, bigint, text, text, timestamptz, timestamptz, text, jsonb, text, text
+  uuid, bigint, text, text, text, timestamptz, timestamptz, text, jsonb, text, text
 ) is
   'Server-only organizer metadata boundary. It stamps the verified actor in a transaction-local context before delegating to the existing locked mutation algorithm.';
 
