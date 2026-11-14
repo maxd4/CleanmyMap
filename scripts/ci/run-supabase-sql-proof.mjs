@@ -286,6 +286,10 @@ export function supabaseNetworkArgs(env = process.env) {
   return networkId ? ["--network-id", networkId] : [];
 }
 
+export function pgtapCliPath(recordPath) {
+  return String(recordPath).split("/").at(-1);
+}
+
 function runCommand(command, args, { logName, env = trustedCommandEnvironment(process.env, [command]) } = {}) {
   return new Promise((resolveResult, rejectResult) => {
     const child = spawn(command, args, { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
@@ -418,7 +422,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const expectedPlan = extractPlan(sql);
         record.expectedAssertions = expectedPlan;
-        await runProof(record, commandName(), ["test", "db", "--workdir", "apps/web", "--local", ...networkArgs, "--debug", `supabase/tests/${record.path.split("/").at(-1)}`], (output) => parsePgTapOutput(output, expectedPlan), commandRunner);
+        await runProof(record, commandName(), ["test", "db", "--workdir", "apps/web", "--local", ...networkArgs, pgtapCliPath(record.path)], (output) => parsePgTapOutput(output, expectedPlan), commandRunner);
       } else if (record.category === "SQL_CONTRACT") {
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const marker = CONTRACT_MARKERS.get(record.path);

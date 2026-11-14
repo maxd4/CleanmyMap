@@ -12,6 +12,7 @@ import {
   assertEphemeralSupabaseTestEnvironment,
   sanitizeProofFailureExcerpt,
   supabaseNetworkArgs,
+  pgtapCliPath,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
 import { parseTerritorialRevisionNotice } from "../../e2e/territorial-legend-revision-concurrency.mjs";
@@ -362,6 +363,13 @@ test("local Supabase proofs reuse the workflow's isolated Docker network when pr
   assert.deepEqual(
     supabaseNetworkArgs({ CMM_SUPABASE_NETWORK_ID: "cleanmymap-supabase-123-1" }),
     ["--network-id", "cleanmymap-supabase-123-1"],
+  );
+});
+
+test("pgTAP CLI paths are relative to the mounted supabase/tests root", () => {
+  assert.equal(
+    pgtapCliPath("apps/web/supabase/tests/action-buddy-contract.pgtap.sql"),
+    "action-buddy-contract.pgtap.sql",
   );
 });
 
