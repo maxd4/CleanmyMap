@@ -13,10 +13,10 @@ select has_index(
   'community_helper_skills_pkey',
   'user and category primary key exists'
 );
-select has_column('public.community_helper_skills', 'user_id', 'user id column exists');
-select has_column('public.community_helper_skills', 'category', 'category column exists');
-select has_column('public.community_helper_skills', 'created_at', 'created at column exists');
-select has_column('public.community_helper_skills', 'updated_at', 'updated at column exists');
+select has_column('public', 'community_helper_skills', 'user_id', 'user id column exists');
+select has_column('public', 'community_helper_skills', 'category', 'category column exists');
+select has_column('public', 'community_helper_skills', 'created_at', 'created at column exists');
+select has_column('public', 'community_helper_skills', 'updated_at', 'updated at column exists');
 select ok(
   exists (
     select 1
