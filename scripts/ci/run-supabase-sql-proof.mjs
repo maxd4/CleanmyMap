@@ -93,7 +93,7 @@ function parseSummaryCounter(output, label) {
   return matches[0] ?? null;
 }
 
-const proofDiagnosticLine = /\b(?:not ok|error|fatal|panic|bail out|failed|result|files|tests|detail|context|hint|permission denied|forbidden|does not exist|violates|duplicate key|assertion|notests|container|network|image|manifest|pull|rate|toomanyrequests|connection)\b/i;
+const proofDiagnosticLine = /\b(?:not ok|error|fatal|panic|bail out|failed|result|files|tests|detail|context|hint|permission denied|forbidden|does not exist|violates|duplicate key|assertion|notests|container|network|image|manifest|pull|rate|toomanyrequests|connection|connect|dbi|psql|host|port|refused|timeout|no such|cannot|could not|invalid|usage)\b/i;
 
 export function sanitizeProofFailureExcerpt(output) {
   const lines = String(output ?? "")
@@ -418,7 +418,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const expectedPlan = extractPlan(sql);
         record.expectedAssertions = expectedPlan;
-        await runProof(record, commandName(), ["test", "db", "--workdir", "apps/web", "--local", ...networkArgs, `supabase/tests/${record.path.split("/").at(-1)}`], (output) => parsePgTapOutput(output, expectedPlan), commandRunner);
+        await runProof(record, commandName(), ["test", "db", "--workdir", "apps/web", "--local", ...networkArgs, "--debug", `supabase/tests/${record.path.split("/").at(-1)}`], (output) => parsePgTapOutput(output, expectedPlan), commandRunner);
       } else if (record.category === "SQL_CONTRACT") {
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const marker = CONTRACT_MARKERS.get(record.path);
