@@ -17,7 +17,7 @@ export function ActionWorkflowStepContent({ activeStep, ...viewProps }: ActionCr
   const { currentActionId, draftContext, preparationContext, formalitiesReadiness, formProps, localDevAuth, preparationPersistenceStatus, onActionPersisted, onFormChange, onFormalitiesReadiness, onPassToComplete, onPreparationValidated, onPreparationSelection, onPreparationContextChange } = viewProps;
   if (activeStep === "itineraire") return <EffectiveAuthStateProvider localDevAuth={localDevAuth}><RouteSection actionId={currentActionId} /></EffectiveAuthStateProvider>;
   if (activeStep === "paris") return <ActionCreationLegalPanel actionId={currentActionId} onReadinessChange={onFormalitiesReadiness} />;
-  if (activeStep === "preparation") return <WeatherSection draftContext={draftContext} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} />;
+  if (activeStep === "preparation") return <WeatherSection draftContext={draftContext} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} territoryPreference={viewProps.territoryPreference} />;
   return <ActionBeforeDeclarationForm {...formProps} initialActionId={currentActionId} preparationContext={preparationContext} guidedWorkflow guidedReadiness={formalitiesReadiness} onFormChange={onFormChange} onActionPersisted={onActionPersisted} onPassToComplete={onPassToComplete} />;
 }
 export function GuidedActionWorkflowView({

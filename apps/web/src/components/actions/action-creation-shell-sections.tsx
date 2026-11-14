@@ -92,7 +92,7 @@ export function ActionCreationSectionContent({
             <CmmCard tone="emerald" variant="glass" size="lg" className={routeRequested ? "xl:col-span-2" : undefined}>
               <div className="space-y-3">
                 <div className="flex items-center gap-2"><CloudSun size={18} className="text-emerald-700" aria-hidden="true" /><h3 className="text-lg font-black text-emerald-950">Météo et créneau</h3></div>
-                <WeatherSection draftContext={draftContext} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} />
+                <WeatherSection draftContext={draftContext} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} territoryPreference={viewProps.territoryPreference} />
               </div>
             </CmmCard>
           </div>

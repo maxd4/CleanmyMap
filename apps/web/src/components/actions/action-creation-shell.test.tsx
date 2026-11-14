@@ -11,6 +11,7 @@ const beforeFormPropsMock = vi.hoisted(() => vi.fn());
 const completeFormPropsMock = vi.hoisted(() => vi.fn());
 const updateActionMock = vi.hoisted(() => vi.fn(() => Promise.resolve({ id: "action-42" })));
 const routerReplaceMock = vi.hoisted(() => vi.fn());
+const weatherSectionPropsMock = vi.hoisted(() => vi.fn());
 const preparationContextHookMock = vi.hoisted(() => vi.fn(({ actionId }: { actionId: string | null }) => ({
   preparationContext: {
     actionId,
@@ -62,7 +63,10 @@ vi.mock("@/components/sections/rubriques/route", () => ({
   RouteSection: () => <div data-testid="route-engine" />,
 }));
 vi.mock("@/components/sections/rubriques/weather/weather-section", () => ({
-  WeatherSection: () => <div data-testid="weather-engine" />,
+  WeatherSection: (props: Record<string, unknown>) => {
+    weatherSectionPropsMock(props);
+    return <div data-testid="weather-engine" />;
+  },
 }));
 
 describe("ActionCreationShell", () => {
@@ -239,6 +243,71 @@ describe("ActionCreationShell", () => {
         guidedWorkflow: true,
       }),
     );
+  });
+
+  it.each([
+    { label: "section parcours", sectionsEnabled: true, initialPanel: "meteo" as const, initialSection: "terrain" as const, tabSearchParams: undefined },
+    { label: "workflow parcours", sectionsEnabled: false, initialPanel: "meteo" as const, initialSection: undefined, tabSearchParams: { step: "preparation" } },
+  ])("transmits the server territory preference through the $label", ({ sectionsEnabled, initialPanel, initialSection, tabSearchParams }) => {
+    const preference = {
+      country: "SN",
+      level: "country",
+      label: "Sénégal",
+      subtitle: "Dakar",
+      arrondissement: null,
+      arrondissementCity: null,
+      locationType: "residence",
+    } as const;
+
+    renderToStaticMarkup(
+      React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: false,
+        userMetadata: { userId: "test" },
+        initialPanel,
+        initialSection,
+        sectionsEnabled,
+        tabSearchParams,
+        territoryPreference: preference,
+      } as ComponentProps<typeof ActionCreationShell>),
+    );
+
+    expect(weatherSectionPropsMock).toHaveBeenLastCalledWith(expect.objectContaining({ territoryPreference: preference }));
+  });
+
+  it.each([
+    { label: "section parcours", sectionsEnabled: true, initialPanel: "meteo" as const, initialSection: "terrain" as const, tabSearchParams: undefined },
+    { label: "workflow parcours", sectionsEnabled: false, initialPanel: "meteo" as const, initialSection: undefined, tabSearchParams: { step: "preparation" } },
+  ])("preserves an explicit empty or absent preference in the $label", ({ sectionsEnabled, initialPanel, initialSection, tabSearchParams }) => {
+    renderToStaticMarkup(
+      React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: false,
+        userMetadata: { userId: "test" },
+        initialPanel,
+        initialSection,
+        sectionsEnabled,
+        tabSearchParams,
+        territoryPreference: null,
+      } as ComponentProps<typeof ActionCreationShell>),
+    );
+    expect(weatherSectionPropsMock).toHaveBeenLastCalledWith(expect.objectContaining({ territoryPreference: null }));
+
+    renderToStaticMarkup(
+      React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: false,
+        userMetadata: { userId: "test" },
+        initialPanel,
+        initialSection,
+        sectionsEnabled,
+        tabSearchParams,
+      } as ComponentProps<typeof ActionCreationShell>),
+    );
+    expect(weatherSectionPropsMock).toHaveBeenLastCalledWith(expect.objectContaining({ territoryPreference: undefined }));
   });
 
   it("starts a new guided preparation on the route step", () => {
