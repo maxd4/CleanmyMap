@@ -66,7 +66,8 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.match(workflow, /e2e\/\*\.sql/);
   assert.match(workflow, /Execute and attest all existing PostgreSQL proofs/);
   assert.match(workflow, /node scripts\/ci\/run-supabase-sql-proof\.mjs/);
-  assert.match(workflow, /select 'Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present'/);
+  assert.match(workflow, /select case/);
+  assert.match(workflow, /then 'Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present'/);
   assert.match(workflow, /grep -q "Preflight passed:/);
   assert.match(workflow, /CMM_SUPABASE_CANDIDATE_SHA:/);
   assert.doesNotMatch(workflow, /mgvmuambbxmmkrjjlryo\.supabase\.co/);

@@ -197,36 +197,24 @@ jobs:
           NODE
 
           preflight_sql="$(cat <<'SQL'
-          do $$
-          declare
-            migration_count bigint;
-          begin
-            if to_regclass('public.actions') is null then
-              raise exception 'Preflight failed: public.actions is absent after canonical reset';
-            end if;
-            if to_regclass('public.spogomi_events') is null then
-              raise exception 'Preflight failed: public.spogomi_events is absent after canonical reset';
-            end if;
-            if to_regclass('supabase_migrations.schema_migrations') is null then
-              raise exception 'Preflight failed: migration registry is absent after canonical reset';
-            end if;
-            select count(*) into migration_count
-            from supabase_migrations.schema_migrations
-            where version ~ '^[0-9]{14}$';
-            if migration_count = 0 then
-              raise exception 'Preflight failed: no canonical application migration is registered';
-            end if;
-            if not exists (
-              select 1
-              from public.actions
-              where id = '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid
-                and notes like 'E2E_FIXTURE:group-join:v1%'
-            ) then
-              raise exception 'Preflight failed: canonical E2E seed fixture is absent';
-            end if;
-          end
-          $$;
-          select 'Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present' as preflight_marker;
+          select case
+            when to_regclass('public.actions') is not null
+              and to_regclass('public.spogomi_events') is not null
+              and to_regclass('supabase_migrations.schema_migrations') is not null
+              and exists (
+                select 1
+                from supabase_migrations.schema_migrations
+                where version ~ '^[0-9]{14}$'
+              )
+              and exists (
+                select 1
+                from public.actions
+                where id = '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid
+                  and notes like 'E2E_FIXTURE:group-join:v1%'
+              )
+              then 'Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present'
+            else 'Preflight failed: canonical schema, migration registry or seed fixture invariant is absent'
+          end as preflight_marker;
           SQL
           )"
           echo "Running canonical PostgreSQL schema preflight"
