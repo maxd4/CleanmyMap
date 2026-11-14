@@ -21,6 +21,8 @@ const expectedServerOnlyRlsInfoTables = [
   "points_ledger",
   "user_badge_totals",
   "badge_events",
+  "progression_events",
+  "progression_profiles",
 ];
 
 function createAllowedFindings() {
@@ -113,6 +115,22 @@ const serverOnlyContractSources = [
       "revoke all on table public.badge_events from public, anon, authenticated",
     ],
   },
+  {
+    table: "progression_events",
+    files: ["supabase/migrations/20261114000010_revoke_gamification_projection_table_grants.sql"],
+    required: [
+      "revoke all privileges on table public.progression_events",
+      "grant all privileges on table public.progression_events to service_role",
+    ],
+  },
+  {
+    table: "progression_profiles",
+    files: ["supabase/migrations/20261114000010_revoke_gamification_projection_table_grants.sql"],
+    required: [
+      "revoke all privileges on table public.progression_profiles",
+      "grant all privileges on table public.progression_profiles to service_role",
+    ],
+  },
 ];
 
 describe("Supabase security advisor guard", () => {
@@ -130,7 +148,7 @@ describe("Supabase security advisor guard", () => {
     expect(script).not.toContain("Docker Desktop");
   });
 
-  it("allows only the eight documented server-only INFO findings", () => {
+  it("allows only the ten documented server-only INFO findings", () => {
     expect(ALLOWED_SERVER_ONLY_RLS_INFO_TABLES).toEqual(expectedServerOnlyRlsInfoTables);
     expect(SECURITY_ADVISOR_COMMAND_OPTIONS).toEqual([
       "--type",
@@ -181,11 +199,11 @@ describe("Supabase security advisor guard", () => {
 
     const summary = summarizeSecurityAdvisorOutput(JSON.stringify(allowedFindings));
     expect(summary.rlsContractActionable).toBe(0);
-    expect(summary.acceptedInfoCount).toBe(8);
+    expect(summary.acceptedInfoCount).toBe(10);
     const normalOutput = formatSecurityAdvisorSummary(summary);
     expect(normalOutput).toContain("RLS_CONTRACT_STATUS: PASS");
     expect(normalOutput).toContain("RLS_CONTRACT_ACTIONABLE: 0");
-    expect(normalOutput).toContain("RLS_ACCEPTED_INFO: 8");
+    expect(normalOutput).toContain("RLS_ACCEPTED_INFO: 10");
     expect(normalOutput).not.toContain("rls_enabled_no_policy");
     expect(normalOutput).not.toContain("action_conversation_exclusions");
   });
@@ -243,7 +261,7 @@ describe("Supabase security advisor guard", () => {
 
     expect(normalOutput).toContain("RLS_CONTRACT_STATUS: PASS");
     expect(normalOutput).toContain("RLS_CONTRACT_ACTIONABLE: 0");
-    expect(normalOutput).toContain("RLS_ACCEPTED_INFO: 8");
+    expect(normalOutput).toContain("RLS_ACCEPTED_INFO: 10");
     expect(normalOutput).toContain("OTHER_SECURITY_FINDINGS: 1");
     expect(normalOutput).toContain("extension_in_public [WARN] — Extension installed in public schema");
     expect(normalOutput).not.toContain("extension_in_public [INFO]");

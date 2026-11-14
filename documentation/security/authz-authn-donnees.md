@@ -286,6 +286,14 @@ vérification Clerk et de la réponse canonique. Les récompenses XP/badges sont
 inséré : un rejeu pédagogique peut encore avancer le SRS et la progression,
 mais ne réattribue pas un événement déjà consommé.
 
+Le ledger CURRENT `public.progression_events` et sa projection
+`public.progression_profiles` sont également `server-only` au niveau SQL.
+`PUBLIC`, `anon` et `authenticated` n'ont aucun privilège direct de lecture,
+écriture ou `TRUNCATE`; les écritures passent par les frontières serveur et la
+RPC `apply_gamification_reconciliation`, réservée à `service_role`. Cette
+révocation explicite complète la RLS service-only et protège aussi les
+privilèges que la RLS ne couvre pas.
+
 `public.app_notifications` reste lisible uniquement par le propriétaire
 authentifié ou par les producteurs serveur. Le client ne dispose que des
 privilèges de colonnes `read_at`, `seen_at` et `acknowledged_at`, avec un

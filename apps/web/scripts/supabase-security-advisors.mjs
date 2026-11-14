@@ -31,6 +31,8 @@ export const ALLOWED_SERVER_ONLY_RLS_INFO_TABLES = Object.freeze([
   "points_ledger",
   "user_badge_totals",
   "badge_events",
+  "progression_events",
+  "progression_profiles",
 ]);
 
 const allowedServerOnlyRlsInfoTables = new Set(ALLOWED_SERVER_ONLY_RLS_INFO_TABLES);

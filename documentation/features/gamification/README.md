@@ -21,6 +21,11 @@ recopie ni les seuils de progression ni les familles de badges.
   `progression_events`, sans créer une nouvelle famille globale.
 - Les faits métier restent dans leurs sources. `progression_events` est le
   ledger XP CURRENT et `progression_profiles` sa projection persistante.
+- Ces deux tables sont des surfaces `server-only` au niveau des privilèges
+  SQL : `PUBLIC`, `anon` et `authenticated` n'ont aucun privilège direct,
+  y compris `TRUNCATE`. Les routes, jobs et RPC serveur utilisent
+  `service_role` ; la RLS service-only reste une défense complémentaire et ne
+  remplace pas cette révocation explicite.
 - Les identités et collections de badges sont détenues par
   `badge-catalog.ts`. Les exemplaires répétables SPOGOMI sont une collection
   séparée et ne sont pas ajoutés à `badgeTotal`.

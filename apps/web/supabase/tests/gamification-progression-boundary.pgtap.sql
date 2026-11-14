@@ -60,7 +60,7 @@ select is((select payload ->> 'reconciliationId' from public.app_notifications w
 
 -- A retry carrying the pre-apply ledger snapshot must conflict before any
 -- attempted event, profile update or receipt can be persisted.
-select is(public.apply_gamification_reconciliation(
+select is((public.apply_gamification_reconciliation(
   'm7c-owner-a',
   (select jsonb_build_array(jsonb_build_object(
     'id', id, 'event_type', event_type, 'source_table', source_table,
