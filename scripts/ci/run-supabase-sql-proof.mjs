@@ -281,6 +281,11 @@ function commandName() {
   return process.platform === "win32" ? resolve(repositoryRoot, "node_modules/.bin/supabase.cmd") : resolve(repositoryRoot, "node_modules/.bin/supabase");
 }
 
+export function supabaseNetworkArgs(env = process.env) {
+  const networkId = String(env.CMM_SUPABASE_NETWORK_ID ?? "").trim();
+  return networkId ? ["--network-id", networkId] : [];
+}
+
 function runCommand(command, args, { logName, env = trustedCommandEnvironment(process.env, [command]) } = {}) {
   return new Promise((resolveResult, rejectResult) => {
     const child = spawn(command, args, { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
@@ -407,12 +412,13 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
   }
 
   try {
+    const networkArgs = supabaseNetworkArgs();
     for (const record of records) {
       if (record.category === "PGTAP") {
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const expectedPlan = extractPlan(sql);
         record.expectedAssertions = expectedPlan;
-        await runProof(record, commandName(), ["test", "db", "--workdir", "apps/web", "--local", `supabase/tests/${record.path.split("/").at(-1)}`], (output) => parsePgTapOutput(output, expectedPlan), commandRunner);
+        await runProof(record, commandName(), ["test", "db", "--workdir", "apps/web", "--local", ...networkArgs, `supabase/tests/${record.path.split("/").at(-1)}`], (output) => parsePgTapOutput(output, expectedPlan), commandRunner);
       } else if (record.category === "SQL_CONTRACT") {
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const marker = CONTRACT_MARKERS.get(record.path);
@@ -425,7 +431,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
           record.reason = error instanceof Error ? error.message : String(error);
           throw new Error(`${record.path}: ${record.reason}`);
         }
-        await runProof(record, commandName(), ["db", "query", "--workdir", "apps/web", "--local", sql], (output) => {
+        await runProof(record, commandName(), ["db", "query", "--workdir", "apps/web", "--local", ...networkArgs, sql], (output) => {
           if (!output.includes(marker)) throw new Error("completion marker is absent from the PostgreSQL output");
           return { marker };
         }, commandRunner);

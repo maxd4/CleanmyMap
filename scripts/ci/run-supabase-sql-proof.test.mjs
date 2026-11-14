@@ -11,6 +11,7 @@ import {
   runSupabaseSqlProof,
   assertEphemeralSupabaseTestEnvironment,
   sanitizeProofFailureExcerpt,
+  supabaseNetworkArgs,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
 import { parseTerritorialRevisionNotice } from "../../e2e/territorial-legend-revision-concurrency.mjs";
@@ -354,6 +355,14 @@ test("proof failure excerpts are bounded and redact sensitive values", () => {
   assert.doesNotMatch(excerpt, /super-secret-value/);
   assert.doesNotMatch(excerpt, /0123456789abcdef0123456789abcdef/);
   assert.ok(excerpt.length <= 1200);
+});
+
+test("local Supabase proofs reuse the workflow's isolated Docker network when provided", () => {
+  assert.deepEqual(supabaseNetworkArgs({}), []);
+  assert.deepEqual(
+    supabaseNetworkArgs({ CMM_SUPABASE_NETWORK_ID: "cleanmymap-supabase-123-1" }),
+    ["--network-id", "cleanmymap-supabase-123-1"],
+  );
 });
 
 test("rejected proof reaches the runner failure exit code", async () => {
