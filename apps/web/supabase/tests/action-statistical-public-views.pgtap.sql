@@ -32,14 +32,14 @@ grant select on pollution_reference_before to anon, authenticated;
 insert into public.actions (
   id, created_by_clerk_id, action_date, location_label, department_code,
   department_name, status, action_phase, moderation_visibility, access_mode,
-  review_state, published_at, data_provenance, action_context,
+  review_state, published_at, data_provenance, action_context, action_context_source,
   waste_kg, cigarette_butts, volunteers_count, children_count, adult_count,
   retired_count, duration_minutes, latitude, longitude
 ) values (
   '00000000-0000-0000-0000-000000000705', 'statistical-public-views-test',
   current_date - 1, 'Public statistical view', '75', 'Paris', 'approved',
   'post_action_complete', 'visible', 'public', 'approved',
-  timezone('utc', now()), 'real', 'citizen', 20, 100, 10, 2, 7, 1, 30,
+  timezone('utc', now()), 'real', 'citizen', 'explicit', 20, 100, 10, 2, 7, 1, 30,
   48.8566, 2.3522
 );
 
