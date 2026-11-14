@@ -93,7 +93,7 @@ function parseSummaryCounter(output, label) {
   return matches[0] ?? null;
 }
 
-const proofDiagnosticLine = /\b(?:not ok|error|fatal|panic|bail out|failed|result|files|tests|detail|context|hint|permission denied|forbidden|does not exist|violates|duplicate key|assertion)\b/i;
+const proofDiagnosticLine = /\b(?:not ok|error|fatal|panic|bail out|failed|result|files|tests|detail|context|hint|permission denied|forbidden|does not exist|violates|duplicate key|assertion|notests|container|network|image|manifest|pull|rate|toomanyrequests|connection)\b/i;
 
 export function sanitizeProofFailureExcerpt(output) {
   const lines = String(output ?? "")
@@ -102,8 +102,8 @@ export function sanitizeProofFailureExcerpt(output) {
       .replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "")
       .replace(/\s+/g, " ")
       .trim())
-    .filter((line) => line && proofDiagnosticLine.test(line))
-    .slice(-8)
+    .filter((line) => line && proofDiagnosticLine.test(line));
+  const selectedLines = [...new Set([...lines.slice(0, 6), ...lines.slice(-10)])]
     .map((line) => line
       .replace(/\b(?:bearer|basic)\s+\S+/gi, "$1 <redacted>")
       .replace(/\b(?:token|password|secret|api[_-]?key|authorization|cookie|jwt|access[_-]?key)\b\s*[:=]\s*\S+/gi, "<redacted-secret>")
@@ -111,7 +111,7 @@ export function sanitizeProofFailureExcerpt(output) {
       .replace(/(?:\/home\/runner|\/github|\/workspace|[A-Za-z]:\\)\S*/g, "<path>")
       .replace(/\b[0-9a-f]{32,}\b/gi, "<id>")
       .slice(0, 240));
-  return lines.join(" | ").slice(0, 1200) || "unavailable";
+  return selectedLines.join(" | ").slice(0, 1200) || "unavailable";
 }
 
 function parsePgProveSummary(output, expectedPlan) {
