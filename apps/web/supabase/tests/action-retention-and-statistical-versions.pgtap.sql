@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(14);
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"action-retention-test"}', true);
@@ -14,11 +14,12 @@ with inserted as (
   insert into public.actions (
     created_by_clerk_id, created_at, updated_at, action_date, location_label,
     status, action_phase, moderation_visibility, access_mode, review_state,
-    waste_kg, cigarette_butts, volunteers_count
+    waste_kg, cigarette_butts, volunteers_count, preparation_data
   ) values (
     'retention-fixture', '2025-01-01T00:00:00Z', '2025-01-01T00:00:00Z',
     current_date - 400, 'Abandoned draft', 'pending', 'post_action_draft',
-    'visible', 'public', 'draft', 3, 10, 2
+    'visible', 'public', 'draft', 3, 10, 2,
+    jsonb_build_object('gpxImport', jsonb_build_object('intent', 'planned'))
   ) returning id
 )
 insert into retention_fixture_ids(fixture, action_id)
