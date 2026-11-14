@@ -72,6 +72,9 @@ on:
 
 env:
   NODE_VERSION_FILE: apps/web/.nvmrc
+  # GitHub-hosted runners share egress IPs; use the Supabase CLI's GHCR mirror
+  # to avoid public ECR rate limiting during the ephemeral stack pull.
+  SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
 
 jobs:
   persistent-e2e:
