@@ -130,11 +130,19 @@ select is(
   'the aggregate contains the new participant count exactly once'
 );
 select diag(format(
-  'statistical-delta detail waste_kg=%s participants_total=%s',
+  'statistical-delta detail waste_kg=%s participants_total=%s initialized=%s floor_date=%s action_date=%s eligible_non_temporal=%s',
   ((select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
     - (select waste_kg from propagation_state_before))::numeric,
   ((select participants_total from public.public_impact_action_aggregate_state where state_id = true)
-    - (select participants_total from propagation_state_before))::bigint
+    - (select participants_total from propagation_state_before))::bigint,
+  (select initialized_at is not null
+   from public.public_impact_action_aggregate_state
+   where state_id = true),
+  (select floor_date from public.public_impact_action_aggregate_state where state_id = true),
+  (select action_date from public.public_impact_action_contributions
+   where action_id = '00000000-0000-0000-0000-000000000301'),
+  (select eligible_non_temporal from public.public_impact_action_contributions
+   where action_id = '00000000-0000-0000-0000-000000000301')
 ));
 
 update public.actions
