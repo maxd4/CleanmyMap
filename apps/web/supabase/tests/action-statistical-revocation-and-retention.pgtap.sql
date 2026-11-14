@@ -38,14 +38,14 @@ select ok(
 );
 select is(
   (select outcome from public.purge_inactive_action_records(
-    '2026-03-31T03:20:00Z', true, 20, null
+    timezone('utc', now()) + interval '2 months', true, 20, null
   ) where action_id = (select id from retention_abandoned)),
   'would_delete',
   'dry-run accepts an old draft with only a non-eligible derived projection'
 );
 select is(
   (select outcome from public.purge_inactive_action_records(
-    '2026-03-31T03:20:00Z', false, 20,
+    timezone('utc', now()) + interval '2 months', false, 20,
     array[(select id from retention_abandoned)]
   ) where action_id = (select id from retention_abandoned)),
   'deleted',
@@ -90,7 +90,7 @@ values ((select id from retention_business_dependency), 'retention-business-user
 
 select is(
   (select outcome from public.purge_inactive_action_records(
-    '2026-03-31T03:20:00Z', true, 20, null
+    timezone('utc', now()) + interval '2 months', true, 20, null
   ) where action_id = (select id from retention_business_dependency)),
   'blocked',
   'a real registration dependency still blocks the purge'
@@ -143,7 +143,7 @@ select is(
 select is(
   (select waste_source_count from public.action_collection_context_reference_averages_v1(current_date)
    where action_context = 'citizen'),
-  (select coalesce(waste_source_count, 0) + 1 from context_reference_before),
+  coalesce((select waste_source_count from context_reference_before), 0) + 1,
   'the dated context reference includes the published snapshot'
 );
 select is(
