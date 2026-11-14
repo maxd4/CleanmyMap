@@ -20,8 +20,11 @@ function parseCoverageCoordinates(raw: unknown): [number, number][][] | undefine
   return coordinates.length > 0 ? coordinates : undefined;
 }
 
-/** Simulated route coordinates are persisted in Leaflet order: [latitude, longitude]. */
-function parseSimulatedCoordinates(raw: unknown): [number, number][][] | undefined {
+/** Normalize GeoJSON [longitude, latitude] or Leaflet [latitude, longitude] to [latitude, longitude]. */
+function parseSimulatedCoordinates(
+  raw: unknown,
+  coordinateOrder: "geojson" | "leaflet",
+): [number, number][][] | undefined {
   if (!Array.isArray(raw) || raw.length < 1 || raw.length > 12) return undefined;
   const coordinates: [number, number][][] = [];
   for (const rawLine of raw) {
@@ -29,8 +32,10 @@ function parseSimulatedCoordinates(raw: unknown): [number, number][][] | undefin
     const line: [number, number][] = [];
     for (const rawPoint of rawLine) {
       if (!Array.isArray(rawPoint) || rawPoint.length !== 2) return undefined;
-      const latitude = rawPoint[0];
-      const longitude = rawPoint[1];
+      const first = rawPoint[0];
+      const second = rawPoint[1];
+      const latitude = coordinateOrder === "geojson" ? second : first;
+      const longitude = coordinateOrder === "geojson" ? first : second;
       if (
         typeof latitude !== "number" || !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
         typeof longitude !== "number" || !Number.isFinite(longitude) || longitude < -180 || longitude > 180
@@ -61,12 +66,7 @@ function parseSimulatedRouteCoverage(
       candidate.provenance !== "estimated" || candidate.status !== "hypothetical" ||
       candidate.speedKmPerHour !== 3 ||
       (candidate.coverageVersion !== "simulated-routes-v1" && candidate.coverageVersion !== "simulated-routes-v2")) return undefined;
-  const coordinates = parseSimulatedCoordinates(candidate.coordinates)
-    ?.map((line) => line.map(([longitude, latitude]) =>
-      (coordinateOrder === "geojson"
-        ? [latitude, longitude]
-        : [longitude, latitude]) as [number, number],
-    ));
+  const coordinates = parseSimulatedCoordinates(candidate.coordinates, coordinateOrder);
   const groupCount = finiteInteger(candidate.groupCount, 1, 12);
   const durationMinutes = finitePositive(candidate.durationMinutes);
   const targetDistanceKm = finiteNonNegativeNumber(candidate.targetDistanceKm);

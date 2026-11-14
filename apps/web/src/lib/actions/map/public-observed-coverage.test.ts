@@ -244,12 +244,12 @@ describe("public map preparation projection", () => {
     expect(JSON.stringify(preparation)).not.toContain("private.gpx");
   });
 
-  it("rejects malformed simulated coordinates and out-of-range operational groups", () => {
+  it("validates GeoJSON coordinates as [longitude, latitude]", () => {
     const preparation = parsePublicObservedPreparationData({
       public_preparation_data: {
         simulatedRouteCoverage: {
           type: "MultiLineString",
-          coordinates: [[[95, 2.3], [48.81, 2.31]]],
+          coordinates: [[[120, 35], [121, 36]]],
           groupCount: 1,
           groupParticipantCounts: [6],
           durationMinutes: 60,
@@ -270,8 +270,70 @@ describe("public map preparation projection", () => {
       },
     });
 
-    expect(preparation?.simulatedRouteCoverage).toBeUndefined();
+    expect(preparation?.simulatedRouteCoverage?.coordinates).toEqual([[[35, 120], [36, 121]]]);
     expect(preparation?.operationalRoute).toBeUndefined();
+  });
+
+  it("rejects GeoJSON coordinates when the latitude is outside ±90", () => {
+    const preparation = parsePublicObservedPreparationData({
+      public_preparation_data: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [[[2.3, 95], [2.31, 48.81]]],
+          groupCount: 1,
+          groupParticipantCounts: [6],
+          durationMinutes: 60,
+          targetDistanceKm: 3,
+          speedKmPerHour: 3,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v1",
+        },
+      },
+    });
+
+    expect(preparation?.simulatedRouteCoverage).toBeUndefined();
+  });
+
+  it("validates Leaflet coordinates as [latitude, longitude] and preserves longitudes above ±90", () => {
+    const preparation = sanitizePublicObservedPreparationData({
+      simulatedRouteCoverage: {
+        type: "MultiLineString",
+        coordinates: [[[35, 120], [36, 121]]],
+        groupCount: 1,
+        groupParticipantCounts: [6],
+        durationMinutes: 60,
+        targetDistanceKm: 3,
+        speedKmPerHour: 3,
+        geometrySource: "estimated_route",
+        provenance: "estimated",
+        status: "hypothetical",
+        coverageVersion: "simulated-routes-v1",
+      },
+    });
+
+    expect(preparation?.simulatedRouteCoverage?.coordinates).toEqual([[[35, 120], [36, 121]]]);
+  });
+
+  it("rejects Leaflet coordinates when the latitude is outside ±90", () => {
+    const preparation = sanitizePublicObservedPreparationData({
+      simulatedRouteCoverage: {
+        type: "MultiLineString",
+        coordinates: [[[95, 2.3], [48.81, 2.31]]],
+        groupCount: 1,
+        groupParticipantCounts: [6],
+        durationMinutes: 60,
+        targetDistanceKm: 3,
+        speedKmPerHour: 3,
+        geometrySource: "estimated_route",
+        provenance: "estimated",
+        status: "hypothetical",
+        coverageVersion: "simulated-routes-v1",
+      },
+    });
+
+    expect(preparation?.simulatedRouteCoverage).toBeUndefined();
   });
 
   it("merges the sanitized feed coverage column with public route preparation", () => {
