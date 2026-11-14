@@ -66,6 +66,7 @@ jobs:
         id: preflight
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           set +e
           npm run supabase:migration:preflight -- --dry-run > "$RUNNER_TEMP/supabase-preflight.log" 2>&1
@@ -106,6 +107,7 @@ jobs:
       - name: Verify history, Advisors, and critical SQL contracts
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           set +e
           npm run supabase:migration:preflight -- --dry-run > "$RUNNER_TEMP/supabase-postflight.log" 2>&1
