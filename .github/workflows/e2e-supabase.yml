@@ -224,9 +224,9 @@ jobs:
             ) then
               raise exception 'Preflight failed: canonical E2E seed fixture is absent';
             end if;
-            raise notice 'Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present';
           end
           $$;
+          select 'Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present' as preflight_marker;
           SQL
           )"
           echo "Running canonical PostgreSQL schema preflight"
