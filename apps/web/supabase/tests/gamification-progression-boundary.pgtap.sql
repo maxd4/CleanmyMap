@@ -93,7 +93,7 @@ select is((public.apply_gamification_reconciliation(
   '{"xp_total":5,"xp_pending":0,"xp_validated":5,"current_level":1,"potential_level":3,"current_applied_rules_revision":16}'::jsonb,
   '{"reconciliationId":"m7c-reconciliation-a","occurredAt":"2026-10-26T12:00:00Z","hasUserVisibleChanges":true}'::jsonb,
   null
-), '{"status":"applied","inserted":0,"updated":0,"removed":0}'::jsonb, 'a current-snapshot replay is applied with zero ledger deltas');
+)), '{"status":"applied","inserted":0,"updated":0,"removed":0}'::jsonb, 'a current-snapshot replay is applied with zero ledger deltas');
 select is((public.apply_gamification_reconciliation(
   'm7c-owner-a',
   (select coalesce(jsonb_agg(jsonb_build_object(
