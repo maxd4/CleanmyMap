@@ -179,23 +179,32 @@ function inferStartStep(log) {
 }
 
 function inferFailureService(log) {
-  const match = String(log ?? "").match(/\b(?:db|postgres|auth|gotrue|rest|postgrest|storage(?:-api)?|realtime|kong|studio|mailpit|inbucket|edge-runtime|logflare|vector|supavisor|imgproxy)\b/i);
-  return normalizeServiceName(match?.[0]);
+  const text = String(log ?? "");
+  const servicePattern = "(?:db|postgres(?:ql)?|auth|gotrue|rest|postgrest|storage(?:-api)?|realtime|kong|studio|mailpit|inbucket|edge-runtime|logflare|vector|supavisor|imgproxy)";
+  const explicitMatch = text.match(new RegExp(`\\b(?:service|container|component|process)\\s+(${servicePattern})\\b`, "i"));
+  if (explicitMatch) return normalizeServiceName(explicitMatch[1]);
+  if (/\bpostgres(?:ql)?:\/\//i.test(text)) return "db";
+  const stateMatch = text.match(new RegExp(`\\b(${servicePattern})\\s+(?:is|was|has|exited|stopped|failed|unhealthy|restarting)\\b`, "i"));
+  return normalizeServiceName(stateMatch?.[1]);
 }
 
-function sanitizeErrorExcerpt(line) {
-  let excerpt = String(line ?? "")
-    .replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  excerpt = excerpt
-    .replace(/\b(?:bearer|basic)\s+\S+/gi, "$1 <redacted>")
-    .replace(/\b(?:token|password|secret|api[_-]?key|authorization|cookie|jwt|access[_-]?key)\b\s*[:=]\s*\S+/gi, "<redacted-secret>")
-    .replace(/https?:\/\/\S+/gi, "<url>")
-    .replace(/(?:\/home\/runner|\/github|\/workspace|[A-Za-z]:\\)\S*/g, "<path>")
-    .replace(/\b[0-9a-f]{32,}\b/gi, "<id>")
-    .slice(0, 240);
-  return excerpt.replace(/[\r\n]+/g, " ").replace(/\s+/g, "_") || "unavailable";
+const firstErrorDiagnosticLabels = Object.freeze({
+  NETWORK: "network",
+  IMAGE_PULL: "image_pull",
+  PORT_BIND: "port_bind",
+  HEALTHCHECK: "healthcheck",
+  RESOURCE: "resource",
+  CLI_CONFIGURATION: "cli_configuration",
+  PERMISSION: "permission",
+  CONTAINER_CREATE: "container_create",
+  CONTAINER_EXIT: "container_exit",
+  UNKNOWN_ERROR: "unknown_error",
+});
+
+function sanitizeErrorExcerpt(signal, service) {
+  const label = firstErrorDiagnosticLabels[signal] ?? "unknown";
+  const safeService = service ?? "unavailable";
+  return `class=${label};service=${safeService}`;
 }
 
 function inferFirstErrorEvidence(log) {
@@ -203,7 +212,7 @@ function inferFirstErrorEvidence(log) {
     const normalized = line.replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "");
     if (!normalized.trim()) continue;
     const signal = firstErrorSignalPatterns.find(([, pattern]) => pattern.test(normalized))?.[0];
-    if (signal) return { signal, excerpt: sanitizeErrorExcerpt(normalized) };
+    if (signal) return { signal, excerpt: sanitizeErrorExcerpt(signal, inferFailureService(normalized)) };
   }
   return { signal: "NONE", excerpt: "none" };
 }

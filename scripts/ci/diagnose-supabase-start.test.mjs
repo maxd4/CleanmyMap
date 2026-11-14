@@ -225,10 +225,74 @@ test("publishes only the first bounded startup error signal", () => {
   });
 
   assert.equal(evidence.firstErrorSignal, "CONTAINER_CREATE");
-  assert.match(evidence.firstErrorExcerpt, /CONTAINER_CREATE|Error:/);
+  assert.equal(evidence.firstErrorExcerpt, "class=container_create;service=db");
   assert.match(diagnostic, /first_error_signal=CONTAINER_CREATE/);
-  assert.match(diagnostic, /first_error_excerpt=/);
-  assert.doesNotMatch(diagnostic, /password=do-not-publish|<redacted-secret>.*password/);
+  assert.match(diagnostic, /first_error_excerpt=class=container_create;service=db/);
+  assert.doesNotMatch(diagnostic, /password=do-not-publish|<redacted-secret>|Error:/);
+});
+
+test("publishes only allowlisted error categories for adversarial log formats", async () => {
+  const cases = [
+    {
+      log: "Error: failed to connect postgres://user:synthetic-password@host/db",
+      forbidden: ["postgres://", "synthetic-password"],
+      expectedService: "db",
+    },
+    {
+      log: 'Error: {"password":"synthetic-pwd-value"}',
+      forbidden: ["synthetic-pwd-value", '"password"'],
+      expectedService: "unavailable",
+    },
+    {
+      log: "Error: Authorization: Bearer synthetic-auth-token",
+      forbidden: ["synthetic-auth-token", "Bearer"],
+      expectedService: "unavailable",
+    },
+    {
+      log: "Error: token=synthetic-token-value",
+      forbidden: ["synthetic-token-value", "token="],
+      expectedService: "unavailable",
+    },
+    {
+      log: "Error: failed to read C:\\Users\\runner\\secrets\\supabase.env",
+      forbidden: ["C:\\Users\\runner", "supabase.env"],
+      expectedService: "unavailable",
+    },
+    {
+      log: "Error: synthetic unknown diagnostic with private-data-value",
+      forbidden: ["private-data-value", "synthetic unknown diagnostic"],
+      expectedService: "unavailable",
+    },
+  ];
+  const root = await mkdtemp(resolve(tmpdir(), "diagnose-supabase-start-artifact-"));
+  try {
+    for (const [index, testCase] of cases.entries()) {
+      const evidence = collectBoundedStartEvidence({
+        log: testCase.log,
+        exitCode: 1,
+        probeCommand: createProbeCommand(),
+      });
+      const diagnostic = renderSupabaseStartDiagnostic({
+        category: SUPABASE_START_CATEGORIES.UNCLASSIFIED,
+        exitCode: 1,
+        dockerVersion: evidence.dockerServerVersion,
+        supabaseCliVersion: evidence.supabaseCliVersion,
+        dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+        evidence,
+      });
+      const artifactPath = resolve(root, `diagnostic-${index}.txt`);
+      await writeFile(artifactPath, diagnostic, "utf8");
+      const artifact = readFileSyncFromFs(artifactPath, "utf8");
+
+      assert.match(artifact, /first_error_excerpt=class=unknown_error;service=/);
+      assert.match(artifact, new RegExp(`service=${testCase.expectedService}`));
+      for (const forbidden of testCase.forbidden) {
+        assert.doesNotMatch(artifact, new RegExp(forbidden.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      }
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("does not classify a benign migration filename as a network error", () => {
