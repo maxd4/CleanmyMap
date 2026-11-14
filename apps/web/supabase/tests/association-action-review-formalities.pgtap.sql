@@ -319,6 +319,7 @@ create temp table association_action_review_formality_fixture (
   invalid_action_id uuid not null,
   valid_action_id uuid not null
 );
+grant all on association_action_review_formality_fixture to service_role;
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"fixture-service"}', true);
