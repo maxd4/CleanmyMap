@@ -51,6 +51,8 @@ test("returns READY_TO_APPLY for several ordered pending migrations", () => {
 
   assert.equal(summary.status, "READY_TO_APPLY");
   assert.deepEqual(summary.pending, pending);
+  assert.equal(summary.firstBlockingMigration, "NONE");
+  assert.equal(summary.actionRequired, "Aucune action requise.");
 });
 
 test("returns DIVERGED when the remote sequence is not a local prefix", () => {
@@ -66,6 +68,7 @@ test("returns DIVERGED when the remote sequence is not a local prefix", () => {
 
   assert.equal(summary.status, "DIVERGED");
   assert.ok(summary.causes.some((cause) => cause.code === "MIGRATION_HISTORY_DIVERGED"));
+  assert.equal(summary.firstBlockingMigration, localIds[2]);
 });
 
 test("blocks an unverified CLI target instead of treating failed access as aligned", () => {
@@ -96,6 +99,8 @@ test("blocks a pending migration with data risk", () => {
 
   assert.equal(summary.status, "BLOCKED");
   assert.ok(summary.causes.some((cause) => cause.code === "MIGRATION_DATA_RISK"));
+  assert.equal(summary.firstBlockingMigration, pending[0]);
+  assert.match(summary.actionRequired, /preuve SQL/);
 });
 
 test("blocks an incompatible deployed runtime", () => {
@@ -110,6 +115,8 @@ test("blocks an incompatible deployed runtime", () => {
 
   assert.equal(summary.status, "BLOCKED");
   assert.ok(summary.causes.some((cause) => cause.code === "RUNTIME_INCOMPATIBLE"));
+  assert.equal(summary.firstBlockingMigration, "NONE");
+  assert.match(summary.actionRequired, /déploiement applicatif/);
 });
 
 test("exposes only read-only Supabase commands", () => {

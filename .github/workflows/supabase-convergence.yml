@@ -1,0 +1,129 @@
+name: Supabase migration convergence
+
+permissions: {}
+
+concurrency:
+  group: supabase-production-migrations
+  cancel-in-progress: false
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/web/supabase/migrations/**"
+      - "apps/web/supabase/config.toml"
+      - "scripts/ci/audit-supabase-release.mjs"
+      - "scripts/ci/supabase-migration-preflight.mjs"
+      - "scripts/ci/resolve-vercel-runtime-proof.mjs"
+      - ".github/workflows/supabase-convergence.yml"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+  schedule:
+    - cron: "15 3 * * *"
+
+env:
+  NODE_VERSION_FILE: apps/web/.nvmrc
+  SUPABASE_PROJECT_REF: trktzkgujgpgsgkoyndn
+  VERCEL_PROJECT_ID: prj_mRle8G2okmR2GSESDkduQD0Jv6Yj
+  VERCEL_ORG_ID: team_gMOehrKlO8JiG5uLNTh4qvxq
+  VERCEL_PRODUCTION_ALIAS: cleanmymap.fr
+
+jobs:
+  converge:
+    name: Preflight and converge Supabase migrations
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: supabase-production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout main candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Link the verified Supabase project
+        working-directory: apps/web
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Prove the deployed runtime matches this candidate
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: node scripts/ci/resolve-vercel-runtime-proof.mjs --sha="${{ github.sha }}" --proof="$RUNNER_TEMP/vercel-runtime-proof.json"
+
+      - name: Run read-only preflight and gate the queue
+        id: preflight
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set +e
+          npm run supabase:migration:preflight -- --dry-run --runtime-proof="$RUNNER_TEMP/vercel-runtime-proof.json" > "$RUNNER_TEMP/supabase-preflight.log" 2>&1
+          preflight_exit=$?
+          set -e
+          cat "$RUNNER_TEMP/supabase-preflight.log"
+          status=$(sed -n 's/^PREFLIGHT_STATUS: //p' "$RUNNER_TEMP/supabase-preflight.log" | tail -n 1)
+          first=$(sed -n 's/^FIRST_BLOCKING_MIGRATION: //p' "$RUNNER_TEMP/supabase-preflight.log" | tail -n 1)
+          action=$(sed -n 's/^ACTION_REQUIRED: //p' "$RUNNER_TEMP/supabase-preflight.log" | tail -n 1)
+          {
+            echo "status=$status"
+            echo "first_blocking_migration=$first"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "## Supabase migration convergence"
+            echo "- Status: \`$status\`"
+            echo "- First blocking migration: \`${first:-NONE}\`"
+            echo "- Required action: ${action:-not reported}"
+            echo "- Remote writes during preflight: \`NONE\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" != "READY_TO_APPLY" ] && [ "$status" != "ALIGNED" ]; then
+            echo "Preflight blocked the deployment; no migration was applied."
+            exit 1
+          fi
+          if [ "$status" = "READY_TO_APPLY" ] && [ "$preflight_exit" -ne 0 ]; then
+            echo "READY_TO_APPLY was reported with a failing preflight exit code."
+            exit 1
+          fi
+
+      - name: Apply the complete canonical queue
+        if: steps.preflight.outputs.status == 'READY_TO_APPLY'
+        working-directory: apps/web
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx supabase db push --linked --yes
+
+      - name: Verify history, Advisors, and critical SQL contracts
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set +e
+          npm run supabase:migration:preflight -- --dry-run --runtime-proof="$RUNNER_TEMP/vercel-runtime-proof.json" > "$RUNNER_TEMP/supabase-postflight.log" 2>&1
+          postflight_exit=$?
+          set -e
+          cat "$RUNNER_TEMP/supabase-postflight.log"
+          postflight_status=$(sed -n 's/^PREFLIGHT_STATUS: //p' "$RUNNER_TEMP/supabase-postflight.log" | tail -n 1)
+          if [ "$postflight_status" != "ALIGNED" ] || [ "$postflight_exit" -ne 0 ]; then
+            echo "Postflight did not prove an aligned, empty queue. No retry is performed."
+            exit 1
+          fi
+          npm run audit:supabase-migration-trees
+          node --test scripts/ci/supabase-migration-preflight.test.mjs scripts/ci/resolve-vercel-runtime-proof.test.mjs scripts/audits/audit-supabase-migration-trees.test.mjs
+          npm run test -w apps/web -- src/lib/supabase/migration-contracts/action-rides-transactions-migration.test.ts src/lib/supabase/migration-contracts/public-action-map-reconstruction-projection.test.ts

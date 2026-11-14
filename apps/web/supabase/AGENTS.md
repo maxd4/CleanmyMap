@@ -198,6 +198,18 @@ du préflight sont exécutables par :
 node --test scripts/ci/supabase-migration-preflight.test.mjs
 ```
 
+La convergence publiée est orchestrée par
+`.github/workflows/supabase-convergence.yml` sur `main`, en déclenchement
+manuel et quotidien. Le job est sérialisé, n'expose aucun secret à une PR et
+exige une preuve Vercel `READY` portant exactement le SHA candidat avant de
+considérer `READY_TO_APPLY`. Il applique alors toute la file avec l'unique
+commande `npx supabase db push --linked --yes`, puis exige un préflight
+`ALIGNED`, des Advisors relus et les contrats statiques critiques. `BLOCKED`
+ou `DIVERGED` publie un diagnostic avec la première migration concernée et
+n'applique rien ; aucune reprise aveugle, réparation d'historique ou DDL
+manuelle n'est autorisée. La procédure opérationnelle canonique est
+`documentation/operations/runbook-supabase-convergence.md`.
+
 Une migration déjà appliquée se corrige exclusivement par une migration
 forward-only. Une migration publiée mais absente de l'historique du projet lié
 peut être corrigée avant application uniquement si un replay ou un push autorisé

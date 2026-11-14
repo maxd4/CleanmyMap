@@ -176,6 +176,32 @@ function normalizeRuntimeEvidence(evidence) {
   return { status: "COMPATIBLE", sha: evidence.sha, migrationVersion: String(evidence.migrationVersion), source: evidence.source };
 }
 
+const ACTIONS_BY_CAUSE = Object.freeze({
+  CLI_AUTH_OR_TARGET_UNVERIFIED: "Vérifier l'identité CLI, le projet lié et les permissions sans modifier l'historique.",
+  CLI_COMMAND_FAILED: "Corriger l'accès ou la disponibilité de la commande, puis relancer le préflight ; ne pas utiliser migration repair.",
+  MIGRATION_HISTORY_DIVERGED: "Arrêter et réconcilier l'historique par une procédure forward-only validée.",
+  DRY_RUN_MISMATCH: "Arrêter et comparer la file complète avec db push --dry-run avant toute application.",
+  MIGRATION_DATA_RISK: "Revoir la migration et obtenir une preuve SQL éphémère autorisée avant application.",
+  SQL_FORWARD_DEPENDENCY: "Corriger l'ordre ou la dépendance SQL dans une migration forward-only avant application.",
+  SECURITY_ADVISOR_FINDING: "Résoudre ou accepter explicitement le finding de sécurité/RLS avant application.",
+  PERFORMANCE_ADVISOR_FINDING: "Revoir le finding de performance avant application et ne pas masquer une régression.",
+  RUNTIME_MISSING: "Déployer et prouver le runtime compatible avec la file de migrations avant application.",
+  RUNTIME_INCOMPATIBLE: "Coordonner le déploiement applicatif et fournir une preuve du SHA runtime compatible avant application.",
+});
+
+export function firstBlockingMigration(pending = [], analyses = [], causes = []) {
+  const risky = new Set(
+    analyses
+      .filter((entry) => pending.includes(entry.id) && (entry.destructive || entry.dataMutation || entry.forwardDependencies?.length))
+      .map((entry) => entry.id),
+  );
+  return pending.find((id) => risky.has(id)) ?? (causes.length > 0 ? pending[0] ?? "NONE" : "NONE");
+}
+
+export function actionRequiredForCauses(causes = []) {
+  return causes.map((cause) => ACTIONS_BY_CAUSE[cause.code] ?? "Analyser la cause indiquée et obtenir une validation explicite avant mutation.")[0] ?? "Aucune action requise.";
+}
+
 export function evaluatePreflight({
   projectRef,
   projectMatched = false,
@@ -223,7 +249,16 @@ export function evaluatePreflight({
   if (causes.some((cause) => cause.code === "MIGRATION_HISTORY_DIVERGED" || cause.code === "DRY_RUN_MISMATCH")) status = "DIVERGED";
   else if (causes.length > 0) status = "BLOCKED";
   else if (pending.length === 0) status = "ALIGNED";
-  return { status, causes, pending, runtime, projectRef, pendingCount: pending.length };
+  return {
+    status,
+    causes,
+    pending,
+    runtime,
+    projectRef,
+    pendingCount: pending.length,
+    firstBlockingMigration: firstBlockingMigration(pending, analyses, causes),
+    actionRequired: actionRequiredForCauses(causes),
+  };
 }
 
 function cliAuthSource(env = process.env) {
@@ -329,6 +364,8 @@ function printSummary(summary) {
   console.log(`RLS_FINDINGS: ${summary.advisors.rlsCount}`);
   console.log(`PERFORMANCE_ADVISOR_FINDINGS: ${summary.advisors.performanceCount}`);
   console.log(`RUNTIME_COMPATIBILITY: ${summary.runtime.status}`);
+  console.log(`FIRST_BLOCKING_MIGRATION: ${summary.firstBlockingMigration}`);
+  console.log(`ACTION_REQUIRED: ${summary.actionRequired}`);
   console.log(`REMOTE_WRITES: ${summary.remoteWrites}`);
   for (const cause of summary.causes) console.log(`CAUSE: ${cause.code} — ${cause.detail}`);
 }

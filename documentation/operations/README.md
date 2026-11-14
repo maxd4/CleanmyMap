@@ -11,6 +11,7 @@ services, coûts, incidents et diagnostics opérationnels.
 | Sujet | Source propriétaire | Ne pas confondre |
 |---|---|---|
 | Publication Vercel | [runbook-deploiement.md](./runbook-deploiement.md), [checklist-push-deploy.md](./checklist-push-deploy.md) | Git publié ≠ Vercel déployé |
+| Convergence Supabase | [runbook-supabase-convergence.md](./runbook-supabase-convergence.md) | migration publiée ≠ migration appliquée |
 | Coûts / quotas / cache | [platform-cost-governance.md](./platform-cost-governance.md) | Audit daté ≠ mesure actuelle |
 | Configuration fournisseur | [services-stack.md](./services-stack.md), [environment-configuration.md](./environment-configuration.md) | Variable présente ≠ service actif |
 | Incidents | [incidents-frequents-et-reprise.md](./incidents-frequents-et-reprise.md) | [INCIDENT_RUNBOOK_SHORT.md](./INCIDENT_RUNBOOK_SHORT.md) est HISTORY |
@@ -41,6 +42,7 @@ Supabase vivent dans `documentation/database/`.
 ## Déploiement
 
 - `runbook-deploiement.md`
+- `runbook-supabase-convergence.md`
 - `checklist-push-deploy.md`
 - `cloudflare-uptimerobot-checklist.md`
 

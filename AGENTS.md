@@ -426,6 +426,17 @@ preuve de migration appliquée ne devient pas une preuve pgTAP, RLS ou de
 concurrence. Si la CLI liée ou ses permissions sont indisponibles, ne pas
 installer ni démarrer Docker en repli : classer le blocage précisément.
 
+La convergence automatique publiée est portée par
+`.github/workflows/supabase-convergence.yml` : déclenchement sur publication
+dans `main`, manuel et quotidien, environnement protégé
+`supabase-production`, concurrence sérialisée et aucun déclencheur PR. Le
+workflow réutilise le préflight canonique, bloque `BLOCKED`/`DIVERGED`, exige
+une preuve du runtime Vercel au SHA exact du candidat et n'applique la file
+complète que pour `READY_TO_APPLY`. Après application, il vérifie un préflight
+`ALIGNED`, les Advisors et les contrats statiques critiques. Il ne réalise
+jamais de `migration repair`, reset, DDL manuelle, correction SQL automatique
+ou retry aveugle ; voir `documentation/operations/runbook-supabase-convergence.md`.
+
 Les dispositifs de *security deception* ou leurres actifs ne sont pas du
 dead-code gratuit : exiger owner, aucune permission/secret réel, absence
 d'effet métier, surveillance exploitable, tests positifs/négatifs et
