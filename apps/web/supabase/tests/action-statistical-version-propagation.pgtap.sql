@@ -5,6 +5,17 @@ select plan(34);
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"statistical-version-propagation-test"}', true);
 
+do $$
+begin
+  perform public.rebuild_public_impact_action_state(
+    (select floor_date
+     from public.public_impact_action_aggregate_state
+     where state_id = true),
+    public.current_public_impact_projection_version()
+  );
+end;
+$$;
+
 create temp table propagation_state_before as
 select waste_kg, participants_total
 from public.public_impact_action_aggregate_state
