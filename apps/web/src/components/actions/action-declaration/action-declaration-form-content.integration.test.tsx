@@ -147,6 +147,7 @@ function FormSubmissionHarness() {
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [searchCountryCode, setSearchCountryCode] = useState<"FR" | "BE">("FR");
   const presentation = useActionDeclarationFormPresentation({
     validationIssues,
     hasAttemptedSubmit,
@@ -182,6 +183,10 @@ function FormSubmissionHarness() {
   return (
     <>
       <ActionDeclarationFormSurface
+        countryCode={searchCountryCode}
+        onCountryCodeChange={(countryCode) => {
+          if (countryCode === "FR" || countryCode === "BE") setSearchCountryCode(countryCode);
+        }}
         actClasses={getBlockClasses("act")}
         showDraftBanner={false}
         draftStorageReadError={false}
@@ -260,6 +265,20 @@ describe("ActionDeclarationFormSurface native submission boundary", () => {
     expect(adultCount.getAttribute("aria-describedby")).toContain("action-validation-error-volunteerParticipation");
     expect(document.activeElement).toBe(organizerType);
 
+    await act(async () => root.unmount());
+  });
+
+  it("keeps the after-action search country local to address suggestions", async () => {
+    const { container, root } = renderHarness();
+    const country = container.querySelector("#action-search-country") as HTMLSelectElement;
+
+    expect(country.value).toBe("FR");
+    await act(async () => {
+      setControlValue(country, "BE");
+      await Promise.resolve();
+    });
+
+    expect(country.value).toBe("BE");
     await act(async () => root.unmount());
   });
 

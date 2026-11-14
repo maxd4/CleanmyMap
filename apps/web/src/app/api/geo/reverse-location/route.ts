@@ -216,9 +216,9 @@ async function loadGeoplateformeReverseLocation(
     for (const feature of payload.features ?? []) {
       const postcode = cleanPart(feature.properties?.postcode);
       const location = formatReverseLocation(feature);
-      // The official French provider plus a French five-digit postcode is a
-      // territorial signal. The bbox only decides whether to probe; it never
-      // authorizes a result on its own.
+      // The postcode identifies the returned address, while proximity only
+      // limits the reverse result. Neither proves that the requested point is
+      // in France; the caller verifies that independently.
       if (location && /^\d{5}$/.test(postcode) && isNearRequestedPoint(location, latitude, longitude)) {
         return location;
       }
@@ -269,14 +269,20 @@ export async function GET(request: Request) {
   }
 
   try {
-    // The bbox only decides whether Geoplateforme is worth probing. A valid
-    // nearby Geoplateforme address with a French postcode is sufficient; Photon
-    // remains a fallback and must expose country metadata when used.
+    // The bbox only decides whether Geoplateforme is worth probing. Its French
+    // address and proximity do not prove the requested point's country, so a
+    // successful French result is returned only after Photon confirms `fr`.
     const shouldProbeGeoplateforme = isWithinFranceTerritoryBounds(lat, lon);
     const geoplateformeLocation = shouldProbeGeoplateforme
       ? await loadGeoplateformeReverseLocation(lat, lon)
       : null;
     if (geoplateformeLocation) {
+      const pointCountry = await loadPhotonReverseLocation(lat, lon);
+      if (pointCountry?.countryCode !== "fr") {
+        return NextResponse.json({ status: "ok", location: null }, {
+          headers: REVERSE_LOCATION_CACHE_HEADERS,
+        });
+      }
       return NextResponse.json({
         status: "ok",
         location: geoplateformeLocation,

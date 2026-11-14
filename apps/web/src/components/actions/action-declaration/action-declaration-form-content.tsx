@@ -7,10 +7,12 @@ import { CmmDialog } from "@/components/ui/cmm-dialog";
 import { cn } from "@/lib/utils";
 import type { getBlockClasses } from "@/lib/ui/block-accents";
 import type { CreateActionPayload } from "@/lib/actions/types";
+import type { CountryCode } from "@/lib/user-location-preference";
 import { ActionDeclarationFormConfirmation } from "./ui/action-declaration-form-confirmation";
 import { ActionDeclarationExportPicker } from "./ui/action-declaration-export-picker";
 import { ActionDeclarationFormFeedback } from "./ui/action-declaration-form.feedback";
 import { ActionDeclarationFormSections } from "./action-declaration-form-sections";
+import { ActionSearchCountryField } from "./before/action-search-country-field";
 import type { ActionDeclarationFormProps } from "./action-declaration-form.types";
 import type { FormState } from "./model";
 
@@ -127,6 +129,8 @@ export function ActionDeclarationFormOverlays({
 }
 
 type SurfaceProps = {
+  countryCode: CountryCode;
+  onCountryCodeChange: (countryCode: CountryCode) => void;
   actClasses: ReturnType<typeof getBlockClasses>;
   showDraftBanner: boolean;
   draftStorageReadError: boolean;
@@ -142,6 +146,8 @@ type SurfaceProps = {
 };
 
 export function ActionDeclarationFormSurface({
+  countryCode,
+  onCountryCodeChange,
   actClasses,
   showDraftBanner,
   draftStorageReadError,
@@ -196,6 +202,7 @@ export function ActionDeclarationFormSurface({
                   <h2 className="text-[clamp(1.5rem,2.8vw,2.35rem)] font-black tracking-tighter text-emerald-950">Déclarer les résultats terrain</h2>
                 </div>
               </header>
+              <ActionSearchCountryField countryCode={countryCode} onChange={onCountryCodeChange} />
               <ActionDeclarationFormSections {...sections} />
             </fieldset>
           </div>

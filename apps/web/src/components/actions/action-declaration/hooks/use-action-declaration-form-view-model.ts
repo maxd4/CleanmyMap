@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { getBlockClasses } from "@/lib/ui/block-accents";
+import { DEFAULT_COUNTRY_CODE, type CountryCode } from "@/lib/user-location-preference";
 import {
   ActionDeclarationFormOverlays,
   ActionDeclarationFormSurface,
@@ -15,6 +16,7 @@ function buildActionDeclarationSectionProps(
   props: ActionDeclarationFormProps,
   state: ActionDeclarationFormState,
   presentation: ReturnType<typeof useActionDeclarationFormPresentation>,
+  searchCountryCode: CountryCode,
 ) {
   const {
     form,
@@ -70,7 +72,7 @@ function buildActionDeclarationSectionProps(
     gpsMessage: smartAssist.gpsMessage,
     onAutofillGps: smartAssist.autofillGps,
     recordType: form.recordType,
-    countryCode: props.countryCode,
+    countryCode: searchCountryCode,
   };
   return {
     form,
@@ -93,6 +95,7 @@ export function useActionDeclarationFormViewModel(
 ) {
   const [isExportPickerOpen, setIsExportPickerOpen] = useState(false);
   const [showRestrictionDialog, setShowRestrictionDialog] = useState(false);
+  const [searchCountryCode, setSearchCountryCode] = useState<CountryCode>(props.countryCode ?? DEFAULT_COUNTRY_CODE);
   const { form, validationIssues, hasAttemptedSubmit, loadedActionPhase, submissionState } = state;
   const presentation = useActionDeclarationFormPresentation({
     validationIssues,
@@ -102,7 +105,7 @@ export function useActionDeclarationFormViewModel(
   });
   const draftRecoveryBlocked = !props.initialActionId && state.draftStorageReadError;
   const isCompletionBlocked = !props.isAuthenticated || draftRecoveryBlocked;
-  const sections = buildActionDeclarationSectionProps(props, state, presentation);
+  const sections = buildActionDeclarationSectionProps(props, state, presentation, searchCountryCode);
 
   function onSubmit(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -147,6 +150,8 @@ export function useActionDeclarationFormViewModel(
       signUpHref: props.signUpHref,
     } satisfies React.ComponentProps<typeof ActionDeclarationFormOverlays>,
     surface: {
+      countryCode: searchCountryCode,
+      onCountryCodeChange: setSearchCountryCode,
       actClasses: getBlockClasses("act"),
       showDraftBanner: state.showDraftBanner,
       draftStorageReadError: state.draftStorageReadError,

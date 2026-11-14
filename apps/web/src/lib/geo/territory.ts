@@ -91,12 +91,9 @@ export function matchesPhotonCountry(result: unknown, countryCode: string): bool
     return resultCountry.trim().toLowerCase() === expectedCountry;
   }
 
-  // France keeps the historical provider compatibility only for a coordinate
-  // inside the metropolitan provider bounds. A foreign request has no safe
-  // fallback without explicit country metadata.
-  if (expectedCountry !== "fr") return false;
-  const coordinates = parsePhotonCoordinates(result);
-  return coordinates !== null && isWithinFranceTerritoryBounds(coordinates.latitude, coordinates.longitude);
+  // Coordinates alone cannot prove the country: the metropolitan bbox also
+  // contains neighbouring countries. Fail closed when Photon omits metadata.
+  return false;
 }
 
 export function buildTerritoryNominatimSearchUrl(query: string): string | null {
