@@ -50,6 +50,7 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.match(workflow, /docker network create --driver bridge/);
   assert.match(workflow, /cleanmymap-supabase-\$\{GITHUB_RUN_ID\}-\$\{GITHUB_RUN_ATTEMPT\}/);
   assert.match(workflow, /--network-id="\$\{\{ steps\.supabase_network\.outputs\.network_name \}\}"/);
+  assert.match(workflow, /supabase db reset --local --workdir apps\/web --yes --network-id="\$\{\{ steps\.supabase_network\.outputs\.network_name \}\}"/);
   assert.match(workflow, /docker network rm "\$network_name"/);
   assert.match(workflow, /No isolated Supabase Docker network was created; skipping removal/);
   assert.match(workflow, /Isolated Supabase Docker network is already absent; skipping removal/);
