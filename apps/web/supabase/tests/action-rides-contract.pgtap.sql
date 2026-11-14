@@ -203,7 +203,7 @@ select lives_ok($fixture$
   $$;
 $fixture$, 'action without a start time can be represented');
 select ok(not public.is_action_ride_departure_eligible(
-  (select max(id) from public.actions where created_by_clerk_id = 'ride-no-time'),
+  (select id from public.actions where created_by_clerk_id = 'ride-no-time' limit 1),
   ((current_date + 14)::timestamp + time '08:00') at time zone 'Europe/Paris'
 ), 'missing action start time fails closed');
 
