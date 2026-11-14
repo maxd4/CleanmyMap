@@ -58,26 +58,6 @@ select is(
   1::bigint,
   'the first source version has one idempotent application audit row'
 );
-select diag(format(
-  'statistical-step detail stage=initial delta_waste_kg=%s delta_participants_total=%s eligible_temporal=%s',
-  ((select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
-    - (select waste_kg from propagation_state_before))::numeric,
-  ((select participants_total from public.public_impact_action_aggregate_state where state_id = true)
-    - (select participants_total from propagation_state_before))::bigint,
-  (select eligible_temporal from public.public_impact_action_contributions
-   where action_id = '00000000-0000-0000-0000-000000000301')
-));
-select diag(format(
-  'statistical-trigger detail action_trigger_count=%s action_trigger_names=%s',
-  (select count(*)
-   from pg_trigger
-   where tgrelid = 'public.actions'::regclass
-     and not tgisinternal),
-  (select string_agg(tgname, ',' order by tgname)
-   from pg_trigger
-   where tgrelid = 'public.actions'::regclass
-     and not tgisinternal)
-));
 
 update public.actions
 set status = 'pending', action_phase = 'post_action_draft', review_state = 'draft',
@@ -104,15 +84,6 @@ select is(
   true,
   'a pending correction keeps the previous published contribution active'
 );
-select diag(format(
-  'statistical-step detail stage=pending delta_waste_kg=%s delta_participants_total=%s eligible_temporal=%s',
-  ((select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
-    - (select waste_kg from propagation_state_before))::numeric,
-  ((select participants_total from public.public_impact_action_aggregate_state where state_id = true)
-    - (select participants_total from propagation_state_before))::bigint,
-  (select eligible_temporal from public.public_impact_action_contributions
-   where action_id = '00000000-0000-0000-0000-000000000301')
-));
 
 update public.actions
 set status = 'approved', action_phase = 'post_action_complete', review_state = 'approved',
@@ -157,15 +128,6 @@ select ok(
              where v.id = source_version_id) desc limit 1),
   'waste changes are recorded in the application audit'
 );
-select diag(format(
-  'statistical-step detail stage=approved delta_waste_kg=%s delta_participants_total=%s eligible_temporal=%s',
-  ((select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
-    - (select waste_kg from propagation_state_before))::numeric,
-  ((select participants_total from public.public_impact_action_aggregate_state where state_id = true)
-    - (select participants_total from propagation_state_before))::bigint,
-  (select eligible_temporal from public.public_impact_action_contributions
-   where action_id = '00000000-0000-0000-0000-000000000301')
-));
 select is(
   (((select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
     - (select waste_kg from propagation_state_before))::numeric)::text,
@@ -178,21 +140,6 @@ select is(
   '12'::text,
   'the aggregate contains the new participant count exactly once'
 );
-select diag(format(
-  'statistical-delta detail waste_kg=%s participants_total=%s initialized=%s floor_date=%s action_date=%s eligible_non_temporal=%s',
-  ((select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
-    - (select waste_kg from propagation_state_before))::numeric,
-  ((select participants_total from public.public_impact_action_aggregate_state where state_id = true)
-    - (select participants_total from propagation_state_before))::bigint,
-  (select initialized_at is not null
-   from public.public_impact_action_aggregate_state
-   where state_id = true),
-  (select floor_date from public.public_impact_action_aggregate_state where state_id = true),
-  (select action_date from public.public_impact_action_contributions
-   where action_id = '00000000-0000-0000-0000-000000000301'),
-  (select eligible_non_temporal from public.public_impact_action_contributions
-   where action_id = '00000000-0000-0000-0000-000000000301')
-));
 
 update public.actions
 set status = 'approved', action_phase = 'post_action_complete', review_state = 'approved',
