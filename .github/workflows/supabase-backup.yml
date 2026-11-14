@@ -172,7 +172,7 @@ jobs:
           encrypted_archive="$RUNNER_TEMP/supabase-backup-${GITHUB_RUN_ID}.tar.gpg"
           tar --create --file "$plain_archive" --directory "$BACKUP_ROOT" .
           GNUPGHOME="$GNUPGHOME" gpg --batch --yes --trust-model always --recipient "$RECIPIENT_FINGERPRINT" --output "$encrypted_archive" --encrypt "$plain_archive"
-          gpg --list-packets "$encrypted_archive" 2>/dev/null | grep -q 'public key encrypted packet'
+          gpg --list-packets "$encrypted_archive" 2>/dev/null | grep -q ':pubkey enc packet:'
           archive_sha256=$(sha256sum "$encrypted_archive" | awk '{print $1}')
           printf '%s  %s\n' "$archive_sha256" "$(basename "$encrypted_archive")" > "$RUNNER_TEMP/supabase-backup-${GITHUB_RUN_ID}.sha256"
           rm -f "$plain_archive"
