@@ -410,7 +410,6 @@ test("authenticated Vercel inspection keeps the active READY Production deployme
   try {
     const productionSha = git(root, ["rev-parse", "HEAD"]);
     const reference = proof(productionSha);
-    const fetchImpl = makeVercelFetch(productionSha);
 
     const preview = await inspectVercelProduction({
       repositoryRoot: root,

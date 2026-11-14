@@ -38,12 +38,6 @@ function migrationIdFromValue(value) {
   return normalizeMigrationId(value.version ?? value.id ?? value.name ?? value.migration);
 }
 
-function migrationNameFromValue(value) {
-  if (typeof value === "string") return value;
-  if (!value || typeof value !== "object") return "";
-  return String(value.name ?? value.file ?? value.migration ?? value.version ?? "");
-}
-
 function migrationRows(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.migrations)) return payload.migrations;
@@ -60,10 +54,6 @@ function advisorFindings(payload) {
 
 function findingLevel(finding) {
   return String(finding?.level ?? finding?.severity ?? "").trim().toUpperCase();
-}
-
-function findingName(finding) {
-  return String(finding?.name ?? finding?.id ?? finding?.slug ?? finding?.key ?? finding?.code ?? "");
 }
 
 function isCriticalFinding(finding) {

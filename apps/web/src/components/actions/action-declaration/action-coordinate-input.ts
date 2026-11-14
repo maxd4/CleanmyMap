@@ -70,7 +70,7 @@ function parseCoordinateText(value: string): ActionLocationCoordinates | null {
 }
 
 function parseExplicitUrlCoordinate(value: string): ActionLocationCoordinates | null {
-  let decoded = value;
+  let decoded: string;
   try {
     decoded = decodeURIComponent(value);
   } catch {
