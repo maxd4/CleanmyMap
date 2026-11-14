@@ -117,7 +117,7 @@ select throws_ok(
   $$insert into public.community_events (
        organizer_clerk_id, title, event_date, location_label
      ) values (
-       'organizer-b', current_date, 'Forged organizer event', 'Data API'
+       'organizer-b', 'Forged organizer event', current_date, 'Data API'
      )$$,
   '42501',
   null,
