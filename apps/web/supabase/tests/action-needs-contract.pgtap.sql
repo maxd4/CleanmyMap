@@ -3,9 +3,9 @@ begin;
 select plan(71);
 
 select has_table('public', 'action_needs', 'action_needs exists');
-select has_index('public', 'action_needs_action_status_created_at_idx', 'action/status index exists');
-select has_index('public', 'action_needs_category_status_created_at_idx', 'category/status index exists');
-select has_index('public', 'action_needs_open_expires_at_idx', 'open expiration index exists');
+select has_index('public', 'action_needs', 'action_needs_action_status_created_at_idx', 'action/status index exists');
+select has_index('public', 'action_needs', 'action_needs_category_status_created_at_idx', 'category/status index exists');
+select has_index('public', 'action_needs', 'action_needs_open_expires_at_idx', 'open expiration index exists');
 select ok(has_column('public', 'action_needs', 'id'), 'id column exists');
 select ok(has_column('public', 'action_needs', 'action_id'), 'action_id column exists');
 select ok(has_column('public', 'action_needs', 'created_by_clerk_id'), 'creator column exists');

@@ -3,7 +3,7 @@ begin;
 select plan(27);
 
 select has_table('public', 'action_retrospectives', 'retrospective table exists');
-select has_index('public', 'action_retrospectives_pkey', 'one retrospective exists per action');
+select has_index('public', 'action_retrospectives', 'action_retrospectives_pkey', 'one retrospective exists per action');
 select ok((select relrowsecurity from pg_class where oid = 'public.action_retrospectives'::regclass), 'retrospectives have RLS enabled');
 select ok(not has_table_privilege('authenticated', 'public.action_retrospectives', 'SELECT'), 'authenticated cannot read private retrospectives directly');
 select ok(not has_table_privilege('authenticated', 'public.action_retrospectives', 'INSERT'), 'authenticated cannot insert private retrospectives directly');

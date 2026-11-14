@@ -9,11 +9,13 @@ select has_table(
 );
 select has_index(
   'public',
+  'community_subscriptions',
   'community_subscriptions_user_territory_unique_idx',
   'territory subscription uniqueness remains enforced'
 );
 select has_index(
   'public',
+  'community_subscriptions',
   'community_subscriptions_user_topic_unique_idx',
   'topic subscription uniqueness remains enforced'
 );

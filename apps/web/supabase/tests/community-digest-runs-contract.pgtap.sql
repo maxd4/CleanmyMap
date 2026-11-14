@@ -3,7 +3,7 @@ begin;
 select plan(32);
 
 select ok(to_regclass('public.community_digest_runs') is not null, 'digest runs table exists');
-select ok(has_index('public', 'community_digest_runs_user_cadence_period_key_key'), 'user cadence period uniqueness exists');
+select ok(has_index('public', 'community_digest_runs', 'community_digest_runs_user_cadence_period_key_key'), 'user cadence period uniqueness exists');
 select ok(has_column('public.community_digest_runs', 'id'), 'id column exists');
 select ok(has_column('public.community_digest_runs', 'user_id'), 'user id column exists');
 select ok(has_column('public.community_digest_runs', 'cadence'), 'cadence column exists');

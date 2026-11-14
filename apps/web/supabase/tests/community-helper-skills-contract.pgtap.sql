@@ -9,6 +9,7 @@ select has_table(
 );
 select has_index(
   'public',
+  'community_helper_skills',
   'community_helper_skills_pkey',
   'user and category primary key exists'
 );

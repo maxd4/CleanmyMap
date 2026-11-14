@@ -4,8 +4,8 @@ select plan(54);
 
 select has_table('public', 'action_rides', 'ride table exists');
 select has_table('public', 'action_ride_requests', 'ride request table exists');
-select has_index('public', 'action_ride_requests_active_passenger_ride_idx', 'active passenger request is unique per ride');
-select has_index('public', 'action_rides_action_id_idx', 'rides are indexed by action and state');
+select has_index('public', 'action_ride_requests', 'action_ride_requests_active_passenger_ride_idx', 'active passenger request is unique per ride');
+select has_index('public', 'action_rides', 'action_rides_action_id_idx', 'rides are indexed by action and state');
 select ok((select relrowsecurity from pg_class where oid = 'public.action_rides'::regclass), 'rides have RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.action_ride_requests'::regclass), 'requests have RLS enabled');
 select ok(not has_table_privilege('anon', 'public.action_rides', 'SELECT'), 'anon cannot read rides');
