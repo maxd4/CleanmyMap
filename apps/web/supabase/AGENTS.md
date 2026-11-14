@@ -182,8 +182,9 @@ Il émet un des statuts suivants :
 
 - `ALIGNED` : aucun pending et historiques convergents ; les alertes Advisors
   restent rapportées ;
-- `READY_TO_APPLY` : la file complète est ordonnée et le dry-run correspond,
-  sans blocage détecté ;
+- `READY_TO_APPLY` : la file complète est ordonnée, le dry-run correspond et
+  une observation API Vercel Production READY vérifie le projet, l'environnement
+  et le SHA exact du candidat ; un manifeste autodéclaré ne suffit pas ;
 - `BLOCKED` : accès, risque critique, contrat SQL incompatible, mutation réelle,
   parsing ambigu ou autre précondition
   insuffisante ;
@@ -204,8 +205,8 @@ node --test scripts/ci/supabase-migration-preflight.test.mjs
 La convergence publiée est orchestrée par
 `.github/workflows/supabase-convergence.yml` sur `main`, en déclenchement
 manuel et quotidien. Le job est sérialisé, n'expose aucun secret à une PR et
-utilise `main` et l'historique Supabase lié avant de considérer
-`READY_TO_APPLY`. Il applique alors toute la file avec l'unique
+utilise `main`, l'historique Supabase lié et l'observation Vercel exacte avant de
+considérer `READY_TO_APPLY`. Il applique alors toute la file avec l'unique
 commande `npx supabase db push --linked --yes`, puis exige un préflight
 `ALIGNED`, des Advisors relus et les contrats statiques critiques. `BLOCKED`
 ou `DIVERGED` publie un diagnostic avec la première migration concernée et

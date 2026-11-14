@@ -433,9 +433,11 @@ dans `main`, manuel et quotidien, environnement protégé
 `supabase-production`, concurrence sérialisée et aucun déclencheur PR. Le
 workflow réutilise le préflight canonique, bloque `BLOCKED`/`DIVERGED` et
 n'applique la file complète que pour `READY_TO_APPLY`, sur la référence `main`
-et l'historique Supabase lié. Les WARN/INFO Advisors historiques restent
-rapportés ; un risque critique ou une régression explicitement attribuée reste
-bloquant. Après application, il vérifie un préflight
+et l'historique Supabase lié. Pour une file en attente, il exige en plus une
+observation API Vercel Production READY du projet/environnement configurés et
+du SHA exact du candidat ; un manifeste autodéclaré ou sans SHA est incompatible.
+Les WARN/INFO Advisors historiques restent rapportés ; un risque critique ou
+une régression explicitement attribuée reste bloquant. Après application, il vérifie un préflight
 `ALIGNED`, les Advisors et les contrats statiques critiques. Il ne réalise
 jamais de `migration repair`, reset, DDL manuelle, correction SQL automatique
 ou retry aveugle ; voir `documentation/operations/runbook-supabase-convergence.md`.

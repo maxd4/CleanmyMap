@@ -142,7 +142,10 @@ la cible et l'authentification CLI, l'ordre local/distant, le dry-run, les
 sorties CLI non ambiguës, les dépendances SQL, les mutations réellement
 exécutées, RLS, grants, la compatibilité des contrats SQL consommés et les
 Advisors. Les alertes historiques sont rapportées ; les risques critiques et
-régressions explicitement attribuées sont bloquants. Ses seuls statuts décisionnels favorables
+régressions explicitement attribuées sont bloquants. Pour une file non vide,
+`READY_TO_APPLY` exige également une observation API Vercel Production READY
+du projet, de l'environnement et du SHA exact du candidat ; un manifeste
+autodéclaré ou sans SHA est incompatible. Ses seuls statuts décisionnels favorables
 sont `ALIGNED` et `READY_TO_APPLY` ; `BLOCKED` et `DIVERGED` arrêtent la
 mutation et indiquent leurs causes. Le préflight ne fait aucune écriture et ne
 remplace pas la preuve PostgreSQL/pgTAP. Une application autorisée porte alors

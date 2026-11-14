@@ -16,6 +16,7 @@ on:
       - "scripts/ci/audit-supabase-release.mjs"
       - "scripts/ci/supabase-migration-preflight.mjs"
       - "scripts/ci/supabase-migration-sql.mjs"
+      - "scripts/ci/resolve-vercel-runtime-proof.mjs"
       - ".github/workflows/supabase-convergence.yml"
       - "package.json"
       - "package-lock.json"
@@ -26,6 +27,9 @@ on:
 env:
   NODE_VERSION_FILE: apps/web/.nvmrc
   SUPABASE_PROJECT_REF: trktzkgujgpgsgkoyndn
+  VERCEL_PROJECT_ID: prj_mRle8G2okmR2GSESDkduQD0Jv6Yj
+  VERCEL_ORG_ID: team_gMOehrKlO8JiG5uLNTh4qvxq
+  VERCEL_PRODUCTION_ALIAS: cleanmymap.fr
 
 jobs:
   converge:
@@ -61,13 +65,18 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: npx supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
 
+      - name: Observe the deployed Vercel runtime
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: node scripts/ci/resolve-vercel-runtime-proof.mjs --sha="${{ github.sha }}" --proof="$RUNNER_TEMP/vercel-runtime-proof.json"
+
       - name: Run read-only preflight and gate the queue
         id: preflight
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           set +e
-          npm run supabase:migration:preflight -- --dry-run > "$RUNNER_TEMP/supabase-preflight.log" 2>&1
+          npm run supabase:migration:preflight -- --dry-run --runtime-proof="$RUNNER_TEMP/vercel-runtime-proof.json" > "$RUNNER_TEMP/supabase-preflight.log" 2>&1
           preflight_exit=$?
           set -e
           cat "$RUNNER_TEMP/supabase-preflight.log"
@@ -107,7 +116,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           set +e
-          npm run supabase:migration:preflight -- --dry-run > "$RUNNER_TEMP/supabase-postflight.log" 2>&1
+          npm run supabase:migration:preflight -- --dry-run --runtime-proof="$RUNNER_TEMP/vercel-runtime-proof.json" > "$RUNNER_TEMP/supabase-postflight.log" 2>&1
           postflight_exit=$?
           set -e
           cat "$RUNNER_TEMP/supabase-postflight.log"
@@ -117,5 +126,5 @@ jobs:
             exit 1
           fi
           npm run audit:supabase-migration-trees
-          node --test scripts/ci/supabase-migration-preflight.test.mjs scripts/audits/audit-supabase-migration-trees.test.mjs
+          node --test scripts/ci/supabase-migration-preflight.test.mjs scripts/ci/resolve-vercel-runtime-proof.test.mjs scripts/audits/audit-supabase-migration-trees.test.mjs
           npm run test -w apps/web -- src/lib/supabase/migration-contracts/action-rides-transactions-migration.test.ts src/lib/supabase/migration-contracts/public-action-map-reconstruction-projection.test.ts

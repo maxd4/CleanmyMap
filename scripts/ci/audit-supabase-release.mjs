@@ -109,7 +109,7 @@ function extractJsonValues(text) {
   for (let index = 0; index < text.length; index += 1) {
     if (text[index] !== "{" && text[index] !== "[") continue;
     const end = jsonValueEnd(text, index);
-    if (end < 0) continue;
+    if (end < 0 || text.slice(end).trim()) continue;
     try {
       values.push(JSON.parse(text.slice(index, end)));
       index = end - 1;
@@ -118,6 +118,14 @@ function extractJsonValues(text) {
     }
   }
   return values;
+}
+
+function isStructuredSupabasePayload(payload, label) {
+  const name = label.toLowerCase();
+  if (name.includes("migration list")) return Boolean(payload && !Array.isArray(payload) && Array.isArray(payload.migrations));
+  if (name.includes("db push")) return Boolean(payload && !Array.isArray(payload) && Array.isArray(payload.migrations));
+  if (name.includes("advisor")) return Array.isArray(payload) || Boolean(payload && ["results", "advisors", "findings", "issues", "data"].some((key) => Array.isArray(payload[key])));
+  return Array.isArray(payload);
 }
 
 export function parseSupabaseJson(result, label) {
@@ -130,6 +138,7 @@ export function parseSupabaseJson(result, label) {
   if (values.length !== 1) {
     throw new Error(`${label} returned ${values.length === 0 ? "no" : "ambiguous"} JSON payload${values.length === 1 ? "" : "s"}`);
   }
+  if (!isStructuredSupabasePayload(values[0], label)) throw new Error(`${label} returned an unsupported structured payload`);
   return values[0];
 }
 

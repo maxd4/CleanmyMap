@@ -14,8 +14,10 @@ L'environnement fournit uniquement `SUPABASE_ACCESS_TOKEN` et
 sérialisée par `supabase-production-migrations`.
 
 La référence décisionnelle est le `main` vérifié et l'historique du projet
-Supabase lié. Aucune preuve Vercel, aucun SHA de déploiement et aucun manifeste
-de runtime n'est une condition générale du préflight. Lorsqu'une migration
+Supabase lié. Pour une file non vide, `READY_TO_APPLY` exige aussi une
+observation API Vercel Production READY du projet et de l'environnement
+configurés, portant le SHA exact du candidat. Un manifeste autodéclaré, sans
+SHA ou sans preuve projet/environnement n'est pas compatible. Lorsqu'une migration
 modifie ou supprime un contrat SQL, le préflight vérifie séparément la
 rétrocompatibilité des consommateurs existants.
 

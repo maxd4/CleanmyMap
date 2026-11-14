@@ -23,7 +23,9 @@ test("Supabase convergence is main-only, scheduled, manual, and serialized", () 
 test("production secrets are scoped to the protected non-PR job and the canonical CLI gate", () => {
   assert.match(workflow, /SUPABASE_ACCESS_TOKEN:\s*\$\{\{ secrets\.SUPABASE_ACCESS_TOKEN \}\}/);
   assert.match(workflow, /SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
-  assert.doesNotMatch(workflow, /VERCEL_TOKEN|VERCEL_PROJECT_ID|VERCEL_ORG_ID|runtime-proof|resolve-vercel-runtime-proof/);
+  assert.match(workflow, /VERCEL_TOKEN:\s*\$\{\{ secrets\.VERCEL_TOKEN \}\}/);
+  assert.match(workflow, /resolve-vercel-runtime-proof\.mjs/);
+  assert.match(workflow, /--runtime-proof=/);
   assert.match(workflow, /supabase:migration:preflight -- --dry-run/);
   assert.match(workflow, /steps\.preflight\.outputs\.status == 'READY_TO_APPLY'/);
   assert.match(workflow, /npx supabase db push --linked --yes/);

@@ -10,6 +10,19 @@ function alignedHistory(localIds = ["20261113000001", "20261114000001"], remoteI
 }
 
 const readyContext = { projectRef: "a".repeat(20), projectMatched: true, authSource: "NATIVE_CREDENTIAL_STORE" };
+const compatibleRuntime = {
+  status: "COMPATIBLE",
+  verified: true,
+  sha: "a".repeat(40),
+  migrationVersion: "20261114000002",
+  source: "vercel-api-readonly",
+  projectId: "prj_test",
+  deploymentId: "dpl_test",
+  productionAlias: "cleanmymap.fr",
+  target: "production",
+  readyState: "READY",
+  observed: { projectId: "prj_test", deploymentId: "dpl_test", target: "production", readyState: "READY", gitSha: "a".repeat(40), productionAlias: "cleanmymap.fr" },
+};
 
 test("parses the single CLI JSON payload with human stdout and stderr diagnostics", () => {
   const payload = { migrations: [{ local: "20261114000001", remote: "" }] };
@@ -19,6 +32,8 @@ test("parses the single CLI JSON payload with human stdout and stderr diagnostic
 test("rejects malformed or ambiguous CLI payloads", () => {
   assert.throws(() => parseSupabaseJson({ status: 0, stdout: "not json", stderr: "" }, "migration list"), /no JSON payload/);
   assert.throws(() => parseSupabaseJson({ status: 0, stdout: "{}", stderr: "{}" }, "migration list"), /ambiguous JSON payload/);
+  assert.throws(() => parseSupabaseJson({ status: 0, stdout: 'text {"migrations": []} trailing text', stderr: "" }, "migration list"), /no JSON payload/);
+  assert.throws(() => parseSupabaseJson({ status: 0, stdout: "{}", stderr: "" }, "migration list"), /unsupported structured payload/);
   assert.throws(() => parseSupabaseJson({ status: 1, stdout: "", stderr: "permission denied" }, "migration list"), /unavailable/);
 });
 
@@ -46,12 +61,22 @@ test("returns ALIGNED for convergent history without runtime or application proo
   assert.deepEqual(summary.pending, []);
 });
 
-test("returns READY_TO_APPLY for ordered pending migrations with historical Advisor warnings", () => {
+test("returns READY_TO_APPLY only with an API-verified runtime observation", () => {
   const localIds = ["20261113000001", "20261114000001", "20261114000002", "20261114000003"];
   const pending = localIds.slice(2);
-  const summary = evaluatePreflight({ ...readyContext, authSource: "ENV_SECRET", history: alignedHistory(localIds, localIds.slice(0, 2)), dryRunIds: pending, advisors: { rlsFindings: [{ level: "INFO" }], actionableSecurity: [{ level: "WARN" }], actionablePerformance: [{ level: "WARN" }], criticalSecurity: [], criticalPerformance: [], regressions: [] }, analyses: pending.map((id) => ({ id, dataMutation: false, destructive: false, reviewRequired: false, forwardDependencies: [], sqlContractIssues: [] })) });
+  const summary = evaluatePreflight({ ...readyContext, authSource: "ENV_SECRET", history: alignedHistory(localIds, localIds.slice(0, 2)), dryRunIds: pending, runtimeEvidence: compatibleRuntime, candidateSha: compatibleRuntime.sha, expectedRuntimeProjectId: compatibleRuntime.projectId, advisors: { rlsFindings: [{ level: "INFO" }], actionableSecurity: [{ level: "WARN" }], actionablePerformance: [{ level: "WARN" }], criticalSecurity: [], criticalPerformance: [], regressions: [] }, analyses: pending.map((id) => ({ id, dataMutation: false, destructive: false, reviewRequired: false, forwardDependencies: [], sqlContractIssues: [] })) });
   assert.equal(summary.status, "READY_TO_APPLY");
   assert.deepEqual(summary.pending, pending);
+});
+
+test("blocks pending migrations when runtime proof is absent or falsified", () => {
+  const base = { ...readyContext, history: alignedHistory(["20261114000001", "20261114000002"], ["20261114000001"]), dryRunIds: ["20261114000002"], analyses: [{ id: "20261114000002", dataMutation: false, destructive: false, reviewRequired: false, forwardDependencies: [], sqlContractIssues: [] }] };
+  const missing = evaluatePreflight(base);
+  assert.equal(missing.status, "BLOCKED");
+  assert.ok(missing.causes.some((cause) => cause.code === "RUNTIME_MISSING"));
+  const falsified = evaluatePreflight({ ...base, runtimeEvidence: { ...compatibleRuntime, verified: false }, candidateSha: compatibleRuntime.sha, expectedRuntimeProjectId: compatibleRuntime.projectId });
+  assert.equal(falsified.status, "BLOCKED");
+  assert.ok(falsified.causes.some((cause) => cause.code === "RUNTIME_INCOMPATIBLE"));
 });
 
 test("returns DIVERGED when the remote sequence is not a local prefix", () => {

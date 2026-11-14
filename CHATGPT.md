@@ -171,7 +171,9 @@ demande d'abord le préflight read-only de toute la file canonique en attente
 (`npm run supabase:migration:preflight -- --dry-run`) : cible, identité CLI,
 historiques et ordre, sorties CLI non ambiguës, dry-run, dépendances SQL,
 mutations réellement exécutées, RLS, grants, compatibilité des contrats SQL
-consommés et Advisors. Le préflight produit
+consommés et Advisors. Pour une file non vide, il exige aussi une observation
+API Vercel Production READY du projet et du SHA exact du candidat ; un manifeste
+autodéclaré ou sans SHA est incompatible. Le préflight produit
 `ALIGNED`, `READY_TO_APPLY`, `BLOCKED` ou `DIVERGED` et ne traite jamais la
 seule migration du dernier commit. Une application autorisée utilise ensuite
 la CLI Supabase liée, sur la file complète, avec vérification
