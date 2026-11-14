@@ -200,6 +200,7 @@ test("emits bounded machine evidence without returning Docker or Supabase output
   assert.equal(evidence.requiredServicesState, "incomplete");
   assert.equal(evidence.healthState, "failed");
   assert.equal(evidence.firstErrorSignal, "NONE");
+  assert.equal(evidence.firstErrorExcerpt, "none");
   assert.match(diagnostic, /evidence_codes=/);
   assert.doesNotMatch(diagnostic, /private-token|DockerRootDir|supabase_db/);
 });
@@ -224,8 +225,10 @@ test("publishes only the first bounded startup error signal", () => {
   });
 
   assert.equal(evidence.firstErrorSignal, "CONTAINER_CREATE");
+  assert.match(evidence.firstErrorExcerpt, /CONTAINER_CREATE|Error:/);
   assert.match(diagnostic, /first_error_signal=CONTAINER_CREATE/);
-  assert.doesNotMatch(diagnostic, /password=do-not-publish|db exited/);
+  assert.match(diagnostic, /first_error_excerpt=/);
+  assert.doesNotMatch(diagnostic, /password=do-not-publish|<redacted-secret>.*password/);
 });
 
 test("renders the bounded startup observation timeline without publishing raw snapshots", () => {
@@ -620,6 +623,7 @@ test("renders all evidence fields while withholding raw logs and sensitive conta
     startPhase: "UNKNOWN",
     failureService: "db",
     firstErrorSignal: "NONE",
+    firstErrorExcerpt: "none",
     dockerContainers: null,
     dockerContainerStates: { running: "unavailable", exited: "unavailable", created: "unavailable", restarting: "unavailable", other: "unavailable" },
     dockerImages: null,

@@ -183,14 +183,29 @@ function inferFailureService(log) {
   return normalizeServiceName(match?.[0]);
 }
 
-function inferFirstErrorSignal(log) {
+function sanitizeErrorExcerpt(line) {
+  let excerpt = String(line ?? "")
+    .replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  excerpt = excerpt
+    .replace(/\b(?:bearer|basic)\s+\S+/gi, "$1 <redacted>")
+    .replace(/\b(?:token|password|secret|api[_-]?key|authorization|cookie|jwt|access[_-]?key)\b\s*[:=]\s*\S+/gi, "<redacted-secret>")
+    .replace(/https?:\/\/\S+/gi, "<url>")
+    .replace(/(?:\/home\/runner|\/github|\/workspace|[A-Za-z]:\\)\S*/g, "<path>")
+    .replace(/\b[0-9a-f]{32,}\b/gi, "<id>")
+    .slice(0, 240);
+  return excerpt.replace(/[\r\n]+/g, " ").replace(/\s+/g, "_") || "unavailable";
+}
+
+function inferFirstErrorEvidence(log) {
   for (const line of String(log ?? "").split(/\r?\n/)) {
     const normalized = line.replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "");
     if (!normalized.trim()) continue;
     const signal = firstErrorSignalPatterns.find(([, pattern]) => pattern.test(normalized))?.[0];
-    if (signal) return signal;
+    if (signal) return { signal, excerpt: sanitizeErrorExcerpt(normalized) };
   }
-  return "NONE";
+  return { signal: "NONE", excerpt: "none" };
 }
 
 function requiredServiceState(containerServices, containerCount) {
@@ -341,6 +356,7 @@ export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = n
   const networkNames = dockerNetworks.available ? String(dockerNetworks.output).split(/\r?\n/).filter(Boolean) : null;
   const networkState = networkNames === null ? "unobserved" : networkNames.some((line) => /supabase/i.test(line)) ? "observed" : "missing";
   const progressSnapshots = normalizeProgressSnapshots(startProgressSnapshots);
+  const firstError = inferFirstErrorEvidence(log);
   const evidence = {
     schemaVersion: 3,
     evidenceCodes: [],
@@ -366,7 +382,8 @@ export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = n
     configuredPorts: configContract.ports,
     startPhase: inferStartStep(log),
     failureService: inferFailureService(log),
-    firstErrorSignal: inferFirstErrorSignal(log),
+    firstErrorSignal: firstError.signal,
+    firstErrorExcerpt: firstError.excerpt,
     durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
     startObservationCount: progressSnapshots.length,
     startObservationTimeline: progressSnapshots.map((snapshot) => `${snapshot.elapsedSeconds ?? "unknown"}:${snapshot.observationState}`).join(","),
@@ -415,6 +432,7 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`start_phase=${evidence.startPhase}`);
     lines.push(`failure_service=${evidence.failureService ?? "unavailable"}`);
     lines.push(`first_error_signal=${evidence.firstErrorSignal ?? "unavailable"}`);
+    lines.push(`first_error_excerpt=${evidence.firstErrorExcerpt ?? "unavailable"}`);
     lines.push(`docker_containers=${evidence.dockerContainers ?? "unavailable"}`);
     lines.push(`docker_container_states=${Object.entries(evidence.dockerContainerStates).map(([state, count]) => `${state}:${count}`).join(",")}`);
     lines.push(`docker_images=${evidence.dockerImages ?? "unavailable"}`);
