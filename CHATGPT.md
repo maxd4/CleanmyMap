@@ -169,13 +169,14 @@ les prompts ne demandent pas à Codex d'installer, démarrer ou sonder Docker,
 WSL ou Supabase local. Pour une application explicitement autorisée, le prompt
 demande d'abord le préflight read-only de toute la file canonique en attente
 (`npm run supabase:migration:preflight -- --dry-run`) : cible, identité CLI,
-historiques et ordre, dry-run, dépendances SQL, risques, RLS, grants, Advisors
-et compatibilité du runtime réellement déployé. Le préflight produit
+historiques et ordre, sorties CLI non ambiguës, dry-run, dépendances SQL,
+mutations réellement exécutées, RLS, grants, compatibilité des contrats SQL
+consommés et Advisors. Le préflight produit
 `ALIGNED`, `READY_TO_APPLY`, `BLOCKED` ou `DIVERGED` et ne traite jamais la
 seule migration du dernier commit. Une application autorisée utilise ensuite
 la CLI Supabase liée, sur la file complète, avec vérification
 post-application et distinction entre migration appliquée et preuve
-PostgreSQL/pgTAP. Si l'accès, la preuve runtime ou la CLI manque, le prompt
+PostgreSQL/pgTAP. Si l'accès ou la CLI manque, le prompt
 conserve le blocage et `DB_SEMANTICS_NOT_EXECUTED` au lieu de proposer Docker
 comme repli.
 Le propriétaire, l'organisateur, le modérateur et l'administrateur ne sont pas

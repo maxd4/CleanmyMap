@@ -76,21 +76,61 @@ export function runSupabase(args) {
   });
 }
 
-export function parseSupabaseJson(result, label) {
-  if (result.status !== 0) throw new Error(`${label} unavailable`);
-  const output = result.stdout || "";
-  const candidates = [];
-  for (let index = 0; index < output.length; index += 1) {
-    if (output[index] === "{" || output[index] === "[") candidates.push(index);
-  }
-  for (const objectStart of candidates) {
-    try {
-      return JSON.parse(output.slice(objectStart));
-    } catch {
-      // Supabase CLI may prefix JSON with informational log lines.
+function jsonValueEnd(text, start) {
+  const opening = text[start];
+  if (opening !== "{" && opening !== "[") return -1;
+  const stack = [opening === "{" ? "}" : "]"];
+  let quote = false;
+  let escaped = false;
+  for (let index = start + 1; index < text.length; index += 1) {
+    const character = text[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') quote = false;
+      continue;
+    }
+    if (character === '"') {
+      quote = true;
+      continue;
+    }
+    if (character === "{" || character === "[") stack.push(character === "{" ? "}" : "]");
+    else if (character === "}" || character === "]") {
+      if (stack.at(-1) !== character) return -1;
+      stack.pop();
+      if (stack.length === 0) return index + 1;
     }
   }
-  throw new Error(`${label} returned invalid JSON`);
+  return -1;
+}
+
+function extractJsonValues(text) {
+  const values = [];
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] !== "{" && text[index] !== "[") continue;
+    const end = jsonValueEnd(text, index);
+    if (end < 0) continue;
+    try {
+      values.push(JSON.parse(text.slice(index, end)));
+      index = end - 1;
+    } catch {
+      // Informational CLI text may contain braces which are not JSON.
+    }
+  }
+  return values;
+}
+
+export function parseSupabaseJson(result, label) {
+  if (result.status !== 0) {
+    const stderr = String(result.stderr ?? "").trim();
+    throw new Error(`${label} unavailable${stderr ? " (stderr output present)" : ""}`);
+  }
+  const streams = [String(result.stdout ?? ""), String(result.stderr ?? "")];
+  const values = streams.flatMap(extractJsonValues);
+  if (values.length !== 1) {
+    throw new Error(`${label} returned ${values.length === 0 ? "no" : "ambiguous"} JSON payload${values.length === 1 ? "" : "s"}`);
+  }
+  return values[0];
 }
 
 export function projectMatches(projects, projectRef) {

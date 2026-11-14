@@ -174,15 +174,18 @@ npm run supabase:migration:preflight -- --dry-run
 
 Le script réutilise l'owner `audit-supabase-release.mjs` et n'exécute que des
 commandes CLI read-only : identité et projet, branches, `migration list`,
-`db push --dry-run` et Advisors security/performance. Il inspecte aussi les
-dépendances SQL, les risques de données, RLS/grants et la compatibilité avec
-un manifeste du runtime effectivement déployé via `--runtime-proof=<path>`.
+`db push --dry-run` et Advisors security/performance. Le parsing exige un
+payload JSON unique ; le préflight distingue les mutations exécutées du DML
+dans les corps de fonctions, vérifie RLS/grants et les contrats SQL consommés,
+et classe les cas indécidables en revue obligatoire.
 Il émet un des statuts suivants :
 
-- `ALIGNED` : aucun pending, historiques et runtime compatibles ;
+- `ALIGNED` : aucun pending et historiques convergents ; les alertes Advisors
+  restent rapportées ;
 - `READY_TO_APPLY` : la file complète est ordonnée et le dry-run correspond,
   sans blocage détecté ;
-- `BLOCKED` : accès, sécurité, risque, preuve runtime ou autre précondition
+- `BLOCKED` : accès, risque critique, contrat SQL incompatible, mutation réelle,
+  parsing ambigu ou autre précondition
   insuffisante ;
 - `DIVERGED` : l'historique ou la liste du dry-run ne forme pas le préfixe
   canonique attendu.
@@ -201,8 +204,8 @@ node --test scripts/ci/supabase-migration-preflight.test.mjs
 La convergence publiée est orchestrée par
 `.github/workflows/supabase-convergence.yml` sur `main`, en déclenchement
 manuel et quotidien. Le job est sérialisé, n'expose aucun secret à une PR et
-exige une preuve Vercel `READY` portant exactement le SHA candidat avant de
-considérer `READY_TO_APPLY`. Il applique alors toute la file avec l'unique
+utilise `main` et l'historique Supabase lié avant de considérer
+`READY_TO_APPLY`. Il applique alors toute la file avec l'unique
 commande `npx supabase db push --linked --yes`, puis exige un préflight
 `ALIGNED`, des Advisors relus et les contrats statiques critiques. `BLOCKED`
 ou `DIVERGED` publie un diagnostic avec la première migration concernée et

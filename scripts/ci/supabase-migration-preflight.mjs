@@ -13,11 +13,11 @@ import {
   runSupabase,
 } from "./audit-supabase-release.mjs";
 import { findRlsContractFindings } from "../../apps/web/scripts/supabase-security-advisors.mjs";
+import { classifyMigrationSql, findSqlContractCompatibilityIssues } from "./supabase-migration-sql.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const migrationsRoot = path.join(repoRoot, "apps", "web", "supabase", "migrations");
 const migrationFilePattern = /^(\d{14})_(.+)\.sql$/;
-const shaPattern = /^[0-9a-f]{40}$/i;
 const PREFLIGHT_STATUSES = Object.freeze(["ALIGNED", "READY_TO_APPLY", "BLOCKED", "DIVERGED"]);
 
 export const READ_ONLY_COMMANDS = Object.freeze([
@@ -68,18 +68,37 @@ function findingName(finding) {
   return String(finding?.name ?? finding?.id ?? finding?.slug ?? finding?.key ?? finding?.code ?? "");
 }
 
+function isCriticalFinding(finding) {
+  return finding?.critical === true || ["CRITICAL", "FATAL"].includes(findingLevel(finding));
+}
+
+function isExplicitRegression(finding) {
+  return finding?.regression === true
+    || finding?.introducedByLot === true
+    || finding?.currentBatch === true
+    || ["pending", "current", "lot"].includes(String(finding?.introducedBy ?? "").toLowerCase());
+}
+
 function summarizeAdvisors(securityPayload, performancePayload) {
   const security = advisorFindings(securityPayload);
   const performance = advisorFindings(performancePayload);
   const rls = findRlsContractFindings(JSON.stringify(securityPayload ?? []));
   const actionableSecurity = security.filter((finding) => ["WARN", "ERROR", "CRITICAL"].includes(findingLevel(finding)));
   const actionablePerformance = performance.filter((finding) => ["WARN", "ERROR", "CRITICAL"].includes(findingLevel(finding)));
+  const criticalSecurity = security.filter(isCriticalFinding);
+  const criticalPerformance = performance.filter(isCriticalFinding);
+  const regressions = [...security, ...performance].filter(isExplicitRegression);
   return {
     securityCount: security.length,
     performanceCount: performance.length,
     rlsFindings: rls,
     actionableSecurity,
     actionablePerformance,
+    criticalSecurity,
+    criticalPerformance,
+    regressions,
+    historicalSecurity: actionableSecurity.filter((finding) => !isCriticalFinding(finding) && !isExplicitRegression(finding)),
+    historicalPerformance: actionablePerformance.filter((finding) => !isCriticalFinding(finding) && !isExplicitRegression(finding)),
   };
 }
 
@@ -104,8 +123,7 @@ function extractReferencedObjects(sql) {
 
 function analyzeMigration(entry, creationIndex) {
   const sql = entry.sql;
-  const dataMutation = /\b(?:insert\s+into|update\s+public\.|delete\s+from|truncate\b|setval\s*\()/i.test(sql);
-  const destructive = /\b(?:drop\s+(?:table|column|schema)|truncate\b|delete\s+from\s+public\.)/i.test(sql);
+  const sqlClassification = classifyMigrationSql(sql);
   const rlsPolicyChanges = /\b(?:create|alter|drop)\s+policy\b|\benable\s+row\s+level\s+security\b/i.test(sql);
   const grantChanges = /\b(?:grant|revoke)\b/i.test(sql);
   const rpcChanges = /\b(?:create|replace|drop)\s+(?:or\s+replace\s+)?(?:function|procedure)\b/i.test(sql);
@@ -115,8 +133,7 @@ function analyzeMigration(entry, creationIndex) {
   return {
     id: entry.id,
     file: entry.file,
-    dataMutation,
-    destructive,
+    ...sqlClassification,
     rlsPolicyChanges,
     grantChanges,
     rpcChanges,
@@ -124,7 +141,7 @@ function analyzeMigration(entry, creationIndex) {
   };
 }
 
-export function readLocalMigrations(root = migrationsRoot) {
+export function readLocalMigrations(root = migrationsRoot, { applicationSource = "" } = {}) {
   const files = fs.readdirSync(root).filter((file) => migrationFilePattern.test(file)).sort();
   const entries = files.map((file, index) => {
     const match = file.match(migrationFilePattern);
@@ -137,7 +154,10 @@ export function readLocalMigrations(root = migrationsRoot) {
       if (!creationIndex.has(objectName)) creationIndex.set(objectName, entry.index);
     }
   }
-  return entries.map((entry) => analyzeMigration({ ...entry, allIds }, creationIndex));
+  return entries.map((entry) => ({
+    ...analyzeMigration({ ...entry, allIds }, creationIndex),
+    sqlContractIssues: findSqlContractCompatibilityIssues(entry.sql, applicationSource),
+  }));
 }
 
 function normalizeHistory(localEntries, remotePayload) {
@@ -166,33 +186,23 @@ function normalizeDryRunMigrations(payload) {
   return migrationRows(payload).map(migrationIdFromValue).filter(Boolean);
 }
 
-function normalizeRuntimeEvidence(evidence) {
-  if (!evidence) return { status: "MISSING", reason: "runtime proof was not supplied" };
-  if (evidence.status !== "COMPATIBLE") return { status: "INCOMPATIBLE", reason: evidence.reason ?? "runtime proof is not compatible" };
-  if (evidence.sha && !shaPattern.test(evidence.sha)) return { status: "INCOMPATIBLE", reason: "runtime proof SHA is invalid" };
-  if (!evidence.migrationVersion || !/^\d{14}$/.test(String(evidence.migrationVersion))) {
-    return { status: "INCOMPATIBLE", reason: "runtime proof has no canonical migration version" };
-  }
-  return { status: "COMPATIBLE", sha: evidence.sha, migrationVersion: String(evidence.migrationVersion), source: evidence.source };
-}
-
 const ACTIONS_BY_CAUSE = Object.freeze({
   CLI_AUTH_OR_TARGET_UNVERIFIED: "Vérifier l'identité CLI, le projet lié et les permissions sans modifier l'historique.",
   CLI_COMMAND_FAILED: "Corriger l'accès ou la disponibilité de la commande, puis relancer le préflight ; ne pas utiliser migration repair.",
   MIGRATION_HISTORY_DIVERGED: "Arrêter et réconcilier l'historique par une procédure forward-only validée.",
   DRY_RUN_MISMATCH: "Arrêter et comparer la file complète avec db push --dry-run avant toute application.",
   MIGRATION_DATA_RISK: "Revoir la migration et obtenir une preuve SQL éphémère autorisée avant application.",
+  MIGRATION_REVIEW_REQUIRED: "Revoir la migration SQL indécidable et obtenir une classification explicite avant application.",
   SQL_FORWARD_DEPENDENCY: "Corriger l'ordre ou la dépendance SQL dans une migration forward-only avant application.",
-  SECURITY_ADVISOR_FINDING: "Résoudre ou accepter explicitement le finding de sécurité/RLS avant application.",
-  PERFORMANCE_ADVISOR_FINDING: "Revoir le finding de performance avant application et ne pas masquer une régression.",
-  RUNTIME_MISSING: "Déployer et prouver le runtime compatible avec la file de migrations avant application.",
-  RUNTIME_INCOMPATIBLE: "Coordonner le déploiement applicatif et fournir une preuve du SHA runtime compatible avant application.",
+  SQL_CONTRACT_INCOMPATIBLE: "Coordonner la compatibilité du contrat SQL avec les consommateurs existants avant application.",
+  SECURITY_ADVISOR_CRITICAL: "Résoudre le risque de sécurité critique avant application.",
+  ADVISOR_REGRESSION: "Résoudre la régression Advisor explicitement attribuée à la file avant application.",
 });
 
 export function firstBlockingMigration(pending = [], analyses = [], causes = []) {
   const risky = new Set(
     analyses
-      .filter((entry) => pending.includes(entry.id) && (entry.destructive || entry.dataMutation || entry.forwardDependencies?.length))
+      .filter((entry) => pending.includes(entry.id) && (entry.destructive || entry.dataMutation || entry.reviewRequired || entry.forwardDependencies?.length || entry.sqlContractIssues?.length))
       .map((entry) => entry.id),
   );
   return pending.find((id) => risky.has(id)) ?? (causes.length > 0 ? pending[0] ?? "NONE" : "NONE");
@@ -209,8 +219,7 @@ export function evaluatePreflight({
   history,
   dryRunIds = [],
   analyses = [],
-  advisors = { rlsFindings: [], actionableSecurity: [], actionablePerformance: [] },
-  runtimeEvidence,
+  advisors = { rlsFindings: [], actionableSecurity: [], actionablePerformance: [], criticalSecurity: [], criticalPerformance: [], regressions: [] },
   commandFailures = [],
 } = {}) {
   const causes = [];
@@ -231,19 +240,23 @@ export function evaluatePreflight({
     if (analysis.destructive || analysis.dataMutation) {
       causes.push({ code: "MIGRATION_DATA_RISK", detail: `${analysis.id} contains data-mutating or destructive SQL.` });
     }
+    if (analysis.reviewRequired) {
+      causes.push({ code: "MIGRATION_REVIEW_REQUIRED", detail: `${analysis.id} contains SQL whose execution timing cannot be classified safely.` });
+    }
     if (analysis.forwardDependencies?.length) {
       causes.push({ code: "SQL_FORWARD_DEPENDENCY", detail: `${analysis.id} references objects created by a later migration.` });
     }
   }
-  if (advisors.rlsFindings?.length || advisors.actionableSecurity?.length) {
-    causes.push({ code: "SECURITY_ADVISOR_FINDING", detail: `${(advisors.rlsFindings?.length ?? 0) + (advisors.actionableSecurity?.length ?? 0)} security finding(s) require review.` });
+  if (pending.length > 0 && (advisors.criticalSecurity?.length || advisors.criticalPerformance?.length)) {
+    causes.push({ code: "SECURITY_ADVISOR_CRITICAL", detail: `${(advisors.criticalSecurity?.length ?? 0) + (advisors.criticalPerformance?.length ?? 0)} critical Advisor finding(s) require resolution.` });
   }
-  if (advisors.actionablePerformance?.length) {
-    causes.push({ code: "PERFORMANCE_ADVISOR_FINDING", detail: `${advisors.actionablePerformance.length} performance finding(s) require review.` });
+  if (pending.length > 0 && advisors.regressions?.length) {
+    causes.push({ code: "ADVISOR_REGRESSION", detail: `${advisors.regressions.length} Advisor regression(s) are explicitly attributed to the pending lot.` });
   }
-  const runtime = normalizeRuntimeEvidence(runtimeEvidence);
-  if (runtime.status !== "COMPATIBLE") {
-    causes.push({ code: `RUNTIME_${runtime.status}`, detail: runtime.reason });
+  for (const analysis of analyses.filter((entry) => pending.includes(entry.id))) {
+    if (analysis.sqlContractIssues?.length) {
+      causes.push({ code: "SQL_CONTRACT_INCOMPATIBLE", detail: `${analysis.id} removes SQL contracts used by existing application consumers.` });
+    }
   }
   let status = "READY_TO_APPLY";
   if (causes.some((cause) => cause.code === "MIGRATION_HISTORY_DIVERGED" || cause.code === "DRY_RUN_MISMATCH")) status = "DIVERGED";
@@ -253,7 +266,6 @@ export function evaluatePreflight({
     status,
     causes,
     pending,
-    runtime,
     projectRef,
     pendingCount: pending.length,
     firstBlockingMigration: firstBlockingMigration(pending, analyses, causes),
@@ -266,14 +278,18 @@ function cliAuthSource(env = process.env) {
   return "NATIVE_CREDENTIAL_STORE";
 }
 
-function readRuntimeProof(filePath) {
-  if (!filePath) return undefined;
-  return JSON.parse(fs.readFileSync(path.resolve(filePath), "utf8"));
-}
-
-function parseRuntimeProofArg(argv) {
-  const value = argv.find((arg) => arg.startsWith("--runtime-proof="));
-  return value?.slice("--runtime-proof=".length) || "";
+function readApplicationSource() {
+  const sourceRoot = path.join(repoRoot, "apps", "web", "src");
+  const files = [];
+  const visit = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(entryPath);
+      else if (/\.(?:ts|tsx|js|jsx)$/.test(entry.name)) files.push(fs.readFileSync(entryPath, "utf8"));
+    }
+  };
+  visit(sourceRoot);
+  return files.join("\n");
 }
 
 export function buildReadOnlyCommandArgs(projectRef) {
@@ -288,11 +304,12 @@ function currentGitSha() {
 export function runPreflight({ argv = process.argv.slice(2), env = process.env, runner = runSupabase, migrationRoot = migrationsRoot } = {}) {
   if (!argv.includes("--dry-run")) throw new Error("--dry-run is mandatory; this preflight has no mutating mode.");
   const projectRef = resolveProjectRef({ argv, env });
-  const localEntries = readLocalMigrations(migrationRoot);
+  const localEntries = readLocalMigrations(migrationRoot, { applicationSource: readApplicationSource() });
   const commands = buildReadOnlyCommandArgs(projectRef);
   const run = (args) => runner(args);
-  const projectsResult = run(commands[0]);
-  const projects = projectsResult.status === 0 ? parseSupabaseJson(projectsResult, "Supabase projects list") : undefined;
+  const projectsParsed = runAndParseWithRunner(run, commands[0], "Supabase projects list");
+  const projectsResult = projectsParsed.result;
+  const projects = projectsParsed.payload;
   const projectMatched = projectMatches(projects, projectRef);
   const parsed = commands.slice(1).map((args, index) => {
     const label = ["Supabase branches list", "Supabase migration list", "Supabase db push dry-run", "Supabase security advisors", "Supabase performance advisors"][index];
@@ -303,12 +320,10 @@ export function runPreflight({ argv = process.argv.slice(2), env = process.env, 
   const dryRunIds = dryRun.payload ? normalizeDryRunMigrations(dryRun.payload) : [];
   const advisors = security.payload && performance.payload
     ? summarizeAdvisors(security.payload, performance.payload)
-    : { rlsFindings: [], actionableSecurity: [], actionablePerformance: [] };
-  const commandFailures = [{ label: "Supabase projects list", result: projectsResult }, ...parsed]
+    : { rlsFindings: [], actionableSecurity: [], actionablePerformance: [], criticalSecurity: [], criticalPerformance: [], regressions: [] };
+  const commandFailures = [projectsParsed, ...parsed]
     .filter((entry) => entry.result?.status !== 0 || entry.error)
     .map((entry) => entry.label ?? "Supabase projects list");
-  const runtimeProofPath = parseRuntimeProofArg(argv);
-  const runtimeEvidence = runtimeProofPath ? readRuntimeProof(runtimeProofPath) : undefined;
   const summary = evaluatePreflight({
     projectRef,
     projectMatched,
@@ -317,7 +332,6 @@ export function runPreflight({ argv = process.argv.slice(2), env = process.env, 
     dryRunIds,
     analyses: localEntries,
     advisors,
-    runtimeEvidence,
     commandFailures,
   });
   return {
@@ -326,12 +340,21 @@ export function runPreflight({ argv = process.argv.slice(2), env = process.env, 
     localCount: localEntries.length,
     remoteAppliedCount: history?.remoteIds.length ?? 0,
     dryRunIds,
+    pendingExecutedDmlCount: localEntries.filter((entry) => history?.pending?.includes(entry.id) && entry.dataMutation).length,
+    pendingReviewRequiredCount: localEntries.filter((entry) => history?.pending?.includes(entry.id) && entry.reviewRequired).length,
+    pendingEmbeddedFunctionDmlCount: localEntries.filter((entry) => history?.pending?.includes(entry.id) && entry.embeddedDml).length,
+    pendingSqlContractIssueCount: localEntries.reduce((count, entry) => count + (history?.pending?.includes(entry.id) ? entry.sqlContractIssues?.length ?? 0 : 0), 0),
     advisors: {
       securityCount: advisors.securityCount ?? 0,
       performanceCount: advisors.performanceCount ?? 0,
       rlsCount: advisors.rlsFindings?.length ?? 0,
       actionableSecurityCount: advisors.actionableSecurity?.length ?? 0,
       actionablePerformanceCount: advisors.actionablePerformance?.length ?? 0,
+      criticalSecurityCount: advisors.criticalSecurity?.length ?? 0,
+      criticalPerformanceCount: advisors.criticalPerformance?.length ?? 0,
+      regressionCount: advisors.regressions?.length ?? 0,
+      historicalSecurityCount: advisors.historicalSecurity?.length ?? 0,
+      historicalPerformanceCount: advisors.historicalPerformance?.length ?? 0,
     },
     branchesRead: branches.result?.status === 0,
     currentGitSha: currentGitSha(),
@@ -360,10 +383,16 @@ function printSummary(summary) {
   console.log(`PENDING_MIGRATIONS: ${summary.pendingCount}`);
   for (const migration of summary.pending) console.log(`PENDING: ${migration}`);
   console.log(`DRY_RUN_MIGRATIONS: ${summary.dryRunIds.length}`);
+  console.log(`PENDING_EXECUTED_DML: ${summary.pendingExecutedDmlCount ?? 0}`);
+  console.log(`PENDING_REVIEW_REQUIRED: ${summary.pendingReviewRequiredCount ?? 0}`);
+  console.log(`PENDING_EMBEDDED_FUNCTION_DML: ${summary.pendingEmbeddedFunctionDmlCount ?? 0}`);
+  console.log(`PENDING_SQL_CONTRACT_ISSUES: ${summary.pendingSqlContractIssueCount ?? 0}`);
   console.log(`SECURITY_ADVISOR_FINDINGS: ${summary.advisors.securityCount}`);
   console.log(`RLS_FINDINGS: ${summary.advisors.rlsCount}`);
   console.log(`PERFORMANCE_ADVISOR_FINDINGS: ${summary.advisors.performanceCount}`);
-  console.log(`RUNTIME_COMPATIBILITY: ${summary.runtime.status}`);
+  console.log(`CRITICAL_ADVISOR_FINDINGS: ${(summary.advisors.criticalSecurityCount ?? 0) + (summary.advisors.criticalPerformanceCount ?? 0)}`);
+  console.log(`ADVISOR_REGRESSIONS: ${summary.advisors.regressionCount ?? 0}`);
+  console.log(`HISTORICAL_ADVISOR_WARNINGS: ${(summary.advisors.historicalSecurityCount ?? 0) + (summary.advisors.historicalPerformanceCount ?? 0)}`);
   console.log(`FIRST_BLOCKING_MIGRATION: ${summary.firstBlockingMigration}`);
   console.log(`ACTION_REQUIRED: ${summary.actionRequired}`);
   console.log(`REMOTE_WRITES: ${summary.remoteWrites}`);

@@ -139,8 +139,10 @@ le préflight canonique
 `npm run supabase:migration:preflight -- --dry-run` caractérise toute la file
 canonique en attente, et non la seule migration du dernier commit. Il vérifie
 la cible et l'authentification CLI, l'ordre local/distant, le dry-run, les
-dépendances SQL, les risques de données, RLS, grants, Advisors et la
-compatibilité du runtime déployé. Ses seuls statuts décisionnels favorables
+sorties CLI non ambiguës, les dépendances SQL, les mutations réellement
+exécutées, RLS, grants, la compatibilité des contrats SQL consommés et les
+Advisors. Les alertes historiques sont rapportées ; les risques critiques et
+régressions explicitement attribuées sont bloquants. Ses seuls statuts décisionnels favorables
 sont `ALIGNED` et `READY_TO_APPLY` ; `BLOCKED` et `DIVERGED` arrêtent la
 mutation et indiquent leurs causes. Le préflight ne fait aucune écriture et ne
 remplace pas la preuve PostgreSQL/pgTAP. Une application autorisée porte alors

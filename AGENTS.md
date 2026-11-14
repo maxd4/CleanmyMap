@@ -405,8 +405,9 @@ canonique doit caractériser **toute la file des migrations canoniques en
 attente** :
 `npm run supabase:migration:preflight -- --dry-run`. Il vérifie l'identité CLI,
 la cible liée, les deux historiques et leur ordre, le `db push --dry-run`, les
-dépendances SQL, les risques de données, RLS, grants, Advisors et la
-compatibilité du runtime réellement déployé. Il produit un statut explicite
+parsing strict des sorties CLI, les dépendances SQL, les mutations réellement
+exécutées (en distinguant le DML dans les corps de fonctions), RLS, grants,
+la compatibilité des contrats SQL consommés et les Advisors. Il produit un statut explicite
 `ALIGNED`, `READY_TO_APPLY`, `BLOCKED` ou `DIVERGED`, avec les migrations et
 causes concernées. Seuls `ALIGNED` et `READY_TO_APPLY` constituent une
 précondition de décision ; le préflight lui-même est toujours read-only et ne
@@ -430,9 +431,11 @@ La convergence automatique publiée est portée par
 `.github/workflows/supabase-convergence.yml` : déclenchement sur publication
 dans `main`, manuel et quotidien, environnement protégé
 `supabase-production`, concurrence sérialisée et aucun déclencheur PR. Le
-workflow réutilise le préflight canonique, bloque `BLOCKED`/`DIVERGED`, exige
-une preuve du runtime Vercel au SHA exact du candidat et n'applique la file
-complète que pour `READY_TO_APPLY`. Après application, il vérifie un préflight
+workflow réutilise le préflight canonique, bloque `BLOCKED`/`DIVERGED` et
+n'applique la file complète que pour `READY_TO_APPLY`, sur la référence `main`
+et l'historique Supabase lié. Les WARN/INFO Advisors historiques restent
+rapportés ; un risque critique ou une régression explicitement attribuée reste
+bloquant. Après application, il vérifie un préflight
 `ALIGNED`, les Advisors et les contrats statiques critiques. Il ne réalise
 jamais de `migration repair`, reset, DDL manuelle, correction SQL automatique
 ou retry aveugle ; voir `documentation/operations/runbook-supabase-convergence.md`.
