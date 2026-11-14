@@ -23,6 +23,7 @@ test("Supabase convergence is main-only, scheduled, manual, and serialized", () 
 test("production secrets are scoped to the protected non-PR job and the canonical CLI gate", () => {
   assert.match(workflow, /SUPABASE_ACCESS_TOKEN:\s*\$\{\{ secrets\.SUPABASE_ACCESS_TOKEN \}\}/);
   assert.match(workflow, /SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
+  assert.match(workflow, /SUPABASE_DB_PASSWORD is required for the linked PostgreSQL read-only checks/);
   assert.doesNotMatch(workflow, /VERCEL_TOKEN|resolve-vercel-runtime-proof|--runtime-proof=/);
   assert.match(workflow, /supabase:migration:preflight -- --dry-run/);
   assert.match(workflow, /Run read-only preflight and gate the queue[\s\S]*?SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);

@@ -60,7 +60,12 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: npx supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+        run: |
+          if [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
+            echo "SUPABASE_DB_PASSWORD is required for the linked PostgreSQL read-only checks; configure the existing protected secret before retrying."
+            exit 1
+          fi
+          npx supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
 
       - name: Run read-only preflight and gate the queue
         id: preflight
