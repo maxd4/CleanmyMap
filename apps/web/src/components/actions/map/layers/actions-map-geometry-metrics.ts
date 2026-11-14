@@ -257,19 +257,22 @@ function resolveMultiLineMetric(
   item: ActionMapItem,
   presentation: GeometryPresentation,
 ): ActionMapGeometryMetric {
-  const simulated = item.contract?.metadata.preparationData?.simulatedRouteCoverage;
-  if (simulated?.status === "hypothetical") {
-    const targetLabel = `Distance cible par groupe · ${formatDistanceValue(simulated.targetDistanceKm)}`;
-    const totalLabel = typeof simulated.totalSimulatedDistanceKm === "number"
-      ? `Somme des distances simulées · ${formatDistanceValue(simulated.totalSimulatedDistanceKm)}`
-      : "Somme des distances simulées · non disponible";
-    return {
-      kind: null,
-      value: null,
-      label: `${presentation.label} · ${simulated.groupCount} groupes · ${targetLabel} · ${totalLabel} · réseau unique inconnu · distance observée non disponible`,
-    };
-  }
   const coverage = item.contract?.metadata.preparationData?.observedCoverage;
+  const isObserved = presentation.reality === "observed" || presentation.variant === "observed";
+  if (!isObserved) {
+    const simulated = item.contract?.metadata.preparationData?.simulatedRouteCoverage;
+    if (simulated?.status === "hypothetical") {
+      const targetLabel = `Distance cible par groupe · ${formatDistanceValue(simulated.targetDistanceKm)}`;
+      const totalLabel = typeof simulated.totalSimulatedDistanceKm === "number"
+        ? `Somme des distances simulées · ${formatDistanceValue(simulated.totalSimulatedDistanceKm)}`
+        : "Somme des distances simulées · non disponible";
+      return {
+        kind: null,
+        value: null,
+        label: `${presentation.label} · ${simulated.groupCount} groupes · ${targetLabel} · ${totalLabel} · réseau unique inconnu · distance observée non disponible`,
+      };
+    }
+  }
   const traceCount = Math.max(0, Math.trunc(Number(coverage?.traceCount) || 0));
   return {
     kind: null,

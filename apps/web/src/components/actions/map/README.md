@@ -71,6 +71,16 @@ entier : aucune ligne, aucun compteur ou aucune source ne sont publiés comme
 observés. Un point de repli conserve seulement la localisation effective ; la
 provenance historique reste dans les propriétés `historical_geometry_*`.
 
+Les deux chemins publics de chargement (API serveur et repli direct
+`actions_map_feed`) utilisent la même allowlist de préparation cartographique.
+Elle peut transmettre une reconstruction `simulatedRouteCoverage` bornée et une
+`referenceAreaProvenance` officielle vérifiée, sans exposer la préparation
+privée. Les coordonnées GeoJSON de la projection SQL sont reconverties dans
+l'ordre Leaflet par le parseur public. Les métriques de reconstruction ne sont
+émises que lorsque la reconstruction est la géométrie sélectionnée ; dès
+qu'une couverture GPS/GPX est retenue, ses métriques observées priment et les
+distances simulées restent secondaires dans l'historique.
+
 Les helpers purs liés à un rendu peuvent rester dans ce dossier lorsqu'ils
 appartiennent réellement à la carte. Un contrat réutilisable hors UI doit
 rejoindre son module domaine propriétaire.

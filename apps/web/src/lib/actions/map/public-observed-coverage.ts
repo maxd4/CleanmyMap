@@ -29,7 +29,10 @@ function parseCoverageSources(raw: unknown): ActionGeometrySource[] | undefined 
   return sources.length > 0 ? sources : undefined;
 }
 
-function parseSimulatedRouteCoverage(raw: unknown): ActionSimulatedRouteCoverage | undefined {
+function parseSimulatedRouteCoverage(
+  raw: unknown,
+  coordinateOrder: "geojson" | "leaflet" = "geojson",
+): ActionSimulatedRouteCoverage | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   const candidate = raw as Record<string, unknown>;
   if (candidate.type !== "MultiLineString" || candidate.geometrySource !== "estimated_route" ||
@@ -37,7 +40,11 @@ function parseSimulatedRouteCoverage(raw: unknown): ActionSimulatedRouteCoverage
       candidate.speedKmPerHour !== 3 ||
       (candidate.coverageVersion !== "simulated-routes-v1" && candidate.coverageVersion !== "simulated-routes-v2")) return undefined;
   const coordinates = parseCoverageCoordinates(candidate.coordinates)
-    ?.map((line) => line.map(([longitude, latitude]) => [latitude, longitude] as [number, number]));
+    ?.map((line) => line.map(([longitude, latitude]) =>
+      (coordinateOrder === "geojson"
+        ? [latitude, longitude]
+        : [longitude, latitude]) as [number, number],
+    ));
   const groupCount = finiteInteger(candidate.groupCount, 1, 12);
   const durationMinutes = finitePositive(candidate.durationMinutes);
   const targetDistanceKm = finiteNonNegativeNumber(candidate.targetDistanceKm);
@@ -181,13 +188,14 @@ function copyServerRouteProvenance(input: Record<string, unknown>, output: Recor
 /** Public map contracts expose only the bounded cartographic preparation allowlist. */
 export function sanitizePublicObservedPreparationData(
   raw: unknown,
+  coordinateOrder: "geojson" | "leaflet" = "leaflet",
 ): ActionPreparationData | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   const input = raw as Record<string, unknown>;
   const output: Record<string, unknown> = {};
   const observedCoverage = parsePublicObservedCoverage(input.observedCoverage)?.observedCoverage;
   if (observedCoverage) output.observedCoverage = observedCoverage;
-  const simulatedCoverage = parseSimulatedRouteCoverage(input.simulatedRouteCoverage);
+  const simulatedCoverage = parseSimulatedRouteCoverage(input.simulatedRouteCoverage, coordinateOrder);
   if (simulatedCoverage) output.simulatedRouteCoverage = simulatedCoverage;
   copyPublicRouteMetadata(input, output);
   copyPublicOperationalRoute(input, output);
@@ -200,7 +208,7 @@ export function parsePublicObservedPreparationData(raw: unknown): ActionPreparat
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   const input = raw as Record<string, unknown>;
   const preparation = input.public_preparation_data ?? input.publicPreparationData ?? input;
-  const projected = sanitizePublicObservedPreparationData(preparation) ?? {};
+  const projected = sanitizePublicObservedPreparationData(preparation, "geojson") ?? {};
   const observedCoverage = parsePublicObservedCoverage(input.observed_coverage)?.observedCoverage;
   if (observedCoverage) projected.observedCoverage = observedCoverage;
   return Object.keys(projected).length > 0 ? projected : undefined;

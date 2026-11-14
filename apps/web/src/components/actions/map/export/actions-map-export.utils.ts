@@ -353,6 +353,7 @@ function buildFeatureProperties(
   resolved: ResolvedExportGeometry,
 ): Record<string, unknown> {
   const simulated = item.contract?.metadata.preparationData?.simulatedRouteCoverage;
+  const selectedSimulated = resolved.simulatedGroupCount === null ? null : simulated;
   const referenceAreaProvenance = hasVerifiedOfficialParkReference(item)
     ? item.contract?.metadata.preparationData?.referenceAreaProvenance ?? null
     : null;
@@ -380,12 +381,12 @@ function buildFeatureProperties(
     reference_area_provenance: referenceAreaProvenance,
     observed_trace_count: resolved.observedCoverage?.traceCount ?? null,
     simulated_group_count: resolved.simulatedGroupCount,
-    simulated_group_size_policy: simulated?.groupSizePolicy ?? null,
-    simulated_target_distance_km: simulated?.targetDistanceKm ?? null,
-    simulated_individual_distances_km: simulated?.individualSimulatedDistancesKm ?? null,
-    simulated_total_distance_km: simulated?.totalSimulatedDistanceKm ?? null,
-    simulated_unique_network_distance_km: simulated?.uniqueNetworkDistanceKm ?? null,
-    simulated_observed_distance_km: simulated?.observedDistanceKm ?? null,
+    simulated_group_size_policy: selectedSimulated?.groupSizePolicy ?? null,
+    simulated_target_distance_km: selectedSimulated?.targetDistanceKm ?? null,
+    simulated_individual_distances_km: selectedSimulated?.individualSimulatedDistancesKm ?? null,
+    simulated_total_distance_km: selectedSimulated?.totalSimulatedDistanceKm ?? null,
+    simulated_unique_network_distance_km: selectedSimulated?.uniqueNetworkDistanceKm ?? null,
+    simulated_observed_distance_km: selectedSimulated?.observedDistanceKm ?? null,
     historical_geometry_kind: resolved.historicalKind,
     historical_geometry_confidence: resolved.historicalConfidence,
     historical_geometry_source: resolved.historicalSource,

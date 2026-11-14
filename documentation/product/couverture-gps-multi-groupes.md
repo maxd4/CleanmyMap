@@ -406,6 +406,15 @@ La répartition vise des groupes équilibrés de 5 à 8 personnes lorsque c'est
 possible ; neuf bénévoles donnent explicitement `[5,4]` et les effectifs
 incompatibles restent signalés sans forcer une répartition artificielle.
 
+La projection publique SQL de la carte conserve cette reconstruction dans une
+allowlist bornée, avec ses groupes, sa politique, ses distances simulées et sa
+provenance estimée, ainsi que les preuves d'une emprise officielle lorsqu'elles
+sont complètes. Elle convertit les coordonnées internes latitude/longitude en
+ordre GeoJSON pour le fallback RPC ; le chemin serveur et le chemin RPC
+reconvergent ensuite vers le même modèle cartographique. Si une observation
+GPS/GPX est sélectionnée, ses métriques remplacent celles de la reconstruction
+dans le rendu et l'export, sans supprimer les métadonnées historiques.
+
 ## 10. Gamification de la contribution cartographique
 
 ### 10.1. Intention produit

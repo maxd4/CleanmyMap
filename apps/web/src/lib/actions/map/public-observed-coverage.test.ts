@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parsePublicObservedPreparationData } from "./public-observed-coverage";
+import {
+  parsePublicObservedPreparationData,
+  sanitizePublicObservedPreparationData,
+} from "./public-observed-coverage";
 
 function buildCoverage(
   coordinates: number[][][],
@@ -50,8 +53,8 @@ describe("public map preparation projection", () => {
         simulatedRouteCoverage: {
           type: "MultiLineString",
           coordinates: [
-            [[48.85, 2.35], [48.851, 2.351]],
-            [[48.85, 2.35], [48.849, 2.349]],
+            [[2.35, 48.85], [2.351, 48.851]],
+            [[2.35, 48.85], [2.349, 48.849]],
           ],
           groupCount: 2,
           groupSizePolicy: "preferred_5_to_8",
@@ -83,6 +86,63 @@ describe("public map preparation projection", () => {
     });
     expect(preparation?.observedCoverage).toBeUndefined();
     expect(preparation?.simulatedRouteCoverage?.observedDistanceKm).toBeNull();
+    expect(preparation?.simulatedRouteCoverage?.coordinates).toEqual([
+      [[48.85, 2.35], [48.851, 2.351]],
+      [[48.85, 2.35], [48.849, 2.349]],
+    ]);
+  });
+
+  it("keeps server and direct-RPC projections equivalent for asymmetric simulated coordinates", () => {
+    const publicPreparation = {
+      simulatedRouteCoverage: {
+        type: "MultiLineString",
+        coordinates: [
+          [[2.3501, 48.8567], [2.3519, 48.8578]],
+          [[2.3602, 48.8461], [2.3618, 48.8473]],
+        ],
+        groupCount: 2,
+        groupSizePolicy: "preferred_5_to_8",
+        groupParticipantCounts: [5, 5],
+        durationMinutes: 90,
+        targetDistanceKm: 4.5,
+        individualSimulatedDistancesKm: [4.4, 4.6],
+        totalSimulatedDistanceKm: 9,
+        uniqueNetworkDistanceKm: null,
+        observedDistanceKm: null,
+        speedKmPerHour: 3,
+        geometrySource: "estimated_route",
+        provenance: "estimated",
+        status: "hypothetical",
+        coverageVersion: "simulated-routes-v2",
+      },
+      referenceAreaProvenance: {
+        kind: "official_park",
+        source: "ville_de_paris",
+        attribution: "Ville de Paris",
+        license: "ODbL",
+        sourceUrl: "https://example.test/belleville",
+      },
+    };
+
+    const serverProjection = sanitizePublicObservedPreparationData({
+      simulatedRouteCoverage: {
+        ...publicPreparation.simulatedRouteCoverage,
+        coordinates: [
+          [[48.8567, 2.3501], [48.8578, 2.3519]],
+          [[48.8461, 2.3602], [48.8473, 2.3618]],
+        ],
+      },
+      referenceAreaProvenance: publicPreparation.referenceAreaProvenance,
+    });
+    const fallbackProjection = parsePublicObservedPreparationData({
+      public_preparation_data: publicPreparation,
+    });
+
+    expect(fallbackProjection).toEqual(serverProjection);
+    expect(fallbackProjection?.simulatedRouteCoverage?.coordinates).toEqual([
+      [[48.8567, 2.3501], [48.8578, 2.3519]],
+      [[48.8461, 2.3602], [48.8473, 2.3618]],
+    ]);
   });
 
   it("projects the explicit nine-person grouping exception without making it observed", () => {

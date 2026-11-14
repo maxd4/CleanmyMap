@@ -113,6 +113,12 @@ describe("actions map export utils", () => {
       geometry_reality: "observed",
       geometry_label: "Trace GPS enregistrée",
       simulated_group_count: null,
+      simulated_group_size_policy: null,
+      simulated_target_distance_km: null,
+      simulated_individual_distances_km: null,
+      simulated_total_distance_km: null,
+      simulated_unique_network_distance_km: null,
+      simulated_observed_distance_km: null,
     });
   });
 

@@ -257,6 +257,40 @@ describe("actions map geometry utils", () => {
     expect(geometry.metrics.label).toContain("réseau unique non calculé");
   });
 
+  it("uses observed multiline metrics when a stale simulation is also present", () => {
+    const item = buildMultiTraceMapItem("observed-over-simulation", "Parc observé", {
+      observedCoverage: buildObservedCoverage(),
+      simulatedRouteCoverage: {
+        type: "MultiLineString",
+        coordinates: [
+          [[48.84, 2.34], [48.841, 2.341]],
+          [[48.84, 2.34], [48.839, 2.339]],
+        ],
+        groupCount: 2,
+        groupSizePolicy: "preferred_5_to_8",
+        groupParticipantCounts: [5, 5],
+        durationMinutes: 60,
+        targetDistanceKm: 3,
+        individualSimulatedDistancesKm: [3, 3],
+        totalSimulatedDistanceKm: 6,
+        uniqueNetworkDistanceKm: null,
+        observedDistanceKm: null,
+        speedKmPerHour: 3,
+        geometrySource: "estimated_route",
+        provenance: "estimated",
+        status: "hypothetical",
+        coverageVersion: "simulated-routes-v2",
+      },
+    });
+
+    const geometry = resolveActionMapGeometryViewModel(item);
+
+    expect(geometry.presentation).toMatchObject({ reality: "observed", variant: "observed" });
+    expect(geometry.metrics.label).toContain("Couverture observée");
+    expect(geometry.metrics.label).not.toContain("Distance cible par groupe");
+    expect(geometry.metrics.label).not.toContain("distance observée non disponible");
+  });
+
   it("shows only the action location when a completed routed line has no network proof", () => {
     const geometry = resolveActionMapGeometryViewModel(
       buildContractMapItem({ geometrySource: "routed" }),
