@@ -104,20 +104,24 @@ function jsonValueEnd(text, start) {
   return -1;
 }
 
-function extractJsonValues(text) {
+function extractJsonCandidates(text) {
   const values = [];
   for (let index = 0; index < text.length; index += 1) {
     if (text[index] !== "{" && text[index] !== "[") continue;
     const end = jsonValueEnd(text, index);
-    if (end < 0 || text.slice(end).trim()) continue;
+    if (end < 0) continue;
     try {
-      values.push(JSON.parse(text.slice(index, end)));
+      values.push({ end, value: JSON.parse(text.slice(index, end)) });
       index = end - 1;
     } catch {
       // Informational CLI text may contain braces which are not JSON.
     }
   }
   return values;
+}
+
+function extractJsonValues(text) {
+  return extractJsonCandidates(text).map((candidate) => candidate.value);
 }
 
 function isStructuredSupabasePayload(payload, label) {
@@ -133,13 +137,18 @@ export function parseSupabaseJson(result, label) {
     const stderr = String(result.stderr ?? "").trim();
     throw new Error(`${label} unavailable${stderr ? " (stderr output present)" : ""}`);
   }
-  const streams = [String(result.stdout ?? ""), String(result.stderr ?? "")];
-  const values = streams.flatMap(extractJsonValues);
-  if (values.length !== 1) {
-    throw new Error(`${label} returned ${values.length === 0 ? "no" : "ambiguous"} JSON payload${values.length === 1 ? "" : "s"}`);
+  const stdout = String(result.stdout ?? "");
+  const stderr = String(result.stderr ?? "");
+  const stdoutValues = extractJsonValues(stdout);
+  const stderrValues = extractJsonValues(stderr);
+  if (stderrValues.length > 0) throw new Error(`${label} returned an ambiguous JSON payload on stderr`);
+  if (stdoutValues.length !== 1) {
+    throw new Error(`${label} returned ${stdoutValues.length === 0 ? "no" : "ambiguous"} JSON payload${stdoutValues.length === 1 ? "" : "s"}`);
   }
-  if (!isStructuredSupabasePayload(values[0], label)) throw new Error(`${label} returned an unsupported structured payload`);
-  return values[0];
+  const payloadEnd = extractJsonCandidates(stdout)[0]?.end ?? -1;
+  if (payloadEnd < 0 || stdout.slice(payloadEnd).trim()) throw new Error(`${label} returned no JSON payload: trailing non-JSON output`);
+  if (!isStructuredSupabasePayload(stdoutValues[0], label)) throw new Error(`${label} returned an unsupported structured payload`);
+  return stdoutValues[0];
 }
 
 export function projectMatches(projects, projectRef) {

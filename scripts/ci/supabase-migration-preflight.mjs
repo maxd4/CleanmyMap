@@ -21,8 +21,8 @@ const PREFLIGHT_STATUSES = Object.freeze(["ALIGNED", "READY_TO_APPLY", "BLOCKED"
 export const READ_ONLY_COMMANDS = Object.freeze([
   ["projects", "list", "--output", "json"],
   ["branches", "list", "--project-ref", "<linked-ref>", "--output", "json"],
-  ["migration", "list", "--linked"],
-  ["db", "push", "--dry-run"],
+  ["migration", "list", "--linked", "--output-format", "json"],
+  ["db", "push", "--dry-run", "--output-format", "json"],
   ["db", "advisors", "--linked", "--type", "security", "--level", "info", "--fail-on", "none", "--output-format", "json"],
   ["db", "advisors", "--linked", "--type", "performance", "--level", "info", "--fail-on", "none", "--output-format", "json"],
 ]);
@@ -67,7 +67,7 @@ function findingName(finding) {
 }
 
 function isCriticalFinding(finding) {
-  return finding?.critical === true || ["CRITICAL", "FATAL"].includes(findingLevel(finding));
+  return finding?.critical === true || ["ERROR", "CRITICAL", "FATAL"].includes(findingLevel(finding));
 }
 
 function isExplicitRegression(finding) {
@@ -196,6 +196,12 @@ const ACTIONS_BY_CAUSE = Object.freeze({
   SECURITY_ADVISOR_CRITICAL: "Résoudre le risque de sécurité critique avant application.",
   ADVISOR_REGRESSION: "Résoudre la régression Advisor explicitement attribuée à la file avant application.",
 });
+
+export const PREFLIGHT_SUCCESS_STATUSES = Object.freeze(["ALIGNED", "READY_TO_APPLY"]);
+
+export function preflightExitCode(status) {
+  return PREFLIGHT_SUCCESS_STATUSES.includes(status) ? 0 : 2;
+}
 
 export function firstBlockingMigration(pending = [], analyses = [], causes = []) {
   const risky = new Set(
@@ -395,7 +401,7 @@ function main() {
   try {
     const summary = runPreflight();
     printSummary(summary);
-    process.exitCode = PREFLIGHT_STATUSES.includes(summary.status) && ["ALIGNED", "READY_TO_APPLY"].includes(summary.status) ? 0 : 2;
+    process.exitCode = PREFLIGHT_STATUSES.includes(summary.status) ? preflightExitCode(summary.status) : 2;
   } catch (error) {
     console.error("PREFLIGHT_STATUS: BLOCKED");
     console.error(error instanceof Error ? error.message : String(error));

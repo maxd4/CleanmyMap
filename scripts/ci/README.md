@@ -40,6 +40,6 @@ prévus par les scripts ; ne pas déposer de secrets, tokens, cookies,
 Le préflight Supabase est read-only et caractérise la file complète des
 migrations canoniques en attente. Il vérifie la cible liée, les historiques,
 l'ordre, `db push --dry-run`, les dépendances SQL, les risques, RLS, grants,
-les Advisors et la compatibilité runtime. Il émet `ALIGNED`,
+les Advisors et la compatibilité des contrats SQL consommés. Il émet `ALIGNED`,
 `READY_TO_APPLY`, `BLOCKED` ou `DIVERGED` ; il ne peut ni appliquer une
 migration, ni faire un `repair`, un reset ou une DDL manuelle.

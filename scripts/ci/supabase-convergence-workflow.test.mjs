@@ -25,6 +25,8 @@ test("production secrets are scoped to the protected non-PR job and the canonica
   assert.match(workflow, /SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
   assert.doesNotMatch(workflow, /VERCEL_TOKEN|resolve-vercel-runtime-proof|--runtime-proof=/);
   assert.match(workflow, /supabase:migration:preflight -- --dry-run/);
+  assert.match(workflow, /if \[ "\$preflight_exit" -ne 0 \]/);
+  assert.match(workflow, /Preflight returned a non-zero exit code/);
   assert.match(workflow, /steps\.preflight\.outputs\.status == 'READY_TO_APPLY'/);
   assert.match(workflow, /npx supabase db push --linked --yes/);
   assert.doesNotMatch(workflow, /migration repair|db reset|CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION/i);

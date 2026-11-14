@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { parseSupabaseJson } from "./audit-supabase-release.mjs";
 import { classifyMigrationSql, findSqlContractCompatibilityIssues } from "./supabase-migration-sql.mjs";
-import { buildReadOnlyCommandArgs, evaluatePreflight } from "./supabase-migration-preflight.mjs";
+import { buildReadOnlyCommandArgs, evaluatePreflight, preflightExitCode } from "./supabase-migration-preflight.mjs";
 
 function alignedHistory(localIds = ["20261113000001", "20261114000001"], remoteIds = localIds) {
   return { localIds, remoteIds, pending: localIds.slice(remoteIds.length), aligned: remoteIds.every((id, index) => id === localIds[index]) };
@@ -13,11 +13,14 @@ const readyContext = { projectRef: "a".repeat(20), projectMatched: true, authSou
 test("parses the single CLI JSON payload with human stdout and stderr diagnostics", () => {
   const payload = { migrations: [{ local: "20261114000001", remote: "" }] };
   assert.deepEqual(parseSupabaseJson({ status: 0, stdout: `Would push these migrations:\n${JSON.stringify(payload)}`, stderr: "Connecting to remote database..." }, "migration list"), payload);
+  assert.deepEqual(parseSupabaseJson({ status: 0, stdout: `DRY RUN:\n${JSON.stringify({ dryRun: true, migrations: ["20261114000001.sql"] })}`, stderr: "Connecting to remote database..." }, "Supabase db push dry-run"), { dryRun: true, migrations: ["20261114000001.sql"] });
 });
 
 test("rejects malformed or ambiguous CLI payloads", () => {
   assert.throws(() => parseSupabaseJson({ status: 0, stdout: "not json", stderr: "" }, "migration list"), /no JSON payload/);
   assert.throws(() => parseSupabaseJson({ status: 0, stdout: "{}", stderr: "{}" }, "migration list"), /ambiguous JSON payload/);
+  assert.throws(() => parseSupabaseJson({ status: 0, stdout: "{} {}", stderr: "" }, "migration list"), /ambiguous JSON payload/);
+  assert.throws(() => parseSupabaseJson({ status: 0, stdout: "{}", stderr: "diagnostic {}" }, "migration list"), /ambiguous JSON payload on stderr/);
   assert.throws(() => parseSupabaseJson({ status: 0, stdout: 'text {"migrations": []} trailing text', stderr: "" }, "migration list"), /no JSON payload/);
   assert.throws(() => parseSupabaseJson({ status: 0, stdout: "{}", stderr: "" }, "migration list"), /unsupported structured payload/);
   assert.throws(() => parseSupabaseJson({ status: 1, stdout: "", stderr: "permission denied" }, "migration list"), /unavailable/);
@@ -47,7 +50,7 @@ test("returns ALIGNED for convergent history without runtime or application proo
   assert.deepEqual(summary.pending, []);
 });
 
-test("returns READY_TO_APPLY from the canonical Supabase evidence without a Vercel SHA proof", () => {
+test("returns READY_TO_APPLY from canonical Supabase evidence without deployment proof", () => {
   const localIds = ["20261113000001", "20261114000001", "20261114000002", "20261114000003"];
   const pending = localIds.slice(2);
   const summary = evaluatePreflight({ ...readyContext, authSource: "ENV_SECRET", history: alignedHistory(localIds, localIds.slice(0, 2)), dryRunIds: pending, advisors: { rlsFindings: [{ level: "INFO" }], actionableSecurity: [{ level: "WARN" }], actionablePerformance: [{ level: "WARN" }], criticalSecurity: [], criticalPerformance: [], regressions: [] }, analyses: pending.map((id) => ({ id, dataMutation: false, destructive: false, reviewRequired: false, forwardDependencies: [], sqlContractIssues: [] })) });
@@ -55,11 +58,17 @@ test("returns READY_TO_APPLY from the canonical Supabase evidence without a Verc
   assert.deepEqual(summary.pending, pending);
 });
 
-test("does not expose deployment proof as a preflight requirement", () => {
+test("favorable statuses alone are the only zero-exit preflight results", () => {
+  assert.equal(preflightExitCode("ALIGNED"), 0);
+  assert.equal(preflightExitCode("READY_TO_APPLY"), 0);
+  assert.equal(preflightExitCode("BLOCKED"), 2);
+  assert.equal(preflightExitCode("DIVERGED"), 2);
+});
+
+test("does not require deployment proof for a compatible migration queue", () => {
   const base = { ...readyContext, history: alignedHistory(["20261114000001", "20261114000002"], ["20261114000001"]), dryRunIds: ["20261114000002"], analyses: [{ id: "20261114000002", dataMutation: false, destructive: false, reviewRequired: false, forwardDependencies: [], sqlContractIssues: [] }] };
-  const summary = evaluatePreflight({ ...base, runtimeEvidence: { status: "INCOMPATIBLE", sha: "f".repeat(40) }, candidateSha: "a".repeat(40) });
+  const summary = evaluatePreflight(base);
   assert.equal(summary.status, "READY_TO_APPLY");
-  assert.doesNotMatch(summary.causes.map((cause) => cause.code).join("\n"), /RUNTIME|VERCEL/i);
 });
 
 test("returns DIVERGED when the remote sequence is not a local prefix", () => {
@@ -82,6 +91,10 @@ test("blocks unverified access, actual mutations, indeterminate SQL and critical
   const critical = evaluatePreflight({ ...base, advisors: { criticalSecurity: [{ level: "CRITICAL" }], criticalPerformance: [], regressions: [] } });
   assert.equal(critical.status, "BLOCKED");
   assert.ok(critical.causes.some((cause) => cause.code === "SECURITY_ADVISOR_CRITICAL"));
+  const error = evaluatePreflight({ ...base, advisors: { criticalSecurity: [{ level: "ERROR" }], criticalPerformance: [], regressions: [] } });
+  assert.equal(error.status, "BLOCKED");
+  const regression = evaluatePreflight({ ...base, advisors: { criticalSecurity: [], criticalPerformance: [], regressions: [{ level: "WARN", regression: true }] } });
+  assert.equal(regression.status, "BLOCKED");
 });
 
 test("blocks a pending incompatible SQL contract", () => {
@@ -97,4 +110,6 @@ test("exposes only read-only Supabase commands", () => {
   assert.equal(rendered.includes("migration repair"), false);
   assert.equal(rendered.includes("reset"), false);
   assert.equal(rendered.includes("db push --dry-run"), true);
+  assert.deepEqual(commands[2].slice(-2), ["--output-format", "json"]);
+  assert.deepEqual(commands[3].slice(-2), ["--output-format", "json"]);
 });
