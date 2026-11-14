@@ -14,12 +14,10 @@ L'environnement fournit uniquement `SUPABASE_ACCESS_TOKEN` et
 sérialisée par `supabase-production-migrations`.
 
 La référence décisionnelle est le `main` vérifié et l'historique du projet
-Supabase lié. Pour une file non vide, `READY_TO_APPLY` exige aussi une
-observation API Vercel Production READY du projet et de l'environnement
-configurés, portant le SHA exact du candidat. Un manifeste autodéclaré, sans
-SHA ou sans preuve projet/environnement n'est pas compatible. Lorsqu'une migration
-modifie ou supprime un contrat SQL, le préflight vérifie séparément la
-rétrocompatibilité des consommateurs existants.
+Supabase lié. Pour une file non vide, `READY_TO_APPLY` exige que la
+rétrocompatibilité des consommateurs existants soit établie lorsqu'une migration
+modifie ou supprime un contrat SQL. Cette décision ne dépend ni d'un déploiement
+Web externe, ni d'un manifeste, ni d'un SHA de déploiement.
 
 ## Décision et application
 

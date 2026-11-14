@@ -3,8 +3,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
-
 import {
   isValidProjectRef,
   parseSupabaseJson,
@@ -18,7 +16,6 @@ import { classifyMigrationSql, findSqlContractCompatibilityIssues } from "./supa
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const migrationsRoot = path.join(repoRoot, "apps", "web", "supabase", "migrations");
 const migrationFilePattern = /^(\d{14})_(.+)\.sql$/;
-const shaPattern = /^[0-9a-f]{40}$/i;
 const PREFLIGHT_STATUSES = Object.freeze(["ALIGNED", "READY_TO_APPLY", "BLOCKED", "DIVERGED"]);
 
 export const READ_ONLY_COMMANDS = Object.freeze([
@@ -187,24 +184,6 @@ function normalizeDryRunMigrations(payload) {
   return migrationRows(payload).map(migrationIdFromValue).filter(Boolean);
 }
 
-function normalizeRuntimeEvidence(evidence, { candidateSha = "", expectedProjectId = "" } = {}) {
-  if (!evidence) return { status: "MISSING", reason: "runtime proof was not supplied" };
-  if (evidence.status !== "COMPATIBLE") return { status: "INCOMPATIBLE", reason: evidence.reason ?? "runtime proof is not compatible" };
-  if (evidence.source !== "vercel-api-readonly" || evidence.verified !== true) return { status: "INCOMPATIBLE", reason: "runtime proof is not an API-verified Vercel observation" };
-  if (!shaPattern.test(String(evidence.sha ?? ""))) return { status: "INCOMPATIBLE", reason: "runtime proof has no valid deployment SHA" };
-  if (candidateSha && evidence.sha !== candidateSha) return { status: "INCOMPATIBLE", reason: "runtime proof SHA does not match the candidate" };
-  if (expectedProjectId && evidence.projectId !== expectedProjectId) return { status: "INCOMPATIBLE", reason: "runtime proof project does not match the configured project" };
-  if (!evidence.projectId || !evidence.deploymentId || evidence.target !== "production" || evidence.readyState !== "READY" || !evidence.productionAlias) {
-    return { status: "INCOMPATIBLE", reason: "runtime proof is missing the observed project, deployment, environment or readiness fields" };
-  }
-  const observed = evidence.observed;
-  if (!observed || observed.projectId !== evidence.projectId || observed.deploymentId !== evidence.deploymentId || observed.target !== "production" || observed.readyState !== "READY" || observed.gitSha !== evidence.sha || observed.productionAlias !== evidence.productionAlias) {
-    return { status: "INCOMPATIBLE", reason: "runtime proof does not contain a consistent API observation" };
-  }
-  if (!/^\d{14}$/.test(String(evidence.migrationVersion ?? ""))) return { status: "INCOMPATIBLE", reason: "runtime proof has no canonical migration version" };
-  return { status: "COMPATIBLE", sha: evidence.sha, migrationVersion: String(evidence.migrationVersion), projectId: evidence.projectId, deploymentId: evidence.deploymentId, productionAlias: evidence.productionAlias };
-}
-
 const ACTIONS_BY_CAUSE = Object.freeze({
   CLI_AUTH_OR_TARGET_UNVERIFIED: "Vérifier l'identité CLI, le projet lié et les permissions sans modifier l'historique.",
   CLI_COMMAND_FAILED: "Corriger l'accès ou la disponibilité de la commande, puis relancer le préflight ; ne pas utiliser migration repair.",
@@ -216,8 +195,6 @@ const ACTIONS_BY_CAUSE = Object.freeze({
   SQL_CONTRACT_INCOMPATIBLE: "Coordonner la compatibilité du contrat SQL avec les consommateurs existants avant application.",
   SECURITY_ADVISOR_CRITICAL: "Résoudre le risque de sécurité critique avant application.",
   ADVISOR_REGRESSION: "Résoudre la régression Advisor explicitement attribuée à la file avant application.",
-  RUNTIME_MISSING: "Observer un déploiement Vercel Production READY du projet configuré avec le SHA candidat avant application.",
-  RUNTIME_INCOMPATIBLE: "Coordonner le déploiement Vercel Production et fournir une observation API cohérente avec le SHA candidat avant application.",
 });
 
 export function firstBlockingMigration(pending = [], analyses = [], causes = []) {
@@ -241,9 +218,6 @@ export function evaluatePreflight({
   dryRunIds = [],
   analyses = [],
   advisors = { rlsFindings: [], actionableSecurity: [], actionablePerformance: [], criticalSecurity: [], criticalPerformance: [], regressions: [] },
-  runtimeEvidence,
-  candidateSha = "",
-  expectedRuntimeProjectId = "",
   commandFailures = [],
 } = {}) {
   const causes = [];
@@ -271,10 +245,6 @@ export function evaluatePreflight({
       causes.push({ code: "SQL_FORWARD_DEPENDENCY", detail: `${analysis.id} references objects created by a later migration.` });
     }
   }
-  const runtime = normalizeRuntimeEvidence(runtimeEvidence, { candidateSha, expectedProjectId: expectedRuntimeProjectId });
-  if (pending.length > 0 && runtime.status !== "COMPATIBLE") {
-    causes.push({ code: `RUNTIME_${runtime.status}`, detail: runtime.reason });
-  }
   if (pending.length > 0 && (advisors.criticalSecurity?.length || advisors.criticalPerformance?.length)) {
     causes.push({ code: "SECURITY_ADVISOR_CRITICAL", detail: `${(advisors.criticalSecurity?.length ?? 0) + (advisors.criticalPerformance?.length ?? 0)} critical Advisor finding(s) require resolution.` });
   }
@@ -294,7 +264,6 @@ export function evaluatePreflight({
     status,
     causes,
     pending,
-    runtime,
     projectRef,
     pendingCount: pending.length,
     firstBlockingMigration: firstBlockingMigration(pending, analyses, causes),
@@ -321,22 +290,8 @@ function readApplicationSource() {
   return files.join("\n");
 }
 
-function readRuntimeProof(filePath) {
-  if (!filePath) return undefined;
-  return JSON.parse(fs.readFileSync(path.resolve(filePath), "utf8"));
-}
-
-function parseRuntimeProofArg(argv) {
-  return argv.find((arg) => arg.startsWith("--runtime-proof="))?.slice("--runtime-proof=".length) || "";
-}
-
 export function buildReadOnlyCommandArgs(projectRef) {
   return READ_ONLY_COMMANDS.map((args) => args.map((arg) => arg === "<linked-ref>" ? projectRef : arg));
-}
-
-function currentGitSha() {
-  const result = spawnSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8", stdio: "pipe" });
-  return result.status === 0 ? result.stdout.trim() : "";
 }
 
 export function runPreflight({ argv = process.argv.slice(2), env = process.env, runner = runSupabase, migrationRoot = migrationsRoot } = {}) {
@@ -362,8 +317,6 @@ export function runPreflight({ argv = process.argv.slice(2), env = process.env, 
   const commandFailures = [projectsParsed, ...parsed]
     .filter((entry) => entry.result?.status !== 0 || entry.error)
     .map((entry) => entry.label ?? "Supabase projects list");
-  const runtimeProofPath = parseRuntimeProofArg(argv);
-  const runtimeEvidence = runtimeProofPath ? readRuntimeProof(runtimeProofPath) : undefined;
   const summary = evaluatePreflight({
     projectRef,
     projectMatched,
@@ -372,9 +325,6 @@ export function runPreflight({ argv = process.argv.slice(2), env = process.env, 
     dryRunIds,
     analyses: localEntries,
     advisors,
-    runtimeEvidence,
-    candidateSha: currentGitSha(),
-    expectedRuntimeProjectId: env.VERCEL_PROJECT_ID?.trim() ?? "",
     commandFailures,
   });
   return {
@@ -400,7 +350,6 @@ export function runPreflight({ argv = process.argv.slice(2), env = process.env, 
       historicalPerformanceCount: advisors.historicalPerformance?.length ?? 0,
     },
     branchesRead: branches.result?.status === 0,
-    currentGitSha: currentGitSha(),
     remoteWrites: "NONE",
   };
 }
@@ -436,7 +385,6 @@ function printSummary(summary) {
   console.log(`CRITICAL_ADVISOR_FINDINGS: ${(summary.advisors.criticalSecurityCount ?? 0) + (summary.advisors.criticalPerformanceCount ?? 0)}`);
   console.log(`ADVISOR_REGRESSIONS: ${summary.advisors.regressionCount ?? 0}`);
   console.log(`HISTORICAL_ADVISOR_WARNINGS: ${(summary.advisors.historicalSecurityCount ?? 0) + (summary.advisors.historicalPerformanceCount ?? 0)}`);
-  console.log(`RUNTIME_COMPATIBILITY: ${summary.runtime.status}`);
   console.log(`FIRST_BLOCKING_MIGRATION: ${summary.firstBlockingMigration}`);
   console.log(`ACTION_REQUIRED: ${summary.actionRequired}`);
   console.log(`REMOTE_WRITES: ${summary.remoteWrites}`);
