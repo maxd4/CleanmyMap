@@ -44,6 +44,8 @@ const LOOP_MIN_SIDE_METERS = 25;
 /** A provider detour this large is treated as geographically incoherent for candidate ranking. */
 const LOOP_MAX_TARGET_DISTANCE_FACTOR = 4;
 const LOOP_MAX_EXCESS_DISTANCE_KM = 5;
+const ROUTE_OVERLAP_THRESHOLD_KM = 0.035;
+const ROUTE_OVERLAP_SAMPLE_STEP_KM = 0.01;
 const geocodingCache = new Map<string, { expiresAt: number; value: GeoPoint | null }>();
 const geocodingInFlight = new Map<string, Promise<GeoPoint | null>>();
 
@@ -221,6 +223,7 @@ async function routeLoopHypotheses(
   targetDistanceKm: number,
   midpoint: [number, number] | null,
   rotationOffsetDegrees = 0,
+  selectedRoutes: RouteGeometry[] = [],
 ): Promise<RouteGeometry> {
   const hypotheses = midpoint
     ? [[origin, midpoint, origin]]
@@ -243,7 +246,11 @@ async function routeLoopHypotheses(
   }
 
   if (networkCandidates.length > 0) {
-    const [firstCandidate, ...remainingCandidates] = networkCandidates;
+    const distinctCandidates = networkCandidates.filter((candidate) =>
+      routeOverlapRatio(candidate.routeGeometry, selectedRoutes) <= 0.75,
+    );
+    const rankedCandidates = distinctCandidates.length > 0 ? distinctCandidates : networkCandidates;
+    const [firstCandidate, ...remainingCandidates] = rankedCandidates;
     return remainingCandidates.reduce(
       (best, candidate) =>
         compareLoopCandidates(candidate, best, targetDistanceKm) < 0 ? candidate : best,
@@ -254,12 +261,62 @@ async function routeLoopHypotheses(
   return fallbackRoute ?? routePolylineThroughFossgisFoot(hypotheses[0]!);
 }
 
+function distancePointToSegmentKm(
+  point: [number, number],
+  start: [number, number],
+  end: [number, number],
+): number {
+  const referenceLatitude = (point[0] * Math.PI) / 180;
+  const scale = 111.32;
+  const project = (coordinate: [number, number]) => [
+    coordinate[1] * Math.cos(referenceLatitude) * scale,
+    coordinate[0] * scale,
+  ] as [number, number];
+  const projectedPoint = project(point);
+  const projectedStart = project(start);
+  const projectedEnd = project(end);
+  const dx = projectedEnd[0] - projectedStart[0];
+  const dy = projectedEnd[1] - projectedStart[1];
+  const denominator = dx * dx + dy * dy;
+  const ratio = denominator === 0
+    ? 0
+    : Math.max(0, Math.min(1, ((projectedPoint[0] - projectedStart[0]) * dx + (projectedPoint[1] - projectedStart[1]) * dy) / denominator));
+  const closest: [number, number] = [
+    projectedStart[0] + ratio * dx,
+    projectedStart[1] + ratio * dy,
+  ];
+  return Math.hypot(projectedPoint[0] - closest[0], projectedPoint[1] - closest[1]);
+}
+
+function routeSegments(route: RouteGeometry): Array<[[number, number], [number, number]]> {
+  return route.coordinates.slice(1).map((end, index) => [route.coordinates[index]!, end]);
+}
+
 function routeOverlapRatio(route: RouteGeometry, selected: RouteGeometry[]): number {
   if (selected.length === 0 || route.coordinates.length < 2) return 0;
-  const nearPoints = route.coordinates.filter((point) => selected.some((other) =>
-    other.coordinates.some((otherPoint) => haversineDistanceKm(point, otherPoint) <= 0.035),
-  ));
-  return nearPoints.length / route.coordinates.length;
+  const selectedSegments = selected.flatMap(routeSegments);
+  let routeLengthKm = 0;
+  let overlappedLengthKm = 0;
+  for (const [start, end] of routeSegments(route)) {
+    const segmentLengthKm = haversineDistanceKm(start, end);
+    if (segmentLengthKm <= 0) continue;
+    routeLengthKm += segmentLengthKm;
+    const sampleCount = Math.max(1, Math.ceil(segmentLengthKm / ROUTE_OVERLAP_SAMPLE_STEP_KM));
+    const sampleLengthKm = segmentLengthKm / sampleCount;
+    for (let index = 0; index < sampleCount; index += 1) {
+      const ratio = (index + 0.5) / sampleCount;
+      const sample: [number, number] = [
+        start[0] + (end[0] - start[0]) * ratio,
+        start[1] + (end[1] - start[1]) * ratio,
+      ];
+      if (selectedSegments.some(([otherStart, otherEnd]) =>
+        distancePointToSegmentKm(sample, otherStart, otherEnd) <= ROUTE_OVERLAP_THRESHOLD_KM,
+      )) {
+        overlappedLengthKm += sampleLengthKm;
+      }
+    }
+  }
+  return routeLengthKm === 0 ? 0 : overlappedLengthKm / routeLengthKm;
 }
 
 async function reconstructHypotheticalCoverage(params: {
@@ -283,6 +340,7 @@ async function reconstructHypotheticalCoverage(params: {
       targetDistanceKm,
       params.midpointPair,
       index * 45,
+      routes,
     );
     if (!isValidNetworkLoop(route) || route.mode !== "network" || route.provider === "none") {
       return { reason: "routage piéton indisponible pour toutes les équipes hypothétiques." };

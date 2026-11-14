@@ -877,7 +877,7 @@ La carte publique expose les libellés de provenance suivants :
 | plusieurs observations | `Couverture observée multi-traces` | traces conservées séparément, sans concaténation |
 | `manual` | `Parcours déclaré` ou `Zone d’action` | géométrie déclarée par l’utilisateur |
 | `routed` / `estimated_route` | `Itinéraire prévu sur le réseau` ou `Itinéraire prévu estimé` | hypothèse de planification, jamais observation ; un `routed` sans mode/provider réseau démontré devient un point |
-| `reference` / `estimated_area` | `Repère géographique indicatif` ou `Zone indicative` | contexte spatial, jamais couverture terrain |
+| `reference` officiel vérifié / `reference` approximatif / `estimated_area` | `Zone d'intervention estimée` / `Repère géographique indicatif` / `Zone indicative` | l'emprise officielle est un polygone rempli attribué, jamais une couverture terrain ; les références approximatives restent contextuelles ou ponctuelles |
 | fallback direct après action | `Parcours non documenté` | point de localisation, sans faux trajet public |
 | `fallback_point` | `Localisation seule` | aucune géométrie exploitable |
 
@@ -904,9 +904,14 @@ La hiérarchie de résolution canonique cible est :
 4. `estimated_route` ;
 5. `fallback_point`.
 
-`reference` et `estimated_area` ne sont pas des sorties de couverture publique :
-ils peuvent fournir un contexte ou une origine de reconstruction, mais leur
-emprise n’est jamais présentée comme le tracé observé d’une action.
+Une référence approximative et `estimated_area` ne sont pas des sorties de
+couverture publique : ils peuvent fournir un contexte ou une origine de
+reconstruction et restent ponctuels lorsque la provenance n'est pas vérifiée.
+L'exception bornée est l'emprise officielle d'un parc dont la provenance,
+l'attribution et la licence sont vérifiées : elle peut être publiée comme
+polygone contextuel rempli `Zone d'intervention estimée`, sans jamais être
+présentée comme le tracé observé, la surface nettoyée ou une distance réelle
+de l'action.
 
 Dans ce contrat `CURRENT`, `gps_tracking` et `gpx_import` sont les observations réelles
 prioritaires. Une action ne remplace jamais une observation valide par une

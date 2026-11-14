@@ -7,6 +7,7 @@ import {
 } from "@/lib/actions/data-contract";
 import {
   getGeometryPresentation,
+  hasVerifiedOfficialParkReference,
   isIndicativeRouteFallback,
 } from "@/lib/actions/geometry/geometry-presentation";
 import type { GeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
@@ -112,7 +113,11 @@ function shouldRenderPublicDrawing(
   item: ActionMapItem,
   presentation: GeometryPresentation,
 ): boolean {
-  if (presentation.reality === "contextual" || presentation.reality === "location_only") {
+  const isVerifiedOfficialParkPolygon =
+    presentation.variant === "reference" &&
+    item.contract?.geometry.kind === "polygon" &&
+    hasVerifiedOfficialParkReference(item);
+  if ((presentation.reality === "contextual" && !isVerifiedOfficialParkPolygon) || presentation.reality === "location_only") {
     return false;
   }
 
@@ -156,6 +161,24 @@ export function resolveActionMapGeometryViewModel(
       label: formatGeometryModeLabel(kind, presentation),
       presentation,
       drawing: null,
+    };
+  }
+
+  if (drawing && coordinates.length > 0 && presentation.reality === "observed") {
+    const kind = drawing.kind;
+    return {
+      kind,
+      renderMode: "drawing",
+      positions: coordinates,
+      multiLinePositions: [],
+      coverageTraceCount: 0,
+      anchor: resolveAnchorFromCoordinates(coordinates),
+      pointCount: coordinates.length,
+      confidence,
+      metrics: resolveGeometryMetric(drawing.kind, coordinates, item, presentation),
+      label: formatGeometryModeLabel(kind, presentation),
+      presentation,
+      drawing,
     };
   }
 

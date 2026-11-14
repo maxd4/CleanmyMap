@@ -65,6 +65,57 @@ describe("actions map export utils", () => {
     });
   });
 
+  it("exports an observed simple GPS line instead of stale hypothetical coverage", () => {
+    const contract = buildActionDataContract({
+      id: "action-observed-over-simulation",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Parcours observé",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "gps_tracking",
+      manualDrawing: { kind: "polyline", coordinates: [[48.85, 2.34], [48.851, 2.341]] },
+      preparationData: {
+        routeObservedDistanceKm: 1.2,
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [
+            [[48.84, 2.34], [48.841, 2.341]],
+            [[48.84, 2.34], [48.839, 2.339]],
+          ],
+          groupCount: 2,
+          groupParticipantCounts: [5, 5],
+          durationMinutes: 60,
+          targetDistanceKm: 3,
+          individualSimulatedDistancesKm: [3, 3],
+          totalSimulatedDistanceKm: 6,
+          uniqueNetworkDistanceKm: null,
+          observedDistanceKm: null,
+          speedKmPerHour: 3,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v2",
+        },
+      },
+    });
+    const geojson = JSON.parse(buildActionsMapGeoJsonString([toActionMapItem(contract)])) as {
+      features: Array<{ geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> }>;
+    };
+    expect(geojson.features[0]?.geometry).toEqual({
+      type: "LineString",
+      coordinates: [[2.34, 48.85], [2.341, 48.851]],
+    });
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_source: "gps_tracking",
+      geometry_reality: "observed",
+      geometry_label: "Trace GPS enregistrée",
+      simulated_group_count: null,
+    });
+  });
+
   it("maps filtered actions to the report csv schema", () => {
     const contract = buildActionDataContract({
       id: "action-export",
@@ -531,6 +582,48 @@ describe("actions map export utils", () => {
       geometry_reality: "contextual",
       historical_geometry_kind: "polygon",
       historical_geometry_source: "reference",
+    });
+  });
+
+  it("exports a verified official park polygon with its attribution", () => {
+    const contract = buildActionDataContract({
+      id: "action-official-park-export",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Parc de Belleville",
+      latitude: 48.87,
+      longitude: 2.39,
+      geometrySource: "reference",
+      manualDrawing: {
+        kind: "polygon",
+        coordinates: [[48.87, 2.39], [48.871, 2.391], [48.872, 2.39]],
+      },
+      preparationData: {
+        referenceAreaProvenance: {
+          kind: "official_park",
+          source: "ville_de_paris",
+          attribution: "Ville de Paris",
+          license: "ODbL",
+          sourceUrl: "https://example.test/belleville",
+        },
+      },
+    });
+    const geojson = JSON.parse(buildActionsMapGeoJsonString([toActionMapItem(contract)])) as {
+      features: Array<{ geometry: { type: string }; properties: Record<string, unknown> }>;
+    };
+    expect(geojson.features[0]?.geometry.type).toBe("Polygon");
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_source: "reference",
+      geometry_reality: "contextual",
+      geometry_label: "Zone d'intervention estimée",
+      reference_area_provenance: {
+        source: "ville_de_paris",
+        attribution: "Ville de Paris",
+        license: "ODbL",
+        sourceUrl: "https://example.test/belleville",
+      },
     });
   });
 

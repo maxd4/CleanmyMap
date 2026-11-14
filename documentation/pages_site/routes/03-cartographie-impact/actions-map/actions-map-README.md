@@ -400,10 +400,14 @@ observée. L'épaisseur sert uniquement à la sélection et à la lisibilité ; 
 ne constitue pas un score.
 
 Une couverture observée est prioritaire sur une géométrie manuelle, de référence
-ou planifiée. Une géométrie de référence déjà persistée reste conservée pour
-l'historique, mais n'est pas exposée comme un faux parcours public. Cette même
-provenance est reprise dans le tableau, la sélection, le journal et l'export
-GeoJSON ; l'export conserve les MultiLineString observées et leurs labels.
+ou planifiée. Une référence approximative déjà persistée reste conservée pour
+l'historique et n'est pas exposée comme un faux parcours public. Une emprise
+officielle de parc dont la provenance, la licence et l'attribution sont
+vérifiées est l'exception : elle est rendue et exportée comme polygone rempli
+`Zone d'intervention estimée`, sans devenir une surface nettoyée, une trace
+observée ou une distance réelle. Cette provenance est reprise dans le tableau,
+la sélection, le journal et l'export GeoJSON ; l'export conserve les
+MultiLineString observées et leurs labels.
 
 La mission mobile, ses `gps_points` et les contributions sources restent privés
 et owner-scoped. `/actions/map` reçoit uniquement la projection bornée via le

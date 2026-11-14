@@ -55,6 +55,15 @@ function toGeometryKind(item: ActionMapItem): ActionGeometryKind | null {
   return item.contract?.geometry.kind ?? item.manual_drawing?.kind ?? null;
 }
 
+export function hasVerifiedOfficialParkReference(item: ActionMapItem): boolean {
+  const reference = item.contract?.metadata.preparationData?.referenceAreaProvenance;
+  return reference?.kind === "official_park" &&
+    reference.source === "ville_de_paris" &&
+    reference.license === "ODbL" &&
+    reference.attribution.trim().length > 0 &&
+    reference.sourceUrl.trim().length > 0;
+}
+
 export function isIndicativeRouteFallback(item: ActionMapItem): boolean {
   const preparationData = item.contract?.metadata.preparationData;
   return (
@@ -248,8 +257,7 @@ function getOriginPresentation(
       : getEstimatedRoutePresentation(item);
   }
   if (origin === "manual") return buildPresentation(origin, "declared", getManualLabel(kind), "solid", "declared");
-  const isOfficialParkReference = item.contract?.metadata.preparationData?.referenceAreaProvenance?.kind === "official_park" ||
-    (kind === "polygon" && /parc de belleville/i.test(item.location_label ?? ""));
+  const isOfficialParkReference = kind === "polygon" && hasVerifiedOfficialParkReference(item);
   if (origin === "reference" && isOfficialParkReference) {
     return buildPresentation(origin, "contextual", "Zone d'intervention estimée", "solid", "reference");
   }

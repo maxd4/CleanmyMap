@@ -78,7 +78,7 @@ describe("actions map geometry utils", () => {
     preparationData,
     actionPhase,
   }: {
-    geometrySource: "manual" | "gpx_import" | "routed" | "estimated_route" | "reference" | "estimated_area";
+    geometrySource: "manual" | "gps_tracking" | "gpx_import" | "routed" | "estimated_route" | "reference" | "estimated_area";
     kind?: "polyline" | "polygon";
     preparationData?: Parameters<typeof buildActionDataContract>[0]["preparationData"];
     actionPhase?: ActionPhase;
@@ -183,9 +183,63 @@ describe("actions map geometry utils", () => {
     });
     const presentation = getGeometryPresentation(item);
     const style = resolveGeometryRenderStyle({ kind: "polygon", presentation });
+    const geometry = resolveActionMapGeometryViewModel(item);
     expect(presentation.label).toBe("Zone d'intervention estimée");
     expect(style.fillOpacity).toBeGreaterThan(0);
     expect(style.dashArray).toBeUndefined();
+    expect(geometry).toMatchObject({
+      kind: "polygon",
+      renderMode: "drawing",
+      presentation: { reality: "contextual", variant: "reference" },
+    });
+    expect(geometry.positions.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("keeps an observed simple GPS or GPX line ahead of stale hypothetical coverage", () => {
+    for (const geometrySource of ["gps_tracking", "gpx_import"] as const) {
+      const item = buildContractMapItem({
+        geometrySource,
+        preparationData: {
+          gpxImport: geometrySource === "gpx_import"
+            ? {
+                source: "gpx_import",
+                observedDistanceKm: 0.133,
+                pointCount: 2,
+                inferredTopology: "point_to_point",
+                intent: "observed",
+              }
+            : undefined,
+          simulatedRouteCoverage: {
+            type: "MultiLineString",
+            coordinates: [
+              [[48.84, 2.34], [48.841, 2.341]],
+              [[48.84, 2.34], [48.839, 2.339]],
+            ],
+            groupCount: 2,
+            groupParticipantCounts: [5, 5],
+            durationMinutes: 60,
+            targetDistanceKm: 3,
+            individualSimulatedDistancesKm: [3, 3],
+            totalSimulatedDistanceKm: 6,
+            uniqueNetworkDistanceKm: null,
+            observedDistanceKm: null,
+            speedKmPerHour: 3,
+            geometrySource: "estimated_route",
+            provenance: "estimated",
+            status: "hypothetical",
+            coverageVersion: "simulated-routes-v2",
+          },
+        },
+      });
+      const geometry = resolveActionMapGeometryViewModel(item);
+      expect(geometry).toMatchObject({
+        kind: "polyline",
+        renderMode: "drawing",
+        presentation: { reality: "observed", variant: "observed" },
+      });
+      expect(geometry.positions).toEqual([[48.85, 2.35], [48.851, 2.351]]);
+      expect(geometry.metrics.label).toMatch(/Distance|Longueur/);
+    }
   });
 
   it("renders independent accepted observations as separate coverage lines", () => {

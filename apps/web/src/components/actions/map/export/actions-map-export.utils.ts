@@ -10,6 +10,7 @@ import {
 import {
   getFallbackPointPresentation,
   getGeometryPresentation,
+  hasVerifiedOfficialParkReference,
   isIndicativeRouteFallback,
 } from "@/lib/actions/geometry/geometry-presentation";
 import type {
@@ -149,7 +150,11 @@ function parseGeoJsonGeometry(raw: string | null | undefined): GeoJsonGeometry |
 
 function shouldExportPublicDrawing(item: ActionMapItem): boolean {
   const presentation = getGeometryPresentation(item);
-  if (presentation.reality === "contextual" || presentation.reality === "location_only") {
+  const isVerifiedOfficialParkPolygon =
+    presentation.variant === "reference" &&
+    item.contract?.geometry.kind === "polygon" &&
+    hasVerifiedOfficialParkReference(item);
+  if ((presentation.reality === "contextual" && !isVerifiedOfficialParkPolygon) || presentation.reality === "location_only") {
     return false;
   }
 
@@ -328,13 +333,16 @@ function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
     return resolveObservedExportGeometry(observedCoverage, historicalKind, historicalSource, historicalConfidence);
   }
 
-  const simulated = resolveSimulatedExportGeometry(item, historicalKind, historicalSource, historicalConfidence);
-  if (simulated) return simulated;
-
   const contractGeometry = item.contract?.geometry.geojson ?? item.geometry_geojson ?? null;
   const geometry = shouldExportPublicDrawing(item)
     ? parseGeoJsonGeometry(contractGeometry) ?? parseGeoJsonGeometry(buildManualDrawingGeoJson(item))
     : null;
+  if (geometry && getGeometryPresentation(item).reality === "observed") {
+    return resolveContractExportGeometry(item, geometry, historicalKind, historicalSource, historicalConfidence);
+  }
+
+  const simulated = resolveSimulatedExportGeometry(item, historicalKind, historicalSource, historicalConfidence);
+  if (simulated) return simulated;
 
   if (!geometry) return resolveFallbackExportGeometry(item, historicalKind, historicalSource, historicalConfidence);
   return resolveContractExportGeometry(item, geometry, historicalKind, historicalSource, historicalConfidence);
@@ -345,6 +353,9 @@ function buildFeatureProperties(
   resolved: ResolvedExportGeometry,
 ): Record<string, unknown> {
   const simulated = item.contract?.metadata.preparationData?.simulatedRouteCoverage;
+  const referenceAreaProvenance = hasVerifiedOfficialParkReference(item)
+    ? item.contract?.metadata.preparationData?.referenceAreaProvenance ?? null
+    : null;
   return {
     id: item.id,
     created_at: resolveCreatedAt(item),
@@ -366,6 +377,7 @@ function buildFeatureProperties(
     geometry_label: resolved.presentation.label,
     geometry_reality: resolved.presentation.reality,
     geometry_variant: resolved.presentation.variant ?? null,
+    reference_area_provenance: referenceAreaProvenance,
     observed_trace_count: resolved.observedCoverage?.traceCount ?? null,
     simulated_group_count: resolved.simulatedGroupCount,
     simulated_group_size_policy: simulated?.groupSizePolicy ?? null,

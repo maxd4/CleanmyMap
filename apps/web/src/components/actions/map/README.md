@@ -49,12 +49,14 @@ dans l'affichage ; un état inconnu ne doit pas devenir une affirmation visuelle
   restent respectivement contextuel, indicatif et ponctuel.
 
 Les couches donnent priorité à une couverture observée et n'ajoutent pas la
-route opérationnelle prévue par-dessus. Les emprises de référence historiques
-restent lisibles pour compatibilité côté contrat, mais sont rendues comme
-contexte ou point et ne deviennent jamais une fausse couverture publique.
-L'export GeoJSON reprend le label, la réalité, la variante et les MultiLineString
-observées ; les distances affichent séparément cible, réseau, observation et
-distances individuelles de couverture.
+route opérationnelle prévue par-dessus. Une emprise officielle de parc dont la
+provenance Ville de Paris, la licence et l'attribution sont vérifiées est
+rendue comme polygone plein avec le label `Zone d'intervention estimée` ; elle
+reste un contexte hypothétique et ne devient jamais une surface nettoyée
+observée. Les références approximatives restent contextuelles ou ponctuelles.
+L'export GeoJSON reprend le label, la réalité, la variante, l'attribution de
+l'emprise officielle et les MultiLineString observées ; les distances affichent
+séparément cible, réseau, observation et distances individuelles de couverture.
 
 Les propriétés effectives `geometry_kind`, `geometry_source`,
 `geometry_reality` et `observed_trace_count` décrivent toujours la géométrie
