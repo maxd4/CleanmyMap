@@ -129,6 +129,13 @@ select is(
   '12'::text,
   'the aggregate contains the new participant count exactly once'
 );
+select diag(format(
+  'statistical-delta detail waste_kg=%s participants_total=%s',
+  ((select waste_kg from public.public_impact_action_aggregate_state where state_id = true)
+    - (select waste_kg from propagation_state_before))::numeric,
+  ((select participants_total from public.public_impact_action_aggregate_state where state_id = true)
+    - (select participants_total from propagation_state_before))::bigint
+));
 
 update public.actions
 set status = 'approved', action_phase = 'post_action_complete', review_state = 'approved',
