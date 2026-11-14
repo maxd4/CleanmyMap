@@ -25,12 +25,12 @@ select ok(not has_function_privilege('authenticated', 'public.transition_action_
 select ok(not has_function_privilege('anon', 'public.update_action_ride_details(uuid,text,text,timestamptz,smallint,text)', 'EXECUTE'), 'anon cannot update rides');
 select ok(not has_function_privilege('authenticated', 'public.update_action_ride_details(uuid,text,text,timestamptz,smallint,text)', 'EXECUTE'), 'authenticated cannot update rides directly');
 
-select like(
+select alike(
   pg_get_functiondef(to_regprocedure('public.accept_action_ride_request(uuid,text)')),
   '%for update of r%',
   'acceptance locks the ride before the request'
 );
-select like(
+select alike(
   pg_get_functiondef(to_regprocedure('public.accept_action_ride_request(uuid,text)')),
   '%action_ride_capacity(v_ride.id)%',
   'acceptance rereads the canonical capacity owner'
@@ -43,17 +43,17 @@ select ok(
   ),
   'ride cancellation notification identity is unique'
 );
-select like(
+select alike(
   pg_get_functiondef(to_regprocedure('public.transition_action_ride(uuid,text,text)')),
   '%on conflict do nothing%',
   'ride cancellation notifications are idempotent'
 );
-select like(
+select alike(
   pg_get_functiondef(to_regprocedure('public.transition_action_ride(uuid,text,text)')),
   '%where rr.ride_id = v_ride.id and rr.status = ''pending''%',
   'pending request transition qualifies SQL columns'
 );
-select like(
+select alike(
   pg_get_functiondef(to_regprocedure('public.update_action_ride_details(uuid,text,text,timestamptz,smallint,text)')),
   '%or v_ride.status <> ''open''%',
   'ride detail updates require an open ride'
