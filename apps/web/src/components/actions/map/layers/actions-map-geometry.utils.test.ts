@@ -77,11 +77,13 @@ describe("actions map geometry utils", () => {
     kind = "polyline",
     preparationData,
     actionPhase,
+    derivedGeometryGeoJson,
   }: {
     geometrySource: "manual" | "gps_tracking" | "gpx_import" | "routed" | "estimated_route" | "reference" | "estimated_area";
     kind?: "polyline" | "polygon";
     preparationData?: Parameters<typeof buildActionDataContract>[0]["preparationData"];
     actionPhase?: ActionPhase;
+    derivedGeometryGeoJson?: string;
   }): ActionMapItem {
     return toActionMapItem(
       buildActionDataContract({
@@ -101,6 +103,7 @@ describe("actions map geometry utils", () => {
               : [[48.85, 2.35], [48.851, 2.351]],
         },
         geometrySource,
+        ...(derivedGeometryGeoJson === undefined ? {} : { derivedGeometryGeoJson }),
         preparationData,
         actionPhase,
       }),
@@ -289,6 +292,52 @@ describe("actions map geometry utils", () => {
     expect(geometry.metrics.label).toContain("Couverture observée");
     expect(geometry.metrics.label).not.toContain("Distance cible par groupe");
     expect(geometry.metrics.label).not.toContain("distance observée non disponible");
+  });
+
+  it("uses the primary observed GeoJSON for rendering and metrics when metadata only has stale simulation", () => {
+    const item = buildContractMapItem({
+      geometrySource: "reference",
+      kind: "polygon",
+      derivedGeometryGeoJson: JSON.stringify({
+        type: "MultiLineString",
+        coordinates: [
+          [[2.35, 48.85], [2.351, 48.851]],
+          [[2.36, 48.86], [2.361, 48.861]],
+          [[2.37, 48.87], [2.371, 48.871]],
+        ],
+      }),
+      preparationData: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [
+            [[48.84, 2.34], [48.841, 2.341]],
+            [[48.84, 2.34], [48.839, 2.339]],
+          ],
+          groupCount: 2,
+          groupParticipantCounts: [5, 5],
+          durationMinutes: 60,
+          targetDistanceKm: 3,
+          individualSimulatedDistancesKm: [3, 3],
+          totalSimulatedDistanceKm: 6,
+          uniqueNetworkDistanceKm: null,
+          observedDistanceKm: null,
+          speedKmPerHour: 3,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v1",
+        },
+      },
+    });
+
+    const geometry = resolveActionMapGeometryViewModel(item);
+
+    expect(geometry.coverageTraceCount).toBe(3);
+    expect(geometry.multiLinePositions).toHaveLength(3);
+    expect(geometry.presentation).toMatchObject({ reality: "observed", variant: "observed" });
+    expect(geometry.metrics.label).toContain("3 traces");
+    expect(geometry.metrics.label).not.toContain("groupes");
+    expect(geometry.metrics.label).not.toContain("distances simulées");
   });
 
   it("shows only the action location when a completed routed line has no network proof", () => {

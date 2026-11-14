@@ -235,9 +235,13 @@ function observedLabel(
   origin: ActionGeometryOrigin | null,
 ): string {
   if (observedTraceCount(item) > 1) return "Couverture observée multi-traces";
-  return (origin === "gpx_import" || observedCoverageSources(item).includes("gpx_import"))
-    ? "Trace GPX fournie"
-    : "Trace GPS enregistrée";
+  const sources = observedCoverageSources(item);
+  if (hasStoredObservedCoverage(item)) {
+    if (sources.includes("gpx_import")) return "Trace GPX fournie";
+    if (sources.includes("gps_tracking")) return "Trace GPS enregistrée";
+    return "Couverture observée";
+  }
+  return origin === "gpx_import" ? "Trace GPX fournie" : "Trace GPS enregistrée";
 }
 
 function getOriginPresentation(

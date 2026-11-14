@@ -491,10 +491,14 @@ describe("actions map export utils", () => {
       }),
     });
 
+    const item = toActionMapItem(contract);
+    const mapGeometry = resolveActionMapGeometryViewModel(item);
     const geojson = JSON.parse(
-      buildActionsMapGeoJsonString([toActionMapItem(contract)]),
+      buildActionsMapGeoJsonString([item]),
     ) as { features: Array<{ properties: Record<string, unknown> }> };
 
+    expect(mapGeometry.coverageTraceCount).toBe(2);
+    expect(mapGeometry.metrics.label).toContain("2 traces");
     expect(geojson.features[0]?.properties).toMatchObject({
       geometry_kind: "multiline",
       geometry_source: null,

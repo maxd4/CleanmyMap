@@ -874,6 +874,7 @@ La carte publique expose les libellés de provenance suivants :
 | --- | --- | --- |
 | `gps_tracking` | `Trace GPS enregistrée` | trajectoire observée issue des points GPS persistés |
 | `gpx_import` | `Trace GPX fournie` | trajectoire observée fournie puis validée |
+| source observée inconnue | `Couverture observée` | trace conservée sans inventer une provenance GPS ou GPX |
 | plusieurs observations | `Couverture observée multi-traces` | traces conservées séparément, sans concaténation |
 | `manual` | `Parcours déclaré` ou `Zone d’action` | géométrie déclarée par l’utilisateur |
 | `routed` / `estimated_route` | `Itinéraire prévu sur le réseau` ou `Itinéraire prévu estimé` | hypothèse de planification, jamais observation ; un `routed` sans mode/provider réseau démontré devient un point |

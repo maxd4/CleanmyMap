@@ -137,6 +137,23 @@ describe("geometry presentation provenance", () => {
     });
   });
 
+  it("keeps a single observed trace with unknown source neutral", () => {
+    expect(getGeometryPresentation(buildItem("reference", "polyline", {
+      observedCoverage: {
+        type: "MultiLineString",
+        coordinates: [[[2.35, 48.85], [2.351, 48.851]]],
+        traceCount: 1,
+        individualDistancesKm: [0.2],
+        coverageDistanceKm: null,
+        coverageVersion: "observed-traces-v1",
+      },
+    }))).toMatchObject({
+      label: "Couverture observée",
+      reality: "observed",
+      variant: "observed",
+    });
+  });
+
   it("does not present planned or unqualified GPX as observed", () => {
     expect(getGeometryPresentation(buildItem("gpx_import", "polyline", {
       geometryMethod: "gpx_import",

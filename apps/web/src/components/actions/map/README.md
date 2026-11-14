@@ -42,6 +42,8 @@ dans l'affichage ; un état inconnu ne doit pas devenir une affirmation visuelle
 - `Trace GPS enregistrée` et `Trace GPX fournie` désignent des observations
   terrain distinctes ; plusieurs traces deviennent `Couverture observée
   multi-traces` sans concaténation ;
+- `Couverture observée` désigne une trace dont la source n'est pas connue ; le
+  rendu et l'export ne lui attribuent ni GPS ni GPX par défaut ;
 - `Parcours déclaré` / `Zone d’action` désignent une déclaration manuelle ;
 - `Itinéraire prévu sur le réseau` et `Itinéraire prévu estimé` désignent une
   planification, jamais une observation ;
