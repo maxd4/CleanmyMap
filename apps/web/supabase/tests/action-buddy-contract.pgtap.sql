@@ -35,7 +35,7 @@ create temp table action_buddy_fixture (
   proposal_cancel uuid not null
 );
 grant select on action_buddy_fixture to anon, authenticated;
-grant insert on action_buddy_fixture to service_role;
+grant select, insert on action_buddy_fixture to service_role;
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"buddy-test-service"}', true);
