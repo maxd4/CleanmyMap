@@ -253,8 +253,8 @@ describe("administrative requirements persistence", () => {
       actionTitle: "Résultat terrain",
       gpxImport: undefined,
       routeObservedDistanceKm: undefined,
-      routeTargetDistanceKm: 1.5,
-      routeTargetDistancePolicyVersion: "route-distance-v2",
+      routeTargetDistanceKm: 0.5,
+      routeTargetDistancePolicyVersion: "route-distance-v3",
       routeTargetDistanceSource: "derived",
       routeTopology: "loop",
     });
