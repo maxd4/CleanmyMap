@@ -68,24 +68,59 @@ jobs:
           proof_step="initialization"
           trap 'status=$?; if [ "$status" -ne 0 ]; then echo "EPHEMERAL_BACKUP_RESTORE_PROOF: FAIL step=$proof_step"; fi' EXIT
           mkdir -p "$PROOF_ROOT/dumps" "$PROOF_SOURCE_WORKDIR/supabase" "$PROOF_TARGET_WORKDIR/supabase"
-          cp apps/web/supabase/config.toml "$PROOF_TARGET_WORKDIR/supabase/config.toml"
-          sed -i \
-            -e 's/^project_id = "web"$/project_id = "cmm-backup-proof-target"/' \
-            -e 's/^port = 54321$/port = 54421/' \
-            -e 's/^port = 54322$/port = 54422/' \
-            -e 's/^shadow_port = 54320$/shadow_port = 54420/' \
-            -e 's/^port = 54329$/port = 54429/' \
-            -e 's/^port = 54323$/port = 54423/' \
-            -e 's/^port = 54324$/port = 54424/' \
-            -e 's/^# smtp_port = 54325$/smtp_port = 54425/' \
-            -e 's/^# pop3_port = 54326$/pop3_port = 54426/' \
-            -e 's/^port = 54327$/port = 54427/' \
-            -e 's/^inspector_port = 8083$/inspector_port = 54803/' \
-            "$PROOF_TARGET_WORKDIR/supabase/config.toml"
-          sed -i '/^\[db\.migrations\]$/,/^\[/ s/^enabled = true$/enabled = false/' \
-            "$PROOF_TARGET_WORKDIR/supabase/config.toml"
-          sed -i '/^\[db\.seed\]$/,/^\[/ s/^enabled = true$/enabled = false/' \
-            "$PROOF_TARGET_WORKDIR/supabase/config.toml"
+          cat > "$PROOF_TARGET_WORKDIR/supabase/config.toml" <<'EOF'
+          project_id = "cmm-backup-proof-target"
+
+          [api]
+          enabled = false
+          port = 54421
+
+          [db]
+          port = 54422
+          shadow_port = 54420
+          major_version = 17
+          health_timeout = "2m"
+
+          [db.pooler]
+          enabled = false
+          port = 54429
+
+          [db.migrations]
+          enabled = false
+
+          [db.seed]
+          enabled = false
+
+          [realtime]
+          enabled = false
+
+          [studio]
+          enabled = false
+          port = 54423
+
+          [inbucket]
+          enabled = false
+          port = 54424
+          smtp_port = 54425
+          pop3_port = 54426
+
+          [storage]
+          enabled = false
+
+          [auth]
+          enabled = true
+
+          [imgproxy]
+          enabled = false
+
+          [analytics]
+          enabled = false
+          port = 54427
+
+          [edge_runtime]
+          enabled = false
+          inspector_port = 54803
+          EOF
 
           proof_step="source-start"
           network_id="$(docker network create --driver bridge --label com.cleanmymap.ci=backup-restore-proof "$PROOF_NETWORK")"
