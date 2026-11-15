@@ -67,14 +67,17 @@ if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}`) {
     process.exitCode = 2;
   } else {
     const roleNames = extractRestoreRoleNames(await readFile(rolesFile, "utf8"));
-    const result = spawnSync(
+    const sql = buildRolePreflightSql(roleNames);
+    const runPreflight = (user) => spawnSync(
       "docker",
-      ["exec", "-i", container, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres", "-d", database, "-f", "-"],
-      { input: buildRolePreflightSql(roleNames), encoding: "utf8", stdio: ["pipe", "ignore", "ignore"] },
+      ["exec", "-i", container, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", user, "-d", database, "-f", "-"],
+      { input: sql, encoding: "utf8", stdio: ["pipe", "ignore", "ignore"] },
     );
-    if (result.status !== 0) {
+    const result = runPreflight("postgres");
+    const fallbackResult = result.status === 0 ? result : runPreflight("supabase_admin");
+    if (fallbackResult.status !== 0) {
       console.error("RESTORE_ROLE_PREFLIGHT: FAIL");
-      process.exitCode = result.status ?? 1;
+      process.exitCode = fallbackResult.status ?? 1;
     } else {
       console.log("RESTORE_ROLE_PREFLIGHT: PASS");
     }
