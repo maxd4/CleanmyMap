@@ -157,8 +157,21 @@ jobs:
           docker cp "$BACKUP_ROOT/database/data.sql" "$db_container:/tmp/cmm-data.sql"
           docker exec "$db_container" dropdb -U postgres --if-exists cmm_backup_restore
           docker exec "$db_container" createdb -U postgres cmm_backup_restore
-          docker exec "$db_container" psql -v ON_ERROR_STOP=1 -U postgres -d cmm_backup_restore -f /tmp/cmm-schema.sql > "$RUNNER_TEMP/restore-schema.log" 2>&1
-          docker exec "$db_container" psql -v ON_ERROR_STOP=1 -U postgres -d cmm_backup_restore -f /tmp/cmm-data.sql > "$RUNNER_TEMP/restore-data.log" 2>&1
+          run_restore_stage() {
+            local stage="$1"
+            local input="$2"
+            local log="$RUNNER_TEMP/restore-${stage}.log"
+            set +e
+            docker exec "$db_container" psql -v ON_ERROR_STOP=1 -U postgres -d cmm_backup_restore -f "$input" > "$log" 2>&1
+            local exit_code=$?
+            set -e
+            local classification
+            classification=$(node scripts/ci/classify-supabase-restore-failure.mjs --log "$log")
+            echo "RESTORE_SQL: stage=$stage exit_code=$exit_code classification=$classification"
+            return "$exit_code"
+          }
+          run_restore_stage schema /tmp/cmm-schema.sql
+          run_restore_stage data /tmp/cmm-data.sql
           docker exec "$db_container" psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d cmm_backup_restore -c "do \$\$ begin if (select count(*) from pg_constraint) = 0 then raise exception 'restored schema has no constraints'; end if; if (select count(*) from pg_proc where pronamespace = 'public'::regnamespace) = 0 then raise exception 'restored schema has no public functions'; end if; if (select count(*) from pg_class where relrowsecurity) = 0 then raise exception 'restored schema has no RLS-enabled relations'; end if; end \$\$;" > "$RUNNER_TEMP/restore-checks.txt"
           test -s "$RUNNER_TEMP/restore-checks.txt"
           if grep -Eq 'ERROR|FATAL|PANIC' "$RUNNER_TEMP/restore-checks.txt"; then exit 1; fi
