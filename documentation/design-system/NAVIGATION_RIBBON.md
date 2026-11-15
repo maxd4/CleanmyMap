@@ -60,6 +60,12 @@ même lorsque les détails sont masqués visuellement sous 1440 px. Clerk,
 notifications, badges, changement de rôle, permissions et destinations ne sont
 pas modifiés.
 
+Pour un visiteur déconnecté, `Se connecter`/`Sign in` et `S'inscrire`/`Sign up`
+restent des boutons compacts à icône seule sous `sm` (640 px). À partir de
+`sm`, leurs libellés sont visibles, sans retour à la ligne, avec une largeur
+dimensionnée par le contenu ; les liens Clerk, redirections et événements de
+tracking restent identiques.
+
 ## Tutoriel guidé
 
 Le tutoriel ne possède aucun déclencheur dans le header global. Il est accessible

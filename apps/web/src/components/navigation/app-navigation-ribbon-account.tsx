@@ -155,10 +155,10 @@ function RibbonAccountActionsView({
                   onClick={() => onTrackNavigation(signInHref, locale === "fr" ? "Se connecter" : "Sign in", null)}
                   tone="critical"
                   variant="pill"
-                  className="cmm-ribbon-text h-11 min-h-11 w-11 shrink-0 px-0 font-bold max-[380px]:h-10 max-[380px]:min-h-10 max-[380px]:w-10 xl:h-10 xl:min-h-0 xl:w-11 xl:px-0 2xl:w-auto 2xl:px-3"
+                  className="cmm-ribbon-text h-11 min-h-11 w-11 shrink-0 whitespace-nowrap px-0 font-bold max-[380px]:h-10 max-[380px]:min-h-10 max-[380px]:w-10 sm:h-10 sm:min-h-0 sm:w-auto sm:px-3"
                 >
-                  <LogIn className="h-4 w-4 xl:inline 2xl:hidden" aria-hidden="true" />
-                  <span className="hidden 2xl:inline">
+                  <LogIn className="h-4 w-4 sm:hidden" aria-hidden="true" />
+                  <span className="hidden sm:inline">
                     {locale === "fr" ? "Se connecter" : "Sign in"}
                   </span>
                 </CmmButton>
@@ -169,10 +169,10 @@ function RibbonAccountActionsView({
                   onClick={() => onTrackNavigation(signUpHref, locale === "fr" ? "S'inscrire" : "Sign up", null)}
                   tone="primary"
                   variant="pill"
-                  className="cmm-ribbon-text h-11 min-h-11 w-11 shrink-0 px-0 font-bold max-[380px]:h-10 max-[380px]:min-h-10 max-[380px]:w-10 xl:h-10 xl:min-h-0 xl:w-11 xl:px-0 2xl:w-auto 2xl:px-4"
+                  className="cmm-ribbon-text h-11 min-h-11 w-11 shrink-0 whitespace-nowrap px-0 font-bold max-[380px]:h-10 max-[380px]:min-h-10 max-[380px]:w-10 sm:h-10 sm:min-h-0 sm:w-auto sm:px-4"
                 >
-                  <UserPlus className="h-4 w-4 xl:inline 2xl:hidden" aria-hidden="true" />
-                  <span className="hidden 2xl:inline">
+                  <UserPlus className="h-4 w-4 sm:hidden" aria-hidden="true" />
+                  <span className="hidden sm:inline">
                     {locale === "fr" ? "S'inscrire" : "Sign up"}
                   </span>
                 </CmmButton>

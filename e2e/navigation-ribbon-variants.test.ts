@@ -23,7 +23,7 @@ async function waitForRibbon(page: Page): Promise<Locator> {
 
 async function assertNoRibbonOverflow(page: Page, width: number): Promise<void> {
   const metrics = await page.evaluate(() => {
-    const navigation = document.querySelector<HTMLElement>('nav[aria-label="Barre de navigation principale"]');
+    const navigation = document.querySelector<HTMLElement>('nav[aria-label="Barre de navigation principale"], nav[aria-label="Main navigation bar"]');
     if (!navigation) throw new Error("Missing global navigation ribbon");
 
     const visible = (element: HTMLElement) => {
@@ -203,6 +203,92 @@ test.describe("canonical classic navigation ribbon", () => {
     await expect(page.locator("#preferences-menu-panel")).toHaveCount(0);
     await expect(page.locator("#feedback-menu-panel")).toBeVisible();
     await page.keyboard.press("Escape");
+  });
+
+  test("shows visitor authentication labels from 640px in French and English", async ({ page }, testInfo) => {
+    test.setTimeout(180_000);
+    const widths = [390, 639, 640, 768, 1024, 1279, 1280, 1440, 1920] as const;
+    const locales = [
+      { code: "fr", signIn: "Se connecter à CleanMyMap", signUp: "Créer un compte CleanMyMap" },
+      { code: "en", signIn: "Sign in to CleanMyMap", signUp: "Sign up for CleanMyMap" },
+    ] as const;
+
+    for (const locale of locales) {
+      await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
+      await page.evaluate((value) => localStorage.setItem("cleanmymap.locale", value), locale.code);
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.locator("html")).toHaveAttribute("lang", locale.code);
+
+      for (const width of widths) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.reload({ waitUntil: "domcontentloaded" });
+        await dismissCookies(page);
+        await assertNoRibbonOverflow(page, width);
+
+        const geometry = await page.evaluate(({ signInLabel, signUpLabel }) => {
+          const find = (label: string) => [...document.querySelectorAll<HTMLElement>("a[aria-label]")].find((element) => element.getAttribute("aria-label") === label);
+          const measure = (element: HTMLElement | undefined) => {
+            if (!element) return null;
+            const label = element.querySelector<HTMLElement>("span");
+            const icon = element.querySelector<SVGElement>("svg");
+            const labelStyle = label ? getComputedStyle(label) : null;
+            const iconStyle = icon ? getComputedStyle(icon) : null;
+            const rect = element.getBoundingClientRect();
+            return {
+              href: element.getAttribute("href"),
+              width: rect.width,
+              height: rect.height,
+              labelDisplay: labelStyle?.display ?? null,
+              labelWidth: label?.getBoundingClientRect().width ?? 0,
+              iconDisplay: iconStyle?.display ?? null,
+              whiteSpace: getComputedStyle(element).whiteSpace,
+            };
+          };
+          return { signIn: measure(find(signInLabel)), signUp: measure(find(signUpLabel)) };
+        }, { signInLabel: locale.signIn, signUpLabel: locale.signUp });
+
+        expect(geometry.signIn, `${locale.code} ${width}px sign-in link`).not.toBeNull();
+        expect(geometry.signUp, `${locale.code} ${width}px sign-up link`).not.toBeNull();
+        expect(geometry.signIn?.href).toContain("/sign-in");
+        expect(geometry.signUp?.href).toContain("/sign-up");
+        expect(geometry.signIn?.width).toBeGreaterThanOrEqual(40);
+        expect(geometry.signUp?.width).toBeGreaterThanOrEqual(40);
+        expect(geometry.signIn?.whiteSpace).toBe("nowrap");
+        expect(geometry.signUp?.whiteSpace).toBe("nowrap");
+
+        if (width < 640) {
+          expect(geometry.signIn?.labelDisplay).toBe("none");
+          expect(geometry.signUp?.labelDisplay).toBe("none");
+          expect(geometry.signIn?.iconDisplay).not.toBe("none");
+          expect(geometry.signUp?.iconDisplay).not.toBe("none");
+        } else {
+          expect(geometry.signIn?.labelDisplay).not.toBe("none");
+          expect(geometry.signUp?.labelDisplay).not.toBe("none");
+          expect(geometry.signIn?.labelWidth).toBeGreaterThan(0);
+          expect(geometry.signUp?.labelWidth).toBeGreaterThan(0);
+          expect(geometry.signIn?.iconDisplay).toBe("none");
+          expect(geometry.signUp?.iconDisplay).toBe("none");
+        }
+
+        if (locale.code === "fr" && [390, 768, 1440].includes(width)) {
+          await testInfo.attach(`visitor-auth-${width}`, {
+            body: await page.screenshot({ fullPage: false }),
+            contentType: "image/png",
+          });
+        }
+      }
+    }
+
+    for (const zoom of [1.25, 1.5] as const) {
+      const effectiveWidth = Math.floor(1440 / zoom);
+      await page.setViewportSize({ width: effectiveWidth, height: 900 });
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await dismissCookies(page);
+      await assertNoRibbonOverflow(page, effectiveWidth);
+      const labels = await page.locator('a[aria-label="Sign in to CleanMyMap"] span, a[aria-label="Sign up for CleanMyMap"] span').evaluateAll((elements) => elements.map((element) => ({ display: getComputedStyle(element).display, width: element.getBoundingClientRect().width })));
+      expect(labels).toHaveLength(2);
+      expect(labels.every((label) => label.display !== "none" && label.width > 0), `English labels at ${Math.round(zoom * 100)}% proxy`).toBe(true);
+    }
   });
 
   test("keeps the responsive product entry and utility controls reachable", async ({ page }) => {
