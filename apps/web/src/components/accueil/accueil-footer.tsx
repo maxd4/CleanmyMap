@@ -51,29 +51,28 @@ export function HomeFooter() {
               className="cmm-footer-brand-logo h-10 w-auto max-w-[12rem] shrink-0 object-contain object-left"
               sizes="12rem"
             />
-            <Link
-              href="/contact"
-              aria-label="Contacter CleanMyMap"
-              className="cmm-ribbon-text group inline-flex min-w-0 shrink items-center gap-2 font-bold uppercase tracking-[0.16em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
-            >
-              <MessageCircle className="cmm-footer-brand-contact-icon h-4 w-4 shrink-0 text-white" aria-hidden="true" />
-              <span className="cmm-footer-contact-separator h-px w-4 bg-slate-400/50" />
-              <span className="cmm-footer-contact-label break-words text-white transition group-hover:text-white group-hover:underline">
-                Contact
-              </span>
-            </Link>
           </div>
 
           <div className="cmm-footer-contact-actions">
+            <Link
+              href="/contact"
+              aria-label="Contacter CleanMyMap"
+              className="cmm-footer-contact-link cmm-footer-contact-link--contact cmm-ribbon-text group rounded-xl border border-transparent bg-transparent transition-all hover:border-slate-700/80 hover:bg-slate-950/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+            >
+              <MessageCircle className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+              <span className="cmm-footer-contact-label text-white transition-colors group-hover:text-white group-hover:underline">
+                Contact
+              </span>
+            </Link>
             <a
               href={`mailto:${contactEmail}`}
               aria-label={`Écrire à ${contactEmail}`}
               className="cmm-footer-contact-link group rounded-xl border border-slate-700/80 bg-slate-950/55 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
-                <Mail className="h-4 w-4 text-white" />
+                <Mail className="h-4 w-4 text-white" aria-hidden="true" />
               </div>
-              <span className="cmm-footer-contact-label text-white transition-colors group-hover:text-white">
+              <span className="cmm-footer-contact-label cmm-footer-contact-label--long text-white transition-colors group-hover:text-white">
                 {contactEmail}
               </span>
             </a>
@@ -87,7 +86,7 @@ export function HomeFooter() {
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
                 <InstagramMark size={18} className="h-4 w-4 text-white" />
               </div>
-              <span className="cmm-footer-contact-label text-white transition-colors group-hover:text-white">
+              <span className="cmm-footer-contact-label cmm-footer-contact-label--long text-white transition-colors group-hover:text-white">
                 @cleanmymap.fr
               </span>
             </a>
@@ -99,7 +98,7 @@ export function HomeFooter() {
               className="cmm-footer-contact-link group rounded-xl border border-slate-700/80 bg-slate-950/55 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
-                <GitBranch className="h-4 w-4 text-white" />
+                <GitBranch className="h-4 w-4 text-white" aria-hidden="true" />
               </div>
               <span className="cmm-footer-contact-label text-white transition-colors group-hover:text-white">
                 GitHub
