@@ -52,9 +52,9 @@ const SQLSTATE_CATEGORIES = Object.freeze([
 
 export function extractRestoreSqlState(logText) {
   const text = String(logText ?? "");
-  const errorLine = text.match(/^\s*(?:ERROR|FATAL|PANIC):\s+(?:SQLSTATE\s*)?([0-9A-Z]{5})\b/im);
+  const errorLine = text.match(/^\s*(?:psql:[^:\r\n]+:\d+(?::\d+)?:\s+)?(?:ERROR|FATAL|PANIC):\s+(?:SQLSTATE\s*)?([0-9A-Z]{5})\b/im);
   if (errorLine) return errorLine[1].toUpperCase();
-  const explicit = text.match(/\bSQLSTATE\s*(?:=|:|\s)\s*([0-9A-Z]{5})\b/i);
+  const explicit = text.match(/^\s*(?:SQLSTATE\s*(?:=|:|\s)\s*)([0-9A-Z]{5})\b/im);
   return explicit?.[1]?.toUpperCase() ?? null;
 }
 

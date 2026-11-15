@@ -69,6 +69,14 @@ PostgreSQL éphémère isolée du runner et contrôle contraintes, fonctions et 
 preuve ne vaut pas restauration complète de la plateforme : les rôles gérés,
 Auth, Storage distant et configuration Supabase demandent une procédure séparée.
 
+En cas d'échec SQL, `psql` conserve `ON_ERROR_STOP=1` et écrit sa sortie complète
+uniquement dans un journal temporaire privé avec la verbosité SQLSTATE. Le résumé
+GitHub publie seulement `stage`, `exit_code`, le premier SQLSTATE trouvé ou
+`UNAVAILABLE`, et une catégorie normalisée. Les préfixes standards de `psql -f`,
+par exemple `psql:/tmp/cmm-schema.sql:17: ERROR: 42P01`, sont reconnus ; les
+codes présents dans du SQL, des données ou des messages arbitraires ne le sont
+pas. Une archive n'est jamais publiée après un échec de restauration.
+
 ## Téléchargement, déchiffrement et vérification locale
 
 Télécharger uniquement l'artefact privé depuis GitHub, vérifier l'empreinte de la

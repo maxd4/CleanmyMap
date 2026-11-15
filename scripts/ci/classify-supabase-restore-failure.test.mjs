@@ -31,6 +31,25 @@ test("extracts the first SQLSTATE and prioritizes its normalized category", () =
   assert.deepEqual(diagnoseRestoreFailure(log), { sqlstate: "23505", classification: "constraint_or_data" });
 });
 
+test("extracts the first SQLSTATE from standard psql -f error prefixes", () => {
+  const log = [
+    "NOTICE: private fixture marker 42P01",
+    "psql:/tmp/cmm-schema.sql:17: ERROR: 42P01",
+    "psql:/tmp/cmm-schema.sql:18: ERROR: 42501",
+  ].join("\n");
+  assert.equal(extractRestoreSqlState(log), "42P01");
+  assert.equal(formatRestoreDiagnostic(log), "sqlstate=42P01 classification=dependency_or_ordering");
+});
+
+test("does not extract SQLSTATE-like data from arbitrary SQL or sensitive text", () => {
+  const log = [
+    "INSERT INTO audit_log(message) VALUES ('SQLSTATE=23505')",
+    "DETAIL: secret-row-42P01",
+    "opaque restore failure",
+  ].join("\n");
+  assert.deepEqual(diagnoseRestoreFailure(log), { sqlstate: "UNAVAILABLE", classification: "unknown" });
+});
+
 test("covers representative SQLSTATE classes without exposing messages", () => {
   const cases = [
     ["08006", "connection_or_authentication"],
