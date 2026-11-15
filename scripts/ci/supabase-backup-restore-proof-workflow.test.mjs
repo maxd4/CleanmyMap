@@ -11,12 +11,11 @@ test('ephemeral backup proof reconstructs source and target without Production c
   assert.match(workflow, /permissions:\s+contents: read/);
   assert.match(workflow, /supabase db reset --local --workdir apps\/web/);
   assert.match(workflow, /project_id = "cmm-backup-proof-target"/);
-  assert.match(workflow, /\[api\][\s\S]*enabled = true/);
+  assert.match(workflow, /cp apps\/web\/supabase\/config\.toml "\$PROOF_TARGET_WORKDIR\/supabase\/config\.toml"/);
   assert.match(workflow, /port = 54422/);
   assert.match(workflow, /shadow_port = 54420/);
   assert.match(workflow, /smtp_port = 54425/);
   assert.match(workflow, /pop3_port = 54426/);
-  assert.match(workflow, /\[auth\][\s\S]*enabled = true/);
   assert.match(workflow, /enabled = false/);
   assert.match(workflow, /supabase db dump --local --workdir apps\/web --role-only/);
   assert.match(workflow, /--schema public --file .*schema\.sql/);
