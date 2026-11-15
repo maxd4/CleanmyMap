@@ -201,6 +201,7 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
           };
           const identity = document.querySelector<HTMLElement>("[data-navigation-account-identity]");
           const fullName = document.querySelector<HTMLElement>("[data-navigation-account-full-name]");
+          const activityStatus = document.querySelector<HTMLButtonElement>('button[aria-label^="Statut :"]');
           const identityGroup = rectFor('[data-navigation-group="account"]');
           const rightControls = [
             rectFor('[data-navigation-tutorial-target="feedback"]'),
@@ -219,6 +220,14 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
             identityGroup,
             identityRole: identity?.getAttribute("role"),
             identityLabel: identity?.getAttribute("aria-label"),
+            activityStatus: activityStatus
+              ? {
+                  width: activityStatus.getBoundingClientRect().width,
+                  height: activityStatus.getBoundingClientRect().height,
+                  label: activityStatus.getAttribute("aria-label"),
+                  pressed: activityStatus.getAttribute("aria-pressed"),
+                }
+              : null,
             fullNameVisible: Boolean(fullName && fullName.getClientRects().length > 0 && getComputedStyle(fullName).visibility !== "hidden"),
             rightControls: sortedControls,
             dock,
@@ -232,6 +241,11 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
         expect(metrics.identityGroup?.right, `${viewportWidth}px: account group overflows viewport`).toBeLessThanOrEqual(viewportWidth + 1);
         expect(metrics.identityRole).toBe("group");
         expect(metrics.identityLabel).toMatch(/Niv\./u);
+        expect(metrics.activityStatus, `${viewportWidth}px: activity status hit-target missing`).toEqual(
+          expect.objectContaining({ label: expect.stringMatching(/^Statut : (actif|inactif)$/u), pressed: "true" }),
+        );
+        expect(metrics.activityStatus?.width, `${viewportWidth}px: activity status hit-target width`).toBeGreaterThanOrEqual(16);
+        expect(metrics.activityStatus?.height, `${viewportWidth}px: activity status hit-target height`).toBeGreaterThanOrEqual(16);
         expect(metrics.documentScrollWidth, `${viewportWidth}px: document overflow`).toBeLessThanOrEqual(viewportWidth + 1);
         expect(metrics.bodyScrollWidth, `${viewportWidth}px: body overflow`).toBeLessThanOrEqual(viewportWidth + 1);
 
