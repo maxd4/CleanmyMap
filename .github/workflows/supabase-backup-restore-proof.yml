@@ -21,6 +21,7 @@ on:
       - "scripts/ci/supabase-restore-extension-preflight.sql"
       - "scripts/ci/verify-supabase-backup-relation-coherence.mjs"
       - "scripts/ci/classify-supabase-restore-failure.mjs"
+      - "scripts/ci/prepare-supabase-restore-roles.mjs"
       - "package.json"
       - "package-lock.json"
 
@@ -172,6 +173,10 @@ jobs:
           docker cp scripts/ci/supabase-restore-extension-preflight.sql "$target_container:/tmp/cmm-restore-extension-preflight.sql"
           restore_db="postgres"
           docker exec "$target_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "alter default privileges in schema public revoke all on tables from anon, authenticated;"
+          node scripts/ci/prepare-supabase-restore-roles.mjs \
+            --roles-file="$PROOF_ROOT/dumps/roles.sql" \
+            --container="$target_container" \
+            --database="$restore_db"
           echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=target-prepare PASS"
 
           run_stage() {
