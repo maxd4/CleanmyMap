@@ -124,6 +124,7 @@ describe("SPOGOMI public identity and lifecycle", () => {
   });
 
   it("keeps active editions first, sorts finished editions newest-first, and excludes cancellations from the catalogue", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-09T12:00:00.000Z") });
     const rows = [
       { id: "in-progress", event_slug: "in-progress", name: "En cours", location_label: "Paris", mode: "casual", state: "active", starts_at: "2026-11-08T08:00:00.000Z", ends_at: "2026-11-10T12:00:00.000Z", action_id: "action-1", public_results_visibility: "hidden" },
       { id: "upcoming", event_slug: "upcoming", name: "À venir", location_label: "Lyon", mode: "world_cup", state: "draft", starts_at: "2026-12-01T08:00:00.000Z", ends_at: null, action_id: "action-1", public_results_visibility: "hidden" },
@@ -136,10 +137,20 @@ describe("SPOGOMI public identity and lifecycle", () => {
     serviceMocks.projection.mockClear();
     serviceMocks.projection.mockResolvedValue({ results: { lifecycleStatus: "unavailable" } });
 
-    const events = await listPublishedSpogomiEvents(makeSupabase(rows) as never);
-    expect(events.map((event) => event.slug)).toEqual(["in-progress", "upcoming", "finished-new", "finished-old"]);
-    expect(events.every((event) => event.state !== "cancelled")).toBe(true);
-    expect(serviceMocks.projection).not.toHaveBeenCalled();
+    try {
+      const events = await listPublishedSpogomiEvents(makeSupabase(rows) as never);
+      expect(events.map((event) => event.slug)).toEqual(["in-progress", "upcoming", "finished-new", "finished-old"]);
+      expect(events.map(({ slug, lifecycle }) => ({ slug, lifecycle }))).toEqual([
+        { slug: "in-progress", lifecycle: "in_progress" },
+        { slug: "upcoming", lifecycle: "upcoming" },
+        { slug: "finished-new", lifecycle: "finished" },
+        { slug: "finished-old", lifecycle: "finished" },
+      ]);
+      expect(events.every((event) => event.state !== "cancelled")).toBe(true);
+      expect(serviceMocks.projection).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps a published cancelled edition directly addressable without exposing its roster", async () => {
