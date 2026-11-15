@@ -8,10 +8,12 @@ import {
   MapPin,
 } from "lucide-react";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type {
   HomeImpactSnapshot,
 } from "@/lib/accueil/config";
 import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
+import type { Locale } from "@/lib/ui/preferences";
 import { HomeImpactKpiCard } from "./accueil-impact-kpi-card";
 import { HomeMapPreview } from "./accueil-map-preview";
 import { RibbonTutorial } from "@/components/navigation/app-navigation-ribbon-tour";
@@ -23,32 +25,32 @@ interface HomeHeroProps {
 
 const heroActions = [
   {
+    id: "map",
     href: "/actions/map",
-    label: "Consulter la carte",
     icon: MapPin,
     tone: "primary",
     width: "auto",
     showArrow: true,
   },
   {
+    id: "signIn",
     href: "/sign-in",
-    label: "Se connecter / S'inscrire",
     icon: Users,
     tone: "critical",
     width: "auto",
     showArrow: false,
   },
   {
+    id: "join",
     href: "/sections/rejoindre-une-action",
-    label: "Rejoindre une action",
     icon: UserRound,
     tone: "secondary",
     width: "auto",
     showArrow: false,
   },
   {
+    id: "create",
     href: "/actions/new",
-    label: "Créer une action",
     icon: Plus,
     tone: "secondary",
     width: "auto",
@@ -56,12 +58,91 @@ const heroActions = [
   },
 ] as const;
 
+const HOME_HERO_COPY: Record<Locale, {
+  eyebrow: string;
+  description: string;
+  impactTitle: string;
+  methodology: string;
+  snapshotUnavailable: string;
+  snapshotGenerated: (date: string) => string;
+  snapshotUpdate: string;
+  actions: Record<(typeof heroActions)[number]["id"], string>;
+  localeSwitcherLabel: string;
+  localeLabels: Record<Locale, string>;
+}> = {
+  fr: {
+    eyebrow: "Des territoires plus propres, ensemble",
+    description: "Cultivons l’entraide pour dépolluer, cartographier et transformer chaque action terrain en preuve utile.",
+    impactTitle: "Impact terrain 2026",
+    methodology: "Méthodologie",
+    snapshotUnavailable: "Données d’impact indisponibles.",
+    snapshotGenerated: (date) => `Dernières données générées le ${date}.`,
+    snapshotUpdate: "Mise à jour mensuelle le 1er du mois.",
+    actions: {
+      map: "Consulter la carte",
+      signIn: "Se connecter / S'inscrire",
+      join: "Rejoindre une action",
+      create: "Créer une action",
+    },
+    localeSwitcherLabel: "Choisir la langue",
+    localeLabels: { fr: "Français", en: "Anglais" },
+  },
+  en: {
+    eyebrow: "Cleaner places, together",
+    description: "Let's work together to clean up, map, and turn every field action into useful evidence.",
+    impactTitle: "Field impact 2026",
+    methodology: "Methodology",
+    snapshotUnavailable: "Impact data is currently unavailable.",
+    snapshotGenerated: (date) => `Latest data generated on ${date}.`,
+    snapshotUpdate: "Updated monthly on the 1st.",
+    actions: {
+      map: "View the map",
+      signIn: "Sign in / Sign up",
+      join: "Join an action",
+      create: "Create an action",
+    },
+    localeSwitcherLabel: "Choose language",
+    localeLabels: { fr: "French", en: "English" },
+  },
+};
+
+function HomeHeroLocaleSwitcher({ locale, setLocale }: { locale: Locale; setLocale: (nextLocale: Locale) => void }) {
+  const copy = HOME_HERO_COPY[locale];
+
+  return (
+    <div
+      data-homepage-locale-switcher
+      role="group"
+      aria-label={copy.localeSwitcherLabel}
+      className="inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-full border border-white/70 bg-white px-1 py-1 text-xs font-black shadow-[0_8px_18px_-12px_rgba(0,40,30,0.8)]"
+    >
+      {(["fr", "en"] as const).map((option) => {
+        const isActive = locale === option;
+        return (
+          <button
+            key={option}
+            type="button"
+            aria-label={copy.localeLabels[option]}
+            aria-pressed={isActive}
+            onClick={() => setLocale(option)}
+            className={`min-h-8 rounded-full px-2.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--action-primary-bg)] focus-visible:ring-offset-2 focus-visible:ring-offset-white ${isActive ? "bg-[var(--action-primary-bg)] text-[var(--action-primary-text)]" : "text-[var(--action-primary-bg)] hover:bg-emerald-50"}`}
+          >
+            {option.toUpperCase()}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function HomeHero({
   metrics,
   impactSnapshot,
 }: HomeHeroProps) {
+  const { locale, setLocale } = useSitePreferences();
+  const copy = HOME_HERO_COPY[locale];
   const snapshotDateLabel = impactSnapshot?.generatedAt
-    ? new Intl.DateTimeFormat("fr-FR", {
+    ? new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-GB", {
         dateStyle: "medium",
         timeZone: "UTC",
       }).format(new Date(impactSnapshot.generatedAt))
@@ -75,21 +156,24 @@ export function HomeHero({
             <div className="max-w-[42rem]">
               <p className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.32em] text-emerald-100 sm:text-xs">
                 <span className="h-3 w-3 shrink-0 rounded-full bg-[#26e6a4] shadow-[0_0_18px_rgba(38,230,164,0.92)]" />
-                Des territoires plus propres, ensemble
+                {copy.eyebrow}
               </p>
 
-              <h1 className="cmm-home-hero-title mt-4 max-w-none font-black leading-[0.88] tracking-[-0.085em] text-white drop-shadow-[0_12px_26px_rgba(0,37,27,0.18)] lg:whitespace-nowrap">
-                CleanMyMap
-              </h1>
+              <div data-homepage-hero-title-row className="mt-4 flex max-w-full flex-wrap items-center gap-x-4 gap-y-3">
+                <h1 className="cmm-home-hero-title max-w-full font-black leading-[0.88] tracking-[-0.085em] text-white drop-shadow-[0_12px_26px_rgba(0,37,27,0.18)] lg:whitespace-nowrap">
+                  CleanMyMap
+                </h1>
+                <HomeHeroLocaleSwitcher locale={locale} setLocale={setLocale} />
+              </div>
               <p className="mt-4 max-w-[37rem] text-[clamp(1.05rem,1.55vw,1.38rem)] leading-[1.42] text-white/90">
-                Cultivons l&apos;entraide pour dépolluer, cartographier et transformer chaque action terrain en preuve utile.
+                {copy.description}
               </p>
 
               <CmmButtonGroup
                 layout="two-column"
                 className="mt-5 max-w-[38rem] sm:mt-6"
               >
-                {heroActions.map(({ href, icon: Icon, label, tone, width, showArrow }) => (
+                {heroActions.map(({ id, href, icon: Icon, tone, width, showArrow }) => (
                   <CmmButton
                     key={href}
                     href={href}
@@ -99,12 +183,12 @@ export function HomeHero({
                     width={width}
                   >
                     <Icon size={22} strokeWidth={2.2} aria-hidden="true" />
-                    <span>{label}</span>
+                    <span>{copy.actions[id]}</span>
                     {showArrow ? <ArrowRight size={21} aria-hidden="true" /> : null}
                   </CmmButton>
                 ))}
               </CmmButtonGroup>
-              <RibbonTutorial locale="fr" entryPoint="homepage" />
+              <RibbonTutorial locale={locale} entryPoint="homepage" />
             </div>
           </div>
 
@@ -115,7 +199,7 @@ export function HomeHero({
           <div className="relative z-10 flex flex-wrap items-center justify-start gap-3 px-1 sm:gap-3 sm:px-2">
             <p className="cmm-home-impact-title flex items-center gap-3 font-black leading-none tracking-[-0.055em] text-white">
               <span className="h-3 w-3 shrink-0 rounded-full bg-[#26e6a4] shadow-[0_0_15px_rgba(38,230,164,0.7)] sm:h-4 sm:w-4" />
-              Impact terrain 2026
+              {copy.impactTitle}
             </p>
             <CmmButton
               href="/methodologie#indicateurs-impact-terrain"
@@ -123,7 +207,7 @@ export function HomeHero({
               variant="pill"
               className="h-9 !border !border-[#047957] !bg-white/90 !text-[#047957] !shadow-[0_10px_24px_-16px_rgba(0,40,30,0.4)] hover:!bg-white"
             >
-              <span className="text-[#7c3aed]">Méthodologie</span>
+              <span className="text-[#7c3aed]">{copy.methodology}</span>
               <ArrowRight size={14} aria-hidden="true" />
             </CmmButton>
           </div>
@@ -134,8 +218,8 @@ export function HomeHero({
             className="relative z-10 mt-2 px-1 text-xs font-semibold text-white/85 sm:px-2"
           >
             {impactSnapshot
-              ? `Dernières données générées le ${snapshotDateLabel}. Mise à jour mensuelle le 1er du mois.`
-              : "Données d’impact indisponibles. Mise à jour mensuelle le 1er du mois."}
+              ? `${copy.snapshotGenerated(snapshotDateLabel ?? "")} ${copy.snapshotUpdate}`
+              : `${copy.snapshotUnavailable} ${copy.snapshotUpdate}`}
           </p>
 
           <div className="relative z-10 mt-5 grid w-full grid-cols-2 gap-3 px-1 min-[768px]:grid-cols-3 min-[768px]:px-2 min-[1200px]:grid-cols-6 min-[1200px]:gap-3 min-[1200px]:px-3">

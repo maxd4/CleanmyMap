@@ -6,7 +6,7 @@
 
 La page accueille les visiteurs et présente la vocation de CleanMyMap. Elle ouvre l'accès aux rubriques du produit sans devenir elle-même un nouveau domaine métier ou un tableau de bord de données distinct.
 
-- **Hero** : proposition de valeur et CTA réels, reliés à leurs routes propriétaires. Les destinations, libellés et états responsive sont gouvernés par les composants réellement utilisés, non par une maquette historique.
+- **Hero** : proposition de valeur et CTA réels, reliés à leurs routes propriétaires. Les textes du hero et de son entrée tutoriel suivent la préférence `locale` partagée (`fr`/`en`). La pastille blanche FR/EN placée à droite de « CleanMyMap » utilise exclusivement `useSitePreferences().locale` et `setLocale()` ; elle reste accessible au clavier et se replie sans chevauchement aux largeurs compactes. Les destinations, libellés et états responsive sont gouvernés par les composants réellement utilisés, non par une maquette historique.
 - **Preview cartographique** : aperçu public des Actions via `ActionsMapFeed`, avec politique d'actions `approved`, période `current_year` et références de pollution V6 de la carte canonique. La homepage peut limiter la quantité, adapter le viewport et masquer des contrôles, mais ne calcule ni score ni règle de couleur autonome.
 - **Découverte et crédibilité** : contenus de présentation et signaux communautaires uniquement depuis des faits publiés ou correctement contextualisés. Une vignette ou un indicateur non renseigné n'est pas une preuve de résultat terrain.
 - **KPI Impact terrain** : les six KPI, leurs équivalences et leurs bulles d'explication proviennent exclusivement du dernier snapshot mensuel public persisté par le cron Impact terrain. Le chemin KPI de la homepage ne lance aucun agrégat, scan d'actions ou recalcul lors d'une visite ; le flux d'activité communautaire indépendant reste borné à trois actions récentes. La date `generatedAt` et la mention de mise à jour mensuelle sont affichées lorsque le snapshot est disponible ; son absence produit « Données d’impact indisponibles » plutôt qu'un zéro.
@@ -16,7 +16,8 @@ La page accueille les visiteurs et présente la vocation de CleanMyMap. Elle ouv
 
 La première partie du hero propose une micro-zone d’aide aux visiteurs qui
 découvrent CleanMyMap : « Nouveau sur CleanMyMap ? Découvrez le ruban en 1
-minute. » et le bouton vert plein « Découvrir le ruban ». Cette entrée reste secondaire
+minute. » en français, ou son équivalent anglais, et le bouton vert plein
+« Découvrir le ruban » (ou « Ribbon tutorial »). Cette entrée reste secondaire
 par rapport aux CTA métier, mais elle est visible sans ouvrir le menu du
 header.
 

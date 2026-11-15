@@ -56,10 +56,11 @@ doit pas dupliquer localement le header ou le footer.
 
 ## Entrée tutoriel — `CURRENT`
 
-Le titre « Configurez votre profil » expose le CTA vert canonique « Découvrir
-le ruban » pendant les trois étapes. Il utilise `RibbonTutorial` avec la même
-copie FR/EN et les mêmes six étapes que l'entrée homepage ; seule la
-présentation du déclencheur change. Le contrôle est `type="button"` et ne
+Le titre « Configurez votre profil » (ou « Configure your profile » selon la
+préférence `locale` partagée) expose le CTA vert canonique « Découvrir le
+ruban » (ou « Discover the ribbon ») pendant les trois étapes. Il utilise
+`RibbonTutorial` avec la même copie FR/EN et les mêmes six étapes que l'entrée
+homepage ; seule la présentation du déclencheur change. Le contrôle est `type="button"` et ne
 soumet pas le formulaire, ne réinitialise pas les saisies et n'est pas rendu
 par `AccountCompletionGate`.
 

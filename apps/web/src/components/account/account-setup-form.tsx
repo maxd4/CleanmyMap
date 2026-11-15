@@ -65,6 +65,17 @@ export function AccountSetupForm({ showRibbonTutorial = false, ...props }: Accou
   ];
   const currentStepIndex = steps.findIndex((step) => step.id === controller.currentStep);
   const isLastStep = controller.currentStep === "location";
+  const onboardingCopy = controller.locale === "fr"
+    ? {
+        eyebrow: "Configuration initiale",
+        title: "Configurez votre profil",
+        description: "Trois étapes courtes pour commencer. Vous pourrez modifier ces choix plus tard dans les réglages de votre compte.",
+      }
+    : {
+        eyebrow: "Initial setup",
+        title: "Configure your profile",
+        description: "Three short steps to get started. You can change these choices later in your account settings.",
+      };
 
   return (
     <form onSubmit={(event) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ controller.handleSubmit(event); }} className="cmm-account-setup-form flex min-h-0 flex-col text-white">
@@ -74,13 +85,13 @@ export function AccountSetupForm({ showRibbonTutorial = false, ...props }: Accou
         </span>
         <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-700">Configuration initiale</p>
-            <h1 className="cmm-account-setup-title font-black tracking-tight text-slate-900">Configurez votre profil</h1>
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-700">{onboardingCopy.eyebrow}</p>
+            <h1 className="cmm-account-setup-title font-black tracking-tight text-slate-900">{onboardingCopy.title}</h1>
           </div>
-          {showRibbonTutorial ? <RibbonTutorial locale="fr" entryPoint="onboarding" /> : null}
+          {showRibbonTutorial ? <RibbonTutorial locale={controller.locale} entryPoint="onboarding" /> : null}
         </div>
         <div className="min-w-0">
-          <p className="cmm-text-body cmm-text-inverse mt-2 max-w-3xl">Trois étapes courtes pour commencer. Vous pourrez modifier ces choix plus tard dans les réglages de votre compte.</p>
+          <p className="cmm-text-body cmm-text-inverse mt-2 max-w-3xl">{onboardingCopy.description}</p>
         </div>
       </header>
 

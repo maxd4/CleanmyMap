@@ -53,6 +53,19 @@ test("onboarding reste navigable sur un viewport mobile", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Configurer plus tard", exact: true })).toBeVisible();
 });
 
+test("onboarding localise son titre et son entrée tutoriel avec la préférence partagée", async ({ page }) => {
+  await page.goto("/onboarding?next=%2Fprofil", { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => localStorage.setItem("cleanmymap.locale", "en"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+
+  await expect(page.getByRole("heading", { name: "Configure your profile", exact: true })).toBeVisible({ timeout: 30_000 });
+  const trigger = page.getByRole("button", { name: "Discover the ribbon", exact: true });
+  await expect(trigger).toHaveAttribute("type", "button");
+  await expect(trigger).toBeVisible();
+  await trigger.focus();
+  await expect(trigger).toBeFocused();
+});
+
 test("onboarding expose le tutoriel sans soumettre ni perdre les saisies", async ({ page }) => {
   await openOnboarding(page);
 

@@ -1,12 +1,26 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildPublicImpactMetrics } from "@/lib/impact/public-impact-kpis";
 
 vi.mock("./accueil-map-preview", () => ({
   HomeMapPreview: () => <div data-testid="home-map-preview" />,
 }));
 
+const preferences = vi.hoisted(() => ({
+  locale: "fr" as "fr" | "en",
+  setLocale: vi.fn(),
+}));
+
+vi.mock("@/components/ui/site-preferences-provider", () => ({
+  useSitePreferences: () => preferences,
+}));
+
 import { HomeHero } from "./accueil-hero";
+
+afterEach(() => {
+  preferences.locale = "fr";
+  preferences.setLocale.mockReset();
+});
 
 describe("HomeHero orientation and impact links", () => {
   it("links to the canonical impact-terrain methodology section", () => {
@@ -51,6 +65,11 @@ describe("HomeHero orientation and impact links", () => {
     expect(html).toContain("Découvrir le ruban");
     expect(html).toContain('data-cmm-button-tone="primary"');
     expect(html).toContain('data-navigation-tutorial-trigger');
+    expect(html).toContain('data-homepage-locale-switcher="true"');
+    expect(html).toContain('aria-label="Français"');
+    expect(html).toContain('aria-label="Anglais"');
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain("bg-[var(--action-primary-bg)]");
   });
 
   it("keeps the onboarding entry point separate from the primary impact actions", () => {
@@ -117,5 +136,21 @@ describe("HomeHero orientation and impact links", () => {
     expect(html.indexOf('href="/sections/rejoindre-une-action"')).toBeLessThan(
       html.indexOf('href="/actions/new"'),
     );
+  });
+
+  it("uses the shared locale preference for English hero and tutorial content", () => {
+    preferences.locale = "en";
+    const html = renderToStaticMarkup(
+      <HomeHero metrics={[]} impactSnapshot={null} />,
+    );
+
+    expect(html).toContain("Cleaner places, together");
+    expect(html).toContain("Let&#x27;s work together");
+    expect(html).toContain("New to CleanMyMap?");
+    expect(html).toContain("Ribbon tutorial");
+    expect(html).toContain('aria-label="French"');
+    expect(html).toContain('aria-label="English"');
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain('href="/actions/map"');
   });
 });
