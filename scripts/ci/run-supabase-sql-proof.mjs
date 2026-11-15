@@ -290,6 +290,15 @@ export function pgtapCliPath(recordPath) {
   return String(recordPath).replaceAll("\\", "/");
 }
 
+export function prioritizePaths(paths, priorityPaths = []) {
+  const priority = new Set(priorityPaths.map((path) => normalizePath(path)).filter(Boolean));
+  return [...paths].sort((left, right) => {
+    const leftPriority = priority.has(normalizePath(left)) ? 0 : 1;
+    const rightPriority = priority.has(normalizePath(right)) ? 0 : 1;
+    return leftPriority - rightPriority || left.localeCompare(right);
+  });
+}
+
 function runCommand(command, args, { logName, env = trustedCommandEnvironment(process.env, [command]) } = {}) {
   return new Promise((resolveResult, rejectResult) => {
     const child = spawn(command, args, { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
@@ -345,7 +354,9 @@ export function attestProofResult(record, result, validate) {
   if (result.code !== 0) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
-    record.reason = `command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
+    const line = String(result.output ?? "").match(/\b(?:LINE|line)\s+(\d+)\b/)?.[1];
+    if (line) record.sqlLine = Number(line);
+    record.reason = `step=${record.category ?? "SQL_PROOF"}; command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}${line ? `; line=${line}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
     throw new Error(record.reason);
   }
   try {
@@ -355,7 +366,7 @@ export function attestProofResult(record, result, validate) {
   } catch (error) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
-    record.reason = error instanceof Error ? error.message : String(error);
+    record.reason = `step=${record.category ?? "SQL_PROOF"}; ${error instanceof Error ? error.message : String(error)}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
     throw new Error(record.reason);
   }
 }
@@ -385,8 +396,12 @@ function writeReport(report) {
 export async function runSupabaseSqlProof({ sha, run = true, commandRunner = runCommand, writeReportImpl = writeReport } = {}) {
   const candidate = candidateSha(sha);
   const inventory = inventorySqlProofs();
+  const priorityPaths = String(process.env.CMM_SUPABASE_PRIORITY_FILES ?? "")
+    .split(",")
+    .map((path) => path.trim())
+    .filter(Boolean);
   const records = [
-    ...inventory.pgtap.map((path) => baseRecord(path, "PGTAP")),
+    ...prioritizePaths(inventory.pgtap, priorityPaths).map((path) => baseRecord(path, "PGTAP")),
     ...inventory.contracts.map((path) => baseRecord(path, "SQL_CONTRACT")),
     ...inventory.multisession.map((path) => baseRecord(path, "MULTISESSION")),
   ];

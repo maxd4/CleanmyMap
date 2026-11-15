@@ -78,6 +78,34 @@ conserver `DB_SEMANTICS_NOT_EXECUTED` et traiter explicitement la limite de
 preuve dans la décision de clôture, sans déployer ni appliquer une migration
 distante implicitement.
 
+### Validation syntaxique SQL avant Git
+
+Les fichiers SQL modifiés sous `apps/web/supabase/migrations/`,
+`apps/web/supabase/tests/` et `e2e/` passent le contrôle déterministe :
+
+```bash
+node scripts/ci/validate-sql-syntax.mjs --staged
+node scripts/ci/validate-sql-syntax.mjs --ref=<sha> --changed-file=<path.sql>
+```
+
+Le contrôle utilise `pg-query-emscripten` (port WASM de `libpg_query`) pour
+parser les instructions multiples, les dollar-quotes, les CTE et les
+définitions de fonctions PostgreSQL. Il rapporte le fichier, la ligne, la
+colonne et l'erreur du parseur. Il inspecte en plus l'AST pour refuser un CTE
+modificateur (`INSERT`, `UPDATE`, `DELETE` ou `MERGE`) imbriqué dans une
+expression ou une sous-requête : PostgreSQL n'autorise ce CTE qu'au niveau de
+l'instruction top-level. Les commandes méta `psql` (`\\copy`, `\\i`, etc.) ne
+font pas partie du langage SQL et sont hors de ce contrôle ; les corps
+PL/pgSQL dollar-quotés sont validés comme syntaxe de leur instruction
+`CREATE FUNCTION`, tandis que leur sémantique et leur exécution restent une
+preuve PostgreSQL.
+
+Le pre-commit lit uniquement l'index staged. Le pre-push et la CI lisent
+l'arbre du SHA candidat et seulement les fichiers SQL modifiés dans sa plage.
+Un résultat `PASS` est donc un `STATIC_CONTRACT` de syntaxe/structure, pas un
+`EXECUTED_DB_CONTRACT`. La suite pgTAP complète reste exécutée par la lane
+PostgreSQL éphémère après replay des migrations ; ce garde ne la remplace pas.
+
 La preuve PostgreSQL des contrats SQL existants est produite uniquement par la
 lane Supabase éphémère hébergée `.github/workflows/e2e-supabase.yml`, après
 rejeu des migrations canoniques et du seed. Le runner

@@ -288,6 +288,28 @@ function Invoke-GuardStep {
         }).Count -gt 0
     }
 
+    function Invoke-SqlSyntaxGuard {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$CandidateRef,
+            [Parameter(Mandatory = $true)]
+            [AllowEmptyCollection()]
+            [string[]]$ChangedFiles
+        )
+
+        $sqlFiles = @($ChangedFiles | Where-Object {
+            $_ -match '^(apps/web/supabase/(migrations|tests)/.*\.sql|e2e/.*\.sql)$'
+        })
+        if ($sqlFiles.Count -eq 0) {
+            Write-SkippedGuardStep "SQL syntax ($CandidateRef)" "no changed migration, pgTAP or SQL contract"
+            return
+        }
+
+        $arguments = @("scripts/ci/validate-sql-syntax.mjs", "--ref=$CandidateRef")
+        foreach ($file in @($sqlFiles | Sort-Object -Unique)) { $arguments += "--changed-file=$file" }
+        Invoke-GuardStep "SQL syntax ($CandidateRef)" { & node @arguments }
+    }
+
     function Test-DuplicationRelevantPath {
         param(
             [Parameter(Mandatory = $true)]
@@ -639,6 +661,7 @@ function Invoke-GuardStep {
             $candidateBaseRef = @($candidates | Where-Object { $_.LocalSha -eq $candidateRef -and -not (Test-ZeroSha $_.RemoteSha) } | Select-Object -ExpandProperty RemoteSha -Unique | Select-Object -First 1)
             $candidateRanges = @($candidates | Where-Object { $_.LocalSha -eq $candidateRef } | Select-Object -ExpandProperty Range -Unique)
             $candidateFiles = if ($candidateRanges.Count -gt 0) { @(Get-ChangedFilesFromRanges -Ranges $candidateRanges) } else { @($changedFiles) }
+            Invoke-SqlSyntaxGuard -CandidateRef $candidateRef -ChangedFiles $candidateFiles
             Invoke-CoveragePublicationGuard -CandidateRef $candidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $candidateFiles
         }
 
@@ -698,6 +721,7 @@ function Invoke-GuardStep {
 
     foreach ($plan in $candidatePlans) {
         Invoke-StaticCandidateChecks -CandidateRefs @($plan.CandidateRef) -DocumentationRelevant ([bool]$plan.DocumentationRelevant) -SupabaseRelevant ([bool]$plan.SupabaseRelevant) -WebRelevant ([bool]$plan.WebRelevant)
+        Invoke-SqlSyntaxGuard -CandidateRef $plan.CandidateRef -ChangedFiles $plan.ChangedFiles
 
         if ([bool]$plan.Policy.scriptsRelevant) {
             Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "script tests" -Command "npm" -DependencyMode "reuse" -CommandArguments @("run", "test:scripts")

@@ -13,6 +13,7 @@ import {
   sanitizeProofFailureExcerpt,
   supabaseNetworkArgs,
   pgtapCliPath,
+  prioritizePaths,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
 import { parseTerritorialRevisionNotice } from "../../e2e/territorial-legend-revision-concurrency.mjs";
@@ -372,6 +373,12 @@ test("pgTAP CLI paths resolve from the checkout root to the canonical test files
     pgtapCliPath("apps/web/supabase/tests/action-buddy-contract.pgtap.sql"),
     "apps/web/supabase/tests/action-buddy-contract.pgtap.sql",
   );
+});
+
+test("changed pgTAP files can be executed first without changing the inventory", () => {
+  const paths = ["a.pgtap.sql", "changed.pgtap.sql", "z.pgtap.sql"];
+  assert.deepEqual(prioritizePaths(paths, ["changed.pgtap.sql"]), ["changed.pgtap.sql", "a.pgtap.sql", "z.pgtap.sql"]);
+  assert.deepEqual(prioritizePaths(paths, ["missing.pgtap.sql"]), paths);
 });
 
 test("rejected proof reaches the runner failure exit code", async () => {
