@@ -155,14 +155,20 @@ jobs:
           db_container="supabase_db_web"
           docker cp "$BACKUP_ROOT/database/schema.sql" "$db_container:/tmp/cmm-schema.sql"
           docker cp "$BACKUP_ROOT/database/data.sql" "$db_container:/tmp/cmm-data.sql"
-          docker exec "$db_container" dropdb -U postgres --if-exists cmm_backup_restore
-          docker exec "$db_container" createdb -U postgres cmm_backup_restore
+          docker cp "$BACKUP_ROOT/database/roles.sql" "$db_container:/tmp/cmm-roles.sql"
+          restore_db="postgres"
+          docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "alter default privileges in schema public revoke all on tables from anon, authenticated;"
           run_restore_stage() {
             local stage="$1"
             local input="$2"
             local log="$RUNNER_TEMP/restore-${stage}.log"
+            local psql_args=(-v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -U postgres -d "$restore_db")
+            if [ "$stage" = "data" ]; then
+              psql_args+=(-c "set session_replication_role = replica")
+            fi
+            psql_args+=(-f "$input")
             set +e
-            docker exec "$db_container" psql -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -U postgres -d cmm_backup_restore -f "$input" > "$log" 2>&1
+            docker exec "$db_container" psql "${psql_args[@]}" > "$log" 2>&1
             local exit_code=$?
             set -e
             local diagnostic
@@ -170,12 +176,12 @@ jobs:
             echo "RESTORE_SQL: stage=$stage exit_code=$exit_code $diagnostic"
             return "$exit_code"
           }
+          run_restore_stage roles /tmp/cmm-roles.sql
           run_restore_stage schema /tmp/cmm-schema.sql
           run_restore_stage data /tmp/cmm-data.sql
-          docker exec "$db_container" psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d cmm_backup_restore -c "do \$\$ begin if (select count(*) from pg_constraint) = 0 then raise exception 'restored schema has no constraints'; end if; if (select count(*) from pg_proc where pronamespace = 'public'::regnamespace) = 0 then raise exception 'restored schema has no public functions'; end if; if (select count(*) from pg_class where relrowsecurity) = 0 then raise exception 'restored schema has no RLS-enabled relations'; end if; end \$\$;" > "$RUNNER_TEMP/restore-checks.txt"
-          test -s "$RUNNER_TEMP/restore-checks.txt"
-          if grep -Eq 'ERROR|FATAL|PANIC' "$RUNNER_TEMP/restore-checks.txt"; then exit 1; fi
-          echo "EPHEMERAL_RESTORE: PASS schema=data=executed constraints=checked functions=checked rls=checked"
+          docker exec "$db_container" psql -X -A -t -F '|' -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "select (select count(*) > 0 from pg_constraint), (select count(*) > 0 from pg_proc where pronamespace = 'public'::regnamespace), (select count(*) > 0 from pg_class where relrowsecurity), (select count(*) >= 3 from pg_roles where rolname in ('anon', 'authenticated', 'service_role')), (select count(*) > 0 from information_schema.role_table_grants where grantee in ('anon', 'authenticated')), (select count(*) > 0 from pg_extension);" > "$RUNNER_TEMP/restore-checks.txt"
+          grep -qx 't|t|t|t|t|t' "$RUNNER_TEMP/restore-checks.txt"
+          echo "EPHEMERAL_RESTORE: PASS roles=schema=data=executed constraints=checked functions=checked grants=checked rls=checked extensions=checked"
 
       - name: Encrypt the complete backup before artifact publication
         id: encrypt

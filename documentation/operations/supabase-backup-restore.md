@@ -104,10 +104,40 @@ secrets ou mots de passe de rôle. Avant une restauration de schéma, appliquer 
 précaution Supabase concernant les privilèges par défaut `anon` et
 `authenticated`.
 
+Le contrôle éphémère du workflow suit la procédure Supabase : il conserve la base
+`postgres` initialisée par `supabase start`, révoque les privilèges par défaut
+`anon`/`authenticated` avant le schéma, rejoue `roles.sql`, puis `schema.sql`,
+et rejoue `data.sql` dans une session séparée avec
+`session_replication_role = replica` pour éviter l'exécution des triggers pendant
+le chargement des données. Le contrôle final vérifie les contraintes, fonctions
+publiques, extensions, rôles, grants de tables et relations protégées par RLS.
+Une base vierge créée par `createdb` n'est pas une cible Supabase représentative.
+
 Recréer ensuite les buckets et téléverser les octets Storage avec l'API officielle,
 en contrôlant chemin, taille, MIME et SHA-256. Reconstituer Auth par un mécanisme
 Supabase officiellement supporté et autorisé ; il n'est pas fourni par ce dump.
 Valider séparément les clients Web/mobile, RPC, RLS et flux critiques.
+
+### Vérification Windows avec Kleopatra
+
+Après téléchargement de l'artefact privé, importer la clé privée correspondante
+dans Kleopatra uniquement sur le poste sécurisé. Vérifier ensuite l'empreinte du
+fichier de clé et du destinataire attendu ; ne jamais importer une clé privée dans
+GitHub Actions.
+
+Dans Kleopatra, choisir `Decrypt/Verify` sur l'archive `.tar.gpg` et sélectionner
+un dossier local protégé pour produire l'archive `.tar`. Vérifier son empreinte
+avec PowerShell, par exemple :
+
+```powershell
+Get-FileHash .\supabase-backup-<run>.tar.gpg -Algorithm SHA256
+Get-Content .\supabase-backup-<run>.sha256
+```
+
+Comparer les valeurs avant extraction, puis ouvrir l'archive avec 7-Zip ou
+`tar -xf` dans un dossier local chiffré. Le tar déchiffré et les dumps SQL ne
+doivent être téléversés, commités ou publiés. Cette procédure locale ne constitue
+pas à elle seule la preuve d'un run de backup réussi.
 
 ## Rotation et incident
 
