@@ -20,9 +20,11 @@ minute. » et le bouton vert plein « Découvrir le ruban ». Cette entrée rest
 par rapport aux CTA métier, mais elle est visible sans ouvrir le menu du
 header.
 
-Le bouton ouvre le même tutoriel guidé que le ruban global : six étapes courtes,
-spotlight de la cible, actions `Suivant`, `Précédent`, `Passer` et `Terminer`,
-fermeture par `Escape` et restitution du focus. La visite est non modale : les
+Le bouton ouvre le même tutoriel guidé que le ruban global : six étapes courtes
+dans l'ordre d'apparition du ruban, spotlight de la cible, `Quitter` à gauche
+et actions `Précédent`/`Suivant` groupées à droite. Aucun compteur d'étape
+n'est affiché. La fermeture par `Escape` et la restitution du focus restent
+prises en charge. La visite est non modale : les
 cibles et leurs vrais menus restent interactifs, tandis que les zones non
 ciblées sont bloquées et floutées à environ 12 px. Le parcours est manuel et
 relançable ; aucun déclenchement automatique ni état de masquage persistant

@@ -35,11 +35,10 @@ type RibbonTutorialCopy = {
   homepageIntro: string;
   homepageDescription: string;
   dialogLabel: string;
-  stepLabel: (current: number, total: number) => string;
   close: string;
   previous: string;
   next: string;
-  skip: string;
+  quit: string;
   finish: string;
   steps: RibbonTutorialStep[];
 };
@@ -51,11 +50,10 @@ const RIBBON_TUTORIAL_COPY: Record<Locale, RibbonTutorialCopy> = {
     homepageIntro: "Nouveau sur CleanMyMap ?",
     homepageDescription: "Découvrez le ruban en 1 minute.",
     dialogLabel: "Tutoriel du ruban de navigation",
-    stepLabel: (current, total) => `Étape ${current} sur ${total}`,
     close: "Fermer le tutoriel du ruban",
     previous: "Précédent",
     next: "Suivant",
-    skip: "Passer",
+    quit: "Quitter",
     finish: "Terminer",
     steps: [
       {
@@ -72,16 +70,16 @@ const RIBBON_TUTORIAL_COPY: Record<Locale, RibbonTutorialCopy> = {
         description: "Ouvrez la recherche globale pour trouver une rubrique, un outil ou une aide sans parcourir les menus.",
       },
       {
-        target: "product",
-        icon: LayoutGrid,
-        title: "Navigation produit",
-        description: "Ces blocs regroupent les grands parcours du produit. Ouvrez un bloc pour afficher ses rubriques.",
-      },
-      {
         target: "preferences",
         icon: Settings2,
         title: "Préférences",
         description: "Adaptez l’affichage et la langue, puis retrouvez vos préférences de compte.",
+      },
+      {
+        target: "product",
+        icon: LayoutGrid,
+        title: "Navigation produit",
+        description: "Ces blocs regroupent les grands parcours du produit. Ouvrez un bloc pour afficher ses rubriques.",
       },
       {
         target: "feedback",
@@ -103,11 +101,10 @@ const RIBBON_TUTORIAL_COPY: Record<Locale, RibbonTutorialCopy> = {
     homepageIntro: "New to CleanMyMap?",
     homepageDescription: "Discover the ribbon in 1 minute.",
     dialogLabel: "Navigation ribbon tutorial",
-    stepLabel: (current, total) => `Step ${current} of ${total}`,
     close: "Close the navigation ribbon tutorial",
     previous: "Previous",
     next: "Next",
-    skip: "Skip",
+    quit: "Quit",
     finish: "Finish",
     steps: [
       {
@@ -124,16 +121,16 @@ const RIBBON_TUTORIAL_COPY: Record<Locale, RibbonTutorialCopy> = {
         description: "Open global search to find a section, tool or help without browsing every menu.",
       },
       {
-        target: "product",
-        icon: LayoutGrid,
-        title: "Product navigation",
-        description: "These blocks group the product’s main journeys. Open a block to see its sections.",
-      },
-      {
         target: "preferences",
         icon: Settings2,
         title: "Preferences",
         description: "Adjust the display and language, then access your account preferences.",
+      },
+      {
+        target: "product",
+        icon: LayoutGrid,
+        title: "Product navigation",
+        description: "These blocks group the product’s main journeys. Open a block to see its sections.",
       },
       {
         target: "feedback",
@@ -188,7 +185,7 @@ export function RibbonTutorial({
   const copy = RIBBON_TUTORIAL_COPY[locale];
   const isHomepageEntryPoint = entryPoint === "homepage";
   const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const panelRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null);
@@ -235,8 +232,12 @@ export function RibbonTutorial({
     setOpen(false);
     setSpotlightRect(null);
     window.requestAnimationFrame(() => {
-      triggerRef.current?.focus();
-      window.setTimeout(() => triggerRef.current?.focus(), 0);
+      const trigger = triggerRef.current ?? document.querySelector<HTMLButtonElement>("[data-navigation-tutorial-trigger]");
+      trigger?.focus();
+      window.setTimeout(() => {
+        const currentTrigger = triggerRef.current ?? document.querySelector<HTMLButtonElement>("[data-navigation-tutorial-trigger]");
+        currentTrigger?.focus();
+      }, 0);
     });
   }, []);
 
@@ -354,10 +355,7 @@ export function RibbonTutorial({
         <div className="cmm-navigation-ribbon-tour-content">
           <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
             <div className="min-w-0">
-              <p className="cmm-text-caption font-bold uppercase tracking-[0.16em] text-amber-200/85">
-                {copy.stepLabel(stepIndex + 1, copy.steps.length)}
-              </p>
-              <h2 id="ribbon-tutorial-title" className="mt-1 text-lg font-black tracking-tight text-white">
+              <h2 id="ribbon-tutorial-title" className="text-lg font-black tracking-tight text-white">
                 {step.title}
               </h2>
             </div>
@@ -393,23 +391,23 @@ export function RibbonTutorial({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-white/[0.03] px-5 py-4">
+          <div data-navigation-ribbon-tour-actions className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-white/[0.03] px-5 py-4">
             <button
               type="button"
               className="inline-flex min-h-10 items-center rounded-xl px-3 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/70 disabled:cursor-not-allowed disabled:opacity-40"
-              onClick={goPrevious}
-              disabled={stepIndex === 0}
+              onClick={close}
             >
-              <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              {copy.previous}
+              {copy.quit}
             </button>
-            <div className="flex items-center gap-1.5">
+            <div data-navigation-ribbon-tour-step-actions className="ml-auto flex items-center gap-1.5">
               <button
                 type="button"
-                className="inline-flex min-h-10 items-center rounded-xl px-3 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/70"
-                onClick={close}
+                className="inline-flex min-h-10 items-center rounded-xl px-3 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/70 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={goPrevious}
+                disabled={stepIndex === 0}
               >
-                {copy.skip}
+                <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                {copy.previous}
               </button>
               <button
                 type="button"
@@ -430,7 +428,7 @@ export function RibbonTutorial({
     </>
   ) : null;
 
-  const triggerLabel = copy.homepageTrigger;
+  const triggerLabel = isHomepageEntryPoint ? copy.homepageTrigger : copy.trigger;
   const trigger = (
     <CmmButton
       asChild

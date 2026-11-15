@@ -54,9 +54,10 @@ fermeture, ni sa sémantique `role="alert"`.
 Le bouton `Découvrir le ruban` n'est pas rendu dans le header global. Il est
 disponible depuis deux entrées explicites seulement : la zone d'accueil
 « Nouveau sur CleanMyMap ? » et le titre de `/onboarding`. Les deux entrées
-réutilisent `RibbonTutorial`, ses six étapes FR/EN — Accueil, Recherche,
-navigation produit, Préférences, Feedback, puis profil/statut et espace
-personnel — et ne varient que par la présentation du déclencheur. Aucun
+réutilisent `RibbonTutorial`, ses six étapes FR/EN dans l'ordre d'apparition du
+ruban — Accueil, Recherche, Préférences, navigation produit, Feedback, puis
+profil/statut et espace personnel — et ne varient que par la présentation du
+déclencheur. Aucun
 déclencheur n'est rendu sur `/reglages`, dans `AccountCompletionGate` ou dans
 les autres pages.
 
@@ -69,6 +70,8 @@ et appliquent un flou réel d'environ 12 px avec une découpe nette autour du
 contrôle actif. La cible reste capable de recevoir hover, clic et ouverture de
 son vrai dropdown ; les panneaux de dropdown restent au-dessus du tutoriel.
 
+Les actions du panneau placent `Quitter` à gauche et groupent `Précédent` et
+`Suivant` côte à côte à droite. Le compteur « Étape X sur 6 » n'est pas rendu.
 Un clic capturé sur un lien réel ferme la visite avant navigation. Sur les
 largeurs où la recherche ou le dock desktop ne sont pas rendus, l'étape
 conserve son explication et cible le groupe primaire ou le bouton `Sommaire`

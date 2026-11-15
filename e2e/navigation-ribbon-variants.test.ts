@@ -201,6 +201,9 @@ test.describe("desktop central navigation ribbon variants", () => {
       const panel = page.getByRole("region", { name: "Tutoriel du ruban de navigation" });
       await expect(panel).toBeVisible();
       await expect(panel.getByRole("heading", { name: "Accueil" })).toBeVisible();
+      await expect(panel).not.toContainText("Étape");
+      await expect(panel.locator('[data-navigation-ribbon-tour-actions] > button').first()).toHaveText("Quitter");
+      await expect(panel.locator('[data-navigation-ribbon-tour-step-actions] > button')).toHaveCount(2);
       await expect(page.locator("[data-navigation-ribbon-tour-spotlight]")).toBeVisible();
       await expect(page.locator("[data-navigation-ribbon-tour-blocker]")).toHaveCount(4);
       await expect(panel).not.toHaveAttribute("aria-modal", "true");
@@ -232,7 +235,6 @@ test.describe("desktop central navigation ribbon variants", () => {
       expect(homepageScrollWidthAfterTour).toBeLessThanOrEqual(homepageScrollWidthBeforeTour + 1);
 
       await page.locator('[data-navigation-tutorial-target="home"]').hover();
-      await panel.getByRole("button", { name: "Suivant" }).click();
       await panel.getByRole("button", { name: "Suivant" }).click();
       await panel.getByRole("button", { name: "Suivant" }).click();
       await expect(panel.getByRole("heading", { name: "Préférences" })).toBeVisible();
