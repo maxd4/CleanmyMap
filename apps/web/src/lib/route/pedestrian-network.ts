@@ -1,5 +1,5 @@
 import type { RouteGeometry, RouteGeometryLeg, RouteTopology } from "./route-contract";
-import { PLANNER_WALKING_SPEED_KM_PER_HOUR } from "@/lib/actions/route-target-distance";
+import { PLANNER_WALKING_SPEED_KM_PER_HOUR } from "../actions/route-target-distance.ts";
 
 export const PEDESTRIAN_NETWORK_IMPORTER_VERSION = "pedestrian-network-v2" as const;
 export const PEDESTRIAN_NETWORK_KEY = "paris-pantheon-jardin-des-plantes" as const;
