@@ -27,7 +27,6 @@ on:
 env:
   NODE_VERSION_FILE: apps/web/.nvmrc
   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
-  PROOF_NETWORK: cleanmymap-backup-proof-${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   replay:
@@ -36,10 +35,6 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
-    env:
-      PROOF_ROOT: ${{ runner.temp }}/cmm-supabase-backup-restore-proof
-      PROOF_SOURCE_WORKDIR: ${{ runner.temp }}/cmm-supabase-backup-restore-proof-source
-      PROOF_TARGET_WORKDIR: ${{ runner.temp }}/cmm-supabase-backup-restore-proof-target
 
     steps:
       - name: Checkout
@@ -66,6 +61,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          PROOF_ROOT="$RUNNER_TEMP/cmm-supabase-backup-restore-proof"
+          PROOF_SOURCE_WORKDIR="$RUNNER_TEMP/cmm-supabase-backup-restore-proof-source"
+          PROOF_TARGET_WORKDIR="$RUNNER_TEMP/cmm-supabase-backup-restore-proof-target"
+          PROOF_NETWORK="cleanmymap-backup-proof-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           mkdir -p "$PROOF_ROOT/dumps" "$PROOF_SOURCE_WORKDIR/supabase" "$PROOF_TARGET_WORKDIR/supabase"
           cat > "$PROOF_TARGET_WORKDIR/supabase/config.toml" <<'EOF'
           project_id = "cmm-backup-proof-target"
@@ -232,7 +231,11 @@ jobs:
         shell: bash
         run: |
           set +e
+          proof_root="$RUNNER_TEMP/cmm-supabase-backup-restore-proof"
+          proof_source_workdir="$RUNNER_TEMP/cmm-supabase-backup-restore-proof-source"
+          proof_target_workdir="$RUNNER_TEMP/cmm-supabase-backup-restore-proof-target"
+          proof_network="cleanmymap-backup-proof-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           ./node_modules/.bin/supabase stop --workdir apps/web --no-backup >/dev/null 2>&1
-          ./node_modules/.bin/supabase stop --workdir "$PROOF_TARGET_WORKDIR" --no-backup >/dev/null 2>&1
-          docker network rm "$PROOF_NETWORK" >/dev/null 2>&1
-          rm -rf "$PROOF_ROOT" "$PROOF_SOURCE_WORKDIR" "$PROOF_TARGET_WORKDIR"
+          ./node_modules/.bin/supabase stop --workdir "$proof_target_workdir" --no-backup >/dev/null 2>&1
+          docker network rm "$proof_network" >/dev/null 2>&1
+          rm -rf "$proof_root" "$proof_source_workdir" "$proof_target_workdir"

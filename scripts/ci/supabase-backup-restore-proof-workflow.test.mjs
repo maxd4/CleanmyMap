@@ -30,7 +30,7 @@ test('ephemeral backup proof reconstructs source and target without Production c
   assert.match(workflow, /Production writes: NONE/);
   assert.match(workflow, /SQL\/data diagnostics: private temporary files only/);
   assert.match(workflow, /supabase stop --workdir apps\/web/);
-  assert.match(workflow, /rm -rf "\$PROOF_ROOT"/);
+  assert.match(workflow, /rm -rf "\$proof_root"/);
   assert.doesNotMatch(workflow, /SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY|SUPABASE_BACKUP_STORAGE_READ_KEY/);
   assert.doesNotMatch(workflow, /upload-artifact@/);
   assert.doesNotMatch(workflow, /db push|migration repair/);
