@@ -176,14 +176,18 @@ jobs:
           node scripts/ci/prepare-supabase-restore-roles.mjs \
             --roles-file="$PROOF_ROOT/dumps/roles.sql" \
             --container="$target_container" \
-            --database="$restore_db"
+            --database="$restore_db" \
+            --write-user-file="$PROOF_ROOT/restore-admin-user.txt"
+          restore_admin_user="$(< "$PROOF_ROOT/restore-admin-user.txt")"
+          test "$restore_admin_user" = "postgres" || test "$restore_admin_user" = "supabase_admin"
           echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=target-prepare PASS"
 
           run_stage() {
             local stage="$1"
             local input="$2"
+            local user="${3:-postgres}"
             local log="$PROOF_ROOT/restore-${stage}.log"
-            local args=(-v ON_ERROR_STOP=1 -v VERBOSITY=verbose -U postgres -d "$restore_db")
+            local args=(-v ON_ERROR_STOP=1 -v VERBOSITY=verbose -U "$user" -d "$restore_db")
             if [ "$stage" = "schema" ] || [ "$stage" = "data" ]; then
               args+=(-c "set search_path = public, extensions")
             fi
@@ -211,7 +215,7 @@ jobs:
           test "$missing_count" = "0"
 
           proof_step="restore-roles"
-          run_stage roles /tmp/cmm-roles.sql
+          run_stage roles /tmp/cmm-roles.sql "$restore_admin_user"
           echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-roles PASS"
           proof_step="restore-extensions"
           run_stage extensions /tmp/cmm-restore-extension-preflight.sql

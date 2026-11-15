@@ -25,6 +25,8 @@ test('ephemeral backup proof reconstructs source and target without Production c
   assert.match(workflow, /cmm-backup-proof-target/);
   assert.match(workflow, /supabase-restore-extension-preflight\.sql/);
   assert.match(workflow, /prepare-supabase-restore-roles\.mjs/);
+  assert.match(workflow, /restore-admin-user\.txt/);
+  assert.match(workflow, /run_stage roles \/tmp\/cmm-roles\.sql "\$restore_admin_user"/);
   assert.match(workflow, /supabase-backup-restore-proof-fixture\.sql/);
   assert.match(workflow, /run_stage roles \/tmp\/cmm-roles\.sql/);
   assert.match(workflow, /run_stage extensions \/tmp\/cmm-restore-extension-preflight\.sql/);

@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 
 const ROLE_IDENTIFIER = /"(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*/g;
@@ -62,6 +62,7 @@ if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}`) {
   const rolesFile = argument("roles-file");
   const container = argument("container");
   const database = argument("database") ?? "postgres";
+  const writeUserFile = argument("write-user-file");
   if (!rolesFile || !container) {
     console.error("Usage: node prepare-supabase-restore-roles.mjs --roles-file PATH --container NAME [--database NAME]");
     process.exitCode = 2;
@@ -74,11 +75,13 @@ if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}`) {
       { input: sql, encoding: "utf8", stdio: ["pipe", "ignore", "ignore"] },
     );
     const result = runPreflight("postgres");
-    const fallbackResult = result.status === 0 ? result : runPreflight("supabase_admin");
+    const executor = result.status === 0 ? "postgres" : "supabase_admin";
+    const fallbackResult = result.status === 0 ? result : runPreflight(executor);
     if (fallbackResult.status !== 0) {
       console.error("RESTORE_ROLE_PREFLIGHT: FAIL");
       process.exitCode = fallbackResult.status ?? 1;
     } else {
+      if (writeUserFile) await writeFile(writeUserFile, `${executor}\n`, "utf8");
       console.log("RESTORE_ROLE_PREFLIGHT: PASS");
     }
   }
