@@ -180,4 +180,91 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
       await context.close();
     }
   });
+
+  test("contains the compact identity bubble and preserves the centered dock", async ({ browser }) => {
+    test.setTimeout(180_000);
+    const context = await browser.newContext({ storageState: authFile });
+    const page = await context.newPage();
+    const widths = [390, 768, 1024, 1279, 1280, 1439, 1440, 1600] as const;
+
+    try {
+      for (const viewportWidth of widths) {
+        await page.setViewportSize({ width: viewportWidth, height: 900 });
+        await openProtectedRoute(page, "/dashboard");
+
+        const metrics = await page.evaluate(() => {
+          const rectFor = (selector: string) => {
+            const element = document.querySelector<HTMLElement>(selector);
+            if (!element) return null;
+            const rect = element.getBoundingClientRect();
+            return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height };
+          };
+          const identity = document.querySelector<HTMLElement>("[data-navigation-account-identity]");
+          const fullName = document.querySelector<HTMLElement>("[data-navigation-account-full-name]");
+          const identityGroup = rectFor('[data-navigation-group="account"]');
+          const rightControls = [
+            rectFor('[data-navigation-tutorial-target="feedback"]'),
+            rectFor('button[aria-label^="Notifications"]'),
+            rectFor('button[aria-label="Menu du profil actif"]'),
+            rectFor("[data-navigation-account-identity]"),
+          ].filter((rect): rect is NonNullable<typeof rect> => rect !== null);
+          const sortedControls = [...rightControls].sort((left, right) => left.left - right.left);
+          const dock = rectFor('nav[aria-label="Navigation par blocs"]');
+          const dockCenter = dock ? dock.left + dock.width / 2 : null;
+          return {
+            viewportWidth: window.innerWidth,
+            documentScrollWidth: document.documentElement.scrollWidth,
+            bodyScrollWidth: document.body.scrollWidth,
+            identity: rectFor("[data-navigation-account-identity]"),
+            identityGroup,
+            identityRole: identity?.getAttribute("role"),
+            identityLabel: identity?.getAttribute("aria-label"),
+            fullNameVisible: Boolean(fullName && fullName.getClientRects().length > 0 && getComputedStyle(fullName).visibility !== "hidden"),
+            rightControls: sortedControls,
+            dock,
+            dockCenter,
+          };
+        });
+
+        expect(metrics.identity, `${viewportWidth}px: compact identity bubble missing`).not.toBeNull();
+        expect(metrics.identity?.width, `${viewportWidth}px: compact bubble width`).toBeGreaterThanOrEqual(viewportWidth < 1280 ? 58 : 50);
+        expect(metrics.identity?.right, `${viewportWidth}px: compact bubble overflows viewport`).toBeLessThanOrEqual(viewportWidth + 1);
+        expect(metrics.identityGroup?.right, `${viewportWidth}px: account group overflows viewport`).toBeLessThanOrEqual(viewportWidth + 1);
+        expect(metrics.identityRole).toBe("group");
+        expect(metrics.identityLabel).toMatch(/Niv\./u);
+        expect(metrics.documentScrollWidth, `${viewportWidth}px: document overflow`).toBeLessThanOrEqual(viewportWidth + 1);
+        expect(metrics.bodyScrollWidth, `${viewportWidth}px: body overflow`).toBeLessThanOrEqual(viewportWidth + 1);
+
+        for (const [index, current] of metrics.rightControls.entries()) {
+          const next = metrics.rightControls[index + 1];
+          if (next) {
+            expect(current.right, `${viewportWidth}px: right controls overlap`).toBeLessThanOrEqual(next.left + 1);
+          }
+        }
+
+        if (viewportWidth < 1440) {
+          expect(metrics.fullNameVisible, `${viewportWidth}px: full name should remain assistive-only`).toBe(false);
+        } else {
+          expect(metrics.fullNameVisible, `${viewportWidth}px: full name should be visible`).toBe(true);
+        }
+
+        if (viewportWidth >= 1280) {
+          expect(metrics.dock, `${viewportWidth}px: desktop dock missing`).not.toBeNull();
+          expect(metrics.dockCenter, `${viewportWidth}px: dock center missing`).not.toBeNull();
+          expect(Math.abs(metrics.dockCenter! - viewportWidth / 2), `${viewportWidth}px: dock moved by account group`).toBeLessThanOrEqual(8);
+          expect(metrics.identityGroup?.left, `${viewportWidth}px: account group overlaps dock`).toBeGreaterThanOrEqual((metrics.dock?.right ?? 0) - 1);
+        }
+      }
+
+      for (const zoom of [1.25, 1.5] as const) {
+        const zoomProxyWidth = Math.floor(1440 / zoom);
+        await page.setViewportSize({ width: zoomProxyWidth, height: 900 });
+        await openProtectedRoute(page, "/dashboard");
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(overflow, `zoom ${zoom}: horizontal overflow`).toBeLessThanOrEqual(1);
+      }
+    } finally {
+      await context.close();
+    }
+  });
 });

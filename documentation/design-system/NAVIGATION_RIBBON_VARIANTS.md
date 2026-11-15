@@ -28,6 +28,15 @@ produit :
 - `account` sépare les notifications et l'identité de compte par une bordure
   de rythme, sans changer leurs permissions ni leurs menus.
 
+La bulle d'identité compacte réserve une largeur intrinsèque suffisante pour
+son avatar, son indicateur de statut, ses espacements, son padding et sa
+bordure ; elle ne repose pas sur une largeur maximale inférieure à son contenu.
+Le groupe expose un nom accessible incluant le handle, le niveau et le nom
+complet, même lorsque les détails textuels sont masqués visuellement sous
+1440px. À partir de 1440px, les détails peuvent redevenir visibles avec une
+troncature locale ; le groupe droit reste borné par le viewport et ne modifie
+jamais le centrage du dock produit.
+
 Les boutons du dock central gardent leur nom accessible, leur cible tactile et
 leur état actif. En variante `classic`, le nom court est également disponible
 au survol et au focus clavier via une info-bulle locale ; le bouton conserve son
