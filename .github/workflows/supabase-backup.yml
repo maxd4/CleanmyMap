@@ -107,8 +107,8 @@ jobs:
           cli_version=$(npx supabase --version | head -n 1)
           printf '%s\n' "$cli_version" > "$BACKUP_ROOT/metadata/supabase-cli-version.txt"
           npx supabase db dump --linked --role-only --file "$BACKUP_ROOT/database/roles.sql"
-          npx supabase db dump --linked --file "$BACKUP_ROOT/database/schema.sql"
-          npx supabase db dump --linked --data-only --use-copy --file "$BACKUP_ROOT/database/data.sql"
+          npx supabase db dump --linked --schema public --file "$BACKUP_ROOT/database/schema.sql"
+          npx supabase db dump --linked --data-only --schema public --use-copy --file "$BACKUP_ROOT/database/data.sql"
           npx supabase migration list --linked > "$BACKUP_ROOT/metadata/migration-list.txt"
           for file in "$BACKUP_ROOT/database/roles.sql" "$BACKUP_ROOT/database/schema.sql" "$BACKUP_ROOT/database/data.sql" "$BACKUP_ROOT/metadata/migration-list.txt"; do
             test -s "$file"
@@ -219,6 +219,24 @@ jobs:
           }
           run_restore_stage roles /tmp/cmm-roles.sql
           run_restore_stage schema /tmp/cmm-schema.sql
+          docker exec "$db_container" psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "select n.nspname || '.' || c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r', 'p', 'S', 'v', 'm', 'f') order by 1;" > "$RUNNER_TEMP/restore-relations.txt"
+          node scripts/ci/verify-supabase-backup-relation-coherence.mjs --data-file "$BACKUP_ROOT/database/data.sql" --available-file "$RUNNER_TEMP/restore-relations.txt"
+          docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "create table public.cmm_backup_coherence_fixture (id integer primary key);"
+          printf 'public.cmm_backup_coherence_fixture\n' > "$RUNNER_TEMP/relation-coherence-positive.relations.txt"
+          printf 'COPY public.cmm_backup_coherence_fixture (id) FROM stdin;\n1\n\\.\n' > "$RUNNER_TEMP/relation-coherence-positive.data.sql"
+          docker cp "$RUNNER_TEMP/relation-coherence-positive.data.sql" "$db_container:/tmp/cmm-relation-coherence-positive.sql"
+          docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -f /tmp/cmm-relation-coherence-positive.sql > "$RUNNER_TEMP/relation-coherence-positive.log" 2>&1
+          node scripts/ci/verify-supabase-backup-relation-coherence.mjs --data-file "$RUNNER_TEMP/relation-coherence-positive.data.sql" --available-file "$RUNNER_TEMP/relation-coherence-positive.relations.txt"
+          printf 'COPY public.cmm_backup_missing_fixture (id) FROM stdin;\n1\n\\.\n' > "$RUNNER_TEMP/relation-coherence-negative.data.sql"
+          docker cp "$RUNNER_TEMP/relation-coherence-negative.data.sql" "$db_container:/tmp/cmm-relation-coherence-negative.sql"
+          if docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -f /tmp/cmm-relation-coherence-negative.sql > "$RUNNER_TEMP/relation-coherence-negative.log" 2>&1; then
+            echo "Relation coherence PostgreSQL negative fixture unexpectedly passed; publication is refused."
+            exit 1
+          fi
+          if node scripts/ci/verify-supabase-backup-relation-coherence.mjs --data-file "$RUNNER_TEMP/relation-coherence-negative.data.sql" --available-file "$RUNNER_TEMP/relation-coherence-positive.relations.txt"; then
+            echo "Relation coherence negative fixture unexpectedly passed; publication is refused."
+            exit 1
+          fi
           run_restore_stage data /tmp/cmm-data.sql
           docker exec "$db_container" psql -X -A -t -F '|' -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "select (select count(*) > 0 from pg_constraint), (select count(*) > 0 from pg_proc where pronamespace = 'public'::regnamespace), (select count(*) > 0 from pg_class where relrowsecurity), (select count(*) >= 3 from pg_roles where rolname in ('anon', 'authenticated', 'service_role')), (select count(*) > 0 from information_schema.role_table_grants where grantee in ('anon', 'authenticated')), (select count(*) > 0 from pg_extension);" > "$RUNNER_TEMP/restore-checks.txt"
           grep -qx 't|t|t|t|t|t' "$RUNNER_TEMP/restore-checks.txt"
@@ -269,4 +287,4 @@ jobs:
         run: |
           set +e
           npx supabase stop --workdir "${restore_workdir:-$RUNNER_TEMP/cmm-supabase-restore}" --no-backup >/dev/null 2>&1
-          rm -rf "$BACKUP_ROOT" "$GNUPGHOME" "${restore_workdir:-$RUNNER_TEMP/cmm-supabase-restore}" "$RUNNER_TEMP/supabase-backup.tar" "$RUNNER_TEMP/supabase-backup-public-key.asc" "$RUNNER_TEMP/supabase-link.log" "$RUNNER_TEMP/restore-roles.log" "$RUNNER_TEMP/restore-schema.log" "$RUNNER_TEMP/restore-data.log" "$RUNNER_TEMP/restore-checks.txt" "$RUNNER_TEMP/supabase-start.log"
+          rm -rf "$BACKUP_ROOT" "$GNUPGHOME" "${restore_workdir:-$RUNNER_TEMP/cmm-supabase-restore}" "$RUNNER_TEMP/supabase-backup.tar" "$RUNNER_TEMP/supabase-backup-public-key.asc" "$RUNNER_TEMP/supabase-link.log" "$RUNNER_TEMP/restore-roles.log" "$RUNNER_TEMP/restore-schema.log" "$RUNNER_TEMP/restore-data.log" "$RUNNER_TEMP/restore-checks.txt" "$RUNNER_TEMP/restore-relations.txt" "$RUNNER_TEMP/relation-coherence-positive.data.sql" "$RUNNER_TEMP/relation-coherence-positive.relations.txt" "$RUNNER_TEMP/relation-coherence-positive.log" "$RUNNER_TEMP/relation-coherence-negative.data.sql" "$RUNNER_TEMP/relation-coherence-negative.log" "$RUNNER_TEMP/supabase-start.log"

@@ -16,7 +16,8 @@ test('backup workflow is manual, main-only and protected', () => {
 
 test('workflow creates all dump classes, encrypts before upload and cleans up', () => {
   assert.match(workflow, /--role-only/);
-  assert.match(workflow, /--data-only/);
+  assert.match(workflow, /--schema public --file .*schema\.sql/);
+  assert.match(workflow, /--data-only --schema public --use-copy/);
   assert.match(workflow, /export-supabase-storage\.mjs/);
   assert.match(workflow, /gpg .*--encrypt/);
   assert.match(workflow, /gpg --batch --list-only --list-packets "\$encrypted_archive" 2>\/dev\/null \| grep -q ':pubkey enc packet:'/);
@@ -34,6 +35,10 @@ test('workflow creates all dump classes, encrypts before upload and cleans up', 
   assert.match(workflow, /restore_db="postgres"/);
   assert.match(workflow, /run_restore_stage roles \/tmp\/cmm-roles\.sql/);
   assert.match(workflow, /run_restore_stage schema \/tmp\/cmm-schema\.sql/);
+  assert.match(workflow, /verify-supabase-backup-relation-coherence\.mjs/);
+  assert.match(workflow, /relation-coherence-positive/);
+  assert.match(workflow, /relation-coherence-negative/);
+  assert.match(workflow, /publication is refused/);
   assert.match(workflow, /run_restore_stage data \/tmp\/cmm-data\.sql/);
   assert.match(workflow, /restore_workdir="\$RUNNER_TEMP\/cmm-supabase-restore"/);
   assert.match(workflow, /project_id = "cmm-backup-restore"/);

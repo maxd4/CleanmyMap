@@ -12,15 +12,19 @@ hébergé ; Docker n'est jamais lancé sur le poste local.
 Le workflow produit, dans un répertoire temporaire puis dans une archive GPG :
 
 - un dump des rôles PostgreSQL ;
-- un dump du schéma et un dump des données métier avec la CLI Supabase ;
+- un dump du schéma et des données métier du schéma `public` avec la CLI
+  Supabase ; ce périmètre explicite est appliqué aux deux dumps ;
 - l'inventaire des buckets et objets Storage, les chemins, tailles, métadonnées
   retournées par l'API et les SHA-256 des octets ;
 - les versions/outils, l'inventaire des migrations et un manifeste de périmètre
   et d'empreintes.
 
 Comme le précise la documentation Supabase, `supabase db dump` exclut les
-schémas gérés tels que `auth` et `storage`, ainsi que les schémas d'extensions,
-et un backup de base ne contient pas les octets Storage. Les utilisateurs Auth,
+schémas gérés tels que `auth` et `storage`, ainsi que les schémas d'extensions.
+Le workflow borne en plus les deux dumps à `public`, qui est le schéma des
+données métier de CleanMyMap ; il refuse toute relation de données non présente
+après le rejeu du schéma au lieu de l'exclure silencieusement. Un backup de base
+ne contient pas les octets Storage. Les utilisateurs Auth,
 leurs métadonnées de fournisseurs, les secrets de projet, les Edge Functions,
 la configuration des services gérés et l'historique point-in-time ne sont donc
 pas restaurables par cette archive. Le dump public n'est pas une sauvegarde
@@ -109,9 +113,13 @@ temporaire dédiée : `supabase start` n'y applique ni l'arbre de migrations mé
 de `apps/web`, ni son seed. Il conserve uniquement les objets gérés nécessaires
 au runtime Supabase dans la base `postgres`, révoque les privilèges par défaut
 `anon`/`authenticated` avant le schéma, rejoue `roles.sql`, puis `schema.sql`,
-et rejoue `data.sql` dans une session séparée avec
+compare d'abord les relations référencées par les instructions `COPY` et
+`setval` de `data.sql` avec les relations présentes après `schema.sql`, puis
+rejoue `data.sql` dans une session séparée avec
 `session_replication_role = replica` pour éviter l'exécution des triggers pendant
-le chargement des données. Le contrôle final vérifie les contraintes, fonctions
+le chargement des données. Des fixtures synthétiques positive et négative
+vérifient que ce contrôle passe pour une relation présente et refuse une relation
+absente. Le contrôle final vérifie les contraintes, fonctions
 publiques, extensions, rôles, grants de tables et relations protégées par RLS.
 La configuration canonique `apps/web/supabase/config.toml` et l'arbre de
 migrations ne sont pas modifiés ; une base vierge créée par `createdb` n'est pas
