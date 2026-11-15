@@ -12,6 +12,21 @@ La page accueille les visiteurs et présente la vocation de CleanMyMap. Elle ouv
 - **KPI Impact terrain** : les six KPI, leurs équivalences et leurs bulles d'explication proviennent exclusivement du dernier snapshot mensuel public persisté par le cron Impact terrain. Le chemin KPI de la homepage ne lance aucun agrégat, scan d'actions ou recalcul lors d'une visite ; le flux d'activité communautaire indépendant reste borné à trois actions récentes. La date `generatedAt` et la mention de mise à jour mensuelle sont affichées lorsque le snapshot est disponible ; son absence produit « Données d’impact indisponibles » plutôt qu'un zéro.
 - **Navigation et approfondissement** : chaque carte ou CTA délègue les éventuels contrôles AuthN/AuthZ à la page, au handler et au domaine propriétaire.
 
+## Parcours de découverte — `CURRENT`
+
+La première partie du hero propose une micro-zone d’aide aux visiteurs qui
+découvrent CleanMyMap : « Nouveau sur CleanMyMap ? Découvrez le ruban en 1
+minute. » et le bouton « Tutoriel du ruban ». Cette entrée reste secondaire
+par rapport aux CTA métier, mais elle est visible sans ouvrir le menu du
+header.
+
+Le bouton ouvre le même tutoriel guidé que le ruban global : six étapes courtes,
+spotlight de la cible, actions `Suivant`, `Précédent`, `Passer` et `Terminer`,
+fermeture par `Escape` et restitution du focus. Le parcours est manuel et
+relançable ; aucun déclenchement automatique ni état de masquage persistant
+n'est activé. L'implémentation réutilise le composant `RibbonTutorial` et ne
+duplique pas le contenu pédagogique.
+
 ## Preuves et limites de présentation
 
 - Les actions réelles représentées renvoient à `/methodologie#indicateurs-impact-terrain` pour les méthodes et limites.

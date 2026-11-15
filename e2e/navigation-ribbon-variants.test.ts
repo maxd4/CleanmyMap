@@ -182,6 +182,36 @@ async function waitForMeniscusAlignment(page: Page): Promise<void> {
 }
 
 test.describe("desktop central navigation ribbon variants", () => {
+  test("homepage exposes the guided tutorial without competing with the primary actions", async ({ page }) => {
+    for (const width of [1440, 390] as const) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/", { waitUntil: "domcontentloaded" });
+      await dismissCookies(page);
+
+      const entryPoint = page.locator('[data-navigation-tutorial-entry="homepage"]');
+      await expect(entryPoint).toBeVisible();
+      await expect(entryPoint).toContainText("Nouveau sur CleanMyMap ?");
+      await expect(entryPoint).toContainText("Découvrez le ruban en 1 minute.");
+      const homepageScrollWidthBeforeTour = await page.evaluate(() => document.documentElement.scrollWidth);
+
+      const trigger = entryPoint.getByRole("button", { name: "Tutoriel du ruban" });
+      await expect(trigger).toBeVisible();
+      await trigger.click();
+
+      const dialog = page.getByRole("dialog", { name: "Tutoriel du ruban de navigation" });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole("heading", { name: "Accueil" })).toBeVisible();
+      await expect(page.locator("[data-navigation-ribbon-tour-spotlight]")).toBeVisible();
+      const homepageScrollWidthAfterTour = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(homepageScrollWidthAfterTour).toBeLessThanOrEqual(homepageScrollWidthBeforeTour + 1);
+      await expect(page.locator("body")).toHaveCSS("overflow-x", "hidden");
+
+      await dialog.getByRole("button", { name: "Passer" }).click();
+      await expect(dialog).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+    }
+  });
+
   test("opens a short guided tour and restores focus on desktop and mobile", async ({ page }) => {
     for (const width of [1440, 390] as const) {
       await page.setViewportSize({ width, height: 900 });

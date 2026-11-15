@@ -14,6 +14,7 @@ import type {
 import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
 import { HomeImpactKpiCard } from "./accueil-impact-kpi-card";
 import { HomeMapPreview } from "./accueil-map-preview";
+import { RibbonTutorial } from "@/components/navigation/app-navigation-ribbon-tour";
 
 interface HomeHeroProps {
   metrics: PublicImpactMetric[];
@@ -103,6 +104,7 @@ export function HomeHero({
                   </CmmButton>
                 ))}
               </CmmButtonGroup>
+              <RibbonTutorial locale="fr" entryPoint="homepage" />
             </div>
           </div>
 

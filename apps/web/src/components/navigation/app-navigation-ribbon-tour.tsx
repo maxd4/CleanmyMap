@@ -17,6 +17,9 @@ type RibbonTutorialStep = {
 
 type RibbonTutorialCopy = {
   trigger: string;
+  homepageTrigger: string;
+  homepageIntro: string;
+  homepageDescription: string;
   dialogLabel: string;
   stepLabel: (current: number, total: number) => string;
   close: string;
@@ -30,6 +33,9 @@ type RibbonTutorialCopy = {
 const RIBBON_TUTORIAL_COPY: Record<Locale, RibbonTutorialCopy> = {
   fr: {
     trigger: "Découvrir le ruban",
+    homepageTrigger: "Tutoriel du ruban",
+    homepageIntro: "Nouveau sur CleanMyMap ?",
+    homepageDescription: "Découvrez le ruban en 1 minute.",
     dialogLabel: "Tutoriel du ruban de navigation",
     stepLabel: (current, total) => `Étape ${current} sur ${total}`,
     close: "Fermer le tutoriel du ruban",
@@ -73,6 +79,9 @@ const RIBBON_TUTORIAL_COPY: Record<Locale, RibbonTutorialCopy> = {
   },
   en: {
     trigger: "Discover the ribbon",
+    homepageTrigger: "Ribbon tutorial",
+    homepageIntro: "New to CleanMyMap?",
+    homepageDescription: "Discover the ribbon in 1 minute.",
     dialogLabel: "Navigation ribbon tutorial",
     stepLabel: (current, total) => `Step ${current} of ${total}`,
     close: "Close the navigation ribbon tutorial",
@@ -142,8 +151,15 @@ function findTutorialTarget(step: RibbonTutorialStep): HTMLElement | null {
   return findVisible(step.target) ?? (step.fallbackTarget ? findVisible(step.fallbackTarget) : null);
 }
 
-export function RibbonTutorial({ locale }: { locale: Locale }) {
+export function RibbonTutorial({
+  locale,
+  entryPoint = "ribbon",
+}: {
+  locale: Locale;
+  entryPoint?: "ribbon" | "homepage";
+}) {
   const copy = RIBBON_TUTORIAL_COPY[locale];
+  const isHomepageEntryPoint = entryPoint === "homepage";
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -324,21 +340,44 @@ export function RibbonTutorial({ locale }: { locale: Locale }) {
     </>
   ) : null;
 
+  const trigger = (
+    <button
+      ref={triggerRef}
+      type="button"
+      aria-label={isHomepageEntryPoint ? copy.homepageTrigger : copy.trigger}
+      title={isHomepageEntryPoint ? copy.homepageTrigger : copy.trigger}
+      aria-haspopup="dialog"
+      data-navigation-tutorial-trigger
+      className={isHomepageEntryPoint
+        ? "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/65 bg-white px-4 py-2.5 text-sm font-bold text-[#047957] shadow-[0_14px_28px_-18px_rgba(0,40,30,0.62)] transition hover:border-white hover:bg-white/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90"
+        : "inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-amber-200/25 bg-amber-400/10 px-0 text-amber-50 transition-colors hover:border-amber-200/50 hover:bg-amber-300/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/70 xl:h-10 xl:w-auto xl:px-3"}
+      onClick={openTutorial}
+    >
+      <Compass className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
+      <span className={isHomepageEntryPoint ? undefined : "cmm-ribbon-text hidden font-semibold xl:inline"}>
+        {isHomepageEntryPoint ? copy.homepageTrigger : copy.trigger}
+      </span>
+    </button>
+  );
+
   return (
     <>
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-label={copy.trigger}
-        title={copy.trigger}
-        aria-haspopup="dialog"
-        data-navigation-tutorial-trigger
-        className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-amber-200/25 bg-amber-400/10 px-0 text-amber-50 transition-colors hover:border-amber-200/50 hover:bg-amber-300/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/70 xl:h-10 xl:w-auto xl:px-3"
-        onClick={openTutorial}
-      >
-        <Compass className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-        <span className="cmm-ribbon-text hidden font-semibold xl:inline">{copy.trigger}</span>
-      </button>
+      {isHomepageEntryPoint ? (
+        <div
+          data-navigation-tutorial-entry="homepage"
+          className="mt-5 flex max-w-[38rem] flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/30 bg-emerald-950/20 px-4 py-3 text-white/95 shadow-[0_16px_34px_-26px_rgba(0,40,30,0.72)] backdrop-blur-sm sm:mt-6 sm:px-5 sm:py-4"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-black tracking-tight text-white sm:text-base">
+              {copy.homepageIntro}
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-emerald-50/85 sm:text-sm">
+              {copy.homepageDescription}
+            </p>
+          </div>
+          {trigger}
+        </div>
+      ) : trigger}
 
       {typeof document !== "undefined" && overlay ? createPortal(overlay, document.body) : null}
     </>

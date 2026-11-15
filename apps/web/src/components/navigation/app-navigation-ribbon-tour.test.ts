@@ -11,6 +11,8 @@ describe("guided navigation ribbon tutorial contract", () => {
     expect(source).not.toContain("setTimeout(openTutorial");
     expect(source).not.toContain("localStorage");
     expect(source.match(/target: "/g)).toHaveLength(12);
+    expect(source).toContain('entryPoint?: "ribbon" | "homepage"');
+    expect(source).toContain('data-navigation-tutorial-entry="homepage"');
   });
 
   it("keeps all product explanations explicit and offers every requested action", () => {
@@ -32,5 +34,6 @@ describe("guided navigation ribbon tutorial contract", () => {
     expect(source).toContain("data-navigation-ribbon-tour-spotlight");
     expect(source).toContain("window.addEventListener(\"resize\"");
     expect(source).toContain("window.addEventListener(\"scroll\"");
+    expect(source).toContain("Découvrez le ruban en 1 minute.");
   });
 });

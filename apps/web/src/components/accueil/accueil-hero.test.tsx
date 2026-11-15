@@ -8,7 +8,7 @@ vi.mock("./accueil-map-preview", () => ({
 
 import { HomeHero } from "./accueil-hero";
 
-describe("HomeHero impact methodology link", () => {
+describe("HomeHero orientation and impact links", () => {
   it("links to the canonical impact-terrain methodology section", () => {
     const html = renderToStaticMarkup(
       <HomeHero
@@ -41,11 +41,40 @@ describe("HomeHero impact methodology link", () => {
     expect(html).toContain("Mise à jour mensuelle le 1er du mois");
     expect(html).toContain('data-impact-snapshot-version="unavailable"');
     expect(html).toContain("flex flex-wrap items-center justify-start gap-3");
-    expect(html).not.toContain("justify-between");
     expect(html).not.toContain("ⓘ");
     expect(html.indexOf("Impact terrain 2026")).toBeLessThan(
       html.indexOf("Méthodologie"),
     );
+    expect(html).toContain('data-navigation-tutorial-entry="homepage"');
+    expect(html).toContain("Nouveau sur CleanMyMap ?");
+    expect(html).toContain("Découvrez le ruban en 1 minute.");
+    expect(html).toContain("Tutoriel du ruban");
+  });
+
+  it("keeps the onboarding entry point separate from the primary impact actions", () => {
+    const html = renderToStaticMarkup(
+      <HomeHero
+        metrics={
+          buildPublicImpactMetrics(
+            {
+              wasteKg: 0,
+              butts: 0,
+              volunteers: 0,
+              co2: 0,
+              water: 0,
+              euro: 0,
+            },
+            false,
+          )
+        }
+        impactSnapshot={null}
+      />,
+    );
+
+    expect(html.indexOf('data-cmm-button-group-layout="two-column"')).toBeLessThan(
+      html.indexOf('data-navigation-tutorial-entry="homepage"'),
+    );
+    expect(html).toContain('aria-haspopup="dialog"');
   });
 
   it("renders four equal two-row actions with real destinations", () => {
