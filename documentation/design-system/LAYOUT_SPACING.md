@@ -182,9 +182,11 @@ sans agrandir proportionnellement la typographie.
 
 La composition autonome de la homepage conserve une hauteur de carte propre à
 son usage, mais celle-ci reste tokenisée (`--cmm-home-map-preview-height*`) et
-est resserrée par la densité `compact`. Les cartes KPI de cette composition
-peuvent donc apparaître plus tôt sans réduire le corps de texte ni modifier
-les données affichées.
+est resserrée par la densité `compact`. À partir de `1200px`, la preview peut
+étendre sa surface visuelle vers la rangée KPI avec une compensation de flux
+locale ; les KPI restent à leur position de composition et les données affichées
+ne changent pas. Sur tablette et mobile, la hauteur reste bornée par les tokens
+correspondants.
 
 Cette densité ne doit jamais être reproduite avec `zoom`, `transform: scale`,
 un wrapper global réduit ou une détection du zoom navigateur.

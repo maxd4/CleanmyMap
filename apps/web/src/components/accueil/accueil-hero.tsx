@@ -150,28 +150,28 @@ export function HomeHero({
 
   return (
     <section data-homepage-section="hero" className="relative isolate overflow-visible text-[#082f24]">
-      <div className="cmm-page-width relative z-10 px-3 pb-3 pt-3 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pb-4 lg:pt-4">
+      <div className="cmm-page-width relative z-10 px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4 lg:px-8 lg:pb-3 lg:pt-3">
         <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-5 xl:gap-7">
-          <div className="min-w-0 px-1 py-3 sm:px-3 lg:py-4">
+          <div className="min-w-0 px-1 py-3 sm:px-3 lg:py-3">
             <div className="max-w-[42rem]">
               <p className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.32em] text-emerald-100 sm:text-xs">
                 <span className="h-3 w-3 shrink-0 rounded-full bg-[#26e6a4] shadow-[0_0_18px_rgba(38,230,164,0.92)]" />
                 {copy.eyebrow}
               </p>
 
-              <div data-homepage-hero-title-row className="mt-4 flex max-w-full flex-wrap items-center gap-x-4 gap-y-3">
+              <div data-homepage-hero-title-row className="mt-5 flex max-w-full flex-wrap items-center gap-x-4 gap-y-3">
                 <h1 className="cmm-home-hero-title max-w-full font-black leading-[0.88] tracking-[-0.085em] text-white drop-shadow-[0_12px_26px_rgba(0,37,27,0.18)] lg:whitespace-nowrap">
                   CleanMyMap
                 </h1>
                 <HomeHeroLocaleSwitcher locale={locale} setLocale={setLocale} />
               </div>
-              <p className="mt-4 max-w-[37rem] text-[clamp(1.05rem,1.55vw,1.38rem)] leading-[1.42] text-white/90">
+              <p className="mt-5 max-w-[37rem] text-[clamp(1.05rem,1.4vw,1.24rem)] leading-[1.48] text-white/90">
                 {copy.description}
               </p>
 
               <CmmButtonGroup
                 layout="two-column"
-                className="mt-5 max-w-[38rem] sm:mt-6"
+                className="mt-6 max-w-[38rem] gap-1.5 sm:mt-7 sm:gap-2"
               >
                 {heroActions.map(({ id, href, icon: Icon, tone, width, showArrow }) => (
                   <CmmButton

@@ -182,6 +182,12 @@
 @media (min-width: 1200px) {
   .cmm-home-map-preview {
     height: var(--cmm-home-map-preview-height-desktop);
+    /* Extend the visual map toward the KPI row without moving that row. */
+    margin-bottom: -3rem;
+  }
+
+  html[data-cmm-density="compact"] .cmm-home-map-preview {
+    margin-bottom: -5rem;
   }
 }
 

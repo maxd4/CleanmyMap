@@ -1,5 +1,6 @@
 import * as React from "react";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -20,6 +21,7 @@ vi.mock("@/components/actions/map-feed/actions-map-feed", () => ({
 import { HomeMapPreview } from "./accueil-map-preview";
 
 const source = readFileSync(new URL("./accueil-map-preview.tsx", import.meta.url), "utf8");
+const layoutSource = readFileSync(resolve(process.cwd(), "src/styles/layout.css"), "utf8");
 
 afterEach(() => {
   state.isNearViewport = false;
@@ -29,6 +31,10 @@ describe("homepage map preview", () => {
   it("uses the shared density-aware height token instead of a page-local height", () => {
     expect(source).toContain('className="cmm-home-map-preview relative isolate min-w-0 overflow-hidden"');
     expect(source).not.toContain("lg:h-[31rem]");
+    expect(layoutSource).toContain("height: var(--cmm-home-map-preview-height-desktop);");
+    expect(layoutSource).toContain("margin-bottom: -3rem;");
+    expect(layoutSource).toContain("html[data-cmm-density=\"compact\"] .cmm-home-map-preview");
+    expect(layoutSource).toContain("margin-bottom: -5rem;");
   });
 
   it("fades only the outer 3.5 percent while keeping the center unmasked", () => {

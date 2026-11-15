@@ -70,6 +70,9 @@ describe("HomeHero orientation and impact links", () => {
     expect(html).toContain('aria-label="Anglais"');
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain("bg-[var(--action-primary-bg)]");
+    expect(html).toContain("mt-5 flex max-w-full flex-wrap items-center gap-x-4 gap-y-3");
+    expect(html).toContain("text-[clamp(1.05rem,1.4vw,1.24rem)] leading-[1.48]");
+    expect(html).toContain("mt-6 max-w-[38rem] gap-1.5 sm:mt-7 sm:gap-2");
   });
 
   it("keeps the onboarding entry point separate from the primary impact actions", () => {
