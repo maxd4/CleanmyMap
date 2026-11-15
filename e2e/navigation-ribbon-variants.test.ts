@@ -74,6 +74,14 @@ test.describe("canonical classic navigation ribbon", () => {
       await expect(page.locator('[data-navigation-utility-menu="feedback"]')).toBeVisible();
       await expect(page.getByRole("button", { name: "Découvrir le ruban" })).toHaveCount(0);
       await expect(page.locator('[data-navigation-block-trigger][title]')).toHaveCount(0);
+      if (width >= 1280) {
+        const firstBlock = page.locator('[data-navigation-block-trigger]').first();
+        await firstBlock.hover();
+        await page.waitForTimeout(350);
+        await expect(page.locator(".cmm-navigation-block-label")).toHaveCount(0);
+        await expect(page.locator("#cmm-global-tooltip")).toHaveCount(0);
+        await expect(firstBlock).toHaveAttribute("aria-label", /.+/);
+      }
       await expect(page.locator("[data-navigation-ribbon][data-navigation-ribbon-variant]")).toHaveCount(0);
       await expect(page.locator('[data-navigation-ribbon] > svg')).toHaveCount(0);
 
@@ -149,7 +157,8 @@ test.describe("canonical classic navigation ribbon", () => {
 
       const inactive = ribbon.locator('[data-navigation-block-active="false"]').first();
       await inactive.hover();
-      await expect(inactive.locator(".cmm-navigation-block-label")).toBeVisible();
+      await expect(page.locator(".cmm-navigation-block-label")).toHaveCount(0);
+      await expect(page.locator("#cmm-global-tooltip")).toHaveCount(0);
       const hoverIconStyle = await inactive.locator(".cmm-navigation-block-icon").evaluate((element) => {
         const style = getComputedStyle(element);
         return { color: style.color, background: style.backgroundColor, backgroundImage: style.backgroundImage, boxShadow: style.boxShadow };
@@ -185,6 +194,7 @@ test.describe("canonical classic navigation ribbon", () => {
     await expect(activeTrigger).toHaveAttribute("aria-expanded", "true");
     const panelId = await activeTrigger.getAttribute("aria-controls");
     await expect(page.locator(`#${panelId}`)).toBeVisible();
+    await expect(page.locator(`#${panelId} h3`)).toContainText("Bloc :");
     await page.keyboard.press("Escape");
     await expect(activeTrigger).toHaveAttribute("aria-expanded", "false");
     await expect(activeTrigger).toBeFocused();
@@ -203,6 +213,22 @@ test.describe("canonical classic navigation ribbon", () => {
     await expect(page.locator("#preferences-menu-panel")).toHaveCount(0);
     await expect(page.locator("#feedback-menu-panel")).toBeVisible();
     await page.keyboard.press("Escape");
+  });
+
+  test("keeps the tooltip-free dock across the three display modes", async ({ page }) => {
+    for (const displayMode of ["exhaustif", "minimaliste", "sobre"] as const) {
+      await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
+      await page.evaluate((mode) => localStorage.setItem("cleanmymap.display_mode", mode), displayMode);
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.setViewportSize({ width: 1440, height: 900 });
+      const ribbon = await waitForRibbon(page);
+      const trigger = ribbon.locator("[data-navigation-block-trigger]").first();
+      await trigger.focus();
+      await page.waitForTimeout(350);
+      await expect(page.locator(".cmm-navigation-block-label")).toHaveCount(0);
+      await expect(page.locator("#cmm-global-tooltip")).toHaveCount(0);
+      await expect(trigger).toHaveAttribute("aria-label", /.+/);
+    }
   });
 
   test("shows visitor authentication labels from 640px in French and English", async ({ page }, testInfo) => {

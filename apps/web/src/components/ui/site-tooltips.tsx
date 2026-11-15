@@ -29,6 +29,10 @@ const SHOW_DELAY_MS = 300;
 const GAP = 12;
 const EDGE_PADDING = 12;
 const TOOLTIP_ID = "cmm-global-tooltip";
+const TOOLTIP_SURFACE_CLASS_NAME =
+  "pointer-events-none fixed z-[9999] max-w-[10rem] select-none rounded-lg border border-white/20 bg-[rgba(15,23,42,0.96)] px-2 py-1 cmm-text-small font-semibold leading-tight text-slate-100 shadow-[0_10px_24px_-14px_rgba(2,6,23,0.9)]";
+const TOOLTIP_ARROW_CLASS_NAME =
+  "absolute h-2.5 w-2.5 rotate-45 border border-white/20 bg-[rgba(15,23,42,0.96)]";
 
 function normalizeTooltipContent(raw: string) {
   const collapsed = raw.replace(/\s+/g, " ").trim();
@@ -290,7 +294,7 @@ function useTooltipEventListeners({ activeTooltip, clearTimer, hideTooltip, show
 function TooltipArrow({ position }: { position: TooltipPosition | null }) {
   if (!position) return null;
   const isVertical = position.placement === "top" || position.placement === "bottom";
-  return <span aria-hidden="true" className={cn("absolute h-2.5 w-2.5 rotate-45 border border-[rgba(161,227,235,0.18)] bg-[linear-gradient(135deg,rgba(65,124,132,0.98),rgba(44,95,119,0.96),rgba(91,95,207,0.88))]", position.placement === "top" && "bottom-[-5px]", position.placement === "bottom" && "top-[-5px]", position.placement === "left" && "right-[-5px]", position.placement === "right" && "left-[-5px]")} style={isVertical ? { left: `${position.arrowLeft ?? 24}px`, transform: "translateX(-50%) rotate(45deg)" } : { top: `${position.arrowTop ?? 24}px`, transform: "translateY(-50%) rotate(45deg)" }} />;
+  return <span aria-hidden="true" className={cn(TOOLTIP_ARROW_CLASS_NAME, position.placement === "top" && "bottom-[-5px]", position.placement === "bottom" && "top-[-5px]", position.placement === "left" && "right-[-5px]", position.placement === "right" && "left-[-5px]")} style={isVertical ? { left: `${position.arrowLeft ?? 24}px`, transform: "translateX(-50%) rotate(45deg)" } : { top: `${position.arrowTop ?? 24}px`, transform: "translateY(-50%) rotate(45deg)" }} />;
 }
 
 function TooltipPortal({ activeTooltip, position, tooltipRef, mounted }: { activeTooltip: ActiveTooltip | null; position: TooltipPosition | null; tooltipRef: import("react").RefObject<HTMLDivElement | null>; mounted: boolean }) {
@@ -305,8 +309,7 @@ function TooltipPortal({ activeTooltip, position, tooltipRef, mounted }: { activ
       role="tooltip"
       aria-hidden={false}
       className={cn(
-        "pointer-events-none fixed z-[9999] max-w-[300px] select-none rounded-2xl border border-[rgba(161,227,235,0.18)] px-3 py-2 cmm-text-small font-medium leading-snug text-white shadow-[0_24px_60px_-28px_rgba(39,195,217,0.34),0_16px_34px_-28px_rgba(91,95,207,0.24)] backdrop-blur-xl",
-        "bg-[linear-gradient(135deg,rgba(65,124,132,0.98),rgba(44,95,119,0.96),rgba(91,95,207,0.88))]",
+        TOOLTIP_SURFACE_CLASS_NAME,
         !position && "invisible opacity-0",
       )}
       style={{

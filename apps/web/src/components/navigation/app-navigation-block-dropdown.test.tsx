@@ -85,9 +85,10 @@ describe("app navigation block dropdown contract", () => {
     expect(minimalHoverRule).not.toMatch(/(?:width|height|padding|transform|box-shadow)/u);
   });
 
-  it("uses the accessible name and one custom label without a native tooltip", () => {
+  it("uses the accessible name without a native or local tooltip", () => {
     expect(source).toContain('aria-label={getLocalizedText(space.label, locale, space.id)}');
-    expect(source).toContain('<span className="cmm-navigation-block-label" aria-hidden="true">');
+    expect(source).not.toContain("cmm-navigation-block-label");
+    expect(source).toContain('<span className="sr-only">{getLocalizedText(space.label, locale, space.id)}</span>');
     expect(source).not.toContain('title={getLocalizedText(space.label, locale, space.id)}');
   });
 
@@ -95,7 +96,7 @@ describe("app navigation block dropdown contract", () => {
     expect(source).toContain('data-navigation-block-active={isActiveSpace ? "true" : "false"}');
     expect(source).toContain("open={open}");
     expect(source).toContain('<span className="cmm-navigation-block-icon">');
-    expect(source).toContain('<span className="cmm-navigation-block-label" aria-hidden="true">');
+    expect(source).not.toContain("cmm-navigation-block-label");
   });
 
   it("isolates hover/open illumination and keeps only one block open", () => {

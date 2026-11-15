@@ -31,8 +31,11 @@ rehausse la surface sans transformer le dock en bouton.
 Le bloc correspondant à la route courante est immédiatement identifiable par
 un fond et une icône accentués. Le survol ou le focus clavier d'un bloc inactif
 reprend localement le même accent, sans déplacer les voisins ni modifier la
-géométrie. L'état de focus reste visible et les info-bulles custom ne sont pas
-doublées par un attribut `title` natif.
+géométrie. L'état de focus reste visible. Les cinq déclencheurs ne rendent
+aucune infobulle locale : leur nom reste porté par `aria-label` et leur
+dropdown conserve son titre `Bloc : ...`. Les aides textuelles courtes hors
+navigation suivent le contrat `SiteTooltips` de
+[`OVERLAYS_DIALOGS.md`](./OVERLAYS_DIALOGS.md).
 
 Les accents des blocs proviennent de `navigation-dropdown-accent-theme.ts`.
 Le mode `minimaliste` raccourcit les transitions ; le mode `sobre` les
@@ -87,5 +90,5 @@ Les contrats unitaires vivent dans
 `e2e/navigation-ribbon-variants.test.ts` conserve son nom historique pour ne
 pas casser les lanceurs existants, mais vérifie exclusivement le ruban classic
 aux largeurs 390, 768, 1024, 1280 et 1440 px : centrage, absence de
-débordement, états actif/hover/focus, contour doré, Feedback vert, dropdowns,
-responsive et captures finales.
+débordement, états actif/hover/focus, absence d'infobulle locale, contour
+doré, Feedback neutre noir et blanc, dropdowns, responsive et captures finales.

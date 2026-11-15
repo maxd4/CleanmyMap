@@ -94,6 +94,24 @@ contrat des menus/navigation flottants, tandis que `CmmPopover` porte le
 contenu riche non modal. `SiteTooltips` reste la primitive des aides
 contextuelles courtes et ne doit pas être remplacée par un popover.
 
+### Infobulles courtes — `SiteTooltips`
+
+`apps/web/src/components/ui/site-tooltips.tsx` est l'unique propriétaire des
+infobulles textuelles courtes. Elles ne servent qu'à compléter une information
+absente de l'interface ; un nom accessible, un libellé visible ou un titre de
+dropdown ne doit pas être répété comme infobulle. La surface canonique est une
+bulle compacte sombre, lisible, avec bordure claire discrète, rayon court,
+padding réduit et ombre légère ; elle est rendue dans un portail et n'est pas
+interactive (`pointer-events: none`).
+
+Le délai reste de `300 ms`. Le placement préféré est adapté aux collisions puis
+borné au viewport avec une marge de sécurité. Le survol et le focus clavier
+peuvent l'ouvrir ; la perte de focus, la sortie du survol, `Escape`, un clic
+extérieur et les gestes tactiles la ferment. Lorsqu'une description est
+affichée, `aria-describedby` est géré temporairement puis restauré. Les
+tooltips structurés des cartes, KPI et graphiques conservent leur comportement
+spécialisé.
+
 Les panneaux `CmmDropdown`/`CmmPopover` positionnés avec des coordonnées du
 viewport sont rendus dans un portail sous `document.body`. Cette frontière
 préserve la correspondance entre `getBoundingClientRect()` et `position: fixed`,

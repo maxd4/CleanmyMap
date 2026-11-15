@@ -95,38 +95,6 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--navigation-block-accent) 22%, transparent) inset, 0 8px 18px -14px var(--navigation-block-accent);
 }
 
-[data-navigation-ribbon] .cmm-navigation-block-label {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  left: 50%;
-  z-index: 4;
-  display: block;
-  max-width: 10rem;
-  padding: 0.3rem 0.45rem;
-  border: 1px solid rgba(226, 232, 240, 0.2);
-  border-radius: 0.5rem;
-  background: rgba(15, 23, 42, 0.96);
-  color: rgba(241, 245, 249, 0.96);
-  font-size: 0.625rem;
-  font-weight: 700;
-  line-height: 1.1;
-  pointer-events: none;
-  opacity: 0;
-  text-align: center;
-  text-shadow: 0 1px 3px rgba(2, 6, 23, 0.86);
-  transform: translate(-50%, -0.2rem);
-  transition: opacity 120ms ease, transform 120ms ease;
-  visibility: hidden;
-  white-space: nowrap;
-}
-
-[data-navigation-ribbon] [data-navigation-block-trigger]:hover .cmm-navigation-block-label,
-[data-navigation-ribbon] [data-navigation-block-trigger]:focus-visible .cmm-navigation-block-label {
-  opacity: 1;
-  transform: translate(-50%, 0);
-  visibility: visible;
-}
-
 @media (max-width: 639px) {
   .cmm-navigation-group--account {
     padding-inline-start: 0.25rem;
@@ -163,10 +131,6 @@
   filter: saturate(1.15);
   background: transparent;
   box-shadow: none;
-}
-
-.cmm-navigation-block-label {
-  display: none;
 }
 
 .cmm-home-map-preview {

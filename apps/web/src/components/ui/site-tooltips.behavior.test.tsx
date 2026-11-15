@@ -136,6 +136,12 @@ describe("SiteTooltips DOM behavior", () => {
     expect(tooltip()).toBeNull();
     await advance();
     expect(tooltip()?.textContent).toBe("Helpful text.");
+    expect(tooltip()?.className).toContain("rounded-lg");
+    expect(tooltip()?.className).toContain("bg-[rgba(15,23,42,0.96)]");
+    expect(tooltip()?.className).toContain("px-2");
+    expect(tooltip()?.className).toContain("py-1");
+    expect(tooltip()?.className).toContain("border-white/20");
+    expect(tooltip()?.className).toContain("shadow-[0_10px_24px_-14px_rgba(2,6,23,0.9)]");
     expect(titleTrigger.getAttribute("aria-describedby")).toBe(TOOLTIP_ID);
 
     firePointer(titleTrigger, "pointerout");
