@@ -119,8 +119,10 @@ rejoue `data.sql` dans une session séparée avec
 `session_replication_role = replica` pour éviter l'exécution des triggers pendant
 le chargement des données. Des fixtures synthétiques positive et négative
 vérifient que ce contrôle passe pour une relation présente et refuse une relation
-absente. Le contrôle final vérifie les contraintes, fonctions
-publiques, extensions, rôles, grants de tables et relations protégées par RLS.
+absente ; la fixture positive est supprimée et son absence est vérifiée avant le
+rejeu réel. Le contrôle final relie ses assertions de contraintes, grants et RLS
+aux relations métier exportées dans `public` et exclut les objets possédés par
+une extension ; il vérifie aussi les fonctions publiques, extensions et rôles.
 La configuration canonique `apps/web/supabase/config.toml` et l'arbre de
 migrations ne sont pas modifiés ; une base vierge créée par `createdb` n'est pas
 une cible Supabase représentative.

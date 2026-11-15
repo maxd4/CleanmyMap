@@ -36,9 +36,15 @@ test('workflow creates all dump classes, encrypts before upload and cleans up', 
   assert.match(workflow, /run_restore_stage roles \/tmp\/cmm-roles\.sql/);
   assert.match(workflow, /run_restore_stage schema \/tmp\/cmm-schema\.sql/);
   assert.match(workflow, /verify-supabase-backup-relation-coherence\.mjs/);
+  assert.match(workflow, /--write-exported-file .*restore-exported-relations\.txt/);
   assert.match(workflow, /relation-coherence-positive/);
   assert.match(workflow, /relation-coherence-negative/);
   assert.match(workflow, /publication is refused/);
+  assert.match(workflow, /drop table public\.cmm_backup_coherence_fixture/);
+  assert.match(workflow, /fixture_count/);
+  assert.match(workflow, /pg_depend/);
+  assert.match(workflow, /restore_business_relations/);
+  assert.ok(workflow.indexOf('drop table public.cmm_backup_coherence_fixture') < workflow.indexOf('docker exec "$db_container" psql -X -A -t -F'));
   assert.match(workflow, /run_restore_stage data \/tmp\/cmm-data\.sql/);
   assert.match(workflow, /restore_workdir="\$RUNNER_TEMP\/cmm-supabase-restore"/);
   assert.match(workflow, /project_id = "cmm-backup-restore"/);

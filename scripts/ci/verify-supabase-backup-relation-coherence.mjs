@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 
 const args = new Map();
 for (let index = 2; index < process.argv.length; index += 1) {
@@ -46,12 +46,19 @@ export function formatRelationCoherence(result) {
   return `RELATION_COHERENCE: PASS exported=${result.exported.length} available=${result.available.length}`;
 }
 
+export async function writeExportedRelations(path, sql) {
+  await writeFile(path, `${extractDataRelations(sql).join("\n")}\n`, { flag: "wx" });
+}
+
 if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}`) {
   try {
     const dataFile = args.get("data-file");
     const availableFile = args.get("available-file");
+    const exportedFile = args.get("write-exported-file");
     if (!dataFile || !availableFile) throw new Error("Usage: node verify-supabase-backup-relation-coherence.mjs --data-file PATH --available-file PATH");
-    const result = compareRelationSets(await readFile(dataFile, "utf8"), await readFile(availableFile, "utf8"));
+    const dataSql = await readFile(dataFile, "utf8");
+    const result = compareRelationSets(dataSql, await readFile(availableFile, "utf8"));
+    if (exportedFile) await writeExportedRelations(exportedFile, dataSql);
     console.log(formatRelationCoherence(result));
     if (result.missing.length > 0) process.exitCode = 1;
   } catch (error) {
