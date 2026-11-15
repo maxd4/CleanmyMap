@@ -956,7 +956,7 @@ ajoutée est append-only et idempotente.
 Pour une action historique sans trace terrain, une reconstruction multi-groupes
 reste explicitement hypothétique, même lorsque chaque ligne a été calculée par
 FOSSGIS/OSRM. Le contrat conserve séparément la durée complète de l'action, la
-distance cible de chaque groupe à `3 km/h`, les longueurs simulées retournées
+distance cible de chaque groupe à `1 km/h` (`route-distance-v3`), les longueurs simulées retournées
 par le routage et leur somme. Cette somme ne représente ni la longueur unique
 du réseau couvert, qui reste inconnue sans déduplication défendable, ni une
 distance observée. Une distance réellement parcourue n'est renseignée qu'avec
@@ -988,8 +988,25 @@ cinq actions ciblées et vérifie leurs effectifs et durées actuels avant tout
 routage. Il répartit les bénévoles avec la politique déterministe existante,
 réutilise les deux extrémités démontrées et ignore l'ancien point intermédiaire
 synthétique. Chaque groupe reçoit la durée complète de l'action et une cible
-`3 km/h`; le rapport expose séparément les longueurs simulées, leur somme, les
+`1 km/h`; le rapport expose séparément les longueurs simulées, leur somme, les
 écarts aux cibles, les recouvrements de corridors et les écarts d'extrémité.
+Pour les cinq actions du dry-run du 15/11/2026, FOSSGIS a fourni 11 candidats
+réseau (88 requêtes, sans écriture) :
+
+| Action | Cible | Candidats | Distance simulée totale | Recouvrement maximal | Statut |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `da367653-530f-4554-9e9b-164519336f52` | 1 km | 2 | 1,415 km | 0 % | `NETWORK_CANDIDATES_NOT_APPLIED` |
+| `b1f71234-21e2-4954-8526-f45f238249ae` | 1,5 km | 2 | 3,195 km | 17,9 % | `NETWORK_CANDIDATES_NOT_APPLIED` |
+| `f92499c2-aa14-4a51-8b56-c835a7d436f6` | 1 km | 2 | 2,769 km | 0 % | `NETWORK_CANDIDATES_NOT_APPLIED` |
+| `e168fb7a-034c-4b22-9b5f-b138188bf1e2` | 1,5 km | 3 | 3,646 km | 62,4 % | `NETWORK_CANDIDATES_NOT_APPLIED` |
+| `15ee0be8-3747-48c8-9de0-c12b40e79eb9` | 1,5 km | 2 | 1,284 km | 32,4 % | `NETWORK_CANDIDATES_NOT_APPLIED` |
+
+Le seuil de rejet de `75 %` n'a été franchi par aucun couple. Ces nombres sont
+des résultats de réseau hypothétiques, non des distances parcourues :
+`uniqueNetworkDistanceKm` et `observedDistanceKm` restent `NULL`, et le
+candidat de persistance est borné à ces cinq identifiants avec le statut
+`NOT_APPLIED`. Le rapport JSON et le GeoJSON reproductibles sont produits par
+le script dans `apps/web/artifacts/historical-route-remediation-v3/`.
 La longueur réseau dédoublonnée et la distance observée restent nulles tant
 qu'une preuve de déduplication ou une observation GPS/GPX n'existe pas. La
 sortie `mapPreview` est une `FeatureCollection` de lignes pointillées portant
@@ -1044,18 +1061,40 @@ centralisés par compatibilité : arrivée présente sans topologie →
 `point_to_point`, arrivée absente → `loop`. Une arrivée manquante ou non
 résolue est une erreur explicite.
 
-La distance cible est éditable dans `/actions/new`. La politique métier
-actuelle est versionnée `route-distance-v2` et applique `3 km par heure d'action`
-pour les cibles hypothétiques. La règle est donc : `routeTargetDistanceKm = durée × 3 km/h`.
+La distance cible est éditable dans `/actions/new`. La politique métier des
+actions est versionnée `route-distance-v3` et applique `1 km par heure d'action`
+uniquement à la progression hypothétique d'une boucle sans trace réelle. La
+règle est donc : `routeTargetDistanceKm = durée × 1 km/h`. Cette policy ne
+gouverne pas le planner piéton : ses estimations de déplacement et ses
+fallbacks conservent `3 km/h` dans leur owner dédié.
 
 Une cible automatique est persistée avec `routeTargetDistanceSource =
 "derived"` et cette version de politique ; une modification explicite devient
 `"manual"` et sa valeur n'est jamais recalculée par une nouvelle politique.
 Une action historique qui porte déjà une version de policy conserve sa cible et
 sa version lors d'une lecture ou d'un patch partiel ; seul un changement
-explicite de durée produit une nouvelle cible à 3 km/h.
+explicite de durée produit une nouvelle cible selon la policy d'action courante.
 Cette valeur est une contrainte de reconstruction, pas la preuve de la
 distance parcourue. Il faut distinguer strictement :
+
+Les simulations publiques `simulated-routes-v1` et `simulated-routes-v2` restent
+compatibles à `3 km/h`. La nouvelle version `simulated-routes-v3` porte la
+policy d'action à `1 km/h`, avec `uniqueNetworkDistanceKm` et
+`observedDistanceKm` explicitement nuls ; la longueur retournée par FOSSGIS
+reste une longueur réseau hypothétique par groupe, jamais la cible ni une
+observation.
+
+Pour la remédiation des cinq actions historiques départ-arrivée, le dry-run
+relit les lignes et leurs extrémités persistées, exclut toute action possédant
+une preuve GPS/GPX observée, puis demande d'abord le plus court chemin piéton
+FOSSGIS. Des alternatives réseau distinctes ne sont essayées que pour les
+sous-groupes dont le chemin précédent est trop proche. La cible `durée × 1
+km/h` est rapportée comme cible de policy et ne déforme pas les waypoints ni
+la longueur réseau retournée. Les recouvrements sont calculés sur les portions
+réellement colinéaires et proches des segments, pondérées par leur longueur,
+et non sur les seuls milieux ou le nombre de sommets ; les croisements
+ponctuels valent zéro et le ratio est borné entre 0 et 1. Le seuil de rejet
+reste de 75 %.
 
 - `routeObservedDistanceKm` = distance mesurée depuis un GPX ;
 - `routeNetworkDistanceKm` = distance retournée par le routage ou son mode de

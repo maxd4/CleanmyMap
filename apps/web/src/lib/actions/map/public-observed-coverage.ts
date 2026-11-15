@@ -62,10 +62,18 @@ function parseSimulatedRouteCoverage(
 ): ActionSimulatedRouteCoverage | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   const candidate = raw as Record<string, unknown>;
+  const coverageVersion = candidate.coverageVersion === "simulated-routes-v1" ||
+    candidate.coverageVersion === "simulated-routes-v2" ||
+    candidate.coverageVersion === "simulated-routes-v3"
+    ? candidate.coverageVersion
+    : undefined;
+  const isLegacySimulation = coverageVersion === "simulated-routes-v1" || coverageVersion === "simulated-routes-v2";
+  const isCurrentSimulation = coverageVersion === "simulated-routes-v3";
   if (candidate.type !== "MultiLineString" || candidate.geometrySource !== "estimated_route" ||
       candidate.provenance !== "estimated" || candidate.status !== "hypothetical" ||
-      candidate.speedKmPerHour !== 3 ||
-      (candidate.coverageVersion !== "simulated-routes-v1" && candidate.coverageVersion !== "simulated-routes-v2")) return undefined;
+      (isLegacySimulation && candidate.speedKmPerHour !== 3) ||
+      (isCurrentSimulation && candidate.speedKmPerHour !== 1) ||
+      coverageVersion === undefined) return undefined;
   const coordinates = parseSimulatedCoordinates(candidate.coordinates, coordinateOrder);
   const groupCount = finiteInteger(candidate.groupCount, 1, 12);
   const durationMinutes = finitePositive(candidate.durationMinutes);
@@ -86,11 +94,11 @@ function parseSimulatedRouteCoverage(
       )
     : undefined;
   const totalSimulatedDistanceKm = finiteNonNegativeNumber(candidate.totalSimulatedDistanceKm);
-  const isCurrentVersion = candidate.coverageVersion === "simulated-routes-v2";
+  const requiresDetailedMetrics = coverageVersion === "simulated-routes-v2" || isCurrentSimulation;
   if (!coordinates || groupCount === undefined || durationMinutes === undefined ||
       targetDistanceKm === undefined || counts.length !== groupCount || coordinates.length !== groupCount ||
       coordinates.some((line) => line.length < 2) ||
-      (isCurrentVersion && (groupSizePolicy === undefined || individualSimulatedDistancesKm?.length !== groupCount ||
+      (requiresDetailedMetrics && (groupSizePolicy === undefined || individualSimulatedDistancesKm?.length !== groupCount ||
         totalSimulatedDistanceKm === undefined))) return undefined;
   return {
     type: "MultiLineString",
@@ -102,12 +110,12 @@ function parseSimulatedRouteCoverage(
     targetDistanceKm,
     ...(individualSimulatedDistancesKm ? { individualSimulatedDistancesKm } : {}),
     ...(totalSimulatedDistanceKm === undefined ? {} : { totalSimulatedDistanceKm }),
-    ...(isCurrentVersion ? { uniqueNetworkDistanceKm: null, observedDistanceKm: null } : {}),
-    speedKmPerHour: 3,
+    ...(requiresDetailedMetrics ? { uniqueNetworkDistanceKm: null, observedDistanceKm: null } : {}),
+    speedKmPerHour: isCurrentSimulation ? 1 : 3,
     geometrySource: "estimated_route",
     provenance: "estimated",
     status: "hypothetical",
-    coverageVersion: candidate.coverageVersion,
+    coverageVersion,
   };
 }
 

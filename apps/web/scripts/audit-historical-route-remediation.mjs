@@ -1,8 +1,9 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+import { CURRENT_ROUTE_DISTANCE_POLICY } from "../src/lib/actions/route-target-distance.ts";
 
 const APP_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const ENV_LOCAL_PATH = join(APP_DIR, ".env.local");
@@ -14,9 +15,9 @@ const FOSSGIS_USER_AGENT = "CleanMyMap historical route audit (https://cleanmyma
 const ROUTED_CONFIDENCE = 0.78;
 const SYNTHETIC_ROUTE_POINT_COUNT = 3;
 const MAX_ENDPOINT_DISTANCE_KM = 0.25;
-const HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR = 3;
 const MAX_HYPOTHESES_PER_GROUP = 8;
 const OVERLAP_CORRIDOR_KM = 0.05;
+const OVERLAP_ANGLE_TOLERANCE_RADIANS = (20 * Math.PI) / 180;
 
 export const HISTORICAL_RECONSTRUCTION_TARGETS = Object.freeze([
   Object.freeze({ id: "da367653-530f-4554-9e9b-164519336f52", volunteers: 10, durationMinutes: 60 }),
@@ -293,8 +294,8 @@ function resolveHypotheticalGroupCounts(participants) {
   return null;
 }
 
-function targetDistanceKm(durationMinutes) {
-  return Number(((durationMinutes / 60) * HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR).toFixed(3));
+export function targetDistanceKm(durationMinutes) {
+  return Number(((durationMinutes / 60) * CURRENT_ROUTE_DISTANCE_POLICY.kilometersPerHour).toFixed(3));
 }
 
 function interpolatePoint(start, end, ratio) {
@@ -311,10 +312,9 @@ function offsetPoint(point, northMeters, eastMeters) {
   ];
 }
 
-function buildOpenRouteHypotheses(endpoints, targetKm, groupIndex) {
+function buildOpenRouteHypotheses(endpoints, _targetKm, groupIndex) {
   const [origin, arrival] = endpoints;
   const directKm = Math.max(directDistanceKm(endpoints), 0.1);
-  const excessMeters = Math.max(100, (targetKm - directKm) * 300);
   const latitudeMeters = (arrival[0] - origin[0]) * 111_320;
   const longitudeMeters = (arrival[1] - origin[1]) * 111_320 * Math.cos((origin[0] * Math.PI) / 180);
   const lengthMeters = Math.max(1, Math.hypot(latitudeMeters, longitudeMeters));
@@ -322,10 +322,13 @@ function buildOpenRouteHypotheses(endpoints, targetKm, groupIndex) {
   const normalEast = latitudeMeters / lengthMeters;
   const patterns = [[1, -1], [-1, 1], [1, 1], [-1, -1]];
   const [firstSign, secondSign] = patterns[groupIndex % patterns.length];
-  return [0.25, 0.4, 0.55, 0.7, 0.85, 1, 1.15, 1.3]
+  const alternativeRadii = [0, 0.15, 0.3, 0.45, 0.6, 0.8, 1, 1.25]
+    .map((factor) => factor === 0 ? 0 : Math.min(2_500, Math.max(100, directKm * 1_000 * factor)));
+  return alternativeRadii
     .slice(0, MAX_HYPOTHESES_PER_GROUP)
     .map((factor) => {
-    const radius = Math.min(2_500, excessMeters * factor);
+    const radius = factor;
+    if (radius === 0) return endpoints;
     const first = offsetPoint(
       interpolatePoint(origin, arrival, 1 / 3),
       normalNorth * radius * firstSign,
@@ -344,29 +347,64 @@ function routeSegments(coordinates) {
   return coordinates.slice(0, -1).map((start, index) => {
     const end = coordinates[index + 1];
     return {
+      start,
+      end,
       midpoint: [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2],
       distanceKm: haversineDistanceKm(start, end),
     };
   });
 }
 
-function sharedCorridorDistanceKm(left, right) {
-  const rightSegments = routeSegments(right);
-  return routeSegments(left).reduce((total, segment) =>
-    rightSegments.some((other) => haversineDistanceKm(segment.midpoint, other.midpoint) <= OVERLAP_CORRIDOR_KM)
-      ? total + segment.distanceKm
-      : total,
-  0);
+function localMeters(point, origin) {
+  const latitudeScale = 111_320;
+  const longitudeScale = latitudeScale * Math.max(0.1, Math.cos((origin[0] * Math.PI) / 180));
+  return [
+    (point[1] - origin[1]) * longitudeScale,
+    (point[0] - origin[0]) * latitudeScale,
+  ];
 }
 
-function pairwiseOverlap(left, right) {
-  const sharedKm = Math.max(
-    sharedCorridorDistanceKm(left.coordinates, right.coordinates),
-    sharedCorridorDistanceKm(right.coordinates, left.coordinates),
-  );
+function segmentSharedLengthKm(left, right) {
+  const leftStart = localMeters(left.start, left.start);
+  const leftEnd = localMeters(left.end, left.start);
+  const rightStart = localMeters(right.start, left.start);
+  const rightEnd = localMeters(right.end, left.start);
+  const leftLength = Math.hypot(leftEnd[0] - leftStart[0], leftEnd[1] - leftStart[1]);
+  const rightLength = Math.hypot(rightEnd[0] - rightStart[0], rightEnd[1] - rightStart[1]);
+  if (leftLength === 0 || rightLength === 0) return 0;
+  const direction = [(leftEnd[0] - leftStart[0]) / leftLength, (leftEnd[1] - leftStart[1]) / leftLength];
+  const rightDirection = [(rightEnd[0] - rightStart[0]) / rightLength, (rightEnd[1] - rightStart[1]) / rightLength];
+  const parallelSine = Math.abs(direction[0] * rightDirection[1] - direction[1] * rightDirection[0]);
+  if (parallelSine > Math.sin(OVERLAP_ANGLE_TOLERANCE_RADIANS)) return 0;
+  const signedPerpendicularDistance = (point) =>
+    Math.abs((point[0] - leftStart[0]) * direction[1] - (point[1] - leftStart[1]) * direction[0]);
+  if (signedPerpendicularDistance(rightStart) > OVERLAP_CORRIDOR_KM * 1_000 ||
+      signedPerpendicularDistance(rightEnd) > OVERLAP_CORRIDOR_KM * 1_000) return 0;
+  const projected = [rightStart, rightEnd].map((point) =>
+    (point[0] - leftStart[0]) * direction[0] + (point[1] - leftStart[1]) * direction[1]);
+  const overlapMeters = Math.max(0, Math.min(leftLength, Math.max(...projected)) - Math.max(0, Math.min(...projected)));
+  return overlapMeters / 1_000;
+}
+
+export function sharedCorridorDistanceKm(left, right) {
+  const rightSegments = routeSegments(right);
+  return routeSegments(left).reduce((total, segment) => {
+    const shared = rightSegments.reduce((segmentTotal, other) =>
+      segmentTotal + segmentSharedLengthKm(segment, other), 0);
+    return total + Math.min(segment.distanceKm, shared);
+  }, 0);
+}
+
+export function pairwiseOverlap(left, right) {
+  const leftCoveredKm = sharedCorridorDistanceKm(left.coordinates, right.coordinates);
+  const rightCoveredKm = sharedCorridorDistanceKm(right.coordinates, left.coordinates);
+  const sharedKm = Math.min(leftCoveredKm, rightCoveredKm);
+  const ratio = Math.min(1, Math.max(0, sharedKm / Math.max(0.001, Math.min(left.distanceKm, right.distanceKm))));
   return {
+    leftCoveredKm: Number(leftCoveredKm.toFixed(3)),
+    rightCoveredKm: Number(rightCoveredKm.toFixed(3)),
     sharedCorridorDistanceKm: Number(sharedKm.toFixed(3)),
-    ratio: Number((sharedKm / Math.max(0.001, Math.min(left.distanceKm, right.distanceKm))).toFixed(3)),
+    ratio: Number(ratio.toFixed(3)),
   };
 }
 
@@ -433,8 +471,7 @@ async function selectHypotheticalGroupRoute(endpoints, targetKm, groupIndex, sel
     return { route: null, reason: "no_coherent_network_hypothesis", failures };
   }
   candidates.sort((left, right) =>
-    (left.absoluteDistanceErrorKm / Math.max(targetKm, 0.1) + left.maxPairwiseOverlapRatio * 4) -
-    (right.absoluteDistanceErrorKm / Math.max(targetKm, 0.1) + right.maxPairwiseOverlapRatio * 4) ||
+    left.maxPairwiseOverlapRatio - right.maxPairwiseOverlapRatio ||
     left.hypothesisIndex - right.hypothesisIndex,
   );
   return { route: candidates[0], reason: null, failures };
@@ -465,6 +502,9 @@ function historicalMapFeature(actionId, route) {
       groupParticipantCount: route.groupParticipantCount,
       targetDistanceKm: route.targetDistanceKm,
       simulatedDistanceKm: route.distanceKm,
+      speedKmPerHour: CURRENT_ROUTE_DISTANCE_POLICY.kilometersPerHour,
+      routeTargetDistancePolicyVersion: CURRENT_ROUTE_DISTANCE_POLICY.version,
+      coverageVersion: "simulated-routes-v3",
       distanceErrorKm: route.distanceErrorKm,
       geometrySource: "estimated_route",
       provenance: "estimated",
@@ -589,6 +629,8 @@ export async function buildHistoricalMultigroupAudit(rows, options = {}) {
       groups: groupReports,
       metrics: {
         targetDistancePerGroupKm: targetDistanceKm(target.durationMinutes),
+        routeTargetDistancePolicyVersion: CURRENT_ROUTE_DISTANCE_POLICY.version,
+        speedKmPerHour: CURRENT_ROUTE_DISTANCE_POLICY.kilometersPerHour,
         totalSimulatedDistanceKm,
         uniqueNetworkDistanceKm: null,
         observedDistanceKm: null,
@@ -615,15 +657,45 @@ export async function buildHistoricalMultigroupAudit(rows, options = {}) {
     targetCount: HISTORICAL_RECONSTRUCTION_TARGETS.length,
     routeCount: mapFeatures.length,
     providerRequests,
-    speedKmPerHour: HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
+    speedKmPerHour: CURRENT_ROUTE_DISTANCE_POLICY.kilometersPerHour,
+    routeTargetDistancePolicyVersion: CURRENT_ROUTE_DISTANCE_POLICY.version,
+    persistenceCandidate: {
+      status: "NOT_APPLIED",
+      allowedActionIds: HISTORICAL_RECONSTRUCTION_TARGETS.map(({ id }) => id),
+      updates: (reports ?? []).map((report) => ({
+        actionId: report.actionId,
+        status: report.status,
+        coverageVersion: "simulated-routes-v3",
+        groupCount: report.groups?.length ?? 0,
+        geometrySource: "estimated_route",
+        provenance: "estimated",
+        observedDistanceKm: null,
+      })),
+    },
     provider: { name: FOSSGIS_PROVIDER, mode: "network", estimated: false, minIntervalMs: FOSSGIS_MIN_INTERVAL_MS },
     reports,
     mapPreview: {
       type: "FeatureCollection",
       features: mapFeatures,
-      properties: { geometrySource: "estimated_route", provenance: "estimated", status: "hypothetical" },
+      properties: {
+        geometrySource: "estimated_route",
+        provenance: "estimated",
+        status: "hypothetical",
+        speedKmPerHour: CURRENT_ROUTE_DISTANCE_POLICY.kilometersPerHour,
+        routeTargetDistancePolicyVersion: CURRENT_ROUTE_DISTANCE_POLICY.version,
+        coverageVersion: "simulated-routes-v3",
+      },
     },
   };
+}
+
+export async function writeHistoricalAuditArtifacts(report, outputDirectory) {
+  await mkdir(outputDirectory, { recursive: true });
+  const reportPath = join(outputDirectory, "historical-route-remediation-report.json");
+  const geoJsonPath = join(outputDirectory, "historical-route-remediation.geojson");
+  await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  await writeFile(geoJsonPath, `${JSON.stringify(report.mapPreview, null, 2)}\n`, "utf8");
+  return { reportPath, geoJsonPath };
 }
 
 function geoJson(candidate) {
@@ -753,6 +825,13 @@ async function main() {
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const rows = await fetchHistoricalReconstructionActions(supabase);
   const report = await buildHistoricalMultigroupAudit(rows);
+  const outputArgument = process.argv.find((argument) => argument.startsWith("--output-dir="));
+  if (outputArgument) {
+    const outputDirectory = outputArgument.slice("--output-dir=".length).trim();
+    if (!outputDirectory) throw new Error("--output-dir requires a non-empty path.");
+    const artifacts = await writeHistoricalAuditArtifacts(report, outputDirectory);
+    console.error(`HISTORICAL_ROUTE_AUDIT_ARTIFACTS: ${artifacts.reportPath} ${artifacts.geoJsonPath}`);
+  }
   console.log(JSON.stringify(report, null, 2));
 }
 

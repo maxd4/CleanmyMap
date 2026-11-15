@@ -21,10 +21,10 @@ import type {
 } from "./route-target-contract";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
-import { HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR } from "@/lib/actions/route-target-distance";
+import { PLANNER_WALKING_SPEED_KM_PER_HOUR } from "@/lib/actions/route-target-distance";
 
 export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v2" as const;
-const WALKING_SPEED_KM_PER_HOUR = HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR;
+const WALKING_SPEED_KM_PER_HOUR = PLANNER_WALKING_SPEED_KM_PER_HOUR;
 
 export type RoutePlannerOrigin = {
   latitude: number;

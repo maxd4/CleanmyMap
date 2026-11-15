@@ -25,7 +25,7 @@ import type { RouteGeometry } from "@/lib/route/route-contract";
 import { resolvePersistedRouteGeometrySource } from "@/lib/route/route-provenance";
 import {
   deriveRouteTargetDistanceKm,
-  HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
+  ACTION_HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
   resolveRouteTargetDistance,
 } from "../route-target-distance";
 import { resolveHypotheticalGroupPlan } from "@/lib/route/route-group-partition";
@@ -363,11 +363,11 @@ async function reconstructHypotheticalCoverage(params: {
       totalSimulatedDistanceKm: Number(routes.reduce((total, route) => total + route.distanceKm, 0).toFixed(3)),
       uniqueNetworkDistanceKm: null,
       observedDistanceKm: null,
-      speedKmPerHour: HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
+      speedKmPerHour: ACTION_HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
       geometrySource: "estimated_route",
       provenance: "estimated",
       status: "hypothetical",
-      coverageVersion: "simulated-routes-v2",
+      coverageVersion: "simulated-routes-v3",
     },
   };
 }

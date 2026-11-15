@@ -64,8 +64,8 @@ describe("server-side action route reconstruction", () => {
   });
 
   it.each([
-    [60, 10, 3, [5, 5]],
-    [90, 15, 4.5, [8, 7]],
+    [60, 10, 1, [5, 5]],
+    [90, 15, 1.5, [8, 7]],
   ])("reconstructs %s minutes as explicitly hypothetical multi-group coverage", async (durationMinutes, participantsCount, targetDistanceKm, groupParticipantCounts) => {
     routeProviderMock.mockImplementation(async (waypoints: [number, number][]) => ({
       ...networkGeometry,
@@ -90,7 +90,7 @@ describe("server-side action route reconstruction", () => {
       totalSimulatedDistanceKm: targetDistanceKm * 2,
       uniqueNetworkDistanceKm: null,
       observedDistanceKm: null,
-      speedKmPerHour: 3,
+      speedKmPerHour: 1,
       geometrySource: "estimated_route",
       provenance: "estimated",
       status: "hypothetical",
@@ -115,7 +115,7 @@ describe("server-side action route reconstruction", () => {
     expect(result?.simulatedRouteCoverage).toMatchObject({
       groupParticipantCounts: [5, 4],
       groupSizePolicy: "explicit_exception",
-      targetDistanceKm: 3,
+      targetDistanceKm: 1,
       totalSimulatedDistanceKm: 6,
     });
   });
@@ -206,7 +206,7 @@ describe("server-side action route reconstruction", () => {
     expect(waypoints[0]).toEqual(waypoints.at(-1));
   });
 
-  it("selects the network hypothesis closest to the target deterministically", async () => {
+  it("selects the network hypothesis closest to the current action target deterministically", async () => {
     const distances = [0.62, 1.18, 0.91, 1.42];
     let callIndex = 0;
     routeProviderMock.mockImplementation(async (waypoints: [number, number][]) => ({
@@ -225,7 +225,7 @@ describe("server-side action route reconstruction", () => {
 
     expect(routeProviderMock).toHaveBeenCalledTimes(4);
     expect(result?.geometrySource).toBe("routed");
-    expect(result?.routeGeometry?.distanceKm).toBe(1.42);
+    expect(result?.routeGeometry?.distanceKm).toBe(0.91);
     expect(result?.drawing.coordinates[0]).toEqual(result?.drawing.coordinates.at(-1));
   });
 

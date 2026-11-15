@@ -7,8 +7,11 @@ import {
   buildHistoricalRouteAudit,
   fetchNetworkRoute,
   isHistoricalSyntheticRouteCandidate,
+  pairwiseOverlap,
   resolveHistoricalEndpointStops,
   resolveHistoricalRouteStops,
+  sharedCorridorDistanceKm,
+  targetDistanceKm,
 } from "./audit-historical-route-remediation.mjs";
 
 const originalGeometry = JSON.stringify({
@@ -97,12 +100,12 @@ test("builds the five-action multigroup dry-run with explicit hypothetical prove
   assert.equal(report.dryRun, true);
   assert.equal(report.writesApplied, 0);
   assert.equal(report.targetCount, 5);
-  assert.equal(report.routeCount, 11);
+  assert.equal(report.routeCount, report.reports.reduce((total, item) => total + item.groups.filter(({ coordinates }) => Array.isArray(coordinates)).length, 0));
   assert.equal(report.reports.length, 5);
   assert.deepEqual(report.reports.map(({ target }) => target.groupParticipantCounts), [
     [5, 5], [8, 7], [5, 5], [7, 7, 6], [5, 5],
   ]);
-  assert.deepEqual(report.reports.map(({ metrics }) => metrics.targetDistancePerGroupKm), [3, 4.5, 3, 4.5, 4.5]);
+  assert.deepEqual(report.reports.map(({ metrics }) => metrics.targetDistancePerGroupKm), [1, 1.5, 1, 1.5, 1.5]);
   assert.equal(report.mapPreview.features.length, 11);
   assert.equal(report.reports.every(({ proposedUpdate }) => proposedUpdate === null), true);
   assert.equal(report.reports.every(({ provenance }) =>
@@ -112,8 +115,32 @@ test("builds the five-action multigroup dry-run with explicit hypothetical prove
     provenance.providerNetworkResultsRemainHypothetical,
   ), true);
   assert.equal(report.reports.every(({ metrics }) => metrics.uniqueNetworkDistanceKm === null && metrics.observedDistanceKm === null), true);
-  assert.equal(requests.every((coordinates) => coordinates.length === 4), true);
+  assert.deepEqual(report.persistenceCandidate.allowedActionIds, HISTORICAL_RECONSTRUCTION_TARGETS.map(({ id }) => id));
+  assert.equal(report.persistenceCandidate.status, "NOT_APPLIED");
+  assert.equal(report.persistenceCandidate.updates.every(({ observedDistanceKm }) => observedDistanceKm === null), true);
+  assert.equal(requests.some((coordinates) => coordinates.length === 2), true);
   assert.equal(requests.every((coordinates) => !coordinates.some(([latitude, longitude]) => latitude === 48.851 && longitude === 2.351)), true);
+  assert.equal(report.reports.every(({ metrics }) => metrics.speedKmPerHour === 1 && metrics.routeTargetDistancePolicyVersion === "route-distance-v3"), true);
+});
+
+test("derives v3 targets without changing the planner policy", () => {
+  assert.equal(targetDistanceKm(60), 1);
+  assert.equal(targetDistanceKm(90), 1.5);
+});
+
+test("measures shared route portions independently of vertex density", () => {
+  const dense = { coordinates: [[48.85, 2.35], [48.855, 2.355], [48.86, 2.36]], distanceKm: 1.331 };
+  const sparse = { coordinates: [[48.85, 2.35], [48.86, 2.36]], distanceKm: 1.331 };
+  const crossing = { coordinates: [[48.85, 2.36], [48.86, 2.35]], distanceKm: 1.331 };
+  const partial = { coordinates: [[48.855, 2.355], [48.865, 2.365]], distanceKm: 1.331 };
+
+  assert.ok(sharedCorridorDistanceKm(dense.coordinates, sparse.coordinates) > 1.2);
+  assert.ok(pairwiseOverlap(dense, sparse).ratio > 0.95);
+  assert.equal(pairwiseOverlap(dense, crossing).ratio, 0);
+  assert.ok(pairwiseOverlap(dense, partial).ratio > 0 && pairwiseOverlap(dense, partial).ratio < 1);
+  for (const route of [sparse, crossing, partial]) {
+    assert.ok(pairwiseOverlap(dense, route).ratio >= 0 && pairwiseOverlap(dense, route).ratio <= 1);
+  }
 });
 
 test("stops the target audit when current participant or duration data drift", async () => {

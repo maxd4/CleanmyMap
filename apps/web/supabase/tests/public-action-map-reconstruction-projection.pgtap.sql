@@ -2,7 +2,7 @@
 -- Never execute this fixture against the linked or production project.
 
 begin;
-select plan(17);
+select plan(19);
 
 select ok(
   to_regprocedure('public.public_action_map_preparation(jsonb)') is not null,
@@ -52,6 +52,16 @@ select is(
   (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v1"}}$json$::jsonb) #>> '{simulatedRouteCoverage,coverageVersion}',
   'simulated-routes-v1',
   'v1 reconstructions remain publicly compatible'
+);
+select is(
+  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupSizePolicy":"preferred_5_to_8","groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":1,"individualSimulatedDistancesKm":[1],"totalSimulatedDistanceKm":1,"speedKmPerHour":1,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v3"}}$json$::jsonb) #>> '{simulatedRouteCoverage,speedKmPerHour}',
+  '1',
+  'v3 reconstructions use the action-only 1 km/h policy'
+);
+select is(
+  public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupSizePolicy":"preferred_5_to_8","groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":1,"individualSimulatedDistancesKm":[1],"totalSimulatedDistanceKm":1,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v3"}}$json$::jsonb),
+  '{}'::jsonb,
+  'v3 rejects the legacy 3 km/h speed'
 );
 select is(
   public.public_action_map_preparation($json${"referenceAreaProvenance":{"kind":"official_park","source":"ville_de_paris","attribution":"","license":"ODbL","sourceUrl":"https://example.invalid"}}$json$::jsonb),

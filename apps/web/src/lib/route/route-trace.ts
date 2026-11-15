@@ -5,7 +5,7 @@ import type {
   RouteGeometryStep,
   RouteTopology,
 } from "./route-contract";
-import { HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR } from "@/lib/actions/route-target-distance";
+import { PLANNER_WALKING_SPEED_KM_PER_HOUR } from "@/lib/actions/route-target-distance";
 import {
   routeDistanceKm,
   travelMinutesForDistance,
@@ -681,7 +681,7 @@ export function buildRouteRecommendationTrace(
       mode: input.routeGeometry.mode,
       estimated: input.routeGeometry.estimated,
       parameters: {
-        walkingSpeedKmPerHour: HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
+        walkingSpeedKmPerHour: PLANNER_WALKING_SPEED_KM_PER_HOUR,
         coordinateCount: input.routeGeometry.coordinates.length,
         budgetPrefixApplied: input.budgetPrefixApplied,
       },

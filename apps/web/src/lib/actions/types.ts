@@ -151,11 +151,11 @@ export type ActionSimulatedRouteCoverage = {
   uniqueNetworkDistanceKm?: null;
   /** Never populated by reconstruction; requires a field observation. */
   observedDistanceKm?: null;
-  speedKmPerHour: 3;
+  speedKmPerHour: 1 | 3;
   geometrySource: "estimated_route";
   provenance: "estimated";
   status: "hypothetical";
-  coverageVersion: "simulated-routes-v1" | "simulated-routes-v2";
+  coverageVersion: "simulated-routes-v1" | "simulated-routes-v2" | "simulated-routes-v3";
 };
 export type ActionSubmissionMode = "quick" | "complete";
 export type ActionPhase =

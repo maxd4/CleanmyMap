@@ -92,6 +92,59 @@ describe("public map preparation projection", () => {
     ]);
   });
 
+  it("accepts v3 at 1 km/h while preserving the legacy v2 contract", () => {
+    const preparation = parsePublicObservedPreparationData({
+      public_preparation_data: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [[[2.35, 48.85], [2.351, 48.851]]],
+          groupCount: 1,
+          groupSizePolicy: "preferred_5_to_8",
+          groupParticipantCounts: [6],
+          durationMinutes: 60,
+          targetDistanceKm: 1,
+          individualSimulatedDistancesKm: [1.2],
+          totalSimulatedDistanceKm: 1.2,
+          uniqueNetworkDistanceKm: null,
+          observedDistanceKm: null,
+          speedKmPerHour: 1,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v3",
+        },
+      },
+    });
+
+    expect(preparation?.simulatedRouteCoverage).toMatchObject({
+      targetDistanceKm: 1,
+      speedKmPerHour: 1,
+      coverageVersion: "simulated-routes-v3",
+      uniqueNetworkDistanceKm: null,
+      observedDistanceKm: null,
+    });
+    expect(parsePublicObservedPreparationData({
+      public_preparation_data: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [[[2.35, 48.85], [2.351, 48.851]]],
+          groupCount: 1,
+          groupSizePolicy: "preferred_5_to_8",
+          groupParticipantCounts: [6],
+          durationMinutes: 60,
+          targetDistanceKm: 1,
+          individualSimulatedDistancesKm: [1.2],
+          totalSimulatedDistanceKm: 1.2,
+          speedKmPerHour: 3,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v3",
+        },
+      },
+    })).toBeUndefined();
+  });
+
   it("keeps server and direct-RPC projections equivalent for asymmetric simulated coordinates", () => {
     const publicPreparation = {
       simulatedRouteCoverage: {

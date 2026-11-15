@@ -1,7 +1,9 @@
 import type { ActionPreparationData } from "./types";
 
-export const CURRENT_ROUTE_DISTANCE_POLICY_VERSION = "route-distance-v2" as const;
-export const HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR = 3 as const;
+export const CURRENT_ROUTE_DISTANCE_POLICY_VERSION = "route-distance-v3" as const;
+export const ACTION_HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR = 1 as const;
+/** Planner/fallback travel estimates remain deliberately independent at 3 km/h. */
+export const PLANNER_WALKING_SPEED_KM_PER_HOUR = 3 as const;
 export type RouteTargetDistanceSource = "derived" | "manual";
 
 export type RouteDistancePolicy = {
@@ -11,7 +13,7 @@ export type RouteDistancePolicy = {
 
 export const CURRENT_ROUTE_DISTANCE_POLICY: RouteDistancePolicy = {
   version: CURRENT_ROUTE_DISTANCE_POLICY_VERSION,
-  kilometersPerHour: HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
+  kilometersPerHour: ACTION_HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
 };
 const DEFAULT_ROUTE_TARGET_DISTANCE_KM = 1;
 

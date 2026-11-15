@@ -8,6 +8,13 @@ const migration = readFileSync(
   ),
   "utf8",
 );
+const v3Migration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261115000013_support_simulated_routes_v3.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("public action map reconstruction projection STATIC_CONTRACT", () => {
   it("replaces only the existing invoker-safe projection function", () => {
@@ -50,5 +57,13 @@ describe("public action map reconstruction projection STATIC_CONTRACT", () => {
     expect(migration).toContain("btrim(input.preparation #>> '{referenceAreaProvenance,attribution}') <> ''");
     expect(migration).toContain("btrim(input.preparation #>> '{referenceAreaProvenance,sourceUrl}') <> ''");
     expect(migration).not.toMatch(/mission_id|contributor_clerk_id|technical_provenance|plannerTechnicalStops/);
+  });
+
+  it("keeps v1/v2 at 3 km/h and admits only v3 at 1 km/h", () => {
+    expect(v3Migration).toContain("'simulated-routes-v1', 'simulated-routes-v2', 'simulated-routes-v3'");
+    expect(v3Migration).toContain("coverageVersion' = 'simulated-routes-v3' then 1 else 3 end");
+    expect(v3Migration).toContain("'speedKmPerHour', case when simulated_input ->> 'coverageVersion' = 'simulated-routes-v3' then 1 else 3 end");
+    expect(v3Migration).toContain("coverageVersion' in ('simulated-routes-v2', 'simulated-routes-v3')");
+    expect(v3Migration).not.toContain("drop function");
   });
 });
