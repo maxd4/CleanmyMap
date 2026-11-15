@@ -55,10 +55,13 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(labelPositions).toEqual([...labelPositions].sort((a, b) => a - b));
   });
 
-  it("uses the green primary button treatment for the Feedback trigger", () => {
+  it("uses the neutral black-and-white button treatment for the Feedback trigger", () => {
     const source = readSource("app-navigation-ribbon-menus.tsx");
 
-    expect(source).toContain('data-cmm-button-tone="primary"');
+    expect(source).toContain('data-cmm-button-tone="secondary"');
+    expect(source).toContain("!bg-white/8");
+    expect(source).toContain("hover:!bg-white/14");
+    expect(source).toContain("ring-white/60");
     expect(source).toContain("cmm-navigation-feedback-trigger");
     expect(source).toContain('data-cmm-button-size="md"');
     expect(source).toContain('data-cmm-button-variant="pill"');

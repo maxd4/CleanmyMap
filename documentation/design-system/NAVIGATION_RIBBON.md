@@ -49,8 +49,9 @@ accessible, le focus et le panneau `CmmDropdown` restent inchangés. Sous
 
 `Préférences` et `Feedback` sont deux contrôles autonomes. La coordination du
 shell garantit qu'un seul menu utilitaire est ouvert à la fois. Feedback utilise
-le traitement vert primaire du design system ; son menu conserve ses quatre
-destinations, ses noms accessibles, son clavier et son callout.
+le traitement secondaire neutre noir et blanc, aligné sur Préférences ; son menu
+conserve ses quatre destinations, ses noms accessibles, son clavier et son
+callout.
 
 La bulle compacte du compte réserve une largeur intrinsèque suffisante à
 l'avatar, au statut, aux espacements, au padding et à la bordure. Le groupe

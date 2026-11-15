@@ -100,6 +100,8 @@ test.describe("canonical classic navigation ribbon", () => {
         const activeIconStyle = getComputedStyle(activeIcon);
         const activeIconBeforeStyle = getComputedStyle(activeIcon, "::before");
         const activeIconAfterStyle = getComputedStyle(activeIcon, "::after");
+        const preferencesStyle = getComputedStyle(preferences);
+        const feedbackStyle = getComputedStyle(feedback);
         return {
           dockCenter: dock.getBoundingClientRect().left + dock.getBoundingClientRect().width / 2,
           availableCenter: (preferences.getBoundingClientRect().right + feedback.getBoundingClientRect().left) / 2,
@@ -112,7 +114,12 @@ test.describe("canonical classic navigation ribbon", () => {
           activeIconAfterBackground: activeIconAfterStyle.backgroundColor,
           dockBorder: getComputedStyle(dock).borderTopColor,
           feedbackTone: feedback.getAttribute("data-cmm-button-tone"),
-          feedbackBackground: getComputedStyle(feedback).backgroundColor,
+          feedbackBackground: feedbackStyle.backgroundColor,
+          feedbackColor: feedbackStyle.color,
+          feedbackBorder: feedbackStyle.borderColor,
+          preferencesBackground: preferencesStyle.backgroundColor,
+          preferencesColor: preferencesStyle.color,
+          preferencesBorder: preferencesStyle.borderColor,
         };
       });
       expect(Math.abs(geometry.dockCenter - geometry.availableCenter), `${width}px dock center in preferences/feedback interval`).toBeLessThanOrEqual(8);
@@ -134,8 +141,11 @@ test.describe("canonical classic navigation ribbon", () => {
       expect(geometry.activeIconBeforeBackground, `${width}px active icon ::before background`).toBe("rgba(0, 0, 0, 0)");
       expect(geometry.activeIconAfterBackground, `${width}px active icon ::after background`).toBe("rgba(0, 0, 0, 0)");
       expect(geometry.dockBorder).not.toBe("rgba(0, 0, 0, 0)");
-      expect(geometry.feedbackTone).toBe("primary");
+      expect(geometry.feedbackTone).toBe("secondary");
       expect(geometry.feedbackBackground).not.toBe("rgba(0, 0, 0, 0)");
+      expect(geometry.feedbackBackground).toBe(geometry.preferencesBackground);
+      expect(geometry.feedbackColor).toBe(geometry.preferencesColor);
+      expect(geometry.feedbackBorder).toBe(geometry.preferencesBorder);
 
       const inactive = ribbon.locator('[data-navigation-block-active="false"]').first();
       await inactive.hover();
