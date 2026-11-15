@@ -57,7 +57,7 @@ function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNa
   const indicatorLeft = getNavigationRibbonIndicatorLeft(activeSpaceIndex, spaces.length);
   const activeSpace = activeSpaceIndex >= 0 ? spaces[activeSpaceIndex] : null;
 
-  return <div data-navigation-group="product" data-navigation-group-visibility="desktop" className="hidden items-center justify-center xl:col-start-2 xl:flex"><nav data-navigation-ribbon data-navigation-ribbon-variant={APP_NAVIGATION_RIBBON_VARIANT} aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)] cmm-navigation-ribbon-dock">
+  return <div data-navigation-group="product" data-navigation-group-visibility="desktop" data-navigation-tutorial-target="product" className="hidden items-center justify-center xl:col-start-2 xl:flex"><nav data-navigation-ribbon data-navigation-ribbon-variant={APP_NAVIGATION_RIBBON_VARIANT} aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)] cmm-navigation-ribbon-dock">
     {indicatorLeft ? (
       <span
         aria-hidden="true"
@@ -182,11 +182,12 @@ function AppNavigationRibbonFrame({
             {locale === "fr" ? "Profil actif" : "Active profile"}: {effectiveProfileLabel}
           </p>
 
-          <div data-navigation-group="primary" role="group" aria-label={locale === "fr" ? "Navigation principale" : "Primary navigation"} className="cmm-navigation-group cmm-navigation-group--primary flex min-w-0 items-center gap-2 xl:col-start-1">
+          <div data-navigation-group="primary" data-navigation-tutorial-target="primary" role="group" aria-label={locale === "fr" ? "Navigation principale" : "Primary navigation"} className="cmm-navigation-group cmm-navigation-group--primary flex min-w-0 items-center gap-2 xl:col-start-1">
             <Link
               href="/"
               prefetch={false}
               onClick={() => onTrackNavigation("/", "Accueil", null)}
+              data-navigation-tutorial-target="home"
               className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-[border-color,box-shadow,background-color] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 max-[380px]:min-h-10 max-[380px]:gap-1 max-[380px]:px-2 xl:h-10 xl:min-h-0"
               aria-label="Accueil"
             >
@@ -211,7 +212,7 @@ function AppNavigationRibbonFrame({
           <RibbonDesktopSpaceNavigation spaces={spaces} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} pathname={pathname} openSpaceId={openSpaceId} onOpenChange={(spaceId, open) => setOpenSpaceId((currentSpaceId) => resolveOpenNavigationSpaceId(currentSpaceId, spaceId, open))} />
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5 max-[380px]:gap-1 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end">
-            <div data-navigation-group="product" data-navigation-group-visibility="responsive" role="group" aria-label={locale === "fr" ? "Navigation produit" : "Product navigation"} className="cmm-navigation-group cmm-navigation-group--product lg:hidden">
+            <div data-navigation-group="product" data-navigation-group-visibility="responsive" data-navigation-tutorial-target="product" role="group" aria-label={locale === "fr" ? "Navigation produit" : "Product navigation"} className="cmm-navigation-group cmm-navigation-group--product lg:hidden">
               <AppNavigationTreeMenu
                 key={`mobile-tree-${pathname}`}
                 activeSpaceId={activeSpaceId}
@@ -235,7 +236,7 @@ function AppNavigationRibbonFrame({
               } as React.ComponentProps<typeof RibbonMenus>)}
             />
 
-            <div data-navigation-group="account" role="group" aria-label={locale === "fr" ? "Compte et notifications" : "Account and notifications"} className="cmm-navigation-group cmm-navigation-group--account">
+            <div data-navigation-group="account" data-navigation-tutorial-target="account" role="group" aria-label={locale === "fr" ? "Compte et notifications" : "Account and notifications"} className="cmm-navigation-group cmm-navigation-group--account">
               <Suspense
               fallback={
                 <RibbonAccountActionsFallback

@@ -41,6 +41,16 @@
   border-inline-start: 1px solid rgba(148, 163, 184, 0.24);
 }
 
+.cmm-navigation-ribbon-tour-backdrop {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.cmm-navigation-ribbon-tour-panel {
+  margin: 0;
+}
+
 [data-navigation-ribbon][data-navigation-ribbon-variant="classic"] [data-navigation-block-trigger] {
   position: relative;
   border-color: transparent;

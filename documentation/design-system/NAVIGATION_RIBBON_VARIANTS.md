@@ -28,6 +28,22 @@ son libellé actif émergent et son libellé au survol. Aucun texte structurel
 n'est ajouté au mobile : le bouton `Sommaire` reste l'entrée explicite vers la
 navigation produit.
 
+## Tutoriel guidé — `CURRENT`
+
+Le bouton `Découvrir le ruban` est disponible dans le groupe des actions
+utilitaires. Il ouvre manuellement une visite courte de six étapes : Accueil,
+Recherche, navigation produit, Préférences, Feedback, puis profil/statut et
+espace personnel. Le bouton reste relançable à tout moment ; aucun autoplay
+n'est activé et aucune préférence de masquage automatique n'est donc requise.
+
+La visite utilise `CmmDialog` pour le nom accessible, le focus initial, le
+piège clavier, `Escape`, le clic extérieur, le scroll-lock et la restitution du
+focus. Un spotlight viewport entoure la cible visible et recalcule sa position
+sur `resize` et `scroll`. Sur les largeurs où la recherche ou le dock desktop
+ne sont pas rendus, l'étape conserve son explication et cible le groupe
+primaire ou le bouton `Sommaire` visible ; les destinations réelles restent
+inchangées.
+
 ## Sélecteur et responsabilité
 
 Le sélecteur unique est
@@ -117,3 +133,11 @@ de `prefers-reduced-motion` et des largeurs responsive est vérifié par
 avec le build par défaut pour `classic`, puis avec
 `NEXT_PUBLIC_CMM_NAVIGATION_RIBBON_VARIANT=meniscus` pour `meniscus` ; il ne
 modifie pas artificiellement l'attribut HTML de la variante.
+
+## Extensions futures — `PLAN`
+
+Le mécanisme de visite peut être étendu plus tard à des zones indépendantes du
+ruban — cartographie, profil, gamification et outils d'action — à condition de
+conserver un déclenchement explicite ou une découverte première visite
+facilement dismissable, des cibles stables et un parcours court par contexte.
+Cette extension n'est pas implémentée dans le contrat `CURRENT` du ruban.

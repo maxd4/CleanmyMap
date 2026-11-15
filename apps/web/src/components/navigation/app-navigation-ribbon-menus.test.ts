@@ -74,6 +74,13 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(source).toContain("cmm-navigation-group--utilities");
   });
 
+  it("keeps the guided ribbon tutorial in the utility group", () => {
+    const source = readSource("app-navigation-ribbon-menus.tsx");
+
+    expect(source).toContain("<RibbonTutorial locale={locale} />");
+    expect(source).toContain("data-navigation-group=\"utilities\"");
+  });
+
   it("keeps the menu links independent from the critical trigger tone", () => {
     const source = readSource("ribbon-dropdown-item.tsx");
 

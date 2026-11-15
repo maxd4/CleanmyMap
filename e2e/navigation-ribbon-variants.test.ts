@@ -15,8 +15,10 @@ const SCREENSHOT_DIRECTORY = path.join(
 
 async function dismissCookies(page: Page): Promise<void> {
   const refuse = page.getByRole("button", { name: "Tout refuser" });
+  await refuse.waitFor({ state: "visible", timeout: 3_000 }).catch(() => undefined);
   if (await refuse.isVisible().catch(() => false)) {
     await refuse.click();
+    await expect(refuse).toHaveCount(0);
   }
 }
 
@@ -180,6 +182,74 @@ async function waitForMeniscusAlignment(page: Page): Promise<void> {
 }
 
 test.describe("desktop central navigation ribbon variants", () => {
+  test("opens a short guided tour and restores focus on desktop and mobile", async ({ page }) => {
+    for (const width of [1440, 390] as const) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
+      await dismissCookies(page);
+
+      const trigger = page.getByRole("button", { name: "Découvrir le ruban" });
+      await expect(trigger).toBeVisible();
+      await trigger.click();
+
+      const dialog = page.getByRole("dialog", { name: "Tutoriel du ruban de navigation" });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole("heading", { name: "Accueil" })).toBeVisible();
+      await expect(page.locator("[data-navigation-ribbon-tour-spotlight]")).toBeVisible();
+      const initialTourGeometry = await page.evaluate(() => {
+        const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+        const spotlight = document.querySelector<HTMLElement>("[data-navigation-ribbon-tour-spotlight]");
+        if (!dialog || !spotlight) throw new Error("Missing guided tour surface");
+        const dialogRect = dialog.getBoundingClientRect();
+        const spotlightRect = spotlight.getBoundingClientRect();
+        return {
+          dialogInsideViewport: dialogRect.left >= 0
+            && dialogRect.top >= 0
+            && dialogRect.right <= window.innerWidth + 1
+            && dialogRect.bottom <= window.innerHeight + 1,
+          spotlightVisible: spotlightRect.width > 0 && spotlightRect.height > 0,
+          horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+        };
+      });
+      expect(initialTourGeometry.dialogInsideViewport).toBe(true);
+      expect(initialTourGeometry.spotlightVisible).toBe(true);
+      expect(initialTourGeometry.horizontalOverflow).toBe(false);
+      await expect(dialog.getByRole("button", { name: "Précédent" })).toBeDisabled();
+      await dialog.getByRole("button", { name: "Suivant" }).click();
+      await expect(dialog.getByRole("heading", { name: "Rechercher" })).toBeVisible();
+      await dialog.getByRole("button", { name: "Précédent" }).click();
+      await expect(dialog.getByRole("heading", { name: "Accueil" })).toBeVisible();
+
+      for (const title of [
+        "Rechercher",
+        "Navigation produit",
+        "Préférences",
+        "Feedback",
+        "Profil et espace personnel",
+      ]) {
+        await dialog.getByRole("button", { name: "Suivant" }).click();
+        await expect(dialog.getByRole("heading", { name: title })).toBeVisible();
+        await expect(page.locator("[data-navigation-ribbon-tour-spotlight]")).toBeVisible();
+      }
+
+      await dialog.getByRole("button", { name: "Terminer" }).click();
+      await expect(dialog).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+
+      await trigger.click();
+      const reopenedDialog = page.getByRole("dialog", { name: "Tutoriel du ruban de navigation" });
+      await expect(reopenedDialog).toBeVisible();
+      await reopenedDialog.getByRole("button", { name: "Passer" }).click();
+      await expect(reopenedDialog).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+
+      await trigger.click();
+      await expect(page.getByRole("dialog", { name: "Tutoriel du ruban de navigation" })).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog", { name: "Tutoriel du ruban de navigation" })).toHaveCount(0);
+    }
+  });
+
   test("uses the code-selected variant and keeps the meniscus silhouette emergent", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
