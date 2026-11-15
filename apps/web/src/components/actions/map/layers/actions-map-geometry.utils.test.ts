@@ -170,6 +170,49 @@ describe("actions map geometry utils", () => {
     expect(model.metrics.label).toContain("distance observée non disponible");
   });
 
+  it("renders a historical routed LineString with v3 coverage as dashed groups", () => {
+    const item = buildContractMapItem({
+      geometrySource: "routed",
+      actionPhase: "post_action_complete",
+      derivedGeometryGeoJson: JSON.stringify({
+        type: "LineString",
+        coordinates: [[2.35, 48.85], [2.351, 48.851]],
+      }),
+      preparationData: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [
+            [[48.85, 2.35], [48.851, 2.351]],
+            [[48.85, 2.35], [48.849, 2.349]],
+          ],
+          groupCount: 2,
+          groupSizePolicy: "preferred_5_to_8",
+          groupParticipantCounts: [5, 5],
+          durationMinutes: 60,
+          targetDistanceKm: 1,
+          individualSimulatedDistancesKm: [1, 1],
+          totalSimulatedDistanceKm: 2,
+          uniqueNetworkDistanceKm: null,
+          observedDistanceKm: null,
+          speedKmPerHour: 1,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v3",
+        },
+      },
+    });
+    const model = resolveActionMapGeometryViewModel(item);
+    expect(model).toMatchObject({
+      kind: "multiline",
+      renderMode: "drawing",
+      coverageTraceCount: 2,
+      presentation: { origin: "estimated_route", label: "Parcours hypothétique estimé", strokeStyle: "dashed" },
+    });
+    expect(resolveGeometryRenderStyle({ kind: "multiline", presentation: model.presentation }).dashArray).toBe("4 8");
+    expect(model.metrics.label).toContain("distance observée non disponible");
+  });
+
   it("renders an official park reference as a filled continuous estimated zone", () => {
     const item = buildContractMapItem({
       geometrySource: "reference",

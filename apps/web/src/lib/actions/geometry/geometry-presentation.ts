@@ -159,6 +159,25 @@ function isUnprovenCompletedRoutedGeometry(
     !hasDemonstratedNetworkRoute(item);
 }
 
+function hasValidHypotheticalSimulation(item: ActionMapItem): boolean {
+  const simulation = item.contract?.metadata.preparationData?.simulatedRouteCoverage;
+  if (!simulation || simulation.type !== "MultiLineString" || simulation.status !== "hypothetical" ||
+      simulation.geometrySource !== "estimated_route" || simulation.provenance !== "estimated") {
+    return false;
+  }
+
+  const expectedSpeed = simulation.coverageVersion === "simulated-routes-v3" ? 1 :
+    simulation.coverageVersion === "simulated-routes-v1" || simulation.coverageVersion === "simulated-routes-v2" ? 3 : null;
+  return expectedSpeed !== null && simulation.speedKmPerHour === expectedSpeed &&
+    simulation.groupCount > 0 && simulation.coordinates.length === simulation.groupCount &&
+    simulation.coordinates.every((line) => line.length >= 2) &&
+    simulation.groupParticipantCounts.length === simulation.groupCount &&
+    typeof simulation.targetDistanceKm === "number" &&
+    typeof simulation.totalSimulatedDistanceKm === "number" &&
+    simulation.individualSimulatedDistancesKm?.length === simulation.groupCount &&
+    simulation.uniqueNetworkDistanceKm === null && simulation.observedDistanceKm === null;
+}
+
 /** Uses only the effective fallback representation when historical geometry is unavailable. */
 export function getFallbackPointPresentation(item: ActionMapItem): GeometryPresentation {
   const historicalPresentation = getGeometryPresentation(item);
@@ -290,6 +309,15 @@ export function getGeometryPresentation(
     return buildFallbackPointPresentation();
   }
   if (isUnprovenCompletedRoutedGeometry(item, origin, kind)) {
+    if (hasValidHypotheticalSimulation(item)) {
+      return buildPresentation(
+        "estimated_route",
+        "planned",
+        "Parcours hypothétique estimé",
+        "dashed",
+        "estimated",
+      );
+    }
     return buildFallbackPointPresentation("Localisation seule · itinéraire non démontré");
   }
   return getOriginPresentation(item, origin, kind);

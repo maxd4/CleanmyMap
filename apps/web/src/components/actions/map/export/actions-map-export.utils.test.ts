@@ -285,6 +285,65 @@ describe("actions map export utils", () => {
     });
   });
 
+  it("exports v3 simulation for a historical routed LineString coherently", () => {
+    const contract = buildActionDataContract({
+      id: "action-routed-v3-simulation",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Parcours historique",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "routed",
+      derivedGeometryKind: "polyline",
+      derivedGeometryGeoJson: JSON.stringify({
+        type: "LineString",
+        coordinates: [[2.34, 48.85], [2.341, 48.851]],
+      }),
+      actionPhase: "post_action_complete",
+      preparationData: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [
+            [[48.85, 2.34], [48.851, 2.341]],
+            [[48.85, 2.34], [48.849, 2.339]],
+          ],
+          groupCount: 2,
+          groupSizePolicy: "preferred_5_to_8",
+          groupParticipantCounts: [5, 5],
+          durationMinutes: 60,
+          targetDistanceKm: 1,
+          individualSimulatedDistancesKm: [1, 1],
+          totalSimulatedDistanceKm: 2,
+          uniqueNetworkDistanceKm: null,
+          observedDistanceKm: null,
+          speedKmPerHour: 1,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v3",
+        },
+      },
+    });
+    const geojson = JSON.parse(buildActionsMapGeoJsonString([toActionMapItem(contract)])) as {
+      features: Array<{ geometry: { type: string }; properties: Record<string, unknown> }>;
+    };
+    expect(geojson.features[0]).toMatchObject({
+      geometry: { type: "MultiLineString" },
+      properties: {
+        geometry_source: "estimated_route",
+        geometry_reality: "planned",
+        geometry_variant: "estimated",
+        geometry_label: "Parcours hypothétique estimé",
+        simulated_group_count: 2,
+        simulated_observed_distance_km: null,
+        historical_geometry_kind: "polyline",
+        historical_geometry_source: "routed",
+      },
+    });
+  });
+
   it("exports observed multi-traces with their provenance and label", () => {
     const contract = buildActionDataContract({
       id: "action-multitrace-export",

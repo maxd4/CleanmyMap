@@ -112,6 +112,38 @@ describe("geometry presentation provenance", () => {
     });
   });
 
+  it("presents a valid historical v3 simulation as estimated", () => {
+    expect(getGeometryPresentation(buildItem("routed", "polyline", {
+      simulatedRouteCoverage: {
+        type: "MultiLineString",
+        coordinates: [
+          [[48.85, 2.35], [48.851, 2.351]],
+          [[48.85, 2.35], [48.849, 2.349]],
+        ],
+        groupCount: 2,
+        groupSizePolicy: "preferred_5_to_8",
+        groupParticipantCounts: [5, 5],
+        durationMinutes: 60,
+        targetDistanceKm: 1,
+        individualSimulatedDistancesKm: [1, 1],
+        totalSimulatedDistanceKm: 2,
+        uniqueNetworkDistanceKm: null,
+        observedDistanceKm: null,
+        speedKmPerHour: 1,
+        geometrySource: "estimated_route",
+        provenance: "estimated",
+        status: "hypothetical",
+        coverageVersion: "simulated-routes-v3",
+      },
+    }, "post_action_complete"))).toMatchObject({
+      origin: "estimated_route",
+      reality: "planned",
+      label: "Parcours hypothétique estimé",
+      strokeStyle: "dashed",
+      variant: "estimated",
+    });
+  });
+
   it("presents manual geometry as declared and solid", () => {
     expect(getGeometryPresentation(buildItem("manual"))).toMatchObject({
       reality: "declared",
