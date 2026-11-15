@@ -22,6 +22,8 @@ on:
       - "scripts/ci/verify-supabase-backup-relation-coherence.mjs"
       - "scripts/ci/classify-supabase-restore-failure.mjs"
       - "scripts/ci/prepare-supabase-restore-roles.mjs"
+      - "scripts/ci/prepare-supabase-restore-target.mjs"
+      - "scripts/ci/run-supabase-restore-check.sh"
       - "package.json"
       - "package-lock.json"
 
@@ -69,24 +71,11 @@ jobs:
           proof_step="initialization"
           trap 'status=$?; if [ "$status" -ne 0 ]; then echo "EPHEMERAL_BACKUP_RESTORE_PROOF: FAIL step=$proof_step"; fi' EXIT
           mkdir -p "$PROOF_ROOT/dumps" "$PROOF_SOURCE_WORKDIR/supabase" "$PROOF_TARGET_WORKDIR/supabase"
-          cp apps/web/supabase/config.toml "$PROOF_TARGET_WORKDIR/supabase/config.toml"
-          sed -i \
-            -e 's/^project_id = "web"$/project_id = "cmm-backup-proof-target"/' \
-            -e 's/^port = 54321$/port = 54421/' \
-            -e 's/^port = 54322$/port = 54422/' \
-            -e 's/^shadow_port = 54320$/shadow_port = 54420/' \
-            -e 's/^port = 54329$/port = 54429/' \
-            -e 's/^port = 54323$/port = 54423/' \
-            -e 's/^port = 54324$/port = 54424/' \
-            -e 's/^# smtp_port = 54325$/smtp_port = 54425/' \
-            -e 's/^# pop3_port = 54326$/pop3_port = 54426/' \
-            -e 's/^port = 54327$/port = 54427/' \
-            -e 's/^inspector_port = 8083$/inspector_port = 54803/' \
-            "$PROOF_TARGET_WORKDIR/supabase/config.toml"
-          sed -i '/^\[db\.migrations\]$/,/^\[/ s/^enabled = true$/enabled = false/' \
-            "$PROOF_TARGET_WORKDIR/supabase/config.toml"
-          sed -i '/^\[db\.seed\]$/,/^\[/ s/^enabled = true$/enabled = false/' \
-            "$PROOF_TARGET_WORKDIR/supabase/config.toml"
+          node scripts/ci/prepare-supabase-restore-target.mjs \
+            --source-config=apps/web/supabase/config.toml \
+            --target-config="$PROOF_TARGET_WORKDIR/supabase/config.toml" \
+            --project-id=cmm-backup-proof-target \
+            --port-offset=100
 
           proof_step="source-start"
           network_id="$(docker network create --driver bridge --label com.cleanmymap.ci=backup-restore-proof "$PROOF_NETWORK")"
@@ -132,115 +121,19 @@ jobs:
           proof_step="target-prepare"
           target_container="supabase_db_cmm-backup-proof-target"
           test "$(docker ps --filter "name=^/${target_container}$" --format '{{.Names}}')" = "$target_container"
-          docker cp "$PROOF_ROOT/dumps/roles.sql" "$target_container:/tmp/cmm-roles.sql"
-          docker cp "$PROOF_ROOT/dumps/schema.sql" "$target_container:/tmp/cmm-schema.sql"
-          docker cp "$PROOF_ROOT/dumps/data.sql" "$target_container:/tmp/cmm-data.sql"
-          docker cp scripts/ci/supabase-restore-extension-preflight.sql "$target_container:/tmp/cmm-restore-extension-preflight.sql"
           restore_db="postgres"
-          docker exec "$target_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "alter default privileges in schema public revoke all on tables from anon, authenticated;"
-          node scripts/ci/prepare-supabase-restore-roles.mjs \
-            --roles-file="$PROOF_ROOT/dumps/roles.sql" \
-            --container="$target_container" \
-            --database="$restore_db" \
-            --write-user-file="$PROOF_ROOT/restore-admin-user.txt"
-          restore_admin_user="$(< "$PROOF_ROOT/restore-admin-user.txt")"
-          test "$restore_admin_user" = "postgres" || test "$restore_admin_user" = "supabase_admin"
-          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=target-prepare PASS"
+          proof_step="restore-check"
+          export RESTORE_CHECK_ROOT="$PROOF_ROOT"
+          export RESTORE_CHECK_CONTAINER="$target_container"
+          export RESTORE_CHECK_DATABASE="$restore_db"
+          export RESTORE_CHECK_ROLES_FILE="$PROOF_ROOT/dumps/roles.sql"
+          export RESTORE_CHECK_SCHEMA_FILE="$PROOF_ROOT/dumps/schema.sql"
+          export RESTORE_CHECK_DATA_FILE="$PROOF_ROOT/dumps/data.sql"
+          export RESTORE_CHECK_EXTENSION_PREFLIGHT_FILE="scripts/ci/supabase-restore-extension-preflight.sql"
+          export RESTORE_CHECK_EXPECT_SYNTHETIC_FIXTURE=true
+          bash scripts/ci/run-supabase-restore-check.sh
 
-          run_stage() {
-            local stage="$1"
-            local input="$2"
-            local user="${3:-postgres}"
-            local log="$PROOF_ROOT/restore-${stage}.log"
-            local args=(-v ON_ERROR_STOP=1 -v VERBOSITY=verbose -U "$user" -d "$restore_db")
-            if [ "$stage" = "schema" ] || [ "$stage" = "data" ]; then
-              args+=(-c "set search_path = public, extensions")
-            fi
-            if [ "$stage" = "data" ]; then
-              args+=(-c "set session_replication_role = replica")
-            fi
-            args+=(-f "$input")
-            set +e
-            docker exec "$target_container" psql "${args[@]}" > "$log" 2>&1
-            local exit_code=$?
-            set -e
-            local diagnostic
-            diagnostic=$(node scripts/ci/classify-supabase-restore-failure.mjs --log "$log")
-            echo "RESTORE_PROOF_SQL: stage=$stage exit_code=$exit_code $diagnostic"
-            return "$exit_code"
-          }
-
-          printf 'create table public.cmm_backup_missing_extension_fixture (geom extensions.geometry);\n' > "$PROOF_ROOT/missing-extension.sql"
-          docker cp "$PROOF_ROOT/missing-extension.sql" "$target_container:/tmp/cmm-missing-extension.sql"
-          if docker exec "$target_container" psql -X -v ON_ERROR_STOP=1 -v VERBOSITY=verbose -U postgres -d "$restore_db" -f /tmp/cmm-missing-extension.sql > "$PROOF_ROOT/missing-extension.log" 2>&1; then
-            echo "Missing-extension proof unexpectedly passed; publication is refused."
-            exit 1
-          fi
-          missing_count=$(docker exec "$target_container" psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname = 'cmm_backup_missing_extension_fixture';")
-          test "$missing_count" = "0"
-
-          proof_step="restore-roles"
-          run_stage roles /tmp/cmm-roles.sql postgres
-          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-roles PASS"
-          proof_step="restore-extensions"
-          run_stage extensions /tmp/cmm-restore-extension-preflight.sql
-          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-extensions PASS"
-          proof_step="restore-schema"
-          run_stage schema /tmp/cmm-schema.sql
-          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-schema PASS"
-          proof_step="relation-coherence"
-          docker exec "$target_container" psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "select n.nspname || '.' || c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r', 'p', 'S', 'v', 'm', 'f') order by 1;" > "$PROOF_ROOT/restore-relations.txt"
-          node scripts/ci/verify-supabase-backup-relation-coherence.mjs --data-file "$PROOF_ROOT/dumps/data.sql" --available-file "$PROOF_ROOT/restore-relations.txt" --write-exported-file "$PROOF_ROOT/exported-relations.txt"
-
-          docker exec "$target_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "create table public.cmm_backup_coherence_fixture (id integer primary key);"
-          printf 'public.cmm_backup_coherence_fixture\n' > "$PROOF_ROOT/positive.relations.txt"
-          printf 'COPY public.cmm_backup_coherence_fixture (id) FROM stdin;\n1\n\\.\n' > "$PROOF_ROOT/positive.data.sql"
-          docker cp "$PROOF_ROOT/positive.data.sql" "$target_container:/tmp/cmm-positive.sql"
-          docker exec "$target_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -f /tmp/cmm-positive.sql > "$PROOF_ROOT/positive.log" 2>&1
-          node scripts/ci/verify-supabase-backup-relation-coherence.mjs --data-file "$PROOF_ROOT/positive.data.sql" --available-file "$PROOF_ROOT/positive.relations.txt"
-          printf 'COPY public.cmm_backup_missing_fixture (id) FROM stdin;\n1\n\\.\n' > "$PROOF_ROOT/negative.data.sql"
-          docker cp "$PROOF_ROOT/negative.data.sql" "$target_container:/tmp/cmm-negative.sql"
-          if docker exec "$target_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -f /tmp/cmm-negative.sql > "$PROOF_ROOT/negative.log" 2>&1; then
-            echo "Relation coherence PostgreSQL negative proof unexpectedly passed; publication is refused."
-            exit 1
-          fi
-          if node scripts/ci/verify-supabase-backup-relation-coherence.mjs --data-file "$PROOF_ROOT/negative.data.sql" --available-file "$PROOF_ROOT/positive.relations.txt"; then
-            echo "Relation coherence parser negative proof unexpectedly passed; publication is refused."
-            exit 1
-          fi
-          docker exec "$target_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "drop table public.cmm_backup_coherence_fixture;"
-          fixture_count=$(docker exec "$target_container" psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname = 'cmm_backup_coherence_fixture';")
-          test "$fixture_count" = "0"
-          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=relation-coherence PASS"
-
-          proof_step="restore-data"
-          run_stage data /tmp/cmm-data.sql
-          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-data PASS"
-          proof_step="integrity-checks"
-          cat > "$PROOF_ROOT/restore-checks.sql" <<'EOF'
-          create temp table restore_business_relations (qualified_name text primary key);
-          copy restore_business_relations (qualified_name) from stdin;
-          EOF
-          cat "$PROOF_ROOT/exported-relations.txt" >> "$PROOF_ROOT/restore-checks.sql"
-          cat >> "$PROOF_ROOT/restore-checks.sql" <<'EOF'
-          \.
-          select
-            (select count(*) = 1 from public.cmm_backup_restore_fixture where id = 1),
-            (select count(*) > 0 from pg_constraint con join pg_class rel on rel.oid = con.conrelid join pg_namespace ns on ns.oid = rel.relnamespace where ns.nspname = 'public' and rel.relkind in ('r', 'p') and exists (select 1 from restore_business_relations r where r.qualified_name = 'public.' || rel.relname) and not exists (select 1 from pg_depend dep where dep.classid = 'pg_class'::regclass and dep.objid = rel.oid and dep.deptype = 'e')),
-            (select count(*) > 0 from pg_proc where pronamespace = 'public'::regnamespace),
-            (select count(*) > 0 from pg_class rel join pg_namespace ns on ns.oid = rel.relnamespace where ns.nspname = 'public' and rel.relkind in ('r', 'p') and rel.relrowsecurity and exists (select 1 from restore_business_relations r where r.qualified_name = 'public.' || rel.relname) and not exists (select 1 from pg_depend dep where dep.classid = 'pg_class'::regclass and dep.objid = rel.oid and dep.deptype = 'e')),
-            (select count(*) >= 3 from pg_roles where rolname in ('anon', 'authenticated', 'service_role')),
-            (select count(*) > 0 from information_schema.role_table_grants grant_info where grant_info.table_schema = 'public' and grant_info.grantee in ('anon', 'authenticated') and exists (select 1 from restore_business_relations r where r.qualified_name = 'public.' || grant_info.table_name) and not exists (select 1 from pg_depend dep join pg_class rel on rel.oid = dep.objid join pg_namespace ns on ns.oid = rel.relnamespace where dep.classid = 'pg_class'::regclass and dep.deptype = 'e' and ns.nspname = 'public' and rel.relname = grant_info.table_name)),
-            (select count(*) > 0 from pg_extension where extname in ('pgcrypto', 'pg_trgm', 'uuid-ossp', 'postgis')),
-            (select not exists (select 1 from restore_business_relations r join pg_class rel on r.qualified_name = 'public.' || rel.relname join pg_namespace ns on ns.oid = rel.relnamespace where ns.nspname = 'public' and exists (select 1 from pg_depend dep where dep.classid = 'pg_class'::regclass and dep.objid = rel.oid and dep.deptype = 'e'))),
-            (select count(*) > 0 from pg_index index_info join pg_class rel on rel.oid = index_info.indrelid join pg_namespace ns on ns.oid = rel.relnamespace join pg_opclass opclass on opclass.oid = any (index_info.indclass::oid[]) join pg_namespace opclass_namespace on opclass_namespace.oid = opclass.opcnamespace where ns.nspname = 'public' and opclass_namespace.nspname = 'extensions' and opclass.opcname = 'gist_geometry_ops_2d' and exists (select 1 from restore_business_relations r where r.qualified_name = 'public.' || rel.relname)),
-            (select count(*) >= 2 from pg_index index_info join pg_class rel on rel.oid = index_info.indrelid join pg_namespace ns on ns.oid = rel.relnamespace join pg_opclass opclass on opclass.oid = any (index_info.indclass::oid[]) join pg_namespace opclass_namespace on opclass_namespace.oid = opclass.opcnamespace where ns.nspname = 'public' and opclass_namespace.nspname = 'extensions' and opclass.opcname = 'gin_trgm_ops' and exists (select 1 from restore_business_relations r where r.qualified_name = 'public.' || rel.relname)),
-            (select not exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname = 'cmm_backup_coherence_fixture'));
-          EOF
-          docker cp "$PROOF_ROOT/restore-checks.sql" "$target_container:/tmp/cmm-restore-checks.sql"
-          docker exec "$target_container" psql -X -A -t -F '|' -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -f /tmp/cmm-restore-checks.sql > "$PROOF_ROOT/restore-checks.txt"
-          grep -qx 't|t|t|t|t|t|t|t|t|t|t' "$PROOF_ROOT/restore-checks.txt"
-          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=integrity-checks PASS"
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-check PASS"
           echo "EPHEMERAL_BACKUP_RESTORE_PROOF: PASS source=migrations dump=roles,schema,data target=isolated extensions=verified negative=verified"
 
       - name: Summarize non-sensitive proof

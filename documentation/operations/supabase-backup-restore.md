@@ -111,12 +111,29 @@ secrets ou mots de passe de rôle. Avant une restauration de schéma, appliquer 
 précaution Supabase concernant les privilèges par défaut `anon` et
 `authenticated`.
 
-Le contrôle éphémère du workflow suit la procédure Supabase sur une configuration
-temporaire dédiée : `supabase start` n'y applique ni l'arbre de migrations métier
-de `apps/web`, ni son seed. Il conserve uniquement les objets gérés nécessaires
-au runtime Supabase dans la base `postgres`, révoque les privilèges par défaut
-`anon`/`authenticated` avant le schéma, rejoue `roles.sql`, prépare ensuite les
-dépendances de restauration avec
+Les deux workflows utilisent exactement l'exécuteur partagé
+`scripts/ci/run-supabase-restore-check.sh`. La cible est dérivée de la
+configuration canonique `apps/web/supabase/config.toml` par
+`scripts/ci/prepare-supabase-restore-target.mjs`, avec un identifiant et des
+ports isolés ; les sections migrations et seed sont désactivées sans remplacer
+la configuration Supabase par un fichier minimal divergent. `supabase start` n'y
+applique donc ni l'arbre de migrations métier de `apps/web`, ni son seed.
+
+L'exécuteur conserve les objets gérés nécessaires au runtime Supabase dans la
+base `postgres`, puis prépare les rôles référencés sans recopier aveuglément
+leurs attributs sensibles. Le préflight des rôles n'est pas considéré comme une
+autorisation suffisante :
+`scripts/ci/prepare-supabase-restore-roles.mjs` essaie l'administrateur
+éphémère disponible et exécute une sonde transactionnelle privée qui vérifie la
+création d'un rôle de test, l'altération des rôles référencés et les grants de
+membership, puis annule la transaction. Seul cet administrateur explicitement
+autorisé exécute `roles.sql` et les étapes suivantes. Un échec de la sonde
+arrête le restore avant `roles.sql` et publie uniquement un SQLSTATE et une
+catégorie ; le journal détaillé reste temporaire et privé.
+
+Après sélection de l'administrateur, l'exécuteur révoque les privilèges par
+défaut `anon`/`authenticated` avant le schéma, rejoue `roles.sql`, prépare
+ensuite les dépendances de restauration avec
 `scripts/ci/supabase-restore-extension-preflight.sql`, puis rejoue `schema.sql`.
 Le préflight installe dans `extensions` les versions majeures compatibles de
 `postgis`, `pg_trgm`, `uuid-ossp` et `pgcrypto`, puis vérifie le type
@@ -140,11 +157,12 @@ assertions métier.
 
 Le workflow séparé de preuve reconstruit une base source avec les migrations et
 le seed canoniques, ajoute uniquement une fixture synthétique versionnée, produit
-les trois dumps avec les mêmes options que le backup, puis rejoue ces dumps dans
-une seconde cible Supabase éphémère avec migrations et seed désactivés. Il
-contrôle les données, contraintes, index spatiaux et trigrammes, fonctions, RLS,
-grants, extensions, rôles et les cas négatifs. Cette preuve ne contacte pas
-Production et ne publie aucun diagnostic en clair.
+les trois dumps avec les mêmes options que le backup, puis appelle le même
+exécuteur dans une seconde cible Supabase éphémère. Il contrôle les données,
+contraintes, index spatiaux et trigrammes, fonctions, RLS, grants, extensions,
+rôles et les cas négatifs. Le workflow de backup appelle ce même exécuteur avec
+les dumps liés et sans attente artificielle de la fixture source. Cette preuve
+ne contacte pas Production et ne publie aucun diagnostic en clair.
 La configuration canonique `apps/web/supabase/config.toml` et l'arbre de
 migrations ne sont pas modifiés ; une base vierge créée par `createdb` n'est pas
 une cible Supabase représentative.
