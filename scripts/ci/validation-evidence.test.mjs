@@ -100,7 +100,7 @@ test("atomically reclaims a stale FULL lock so concurrent recovery has one owner
     assert.equal(results.filter((result) => result.code === 1).length, 1);
     assert.match(
       results.find((result) => result.code === 1)?.stderr ?? "",
-      /Un seul FULL|récupération concurrente|verrou FULL existant/,
+      /Un seul FULL|récupération concurrente|[Vv]errou FULL existant/,
     );
     assert.equal(fs.existsSync(lockPath(root)), false);
   } finally {
