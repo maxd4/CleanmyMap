@@ -49,12 +49,12 @@ select is(
   'simulation is emitted as bounded public GeoJSON coordinates'
 );
 select is(
-  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v1"}}$json$::jsonb) #>> '{simulatedRouteCoverage,coverageVersion}',
+  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v1"}}$json$::jsonb)) #>> '{simulatedRouteCoverage,coverageVersion}',
   'simulated-routes-v1',
   'v1 reconstructions remain publicly compatible'
 );
 select is(
-  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupSizePolicy":"preferred_5_to_8","groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":1,"individualSimulatedDistancesKm":[1],"totalSimulatedDistanceKm":1,"speedKmPerHour":1,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v3"}}$json$::jsonb) #>> '{simulatedRouteCoverage,speedKmPerHour}',
+  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupSizePolicy":"preferred_5_to_8","groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":1,"individualSimulatedDistancesKm":[1],"totalSimulatedDistanceKm":1,"speedKmPerHour":1,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v3"}}$json$::jsonb)) #>> '{simulatedRouteCoverage,speedKmPerHour}',
   '1',
   'v3 reconstructions use the action-only 1 km/h policy'
 );
@@ -73,26 +73,26 @@ select ok(
   'private preparation fields are not projected'
 );
 select is(
-  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3]]],"groupCount":1,"groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v2"}}$json$::jsonb),
+  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3]]],"groupCount":1,"groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v2"}}$json$::jsonb)),
   '{}'::jsonb,
   'an incomplete v2 reconstruction is omitted'
 );
 select is(
-  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[95,2.3],[48.81,2.31]]],"groupCount":1,"groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v1"}}$json$::jsonb),
+  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[95,2.3],[48.81,2.31]]],"groupCount":1,"groupParticipantCounts":[6],"durationMinutes":60,"targetDistanceKm":3,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v1"}}$json$::jsonb)),
   '{}'::jsonb,
   'out-of-range coordinates are omitted'
 );
 select ok(
-  (public.public_action_map_preparation($json${"referenceAreaProvenance":{"kind":"official_park","source":"ville_de_paris","attribution":"Ville de Paris","license":"ODbL","sourceUrl":"https://example.invalid"}}$json$::jsonb) ? 'referenceAreaProvenance',
+  (public.public_action_map_preparation($json${"referenceAreaProvenance":{"kind":"official_park","source":"ville_de_paris","attribution":"Ville de Paris","license":"ODbL","sourceUrl":"https://example.invalid"}}$json$::jsonb)) ? 'referenceAreaProvenance',
   'verified official reference provenance survives the public projection'
 );
 select is(
-  (public.public_action_map_preparation($json${"referenceAreaProvenance":{"kind":"official_park","source":"other","attribution":"Ville de Paris","license":"ODbL","sourceUrl":"https://example.invalid"}}$json$::jsonb),
+  (public.public_action_map_preparation($json${"referenceAreaProvenance":{"kind":"official_park","source":"other","attribution":"Ville de Paris","license":"ODbL","sourceUrl":"https://example.invalid"}}$json$::jsonb)),
   '{}'::jsonb,
   'a label or attribution cannot establish the official source'
 );
 select ok(
-  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupSizePolicy":"explicit_exception","groupParticipantCounts":[4],"durationMinutes":90,"targetDistanceKm":4.5,"individualSimulatedDistancesKm":[4.5],"totalSimulatedDistanceKm":4.5,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v2"}}$json$::jsonb) ? 'simulatedRouteCoverage',
+  (public.public_action_map_preparation($json${"simulatedRouteCoverage":{"type":"MultiLineString","coordinates":[[[48.8,2.3],[48.81,2.31]]],"groupCount":1,"groupSizePolicy":"explicit_exception","groupParticipantCounts":[4],"durationMinutes":90,"targetDistanceKm":4.5,"individualSimulatedDistancesKm":[4.5],"totalSimulatedDistanceKm":4.5,"speedKmPerHour":3,"geometrySource":"estimated_route","provenance":"estimated","status":"hypothetical","coverageVersion":"simulated-routes-v2"}}$json$::jsonb)) ? 'simulatedRouteCoverage',
   'explicit exception remains accepted for a bounded v2 reconstruction'
 );
 select lives_ok(
