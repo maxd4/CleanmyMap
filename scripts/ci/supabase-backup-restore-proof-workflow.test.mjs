@@ -22,6 +22,7 @@ test('ephemeral backup proof reconstructs source and target without Production c
   assert.match(workflow, /run_stage schema \/tmp\/cmm-schema\.sql/);
   assert.match(workflow, /run_stage data \/tmp\/cmm-data\.sql/);
   assert.match(workflow, /VERBOSITY=verbose/);
+  assert.match(workflow, /diagnose-supabase-start\.mjs/);
   assert.match(workflow, /cmm_backup_missing_extension_fixture/);
   assert.match(workflow, /cmm_backup_coherence_fixture/);
   assert.match(workflow, /restore_business_relations[\s\S]*deptype = 'e'/);

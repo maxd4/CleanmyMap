@@ -132,7 +132,21 @@ jobs:
           echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=source-dumps PASS"
 
           proof_step="target-start"
+          target_start_started_at="$(date +%s)"
+          set +e
           ./node_modules/.bin/supabase start --workdir "$PROOF_TARGET_WORKDIR" --yes --output-format json --network-id="$PROOF_NETWORK" > "$PROOF_ROOT/target-start.log" 2>&1
+          target_start_exit_code=$?
+          set -e
+          if [ "$target_start_exit_code" -ne 0 ]; then
+            target_start_duration_seconds=$(( $(date +%s) - target_start_started_at ))
+            node scripts/ci/diagnose-supabase-start.mjs \
+              --log-file="$PROOF_ROOT/target-start.log" \
+              --exit-code="$target_start_exit_code" \
+              --duration-seconds="$target_start_duration_seconds" \
+              > "$PROOF_ROOT/target-start-diagnostic.txt" 2>&1 || true
+            cat "$PROOF_ROOT/target-start-diagnostic.txt"
+            exit "$target_start_exit_code"
+          fi
           echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=target-start PASS"
           proof_step="target-prepare"
           target_container="supabase_db_cmm-backup-proof-target"
