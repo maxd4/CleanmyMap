@@ -11,6 +11,7 @@ import {
   normalizeVolunteerParticipation,
   resolvePersistedVolunteerParticipation,
   resolveEffectiveVolunteerUnits,
+  resolveKnownParticipantsCount,
   resolveParticipantsCount,
 } from "./volunteer-participation";
 
@@ -203,6 +204,13 @@ describe("volunteer participation contract", () => {
     });
     expect(resolveParticipantsCount({ volunteerParticipation: result })).toBe(7);
     expect(resolveEffectiveVolunteerUnits(result)).toBe(5.5);
+  });
+
+  it("keeps an unavailable participant total as null for visual consumers", () => {
+    expect(resolveKnownParticipantsCount({})).toBeNull();
+    expect(resolveKnownParticipantsCount({ legacyVolunteersCount: null })).toBeNull();
+    expect(resolveKnownParticipantsCount({ legacyVolunteersCount: 0 })).toBe(0);
+    expect(resolveParticipantsCount({})).toBe(0);
   });
 
   it("recalculates derived fields from category sources instead of trusting payload totals", () => {

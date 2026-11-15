@@ -28,6 +28,7 @@ import {
   GeometryInteractionOverlays,
   renderCoveragePolylines,
   renderMultilineGeometry,
+  resolveSelectionHaloPathOptions,
   resolveVisibleShapePathOptions,
 } from "./map-layers-coverage-geometry";
 import {
@@ -42,6 +43,7 @@ export type ShapeGeometryRendererProps = {
   item: ActionMapItem;
   geometry: ActionMapGeometryViewModel;
   renderStyle: ActionMapGeometryRenderStyle;
+  strokeWeight: number;
   color: string;
   displayColor: string;
   pollutionCategory: ShapePollutionCategory;
@@ -143,6 +145,18 @@ function renderPolygonGeometry({
 }: PolygonGeometryRenderInput) {
   return (
     <Fragment>
+      {isSelected ? (
+        <Polygon
+          key={`selection-halo-${item.id}`}
+          positions={geometry.positions}
+          pathOptions={resolveSelectionHaloPathOptions({
+            geometryKind: "polygon",
+            displayColor,
+            renderStyle,
+            visibleWeight,
+          })}
+        />
+      ) : null}
       {casingStyle ? (
         <Polygon
           key={`casing-${item.id}`}
@@ -243,6 +257,7 @@ export function ShapeGeometryRenderer({
   item,
   geometry,
   renderStyle,
+  strokeWeight,
   color,
   displayColor,
   pollutionCategory,
@@ -265,9 +280,7 @@ export function ShapeGeometryRenderer({
   endpointMarkers,
   directionMarkers,
 }: ShapeGeometryRendererProps) {
-  const visibleWeight =
-    (renderStyle.strokeWeight ?? (geometry.kind === "polygon" ? 2 : 4)) +
-    (isSelected ? 2 : 0);
+  const visibleWeight = strokeWeight;
   const casingStyle = resolveShapeCasingStyle({
     pollutionCategory,
     basemapMode,
@@ -335,6 +348,18 @@ export function ShapeGeometryRenderer({
 
   return (
     <Fragment>
+      {isSelected ? (
+        <Polyline
+          key={`selection-halo-${item.id}`}
+          positions={geometry.positions}
+          pathOptions={resolveSelectionHaloPathOptions({
+            geometryKind: "polyline",
+            displayColor,
+            renderStyle,
+            visibleWeight,
+          })}
+        />
+      ) : null}
       {casingStyle ? (
         <Polyline
           key={`casing-${item.id}`}

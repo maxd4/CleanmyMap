@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 const CLASSIFICATIONS = Object.freeze([
   "role_or_privilege",
   "extension_or_feature",
+  "schema_conflict",
   "dependency_or_ordering",
   "constraint_or_data",
   "syntax_or_format",
@@ -14,6 +15,7 @@ const patterns = [
   ["connection_or_authentication", /password authentication failed|could not connect|connection refused|no pg_hba|role .* does not exist/i],
   ["role_or_privilege", /permission denied|must be owner|insufficient privilege|role .* cannot|grant|revoke/i],
   ["extension_or_feature", /extension .* does not exist|could not open extension control file|feature .* is not supported/i],
+  ["schema_conflict", /already exists|duplicate table|duplicate schema|duplicate type/i],
   ["dependency_or_ordering", /undefined table|undefined column|relation .* does not exist|depends on|cannot drop/i],
   ["constraint_or_data", /violates .* constraint|duplicate key|invalid input syntax|foreign key|not-null|check constraint/i],
   ["syntax_or_format", /syntax error|unterminated|invalid command|invalid byte sequence|malformed/i],
@@ -35,6 +37,7 @@ const SQLSTATE_CATEGORIES = Object.freeze([
   ["42501", "role_or_privilege"],
   ["0A", "extension_or_feature"],
   ["42704", "extension_or_feature"],
+  ["42P07", "schema_conflict"],
   ["42P01", "dependency_or_ordering"],
   ["42703", "dependency_or_ordering"],
   ["42883", "dependency_or_ordering"],

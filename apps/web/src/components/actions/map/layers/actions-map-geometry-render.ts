@@ -27,6 +27,60 @@ export type ActionMapGeometryRenderStyle = {
   dashArray: string | undefined;
 };
 
+export const HYPOTHETICAL_GEOMETRY_DASH_ARRAY = "8 8";
+export const DEFAULT_GEOMETRY_STROKE_OPACITY = 0.9;
+
+const GEOMETRY_STROKE_WEIGHT_POLICY = [
+  { maximumParticipants: 4, weight: 1.75 },
+  { maximumParticipants: 9, weight: 2.25 },
+  { maximumParticipants: 24, weight: 2.75 },
+  { maximumParticipants: 49, weight: 3.25 },
+  { maximumParticipants: Number.POSITIVE_INFINITY, weight: 3.75 },
+] as const;
+
+const DEFAULT_GEOMETRY_STROKE_WEIGHT = GEOMETRY_STROKE_WEIGHT_POLICY[0].weight;
+const MIN_ZOOM_WEIGHT_FACTOR = 0.78;
+const MAX_ZOOM_WEIGHT_FACTOR = 1.14;
+const ZOOM_WEIGHT_REFERENCE = 10;
+const ZOOM_WEIGHT_SLOPE = 0.04;
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function resolveParticipantBaseWeight(participantsCount: number | null): number {
+  if (participantsCount === null || !Number.isFinite(participantsCount)) {
+    return DEFAULT_GEOMETRY_STROKE_WEIGHT;
+  }
+
+  const normalizedCount = Math.max(0, Math.trunc(participantsCount));
+  return GEOMETRY_STROKE_WEIGHT_POLICY.find(
+    ({ maximumParticipants }) => normalizedCount <= maximumParticipants,
+  )?.weight ?? DEFAULT_GEOMETRY_STROKE_WEIGHT;
+}
+
+/**
+ * Keeps business thickness independent from selection and provenance. Leaflet
+ * path weights are pixels, so the bounded continuous factor compensates for
+ * visual overload when zooming in while preserving tier ratios.
+ */
+export function resolveGeometryStrokeWeight({
+  participantsCount,
+  zoom,
+}: {
+  participantsCount: number | null;
+  zoom: number;
+}): number {
+  const safeZoom = Number.isFinite(zoom) ? zoom : ZOOM_WEIGHT_REFERENCE;
+  const zoomFactor = clamp(
+    MAX_ZOOM_WEIGHT_FACTOR -
+      (safeZoom - ZOOM_WEIGHT_REFERENCE) * ZOOM_WEIGHT_SLOPE,
+    MIN_ZOOM_WEIGHT_FACTOR,
+    MAX_ZOOM_WEIGHT_FACTOR,
+  );
+  return resolveParticipantBaseWeight(participantsCount) * zoomFactor;
+}
+
 export function formatActionGeometryTooltipTitle(
   kind: "polyline" | "polygon",
 ): string {
@@ -37,15 +91,13 @@ function resolvePointRenderStyle(isFallback: boolean): ActionMapGeometryRenderSt
   return { pointRadius: isFallback ? 4.5 : 6, pointWeight: isFallback ? 1.5 : 2, pointOpacity: isFallback ? 0.7 : 0.95, pointFillOpacity: isFallback ? 0.52 : 0.85, strokeWeight: null, strokeOpacity: null, fillOpacity: null, dashArray: undefined };
 }
 
-function resolvePolygonRenderStyle(isIndicative: boolean): ActionMapGeometryRenderStyle {
-  return { pointRadius: null, pointWeight: null, pointOpacity: null, pointFillOpacity: null, strokeWeight: 2, strokeOpacity: isIndicative ? 0.68 : 0.95, fillOpacity: isIndicative ? 0.14 : 0.32, dashArray: isIndicative ? "6 6" : undefined };
+function resolvePolygonRenderStyle(isHypothetical: boolean): ActionMapGeometryRenderStyle {
+  return { pointRadius: null, pointWeight: null, pointOpacity: null, pointFillOpacity: null, strokeWeight: null, strokeOpacity: DEFAULT_GEOMETRY_STROKE_OPACITY, fillOpacity: 0.24, dashArray: isHypothetical ? HYPOTHETICAL_GEOMETRY_DASH_ARRAY : undefined };
 }
 
 function resolveLineRenderStyle(presentation: GeometryPresentation): ActionMapGeometryRenderStyle {
-  const isNetworkRoute = presentation.variant === "network" || (presentation.variant === undefined && presentation.strokeStyle === "dashed");
-  const isIndicativeRoute = (presentation.variant === "indicative" || presentation.reality === "contextual" || presentation.reality === "estimated") && presentation.strokeStyle === "dashed";
-  const isEstimatedRoute = presentation.variant === "estimated" && presentation.strokeStyle === "dashed";
-  return { pointRadius: null, pointWeight: null, pointOpacity: null, pointFillOpacity: null, strokeWeight: 4, strokeOpacity: isNetworkRoute ? 0.75 : isIndicativeRoute ? 0.62 : 0.92, fillOpacity: null, dashArray: isNetworkRoute ? "8 8" : isIndicativeRoute || isEstimatedRoute ? "4 8" : undefined };
+  const isHypothetical = presentation.variant === "network" || presentation.strokeStyle === "dashed";
+  return { pointRadius: null, pointWeight: null, pointOpacity: null, pointFillOpacity: null, strokeWeight: null, strokeOpacity: DEFAULT_GEOMETRY_STROKE_OPACITY, fillOpacity: null, dashArray: isHypothetical ? HYPOTHETICAL_GEOMETRY_DASH_ARRAY : undefined };
 }
 
 export function resolveGeometryRenderStyle(
@@ -59,11 +111,7 @@ export function resolveGeometryRenderStyle(
     if (geometry.presentation.origin === "reference" && geometry.presentation.strokeStyle === "solid") {
       return resolvePolygonRenderStyle(false);
     }
-    const isIndicative =
-      geometry.presentation.variant === "indicative" ||
-      geometry.presentation.reality === "contextual" ||
-      geometry.presentation.reality === "estimated";
-    return resolvePolygonRenderStyle(isIndicative);
+    return resolvePolygonRenderStyle(geometry.presentation.strokeStyle === "dashed");
   }
   return resolveLineRenderStyle(geometry.presentation);
 }

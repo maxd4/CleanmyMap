@@ -11,6 +11,7 @@ import {
   formatGeometryPointCount,
   formatActionGeometryTooltipTitle,
   resolveGeometryConfidenceLabel,
+  resolveGeometryStrokeWeight,
   resolvePolylineDirectionMarkers,
   resolveGeometryRenderStyle,
   resolvePolylineEndpointMarkers,
@@ -209,7 +210,7 @@ describe("actions map geometry utils", () => {
       coverageTraceCount: 2,
       presentation: { origin: "estimated_route", label: "Parcours hypothétique estimé", strokeStyle: "dashed" },
     });
-    expect(resolveGeometryRenderStyle({ kind: "multiline", presentation: model.presentation }).dashArray).toBe("4 8");
+    expect(resolveGeometryRenderStyle({ kind: "multiline", presentation: model.presentation }).dashArray).toBe("8 8");
     expect(model.metrics.label).toContain("distance observée non disponible");
   });
 
@@ -503,7 +504,7 @@ describe("actions map geometry utils", () => {
 
     expect(geometry.renderMode).toBe("drawing");
     expect(geometry.presentation.label).toBe("Liaison indicative non routée");
-    expect(resolveGeometryRenderStyle(geometry).dashArray).toBe("4 8");
+    expect(resolveGeometryRenderStyle(geometry).dashArray).toBe("8 8");
   });
 
   it("shows confidence only for estimated geometry and preserves stroke semantics", () => {
@@ -535,7 +536,7 @@ describe("actions map geometry utils", () => {
           variant: "estimated",
         },
       }).dashArray,
-    ).toBe("4 8");
+    ).toBe("8 8");
     expect(
       resolveGeometryRenderStyle({
         kind: "polyline",
@@ -560,8 +561,8 @@ describe("actions map geometry utils", () => {
       },
     });
 
-    expect(style.fillOpacity).toBe(0.32);
-    expect(style.strokeOpacity).toBe(0.95);
+    expect(style.fillOpacity).toBe(0.24);
+    expect(style.strokeOpacity).toBe(0.9);
     expect(style.dashArray).toBeUndefined();
     expect(
       formatGeometryModeLabel("polygon", {
@@ -614,9 +615,9 @@ describe("actions map geometry utils", () => {
       },
     });
 
-    expect(style.fillOpacity).toBe(0.14);
-    expect(style.strokeOpacity).toBe(0.68);
-    expect(style.dashArray).toBe("6 6");
+    expect(style.fillOpacity).toBe(0.24);
+    expect(style.strokeOpacity).toBe(0.9);
+    expect(style.dashArray).toBe("8 8");
     expect(
       formatGeometryModeLabel("polygon", {
         origin: "estimated_area",
@@ -841,7 +842,7 @@ describe("actions map geometry utils", () => {
       "Confiance 100%",
     );
     expect(geometry.metrics.label).toMatch(/^Parcours déclaré · /);
-    expect(resolveGeometryRenderStyle(geometry).strokeWeight).toBe(4);
+    expect(resolveGeometryRenderStyle(geometry).strokeWeight).toBeNull();
   });
 
   it("computes an approximate area label for polygon drawings", () => {
@@ -872,7 +873,40 @@ describe("actions map geometry utils", () => {
     expect(geometry.kind).toBe("polygon");
     expect(geometry.metrics.kind).toBe("area");
     expect(geometry.metrics.label).toMatch(/^Zone d’action · /);
-    expect(resolveGeometryRenderStyle(geometry).strokeWeight).toBe(2);
+    expect(resolveGeometryRenderStyle(geometry).strokeWeight).toBeNull();
+  });
+
+  it("uses real participant tiers and keeps unknown totals distinct from zero", () => {
+    const unknown = resolveGeometryStrokeWeight({ participantsCount: null, zoom: 10 });
+    const one = resolveGeometryStrokeWeight({ participantsCount: 1, zoom: 10 });
+    const five = resolveGeometryStrokeWeight({ participantsCount: 5, zoom: 10 });
+    const twentyFive = resolveGeometryStrokeWeight({ participantsCount: 25, zoom: 10 });
+
+    expect(unknown).toBeGreaterThan(0);
+    expect(one).toBeLessThan(five);
+    expect(five).toBeLessThan(twentyFive);
+    expect(resolveGeometryStrokeWeight({ participantsCount: null, zoom: 10 })).toBe(unknown);
+  });
+
+  it("applies a bounded continuous zoom factor without collapsing participant tiers", () => {
+    const zoomedOutSmall = resolveGeometryStrokeWeight({ participantsCount: 1, zoom: 5 });
+    const zoomedOutLarge = resolveGeometryStrokeWeight({ participantsCount: 25, zoom: 5 });
+    const zoomedInSmall = resolveGeometryStrokeWeight({ participantsCount: 1, zoom: 18 });
+    const zoomedInLarge = resolveGeometryStrokeWeight({ participantsCount: 25, zoom: 18 });
+
+    expect(zoomedOutSmall).toBeGreaterThan(0);
+    expect(zoomedOutLarge).toBeGreaterThan(zoomedOutSmall);
+    expect(zoomedInLarge).toBeGreaterThan(zoomedInSmall);
+    expect(zoomedInSmall).toBeLessThan(zoomedOutSmall);
+    expect(resolveGeometryStrokeWeight({ participantsCount: 1, zoom: 10.1 })).toBeGreaterThan(
+      resolveGeometryStrokeWeight({ participantsCount: 1, zoom: 10.2 }),
+    );
+    expect(resolveGeometryStrokeWeight({ participantsCount: 1, zoom: -100 })).toBe(
+      resolveGeometryStrokeWeight({ participantsCount: 1, zoom: 0 }),
+    );
+    expect(resolveGeometryStrokeWeight({ participantsCount: 1, zoom: 100 })).toBe(
+      resolveGeometryStrokeWeight({ participantsCount: 1, zoom: 20 }),
+    );
   });
 
   it("keeps distance labels tied to their geometry provenance", () => {

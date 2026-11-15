@@ -9,7 +9,7 @@ import {
 import { MapGeometryLegend } from "./map-geometry-legend";
 
 describe("MapGeometryLegend", () => {
-  it("explains the final geometry interaction grammar and indicative opacity", () => {
+  it("explains the final geometry interaction grammar and participant thickness", () => {
     const markup = renderToStaticMarkup(<MapGeometryLegend />);
 
     expect(markup).toContain(
@@ -19,15 +19,13 @@ describe("MapGeometryLegend", () => {
       "Trait plein : parcours ou zone déclaré manuellement",
     );
     expect(markup).toContain(
-      "Pointillé régulier : itinéraire prévu sur le réseau",
+      "Pointillé : parcours prévu, reconstruit ou hypothétique",
     );
     expect(markup).toContain(
       "Contour contextuel : repère géographique, pas une couverture nettoyée",
     );
     expect(markup).toContain("Point : localisation seule");
-    expect(markup).toMatch(
-      /L(?:'|&#x27;)opacité et le libellé précisent les zones indicatives\./,
-    );
+    expect(markup).toContain("épaisseur suit le nombre total de participants");
     expect(markup).toContain("bg-slate-700");
     expect(markup).toContain("border-dashed border-slate-700");
     expect(markup).toContain("border-slate-700 bg-slate-500/10");
@@ -77,7 +75,7 @@ describe("MapGeometryLegend", () => {
       "Trait plein : parcours ou zone déclaré manuellement",
     );
     expect(markup).toContain(
-      "Pointillé régulier : itinéraire prévu sur le réseau",
+      "Pointillé : parcours prévu, reconstruit ou hypothétique",
     );
     expect(markup).not.toContain("pollution projetée depuis la dernière action");
   });

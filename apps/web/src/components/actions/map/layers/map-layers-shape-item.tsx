@@ -1,8 +1,10 @@
 "use client";
 
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
+import { Fragment } from "react";
 import { Polyline, Tooltip } from "react-leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
+import { resolveKnownParticipantsCount } from "@/lib/actions/volunteer-participation";
 import { groupActionsByCorridor } from "@/lib/actions/pollution/corridor-history";
 import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
 import type {
@@ -14,9 +16,11 @@ import type {
   PollutionScoreScope,
 } from "@/lib/actions/pollution/pollution-score";
 import { resolveActionMapGeometryViewModel, type ActionMapGeometryViewModel } from "./actions-map-geometry.utils";
-import { fitActionGeometryBounds, type ShapeBasemapMode } from "./map-layers.shared";
+import { fitActionGeometryBounds, resolveShapeCasingStyle, type ShapeBasemapMode } from "./map-layers.shared";
 import { ShapeGeometryRenderer } from "./map-layers-shape-geometry";
 import { resolveShapeLayerGeometryModel, resolveShapeLayerScoreModel } from "./map-layers-shape-item-model";
+import { HYPOTHETICAL_GEOMETRY_DASH_ARRAY, resolveGeometryRenderStyle, resolveGeometryStrokeWeight } from "./actions-map-geometry-render";
+import { resolveVisibleShapePathOptions } from "./map-layers-coverage-geometry";
 
 export type ActionShapeLayerRef = {
   openPopup?: () => void;
@@ -38,6 +42,7 @@ export type ShapeLayerItemProps = {
   hoveredActionId: string | null;
   onSelectAction?: (actionId: string) => void;
   map: Parameters<typeof fitActionGeometryBounds>[0];
+  zoom: number;
   layerRefs: ShapeLayerRefs;
   setHoveredActionId: Dispatch<SetStateAction<string | null>>;
   references?: PollutionScoreReferences | null;
@@ -47,24 +52,60 @@ export type ShapeLayerItemProps = {
   corridorHistories: ReturnType<typeof groupActionsByCorridor>;
 };
 
-function OperationalRouteLayers({ item }: { item: ActionMapItem }) {
+function OperationalRouteLayers({
+  item,
+  displayColor,
+  pollutionCategory,
+  basemapMode,
+  participantsCount,
+  zoom,
+}: {
+  item: ActionMapItem;
+  displayColor: string;
+  pollutionCategory: Parameters<typeof resolveShapeCasingStyle>[0]["pollutionCategory"];
+  basemapMode: ShapeBasemapMode;
+  participantsCount: number | null;
+  zoom: number;
+}) {
   const operationalRoute = item.contract?.metadata.preparationData?.operationalRoute;
   const segments = getPublicOperationalRouteSegments(operationalRoute);
+  const renderStyle = resolveGeometryRenderStyle({
+    kind: "polyline",
+    presentation: {
+      origin: "routed",
+      reality: "planned",
+      label: "Itinéraire prévu sur le réseau",
+      strokeStyle: "dashed",
+      variant: "network",
+    },
+  });
+  const strokeWeight = resolveGeometryStrokeWeight({ participantsCount, zoom });
+  const casingStyle = resolveShapeCasingStyle({
+    pollutionCategory,
+    basemapMode,
+    geometryKind: "polyline",
+    visibleWeight: strokeWeight,
+    dashArray: HYPOTHETICAL_GEOMETRY_DASH_ARRAY,
+  });
+  const visibleStyle = resolveVisibleShapePathOptions({
+    geometryKind: "polyline",
+    displayColor,
+    renderStyle,
+    visibleWeight: strokeWeight,
+    isSelected: false,
+  });
   return (
     <>
-      {segments.map((segment, index) => (
-        <Polyline
-          key={`operational-route-${item.id}-${segment.routeId}`}
-          positions={segment.coordinates}
-          pathOptions={{
-            color: index % 2 === 0 ? "#059669" : "#2563eb",
-            weight: 5,
-            opacity: 0.78,
-            dashArray: "10 7",
-          }}
-        >
-          <Tooltip sticky>Itinéraire prévu sur le réseau</Tooltip>
-        </Polyline>
+      {segments.map((segment) => (
+        <Fragment key={`operational-route-${item.id}-${segment.routeId}`}>
+          {casingStyle ? <Polyline positions={segment.coordinates} pathOptions={casingStyle} /> : null}
+          <Polyline
+            positions={segment.coordinates}
+            pathOptions={visibleStyle}
+          >
+            <Tooltip sticky>Itinéraire prévu sur le réseau</Tooltip>
+          </Polyline>
+        </Fragment>
       ))}
     </>
   );
@@ -80,6 +121,7 @@ export function ShapeLayerItem({
   hoveredActionId,
   onSelectAction,
   map,
+  zoom,
   layerRefs,
   setHoveredActionId,
   references,
@@ -96,12 +138,6 @@ export function ShapeLayerItem({
     geometry.positions.length > 0 || geometry.multiLinePositions.some((line) => line.length > 1);
   const showOperationalRoute =
     operationalRouteSegments.length > 0 && geometry.presentation.reality !== "observed";
-  if (geometry.renderMode !== "drawing" || !hasRenderableGeometry) {
-    return showOperationalRoute ? (
-      <OperationalRouteLayers item={item} />
-    ) : null;
-  }
-
   const scoreModel = resolveShapeLayerScoreModel({
     item,
     geometry,
@@ -113,6 +149,27 @@ export function ShapeLayerItem({
     referencesLoading,
     now,
   });
+  const participantsCount = resolveKnownParticipantsCount({
+    volunteerParticipation:
+      item.contract?.metadata.volunteerParticipation ??
+      item.contract?.metadata.preparationData?.volunteerParticipation,
+    legacyVolunteersCount:
+      item.contract?.metadata.volunteersCount ?? item.volunteers_count,
+  });
+  const strokeWeight = resolveGeometryStrokeWeight({ participantsCount, zoom });
+  if (geometry.renderMode !== "drawing" || !hasRenderableGeometry) {
+    return showOperationalRoute ? (
+      <OperationalRouteLayers
+        item={item}
+        displayColor={scoreModel.displayColor}
+        pollutionCategory={scoreModel.pollutionCategory}
+        basemapMode={basemapMode}
+        participantsCount={participantsCount}
+        zoom={zoom}
+      />
+    ) : null;
+  }
+
   const geometryModel = resolveShapeLayerGeometryModel({
     item,
     geometry,
@@ -130,11 +187,21 @@ export function ShapeLayerItem({
   });
   return (
     <>
-      {showOperationalRoute ? <OperationalRouteLayers item={item} /> : null}
+      {showOperationalRoute ? (
+        <OperationalRouteLayers
+          item={item}
+          displayColor={scoreModel.displayColor}
+          pollutionCategory={scoreModel.pollutionCategory}
+          basemapMode={basemapMode}
+          participantsCount={participantsCount}
+          zoom={zoom}
+        />
+      ) : null}
       <ShapeGeometryRenderer
         item={item}
         geometry={geometry}
         renderStyle={geometryModel.renderStyle}
+        strokeWeight={strokeWeight}
         color={scoreModel.color}
         displayColor={scoreModel.displayColor}
         pollutionCategory={scoreModel.pollutionCategory}

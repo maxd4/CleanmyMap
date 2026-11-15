@@ -35,10 +35,16 @@ test('workflow creates all dump classes, encrypts before upload and cleans up', 
   assert.match(workflow, /run_restore_stage roles \/tmp\/cmm-roles\.sql/);
   assert.match(workflow, /run_restore_stage schema \/tmp\/cmm-schema\.sql/);
   assert.match(workflow, /run_restore_stage data \/tmp\/cmm-data\.sql/);
+  assert.match(workflow, /restore_workdir="\$RUNNER_TEMP\/cmm-supabase-restore"/);
+  assert.match(workflow, /project_id = "cmm-backup-restore"/);
+  assert.match(workflow, /\[db\.migrations\][\s\S]*?enabled = false/);
+  assert.match(workflow, /\[db\.seed\][\s\S]*?enabled = false/);
+  assert.doesNotMatch(workflow, /supabase start --workdir apps\/web/);
   assert.match(workflow, /session_replication_role = replica/);
   assert.doesNotMatch(workflow, /dropdb .*cmm_backup_restore|createdb .*cmm_backup_restore/);
   assert.match(workflow, /information_schema\.role_table_grants/);
   assert.match(workflow, /EPHEMERAL_RESTORE: PASS roles=schema=data=executed/);
+  assert.match(workflow, /restore-roles\.log/);
   assert.match(workflow, /steps\.encrypt\.outputs\.encrypted_archive/);
   assert.ok(workflow.indexOf('run_restore_stage data /tmp/cmm-data.sql') < workflow.indexOf('- name: Encrypt the complete backup before artifact publication'));
   assert.ok(workflow.indexOf('- name: Encrypt the complete backup before artifact publication') < workflow.indexOf('- name: Publish encrypted artifact only'));

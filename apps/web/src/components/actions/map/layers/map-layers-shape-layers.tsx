@@ -26,10 +26,19 @@ export function ShapeLayers({
   const { references, isLoading: referencesLoading } = useActionPollutionScoreReferences();
   const map = useMap();
   const now = new Date();
+  const [zoom, setZoom] = useState(() => map.getZoom());
   const [hoveredActionId, setHoveredActionId] = useState<string | null>(null);
   const layerRefs = useRef<
     Record<string, { visible?: ActionShapeLayerRef; casing?: ActionShapeLayerRef }>
   >({});
+
+  useEffect(() => {
+    const handleZoomEnd = () => setZoom(map.getZoom());
+    map.on("zoomend", handleZoomEnd);
+    return () => {
+      map.off("zoomend", handleZoomEnd);
+    };
+  }, [map]);
   const actionItemsById = new Map(
     items
       .filter((item) => item.contract)
@@ -79,6 +88,7 @@ export function ShapeLayers({
           hoveredActionId={hoveredActionId}
           onSelectAction={onSelectAction}
           map={map}
+          zoom={zoom}
           layerRefs={layerRefs}
           setHoveredActionId={setHoveredActionId}
           references={references}

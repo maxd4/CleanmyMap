@@ -1164,11 +1164,29 @@ choix d'un autre mode ne l'efface ni ne la transforme en parcours prévu.
 Sur mobile, la carte reste consultable et cadre le point ou l'ensemble des
 traces ; le dessin manuel reste disponible sur ordinateur uniquement.
 
-### Sélection
+### Épaisseur, zoom et sélection
 
-L'épaisseur du trait peut augmenter pour indiquer la sélection de l'objet.
+La couleur des tracés encode exclusivement la pollution : un score absent reste
+gris et le vert est réservé aux lieux explicitement propres (`clean_place`). La
+provenance reste dans les données, les libellés et la légende ; le pointillé est
+le seul signal visuel qui distingue un parcours prévu, reconstruit ou
+hypothétique d'une trace observée ou d'un parcours déclaré. L'opacité n'ajoute
+aucune sémantique métier de provenance : elle conserve uniquement les besoins
+techniques de remplissage, de contraste et de sélection.
 
-L'épaisseur ne doit pas être utilisée pour encoder la pollution.
+L'épaisseur du tracé encode le nombre total réel de participants par paliers
+lisibles. Elle utilise la composition finale normalisée puis, pour les données
+historiques compatibles, le total `volunteers_count`; les unités opérationnelles
+pondérées et les valeurs attendues ne sont jamais utilisées. Une valeur absente
+reste inconnue et reçoit le tracé fin par défaut, sans conversion silencieuse
+en zéro.
+
+Le resolver central de rendu applique un facteur déterministe, borné et continu
+au zoom Leaflet. Il réduit les traits à fort zoom pour éviter la surcharge,
+préserve les écarts entre paliers au dézoom et s'applique de manière identique
+à la carte complète, à l'aperçu de l'accueil, aux `MultiLineString` et aux
+`OperationalRouteLayers`. La sélection ajoute un halo distinct du poids métier
+et ne modifie jamais le nombre de participants représenté.
 
 ## 11. Lecture recommandée dans les tooltips et popups
 

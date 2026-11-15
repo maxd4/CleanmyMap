@@ -382,13 +382,13 @@ suivantes, sur la carte, dans la légende, les tooltips et les popups :
   individuelles restent distinctes et la distance de couverture cumulée est
   indisponible sans politique de dédoublonnage versionnée ;
 - `Parcours déclaré` : parcours dessiné ou déclaré, trait plein ;
-- `Itinéraire prévu sur le réseau` : parcours piéton retourné par le réseau,
-  trait pointillé régulier ;
-- `Itinéraire prévu estimé` : estimation sans trace observée, trait pointillé ;
-- `Parcours hypothétique estimé` : multi-traces reconstruites pour des groupes de 5 à 8 participants, sans surface nettoyée ni distance observée ;
+- `Itinéraire prévu sur le réseau`, `Itinéraire prévu estimé` et `Parcours
+  hypothétique estimé` : parcours sans observation terrain, tous rendus avec le
+  même trait pointillé. Les groupes de 5 à 8 participants restent décrits dans
+  les données et les libellés, sans ajouter une seconde sémantique visuelle ;
 - `Zone d'intervention estimée` : emprise officielle d'un parc utilisée comme repère rempli, sans prétendre mesurer la zone nettoyée ;
 - `Liaison indicative non routée` : repli géographique sans réseau, trait
-  pointillé léger uniquement pendant la préparation ; après action, le rendu
+  pointillé pendant la préparation ; après action, le rendu
   devient le point `Parcours non documenté` ;
 - `Zone d'action` : surface déclarée à bord plein ;
 - `Repère géographique indicatif` et `Zone indicative` : contexte spatial à
@@ -396,8 +396,13 @@ suivantes, sur la carte, dans la légende, les tooltips et les popups :
 - `Localisation seule` : point sans tracé.
 
 Un trait pointillé représente une hypothèse géographique, jamais une trace GPS
-observée. L'épaisseur sert uniquement à la sélection et à la lisibilité ; elle
-ne constitue pas un score.
+observée. La couleur porte exclusivement la pollution (gris si le score est
+indisponible, vert uniquement pour `clean_place`). L'épaisseur métier suit le
+nombre total réel de participants, par paliers, avec un facteur déterministe,
+borné et continu selon le zoom ; une valeur absente reste inconnue et reçoit
+seulement le trait fin par défaut. La sélection ajoute un halo distinct sans
+modifier le nombre représenté. L'opacité conserve uniquement ses usages
+techniques de remplissage, contraste et sélection.
 
 Une couverture observée est prioritaire sur une géométrie manuelle, de référence
 ou planifiée. Une référence approximative déjà persistée reste conservée pour

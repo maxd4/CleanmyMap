@@ -13,6 +13,7 @@ test("classifies restore failures without returning SQL text", () => {
   assert.equal(classifyRestoreFailure("psql: ERROR: permission denied for schema public"), "role_or_privilege");
   assert.equal(classifyRestoreFailure("psql: ERROR: extension postgis does not exist"), "extension_or_feature");
   assert.equal(classifyRestoreFailure("psql: ERROR: relation public.actions does not exist"), "dependency_or_ordering");
+  assert.equal(classifyRestoreFailure("psql: ERROR: relation public.actions already exists"), "schema_conflict");
   assert.equal(classifyRestoreFailure("psql: ERROR: duplicate key value violates unique constraint"), "constraint_or_data");
   assert.equal(classifyRestoreFailure("psql: ERROR: syntax error at or near COPY"), "syntax_or_format");
   assert.equal(classifyRestoreFailure("psql: error: connection refused"), "connection_or_authentication");
@@ -55,6 +56,7 @@ test("covers representative SQLSTATE classes without exposing messages", () => {
     ["08006", "connection_or_authentication"],
     ["42501", "role_or_privilege"],
     ["0A000", "extension_or_feature"],
+    ["42P07", "schema_conflict"],
     ["42P01", "dependency_or_ordering"],
     ["23503", "constraint_or_data"],
     ["42601", "syntax_or_format"],

@@ -104,14 +104,18 @@ secrets ou mots de passe de rôle. Avant une restauration de schéma, appliquer 
 précaution Supabase concernant les privilèges par défaut `anon` et
 `authenticated`.
 
-Le contrôle éphémère du workflow suit la procédure Supabase : il conserve la base
-`postgres` initialisée par `supabase start`, révoque les privilèges par défaut
+Le contrôle éphémère du workflow suit la procédure Supabase sur une configuration
+temporaire dédiée : `supabase start` n'y applique ni l'arbre de migrations métier
+de `apps/web`, ni son seed. Il conserve uniquement les objets gérés nécessaires
+au runtime Supabase dans la base `postgres`, révoque les privilèges par défaut
 `anon`/`authenticated` avant le schéma, rejoue `roles.sql`, puis `schema.sql`,
 et rejoue `data.sql` dans une session séparée avec
 `session_replication_role = replica` pour éviter l'exécution des triggers pendant
 le chargement des données. Le contrôle final vérifie les contraintes, fonctions
 publiques, extensions, rôles, grants de tables et relations protégées par RLS.
-Une base vierge créée par `createdb` n'est pas une cible Supabase représentative.
+La configuration canonique `apps/web/supabase/config.toml` et l'arbre de
+migrations ne sont pas modifiés ; une base vierge créée par `createdb` n'est pas
+une cible Supabase représentative.
 
 Recréer ensuite les buckets et téléverser les octets Storage avec l'API officielle,
 en contrôlant chemin, taille, MIME et SHA-256. Reconstituer Auth par un mécanisme

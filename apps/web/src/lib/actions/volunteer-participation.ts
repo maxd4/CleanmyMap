@@ -384,6 +384,18 @@ export function resolveParticipantsCount(params: {
   volunteerParticipation?: ActionVolunteerParticipation | null;
   legacyVolunteersCount?: number | null;
 }): number {
+  return resolveKnownParticipantsCount(params) ?? 0;
+}
+
+/**
+ * Returns the physical participant total without turning an unknown value into
+ * zero. This is the read-side contract for visual encodings and other callers
+ * where absence must remain distinguishable from an actual zero.
+ */
+export function resolveKnownParticipantsCount(params: {
+  volunteerParticipation?: ActionVolunteerParticipation | null;
+  legacyVolunteersCount?: number | null;
+}): number | null {
   const normalized = params.volunteerParticipation
     ? normalizeVolunteerParticipation(params.volunteerParticipation)
     : null;
@@ -395,7 +407,7 @@ export function resolveParticipantsCount(params: {
   const legacy = params.legacyVolunteersCount;
   return typeof legacy === "number" && Number.isFinite(legacy)
     ? Math.max(0, Math.trunc(legacy))
-    : 0;
+    : null;
 }
 
 export function resolveEffectiveVolunteerUnits(

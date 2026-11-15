@@ -151,8 +151,49 @@ jobs:
         run: |
           set -euo pipefail
           export SUPABASE_DB_PASSWORD='ephemeral-restore-not-production'
-          npx supabase start --workdir apps/web --yes > "$RUNNER_TEMP/supabase-start.log" 2>&1
-          db_container="supabase_db_web"
+          restore_workdir="$RUNNER_TEMP/cmm-supabase-restore"
+          mkdir -p "$restore_workdir/supabase"
+          cat > "$restore_workdir/supabase/config.toml" <<'EOF'
+          project_id = "cmm-backup-restore"
+
+          [api]
+          enabled = false
+
+          [db]
+          port = 54322
+          major_version = 17
+          health_timeout = "2m"
+
+          [db.migrations]
+          enabled = false
+
+          [db.seed]
+          enabled = false
+
+          [realtime]
+          enabled = false
+
+          [studio]
+          enabled = false
+
+          [inbucket]
+          enabled = false
+
+          [storage]
+          enabled = false
+
+          [imgproxy]
+          enabled = false
+
+          [analytics]
+          enabled = false
+
+          [edge_runtime]
+          enabled = false
+          EOF
+          npx supabase start --workdir "$restore_workdir" --yes > "$RUNNER_TEMP/supabase-start.log" 2>&1
+          db_container="supabase_db_cmm-backup-restore"
+          test "$(docker ps --filter "name=^/${db_container}$" --format '{{.Names}}')" = "$db_container"
           docker cp "$BACKUP_ROOT/database/schema.sql" "$db_container:/tmp/cmm-schema.sql"
           docker cp "$BACKUP_ROOT/database/data.sql" "$db_container:/tmp/cmm-data.sql"
           docker cp "$BACKUP_ROOT/database/roles.sql" "$db_container:/tmp/cmm-roles.sql"
@@ -227,5 +268,5 @@ jobs:
         if: always()
         run: |
           set +e
-          npx supabase stop --workdir apps/web --no-backup >/dev/null 2>&1
-          rm -rf "$BACKUP_ROOT" "$GNUPGHOME" "$RUNNER_TEMP/supabase-backup.tar" "$RUNNER_TEMP/supabase-backup-public-key.asc" "$RUNNER_TEMP/supabase-link.log" "$RUNNER_TEMP/restore-schema.log" "$RUNNER_TEMP/restore-data.log" "$RUNNER_TEMP/restore-checks.txt" "$RUNNER_TEMP/supabase-start.log"
+          npx supabase stop --workdir "${restore_workdir:-$RUNNER_TEMP/cmm-supabase-restore}" --no-backup >/dev/null 2>&1
+          rm -rf "$BACKUP_ROOT" "$GNUPGHOME" "${restore_workdir:-$RUNNER_TEMP/cmm-supabase-restore}" "$RUNNER_TEMP/supabase-backup.tar" "$RUNNER_TEMP/supabase-backup-public-key.asc" "$RUNNER_TEMP/supabase-link.log" "$RUNNER_TEMP/restore-roles.log" "$RUNNER_TEMP/restore-schema.log" "$RUNNER_TEMP/restore-data.log" "$RUNNER_TEMP/restore-checks.txt" "$RUNNER_TEMP/supabase-start.log"

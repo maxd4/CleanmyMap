@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Popup, Polyline, Tooltip } from "react-leaflet";
 import type { ActionMapGeometryViewModel } from "./actions-map-geometry.utils";
 import type { ActionMapGeometryRenderStyle } from "./actions-map-geometry-render";
@@ -46,6 +47,25 @@ export function resolveVisibleShapePathOptions({
   };
 }
 
+export function resolveSelectionHaloPathOptions({
+  geometryKind,
+  displayColor,
+  renderStyle,
+  visibleWeight,
+}: Pick<CoverageGeometryRenderInput, "displayColor" | "renderStyle"> & {
+  geometryKind: "polygon" | "polyline";
+  visibleWeight: number;
+}) {
+  return {
+    color: displayColor,
+    weight: visibleWeight + 4,
+    opacity: 0.38,
+    ...(geometryKind === "polygon" ? { fillOpacity: 0 } : {}),
+    dashArray: renderStyle.dashArray,
+    interactive: false,
+  };
+}
+
 export function GeometryInteractionOverlays({
   item,
   geometryKind,
@@ -86,9 +106,22 @@ export function renderCoveragePolylines({
     isSelected,
   });
   return geometry.multiLinePositions.map((positions, index) => (
-    <Polyline key={`coverage-${item.id}-${index}`} positions={positions} pathOptions={coverageStyle} eventHandlers={handlers}>
-      {withInteraction && index === 0 ? <GeometryInteractionOverlays item={item} geometryKind="polyline" tooltipProps={tooltipProps} commonPopupProps={commonPopupProps} /> : null}
-    </Polyline>
+    <Fragment key={`coverage-${item.id}-${index}`}>
+      {isSelected ? (
+        <Polyline
+          positions={positions}
+          pathOptions={resolveSelectionHaloPathOptions({
+            geometryKind: "polyline",
+            displayColor,
+            renderStyle,
+            visibleWeight,
+          })}
+        />
+      ) : null}
+      <Polyline positions={positions} pathOptions={coverageStyle} eventHandlers={handlers}>
+        {withInteraction && index === 0 ? <GeometryInteractionOverlays item={item} geometryKind="polyline" tooltipProps={tooltipProps} commonPopupProps={commonPopupProps} /> : null}
+      </Polyline>
+    </Fragment>
   ));
 }
 

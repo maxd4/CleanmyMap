@@ -13,6 +13,7 @@ import {
   computePollutionScoresRelativeToReferences,
 } from "@/lib/actions/pollution/pollution-score";
 import { POLLUTION_SCORE_UNAVAILABLE_COLOR } from "../scores/pollution-score-scope";
+import { resolveGeometryStrokeWeight } from "./actions-map-geometry-render";
 
 vi.mock("react-leaflet", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>
@@ -82,7 +83,7 @@ vi.mock("react-leaflet", () => {
       ),
     Popup: passthrough,
     Tooltip: passthrough,
-    useMap: () => ({ fitBounds: vi.fn() }),
+    useMap: () => ({ getZoom: () => 10, on: vi.fn(), off: vi.fn(), fitBounds: vi.fn() }),
   };
 });
 
@@ -318,7 +319,9 @@ describe("ShapeLayers", () => {
 
     expect(markup).toContain('data-color="#ffffff"');
     expect(markup).toContain('data-dash-array="8 8"');
-    expect(markup).toContain(`data-weight="6"`);
+    expect(markup).toContain(
+      `data-weight="${resolveGeometryStrokeWeight({ participantsCount: 1, zoom: 10 }) + 2}"`,
+    );
     expect(markup).toContain(`data-weight="${ACTION_TRACE_HIT_AREA_WEIGHT}"`);
     expect(markup).toContain('data-opacity="0"');
   });
@@ -389,6 +392,21 @@ describe("ShapeLayers", () => {
     expect(selectedMarkup).toContain("Départ");
     expect(selectedMarkup).toContain("Arrivée");
     expect(selectedMarkup.match(/cmm-action-geometry-direction/g)).toHaveLength(3);
+  });
+
+  it("adds a selection halo without changing the participant stroke weight", () => {
+    const selectedMarkup = renderToStaticMarkup(
+      React.createElement(ShapeLayers, {
+        items: [buildShapeItem("action", 20, "polyline", { geometrySource: "manual" })],
+        selectedActionId: "action-shape",
+        basemapMode: "light",
+      }),
+    );
+    const businessWeight = resolveGeometryStrokeWeight({ participantsCount: 1, zoom: 10 });
+
+    expect(selectedMarkup).toContain(`data-weight="${businessWeight}"`);
+    expect(selectedMarkup).toContain(`data-weight="${businessWeight + 4}"`);
+    expect(selectedMarkup).not.toContain(`data-weight="${businessWeight + 2}"`);
   });
 
   function buildShapeItem(
