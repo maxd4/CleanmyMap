@@ -11,8 +11,11 @@ géométrie parallèle ne permet de choisir une autre présentation.
 - À gauche, `Accueil`, `Rechercher` et `Préférences` restent dans des groupes
   fonctionnellement autonomes.
 - Au centre, le dock des blocs de navigation est rendu à partir de `xl`
-  (1280 px) et reste centré sur le viewport par la grille indépendante du
-  shell. Sous `xl`, `Sommaire` conserve l'entrée mobile/tablette.
+  (1280 px) et se centre dans l'espace réellement disponible entre le bord
+  droit de `Préférences` et le bord gauche de `Feedback`. La grille `auto /
+  espace flexible / auto` conserve cet équilibre lorsque le groupe de compte
+  connecté ou déconnecté change de largeur. Sous `xl`, `Sommaire` conserve
+  l'entrée mobile/tablette.
 - À droite, `Feedback`, notifications, rôle et identité/compte restent
   montés une seule fois. Les libellés secondaires se compactent avant les
   contrôles essentiels ; le groupe reste borné au viewport.
@@ -37,6 +40,12 @@ neutralise. `prefers-reduced-motion` désactive également les transitions de
 l'icône.
 
 ## Utilitaires et identité
+
+La recherche globale affiche une pastille sombre compacte avec loupe et libellé
+`RECHERCHER` dès `xl` lorsque l'espace desktop le permet ; son indication
+visuelle `Ctrl K / ⌘ K` n'est pas rendue. Le raccourci Ctrl/Cmd+K, le nom
+accessible, le focus et le panneau `CmmDropdown` restent inchangés. Sous
+`xl`, la variante loupe seule est conservée.
 
 `Préférences` et `Feedback` sont deux contrôles autonomes. La coordination du
 shell garantit qu'un seul menu utilitaire est ouvert à la fois. Feedback utilise

@@ -113,7 +113,9 @@ describe("GlobalSearch", () => {
     expect(searchSource).toContain('triggerHasPopup="dialog"');
     expect(searchSource).toContain('panelClassName="w-[min(24rem,calc(100vw-1rem))]"');
     expect(searchSource).toContain('panelAlignment="center"');
-    expect(searchSource).toContain("hidden whitespace-nowrap font-black uppercase tracking-[0.14em] 2xl:inline");
+    expect(searchSource).toContain("hidden whitespace-nowrap font-normal uppercase tracking-[0.12em] xl:inline");
+    expect(searchSource).toContain('aria-keyshortcuts="Control+K Meta+K"');
+    expect(searchSource).not.toContain("Ctrl K / ⌘ K");
     expect(searchSource).toContain("NavigationItemText");
     expect(searchSource).toContain("cmm-text-caption");
     expect(searchSource).not.toContain("text-[10px]");

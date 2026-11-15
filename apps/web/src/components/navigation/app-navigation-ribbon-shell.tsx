@@ -54,7 +54,7 @@ type OpenRibbonUtilityMenu = {
 };
 
 function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNavigation, pathname, openSpaceId, onOpenChange }: { spaces: NavigationSpace[]; activeSpaceId: NavigationSpace["id"] | null; locale: Parameters<typeof AppNavigationBlockDropdown>[0]["locale"]; onTrackNavigation: Parameters<typeof AppNavigationBlockDropdown>[0]["onTrackNavigation"]; pathname: string; openSpaceId: NavigationSpace["id"] | null; onOpenChange: (spaceId: NavigationSpace["id"], open: boolean) => void }) {
-  return <div data-navigation-group="product" data-navigation-group-visibility="desktop" data-navigation-tutorial-target="product" className="hidden items-center justify-center xl:col-start-2 xl:flex"><nav data-navigation-ribbon aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)] cmm-navigation-ribbon-dock">
+  return <div data-navigation-group="product" data-navigation-group-visibility="desktop" data-navigation-tutorial-target="product" className="hidden min-w-0 items-center justify-center xl:col-start-2 xl:flex"><nav data-navigation-ribbon aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)] cmm-navigation-ribbon-dock">
     {spaces.map((space) => <AppNavigationBlockDropdown key={space.id} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} onOpenChange={onOpenChange} open={openSpaceId === space.id} pathname={pathname} space={space} />)}
   </nav></div>;
 }
@@ -155,7 +155,7 @@ function AppNavigationRibbonFrame({
         )}
         style={ribbonChrome}
       >
-        <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 max-[639px]:gap-1 max-[639px]:px-2 sm:px-5 lg:gap-2 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:px-7 xl:py-2">
+        <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 max-[639px]:gap-1 max-[639px]:px-2 sm:px-5 lg:gap-2 xl:grid-cols-[auto_minmax(15rem,1fr)_auto] xl:px-7 xl:py-2">
           <p className="sr-only">
             {locale === "fr" ? "Profil actif" : "Active profile"}: {effectiveProfileLabel}
           </p>
@@ -181,8 +181,8 @@ function AppNavigationRibbonFrame({
                 </span>
               </Link>
 
-              <div className="hidden min-w-0 flex-1 items-center xl:flex">
-                <div className="w-10 shrink-0 2xl:w-full 2xl:max-w-[18rem]">
+              <div className="hidden min-w-0 items-center xl:flex xl:w-[9rem] 2xl:w-[10rem]">
+                <div className="w-full shrink-0">
                   <GlobalSearch currentProfile={effectiveProfile} />
                 </div>
               </div>

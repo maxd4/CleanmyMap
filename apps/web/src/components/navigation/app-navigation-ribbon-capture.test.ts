@@ -30,15 +30,15 @@ describe("global ribbon capture contract", () => {
     expect(source).toContain("<AppNavigationTreeMenu");
   });
 
-  it("keeps the desktop block navigation centered independently of side controls", () => {
+  it("keeps the desktop block navigation centered between side controls", () => {
     const source = fs.readFileSync(
       path.join(navigationDirectory, "app-navigation-ribbon-shell.tsx"),
       "utf8",
     );
     expect(source).toContain(
-      "xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
+      "xl:grid-cols-[auto_minmax(15rem,1fr)_auto]",
     );
-    expect(source).toContain('max-w-[18rem]');
+    expect(source).toContain('xl:w-[9rem] 2xl:w-[10rem]');
     expect(source).toContain("<GlobalSearch");
     expect(source).toContain(
       'aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}',

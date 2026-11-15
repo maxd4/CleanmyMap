@@ -181,11 +181,11 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
     }
   });
 
-  test("contains the compact identity bubble and preserves the centered dock", async ({ browser }) => {
+  test("contains the compact identity bubble and preserves the utility-interval dock", async ({ browser }) => {
     test.setTimeout(180_000);
     const context = await browser.newContext({ storageState: authFile });
     const page = await context.newPage();
-    const widths = [390, 768, 1024, 1279, 1280, 1439, 1440, 1600] as const;
+    const widths = [390, 768, 1024, 1279, 1280, 1439, 1440, 1600, 1920] as const;
 
     try {
       for (const viewportWidth of widths) {
@@ -204,6 +204,9 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
           const fullName = document.querySelector<HTMLElement>("[data-navigation-account-full-name]");
           const activityStatus = document.querySelector<HTMLButtonElement>('button[aria-label^="Statut :"]');
           const identityGroup = rectFor('[data-navigation-group="account"]');
+          const preferences = rectFor('button[data-navigation-tutorial-target="preferences"]');
+          const feedback = rectFor('button[data-navigation-tutorial-target="feedback"]');
+          const searchLabel = document.querySelector<HTMLElement>('button[data-navigation-tutorial-target="search"] .cmm-ribbon-text');
           const rightControls = [
             rectFor('[data-navigation-tutorial-target="feedback"]'),
             rectFor('button[aria-label^="Notifications"]'),
@@ -213,6 +216,7 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
           const sortedControls = [...rightControls].sort((left, right) => left.left - right.left);
           const dock = rectFor('nav[aria-label="Navigation par blocs"]');
           const dockCenter = dock ? dock.left + dock.width / 2 : null;
+          const availableCenter = preferences && feedback ? (preferences.right + feedback.left) / 2 : null;
           return {
             viewportWidth: window.innerWidth,
             documentScrollWidth: document.documentElement.scrollWidth,
@@ -233,6 +237,9 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
             rightControls: sortedControls,
             dock,
             dockCenter,
+            availableCenter,
+            searchLabelVisible: Boolean(searchLabel && getComputedStyle(searchLabel).display !== "none"),
+            searchShortcutCount: document.querySelectorAll('button[data-navigation-tutorial-target="search"] kbd').length,
           };
         });
 
@@ -266,7 +273,10 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
         if (viewportWidth >= 1280) {
           expect(metrics.dock, `${viewportWidth}px: desktop dock missing`).not.toBeNull();
           expect(metrics.dockCenter, `${viewportWidth}px: dock center missing`).not.toBeNull();
-          expect(Math.abs(metrics.dockCenter! - viewportWidth / 2), `${viewportWidth}px: dock moved by account group`).toBeLessThanOrEqual(8);
+          expect(metrics.availableCenter, `${viewportWidth}px: utility interval center missing`).not.toBeNull();
+          expect(Math.abs(metrics.dockCenter! - metrics.availableCenter!), `${viewportWidth}px: dock not centered between preferences and feedback`).toBeLessThanOrEqual(8);
+          expect(metrics.searchLabelVisible, `${viewportWidth}px: search label should remain visible`).toBe(true);
+          expect(metrics.searchShortcutCount, `${viewportWidth}px: visual search shortcut should be removed`).toBe(0);
           expect(metrics.identityGroup?.left, `${viewportWidth}px: account group overlaps dock`).toBeGreaterThanOrEqual((metrics.dock?.right ?? 0) - 1);
         }
       }

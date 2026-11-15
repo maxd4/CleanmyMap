@@ -56,10 +56,11 @@ vérité supérieure au runtime ou aux contrats UI.
 ## Recherche globale
 
 La recherche globale réutilise `CmmDropdown` et l'index de navigation autorisé
-par profil et mode d'affichage. Elle expose le raccourci réellement actif
-`Ctrl K / ⌘ K`, la navigation par flèches, l'ouverture par `Entrée` et la
-fermeture par `Échap` en français ; en anglais, les touches affichées sont
-respectivement `Enter` et `Esc`. Le libellé générique de catégorie est
+par profil et mode d'affichage. Le raccourci réellement actif Ctrl/Cmd+K n'est
+pas répété visuellement dans la pastille, mais la navigation par flèches,
+l'ouverture par `Entrée` et la fermeture par `Échap` en français restent
+disponibles ; en anglais, les touches du panneau sont respectivement `Enter`
+et `Esc`. Le libellé générique de catégorie est
 `Rubrique` en français et `Section` en anglais, suivi du nom localisé de
 `spaceLabel` : cette seconde information reste nécessaire pour distinguer la
 provenance de l'entrée.

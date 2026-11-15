@@ -10,11 +10,11 @@ function readSource(fileName: string) {
 }
 
 describe("desktop ribbon control geometry", () => {
-  it("keeps the block navigation on the independent center grid axis", () => {
+  it("keeps the block navigation centered in the available utility interval", () => {
     const source = readSource("app-navigation-ribbon-shell.tsx");
 
     expect(source).toContain(
-      "xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
+      "xl:grid-cols-[auto_minmax(15rem,1fr)_auto]",
     );
     expect(source).toContain('xl:col-start-1');
     expect(source).toContain('xl:col-start-2');
@@ -29,9 +29,10 @@ describe("desktop ribbon control geometry", () => {
 
     expect(ribbonSource).toContain("xl:h-10 xl:min-h-0");
     expect(searchSource).toContain("inline-flex h-10 min-h-10 w-10");
+    expect(searchSource).toContain("xl:w-full xl:justify-between xl:px-2.5");
     expect(searchSource).toContain('panelAlignment="center"');
     expect(searchSource).toContain('panelClassName="w-[min(24rem,calc(100vw-1rem))]"');
-    expect(ribbonSource).toContain("max-w-[18rem]");
+    expect(ribbonSource).toContain("xl:w-[9rem] 2xl:w-[10rem]");
     expect(ribbonSource).toContain("w-[15rem] shrink-0 flex-nowrap items-center justify-center");
     expect(ribbonSource).toContain("<AppNavigationTreeMenu");
     expect(ribbonSource).toContain('cmm-navigation-group--product xl:order-none xl:hidden');
@@ -88,7 +89,7 @@ describe("desktop ribbon control geometry", () => {
     expect(accountGroup).toContain("xl:col-start-3");
     expect(shellSource).toContain("order-3 col-start-2 ml-auto");
     expect(shellSource).toContain("order-2 col-start-1 shrink-0");
-    expect(shellSource).toContain("xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]");
+    expect(shellSource).toContain("xl:grid-cols-[auto_minmax(15rem,1fr)_auto]");
     expect(shellSource).toContain("xl:col-start-1");
     expect(shellSource).toContain("xl:col-start-2");
     expect(shellSource).toContain("xl:col-start-3");

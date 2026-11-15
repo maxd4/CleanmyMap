@@ -60,11 +60,11 @@ async function captureRibbonArea(page: Page, ribbon: Locator, outputPath: string
 }
 
 test.describe("canonical classic navigation ribbon", () => {
-  test("keeps one centered five-block dock with active and hover accents", async ({ page }, testInfo) => {
+  test("keeps one five-block dock centered between preferences and feedback", async ({ page }, testInfo) => {
     test.setTimeout(120_000);
     mkdirSync(SCREENSHOT_DIRECTORY, { recursive: true });
 
-    for (const width of [390, 768, 1024, 1280, 1440] as const) {
+    for (const width of [390, 768, 1024, 1279, 1280, 1440, 1600, 1920] as const) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
       await dismissCookies(page);
@@ -91,16 +91,18 @@ test.describe("canonical classic navigation ribbon", () => {
       const geometry = await page.evaluate(() => {
         const dock = document.querySelector<HTMLElement>('nav[aria-label="Navigation par blocs"]');
         const active = dock?.querySelector<HTMLElement>('[data-navigation-block-active="true"]');
-        const feedback = document.querySelector<HTMLElement>('[data-navigation-tutorial-target="feedback"]');
-        if (!dock || !active || !feedback) throw new Error("Missing classic ribbon controls");
+        if (!dock || !active) throw new Error("Missing classic ribbon controls");
         const activeIcon = active.querySelector<HTMLElement>(".cmm-navigation-block-icon");
         if (!activeIcon) throw new Error("Missing active navigation block icon");
+        const preferences = document.querySelector<HTMLElement>('button[data-navigation-tutorial-target="preferences"]');
+        const feedback = document.querySelector<HTMLElement>('button[data-navigation-tutorial-target="feedback"]');
+        if (!preferences || !feedback) throw new Error("Missing utility controls");
         const activeIconStyle = getComputedStyle(activeIcon);
         const activeIconBeforeStyle = getComputedStyle(activeIcon, "::before");
         const activeIconAfterStyle = getComputedStyle(activeIcon, "::after");
         return {
           dockCenter: dock.getBoundingClientRect().left + dock.getBoundingClientRect().width / 2,
-          viewportCenter: window.innerWidth / 2,
+          availableCenter: (preferences.getBoundingClientRect().right + feedback.getBoundingClientRect().left) / 2,
           activeBackground: getComputedStyle(active).backgroundColor,
           activeIconColor: activeIconStyle.color,
           activeIconBackground: activeIconStyle.backgroundColor,
@@ -113,7 +115,17 @@ test.describe("canonical classic navigation ribbon", () => {
           feedbackBackground: getComputedStyle(feedback).backgroundColor,
         };
       });
-      expect(Math.abs(geometry.dockCenter - geometry.viewportCenter), `${width}px dock center`).toBeLessThanOrEqual(8);
+      expect(Math.abs(geometry.dockCenter - geometry.availableCenter), `${width}px dock center in preferences/feedback interval`).toBeLessThanOrEqual(8);
+      const search = page.locator('button[data-navigation-tutorial-target="search"]');
+      await expect(search).toBeVisible();
+      await expect(search.locator("kbd")).toHaveCount(0);
+      const searchLabelStyles = await search.locator(".cmm-ribbon-text").evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { display: style.display, fontWeight: style.fontWeight, textTransform: style.textTransform };
+      });
+      expect(searchLabelStyles.display).not.toBe("none");
+      expect(searchLabelStyles.fontWeight).toBe("400");
+      expect(searchLabelStyles.textTransform).toBe("uppercase");
       expect(geometry.activeBackground).not.toBe("rgba(0, 0, 0, 0)");
       expect(geometry.activeIconColor).not.toBe("rgb(255, 255, 255)");
       expect(geometry.activeIconBackground, `${width}px active icon background`).toBe("rgba(0, 0, 0, 0)");
@@ -150,6 +162,14 @@ test.describe("canonical classic navigation ribbon", () => {
     await dismissCookies(page);
     const ribbon = await waitForRibbon(page);
 
+    const search = page.locator('button[data-navigation-tutorial-target="search"]');
+    await page.keyboard.press("Control+k");
+    await expect(page.locator("#global-search-popover")).toBeVisible();
+    await expect(page.locator('input[aria-label="Rechercher une rubrique, un outil ou une aide"]')).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#global-search-popover")).toHaveCount(0);
+    await expect(search).toBeFocused();
+
     const activeTrigger = ribbon.locator('[data-navigation-block-active="true"]');
     await activeTrigger.press("Enter");
     await expect(activeTrigger).toHaveAttribute("aria-expanded", "true");
@@ -176,21 +196,24 @@ test.describe("canonical classic navigation ribbon", () => {
   });
 
   test("keeps the responsive product entry and utility controls reachable", async ({ page }) => {
-    for (const width of [390, 768, 1024, 1280, 1440] as const) {
+    test.setTimeout(120_000);
+    for (const width of [390, 768, 1024, 1279, 1280, 1440, 1600, 1920] as const) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
       await dismissCookies(page);
-      const summary = page.getByRole("button", { name: "Sommaire" });
+      const responsiveGroup = page.locator('[data-navigation-group-visibility="responsive"]');
+      const summary = responsiveGroup.getByRole("button", { name: "Sommaire" });
       const desktopDock = page.locator('nav[aria-label="Navigation par blocs"]');
 
       if (width < 1280) {
+        await expect(responsiveGroup).toBeVisible();
         await expect(summary).toBeVisible();
         await expect(desktopDock).toBeHidden();
         await page.getByRole("button", { name: "Menu Feedback" }).click();
         await expect(page.locator("#feedback-menu-panel")).toBeVisible();
         await page.keyboard.press("Escape");
       } else {
-        await expect(summary).toBeHidden();
+        await expect(responsiveGroup).toBeHidden();
         await expect(desktopDock).toBeVisible();
         await assertNoRibbonOverflow(page, width);
       }
