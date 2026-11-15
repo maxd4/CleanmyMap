@@ -180,7 +180,7 @@ jobs:
           test "$missing_count" = "0"
 
           proof_step="restore-roles"
-          run_stage roles /tmp/cmm-roles.sql "$restore_admin_user"
+          run_stage roles /tmp/cmm-roles.sql postgres
           echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-roles PASS"
           proof_step="restore-extensions"
           run_stage extensions /tmp/cmm-restore-extension-preflight.sql
