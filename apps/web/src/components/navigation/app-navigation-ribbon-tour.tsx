@@ -239,7 +239,7 @@ export function RibbonTutorial({
         aria-hidden="true"
         data-motion-role="overlay"
         data-navigation-ribbon-tour-spotlight-layer
-        className="pointer-events-none fixed inset-0 z-[39]"
+        className="cmm-navigation-ribbon-tour-spotlight-layer pointer-events-none fixed inset-0"
       >
         {spotlightStyle ? (
           <div
@@ -259,7 +259,7 @@ export function RibbonTutorial({
         ariaDescribedBy="ribbon-tutorial-description"
         size="sm"
         className="cmm-navigation-ribbon-tour-backdrop"
-        panelClassName="cmm-navigation-ribbon-tour-panel z-[41] max-w-none overflow-hidden rounded-[1.35rem] border border-amber-200/30 bg-slate-950/98 p-0 text-white shadow-[0_28px_70px_-30px_rgba(2,6,23,0.96)]"
+        panelClassName="cmm-navigation-ribbon-tour-panel max-w-none overflow-hidden rounded-[1.35rem] border border-amber-200/30 bg-slate-950/98 p-0 text-white shadow-[0_28px_70px_-30px_rgba(2,6,23,0.96)]"
       >
         <div className="cmm-navigation-ribbon-tour-content">
           <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">

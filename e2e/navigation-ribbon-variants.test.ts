@@ -244,6 +244,35 @@ test.describe("desktop central navigation ribbon variants", () => {
       expect(initialTourGeometry.dialogInsideViewport).toBe(true);
       expect(initialTourGeometry.spotlightVisible).toBe(true);
       expect(initialTourGeometry.horizontalOverflow).toBe(false);
+
+      const modalStack = await page.evaluate(() => {
+        const header = document.querySelector<HTMLElement>('[data-cmm-capture-sticky]');
+        const spotlight = document.querySelector<HTMLElement>('[data-navigation-ribbon-tour-spotlight-layer]');
+        const backdrop = document.querySelector<HTMLElement>('.cmm-navigation-ribbon-tour-backdrop');
+        const panel = document.querySelector<HTMLElement>('.cmm-navigation-ribbon-tour-panel');
+        if (!header || !spotlight || !backdrop || !panel) throw new Error("Missing guided tour stacking layers");
+
+        return {
+          headerZIndex: Number.parseInt(getComputedStyle(header).zIndex, 10),
+          spotlightZIndex: Number.parseInt(getComputedStyle(spotlight).zIndex, 10),
+          backdropZIndex: Number.parseInt(getComputedStyle(backdrop).zIndex, 10),
+          panelZIndex: Number.parseInt(getComputedStyle(panel).zIndex, 10),
+        };
+      });
+      expect(modalStack.headerZIndex).toBeLessThan(modalStack.spotlightZIndex);
+      expect(modalStack.spotlightZIndex).toBeLessThan(modalStack.backdropZIndex);
+      expect(modalStack.backdropZIndex).toBeLessThan(modalStack.panelZIndex);
+
+      const homeTarget = page.locator('[data-navigation-tutorial-target="home"]');
+      const homeBox = await homeTarget.boundingBox();
+      if (!homeBox) throw new Error("Missing header home target");
+      const urlBeforeBlockedClick = page.url();
+      await page.mouse.click(homeBox.x + homeBox.width / 2, homeBox.y + homeBox.height / 2);
+      expect(page.url()).toBe(urlBeforeBlockedClick);
+      await expect(dialog).toHaveCount(0);
+      await trigger.click();
+      await expect(dialog).toBeVisible();
+
       await expect(dialog.getByRole("button", { name: "Précédent" })).toBeDisabled();
       await dialog.getByRole("button", { name: "Suivant" }).click();
       await expect(dialog.getByRole("heading", { name: "Rechercher" })).toBeVisible();

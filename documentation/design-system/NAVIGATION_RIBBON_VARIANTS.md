@@ -46,6 +46,13 @@ ne sont pas rendus, l'étape conserve son explication et cible le groupe
 primaire ou le bouton `Sommaire` visible ; les destinations réelles restent
 inchangées.
 
+Le tutoriel conserve une hiérarchie d'empilement dédiée : le header (`z-50`)
+reste sous le spotlight, le spotlight reste sous le backdrop transparent du
+dialogue, et le panneau du tutoriel reste au-dessus du backdrop. Cette couche
+modale bloque ainsi les clics vers les contrôles du ruban tout en laissant le
+détourage de la cible visible ; la primitive globale `CmmDialog` n'est pas
+modifiée.
+
 ## Sélecteur et responsabilité
 
 Le sélecteur unique est
