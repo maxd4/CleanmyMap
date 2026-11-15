@@ -14,6 +14,52 @@ function relation(schema, table) {
   return `${identifier(schema ?? "public")}.${identifier(table)}`;
 }
 
+function parseQualifiedIdentifier(path) {
+  const parts = [];
+  let index = 0;
+
+  while (index < path.length && parts.length < 3) {
+    while (/\s/.test(path[index] ?? "")) index += 1;
+    if (index >= path.length) break;
+
+    let value = "";
+    const quoted = path[index] === '"';
+    if (quoted) {
+      index += 1;
+      let closed = false;
+      while (index < path.length) {
+        if (path[index] !== '"') {
+          value += path[index];
+          index += 1;
+          continue;
+        }
+        if (path[index + 1] === '"') {
+          value += '"';
+          index += 2;
+          continue;
+        }
+        index += 1;
+        closed = true;
+        break;
+      }
+      if (!closed) return null;
+    } else {
+      const start = index;
+      while (index < path.length && path[index] !== "." && !/\s/.test(path[index])) index += 1;
+      value = path.slice(start, index).toLowerCase();
+    }
+    if (!value) return null;
+    parts.push(value);
+
+    while (/\s/.test(path[index] ?? "")) index += 1;
+    if (path[index] !== ".") break;
+    index += 1;
+  }
+
+  while (/\s/.test(path[index] ?? "")) index += 1;
+  return parts.length === 2 && index === path.length ? parts : null;
+}
+
 export function extractDataRelations(sql) {
   const relations = new Set();
   for (const line of String(sql).split(/\r?\n/)) {
@@ -22,8 +68,8 @@ export function extractDataRelations(sql) {
     const setval = line.match(/pg_catalog\.setval\(\s*'((?:''|[^'])+)'/i);
     if (setval) {
       const path = setval[1].replaceAll("''", "'");
-      const separator = path.indexOf(".");
-      if (separator > 0) relations.add(`${path.slice(0, separator)}.${path.slice(separator + 1)}`);
+      const qualified = parseQualifiedIdentifier(path);
+      if (qualified) relations.add(relation(qualified[0], qualified[1]));
     }
   }
   return [...relations].sort();

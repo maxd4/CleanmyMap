@@ -32,6 +32,30 @@ test("keeps private relations in the same coherence contract", () => {
   assert.deepEqual(result.exported, ["private.action_chat_acl", "private.action_chat_acl_id_seq"]);
 });
 
+test("normalizes quoted and unquoted setval identifiers without losing quoted case", () => {
+  const sql = [
+    "SELECT pg_catalog.setval('public.actions_id_seq', 7, true);",
+    `SELECT pg_catalog.setval('"public"."CaseSensitiveSeq"', 8, true);`,
+    "SELECT pg_catalog.setval('PUBLIC.MixedCaseSeq', 9, true);",
+  ].join("\n");
+  assert.deepEqual(extractDataRelations(sql), [
+    "public.CaseSensitiveSeq",
+    "public.actions_id_seq",
+    "public.mixedcaseseq",
+  ]);
+});
+
+test("parses escaped quoted identifiers in public and private schemas", () => {
+  const sql = [
+    `SELECT pg_catalog.setval('"public"."seq""with""quotes"', 7, true);`,
+    `SELECT pg_catalog.setval('"private"."Seq''With''Apostrophes"', 8, true);`,
+  ].join("\n");
+  assert.deepEqual(extractDataRelations(sql), [
+    'private.Seq\'With\'Apostrophes',
+    'public.seq"with"quotes',
+  ]);
+});
+
 test("fails closed when data references a relation absent after schema restore", () => {
   const result = compareRelationSets("COPY public.actions FROM stdin;\nCOPY public.missing_relation FROM stdin;\n", "public.actions\n");
   assert.deepEqual(result.missing, ["public.missing_relation"]);
