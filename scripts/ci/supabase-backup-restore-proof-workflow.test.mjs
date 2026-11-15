@@ -11,6 +11,7 @@ test('ephemeral backup proof reconstructs source and target without Production c
   assert.match(workflow, /permissions:\s+contents: read/);
   assert.match(workflow, /supabase db reset --local --workdir apps\/web/);
   assert.match(workflow, /project_id = "cmm-backup-proof-target"/);
+  assert.match(workflow, /\[api\][\s\S]*enabled = true/);
   assert.match(workflow, /port = 54422/);
   assert.match(workflow, /shadow_port = 54420/);
   assert.match(workflow, /smtp_port = 54425/);

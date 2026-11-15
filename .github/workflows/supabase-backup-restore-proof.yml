@@ -72,7 +72,7 @@ jobs:
           project_id = "cmm-backup-proof-target"
 
           [api]
-          enabled = false
+          enabled = true
           port = 54421
 
           [db]
