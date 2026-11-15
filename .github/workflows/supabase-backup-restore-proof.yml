@@ -27,9 +27,6 @@ on:
 env:
   NODE_VERSION_FILE: apps/web/.nvmrc
   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
-  PROOF_ROOT: ${{ runner.temp }}/cmm-supabase-backup-restore-proof
-  PROOF_SOURCE_WORKDIR: ${{ runner.temp }}/cmm-supabase-backup-restore-proof-source
-  PROOF_TARGET_WORKDIR: ${{ runner.temp }}/cmm-supabase-backup-restore-proof-target
   PROOF_NETWORK: cleanmymap-backup-proof-${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
@@ -39,6 +36,10 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+    env:
+      PROOF_ROOT: ${{ runner.temp }}/cmm-supabase-backup-restore-proof
+      PROOF_SOURCE_WORKDIR: ${{ runner.temp }}/cmm-supabase-backup-restore-proof-source
+      PROOF_TARGET_WORKDIR: ${{ runner.temp }}/cmm-supabase-backup-restore-proof-target
 
     steps:
       - name: Checkout
