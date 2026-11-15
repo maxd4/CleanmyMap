@@ -991,27 +991,40 @@ synthétique. Chaque groupe reçoit la durée complète de l'action et une cible
 `1 km/h`; le rapport expose séparément les longueurs simulées, leur somme, les
 écarts aux cibles, les recouvrements de corridors et les écarts d'extrémité.
 Pour les cinq actions du dry-run du 15/11/2026, FOSSGIS a fourni 11 candidats
-réseau (88 requêtes, sans écriture) :
+réseau (88 requêtes de dry-run ; la persistance transactionnelle est décrite
+ci-dessous) :
 
 | Action | Cible | Candidats | Distance simulée totale | Recouvrement maximal | Statut |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `da367653-530f-4554-9e9b-164519336f52` | 1 km | 2 | 1,415 km | 0 % | `NETWORK_CANDIDATES_NOT_APPLIED` |
-| `b1f71234-21e2-4954-8526-f45f238249ae` | 1,5 km | 2 | 3,195 km | 17,9 % | `NETWORK_CANDIDATES_NOT_APPLIED` |
-| `f92499c2-aa14-4a51-8b56-c835a7d436f6` | 1 km | 2 | 2,769 km | 0 % | `NETWORK_CANDIDATES_NOT_APPLIED` |
-| `e168fb7a-034c-4b22-9b5f-b138188bf1e2` | 1,5 km | 3 | 3,646 km | 62,4 % | `NETWORK_CANDIDATES_NOT_APPLIED` |
-| `15ee0be8-3747-48c8-9de0-c12b40e79eb9` | 1,5 km | 2 | 1,284 km | 32,4 % | `NETWORK_CANDIDATES_NOT_APPLIED` |
+| `da367653-530f-4554-9e9b-164519336f52` | 1 km | 2 | 1,415 km | 0 % | `APPLIED_V3` |
+| `b1f71234-21e2-4954-8526-f45f238249ae` | 1,5 km | 2 | 3,195 km | 17,9 % | `APPLIED_V3` |
+| `f92499c2-aa14-4a51-8b56-c835a7d436f6` | 1 km | 2 | 2,769 km | 0 % | `APPLIED_V3` |
+| `e168fb7a-034c-4b22-9b5f-b138188bf1e2` | 1,5 km | 3 | 3,646 km | 62,4 % | `APPLIED_V3` |
+| `15ee0be8-3747-48c8-9de0-c12b40e79eb9` | 1,5 km | 2 | 1,284 km | 32,4 % | `APPLIED_V3` |
 
 Le seuil de rejet de `75 %` n'a été franchi par aucun couple. Ces nombres sont
 des résultats de réseau hypothétiques, non des distances parcourues :
-`uniqueNetworkDistanceKm` et `observedDistanceKm` restent `NULL`, et le
-candidat de persistance est borné à ces cinq identifiants avec le statut
-`NOT_APPLIED`. Le rapport JSON et le GeoJSON reproductibles sont produits par
-le script dans `apps/web/artifacts/historical-route-remediation-v3/`.
+`uniqueNetworkDistanceKm` et `observedDistanceKm` restent `NULL`. Après
+relecture read-only des cinq lignes, du contrat de projection et du préflight
+Supabase (`ALIGNED`, 472 migrations locales et distantes, aucune en attente),
+les 11 groupes ont été persistés le 15/11/2026 dans
+`preparation_data.simulatedRouteCoverage` avec `simulated-routes-v3`,
+`speedKmPerHour = 1` et la provenance `estimated_route / estimated /
+hypothetical`. L'opération était une transaction bornée aux cinq IDs, avec
+verrouillage `FOR UPDATE`, sauvegarde temporaire et validation des états,
+effectifs, durées et absence de preuve GPS/GPX ; toute couverture existante
+différente provoquait l'annulation. Le hash pré-écriture de la sauvegarde
+transactionnelle était `9f48132ae055228d2217e346d5f3f317`. Le rapport JSON et
+le GeoJSON reproductibles sont produits par le script dans
+`apps/web/artifacts/historical-route-remediation-v3/`.
 La longueur réseau dédoublonnée et la distance observée restent nulles tant
 qu'une preuve de déduplication ou une observation GPS/GPX n'existe pas. La
-sortie `mapPreview` est une `FeatureCollection` de lignes pointillées portant
-`estimated_route`, `estimated` et `hypothetical`; même un résultat réseau
-FOSSGIS valide ne peut être promu en trace ou en distance de collecte.
+sortie `mapPreview` et la projection publique SQL sont une `FeatureCollection`
+de lignes pointillées portant `estimated_route`, `estimated` et `hypothetical` ;
+même après persistance, un résultat réseau FOSSGIS valide ne peut être promu en
+trace ou en distance de collecte. La vérification post-écriture a confirmé pour
+les cinq actions la version v3, la vitesse 1, les groupes attendus et
+`uniqueNetworkDistanceKm = NULL` / `observedDistanceKm = NULL`.
 
 La confiance (`geometry_confidence`) n'est jamais une preuve d'origine. Une
 reclassification exige une évidence persistée et déterministe : source forte
