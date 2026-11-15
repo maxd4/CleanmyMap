@@ -65,6 +65,8 @@ jobs:
           PROOF_SOURCE_WORKDIR="$RUNNER_TEMP/cmm-supabase-backup-restore-proof-source"
           PROOF_TARGET_WORKDIR="$RUNNER_TEMP/cmm-supabase-backup-restore-proof-target"
           PROOF_NETWORK="cleanmymap-backup-proof-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          proof_step="initialization"
+          trap 'status=$?; if [ "$status" -ne 0 ]; then echo "EPHEMERAL_BACKUP_RESTORE_PROOF: FAIL step=$proof_step"; fi' EXIT
           mkdir -p "$PROOF_ROOT/dumps" "$PROOF_SOURCE_WORKDIR/supabase" "$PROOF_TARGET_WORKDIR/supabase"
           cat > "$PROOF_TARGET_WORKDIR/supabase/config.toml" <<'EOF'
           project_id = "cmm-backup-proof-target"
@@ -105,23 +107,34 @@ jobs:
           enabled = false
           EOF
 
+          proof_step="source-start"
           network_id="$(docker network create --driver bridge --label com.cleanmymap.ci=backup-restore-proof "$PROOF_NETWORK")"
           test -n "$network_id"
           ./node_modules/.bin/supabase start --workdir apps/web --yes --output-format json --network-id="$PROOF_NETWORK" > "$PROOF_ROOT/source-start.log" 2>&1
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=source-start PASS"
+          proof_step="source-reset"
           ./node_modules/.bin/supabase db reset --local --workdir apps/web --yes --network-id="$PROOF_NETWORK" > "$PROOF_ROOT/source-reset.log" 2>&1
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=source-reset PASS"
+          proof_step="source-fixture"
           source_container="supabase_db_web"
           test "$(docker ps --filter "name=^/${source_container}$" --format '{{.Names}}')" = "$source_container"
           docker cp scripts/ci/supabase-backup-restore-proof-fixture.sql "$source_container:/tmp/cmm-backup-restore-proof-fixture.sql"
           docker exec "$source_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres -f /tmp/cmm-backup-restore-proof-fixture.sql > "$PROOF_ROOT/source-fixture.log" 2>&1
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=source-fixture PASS"
 
+          proof_step="source-dumps"
           ./node_modules/.bin/supabase db dump --local --workdir apps/web --role-only --file "$PROOF_ROOT/dumps/roles.sql" > "$PROOF_ROOT/dump-roles.log" 2>&1
           ./node_modules/.bin/supabase db dump --local --workdir apps/web --schema public --file "$PROOF_ROOT/dumps/schema.sql" > "$PROOF_ROOT/dump-schema.log" 2>&1
           ./node_modules/.bin/supabase db dump --local --workdir apps/web --data-only --schema public --use-copy --file "$PROOF_ROOT/dumps/data.sql" > "$PROOF_ROOT/dump-data.log" 2>&1
           test -s "$PROOF_ROOT/dumps/roles.sql"
           test -s "$PROOF_ROOT/dumps/schema.sql"
           test -s "$PROOF_ROOT/dumps/data.sql"
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=source-dumps PASS"
 
+          proof_step="target-start"
           ./node_modules/.bin/supabase start --workdir "$PROOF_TARGET_WORKDIR" --yes --output-format json --network-id="$PROOF_NETWORK" > "$PROOF_ROOT/target-start.log" 2>&1
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=target-start PASS"
+          proof_step="target-prepare"
           target_container="supabase_db_cmm-backup-proof-target"
           test "$(docker ps --filter "name=^/${target_container}$" --format '{{.Names}}')" = "$target_container"
           docker cp "$PROOF_ROOT/dumps/roles.sql" "$target_container:/tmp/cmm-roles.sql"
@@ -130,6 +143,7 @@ jobs:
           docker cp scripts/ci/supabase-restore-extension-preflight.sql "$target_container:/tmp/cmm-restore-extension-preflight.sql"
           restore_db="postgres"
           docker exec "$target_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "alter default privileges in schema public revoke all on tables from anon, authenticated;"
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=target-prepare PASS"
 
           run_stage() {
             local stage="$1"
@@ -162,9 +176,16 @@ jobs:
           missing_count=$(docker exec "$target_container" psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname = 'cmm_backup_missing_extension_fixture';")
           test "$missing_count" = "0"
 
+          proof_step="restore-roles"
           run_stage roles /tmp/cmm-roles.sql
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-roles PASS"
+          proof_step="restore-extensions"
           run_stage extensions /tmp/cmm-restore-extension-preflight.sql
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-extensions PASS"
+          proof_step="restore-schema"
           run_stage schema /tmp/cmm-schema.sql
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-schema PASS"
+          proof_step="relation-coherence"
           docker exec "$target_container" psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "select n.nspname || '.' || c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r', 'p', 'S', 'v', 'm', 'f') order by 1;" > "$PROOF_ROOT/restore-relations.txt"
           node scripts/ci/verify-supabase-backup-relation-coherence.mjs --data-file "$PROOF_ROOT/dumps/data.sql" --available-file "$PROOF_ROOT/restore-relations.txt" --write-exported-file "$PROOF_ROOT/exported-relations.txt"
 
@@ -187,8 +208,12 @@ jobs:
           docker exec "$target_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "drop table public.cmm_backup_coherence_fixture;"
           fixture_count=$(docker exec "$target_container" psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -c "select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname = 'cmm_backup_coherence_fixture';")
           test "$fixture_count" = "0"
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=relation-coherence PASS"
 
+          proof_step="restore-data"
           run_stage data /tmp/cmm-data.sql
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=restore-data PASS"
+          proof_step="integrity-checks"
           cat > "$PROOF_ROOT/restore-checks.sql" <<'EOF'
           create temp table restore_business_relations (qualified_name text primary key);
           copy restore_business_relations (qualified_name) from stdin;
@@ -212,6 +237,7 @@ jobs:
           docker cp "$PROOF_ROOT/restore-checks.sql" "$target_container:/tmp/cmm-restore-checks.sql"
           docker exec "$target_container" psql -X -A -t -F '|' -v ON_ERROR_STOP=1 -U postgres -d "$restore_db" -f /tmp/cmm-restore-checks.sql > "$PROOF_ROOT/restore-checks.txt"
           grep -qx 't|t|t|t|t|t|t|t|t|t|t' "$PROOF_ROOT/restore-checks.txt"
+          echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=integrity-checks PASS"
           echo "EPHEMERAL_BACKUP_RESTORE_PROOF: PASS source=migrations dump=roles,schema,data target=isolated extensions=verified negative=verified"
 
       - name: Summarize non-sensitive proof
