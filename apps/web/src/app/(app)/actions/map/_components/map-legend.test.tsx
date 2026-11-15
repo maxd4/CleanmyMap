@@ -21,7 +21,7 @@ describe("MapLegend", () => {
     expect(markup).toContain("Trash Spotter");
     expect(markup).toContain("Infrastructure");
     expect(markup).toContain(
-      "Pointillé léger : zone contextuelle ou liaison indicative non routée",
+      "Pointillé : parcours prévu, reconstruit ou hypothétique",
     );
     expect(markup).toContain("clean_place");
     expect(markup).toContain(`background-image:${expectedGradient}`);
