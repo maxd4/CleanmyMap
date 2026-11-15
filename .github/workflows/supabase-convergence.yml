@@ -41,6 +41,14 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Checkout current main for read-only control
+        if: github.event_name != 'workflow_run'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Download sanitized ephemeral proof
         if: github.event_name == 'workflow_run'
         id: proof_download

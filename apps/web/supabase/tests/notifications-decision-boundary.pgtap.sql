@@ -213,15 +213,16 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', 'm7b-notification-owner-a', true);
 select is((select count(*)::integer from public.app_notifications), 1, 'recipient A reads only its private fixture');
 select is((select count(*)::integer from public.app_notifications where user_id = 'm7b-notification-owner-b'), 0, 'recipient A cannot read recipient B notifications');
+with changed as (
+  update public.app_notifications
+     set read_at = timezone('utc', now()),
+         seen_at = timezone('utc', now()),
+         acknowledged_at = timezone('utc', now())
+   where id = '70000000-0000-4000-8000-000000000101'::uuid
+   returning id
+)
 select is(
-  (with changed as (
-    update public.app_notifications
-       set read_at = timezone('utc', now()),
-           seen_at = timezone('utc', now()),
-           acknowledged_at = timezone('utc', now())
-     where id = '70000000-0000-4000-8000-000000000101'::uuid
-     returning id
-  ) select count(*)::integer from changed),
+  (select count(*)::integer from changed),
   1,
   'recipient A receipt update changes exactly one row'
 );
@@ -229,13 +230,14 @@ select throws_ok($$update public.app_notifications set title = 'forged' where id
 select throws_ok($$update public.app_notifications set content = 'forged' where id = '70000000-0000-4000-8000-000000000101'::uuid$$, '42501', null, 'recipient A cannot rewrite content');
 select throws_ok($$update public.app_notifications set payload = '{"forged":true}'::jsonb where id = '70000000-0000-4000-8000-000000000101'::uuid$$, '42501', null, 'recipient A cannot rewrite payload');
 select throws_ok($$update public.app_notifications set user_id = 'm7b-notification-owner-b' where id = '70000000-0000-4000-8000-000000000101'::uuid$$, '42501', null, 'recipient A cannot transfer ownership');
+with changed as (
+  update public.app_notifications
+     set read_at = timezone('utc', now())
+   where id = '70000000-0000-4000-8000-000000000102'::uuid
+   returning id
+)
 select is(
-  (with changed as (
-    update public.app_notifications
-       set read_at = timezone('utc', now())
-     where id = '70000000-0000-4000-8000-000000000102'::uuid
-     returning id
-  ) select count(*)::integer from changed),
+  (select count(*)::integer from changed),
   0,
   'recipient A cross-owner update changes zero rows'
 );
@@ -258,13 +260,14 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', 'm7b-notification-owner-b', true);
 select is((select count(*)::integer from public.app_notifications), 1, 'recipient B has an independent private inbox');
 select is((select count(*)::integer from public.app_notifications where user_id = 'm7b-notification-owner-a'), 0, 'recipient B cannot read recipient A notifications');
+with changed as (
+  update public.app_notifications
+     set acknowledged_at = timezone('utc', now())
+   where id = '70000000-0000-4000-8000-000000000102'::uuid
+   returning id
+)
 select is(
-  (with changed as (
-    update public.app_notifications
-       set acknowledged_at = timezone('utc', now())
-     where id = '70000000-0000-4000-8000-000000000102'::uuid
-     returning id
-  ) select count(*)::integer from changed),
+  (select count(*)::integer from changed),
   1,
   'recipient B acknowledgement changes exactly one row'
 );
@@ -281,13 +284,14 @@ select set_config('request.jwt.claims', '{"role":"authenticated","sub":""}', tru
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', '', true);
 select is((select count(*)::integer from public.app_notifications), 0, 'authenticated session without a Clerk subject sees no notifications');
+with changed as (
+  update public.app_notifications
+     set read_at = timezone('utc', now())
+   where id = '70000000-0000-4000-8000-000000000102'::uuid
+   returning id
+)
 select is(
-  (with changed as (
-    update public.app_notifications
-       set read_at = timezone('utc', now())
-     where id = '70000000-0000-4000-8000-000000000102'::uuid
-     returning id
-  ) select count(*)::integer from changed),
+  (select count(*)::integer from changed),
   0,
   'authenticated session without a Clerk subject cannot mutate a private receipt'
 );

@@ -42,6 +42,7 @@ test("Supabase convergence is proof-triggered, scheduled, manual, and serialized
   assert.match(workflow, /cancel-in-progress:\s*false/);
   assert.match(workflow, /environment:\s*supabase-production/);
   assert.match(workflow, /actions\/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e/);
+  assert.match(workflow, /Checkout current main for read-only control[\s\S]*?if: github\.event_name != 'workflow_run'[\s\S]*?ref: \$\{\{ github\.sha \}\}/);
   assert.match(workflow, /git ls-remote origin refs\/heads\/main/);
   assert.match(workflow, /Recheck exact remote main before application[\s\S]*?current_main_sha.*CMM_SUPABASE_CANDIDATE_SHA/);
   assert.match(workflow, /supabase-convergence-gate\.mjs/);
