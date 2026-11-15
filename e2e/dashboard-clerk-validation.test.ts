@@ -191,6 +191,7 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
       for (const viewportWidth of widths) {
         await page.setViewportSize({ width: viewportWidth, height: 900 });
         await openProtectedRoute(page, "/dashboard");
+        await expect(page.locator("[data-navigation-account-identity]")).toBeVisible();
 
         const metrics = await page.evaluate(() => {
           const rectFor = (selector: string) => {
