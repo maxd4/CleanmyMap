@@ -35,7 +35,7 @@ describe("top ribbon dropdown sizing contract", () => {
 
   it("keeps the four Feedback destinations in their documented order", () => {
     const source = readSource("app-navigation-ribbon-menus.tsx");
-    const feedbackLinksStart = source.indexOf("const feedbackLinks = [");
+    const feedbackLinksStart = source.indexOf("const FEEDBACK_LINKS = [");
     const feedbackLinksEnd = source.indexOf("  ] as const;", feedbackLinksStart);
     const feedbackLinks = source.slice(feedbackLinksStart, feedbackLinksEnd);
     const labels = [
@@ -66,19 +66,20 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(source).not.toContain("max-[380px]:hidden");
   });
 
-  it("groups preferences and feedback as utility actions", () => {
+  it("keeps preferences and feedback as autonomous utility controls", () => {
     const source = readSource("app-navigation-ribbon-menus.tsx");
 
-    expect(source).toContain('data-navigation-group="utilities"');
-    expect(source).toContain('role="group"');
-    expect(source).toContain("cmm-navigation-group--utilities");
+    expect(source).toContain('data-navigation-utility-menu="preferences"');
+    expect(source).toContain('data-navigation-utility-menu="feedback"');
+    expect(source).toContain("export function RibbonPreferencesMenu");
+    expect(source).toContain("export function RibbonFeedbackMenu");
+    expect(source).not.toContain("cmm-navigation-group--utilities");
   });
 
-  it("keeps the guided ribbon tutorial in the utility group", () => {
+  it("keeps the guided ribbon tutorial out of the global header", () => {
     const source = readSource("app-navigation-ribbon-menus.tsx");
 
-    expect(source).toContain("<RibbonTutorial locale={locale} />");
-    expect(source).toContain("data-navigation-group=\"utilities\"");
+    expect(source).not.toContain("RibbonTutorial");
   });
 
   it("keeps the menu links independent from the critical trigger tone", () => {
@@ -108,7 +109,7 @@ describe("top ribbon dropdown sizing contract", () => {
     const accountSource = readSource("app-navigation-ribbon-account.tsx");
     const identitySource = readSource("../account/account-identity-chip.tsx");
 
-    expect(menusSource).toContain("hidden font-semibold xl:inline");
+    expect(menusSource).toContain("hidden font-semibold min-[1440px]:inline");
     expect(menusSource).not.toContain("hidden font-semibold lg:inline");
     expect(treeSource).toContain("hidden cmm-text-caption font-bold uppercase tracking-[0.16em] lg:inline");
     expect(treeSource).not.toContain("tracking-[0.16em] sm:inline");
@@ -116,6 +117,6 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(accountSource).toContain("<UserPlus className=\"h-4 w-4 xl:inline 2xl:hidden\"");
     expect(accountSource).not.toContain("active:scale-");
     expect(identitySource).toContain("h-11 min-h-11 w-11 min-w-11");
-    expect(identitySource).toContain("hidden min-w-0 break-words font-bold xl:inline");
+    expect(identitySource).toContain("hidden min-w-0 break-words font-bold min-[1440px]:inline");
   });
 });

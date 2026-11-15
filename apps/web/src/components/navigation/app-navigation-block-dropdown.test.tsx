@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   getNavigationBlockTriggerStateClassName,
   resolveOpenNavigationSpaceId,
+  resolveOpenRibbonUtilityMenuId,
 } from "./navigation-block-trigger-state";
 import { getNavigationBlockIcon } from "./app-navigation-block-icon";
 
@@ -84,6 +85,12 @@ describe("app navigation block dropdown contract", () => {
     expect(minimalHoverRule).not.toMatch(/(?:width|height|padding|transform|box-shadow)/u);
   });
 
+  it("uses the accessible name and one custom label without a native tooltip", () => {
+    expect(source).toContain('aria-label={getLocalizedText(space.label, locale, space.id)}');
+    expect(source).toContain('<span className="cmm-navigation-block-label" aria-hidden="true">');
+    expect(source).not.toContain('title={getLocalizedText(space.label, locale, space.id)}');
+  });
+
   it("marks route activity separately from open state for the optional indicator", () => {
     expect(source).toContain('data-navigation-block-active={isActiveSpace ? "true" : "false"}');
     expect(source).toContain("open={open}");
@@ -114,9 +121,15 @@ describe("app navigation block dropdown contract", () => {
     expect(resolveOpenNavigationSpaceId("learn", "network", false)).toBe("learn");
     expect(resolveOpenNavigationSpaceId("network", "network", false)).toBeNull();
 
+    expect(resolveOpenRibbonUtilityMenuId(null, "preferences", true)).toBe("preferences");
+    expect(resolveOpenRibbonUtilityMenuId("preferences", "feedback", true)).toBe("feedback");
+    expect(resolveOpenRibbonUtilityMenuId("preferences", "feedback", false)).toBe("preferences");
+    expect(resolveOpenRibbonUtilityMenuId("feedback", "feedback", false)).toBeNull();
+
     expect(shellSource).toContain("openSpaceId");
     expect(shellSource).toContain("open={openSpaceId === space.id}");
     expect(shellSource).toContain("resolveOpenNavigationSpaceId");
+    expect(shellSource).toContain("resolveOpenRibbonUtilityMenuId");
     expect(treeSource).toContain("window.setTimeout(onClose, 0);");
     expect(source).not.toMatch(/\[data-navigation-block-trigger\][^\n]*~/u);
     expect(source).not.toContain(".group:hover [data-navigation-block-trigger]");

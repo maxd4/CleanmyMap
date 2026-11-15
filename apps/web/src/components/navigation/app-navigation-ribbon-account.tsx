@@ -61,7 +61,10 @@ export function AccountUserBubble({
     activityStatus === "active" ? "Statut : actif" : "Statut : inactif";
 
   return (
-    <div className="relative flex min-w-0 max-w-[18rem] items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.07] px-2 py-1.5 text-white shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] xl:h-10 xl:py-0">
+    <div
+      aria-label={`${username} · Niv. ${identity.currentLevel}, ${fullName}`}
+      className="relative flex min-w-0 shrink-0 max-w-12 items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.07] px-2 py-1.5 text-white shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] xl:h-10 xl:py-0 min-[1440px]:max-w-[18rem]"
+    >
       <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-700/80 xl:h-8 xl:w-8">
         <UserButton
           appearance={{
@@ -84,11 +87,11 @@ export function AccountUserBubble({
           )}
         />
       </div>
-      <div className="hidden min-w-0 flex-1 leading-tight xl:block">
-        <p className="cmm-ribbon-text break-words font-bold text-white">
+      <div className="hidden min-w-0 flex-1 overflow-hidden leading-tight min-[1440px]:block">
+        <p className="cmm-ribbon-text overflow-hidden text-ellipsis whitespace-nowrap font-bold text-white">
           {username} · Niv. {identity.currentLevel}
         </p>
-        <p className="cmm-ribbon-text break-words font-medium text-slate-300">{fullName}</p>
+        <p className="cmm-ribbon-text overflow-hidden text-ellipsis whitespace-nowrap font-medium text-slate-300">{fullName}</p>
       </div>
       {activityStatusError ? (
         <span
@@ -175,7 +178,7 @@ function RibbonAccountActionsView({
             ) : null}
 
             {isAuthenticated ? (
-              <div className="flex min-w-0 items-center gap-2 lg:gap-3">
+              <div className="flex min-w-0 shrink-0 items-center gap-2 lg:gap-3">
                 <NotificationBell ribbonChrome={ribbonChrome} />
                 {effectiveIdentity ? (
                   <AccountIdentityChip identity={effectiveIdentity} />

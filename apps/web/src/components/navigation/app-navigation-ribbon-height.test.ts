@@ -28,12 +28,13 @@ describe("desktop ribbon control geometry", () => {
     const searchSource = readSource("global-search.tsx");
 
     expect(ribbonSource).toContain("xl:h-10 xl:min-h-0");
-    expect(searchSource).toContain("inline-flex h-10 min-h-10 w-full");
-    expect(searchSource).toContain('panelAlignment="start"');
+    expect(searchSource).toContain("inline-flex h-10 min-h-10 w-10");
+    expect(searchSource).toContain('panelAlignment="center"');
+    expect(searchSource).toContain('panelClassName="w-[min(24rem,calc(100vw-1rem))]"');
     expect(ribbonSource).toContain("max-w-[18rem]");
     expect(ribbonSource).toContain("w-[15rem] shrink-0 flex-nowrap items-center justify-center");
     expect(ribbonSource).toContain("<AppNavigationTreeMenu");
-    expect(ribbonSource).toContain('cmm-navigation-group--product xl:hidden');
+    expect(ribbonSource).toContain('cmm-navigation-group--product xl:order-none xl:hidden');
   });
 
   it("keeps the five block triggers stable while enlarging reduced-mode icons", () => {
@@ -96,7 +97,7 @@ describe("desktop ribbon control geometry", () => {
 
     expect(menusSource.match(/xl:h-10/g)).toHaveLength(2);
     expect(notificationSource).toContain("xl:h-10 xl:w-10");
-    expect(accountSource).toContain("xl:h-10 xl:min-h-0");
+    expect(accountSource).toContain("min-[1440px]:h-10 min-[1440px]:min-h-0");
     expect(ribbonAccountSource).toContain("xl:h-10 xl:py-0");
     expect(ribbonAccountSource).toContain("xl:h-8 xl:w-8");
   });
@@ -106,37 +107,24 @@ describe("desktop ribbon control geometry", () => {
     const menusSource = readSource("app-navigation-ribbon-menus.tsx");
     const accountSource = readSource("app-navigation-ribbon-account.tsx");
     const identitySource = readSource("../account/account-identity-chip.tsx");
-    const rightControlZone = shellSource.match(
-      /className="([^\"]*ml-auto[^\"]*)"/,
+    const accountGroup = shellSource.match(
+      /className="([^\"]*xl:col-start-3[^\"]*)"/,
     )?.[1];
 
-    expect(rightControlZone).toBeDefined();
-    expect(rightControlZone?.split(/\s+/)).toEqual(
-      expect.arrayContaining([
-        "ml-auto",
-        "flex",
-        "min-w-0",
-        "items-center",
-        "gap-1.5",
-        "sm:gap-2",
-        "lg:gap-2.5",
-        "max-[380px]:gap-1",
-        "xl:col-start-3",
-        "xl:ml-0",
-        "xl:justify-end",
-      ]),
-    );
+    expect(accountGroup).toBeDefined();
+    expect(accountGroup).toContain("xl:col-start-3");
+    expect(shellSource).toContain("order-3 col-start-2 ml-auto");
+    expect(shellSource).toContain("order-2 col-start-1 shrink-0");
     expect(shellSource).toContain("xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]");
     expect(shellSource).toContain("xl:col-start-1");
     expect(shellSource).toContain("xl:col-start-2");
     expect(shellSource).toContain("xl:col-start-3");
-    expect(menusSource).toContain("xl:w-auto");
-    expect(menusSource).toContain("xl:px-3");
+    expect(menusSource).toContain("min-[1440px]:inline");
     expect(menusSource).toContain("xl:h-10");
     expect(menusSource).not.toContain("lg:w-auto");
     expect(menusSource).not.toContain("lg:px-3");
-    expect(accountSource).toContain("hidden min-w-0 flex-1 leading-tight xl:block");
-    expect(identitySource).toContain("xl:w-auto xl:min-w-0 xl:px-3 xl:h-10");
+    expect(accountSource).toContain("hidden min-w-0 flex-1 overflow-hidden leading-tight min-[1440px]:block");
+    expect(identitySource).toContain("min-[1440px]:w-auto min-[1440px]:min-w-0");
   });
 
   it("keeps the shared icon scale contract explicit", () => {

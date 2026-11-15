@@ -12,31 +12,51 @@ Le shell global conserve les mêmes composants et destinations, mais expose une
 hiérarchie visuelle stable afin de distinguer rapidement les niveaux du
 produit :
 
-- `primary` regroupe `Accueil` et `Rechercher` ; la marque conserve son accent
+- `primary` regroupe `Accueil` et `Rechercher`, puis `Préférences` est monté
+  comme contrôle autonome dans la zone gauche ; la marque conserve son accent
   bleu et la recherche reste une surface sombre bordée de cyan ;
 - `product` porte le dock central à partir de `xl` (1280px) et le bouton
   `Sommaire` sur toutes les largeurs inférieures à `xl` ; une seule de ces
   deux surfaces est donc visible, sans discontinuité entre 1024px et 1279px ;
-  le dock reste compact et centré ;
-- `utilities` regroupe `Préférences` et `Feedback` dans une surface discrète ;
+  le dock est placé sur l'axe du viewport, indépendamment des largeurs
+  différentes des groupes latéraux ;
+- `Feedback` est monté comme contrôle autonome dans la zone droite, devant les
+  notifications, le menu de rôle et l'identité/compte. Préférences et Feedback
+  ne partagent plus d'enveloppe visuelle ; une seule coordination d'état garde
+  au plus un menu utilitaire ouvert ; sous `xl`, les deux contrôles restent
+  accessibles même lorsque la recherche est masquée ;
 - `account` sépare les notifications et l'identité de compte par une bordure
   de rythme, sans changer leurs permissions ni leurs menus.
 
 Les boutons du dock central gardent leur nom accessible, leur cible tactile et
 leur état actif. En variante `classic`, le nom court est également disponible
-au survol et au focus clavier via une info-bulle locale, avec un attribut
-`title` comme repli pour les appareils tactiles. La variante `meniscus` garde
+au survol et au focus clavier via une info-bulle locale ; le bouton conserve son
+`aria-label` et son libellé masqué pour l'accessibilité, sans attribut `title`
+natif simultané avec cette info-bulle. La variante `meniscus` garde
 son libellé actif émergent et son libellé au survol. Aucun texte structurel
 n'est ajouté au mobile : le bouton `Sommaire` reste l'entrée explicite vers la
 navigation produit.
 
+À partir de `xl`, la recherche globale est volontairement iconique dans les
+largeurs contraintes (libellé visible à partir de `2xl`) afin de préserver la
+ligne unique et la largeur utile du compte. Son nom accessible et le raccourci
+`Ctrl/Cmd+K` restent disponibles. Le panneau est un dropdown non modal centré
+sous la loupe, borné à 24rem et aux marges utilisables du viewport ; il conserve
+le focus d'entrée et la navigation clavier.
+
+L'alerte météo est une surface d'information de niveau inférieur (`z-30`) :
+elle ne doit pas recouvrir le header, les menus ouverts ou la recherche
+(`z-50` et `z-70`). Cette baisse de plan ne change ni son contenu, ni sa
+fermeture, ni sa sémantique `role="alert"`.
+
 ## Tutoriel guidé — `CURRENT`
 
-Le bouton `Découvrir le ruban` est disponible dans le groupe des actions
-utilitaires. Il ouvre manuellement une visite courte de six étapes : Accueil,
-Recherche, navigation produit, Préférences, Feedback, puis profil/statut et
-espace personnel. Le bouton reste relançable à tout moment ; aucun autoplay
-n'est activé et aucune préférence de masquage automatique n'est donc requise.
+Le bouton `Découvrir le ruban` n'est pas rendu dans le header global. Il reste
+disponible sur l'accueil comme point d'entrée explicite vers une visite courte
+de six étapes : Accueil, Recherche, navigation produit, Préférences, Feedback,
+puis profil/statut et espace personnel. Le bouton reste relançable à tout
+moment ; aucun autoplay n'est activé et aucune préférence de masquage
+automatique n'est donc requise.
 
 La visite utilise `CmmDialog` pour le nom accessible, le focus initial, le
 piège clavier, `Escape`, le clic extérieur, le scroll-lock et la restitution du

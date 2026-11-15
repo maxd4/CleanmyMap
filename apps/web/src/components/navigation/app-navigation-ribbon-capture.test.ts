@@ -26,7 +26,7 @@ describe("global ribbon capture contract", () => {
 
     expect(source).not.toContain("href={EXPLORER_ROUTE}");
     expect(source).not.toContain("<List");
-    expect(source).toContain('cmm-navigation-group--product xl:hidden');
+    expect(source).toContain('cmm-navigation-group--product xl:order-none xl:hidden');
     expect(source).toContain("<AppNavigationTreeMenu");
   });
 
@@ -61,9 +61,10 @@ describe("global ribbon capture contract", () => {
     expect(source).toContain('data-navigation-group="primary"');
     expect(source).toContain('data-navigation-group="product"');
     expect(source).toContain('data-navigation-group="account"');
-    expect(menusSource).toContain('data-navigation-group="utilities"');
+    expect(menusSource).toContain('data-navigation-utility-menu="preferences"');
+    expect(menusSource).toContain('data-navigation-utility-menu="feedback"');
     expect(source).toContain('aria-label={locale === "fr" ? "Navigation principale" : "Primary navigation"}');
-    expect(menusSource).toContain('aria-label={locale === "fr" ? "Actions utilitaires" : "Utility actions"}');
+    expect(menusSource).toContain('data-navigation-utility-menu="feedback"');
   });
 
   it("uses a root capture attribute to make marked chrome static", () => {

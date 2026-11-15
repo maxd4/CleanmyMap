@@ -35,8 +35,15 @@ import {
   type ClerkUserLike,
 } from "./app-navigation-ribbon-account";
 import { useRibbonActivityStatus } from "./app-navigation-ribbon-activity";
-import { RibbonMenus } from "./app-navigation-ribbon-menus";
-import { resolveOpenNavigationSpaceId } from "./navigation-block-trigger-state";
+import {
+  RibbonFeedbackMenu,
+  RibbonPreferencesMenu,
+} from "./app-navigation-ribbon-menus";
+import {
+  resolveOpenNavigationSpaceId,
+  resolveOpenRibbonUtilityMenuId,
+  type RibbonUtilityMenuId,
+} from "./navigation-block-trigger-state";
 import {
   getNavigationRibbonIndicatorLeft,
   NAVIGATION_RIBBON_INDICATOR_WIDTH_PX,
@@ -48,6 +55,11 @@ type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
   user: ClerkUserLike | null;
   authStateReady: boolean;
   showAccountActions: boolean;
+};
+
+type OpenRibbonUtilityMenu = {
+  pathname: string;
+  id: RibbonUtilityMenuId;
 };
 
 function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNavigation, pathname, openSpaceId, onOpenChange }: { spaces: NavigationSpace[]; activeSpaceId: NavigationSpace["id"] | null; locale: Parameters<typeof AppNavigationBlockDropdown>[0]["locale"]; onTrackNavigation: Parameters<typeof AppNavigationBlockDropdown>[0]["onTrackNavigation"]; pathname: string; openSpaceId: NavigationSpace["id"] | null; onOpenChange: (spaceId: NavigationSpace["id"], open: boolean) => void }) {
@@ -105,6 +117,7 @@ function AppNavigationRibbonFrame({
   const ribbonRef = useRef<HTMLElement | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [openSpaceId, setOpenSpaceId] = useState<NavigationSpace["id"] | null>(null);
+  const [openUtilityMenu, setOpenUtilityMenu] = useState<OpenRibbonUtilityMenu | null>(null);
   const { data: hydratedIdentity } = useSWR<CurrentAccountIdentity | null>(
     authStateReady && user
       ? ["current-account-identity", user.id]
@@ -159,6 +172,16 @@ function AppNavigationRibbonFrame({
     };
   }, []);
 
+  const handleUtilityMenuChange = (menuId: RibbonUtilityMenuId, open: boolean) => {
+    setOpenUtilityMenu((currentMenu) => {
+      const currentMenuId = currentMenu?.pathname === pathname ? currentMenu.id : null;
+      const nextMenuId = resolveOpenRibbonUtilityMenuId(currentMenuId, menuId, open);
+      return nextMenuId ? { pathname, id: nextMenuId } : null;
+    });
+  };
+  const openUtilityMenuId = openUtilityMenu?.pathname === pathname
+    ? openUtilityMenu.id
+    : null;
 
   return (
     <div
@@ -177,65 +200,74 @@ function AppNavigationRibbonFrame({
         )}
         style={ribbonChrome}
       >
-        <div className="flex w-full min-w-0 items-center gap-2 px-3 py-2.5 max-[380px]:gap-1 max-[380px]:px-2 sm:px-5 lg:gap-2 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:px-7 xl:py-2">
+        <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 max-[639px]:gap-1 max-[639px]:px-2 sm:px-5 lg:gap-2 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:px-7 xl:py-2">
           <p className="sr-only">
             {locale === "fr" ? "Profil actif" : "Active profile"}: {effectiveProfileLabel}
           </p>
 
-          <div data-navigation-group="primary" data-navigation-tutorial-target="primary" role="group" aria-label={locale === "fr" ? "Navigation principale" : "Primary navigation"} className="cmm-navigation-group cmm-navigation-group--primary flex min-w-0 items-center gap-2 xl:col-start-1">
-            <Link
-              href="/"
-              prefetch={false}
-              onClick={() => onTrackNavigation("/", "Accueil", null)}
-              data-navigation-tutorial-target="home"
-              className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-[border-color,box-shadow,background-color] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 max-[380px]:min-h-10 max-[380px]:gap-1 max-[380px]:px-2 xl:h-10 xl:min-h-0"
-              aria-label="Accueil"
-            >
-              <BrandLogo
-                alt=""
-                className="h-9 w-9 shrink-0 object-contain max-[380px]:h-8 max-[380px]:w-8"
-                priority
-                sizes="2.25rem"
-              />
-              <span className="cmm-ribbon-text hidden xl:inline font-black uppercase tracking-[0.18em]">
-                Accueil
-              </span>
-            </Link>
+          <div className="order-1 col-span-2 flex min-w-0 items-center justify-between gap-2 xl:order-none xl:col-span-1 xl:col-start-1 xl:justify-start">
+            <div data-navigation-group="primary" data-navigation-tutorial-target="primary" role="group" aria-label={locale === "fr" ? "Navigation principale" : "Primary navigation"} className="max-[639px]:shrink-0 cmm-navigation-group cmm-navigation-group--primary flex min-w-0 items-center gap-2">
+              <Link
+                href="/"
+                prefetch={false}
+                onClick={() => onTrackNavigation("/", "Accueil", null)}
+                data-navigation-tutorial-target="home"
+                className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-[border-color,box-shadow,background-color] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 max-[380px]:min-h-10 max-[380px]:gap-1 max-[380px]:px-2 xl:h-10 xl:min-h-0"
+                aria-label="Accueil"
+              >
+                <BrandLogo
+                  alt=""
+                  className="h-9 w-9 shrink-0 object-contain max-[380px]:h-8 max-[380px]:w-8"
+                  priority
+                  sizes="2.25rem"
+                />
+                <span className="cmm-ribbon-text hidden xl:inline font-black uppercase tracking-[0.18em]">
+                  Accueil
+                </span>
+              </Link>
 
-            <div className="hidden min-w-0 flex-1 items-center xl:flex">
-              <div className="w-full max-w-[18rem]">
-                <GlobalSearch currentProfile={effectiveProfile} />
+              <div className="hidden min-w-0 flex-1 items-center xl:flex">
+                <div className="w-10 shrink-0 2xl:w-full 2xl:max-w-[18rem]">
+                  <GlobalSearch currentProfile={effectiveProfile} />
+                </div>
               </div>
             </div>
+
+            <RibbonPreferencesMenu
+              locale={locale}
+              ribbonChrome={ribbonChrome}
+              onTrackNavigation={onTrackNavigation}
+              open={openUtilityMenuId === "preferences"}
+              onOpenChange={(open) => handleUtilityMenuChange("preferences", open)}
+            />
           </div>
 
           <RibbonDesktopSpaceNavigation spaces={spaces} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} pathname={pathname} openSpaceId={openSpaceId} onOpenChange={(spaceId, open) => setOpenSpaceId((currentSpaceId) => resolveOpenNavigationSpaceId(currentSpaceId, spaceId, open))} />
 
-          <div className="ml-auto flex min-w-0 items-center gap-1.5 max-[380px]:gap-1 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end">
-            <div data-navigation-group="product" data-navigation-group-visibility="responsive" data-navigation-tutorial-target="product" role="group" aria-label={locale === "fr" ? "Navigation produit" : "Product navigation"} className="cmm-navigation-group cmm-navigation-group--product xl:hidden">
-              <AppNavigationTreeMenu
-                key={`mobile-tree-${pathname}`}
-                activeSpaceId={activeSpaceId}
-                idBase="mobile-navigation-tree"
-                locale={locale}
-                onTrackNavigation={onTrackNavigation}
-                pathname={pathname}
-                ribbonChrome={ribbonChrome}
-                spaces={spaces}
-              />
-            </div>
-
-            <RibbonMenus
-              key={`ribbon-menus-${pathname}`}
-              {...({
-                locale,
-                pathname,
-                ribbonChrome,
-                onTrackNavigation,
-                isAuthenticated,
-              } as React.ComponentProps<typeof RibbonMenus>)}
+          <div data-navigation-group="product" data-navigation-group-visibility="responsive" data-navigation-tutorial-target="product" role="group" aria-label={locale === "fr" ? "Navigation produit" : "Product navigation"} className="order-2 col-start-1 shrink-0 cmm-navigation-group cmm-navigation-group--product xl:order-none xl:hidden">
+            <AppNavigationTreeMenu
+              key={`mobile-tree-${pathname}`}
+              activeSpaceId={activeSpaceId}
+              idBase="mobile-navigation-tree"
+              locale={locale}
+              onTrackNavigation={onTrackNavigation}
+              pathname={pathname}
+              ribbonChrome={ribbonChrome}
+              spaces={spaces}
             />
+          </div>
 
+          <div className="order-3 col-start-2 ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5 xl:order-none xl:col-start-3 xl:justify-self-end">
+            <RibbonFeedbackMenu
+              locale={locale}
+              pathname={pathname}
+              ribbonChrome={ribbonChrome}
+              onTrackNavigation={onTrackNavigation}
+              isAuthenticated={isAuthenticated}
+              isPreferencesOpen={openUtilityMenuId === "preferences"}
+              open={openUtilityMenuId === "feedback"}
+              onOpenChange={(open) => handleUtilityMenuChange("feedback", open)}
+            />
             <div data-navigation-group="account" data-navigation-tutorial-target="account" role="group" aria-label={locale === "fr" ? "Compte et notifications" : "Account and notifications"} className="cmm-navigation-group cmm-navigation-group--account">
               <Suspense
               fallback={

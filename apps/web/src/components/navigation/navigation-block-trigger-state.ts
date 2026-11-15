@@ -27,3 +27,17 @@ export function resolveOpenNavigationSpaceId<T extends string>(
 
   return currentSpaceId === nextSpaceId ? null : currentSpaceId;
 }
+
+export type RibbonUtilityMenuId = "preferences" | "feedback";
+
+export function resolveOpenRibbonUtilityMenuId(
+  currentMenuId: RibbonUtilityMenuId | null,
+  nextMenuId: RibbonUtilityMenuId,
+  open: boolean,
+): RibbonUtilityMenuId | null {
+  if (open) {
+    return nextMenuId;
+  }
+
+  return currentMenuId === nextMenuId ? null : currentMenuId;
+}

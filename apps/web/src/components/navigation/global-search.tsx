@@ -32,7 +32,7 @@ function GlobalSearchFooter({ locale }: { locale: Locale }) {
 }
 
 function GlobalSearchTrigger({ locale, triggerProps }: { locale: Locale; triggerProps: ComponentProps<"button"> }) {
-  return <button {...triggerProps} data-navigation-tutorial-target="search" className="group inline-flex h-10 min-h-10 w-full items-center justify-between gap-2.5 rounded-full border border-cyan-100/30 bg-slate-950/70 px-3.5 text-white shadow-[0_18px_38px_-30px_rgba(2,6,23,0.95)] backdrop-blur-xl transition-colors hover:border-cyan-100/50 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70" aria-label={locale === "fr" ? "Rechercher" : "Search"}><span className="flex min-w-0 items-center gap-2"><Search className="h-4.5 w-4.5 shrink-0 text-cyan-100" aria-hidden="true" /><span className="cmm-ribbon-text whitespace-nowrap font-black uppercase tracking-[0.14em]">{locale === "fr" ? "Rechercher" : "Search"}</span></span><kbd className="cmm-ribbon-text cmm-text-caption hidden shrink-0 items-center gap-1 rounded-full border border-white/15 bg-black/30 px-1.5 py-0.5 font-semibold tracking-[0.06em] text-white/70 sm:inline-flex">Ctrl K / ⌘ K</kbd></button>;
+  return <button {...triggerProps} data-navigation-tutorial-target="search" className="group inline-flex h-10 min-h-10 w-10 shrink-0 items-center justify-center gap-2.5 rounded-full border border-cyan-100/30 bg-slate-950/70 px-0 text-white shadow-[0_18px_38px_-30px_rgba(2,6,23,0.95)] backdrop-blur-xl transition-colors hover:border-cyan-100/50 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 2xl:w-full 2xl:justify-between 2xl:px-3.5" aria-label={locale === "fr" ? "Rechercher" : "Search"}><span className="flex min-w-0 items-center gap-2"><Search className="h-4.5 w-4.5 shrink-0 text-cyan-100" aria-hidden="true" /><span className="cmm-ribbon-text hidden whitespace-nowrap font-black uppercase tracking-[0.14em] 2xl:inline">{locale === "fr" ? "Rechercher" : "Search"}</span></span><kbd className="cmm-ribbon-text cmm-text-caption hidden shrink-0 items-center gap-1 rounded-full border border-white/15 bg-black/30 px-1.5 py-0.5 font-semibold tracking-[0.06em] text-white/70 2xl:inline-flex">Ctrl K / ⌘ K</kbd></button>;
 }
 
 function buildSearchItems(
@@ -68,8 +68,8 @@ function GlobalSearchPanel({ locale, query, setQuery, searchInputRef, suggestedI
   const copy = GLOBAL_SEARCH_COPY[locale];
 
   return (
-<div className="overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-900 shadow-2xl">
-  <div className="flex items-center border-b border-slate-800 px-4 py-3 sm:px-6 sm:py-4">
+<div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
+  <div className="flex items-center border-b border-slate-800 px-3 py-2.5 sm:px-4 sm:py-3">
     <Search className="h-5 w-5 shrink-0 text-slate-300" aria-hidden="true" />
     <input
       ref={searchInputRef}
@@ -80,7 +80,7 @@ function GlobalSearchPanel({ locale, query, setQuery, searchInputRef, suggestedI
       }}
       placeholder={locale === "fr" ? "Chercher une rubrique, un outil, une aide..." : "Search for a section, tool, help..."}
       aria-label={locale === "fr" ? "Rechercher une rubrique, un outil ou une aide" : "Search for a section, tool or help"}
-      className="min-w-0 flex-1 bg-transparent px-3 py-2 text-lg text-slate-100 placeholder-slate-500 outline-none sm:px-4"
+      className="min-w-0 flex-1 bg-transparent px-2.5 py-1.5 text-base text-slate-100 placeholder-slate-500 outline-none sm:px-3"
     />
     <button
       type="button"
@@ -92,9 +92,9 @@ function GlobalSearchPanel({ locale, query, setQuery, searchInputRef, suggestedI
     </button>
   </div>
 
-  <div className="max-h-[60vh] overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent sm:p-4">
+  <div className="max-h-[52vh] overflow-y-auto p-2.5 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent sm:p-3">
     {query.trim() === "" ? (
-      <div className="py-8 text-center sm:py-10">
+      <div className="py-6 text-center sm:py-8">
         <p className="cmm-text-caption font-bold uppercase tracking-widest text-slate-400">
           {locale === "fr" ? "Explorez les rubriques accessibles" : "Explore the available sections"}
         </p>
@@ -183,7 +183,7 @@ function GlobalSearchPanel({ locale, query, setQuery, searchInputRef, suggestedI
         ))}
       </div>
     ) : (
-      <div className="py-8 text-center sm:py-10">
+      <div className="py-6 text-center sm:py-8">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800/70 text-slate-400">
           <Search size={24} aria-hidden="true" />
         </div>
@@ -251,8 +251,8 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
       onOpenChange={setIsOpen}
       panelRole="region"
       triggerHasPopup="dialog"
-      panelAlignment="start"
-      panelClassName="w-[min(42rem,calc(100vw-1rem))]"
+      panelAlignment="center"
+      panelClassName="w-[min(24rem,calc(100vw-1rem))]"
       wrapperClassName="w-full"
       verticalGap={8}
       renderTrigger={(triggerProps) => <GlobalSearchTrigger locale={locale} triggerProps={triggerProps} />}

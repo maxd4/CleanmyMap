@@ -63,7 +63,7 @@ describe("AppNavigationBlockDropdown keyboard behavior", () => {
     const trigger = host.querySelector<HTMLButtonElement>("[data-navigation-block-trigger]");
     expect(trigger).not.toBeNull();
     expect(trigger?.getAttribute("aria-label")).toBe("Agir");
-    expect(trigger?.getAttribute("title")).toBe("Agir");
+    expect(trigger?.getAttribute("title")).toBeNull();
     trigger!.focus();
     act(() => {
       trigger!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));

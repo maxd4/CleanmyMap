@@ -212,100 +212,15 @@ test.describe("desktop central navigation ribbon variants", () => {
     }
   });
 
-  test("opens a short guided tour and restores focus on desktop and mobile", async ({ page }) => {
+  test("keeps the guided tutorial out of the global header", async ({ page }) => {
     for (const width of [1440, 390] as const) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
       await dismissCookies(page);
 
-      const trigger = page.getByRole("button", { name: "Découvrir le ruban" });
-      await expect(trigger).toBeVisible();
-      await trigger.click();
-
-      const dialog = page.getByRole("dialog", { name: "Tutoriel du ruban de navigation" });
-      await expect(dialog).toBeVisible();
-      await expect(dialog.getByRole("heading", { name: "Accueil" })).toBeVisible();
-      await expect(page.locator("[data-navigation-ribbon-tour-spotlight]")).toBeVisible();
-      const initialTourGeometry = await page.evaluate(() => {
-        const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
-        const spotlight = document.querySelector<HTMLElement>("[data-navigation-ribbon-tour-spotlight]");
-        if (!dialog || !spotlight) throw new Error("Missing guided tour surface");
-        const dialogRect = dialog.getBoundingClientRect();
-        const spotlightRect = spotlight.getBoundingClientRect();
-        return {
-          dialogInsideViewport: dialogRect.left >= 0
-            && dialogRect.top >= 0
-            && dialogRect.right <= window.innerWidth + 1
-            && dialogRect.bottom <= window.innerHeight + 1,
-          spotlightVisible: spotlightRect.width > 0 && spotlightRect.height > 0,
-          horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
-        };
-      });
-      expect(initialTourGeometry.dialogInsideViewport).toBe(true);
-      expect(initialTourGeometry.spotlightVisible).toBe(true);
-      expect(initialTourGeometry.horizontalOverflow).toBe(false);
-
-      const modalStack = await page.evaluate(() => {
-        const header = document.querySelector<HTMLElement>('[data-cmm-capture-sticky]');
-        const spotlight = document.querySelector<HTMLElement>('[data-navigation-ribbon-tour-spotlight-layer]');
-        const backdrop = document.querySelector<HTMLElement>('.cmm-navigation-ribbon-tour-backdrop');
-        const panel = document.querySelector<HTMLElement>('.cmm-navigation-ribbon-tour-panel');
-        if (!header || !spotlight || !backdrop || !panel) throw new Error("Missing guided tour stacking layers");
-
-        return {
-          headerZIndex: Number.parseInt(getComputedStyle(header).zIndex, 10),
-          spotlightZIndex: Number.parseInt(getComputedStyle(spotlight).zIndex, 10),
-          backdropZIndex: Number.parseInt(getComputedStyle(backdrop).zIndex, 10),
-          panelZIndex: Number.parseInt(getComputedStyle(panel).zIndex, 10),
-        };
-      });
-      expect(modalStack.headerZIndex).toBeLessThan(modalStack.spotlightZIndex);
-      expect(modalStack.spotlightZIndex).toBeLessThan(modalStack.backdropZIndex);
-      expect(modalStack.backdropZIndex).toBeLessThan(modalStack.panelZIndex);
-
-      const homeTarget = page.locator('[data-navigation-tutorial-target="home"]');
-      const homeBox = await homeTarget.boundingBox();
-      if (!homeBox) throw new Error("Missing header home target");
-      const urlBeforeBlockedClick = page.url();
-      await page.mouse.click(homeBox.x + homeBox.width / 2, homeBox.y + homeBox.height / 2);
-      expect(page.url()).toBe(urlBeforeBlockedClick);
-      await expect(dialog).toHaveCount(0);
-      await trigger.click();
-      await expect(dialog).toBeVisible();
-
-      await expect(dialog.getByRole("button", { name: "Précédent" })).toBeDisabled();
-      await dialog.getByRole("button", { name: "Suivant" }).click();
-      await expect(dialog.getByRole("heading", { name: "Rechercher" })).toBeVisible();
-      await dialog.getByRole("button", { name: "Précédent" }).click();
-      await expect(dialog.getByRole("heading", { name: "Accueil" })).toBeVisible();
-
-      for (const title of [
-        "Rechercher",
-        "Navigation produit",
-        "Préférences",
-        "Feedback",
-        "Profil et espace personnel",
-      ]) {
-        await dialog.getByRole("button", { name: "Suivant" }).click();
-        await expect(dialog.getByRole("heading", { name: title })).toBeVisible();
-        await expect(page.locator("[data-navigation-ribbon-tour-spotlight]")).toBeVisible();
-      }
-
-      await dialog.getByRole("button", { name: "Terminer" }).click();
-      await expect(dialog).toHaveCount(0);
-      await expect(trigger).toBeFocused();
-
-      await trigger.click();
-      const reopenedDialog = page.getByRole("dialog", { name: "Tutoriel du ruban de navigation" });
-      await expect(reopenedDialog).toBeVisible();
-      await reopenedDialog.getByRole("button", { name: "Passer" }).click();
-      await expect(reopenedDialog).toHaveCount(0);
-      await expect(trigger).toBeFocused();
-
-      await trigger.click();
-      await expect(page.getByRole("dialog", { name: "Tutoriel du ruban de navigation" })).toBeVisible();
-      await page.keyboard.press("Escape");
-      await expect(page.getByRole("dialog", { name: "Tutoriel du ruban de navigation" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Découvrir le ruban" })).toHaveCount(0);
+      await expect(page.locator('[data-navigation-utility-menu="preferences"]')).toBeVisible();
+      await expect(page.locator('[data-navigation-utility-menu="feedback"]')).toBeVisible();
     }
   });
 
@@ -318,11 +233,12 @@ test.describe("desktop central navigation ribbon variants", () => {
     const ribbon = await waitForRibbon(page);
     await assertRibbonHierarchy(page, 1440);
     await expect(page.locator('[data-navigation-group="primary"]')).toBeVisible();
-    await expect(page.locator('[data-navigation-group="utilities"]')).toBeVisible();
+    await expect(page.locator('[data-navigation-utility-menu="preferences"]')).toBeVisible();
+    await expect(page.locator('[data-navigation-utility-menu="feedback"]')).toBeVisible();
     await expect(page.locator('[data-navigation-group="account"]')).toBeVisible();
     await expect(page.locator('[data-navigation-group="product"]:visible')).toHaveCount(1);
     await expect(ribbon).toHaveAttribute("data-navigation-ribbon-variant", EXPECTED_VARIANT);
-    await expect(ribbon.locator('[data-navigation-block-trigger]').first()).toHaveAttribute("title", /.+/);
+    await expect(ribbon.locator('[data-navigation-block-trigger]').first()).not.toHaveAttribute("title");
     mkdirSync(SCREENSHOT_DIRECTORY, { recursive: true });
     const classicScreenshot = await captureRibbonArea(
       page,
@@ -453,12 +369,12 @@ test.describe("desktop central navigation ribbon variants", () => {
     await dismissCookies(page);
     const ribbon = await waitForRibbon(page);
 
-    const initialActTrigger = ribbon.getByRole("button", { name: "Agir" });
-    await initialActTrigger.press("Enter");
-    const panelId = await initialActTrigger.getAttribute("aria-controls");
+    const initialLearnTrigger = ribbon.getByRole("button", { name: "Apprendre" });
+    await initialLearnTrigger.press("Enter");
+    const panelId = await initialLearnTrigger.getAttribute("aria-controls");
     const panel = page.locator(`#${panelId}`);
     await expect(panel).toBeVisible();
-    await expect(panel.locator('a[href="/actions/new"]')).toBeVisible();
+    await expect(panel.locator('a[href="/learn/comprendre"]')).toBeVisible();
 
     type RibbonSample = {
       pathname: string;
@@ -482,7 +398,7 @@ test.describe("desktop central navigation ribbon variants", () => {
       };
     });
     const samples: RibbonSample[] = [await collectRibbonSample()];
-    const clickPromise = panel.locator('a[href="/actions/new"]').click({ noWaitAfter: true });
+    const clickPromise = panel.locator('a[href="/learn/comprendre"]').click({ noWaitAfter: true });
     const sampleUntil = Date.now() + 420;
     while (Date.now() < sampleUntil) {
       try {
@@ -493,7 +409,7 @@ test.describe("desktop central navigation ribbon variants", () => {
       await page.waitForTimeout(16);
     }
     await clickPromise;
-    await expect(page).toHaveURL(/\/actions\/new$/);
+    await expect(page).toHaveURL(/\/learn\/comprendre$/);
     samples.push(await collectRibbonSample());
 
     if (EXPECTED_VARIANT === "classic") return;
@@ -561,9 +477,10 @@ test.describe("desktop central navigation ribbon variants", () => {
       await dismissCookies(page);
       await assertRibbonHierarchy(page, width);
       await expect(page.locator('[data-navigation-group="primary"]')).toBeVisible();
-      await expect(page.locator('[data-navigation-group="utilities"]')).toBeVisible();
+      await expect(page.locator('[data-navigation-utility-menu="preferences"]')).toBeVisible();
+      await expect(page.locator('[data-navigation-utility-menu="feedback"]')).toBeVisible();
       await expect(page.locator('[data-navigation-group="account"]')).toBeVisible();
-      await expect(page.getByRole("button", { name: "Découvrir le ruban" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Découvrir le ruban" })).toHaveCount(0);
       await expect(page.locator('[data-navigation-group="product"]:visible')).toHaveCount(1);
       const summary = page.getByRole("button", { name: "Sommaire" });
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.getBoundingClientRect().width);
@@ -602,12 +519,114 @@ test.describe("desktop central navigation ribbon variants", () => {
         await expect(desktopRibbon).toBeVisible();
         await expect(desktopRibbon).toHaveAttribute("data-navigation-ribbon-variant", EXPECTED_VARIANT);
         await expect(summary).toBeHidden();
+        const dockGeometry = await page.evaluate(() => {
+          const dock = document.querySelector<HTMLElement>('nav[aria-label="Navigation par blocs"]');
+          if (!dock) throw new Error("Missing desktop navigation dock");
+          const rect = dock.getBoundingClientRect();
+          return {
+            dockCenter: rect.left + rect.width / 2,
+            viewportCenter: window.innerWidth / 2,
+          };
+        });
+        expect(
+          Math.abs(dockGeometry.dockCenter - dockGeometry.viewportCenter),
+          `desktop dock is not viewport-centered at ${width}px`,
+        ).toBeLessThanOrEqual(8);
         const firstDesktopTrigger = desktopRibbon.locator("[data-navigation-block-trigger]").first();
         await firstDesktopTrigger.press("Enter");
         const desktopPanelId = await firstDesktopTrigger.getAttribute("aria-controls");
         await expect(page.locator(`#${desktopPanelId}`)).toBeVisible();
         await page.keyboard.press("Escape");
         await expect(firstDesktopTrigger).toBeFocused();
+      }
+    }
+  });
+
+  test("keeps compact search, utility ordering and overlay planes stable", async ({ page }, testInfo) => {
+    test.setTimeout(120_000);
+    for (const width of [390, 768, 1024, 1280, 1440, 1600] as const) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
+      await dismissCookies(page);
+      await assertRibbonHierarchy(page, width);
+
+      const capture = await page.screenshot();
+      await testInfo.attach(`ribbon-${width}`, { body: capture, contentType: "image/png" });
+
+      const blockTriggersWithNativeTooltips = await page.locator('[data-navigation-block-trigger][title]').count();
+      expect(blockTriggersWithNativeTooltips, `duplicate native tooltips at ${width}px`).toBe(0);
+
+      if (width === 390 || width >= 1280) {
+        const preferencesTrigger = page.getByRole("button", { name: "Menu des préférences d'affichage et langue" });
+        const feedbackTrigger = page.getByRole("button", { name: "Menu Feedback" });
+        await expect(preferencesTrigger).toBeVisible();
+        await expect(feedbackTrigger).toBeVisible();
+
+        await preferencesTrigger.click();
+        await expect(page.locator("#preferences-menu-panel")).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(page.locator("#preferences-menu-panel")).toHaveCount(0);
+        await feedbackTrigger.click();
+        await expect(page.locator("#feedback-menu-panel")).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(page.locator("#feedback-menu-panel")).toHaveCount(0);
+      }
+
+      if (width < 1280) continue;
+
+      const searchTrigger = page.locator('[data-navigation-tutorial-target="search"]');
+      await expect(searchTrigger).toBeVisible();
+      if (width < 1536) {
+        await expect(searchTrigger.getByText("Rechercher")).toBeHidden();
+      } else {
+        await expect(searchTrigger.getByText("Rechercher")).toBeVisible();
+      }
+
+      await searchTrigger.click();
+      const searchPanel = page.locator("#global-search-popover");
+      await expect(searchPanel).toBeVisible();
+      await expect(searchPanel.locator("input")).toBeFocused();
+      const searchGeometry = await page.evaluate(() => {
+        const panel = document.querySelector<HTMLElement>("#global-search-popover");
+        const trigger = document.querySelector<HTMLElement>('[data-navigation-tutorial-target="search"]');
+        if (!panel || !trigger) throw new Error("Missing global search geometry");
+        const panelRect = panel.getBoundingClientRect();
+        const triggerRect = trigger.getBoundingClientRect();
+        const alert = document.querySelector<HTMLElement>('[role="alert"]');
+        return {
+          panelLeft: panelRect.left,
+          panelRight: panelRect.right,
+          panelWidth: panelRect.width,
+          panelCenter: panelRect.left + panelRect.width / 2,
+          triggerCenter: triggerRect.left + triggerRect.width / 2,
+          viewportWidth: document.documentElement.clientWidth,
+          panelZIndex: getComputedStyle(panel).zIndex,
+          alertZIndex: alert ? getComputedStyle(alert).zIndex : null,
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+      expect(searchGeometry.panelLeft, `search panel left edge at ${width}px`).toBeGreaterThanOrEqual(7);
+      expect(searchGeometry.panelRight, `search panel right edge at ${width}px`).toBeLessThanOrEqual(searchGeometry.viewportWidth - 7);
+      expect(Math.abs(searchGeometry.panelCenter - searchGeometry.triggerCenter), `search panel alignment at ${width}px`).toBeLessThanOrEqual(1);
+      expect(searchGeometry.panelWidth).toBeLessThanOrEqual(384);
+      expect(searchGeometry.panelZIndex).toBe("70");
+      expect(searchGeometry.alertZIndex === null || Number(searchGeometry.alertZIndex) < Number(searchGeometry.panelZIndex)).toBe(true);
+      expect(searchGeometry.overflow, `search overflow at ${width}px`).toBeLessThanOrEqual(1);
+
+      await page.keyboard.press("Escape");
+      await expect(searchPanel).toHaveCount(0);
+      await expect(searchTrigger).toBeFocused();
+
+      for (const zoom of [1.1, 1.25, 1.5] as const) {
+        const zoomProxyWidth = Math.floor(width / zoom);
+        await page.setViewportSize({ width: zoomProxyWidth, height: 900 });
+        await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
+        await dismissCookies(page);
+        await assertRibbonHierarchy(page, zoomProxyWidth);
+        const zoomProxyOverflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(zoomProxyOverflow, `zoom ${zoom} proxy overflow from ${width}px`).toBeLessThanOrEqual(1);
       }
     }
   });

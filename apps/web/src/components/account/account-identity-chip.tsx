@@ -168,7 +168,7 @@ function AccountRoleMenu({
         <button
           {...triggerProps}
           aria-label={locale === "fr" ? "Menu du profil actif" : "Active profile menu"}
-          className="cmm-dropdown-trigger inline-flex h-11 min-h-11 w-11 min-w-11 max-w-[13rem] items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-0 text-left text-white transition-colors hover:border-white/25 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 xl:w-auto xl:min-w-0 xl:px-3 xl:h-10 xl:min-h-0"
+          className="cmm-dropdown-trigger inline-flex h-11 min-h-11 w-11 min-w-11 max-w-[13rem] items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-0 text-left text-white transition-colors hover:border-white/25 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 min-[1440px]:w-auto min-[1440px]:min-w-0 min-[1440px]:px-3 min-[1440px]:h-10 min-[1440px]:min-h-0"
         >
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-emerald-200">
             <BadgePictogram
@@ -176,12 +176,12 @@ function AccountRoleMenu({
               size={16}
             />
           </span>
-          <span className="cmm-ribbon-text hidden min-w-0 break-words font-bold xl:inline">
+          <span className="cmm-ribbon-text hidden min-w-0 break-words font-bold min-[1440px]:inline">
             {getProfileLabel(identity.activeRole, locale)}
           </span>
           <ChevronDown
             className={cn(
-              "hidden h-4 w-4 shrink-0 text-slate-300 transition-transform duration-150 xl:inline",
+              "hidden h-4 w-4 shrink-0 text-slate-300 transition-transform duration-150 min-[1440px]:inline",
               isOpen && "rotate-180",
             )}
             aria-hidden="true"

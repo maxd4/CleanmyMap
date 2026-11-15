@@ -94,7 +94,7 @@ const [isVisible, setIsVisible] = useState(false);
  ref={barRef}
  role="alert"
  aria-live="assertive"
- className={`relative z-[60] flex items-center justify-between px-4 py-2 text-white shadow-lg animate-in slide-in-from-top duration-500 ${bgClass}`}
+ className={`relative z-30 flex items-center justify-between px-4 py-2 text-white shadow-lg animate-in slide-in-from-top duration-500 ${bgClass}`}
  >
  <div className="flex items-center gap-3">
  <Icon size={18} className="animate-pulse" />

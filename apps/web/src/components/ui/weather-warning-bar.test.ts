@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 
 const canRequestGeolocationMock = vi.hoisted(() => vi.fn());
@@ -7,6 +8,8 @@ vi.mock("@/lib/browser/geolocation", () => ({
 }));
 
 import { shouldRequestWeatherGeolocation } from "./weather-warning-bar";
+
+const weatherSource = readFileSync(new URL("./weather-warning-bar.tsx", import.meta.url), "utf8");
 
 describe("WeatherWarningBar geolocation policy", () => {
   it("never checks or requests geolocation when the surface disables it", () => {
@@ -19,5 +22,10 @@ describe("WeatherWarningBar geolocation policy", () => {
 
     expect(shouldRequestWeatherGeolocation(true)).toBe(true);
     expect(canRequestGeolocationMock).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the warning below the header and dropdown overlay planes", () => {
+    expect(weatherSource).toContain("relative z-30");
+    expect(weatherSource).not.toContain("z-[60]");
   });
 });
