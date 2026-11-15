@@ -16,8 +16,8 @@ test('backup workflow is manual, main-only and protected', () => {
 
 test('backup exports all dump classes, uses the shared restore-check, encrypts before upload and cleans up', () => {
   assert.match(workflow, /--role-only/);
-  assert.match(workflow, /--schema public --file .*schema\.sql/);
-  assert.match(workflow, /--data-only --schema public --use-copy/);
+  assert.match(workflow, /--schema public,private --file .*schema\.sql/);
+  assert.match(workflow, /--data-only --schema public,private --use-copy/);
   assert.match(workflow, /export-supabase-storage\.mjs/);
   assert.match(workflow, /prepare-supabase-restore-target\.mjs/);
   assert.match(workflow, /project-id=cmm-backup-restore/);

@@ -22,6 +22,16 @@ test("passes when every exported relation exists after schema restore", () => {
   assert.match(formatRelationCoherence(result), /^RELATION_COHERENCE: PASS /);
 });
 
+test("keeps private relations in the same coherence contract", () => {
+  const sql = [
+    "COPY private.action_chat_acl FROM stdin;",
+    "SELECT pg_catalog.setval('private.action_chat_acl_id_seq', 7, true);",
+  ].join("\n");
+  const result = compareRelationSets(sql, "private.action_chat_acl\nprivate.action_chat_acl_id_seq\n");
+  assert.deepEqual(result.missing, []);
+  assert.deepEqual(result.exported, ["private.action_chat_acl", "private.action_chat_acl_id_seq"]);
+});
+
 test("fails closed when data references a relation absent after schema restore", () => {
   const result = compareRelationSets("COPY public.actions FROM stdin;\nCOPY public.missing_relation FROM stdin;\n", "public.actions\n");
   assert.deepEqual(result.missing, ["public.missing_relation"]);

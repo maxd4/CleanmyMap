@@ -84,7 +84,7 @@ run_restore_stage schema /tmp/cmm-schema.sql
 
 restore_check_step="relation-coherence"
 docker exec "$RESTORE_CHECK_CONTAINER" psql -X -A -t -v ON_ERROR_STOP=1 -U "$restore_admin_user" -d "$restore_db" \
-  -c "select n.nspname || '.' || c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r', 'p', 'S', 'v', 'm', 'f') order by 1;" \
+  -c "select n.nspname || '.' || c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname in ('public', 'private') and c.relkind in ('r', 'p', 'S', 'v', 'm', 'f') order by 1;" \
   > "$RESTORE_CHECK_ROOT/restore-relations.txt"
 node scripts/ci/verify-supabase-backup-relation-coherence.mjs \
   --data-file "$RESTORE_CHECK_DATA_FILE" \
@@ -133,11 +133,13 @@ select
   $(if [ "$restore_check_fixture_expected" = "true" ]; then printf "(select count(*) = 1 from public.cmm_backup_restore_fixture where id = 1)"; else printf "true"; fi),
   (select count(*) > 0 from pg_constraint con join pg_class rel on rel.oid = con.conrelid join pg_namespace ns on ns.oid = rel.relnamespace where ns.nspname = 'public' and rel.relkind in ('r', 'p') and exists (select 1 from restore_business_relations r where r.qualified_name = 'public.' || rel.relname) and not exists (select 1 from pg_depend dep where dep.classid = 'pg_class'::regclass and dep.objid = rel.oid and dep.deptype = 'e')),
   (select count(*) > 0 from pg_proc where pronamespace = 'public'::regnamespace),
+  (select count(*) >= 5 from pg_proc where pronamespace = 'private'::regnamespace and prokind = 'f'),
+  (select count(distinct pol.oid) >= 4 from pg_policy pol join pg_class rel on rel.oid = pol.polrelid join pg_namespace rel_ns on rel_ns.oid = rel.relnamespace join pg_depend dep on dep.classid = 'pg_policy'::regclass and dep.objid = pol.oid join pg_proc fn on fn.oid = dep.refobjid join pg_namespace fn_ns on fn_ns.oid = fn.pronamespace where rel_ns.nspname = 'public' and fn_ns.nspname = 'private' and fn.prokind = 'f'),
   (select count(*) > 0 from pg_class rel join pg_namespace ns on ns.oid = rel.relnamespace where ns.nspname = 'public' and rel.relkind in ('r', 'p') and rel.relrowsecurity and exists (select 1 from restore_business_relations r where r.qualified_name = 'public.' || rel.relname) and not exists (select 1 from pg_depend dep where dep.classid = 'pg_class'::regclass and dep.objid = rel.oid and dep.deptype = 'e')),
   (select count(*) >= 3 from pg_roles where rolname in ('anon', 'authenticated', 'service_role')),
   (select count(*) > 0 from information_schema.role_table_grants grant_info where grant_info.table_schema = 'public' and grant_info.grantee in ('anon', 'authenticated') and exists (select 1 from restore_business_relations r where r.qualified_name = 'public.' || grant_info.table_name) and not exists (select 1 from pg_depend dep join pg_class rel on rel.oid = dep.objid join pg_namespace ns on ns.oid = rel.relnamespace where dep.classid = 'pg_class'::regclass and dep.deptype = 'e' and ns.nspname = 'public' and rel.relname = grant_info.table_name)),
   (select count(*) > 0 from pg_extension where extname in ('pgcrypto', 'pg_trgm', 'uuid-ossp', 'postgis')),
-  (select not exists (select 1 from restore_business_relations r join pg_class rel on r.qualified_name = 'public.' || rel.relname join pg_namespace ns on ns.oid = rel.relnamespace where ns.nspname = 'public' and exists (select 1 from pg_depend dep where dep.classid = 'pg_class'::regclass and dep.objid = rel.oid and dep.deptype = 'e'))),
+  (select not exists (select 1 from restore_business_relations r join pg_class rel on rel.relname = split_part(r.qualified_name, '.', 2) join pg_namespace ns on ns.oid = rel.relnamespace and r.qualified_name = ns.nspname || '.' || rel.relname where ns.nspname in ('public', 'private') and exists (select 1 from pg_depend dep where dep.classid = 'pg_class'::regclass and dep.objid = rel.oid and dep.deptype = 'e'))),
   (select count(*) > 0 from pg_index index_info join pg_class rel on rel.oid = index_info.indrelid join pg_namespace ns on ns.oid = rel.relnamespace join pg_opclass opclass on opclass.oid = any (index_info.indclass::oid[]) join pg_namespace opclass_namespace on opclass_namespace.oid = opclass.opcnamespace where ns.nspname = 'public' and opclass_namespace.nspname = 'extensions' and opclass.opcname = 'gist_geometry_ops_2d' and exists (select 1 from restore_business_relations r where r.qualified_name = 'public.' || rel.relname)),
   (select count(*) >= 2 from pg_index index_info join pg_class rel on rel.oid = index_info.indrelid join pg_namespace ns on ns.oid = rel.relnamespace join pg_opclass opclass on opclass.oid = any (index_info.indclass::oid[]) join pg_namespace opclass_namespace on opclass_namespace.oid = opclass.opcnamespace where ns.nspname = 'public' and opclass_namespace.nspname = 'extensions' and opclass.opcname = 'gin_trgm_ops' and exists (select 1 from restore_business_relations r where r.qualified_name = 'public.' || rel.relname)),
   (select not exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname = 'cmm_backup_coherence_fixture'));
@@ -145,5 +147,5 @@ EOF
 docker cp "$RESTORE_CHECK_ROOT/restore-checks.sql" "$RESTORE_CHECK_CONTAINER:/tmp/cmm-restore-checks.sql"
 docker exec "$RESTORE_CHECK_CONTAINER" psql -X -A -t -F '|' -v ON_ERROR_STOP=1 -U "$restore_admin_user" -d "$restore_db" \
   -f /tmp/cmm-restore-checks.sql > "$RESTORE_CHECK_ROOT/restore-checks.txt"
-grep -qx 't|t|t|t|t|t|t|t|t|t|t' "$RESTORE_CHECK_ROOT/restore-checks.txt"
+grep -qx 't|t|t|t|t|t|t|t|t|t|t|t|t' "$RESTORE_CHECK_ROOT/restore-checks.txt"
 echo "SUPABASE_RESTORE_CHECK: PASS roles=extensions=schema=data=executed integrity=checked"

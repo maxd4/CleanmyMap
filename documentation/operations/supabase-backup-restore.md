@@ -13,8 +13,9 @@ un runner GitHub hébergé ; Docker n'est jamais lancé sur le poste local.
 Le workflow produit, dans un répertoire temporaire puis dans une archive GPG :
 
 - un dump des rôles PostgreSQL ;
-- un dump du schéma et des données métier du schéma `public` avec la CLI
-  Supabase ; ce périmètre explicite est appliqué aux deux dumps ;
+- un dump du schéma et des données métier des schémas applicatifs `public` et
+  `private` avec la CLI Supabase ; ce périmètre explicite est appliqué aux deux
+  dumps ;
 - l'inventaire des buckets et objets Storage, les chemins, tailles, métadonnées
   retournées par l'API et les SHA-256 des octets ;
 - les versions/outils, l'inventaire des migrations et un manifeste de périmètre
@@ -22,13 +23,14 @@ Le workflow produit, dans un répertoire temporaire puis dans une archive GPG :
 
 Comme le précise la documentation Supabase, `supabase db dump` exclut les
 schémas gérés tels que `auth` et `storage`, ainsi que les schémas d'extensions.
-Le workflow borne en plus les deux dumps à `public`, qui est le schéma des
-données métier de CleanMyMap ; il refuse toute relation de données non présente
+Le workflow borne en plus les deux dumps aux schémas applicatifs `public,private`,
+qui portent les données métier et les helpers privés de CleanMyMap ; il refuse
+toute relation de données non présente
 après le rejeu du schéma au lieu de l'exclure silencieusement. Un backup de base
 ne contient pas les octets Storage. Les utilisateurs Auth,
 leurs métadonnées de fournisseurs, les secrets de projet, les Edge Functions,
 la configuration des services gérés et l'historique point-in-time ne sont donc
-pas restaurables par cette archive. Le dump public n'est pas une sauvegarde
+pas restaurables par cette archive. Le dump applicatif n'est pas une sauvegarde
 complète de la plateforme. Les migrations versionnées dans Git restent la
 source de reconstruction du schéma.
 
@@ -150,14 +152,18 @@ vérifient respectivement une relation présente, une relation absente et
 l'absence préalable des extensions ; la fixture positive est supprimée et son
 absence est vérifiée avant le rejeu réel. Le contrôle final relie ses assertions
 de contraintes, grants et RLS aux relations métier exportées dans `public`,
-exclut les objets possédés par une extension et vérifie les index spatiaux et
-trigrammes. Il vérifie aussi les fonctions publiques, extensions et rôles. Ainsi,
+couvre les relations exportées des deux schémas pour la cohérence et les
+contraintes, exclut les objets possédés par une extension et vérifie les index
+spatiaux et trigrammes. Il vérifie aussi les fonctions publiques, au moins cinq
+fonctions `private` et les policies `public` qui dépendent de fonctions
+`private`, ainsi que les extensions et rôles. Ainsi,
 une fixture résiduelle ou un objet Supabase géré ne peut pas satisfaire seul les
 assertions métier.
 
 Le workflow séparé de preuve reconstruit une base source avec les migrations et
 le seed canoniques, ajoute uniquement une fixture synthétique versionnée, produit
-les trois dumps avec les mêmes options que le backup, puis appelle le même
+les trois dumps avec les mêmes options (`--schema public,private` pour les
+dumps schéma et données) que le backup, puis appelle le même
 exécuteur dans une seconde cible Supabase éphémère. Il contrôle les données,
 contraintes, index spatiaux et trigrammes, fonctions, RLS, grants, extensions,
 rôles et les cas négatifs. Le workflow de backup appelle ce même exécuteur avec

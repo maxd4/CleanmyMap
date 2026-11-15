@@ -94,8 +94,8 @@ jobs:
 
           proof_step="source-dumps"
           ./node_modules/.bin/supabase db dump --local --workdir apps/web --role-only --file "$PROOF_ROOT/dumps/roles.sql" > "$PROOF_ROOT/dump-roles.log" 2>&1
-          ./node_modules/.bin/supabase db dump --local --workdir apps/web --schema public --file "$PROOF_ROOT/dumps/schema.sql" > "$PROOF_ROOT/dump-schema.log" 2>&1
-          ./node_modules/.bin/supabase db dump --local --workdir apps/web --data-only --schema public --use-copy --file "$PROOF_ROOT/dumps/data.sql" > "$PROOF_ROOT/dump-data.log" 2>&1
+          ./node_modules/.bin/supabase db dump --local --workdir apps/web --schema public,private --file "$PROOF_ROOT/dumps/schema.sql" > "$PROOF_ROOT/dump-schema.log" 2>&1
+          ./node_modules/.bin/supabase db dump --local --workdir apps/web --data-only --schema public,private --use-copy --file "$PROOF_ROOT/dumps/data.sql" > "$PROOF_ROOT/dump-data.log" 2>&1
           test -s "$PROOF_ROOT/dumps/roles.sql"
           test -s "$PROOF_ROOT/dumps/schema.sql"
           test -s "$PROOF_ROOT/dumps/data.sql"

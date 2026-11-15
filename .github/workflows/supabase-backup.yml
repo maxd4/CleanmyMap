@@ -107,8 +107,8 @@ jobs:
           cli_version=$(npx supabase --version | head -n 1)
           printf '%s\n' "$cli_version" > "$BACKUP_ROOT/metadata/supabase-cli-version.txt"
           npx supabase db dump --linked --role-only --file "$BACKUP_ROOT/database/roles.sql"
-          npx supabase db dump --linked --schema public --file "$BACKUP_ROOT/database/schema.sql"
-          npx supabase db dump --linked --data-only --schema public --use-copy --file "$BACKUP_ROOT/database/data.sql"
+          npx supabase db dump --linked --schema public,private --file "$BACKUP_ROOT/database/schema.sql"
+          npx supabase db dump --linked --data-only --schema public,private --use-copy --file "$BACKUP_ROOT/database/data.sql"
           npx supabase migration list --linked > "$BACKUP_ROOT/metadata/migration-list.txt"
           for file in "$BACKUP_ROOT/database/roles.sql" "$BACKUP_ROOT/database/schema.sql" "$BACKUP_ROOT/database/data.sql" "$BACKUP_ROOT/metadata/migration-list.txt"; do
             test -s "$file"

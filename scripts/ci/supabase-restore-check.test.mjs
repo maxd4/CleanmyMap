@@ -25,12 +25,16 @@ test("shared executor preserves fail-closed PostgreSQL and privacy contracts", (
     "cmm_backup_missing_extension_fixture",
     "cmm_backup_coherence_fixture",
     "restore_business_relations",
+    "n.nspname in ('public', 'private')",
     "pg_constraint",
+    "pronamespace = 'private'::regnamespace",
+    "pg_policy",
+    "fn_ns.nspname = 'private'",
     "relrowsecurity",
     "role_table_grants",
     "gist_geometry_ops_2d",
     "gin_trgm_ops",
-    "grep -qx 't|t|t|t|t|t|t|t|t|t|t'",
+    "grep -qx 't|t|t|t|t|t|t|t|t|t|t|t|t'",
   ]) assert.match(executor, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.doesNotMatch(executor, /cat .*restore-(roles|schema|data)\.log/);
 });

@@ -14,8 +14,8 @@ test('ephemeral backup proof reconstructs source and canonical target without Pr
   assert.match(workflow, /project-id=cmm-backup-proof-target/);
   assert.match(workflow, /port-offset=100/);
   assert.match(workflow, /supabase db dump --local --workdir apps\/web --role-only/);
-  assert.match(workflow, /--schema public --file .*schema\.sql/);
-  assert.match(workflow, /--data-only --schema public --use-copy/);
+  assert.match(workflow, /--schema public,private --file .*schema\.sql/);
+  assert.match(workflow, /--data-only --schema public,private --use-copy/);
   assert.match(workflow, /supabase_db_web/);
   assert.match(workflow, /cmm-backup-proof-target/);
   assert.match(workflow, /run-supabase-restore-check\.sh/);
