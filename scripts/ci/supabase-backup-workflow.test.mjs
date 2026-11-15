@@ -27,10 +27,12 @@ test('workflow creates all dump classes, encrypts before upload and cleans up', 
   assert.match(workflow, /verify-supabase-backup-manifest\.mjs/);
   assert.match(workflow, /verify-supabase-backup-gpg\.mjs/);
   assert.match(workflow, /run_restore_stage\(\)\s*\{/);
+  assert.match(workflow, /psql -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate/);
   assert.match(workflow, /classify-supabase-restore-failure\.mjs/);
-  assert.match(workflow, /RESTORE_SQL: stage=\$stage exit_code=\$exit_code classification=\$classification/);
+  assert.match(workflow, /RESTORE_SQL: stage=\$stage exit_code=\$exit_code \$diagnostic/);
   assert.match(workflow, /run_restore_stage schema \/tmp\/cmm-schema\.sql/);
   assert.match(workflow, /run_restore_stage data \/tmp\/cmm-data\.sql/);
+  assert.doesNotMatch(workflow, /run_restore_stage roles/);
   assert.match(workflow, /EPHEMERAL_RESTORE: PASS schema=data=executed/);
   assert.match(workflow, /steps\.encrypt\.outputs\.encrypted_archive/);
   const publication = workflow.slice(workflow.indexOf('- name: Publish encrypted artifact only'), workflow.indexOf('- name: Summarize the non-sensitive proof'));

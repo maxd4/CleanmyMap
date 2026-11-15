@@ -20,11 +20,61 @@ const patterns = [
 ];
 
 export function classifyRestoreFailure(logText) {
+  const sqlstate = extractRestoreSqlState(logText);
+  if (sqlstate) return classifyRestoreSqlState(sqlstate);
   const text = String(logText ?? "");
   for (const [classification, pattern] of patterns) {
     if (pattern.test(text)) return classification;
   }
   return "unknown";
+}
+
+const SQLSTATE_CATEGORIES = Object.freeze([
+  ["08", "connection_or_authentication"],
+  ["28", "connection_or_authentication"],
+  ["42501", "role_or_privilege"],
+  ["0A", "extension_or_feature"],
+  ["42704", "extension_or_feature"],
+  ["42P01", "dependency_or_ordering"],
+  ["42703", "dependency_or_ordering"],
+  ["42883", "dependency_or_ordering"],
+  ["3F", "dependency_or_ordering"],
+  ["2B", "dependency_or_ordering"],
+  ["23505", "constraint_or_data"],
+  ["23503", "constraint_or_data"],
+  ["23502", "constraint_or_data"],
+  ["23514", "constraint_or_data"],
+  ["22P02", "constraint_or_data"],
+  ["42601", "syntax_or_format"],
+  ["22P04", "syntax_or_format"],
+  ["22", "syntax_or_format"],
+]);
+
+export function extractRestoreSqlState(logText) {
+  const text = String(logText ?? "");
+  const errorLine = text.match(/^\s*(?:ERROR|FATAL|PANIC):\s+(?:SQLSTATE\s*)?([0-9A-Z]{5})\b/im);
+  if (errorLine) return errorLine[1].toUpperCase();
+  const explicit = text.match(/\bSQLSTATE\s*(?:=|:|\s)\s*([0-9A-Z]{5})\b/i);
+  return explicit?.[1]?.toUpperCase() ?? null;
+}
+
+export function classifyRestoreSqlState(sqlstate) {
+  const code = String(sqlstate ?? "").toUpperCase();
+  const match = SQLSTATE_CATEGORIES.find(([prefix]) => code === prefix || code.startsWith(prefix));
+  return match?.[1] ?? "unknown";
+}
+
+export function diagnoseRestoreFailure(logText) {
+  const sqlstate = extractRestoreSqlState(logText);
+  return {
+    sqlstate: sqlstate ?? "UNAVAILABLE",
+    classification: sqlstate ? classifyRestoreSqlState(sqlstate) : classifyRestoreFailure(logText),
+  };
+}
+
+export function formatRestoreDiagnostic(logText) {
+  const diagnostic = diagnoseRestoreFailure(logText);
+  return `sqlstate=${diagnostic.sqlstate} classification=${diagnostic.classification}`;
 }
 
 export function isRestoreClassification(value) {
@@ -38,6 +88,6 @@ if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}`) {
     console.error("Usage: node classify-supabase-restore-failure.mjs --log PATH");
     process.exitCode = 2;
   } else {
-    process.stdout.write(`${classifyRestoreFailure(await readFile(logPath, "utf8"))}\n`);
+    process.stdout.write(`${formatRestoreDiagnostic(await readFile(logPath, "utf8"))}\n`);
   }
 }

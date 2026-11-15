@@ -162,12 +162,12 @@ jobs:
             local input="$2"
             local log="$RUNNER_TEMP/restore-${stage}.log"
             set +e
-            docker exec "$db_container" psql -v ON_ERROR_STOP=1 -U postgres -d cmm_backup_restore -f "$input" > "$log" 2>&1
+            docker exec "$db_container" psql -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -U postgres -d cmm_backup_restore -f "$input" > "$log" 2>&1
             local exit_code=$?
             set -e
-            local classification
-            classification=$(node scripts/ci/classify-supabase-restore-failure.mjs --log "$log")
-            echo "RESTORE_SQL: stage=$stage exit_code=$exit_code classification=$classification"
+            local diagnostic
+            diagnostic=$(node scripts/ci/classify-supabase-restore-failure.mjs --log "$log")
+            echo "RESTORE_SQL: stage=$stage exit_code=$exit_code $diagnostic"
             return "$exit_code"
           }
           run_restore_stage schema /tmp/cmm-schema.sql
