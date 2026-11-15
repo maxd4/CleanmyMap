@@ -2,10 +2,11 @@
 
 Statut : `CURRENT` — procédure opérationnelle CleanMyMap.
 
-Cette procédure concerne le projet `trktzkgujgpgsgkoyndn` et le workflow manuel
-`.github/workflows/supabase-backup.yml`. Elle ne déclenche ni migration, ni
-`db push`, ni modification de Production. Le workflow utilise un runner GitHub
-hébergé ; Docker n'est jamais lancé sur le poste local.
+Cette procédure concerne le projet `trktzkgujgpgsgkoyndn`, le workflow manuel
+`.github/workflows/supabase-backup.yml` et la preuve CI
+`.github/workflows/supabase-backup-restore-proof.yml`. Elle ne déclenche ni
+migration, ni `db push`, ni modification de Production. Les workflows utilisent
+un runner GitHub hébergé ; Docker n'est jamais lancé sur le poste local.
 
 ## Couverture réelle
 
@@ -73,13 +74,15 @@ PostgreSQL éphémère isolée du runner et contrôle contraintes, fonctions et 
 preuve ne vaut pas restauration complète de la plateforme : les rôles gérés,
 Auth, Storage distant et configuration Supabase demandent une procédure séparée.
 
-En cas d'échec SQL, `psql` conserve `ON_ERROR_STOP=1` et écrit sa sortie complète
-uniquement dans un journal temporaire privé avec la verbosité SQLSTATE. Le résumé
+En cas d'échec SQL, `psql` conserve `ON_ERROR_STOP=1` et écrit la sortie détaillée
+(`VERBOSITY=verbose`) uniquement dans un journal temporaire privé. Le résumé
 GitHub publie seulement `stage`, `exit_code`, le premier SQLSTATE trouvé ou
-`UNAVAILABLE`, et une catégorie normalisée. Les préfixes standards de `psql -f`,
-par exemple `psql:/tmp/cmm-schema.sql:17: ERROR: 42P01`, sont reconnus ; les
-codes présents dans du SQL, des données ou des messages arbitraires ne le sont
-pas. Une archive n'est jamais publiée après un échec de restauration.
+`UNAVAILABLE`, et une catégorie normalisée. Les préfixes standards de `psql -f`
+sont reconnus ; le message, le SQL, les données et les secrets restent privés.
+Ces journaux ne sont pas téléversés. Si un artefact de diagnostic devient
+nécessaire ultérieurement, il doit être chiffré avec la clé GPG protégée avant
+toute publication. Une archive n'est jamais publiée après un échec de
+restauration.
 
 ## Téléchargement, déchiffrement et vérification locale
 
@@ -112,17 +115,36 @@ Le contrôle éphémère du workflow suit la procédure Supabase sur une configu
 temporaire dédiée : `supabase start` n'y applique ni l'arbre de migrations métier
 de `apps/web`, ni son seed. Il conserve uniquement les objets gérés nécessaires
 au runtime Supabase dans la base `postgres`, révoque les privilèges par défaut
-`anon`/`authenticated` avant le schéma, rejoue `roles.sql`, puis `schema.sql`,
-compare d'abord les relations référencées par les instructions `COPY` et
-`setval` de `data.sql` avec les relations présentes après `schema.sql`, puis
-rejoue `data.sql` dans une session séparée avec
+`anon`/`authenticated` avant le schéma, rejoue `roles.sql`, prépare ensuite les
+dépendances de restauration avec
+`scripts/ci/supabase-restore-extension-preflight.sql`, puis rejoue `schema.sql`.
+Le préflight installe dans `extensions` les versions majeures compatibles de
+`postgis`, `pg_trgm`, `uuid-ossp` et `pgcrypto`, puis vérifie le type
+`extensions.geometry`, les classes `gist_geometry_ops_2d` et `gin_trgm_ops`.
+Une absence, un mauvais schéma ou une version incompatible fait échouer le
+restore avant le schéma métier ; le préflight n'est pas une migration.
+
+Le contrôle compare d'abord les relations référencées par les instructions
+`COPY` et `setval` de `data.sql` avec les relations présentes après `schema.sql`,
+puis rejoue `data.sql` dans une session séparée avec
 `session_replication_role = replica` pour éviter l'exécution des triggers pendant
 le chargement des données. Des fixtures synthétiques positive et négative
-vérifient que ce contrôle passe pour une relation présente et refuse une relation
-absente ; la fixture positive est supprimée et son absence est vérifiée avant le
-rejeu réel. Le contrôle final relie ses assertions de contraintes, grants et RLS
-aux relations métier exportées dans `public` et exclut les objets possédés par
-une extension ; il vérifie aussi les fonctions publiques, extensions et rôles.
+vérifient respectivement une relation présente, une relation absente et
+l'absence préalable des extensions ; la fixture positive est supprimée et son
+absence est vérifiée avant le rejeu réel. Le contrôle final relie ses assertions
+de contraintes, grants et RLS aux relations métier exportées dans `public`,
+exclut les objets possédés par une extension et vérifie les index spatiaux et
+trigrammes. Il vérifie aussi les fonctions publiques, extensions et rôles. Ainsi,
+une fixture résiduelle ou un objet Supabase géré ne peut pas satisfaire seul les
+assertions métier.
+
+Le workflow séparé de preuve reconstruit une base source avec les migrations et
+le seed canoniques, ajoute uniquement une fixture synthétique versionnée, produit
+les trois dumps avec les mêmes options que le backup, puis rejoue ces dumps dans
+une seconde cible Supabase éphémère avec migrations et seed désactivés. Il
+contrôle les données, contraintes, index spatiaux et trigrammes, fonctions, RLS,
+grants, extensions, rôles et les cas négatifs. Cette preuve ne contacte pas
+Production et ne publie aucun diagnostic en clair.
 La configuration canonique `apps/web/supabase/config.toml` et l'arbre de
 migrations ne sont pas modifiés ; une base vierge créée par `createdb` n'est pas
 une cible Supabase représentative.

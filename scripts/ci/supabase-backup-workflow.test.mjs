@@ -28,12 +28,16 @@ test('workflow creates all dump classes, encrypts before upload and cleans up', 
   assert.match(workflow, /verify-supabase-backup-manifest\.mjs/);
   assert.match(workflow, /verify-supabase-backup-gpg\.mjs/);
   assert.match(workflow, /run_restore_stage\(\)\s*\{/);
-  assert.match(workflow, /psql_args=\(-v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate/);
+  assert.match(workflow, /psql_args=\(-v ON_ERROR_STOP=1 -v VERBOSITY=verbose/);
   assert.match(workflow, /classify-supabase-restore-failure\.mjs/);
   assert.match(workflow, /RESTORE_SQL: stage=\$stage exit_code=\$exit_code \$diagnostic/);
   assert.match(workflow, /docker cp "\$BACKUP_ROOT\/database\/roles\.sql" "\$db_container:\/tmp\/cmm-roles\.sql"/);
   assert.match(workflow, /restore_db="postgres"/);
   assert.match(workflow, /run_restore_stage roles \/tmp\/cmm-roles\.sql/);
+  assert.match(workflow, /supabase-restore-extension-preflight\.sql/);
+  assert.match(workflow, /run_restore_stage extensions \/tmp\/cmm-restore-extension-preflight\.sql/);
+  assert.match(workflow, /missing-extension\.sql/);
+  assert.match(workflow, /Missing-extension PostgreSQL negative fixture unexpectedly passed/);
   assert.match(workflow, /run_restore_stage schema \/tmp\/cmm-schema\.sql/);
   assert.match(workflow, /verify-supabase-backup-relation-coherence\.mjs/);
   assert.match(workflow, /--write-exported-file .*restore-exported-relations\.txt/);
@@ -45,6 +49,7 @@ test('workflow creates all dump classes, encrypts before upload and cleans up', 
   assert.match(workflow, /pg_depend/);
   assert.match(workflow, /restore_business_relations/);
   assert.ok(workflow.indexOf('drop table public.cmm_backup_coherence_fixture') < workflow.indexOf('docker exec "$db_container" psql -X -A -t -F'));
+  assert.ok(workflow.indexOf('run_restore_stage extensions /tmp/cmm-restore-extension-preflight.sql') < workflow.indexOf('run_restore_stage schema /tmp/cmm-schema.sql'));
   assert.match(workflow, /run_restore_stage data \/tmp\/cmm-data\.sql/);
   assert.match(workflow, /restore_workdir="\$RUNNER_TEMP\/cmm-supabase-restore"/);
   assert.match(workflow, /project_id = "cmm-backup-restore"/);
@@ -54,6 +59,7 @@ test('workflow creates all dump classes, encrypts before upload and cleans up', 
   assert.match(workflow, /session_replication_role = replica/);
   assert.doesNotMatch(workflow, /dropdb .*cmm_backup_restore|createdb .*cmm_backup_restore/);
   assert.match(workflow, /information_schema\.role_table_grants/);
+  assert.match(workflow, /grep -qx 't\|t\|t\|t\|t\|t\|t\|t\|t'/);
   assert.match(workflow, /EPHEMERAL_RESTORE: PASS roles=schema=data=executed/);
   assert.match(workflow, /restore-roles\.log/);
   assert.match(workflow, /steps\.encrypt\.outputs\.encrypted_archive/);
