@@ -33,7 +33,7 @@ describe("desktop ribbon control geometry", () => {
     expect(ribbonSource).toContain("max-w-[18rem]");
     expect(ribbonSource).toContain("w-[15rem] shrink-0 flex-nowrap items-center justify-center");
     expect(ribbonSource).toContain("<AppNavigationTreeMenu");
-    expect(ribbonSource).toContain('className="lg:hidden"');
+    expect(ribbonSource).toContain('cmm-navigation-group--product lg:hidden');
   });
 
   it("keeps the five block triggers stable while enlarging reduced-mode icons", () => {
@@ -83,6 +83,8 @@ describe("desktop ribbon control geometry", () => {
     expect(layoutSource).toContain("pointer-events: none;");
     expect(layoutSource).toContain('data-navigation-block-active="true"]');
     expect(layoutSource).toContain("top: -0.4375rem;");
+    expect(layoutSource).toContain('[data-navigation-ribbon][data-navigation-ribbon-variant="classic"] .cmm-navigation-block-label');
+    expect(layoutSource).toContain("color-mix(in srgb, var(--navigation-block-accent) 58%, transparent)");
   });
 
   it("aligns first-level menus, notification, profile and account controls only on desktop", () => {

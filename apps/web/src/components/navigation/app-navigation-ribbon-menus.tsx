@@ -153,5 +153,8 @@ export function RibbonMenus({
     },
   ] as const;
 
-  return <><PreferencesMenu locale={locale} ribbonChrome={ribbonChrome} onTrackNavigation={onTrackNavigation} open={isPreferencesOpen} onOpen={(open) => { setIsPreferencesOpen(open); if (open) setIsFeedbackOpen(false); }} /><FeedbackMenu locale={locale} pathname={pathname} ribbonChrome={ribbonChrome} onTrackNavigation={onTrackNavigation} isAuthenticated={isAuthenticated} isPreferencesOpen={isPreferencesOpen} links={feedbackLinks} open={isFeedbackOpen} onOpen={(open) => { setIsFeedbackOpen(open); if (open) setIsPreferencesOpen(false); }} /></>;
+  return <div data-navigation-group="utilities" role="group" aria-label={locale === "fr" ? "Actions utilitaires" : "Utility actions"} className="cmm-navigation-group cmm-navigation-group--utilities">
+    <PreferencesMenu locale={locale} ribbonChrome={ribbonChrome} onTrackNavigation={onTrackNavigation} open={isPreferencesOpen} onOpen={(open) => { setIsPreferencesOpen(open); if (open) setIsFeedbackOpen(false); }} />
+    <FeedbackMenu locale={locale} pathname={pathname} ribbonChrome={ribbonChrome} onTrackNavigation={onTrackNavigation} isAuthenticated={isAuthenticated} isPreferencesOpen={isPreferencesOpen} links={feedbackLinks} open={isFeedbackOpen} onOpen={(open) => { setIsFeedbackOpen(open); if (open) setIsPreferencesOpen(false); }} />
+  </div>;
 }

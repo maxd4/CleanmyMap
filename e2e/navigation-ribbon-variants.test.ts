@@ -29,6 +29,55 @@ async function waitForRibbon(page: Page) {
   return ribbon;
 }
 
+async function assertRibbonHierarchy(page: Page, width: number): Promise<void> {
+  const metrics = await page.evaluate(() => {
+    const navigation = document.querySelector<HTMLElement>('nav[aria-label="Barre de navigation principale"]');
+    if (!navigation) throw new Error("Missing global navigation ribbon");
+
+    const visible = (element: HTMLElement) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    };
+    const overlap = (first: DOMRect, second: DOMRect) =>
+      Math.min(first.right, second.right) - Math.max(first.left, second.left) > 1
+      && Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top) > 1;
+
+    const groups = [...navigation.querySelectorAll<HTMLElement>("[data-navigation-group]")]
+      .filter(visible)
+      .map((element) => ({
+        name: element.dataset.navigationGroup ?? "",
+        rect: element.getBoundingClientRect().toJSON(),
+      }));
+    const groupCollisions = groups.flatMap((first, firstIndex) =>
+      groups.slice(firstIndex + 1).filter((second) => overlap(first.rect, second.rect)).map((second) => [first.name, second.name]),
+    );
+
+    const controls = [...navigation.querySelectorAll<HTMLElement>("a, button")]
+      .filter(visible)
+      .filter((element) => !element.getAttribute("aria-label")?.startsWith("Statut :"))
+      .map((element) => ({
+        label: element.getAttribute("aria-label") ?? element.textContent?.trim() ?? element.tagName,
+        rect: element.getBoundingClientRect().toJSON(),
+      }));
+    const controlCollisions = controls.flatMap((first, firstIndex) =>
+      controls.slice(firstIndex + 1).filter((second) => overlap(first.rect, second.rect)).map((second) => [first.label, second.label]),
+    );
+
+    return {
+      groups,
+      groupCollisions,
+      controlCollisions,
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: document.documentElement.getBoundingClientRect().width,
+    };
+  });
+
+  expect(metrics.groupCollisions, `visible ribbon groups overlap at ${width}px: ${JSON.stringify(metrics)}`).toEqual([]);
+  expect(metrics.controlCollisions, `visible ribbon controls overlap at ${width}px: ${JSON.stringify(metrics)}`).toEqual([]);
+  expect(metrics.scrollWidth, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+}
+
 async function captureRibbonArea(
   page: Page,
   ribbon: Locator,
@@ -133,12 +182,18 @@ async function waitForMeniscusAlignment(page: Page): Promise<void> {
 test.describe("desktop central navigation ribbon variants", () => {
   test("uses the code-selected variant and keeps the meniscus silhouette emergent", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+    await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
     await dismissCookies(page);
     await page.evaluate(() => document.documentElement.setAttribute("data-display-mode", "exhaustif"));
 
     const ribbon = await waitForRibbon(page);
+    await assertRibbonHierarchy(page, 1440);
+    await expect(page.locator('[data-navigation-group="primary"]')).toBeVisible();
+    await expect(page.locator('[data-navigation-group="utilities"]')).toBeVisible();
+    await expect(page.locator('[data-navigation-group="account"]')).toBeVisible();
+    await expect(page.locator('[data-navigation-group="product"]:visible')).toHaveCount(1);
     await expect(ribbon).toHaveAttribute("data-navigation-ribbon-variant", EXPECTED_VARIANT);
+    await expect(ribbon.locator('[data-navigation-block-trigger]').first()).toHaveAttribute("title", /.+/);
     mkdirSync(SCREENSHOT_DIRECTORY, { recursive: true });
     const classicScreenshot = await captureRibbonArea(
       page,
@@ -149,6 +204,10 @@ test.describe("desktop central navigation ribbon variants", () => {
 
     if (EXPECTED_VARIANT === "classic") {
       await expect(ribbon.locator(".cmm-navigation-meniscus-indicator")).toHaveCSS("opacity", "0");
+      const hoveredTrigger = ribbon.locator('[data-navigation-block-active="false"]').first();
+      await hoveredTrigger.hover();
+      await expect(hoveredTrigger.locator(".cmm-navigation-block-label")).toBeVisible();
+      await expect(hoveredTrigger.locator(".cmm-navigation-block-label")).not.toHaveText("");
       return;
     }
 
@@ -203,7 +262,7 @@ test.describe("desktop central navigation ribbon variants", () => {
 
   test("preserves dropdown activation, route links, keyboard focus and display-mode motion", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+    await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
     await dismissCookies(page);
     const ribbon = await waitForRibbon(page);
     await page.waitForTimeout(350);
@@ -261,7 +320,7 @@ test.describe("desktop central navigation ribbon variants", () => {
 
   test("moves the bead and concave surface continuously across client navigation", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+    await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
     await dismissCookies(page);
     const ribbon = await waitForRibbon(page);
 
@@ -375,8 +434,9 @@ test.describe("desktop central navigation ribbon variants", () => {
   test("keeps the desktop-only variant out of mobile and tablet layouts", async ({ page }) => {
     for (const width of [390, 768, 1440] as const) {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+      await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
       await dismissCookies(page);
+      await assertRibbonHierarchy(page, width);
       const summary = page.getByRole("button", { name: "Sommaire" });
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.getBoundingClientRect().width);
 

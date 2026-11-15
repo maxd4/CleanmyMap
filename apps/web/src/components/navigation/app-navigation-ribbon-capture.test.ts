@@ -26,7 +26,7 @@ describe("global ribbon capture contract", () => {
 
     expect(source).not.toContain("href={EXPLORER_ROUTE}");
     expect(source).not.toContain("<List");
-    expect(source).toContain('className="lg:hidden"');
+    expect(source).toContain('cmm-navigation-group--product lg:hidden');
     expect(source).toContain("<AppNavigationTreeMenu");
   });
 
@@ -46,6 +46,24 @@ describe("global ribbon capture contract", () => {
     expect(source).toContain('xl:col-start-1');
     expect(source).toContain('xl:col-start-2');
     expect(source).toContain('xl:col-start-3');
+  });
+
+  it("exposes the four visual ribbon levels without duplicating navigation", () => {
+    const source = fs.readFileSync(
+      path.join(navigationDirectory, "app-navigation-ribbon-shell.tsx"),
+      "utf8",
+    );
+    const menusSource = fs.readFileSync(
+      path.join(navigationDirectory, "app-navigation-ribbon-menus.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain('data-navigation-group="primary"');
+    expect(source).toContain('data-navigation-group="product"');
+    expect(source).toContain('data-navigation-group="account"');
+    expect(menusSource).toContain('data-navigation-group="utilities"');
+    expect(source).toContain('aria-label={locale === "fr" ? "Navigation principale" : "Primary navigation"}');
+    expect(menusSource).toContain('aria-label={locale === "fr" ? "Actions utilitaires" : "Utility actions"}');
   });
 
   it("uses a root capture attribute to make marked chrome static", () => {

@@ -60,6 +60,7 @@ export function AppNavigationBlockDropdown({
           data-navigation-block-trigger
           data-navigation-block-active={isActiveSpace ? "true" : "false"}
           aria-label={getLocalizedText(space.label, locale, space.id)}
+          title={getLocalizedText(space.label, locale, space.id)}
           style={buildNavigationBlockTriggerStyle(space.id)}
           className={cn(
             "inline-flex h-8 w-9 shrink-0 items-center justify-center rounded-[0.8rem] border border-transparent bg-transparent leading-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:bg-white/10",

@@ -57,7 +57,7 @@ function RibbonDesktopSpaceNavigation({ spaces, activeSpaceId, locale, onTrackNa
   const indicatorLeft = getNavigationRibbonIndicatorLeft(activeSpaceIndex, spaces.length);
   const activeSpace = activeSpaceIndex >= 0 ? spaces[activeSpaceIndex] : null;
 
-  return <div className="hidden items-center justify-center xl:col-start-2 xl:flex"><nav data-navigation-ribbon data-navigation-ribbon-variant={APP_NAVIGATION_RIBBON_VARIANT} aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)] cmm-navigation-ribbon-dock">
+  return <div data-navigation-group="product" data-navigation-group-visibility="desktop" className="hidden items-center justify-center xl:col-start-2 xl:flex"><nav data-navigation-ribbon data-navigation-ribbon-variant={APP_NAVIGATION_RIBBON_VARIANT} aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"} className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)] cmm-navigation-ribbon-dock">
     {indicatorLeft ? (
       <span
         aria-hidden="true"
@@ -182,7 +182,7 @@ function AppNavigationRibbonFrame({
             {locale === "fr" ? "Profil actif" : "Active profile"}: {effectiveProfileLabel}
           </p>
 
-          <div className="flex min-w-0 items-center gap-2 xl:col-start-1">
+          <div data-navigation-group="primary" role="group" aria-label={locale === "fr" ? "Navigation principale" : "Primary navigation"} className="cmm-navigation-group cmm-navigation-group--primary flex min-w-0 items-center gap-2 xl:col-start-1">
             <Link
               href="/"
               prefetch={false}
@@ -211,7 +211,7 @@ function AppNavigationRibbonFrame({
           <RibbonDesktopSpaceNavigation spaces={spaces} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} pathname={pathname} openSpaceId={openSpaceId} onOpenChange={(spaceId, open) => setOpenSpaceId((currentSpaceId) => resolveOpenNavigationSpaceId(currentSpaceId, spaceId, open))} />
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5 max-[380px]:gap-1 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end">
-            <div className="lg:hidden">
+            <div data-navigation-group="product" data-navigation-group-visibility="responsive" role="group" aria-label={locale === "fr" ? "Navigation produit" : "Product navigation"} className="cmm-navigation-group cmm-navigation-group--product lg:hidden">
               <AppNavigationTreeMenu
                 key={`mobile-tree-${pathname}`}
                 activeSpaceId={activeSpaceId}
@@ -235,7 +235,8 @@ function AppNavigationRibbonFrame({
               } as React.ComponentProps<typeof RibbonMenus>)}
             />
 
-            <Suspense
+            <div data-navigation-group="account" role="group" aria-label={locale === "fr" ? "Compte et notifications" : "Account and notifications"} className="cmm-navigation-group cmm-navigation-group--account">
+              <Suspense
               fallback={
                 <RibbonAccountActionsFallback
                   pathname={pathname}
@@ -249,18 +250,19 @@ function AppNavigationRibbonFrame({
                   activity={ribbonActivity}
                 />
               }
-            >
-              <RibbonAccountActions
-                locale={locale}
-                isAuthenticated={isAuthenticated}
-                onTrackNavigation={onTrackNavigation}
-                ribbonChrome={ribbonChrome}
-                effectiveIdentity={effectiveIdentity}
-                identityForBubble={identityForBubble}
-                user={user}
-                activity={ribbonActivity}
-              />
-            </Suspense>
+              >
+                <RibbonAccountActions
+                  locale={locale}
+                  isAuthenticated={isAuthenticated}
+                  onTrackNavigation={onTrackNavigation}
+                  ribbonChrome={ribbonChrome}
+                  effectiveIdentity={effectiveIdentity}
+                  identityForBubble={identityForBubble}
+                  user={user}
+                  activity={ribbonActivity}
+                />
+              </Suspense>
+            </div>
           </div>
         </div>
       </nav>

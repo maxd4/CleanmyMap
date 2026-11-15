@@ -6,6 +6,28 @@ Ce contrat décrit uniquement la présentation du ruban central de navigation
 desktop. Les espaces, routes, profils, menus, états d'ouverture, tracking et
 état actif restent ceux du flux de navigation existant.
 
+## Hiérarchie du ruban global
+
+Le shell global conserve les mêmes composants et destinations, mais expose une
+hiérarchie visuelle stable afin de distinguer rapidement les niveaux du
+produit :
+
+- `primary` regroupe `Accueil` et `Rechercher` ; la marque conserve son accent
+  bleu et la recherche reste une surface sombre bordée de cyan ;
+- `product` porte le dock central desktop et le bouton `Sommaire` sur les
+  largeurs responsive ; le dock reste compact et centré ;
+- `utilities` regroupe `Préférences` et `Feedback` dans une surface discrète ;
+- `account` sépare les notifications et l'identité de compte par une bordure
+  de rythme, sans changer leurs permissions ni leurs menus.
+
+Les boutons du dock central gardent leur nom accessible, leur cible tactile et
+leur état actif. En variante `classic`, le nom court est également disponible
+au survol et au focus clavier via une info-bulle locale, avec un attribut
+`title` comme repli pour les appareils tactiles. La variante `meniscus` garde
+son libellé actif émergent et son libellé au survol. Aucun texte structurel
+n'est ajouté au mobile : le bouton `Sommaire` reste l'entrée explicite vers la
+navigation produit.
+
 ## Sélecteur et responsabilité
 
 Le sélecteur unique est

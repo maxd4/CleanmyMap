@@ -66,6 +66,14 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(source).not.toContain("max-[380px]:hidden");
   });
 
+  it("groups preferences and feedback as utility actions", () => {
+    const source = readSource("app-navigation-ribbon-menus.tsx");
+
+    expect(source).toContain('data-navigation-group="utilities"');
+    expect(source).toContain('role="group"');
+    expect(source).toContain("cmm-navigation-group--utilities");
+  });
+
   it("keeps the menu links independent from the critical trigger tone", () => {
     const source = readSource("ribbon-dropdown-item.tsx");
 
