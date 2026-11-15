@@ -9,6 +9,7 @@ type AccountSetupReason = "initial_setup" | "schema_update" | null;
 export type AccountCompletionPageProps = Omit<AccountSetupFormProps, "initialRole"> & {
   reason?: AccountSetupReason;
   initialRole?: Role;
+  showRibbonTutorial?: boolean;
 };
 
 /** Full-page onboarding surface used by both /onboarding and the blocking gate. */
@@ -25,6 +26,7 @@ export function AccountCompletionPage({
   initialArrondissement,
   initialLocationType,
   submitMode = "navigate",
+  showRibbonTutorial = false,
 }: AccountCompletionPageProps) {
   return (
     <div className="cmm-account-setup-surface relative isolate min-h-0 w-full min-w-0 overflow-x-hidden bg-[linear-gradient(135deg,#eef6f2_0%,#f1f4f8_52%,#f5f2fb_100%)]">
@@ -42,6 +44,7 @@ export function AccountCompletionPage({
           initialWork={initialWork}
           initialArrondissement={initialArrondissement}
           initialLocationType={initialLocationType}
+          showRibbonTutorial={showRibbonTutorial}
         />
       </div>
     </div>

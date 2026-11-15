@@ -16,13 +16,15 @@ La page accueille les visiteurs et présente la vocation de CleanMyMap. Elle ouv
 
 La première partie du hero propose une micro-zone d’aide aux visiteurs qui
 découvrent CleanMyMap : « Nouveau sur CleanMyMap ? Découvrez le ruban en 1
-minute. » et le bouton « Tutoriel du ruban ». Cette entrée reste secondaire
+minute. » et le bouton vert plein « Découvrir le ruban ». Cette entrée reste secondaire
 par rapport aux CTA métier, mais elle est visible sans ouvrir le menu du
 header.
 
 Le bouton ouvre le même tutoriel guidé que le ruban global : six étapes courtes,
 spotlight de la cible, actions `Suivant`, `Précédent`, `Passer` et `Terminer`,
-fermeture par `Escape` et restitution du focus. Le parcours est manuel et
+fermeture par `Escape` et restitution du focus. La visite est non modale : les
+cibles et leurs vrais menus restent interactifs, tandis que les zones non
+ciblées sont bloquées et floutées à environ 12 px. Le parcours est manuel et
 relançable ; aucun déclenchement automatique ni état de masquage persistant
 n'est activé. L'implémentation réutilise le composant `RibbonTutorial` et ne
 duplique pas le contenu pédagogique.

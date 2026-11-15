@@ -88,6 +88,11 @@ vi.mock("@/components/ui/cmm-button", () => ({
   },
 }));
 vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
+vi.mock("@/components/navigation/app-navigation-ribbon-tour", () => ({
+  RibbonTutorial: ({ entryPoint }: { entryPoint: string }) => (
+    <button type="button" data-navigation-tutorial-entry={entryPoint}>Découvrir le ruban</button>
+  ),
+}));
 vi.mock("@/components/ui/error-message", () => ({ ErrorMessage: () => null }));
 vi.mock("@/components/ui/permission-error-state", () => ({ PermissionErrorState: () => null }));
 vi.mock("@/components/ui/system-state", () => ({
@@ -139,5 +144,23 @@ describe("AccountSetupForm progressive setup", () => {
     expect(markup).toContain("Localisation");
     expect(markup).toContain("Aucune zone sélectionnée");
     expect(markup).toContain("Enregistrer et continuer");
+  });
+
+  it("exposes the onboarding tutorial entry on every setup step without submitting the form", () => {
+    for (const currentStep of ["identity", "usage", "location"] as const) {
+      controllerState.currentStep = currentStep;
+      const markup = renderToStaticMarkup(
+        <AccountSetupForm
+          initialProfile="benevole"
+          clerkReachable
+          initialRole="benevole"
+          showRibbonTutorial
+        />,
+      );
+
+      expect(markup).toContain('data-navigation-tutorial-entry="onboarding"');
+      expect(markup).toContain('type="button"');
+      expect(markup).not.toContain('data-navigation-tutorial-entry="homepage"');
+    }
   });
 });

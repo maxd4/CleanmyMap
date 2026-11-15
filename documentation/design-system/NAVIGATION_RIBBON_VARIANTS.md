@@ -51,27 +51,29 @@ fermeture, ni sa sémantique `role="alert"`.
 
 ## Tutoriel guidé — `CURRENT`
 
-Le bouton `Découvrir le ruban` n'est pas rendu dans le header global. Il reste
-disponible sur l'accueil comme point d'entrée explicite vers une visite courte
-de six étapes : Accueil, Recherche, navigation produit, Préférences, Feedback,
-puis profil/statut et espace personnel. Le bouton reste relançable à tout
-moment ; aucun autoplay n'est activé et aucune préférence de masquage
-automatique n'est donc requise.
+Le bouton `Découvrir le ruban` n'est pas rendu dans le header global. Il est
+disponible depuis deux entrées explicites seulement : la zone d'accueil
+« Nouveau sur CleanMyMap ? » et le titre de `/onboarding`. Les deux entrées
+réutilisent `RibbonTutorial`, ses six étapes FR/EN — Accueil, Recherche,
+navigation produit, Préférences, Feedback, puis profil/statut et espace
+personnel — et ne varient que par la présentation du déclencheur. Aucun
+déclencheur n'est rendu sur `/reglages`, dans `AccountCompletionGate` ou dans
+les autres pages.
 
-La visite utilise `CmmDialog` pour le nom accessible, le focus initial, le
-piège clavier, `Escape`, le clic extérieur, le scroll-lock et la restitution du
-focus. Un spotlight viewport entoure la cible visible et recalcule sa position
-sur `resize` et `scroll`. Sur les largeurs où la recherche ou le dock desktop
-ne sont pas rendus, l'étape conserve son explication et cible le groupe
-primaire ou le bouton `Sommaire` visible ; les destinations réelles restent
-inchangées.
+La visite est une interaction non modale contrôlée. Son panneau pédagogique
+se place sous le ruban ; le focus initial, `Escape`, la fermeture, la
+réouverture et la restitution du focus restent pris en charge. Un spotlight
+viewport entoure la cible visible et recalcule sa position sur `resize` et
+`scroll`. Les quatre zones hors cible bloquent les interactions accidentelles
+et appliquent un flou réel d'environ 12 px avec une découpe nette autour du
+contrôle actif. La cible reste capable de recevoir hover, clic et ouverture de
+son vrai dropdown ; les panneaux de dropdown restent au-dessus du tutoriel.
 
-Le tutoriel conserve une hiérarchie d'empilement dédiée : le header (`z-50`)
-reste sous le spotlight, le spotlight reste sous le backdrop transparent du
-dialogue, et le panneau du tutoriel reste au-dessus du backdrop. Cette couche
-modale bloque ainsi les clics vers les contrôles du ruban tout en laissant le
-détourage de la cible visible ; la primitive globale `CmmDialog` n'est pas
-modifiée.
+Un clic capturé sur un lien réel ferme la visite avant navigation. Sur les
+largeurs où la recherche ou le dock desktop ne sont pas rendus, l'étape
+conserve son explication et cible le groupe primaire ou le bouton `Sommaire`
+visible ; les destinations et permissions réelles restent inchangées. La
+primitive globale `CmmDialog` n'est pas modifiée.
 
 ## Sélecteur et responsabilité
 

@@ -78,6 +78,7 @@ export default async function OnboardingPage({
       initialAgeBand={consentEligibility.ageBand}
       initialResidence={locationPreferences.residence}
       initialWork={locationPreferences.work}
+    showRibbonTutorial
     />
   );
 }

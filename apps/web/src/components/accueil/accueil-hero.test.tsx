@@ -48,7 +48,9 @@ describe("HomeHero orientation and impact links", () => {
     expect(html).toContain('data-navigation-tutorial-entry="homepage"');
     expect(html).toContain("Nouveau sur CleanMyMap ?");
     expect(html).toContain("Découvrez le ruban en 1 minute.");
-    expect(html).toContain("Tutoriel du ruban");
+    expect(html).toContain("Découvrir le ruban");
+    expect(html).toContain('data-cmm-button-tone="primary"');
+    expect(html).toContain('data-navigation-tutorial-trigger');
   });
 
   it("keeps the onboarding entry point separate from the primary impact actions", () => {
@@ -74,7 +76,8 @@ describe("HomeHero orientation and impact links", () => {
     expect(html.indexOf('data-cmm-button-group-layout="two-column"')).toBeLessThan(
       html.indexOf('data-navigation-tutorial-entry="homepage"'),
     );
-    expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain('data-navigation-tutorial-entry="homepage"');
+    expect(html).not.toContain('aria-modal="true"');
   });
 
   it("renders four equal two-row actions with real destinations", () => {

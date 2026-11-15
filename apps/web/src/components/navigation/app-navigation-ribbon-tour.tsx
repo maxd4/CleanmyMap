@@ -2,15 +2,29 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Check, Compass, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Compass,
+  House,
+  LayoutGrid,
+  MessageSquare,
+  Search,
+  Settings2,
+  UserRound,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 
-import { CmmDialog } from "@/components/ui/cmm-dialog";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
 
 type RibbonTutorialStep = {
   target: string;
   fallbackTarget?: string;
+  icon: LucideIcon;
   title: string;
   description: string;
 };
@@ -33,7 +47,7 @@ type RibbonTutorialCopy = {
 const RIBBON_TUTORIAL_COPY: Record<Locale, RibbonTutorialCopy> = {
   fr: {
     trigger: "Découvrir le ruban",
-    homepageTrigger: "Tutoriel du ruban",
+    homepageTrigger: "Découvrir le ruban",
     homepageIntro: "Nouveau sur CleanMyMap ?",
     homepageDescription: "Découvrez le ruban en 1 minute.",
     dialogLabel: "Tutoriel du ruban de navigation",
@@ -46,32 +60,38 @@ const RIBBON_TUTORIAL_COPY: Record<Locale, RibbonTutorialCopy> = {
     steps: [
       {
         target: "home",
+        icon: House,
         title: "Accueil",
         description: "Revenez ici à tout moment pour retrouver le point de départ de CleanMyMap.",
       },
       {
         target: "search",
         fallbackTarget: "primary",
+        icon: Search,
         title: "Rechercher",
         description: "Ouvrez la recherche globale pour trouver une rubrique, un outil ou une aide sans parcourir les menus.",
       },
       {
         target: "product",
+        icon: LayoutGrid,
         title: "Navigation produit",
         description: "Ces blocs regroupent les grands parcours du produit. Ouvrez un bloc pour afficher ses rubriques.",
       },
       {
         target: "preferences",
+        icon: Settings2,
         title: "Préférences",
         description: "Adaptez l’affichage et la langue, puis retrouvez vos préférences de compte.",
       },
       {
         target: "feedback",
+        icon: MessageSquare,
         title: "Feedback",
         description: "Signalez un problème, proposez une idée, contactez-nous ou soutenez le projet.",
       },
       {
         target: "account",
+        icon: UserRound,
         title: "Profil et espace personnel",
         description: "Accédez à vos notifications, votre profil et votre statut. Connectez-vous si ces options ne sont pas encore disponibles.",
       },
@@ -92,32 +112,38 @@ const RIBBON_TUTORIAL_COPY: Record<Locale, RibbonTutorialCopy> = {
     steps: [
       {
         target: "home",
+        icon: House,
         title: "Home",
         description: "Come back here at any time to return to CleanMyMap’s starting point.",
       },
       {
         target: "search",
         fallbackTarget: "primary",
+        icon: Search,
         title: "Search",
         description: "Open global search to find a section, tool or help without browsing every menu.",
       },
       {
         target: "product",
+        icon: LayoutGrid,
         title: "Product navigation",
         description: "These blocks group the product’s main journeys. Open a block to see its sections.",
       },
       {
         target: "preferences",
+        icon: Settings2,
         title: "Preferences",
         description: "Adjust the display and language, then access your account preferences.",
       },
       {
         target: "feedback",
+        icon: MessageSquare,
         title: "Feedback",
         description: "Report a problem, suggest an idea, contact us or support the project.",
       },
       {
         target: "account",
+        icon: UserRound,
         title: "Profile and personal space",
         description: "Access notifications, your profile and your status. Sign in if these options are not available yet.",
       },
@@ -133,6 +159,7 @@ type SpotlightRect = {
 };
 
 const SPOTLIGHT_PADDING_PX = 8;
+const TUTORIAL_PANEL_GAP_PX = 12;
 
 function isVisibleTarget(element: HTMLElement): boolean {
   const style = window.getComputedStyle(element);
@@ -153,17 +180,19 @@ function findTutorialTarget(step: RibbonTutorialStep): HTMLElement | null {
 
 export function RibbonTutorial({
   locale,
-  entryPoint = "ribbon",
+  entryPoint,
 }: {
   locale: Locale;
-  entryPoint?: "ribbon" | "homepage";
+  entryPoint: "homepage" | "onboarding";
 }) {
   const copy = RIBBON_TUTORIAL_COPY[locale];
   const isHomepageEntryPoint = entryPoint === "homepage";
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null);
+  const [panelTop, setPanelTop] = useState(TUTORIAL_PANEL_GAP_PX);
   const step = copy.steps[stepIndex] ?? copy.steps[0];
 
   const updatePosition = useCallback(() => {
@@ -181,6 +210,8 @@ export function RibbonTutorial({
       : null;
 
     setSpotlightRect(nextRect);
+    const ribbonBox = document.querySelector<HTMLElement>("[data-cmm-capture-sticky]")?.getBoundingClientRect();
+    setPanelTop(Math.max(TUTORIAL_PANEL_GAP_PX, (ribbonBox?.bottom ?? 0) + TUTORIAL_PANEL_GAP_PX));
   }, [open, step]);
 
   useEffect(() => {
@@ -203,12 +234,41 @@ export function RibbonTutorial({
   const close = useCallback(() => {
     setOpen(false);
     setSpotlightRect(null);
+    window.requestAnimationFrame(() => {
+      triggerRef.current?.focus();
+      window.setTimeout(() => triggerRef.current?.focus(), 0);
+    });
   }, []);
 
   const openTutorial = () => {
     setStepIndex(0);
     setOpen(true);
   };
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const focusPanel = window.requestAnimationFrame(() => panelRef.current?.focus());
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      close();
+    };
+    const closeBeforeRealLinkNavigation = (event: MouseEvent) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest("a[href]")) {
+        close();
+      }
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("click", closeBeforeRealLinkNavigation, true);
+    return () => {
+      window.cancelAnimationFrame(focusPanel);
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("click", closeBeforeRealLinkNavigation, true);
+    };
+  }, [close, open]);
 
   const goNext = () => {
     if (stepIndex >= copy.steps.length - 1) {
@@ -233,6 +293,22 @@ export function RibbonTutorial({
     };
   }, [spotlightRect]);
 
+  const blockerStyles = useMemo<CSSProperties[]>(() => {
+    if (!spotlightStyle) return [{ inset: 0 }];
+
+    const top = Number(spotlightStyle.top);
+    const left = Number(spotlightStyle.left);
+    const width = Number(spotlightStyle.width);
+    const height = Number(spotlightStyle.height);
+    return [
+      { top: 0, left: 0, right: 0, height: Math.max(0, top) },
+      { top, left: 0, width: Math.max(0, left), height },
+      { top, left: left + width, right: 0, height },
+      { top: top + height, left: 0, right: 0, bottom: 0 },
+    ];
+  }, [spotlightStyle]);
+
+  const StepIcon = step.icon;
   const overlay = open ? (
     <>
       <div
@@ -241,25 +317,39 @@ export function RibbonTutorial({
         data-navigation-ribbon-tour-spotlight-layer
         className="cmm-navigation-ribbon-tour-spotlight-layer pointer-events-none fixed inset-0"
       >
+        {blockerStyles.map((style, index) => (
+          <div
+            key={`tour-blocker-${index}`}
+            aria-hidden="true"
+            data-navigation-ribbon-tour-blocker
+            className="cmm-navigation-ribbon-tour-blocker"
+            style={{
+              ...style,
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+            }}
+            onClick={(event) => event.preventDefault()}
+          />
+        ))}
         {spotlightStyle ? (
           <div
             data-navigation-ribbon-tour-spotlight
-            className="absolute rounded-2xl border-2 border-amber-200/90 shadow-[0_0_0_9999px_rgba(2,6,23,0.74),0_0_0_5px_rgba(251,191,36,0.16)]"
+            className="cmm-navigation-ribbon-tour-spotlight"
             style={spotlightStyle}
           />
-        ) : (
-          <div className="absolute inset-0 bg-slate-950/74" />
-        )}
+        ) : null}
       </div>
 
-      <CmmDialog
-        open={open}
-        onClose={close}
-        ariaLabel={copy.dialogLabel}
-        ariaDescribedBy="ribbon-tutorial-description"
-        size="sm"
-        className="cmm-navigation-ribbon-tour-backdrop"
-        panelClassName="cmm-navigation-ribbon-tour-panel max-w-none overflow-hidden rounded-[1.35rem] border border-amber-200/30 bg-slate-950/98 p-0 text-white shadow-[0_28px_70px_-30px_rgba(2,6,23,0.96)]"
+      <section
+        ref={panelRef}
+        id="ribbon-tutorial-panel"
+        role="region"
+        aria-label={copy.dialogLabel}
+        aria-describedby="ribbon-tutorial-description"
+        tabIndex={-1}
+        data-navigation-ribbon-tour-panel
+        className="cmm-navigation-ribbon-tour-panel max-w-none overflow-hidden rounded-[1.35rem] border border-amber-200/30 bg-slate-950/98 p-0 text-white shadow-[0_28px_70px_-30px_rgba(2,6,23,0.96)]"
+        style={{ top: panelTop }}
       >
         <div className="cmm-navigation-ribbon-tour-content">
           <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
@@ -284,7 +374,7 @@ export function RibbonTutorial({
           <div className="px-5 py-5">
             <div className="mb-5 flex items-center gap-3" aria-hidden="true">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-300/15 text-amber-200">
-                <Compass className="h-5 w-5" />
+                <StepIcon className="h-5 w-5" />
               </div>
               <div className="flex min-w-0 flex-1 gap-1.5">
                 {copy.steps.map((item, index) => (
@@ -336,28 +426,32 @@ export function RibbonTutorial({
             </div>
           </div>
         </div>
-      </CmmDialog>
+      </section>
     </>
   ) : null;
 
+  const triggerLabel = copy.homepageTrigger;
   const trigger = (
-    <button
-      ref={triggerRef}
-      type="button"
-      aria-label={isHomepageEntryPoint ? copy.homepageTrigger : copy.trigger}
-      title={isHomepageEntryPoint ? copy.homepageTrigger : copy.trigger}
-      aria-haspopup="dialog"
-      data-navigation-tutorial-trigger
-      className={isHomepageEntryPoint
-        ? "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/65 bg-white px-4 py-2.5 text-sm font-bold text-[#047957] shadow-[0_14px_28px_-18px_rgba(0,40,30,0.62)] transition hover:border-white hover:bg-white/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90"
-        : "inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-amber-200/25 bg-amber-400/10 px-0 text-amber-50 transition-colors hover:border-amber-200/50 hover:bg-amber-300/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/70 xl:h-10 xl:w-auto xl:px-3"}
-      onClick={openTutorial}
+    <CmmButton
+      asChild
+      tone="primary"
+      variant="pill"
+      size="md"
+      className="shrink-0"
     >
-      <Compass className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-      <span className={isHomepageEntryPoint ? undefined : "cmm-ribbon-text hidden font-semibold xl:inline"}>
-        {isHomepageEntryPoint ? copy.homepageTrigger : copy.trigger}
-      </span>
-    </button>
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-label={triggerLabel}
+        aria-expanded={open}
+        aria-controls="ribbon-tutorial-panel"
+        data-navigation-tutorial-trigger
+        onClick={openTutorial}
+      >
+        <Compass className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
+        <span>{triggerLabel}</span>
+      </button>
+    </CmmButton>
   );
 
   return (
@@ -377,7 +471,11 @@ export function RibbonTutorial({
           </div>
           {trigger}
         </div>
-      ) : trigger}
+      ) : (
+        <div data-navigation-tutorial-entry="onboarding" className="shrink-0">
+          {trigger}
+        </div>
+      )}
 
       {typeof document !== "undefined" && overlay ? createPortal(overlay, document.body) : null}
     </>

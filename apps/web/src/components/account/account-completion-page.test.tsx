@@ -3,7 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./account-setup-form", () => ({
-  AccountSetupForm: () => <div data-testid="account-setup-form" />,
+  AccountSetupForm: ({ showRibbonTutorial }: { showRibbonTutorial?: boolean }) => (
+    <div data-testid="account-setup-form" data-tutorial-entry={showRibbonTutorial ? "onboarding" : "none"} />
+  ),
 }));
 
 import { AccountCompletionPage } from "./account-completion-page";
@@ -22,6 +24,19 @@ describe("AccountCompletionPage", () => {
     expect(markup).toContain('data-testid="account-setup-form"');
     expect(markup).not.toContain("fixed inset-0");
     expect(markup).not.toContain("z-[150]");
+    expect(markup).toContain('data-tutorial-entry="none"');
+  });
+
+  it("allows only the dedicated onboarding page to opt into the tutorial", () => {
+    const markup = renderToStaticMarkup(
+      <AccountCompletionPage
+        initialProfile="benevole"
+        clerkReachable
+        showRibbonTutorial
+      />,
+    );
+
+    expect(markup).toContain('data-tutorial-entry="onboarding"');
   });
 
   it("uses the shared height-responsive onboarding density contract", () => {

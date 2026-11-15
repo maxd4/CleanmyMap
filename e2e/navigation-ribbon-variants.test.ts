@@ -182,7 +182,7 @@ async function waitForMeniscusAlignment(page: Page): Promise<void> {
 }
 
 test.describe("desktop central navigation ribbon variants", () => {
-  test("homepage exposes the guided tutorial without competing with the primary actions", async ({ page }) => {
+  test("homepage exposes the guided tutorial without competing with the primary actions", async ({ page }, testInfo) => {
     for (const width of [1440, 390] as const) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -194,20 +194,54 @@ test.describe("desktop central navigation ribbon variants", () => {
       await expect(entryPoint).toContainText("Découvrez le ruban en 1 minute.");
       const homepageScrollWidthBeforeTour = await page.evaluate(() => document.documentElement.scrollWidth);
 
-      const trigger = entryPoint.getByRole("button", { name: "Tutoriel du ruban" });
+      const trigger = entryPoint.getByRole("button", { name: "Découvrir le ruban" });
       await expect(trigger).toBeVisible();
       await trigger.click();
 
-      const dialog = page.getByRole("dialog", { name: "Tutoriel du ruban de navigation" });
-      await expect(dialog).toBeVisible();
-      await expect(dialog.getByRole("heading", { name: "Accueil" })).toBeVisible();
+      const panel = page.getByRole("region", { name: "Tutoriel du ruban de navigation" });
+      await expect(panel).toBeVisible();
+      await expect(panel.getByRole("heading", { name: "Accueil" })).toBeVisible();
       await expect(page.locator("[data-navigation-ribbon-tour-spotlight]")).toBeVisible();
+      await expect(page.locator("[data-navigation-ribbon-tour-blocker]")).toHaveCount(4);
+      await expect(panel).not.toHaveAttribute("aria-modal", "true");
+      const panelGeometry = await page.evaluate(() => {
+        const panel = document.querySelector<HTMLElement>("[data-navigation-ribbon-tour-panel]");
+        const ribbon = document.querySelector<HTMLElement>('nav[aria-label="Barre de navigation principale"]');
+        const blocker = document.querySelector<HTMLElement>("[data-navigation-ribbon-tour-blocker]");
+        if (!panel || !ribbon || !blocker) throw new Error("Missing tutorial geometry");
+        return {
+          panelTop: panel.getBoundingClientRect().top,
+          ribbonBottom: ribbon.getBoundingClientRect().bottom,
+          backdropFilter: getComputedStyle(blocker).backdropFilter
+            || (getComputedStyle(blocker) as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter,
+        };
+      });
+      expect(panelGeometry.panelTop).toBeGreaterThanOrEqual(panelGeometry.ribbonBottom);
+      expect(panelGeometry.backdropFilter).toContain("blur(12px)");
+      if (width === 1440) {
+        mkdirSync(SCREENSHOT_DIRECTORY, { recursive: true });
+        const tutorialScreenshot = await page.screenshot({
+          path: path.join(SCREENSHOT_DIRECTORY, "homepage-tutorial.png"),
+        });
+        await testInfo.attach("homepage-tutorial", {
+          body: tutorialScreenshot,
+          contentType: "image/png",
+        });
+      }
       const homepageScrollWidthAfterTour = await page.evaluate(() => document.documentElement.scrollWidth);
       expect(homepageScrollWidthAfterTour).toBeLessThanOrEqual(homepageScrollWidthBeforeTour + 1);
-      await expect(page.locator("body")).toHaveCSS("overflow-x", "hidden");
 
-      await dialog.getByRole("button", { name: "Passer" }).click();
-      await expect(dialog).toHaveCount(0);
+      await page.locator('[data-navigation-tutorial-target="home"]').hover();
+      await panel.getByRole("button", { name: "Suivant" }).click();
+      await panel.getByRole("button", { name: "Suivant" }).click();
+      await panel.getByRole("button", { name: "Suivant" }).click();
+      await expect(panel.getByRole("heading", { name: "Préférences" })).toBeVisible();
+      const preferencesTrigger = page.getByRole("button", { name: "Menu des préférences d'affichage et langue" });
+      await preferencesTrigger.click();
+      await expect(page.locator("#preferences-menu-panel")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(panel).toHaveCount(0);
+      await expect(page.locator("#preferences-menu-panel")).toHaveCount(0);
       await expect(trigger).toBeFocused();
     }
   });

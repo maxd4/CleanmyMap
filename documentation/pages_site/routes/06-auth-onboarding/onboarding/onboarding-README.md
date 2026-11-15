@@ -54,6 +54,21 @@ d'onboarding s'insère entre ces deux rubans et ne doit jamais les recouvrir.
 Le chrome est fourni exclusivement par le layout racine. La page onboarding ne
 doit pas dupliquer localement le header ou le footer.
 
+## Entrée tutoriel — `CURRENT`
+
+Le titre « Configurez votre profil » expose le CTA vert canonique « Découvrir
+le ruban » pendant les trois étapes. Il utilise `RibbonTutorial` avec la même
+copie FR/EN et les mêmes six étapes que l'entrée homepage ; seule la
+présentation du déclencheur change. Le contrôle est `type="button"` et ne
+soumet pas le formulaire, ne réinitialise pas les saisies et n'est pas rendu
+par `AccountCompletionGate`.
+
+La visite reste non modale : le panneau pédagogique se place sous le ruban,
+les contrôles ciblés et leurs vrais dropdowns restent utilisables, et les zones
+hors cible sont bloquées par un flou réel d'environ 12 px. Un lien réel ferme
+la visite avant sa navigation ; `Escape`, le focus, la fermeture et la
+réouverture conservent leur contrat.
+
 ## Persistance séquentielle et reprise
 
 Le formulaire est organisé en trois étapes conservant les saisies en mémoire

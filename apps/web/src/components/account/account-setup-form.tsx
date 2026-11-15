@@ -25,10 +25,15 @@ import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 import type { AgeBand } from "@/lib/minor-consent";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
+import { RibbonTutorial } from "@/components/navigation/app-navigation-ribbon-tour";
 
 export type { AccountSetupFormProps } from "@/components/account/use-account-setup-controller";
 
-export function AccountSetupForm(props: AccountSetupFormProps) {
+type AccountSetupFormViewProps = AccountSetupFormProps & {
+  showRibbonTutorial?: boolean;
+};
+
+export function AccountSetupForm({ showRibbonTutorial = false, ...props }: AccountSetupFormViewProps) {
   const controller = useAccountSetupController(props);
   const signInHref = buildSignInRedirectHref(props.nextPath ?? "/onboarding");
 
@@ -67,9 +72,14 @@ export function AccountSetupForm(props: AccountSetupFormProps) {
         <span className="cmm-account-setup-header-icon flex shrink-0 items-center justify-center rounded-2xl border border-slate-300/40 bg-slate-700/25 text-slate-100">
           <UserRound className="cmm-account-setup-header-glyph" aria-hidden="true" />
         </span>
-        <div>
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-700">Configuration initiale</p>
-          <h1 className="cmm-account-setup-title font-black tracking-tight text-slate-900">Configurez votre profil</h1>
+        <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-700">Configuration initiale</p>
+            <h1 className="cmm-account-setup-title font-black tracking-tight text-slate-900">Configurez votre profil</h1>
+          </div>
+          {showRibbonTutorial ? <RibbonTutorial locale="fr" entryPoint="onboarding" /> : null}
+        </div>
+        <div className="min-w-0">
           <p className="cmm-text-body cmm-text-inverse mt-2 max-w-3xl">Trois étapes courtes pour commencer. Vous pourrez modifier ces choix plus tard dans les réglages de votre compte.</p>
         </div>
       </header>
