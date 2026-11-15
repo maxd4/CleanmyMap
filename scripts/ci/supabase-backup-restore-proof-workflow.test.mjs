@@ -15,6 +15,11 @@ test('ephemeral backup proof reconstructs source and target without Production c
   assert.match(workflow, /--data-only --schema public --use-copy/);
   assert.match(workflow, /supabase_db_web/);
   assert.match(workflow, /cmm-backup-proof-target/);
+  assert.match(workflow, /port = 54422/);
+  assert.match(workflow, /shadow_port = 54420/);
+  assert.match(workflow, /smtp_port = 54425/);
+  assert.match(workflow, /pop3_port = 54426/);
+  assert.match(workflow, /\[auth\][\s\S]*enabled = false/);
   assert.match(workflow, /supabase-restore-extension-preflight\.sql/);
   assert.match(workflow, /supabase-backup-restore-proof-fixture\.sql/);
   assert.match(workflow, /run_stage roles \/tmp\/cmm-roles\.sql/);

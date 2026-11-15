@@ -73,11 +73,17 @@ jobs:
 
           [api]
           enabled = false
+          port = 54421
 
           [db]
-          port = 54332
+          port = 54422
+          shadow_port = 54420
           major_version = 17
           health_timeout = "2m"
+
+          [db.pooler]
+          enabled = false
+          port = 54429
 
           [db.migrations]
           enabled = false
@@ -90,11 +96,18 @@ jobs:
 
           [studio]
           enabled = false
+          port = 54423
 
           [inbucket]
           enabled = false
+          port = 54424
+          smtp_port = 54425
+          pop3_port = 54426
 
           [storage]
+          enabled = false
+
+          [auth]
           enabled = false
 
           [imgproxy]
@@ -102,9 +115,11 @@ jobs:
 
           [analytics]
           enabled = false
+          port = 54427
 
           [edge_runtime]
           enabled = false
+          inspector_port = 54803
           EOF
 
           proof_step="source-start"
