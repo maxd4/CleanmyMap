@@ -50,6 +50,13 @@ const temporalReconciliationMigration = readFileSync(
   ),
   "utf8",
 );
+const temporalCorrectionMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261115000014_restore_public_impact_temporal_invariants.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const temporalEligibilityProof = readFileSync(
   new URL(
     "../../../../supabase/tests/public-impact-temporal-eligibility.pgtap.sql",
@@ -180,6 +187,33 @@ describe("incremental public Impact state migration", () => {
     );
     expect(temporalEligibilityProof).toContain(
       "the first advance after reconciliation does not double-count",
+    );
+  });
+
+  it("keeps the counter-zero correction and temporal transition invariants together", () => {
+    expect(temporalCorrectionMigration).toContain(
+      "p_contribution.action_date > current_date",
+    );
+    expect(temporalCorrectionMigration).toContain(
+      "if p_sign = 1 and p_contribution.eligible_temporal then return;",
+    );
+    expect(temporalCorrectionMigration).toContain(
+      "if p_sign = -1 and not p_contribution.eligible_temporal then return;",
+    );
+    expect(temporalCorrectionMigration).toContain(
+      "set eligible_temporal = (p_sign = 1)",
+    );
+    expect(temporalCorrectionMigration).toContain(
+      "v_state.visible_actions + p_sign < 0",
+    );
+    expect(temporalCorrectionMigration).toContain(
+      "delete from public.public_impact_action_location_counts",
+    );
+    expect(temporalCorrectionMigration).toContain(
+      "grant execute on function public.public_impact_adjust_contribution(",
+    );
+    expect(temporalCorrectionMigration).toContain(
+      "set search_path = pg_catalog, public",
     );
   });
 
