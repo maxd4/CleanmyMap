@@ -10,6 +10,10 @@ const impactMigration = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20261009000009_action_participant_impact_notifications.sql"),
   "utf8",
 );
+const variableConflictFixMigration = readFileSync(
+  resolve(process.cwd(), "supabase/migrations/20261115000012_fix_action_result_prompt_variable_conflict.sql"),
+  "utf8",
+);
 
 describe("action result notifications migration STATIC_CONTRACT", () => {
   it("notifies confirmed future registrants once the public final result exists", () => {
@@ -41,6 +45,17 @@ describe("action result notifications migration STATIC_CONTRACT", () => {
     expect(migration).toContain("new.participation_status in ('confirmed', 'cancelled')");
     expect(migration).toContain("subtype', 'post_action_claim_decision'");
     expect(migration).toContain("grant execute on function public.sync_action_post_action_claim_notifications()");
+  });
+
+  it("keeps the forward-only prompt fix column-bound and narrowly idempotent", () => {
+    expect(variableConflictFixMigration).toContain("#variable_conflict use_column");
+    expect(variableConflictFixMigration).toContain("returns table (status text, action_id uuid)");
+    expect(variableConflictFixMigration).toContain("on conflict (action_id, user_id) do nothing");
+    expect(variableConflictFixMigration).not.toContain("on conflict do nothing");
+    expect(variableConflictFixMigration).toContain("security definer");
+    expect(variableConflictFixMigration).toContain("set search_path = public, pg_catalog");
+    expect(variableConflictFixMigration).toContain("revoke all on function public.respond_to_action_result_prompt(uuid, text, text)");
+    expect(variableConflictFixMigration).toContain("grant execute on function public.respond_to_action_result_prompt(uuid, text, text)");
   });
 
   it("keeps personal impact notifications on confirmed participants and the canonical action projection", () => {
