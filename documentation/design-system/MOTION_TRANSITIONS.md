@@ -71,13 +71,11 @@ de ces helpers aux modes d’affichage sont portées par
 `apps/web/src/styles/display-modes.css`.
 
 La navigation centrale desktop conserve un seul flux de données et de menus
-pour ses variantes visuelles. Le sélecteur typé
-`apps/web/src/components/navigation/app-navigation-ribbon-variant.ts` garde
-`classic` comme valeur par défaut ; `meniscus` ne déplace que l’indicateur de
-rubrique active et la présentation de son icône. L’indicateur reste dérivé de
-la route, jamais du survol, et demeure statique en mode `sobre` ou lorsque
-`prefers-reduced-motion` est actif. La géométrie et le contrat de responsive
-sont détaillés dans [`NAVIGATION_RIBBON_VARIANTS.md`](./NAVIGATION_RIBBON_VARIANTS.md).
+dans la présentation canonique `classic`. L'état actif et l'accent d'icône sont
+dérivés de la route ; le survol et le focus ne déplacent jamais les voisins.
+Le mode `sobre` et `prefers-reduced-motion` neutralisent les transitions de
+l'icône. Le contrat de responsive est détaillé dans
+[`NAVIGATION_RIBBON.md`](./NAVIGATION_RIBBON.md).
 
 Maps, data-viz, gamification et animations métier spécialisées restent hors de
 cette normalisation générale. Le legacy Motion restant sera traité dans le

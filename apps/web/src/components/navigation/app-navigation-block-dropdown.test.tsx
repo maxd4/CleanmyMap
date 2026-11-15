@@ -152,8 +152,6 @@ describe("app navigation block dropdown contract", () => {
     );
     expect(displayModes).not.toContain("outline: 2px solid var(--text-inverse);");
     expect(displayModes).toContain("box-shadow: none !important;");
-    expect(displayModes).toContain(".cmm-navigation-meniscus-indicator");
-    expect(displayModes).toContain(".cmm-navigation-meniscus-bead");
     expect(displayModes).toContain(".cmm-navigation-block-icon");
   });
 

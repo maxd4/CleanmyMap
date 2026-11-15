@@ -55,10 +55,11 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(labelPositions).toEqual([...labelPositions].sort((a, b) => a - b));
   });
 
-  it("uses the critical button treatment only for the Feedback trigger", () => {
+  it("uses the green primary button treatment for the Feedback trigger", () => {
     const source = readSource("app-navigation-ribbon-menus.tsx");
 
-    expect(source).toContain('data-cmm-button-tone="critical"');
+    expect(source).toContain('data-cmm-button-tone="primary"');
+    expect(source).toContain("cmm-navigation-feedback-trigger");
     expect(source).toContain('data-cmm-button-size="md"');
     expect(source).toContain('data-cmm-button-variant="pill"');
     expect(source).toContain("...triggerProps");
@@ -82,7 +83,7 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(source).not.toContain("RibbonTutorial");
   });
 
-  it("keeps the menu links independent from the critical trigger tone", () => {
+  it("keeps the menu links independent from the green trigger tone", () => {
     const source = readSource("ribbon-dropdown-item.tsx");
 
     expect(source).not.toContain("data-cmm-button-tone");

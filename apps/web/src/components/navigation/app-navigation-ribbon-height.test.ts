@@ -49,44 +49,17 @@ describe("desktop ribbon control geometry", () => {
     expect(source).not.toContain("hover:scale");
   });
 
-  it("keeps the desktop ribbon variant selector and geometry independent from the five triggers", () => {
-    const shellSource = readSource("app-navigation-ribbon-shell.tsx");
-    const variantSource = readSource("app-navigation-ribbon-variant.ts");
-
-    expect(variantSource).toContain('["classic", "meniscus"] as const');
-    expect(variantSource).toContain('? "meniscus" : "classic"');
-    expect(shellSource).toContain("APP_NAVIGATION_RIBBON_VARIANT");
-    expect(shellSource).toContain("data-navigation-ribbon-variant");
-    expect(shellSource).toContain("activeSpaceIndex");
-    expect(shellSource).toContain("getNavigationRibbonIndicatorLeft(activeSpaceIndex, spaces.length)");
-    expect(shellSource).not.toContain("activeSpaceIndex * 38");
-    expect(shellSource).toContain('w-[15rem]');
-    expect(shellSource).toContain('gap-0.5');
-    expect(shellSource).toContain('viewBox={`0 0 ${NAVIGATION_RIBBON_INDICATOR_WIDTH_PX} ${NAVIGATION_RIBBON_MENISCUS_INDICATOR_HEIGHT_PX}`}');
-    expect(shellSource).toContain('className="cmm-navigation-meniscus-surface"');
-  });
-
-  it("keeps the meniscus surface, bead and icon in one moving indicator", () => {
+  it("keeps one classic desktop dock without variant or indicator branches", () => {
     const shellSource = readSource("app-navigation-ribbon-shell.tsx");
     const layoutSource = fs.readFileSync(
       path.resolve(navigationDirectory, "../../styles/layout.css"),
       "utf8",
     );
 
-    expect(shellSource).toContain('className="cmm-navigation-meniscus-indicator"');
-    expect(shellSource).toContain('className="cmm-navigation-meniscus-surface"');
-    expect(shellSource).toContain('className="cmm-navigation-meniscus-bead"');
-    expect(shellSource).toContain('className="cmm-navigation-meniscus-bead-icon"');
-    expect(shellSource).toContain('className="cmm-navigation-meniscus-bead-label"');
-    expect(layoutSource).toContain(".cmm-navigation-meniscus-indicator {");
-    expect(layoutSource).toContain("left 260ms cubic-bezier(0.22, 0.8, 0.28, 1)");
-    expect(layoutSource).toContain(".cmm-navigation-meniscus-bead {");
-    expect(layoutSource).toContain("pointer-events: none;");
-    expect(layoutSource).toContain('data-navigation-block-active="true"]');
-    expect(layoutSource).toContain("top: -0.4375rem;");
-    expect(layoutSource).toContain("width: 2.25rem;");
-    expect(layoutSource).toContain('[data-navigation-ribbon][data-navigation-ribbon-variant="classic"] .cmm-navigation-block-label');
-    expect(layoutSource).toContain("color-mix(in srgb, var(--navigation-block-accent) 58%, transparent)");
+    expect(shellSource).toContain("data-navigation-ribbon aria-label");
+    expect(layoutSource).toContain("border-color: color-mix(in srgb, #f6d365 56%, transparent)");
+    expect(layoutSource).toContain("data-navigation-block-active=\"true\"");
+    expect(layoutSource).toContain("var(--navigation-block-accent)");
   });
 
   it("aligns first-level menus, notification, profile and account controls only on desktop", () => {

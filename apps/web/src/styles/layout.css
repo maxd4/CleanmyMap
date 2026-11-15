@@ -83,19 +83,19 @@
   }
 }
 
-[data-navigation-ribbon][data-navigation-ribbon-variant="classic"] [data-navigation-block-trigger] {
+[data-navigation-ribbon] [data-navigation-block-trigger] {
   position: relative;
   border-color: transparent;
   transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-[data-navigation-ribbon][data-navigation-ribbon-variant="classic"] [data-navigation-block-trigger][data-navigation-block-active="true"] {
+[data-navigation-ribbon] [data-navigation-block-trigger][data-navigation-block-active="true"] {
   border-color: color-mix(in srgb, var(--navigation-block-accent) 58%, transparent);
   background: color-mix(in srgb, var(--navigation-block-accent) 18%, rgba(15, 23, 42, 0.86));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--navigation-block-accent) 22%, transparent) inset, 0 8px 18px -14px var(--navigation-block-accent);
 }
 
-[data-navigation-ribbon][data-navigation-ribbon-variant="classic"] .cmm-navigation-block-label {
+[data-navigation-ribbon] .cmm-navigation-block-label {
   position: absolute;
   top: calc(100% + 0.35rem);
   left: 50%;
@@ -120,8 +120,8 @@
   white-space: nowrap;
 }
 
-[data-navigation-ribbon][data-navigation-ribbon-variant="classic"] [data-navigation-block-trigger]:hover .cmm-navigation-block-label,
-[data-navigation-ribbon][data-navigation-ribbon-variant="classic"] [data-navigation-block-trigger]:focus-visible .cmm-navigation-block-label {
+[data-navigation-ribbon] [data-navigation-block-trigger]:hover .cmm-navigation-block-label,
+[data-navigation-ribbon] [data-navigation-block-trigger]:focus-visible .cmm-navigation-block-label {
   opacity: 1;
   transform: translate(-50%, 0);
   visibility: visible;
@@ -135,130 +135,14 @@
   }
 }
 
-/* Optional desktop central-ribbon treatment. The classic dock keeps the
-   existing surface because every rule below is scoped to meniscus. */
 .cmm-navigation-ribbon-dock {
   position: relative;
   isolation: isolate;
   overflow: visible;
-}
-
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] {
-  --cmm-navigation-meniscus-surface: #10111f;
-  --cmm-navigation-meniscus-edge: rgba(224, 231, 255, 0.34);
-  --cmm-navigation-meniscus-accent: #f6a11a;
-  --cmm-navigation-meniscus-accent-edge: #ffd071;
-  --cmm-navigation-meniscus-ink: #241508;
-  background: var(--cmm-navigation-meniscus-surface);
-  border-top-color: transparent;
-  border-inline-color: rgba(224, 231, 255, 0.24);
-  border-bottom-color: rgba(224, 231, 255, 0.2);
+  border-color: color-mix(in srgb, #f6d365 56%, transparent);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 14px 28px -24px rgba(2, 6, 23, 0.96),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-}
-
-.cmm-navigation-meniscus-indicator {
-  position: absolute;
-  top: -1.875rem;
-  z-index: 0;
-  width: 5.5rem;
-  height: 4rem;
-  pointer-events: none;
-  opacity: 0;
-  transition:
-    left 260ms cubic-bezier(0.22, 0.8, 0.28, 1),
-    opacity 180ms ease-out;
-}
-
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] .cmm-navigation-meniscus-indicator {
-  opacity: 1;
-}
-
-.cmm-navigation-meniscus-indicator > svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.cmm-navigation-meniscus-surface {
-  fill: var(--cmm-navigation-meniscus-surface, #10111f);
-  stroke: var(--cmm-navigation-meniscus-edge, rgba(224, 231, 255, 0.34));
-  stroke-linejoin: round;
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
-.cmm-navigation-meniscus-bead {
-  position: absolute;
-  top: 1.125rem;
-  left: 50%;
-  z-index: 2;
-  display: inline-flex;
-  width: 2.75rem;
-  height: 2.75rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--cmm-navigation-meniscus-accent-edge);
-  border-radius: 9999px;
-  background: var(--cmm-navigation-meniscus-accent);
-  color: var(--cmm-navigation-meniscus-ink);
-  box-shadow:
-    0 8px 14px -8px rgba(2, 6, 23, 0.85),
-    0 0 0 2px rgba(255, 255, 255, 0.08) inset;
-  pointer-events: none;
-  transform: translateX(-50%);
-}
-
-.cmm-navigation-meniscus-bead-icon {
-  display: inline-flex;
-  transform: scale(1.04);
-}
-
-.cmm-navigation-meniscus-bead-label {
-  position: absolute;
-  top: calc(100% + 0.125rem);
-  left: 50%;
-  z-index: 4;
-  color: var(--cmm-navigation-meniscus-accent);
-  font-size: 0.625rem;
-  font-weight: 700;
-  line-height: 1;
-  pointer-events: none;
-  text-shadow: 0 1px 3px rgba(2, 6, 23, 0.86);
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
-
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] {
-  position: relative;
-  z-index: 3;
-  top: -0.4375rem;
-  /* Keep the transparent hit target on the same 36px x-axis as its
-     neighbours; the separate 44px bead remains the visual indicator. */
-  width: 2.25rem;
-  height: 2.75rem;
-  margin: -0.375rem 0;
-  border-color: transparent !important;
-  border-radius: 9999px;
-  background: transparent !important;
-  color: transparent !important;
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"][aria-expanded="true"],
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"]:focus-visible {
-  background: transparent !important;
-}
-
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"]:focus-visible {
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.78),
-    0 0 0 1px rgba(246, 161, 26, 0.72);
+    0 0 0 1px rgba(246, 211, 101, 0.12) inset,
+    0 18px 36px -28px rgba(2, 6, 23, 0.8);
 }
 
 .cmm-navigation-block-icon {
@@ -268,30 +152,26 @@
   transition: transform 260ms cubic-bezier(0.22, 0.8, 0.28, 1);
 }
 
+[data-navigation-ribbon] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-icon,
+[data-navigation-ribbon] [data-navigation-block-trigger]:hover .cmm-navigation-block-icon,
+[data-navigation-ribbon] [data-navigation-block-trigger]:focus-visible .cmm-navigation-block-icon {
+  color: var(--navigation-block-accent);
+  filter: saturate(1.15);
+}
+
+[data-navigation-ribbon] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-icon {
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--navigation-block-accent) 20%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--navigation-block-accent) 35%, transparent) inset;
+}
+
+[data-navigation-ribbon] [data-navigation-block-trigger]:hover .cmm-navigation-block-icon,
+[data-navigation-ribbon] [data-navigation-block-trigger]:focus-visible .cmm-navigation-block-icon {
+  background: color-mix(in srgb, var(--navigation-block-accent) 16%, transparent);
+}
+
 .cmm-navigation-block-label {
   display: none;
-}
-
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="false"]:hover .cmm-navigation-block-label,
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="false"]:focus-visible .cmm-navigation-block-label {
-  position: absolute;
-  top: calc(100% + 0.125rem);
-  left: 50%;
-  z-index: 4;
-  display: block;
-  color: var(--cmm-navigation-meniscus-accent);
-  font-size: 0.625rem;
-  font-weight: 700;
-  line-height: 1;
-  pointer-events: none;
-  text-shadow: 0 1px 3px rgba(2, 6, 23, 0.86);
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
-
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-icon,
-[data-navigation-ribbon][data-navigation-ribbon-variant="meniscus"] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-label {
-  visibility: hidden;
 }
 
 .cmm-home-map-preview {

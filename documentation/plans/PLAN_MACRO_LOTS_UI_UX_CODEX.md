@@ -24,7 +24,7 @@
 | Ordre | Macro-lot | IDs principalement responsables | Résultat central |
 |---:|---|---|---|
 | 01 | États, feedback et accessibilité transverse | 1, 21, 22, 23, 38 | Socle cohérent de chargement, attente, erreurs et annonces |
-| 02 | Navigation, menus et mouvement | 3, 4, 11, 13, 20, 24, 25, 26, 27, 28, 29, 34, 39 | Ruban `classic`/`meniscus` fiable, sans seconde navigation |
+| 02 | Navigation, menus et mouvement | 3, 4, 11, 13, 20, 24, 25, 26, 27, 28, 29, 34, 39 | Ruban canonique fiable, sans seconde navigation |
 | 03 | Requêtes, cache et filtres | 6, 32, 33 | Fraîcheur et concurrence cohérentes, sans fuite inter-compte |
 | 04 | Listes longues et vues carte/liste | 37, 47 | Pagination réellement complète et sélection synchronisée |
 | 05 | Mutations sensibles et idempotence | 19 | Replays sûrs et conflits explicites aux frontières de persistance |
@@ -54,24 +54,24 @@ Ce tableau est une **indexation des responsabilités**, pas une déclaration de 
 | 8 | BlurHash placeholders | 10 | Galerie de preuves photo d'action, médias de signalements, /sections/annuaire et galerie SPOGOMI, si une chaîne de génération fiable fournit la miniature ; |
 | 9 | View transitions | 10 | Navigation carte ↔ fiche d'action ; |
 | 10 | Swipe-to-dismiss sheets | 11 | Fiches basses des marqueurs carte sur téléphone, filtres cartographiques mobiles et fiches détaillées de mission mobile. |
-| 11 | Interruptible animations | 02 | Navigation centrale meniscus, changements d'onglets et transitions de panneaux. |
+| 11 | Interruptible animations | 02 | Navigation centrale, changements d'onglets et transitions de panneaux. |
 | 12 | Predictive back | 11 | Évaluer sur apps/mobile lorsque la pile de navigation native et la plateforme le permettent ; |
 | 13 | Hit slop | 02 | Icônes denses du ruban, actions sur marqueurs Leaflet, galerie, boutons de petites cartes, app mobile ; |
 | 14 | Safe area insets | 11 | Autres feuilles et panneaux fixes de mission/finalisation sur mobile, ainsi que les overlays web sur iOS Safari si nécessaire ; |
 | 15 | One-time code autofill | 08 | Vérifier les écrans d'authentification et de vérification Clerk lorsque personnalisés, uniquement pour de vrais OTP et sans contourner le fournisseur d'identité. |
 | 16 | Tabular numbers | 10 | Colonnes d'indicateurs /reports, /pilotage, classements, horaires, progression GPS et montants alignés, uniquement si l'existant ne les couvre pas déjà par les… |
 | 17 | Balanced headlines | 10 | Titres longs d'aides, guides /learn/*, modales de validation et encarts éditoriaux ; |
-| 18 | Continuous corners | 10 | Dock meniscus, panneaux flottants et cartes mises en avant si l'effet s'intègre au design system ; |
+| 18 | Continuous corners | 10 | Dock central, panneaux flottants et cartes mises en avant si l'effet s'intègre au design system ; |
 | 19 | Idempotency keys | 05 | Examiner seulement les autres mutations à risque de duplication : inscriptions, créations événementielles, demandes partenaires, import ou finalisation mobile. |
 | 20 | Amazon safe triangle | 02 | Ruban central et dropdowns des blocs si des fermetures accidentelles sont reproduites. |
 | 21 | Toasts contextualisés et récupération d'erreur | 01 | Soumissions de formulaire non critiques, actions réseau de messagerie, annuaire et outils de carte en cas d'échec ; |
 | 22 | États async explicites | 01 | Chaque surface de liste ou consultation métier encore dépourvue d'un état dédié, notamment /pilotage, /reports, /sections/annuaire et /actions/history ; |
 | 23 | Boutons avec état pending | 01 | Mutations actions, ajout de preuves, demandes partenaires, envoi de message et formulaires admin là où la primitive n'est pas encore utilisée ; |
-| 24 | Dropdown accessible au clavier et à l'extérieur | 02 | Nouveau dock meniscus, menus de filtres et menus de contexte supplémentaires ; |
+| 24 | Dropdown accessible au clavier et à l'extérieur | 02 | Dock central, menus de filtres et menus de contexte supplémentaires ; |
 | 25 | Placement adaptatif des overlays | 02 | Menus proches du bord des cartes, suggestions d'adresse, menus des tableaux et listes sur écrans étroits ; |
-| 26 | Navigation responsive par parcours | 02 | Assurer la même structure et les mêmes droits lorsque meniscus est activé ; |
-| 27 | Indicateur de route active et sémantique ARIA | 02 | Icônes actives du dock meniscus, onglets mobiles, fil d'Ariane et parcours longs ; |
-| 28 | Préférences d'affichage accessibles | 02 | Tous les nouveaux composants animés, cartographiques ou riches, surtout meniscus, panneaux mobiles et visualisations, sans changer le contenu ni les permissions… |
+| 26 | Navigation responsive par parcours | 02 | Assurer la même structure et les mêmes droits à toutes les largeurs ; |
+| 27 | Indicateur de route active et sémantique ARIA | 02 | Icônes actives du dock, onglets mobiles, fil d'Ariane et parcours longs ; |
+| 28 | Préférences d'affichage accessibles | 02 | Tous les nouveaux composants animés, cartographiques ou riches, panneaux mobiles et visualisations, sans changer le contenu ni les permissions… |
 | 29 | Respect de la réduction du mouvement | 02 | Toutes les animations nouvelles, notamment dock, bascule de panneaux, cartes et gamification ; |
 | 30 | Chargement différé / code splitting | 09 | Modules lourds de rapports, cartes secondaires, galeries, configurateurs et fonctionnalités rares ; |
 | 31 | Lazy mounting à l'entrée dans le viewport | 09 | Graphiques secondaires, prévisualisations lourdes et sections sous la ligne de flottaison ; |
@@ -82,7 +82,7 @@ Ce tableau est une **indexation des responsabilités**, pas une déclaration de 
 | 36 | Galeries navigables au clavier | 10 | Galeries de preuves de dépollution et photos de signalements, si leur viewer actuel n'a pas les mêmes raccourcis, avec contrôle du focus et alternative tactile. |
 | 37 | Pagination et chargement progressif | 04 | Historiques d'actions, annuaire de partenaires, flux de signalements, tables admin et listes d'événements volumineuses ; |
 | 38 | Annonces accessibles des états dynamiques | 01 | Opérations asynchrones de carte, validation de formulaires et messages de résultat, sans annonces répétées ou trop fréquentes aux lecteurs d'écran. |
-| 39 | Rendu du ruban sensible au fond environnant | 02 | Nouveau dock meniscus, popovers ancrés au ruban et variantes de thème. |
+| 39 | Rendu du ruban sensible au fond environnant | 02 | Dock, popovers ancrés au ruban et variantes de thème. |
 | 40 | Feedback d'annulation locale à la source | 06 | Brouillons de géométrie, déplacements de sommets, champs multiétapes, opérations locales sur une prévisualisation ; |
 | 41 | Erreurs de formulaire accessibles | 06 | Formulaires de création d’action, signalement, inscription, demande partenaire et administration, seulement si des champs échappent encore à CmmField. |
 | 42 | Étapes et progression de workflow | 06 | Formulaires longs d’inscription ou de rapports multiétapes, si le parcours a de vraies étapes et des validations distinctes. |
@@ -110,13 +110,13 @@ STOP : chaque surface retenue expose des états exacts et accessibles, les scén
 ### Macro-lot 02 : navigation, menus, raccourcis et mouvement
 
 ```text
-Améliorer le ruban et les interactions de navigation CleanMyMap pour #3, #4, #11, #13, #20, #24 à #29, #34 et #39. Le main dispose déjà de `app-navigation-ribbon-variant.ts` (`classic | meniscus`) : conserver ce sélecteur, ses dropdowns et le registre unique `lib/navigation.ts`, sans recréer de variante.
+Améliorer le ruban et les interactions de navigation CleanMyMap pour #3, #4, #11, #13, #20, #24 à #29, #34 et #39. Le ruban publié repose désormais sur la présentation canonique `classic`, ses dropdowns et le registre unique `lib/navigation.ts`, sans recréer de variante.
 
 Étendre GlobalSearch uniquement avec des actions de navigation non destructives déjà autorisées ; afficher les raccourcis réellement disponibles. Fiabiliser les deux docks : indicateur dérivé de la route, menu ouvert distinct, animation interrompable, cibles cliquables sans chevauchement, info-bulles accessibles, placement adaptatif au bord/zoom. Tester le parcours pointeur vers dropdown ; n'ajouter un safe triangle qu'en présence d'une fermeture reproductible non corrigée par le pont/délai existants. Préserver les menus mobiles et les préférences exhaustif/minimaliste/sobre, reduced motion, SSR, capture et chrome adaptatif.
 
-Étendre massivement les tests navigation/keyboard/focus/pointer, changement rapide d'URL et de profil, route inconnue, zoom, petits écrans, contrastes/modes d'affichage, menu ouvert puis navigation, absence de doublons d'événements ; couvrir les branches de sélection et de fermeture. Comparer visuellement `classic` et `meniscus` au navigateur. Mettre à jour NAVIGATION_DROPDOWNS.md, MOTION_TRANSITIONS.md et autres contrats/fiches réellement changés ; matrice intacte.
+Étendre massivement les tests navigation/keyboard/focus/pointer, changement rapide d'URL et de profil, route inconnue, zoom, petits écrans, contrastes/modes d'affichage, menu ouvert puis navigation, absence de doublons d'événements ; couvrir les branches de sélection et de fermeture. Comparer visuellement le ruban canonique au navigateur. Mettre à jour NAVIGATION_DROPDOWNS.md, MOTION_TRANSITIONS.md et autres contrats/fiches réellement changés ; matrice intacte.
 
-STOP : les deux variantes fonctionnent sans divergence ni recul accessibilité, les tests comportementaux et la couverture du domaine sont documentés. Publier selon AGENTS.md.
+STOP : le ruban canonique fonctionne sans divergence ni recul accessibilité, les tests comportementaux et la couverture du domaine sont documentés. Publier selon AGENTS.md.
 ```
 
 ### Macro-lot 03 : fraîcheur, debounce et annulation des requêtes
