@@ -93,11 +93,21 @@ test.describe("canonical classic navigation ribbon", () => {
         const active = dock?.querySelector<HTMLElement>('[data-navigation-block-active="true"]');
         const feedback = document.querySelector<HTMLElement>('[data-navigation-tutorial-target="feedback"]');
         if (!dock || !active || !feedback) throw new Error("Missing classic ribbon controls");
+        const activeIcon = active.querySelector<HTMLElement>(".cmm-navigation-block-icon");
+        if (!activeIcon) throw new Error("Missing active navigation block icon");
+        const activeIconStyle = getComputedStyle(activeIcon);
+        const activeIconBeforeStyle = getComputedStyle(activeIcon, "::before");
+        const activeIconAfterStyle = getComputedStyle(activeIcon, "::after");
         return {
           dockCenter: dock.getBoundingClientRect().left + dock.getBoundingClientRect().width / 2,
           viewportCenter: window.innerWidth / 2,
           activeBackground: getComputedStyle(active).backgroundColor,
-          activeIconColor: getComputedStyle(active.querySelector<HTMLElement>(".cmm-navigation-block-icon")!).color,
+          activeIconColor: activeIconStyle.color,
+          activeIconBackground: activeIconStyle.backgroundColor,
+          activeIconBackgroundImage: activeIconStyle.backgroundImage,
+          activeIconBoxShadow: activeIconStyle.boxShadow,
+          activeIconBeforeBackground: activeIconBeforeStyle.backgroundColor,
+          activeIconAfterBackground: activeIconAfterStyle.backgroundColor,
           dockBorder: getComputedStyle(dock).borderTopColor,
           feedbackTone: feedback.getAttribute("data-cmm-button-tone"),
           feedbackBackground: getComputedStyle(feedback).backgroundColor,
@@ -106,6 +116,11 @@ test.describe("canonical classic navigation ribbon", () => {
       expect(Math.abs(geometry.dockCenter - geometry.viewportCenter), `${width}px dock center`).toBeLessThanOrEqual(8);
       expect(geometry.activeBackground).not.toBe("rgba(0, 0, 0, 0)");
       expect(geometry.activeIconColor).not.toBe("rgb(255, 255, 255)");
+      expect(geometry.activeIconBackground, `${width}px active icon background`).toBe("rgba(0, 0, 0, 0)");
+      expect(geometry.activeIconBackgroundImage, `${width}px active icon background image`).toBe("none");
+      expect(geometry.activeIconBoxShadow, `${width}px active icon box shadow`).toBe("none");
+      expect(geometry.activeIconBeforeBackground, `${width}px active icon ::before background`).toBe("rgba(0, 0, 0, 0)");
+      expect(geometry.activeIconAfterBackground, `${width}px active icon ::after background`).toBe("rgba(0, 0, 0, 0)");
       expect(geometry.dockBorder).not.toBe("rgba(0, 0, 0, 0)");
       expect(geometry.feedbackTone).toBe("primary");
       expect(geometry.feedbackBackground).not.toBe("rgba(0, 0, 0, 0)");
@@ -113,8 +128,14 @@ test.describe("canonical classic navigation ribbon", () => {
       const inactive = ribbon.locator('[data-navigation-block-active="false"]').first();
       await inactive.hover();
       await expect(inactive.locator(".cmm-navigation-block-label")).toBeVisible();
-      const hoverColor = await inactive.locator(".cmm-navigation-block-icon").evaluate((element) => getComputedStyle(element).color);
-      expect(hoverColor).not.toBe("rgb(255, 255, 255)");
+      const hoverIconStyle = await inactive.locator(".cmm-navigation-block-icon").evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { color: style.color, background: style.backgroundColor, backgroundImage: style.backgroundImage, boxShadow: style.boxShadow };
+      });
+      expect(hoverIconStyle.color).not.toBe("rgb(255, 255, 255)");
+      expect(hoverIconStyle.background, `${width}px hover icon background`).toBe("rgba(0, 0, 0, 0)");
+      expect(hoverIconStyle.backgroundImage, `${width}px hover icon background image`).toBe("none");
+      expect(hoverIconStyle.boxShadow, `${width}px hover icon box shadow`).toBe("none");
 
       await testInfo.attach(`classic-ribbon-${width}`, {
         body: await captureRibbonArea(page, ribbon, path.join(SCREENSHOT_DIRECTORY, `classic-${width}.png`)),

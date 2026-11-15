@@ -149,6 +149,10 @@
   position: relative;
   z-index: 2;
   display: inline-flex;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   transition: transform 260ms cubic-bezier(0.22, 0.8, 0.28, 1);
 }
 
@@ -157,17 +161,8 @@
 [data-navigation-ribbon] [data-navigation-block-trigger]:focus-visible .cmm-navigation-block-icon {
   color: var(--navigation-block-accent);
   filter: saturate(1.15);
-}
-
-[data-navigation-ribbon] [data-navigation-block-trigger][data-navigation-block-active="true"] .cmm-navigation-block-icon {
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--navigation-block-accent) 20%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--navigation-block-accent) 35%, transparent) inset;
-}
-
-[data-navigation-ribbon] [data-navigation-block-trigger]:hover .cmm-navigation-block-icon,
-[data-navigation-ribbon] [data-navigation-block-trigger]:focus-visible .cmm-navigation-block-icon {
-  background: color-mix(in srgb, var(--navigation-block-accent) 16%, transparent);
+  background: transparent;
+  box-shadow: none;
 }
 
 .cmm-navigation-block-label {
