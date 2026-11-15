@@ -72,12 +72,24 @@ export function diagnoseRestoreFailure(logText) {
   return {
     sqlstate: sqlstate ?? "UNAVAILABLE",
     classification: sqlstate ? classifyRestoreSqlState(sqlstate) : classifyRestoreFailure(logText),
+    signal: classifyRestoreSignal(logText, sqlstate),
   };
+}
+
+export function classifyRestoreSignal(logText, sqlstate = extractRestoreSqlState(logText)) {
+  const text = String(logText ?? "");
+  if (/unrecognized configuration parameter|invalid configuration parameter/i.test(text)) return "configuration_parameter";
+  if (/role .* does not exist/i.test(text)) return "missing_role";
+  if (/extension .* does not exist|could not open extension control file/i.test(text)) return "missing_extension";
+  if (/must be owner|must be member of role|permission denied|insufficient privilege/i.test(text)) return "privilege_denied";
+  if (sqlstate === "42704") return "undefined_object";
+  if (sqlstate === "42501") return "privilege_denied";
+  return "unspecified";
 }
 
 export function formatRestoreDiagnostic(logText) {
   const diagnostic = diagnoseRestoreFailure(logText);
-  return `sqlstate=${diagnostic.sqlstate} classification=${diagnostic.classification}`;
+  return `sqlstate=${diagnostic.sqlstate} classification=${diagnostic.classification} signal=${diagnostic.signal}`;
 }
 
 export function isRestoreClassification(value) {

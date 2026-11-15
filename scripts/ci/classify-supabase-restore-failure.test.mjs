@@ -29,7 +29,7 @@ test("extracts the first SQLSTATE and prioritizes its normalized category", () =
   ].join("\n");
   assert.equal(extractRestoreSqlState(log), "23505");
   assert.equal(classifyRestoreSqlState("23505"), "constraint_or_data");
-  assert.deepEqual(diagnoseRestoreFailure(log), { sqlstate: "23505", classification: "constraint_or_data" });
+  assert.deepEqual(diagnoseRestoreFailure(log), { sqlstate: "23505", classification: "constraint_or_data", signal: "unspecified" });
 });
 
 test("extracts the first SQLSTATE from standard psql -f error prefixes", () => {
@@ -39,7 +39,7 @@ test("extracts the first SQLSTATE from standard psql -f error prefixes", () => {
     "psql:/tmp/cmm-schema.sql:18: ERROR: 42501",
   ].join("\n");
   assert.equal(extractRestoreSqlState(log), "42P01");
-  assert.equal(formatRestoreDiagnostic(log), "sqlstate=42P01 classification=dependency_or_ordering");
+  assert.equal(formatRestoreDiagnostic(log), "sqlstate=42P01 classification=dependency_or_ordering signal=unspecified");
 });
 
 test("does not extract SQLSTATE-like data from arbitrary SQL or sensitive text", () => {
@@ -48,7 +48,7 @@ test("does not extract SQLSTATE-like data from arbitrary SQL or sensitive text",
     "DETAIL: secret-row-42P01",
     "opaque restore failure",
   ].join("\n");
-  assert.deepEqual(diagnoseRestoreFailure(log), { sqlstate: "UNAVAILABLE", classification: "unknown" });
+  assert.deepEqual(diagnoseRestoreFailure(log), { sqlstate: "UNAVAILABLE", classification: "unknown", signal: "unspecified" });
 });
 
 test("covers representative SQLSTATE classes without exposing messages", () => {
@@ -64,7 +64,7 @@ test("covers representative SQLSTATE classes without exposing messages", () => {
   ];
   for (const [sqlstate, classification] of cases) assert.equal(classifyRestoreSqlState(sqlstate), classification);
   const output = formatRestoreDiagnostic("ERROR: 42501\nDETAIL: super-secret SQL and row data");
-  assert.equal(output, "sqlstate=42501 classification=role_or_privilege");
+  assert.equal(output, "sqlstate=42501 classification=role_or_privilege signal=privilege_denied");
   assert.doesNotMatch(output, /super-secret|SQL|row data/);
 });
 
@@ -72,10 +72,12 @@ test("uses a safe fallback when SQLSTATE is unavailable", () => {
   assert.deepEqual(diagnoseRestoreFailure("psql: ERROR: permission denied for schema public"), {
     sqlstate: "UNAVAILABLE",
     classification: "role_or_privilege",
+    signal: "privilege_denied",
   });
   assert.deepEqual(diagnoseRestoreFailure("opaque private failure"), {
     sqlstate: "UNAVAILABLE",
     classification: "unknown",
+    signal: "unspecified",
   });
   assert.equal(isRestoreClassification(diagnoseRestoreFailure("opaque").classification), true);
 });
