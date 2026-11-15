@@ -212,7 +212,7 @@ function AppNavigationRibbonFrame({
           <RibbonDesktopSpaceNavigation spaces={spaces} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} pathname={pathname} openSpaceId={openSpaceId} onOpenChange={(spaceId, open) => setOpenSpaceId((currentSpaceId) => resolveOpenNavigationSpaceId(currentSpaceId, spaceId, open))} />
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5 max-[380px]:gap-1 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end">
-            <div data-navigation-group="product" data-navigation-group-visibility="responsive" data-navigation-tutorial-target="product" role="group" aria-label={locale === "fr" ? "Navigation produit" : "Product navigation"} className="cmm-navigation-group cmm-navigation-group--product lg:hidden">
+            <div data-navigation-group="product" data-navigation-group-visibility="responsive" data-navigation-tutorial-target="product" role="group" aria-label={locale === "fr" ? "Navigation produit" : "Product navigation"} className="cmm-navigation-group cmm-navigation-group--product xl:hidden">
               <AppNavigationTreeMenu
                 key={`mobile-tree-${pathname}`}
                 activeSpaceId={activeSpaceId}

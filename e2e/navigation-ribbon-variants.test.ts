@@ -424,12 +424,12 @@ test.describe("desktop central navigation ribbon variants", () => {
     await dismissCookies(page);
     const ribbon = await waitForRibbon(page);
 
-    const visualizeTrigger = ribbon.getByRole("button", { name: "Cartographie & Impact" });
-    await visualizeTrigger.press("Enter");
-    const panelId = await visualizeTrigger.getAttribute("aria-controls");
+    const initialActTrigger = ribbon.getByRole("button", { name: "Agir" });
+    await initialActTrigger.press("Enter");
+    const panelId = await initialActTrigger.getAttribute("aria-controls");
     const panel = page.locator(`#${panelId}`);
     await expect(panel).toBeVisible();
-    await expect(panel.locator('a[href="/methodologie"]')).toBeVisible();
+    await expect(panel.locator('a[href="/actions/new"]')).toBeVisible();
 
     type RibbonSample = {
       pathname: string;
@@ -453,7 +453,7 @@ test.describe("desktop central navigation ribbon variants", () => {
       };
     });
     const samples: RibbonSample[] = [await collectRibbonSample()];
-    const clickPromise = panel.locator('a[href="/methodologie"]').click({ noWaitAfter: true });
+    const clickPromise = panel.locator('a[href="/actions/new"]').click({ noWaitAfter: true });
     const sampleUntil = Date.now() + 420;
     while (Date.now() < sampleUntil) {
       try {
@@ -464,7 +464,7 @@ test.describe("desktop central navigation ribbon variants", () => {
       await page.waitForTimeout(16);
     }
     await clickPromise;
-    await expect(page).toHaveURL(/\/methodologie$/);
+    await expect(page).toHaveURL(/\/actions\/new$/);
     samples.push(await collectRibbonSample());
 
     if (EXPECTED_VARIANT === "classic") return;
@@ -479,13 +479,6 @@ test.describe("desktop central navigation ribbon variants", () => {
       expect(sample.triggerCenters).toEqual(validSamples[0].triggerCenters);
     }
 
-    const actTrigger = ribbon.getByRole("button", { name: "Agir" });
-    await actTrigger.press("Enter");
-    const actPanelId = await actTrigger.getAttribute("aria-controls");
-    const actPanel = page.locator(`#${actPanelId}`);
-    await expect(actPanel.locator('a[href="/actions/new"]')).toBeVisible();
-    await actPanel.locator('a[href="/actions/new"]').click({ noWaitAfter: true });
-    await expect(page).toHaveURL(/\/actions\/new$/);
     await page.waitForTimeout(40);
     const visualizeAgainTrigger = ribbon.getByRole("button", { name: "Cartographie & Impact" });
     await visualizeAgainTrigger.press("Enter");
@@ -531,12 +524,18 @@ test.describe("desktop central navigation ribbon variants", () => {
     expect(transitionSamples.some((center) => Math.abs(center - transitionSamples[0]) > 2 && Math.abs(center - transitionSamples.at(-1)!) > 2)).toBe(true);
   });
 
-  test("keeps the desktop-only variant out of mobile and tablet layouts", async ({ page }) => {
-    for (const width of [390, 768, 1440] as const) {
+  test("keeps exactly one product navigation across the responsive boundary", async ({ page }) => {
+    test.setTimeout(120_000);
+    for (const width of [390, 768, 1024, 1100, 1279, 1280, 1440] as const) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
       await dismissCookies(page);
       await assertRibbonHierarchy(page, width);
+      await expect(page.locator('[data-navigation-group="primary"]')).toBeVisible();
+      await expect(page.locator('[data-navigation-group="utilities"]')).toBeVisible();
+      await expect(page.locator('[data-navigation-group="account"]')).toBeVisible();
+      await expect(page.getByRole("button", { name: "Découvrir le ruban" })).toBeVisible();
+      await expect(page.locator('[data-navigation-group="product"]:visible')).toHaveCount(1);
       const summary = page.getByRole("button", { name: "Sommaire" });
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.getBoundingClientRect().width);
 
@@ -545,11 +544,41 @@ test.describe("desktop central navigation ribbon variants", () => {
         const desktopRibbon = page.locator('nav[aria-label="Navigation par blocs"]');
         await expect(desktopRibbon).toBeHidden();
         await expect(summary).toBeVisible();
+
+        const exercisesResponsiveBoundary = width >= 1024;
+        if (!exercisesResponsiveBoundary) continue;
+
+        await summary.click();
+        const panel = page.locator("#mobile-navigation-tree-panel");
+        await page.waitForTimeout(250);
+        await expect(panel).toBeVisible();
+        await expect(panel.getByRole("button", { name: "Fermer le menu de navigation" })).toBeFocused();
+        await expect(panel.getByRole("link").first()).toBeVisible();
+        await expect(panel.getByRole("link").first()).toHaveAttribute("href", /^\//);
+        await page.keyboard.press("Escape");
+        await expect(panel).toHaveCount(0);
+        await expect(summary).toBeFocused();
+
+        await summary.press("Enter");
+        const keyboardPanel = page.locator("#mobile-navigation-tree-panel");
+        await page.waitForTimeout(250);
+        await expect(keyboardPanel).toBeVisible();
+        const destination = keyboardPanel.getByRole("link").first();
+        const destinationHref = await destination.getAttribute("href");
+        expect(destinationHref, `missing responsive destination at ${width}px`).toMatch(/^\//);
+        await destination.focus();
+        await expect(destination).toBeFocused();
       } else {
         const desktopRibbon = await waitForRibbon(page);
         await expect(desktopRibbon).toBeVisible();
         await expect(desktopRibbon).toHaveAttribute("data-navigation-ribbon-variant", EXPECTED_VARIANT);
         await expect(summary).toBeHidden();
+        const firstDesktopTrigger = desktopRibbon.locator("[data-navigation-block-trigger]").first();
+        await firstDesktopTrigger.press("Enter");
+        const desktopPanelId = await firstDesktopTrigger.getAttribute("aria-controls");
+        await expect(page.locator(`#${desktopPanelId}`)).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(firstDesktopTrigger).toBeFocused();
       }
     }
   });

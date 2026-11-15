@@ -14,8 +14,10 @@ produit :
 
 - `primary` regroupe `Accueil` et `Rechercher` ; la marque conserve son accent
   bleu et la recherche reste une surface sombre bordée de cyan ;
-- `product` porte le dock central desktop et le bouton `Sommaire` sur les
-  largeurs responsive ; le dock reste compact et centré ;
+- `product` porte le dock central à partir de `xl` (1280px) et le bouton
+  `Sommaire` sur toutes les largeurs inférieures à `xl` ; une seule de ces
+  deux surfaces est donc visible, sans discontinuité entre 1024px et 1279px ;
+  le dock reste compact et centré ;
 - `utilities` regroupe `Préférences` et `Feedback` dans une surface discrète ;
 - `account` sépare les notifications et l'identité de compte par une bordure
   de rythme, sans changer leurs permissions ni leurs menus.
@@ -120,8 +122,9 @@ des cinq blocs desktop ; l'absence d'une sélection retourne `null`.
 
 Les SVG décoratifs sont masqués aux technologies d'assistance. Les vrais
 déclencheurs restent des boutons avec leur nom accessible, leur focus et leur
-gestion de dropdown inchangés. La variante ne s'applique qu'au ruban desktop ;
-les surfaces mobile et tablette conservent leur navigation actuelle.
+gestion de dropdown inchangés. La variante ne s'applique qu'au dock central à
+partir de `xl` ; les surfaces mobile et tablette, ainsi que le `Sommaire` sous
+`xl`, conservent leur navigation actuelle.
 
 ## Vérifications associées
 
