@@ -13,6 +13,8 @@ on:
         description: Type BACKUP_PRODUCTION_NOW to authorize this read-only export
         required: true
         type: string
+  schedule:
+    - cron: "17 2 1 * *"
 
 env:
   NODE_VERSION_FILE: apps/web/.nvmrc
@@ -21,8 +23,11 @@ env:
 
 jobs:
   backup:
-    name: Export, encrypt, and restore-check Supabase
-    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'BACKUP_PRODUCTION_NOW'
+    name: Export, encrypt, verify, and retain Supabase backup
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.confirmation == 'BACKUP_PRODUCTION_NOW') ||
+      (github.event_name == 'schedule' && vars.SUPABASE_BACKUP_MONTHLY_ENABLED == 'true'))
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     environment: supabase-production
@@ -146,32 +151,53 @@ jobs:
             --manifest "$BACKUP_ROOT/manifest.json"
 
       - name: Restore-check schema and data on isolated ephemeral PostgreSQL
+        id: restore
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           export SUPABASE_DB_PASSWORD='ephemeral-restore-not-production'
           restore_workdir="$RUNNER_TEMP/cmm-supabase-restore"
+          restore_output="$RUNNER_TEMP/restore-check-output.log"
+          restore_status=RESTORE_FAILED
+          restore_exit=1
           mkdir -p "$restore_workdir/supabase"
-          node scripts/ci/prepare-supabase-restore-target.mjs \
+          if node scripts/ci/prepare-supabase-restore-target.mjs \
             --source-config=apps/web/supabase/config.toml \
             --target-config="$restore_workdir/supabase/config.toml" \
             --project-id=cmm-backup-restore \
-            --port-offset=100
-          npx supabase start --workdir "$restore_workdir" --yes > "$RUNNER_TEMP/supabase-start.log" 2>&1
-          db_container="supabase_db_cmm-backup-restore"
-          test "$(docker ps --filter "name=^/${db_container}$" --format '{{.Names}}')" = "$db_container"
-          restore_db="postgres"
-          export RESTORE_CHECK_ROOT="$RUNNER_TEMP/cmm-supabase-restore"
-          export RESTORE_CHECK_CONTAINER="$db_container"
-          export RESTORE_CHECK_DATABASE="$restore_db"
-          export RESTORE_CHECK_ROLES_FILE="$BACKUP_ROOT/database/roles.sql"
-          export RESTORE_CHECK_SCHEMA_FILE="$BACKUP_ROOT/database/schema.sql"
-          export RESTORE_CHECK_DATA_FILE="$BACKUP_ROOT/database/data.sql"
-          export RESTORE_CHECK_EXTENSION_PREFLIGHT_FILE="scripts/ci/supabase-restore-extension-preflight.sql"
-          export RESTORE_CHECK_EXPECT_SYNTHETIC_FIXTURE=false
-          bash scripts/ci/run-supabase-restore-check.sh
-          echo "EPHEMERAL_RESTORE: PASS roles=schema=data=executed constraints=checked functions=checked grants=checked rls=checked extensions=checked"
+            --port-offset=100 && \
+            npx supabase start --workdir "$restore_workdir" --yes > "$RUNNER_TEMP/supabase-start.log" 2>&1; then
+            db_container="supabase_db_cmm-backup-restore"
+            if [ "$(docker ps --filter "name=^/${db_container}$" --format '{{.Names}}')" = "$db_container" ]; then
+              restore_db="postgres"
+              export RESTORE_CHECK_ROOT="$RUNNER_TEMP/cmm-supabase-restore"
+              export RESTORE_CHECK_CONTAINER="$db_container"
+              export RESTORE_CHECK_DATABASE="$restore_db"
+              export RESTORE_CHECK_ROLES_FILE="$BACKUP_ROOT/database/roles.sql"
+              export RESTORE_CHECK_SCHEMA_FILE="$BACKUP_ROOT/database/schema.sql"
+              export RESTORE_CHECK_DATA_FILE="$BACKUP_ROOT/database/data.sql"
+              export RESTORE_CHECK_EXTENSION_PREFLIGHT_FILE="scripts/ci/supabase-restore-extension-preflight.sql"
+              export RESTORE_CHECK_EXPECT_SYNTHETIC_FIXTURE=false
+              set +e
+              bash scripts/ci/run-supabase-restore-check.sh > "$restore_output" 2>&1
+              restore_exit=$?
+              set -e
+            fi
+          else
+            restore_exit=$?
+          fi
+          if [ "$restore_exit" -eq 0 ]; then
+            restore_status=RESTORE_VERIFIED
+            echo "RESTORE_VERIFIED: checks=executed diagnostics=private"
+          else
+            echo "RESTORE_FAILED: checks=failed diagnostics=private"
+            if [ -f "$restore_output" ]; then
+              grep -E '^(RESTORE_ADMIN_PRIVILEGES:|RESTORE_SQL:|RESTORE_RELATION_COHERENCE:|SUPABASE_RESTORE_CHECK:)' "$restore_output" || true
+            fi
+          fi
+          echo "RESTORE_STATUS=$restore_status" >> "$GITHUB_ENV"
+          echo "restore_status=$restore_status" >> "$GITHUB_OUTPUT"
 
       - name: Encrypt the complete backup before artifact publication
         id: encrypt
@@ -188,6 +214,34 @@ jobs:
           echo "encrypted_archive=$encrypted_archive" >> "$GITHUB_OUTPUT"
           echo "archive_sha256=$archive_sha256" >> "$GITHUB_OUTPUT"
 
+      - name: Publish encrypted backup to private Cloudflare R2 and verify retrieval
+        id: r2
+        env:
+          SUPABASE_BACKUP_R2_ENDPOINT: ${{ vars.SUPABASE_BACKUP_R2_ENDPOINT }}
+          SUPABASE_BACKUP_R2_BUCKET: ${{ vars.SUPABASE_BACKUP_R2_BUCKET }}
+          SUPABASE_BACKUP_R2_OBJECT_PREFIX: ${{ vars.SUPABASE_BACKUP_R2_OBJECT_PREFIX }}
+          SUPABASE_BACKUP_R2_ACCESS_KEY_ID: ${{ secrets.SUPABASE_BACKUP_R2_ACCESS_KEY_ID }}
+          SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          for required in SUPABASE_BACKUP_R2_ENDPOINT SUPABASE_BACKUP_R2_BUCKET SUPABASE_BACKUP_R2_ACCESS_KEY_ID SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY; do
+            if [ -z "${!required:-}" ]; then
+              echo "$required is missing from the protected supabase-production environment. No R2 publication was attempted."
+              exit 1
+            fi
+          done
+          object_prefix="${SUPABASE_BACKUP_R2_OBJECT_PREFIX:-supabase-backups}"
+          if [[ "$object_prefix" =~ [^A-Za-z0-9._/-] || "$object_prefix" = /* || "$object_prefix" = */ ]]; then
+            echo "SUPABASE_BACKUP_R2_OBJECT_PREFIX is invalid. No R2 publication was attempted."
+            exit 1
+          fi
+          export SUPABASE_BACKUP_R2_OBJECT_KEY="${object_prefix%/}/${GITHUB_SHA}/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.tar.gpg"
+          node scripts/ci/publish-supabase-backup-r2.mjs \
+            --archive "$RUNNER_TEMP/supabase-backup-${GITHUB_RUN_ID}.tar.gpg" \
+            --checksum "$RUNNER_TEMP/supabase-backup-${GITHUB_RUN_ID}.sha256"
+          echo "BACKUP_STATUS=BACKUP_CREATED" >> "$GITHUB_ENV"
+          echo "backup_status=BACKUP_CREATED" >> "$GITHUB_OUTPUT"
+
       - name: Publish encrypted artifact only
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -202,12 +256,17 @@ jobs:
         if: always()
         run: |
           archive_sha256="${{ steps.encrypt.outputs.archive_sha256 || '' }}"
+          backup_status="${BACKUP_STATUS:-BACKUP_FAILED}"
+          restore_status="${RESTORE_STATUS:-RESTORE_FAILED}"
           {
             echo "## Supabase encrypted backup"
             printf '%s\n' "- Project: $SUPABASE_PROJECT_REF"
             printf '%s\n' "- Commit: $GITHUB_SHA"
             printf '%s\n' "- Recipient fingerprint: $RECIPIENT_FINGERPRINT"
             printf '%s\n' "- Archive SHA-256: ${archive_sha256:-NOT_PRODUCED}"
+            printf '%s\n' "- Backup status: $backup_status"
+            printf '%s\n' "- Restore status: $restore_status"
+            printf '%s\n' "- R2 retrieval verification: exact SHA-256 required"
             echo "- Plaintext publication: NONE"
             echo "- Production writes: NONE"
             echo "- Auth platform records and managed service configuration: NOT_INCLUDED"
@@ -218,4 +277,4 @@ jobs:
         run: |
           set +e
           npx supabase stop --workdir "${restore_workdir:-$RUNNER_TEMP/cmm-supabase-restore}" --no-backup >/dev/null 2>&1
-          rm -rf "$BACKUP_ROOT" "$GNUPGHOME" "${restore_workdir:-$RUNNER_TEMP/cmm-supabase-restore}" "$RUNNER_TEMP/supabase-backup.tar" "$RUNNER_TEMP/supabase-backup-public-key.asc" "$RUNNER_TEMP/supabase-link.log" "$RUNNER_TEMP/restore-roles.log" "$RUNNER_TEMP/restore-extensions.log" "$RUNNER_TEMP/restore-schema.log" "$RUNNER_TEMP/restore-data.log" "$RUNNER_TEMP/restore-checks.txt" "$RUNNER_TEMP/restore-checks.sql" "$RUNNER_TEMP/restore-relations.txt" "$RUNNER_TEMP/restore-exported-relations.txt" "$RUNNER_TEMP/missing-extension.sql" "$RUNNER_TEMP/missing-extension.log" "$RUNNER_TEMP/relation-coherence-positive.data.sql" "$RUNNER_TEMP/relation-coherence-positive.relations.txt" "$RUNNER_TEMP/relation-coherence-positive.log" "$RUNNER_TEMP/relation-coherence-negative.data.sql" "$RUNNER_TEMP/relation-coherence-negative.log" "$RUNNER_TEMP/supabase-start.log"
+          rm -rf "$BACKUP_ROOT" "$GNUPGHOME" "${restore_workdir:-$RUNNER_TEMP/cmm-supabase-restore}" "$RUNNER_TEMP/supabase-backup.tar" "$RUNNER_TEMP/supabase-backup-public-key.asc" "$RUNNER_TEMP/supabase-link.log" "$RUNNER_TEMP/restore-check-output.log" "$RUNNER_TEMP/restore-roles.log" "$RUNNER_TEMP/restore-extensions.log" "$RUNNER_TEMP/restore-schema.log" "$RUNNER_TEMP/restore-data.log" "$RUNNER_TEMP/restore-checks.txt" "$RUNNER_TEMP/restore-checks.sql" "$RUNNER_TEMP/restore-relations.txt" "$RUNNER_TEMP/restore-exported-relations.txt" "$RUNNER_TEMP/missing-extension.sql" "$RUNNER_TEMP/missing-extension.log" "$RUNNER_TEMP/relation-coherence-positive.data.sql" "$RUNNER_TEMP/relation-coherence-positive.relations.txt" "$RUNNER_TEMP/relation-coherence-positive.log" "$RUNNER_TEMP/relation-coherence-negative.data.sql" "$RUNNER_TEMP/relation-coherence-negative.log" "$RUNNER_TEMP/supabase-start.log" "$RUNNER_TEMP/supabase-backup-${GITHUB_RUN_ID}.tar.gpg" "$RUNNER_TEMP/supabase-backup-${GITHUB_RUN_ID}.sha256"

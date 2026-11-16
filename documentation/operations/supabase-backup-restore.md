@@ -2,8 +2,8 @@
 
 Statut : `CURRENT` — procédure opérationnelle CleanMyMap.
 
-Cette procédure concerne le projet `trktzkgujgpgsgkoyndn`, le workflow manuel
-`.github/workflows/supabase-backup.yml` et la preuve CI
+Cette procédure concerne le projet `trktzkgujgpgsgkoyndn`, le workflow manuel et
+mensuel `.github/workflows/supabase-backup.yml` et la preuve CI
 `.github/workflows/supabase-backup-restore-proof.yml`. Elle ne déclenche ni
 migration, ni `db push`, ni modification de Production. Les workflows utilisent
 un runner GitHub hébergé ; Docker n'est jamais lancé sur le poste local.
@@ -63,10 +63,23 @@ l'empreinte attendue, vérifiée hors GitHub avec la personne qui conserve la cl
 privée. La CI importe la clé publique, calcule son empreinte et refuse toute
 divergence avant l'export ; elle ne possède ni clé privée ni phrase secrète.
 
+Pour la conservation R2, configurer dans le même environnement :
+
+- variable `SUPABASE_BACKUP_R2_ENDPOINT`, sous la forme `https://<account-id>.r2.cloudflarestorage.com` ;
+- variable `SUPABASE_BACKUP_R2_BUCKET` ;
+- variable facultative `SUPABASE_BACKUP_R2_OBJECT_PREFIX` (défaut `supabase-backups`) ;
+- secret `SUPABASE_BACKUP_R2_ACCESS_KEY_ID` limité à ce bucket ;
+- secret `SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY` limité à `HeadObject`, `PutObject` et `GetObject` sur ce préfixe.
+
+Ces identifiants ne doivent pas avoir `DeleteObject`, `ListBucket`, `PutBucketLifecycle` ou une permission de modification des règles de rétention. La publication R2 réelle reste `NOT_VERIFIED` tant qu'un transfert et une récupération réels n'ont pas été testés avec cette configuration.
+
 Depuis l'onglet Actions, choisir **Supabase encrypted backup**, sélectionner la
-branche `main` et saisir exactement `BACKUP_PRODUCTION_NOW`. Toute autre branche
-ou valeur arrête le job avant l'export. Le job est séquentiel et l'artefact est
-conservé trois jours.
+branche `main` et saisir exactement `BACKUP_PRODUCTION_NOW` pour un run manuel.
+Toute autre branche ou valeur arrête le job avant l'export. Le déclencheur mensuel
+du premier jour à 02:17 UTC reste inactif tant que
+`SUPABASE_BACKUP_MONTHLY_ENABLED` n'est pas exactement `true`. Le job est
+séquentiel ; l'artefact GitHub est conservé trois jours et l'archive pérenne est
+publiée dans R2.
 
 Le workflow vérifie que le dump de rôles, de schéma, de données et l'inventaire
 Storage sont non vides. Il construit ensuite un manifeste de SHA-256, vérifie
@@ -83,13 +96,17 @@ GitHub publie seulement `stage`, `exit_code`, le premier SQLSTATE trouvé ou
 sont reconnus ; le message, le SQL, les données et les secrets restent privés.
 Ces journaux ne sont pas téléversés. Si un artefact de diagnostic devient
 nécessaire ultérieurement, il doit être chiffré avec la clé GPG protégée avant
-toute publication. Une archive n'est jamais publiée après un échec de
-restauration.
+toute publication. Une archive n'est pas publiée après un échec de manifeste,
+de chiffrement ou de conservation. Un échec du restore-check est au contraire
+publié uniquement comme `RESTORE_FAILED` dans le résumé non sensible ; il ne
+bloque pas la conservation d'une archive dont `BACKUP_CREATED` a été confirmé
+par le transfert et la récupération R2.
 
 ## Téléchargement, déchiffrement et vérification locale
 
-Télécharger uniquement l'artefact privé depuis GitHub, vérifier l'empreinte de la
-clé et le fichier SHA-256, puis déchiffrer localement, jamais dans CI :
+Récupérer l'objet privé et son `.sha256` depuis R2 (ou l'artefact court GitHub en
+secours), vérifier l'empreinte de la clé et le fichier SHA-256, puis déchiffrer
+localement, jamais dans CI :
 
 ```sh
 sha256sum -c supabase-backup-<run>.sha256
@@ -241,19 +258,19 @@ Clerk demeure la source d'identité canonique. Une sauvegarde PostgreSQL ne gara
 
 ### 3. Sauvegarde indépendante
 
-**Cible :** un workflow automatique quotidien, en lecture seule sur Production, qui :
+**Cible :** un workflow automatique mensuel, activable explicitement, en lecture seule sur Production, qui :
 
 1. Vérifie les accès, la clé publique GPG et le périmètre attendu.
 2. Exporte les données et les objets Storage sans mutation de Production.
 3. Vérifie que les fichiers et inventaires attendus sont présents et cohérents.
 4. Construit un manifeste versionné contenant périmètre, horodatage, versions, SHA Git et empreintes.
 5. Chiffre l'archive avant toute publication.
-6. Vérifie les empreintes de l'archive chiffrée et sa présence dans le stockage de destination.
+6. Publie l'archive chiffrée et son `.sha256` dans un bucket Cloudflare R2 privé via son API S3, puis récupère l'archive pour vérifier exactement son SHA-256.
 7. Publie uniquement les statuts et métadonnées non sensibles.
 
-Le workflow de sauvegarde ne dépend pas de la réussite du restore-check PostgreSQL. Un échec d'export, une couverture incomplète, une erreur de manifeste, un chiffrement défaillant ou une publication non confirmée restent bloquants.
+Le workflow de sauvegarde ne dépend pas de la réussite du restore-check PostgreSQL. Un échec d'export, une couverture incomplète, une erreur de manifeste, un chiffrement défaillant, un transfert R2, une collision ou une récupération dont le SHA diverge restent bloquants. Un restore-check échoué est conservé comme `RESTORE_FAILED` et ne bloque pas l'archive si elle est par ailleurs intègre.
 
-**Une archive intègre mais non restaurée peut être conservée, mais son statut doit explicitement indiquer `RESTORE_UNVERIFIED`.**
+**Une archive intègre mais non restaurée ou dont le rejeu échoue peut être conservée, mais son statut doit explicitement indiquer `RESTORE_FAILED` (ou `RESTORE_UNVERIFIED` si aucun rejeu n'a pu commencer).**
 
 Aucun SQL, objet Storage, secret ou fichier déchiffré ne doit être publié dans les logs, les artefacts publics ou les caches.
 
@@ -263,11 +280,11 @@ Les archives doivent être conservées hors de Supabase, dans un stockage privé
 
 **Politique cible initiale :**
 
-- une sauvegarde quotidienne ;
-- conservation des 30 dernières sauvegardes quotidiennes ;
-- conservation d'une sauvegarde hebdomadaire pendant 12 semaines ;
-- protection contre la suppression et la modification des versions conservées, lorsque le fournisseur le permet ;
-- au moins une copie supplémentaire sous une autre frontière d'accès.
+- une sauvegarde mensuelle, activée par `SUPABASE_BACKUP_MONTHLY_ENABLED=true` ;
+- conservation pérenne des archives et de leurs `.sha256` dans le bucket R2 privé ;
+- règles de rétention, verrouillage et éventuelle immutabilité configurés hors de GitHub Actions ;
+- aucune capacité CI de suppression, de listing global ou de modification des règles de rétention R2 ;
+- au moins une copie supplémentaire sous une autre frontière d'accès lorsque la politique d'exploitation le permet.
 
 Cette politique reste à ajuster selon la volumétrie réelle, les coûts, le RGPD et la sensibilité des données.
 
@@ -275,7 +292,7 @@ L'identité qui produit et téléverse les archives doit avoir les permissions m
 
 La clé privée GPG et sa phrase secrète restent hors CI et hors GitHub. Elles doivent être récupérables après une panne ou une perte du poste principal, avec une copie sécurisée indépendante.
 
-La rétention GitHub Actions de trois jours actuellement configurée ne satisfait pas cette cible.
+La rétention GitHub Actions de trois jours actuellement configurée ne satisfait pas cette cible ; elle reste seulement une copie courte de dépannage. R2 est la conservation pérenne attendue.
 
 ### 5. Restauration vérifiée
 
@@ -333,7 +350,7 @@ Ne jamais écraser directement Production avec une archive potentiellement compr
 | État                         | Critère d'attribution                                                              |
 | ---------------------------- | ---------------------------------------------------------------------------------- |
 | `BACKUP_FAILED`              | Export, intégrité, chiffrement ou conservation défaillant                          |
-| `BACKUP_CREATED`             | Archive chiffrée présente dans le stockage privé, empreintes et périmètre vérifiés |
+| `BACKUP_CREATED`             | Archive chiffrée et `.sha256` présents dans R2 après récupération et SHA-256 exact |
 | `RESTORE_UNVERIFIED`         | Archive conservée sans preuve de restauration réussie                              |
 | `RESTORE_FAILED`             | Exercice réel échoué, cause enregistrée sans fuite de données                      |
 | `RESTORE_VERIFIED`           | Archive restaurée sur cible isolée, contrôles SQL et données exécutés avec succès  |
@@ -345,7 +362,7 @@ Un test réussi sur une fixture synthétique ne vaut pas restauration d'une arch
 
 ### 8. Objectifs de continuité
 
-La fréquence quotidienne vise une perte de données limitée à une journée en fonctionnement nominal, mais cette limite n'est garantie que si les sauvegardes successives réussissent et que leur conservation est confirmée.
+La fréquence mensuelle vise une archive pérenne par mois en fonctionnement nominal, mais cette garantie n'existe que si l'activation du cron, le transfert R2 et la récupération avec SHA-256 exact réussissent.
 
 Le **RPO** (perte maximale de données admissible) et le **RTO** (délai maximal de reprise admissible) doivent être fixés à partir du besoin métier et mesurés au moyen d'exercices. Aucun RPO ou RTO garanti n'est actuellement démontré.
 
@@ -377,8 +394,8 @@ le secret protégé, exécuter un backup manuel, puis déchiffrer localement ave
 nouvelle clé avant de retirer l'ancienne. Conserver l'ancienne clé uniquement
 jusqu'à cette preuve.
 
-En incident, récupérer la dernière archive chiffrée encore dans la rétention
-GitHub, vérifier son SHA-256 et son empreinte, la déchiffrer localement, puis
+En incident, récupérer la dernière archive chiffrée encore dans R2 (ou dans la
+rétention GitHub de secours), vérifier son SHA-256 et son empreinte, la déchiffrer localement, puis
 restaurer sur une cible isolée. Ne jamais restaurer directement sur Production
 pour contourner une indisponibilité ; la bascule applicative et la récupération
 Auth/Storage restent des décisions séparées.
