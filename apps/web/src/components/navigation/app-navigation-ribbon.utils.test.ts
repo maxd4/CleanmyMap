@@ -73,4 +73,20 @@ describe("getRibbonNavigationGroups", () => {
     ]);
     expect(groups.activeSpace).toBeNull();
   });
+
+  it("promotes a secondary active block when fewer than six primary blocks exist", () => {
+    const groups = getRibbonNavigationGroups([makeSpace("home"), makeSpace("learn")], "learn");
+
+    expect(groups.primarySpaces.map((space) => space.id)).toEqual(["home", "learn"]);
+    expect(groups.secondarySpaces).toEqual([]);
+    expect(groups.activeSpace?.id).toBe("learn");
+  });
+
+  it("keeps unknown active ids out of the visible groups and handles an empty input", () => {
+    const groups = getRibbonNavigationGroups([], "learn");
+
+    expect(groups.primarySpaces).toEqual([]);
+    expect(groups.secondarySpaces).toEqual([]);
+    expect(groups.activeSpace).toBeNull();
+  });
 });
