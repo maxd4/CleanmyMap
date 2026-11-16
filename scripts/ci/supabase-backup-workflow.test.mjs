@@ -34,6 +34,7 @@ test('backup exports all dump classes, uses the shared restore-check, encrypts b
   assert.match(workflow, /publish-supabase-backup-r2\.mjs/);
   assert.match(workflow, /SUPABASE_BACKUP_R2_ACCESS_KEY_ID/);
   assert.match(workflow, /SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY/);
+  assert.match(workflow, /add-mask::\$SUPABASE_BACKUP_R2_ENDPOINT/);
   assert.match(workflow, /BACKUP_STATUS=BACKUP_CREATED/);
   assert.match(workflow, /RESTORE_STATUS=\$restore_status/);
   assert.match(workflow, /RESTORE_VERIFIED/);

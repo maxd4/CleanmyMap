@@ -1,0 +1,38 @@
+name: Cloudflare R2 connection proof
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+
+jobs:
+  r2-connection:
+    name: Verify synthetic authenticated R2 object
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: supabase-production
+    permissions:
+      contents: read
+    env:
+      R2_CONNECTION_TEST_REQUIRED: "1"
+      SUPABASE_BACKUP_R2_ENDPOINT: ${{ vars.SUPABASE_BACKUP_R2_ENDPOINT }}
+      SUPABASE_BACKUP_R2_BUCKET: ${{ vars.SUPABASE_BACKUP_R2_BUCKET }}
+      SUPABASE_BACKUP_R2_ACCESS_KEY_ID: ${{ secrets.SUPABASE_BACKUP_R2_ACCESS_KEY_ID }}
+      SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Checkout the requested main commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: apps/web/.nvmrc
+
+      - name: Run synthetic authenticated R2 proof
+        run: |
+          echo "::add-mask::$SUPABASE_BACKUP_R2_ENDPOINT"
+          node --test scripts/ci/publish-supabase-backup-r2.integration.test.mjs

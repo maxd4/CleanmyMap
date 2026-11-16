@@ -8,6 +8,32 @@ for (let index = 2; index < process.argv.length; index += 1) {
 
 const encoder = new TextEncoder();
 
+function normalizedS3ErrorCode(status) {
+  if (status === 400) return "BAD_REQUEST";
+  if (status === 401) return "UNAUTHORIZED";
+  if (status === 403) return "ACCESS_DENIED";
+  if (status === 404) return "NOT_FOUND";
+  if (status === 412) return "OBJECT_COLLISION";
+  if (status >= 500) return "TRANSFER_FAILED";
+  return `HTTP_${status}`;
+}
+
+function createS3Error(method, status) {
+  const code = normalizedS3ErrorCode(status);
+  const classification = code === "OBJECT_COLLISION"
+    ? "R2_OBJECT_COLLISION"
+    : code === "ACCESS_DENIED"
+      ? "R2_ACCESS_DENIED"
+      : code === "TRANSFER_FAILED"
+        ? "R2_TRANSFER_FAILED"
+        : `R2_${method}_FAILED`;
+  const error = new Error(`${classification} method=${method} status=${status} code=${code}`);
+  error.method = method;
+  error.status = status;
+  error.code = code;
+  return error;
+}
+
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -90,10 +116,7 @@ async function s3Request({ endpoint, bucket, key, method, accessKeyId, secretAcc
   if (response.ok) return response;
   if (response.body) await response.arrayBuffer().catch(() => undefined);
   if (response.status === 404 && method === "HEAD") return null;
-  if (response.status === 412) throw new Error("R2_OBJECT_COLLISION");
-  if (response.status === 403) throw new Error("R2_ACCESS_DENIED");
-  if (response.status >= 500) throw new Error("R2_TRANSFER_FAILED");
-  throw new Error(`R2_${method}_FAILED`);
+  throw createS3Error(method, response.status);
 }
 
 function checksumFromFile(value) {
@@ -147,7 +170,8 @@ if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}`) {
     });
     console.log(`BACKUP_CREATED: archive_sha256=${result.archiveSha256}`);
   } catch (error) {
-    console.error(`R2_BACKUP: FAIL classification=${error instanceof Error ? error.message : "unknown"}`);
+    const classification = error instanceof Error ? error.message : "unknown";
+    console.error(`R2_BACKUP: FAIL classification=${classification}`);
     process.exitCode = 1;
   }
 }

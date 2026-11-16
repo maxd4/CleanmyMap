@@ -224,6 +224,7 @@ jobs:
           SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
+          echo "::add-mask::$SUPABASE_BACKUP_R2_ENDPOINT"
           for required in SUPABASE_BACKUP_R2_ENDPOINT SUPABASE_BACKUP_R2_BUCKET SUPABASE_BACKUP_R2_ACCESS_KEY_ID SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY; do
             if [ -z "${!required:-}" ]; then
               echo "$required is missing from the protected supabase-production environment. No R2 publication was attempted."

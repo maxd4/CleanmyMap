@@ -20,6 +20,11 @@ async function withFakeR2(mode, callback) {
         return;
       }
       if (request.method === "HEAD") {
+        if (mode.startsWith("head-")) {
+          const status = Number(mode.slice("head-".length));
+          response.writeHead(status).end();
+          return;
+        }
         response.writeHead(objects.has(path) ? 200 : 404).end();
         return;
       }
@@ -116,6 +121,30 @@ test("fails closed on transfer failure and downloaded archive corruption", async
     await t.test("archive corruption", async () => {
       await withFakeR2("corruption", async ({ endpoint }) => {
         await assert.rejects(publish(endpoint, fixture), /R2_ARCHIVE_CORRUPTED/);
+      });
+    });
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("publishes normalized method, status, and code for HEAD S3 failures", async (t) => {
+  const fixture = await createFixture();
+  try {
+    for (const [status, classification, code] of [[400, "R2_HEAD_FAILED", "BAD_REQUEST"], [401, "R2_HEAD_FAILED", "UNAUTHORIZED"], [403, "R2_ACCESS_DENIED", "ACCESS_DENIED"]]) {
+      await t.test(`HEAD ${status}`, async () => {
+        await withFakeR2(`head-${status}`, async ({ endpoint }) => {
+          await assert.rejects(
+            publish(endpoint, fixture),
+            new RegExp(`${classification} method=HEAD status=${status} code=${code}`),
+          );
+        });
+      });
+    }
+    await t.test("HEAD 404 remains the non-existent-object path", async () => {
+      await withFakeR2("head-404", async ({ endpoint, objects }) => {
+        await publish(endpoint, fixture);
+        assert.equal(objects.size, 2);
       });
     });
   } finally {
