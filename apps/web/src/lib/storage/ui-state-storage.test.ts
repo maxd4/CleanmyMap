@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   COOKIE_CONSENT_MAX_AGE_MS,
   cookieConsentStorage,
+  notifyCookieConsentChanged,
   requestCookieConsentPreferences,
   dashboardPeriodStorage,
   guideChecklistStorage,
@@ -65,6 +66,31 @@ describe("ui state storage", () => {
     expect(memory.get("cmm_dashboard_days")).toBe("365");
   });
 
+  it("uses the dashboard fallback and normalizes invalid checklist payloads", () => {
+    const { memory } = installMockWindow();
+
+    memory.set("cmm_dashboard_days", "not-a-period");
+    expect(dashboardPeriodStorage.read()).toBe(90);
+
+    memory.set("cleanmymap.guide.checklist", JSON.stringify(["not", "a", "record"]));
+    expect(guideChecklistStorage.read()).toEqual({
+      briefing: false,
+      declaration: false,
+      tracing: false,
+      moderation: false,
+      export: false,
+    });
+
+    memory.set("cleanmymap.guide.checklist", "{");
+    expect(guideChecklistStorage.read()).toEqual({
+      briefing: false,
+      declaration: false,
+      tracing: false,
+      moderation: false,
+      export: false,
+    });
+  });
+
   it("normalizes consent and checklist payloads", () => {
     const { memory } = installMockWindow();
 
@@ -121,6 +147,34 @@ describe("ui state storage", () => {
     expect(memory.has("cleanmymap_cookie_consent")).toBe(false);
   });
 
+  it("fails closed for malformed consent payloads and preserves safe defaults", () => {
+    const { memory } = installMockWindow();
+
+    memory.set("cleanmymap_cookie_consent", JSON.stringify(null));
+    expect(cookieConsentStorage.read()).toEqual({
+      choice: null,
+      timestamp: null,
+      analytics: false,
+      ageBand: "unknown",
+    });
+
+    memory.set("cleanmymap_cookie_consent", "not-json");
+    expect(cookieConsentStorage.read()).toEqual({
+      choice: null,
+      timestamp: null,
+      analytics: false,
+      ageBand: "unknown",
+    });
+
+    memory.set("cleanmymap_cookie_consent", JSON.stringify({ choice: "other", timestamp: "later", analytics: "yes", ageBand: "invalid" }));
+    expect(cookieConsentStorage.read()).toEqual({
+      choice: null,
+      timestamp: null,
+      analytics: false,
+      ageBand: "unknown",
+    });
+  });
+
   it("dispatches the explicit event used to reopen cookie preferences", () => {
     const dispatchEvent = vi.fn();
     vi.stubGlobal("window", { dispatchEvent } as unknown as Window);
@@ -131,5 +185,28 @@ describe("ui state storage", () => {
     expect(dispatchEvent.mock.calls[0]?.[0].type).toBe(
       "cleanmymap-cookie-consent-manage",
     );
+  });
+
+  it("dispatches both cookie preference events and fails safely when storage throws", () => {
+    const dispatchEvent = vi.fn();
+    const throwingStorage = {
+      getItem: () => { throw new Error("storage blocked"); },
+      setItem: () => { throw new Error("storage blocked"); },
+      removeItem: () => { throw new Error("storage blocked"); },
+    };
+    vi.stubGlobal("window", { localStorage: throwingStorage, dispatchEvent } as unknown as Window);
+
+    expect(siteLocaleStorage.read()).toBeNull();
+    expect(siteLocaleStorage.write("en")).toBe(false);
+    expect(siteLocaleStorage.remove()).toBe(false);
+    expect(cookieConsentStorage.read()).toBeNull();
+    notifyCookieConsentChanged();
+    requestCookieConsentPreferences();
+
+    expect(dispatchEvent).toHaveBeenCalledTimes(2);
+    expect(dispatchEvent.mock.calls.map(([event]) => event.type)).toEqual([
+      "cleanmymap-cookie-consent-change",
+      "cleanmymap-cookie-consent-manage",
+    ]);
   });
 });
