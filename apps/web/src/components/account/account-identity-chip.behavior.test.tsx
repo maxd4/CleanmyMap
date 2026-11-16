@@ -169,11 +169,21 @@ describe("AccountIdentityChip behavior", () => {
     expect(host.querySelectorAll('[role="menuitemradio"]')).toHaveLength(7);
     expect(host.querySelector('[role="menuitemradio"][aria-checked="true"]')).not.toBeNull();
 
+    act(() => {
+      host.querySelector<HTMLButtonElement>('button[aria-label="Menu du profil actif"]')?.click();
+    });
+    expect(host.querySelector("#account-role-menu-panel")).toBeNull();
+
     await open("Menu des badges");
     expect(host.querySelector("#account-role-menu-panel")).toBeNull();
     expect(host.querySelector("#account-badges-menu-panel")).not.toBeNull();
     expect(host.textContent).toContain("Badges d'engagement");
     expect(host.textContent).toContain("Mentor");
+
+    act(() => {
+      host.querySelector<HTMLButtonElement>('button[aria-label="Menu des badges"]')?.click();
+    });
+    expect(host.querySelector("#account-badges-menu-panel")).toBeNull();
   });
 
   it("switches to an allowed inactive role and closes on the active role", async () => {

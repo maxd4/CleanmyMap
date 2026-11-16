@@ -147,10 +147,11 @@ describe("useRibbonActivityStatus behavior", () => {
   });
 
   it("restores the previous status and reports a server error", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockReturnValue(response({ error: "Statut refusé." }, false)),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockReturnValueOnce(response({ error: "Statut refusé." }, false))
+      .mockReturnValue(response({}, false));
+    vi.stubGlobal("fetch", fetchMock);
     render({ id: "user-error", unsafeMetadata: {}, reload: vi.fn() });
 
     await act(async () => {
@@ -160,6 +161,13 @@ describe("useRibbonActivityStatus behavior", () => {
 
     expect(status()).toBe("active");
     expect(host.querySelector("[role=alert]")?.textContent).toBe("Statut refusé.");
+
+    await act(async () => {
+      host.querySelector("button")?.click();
+    });
+    expect(host.querySelector("[role=alert]")?.textContent).toBe(
+      "Impossible de mettre à jour le statut.",
+    );
   });
 
   it("uses the generic message for a non-Error rejection and tolerates invalid JSON", async () => {
