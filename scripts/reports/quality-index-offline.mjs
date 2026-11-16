@@ -61,6 +61,7 @@ function validateReport(audit, report) {
   if (audit === "type-safety" && (!Array.isArray(report.findings) || !Array.isArray(report.diagnostics) || !Array.isArray(report.coverage) || !report.summary)) throw new Error("Rapport type-safety incomplet.");
   if (audit === "hotspots" && (!Array.isArray(report.files) || !report.methodology || !report.summary || !Array.isArray(report.diagnostics))) throw new Error("Rapport hotspots incomplet.");
   if (audit === "testability" && (!Array.isArray(report.domains) || !report.summary || !Array.isArray(report.diagnostics))) throw new Error("Rapport testability incomplet.");
+  if (audit === "structure" && (!Array.isArray(report.folders) || !Array.isArray(report.foldersRequiringReview) || !report.summary || !Array.isArray(report.diagnostics))) throw new Error("Rapport structure incomplet.");
   if (audit === "coverage" && (!Array.isArray(report.scopes) || !report.summary || !report.duplication || !Array.isArray(report.warnings) || !Array.isArray(report.diagnostics))) throw new Error("Rapport coverage incomplet.");
   return report;
 }
@@ -90,7 +91,7 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
     reports[audit] = entry.report;
     sourceFiles.push(...entry.sourceFiles);
   }
-  const optionalAudits = ["maintainability", "type-safety", "hotspots", "testability", "coverage"].filter((audit) => manifestPathExists(root, auditedSha, runId, audit, fsApi));
+  const optionalAudits = ["maintainability", "type-safety", "hotspots", "testability", "structure", "coverage"].filter((audit) => manifestPathExists(root, auditedSha, runId, audit, fsApi));
   for (const audit of optionalAudits) {
     const entry = readAudit({ root, auditedSha, runId, audit, fsApi });
     manifests[audit] = entry.manifest;

@@ -48,6 +48,7 @@ function fixtureResult(audit) {
   if (audit === "type-safety") return { schemaVersion: 1, kind: "quality-type-safety", status: "PASS", blocking: false, measurementStatus: "MEASURED_NOT_RATCHETED", summary: { filesInScope: 0, filesMeasured: 0, filesWithTypedCoverage: 0, findings: 0, findingsByFamily: { TYPE_SAFETY: 0, ASYNC_SAFETY: 0 }, findingsByRule: {}, historicalFindings: 0, newCandidateFindings: 0, documentedExceptions: 0, elapsedMs: 0 }, coverage: [], findings: [], diagnostics: [] };
   if (audit === "hotspots") return { schemaVersion: 1, kind: "quality-hotspots", status: "PASS", blocking: false, measurementStatus: "MEASURED", methodology: { historyWindowDays: 180 }, summary: { filesMeasured: 0, highActivityFiles: 0, hotspotCandidates: 0, regressionRecurrence: "NOT_MEASURED" }, files: [], diagnostics: [] };
   if (audit === "testability") return { schemaVersion: 1, kind: "quality-testability", status: "PASS", blocking: false, measurementStatus: "NOT_MEASURED", summary: { domainsMeasured: 0, criticalDomainsWithoutSufficientEvidence: 0 }, files: [], domains: [], diagnostics: [] };
+  if (audit === "structure") return { schemaVersion: 1, kind: "quality-structure", status: "PASS", blocking: false, measurementStatus: "MEASURED", summary: { foldersMeasured: 0, foldersWithSignals: 0, foldersRequiringReview: 0, descriptiveSignals: 0, importEdgesMeasured: 0 }, folders: [], foldersRequiringReview: [], diagnostics: [] };
   if (audit === "coverage") return { schemaVersion: 1, kind: "quality-coverage-insights", status: "PASS", blocking: false, measurementStatus: "NOT_MEASURED", thresholds: { coverageWarningPct: 80, duplicationWarningPct: 3 }, summary: { scopes: 0, scopesMeasured: 0, warnings: 0, diagnosticCount: 0, topUncoveredBranchFiles: [], elapsedMs: 0 }, scopes: [], duplication: { state: "NOT_MEASURED", scopes: [], warnings: [], diagnostics: [] }, warnings: [], diagnostics: [] };
   return { gateStatus: "PASS", status: "PASS", cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } };
 }
@@ -117,7 +118,7 @@ function cycleEngineResult() {
   };
 }
 
-const qualityAudits = ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage"];
+const qualityAudits = ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "structure", "coverage"];
 
 function writeFlatQualityRun(root, auditedHead, runId, generatedAt, audits = qualityAudits) {
   const shaRoot = path.join(root, "artifacts", "quality-audits", auditedHead);
@@ -264,7 +265,7 @@ test("all writes every gate and the aggregate as flat files for one run", async 
   try {
     const result = await runQualityAudit("all", { root, runId: "run-all", snapshot: () => stableSnapshot, engine: async (audit) => fixtureResult(audit) });
     const names = fs.readdirSync(path.join(root, "artifacts", "quality-audits", sha)).sort();
-    assert.equal(names.length, 36);
+    assert.equal(names.length, 39);
     for (const audit of [...qualityAudits, "all"]) {
       assert.ok(names.includes(`${audit}--run-all--manifest.json`));
       assert.ok(names.includes(`${audit}--run-all--report.json`));
@@ -380,7 +381,7 @@ test("all intègre la dimension documentaire dans l'agrégat, l'index et le ZIP"
     const index = JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8"));
 
     assert.equal(result.status, "PASS");
-    assert.equal(result.results.length, 10);
+    assert.equal(result.results.length, 11);
     assert.equal(aggregate.documentation.kind, "documentation-maintainability");
     assert.equal(index.audits.documentation.state, "PRESENT");
     assert.equal(index.globalCounts.documentationFiles, 1);
@@ -403,7 +404,7 @@ test("un échec documentaire reste NOT_MEASURED sans modifier le verdict des cin
     const index = JSON.parse(fs.readFileSync(result.projectionPaths.index, "utf8"));
 
     assert.equal(result.status, "PASS");
-    assert.equal(result.results.length, 10);
+    assert.equal(result.results.length, 11);
     assert.equal(result.documentation.status, "NOT_MEASURED");
     assert.equal(result.documentation.reason, "MEASUREMENT_FAILED");
     assert.equal(result.documentation.error.message, "documentation fixture failure");
@@ -892,7 +893,7 @@ test("une promesse asynchrone rejetée produit un FAIL diagnostiqué et laisse l
     const cyclesReport = JSON.parse(fs.readFileSync(cycles.paths.report, "utf8"));
     const manifest = JSON.parse(fs.readFileSync(result.allPaths.manifest, "utf8"));
 
-    assert.deepEqual(calls, ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage"]);
+    assert.deepEqual(calls, ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "structure", "coverage"]);
     assert.equal(complexity.status, "FAIL");
     assert.equal(complexityReport.status, "FAIL");
     assert.equal(complexityReport.error.code, "FIXTURE_COMPLEXITY_FAILED");
@@ -955,8 +956,8 @@ test("all runs each engine once, aggregates statuses and retains other results a
         return fixtureResult(audit);
       },
     });
-    assert.deepEqual(calls, ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage"]);
-    assert.equal(result.results.length, 10);
+    assert.deepEqual(calls, ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "structure", "coverage"]);
+    assert.equal(result.results.length, 11);
     assert.equal(result.status, "FAIL");
     assert.equal(result.results.find((entry) => entry.audit === "duplication").status, "FAIL");
     assert.equal(result.results.find((entry) => entry.audit === "cycles").status, "PASS");
@@ -980,7 +981,7 @@ test("all correlates the five current gate results after execution without rerun
     });
     assert.deepEqual(
       result.results.map((entry) => entry.audit),
-      ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage"],
+      ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "structure", "coverage"],
     );
     const topHeavy = result.results.find((entry) => entry.audit === "top-heavy").result;
     assert.equal(topHeavy.radarProjection.rows[0].signals.size.state, "PRESENT");

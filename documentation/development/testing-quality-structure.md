@@ -13,6 +13,45 @@ encore contenir des clones actionnables ; un scope au-dessus de 3 % expose un
 la plus récente est
 [`duplication-reference-2026-10-26.md`](../operations/audits/duplication-reference-2026-10-26.md).
 
+## Structure des dossiers et cohésion
+
+Le contrôle `quality:structure` est une projection descriptive, non bloquante,
+qui réutilise l'inventaire et le graphe de
+[`architecture-audit.mjs`](../../scripts/reports/architecture-audit.mjs). Il
+ne crée pas de scanner concurrent et ne modifie aucun des cinq quality gates,
+leurs seuils, leurs baselines ou leurs justifications.
+
+```bash
+npm run quality:structure -- --dry-run
+npm run audit:quality -- structure
+```
+
+Les mesures conservées par dossier sont les fichiers directs et récursifs, la
+profondeur relative au root, la part directe dans l'ensemble récursif, les
+préfixes fonctionnels de fichiers et les relations d'import internes,
+entrantes, sortantes et croisées. Les signaux initiaux sont :
+
+- `15` fichiers directs : surveillance ; `25` : revue descriptive ;
+- concentration directe strictement supérieure à `75 %` sur au moins `8`
+  fichiers récursifs ;
+- au moins deux préfixes fonctionnels parmi au moins `8` fichiers directs ;
+- relations d'import croisées et faible part d'import interne lorsqu'elles
+  complètent la diversité fonctionnelle.
+
+La concentration et le volume appartiennent à une même famille de forme. Un
+dossier n'est retenu dans `foldersRequiringReview` que si au moins deux familles
+indépendantes concordent (`shape`, diversité fonctionnelle, couplage ou
+cohésion). Le rapport expose les chemins directs et les métriques qui fondent
+chaque signal ; `REVIEW_STRUCTURE` signifie « réunir une preuve humaine », pas
+« réorganiser ».
+
+Les conventions de routage Next.js et Expo, les assets, migrations, vendor,
+third-party et fichiers générés sont hors décision structurelle. Les petits
+dossiers et les ensembles répartis dans des sous-dossiers restent ainsi
+descriptifs sans faux positif automatique. Le rapport est intégré à
+`audit:quality -- all` et à la projection `architecture.structure` du Quality
+Index, sans changer le verdict global des cinq gates.
+
 ## Structure anti-duplication des tests
 
 Cette méthode s'applique aux petits correctifs comme aux campagnes massives. Elle

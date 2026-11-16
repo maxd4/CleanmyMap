@@ -926,6 +926,8 @@ function buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDo
     architectureFiles: architecture.files?.length ?? 0,
     architectureBlockingBoundaryCount: architecture.boundary?.blocking?.length ?? 0,
     architectureUnresolvedInternalCount: architecture.graphSummary?.unresolvedInternalImports ?? 0,
+    structureFoldersRequiringReview: architecture.structure?.summary?.foldersRequiringReview ?? 0,
+    structureDescriptiveSignals: architecture.structure?.summary?.descriptiveSignals ?? 0,
     documentationFiles: documentation.summary?.trackedDocuments ?? 0,
     documentationInvalidReferences: documentation.summary?.invalidReferences ?? 0,
     documentationUnverifiedReferences: documentation.summary?.unverifiedReferences ?? 0,
@@ -1008,6 +1010,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
       "La sûreté de typage et d'asynchronisme reste une dimension auxiliaire non bloquante ; une configuration TypeScript hors de la peer range est explicitement NOT_MEASURED, jamais traitée comme une couverture typée.",
       "Les hotspots utilisent une fenêtre Git de 180 jours, des seuils descriptifs de 5 commits et 20 lignes modifiées par changement substantiel ; aucune activité seule ne devient un finding bloquant et la récurrence multi-run reste NOT_MEASURED sans série attribuable.",
       "La testabilité réutilise uniquement les métriques de modules portant le SHA exact ; les couvertures absentes, périmées ou non attestées, la mutation non attribuable et les correspondances fichier-test non démontrées restent NOT_MEASURED.",
+      "La structure des dossiers réutilise folderMeasures et le graphe d'import de l'audit d'architecture ; ses seuils sont descriptifs, ses dossiers sont retenus seulement lorsque plusieurs familles de signaux concordent et son résultat ne modifie aucun gate historique.",
     ],
   };
 }

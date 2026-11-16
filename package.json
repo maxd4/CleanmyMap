@@ -79,6 +79,7 @@
     "quality:type-safety": "node scripts/checks/check-type-safety.mjs",
     "quality:duplication": "node scripts/checks/check-duplication.mjs",
     "quality:cycles": "node scripts/checks/check-cycles.mjs",
+    "quality:structure": "node scripts/reports/quality-structure.mjs",
     "audit:quality": "node --max-old-space-size=6144 scripts/audits/run-quality-audit.mjs",
     "audit:modularity": "node scripts/reports/generate-modularity-radar.mjs --ref=HEAD",
     "report:quality-index": "node --max-old-space-size=6144 scripts/reports/quality-file-index.mjs",

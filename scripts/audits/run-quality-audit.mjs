@@ -30,6 +30,7 @@ import {
 } from "../reports/generate-modularity-radar.mjs";
 import { buildArchitectureCouplingFromRepository, buildArchitectureCouplingProjection, generateQualityFileIndex } from "../reports/quality-file-index.mjs";
 import { buildQualityHotspotsReport, buildQualityTestabilityReport } from "../reports/quality-audit-signals.mjs";
+import { buildQualityStructureFromRepository } from "../reports/quality-structure.mjs";
 import { buildDocumentationMaintainabilityReport, buildDocumentationNotMeasured } from "./documentation-maintainability.mjs";
 import {
   QUALITY_AUDIT_ROOT,
@@ -43,7 +44,7 @@ import { qualityAuditPolicy } from "./quality-audit-policy.mjs";
 import { normalizeQualityScope, scopeMetadata } from "../checks/quality-scope.mjs";
 
 export const QUALITY_GATE_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
-export const AUXILIARY_AUDITS = Object.freeze(["maintainability", "type-safety", "hotspots", "testability", "coverage"]);
+export const AUXILIARY_AUDITS = Object.freeze(["maintainability", "type-safety", "hotspots", "testability", "structure", "coverage"]);
 export const AUDIT_MODES = Object.freeze([...QUALITY_GATE_AUDITS, ...AUXILIARY_AUDITS, "all"]);
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const ACQUIRED_ARCHITECTURE_DECISIONS = new Set([
@@ -255,6 +256,18 @@ function isCoverageResult(result) {
     && result.summary;
 }
 
+function isStructureResult(result) {
+  return Boolean(result)
+    && result.kind === "quality-structure"
+    && result.status === "PASS"
+    && result.blocking === false
+    && result.measurementStatus === "MEASURED"
+    && Array.isArray(result.folders)
+    && Array.isArray(result.foldersRequiringReview)
+    && result.summary
+    && Array.isArray(result.diagnostics);
+}
+
 function preserveMalformedAsyncResult(audit, result) {
   return {
     ...(result && typeof result === "object" ? result : {}),
@@ -331,6 +344,7 @@ export function attentionRequired(audit, result) {
       || (result.summary?.newCandidateFindings ?? 0) > 0;
   }
   if (audit === "hotspots" || audit === "testability") return false;
+  if (audit === "structure") return (result.summary?.foldersRequiringReview ?? 0) > 0;
   if (audit === "coverage") return Boolean(result.attentionRequired) || result.measurementStatus === "MEASUREMENT_FAILED";
   return false;
 }
@@ -466,6 +480,15 @@ function makeSummary({ audit, manifest, result, paths }) {
       "- Coverage, test presence and mutation are reported only when attributable; no test runner is launched by this audit.",
     );
   }
+  if (audit === "structure" && result?.summary) {
+    lines.splice(6, 0,
+      `- Folders measured: ${result.summary.foldersMeasured}`,
+      `- Folders with descriptive signals: ${result.summary.foldersWithSignals}`,
+      `- Folders requiring concordant review: ${result.summary.foldersRequiringReview}`,
+      `- Import edges measured: ${result.summary.importEdgesMeasured}`,
+      "- Non-blocking structural review; no reorganization is recommended from file count alone.",
+    );
+  }
   if (audit === "coverage" && result?.summary) {
     lines.splice(6, 0,
       `- Scopes measured: ${result.summary.scopesMeasured}/${result.summary.scopes}`,
@@ -496,6 +519,7 @@ function createAuditExecutors({
   hotspotsRunner,
   testabilityRunner,
   coverageRunner,
+  structureRunner,
   complexityResult,
   previousResults,
   topHeavyRunner,
@@ -525,6 +549,7 @@ function createAuditExecutors({
     "type-safety": async () => ({ result: await typeSafetyRunner({ root, scope: activeScope }), readProvenance: "WORKTREE_LIVE", validate: isTypeSafetyResult }),
     hotspots: () => ({ result: hotspotsRunner({ root, auditedSha: auditedHead, reports: previousResults, scope: activeScope }), readProvenance: "COMMITTED_SNAPSHOT", validate: isHotspotsResult }),
     testability: () => ({ result: testabilityRunner({ root, auditedSha: auditedHead, scope: activeScope }), readProvenance: "MIXED", validate: isTestabilityResult }),
+    structure: () => ({ result: structureRunner({ root, auditedSha: auditedHead }), readProvenance: "COMMITTED_SNAPSHOT", validate: isStructureResult }),
     coverage: () => ({ result: coverageRunner({ root, auditedSha: auditedHead, duplicationReport: previousResults.duplication ?? null, scope: activeScope }), readProvenance: "MIXED", validate: isCoverageResult, format: formatCoverageInsightsReport }),
     cycles: async () => {
       const result = await cycleRunner({ scope: activeScope });
@@ -555,6 +580,7 @@ export async function executeAudit(
     hotspotsRunner = buildQualityHotspotsReport,
     testabilityRunner = buildQualityTestabilityReport,
     coverageRunner = buildCoverageInsightsReport,
+    structureRunner = buildQualityStructureFromRepository,
     complexityResult = null,
     previousResults = {},
     topHeavyRunner = runTopHeavyPolicy,
@@ -573,6 +599,7 @@ export async function executeAudit(
     hotspotsRunner,
     testabilityRunner,
     coverageRunner,
+    structureRunner,
     complexityResult,
     previousResults,
     topHeavyRunner,
@@ -718,7 +745,7 @@ function summarizeAuditStatus(manifests) {
   return statusPriority.find((status) => manifests.some((entry) => entry.status === status)) ?? "PASS";
 }
 
-async function buildAggregateInputs({ root, auditedHead, runId, documentationRunner, architectureBuilder }) {
+async function buildAggregateInputs({ root, auditedHead, runId, documentationRunner, architectureBuilder, structure }) {
   let documentation;
   try {
     documentation = await documentationRunner({ root, auditedSha: auditedHead, runId });
@@ -731,7 +758,10 @@ async function buildAggregateInputs({ root, auditedHead, runId, documentationRun
   } catch (error) {
     architecture = buildArchitectureCouplingProjection({ error });
   }
-  return { documentation, architecture };
+  return {
+    documentation,
+    architecture: { ...architecture, structure: structure ?? null },
+  };
 }
 
 function writeAggregateArtifacts({ root, auditedHead, runId, generatedAt, manifests, overallStatus, overallAttention, documentation, fsApi, scope = "all" }) {
@@ -838,6 +868,7 @@ export async function runQualityAudit(mode, {
         runId,
         documentationRunner,
         architectureBuilder,
+        structure: results.find((entry) => entry.audit === "structure")?.result ?? null,
       });
       documentation = aggregate.documentation;
       allPaths = writeAggregateArtifacts({

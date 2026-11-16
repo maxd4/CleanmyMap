@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { QUALITY_GATE_INDEX_AUDITS } from "../reports/quality-index-primitives.mjs";
 
 export const QUALITY_AUDIT_ROOT = "artifacts/quality-audits";
-const QUALITY_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage", "all"]);
+const QUALITY_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "structure", "coverage", "all"]);
 const QUALITY_AUDIT_RETENTION_LIMIT = 3;
 const QUALITY_PROJECTION_PREFIX = "quality-index";
 

@@ -17,6 +17,8 @@ npm run audit:quality -- maintainability
 npm run audit:quality -- type-safety
 npm run audit:quality -- hotspots
 npm run audit:quality -- testability
+npm run quality:structure -- --dry-run
+npm run audit:quality -- structure
 npm run audit:quality -- coverage
 npm run audit:quality -- all
 npm run audit:quality -- all --scope=web
@@ -140,6 +142,16 @@ un ensemble complet de rapports exploitables. `testability` réutilise uniquemen
 couvertures et rapports de mutation attribuables au SHA exact ; l'absence,
 l'obsolescence ou la non-attribution d'une preuve reste `NOT_MEASURED` et aucun
 runner de test n'est relancé par l'audit.
+
+`structure` réutilise `folderMeasures`, les chemins sources directs/récursifs
+et les arêtes locales de `architecture-audit.mjs` pour décrire profondeur,
+concentration, préfixes fonctionnels et relations d'import. Les signaux `15`/
+`25` fichiers directs, `>75 %` de concentration sur au moins `8` fichiers
+récursifs et la diversité fonctionnelle restent descriptifs ; la revue exige
+plusieurs familles concordantes et n'est jamais une recommandation de
+réorganisation fondée sur le seul nombre de fichiers. Les conventions Next.js
+et Expo, assets, migrations, vendor et fichiers générés sont hors décision.
+Le rapport reste `PASS` non bloquant et expose ses chemins et métriques.
 
 `coverage` est une projection auxiliaire rapide et non bloquante : elle
 réutilise les rapports existants Web, mobile, Node et Python après validation
@@ -299,7 +311,7 @@ npm run report:quality-index -- --offline --sha=<SHA> --run-id=<runId> --bundle
 
 Le mode `--offline` lit exclusivement les cinq rapports de gate, les rapports
 auxiliaires présents (`maintainability`, `type-safety`, `hotspots`,
-`testability`), leurs manifestes et le rapport agrégé du couple exact
+`testability`, `structure`), leurs manifestes et le rapport agrégé du couple exact
 `SHA/runId`. Il conserve la provenance `COMMITTED_SNAPSHOT`, `WORKTREE_LIVE`
 ou `MIXED` du run ; il accepte une archive ancienne ou nouvelle tant que
 l’identité exacte du couple `SHA/runId`, les rapports, les manifestes et les
@@ -307,7 +319,7 @@ résumés sont cohérents.
 Il ne relit pas le HEAD courant, ne recalcule aucune métrique et ne ratifie
 aucune baseline. Il refuse uniquement les mélanges d'identité, de SHA, de
 runId, de verdicts ou les rapports incomplets. Le `--bundle` écrit un ZIP dans le même dossier avec
-les trente fichiers originaux d'un run complet et les deux projections, chemins plats
+les trente-six fichiers originaux d'un run complet et les deux projections, chemins plats
 préservés, sans écraser un fichier existant. Les contrôles de rétention
 reconnaissent ces trois artefacts de projection sans les confondre avec les
 triplets des engines uniquement lorsqu'un manifeste `all` valide du même SHA
@@ -363,6 +375,18 @@ pour rendre la zone de revue navigable. Les chemins `assets`, `migrations`,
 fichiers générés restent classifiés mais la politique existante exclut les
 fichiers régénérables des alertes de modularisation. Le test exécutable du
 contrat est `node --test scripts/reports/architecture-audit.test.mjs`.
+
+L'analyse structurelle directement exploitable est disponible en lecture seule :
+
+```bash
+npm run quality:structure -- --dry-run
+```
+
+Sans `--dry-run`, elle écrit uniquement son rapport régénérable sous
+`artifacts/quality-structure/<SHA>/structure.json`. `audit:quality -- all`
+conserve aussi le résultat dans le triplet du run et ajoute sa projection au
+champ `architecture.structure` du Quality Index ; aucune source, baseline,
+justification ou matrice historique n'est modifiée.
 
 La couverture Web n’est déclarée disponible par cet audit que si
 `apps/web/coverage/coverage-evidence.json` passe le validateur canonique, si

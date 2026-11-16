@@ -130,6 +130,10 @@ function createFolderMeasure(pathName, root) {
     root,
     directFiles: 0,
     recursiveFiles: 0,
+    directFilePaths: new Set(),
+    recursiveFilePaths: new Set(),
+    eligibleDirectFilePaths: new Set(),
+    eligibleRecursiveFilePaths: new Set(),
     directKinds: kinds(),
     recursiveKinds: kinds(),
     maxFileDepth: folderDepth(pathName, root),
@@ -165,6 +169,12 @@ function materializeFolderMeasure(folder) {
       direct: folder.directFiles,
       recursive: folder.recursiveFiles,
     },
+    paths: {
+      direct: [...folder.directFilePaths].sort((left, right) => left.localeCompare(right, "en")),
+      recursive: [...folder.recursiveFilePaths].sort((left, right) => left.localeCompare(right, "en")),
+      eligibleDirect: [...folder.eligibleDirectFilePaths].sort((left, right) => left.localeCompare(right, "en")),
+      eligibleRecursive: [...folder.eligibleRecursiveFilePaths].sort((left, right) => left.localeCompare(right, "en")),
+    },
     kinds: {
       direct: folder.directKinds,
       recursive: folder.recursiveKinds,
@@ -198,10 +208,14 @@ export function buildFolderMeasures(rows, { scanRoots = ARCHITECTURE_SCAN_ROOTS,
       const folderPath = directoryParts.slice(0, index).join("/");
       const folder = ensureFolderMeasure(folders, folderPath, root);
       folder.recursiveFiles += 1;
+      folder.recursiveFilePaths.add(row.file);
+      if (!row.generated) folder.eligibleRecursiveFilePaths.add(row.file);
       folder.recursiveKinds[kind] += 1;
       folder.maxFileDepth = Math.max(folder.maxFileDepth, folderDepth(row.file, root));
       if (folderPath === directory) {
         folder.directFiles += 1;
+        folder.directFilePaths.add(row.file);
+        if (!row.generated) folder.eligibleDirectFilePaths.add(row.file);
         folder.directKinds[kind] += 1;
       }
       if (isAboveReview(row)) folder.reviewFiles.add(row.file);
@@ -272,12 +286,21 @@ export function collectImportGraph(view, rows) {
     .filter((file) => CODE_EXTENSIONS.has(path.posix.extname(file)));
   const sourceFileSet = new Set(sourceFiles);
   const outgoing = new Map(sourceFiles.map((file) => [file, new Set()]));
+  const edges = [];
+  const edgeKeys = new Set();
   let unresolvedLocalImports = 0;
   let excludedLocalImports = 0;
   for (const file of sourceFiles) {
     for (const specifier of importSpecifiers(view.readText(file))) {
       const resolved = resolveImport(view, file, specifier);
-      if (resolved && sourceFileSet.has(resolved)) outgoing.get(file).add(resolved);
+      if (resolved && sourceFileSet.has(resolved)) {
+        outgoing.get(file).add(resolved);
+        const edgeKey = `${file}\0${resolved}`;
+        if (!edgeKeys.has(edgeKey)) {
+          edgeKeys.add(edgeKey);
+          edges.push({ from: file, to: resolved, fromDomain: domainForFile(file), toDomain: domainForFile(resolved) });
+        }
+      }
       else if (resolved) excludedLocalImports += 1;
       else if (specifier.startsWith(".") || specifier.startsWith("@/")) unresolvedLocalImports += 1;
     }
@@ -302,6 +325,7 @@ export function collectImportGraph(view, rows) {
     available: true,
     unresolvedLocalImports,
     excludedLocalImports,
+    edges: edges.sort((left, right) => `${left.from}:${left.to}`.localeCompare(`${right.from}:${right.to}`, "en")),
     byDomain: Object.fromEntries(Object.entries(byDomain).sort(([left], [right]) => left.localeCompare(right))),
     modules,
   };
