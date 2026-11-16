@@ -33,16 +33,7 @@ jobs:
       actions: read
 
     steps:
-      - name: Checkout tested candidate
-        if: github.event_name == 'workflow_run'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Checkout current main for read-only control
-        if: github.event_name != 'workflow_run'
+      - name: Checkout trusted main control source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
@@ -71,6 +62,7 @@ jobs:
         if: always()
         env:
           CMM_SUPABASE_SOURCE_REPOSITORY: ${{ github.event.workflow_run.repository.full_name }}
+          CMM_SUPABASE_SOURCE_HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
           CMM_SUPABASE_SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
           CMM_SUPABASE_SOURCE_BRANCH: ${{ github.event.workflow_run.head_branch }}
           CMM_SUPABASE_SOURCE_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
@@ -81,7 +73,6 @@ jobs:
           set -euo pipefail
           if [ "${GITHUB_EVENT_NAME}" = "workflow_run" ]; then
             test "${CMM_SUPABASE_SOURCE_REPOSITORY}" = "${GITHUB_REPOSITORY}"
-            test "${{ github.event.workflow_run.head_repository.full_name }}" = "${GITHUB_REPOSITORY}"
             CMM_SUPABASE_REMOTE_HEAD_SHA="$(git ls-remote origin refs/heads/main | cut -f1)"
             export CMM_SUPABASE_REMOTE_HEAD_SHA
           fi

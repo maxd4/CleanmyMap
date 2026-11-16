@@ -42,7 +42,10 @@ test("Supabase convergence is proof-triggered, scheduled, manual, and serialized
   assert.match(workflow, /cancel-in-progress:\s*false/);
   assert.match(workflow, /environment:\s*supabase-production/);
   assert.match(workflow, /actions\/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e/);
-  assert.match(workflow, /Checkout current main for read-only control[\s\S]*?if: github\.event_name != 'workflow_run'[\s\S]*?ref: \$\{\{ github\.sha \}\}/);
+  assert.match(workflow, /Checkout trusted main control source[\s\S]*?ref: \$\{\{ github\.sha \}\}/);
+  assert.doesNotMatch(workflow, /Checkout tested candidate[\s\S]*?github\.event\.workflow_run\.head_sha/);
+  assert.doesNotMatch(workflow.slice(0, workflow.indexOf("Download sanitized ephemeral proof")), /github\.event\.workflow_run\.head_sha/);
+  assert.match(workflow, /CMM_SUPABASE_SOURCE_HEAD_REPOSITORY:\s*\$\{\{ github\.event\.workflow_run\.head_repository\.full_name \}\}/);
   assert.match(workflow, /git ls-remote origin refs\/heads\/main/);
   assert.match(workflow, /Recheck exact remote main before application[\s\S]*?current_main_sha.*CMM_SUPABASE_CANDIDATE_SHA/);
   assert.match(workflow, /supabase-convergence-gate\.mjs/);
@@ -77,6 +80,7 @@ test("only a successful exact main run with complete SQL evidence can apply", ()
     eventName: "workflow_run",
     repository: "maxd4/CleanmyMap",
     sourceRepository: "maxd4/CleanmyMap",
+    sourceHeadRepository: "maxd4/CleanmyMap",
     workflowName: "e2e-supabase-ephemeral",
     headBranch: "main",
     conclusion: "success",
@@ -101,6 +105,7 @@ test("wrong source, failed run, stale main, missing proof, and incomplete proof 
     eventName: "workflow_run",
     repository: "maxd4/CleanmyMap",
     sourceRepository: "maxd4/CleanmyMap",
+    sourceHeadRepository: "maxd4/CleanmyMap",
     workflowName: "e2e-supabase-ephemeral",
     headBranch: "main",
     conclusion: "success",
@@ -111,6 +116,7 @@ test("wrong source, failed run, stale main, missing proof, and incomplete proof 
   for (const [field, value] of [
     ["workflowName", "other-workflow"],
     ["sourceRepository", "fork/CleanmyMap"],
+    ["sourceHeadRepository", "fork/CleanmyMap"],
     ["headBranch", "feature"],
     ["conclusion", "failure"],
     ["remoteHeadSha", "a".repeat(40)],
@@ -121,6 +127,21 @@ test("wrong source, failed run, stale main, missing proof, and incomplete proof 
     assert.equal(evaluateSupabaseConvergenceGate({ ...base, [field]: value }).mode, "BLOCKED", field);
   }
   assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ candidateSha: "a".repeat(40) }), candidateSha }).mode, "BLOCKED");
+});
+
+test("a workflow_run produced by a pull request is blocked before any production convergence", () => {
+  assert.equal(evaluateSupabaseConvergenceGate({
+    eventName: "workflow_run",
+    repository: "maxd4/CleanmyMap",
+    sourceRepository: "maxd4/CleanmyMap",
+    sourceHeadRepository: "attacker/CleanmyMap",
+    workflowName: "e2e-supabase-ephemeral",
+    headBranch: "feature/untrusted-change",
+    conclusion: "success",
+    candidateSha,
+    remoteHeadSha: candidateSha,
+    evidence: passingEvidence(),
+  }).mode, "BLOCKED");
 });
 
 test("all third-party actions in the workflow are pinned to full commit SHAs", () => {

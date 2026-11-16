@@ -42,6 +42,7 @@ export function evaluateSupabaseConvergenceGate({
   eventName,
   repository,
   sourceRepository,
+  sourceHeadRepository,
   workflowName,
   headBranch,
   conclusion,
@@ -54,7 +55,9 @@ export function evaluateSupabaseConvergenceGate({
   }
   if (eventName !== "workflow_run") return blocked("unsupported convergence trigger");
   if (workflowName !== EXPECTED_WORKFLOW) return blocked("source workflow is not the canonical ephemeral Supabase workflow");
-  if (repository !== sourceRepository || repository !== "maxd4/CleanmyMap") return blocked("source workflow repository is not the canonical repository");
+  if (repository !== "maxd4/CleanmyMap" || sourceRepository !== repository || sourceHeadRepository !== repository) {
+    return blocked("source workflow repository is not the canonical repository");
+  }
   if (headBranch !== "main") return blocked("source workflow did not test main");
   if (conclusion !== "success") return blocked("source workflow did not succeed");
   const candidate = requireSha(candidateSha, "candidate SHA");
@@ -80,6 +83,7 @@ function main() {
     eventName: process.env.GITHUB_EVENT_NAME,
     repository: process.env.GITHUB_REPOSITORY,
     sourceRepository: process.env.CMM_SUPABASE_SOURCE_REPOSITORY,
+    sourceHeadRepository: process.env.CMM_SUPABASE_SOURCE_HEAD_REPOSITORY,
     workflowName: process.env.CMM_SUPABASE_SOURCE_WORKFLOW,
     headBranch: process.env.CMM_SUPABASE_SOURCE_BRANCH,
     conclusion: process.env.CMM_SUPABASE_SOURCE_CONCLUSION,
