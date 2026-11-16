@@ -938,23 +938,28 @@ function buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDo
   };
 }
 
-function structureProjectionFromRun(run) {
-  const structure = run?.reports?.structure;
-  return structure?.kind === "quality-structure"
-    && structure.auditedHead === run.auditedSha
-    && structure.runId === run.runId
-    ? structure
-    : null;
+function qualityRunScope(run) {
+  return run?.aggregateManifest?.scope
+    ?? run?.aggregateReport?.scope
+    ?? run?.manifests?.all?.scope
+    ?? run?.reports?.all?.scope
+    ?? null;
+}
+
+function validStructureProjection(run, candidate, source) {
+  if (!candidate) return null;
+  if (candidate.kind !== "quality-structure") return null;
+  const runScope = qualityRunScope(run);
+  if (runScope && candidate.scope !== runScope) throw new Error(`Projection structure incohérente: scope ${source}.`);
+  if (candidate.auditedHead !== run.auditedSha || candidate.runId !== run.runId) return null;
+  if (!runScope && candidate.scope) throw new Error(`Projection structure incohérente: scope du run absent (${source}).`);
+  return candidate;
 }
 
 function structureProjectionForRun(run, architecture) {
-  const current = structureProjectionFromRun(run);
-  const supplied = architecture?.structure;
-  return supplied?.kind === "quality-structure"
-    && supplied.auditedHead === run.auditedSha
-    && supplied.runId === run.runId
-    ? supplied
-    : current;
+  const supplied = validStructureProjection(run, architecture?.structure, "architecture.structure");
+  const current = validStructureProjection(run, run?.reports?.structure, "run");
+  return supplied ?? current;
 }
 
 export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new Date().toISOString(), architecture = null, previousRun = null, previousRunError = null, comparisonRequested = false } = {}) {

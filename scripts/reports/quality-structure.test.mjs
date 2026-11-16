@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
+import childProcess from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { buildFolderMeasures } from "./architecture-audit.mjs";
-import { analyzeQualityStructure, QUALITY_STRUCTURE_THRESHOLDS, structureScanRoots } from "./quality-structure.mjs";
+import { analyzeQualityStructure, qualityStructureOutputPath, QUALITY_STRUCTURE_THRESHOLDS, structureScanRoots } from "./quality-structure.mjs";
 
 const ROOT = "apps/web/src";
 
@@ -43,14 +48,18 @@ test("un dossier plat cohérent conserve un signal descriptif sans recommandatio
 
 test("un dossier plat multiresponsabilité exige des indices concordants", () => {
   const files = [...directFiles("mixed", "action", 8), ...directFiles("mixed", "report", 8)];
-  const external = `${ROOT}/shared/shared.ts`;
-  const edges = files.map((file) => ({ from: file, to: external, fromDomain: "web/mixed", toDomain: "web/shared" }));
-  const folder = reviewedFolder(fixture([...files, external], edges), "mixed");
+  const actionService = `${ROOT}/services/action.ts`;
+  const reportService = `${ROOT}/services/report.ts`;
+  const edges = [
+    ...files.slice(0, 8).map((file) => ({ from: file, to: actionService, fromDomain: "web/mixed", toDomain: "web/services/action" })),
+    ...files.slice(8).map((file) => ({ from: file, to: reportService, fromDomain: "web/mixed", toDomain: "web/services/report" })),
+  ];
+  const folder = reviewedFolder(fixture([...files, actionService, reportService], edges), "mixed");
 
   assert.equal(folder.files.direct, 16);
   assert.equal(folder.functionalGroups.length, 2);
   assert.ok(folder.signalFamilies.includes("functional-diversity"));
-  assert.ok(folder.reviewFamilies.includes("functional-diversity"));
+  assert.ok(folder.reviewFamilies.includes("graph"));
   assert.equal(folder.review.required, true);
   assert.match(folder.review.reason, /plusieurs familles/);
   assert.ok(folder.review.evidence.directFiles.includes(`${ROOT}/mixed/action-01.ts`));
@@ -72,15 +81,53 @@ test("des sous-dossiers cohérents ne sont pas remontés comme un dossier plat",
 
 test("les imports croisés renforcent la preuve de faible cohésion", () => {
   const files = [...directFiles("crossed", "action", 4), ...directFiles("crossed", "report", 4)];
-  const external = `${ROOT}/shared/shared.ts`;
-  const edges = files.map((file) => ({ from: file, to: external, fromDomain: "web/crossed", toDomain: "web/shared" }));
-  const folder = reviewedFolder(fixture([...files, external], edges), "crossed");
+  const actionService = `${ROOT}/services/action-crossed.ts`;
+  const reportService = `${ROOT}/services/report-crossed.ts`;
+  const edges = [
+    ...files.slice(0, 4).map((file) => ({ from: file, to: actionService, fromDomain: "web/crossed", toDomain: "web/services/action" })),
+    ...files.slice(4).map((file) => ({ from: file, to: reportService, fromDomain: "web/crossed", toDomain: "web/services/report" })),
+  ];
+  const folder = reviewedFolder(fixture([...files, actionService, reportService], edges), "crossed");
 
   assert.equal(folder.imports.crossFolder, 8);
   assert.equal(folder.imports.internalShare, 0);
   assert.ok(folder.signals.some((signal) => signal.id === "CROSS_FOLDER_IMPORTS"));
   assert.ok(folder.signals.some((signal) => signal.id === "LOW_INTERNAL_COHESION"));
   assert.equal(folder.review.required, true);
+});
+
+test("les imports entrants de consommateurs et de helpers partagés ne simulent pas une faible cohésion", () => {
+  const files = [...directFiles("incoming", "action", 8), ...directFiles("incoming", "report", 8)];
+  const consumer = `${ROOT}/consumers/test-consumer.ts`;
+  const edges = files.map((file) => ({ from: consumer, to: file, fromDomain: "web/consumers", toDomain: "web/incoming" }));
+  const folder = reviewedFolder(fixture([...files, consumer], edges), "incoming");
+
+  assert.equal(folder.imports.externalIncoming, 16);
+  assert.equal(folder.imports.externalOutgoing, 0);
+  assert.equal(folder.imports.internalShare, null);
+  assert.equal(folder.signals.some((entry) => entry.id === "CROSS_FOLDER_IMPORTS"), false);
+  assert.equal(folder.signals.some((entry) => entry.id === "LOW_INTERNAL_COHESION"), false);
+  assert.equal(folder.review.required, false);
+
+  const helperFiles = [...directFiles("__tests__/helpers", "fixture", 8), ...directFiles("__tests__/helpers", "mock", 8)];
+  const helperConsumer = `${ROOT}/__tests__/consumer.ts`;
+  const helperEdges = helperFiles.map((file) => ({ from: helperConsumer, to: file, fromDomain: "web/__tests__", toDomain: "web/__tests__/helpers" }));
+  const helperFolder = reviewedFolder(fixture([...helperFiles, helperConsumer], helperEdges), "__tests__/helpers");
+  assert.equal(helperFolder.imports.externalIncoming, 16);
+  assert.equal(helperFolder.review.required, false);
+  assert.equal(helperFolder.signals.some((entry) => entry.id === "LOW_INTERNAL_COHESION"), false);
+});
+
+test("les dépendances sortantes ordinaires vers une cible partagée ne suffisent pas", () => {
+  const files = [...directFiles("shared-reuse", "action", 8), ...directFiles("shared-reuse", "report", 8)];
+  const shared = `${ROOT}/shared/consumer-helper.ts`;
+  const edges = files.map((file) => ({ from: file, to: shared, fromDomain: "web/shared-reuse", toDomain: "web/shared" }));
+  const folder = reviewedFolder(fixture([...files, shared], edges), "shared-reuse");
+
+  assert.equal(folder.imports.dispersedOutgoing, false);
+  assert.equal(folder.signals.some((entry) => entry.id === "CROSS_FOLDER_IMPORTS"), false);
+  assert.equal(folder.signals.some((entry) => entry.id === "LOW_INTERNAL_COHESION"), false);
+  assert.equal(folder.review.required, false);
 });
 
 test("les relations récursives incluent les imports entre sous-dossiers", () => {
@@ -152,6 +199,27 @@ test("la mesure reste déterministe malgré l'ordre des fichiers et des arêtes"
   const first = fixture(files, edges);
   const second = fixture([...files].reverse(), [...edges].reverse());
   assert.deepEqual(second, first);
+});
+
+test("les écritures CLI successives des scopes restent séparées", () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+  const script = fileURLToPath(new URL("./quality-structure.mjs", import.meta.url));
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "quality-structure-scopes-"));
+  try {
+    const outputs = {};
+    for (const scope of ["all", "web", "mobile"]) {
+      const output = path.join(temp, `${scope}.json`);
+      childProcess.execFileSync(process.execPath, [script, "--ref=HEAD", `--scope=${scope}`, `--output=${output}`], { cwd: root, encoding: "utf8" });
+      outputs[scope] = JSON.parse(fs.readFileSync(output, "utf8"));
+    }
+    assert.equal(outputs.all.scope, "all");
+    assert.equal(outputs.web.scope, "web");
+    assert.equal(outputs.mobile.scope, "mobile");
+    assert.notEqual(qualityStructureOutputPath({ root, auditedHead: "a".repeat(40), scope: "all" }), qualityStructureOutputPath({ root, auditedHead: "a".repeat(40), scope: "web" }));
+    assert.notEqual(qualityStructureOutputPath({ root, auditedHead: "a".repeat(40), scope: "web" }), qualityStructureOutputPath({ root, auditedHead: "a".repeat(40), scope: "mobile" }));
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
 });
 
 test("un petit dossier multiresponsabilité reste hors revue automatique", () => {

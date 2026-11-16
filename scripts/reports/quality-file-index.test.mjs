@@ -169,6 +169,20 @@ function aggregateManifest() {
   };
 }
 
+function structureReport(scope = "all") {
+  return {
+    kind: "quality-structure",
+    status: "PASS",
+    auditedHead: sha,
+    runId,
+    scope,
+    folders: [],
+    foldersRequiringReview: [],
+    summary: { foldersMeasured: 0, foldersRequiringReview: 0, descriptiveSignals: 0 },
+    diagnostics: [],
+  };
+}
+
 function buildRun() {
   const auditReports = reports();
   return {
@@ -211,8 +225,7 @@ function documentationReport() {
   };
 }
 
-function writeRun(root) {
-  const run = buildRun();
+function writeRun(root, run = buildRun()) {
   const shaRoot = path.join(root, "artifacts", "quality-audits", sha);
   fs.mkdirSync(shaRoot, { recursive: true });
   for (const audit of [...Object.keys(run.reports), "all"]) {
@@ -621,6 +634,45 @@ test("projette la structure AST, sa relation aux métriques existantes et les si
   assert.deepEqual(index.triage.functions.candidates[0].functionSignals[0].signals, ["complexity", "functionLength", "cognitiveComplexity", "controlFlowStructure"]);
   assert.match(buildQualityFileIndexMarkdown(index), /FUNCTION CONTROL-FLOW STRUCTURE/);
   assert.match(buildQualityFileIndexMarkdown(index), /named:fixture#1/);
+});
+
+test("refuse une projection structurelle dont le scope diverge du run agrégé", () => {
+  const run = buildRun();
+  run.aggregateManifest.scope = "all";
+  run.aggregateReport.scope = "all";
+  run.reports.structure = structureReport("all");
+  run.manifests.structure = {
+    schemaVersion: 1,
+    audit: "structure",
+    runId,
+    auditedHead: sha,
+    originMain: sha,
+    readProvenance: "WORKTREE_LIVE",
+    status: "PASS",
+    attentionRequired: false,
+    scope: "all",
+  };
+  run.aggregateReport.audits.push({ audit: "structure", status: "PASS" });
+
+  const root = tempRoot();
+  try {
+    writeRun(root, run);
+    const offline = readOfflineQualityRun({ root, auditedSha: sha, runId });
+    assert.equal(offline.reports.structure.scope, "all");
+
+    const mismatched = JSON.parse(fs.readFileSync(path.join(root, "artifacts", "quality-audits", sha, `structure--${runId}--report.json`), "utf8"));
+    mismatched.scope = "web";
+    const manifestPath = path.join(root, "artifacts", "quality-audits", sha, `structure--${runId}--manifest.json`);
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    manifest.scope = "web";
+    fs.writeFileSync(path.join(root, "artifacts", "quality-audits", sha, `structure--${runId}--report.json`), `${JSON.stringify(mismatched)}\n`);
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`);
+    assert.throws(() => readOfflineQualityRun({ root, auditedSha: sha, runId }), /scope du run/);
+
+    assert.throws(() => buildQualityFileIndex({ run, architecture: { structure: structureReport("web") } }), /scope architecture\.structure/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("projette une comparaison historique exacte dans l'index et le triage sans changer le verdict", () => {

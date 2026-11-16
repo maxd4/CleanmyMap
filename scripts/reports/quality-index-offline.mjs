@@ -31,6 +31,7 @@ function validateManifest(manifest, { audit, auditedSha, runId }) {
     throw new Error(`Manifest ${audit} incohérent: originMain.`);
   }
   if (typeof manifest.readProvenance !== "string") throw new Error(`Manifest ${audit} sans readProvenance.`);
+  if (manifest.scope !== undefined && !["web", "mobile", "all"].includes(manifest.scope)) throw new Error(`Manifest ${audit} incohérent: scope.`);
   if (!["PASS", "PASS_WITH_GRACE", "FAIL", "SKIPPED_BY_POLICY"].includes(manifest.status)) throw new Error(`Manifest ${audit} sans status valide.`);
   return manifest;
 }
@@ -107,6 +108,19 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
   const aggregateManifest = allEntry.manifest;
   const aggregateReport = allEntry.report;
   const expectedAudits = [...QUALITY_GATE_INDEX_AUDITS, ...optionalAudits];
+  const runScope = aggregateManifest.scope ?? aggregateReport.scope ?? null;
+  if (runScope && !["web", "mobile", "all"].includes(runScope)) throw new Error("Manifeste all incohérent: scope invalide.");
+  if (aggregateReport.scope !== undefined && aggregateReport.scope !== runScope) throw new Error("Rapport all incohérent: scope.");
+  if (optionalAudits.includes("structure")) {
+    if (!runScope) throw new Error("Manifeste all incohérent: scope absent pour la projection structurelle.");
+    if (manifests.structure.scope !== runScope) throw new Error("Manifeste structure incohérent: scope du run.");
+    if (reports.structure.scope !== runScope) throw new Error("Rapport structure incohérent: scope du run.");
+  }
+  if (runScope) {
+    for (const audit of expectedAudits) {
+      if (manifests[audit].scope !== undefined && manifests[audit].scope !== runScope) throw new Error(`Manifeste ${audit} incohérent: scope du run.`);
+    }
+  }
   if (!Array.isArray(aggregateReport?.audits) || aggregateReport.audits.length !== expectedAudits.length) throw new Error("Rapport all incomplet: les cinq audits de gate et les auxiliaires présents sont attendus.");
   const aggregateAudits = new Map(aggregateReport.audits.map((entry) => [entry.audit, entry]));
   if (aggregateAudits.size !== expectedAudits.length || expectedAudits.some((audit) => !aggregateAudits.has(audit))) throw new Error("Rapport all incohérent: audit manquant ou dupliqué.");

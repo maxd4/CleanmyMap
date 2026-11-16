@@ -91,8 +91,12 @@ function relationMetrics(folder, imports, architecture) {
   const internalDirect = edges.filter((edge) => directFiles.has(edge.from) && directFiles.has(edge.to));
   const internalRecursive = edges.filter((edge) => recursiveFiles.has(edge.from) && recursiveFiles.has(edge.to));
   const crossFolder = edges.filter((edge) => recursiveFiles.has(edge.from) !== recursiveFiles.has(edge.to));
+  const externalOutgoingEdges = edges.filter((edge) => recursiveFiles.has(edge.from) && !recursiveFiles.has(edge.to));
+  const externalIncomingEdges = edges.filter((edge) => !recursiveFiles.has(edge.from) && recursiveFiles.has(edge.to));
   const outgoing = edges.filter((edge) => directFiles.has(edge.from) && !directFiles.has(edge.to));
   const incoming = edges.filter((edge) => directFiles.has(edge.to) && !directFiles.has(edge.from));
+  const outgoingSourceGroups = stableFiles(externalOutgoingEdges.map((edge) => functionalPrefix(edge.from)));
+  const outgoingTargetDomains = stableFiles(externalOutgoingEdges.map((edge) => normalizePath(edge.toDomain ?? path.posix.dirname(edge.to))));
   const architectureFiles = new Map((architecture?.files ?? []).map((entry) => [normalizePath(entry.path), entry]));
   const coupling = [...directFiles].reduce((summary, file) => {
     const metrics = architectureFiles.get(file)?.metrics;
@@ -103,6 +107,7 @@ function relationMetrics(folder, imports, architecture) {
     return summary;
   }, { fanIn: 0, fanOut: 0, measuredFiles: 0 });
   const relationTotal = internalRecursive.length + crossFolder.length;
+  const cohesionRelationTotal = internalRecursive.length + externalOutgoingEdges.length;
   return {
     measurementStatus: graphMeasured ? "MEASURED" : "NOT_MEASURED",
     total: relationTotal,
@@ -111,7 +116,13 @@ function relationMetrics(folder, imports, architecture) {
     crossFolder: crossFolder.length,
     outgoing: outgoing.length,
     incoming: incoming.length,
-    internalShare: ratio(internalRecursive.length, relationTotal),
+    externalOutgoing: externalOutgoingEdges.length,
+    externalIncoming: externalIncomingEdges.length,
+    outgoingSourceGroups,
+    outgoingTargetDomains,
+    dispersedOutgoing: outgoingSourceGroups.length >= 2 && outgoingTargetDomains.length >= 2,
+    cohesionRelationTotal,
+    internalShare: cohesionRelationTotal === 0 ? null : ratio(internalRecursive.length, cohesionRelationTotal),
     coupling,
   };
 }
@@ -158,32 +169,47 @@ function analyzeFolder(folder, imports, architecture) {
       { groupCount: functionalGroups.length, groups: functionalGroups },
     ));
   }
-  if (direct >= QUALITY_STRUCTURE_THRESHOLDS.minimumFunctionalFiles && importsMeasured.crossFolder >= QUALITY_STRUCTURE_THRESHOLDS.minimumCrossFolderRelations) {
+  if (direct >= QUALITY_STRUCTURE_THRESHOLDS.minimumFunctionalFiles
+    && importsMeasured.dispersedOutgoing
+    && importsMeasured.externalOutgoing >= QUALITY_STRUCTURE_THRESHOLDS.minimumCrossFolderRelations) {
     signals.push(signal(
       "CROSS_FOLDER_IMPORTS",
       "coupling",
-      "plusieurs relations d'import sortent de la zone récursive du dossier",
-      { crossFolderRelations: importsMeasured.crossFolder, threshold: QUALITY_STRUCTURE_THRESHOLDS.minimumCrossFolderRelations, outgoing: importsMeasured.outgoing, incoming: importsMeasured.incoming },
+      "des groupes fonctionnels distincts dépendent de cibles externes distinctes",
+      {
+        externalOutgoing: importsMeasured.externalOutgoing,
+        externalIncoming: importsMeasured.externalIncoming,
+        outgoingSourceGroups: importsMeasured.outgoingSourceGroups,
+        outgoingTargetDomains: importsMeasured.outgoingTargetDomains,
+        threshold: QUALITY_STRUCTURE_THRESHOLDS.minimumCrossFolderRelations,
+      },
     ));
   }
   if (direct >= QUALITY_STRUCTURE_THRESHOLDS.minimumFunctionalFiles
     && functionalGroups.length > 1
-    && importsMeasured.total >= 4
+    && importsMeasured.dispersedOutgoing
+    && importsMeasured.cohesionRelationTotal >= 4
+    && importsMeasured.internalShare !== null
     && importsMeasured.internalShare <= 0.25) {
     signals.push(signal(
       "LOW_INTERNAL_COHESION",
       "cohesion",
-      "les groupes fonctionnels sont peu reliés entre eux dans le graphe local observé",
-      { internalRecursiveRelations: importsMeasured.internalRecursive, totalRelations: importsMeasured.total, internalShare: importsMeasured.internalShare, maximumInternalShare: 0.25 },
+      "les groupes fonctionnels sont peu reliés entre eux au regard de leurs dépendances sortantes",
+      {
+        internalRecursiveRelations: importsMeasured.internalRecursive,
+        cohesionRelationTotal: importsMeasured.cohesionRelationTotal,
+        externalIncomingExcluded: importsMeasured.externalIncoming,
+        internalShare: importsMeasured.internalShare,
+        maximumInternalShare: 0.25,
+      },
     ));
   }
 
   const families = [...new Set(signals.map((entry) => entry.family))].sort();
-  const graphBackedFunctionalDiversity = functionalGroups.length > 1
-    && importsMeasured.measurementStatus === "MEASURED"
-    && (importsMeasured.crossFolder >= QUALITY_STRUCTURE_THRESHOLDS.minimumCrossFolderRelations
-      || (importsMeasured.total >= 4 && importsMeasured.internalShare <= 0.25));
-  const reviewFamilies = families.filter((family) => family !== "functional-diversity" || graphBackedFunctionalDiversity);
+  const reviewFamilies = [
+    ...(families.includes("shape") ? ["shape"] : []),
+    ...(families.includes("coupling") || families.includes("cohesion") ? ["graph"] : []),
+  ];
   const reviewRequired = reviewFamilies.length >= QUALITY_STRUCTURE_THRESHOLDS.minimumConcordantFamilies;
   return {
     path: folder.path,
@@ -225,7 +251,7 @@ export function analyzeQualityStructure({ folderMeasures, imports, architecture 
       foldersWithSignals: folders.filter((folder) => folder.signals.length > 0).length,
       foldersRequiringReview: reviewed.length,
       descriptiveSignals: folders.reduce((sum, folder) => sum + folder.signals.length, 0),
-      concordantFamilyCount: reviewed.reduce((sum, folder) => sum + folder.signalFamilies.length, 0),
+      concordantFamilyCount: reviewed.reduce((sum, folder) => sum + folder.reviewFamilies.length, 0),
       signalCounts,
       importEdgesMeasured: imports?.edges?.length ?? 0,
       unresolvedLocalImports: imports?.unresolvedLocalImports ?? 0,
@@ -252,6 +278,13 @@ export function buildQualityStructureFromRepository({ root, auditedSha = "HEAD",
   };
 }
 
+export function qualityStructureOutputPath({ root, auditedHead, scope = "all" } = {}) {
+  const activeScope = scope ?? "all";
+  structureScanRoots(activeScope);
+  const scopeSuffix = activeScope === "all" ? "structure.json" : `${activeScope}/structure.json`;
+  return path.resolve(root, "artifacts", "quality-structure", auditedHead, scopeSuffix);
+}
+
 function option(args, name) {
   const prefix = `--${name}=`;
   return args.find((value) => value.startsWith(prefix))?.slice(prefix.length) ?? null;
@@ -262,7 +295,7 @@ export function main(args = process.argv.slice(2)) {
     const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
     const report = buildQualityStructureFromRepository({ root, auditedSha: option(args, "ref") ?? "HEAD", scope: option(args, "scope") ?? "all" });
     const dryRun = args.includes("--dry-run");
-    const output = path.resolve(root, option(args, "output") ?? `artifacts/quality-structure/${report.auditedHead}/structure.json`);
+    const output = path.resolve(root, option(args, "output") ?? qualityStructureOutputPath({ root, auditedHead: report.auditedHead, scope: report.scope }));
     if (!dryRun) {
       fs.mkdirSync(path.dirname(output), { recursive: true });
       fs.writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`, "utf8");

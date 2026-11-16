@@ -43,12 +43,18 @@ fichiers directs restent exposées séparément. Les signaux initiaux sont :
 
 La concentration et le volume appartiennent à une même famille de forme. Un
 dossier n'est retenu dans `foldersRequiringReview` que si au moins deux familles
-indépendantes concordent (`shape`, couplage ou cohésion). La diversité lexicale
-ne devient une famille concordante que si le graphe mesuré apporte aussi des
-relations croisées ou une faible part interne ; des noms de fichiers différents
-ne suffisent donc jamais à eux seuls. Le rapport expose les chemins directs et
-les métriques qui fondent chaque signal ; `REVIEW_STRUCTURE` signifie « réunir
-une preuve humaine », pas « réorganiser ».
+indépendantes concordent (`shape` et une preuve de graphe). La diversité
+lexicale reste un indice descriptif : elle ne devient une preuve de
+responsabilités dispersées que si des dépendances sortantes relient plusieurs
+groupes à plusieurs cibles distinctes, ou si la faible cohésion est mesurée sur
+les relations internes et sortantes. Les imports entrants de consommateurs,
+y compris les helpers de tests réutilisés, sont mesurés séparément et ne
+abaissent pas artificiellement la cohésion ; une cible externe partagée ne
+constitue pas à elle seule une dispersion. Les familles `coupling` et
+`cohesion` issues du même graphe sont ramenées à une seule famille de décision.
+Le rapport expose les chemins directs et les métriques qui fondent chaque
+signal ; `REVIEW_STRUCTURE` signifie « réunir une preuve humaine », pas
+« réorganiser ».
 
 Les conventions de routage Next.js et Expo, les assets, migrations, vendor,
 third-party et fichiers générés sont hors décision structurelle. Les petits
@@ -63,7 +69,8 @@ permet pas de conclure à une faible cohésion.
 
 Chaque rapport produit par `audit:quality` porte `auditedHead`, `runId` et le
 scope. La projection offline reprend le rapport `structure` validé du même
-couple SHA/runId, sans rescanner ni recalculer ; le graphe architectural reste
+couple SHA/runId et du même scope que le run agrégé, sans rescanner ni
+recalculer ; un scope divergent est refusé. Le graphe architectural reste
 `NOT_MEASURED` lorsqu'il n'est pas fourni séparément.
 
 ## Structure anti-duplication des tests
