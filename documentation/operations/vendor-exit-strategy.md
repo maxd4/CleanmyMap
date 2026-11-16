@@ -74,9 +74,19 @@ Le périmètre exact des exports, les droits d'accès, les possibilités de réc
 
 L'arbre canonique des migrations est `apps/web/supabase/migrations/`. Les deux workflows `.github/workflows/supabase-backup.yml` et `.github/workflows/supabase-backup-restore-proof.yml` consomment un exécuteur de restauration commun : `scripts/ci/run-supabase-restore-check.sh`.
 
-Le workflow de sauvegarde est **manuel**, exporte actuellement le schéma `public` uniquement avec la CLI Supabase, les rôles et les objets Storage, puis prépare une archive GPG après vérification du replay PostgreSQL. Un échec de restauration empêche actuellement la publication de l'archive. La rétention de l'artefact GitHub est de **trois jours**.
+Le workflow de sauvegarde est manuel ou mensuel, sous activation explicite du
+dépôt, et exporte `public,private`, les rôles et les objets Storage avant de
+préparer une archive GPG. L'archive peut être conservée même si le restore-check
+échoue ; les statuts `BACKUP_CREATED`, `RESTORE_VERIFIED` et `RESTORE_FAILED`
+restent distincts. La rétention de l'artefact GitHub est de **trois jours** et
+la conservation R2 est décrite exclusivement dans
+[la procédure canonique Supabase](./supabase-backup-restore.md). Aucun transfert
+R2 réel ni aucune activation effective du cron n'est déclaré vérifié ici.
 
-Ce périmètre ne constitue **pas** une reprise après sinistre démontrée. Le schéma applicatif `private` est créé par les migrations et contient des fonctions utilisées par des policies de `public` : il n'est pas couvert par les dumps `--schema public`. Les schémas et services gérés `auth`, `storage` et apparentés ne sont pas reconstruits par ce seul export. Leurs données ou paramètres spécifiques ne doivent pas être déclarés sauvegardés sans preuve.
+Ce périmètre ne constitue **pas** une reprise après sinistre complète démontrée.
+Les schémas et services gérés `auth`, `storage` et apparentés ne sont pas
+reconstruits par ce seul export. Leurs données ou paramètres spécifiques ne
+doivent pas être déclarés sauvegardés sans preuve.
 
 Consulter exclusivement [la procédure canonique Supabase](./supabase-backup-restore.md) pour l'état des étapes, secrets protégés, limites et vérifications de restauration.
 
@@ -117,11 +127,14 @@ La sauvegarde doit pouvoir être produite **même si le banc d'essai de restaura
 4. **Restaurer et tester** une archive conservée dans une cible isolée, sans bloquer rétroactivement sa conservation si le test échoue.
 5. **Qualifier** séparément l'intégrité du backup, la restaurabilité de la base et la reprise applicative.
 
-Un export incomplet, un manifeste incorrect, un chiffrement défaillant ou un transfert non confirmé restent bloquants pour `BACKUP_CREATED`. En revanche, une archive complète et chiffrée peut être conservée sous `RESTORE_UNVERIFIED` si la validation PostgreSQL échoue. Aucun statut `RESTORE_VERIFIED` ne peut être attribué sur tests statiques ou fixtures uniquement.
+Un export incomplet, un manifeste incorrect, un chiffrement défaillant ou un transfert non confirmé restent bloquants pour `BACKUP_CREATED`. En revanche, une archive complète et chiffrée peut être conservée sous `RESTORE_FAILED` si le rejeu PostgreSQL échoue, ou `RESTORE_UNVERIFIED` si aucun rejeu n'a pu commencer. Aucun statut `RESTORE_VERIFIED` ne peut être attribué sur tests statiques ou fixtures uniquement.
 
 ### 4.2 Stockage, rétention et sécurité
 
-Politique initiale proposée, à ajuster après mesure de volumétrie, coût et obligations RGPD : **quotidien**, au moins **30 versions journalières**, **12 versions hebdomadaires**, et une **copie indépendante** sous une autre frontière d'accès. Protéger les versions contre écrasement et suppression pendant la fenêtre retenue. Documenter les expirations, demandes d'effacement, clés de chiffrement, restaurations et suppressions autorisées.
+La politique R2 et ses réglages de rétention sont documentés dans la procédure
+Supabase propriétaire. La stratégie transversale conserve seulement le besoin
+d'une copie indépendante, chiffrée et protégée contre l'écrasement ou la
+suppression ; elle ne duplique pas les durées, permissions ou quotas R2.
 
 La clé privée GPG et sa récupération de secours restent hors GitHub et hors du fournisseur de stockage des archives. Une copie locale seule n'est pas suffisante si le poste est perdu. Les informations de récupération du coffre de secrets et du domaine doivent être conservées dans une procédure protégée hors dépôt, sans jamais placer de valeurs sensibles dans ce document.
 
@@ -215,8 +228,8 @@ Les étapes ci-dessous sont des décisions `PLAN`, non des tâches lancées ni d
 
 | Priorité | Chantier borné | Critère de clôture |
 | --- | --- | --- |
-| **P0** | Rendre l'export Supabase complet pour `public` et `private`, séparer sauvegarde chiffrée et restore-check, conserver au moins une archive récupérable indépendamment du résultat de la preuve SQL | Archive réelle chiffrée avec manifeste conforme, hors runner ; `RESTORE_UNVERIFIED` explicite si replay non validé |
-| **P1** | Stockage externe versionné, conservation et récupération de la clé GPG hors dépendance GitHub/Supabase | Une archive historique récupérée et déchiffrée depuis la copie indépendante ; droits de suppression testés |
+| **P0** | Maintenir l'export Supabase complet pour `public` et `private`, séparer sauvegarde chiffrée et restore-check, conserver au moins une archive récupérable indépendamment du résultat de la preuve SQL | Archive réelle chiffrée avec manifeste conforme, hors runner ; `RESTORE_FAILED` ou `RESTORE_UNVERIFIED` explicite si replay non validé |
+| **P1** | Vérifier la configuration R2 privée, la conservation hors CI et la récupération de la clé GPG hors dépendance GitHub/Supabase | Une archive historique récupérée et déchiffrée depuis la copie indépendante ; droits de suppression et rétention vérifiés |
 | **P1** | Export et procédure de migration d'identités Clerk, inventaire des secrets Vercel et copie indépendante Git | Exports sécurisés, contrôle de couverture et reconstruction de test sans accès aux comptes Production |
 | **P2** | Restauration d'une archive réelle sur nouveau projet Supabase, puis tests RLS/Storage et parcours critiques | `RESTORE_VERIFIED` et `SERVICE_RECOVERY_VERIFIED` sur une cible isolée |
 | **P2** | Redéploiement Web hors Vercel et remplacement contrôlé de Resend | Services testés avec clés neuves et vérifications de réception, sécurité et cron |

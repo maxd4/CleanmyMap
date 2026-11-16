@@ -8,6 +8,22 @@ mensuel `.github/workflows/supabase-backup.yml` et la preuve CI
 migration, ni `db push`, ni modification de Production. Les workflows utilisent
 un runner GitHub hébergé ; Docker n'est jamais lancé sur le poste local.
 
+### Statuts de preuve
+
+- `CURRENT` décrit ce qui est versionné dans le workflow et les scripts présents
+  sur `main`.
+- `PLAN` décrit une configuration ou une procédure recommandée qui n'est pas
+  encore démontrée dans le dépôt ou par un exercice réel.
+- `NOT_VERIFIED` signifie qu'aucune preuve d'état distant ou de transfert réel
+  n'est disponible ; ce statut ne doit pas être remplacé par une inférence à
+  partir du code.
+
+Le premier backup Production validé par le restore-check PostgreSQL est conservé
+comme preuve historique de la restauration isolée. Il ne constitue pas une
+preuve de transfert R2, de récupération depuis R2, de déchiffrement Kleopatra,
+ni d'activation effective du cron mensuel : ces éléments restent
+`NOT_VERIFIED` tant qu'ils n'ont pas été exécutés et constatés séparément.
+
 ## Couverture réelle
 
 Le workflow produit, dans un répertoire temporaire puis dans une archive GPG :
@@ -65,21 +81,84 @@ divergence avant l'export ; elle ne possède ni clé privée ni phrase secrète.
 
 Pour la conservation R2, configurer dans le même environnement :
 
-- variable `SUPABASE_BACKUP_R2_ENDPOINT`, sous la forme `https://<account-id>.r2.cloudflarestorage.com` ;
+- variable `SUPABASE_BACKUP_R2_ENDPOINT`, sous la forme
+  `https://<account-id>.eu.r2.cloudflarestorage.com` pour un bucket de
+  juridiction EU ;
 - variable `SUPABASE_BACKUP_R2_BUCKET` ;
 - variable facultative `SUPABASE_BACKUP_R2_OBJECT_PREFIX` (défaut `supabase-backups`) ;
 - secret `SUPABASE_BACKUP_R2_ACCESS_KEY_ID` limité à ce bucket ;
-- secret `SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY` limité à `HeadObject`, `PutObject` et `GetObject` sur ce préfixe.
+- secret `SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY` limité à `HeadObject`,
+  `PutObject` et `GetObject` sur ce bucket et, lorsque la politique le permet,
+  sur le préfixe de sauvegarde.
 
-Ces identifiants ne doivent pas avoir `DeleteObject`, `ListBucket`, `PutBucketLifecycle` ou une permission de modification des règles de rétention. La publication R2 réelle reste `NOT_VERIFIED` tant qu'un transfert et une récupération réels n'ont pas été testés avec cette configuration.
+Le jeton R2 à créer est **Object Read & Write**, avec `Apply to specific
+buckets only` sur le seul bucket de sauvegarde. Cloudflare génère alors les deux
+identifiants S3 nécessaires : `Access Key ID` et `Secret Access Key`; la seconde
+valeur n'est plus consultable après sa création et doit être copiée une seule
+fois dans le secret GitHub. La CI n'a pas besoin de `ListBucket`, de
+`PutBucketLifecycle`, de `PutBucketObjectLockConfiguration` ou de droits de
+gestion du bucket. Si `DeleteObject` est accordé par la politique R2 malgré le
+besoin d'écriture, il existe un risque de suppression par le principal CI en
+dehors de la protection de rétention ; il faut donc le refuser et vérifier la
+permission effective du jeton. Bucket Lock ne remplace pas cette séparation de
+droits et ne protège que les objets et durées effectivement configurés.
+
+#### Configuration R2 recommandée et état de vérification
+
+`PLAN` — créer un bucket privé **Standard**, de juridiction **European Union
+(EU)**, puis utiliser l'endpoint S3 juridictionnel
+`https://<ACCOUNT_ID>.eu.r2.cloudflarestorage.com`. Configurer hors GitHub Actions
+un Bucket Lock de 180 jours et une règle Lifecycle supprimant les objets après
+210 jours ; cette dernière valeur ne doit pas annuler ou contourner le verrou
+pendant les 180 premiers jours. Configurer également l'abandon des uploads
+multipart incomplets après 7 jours (valeur par défaut documentée par Cloudflare,
+à confirmer si une règle explicite est ajoutée). Ces réglages sont des
+recommandations d'exploitation, pas des paramètres que le workflow peut créer
+ou modifier.
+
+`NOT_VERIFIED` — le dépôt ne contient aucune preuve que le bucket, sa
+juridiction EU, sa classe Standard, son Bucket Lock 180 jours, sa Lifecycle
+210 jours, sa règle multipart 7 jours, le périmètre effectif du jeton ou ses
+permissions de suppression ont été configurés et relus dans Cloudflare.
+
+Le dépôt ne garantit pas un plafond de dépense. La tarification R2 comprend un
+quota gratuit mensuel annoncé par Cloudflare pour Standard (10 GB-month de
+stockage, 1 million d'opérations Class A et 10 millions d'opérations Class B,
+avec egress gratuit), puis une facturation à l'usage au-delà et un arrondi par
+unité de facturation. Les montants et quotas sont susceptibles d'évoluer ; ils
+doivent être relus chez Cloudflare avant activation. Une alerte budgétaire
+Cloudflare non bloquante est recommandée, mais elle ne constitue ni un plafond
+garanti ni un arrêt automatique de la CI.
+
+Les variables et secrets sont à créer dans **Settings → Environments →
+`supabase-production`** du dépôt GitHub `maxd4/CleanmyMap` :
+
+| Nom | Type | Usage |
+| --- | --- | --- |
+| `SUPABASE_BACKUP_R2_ENDPOINT` | Variable d'environnement | Endpoint S3 EU du compte R2 |
+| `SUPABASE_BACKUP_R2_BUCKET` | Variable d'environnement | Nom exact du bucket privé |
+| `SUPABASE_BACKUP_R2_OBJECT_PREFIX` | Variable d'environnement facultative | Préfixe objet, sinon `supabase-backups` |
+| `SUPABASE_BACKUP_R2_ACCESS_KEY_ID` | Secret | Access Key ID S3 du jeton limité au bucket |
+| `SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY` | Secret | Secret Access Key S3, jamais affiché |
+| `SUPABASE_BACKUP_MONTHLY_ENABLED` | Variable de dépôt | Doit être exactement `true` pour autoriser le cron |
+
+Les autres secrets du même environnement restent requis :
+`SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`,
+`SUPABASE_BACKUP_STORAGE_READ_KEY` et `SUPABASE_BACKUP_GPG_PUBLIC_KEY` ; la
+variable `SUPABASE_BACKUP_GPG_EXPECTED_FINGERPRINT` porte l'empreinte attendue.
+L'activation mensuelle est une action explicite au niveau du dépôt et n'est pas
+déclenchée par la seule présence d'un secret R2.
 
 Depuis l'onglet Actions, choisir **Supabase encrypted backup**, sélectionner la
 branche `main` et saisir exactement `BACKUP_PRODUCTION_NOW` pour un run manuel.
 Toute autre branche ou valeur arrête le job avant l'export. Le déclencheur mensuel
 du premier jour à 02:17 UTC reste inactif tant que
 `SUPABASE_BACKUP_MONTHLY_ENABLED` n'est pas exactement `true`. Le job est
-séquentiel ; l'artefact GitHub est conservé trois jours et l'archive pérenne est
-publiée dans R2.
+séquentiel ; l'artefact GitHub est conservé trois jours et l'archive est
+destinée à la conservation pérenne dans R2. Le planning est donc le premier
+jour de chaque mois à `02:17 UTC`, mais son exécution réelle reste
+`NOT_VERIFIED` tant que la variable de dépôt n'a pas été activée et qu'aucun run
+planifié n'a été observé.
 
 Le workflow vérifie que le dump de rôles, de schéma, de données et l'inventaire
 Storage sont non vides. Il construit ensuite un manifeste de SHA-256, vérifie
@@ -194,6 +273,31 @@ Recréer ensuite les buckets et téléverser les octets Storage avec l'API offic
 en contrôlant chemin, taille, MIME et SHA-256. Reconstituer Auth par un mécanisme
 Supabase officiellement supporté et autorisé ; il n'est pas fourni par ce dump.
 Valider séparément les clients Web/mobile, RPC, RLS et flux critiques.
+
+### Conservation, récupération et rotation des clés R2
+
+L'archive chiffrée et son fichier `.sha256` sont envoyés sous une clé unique
+construite à partir du préfixe, du SHA Git, du `run_id` et du `run_attempt`.
+L'exécuteur refuse une collision avec `If-None-Match: *`, téléverse l'archive
+et son `.sha256`, récupère les deux objets via l'API S3 et compare exactement
+les SHA-256. Une collision, un échec de transfert ou une divergence de
+récupération empêche `BACKUP_CREATED`. Le SQL en clair et les données
+décompressées restent dans l'espace temporaire du runner et sont supprimés.
+
+La récupération opérationnelle reprend l'archive et le `.sha256` depuis R2,
+refait la vérification SHA-256, puis déchiffre localement avec Kleopatra ou GPG.
+Après déchiffrement, la restauration s'effectue uniquement sur une cible isolée
+avec les contrôles PostgreSQL décrits plus haut. R2 ne fournit pas la clé privée
+GPG : elle reste hors GitHub, avec une copie de secours protégée et testée
+séparément.
+
+Pour une rotation, générer une nouvelle paire R2 et une nouvelle clé publique
+GPG hors CI, vérifier leurs empreintes et permissions, remplacer les valeurs
+dans l'environnement protégé, effectuer un transfert/récupération de preuve,
+puis retirer l'ancienne paire seulement après avoir confirmé qu'aucune archive
+encore nécessaire n'en dépend. Une clé R2 révoquée ne déchiffre pas les
+archives ; la rotation GPG doit donc préserver la clé privée de chaque archive
+conservée ou organiser une migration chiffrée contrôlée.
 
 ### Vérification Windows avec Kleopatra
 
@@ -345,6 +449,17 @@ Ne jamais écraser directement Production avec une archive potentiellement compr
 
 **Limite :** la restauration des données PostgreSQL ne remplace pas automatiquement les services managés Supabase. La sortie complète du fournisseur demande une validation distincte.
 
+#### C. GitHub Actions ou dépôt inaccessible
+
+Récupérer le dépôt depuis une copie Git indépendante et l'archive depuis R2
+avec un accès R2 de secours contrôlé, sans réutiliser un jeton GitHub compromis.
+Vérifier le `.sha256`, déchiffrer avec la clé privée hors CI et restaurer sur une
+cible isolée. Recréer ensuite une CI minimale depuis le code vérifié, avec de
+nouveaux secrets et un nouveau jeton R2 limité au bucket. Si R2 et GitHub sont
+indisponibles simultanément, utiliser la copie indépendante de l'archive et de
+la clé GPG ; si aucune copie n'est récupérable, classer la reprise comme
+bloquée, sans inventer une restauration à partir d'une archive locale absente.
+
 ### 7. États et preuves
 
 | État                         | Critère d'attribution                                                              |
@@ -362,7 +477,7 @@ Un test réussi sur une fixture synthétique ne vaut pas restauration d'une arch
 
 ### 8. Objectifs de continuité
 
-La fréquence mensuelle vise une archive pérenne par mois en fonctionnement nominal, mais cette garantie n'existe que si l'activation du cron, le transfert R2 et la récupération avec SHA-256 exact réussissent.
+La fréquence mensuelle vise une archive pérenne par mois en fonctionnement nominal, mais cette garantie n'existe que si l'activation du cron, le transfert R2 et la récupération avec SHA-256 exact réussissent. L'activation du cron et le transfert R2 réel restent `NOT_VERIFIED`.
 
 Le **RPO** (perte maximale de données admissible) et le **RTO** (délai maximal de reprise admissible) doivent être fixés à partir du besoin métier et mesurés au moyen d'exercices. Aucun RPO ou RTO garanti n'est actuellement démontré.
 
@@ -386,6 +501,10 @@ Les procédures existantes `CURRENT` restent applicables tant que ces objectifs 
 - [Supabase : Backup and Restore using CLI](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore)
 - [Supabase : Restore a Platform Project to Self-Hosted](https://supabase.com/docs/guides/self-hosting/restore-from-platform)
 - [Supabase : Download Storage Objects](https://supabase.com/docs/guides/storage/management/download-objects)
+- [Cloudflare R2 : S3-compatible API and credentials](https://developers.cloudflare.com/r2/get-started/s3/)
+- [Cloudflare R2 : authentication, bucket scope and EU endpoints](https://developers.cloudflare.com/r2/api/tokens/)
+- [Cloudflare R2 : pricing and free tier](https://developers.cloudflare.com/r2/pricing/)
+- [Cloudflare R2 : object lifecycles and incomplete multipart uploads](https://developers.cloudflare.com/r2/buckets/object-lifecycles/)
 
 ## Rotation et incident
 
