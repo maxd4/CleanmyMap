@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildFolderMeasures } from "./architecture-audit.mjs";
-import { analyzeQualityStructure, QUALITY_STRUCTURE_THRESHOLDS } from "./quality-structure.mjs";
+import { analyzeQualityStructure, QUALITY_STRUCTURE_THRESHOLDS, structureScanRoots } from "./quality-structure.mjs";
 
 const ROOT = "apps/web/src";
 
@@ -29,23 +29,28 @@ function reviewedFolder(report, folder) {
 }
 
 test("un dossier plat cohérent conserve un signal descriptif sans recommandation", () => {
-  const files = directFiles("coherent", "action", 16);
+  const files = [...directFiles("coherent", "action", 8), ...directFiles("coherent", "report", 8)];
   const folder = reviewedFolder(fixture(files), "coherent");
 
   assert.equal(folder.files.direct, 16);
-  assert.equal(folder.signals.length, 2);
+  assert.equal(folder.signals.length, 3);
   assert.equal(folder.signals[0].id, "DIRECT_FILES_SURVEILLANCE");
+  assert.deepEqual(folder.signalFamilies, ["functional-diversity", "shape"]);
+  assert.deepEqual(folder.reviewFamilies, ["shape"]);
   assert.equal(folder.review.required, false);
   assert.equal(folder.review.recommendation, "DESCRIPTIVE_ONLY");
 });
 
 test("un dossier plat multiresponsabilité exige des indices concordants", () => {
   const files = [...directFiles("mixed", "action", 8), ...directFiles("mixed", "report", 8)];
-  const folder = reviewedFolder(fixture(files), "mixed");
+  const external = `${ROOT}/shared/shared.ts`;
+  const edges = files.map((file) => ({ from: file, to: external, fromDomain: "web/mixed", toDomain: "web/shared" }));
+  const folder = reviewedFolder(fixture([...files, external], edges), "mixed");
 
   assert.equal(folder.files.direct, 16);
   assert.equal(folder.functionalGroups.length, 2);
-  assert.deepEqual(folder.signalFamilies, ["functional-diversity", "shape"]);
+  assert.ok(folder.signalFamilies.includes("functional-diversity"));
+  assert.ok(folder.reviewFamilies.includes("functional-diversity"));
   assert.equal(folder.review.required, true);
   assert.match(folder.review.reason, /plusieurs familles/);
   assert.ok(folder.review.evidence.directFiles.includes(`${ROOT}/mixed/action-01.ts`));
@@ -76,6 +81,56 @@ test("les imports croisés renforcent la preuve de faible cohésion", () => {
   assert.ok(folder.signals.some((signal) => signal.id === "CROSS_FOLDER_IMPORTS"));
   assert.ok(folder.signals.some((signal) => signal.id === "LOW_INTERNAL_COHESION"));
   assert.equal(folder.review.required, true);
+});
+
+test("les relations récursives incluent les imports entre sous-dossiers", () => {
+  const files = [
+    ...directFiles("nested/actions", "action", 4),
+    ...directFiles("nested/reports", "report", 4),
+  ];
+  const external = `${ROOT}/shared/shared.ts`;
+  const edges = [
+    { from: files[0], to: files[1], fromDomain: "web/nested", toDomain: "web/nested" },
+    { from: files[4], to: files[5], fromDomain: "web/nested", toDomain: "web/nested" },
+    { from: files[0], to: external, fromDomain: "web/nested", toDomain: "web/shared" },
+  ];
+  const folder = reviewedFolder(fixture([...files, external], edges), "nested");
+
+  assert.equal(folder.files.direct, 0);
+  assert.equal(folder.imports.internalDirect, 0);
+  assert.equal(folder.imports.internalRecursive, 2);
+  assert.equal(folder.imports.crossFolder, 1);
+  assert.equal(folder.imports.total, 3);
+  assert.equal(folder.imports.internalShare, 0.666667);
+});
+
+test("un graphe absent ou partiel ne permet aucune conclusion de cohésion", () => {
+  const files = [...directFiles("partial", "action", 8), ...directFiles("partial", "report", 8)];
+  const sourceRows = rows(files);
+  const folderMeasures = buildFolderMeasures(sourceRows, { scanRoots: [ROOT] });
+  const report = analyzeQualityStructure({
+    folderMeasures,
+    imports: { available: false, edges: [], unresolvedLocalImports: 1, excludedLocalImports: 0 },
+  });
+  const folder = reviewedFolder(report, "partial");
+
+  assert.equal(folder.imports.measurementStatus, "NOT_MEASURED");
+  assert.equal(folder.imports.total, 0);
+  assert.equal(folder.signals.some((entry) => entry.id === "LOW_INTERNAL_COHESION"), false);
+  assert.equal(folder.review.required, false);
+});
+
+test("les scopes web et mobile ne contaminent pas leurs inventaires", () => {
+  const web = "apps/web/src/components/web.ts";
+  const mobile = "apps/mobile/features/mobile.ts";
+  const sourceRows = rows([web, mobile]);
+  const webMeasures = buildFolderMeasures(sourceRows, { scanRoots: structureScanRoots("web") });
+  const mobileMeasures = buildFolderMeasures(sourceRows, { scanRoots: structureScanRoots("mobile") });
+
+  assert.deepEqual(webMeasures.roots, ["apps/web/src"]);
+  assert.deepEqual(mobileMeasures.roots, ["apps/mobile"]);
+  assert.deepEqual([...new Set(webMeasures.folders.flatMap((folder) => folder.paths.recursive))], [web]);
+  assert.deepEqual([...new Set(mobileMeasures.folders.flatMap((folder) => folder.paths.recursive))], [mobile]);
 });
 
 test("les exceptions de structure et les fichiers générés ne produisent pas de faux positif", () => {

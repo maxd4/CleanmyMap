@@ -17,7 +17,7 @@ import {
   runQualityAudit,
   serialize,
 } from "./run-quality-audit.mjs";
-import { readOfflineQualityRun } from "../reports/quality-file-index.mjs";
+import { buildQualityFileIndex, readOfflineQualityRun } from "../reports/quality-file-index.mjs";
 import { acquireRetentionLock, beginActiveAudit, createQualityProjectionPaths, endActiveAudit, listFlatQualityProjectionArtifacts, releaseRetentionLock, retainQualityAuditArtifacts } from "./quality-audit-storage.mjs";
 
 const sha = "a".repeat(40);
@@ -385,6 +385,13 @@ test("all intègre la dimension documentaire dans l'agrégat, l'index et le ZIP"
     assert.equal(aggregate.documentation.kind, "documentation-maintainability");
     assert.equal(index.audits.documentation.state, "PRESENT");
     assert.equal(index.globalCounts.documentationFiles, 1);
+    assert.equal(index.architecture.structure.auditedHead, sha);
+    assert.equal(index.architecture.structure.runId, "run-documentation");
+    assert.equal(index.architecture.structure.scope, "all");
+    const offlineRun = readOfflineQualityRun({ root, auditedSha: sha, runId: "run-documentation" });
+    const offlineIndex = buildQualityFileIndex({ run: offlineRun, mode: "OFFLINE" });
+    assert.deepEqual(offlineIndex.architecture.structure, index.architecture.structure);
+    assert.equal(offlineIndex.architecture.state, "NOT_MEASURED");
     assert.equal(fs.statSync(result.projectionPaths.bundle).isFile(), true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

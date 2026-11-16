@@ -459,7 +459,7 @@ export function coverageAvailability({
   return result;
 }
 
-export function buildArchitectureAudit({ root = process.cwd(), ref = "HEAD", now = () => new Date().toISOString(), gitRunner = git } = {}) {
+export function buildArchitectureAudit({ root = process.cwd(), ref = "HEAD", now = () => new Date().toISOString(), gitRunner = git, scanRoots = ARCHITECTURE_SCAN_ROOTS } = {}) {
   const requested = ref || "HEAD";
   const sourceSha = gitRunner(["rev-parse", "--verify", `${requested}^{commit}`], root);
   const headSha = gitRunner(["rev-parse", "HEAD"], root);
@@ -474,14 +474,14 @@ export function buildArchitectureAudit({ root = process.cwd(), ref = "HEAD", now
     }
   };
   const view = createRepositoryView({ root, ref: sourceSha });
-  const rows = collectArchitectureRows(view, ARCHITECTURE_SCAN_ROOTS);
+  const rows = collectArchitectureRows(view, scanRoots);
   const largeModules = rows
     .filter((row) => isAboveReview(row))
     .sort((left, right) => right.lines - left.lines || right.bytes - left.bytes || left.file.localeCompare(right.file))
     .map((row) => ({ file: row.file, kind: row.kind, lines: row.lines, bytes: row.bytes, severity: isAboveHard(row) ? "HARD" : "REVIEW" }));
   const actionShell = rows.find((row) => row.file === ACTION_CREATION_SHELL) ?? null;
   const radarSource = readModularitySnapshot(view, sourceSha);
-  const folderMeasures = buildFolderMeasures(rows, { deferredSplit: radarSource.deferredSplit });
+  const folderMeasures = buildFolderMeasures(rows, { scanRoots, deferredSplit: radarSource.deferredSplit });
   const quality = Object.fromEntries(Object.entries(QUALITY_EVIDENCE).map(([name, key]) => [name, qualityEvidence(root, sourceSha, key, worktreeClean)]));
   quality.duplication = {
     scopes: Object.fromEntries(["runtime", "tests", "fixtures-data"].map((scope) => [scope, qualityEvidence(root, sourceSha, `duplication-${scope}`, worktreeClean)])),

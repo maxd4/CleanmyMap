@@ -16,6 +16,11 @@ export const QUALITY_STRUCTURE_THRESHOLDS = Object.freeze({
   minimumCrossFolderRelations: 2,
   minimumConcordantFamilies: 2,
 });
+export const QUALITY_STRUCTURE_SCOPE_ROOTS = Object.freeze({
+  web: Object.freeze(["apps/web/src"]),
+  mobile: Object.freeze(["apps/mobile"]),
+  all: ARCHITECTURE_SCAN_ROOTS,
+});
 
 const STRUCTURAL_EXCLUSION_RULES = Object.freeze([
   { code: "GENERATED", pattern: /(?:^|\/)(?:generated|__generated__)(?:\/|$)|(?:^|\/)next-env\.d\.ts$|\.generated\./i },
@@ -51,6 +56,12 @@ function functionalPrefix(file) {
   return prefix?.toLowerCase() || "unknown";
 }
 
+export function structureScanRoots(scope = "all") {
+  const roots = QUALITY_STRUCTURE_SCOPE_ROOTS[scope];
+  if (!roots) throw new Error(`Scope structurel inconnu: ${scope}`);
+  return [...roots];
+}
+
 function pathBelongsToFolder(file, folderPath) {
   return file === folderPath || file.startsWith(`${folderPath}/`);
 }
@@ -73,7 +84,10 @@ function buildFunctionalGroups(files) {
 function relationMetrics(folder, imports, architecture) {
   const directFiles = new Set(folder.paths?.eligibleDirect ?? folder.paths?.direct ?? []);
   const recursiveFiles = new Set(folder.paths?.eligibleRecursive ?? folder.paths?.recursive ?? []);
-  const edges = (imports?.edges ?? []).filter((edge) => directFiles.has(edge.from) || directFiles.has(edge.to));
+  const graphMeasured = imports?.available !== false && Array.isArray(imports?.edges);
+  const edges = graphMeasured
+    ? imports.edges.filter((edge) => recursiveFiles.has(edge.from) || recursiveFiles.has(edge.to))
+    : [];
   const internalDirect = edges.filter((edge) => directFiles.has(edge.from) && directFiles.has(edge.to));
   const internalRecursive = edges.filter((edge) => recursiveFiles.has(edge.from) && recursiveFiles.has(edge.to));
   const crossFolder = edges.filter((edge) => recursiveFiles.has(edge.from) !== recursiveFiles.has(edge.to));
@@ -90,6 +104,7 @@ function relationMetrics(folder, imports, architecture) {
   }, { fanIn: 0, fanOut: 0, measuredFiles: 0 });
   const relationTotal = internalRecursive.length + crossFolder.length;
   return {
+    measurementStatus: graphMeasured ? "MEASURED" : "NOT_MEASURED",
     total: relationTotal,
     internalDirect: internalDirect.length,
     internalRecursive: internalRecursive.length,
@@ -164,7 +179,12 @@ function analyzeFolder(folder, imports, architecture) {
   }
 
   const families = [...new Set(signals.map((entry) => entry.family))].sort();
-  const reviewRequired = families.length >= QUALITY_STRUCTURE_THRESHOLDS.minimumConcordantFamilies;
+  const graphBackedFunctionalDiversity = functionalGroups.length > 1
+    && importsMeasured.measurementStatus === "MEASURED"
+    && (importsMeasured.crossFolder >= QUALITY_STRUCTURE_THRESHOLDS.minimumCrossFolderRelations
+      || (importsMeasured.total >= 4 && importsMeasured.internalShare <= 0.25));
+  const reviewFamilies = families.filter((family) => family !== "functional-diversity" || graphBackedFunctionalDiversity);
+  const reviewRequired = reviewFamilies.length >= QUALITY_STRUCTURE_THRESHOLDS.minimumConcordantFamilies;
   return {
     path: folder.path,
     root: folder.root,
@@ -178,9 +198,10 @@ function analyzeFolder(folder, imports, architecture) {
     review: {
       required: reviewRequired,
       recommendation: reviewRequired ? "REVIEW_STRUCTURE" : "DESCRIPTIVE_ONLY",
-      reason: reviewRequired ? "plusieurs familles de signaux concordent ; aucune réorganisation automatique" : "indices insuffisants pour recommander une réorganisation",
+      reason: reviewRequired ? "plusieurs familles de signaux indépendantes concordent ; aucune réorganisation automatique" : "indices insuffisants pour recommander une réorganisation",
       evidence: reviewRequired ? { directFiles, recursiveFiles } : { directFiles: [], recursiveFiles: [] },
     },
+    reviewFamilies,
     exception: null,
   };
 }
@@ -220,11 +241,14 @@ export function analyzeQualityStructure({ folderMeasures, imports, architecture 
   };
 }
 
-export function buildQualityStructureFromRepository({ root, auditedSha = "HEAD", architecture = null, now = () => new Date().toISOString() } = {}) {
-  const architectureAudit = buildArchitectureAudit({ root, ref: auditedSha, now });
+export function buildQualityStructureFromRepository({ root, auditedSha = "HEAD", architecture = null, now = () => new Date().toISOString(), runId = null, scope = "all" } = {}) {
+  const activeScope = scope ?? "all";
+  const architectureAudit = buildArchitectureAudit({ root, ref: auditedSha, now, scanRoots: structureScanRoots(activeScope) });
   return {
     ...analyzeQualityStructure({ folderMeasures: architectureAudit.folderMeasures, imports: architectureAudit.imports, architecture }),
     auditedHead: architectureAudit.sourceSha,
+    runId,
+    scope: activeScope,
   };
 }
 
@@ -236,7 +260,7 @@ function option(args, name) {
 export function main(args = process.argv.slice(2)) {
   try {
     const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-    const report = buildQualityStructureFromRepository({ root, auditedSha: option(args, "ref") ?? "HEAD" });
+    const report = buildQualityStructureFromRepository({ root, auditedSha: option(args, "ref") ?? "HEAD", scope: option(args, "scope") ?? "all" });
     const dryRun = args.includes("--dry-run");
     const output = path.resolve(root, option(args, "output") ?? `artifacts/quality-structure/${report.auditedHead}/structure.json`);
     if (!dryRun) {

@@ -938,14 +938,37 @@ function buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDo
   };
 }
 
+function structureProjectionFromRun(run) {
+  const structure = run?.reports?.structure;
+  return structure?.kind === "quality-structure"
+    && structure.auditedHead === run.auditedSha
+    && structure.runId === run.runId
+    ? structure
+    : null;
+}
+
+function structureProjectionForRun(run, architecture) {
+  const current = structureProjectionFromRun(run);
+  const supplied = architecture?.structure;
+  return supplied?.kind === "quality-structure"
+    && supplied.auditedHead === run.auditedSha
+    && supplied.runId === run.runId
+    ? supplied
+    : current;
+}
+
 export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new Date().toISOString(), architecture = null, previousRun = null, previousRunError = null, comparisonRequested = false } = {}) {
   if (!run?.reports || !run?.auditedSha || !run?.runId) throw new Error("Run quality absent pour construire l'index.");
-  const architectureProjection = architecture ?? {
+  const structure = structureProjectionForRun(run, architecture);
+  const architectureProjection = {
+    ...(architecture ?? {
     state: "NOT_MEASURED",
     detail: "projection du graphe architectural absente pour ce run",
     files: [],
     domains: [],
     boundary: { state: "NOT_MEASURED", blocking: [], current: [] },
+    }),
+    ...(structure ? { structure } : {}),
   };
   const files = new Map();
   const auditCategories = new Map();

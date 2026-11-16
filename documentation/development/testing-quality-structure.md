@@ -26,31 +26,45 @@ npm run quality:structure -- --dry-run
 npm run audit:quality -- structure
 ```
 
-Les mesures conservées par dossier sont les fichiers directs et récursifs, la
-profondeur relative au root, la part directe dans l'ensemble récursif, les
-préfixes fonctionnels de fichiers et les relations d'import internes,
-entrantes, sortantes et croisées. Les signaux initiaux sont :
+Les mesures conservées par dossier sont les fichiers directs et récursifs
+éligibles, la profondeur relative au root, la part directe dans l'ensemble
+récursif, les préfixes fonctionnels de fichiers et les relations d'import
+internes, entrantes, sortantes et croisées. Les relations récursives sont
+calculées sur tout l'ensemble récursif du dossier ; les relations propres aux
+fichiers directs restent exposées séparément. Les signaux initiaux sont :
 
 - `15` fichiers directs : surveillance ; `25` : revue descriptive ;
 - concentration directe strictement supérieure à `75 %` sur au moins `8`
   fichiers récursifs ;
-- au moins deux préfixes fonctionnels parmi au moins `8` fichiers directs ;
+- au moins deux préfixes fonctionnels parmi au moins `8` fichiers directs,
+  comme indice lexical descriptif seulement ;
 - relations d'import croisées et faible part d'import interne lorsqu'elles
-  complètent la diversité fonctionnelle.
+  complètent la diversité fonctionnelle et fournissent une preuve indépendante.
 
 La concentration et le volume appartiennent à une même famille de forme. Un
 dossier n'est retenu dans `foldersRequiringReview` que si au moins deux familles
-indépendantes concordent (`shape`, diversité fonctionnelle, couplage ou
-cohésion). Le rapport expose les chemins directs et les métriques qui fondent
-chaque signal ; `REVIEW_STRUCTURE` signifie « réunir une preuve humaine », pas
-« réorganiser ».
+indépendantes concordent (`shape`, couplage ou cohésion). La diversité lexicale
+ne devient une famille concordante que si le graphe mesuré apporte aussi des
+relations croisées ou une faible part interne ; des noms de fichiers différents
+ne suffisent donc jamais à eux seuls. Le rapport expose les chemins directs et
+les métriques qui fondent chaque signal ; `REVIEW_STRUCTURE` signifie « réunir
+une preuve humaine », pas « réorganiser ».
 
 Les conventions de routage Next.js et Expo, les assets, migrations, vendor,
 third-party et fichiers générés sont hors décision structurelle. Les petits
 dossiers et les ensembles répartis dans des sous-dossiers restent ainsi
 descriptifs sans faux positif automatique. Le rapport est intégré à
 `audit:quality -- all` et à la projection `architecture.structure` du Quality
-Index, sans changer le verdict global des cinq gates.
+Index, sans changer le verdict global des cinq gates. `--scope=web` ne lit que
+`apps/web/src`, `--scope=mobile` que `apps/mobile` et `all` conserve les trois
+racines (`apps/web/src`, `apps/mobile`, `scripts`) sans attribuer une
+application à l'autre. Un graphe absent ou partiel reste `NOT_MEASURED` et ne
+permet pas de conclure à une faible cohésion.
+
+Chaque rapport produit par `audit:quality` porte `auditedHead`, `runId` et le
+scope. La projection offline reprend le rapport `structure` validé du même
+couple SHA/runId, sans rescanner ni recalculer ; le graphe architectural reste
+`NOT_MEASURED` lorsqu'il n'est pas fourni séparément.
 
 ## Structure anti-duplication des tests
 

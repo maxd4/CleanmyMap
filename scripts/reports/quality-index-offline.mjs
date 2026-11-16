@@ -49,7 +49,7 @@ function expectedOverallStatus(statuses) {
   return "PASS";
 }
 
-function validateReport(audit, report) {
+function validateReport(audit, report, { auditedSha = null, runId = null, scope = null } = {}) {
   if (!report || typeof report !== "object") throw new Error(`Rapport ${audit} absent.`);
   if (report.error && typeof report.error === "object") return report;
   if (audit === "dead-code" && (!Array.isArray(report.currentFindings) || !report.comparison)) throw new Error("Rapport dead-code incomplet.");
@@ -61,7 +61,11 @@ function validateReport(audit, report) {
   if (audit === "type-safety" && (!Array.isArray(report.findings) || !Array.isArray(report.diagnostics) || !Array.isArray(report.coverage) || !report.summary)) throw new Error("Rapport type-safety incomplet.");
   if (audit === "hotspots" && (!Array.isArray(report.files) || !report.methodology || !report.summary || !Array.isArray(report.diagnostics))) throw new Error("Rapport hotspots incomplet.");
   if (audit === "testability" && (!Array.isArray(report.domains) || !report.summary || !Array.isArray(report.diagnostics))) throw new Error("Rapport testability incomplet.");
-  if (audit === "structure" && (!Array.isArray(report.folders) || !Array.isArray(report.foldersRequiringReview) || !report.summary || !Array.isArray(report.diagnostics))) throw new Error("Rapport structure incomplet.");
+  if (audit === "structure") {
+    if (!Array.isArray(report.folders) || !Array.isArray(report.foldersRequiringReview) || !report.summary || !Array.isArray(report.diagnostics)) throw new Error("Rapport structure incomplet.");
+    if (report.auditedHead !== auditedSha || report.runId !== runId) throw new Error("Rapport structure incohérent: SHA/runId.");
+    if (scope && report.scope !== scope) throw new Error("Rapport structure incohérent: scope.");
+  }
   if (audit === "coverage" && (!Array.isArray(report.scopes) || !report.summary || !report.duplication || !Array.isArray(report.warnings) || !Array.isArray(report.diagnostics))) throw new Error("Rapport coverage incomplet.");
   return report;
 }
@@ -73,7 +77,7 @@ function manifestPathExists(root, auditedSha, runId, audit, fsApi) {
 function readAudit({ root, auditedSha, runId, audit, fsApi }) {
   const paths = createAuditPaths({ root, auditedHead: auditedSha, audit, runId });
   const manifest = validateManifest(readJson(paths.manifest, fsApi), { audit, auditedSha, runId });
-  const report = validateReport(audit, readJson(paths.report, fsApi));
+  const report = validateReport(audit, readJson(paths.report, fsApi), { auditedSha, runId, scope: manifest.scope ?? null });
   const measuredStatus = reportStatus(audit, report);
   if (measuredStatus && measuredStatus !== manifest.status) throw new Error(`Rapport ${audit} contradictoire avec son manifeste: status.`);
   try { fsApi.readFileSync(paths.summary, "utf8"); } catch { throw new Error(`Résumé ${audit} absent ou illisible.`); }

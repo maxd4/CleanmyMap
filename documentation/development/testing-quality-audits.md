@@ -386,7 +386,17 @@ Sans `--dry-run`, elle écrit uniquement son rapport régénérable sous
 `artifacts/quality-structure/<SHA>/structure.json`. `audit:quality -- all`
 conserve aussi le résultat dans le triplet du run et ajoute sa projection au
 champ `architecture.structure` du Quality Index ; aucune source, baseline,
-justification ou matrice historique n'est modifiée.
+justification ou matrice historique n'est modifiée. Le rapport structurel
+conserve les fichiers directs et récursifs éligibles, les métriques de relations
+directes séparées des métriques récursives complètes, le scope et l'identité
+`auditedHead`/`runId`. La diversité des préfixes de noms reste descriptive ;
+une revue exige des indices indépendants et concordants, avec un graphe mesuré
+pour retenir la faible cohésion ou le couplage.
+
+Lorsqu'un index est régénéré avec `--offline`, le rapport structurel archivé du
+même SHA/runId est reprojeté dans `architecture.structure` sans nouveau scan.
+L'état du graphe architectural reste `NOT_MEASURED` si sa source n'est pas
+disponible ; un rapport structurel d'un autre SHA, runId ou scope est refusé.
 
 La couverture Web n’est déclarée disponible par cet audit que si
 `apps/web/coverage/coverage-evidence.json` passe le validateur canonique, si

@@ -520,6 +520,7 @@ function createAuditExecutors({
   testabilityRunner,
   coverageRunner,
   structureRunner,
+  runId,
   complexityResult,
   previousResults,
   topHeavyRunner,
@@ -549,7 +550,7 @@ function createAuditExecutors({
     "type-safety": async () => ({ result: await typeSafetyRunner({ root, scope: activeScope }), readProvenance: "WORKTREE_LIVE", validate: isTypeSafetyResult }),
     hotspots: () => ({ result: hotspotsRunner({ root, auditedSha: auditedHead, reports: previousResults, scope: activeScope }), readProvenance: "COMMITTED_SNAPSHOT", validate: isHotspotsResult }),
     testability: () => ({ result: testabilityRunner({ root, auditedSha: auditedHead, scope: activeScope }), readProvenance: "MIXED", validate: isTestabilityResult }),
-    structure: () => ({ result: structureRunner({ root, auditedSha: auditedHead }), readProvenance: "COMMITTED_SNAPSHOT", validate: isStructureResult }),
+    structure: () => ({ result: structureRunner({ root, auditedSha: auditedHead, runId, scope: activeScope }), readProvenance: "COMMITTED_SNAPSHOT", validate: isStructureResult }),
     coverage: () => ({ result: coverageRunner({ root, auditedSha: auditedHead, duplicationReport: previousResults.duplication ?? null, scope: activeScope }), readProvenance: "MIXED", validate: isCoverageResult, format: formatCoverageInsightsReport }),
     cycles: async () => {
       const result = await cycleRunner({ scope: activeScope });
@@ -573,6 +574,7 @@ export async function executeAudit(
   root,
   {
     auditedHead,
+    runId,
     complexityRunner = runComplexityPolicy,
     cycleRunner = runCycleGate,
     maintainabilityRunner = runMaintainabilityAudit,
@@ -600,6 +602,7 @@ export async function executeAudit(
     testabilityRunner,
     coverageRunner,
     structureRunner,
+    runId,
     complexityResult,
     previousResults,
     topHeavyRunner,
@@ -658,7 +661,7 @@ function duplicationProjectionMetadata(result) {
   };
 }
 
-async function executeAuditBatch(audits, { engine, root, snapshot, scope = "all" }) {
+async function executeAuditBatch(audits, { engine, root, snapshot, runId, scope = "all" }) {
   const results = [];
   for (const audit of audits) {
     const previousResults = Object.fromEntries(results.map((entry) => [entry.audit, entry.result]));
@@ -666,6 +669,7 @@ async function executeAuditBatch(audits, { engine, root, snapshot, scope = "all"
     try {
       raw = await engine(audit, root, {
         auditedHead: snapshot.auditedHead,
+        runId,
         snapshot,
         complexityResult: previousResults.complexity ?? null,
         previousResults,
@@ -673,6 +677,9 @@ async function executeAuditBatch(audits, { engine, root, snapshot, scope = "all"
       });
     } catch (error) {
       raw = auditErrorResult(error);
+    }
+    if (audit === "structure" && raw?.kind === "quality-structure") {
+      raw = { ...raw, auditedHead: raw.auditedHead ?? snapshot.auditedHead, runId: raw.runId ?? runId, scope: raw.scope ?? scope };
     }
     const status = statusForAudit(audit, raw);
     const attention = attentionRequired(audit, raw);
@@ -848,7 +855,7 @@ export async function runQualityAudit(mode, {
 
   try {
     const activeScope = normalizeQualityScope(scope);
-    const results = await executeAuditBatch(audits, { engine, root, snapshot: start, scope: activeScope });
+    const results = await executeAuditBatch(audits, { engine, root, snapshot: start, runId, scope: activeScope });
     if (mode === "all") addRadarProjection(results);
 
     const generatedAt = now();
