@@ -75,7 +75,7 @@ describe("HomeFooter behavior", () => {
   });
 
   it("preserves a configured public email and the cookie control interaction", () => {
-    const configuredEmail = ["bonjour", "example.fr"].join("@");
+    const configuredEmail = "bonjour@example.com";
     mocks.contactEmail = configuredEmail;
     render();
 
