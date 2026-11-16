@@ -5,8 +5,8 @@
 .cursor/
 .mcp.json
 .vscode/
-documentation/
-maintenance/
+/documentation/
+/maintenance/
 node_modules/
 .git/
 .vercel/
