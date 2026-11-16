@@ -30,8 +30,8 @@ import { useTerritorialLegendsController } from '../features/territorial-legends
 const consent = { status: 'ok', enabled: false, ageBand: '15_or_over', activatedAt: null, revokedAt: null }
 const overview = { status: 'ok', campaignYear: 2026, windowDays: 90, levels: ['arrondissement', 'commune', 'department', 'region', 'country'], territories: [] }
 
-function Probe({ ownerId, onValue, onSessionExpired }: { ownerId: string | null; onValue: (value: ReturnType<typeof useTerritorialLegendsController>) => void; onSessionExpired: () => void }) {
-  const value = useTerritorialLegendsController({ ownerId, shouldLoadOverview: true, onSessionExpired })
+function Probe({ ownerId, shouldLoadOverview = true, onValue, onSessionExpired }: { ownerId: string | null; shouldLoadOverview?: boolean; onValue: (value: ReturnType<typeof useTerritorialLegendsController>) => void; onSessionExpired: () => void }) {
+  const value = useTerritorialLegendsController({ ownerId, shouldLoadOverview, onSessionExpired })
   useEffect(() => { onValue(value) }, [onValue, value])
   return null
 }
@@ -151,6 +151,94 @@ describe('territorial legends controller runtime', () => {
       await settle()
     })
     expect(latest.overview?.campaignYear).toBe(2027)
+    renderer.unmount()
+  })
+
+  it('does not fetch without an owner and can load consent without the optional overview', async () => {
+    let latest!: ReturnType<typeof useTerritorialLegendsController>
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<Probe ownerId={null} onValue={(value) => { latest = value }} onSessionExpired={vi.fn()} />)
+      await settle()
+    })
+    await act(async () => { await latest.refresh(); await settle() })
+    expect(state.loadConsent).not.toHaveBeenCalled()
+    expect(state.loadOverview).not.toHaveBeenCalled()
+    renderer.unmount()
+
+    await act(async () => {
+      renderer = TestRenderer.create(<Probe ownerId="user-a" shouldLoadOverview={false} onValue={(value) => { latest = value }} onSessionExpired={vi.fn()} />)
+      await settle()
+    })
+    expect(state.loadConsent).toHaveBeenCalledTimes(1)
+    expect(state.loadOverview).not.toHaveBeenCalled()
+    renderer.unmount()
+  })
+
+  it('expires the session on unauthorized initial and consent-update responses', async () => {
+    const onSessionExpired = vi.fn()
+    state.loadConsent.mockRejectedValueOnce(Object.assign(new Error('expired'), { status: 401 }))
+    let latest!: ReturnType<typeof useTerritorialLegendsController>
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<Probe ownerId="user-a" onValue={(value) => { latest = value }} onSessionExpired={onSessionExpired} />)
+      await settle()
+    })
+    expect(onSessionExpired).toHaveBeenCalledTimes(1)
+
+    state.updateConsent.mockRejectedValueOnce(Object.assign(new Error('expired'), { status: 401 }))
+    await act(async () => { await latest.setTerritorialLegendConsent(true); await settle() })
+    expect(onSessionExpired).toHaveBeenCalledTimes(2)
+    renderer.unmount()
+  })
+
+  it('surfaces non-Error failures and ignores a second save while the first is pending', async () => {
+    state.loadConsent.mockRejectedValueOnce('unavailable')
+    let latest!: ReturnType<typeof useTerritorialLegendsController>
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<Probe ownerId="user-a" onValue={(value) => { latest = value }} onSessionExpired={vi.fn()} />)
+      await settle()
+    })
+    expect(latest.error).toBe('Les Légendes territoriales sont indisponibles.')
+    renderer.unmount()
+
+    let resolveUpdate!: (value: typeof consent) => void
+    state.updateConsent.mockReturnValueOnce(new Promise((resolve) => { resolveUpdate = resolve }))
+    await act(async () => {
+      renderer = TestRenderer.create(<Probe ownerId="user-a" onValue={(value) => { latest = value }} onSessionExpired={vi.fn()} />)
+      await settle()
+    })
+    let first!: Promise<void>
+    await act(async () => { first = latest.setTerritorialLegendConsent(true); await settle() })
+    const second = latest.setTerritorialLegendConsent(false)
+    expect(state.updateConsent).toHaveBeenCalledTimes(1)
+    resolveUpdate({ ...consent, enabled: true })
+    await act(async () => { await first; await second; await settle() })
+    expect(latest.message).toContain('activé')
+    renderer.unmount()
+  })
+
+  it('handles refresh failures and reports a normal save failure without leaking the error object', async () => {
+    let latest!: ReturnType<typeof useTerritorialLegendsController>
+    let renderer!: TestRenderer.ReactTestRenderer
+    const onSessionExpired = vi.fn()
+    await act(async () => {
+      renderer = TestRenderer.create(<Probe ownerId="user-a" onValue={(value) => { latest = value }} onSessionExpired={onSessionExpired} />)
+      await settle()
+    })
+
+    state.loadConsent.mockRejectedValueOnce(Object.assign(new Error('expired'), { status: 401 }))
+    await act(async () => { await latest.refresh(); await settle() })
+    expect(onSessionExpired).toHaveBeenCalledTimes(1)
+
+    state.loadConsent.mockRejectedValueOnce(new Error('refresh unavailable'))
+    await act(async () => { await latest.refresh(); await settle() })
+    expect(latest.error).toBe('refresh unavailable')
+
+    state.updateConsent.mockRejectedValueOnce(new Error('save unavailable'))
+    await act(async () => { await latest.setTerritorialLegendConsent(false); await settle() })
+    expect(latest.error).toBe('save unavailable')
     renderer.unmount()
   })
 })

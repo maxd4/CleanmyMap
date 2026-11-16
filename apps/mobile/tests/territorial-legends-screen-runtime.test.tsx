@@ -3,6 +3,7 @@ import TestRenderer, { act } from 'react-test-renderer'
 import { describe, expect, it, vi } from 'vitest'
 import { commonNativeComponents, nativeComponent } from './support/native-component'
 import type { TerritorialLegendsController } from '../features/territorial-legends/use-territorial-legends-controller'
+import { TerritorialLegendConsentSetting } from '../features/territorial-legends/territorial-legend-consent-setting'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -89,5 +90,70 @@ describe('territorial legends screen runtime', () => {
     let error!: TestRenderer.ReactTestRenderer
     await act(async () => { error = TestRenderer.create(<TerritorialLegendsScreen controller={controller({ overview: null, error: 'Réponse indisponible' })} onOpenPreferences={vi.fn()} />) })
     expect(textContent(error.root)).toContain('Réponse indisponible')
+  })
+
+  it('exposes the rules, preferences and territory details interactions', async () => {
+    const onOpenPreferences = vi.fn()
+    const value = controller({
+      consent: { status: 'ok', enabled: true, ageBand: '15_or_over', activatedAt: '2026-11-01', revokedAt: null },
+      consentLoading: true,
+      error: 'Mise à jour partielle',
+      message: 'Consentement territorial activé.',
+      overview: {
+        status: 'ok', campaignYear: 2026, windowDays: 90, levels: ['commune'],
+        territories: [{
+          level: 'commune', territoryCode: '75056', territoryLabel: null,
+          private: null,
+          public: { competitorCount: 0, maxScore: 0, titleEligible: false, title: null, items: [] },
+          currentHold: { startedOn: 'not-a-date', lastVerifiedOn: 'also-not-a-date', days: 0 },
+          bestHistory: { campaignYear: 2026, startedOn: 'not-a-date', endedOn: null, days: 0 },
+          rewards: [],
+        }],
+      },
+    })
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(<TerritorialLegendsScreen controller={value} onOpenPreferences={onOpenPreferences} />) })
+    const buttons = () => renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity')
+    const byText = (text: string) => buttons().find((button) => textContent(button).includes(text))
+    await act(async () => {
+      byText('Gérer dans Préférences')?.props.onPress()
+      byText('Ouvrir les règles')?.props.onPress()
+      byText('Ouvrir les détails du territoire')?.props.onPress()
+    })
+    const text = textContent(renderer.root)
+    expect(onOpenPreferences).toHaveBeenCalledTimes(1)
+    expect(text).toContain('Masquer les règles')
+    expect(text).toContain('Code territorial : 75056')
+    expect(text).toContain('Non disponible')
+    renderer.unmount()
+  })
+
+  it('renders the consent setting loading, disabled, saving and revoked states', async () => {
+    const setConsent = vi.fn(async () => undefined)
+    const base = controller({ setTerritorialLegendConsent: setConsent })
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<TerritorialLegendConsentSetting controller={controller({ consent: null, consentLoading: true })} />)
+    })
+    const loadingSwitch = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity')[0]!
+    expect(loadingSwitch.props.disabled).toBe(true)
+    expect(textContent(renderer.root)).toContain('Chargement…')
+    renderer.unmount()
+
+    await act(async () => {
+      renderer = TestRenderer.create(<TerritorialLegendConsentSetting controller={controller({ consent: { status: 'ok', enabled: true, ageBand: '15_or_over', activatedAt: null, revokedAt: '2026-11-04T12:00:00.000Z' }, savingConsent: true, error: 'Erreur de consentement', setTerritorialLegendConsent: setConsent })} />)
+    })
+    expect(renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity')[0]!.props.disabled).toBe(true)
+    expect(textContent(renderer.root)).toContain('Révoqué le')
+    expect(textContent(renderer.root)).toContain('Erreur de consentement')
+    expect(textContent(renderer.root)).toContain('…')
+    renderer.unmount()
+
+    await act(async () => {
+      renderer = TestRenderer.create(<TerritorialLegendConsentSetting controller={base} />)
+    })
+    await act(async () => { renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity')[0]!.props.onPress(); await Promise.resolve() })
+    expect(setConsent).toHaveBeenCalledWith(true)
+    renderer.unmount()
   })
 })

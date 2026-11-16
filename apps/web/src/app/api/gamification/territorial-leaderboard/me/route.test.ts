@@ -56,4 +56,20 @@ describe("GET /api/gamification/territorial-leaderboard/me", () => {
     expect(loadPageMock).not.toHaveBeenCalled();
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
+
+  it("rejects malformed owner parameters before creating a privileged client", async () => {
+    const response = await GET(new Request("http://localhost/api/gamification/territorial-leaderboard/me?level=unknown&territoryCode=75"));
+
+    expect(response.status).toBe(400);
+    expect(loadPageMock).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("maps loader failures through the API error boundary", async () => {
+    loadPageMock.mockRejectedValueOnce(new Error("projection unavailable"));
+
+    const response = await GET(new Request("http://localhost/api/gamification/territorial-leaderboard/me?level=commune&territoryCode=75056"));
+
+    expect(response.status).toBe(500);
+  });
 });

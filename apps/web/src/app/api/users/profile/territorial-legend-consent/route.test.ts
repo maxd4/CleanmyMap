@@ -88,4 +88,34 @@ describe("territorial legend consent route", () => {
     expect(response.status).toBe(401);
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
+
+  it("rejects strict, malformed PATCH payloads before the eligibility or database boundary", async () => {
+    const response = await PATCH(new Request("http://localhost/api/users/profile/territorial-legend-consent", {
+      method: "PATCH",
+      body: JSON.stringify({ enabled: "yes", extra: true }),
+      headers: { "Content-Type": "application/json" },
+    }));
+
+    expect(response.status).toBe(422);
+    expect(getEligibilityMock).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("maps read and write persistence failures without exposing database details", async () => {
+    const readChain = setupChain();
+    readChain.maybeSingle.mockResolvedValue({ data: null, error: new Error("private database detail") });
+    const readResponse = await GET(new Request("http://localhost/api/users/profile/territorial-legend-consent"));
+    expect(readResponse.status).toBe(500);
+    expect((await readResponse.json()).error).not.toContain("private database detail");
+
+    const writeChain = setupChain();
+    writeChain.rpc.mockResolvedValue({ data: null, error: new Error("private rpc detail") });
+    const writeResponse = await PATCH(new Request("http://localhost/api/users/profile/territorial-legend-consent", {
+      method: "PATCH",
+      body: JSON.stringify({ enabled: true }),
+      headers: { "Content-Type": "application/json" },
+    }));
+    expect(writeResponse.status).toBe(500);
+    expect((await writeResponse.json()).error).not.toContain("private rpc detail");
+  });
 });

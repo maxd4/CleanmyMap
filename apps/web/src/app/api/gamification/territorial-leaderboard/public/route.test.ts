@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const loadPageMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
+const rateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/gamification/territorial-legends", async () => {
   const actual = await vi.importActual<typeof import("@/lib/gamification/territorial-legends")>("@/lib/gamification/territorial-legends");
@@ -9,7 +10,7 @@ vi.mock("@/lib/gamification/territorial-legends", async () => {
 });
 vi.mock("@/lib/rate-limit/server", () => ({
   verifyRateLimit: verifyRateLimitMock,
-  createServerRateLimitResponse: () => null,
+  createServerRateLimitResponse: rateLimitResponseMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: vi.fn(() => ({})) }));
 
@@ -18,6 +19,7 @@ import { GET } from "./route";
 describe("public territorial leaderboard route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    rateLimitResponseMock.mockReturnValue(null);
   });
 
   it("returns only the minimized public projection", async () => {
@@ -59,5 +61,26 @@ describe("public territorial leaderboard route", () => {
     const response = await GET(new Request("http://localhost/api/gamification/territorial-leaderboard/public?level=country&territoryCode=75"));
     expect(response.status).toBe(400);
     expect(loadPageMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the rate-limit response before validating or loading the projection", async () => {
+    const limited = new Response(JSON.stringify({ error: "too many requests" }), { status: 429 });
+    verifyRateLimitMock.mockResolvedValue({ allowed: false, retryAfter: 17 });
+    rateLimitResponseMock.mockReturnValue(limited);
+
+    const response = await GET(new Request("http://localhost/api/gamification/territorial-leaderboard/public?level=commune&territoryCode=75056"));
+
+    expect(response).toBe(limited);
+    expect(loadPageMock).not.toHaveBeenCalled();
+  });
+
+  it("clamps positive limits, preserves cursors and turns loader failures into API errors", async () => {
+    verifyRateLimitMock.mockResolvedValue({ allowed: true });
+    await GET(new Request("http://localhost/api/gamification/territorial-leaderboard/public?level=commune&territoryCode=75056&limit=999&cursor=next-page"));
+    expect(loadPageMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ limit: 100, cursor: "next-page" }));
+
+    loadPageMock.mockRejectedValueOnce(new Error("database unavailable"));
+    const response = await GET(new Request("http://localhost/api/gamification/territorial-leaderboard/public?level=commune&territoryCode=75056&limit=not-a-number"));
+    expect(response.status).toBe(500);
   });
 });
