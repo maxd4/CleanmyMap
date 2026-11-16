@@ -199,6 +199,177 @@ Comparer les valeurs avant extraction, puis ouvrir l'archive avec 7-Zip ou
 doivent être téléversés, commités ou publiés. Cette procédure locale ne constitue
 pas à elle seule la preuve d'un run de backup réussi.
 
+## PLAN : sauvegardes autonomes et reprise après sinistre
+
+### 1. Objectif et périmètre
+
+CleanMyMap doit conserver la capacité de récupérer ses données et de remettre le produit en service après :
+
+- une indisponibilité temporaire ou définitive de Supabase ;
+- une suppression accidentelle ou une corruption de données ;
+- une compromission du site, du backend ou des accès administratifs ;
+- une compromission d'un fournisseur, du dépôt GitHub ou des identifiants de déploiement.
+
+Trois capacités distinctes sont nécessaires :
+
+1. **Sauvegarder** : produire et conserver une archive complète, intègre et chiffrée, indépendamment de la réussite d'un test de restauration.
+2. **Restaurer** : démontrer que les archives permettent de reconstruire les données et leurs contrats SQL sur une cible isolée.
+3. **Remettre en service** : rétablir une application Web/mobile fonctionnelle sur une infrastructure saine, y compris hors Supabase si nécessaire.
+
+Ces trois capacités doivent partager un format de sauvegarde documenté, mais leurs échecs et leurs validations restent indépendants.
+
+### 2. Couverture exigée
+
+Le périmètre de sauvegarde doit comprendre :
+
+| Ressource            | Contrat                                                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL `public`  | Tables, données, vues, séquences, fonctions, triggers, contraintes, index, RLS et grants                                  |
+| PostgreSQL `private` | Fonctions, permissions, objets et éventuelles données applicatives                                                        |
+| Rôles                | Définition et informations nécessaires à la réconciliation des rôles sur la cible, sans réutilisation aveugle des secrets |
+| Extensions           | Inventaire des extensions et versions, notamment PostGIS, `pg_trgm`, `pgcrypto` et `uuid-ossp`                            |
+| Supabase Storage     | Buckets, objets, contenus binaires, métadonnées utiles et empreintes SHA-256                                              |
+| Migrations           | Inventaire des versions réellement appliquées, associé au SHA Git                                                         |
+| Configuration        | Inventaire des paramètres indispensables à la reconstruction, sans intégrer de secrets en clair                           |
+| Dépendances externes | Inventaire des contrats Clerk, Vercel, DNS et services nécessaires au fonctionnement                                      |
+
+Le schéma `private` est applicatif : il contient des fonctions consommées par des policies RLS de `public`. L'export limité à `public` est donc insuffisant.
+
+Les schémas gérés par Supabase (`auth`, `storage`, etc.) ne doivent pas être assimilés aux schémas applicatifs. Leur couverture et leur reconstruction nécessitent des procédures distinctes et explicitement vérifiées.
+
+Clerk demeure la source d'identité canonique. Une sauvegarde PostgreSQL ne garantit pas à elle seule la récupération des comptes, sessions ou paramètres Clerk.
+
+### 3. Sauvegarde indépendante
+
+**Cible :** un workflow automatique quotidien, en lecture seule sur Production, qui :
+
+1. Vérifie les accès, la clé publique GPG et le périmètre attendu.
+2. Exporte les données et les objets Storage sans mutation de Production.
+3. Vérifie que les fichiers et inventaires attendus sont présents et cohérents.
+4. Construit un manifeste versionné contenant périmètre, horodatage, versions, SHA Git et empreintes.
+5. Chiffre l'archive avant toute publication.
+6. Vérifie les empreintes de l'archive chiffrée et sa présence dans le stockage de destination.
+7. Publie uniquement les statuts et métadonnées non sensibles.
+
+Le workflow de sauvegarde ne dépend pas de la réussite du restore-check PostgreSQL. Un échec d'export, une couverture incomplète, une erreur de manifeste, un chiffrement défaillant ou une publication non confirmée restent bloquants.
+
+**Une archive intègre mais non restaurée peut être conservée, mais son statut doit explicitement indiquer `RESTORE_UNVERIFIED`.**
+
+Aucun SQL, objet Storage, secret ou fichier déchiffré ne doit être publié dans les logs, les artefacts publics ou les caches.
+
+### 4. Stockage et conservation
+
+Les archives doivent être conservées hors de Supabase, dans un stockage privé utilisant une frontière administrative indépendante.
+
+**Politique cible initiale :**
+
+- une sauvegarde quotidienne ;
+- conservation des 30 dernières sauvegardes quotidiennes ;
+- conservation d'une sauvegarde hebdomadaire pendant 12 semaines ;
+- protection contre la suppression et la modification des versions conservées, lorsque le fournisseur le permet ;
+- au moins une copie supplémentaire sous une autre frontière d'accès.
+
+Cette politique reste à ajuster selon la volumétrie réelle, les coûts, le RGPD et la sensibilité des données.
+
+L'identité qui produit et téléverse les archives doit avoir les permissions minimales nécessaires. Elle ne doit pas pouvoir effacer l'ensemble de l'historique de sauvegardes.
+
+La clé privée GPG et sa phrase secrète restent hors CI et hors GitHub. Elles doivent être récupérables après une panne ou une perte du poste principal, avec une copie sécurisée indépendante.
+
+La rétention GitHub Actions de trois jours actuellement configurée ne satisfait pas cette cible.
+
+### 5. Restauration vérifiée
+
+La restauration doit utiliser une archive existante et une cible nouvelle, isolée de Production.
+
+Procédure attendue :
+
+1. Vérifier l'empreinte SHA-256, le manifeste et le destinataire GPG.
+2. Déchiffrer dans un environnement autorisé et protégé.
+3. Créer une cible PostgreSQL/Supabase compatible.
+4. Préparer les schémas gérés nécessaires, rôles et extensions.
+5. Restaurer les schémas métier `public` et `private`, puis les données dans l'ordre adapté.
+6. Restaurer séparément les buckets et fichiers Storage.
+7. Contrôler les relations, volumes, contraintes, index, fonctions, triggers, RLS, policies et grants.
+8. Tester les parcours applicatifs critiques Web et Mobile avec plusieurs niveaux d'autorisation.
+9. Nettoyer les fichiers temporaires et documenter le résultat.
+
+Une restauration PostgreSQL seule ne prouve pas une remise en service complète.
+
+**Fréquence cible :** exécuter les preuves de restauration après toute modification significative des contrats de données, ainsi qu'un exercice périodique sur une archive réellement conservée.
+
+Les tests doivent vérifier les échecs attendus sans désactiver la RLS ni affaiblir les règles d'autorisation pour obtenir un résultat positif.
+
+### 6. Scénarios de reprise après sinistre
+
+#### A. Application ou accès administratifs compromis
+
+1. Isoler le système compromis et suspendre les écritures à risque.
+2. Préserver les preuves utiles à l'investigation.
+3. Déterminer la fenêtre probable de compromission.
+4. Identifier une sauvegarde antérieure à la compromission, sans considérer automatiquement la dernière comme saine.
+5. Provisionner une infrastructure de récupération isolée.
+6. Restaurer et vérifier les données.
+7. Révoquer ou renouveler les identifiants et clés compromis : Supabase, Clerk, Vercel, GitHub, Storage et autres services concernés.
+8. Redéployer depuis une révision de code vérifiée.
+9. Contrôler les autorisations, journaux, accès administrateurs et fonctionnalités sensibles.
+10. Réouvrir progressivement les services uniquement après validation.
+
+Ne jamais écraser directement Production avec une archive potentiellement compromise.
+
+#### B. Supabase définitivement indisponible
+
+1. Récupérer les archives et les éléments de reconstruction sans dépendre de l'accès à Supabase.
+2. Préparer une infrastructure PostgreSQL indépendante.
+3. Restaurer les objets métier, données et extensions compatibles.
+4. Reconstruire les services nécessaires : API, Storage, autorisation et autres fonctions de plateforme effectivement consommées.
+5. Rétablir les connexions Clerk, les secrets applicatifs, les variables d'environnement et les domaines.
+6. Déployer les applications Web et Mobile compatibles.
+7. Vérifier les parcours critiques et les permissions avant toute bascule de trafic.
+
+**Limite :** la restauration des données PostgreSQL ne remplace pas automatiquement les services managés Supabase. La sortie complète du fournisseur demande une validation distincte.
+
+### 7. États et preuves
+
+| État                         | Critère d'attribution                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------- |
+| `BACKUP_FAILED`              | Export, intégrité, chiffrement ou conservation défaillant                          |
+| `BACKUP_CREATED`             | Archive chiffrée présente dans le stockage privé, empreintes et périmètre vérifiés |
+| `RESTORE_UNVERIFIED`         | Archive conservée sans preuve de restauration réussie                              |
+| `RESTORE_FAILED`             | Exercice réel échoué, cause enregistrée sans fuite de données                      |
+| `RESTORE_VERIFIED`           | Archive restaurée sur cible isolée, contrôles SQL et données exécutés avec succès  |
+| `DISASTER_RECOVERY_VERIFIED` | Exercice de remise en service applicative exécuté avec succès                      |
+
+Chaque preuve doit être liée à un identifiant d'archive, un SHA Git, un horodatage, un environnement de test et un résultat vérifiable.
+
+Un test réussi sur une fixture synthétique ne vaut pas restauration d'une archive Production. Un artefact produit ne vaut pas validation de sa restaurabilité.
+
+### 8. Objectifs de continuité
+
+La fréquence quotidienne vise une perte de données limitée à une journée en fonctionnement nominal, mais cette limite n'est garantie que si les sauvegardes successives réussissent et que leur conservation est confirmée.
+
+Le **RPO** (perte maximale de données admissible) et le **RTO** (délai maximal de reprise admissible) doivent être fixés à partir du besoin métier et mesurés au moyen d'exercices. Aucun RPO ou RTO garanti n'est actuellement démontré.
+
+### 9. Conditions de validation du plan
+
+La stratégie sera considérée opérationnelle uniquement lorsque :
+
+- le périmètre applicatif `public` et `private` est couvert et vérifié ;
+- une archive Production complète a été chiffrée et conservée hors Supabase ;
+- plusieurs versions historiques sont récupérables ;
+- un déchiffrement réel a été effectué avec la clé privée ;
+- une archive a été restaurée sur une cible isolée avec contrôles de données et d'autorisations ;
+- un exercice de reprise applicative a été réalisé ;
+- les responsabilités, procédures d'urgence, limites et résultats sont documentés.
+
+Les procédures existantes `CURRENT` restent applicables tant que ces objectifs `PLAN` ne sont pas effectivement implémentés et validés.
+
+### Références
+
+- [Supabase : Database Backups](https://supabase.com/docs/guides/platform/backups)
+- [Supabase : Backup and Restore using CLI](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore)
+- [Supabase : Restore a Platform Project to Self-Hosted](https://supabase.com/docs/guides/self-hosting/restore-from-platform)
+- [Supabase : Download Storage Objects](https://supabase.com/docs/guides/storage/management/download-objects)
+
 ## Rotation et incident
 
 Pour une rotation, vérifier la nouvelle clé publique hors CI, la remplacer dans
