@@ -53,7 +53,7 @@ test('backup exports all dump classes, uses the shared restore-check, encrypts b
 });
 
 test('R2 publisher is private, collision-safe, and read-back verified', () => {
-  assert.match(r2Publisher, /if-none-match/);
+  assert.match(r2Publisher, /IfNoneMatch:\s+"\*"/);
   assert.match(r2Publisher, /R2_OBJECT_COLLISION/);
   assert.match(r2Publisher, /R2_ARCHIVE_CORRUPTED/);
   assert.match(r2Publisher, /R2_CHECKSUM_CORRUPTED/);

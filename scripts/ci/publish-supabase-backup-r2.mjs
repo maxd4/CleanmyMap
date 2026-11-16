@@ -1,12 +1,11 @@
-import { createHash, createHmac } from "node:crypto";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const args = new Map();
 for (let index = 2; index < process.argv.length; index += 1) {
   if (process.argv[index].startsWith("--")) args.set(process.argv[index].slice(2), process.argv[index + 1]);
 }
-
-const encoder = new TextEncoder();
 
 function normalizedS3ErrorCode(status) {
   if (status === 400) return "BAD_REQUEST";
@@ -18,32 +17,8 @@ function normalizedS3ErrorCode(status) {
   return `HTTP_${status}`;
 }
 
-function createS3Error(method, status) {
-  const code = normalizedS3ErrorCode(status);
-  const classification = code === "OBJECT_COLLISION"
-    ? "R2_OBJECT_COLLISION"
-    : code === "ACCESS_DENIED"
-      ? "R2_ACCESS_DENIED"
-      : code === "TRANSFER_FAILED"
-        ? "R2_TRANSFER_FAILED"
-        : `R2_${method}_FAILED`;
-  const error = new Error(`${classification} method=${method} status=${status} code=${code}`);
-  error.method = method;
-  error.status = status;
-  error.code = code;
-  return error;
-}
-
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
-}
-
-function hmac(key, value) {
-  return createHmac("sha256", key).update(value).digest();
-}
-
-function encodePathPart(value) {
-  return encodeURIComponent(value).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`);
 }
 
 function validateEndpoint(endpoint, allowInsecureEndpoint = false) {
@@ -63,60 +38,44 @@ function validateInputs({ bucket, key, accessKeyId, secretAccessKey }) {
   if (!accessKeyId || !secretAccessKey) throw new Error("R2_CREDENTIALS_MISSING");
 }
 
-function requestTarget(endpoint, bucket, key) {
-  const basePath = endpoint.pathname.replace(/\/+$/, "");
-  const path = `${basePath}/${encodePathPart(bucket)}/${key.split("/").map(encodePathPart).join("/")}`;
-  return { url: new URL(path, endpoint), canonicalUri: path || "/" };
+function normalizedSdkErrorCode(error, status) {
+  const raw = String(error?.Code ?? error?.code ?? error?.name ?? "UNKNOWN").replace(/[^A-Za-z0-9_-]/g, "_");
+  if (raw !== "UNKNOWN") return raw;
+  return normalizedS3ErrorCode(status);
 }
 
-function authorization({ method, endpoint, canonicalUri, headers, payloadHash, accessKeyId, secretAccessKey, now }) {
-  const amzDate = now.toISOString().replace(/[-:]|\.\d{3}/g, "");
-  const date = amzDate.slice(0, 8);
-  const region = "auto";
-  const service = "s3";
-  const requestHeaders = {
-    ...headers,
-    host: endpoint.host,
-    "x-amz-date": amzDate,
-    "x-amz-content-sha256": payloadHash,
-  };
-  const canonicalHeaders = Object.entries(requestHeaders)
-    .map(([name, value]) => [name.toLowerCase(), String(value).trim().replace(/\s+/g, " ")])
-    .sort(([left], [right]) => left.localeCompare(right));
-  const signedHeaders = canonicalHeaders.map(([name]) => name).join(";");
-  const headerBlock = canonicalHeaders.map(([name, value]) => `${name}:${value}\n`).join("");
-  const canonicalRequest = [method, canonicalUri, "", headerBlock, signedHeaders, payloadHash].join("\n");
-  const scope = `${date}/${region}/${service}/aws4_request`;
-  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, sha256(canonicalRequest)].join("\n");
-  const signingKey = hmac(hmac(hmac(hmac(`AWS4${secretAccessKey}`, date), region), service), "aws4_request");
-  const signature = createHmac("sha256", signingKey).update(stringToSign).digest("hex");
-  return {
-    ...requestHeaders,
-    authorization: `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${scope}, SignedHeaders=${signedHeaders}; Signature=${signature}`,
-  };
+function sdkError(method, error) {
+  const status = error?.$metadata?.httpStatusCode ?? null;
+  const code = normalizedSdkErrorCode(error, status);
+  const classification = status === 412 || code === "PreconditionFailed"
+    ? "R2_OBJECT_COLLISION"
+    : status === 403 || code === "AccessDenied"
+      ? "R2_ACCESS_DENIED"
+      : status !== null && status >= 500
+        ? "R2_TRANSFER_FAILED"
+        : `R2_${method}_FAILED`;
+  const diagnosticStatus = status ?? "UNKNOWN";
+  const diagnostic = new Error(`${classification} method=${method} status=${diagnosticStatus} code=${code}`);
+  diagnostic.cause = error;
+  return diagnostic;
 }
 
-async function s3Request({ endpoint, bucket, key, method, accessKeyId, secretAccessKey, body, contentType, fetchImpl, now = new Date() }) {
-  const { url, canonicalUri } = requestTarget(endpoint, bucket, key);
-  const payload = body === undefined ? Buffer.alloc(0) : Buffer.from(body);
-  const headers = {};
-  if (contentType) headers["content-type"] = contentType;
-  if (method === "PUT") headers["if-none-match"] = "*";
-  const signedHeaders = authorization({
-    method,
-    endpoint,
-    canonicalUri,
-    headers,
-    payloadHash: sha256(payload),
-    accessKeyId,
-    secretAccessKey,
-    now,
-  });
-  const response = await fetchImpl(url, { method, headers: signedHeaders, body: method === "PUT" ? payload : undefined });
-  if (response.ok) return response;
-  if (response.body) await response.arrayBuffer().catch(() => undefined);
-  if (response.status === 404 && method === "HEAD") return null;
-  throw createS3Error(method, response.status);
+async function readObjectBody(body) {
+  if (body?.transformToByteArray) return Buffer.from(await body.transformToByteArray());
+  if (body?.transformToString) return Buffer.from(await body.transformToString(), "utf8");
+  const chunks = [];
+  for await (const chunk of body) chunks.push(Buffer.from(chunk));
+  return Buffer.concat(chunks);
+}
+
+async function s3Request(client, command, method) {
+  try {
+    return await client.send(command);
+  } catch (error) {
+    const status = error?.$metadata?.httpStatusCode ?? null;
+    if (status === 404 && method === "HEAD") return null;
+    throw sdkError(method, error);
+  }
 }
 
 function checksumFromFile(value) {
@@ -134,27 +93,50 @@ export async function publishBackupToR2({
   accessKeyId,
   secretAccessKey,
   allowInsecureEndpoint = false,
-  fetchImpl = fetch,
-  now = new Date(),
+  clientFactory = (configuration) => new S3Client(configuration),
 }) {
   const parsedEndpoint = validateEndpoint(endpoint, allowInsecureEndpoint);
   validateInputs({ bucket, key: objectKey, accessKeyId, secretAccessKey });
-  const archive = await readFile(archivePath);
-  const checksum = await readFile(checksumPath, "utf8");
-  const archiveSha256 = sha256(archive);
-  if (checksumFromFile(checksum) !== archiveSha256) throw new Error("CHECKSUM_LOCAL_MISMATCH");
-  const checksumKey = `${objectKey}.sha256`;
-  const existingArchive = await s3Request({ endpoint: parsedEndpoint, bucket, key: objectKey, method: "HEAD", accessKeyId, secretAccessKey, fetchImpl, now });
-  const existingChecksum = await s3Request({ endpoint: parsedEndpoint, bucket, key: checksumKey, method: "HEAD", accessKeyId, secretAccessKey, fetchImpl, now });
-  if (existingArchive || existingChecksum) throw new Error("R2_OBJECT_COLLISION");
-  await s3Request({ endpoint: parsedEndpoint, bucket, key: objectKey, method: "PUT", body: archive, contentType: "application/octet-stream", accessKeyId, secretAccessKey, fetchImpl, now });
-  await s3Request({ endpoint: parsedEndpoint, bucket, key: checksumKey, method: "PUT", body: checksum, contentType: "text/plain; charset=utf-8", accessKeyId, secretAccessKey, fetchImpl, now });
-  const uploadedArchive = await s3Request({ endpoint: parsedEndpoint, bucket, key: objectKey, method: "GET", accessKeyId, secretAccessKey, fetchImpl, now });
-  const downloadedArchive = Buffer.from(await uploadedArchive.arrayBuffer());
-  if (sha256(downloadedArchive) !== archiveSha256) throw new Error("R2_ARCHIVE_CORRUPTED");
-  const uploadedChecksum = await s3Request({ endpoint: parsedEndpoint, bucket, key: checksumKey, method: "GET", accessKeyId, secretAccessKey, fetchImpl, now });
-  if ((await uploadedChecksum.text()).trim() !== checksum.trim()) throw new Error("R2_CHECKSUM_CORRUPTED");
-  return { archiveSha256, objectKey, checksumKey };
+  const client = clientFactory({
+    endpoint: parsedEndpoint.toString().replace(/\/$/, ""),
+    region: "auto",
+    credentials: { accessKeyId, secretAccessKey },
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
+  });
+  try {
+    const archive = await readFile(archivePath);
+    const checksum = await readFile(checksumPath, "utf8");
+    const archiveSha256 = sha256(archive);
+    if (checksumFromFile(checksum) !== archiveSha256) throw new Error("CHECKSUM_LOCAL_MISMATCH");
+    const checksumKey = `${objectKey}.sha256`;
+    const existingArchive = await s3Request(client, new HeadObjectCommand({ Bucket: bucket, Key: objectKey }), "HEAD");
+    const existingChecksum = await s3Request(client, new HeadObjectCommand({ Bucket: bucket, Key: checksumKey }), "HEAD");
+    if (existingArchive || existingChecksum) throw new Error("R2_OBJECT_COLLISION");
+    await s3Request(client, new PutObjectCommand({
+      Bucket: bucket,
+      Key: objectKey,
+      Body: archive,
+      ContentType: "application/octet-stream",
+      IfNoneMatch: "*",
+    }), "PUT");
+    await s3Request(client, new PutObjectCommand({
+      Bucket: bucket,
+      Key: checksumKey,
+      Body: checksum,
+      ContentType: "text/plain; charset=utf-8",
+      IfNoneMatch: "*",
+    }), "PUT");
+    const uploadedArchive = await s3Request(client, new GetObjectCommand({ Bucket: bucket, Key: objectKey }), "GET");
+    const downloadedArchive = await readObjectBody(uploadedArchive.Body);
+    if (sha256(downloadedArchive) !== archiveSha256) throw new Error("R2_ARCHIVE_CORRUPTED");
+    const uploadedChecksum = await s3Request(client, new GetObjectCommand({ Bucket: bucket, Key: checksumKey }), "GET");
+    const downloadedChecksum = (await readObjectBody(uploadedChecksum.Body)).toString("utf8");
+    if (downloadedChecksum.trim() !== checksum.trim()) throw new Error("R2_CHECKSUM_CORRUPTED");
+    return { archiveSha256, objectKey, checksumKey };
+  } finally {
+    client.destroy?.();
+  }
 }
 
 if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}`) {
