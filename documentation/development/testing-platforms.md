@@ -67,6 +67,13 @@ Exécuter :
 npm run test:e2e
 ```
 
+Pour la preuve locale ciblée du ruban de navigation, utiliser la configuration
+canonique versionnée sous `e2e/` :
+
+```bash
+npm run test:e2e:navigation:local
+```
+
 Ces commandes sélectionnent uniquement les projets Playwright locaux qui ne
 requièrent pas de base Supabase mutable. Les E2E persistants — partage
 d'action, parcours authentifié de recrutement et signalement/Storage — ne sont

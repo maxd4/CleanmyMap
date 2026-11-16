@@ -131,6 +131,7 @@
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
     "test:e2e": "playwright test --project=\"local public\" --project=\"local authenticated\"",
     "test:e2e:list": "playwright test --list --project=\"local public\" --project=\"local authenticated\"",
+    "test:e2e:navigation:local": "playwright test --config=e2e/playwright.navigation.local.config.ts",
     "test:e2e:persistent:ci": "node e2e/run-github-actions-persistent.mjs",
     "gamification:reconcile": "npm run gamification:reconcile -w apps/web",
     "mobile:typecheck": "npm run typecheck -w apps/mobile",

@@ -1,10 +1,14 @@
+import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
+const configDirectory = __dirname;
+const repositoryRoot = path.resolve(configDirectory, "..");
+
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: configDirectory,
   fullyParallel: false,
   workers: 1,
-  outputDir: "artifacts/playwright/navigation-local-results",
+  outputDir: path.join(repositoryRoot, "artifacts/playwright/navigation-local-results"),
   reporter: "line",
   use: {
     baseURL: "http://localhost:3001",
@@ -21,6 +25,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "node scripts/dev/dev-with-fallback-port.mjs",
+    cwd: repositoryRoot,
     url: "http://localhost:3001",
     reuseExistingServer: false,
     timeout: 120_000,
