@@ -1,6 +1,9 @@
 # Vendor Exit Strategy : continuité et sortie des fournisseurs
 
-Statut documentaire : `CURRENT` pour l'inventaire des contrats existants et les règles de gouvernance ; `PLAN` pour les capacités de sauvegarde, restauration et bascule qui ne sont pas encore démontrées.
+Statut documentaire : `CURRENT` pour l'inventaire des contrats existants, les
+règles de gouvernance et les preuves de sauvegarde Supabase établies ; `PLAN`
+pour les capacités de restauration à froid, reprise applicative et sortie
+fournisseur qui ne sont pas encore démontrées.
 
 ## 1. Objectif, autorité et limites
 
@@ -76,12 +79,19 @@ L'arbre canonique des migrations est `apps/web/supabase/migrations/`. Les deux w
 
 Le workflow de sauvegarde est manuel ou mensuel, sous activation explicite du
 dépôt, et exporte `public,private`, les rôles et les objets Storage avant de
-préparer une archive GPG. L'archive peut être conservée même si le restore-check
-échoue ; les statuts `BACKUP_CREATED`, `RESTORE_VERIFIED` et `RESTORE_FAILED`
-restent distincts. La rétention de l'artefact GitHub est de **trois jours** et
-la conservation R2 est décrite exclusivement dans
-[la procédure canonique Supabase](./supabase-backup-restore.md). Aucun transfert
-R2 réel ni aucune activation effective du cron n'est déclaré vérifié ici.
+préparer une archive GPG. Le run Production du 16 novembre 2026
+[`43868255913`](https://github.com/maxd4/CleanmyMap/actions/runs/43868255913) a
+établi `BACKUP_CREATED` et `RESTORE_VERIFIED` pour une archive réelle ; son
+export Storage a trouvé 5 buckets et 2 objets. Le transfert et la récupération
+R2 avec SHA-256 exact sont donc `CURRENT`. Le run SDK R2
+[`43863350721`](https://github.com/maxd4/CleanmyMap/actions/runs/43863350721) a
+établi séparément `HEAD/PUT/GET` sur un objet synthétique.
+
+La confirmation utilisateur du 16 novembre établit la conservation R2 à 180
+jours de verrouillage puis 210 jours de lifecycle et l'activation mensuelle ; les
+détails de cette configuration restent chez l'owner de la
+[procédure Supabase](./supabase-backup-restore.md). Ces preuves ne
+démontrent ni restauration à froid déchiffrée depuis R2, ni reprise applicative.
 
 Ce périmètre ne constitue **pas** une reprise après sinistre complète démontrée.
 Les schémas et services gérés `auth`, `storage` et apparentés ne sont pas
@@ -115,11 +125,13 @@ Les scripts suivants existent dans le workspace Web et constituent des points d'
 
 Ne pas confondre les exports métier partiels avec la sauvegarde PostgreSQL/Storage, ni réutiliser un outil de synchronisation des variables comme coffre de secrets.
 
-## 4. `PLAN` : sauvegardes autonomes et conservation
+## 4. `PLAN` : sauvegardes autonomes et conservation restantes
 
 ### 4.1 Contrat commun
 
-La sauvegarde doit pouvoir être produite **même si le banc d'essai de restauration échoue**. Les actions sont séparées :
+Les capacités restantes doivent compléter la sauvegarde déjà démontrée **sans
+confondre le banc d'essai de restauration et la reprise applicative**. Les
+actions sont séparées :
 
 1. **Exporter** le périmètre métier complet, vérifier les inventaires et empreintes, produire un manifeste avec horodatage, identifiant d'archive, provenance, versions et SHA Git.
 2. **Chiffrer** l'archive avant de quitter l'espace protégé, vérifier le destinataire GPG et l'intégrité du fichier final.
@@ -127,14 +139,19 @@ La sauvegarde doit pouvoir être produite **même si le banc d'essai de restaura
 4. **Restaurer et tester** une archive conservée dans une cible isolée, sans bloquer rétroactivement sa conservation si le test échoue.
 5. **Qualifier** séparément l'intégrité du backup, la restaurabilité de la base et la reprise applicative.
 
-Un export incomplet, un manifeste incorrect, un chiffrement défaillant ou un transfert non confirmé restent bloquants pour `BACKUP_CREATED`. En revanche, une archive complète et chiffrée peut être conservée sous `RESTORE_FAILED` si le rejeu PostgreSQL échoue, ou `RESTORE_UNVERIFIED` si aucun rejeu n'a pu commencer. Aucun statut `RESTORE_VERIFIED` ne peut être attribué sur tests statiques ou fixtures uniquement.
+Un export incomplet, un manifeste incorrect, un chiffrement défaillant ou un
+transfert non confirmé restent bloquants pour `BACKUP_CREATED`. Le run
+`43868255913` satisfait ce critère pour son archive ; cette preuve ne change
+pas les critères des restaurations à froid ou de la reprise applicative.
 
 ### 4.2 Stockage, rétention et sécurité
 
 La politique R2 et ses réglages de rétention sont documentés dans la procédure
 Supabase propriétaire. La stratégie transversale conserve seulement le besoin
 d'une copie indépendante, chiffrée et protégée contre l'écrasement ou la
-suppression ; elle ne duplique pas les durées, permissions ou quotas R2.
+suppression ; elle ne duplique pas les permissions ou quotas R2. Les runs
+prouvent les opérations exercées, mais pas l'absence de `DeleteObject`,
+`ListBucket` ou de droits de gestion du bucket.
 
 La clé privée GPG et sa récupération de secours restent hors GitHub et hors du fournisseur de stockage des archives. Une copie locale seule n'est pas suffisante si le poste est perdu. Les informations de récupération du coffre de secrets et du domaine doivent être conservées dans une procédure protégée hors dépôt, sans jamais placer de valeurs sensibles dans ce document.
 
@@ -156,6 +173,12 @@ Les exports de plusieurs fournisseurs sont des instantanés à dates différente
 ### 5.1 Supabase perdu, nouveau projet Supabase disponible
 
 C'est la voie de reprise à privilégier pour limiter le changement logiciel :
+
+Le `RESTORE_VERIFIED` du run `43868255913` concerne uniquement le rejeu
+PostgreSQL éphémère dans la cible isolée du runner. La récupération R2 du même
+run prouve l'objet et son checksum, mais pas une restauration à froid : il faut
+encore télécharger, déchiffrer et restaurer l'archive depuis R2 sur une cible
+isolée. La remise en service Web/mobile est une troisième preuve, distincte.
 
 1. Récupérer les archives et le code depuis les copies indépendantes ; sélectionner un point de restauration sain.
 2. Créer un **nouveau projet isolé** et y reconstituer les dépendances PostgreSQL/Supabase requises.
@@ -228,10 +251,10 @@ Les étapes ci-dessous sont des décisions `PLAN`, non des tâches lancées ni d
 
 | Priorité | Chantier borné | Critère de clôture |
 | --- | --- | --- |
-| **P0** | Maintenir l'export Supabase complet pour `public` et `private`, séparer sauvegarde chiffrée et restore-check, conserver au moins une archive récupérable indépendamment du résultat de la preuve SQL | Archive réelle chiffrée avec manifeste conforme, hors runner ; `RESTORE_FAILED` ou `RESTORE_UNVERIFIED` explicite si replay non validé |
-| **P1** | Vérifier la configuration R2 privée, la conservation hors CI et la récupération de la clé GPG hors dépendance GitHub/Supabase | Une archive historique récupérée et déchiffrée depuis la copie indépendante ; droits de suppression et rétention vérifiés |
+| **P0 — CURRENT** | Maintenir l'export Supabase complet pour `public` et `private`, séparer sauvegarde chiffrée et restore-check, conserver au moins une archive récupérable indépendamment du résultat de la preuve SQL | Run Production `43868255913` : `BACKUP_CREATED`, `RESTORE_VERIFIED`, transfert et récupération R2, avec export Storage 5 buckets / 2 objets |
+| **P1** | Exécuter une restauration à froid depuis R2 et vérifier la récupération de la clé GPG hors dépendance GitHub/Supabase | Téléchargement, déchiffrement et restauration d'une archive R2 historique sur cible isolée ; permissions de suppression et règle multipart encore à vérifier |
 | **P1** | Export et procédure de migration d'identités Clerk, inventaire des secrets Vercel et copie indépendante Git | Exports sécurisés, contrôle de couverture et reconstruction de test sans accès aux comptes Production |
-| **P2** | Restauration d'une archive réelle sur nouveau projet Supabase, puis tests RLS/Storage et parcours critiques | `RESTORE_VERIFIED` et `SERVICE_RECOVERY_VERIFIED` sur une cible isolée |
+| **P2** | Restauration d'une archive réelle sur nouveau projet Supabase, puis tests RLS/Storage et parcours critiques | `SERVICE_RECOVERY_VERIFIED` sur une cible isolée ; le `RESTORE_VERIFIED` PostgreSQL éphémère existant ne clôt pas ce jalon |
 | **P2** | Redéploiement Web hors Vercel et remplacement contrôlé de Resend | Services testés avec clés neuves et vérifications de réception, sécurité et cron |
 | **P3** | Exercice de bascule hors Supabase / changement de fournisseur d'identité | Contrats API, JWT, ownership et fonctionnement mesurés ; écarts documentés |
 

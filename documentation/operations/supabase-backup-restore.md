@@ -18,11 +18,23 @@ un runner GitHub hébergé ; Docker n'est jamais lancé sur le poste local.
   n'est disponible ; ce statut ne doit pas être remplacé par une inférence à
   partir du code.
 
-Le premier backup Production validé par le restore-check PostgreSQL est conservé
-comme preuve historique de la restauration isolée. Il ne constitue pas une
-preuve de transfert R2, de récupération depuis R2, de déchiffrement Kleopatra,
-ni d'activation effective du cron mensuel : ces éléments restent
-`NOT_VERIFIED` tant qu'ils n'ont pas été exécutés et constatés séparément.
+Preuves établies le 16 novembre 2026 : le run Production
+[`43868255913`](https://github.com/maxd4/CleanmyMap/actions/runs/43868255913) a
+produit `BACKUP_CREATED` et `RESTORE_VERIFIED` pour l'archive réelle, après
+export, contrôle PostgreSQL éphémère, chiffrement, transfert R2 et récupération
+avec SHA-256 exact. L'export Storage de ce run a trouvé 5 buckets et 2 objets
+(113716 octets). Le run SDK R2
+[`43863350721`](https://github.com/maxd4/CleanmyMap/actions/runs/43863350721) a
+également réussi sur un objet synthétique avec `HEAD`, `PUT` et `GET`.
+
+Ces preuves établissent le transfert et la récupération R2, mais pas un
+déchiffrement local, une restauration à froid depuis R2, ni une reprise
+applicative Web/mobile. La confirmation utilisateur du 16 novembre établit que
+les paramètres R2 de conservation sont configurés à 180 jours de verrouillage
+et 210 jours de lifecycle, et que l'activation mensuelle est effective. Les
+permissions exactes du jeton R2, notamment l'absence de `DeleteObject`,
+`ListBucket` et des droits de gestion du bucket, ne sont pas énumérées par ces
+runs et ne doivent pas être présentées comme vérifiées.
 
 ## Couverture réelle
 
@@ -86,40 +98,39 @@ Pour la conservation R2, configurer dans le même environnement :
   juridiction EU ;
 - variable `SUPABASE_BACKUP_R2_BUCKET` ;
 - variable facultative `SUPABASE_BACKUP_R2_OBJECT_PREFIX` (défaut `supabase-backups`) ;
-- secret `SUPABASE_BACKUP_R2_ACCESS_KEY_ID` limité à ce bucket ;
-- secret `SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY` limité à `HeadObject`,
-  `PutObject` et `GetObject` sur ce bucket et, lorsque la politique le permet,
-  sur le préfixe de sauvegarde.
+- secret `SUPABASE_BACKUP_R2_ACCESS_KEY_ID` utilisé par le workflow ; le scope
+  exact du jeton doit être vérifié séparément ;
+- secret `SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY` capable d'exécuter les
+  opérations requises par le workflow sur ce bucket et son préfixe ; la
+  politique effective du jeton doit être vérifiée séparément.
 
-Le jeton R2 à créer est **Object Read & Write**, avec `Apply to specific
-buckets only` sur le seul bucket de sauvegarde. Cloudflare génère alors les deux
-identifiants S3 nécessaires : `Access Key ID` et `Secret Access Key`; la seconde
-valeur n'est plus consultable après sa création et doit être copiée une seule
-fois dans le secret GitHub. La CI n'a pas besoin de `ListBucket`, de
-`PutBucketLifecycle`, de `PutBucketObjectLockConfiguration` ou de droits de
-gestion du bucket. Si `DeleteObject` est accordé par la politique R2 malgré le
-besoin d'écriture, il existe un risque de suppression par le principal CI en
-dehors de la protection de rétention ; il faut donc le refuser et vérifier la
-permission effective du jeton. Bucket Lock ne remplace pas cette séparation de
-droits et ne protège que les objets et durées effectivement configurés.
+Les identifiants S3 sont créés hors du dépôt et la valeur secrète n'est copiée
+qu'une seule fois dans GitHub. Le workflow observé utilise `HeadObject`,
+`PutObject` et `GetObject` pour publier et récupérer l'archive et son checksum.
+Cette observation ne permet pas de déduire les permissions refusées ou les
+droits d'administration du bucket. Bucket Lock ne remplace pas une revue de la
+politique effective et ne protège que les objets et durées effectivement
+configurés.
 
 #### Configuration R2 recommandée et état de vérification
 
-`PLAN` — créer un bucket privé **Standard**, de juridiction **European Union
-(EU)**, puis utiliser l'endpoint S3 juridictionnel
-`https://<ACCOUNT_ID>.eu.r2.cloudflarestorage.com`. Configurer hors GitHub Actions
-un Bucket Lock de 180 jours et une règle Lifecycle supprimant les objets après
-210 jours ; cette dernière valeur ne doit pas annuler ou contourner le verrou
-pendant les 180 premiers jours. Configurer également l'abandon des uploads
-multipart incomplets après 7 jours (valeur par défaut documentée par Cloudflare,
-à confirmer si une règle explicite est ajoutée). Ces réglages sont des
-recommandations d'exploitation, pas des paramètres que le workflow peut créer
-ou modifier.
+`CURRENT` — le transfert et la récupération des objets R2 sont établis par les
+runs `43868255913` et `43863350721`. La configuration de conservation à 180
+jours de verrouillage puis 210 jours de lifecycle et l'activation mensuelle ont
+été confirmées par l'utilisateur le 16 novembre 2026 ; elles ne sont pas
+modifiées par le workflow.
 
-`NOT_VERIFIED` — le dépôt ne contient aucune preuve que le bucket, sa
-juridiction EU, sa classe Standard, son Bucket Lock 180 jours, sa Lifecycle
-210 jours, sa règle multipart 7 jours, le périmètre effectif du jeton ou ses
-permissions de suppression ont été configurés et relus dans Cloudflare.
+`PLAN` — maintenir un bucket privé **Standard** de juridiction **European Union
+(EU)** avec l'endpoint S3 juridictionnel
+`https://<ACCOUNT_ID>.eu.r2.cloudflarestorage.com`, et confirmer l'abandon des
+uploads multipart incomplets après 7 jours (valeur par défaut documentée par
+Cloudflare, à confirmer si une règle explicite est ajoutée). Ces paramètres
+d'infrastructure ne sont pas créés ni modifiés par le workflow.
+
+`NOT_VERIFIED` — la règle multipart explicite, le périmètre détaillé du jeton,
+les permissions de suppression et les droits de gestion du bucket n'ont pas été
+relus dans Cloudflare. Les runs prouvent les opérations effectivement exercées,
+pas l'absence de permissions supplémentaires.
 
 Le dépôt ne garantit pas un plafond de dépense. La tarification R2 comprend un
 quota gratuit mensuel annoncé par Cloudflare pour Standard (10 GB-month de
@@ -151,14 +162,13 @@ déclenchée par la seule présence d'un secret R2.
 
 Depuis l'onglet Actions, choisir **Supabase encrypted backup**, sélectionner la
 branche `main` et saisir exactement `BACKUP_PRODUCTION_NOW` pour un run manuel.
-Toute autre branche ou valeur arrête le job avant l'export. Le déclencheur mensuel
-du premier jour à 02:17 UTC reste inactif tant que
-`SUPABASE_BACKUP_MONTHLY_ENABLED` n'est pas exactement `true`. Le job est
-séquentiel ; l'artefact GitHub est conservé trois jours et l'archive est
-destinée à la conservation pérenne dans R2. Le planning est donc le premier
-jour de chaque mois à `02:17 UTC`, mais son exécution réelle reste
-`NOT_VERIFIED` tant que la variable de dépôt n'a pas été activée et qu'aucun run
-planifié n'a été observé.
+Toute autre branche ou valeur arrête le job avant l'export. Le déclencheur
+mensuel du premier jour à 02:17 UTC exige
+`SUPABASE_BACKUP_MONTHLY_ENABLED=true`. Le job est séquentiel ; l'artefact
+GitHub est conservé trois jours et l'archive est destinée à la conservation
+pérenne dans R2. L'activation mensuelle a été confirmée par l'utilisateur le
+16 novembre 2026 ; l'observation d'un run effectivement déclenché par le
+planning reste à faire séparément.
 
 Le workflow vérifie que le dump de rôles, de schéma, de données et l'inventaire
 Storage sont non vides. Il construit ensuite un manifeste de SHA-256, vérifie
@@ -197,6 +207,18 @@ La clé privée et sa phrase secrète restent sur le poste sécurisé de l'utili
 Ne pas déposer l'archive déchiffrée dans GitHub, un cache, un partage public ou
 un ticket. Supprimer le tar déchiffré après contrôle, selon la politique locale
 de conservation.
+
+### Distinction des preuves de restauration
+
+- `RESTORE_VERIFIED` dans le run Production `43868255913` est une restauration
+  PostgreSQL éphémère de l'archive réelle dans la cible isolée du runner.
+- La récupération R2 vérifiée dans ce run confirme que l'archive et son checksum
+  ont été relus avec le même SHA-256. Elle ne constitue pas une restauration à
+  froid depuis R2 : le téléchargement, le déchiffrement local et le rejeu depuis
+  l'objet R2 doivent encore être exécutés et documentés séparément (`PLAN`).
+- La reprise applicative exige en plus le rétablissement des services, des
+  identités, du Storage et des parcours Web/mobile (`SERVICE_RECOVERY_VERIFIED`);
+  elle n'est pas démontrée par ces runs.
 
 ## Restauration contrôlée
 
@@ -477,7 +499,11 @@ Un test réussi sur une fixture synthétique ne vaut pas restauration d'une arch
 
 ### 8. Objectifs de continuité
 
-La fréquence mensuelle vise une archive pérenne par mois en fonctionnement nominal, mais cette garantie n'existe que si l'activation du cron, le transfert R2 et la récupération avec SHA-256 exact réussissent. L'activation du cron et le transfert R2 réel restent `NOT_VERIFIED`.
+La fréquence mensuelle vise une archive pérenne par mois en fonctionnement
+nominal. Le transfert R2 et la récupération avec SHA-256 exact sont démontrés
+par le run Production `43868255913`; l'activation mensuelle est confirmée par
+l'utilisateur le 16 novembre 2026. Un run effectivement déclenché par le
+planning n'a pas encore été observé séparément.
 
 Le **RPO** (perte maximale de données admissible) et le **RTO** (délai maximal de reprise admissible) doivent être fixés à partir du besoin métier et mesurés au moyen d'exercices. Aucun RPO ou RTO garanti n'est actuellement démontré.
 
@@ -523,9 +549,11 @@ Un run absent, un secret manquant, une empreinte non vérifiée, un échec de re
 un manifeste incohérent ou un périmètre non couvert doit être classé comme
 blocage. `EPHEMERAL_RESTORE: PASS` n'est produit qu'après exécution réelle du
 rejeu et des contrôles d'intégrité ; aucun backup réussi ne doit être annoncé
-sur la seule présence d'un fichier chiffré. Tant qu'un run réel n'a pas réussi,
-que son artefact n'a pas été vérifié et que son déchiffrement local avec
-Kleopatra n'a pas été effectué, l'état reste `PARTIAL`.
+sur la seule présence d'un fichier chiffré. Le run Production établit
+`BACKUP_CREATED` et `RESTORE_VERIFIED` pour son périmètre. Le déchiffrement local
+avec Kleopatra, la restauration à froid depuis R2 et la reprise applicative
+restent des preuves distinctes à obtenir ; leur absence ne rétrograde pas les
+deux statuts du run, mais interdit de déclarer la reprise complète.
 
 Voir aussi la stratégie de sortie fournisseur dans
 [`vendor-exit-strategy.md`](vendor-exit-strategy.md) ; ce document reste la
