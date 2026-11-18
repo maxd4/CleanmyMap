@@ -447,6 +447,18 @@ L'estimateur d'impact du site et le module d'usage individuel « Mon empreinte I
    - Pas de cumul tokens et durée pour une même charge ;
    - Unidirectionnalité stricte $\text{kWh} \to \text{CO₂e}$, interdisant toute division inverse.
 
+4. **Catalogue des modèles et neutralité du raisonnement** :
+   - Séparation stricte entre éditeur et opérateur hébergeur (`resolveHosterForModel`) ;
+   - Prise en compte des architectures denses vs Mixture-of-Experts (paramètres actifs vs totaux) ;
+   - Les tokens de réflexion des modèles de raisonnement (reasoning tokens) sont des tokens physiques générés, sans multiplicateur énergétique arbitraire ;
+   - KV-cache et prompt caching intégrés avec abattement sur la phase de préfill sans régression.
+
+5. **Évaluation et intégration de la méthodologie EcoLogits** :
+   - Évaluation de la méthodologie EcoLogits v3.0.0 (Data For Good / GenAI Impact, licence MPL-2.0) via `ecologits-adapter.ts` ;
+   - Décomposition physique en DAG : énergie active accélérateurs ($E_{\text{active}}$) + énergie idle serveur ($E_{\text{idle}}$) + impacts matériels ACV (GWP, ADPe, PE) amortis sur 3 ans ;
+   - Dérivation de débits déterministes pour bilans déclaratifs et bascule en fail-closed (`NA`) si la géographie ou la physique sont incomplètes ;
+   - Herméticité absolue entre engagements contractuels market-based et inventaire physique location-based.
+
 ## Lecture correcte
 
 Le protocole n'a pas pour but de sur-vendre l'impact. Il sert a rendre l'impact comparable, discutable et ameliorable.

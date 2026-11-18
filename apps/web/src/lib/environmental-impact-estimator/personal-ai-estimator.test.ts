@@ -158,4 +158,107 @@ describe("personal-ai-estimator", () => {
     expect(result.modalities.text.activityCount).toBe(3_000_000);
     expect(result.physicalTotals.itEnergyKwh).toBe(0.9);
   });
+
+  it("calcule les impacts pour un modèle documenté du catalogue via les paramètres EcoLogits", () => {
+    const result = estimatePersonalAiFootprint({
+      modelId: "meta-llama/llama-3.1-70b-instruct",
+      hosterOperator: "aws_bedrock",
+      textUsage: {
+        inputTokens: 50_000,
+        outputTokens: 10_000,
+        cachedTokens: 20_000,
+      },
+      region: "US",
+      pue: 1.15,
+      datacenterWue: 0.8,
+    });
+
+    expect(result.modelDetails).toBeDefined();
+    expect(result.modelDetails?.id).toBe("meta-llama/llama-3.1-70b-instruct");
+    expect(result.modelDetails?.publisher).toBe("Meta");
+    expect(result.modelDetails?.hoster).toBe("AWS Bedrock");
+    expect(result.modelDetails?.activeParametersBillion).toBe(70);
+
+    expect(result.physicalTotals.itEnergyKwh).toBeGreaterThan(0);
+    expect(result.physicalTotals.facilityEnergyKwh).toBeGreaterThan(0);
+    expect(result.physicalTotals.operationalKgCo2e).toBeGreaterThan(0);
+    expect(result.physicalTotals.embodiedKgCo2e).toBeGreaterThan(0);
+    expect(result.physicalTotals.directWaterLiters).toBeGreaterThan(0);
+    expect(result.physicalTotals.indirectWaterLiters).toBeGreaterThan(0);
+    expect(result.physicalTotals.totalWaterLiters).toBeGreaterThan(0);
+    expect(result.dataQuality).toBe("DOCUMENTED_MODEL");
+  });
+
+  it("gère les modèles de raisonnement sans multiplicateur artificiel de réflexion", () => {
+    const result = estimatePersonalAiFootprint({
+      modelId: "deepseek-ai/deepseek-r1",
+      textUsage: {
+        inputTokens: 1_000,
+        outputTokens: 5_000, // contient 3 500 tokens de réflexion
+        reasoningTokensIncluded: 3_500,
+      },
+      region: "US",
+    });
+
+    expect(result.modelDetails?.isReasoningModel).toBe(true);
+    expect(
+      result.methodologyNotes.some((n) =>
+        n.includes("tokens de raisonnement inclus dans le volume de génération"),
+      ),
+    ).toBe(true);
+    // Vérification que reasoningTokens n'a pas été ajouté en surplus (anti-double-comptage)
+    expect(result.modalities.text.activityCount).toBe(6_000);
+  });
+
+  it("utilise prioritairement une mesure électrique directe aux bornes", () => {
+    const result = estimatePersonalAiFootprint({
+      textUsage: { totalTokens: 1_000_000 },
+      measuredEnergyKwh: 4.5, // 4.5 kWh mesurés
+      region: "US",
+      pue: 1.15,
+    });
+
+    expect(result.physicalTotals.itEnergyKwh).toBe(4.5);
+    expect(result.physicalTotals.facilityEnergyKwh).toBe(round6(4.5 * 1.15));
+    expect(result.dataQuality).toBe("MEASURED");
+    expect(
+      result.modalities.text.methodologyNote.includes("Consommation électrique directe mesurée"),
+    ).toBe(true);
+  });
+
+  it("distingue strictement le calcul physique location-based de la déclaration market-based", () => {
+    const result = estimatePersonalAiFootprint({
+      textUsage: { totalTokens: 10_000_000 },
+      region: "US", // 0.35 kgCO2e/kWh location-based
+      marketBasedDeclaration: {
+        claimedKgCo2ePerKwh: 0.05, // déclaration contractuelle opérateur (PPA éolien/solaire)
+        providerCertificateNote: "Certificat de garantie d'origine 100% renouvelable",
+      },
+    });
+
+    // La valeur physique reste le mix réel du réseau américain
+    expect(result.physicalTotals.operationalKgCo2e).toBe(1.2075);
+    // La déclaration contractuelle est exposée séparément
+    expect(result.marketBasedDisclosure).toBeDefined();
+    expect(result.marketBasedDisclosure?.isReported).toBe(true);
+    expect(result.marketBasedDisclosure?.claimedKgCo2e).toBe(round6(3.45 * 0.05));
+    expect(result.marketBasedDisclosure?.note).toContain("Certificat de garantie d'origine");
+  });
+
+  it("adapte le calcul pour une exécution locale sur machine personnelle", () => {
+    const result = estimatePersonalAiFootprint({
+      modelId: "meta-llama/llama-3.1-8b-instruct",
+      executionEnvironment: "local_device",
+      textUsage: { outputTokens: 10_000 },
+      region: "FR",
+    });
+
+    expect(result.executionEnvironment).toBe("local_device");
+    expect(result.pue).toBe(1.0); // aucun surcoût de refroidissement data center
+    expect(result.physicalTotals.embodiedKgCo2e).toBe(0); // pas d'amortissement serveur cloud
+  });
 });
+
+function round6(val: number): number {
+  return Math.round(val * 1_000_000) / 1_000_000;
+}

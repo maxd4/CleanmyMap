@@ -53,3 +53,31 @@ export type {
   PersonalAiFootprintEstimate,
   ModalityEstimate,
 } from "./personal-ai-estimator";
+export {
+  AI_MODEL_CATALOG,
+  STANDARD_HOSTERS,
+  findAiModel,
+  requireAiModel,
+  listAiModels,
+  resolveHosterForModel,
+} from "./model-catalog";
+export type {
+  AiModelRecord,
+  AiModelPublisher,
+  WeightsAvailability,
+  ExecutionEnvironment,
+  ArchitectureType,
+  AiModelArchitecture,
+  AiModelHoster,
+} from "./model-catalog";
+export {
+  ECOLOGITS_METADATA,
+  ECOLOGITS_CONSTANTS,
+  evaluateEcologitsMethodology,
+  computeEcologitsCompatibleImpacts,
+} from "./ecologits-adapter";
+export type {
+  EcologitsEvaluationReport,
+  EcologitsComputationParams,
+  EcologitsImpactsResult,
+} from "./ecologits-adapter";
