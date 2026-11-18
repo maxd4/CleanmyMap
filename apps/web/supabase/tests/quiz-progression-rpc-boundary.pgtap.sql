@@ -46,8 +46,8 @@ select is(jsonb_array_length(public.record_quiz_progression(
   'quiz-rpc-49', 'quiz-a', array['quiz-a'], '[]'::jsonb
 ) -> 'inserted_events'), 0, 'a replay does not report a duplicate event');
 select is((select count(*)::integer from public.progression_events where user_id = 'quiz-rpc-49' and source_id = 'quiz-rpc-49-50'), 1, 'the 50 milestone is persisted once');
-select is((select xp_base from public.progression_events where user_id = 'quiz-rpc-49' and source_id = 'quiz-rpc-49-50'), 3, 'the 50 milestone keeps xp_base');
-select is((select xp_awarded from public.progression_events where user_id = 'quiz-rpc-49' and source_id = 'quiz-rpc-49-50'), 3, 'the 50 milestone keeps xp_awarded');
+select is((select xp_base from public.progression_events where user_id = 'quiz-rpc-49' and source_id = 'quiz-rpc-49-50'), 3::numeric, 'the 50 milestone keeps xp_base');
+select is((select xp_awarded from public.progression_events where user_id = 'quiz-rpc-49' and source_id = 'quiz-rpc-49-50'), 3::numeric, 'the 50 milestone keeps xp_awarded');
 select is((select metadata from public.progression_events where user_id = 'quiz-rpc-49' and source_id = 'quiz-rpc-49-50'), '{"badge":"quiz-type-50","case":"49-to-50"}'::jsonb, 'the 50 milestone keeps metadata');
 select is((select occurred_on from public.progression_events where user_id = 'quiz-rpc-49' and source_id = 'quiz-rpc-49-50'), '2026-10-28'::date, 'the 50 milestone keeps occurred_on');
 
@@ -79,7 +79,7 @@ select is((select count(*)::integer from public.progression_events
     and source_table = 'quiz_type_balance_progress'
     and source_id = 'quiz-rpc-balanced-10'
     and status_phase = 'validated'), 1, 'the balanced milestone is persisted once under its full identity');
-select is((select xp_awarded from public.progression_events where user_id = 'quiz-rpc-balanced' and source_id = 'quiz-rpc-balanced-10'), 2, 'the balanced milestone keeps XP');
+select is((select xp_awarded from public.progression_events where user_id = 'quiz-rpc-balanced' and source_id = 'quiz-rpc-balanced-10'), 2::numeric, 'the balanced milestone keeps XP');
 select is((select metadata from public.progression_events where user_id = 'quiz-rpc-balanced' and source_id = 'quiz-rpc-balanced-10'), '{"case":"balanced-9-to-10"}'::jsonb, 'the balanced milestone keeps metadata');
 select is((select correct_count from public.quiz_type_progress where user_id = 'quiz-rpc-balanced' and question_type = 'quiz-a'), 10, 'balanced first type is ten');
 select is((select correct_count from public.quiz_type_progress where user_id = 'quiz-rpc-balanced' and question_type = 'quiz-b'), 10, 'balanced second type is ten');

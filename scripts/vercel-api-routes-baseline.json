@@ -489,7 +489,7 @@
       "route": "apps/web/src/app/api/admin/brigade-verte/route.ts",
       "introducedBy": "c577f77bad3972978b9e36047cdfcfa6b33a1015",
       "reason": "Surface d'administration IMU max pour qualifier, révoquer et consulter les actions Quartier Propre Brigade Verte Paris avec audit systématique.",
-      "costContract": "GET et POST réservés à l'accès créateur (requireCreatorAccess) avec rate limits et audit PostgreSQL atomique ; recherche paginée d'actions éligibles bornée à 50 éléments par page sans exposition de données sensibles.",
+      "costContract": "GET et POST réservés à l'accès créateur (requireCreatorAccess) avec audit PostgreSQL atomique ; recherche paginée d'actions éligibles bornée à 50 éléments par page sans exposition de données sensibles.",
       "reviewedAt": "2026-11-18"
     },
     {

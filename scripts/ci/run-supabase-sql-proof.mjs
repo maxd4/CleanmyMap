@@ -488,7 +488,7 @@ export async function main(run = runSupabaseSqlProof) {
 }
 
 export function reportMainRejection(error) {
-  console.error(`SUPABASE_SQL_EVIDENCE: FAIL main rejected (${error instanceof Error ? (error.stack || error.message) : String(error)})`);
+  console.error(`SUPABASE_SQL_EVIDENCE: FAIL main rejected (${error instanceof Error ? error.name : "non-error rejection"})`);
   return 1;
 }
 
