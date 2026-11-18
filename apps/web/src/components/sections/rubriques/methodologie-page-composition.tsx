@@ -61,15 +61,8 @@ export function MethodologiePageClient(props: MethodologiePageClientProps) {
 
       <div className="methodology-page__shell cmm-page-width flex flex-col space-y-10 px-4 pt-2 sm:px-6 lg:px-8">
         <PageHeader
-          align="center"
           tone="red"
-          className="methodology-page__header"
-          title={
-            <span className="methodology-page__title">
-              <span aria-hidden="true" className="methodology-page__title-accent" />
-              <span>{t("header_title")}</span>
-            </span>
-          }
+          title={t("header_title")}
           subtitle={t("header_desc")}
         />
 

@@ -135,7 +135,10 @@
      ============================================================ */
   --cmm-page-max-width: 112rem;      /* 1792px - shell des pages classiques */
   --cmm-ribbon-text-size: var(--text-caption);      /* 12px - texte des rubans */
-  --cmm-page-header-title-size: clamp(2.5rem, 4vw, 3.6rem);
+  --cmm-page-header-title-size: clamp(2.5rem, 4.2vw, 3.85rem);
+  --cmm-page-header-max-width: 56rem;
+  --cmm-page-header-subtitle-max-width: 42rem;
+  --cmm-page-header-padding-block: clamp(1rem, 2.5vw, 2rem) clamp(0.75rem, 2vw, 1.5rem);
   --cmm-home-hero-title-size: clamp(3.5rem, 5.8vw, 4.8rem);
   --cmm-home-impact-title-size: clamp(1.9rem, 3.8vw, 2.7rem);
   --cmm-home-map-preview-height: 20rem;
@@ -380,14 +383,17 @@ html[data-cmm-density="compact"] {
   --radius-md: 0.8rem;
   --radius-lg: 1.2rem;
 
-  --cmm-page-header-title-size: clamp(2rem, 3.2vw, 2.88rem);
+  --cmm-page-header-title-size: clamp(2.25rem, 3.8vw, 3.4rem);
+  --cmm-page-header-max-width: 56rem;
+  --cmm-page-header-subtitle-max-width: 42rem;
+  --cmm-page-header-padding-block: clamp(0.85rem, 2.2vw, 1.75rem) clamp(0.65rem, 1.6vw, 1.25rem);
   --cmm-home-hero-title-size: clamp(2.8rem, 4.6vw, 3.8rem);
   --cmm-home-impact-title-size: clamp(1.52rem, 3.04vw, 2.16rem);
   --cmm-home-map-preview-height: 18rem;
   --cmm-home-map-preview-height-tablet: 20rem;
   --cmm-home-map-preview-height-desktop: 30rem;
   --cmm-page-padding-block: 1.6rem;
-  --cmm-page-header-content-gap: 1.6rem;
+  --cmm-page-header-content-gap: 1.75rem;
   --cmm-section-gap: 1.6rem;
   --cmm-content-group-gap: 0.8rem;
   --cmm-rubrique-card-padding: 1.6rem;
@@ -404,7 +410,7 @@ html[data-cmm-density="compact"] {
 @media (min-width: 1024px) {
   html[data-cmm-density="compact"] {
     --cmm-page-padding-block: 1.2rem;
-    --cmm-page-header-content-gap: 1.2rem;
+    --cmm-page-header-content-gap: 1.6rem;
     --cmm-section-gap: 1.2rem;
     --cmm-content-group-gap: 0.6rem;
     --cmm-rubrique-card-padding: 1.2rem;

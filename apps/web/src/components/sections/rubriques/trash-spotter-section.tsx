@@ -20,7 +20,26 @@ function resolveUrgencyLabel(fr: boolean, coveragePercent: number) {
   return fr ? "À surveiller" : "Watch";
 }
 function TrashSpotterSectionHero({ fr, quality, coveragePercent, urgencyLabel }: { fr: boolean; quality: ReturnType<typeof useTrashSpotter>["quality"]; coveragePercent: number; urgencyLabel: string }) {
-  return <motion.div variants={containerVariants} initial="hidden" animate="visible" className="relative overflow-hidden rounded-[2rem] border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(250,253,248,0.98),rgba(243,249,241,0.98))] p-6 shadow-[0_24px_72px_-42px_rgba(34,197,94,0.24)] sm:p-8 lg:p-10"><div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(187,247,208,0.45),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(134,239,172,0.2),transparent_30%)]" /><div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] lg:items-center"><motion.div variants={itemVariants} className="space-y-5"><PageHeader title={fr ? "Suivi Trash Spotter" : "Trash Spotter monitoring"} subtitle={fr ? "Consultez les signalements approuvés et la carte des points actuellement actionnables." : "Review approved reports and the map of currently actionable points."} /></motion.div><motion.div variants={itemVariants} className="relative min-h-[240px] overflow-hidden rounded-2xl border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(234,247,231,0.92),rgba(248,252,246,0.98))] shadow-[0_16px_44px_-30px_rgba(22,163,74,0.2)]"><div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300" /><div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(134,239,172,0.45),transparent_25%),radial-gradient(circle_at_20%_80%,rgba(187,247,208,0.45),transparent_24%)]" /><div className="relative h-full p-5"><div className="absolute left-6 top-6 flex gap-2"><div className="h-4 w-4 rounded-full bg-emerald-500/80" /><div className="h-4 w-4 rounded-full bg-emerald-300/70" /><div className="h-4 w-4 rounded-full bg-white/80" /></div><div className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,rgba(16,76,44,0.08))]" /><div className="absolute right-6 top-8 h-28 w-28 rounded-full bg-emerald-200/50 blur-3xl" /><div className="absolute bottom-7 left-5 right-5 rounded-2xl border border-emerald-200/70 bg-white/90 p-4 shadow-[0_12px_28px_-22px_rgba(15,23,42,0.22)]"><div className="flex items-start justify-between gap-3"><div className="space-y-1"><p className="cmm-text-small font-black uppercase tracking-[0.18em] text-emerald-700">{fr ? "Signalements actifs" : "Active reports"}</p><p className="text-3xl font-black tracking-[-0.06em] text-emerald-950">{quality.received}</p></div><div className="space-y-2 text-right"><div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">{fr ? "En direct" : "Live"}</div><div className="rounded-full border border-emerald-200 bg-white px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-900">{coveragePercent}% · {urgencyLabel}</div></div></div><div className="mt-4 h-2 rounded-full bg-emerald-100"><div className="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: String(Math.max(24, coveragePercent)) + "%" }} /></div></div></div></motion.div></div></motion.div>;
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        title={fr ? "Suivi Trash Spotter" : "Trash Spotter monitoring"}
+        subtitle={fr ? "Consultez les signalements approuvés et la carte des points actuellement actionnables." : "Review approved reports and the map of currently actionable points."}
+      />
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="relative overflow-hidden rounded-[2rem] border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(250,253,248,0.98),rgba(243,249,241,0.98))] p-6 shadow-[0_24px_72px_-42px_rgba(34,197,94,0.24)] sm:p-8">
+        <div className="relative flex flex-col items-start justify-between gap-4 rounded-2xl border border-emerald-200/70 bg-white/90 p-4 shadow-[0_12px_28px_-22px_rgba(15,23,42,0.22)] sm:flex-row sm:items-center">
+          <div className="space-y-1">
+            <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-emerald-700">{fr ? "Signalements actifs" : "Active reports"}</p>
+            <p className="text-3xl font-black tracking-[-0.06em] text-emerald-950">{quality.received}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-800">{fr ? "En direct" : "Live"}</div>
+            <div className="rounded-full border border-emerald-200 bg-white px-3 py-1 cmm-text-small font-black uppercase tracking-[0.14em] text-emerald-900">{coveragePercent}% · {urgencyLabel}</div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
 }
 function TrashSpotterMonitoring({ fr, error, isLoading, quality }: { fr: boolean; error: unknown; isLoading: boolean; quality: ReturnType<typeof useTrashSpotter>["quality"] }) {
   const approvedLabel = fr ? String(quality.approved) + " point" + (quality.approved > 1 ? "s" : "") + " approuvé" + (quality.approved > 1 ? "s" : "") : String(quality.approved) + " approved point" + (quality.approved === 1 ? "" : "s");

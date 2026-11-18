@@ -1,6 +1,5 @@
 "use client";
 
-import { ShieldAlert } from "lucide-react";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -10,33 +9,20 @@ export function FeedbackHeader() {
   const { locale } = useSitePreferences();
 
   return (
-    <CmmCard
-      tone="sky"
-      variant="glass"
-      size="lg"
-      className="rounded-[2rem] border-cyan-300/20 bg-slate-950/35"
-    >
-      <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
-        <div className="space-y-4">
-          <PageHeader
-            contrast="inverse"
-            title={
-              <span className="inline-flex items-center gap-3">
-                <ShieldAlert className="h-6 w-6 text-cyan-300" aria-hidden="true" />
-                <span>
-                  {locale === "fr"
-                    ? "Un canal unique pour corriger, améliorer et collaborer."
-                    : "A single channel to fix, improve and collaborate."}
-                </span>
-              </span>
-            }
-            subtitle={
-              locale === "fr"
-                ? "Choisis le questionnaire adapté: bug, amélioration ou collaboration. Chaque réponse est enregistrée dans le suivi CleanMyMap avec un vrai contexte."
-                : "Choose the right questionnaire: bug, improvement or collaboration. Each answer is recorded in the CleanMyMap follow-up with real context."
-            }
-          />
-
+    <div className="space-y-6">
+      <PageHeader
+        contrast="inverse"
+        title={
+          locale === "fr"
+            ? "Un canal unique pour corriger, améliorer et collaborer."
+            : "A single channel to fix, improve and collaborate."
+        }
+        subtitle={
+          locale === "fr"
+            ? "Choisis le questionnaire adapté: bug, amélioration ou collaboration. Chaque réponse est enregistrée dans le suivi CleanMyMap avec un vrai contexte."
+            : "Choose the right questionnaire: bug, improvement or collaboration. Each answer is recorded in the CleanMyMap follow-up with real context."
+        }
+        action={
           <CmmButtonGroup>
             <CmmButton href="#bug" tone="primary" variant="pill">
               {locale === "fr" ? "Signalement bug" : "Bug report"}
@@ -48,9 +34,16 @@ export function FeedbackHeader() {
               Collaboration
             </CmmButton>
           </CmmButtonGroup>
-        </div>
+        }
+      />
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+      <CmmCard
+        tone="sky"
+        variant="glass"
+        size="lg"
+        className="rounded-[2rem] border-cyan-300/20 bg-slate-950/35"
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
           {[
             {
                 label: "Bugs",
@@ -76,7 +69,7 @@ export function FeedbackHeader() {
             </div>
           ))}
         </div>
-      </div>
-    </CmmCard>
+      </CmmCard>
+    </div>
   );
 }

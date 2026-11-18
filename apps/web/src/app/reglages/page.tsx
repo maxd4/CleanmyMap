@@ -8,6 +8,7 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerLocale } from "@/lib/server-preferences";
 import { AccountSettingsEditor } from "@/components/account/account-settings-editor";
 import { extractLocationPreferencesFromMetadataSources } from "@/lib/user-location-preference";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { HOME_ROUTE } from "@/lib/home-routes";
@@ -80,13 +81,10 @@ function ReglagesPageContent({
           title={copy.title}
           subtitle={copy.subtitle}
           action={
-            <Link
-              href={PROFIL_ROUTE}
-              className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-2.5 text-sm font-black text-sky-800 transition hover:-translate-y-[1px] hover:bg-sky-50"
-            >
+            <CmmButton href={PROFIL_ROUTE} tone="secondary" variant="pill">
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               {copy.back}
-            </Link>
+            </CmmButton>
           }
         />
 

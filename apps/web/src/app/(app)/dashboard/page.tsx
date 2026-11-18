@@ -84,25 +84,23 @@ export default async function DashboardPage() {
           </div>
 
           {/* ── Header ── */}
-          <div
-            data-gsap-reveal
-            className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
-          >
+          <div data-gsap-reveal>
             <PageHeader
               family={pageFamily}
               title={t("title_v1")}
-              className="flex-1"
+              action={
+                <div className="flex flex-wrap items-center justify-center gap-2.5">
+                  <span className="h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.55)]" />
+                  <span className="text-sm font-semibold text-amber-900">
+                    {roleLabel}
+                  </span>
+                  <span className="rounded-lg border border-amber-200/18 bg-[rgba(69,26,3,0.72)] px-3 py-1 cmm-text-caption font-mono font-bold text-amber-50 shadow-sm">
+                    <Shield size={10} className="mr-1.5 inline text-amber-300" />
+                    {userId.slice(-8).toUpperCase()}
+                  </span>
+                </div>
+              }
             />
-            <div className="flex items-center gap-2.5 pb-1">
-              <span className="h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.55)]" />
-              <span className="text-sm font-semibold text-amber-900">
-                {roleLabel}
-              </span>
-              <span className="rounded-lg border border-amber-200/18 bg-[rgba(69,26,3,0.72)] px-3 py-1 cmm-text-caption font-mono font-bold text-amber-50 shadow-sm">
-                <Shield size={10} className="mr-1.5 inline text-amber-300" />
-                {userId.slice(-8).toUpperCase()}
-              </span>
-            </div>
           </div>
 
           {/* ── Résumé décisionnel + Plan de journée ── */}

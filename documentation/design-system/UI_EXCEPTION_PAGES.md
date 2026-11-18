@@ -184,6 +184,7 @@ nouvelle variante de `PageHeader`.
 
 | Surface | Raison vérifiée | Référence |
 |---|---|---|
+| `/` (accueil) | Hero autonome d'accueil avec composition dédiée (`cmm-home-hero-title`) et sélecteur de langue | `components/accueil/accueil-hero.tsx` |
 | `/explorer` | Sommaire de navigation avec composition dédiée et cartes de rubriques | `app/(app)/explorer/page.tsx` |
 | `/not-found` | État système 404 | `app/not-found.tsx` |
 | `/sign-in`, `/sign-up` | Branding et structure Clerk Auth & Onboarding | pages auth dédiées |
@@ -221,7 +222,7 @@ servir de modèle pour une nouvelle page éditoriale.
 | `/prints/report` | en-tête principal harmonisé sur le composant canonique | en-tête de document conservé, layout imprimable inchangé |
 | `/missions/[id]` | en-tête principal harmonisé sur le composant canonique | détail mission, carte et statistiques conservées |
 | `/learn/ressources` | en-tête principal harmonisé via le shell d'apprentissage | shell d'apprentissage inchangé |
-| `/actions/history` | en-tête principal harmonisé via `PageReadingTemplate` et `DecisionPageHeader` | chronologie métier conservée |
+| `/actions/history` | en-tête principal harmonisé via `PageReadingTemplate` et `PageHeader` centré | chronologie métier conservée |
 
 ### Familles autonomes où `PageHeader` n'est pas la bonne brique principale
 

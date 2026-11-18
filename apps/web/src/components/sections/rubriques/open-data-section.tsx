@@ -131,32 +131,19 @@ export function OpenDataSection() {
       hideHeader
       gradient="from-white via-violet-50/50 to-white"
     >
-      <div className="relative overflow-hidden rounded-[2.25rem] border border-violet-100 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(216,180,254,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(252,250,255,0.98)_100%)] p-5 text-slate-950 shadow-[0_30px_100px_-70px_rgba(79,70,229,0.45)] sm:p-8 lg:p-10">
-        <div className="pointer-events-none absolute right-8 top-10 hidden h-36 w-60 rounded-[2rem] opacity-60 lg:block">
-          <div className="h-full w-full bg-[radial-gradient(circle,rgba(168,85,247,0.55)_1.6px,transparent_1.6px)] bg-[length:18px_18px] opacity-70" />
-        </div>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-violet-200/20 blur-3xl" />
+      <div className="space-y-8">
+        <PageHeader
+          title="Open Data & API"
+          subtitle={
+            fr
+              ? "Consultez la projection publique des actions approuvées et cartographiées via l’API JSON."
+              : "Consult the public projection of approved mapped actions through the JSON API."
+          }
+        />
 
-        <section className="relative grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-          <div className="space-y-6">
-            <PageHeader
-              title={
-                <span className="inline-flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-700 text-white">
-                    <Database size={18} aria-hidden="true" />
-                  </span>
-                  <span>Open Data &amp; API</span>
-                </span>
-              }
-              subtitle={
-                fr
-                  ? "Consultez la projection publique des actions approuvées et cartographiées via l’API JSON."
-                  : "Consult the public projection of approved mapped actions through the JSON API."
-              }
-            />
-          </div>
-
-          <CmmCard tone="violet" variant="glass" className="relative">
+        <div className="relative overflow-hidden rounded-[2.25rem] border border-violet-100 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(216,180,254,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(252,250,255,0.98)_100%)] p-5 text-slate-950 shadow-[0_30px_100px_-70px_rgba(79,70,229,0.45)] sm:p-8 lg:p-10">
+          <section className="relative">
+            <CmmCard tone="violet" variant="glass" className="relative">
             <div className="absolute right-0 top-0 hidden h-full w-32 overflow-hidden rounded-r-[2rem] lg:block">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.12),transparent_68%)]" />
               <div className="absolute inset-y-0 right-4 w-px bg-violet-100/70" />
@@ -318,6 +305,7 @@ export function OpenDataSection() {
             </CmmButton>
           </div>
         </section>
+        </div>
       </div>
     </SectionShell>
   );

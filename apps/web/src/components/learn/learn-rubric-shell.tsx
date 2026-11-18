@@ -65,18 +65,18 @@ function LearnRubricIntro({
   }
 
   return (
-    <>
+    <div className="space-y-3 text-center">
       <PageHeader family={family} title={title[locale]} subtitle={subtitle[locale]} />
       <p
         className={
           isLightOrange
-            ? "cmm-text-body max-w-3xl"
-            : "max-w-3xl text-base leading-relaxed text-white md:text-lg"
+            ? "cmm-text-body mx-auto max-w-2xl"
+            : "mx-auto max-w-2xl text-base leading-relaxed text-white md:text-lg"
         }
       >
         {description[locale]}
       </p>
-    </>
+    </div>
   );
 }
 

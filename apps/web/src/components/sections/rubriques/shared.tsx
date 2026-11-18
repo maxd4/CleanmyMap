@@ -45,7 +45,6 @@ export function SectionShell({
   id,
   title,
   subtitle,
-  icon: Icon,
   gradient,
   children,
   summary,
@@ -75,25 +74,12 @@ export function SectionShell({
 
       <CmmPageLayout>
         {!hideHeader && title ? (
-          <div className="space-y-4">
-            <PageHeader
-              family={pageFamily}
-              title={
-                <span className="inline-flex items-center gap-4">
-                  {Icon ? (
-                    <span className={hero.iconWrap}>
-                      <Icon size={24} className={hero.icon} aria-hidden="true" />
-                    </span>
-                  ) : null}
-                  <span>{t(locale, title)}</span>
-                </span>
-              }
-              subtitle={subtitle ? t(locale, subtitle) : undefined}
-              headingLevel={headingLevel}
-            />
-
-            <div className="h-px w-full bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
-          </div>
+          <PageHeader
+            family={pageFamily}
+            title={t(locale, title)}
+            subtitle={subtitle ? t(locale, subtitle) : undefined}
+            headingLevel={headingLevel}
+          />
         ) : null}
 
         <CmmSectionGroup>

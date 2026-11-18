@@ -7,23 +7,17 @@ export default function Loading() {
   return (
     <div className="min-h-screen pb-24 text-slate-950">
       <div className="cmm-page-width space-y-10 px-6 py-8">
-        <header className="relative space-y-8 pt-10 lg:pt-12">
-          <div className="absolute -left-24 -top-24 h-[600px] w-[600px] rounded-full bg-sky-500/10 blur-[120px]" />
-
-          <div className="max-w-4xl space-y-4">
-            <PageHeader
-              family={resolvePageFamily("/actions/map")}
-              title="Cartographie des actions"
-              subtitle={<CmmSkeleton variant="text" className="w-[32rem]" />}
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <CmmSkeleton variant="rectangular" className="h-11 w-32 rounded-full" />
-            <CmmSkeleton variant="rectangular" className="h-11 w-36 rounded-full" />
-            <CmmSkeleton variant="rectangular" className="h-11 w-36 rounded-full" />
-          </div>
-        </header>
+        <PageHeader
+          family={resolvePageFamily("/actions/map")}
+          title="Cartographie des actions"
+          subtitle={<CmmSkeleton variant="text" className="mx-auto max-w-full w-[32rem]" />}
+          action={
+            <div className="flex flex-wrap justify-center gap-3">
+              <CmmSkeleton variant="rectangular" className="h-11 w-32 rounded-full" />
+              <CmmSkeleton variant="rectangular" className="h-11 w-36 rounded-full" />
+            </div>
+          }
+        />
 
         <section className="relative left-1/2 right-1/2 mx-auto w-[calc(100vw-1rem)] -translate-x-1/2 lg:w-[calc(100vw-1.5rem)]">
           <MapLoadingState fullViewport />

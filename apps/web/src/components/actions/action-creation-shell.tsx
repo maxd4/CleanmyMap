@@ -7,7 +7,6 @@ import { ActionCreationSectionContent, ActionCreationSectionsView } from "./acti
 import { ActionWorkflowStepContent, GuidedActionWorkflowView } from "./action-creation-shell-workflow";
 import type { ActionCreationSectionFormProps, ActionCreationShellProps } from "./action-creation-shell.types";
 import { useActionCreationShellController } from "./use-action-creation-shell-controller";
-import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { INACTIVE_LOCAL_DEV_AUTH } from "@/lib/auth/effective-auth-contract";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -114,7 +113,7 @@ function ActionCreationShellView({
   };
 
   if (initialSpace === "day" && actionIdForRender) {
-    return <div data-testid="action-day-shell" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><PageHeader tone="emerald" title="Jour J" subtitle="Retrouvez le rendez-vous et le briefing de la même action." className="!gap-2" /></CmmCard><ActionLifecycleNavigation actionId={actionIdForRender} activeSpace="day" fr={fr} searchParams={actionCreationSearchParams} /><ActionDayView actionId={actionIdForRender} /></div></div>;
+    return <div data-testid="action-day-shell" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><PageHeader tone="emerald" title="Jour J" subtitle="Retrouvez le rendez-vous et le briefing de la même action." /><ActionLifecycleNavigation actionId={actionIdForRender} activeSpace="day" fr={fr} searchParams={actionCreationSearchParams} /><ActionDayView actionId={actionIdForRender} /></div></div>;
   }
   if (initialSpace === "bilan" && actionIdForRender) return <ActionBilanView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} />;
   if (initialTab === "after") return <AfterActionCreationView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} />;

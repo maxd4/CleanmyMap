@@ -43,7 +43,7 @@ En cas de contradiction, ne pas créer une correction locale : aligner la docume
 - le titre principal est rendu en `h1` par `PageHeader` ;
 - `PageHeader` est l'unique composant runtime pour les titres principaux de page ;
 - aucun nouveau système de titre décoratif ne doit être créé ;
-- le header canonique est centré sur le couple **titre + sous-titre**, avec une éventuelle `action` latérale ;
+- le header canonique est centré dans la colonne de contenu sur le couple **titre + sous-titre**, avec d'éventuelles actions facultatives (`CmmButton` / `CTAGroup` ou métadonnée courte) placées juste sous le sous-titre ;
 - les repères de contexte, pills, badges et eyebrow ne font pas partie du contrat canonique du titre de page ;
 - les sous-titres restent courts, lisibles et non exhaustifs ;
 - les titres et sous-titres sont affichés intégralement : une ellipse CSS ne
@@ -57,13 +57,13 @@ En cas de contradiction, ne pas créer une correction locale : aligner la docume
 
 Le titre doit utiliser exclusivement `cmm-page-header-title`.
 
-Valeurs canoniques actuellement portées par le runtime :
+Valeurs canoniques actuellement portées par le runtime (`tokens.css` et `typography.css`) :
 
 ```css
-font-size: clamp(2.5rem, 4vw, 4.5rem);
+font-size: var(--cmm-page-header-title-size);
 font-weight: 900;
-line-height: 0.96;
-letter-spacing: -0.05em;
+line-height: 1.02;
+letter-spacing: -0.045em;
 text-wrap: balance;
 ```
 
@@ -104,14 +104,16 @@ Règles :
 
 La géométrie du couple titre / sous-titre est portée par `cmm-page-header` et doit rester commune au site.
 
-Valeur structurante actuelle :
+Valeurs structurantes actuelles :
 
 ```css
-max-width: 42rem;
-gap: 1rem;
+width: 100%;
+max-width: var(--cmm-page-header-max-width); /* 56rem */
+padding-block: var(--cmm-page-header-padding-block);
+gap: 0.875rem;
 ```
 
-Une page peut ajuster le placement du bloc dans son layout, mais pas recréer une largeur ou un rythme typographique parallèle.
+Le sous-titre reste contraint à `max-width: var(--cmm-page-header-subtitle-max-width)` (`42rem`) et centré sous le H1. Une page peut ajuster le placement du bloc dans son layout, mais pas recréer une largeur ou un rythme typographique parallèle.
 
 Le `className` du `PageHeader` reste donc limité au placement de son wrapper.
 Les overrides locaux de typographie, largeur, padding, radius, fond, bordure
@@ -138,25 +140,25 @@ Priorité :
 
 `align` accepte uniquement :
 
-- `left` — valeur standard ;
-- `center` — uniquement lorsqu'un hero ou une fiche canonique de page le justifie.
+- `center` — valeur standard sur toutes les pages Web ;
+- `left` — uniquement lorsqu'une surface spécialisée documentée dans `UI_EXCEPTION_PAGES.md` le justifie (ex. sous-vue compacte de messagerie).
 
 Règles :
 
 - pas d'alignement `right` ;
-- titre et sous-titre restent alignés ensemble ;
-- un changement `left` ↔ `center` doit être documenté dans la fiche de page ou dans une exception UI ;
+- titre, sous-titre et actions restent alignés ensemble ;
+- tout recours à `align="left"` doit être documenté dans `UI_EXCEPTION_PAGES.md` ;
 - l'alignement ne change jamais la typographie.
 
-### Action latérale
+### Actions et métadonnées sous le sous-titre
 
-`action` peut porter une métadonnée ou une action contextuelle, par exemple une date de mise à jour.
+`action` porte les boutons spécifiques à la page (`CmmButton` / `CTAGroup`) ou une métadonnée contextuelle (ex. date de mise à jour juridique), toujours placés **sous le sous-titre**.
 
 Elle doit :
 
-- rester secondaire par rapport au H1 ;
-- ne pas réduire artificiellement le titre au point d'imposer une variante locale ;
-- être déplacée sous ou à côté du header par le layout responsive global si nécessaire.
+- utiliser `CmmButton` pour les actions interactives ;
+- se disposer horizontalement et centrée sur desktop (`>= 640px`), et s'empiler en pleine largeur sur mobile (`< 640px`) ;
+- rester secondaire par rapport au H1 sans créer de barre latérale concurrente.
 
 ## Props autorisées
 
@@ -164,8 +166,8 @@ Elle doit :
 |---|---|---|---|
 | `title` | `ReactNode` | obligatoire | titre principal |
 | `subtitle` | `ReactNode` | recommandé si utile | sous-titre bref |
-| `action` | `ReactNode` | optionnel | métadonnée ou action contextuelle |
-| `align` | `"left" \| "center"` | optionnel | position du bloc, `left` par défaut |
+| `action` | `ReactNode` | optionnel | actions (`CmmButton`/`CTAGroup`) ou métadonnée sous le sous-titre |
+| `align` | `"left" \| "center"` | optionnel | position du bloc, `center` par défaut |
 | `family` | `ResolvedPageFamily` | prioritaire | couleur issue de la famille |
 | `tone` | `PageHeaderTone` | fallback | couleur des surfaces autonomes |
 | `contrast` | `"default" \| "inverse"` | optionnel | contraste de lecture uniquement |
@@ -233,8 +235,8 @@ Une exception UI ne peut pas être utilisée pour inventer une taille de H1 diff
 Une exception peut uniquement justifier :
 
 - une palette différente ;
-- `align="center"` au lieu de `left` ;
-- l'usage d'un autre shell canonique pour une surface système qui n'est pas un header de page classique.
+- `align="left"` au lieu de `center` sur une sous-vue spécialisée documentée ;
+- l'usage d'un autre shell canonique pour une surface système ou une composition dédiée documentée (`/` et `/explorer`).
 
 Toute exception doit être documentée dans `UI_EXCEPTION_PAGES.md`.
 
@@ -250,9 +252,10 @@ Pour toute modification de page avec un titre visible, vérifier :
 □ aucun tracking / line-height local n'est appliqué
 □ aucun <br> manuel n'est utilisé dans title ou subtitle
 □ aucune largeur typographique locale n'est ajoutée
-□ subtitle reste court et au maximum sur deux lignes
+□ subtitle reste court, centré (max-width 42rem) et lisible
 □ la couleur vient de family / tone / contrast
-□ l'alignement est left ou center et est documenté si center
+□ l'alignement est center par défaut (ou left documenté dans UI_EXCEPTION_PAGES.md)
+□ les actions optionnelles utilisent CmmButton sous le sous-titre
 □ les props legacy eyebrow / badge / badges ne sont pas introduites
 ```
 

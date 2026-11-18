@@ -141,7 +141,7 @@ export function PageHeader({
   subtitle,
   headingLevel = "h1",
   action,
-  align = "left",
+  align = "center",
   contrast = "default",
   className,
   actionClassName,
@@ -162,18 +162,11 @@ export function PageHeader({
     >
       <div
         className={cn(
-          "flex w-full flex-col gap-4",
-          isCenter ? "items-center" : "items-start",
-          action ? "sm:flex-row sm:items-start sm:justify-between" : null,
+          "flex w-full flex-col",
+          isCenter ? "items-center text-center" : "items-start text-left",
         )}
       >
-        <div
-          className={cn(
-            "min-w-0",
-            action ? "flex-1" : "w-full",
-            isCenter ? "text-center" : null,
-          )}
-        >
+        <div className="w-full min-w-0">
           {title !== undefined && title !== null ? (
             <Heading className={cn("cmm-page-header-title", tokens.titleColor)}>{title}</Heading>
           ) : null}
@@ -186,7 +179,7 @@ export function PageHeader({
         </div>
 
         {action ? (
-          <div className={cn("cmm-page-header-action shrink-0", actionClassName)}>
+          <div className={cn("cmm-page-header-action", actionClassName)}>
             {action}
           </div>
         ) : null}

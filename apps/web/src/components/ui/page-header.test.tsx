@@ -59,14 +59,20 @@ describe("PageHeader", () => {
     expect(classFor(inverseMarkup, "p")).toContain("text-white");
   });
 
-  it("limits align variation to the page-header position classes", () => {
+  it("defaults to centered alignment and places optional actions below the subtitle", () => {
+    const defaultMarkup = renderHeader({
+      action: <button type="button">Action test</button>,
+    });
     const leftMarkup = renderHeader({ align: "left" });
-    const centerMarkup = renderHeader({ align: "center" });
 
+    expect(defaultMarkup).toContain("cmm-page-header--center");
+    expect(defaultMarkup).not.toContain("sm:flex-row sm:items-start sm:justify-between");
+    expect(defaultMarkup.indexOf("Sous-titre de page")).toBeLessThan(
+      defaultMarkup.indexOf("cmm-page-header-action"),
+    );
     expect(leftMarkup).toContain("cmm-page-header--left");
-    expect(centerMarkup).toContain("cmm-page-header--center");
-    expect(classFor(leftMarkup, "h1")).toBe(classFor(centerMarkup, "h1"));
-    expect(classFor(leftMarkup, "p")).toBe(classFor(centerMarkup, "p"));
+    expect(classFor(leftMarkup, "h1")).toBe(classFor(defaultMarkup, "h1"));
+    expect(classFor(leftMarkup, "p")).toBe(classFor(defaultMarkup, "p"));
   });
 
   it("does not expose page-specific typography or legacy header variants", () => {

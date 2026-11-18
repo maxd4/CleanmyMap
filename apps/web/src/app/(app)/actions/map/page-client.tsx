@@ -45,14 +45,25 @@ export function ActionsMapPageClient({
 }
 
 function ActionsMapPageHeader({ pageFamily, scoreScope, displayMode }: { pageFamily: ReturnType<typeof resolvePageFamily>; scoreScope: PollutionScoreScope; displayMode: CurrentPlaceStateMode }) {
-  return <header className="relative space-y-6 overflow-hidden pt-4 lg:pt-6">
-    <div className="absolute -top-24 -left-24 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
-    <PageHeader family={pageFamily} title={null} subtitle={scoreScope === "department" ? "Comparaison départementale active." : displayMode === "observed" ? "Mode observation actif." : "Mode projection actif."} className="w-full" />
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-      <CmmButton href="/actions/new" tone="primary" variant="pill" className="w-full justify-center px-5 py-2.5 cmm-text-small font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">Déclarer <ArrowRight size={14} className="transition-transform hover:translate-x-1" /></CmmButton>
-      <CmmButton href="/methodologie" tone="tertiary" variant="pill" className="w-full justify-center px-5 py-2.5 cmm-text-small font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">Méthodologie <ArrowRight size={14} /></CmmButton>
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        family={pageFamily}
+        title={null}
+        subtitle={scoreScope === "department" ? "Comparaison départementale active." : displayMode === "observed" ? "Mode observation actif." : "Mode projection actif."}
+        action={
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
+            <CmmButton href="/actions/new" tone="primary" variant="pill" className="w-full justify-center sm:w-auto">
+              Déclarer <ArrowRight size={14} aria-hidden="true" />
+            </CmmButton>
+            <CmmButton href="/methodologie" tone="secondary" variant="pill" className="w-full justify-center sm:w-auto">
+              Méthodologie <ArrowRight size={14} aria-hidden="true" />
+            </CmmButton>
+          </div>
+        }
+      />
     </div>
-  </header>;
+  );
 }
 
 function useActionsMapSelectionHandlers({ router, pathname, searchParams, requestedActionId, filterControls }: { router: ReturnType<typeof useRouter>; pathname: string; searchParams: ReturnType<typeof useSearchParams>; requestedActionId: string | null; filterControls: ReturnType<typeof useActionsMapFilters> }) {

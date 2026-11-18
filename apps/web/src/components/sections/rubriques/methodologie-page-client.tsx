@@ -1,6 +1,6 @@
 "use client";
 
-import { Beaker, Scaling, Sparkles } from "lucide-react";
+import { Scaling, Sparkles } from "lucide-react";
 import { buildActionImpactMethodology } from "@/lib/actions/impact-calculators";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { AppProfile } from "@/lib/profiles";
@@ -123,7 +123,7 @@ function LegacyMethodologieLayout({
     <div className={cn(contentOnly ? "space-y-10" : "relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip bg-[linear-gradient(180deg,rgba(255,244,246,0.98)_0%,rgba(255,251,252,0.92)_28%,rgba(15,23,42,1)_100%)] pb-20 pt-6")}>
       {!contentOnly ? <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[44rem] bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.26)_0%,rgba(251,113,133,0.12)_24%,rgba(255,255,255,0.88)_52%,rgba(15,23,42,0.98)_100%)]" /> : null}
       <div className={cn("flex flex-col space-y-10", !contentOnly && "cmm-page-width px-4 pt-2 sm:px-6 lg:px-8")}>
-        {!contentOnly ? <PageHeader align="center" tone="red" title={<span className="inline-flex items-center gap-3"><Beaker size={24} aria-hidden="true" /><span>{t("header_title")}</span></span>} subtitle={t("header_desc")} /> : null}
+        {!contentOnly ? <PageHeader tone="red" title={t("header_title")} subtitle={t("header_desc")} /> : null}
         <MethodologieNavigationSections actionMapSection={<ActionMapMethodologySection isFrench={isFrench} />} includeMapAndRouteContent={includeMapAndRouteContent} includeReportsContent={includeReportsContent} impactTerrainResults={impactTerrainResults} impactTerrainGeneratedAt={impactTerrainGeneratedAt} impactTerrainMethodologyVersion={impactTerrainMethodologyVersion} isFrench={isFrench} />
         <MethodologieTransverseSections freePlanServices={freePlanServices} githubStats={githubStats} impactTotals={impactTotals} includeTransverseContent={includeTransverseContent} isFrench={isFrench} locale={locale} methodology={methodology} quotaServicesDoc={QUOTA_SERVICES_DOC} />
         <MethodologieReportSections electricity={electricity} freePlanServices={freePlanServices} githubStats={githubStats} impactDoc={IMPACT_DOC} impactGeneratedAt={impactGeneratedAt} impactLaunchedAt={impactLaunchedAt} impactSnapshots={impactSnapshots} impactTotals={impactTotals} includeReportsContent={includeReportsContent} isFrench={isFrench} methodology={methodology} sources={sources} t={t} water={water} />

@@ -27,12 +27,13 @@ export function PilotageRestrictedPage({
   return (
     <section className="w-full space-y-6 p-4 md:p-8">
       <div className="space-y-8 md:p-2">
-        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          <PageHeader
-            family={pageFamily}
-            title={copy.title}
-            subtitle={copy.description}
-          />
+        <PageHeader
+          family={pageFamily}
+          title={copy.title}
+          subtitle={copy.description}
+        />
+
+        <div className="mx-auto max-w-2xl">
 
           <aside className="rounded-[1.75rem] border border-white/12 bg-[rgba(69,45,28,0.82)] p-5">
             <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-orange-100/90">

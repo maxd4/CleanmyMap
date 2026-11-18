@@ -79,22 +79,17 @@ export default async function SponsorPortalPage() {
   const page = (
     <CmmPageLayout>
       {/* Premium Cockpit Header */}
-      <header className="relative space-y-12 pt-16">
-        <div className="absolute -top-24 -left-24 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
-
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
-          <PageHeader
-            family={pageFamily}
-            title="ROI stratégique"
-            subtitle="Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG."
-          />
-          
-          <CmmButton tone="primary" variant="pill" size="lg" className="group flex items-center gap-4 cmm-text-small font-black uppercase tracking-[0.2em] text-black">
-            <Download size={20} />
+      <PageHeader
+        family={pageFamily}
+        title="ROI stratégique"
+        subtitle="Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG."
+        action={
+          <CmmButton tone="primary" variant="pill" size="lg">
+            <Download size={18} aria-hidden="true" />
             Exporter le bilan certifié
           </CmmButton>
-        </div>
-      </header>
+        }
+      />
 
       {/* ROI CARDS - High Impact Tiles */}
       <section>

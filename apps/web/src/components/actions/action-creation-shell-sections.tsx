@@ -134,7 +134,7 @@ export function ActionCreationSectionsView({
     <div data-testid="action-creation-shell" data-workflow-section={activeSection} className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6">
       <div className="pointer-events-none absolute inset-0 exhaustive-only"><div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-emerald-200/45 blur-[110px]" /><div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-emerald-100/50 blur-[120px]" /></div>
       <div className="cmm-page-width relative space-y-5">
-        <CmmCard tone="emerald" variant="glass" size="sm"><PageHeader tone="emerald" title={fr ? "Organiser une action" : "Organize an action"} subtitle={fr ? "Préparez la même action, section par section, puis vérifiez-la avant publication." : "Prepare the same action section by section, then review it before publication."} className="!gap-2" /></CmmCard>
+        <PageHeader tone="emerald" title={fr ? "Organiser une action" : "Organize an action"} subtitle={fr ? "Préparez la même action, section par section, puis vérifiez-la avant publication." : "Prepare the same action section by section, then review it before publication."} />
         <ActionLifecycleNavigation actionId={currentActionId} activeSpace={activeSpace} fr={fr} searchParams={actionCreationSearchParams} />
         <ActionCreationSectionNavigation state={state} fr={fr} onSelect={onSelect} />
         {transitionError ? <p role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{transitionError}</p> : null}
