@@ -112,6 +112,21 @@ Ne jamais :
 - modifier un généré pour cacher une erreur source ;
 - supprimer des caches ou dépendances étrangers sans provenance établie.
 
+## Scripts d'installation npm
+
+Le monorepo et la racine Vercel `apps/web` déclarent une politique
+`allowScripts` versionnée et épinglée : le `postinstall` de `core-js` est refusé
+car il ne fait qu'afficher une bannière de financement ; celui de
+`unrs-resolver` est autorisé pour préparer son binding N-API optionnel, utilisé
+par `eslint-import-resolver-typescript`. Cette liste ne constitue pas une
+autorisation globale : toute nouvelle dépendance avec script reste à examiner.
+
+Un avertissement `Unknown env config "cache-dir"` ne provient pas de cette
+politique ni d'un `.npmrc` versionné : il doit être requalifié comme paramètre
+injecté par l'environnement npm/Vercel tant qu'aucune variable de projet ni
+commande d'installation ne le définit. Ne pas ajouter une clé npm obsolète
+pour le masquer.
+
 ## Variables d'environnement
 
 Une erreur d'environnement n'est pas automatiquement une régression de code.

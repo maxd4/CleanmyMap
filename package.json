@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "Monorepo de la plateforme CleanMyMap.fr",
   "private": true,
+  "allowScripts": {
+    "core-js@3.47.0": false,
+    "core-js@3.50.0": false,
+    "unrs-resolver@1.12.2": true
+  },
   "workspaces": [
     "apps/web",
     "apps/mobile"
