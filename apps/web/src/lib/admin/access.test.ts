@@ -1,16 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
+const requireCreatorAccessMock = vi.hoisted(() => vi.fn());
 const redirectMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAdminAccess: requireAdminAccessMock,
+  requireCreatorAccess: requireCreatorAccessMock,
 }));
 vi.mock("next/navigation", () => ({
   redirect: redirectMock,
 }));
 
-import { checkAdminAccess } from "./access";
+import { checkAdminAccess, checkCreatorAccess } from "./access";
 
 describe("checkAdminAccess", () => {
   beforeEach(() => {
@@ -58,5 +60,45 @@ describe("checkAdminAccess", () => {
 
     expect(requireAdminAccessMock).toHaveBeenCalledTimes(1);
     expect(requireAdminAccessMock).toHaveBeenCalledWith();
+  });
+});
+
+describe("checkCreatorAccess", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("redirects an anonymous request to sign-in", async () => {
+    requireCreatorAccessMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
+
+    await checkCreatorAccess();
+
+    expect(redirectMock).toHaveBeenCalledWith("/auth/signin");
+    expect(redirectMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("redirects an authenticated non-max user (including regular admin) to root", async () => {
+    requireCreatorAccessMock.mockResolvedValue({
+      ok: false,
+      status: 403,
+      error: "Forbidden",
+    });
+
+    await checkCreatorAccess();
+
+    expect(redirectMock).toHaveBeenCalledWith("/");
+    expect(redirectMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows IMU max through without redirecting", async () => {
+    requireCreatorAccessMock.mockResolvedValue({ ok: true, userId: "max-1" });
+
+    await expect(checkCreatorAccess()).resolves.toBeUndefined();
+
+    expect(redirectMock).not.toHaveBeenCalled();
   });
 });

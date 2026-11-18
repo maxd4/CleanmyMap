@@ -2,12 +2,12 @@
  * API admin Brigade Verte — Parcours Éco-Citoyen Quartier Propre.
  *
  * ACCÈS : IMU max uniquement (requireCreatorAccess).
- * AUDIT : toute mutation écrit dans admin_operations_audit.
+ * AUDIT : toute mutation écrit dans admin_operations_audit via la RPC PostgreSQL atomique ou le handler d'erreur.
  *
  * GET  /api/admin/brigade-verte?actionId=<uuid>          → qualification + historique
- * GET  /api/admin/brigade-verte?query=<text>&date=<date> → recherche d'actions éligibles
- * POST /api/admin/brigade-verte { action: "qualify", ... }
- * POST /api/admin/brigade-verte { action: "revoke", ... }
+ * GET  /api/admin/brigade-verte?query=<text>&date=<date>&page=<number> → recherche paginée d'actions éligibles
+ * POST /api/admin/brigade-verte { action: "qualify", actionId, justificationUrl, qualificationReason }
+ * POST /api/admin/brigade-verte { action: "revoke", qualificationId, revocationReason }
  */
 
 import { NextResponse } from "next/server";
@@ -38,6 +38,11 @@ const qualifyPayloadSchema = z.object({
     .refine((url) => url.startsWith("https://"), {
       message: "justificationUrl doit commencer par https://.",
     }),
+  qualificationReason: z
+    .string()
+    .trim()
+    .min(5, { message: "Le motif de qualification doit comporter au moins 5 caractères." })
+    .max(500, { message: "Le motif de qualification ne peut pas dépasser 500 caractères." }),
 });
 
 const revokePayloadSchema = z.object({
@@ -46,7 +51,7 @@ const revokePayloadSchema = z.object({
   revocationReason: z
     .string()
     .trim()
-    .min(10, { message: "Le motif de révocation doit comporter au moins 10 caractères." })
+    .min(5, { message: "Le motif de révocation doit comporter au moins 5 caractères." })
     .max(500, { message: "Le motif de révocation ne peut pas dépasser 500 caractères." }),
 });
 
@@ -70,6 +75,8 @@ export async function GET(request: Request): Promise<Response> {
   const actionId = url.searchParams.get("actionId");
   const query = url.searchParams.get("query") ?? undefined;
   const date = url.searchParams.get("date") ?? undefined;
+  const pageStr = url.searchParams.get("page");
+  const page = pageStr ? parseInt(pageStr, 10) : 1;
 
   if (actionId) {
     // Lecture de la qualification + historique pour une action spécifique
@@ -78,8 +85,8 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   // Recherche d'actions éligibles
-  const actions = await searchEligibleActions({ query, date });
-  return NextResponse.json({ actions });
+  const searchResult = await searchEligibleActions({ query, date, page });
+  return NextResponse.json(searchResult);
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +135,7 @@ export async function POST(request: Request): Promise<Response> {
       status: 400,
       code: "invalid_payload",
       message: "Payload invalide.",
-      hint: "Vérifier les champs action, actionId/qualificationId, justificationUrl/revocationReason.",
+      hint: "Vérifier les champs action, actionId/qualificationId, justificationUrl/qualificationReason/revocationReason.",
       operationId,
       details: parsed.error.flatten().fieldErrors,
     });
@@ -140,37 +147,44 @@ export async function POST(request: Request): Promise<Response> {
     const result = await qualifyAction({
       actionId: payload.actionId,
       justificationUrl: payload.justificationUrl,
+      qualificationReason: payload.qualificationReason,
       qualifiedBy: access.userId,
       operationId,
     });
 
-    await appendAdminOperationAudit({
-      operationId,
-      at: new Date().toISOString(),
-      actorUserId: access.userId,
-      operationType: "brigade_verte_qualification",
-      outcome: result.ok ? "success" : "error",
-      targetId: payload.actionId,
-      details: result.ok
-        ? { decision: result.decision, qualificationId: result.qualificationId }
-        : { error: result.error, message: result.message },
-    });
-
     if (!result.ok) {
-      const status = result.error === "already_active" ? 409 : result.error === "action_not_eligible" ? 422 : 500;
+      await appendAdminOperationAudit({
+        operationId,
+        at: new Date().toISOString(),
+        actorUserId: access.userId,
+        operationType: "brigade_verte_qualification",
+        outcome: "error",
+        targetId: payload.actionId,
+        details: { error: result.error, message: result.message },
+      });
+
+      const status =
+        result.error === "already_active" ? 409 : result.error === "action_not_eligible" ? 422 : 500;
       return adminErrorResponse({
         status,
         code: result.error === "already_active" ? "state_conflict" : "server_error",
         message: result.message,
-        hint: result.error === "already_active"
-          ? "Cette action est déjà qualifiée Brigade Verte. Révoquer d'abord avant de requalifier."
-          : "Vérifier l'éligibilité de l'action.",
+        hint:
+          result.error === "already_active"
+            ? "Cette action est déjà qualifiée Brigade Verte. Révoquer d'abord avant de requalifier."
+            : "Vérifier l'éligibilité de l'action.",
         operationId,
       });
     }
 
     return NextResponse.json(
-      { ok: true, qualificationId: result.qualificationId, decision: result.decision, operationId },
+      {
+        ok: true,
+        qualificationId: result.qualificationId,
+        decision: result.decision,
+        idempotent: result.idempotent ?? false,
+        operationId,
+      },
       { status: 200 },
     );
   }
@@ -183,32 +197,38 @@ export async function POST(request: Request): Promise<Response> {
     operationId,
   });
 
-  await appendAdminOperationAudit({
-    operationId,
-    at: new Date().toISOString(),
-    actorUserId: access.userId,
-    operationType: "brigade_verte_qualification",
-    outcome: result.ok ? "success" : "error",
-    targetId: payload.qualificationId,
-    details: result.ok
-      ? { action: "revoke" }
-      : { error: result.error, message: result.message },
-  });
-
   if (!result.ok) {
+    await appendAdminOperationAudit({
+      operationId,
+      at: new Date().toISOString(),
+      actorUserId: access.userId,
+      operationType: "brigade_verte_qualification",
+      outcome: "error",
+      targetId: payload.qualificationId,
+      details: { error: result.error, message: result.message },
+    });
+
     const status =
-      result.error === "not_found" ? 404 :
-      result.error === "already_revoked" ? 409 : 500;
+      result.error === "not_found" ? 404 : result.error === "already_revoked" ? 409 : 500;
     return adminErrorResponse({
       status,
-      code: result.error === "not_found" ? "not_found" : result.error === "already_revoked" ? "state_conflict" : "server_error",
+      code:
+        result.error === "not_found"
+          ? "not_found"
+          : result.error === "already_revoked"
+            ? "state_conflict"
+            : "server_error",
       message: result.message,
-      hint: result.error === "not_found"
-        ? "Vérifier l'identifiant de qualification."
-        : "Cette qualification est déjà révoquée.",
+      hint:
+        result.error === "not_found"
+          ? "Vérifier l'identifiant de qualification."
+          : "Cette qualification est déjà révoquée.",
       operationId,
     });
   }
 
-  return NextResponse.json({ ok: true, operationId }, { status: 200 });
+  return NextResponse.json(
+    { ok: true, idempotent: result.idempotent ?? false, operationId },
+    { status: 200 },
+  );
 }

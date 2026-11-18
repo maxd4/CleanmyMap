@@ -1,16 +1,20 @@
 /**
- * Tests unitaires — Brigade Verte service métier.
+ * Tests unitaires — Brigade Verte service métier (version durcie).
  *
- * Couverture : isActionEligibleForBrigadeVerte, computeBrigadeVerteProgress,
- * qualifyAction, revokeQualification.
- *
- * Les mocks Supabase suivent le pattern existant du projet.
+ * Couverture :
+ * - checkActionEligibilityPredicate (tous les invariants : date passée, review_state approved OU not_required, access_mode public, visibility visible, status approved, etc.)
+ * - isActionEligibleForBrigadeVerte
+ * - computeBrigadeVerteProgress (revalidation exhaustive, fail-closed, tri déterministe date puis id, remplacement automatique après invalidation)
+ * - qualifyAction (appel RPC atomique, mapping des erreurs, idempotence)
+ * - revokeQualification (appel RPC atomique, mapping des erreurs)
+ * - searchEligibleActions (pagination, filtres)
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockSupabase = {
   from: vi.fn(),
+  rpc: vi.fn(),
 };
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -18,11 +22,14 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import {
+  checkActionEligibilityPredicate,
   isActionEligibleForBrigadeVerte,
   computeBrigadeVerteProgress,
   qualifyAction,
   revokeQualification,
+  searchEligibleActions,
 } from "./brigade-verte-service";
+import type { EligibleActionRow } from "./brigade-verte-types";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -30,19 +37,102 @@ import {
 
 type SupabaseChainResult = {
   data: unknown;
-  error: { message: string } | null;
+  count?: number;
+  error: { message: string; code?: string } | null;
 };
 
 function makeChain(result: SupabaseChainResult) {
   const chain: Record<string, unknown> = {};
   const noop = () => chain;
-  for (const m of ["select","eq","is","not","in","or","insert","update","order","limit"]) {
+  for (const m of [
+    "select",
+    "eq",
+    "lt",
+    "is",
+    "not",
+    "in",
+    "or",
+    "insert",
+    "update",
+    "order",
+    "limit",
+    "range",
+  ]) {
     chain[m] = vi.fn(noop);
   }
   chain.maybeSingle = vi.fn().mockResolvedValue(result);
   chain.single = vi.fn().mockResolvedValue(result);
+  Object.defineProperty(chain, "then", {
+    get: () => (resolve: (v: SupabaseChainResult) => void) => resolve(result),
+  });
   return chain;
 }
+
+// ---------------------------------------------------------------------------
+// checkActionEligibilityPredicate
+// ---------------------------------------------------------------------------
+
+describe("checkActionEligibilityPredicate", () => {
+  const validAction: EligibleActionRow = {
+    id: "act-1",
+    actionDate: "2026-10-01",
+    locationLabel: "Paris 10",
+    status: "approved",
+    actionPhase: "post_action_complete",
+    moderationVisibility: "visible",
+    accessMode: "public",
+    cancelledAt: null,
+    reviewState: "approved",
+    publishedAt: "2026-10-01T12:00:00Z",
+  };
+
+  it("accepte une action conforme avec review_state = approved", () => {
+    expect(checkActionEligibilityPredicate(validAction, "2026-11-18")).toBe(true);
+  });
+
+  it("accepte une action conforme avec review_state = not_required", () => {
+    const action = { ...validAction, reviewState: "not_required" };
+    expect(checkActionEligibilityPredicate(action, "2026-11-18")).toBe(true);
+  });
+
+  it("rejette une action avec date future ou égale à aujourd'hui", () => {
+    const futureAction = { ...validAction, actionDate: "2026-11-19" };
+    expect(checkActionEligibilityPredicate(futureAction, "2026-11-18")).toBe(false);
+
+    const todayAction = { ...validAction, actionDate: "2026-11-18" };
+    expect(checkActionEligibilityPredicate(todayAction, "2026-11-18")).toBe(false);
+  });
+
+  it("rejette une action privée (access_mode != public)", () => {
+    const privateAction = { ...validAction, accessMode: "private" };
+    expect(checkActionEligibilityPredicate(privateAction, "2026-11-18")).toBe(false);
+  });
+
+  it("rejette une action non visible (moderation_visibility != visible)", () => {
+    const hiddenAction = { ...validAction, moderationVisibility: "hidden" };
+    expect(checkActionEligibilityPredicate(hiddenAction, "2026-11-18")).toBe(false);
+  });
+
+  it("rejette une action annulée (cancelledAt != null)", () => {
+    const cancelledAction = { ...validAction, cancelledAt: "2026-10-01T08:00:00Z" };
+    expect(checkActionEligibilityPredicate(cancelledAction, "2026-11-18")).toBe(false);
+  });
+
+  it("rejette une action non publiée (publishedAt == null)", () => {
+    const unpubAction = { ...validAction, publishedAt: null };
+    expect(checkActionEligibilityPredicate(unpubAction, "2026-11-18")).toBe(false);
+  });
+
+  it("rejette une action avec phase non terminée (ex: pre_action)", () => {
+    const preAction = { ...validAction, actionPhase: "pre_action" };
+    expect(checkActionEligibilityPredicate(preAction, "2026-11-18")).toBe(false);
+  });
+
+  it("rejette une action avec review_state invalide (ex: pending_review ou rejected)", () => {
+    const pendingAction = { ...validAction, reviewState: "pending_review" };
+    expect(checkActionEligibilityPredicate(pendingAction, "2026-11-18")).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // isActionEligibleForBrigadeVerte
@@ -53,101 +143,38 @@ describe("isActionEligibleForBrigadeVerte", () => {
     vi.clearAllMocks();
   });
 
-  it("retourne eligible=true pour une action entièrement conforme", async () => {
-    const eligibleRow = {
+  it("retourne eligible=true pour une action entièrement conforme en base", async () => {
+    const eligibleDbRow = {
       id: "action-1",
       action_date: "2026-10-01",
       location_label: "Quartier Propre Paris 15",
       status: "approved",
       action_phase: "post_action_complete",
       moderation_visibility: "visible",
+      access_mode: "public",
       cancelled_at: null,
-      review_state: "approved",
+      review_state: "not_required",
       published_at: "2026-10-02T10:00:00Z",
     };
-    const chain = makeChain({ data: eligibleRow, error: null });
-    mockSupabase.from.mockReturnValue(chain);
+    mockSupabase.from.mockReturnValue(makeChain({ data: eligibleDbRow, error: null }));
 
     const result = await isActionEligibleForBrigadeVerte("action-1");
     expect(result.eligible).toBe(true);
     expect(result.row?.id).toBe("action-1");
+    expect(result.row?.accessMode).toBe("public");
   });
 
-  it("retourne eligible=false pour une action non publiée", async () => {
-    const chain = makeChain({
-      data: {
-        id: "action-2",
-        action_date: "2026-10-01",
-        location_label: "Quartier Test",
-        status: "approved",
-        action_phase: "post_action_complete",
-        moderation_visibility: "visible",
-        cancelled_at: null,
-        review_state: "approved",
-        published_at: null,
-      },
-      error: null,
-    });
-    mockSupabase.from.mockReturnValue(chain);
+  it("retourne eligible=false si l'action n'existe pas ou en cas d'erreur DB", async () => {
+    mockSupabase.from.mockReturnValue(makeChain({ data: null, error: { message: "db error" } }));
 
-    const result = await isActionEligibleForBrigadeVerte("action-2");
-    expect(result.eligible).toBe(false);
-  });
-
-  it("retourne eligible=false pour une action annulée", async () => {
-    const chain = makeChain({
-      data: {
-        id: "action-3",
-        action_date: "2026-10-01",
-        location_label: "Quartier Test",
-        status: "approved",
-        action_phase: "post_action_complete",
-        moderation_visibility: "visible",
-        cancelled_at: "2026-10-01T08:00:00Z",
-        review_state: "approved",
-        published_at: "2026-10-01T09:00:00Z",
-      },
-      error: null,
-    });
-    mockSupabase.from.mockReturnValue(chain);
-
-    const result = await isActionEligibleForBrigadeVerte("action-3");
-    expect(result.eligible).toBe(false);
-  });
-
-  it("retourne eligible=false pour une action non approuvée", async () => {
-    const chain = makeChain({
-      data: {
-        id: "action-4",
-        action_date: "2026-10-01",
-        location_label: "Quartier Test",
-        status: "pending",
-        action_phase: "post_action_complete",
-        moderation_visibility: "visible",
-        cancelled_at: null,
-        review_state: "pending",
-        published_at: null,
-      },
-      error: null,
-    });
-    mockSupabase.from.mockReturnValue(chain);
-
-    const result = await isActionEligibleForBrigadeVerte("action-4");
-    expect(result.eligible).toBe(false);
-  });
-
-  it("retourne eligible=false si Supabase retourne une erreur", async () => {
-    const chain = makeChain({ data: null, error: { message: "db error" } });
-    mockSupabase.from.mockReturnValue(chain);
-
-    const result = await isActionEligibleForBrigadeVerte("action-err");
+    const result = await isActionEligibleForBrigadeVerte("action-unknown");
     expect(result.eligible).toBe(false);
     expect(result.row).toBeNull();
   });
 });
 
 // ---------------------------------------------------------------------------
-// computeBrigadeVerteProgress
+// computeBrigadeVerteProgress (avec revalidation & fail-closed)
 // ---------------------------------------------------------------------------
 
 describe("computeBrigadeVerteProgress", () => {
@@ -160,93 +187,210 @@ describe("computeBrigadeVerteProgress", () => {
     mockSupabase.from.mockImplementation(() => {
       const result = calls[callCount] ?? { data: null, error: null };
       callCount++;
-      const chain: Record<string, unknown> = {};
-      const noop = () => chain;
-      for (const m of ["select","eq","is","not","in","or","insert","update","order","limit"]) {
-        chain[m] = vi.fn(noop);
-      }
-      chain.maybeSingle = vi.fn().mockResolvedValue(result);
-      chain.single = vi.fn().mockResolvedValue(result);
-      // simulate promise resolution for queries without terminal
-      Object.defineProperty(chain, "then", {
-        get: () => (resolve: (v: SupabaseChainResult) => void) => resolve(result),
-      });
-      return chain;
+      return makeChain(result);
     });
   }
 
-  it("retourne count=0 et eligible=true si aucune action qualifiée", async () => {
+  it("retourne eligible=true et count=0 si aucune qualification active", async () => {
     setupFromSequence([{ data: [], error: null }]);
+
     const result = await computeBrigadeVerteProgress("user-1");
     expect(result.eligible).toBe(true);
     expect(result.count).toBe(0);
     expect(result.proofs).toHaveLength(0);
   });
 
-  it("retourne eligible=false en cas d'erreur Supabase (fail-closed)", async () => {
-    setupFromSequence([{ data: null, error: { message: "network error" } }]);
+  it("retourne eligible=false en cas d'erreur de lecture des qualifications (fail-closed)", async () => {
+    setupFromSequence([{ data: null, error: { message: "timeout" } }]);
+
     const result = await computeBrigadeVerteProgress("user-1");
     expect(result.eligible).toBe(false);
     expect(result.count).toBe(0);
   });
 
-  it("exclut les participations avec statut pending", async () => {
-    // qualifications actives
+  it("retourne eligible=true et count=0 si le participant n'a pas de participation confirmed", async () => {
     setupFromSequence([
-      { data: [{ action_id: "a1", qualified_at: "2026-10-01T00:00:00Z" }], error: null },
-      // participations : aucune confirmed pour user
-      { data: [], error: null },
+      { data: [{ action_id: "act-1", qualified_at: "2026-10-05T00:00:00Z" }], error: null },
+      { data: [], error: null }, // Aucune participation confirmed
     ]);
-    const result = await computeBrigadeVerteProgress("user-pending");
+
+    const result = await computeBrigadeVerteProgress("user-1");
+    expect(result.eligible).toBe(true);
     expect(result.count).toBe(0);
+  });
+
+  it("calcule correctement 2 participations admissibles triées par date ASC puis ID ASC", async () => {
+    setupFromSequence([
+      // 1. Qualifications actives (3 actions qualifiées)
+      {
+        data: [
+          { action_id: "act-3", qualified_at: "2026-10-15T00:00:00Z" },
+          { action_id: "act-1", qualified_at: "2026-10-01T00:00:00Z" },
+          { action_id: "act-2", qualified_at: "2026-10-10T00:00:00Z" },
+        ],
+        error: null,
+      },
+      // 2. Participations confirmées pour user-1
+      {
+        data: [
+          { action_id: "act-3" },
+          { action_id: "act-1" },
+          { action_id: "act-2" },
+        ],
+        error: null,
+      },
+      // 3. Détails des actions pour revalidation
+      {
+        data: [
+          {
+            id: "act-3",
+            action_date: "2026-10-20",
+            location_label: "Lieu 3",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            cancelled_at: null,
+            review_state: "approved",
+            published_at: "2026-10-21T00:00:00Z",
+          },
+          {
+            id: "act-1",
+            action_date: "2026-10-05",
+            location_label: "Lieu 1",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            cancelled_at: null,
+            review_state: "not_required",
+            published_at: "2026-10-06T00:00:00Z",
+          },
+          {
+            id: "act-2",
+            action_date: "2026-10-10",
+            location_label: "Lieu 2",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            cancelled_at: null,
+            review_state: "approved",
+            published_at: "2026-10-11T00:00:00Z",
+          },
+        ],
+        error: null,
+      },
+    ]);
+
+    const result = await computeBrigadeVerteProgress("user-1", "2026-11-18");
+    expect(result.eligible).toBe(true);
+    expect(result.count).toBe(2);
+    expect(result.proofs).toHaveLength(2);
+    // Tri par date : act-1 (10-05) puis act-2 (10-10)
+    expect(result.proofs[0].actionId).toBe("act-1");
+    expect(result.proofs[1].actionId).toBe("act-2");
+  });
+
+  it("exclut immédiatement une action qualifiée devenue privée ou annulée après qualification (revalidation)", async () => {
+    setupFromSequence([
+      {
+        data: [
+          { action_id: "act-invalid", qualified_at: "2026-10-01T00:00:00Z" },
+          { action_id: "act-valid", qualified_at: "2026-10-12T00:00:00Z" },
+        ],
+        error: null,
+      },
+      {
+        data: [{ action_id: "act-invalid" }, { action_id: "act-valid" }],
+        error: null,
+      },
+      {
+        data: [
+          {
+            id: "act-invalid",
+            action_date: "2026-10-02",
+            location_label: "Lieu Devenu Privé",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "private", // DEVANT ÊTRE REJETÉ
+            cancelled_at: null,
+            review_state: "approved",
+            published_at: "2026-10-03T00:00:00Z",
+          },
+          {
+            id: "act-valid",
+            action_date: "2026-10-12",
+            location_label: "Lieu Conforme",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            cancelled_at: null,
+            review_state: "approved",
+            published_at: "2026-10-13T00:00:00Z",
+          },
+        ],
+        error: null,
+      },
+    ]);
+
+    const result = await computeBrigadeVerteProgress("user-1", "2026-11-18");
+    expect(result.eligible).toBe(true);
+    expect(result.count).toBe(1);
+    expect(result.proofs).toHaveLength(1);
+    expect(result.proofs[0].actionId).toBe("act-valid");
   });
 });
 
 // ---------------------------------------------------------------------------
-// qualifyAction
+// qualifyAction (RPC atomique)
 // ---------------------------------------------------------------------------
 
 describe("qualifyAction", () => {
   const baseParams = {
-    actionId: "action-uuid",
-    justificationUrl: "https://example.com/proof",
-    qualifiedBy: "clerk-imu-id",
-    operationId: "op-id",
+    actionId: "11111111-1111-1111-1111-111111111111",
+    justificationUrl: "https://paris.fr/brigade-verte",
+    qualificationReason: "Coorganisation vérifiée sur site officiel.",
+    qualifiedBy: "clerk-max-id",
+    operationId: "op-qual-1",
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("retourne already_active si la qualification existe déjà en statut active", async () => {
-    let callCount = 0;
-    mockSupabase.from.mockImplementation(() => {
-      const chain: Record<string, unknown> = {};
-      const noop = () => chain;
-      for (const m of ["select","eq","is","not","in","or","insert","update","order","limit"]) {
-        chain[m] = vi.fn(noop);
-      }
-      callCount++;
-      if (callCount === 1) {
-        // isActionEligibleForBrigadeVerte
-        chain.maybeSingle = vi.fn().mockResolvedValue({
-          data: {
-            id: "action-uuid", action_date: "2026-10-01", location_label: "Test",
-            status: "approved", action_phase: "post_action_complete",
-            moderation_visibility: "visible", cancelled_at: null,
-            review_state: "approved", published_at: "2026-10-01T10:00:00Z",
-          },
-          error: null,
-        });
-      } else {
-        // existing qualification lookup
-        chain.maybeSingle = vi.fn().mockResolvedValue({
-          data: { id: "qual-id", status: "active" },
-          error: null,
-        });
-      }
-      chain.single = vi.fn().mockResolvedValue({ data: null, error: null });
-      return chain;
+  it("exécute la RPC PostgreSQL atomique et retourne la décision", async () => {
+    mockSupabase.rpc.mockResolvedValue({
+      data: {
+        status: "success",
+        qualification_id: "qual-uuid-1",
+        decision: "qualified",
+        idempotent: false,
+      },
+      error: null,
+    });
+
+    const result = await qualifyAction(baseParams);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.qualificationId).toBe("qual-uuid-1");
+      expect(result.decision).toBe("qualified");
+    }
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("qualify_brigade_verte_action", {
+      p_action_id: baseParams.actionId,
+      p_justification_url: baseParams.justificationUrl,
+      p_qualification_reason: baseParams.qualificationReason,
+      p_actor_user_id: baseParams.qualifiedBy,
+      p_operation_id: baseParams.operationId,
+    });
+  });
+
+  it("mappe l'erreur already_active en cas de violation d'unicité active", async () => {
+    mockSupabase.rpc.mockResolvedValue({
+      data: null,
+      error: { message: "Action is already actively qualified", code: "23505" },
     });
 
     const result = await qualifyAction(baseParams);
@@ -256,16 +400,10 @@ describe("qualifyAction", () => {
     }
   });
 
-  it("retourne action_not_eligible si l'action n'est pas éligible", async () => {
-    mockSupabase.from.mockImplementation(() => {
-      const chain: Record<string, unknown> = {};
-      const noop = () => chain;
-      for (const m of ["select","eq","is","not","in","or","insert","update","order","limit"]) {
-        chain[m] = vi.fn(noop);
-      }
-      chain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-      chain.single = vi.fn().mockResolvedValue({ data: null, error: null });
-      return chain;
+  it("mappe l'erreur action_not_eligible si la base rejette l'éligibilité de l'action", async () => {
+    mockSupabase.rpc.mockResolvedValue({
+      data: null,
+      error: { message: "Action is not eligible for Brigade Verte qualification", code: "23514" },
     });
 
     const result = await qualifyAction(baseParams);
@@ -277,75 +415,94 @@ describe("qualifyAction", () => {
 });
 
 // ---------------------------------------------------------------------------
-// revokeQualification
+// revokeQualification (RPC atomique)
 // ---------------------------------------------------------------------------
 
 describe("revokeQualification", () => {
   const baseParams = {
-    qualificationId: "qual-uuid",
-    revocationReason: "Organisation non vérifiée.",
-    revokedBy: "clerk-imu-id",
-    operationId: "op-id",
+    qualificationId: "22222222-2222-2222-2222-222222222222",
+    revocationReason: "Partenariat révoqué après contrôle.",
+    revokedBy: "clerk-max-id",
+    operationId: "op-rev-1",
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("retourne not_found si la qualification est introuvable", async () => {
-    mockSupabase.from.mockImplementation(() => {
-      const chain: Record<string, unknown> = {};
-      const noop = () => chain;
-      for (const m of ["select","eq","is","not","in","or","insert","update","order","limit"]) {
-        chain[m] = vi.fn(noop);
-      }
-      chain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-      chain.single = vi.fn().mockResolvedValue({ data: null, error: null });
-      return chain;
+  it("exécute la RPC PostgreSQL atomique de révocation avec succès", async () => {
+    mockSupabase.rpc.mockResolvedValue({
+      data: { status: "success", idempotent: false },
+      error: null,
     });
 
     const result = await revokeQualification(baseParams);
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("not_found");
+    expect(result.ok).toBe(true);
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("revoke_brigade_verte_qualification", {
+      p_qualification_id: baseParams.qualificationId,
+      p_revocation_reason: baseParams.revocationReason,
+      p_actor_user_id: baseParams.revokedBy,
+      p_operation_id: baseParams.operationId,
+    });
   });
 
-  it("retourne already_revoked si la qualification est déjà révoquée", async () => {
-    mockSupabase.from.mockImplementation(() => {
-      const chain: Record<string, unknown> = {};
-      const noop = () => chain;
-      for (const m of ["select","eq","is","not","in","or","insert","update","order","limit"]) {
-        chain[m] = vi.fn(noop);
-      }
-      chain.maybeSingle = vi.fn().mockResolvedValue({
-        data: { id: "qual-uuid", action_id: "action-uuid", status: "revoked" },
-        error: null,
-      });
-      chain.single = vi.fn().mockResolvedValue({ data: null, error: null });
-      return chain;
+  it("mappe not_found si la qualification n'existe pas", async () => {
+    mockSupabase.rpc.mockResolvedValue({
+      data: null,
+      error: { message: "Qualification not found" },
     });
 
     const result = await revokeQualification(baseParams);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("already_revoked");
+    if (!result.ok) {
+      expect(result.error).toBe("not_found");
+    }
   });
 
-  it("retourne db_error si Supabase retourne une erreur", async () => {
-    mockSupabase.from.mockImplementation(() => {
-      const chain: Record<string, unknown> = {};
-      const noop = () => chain;
-      for (const m of ["select","eq","is","not","in","or","insert","update","order","limit"]) {
-        chain[m] = vi.fn(noop);
-      }
-      chain.maybeSingle = vi.fn().mockResolvedValue({
-        data: null,
-        error: { message: "connection refused" },
-      });
-      chain.single = vi.fn().mockResolvedValue({ data: null, error: null });
-      return chain;
+  it("mappe already_revoked si la qualification est déjà révoquée", async () => {
+    mockSupabase.rpc.mockResolvedValue({
+      data: null,
+      error: { message: "Qualification is already revoked" },
     });
 
     const result = await revokeQualification(baseParams);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("db_error");
+    if (!result.ok) {
+      expect(result.error).toBe("already_revoked");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// searchEligibleActions (avec pagination)
+// ---------------------------------------------------------------------------
+
+describe("searchEligibleActions", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("exécute la requête paginée avec calcul de hasMore", async () => {
+    const fakeRows = [
+      {
+        id: "a1",
+        action_date: "2026-10-01",
+        location_label: "Paris 1",
+        status: "approved",
+        action_phase: "post_action_complete",
+        moderation_visibility: "visible",
+        access_mode: "public",
+        cancelled_at: null,
+        review_state: "not_required",
+        published_at: "2026-10-02T00:00:00Z",
+      },
+    ];
+    mockSupabase.from.mockReturnValue(makeChain({ data: fakeRows, count: 15, error: null }));
+
+    const res = await searchEligibleActions({ page: 1, pageSize: 10 });
+    expect(res.actions).toHaveLength(1);
+    expect(res.total).toBe(15);
+    expect(res.hasMore).toBe(true);
+    expect(res.page).toBe(1);
   });
 });

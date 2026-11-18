@@ -4,11 +4,14 @@
  * OWNER : apps/web/src/lib/brigade-verte/
  *
  * INVARIANTS :
- * - Toutes les mutations passent par service_role (getSupabaseAdminClient).
+ * - Toutes les mutations passent par service_role (getSupabaseAdminClient) via RPC atomiques PostgreSQL.
+ * - Atomicité garantie : qualification, historique immuable et audit sont validés ou rollback ensemble.
  * - Aucun XP, badge ou gamification n'est créé ici.
  * - computeBrigadeVerteProgress est fail-closed : toute erreur retourne eligible=false.
  * - L'éligibilité d'une action NE se déduit pas du titre, des notes ou de l'organizer_id.
- * - Les deux preuves retenues sont sélectionnées par date d'action ASC puis id ASC.
+ * - Le prédicat d'éligibilité complet (action passée, finalisée, approuvée, publiée, visible, publique, non annulée, review_state not_required/approved)
+ *   est revalidé dynamiquement à la lecture personnelle.
+ * - Les deux preuves retenues sont sélectionnées par date d'action ASC puis id ASC avec remplacement automatique.
  */
 
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -19,11 +22,47 @@ import type {
   EligibleActionRow,
   QualifyActionResult,
   RevokeActionResult,
+  SearchEligibleActionsParams,
+  SearchEligibleActionsResult,
 } from "./brigade-verte-types";
 
 // ---------------------------------------------------------------------------
 // Critères d'éligibilité d'une action Quartier Propre Brigade Verte
 // ---------------------------------------------------------------------------
+
+/**
+ * Helper pur vérifiant si les champs d'une action respectent le prédicat d'éligibilité canonique :
+ * 1. Date passée (< aujourd'hui en UTC/local YYYY-MM-DD)
+ * 2. Phase finalisée (action_phase = 'post_action_complete')
+ * 3. Statut approuvé (status = 'approved')
+ * 4. Publiée (published_at IS NOT NULL)
+ * 5. Visible (moderation_visibility = 'visible')
+ * 6. Publique (access_mode = 'public')
+ * 7. Non annulée (cancelled_at IS NULL)
+ * 8. Revue not_required ou approved (review_state IN ('not_required', 'approved'))
+ */
+export function checkActionEligibilityPredicate(row: EligibleActionRow, referenceDate?: string): boolean {
+  const today = referenceDate ?? new Date().toISOString().slice(0, 10);
+  const isPast = row.actionDate < today;
+  const isApproved = row.status === "approved";
+  const isComplete = row.actionPhase === "post_action_complete";
+  const isVisible = row.moderationVisibility === "visible";
+  const isPublic = (row.accessMode ?? "public") === "public";
+  const isNotCancelled = row.cancelledAt === null;
+  const isReviewValid = row.reviewState === "approved" || row.reviewState === "not_required";
+  const isPublished = row.publishedAt !== null;
+
+  return (
+    isPast &&
+    isApproved &&
+    isComplete &&
+    isVisible &&
+    isPublic &&
+    isNotCancelled &&
+    isReviewValid &&
+    isPublished
+  );
+}
 
 /**
  * Vérifie qu'une action est éligible pour une qualification Brigade Verte.
@@ -36,7 +75,7 @@ export async function isActionEligibleForBrigadeVerte(
   const { data, error } = await supabase
     .from("actions")
     .select(
-      "id, action_date, location_label, status, action_phase, moderation_visibility, cancelled_at, review_state, published_at",
+      "id, action_date, location_label, status, action_phase, moderation_visibility, access_mode, cancelled_at, review_state, published_at",
     )
     .eq("id", actionId)
     .maybeSingle();
@@ -52,149 +91,96 @@ export async function isActionEligibleForBrigadeVerte(
     status: data.status,
     actionPhase: data.action_phase,
     moderationVisibility: data.moderation_visibility,
+    accessMode: data.access_mode ?? "public",
     cancelledAt: data.cancelled_at ?? null,
-    reviewState: data.review_state,
+    reviewState: data.review_state ?? "not_required",
     publishedAt: data.published_at ?? null,
   };
 
-  const eligible =
-    row.status === "approved" &&
-    row.actionPhase === "post_action_complete" &&
-    row.moderationVisibility === "visible" &&
-    row.cancelledAt === null &&
-    row.reviewState === "approved" &&
-    row.publishedAt !== null;
+  const eligible = checkActionEligibilityPredicate(row);
 
   return { eligible, row };
 }
 
 // ---------------------------------------------------------------------------
-// Qualification
+// Qualification (RPC PostgreSQL atomique)
 // ---------------------------------------------------------------------------
 
 /**
- * Qualifie une action comme "Quartier Propre Brigade Verte".
- * - Idempotent si déjà active pour cet actionId → retourne already_active.
- * - Si précédemment revoked, crée une requalification.
- * - Écrit dans brigade_verte_qualifications et brigade_verte_qualification_history atomiquement.
+ * Qualifie une action comme "Quartier Propre Brigade Verte" via RPC atomique.
+ * - Idempotent sur operationId.
+ * - Vérifie l'éligibilité sous verrou.
+ * - Gère nouvelle qualification et requalification après révocation.
+ * - Enregistre qualification, décision historique et audit de manière atomique.
  */
 export async function qualifyAction(params: {
   actionId: string;
   justificationUrl: string;
+  qualificationReason: string;
   qualifiedBy: string;
   operationId: string;
 }): Promise<QualifyActionResult> {
-  const { actionId, justificationUrl, qualifiedBy, operationId } = params;
+  const { actionId, justificationUrl, qualificationReason, qualifiedBy, operationId } = params;
   const supabase = getSupabaseAdminClient();
-  const now = new Date().toISOString();
 
-  // Vérifier l'éligibilité de l'action
-  const { eligible } = await isActionEligibleForBrigadeVerte(actionId);
-  if (!eligible) {
-    return { ok: false, error: "action_not_eligible", message: "L'action n'est pas éligible (non approuvée, non publiée, annulée ou non visible)." };
-  }
+  const { data, error } = await supabase.rpc("qualify_brigade_verte_action", {
+    p_action_id: actionId,
+    p_justification_url: justificationUrl,
+    p_qualification_reason: qualificationReason,
+    p_actor_user_id: qualifiedBy,
+    p_operation_id: operationId,
+  });
 
-  // Chercher une qualification existante pour cette action
-  const { data: existing, error: fetchError } = await supabase
-    .from("brigade_verte_qualifications")
-    .select("id, status")
-    .eq("action_id", actionId)
-    .maybeSingle();
-
-  if (fetchError) {
-    return { ok: false, error: "db_error", message: fetchError.message };
-  }
-
-  if (existing?.status === "active") {
-    return { ok: false, error: "already_active", message: "Cette action est déjà qualifiée Brigade Verte." };
-  }
-
-  // Qualification ou requalification
-  if (existing && existing.status === "revoked") {
-    // Requalification
-    const { error: updateError } = await supabase
-      .from("brigade_verte_qualifications")
-      .update({
-        status: "active",
-        justification_url: justificationUrl,
-        qualified_by: qualifiedBy,
-        qualified_at: now,
-        revocation_reason: null,
-        revoked_by: null,
-        revoked_at: null,
-        requalified_at: now,
-      })
-      .eq("id", existing.id);
-
-    if (updateError) {
-      return { ok: false, error: "db_error", message: updateError.message };
+  if (error) {
+    // Parser les codes d'erreur PostgreSQL renvoyés par la RPC
+    const msg = error.message || "";
+    if (msg.includes("already actively qualified") || error.code === "23505") {
+      return {
+        ok: false,
+        error: "already_active",
+        message: "Cette action est déjà qualifiée Brigade Verte.",
+      };
     }
-
-    // Historique
-    const { error: histError } = await supabase
-      .from("brigade_verte_qualification_history")
-      .insert({
-        qualification_id: existing.id,
-        action_id: actionId,
-        decision: "requalified",
-        decided_by: qualifiedBy,
-        decided_at: now,
-        justification_url: justificationUrl,
-        revocation_reason: null,
-        operation_id: operationId,
-      });
-
-    if (histError) {
-      return { ok: false, error: "db_error", message: histError.message };
+    if (msg.includes("not eligible") || error.code === "23514") {
+      return {
+        ok: false,
+        error: "action_not_eligible",
+        message:
+          "L'action n'est pas éligible (date future, non finalisée, non approuvée, privée, annulée ou non publiée).",
+      };
     }
-
-    return { ok: true, qualificationId: existing.id, decision: "requalified" };
+    return {
+      ok: false,
+      error: "db_error",
+      message: error.message,
+    };
   }
 
-  // Nouvelle qualification
-  const { data: inserted, error: insertError } = await supabase
-    .from("brigade_verte_qualifications")
-    .insert({
-      action_id: actionId,
-      status: "active",
-      justification_url: justificationUrl,
-      qualified_by: qualifiedBy,
-      qualified_at: now,
-    })
-    .select("id")
-    .single();
+  const result = data as {
+    status: string;
+    qualification_id: string;
+    decision: "qualified" | "requalified" | "idempotent_replay";
+    idempotent?: boolean;
+  };
 
-  if (insertError || !inserted) {
-    return { ok: false, error: "db_error", message: insertError?.message ?? "Insertion échouée." };
-  }
+  const decision = result.decision === "idempotent_replay" ? "qualified" : result.decision;
 
-  // Historique
-  const { error: histError } = await supabase
-    .from("brigade_verte_qualification_history")
-    .insert({
-      qualification_id: inserted.id,
-      action_id: actionId,
-      decision: "qualified",
-      decided_by: qualifiedBy,
-      decided_at: now,
-      justification_url: justificationUrl,
-      revocation_reason: null,
-      operation_id: operationId,
-    });
-
-  if (histError) {
-    return { ok: false, error: "db_error", message: histError.message };
-  }
-
-  return { ok: true, qualificationId: inserted.id, decision: "qualified" };
+  return {
+    ok: true,
+    qualificationId: result.qualification_id,
+    decision,
+    idempotent: Boolean(result.idempotent),
+  };
 }
 
 // ---------------------------------------------------------------------------
-// Révocation
+// Révocation (RPC PostgreSQL atomique)
 // ---------------------------------------------------------------------------
 
 /**
- * Révoque une qualification active.
+ * Révoque une qualification active via RPC atomique.
+ * - Idempotent sur operationId.
+ * - Enregistre révocation, décision historique et audit de manière atomique.
  */
 export async function revokeQualification(params: {
   qualificationId: string;
@@ -204,57 +190,46 @@ export async function revokeQualification(params: {
 }): Promise<RevokeActionResult> {
   const { qualificationId, revocationReason, revokedBy, operationId } = params;
   const supabase = getSupabaseAdminClient();
-  const now = new Date().toISOString();
 
-  const { data: existing, error: fetchError } = await supabase
-    .from("brigade_verte_qualifications")
-    .select("id, action_id, status")
-    .eq("id", qualificationId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("revoke_brigade_verte_qualification", {
+    p_qualification_id: qualificationId,
+    p_revocation_reason: revocationReason,
+    p_actor_user_id: revokedBy,
+    p_operation_id: operationId,
+  });
 
-  if (fetchError) {
-    return { ok: false, error: "db_error", message: fetchError.message };
-  }
-  if (!existing) {
-    return { ok: false, error: "not_found", message: "Qualification introuvable." };
-  }
-  if (existing.status === "revoked") {
-    return { ok: false, error: "already_revoked", message: "Cette qualification est déjà révoquée." };
-  }
-
-  const { error: updateError } = await supabase
-    .from("brigade_verte_qualifications")
-    .update({
-      status: "revoked",
-      revocation_reason: revocationReason,
-      revoked_by: revokedBy,
-      revoked_at: now,
-    })
-    .eq("id", qualificationId);
-
-  if (updateError) {
-    return { ok: false, error: "db_error", message: updateError.message };
-  }
-
-  // Historique
-  const { error: histError } = await supabase
-    .from("brigade_verte_qualification_history")
-    .insert({
-      qualification_id: qualificationId,
-      action_id: existing.action_id,
-      decision: "revoked",
-      decided_by: revokedBy,
-      decided_at: now,
-      justification_url: null,
-      revocation_reason: revocationReason,
-      operation_id: operationId,
-    });
-
-  if (histError) {
-    return { ok: false, error: "db_error", message: histError.message };
+  if (error) {
+    const msg = error.message || "";
+    if (msg.includes("Qualification not found")) {
+      return {
+        ok: false,
+        error: "not_found",
+        message: "Qualification introuvable.",
+      };
+    }
+    if (msg.includes("already revoked")) {
+      return {
+        ok: false,
+        error: "already_revoked",
+        message: "Cette qualification est déjà révoquée.",
+      };
+    }
+    return {
+      ok: false,
+      error: "db_error",
+      message: error.message,
+    };
   }
 
-  return { ok: true };
+  const result = data as {
+    status: string;
+    idempotent?: boolean;
+  };
+
+  return {
+    ok: true,
+    idempotent: Boolean(result.idempotent),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -274,11 +249,7 @@ export async function getQualificationWithHistory(actionId: string): Promise<{
     .eq("action_id", actionId)
     .maybeSingle();
 
-  if (qualError) {
-    return { qualification: null, history: [] };
-  }
-
-  if (!qual) {
+  if (qualError || !qual) {
     return { qualification: null, history: [] };
   }
 
@@ -323,74 +294,113 @@ export async function getQualificationWithHistory(actionId: string): Promise<{
 }
 
 /**
- * Recherche d'actions éligibles pour l'administration IMU max.
- * Filtre par location_label ILIKE ou id exact, et/ou par date.
- * Retourne au maximum 20 résultats.
+ * Recherche paginée d'actions éligibles pour l'administration IMU max.
+ * Filtre sur le prédicat d'éligibilité complet :
+ * - action_date < CURRENT_DATE
+ * - status = 'approved'
+ * - action_phase = 'post_action_complete'
+ * - moderation_visibility = 'visible'
+ * - access_mode = 'public'
+ * - cancelled_at IS NULL
+ * - review_state IN ('approved', 'not_required')
+ * - published_at IS NOT NULL
  */
-export async function searchEligibleActions(params: {
-  query?: string;
-  date?: string;
-}): Promise<EligibleActionRow[]> {
+export async function searchEligibleActions(
+  params: SearchEligibleActionsParams,
+): Promise<SearchEligibleActionsResult> {
   const supabase = getSupabaseAdminClient();
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(50, Math.max(1, params.pageSize ?? 10));
+  const offset = (page - 1) * pageSize;
+  const today = new Date().toISOString().slice(0, 10);
 
   let q = supabase
     .from("actions")
     .select(
-      "id, action_date, location_label, status, action_phase, moderation_visibility, cancelled_at, review_state, published_at",
+      "id, action_date, location_label, status, action_phase, moderation_visibility, access_mode, cancelled_at, review_state, published_at",
+      { count: "exact" },
     )
+    .lt("action_date", today)
     .eq("status", "approved")
     .eq("action_phase", "post_action_complete")
     .eq("moderation_visibility", "visible")
+    .or("access_mode.is.null,access_mode.eq.public")
     .is("cancelled_at", null)
-    .eq("review_state", "approved")
-    .not("published_at", "is", null)
-    .order("action_date", { ascending: false })
-    .limit(20);
+    .in("review_state", ["approved", "not_required"])
+    .not("published_at", "is", null);
 
   if (params.date) {
     q = q.eq("action_date", params.date);
   }
 
   if (params.query) {
-    // Chercher par id exact ou location_label ILIKE
-    q = q.or(`id.eq.${params.query},location_label.ilike.%${params.query}%`);
+    const trimmed = params.query.trim();
+    if (trimmed) {
+      q = q.or(`id.eq.${trimmed},location_label.ilike.%${trimmed}%`);
+    }
   }
 
-  const { data, error } = await q;
+  q = q.order("action_date", { ascending: false }).order("id", { ascending: true }).range(offset, offset + pageSize - 1);
 
-  if (error || !data) return [];
+  const { data, count, error } = await q;
 
-  return data.map((row) => ({
+  if (error) {
+    return {
+      actions: [],
+      total: 0,
+      page,
+      pageSize,
+      hasMore: false,
+      error: error.message,
+    };
+  }
+
+  const total = count ?? (data ? data.length : 0);
+  const actions: EligibleActionRow[] = (data ?? []).map((row) => ({
     id: row.id,
     actionDate: row.action_date,
     locationLabel: row.location_label,
     status: row.status,
     actionPhase: row.action_phase,
     moderationVisibility: row.moderation_visibility,
+    accessMode: row.access_mode ?? "public",
     cancelledAt: row.cancelled_at ?? null,
-    reviewState: row.review_state,
+    reviewState: row.review_state ?? "not_required",
     publishedAt: row.published_at ?? null,
   }));
+
+  return {
+    actions,
+    total,
+    page,
+    pageSize,
+    hasMore: offset + actions.length < total,
+  };
 }
 
 // ---------------------------------------------------------------------------
-// Projection personnelle (fail-closed)
+// Projection personnelle (fail-closed avec revalidation exhaustive)
 // ---------------------------------------------------------------------------
 
 /**
  * Calcule les participations Brigade Verte admissibles pour un userId.
  *
  * FAIL-CLOSED : toute erreur Supabase retourne { eligible: false, count: 0, proofs: [] }.
- * Ne divulgue jamais les identités d'autres participants.
- * Sélectionne les 2 premières action_id distinctes (tri: action_date ASC, id ASC).
+ * INVARIANTS :
+ * - Aucune pagination tronquée silencieusement : lecture exhaustive de toutes les qualifications actives.
+ * - Revalidation systématique du prédicat d'éligibilité complet de chaque action associée.
+ * - Une action devenue privée, invalidée, annulée ou avec date future est immédiatement rejetée.
+ * - Remplacement automatique et déterministe : tri par action_date ASC puis id ASC, sélection des 2 premières.
+ * - Ne divulgue jamais les identités d'autres participants ni les motifs administratifs.
  */
 export async function computeBrigadeVerteProgress(
   userId: string,
+  referenceDate?: string,
 ): Promise<BrigadeVerteProgress> {
   const supabase = getSupabaseAdminClient();
 
   try {
-    // Récupérer les action_id des qualifications actives
+    // 1. Récupérer toutes les qualifications actives
     const { data: qualData, error: qualError } = await supabase
       .from("brigade_verte_qualifications")
       .select("action_id, qualified_at")
@@ -404,12 +414,12 @@ export async function computeBrigadeVerteProgress(
       return { eligible: true, count: 0, proofs: [] };
     }
 
-    const qualifiedActionIds = qualData.map((q) => q.action_id);
+    const qualifiedActionIds = Array.from(new Set(qualData.map((q) => q.action_id)));
     const qualifiedAtMap = new Map<string, string>(
       qualData.map((q) => [q.action_id, q.qualified_at]),
     );
 
-    // Participations confirmées du userId dans ces actions
+    // 2. Participations confirmées du userId dans ces actions
     const { data: participations, error: partError } = await supabase
       .from("action_participants")
       .select("action_id")
@@ -425,29 +435,53 @@ export async function computeBrigadeVerteProgress(
       return { eligible: true, count: 0, proofs: [] };
     }
 
-    // Dédupliquer les action_id
-    const distinctActionIds = Array.from(
+    const candidateActionIds = Array.from(
       new Set(participations.map((p) => p.action_id)),
     );
 
-    // Récupérer les infos des actions pour le tri et les preuves publiques
-    const { data: actionData, error: actionError } = await supabase
+    // 3. Récupérer les détails complets des actions candidates pour réévaluer rigoureusement leur éligibilité
+    const { data: actionsData, error: actionsError } = await supabase
       .from("actions")
-      .select("id, action_date, location_label")
-      .in("id", distinctActionIds)
-      .order("action_date", { ascending: true })
-      .order("id", { ascending: true });
+      .select(
+        "id, action_date, location_label, status, action_phase, moderation_visibility, access_mode, cancelled_at, review_state, published_at",
+      )
+      .in("id", candidateActionIds);
 
-    if (actionError) {
+    if (actionsError || !actionsData) {
       return { eligible: false, count: 0, proofs: [] };
     }
 
-    if (!actionData || actionData.length === 0) {
+    // 4. Filtrer uniquement les actions qui satisfont TOUS les critères d'éligibilité actuels
+    const eligibleActions = actionsData.filter((a) => {
+      const row: EligibleActionRow = {
+        id: a.id,
+        actionDate: a.action_date,
+        locationLabel: a.location_label,
+        status: a.status,
+        actionPhase: a.action_phase,
+        moderationVisibility: a.moderation_visibility,
+        accessMode: a.access_mode ?? "public",
+        cancelledAt: a.cancelled_at ?? null,
+        reviewState: a.review_state ?? "not_required",
+        publishedAt: a.published_at ?? null,
+      };
+      return checkActionEligibilityPredicate(row, referenceDate);
+    });
+
+    if (eligibleActions.length === 0) {
       return { eligible: true, count: 0, proofs: [] };
     }
 
-    // Prendre les 2 premières (tri déjà appliqué par la requête)
-    const top2 = actionData.slice(0, 2);
+    // 5. Tri déterministe : date d'action ASC puis ID ASC
+    eligibleActions.sort((a, b) => {
+      if (a.action_date !== b.action_date) {
+        return a.action_date.localeCompare(b.action_date);
+      }
+      return a.id.localeCompare(b.id);
+    });
+
+    // 6. Sélectionner les deux premières preuves admissibles
+    const top2 = eligibleActions.slice(0, 2);
 
     const proofs = top2.map((a) => ({
       actionId: a.id,
@@ -456,7 +490,11 @@ export async function computeBrigadeVerteProgress(
       qualifiedAt: qualifiedAtMap.get(a.id) ?? "",
     }));
 
-    return { eligible: true, count: top2.length, proofs };
+    return {
+      eligible: true,
+      count: top2.length,
+      proofs,
+    };
   } catch {
     // Fail-closed sur toute exception imprévue
     return { eligible: false, count: 0, proofs: [] };

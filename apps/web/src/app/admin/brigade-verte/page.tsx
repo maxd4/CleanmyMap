@@ -1,4 +1,4 @@
-import { checkAdminAccess } from "@/lib/admin/access";
+import { checkCreatorAccess } from "@/lib/admin/access";
 import { PageHeader } from "@/components/ui/page-header";
 import { searchEligibleActions } from "@/lib/brigade-verte/brigade-verte-service";
 import Link from "next/link";
@@ -11,6 +11,7 @@ export const metadata = {
 type SearchParams = {
   query?: string;
   date?: string;
+  page?: string;
 };
 
 export default async function Page({
@@ -18,22 +19,27 @@ export default async function Page({
 }: {
   searchParams?: Promise<SearchParams>;
 }) {
-  await checkAdminAccess();
+  await checkCreatorAccess();
 
   const resolved = searchParams ? await searchParams : undefined;
   const query = resolved?.query ?? "";
   const date = resolved?.date ?? "";
+  const page = Math.max(1, parseInt(resolved?.page ?? "1", 10) || 1);
 
-  const actions = await searchEligibleActions({
+  const searchResult = await searchEligibleActions({
     query: query || undefined,
     date: date || undefined,
+    page,
+    pageSize: 10,
   });
+
+  const { actions, total, hasMore, error } = searchResult;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <PageHeader
         title="Administration Brigade Verte Paris"
-        subtitle="Gestion et qualification des opérations Quartier Propre éligibles au Parcours Éco-Citoyen."
+        subtitle="Gestion et qualification des opérations Quartier Propre éligibles au Parcours Éco-Citoyen. Réservé IMU max."
       />
 
       <div className="mt-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
@@ -78,10 +84,20 @@ export default async function Page({
       </div>
 
       <div className="mt-8">
-        <h3 className="text-md font-semibold text-zinc-800 dark:text-zinc-200 mb-3">
-          Actions éligibles trouvées ({actions.length})
-        </h3>
-        {actions.length === 0 ? (
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-md font-semibold text-zinc-800 dark:text-zinc-200">
+            Actions éligibles trouvées ({total})
+          </h3>
+          <span className="text-xs text-zinc-500">
+            Page {page} {total > 0 && `sur ${Math.ceil(total / 10)}`}
+          </span>
+        </div>
+
+        {error ? (
+          <div className="p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-md text-rose-800 dark:text-rose-200 text-sm">
+            Erreur lors de la recherche des actions : {error}
+          </div>
+        ) : actions.length === 0 ? (
           <p className="text-sm text-zinc-500 py-4">
             Aucune action éligible ne correspond aux critères de recherche.
           </p>
@@ -111,6 +127,29 @@ export default async function Page({
             ))}
           </div>
         )}
+
+        {/* Pagination simple */}
+        <div className="mt-4 flex justify-between items-center text-sm">
+          {page > 1 ? (
+            <Link
+              href={`/admin/brigade-verte?query=${encodeURIComponent(query)}&date=${encodeURIComponent(date)}&page=${page - 1}`}
+              className="px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              ← Page précédente
+            </Link>
+          ) : (
+            <span />
+          )}
+
+          {hasMore && (
+            <Link
+              href={`/admin/brigade-verte?query=${encodeURIComponent(query)}&date=${encodeURIComponent(date)}&page=${page + 1}`}
+              className="px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              Page suivante →
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

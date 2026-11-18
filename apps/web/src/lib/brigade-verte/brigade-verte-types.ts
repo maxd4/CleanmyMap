@@ -48,14 +48,33 @@ export type EligibleActionRow = {
   status: string;
   actionPhase: string;
   moderationVisibility: string;
+  accessMode: string;
   cancelledAt: string | null;
   reviewState: string;
   publishedAt: string | null;
 };
 
+/** Paramètres de recherche d'actions éligibles avec pagination. */
+export type SearchEligibleActionsParams = {
+  query?: string;
+  date?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+/** Résultat paginé de la recherche d'actions éligibles. */
+export type SearchEligibleActionsResult = {
+  actions: EligibleActionRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+  error?: string;
+};
+
 /** Résultat de l'opération de qualification d'une action. */
 export type QualifyActionResult =
-  | { ok: true; qualificationId: string; decision: BrigadeVerteDecision }
+  | { ok: true; qualificationId: string; decision: BrigadeVerteDecision; idempotent?: boolean }
   | {
       ok: false;
       error: "already_active" | "action_not_eligible" | "db_error";
@@ -64,12 +83,13 @@ export type QualifyActionResult =
 
 /** Résultat de l'opération de révocation d'une qualification. */
 export type RevokeActionResult =
-  | { ok: true }
+  | { ok: true; idempotent?: boolean }
   | {
       ok: false;
       error: "not_found" | "already_revoked" | "db_error";
       message: string;
     };
+
 
 /**
  * Preuve publique retournée dans la projection personnelle.
