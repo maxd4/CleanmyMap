@@ -26,3 +26,30 @@ export {
 export {
   normalizeEnvironmentalImpactEstimateInput,
 } from "./validation";
+export {
+  SCIENTIFIC_FACTOR_REGISTRY,
+  ANTI_DOUBLE_COUNTING_RULES,
+  getScientificFactor,
+  listScientificFactors,
+  assertNoGenericAiCallsToTokensConversion,
+  resolveElectricityFactorForRegion,
+  evaluateDataQualityDiagnostic,
+} from "./scientific-registry";
+export type {
+  ScientificProofStatus,
+  AccountingScopeType,
+  ScientificFactorRegion,
+  ScientificFactorScope,
+  ScientificPhysicalUnit,
+  MultimodalCategory,
+  EnvironmentalDataQualityDiagnostic,
+  ScientificFactorRecord,
+} from "./scientific-registry";
+export {
+  estimatePersonalAiFootprint,
+} from "./personal-ai-estimator";
+export type {
+  PersonalAiFootprintInput,
+  PersonalAiFootprintEstimate,
+  ModalityEstimate,
+} from "./personal-ai-estimator";

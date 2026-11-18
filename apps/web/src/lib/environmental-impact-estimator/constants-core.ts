@@ -5,7 +5,8 @@ export const ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION =
 
 /**
  * Default location-based electricity factor for infrastructure mainly hosted
- * in the United States. It is a configuration anchor, not a measurement of
+ * in the United States. Canonically registered as 'electricity-us-egrid-2024'
+ * in SCIENTIFIC_FACTOR_REGISTRY. It is a configuration anchor, not a measurement of
  * CleanMyMap's actual provider mix. Replace it when a provider region or a
  * measured electricity signal is available.
  */
@@ -21,7 +22,8 @@ export const ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR = {
 
 /**
  * Configurable U.S. average proxy for indirect water consumption associated
- * with electricity used by data centers. Replace it with a location-specific
+ * with electricity used by data centers. Canonically registered as 'water-indirect-datacenter-us-2024'
+ * in SCIENTIFIC_FACTOR_REGISTRY. Replace it with a location-specific
  * factor when the provider/grid location is known.
  */
 export const ENVIRONMENTAL_IMPACT_WATER_FACTOR = {

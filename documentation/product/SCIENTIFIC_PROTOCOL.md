@@ -420,7 +420,32 @@ Le runtime calcule actuellement `dataIntegrityPriority` à partir de
 
 Le moteur d'empreinte numérique conserve la séparation entre valeur mesurée, valeur dérivée et proxy. La conversion électrique ne s'effectue que dans le sens `kWh réel × facteur électrique`; en l'absence de kWh, l'interface utilise le libellé `équivalent électrique estimé` et conserve le CO₂e proxy sans reconstruire de kWh par division. Une donnée absente reste `à compléter`.
 
-Le facteur par défaut configurable est `0,35 kgCO₂e/kWh` pour des serveurs majoritairement américains, avec [EPA eGRID](https://www.epa.gov/egrid) et [EIA](https://www.eia.gov/tools/faqs/faq.php?id=74&t=11) comme références de cadrage. Il doit être remplacé par un facteur régional lorsque la localisation électrique réelle est connue. La ventilation du refroidissement reste prudente: environ 7 % dans certains hyperscalers efficaces à plus de 30 % dans des installations moins efficaces selon [IEA Energy and AI](https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai). Les serveurs accélérés principalement associés à l'IA sont décrits comme un moteur de croissance, sans attribuer de part IA inconnue à CleanMyMap.
+Le facteur par défaut configurable est `0,35 kgCO₂e/kWh` pour des serveurs majoritairement américains (`electricity-us-egrid-2024`), avec [EPA eGRID](https://www.epa.gov/egrid) et [EIA](https://www.eia.gov/tools/faqs/faq.php?id=74&t=11) comme références de cadrage. Il doit être remplacé par un facteur régional lorsque la localisation électrique réelle est connue (ex. `0,0217 kgCO₂e/kWh` pour la France via RTE, `electricity-fr-rte-2024`). La ventilation du refroidissement reste prudente: environ 7 % dans certains hyperscalers efficaces à plus de 30 % dans des installations moins efficaces selon [IEA Energy and AI](https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai). Les serveurs accélérés principalement associés à l'IA sont décrits comme un moteur de croissance, sans attribuer de part IA inconnue à CleanMyMap.
+
+### Convergence scientifique des estimateurs (CleanMyMap et « Mon empreinte IA »)
+
+L'estimateur d'impact du site et le module d'usage individuel « Mon empreinte IA » partagent le registre canonique de facteurs versionnés (`SCIENTIFIC_FACTOR_REGISTRY` dans `apps/web/src/lib/environmental-impact-estimator/scientific-registry.ts`) tout en maintenant une séparation hermétique de leurs périmètres comptables :
+
+1. **Cloisonnement des périmètres comptables** :
+   - `CLEANMYMAP_PRODUCTION` : consommation et infrastructure du service public en production ;
+   - `CLEANMYMAP_DEVELOPMENT` : fabrication et maintenance du projet (ex. outillage IA, CI/CD) ;
+   - `PERSONAL_AI_USAGE` : utilisation déclarée par un utilisateur individuel (« Mon empreinte IA ») ;
+   - `HYPOTHETICAL_SCENARIO` : variantes prospectives de sensibilité ;
+   - `NOT_CALCULABLE` : modalités ou métriques sans méthode physique applicable.
+
+2. **Garde-fous méthodologiques stricts** :
+   - *Interdiction de conversion `aiCalls` en tokens* : le proxy applicatif `aiCalls` (détections photos, requêtes d'inférence) ne doit jamais être assimilé ou converti en tokens LLM.
+   - *Refus de l'auto-application des facteurs américains sur infrastructure inconnue* : en l'absence de région avérée ou pour la région `UNKNOWN`, les coefficients américains (`0,35 kgCO₂e/kWh`, `4,52 L/kWh`) ne sont pas appliqués par défaut ; les émissions physiques correspondantes demeurent `null`.
+   - *Multimodalité conditionnée* : les quatre modalités (`text`, `image`, `audio`, `video`) sont modélisées, mais seule la modalité `text` produit des estimations physiques (`0,06`, `0,30` ou `0,60 kWh/M tokens`). Les modalités `image`, `audio` et `video` conservent leurs unités d'activité déclarées avec des impacts physiques `null` et statut `NOT_CALCULABLE` (`NA`).
+   - *Diagnostic de qualité déterministe* : aucun pourcentage de confiance arbitraire ; qualification systématique en `MEASURED`, `DOCUMENTED_MODEL`, `PROXY_SCENARIO` ou `NOT_CALCULABLE`.
+
+3. **Garanties anti-double-comptage** :
+   - Pas d'addition $E_{\text{IT}} + E_{\text{total}}$ (le PUE inclut déjà l'IT) ;
+   - Pas d'addition d'eau indirecte si l'eau directe couvre déjà le cycle amont ;
+   - Majoration ACV partielle (+30 %) appliquée au carbone opérationnel sans double imputation matérielle ;
+   - Absence totale de porosité entre périmètres CleanMyMap et usage personnel ;
+   - Pas de cumul tokens et durée pour une même charge ;
+   - Unidirectionnalité stricte $\text{kWh} \to \text{CO₂e}$, interdisant toute division inverse.
 
 ## Lecture correcte
 

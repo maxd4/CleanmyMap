@@ -88,3 +88,46 @@ Le facteur par défaut de `4,52 L/kWh` est un proxy configurable d'eau indirecte
 L'eau reste dans le cycle hydrologique global, mais l'eau évaporée est consommée localement car elle n'est plus immédiatement disponible dans le même bassin. Le retrait et la consommation sont différents; l'eau retournée varie selon le lieu, le moment, la température et la qualité. L'impact dépend aussi du stress hydrique et des conflits locaux, pas seulement du volume en litres. Cette lecture ne doit pas être confondue avec les KPI d'impact terrain.
 
 Référence complémentaire sur la limite planétaire Freshwater Change: [Stockholm Resilience Centre](https://www.stockholmresilience.org/research/planetary-boundaries/the-nine-planetary-boundaries/freshwater-change.html), qui distingue blue water et green water et décrit une transgression de la limite.
+
+## Convergence scientifique des estimateurs (CleanMyMap et « Mon empreinte IA »)
+
+Pour assurer la cohérence méthodologique sans fusionner des réalités comptables distinctes, l'estimateur environnemental existant (`environmental-impact-estimator`) et le module « Mon empreinte IA » (`personal-ai-estimator`) partagent un registre canonique de facteurs versionnés (`scientific-registry.ts`).
+
+### 1. Registre canonique des facteurs versionnés
+
+Le registre centralise les facteurs, leur version, leur région, leur périmètre, leur unité, leurs hypothèses et leur statut de preuve (`OBSERVED`, `DERIVED`, `DECLARED`, `ASSUMPTION`, `PROXY`, `NA`) :
+- `electricity-us-egrid-2024` (v2024.1) : `0,35 kgCO₂e/kWh` (EPA eGRID / EIA, région US, `PROXY`) ;
+- `electricity-fr-rte-2024` (v2024.1) : `0,0217 kgCO₂e/kWh` (RTE Bilan 2024, région FR, `OBSERVED`) ;
+- `water-indirect-datacenter-us-2024` (v2024.1) : `4,52 L/kWh` (LBNL 2024, région US, `PROXY`) ;
+- `ai-inference-energy-scenario-low-v1` : `0,06 kWh/million_tokens` (scénario bas, `ASSUMPTION`) ;
+- `ai-inference-energy-scenario-central-v1` : `0,30 kWh/million_tokens` (scénario central, `ASSUMPTION`) ;
+- `ai-inference-energy-scenario-high-v1` : `0,60 kWh/million_tokens` (scénario haut, `ASSUMPTION`) ;
+- `ai-partial-lca-overhead-v1` : `+30 %` (`fraction 0,30`, majoration de sensibilité de fabrication/ACV partielle, `ASSUMPTION`) ;
+- `digital-car-equivalent-ademe-v1` : `14,2 kgCO₂e/100km` (Base Empreinte ADEME / Impact CO₂, équivalence pédagogique, `PROXY`) ;
+- `multimodal-image-unmeasured-v1`, `multimodal-audio-unmeasured-v1`, `multimodal-video-unmeasured-v1` : facteurs physiques non calculables (`null`, statut `NA`).
+
+### 2. Étanchéité stricte des périmètres comptables
+
+Les périmètres sont strictement cloisonnés pour éviter tout mélange d'attribution :
+1. `CLEANMYMAP_PRODUCTION` : fonctionnement du site web, de l'API et de la base de données en production ;
+2. `CLEANMYMAP_DEVELOPMENT` : fabrication et développement du site (incluant l'outillage IA de développement tel que Codex/GitHub Actions) ;
+3. `PERSONAL_AI_USAGE` : utilisation personnelle d'IA déclarée par l'utilisateur dans « Mon empreinte IA » ;
+4. `HYPOTHETICAL_SCENARIO` : simulations prospectives ou analyses de sensibilité ;
+5. `NOT_CALCULABLE` : postes ou modalités sans métrique ni facteur physique applicable.
+
+### 3. Invariants scientifiques stricts
+
+- **Aucune conversion du proxy générique `aiCalls` en tokens** : La métrique opérationnelle `aiCalls` (détections photos d'actions ou inférences applicatives hébergées) est un compteur d'événements et ne doit jamais être convertie en tokens LLM.
+- **Aucune application automatique des facteurs américains sur infrastructure inconnue** : Si la région d'infrastructure n'est pas établie ou vaut `UNKNOWN`, aucun facteur d'émission régional américain (comme `0,35 kgCO₂e/kWh` ou `4,52 L/kWh`) n'est appliqué silencieusement. L'énergie IT/facility reste calculable si la charge est connue, mais les émissions associées sont classées non calculables (`null`) avec mention explicite.
+- **Multimodalité conditionnée aux méthodes sourcées** : Le contrat scientifique intègre les quatre catégories multimodales (`text`, `image`, `audio`, `video`). Seule la modalité `text` dispose aujourd'hui de méthodes physiques sourcées (`kWh/M tokens`). Pour `image`, `audio` et `video`, les compteurs d'activité déclarés sont consignés, mais l'impact physique (kWh, CO₂e, eau) est obligatoirement `null` avec statut `NA` (`NOT_CALCULABLE`).
+- **Diagnostic déterministe de qualité des données** : Les scores de confiance numériques arbitraires (pourcentages inventés de 50 % à 96 %) sont proscrits. La qualité des données est évaluée de façon déterministe selon quatre statuts objectifs : `MEASURED`, `DOCUMENTED_MODEL`, `PROXY_SCENARIO` ou `NOT_CALCULABLE`.
+
+### 4. Règles anti-double-comptage
+
+Six règles formelles garantissent l'intégrité des calculs :
+1. `NO_IT_FACILITY_DOUBLE_COUNT` : L'énergie totale data center intégrant le PUE ($E_{\text{total}} = E_{\text{IT}} \times \text{PUE}$), ne jamais sommer énergie IT et énergie totale pour une même charge.
+2. `NO_WATER_DOUBLE_COUNT` : L'eau indirecte liée à la production d'électricité ne s'additionne à l'eau directe sur site que si cette dernière n'inclut pas déjà l'amont énergétique.
+3. `NO_ACV_EMBODIED_DOUBLE_COUNT` : La majoration de sensibilité ACV partielle (+30 %) s'applique au carbone opérationnel sans imputer à nouveau le matériel cloud dans un autre poste.
+4. `NO_CROSS_SCOPE_DOUBLE_COUNT` : Aucune porosité ni addition entre production CleanMyMap, développement du projet et usage personnel d'un utilisateur.
+5. `NO_TOKEN_TIME_DOUBLE_COUNT` : Ne jamais sommer une estimation basée sur les tokens et une estimation basée sur la durée de session pour une même activité.
+6. `NO_REVERSE_CO2_TO_KWH` : La conversion énergétique n'opère que dans le sens physique $\text{kWh} \times f_C = \text{kgCO₂e}$. Interdiction absolue de diviser un CO₂e proxy par un facteur d'émission pour fabriquer un prétendu « kWh électrique mesuré ».

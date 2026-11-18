@@ -122,4 +122,16 @@ describe("scientific estimator coherence", () => {
     expect(snapshot.model.methodology.electricity.kWh).toBe(10);
     expect(snapshot.model.methodology.electricity.kgCo2e).toBe(3.5);
   });
+
+  it("garantit l'alignement exact entre les constantes historiques et le registre canonique", async () => {
+    const { ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR, ENVIRONMENTAL_IMPACT_WATER_FACTOR } =
+      await import("./constants");
+    const { getScientificFactor } = await import("./scientific-registry");
+
+    const canonElec = getScientificFactor("electricity-us-egrid-2024");
+    expect(ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR.kgCo2ePerKwh).toBe(canonElec.value);
+
+    const canonWater = getScientificFactor("water-indirect-datacenter-us-2024");
+    expect(ENVIRONMENTAL_IMPACT_WATER_FACTOR.litersPerKwh).toBe(canonWater.value);
+  });
 });
