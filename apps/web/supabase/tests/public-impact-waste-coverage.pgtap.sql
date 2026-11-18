@@ -38,7 +38,9 @@ insert into public.actions (
   volunteers_count,
   duration_minutes,
   status,
-  notes
+  notes,
+  published_at,
+  data_provenance
 )
 values
   (
@@ -51,7 +53,9 @@ values
     1,
     0,
     'approved',
-    '[cmm-meta]{"label":"test"}'
+    '[cmm-meta]{"label":"test"}',
+    current_timestamp,
+    'real'
   ),
   (
     '00000000-0000-0000-0000-000000000102',
@@ -63,7 +67,9 @@ values
     1,
     0,
     'approved',
-    'Mesure explicite nulle'
+    'Mesure explicite nulle',
+    current_timestamp,
+    'real'
   ),
   (
     '00000000-0000-0000-0000-000000000103',
@@ -75,7 +81,9 @@ values
     1,
     0,
     'approved',
-    'Pas de masse declaree'
+    'Pas de masse declaree',
+    current_timestamp,
+    'real'
   ),
   (
     '00000000-0000-0000-0000-000000000104',
@@ -87,7 +95,9 @@ values
     1,
     0,
     'approved',
-    'Exclusion metier malgre test'
+    'Exclusion metier malgre test',
+    current_timestamp,
+    'test'
   ),
   (
     '00000000-0000-0000-0000-000000000105',
@@ -99,7 +109,9 @@ values
     1,
     0,
     'approved',
-    '[cmm-meta]{"cigaretteButtsMeasurements":{"cigaretteButtsLotResults":[{"id":"lot-v1","condition":"propre","count":100,"massKg":0.02,"massProvenance":"measured","massConversionFormulaVersion":"impact-terrain-2026-butts-mass-v1"},{"id":"lot-v2","condition":"propre","count":200,"massKg":0.04,"massProvenance":"estimated","volumeConversionFormulaVersion":"cleanmymap-butts-volume-v2"}]}}'
+    '[cmm-meta]{"cigaretteButtsMeasurements":{"cigaretteButtsLotResults":[{"id":"lot-v1","condition":"propre","count":100,"massKg":0.02,"massProvenance":"measured","massConversionFormulaVersion":"impact-terrain-2026-butts-mass-v1"},{"id":"lot-v2","condition":"propre","count":200,"massKg":0.04,"massProvenance":"estimated","volumeConversionFormulaVersion":"cleanmymap-butts-volume-v2"}]}}',
+    current_timestamp,
+    'real'
   ),
   (
     '00000000-0000-0000-0000-000000000106',
@@ -111,7 +123,9 @@ values
     1,
     0,
     'approved',
-    '[cmm-meta]{"cigaretteButtsMeasurements":{"cigaretteButtsLotResults":[{"id":"lot-unknown","condition":"propre","count":75,"massKg":null,"massProvenance":"unknown","massConversionFormulaVersion":null}]}}'
+    '[cmm-meta]{"cigaretteButtsMeasurements":{"cigaretteButtsLotResults":[{"id":"lot-unknown","condition":"propre","count":75,"massKg":null,"massProvenance":"unknown","massConversionFormulaVersion":null}]}}',
+    current_timestamp,
+    'real'
   );
 
 select is(

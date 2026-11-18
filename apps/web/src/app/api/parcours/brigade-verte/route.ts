@@ -18,6 +18,7 @@ import { computeBrigadeVerteProgress } from "@/lib/brigade-verte/brigade-verte-s
 
 export const runtime = "nodejs";
 
+// Justification cache : données personnelles privées no-store sans mise en cache partagée
 const CACHE_HEADERS = {
   "Cache-Control": "private, no-store",
 };

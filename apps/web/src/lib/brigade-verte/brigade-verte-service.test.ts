@@ -58,6 +58,7 @@ function makeChain(result: SupabaseChainResult) {
     "order",
     "limit",
     "range",
+    "gt",
   ]) {
     chain[m] = vi.fn(noop);
   }
@@ -319,28 +320,96 @@ describe("computeBrigadeVerteProgress", () => {
     expect(result.proofs[1].actionId).toBe("act-2");
   });
 
-  it("gère la pagination exhaustive des participations confirmées sur plusieurs pages", async () => {
-    // Page 1 retourne 500 items avec participations, Page 2 retourne 1 item
-    const page1 = Array.from({ length: 500 }, () => ({ action_id: "act-batch-1" }));
-    const page2 = [{ action_id: "act-target" }];
+  it("gère la pagination par curseur exhaustive sur plus de 500 actions distinctes sans perte de preuve", async () => {
+    // 550 actions uniques réparties sur 2 pages (500 + 50)
+    // Preuves admissibles : act-010 (page 1) et act-520 (page 2)
+    const page1 = Array.from({ length: 500 }, (_, i) => ({
+      action_id: `act-${String(i + 1).padStart(4, "0")}`,
+    }));
+    const page2 = Array.from({ length: 50 }, (_, i) => ({
+      action_id: `act-${String(501 + i).padStart(4, "0")}`,
+    }));
 
     setupFromSequence([
-      // 1. Page 1
+      // 1. Page 1 (curseur initial)
       { data: page1, error: null },
-      // 2. Page 2
+      // 2. Page 2 (curseur gt act-0500)
       { data: page2, error: null },
-      // 3. Qualifications actives pour ces actions
+      // 3. Qualifications actives pour ces actions (par chunks de 50)
+      //    act-0010 et act-0520 sont qualifiées
       {
-        data: [{ action_id: "act-target", qualified_at: "2026-10-01T00:00:00Z" }],
+        data: [{ action_id: "act-0010", qualified_at: "2026-10-01T00:00:00Z" }],
         error: null,
       },
-      // 4. Détails de l'action qualifiée
+      ...Array.from({ length: 9 }, () => ({ data: [], error: null })),
+      {
+        data: [{ action_id: "act-0520", qualified_at: "2026-10-02T00:00:00Z" }],
+        error: null,
+      },
+      // 4. Détails des 2 actions candidates qualifiées
       {
         data: [
           {
-            id: "act-target",
+            id: "act-0010",
             action_date: "2026-10-01",
-            location_label: "Lieu Paginé",
+            location_label: "Lieu Page 1",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            cancelled_at: null,
+            review_state: "approved",
+            published_at: "2026-10-02T00:00:00Z",
+          },
+          {
+            id: "act-0520",
+            action_date: "2026-10-05",
+            location_label: "Lieu Page 2",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            cancelled_at: null,
+            review_state: "not_required",
+            published_at: "2026-10-06T00:00:00Z",
+          },
+        ],
+        error: null,
+      },
+    ]);
+
+    const result = await computeBrigadeVerteProgress("user-1", "2026-11-18");
+    expect(result.eligible).toBe(true);
+    expect(result.count).toBe(2);
+    expect(result.proofs).toHaveLength(2);
+    expect(result.proofs[0].actionId).toBe("act-0010");
+    expect(result.proofs[1].actionId).toBe("act-0520");
+  });
+
+  it("gère la frontière exacte de pagination (pile 500 actions puis page vide)", async () => {
+    const page1 = Array.from({ length: 500 }, (_, i) => ({
+      action_id: `act-exact-${String(i + 1).padStart(4, "0")}`,
+    }));
+    const page2: { action_id: string }[] = [];
+
+    setupFromSequence([
+      // 1. Page 1 (500 items)
+      { data: page1, error: null },
+      // 2. Page 2 (0 item -> arrêt du curseur)
+      { data: page2, error: null },
+      // 3. Qualifications actives (10 chunks de 50)
+      {
+        data: [{ action_id: "act-exact-0001", qualified_at: "2026-10-01T00:00:00Z" }],
+        error: null,
+      },
+      ...Array.from({ length: 9 }, () => ({ data: [], error: null })),
+      // 4. Action candidate
+      {
+        data: [
+          {
+            id: "act-exact-0001",
+            action_date: "2026-10-01",
+            location_label: "Lieu Frontière",
             status: "approved",
             action_phase: "post_action_complete",
             moderation_visibility: "visible",
@@ -357,7 +426,26 @@ describe("computeBrigadeVerteProgress", () => {
     const result = await computeBrigadeVerteProgress("user-1", "2026-11-18");
     expect(result.eligible).toBe(true);
     expect(result.count).toBe(1);
-    expect(result.proofs[0].actionId).toBe("act-target");
+    expect(result.proofs[0].actionId).toBe("act-exact-0001");
+  });
+
+  it("retourne eligible=false en cas d'erreur intermédiaire sur la page 2 (fail-closed)", async () => {
+    const page1 = Array.from({ length: 500 }, (_, i) => ({
+      action_id: `act-err-${String(i + 1).padStart(4, "0")}`,
+    }));
+
+    setupFromSequence([
+      // Page 1 réussit
+      { data: page1, error: null },
+      // Page 2 échoue
+      { data: null, error: { message: "timeout sur page 2" } },
+    ]);
+
+    const result = await computeBrigadeVerteProgress("user-1", "2026-11-18");
+    // Fail-closed : ne convertit jamais une lecture partielle en progression incomplète
+    expect(result.eligible).toBe(false);
+    expect(result.count).toBe(0);
+    expect(result.proofs).toHaveLength(0);
   });
 
   it("exclut immédiatement une action qualifiée devenue privée ou annulée après qualification (revalidation)", async () => {

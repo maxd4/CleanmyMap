@@ -402,19 +402,26 @@ export async function computeBrigadeVerteProgress(
   const supabase = getSupabaseAdminClient();
 
   try {
-    // 1. Lecture owner-scoped paginée des participations confirmées de l'utilisateur
-    //    Garantit qu'aucun plafond PostgREST (ex. 1000 lignes) ne tronque silencieusement le résultat.
+    // 1. Lecture owner-scoped paginée par curseur des participations confirmées de l'utilisateur.
+    //    Garantit un ordre stable sur action_id et qu'aucun plafond PostgREST ne tronque le résultat.
     const PARTICIPANTS_PAGE_SIZE = 500;
-    let participantOffset = 0;
+    let lastActionId: string | null = null;
     const confirmedActionIdsList: string[] = [];
 
     while (true) {
-      const { data: pageRows, error: partError } = await supabase
+      let query = supabase
         .from("action_participants")
         .select("action_id")
         .eq("user_id", userId)
         .eq("participation_status", "confirmed")
-        .range(participantOffset, participantOffset + PARTICIPANTS_PAGE_SIZE - 1);
+        .order("action_id", { ascending: true })
+        .limit(PARTICIPANTS_PAGE_SIZE);
+
+      if (lastActionId) {
+        query = query.gt("action_id", lastActionId);
+      }
+
+      const { data: pageRows, error: partError } = await query;
 
       if (partError) {
         return { eligible: false, count: 0, proofs: [] };
@@ -430,10 +437,11 @@ export async function computeBrigadeVerteProgress(
         }
       }
 
-      if (pageRows.length < PARTICIPANTS_PAGE_SIZE) {
+      lastActionId = pageRows[pageRows.length - 1]?.action_id ?? null;
+
+      if (pageRows.length < PARTICIPANTS_PAGE_SIZE || !lastActionId) {
         break;
       }
-      participantOffset += PARTICIPANTS_PAGE_SIZE;
     }
 
     if (confirmedActionIdsList.length === 0) {

@@ -484,6 +484,20 @@
       "reason": "Association authentifiée d'une image de référence privée au parcours prévu SPOGOMI, sans dérivation automatique de géométrie ou de distance.",
       "costContract": "POST limité à un mediaId déjà finalisé et rattaché à la même action ; AuthZ organisateur et révision du parcours sont revalidées côté serveur, la réponse reste privée et l'image n'est jamais publiée dans la projection publique.",
       "reviewedAt": "2026-11-10"
+    },
+    {
+      "route": "apps/web/src/app/api/admin/brigade-verte/route.ts",
+      "introducedBy": "c577f77bad3972978b9e36047cdfcfa6b33a1015",
+      "reason": "Surface d'administration IMU max pour qualifier, révoquer et consulter les actions Quartier Propre Brigade Verte Paris avec audit systématique.",
+      "costContract": "GET et POST réservés à l'accès créateur (requireCreatorAccess) avec rate limits et audit PostgreSQL atomique ; recherche paginée d'actions éligibles bornée à 50 éléments par page sans exposition de données sensibles.",
+      "reviewedAt": "2026-11-18"
+    },
+    {
+      "route": "apps/web/src/app/api/parcours/brigade-verte/route.ts",
+      "introducedBy": "c577f77bad3972978b9e36047cdfcfa6b33a1015",
+      "reason": "Surface authentifiée de projection personnelle des participations vérifiées au Parcours Éco-Citoyen Brigade Verte Paris.",
+      "costContract": "GET authentifié strictement owner-scoped, fail-closed avec réponse private/no-store, sans recalcul d'éligibilité dans le client ni exposition d'identités tierces.",
+      "reviewedAt": "2026-11-18"
     }
   ],
   "apiRoutes": [
@@ -543,6 +557,7 @@
     "apps/web/src/app/api/actions/prefill/route.ts",
     "apps/web/src/app/api/actions/registration-requests/route.ts",
     "apps/web/src/app/api/actions/route.ts",
+    "apps/web/src/app/api/admin/brigade-verte/route.ts",
     "apps/web/src/app/api/admin/codex-usage/route.ts",
     "apps/web/src/app/api/admin/creator-inbox/route.ts",
     "apps/web/src/app/api/admin/environmental-impact/route.ts",
@@ -628,6 +643,7 @@
     "apps/web/src/app/api/mobile/actions/route.ts",
     "apps/web/src/app/api/newsletter/subscribe/route.ts",
     "apps/web/src/app/api/notifications/preferences/route.ts",
+    "apps/web/src/app/api/parcours/brigade-verte/route.ts",
     "apps/web/src/app/api/partners/onboarding-requests/route.ts",
     "apps/web/src/app/api/partners/published-directory/route.ts",
     "apps/web/src/app/api/pilotage/overview/route.ts",

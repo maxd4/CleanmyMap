@@ -482,13 +482,13 @@ export async function main(run = runSupabaseSqlProof) {
     console.log(`SUPABASE_SQL_EVIDENCE: ${report.outcome} candidate=${report.candidateSha} records=${report.records.length}`);
     return 0;
   } catch (error) {
-    console.error(`SUPABASE_SQL_EVIDENCE: FAIL ${error instanceof Error ? error.name : "non-error rejection"}`);
+    console.error(`SUPABASE_SQL_EVIDENCE: FAIL ${error instanceof Error ? (error.stack || error.message) : String(error)}`);
     return 1;
   }
 }
 
 export function reportMainRejection(error) {
-  console.error(`SUPABASE_SQL_EVIDENCE: FAIL main rejected (${error instanceof Error ? error.name : "non-error rejection"})`);
+  console.error(`SUPABASE_SQL_EVIDENCE: FAIL main rejected (${error instanceof Error ? (error.stack || error.message) : String(error)})`);
   return 1;
 }
 

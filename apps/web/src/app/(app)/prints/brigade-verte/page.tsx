@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   },
 };
 
+// Justification Vercel : rendu dynamique requis pour session Clerk et calcul des preuves personnelles
 export const dynamic = "force-dynamic";
 
 export default async function PrintBrigadeVertePage({
