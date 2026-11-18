@@ -6,13 +6,13 @@ Ce document synthétise les repères d'exécution essentiels pour le développem
 
 ## 1. Source de Vérité et Priorité
 
-La source de vérité absolue du projet reste **[AGENTS.md](file:///c:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/AGENTS.md)** à la racine et ses déclinaisons scoped :
-- `apps/web/AGENTS.md` (Next.js, SSR, client/server boundaries, authz)
-- `apps/mobile/AGENTS.md` (Expo, React Native)
-- `scripts/AGENTS.md` (outillage de validation, audits)
-- `documentation/AGENTS.md` (règles documentaires et contrats CURRENT)
+La gouvernance d'ingénierie et les invariants universels du dépôt s'appliquent en priorité absolue :
+- Workspace Web (`apps/web`) : Next.js, SSR, frontières client/serveur, contrats AuthZ et RLS
+- Workspace Mobile (`apps/mobile`) : Expo, React Native
+- Scripts et outillage (`scripts/`) : outillage de validation et audits de qualité
+- Documentation technique (`documentation/`) : contrats CURRENT et politiques de documentation
 
-**Ce fichier `GEMINI.md` n'ajoute ni ne modifie aucune règle métier ou architecturale.**
+Ce document synthétise les repères d'environnement sans modifier aucune règle métier ou architecturale.
 
 ---
 

@@ -27,6 +27,7 @@ import {
   computeBrigadeVerteProgress,
   qualifyAction,
   revokeQualification,
+  getQualificationWithHistory,
   searchEligibleActions,
 } from "./brigade-verte-service";
 import type { EligibleActionRow } from "./brigade-verte-types";
@@ -174,7 +175,7 @@ describe("isActionEligibleForBrigadeVerte", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeBrigadeVerteProgress (avec revalidation & fail-closed)
+// computeBrigadeVerteProgress (lecture owner-scoped, fenêtrée, avec revalidation & fail-closed)
 // ---------------------------------------------------------------------------
 
 describe("computeBrigadeVerteProgress", () => {
@@ -191,7 +192,7 @@ describe("computeBrigadeVerteProgress", () => {
     });
   }
 
-  it("retourne eligible=true et count=0 si aucune qualification active", async () => {
+  it("retourne eligible=true et count=0 si l'utilisateur n'a aucune participation confirmée", async () => {
     setupFromSequence([{ data: [], error: null }]);
 
     const result = await computeBrigadeVerteProgress("user-1");
@@ -200,7 +201,7 @@ describe("computeBrigadeVerteProgress", () => {
     expect(result.proofs).toHaveLength(0);
   });
 
-  it("retourne eligible=false en cas d'erreur de lecture des qualifications (fail-closed)", async () => {
+  it("retourne eligible=false en cas d'erreur de lecture des participations (fail-closed)", async () => {
     setupFromSequence([{ data: null, error: { message: "timeout" } }]);
 
     const result = await computeBrigadeVerteProgress("user-1");
@@ -208,34 +209,60 @@ describe("computeBrigadeVerteProgress", () => {
     expect(result.count).toBe(0);
   });
 
-  it("retourne eligible=true et count=0 si le participant n'a pas de participation confirmed", async () => {
+  it("retourne eligible=true et count=0 si aucune des actions du bénévole n'est qualifiée active", async () => {
     setupFromSequence([
-      { data: [{ action_id: "act-1", qualified_at: "2026-10-05T00:00:00Z" }], error: null },
-      { data: [], error: null }, // Aucune participation confirmed
+      // 1. Participations confirmées pour user-1
+      { data: [{ action_id: "act-1" }, { action_id: "act-2" }], error: null },
+      // 2. Qualifications actives pour ces actions
+      { data: [], error: null },
     ]);
 
     const result = await computeBrigadeVerteProgress("user-1");
     expect(result.eligible).toBe(true);
     expect(result.count).toBe(0);
+    expect(result.proofs).toHaveLength(0);
+  });
+
+  it("retourne eligible=false en cas d'erreur de lecture des qualifications (fail-closed)", async () => {
+    setupFromSequence([
+      { data: [{ action_id: "act-1" }], error: null },
+      { data: null, error: { message: "db error" } },
+    ]);
+
+    const result = await computeBrigadeVerteProgress("user-1");
+    expect(result.eligible).toBe(false);
+    expect(result.count).toBe(0);
+  });
+
+  it("retourne eligible=false en cas d'erreur de lecture des actions candidates (fail-closed)", async () => {
+    setupFromSequence([
+      { data: [{ action_id: "act-1" }], error: null },
+      { data: [{ action_id: "act-1", qualified_at: "2026-10-01T00:00:00Z" }], error: null },
+      { data: null, error: { message: "db error actions" } },
+    ]);
+
+    const result = await computeBrigadeVerteProgress("user-1");
+    expect(result.eligible).toBe(false);
+    expect(result.count).toBe(0);
   });
 
   it("calcule correctement 2 participations admissibles triées par date ASC puis ID ASC", async () => {
     setupFromSequence([
-      // 1. Qualifications actives (3 actions qualifiées)
-      {
-        data: [
-          { action_id: "act-3", qualified_at: "2026-10-15T00:00:00Z" },
-          { action_id: "act-1", qualified_at: "2026-10-01T00:00:00Z" },
-          { action_id: "act-2", qualified_at: "2026-10-10T00:00:00Z" },
-        ],
-        error: null,
-      },
-      // 2. Participations confirmées pour user-1
+      // 1. Participations confirmées pour user-1
       {
         data: [
           { action_id: "act-3" },
           { action_id: "act-1" },
           { action_id: "act-2" },
+        ],
+        error: null,
+      },
+      // 2. Qualifications actives
+      {
+        data: [
+          { action_id: "act-3", qualified_at: "2026-10-15T00:00:00Z" },
+          { action_id: "act-1", qualified_at: "2026-10-01T00:00:00Z" },
+          { action_id: "act-2", qualified_at: "2026-10-10T00:00:00Z" },
         ],
         error: null,
       },
@@ -292,17 +319,58 @@ describe("computeBrigadeVerteProgress", () => {
     expect(result.proofs[1].actionId).toBe("act-2");
   });
 
+  it("gère la pagination exhaustive des participations confirmées sur plusieurs pages", async () => {
+    // Page 1 retourne 500 items avec participations, Page 2 retourne 1 item
+    const page1 = Array.from({ length: 500 }, () => ({ action_id: "act-batch-1" }));
+    const page2 = [{ action_id: "act-target" }];
+
+    setupFromSequence([
+      // 1. Page 1
+      { data: page1, error: null },
+      // 2. Page 2
+      { data: page2, error: null },
+      // 3. Qualifications actives pour ces actions
+      {
+        data: [{ action_id: "act-target", qualified_at: "2026-10-01T00:00:00Z" }],
+        error: null,
+      },
+      // 4. Détails de l'action qualifiée
+      {
+        data: [
+          {
+            id: "act-target",
+            action_date: "2026-10-01",
+            location_label: "Lieu Paginé",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            cancelled_at: null,
+            review_state: "approved",
+            published_at: "2026-10-02T00:00:00Z",
+          },
+        ],
+        error: null,
+      },
+    ]);
+
+    const result = await computeBrigadeVerteProgress("user-1", "2026-11-18");
+    expect(result.eligible).toBe(true);
+    expect(result.count).toBe(1);
+    expect(result.proofs[0].actionId).toBe("act-target");
+  });
+
   it("exclut immédiatement une action qualifiée devenue privée ou annulée après qualification (revalidation)", async () => {
     setupFromSequence([
+      {
+        data: [{ action_id: "act-invalid" }, { action_id: "act-valid" }],
+        error: null,
+      },
       {
         data: [
           { action_id: "act-invalid", qualified_at: "2026-10-01T00:00:00Z" },
           { action_id: "act-valid", qualified_at: "2026-10-12T00:00:00Z" },
         ],
-        error: null,
-      },
-      {
-        data: [{ action_id: "act-invalid" }, { action_id: "act-valid" }],
         error: null,
       },
       {
@@ -341,6 +409,75 @@ describe("computeBrigadeVerteProgress", () => {
     expect(result.count).toBe(1);
     expect(result.proofs).toHaveLength(1);
     expect(result.proofs[0].actionId).toBe("act-valid");
+  });
+
+  it("remplace automatiquement une preuve invalidée par la preuve valide suivante", async () => {
+    setupFromSequence([
+      // Bénévole a participé à act-1 (devenue annulée), act-2 (valide), act-3 (valide)
+      {
+        data: [{ action_id: "act-1" }, { action_id: "act-2" }, { action_id: "act-3" }],
+        error: null,
+      },
+      // Les trois sont qualifiées Brigade Verte
+      {
+        data: [
+          { action_id: "act-1", qualified_at: "2026-09-01T00:00:00Z" },
+          { action_id: "act-2", qualified_at: "2026-09-10T00:00:00Z" },
+          { action_id: "act-3", qualified_at: "2026-09-20T00:00:00Z" },
+        ],
+        error: null,
+      },
+      // Mais act-1 est annulée !
+      {
+        data: [
+          {
+            id: "act-1",
+            action_date: "2026-09-01",
+            location_label: "Lieu 1 Annulé",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            cancelled_at: "2026-09-02T00:00:00Z", // ANNULÉE
+            review_state: "approved",
+            published_at: "2026-09-01T12:00:00Z",
+          },
+          {
+            id: "act-2",
+            action_date: "2026-09-10",
+            location_label: "Lieu 2 Valide",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            cancelled_at: null,
+            review_state: "approved",
+            published_at: "2026-09-10T12:00:00Z",
+          },
+          {
+            id: "act-3",
+            action_date: "2026-09-20",
+            location_label: "Lieu 3 Valide",
+            status: "approved",
+            action_phase: "post_action_complete",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            cancelled_at: null,
+            review_state: "approved",
+            published_at: "2026-09-20T12:00:00Z",
+          },
+        ],
+        error: null,
+      },
+    ]);
+
+    const result = await computeBrigadeVerteProgress("user-1", "2026-11-18");
+    expect(result.eligible).toBe(true);
+    expect(result.count).toBe(2);
+    expect(result.proofs).toHaveLength(2);
+    // act-1 étant exclue, ce sont act-2 et act-3 qui sont sélectionnées !
+    expect(result.proofs[0].actionId).toBe("act-2");
+    expect(result.proofs[1].actionId).toBe("act-3");
   });
 });
 
@@ -504,5 +641,66 @@ describe("searchEligibleActions", () => {
     expect(res.total).toBe(15);
     expect(res.hasMore).toBe(true);
     expect(res.page).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getQualificationWithHistory (séparation qualificationReason / revocationReason)
+// ---------------------------------------------------------------------------
+
+describe("getQualificationWithHistory", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("sépare distinctement qualificationReason et revocationReason dans la qualification et son historique", async () => {
+    const qualRow = {
+      id: "qual-1",
+      action_id: "act-1",
+      status: "active",
+      justification_url: "https://paris.fr/evidence",
+      qualification_reason: "Coorganisation validée sur convention officielle",
+      revocation_reason: null,
+      qualified_by: "imu-max-clerk-id",
+      qualified_at: "2026-10-01T10:00:00Z",
+      revoked_by: null,
+      revoked_at: null,
+      requalified_at: null,
+      created_at: "2026-10-01T10:00:00Z",
+      updated_at: "2026-10-01T10:00:00Z",
+    };
+
+    const histRows = [
+      {
+        id: "hist-1",
+        qualification_id: "qual-1",
+        action_id: "act-1",
+        decision: "qualified",
+        decided_by: "imu-max-clerk-id",
+        decided_at: "2026-10-01T10:00:00Z",
+        justification_url: "https://paris.fr/evidence",
+        qualification_reason: "Coorganisation validée sur convention officielle",
+        revocation_reason: null,
+        operation_id: "op-1",
+      },
+    ];
+
+    let callCount = 0;
+    mockSupabase.from.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return makeChain({ data: qualRow, error: null });
+      }
+      return makeChain({ data: histRows, error: null });
+    });
+
+    const res = await getQualificationWithHistory("act-1");
+    expect(res.qualification).not.toBeNull();
+    expect(res.qualification?.qualificationReason).toBe("Coorganisation validée sur convention officielle");
+    expect(res.qualification?.revocationReason).toBeNull();
+
+    expect(res.history).toHaveLength(1);
+    expect(res.history[0].qualificationReason).toBe("Coorganisation validée sur convention officielle");
+    expect(res.history[0].revocationReason).toBeNull();
   });
 });

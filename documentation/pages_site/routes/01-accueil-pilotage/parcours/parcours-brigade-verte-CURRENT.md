@@ -18,7 +18,7 @@ Permet à chaque bénévole connecté de consulter l'avancement de son parcours 
 4. Sont exclus : inscriptions, claims en attente ou annulés, simples effectifs non confirmés.
 5. Progression = $\min(2, \text{preuves distinctes})$.
 6. Les deux preuves sont retenues par date d'action croissante puis par identifiant d'action. En cas de révocation administrative ou d'invalidation d'une opération, le remplacement déterministe par une autre action admissible est automatique.
-7. Aucune pagination silencieusement tronquée : la lecture des qualifications actives est exhaustive.
+7. Projection exhaustive et fail-closed : lecture owner-scoped des participations confirmées de l'utilisateur avec pagination fenêtrée, puis vérification par lots bornés des qualifications actives et des actions éligibles. Toute indisponibilité ou erreur de base renvoie immédiatement un statut d'erreur fermé (`status = 'error'`) sans jamais tronquer ni convertir une anomalie en `0/2`.
 
 ---
 

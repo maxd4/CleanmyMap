@@ -71,6 +71,9 @@ export default async function ActionDetailPage({
               </span>
             </div>
             <div>URL justificative : <a href={qualification.justificationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{qualification.justificationUrl}</a></div>
+            {qualification.qualificationReason && (
+              <div>Motif de qualification : <span className="font-medium text-emerald-800 dark:text-emerald-300">{qualification.qualificationReason}</span></div>
+            )}
             <div>Qualifiée par : <span className="font-mono">{qualification.qualifiedBy}</span> le {new Date(qualification.qualifiedAt).toLocaleString("fr-FR")}</div>
             {qualification.requalifiedAt && (
               <div>Dernière requalification le : {new Date(qualification.requalifiedAt).toLocaleString("fr-FR")}</div>
@@ -78,7 +81,7 @@ export default async function ActionDetailPage({
             {qualification.revokedAt && (
               <div className="text-rose-600">
                 Révoquée le {new Date(qualification.revokedAt).toLocaleString("fr-FR")} par <span className="font-mono">{qualification.revokedBy}</span>
-                {qualification.revocationReason && ` — Motif : ${qualification.revocationReason}`}
+                {qualification.revocationReason && ` — Motif de révocation : ${qualification.revocationReason}`}
               </div>
             )}
           </div>
@@ -116,7 +119,8 @@ export default async function ActionDetailPage({
                 </div>
                 <div className="text-xs text-zinc-500 mt-1">Par : <span className="font-mono">{h.decidedBy}</span> {h.operationId && `• Opération : ${h.operationId}`}</div>
                 {h.justificationUrl && <div className="text-xs mt-0.5">Preuve : <a href={h.justificationUrl} target="_blank" rel="noopener noreferrer" className="underline text-blue-600 break-all">{h.justificationUrl}</a></div>}
-                {h.revocationReason && <div className="text-xs text-rose-600 mt-0.5">Motif : {h.revocationReason}</div>}
+                {h.qualificationReason && <div className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">Motif de qualification : {h.qualificationReason}</div>}
+                {h.revocationReason && <div className="text-xs text-rose-600 mt-0.5">Motif de révocation : {h.revocationReason}</div>}
               </div>
             ))}
           </div>

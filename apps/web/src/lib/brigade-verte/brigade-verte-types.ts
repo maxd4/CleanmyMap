@@ -15,6 +15,7 @@ export type BrigadeVerteQualification = {
   actionId: string;
   status: BrigadeVerteStatus;
   justificationUrl: string;
+  qualificationReason: string | null;
   revocationReason: string | null;
   qualifiedBy: string;
   qualifiedAt: string;
@@ -33,6 +34,7 @@ export type BrigadeVerteHistoryEntry = {
   decidedBy: string;
   decidedAt: string;
   justificationUrl: string | null;
+  qualificationReason: string | null;
   revocationReason: string | null;
   operationId: string | null;
 };

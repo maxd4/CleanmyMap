@@ -50,7 +50,8 @@ Mutations exclusives réservées à l'IMU max, déléguées à des fonctions RPC
 
 ## 3. Données et Sécurité PostgreSQL
 
-- Table `brigade_verte_qualifications` : porte le statut (`active` ou `revoked`), l'URL de justification HTTPS, l'auteur IMU max, la date de qualification, la date de requalification, le motif et auteur de révocation.
-- Table `brigade_verte_qualification_history` : table append-only protégée par trigger interdisant strictement les UPDATE, DELETE et TRUNCATE.
+- Table `brigade_verte_qualifications` : porte le statut (`active` ou `revoked`), l'URL de justification HTTPS, le motif de qualification (`qualification_reason`), l'auteur IMU max, la date de qualification, la date de requalification, le motif de révocation (`revocation_reason`) et auteur de révocation.
+- Table `brigade_verte_qualification_history` : table append-only protégée par trigger interdisant strictement les UPDATE, DELETE et TRUNCATE, avec séparation explicite entre `qualification_reason` et `revocation_reason`.
 - RLS & Privilèges : Tous privilèges révoqués pour `anon`, `authenticated` et `public`. Accès et mutations réservés exclusivement à `service_role` (fail-closed absolu, aucune fuite de métadonnées administratives privées).
 - Fonctions RPC `SECURITY DEFINER` avec `SET search_path = pg_catalog, public`, exécutables uniquement par `service_role`.
+- Migrations versionnées : `20261118000001_brigade_verte_qualifications.sql`, `20261118000002_harden_brigade_verte_integrity.sql`, `20261118000003_brigade_verte_qualification_reason_and_history.sql`.

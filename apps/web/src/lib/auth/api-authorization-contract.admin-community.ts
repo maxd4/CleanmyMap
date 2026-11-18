@@ -1,6 +1,20 @@
 import type { ApiAuthorizationContract } from "./api-authorization-contract.types";
 
 export const adminCommunityAuthorizationContract = {
+  "admin/brigade-verte": {
+    GET: {
+      expected: "Admin/creator role for Brigade Verte qualification search and inspection",
+      dimensions: ["admin/creator role"],
+      actual: "requireCreatorAccess",
+      evidence: ["requireCreatorAccess"],
+    },
+    POST: {
+      expected: "Admin/creator role plus justification URL/reason and mandatory operation audit",
+      dimensions: ["admin/creator role", "audit"],
+      actual: "requireCreatorAccess + appendAdminOperationAudit",
+      evidence: ["requireCreatorAccess", "appendAdminOperationAudit"],
+    },
+  },
   "admin/codex-usage": {
     GET: {
       expected: "Admin-like role",

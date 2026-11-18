@@ -2,6 +2,20 @@ begin;
 
 select plan(22);
 
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"public-impact-waste-coverage-test"}', true);
+
+do $$
+begin
+  perform public.rebuild_public_impact_action_state(
+    (select floor_date
+     from public.public_impact_action_aggregate_state
+     where state_id = true),
+    public.current_public_impact_projection_version()
+  );
+end;
+$$;
+
 create temp table public_impact_waste_coverage_before as
 select * from public.load_public_landing_action_summary_incremental();
 

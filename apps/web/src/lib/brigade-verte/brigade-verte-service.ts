@@ -258,6 +258,7 @@ export async function getQualificationWithHistory(actionId: string): Promise<{
     actionId: qual.action_id,
     status: qual.status,
     justificationUrl: qual.justification_url,
+    qualificationReason: qual.qualification_reason ?? null,
     revocationReason: qual.revocation_reason ?? null,
     qualifiedBy: qual.qualified_by,
     qualifiedAt: qual.qualified_at,
@@ -286,6 +287,7 @@ export async function getQualificationWithHistory(actionId: string): Promise<{
     decidedBy: h.decided_by,
     decidedAt: h.decided_at,
     justificationUrl: h.justification_url ?? null,
+    qualificationReason: h.qualification_reason ?? null,
     revocationReason: h.revocation_reason ?? null,
     operationId: h.operation_id ?? null,
   }));
@@ -400,73 +402,111 @@ export async function computeBrigadeVerteProgress(
   const supabase = getSupabaseAdminClient();
 
   try {
-    // 1. Récupérer toutes les qualifications actives
-    const { data: qualData, error: qualError } = await supabase
-      .from("brigade_verte_qualifications")
-      .select("action_id, qualified_at")
-      .eq("status", "active");
+    // 1. Lecture owner-scoped paginée des participations confirmées de l'utilisateur
+    //    Garantit qu'aucun plafond PostgREST (ex. 1000 lignes) ne tronque silencieusement le résultat.
+    const PARTICIPANTS_PAGE_SIZE = 500;
+    let participantOffset = 0;
+    const confirmedActionIdsList: string[] = [];
 
-    if (qualError) {
-      return { eligible: false, count: 0, proofs: [] };
+    while (true) {
+      const { data: pageRows, error: partError } = await supabase
+        .from("action_participants")
+        .select("action_id")
+        .eq("user_id", userId)
+        .eq("participation_status", "confirmed")
+        .range(participantOffset, participantOffset + PARTICIPANTS_PAGE_SIZE - 1);
+
+      if (partError) {
+        return { eligible: false, count: 0, proofs: [] };
+      }
+
+      if (!pageRows || pageRows.length === 0) {
+        break;
+      }
+
+      for (const row of pageRows) {
+        if (row.action_id) {
+          confirmedActionIdsList.push(row.action_id);
+        }
+      }
+
+      if (pageRows.length < PARTICIPANTS_PAGE_SIZE) {
+        break;
+      }
+      participantOffset += PARTICIPANTS_PAGE_SIZE;
     }
 
-    if (!qualData || qualData.length === 0) {
+    if (confirmedActionIdsList.length === 0) {
       return { eligible: true, count: 0, proofs: [] };
     }
 
-    const qualifiedActionIds = Array.from(new Set(qualData.map((q) => q.action_id)));
-    const qualifiedAtMap = new Map<string, string>(
-      qualData.map((q) => [q.action_id, q.qualified_at]),
-    );
+    const candidateActionIds = Array.from(new Set(confirmedActionIdsList));
 
-    // 2. Participations confirmées du userId dans ces actions
-    const { data: participations, error: partError } = await supabase
-      .from("action_participants")
-      .select("action_id")
-      .eq("user_id", userId)
-      .eq("participation_status", "confirmed")
-      .in("action_id", qualifiedActionIds);
+    // 2. Vérification des qualifications actives par fenêtres bornées (batches de 50)
+    const CHUNK_SIZE = 50;
+    const qualifiedAtMap = new Map<string, string>();
 
-    if (partError) {
-      return { eligible: false, count: 0, proofs: [] };
+    for (let i = 0; i < candidateActionIds.length; i += CHUNK_SIZE) {
+      const chunk = candidateActionIds.slice(i, i + CHUNK_SIZE);
+      const { data: qualChunk, error: qualError } = await supabase
+        .from("brigade_verte_qualifications")
+        .select("action_id, qualified_at")
+        .eq("status", "active")
+        .in("action_id", chunk);
+
+      if (qualError) {
+        return { eligible: false, count: 0, proofs: [] };
+      }
+
+      if (qualChunk) {
+        for (const q of qualChunk) {
+          qualifiedAtMap.set(q.action_id, q.qualified_at);
+        }
+      }
     }
 
-    if (!participations || participations.length === 0) {
+    if (qualifiedAtMap.size === 0) {
       return { eligible: true, count: 0, proofs: [] };
     }
 
-    const candidateActionIds = Array.from(
-      new Set(participations.map((p) => p.action_id)),
-    );
+    const qualifiedCandidateIds = Array.from(qualifiedAtMap.keys());
 
-    // 3. Récupérer les détails complets des actions candidates pour réévaluer rigoureusement leur éligibilité
-    const { data: actionsData, error: actionsError } = await supabase
-      .from("actions")
-      .select(
-        "id, action_date, location_label, status, action_phase, moderation_visibility, access_mode, cancelled_at, review_state, published_at",
-      )
-      .in("id", candidateActionIds);
+    // 3. Récupérer les détails complets des actions candidates qualifiées par fenêtres bornées
+    const loadedActions: EligibleActionRow[] = [];
 
-    if (actionsError || !actionsData) {
-      return { eligible: false, count: 0, proofs: [] };
+    for (let i = 0; i < qualifiedCandidateIds.length; i += CHUNK_SIZE) {
+      const chunk = qualifiedCandidateIds.slice(i, i + CHUNK_SIZE);
+      const { data: actionsChunk, error: actionsError } = await supabase
+        .from("actions")
+        .select(
+          "id, action_date, location_label, status, action_phase, moderation_visibility, access_mode, cancelled_at, review_state, published_at",
+        )
+        .in("id", chunk);
+
+      if (actionsError || !actionsChunk) {
+        return { eligible: false, count: 0, proofs: [] };
+      }
+
+      for (const a of actionsChunk) {
+        loadedActions.push({
+          id: a.id,
+          actionDate: a.action_date,
+          locationLabel: a.location_label,
+          status: a.status,
+          actionPhase: a.action_phase,
+          moderationVisibility: a.moderation_visibility,
+          accessMode: a.access_mode ?? "public",
+          cancelledAt: a.cancelled_at ?? null,
+          reviewState: a.review_state ?? "not_required",
+          publishedAt: a.published_at ?? null,
+        });
+      }
     }
 
     // 4. Filtrer uniquement les actions qui satisfont TOUS les critères d'éligibilité actuels
-    const eligibleActions = actionsData.filter((a) => {
-      const row: EligibleActionRow = {
-        id: a.id,
-        actionDate: a.action_date,
-        locationLabel: a.location_label,
-        status: a.status,
-        actionPhase: a.action_phase,
-        moderationVisibility: a.moderation_visibility,
-        accessMode: a.access_mode ?? "public",
-        cancelledAt: a.cancelled_at ?? null,
-        reviewState: a.review_state ?? "not_required",
-        publishedAt: a.published_at ?? null,
-      };
-      return checkActionEligibilityPredicate(row, referenceDate);
-    });
+    const eligibleActions = loadedActions.filter((row) =>
+      checkActionEligibilityPredicate(row, referenceDate),
+    );
 
     if (eligibleActions.length === 0) {
       return { eligible: true, count: 0, proofs: [] };
@@ -474,8 +514,8 @@ export async function computeBrigadeVerteProgress(
 
     // 5. Tri déterministe : date d'action ASC puis ID ASC
     eligibleActions.sort((a, b) => {
-      if (a.action_date !== b.action_date) {
-        return a.action_date.localeCompare(b.action_date);
+      if (a.actionDate !== b.actionDate) {
+        return a.actionDate.localeCompare(b.actionDate);
       }
       return a.id.localeCompare(b.id);
     });
@@ -485,8 +525,8 @@ export async function computeBrigadeVerteProgress(
 
     const proofs = top2.map((a) => ({
       actionId: a.id,
-      actionDate: a.action_date,
-      locationLabel: a.location_label,
+      actionDate: a.actionDate,
+      locationLabel: a.locationLabel,
       qualifiedAt: qualifiedAtMap.get(a.id) ?? "",
     }));
 
