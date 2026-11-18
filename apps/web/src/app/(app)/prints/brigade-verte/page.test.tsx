@@ -53,9 +53,7 @@ describe("PrintBrigadeVertePage", () => {
 
   it("affiche une invite de connexion si l'utilisateur est anonyme", async () => {
     mockAuthUserId = null;
-    const page = await PrintBrigadeVertePage({
-      searchParams: Promise.resolve({}),
-    });
+    const page = await PrintBrigadeVertePage();
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain("Connexion requise");
@@ -64,9 +62,7 @@ describe("PrintBrigadeVertePage", () => {
 
   it("refuse la génération si l'utilisateur a moins de 2 preuves (1/2 ou 0/2)", async () => {
     mockProgress.count = 1;
-    const page = await PrintBrigadeVertePage({
-      searchParams: Promise.resolve({}),
-    });
+    const page = await PrintBrigadeVertePage();
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain("Justificatif non disponible (2 participations requises)");
@@ -77,32 +73,35 @@ describe("PrintBrigadeVertePage", () => {
   it("refuse la génération si la base de données retourne une erreur (fail-closed)", async () => {
     mockProgress.eligible = false;
     mockProgress.count = 0;
-    const page = await PrintBrigadeVertePage({
-      searchParams: Promise.resolve({}),
-    });
+    const page = await PrintBrigadeVertePage();
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain("Justificatif non disponible (2 participations requises)");
     expect(html).toContain("Indisponible");
   });
 
-  it("génère le récapitulatif A4 complet avec mention obligatoire exacte et 2 preuves", async () => {
-    const page = await PrintBrigadeVertePage({
-      searchParams: Promise.resolve({ name: "Camille Dupont" }),
-    });
+  it("génère le récapitulatif A4 complet avec saisie locale éphémère et 2 preuves", async () => {
+    const page = await PrintBrigadeVertePage();
     const html = renderToStaticMarkup(page);
 
-    // Identité déclarée
-    expect(html).toContain("Camille Dupont");
+    // Identité déclarée gérée via composant éphémère sans searchParams
+    expect(html).toContain("Bénéficiaire (identité déclarée)");
+    expect(html).toContain("Bénévole CleanMyMap");
+    expect(html).toContain("maxLength=\"60\"");
+    expect(html).toContain("print:hidden");
+    expect(html).toContain("hidden print:block");
+
     // Mention obligatoire exacte
     expect(html).toContain(
       "Document informatif établi par CleanMyMap. Ne constitue ni un diplôme, ni une attestation officielle de la Brigade Verte Paris.",
     );
+
     // Deux preuves vérifiées
     expect(html).toContain("Paris 10e - Canal Saint-Martin");
     expect(html).toContain("Paris 18e - Montmartre");
     expect(html).toContain("00000000-0000-0000-0000-000000000001");
     expect(html).toContain("00000000-0000-0000-0000-000000000002");
+
     // Conditions externes et lien officiel
     expect(html).toContain("https://www.brigadeverteparis.fr/");
     expect(html).toContain("Formation et sensibilisation");

@@ -56,10 +56,16 @@ L'indisponibilité n'est **jamais** transformée en `count: 0` ou `0/2`.
 
 Le composant `GamificationBrigadeVertePanel` s'insère dans la section Gamification (`apps/web/src/components/sections/rubriques/gamification/`) :
 
+- **Politique de rafraîchissement SWR et intégrité runtime :**
+  - Revalidation automatique lors du retour sur l'onglet (`revalidateOnFocus: true`, `revalidateOnReconnect: true`, `dedupingInterval: 2000`) pour détecter immédiatement toute révocation ou invalidation administrative.
+  - Validation runtime stricte du DTO via `validateBrigadeVerteApiResponse` : vérification du statut, du compteur entier $0 \le count \le 2$, de la cardinalité exacte $count = proofs.length$, et déduplication stricte des identifiants d'actions (`actionId`).
+  - Toute réponse incohérente ou corrompue bascule immédiatement en état d'indisponibilité fermé, sans jamais afficher de `2/2` artificiel ni présumer `0/2`.
 - **Compteur officiel et statuts :**
   - `0/2` : « Aucune participation justificative » (jauge 0 %, badge neutre).
   - `1/2` : « Une participation vérifiée » (jauge 50 %, badge ambré).
   - `2/2` : « Deux participations justificatives réunies » (jauge 100 %, badge émeraude).
+- **Attribution factuelle :**
+  - Mention factuelle d'attribution : « Progression de preuves vérifiées par CleanMyMap » (exclusion de mentions de partenariat institutionnel non contractuel).
 - **Les 3 conditions publiées (communication Brigade Verte Paris, septembre 2026) :**
   1. *Deux opérations « Quartier Propre »* : Seule condition suivie et vérifiée par CleanMyMap.
   2. *Formation / Sensibilisation* : Condition externe requise par Brigade Verte Paris, non vérifiée dans CleanMyMap.
@@ -82,10 +88,11 @@ Le composant `GamificationBrigadeVertePanel` s'insère dans la section Gamificat
 
 Route accessible uniquement aux utilisateurs authentifiés réunissant leurs deux preuves vérifiées (`count === 2`).
 
-- **Sécurité et contrôle serveur :**
+- **Sécurité, contrôle serveur et confidentialité :**
   - Vérification systématique côté serveur via `computeBrigadeVerteProgress(userId)`.
   - Rejet immédiat avec message explicatif si l'utilisateur n'a pas ses deux preuves actives ou si une preuve a été révoquée.
-  - Identité (nom/prénom) librement saisie par l'utilisateur lors de l'impression, transmise via paramètre d'URL `name` sans jamais être persistée en base de données.
+  - **Confidentialité du nom :** Le nom ou prénom facultatif n'est pas transmis dans l'URL (aucun paramètre `?name=`) afin de ne pas fuiter dans l'historique du navigateur ou les journaux HTTP. Il est saisi directement et localement dans la page d'impression (`PrintBeneficiaryField`), sans aucune persistance (ni localStorage, cookies ou sessionStore) et sans requête serveur supplémentaire.
+  - À l'impression ou l'export PDF du navigateur, le champ interactif s'efface au profit du texte en clair déclaré (ou « Bénévole CleanMyMap » par défaut), limité strictement à 60 caractères.
 - **Mise en page et mentions obligatoires :**
   - Format A4 portrait conforme aux styles d'impression CleanMyMap (`max-w-[210mm]`, styles `@media print`).
   - **Mention obligatoire exacte :**

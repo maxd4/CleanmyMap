@@ -5,6 +5,7 @@ import { computeBrigadeVerteProgress } from "@/lib/brigade-verte/brigade-verte-s
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PrintActionButton } from "./print-action-button";
+import { PrintBeneficiaryField } from "./print-beneficiary-field";
 
 export const metadata: Metadata = {
   title: "Récapitulatif Parcours Éco-Citoyen | CleanMyMap",
@@ -18,13 +19,8 @@ export const metadata: Metadata = {
 // Justification Vercel : rendu dynamique requis pour session Clerk et calcul des preuves personnelles
 export const dynamic = "force-dynamic";
 
-export default async function PrintBrigadeVertePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ name?: string }>;
-}) {
+export default async function PrintBrigadeVertePage() {
   const { userId } = await getSafeAuthSession();
-  const { name } = await searchParams;
 
   if (!userId) {
     return (
@@ -73,7 +69,6 @@ export default async function PrintBrigadeVertePage({
     );
   }
 
-  const voluntaryName = name?.trim() || "Bénévole CleanMyMap";
   const editionDate = new Date().toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "long",
@@ -119,12 +114,7 @@ export default async function PrintBrigadeVertePage({
 
         {/* Bénéficiaire & Mention obligatoire */}
         <section className="mb-6 space-y-4">
-          <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4">
-            <div className="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-1">
-              Bénéficiaire (identité déclarée)
-            </div>
-            <div className="text-base font-bold text-zinc-900">{voluntaryName}</div>
-          </div>
+          <PrintBeneficiaryField />
 
           {/* Mention obligatoire exacte */}
           <div className="p-4 bg-amber-50/70 border border-amber-300/80 rounded-lg text-xs leading-relaxed text-amber-950 font-medium">

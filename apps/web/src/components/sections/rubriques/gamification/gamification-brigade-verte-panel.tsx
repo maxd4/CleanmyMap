@@ -20,14 +20,14 @@ import {
 import { CmmButton } from "@/components/ui/cmm-button";
 import { GamificationPanelLoading, SectionLabel } from "./gamification-shell";
 
-type PublicProof = {
+export type PublicProof = {
   actionId: string;
   actionDate: string;
   locationLabel: string;
   qualifiedAt: string;
 };
 
-type BrigadeVerteApiResponse =
+export type BrigadeVerteApiResponse =
   | {
       status: "available";
       count: number;
@@ -38,15 +38,107 @@ type BrigadeVerteApiResponse =
       message: string;
     };
 
-async function fetcher(url: string): Promise<BrigadeVerteApiResponse> {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) {
+/**
+ * Validation runtime stricte et fail-closed du contrat DTO.
+ * Toute incohérence (types, cardinalité != count, compteur hors [0, 2], doublons d'actionId)
+ * bascule obligatoirement la réponse en état d'erreur pour prévenir tout 2/2 artificiel.
+ */
+export function validateBrigadeVerteApiResponse(data: unknown): BrigadeVerteApiResponse {
+  if (!data || typeof data !== "object") {
     return {
       status: "error",
-      message: "Indisponibilité temporaire du service de parcours.",
+      message: "Réponse du service invalide ou vide.",
     };
   }
-  return res.json();
+
+  const record = data as Record<string, unknown>;
+
+  if (record.status !== "available") {
+    return {
+      status: "error",
+      message:
+        typeof record.message === "string" && record.message.trim()
+          ? record.message
+          : "Service de parcours indisponible.",
+    };
+  }
+
+  if (
+    typeof record.count !== "number" ||
+    !Number.isInteger(record.count) ||
+    record.count < 0 ||
+    record.count > 2 ||
+    !Array.isArray(record.proofs) ||
+    record.proofs.length !== record.count
+  ) {
+    return {
+      status: "error",
+      message: "Incohérence détectée dans le décompte ou la cardinalité des preuves.",
+    };
+  }
+
+  const seenActionIds = new Set<string>();
+  const validProofs: PublicProof[] = [];
+
+  for (const item of record.proofs) {
+    if (
+      !item ||
+      typeof item !== "object" ||
+      typeof item.actionId !== "string" ||
+      !item.actionId.trim() ||
+      typeof item.actionDate !== "string" ||
+      !item.actionDate.trim() ||
+      typeof item.locationLabel !== "string" ||
+      !item.locationLabel.trim() ||
+      typeof item.qualifiedAt !== "string" ||
+      !item.qualifiedAt.trim()
+    ) {
+      return {
+        status: "error",
+        message: "Format d'une preuve de participation invalide.",
+      };
+    }
+
+    if (seenActionIds.has(item.actionId)) {
+      return {
+        status: "error",
+        message: "Preuves dupliquées détectées dans la réponse.",
+      };
+    }
+    seenActionIds.add(item.actionId);
+
+    validProofs.push({
+      actionId: item.actionId,
+      actionDate: item.actionDate,
+      locationLabel: item.locationLabel,
+      qualifiedAt: item.qualifiedAt,
+    });
+  }
+
+  return {
+    status: "available",
+    count: record.count,
+    proofs: validProofs,
+  };
+}
+
+async function fetcher(url: string): Promise<BrigadeVerteApiResponse> {
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) {
+      return {
+        status: "error",
+        message: "Indisponibilité temporaire du service de parcours.",
+      };
+    }
+    const json = await res.json();
+    return validateBrigadeVerteApiResponse(json);
+  } catch {
+    return {
+      status: "error",
+      message: "Erreur réseau lors de la consultation du parcours.",
+    };
+  }
 }
 
 type Props = {
@@ -58,15 +150,16 @@ export function GamificationBrigadeVertePanel({
   locale = "fr",
   displayMode = "calme",
 }: Props) {
-  const { data, error, isLoading, mutate } = useSWR<BrigadeVerteApiResponse>(
+  const { data: rawData, error, isLoading, mutate } = useSWR<BrigadeVerteApiResponse>(
     "/api/parcours/brigade-verte",
     fetcher,
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 2000,
     },
   );
 
-  const [declaredName, setDeclaredName] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   const toggleFaq = (idx: number) => {
@@ -89,8 +182,10 @@ export function GamificationBrigadeVertePanel({
     );
   }
 
-  // 2. État d'erreur / indisponibilité (FAIL-CLOSED : NE JAMAIS afficher 0/2 sur erreur ou format invalide)
-  if (error || !data || data.status !== "available" || !Array.isArray(data.proofs)) {
+  // 2. Validation runtime et état d'erreur / indisponibilité (FAIL-CLOSED)
+  const validated = rawData ? validateBrigadeVerteApiResponse(rawData) : undefined;
+
+  if (error || !validated || validated.status !== "available") {
     return (
       <section
         role="region"
@@ -107,7 +202,7 @@ export function GamificationBrigadeVertePanel({
               Impossible de charger votre progression actuellement. Ce service est momentanément indisponible.
             </p>
             <p className="text-xs text-rose-700">
-              Note : en conformité avec nos garanties de sécurité, aucune valeur n&apos;est présumée ou affichée à zéro lors d&apos;une interruption.
+              Note : en conformité avec nos garanties d&apos;intégrité, aucune valeur n&apos;est présumée ou affichée à zéro lors d&apos;une interruption ou d&apos;une anomalie de données.
             </p>
             <div className="pt-2">
               <CmmButton
@@ -126,7 +221,7 @@ export function GamificationBrigadeVertePanel({
     );
   }
 
-  const { count, proofs } = data;
+  const { count, proofs } = validated;
   const isComplete = count >= 2;
 
   // Libellés du compteur officiel
@@ -190,7 +285,7 @@ export function GamificationBrigadeVertePanel({
               {progressBadgeText}
             </span>
             <span className="text-xs text-zinc-500 font-medium">
-              Dispositif Partenaire • Ville de Paris
+              Progression de preuves vérifiées par CleanMyMap
             </span>
           </div>
         </div>
@@ -329,33 +424,20 @@ export function GamificationBrigadeVertePanel({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-end pt-2 border-t border-emerald-200/80">
-            <div className="space-y-1">
-              <label htmlFor="declared-name-input" className="text-xs font-semibold text-emerald-950 block">
-                Nom ou prénom pour le document (facultatif, non enregistré en base) :
-              </label>
-              <input
-                id="declared-name-input"
-                type="text"
-                value={declaredName}
-                onChange={(e) => setDeclaredName(e.target.value)}
-                placeholder="Ex. Alex Martin"
-                maxLength={60}
-                className="w-full text-xs rounded-lg border border-emerald-300 bg-white px-3 py-2 text-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-            <div>
-              <Link
-                href={`/prints/brigade-verte${declaredName.trim() ? `?name=${encodeURIComponent(declaredName.trim())}` : ""}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs px-4 py-2.5 transition shadow-sm"
-              >
-                <FileText className="h-4 w-4" aria-hidden="true" />
-                Ouvrir le relevé A4 imprimable
-                <ExternalLink className="h-3 w-3 opacity-80" aria-hidden="true" />
-              </Link>
-            </div>
+          <div className="pt-2 border-t border-emerald-200/80 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-emerald-900">
+              L&apos;identité du bénéficiaire peut être renseignée directement lors de l&apos;impression sans transmission réseau.
+            </p>
+            <Link
+              href="/prints/brigade-verte"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs px-4 py-2.5 transition shadow-sm"
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Ouvrir le relevé A4 imprimable
+              <ExternalLink className="h-3 w-3 opacity-80" aria-hidden="true" />
+            </Link>
           </div>
 
           <div className="text-xs text-emerald-900/90 leading-normal italic bg-emerald-100/60 p-2.5 rounded-lg border border-emerald-200">

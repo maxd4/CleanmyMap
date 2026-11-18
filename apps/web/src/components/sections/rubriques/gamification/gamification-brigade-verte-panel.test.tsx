@@ -25,7 +25,10 @@ vi.mock("@/components/ui/cmm-button", () => ({
   ),
 }));
 
-import { GamificationBrigadeVertePanel } from "./gamification-brigade-verte-panel";
+import {
+  GamificationBrigadeVertePanel,
+  validateBrigadeVerteApiResponse,
+} from "./gamification-brigade-verte-panel";
 
 describe("GamificationBrigadeVertePanel", () => {
   beforeEach(() => {
@@ -61,7 +64,59 @@ describe("GamificationBrigadeVertePanel", () => {
     expect(html).not.toContain("Aucune participation justificative");
   });
 
-  it("affiche correctement l'état 0/2 et le parcours guidé", () => {
+  it("bascule en état fail-closed si la réponse DTO est incohérente (count invalide, mismatch cardinalité, doublons)", () => {
+    // Cas 1 : count !== proofs.length
+    mockSwrState.data = {
+      status: "available",
+      count: 2,
+      proofs: [
+        {
+          actionId: "act-1",
+          actionDate: "2026-09-20",
+          locationLabel: "Paris 10e",
+          qualifiedAt: "2026-09-21T10:00:00Z",
+        },
+      ],
+    };
+
+    let html = renderToStaticMarkup(<GamificationBrigadeVertePanel />);
+    expect(html).toContain("Impossible de charger votre progression actuellement");
+    expect(html).not.toContain("2/2");
+
+    // Cas 2 : count hors bornes [0, 2]
+    mockSwrState.data = {
+      status: "available",
+      count: 3,
+      proofs: [],
+    };
+    html = renderToStaticMarkup(<GamificationBrigadeVertePanel />);
+    expect(html).toContain("Impossible de charger votre progression actuellement");
+
+    // Cas 3 : preuves dupliquées (même actionId)
+    mockSwrState.data = {
+      status: "available",
+      count: 2,
+      proofs: [
+        {
+          actionId: "same-act-id",
+          actionDate: "2026-09-20",
+          locationLabel: "Paris 10e",
+          qualifiedAt: "2026-09-21T10:00:00Z",
+        },
+        {
+          actionId: "same-act-id",
+          actionDate: "2026-09-20",
+          locationLabel: "Paris 10e",
+          qualifiedAt: "2026-09-21T10:00:00Z",
+        },
+      ],
+    };
+    html = renderToStaticMarkup(<GamificationBrigadeVertePanel />);
+    expect(html).toContain("Impossible de charger votre progression actuellement");
+    expect(html).not.toContain("2/2");
+  });
+
+  it("affiche correctement l'état 0/2 avec mention d'attribution CleanMyMap et sans mention de partenariat Ville de Paris", () => {
     mockSwrState.data = {
       status: "available",
       count: 0,
@@ -71,15 +126,22 @@ describe("GamificationBrigadeVertePanel", () => {
     const html = renderToStaticMarkup(<GamificationBrigadeVertePanel />);
     expect(html).toContain("0/2 • Aucune participation justificative");
     expect(html).toContain("Parcours Éco-Citoyen | Brigade Verte Paris");
+
+    // Attribution factuelle CleanMyMap
+    expect(html).toContain("Progression de preuves vérifiées par CleanMyMap");
+    expect(html).not.toContain("Dispositif Partenaire • Ville de Paris");
+
     // Les 3 conditions publiées
     expect(html).toContain("1. Deux opérations terrain");
     expect(html).toContain("Vérifié par CleanMyMap");
     expect(html).toContain("2. Formation &amp; Sensibilisation");
     expect(html).toContain("3. Engagement durable");
+
     // Parcours guidé
     expect(html).toContain("Découvrir les opérations");
     expect(html).toContain("Participer sur le terrain");
     expect(html).toContain("Faire confirmer sa présence");
+
     // Pas de justificatif disponible à 0/2
     expect(html).not.toContain("Ouvrir le relevé A4 imprimable");
   });
@@ -107,7 +169,7 @@ describe("GamificationBrigadeVertePanel", () => {
     expect(html).not.toContain("Ouvrir le relevé A4 imprimable");
   });
 
-  it("affiche l'état 2/2 avec les 2 preuves et la section Justificatif A4", () => {
+  it("affiche l'état 2/2 avec lien d'impression pur sans query param name dans l'URL", () => {
     mockSwrState.data = {
       status: "available",
       count: 2,
@@ -130,9 +192,11 @@ describe("GamificationBrigadeVertePanel", () => {
     const html = renderToStaticMarkup(<GamificationBrigadeVertePanel />);
     expect(html).toContain("2/2 • Deux participations justificatives réunies");
     expect(html).toContain("Félicitations ! Vos deux preuves de participation sont réunies.");
-    // Lien vers l'impression A4
-    expect(html).toContain("Ouvrir le relevé A4 imprimable");
-    expect(html).toContain("/prints/brigade-verte");
+
+    // Lien vers l'impression A4 strict sans query param ?name=
+    expect(html).toContain('href="/prints/brigade-verte"');
+    expect(html).not.toContain("?name=");
+
     // Mention obligatoire exacte
     expect(html).toContain(
       "Document informatif établi par CleanMyMap. Ne constitue ni un diplôme, ni une attestation officielle de la Brigade Verte Paris.",
@@ -145,5 +209,31 @@ describe("GamificationBrigadeVertePanel", () => {
     expect(html).toContain("Qu&#x27;est-ce qu&#x27;une opération admissible « Quartier Propre » ?");
     expect(html).toContain("Pourquoi mon inscription seule ne suffit-elle pas ?");
     expect(html).toContain("Comment obtenir le Diplôme Éco-Citoyen officiel ?");
+  });
+
+  it("valide les structures conformes via validateBrigadeVerteApiResponse", () => {
+    const valid = validateBrigadeVerteApiResponse({
+      status: "available",
+      count: 1,
+      proofs: [
+        {
+          actionId: "a1",
+          actionDate: "2026-05-01",
+          locationLabel: "Paris",
+          qualifiedAt: "2026-05-02T00:00:00Z",
+        },
+      ],
+    });
+    expect(valid.status).toBe("available");
+
+    const invalidNull = validateBrigadeVerteApiResponse(null);
+    expect(invalidNull.status).toBe("error");
+
+    const invalidCount = validateBrigadeVerteApiResponse({
+      status: "available",
+      count: 1.5,
+      proofs: [],
+    });
+    expect(invalidCount.status).toBe("error");
   });
 });
