@@ -49,3 +49,48 @@ En cas d'erreur de base de données ou d'indisponibilité, la réponse est oblig
 }
 ```
 L'indisponibilité n'est **jamais** transformée en `count: 0` ou `0/2`.
+
+---
+
+## 3. Expérience Utilisateur dans la Gamification (`/sections/gamification`)
+
+Le composant `GamificationBrigadeVertePanel` s'insère dans la section Gamification (`apps/web/src/components/sections/rubriques/gamification/`) :
+
+- **Compteur officiel et statuts :**
+  - `0/2` : « Aucune participation justificative » (jauge 0 %, badge neutre).
+  - `1/2` : « Une participation vérifiée » (jauge 50 %, badge ambré).
+  - `2/2` : « Deux participations justificatives réunies » (jauge 100 %, badge émeraude).
+- **Les 3 conditions publiées (communication Brigade Verte Paris, septembre 2026) :**
+  1. *Deux opérations « Quartier Propre »* : Seule condition suivie et vérifiée par CleanMyMap.
+  2. *Formation / Sensibilisation* : Condition externe requise par Brigade Verte Paris, non vérifiée dans CleanMyMap.
+  3. *Engagement durable* : Condition externe d'implication citoyenne continue, non vérifiée dans CleanMyMap.
+- **Parcours guidé en 4 volets :**
+  - *Découvrir :* Explication des opérations Quartier Propre et critères de participation.
+  - *Participer :* Liens vers les actions publiques (`/actions`) ou renvoi direct vers le site officiel (https://www.brigadeverteparis.fr/) si aucune opération n'est disponible.
+  - *Confirmer sa présence :* Rappel que l'inscription seule ne suffit pas ; la présence doit être confirmée sur le terrain par l'organisateur ou attestée par claim rétrospectif.
+  - *Suivre ses preuves :* Liste détaillée des opérations retenues (dates, lieux, identifiants, dates de validation).
+- **Foire aux Questions (FAQ) :**
+  - Accordéon pédagogique clarifiant l'éligibilité, la différence inscription vs présence confirmée, la procédure de confirmation rétrospective, les 2 conditions externes et l'obtention finale du diplôme.
+- **Invariants de gamification :**
+  - Aucun badge virtuel additionnel dans le catalogue de badges CleanMyMap.
+  - Aucun point XP additionnel attribué.
+  - Aucun classement ni certification automatique délivrée dans l'application.
+
+---
+
+## 4. Justificatif Personnel A4 Imprimable (`/prints/brigade-verte`)
+
+Route accessible uniquement aux utilisateurs authentifiés réunissant leurs deux preuves vérifiées (`count === 2`).
+
+- **Sécurité et contrôle serveur :**
+  - Vérification systématique côté serveur via `computeBrigadeVerteProgress(userId)`.
+  - Rejet immédiat avec message explicatif si l'utilisateur n'a pas ses deux preuves actives ou si une preuve a été révoquée.
+  - Identité (nom/prénom) librement saisie par l'utilisateur lors de l'impression, transmise via paramètre d'URL `name` sans jamais être persistée en base de données.
+- **Mise en page et mentions obligatoires :**
+  - Format A4 portrait conforme aux styles d'impression CleanMyMap (`max-w-[210mm]`, styles `@media print`).
+  - **Mention obligatoire exacte :**
+    > « Document informatif établi par CleanMyMap. Ne constitue ni un diplôme, ni une attestation officielle de la Brigade Verte Paris. »
+  - Date d'édition dynamique et rappel des deux preuves retenues (dates de réalisation, lieux, identifiants d'actions canoniques, dates de qualification administrative).
+  - Présentation des démarches externes restantes (formation et engagement) avec lien officiel vers https://www.brigadeverteparis.fr/.
+  - Absence stricte de logo officiel de la Brigade Verte Paris, de tampon officiel, de signature ou de compétences inventées.
+  - Note d'intégrité temporelle : un justificatif imprimé/exporté constitue un document historique ; toute révocation administrative d'une preuve bloque toute nouvelle édition.

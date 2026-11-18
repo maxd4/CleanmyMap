@@ -29,6 +29,7 @@ import { GamificationReconciliationNotice } from "./gamification-reconciliation-
 import { GamificationReconciliationHistory } from "./gamification-reconciliation-history";
 import { GamificationSpogomiCollection } from "./gamification-spogomi-collection";
 import { TerritorialLegendsPanel } from "./territorial-legends-panel";
+import { GamificationBrigadeVertePanel } from "./gamification-brigade-verte-panel";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -148,6 +149,8 @@ export function GamificationSection() {
             />
 
             <TerritorialLegendsPanel locale={locale} />
+
+            <GamificationBrigadeVertePanel locale={locale} displayMode={displayMode} />
 
             <GamificationReconciliationHistory
               history={meData?.reconciliationHistory}
