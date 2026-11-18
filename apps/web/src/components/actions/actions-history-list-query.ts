@@ -1,9 +1,18 @@
+import { mapItemWasteKg } from "@/lib/actions/data-contract";
 import { evaluateActionQuality } from "@/lib/actions/quality/quality";
 import type {
   ActionListItem,
+  ActionMapItem,
   ActionQualityGrade,
   ActionStatus,
 } from "@/lib/actions/types";
+
+export type HistorySortKey =
+  | "date_desc"
+  | "date_asc"
+  | "quality_desc"
+  | "quality_asc"
+  | "waste_desc";
 
 export type ActionsHistoryListFilters = {
   statusFilter: ActionStatus | "all";
@@ -11,6 +20,7 @@ export type ActionsHistoryListFilters = {
   toFixOnly: boolean;
   limit: number;
   search: string;
+  sortBy: HistorySortKey;
 };
 
 export type ActionHistoryQualityResult = ReturnType<typeof evaluateActionQuality>;
@@ -50,11 +60,40 @@ export function buildActionHistoryQualityMap(
   return output;
 }
 
+export function sortActionHistoryItems(
+  items: ActionListItem[],
+  qualityById: Map<string, ActionHistoryQualityResult>,
+  sortBy: HistorySortKey,
+): ActionListItem[] {
+  if (sortBy === "date_desc") {
+    return items;
+  }
+
+  const copy = [...items];
+  copy.sort((a, b) => {
+    if (sortBy === "date_asc") {
+      return (a.action_date ?? "").localeCompare(b.action_date ?? "");
+    }
+    if (sortBy === "quality_desc" || sortBy === "quality_asc") {
+      const scoreA = qualityById.get(a.id)?.score ?? -1;
+      const scoreB = qualityById.get(b.id)?.score ?? -1;
+      return sortBy === "quality_desc" ? scoreB - scoreA : scoreA - scoreB;
+    }
+    const wasteA = Number(mapItemWasteKg(a as ActionMapItem) ?? -1);
+    const wasteB = Number(mapItemWasteKg(b as ActionMapItem) ?? -1);
+    return wasteB - wasteA;
+  });
+  return copy;
+}
+
 export function selectActionHistoryItem(
   items: ActionListItem[],
   selectedId: string | null,
 ): ActionListItem | null {
-  return items.find((item) => item.id === selectedId) ?? items[0] ?? null;
+  if (!selectedId) {
+    return null;
+  }
+  return items.find((item) => item.id === selectedId) ?? null;
 }
 
 export function resolveCorrectiveAction(
@@ -65,13 +104,13 @@ export function resolveCorrectiveAction(
   }
 
   if (quality.breakdown.geoloc < 70) {
-    return "Renforcer geo-tracabilite (coordonnees + trace/polygone).";
+    return "Renforcer géo-traçabilité (coordonnées + tracé/polygone).";
   }
   if (quality.breakdown.traceability < 80) {
-    return "Completer les champs de traçabilite (auteur/source/dates).";
+    return "Compléter les champs de traçabilité (auteur/source/dates).";
   }
   if (quality.breakdown.freshness < 70) {
-    return "Prioriser moderation rapide pour reduire la staleness.";
+    return "Prioriser la modération pour réduire l’ancienneté.";
   }
-  return "Corriger les champs incomplets et valeurs incoherentes.";
+  return "Corriger les champs incomplets et valeurs incohérentes.";
 }

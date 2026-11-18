@@ -1,15 +1,16 @@
+import { CmmBadge } from "@/components/ui/cmm-badge";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { ActionListItem, ActionMapItem, ActionQualityGrade } from "@/lib/actions/types";
 import { mapItemCigaretteButts, mapItemWasteKg } from "@/lib/actions/data-contract";
+import type { ActionListItem, ActionMapItem, ActionQualityGrade } from "@/lib/actions/types";
 import { formatScorePercent } from "@/lib/formatters/score";
 import {
   buildJoinHref,
   canManageGroupJoin,
+  formatActionStatus,
   formatDate,
   formatRecordType,
   isJoinableAction,
   qualityTone,
-  rowTone,
 } from "./actions-history-list.helpers";
 
 export type ActionQualityResult = {
@@ -26,6 +27,7 @@ export type ActionQualityResult = {
 type ActionsHistoryListTableRowProps = {
   item: ActionListItem;
   quality?: ActionQualityResult;
+  isSelected?: boolean;
   currentUserId: string | null;
   isAdminLikeUser: boolean;
   groupJoinActionId: string | null;
@@ -36,109 +38,115 @@ type ActionsHistoryListTableRowProps = {
 export function ActionsHistoryListTableRow({
   item,
   quality,
+  isSelected = false,
   currentUserId,
   isAdminLikeUser,
   groupJoinActionId,
   onSelectItem,
   onToggleGroupJoin,
 }: ActionsHistoryListTableRowProps) {
+  const wasteKg = mapItemWasteKg(item as ActionMapItem);
+  const butts = mapItemCigaretteButts(item as ActionMapItem);
+
   return (
     <tr
-      className={`cursor-pointer cmm-text-secondary ${rowTone(quality?.grade ?? null)}`}
+      tabIndex={0}
+      aria-selected={isSelected}
       onClick={() => onSelectItem(item.id)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelectItem(item.id);
+        }
+      }}
+      className={`cursor-pointer cmm-text-secondary transition-colors hover:bg-emerald-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 ${
+        isSelected ? "bg-emerald-50/80" : ""
+      }`}
     >
-      <td>{formatDate(item.action_date)}</td>
-      <td>{item.actor_name || "Anonyme"}</td>
-      <td>{item.location_label}</td>
-      <td>{formatRecordType(item)}</td>
-      <td>
-        {mapItemWasteKg(item as ActionMapItem) !== null ? (
-          Number(mapItemWasteKg(item as ActionMapItem)).toFixed(1)
-        ) : (
-          <span className="text-slate-300">-</span>
-        )}
+      <td className="whitespace-nowrap">{formatDate(item.action_date)}</td>
+      <td className="min-w-56">
+        <p className="font-medium cmm-text-primary line-clamp-2">{item.location_label}</p>
+        <p className="mt-0.5 cmm-text-caption cmm-text-muted">
+          {item.actor_name || "Anonyme"} · {formatRecordType(item)}
+        </p>
+      </td>
+      <td className="whitespace-nowrap">
+        <div className="cmm-text-caption">
+          <span className="font-medium cmm-text-primary">
+            {wasteKg !== null ? `${Number(wasteKg).toFixed(1)} kg` : "—"}
+          </span>
+          <span className="mx-1 text-slate-300">·</span>
+          <span>{butts !== null ? `${butts} mégots` : "—"}</span>
+        </div>
       </td>
       <td>
-        {mapItemCigaretteButts(item as ActionMapItem) !== null ? (
-          mapItemCigaretteButts(item as ActionMapItem)
-        ) : (
-          <span className="text-slate-300">-</span>
-        )}
+        <CmmBadge tone="slate" shape="pill">
+          <span className="whitespace-nowrap">{formatActionStatus(item.status)}</span>
+        </CmmBadge>
       </td>
-      <td>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">
-          {item.status}
-        </span>
-      </td>
-      <td>
+      <td className="whitespace-nowrap">
         {quality ? (
-          <div className="space-y-1">
-            <span
-              title={quality.flags.join(" |")}
-              className={`inline-flex rounded-full border px-2 py-0.5 cmm-text-caption font-semibold ${qualityTone(
-                quality.grade,
-              )}`}
-            >
-              {quality.grade} ({formatScorePercent(quality.score)})
-            </span>
-            <p className="max-w-48 truncate cmm-text-caption cmm-text-muted">
-              {quality.flags[0]
-                ? `Risque: ${quality.flags[0]}`
-                : "Aucun risque majeur détecté"}
-            </p>
-          </div>
+          <span
+            title={quality.flags.length > 0 ? quality.flags.join(" | ") : "Aucun risque majeur détecté"}
+            className={`inline-flex rounded-full border px-2.5 py-0.5 cmm-text-caption font-semibold ${qualityTone(
+              quality.grade,
+            )}`}
+          >
+            {quality.grade} ({formatScorePercent(quality.score)})
+          </span>
         ) : (
           <span className="cmm-text-caption cmm-text-muted">n/a</span>
         )}
       </td>
-      <td>
-        {item.status === "approved" && item.record_type === "action" ? (
-          <div className="flex flex-col items-start gap-2">
-            {isJoinableAction(item) ? (
-              <CmmButton
-                href={buildJoinHref(item.id)}
-                tone="secondary"
-                size="sm"
-                variant="pill"
-                className="h-9 px-3 font-black uppercase tracking-[0.16em]"
-              >
-                Rejoindre
-              </CmmButton>
-            ) : (
-              <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide text-slate-500">
-                Fermé
-              </span>
-            )}
-            {canManageGroupJoin(item, currentUserId, isAdminLikeUser) ? (
-              <CmmButton
-                type="button"
-                tone="primary"
-                size="sm"
-                variant="pill"
-                loading={groupJoinActionId === item.id}
-                onClick={() =>
-                  onToggleGroupJoin(
-                    item,
-                    item.contract?.metadata.groupJoinEnabled === false,
-                  )
-                }
-                className="h-9 px-3 font-black uppercase tracking-[0.16em]"
-              >
-                {groupJoinActionId === item.id
-                  ? item.contract?.metadata.groupJoinEnabled === false
-                    ? "Réouverture…"
-                    : "Fermeture…"
-                  : item.contract?.metadata.groupJoinEnabled === false ? (
-                    "Rouvrir"
-                  ) : (
-                    "Fermer"
-                  )}
-              </CmmButton>
-            ) : null}
-          </div>
-        ) : (
-          <span className="cmm-text-caption cmm-text-muted">-</span>
-        )}
+      <td onClick={(event) => event.stopPropagation()}>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <CmmButton
+            type="button"
+            tone="tertiary"
+            size="sm"
+            onClick={() => onSelectItem(item.id)}
+            ariaLabel={`Voir les détails de ${item.location_label}`}
+          >
+            Détails
+          </CmmButton>
+          {item.status === "approved" && item.record_type === "action" ? (
+            <>
+              {isJoinableAction(item) ? (
+                <CmmButton
+                  href={buildJoinHref(item.id)}
+                  tone="secondary"
+                  size="sm"
+                  variant="pill"
+                >
+                  Rejoindre
+                </CmmButton>
+              ) : null}
+              {canManageGroupJoin(item, currentUserId, isAdminLikeUser) ? (
+                <CmmButton
+                  type="button"
+                  tone="primary"
+                  size="sm"
+                  variant="pill"
+                  loading={groupJoinActionId === item.id}
+                  onClick={() =>
+                    onToggleGroupJoin(
+                      item,
+                      item.contract?.metadata.groupJoinEnabled === false,
+                    )
+                  }
+                >
+                  {groupJoinActionId === item.id
+                    ? item.contract?.metadata.groupJoinEnabled === false
+                      ? "Réouverture…"
+                      : "Fermeture…"
+                    : item.contract?.metadata.groupJoinEnabled === false
+                      ? "Rouvrir"
+                      : "Fermer"}
+                </CmmButton>
+              ) : null}
+            </>
+          ) : null}
+        </div>
       </td>
     </tr>
   );

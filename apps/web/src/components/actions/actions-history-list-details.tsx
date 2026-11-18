@@ -147,7 +147,7 @@ export function ActionsHistoryListDetails({
   if (!selectedItem || !selectedQuality) return null;
 
   return (
-    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+    <div className="space-y-4">
       <ActionHistoryPrimarySections
         selectedItem={selectedItem}
         selectedQuality={selectedQuality}

@@ -10,20 +10,20 @@ import { usePageFamily } from "@/lib/ui/page-families";
 type TemplateAction = {
  href: string;
  label: string;
- tone?: "primary" | "secondary";
 };
 
 type PageReadingTemplateProps = {
- context?: string;
  title: string;
  objective: string;
- summary?: ReactNode;
  primaryAction: TemplateAction;
  secondaryAction?: TemplateAction;
  analysis: ReactNode;
- trace?: ReactNode;
 };
 
+/**
+ * Gabarit de lecture : `PageHeader` (titre, sous-titre, actions utiles) puis
+ * le contenu analytique. Aucun bloc de synthèse ou de contexte décoratif.
+ */
 export function PageReadingTemplate(props: PageReadingTemplateProps) {
  const pageFamily = usePageFamily();
 
@@ -31,34 +31,24 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
   <div data-rubrique-report-root>
    <CmmPageLayout>
     <CmmSectionGroup>
-   {/* Analysis */}
-   <section className="space-y-4">
-    <div className="space-y-4">{props.analysis}</div>
-   </section>
-
-   {/* Header */}
-   <header className="border-t border-[color:var(--border-default)] pt-5">
-    <PageHeader
-     family={pageFamily}
-     title={props.title}
-     subtitle={props.objective}
-     action={props.context ? <span className="text-sm font-medium text-slate-600">{props.context}</span> : undefined}
-    />
-   </header>
-
-   {/* Actions */}
-   <section className="border-t border-[color:var(--border-default)] pt-6">
-    <CTAGroup>
-     <CmmButton href={props.primaryAction.href} tone="primary" variant="default">
-      {props.primaryAction.label}
-     </CmmButton>
-     {props.secondaryAction ? (
-      <CmmButton href={props.secondaryAction.href} tone="secondary">
-       {props.secondaryAction.label}
-      </CmmButton>
-     ) : null}
-    </CTAGroup>
-   </section>
+     <PageHeader
+      family={pageFamily}
+      title={props.title}
+      subtitle={props.objective}
+      action={
+       <CTAGroup>
+        <CmmButton href={props.primaryAction.href} tone="primary">
+         {props.primaryAction.label}
+        </CmmButton>
+        {props.secondaryAction ? (
+         <CmmButton href={props.secondaryAction.href} tone="secondary">
+          {props.secondaryAction.label}
+         </CmmButton>
+        ) : null}
+       </CTAGroup>
+      }
+     />
+     <section className="space-y-4">{props.analysis}</section>
     </CmmSectionGroup>
    </CmmPageLayout>
   </div>

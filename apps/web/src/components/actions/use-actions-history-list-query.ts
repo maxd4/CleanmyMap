@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import { getActionOperationalContext } from "@/lib/actions/operational-context";
@@ -11,9 +11,11 @@ import {
   buildActionHistoryQualityMap,
   filterActionHistoryItems,
   selectActionHistoryItem,
+  sortActionHistoryItems,
   resolveCorrectiveAction,
   type ActionHistoryQualityResult,
   type ActionsHistoryListFilters,
+  type HistorySortKey,
 } from "./actions-history-list-query";
 
 export type ActionsHistoryListQueryModel = ActionsHistoryListFilters & {
@@ -27,17 +29,22 @@ export type ActionsHistoryListQueryModel = ActionsHistoryListFilters & {
   approvedFilteredItems: Awaited<ReturnType<typeof fetchActions>>["items"];
   qualityById: Map<string, ActionHistoryQualityResult>;
   selectedId: string | null;
+  selectedIndex: number;
   selectedItem: Awaited<ReturnType<typeof fetchActions>>["items"][number] | null;
   selectedQuality: ActionHistoryQualityResult | null;
   selectedOperational: ReturnType<typeof getActionOperationalContext> | null;
   selectedLostPoints: number;
   correctiveAction: string | null;
+  hasActiveFilters: boolean;
+  activeSecondaryFilterCount: number;
   setStatusFilter: (value: ActionStatus | "all") => void;
   setQualityFilter: (value: ActionQualityGrade | "all") => void;
   setToFixOnly: (value: boolean | ((previous: boolean) => boolean)) => void;
   setLimit: (value: number | ((previous: number) => number)) => void;
   setSearch: (value: string) => void;
+  setSortBy: (value: HistorySortKey) => void;
   setSelectedId: (value: string | null) => void;
+  resetFilters: () => void;
 };
 
 export function useActionsHistoryListQuery(): ActionsHistoryListQueryModel {
@@ -46,6 +53,7 @@ export function useActionsHistoryListQuery(): ActionsHistoryListQueryModel {
   const [toFixOnly, setToFixOnly] = useState(false);
   const [limit, setLimit] = useState(25);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<HistorySortKey>("date_desc");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const swrKey = useMemo(
     () => ["actions", statusFilter, qualityFilter, String(toFixOnly), String(limit)],
@@ -71,13 +79,17 @@ export function useActionsHistoryListQuery(): ActionsHistoryListQueryModel {
   );
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
-  const filteredItems = useMemo(
+  const searchedItems = useMemo(
     () => filterActionHistoryItems(items, search),
     [items, search],
   );
   const qualityById = useMemo(
-    () => buildActionHistoryQualityMap(filteredItems),
-    [filteredItems],
+    () => buildActionHistoryQualityMap(searchedItems),
+    [searchedItems],
+  );
+  const filteredItems = useMemo(
+    () => sortActionHistoryItems(searchedItems, qualityById, sortBy),
+    [searchedItems, qualityById, sortBy],
   );
   const approvedFilteredItems = useMemo(
     () => filteredItems.filter((item) => item.status === "approved"),
@@ -86,6 +98,10 @@ export function useActionsHistoryListQuery(): ActionsHistoryListQueryModel {
   const selectedItem = useMemo(
     () => selectActionHistoryItem(filteredItems, selectedId),
     [filteredItems, selectedId],
+  );
+  const selectedIndex = useMemo(
+    () => (selectedItem ? filteredItems.findIndex((item) => item.id === selectedItem.id) : -1),
+    [filteredItems, selectedItem],
   );
   const selectedQuality = selectedItem
     ? (qualityById.get(selectedItem.id) ?? null)
@@ -98,12 +114,31 @@ export function useActionsHistoryListQuery(): ActionsHistoryListQueryModel {
     : 0;
   const correctiveAction = resolveCorrectiveAction(selectedQuality);
 
+  const activeSecondaryFilterCount =
+    (qualityFilter !== "all" ? 1 : 0) +
+    (toFixOnly ? 1 : 0) +
+    (sortBy !== "date_desc" ? 1 : 0);
+
+  const hasActiveFilters =
+    statusFilter !== "approved" ||
+    search.trim().length > 0 ||
+    activeSecondaryFilterCount > 0;
+
+  const resetFilters = useCallback(() => {
+    setStatusFilter("approved");
+    setQualityFilter("all");
+    setToFixOnly(false);
+    setSearch("");
+    setSortBy("date_desc");
+  }, []);
+
   return {
     statusFilter,
     qualityFilter,
     toFixOnly,
     limit,
     search,
+    sortBy,
     data,
     error,
     isLoading,
@@ -114,16 +149,21 @@ export function useActionsHistoryListQuery(): ActionsHistoryListQueryModel {
     approvedFilteredItems,
     qualityById,
     selectedId,
+    selectedIndex,
     selectedItem,
     selectedQuality,
     selectedOperational,
     selectedLostPoints,
     correctiveAction,
+    hasActiveFilters,
+    activeSecondaryFilterCount,
     setStatusFilter,
     setQualityFilter,
     setToFixOnly,
     setLimit,
     setSearch,
+    setSortBy,
     setSelectedId,
+    resetFilters,
   };
 }

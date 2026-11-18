@@ -77,3 +77,13 @@ export function rowTone(grade: ActionQualityGrade | null): string {
 
   return "";
 }
+
+const ACTION_STATUS_LABELS: Record<string, string> = {
+  pending: "En attente",
+  approved: "Approuvé",
+  rejected: "Refusé",
+};
+
+export function formatActionStatus(status: string | null | undefined): string {
+  return (status && ACTION_STATUS_LABELS[status]) || status || "—";
+}

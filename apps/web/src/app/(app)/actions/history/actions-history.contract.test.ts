@@ -62,20 +62,23 @@ describe("actions history route contract", () => {
   });
 
   it("keeps the page links on existing internal destinations", () => {
-    expect(pageSource).toContain('href:"/actions/new"');
-    expect(pageSource).toContain('href:"/reports"');
+    expect(pageSource).toContain('href: "/actions/new"');
+    expect(pageSource).toContain('href: "/reports"');
     expect(existsSync(new URL("../new/page.tsx", import.meta.url))).toBe(true);
     expect(existsSync(new URL("../../reports/page.tsx", import.meta.url))).toBe(true);
   });
 
-  it("uses the canonical title, description and action CTA in both page templates", () => {
+  it("uses the canonical title, description and action CTA through the single reading template", () => {
     expect(pageSource).toContain('title: "Historique terrain"');
     expect(pageSource).toContain('title="Historique terrain"');
+    expect(pageSource).not.toMatch(/N-1|Delta/);
+    expect(pageSource).not.toContain("StatCard");
+    expect(pageSource).not.toContain("DecisionPageHeader");
     expect(pageSource).toContain(
       "Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer.",
     );
     expect(pageSource).not.toContain('label:"Déclarer"');
     expect(pageSource).not.toContain('label:"Nouvelle déclaration"');
-    expect(pageSource).toContain('label:"Créer une action"');
+    expect(pageSource).toContain('label: "Créer une action"');
   });
 });

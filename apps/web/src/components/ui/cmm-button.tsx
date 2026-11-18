@@ -37,6 +37,8 @@ export interface CmmButtonProps {
  role?: string;
  tabIndex?: number;
  ariaControls?: string;
+ ariaExpanded?: boolean;
+ ariaPressed?: boolean;
  ariaSelected?: boolean;
  onKeyDown?: KeyboardEventHandler<HTMLButtonElement>;
  ref?: Ref<HTMLButtonElement>;
@@ -72,6 +74,8 @@ export function CmmButton({
  role,
  tabIndex,
  ariaControls,
+ ariaExpanded,
+ ariaPressed,
  ariaSelected,
  onKeyDown,
  loading = false,
@@ -158,6 +162,8 @@ export function CmmButton({
   className={classes}
   aria-label={ariaLabel}
   aria-controls={ariaControls}
+  aria-expanded={ariaExpanded}
+  aria-pressed={ariaPressed}
   aria-selected={ariaSelected}
   role={role}
   tabIndex={blocked ? -1 : tabIndex}
