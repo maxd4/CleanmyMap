@@ -16,12 +16,12 @@ test("rejects local typography and geometry overrides on PageHeader", () => {
   );
 });
 
-test("preserves the documented compact messaging exception", () => {
-  assert.deepEqual(
+test("rejects local overrides on connect-section-view.tsx now that messaging uses canonical PageHeader", () => {
+  assert.equal(
     auditPageHeaderLocalOverrides(
       "max-w-none text-xs",
       "apps/web/src/components/sections/rubriques/connect-section-view.tsx",
-    ),
-    [],
+    ).length,
+    1,
   );
 });

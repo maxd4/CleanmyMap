@@ -27,9 +27,7 @@ const rawH1Allowlist = new Map([
 
 const forbiddenTypographyClass = /(?:^|\s)(?:text-|font-|leading-|tracking-|max-w-|whitespace-|line-clamp-)/;
 const forbiddenGeometryClass = /(?:^|\s)(?:rounded-|border(?:-|$)|bg-|shadow-|(?:p|px|py|h|min-h|max-h)-)/;
-const pageHeaderWrapperExceptions = new Map([
-  ["apps/web/src/components/sections/rubriques/connect-section-view.tsx", "documented compact messaging sub-view"],
-]);
+const pageHeaderWrapperExceptions = new Map();
 
 function collectSourceFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

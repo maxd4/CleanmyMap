@@ -20,11 +20,12 @@ describe("actions map public semantics", () => {
     expect(serverSource).toContain("actions et les données publiques autorisées par le contrat");
     expect(serverSource).toContain("une projection n&apos;est pas une mesure actuelle du terrain");
     expect(serverSource).toContain('href="/methodologie"');
+    expect(serverSource).toContain('href="/actions/new"');
     expect(serverSource).toContain("<Suspense");
     expect(serverSource).toContain("async function ActionsMapContent");
     expect(loadingSource).toContain("<PageHeader");
     expect(loadingSource).toContain("Cartographie des actions");
-    expect(source).toContain("title={null}");
+    expect(source).not.toContain("<PageHeader");
     expect(source).toContain("Comparaison départementale active.");
     expect(source).toContain("Mode observation actif.");
     expect(source).toContain("Mode projection actif.");
@@ -45,7 +46,7 @@ describe("actions map public semantics", () => {
   });
 
   it("keeps the methodology CTA and removes secondary technical surfaces", () => {
-    expect(source).toContain('href="/methodologie"');
+    expect(serverSource).toContain('href="/methodologie"');
     expect(source).not.toContain("MapSidebarAid");
     expect(source).toContain("Journal des actions");
     expect(source).toContain('href="/reports"');

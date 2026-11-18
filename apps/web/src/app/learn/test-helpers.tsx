@@ -9,11 +9,20 @@ export function createLearnSitePreferencesModule() {
 export function createLearnRubricShellModule() {
   return {
     LearnRubricShell: ({
+      title,
+      subtitle,
       children,
-      staticIntro,
     }: {
+      title?: { fr: string; en: string };
+      subtitle?: { fr: string; en: string };
       children: React.ReactNode;
-      staticIntro?: React.ReactNode;
-    }) => React.createElement("div", { "data-testid": "shell" }, staticIntro, children),
+    }) =>
+      React.createElement(
+        "div",
+        { "data-testid": "shell" },
+        title ? React.createElement("h1", null, title.fr) : null,
+        subtitle ? React.createElement("p", null, subtitle.fr) : null,
+        children,
+      ),
   };
 }

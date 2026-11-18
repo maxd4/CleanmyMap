@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { LearnLocalizedHeading } from "@/components/learn/learn-localized-heading";
 import { buildPageMetadata } from "@/lib/metadata";
 import LearnSentrainerClient from "./client";
 
@@ -11,11 +10,5 @@ export const metadata: Metadata = buildPageMetadata("/learn/sentrainer", {
 });
 
 export default function LearnSentrainerPage() {
-  return (
-    <LearnSentrainerClient
-      staticIntro={
-        <LearnLocalizedHeading fr="S’entraîner" en="Practice" />
-      }
-    />
-  );
+  return <LearnSentrainerClient />;
 }

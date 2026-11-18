@@ -42,15 +42,6 @@ vi.mock("@/components/learn/learn-rubric-shell", async () =>
   (await import("@/app/learn/test-helpers")).createLearnRubricShellModule(),
 );
 
-vi.mock("@/components/learn/learn-localized-heading", () => ({
-  LearnLocalizedHeading: ({ en }: { fr: string; en: string }) =>
-    React.createElement(
-      "h1",
-      { className: "cmm-page-header-title text-slate-950" },
-      en,
-    ),
-}));
-
 vi.mock("@/components/learn/learn-practice-theme-tabs", () => ({
   LearnPracticeThemeTabs: (props: TabsProps) => {
     tabsCalls.push(props);
@@ -151,7 +142,7 @@ describe("bonnes-pratiques page", () => {
   it("passes the localized heading labels to the client boundary", async () => {
     const markup = renderToStaticMarkup(await Page());
 
-    expect(markup).toContain("Good practices");
+    expect(markup).toContain("Bonnes pratiques");
     expect(markup.match(/<h1\b/g)).toHaveLength(1);
   });
 });

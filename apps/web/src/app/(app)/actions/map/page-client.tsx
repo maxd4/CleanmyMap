@@ -13,8 +13,6 @@ import { useActionsMapFilters } from "@/components/actions/map/filters/use-actio
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import type { ActionContextFilter } from "@/lib/actions/action-context";
 import type { ActionsMapDateScope } from "@/components/actions/map/filters/actions-map-filters.utils";
-import { PageHeader } from "@/components/ui/page-header";
-import { resolvePageFamily } from "@/lib/ui/page-families";
 import { cn } from "@/lib/utils";
 import { MapKpiRibbon } from "./_components/map-kpi-ribbon";
 import { MapControlTower } from "./_components/map-control-tower";
@@ -41,28 +39,6 @@ export function ActionsMapPageClient({
       <ActionPollutionScoreReferencesProvider>
       <ActionsMapPageContent impactMetrics={impactMetrics} />
     </ActionPollutionScoreReferencesProvider>
-  );
-}
-
-function ActionsMapPageHeader({ pageFamily, scoreScope, displayMode }: { pageFamily: ReturnType<typeof resolvePageFamily>; scoreScope: PollutionScoreScope; displayMode: CurrentPlaceStateMode }) {
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        family={pageFamily}
-        title={null}
-        subtitle={scoreScope === "department" ? "Comparaison départementale active." : displayMode === "observed" ? "Mode observation actif." : "Mode projection actif."}
-        action={
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
-            <CmmButton href="/actions/new" tone="primary" variant="pill" className="w-full justify-center sm:w-auto">
-              Déclarer <ArrowRight size={14} aria-hidden="true" />
-            </CmmButton>
-            <CmmButton href="/methodologie" tone="secondary" variant="pill" className="w-full justify-center sm:w-auto">
-              Méthodologie <ArrowRight size={14} aria-hidden="true" />
-            </CmmButton>
-          </div>
-        }
-      />
-    </div>
   );
 }
 
@@ -98,7 +74,6 @@ function useActionsMapPageData({ filters, requestedActionId, mapViewport, isInit
 function ActionsMapPageContent({
   impactMetrics,
 }: ActionsMapPageClientProps) {
-  const pageFamily = resolvePageFamily("/actions/map");
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -136,12 +111,16 @@ function ActionsMapPageContent({
   const { mapFeedDataForView, selectedActionLoad, knownSelectedAction, filteredMapItems, visibleCount, loadedCount } = useActionsMapPageData({ filters, requestedActionId, mapViewport, isInitialViewportResolved, hasInitialPublicActions, initialViewportError, scoreScope, displayMode });
 
   const surfaceCard = "rounded-[3rem] border border-sky-200/70 bg-sky-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]";
+  const modeStatusLabel =
+    scoreScope === "department"
+      ? "Comparaison départementale active."
+      : displayMode === "observed"
+        ? "Mode observation actif."
+        : "Mode projection actif.";
 
   return (
     <div className="min-h-screen text-slate-950 pb-24">
       <div className="cmm-page-width px-6 py-6 space-y-6">
-        <ActionsMapPageHeader pageFamily={pageFamily} scoreScope={scoreScope} displayMode={displayMode} />
-
         <section className="relative mx-auto w-full lg:left-1/2 lg:right-1/2 lg:w-[calc(100vw-1.5rem)] lg:-translate-x-1/2">
           <ActionsMapFeedContent
             feedData={mapFeedDataForView}
@@ -193,6 +172,7 @@ function ActionsMapPageContent({
               loadedCount={loadedCount}
               filteredMapItems={filteredMapItems}
               freshnessLabel={mapFeedDataForView.freshnessLabel}
+              modeStatusLabel={modeStatusLabel}
               mapExportTargetRef={mapExportTargetRef}
               viewport={mapViewport}
             />

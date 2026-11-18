@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ArrowRight, Compass, Layers3, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
-import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -21,64 +21,8 @@ type LearnRubricShellProps = {
     label: { fr: string; en: string };
   };
   showVisualPanel?: boolean;
-  staticIntro?: ReactNode;
   children: ReactNode;
 };
-
-function LearnRubricIntro({
-  staticIntro,
-  family,
-  title,
-  subtitle,
-  description,
-  locale,
-  isLightOrange,
-}: Pick<LearnRubricShellProps, "staticIntro" | "title" | "subtitle" | "description"> & {
-  family: ReturnType<typeof usePageFamily>;
-  locale: "fr" | "en";
-  isLightOrange: boolean;
-}) {
-  if (staticIntro) {
-    return (
-      <div className="space-y-2">
-        {staticIntro}
-        <p
-          className={
-            isLightOrange
-              ? "cmm-text-body max-w-3xl"
-              : "max-w-3xl text-base leading-relaxed text-white md:text-lg"
-          }
-        >
-          {subtitle[locale]}
-        </p>
-        <p
-          className={
-            isLightOrange
-              ? "cmm-text-body max-w-3xl"
-              : "max-w-3xl text-base leading-relaxed text-white md:text-lg"
-          }
-        >
-          {description[locale]}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3 text-center">
-      <PageHeader family={family} title={title[locale]} subtitle={subtitle[locale]} />
-      <p
-        className={
-          isLightOrange
-            ? "cmm-text-body mx-auto max-w-2xl"
-            : "mx-auto max-w-2xl text-base leading-relaxed text-white md:text-lg"
-        }
-      >
-        {description[locale]}
-      </p>
-    </div>
-  );
-}
 
 const ACCENT_CLASSES: Record<LearnRubricShellProps["accent"], string> = {
   blue: "from-sky-500 via-cyan-500 to-blue-500",
@@ -144,7 +88,6 @@ export function LearnRubricShell({
   accent,
   cta,
   showVisualPanel = true,
-  staticIntro,
   children,
 }: LearnRubricShellProps) {
   const { locale } = useSitePreferences();
@@ -161,51 +104,60 @@ export function LearnRubricShell({
             : `rounded-[2rem] bg-gradient-to-br ${ACCENT_CLASSES[accent]} p-6 text-white md:p-8`
         }
       >
-        <div
-          className={
-            showVisualPanel
-              ? "grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start"
-              : "space-y-6"
-          }
-        >
-          <div className="space-y-6">
-            <div className="flex flex-wrap items-center gap-3">
-              <CmmButton
-                href={backHref}
-                tone="secondary"
-                size="sm"
-                variant="pill"
-                className="shrink-0"
-              >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                {backLabel[locale]}
-              </CmmButton>
-              {cta ? (
+        <div className="space-y-6">
+          <PageHeader
+            family={pageFamily}
+            title={title[locale]}
+            subtitle={subtitle[locale]}
+            action={
+              <CmmButtonGroup>
                 <CmmButton
-                  href={cta.href}
-                  tone="critical"
+                  href={backHref}
+                  tone="secondary"
                   size="sm"
                   variant="pill"
                   className="shrink-0"
                 >
-                  {cta.label[locale]}
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  {backLabel[locale]}
                 </CmmButton>
-              ) : null}
-            </div>
+                {cta ? (
+                  <CmmButton
+                    href={cta.href}
+                    tone="critical"
+                    size="sm"
+                    variant="pill"
+                    className="shrink-0"
+                  >
+                    {cta.label[locale]}
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </CmmButton>
+                ) : null}
+              </CmmButtonGroup>
+            }
+          />
 
-            <LearnRubricIntro
-              staticIntro={staticIntro}
-              family={pageFamily}
-              title={title}
+          <p
+            className={
+              isLightOrange
+                ? "cmm-text-body mx-auto max-w-2xl text-center"
+                : "mx-auto max-w-2xl text-center text-base leading-relaxed text-white md:text-lg"
+            }
+          >
+            {description[locale]}
+          </p>
+
+          {showVisualPanel ? (
+            <LearnVisualPanel
+              isFrench={isFrench}
+              isLightOrange={isLightOrange}
+              locale={locale}
               subtitle={subtitle}
               description={description}
-              locale={locale}
-              isLightOrange={isLightOrange}
+              highlights={highlights}
+              cta={cta}
             />
-          </div>
-
-          {showVisualPanel ? <LearnVisualPanel isFrench={isFrench} isLightOrange={isLightOrange} locale={locale} subtitle={subtitle} description={description} highlights={highlights} cta={cta} /> : null}
+          ) : null}
         </div>
       </section>
 

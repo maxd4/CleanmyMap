@@ -65,7 +65,8 @@ vi.mock("./_components/map-kpi-ribbon", () => ({
 }));
 
 vi.mock("./_components/map-control-tower", () => ({
-  MapControlTower: () => null,
+  MapControlTower: ({ modeStatusLabel }: { modeStatusLabel?: string | null }) =>
+    modeStatusLabel ? React.createElement("p", { role: "status" }, modeStatusLabel) : null,
 }));
 
 vi.mock("@/components/ui/page-header", () => ({

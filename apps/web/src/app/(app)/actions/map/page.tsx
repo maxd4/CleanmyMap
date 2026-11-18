@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Suspense } from "react";
 import { loadLandingSummary } from "@/lib/accueil/data";
 import {
@@ -8,6 +9,7 @@ import {
 } from "@/lib/impact/public-impact-kpis";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { buildPageMetadata } from "@/lib/metadata";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { ActionsMapPageClient } from "./page-client";
 import { PageHeader } from "@/components/ui/page-header";
 
@@ -50,6 +52,16 @@ export default function ActionsMapPage() {
               </Link>.
             </>
           )}
+          action={
+            <CmmButtonGroup>
+              <CmmButton href="/actions/new" tone="primary" variant="pill">
+                Déclarer <ArrowRight size={14} aria-hidden="true" />
+              </CmmButton>
+              <CmmButton href="/methodologie" tone="secondary" variant="pill">
+                Méthodologie <ArrowRight size={14} aria-hidden="true" />
+              </CmmButton>
+            </CmmButtonGroup>
+          }
         />
       </div>
       <Suspense

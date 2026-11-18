@@ -202,6 +202,8 @@ describe("Messagerie navigation shell", () => {
 
   it("uses the canonical page header, fluid shell height, and real tab semantics", () => {
     expect(connectImplementationSource).toContain("<PageHeader");
+    expect(connectImplementationSource).not.toContain('align="left"');
+    expect(connectImplementationSource).not.toContain("max-w-none");
     expect(connectImplementationSource).not.toContain("action={<ConnectTabs");
     expect(connectImplementationSource).toContain("<ConnectTabs activeTab={activeTab}");
     expect(connectImplementationSource).not.toContain("h-[calc(100dvh-8.5rem)]");

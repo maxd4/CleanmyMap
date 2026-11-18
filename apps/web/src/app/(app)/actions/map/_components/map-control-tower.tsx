@@ -13,6 +13,7 @@ type MapControlTowerProps = {
   loadedCount: number;
   filteredMapItems: ActionMapItem[];
   freshnessLabel?: string | null;
+  modeStatusLabel?: string | null;
   viewport?: MapViewportState | null;
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
 };
@@ -23,6 +24,7 @@ export function MapControlTower({
   loadedCount,
   filteredMapItems,
   freshnessLabel,
+  modeStatusLabel,
   viewport,
   mapExportTargetRef,
 }: MapControlTowerProps) {
@@ -42,6 +44,11 @@ export function MapControlTower({
             <p className="text-sm font-medium text-slate-600">
               {visibleCount} élément{visibleCount === 1 ? "" : "s"} visible{visibleCount === 1 ? "" : "s"} sur {loadedCount} chargé{loadedCount === 1 ? "" : "s"}.
             </p>
+            {modeStatusLabel ? (
+              <p role="status" className="mt-0.5 cmm-text-caption font-semibold text-sky-900">
+                {modeStatusLabel}
+              </p>
+            ) : null}
           </div>
         </div>
         <ActionsMapExportButton

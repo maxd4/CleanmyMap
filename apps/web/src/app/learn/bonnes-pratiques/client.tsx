@@ -10,13 +10,8 @@ import { LearnPracticeThemeTabs } from "@/components/learn/learn-practice-theme-
 import { LearnPracticeThemeSelection } from "@/components/learn/learn-practice-theme-selection";
 import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import type { ReactNode } from "react";
 
-export default function LearnBonnesPratiquesPage({
-  staticIntro,
-}: {
-  staticIntro?: ReactNode;
-}) {
+export default function LearnBonnesPratiquesPage() {
   const { locale } = useSitePreferences();
 
   return (
@@ -34,7 +29,6 @@ export default function LearnBonnesPratiquesPage({
       backLabel={{ fr: "Retour au sommaire", en: "Back to summary" }}
       accent="yellow"
       showVisualPanel={false}
-      staticIntro={staticIntro}
     >
       <LearnPageVisitTracker pageId="bonnes-pratiques" />
       <div className="space-y-6">

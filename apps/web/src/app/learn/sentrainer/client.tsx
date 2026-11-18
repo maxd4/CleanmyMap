@@ -11,13 +11,8 @@ import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-track
 import { parseQuizSentrainerEntryState } from "@/lib/learning/quiz/quiz-entry-state";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import type { ReactNode } from "react";
 
-export default function LearnSentrainerPage({
-  staticIntro,
-}: {
-  staticIntro?: ReactNode;
-}) {
+export default function LearnSentrainerPage() {
   const { locale } = useSitePreferences();
   const practiceCard = LEARN_OVERVIEW_CARDS[locale][1];
   const defaultQuizEntryState = parseQuizSentrainerEntryState(null);
@@ -36,7 +31,6 @@ export default function LearnSentrainerPage({
       backHref="/explorer"
       backLabel={{ fr: "Retour au sommaire", en: "Back to summary" }}
       accent="yellow"
-      staticIntro={staticIntro}
       highlights={[
         { fr: "Rappel actif", en: "Active recall" },
         { fr: "Rythme court", en: "Short rhythm" },

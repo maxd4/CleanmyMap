@@ -140,8 +140,8 @@ Priorité :
 
 `align` accepte uniquement :
 
-- `center` — valeur standard sur toutes les pages Web ;
-- `left` — uniquement lorsqu'une surface spécialisée documentée dans `UI_EXCEPTION_PAGES.md` le justifie (ex. sous-vue compacte de messagerie).
+- `center` — valeur standard sur toutes les pages Web (y compris `/actions/map`, `/sections/messagerie` et le bloc Apprendre) ;
+- `left` — uniquement lorsqu'une surface spécialisée documentée dans `UI_EXCEPTION_PAGES.md` le justifie.
 
 Règles :
 

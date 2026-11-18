@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { LearnLocalizedHeading } from "@/components/learn/learn-localized-heading";
 import { buildPageMetadata } from "@/lib/metadata";
 import LearnBonnesPratiquesClient from "./client";
 
@@ -11,11 +10,5 @@ export const metadata: Metadata = buildPageMetadata("/learn/bonnes-pratiques", {
 });
 
 export default function LearnBonnesPratiquesPage() {
-  return (
-    <LearnBonnesPratiquesClient
-      staticIntro={
-        <LearnLocalizedHeading fr="Bonnes pratiques" en="Good practices" />
-      }
-    />
-  );
+  return <LearnBonnesPratiquesClient />;
 }
