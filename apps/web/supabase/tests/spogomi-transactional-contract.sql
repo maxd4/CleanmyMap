@@ -49,7 +49,7 @@ begin
     update public.spogomi_events set state = 'composition_locked' where id = v_event_id;
     raise exception 'direct event lock mutation was accepted';
   exception when others then
-    if sqlerrm not like '%SPOGOMI event locking requires the atomic composition lock procedure%' then
+    if sqlerrm not like '%SPOGOMI event locking requires an eligible, atomically prepared composition%' then
       raise;
     end if;
   end;
