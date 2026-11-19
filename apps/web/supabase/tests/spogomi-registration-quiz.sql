@@ -139,7 +139,8 @@ begin
   -- position for either association of the same public labels.
   select candidate.correct_label, candidate.incorrect_label
     into v_attack_correct_label, v_attack_incorrect_label
-    from (values ('safe', 'unsafe'), ('correct label', 'incorrect label'), ('A', 'B')) as candidate(correct_label, incorrect_label)
+    from generate_series(1, 32) as i,
+         lateral (values ('safe-' || i::text, 'unsafe-' || i::text)) as candidate(correct_label, incorrect_label)
    where get_byte(decode(md5(concat_ws(':', v_event_id::text, v_division_id::text, 'rotation-probe', candidate.correct_label, candidate.incorrect_label)), 'hex'), 0) % 2
       <> get_byte(decode(md5(concat_ws(':', v_event_id::text, v_division_id::text, 'rotation-probe', candidate.incorrect_label, candidate.correct_label)), 'hex'), 0) % 2
    limit 1;
