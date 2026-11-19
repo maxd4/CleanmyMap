@@ -1,52 +1,15 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { resolveLocalEphemeralDbUrl, runLocalPsqlQuery } from "./supabase-local-psql.mjs";
 
-const execFileAsync = promisify(execFile);
-const root = process.cwd();
-const supabaseCommand = process.platform === "win32" ? "npx.cmd" : "npx";
 const userId = "quiz-rpc-concurrent";
 const barrierKeys = { first: 918273646101n, second: 918273646102n };
 
 async function runQuery(sql, { timeoutMs = 20_000 } = {}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await execFileAsync(
-      supabaseCommand,
-      ["supabase", "db", "query", "--workdir", "apps/web", "--local", sql],
-      {
-        cwd: root,
-        shell: process.platform === "win32",
-        maxBuffer: 8 * 1024 * 1024,
-        signal: controller.signal,
-      },
-    );
-  } catch (error) {
-    const detail = [error?.stdout, error?.stderr, error?.message].filter(Boolean).join("\n");
-    throw new Error(`DB_SEMANTICS_NOT_EXECUTED: Quiz progression concurrency query failed.\n${detail}`);
-  } finally {
-    clearTimeout(timeout);
-  }
+  return runLocalPsqlQuery(sql, { timeoutMs, errorLabel: "Quiz progression concurrency query failed" });
 }
 
 async function assertEphemeralDestination() {
-  let result;
-  try {
-    result = await execFileAsync(
-      supabaseCommand,
-      ["supabase", "status", "--workdir", "apps/web", "--output", "json"],
-      { cwd: root, shell: process.platform === "win32", maxBuffer: 2 * 1024 * 1024 },
-    );
-  } catch (error) {
-    const detail = [error?.stdout, error?.stderr, error?.message].filter(Boolean).join("\n");
-    throw new Error(`DB_SEMANTICS_NOT_EXECUTED: ephemeral Supabase status is unavailable.\n${detail}`);
-  }
-  const start = result.stdout.indexOf("{");
-  if (start < 0) throw new Error("DB_SEMANTICS_NOT_EXECUTED: Supabase status did not return JSON.");
-  const status = JSON.parse(result.stdout.slice(start));
-  const apiUrl = new URL(status.API_URL ?? "");
-  assert.ok(apiUrl.hostname === "127.0.0.1" || apiUrl.hostname === "localhost");
+  await resolveLocalEphemeralDbUrl();
 }
 
 const cleanupSql = `

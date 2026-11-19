@@ -1,12 +1,8 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
 import path from "node:path";
-import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { runLocalPsqlQuery } from "./supabase-local-psql.mjs";
 
-const execFileAsync = promisify(execFile);
-const root = process.cwd();
-const supabaseCommand = process.platform === "win32" ? "npx.cmd" : "npx";
 const actionId = "22222222-2222-4222-8222-222222222222";
 const targetUserId = "role-attestation-concurrency-user";
 const reviewerId = "role-attestation-concurrency-reviewer";
@@ -18,27 +14,7 @@ const CONCURRENCY_SYNC_TIMEOUT_MS = 10_000;
 const CONCURRENCY_POLL_INTERVAL_MS = 100;
 
 async function runQuery(sql, { signal: callerSignal, timeoutMs = CONCURRENCY_QUERY_TIMEOUT_MS } = {}) {
-  const controller = new AbortController();
-  const abortFromCaller = () => controller.abort(callerSignal.reason);
-  if (callerSignal?.aborted) {
-    controller.abort(callerSignal.reason);
-  } else {
-    callerSignal?.addEventListener("abort", abortFromCaller, { once: true });
-  }
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await execFileAsync(
-      supabaseCommand,
-      ["supabase", "db", "query", "--workdir", "apps/web", "--local", sql],
-      { cwd: root, shell: process.platform === "win32", maxBuffer: 8 * 1024 * 1024, signal: controller.signal },
-    );
-  } catch (error) {
-    const detail = [error?.stdout, error?.stderr, error?.message].filter(Boolean).join("\n");
-    throw new Error(detail);
-  } finally {
-    clearTimeout(timeout);
-    callerSignal?.removeEventListener("abort", abortFromCaller);
-  }
+  return runLocalPsqlQuery(sql, { signal: callerSignal, timeoutMs, rawError: true });
 }
 
 function startQuery(sql, query = runQuery) {

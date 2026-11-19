@@ -1,12 +1,8 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
 import path from "node:path";
-import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { runLocalPsqlQuery } from "./supabase-local-psql.mjs";
 
-const execFileAsync = promisify(execFile);
-const root = process.cwd();
-const supabaseCommand = process.platform === "win32" ? "npx.cmd" : "npx";
 const fixtureIds = [
   "security-02-session-stale-admin",
   "security-02-session-stale-elu",
@@ -14,20 +10,7 @@ const fixtureIds = [
 ];
 
 async function runQuery(sql) {
-  try {
-    return await execFileAsync(
-      supabaseCommand,
-      ["supabase", "db", "query", "--workdir", "apps/web", "--local", sql],
-      {
-        cwd: root,
-        shell: process.platform === "win32",
-        maxBuffer: 8 * 1024 * 1024,
-      },
-    );
-  } catch (error) {
-    const detail = [error?.stdout, error?.stderr, error?.message].filter(Boolean).join("\n");
-    throw new Error(`DB_SEMANTICS_NOT_EXECUTED: local Supabase query failed.\n${detail}`);
-  }
+  return runLocalPsqlQuery(sql, { errorLabel: "local Supabase query failed" });
 }
 
 const setupSql = `

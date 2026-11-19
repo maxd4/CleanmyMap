@@ -1,12 +1,8 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
 import { resolve } from "node:path";
-import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { resolveLocalEphemeralDbUrl, runLocalPsqlQuery } from "./supabase-local-psql.mjs";
 
-const execFileAsync = promisify(execFile);
-const root = process.cwd();
-const supabaseCommand = process.platform === "win32" ? "npx.cmd" : "npx";
 const actionId = "00000000-0000-4000-8000-000000000014";
 const TERRITORIAL_REVISION_PATTERN = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}[+-]\d{2}:\d{2})$/;
 
@@ -20,44 +16,11 @@ export function parseTerritorialRevisionNotice(output) {
 }
 
 async function runQuery(sql, { timeoutMs = 30_000 } = {}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await execFileAsync(
-      supabaseCommand,
-      ["supabase", "db", "query", "--workdir", "apps/web", "--local", sql],
-      {
-        cwd: root,
-        shell: process.platform === "win32",
-        maxBuffer: 8 * 1024 * 1024,
-        signal: controller.signal,
-      },
-    );
-  } catch (error) {
-    const detail = [error?.stdout, error?.stderr, error?.message].filter(Boolean).join("\n");
-    throw new Error(`DB_SEMANTICS_NOT_EXECUTED: Territorial revision concurrency query failed.\n${detail}`);
-  } finally {
-    clearTimeout(timeout);
-  }
+  return runLocalPsqlQuery(sql, { timeoutMs, errorLabel: "Territorial revision concurrency query failed" });
 }
 
 async function assertEphemeralDestination() {
-  let result;
-  try {
-    result = await execFileAsync(
-      supabaseCommand,
-      ["supabase", "status", "--workdir", "apps/web", "--output", "json"],
-      { cwd: root, shell: process.platform === "win32", maxBuffer: 2 * 1024 * 1024 },
-    );
-  } catch (error) {
-    const detail = [error?.stdout, error?.stderr, error?.message].filter(Boolean).join("\n");
-    throw new Error(`DB_SEMANTICS_NOT_EXECUTED: ephemeral Supabase status is unavailable.\n${detail}`);
-  }
-  const start = result.stdout.indexOf("{");
-  if (start < 0) throw new Error("DB_SEMANTICS_NOT_EXECUTED: Supabase status did not return JSON.");
-  const status = JSON.parse(result.stdout.slice(start));
-  const apiUrl = new URL(status.API_URL ?? "");
-  assert.ok(apiUrl.hostname === "127.0.0.1" || apiUrl.hostname === "localhost", "Refusing a non-local PostgreSQL destination");
+  await resolveLocalEphemeralDbUrl();
 }
 
 const winner = (userId, fingerprint) => `jsonb_build_array(jsonb_build_object(

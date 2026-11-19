@@ -10,7 +10,7 @@ const correctionSql = readFileSync(
 );
 
 test("role attestation concurrency proof uses two local PostgreSQL sessions and cleanup", () => {
-  assert.match(source, /\["supabase", "db", "query", "--workdir", "apps\/web", "--local"/);
+  assert.match(source, /runLocalPsqlQuery/);
   assert.match(source, /for update/);
   assert.match(source, /pg_stat_activity/);
   assert.match(source, /ROLE_ATTESTATION_LOCK_HELD/);
