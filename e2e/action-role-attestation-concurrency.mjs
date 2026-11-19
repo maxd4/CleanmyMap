@@ -107,6 +107,8 @@ async function waitForDatabaseObservation(
 const setupSql = `
 begin;
 set local role postgres;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 delete from public.action_role_attestation_audit where action_id = '${actionId}'::uuid;
 delete from public.action_role_attestations where action_id = '${actionId}'::uuid;
 delete from public.action_field_role_assignments where action_id = '${actionId}'::uuid;
@@ -223,6 +225,8 @@ end $$;
 const cleanupSql = `
 begin;
 set local role postgres;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 delete from public.action_role_attestation_audit where action_id = '${actionId}'::uuid;
 delete from public.action_role_attestations where action_id = '${actionId}'::uuid;
 delete from public.action_field_role_assignments where action_id = '${actionId}'::uuid;
