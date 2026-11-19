@@ -49,7 +49,7 @@ select ok(public.spogomi_division_regulation_is_complete('bbbbbbbb-bbbb-4bbb-8bb
 select is((select count(*) from public.spogomi_environment_category_mappings where event_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' and division_id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' and environmental_category_slug = 'plastic'), 2::bigint, 'Casual keeps both of its own mappings');
 
 select throws_ok($$select * from public.spogomi_update_division_regulation(
-  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 1,
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2,
   'spogomi-mapping-coherence-pgtap', 'casual-v1', 'complete', 'synthetic://mapping-coherence/casual-v1',
   '{"rounding":{"decimals":0,"mode":"half_up"},"penalties":[],"eligibility":{"minimumPresentParticipants":1,"requiresAllCategories":true},"tiebreakers":["sporting_score"]}'::jsonb,
   '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb,
@@ -59,7 +59,7 @@ select throws_ok($$select * from public.spogomi_update_division_regulation(
 select ok(public.spogomi_division_regulation_is_complete('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'casual-v1'), 'a rejected slug does not alter the prior Casual configuration');
 
 select throws_ok($$select * from public.spogomi_update_division_regulation(
-  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 1,
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2,
   'spogomi-mapping-coherence-pgtap', 'casual-v1', 'complete', 'synthetic://mapping-coherence/casual-v1',
   '{"rounding":{"decimals":0,"mode":"half_up"},"penalties":[],"eligibility":{"minimumPresentParticipants":1,"requiresAllCategories":true},"tiebreakers":["sporting_score"]}'::jsonb,
   '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb,
@@ -69,7 +69,7 @@ select throws_ok($$select * from public.spogomi_update_division_regulation(
 select ok(public.spogomi_division_regulation_is_complete('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'casual-v1'), 'a rejected isMegots flag does not alter the prior Casual configuration');
 
 select throws_ok($$select * from public.spogomi_update_division_regulation(
-  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 1,
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2,
   'spogomi-mapping-coherence-pgtap', 'casual-v1', 'complete', 'synthetic://mapping-coherence/casual-v1',
   '{"rounding":{"decimals":0,"mode":"half_up"},"penalties":[],"eligibility":{"minimumPresentParticipants":1,"requiresAllCategories":true},"tiebreakers":["sporting_score"]}'::jsonb,
   '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb,
