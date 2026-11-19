@@ -55,7 +55,7 @@ function ActorSphereNode({
   const targetScale = isSelected ? 1.32 : isHovered ? 1.18 : 1.0;
 
   useFrame((_, delta) => {
-    if (!meshRef.current) return;
+    if (!meshRef.current?.scale) return;
     if (!animateMotion) {
       meshRef.current.scale.setScalar(targetScale);
       return;

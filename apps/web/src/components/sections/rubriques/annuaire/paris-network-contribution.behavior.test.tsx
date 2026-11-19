@@ -218,6 +218,19 @@ describe("ParisNetworkContributionCard behavior", () => {
     expect(container.textContent).toContain("Envoi impossible");
     expect(container.textContent).toContain("Erreur réseau simulée");
 
+    // Render English anonymous & authenticated states to cover i18n branches
+    useUserMock.mockReturnValue({ isLoaded: true, isSignedIn: false });
+    act(() => {
+      root.render(React.createElement(ParisNetworkContributionCard, { fr: false }));
+    });
+    expect(container.textContent).toContain("Sign in to contribute");
+
+    useUserMock.mockReturnValue({ isLoaded: true, isSignedIn: true });
+    act(() => {
+      root.render(React.createElement(ParisNetworkContributionCard, { fr: false }));
+    });
+    expect(container.textContent).toContain("Submit for review");
+
     act(() => {
       root.unmount();
     });
