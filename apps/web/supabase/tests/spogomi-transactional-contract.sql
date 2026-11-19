@@ -563,7 +563,7 @@ begin
     id, event_id, division_id, content_sha256, import_key, file_name, format,
     sheet_name, column_mapping, imported_by_clerk_id
   ) values (
-    v_other_import_id, v_event_id, v_division_id, repeat('1', 64),
+    v_other_import_id, v_event_id, v_division_id, repeat('2', 64),
     'synthetic-measurement-import-other-sheet', 'synthetic.xlsx', 'xlsx', 'Autre feuille',
     '{"team":"team-id","category":"category-id","value":"value-g"}'::jsonb,
     'spogomi-measurement-import-contract-owner'
