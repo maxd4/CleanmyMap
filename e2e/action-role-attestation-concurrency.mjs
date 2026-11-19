@@ -126,6 +126,7 @@ insert into public.action_participants (action_id, user_id, participation_status
 values ('${actionId}'::uuid, '${targetUserId}', 'confirmed', 'group_form');
 insert into public.action_field_role_assignments (action_id, user_id, role_code, assignment_status, assigned_by_clerk_id)
 values ('${actionId}'::uuid, '${targetUserId}', 'group_lead', 'active', '${reviewerId}');
+delete from public.app_notifications where user_id = '${targetUserId}' and payload ->> 'actionId' = '${actionId}';
 commit;
 begin;
 set local role service_role;
