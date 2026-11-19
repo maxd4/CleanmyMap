@@ -194,7 +194,7 @@
   "homepage": "https://github.com/maxd4/CleanMyMap#readme",
   "devDependencies": {
     "@aws-sdk/client-s3": "3.1173.0",
-    "@clerk/backend": "^3.26.1",
+    "@clerk/backend": "^3.29.0",
     "@clerk/testing": "2.2.50",
     "@playwright/test": "^1.64.1",
     "@stryker-mutator/core": "10.0.0",
