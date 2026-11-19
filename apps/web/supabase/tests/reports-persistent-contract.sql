@@ -162,7 +162,7 @@ begin
   begin
     insert into public.report_generation_pdf_shares (
       generation_id, artifact_id, created_by_clerk_id, theme,
-      renderer_version, token_hash, expires_at, created_at
+      renderer_version, token_hash, expires_at
     ) values (
       v_generation_id, v_artifact_id, 'reports-persistent-contract-owner',
       'impact', 'synthetic-renderer-v1', repeat('A', 64),
@@ -175,7 +175,7 @@ begin
   begin
     insert into public.report_generation_pdf_shares (
       generation_id, artifact_id, created_by_clerk_id, theme,
-      renderer_version, token_hash, expires_at
+      renderer_version, token_hash, expires_at, created_at
     ) values (
       v_generation_id, v_artifact_id, 'reports-persistent-contract-owner',
       'impact', 'synthetic-renderer-v1', repeat('b', 64),
