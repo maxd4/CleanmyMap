@@ -38,8 +38,8 @@ test("Node and Python generators use the locked coverage tools", () => {
   assert.equal(packageJson.devDependencies.c8, "12.0.0");
   const pythonRequirements = read("maintenance/python/requirements-dev.txt");
   const pythonLock = read("maintenance/python/requirements-lock.txt");
-  assert.match(pythonRequirements, /^coverage>=7\.16,<8$/m);
-  assert.match(pythonLock, /^coverage==7\.16\.2$/m);
+  assert.match(pythonRequirements, /^coverage>=7\.17\.2,<8$/m);
+  assert.match(pythonLock, /^coverage==7\.17\.2$/m);
 });
 
 test("SonarQube receives Web, mobile and Node LCOV plus Python coverage", () => {
