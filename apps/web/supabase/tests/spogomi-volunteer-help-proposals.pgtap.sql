@@ -67,7 +67,7 @@ begin
       v_event_id, 'help-requester', 'proposal-key-000001', 'Ada', 'Lovelace', 'ada' || '@example.test', null,
       'Accueil', 'Contenu modifié sous la même clé.', 'Organisation', 'Une cleanwalk.'
     );
-  exception when check_violation then
+  exception when invalid_parameter_value then
     v_idempotency_conflict := true;
   end;
   if not v_idempotency_conflict then raise exception 'changed idempotent replay was accepted'; end if;
