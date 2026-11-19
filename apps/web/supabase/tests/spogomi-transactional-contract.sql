@@ -241,7 +241,7 @@ begin
   );
   perform public.spogomi_ensure_parent_divisions(v_event_id, 'casual');
   insert into public.spogomi_teams (id, event_id, team_number, public_name, composition_state)
-  values (v_team_id, v_event_id, 1, 'Synthetic consolidation team', 'verified');
+  values (v_team_id, v_event_id, 1, 'Synthetic consolidation team', 'draft');
   insert into public.spogomi_participants (
     id, event_id, team_id, external_reference, registration_status, attendance_status
   ) values (
