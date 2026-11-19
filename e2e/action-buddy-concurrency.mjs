@@ -32,6 +32,8 @@ async function assertEphemeralDestination() {
 const cleanupSql = `
 begin;
 set local role postgres;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"action-buddy-concurrency-cleanup"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 delete from public.actions where id = '${actionId}'::uuid;
 delete from public.actions where id = '${sameRequestActionId}'::uuid;
 commit;
