@@ -276,9 +276,9 @@ select is(
   'the current contribution is labelled with the current projection version'
 );
 select ok(
-  (select (public.build_public_impact_action_contribution(a)).butts_mass_by_condition->'propre' @> '[{"conversionVersion":"cleanmymap-butts-volume-v2"}]'::jsonb
-   from public.actions a
-   where a.id = (select volume_action_id from scientific_projection_fixture)),
+  (select projected_lot_results @> '[{"volumeConversionFormulaVersion":"cleanmymap-butts-volume-v2"}]'::jsonb
+   from public.public_impact_action_cigarette_butt_projections
+   where action_id = (select volume_action_id from scientific_projection_fixture)),
   'the current volume conversion version is retained in provenance'
 );
 select is(
