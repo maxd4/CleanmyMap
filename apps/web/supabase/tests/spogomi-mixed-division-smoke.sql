@@ -280,7 +280,7 @@ begin
       from public.spogomi_event_change_history
      where event_id = v_event_id;
     perform public.spogomi_update_event_metadata(
-      v_event_id, 1, 'spogomi-db-smoke', 'invalid bounded Casual', 'SPOGOMI smoke', now(), null,
+      v_event_id, v_before_revision, 'spogomi-db-smoke', 'invalid bounded Casual', 'SPOGOMI smoke', now(), null,
       'mixed', '{"casual":{"minMembers":1,"maxMembers":1}}'::jsonb, 'private', 'hidden'
     );
     raise exception 'metadata RPC accepted a Casual bound smaller than an existing team';
@@ -295,11 +295,11 @@ begin
   end if;
 
   select public.spogomi_update_event_metadata(
-    v_event_id, 1, 'spogomi-db-smoke', 'SPOGOMI mixed visible', 'SPOGOMI smoke', now(), null,
+    v_event_id, v_before_revision, 'spogomi-db-smoke', 'SPOGOMI mixed visible', 'SPOGOMI smoke', now(), null,
     'mixed', '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb, 'published', 'hidden'
   ) into v_metadata;
   if v_metadata->>'mode' <> 'mixed' or v_metadata->>'public_visibility' <> 'published'
-     or (v_metadata->>'composition_revision')::bigint <> 1 then
+     or (v_metadata->>'composition_revision')::bigint <> v_before_revision then
     raise exception 'mixed visibility update did not preserve mode';
   end if;
 
