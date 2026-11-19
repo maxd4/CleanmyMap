@@ -11,6 +11,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PageHeader } from "@/components/ui/page-header";
+import { EngagementAttestationPdfSection } from "./engagement-attestation-pdf-section";
 import {
   EngagementParticipationSelector,
   EngagementPersonalFieldsForm,
@@ -351,6 +352,8 @@ export function EngagementDossierPage() {
               form={form}
               onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
             />
+
+            <EngagementAttestationPdfSection selectedItems={selectedFilteredItems} />
           </div>
         )}
       </CmmGridItem>

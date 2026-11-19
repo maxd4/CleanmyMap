@@ -175,6 +175,70 @@ describe("EngagementDossierPage", () => {
     );
   });
 
+  it("renders multiple organizations separately, keeps unknown structures non-signatory, and exposes the blank PDF download with instructions", async () => {
+    const multiOrgProjection = {
+      ...MOCK_PROJECTION,
+      participations: {
+        status: "available",
+        value: [
+          ...MOCK_PROJECTION.participations.value,
+          {
+            ...MOCK_PROJECTION.participations.value[0]!,
+            actionId: "action-2",
+            actionDate: "2026-06-01",
+            actionTitle: "Action Parc",
+            organization: {
+              status: "available",
+              value: {
+                organizationKey: "association:bercy",
+                name: "Association Bercy",
+                organizerType: "association",
+                organizerTypeLabel: "Association",
+                provenance: "organizer_name",
+              },
+              reason: null,
+            },
+          },
+          {
+            ...MOCK_PROJECTION.participations.value[0]!,
+            actionId: "action-3",
+            actionDate: "2026-06-15",
+            actionTitle: "Action Spontanée",
+            organization: {
+              status: "unavailable",
+              value: null,
+              reason: "communicable_organization_not_declared",
+            },
+          },
+        ],
+        reason: null,
+      },
+    };
+
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => multiOrgProjection,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await act(async () => {
+      root.render(<EngagementDossierPage />);
+    });
+
+    expect(container.textContent).toContain("Association Canal");
+    expect(container.textContent).toContain("Association Bercy");
+    expect(container.textContent).toContain("Structure organisatrice non documentée (1)");
+    expect(container.textContent).toContain("trois lignes d’actions");
+    expect(container.textContent).toContain("heures non vérifiées vides");
+
+    const pdfLink = container.querySelector<HTMLAnchorElement>(
+      'a[href="/documents/modele-attestation-benevolat-v2.pdf"]',
+    );
+    expect(pdfLink).not.toBeNull();
+    expect(pdfLink?.getAttribute("download")).toBe("modele_attestation_benevolat_v2.pdf");
+  });
+
   it("renders an explicit retryable error alert when the projection fails", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: false,

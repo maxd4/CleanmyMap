@@ -262,6 +262,20 @@ La réponse et l'export sont strictement owner-scoped
 `Cache-Control: private, no-store`, et ne persistent ni champs libres ni
 dossiers générés.
 
+Pour l'attestation associative papier/numérique à faire signer par chaque
+organisme, `/profil/engagement` regroupe les participations sélectionnées par
+structure documentée (les participations sans structure identifiée restent
+explicitement non rattachées à un signataire) et met à disposition le modèle
+officiel vierge versionné
+`apps/web/public/documents/modele-attestation-benevolat-v2.pdf`
+(`/documents/modele-attestation-benevolat-v2.pdf`, 1 page A4, AcroForm à 27
+champs texte remplissables, imprimables et enregistrables, vierge de toute
+signature ou validation CleanMyMap). Aucun service de signature électronique,
+d'import de document signé, de stockage administratif ou de génération PDF
+parallèle n'est activé. Le futur PDF narratif complet du dossier reste au statut
+`PLAN` et réutilisera la projection du lot 1 ainsi que le contenu éditorial du
+lot 2.
+
 La projection est réévaluée à la volée à chaque lecture, sans compteur ni copie
 concurrente des preuves :
 
