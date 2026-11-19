@@ -12,6 +12,8 @@ declare
   v_event_id uuid := gen_random_uuid();
   v_team_id uuid := gen_random_uuid();
   v_participant_id uuid := gen_random_uuid();
+  v_category_id uuid := gen_random_uuid();
+  v_item_id uuid := gen_random_uuid();
   v_submission_id uuid := gen_random_uuid();
   v_revision bigint;
 begin
@@ -219,6 +221,8 @@ declare
   v_event_id uuid := gen_random_uuid();
   v_team_id uuid := gen_random_uuid();
   v_participant_id uuid := gen_random_uuid();
+  v_category_id uuid := gen_random_uuid();
+  v_item_id uuid := gen_random_uuid();
   v_submission_id uuid := gen_random_uuid();
   v_snapshot jsonb;
   v_projection_a jsonb;
@@ -233,11 +237,14 @@ begin
           'Synthetic consolidation contract', 'pending');
   insert into public.spogomi_events (
     id, action_id, created_by_clerk_id, name, location_label, mode, state,
-    starts_at, regulation_version, regulation_status
+    starts_at, regulation_version, regulation_status, regulation_source_reference,
+    regulation_config
   ) values (
     v_event_id, v_action_id, 'spogomi-consolidation-contract-owner',
     'Synthetic consolidation event', 'Synthetic consolidation location',
-    'casual', 'draft', '2026-10-20T09:00:00+02:00', 'synthetic-v1', 'complete'
+    'casual', 'draft', '2026-10-20T09:00:00+02:00', 'synthetic-v1', 'complete',
+    'synthetic://consolidation-contract/v1',
+    '{"rounding":{"decimals":0,"mode":"half_up"},"penalties":[],"eligibility":{"minimumPresentParticipants":1,"requiresAllCategories":false},"tiebreakers":["sporting_score"]}'::jsonb
   );
   perform public.spogomi_ensure_parent_divisions(v_event_id, 'casual');
   insert into public.spogomi_teams (id, event_id, team_number, public_name, composition_state)
@@ -248,13 +255,32 @@ begin
     v_participant_id, v_event_id, v_team_id, 'synthetic-consolidation-ticket', 'registered', 'present'
   );
   update public.spogomi_events set state = 'judging' where id = v_event_id;
+  insert into public.spogomi_category_rules (
+    id, event_id, regulation_version, code, label, measurement_kind, unit,
+    coefficient, coefficient_status, is_complete
+  ) values (
+    v_category_id, v_event_id, 'synthetic-v1', 'plastic', 'Plastic', 'mass', 'g',
+    1, 'confirmed', true
+  );
   insert into public.spogomi_result_submissions (
     id, event_id, team_id, version, status, regulation_version,
-    submitted_by_clerk_id, submitted_at, certified_by_clerk_id, certified_at
+    submitted_by_clerk_id, submitted_at
   ) values (
-    v_submission_id, v_event_id, v_team_id, 1, 'certified', 'synthetic-v1',
-    'synthetic-team', now(), 'synthetic-referee', now()
+    v_submission_id, v_event_id, v_team_id, 1, 'provisional', 'synthetic-v1',
+    'synthetic-team', now()
   );
+  insert into public.spogomi_result_items (
+    id, event_id, submission_id, category_rule_id, measurement_kind, unit,
+    quantity, provenance, measurement_method
+  ) values (
+    v_item_id, v_event_id, v_submission_id, v_category_id, 'mass', 'g',
+    1250, 'synthetic scale', 'synthetic balance'
+  );
+  update public.spogomi_result_submissions
+     set status = 'certified',
+         certified_by_clerk_id = 'synthetic-referee',
+         certified_at = now()
+   where id = v_submission_id;
   update public.spogomi_teams
      set certified_submission_id = v_submission_id
    where id = v_team_id;
@@ -270,17 +296,20 @@ begin
       'organizerName', a.organizer_name, 'organizerType', a.organizer_type,
       'updatedAt', a.updated_at::text
     ),
-    'categories', '[]'::jsonb, 'mappings', '[]'::jsonb,
+    'categories', jsonb_build_array(jsonb_build_object('id', cr.id::text, 'updatedAt', cr.updated_at::text)),
+    'mappings', '[]'::jsonb,
     'teams', jsonb_build_array(jsonb_build_object('id', t.id::text, 'updatedAt', t.updated_at::text)),
     'submissions', jsonb_build_array(jsonb_build_object('id', s.id::text, 'updatedAt', s.updated_at::text)),
-    'items', '[]'::jsonb,
+    'items', jsonb_build_array(jsonb_build_object('id', ri.id::text, 'updatedAt', ri.updated_at::text)),
     'participants', jsonb_build_array(jsonb_build_object('id', p.id::text, 'updatedAt', p.updated_at::text)),
     'route', null
   ) into v_snapshot
   from public.spogomi_events e
   join public.actions a on a.id = e.action_id
+  join public.spogomi_category_rules cr on cr.id = v_category_id
   join public.spogomi_teams t on t.event_id = e.id
   join public.spogomi_result_submissions s on s.id = t.certified_submission_id
+  join public.spogomi_result_items ri on ri.id = v_item_id
   join public.spogomi_participants p on p.event_id = e.id
   where e.id = v_event_id;
 
