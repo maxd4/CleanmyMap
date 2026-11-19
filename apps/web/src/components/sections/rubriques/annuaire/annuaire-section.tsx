@@ -5,6 +5,8 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { AnnuaireFeaturedSection } from "./annuaire-featured-section";
 import { AnnuaireExplorationView } from "./annuaire-exploration-view";
+import { ParisNetwork3DSection } from "./paris-network-3d-section";
+import { ParisNetworkContributionCard } from "./paris-network-contribution-card";
 import { useAnnuaireLogic } from "./use-annuaire-logic";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
@@ -171,6 +173,12 @@ export function AnnuaireSection() {
             />
           </CmmSectionGroup>
         </motion.section>
+
+        {/* Dedicated Paris 3D Cleanwalk Network Section */}
+        <ParisNetwork3DSection fr={fr} />
+
+        {/* Citizen contribution block (moderated via /api/community/bug-reports) */}
+        <ParisNetworkContributionCard fr={fr} />
 
         {/* Final CTA - Institutional Premium */}
         <AnnuaireJoinCta fr={fr} />

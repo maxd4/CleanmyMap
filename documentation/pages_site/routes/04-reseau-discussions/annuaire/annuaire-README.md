@@ -12,6 +12,7 @@
 Cette fiche est l'index contractuel de la page. Elle ne duplique pas les détails de comportement :
 
 - [Présentation détaillée et fonctionnement actuel](./annuaire-presentation-detaillee.md)
+- [Contrat du réseau 3D des cleanwalks à Paris](../../../../features/paris-cleanwalk-network-3d.md)
 - [Propositions réellement restantes](./annuaire-liste-propositions-a-traiter.md)
 - [Objectifs hors périmètre](./annuaire-objectifs-non-pertinents.md)
 
@@ -20,8 +21,10 @@ Cette fiche est l'index contractuel de la page. Elle ne duplique pas les détail
 - `apps/web/src/lib/sections-registry/config.ts`
 - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
 - `apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx`
+- `apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-section.tsx`
 - `apps/web/src/components/sections/rubriques/annuaire/use-annuaire-logic.ts`
 - `apps/web/src/lib/partners/annuaire-types.ts`
+- `apps/web/src/lib/partners/paris-cleanwalk-network.ts`
 - `apps/web/src/lib/partners/published-annuaire-entries-store.ts`
 
 ## Contrat résumé

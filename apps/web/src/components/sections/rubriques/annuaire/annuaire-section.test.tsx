@@ -32,6 +32,14 @@ vi.mock("@/components/sections/rubriques/annuaire/annuaire-exploration-view", ()
   AnnuaireExplorationView: () => React.createElement("div"),
 }));
 
+vi.mock("@/components/sections/rubriques/annuaire/paris-network-3d-section", () => ({
+  ParisNetwork3DSection: () => React.createElement("div", { "data-testid": "paris-network-3d-section" }),
+}));
+
+vi.mock("@/components/sections/rubriques/annuaire/paris-network-contribution-card", () => ({
+  ParisNetworkContributionCard: () => React.createElement("div", { "data-testid": "paris-network-contribution-card" }),
+}));
+
 vi.mock("@/components/ui/cmm-button", () => ({
   CmmButton: ({
     href,
@@ -83,6 +91,12 @@ beforeEach(() => {
 });
 
 describe("AnnuaireSection partner onboarding CTA", () => {
+  it("composes the dedicated Paris 3D network section alongside the directory", () => {
+    const markup = renderToStaticMarkup(<AnnuaireSection />);
+    expect(markup).toContain('data-testid="paris-network-3d-section"');
+    expect(markup).toContain('data-testid="paris-network-contribution-card"');
+  });
+
   it("targets the canonical partner onboarding route", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
 

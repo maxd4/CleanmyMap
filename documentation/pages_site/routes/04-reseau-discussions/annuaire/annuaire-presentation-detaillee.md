@@ -126,6 +126,8 @@ collaboration, de partenariat, de co-organisation ou de relation opérationnelle
 Les positions visuelles des nœuds servent à la lisibilité du graphe et ne sont pas des
 coordonnées géographiques.
 
+En complément de la carte Leaflet et du graphe SVG, une section dédiée présente le **réseau 3D des cleanwalks à Paris** (`paris-network-3d-section.tsx`), alimenté par le registre éditorial sourcé `apps/web/src/lib/partners/paris-cleanwalk-network.ts` (voir le [contrat relationnel dédié](../../../../features/paris-cleanwalk-network-3d.md)). Il réutilise les identifiants canoniques de l'Annuaire lorsqu'ils existent, distingue organisateurs directs, coordinateurs de réseau et plateformes de publication (avec relations `publie_sur` distinctes de `action_commune`), n'affiche au repos que le nom des structures sur les sphères 3D et ouvre une bulle HTML contextuelle au survol, au clic ou au clavier (avec fermeture par `Échap`, sélection d'un autre nœud ou bouton dédié), suspend l'animation hors écran ou en mode `sobre` / `prefers-reduced-motion`, et bascule vers un repli HTML interactif complet si WebGL est indisponible. Sous cette visualisation, un bloc `« Aidez-nous à compléter ce réseau »` permet aux utilisateurs connectés d'envoyer des propositions modérées via `POST /api/community/bug-reports` (`reportType="idea"`, `source="feedback_section"`), sans jamais modifier automatiquement le graphe public.
+
 ## 6. Référencement et publication
 
 Le CTA `Référencer ma structure` ouvre `/partners/onboarding`. La soumission demande
