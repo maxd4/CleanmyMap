@@ -11,6 +11,7 @@ import {
   runSupabaseSqlProof,
   assertEphemeralSupabaseTestEnvironment,
   sanitizeProofFailureExcerpt,
+  sanitizePublicEvidenceText,
   supabaseNetworkArgs,
   pgtapCliPath,
   prioritizePaths,
@@ -475,4 +476,14 @@ test("destructive Supabase proofs require explicit local ephemeral authorization
     CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: "I_UNDERSTAND_EPHEMERAL_ONLY",
     SUPABASE_URL: "http://127.0.0.1:54321",
   }), true);
+});
+
+test("public evidence sanitization strips forbidden authentication/session vocabulary from markers and excerpts", () => {
+  const forbiddenPattern = /\b(?:authorization|cookie|set-cookie|bearer|storageState|access_token|refresh_token|session(?:_?id|_?token)?|clerk(?:_?session)?|supabase(?:_?service)?_?role)\b/i;
+  const rawMarker = "EXECUTED_DB_CONTRACT: optimistic individual-impact revision, partial PATCH, authorization withdrawal and two-session contract passed";
+  const sanitized = sanitizePublicEvidenceText(rawMarker);
+  assert.doesNotMatch(sanitized, forbiddenPattern);
+
+  const excerpt = sanitizeProofFailureExcerpt("ERROR: two-session authorization check failed for clerk_session");
+  assert.doesNotMatch(excerpt, forbiddenPattern);
 });

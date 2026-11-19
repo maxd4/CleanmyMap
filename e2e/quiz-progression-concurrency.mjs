@@ -28,7 +28,7 @@ declare
   v_ready boolean := false;
   v_attempt integer;
 begin
-  for v_attempt in 1..100 loop
+  for v_attempt in 1..200 loop
     if pg_try_advisory_lock(${otherKey}) then
       perform pg_advisory_unlock(${otherKey});
       perform pg_sleep(0.05);
@@ -40,6 +40,7 @@ begin
   if not v_ready then
     raise exception 'QUIZ_RPC_CONCURRENCY barrier timed out for ${participant}';
   end if;
+  perform pg_sleep(0.15);
   raise notice 'QUIZ_RPC_CONCURRENCY_READY=${participant} pid=%', pg_backend_pid();
 end;
 $$;
@@ -69,6 +70,7 @@ begin
   raise notice 'QUIZ_RPC_CONCURRENCY_RESULT=${participant} correct=% balanced=% inserted=%', v_result ->> 'correct_count', v_result ->> 'balanced_count', jsonb_array_length(v_result -> 'inserted_events');
 end;
 $$;
+select pg_sleep(0.2);
 select pg_advisory_unlock(${ownKey});
 commit;
 `;

@@ -143,7 +143,8 @@ select id from public.actions where id = '${actionId}'::uuid for update;
 do $$
 declare v_attempt integer;
 begin
-  for v_attempt in 1..100 loop
+  for v_attempt in 1..200 loop
+    perform pg_stat_clear_snapshot();
     if exists (
       select 1
         from pg_stat_activity

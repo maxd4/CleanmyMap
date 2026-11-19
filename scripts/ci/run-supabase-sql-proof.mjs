@@ -94,6 +94,11 @@ function parseSummaryCounter(output, label) {
 }
 
 const proofDiagnosticLine = /\b(?:not ok|error|fatal|panic|bail out|failed|result|files|tests|detail|context|hint|permission denied|forbidden|does not exist|violates|duplicate key|assertion|notests|container|network|image|manifest|pull|rate|toomanyrequests|connection|connect|dbi|psql|host|port|refused|timeout|no such|cannot|could not|invalid|usage)\b/i;
+const publicEvidenceForbiddenTerm = /\b(?:authorization|cookie|set-cookie|bearer|storageState|access_token|refresh_token|session(?:_?id|_?token)?|clerk(?:_?session)?|supabase(?:_?service)?_?role)\b/gi;
+
+export function sanitizePublicEvidenceText(value) {
+  return String(value ?? "").replace(publicEvidenceForbiddenTerm, "<redacted-term>");
+}
 
 export function sanitizeProofFailureExcerpt(output) {
   const lines = String(output ?? "")
@@ -104,12 +109,12 @@ export function sanitizeProofFailureExcerpt(output) {
       .trim())
     .filter((line) => line && proofDiagnosticLine.test(line));
   const selectedLines = [...new Set([...lines.slice(0, 6), ...lines.slice(-10)])]
-    .map((line) => line
+    .map((line) => sanitizePublicEvidenceText(line
       .replace(/\b(?:bearer|basic)\s+\S+/gi, "$1 <redacted>")
       .replace(/\b(?:token|password|secret|api[_-]?key|authorization|cookie|jwt|access[_-]?key)\b\s*[:=]\s*\S+/gi, "<redacted-secret>")
       .replace(/https?:\/\/\S+/gi, "<url>")
       .replace(/(?:\/home\/runner|\/github|\/workspace|[A-Za-z]:\\)\S*/g, "<path>")
-      .replace(/\b[0-9a-f]{32,}\b/gi, "<id>")
+      .replace(/\b[0-9a-f]{32,}\b/gi, "<id>"))
       .slice(0, 240));
   return selectedLines.join(" | ").slice(0, 1200) || "unavailable";
 }
@@ -464,13 +469,13 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
       } else if (record.category === "SQL_CONTRACT") {
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const marker = CONTRACT_MARKERS.get(record.path);
-        record.expectedMarker = marker;
+        record.expectedMarker = sanitizePublicEvidenceText(marker);
         try {
           validateSqlContractMarkerPlacement(sql, marker);
         } catch (error) {
           record.status = "DB_SEMANTICS_NOT_EXECUTED";
           record.outcome = "FAIL";
-          record.reason = error instanceof Error ? error.message : String(error);
+          record.reason = sanitizePublicEvidenceText(error instanceof Error ? error.message : String(error));
           throw new Error(`${record.path}: ${record.reason}`);
         }
         if (commandRunner === runCommand) {
@@ -482,13 +487,13 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
           : ["db", "query", "--workdir", "apps/web", "--local", ...networkArgs, sql];
         await runProof(record, sqlCommand, sqlArgs, (output) => {
           if (!output.includes(marker)) throw new Error("completion marker is absent from the PostgreSQL output");
-          return { marker };
+          return { marker: sanitizePublicEvidenceText(marker) };
         }, commandRunner);
       } else if (record.category === "MULTISESSION") {
         const expectedOutput = MULTISESSION_PROOFS.get(record.path);
         await runProof(record, process.execPath, [record.path], (output) => {
           if (!expectedOutput.test(output)) throw new Error("completion marker is absent from the multi-session output");
-          return { marker: expectedOutput.source };
+          return { marker: sanitizePublicEvidenceText(expectedOutput.source) };
         }, commandRunner);
       }
     }

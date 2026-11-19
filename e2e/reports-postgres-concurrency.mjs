@@ -56,7 +56,7 @@ declare
   v_ready boolean := false;
   v_attempt integer;
 begin
-  for v_attempt in 1..100 loop
+  for v_attempt in 1..200 loop
     if pg_try_advisory_lock(${otherKey}) then
       perform pg_advisory_unlock(${otherKey});
       perform pg_sleep(0.05);
@@ -68,6 +68,7 @@ begin
   if not v_ready then
     raise exception 'Reports concurrency barrier timed out for ${participant}';
   end if;
+  perform pg_sleep(0.15);
   raise notice 'REPORTS_CONCURRENCY_READY=${participant} pid=%', pg_backend_pid();
 end;
 $$;

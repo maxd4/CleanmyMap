@@ -13,6 +13,7 @@ test("role attestation concurrency proof uses two local PostgreSQL sessions and 
   assert.match(source, /runLocalPsqlQuery/);
   assert.match(source, /for update/);
   assert.match(source, /pg_stat_activity/);
+  assert.match(source, /perform pg_stat_clear_snapshot\(\);/);
   assert.match(source, /ROLE_ATTESTATION_LOCK_HELD/);
   assert.match(source, /ROLE_ATTESTATION_CORRECTION_WAITING/);
   assert.match(source, /wait_event_type = 'Lock'/);
