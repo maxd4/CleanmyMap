@@ -266,7 +266,7 @@ begin
     id, event_id, team_id, version, status, regulation_version,
     submitted_by_clerk_id, submitted_at
   ) values (
-    v_submission_id, v_event_id, v_team_id, 1, 'provisional', 'synthetic-v1',
+    v_submission_id, v_event_id, v_team_id, 1, 'draft', 'synthetic-v1',
     'synthetic-team', now()
   );
   insert into public.spogomi_result_items (
