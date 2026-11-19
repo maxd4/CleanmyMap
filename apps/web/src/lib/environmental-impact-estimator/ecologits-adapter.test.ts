@@ -98,6 +98,28 @@ describe("ecologits-adapter", () => {
     expect(cachedPrefill.itEnergyKwh).toBeLessThan(fullPrefill.itEnergyKwh);
   });
 
+  it("préserve la précision sur une très petite requête (1 token) et ne classe pas un zéro déclaré en MEASURED", () => {
+    const llama8b = requireAiModel("meta-llama/llama-3.1-8b-instruct");
+
+    const tiny = computeEcologitsCompatibleImpacts({
+      model: llama8b,
+      inputTokens: 0,
+      outputTokens: 1,
+      region: "US",
+    });
+    expect(tiny.itEnergyKwh).toBeGreaterThan(0);
+    expect(tiny.facilityEnergyKwh).toBeGreaterThan(0);
+
+    const declaredZero = computeEcologitsCompatibleImpacts({
+      model: llama8b,
+      inputTokens: 0,
+      outputTokens: 0,
+      region: "US",
+    });
+    expect(declaredZero.diagnostic).toBe("DOCUMENTED_MODEL");
+    expect(declaredZero.diagnostic).not.toBe("MEASURED");
+  });
+
   it("exclut les impacts incorporés cloud lors d'une exécution locale", () => {
     const llama8b = requireAiModel("meta-llama/llama-3.1-8b-instruct");
 

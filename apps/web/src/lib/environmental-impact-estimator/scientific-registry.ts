@@ -134,10 +134,10 @@ export const SCIENTIFIC_FACTOR_REGISTRY: readonly ScientificFactorRecord[] = [
   {
     id: "electricity-fr-rte-2024",
     version: "2024.1",
-    label: "Électricité — Mix moyen réseau métropolitain français (RTE)",
-    source: "RTE — Bilan électrique 2024",
+    label: "Électricité — Intensité moyenne directe de production réseau France (RTE)",
+    source: "RTE — Bilan électrique 2024 (émissions directes de production)",
     sourceUrls: [
-      "https://analysesetdonnees.rte-france.com/bilan-electrique-2024",
+      "https://analysesetdonnees.rte-france.com/bilan-electrique-2024/emissions",
     ],
     date: "2024",
     region: "FR",
@@ -145,11 +145,11 @@ export const SCIENTIFIC_FACTOR_REGISTRY: readonly ScientificFactorRecord[] = [
     unit: "kgCO2e/kWh",
     value: 0.0217,
     hypotheses: [
-      "Mix fortement décarboné (nucléaire + renouvelables).",
-      "Sert d'analyse de sensibilité pour des calculs d'infrastructures hébergées en France.",
+      "21,7 gCO₂e/kWh correspond à l'intensité moyenne des émissions directes de la production électrique en France (distincte de 30,2 gCO₂e/kWh en analyse de cycle de vie).",
+      "Ne constitue pas une mesure directe de l'électricité consommée par un data center donné : utilisé comme proxy régional d'analyse de sensibilité pour des infrastructures situées en France.",
     ],
-    proofStatus: "OBSERVED",
-    isProxy: false,
+    proofStatus: "PROXY",
+    isProxy: true,
   },
   {
     id: "water-indirect-datacenter-us-2024",
@@ -347,6 +347,19 @@ export function getScientificFactor(id: string, version?: string): ScientificFac
     );
   }
   return factor;
+}
+
+/**
+ * Récupère la valeur numérique garantie d'un facteur scientifique canonique.
+ */
+export function requireNumericScientificFactorValue(id: string, version?: string): number {
+  const factor = getScientificFactor(id, version);
+  if (typeof factor.value !== "number" || !Number.isFinite(factor.value)) {
+    throw new Error(
+      `Le facteur scientifique "${id}" ne possède pas de valeur numérique exploitable.`,
+    );
+  }
+  return factor.value;
 }
 
 /**

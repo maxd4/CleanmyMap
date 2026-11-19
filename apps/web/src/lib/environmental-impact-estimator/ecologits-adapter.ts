@@ -126,12 +126,20 @@ export const ECOLOGITS_CONSTANTS = {
   CACHE_ENERGY_DISCOUNT_FACTOR: 0.15,
 } as const;
 
-function round6(val: number): number {
-  return Math.round(val * 1_000_000) / 1_000_000;
+function roundPhysicalOutput(val: number): number {
+  if (!Number.isFinite(val) || val === 0) return 0;
+  if (Math.abs(val) >= 0.001) {
+    return Math.round(val * 1_000_000) / 1_000_000;
+  }
+  return Number(val.toPrecision(6));
 }
 
 function round12(val: number): number {
-  return Math.round(val * 1_000_000_000_000) / 1_000_000_000_000;
+  if (!Number.isFinite(val) || val === 0) return 0;
+  if (Math.abs(val) >= 1e-9) {
+    return Math.round(val * 1_000_000_000_000) / 1_000_000_000_000;
+  }
+  return Number(val.toPrecision(6));
 }
 
 export type EcologitsComputationParams = {
@@ -309,17 +317,17 @@ export function computeEcologitsCompatibleImpacts(
 
   const serverIdleKwh = serverIdlePowerKwPerGpu * (durationSeconds / 3600);
 
-  // Total Énergie IT
-  const itEnergyKwh = round6(gpuActiveKwh + serverIdleKwh);
+  // Total Énergie IT (précision flottante complète en interne)
+  const itEnergyKwhRaw = gpuActiveKwh + serverIdleKwh;
   // Total Énergie Data Center (avec PUE)
-  const facilityEnergyKwh = round6(itEnergyKwh * pue);
+  const facilityEnergyKwhRaw = itEnergyKwhRaw * pue;
 
   // 4. Émissions de GES opérationnelles (Scope 2 location-based)
   const electricityFactor = resolveElectricityFactorForRegion(params.region);
-  let operationalGwpKgCo2e: number | null = null;
+  let operationalGwpKgCo2eRaw: number | null = null;
 
   if (electricityFactor && electricityFactor.value !== null) {
-    operationalGwpKgCo2e = round6(facilityEnergyKwh * electricityFactor.value);
+    operationalGwpKgCo2eRaw = facilityEnergyKwhRaw * electricityFactor.value;
   } else {
     warnings.push(
       `Facteur carbone électrique non disponible pour la région '${params.region ?? "UNKNOWN"}'. Émissions opérationnelles classées non calculables (NA) conformément au principe d'intégrité.`,
@@ -329,9 +337,9 @@ export function computeEcologitsCompatibleImpacts(
   // 5. Impacts incorporés ACV (Embodied impacts GPU + Serveur)
   // Total serveur = 5700 kgCO2e serveur + 8 x 273 kgCO2e GPU = 7884 kgCO2e
   // Taux par seconde et par requête (avec batch size 64)
-  let embodiedGwpKgCo2e = 0;
-  let embodiedAdpeKgSbEq = 0;
-  let embodiedPeMj = 0;
+  let embodiedGwpKgCo2eRaw = 0;
+  let embodiedAdpeKgSbEqRaw = 0;
+  let embodiedPeMjRaw = 0;
 
   if (executionEnv === "cloud_api") {
     const totalServerGwp =
@@ -340,7 +348,7 @@ export function computeEcologitsCompatibleImpacts(
     const gwpRatePerSecondPerRequest =
       (totalServerGwp / ECOLOGITS_CONSTANTS.SERVER_GPUS / ECOLOGITS_CONSTANTS.HARDWARE_LIFESPAN_SECONDS) /
       ECOLOGITS_CONSTANTS.BATCH_SIZE;
-    embodiedGwpKgCo2e = round6(gwpRatePerSecondPerRequest * durationSeconds);
+    embodiedGwpKgCo2eRaw = gwpRatePerSecondPerRequest * durationSeconds;
 
     const totalServerAdpe =
       ECOLOGITS_CONSTANTS.SERVER_EMBODIED_ADPE_KG +
@@ -348,7 +356,7 @@ export function computeEcologitsCompatibleImpacts(
     const adpeRatePerSecondPerRequest =
       (totalServerAdpe / ECOLOGITS_CONSTANTS.SERVER_GPUS / ECOLOGITS_CONSTANTS.HARDWARE_LIFESPAN_SECONDS) /
       ECOLOGITS_CONSTANTS.BATCH_SIZE;
-    embodiedAdpeKgSbEq = round12(adpeRatePerSecondPerRequest * durationSeconds);
+    embodiedAdpeKgSbEqRaw = adpeRatePerSecondPerRequest * durationSeconds;
 
     const totalServerPe =
       ECOLOGITS_CONSTANTS.SERVER_EMBODIED_PE_MJ +
@@ -356,7 +364,7 @@ export function computeEcologitsCompatibleImpacts(
     const peRatePerSecondPerRequest =
       (totalServerPe / ECOLOGITS_CONSTANTS.SERVER_GPUS / ECOLOGITS_CONSTANTS.HARDWARE_LIFESPAN_SECONDS) /
       ECOLOGITS_CONSTANTS.BATCH_SIZE;
-    embodiedPeMj = round6(peRatePerSecondPerRequest * durationSeconds);
+    embodiedPeMjRaw = peRatePerSecondPerRequest * durationSeconds;
   } else {
     notes.push(
       "Exécution locale sur matériel personnel : l'impact incorporé cloud n'est pas appliqué (matériel propre de l'utilisateur).",
@@ -364,24 +372,24 @@ export function computeEcologitsCompatibleImpacts(
   }
 
   // Total GWP ACV
-  const totalGwpKgCo2e =
-    operationalGwpKgCo2e !== null ? round6(operationalGwpKgCo2e + embodiedGwpKgCo2e) : null;
+  const totalGwpKgCo2eRaw =
+    operationalGwpKgCo2eRaw !== null ? operationalGwpKgCo2eRaw + embodiedGwpKgCo2eRaw : null;
 
   // 6. Eau (WCF : directe et indirecte)
-  let directWaterLiters: number | null = null;
-  let indirectWaterLiters: number | null = null;
-  let totalWaterLiters: number | null = null;
+  let directWaterLitersRaw: number | null = null;
+  let indirectWaterLitersRaw: number | null = null;
+  let totalWaterLitersRaw: number | null = null;
 
   // Eau directe sur site (refroidissement par évaporation)
   if (typeof params.datacenterWue === "number" && params.datacenterWue >= 0) {
-    directWaterLiters = round6(facilityEnergyKwh * params.datacenterWue);
+    directWaterLitersRaw = facilityEnergyKwhRaw * params.datacenterWue;
   }
 
   // Eau indirecte (cycle amont de la production d'électricité)
   if (params.region === "US") {
     const usWaterFactor = getScientificFactor("water-indirect-datacenter-us-2024");
     if (usWaterFactor.value !== null) {
-      indirectWaterLiters = round6(facilityEnergyKwh * usWaterFactor.value);
+      indirectWaterLitersRaw = facilityEnergyKwhRaw * usWaterFactor.value;
     }
   } else if (params.region && params.region !== "UNKNOWN") {
     notes.push(
@@ -389,37 +397,45 @@ export function computeEcologitsCompatibleImpacts(
     );
   }
 
-  if (directWaterLiters !== null && indirectWaterLiters !== null) {
-    totalWaterLiters = round6(directWaterLiters + indirectWaterLiters);
-  } else if (directWaterLiters !== null) {
-    totalWaterLiters = directWaterLiters;
-  } else if (indirectWaterLiters !== null) {
-    totalWaterLiters = indirectWaterLiters;
+  if (directWaterLitersRaw !== null && indirectWaterLitersRaw !== null) {
+    totalWaterLitersRaw = directWaterLitersRaw + indirectWaterLitersRaw;
+  } else if (directWaterLitersRaw !== null) {
+    totalWaterLitersRaw = directWaterLitersRaw;
+  } else if (indirectWaterLitersRaw !== null) {
+    totalWaterLitersRaw = indirectWaterLitersRaw;
   }
 
-  // Diagnostic déterministe de qualité des données
+  // Diagnostic déterministe de qualité des données (un zéro déclaré n'est jamais une mesure physique)
   let diagnostic: EnvironmentalDataQualityDiagnostic = "NOT_CALCULABLE";
-  if (outputTokens === 0 && uncachedInputTokens === 0) {
-    diagnostic = "MEASURED";
-  } else if (operationalGwpKgCo2e !== null && params.model?.architecture.totalParametersBillion) {
+  if (outputTokens === 0 && uncachedInputTokens === 0 && cachedTokens === 0) {
+    notes.push(
+      "Activité texte déclarée à zéro (sans mesure électrique directe aux bornes) : le zéro résulte d'une déclaration utilisateur.",
+    );
+  }
+
+  if (operationalGwpKgCo2eRaw !== null && params.model?.architecture.totalParametersBillion) {
     diagnostic = "DOCUMENTED_MODEL";
-  } else if (operationalGwpKgCo2e !== null) {
+  } else if (operationalGwpKgCo2eRaw !== null) {
     diagnostic = "PROXY_SCENARIO";
   } else {
     diagnostic = "NOT_CALCULABLE";
   }
 
   return {
-    itEnergyKwh,
-    facilityEnergyKwh,
-    operationalGwpKgCo2e,
-    embodiedGwpKgCo2e,
-    totalGwpKgCo2e,
-    directWaterLiters,
-    indirectWaterLiters,
-    totalWaterLiters,
-    embodiedAdpeKgSbEq,
-    embodiedPeMj,
+    itEnergyKwh: roundPhysicalOutput(itEnergyKwhRaw),
+    facilityEnergyKwh: roundPhysicalOutput(facilityEnergyKwhRaw),
+    operationalGwpKgCo2e:
+      operationalGwpKgCo2eRaw !== null ? roundPhysicalOutput(operationalGwpKgCo2eRaw) : null,
+    embodiedGwpKgCo2e: roundPhysicalOutput(embodiedGwpKgCo2eRaw),
+    totalGwpKgCo2e: totalGwpKgCo2eRaw !== null ? roundPhysicalOutput(totalGwpKgCo2eRaw) : null,
+    directWaterLiters:
+      directWaterLitersRaw !== null ? roundPhysicalOutput(directWaterLitersRaw) : null,
+    indirectWaterLiters:
+      indirectWaterLitersRaw !== null ? roundPhysicalOutput(indirectWaterLitersRaw) : null,
+    totalWaterLiters:
+      totalWaterLitersRaw !== null ? roundPhysicalOutput(totalWaterLitersRaw) : null,
+    embodiedAdpeKgSbEq: round12(embodiedAdpeKgSbEqRaw),
+    embodiedPeMj: roundPhysicalOutput(embodiedPeMjRaw),
     diagnostic,
     notes,
     warnings,

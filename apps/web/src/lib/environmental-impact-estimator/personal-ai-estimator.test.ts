@@ -129,15 +129,45 @@ describe("personal-ai-estimator", () => {
     expect(result.modalities.video.activityCount).toBe(120);
     expect(result.modalities.video.energyKwh).toBeNull();
     expect(result.modalities.video.qualityDiagnostic).toBe("NOT_CALCULABLE");
+
+    // Couverture partielle signalée explicitement
+    expect(result.modalityCoverage.status).toBe("PARTIAL_MULTIMODAL");
+    expect(result.modalityCoverage.coversAllDeclaredActivity).toBe(false);
+    expect(result.modalityCoverage.calculableModalities).toEqual(["text"]);
+    expect(result.modalityCoverage.nonCalculableDeclaredModalities).toEqual([
+      "image",
+      "audio",
+      "video",
+    ]);
+    expect(result.dataQuality).toBe("NOT_CALCULABLE");
+    expect(result.modalities.text.qualityDiagnostic).toBe("PROXY_SCENARIO");
+    expect(
+      result.methodologyNotes.some((n) => n.includes("Couverture partielle")),
+    ).toBe(true);
   });
 
-  it("gère l'absence d'activité et l'activité zéro", () => {
-    const zeroResult = estimatePersonalAiFootprint({
+  it("gère l'absence d'activité et l'activité zéro sans classer un zéro déclaré comme MEASURED", () => {
+    const zeroUnknownResult = estimatePersonalAiFootprint({
       textUsage: { totalTokens: 0 },
     });
-    expect(zeroResult.physicalTotals.itEnergyKwh).toBe(0);
-    expect(zeroResult.physicalTotals.operationalKgCo2e).toBe(0);
-    expect(zeroResult.dataQuality).toBe("MEASURED");
+    expect(zeroUnknownResult.physicalTotals.itEnergyKwh).toBe(0);
+    expect(zeroUnknownResult.physicalTotals.operationalKgCo2e).toBeNull();
+    expect(zeroUnknownResult.dataQuality).toBe("NOT_CALCULABLE");
+
+    const zeroUsResult = estimatePersonalAiFootprint({
+      textUsage: { totalTokens: 0 },
+      region: "US",
+    });
+    expect(zeroUsResult.physicalTotals.itEnergyKwh).toBe(0);
+    expect(zeroUsResult.physicalTotals.operationalKgCo2e).toBe(0);
+    expect(zeroUsResult.dataQuality).toBe("PROXY_SCENARIO");
+    expect(zeroUsResult.dataQuality).not.toBe("MEASURED");
+
+    const measuredZeroResult = estimatePersonalAiFootprint({
+      measuredEnergyKwh: 0,
+      region: "US",
+    });
+    expect(measuredZeroResult.dataQuality).toBe("MEASURED");
 
     const emptyResult = estimatePersonalAiFootprint({});
     expect(emptyResult.physicalTotals.itEnergyKwh).toBeNull();
@@ -256,6 +286,88 @@ describe("personal-ai-estimator", () => {
     expect(result.executionEnvironment).toBe("local_device");
     expect(result.pue).toBe(1.0); // aucun surcoût de refroidissement data center
     expect(result.physicalTotals.embodiedKgCo2e).toBe(0); // pas d'amortissement serveur cloud
+  });
+
+  it("rejette les entrées invalides, non finies, négatives, non entières ou contradictoires", () => {
+    expect(() =>
+      estimatePersonalAiFootprint({ textUsage: { totalTokens: 100 }, pue: Infinity }),
+    ).toThrow(/pue/);
+    expect(() =>
+      estimatePersonalAiFootprint({ textUsage: { totalTokens: 100 }, pue: 0.9 }),
+    ).toThrow(/pue/);
+    expect(() =>
+      estimatePersonalAiFootprint({ textUsage: { totalTokens: 100 }, pue: 6.0 }),
+    ).toThrow(/pue/);
+    expect(() =>
+      estimatePersonalAiFootprint({ imageUsage: { imageCount: -1 } }),
+    ).toThrow(/imageCount/);
+    expect(() =>
+      estimatePersonalAiFootprint({ imageUsage: { imageCount: 2.5 } }),
+    ).toThrow(/imageCount/);
+    expect(() =>
+      estimatePersonalAiFootprint({ textUsage: { totalTokens: 10.5 } }),
+    ).toThrow(/totalTokens/);
+    expect(() =>
+      estimatePersonalAiFootprint({ audioUsage: { durationMinutes: -5 } }),
+    ).toThrow(/durationMinutes/);
+    expect(() =>
+      estimatePersonalAiFootprint({
+        textUsage: { totalTokens: 100, inputTokens: 80, outputTokens: 50 },
+      }),
+    ).toThrow(/totalTokens/);
+    expect(() =>
+      estimatePersonalAiFootprint({
+        textUsage: { inputTokens: 100, cachedTokens: 120 },
+      }),
+    ).toThrow(/cachedTokens/);
+    expect(() =>
+      estimatePersonalAiFootprint({
+        textUsage: { outputTokens: 100, reasoningTokensIncluded: 120 },
+      }),
+    ).toThrow(/reasoningTokensIncluded/);
+  });
+
+  it("préserve la précision interne pour de très faibles volumes de tokens non nuls", () => {
+    const result = estimatePersonalAiFootprint({
+      textUsage: { totalTokens: 1 },
+      energyScenario: "central",
+      region: "US",
+      pue: 1.15,
+    });
+
+    expect(result.physicalTotals.itEnergyKwh).toBeGreaterThan(0);
+    expect(result.physicalTotals.facilityEnergyKwh).toBeGreaterThan(0);
+    expect(result.physicalTotals.operationalKgCo2e).toBeGreaterThan(0);
+    expect(result.physicalTotals.indirectWaterLiters).toBeGreaterThan(0);
+  });
+
+  it("évalue honnêtement les règles anti-double-comptage et leurs limites externes", () => {
+    const frResult = estimatePersonalAiFootprint({
+      textUsage: { totalTokens: 1_000_000 },
+      region: "FR",
+    });
+    expect(frResult.antiDoubleCountingCompliance.verifiedRules).toContain(
+      "NO_IT_FACILITY_DOUBLE_COUNT",
+    );
+    expect(frResult.antiDoubleCountingCompliance.notApplicableRules).toContain(
+      "NO_WATER_DOUBLE_COUNT",
+    );
+    expect(frResult.antiDoubleCountingCompliance.unverifiableLimits).toContain(
+      "NO_CROSS_SCOPE_DOUBLE_COUNT",
+    );
+    expect(frResult.antiDoubleCountingCompliance.verifiedRules).not.toContain(
+      "NO_CROSS_SCOPE_DOUBLE_COUNT",
+    );
+
+    const usWithWue = estimatePersonalAiFootprint({
+      modelId: "meta-llama/llama-3.1-8b-instruct",
+      textUsage: { inputTokens: 10_000, outputTokens: 5_000 },
+      region: "US",
+      datacenterWue: 0.5,
+    });
+    expect(usWithWue.antiDoubleCountingCompliance.unverifiableLimits).toContain(
+      "NO_WATER_DOUBLE_COUNT",
+    );
   });
 });
 

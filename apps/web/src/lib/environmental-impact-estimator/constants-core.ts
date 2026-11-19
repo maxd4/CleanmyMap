@@ -1,37 +1,44 @@
 import type { EnvironmentalImpactProjectAnchor } from "./types-project";
+import {
+  getScientificFactor,
+  requireNumericScientificFactorValue,
+} from "./scientific-registry";
 
 export const ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION =
   "environmental-impact-estimator-2026.05-v1";
 
+const CANONICAL_US_ELECTRICITY_FACTOR = getScientificFactor(
+  "electricity-us-egrid-2024",
+);
+const CANONICAL_US_WATER_FACTOR = getScientificFactor(
+  "water-indirect-datacenter-us-2024",
+);
+
 /**
  * Default location-based electricity factor for infrastructure mainly hosted
- * in the United States. Canonically registered as 'electricity-us-egrid-2024'
- * in SCIENTIFIC_FACTOR_REGISTRY. It is a configuration anchor, not a measurement of
- * CleanMyMap's actual provider mix. Replace it when a provider region or a
- * measured electricity signal is available.
+ * in the United States. Derived directly from the canonical registry entry
+ * 'electricity-us-egrid-2024' in SCIENTIFIC_FACTOR_REGISTRY. Replace it when
+ * a provider region or a measured electricity signal is available.
  */
 export const ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR = {
-  kgCo2ePerKwh: 0.35,
+  kgCo2ePerKwh: requireNumericScientificFactorValue("electricity-us-egrid-2024"),
   region: "Serveurs majoritairement américains",
-  sourceLabel: "EPA eGRID / EIA",
-  sourceUrls: [
-    "https://www.epa.gov/egrid",
-    "https://www.eia.gov/tools/faqs/faq.php?id=74&t=11",
-  ],
+  sourceLabel: CANONICAL_US_ELECTRICITY_FACTOR.source,
+  sourceUrls: CANONICAL_US_ELECTRICITY_FACTOR.sourceUrls,
 } as const;
 
 /**
  * Configurable U.S. average proxy for indirect water consumption associated
- * with electricity used by data centers. Canonically registered as 'water-indirect-datacenter-us-2024'
- * in SCIENTIFIC_FACTOR_REGISTRY. Replace it with a location-specific
- * factor when the provider/grid location is known.
+ * with electricity used by data centers. Derived directly from the canonical
+ * registry entry 'water-indirect-datacenter-us-2024' in SCIENTIFIC_FACTOR_REGISTRY.
+ * Replace it with a location-specific factor when the provider/grid location is known.
  */
 export const ENVIRONMENTAL_IMPACT_WATER_FACTOR = {
-  litersPerKwh: 4.52,
+  litersPerKwh: requireNumericScientificFactorValue("water-indirect-datacenter-us-2024"),
   region: "Électricité associée à des data centers américains",
-  sourceLabel: "LBNL — 2024 United States Data Center Energy Usage Report",
-  sourceUrl: "https://doi.org/10.71468/P1WC7Q",
-  isProxy: true,
+  sourceLabel: CANONICAL_US_WATER_FACTOR.source,
+  sourceUrl: CANONICAL_US_WATER_FACTOR.sourceUrls[0],
+  isProxy: CANONICAL_US_WATER_FACTOR.isProxy,
 } as const;
 
 export const ENVIRONMENTAL_IMPACT_CO2E_COMPOSITION_NOTE =

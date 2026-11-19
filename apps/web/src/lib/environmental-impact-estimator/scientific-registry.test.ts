@@ -45,7 +45,13 @@ describe("scientific-registry", () => {
     expect(frElec.value).toBe(0.0217);
     expect(frElec.unit).toBe("kgCO2e/kWh");
     expect(frElec.region).toBe("FR");
-    expect(frElec.proofStatus).toBe("OBSERVED");
+    expect(frElec.proofStatus).toBe("PROXY");
+    expect(frElec.isProxy).toBe(true);
+    expect(frElec.sourceUrls).toContain(
+      "https://analysesetdonnees.rte-france.com/bilan-electrique-2024/emissions",
+    );
+    expect(frElec.hypotheses.join(" ")).toContain("21,7 gCO₂e/kWh");
+    expect(frElec.hypotheses.join(" ")).toContain("30,2 gCO₂e/kWh");
 
     const usWater = getScientificFactor("water-indirect-datacenter-us-2024");
     expect(usWater.value).toBe(4.52);

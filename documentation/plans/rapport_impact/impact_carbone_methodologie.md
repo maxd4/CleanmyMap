@@ -91,13 +91,13 @@ Référence complémentaire sur la limite planétaire Freshwater Change: [Stockh
 
 ## Convergence scientifique des estimateurs (CleanMyMap et « Mon empreinte IA »)
 
-Pour assurer la cohérence méthodologique sans fusionner des réalités comptables distinctes, l'estimateur environnemental existant (`environmental-impact-estimator`) et le module « Mon empreinte IA » (`personal-ai-estimator`) partagent un registre canonique de facteurs versionnés (`scientific-registry.ts`).
+Pour assurer la cohérence méthodologique sans fusionner des réalités comptables distinctes, l'estimateur environnemental existant (`environmental-impact-estimator`, via `constants-core.ts` dérivé du registre) et le module « Mon empreinte IA » (`personal-ai-estimator`) partagent une source unique canonique de facteurs versionnés (`scientific-registry.ts`).
 
 ### 1. Registre canonique des facteurs versionnés
 
 Le registre centralise les facteurs, leur version, leur région, leur périmètre, leur unité, leurs hypothèses et leur statut de preuve (`OBSERVED`, `DERIVED`, `DECLARED`, `ASSUMPTION`, `PROXY`, `NA`) :
 - `electricity-us-egrid-2024` (v2024.1) : `0,35 kgCO₂e/kWh` (EPA eGRID / EIA, région US, `PROXY`) ;
-- `electricity-fr-rte-2024` (v2024.1) : `0,0217 kgCO₂e/kWh` (RTE Bilan 2024, région FR, `OBSERVED`) ;
+- `electricity-fr-rte-2024` (v2024.1) : `0,0217 kgCO₂e/kWh` (`21,7 gCO₂e/kWh`, RTE Bilan électrique 2024 — intensité moyenne des émissions directes de production, distincte de `30,2 gCO₂e/kWh` en ACV ; utilisé comme proxy régional d'analyse de sensibilité, région FR, `PROXY`) ;
 - `water-indirect-datacenter-us-2024` (v2024.1) : `4,52 L/kWh` (LBNL 2024, région US, `PROXY`) ;
 - `ai-inference-energy-scenario-low-v1` : `0,06 kWh/million_tokens` (scénario bas, `ASSUMPTION`) ;
 - `ai-inference-energy-scenario-central-v1` : `0,30 kWh/million_tokens` (scénario central, `ASSUMPTION`) ;

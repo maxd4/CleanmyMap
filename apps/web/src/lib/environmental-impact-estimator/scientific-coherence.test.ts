@@ -130,8 +130,11 @@ describe("scientific estimator coherence", () => {
 
     const canonElec = getScientificFactor("electricity-us-egrid-2024");
     expect(ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR.kgCo2ePerKwh).toBe(canonElec.value);
+    expect(ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR.sourceUrls).toEqual(canonElec.sourceUrls);
 
     const canonWater = getScientificFactor("water-indirect-datacenter-us-2024");
     expect(ENVIRONMENTAL_IMPACT_WATER_FACTOR.litersPerKwh).toBe(canonWater.value);
+    expect(ENVIRONMENTAL_IMPACT_WATER_FACTOR.sourceUrl).toBe(canonWater.sourceUrls[0]);
+    expect(ENVIRONMENTAL_IMPACT_WATER_FACTOR.isProxy).toBe(canonWater.isProxy);
   });
 });
