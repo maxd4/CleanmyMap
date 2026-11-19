@@ -248,6 +248,49 @@ un même état, et insère la notification `action_event` de décision dans la
 même transaction. La clé de révision déduplique les messages. Un changement
 ultérieur d'organisateur ne réécrit pas les instantanés historiques.
 
+### Projection personnelle des preuves d'engagement (éco-citoyenneté et insertion)
+
+Tout membre authentifié peut lire la projection server-only de ses engagements
+bénévoles documentés via `GET /api/account/engagement-proofs`
+(`apps/web/src/lib/actions/engagement-proof-projection.ts`), indépendamment de
+Brigade Verte et de SPOGOMI. La réponse est strictement owner-scoped
+(`requireActionRequestAccess`, refus `403` de tout `userId` tiers) et servie en
+`Cache-Control: private, no-store`.
+
+La projection est réévaluée à la volée à chaque lecture, sans compteur ni copie
+concurrente des preuves :
+
+- **Sources canoniques et déduplication** : la présence finale provient
+  exclusivement de `action_participants.participation_status = confirmed`,
+  dédupliquée par `action_id` sur les seules actions communicables finalisées
+  (`status = approved`, `action_phase = post_action_complete`, `published_at`
+  non nul, `cancelled_at` nul, `moderation_visibility != hidden`,
+  `data_provenance != test`, `access_mode` public hors `invite_link`). Les
+  missions attestées proviennent de
+  `action_role_attestations.verification_status = confirmed` (avec concordance
+  de l'instantané `targetOrganizer` pour `organizer_primary` et `coorganizer`)
+  et, uniquement lorsque l'équivalence est démontrée sur la même action
+  (`spogomi_events.state = certified` et `public_visibility = published`,
+  `spogomi_participants.account_link_status = verified` et
+  `attendance_status = present`, `spogomi_recognition_attestations.status = certified`
+  avec `evidence_reference` non vide), des attestations SPOGOMI rattachées sans
+  multiplier la présence.
+- **Exclusions et distinctions explicites** : les inscriptions seules
+  (`action_registrations`), rôles prévus (`action_field_role_assignments`),
+  claims ou attestations `pending`/`rejected`, actions simulées, annulées,
+  masquées ou privées sont exclus. Les missions d'accompagnement, de
+  sensibilisation, de sécurité ou de logistique sont restituées lorsqu'elles
+  sont attestées, sans attribution fictive de collecte
+  (`collectionAttributed = false`) ni revendication de compétence certifiée
+  (`skillsCertificationClaimed = false`). La réponse distingue explicitement
+  présence confirmée, mission attestée, heures vérifiées (`status = unavailable`,
+  `totalHours = null` — jamais déduites de `actions.duration_minutes`),
+  déclarations personnelles et résultats collectifs. Toute donnée absente ou en
+  erreur conserve son état `unavailable` ou `error` (`503`) sans être convertie
+  en zéro. Aucune donnée de statut migratoire, nationalité, situation
+  administrative, motif de dossier ou identité d'autres participants/reviewers
+  n'est collectée ni exposée.
+
 - Verifier que le bouton de join est visible sur les surfaces ciblees.
 - Verifier qu'une inscription future, même confirmée, ne remonte pas dans les statistiques ni la gamification.
 - Verifier qu'une demande en attente peut etre annulée par son auteur.

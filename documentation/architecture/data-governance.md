@@ -221,6 +221,20 @@ table métier parallèle. `duration_minutes` décrit l'action de dépollution,
 tandis que `event_start_time`/`event_end_time` décrivent le créneau global ;
 leurs dérivés restent indisponibles si les heures sont absentes ou incohérentes.
 
+La projection personnelle des preuves d'engagement bénévole
+(`apps/web/src/lib/actions/engagement-proof-projection.ts`, exposée par
+`GET /api/account/engagement-proofs` en `private, no-store`) relit à la volée,
+pour le seul compte authentifié, `action_participants` (`confirmed`),
+`action_role_attestations` (`confirmed`), `public.actions` finalisées publiques
+hors `data_provenance = test` et, uniquement sous contrat d'équivalence
+certifiée, les attestations SPOGOMI reliées au même `action_id`. Elle ne crée
+aucune table, compteur ou copie persistée, déduplique la présence par
+`action_id`, sépare présence confirmée, missions attestées, heures individuelles
+vérifiées (`unavailable` / `null`, jamais déduites de `duration_minutes`),
+déclarations personnelles et résultats collectifs, et ne collecte ni n'expose
+aucune donnée de nationalité, statut migratoire, situation administrative, motif
+de dossier ou identité de tiers.
+
 ### Provenance des actions et éligibilité publique
 
 `actions.data_provenance` est le marqueur technique canonique, non éditable par

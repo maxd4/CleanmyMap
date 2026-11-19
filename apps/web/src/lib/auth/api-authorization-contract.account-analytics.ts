@@ -72,6 +72,19 @@ export const accountAnalyticsAuthorizationContract = {
       evidence: ["getSafeAuthSession", "userId", "listPromotionRequestsForUser"],
     },
   },
+  "account/engagement-proofs": {
+    GET: {
+      expected: "Authenticated current account reads only its own live-evaluated personal engagement proof projection with no-store privacy",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess scopes the read to access.userId, rejects any foreign userId parameter with 403, enforces authenticated rate limit, and loads the live projection via loadPersonalEngagementProofProjection",
+      evidence: [
+        "requireActionRequestAccess",
+        "enforceServerRateLimitForAuthenticatedUser",
+        "access.userId",
+        "loadPersonalEngagementProofProjection",
+      ],
+    },
+  },
   "analytics/funnel": {
     POST: {
       expected: "Public-safe validated funnel ingestion with optional current-user attribution",
