@@ -18,7 +18,8 @@ export type TerritoryAdminLevel =
   | "oif_member"
   | "oif_associate"
   | "oif_observer"
-  | "oif_subdivision";
+  | "oif_subdivision"
+  | "subdivision_francophone";
 
 export type OifMembershipStatus = "membre" | "associe" | "observateur";
 

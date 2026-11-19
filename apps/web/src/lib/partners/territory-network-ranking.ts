@@ -112,10 +112,14 @@ export function resolveTerritoryFromLocationSelection(
     return frenchMatch ?? null;
   }
 
-  // Foreign country: match OIF subdivision first, then OIF country code; never infer a French region.
+  // Foreign country: match OIF subdivision or Francophone subdivision first, then OIF country code; never infer a French region.
   const adminCode = selection.administrativeCode?.trim().toUpperCase() ?? "";
   if (adminCode) {
-    const subMatch = byId.get(`OIF:${adminCode}`) ?? byId.get(`OIF:${selection.country}-${adminCode}`);
+    const subMatch =
+      byId.get(`OIF:${adminCode}`) ??
+      byId.get(`OIF:${selection.country}-${adminCode}`) ??
+      byId.get(`SUB:${adminCode}`) ??
+      byId.get(`SUB:${selection.country}-${adminCode}`);
     if (subMatch) {
       return subMatch;
     }
@@ -127,8 +131,11 @@ export function resolveTerritoryFromLocationSelection(
   const subdivisionMatch = entries.find(
     (entry) =>
       entry.countryCode === selection.country &&
-      entry.adminLevel === "oif_subdivision" &&
-      labelNorm.includes(normalizeTerritorySearchText(entry.nameFr.replace(/\s*\(canton\)/i, ""))),
+      (entry.adminLevel === "oif_subdivision" ||
+        entry.adminLevel === "subdivision_francophone") &&
+      labelNorm.includes(
+        normalizeTerritorySearchText(entry.nameFr.replace(/\s*\(canton\)/i, "")),
+      ),
   );
   if (subdivisionMatch) {
     return subdivisionMatch;
@@ -163,7 +170,12 @@ export function rankTerritoriesByContext({
 
     if (withDistance.length >= 2) {
       const first = withDistance[0].entry;
-      const second = withDistance[1].entry;
+      const second =
+        withDistance.find(
+          (item) =>
+            item.entry.id !== first.id &&
+            haversineDistanceKm(first.representativePoint, item.entry.representativePoint) >= 1,
+        )?.entry ?? withDistance[1].entry;
       const suggestionIds = new Set([first.id, second.id]);
       return {
         suggestions: [first, second],

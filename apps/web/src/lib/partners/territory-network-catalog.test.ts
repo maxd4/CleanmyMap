@@ -40,9 +40,48 @@ describe("territory-network-catalog & ranking", () => {
     expect(byId.get("FR:COM:984")?.hasPermanentPopulation).toBe(false);
     expect(byId.get("FR:COM:989")?.hasPermanentPopulation).toBe(false);
     expect(byId.get("OIF:CA-QC")?.nameFr).toBe("Québec");
-    expect(byId.get("OIF:BE-WAL")?.nameFr).toBe("Wallonie");
+    expect(byId.get("SUB:BE-WAL")?.nameFr).toBe("Wallonie");
+    expect(byId.get("SUB:BE-WAL")?.oifStatus).toBeUndefined();
+    expect(byId.get("SUB:BE-BRU")?.oifStatus).toBeUndefined();
+    expect(byId.get("SUB:CH-GE")?.oifStatus).toBeUndefined();
     // France is not duplicated in OIF
     expect(byId.get("OIF:FR")).toBeUndefined();
+  });
+
+  it("reconciles the 92 OIF entities (53 members, 5 associates, 34 observers) as of November 2026", () => {
+    const byId = new Map(TERRITORY_NETWORK_CATALOG.map((item) => [item.id, item]));
+    const oifTagged = TERRITORY_NETWORK_CATALOG.filter((item) => item.oifStatus !== undefined);
+    const membersWithoutFrance = oifTagged.filter((item) => item.oifStatus === "membre");
+    const associates = oifTagged.filter((item) => item.oifStatus === "associe");
+    const observers = oifTagged.filter((item) => item.oifStatus === "observateur");
+
+    // 52 external members + France (represented by FR:*) = 53 full members
+    expect(membersWithoutFrance).toHaveLength(52);
+    expect(associates).toHaveLength(5);
+    expect(observers).toHaveLength(34);
+
+    // 2025 withdrawals removed
+    expect(byId.get("OIF:BF")).toBeUndefined();
+    expect(byId.get("OIF:ML")).toBeUndefined();
+    expect(byId.get("OIF:NE")).toBeUndefined();
+
+    // Chypre & Ghana promoted to full members; Belgique & FWB distinct
+    expect(byId.get("OIF:CY")?.oifStatus).toBe("membre");
+    expect(byId.get("OIF:GH")?.oifStatus).toBe("membre");
+    expect(byId.get("OIF:BE")?.nameFr).toBe("Belgique");
+    expect(byId.get("OIF:BE-FWB")?.nameFr).toBe("Fédération Wallonie-Bruxelles");
+    expect(byId.get("OIF:BE-FWB")?.oifStatus).toBe("membre");
+
+    // French overseas territories carry OIF status without duplication
+    expect(byId.get("FR:COM:988")?.oifStatus).toBe("associe");
+    expect(byId.get("FR:COM:987")?.oifStatus).toBe("observateur");
+    expect(byId.get("OIF:NC")).toBeUndefined();
+    expect(OIF_AND_FRANCOPHONE_SUBDIVISIONS.some((item) => item.code === "988")).toBe(false);
+
+    // Nov 2026 admissions & missing observers included
+    for (const code of ["KN", "CA-MB", "AO", "CL", "GM", "MT", "US-LA", "CA-ON", "CA-NS", "DE-SL"]) {
+      expect(byId.get(`OIF:${code}`)?.oifStatus).toBe("observateur");
+    }
   });
 
   it("searches by accent-insensitive name, numeric code, and country", () => {
@@ -75,6 +114,13 @@ describe("territory-network-catalog & ranking", () => {
     });
     expect(pacificRanked.suggestions.map((s) => s.id)).not.toContain("FR:COM:989");
     expect(pacificRanked.suggestions.map((s) => s.id)).not.toContain("FR:COM:984");
+
+    // Near Brussels (50.8503, 4.3517): BE, BE-FWB and SUB:BE-BRU share coordinates -> never monopolize both suggestions
+    const brusselsRanked = rankTerritoriesByContext({
+      gpsCoords: [50.8503, 4.3517],
+    });
+    const [first, second] = brusselsRanked.suggestions;
+    expect(first.representativePoint).not.toEqual(second.representativePoint);
   });
 
   it("ranks by Clerk residence & work preferences with deduplication and foreign handling", () => {

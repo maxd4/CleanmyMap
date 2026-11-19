@@ -62,12 +62,14 @@ Pour `action_commune` :
   - Les liens non HTTP(S) sont filtrés avant affichage.
   - Si aucun financement n'est établi pour l'acteur, aucune ligne `Financement` n'est rendue dans `ParisNetwork3DBubble`.
 
-## 7. Sélecteur territorial, classement contextuel et état vide
+## 7. Sélecteur territorial, classement contextuel et état vide (référentiel vérifié au 2026-11-19)
 
 - Catalogue géographique statique (`apps/web/src/lib/partners/territory-network-catalog.ts`, `.data.ts`, `territory-network-ranking.ts`) :
-  - 18 régions françaises COG (`01` à `94`), 8 collectivités et territoires français d'outre-mer (`975`, `977`, `978`, `984`, `986`, `987`, `988`, `989`, dont `984` et `989` exclus du calcul de proximité car sans population permanente), ainsi que les États et gouvernements de l'OIF et subdivisions francophones pertinentes (`CA-QC`, `CA-NB`, `BE-WAL`, `BE-BRU`, cantons francophones suisses) sans doublonner la France.
+  - 18 régions françaises COG (`01` à `94`), 8 collectivités et territoires français d'outre-mer (`975`, `977`, `978`, `984`, `986`, `987`, `988`, `989`, dont `984` et `989` exclus du calcul de proximité car sans population permanente).
+  - **OIF (92 États et gouvernements au 16 novembre 2026)** : **53 membres de plein droit** (52 entités externes dont Chypre, Ghana, Belgique et Fédération Wallonie-Bruxelles distincts + France représentée par `FR:*` sans doublon ; retraits 2025 du Burkina Faso, du Mali et du Niger pris en compte), **5 membres associés** (dont Nouvelle-Calédonie `FR:COM:988` sans doublon) et **34 observateurs** (dont Polynésie française `FR:COM:987` sans doublon, Angola, Chili, Gambie, Malte, Louisiane, Ontario, Nouvelle-Écosse, Sarre, ainsi que Saint-Christophe-et-Niévès et le Manitoba admis en novembre 2026).
+  - Les subdivisions francophones sans statut institutionnel propre à l'OIF (`SUB:BE-WAL`, `SUB:BE-BRU` et les 6 cantons francophones suisses) restent accessibles sans statut OIF fictif.
 - Le combobox accessible `« Choisir un territoire »` (`territory-network-combobox.tsx`) filtre localement sans requête réseau et propose 2 suggestions contextuelles en tête :
-  1. Position GPS uniquement si déjà autorisée (`permissions.query`) ou après clic explicite sur `« Me localiser »`, classée par approximation géodésique (`haversineDistanceKm`) sur point représentatif.
+  1. Position GPS uniquement si déjà autorisée (`permissions.query`) ou après clic explicite sur `« Me localiser »`, classée par approximation géodésique (`haversineDistanceKm`) sur point représentatif, en évitant que deux entités partageant les mêmes coordonnées représentatives monopolisent les deux suggestions.
   2. Préférences Clerk canoniques `residence` puis `work` (`user-location-preference.ts`), dédupliquées et complétées si besoin.
   3. Repli déterministe par ordre numérique INSEE puis codes/libellés internationaux.
   - Une sélection manuelle n'est jamais écrasée par une réponse asynchrone tardive.

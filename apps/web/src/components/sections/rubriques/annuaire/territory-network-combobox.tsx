@@ -31,14 +31,19 @@ const OIF_STATUS_LABELS_FR = {
 } as const;
 
 function formatOptionSecondaryLabel(entry: TerritoryEntry, fr: boolean): string | null {
-  if (entry.group !== "francophonie") {
-    return null;
-  }
   const status = entry.oifStatus
     ? fr
       ? OIF_STATUS_LABELS_FR[entry.oifStatus]
       : `OIF ${entry.oifStatus}`
-    : null;
+    : entry.adminLevel === "subdivision_francophone"
+      ? fr
+        ? "Subdivision francophone"
+        : "Francophone subdivision"
+      : null;
+
+  if (entry.group !== "francophonie") {
+    return status;
+  }
   const parts = [entry.countryNameFr, status].filter(Boolean);
   return parts.join(" · ");
 }
