@@ -62,6 +62,7 @@ export function AnnuaireSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+  const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>("FR:REG:11");
 
   const annuaireLogic = useAnnuaireLogic();
   const {
@@ -175,10 +176,16 @@ export function AnnuaireSection() {
         </motion.section>
 
         {/* Dedicated Paris 3D Cleanwalk Network Section */}
-        <ParisNetwork3DSection fr={fr} />
+        <ParisNetwork3DSection
+          fr={fr}
+          onTerritoryChange={setSelectedTerritoryId}
+        />
 
         {/* Citizen contribution block (moderated via /api/community/bug-reports) */}
-        <ParisNetworkContributionCard fr={fr} />
+        <ParisNetworkContributionCard
+          fr={fr}
+          territoryId={selectedTerritoryId}
+        />
 
         {/* Final CTA - Institutional Premium */}
         <AnnuaireJoinCta fr={fr} />

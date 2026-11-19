@@ -11,12 +11,19 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { Box, Eye, Maximize2, ZoomIn, ZoomOut } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
+import { Box, Eye, MapPinOff, Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
+import { canRequestGeolocation } from "@/lib/browser/geolocation";
+import type { GeodesicCoordinate } from "@/lib/geo/geodesic-distance";
 import {
-  PARIS_CLEANWALK_ACTORS,
-  PARIS_CLEANWALK_RELATIONS,
-} from "@/lib/partners/paris-cleanwalk-network";
+  DEFAULT_TERRITORY_ID,
+  getTerritoryNetworkDataset,
+  type TerritoryEntry,
+} from "@/lib/partners/territory-network-catalog";
+import { TERRITORY_NETWORK_CATALOG } from "@/lib/partners/territory-network-catalog.data";
+import { rankTerritoriesByContext } from "@/lib/partners/territory-network-ranking";
+import { extractLocationPreferencesFromMetadata } from "@/lib/user-location-preference";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
@@ -26,6 +33,7 @@ import type { ParisNetwork3DCanvasHandle } from "./paris-network-3d-canvas";
 import { ParisNetwork3DFallback } from "./paris-network-3d-fallback";
 import { ParisNetwork3DFiltersBar } from "./paris-network-3d-filters";
 import { ParisNetwork3DLegend } from "./paris-network-3d-legend";
+import { TerritoryNetworkCombobox } from "./territory-network-combobox";
 import {
   DEFAULT_PARIS_NETWORK_3D_FILTERS,
   computeParisNetwork3DLayout,
@@ -71,11 +79,25 @@ class WebGLErrorBoundary extends Component<
   }
 }
 
-export function ParisNetwork3DSection({ fr: externalFr }: { fr?: boolean }) {
+export function ParisNetwork3DSection({
+  fr: externalFr,
+  onTerritoryChange,
+}: {
+  fr?: boolean;
+  onTerritoryChange?: (territoryId: string) => void;
+}) {
   const { locale, displayMode } = useSitePreferences();
   const fr = externalFr ?? locale === "fr";
   const reducedMotion = useReducedMotion() === true;
   const animateMotion = !reducedMotion && displayMode !== "sobre";
+  const { user } = useUser();
+
+  const [selectedTerritoryId, setSelectedTerritoryId] =
+    useState<string>(DEFAULT_TERRITORY_ID);
+  const manualSelectionRef = useRef(false);
+  const [gpsCoords, setGpsCoords] = useState<GeodesicCoordinate | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<ParisNetwork3DFilters>(
     DEFAULT_PARIS_NETWORK_3D_FILTERS,
@@ -175,15 +197,114 @@ export function ParisNetwork3DSection({ fr: externalFr }: { fr?: boolean }) {
     return () => observer.disconnect();
   }, []);
 
-  const filtered = useMemo(
-    () =>
-      filterParisNetwork(
-        PARIS_CLEANWALK_ACTORS,
-        PARIS_CLEANWALK_RELATIONS,
-        filters,
-      ),
-    [filters],
+  const gpsAvailable = canRequestGeolocation();
+
+  useEffect(() => {
+    if (!gpsAvailable || typeof navigator === "undefined" || !navigator.permissions?.query) {
+      return;
+    }
+    let cancelled = false;
+    navigator.permissions
+      .query({ name: "geolocation" as PermissionName })
+      .then((status) => {
+        if (cancelled || status.state !== "granted") {
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            if (!cancelled) {
+              setGpsCoords([position.coords.latitude, position.coords.longitude]);
+            }
+          },
+          () => undefined,
+          { timeout: 6000, maximumAge: 300_000 },
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [gpsAvailable]);
+
+  const handleRequestGps = useCallback(() => {
+    if (!gpsAvailable || typeof navigator === "undefined" || !navigator.geolocation) {
+      return;
+    }
+    setGpsLoading(true);
+    setGpsError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGpsLoading(false);
+        const coords: GeodesicCoordinate = [
+          position.coords.latitude,
+          position.coords.longitude,
+        ];
+        setGpsCoords(coords);
+        if (!manualSelectionRef.current) {
+          const nextRanked = rankTerritoriesByContext({ gpsCoords: coords });
+          setSelectedTerritoryId(nextRanked.suggestions[0].id);
+          onTerritoryChange?.(nextRanked.suggestions[0].id);
+        }
+      },
+      () => {
+        setGpsLoading(false);
+        setGpsError(
+          fr
+            ? "Position GPS indisponible ou refusée ; classement contextuel conservé."
+            : "GPS location unavailable or denied; contextual ranking preserved.",
+        );
+      },
+      { timeout: 8000, maximumAge: 60_000 },
+    );
+  }, [fr, gpsAvailable, onTerritoryChange]);
+
+  const handleSelectTerritory = useCallback(
+    (territory: TerritoryEntry) => {
+      manualSelectionRef.current = true;
+      setSelectedTerritoryId(territory.id);
+      setSelectedActorId(null);
+      setHoveredActorId(null);
+      onTerritoryChange?.(territory.id);
+    },
+    [onTerritoryChange],
   );
+
+  const locationPreferences = useMemo(
+    () => extractLocationPreferencesFromMetadata(user?.unsafeMetadata),
+    [user?.unsafeMetadata],
+  );
+
+  const ranked = useMemo(
+    () =>
+      rankTerritoriesByContext({
+        gpsCoords,
+        locationPreferences,
+      }),
+    [gpsCoords, locationPreferences],
+  );
+
+  const selectedTerritory = useMemo(
+    () =>
+      TERRITORY_NETWORK_CATALOG.find((item) => item.id === selectedTerritoryId) ??
+      TERRITORY_NETWORK_CATALOG.find((item) => item.id === DEFAULT_TERRITORY_ID)!,
+    [selectedTerritoryId],
+  );
+
+  const territoryDataset = useMemo(
+    () => getTerritoryNetworkDataset(selectedTerritory.id),
+    [selectedTerritory.id],
+  );
+
+  const filtered = useMemo(() => {
+    if (!territoryDataset) {
+      return { actors: [], relations: [] };
+    }
+    return filterParisNetwork(
+      territoryDataset.actors,
+      territoryDataset.relations,
+      filters,
+    );
+  }, [filters, territoryDataset]);
 
   const layout = useMemo(
     () => computeParisNetwork3DLayout(filtered.actors, filtered.relations),
@@ -219,111 +340,136 @@ export function ParisNetwork3DSection({ fr: externalFr }: { fr?: boolean }) {
           <div className="max-w-3xl space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-4 py-1 text-xs font-black uppercase tracking-[0.25em] text-violet-300">
               <Box size={13} aria-hidden="true" />
-              {fr
-                ? "Écosystème Paris intramuros · 3D sourcée"
-                : "Paris intramuros ecosystem · Sourced 3D"}
+              {territoryDataset
+                ? fr
+                  ? territoryDataset.pilotLabelFr
+                  : territoryDataset.pilotLabelEn
+                : `${selectedTerritory.code} — ${fr ? selectedTerritory.nameFr : selectedTerritory.nameEn}`}
             </div>
             <h2
               id="paris-network-3d-heading"
               className="text-3xl font-black tracking-tight text-white md:text-4xl"
             >
-              {fr
-                ? "Réseau 3D des cleanwalks à Paris"
-                : "3D network of Paris cleanwalks"}
+              {territoryDataset
+                ? fr
+                  ? "Réseau 3D des cleanwalks à Paris"
+                  : "3D network of Paris cleanwalks"
+                : fr
+                  ? `Réseau territorial — ${selectedTerritory.nameFr}`
+                  : `Territorial network — ${selectedTerritory.nameEn}`}
             </h2>
             <p className="text-sm font-medium leading-relaxed text-slate-300">
-              {fr
-                ? "Survolez, cliquez ou naviguez au clavier sur un nom d'acteur pour afficher ses canaux publics et ses liens vérifiés."
-                : "Hover, click or navigate by keyboard on an actor name to display its public channels and verified links."}
+              {territoryDataset
+                ? fr
+                  ? "Survolez, cliquez ou naviguez au clavier sur un nom d'acteur pour afficher ses canaux publics et ses liens vérifiés."
+                  : "Hover, click or navigate by keyboard on an actor name to display its public channels and verified links."
+                : fr
+                  ? "Sélectionnez un territoire pour consulter son réseau d'acteurs sourcé lorsqu'il est disponible."
+                  : "Select a territory to explore its sourced actor network when available."}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {show3DCanvas && hasEnteredViewport ? (
-              <>
-                <CmmButton
-                  type="button"
-                  tone="tertiary"
-                  variant="pill"
-                  size="sm"
-                  onClick={() => canvasHandleRef.current?.zoomIn()}
-                  ariaLabel={fr ? "Zoomer sur la scène 3D" : "Zoom in 3D scene"}
-                  className="inline-flex items-center gap-1.5"
-                >
-                  <ZoomIn size={14} aria-hidden="true" />
-                  <span className="sr-only sm:not-sr-only">Zoom +</span>
-                </CmmButton>
-                <CmmButton
-                  type="button"
-                  tone="tertiary"
-                  variant="pill"
-                  size="sm"
-                  onClick={() => canvasHandleRef.current?.zoomOut()}
-                  ariaLabel={fr ? "Dézoomer la scène 3D" : "Zoom out 3D scene"}
-                  className="inline-flex items-center gap-1.5"
-                >
-                  <ZoomOut size={14} aria-hidden="true" />
-                  <span className="sr-only sm:not-sr-only">Zoom -</span>
-                </CmmButton>
-                <CmmButton
-                  type="button"
-                  tone="tertiary"
-                  variant="pill"
-                  size="sm"
-                  onClick={() => canvasHandleRef.current?.resetCamera()}
-                  ariaLabel={fr ? "Recentrer la caméra 3D" : "Recenter 3D camera"}
-                  className="inline-flex items-center gap-1.5"
-                >
-                  <Maximize2 size={14} aria-hidden="true" />
-                  <span>{fr ? "Recentrer" : "Recenter"}</span>
-                </CmmButton>
-              </>
-            ) : null}
+          {territoryDataset ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {show3DCanvas && hasEnteredViewport ? (
+                <>
+                  <CmmButton
+                    type="button"
+                    tone="tertiary"
+                    variant="pill"
+                    size="sm"
+                    onClick={() => canvasHandleRef.current?.zoomIn()}
+                    ariaLabel={fr ? "Zoomer sur la scène 3D" : "Zoom in 3D scene"}
+                    className="inline-flex items-center gap-1.5"
+                  >
+                    <ZoomIn size={14} aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Zoom +</span>
+                  </CmmButton>
+                  <CmmButton
+                    type="button"
+                    tone="tertiary"
+                    variant="pill"
+                    size="sm"
+                    onClick={() => canvasHandleRef.current?.zoomOut()}
+                    ariaLabel={fr ? "Dézoomer la scène 3D" : "Zoom out 3D scene"}
+                    className="inline-flex items-center gap-1.5"
+                  >
+                    <ZoomOut size={14} aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Zoom -</span>
+                  </CmmButton>
+                  <CmmButton
+                    type="button"
+                    tone="tertiary"
+                    variant="pill"
+                    size="sm"
+                    onClick={() => canvasHandleRef.current?.resetCamera()}
+                    ariaLabel={fr ? "Recentrer la caméra 3D" : "Recenter 3D camera"}
+                    className="inline-flex items-center gap-1.5"
+                  >
+                    <Maximize2 size={14} aria-hidden="true" />
+                    <span>{fr ? "Recentrer" : "Recenter"}</span>
+                  </CmmButton>
+                </>
+              ) : null}
 
-            {webglAvailable ? (
-              <CmmButton
-                type="button"
-                tone={viewMode === "html" ? "important" : "secondary"}
-                variant="pill"
-                size="sm"
-                onClick={() =>
-                  setViewMode((prev) => (prev === "3d" ? "html" : "3d"))
-                }
-                ariaLabel={
-                  viewMode === "3d"
-                    ? fr
-                      ? "Basculer vers la vue HTML accessible"
-                      : "Switch to accessible HTML view"
-                    : fr
-                      ? "Basculer vers la scène 3D WebGL"
-                      : "Switch to WebGL 3D scene"
-                }
-                className="inline-flex items-center gap-1.5"
-              >
-                <Eye size={14} aria-hidden="true" />
-                <span>
-                  {viewMode === "3d"
-                    ? fr
-                      ? "Vue HTML"
-                      : "HTML view"
-                    : fr
-                      ? "Vue 3D"
-                      : "3D view"}
-                </span>
-              </CmmButton>
-            ) : null}
-          </div>
+              {webglAvailable ? (
+                <CmmButton
+                  type="button"
+                  tone={viewMode === "html" ? "important" : "secondary"}
+                  variant="pill"
+                  size="sm"
+                  onClick={() =>
+                    setViewMode((prev) => (prev === "3d" ? "html" : "3d"))
+                  }
+                  ariaLabel={
+                    viewMode === "3d"
+                      ? fr
+                        ? "Basculer vers la vue HTML accessible"
+                        : "Switch to accessible HTML view"
+                      : fr
+                        ? "Basculer vers la scène 3D WebGL"
+                        : "Switch to WebGL 3D scene"
+                  }
+                  className="inline-flex items-center gap-1.5"
+                >
+                  <Eye size={14} aria-hidden="true" />
+                  <span>
+                    {viewMode === "3d"
+                      ? fr
+                        ? "Vue HTML"
+                        : "HTML view"
+                      : fr
+                        ? "Vue 3D"
+                        : "3D view"}
+                  </span>
+                </CmmButton>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
-        <ParisNetwork3DFiltersBar
-          filters={filters}
-          onChange={setFilters}
-          actorCount={filtered.actors.length}
-          relationCount={filtered.relations.length}
+        <TerritoryNetworkCombobox
           fr={fr}
+          selectedTerritory={selectedTerritory}
+          ranked={ranked}
+          gpsAvailable={gpsAvailable}
+          gpsLoading={gpsLoading}
+          gpsError={gpsError}
+          onSelectTerritory={handleSelectTerritory}
+          onRequestGps={handleRequestGps}
         />
 
-        <div className="relative h-[500px] w-full min-w-0 overflow-hidden rounded-2xl border border-violet-300/20 bg-slate-950/90 sm:h-[580px]">
+        {territoryDataset ? (
+          <>
+            <ParisNetwork3DFiltersBar
+              filters={filters}
+              onChange={setFilters}
+              actorCount={filtered.actors.length}
+              relationCount={filtered.relations.length}
+              fr={fr}
+            />
+
+            <div className="relative h-[500px] w-full min-w-0 overflow-hidden rounded-2xl border border-violet-300/20 bg-slate-950/90 sm:h-[580px]">
           {show3DCanvas ? (
             hasEnteredViewport ? (
               <WebGLErrorBoundary
@@ -408,7 +554,26 @@ export function ParisNetwork3DSection({ fr: externalFr }: { fr?: boolean }) {
           ) : null}
         </div>
 
-        <ParisNetwork3DLegend fr={fr} />
+            <ParisNetwork3DLegend fr={fr} />
+          </>
+        ) : (
+          <div
+            role="status"
+            className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-white/15 bg-slate-950/75 p-8 text-center"
+          >
+            <MapPinOff size={28} className="text-violet-300" aria-hidden="true" />
+            <p className="text-base font-black text-white">
+              {fr
+                ? "Réseau de ce territoire pas encore renseigné"
+                : "Network for this territory not yet documented"}
+            </p>
+            <p className="max-w-lg text-xs leading-relaxed text-slate-300">
+              {fr
+                ? `Territoire sélectionné : ${selectedTerritory.code} — ${selectedTerritory.nameFr}. Aucun acteur, relation ou métrique n'est généré tant qu'une source vérifiée n'est pas intégrée.`
+                : `Selected territory: ${selectedTerritory.code} — ${selectedTerritory.nameEn}. No actor, relation or metric is generated until a verified source is integrated.`}
+            </p>
+          </div>
+        )}
       </CmmSectionGroup>
     </section>
   );

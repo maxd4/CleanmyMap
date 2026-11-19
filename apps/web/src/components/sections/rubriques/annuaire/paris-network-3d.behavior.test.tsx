@@ -15,6 +15,11 @@ import {
 import { ParisNetwork3DBubble } from "./paris-network-3d-bubble";
 
 const sitePreferencesMock = vi.hoisted(() => vi.fn());
+const clerkUseUserMock = vi.hoisted(() => vi.fn(() => ({ user: null })));
+
+vi.mock("@clerk/nextjs", () => ({
+  useUser: clerkUseUserMock,
+}));
 
 vi.mock("@/components/ui/site-preferences-provider", () => ({
   useSitePreferences: sitePreferencesMock,
@@ -544,6 +549,90 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     });
     expect(container.textContent).toContain("Financement");
     expect(container.querySelector('a[href^="javascript:"]')).toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("filters territories in combobox, displays empty state for non-Paris territory, and prevents late GPS from overwriting manual choice", () => {
+    sitePreferencesMock.mockReturnValue({
+      locale: "fr",
+      displayMode: "complet",
+    });
+
+    let deferredGpsSuccess: ((pos: GeolocationPosition) => void) | null = null;
+    const originalGeolocation = navigator.geolocation;
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: {
+        getCurrentPosition: vi.fn((success) => {
+          deferredGpsSuccess = success;
+        }),
+      },
+    });
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(React.createElement(ParisNetwork3DSection, { fr: true }));
+    });
+
+    // Initially displays Paris intramuros pilot
+    expect(container.textContent).toContain("Pilote : Paris intramuros");
+
+    // Click "Me localiser" to start an async GPS request
+    const gpsBtn = Array.from(container.querySelectorAll("button")).find((btn) =>
+      btn.textContent?.includes("Me localiser"),
+    );
+    expect(gpsBtn).toBeDefined();
+    act(() => {
+      gpsBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    // Open combobox, search "bretagne", select FR:REG:53 via keyboard ArrowDown + Enter
+    const combobox = container.querySelector(
+      'input[role="combobox"]',
+    ) as HTMLInputElement;
+    expect(combobox).not.toBeNull();
+
+    act(() => {
+      combobox.focus();
+      const setter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(combobox, "bretagne");
+      combobox.dispatchEvent(new Event("input", { bubbles: true }));
+      combobox.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    act(() => {
+      combobox.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+
+    // Empty state is displayed without any canvas or fake network
+    expect(container.textContent).toContain(
+      "Réseau de ce territoire pas encore renseigné",
+    );
+    expect(container.querySelector("canvas")).toBeNull();
+
+    // Late async GPS response arrives for Paris -> must NOT overwrite Bretagne
+    act(() => {
+      deferredGpsSuccess?.({
+        coords: { latitude: 48.8566, longitude: 2.3522 },
+      } as GeolocationPosition);
+    });
+    expect(container.textContent).toContain(
+      "Réseau de ce territoire pas encore renseigné",
+    );
+
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: originalGeolocation,
+    });
 
     act(() => {
       root.unmount();

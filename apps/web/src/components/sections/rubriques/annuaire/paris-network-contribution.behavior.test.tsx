@@ -235,4 +235,23 @@ describe("ParisNetworkContributionCard behavior", () => {
       root.unmount();
     });
   });
+
+  it("reserves the contribution form for the Paris pilot FR:REG:11 and blocks non-Paris territories", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        React.createElement(ParisNetworkContributionCard, {
+          fr: true,
+          territoryId: "FR:REG:53",
+        }),
+      );
+    });
+    expect(container.textContent).toContain("pilote Paris intramuros (FR:REG:11)");
+    expect(container.querySelector("form")).toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

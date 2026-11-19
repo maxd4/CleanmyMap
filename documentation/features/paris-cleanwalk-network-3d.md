@@ -60,3 +60,14 @@ Pour `action_commune` :
   - Ne jamais confondre les comptes d'une entité nationale/européenne avec ceux d'une antenne locale (ex. les comptes de Surfrider Europe ne sont pas attribués à Surfrider Paris).
   - Les liens non HTTP(S) sont filtrés avant affichage.
   - Si aucun financement n'est établi pour l'acteur, aucune ligne `Financement` n'est rendue dans `ParisNetwork3DBubble`.
+
+## 7. Sélecteur territorial, classement contextuel et état vide
+
+- Catalogue géographique statique (`apps/web/src/lib/partners/territory-network-catalog.ts`, `.data.ts`, `territory-network-ranking.ts`) :
+  - 18 régions françaises COG (`01` à `94`), 8 collectivités et territoires français d'outre-mer (`975`, `977`, `978`, `984`, `986`, `987`, `988`, `989`, dont `984` et `989` exclus du calcul de proximité car sans population permanente), ainsi que les États et gouvernements de l'OIF et subdivisions francophones pertinentes (`CA-QC`, `CA-NB`, `BE-WAL`, `BE-BRU`, cantons francophones suisses) sans doublonner la France.
+- Le combobox accessible `« Choisir un territoire »` (`territory-network-combobox.tsx`) filtre localement sans requête réseau et propose 2 suggestions contextuelles en tête :
+  1. Position GPS uniquement si déjà autorisée (`permissions.query`) ou après clic explicite sur `« Me localiser »`, classée par approximation géodésique (`haversineDistanceKm`) sur point représentatif.
+  2. Préférences Clerk canoniques `residence` puis `work` (`user-location-preference.ts`), dédupliquées et complétées si besoin.
+  3. Repli déterministe par ordre numérique INSEE puis codes/libellés internationaux.
+  - Une sélection manuelle n'est jamais écrasée par une réponse asynchrone tardive.
+- Seul `FR:REG:11` dispose actuellement d'un jeu de données (`Pilote : Paris intramuros (Île-de-France non exhaustive)`). Tout autre territoire affiche l'état vide `« Réseau de ce territoire pas encore renseigné »` sans scène WebGL ni données inventées, et le formulaire de contribution reste réservé à `FR:REG:11`.

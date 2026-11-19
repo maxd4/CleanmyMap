@@ -16,7 +16,13 @@ import {
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
-export function ParisNetworkContributionCard({ fr = true }: { fr?: boolean }) {
+export function ParisNetworkContributionCard({
+  fr = true,
+  territoryId = "FR:REG:11",
+}: {
+  fr?: boolean;
+  territoryId?: string;
+}) {
   const { isLoaded, isSignedIn } = useUser();
   const [message, setMessage] = useState("");
   const [infoType, setInfoType] = useState<ContributionInfoType>("");
@@ -88,6 +94,36 @@ export function ParisNetworkContributionCard({ fr = true }: { fr?: boolean }) {
   };
 
   const signInHref = buildSignInRedirectHref(PARIS_NETWORK_CONTRIBUTION_PAGE_PATH);
+
+  if (territoryId !== "FR:REG:11") {
+    return (
+      <section
+        id="reseau-cleanwalks"
+        aria-labelledby="paris-network-contribution-heading"
+        className="rounded-[var(--radius-lg)] border border-violet-300/18 bg-slate-900/50 p-6 md:p-8"
+      >
+        <div className="max-w-3xl space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-3.5 py-1 text-xs font-black uppercase tracking-[0.2em] text-violet-300">
+            <MessageSquarePlus size={13} aria-hidden="true" />
+            {fr ? "Contribution citoyenne modérée" : "Moderated citizen contribution"}
+          </div>
+          <h3
+            id="paris-network-contribution-heading"
+            className="text-2xl font-black tracking-tight text-white md:text-3xl"
+          >
+            {fr
+              ? "Aidez-nous à compléter ce réseau"
+              : "Help us complete this network"}
+          </h3>
+          <p role="status" className="text-sm leading-relaxed text-slate-300">
+            {fr
+              ? "Ce formulaire de contribution est actuellement réservé au pilote Paris intramuros (FR:REG:11). Sélectionnez l'Île-de-France / Paris intramuros pour proposer un acteur parisien."
+              : "This contribution form is currently reserved for the Paris intramuros pilot (FR:REG:11). Select Île-de-France / Paris intramuros to submit a Paris actor."}
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
