@@ -151,7 +151,7 @@ begin
   if (select actor_clerk_id
         from public.spogomi_event_change_history
        where event_id = v_event_id
-       order by created_at desc, id desc
+       order by revision desc, id desc
        limit 1) <> 'spogomi-db-smoke' then
     raise exception 'event metadata history lost the verified organizer actor';
   end if;
@@ -329,7 +329,7 @@ begin
   if (select actor_clerk_id
         from public.spogomi_event_change_history
        where event_id = v_event_id
-       order by created_at desc, id desc
+       order by revision desc, id desc
        limit 1) <> 'system' then
     raise exception 'a direct system regulation update was attributed to an organizer';
   end if;
