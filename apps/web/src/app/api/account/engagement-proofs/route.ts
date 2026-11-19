@@ -9,7 +9,8 @@ import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/ser
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
-// Justification Vercel: personal volunteer engagement proofs are strictly owner-scoped and re-evaluated live on every read; no-store prevents shared or stale cache disclosure.
+// Justification Vercel: les preuves d'engagement bénévole sont strictement owner-scoped et réévaluées à chaque lecture.
+// Politique de confidentialité : réponse private, no-store pour empêcher tout stockage en cache partagé.
 export const dynamic = "force-dynamic";
 
 function noStoreJson(body: unknown, status = 200) {

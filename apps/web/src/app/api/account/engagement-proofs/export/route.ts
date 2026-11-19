@@ -11,7 +11,8 @@ import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/ser
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
-// Justification Vercel: personal volunteer dossier export is owner-scoped and regenerated live from canonical proofs; no-store prevents shared-cache disclosure.
+// Justification Vercel: l'export du dossier bénévole est strictement owner-scoped et régénéré à la volée depuis les preuves canoniques.
+// Politique de confidentialité : réponse private, no-store pour empêcher tout stockage en cache partagé.
 export const dynamic = "force-dynamic";
 
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;

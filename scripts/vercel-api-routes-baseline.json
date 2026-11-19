@@ -498,6 +498,20 @@
       "reason": "Surface authentifiée de projection personnelle des participations vérifiées au Parcours Éco-Citoyen Brigade Verte Paris.",
       "costContract": "GET authentifié strictement owner-scoped, fail-closed avec réponse private/no-store, sans recalcul d'éligibilité dans le client ni exposition d'identités tierces.",
       "reviewedAt": "2026-11-18"
+    },
+    {
+      "route": "apps/web/src/app/api/account/engagement-proofs/route.ts",
+      "introducedBy": "5e064d212721b9d4cb4236f96ad62d8816c7953c",
+      "reason": "Projection personnelle authentifiée des preuves d'engagement bénévole (éco-citoyenneté et insertion), réévaluée à la volée.",
+      "costContract": "GET authentifié strictement owner-scoped, rate-limité, pagination bornée et réponse private/no-store sans cache partagé ni table concurrente.",
+      "reviewedAt": "2026-11-20"
+    },
+    {
+      "route": "apps/web/src/app/api/account/engagement-proofs/export/route.ts",
+      "introducedBy": "ad40889d1792062951bdd569e9269ca1078ce2d6",
+      "reason": "Export Markdown privé du dossier personnel de bénévolat généré à la demande depuis la projection canonique.",
+      "costContract": "POST authentifié strictement owner-scoped, rate-limité, relecture live et réponse private/no-store sans persistance des champs libres ni des fichiers générés.",
+      "reviewedAt": "2026-11-20"
     }
   ],
   "apiRoutes": [
@@ -505,6 +519,8 @@
     "apps/web/src/app/api/account/active-profile/route.ts",
     "apps/web/src/app/api/account/activity-status/route.ts",
     "apps/web/src/app/api/account/age-band/route.ts",
+    "apps/web/src/app/api/account/engagement-proofs/export/route.ts",
+    "apps/web/src/app/api/account/engagement-proofs/route.ts",
     "apps/web/src/app/api/account/identity/route.ts",
     "apps/web/src/app/api/account/locations/route.ts",
     "apps/web/src/app/api/account/profile-role/route.ts",
