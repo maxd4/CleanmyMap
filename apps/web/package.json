@@ -102,7 +102,7 @@
     "@types/three": "^0.187.0",
     "@vitest/coverage-v8": "4.1.12",
     "eslint": "^9.39.4",
-    "eslint-config-next": "16.4.5",
+    "eslint-config-next": "16.4.6",
     "jsdom": "^26.1.0",
     "react-test-renderer": "19.2.3",
     "tailwindcss": "^4",
