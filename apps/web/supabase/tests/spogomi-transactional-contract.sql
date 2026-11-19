@@ -237,7 +237,7 @@ begin
   ) values (
     v_event_id, v_action_id, 'spogomi-consolidation-contract-owner',
     'Synthetic consolidation event', 'Synthetic consolidation location',
-    'casual', 'judging', '2026-10-20T09:00:00+02:00', 'synthetic-v1', 'complete'
+    'casual', 'draft', '2026-10-20T09:00:00+02:00', 'synthetic-v1', 'complete'
   );
   perform public.spogomi_ensure_parent_divisions(v_event_id, 'casual');
   insert into public.spogomi_teams (id, event_id, team_number, public_name, composition_state)
@@ -247,6 +247,7 @@ begin
   ) values (
     v_participant_id, v_event_id, v_team_id, 'synthetic-consolidation-ticket', 'registered', 'present'
   );
+  update public.spogomi_events set state = 'judging' where id = v_event_id;
   insert into public.spogomi_result_submissions (
     id, event_id, team_id, version, status, regulation_version,
     submitted_by_clerk_id, submitted_at, certified_by_clerk_id, certified_at
