@@ -57,6 +57,17 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
     activities: [
       "Campagnes nationales de prévention des déchets abandonnés et guides de cleanup",
     ],
+    funding: {
+      sources: [
+        { label: "Industriels" },
+        { label: "Éco-organismes" },
+        { label: "Ministère chargé de l'environnement" },
+      ],
+      sharesPublished: false,
+      entityName: "Gestes Propres",
+      sourceUrl: "https://www.gestespropres.com/foire-aux-questions",
+      verifiedAt: "2026-11-19",
+    },
     provenance: {
       sourceLabel: "Gestes Propres",
       sourceUrl: "https://www.gestespropres.com/organiser-un-cleanup",
@@ -181,6 +192,16 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
     activities: [
       "Prévention et réduction des mégots jetés dans l'espace public (filière REP tabac)",
     ],
+    funding: {
+      sources: [
+        { label: "Éco-contributions des producteurs de tabac (filière REP)" },
+      ],
+      sharesPublished: false,
+      entityName: "ALCOME",
+      calculationBase: "Filière REP tabac",
+      sourceUrl: "https://filieres-rep.ademe.fr/filieres-REP/filiere-TABAC",
+      verifiedAt: "2026-11-19",
+    },
     provenance: {
       sourceLabel: "ALCOME & ADEME — Filières REP",
       sourceUrl: "https://alcome.eco/",
@@ -231,6 +252,24 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
     activities: [
       "Plaidoyer, sensibilisation et réduction des déchets à la source (distincte de Zero Waste Paris)",
     ],
+    funding: {
+      sources: [
+        { label: "Particuliers", sharePercent: 55.6 },
+        { label: "Subventions", sharePercent: 30.1 },
+        { label: "Mécénat", sharePercent: 7.6 },
+        { label: "Dons via entreprises", sharePercent: 5.2 },
+        { label: "Adhésions groupes locaux", sharePercent: 1.2 },
+        { label: "Prestations", sharePercent: 0.2 },
+      ],
+      sharesPublished: true,
+      period: "2025",
+      entityName: "Zero Waste France",
+      calculationBase: "Recettes 2025",
+      notes: "Total arrondi 99,9 %",
+      sourceUrl:
+        "https://www.zerowastefrance.org/wp-content/uploads/2026/03/zw-ra-2025-horizontal-13032026.pdf",
+      verifiedAt: "2026-11-19",
+    },
     provenance: {
       sourceLabel: "Zero Waste France",
       sourceUrl: "https://www.zerowastefrance.org/lassociation/missions/",
@@ -279,6 +318,17 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
     activities: [
       "Lieu ressource parisien dédié à la sensibilisation et à la réduction des déchets",
     ],
+    funding: {
+      sources: [
+        { label: "Activités commerciales" },
+        { label: "Soutiens publics sur certains projets" },
+        { label: "Dons" },
+      ],
+      sharesPublished: false,
+      entityName: "Maison du Zéro Déchet",
+      sourceUrl: "https://lamaisonduzerodechet.org/association/",
+      verifiedAt: "2026-11-19",
+    },
     provenance: {
       sourceLabel: "Maison du Zéro Déchet",
       sourceUrl: "https://lamaisonduzerodechet.org/association/",
@@ -328,6 +378,15 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
     activities: [
       "Sensibilisation, campagnes et mobilisation contre la pollution plastique",
     ],
+    funding: {
+      sources: [
+        { label: "Soutien déclaré du ministère chargé de l'environnement" },
+      ],
+      sharesPublished: false,
+      entityName: "No Plastic In My Sea",
+      sourceUrl: "https://noplasticinmysea.org/lassociation/",
+      verifiedAt: "2026-11-19",
+    },
     provenance: {
       sourceLabel: "No Plastic In My Sea",
       sourceUrl: "https://noplasticinmysea.org/lassociation/",

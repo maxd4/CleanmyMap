@@ -12,6 +12,7 @@ import {
   computeParisNetwork3DLayout,
   filterParisNetwork,
 } from "./paris-network-3d.model";
+import { ParisNetwork3DBubble } from "./paris-network-3d-bubble";
 
 const sitePreferencesMock = vi.hoisted(() => vi.fn());
 
@@ -465,5 +466,87 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     });
     expect(tallBubble.topPx).toBe(12);
     expect(tallBubble.maxHeightPx).toBe(476);
+  });
+
+  it("renders funding block for complete, partial/unknown, absent funding and blocks invalid funding URLs", () => {
+    const byId = new Map(PARIS_CLEANWALK_ACTORS.map((actor) => [actor.id, actor]));
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    // 1. Complete case: Zero Waste France (shares + rounded 99,9 % + safe PDF link)
+    const zwf = byId.get("asso-zerowaste-france")!;
+    act(() => {
+      root.render(
+        <ParisNetwork3DBubble
+          actor={zwf}
+          isLocked={true}
+          fr={true}
+          anchorPosition={null}
+          onClose={() => undefined}
+        />,
+      );
+    });
+    expect(container.textContent).toContain("Financement");
+    expect(container.textContent).toContain("Particuliers 55,6 %");
+    expect(container.textContent).toContain("Total arrondi 99,9 %");
+    expect(
+      container.querySelector(`a[href="${zwf.funding?.sourceUrl}"]`),
+    ).not.toBeNull();
+
+    // 2. Partial/unknown shares: Zero Waste Paris ("Parts non publiées")
+    const zwp = byId.get("asso-zerowaste-paris")!;
+    act(() => {
+      root.render(
+        <ParisNetwork3DBubble
+          actor={zwp}
+          isLocked={true}
+          fr={true}
+          anchorPosition={null}
+          onClose={() => undefined}
+        />,
+      );
+    });
+    expect(container.textContent).toContain("Financement");
+    expect(container.textContent).toContain("Parts non publiées");
+
+    // 3. Absent funding: Surfrider Paris (no Financement section rendered)
+    const surfrider = byId.get("asso-surfrider-paris")!;
+    act(() => {
+      root.render(
+        <ParisNetwork3DBubble
+          actor={surfrider}
+          isLocked={true}
+          fr={true}
+          anchorPosition={null}
+          onClose={() => undefined}
+        />,
+      );
+    });
+    expect(container.textContent).not.toContain("Financement");
+
+    // 4. Invalid URL: javascript: link is never rendered as an <a href>
+    act(() => {
+      root.render(
+        <ParisNetwork3DBubble
+          actor={{
+            ...zwp,
+            funding: {
+              ...zwp.funding!,
+              sourceUrl: "javascript:alert(1)",
+            },
+          }}
+          isLocked={true}
+          fr={true}
+          anchorPosition={null}
+          onClose={() => undefined}
+        />,
+      );
+    });
+    expect(container.textContent).toContain("Financement");
+    expect(container.querySelector('a[href^="javascript:"]')).toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
   });
 });

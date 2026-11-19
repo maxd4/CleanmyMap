@@ -477,4 +477,49 @@ describe("paris-cleanwalk-network 12-month deduplication and thickness policy", 
       "https://www.aremacs.com/antennes/paris",
     );
   });
+
+  it("enforces funding provenance, entity scope, rounded totals and unknown shares without inventing values", () => {
+    const byId = new Map(PARIS_CLEANWALK_ACTORS.map((actor) => [actor.id, actor]));
+
+    // Complete 2025 breakdown for Zero Waste France (rounded total 99.9%)
+    const zwf = byId.get("asso-zerowaste-france");
+    expect(zwf?.funding?.entityName).toBe("Zero Waste France");
+    expect(zwf?.funding?.period).toBe("2025");
+    expect(zwf?.funding?.sharesPublished).toBe(true);
+    expect(zwf?.funding?.notes).toContain("99,9 %");
+    const zwfSum = (zwf?.funding?.sources ?? []).reduce(
+      (acc, src) => acc + (src.sharePercent ?? 0),
+      0,
+    );
+    expect(zwfSum).toBeCloseTo(99.9, 1);
+
+    // Partial/unknown shares must not invent 0%
+    const unknownShareIds = [
+      "asso-gestes-propres",
+      "asso-zerowaste-paris",
+      "asso-maison-zero-dechet",
+      "asso-no-plastic-in-my-sea",
+      "asso-megots-alcome",
+    ];
+    for (const id of unknownShareIds) {
+      const actor = byId.get(id);
+      expect(actor?.funding).toBeDefined();
+      expect(actor?.funding?.sharesPublished).toBe(false);
+      expect(actor?.funding?.sources.length).toBeGreaterThan(0);
+      for (const src of actor?.funding?.sources ?? []) {
+        expect(src.sharePercent).toBeUndefined();
+      }
+      expect(actor?.funding?.sourceUrl.startsWith("https://")).toBe(true);
+    }
+
+    // Surfrider Paris must not inherit Surfrider Europe accounts
+    expect(byId.get("asso-surfrider-paris")?.funding).toBeUndefined();
+
+    // Every actor with funding must target its own entity (no national/local conflation)
+    for (const actor of PARIS_CLEANWALK_ACTORS) {
+      if (actor.funding) {
+        expect(actor.funding.entityName).toBe(actor.name);
+      }
+    }
+  });
 });

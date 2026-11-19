@@ -158,15 +158,15 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
         "Activité centrée sur la réduction à la source et le plaidoyer ; aucun prêt de matériel de collecte attribué.",
       certainty: "verifie",
     },
-    activities: [
-      "Ateliers zéro déchet, sensibilisation et plaidoyer local à Paris",
-      "Interventions en milieu scolaire et auprès des organisations",
-    ],
-    provenance: {
-      sourceLabel: "zerowasteparis.fr/nos-actions",
-      sourceUrl: "https://www.zerowasteparis.fr/nos-actions",
-      certainty: "verifie",
+    activities: ["Ateliers zéro déchet, sensibilisation et plaidoyer local à Paris", "Interventions en milieu scolaire et auprès des organisations"],
+    funding: {
+      sources: [{ label: "Adhésions et dons" }, { label: "Subventions" }, { label: "Mécénat d'entreprise" }, { label: "Prestations rémunérées" }],
+      sharesPublished: false,
+      entityName: "Zero Waste Paris",
+      sourceUrl: "https://zerowasteparis.fr/qui-sommes-nous/",
+      verifiedAt: "2026-11-19",
     },
+    provenance: { sourceLabel: "zerowasteparis.fr/nos-actions", sourceUrl: "https://www.zerowasteparis.fr/nos-actions", certainty: "verifie" },
     verifiedAt: "2026-11-19",
     isCleanMyMapMember: false,
   },

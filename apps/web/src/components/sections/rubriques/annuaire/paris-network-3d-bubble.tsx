@@ -212,6 +212,59 @@ export function ParisNetwork3DBubble({
           <p className="leading-relaxed text-slate-300">{actor.activities[0]}</p>
         ) : null}
 
+        {/* 3b. Financement (uniquement si documenté) */}
+        {actor.funding && actor.funding.sources.length > 0 ? (
+          <div className="rounded-lg border border-emerald-400/25 bg-emerald-500/5 p-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-black uppercase tracking-wider text-xs text-emerald-300">
+                {fr ? "Financement" : "Funding"}
+              </p>
+              {isSafeHttpUrl(actor.funding.sourceUrl) ? (
+                <a
+                  href={actor.funding.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-200 underline decoration-emerald-400/50 underline-offset-2 hover:text-white"
+                >
+                  <span>{fr ? "Source" : "Source"}</span>
+                  <ExternalLink size={10} aria-hidden="true" />
+                </a>
+              ) : null}
+            </div>
+            <p className="mt-1 leading-relaxed text-slate-200">
+              {actor.funding.sources
+                .map((src) => {
+                  const parts: string[] = [src.label];
+                  if (typeof src.sharePercent === "number") {
+                    const formatted = fr
+                      ? `${src.sharePercent.toString().replace(".", ",")} %`
+                      : `${src.sharePercent}%`;
+                    parts.push(formatted);
+                  }
+                  if (typeof src.amountEur === "number") {
+                    parts.push(`${src.amountEur.toLocaleString(fr ? "fr-FR" : "en-US")} €`);
+                  }
+                  return parts.join(" ");
+                })
+                .join(" · ")}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {[
+                actor.funding.entityName,
+                actor.funding.calculationBase ?? actor.funding.period,
+                !actor.funding.sharesPublished
+                  ? fr
+                    ? "Parts non publiées"
+                    : "Shares not published"
+                  : null,
+                actor.funding.notes ?? null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          </div>
+        ) : null}
+
         {actor.platformStatus?.v2UnavailableFeaturesNote ? (
           <div className="flex items-start gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2 text-xs text-amber-100">
             <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-300" aria-hidden="true" />

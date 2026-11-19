@@ -50,3 +50,13 @@ Pour `action_commune` :
   1. L'administrateur retrouve et qualifie la proposition dans la file créateur existante (`/admin` / `creator-inbox`).
   2. Vérification de la preuve (source publique HTTP(S) directe, absence de confusion d'homonymes, absence de lien d'invitation privé ou de donnée personnelle privée).
   3. Mise à jour explicite du registre canonique (`apps/web/src/lib/partners/paris-cleanwalk-network.data.ts` et `.relations.ts`) avec provenance et date `verifiedAt`.
+
+## 6. Transparence des financements
+
+- Chaque nœud peut porter un champ facultatif `funding` (`ParisActorFunding`) directement dans le registre éditorial (sans nouvelle table Supabase).
+- Ce champ enregistre uniquement les origines de financement documentées par une source publique directe (`sources`, `sharesPublished`, `period`, `entityName`, `calculationBase`, `sourceUrl`, `verifiedAt`, `notes` éventuelles).
+- **Règles de rigueur** :
+  - Ne jamais assimiler une part inconnue à `0` : lorsque les sources sont connues sans répartition chiffrée (`sharesPublished: false`), la bulle affiche `« Parts non publiées »`.
+  - Ne jamais confondre les comptes d'une entité nationale/européenne avec ceux d'une antenne locale (ex. les comptes de Surfrider Europe ne sont pas attribués à Surfrider Paris).
+  - Les liens non HTTP(S) sont filtrés avant affichage.
+  - Si aucun financement n'est établi pour l'acteur, aucune ligne `Financement` n'est rendue dans `ParisNetwork3DBubble`.

@@ -93,6 +93,25 @@ export interface ParisActorProvenance {
   certainty: VerificationCertainty;
 }
 
+export interface ParisActorFundingSource {
+  label: string;
+  /** Pourcentage publié (0..100). Toujours null/undefined si inconnu — ne jamais assimiler à 0. */
+  sharePercent?: number | null;
+  /** Montant en euros publié si connu. */
+  amountEur?: number | null;
+}
+
+export interface ParisActorFunding {
+  sources: ParisActorFundingSource[];
+  sharesPublished: boolean;
+  period?: string;
+  entityName: string;
+  calculationBase?: string;
+  sourceUrl: string;
+  verifiedAt: string;
+  notes?: string;
+}
+
 export interface ParisCleanwalkActor {
   /**
    * Canonical identifier. Reuses the Annuaire seed ID when the actor already
@@ -122,6 +141,7 @@ export interface ParisCleanwalkActor {
   participationModalities: ParticipationModality[];
   equipmentAvailability: ParisActorEquipment;
   activities: string[];
+  funding?: ParisActorFunding;
   provenance: ParisActorProvenance;
   verifiedAt: string;
   isCleanMyMapMember: false;
