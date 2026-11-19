@@ -4,6 +4,8 @@
 
 begin;
 set local role postgres;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 
 delete from public.action_role_attestation_audit where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
 delete from public.action_role_attestations where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
@@ -178,6 +180,8 @@ end $$;
 
 begin;
 set local role postgres;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 delete from public.action_role_attestation_audit where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
 delete from public.action_role_attestations where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
 delete from public.action_field_role_assignments where action_id = '11111111-1111-4111-8111-111111111111'::uuid;
