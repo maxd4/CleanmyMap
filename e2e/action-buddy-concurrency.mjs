@@ -41,6 +41,7 @@ const setupSql = `
 begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"action-buddy-concurrency-setup"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 insert into public.actions (
   id, created_by_clerk_id, action_date, event_start_time, location_label,
   status, action_phase, access_mode, moderation_visibility, review_state, published_at
@@ -119,6 +120,7 @@ function sessionSql(participant, proposalId, ownKey, otherKey) {
 begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"action-buddy-concurrency-${participant.toLowerCase()}"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 ${barrierSql(participant, ownKey, otherKey)}
 do $$
 declare
