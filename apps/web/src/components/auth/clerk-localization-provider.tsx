@@ -30,6 +30,25 @@ export function ClerkLocalizationProvider({
       ...frFR,
       formFieldLabel__username: "Pseudo",
       formFieldInputPlaceholder__username: "Pseudo",
+      signIn: {
+        ...frFR.signIn,
+        start: {
+          ...frFR.signIn?.start,
+          title: "Se connecter",
+          titleCombined: "Se connecter",
+          subtitle: "Accédez à votre espace CleanMyMap",
+        },
+      },
+      signUp: {
+        ...frFR.signUp,
+        start: {
+          ...frFR.signUp?.start,
+          title: "Créer un compte",
+          titleCombined: "Créer un compte",
+          subtitle: "Rejoignez CleanMyMap en quelques secondes",
+          subtitleCombined: "Rejoignez CleanMyMap en quelques secondes",
+        },
+      },
     }
   : undefined;
 

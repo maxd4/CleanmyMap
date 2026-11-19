@@ -18,12 +18,13 @@
   page d'origine après connexion, y compris après OAuth. Sans destination
   valide, Clerk utilise l'accueil. Le lien vers l'inscription conserve le même
   contexte.
-- **Palette attendue** : canvas emerald clair lumineux, halos emerald discrets,
-  panneau éditorial emerald sombre et surface Clerk claire structurée
-- **Scope** : shell Auth & Onboarding partagé, surface Clerk de connexion, retour vers l'accueil et bascule vers l'inscription.
+- **Palette attendue** : canvas emerald sobre (`bg-emerald-50/40`),
+  panneau éditorial vert profond compact (35–40 % desktop) et panneau
+  formulaire blanc dominant (60–65 % desktop) avec CTA emerald (`#059669`)
+- **Scope** : shell Auth & Onboarding partagé, surface Clerk de connexion, retour vers l'accueil, bascule unique vers l'inscription et liens discrets CGU/confidentialité.
 - **Terminée** : oui pour le parcours actuellement livré
-- **Couleurs actuellement détectées** : canvas emerald lumineux, panneau éditorial
-  emerald sombre, surface Clerk blanche et CTA principal doré/brun
+- **Couleurs actuellement détectées** : canvas emerald sobre, panneau éditorial
+  vert profond, surface Clerk blanche unifiée et CTA principal emerald
 - **Incohérences de couleurs** : aucune ; le shell reste autonome et la
   surface Clerk conserve ses composants natifs, sa validation et ses erreurs.
 - **Risque de conflit avec les couleurs existantes** : moyen : éviter une dérive vers une esthétique admin ou cartographique.
@@ -32,12 +33,12 @@
 - Formulaire
 - CTA principal
 - validation
-- liens de bascule auth
+- liens de bascule auth et liens discrets CGU/confidentialité
 - **Textes à réduire ou supprimer** :
-- Marketing de contexte
+- Marketing de contexte (cartes bénéfices supprimées)
 - explications répétées
 - bandeaux auxiliaires
-- **Bulles / cartes / contextes trop nombreux** : le shell limite le contexte éditorial à trois bénéfices et conserve une seule surface Clerk principale.
+- **Bulles / cartes / contextes trop nombreux** : le panneau gauche est limité au logo, un titre bref et une phrase descriptive ; le panneau droit forme un conteneur visuel unique sans encadrement imbriqué.
 - **Composants UI concernés** :
 - Formulaire auth
 - inputs

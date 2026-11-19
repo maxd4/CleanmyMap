@@ -20,7 +20,7 @@ function SignUpLoadingState() {
     <div className="space-y-4 motion-safe:animate-pulse">
       <div className="h-11 rounded-xl border border-slate-200 bg-slate-100" />
       <div className="h-11 rounded-xl border border-slate-200 bg-slate-100" />
-      <div className="h-11 rounded-xl bg-[#a06c00]" />
+      <div className="h-11 rounded-xl bg-emerald-600" />
       <p className="pt-2 text-sm text-slate-500">
         Chargement sécurisé de l&apos;inscription...
       </p>
