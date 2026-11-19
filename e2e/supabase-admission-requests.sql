@@ -16,6 +16,9 @@ declare
   v_world_cup_id uuid := md5(v_event_id::text || ':world_cup')::uuid;
   v_team_casual uuid := gen_random_uuid();
   v_team_world_cup uuid := gen_random_uuid();
+  v_casual_category_id uuid := gen_random_uuid();
+  v_world_cup_category_id uuid := gen_random_uuid();
+  v_quiz_version text;
   v_registration_request_id uuid;
   v_team_join_request_id uuid;
   v_replay_id uuid;
@@ -41,26 +44,94 @@ begin
 
   insert into public.spogomi_events (
     id, action_id, created_by_clerk_id, name, location_label, mode,
-    state, starts_at, regulation_version, regulation_status, regulation_config,
+    state, starts_at, regulation_version, regulation_status,
+    regulation_source_reference, regulation_config,
     team_size_config, creation_state, public_visibility
   ) values (
     v_event_id, v_action_id, 'admission-db-contract', 'SPOGOMI admission contract',
-    'SPOGOMI contract', 'mixed', 'registration_open', now(), 'contract-v1',
-    'complete', '{}'::jsonb, '{}'::jsonb, 'event_pending', 'published'
+    'SPOGOMI contract', 'mixed', 'registration_open', now() + interval '1 day', 'contract-v1',
+    'complete', 'https://example.invalid/official-regulation',
+    jsonb_build_object('registrationPolicy', jsonb_build_object(
+      'capacity', 10,
+      'safetyInstructions', 'Rester dans le périmètre et respecter les consignes.',
+      'safetyInstructionsVerified', true,
+      'organizationContact', 'Contact officiel CleanMyMap',
+      'organizationContactVerified', true,
+      'assistanceProcedure', 'Contacter l’organisation via le canal officiel.',
+      'assistanceProcedureVerified', true,
+      'minorsApplicable', false
+    )),
+    '{}'::jsonb, 'event_pending', 'published'
   );
 
   insert into public.spogomi_divisions (
     id, event_id, division_type, division_key, regulation_version,
-    regulation_status, regulation_config, team_size_config
+    regulation_status, regulation_source_reference, regulation_config, team_size_config
   ) values
     (
       v_casual_id, v_event_id, 'casual', 'casual', 'contract-v1', 'complete',
-      '{"registrationPolicy":{"directRegistrationOpen":true}}'::jsonb, '{}'::jsonb
+      'https://example.invalid/division-regulation',
+      jsonb_build_object(
+        'rounding', jsonb_build_object('decimals', 2, 'mode', 'half_up'),
+        'eligibility', jsonb_build_object('requiresAllCategories', true, 'minimumPresentParticipants', 1),
+        'tiebreakers', jsonb_build_array('sporting_score'),
+        'registrationPolicy', jsonb_build_object('directRegistrationOpen', true, 'capacity', 10)
+      ),
+      '{}'::jsonb
     ),
     (
       v_world_cup_id, v_event_id, 'world_cup', 'world_cup', 'contract-v1', 'complete',
-      '{"registrationPolicy":{"directRegistrationOpen":true,"worldCupDirectRegistrationAllowed":true}}'::jsonb, '{}'::jsonb
+      'https://example.invalid/division-regulation',
+      jsonb_build_object(
+        'rounding', jsonb_build_object('decimals', 2, 'mode', 'half_up'),
+        'eligibility', jsonb_build_object('requiresAllCategories', true, 'minimumPresentParticipants', 1),
+        'tiebreakers', jsonb_build_array('sporting_score'),
+        'registrationPolicy', jsonb_build_object('directRegistrationOpen', true, 'worldCupDirectRegistrationAllowed', true, 'capacity', 10)
+      ),
+      '{}'::jsonb
     );
+
+  insert into public.spogomi_category_rules (
+    id, event_id, division_id, regulation_version, code, label,
+    measurement_kind, unit, coefficient, coefficient_status,
+    environmental_category_slug, display_order, is_complete
+  ) values
+    (v_casual_category_id, v_event_id, v_casual_id, 'contract-v1', 'plastic', 'Plastique', 'mass', 'grams', 1, 'confirmed', 'plastic', 1, true),
+    (v_world_cup_category_id, v_event_id, v_world_cup_id, 'contract-v1', 'plastic', 'Plastique', 'mass', 'grams', 1, 'confirmed', 'plastic', 1, true);
+
+  insert into public.spogomi_environment_category_mappings (
+    event_id, division_id, category_rule_id, mapping_version, category_code,
+    environmental_category_slug, source_field, source_unit, target_unit,
+    unit_factor_to_target, mapping_status
+  ) values
+    (v_event_id, v_casual_id, v_casual_category_id, 'spogomi-cleanmymap-v1', 'plastic', 'plastic', 'mass_grams', 'grams', 'grams', 1, 'mapped'),
+    (v_event_id, v_world_cup_id, v_world_cup_category_id, 'spogomi-cleanmymap-v1', 'plastic', 'plastic', 'mass_grams', 'grams', 'grams', 1, 'mapped');
+
+  insert into public.spogomi_event_routes (
+    event_id, action_id, file_name, point_count, reference_distance_km,
+    inferred_topology, geometry_geojson, imported_by_clerk_id
+  ) values (
+    v_event_id, v_action_id, 'official-route.gpx', 2, 1.2, 'point_to_point',
+    '{"type":"LineString","coordinates":[[2,48],[2.01,48.01]]}'::jsonb,
+    'admission-db-contract'
+  );
+
+  insert into public.spogomi_field_operations (
+    event_id, division_id, timezone_name, regulation_version,
+    official_start_at, collection_limit_at, sorting_limit_at,
+    weighing_start_at, weighing_end_at, updated_by_clerk_id
+  ) values
+    (v_event_id, v_casual_id, 'Europe/Paris', 'contract-v1', now() + interval '1 day', now() + interval '1 day 1 hour', now() + interval '1 day 2 hours', now() + interval '1 day 2 hours', now() + interval '1 day 3 hours', 'admission-db-contract'),
+    (v_event_id, v_world_cup_id, 'Europe/Paris', 'contract-v1', now() + interval '1 day', now() + interval '1 day 1 hour', now() + interval '1 day 2 hours', now() + interval '1 day 2 hours', now() + interval '1 day 3 hours', 'admission-db-contract');
+
+  v_quiz_version := public.spogomi_registration_quiz_definition(v_event_id, v_casual_id) ->> 'quizVersion';
+  insert into public.spogomi_registration_quiz_proofs (
+    event_id, division_id, clerk_id, quiz_version, score,
+    critical_correct, critical_total, other_correct, other_total
+  ) values
+    (v_event_id, v_casual_id, 'admission-owner', v_quiz_version, 100, 3, 3, 3, 3),
+    (v_event_id, v_casual_id, 'cancel-owner', v_quiz_version, 100, 3, 3, 3, 3),
+    (v_event_id, v_casual_id, 'reject-owner', v_quiz_version, 100, 3, 3, 3, 3);
 
   insert into public.spogomi_teams (id, event_id, division_id, team_number, public_name)
   values
