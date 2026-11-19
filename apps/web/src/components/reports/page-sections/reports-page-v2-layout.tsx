@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -28,6 +29,11 @@ export function ReportsPageV2Layout({
         <PageHeader
           family={pageFamily}
           title="Rapports d’impact"
+          action={
+            <CmmButton href="/profil/engagement" tone="secondary" size="sm">
+              Valoriser mon engagement
+            </CmmButton>
+          }
           className="w-full"
         />
       </CmmGridItem>

@@ -85,6 +85,20 @@ export const accountAnalyticsAuthorizationContract = {
       ],
     },
   },
+  "account/engagement-proofs/export": {
+    POST: {
+      expected: "Authenticated current account generates and downloads a private no-store Markdown engagement dossier from its live canonical proofs without storing free-text inputs",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess scopes the export to access.userId, rejects foreign userId parameters with 403, enforces authenticated rate limit, reloads live canonical proofs via loadPersonalEngagementProofProjection, and renders Markdown without persisting inputs",
+      evidence: [
+        "requireActionRequestAccess",
+        "enforceServerRateLimitForAuthenticatedUser",
+        "access.userId",
+        "loadPersonalEngagementProofProjection",
+        "renderEngagementDossierMarkdown",
+      ],
+    },
+  },
   "analytics/funnel": {
     POST: {
       expected: "Public-safe validated funnel ingestion with optional current-user attribution",

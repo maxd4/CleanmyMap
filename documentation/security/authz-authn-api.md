@@ -62,13 +62,14 @@ Les mutations `PATCH /api/account/identity`, `PATCH /api/account/locations` et
 sur leurs réponses de succès et d'état partiel. Si Clerk a été muté mais que
 la projection Supabase n'est pas confirmée, la réponse reste `503` avec
 `status=clerk_updated_supabase_sync_pending` afin de permettre une reprise sans
-présenter la mutation comme entièrement convergée. La lecture
-`GET /api/account/engagement-proofs` applique la même frontière
-`requireActionRequestAccess` + `Cache-Control: private, no-store` : elle est
-strictement bornée à `access.userId`, refuse avec `403` tout paramètre
-`userId` tiers, n'expose ni `reviewer_clerk_id` ni `provenance_snapshot` brut
-ni données d'autres participants, et retourne `503` avec un état `error`
-explicite en cas d'indisponibilité Supabase.
+présenter la mutation comme entièrement convergée. La lecture `GET /api/account/engagement-proofs` et l'export Markdown
+`POST /api/account/engagement-proofs/export` appliquent la même frontière
+`requireActionRequestAccess` + `Cache-Control: private, no-store` : ils sont
+strictement bornés à `access.userId`, refusent avec `403` tout paramètre
+`userId` tiers, rechargent les preuves canoniques à la volée sans persister
+les champs libres ni les dossiers générés, n'exposent ni `reviewer_clerk_id`
+ni `provenance_snapshot` brut ni données d'autres participants, et retournent
+`503` avec un état `error` explicite en cas d'indisponibilité Supabase.
 
 Les routes de transport de test `/api/email/test` et `/api/send` sont des
 surfaces admin et renvoient également `private, no-store`. Le token

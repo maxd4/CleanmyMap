@@ -34,6 +34,7 @@ export function ImpactProfileAuthenticatedView({ classes, identity, prog, valida
       <div className="sticky top-24 flex justify-center"><ImpactCardPreview identity={identity} prog={prog} /></div>
       <div className="space-y-10">
         <ImpactProfileIntro classes={classes} actions={actions} />
+        <ImpactEngagementDossierCard classes={classes} />
         <ImpactMethodology classes={classes} />
         <ImpactRoleHistory classes={classes} history={validatedRoleHistory} />
         <ImpactCollectiveSection classes={classes} />
@@ -60,6 +61,10 @@ function ImpactProfileIntro({ classes, actions }: { classes: ReturnType<typeof i
     <div className="flex flex-col gap-4 sm:flex-row"><CmmButton type="button" onClick={() => { void /* fire-and-forget -- the impact card action owns export state and errors. */ handleDownload(); }} disabled={Boolean(activeCardAction)} tone="destructive" className={cn("flex-1 flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-8 py-5 text-sm font-black uppercase tracking-widest text-white shadow-2xl shadow-red-600/20 hover:bg-red-500 disabled:opacity-50", classes.shadow)}><Download size={18} />{activeCardAction === "export" ? "Génération de la carte..." : "Exporter la carte"}</CmmButton><CmmButton type="button" onClick={() => { void /* fire-and-forget -- the impact card action owns share state and errors. */ handleShare(); }} disabled={Boolean(activeCardAction)} tone="secondary" className="flex-1 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-sm font-black uppercase tracking-widest text-red-100/60 transition-[background-color,color] hover:bg-white/10 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-50"><Share2 size={18} />{activeCardAction === "share" ? "Préparation du partage..." : "Partager la carte"}</CmmButton></div>
     <div className="min-h-6" aria-live="polite" aria-atomic="true">{cardActionMessage ? <p className="text-center text-xs font-bold text-red-100/80">{cardActionMessage}</p> : null}{cardActionError ? <p role="alert" className="text-center text-xs font-bold text-rose-200">{cardActionError}</p> : null}</div>
   </>;
+}
+
+function ImpactEngagementDossierCard({ classes }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses> }) {
+  return <section aria-labelledby="engagement-dossier-entry-title" className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}><div className="space-y-2"><p className="text-xs font-black uppercase tracking-widest text-red-400/60">Éco-citoyenneté &amp; insertion</p><h3 id="engagement-dossier-entry-title" className="text-lg font-black tracking-tight text-slate-950">Valoriser mon engagement</h3><p className="cmm-text-body">Sélectionnez vos participations confirmées et vos missions attestées pour télécharger un dossier Markdown privé.</p></div><CmmButton href="/profil/engagement" tone="primary" size="md">Ouvrir mon dossier d&apos;engagement</CmmButton></section>;
 }
 
 function ImpactMethodology({ classes }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses> }) {

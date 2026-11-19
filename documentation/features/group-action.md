@@ -253,9 +253,14 @@ ultérieur d'organisateur ne réécrit pas les instantanés historiques.
 Tout membre authentifié peut lire la projection server-only de ses engagements
 bénévoles documentés via `GET /api/account/engagement-proofs`
 (`apps/web/src/lib/actions/engagement-proof-projection.ts`), indépendamment de
-Brigade Verte et de SPOGOMI. La réponse est strictement owner-scoped
-(`requireActionRequestAccess`, refus `403` de tout `userId` tiers) et servie en
-`Cache-Control: private, no-store`.
+Brigade Verte et de SPOGOMI, et exporter son dossier Markdown privé depuis
+`/profil/engagement` (accessible principalement depuis `/profil/impact` et en
+lien secondaire depuis `/reports`) via `POST /api/account/engagement-proofs/export`
+et le modèle éditorial versionné `apps/web/src/lib/actions/engagement-dossier-template.md`.
+La réponse et l'export sont strictement owner-scoped
+(`requireActionRequestAccess`, refus `403` de tout `userId` tiers), servis en
+`Cache-Control: private, no-store`, et ne persistent ni champs libres ni
+dossiers générés.
 
 La projection est réévaluée à la volée à chaque lecture, sans compteur ni copie
 concurrente des preuves :
