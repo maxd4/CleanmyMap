@@ -29,6 +29,7 @@ begin
     '2026-10-20T09:00:00+02:00', 'synthetic-v1', 'complete',
     '{"casual":{"minMembers":1,"maxMembers":4}}'::jsonb
   );
+  perform public.spogomi_ensure_parent_divisions(v_event_id, 'casual');
   insert into public.spogomi_teams (id, event_id, team_number, public_name)
   values (v_team_id, v_event_id, 1, 'Synthetic team');
   insert into public.spogomi_participants (
@@ -39,8 +40,10 @@ begin
 
   -- The privileged session is required for the server-owned RPCs, but direct
   -- writes still pass through the composition triggers.
+  select composition_revision into v_revision
+    from public.spogomi_events where id = v_event_id;
   perform public.spogomi_move_participant_to_team(
-    v_event_id, v_participant_id, v_team_id, 0, 'spogomi-transactional-contract-move'
+    v_event_id, v_participant_id, v_team_id, v_revision, 'spogomi-transactional-contract-move'
   );
   begin
     update public.spogomi_events set state = 'composition_locked' where id = v_event_id;
@@ -235,6 +238,7 @@ begin
     'Synthetic consolidation event', 'Synthetic consolidation location',
     'casual', 'judging', '2026-10-20T09:00:00+02:00', 'synthetic-v1', 'complete'
   );
+  perform public.spogomi_ensure_parent_divisions(v_event_id, 'casual');
   insert into public.spogomi_teams (id, event_id, team_number, public_name, composition_state)
   values (v_team_id, v_event_id, 1, 'Synthetic consolidation team', 'verified');
   insert into public.spogomi_participants (
