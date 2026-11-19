@@ -74,10 +74,14 @@ export {
   ECOLOGITS_METADATA,
   ECOLOGITS_CONSTANTS,
   evaluateEcologitsMethodology,
+  computeOfficialEcologitsLlmImpacts,
   computeEcologitsCompatibleImpacts,
 } from "./ecologits-adapter";
 export type {
   EcologitsEvaluationReport,
+  OfficialEcologitsLlmCoefficients,
+  OfficialEcologitsLlmParams,
+  OfficialEcologitsLlmRawImpacts,
   EcologitsComputationParams,
   EcologitsImpactsResult,
 } from "./ecologits-adapter";

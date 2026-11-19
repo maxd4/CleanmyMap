@@ -275,17 +275,92 @@ describe("personal-ai-estimator", () => {
     expect(result.marketBasedDisclosure?.note).toContain("Certificat de garantie d'origine");
   });
 
-  it("adapte le calcul pour une exécution locale sur machine personnelle", () => {
-    const result = estimatePersonalAiFootprint({
+  it("gère rigoureusement local_device : NA sans mesure électrique, calcul mesuré avec PUE 1.0 et incorporé NA (jamais 0)", () => {
+    // 1. Sans measuredEnergyKwh : aucune extrapolation serveur H100 et aucun 0 fictif sur l'incorporé
+    const unmeasuredLocal = estimatePersonalAiFootprint({
       modelId: "meta-llama/llama-3.1-8b-instruct",
       executionEnvironment: "local_device",
       textUsage: { outputTokens: 10_000 },
       region: "FR",
     });
 
-    expect(result.executionEnvironment).toBe("local_device");
-    expect(result.pue).toBe(1.0); // aucun surcoût de refroidissement data center
-    expect(result.physicalTotals.embodiedKgCo2e).toBe(0); // pas d'amortissement serveur cloud
+    expect(unmeasuredLocal.executionEnvironment).toBe("local_device");
+    expect(unmeasuredLocal.pue).toBe(1.0);
+    expect(unmeasuredLocal.physicalTotals.itEnergyKwh).toBeNull();
+    expect(unmeasuredLocal.physicalTotals.facilityEnergyKwh).toBeNull();
+    expect(unmeasuredLocal.physicalTotals.operationalKgCo2e).toBeNull();
+    expect(unmeasuredLocal.physicalTotals.embodiedKgCo2e).toBeNull();
+    expect(unmeasuredLocal.dataQuality).toBe("NOT_CALCULABLE");
+
+    // 2. Avec measuredEnergyKwh : énergie et carbone opérationnel calculés, PUE 1.0, incorporé strictement null (NA)
+    const measuredLocal = estimatePersonalAiFootprint({
+      modelId: "meta-llama/llama-3.1-8b-instruct",
+      executionEnvironment: "local_device",
+      measuredEnergyKwh: 2.0,
+      region: "FR",
+    });
+
+    expect(measuredLocal.pue).toBe(1.0);
+    expect(measuredLocal.physicalTotals.itEnergyKwh).toBe(2.0);
+    expect(measuredLocal.physicalTotals.facilityEnergyKwh).toBe(2.0);
+    expect(measuredLocal.physicalTotals.operationalKgCo2e).toBe(round6(2.0 * 0.0217));
+    expect(measuredLocal.physicalTotals.embodiedKgCo2e).toBeNull();
+    expect(measuredLocal.dataQuality).toBe("MEASURED");
+  });
+
+  it("ne traite jamais totalTokens seul comme outputTokens sur un modèle connu et n'invente aucune énergie sans activité", () => {
+    // 1. Modèle connu avec totalTokens seul (sans ventilation outputTokens) -> bascule sur PROXY_SCENARIO
+    const totalOnlyOnKnownModel = estimatePersonalAiFootprint({
+      modelId: "meta-llama/llama-3.1-70b-instruct",
+      textUsage: { totalTokens: 1_000_000 },
+      energyScenario: "central",
+      region: "US",
+      pue: 1.15,
+    });
+
+    expect(totalOnlyOnKnownModel.dataQuality).toBe("PROXY_SCENARIO");
+    expect(totalOnlyOnKnownModel.physicalTotals.itEnergyKwh).toBe(0.3);
+    expect(totalOnlyOnKnownModel.physicalTotals.embodiedKgCo2e).toBeNull();
+    expect(
+      totalOnlyOnKnownModel.methodologyNotes.some((n) =>
+        n.includes("ne sont jamais assimilés à des tokens de sortie dans EcoLogits"),
+      ),
+    ).toBe(true);
+
+    // 2. Modèle connu sans aucune activité texte -> NA (aucune seconde fictive inventée)
+    const knownModelNoActivity = estimatePersonalAiFootprint({
+      modelId: "meta-llama/llama-3.1-70b-instruct",
+      region: "US",
+    });
+
+    expect(knownModelNoActivity.dataQuality).toBe("NOT_CALCULABLE");
+    expect(knownModelNoActivity.physicalTotals.itEnergyKwh).toBeNull();
+    expect(knownModelNoActivity.physicalTotals.facilityEnergyKwh).toBeNull();
+    expect(knownModelNoActivity.physicalTotals.operationalKgCo2e).toBeNull();
+    expect(knownModelNoActivity.physicalTotals.embodiedKgCo2e).toBeNull();
+  });
+
+  it("n'expose totalWaterLiters que si l'eau directe et l'eau indirecte sont toutes deux calculables", () => {
+    // Sans datacenterWue : directWaterLiters = null -> totalWaterLiters = null
+    const usIndirectOnly = estimatePersonalAiFootprint({
+      textUsage: { totalTokens: 10_000_000 },
+      region: "US",
+      pue: 1.15,
+    });
+    expect(usIndirectOnly.physicalTotals.directWaterLiters).toBeNull();
+    expect(usIndirectOnly.physicalTotals.indirectWaterLiters).toBe(15.594);
+    expect(usIndirectOnly.physicalTotals.totalWaterLiters).toBeNull();
+
+    // Avec datacenterWue en région US : les deux composantes sont présentes -> totalWaterLiters calculé
+    const usBothWaters = estimatePersonalAiFootprint({
+      textUsage: { totalTokens: 10_000_000 },
+      region: "US",
+      pue: 1.15,
+      datacenterWue: 0.5,
+    });
+    expect(usBothWaters.physicalTotals.directWaterLiters).toBe(1.5);
+    expect(usBothWaters.physicalTotals.indirectWaterLiters).toBe(15.594);
+    expect(usBothWaters.physicalTotals.totalWaterLiters).toBe(17.094);
   });
 
   it("rejette les entrées invalides, non finies, négatives, non entières ou contradictoires", () => {
@@ -325,6 +400,28 @@ describe("personal-ai-estimator", () => {
         textUsage: { outputTokens: 100, reasoningTokensIncluded: 120 },
       }),
     ).toThrow(/reasoningTokensIncluded/);
+    expect(() =>
+      estimatePersonalAiFootprint({
+        textUsage: { totalTokens: 100, inputTokens: 40 },
+      }),
+    ).toThrow(/totalTokens/);
+    expect(() =>
+      estimatePersonalAiFootprint({
+        textUsage: { totalTokens: 100, cachedTokens: 20 },
+      }),
+    ).toThrow(/cachedTokens/);
+    expect(() =>
+      estimatePersonalAiFootprint({
+        textUsage: { outputTokens: 100 },
+        requestCount: 0,
+      }),
+    ).toThrow(/requestCount/);
+    expect(() =>
+      estimatePersonalAiFootprint({
+        textUsage: { outputTokens: 100 },
+        measuredDurationSeconds: 0,
+      }),
+    ).toThrow(/measuredDurationSeconds/);
   });
 
   it("préserve la précision interne pour de très faibles volumes de tokens non nuls", () => {

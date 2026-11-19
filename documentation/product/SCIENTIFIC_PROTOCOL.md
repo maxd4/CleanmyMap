@@ -451,13 +451,18 @@ L'estimateur d'impact du site (`constants-core.ts` dérivant directement les val
 4. **Catalogue des modèles et neutralité du raisonnement** :
    - Séparation stricte entre éditeur et opérateur hébergeur (`resolveHosterForModel`) ;
    - Prise en compte des architectures denses vs Mixture-of-Experts (paramètres actifs vs totaux) ;
-   - Les tokens de réflexion des modèles de raisonnement (reasoning tokens) sont des tokens physiques générés, sans multiplicateur énergétique arbitraire ;
-   - KV-cache et prompt caching intégrés avec abattement sur la phase de préfill sans régression.
+   - Les tokens de réflexion des modèles de raisonnement (reasoning tokens) sont un sous-ensemble des tokens physiques générés (`outputTokens`), sans multiplicateur énergétique arbitraire ;
+   - Les tokens en cache (`cachedTokens`) sont un sous-ensemble vérifié de `inputTokens` (`0 <= cachedTokens <= inputTokens`), jamais additionnés à `inputTokens`.
 
-5. **Évaluation et intégration de la méthodologie EcoLogits** :
-   - Évaluation de la méthodologie EcoLogits v3.0.0 (Data For Good / GenAI Impact, licence MPL-2.0) via `ecologits-adapter.ts` ;
-   - Décomposition physique en DAG : énergie active accélérateurs ($E_{\text{active}}$) + énergie idle serveur ($E_{\text{idle}}$) + impacts matériels ACV (GWP, ADPe, PE) amortis sur 3 ans ;
-   - Dérivation de débits déterministes pour bilans déclaratifs et bascule en fail-closed (`NA`) si la géographie ou la physique sont incomplètes ;
+5. **Fidélité scientifique de l'intégration EcoLogits v3.0.0** :
+   - Implémentation exacte dans `ecologits-adapter.ts` (`computeOfficialEcologitsLlmImpacts` et `computeEcologitsCompatibleImpacts`) des équations et constantes officielles EcoLogits.js v3.0.0 (`packages/ecologits.js/src/impacts/llm.ts`), validée à 0 ULP contre les vecteurs officiels `spec/vectors/estimator.json` :
+     - $E_{\text{GPU}} = N_{\text{output}} \times \frac{\alpha \exp(\beta \cdot \text{batch}) P_{\text{active}} + \gamma}{1000} \times N_{\text{GPU}}$, avec $\alpha = 1,1665273170451914 \times 10^{-6}$, $\beta = -0,011205921025579175$ et $\gamma = 4,052928146734005 \times 10^{-5}$ ;
+     - Dimensionnement mémoire $M_{\text{req}} = 1,2 \times P_{\text{total}} \times \text{bits} / 8$ et $N_{\text{GPU}} = 2^{\lceil \log_2(\lceil M_{\text{req}} / M_{\text{GPU}} \rceil) \rceil}$ ;
+     - Latence active dérivée de la régression officielle ($\alpha_L P_{\text{active}} + \beta_L \text{batch} + \gamma_L$) ou de `tps`/`ttft`, plafonnée par `requestLatency` ;
+     - Impacts incorporés (serveur $5700\text{ kgCO₂e}$ hors GPU + $273\text{ kgCO₂e/GPU}$, ADPe, PE) pondérés par $N_{\text{GPU}} / 8$ et amortis sur $3 \times 365 \times 24 \times 3600\text{ s}$ ;
+   - Aucune conformité EcoLogits n'est revendiquée si `activeParametersBillion`, `totalParametersBillion` ou `outputTokens > 0` manquent : `totalTokens` ou `inputTokens` ne sont jamais substitués à `outputTokens` (bascule explicite sur le scénario générique `PROXY_SCENARIO` ou `NA`) ;
+   - Pour `local_device` sans `measuredEnergyKwh`, aucune extrapolation des constantes serveur cloud H100 n'est appliquée et les impacts incorporés restent `null` (`NA`), jamais `0` ;
+   - `totalWaterLiters` n'est calculé que lorsque l'eau directe sur site et l'eau indirecte réseau sont toutes deux calculables ;
    - Herméticité absolue entre engagements contractuels market-based et inventaire physique location-based.
 
 ## Lecture correcte

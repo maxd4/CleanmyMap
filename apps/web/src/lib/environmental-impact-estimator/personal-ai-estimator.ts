@@ -25,9 +25,7 @@ const MAX_REASONABLE_PUE = 5.0;
 
 function roundPhysicalOutput(value: number): number {
   if (!Number.isFinite(value) || value === 0) return 0;
-  if (Math.abs(value) >= 0.001) {
-    return Math.round(value * 1_000_000) / 1_000_000;
-  }
+  if (Math.abs(value) >= 0.001) return Math.round(value * 1_000_000) / 1_000_000;
   return Number(value.toPrecision(6));
 }
 
@@ -45,78 +43,51 @@ function assertNonNegativeInteger(value: number | null | undefined, fieldName: s
   }
 }
 
+function validateTextUsageCoherence(text: NonNullable<PersonalAiFootprintInput["textUsage"]>): void {
+  assertNonNegativeInteger(text.totalTokens, "textUsage.totalTokens");
+  assertNonNegativeInteger(text.inputTokens, "textUsage.inputTokens");
+  assertNonNegativeInteger(text.outputTokens, "textUsage.outputTokens");
+  assertNonNegativeInteger(text.cachedTokens, "textUsage.cachedTokens");
+  assertNonNegativeInteger(text.reasoningTokensIncluded, "textUsage.reasoningTokensIncluded");
+
+  if (typeof text.cachedTokens === "number") {
+    if (typeof text.inputTokens !== "number" && text.cachedTokens > 0) {
+      throw new Error("Déclaration incohérente : 'textUsage.cachedTokens' est un sous-ensemble de 'textUsage.inputTokens' et requiert 'textUsage.inputTokens'.");
+    }
+    if (typeof text.inputTokens === "number" && text.cachedTokens > text.inputTokens) {
+      throw new Error("Déclaration incohérente : 'textUsage.cachedTokens' ne peut pas dépasser 'textUsage.inputTokens'.");
+    }
+  }
+
+  if (typeof text.reasoningTokensIncluded === "number") {
+    if (typeof text.outputTokens !== "number" && text.reasoningTokensIncluded > 0) {
+      throw new Error("Déclaration incohérente : 'textUsage.reasoningTokensIncluded' est un sous-ensemble de 'textUsage.outputTokens' et requiert 'textUsage.outputTokens'.");
+    }
+    if (typeof text.outputTokens === "number" && text.reasoningTokensIncluded > text.outputTokens) {
+      throw new Error("Déclaration incohérente : 'textUsage.reasoningTokensIncluded' ne peut pas dépasser 'textUsage.outputTokens'.");
+    }
+  }
+
+  if (typeof text.totalTokens === "number") {
+    const hasInput = typeof text.inputTokens === "number";
+    const hasOutput = typeof text.outputTokens === "number";
+    if (hasInput && hasOutput) {
+      if (text.totalTokens !== (text.inputTokens as number) + (text.outputTokens as number)) {
+        throw new Error("Déclaration incohérente : 'textUsage.totalTokens' doit égaler 'inputTokens + outputTokens'.");
+      }
+    } else if (hasInput || hasOutput) {
+      throw new Error("Déclaration incohérente : lorsque 'textUsage.totalTokens' est combiné avec une sous-répartition, 'inputTokens' et 'outputTokens' doivent tous deux être fournis (aucune déduction implicite).");
+    }
+  }
+}
+
 function validatePersonalAiInput(input: PersonalAiFootprintInput): void {
   if (input.pue !== undefined && input.pue !== null) {
-    if (
-      typeof input.pue !== "number" ||
-      !Number.isFinite(input.pue) ||
-      input.pue < 1.0 ||
-      input.pue > MAX_REASONABLE_PUE
-    ) {
-      throw new Error(
-        `Entrée invalide pour 'pue' : une valeur finie comprise entre 1.0 et ${MAX_REASONABLE_PUE} est attendue.`,
-      );
+    if (typeof input.pue !== "number" || !Number.isFinite(input.pue) || input.pue < 1.0 || input.pue > MAX_REASONABLE_PUE) {
+      throw new Error(`Entrée invalide pour 'pue' : une valeur finie comprise entre 1.0 et ${MAX_REASONABLE_PUE} est attendue.`);
     }
   }
-
-  const text = input.textUsage;
-  if (text) {
-    assertNonNegativeInteger(text.totalTokens, "textUsage.totalTokens");
-    assertNonNegativeInteger(text.inputTokens, "textUsage.inputTokens");
-    assertNonNegativeInteger(text.outputTokens, "textUsage.outputTokens");
-    assertNonNegativeInteger(text.cachedTokens, "textUsage.cachedTokens");
-    assertNonNegativeInteger(text.reasoningTokensIncluded, "textUsage.reasoningTokensIncluded");
-
-    if (
-      typeof text.inputTokens === "number" &&
-      typeof text.cachedTokens === "number" &&
-      text.cachedTokens > text.inputTokens
-    ) {
-      throw new Error(
-        "Déclaration incohérente : 'textUsage.cachedTokens' ne peut pas dépasser 'textUsage.inputTokens'.",
-      );
-    }
-
-    if (
-      typeof text.outputTokens === "number" &&
-      typeof text.reasoningTokensIncluded === "number" &&
-      text.reasoningTokensIncluded > text.outputTokens
-    ) {
-      throw new Error(
-        "Déclaration incohérente : 'textUsage.reasoningTokensIncluded' ne peut pas dépasser 'textUsage.outputTokens'.",
-      );
-    }
-
-    if (typeof text.totalTokens === "number") {
-      if (typeof text.inputTokens === "number" && typeof text.outputTokens === "number") {
-        if (text.totalTokens !== text.inputTokens + text.outputTokens) {
-          throw new Error(
-            "Déclaration incohérente : 'textUsage.totalTokens' doit égaler 'inputTokens + outputTokens'.",
-          );
-        }
-      } else {
-        const minExpected = (text.inputTokens ?? 0) + (text.outputTokens ?? 0);
-        if (text.totalTokens < minExpected) {
-          throw new Error(
-            "Déclaration incohérente : 'textUsage.totalTokens' ne peut pas être inférieur à la sous-répartition fournie.",
-          );
-        }
-        if (typeof text.cachedTokens === "number" && text.cachedTokens > text.totalTokens) {
-          throw new Error(
-            "Déclaration incohérente : 'textUsage.cachedTokens' ne peut pas dépasser 'textUsage.totalTokens'.",
-          );
-        }
-      }
-    } else if (
-      typeof text.cachedTokens === "number" &&
-      text.cachedTokens > 0 &&
-      typeof text.inputTokens !== "number"
-    ) {
-      throw new Error(
-        "Déclaration incohérente : 'textUsage.cachedTokens' requiert 'textUsage.inputTokens' ou 'textUsage.totalTokens'.",
-      );
-    }
-  }
+  if (input.textUsage) validateTextUsageCoherence(input.textUsage);
 
   assertNonNegativeInteger(input.imageUsage?.imageCount, "imageUsage.imageCount");
   assertNonNegativeFinite(input.audioUsage?.durationMinutes, "audioUsage.durationMinutes");
@@ -127,65 +98,60 @@ function validatePersonalAiInput(input: PersonalAiFootprintInput): void {
   assertNonNegativeFinite(input.measuredDurationSeconds, "measuredDurationSeconds");
   assertNonNegativeFinite(input.measuredEnergyKwh, "measuredEnergyKwh");
   assertNonNegativeFinite(input.datacenterWue, "datacenterWue");
-  assertNonNegativeFinite(
-    input.marketBasedDeclaration?.claimedKgCo2ePerKwh,
-    "marketBasedDeclaration.claimedKgCo2ePerKwh",
-  );
+  assertNonNegativeFinite(input.ttftSeconds, "ttftSeconds");
+  assertNonNegativeFinite(input.marketBasedDeclaration?.claimedKgCo2ePerKwh, "marketBasedDeclaration.claimedKgCo2ePerKwh");
+
+  if (input.tps !== undefined && input.tps !== null && (typeof input.tps !== "number" || !Number.isFinite(input.tps) || input.tps <= 0)) {
+    throw new Error("Entrée invalide pour 'tps' : un nombre fini > 0 est attendu.");
+  }
+  if (
+    input.batchSize !== undefined &&
+    input.batchSize !== null &&
+    (typeof input.batchSize !== "number" || !Number.isFinite(input.batchSize) || !Number.isInteger(input.batchSize) || input.batchSize < 1)
+  ) {
+    throw new Error("Entrée invalide pour 'batchSize' : un entier >= 1 est attendu.");
+  }
+
+  const text = input.textUsage;
+  const declaredTokens = typeof text?.totalTokens === "number" ? text.totalTokens : (text?.inputTokens ?? 0) + (text?.outputTokens ?? 0);
+  const hasPositiveActivity = declaredTokens > 0 || (input.measuredEnergyKwh ?? 0) > 0 || (input.measuredDurationSeconds ?? 0) > 0;
+
+  if (input.requestCount === 0 && hasPositiveActivity) {
+    throw new Error("Déclaration incohérente : 'requestCount' ne peut pas être 0 lorsqu'une activité non nulle est déclarée.");
+  }
+  if (input.measuredDurationSeconds === 0 && declaredTokens > 0) {
+    throw new Error("Déclaration incohérente : 'measuredDurationSeconds' ne peut pas être 0 lorsqu'une activité de tokens non nulle est déclarée.");
+  }
 }
 
 export type EnergyScenario = "low" | "central" | "high";
 export type AccountingRegion = ScientificFactorRegion;
 
 export type PersonalAiFootprintInput = {
-  /** Période ou libellé descriptif (ex: "Septembre 2026", "Session d'audit") */
   periodLabel?: string;
-  /** Identifiant du modèle dans le catalogue canonique (ex: "openai/gpt-4o", "meta-llama/llama-3.1-70b-instruct") */
   modelId?: string | null;
-  /** Environnement d'exécution : API cloud ou machine locale */
   executionEnvironment?: ExecutionEnvironment;
-  /** Opérateur ou hébergeur effectif (ex: "aws_bedrock", "azure", "openai", "local_self_hosted") */
   hosterOperator?: string | null;
-  /** Utilisation de texte déclarée */
   textUsage?: {
     totalTokens?: number | null;
     inputTokens?: number | null;
     outputTokens?: number | null;
     cachedTokens?: number | null;
-    /** Nombre de tokens de raisonnement inclus dans outputTokens (pour modèles type o1, DeepSeek-R1) */
     reasoningTokensIncluded?: number | null;
   };
-  /** Utilisation d'images déclarée */
-  imageUsage?: {
-    imageCount?: number | null;
-  };
-  /** Utilisation d'audio déclarée */
-  audioUsage?: {
-    durationMinutes?: number | null;
-    requestCount?: number | null;
-  };
-  /** Utilisation de vidéo déclarée */
-  videoUsage?: {
-    durationSeconds?: number | null;
-    generationCount?: number | null;
-  };
-  /** Nombre total de requêtes déclarées */
+  imageUsage?: { imageCount?: number | null };
+  audioUsage?: { durationMinutes?: number | null; requestCount?: number | null };
+  videoUsage?: { durationSeconds?: number | null; generationCount?: number | null };
   requestCount?: number | null;
-  /** Durée ou latence mesurée (en secondes) si disponible */
   measuredDurationSeconds?: number | null;
-  /** Consommation électrique mesurée directement aux bornes (kWh) */
+  tps?: number | null;
+  ttftSeconds?: number | null;
+  batchSize?: number | null;
   measuredEnergyKwh?: number | null;
-  /** WUE direct de refroidissement sur site du data center (L/kWh) si connu */
   datacenterWue?: number | null;
-  /** Déclaration contractuelle market-based (PPA / certificats ENR) */
-  marketBasedDeclaration?: {
-    claimedKgCo2ePerKwh?: number | null;
-    providerCertificateNote?: string;
-  };
-  /** Scénario énergétique pour l'inférence de texte (par défaut: central) */
+  marketBasedDeclaration?: { claimedKgCo2ePerKwh?: number | null; providerCertificateNote?: string };
   energyScenario?: "low" | "central" | "high";
-  /** Région d'infrastructure électrique */
   region?: ScientificFactorRegion;
-  /** PUE du data center (défaut: 1.15 pour intégrer le refroidissement standard, 1.0 si local) */
   pue?: number;
 };
 
@@ -222,12 +188,7 @@ export type PersonalAiFootprintEstimate = {
     activeParametersBillion: number | null;
     isReasoningModel: boolean;
   };
-  modalities: {
-    text: ModalityEstimate;
-    image: ModalityEstimate;
-    audio: ModalityEstimate;
-    video: ModalityEstimate;
-  };
+  modalities: { text: ModalityEstimate; image: ModalityEstimate; audio: ModalityEstimate; video: ModalityEstimate };
   physicalTotals: {
     itEnergyKwh: number | null;
     facilityEnergyKwh: number | null;
@@ -240,11 +201,7 @@ export type PersonalAiFootprintEstimate = {
     primaryEnergyMj?: number | null;
     abioticDepletionKgSbEq?: number | null;
   };
-  marketBasedDisclosure?: {
-    isReported: boolean;
-    claimedKgCo2e: number | null;
-    note: string;
-  };
+  marketBasedDisclosure?: { isReported: boolean; claimedKgCo2e: number | null; note: string };
   modalityCoverage: {
     status: "NONE" | "TEXT_ONLY" | "PARTIAL_MULTIMODAL";
     calculableModalities: MultimodalCategory[];
@@ -256,20 +213,15 @@ export type PersonalAiFootprintEstimate = {
     verifiedRules: string[];
     notApplicableRules: string[];
     unverifiableLimits: string[];
-    ruleEvaluations: Array<{
-      id: string;
-      status: "ENFORCED" | "NOT_APPLICABLE" | "UNVERIFIABLE_EXTERNAL";
-      reason: string;
-    }>;
+    ruleEvaluations: Array<{ id: string; status: "ENFORCED" | "NOT_APPLICABLE" | "UNVERIFIABLE_EXTERNAL"; reason: string }>;
   };
-  methodologyTrace: {
-    formula: string;
-    sources: readonly string[];
-    date: string;
-    version: string;
-    limitations: readonly string[];
-  };
+  methodologyTrace: { formula: string; sources: readonly string[]; date: string; version: string; limitations: readonly string[] };
   methodologyNotes: string[];
+};
+
+const EMPTY_PHYSICAL_TOTALS: PersonalAiFootprintEstimate["physicalTotals"] = {
+  itEnergyKwh: null, facilityEnergyKwh: null, operationalKgCo2e: null, directWaterLiters: null, indirectWaterLiters: null,
+  totalWaterLiters: null, embodiedKgCo2e: null, partialLcaKgCo2e: null, primaryEnergyMj: null, abioticDepletionKgSbEq: null,
 };
 
 interface ResolvedModelContext {
@@ -277,122 +229,139 @@ interface ResolvedModelContext {
   modelDetails?: PersonalAiFootprintEstimate["modelDetails"];
 }
 
-function resolveModelContext(
-  input: PersonalAiFootprintInput,
-  notes: string[],
-): ResolvedModelContext {
-  if (!input.modelId) {
-    return {};
-  }
+function resolveModelContext(input: PersonalAiFootprintInput, notes: string[]): ResolvedModelContext {
+  if (!input.modelId) return {};
   const modelRecord = findAiModel(input.modelId);
   const hoster = resolveHosterForModel(modelRecord, input.hosterOperator);
 
   if (modelRecord) {
-    const modelDetails = {
-      id: modelRecord.id,
-      name: modelRecord.name,
-      publisher: modelRecord.publisher,
-      hoster: hoster.name,
-      weightsAvailability: modelRecord.weightsAvailability,
-      architectureType: modelRecord.architecture.type,
-      totalParametersBillion: modelRecord.architecture.totalParametersBillion,
-      activeParametersBillion: modelRecord.architecture.activeParametersBillion,
-      isReasoningModel: modelRecord.architecture.isReasoningModel,
+    notes.push(`Modèle identifié : ${modelRecord.name} (Éditeur: ${modelRecord.publisher}, Opérateur/Hébergeur: ${hoster.name}, Licence: ${modelRecord.license}).`);
+    return {
+      modelRecord,
+      modelDetails: {
+        id: modelRecord.id, name: modelRecord.name, publisher: modelRecord.publisher, hoster: hoster.name,
+        weightsAvailability: modelRecord.weightsAvailability, architectureType: modelRecord.architecture.type,
+        totalParametersBillion: modelRecord.architecture.totalParametersBillion,
+        activeParametersBillion: modelRecord.architecture.activeParametersBillion,
+        isReasoningModel: modelRecord.architecture.isReasoningModel,
+      },
     };
-    notes.push(
-      `Modèle identifié : ${modelRecord.name} (Éditeur: ${modelRecord.publisher}, Opérateur/Hébergeur: ${hoster.name}, Licence: ${modelRecord.license}).`,
-    );
-    return { modelRecord, modelDetails };
   }
 
-  notes.push(
-    `Modèle "${input.modelId}" non répertorié dans le catalogue standard : calcul basé sur scénario générique.`,
-  );
+  notes.push(`Modèle "${input.modelId}" non répertorié dans le catalogue standard : calcul basé sur scénario générique.`);
   return {};
 }
 
 interface TextImpactsResult {
   textModality: ModalityEstimate;
-  totals: {
-    itEnergyKwh: number | null;
-    facilityEnergyKwh: number | null;
-    operationalKgCo2e: number | null;
-    directWaterLiters: number | null;
-    indirectWaterLiters: number | null;
-    totalWaterLiters: number | null;
-    embodiedKgCo2e: number | null;
-    partialLcaKgCo2e: number | null;
-    primaryEnergyMj: number | null;
-    abioticDepletionKgSbEq: number | null;
-  };
+  totals: PersonalAiFootprintEstimate["physicalTotals"];
   textDiagnostic: EnvironmentalDataQualityDiagnostic;
+  usedOfficialEcologitsFormula: boolean;
+}
+
+function buildTextImpactsResult(params: {
+  activityCount: number | null;
+  totals: PersonalAiFootprintEstimate["physicalTotals"];
+  textDiagnostic: EnvironmentalDataQualityDiagnostic;
+  methodologyNote: string;
+  usedOfficialEcologitsFormula?: boolean;
+}): TextImpactsResult {
+  const { activityCount, totals, textDiagnostic, methodologyNote } = params;
+  return {
+    textModality: {
+      category: "text", hasSourcedPhysicalMethod: true, activityCount, activityUnit: "tokens",
+      energyKwh: totals.facilityEnergyKwh, operationalKgCo2e: totals.operationalKgCo2e,
+      indirectWaterLiters: totals.indirectWaterLiters, partialLcaKgCo2e: totals.partialLcaKgCo2e,
+      qualityDiagnostic: textDiagnostic, methodologyNote,
+    },
+    totals,
+    textDiagnostic,
+    usedOfficialEcologitsFormula: params.usedOfficialEcologitsFormula ?? false,
+  };
+}
+
+function buildUnmeasuredTextImpacts(activityCount: number | null, methodologyNote: string): TextImpactsResult {
+  return buildTextImpactsResult({
+    activityCount,
+    totals: { ...EMPTY_PHYSICAL_TOTALS },
+    textDiagnostic: evaluateDataQualityDiagnostic({ isMissingOrUnmeasured: true }),
+    methodologyNote,
+  });
+}
+
+function computeRegionalPhysicalTotals(params: {
+  itEnergyKwhRaw: number;
+  pue: number;
+  region: AccountingRegion;
+  datacenterWue: number | null;
+  includeCloudPartialLca: boolean;
+  recordRegionalWaterGapNote: boolean;
+  notes: string[];
+}): { totals: PersonalAiFootprintEstimate["physicalTotals"]; electricityFactorValue: number | null } {
+  const { itEnergyKwhRaw, pue, region, datacenterWue, includeCloudPartialLca, notes } = params;
+  const facilityEnergyKwhRaw = itEnergyKwhRaw * pue;
+  const electricityFactor = resolveElectricityFactorForRegion(region);
+  const directWaterRaw = typeof datacenterWue === "number" ? itEnergyKwhRaw * datacenterWue : null;
+  let operationalCo2eRaw: number | null = null;
+  let indirectWaterRaw: number | null = null;
+  let partialLcaCo2eRaw: number | null = null;
+
+  if (electricityFactor && electricityFactor.value !== null) {
+    operationalCo2eRaw = facilityEnergyKwhRaw * electricityFactor.value;
+    if (region === "US") {
+      const waterFactor = getScientificFactor("water-indirect-datacenter-us-2024");
+      if (waterFactor.value !== null) indirectWaterRaw = facilityEnergyKwhRaw * waterFactor.value;
+    } else if (params.recordRegionalWaterGapNote) {
+      notes.push(`Eau indirecte non calculée pour la région ${region} : le facteur LBNL est spécifique aux États-Unis et n'est pas appliqué automatiquement.`);
+    }
+    if (includeCloudPartialLca) {
+      const overheadFraction = getScientificFactor("ai-partial-lca-overhead-v1").value ?? 0.30;
+      partialLcaCo2eRaw = operationalCo2eRaw * (1 + overheadFraction);
+    }
+  }
+
+  return {
+    electricityFactorValue: electricityFactor?.value ?? null,
+    totals: {
+      itEnergyKwh: roundPhysicalOutput(itEnergyKwhRaw),
+      facilityEnergyKwh: roundPhysicalOutput(facilityEnergyKwhRaw),
+      operationalKgCo2e: operationalCo2eRaw !== null ? roundPhysicalOutput(operationalCo2eRaw) : null,
+      directWaterLiters: directWaterRaw !== null ? roundPhysicalOutput(directWaterRaw) : null,
+      indirectWaterLiters: indirectWaterRaw !== null ? roundPhysicalOutput(indirectWaterRaw) : null,
+      totalWaterLiters: directWaterRaw !== null && indirectWaterRaw !== null ? roundPhysicalOutput(directWaterRaw + indirectWaterRaw) : null,
+      embodiedKgCo2e: null,
+      partialLcaKgCo2e: partialLcaCo2eRaw !== null ? roundPhysicalOutput(partialLcaCo2eRaw) : null,
+      primaryEnergyMj: null,
+      abioticDepletionKgSbEq: null,
+    },
+  };
 }
 
 function computeDirectMeasuredTextImpacts(
   measuredEnergyKwh: number,
   pue: number,
   region: AccountingRegion,
+  executionEnv: ExecutionEnvironment,
+  datacenterWue: number | null,
+  activityCount: number | null,
+  notes: string[],
 ): TextImpactsResult {
-  const textItEnergyKwhRaw = measuredEnergyKwh;
-  const textFacilityEnergyKwhRaw = textItEnergyKwhRaw * pue;
-  const electricityFactor = resolveElectricityFactorForRegion(region);
+  const { totals } = computeRegionalPhysicalTotals({
+    itEnergyKwhRaw: measuredEnergyKwh,
+    pue,
+    region,
+    datacenterWue: executionEnv === "cloud_api" ? datacenterWue : null,
+    includeCloudPartialLca: executionEnv === "cloud_api",
+    recordRegionalWaterGapNote: false,
+    notes,
+  });
 
-  let textOperationalKgCo2eRaw: number | null = null;
-  let textIndirectWaterLitersRaw: number | null = null;
-  let textPartialLcaKgCo2eRaw: number | null = null;
-
-  if (electricityFactor && electricityFactor.value !== null) {
-    textOperationalKgCo2eRaw = textFacilityEnergyKwhRaw * electricityFactor.value;
-    if (region === "US") {
-      const waterFactor = getScientificFactor("water-indirect-datacenter-us-2024");
-      if (waterFactor.value !== null) {
-        textIndirectWaterLitersRaw = textFacilityEnergyKwhRaw * waterFactor.value;
-      }
-    }
-    const lcaOverheadFactor = getScientificFactor("ai-partial-lca-overhead-v1");
-    const overheadFraction = lcaOverheadFactor.value ?? 0.30;
-    textPartialLcaKgCo2eRaw = textOperationalKgCo2eRaw * (1 + overheadFraction);
-  }
-
-  const textItEnergyKwh = roundPhysicalOutput(textItEnergyKwhRaw);
-  const textFacilityEnergyKwh = roundPhysicalOutput(textFacilityEnergyKwhRaw);
-  const textOperationalKgCo2e =
-    textOperationalKgCo2eRaw !== null ? roundPhysicalOutput(textOperationalKgCo2eRaw) : null;
-  const textIndirectWaterLiters =
-    textIndirectWaterLitersRaw !== null ? roundPhysicalOutput(textIndirectWaterLitersRaw) : null;
-  const textPartialLcaKgCo2e =
-    textPartialLcaKgCo2eRaw !== null ? roundPhysicalOutput(textPartialLcaKgCo2eRaw) : null;
-
-  const textDiagnostic: EnvironmentalDataQualityDiagnostic = "MEASURED";
-  const textMethodNote = `Consommation électrique directe mesurée aux bornes (${textItEnergyKwh} kWh).`;
-
-  return {
-    textModality: {
-      category: "text",
-      hasSourcedPhysicalMethod: true,
-      activityCount: null,
-      activityUnit: "tokens",
-      energyKwh: textFacilityEnergyKwh,
-      operationalKgCo2e: textOperationalKgCo2e,
-      indirectWaterLiters: textIndirectWaterLiters,
-      partialLcaKgCo2e: textPartialLcaKgCo2e,
-      qualityDiagnostic: textDiagnostic,
-      methodologyNote: textMethodNote,
-    },
-    totals: {
-      itEnergyKwh: textItEnergyKwh,
-      facilityEnergyKwh: textFacilityEnergyKwh,
-      operationalKgCo2e: textOperationalKgCo2e,
-      directWaterLiters: null,
-      indirectWaterLiters: textIndirectWaterLiters,
-      totalWaterLiters: textIndirectWaterLiters,
-      embodiedKgCo2e: null,
-      partialLcaKgCo2e: textPartialLcaKgCo2e,
-      primaryEnergyMj: null,
-      abioticDepletionKgSbEq: null,
-    },
-    textDiagnostic,
-  };
+  return buildTextImpactsResult({
+    activityCount,
+    totals,
+    textDiagnostic: "MEASURED",
+    methodologyNote: `Consommation électrique directe mesurée aux bornes (${totals.itEnergyKwh} kWh).`,
+  });
 }
 
 function computeEcologitsModelTextImpacts(
@@ -402,30 +371,22 @@ function computeEcologitsModelTextImpacts(
   region: AccountingRegion,
   scenario: EnergyScenario,
   executionEnv: ExecutionEnvironment,
-  textTokens: number | null,
+  textTokens: number,
+  outputTokens: number,
   notes: string[],
 ): TextImpactsResult {
   const textInput = input.textUsage;
-  const cachedTokens = textInput?.cachedTokens ?? 0;
-  const uncachedInputTokens =
-    typeof textInput?.inputTokens === "number"
-      ? Math.max(0, textInput.inputTokens - cachedTokens)
-      : 0;
-  const outputTokens =
-    typeof textInput?.outputTokens === "number"
-      ? textInput.outputTokens
-      : typeof textInput?.inputTokens === "number"
-        ? 0
-        : (textTokens ?? 0);
-
   const ecologitsImpacts = computeEcologitsCompatibleImpacts({
     model: modelRecord,
-    inputTokens: uncachedInputTokens,
+    inputTokens: textInput?.inputTokens ?? 0,
     outputTokens,
-    cachedTokens,
+    cachedTokens: textInput?.cachedTokens ?? 0,
     reasoningTokensIncluded: textInput?.reasoningTokensIncluded ?? null,
     requestCount: input.requestCount,
     durationSeconds: input.measuredDurationSeconds,
+    tps: input.tps,
+    ttft: input.ttftSeconds,
+    batchSize: input.batchSize,
     pue,
     datacenterWue: input.datacenterWue,
     region,
@@ -433,22 +394,10 @@ function computeEcologitsModelTextImpacts(
     executionEnvironment: executionEnv,
   });
 
-  const textMethodNote = `Modèle documenté ${modelRecord.name} (${modelRecord.architecture.activeParametersBillion}B params actifs) évalué selon méthodologie EcoLogits v3.0.0.`;
-  notes.push(...ecologitsImpacts.notes);
+  notes.push(...ecologitsImpacts.notes, ...ecologitsImpacts.warnings);
 
-  return {
-    textModality: {
-      category: "text",
-      hasSourcedPhysicalMethod: true,
-      activityCount: textTokens,
-      activityUnit: "tokens",
-      energyKwh: ecologitsImpacts.facilityEnergyKwh,
-      operationalKgCo2e: ecologitsImpacts.operationalGwpKgCo2e,
-      indirectWaterLiters: ecologitsImpacts.indirectWaterLiters,
-      partialLcaKgCo2e: ecologitsImpacts.totalGwpKgCo2e,
-      qualityDiagnostic: ecologitsImpacts.diagnostic,
-      methodologyNote: textMethodNote,
-    },
+  return buildTextImpactsResult({
+    activityCount: textTokens,
     totals: {
       itEnergyKwh: ecologitsImpacts.itEnergyKwh,
       facilityEnergyKwh: ecologitsImpacts.facilityEnergyKwh,
@@ -462,7 +411,9 @@ function computeEcologitsModelTextImpacts(
       abioticDepletionKgSbEq: ecologitsImpacts.embodiedAdpeKgSbEq,
     },
     textDiagnostic: ecologitsImpacts.diagnostic,
-  };
+    methodologyNote: `Modèle documenté ${modelRecord.name} (${modelRecord.architecture.activeParametersBillion}B params actifs / ${modelRecord.architecture.totalParametersBillion}B totaux, N_GPU=${ecologitsImpacts.gpuRequiredCount ?? "NA"}) évalué sur ${outputTokens} tokens générés selon les équations officielles EcoLogits v3.0.0.`,
+    usedOfficialEcologitsFormula: ecologitsImpacts.isEcologitsCompliant,
+  });
 }
 
 function computeGenericScenarioTextImpacts(
@@ -470,6 +421,7 @@ function computeGenericScenarioTextImpacts(
   scenario: EnergyScenario,
   region: AccountingRegion,
   pue: number,
+  datacenterWue: number | null,
   notes: string[],
 ): TextImpactsResult {
   const factorId =
@@ -478,129 +430,69 @@ function computeGenericScenarioTextImpacts(
       : scenario === "high"
         ? "ai-inference-energy-scenario-high-v1"
         : "ai-inference-energy-scenario-central-v1";
+  const kwhPerMillion = getScientificFactor(factorId).value ?? 0.30;
+  const { totals, electricityFactorValue } = computeRegionalPhysicalTotals({
+    itEnergyKwhRaw: (textTokens / 1_000_000) * kwhPerMillion,
+    pue,
+    region,
+    datacenterWue,
+    includeCloudPartialLca: true,
+    recordRegionalWaterGapNote: true,
+    notes,
+  });
 
-  const energyFactor = getScientificFactor(factorId);
-  const kwhPerMillion = energyFactor.value ?? 0.30;
-
-  const textItEnergyKwhRaw = (textTokens / 1_000_000) * kwhPerMillion;
-  const textFacilityEnergyKwhRaw = textItEnergyKwhRaw * pue;
-
-  const electricityFactor = resolveElectricityFactorForRegion(region);
-  let textOperationalKgCo2eRaw: number | null = null;
-  let textIndirectWaterLitersRaw: number | null = null;
-  let textPartialLcaKgCo2eRaw: number | null = null;
-  let textDiagnostic: EnvironmentalDataQualityDiagnostic = "PROXY_SCENARIO";
-  let textMethodNote: string;
-
-  if (electricityFactor && electricityFactor.value !== null) {
-    textOperationalKgCo2eRaw = textFacilityEnergyKwhRaw * electricityFactor.value;
-
-    if (region === "US") {
-      const waterFactor = getScientificFactor("water-indirect-datacenter-us-2024");
-      if (waterFactor.value !== null) {
-        textIndirectWaterLitersRaw = textFacilityEnergyKwhRaw * waterFactor.value;
-      }
-    } else {
-      notes.push(
-        `Eau indirecte non calculée pour la région ${region} : le facteur LBNL est spécifique aux États-Unis et n'est pas appliqué automatiquement.`,
-      );
-    }
-
-    const lcaOverheadFactor = getScientificFactor("ai-partial-lca-overhead-v1");
-    const overheadFraction = lcaOverheadFactor.value ?? 0.30;
-    textPartialLcaKgCo2eRaw = textOperationalKgCo2eRaw * (1 + overheadFraction);
-
-    textDiagnostic = evaluateDataQualityDiagnostic({ isScenarioOrRegionalProxy: true });
-    textMethodNote = `Calculé via scénario ${scenario} (${kwhPerMillion} kWh/M tokens), PUE ${pue}, facteur carbone ${region} (${electricityFactor.value} kgCO₂e/kWh) et ACV partielle +30%.`;
-  } else {
-    textDiagnostic = evaluateDataQualityDiagnostic({ isScenarioOrRegionalProxy: true });
-    textMethodNote = `Énergie IT/facility calculée (${roundPhysicalOutput(textFacilityEnergyKwhRaw)} kWh, scénario ${scenario}), mais carbone et eau non calculés : région d'infrastructure '${region}' inconnue ou non sourcée.`;
-    notes.push(
-      "Infrastructure électrique inconnue : les coefficients d'émission régionaux ne sont pas appliqués arbitrairement (conformité Invariant 5).",
-    );
+  if (electricityFactorValue === null) {
+    notes.push("Infrastructure électrique inconnue : les coefficients d'émission régionaux ne sont pas appliqués arbitrairement (conformité Invariant 5).");
   }
+  const textMethodNote =
+    electricityFactorValue !== null
+      ? `Calculé via scénario hypothétique ${scenario} (${kwhPerMillion} kWh/M tokens), PUE ${pue}, facteur carbone ${region} (${electricityFactorValue} kgCO₂e/kWh) et ACV partielle +30%.`
+      : `Énergie IT/facility calculée (${totals.facilityEnergyKwh} kWh, scénario ${scenario}), mais carbone et eau non calculés : région d'infrastructure '${region}' inconnue ou non sourcée.`;
 
-  const textItEnergyKwh = roundPhysicalOutput(textItEnergyKwhRaw);
-  const textFacilityEnergyKwh = roundPhysicalOutput(textFacilityEnergyKwhRaw);
-  const textOperationalKgCo2e =
-    textOperationalKgCo2eRaw !== null ? roundPhysicalOutput(textOperationalKgCo2eRaw) : null;
-  const textIndirectWaterLiters =
-    textIndirectWaterLitersRaw !== null ? roundPhysicalOutput(textIndirectWaterLitersRaw) : null;
-  const textPartialLcaKgCo2e =
-    textPartialLcaKgCo2eRaw !== null ? roundPhysicalOutput(textPartialLcaKgCo2eRaw) : null;
-
-  return {
-    textModality: {
-      category: "text",
-      hasSourcedPhysicalMethod: true,
-      activityCount: textTokens,
-      activityUnit: "tokens",
-      energyKwh: textFacilityEnergyKwh,
-      operationalKgCo2e: textOperationalKgCo2e,
-      indirectWaterLiters: textIndirectWaterLiters,
-      partialLcaKgCo2e: textPartialLcaKgCo2e,
-      qualityDiagnostic: textDiagnostic,
-      methodologyNote: textMethodNote,
-    },
-    totals: {
-      itEnergyKwh: textItEnergyKwh,
-      facilityEnergyKwh: textFacilityEnergyKwh,
-      operationalKgCo2e: textOperationalKgCo2e,
-      directWaterLiters: null,
-      indirectWaterLiters: textIndirectWaterLiters,
-      totalWaterLiters: textIndirectWaterLiters,
-      embodiedKgCo2e: null,
-      partialLcaKgCo2e: textPartialLcaKgCo2e,
-      primaryEnergyMj: null,
-      abioticDepletionKgSbEq: null,
-    },
-    textDiagnostic,
-  };
+  return buildTextImpactsResult({
+    activityCount: textTokens,
+    totals,
+    textDiagnostic: evaluateDataQualityDiagnostic({ isScenarioOrRegionalProxy: true }),
+    methodologyNote: textMethodNote,
+  });
 }
 
 function computeZeroTokenTextImpacts(
   region: AccountingRegion,
+  hasDocumentedModel: boolean,
+  datacenterWue: number | null,
   notes: string[],
 ): TextImpactsResult {
   const hasRegionalFactor = resolveElectricityFactorForRegion(region) !== null;
-  const textDiagnostic = hasRegionalFactor
-    ? evaluateDataQualityDiagnostic({ isScenarioOrRegionalProxy: true })
-    : evaluateDataQualityDiagnostic({ isMissingOrUnmeasured: true });
+  const textDiagnostic = !hasRegionalFactor
+    ? evaluateDataQualityDiagnostic({ isMissingOrUnmeasured: true })
+    : hasDocumentedModel
+      ? evaluateDataQualityDiagnostic({ hasDocumentedModel: true })
+      : evaluateDataQualityDiagnostic({ isScenarioOrRegionalProxy: true });
   const textOperationalKgCo2e = hasRegionalFactor ? 0 : null;
+  const textDirectWaterLiters = typeof datacenterWue === "number" ? 0 : null;
   const textIndirectWaterLiters = region === "US" ? 0 : null;
+  const textTotalWaterLiters = textDirectWaterLiters !== null && textIndirectWaterLiters !== null ? 0 : null;
   const textPartialLcaKgCo2e = hasRegionalFactor ? 0 : null;
-  notes.push(
-    "Activité texte déclarée à zéro (0 token, sans mesure électrique directe aux bornes) : le zéro résulte d'une déclaration utilisateur.",
-  );
+  notes.push("Activité texte déclarée à zéro (0 token, sans mesure électrique directe aux bornes) : le zéro résulte d'une déclaration utilisateur.");
 
-  return {
-    textModality: {
-      category: "text",
-      hasSourcedPhysicalMethod: true,
-      activityCount: 0,
-      activityUnit: "tokens",
-      energyKwh: 0,
-      operationalKgCo2e: textOperationalKgCo2e,
-      indirectWaterLiters: textIndirectWaterLiters,
-      partialLcaKgCo2e: textPartialLcaKgCo2e,
-      qualityDiagnostic: textDiagnostic,
-      methodologyNote:
-        "Activité texte nulle déclarée (0 token, sans mesure électrique directe aux bornes).",
-    },
+  return buildTextImpactsResult({
+    activityCount: 0,
     totals: {
       itEnergyKwh: 0,
       facilityEnergyKwh: 0,
       operationalKgCo2e: textOperationalKgCo2e,
-      directWaterLiters: null,
+      directWaterLiters: textDirectWaterLiters,
       indirectWaterLiters: textIndirectWaterLiters,
-      totalWaterLiters: textIndirectWaterLiters,
-      embodiedKgCo2e: null,
+      totalWaterLiters: textTotalWaterLiters,
+      embodiedKgCo2e: hasDocumentedModel ? 0 : null,
       partialLcaKgCo2e: textPartialLcaKgCo2e,
-      primaryEnergyMj: null,
-      abioticDepletionKgSbEq: null,
+      primaryEnergyMj: hasDocumentedModel ? 0 : null,
+      abioticDepletionKgSbEq: hasDocumentedModel ? 0 : null,
     },
     textDiagnostic,
-  };
+    methodologyNote: "Activité texte nulle déclarée (0 token, sans mesure électrique directe aux bornes).",
+  });
 }
 
 function computeTextImpacts(
@@ -614,134 +506,115 @@ function computeTextImpacts(
 ): TextImpactsResult {
   const textInput = input.textUsage;
   let textTokens: number | null = null;
-  if (typeof textInput?.totalTokens === "number" && textInput.totalTokens >= 0) {
+  if (typeof textInput?.totalTokens === "number") {
     textTokens = textInput.totalTokens;
-  } else if (
-    typeof textInput?.inputTokens === "number" ||
-    typeof textInput?.outputTokens === "number"
-  ) {
+  } else if (typeof textInput?.inputTokens === "number" || typeof textInput?.outputTokens === "number") {
     textTokens = (textInput.inputTokens ?? 0) + (textInput.outputTokens ?? 0);
   }
 
-  if (
-    typeof textInput?.reasoningTokensIncluded === "number" &&
-    textInput.reasoningTokensIncluded > 0
-  ) {
-    notes.push(
-      `${textInput.reasoningTokensIncluded} tokens de raisonnement inclus dans le volume de génération (aucun surcoût multiplicateur arbitraire).`,
-    );
+  if (typeof textInput?.reasoningTokensIncluded === "number" && textInput.reasoningTokensIncluded > 0) {
+    notes.push(`${textInput.reasoningTokensIncluded} tokens de raisonnement inclus dans le volume de génération (aucun surcoût multiplicateur arbitraire).`);
   }
-
   if (typeof textInput?.cachedTokens === "number" && textInput.cachedTokens > 0) {
-    notes.push(
-      `${textInput.cachedTokens} tokens d'entrée servis depuis le cache (KV-cache réutilisé sans calcul complet de préfill).`,
-    );
+    notes.push(`${textInput.cachedTokens} tokens d'entrée servis depuis le cache (sous-ensemble de inputTokens, non additionné).`);
   }
 
   if (typeof input.measuredEnergyKwh === "number" && input.measuredEnergyKwh >= 0) {
-    return computeDirectMeasuredTextImpacts(input.measuredEnergyKwh, pue, region);
-  }
-  if (modelRecord && modelRecord.architecture.activeParametersBillion) {
-    return computeEcologitsModelTextImpacts(
-      input,
-      modelRecord,
+    if (executionEnv === "local_device") {
+      notes.push("Exécution locale (local_device) avec consommation électrique mesurée : PUE = 1,0 ; l'impact matériel incorporé du terminal personnel reste non calculable (NA / null).");
+    }
+    return computeDirectMeasuredTextImpacts(
+      input.measuredEnergyKwh,
       pue,
       region,
-      scenario,
       executionEnv,
+      input.datacenterWue ?? null,
       textTokens,
       notes,
     );
   }
-  if (textTokens !== null && textTokens > 0) {
-    return computeGenericScenarioTextImpacts(textTokens, scenario, region, pue, notes);
-  }
-  if (textTokens === 0) {
-    return computeZeroTokenTextImpacts(region, notes);
+
+  if (executionEnv === "local_device") {
+    const localNote = "Exécution locale (local_device) sans mesure électrique directe (measuredEnergyKwh) ni profil matériel local sourcé : aucune extrapolation de serveur cloud H100 n'est appliquée et les impacts (énergie, carbone opérationnel et matériel incorporé) restent non calculables (NA / null).";
+    notes.push(localNote);
+    return buildUnmeasuredTextImpacts(textTokens, localNote);
   }
 
+  if (textTokens === null) {
+    return buildUnmeasuredTextImpacts(null, "Aucune donnée de consommation de texte ni mesure électrique fournie.");
+  }
+
+  const hasDocumentedModel = Boolean(
+    modelRecord &&
+      typeof modelRecord.architecture.activeParametersBillion === "number" &&
+      modelRecord.architecture.activeParametersBillion > 0 &&
+      typeof modelRecord.architecture.totalParametersBillion === "number" &&
+      modelRecord.architecture.totalParametersBillion > 0,
+  );
+
+  if (textTokens === 0) {
+    return computeZeroTokenTextImpacts(region, hasDocumentedModel, input.datacenterWue ?? null, notes);
+  }
+
+  if (modelRecord && hasDocumentedModel) {
+    if (typeof textInput?.outputTokens === "number" && textInput.outputTokens > 0) {
+      return computeEcologitsModelTextImpacts(input, modelRecord, pue, region, scenario, executionEnv, textTokens, textInput.outputTokens, notes);
+    }
+    notes.push(`Modèle ${modelRecord.name} sélectionné sans nombre de tokens générés explicite (outputTokens absent ou nul) : les tokens d'entrée ou totaux (${textTokens} tokens) ne sont jamais assimilés à des tokens de sortie dans EcoLogits v3.0.0. Bascule sur le scénario énergétique générique hypothétique (${scenario}, PROXY_SCENARIO).`);
+  } else if (modelRecord && !hasDocumentedModel) {
+    notes.push(`L'architecture du modèle ${modelRecord.name} n'est pas publiée par son éditeur : aucune conformité EcoLogits v3.0.0 n'est revendiquée ; bascule sur le scénario énergétique générique hypothétique (${scenario}, PROXY_SCENARIO).`);
+  }
+
+  return computeGenericScenarioTextImpacts(textTokens, scenario, region, pue, input.datacenterWue ?? null, notes);
+}
+
+function buildUnmeasuredModality(
+  category: MultimodalCategory,
+  activityCount: number | null,
+  activityUnit: string,
+  activeLabel: string,
+  emptyLabel: string,
+): ModalityEstimate {
   return {
-    textModality: {
-      category: "text",
-      hasSourcedPhysicalMethod: true,
-      activityCount: null,
-      activityUnit: "tokens",
-      energyKwh: null,
-      operationalKgCo2e: null,
-      indirectWaterLiters: null,
-      partialLcaKgCo2e: null,
-      qualityDiagnostic: "NOT_CALCULABLE",
-      methodologyNote: "Aucune activité texte renseignée (NA).",
-    },
-    totals: {
-      itEnergyKwh: null,
-      facilityEnergyKwh: null,
-      operationalKgCo2e: null,
-      directWaterLiters: null,
-      indirectWaterLiters: null,
-      totalWaterLiters: null,
-      embodiedKgCo2e: null,
-      partialLcaKgCo2e: null,
-      primaryEnergyMj: null,
-      abioticDepletionKgSbEq: null,
-    },
-    textDiagnostic: "NOT_CALCULABLE",
+    category, hasSourcedPhysicalMethod: false, activityCount, activityUnit,
+    energyKwh: null, operationalKgCo2e: null, indirectWaterLiters: null, partialLcaKgCo2e: null,
+    qualityDiagnostic: "NOT_CALCULABLE",
+    methodologyNote: activityCount !== null ? activeLabel : emptyLabel,
   };
 }
 
-function buildNonTextModalities(input: PersonalAiFootprintInput) {
+function buildNonTextModalities(input: PersonalAiFootprintInput): {
+  imageModality: ModalityEstimate;
+  audioModality: ModalityEstimate;
+  videoModality: ModalityEstimate;
+} {
   const imageCount = typeof input.imageUsage?.imageCount === "number" ? input.imageUsage.imageCount : null;
-  const imageModality: ModalityEstimate = {
-    category: "image",
-    hasSourcedPhysicalMethod: false,
-    activityCount: imageCount,
-    activityUnit: "images",
-    energyKwh: null,
-    operationalKgCo2e: null,
-    indirectWaterLiters: null,
-    partialLcaKgCo2e: null,
-    qualityDiagnostic: "NOT_CALCULABLE",
-    methodologyNote:
-      imageCount !== null
-        ? `${imageCount} image(s) déclarée(s). Aucun facteur physique générique sourcé n'est applicable : impact physique NA conformément au protocole.`
-        : "Aucune activité image déclarée (NA).",
-  };
-
   const audioMinutes = typeof input.audioUsage?.durationMinutes === "number" ? input.audioUsage.durationMinutes : null;
-  const audioModality: ModalityEstimate = {
-    category: "audio",
-    hasSourcedPhysicalMethod: false,
-    activityCount: audioMinutes,
-    activityUnit: "minutes",
-    energyKwh: null,
-    operationalKgCo2e: null,
-    indirectWaterLiters: null,
-    partialLcaKgCo2e: null,
-    qualityDiagnostic: "NOT_CALCULABLE",
-    methodologyNote:
-      audioMinutes !== null
-        ? `${audioMinutes} minute(s) audio déclarée(s). Facteur physique non calculable (NA).`
-        : "Aucune activité audio déclarée (NA).",
-  };
-
   const videoSeconds = typeof input.videoUsage?.durationSeconds === "number" ? input.videoUsage.durationSeconds : null;
-  const videoModality: ModalityEstimate = {
-    category: "video",
-    hasSourcedPhysicalMethod: false,
-    activityCount: videoSeconds,
-    activityUnit: "seconds",
-    energyKwh: null,
-    operationalKgCo2e: null,
-    indirectWaterLiters: null,
-    partialLcaKgCo2e: null,
-    qualityDiagnostic: "NOT_CALCULABLE",
-    methodologyNote:
-      videoSeconds !== null
-        ? `${videoSeconds} seconde(s) vidéo déclarée(s). Facteur physique non calculable (NA).`
-        : "Aucune activité vidéo déclarée (NA).",
-  };
 
-  return { imageModality, audioModality, videoModality };
+  return {
+    imageModality: buildUnmeasuredModality(
+      "image",
+      imageCount,
+      "images",
+      `${imageCount} image(s) déclarée(s). Aucun facteur physique générique sourcé n'est applicable : impact physique NA conformément au protocole.`,
+      "Aucune activité image déclarée (NA).",
+    ),
+    audioModality: buildUnmeasuredModality(
+      "audio",
+      audioMinutes,
+      "minutes",
+      `${audioMinutes} minute(s) audio déclarée(s). Facteur physique non calculable (NA).`,
+      "Aucune activité audio déclarée (NA).",
+    ),
+    videoModality: buildUnmeasuredModality(
+      "video",
+      videoSeconds,
+      "seconds",
+      `${videoSeconds} seconde(s) vidéo déclarée(s). Facteur physique non calculable (NA).`,
+      "Aucune activité vidéo déclarée (NA).",
+    ),
+  };
 }
 
 function resolveMarketBasedDisclosure(
@@ -749,17 +622,13 @@ function resolveMarketBasedDisclosure(
   facilityEnergyKwh: number | null,
   notes: string[],
 ): PersonalAiFootprintEstimate["marketBasedDisclosure"] {
-  if (!input.marketBasedDeclaration) {
-    return undefined;
-  }
+  if (!input.marketBasedDeclaration) return undefined;
   const claimedFactor = input.marketBasedDeclaration.claimedKgCo2ePerKwh;
   const claimedKgCo2e =
     facilityEnergyKwh !== null && typeof claimedFactor === "number"
       ? roundPhysicalOutput(facilityEnergyKwh * claimedFactor)
       : null;
-  notes.push(
-    "Divulgation contractuelle (market-based) enregistrée séparément de la réalité physique du réseau électrique local (location-based).",
-  );
+  notes.push("Divulgation contractuelle (market-based) enregistrée séparément de la réalité physique du réseau électrique local (location-based).");
   return {
     isReported: true,
     claimedKgCo2e,
@@ -777,103 +646,42 @@ function evaluateAntiDoubleCountingCompliance(params: {
   const hasOperationalCo2e = totals.operationalKgCo2e !== null;
   const hasDirectWater = totals.directWaterLiters !== null;
   const hasIndirectWater = totals.indirectWaterLiters !== null;
-  const hasLcaOrEmbodied =
-    totals.embodiedKgCo2e !== null || totals.partialLcaKgCo2e !== null;
-  const hasDuration =
-    typeof input.measuredDurationSeconds === "number" && input.measuredDurationSeconds > 0;
+  const hasLcaOrEmbodied = totals.embodiedKgCo2e !== null || totals.partialLcaKgCo2e !== null;
+  const hasDuration = typeof input.measuredDurationSeconds === "number" && input.measuredDurationSeconds > 0;
+  const check = (id: string, status: "ENFORCED" | "NOT_APPLICABLE" | "UNVERIFIABLE_EXTERNAL", reason: string) => ({ id, status, reason });
 
   const ruleEvaluations = ANTI_DOUBLE_COUNTING_RULES.map((rule) => {
     switch (rule.id) {
       case "NO_IT_FACILITY_DOUBLE_COUNT":
         return hasEnergy
-          ? {
-              id: rule.id,
-              status: "ENFORCED" as const,
-              reason: "PUE appliqué à l'énergie IT sans additionner E_IT et E_facility.",
-            }
-          : {
-              id: rule.id,
-              status: "NOT_APPLICABLE" as const,
-              reason: "Aucune énergie physique calculée pour cette requête.",
-            };
+          ? check(rule.id, "ENFORCED", "PUE appliqué à l'énergie IT sans additionner E_IT et E_facility.")
+          : check(rule.id, "NOT_APPLICABLE", "Aucune énergie physique calculée pour cette requête.");
       case "NO_WATER_DOUBLE_COUNT":
-        if (!hasDirectWater && !hasIndirectWater) {
-          return {
-            id: rule.id,
-            status: "NOT_APPLICABLE" as const,
-            reason: "Aucun poste d'eau physique calculé pour cette requête.",
-          };
-        }
+        if (!hasDirectWater && !hasIndirectWater) return check(rule.id, "NOT_APPLICABLE", "Aucun poste d'eau physique calculé pour cette requête.");
         if (hasDirectWater && hasIndirectWater) {
-          return {
-            id: rule.id,
-            status: "UNVERIFIABLE_EXTERNAL" as const,
-            reason:
-              "Eau directe (WUE opérateur) et eau indirecte (proxy réseau US) affichées séparément, mais l'absence de recoupement dans le WUE déclaré par l'opérateur n'est pas vérifiable localement.",
-          };
+          return check(rule.id, "UNVERIFIABLE_EXTERNAL", "Eau directe (WUE opérateur) et eau indirecte (proxy réseau US) affichées séparément, mais l'absence de recoupement dans le WUE déclaré par l'opérateur n'est pas vérifiable localement.");
         }
-        return {
-          id: rule.id,
-          status: "ENFORCED" as const,
-          reason: "Un seul poste hydrique calculé sans double imputation directe/indirecte.",
-        };
+        return check(rule.id, "ENFORCED", "Un seul poste hydrique calculé sans double imputation directe/indirecte.");
       case "NO_ACV_EMBODIED_DOUBLE_COUNT":
         return hasLcaOrEmbodied
-          ? {
-              id: rule.id,
-              status: "ENFORCED" as const,
-              reason:
-                "Une seule branche d'impact incorporé/ACV appliquée (EcoLogits ou majoration partielle +30 %, jamais cumulées).",
-            }
-          : {
-              id: rule.id,
-              status: "NOT_APPLICABLE" as const,
-              reason: "Aucun poste ACV/incorporé calculé pour cette requête.",
-            };
+          ? check(rule.id, "ENFORCED", "Une seule branche d'impact incorporé/ACV appliquée (EcoLogits ou majoration partielle +30 %, jamais cumulées).")
+          : check(rule.id, "NOT_APPLICABLE", "Aucun poste ACV/incorporé calculé pour cette requête.");
       case "NO_CROSS_SCOPE_DOUBLE_COUNT":
-        return {
-          id: rule.id,
-          status: "UNVERIFIABLE_EXTERNAL" as const,
-          reason:
-            "Le calcul est cloisonné dans PERSONAL_AI_USAGE, mais l'absence de comptage parallèle dans des bilans externes CleanMyMap ne peut pas être vérifiée dans ce module.",
-        };
+        return check(rule.id, "UNVERIFIABLE_EXTERNAL", "Le calcul est cloisonné dans PERSONAL_AI_USAGE, mais l'absence de comptage parallèle dans des bilans externes CleanMyMap ne peut pas être vérifiée dans ce module.");
       case "NO_TOKEN_TIME_DOUBLE_COUNT":
         return hasTextActivity || hasDuration
-          ? {
-              id: rule.id,
-              status: "ENFORCED" as const,
-              reason:
-                "Aucune addition d'une énergie par tokens et d'une énergie par durée sur une même charge.",
-            }
-          : {
-              id: rule.id,
-              status: "NOT_APPLICABLE" as const,
-              reason: "Aucune charge texte ou durée mesurée déclarée.",
-            };
+          ? check(rule.id, "ENFORCED", "Aucune addition d'une énergie par tokens et d'une énergie par durée sur une même charge.")
+          : check(rule.id, "NOT_APPLICABLE", "Aucune charge texte ou durée mesurée déclarée.");
       case "NO_REVERSE_CO2_TO_KWH":
         return hasOperationalCo2e
-          ? {
-              id: rule.id,
-              status: "ENFORCED" as const,
-              reason: "Conversion unidirectionnelle stricte kWh -> kgCO2e uniquement.",
-            }
-          : {
-              id: rule.id,
-              status: "NOT_APPLICABLE" as const,
-              reason: "Aucune émission opérationnelle calculée.",
-            };
+          ? check(rule.id, "ENFORCED", "Conversion unidirectionnelle stricte kWh -> kgCO2e uniquement.")
+          : check(rule.id, "NOT_APPLICABLE", "Aucune émission opérationnelle calculée.");
     }
   });
 
-  const verifiedRules = ruleEvaluations
-    .filter((item) => item.status === "ENFORCED")
-    .map((item) => item.id);
-  const notApplicableRules = ruleEvaluations
-    .filter((item) => item.status === "NOT_APPLICABLE")
-    .map((item) => item.id);
-  const unverifiableLimits = ruleEvaluations
-    .filter((item) => item.status === "UNVERIFIABLE_EXTERNAL")
-    .map((item) => item.id);
+  const verifiedRules = ruleEvaluations.filter((item) => item.status === "ENFORCED").map((item) => item.id);
+  const notApplicableRules = ruleEvaluations.filter((item) => item.status === "NOT_APPLICABLE").map((item) => item.id);
+  const unverifiableLimits = ruleEvaluations.filter((item) => item.status === "UNVERIFIABLE_EXTERNAL").map((item) => item.id);
 
   return {
     compliant: verifiedRules.length > 0 || notApplicableRules.length === ruleEvaluations.length,
@@ -884,13 +692,6 @@ function evaluateAntiDoubleCountingCompliance(params: {
   };
 }
 
-/**
- * Moteur d'estimation « Mon empreinte IA ».
- *
- * Calcule l'empreinte environnementale de l'utilisation personnelle déclarée d'IA,
- * dans un périmètre comptable strictement isolé de CleanMyMap (aucun double comptage
- * avec le fonctionnement du site ni avec le développement du projet).
- */
 export function estimatePersonalAiFootprint(
   input: PersonalAiFootprintInput,
   generatedAt = new Date().toISOString(),
@@ -900,48 +701,23 @@ export function estimatePersonalAiFootprint(
   const scenario = input.energyScenario ?? "central";
   const region = input.region ?? "UNKNOWN";
   const executionEnv: ExecutionEnvironment = input.executionEnvironment ?? "cloud_api";
-  const pue =
-    executionEnv === "local_device"
-      ? 1.0
-      : typeof input.pue === "number"
-        ? input.pue
-        : 1.15;
+  const pue = executionEnv === "local_device" ? 1.0 : typeof input.pue === "number" ? input.pue : 1.15;
 
   const notes: string[] = [
     "Périmètre comptable : utilisation personnelle déclarée d'IA (PERSONAL_AI_USAGE). Strictement isolé des métriques du site CleanMyMap.",
   ];
 
-  // 1. RÉSOLUTION DU MODÈLE ET DE L'HÉBERGEUR
   const { modelRecord, modelDetails } = resolveModelContext(input, notes);
-
-  // 2. MODALITÉ TEXTE (Dispose de méthodes physiques sourcées)
-  const { textModality, totals, textDiagnostic } = computeTextImpacts(
-    input,
-    modelRecord,
-    pue,
-    region,
-    scenario,
-    executionEnv,
-    notes,
-  );
-
-  // 3. MODALITÉS NON TEXTE (image, audio, vidéo)
+  const { textModality, totals, textDiagnostic, usedOfficialEcologitsFormula } =
+    computeTextImpacts(input, modelRecord, pue, region, scenario, executionEnv, notes);
   const { imageModality, audioModality, videoModality } = buildNonTextModalities(input);
 
   const nonCalculableDeclaredModalities: MultimodalCategory[] = [];
-  if ((input.imageUsage?.imageCount ?? 0) > 0) {
-    nonCalculableDeclaredModalities.push("image");
-  }
-  if (
-    (input.audioUsage?.durationMinutes ?? 0) > 0 ||
-    (input.audioUsage?.requestCount ?? 0) > 0
-  ) {
+  if ((input.imageUsage?.imageCount ?? 0) > 0) nonCalculableDeclaredModalities.push("image");
+  if ((input.audioUsage?.durationMinutes ?? 0) > 0 || (input.audioUsage?.requestCount ?? 0) > 0) {
     nonCalculableDeclaredModalities.push("audio");
   }
-  if (
-    (input.videoUsage?.durationSeconds ?? 0) > 0 ||
-    (input.videoUsage?.generationCount ?? 0) > 0
-  ) {
+  if ((input.videoUsage?.durationSeconds ?? 0) > 0 || (input.videoUsage?.generationCount ?? 0) > 0) {
     nonCalculableDeclaredModalities.push("video");
   }
 
@@ -962,12 +738,9 @@ export function estimatePersonalAiFootprint(
   };
 
   if (nonCalculableDeclaredModalities.length > 0) {
-    notes.push(
-      `Couverture partielle : les totaux physiques (physicalTotals) ne couvrent que la modalité texte ; les modalités multimodales déclarées (${nonCalculableDeclaredModalities.join(", ")}) restent non calculables (NA) faute de méthode physique sourcée.`,
-    );
+    notes.push(`Couverture partielle : les totaux physiques (physicalTotals) ne couvrent que la modalité texte ; les modalités multimodales déclarées (${nonCalculableDeclaredModalities.join(", ")}) restent non calculables (NA) faute de méthode physique sourcée.`);
   }
 
-  // Synthèse de la qualité globale (déterministe, sans pourcentage arbitraire)
   const overallQuality: EnvironmentalDataQualityDiagnostic =
     nonCalculableDeclaredModalities.length > 0
       ? "NOT_CALCULABLE"
@@ -978,32 +751,39 @@ export function estimatePersonalAiFootprint(
           isMissingOrUnmeasured: textDiagnostic === "NOT_CALCULABLE",
         });
 
-  // Déclaration contractuelle market-based (strictement séparée du calcul physique location-based)
   const marketBasedDisclosure = resolveMarketBasedDisclosure(input, totals.facilityEnergyKwh, notes);
 
-  // Traçabilité méthodologique
+  let formulaTrace: string;
+  if (typeof input.measuredEnergyKwh === "number") {
+    formulaTrace = "E_total = E_IT_mesurée × PUE ; GWP = E_total × f_grid";
+  } else if (usedOfficialEcologitsFormula) {
+    formulaTrace = "E_GPU = N_output × ((alpha × exp(beta × batch) × P_active + gamma) / 1000) × N_GPU ; E_IT = E_server + E_GPU ; E_total = E_IT × PUE ; GWP = E_total × f_grid + Embodied_GWP";
+  } else if (totals.itEnergyKwh !== null) {
+    formulaTrace = "E_total = (Tokens / 1M) × f_scenario × PUE ; GWP = E_total × f_grid ; LCA = GWP × 1,30";
+  } else {
+    formulaTrace = "NA (données physiques ou ventilation requises absentes : aucune extrapolation appliquée)";
+  }
+
   const methodologyTrace = {
-    formula:
-      modelRecord && modelRecord.architecture.activeParametersBillion
-        ? "E_IT = (Tokens_eff × P_active × alpha_GPU) + E_server_idle ; E_total = E_IT × PUE ; GWP = E_total × f_grid"
-        : "E_total = (Tokens / 1M) × f_scenario × PUE ; GWP = E_total × f_grid ; LCA = GWP × 1,30",
+    formula: formulaTrace,
     sources: [
-      "EcoLogits v3.0.0 (Data For Good / GenAI Impact)",
+      "EcoLogits v3.0.0 (Data For Good / GenAI Impact — packages/ecologits.js/src/impacts/llm.ts)",
       "EPA eGRID / EIA 2024",
       "RTE Bilan électrique 2024 (émissions directes de production)",
       "LBNL 2024 United States Data Center Energy Usage Report",
       "CleanMyMap Rapport impact_IA (Annexe B)",
     ],
     date: "2026-05",
-    version: "personal-ai-estimator-2026.05-v2",
+    version: "personal-ai-estimator-2026.05-v3",
     limitations: [
+      "Les équations EcoLogits v3.0.0 exigent des paramètres actifs/totaux publiés et un volume explicite de tokens générés (outputTokens > 0) ; à défaut, l'estimateur bascule sur un scénario générique ou NA sans substituer inputTokens à outputTokens.",
+      "L'exécution locale (local_device) sans mesure électrique directe (measuredEnergyKwh) retourne NA sans extrapoler les constantes serveur cloud H100 ni supposer une empreinte matérielle incorporée nulle.",
+      "L'eau totale (totalWaterLiters) n'est renseignée que lorsque l'eau directe sur site et l'eau indirecte réseau sont toutes deux calculables.",
       "Les facteurs physiques image, audio et vidéo restent NA faute de méthode sourcée reproductible.",
       "Le facteur électrique US n'est jamais propagé à une région inconnue ou non américaine.",
-      "Les scénarios de sensibilité constituent des repères de simulation technique, pas des lois probabilistes.",
     ],
   };
 
-  // Vérification honnête des règles anti-double-comptage
   const antiDoubleCountingCompliance = evaluateAntiDoubleCountingCompliance({
     input,
     totals,
@@ -1012,7 +792,7 @@ export function estimatePersonalAiFootprint(
 
   return {
     accountingScope: "PERSONAL_AI_USAGE",
-    version: "personal-ai-estimator-2026.05-v2",
+    version: "personal-ai-estimator-2026.05-v3",
     generatedAt,
     scenario,
     region,
