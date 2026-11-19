@@ -12,9 +12,9 @@ select set_config('request.jwt.claims', '{"role":"service_role","sub":"system"}'
 select set_config('request.jwt.claim.role', 'service_role', true);
 
 delete from public.progression_events
- where user_id in ('quiz-rpc-zero', 'quiz-rpc-49', 'quiz-rpc-99', 'quiz-rpc-balanced', 'quiz-rpc-invalid', 'quiz-rpc-rollback');
+ where user_id in ('quiz-rpc-zero', 'quiz-rpc-49', 'quiz-rpc-99', 'quiz-rpc-balanced', 'quiz-rpc-balanced-wait', 'quiz-rpc-balanced-prev', 'quiz-rpc-invalid', 'quiz-rpc-rollback');
 delete from public.quiz_type_progress
- where user_id in ('quiz-rpc-zero', 'quiz-rpc-49', 'quiz-rpc-99', 'quiz-rpc-balanced', 'quiz-rpc-invalid', 'quiz-rpc-rollback');
+ where user_id in ('quiz-rpc-zero', 'quiz-rpc-49', 'quiz-rpc-99', 'quiz-rpc-balanced', 'quiz-rpc-balanced-wait', 'quiz-rpc-balanced-prev', 'quiz-rpc-invalid', 'quiz-rpc-rollback');
 
 -- A first answer advances the counter, but a future threshold does not create an event.
 select is((public.record_quiz_progression(
@@ -35,6 +35,8 @@ select is((select count(*)::integer from public.progression_events where user_id
 insert into public.quiz_type_progress (user_id, question_type, correct_count)
 values ('quiz-rpc-49', 'quiz-a', 49), ('quiz-rpc-99', 'quiz-a', 99),
        ('quiz-rpc-balanced', 'quiz-a', 9), ('quiz-rpc-balanced', 'quiz-b', 9),
+       ('quiz-rpc-balanced-wait', 'quiz-a', 9), ('quiz-rpc-balanced-wait', 'quiz-b', 9),
+       ('quiz-rpc-balanced-prev', 'quiz-a', 10), ('quiz-rpc-balanced-prev', 'quiz-b', 9),
        ('quiz-rpc-invalid', 'quiz-a', 0), ('quiz-rpc-rollback', 'quiz-a', 0);
 
 select is((public.record_quiz_progression(
@@ -62,12 +64,12 @@ select is((public.record_quiz_progression(
   '[{"metric":"balance","threshold":10,"user_id":"quiz-rpc-balanced","event_type":"quiz_question_type_balance_milestone","source_table":"quiz_type_balance_progress","source_id":"quiz-rpc-balanced-10","status_phase":"validated","weight":1,"xp_base":2,"xp_awarded":2,"occurred_on":"2026-10-28","metadata":{"case":"balanced-9-to-10"}}]'::jsonb
 ) ->> 'previous_balanced_count')::integer, 9, 'balanced progression observes nine');
 select is(jsonb_array_length(public.record_quiz_progression(
-  'quiz-rpc-balanced', 'quiz-a', array['quiz-a', 'quiz-b'],
-  '[{"metric":"balance","threshold":10,"user_id":"quiz-rpc-balanced","event_type":"quiz_question_type_balance_milestone","source_table":"quiz_type_balance_progress","source_id":"quiz-rpc-balanced-10","status_phase":"validated","weight":1,"xp_base":2,"xp_awarded":2,"occurred_on":"2026-10-28","metadata":{"case":"balanced-9-to-10"}}]'::jsonb
+  'quiz-rpc-balanced-wait', 'quiz-a', array['quiz-a', 'quiz-b'],
+  '[{"metric":"balance","threshold":10,"user_id":"quiz-rpc-balanced-wait","event_type":"quiz_question_type_balance_milestone","source_table":"quiz_type_balance_progress","source_id":"quiz-rpc-balanced-wait-10","status_phase":"validated","weight":1,"xp_base":2,"xp_awarded":2,"occurred_on":"2026-10-28","metadata":{"case":"balanced-9-to-10"}}]'::jsonb
 ) -> 'inserted_events'), 0, 'the balanced milestone is not inserted while the minimum remains nine');
 select is((public.record_quiz_progression(
-  'quiz-rpc-balanced', 'quiz-b', array['quiz-a', 'quiz-b'],
-  '[{"metric":"balance","threshold":10,"user_id":"quiz-rpc-balanced","event_type":"quiz_question_type_balance_milestone","source_table":"quiz_type_balance_progress","source_id":"quiz-rpc-balanced-10","status_phase":"validated","weight":1,"xp_base":2,"xp_awarded":2,"occurred_on":"2026-10-28","metadata":{"case":"balanced-9-to-10"}}]'::jsonb
+  'quiz-rpc-balanced-prev', 'quiz-b', array['quiz-a', 'quiz-b'],
+  '[{"metric":"balance","threshold":10,"user_id":"quiz-rpc-balanced-prev","event_type":"quiz_question_type_balance_milestone","source_table":"quiz_type_balance_progress","source_id":"quiz-rpc-balanced-prev-10","status_phase":"validated","weight":1,"xp_base":2,"xp_awarded":2,"occurred_on":"2026-10-28","metadata":{"case":"balanced-9-to-10"}}]'::jsonb
 ) ->> 'previous_balanced_count')::integer, 9, 'the second balanced transition observes nine');
 select is((public.record_quiz_progression(
   'quiz-rpc-balanced', 'quiz-b', array['quiz-a', 'quiz-b'],
