@@ -77,7 +77,7 @@ export async function runLocalPsqlQuery(
     return await new Promise((resolve, reject) => {
       const child = spawn(
         psqlCommand,
-        ["-X", "-A", "-t", "-v", "ON_ERROR_STOP=1", "-f", "-", dbUrl],
+        ["-X", "-x", "-v", "ON_ERROR_STOP=1", "-f", "-", dbUrl],
         {
           cwd: root,
           env: trustedEnvironment(),
