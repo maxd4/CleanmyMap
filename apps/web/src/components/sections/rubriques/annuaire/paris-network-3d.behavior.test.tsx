@@ -183,8 +183,24 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     expect(lockedDialog?.textContent).toContain("Plateforme de publication");
     expect(lockedDialog?.textContent).not.toContain("Référent public :");
 
+    // Second click on Cleanwalk.org preserves the locked bubble
+    act(() => {
+      cleanwalkOrgBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain(
+      "Cleanwalk.org",
+    );
+
+    // Hovering Brigade Verte Paris while Cleanwalk.org is locked keeps Cleanwalk.org
+    act(() => {
+      brigadeBtn?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    });
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain(
+      "Cleanwalk.org",
+    );
+
     const officialLink = lockedDialog?.querySelector(
-      'a[href="https://www.helloasso.com/associations/cleanwalk-org"]',
+      'a[href="https://www.cleanwalk.org/"]',
     );
     expect(officialLink?.getAttribute("rel")).toBe("noopener noreferrer");
     expect(officialLink?.getAttribute("target")).toBe("_blank");

@@ -125,7 +125,7 @@ export function ParisNetwork3DSection({ fr: externalFr }: { fr?: boolean }) {
 
   const handleSelectActor = useCallback((actorId: string) => {
     cancelHoverClose();
-    setSelectedActorId((prev) => (prev === actorId ? null : actorId));
+    setSelectedActorId(actorId);
   }, [cancelHoverClose]);
 
   const handleCloseBubble = useCallback(() => {

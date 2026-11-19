@@ -122,10 +122,12 @@ describe("ParisNetworkContributionCard behavior", () => {
     const initialActorsCount = PARIS_CLEANWALK_ACTORS.length;
     const initialRelationsCount = PARIS_CLEANWALK_RELATIONS.length;
 
+    const beforeRender = Date.now();
     const root = createRoot(container);
     act(() => {
       root.render(React.createElement(ParisNetworkContributionCard, { fr: true }));
     });
+    const afterRender = Date.now();
 
     const select = container.querySelector(
       'select[aria-label="Type d\'information"]',
@@ -172,6 +174,8 @@ describe("ParisNetworkContributionCard behavior", () => {
     expect(sent.source).toBe("feedback_section");
     expect(sent.title).toContain("Réseau cleanwalks Paris");
     expect(sent.pagePath).toBe("/sections/annuaire#reseau-cleanwalks");
+    expect(sent.submittedAt).toBeGreaterThanOrEqual(beforeRender);
+    expect(sent.submittedAt).toBeLessThanOrEqual(afterRender);
 
     expect(container.textContent).toContain("Contribution enregistrée");
     expect(container.textContent).toContain("req-cleanwalk-123");

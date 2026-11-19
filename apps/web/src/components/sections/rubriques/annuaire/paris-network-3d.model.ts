@@ -1,8 +1,8 @@
 import {
   PARIS_ACTOR_CATEGORY_META,
-  PARIS_CLEANWALK_REFERENCE_DATE,
   PARIS_RELATION_TYPE_META,
   computeRelationThickness,
+  getCurrentReferenceDateIso,
   type EquipmentStatus,
   type ParisActorCategory,
   type ParisCleanwalkActor,
@@ -132,7 +132,7 @@ export function filterParisNetwork(
 export function computeParisNetwork3DLayout(
   actors: readonly ParisCleanwalkActor[],
   relations: readonly ParisCleanwalkRelation[],
-  referenceDateIso: string = PARIS_CLEANWALK_REFERENCE_DATE,
+  referenceDateIso: string = getCurrentReferenceDateIso(),
 ): {
   nodes: ParisNetwork3DNode[];
   edges: ParisNetwork3DEdge[];

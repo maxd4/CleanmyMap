@@ -269,7 +269,7 @@ export const ParisNetwork3DCanvas = forwardRef<
   },
   ref,
 ) {
-  const activeFocusId = hoveredActorId ?? selectedActorId;
+  const activeFocusId = selectedActorId ?? hoveredActorId;
   const connectedIds = useMemo(
     () => getConnectedActorIds(activeFocusId, relations),
     [activeFocusId, relations],

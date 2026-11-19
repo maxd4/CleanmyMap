@@ -165,7 +165,9 @@ export const RELATION_THICKNESS_POLICY = {
   rollingWindowDays: 365,
 } as const;
 
-export const PARIS_CLEANWALK_REFERENCE_DATE = "2026-11-19";
+export function getCurrentReferenceDateIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export {
   isPrivateOrUnauthorizedInviteUrl,
@@ -180,7 +182,7 @@ export {
  */
 export function countDistinctOperationsLast12Months(
   relation: Pick<ParisCleanwalkRelation, "relationType" | "operations" | "frequencyKnown">,
-  referenceDateIso: string = PARIS_CLEANWALK_REFERENCE_DATE,
+  referenceDateIso: string = getCurrentReferenceDateIso(),
 ): number | null {
   if (relation.relationType !== "action_commune") {
     return null;
@@ -216,7 +218,7 @@ export function countDistinctOperationsLast12Months(
  */
 export function computeRelationThickness(
   relation: Pick<ParisCleanwalkRelation, "relationType" | "operations" | "frequencyKnown">,
-  referenceDateIso: string = PARIS_CLEANWALK_REFERENCE_DATE,
+  referenceDateIso: string = getCurrentReferenceDateIso(),
 ): {
   thickness: number;
   operationsCount12m: number | null;

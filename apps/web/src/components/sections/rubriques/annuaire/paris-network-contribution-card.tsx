@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useUser } from "@clerk/nextjs";
 import { CheckCircle2, LogIn, MessageSquarePlus, Send } from "lucide-react";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
@@ -27,9 +27,15 @@ export function ParisNetworkContributionCard({ fr = true }: { fr?: boolean }) {
   const [savedRequestId, setSavedRequestId] = useState<string | null>(null);
   const openedAtRef = useRef<number>(0);
 
+  useEffect(() => {
+    if (openedAtRef.current === 0) {
+      openedAtRef.current = Date.now();
+    }
+  }, []);
+
   const ensureOpenedTimestamp = () => {
     if (openedAtRef.current === 0) {
-      openedAtRef.current = Date.now() - 2500;
+      openedAtRef.current = Date.now();
     }
     return openedAtRef.current;
   };

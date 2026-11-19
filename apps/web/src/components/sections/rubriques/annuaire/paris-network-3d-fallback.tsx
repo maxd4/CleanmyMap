@@ -40,7 +40,7 @@ export function ParisNetwork3DFallback({
   reason,
   fr,
 }: ParisNetwork3DFallbackProps) {
-  const activeFocusId = hoveredActorId ?? selectedActorId;
+  const activeFocusId = selectedActorId ?? hoveredActorId;
   const connectedIds = getConnectedActorIds(activeFocusId, relations);
   const actorNameById = new Map(actors.map((a) => [a.id, a.name]));
 

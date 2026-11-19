@@ -287,4 +287,71 @@ describe("paris-cleanwalk-network 12-month deduplication and thickness policy", 
     expect(sixOps.thickness).toBeLessThan(twentyOps.thickness);
     expect(twentyOps.thickness).toBe(RELATION_THICKNESS_POLICY.maxThickness);
   });
+
+  it("validates corrected editorial URLs, public leader and WCD/Megothon partnership", () => {
+    const byId = new Map(PARIS_CLEANWALK_ACTORS.map((actor) => [actor.id, actor]));
+    expect(byId.get("cleanwalk-org")?.officialWebsite).toBe(
+      "https://www.cleanwalk.org/",
+    );
+    expect(
+      byId
+        .get("cleanwalk-org")
+        ?.publicChannels.some(
+          (ch) =>
+            ch.url === "https://www.helloasso.com/associations/cleanwalk-org",
+        ),
+    ).toBe(true);
+    expect(
+      byId
+        .get("asso-zerowaste-paris")
+        ?.publicChannels.some(
+          (ch) =>
+            ch.url ===
+            "https://www.jeveuxaider.gouv.fr/organisations/16300-zero-waste-paris",
+        ),
+    ).toBe(true);
+    expect(byId.get("world-cleanup-day-france")?.publicLeader?.name).toBe(
+      "Virginie Delugeard",
+    );
+
+    const wcdMegothon = PARIS_CLEANWALK_RELATIONS.find(
+      (rel) => rel.id === "rel-wcd-megothon",
+    );
+    expect(wcdMegothon?.relationType).toBe("partenariat");
+    expect(wcdMegothon?.frequencyKnown).toBe(false);
+    expect(wcdMegothon?.operations).toBeUndefined();
+  });
+
+  it("evaluates rolling 12-month operations at two distinct reference dates and preserves known-zero vs unknown", () => {
+    const ops = [
+      {
+        id: "op-1",
+        date: "2026-05-23",
+        label: "Opération test",
+        sourceUrl: "https://www.worldcleanupday.fr",
+      },
+    ];
+
+    expect(
+      countDistinctOperationsLast12Months(
+        { relationType: "action_commune", frequencyKnown: true, operations: ops },
+        "2026-11-19",
+      ),
+    ).toBe(1);
+
+    expect(
+      countDistinctOperationsLast12Months(
+        { relationType: "action_commune", frequencyKnown: true, operations: ops },
+        "2027-06-01",
+      ),
+    ).toBe(0);
+
+    const knownZero = computeRelationThickness(
+      { relationType: "action_commune", frequencyKnown: true, operations: [] },
+      "2026-11-19",
+    );
+    expect(knownZero.operationsCount12m).toBe(0);
+    expect(knownZero.isNeutralFallback).toBe(true);
+    expect(knownZero.thickness).toBe(RELATION_THICKNESS_POLICY.neutralThickness);
+  });
 });

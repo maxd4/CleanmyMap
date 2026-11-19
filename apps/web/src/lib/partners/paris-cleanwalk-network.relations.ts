@@ -5,22 +5,14 @@ export const PARIS_CLEANWALK_RELATIONS: readonly ParisCleanwalkRelation[] = [
     id: "rel-wcd-megothon",
     sourceId: "world-cleanup-day-france",
     targetId: "megothon",
-    relationType: "action_commune",
-    title: "Co-mobilisation nationale Mégothon",
+    relationType: "partenariat",
+    title: "Partenariat historique (non coporteuse en 2026)",
     summary:
-      "Coordination conjointe de la semaine nationale de collecte des mégots (Mégothon) avec les relais World Cleanup Day France.",
-    operations: [
-      {
-        id: "megothon-edition-2026",
-        date: "2026-05-23",
-        label: "Semaine nationale du Mégothon 2026",
-        sourceUrl: "https://www.worldcleanupday.fr",
-      },
-    ],
-    frequencyKnown: true,
+      "World Cleanup Day France précise ne plus être coporteuse du Mégothon en 2026 tout en restant partenaire de l'initiative.",
+    frequencyKnown: false,
     source: {
-      label: "worldcleanupday.fr & lemegothon.fr/qui-sommes-nous",
-      url: "https://www.worldcleanupday.fr",
+      label: "Rapport d'activité 2025 World Cleanup Day France",
+      url: "https://www.worldcleanupday.fr/wp-content/uploads/2026/04/Rapport-activite-2025-1.pdf",
       verifiedAt: "2026-11-19",
       certainty: "verifie",
     },

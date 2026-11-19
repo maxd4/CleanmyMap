@@ -135,10 +135,10 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
       channel(
         "plateforme_jeveuxaider",
         "Missions sur JeVeuxAider.gouv.fr",
-        "https://www.jeveuxaider.gouv.fr/organisations/zero-waste-paris",
+        "https://www.jeveuxaider.gouv.fr/organisations/16300-zero-waste-paris",
         "jeveuxaider.gouv.fr",
-        "https://www.jeveuxaider.gouv.fr",
-        "partiel_ou_incertain",
+        "https://www.jeveuxaider.gouv.fr/organisations/16300-zero-waste-paris",
+        "verifie",
       ),
     ]),
     parisZone: {
@@ -304,9 +304,9 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
     roles: ["relais", "organisateur_effectif"],
     ecosystemRoles: ["coordinateur_reseau", "organisateur_direct"],
     publicLeader: {
-      name: "Virginie Guérin",
+      name: "Virginie Delugeard",
       roleTitle: "Présidente",
-      sourceUrl: "https://www.worldcleanupday.fr",
+      sourceUrl: "https://www.worldcleanupday.fr/en-france/",
       verifiedAt: "2026-11-19",
     },
     officialWebsite: "https://www.worldcleanupday.fr",
@@ -704,19 +704,20 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
     roles: ["relais"],
     ecosystemRoles: ["plateforme_publication"],
     publicLeader: null,
-    officialWebsite: "https://www.helloasso.com/associations/cleanwalk-org",
+    officialWebsite: "https://www.cleanwalk.org/",
     publicContact: {
       label: "Page associative Cleanwalk.org (HelloAsso)",
       url: "https://www.helloasso.com/associations/cleanwalk-org",
       certainty: "verifie",
     },
     publicChannels: sanitizeAndDeduplicatePublicChannels([
-      channel("plateforme_cleanwalk", "Page associative Cleanwalk.org (HelloAsso)", "https://www.helloasso.com/associations/cleanwalk-org", "helloasso.com"),
+      channel("site_officiel", "Site officiel Cleanwalk.org", "https://www.cleanwalk.org/", "cleanwalk.org"),
+      channel("plateforme_helloasso", "Page associative Cleanwalk.org (HelloAsso)", "https://www.helloasso.com/associations/cleanwalk-org", "helloasso.com"),
     ]),
     platformStatus: {
       isPlatform: true,
       v2UnavailableFeaturesNote:
-        "Plateforme de mise en relation et référencement : certaines fonctionnalités de sa V2 (cartographie/inscription) sont actuellement indisponibles ou en transition technique. Les bénévoles et opérations des structures utilisatrices ne sont pas attribués à Cleanwalk.org.",
+        "Plateforme de mise en relation et référencement : l'inscription et plusieurs fonctionnalités de sa V2 sont actuellement indisponibles ou en transition technique. Les bénévoles et opérations des structures utilisatrices ne sont pas attribués à Cleanwalk.org.",
     },
     parisZone: {
       label: "Plateforme collaborative de référencement (portée francophone)",
