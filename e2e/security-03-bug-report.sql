@@ -30,8 +30,8 @@ values
 
 do $$
 begin
-  if not has_table_privilege('authenticated', 'public.app_messages', 'INSERT') then
-    raise exception 'SECURITY-03 authenticated app_messages INSERT grant is missing';
+  if has_table_privilege('authenticated', 'public.app_messages', 'INSERT') then
+    raise exception 'SECURITY-03 authenticated app_messages INSERT grant must be revoked';
   end if;
   if not has_table_privilege('service_role', 'public.app_messages', 'INSERT') then
     raise exception 'SECURITY-03 service_role app_messages INSERT grant is missing';
@@ -75,14 +75,23 @@ begin
 end
 $$;
 
--- The ordinary community channel remains writable under its existing scope.
-insert into public.app_messages (sender_id, recipient_id, channel_type, content)
-values (
-  'security-03-bug-sender',
-  null,
-  'community',
-  'SECURITY-03 community regression check'
-);
+-- Direct authenticated community inserts are also revoked in favor of POST /api/chat.
+do $$
+begin
+  begin
+    insert into public.app_messages (sender_id, recipient_id, channel_type, content)
+    values (
+      'security-03-bug-sender',
+      null,
+      'community',
+      'SECURITY-03 community direct authenticated attempt'
+    );
+    raise exception 'SECURITY-03 authenticated community insert unexpectedly succeeded';
+  exception when insufficient_privilege then
+    null;
+  end;
+end
+$$;
 
 do $$
 declare
