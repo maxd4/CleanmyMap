@@ -3,6 +3,15 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { INDIVIDUAL_IMPACT_SELECT } from "./participation/individual-impact";
 import {
+  assertAllActionIdsLoaded,
+  chunkIds,
+  EngagementProofReadError,
+  MAX_ENGAGEMENT_SOURCE_ROWS,
+  readAllBoundedPages,
+  readAllBoundedSpogomiPages,
+  type BoundedPageResult,
+} from "./engagement-proof-projection.pagination";
+import {
   availableField,
   buildCommunicableReference,
   buildFieldRoleAttestedMission,
@@ -32,8 +41,6 @@ import type {
   EngagementProofVerifiedHours,
   PersonalEngagementProofProjection,
 } from "./engagement-proof-projection.types";
-
-const MAX_PARTICIPATION_READ_LIMIT = 10000;
 
 const ACTION_ENGAGEMENT_COLUMNS =
   "id, created_at, action_date, location_label, department_code, department_name, actor_name, organizer_name, organizer_type, action_context, status, action_phase, published_at, cancelled_at, moderation_visibility, access_mode, data_provenance, duration_minutes, volunteers_count, waste_kg, cigarette_butts, notes, preparation_data";
@@ -71,23 +78,7 @@ export type LoadedEngagementProofSources = {
   spogomiAttestations: RawSpogomiAttestationRow[];
 };
 
-export class EngagementProofReadError extends Error {
-  readonly failedSource:
-    | "actionParticipants"
-    | "actions"
-    | "actionRoleAttestations"
-    | "spogomiEquivalence";
-
-  constructor(
-    failedSource: EngagementProofReadError["failedSource"],
-    message: string,
-    options?: ErrorOptions,
-  ) {
-    super(message, options);
-    this.name = "EngagementProofReadError";
-    this.failedSource = failedSource;
-  }
-}
+export { EngagementProofReadError };
 
 function chooseCanonicalParticipantRow(
   existing: RawParticipantRow,
@@ -514,27 +505,72 @@ async function loadOwnerConfirmedParticipants(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<RawParticipantRow[]> {
-  const result = await supabase
-    .from("action_participants")
-    .select(
-      `id, action_id, user_id, joined_at, created_at, updated_at, participation_status, participation_source, ${INDIVIDUAL_IMPACT_SELECT}`,
-    )
-    .eq("user_id", userId)
-    .eq("participation_status", "confirmed")
-    .limit(MAX_PARTICIPATION_READ_LIMIT);
+  return readAllBoundedPages<RawParticipantRow>({
+    source: "actionParticipants",
+    label: "action_participants",
+    loadPage: (from, to) =>
+      supabase
+        .from("action_participants")
+        .select(
+          `id, action_id, user_id, joined_at, created_at, updated_at, participation_status, participation_source, ${INDIVIDUAL_IMPACT_SELECT}`,
+          { count: "exact" },
+        )
+        .eq("user_id", userId)
+        .eq("participation_status", "confirmed")
+        .order("id", { ascending: true })
+        .range(from, to) as unknown as PromiseLike<BoundedPageResult<RawParticipantRow>>,
+  });
+}
 
-  if (result.error) {
-    throw new EngagementProofReadError("actionParticipants", result.error.message, {
-      cause: result.error,
-    });
-  }
-  if (!Array.isArray(result.data)) {
+async function loadActionsInBatches(
+  supabase: SupabaseClient,
+  actionIds: readonly string[],
+): Promise<RawActionRow[]> {
+  if (actionIds.length > MAX_ENGAGEMENT_SOURCE_ROWS) {
     throw new EngagementProofReadError(
-      "actionParticipants",
-      "La lecture des participations confirmées est incomplète.",
+      "actions",
+      `Le nombre d’actions (${actionIds.length}) dépasse la borne maximale autorisée (${MAX_ENGAGEMENT_SOURCE_ROWS}).`,
     );
   }
-  return result.data as unknown as RawParticipantRow[];
+  const batches = chunkIds(actionIds);
+  const actions: RawActionRow[] = [];
+  for (const batch of batches) {
+    const batchRows = await readAllBoundedPages<RawActionRow>({
+      source: "actions",
+      label: "actions",
+      loadPage: (from, to) =>
+        supabase
+          .from("actions")
+          .select(ACTION_ENGAGEMENT_COLUMNS, { count: "exact" })
+          .in("id", batch)
+          .order("id", { ascending: true })
+          .range(from, to),
+    });
+    assertAllActionIdsLoaded(batchRows, batch);
+    actions.push(...batchRows);
+  }
+  return actions;
+}
+
+async function loadOwnerConfirmedRoleAttestations(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<RawRoleAttestationRow[]> {
+  return readAllBoundedPages<RawRoleAttestationRow>({
+    source: "actionRoleAttestations",
+    label: "action_role_attestations",
+    loadPage: (from, to) =>
+      supabase
+        .from("action_role_attestations")
+        .select(
+          "id, action_id, user_id, role_code, verification_status, decided_at, responsibility_provenance, provenance_snapshot, revision",
+          { count: "exact" },
+        )
+        .eq("user_id", userId)
+        .eq("verification_status", "confirmed")
+        .order("id", { ascending: true })
+        .range(from, to) as unknown as PromiseLike<BoundedPageResult<RawRoleAttestationRow>>,
+  });
 }
 
 async function loadActionsAndAttestationsForActionIds(
@@ -548,47 +584,11 @@ async function loadActionsAndAttestationsForActionIds(
   if (actionIds.length === 0) {
     return { actions: [], roleAttestations: [] };
   }
-  const [actionsResult, attestationsResult] = await Promise.all([
-    supabase
-      .from("actions")
-      .select(ACTION_ENGAGEMENT_COLUMNS)
-      .in("id", [...actionIds]),
-    supabase
-      .from("action_role_attestations")
-      .select(
-        "id, action_id, user_id, role_code, verification_status, decided_at, responsibility_provenance, provenance_snapshot, revision",
-      )
-      .eq("user_id", userId)
-      .eq("verification_status", "confirmed")
-      .in("action_id", [...actionIds]),
+  const [actions, roleAttestations] = await Promise.all([
+    loadActionsInBatches(supabase, actionIds),
+    loadOwnerConfirmedRoleAttestations(supabase, userId),
   ]);
-
-  if (actionsResult.error) {
-    throw new EngagementProofReadError("actions", actionsResult.error.message, {
-      cause: actionsResult.error,
-    });
-  }
-  if (!Array.isArray(actionsResult.data)) {
-    throw new EngagementProofReadError("actions", "La lecture des actions est incomplète.");
-  }
-  if (attestationsResult.error) {
-    throw new EngagementProofReadError(
-      "actionRoleAttestations",
-      attestationsResult.error.message,
-      { cause: attestationsResult.error },
-    );
-  }
-  if (!Array.isArray(attestationsResult.data)) {
-    throw new EngagementProofReadError(
-      "actionRoleAttestations",
-      "La lecture des attestations de mission est incomplète.",
-    );
-  }
-
-  return {
-    actions: actionsResult.data as unknown as RawActionRow[],
-    roleAttestations: attestationsResult.data as unknown as RawRoleAttestationRow[],
-  };
+  return { actions, roleAttestations };
 }
 
 async function loadSpogomiEquivalenceForOwner(
@@ -604,64 +604,83 @@ async function loadSpogomiEquivalenceForOwner(
     return { spogomiParticipants: [], spogomiEvents: [], spogomiAttestations: [] };
   }
 
-  const participantsResult = await supabase
-    .from("spogomi_participants")
-    .select(
-      "id, event_id, division_id, clerk_id, registration_status, attendance_status, account_link_status",
-    )
-    .eq("clerk_id", userId)
-    .eq("account_link_status", "verified")
-    .eq("attendance_status", "present");
+  const spogomiParticipants = await readAllBoundedSpogomiPages<RawSpogomiParticipantRow>({
+    label: "engagement SPOGOMI participants",
+    loadPage: (from, to) =>
+      supabase
+        .from("spogomi_participants")
+        .select(
+          "id, event_id, division_id, clerk_id, registration_status, attendance_status, account_link_status",
+          { count: "exact" },
+        )
+        .eq("clerk_id", userId)
+        .eq("account_link_status", "verified")
+        .eq("attendance_status", "present")
+        .order("id", { ascending: true })
+        .range(from, to) as unknown as PromiseLike<BoundedPageResult<RawSpogomiParticipantRow>>,
+  });
 
-  if (participantsResult.error) {
-    throw new EngagementProofReadError(
-      "spogomiEquivalence",
-      participantsResult.error.message,
-      { cause: participantsResult.error },
-    );
-  }
-  const spogomiParticipants = (participantsResult.data ?? []) as RawSpogomiParticipantRow[];
   if (spogomiParticipants.length === 0) {
     return { spogomiParticipants: [], spogomiEvents: [], spogomiAttestations: [] };
   }
 
-  const eventIds = [...new Set(spogomiParticipants.map((row) => row.event_id))];
-  const participantIds = [...new Set(spogomiParticipants.map((row) => row.id))];
+  const actionIdSet = new Set(actionIds);
+  const participantIdSet = new Set(spogomiParticipants.map((row) => row.id));
+  const eventBatches = chunkIds(spogomiParticipants.map((row) => row.event_id));
 
-  const [eventsResult, attestationsResult] = await Promise.all([
-    supabase
-      .from("spogomi_events")
-      .select("id, action_id, name, public_visibility, state")
-      .in("id", eventIds)
-      .in("action_id", [...actionIds]),
-    supabase
-      .from("spogomi_recognition_attestations")
-      .select(
-        "id, event_id, division_id, participant_id, kind, status, certified_at, evidence_reference, certification_version",
-      )
-      .in("event_id", eventIds)
-      .in("participant_id", participantIds)
-      .eq("status", "certified"),
-  ]);
+  const spogomiEvents: RawSpogomiEventRow[] = [];
+  const spogomiAttestations: RawSpogomiAttestationRow[] = [];
 
-  if (eventsResult.error) {
-    throw new EngagementProofReadError("spogomiEquivalence", eventsResult.error.message, {
-      cause: eventsResult.error,
-    });
+  for (const eventBatch of eventBatches) {
+    const [batchEvents, batchAttestations] = await Promise.all([
+      readAllBoundedSpogomiPages<RawSpogomiEventRow>({
+        label: "engagement SPOGOMI events",
+        loadPage: (from, to) =>
+          supabase
+            .from("spogomi_events")
+            .select("id, action_id, name, public_visibility, state", { count: "exact" })
+            .in("id", eventBatch)
+            .order("id", { ascending: true })
+            .range(from, to),
+      }),
+      readAllBoundedSpogomiPages<RawSpogomiAttestationRow>({
+        label: "engagement SPOGOMI attestations",
+        loadPage: (from, to) =>
+          supabase
+            .from("spogomi_recognition_attestations")
+            .select(
+              "id, event_id, division_id, participant_id, kind, status, certified_at, evidence_reference, certification_version",
+              { count: "exact" },
+            )
+            .in("event_id", eventBatch)
+            .eq("status", "certified")
+            .order("id", { ascending: true })
+            .range(from, to),
+      }),
+    ]);
+
+    for (const event of batchEvents) {
+      if (typeof event.action_id === "string" && actionIdSet.has(event.action_id)) {
+        spogomiEvents.push(event);
+      }
+    }
+    for (const attestation of batchAttestations) {
+      if (participantIdSet.has(attestation.participant_id)) {
+        spogomiAttestations.push(attestation);
+      }
+    }
+    if (
+      spogomiEvents.length > MAX_ENGAGEMENT_SOURCE_ROWS ||
+      spogomiAttestations.length > MAX_ENGAGEMENT_SOURCE_ROWS
+    ) {
+      throw new EngagementProofReadError(
+        "spogomiEquivalence",
+        `Les preuves SPOGOMI dépassent la borne maximale autorisée (${MAX_ENGAGEMENT_SOURCE_ROWS}).`,
+      );
+    }
   }
-  if (attestationsResult.error) {
-    throw new EngagementProofReadError(
-      "spogomiEquivalence",
-      attestationsResult.error.message,
-      { cause: attestationsResult.error },
-    );
-  }
 
-  return {
-    spogomiParticipants,
-    spogomiEvents: (eventsResult.data ?? []) as RawSpogomiEventRow[],
-    spogomiAttestations: (attestationsResult.data ?? []) as RawSpogomiAttestationRow[],
-  };
+  return { spogomiParticipants, spogomiEvents, spogomiAttestations };
 }
 
 export async function loadPersonalEngagementProofProjection(

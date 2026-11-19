@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+﻿import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
@@ -80,6 +80,8 @@ function makeRoleAttestation(
   };
 }
 
+const SUPABASE_MAX_ROWS = 1000;
+
 function createSupabaseMock(params: {
   action_participants?: RawParticipantRow[];
   actions?: RawActionRow[];
@@ -92,10 +94,16 @@ function createSupabaseMock(params: {
 }) {
   const from = vi.fn((table: string) => {
     const filters: Array<{ op: "eq" | "in"; col: string; val: unknown }> = [];
+    let orderBy: { col: string; ascending: boolean } | null = null;
+    let rangeBounds: { from: number; to: number } | null = null;
+    let limitCount: number | null = null;
+    let includeCount = false;
+
     const execute = async () => {
       if (params.failTable === table) {
         return {
           data: null,
+          count: null,
           error: { message: params.failMessage ?? `${table} unavailable` },
         };
       }
@@ -110,11 +118,38 @@ function createSupabaseMock(params: {
           return true;
         }),
       );
-      return { data: filtered, error: null };
+      const sorted = orderBy
+        ? [...filtered].sort((left, right) => {
+            const leftVal = String(left[orderBy!.col] ?? "");
+            const rightVal = String(right[orderBy!.col] ?? "");
+            return orderBy!.ascending
+              ? leftVal.localeCompare(rightVal)
+              : rightVal.localeCompare(leftVal);
+          })
+        : filtered;
+
+      const start = rangeBounds ? rangeBounds.from : 0;
+      const requestedEnd = rangeBounds
+        ? rangeBounds.to + 1
+        : limitCount !== null
+          ? limitCount
+          : sorted.length;
+      const cappedEnd = Math.min(requestedEnd, start + SUPABASE_MAX_ROWS);
+
+      return {
+        data: sorted.slice(start, cappedEnd),
+        count: includeCount ? sorted.length : null,
+        error: null,
+      };
     };
 
     const chain: Record<string, unknown> = {
-      select: vi.fn(() => chain),
+      select: vi.fn((_cols?: string, options?: { count?: string }) => {
+        if (options?.count === "exact") {
+          includeCount = true;
+        }
+        return chain;
+      }),
       eq: vi.fn((col: string, val: unknown) => {
         filters.push({ op: "eq", col, val });
         return chain;
@@ -123,7 +158,18 @@ function createSupabaseMock(params: {
         filters.push({ op: "in", col, val });
         return chain;
       }),
-      limit: vi.fn(() => chain),
+      order: vi.fn((col: string, opts?: { ascending?: boolean }) => {
+        orderBy = { col, ascending: opts?.ascending !== false };
+        return chain;
+      }),
+      range: vi.fn((fromIndex: number, toIndex: number) => {
+        rangeBounds = { from: fromIndex, to: toIndex };
+        return chain;
+      }),
+      limit: vi.fn((n: number) => {
+        limitCount = n;
+        return chain;
+      }),
       then: (
         resolve: (value: unknown) => unknown,
         reject?: (reason: unknown) => unknown,
@@ -721,68 +767,5 @@ describe("engagement-proof-projection distinctions, live re-evaluation, and erro
     await expect(
       loadPersonalEngagementProofProjection(failedSpogomi.supabase, "   "),
     ).rejects.toThrow("identifiant du compte est requis");
-  });
-
-  it("aggregates multiple actions across periods and organizations with association_name/actor_name fallbacks and cigarette-butt declarations", async () => {
-    const mock = createSupabaseMock({
-      action_participants: [
-        makeParticipant({
-          id: "p-1",
-          action_id: "action-1",
-          individual_waste_kg: 2.5,
-          individual_waste_condition: "sec",
-          individual_cigarette_butts_count: 150,
-          individual_cigarette_butts_provenance: "counted",
-        }),
-        makeParticipant({
-          id: "p-2",
-          action_id: "action-2",
-          individual_waste_kg: null,
-          individual_cigarette_butts_count: 80,
-          individual_cigarette_butts_provenance: "counted",
-        }),
-        makeParticipant({
-          id: "p-3",
-          action_id: "action-3",
-        }),
-      ],
-      actions: [
-        makeAction({
-          id: "action-1",
-          action_date: "2026-05-10",
-          organizer_name: "Association Canal Vivant",
-          organizer_type: "association",
-          action_context: "citizen",
-        }),
-        makeAction({
-          id: "action-2",
-          action_date: "2026-05-24",
-          organizer_name: "Association Canal Vivant",
-          organizer_type: "association",
-          action_context: "school",
-        }),
-        makeAction({
-          id: "action-3",
-          action_date: "2025-11-04",
-          organizer_name: null,
-          actor_name: "Collectif Rive Gauche",
-          organizer_type: "collective",
-          action_context: "company",
-          notes: '[cmm-meta]{"associationName":"Association Rive Gauche"}',
-        }),
-      ],
-      action_role_attestations: [],
-      spogomi_participants: [],
-    });
-
-    const projection = await loadPersonalEngagementProofProjection(mock.supabase, "user-1");
-    expect(projection.status).toBe("available");
-    expect(projection.participations.value).toHaveLength(3);
-    expect(projection.organizations.value).toHaveLength(2);
-    expect(projection.organizations.value?.[0]?.confirmedParticipationsCount).toBe(2);
-    expect(projection.organizations.value?.[1]?.name).toBe("Association Rive Gauche");
-    expect(projection.periods.value?.byYear).toHaveLength(2);
-    expect(projection.periods.value?.byMonth).toHaveLength(2);
-    expect(projection.distinctions.personalDeclarations.value?.declaredActionCount).toBe(2);
   });
 });

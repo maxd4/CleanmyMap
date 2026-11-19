@@ -278,18 +278,22 @@ concurrente des preuves :
 - **Exclusions et distinctions explicites** : les inscriptions seules
   (`action_registrations`), rôles prévus (`action_field_role_assignments`),
   claims ou attestations `pending`/`rejected`, actions simulées, annulées,
-  masquées ou privées sont exclus. Les missions d'accompagnement, de
+  masquées ou privées sont exclues. Les missions d'accompagnement, de
   sensibilisation, de sécurité ou de logistique sont restituées lorsqu'elles
   sont attestées, sans attribution fictive de collecte
   (`collectionAttributed = false`) ni revendication de compétence certifiée
   (`skillsCertificationClaimed = false`). La réponse distingue explicitement
   présence confirmée, mission attestée, heures vérifiées (`status = unavailable`,
   `totalHours = null` — jamais déduites de `actions.duration_minutes`),
-  déclarations personnelles et résultats collectifs. Toute donnée absente ou en
-  erreur conserve son état `unavailable` ou `error` (`503`) sans être convertie
-  en zéro. Aucune donnée de statut migratoire, nationalité, situation
-  administrative, motif de dossier ou identité d'autres participants/reviewers
-  n'est collectée ni exposée.
+  déclarations personnelles et résultats collectifs. Chaque source
+  (`action_participants`, `actions`, `action_role_attestations`, SPOGOMI) est
+  lue par pagination déterministe (`order("id")`, `count = exact`, pages de 1 000)
+  et lots bornés d'identifiants (200, plafond explicite de 10 000 lignes) ; toute
+  troncature, incohérence de cardinalité, dépassement de borne ou erreur
+  Supabase retourne un état `error` et HTTP `503` sans jamais présenter un
+  historique partiel ou convertir une absence en zéro. Aucune donnée de statut
+  migratoire, nationalité, situation administrative, motif de dossier ou
+  identité d'autres participants/reviewers n'est collectée ni exposée.
 
 - Verifier que le bouton de join est visible sur les surfaces ciblees.
 - Verifier qu'une inscription future, même confirmée, ne remonte pas dans les statistiques ni la gamification.

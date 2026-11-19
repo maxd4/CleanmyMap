@@ -85,9 +85,18 @@ async function createEvent(client, actionId, mode = "world_cup") {
     starts_at: "2026-10-20T09:00:00.000Z",
     regulation_version: "synthetic-v1",
     regulation_status: "complete",
+    creation_state: "event_pending",
     team_size_config: mode === "casual" ? { casual: { minMembers: 2, maxMembers: 4 } } : {},
   }).select("id, composition_revision").single(), "create synthetic event");
   created.events.push(row.id);
+  await must(
+    await client.rpc("spogomi_ensure_parent_divisions", { p_event_id: row.id, p_mode: mode }),
+    "create synthetic event divisions",
+  );
+  await must(
+    await client.from("spogomi_events").update({ creation_state: "ready" }).eq("id", row.id),
+    "mark synthetic event ready",
+  );
   return row;
 }
 
