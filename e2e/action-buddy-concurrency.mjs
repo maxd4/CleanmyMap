@@ -45,10 +45,10 @@ set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"action-buddy-concurrency-setup"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
 insert into public.actions (
-  id, created_by_clerk_id, action_date, event_start_time, location_label,
+  id, created_by_clerk_id, action_date, event_start_time, event_start_at, location_label,
   status, action_phase, access_mode, moderation_visibility, review_state, published_at
 ) values (
-  '${actionId}'::uuid, 'action-buddy-concurrency-organizer', current_date + 30, time '10:00', 'Action buddy concurrency fixture',
+  '${actionId}'::uuid, 'action-buddy-concurrency-organizer', current_date + 30, time '10:00', now() + interval '30 days', 'Action buddy concurrency fixture',
   'approved', 'pre_action', 'public', 'visible', 'approved', now()
 );
 insert into public.action_registrations (action_id, user_id, registration_status, registration_source)
@@ -67,10 +67,10 @@ values
   ('${proposalIds.A}'::uuid, '${requestIds.A}'::uuid, '${mentorId}'),
   ('${proposalIds.B}'::uuid, '${requestIds.B}'::uuid, '${mentorId}');
 insert into public.actions (
-  id, created_by_clerk_id, action_date, event_start_time, location_label,
+  id, created_by_clerk_id, action_date, event_start_time, event_start_at, location_label,
   status, action_phase, access_mode, moderation_visibility, review_state, published_at
 ) values (
-  '${sameRequestActionId}'::uuid, 'action-buddy-concurrency-organizer-2', current_date + 30, time '10:00', 'Action buddy same-request fixture',
+  '${sameRequestActionId}'::uuid, 'action-buddy-concurrency-organizer-2', current_date + 30, time '10:00', now() + interval '30 days', 'Action buddy same-request fixture',
   'approved', 'pre_action', 'public', 'visible', 'approved', now()
 );
 insert into public.action_registrations (action_id, user_id, registration_status, registration_source)
