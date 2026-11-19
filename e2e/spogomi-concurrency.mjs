@@ -227,10 +227,9 @@ async function teamPublicNameUniqueness() {
     p_actor_clerk_id: `${marker}-collision`,
   });
   assert.ok(collision.error, "a generated public-name collision must reject composition confirmation");
-  assert.match(
-    collision.error.message,
-    /generated SPOGOMI team public name is already used|duplicate key value violates unique constraint/i,
-  );
+  if (!/generated SPOGOMI team public name is already used|duplicate key value violates unique constraint/i.test(collision.error.message)) {
+    throw new Error(`Unexpected collision error (${collision.error.code ?? "no-code"}): ${collision.error.message}`);
+  }
 
   const teamsAfterCollision = await must(
     await sessionA.from("spogomi_teams").select("team_number, public_name").eq("event_id", event.id).order("team_number"),
