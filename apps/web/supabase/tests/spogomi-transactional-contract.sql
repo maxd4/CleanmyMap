@@ -72,7 +72,8 @@ begin
     raise exception 'direct participant mutation after composition lock was accepted';
   exception when others then
     if sqlerrm not like '%Direct SPOGOMI team changes require the protected composition procedure%'
-       and sqlerrm not like '%composition changes require a versioned correction procedure%' then
+       and sqlerrm not like '%composition changes require a versioned correction procedure%'
+       and sqlerrm not like '%SPOGOMI participant eligibility or team changes require an explicit audited arbitration procedure after composition lock%' then
       raise;
     end if;
   end;
