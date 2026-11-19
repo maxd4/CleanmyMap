@@ -24,6 +24,7 @@ vi.mock("framer-motion", () => ({
 }));
 
 import { ParisNetwork3DSection } from "./paris-network-3d-section";
+import { computeClampedBubblePosition } from "./paris-network-3d-bubble";
 
 describe("paris-network-3d model", () => {
   it("computes deterministic 3D cluster positions with non-zero depth", () => {
@@ -254,5 +255,178 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     act(() => {
       root.unmount();
     });
+  });
+
+  it("renders English UI and exercises all 5 filters plus reset", () => {
+    sitePreferencesMock.mockReturnValue({
+      locale: "en",
+      displayMode: "minimaliste",
+    });
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(React.createElement(ParisNetwork3DSection, { fr: false }));
+    });
+
+    expect(container.textContent).toContain("3D network of Paris cleanwalks");
+    expect(container.textContent).toContain("Actor families (3D clusters)");
+
+    const setSelect = (label: string, value: string) => {
+      const sel = container.querySelector(
+        `select[aria-label="${label}"]`,
+      ) as HTMLSelectElement | null;
+      expect(sel).not.toBeNull();
+      if (!sel) return;
+      sel.value = value;
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    act(() => {
+      setSelect("Filter by actor type", "association_locale");
+      setSelect("Filter by ecosystem role", "organisateur_direct");
+      setSelect("Filter by audience", "benevoles");
+      setSelect("Filter by equipment", "incertain");
+      setSelect("Filter by relation type", "soutien_rse");
+    });
+
+    const resetBtn = container.querySelector(
+      'button[aria-label="Reset 3D filters"]',
+    );
+    expect(resetBtn).not.toBeNull();
+
+    act(() => {
+      resetBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(
+      container.querySelector('button[aria-label="Reset 3D filters"]'),
+    ).toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("renders WebGL toolbar, toggles 3D/HTML view and triggers IntersectionObserver when WebGL is available", () => {
+    const getContextSpy = vi
+      .spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue({} as RenderingContext);
+
+    let observerCallback:
+      | ((entries: Array<{ isIntersecting: boolean }>) => void)
+      | null = null;
+    const originalIO = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = class MockIO {
+      constructor(cb: (entries: Array<{ isIntersecting: boolean }>) => void) {
+        observerCallback = cb;
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    } as unknown as typeof IntersectionObserver;
+
+    sitePreferencesMock.mockReturnValue({
+      locale: "fr",
+      displayMode: "exhaustif",
+    });
+
+    const root = createRoot(container);
+    act(() => {
+      root.render(React.createElement(ParisNetwork3DSection, { fr: true }));
+    });
+
+    // Trigger viewport entry via IntersectionObserver
+    act(() => {
+      observerCallback?.([{ isIntersecting: true }]);
+    });
+
+    expect(
+      container.querySelector('button[aria-label="Zoomer sur la scène 3D"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('button[aria-label="Dézoomer la scène 3D"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('button[aria-label="Recentrer la caméra 3D"]'),
+    ).not.toBeNull();
+
+    // Toggle to HTML view and back to 3D
+    const toggleBtn = container.querySelector(
+      'button[aria-label="Basculer vers la vue HTML accessible"]',
+    );
+    expect(toggleBtn).not.toBeNull();
+    act(() => {
+      toggleBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(container.textContent).toContain("Vue HTML accessible active");
+
+    // Hover Brigade Verte in English mode to cover English bubble branches
+    act(() => {
+      root.render(React.createElement(ParisNetwork3DSection, { fr: false }));
+    });
+    const brigadeEnBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Brigade Verte Paris"),
+    );
+    act(() => {
+      brigadeEnBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(container.textContent).toContain("Join actions");
+    expect(container.textContent).toContain("Official website");
+
+    // Trigger offscreen via IntersectionObserver
+    act(() => {
+      observerCallback?.([{ isIntersecting: false }]);
+    });
+
+    act(() => {
+      root.unmount();
+    });
+    getContextSpy.mockRestore();
+    globalThis.IntersectionObserver = originalIO;
+  });
+
+  it("clamps bubble coordinates to container bounds on 390px and 320px mobile viewports and for tall bubbles", () => {
+    // 390px mobile viewport, node near bottom-right edge
+    const mobile390 = computeClampedBubblePosition({
+      anchorPosition: { leftPercent: 95, topPercent: 95 },
+      containerWidth: 390,
+      containerHeight: 500,
+      bubbleWidth: 336,
+      bubbleHeight: 320,
+    });
+    expect(mobile390.leftPx).toBe(42); // 390 - 336 - 12
+    expect(mobile390.leftPx + 336).toBeLessThanOrEqual(390 - 12);
+    expect(mobile390.topPx + 320).toBeLessThanOrEqual(500 - 12);
+
+    // 320px mobile viewport, nodes near all 4 edges
+    for (const anchorPosition of [
+      { leftPercent: 0, topPercent: 0 },
+      { leftPercent: 100, topPercent: 0 },
+      { leftPercent: 0, topPercent: 100 },
+      { leftPercent: 100, topPercent: 100 },
+    ]) {
+      const pos = computeClampedBubblePosition({
+        anchorPosition,
+        containerWidth: 320,
+        containerHeight: 500,
+        bubbleWidth: 296,
+        bubbleHeight: 300,
+      });
+      expect(pos.leftPx).toBeGreaterThanOrEqual(12);
+      expect(pos.topPx).toBeGreaterThanOrEqual(12);
+      expect(pos.leftPx + 296).toBeLessThanOrEqual(320 - 12);
+      expect(pos.topPx + 300).toBeLessThanOrEqual(500 - 12);
+    }
+
+    // Tall bubble exceeding container height clamps topPx and sets maxHeightPx for internal scroll
+    const tallBubble = computeClampedBubblePosition({
+      anchorPosition: { leftPercent: 50, topPercent: 85 },
+      containerWidth: 800,
+      containerHeight: 500,
+      bubbleWidth: 336,
+      bubbleHeight: 490,
+    });
+    expect(tallBubble.topPx).toBe(12);
+    expect(tallBubble.maxHeightPx).toBe(476);
   });
 });

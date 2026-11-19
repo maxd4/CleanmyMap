@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect, useRef, useState } from "react";
 import { AlertTriangle, ExternalLink, X } from "lucide-react";
 import {
   PARIS_ACTOR_CATEGORY_META,
@@ -34,6 +35,30 @@ export interface ParisNetwork3DBubbleProps {
   fr: boolean;
 }
 
+export function computeClampedBubblePosition(params: {
+  anchorPosition: { leftPercent: number; topPercent: number };
+  containerWidth: number;
+  containerHeight: number;
+  bubbleWidth: number;
+  bubbleHeight: number;
+  marginPx?: number;
+}): { leftPx: number; topPx: number; maxHeightPx: number } {
+  const margin = params.marginPx ?? 12;
+  const { containerWidth, containerHeight, bubbleWidth, bubbleHeight } = params;
+
+  const desiredLeft = (params.anchorPosition.leftPercent / 100) * containerWidth;
+  const desiredTop = (params.anchorPosition.topPercent / 100) * containerHeight;
+
+  const maxLeft = Math.max(margin, containerWidth - bubbleWidth - margin);
+  const maxTop = Math.max(margin, containerHeight - bubbleHeight - margin);
+
+  return {
+    leftPx: Math.round(Math.min(Math.max(desiredLeft, margin), maxLeft)),
+    topPx: Math.round(Math.min(Math.max(desiredTop, margin), maxTop)),
+    maxHeightPx: Math.max(160, Math.round(containerHeight - margin * 2)),
+  };
+}
+
 export function ParisNetwork3DBubble({
   actor,
   isLocked,
@@ -43,6 +68,61 @@ export function ParisNetwork3DBubble({
   onMouseLeave,
   fr,
 }: ParisNetwork3DBubbleProps) {
+  const bubbleRef = useRef<HTMLDivElement | null>(null);
+  const [clampedCoords, setClampedCoords] = useState<{
+    leftPx: number;
+    topPx: number;
+    maxHeightPx: number;
+  } | null>(null);
+
+  useLayoutEffect(() => {
+    const bubbleEl = bubbleRef.current;
+    const parentEl = bubbleEl?.parentElement;
+    if (!bubbleEl || !parentEl || !anchorPosition) {
+      return;
+    }
+
+    const updatePosition = () => {
+      const containerWidth = parentEl.clientWidth || parentEl.getBoundingClientRect().width;
+      const containerHeight = parentEl.clientHeight || parentEl.getBoundingClientRect().height;
+      const bubbleWidth = bubbleEl.offsetWidth || bubbleEl.getBoundingClientRect().width;
+      const bubbleHeight = bubbleEl.offsetHeight || bubbleEl.getBoundingClientRect().height;
+
+      if (containerWidth <= 0 || containerHeight <= 0) {
+        return;
+      }
+
+      const next = computeClampedBubblePosition({
+        anchorPosition,
+        containerWidth,
+        containerHeight,
+        bubbleWidth,
+        bubbleHeight,
+      });
+
+      setClampedCoords((prev) =>
+        prev &&
+        prev.leftPx === next.leftPx &&
+        prev.topPx === next.topPx &&
+        prev.maxHeightPx === next.maxHeightPx
+          ? prev
+          : next,
+      );
+    };
+
+    updatePosition();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(updatePosition);
+      observer.observe(parentEl);
+      observer.observe(bubbleEl);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener("resize", updatePosition);
+    return () => window.removeEventListener("resize", updatePosition);
+  }, [actor.id, anchorPosition]);
+
   const safeChannels = sanitizeAndDeduplicatePublicChannels(actor.publicChannels);
   const participationLinks = safeChannels.filter((ch) =>
     ACTION_PARTICIPATION_TYPES.has(ch.type),
@@ -65,14 +145,22 @@ export function ParisNetwork3DBubble({
     .join(" · ");
 
   const positioningStyle = anchorPosition
-    ? {
-        left: `${Math.min(Math.max(anchorPosition.leftPercent, 6), 64)}%`,
-        top: `${Math.min(Math.max(anchorPosition.topPercent, 6), 54)}%`,
-      }
+    ? clampedCoords
+      ? {
+          left: `${clampedCoords.leftPx}px`,
+          top: `${clampedCoords.topPx}px`,
+          maxHeight: `${clampedCoords.maxHeightPx}px`,
+        }
+      : {
+          left: "12px",
+          top: "12px",
+          maxHeight: "calc(100% - 1.5rem)",
+        }
     : undefined;
 
   return (
     <div
+      ref={bubbleRef}
       role="dialog"
       aria-modal="false"
       aria-label={fr ? `Informations sur ${actor.name}` : `Information about ${actor.name}`}
@@ -83,7 +171,7 @@ export function ParisNetwork3DBubble({
         anchorPosition
           ? "absolute z-30 w-[min(21rem,calc(100%-1.5rem))]"
           : "relative z-30 w-full max-w-md"
-      } max-h-[82%] overflow-y-auto rounded-2xl border border-violet-300/35 bg-slate-950/95 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur-xl`}
+      } overflow-y-auto rounded-2xl border border-violet-300/35 bg-slate-950/95 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur-xl`}
     >
       {/* 1. Nom et rôle réel */}
       <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
