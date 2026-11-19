@@ -73,7 +73,7 @@ select ok(
 set local role postgres;
 
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     (select effective_on from territorial_legend_contract_state),
     jsonb_build_array(
       jsonb_build_object(
@@ -98,7 +98,7 @@ select is((select count(*)::integer from public.territorial_legend_hold_periods 
 select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id like 'legend-contract-%' and award_kind = 'conquest'), 2, 'the first snapshot creates one conquest proof per winner');
 
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     (select effective_on from territorial_legend_contract_state),
     jsonb_build_array(
       jsonb_build_object('user_id', 'legend-contract-a', 'campaign_year', extract(year from (select effective_on from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 2, 'source_fingerprint', 'contract-source-a'),
@@ -111,7 +111,7 @@ select is(
 select is((select count(*)::integer from public.territorial_legend_hold_periods where user_id like 'legend-contract-%' and validity_status = 'active'), 2, 'an idempotent replay keeps both titles active');
 
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     (select effective_on + 2 from territorial_legend_contract_state),
     jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-a', 'campaign_year', extract(year from (select effective_on + 2 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 2 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'contract-source-a-gap'))
   )->>'closedPeriods',
@@ -121,7 +121,7 @@ select is(
 select is((select count(*)::integer from public.territorial_legend_hold_periods where user_id like 'legend-contract-%' and validity_status = 'active'), 1, 'the interrupted snapshot leaves only the current winner active');
 
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     (select effective_on + 2 from territorial_legend_contract_state),
     jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-same-day', 'campaign_year', extract(year from (select effective_on + 2 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 2 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'same-day-gain'))
   )->>'status',
@@ -129,7 +129,7 @@ select is(
   'same-day transition first records the title'
 );
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     (select effective_on + 2 from territorial_legend_contract_state),
     '[]'::jsonb
   )->>'status',
@@ -137,7 +137,7 @@ select is(
   'same-day loss is replayable without deleting the period'
 );
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     (select effective_on + 2 from territorial_legend_contract_state),
     jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-same-day', 'campaign_year', extract(year from (select effective_on + 2 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 2 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'same-day-return'))
   )->>'status',
@@ -148,7 +148,7 @@ select is((select count(*)::integer from public.territorial_legend_hold_periods 
 select is((select validity_status from public.territorial_legend_hold_periods where user_id = 'legend-contract-same-day'), 'active', 'same-day return leaves the period active');
 select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-same-day' and award_kind = 'conquest'), 1, 'same-day return does not duplicate conquest proof');
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     (select effective_on + 2 from territorial_legend_contract_state),
     jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-same-day', 'campaign_year', extract(year from (select effective_on + 2 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 2 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'same-day-replay'))
   )->>'status',
@@ -158,7 +158,7 @@ select is(
 select is((select count(*)::integer from public.territorial_legend_hold_periods where user_id = 'legend-contract-same-day'), 1, 'same-day replay keeps one hold period');
 
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     (select effective_on + 3 from territorial_legend_contract_state),
     jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-order', 'campaign_year', extract(year from (select effective_on + 3 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 3 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'newer-state'))
   )->>'status',
@@ -192,7 +192,7 @@ select is((select count(*)::integer from public.territorial_legend_award_proofs 
 select is((select last_verified_on from public.territorial_legend_hold_periods where user_id = 'legend-contract-a' and validity_status = 'active'), (select effective_on + 8 from territorial_legend_contract_state), 'continuous holding advances only through verified days');
 
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     (select effective_on + 10 from territorial_legend_contract_state),
     jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-a', 'campaign_year', extract(year from (select effective_on + 10 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 10 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'contract-source-a-reconquest'))
   )->>'status',
@@ -209,7 +209,7 @@ update territorial_legend_contract_state
         and started_on = (select effective_on from territorial_legend_contract_state)
    );
 select is(
-  (public.invalidate_territorial_legend_history(
+  public.invalidate_territorial_legend_history(
     array[(select first_period_id from territorial_legend_contract_state)],
     array['legend-contract-a:commune:' || extract(year from (select effective_on from territorial_legend_contract_state))::integer || ':*:conquest:0']::text[],
     (select effective_on + 10 from territorial_legend_contract_state)
@@ -296,7 +296,7 @@ begin
 end;
 $$;
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     date '2025-12-31',
     jsonb_build_array(jsonb_build_object(
       'user_id', 'legend-contract-year', 'campaign_year', 2025, 'level', 'commune',
@@ -313,7 +313,7 @@ select is((select count(*)::integer from public.territorial_legend_award_proofs 
 select is((select last_verified_on from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2025), date '2025-12-31', 'the prior period ends on 31 December');
 
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     date '2026-01-01',
     jsonb_build_array(jsonb_build_object(
       'user_id', 'legend-contract-year', 'campaign_year', 2026, 'level', 'commune',
@@ -340,7 +340,7 @@ select public.reconcile_territorial_legend_snapshot(
 select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2025 and award_kind = 'season_end'), 1, 'replaying the closure remains idempotent');
 
 select is(
-  (public.reconcile_territorial_legend_snapshot(
+  public.reconcile_territorial_legend_snapshot(
     date '2026-01-02',
     jsonb_build_array(jsonb_build_object(
       'user_id', 'legend-contract-year', 'campaign_year', 2026, 'level', 'commune',
