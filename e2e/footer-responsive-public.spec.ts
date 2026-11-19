@@ -63,7 +63,6 @@ async function readFooterLayout(page: Page) {
     const contactActions = footer.querySelector<HTMLElement>(".cmm-footer-contact-actions");
     const legalLinks = footer.querySelector<HTMLElement>(".cmm-footer-legal-links");
     const information = footer.querySelector<HTMLElement>(".cmm-footer-information");
-    const signature = footer.querySelector<HTMLElement>(".cmm-footer-signature");
     const footerRect = toRect(footer);
     const rowRect = row ? toRect(row) : null;
     const rectsIntersect = (first: Rect, second: Rect): boolean =>

@@ -62,10 +62,6 @@ export function structureScanRoots(scope = "all") {
   return [...roots];
 }
 
-function pathBelongsToFolder(file, folderPath) {
-  return file === folderPath || file.startsWith(`${folderPath}/`);
-}
-
 function signal(id, family, detail, evidence) {
   return { id, family, detail, evidence };
 }

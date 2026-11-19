@@ -175,8 +175,11 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     expect(container.querySelector('[role="dialog"]')).toBeNull();
 
     // Clicking Cleanwalk.org locks the bubble and omits missing public leader
-    const cleanwalkOrgBtn = allButtons.find((btn) =>
-      btn.textContent?.includes("Cleanwalk.org"),
+    const cleanwalkOrgName = PARIS_CLEANWALK_ACTORS.find(
+      (actor) => actor.id === "cleanwalk-org",
+    )?.name;
+    const cleanwalkOrgBtn = allButtons.find(
+      (btn) => btn.querySelector("span")?.textContent?.trim() === cleanwalkOrgName,
     );
     expect(cleanwalkOrgBtn).toBeDefined();
 
@@ -361,8 +364,13 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
       | null = null;
     const originalIO = globalThis.IntersectionObserver;
     globalThis.IntersectionObserver = class MockIO {
-      constructor(cb: (entries: Array<{ isIntersecting: boolean }>) => void) {
+      readonly options?: IntersectionObserverInit;
+      constructor(
+        cb: (entries: Array<{ isIntersecting: boolean }>) => void,
+        options?: IntersectionObserverInit,
+      ) {
         observerCallback = cb;
+        this.options = options;
       }
       observe() {}
       disconnect() {}
@@ -651,12 +659,15 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
       root.render(React.createElement(ParisNetwork3DSection, { fr: true }));
     });
 
+    const cleanwalkOrgName = PARIS_CLEANWALK_ACTORS.find(
+      (actor) => actor.id === "cleanwalk-org",
+    )?.name;
     const buttons = Array.from(container.querySelectorAll("button"));
     const cleanmymapBtn = buttons.find(
-      (btn) => btn.textContent?.includes("CleanMyMap"),
+      (btn) => btn.querySelector("span")?.textContent?.trim() === "CleanMyMap",
     );
     const cleanwalkBtn = buttons.find(
-      (btn) => btn.textContent?.includes("Cleanwalk.org"),
+      (btn) => btn.querySelector("span")?.textContent?.trim() === cleanwalkOrgName,
     );
     expect(cleanmymapBtn).toBeDefined();
     expect(cleanwalkBtn).toBeDefined();

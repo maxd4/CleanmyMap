@@ -193,6 +193,34 @@ describe("paris-cleanwalk-network registry contract", () => {
     expect(sanitized[0]?.label).toBe("Site 1");
   });
 
+  it("validates structured channel URLs against deceptive hosts, private invites and encoding bypasses", () => {
+    // Private invites (direct, subdomain, trailing dot, percent-encoded, double-slash)
+    expect(isPrivateOrUnauthorizedInviteUrl("https://chat.whatsapp.com/SecretInvite123")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://chat.whatsapp.com./SecretInvite123")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://wa.me/33612345678")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://api.whatsapp.com/send?phone=33612345678")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://discord.gg/private123")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://discord.com/invite/private123")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://discordapp.com//%69%6e%76%69%74%65/private123")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://t.me/+SecretHash")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://t.me/%2BSecretHash")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://t.me/%252BSecretHash")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://telegram.me/joinchat/SecretHash")).toBe(true);
+
+    // Deceptive hosts & unsafe URLs
+    expect(isSafeHttpUrl("https://chat.whatsapp.com.attacker.example/cleanwalk")).toBe(false);
+    expect(isSafeHttpUrl("https://discord.gg.attacker.example/cleanwalk")).toBe(false);
+    expect(isSafeHttpUrl("https://user:pass@example.org/")).toBe(false);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://chat.whatsapp.com.attacker.example/cleanwalk")).toBe(true);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://t.me/%E0%A4%A")).toBe(true);
+
+    // Legitimate public channels and query strings mentioning domains
+    expect(isPrivateOrUnauthorizedInviteUrl("https://www.cleanwalk.org/")).toBe(false);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://t.me/cleanwalk_public_channel")).toBe(false);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://not-wa.me.example.org/events")).toBe(false);
+    expect(isPrivateOrUnauthorizedInviteUrl("https://cleanmymap.fr/actions/map?ref=discord.gg")).toBe(false);
+  });
+
   it("contains the documented relations with valid actors, distinct publie_sur vs action_commune, and sources", () => {
     const actorIds = new Set(PARIS_CLEANWALK_ACTORS.map((actor) => actor.id));
     for (const relation of PARIS_CLEANWALK_RELATIONS) {

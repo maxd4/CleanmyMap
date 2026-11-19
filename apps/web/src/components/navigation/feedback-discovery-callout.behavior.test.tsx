@@ -74,7 +74,9 @@ describe("FeedbackDiscoveryCallout behavior", () => {
 
     act(() => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({}));
-      window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }));
+      const storageEvent = new Event("storage");
+      Object.defineProperty(storageEvent, "key", { value: STORAGE_KEY });
+      window.dispatchEvent(storageEvent);
       vi.runOnlyPendingTimers();
     });
     expect(host.querySelector('[data-cmm-contextual-callout="feedback-discovery"]')).not.toBeNull();
