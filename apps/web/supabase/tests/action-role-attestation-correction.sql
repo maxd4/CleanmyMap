@@ -40,6 +40,9 @@ insert into public.action_field_role_assignments (
   '11111111-1111-4111-8111-111111111111'::uuid,
   'role-attestation-contract-user', 'group_lead', 'active', 'role-attestation-contract-reviewer'
 );
+delete from public.app_notifications
+ where user_id = 'role-attestation-contract-user'
+   and payload ->> 'actionId' = '11111111-1111-4111-8111-111111111111';
 commit;
 
 begin;
