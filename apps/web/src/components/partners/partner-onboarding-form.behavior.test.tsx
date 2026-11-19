@@ -72,14 +72,12 @@ describe("PartnerOnboardingForm behavior", () => {
     const buttons = Array.from(container.querySelectorAll("button"));
     const envBtn = buttons.find((b) => b.textContent?.includes("Environnement"));
     const matBtn = buttons.find((b) => b.textContent?.includes("Matériel"));
-    const localScopeBtn = buttons.find((b) =>
-      b.textContent?.includes("Locale") || b.textContent?.includes("Paris"),
-    );
+    const arrBtn = buttons.find((b) => b.textContent?.trim() === "Paris 11e");
 
     act(() => {
       envBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       matBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      localScopeBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      arrBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     // Fill inputs across general-info, geographic-coverage, availability, contact, relay
@@ -88,19 +86,30 @@ describe("PartnerOnboardingForm behavior", () => {
 
     act(() => {
       for (const input of inputs) {
+        if (
+          input.id === "partner-onboarding-website" ||
+          input.name === "website"
+        ) {
+          continue;
+        }
         if (input.type === "checkbox") {
-          input.click();
+          if (!input.checked) {
+            input.click();
+          }
           continue;
         }
         if (input.type === "url") {
-          setInputValue(input, "https://example.org");
+          setInputValue(input, "https://www.association-clean-paris.fr");
         } else if (input.type === "email") {
           setInputValue(input, "contact@example.org");
         } else if (input.type === "tel") {
           setInputValue(input, "0612345678");
-        } else if (input.placeholder?.toLowerCase().includes("arrondissement") || input.name?.includes("arrondissement")) {
+        } else if (
+          input.placeholder?.toLowerCase().includes("arrondissement") ||
+          input.name?.includes("arrondissement")
+        ) {
           setInputValue(input, "11, 20");
-        } else {
+        } else if (!input.value) {
           setInputValue(input, "Association Test Paris");
         }
       }
@@ -112,14 +121,40 @@ describe("PartnerOnboardingForm behavior", () => {
       }
     });
 
-    const form = container.querySelector("form");
-    expect(form).not.toBeNull();
+    const submitBtn = container.querySelector(
+      'button[type="submit"]',
+    ) as HTMLButtonElement | null;
+    expect(submitBtn).not.toBeNull();
 
     await act(async () => {
-      form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      submitBtn?.click();
     });
 
-    expect(container.textContent?.length).toBeGreaterThan(0);
+    expect(container.querySelector(".text-rose-800")?.textContent ?? "").toBe("");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    expect(requestUrl).toBe("/api/partners/onboarding-requests");
+    expect(requestInit.method).toBe("POST");
+
+    const sentPayload = JSON.parse(String(requestInit.body)) as {
+      honeypot: string;
+      organizationName: string;
+      contributionTypes: string[];
+      publicWebsiteUrl?: string;
+      publicWebsiteConsent: boolean;
+      submittedAt: number;
+    };
+    expect(sentPayload.honeypot).toBe("");
+    expect(sentPayload.organizationName).toBe("Association Test Paris");
+    expect(sentPayload.contributionTypes.length).toBeGreaterThan(0);
+    expect(sentPayload.publicWebsiteUrl).toBe("https://www.association-clean-paris.fr");
+    expect(sentPayload.publicWebsiteConsent).toBe(true);
+    expect(typeof sentPayload.submittedAt).toBe("number");
+
+    expect(container.textContent).toContain("req-partner-1");
 
     act(() => {
       root.unmount();

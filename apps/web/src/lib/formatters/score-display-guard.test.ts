@@ -9,6 +9,12 @@ const SOURCE_ROOTS = [
 const LEGACY_SCORE_DISPLAY = /(?:\/\s*100(?!\d)|\bsur\s+100\b)/i;
 const TECHNICAL_SCORE_FORMULA =
   /^\s*const offset = circumference - \(safeValue \/ 100\) \* circumference;\s*$/;
+const BUBBLE_ANCHOR_CONVERSION_FILE = resolve(
+  __dirname,
+  "../../components/sections/rubriques/annuaire/paris-network-3d-bubble.tsx",
+);
+const BUBBLE_ANCHOR_PERCENT_CONVERSION =
+  /^\s*const desired(?:Left|Top) = \(params\.anchorPosition\.(?:left|top)Percent \/ 100\) \* (?:params\.)?container(?:Width|Height);\s*$/;
 const THEORETICAL_RELEVANCE_CARD = resolve(
   __dirname,
   "../../components/sections/rubriques/route/components/route-pollution-relevance-card.tsx",
@@ -46,6 +52,22 @@ function isAuthorizedTheoreticalIndex(file: string, line: string): boolean {
   return AUTHORIZED_THEORETICAL_INDEX.some((entry) => entry.file === file && entry.pattern.test(line));
 }
 
+function isForbiddenLegacyScoreLine(file: string, line: string): boolean {
+  if (!LEGACY_SCORE_DISPLAY.test(line)) {
+    return false;
+  }
+  if (TECHNICAL_SCORE_FORMULA.test(line)) {
+    return false;
+  }
+  if (
+    file === BUBBLE_ANCHOR_CONVERSION_FILE &&
+    BUBBLE_ANCHOR_PERCENT_CONVERSION.test(line)
+  ) {
+    return false;
+  }
+  return !isAuthorizedTheoreticalIndex(file, line);
+}
+
 function collectSourceFiles(root: string): string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
     const path = join(root, entry.name);
@@ -72,12 +94,7 @@ describe("score display guard", () => {
         readFileSync(file, "utf8")
           .split(/\r?\n/)
           .map((line, index) => ({ file, line, lineNumber: index + 1 }))
-          .filter(
-            ({ line }) =>
-              LEGACY_SCORE_DISPLAY.test(line) &&
-              !TECHNICAL_SCORE_FORMULA.test(line) &&
-              !isAuthorizedTheoreticalIndex(file, line),
-          ),
+          .filter(({ line }) => isForbiddenLegacyScoreLine(file, line)),
       ),
     );
 
@@ -133,5 +150,39 @@ describe("score display guard", () => {
         "Score historique : ${Math.round(value)} / 100",
       ),
     ).toBe(false);
+  });
+
+  it("allows scoped geometric percent conversion in paris-network-3d-bubble without allowing /100 scores", () => {
+    expect(
+      isForbiddenLegacyScoreLine(
+        BUBBLE_ANCHOR_CONVERSION_FILE,
+        "  const desiredLeft = (params.anchorPosition.leftPercent / 100) * params.containerWidth;",
+      ),
+    ).toBe(false);
+    expect(
+      isForbiddenLegacyScoreLine(
+        BUBBLE_ANCHOR_CONVERSION_FILE,
+        "  const desiredTop = (params.anchorPosition.topPercent / 100) * params.containerHeight;",
+      ),
+    ).toBe(false);
+    // Negative cases: real /100 score labels or other files are still forbidden
+    expect(
+      isForbiddenLegacyScoreLine(
+        BUBBLE_ANCHOR_CONVERSION_FILE,
+        "  const label = `${score} / 100`;",
+      ),
+    ).toBe(true);
+    expect(
+      isForbiddenLegacyScoreLine(
+        join(__dirname, "unrelated-component.tsx"),
+        "  const desiredLeft = (params.anchorPosition.leftPercent / 100) * params.containerWidth;",
+      ),
+    ).toBe(true);
+    expect(
+      isForbiddenLegacyScoreLine(
+        join(__dirname, "unrelated-component.tsx"),
+        "Note sur 100",
+      ),
+    ).toBe(true);
   });
 });
