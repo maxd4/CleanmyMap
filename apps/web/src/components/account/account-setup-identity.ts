@@ -10,17 +10,43 @@ export type AccountSetupIdentitySource = {
   externalAccounts?: readonly AccountSetupExternalAccount[] | null;
 };
 
+const SUPPORTED_NAME_PROVIDERS = new Set([
+  "google",
+  "oauth_google",
+  "linkedin_oidc",
+  "oauth_linkedin_oidc",
+  "linkedin",
+  "oauth_linkedin",
+]);
+
 function trimOrEmpty(value: string | null | undefined): string {
   return value?.trim() ?? "";
 }
 
-function findGoogleExternalAccount(
+function findSupportedOAuthExternalAccounts(
   externalAccounts: readonly AccountSetupExternalAccount[] | null | undefined,
-): AccountSetupExternalAccount | undefined {
-  return externalAccounts?.find((account) => {
+): AccountSetupExternalAccount[] {
+  if (!externalAccounts?.length) {
+    return [];
+  }
+
+  return externalAccounts.filter((account) => {
     const provider = account.provider?.trim().toLowerCase();
-    return provider === "google" || provider === "oauth_google";
+    return Boolean(provider && SUPPORTED_NAME_PROVIDERS.has(provider));
   });
+}
+
+function resolveFirstNonEmptyFromAccounts(
+  accounts: readonly AccountSetupExternalAccount[],
+  field: "firstName" | "lastName",
+): string {
+  for (const account of accounts) {
+    const value = trimOrEmpty(account[field]);
+    if (value) {
+      return value;
+    }
+  }
+  return "";
 }
 
 /** Resolve provider names without ever deriving a name from an email address. */
@@ -29,11 +55,15 @@ export function resolveAccountSetupIdentityNames({
   lastName,
   externalAccounts,
 }: AccountSetupIdentitySource): { firstName: string; lastName: string } {
-  const googleAccount = findGoogleExternalAccount(externalAccounts);
+  const supportedAccounts = findSupportedOAuthExternalAccounts(externalAccounts);
 
   return {
-    firstName: trimOrEmpty(firstName) || trimOrEmpty(googleAccount?.firstName),
-    lastName: trimOrEmpty(lastName) || trimOrEmpty(googleAccount?.lastName),
+    firstName:
+      trimOrEmpty(firstName) ||
+      resolveFirstNonEmptyFromAccounts(supportedAccounts, "firstName"),
+    lastName:
+      trimOrEmpty(lastName) ||
+      resolveFirstNonEmptyFromAccounts(supportedAccounts, "lastName"),
   };
 }
 

@@ -27,6 +27,30 @@ describe("account setup identity source", () => {
     })).toEqual({ firstName: "", lastName: "" });
   });
 
+  it("supports LinkedIn OpenID Connect ExternalAccount names without assuming all fields exist", () => {
+    expect(resolveAccountSetupIdentityNames({
+      firstName: null,
+      lastName: null,
+      externalAccounts: [
+        { provider: "linkedin_oidc", firstName: "Linus", lastName: "Torvalds" },
+      ],
+    })).toEqual({ firstName: "Linus", lastName: "Torvalds" });
+
+    expect(resolveAccountSetupIdentityNames({
+      firstName: null,
+      lastName: null,
+      externalAccounts: [
+        { provider: "oauth_linkedin_oidc", firstName: "Camille", lastName: null },
+      ],
+    })).toEqual({ firstName: "Camille", lastName: "" });
+
+    expect(resolveAccountSetupIdentityNames({
+      firstName: "",
+      lastName: "",
+      externalAccounts: [{ provider: "oauth_linkedin_oidc" }],
+    })).toEqual({ firstName: "", lastName: "" });
+  });
+
   it("does not overwrite a manual field during rehydration", () => {
     expect(resolveAccountSetupNameField("Manual", "Provider")).toBe("Manual");
     expect(resolveAccountSetupNameField("", "Provider")).toBe("");

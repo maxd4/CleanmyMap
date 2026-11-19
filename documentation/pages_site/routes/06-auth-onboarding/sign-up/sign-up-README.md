@@ -57,7 +57,7 @@ rattacher la route au parcours métier `/actions/new`. Sur mobile, le formulaire
 est prioritaire et le panneau éditorial disparaît au profit d'une identité
 CleanMyMap compacte.
 
-Le composant Clerk natif conserve le formulaire d’inscription, Google/OAuth,
+Le composant Clerk natif conserve le formulaire d’inscription, Google/OAuth (LinkedIn OpenID Connect prêt côté code et prise en charge des noms initiaux dans `account-setup-identity.ts`, mais bloqué tant que le fournisseur n’est pas activé dans Clerk Dashboard avec les identifiants LinkedIn),
 la validation, les erreurs, le paramètre de referral et la redirection sûre
 vers l’onboarding puis la destination d’origine. Le titre Clerk reste la
 hiérarchie principale du panneau
