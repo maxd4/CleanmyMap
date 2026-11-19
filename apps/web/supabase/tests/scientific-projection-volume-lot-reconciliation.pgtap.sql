@@ -123,6 +123,7 @@ declare
     )
   )::text;
 
+begin
   insert into public.actions (
     id, created_by_clerk_id, action_date, location_label, status,
     cigarette_butts, waste_kg, volunteers_count, duration_minutes, notes
