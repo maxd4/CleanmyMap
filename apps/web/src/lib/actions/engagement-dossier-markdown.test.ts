@@ -167,4 +167,101 @@ describe("engagement-dossier-markdown", () => {
     expect(markdown).toContain("**Structures organisatrices identifiées** : non documentées");
     expect(markdown).toContain("Aucune participation confirmée sélectionnée");
   });
+
+  it("distinguishes explicit empty selection ([]) and non-matching period from full selection on a non-empty projection", () => {
+    const projection = buildPersonalEngagementProofProjectionFromSources({
+      userId: "user-1",
+      now: new Date("2026-07-15T10:30:00Z"),
+      sources: {
+        participantRows: [
+          {
+            id: "p-1",
+            action_id: "action-1",
+            user_id: "user-1",
+            joined_at: "2026-05-10T17:00:00Z",
+            participation_status: "confirmed",
+            participation_source: "post_action_claim",
+          },
+          {
+            id: "p-2",
+            action_id: "action-2",
+            user_id: "user-1",
+            joined_at: "2026-06-20T17:00:00Z",
+            participation_status: "confirmed",
+            participation_source: "post_action_claim",
+          },
+        ],
+        actions: [
+          {
+            id: "action-1",
+            created_at: "2026-05-10T14:00:00Z",
+            action_date: "2026-05-10",
+            location_label: "Canal Saint-Martin",
+            organizer_name: "Association Canal",
+            organizer_type: "association",
+            status: "approved",
+            action_phase: "post_action_complete",
+            published_at: "2026-05-10T16:00:00Z",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            data_provenance: "real",
+          },
+          {
+            id: "action-2",
+            created_at: "2026-06-20T14:00:00Z",
+            action_date: "2026-06-20",
+            location_label: "Parc Monceau",
+            organizer_name: "Association Monceau",
+            organizer_type: "association",
+            status: "approved",
+            action_phase: "post_action_complete",
+            published_at: "2026-06-20T16:00:00Z",
+            moderation_visibility: "visible",
+            access_mode: "public",
+            data_provenance: "real",
+          },
+        ],
+        roleAttestations: [],
+        spogomiParticipants: [],
+        spogomiEvents: [],
+        spogomiAttestations: [],
+      },
+    });
+
+    // Explicit empty selection must never fall back to exporting all participations
+    const emptySelected = renderEngagementDossierMarkdown({
+      projection,
+      input: { selectedActionIds: [] },
+    });
+    expect(emptySelected).toContain("**Nombre d'actions distinctes avec présence finale confirmée** : 0");
+    expect(emptySelected).toContain("Aucune participation confirmée sélectionnée");
+    expect(emptySelected).not.toContain("Canal Saint-Martin");
+    expect(emptySelected).not.toContain("Parc Monceau");
+
+    // Partial selection exports only the chosen action
+    const partialSelected = renderEngagementDossierMarkdown({
+      projection,
+      input: { selectedActionIds: ["action-1"] },
+    });
+    expect(partialSelected).toContain("**Nombre d'actions distinctes avec présence finale confirmée** : 1");
+    expect(partialSelected).toContain("Canal Saint-Martin");
+    expect(partialSelected).not.toContain("Parc Monceau");
+
+    // Null/undefined exports all documented participations
+    const unfiltered = renderEngagementDossierMarkdown({
+      projection,
+      input: { selectedActionIds: null },
+    });
+    expect(unfiltered).toContain("**Nombre d'actions distinctes avec présence finale confirmée** : 2");
+    expect(unfiltered).toContain("Canal Saint-Martin");
+    expect(unfiltered).toContain("Parc Monceau");
+
+    // Period filter matching 0 actions exports 0 participations
+    const emptyPeriod = renderEngagementDossierMarkdown({
+      projection,
+      input: { periodStart: "2025-01-01", periodEnd: "2025-12-31" },
+    });
+    expect(emptyPeriod).toContain("**Nombre d'actions distinctes avec présence finale confirmée** : 0");
+    expect(emptyPeriod).toContain("Aucune participation confirmée sélectionnée");
+  });
 });

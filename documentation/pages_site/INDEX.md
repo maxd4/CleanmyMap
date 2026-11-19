@@ -227,6 +227,7 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 | `/profil` | [Profil](./routes/01-accueil-pilotage/profil/profil-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/page.tsx` |
 | `/profil/[profile]` | [Profil détaillé](./routes/01-accueil-pilotage/profil-profile/profil-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/[profile]/page.tsx` |
 | `/profil/impact` | [Profil impact](./routes/01-accueil-pilotage/profil-impact/profil-impact-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/impact/page.tsx` |
+| `/profil/engagement` | [Profil engagement](./routes/01-accueil-pilotage/profil-engagement/profil-engagement-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/engagement/page.tsx` |
 | `/sponsor-portal` | [Portail décideur](./routes/01-accueil-pilotage/sponsor-portal/sponsor-portal-README.md) | `protected` | pilotage | `apps/web/src/app/(app)/sponsor-portal/page.tsx` |
 | `/sections/elus` | [Gouvernance](./routes/01-accueil-pilotage/gouvernance/gouvernance-README.md) | `auth-disabled-gate` | accueil-pilotage | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 

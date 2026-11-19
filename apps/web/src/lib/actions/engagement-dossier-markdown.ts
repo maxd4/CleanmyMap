@@ -72,10 +72,9 @@ function filterParticipations(
   participations: readonly EngagementProofParticipationItem[],
   input: EngagementDossierExportInput,
 ): EngagementProofParticipationItem[] {
-  const selectedSet =
-    Array.isArray(input.selectedActionIds) && input.selectedActionIds.length > 0
-      ? new Set(input.selectedActionIds.map((id) => id.trim()).filter(Boolean))
-      : null;
+  const selectedSet = Array.isArray(input.selectedActionIds)
+    ? new Set(input.selectedActionIds.map((id) => id.trim()).filter(Boolean))
+    : null;
 
   const periodStart = input.periodStart?.trim() || null;
   const periodEnd = input.periodEnd?.trim() || null;

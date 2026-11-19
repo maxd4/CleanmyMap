@@ -175,6 +175,54 @@ describe("EngagementDossierPage", () => {
     );
   });
 
+  it("sends selectedActionIds=[] after Tout désélectionner and restores them after Tout sélectionner", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => MOCK_PROJECTION,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          "Content-Disposition": 'attachment; filename="dossier-benevolat-2026-07-15.md"',
+        }),
+        text: async () => "# Dossier vide",
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await act(async () => {
+      root.render(<EngagementDossierPage />);
+    });
+
+    const clearButton = Array.from(container.querySelectorAll("button")).find((btn) =>
+      btn.textContent?.includes("Tout désélectionner"),
+    );
+    expect(clearButton).toBeDefined();
+    await act(async () => {
+      clearButton!.click();
+    });
+
+    const checkbox = container.querySelector<HTMLInputElement>("#engagement-action-action-1");
+    expect(checkbox?.checked).toBe(false);
+
+    const downloadButton = Array.from(container.querySelectorAll("button")).find((btn) =>
+      btn.textContent?.includes("Télécharger le dossier"),
+    );
+    await act(async () => {
+      downloadButton!.click();
+    });
+
+    const postCall = fetchMock.mock.calls[1];
+    expect(postCall?.[0]).toBe("/api/account/engagement-proofs/export");
+    const parsedBody = JSON.parse(String((postCall?.[1] as RequestInit).body)) as {
+      selectedActionIds: string[];
+    };
+    expect(parsedBody.selectedActionIds).toEqual([]);
+  });
+
   it("renders multiple organizations separately, keeps unknown structures non-signatory, and exposes the blank PDF download with instructions", async () => {
     const multiOrgProjection = {
       ...MOCK_PROJECTION,

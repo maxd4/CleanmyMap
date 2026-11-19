@@ -15,7 +15,7 @@
 - **Navigation** : surface secondaire contextualisée, volontairement absente du ruban principal.
 - **Règle de partage** : Le partage porte uniquement sur le fichier image PNG généré depuis la carte personnelle. Il ne crée pas de profil public, ne partage pas l'URL protégée `/profil/impact` et ne produit aucune donnée serveur ou token public.
 - **Palette attendue** : red / rouge impact
-- **Scope** : carte d'impact personnelle, progression et badges issus des actions validées, export PNG et partage fichier uniquement.
+- **Scope** : carte d'impact personnelle, progression et badges issus des actions validées, export PNG et partage fichier uniquement ; expose l'accès principal « Valoriser mon engagement » vers `/profil/engagement`.
 - **Terminée** : oui pour le périmètre actuellement livré
 - **Couleurs actuellement détectées** : red — états de chargement, carte et actions d'impact utilisent l'accent impact.
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle runtime actuelle.
