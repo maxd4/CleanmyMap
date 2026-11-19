@@ -66,22 +66,6 @@ export const PARIS_CLEANWALK_RELATIONS: readonly ParisCleanwalkRelation[] = [
     },
   },
   {
-    id: "rel-spogomi-jagis",
-    sourceId: "spogomi-dream-in-green-france",
-    targetId: "evt-j-agis-nature",
-    relationType: "publie_sur",
-    title: "Publie ses missions sur J'agis pour la nature",
-    summary:
-      "Dream in Green France référence des opérations de ramassage et ateliers sur J'agis pour la nature.",
-    frequencyKnown: false,
-    source: {
-      label: "jagispourlanature.org",
-      url: "https://www.jagispourlanature.org",
-      verifiedAt: "2026-11-19",
-      certainty: "verifie",
-    },
-  },
-  {
     id: "rel-zerowaste-jeveuxaider",
     sourceId: "asso-zerowaste-paris",
     targetId: "evt-je-veux-aider",
@@ -92,25 +76,9 @@ export const PARIS_CLEANWALK_RELATIONS: readonly ParisCleanwalkRelation[] = [
     frequencyKnown: false,
     source: {
       label: "jeveuxaider.gouv.fr",
-      url: "https://www.jeveuxaider.gouv.fr",
+      url: "https://www.jeveuxaider.gouv.fr/organisations/16300-zero-waste-paris",
       verifiedAt: "2026-11-19",
       certainty: "verifie",
-    },
-  },
-  {
-    id: "rel-dpe-brigade-verte",
-    sourceId: "evt-paris-nettoyages",
-    targetId: "asso-featured-1",
-    relationType: "appui_logistique",
-    title: "Cadre municipal nettoyages participatifs",
-    summary:
-      "Articulation des opérations associatives parisiennes avec le dispositif municipal de la Direction de la Propreté et de l'Eau.",
-    frequencyKnown: false,
-    source: {
-      label: "paris.fr — Nettoyages participatifs",
-      url: "https://www.paris.fr/pages/nettoyages-participatifs-ensemble-rendons-paris-plus-propre-15425",
-      verifiedAt: "2026-11-19",
-      certainty: "partiel_ou_incertain",
     },
   },
   {
@@ -123,26 +91,10 @@ export const PARIS_CLEANWALK_RELATIONS: readonly ParisCleanwalkRelation[] = [
       "Intervention de la Brigade Citoyenne du 5e en appui aux services municipaux de propreté.",
     frequencyKnown: false,
     source: {
-      label: "mairie05.paris.fr",
-      url: "https://mairie05.paris.fr",
+      label: "Mairie du 5e — Brigade Citoyenne",
+      url: "https://mairie05.paris.fr/pages/contre-les-rats-la-mairie-du-5e-passe-a-l-offensive-32006",
       verifiedAt: "2026-11-19",
       certainty: "verifie",
-    },
-  },
-  {
-    id: "rel-surfrider-wcd",
-    sourceId: "asso-surfrider-paris",
-    targetId: "world-cleanup-day-france",
-    relationType: "presence_evenement",
-    title: "Convergence campagnes de collecte urbaines",
-    summary:
-      "Participation et relais de campagnes de sensibilisation sans fusion de gouvernance ni appartenance réciproque.",
-    frequencyKnown: false,
-    source: {
-      label: "surfrider-paris.fr/nos-actions",
-      url: "https://surfrider-paris.fr/nos-actions",
-      verifiedAt: "2026-11-19",
-      certainty: "partiel_ou_incertain",
     },
   },
 ] as const;

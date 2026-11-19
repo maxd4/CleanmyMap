@@ -410,11 +410,11 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
       channel("site_officiel", "Page SPOGOMI Dream in Green France", "https://www.dreamingreenfrance.com/spogomi-wc", "dreamingreenfrance.com"),
     ]),
     parisZone: {
-      label: "Paris & Île-de-France (épreuves qualificatives)",
-      arrondissements: [7, 15],
+      label: "Paris & Île-de-France (qualification parisienne avril 2025)",
+      arrondissements: [],
       isIntramuros: true,
       scopeNote:
-        "Association basée en Île-de-France (Cachan) organisant des qualifications SPOGOMI à Paris (secteur Tour Eiffel / 7e-15e).",
+        "Association basée en Île-de-France (Cachan) ; qualification parisienne documentée en avril 2025 sans arrondissement intramuros attribué.",
     },
     participationModalities: ["benevoles", "entreprises_rse", "scolaires"],
     equipmentAvailability: {

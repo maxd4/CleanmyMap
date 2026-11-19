@@ -320,6 +320,21 @@ describe("paris-cleanwalk-network 12-month deduplication and thickness policy", 
     expect(wcdMegothon?.relationType).toBe("partenariat");
     expect(wcdMegothon?.frequencyKnown).toBe(false);
     expect(wcdMegothon?.operations).toBeUndefined();
+
+    const relationIds = new Set(PARIS_CLEANWALK_RELATIONS.map((rel) => rel.id));
+    expect(relationIds.has("rel-spogomi-jagis")).toBe(false);
+    expect(relationIds.has("rel-surfrider-wcd")).toBe(false);
+    expect(relationIds.has("rel-dpe-brigade-verte")).toBe(false);
+
+    const dpeMairie5 = PARIS_CLEANWALK_RELATIONS.find(
+      (rel) => rel.id === "rel-dpe-mairie-5",
+    );
+    expect(dpeMairie5?.source.url).toBe(
+      "https://mairie05.paris.fr/pages/contre-les-rats-la-mairie-du-5e-passe-a-l-offensive-32006",
+    );
+
+    const spogomi = byId.get("spogomi-dream-in-green-france");
+    expect(spogomi?.parisZone.arrondissements).toEqual([]);
   });
 
   it("evaluates rolling 12-month operations at two distinct reference dates and preserves known-zero vs unknown", () => {
