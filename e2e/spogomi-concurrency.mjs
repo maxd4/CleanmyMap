@@ -169,19 +169,23 @@ async function concurrentCompositionConfirmation() {
   const actionId = await createAction(sessionA);
   const event = await createEvent(sessionA, actionId);
   const rows = await participants(sessionA, event.id, 6);
-  const assignments = rows.map((row, index) => ({
+  const assignmentsA = rows.map((row, index) => ({
     participantId: row.id,
     teamNumber: index < 3 ? 1 : 2,
+  }));
+  const assignmentsB = rows.map((row, index) => ({
+    participantId: row.id,
+    teamNumber: index < 3 ? 2 : 1,
   }));
   const expectedRevision = await currentRevision(sessionA, event.id);
   const results = await Promise.allSettled([
     sessionA.rpc("spogomi_confirm_team_composition", {
       p_event_id: event.id, p_expected_revision: expectedRevision,
-      p_assignments: assignments, p_actor_clerk_id: `${marker}-A`,
+      p_assignments: assignmentsA, p_actor_clerk_id: `${marker}-A`,
     }),
     sessionB.rpc("spogomi_confirm_team_composition", {
       p_event_id: event.id, p_expected_revision: expectedRevision,
-      p_assignments: assignments, p_actor_clerk_id: `${marker}-B`,
+      p_assignments: assignmentsB, p_actor_clerk_id: `${marker}-B`,
     }),
   ]);
   const responses = results.map((result) => result.status === "fulfilled" ? result.value : null);
