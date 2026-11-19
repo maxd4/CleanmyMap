@@ -2,7 +2,7 @@
 
 **Statut : `CURRENT`**
 
-Ce document décrit le contrat de données, de relations et de rendu de la visualisation 3D de l'écosystème des cleanwalks, de la prévention et de la sensibilisation aux déchets rattaché à Paris et intégré dans `/sections/annuaire` (25 acteurs publiés).
+Ce document décrit le contrat de données, de relations et de rendu de la visualisation 3D de l'écosystème des cleanwalks, de la prévention et de la sensibilisation aux déchets rattaché à Paris et intégré dans `/sections/annuaire` (26 acteurs publiés).
 
 ## 1. Sources runtime
 
@@ -22,6 +22,7 @@ Ce document décrit le contrat de données, de relations et de rendu de la visua
 - **ALCOME** (`asso-megots-alcome`, catégorie `entreprise_rse`) pointe vers son site officiel `https://alcome.eco/` tout en conservant la fiche filière REP Tabac de l'ADEME comme preuve institutionnelle distincte.
 - **Zero Waste France** (`asso-zerowaste-france`) et **Zero Waste Paris** (`asso-zerowaste-paris`) restent deux nœuds distincts.
 - **Cleanwalk.org** (`cleanwalk-org`) est typée comme `plateforme_publication` ; ses fonctionnalités V2 indisponibles sont signalées et aucune opération ou bénévole des structures utilisatrices ne lui est attribuée.
+- **CleanMyMap** (`cleanmymap`, 26e nœud) est documentée comme plateforme éditrice du réseau (`plateforme_mise_en_relation`, `plateforme_publication`, projet civic-tech open source initié par Maxence Deroome selon `README.md` et `AUTHORS.md`), sans présumer qu'elle est une association constituée ni que les autres acteurs du graphe sont ses partenaires (`isCleanMyMapMember: false` conservé).
 - Aucun acteur du registre n'est présenté comme membre du réseau CleanMyMap (`isCleanMyMapMember: false`).
 - Aucun prêt de matériel n'est attribué à un tiers sans preuve directe (`fournit_materiel` est réservé aux acteurs disposant d'une source vérifiée, notamment la Ville de Paris / DPE). Les nœuds de prévention/sensibilisation sans relation directe démontrée sont conservés sans arête présumée.
 

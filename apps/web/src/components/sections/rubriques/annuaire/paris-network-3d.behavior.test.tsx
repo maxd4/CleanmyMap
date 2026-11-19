@@ -97,6 +97,7 @@ describe("paris-network-3d model", () => {
       { ...DEFAULT_PARIS_NETWORK_3D_FILTERS, ecosystemRole: "plateforme_publication" },
     );
     expect(byPlatformRole.actors.map((a) => a.id).sort()).toEqual([
+      "cleanmymap",
       "cleanwalk-org",
       "evt-j-agis-nature",
       "evt-je-veux-aider",
@@ -633,6 +634,47 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
       configurable: true,
       value: originalGeolocation,
     });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("displays CleanMyMap in the network and opens its accessible bubble in HTML fallback distinct from Cleanwalk.org", () => {
+    sitePreferencesMock.mockReturnValue({
+      locale: "fr",
+      displayMode: "complet",
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(React.createElement(ParisNetwork3DSection, { fr: true }));
+    });
+
+    const buttons = Array.from(container.querySelectorAll("button"));
+    const cleanmymapBtn = buttons.find(
+      (btn) => btn.textContent?.includes("CleanMyMap"),
+    );
+    const cleanwalkBtn = buttons.find(
+      (btn) => btn.textContent?.includes("Cleanwalk.org"),
+    );
+    expect(cleanmymapBtn).toBeDefined();
+    expect(cleanwalkBtn).toBeDefined();
+
+    act(() => {
+      cleanmymapBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain("CleanMyMap");
+    expect(dialog?.textContent).toContain("Maxence Deroome");
+    expect(dialog?.textContent).toContain("Plateforme de publication");
+    expect(dialog?.querySelector('a[href="https://cleanmymap.fr"]')).not.toBeNull();
+    expect(
+      dialog?.querySelector('a[href="https://cleanmymap.fr/actions/map"]'),
+    ).not.toBeNull();
+    expect(dialog?.textContent).not.toContain("Financement");
 
     act(() => {
       root.unmount();

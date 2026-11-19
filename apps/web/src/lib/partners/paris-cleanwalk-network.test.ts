@@ -12,10 +12,10 @@ import {
 } from "./paris-cleanwalk-network";
 
 describe("paris-cleanwalk-network registry contract", () => {
-  it("includes all 25 required Paris ecosystem actors and platforms with unique IDs", () => {
+  it("includes all 26 required Paris ecosystem actors and platforms with unique IDs", () => {
     const ids = PARIS_CLEANWALK_ACTORS.map((actor) => actor.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(PARIS_CLEANWALK_ACTORS).toHaveLength(25);
+    expect(PARIS_CLEANWALK_ACTORS).toHaveLength(26);
 
     const names = PARIS_CLEANWALK_ACTORS.map((actor) => actor.name);
     for (const required of [
@@ -521,5 +521,37 @@ describe("paris-cleanwalk-network 12-month deduplication and thickness policy", 
         expect(actor.funding.entityName).toBe(actor.name);
       }
     }
+  });
+
+  it("includes CleanMyMap as the 26th actor with civic-tech platform status and verified provenance", () => {
+    const byId = new Map(PARIS_CLEANWALK_ACTORS.map((actor) => [actor.id, actor]));
+    const cleanmymap = byId.get("cleanmymap");
+    const cleanwalkOrg = byId.get("cleanwalk-org");
+
+    expect(cleanmymap).toBeDefined();
+    expect(cleanwalkOrg).toBeDefined();
+    expect(cleanmymap?.id).not.toBe(cleanwalkOrg?.id);
+    expect(cleanmymap?.name).toBe("CleanMyMap");
+    expect(cleanmymap?.category).toBe("plateforme_mise_en_relation");
+    expect(cleanmymap?.roles).toEqual(["relais"]);
+    expect(cleanmymap?.ecosystemRoles).toEqual(["plateforme_publication"]);
+    expect(cleanmymap?.publicLeader?.name).toBe("Maxence Deroome");
+    expect(cleanmymap?.officialWebsite).toBe("https://cleanmymap.fr");
+    expect(cleanmymap?.publicContact?.url).toBe("https://cleanmymap.fr/contact");
+    expect(
+      cleanmymap?.publicChannels.some(
+        (ch) => ch.url === "https://cleanmymap.fr/actions/map",
+      ),
+    ).toBe(true);
+    expect(
+      cleanmymap?.publicChannels.some(
+        (ch) => ch.url === "https://github.com/maxd4/CleanmyMap",
+      ),
+    ).toBe(true);
+    expect(cleanmymap?.provenance.sourceUrl).toContain("README.md");
+    expect(cleanmymap?.provenance.secondarySourceUrl).toContain("AUTHORS.md");
+    expect(cleanmymap?.funding).toBeUndefined();
+    expect(cleanmymap?.isCleanMyMapMember).toBe(false);
+    expect(cleanmymap?.parisZone.arrondissements).toEqual([]);
   });
 });
