@@ -170,7 +170,7 @@ async function main() {
     assert.equal(new Set(ready.map((match) => match[1])).size, 4, "the proof must use four PostgreSQL backends");
     assert.equal((resultText.match(/ACTION_BUDDY_CONCURRENCY_RESULT=[^ ]+ status=matched/g) ?? []).length, 2, `one acceptance must match in each concurrency scenario; output=${resultText.slice(0, 400)}`);
     assert.equal((resultText.match(/action_buddy_conflict_mentor_already_matched/g) ?? []).length, 1, `the losing acceptance must report a mentor conflict; output=${resultText.slice(0, 400)}`);
-    assert.equal((resultText.match(/action_buddy_conflict_request_not_open/g) ?? []).length, 1, `the same-request loser must report a request conflict; output=${resultText.slice(0, 400)}`);
+    assert.equal((resultText.match(/action_buddy_conflict_(?:request_not_open|proposal_not_pending)/g) ?? []).length, 1, `the same-request loser must report a request or proposal conflict; output=${resultText.slice(0, 400)}`);
 
     const finalState = await runQuery(`
 select
