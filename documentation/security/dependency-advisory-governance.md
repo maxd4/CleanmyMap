@@ -15,20 +15,30 @@ package, de niveau de sévérité ou de scanner.
 | [GHSA-VFJ7-8CJW-P6XM](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | CVE-2026-93687 | `apps/mobile/vendor/braces` `3.0.4` | `micromatch@4.0.8` → `braces` dans Metro et l'outillage ESLint | Backport borné de profondeur de parsing ; voir `apps/mobile/vendor/braces/SECURITY-PATCH.md` |
 | [GHSA-GCQX-W48M-W2H4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4) | CVE-2026-93753 | `apps/mobile/vendor/deepmerge` `4.3.2` | `expo@57.0.27` → `@expo/config@57.0.10` → `deepmerge` | Backport du rejet explicite des clés prototype ; voir `apps/mobile/vendor/deepmerge/SECURITY-PATCH.md` |
 
-## Correctifs de graphe Expo sans migration SDK
+## Correctifs de graphe Expo et Web sans migration SDK
 
 Les alertes `GHSA-3g3m-2fjr-6pw4` (`glob`) et
-`GHSA-g3hv-75wg-m249` (`minimatch`) atteignent le graphe runtime mobile par
-Expo et `@expo/fingerprint`. Le contrat mobile reste Expo SDK 57 ; une
-migration SDK majeure n'est donc pas une correction proportionnée de ces
-advisories. Les overrides racine résolvent `glob` vers `14.0.2` et la
-résolution `minimatch` d'`@expo/fingerprint` vers `11.0.1`, versions corrigées,
-sans changer les manifests Expo ni les permissions natives. Le backport
-`deepmerge` est limité au consommateur Expo et garde l'API CommonJS requise.
+`GHSA-g3hv-75wg-m249` (`minimatch`) atteignent le graphe runtime mobile et Web
+par Expo (`@expo/cli`, `@expo/config`, `@expo/config-plugins`,
+`@expo/fingerprint`, `@expo/metro-config`) et Sentry (`@sentry/bundler-plugins`).
+Le contrat mobile reste Expo SDK 57 ; une migration SDK majeure n'est donc pas
+une correction proportionnée de ces advisories. Les overrides racine résolvent
+`glob` vers `14.0.2` et `minimatch` vers `11.0.1` sur toutes ces chaînes (les
+plugins ESLint historiques conservent `minimatch@3.1.5` non vulnérable), sans
+changer les manifests Expo ni les permissions natives. Le backport `deepmerge`
+est limité au consommateur Expo et garde l'API CommonJS requise.
 
 Les chemins et versions sont vérifiés par
+`apps/mobile/security/expo-glob-minimatch-security.test.mjs`,
 `apps/mobile/security/deepmerge-security.test.mjs` et par le lockfile ; aucun
 ignore global Dependabot n'est ajouté.
+
+Pour `fast-xml-parser@5.2.5` (8 advisories High/Critical dont
+`GHSA-m7jm-9gc2-mpf2` via `@aws-sdk/xml-builder` et `@aws-sdk/client-s3@3.940.0`),
+`@aws-sdk/client-s3` est mis à jour vers `3.1173.0`, ce qui supprime la
+dépendance transitive à `fast-xml-parser` tout en préservant l'API S3 utilisée
+par `scripts/ci/publish-supabase-backup-r2.mjs` (examinée en regard de la PR
+Dependabot #192 sans fusionner son manifeste obsolète).
 
 ## Mitigation effectivement versionnée
 
@@ -193,13 +203,13 @@ correctif upstream compatible avec la ligne Expo 57 n'est donc disponible dans
 le graphe vérifié le 2026-10-23.
 
 Le `package.json` applique un override strictement limité à
-`@expo/cli` : `zod: npm:zod@4.6.6`. Le lockfile résout le chemin imbriqué
-`node_modules/@expo/cli/node_modules/zod` vers `4.6.6`, sans ajouter de
-dépendance runtime directe à l'application. Les schémas actuellement utilisés
+`@expo/cli` : `zod: 4.6.7` (aligné sur `apps/web` et `>=4.6.6`). Le lockfile
+résout `zod` vers `4.6.7`, sans ajouter de dépendance runtime directe à
+l'application mobile ni dupliquer Zod. Les schémas actuellement utilisés
 par l'Expo CLI (`object`, `enum`, `number`, `boolean`, `string`, `union`,
 `literal`, `min`, `optional`, `url` et `array`) sont vérifiés positivement et
 négativement par `apps/mobile/security/expo-zod-compatibility.test.mjs`, qui
-charge précisément le package imbriqué de l'Expo CLI.
+charge précisément `zod` depuis `@expo/cli`.
 
 Cette adaptation n'est pas une exception du gate : elle corrige la chaîne
 Zod vers la version publiée corrigée, tandis que les backports vendorisés
@@ -307,15 +317,16 @@ charge explicite de ce backport par le scanner.
 
 ## Conditions de retrait — `node-forge`
 
-Le vendor `node-forge` et ses deux overrides ne pourront être retirés que
-lorsqu'une release upstream publiée contenant le correctif de
-`GHSA-86w9-cpqp-85rv` / `CVE-2026-85393` sera disponible et compatible avec
-`@expo/cli@57.0.24` et `@expo/code-signing-certificates@0.0.6` (ou avec les
-versions Expo alors supportées). Le retrait exige la vérification de l'arbre
-réel, la régénération du lockfile et le succès du test RSA, des validations
-mobile, de `npm audit` et de `npm run check:lockfile-policy`. Sans cette
-preuve, le backport reste versionné ; aucune mise à jour majeure d'Expo ne
-constitue une condition implicite de retrait.
+La release upstream `node-forge@1.4.3` publiée sur npm corrige
+`GHSA-86w9-cpqp-85rv` / `CVE-2026-85393`, `GHSA-7wch-p9px-956x` et les avis
+ultérieurs sur `<=1.4.2`, tout en restant compatible avec `@expo/cli@57.0.28` et
+`@expo/code-signing-certificates@0.0.6`. Les overrides scoped de `package.json`
+pointent désormais vers `1.4.3` sans override global, vérifiés par
+`apps/mobile/security/node-forge-security.test.mjs` (vecteur RSA forgé et smoke
+test Expo), `npm run security:dependencies` et `npm run check:lockfile-policy`.
+Le dossier historique `apps/mobile/vendor/node-forge` reste conservé pour la
+traçabilité de l'audit de provenance et des allowlists existantes, sans être
+résolu dans le lockfile.
 
 ## Conditions de retrait — `image-size`
 

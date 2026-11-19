@@ -81,15 +81,21 @@ test("rejects the nested DigestAlgorithm RSA forgery from forge#1152", () => {
   }
 });
 
-test("resolves both Expo consumers to the local backport", () => {
+test("resolves both Expo consumers to the patched upstream node-forge release", () => {
   const consumerPackages = [
     require.resolve("@expo/cli/package.json", { paths: [mobileRoot] }),
     require.resolve("@expo/code-signing-certificates/package.json", { paths: [mobileRoot] }),
   ];
   for (const consumerPackage of consumerPackages) {
-    assert.equal(
-      require.resolve("node-forge/package.json", { paths: [path.dirname(consumerPackage)] }),
-      path.join(vendorRoot, "package.json"),
+    const resolvedPackageJson = require.resolve("node-forge/package.json", {
+      paths: [path.dirname(consumerPackage)],
+    });
+    const pkg = JSON.parse(fs.readFileSync(resolvedPackageJson, "utf8"));
+    assert.equal(pkg.version, "1.4.3");
+    const resolvedForge = require(path.dirname(resolvedPackageJson));
+    assert.throws(
+      () => verifyForgedDigest(resolvedForge),
+      /ASN\.1 object does not contain a valid RSASSA-PKCS1-v1_5 DigestInfo value\./,
     );
   }
 });

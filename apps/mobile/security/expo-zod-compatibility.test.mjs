@@ -12,9 +12,13 @@ const cliRequire = createRequire(path.join(cliPackageRoot, "package.json"));
 
 test("loads the fixed Zod release through the scoped Expo CLI override", () => {
   const zodPackage = JSON.parse(
-    fs.readFileSync(path.join(cliPackageRoot, "node_modules/zod/package.json"), "utf8"),
+    fs.readFileSync(cliRequire.resolve("zod/package.json"), "utf8"),
   );
-  assert.equal(zodPackage.version, "4.6.6");
+  const [major, minor, patch] = zodPackage.version.split(".").map(Number);
+  assert.ok(
+    major > 4 || (major === 4 && (minor > 6 || (minor === 6 && patch >= 6))),
+    `Expected Zod >= 4.6.6, got ${zodPackage.version}`,
+  );
 
   const { z } = cliRequire("zod");
   const schema = z.object({
