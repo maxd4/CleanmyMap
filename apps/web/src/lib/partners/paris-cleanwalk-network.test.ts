@@ -12,10 +12,10 @@ import {
 } from "./paris-cleanwalk-network";
 
 describe("paris-cleanwalk-network registry contract", () => {
-  it("includes all 16 required Paris ecosystem actors and platforms with unique IDs", () => {
+  it("includes all 25 required Paris ecosystem actors and platforms with unique IDs", () => {
     const ids = PARIS_CLEANWALK_ACTORS.map((actor) => actor.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(PARIS_CLEANWALK_ACTORS).toHaveLength(16);
+    expect(PARIS_CLEANWALK_ACTORS).toHaveLength(25);
 
     const names = PARIS_CLEANWALK_ACTORS.map((actor) => actor.name);
     for (const required of [
@@ -72,6 +72,7 @@ describe("paris-cleanwalk-network registry contract", () => {
     expect(byId.get("asso-zerowaste-paris")?.ecosystemRoles).toEqual([
       "organisateur_direct",
       "coordinateur_reseau",
+      "sensibilisation_prevention",
     ]);
     expect(byId.get("evt-j-agis-nature")?.ecosystemRoles).toEqual([
       "plateforme_publication",
@@ -368,5 +369,81 @@ describe("paris-cleanwalk-network 12-month deduplication and thickness policy", 
     expect(knownZero.operationsCount12m).toBe(0);
     expect(knownZero.isNeutralFallback).toBe(true);
     expect(knownZero.thickness).toBe(RELATION_THICKNESS_POLICY.neutralThickness);
+  });
+
+  it("includes the 9 prevention/awareness actors with verified IDs, roles and provenance", () => {
+    const byId = new Map(PARIS_CLEANWALK_ACTORS.map((actor) => [actor.id, actor]));
+
+    const expectedActors = [
+      {
+        id: "asso-gestes-propres",
+        annuaireEntryId: "asso-gestes-propres",
+        url: "https://www.gestespropres.com/organiser-un-cleanup",
+      },
+      {
+        id: "asso-1",
+        annuaireEntryId: "asso-1",
+        organizerDirectoryId: "association-pikpik",
+        url: "https://pikpik.org/pikpik-services-solidaires/",
+      },
+      {
+        id: "asso-megots-alcome",
+        annuaireEntryId: "asso-megots-alcome",
+        url: "https://filieres-rep.ademe.fr/filieres-REP/filiere-TABAC",
+      },
+      {
+        id: "asso-zerowaste-france",
+        url: "https://www.zerowastefrance.org/lassociation/missions/",
+      },
+      {
+        id: "asso-maison-zero-dechet",
+        url: "https://lamaisonduzerodechet.org/association/",
+      },
+      {
+        id: "asso-no-plastic-in-my-sea",
+        organizerDirectoryId: "association-no-plastic-in-my-sea",
+        url: "https://noplasticinmysea.org/lassociation/",
+      },
+      {
+        id: "asso-aremacs-idf",
+        url: "https://www.aremacs.com/association",
+      },
+      {
+        id: "collectivite-syctom",
+        url: "https://www.syctom-paris.fr/prevention-et-sensibilisation.html",
+      },
+      {
+        id: "eco-organisme-citeo",
+        url: "https://www.citeo.com/nous-connaitre/",
+      },
+    ];
+
+    for (const expected of expectedActors) {
+      const actor = byId.get(expected.id);
+      expect(actor).toBeDefined();
+      expect(actor?.ecosystemRoles).toContain("sensibilisation_prevention");
+      expect(actor?.officialWebsite).toBe(expected.url);
+      expect(actor?.provenance.sourceUrl).toBe(expected.url);
+      if (expected.annuaireEntryId) {
+        expect(actor?.annuaireEntryId).toBe(expected.annuaireEntryId);
+      }
+      if (expected.organizerDirectoryId) {
+        expect(actor?.organizerDirectoryId).toBe(expected.organizerDirectoryId);
+      }
+    }
+
+    // Existing actors updated with sensibilisation_prevention
+    expect(byId.get("asso-surfrider-paris")?.ecosystemRoles).toContain(
+      "sensibilisation_prevention",
+    );
+    expect(byId.get("evt-paris-nettoyages")?.ecosystemRoles).toContain(
+      "sensibilisation_prevention",
+    );
+    expect(byId.get("asso-zerowaste-paris")?.ecosystemRoles).toContain(
+      "sensibilisation_prevention",
+    );
+    // Zero Waste France is distinct from Zero Waste Paris
+    expect(byId.get("asso-zerowaste-france")?.name).toBe("Zero Waste France");
+    expect(byId.get("asso-zerowaste-paris")?.name).toBe("Zero Waste Paris");
   });
 });

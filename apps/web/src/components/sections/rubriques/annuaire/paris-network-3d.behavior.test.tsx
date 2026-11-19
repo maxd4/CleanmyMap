@@ -307,6 +307,43 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     });
   });
 
+  it("filters by sensibilisation_prevention role and displays the new prevention actors", () => {
+    sitePreferencesMock.mockReturnValue({
+      locale: "en",
+      displayMode: "complet",
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(<ParisNetwork3DSection />);
+    });
+    const roleSelect = container.querySelector(
+      'select[aria-label="Filter by ecosystem role"]',
+    ) as HTMLSelectElement;
+    expect(roleSelect).not.toBeNull();
+
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(
+        HTMLSelectElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(roleSelect, "sensibilisation_prevention");
+      roleSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("Gestes Propres");
+    expect(text).toContain("Pik Pik Environnement");
+    expect(text).toContain("Zero Waste France");
+    expect(text).toContain("Maison du Zéro Déchet");
+    expect(text).toContain("Syctom");
+    expect(text).toContain("Citeo");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it("renders WebGL toolbar, toggles 3D/HTML view and triggers IntersectionObserver when WebGL is available", () => {
     const getContextSpy = vi
       .spyOn(HTMLCanvasElement.prototype, "getContext")

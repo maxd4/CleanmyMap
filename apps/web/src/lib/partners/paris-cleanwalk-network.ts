@@ -14,7 +14,8 @@ export type ParisActorOperationalRole =
 export type ParisEcosystemRole =
   | "organisateur_direct"
   | "coordinateur_reseau"
-  | "plateforme_publication";
+  | "plateforme_publication"
+  | "sensibilisation_prevention";
 
 export type ParticipationModality =
   | "benevoles"
@@ -296,6 +297,7 @@ export const PARIS_ECOSYSTEM_ROLE_LABELS: Record<ParisEcosystemRole, string> = {
   organisateur_direct: "Organisateur direct",
   coordinateur_reseau: "Coordinateur de réseau",
   plateforme_publication: "Plateforme de publication",
+  sensibilisation_prevention: "Sensibilisation & prévention",
 };
 
 export const PUBLIC_CHANNEL_TYPE_LABELS: Record<PublicChannelType, string> = {

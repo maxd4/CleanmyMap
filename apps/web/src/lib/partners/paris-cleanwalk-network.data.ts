@@ -1,9 +1,10 @@
-import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
+﻿import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
 import {
   createVerifiedChannel as channel,
   sanitizeAndDeduplicatePublicChannels,
 } from "./paris-cleanwalk-network.channels";
 import type { ParisCleanwalkActor } from "./paris-cleanwalk-network";
+import { PARIS_PREVENTION_ACTORS_RAW } from "./paris-cleanwalk-network.prevention.data";
 
 const ANNUAIRE_IDS = new Set(INITIAL_ANNUAIRE_ENTRIES.map((entry) => entry.id));
 const ALL_PARIS_ARRONDISSEMENTS = Array.from({ length: 20 }, (_, i) => i + 1);
@@ -79,7 +80,7 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
     name: "Surfrider Paris",
     category: "association_locale",
     roles: ["organisateur_effectif", "relais"],
-    ecosystemRoles: ["organisateur_direct"],
+    ecosystemRoles: ["organisateur_direct", "sensibilisation_prevention"],
     publicLeader: null,
     officialWebsite: "https://surfrider-paris.fr/nos-actions",
     publicContact: {
@@ -121,7 +122,11 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
     name: "Zero Waste Paris",
     category: "association_locale",
     roles: ["organisateur_effectif", "relais"],
-    ecosystemRoles: ["organisateur_direct", "coordinateur_reseau"],
+    ecosystemRoles: [
+      "organisateur_direct",
+      "coordinateur_reseau",
+      "sensibilisation_prevention",
+    ],
     publicLeader: null,
     officialWebsite: "https://www.zerowasteparis.fr/nos-actions",
     publicContact: {
@@ -484,7 +489,7 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
     name: "Ville de Paris — Direction de la Propreté et de l'Eau (DPE)",
     category: "collectivite_mairie",
     roles: ["fournisseur_materiel", "relais"],
-    ecosystemRoles: ["coordinateur_reseau"],
+    ecosystemRoles: ["coordinateur_reseau", "sensibilisation_prevention"],
     publicLeader: null,
     officialWebsite:
       "https://www.paris.fr/pages/nettoyages-participatifs-ensemble-rendons-paris-plus-propre-15425",
@@ -742,4 +747,5 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
     verifiedAt: "2026-11-19",
     isCleanMyMapMember: false,
   },
+  ...PARIS_PREVENTION_ACTORS_RAW,
 ] as const;
