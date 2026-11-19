@@ -384,12 +384,12 @@ describe("paris-cleanwalk-network 12-month deduplication and thickness policy", 
         id: "asso-1",
         annuaireEntryId: "asso-1",
         organizerDirectoryId: "association-pikpik",
-        url: "https://pikpik.org/pikpik-services-solidaires/",
+        url: "https://pikpik.org/",
       },
       {
         id: "asso-megots-alcome",
         annuaireEntryId: "asso-megots-alcome",
-        url: "https://filieres-rep.ademe.fr/filieres-REP/filiere-TABAC",
+        url: "https://alcome.eco/",
       },
       {
         id: "asso-zerowaste-france",
@@ -445,5 +445,36 @@ describe("paris-cleanwalk-network 12-month deduplication and thickness policy", 
     // Zero Waste France is distinct from Zero Waste Paris
     expect(byId.get("asso-zerowaste-france")?.name).toBe("Zero Waste France");
     expect(byId.get("asso-zerowaste-paris")?.name).toBe("Zero Waste Paris");
+
+    // Eco-organisms classified under entreprise_rse (not reseau_evenement)
+    expect(byId.get("asso-megots-alcome")?.category).toBe("entreprise_rse");
+    expect(byId.get("eco-organisme-citeo")?.category).toBe("entreprise_rse");
+    expect(byId.get("asso-megots-alcome")?.publicContact?.url).toBe(
+      "https://alcome.eco/",
+    );
+    expect(byId.get("asso-megots-alcome")?.provenance.secondarySourceUrl).toBe(
+      "https://filieres-rep.ademe.fr/filieres-REP/filiere-TABAC",
+    );
+
+    // Pik Pik Environnement association kept distinct from PikPik Services Solidaires
+    const pikpik = byId.get("asso-1");
+    expect(pikpik?.publicContact?.url).toBe("https://pikpik.org/");
+    expect(pikpik?.officialWebsite).not.toContain("pikpik-services-solidaires");
+    expect(pikpik?.provenance.secondarySourceUrl).toBe(
+      "https://www.jeveuxaider.gouv.fr/missions-benevolat/101949/benevolat-pikpik-environnement-26",
+    );
+    expect(
+      pikpik?.publicChannels.some(
+        (ch) =>
+          ch.type === "plateforme_jeveuxaider" &&
+          ch.url ===
+            "https://www.jeveuxaider.gouv.fr/missions-benevolat/101949/benevolat-pikpik-environnement-26",
+      ),
+    ).toBe(true);
+
+    // AREMACS IDF completed with Paris antenna provenance
+    expect(byId.get("asso-aremacs-idf")?.provenance.secondarySourceUrl).toBe(
+      "https://www.aremacs.com/antennes/paris",
+    );
   });
 });

@@ -74,27 +74,39 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
     roles: ["organisateur_effectif", "relais"],
     ecosystemRoles: ["sensibilisation_prevention", "organisateur_direct"],
     publicLeader: null,
-    officialWebsite: "https://pikpik.org/pikpik-services-solidaires/",
+    officialWebsite: "https://pikpik.org/",
     publicContact: {
-      label: "Pik Pik Environnement — Services solidaires",
-      url: "https://pikpik.org/pikpik-services-solidaires/",
+      label: "Site officiel Pik Pik Environnement",
+      url: "https://pikpik.org/",
       certainty: "verifie",
     },
     publicChannels: sanitizeAndDeduplicatePublicChannels([
       {
         type: "site_officiel",
-        label: "Pik Pik Services solidaires",
-        url: "https://pikpik.org/pikpik-services-solidaires/",
+        label: "Pik Pik Environnement",
+        url: "https://pikpik.org/",
         provenance: {
           sourceLabel: "Pik Pik Environnement",
-          sourceUrl: "https://pikpik.org/pikpik-services-solidaires/",
+          sourceUrl: "https://pikpik.org/",
+          verifiedAt: "2026-11-19",
+          certainty: "verifie",
+        },
+      },
+      {
+        type: "plateforme_jeveuxaider",
+        label: "Mission cleanwalk Paris (JeVeuxAider.gouv.fr)",
+        url: "https://www.jeveuxaider.gouv.fr/missions-benevolat/101949/benevolat-pikpik-environnement-26",
+        provenance: {
+          sourceLabel: "JeVeuxAider.gouv.fr",
+          sourceUrl:
+            "https://www.jeveuxaider.gouv.fr/missions-benevolat/101949/benevolat-pikpik-environnement-26",
           verifiedAt: "2026-11-19",
           certainty: "verifie",
         },
       },
     ]),
     parisZone: {
-      label: "Île-de-France & Paris (animations et sensibilisation)",
+      label: "Île-de-France & Paris (animations et cleanwalks associatives)",
       arrondissements: [],
       isIntramuros: true,
     },
@@ -105,11 +117,13 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
       certainty: "verifie",
     },
     activities: [
-      "Éducation à l'environnement, sensibilisation zéro déchet et ateliers citoyens",
+      "Éducation à l'environnement, sensibilisation zéro déchet et cleanwalks associatives à Paris (distincte de PikPik Services Solidaires)",
     ],
     provenance: {
-      sourceLabel: "Pik Pik Environnement",
-      sourceUrl: "https://pikpik.org/pikpik-services-solidaires/",
+      sourceLabel: "Pik Pik Environnement & JeVeuxAider.gouv.fr",
+      sourceUrl: "https://pikpik.org/",
+      secondarySourceUrl:
+        "https://www.jeveuxaider.gouv.fr/missions-benevolat/101949/benevolat-pikpik-environnement-26",
       certainty: "verifie",
     },
     verifiedAt: "2026-11-19",
@@ -119,19 +133,30 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
     id: requireAnnuaireId("asso-megots-alcome"),
     annuaireEntryId: "asso-megots-alcome",
     name: "ALCOME",
-    category: "reseau_evenement",
+    category: "entreprise_rse",
     roles: ["relais"],
     ecosystemRoles: ["sensibilisation_prevention"],
     publicLeader: null,
-    officialWebsite: "https://filieres-rep.ademe.fr/filieres-REP/filiere-TABAC",
+    officialWebsite: "https://alcome.eco/",
     publicContact: {
-      label: "Fiche filière REP Tabac — ADEME",
-      url: "https://filieres-rep.ademe.fr/filieres-REP/filiere-TABAC",
+      label: "Site officiel ALCOME",
+      url: "https://alcome.eco/",
       certainty: "verifie",
     },
     publicChannels: sanitizeAndDeduplicatePublicChannels([
       {
         type: "site_officiel",
+        label: "Site officiel ALCOME",
+        url: "https://alcome.eco/",
+        provenance: {
+          sourceLabel: "ALCOME",
+          sourceUrl: "https://alcome.eco/",
+          verifiedAt: "2026-11-19",
+          certainty: "verifie",
+        },
+      },
+      {
+        type: "autre_public",
         label: "Filière REP Tabac (ADEME)",
         url: "https://filieres-rep.ademe.fr/filieres-REP/filiere-TABAC",
         provenance: {
@@ -157,8 +182,10 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
       "Prévention et réduction des mégots jetés dans l'espace public (filière REP tabac)",
     ],
     provenance: {
-      sourceLabel: "ADEME — Filières REP",
-      sourceUrl: "https://filieres-rep.ademe.fr/filieres-REP/filiere-TABAC",
+      sourceLabel: "ALCOME & ADEME — Filières REP",
+      sourceUrl: "https://alcome.eco/",
+      secondarySourceUrl:
+        "https://filieres-rep.ademe.fr/filieres-REP/filiere-TABAC",
       certainty: "verifie",
     },
     verifiedAt: "2026-11-19",
@@ -334,6 +361,17 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
           certainty: "verifie",
         },
       },
+      {
+        type: "autre_public",
+        label: "Antenne AREMACS Paris / Île-de-France",
+        url: "https://www.aremacs.com/antennes/paris",
+        provenance: {
+          sourceLabel: "AREMACS — Antenne Paris",
+          sourceUrl: "https://www.aremacs.com/antennes/paris",
+          verifiedAt: "2026-11-19",
+          certainty: "verifie",
+        },
+      },
     ]),
     parisZone: {
       label: "Île-de-France / Paris (antenne régionale)",
@@ -350,8 +388,9 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
       "Prévention, tri et gestion des déchets lors d'événements en Île-de-France et à Paris",
     ],
     provenance: {
-      sourceLabel: "AREMACS",
+      sourceLabel: "AREMACS (association nationale et antenne Paris)",
       sourceUrl: "https://www.aremacs.com/association",
+      secondarySourceUrl: "https://www.aremacs.com/antennes/paris",
       certainty: "verifie",
     },
     verifiedAt: "2026-11-19",
@@ -408,7 +447,7 @@ export const PARIS_PREVENTION_ACTORS_RAW: readonly ParisCleanwalkActor[] = [
   {
     id: "eco-organisme-citeo",
     name: "Citeo",
-    category: "reseau_evenement",
+    category: "entreprise_rse",
     roles: ["relais"],
     ecosystemRoles: ["sensibilisation_prevention"],
     publicLeader: null,

@@ -265,8 +265,8 @@ export const PARIS_ACTOR_CATEGORY_META: Record<
     colorHex: "#8b5cf6",
   },
   entreprise_rse: {
-    label: "Entreprises et soutiens RSE",
-    shortLabel: "Entreprises / RSE",
+    label: "Entreprises, soutiens RSE et éco-organismes",
+    shortLabel: "Entreprises / Éco-organismes",
     colorHex: "#6366f1",
   },
   collectivite_mairie: {
