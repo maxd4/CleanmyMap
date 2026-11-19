@@ -164,13 +164,13 @@ async function main() {
     }
 
     const outputs = results.map(output);
-    const ready = outputs.flatMap((value) => [...value.matchAll(/ACTION_BUDDY_CONCURRENCY_READY=[^ ]+ pid=(\d+)/g)]);
-    assert.equal(ready.length, 4, "all PostgreSQL sessions must reach the concurrency barriers");
-    assert.equal(new Set(ready.map((match) => match[1])).size, 4, "the proof must use four PostgreSQL backends");
     const resultText = outputs.join("\n");
-    assert.equal((resultText.match(/ACTION_BUDDY_CONCURRENCY_RESULT=[^ ]+ status=matched/g) ?? []).length, 2, "one acceptance must match in each concurrency scenario");
-    assert.equal((resultText.match(/action_buddy_conflict_mentor_already_matched/g) ?? []).length, 1, "the losing acceptance must report a mentor conflict");
-    assert.equal((resultText.match(/action_buddy_conflict_request_not_open/g) ?? []).length, 1, "the same-request loser must report a request conflict");
+    const ready = outputs.flatMap((value) => [...value.matchAll(/ACTION_BUDDY_CONCURRENCY_READY=[^ ]+ pid=(\d+)/g)]);
+    assert.equal(ready.length, 4, `all PostgreSQL sessions must reach the concurrency barriers; got=${ready.length}; output=${resultText.slice(0, 400)}`);
+    assert.equal(new Set(ready.map((match) => match[1])).size, 4, "the proof must use four PostgreSQL backends");
+    assert.equal((resultText.match(/ACTION_BUDDY_CONCURRENCY_RESULT=[^ ]+ status=matched/g) ?? []).length, 2, `one acceptance must match in each concurrency scenario; output=${resultText.slice(0, 400)}`);
+    assert.equal((resultText.match(/action_buddy_conflict_mentor_already_matched/g) ?? []).length, 1, `the losing acceptance must report a mentor conflict; output=${resultText.slice(0, 400)}`);
+    assert.equal((resultText.match(/action_buddy_conflict_request_not_open/g) ?? []).length, 1, `the same-request loser must report a request conflict; output=${resultText.slice(0, 400)}`);
 
     const finalState = await runQuery(`
 select
@@ -199,6 +199,6 @@ select
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error(`ERROR: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;
 });
