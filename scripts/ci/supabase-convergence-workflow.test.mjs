@@ -41,7 +41,7 @@ test("Supabase convergence is proof-triggered, scheduled, manual, and serialized
   assert.match(workflow, /group:\s*supabase-production-migrations/);
   assert.match(workflow, /cancel-in-progress:\s*false/);
   assert.match(workflow, /environment:\s*supabase-production/);
-  assert.match(workflow, /actions\/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e/);
+  assert.match(workflow, /actions\/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333/);
   assert.match(workflow, /Checkout trusted main control source[\s\S]*?ref: \$\{\{ github\.sha \}\}/);
   assert.doesNotMatch(workflow, /Checkout tested candidate[\s\S]*?github\.event\.workflow_run\.head_sha/);
   assert.doesNotMatch(workflow.slice(0, workflow.indexOf("Download sanitized ephemeral proof")), /github\.event\.workflow_run\.head_sha/);

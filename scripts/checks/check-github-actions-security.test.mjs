@@ -139,12 +139,12 @@ assert.deepEqual(auditWorkflowContent(codeqlWorkflow, ".github/workflows/codeql.
 const codeqlActionRefs = [...codeqlWorkflow.matchAll(/uses:\s+github\/codeql-action\/(?:init|autobuild|analyze)@([0-9a-f]{40})/g)]
   .map((match) => match[1]);
 assert.equal(codeqlActionRefs.length, 8);
-assert.deepEqual(new Set(codeqlActionRefs), new Set(["9b3254085494b55a0f7c4c2b3d2d52cc712ce370"]));
+assert.deepEqual(new Set(codeqlActionRefs), new Set(["33d7b85da1a04171e211befe2c739303b9a4c066"]));
 assert.doesNotMatch(codeqlWorkflow, /24c54180a607b1449ed407dd24f251e4e9147c8d/);
 assert.doesNotMatch(codeqlWorkflow, /checkout_path:/);
 assert.match(scorecardWorkflow, /uses:\s+ossf\/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e/);
 assert.doesNotMatch(scorecardWorkflow, /2d1146689b8cda280b9bc96326124645441f03bc/);
-assert.match(zizmorWorkflow, /uses:\s+zizmorcore\/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e/);
+assert.match(zizmorWorkflow, /uses:\s+zizmorcore\/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd/);
 assert.doesNotMatch(zizmorWorkflow, /cc914d7f3750a2d13d75c7f184a1060aa0e9d482/);
 for (const workflow of [codeqlWorkflow, scorecardWorkflow, zizmorWorkflow]) {
   assert.match(workflow, /^permissions:\s*\{\}/m);

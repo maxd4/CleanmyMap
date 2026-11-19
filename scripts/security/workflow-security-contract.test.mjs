@@ -47,7 +47,7 @@ assertCommonWorkflowSecurity(zizmor, "zizmor.yml");
 assert.match(zizmor, /push:[\s\S]*paths:\s*\n\s+- \.github\/workflows\/\*\*\n\s+pull_request:/);
 assert.match(zizmor, /pull_request:[\s\S]*paths:\s*\n\s+- \.github\/workflows\/\*\*/);
 assert.match(zizmor, /workflow_dispatch:/);
-assert.match(zizmor, /zizmorcore\/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e/);
+assert.match(zizmor, /zizmorcore\/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd/);
 assert.match(zizmor, /version: 1\.30\.1/);
 assert.match(zizmor, /online-audits: false/);
 assert.match(zizmor, /advanced-security: false/);
