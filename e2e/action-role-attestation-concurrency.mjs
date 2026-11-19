@@ -208,7 +208,7 @@ begin
   select verification_status into v_status from public.action_role_attestations where action_id = '${actionId}'::uuid and user_id = '${targetUserId}';
   select count(*) into v_audit_count from public.action_role_attestation_audit where action_id = '${actionId}'::uuid;
   select count(*) into v_notice_count from public.app_notifications where user_id = '${targetUserId}' and payload ->> 'actionId' = '${actionId}';
-  if v_status <> 'confirmed' or v_audit_count <> 1 or v_notice_count <> 1 then raise exception 'concurrent correction without reason changed the attestation'; end if;
+  if v_status <> 'confirmed' or v_audit_count <> 1 or v_notice_count <> 1 then raise exception 'concurrent correction without reason changed the attestation: status=%, audit=%, notices=%', v_status, v_audit_count, v_notice_count; end if;
 end $$;
 `;
 
@@ -219,7 +219,7 @@ begin
   select verification_status into v_status from public.action_role_attestations where action_id = '${actionId}'::uuid and user_id = '${targetUserId}';
   select count(*) into v_audit_count from public.action_role_attestation_audit where action_id = '${actionId}'::uuid;
   select count(*) into v_notice_count from public.app_notifications where user_id = '${targetUserId}' and payload ->> 'actionId' = '${actionId}';
-  if v_status <> 'rejected' or v_audit_count <> 2 or v_notice_count <> 2 then raise exception 'concurrent correction did not produce one audited revision and notice'; end if;
+  if v_status <> 'rejected' or v_audit_count <> 2 or v_notice_count <> 2 then raise exception 'concurrent correction did not produce one audited revision and notice: status=%, audit=%, notices=%', v_status, v_audit_count, v_notice_count; end if;
 end $$;
 `;
 
