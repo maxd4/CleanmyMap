@@ -281,6 +281,28 @@ function commandName() {
   return process.platform === "win32" ? resolve(repositoryRoot, "node_modules/.bin/supabase.cmd") : resolve(repositoryRoot, "node_modules/.bin/supabase");
 }
 
+function psqlCommand() {
+  return process.platform === "win32" ? "psql" : "/usr/bin/psql";
+}
+
+function resolveLocalDbUrl() {
+  const raw = execFileSync(commandName(), ["status", "--workdir", "apps/web", "--output", "json"], {
+    cwd: repositoryRoot,
+    env: trustedCommandEnvironment(process.env, [commandName()]),
+    encoding: "utf8",
+  });
+  const start = raw.indexOf("{");
+  if (start < 0) throw new Error("Supabase status did not return JSON for apps/web.");
+  const status = JSON.parse(raw.slice(start));
+  const dbUrl = String(status.DB_URL ?? "").trim();
+  if (!dbUrl) throw new Error("Supabase status did not include DB_URL for apps/web.");
+  const parsed = new URL(dbUrl);
+  if (parsed.hostname !== "127.0.0.1" && parsed.hostname !== "localhost") {
+    throw new Error("Refusing non-local DB_URL for SQL contract proof.");
+  }
+  return dbUrl;
+}
+
 export function supabaseNetworkArgs(env = process.env) {
   const networkId = String(env.CMM_SUPABASE_NETWORK_ID ?? "").trim();
   return networkId ? ["--network-id", networkId] : [];
@@ -432,6 +454,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
 
   try {
     const networkArgs = supabaseNetworkArgs();
+    let localDbUrl = null;
     for (const record of records) {
       if (record.category === "PGTAP") {
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
@@ -450,7 +473,14 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
           record.reason = error instanceof Error ? error.message : String(error);
           throw new Error(`${record.path}: ${record.reason}`);
         }
-        await runProof(record, commandName(), ["db", "query", "--workdir", "apps/web", "--local", ...networkArgs, sql], (output) => {
+        if (commandRunner === runCommand) {
+          localDbUrl ??= resolveLocalDbUrl();
+        }
+        const sqlCommand = commandRunner === runCommand ? psqlCommand() : commandName();
+        const sqlArgs = commandRunner === runCommand
+          ? ["-v", "ON_ERROR_STOP=1", "-f", resolve(repositoryRoot, record.path), localDbUrl]
+          : ["db", "query", "--workdir", "apps/web", "--local", ...networkArgs, sql];
+        await runProof(record, sqlCommand, sqlArgs, (output) => {
           if (!output.includes(marker)) throw new Error("completion marker is absent from the PostgreSQL output");
           return { marker };
         }, commandRunner);
