@@ -351,17 +351,20 @@ begin
       'organizerName', a.organizer_name, 'organizerType', a.organizer_type,
       'updatedAt', a.updated_at::text
     ),
-    'categories', '[]'::jsonb, 'mappings', '[]'::jsonb,
+    'categories', jsonb_build_array(jsonb_build_object('id', cr.id::text, 'updatedAt', cr.updated_at::text)),
+    'mappings', '[]'::jsonb,
     'teams', jsonb_build_array(jsonb_build_object('id', t.id::text, 'updatedAt', t.updated_at::text)),
     'submissions', jsonb_build_array(jsonb_build_object('id', s.id::text, 'updatedAt', s.updated_at::text)),
-    'items', '[]'::jsonb,
+    'items', jsonb_build_array(jsonb_build_object('id', ri.id::text, 'updatedAt', ri.updated_at::text)),
     'participants', jsonb_build_array(jsonb_build_object('id', p.id::text, 'updatedAt', p.updated_at::text)),
     'route', null
   ) into v_snapshot
   from public.spogomi_events e
   join public.actions a on a.id = e.action_id
+  join public.spogomi_category_rules cr on cr.id = v_category_id
   join public.spogomi_teams t on t.event_id = e.id
   join public.spogomi_result_submissions s on s.id = t.certified_submission_id
+  join public.spogomi_result_items ri on ri.id = v_item_id
   join public.spogomi_participants p on p.event_id = e.id
   where e.id = v_event_id;
   v_projection_b := jsonb_set(v_projection_b, '{sourceSnapshot}', v_snapshot);
@@ -382,17 +385,20 @@ begin
       'organizerName', a.organizer_name, 'organizerType', a.organizer_type,
       'updatedAt', a.updated_at::text
     ),
-    'categories', '[]'::jsonb, 'mappings', '[]'::jsonb,
+    'categories', jsonb_build_array(jsonb_build_object('id', cr.id::text, 'updatedAt', cr.updated_at::text)),
+    'mappings', '[]'::jsonb,
     'teams', jsonb_build_array(jsonb_build_object('id', t.id::text, 'updatedAt', t.updated_at::text)),
     'submissions', jsonb_build_array(jsonb_build_object('id', s.id::text, 'updatedAt', s.updated_at::text)),
-    'items', '[]'::jsonb,
+    'items', jsonb_build_array(jsonb_build_object('id', ri.id::text, 'updatedAt', ri.updated_at::text)),
     'participants', jsonb_build_array(jsonb_build_object('id', p.id::text, 'updatedAt', p.updated_at::text)),
     'route', null
   ) into v_snapshot
   from public.spogomi_events e
   join public.actions a on a.id = e.action_id
+  join public.spogomi_category_rules cr on cr.id = v_category_id
   join public.spogomi_teams t on t.event_id = e.id
   join public.spogomi_result_submissions s on s.id = t.certified_submission_id
+  join public.spogomi_result_items ri on ri.id = v_item_id
   join public.spogomi_participants p on p.event_id = e.id
   where e.id = v_event_id;
   v_projection_a := jsonb_set(v_projection_a, '{sourceSnapshot}', v_snapshot);
