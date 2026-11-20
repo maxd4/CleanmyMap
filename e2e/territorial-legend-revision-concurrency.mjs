@@ -15,8 +15,12 @@ export function parseTerritorialRevisionNotice(output) {
   return revision;
 }
 
-async function runQuery(sql, { timeoutMs = 30_000 } = {}) {
-  return runLocalPsqlQuery(sql, { timeoutMs, errorLabel: "Territorial revision concurrency query failed" });
+async function runQuery(sql, phase, { timeoutMs = 30_000 } = {}) {
+  try {
+    return await runLocalPsqlQuery(sql, { timeoutMs, errorLabel: `Territorial revision ${phase} failed` });
+  } catch (error) {
+    throw new Error(`TERRITORIAL_PHASE=${phase}: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 async function assertEphemeralDestination() {
@@ -126,12 +130,12 @@ let ephemeralDestinationVerified = false;
 async function main() {
   await assertEphemeralDestination();
   ephemeralDestinationVerified = true;
-  await runQuery(cleanupSql);
-  await runQuery(setupSql);
-  const oldRevisionResult = await runQuery(readOldRevisionSql);
+  await runQuery(cleanupSql, "initial-cleanup");
+  await runQuery(setupSql, "setup");
+  const oldRevisionResult = await runQuery(readOldRevisionSql, "read-old-revision");
   const oldOutput = output({ value: oldRevisionResult });
   const oldRevision = parseTerritorialRevisionNotice(oldOutput);
-  const freshResult = await runQuery(freshSessionSql);
+  const freshResult = await runQuery(freshSessionSql, "fresh-publication");
   const freshOutput = output({ value: freshResult });
   const freshResultMatch = freshOutput.match(/TERRITORIAL_FRESH_RESULT=(\{.*\})/);
   assert.ok(freshResultMatch, "fresh publication must expose the RPC JSON response");
@@ -143,7 +147,7 @@ async function main() {
   assert.equal(typeof freshRpcResult.extendedPeriods, "number");
   assert.equal(typeof freshRpcResult.closedPeriods, "number");
 
-  const staleResult = await runQuery(staleSessionSql(oldRevision));
+  const staleResult = await runQuery(staleSessionSql(oldRevision), "stale-publication");
   const staleOutput = output({ value: staleResult });
   assert.match(staleOutput, /TERRITORIAL_STALE_REJECTED=territorial legend snapshot was calculated from an older fact revision/);
   const sessionPids = [oldOutput, freshOutput, staleOutput].map((value) => value.match(/TERRITORIAL_SESSION=[^ ]+ pid=(\d+)/)?.[1]);
@@ -156,11 +160,11 @@ select json_build_object(
   'stale', (select count(*) from public.territorial_legend_hold_periods where user_id = 'legend-revision-stale'),
   'freshFingerprints', (select array_agg(distinct source_fingerprint order by source_fingerprint) from public.territorial_legend_hold_periods where user_id = 'legend-revision-fresh')
 ) as result;
-`);
+`, "final-state");
   assert.match(finalState.stdout, /"fresh"\s*:\s*1/);
   assert.match(finalState.stdout, /"stale"\s*:\s*0/);
   assert.match(finalState.stdout, /fresh-after-delete/);
-  await runQuery(cleanupSql);
+  await runQuery(cleanupSql, "final-cleanup");
   console.log("EXECUTED_DB_CONTRACT: Territorial legend monotone fact revision and stale same-day reconciliation concurrency passed.");
 }
 
@@ -168,7 +172,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   main().catch(async (error) => {
     if (ephemeralDestinationVerified) {
       try {
-        await runQuery(cleanupSql);
+        await runQuery(cleanupSql, "failure-cleanup");
       } catch (cleanupError) {
         console.error(cleanupError);
       }

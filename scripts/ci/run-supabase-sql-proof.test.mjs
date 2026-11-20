@@ -95,9 +95,10 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
 test("territorial revision proof uses explicit session barriers and the RPC contract", () => {
   const source = readFileSync(new URL("../../e2e/territorial-legend-revision-concurrency.mjs", import.meta.url), "utf8");
   assert.match(source, /set_config\('request\.jwt\.claim\.role', 'service_role', true\)/g);
-  assert.match(source, /const oldRevisionResult = await runQuery\(readOldRevisionSql\)/);
-  assert.match(source, /const freshResult = await runQuery\(freshSessionSql\)/);
-  assert.match(source, /const staleResult = await runQuery\(staleSessionSql\(oldRevision\)\)/);
+  assert.match(source, /const oldRevisionResult = await runQuery\(readOldRevisionSql, "read-old-revision"\)/);
+  assert.match(source, /const freshResult = await runQuery\(freshSessionSql, "fresh-publication"\)/);
+  assert.match(source, /const staleResult = await runQuery\(staleSessionSql\(oldRevision\), "stale-publication"\)/);
+  assert.match(source, /TERRITORIAL_PHASE=\$\{phase\}/);
   assert.match(source, /TERRITORIAL_FRESH_RESULT=/);
   assert.match(source, /freshRpcResult\.status, "applied"/);
   assert.match(source, /freshRpcResult\.affectedUserIds\.includes\("legend-revision-fresh"\)/);
