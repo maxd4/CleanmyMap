@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const clerkClientMock = vi.hoisted(() => vi.fn());
+const clerkGetUserListMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: clerkClientMock }));
+vi.mock("server-only", () => ({}));
 vi.mock("@/lib/env", () => ({ env: { CLERK_IMU_OWNER_USER_ID: "" } }));
 
 function createSupabaseMock(profileRows: Array<{ id: string; display_name: string; handle: string }>) {
@@ -37,9 +39,17 @@ describe("syncActionManualParticipants", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    clerkClientMock.mockResolvedValue({
-      users: { getUserList: vi.fn().mockResolvedValue({ data: [] }) },
-    });
+    clerkGetUserListMock.mockReset().mockImplementation(async ({ userId }: { userId?: string[] }) => ({
+      data: (userId ?? []).map((id) => ({
+        id,
+        username: null,
+        firstName: null,
+        lastName: null,
+        publicMetadata: {},
+        emailAddresses: [],
+      })),
+    }));
+    clerkClientMock.mockResolvedValue({ users: { getUserList: clerkGetUserListMock } });
   });
 
   it("sends a fully resolved participant set through one atomic RPC", async () => {
@@ -77,6 +87,52 @@ describe("syncActionManualParticipants", () => {
     });
 
     expect(result.unresolvedTokens).toEqual(["unknown-account"]);
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("does not persist a direct participant ID whose Clerk metadata marks it as E2E", async () => {
+    clerkGetUserListMock.mockImplementationOnce(async ({ userId }: { userId?: string[] }) => ({
+      data: (userId ?? []).map((id) => ({
+        id,
+        username: null,
+        firstName: null,
+        lastName: null,
+        publicMetadata: { cleanmymapE2E: true },
+        emailAddresses: [],
+      })),
+    }));
+    const { syncActionManualParticipants } = await import("./organizers");
+    const { supabase, rpcMock } = createSupabaseMock([
+      { id: "e2e-user", display_name: "Test", handle: "test" },
+    ]);
+
+    const result = await syncActionManualParticipants({
+      supabase,
+      actionId: "action-1",
+      creator: { userId: "creator-1", displayName: "Créateur" },
+      participantAccounts: ["e2e-user"],
+      organizerIds: [],
+    });
+
+    expect(result.participants).toEqual([]);
+    expect(result.unresolvedTokens).toEqual(["e2e-user"]);
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("does not persist when Clerk cannot verify selected participants", async () => {
+    clerkGetUserListMock.mockRejectedValueOnce(new Error("Clerk unavailable"));
+    const { syncActionManualParticipants } = await import("./organizers");
+    const { supabase, rpcMock } = createSupabaseMock([
+      { id: "unverified-user", display_name: "Profil", handle: "profil" },
+    ]);
+
+    await expect(syncActionManualParticipants({
+      supabase,
+      actionId: "action-1",
+      creator: { userId: "creator-1", displayName: "Créateur" },
+      participantAccounts: ["unverified-user"],
+      organizerIds: [],
+    })).rejects.toThrow("Clerk unavailable");
     expect(rpcMock).not.toHaveBeenCalled();
   });
 

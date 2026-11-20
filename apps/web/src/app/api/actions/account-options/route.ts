@@ -1,5 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { isE2EClerkAccount } from "@/lib/auth/e2e-account";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
@@ -23,6 +24,8 @@ type ClerkUserForActionPicker = {
   lastName: string | null;
   username: string | null;
   imageUrl?: string | null;
+  publicMetadata?: Record<string, unknown> | null;
+  emailAddresses?: Array<{ emailAddress?: string | null }> | null;
 };
 
 export type ActionAccountOption = {
@@ -88,6 +91,7 @@ async function loadEligibleAccounts(params: {
         continue;
       }
       seenIds.add(user.id);
+      if (isE2EClerkAccount(user)) continue;
       accounts.push(toActionAccountOption(user));
       if (accounts.length === PAGE_SIZE) {
         break;

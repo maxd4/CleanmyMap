@@ -173,6 +173,22 @@ function assertLocalClerkConfiguration(
   }
 }
 
+function assertVercelProductionClerkConfiguration(
+  publishableKey: string | undefined,
+  secretKey: string | undefined,
+): void {
+  if (process.env.VERCEL_ENV?.trim().toLowerCase() !== "production") return;
+
+  if (
+    getClerkKeyMode(publishableKey, "pk") !== "live" ||
+    getClerkKeyMode(secretKey, "sk") !== "live"
+  ) {
+    throw new Error(
+      "Invalid Vercel Production Clerk configuration: a matching pk_live_* and sk_live_* Production pair is required; Development keys are refused.",
+    );
+  }
+}
+
 function resolveClerkSatellite(
   isSatellite: boolean,
   isLocalDevOrigin: boolean,
@@ -206,6 +222,10 @@ export function getClerkRuntimeConfig(): ClerkRuntimeConfig {
   const domain = parseDomain(env.CLERK_DOMAIN);
   const proxyUrl = resolveProxyUrl(env.NEXT_PUBLIC_CLERK_PROXY_URL, appOrigin);
   const isLocalDevOrigin = process.env.NODE_ENV !== "production" && isLocalhostOrigin(appOrigin);
+  assertVercelProductionClerkConfiguration(
+    env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    env.CLERK_SECRET_KEY,
+  );
   if (isLocalDevOrigin) {
     assertLocalClerkConfiguration(
       publishableKey,

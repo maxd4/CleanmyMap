@@ -129,6 +129,26 @@ describe("GET /api/actions/account-options", () => {
     expect(body.hasMore).toBe(false);
   });
 
+  it("skips E2E marker and legacy test-alias accounts while preserving pagination and order", async () => {
+    const getUserListMock = vi.fn().mockResolvedValue({
+      data: [
+        clerkUser("e2e-marked", { publicMetadata: { cleanmymapE2E: true } }),
+        clerkUser("e2e-legacy", { emailAddresses: [{ emailAddress: "cmm-e2e-old+clerk_test@example.com" }] }),
+        clerkUser("user-real-1"),
+      ],
+      totalCount: 3,
+    });
+    clerkClientMock.mockResolvedValue({ users: { getUserList: getUserListMock } });
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/account-options?includeCurrentUser=1"));
+    const body = await response.json() as { users?: Array<{ id: string }>; nextOffset?: number | null; hasMore?: boolean };
+
+    expect(body.users?.map((user) => user.id)).toEqual(["user-real-1"]);
+    expect(body.nextOffset).toBeNull();
+    expect(body.hasMore).toBe(false);
+  });
+
   it("deduplicates Clerk accounts by id before returning a page", async () => {
     const getUserListMock = vi.fn().mockResolvedValue({
       data: [

@@ -1,4 +1,5 @@
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
+import { getVerifiedNonE2EClerkUserIds } from "@/lib/auth/e2e-account-server";
 import { escapePostgrestLikePattern, mergeRowGroupsById } from "./postgrest";
 
 export type ChatUserRow = {
@@ -76,5 +77,7 @@ export async function fetchCachedChatUsers(
     throw new Error("Connexion sécurisée indisponible");
   }
 
-  return loadChatUsers(supabase, userId, normalizedQuery);
+  const users = await loadChatUsers(supabase, userId, normalizedQuery);
+  const verifiedIds = await getVerifiedNonE2EClerkUserIds(users.map((user) => user.id));
+  return users.filter((user) => verifiedIds.has(user.id));
 }

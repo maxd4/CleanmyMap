@@ -44,6 +44,17 @@ export function createTemporaryMetadata({ userId, runId }) {
   };
 }
 
+export function buildE2EPublicMetadata(existingMetadata = {}, lifecycle, claimTemporaryOwnership = false) {
+  return {
+    ...existingMetadata,
+    cleanmymapE2E: true,
+    cleanmymapLifecycle: lifecycle,
+    ...(claimTemporaryOwnership && lifecycle === CLERK_LIFECYCLE.TEMPORARY
+      ? { cleanmymapOwner: TEMPORARY_OWNER }
+      : {}),
+  };
+}
+
 export function parseManagedUserMetadata(raw) {
   try {
     const candidate = JSON.parse(raw);

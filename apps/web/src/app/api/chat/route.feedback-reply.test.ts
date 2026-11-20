@@ -16,6 +16,7 @@ const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 const reserveDiscussionMessageSlotMock = vi.hoisted(() => vi.fn());
 const createChatNotificationsForMessageMock = vi.hoisted(() => vi.fn());
 const getCommunityBugReportByIdMock = vi.hoisted(() => vi.fn());
+const verifiedRecipientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/authz", () => ({
@@ -41,6 +42,7 @@ vi.mock("@/lib/chat/chat-notifications", () => ({
 vi.mock("@/lib/community/bug-reports-store", () => ({
   getCommunityBugReportById: getCommunityBugReportByIdMock,
 }));
+vi.mock("@/lib/auth/e2e-account-server", () => ({ isVerifiedNonE2EClerkUserId: verifiedRecipientMock }));
 
 const feedbackId = "11111111-1111-4111-8111-111111111111";
 const operationId = "22222222-2222-4222-8222-222222222222";
@@ -139,6 +141,7 @@ describe("POST /api/chat — réponse privée à un feedback", () => {
     createServerRateLimitResponseMock.mockReturnValue(null);
     reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
     createChatNotificationsForMessageMock.mockResolvedValue(undefined);
+    verifiedRecipientMock.mockResolvedValue(true);
   });
 
   it("délègue la réponse complète à la RPC atomique avec la cible canonique", async () => {
@@ -201,6 +204,16 @@ describe("POST /api/chat — réponse privée à un feedback", () => {
     const response = await POST(feedbackRequest({ recipientId: "user-3" }));
 
     expect(response.status).toBe(403);
+    expect(supabaseMock.serviceRpc).not.toHaveBeenCalled();
+    expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
+  });
+
+  it("refuse un destinataire E2E avant toute écriture de feedback", async () => {
+    verifiedRecipientMock.mockResolvedValue(false);
+    const supabaseMock = configureFeedbackRoute({});
+    const response = await POST(feedbackRequest());
+
+    expect(response.status).toBe(404);
     expect(supabaseMock.serviceRpc).not.toHaveBeenCalled();
     expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
   });

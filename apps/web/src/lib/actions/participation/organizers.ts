@@ -1,6 +1,11 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildFallbackHandle } from "@/lib/auth/identity-handle";
+import { isE2EClerkAccount, type E2EClerkAccountLike } from "@/lib/auth/e2e-account";
+import {
+  getVerifiedNonE2EClerkUsers,
+  MAX_CLERK_ACCOUNT_VERIFICATION_IDS,
+} from "@/lib/auth/e2e-account-server";
 import { persistManualParticipantDiff } from "./manual-participant-sync";
 
 type ProfileLookupRow = {
@@ -22,9 +27,11 @@ type ClerkUserLookup = {
   username: string | null;
   firstName: string | null;
   lastName: string | null;
-  primaryEmailAddress: {
-    emailAddress: string;
+  primaryEmailAddress?: {
+    emailAddress?: string | null;
   } | null;
+  publicMetadata?: Record<string, unknown> | null;
+  emailAddresses?: Array<{ emailAddress?: string | null }> | null;
 };
 
 export type ResolvedActionOrganizer = {
@@ -212,7 +219,7 @@ async function lookupClerkUserByToken(
   });
 
   const match = result.data.find((user: ClerkUserLookup) =>
-    isClerkUserMatch(user, normalized),
+    isClerkUserMatch(user, normalized) && !isE2EClerkAccount(user as E2EClerkAccountLike),
   );
 
   if (!match) {
@@ -227,23 +234,58 @@ async function lookupClerkUserByToken(
   };
 }
 
-async function resolveAndTrackActionAccount(params: {
+async function resolveActionAccountsByTokens(params: {
   supabase: SupabaseClient;
-  token: string;
-  seen: Set<string>;
-  unresolvedTokens: string[];
-}): Promise<ResolvedActionAccount | null> {
-  const fromProfiles = await lookupProfileByToken(params.supabase, params.token);
-  const resolved = fromProfiles ?? (await lookupClerkUserByToken(params.token));
-  if (!resolved) {
-    params.unresolvedTokens.push(params.token);
-    return null;
+  tokens: string[];
+}): Promise<{ accountsByToken: Map<string, ResolvedActionAccount>; unresolvedTokens: string[] }> {
+  const tokens = uniqueTokens(params.tokens);
+  const accountsByToken = new Map<string, ResolvedActionAccount>();
+  if (tokens.length > MAX_CLERK_ACCOUNT_VERIFICATION_IDS) {
+    return { accountsByToken, unresolvedTokens: tokens };
   }
-  if (params.seen.has(resolved.userId)) {
-    return null;
+
+  const profilesByToken = new Map<string, ResolvedActionAccount>();
+  for (const token of tokens) {
+    const profile = await lookupProfileByToken(params.supabase, token);
+    if (profile) profilesByToken.set(token, profile);
   }
-  params.seen.add(resolved.userId);
-  return resolved;
+
+  const directUserIds = tokens.filter((token) => !profilesByToken.has(token) && token.startsWith("user_"));
+  const verifiedProfiles = await getVerifiedNonE2EClerkUsers([
+    ...[...profilesByToken.values()].map((profile) => profile.userId),
+    ...directUserIds,
+  ]);
+  const unresolvedTokens: string[] = [];
+
+  for (const token of tokens) {
+    const profile = profilesByToken.get(token);
+    if (profile) {
+      if (verifiedProfiles.has(profile.userId)) accountsByToken.set(token, profile);
+      else unresolvedTokens.push(token);
+      continue;
+    }
+
+    if (token.startsWith("user_")) {
+      const user = verifiedProfiles.get(token);
+      if (!user) {
+        unresolvedTokens.push(token);
+        continue;
+      }
+      accountsByToken.set(token, {
+        userId: user.id,
+        displayName: buildClerkDisplayName(user),
+        handle: user.username?.trim() || buildFallbackHandle(user.id),
+        sourceToken: token,
+      });
+      continue;
+    }
+
+    const account = await lookupClerkUserByToken(token);
+    if (account) accountsByToken.set(token, account);
+    else unresolvedTokens.push(token);
+  }
+
+  return { accountsByToken, unresolvedTokens };
 }
 
 export async function resolveActionOrganizers(params: {
@@ -268,19 +310,20 @@ export async function resolveActionOrganizers(params: {
   const unresolvedTokens: string[] = [];
   const tokens = uniqueTokens(params.organizerAccounts ?? []);
   const seen = new Set<string>(includeCreatorAsPrimary ? [params.creator.userId] : []);
+  const selectableTokens = tokens.filter((token) =>
+    !(includeCreatorAsPrimary && isCreatorToken(token, params.creator)),
+  );
+  const resolution = await resolveActionAccountsByTokens({
+    supabase: params.supabase,
+    tokens: selectableTokens,
+  });
+  unresolvedTokens.push(...resolution.unresolvedTokens);
 
-  for (const token of tokens) {
-    if (includeCreatorAsPrimary && isCreatorToken(token, params.creator)) {
-      continue;
-    }
-
-    const resolved = await resolveAndTrackActionAccount({
-      supabase: params.supabase,
-      token,
-      seen,
-      unresolvedTokens,
-    });
+  for (const token of selectableTokens) {
+    const resolved = resolution.accountsByToken.get(token);
     if (!resolved) continue;
+    if (seen.has(resolved.userId)) continue;
+    seen.add(resolved.userId);
 
     organizers.push({
       ...resolved,
@@ -303,6 +346,11 @@ export async function resolveActionParticipants(params: ActionAccountResolutionP
 }> {
   const unresolvedTokens: string[] = [];
   const participants: ResolvedActionParticipant[] = [];
+  const tokens = uniqueTokens(params.participantAccounts ?? []).filter((token) =>
+    !isCreatorToken(token, params.creator),
+  );
+  const resolution = await resolveActionAccountsByTokens({ supabase: params.supabase, tokens });
+  unresolvedTokens.push(...resolution.unresolvedTokens);
   const seen = new Set<string>(
     (params.organizerIds ?? [])
       .map((value) => value.trim())
@@ -310,18 +358,11 @@ export async function resolveActionParticipants(params: ActionAccountResolutionP
   );
   seen.add(params.creator.userId);
 
-  for (const token of uniqueTokens(params.participantAccounts ?? [])) {
-    if (isCreatorToken(token, params.creator)) {
-      continue;
-    }
-
-    const resolved = await resolveAndTrackActionAccount({
-      supabase: params.supabase,
-      token,
-      seen,
-      unresolvedTokens,
-    });
+  for (const token of tokens) {
+    const resolved = resolution.accountsByToken.get(token);
     if (!resolved) continue;
+    if (seen.has(resolved.userId)) continue;
+    seen.add(resolved.userId);
 
     participants.push(resolved);
   }

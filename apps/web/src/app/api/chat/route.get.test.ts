@@ -8,6 +8,7 @@ import {
   getCurrentUserIdentityMock,
   getSupabaseClerkRlsClientMock,
   getSupabaseServerClientMock,
+  isVerifiedNonE2EClerkUserIdMock,
   resolveActionDiscussionAccessMock,
   resetChatRouteMocks,
 } from "./route.test.mocks";
@@ -275,6 +276,33 @@ describe("GET /api/chat", () => {
     expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith("sender_id", ["user-1", "user-2"]);
     expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith("recipient_id", ["user-1", "user-2"]);
   }, 15000);
+
+  it("refuses a direct E2E recipient ID before loading any conversation rows", async () => {
+    isVerifiedNonE2EClerkUserIdMock.mockResolvedValue(false);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/chat?channelType=dm&recipientId=e2e-user-id"),
+    );
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "Conversation indisponible" });
+    expect(isVerifiedNonE2EClerkUserIdMock).toHaveBeenCalledWith("e2e-user-id");
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when Clerk is unavailable during direct conversation resolution", async () => {
+    isVerifiedNonE2EClerkUserIdMock.mockRejectedValue(new Error("Clerk unavailable"));
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/chat?channelType=dm&recipientId=user-2"),
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "Connexion sécurisée indisponible" });
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
 
   it("signs durable attachment paths once for the authorized page", async () => {
     const supabaseMock = buildSupabaseMock({

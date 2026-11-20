@@ -22,6 +22,7 @@ vi.mock("@/lib/env", async (importOriginal) => {
 });
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   mockEnv.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
   mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = `pk_test_${Buffer.from("local-dev.clerk.accounts.dev$").toString("base64")}`;
   mockEnv.CLERK_SECRET_KEY = "sk_test_local_dev_secret";
@@ -112,6 +113,53 @@ describe("getClerkRuntimeConfig", () => {
   });
 
   it("allows live keys outside localhost", async () => {
+    mockEnv.NEXT_PUBLIC_APP_URL = "https://cleanmymap.fr";
+    mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_production";
+    mockEnv.CLERK_SECRET_KEY = "sk_live_production";
+
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+
+    expect(getClerkRuntimeConfig().publishableKey).toBe("pk_live_production");
+  });
+
+  it("refuses Clerk Development keys in Vercel Production", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+
+    expect(() => getClerkRuntimeConfig()).toThrow(
+      "a matching pk_live_* and sk_live_* Production pair is required",
+    );
+  });
+
+  it.each([
+    ["pk_test_development", "sk_live_production"],
+    ["pk_live_production", "sk_test_development"],
+    ["", "sk_live_production"],
+    ["pk_live_production", ""],
+  ])("rejects missing or mixed Vercel Production keys (%s / %s)", async (publishableKey, secretKey) => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = publishableKey;
+    mockEnv.CLERK_SECRET_KEY = secretKey;
+
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+
+    expect(() => getClerkRuntimeConfig()).toThrow("matching pk_live_* and sk_live_*");
+  });
+
+  it("preserves Clerk Development on isolated Vercel Development and Preview", async () => {
+    vi.stubEnv("VERCEL_ENV", "development");
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+    expect(getClerkRuntimeConfig().publishableKey).toBe(mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
+    vi.resetModules();
+    vi.stubEnv("VERCEL_ENV", "preview");
+    const previewConfig = await import("./clerk-session-config");
+    expect(previewConfig.getClerkRuntimeConfig().publishableKey).toBe(mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+  });
+
+  it("accepts a complete Production pair on Vercel Production", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
     mockEnv.NEXT_PUBLIC_APP_URL = "https://cleanmymap.fr";
     mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_production";
     mockEnv.CLERK_SECRET_KEY = "sk_live_production";

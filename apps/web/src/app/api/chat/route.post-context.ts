@@ -3,6 +3,7 @@ import { buildChannelAccessHint, extractZoneContextFromMetadata } from "@/lib/ch
 import { resolveActionTerritoryDestination } from "@/lib/chat/action-sharing";
 import { createActionShareRequest } from "@/lib/chat/action-share-requests";
 import { resolveActionBuddyContact } from "@/lib/actions/action-buddy";
+import { isVerifiedNonE2EClerkUserId } from "@/lib/auth/e2e-account-server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import { handleApiError } from "@/lib/http/api-errors";
@@ -70,6 +71,12 @@ async function resolveDmDestination({
     return NextResponse.json(
       { error: "Destinataire requis", hint: "Choisissez un membre avant d'envoyer un message privé." },
       { status: 400 },
+    );
+  }
+  if (!(await isVerifiedNonE2EClerkUserId(recipientId))) {
+    return NextResponse.json(
+      { error: "Destinataire indisponible" },
+      { status: 404 },
     );
   }
   if (recipientId === userId) {
@@ -337,6 +344,13 @@ export async function resolveChatPostDestination({
     isBuddyContact,
   });
   if (destination instanceof Response) return destination;
+  if (
+    data.channelType !== "dm" &&
+    destination.recipientId &&
+    !(await isVerifiedNonE2EClerkUserId(destination.recipientId))
+  ) {
+    return NextResponse.json({ error: "Destinataire indisponible" }, { status: 404 });
+  }
   return {
     ...destination,
     relatedEvent,

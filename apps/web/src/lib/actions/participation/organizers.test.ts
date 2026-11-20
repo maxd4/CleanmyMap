@@ -1,23 +1,40 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   loadCanonicalActionOrganizerIdsForAction,
   resolveActionOrganizers,
+  resolveActionParticipants,
   resolveDefaultActionOrganizerIds,
 } from "./organizers";
 import { syncActionOrganizers } from "./organizer-sync";
 
+const clerkGetUserListMock = vi.hoisted(() => vi.fn());
+
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: vi.fn().mockResolvedValue({
-    users: { getUserList: vi.fn().mockResolvedValue({ data: [] }) },
+    users: { getUserList: clerkGetUserListMock },
   }),
 }));
+vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/env", () => ({
   env: {
     CLERK_IMU_OWNER_USER_ID: "owner-1",
   },
 }));
+
+beforeEach(() => {
+  clerkGetUserListMock.mockReset().mockImplementation(async (params: { userId?: string[] }) => ({
+    data: (params.userId ?? []).map((id) => ({
+      id,
+      username: null,
+      firstName: null,
+      lastName: null,
+      publicMetadata: {},
+      emailAddresses: [],
+    })),
+  }));
+});
 
 function createSupabaseMock(profileRows: Array<{ id: string; display_name: string | null; handle: string | null }>) {
   const state: { eq: Record<string, string> } = { eq: {} };
@@ -121,6 +138,76 @@ describe("resolveActionOrganizers", () => {
       displayName: "Déclarant",
       isPrimary: true,
     });
+  });
+
+  it("verifies all Supabase profile IDs in one bounded Clerk batch and excludes marked accounts", async () => {
+    const supabase = createSupabaseMock([
+      { id: "user-real", display_name: "Réel", handle: "reel" },
+      { id: "user-e2e", display_name: "Test", handle: "test" },
+    ]);
+    clerkGetUserListMock.mockImplementationOnce(async ({ userId }: { userId?: string[] }) => ({
+      data: (userId ?? []).map((id) => ({
+        id,
+        username: null,
+        firstName: null,
+        lastName: null,
+        publicMetadata: { cleanmymapE2E: id === "user-e2e" },
+        emailAddresses: [],
+      })),
+    }));
+
+    const result = await resolveActionOrganizers({
+      supabase,
+      creator: { userId: "creator", displayName: "Créateur" },
+      organizerAccounts: ["user-real", "user-e2e"],
+    });
+
+    expect(result.organizers.map((organizer) => organizer.userId)).toEqual(["user-real"]);
+    expect(result.unresolvedTokens).toEqual(["user-e2e"]);
+    expect(clerkGetUserListMock).toHaveBeenCalledTimes(1);
+    expect(clerkGetUserListMock).toHaveBeenCalledWith({ userId: ["user-real", "user-e2e"], limit: 2 });
+  });
+
+  it("does not persist an E2E organizer selected by direct ID", async () => {
+    clerkGetUserListMock.mockImplementationOnce(async ({ userId }: { userId?: string[] }) => ({
+      data: (userId ?? []).map((id) => ({
+        id,
+        username: null,
+        firstName: null,
+        lastName: null,
+        publicMetadata: { cleanmymapE2E: true },
+        emailAddresses: [],
+      })),
+    }));
+    const supabase = createSupabaseMock([
+      { id: "user-e2e", display_name: "Test", handle: "test" },
+    ]);
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    (supabase as unknown as { rpc: typeof rpc }).rpc = rpc;
+
+    const result = await syncActionOrganizers({
+      supabase,
+      actionId: "action-1",
+      creator: { userId: "creator", displayName: "Créateur" },
+      organizerAccounts: ["user-e2e"],
+    });
+
+    expect(result.organizers).toEqual([]);
+    expect(result.unresolvedTokens).toEqual(["user-e2e"]);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("fails closed on participant resolution when Clerk verification fails", async () => {
+    clerkGetUserListMock.mockRejectedValueOnce(new Error("Clerk unavailable"));
+    const supabase = createSupabaseMock([
+      { id: "user-profile", display_name: "Profil", handle: "profil" },
+    ]);
+
+    await expect(resolveActionParticipants({
+      supabase,
+      creator: { userId: "creator", displayName: "Créateur" },
+      participantAccounts: ["user-profile"],
+    })).rejects.toThrow("Clerk unavailable");
   });
 });
 

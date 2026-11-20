@@ -72,6 +72,25 @@ compte Development et ne le supprime jamais automatiquement. Un fichier
 suppression. Aucun rôle admin n'est attribué implicitement.
 
 Les credentials sont refusés si leur paire n'est pas `sk_test_*` / `pk_test_*`.
+Le runtime Vercel Production refuse toute paire Clerk autre que
+`pk_live_*` / `sk_live_*`; l'absence d'une clé ou un mélange de modes bloque le
+boot. Les instances Clerk Development restent réservées aux environnements
+isolés.
+
+Les comptes du harness sont marqués dans `publicMetadata` Clerk avec
+`cleanmymapE2E: true` et leur cycle de vie. Les sélecteurs Actions et Chat
+excluent ce marqueur et l'alias historique `cmm-e2e-...+clerk_test@`. Les
+profils Supabase ne font jamais autorité sur ce statut : leurs identifiants
+sont vérifiés par lots bornés auprès de Clerk et les profils absents ou non
+vérifiables sont omis. Les mutations Actions et les résolutions de destinataire
+Chat appliquent la même vérification avant persistance. Les listes et
+résolutions directes échouent fermées si Clerk est indisponible.
+
+Pour examiner les comptes E2E Development résiduels, exécuter
+`npm run data:audit:e2e-clerk` avec les credentials Development. L'audit est
+borné, paginé et en lecture seule; il n'efface aucun compte ni donnée métier,
+même lorsqu'un marqueur est incomplet ou ancien.
+
 Les fichiers de session restent locaux et ignorés : ne jamais publier ni
 journaliser secret, mot de passe, code, cookie, token, `storageState`, trace ou
 HAR. Une session humaine préautorisée est un repli manuel sans copie de secret

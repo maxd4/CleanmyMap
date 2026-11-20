@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
   assertClerkDevelopmentEnvironment,
+  buildE2EPublicMetadata,
   buildTemporaryEmail,
   buildTemporaryRunId,
   CLERK_LIFECYCLE,
@@ -13,7 +14,6 @@ import {
   isOwnedTemporaryUser,
   parseManagedUserMetadata,
   resolveClerkLifecycle,
-  TEMPORARY_OWNER,
 } from "./clerk-lifecycle.mjs";
 
 setup.describe.configure({ mode: "serial" });
@@ -88,6 +88,9 @@ setup("global setup", async () => {
   const existing = await client.users.getUserList({ emailAddress: [email] });
   if (existing.data.length > 0) {
     userId = existing.data[0].id;
+    await client.users.updateUserMetadata(userId, {
+      publicMetadata: buildE2EPublicMetadata(existing.data[0].publicMetadata ?? {}, lifecycle),
+    });
   } else {
     const user = await client.users.createUser({
       emailAddress: [email],
@@ -95,9 +98,11 @@ setup("global setup", async () => {
       lastName: "E2E",
       skipPasswordRequirement: true,
       publicMetadata: {
-        cleanmymapE2E: true,
-        ...(lifecycle === CLERK_LIFECYCLE.TEMPORARY ? { cleanmymapOwner: TEMPORARY_OWNER } : {}),
-        cleanmymapLifecycle: lifecycle,
+        ...buildE2EPublicMetadata(
+          {},
+          lifecycle,
+          lifecycle === CLERK_LIFECYCLE.TEMPORARY,
+        ),
         profileSetupCompleted: true,
         profileSetupVersion: 2,
       },

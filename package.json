@@ -139,6 +139,7 @@
     "test:e2e:list": "playwright test --list --project=\"local public\" --project=\"local authenticated\"",
     "test:e2e:navigation:local": "playwright test --config=e2e/playwright.navigation.local.config.ts",
     "test:e2e:persistent:ci": "node e2e/run-github-actions-persistent.mjs",
+    "data:audit:e2e-clerk": "node --experimental-strip-types e2e/audit-clerk-e2e-accounts.mjs",
     "gamification:reconcile": "npm run gamification:reconcile -w apps/web",
     "mobile:typecheck": "npm run typecheck -w apps/mobile",
     "mobile:lint": "npm run lint -w apps/mobile",

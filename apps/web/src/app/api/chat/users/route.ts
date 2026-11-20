@@ -6,7 +6,7 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 
 const CHAT_USERS_CACHE_HEADERS = {
-  "Cache-Control": "private, max-age=15, stale-while-revalidate=60",
+  "Cache-Control": "private, no-store",
 };
 
 export async function GET(request: Request) {

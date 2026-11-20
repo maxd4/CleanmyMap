@@ -11,6 +11,7 @@ const reserveMock = vi.hoisted(() => vi.fn());
 const notificationsMock = vi.hoisted(() => vi.fn());
 const loadActionMock = vi.hoisted(() => vi.fn());
 const buddyContactMock = vi.hoisted(() => vi.fn());
+const verifiedRecipientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: identityMock }));
@@ -21,6 +22,7 @@ vi.mock("@/lib/community/discussion-rate-limit", () => ({ reserveDiscussionMessa
 vi.mock("@/lib/chat/chat-notifications", () => ({ createChatNotificationsForMessage: notificationsMock }));
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionMock }));
 vi.mock("@/lib/actions/action-buddy", () => ({ resolveActionBuddyContact: buddyContactMock }));
+vi.mock("@/lib/auth/e2e-account-server", () => ({ isVerifiedNonE2EClerkUserId: verifiedRecipientMock }));
 
 function futureAction(id: string) {
   return {
@@ -45,6 +47,7 @@ describe("POST /api/chat action shares", () => {
     notificationsMock.mockResolvedValue(undefined);
     loadActionMock.mockResolvedValue(null);
     buddyContactMock.mockResolvedValue({ request: { id: "buddy-request-1", status: "matched" }, recipientUserId: "user-2" });
+    verifiedRecipientMock.mockResolvedValue(true);
   });
 
   it("persists only action_id and uses normal chat notification fan-out", async () => {
@@ -66,6 +69,27 @@ describe("POST /api/chat action shares", () => {
       "shared-1",
       "user-1",
     );
+  });
+
+  it("rejects a direct E2E recipient ID before persisting a private message", async () => {
+    verifiedRecipientMock.mockResolvedValue(false);
+    const supabaseMock = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [],
+      insertedMessage: { id: "unused", created_at: "2098-12-01T10:00:00.000Z", content: "unused", channel_type: "dm", sender_id: "user-1", recipient_id: "e2e-user", arrondissement_id: null, zone_name: null },
+    });
+    rlsMock.mockResolvedValue(supabaseMock.supabase);
+    serverMock.mockReturnValue(supabaseMock.serviceSupabase);
+
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ channelType: "dm", recipientId: "e2e-user", content: "Hello" }),
+    }));
+
+    expect(response.status).toBe(404);
+    expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
+    expect(verifiedRecipientMock).toHaveBeenCalledWith("e2e-user");
   });
 
   it("refuses an unavailable action before writing", async () => {

@@ -12,6 +12,7 @@ const toDiscussionRateLimitErrorPayloadMock = vi.fn();
 export const createChatNotificationsForMessageMock = vi.fn();
 export const resolveActionDiscussionAccessMock = vi.fn();
 export const loadActionByIdMock = vi.fn();
+export const isVerifiedNonE2EClerkUserIdMock = vi.fn();
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -52,6 +53,11 @@ vi.mock("@/lib/actions/store", () => ({
   loadActionById: loadActionByIdMock,
 }));
 
+vi.mock("@/lib/auth/e2e-account-server", () => ({
+  isVerifiedNonE2EClerkUserId: isVerifiedNonE2EClerkUserIdMock,
+  getVerifiedNonE2EClerkUserIds: vi.fn(async (ids: string[]) => new Set(ids)),
+}));
+
 export function resetChatRouteMocks() {
   vi.clearAllMocks();
 
@@ -65,6 +71,7 @@ export function resetChatRouteMocks() {
     },
   });
   getCurrentUserIdentityMock.mockResolvedValue({ role: "member", activeRole: "benevole" });
+  isVerifiedNonE2EClerkUserIdMock.mockResolvedValue(true);
   verifyRateLimitMock.mockResolvedValue({
     allowed: true,
     limit: 20,

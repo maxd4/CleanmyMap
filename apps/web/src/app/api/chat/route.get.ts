@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { isVerifiedNonE2EClerkUserId } from "@/lib/auth/e2e-account-server";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import {
@@ -428,6 +429,16 @@ export async function GET(request: Request) {
   const topicValidation = validateTopicRequestForChannel(channelType, requestedTopicId);
   const topicId = topicValidation.topicId;
   const topicIds = getChatTopicIdsFromValidation(topicValidation);
+
+  if (channelType === "dm" && recipientId) {
+    try {
+      if (!(await isVerifiedNonE2EClerkUserId(recipientId))) {
+        return NextResponse.json({ error: "Conversation indisponible" }, { status: 404 });
+      }
+    } catch {
+      return NextResponse.json({ error: "Connexion sécurisée indisponible" }, { status: 503 });
+    }
+  }
 
   const actionChannelError = validateActionChannelParams(channelType, requestedActionId);
   if (actionChannelError) return actionChannelError;
