@@ -95,6 +95,13 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
   }
 });
 
+test("collection concurrency proof uses service-role claims and scoped cleanup", () => {
+  const source = readFileSync(new URL("../../e2e/action-collection-concurrency.mjs", import.meta.url), "utf8");
+  assert.match(source, /collection-concurrency-cleanup/);
+  assert.match(source, /delete from public\.action_participants where id in \('\$\{firstId\}'::uuid, '\$\{secondId\}'::uuid\)/);
+  assert.match(source, /created_by_clerk_id = 'collection-concurrency-setup'/);
+});
+
 test("territorial revision proof uses explicit session barriers and the RPC contract", () => {
   const source = readFileSync(new URL("../../e2e/territorial-legend-revision-concurrency.mjs", import.meta.url), "utf8");
   assert.match(source, /set_config\('request\.jwt\.claim\.role', 'service_role', true\)/g);

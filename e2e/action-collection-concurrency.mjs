@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { runLocalPsqlQuery } from "./supabase-local-psql.mjs";
 
-const actionId = "00000000-0000-4000-8000-000000000021";
-const firstId = "00000000-0000-4000-8000-000000000022";
-const secondId = "00000000-0000-4000-8000-000000000023";
+const actionId = "33333333-3333-4333-8333-333333333321";
+const firstId = "33333333-3333-4333-8333-333333333322";
+const secondId = "33333333-3333-4333-8333-333333333323";
 const firstApp = "cleanmymap-collection-writer-a";
 const secondApp = "cleanmymap-collection-writer-b";
 
@@ -13,8 +13,12 @@ const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const cleanup = `
 begin;
 set local role service_role;
-delete from public.action_participants where action_id = '${actionId}'::uuid;
-delete from public.actions where id = '${actionId}'::uuid;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"collection-concurrency-cleanup"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+delete from public.action_participants where id in ('${firstId}'::uuid, '${secondId}'::uuid);
+delete from public.actions
+ where id = '${actionId}'::uuid
+   and created_by_clerk_id = 'collection-concurrency-setup';
 commit;
 `;
 
