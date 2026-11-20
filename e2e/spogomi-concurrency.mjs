@@ -76,17 +76,19 @@ async function createAction(client, preparationData = {}) {
   return row.id;
 }
 
-async function createEvent(client, actionId, mode = "world_cup") {
+async function createEvent(client, actionId, mode = "world_cup", regulation = {}) {
   const row = await must(await client.from("spogomi_events").insert({
     action_id: actionId,
     created_by_clerk_id: marker,
     name: `${marker} event`,
     mode,
     starts_at: "2026-10-20T09:00:00.000Z",
-    regulation_version: "synthetic-v1",
-    regulation_status: "complete",
+    regulation_version: regulation.version ?? "synthetic-v1",
+    regulation_status: regulation.status ?? "complete",
+    regulation_source_reference: regulation.sourceReference ?? null,
+    regulation_config: regulation.config ?? {},
     creation_state: "event_pending",
-    team_size_config: mode === "casual" ? { casual: { minMembers: 2, maxMembers: 4 } } : {},
+    team_size_config: regulation.teamSizeConfig ?? (mode === "casual" ? { casual: { minMembers: 2, maxMembers: 4 } } : {}),
   }).select("id, composition_revision").single(), "create synthetic event");
   created.events.push(row.id);
   await must(
@@ -98,6 +100,44 @@ async function createEvent(client, actionId, mode = "world_cup") {
     "mark synthetic event ready",
   );
   return row;
+}
+
+async function configureCompleteDivisionRegulation(client, event, divisionId, regulation) {
+  const categories = [{
+    code: `${marker}-plastic`,
+    label: "Plastic",
+    measurementKind: "mass",
+    unit: "g",
+    coefficient: "1",
+    coefficientStatus: "confirmed",
+    environmentalCategorySlug: "plastic",
+    displayOrder: 1,
+    isComplete: true,
+  }];
+  const environmentMappings = [{
+    categoryCode: categories[0].code,
+    environmentalCategorySlug: categories[0].environmentalCategorySlug,
+    sourceField: "mass_grams",
+    sourceUnit: "g",
+    targetUnit: "grams",
+    unitFactorToTarget: "1",
+    countsTowardTotal: true,
+    isMegots: false,
+    mappingStatus: "mapped",
+  }];
+  return must(await client.rpc("spogomi_update_division_regulation", {
+    p_event_id: event.id,
+    p_division_id: divisionId,
+    p_expected_revision: await currentRevision(client, event.id),
+    p_actor_clerk_id: `${marker}-${regulation.actor}`,
+    p_regulation_version: regulation.version,
+    p_regulation_status: "complete",
+    p_regulation_source_reference: `${marker}-${regulation.actor}-regulation-source`,
+    p_regulation_config: regulation.config,
+    p_team_size_config: regulation.teamSizeConfig,
+    p_categories: categories,
+    p_environment_mappings: environmentMappings,
+  }), `configure complete ${regulation.actor} division regulation`);
 }
 
 async function participants(client, eventId, count, teamId = null) {
@@ -557,45 +597,27 @@ async function concurrentCertificateReissue() {
 
 async function concurrentConsolidationPublication() {
   const actionId = await createAction(sessionA, { preserved: `${marker}-consolidation` });
-  const event = await createEvent(sessionA, actionId, "casual");
   const regulationConfig = {
     rounding: { decimals: 0, mode: "half_up" },
     eligibility: { requiresAllCategories: true, minimumPresentParticipants: null },
     tiebreakers: ["sporting_score"],
   };
-  await must(
-    await sessionA.from("spogomi_events").update({
-      regulation_source_reference: `${marker}-regulation`,
-      regulation_config: regulationConfig,
-    }).eq("id", event.id),
-    "complete consolidation concurrency event regulation",
-  );
+  const regulation = {
+    version: "synthetic-consolidation-v2",
+    status: "complete",
+    sourceReference: `${marker}-consolidation-regulation-source`,
+    config: regulationConfig,
+    teamSizeConfig: { casual: { minMembers: 1, maxMembers: 4 } },
+  };
+  const event = await createEvent(sessionA, actionId, "casual", regulation);
   const division = await must(
     await sessionA.from("spogomi_divisions").select("id").eq("event_id", event.id).single(),
     "read consolidation concurrency division",
   );
-  await must(
-    await sessionA.from("spogomi_divisions").update({
-      regulation_source_reference: `${marker}-regulation`,
-      regulation_config: regulationConfig,
-    }).eq("id", division.id),
-    "complete consolidation concurrency division regulation",
-  );
+  await configureCompleteDivisionRegulation(sessionA, event, division.id, { ...regulation, actor: "consolidation" });
   const category = await must(
-    await sessionA.from("spogomi_category_rules").insert({
-      event_id: event.id,
-      division_id: division.id,
-      regulation_version: "synthetic-v1",
-      code: `${marker}-plastic`,
-      label: "Plastic",
-      measurement_kind: "mass",
-      unit: "g",
-      coefficient_status: "confirmed",
-      coefficient: 1,
-      display_order: 1,
-      is_complete: true,
-    }).select("id").single(),
-    "create consolidation concurrency category",
+    await sessionA.from("spogomi_category_rules").select("id").eq("event_id", event.id).eq("division_id", division.id).eq("regulation_version", regulation.version).single(),
+    "read consolidation concurrency category",
   );
   const team = await must(
     await sessionA.from("spogomi_teams").insert({
@@ -629,7 +651,7 @@ async function concurrentConsolidationPublication() {
       team_id: team.id,
       version: 1,
       status: "draft",
-      regulation_version: "synthetic-v1",
+      regulation_version: regulation.version,
     }).select("id").single(),
     "create consolidation concurrency submission",
   );
@@ -710,7 +732,19 @@ async function concurrentConsolidationPublication() {
 
 async function concurrentClosureCorrectionAndRankingPublication() {
   const actionId = await createAction(sessionA, { independent: `${marker}-preserved` });
-  const event = await createEvent(sessionA, actionId, "casual");
+  const regulationConfig = {
+    rounding: { decimals: 0, mode: "half_up" },
+    eligibility: { requiresAllCategories: true },
+    tiebreakers: ["sporting_score", "mass_grams"],
+  };
+  const regulation = {
+    version: "synthetic-closure-v2",
+    status: "complete",
+    sourceReference: `${marker}-closure-regulation-source`,
+    config: regulationConfig,
+    teamSizeConfig: { casual: { minMembers: 1, maxMembers: 4 } },
+  };
+  const event = await createEvent(sessionA, actionId, "casual", regulation);
   await must(
     await sessionA.rpc("spogomi_ensure_parent_divisions", { p_event_id: event.id, p_mode: "casual" }),
     "create closure concurrency division",
@@ -719,35 +753,10 @@ async function concurrentClosureCorrectionAndRankingPublication() {
     await sessionA.from("spogomi_divisions").select("id, division_type, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("event_id", event.id).single(),
     "read closure concurrency division",
   );
-  const regulationConfig = {
-    rounding: { decimals: 0, mode: "half_up" },
-    eligibility: { requiresAllCategories: true },
-    tiebreakers: ["rank"],
-  };
-  const updatedDivision = await must(
-    await sessionA.from("spogomi_divisions").update({
-      regulation_version: "synthetic-v1",
-      regulation_status: "complete",
-      regulation_source_reference: `${marker}-regulation`,
-      regulation_config: regulationConfig,
-      team_size_config: { casual: { minMembers: 1, maxMembers: 4 } },
-    }).eq("id", division.id).select("id, division_type, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config, updated_at").single(),
-    "complete closure concurrency division regulation",
-  );
+  const updatedDivision = await configureCompleteDivisionRegulation(sessionA, event, division.id, { ...regulation, actor: "closure" });
   const category = await must(
-    await sessionA.from("spogomi_category_rules").insert({
-      event_id: event.id,
-      division_id: division.id,
-      regulation_version: "synthetic-v1",
-      code: `${marker}-plastic`,
-      label: "Plastic",
-      measurement_kind: "mass",
-      unit: "g",
-      coefficient_status: "not_applicable",
-      display_order: 1,
-      is_complete: true,
-    }).select("id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, is_complete, updated_at").single(),
-    "create closure concurrency category",
+    await sessionA.from("spogomi_category_rules").select("id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, is_complete, updated_at").eq("event_id", event.id).eq("division_id", division.id).eq("regulation_version", regulation.version).single(),
+    "read closure concurrency category",
   );
   const team = await must(
     await sessionA.from("spogomi_teams").insert({
@@ -762,6 +771,10 @@ async function concurrentClosureCorrectionAndRankingPublication() {
   await must(
     await sessionA.from("spogomi_events").update({ state: "certified", regulation_status: "complete" }).eq("id", event.id),
     "certify closure concurrency event",
+  );
+  const certifiedEvent = await must(
+    await sessionA.from("spogomi_events").select("id, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("id", event.id).single(),
+    "read certified closure event regulation snapshot",
   );
   const decision = await must(
     await sessionA.rpc("spogomi_set_team_closure_decision", {
@@ -780,7 +793,14 @@ async function concurrentClosureCorrectionAndRankingPublication() {
   assert.equal(decision.decision_version, 1);
 
   const sourceSnapshot = {
-    event: { id: event.id },
+    event: {
+      id: certifiedEvent.id,
+      regulationVersion: certifiedEvent.regulation_version,
+      regulationStatus: certifiedEvent.regulation_status,
+      regulationSourceReference: certifiedEvent.regulation_source_reference,
+      regulationConfig: certifiedEvent.regulation_config,
+      teamSizeConfig: certifiedEvent.team_size_config,
+    },
     divisions: [{
       id: updatedDivision.id,
       type: updatedDivision.division_type,
