@@ -215,8 +215,8 @@ async function teamPublicNameUniqueness() {
   });
   assert.equal(rename.error, null, "the seed team must be renamable before composition confirmation");
 
-  const revisionBeforeCollision = await currentRevision(sessionA, event.id);
   const rows = await participants(sessionA, event.id, 6);
+  const revisionBeforeCollision = await currentRevision(sessionA, event.id);
   const collision = await sessionA.rpc("spogomi_confirm_team_composition", {
     p_event_id: event.id,
     p_expected_revision: revisionBeforeCollision,
