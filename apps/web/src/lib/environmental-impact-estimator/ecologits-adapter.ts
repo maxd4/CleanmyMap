@@ -12,6 +12,7 @@ import {
   type EnvironmentalDataQualityDiagnostic,
   type ScientificFactorRegion,
 } from "./scientific-registry";
+import { roundPhysicalOutput } from "./physical-rounding";
 
 export {
   ECOLOGITS_CONSTANTS,
@@ -126,19 +127,10 @@ function assertFinitePhysicalValue(val: number, label: string): void {
   }
 }
 
-function roundPhysicalOutput(val: number): number {
-  assertFinitePhysicalValue(val, "output");
-  if (val === 0) return 0;
-  if (Math.abs(val) >= 0.001) {
-    return Math.round(val * 1_000_000) / 1_000_000;
-  }
-  return Number(val.toPrecision(6));
-}
-
 function round12(val: number): number {
   assertFinitePhysicalValue(val, "output");
   if (val === 0) return 0;
-  if (Math.abs(val) >= 1e-9) {
+  if (Math.abs(val) >= 1e-9 && Math.abs(val) < Number.MAX_SAFE_INTEGER / 1_000_000_000_000) {
     return Math.round(val * 1_000_000_000_000) / 1_000_000_000_000;
   }
   return Number(val.toPrecision(6));

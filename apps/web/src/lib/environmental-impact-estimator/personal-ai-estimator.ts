@@ -20,109 +20,8 @@ import {
   type MultimodalCategory,
   type ScientificFactorRegion,
 } from "./scientific-registry";
-
-const MAX_REASONABLE_PUE = 5.0;
-
-function roundPhysicalOutput(value: number): number {
-  if (!Number.isFinite(value) || value === 0) return 0;
-  if (Math.abs(value) >= 0.001) return Math.round(value * 1_000_000) / 1_000_000;
-  return Number(value.toPrecision(6));
-}
-
-function assertNonNegativeFinite(value: number | null | undefined, fieldName: string): void {
-  if (value === undefined || value === null) return;
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-    throw new Error(`Entrée invalide pour '${fieldName}' : un nombre fini >= 0 est attendu.`);
-  }
-}
-
-function assertNonNegativeInteger(value: number | null | undefined, fieldName: string): void {
-  assertNonNegativeFinite(value, fieldName);
-  if (value !== undefined && value !== null && !Number.isInteger(value)) {
-    throw new Error(`Entrée invalide pour '${fieldName}' : un entier >= 0 est attendu.`);
-  }
-}
-
-function validateTextUsageCoherence(text: NonNullable<PersonalAiFootprintInput["textUsage"]>): void {
-  assertNonNegativeInteger(text.totalTokens, "textUsage.totalTokens");
-  assertNonNegativeInteger(text.inputTokens, "textUsage.inputTokens");
-  assertNonNegativeInteger(text.outputTokens, "textUsage.outputTokens");
-  assertNonNegativeInteger(text.cachedTokens, "textUsage.cachedTokens");
-  assertNonNegativeInteger(text.reasoningTokensIncluded, "textUsage.reasoningTokensIncluded");
-
-  if (typeof text.cachedTokens === "number") {
-    if (typeof text.inputTokens !== "number" && text.cachedTokens > 0) {
-      throw new Error("Déclaration incohérente : 'textUsage.cachedTokens' est un sous-ensemble de 'textUsage.inputTokens' et requiert 'textUsage.inputTokens'.");
-    }
-    if (typeof text.inputTokens === "number" && text.cachedTokens > text.inputTokens) {
-      throw new Error("Déclaration incohérente : 'textUsage.cachedTokens' ne peut pas dépasser 'textUsage.inputTokens'.");
-    }
-  }
-
-  if (typeof text.reasoningTokensIncluded === "number") {
-    if (typeof text.outputTokens !== "number" && text.reasoningTokensIncluded > 0) {
-      throw new Error("Déclaration incohérente : 'textUsage.reasoningTokensIncluded' est un sous-ensemble de 'textUsage.outputTokens' et requiert 'textUsage.outputTokens'.");
-    }
-    if (typeof text.outputTokens === "number" && text.reasoningTokensIncluded > text.outputTokens) {
-      throw new Error("Déclaration incohérente : 'textUsage.reasoningTokensIncluded' ne peut pas dépasser 'textUsage.outputTokens'.");
-    }
-  }
-
-  if (typeof text.totalTokens === "number") {
-    const hasInput = typeof text.inputTokens === "number";
-    const hasOutput = typeof text.outputTokens === "number";
-    if (hasInput && hasOutput) {
-      if (text.totalTokens !== (text.inputTokens as number) + (text.outputTokens as number)) {
-        throw new Error("Déclaration incohérente : 'textUsage.totalTokens' doit égaler 'inputTokens + outputTokens'.");
-      }
-    } else if (hasInput || hasOutput) {
-      throw new Error("Déclaration incohérente : lorsque 'textUsage.totalTokens' est combiné avec une sous-répartition, 'inputTokens' et 'outputTokens' doivent tous deux être fournis (aucune déduction implicite).");
-    }
-  }
-}
-
-function validatePersonalAiInput(input: PersonalAiFootprintInput): void {
-  if (input.pue !== undefined && input.pue !== null) {
-    if (typeof input.pue !== "number" || !Number.isFinite(input.pue) || input.pue < 1.0 || input.pue > MAX_REASONABLE_PUE) {
-      throw new Error(`Entrée invalide pour 'pue' : une valeur finie comprise entre 1.0 et ${MAX_REASONABLE_PUE} est attendue.`);
-    }
-  }
-  if (input.textUsage) validateTextUsageCoherence(input.textUsage);
-
-  assertNonNegativeInteger(input.imageUsage?.imageCount, "imageUsage.imageCount");
-  assertNonNegativeFinite(input.audioUsage?.durationMinutes, "audioUsage.durationMinutes");
-  assertNonNegativeInteger(input.audioUsage?.requestCount, "audioUsage.requestCount");
-  assertNonNegativeFinite(input.videoUsage?.durationSeconds, "videoUsage.durationSeconds");
-  assertNonNegativeInteger(input.videoUsage?.generationCount, "videoUsage.generationCount");
-  assertNonNegativeInteger(input.requestCount, "requestCount");
-  assertNonNegativeFinite(input.measuredDurationSeconds, "measuredDurationSeconds");
-  assertNonNegativeFinite(input.measuredEnergyKwh, "measuredEnergyKwh");
-  assertNonNegativeFinite(input.datacenterWue, "datacenterWue");
-  assertNonNegativeFinite(input.ttftSeconds, "ttftSeconds");
-  assertNonNegativeFinite(input.marketBasedDeclaration?.claimedKgCo2ePerKwh, "marketBasedDeclaration.claimedKgCo2ePerKwh");
-
-  if (input.tps !== undefined && input.tps !== null && (typeof input.tps !== "number" || !Number.isFinite(input.tps) || input.tps <= 0)) {
-    throw new Error("Entrée invalide pour 'tps' : un nombre fini > 0 est attendu.");
-  }
-  if (
-    input.batchSize !== undefined &&
-    input.batchSize !== null &&
-    (typeof input.batchSize !== "number" || !Number.isFinite(input.batchSize) || !Number.isInteger(input.batchSize) || input.batchSize < 1)
-  ) {
-    throw new Error("Entrée invalide pour 'batchSize' : un entier >= 1 est attendu.");
-  }
-
-  const text = input.textUsage;
-  const declaredTokens = typeof text?.totalTokens === "number" ? text.totalTokens : (text?.inputTokens ?? 0) + (text?.outputTokens ?? 0);
-  const hasPositiveActivity = declaredTokens > 0 || (input.measuredEnergyKwh ?? 0) > 0 || (input.measuredDurationSeconds ?? 0) > 0;
-
-  if (input.requestCount === 0 && hasPositiveActivity) {
-    throw new Error("Déclaration incohérente : 'requestCount' ne peut pas être 0 lorsqu'une activité non nulle est déclarée.");
-  }
-  if (input.measuredDurationSeconds === 0 && declaredTokens > 0) {
-    throw new Error("Déclaration incohérente : 'measuredDurationSeconds' ne peut pas être 0 lorsqu'une activité de tokens non nulle est déclarée.");
-  }
-}
+import { roundPhysicalOutput } from "./physical-rounding";
+import { validatePersonalAiInput } from "./personal-ai-estimator.validation";
 
 export type EnergyScenario = "low" | "central" | "high";
 export type AccountingRegion = ScientificFactorRegion;
@@ -209,6 +108,7 @@ export type PersonalAiFootprintEstimate = {
     coversAllDeclaredActivity: boolean;
   };
   antiDoubleCountingCompliance: {
+    status: "VERIFIED" | "PARTIAL" | "UNPROVEN";
     compliant: boolean;
     verifiedRules: string[];
     notApplicableRules: string[];
@@ -506,8 +406,15 @@ function computeTextImpacts(
 ): TextImpactsResult {
   const textInput = input.textUsage;
   let textTokens: number | null = null;
+  let resolvedInputTokens = textInput?.inputTokens;
+  let resolvedOutputTokens = textInput?.outputTokens;
   if (typeof textInput?.totalTokens === "number") {
     textTokens = textInput.totalTokens;
+    if (typeof resolvedInputTokens === "number" && typeof resolvedOutputTokens !== "number") {
+      resolvedOutputTokens = textInput.totalTokens - resolvedInputTokens;
+    } else if (typeof resolvedOutputTokens === "number" && typeof resolvedInputTokens !== "number") {
+      resolvedInputTokens = textInput.totalTokens - resolvedOutputTokens;
+    }
   } else if (typeof textInput?.inputTokens === "number" || typeof textInput?.outputTokens === "number") {
     textTokens = (textInput.inputTokens ?? 0) + (textInput.outputTokens ?? 0);
   }
@@ -516,7 +423,9 @@ function computeTextImpacts(
     notes.push(`${textInput.reasoningTokensIncluded} tokens de raisonnement inclus dans le volume de génération (aucun surcoût multiplicateur arbitraire).`);
   }
   if (typeof textInput?.cachedTokens === "number" && textInput.cachedTokens > 0) {
-    notes.push(`${textInput.cachedTokens} tokens d'entrée servis depuis le cache (sous-ensemble de inputTokens, non additionné).`);
+    notes.push(typeof resolvedInputTokens === "number"
+      ? `${textInput.cachedTokens} tokens d'entrée servis depuis le cache (sous-ensemble de inputTokens, non additionné).`
+      : `${textInput.cachedTokens} tokens servis depuis le cache, mais leur ventilation entrée/sortie est inconnue ; non ajoutés au total ni utilisés pour EcoLogits.`);
   }
 
   if (typeof input.measuredEnergyKwh === "number" && input.measuredEnergyKwh >= 0) {
@@ -557,8 +466,9 @@ function computeTextImpacts(
   }
 
   if (modelRecord && hasDocumentedModel) {
-    if (typeof textInput?.outputTokens === "number" && textInput.outputTokens > 0) {
-      return computeEcologitsModelTextImpacts(input, modelRecord, pue, region, scenario, executionEnv, textTokens, textInput.outputTokens, notes);
+    if (typeof resolvedOutputTokens === "number" && resolvedOutputTokens > 0) {
+      const resolvedInput = { ...input, textUsage: { ...textInput, inputTokens: resolvedInputTokens, outputTokens: resolvedOutputTokens } };
+      return computeEcologitsModelTextImpacts(resolvedInput, modelRecord, pue, region, scenario, executionEnv, textTokens, resolvedOutputTokens, notes);
     }
     notes.push(`Modèle ${modelRecord.name} sélectionné sans nombre de tokens générés explicite (outputTokens absent ou nul) : les tokens d'entrée ou totaux (${textTokens} tokens) ne sont jamais assimilés à des tokens de sortie dans EcoLogits v3.0.0. Bascule sur le scénario énergétique générique hypothétique (${scenario}, PROXY_SCENARIO).`);
   } else if (modelRecord && !hasDocumentedModel) {
@@ -682,9 +592,13 @@ function evaluateAntiDoubleCountingCompliance(params: {
   const verifiedRules = ruleEvaluations.filter((item) => item.status === "ENFORCED").map((item) => item.id);
   const notApplicableRules = ruleEvaluations.filter((item) => item.status === "NOT_APPLICABLE").map((item) => item.id);
   const unverifiableLimits = ruleEvaluations.filter((item) => item.status === "UNVERIFIABLE_EXTERNAL").map((item) => item.id);
+  const status = unverifiableLimits.length > 0
+    ? verifiedRules.length > 0 ? "PARTIAL" as const : "UNPROVEN" as const
+    : "VERIFIED" as const;
 
   return {
-    compliant: verifiedRules.length > 0 || notApplicableRules.length === ruleEvaluations.length,
+    status,
+    compliant: status === "VERIFIED",
     verifiedRules,
     notApplicableRules,
     unverifiableLimits,

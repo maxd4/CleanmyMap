@@ -29,7 +29,8 @@ describe("personal-ai-estimator", () => {
     expect(result.physicalTotals.partialLcaKgCo2e).toBe(1.56975);
 
     expect(result.dataQuality).toBe("PROXY_SCENARIO");
-    expect(result.antiDoubleCountingCompliance.compliant).toBe(true);
+    expect(result.antiDoubleCountingCompliance.status).toBe("PARTIAL");
+    expect(result.antiDoubleCountingCompliance.compliant).toBe(false);
   });
 
   it("gère les scénarios de sensibilité bas et haut", () => {
@@ -400,16 +401,11 @@ describe("personal-ai-estimator", () => {
         textUsage: { outputTokens: 100, reasoningTokensIncluded: 120 },
       }),
     ).toThrow(/reasoningTokensIncluded/);
-    expect(() =>
-      estimatePersonalAiFootprint({
-        textUsage: { totalTokens: 100, inputTokens: 40 },
-      }),
-    ).toThrow(/totalTokens/);
-    expect(() =>
-      estimatePersonalAiFootprint({
-        textUsage: { totalTokens: 100, cachedTokens: 20 },
-      }),
-    ).toThrow(/cachedTokens/);
+    const knownModel = estimatePersonalAiFootprint({ modelId: "meta-llama/llama-3.1-8b-instruct", textUsage: { totalTokens: 100, inputTokens: 80 }, region: "US" });
+    expect(knownModel.physicalTotals.itEnergyKwh).toBeGreaterThan(0);
+    expect(knownModel.methodologyNotes.join(" ")).toContain("seuls les 20 tokens générés");
+    expect(estimatePersonalAiFootprint({ textUsage: { totalTokens: 100, inputTokens: 40 } }).physicalTotals.itEnergyKwh).toBeGreaterThan(0);
+    expect(estimatePersonalAiFootprint({ textUsage: { totalTokens: 100, cachedTokens: 90 }, modelId: "meta-llama/llama-3.1-8b-instruct", region: "US" }).methodologyNotes.join(" ")).toContain("ventilation entrée/sortie est inconnue");
     expect(() =>
       estimatePersonalAiFootprint({
         textUsage: { outputTokens: 100 },
@@ -455,6 +451,8 @@ describe("personal-ai-estimator", () => {
     expect(frResult.antiDoubleCountingCompliance.verifiedRules).not.toContain(
       "NO_CROSS_SCOPE_DOUBLE_COUNT",
     );
+    expect(frResult.antiDoubleCountingCompliance.status).toBe("PARTIAL");
+    expect(frResult.antiDoubleCountingCompliance.compliant).toBe(false);
 
     const usWithWue = estimatePersonalAiFootprint({
       modelId: "meta-llama/llama-3.1-8b-instruct",
@@ -465,6 +463,12 @@ describe("personal-ai-estimator", () => {
     expect(usWithWue.antiDoubleCountingCompliance.unverifiableLimits).toContain(
       "NO_WATER_DOUBLE_COUNT",
     );
+    expect(usWithWue.antiDoubleCountingCompliance.status).toBe("PARTIAL");
+  });
+
+  it("refuse les résultats physiques non finis au lieu de les convertir en zéro", () => {
+    expect(() => estimatePersonalAiFootprint({ measuredEnergyKwh: 1e308, pue: 5 })).toThrow(/Résultat physique invalide/);
+    expect(() => estimatePersonalAiFootprint({ measuredEnergyKwh: 1e303, region: "US" })).not.toThrow();
   });
 });
 
