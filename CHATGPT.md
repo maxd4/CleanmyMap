@@ -325,6 +325,54 @@ documents administratifs et financiers du projet, consulter les sources
 Google Drive actuelles lorsque disponibles via leur index dans
 `documentation/product/README.md` ; sinon signaler l'absence d'accès.
 
+### Pré-intégration proactive et livrables candidats
+
+Avant de déléguer un chantier technique substantiel à Codex, évaluer explicitement
+ce que ChatGPT peut produire **immédiatement et de façon fiable** avec les
+sources, outils et contrats disponibles. Lorsque cela réduit réellement le
+travail d'intégration, préparer spontanément les livrables exploitables :
+contrats, fichiers complets, fonctions métier pures, fixtures, tests,
+maquettes statiques pertinentes ou SQL candidat non appliqué. Ne pas attendre
+une seconde demande « génère les fichiers » si l'objectif est déjà suffisamment
+défini. Faire les recherches et arbitrages possibles ici, plutôt que de les
+transférer à Codex.
+
+La préparation commence par les owners, leurs consommateurs et les conventions
+du `main` actuel. Préférer l'extension de code existant aux modules parallèles,
+et un fichier complet directement intégrable à une abstraction de démonstration.
+Ne générer que les artefacts dont l'utilité est établie. Vérifier leur contenu,
+exécuter les contrôles accessibles et distinguer preuve statique, test isolé,
+test du workspace, intégration et production. Tout candidat non exécuté dans
+le runtime reste `CANDIDATE`, jamais `CURRENT` ou « testé par Codex ».
+
+Pour les chantiers **Mon empreinte IA**, utiliser
+`documentation/specs/empreinte-ia/README_CODEX.md` comme index de passation.
+Avant chaque lot, lire les spécifications, l'errata applicable, la passation et
+les candidats de code et de tests associés. Rechercher leurs équivalents dans
+le `main` actuel, puis réutiliser ou adapter les candidats sans créer de
+doublons. Intégrer et valider selon `AGENTS.md`, préserver les décisions
+scientifiques les plus récentes et signaler toute incompatibilité démontrée.
+Les candidats restent des propositions, pas des fonctionnalités déjà
+intégrées. Ne jamais copier directement le SQL candidat dans les migrations ni
+publier les fichiers temporaires de passation.
+
+Pour plusieurs fichiers liés ou plusieurs lots séquencés, lorsque le gain est
+réel, fournir un **dossier unique** de pré-intégration dans une zone de spec
+temporaire appropriée, avec chemins cibles préservés, manifeste bref, ordre des
+sources/errata, fichiers candidats, tests, preuves et limites. Le manifeste doit
+permettre de repérer les versions obsolètes, les dépendances et les collisions.
+Éviter les archives doublonnées et les copies dans les chemins runtime avant
+intégration. Un prompt Codex doit pointer explicitement vers les candidats à
+examiner, réutiliser ou adapter ; leur découverte par recherche agentique ne
+suffit pas comme garantie d'intégration. Codex reste responsable du checkout,
+des consommateurs, des tests réels, des migrations autorisées et de la publication.
+
+Cette proactivité reste **proportionnée** : pas de pack artificiel pour une
+question, une étude exploratoire ou un défaut local simple ; pas de code
+spéculatif si les données nécessaires manquent. Une simple demande « Vérifie
+les commits » conserve exclusivement le contrat de sortie de
+`COMMIT_REVIEW_PROTOCOL.md`, sans artefacts spontanés ni élargissement du lot.
+
 Quand l'utilisateur demande de créer ou remplacer un fichier précis et que le
 contexte suffit, produire son **contenu final complet**, conserver exactement
 son nom cible et indiquer son emplacement dans le dépôt. Pour plusieurs
