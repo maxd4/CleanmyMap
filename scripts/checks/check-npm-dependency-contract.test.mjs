@@ -22,12 +22,26 @@ test("keeps the Linux Rolldown binding optional and platform-restricted", () => 
 });
 
 test("keeps the three dependency surfaces on their selected compatible versions", () => {
-  assert.equal(webPackageJson.dependencies["@clerk/nextjs"], "7.9.19");
-  assert.equal(webPackageJson.dependencies["@sentry/nextjs"], "11.8.0");
-  assert.equal(webPackageJson.dependencies.next, "16.4.2");
-  assert.equal(webPackageJson.dependencies.resend, "^6.33.0");
-  assert.equal(packageJson.devDependencies["@clerk/testing"], "2.2.50");
-  assert.equal(packageJson.devDependencies.playwright, "^1.64.1");
-  assert.equal(packageJson.devDependencies.knip, "6.42.1");
-  assert.equal(mobilePackageJson.devDependencies["typescript-eslint"], "8.72.0");
+  assert.equal(webPackageJson.dependencies["@clerk/nextjs"], "7.10.0");
+  assert.equal(webPackageJson.dependencies["@sentry/nextjs"], "11.13.0");
+  assert.equal(webPackageJson.dependencies.next, "16.4.6");
+  assert.equal(webPackageJson.dependencies.resend, "^6.38.1");
+  assert.equal(packageJson.devDependencies["@clerk/testing"], "2.3.0");
+  assert.equal(packageJson.devDependencies.playwright, "^1.65.1");
+  assert.equal(packageJson.devDependencies.knip, "6.45.1");
+  assert.equal(mobilePackageJson.devDependencies["typescript-eslint"], "8.73.0");
+
+  assert.equal(rootLockPackage.devDependencies["@clerk/testing"], packageJson.devDependencies["@clerk/testing"]);
+  assert.equal(rootLockPackage.devDependencies.playwright, packageJson.devDependencies.playwright);
+  assert.equal(rootLockPackage.devDependencies.knip, packageJson.devDependencies.knip);
+  assert.equal(rootLockPackage.devDependencies["@playwright/test"], packageJson.devDependencies["@playwright/test"]);
+  assert.equal(lockfile.packages["node_modules/@clerk/testing"].version, "2.3.0");
+  assert.equal(lockfile.packages["node_modules/@clerk/nextjs"].version, "7.10.0");
+  assert.equal(lockfile.packages["node_modules/@playwright/test"].version, "1.65.1");
+  assert.equal(lockfile.packages["node_modules/playwright"].version, "1.65.1");
+  assert.equal(lockfile.packages["node_modules/knip"].version, "6.45.1");
+  assert.equal(lockfile.packages["node_modules/typescript-eslint"].version, "8.73.0");
+  assert.equal(lockfile.packages["node_modules/@sentry/nextjs"].version, "11.13.0");
+  assert.equal(lockfile.packages["node_modules/next"].version, "16.4.6");
+  assert.equal(lockfile.packages["node_modules/resend"].version, "6.39.0");
 });

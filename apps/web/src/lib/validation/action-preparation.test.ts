@@ -2,17 +2,7 @@ import { buildCreateActionPayload, createInitialFormState } from "@/components/a
 import { toContractCreatePayload } from "@/lib/actions/contracts/contract-builders";
 import { describe, expect, it } from "vitest";
 import { createActionSchema, updateActionSchema } from "./action";
-
-const basePayload = {
-  actorName: "Bénévole test",
-  associationName: "Action spontanée",
-  actionDate: "2026-04-22",
-  locationLabel: "Canal Saint-Martin",
-  wasteKg: 1.5,
-  cigaretteButts: 0,
-  volunteersCount: 2,
-  durationMinutes: 45,
-};
+import { basePayload } from "./tests/action-base-payload";
 
 describe("HTTP preparation data contract", () => {
   it("accepts the new form defaults on both creation contracts", () => {

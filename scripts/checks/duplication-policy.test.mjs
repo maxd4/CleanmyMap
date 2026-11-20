@@ -333,11 +333,11 @@ test("the executed jscpd version is accepted only when it matches the canonical 
     verifyExecutedJscpdVersion({
       runnerPath: "C:/repo/node_modules/jscpd/run-jscpd.js",
       fileExists: () => true,
-      execute: () => "jscpd 5.4.2\n",
+      execute: () => "jscpd 5.4.3\n",
     }),
-    { expected: "5.4.2", actual: "5.4.2", runnerPath: "C:/repo/node_modules/jscpd/run-jscpd.js" },
+    { expected: "5.4.3", actual: "5.4.3", runnerPath: "C:/repo/node_modules/jscpd/run-jscpd.js" },
   );
-  assert.throws(() => verifyExecutedJscpdVersion({ fileExists: () => true, execute: () => "jscpd 5.4.1\n" }), /DUPLICATION_TOOL_VERSION_MISMATCH.*expected jscpd 5\.4\.2.*executed 5\.4\.1/);
+  assert.throws(() => verifyExecutedJscpdVersion({ fileExists: () => true, execute: () => "jscpd 5.4.2\n" }), /DUPLICATION_TOOL_VERSION_MISMATCH.*expected jscpd 5\.4\.3.*executed 5\.4\.2/);
 });
 
 test("version diagnostics distinguish an absent executable and an invalid version report", () => {

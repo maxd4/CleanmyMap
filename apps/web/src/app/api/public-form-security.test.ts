@@ -4,6 +4,7 @@ import { clearRateLimitStore } from "@/lib/rate-limit/store";
 const authMock = vi.hoisted(() =>
   vi.fn(async (): Promise<{ userId: string | null }> => ({ userId: "user-1" })),
 );
+const requireBotIdHumanMock = vi.hoisted(() => vi.fn(async (): Promise<Response | null> => null));
 type RateLimitResult = {
   allowed: boolean;
   limit: number;
@@ -51,8 +52,27 @@ const appendPromotionRequestMock = vi.hoisted(() => vi.fn(async () => ({
   status: "pending_owner_review",
 })));
 
+async function expectRateLimitedResponse(response: Response): Promise<void> {
+  const body = (await response.json()) as {
+    error?: string;
+    kind?: string;
+    status?: string;
+  };
+
+  expect(response.status).toBe(429);
+  expect(body).toMatchObject({
+    error: "Impossible d'envoyer la demande pour le moment.",
+    kind: "validation",
+    status: "rate_limited",
+  });
+}
+
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
+}));
+
+vi.mock("@/lib/botid/server", () => ({
+  requireBotIdHuman: requireBotIdHumanMock,
 }));
 
 vi.mock("@/lib/authz", () => ({
@@ -94,9 +114,13 @@ vi.mock("@/lib/admin/promotion-requests-store", () => ({
 describe("public form security guardrails", () => {
   beforeEach(() => {
     clearRateLimitStore();
+    requireBotIdHumanMock.mockResolvedValue(null);
   });
 
-  it("returns a standardized 429 payload for newsletter honeypots", async () => {
+  it("rejects newsletter requests through server BotID before rate limiting", async () => {
+    requireBotIdHumanMock.mockResolvedValueOnce(new Response(null, { status: 403 }));
+    verifyRateLimitMock.mockClear();
+    getSupabaseServerClientMock.mockClear();
     const { POST } = await import("./newsletter/subscribe/route");
     const response = await POST(
       new Request("http://localhost/api/newsletter/subscribe", {
@@ -112,18 +136,10 @@ describe("public form security guardrails", () => {
       }),
     );
 
-    const body = (await response.json()) as {
-      error?: string;
-      kind?: string;
-      status?: string;
-    };
-
-    expect(response.status).toBe(429);
-    expect(body).toMatchObject({
-      error: "Impossible de vous inscrire pour le moment.",
-      kind: "validation",
-      status: "rate_limited",
-    });
+    expect(response.status).toBe(403);
+    expect(requireBotIdHumanMock).toHaveBeenCalledTimes(1);
+    expect(verifyRateLimitMock).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 
   it("returns a standardized 429 payload for partner onboarding honeypots", async () => {
@@ -159,18 +175,7 @@ describe("public form security guardrails", () => {
       }),
     );
 
-    const body = (await response.json()) as {
-      error?: string;
-      kind?: string;
-      status?: string;
-    };
-
-    expect(response.status).toBe(429);
-    expect(body).toMatchObject({
-      error: "Impossible d'envoyer la demande pour le moment.",
-      kind: "validation",
-      status: "rate_limited",
-    });
+    await expectRateLimitedResponse(response);
   });
 
   it("returns a standardized 429 payload for promotion requests", async () => {
@@ -188,18 +193,7 @@ describe("public form security guardrails", () => {
       }),
     );
 
-    const body = (await response.json()) as {
-      error?: string;
-      kind?: string;
-      status?: string;
-    };
-
-    expect(response.status).toBe(429);
-    expect(body).toMatchObject({
-      error: "Impossible d'envoyer la demande pour le moment.",
-      kind: "validation",
-      status: "rate_limited",
-    });
+    await expectRateLimitedResponse(response);
   });
 
   it("keeps partner onboarding and promotion requests server-authenticated", async () => {
