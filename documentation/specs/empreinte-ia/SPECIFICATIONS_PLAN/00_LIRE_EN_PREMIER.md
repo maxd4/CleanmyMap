@@ -1,6 +1,6 @@
 # Mon empreinte IA : guide d'exécution et décisions unifiées
 
-**Statut : PLAN, 20 novembre 2026 (révision qualité de code, raisonnement et abonnement).** Aucun lot de ce dossier n'est réputé implémenté. Avant chaque intégration, Codex lit le checkout réel, `main`, `CHATGPT.md`, les `AGENTS.md` applicables et les propriétaires de contrats. Les Markdown présents sont des candidats d'exécution, non une preuve de production.
+**Statut : PLAN, 20 novembre 2026 (révision qualité de code, raisonnement et abonnement).** Aucun lot de ce dossier n'est réputé implémenté. Avant chaque intégration, Codex lit le checkout réel, `main`, `CHATGPT.md`, les instructions du dépôt et de ses sous-arbres, ainsi que les propriétaires de contrats. Les Markdown présents sont des candidats d'exécution, non une preuve de production.
 
 ## Remplacements à effectuer dans le dossier d'exécution
 
@@ -19,7 +19,7 @@ Remplacer **intégralement** par les versions ci-jointes (ne pas combiner des va
 
 `Lot 0 + 08 -> lot 1 -> lot 2 -> lot 3 -> lot 4 + 09 -> lot 11 -> lot 12 -> lot 10 -> lot 14 -> lot 15 -> lot 16 -> lot 18 -> lot 21`.
 
-Les fichiers `01` et `22/23` alimentent le lot 21 en contrats, méthodologie et fixtures, et ne sont **pas** exécutés séparément. Codex met à jour les documents canoniques réellement concernés selon les `AGENTS.md` sans redondance de sources. Les éléments antérieurs demeurent `PLAN` tant que l'implémentation et les preuves d'exécution n'existent pas.
+Les fichiers `01` et `22/23` alimentent le lot 21 en contrats, méthodologie et fixtures, et ne sont **pas** exécutés séparément. Codex met à jour les documents canoniques réellement concernés selon les instructions applicables, sans redondance de sources. Les éléments antérieurs demeurent `PLAN` tant que l'implémentation et les preuves d'exécution n'existent pas.
 
 ## Décisions consolidées du projet, à préserver
 

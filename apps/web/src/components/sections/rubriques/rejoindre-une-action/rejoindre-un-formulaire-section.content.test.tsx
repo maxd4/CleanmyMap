@@ -208,8 +208,8 @@ describe("Rejoindre une action content contract", () => {
     expect(joinDocumentation).not.toContain("ne permet aucune participation rétroactive");
 
     expect(groupActionDocumentation).toContain("Rejoindre → Créer → Signaler");
-    expect(groupActionDocumentation).toContain("pending` ou `approved");
+    expect(groupActionDocumentation).toContain("Une pré-action `pending` ou `approved` peut apparaitre dans `Rejoindre une action`");
     expect(groupActionDocumentation).not.toContain("valide par un admin");
-    expect(groupActionDocumentation).not.toContain("status = approved");
+    expect(groupActionDocumentation).toMatch(/Une attestation n'est possible que pour une action `approved`, publiée, visible\s+et `post_action_complete`/);
   });
 });

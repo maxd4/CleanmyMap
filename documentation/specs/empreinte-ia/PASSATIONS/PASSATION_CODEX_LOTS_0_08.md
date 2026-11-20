@@ -4,7 +4,7 @@
 
 ## Autorité et ordre
 
-1. Réexaminer `main` au moment de l'intégration. Les sources gouvernantes sont `CHATGPT.md`, `AGENTS.md`, `apps/web/AGENTS.md`, `apps/web/supabase/AGENTS.md`, la documentation scientifique et les propriétaires métier actuels.
+1. Réexaminer `main` au moment de l'intégration. Les sources gouvernantes sont `CHATGPT.md`, les instructions racine et scoped applicables, la documentation scientifique et les propriétaires métier actuels.
 2. Les pièces `SPECIFICATIONS_PLAN/00` et `01` sont les dernières versions récupérées du chantier IA, et `02` à `08` sont les spécifications conservées. `ERRATA_CONTRATS_0_08.md` tranche les anciennes formulations obsolètes. **Ne pas prendre l'ancien nombre de « cleanwalks équivalentes » pour un contrat actif.**
 3. Ordre d'intégration conservé : **lot 0 + complément 08 → lot 1 → lot 2 → lot 3 → lot 4**. Les lots 09 et suivants restent indépendants et futurs.
 4. Ces candidats cherchent la convergence vers l'owner `apps/web/src/lib/environmental-impact-estimator/`, pas la création d'un second estimateur public. Chaque helper doit être fusionné, consommé ou internalisé lorsqu'un owner équivalent existe déjà.
@@ -60,4 +60,4 @@ Ce SQL **ne dispose pas** de preuve PostgreSQL, d'une route API, ni d'un RPC d'i
 4. **Lot 3 :** raccorder agrégation mensuelle et budgets aux lignes privées, réconciliation, préférences, versions et révisions immuables ; valider les bornes de mois et la couverture. STOP : données historiques correctes, privées et avec inconnues visibles.
 5. **Lot 4 :** composer la page unique avec les composants métier, navigation de la rubrique Apprendre et les modes d'affichage ; relier Actions sans inventer d'endpoint `commune`. STOP : parcours complet réellement utilisable sur mobile et desktop, sans modification des KPI, sans gamification anticipée.
 
-Tout travail dans le checkout doit suivre `AGENTS.md` : contrôle `main`, préservation des changements étrangers, mutations autorisées et validations proportionnées. Ne jamais annoncer ces STOP sur la seule présence de fichiers, de tests unitaires isolés ou de SQL statique.
+Tout travail dans le checkout doit suivre les instructions applicables du dépôt : contrôle `main`, préservation des changements étrangers, mutations autorisées et validations proportionnées. Ne jamais annoncer ces STOP sur la seule présence de fichiers, de tests unitaires isolés ou de SQL statique.
