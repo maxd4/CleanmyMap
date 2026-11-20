@@ -10,6 +10,16 @@ const secondApp = "cleanmymap-collection-writer-b";
 const run = (sql, timeoutMs = 15_000) => runLocalPsqlQuery(sql, { timeoutMs, rawError: true });
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+async function waitForActivity(sql, marker, timeoutMs = 8_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const observation = await run(sql);
+    if (observation.stdout.includes(marker)) return;
+    await pause(50);
+  }
+  throw new Error(`Timed out waiting for PostgreSQL activity marker ${marker}`);
+}
+
 const cleanup = `
 begin;
 set local role service_role;
@@ -40,16 +50,23 @@ try {
   const writerA = run(`
     begin;
     set local role service_role;
+    select set_config('request.jwt.claims', '{"role":"service_role","sub":"collection-concurrency-a"}', true);
     select set_config('request.jwt.claim.role', 'service_role', true);
     select set_config('application_name', '${firstApp}', true);
     update public.action_participants set collection_status = 'collected' where id = '${firstId}'::uuid;
     select pg_sleep(1.5);
     commit;
   `);
-  await pause(150);
+  await waitForActivity(`
+    select case when exists (
+      select 1 from pg_stat_activity
+       where application_name = '${firstApp}' and state = 'active' and wait_event = 'PgSleep'
+    ) then 'ACTION_LOCK_HELD' else 'ACTION_LOCK_NOT_HELD' end;
+  `, "ACTION_LOCK_HELD");
   const writerB = run(`
     begin;
     set local role service_role;
+    select set_config('request.jwt.claims', '{"role":"service_role","sub":"collection-concurrency-b"}', true);
     select set_config('request.jwt.claim.role', 'service_role', true);
     select set_config('application_name', '${secondApp}', true);
     update public.action_participants set collection_status = 'collected' where id = '${secondId}'::uuid;
@@ -57,19 +74,16 @@ try {
   `);
 
   let observedWait = false;
-  const deadline = Date.now() + 8_000;
-  while (Date.now() < deadline) {
-    const observation = await run(`
+  try {
+    await waitForActivity(`
       select case when exists (
         select 1 from pg_stat_activity
          where application_name = '${secondApp}' and wait_event_type = 'Lock'
       ) then 'LOCK_WAIT_OBSERVED' else 'NO_LOCK_WAIT' end;
-    `);
-    if (observation.stdout.includes("LOCK_WAIT_OBSERVED")) {
-      observedWait = true;
-      break;
-    }
-    await pause(50);
+    `, "LOCK_WAIT_OBSERVED");
+    observedWait = true;
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("Timed out waiting")) throw error;
   }
   assert.equal(observedWait, true, "second collector write must wait on the shared action row");
   await writerA;
