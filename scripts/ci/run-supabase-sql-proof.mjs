@@ -93,7 +93,7 @@ function parseSummaryCounter(output, label) {
   return matches[0] ?? null;
 }
 
-const proofDiagnosticLine = /\b(?:not ok|error|fatal|panic|bail out|failed|result|files|tests|detail|context|hint|permission denied|forbidden|does not exist|violates|duplicate key|assertion|notests|container|network|image|manifest|pull|rate|toomanyrequests|connection|connect|dbi|psql|host|port|refused|timeout|no such|cannot|could not|invalid|usage)\b/i;
+const proofDiagnosticLine = /\b(?:territorial_phase|not ok|error|fatal|panic|bail out|failed|result|files|tests|detail|context|hint|permission denied|forbidden|does not exist|violates|duplicate key|assertion|notests|container|network|image|manifest|pull|rate|toomanyrequests|connection|connect|dbi|psql|host|port|refused|timeout|no such|cannot|could not|invalid|usage)\b/i;
 const publicEvidenceForbiddenTerm = /\b(?:authorization|cookie|set-cookie|bearer|storageState|access_token|refresh_token|session(?:_?id|_?token)?|clerk(?:_?session)?|supabase(?:_?service)?_?role)\b/gi;
 
 export function sanitizePublicEvidenceText(value) {

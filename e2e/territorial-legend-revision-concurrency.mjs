@@ -16,6 +16,7 @@ export function parseTerritorialRevisionNotice(output) {
 }
 
 async function runQuery(sql, phase, { timeoutMs = 30_000 } = {}) {
+  console.log(`TERRITORIAL_PHASE=${phase}`);
   try {
     return await runLocalPsqlQuery(sql, { timeoutMs, errorLabel: `Territorial revision ${phase} failed` });
   } catch (error) {

@@ -361,6 +361,7 @@ test("proof failure excerpts are bounded and redact sensitive values", () => {
   assert.doesNotMatch(excerpt, /super-secret-value/);
   assert.doesNotMatch(excerpt, /0123456789abcdef0123456789abcdef/);
   assert.ok(excerpt.length <= 1200);
+  assert.match(sanitizeProofFailureExcerpt("TERRITORIAL_PHASE=fresh-publication"), /TERRITORIAL_PHASE=fresh-publication/);
 });
 
 test("local Supabase proofs reuse the workflow's isolated Docker network when provided", () => {
