@@ -159,11 +159,13 @@ describe("POST /api/actions/import", () => {
 
   it("requires a proof and an exact confirmation before the write path", async () => {
     const { POST } = await import("./route");
+    verifyDryRunProofMock.mockReturnValueOnce({ ok: false, code: "invalid" } as never);
     const missingProof = await POST(new Request("http://localhost/api/actions/import", {
       method: "POST",
       body: JSON.stringify({ ...payload(), confirmPhrase: "CONFIRMER IMPORT" }),
     }));
     expect(missingProof.status).toBe(409);
+    expect(verifyDryRunProofMock).toHaveBeenCalledWith(expect.objectContaining({ token: "" }));
     expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({ details: { code: "dry_run_required" } }));
 
     const missingPhrase = await POST(new Request("http://localhost/api/actions/import", {

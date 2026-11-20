@@ -135,14 +135,18 @@ describe("POST /api/newsletter/subscribe", () => {
   });
 
   it.each([
-    ["a honeypot signal", { honeypot: "filled" }],
-    ["a too-recent timestamp", { submittedAt: Date.now() }],
-  ])("does not write for %s", async (_label, overrides) => {
+    ["a client-supplied honeypot value", { honeypot: "filled" }],
+    ["a client-supplied timestamp", { submittedAt: Date.now() }],
+  ])("does not let %s bypass server-side abuse controls", async (_label, overrides) => {
+    const { supabase, upsert } = makeSupabase({});
+    getSupabaseServerClientMock.mockReturnValue(supabase);
     const { POST } = await import("./route");
     const response = await POST(request(overrides));
 
-    expect(response.status).toBe(429);
-    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(verifyRateLimitMock).toHaveBeenCalledTimes(1);
+    expect(requireBotIdHumanMock).toHaveBeenCalledTimes(1);
+    expect(upsert).toHaveBeenCalledTimes(1);
   });
 
   it("does not write when the server rate limit rejects the request", async () => {

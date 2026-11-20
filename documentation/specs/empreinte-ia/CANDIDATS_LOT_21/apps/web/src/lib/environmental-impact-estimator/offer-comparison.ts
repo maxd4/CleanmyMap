@@ -375,7 +375,7 @@ export function compareOffers(
     let carbon = normalizedCarbon(offer);
     const warnings: string[] = [];
     const first = index === 0;
-    let eligibility: OfferEligibilityStatus = "ELIGIBLE_PRICE";
+    let eligibility: OfferEligibilityStatus;
 
     if (!first) {
       if (offer.kind !== "REAL_VERIFIED" || !proven(offer.evidence)) {

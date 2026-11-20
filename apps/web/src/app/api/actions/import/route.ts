@@ -275,22 +275,6 @@ export async function POST(request: Request) {
       });
     }
 
-    if (!proofToken) {
-      await auditImportFailure({
-        operationId,
-        userId: access.userId,
-        dryRun,
-        code: "dry_run_required",
-      });
-      return adminErrorResponse({
-        status: 409,
-        code: "dry_run_required",
-        message: "Dry-run proof required",
-        hint: "Lance d'abord un dry-run valide puis confirme avec le jeton fourni.",
-        operationId,
-      });
-    }
-
     if (!isValidImportConfirmationPhrase(confirmationPhrase)) {
       await auditImportFailure({
         operationId,
@@ -308,7 +292,7 @@ export async function POST(request: Request) {
     }
 
     const verification = verifyDryRunProof({
-      token: proofToken,
+      token: proofToken ?? "",
       userId: access.userId,
       payloadHash,
     });

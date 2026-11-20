@@ -452,6 +452,9 @@ export function buildCommunicableReference(params: {
   const missionCodes: EngagementProofMissionCode[] = params.missions.map(
     (mission) => mission.roleCode,
   );
+  // This hashes an authenticated user ID and proof metadata into a deterministic
+  // reference fingerprint; it is not password material or an authentication secret.
+  // codeql[js/insufficient-password-hash]
   const fingerprint = createHash("sha256")
     .update(
       JSON.stringify({

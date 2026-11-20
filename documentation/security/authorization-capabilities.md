@@ -101,9 +101,11 @@ Exemples de classification cible :
 
 Pour la newsletter, `public_write_exception` décrit le parcours HTTP public,
 pas un droit d'écriture Data API. La route `/api/newsletter/subscribe` applique
-BotID, rate limiting, validation, honeypot, délai anti-rejeu et consentement,
-puis écrit avec `service_role` ; `anon` et `authenticated` ne disposent pas
-d'INSERT direct sur `newsletter_subscriptions`. Le consentement RGPD est une
+BotID, rate limiting serveur, validation et consentement, puis écrit avec
+`service_role` ; `anon` et `authenticated` ne disposent pas d'INSERT direct sur
+`newsletter_subscriptions`. Les champs `honeypot` et `submittedAt` fournis par
+le client ne contrôlent plus l'accès à l'écriture : le serveur ne les traite pas
+comme des preuves anti-abus. Le consentement RGPD est une
 preuve du choix déclaré dans le formulaire, pas une preuve de possession ou de
 contrôle effectif de l'adresse email. La fermeture du bypass Data API ne met
 pas en place de double opt-in ni de vérification d'adresse.

@@ -103,6 +103,9 @@ il ne remplace ni AuthN/AuthZ ni le rate limit.
 Les formulaires publics conservent leurs contrôles `honeypot` et `submittedAt`
 lorsqu'ils sont prévus par leur contrat. Les wrappers génériques ne prouvent
 pas qu'une route les utilise.
+La newsletter constitue une exception : seuls BotID et le rate limit serveur
+servent de contrôles anti-abus ; les valeurs `honeypot` et `submittedAt` reçues
+du client sont ignorées.
 
 ## CURRENT — tests de non-régression
 
