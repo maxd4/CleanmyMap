@@ -558,10 +558,6 @@ async function concurrentCertificateReissue() {
 async function concurrentConsolidationPublication() {
   const actionId = await createAction(sessionA, { preserved: `${marker}-consolidation` });
   const event = await createEvent(sessionA, actionId, "casual");
-  await must(
-    await sessionA.from("spogomi_events").update({ state: "judging" }).eq("id", event.id),
-    "prepare consolidation concurrency event",
-  );
   const team = await must(
     await sessionA.from("spogomi_teams").insert({
       event_id: event.id,
@@ -580,6 +576,10 @@ async function concurrentConsolidationPublication() {
       attendance_status: "present",
     }).select("id").single(),
     "create consolidation concurrency participant",
+  );
+  await must(
+    await sessionA.from("spogomi_events").update({ state: "judging" }).eq("id", event.id),
+    "prepare consolidation concurrency event",
   );
   const submission = await must(
     await sessionA.from("spogomi_result_submissions").insert({
