@@ -252,11 +252,11 @@ Les étapes ci-dessous sont des décisions `PLAN`, non des tâches lancées ni d
 | Priorité | Chantier borné | Critère de clôture |
 | --- | --- | --- |
 | **P0 — CURRENT** | Maintenir l'export Supabase complet pour `public` et `private`, séparer sauvegarde chiffrée et restore-check, conserver au moins une archive récupérable indépendamment du résultat de la preuve SQL | Run Production `43868255913` : `BACKUP_CREATED`, `RESTORE_VERIFIED`, transfert et récupération R2, avec export Storage 5 buckets / 2 objets |
-| **P1** | Exécuter une restauration à froid depuis R2 et vérifier la récupération de la clé GPG hors dépendance GitHub/Supabase | Téléchargement, déchiffrement et restauration d'une archive R2 historique sur cible isolée ; permissions de suppression et règle multipart encore à vérifier |
-| **P1** | Export et procédure de migration d'identités Clerk, inventaire des secrets Vercel et copie indépendante Git | Exports sécurisés, contrôle de couverture et reconstruction de test sans accès aux comptes Production |
-| **P2** | Restauration d'une archive réelle sur nouveau projet Supabase, puis tests RLS/Storage et parcours critiques | `SERVICE_RECOVERY_VERIFIED` sur une cible isolée ; le `RESTORE_VERIFIED` PostgreSQL éphémère existant ne clôt pas ce jalon |
-| **P2** | Redéploiement Web hors Vercel et remplacement contrôlé de Resend | Services testés avec clés neuves et vérifications de réception, sécurité et cron |
-| **P3** | Exercice de bascule hors Supabase / changement de fournisseur d'identité | Contrats API, JWT, ownership et fonctionnement mesurés ; écarts documentés |
+| **P1 — PLAN** | Exécuter une restauration à froid depuis R2 et vérifier la récupération de la clé GPG hors dépendance GitHub/Supabase | Téléchargement, déchiffrement et restauration d'une archive R2 historique sur cible isolée ; permissions de suppression et règle multipart encore à vérifier |
+| **P1 — PLAN** | Préparer séparément les exports d'identité Clerk, l'inventaire des secrets Vercel et une copie Git indépendante | Export/import Clerk et copie Git indépendante non exécutés ni vérifiés ; reconstruction de test exigée sans accès aux comptes Production |
+| **P2 — PLAN** | Restaurer une archive réelle sur un nouveau projet Supabase, puis tester RLS/Storage et les parcours critiques | `SERVICE_RECOVERY_VERIFIED` sur une cible isolée ; le `RESTORE_VERIFIED` PostgreSQL éphémère existant ne clôt pas ce jalon |
+| **P2 — PLAN** | Redéployer Web hors Vercel et remplacer Resend de façon contrôlée | Services testés avec clés neuves et vérifications de réception, sécurité et cron |
+| **P3 — PLAN** | Exercer une bascule hors Supabase et un changement de fournisseur d'identité | Aucune reprise multi-fournisseurs n'est validée ; établir les contrats API, JWT, ownership et écarts par un exercice mesuré |
 
 **STOP CONDITION globale :** disposer de copies indépendantes récupérables des données et identités critiques, d'un exercice réellement exécuté sur archive conservée, d'un chemin de redéploiement Web et d'un inventaire explicite des dépendances non restaurables. Une voie de sortie non testée reste `PLAN` ; ne pas multiplier les workflows, schémas ou interfaces de secours avant preuve d'un besoin actuel.
 

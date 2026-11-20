@@ -14,9 +14,9 @@ un runner GitHub hébergé ; Docker n'est jamais lancé sur le poste local.
   sur `main`.
 - `PLAN` décrit une configuration ou une procédure recommandée qui n'est pas
   encore démontrée dans le dépôt ou par un exercice réel.
-- `NOT_VERIFIED` signifie qu'aucune preuve d'état distant ou de transfert réel
-  n'est disponible ; ce statut ne doit pas être remplacé par une inférence à
-  partir du code.
+- `NOT_VERIFIED` signifie qu'aucune preuve n'est disponible pour le fait précis
+  concerné (paramètre distant, permission ou étape de restauration) ; ce statut
+  ne doit pas être remplacé par une inférence à partir du code.
 
 Preuves établies le 16 novembre 2026 : le run Production
 [`43868255913`](https://github.com/maxd4/CleanmyMap/actions/runs/43868255913) a
@@ -149,7 +149,7 @@ Les variables et secrets sont à créer dans **Settings → Environments →
 | `SUPABASE_BACKUP_R2_ENDPOINT` | Variable d'environnement | Endpoint S3 EU du compte R2 |
 | `SUPABASE_BACKUP_R2_BUCKET` | Variable d'environnement | Nom exact du bucket privé |
 | `SUPABASE_BACKUP_R2_OBJECT_PREFIX` | Variable d'environnement facultative | Préfixe objet, sinon `supabase-backups` |
-| `SUPABASE_BACKUP_R2_ACCESS_KEY_ID` | Secret | Access Key ID S3 du jeton limité au bucket |
+| `SUPABASE_BACKUP_R2_ACCESS_KEY_ID` | Secret | Access Key ID S3 du jeton utilisé par le workflow ; portée effective à vérifier |
 | `SUPABASE_BACKUP_R2_SECRET_ACCESS_KEY` | Secret | Secret Access Key S3, jamais affiché |
 | `SUPABASE_BACKUP_MONTHLY_ENABLED` | Variable de dépôt | Doit être exactement `true` pour autoriser le cron |
 
@@ -409,7 +409,9 @@ Les archives doivent être conservées hors de Supabase, dans un stockage privé
 - une sauvegarde mensuelle, activée par `SUPABASE_BACKUP_MONTHLY_ENABLED=true` ;
 - conservation pérenne des archives et de leurs `.sha256` dans le bucket R2 privé ;
 - règles de rétention, verrouillage et éventuelle immutabilité configurés hors de GitHub Actions ;
-- aucune capacité CI de suppression, de listing global ou de modification des règles de rétention R2 ;
+- vérifier puis limiter les permissions CI ; l'objectif est d'exclure la
+  suppression, le listing global et la modification des règles de rétention R2,
+  sans considérer ces droits comme absents avant revue de la politique effective ;
 - au moins une copie supplémentaire sous une autre frontière d'accès lorsque la politique d'exploitation le permet.
 
 Cette politique reste à ajuster selon la volumétrie réelle, les coûts, le RGPD et la sensibilité des données.
@@ -477,7 +479,8 @@ Récupérer le dépôt depuis une copie Git indépendante et l'archive depuis R2
 avec un accès R2 de secours contrôlé, sans réutiliser un jeton GitHub compromis.
 Vérifier le `.sha256`, déchiffrer avec la clé privée hors CI et restaurer sur une
 cible isolée. Recréer ensuite une CI minimale depuis le code vérifié, avec de
-nouveaux secrets et un nouveau jeton R2 limité au bucket. Si R2 et GitHub sont
+nouveaux secrets et un jeton R2 à portée de bucket dont les permissions
+effectives ont été vérifiées. Si R2 et GitHub sont
 indisponibles simultanément, utiliser la copie indépendante de l'archive et de
 la clé GPG ; si aucune copie n'est récupérable, classer la reprise comme
 bloquée, sans inventer une restauration à partir d'une archive locale absente.
