@@ -83,6 +83,7 @@ function allocateParticipantImpactRows(
     output.set(actionId, allocateActionParticipantImpact({
       totalWasteKg: action?.waste_kg ?? null,
       totalCigaretteButts: action?.cigarette_butts ?? null,
+      collectorsCount: action?.collectors_count ?? null,
       participants: rowsByActionId.get(actionId) ?? [],
       collectionAttributionVersion: extractActionMetadataFromNotes(action?.notes ?? null).collectionAttributionVersion,
     }));

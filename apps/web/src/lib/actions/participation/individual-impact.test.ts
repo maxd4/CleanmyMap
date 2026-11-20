@@ -44,6 +44,7 @@ describe("individual action impact attribution", () => {
     const result = allocateActionParticipantImpact({
       totalWasteKg: 20,
       totalCigaretteButts: null,
+      collectorsCount: 2,
       collectionAttributionVersion: "collectors-v1",
       participants: [
         { ...participant("measured", exact), collectionStatus: "collected" },
@@ -64,6 +65,7 @@ describe("individual action impact attribution", () => {
     const result = allocateActionParticipantImpact({
       totalWasteKg: 20,
       totalCigaretteButts: null,
+      collectorsCount: 1,
       collectionAttributionVersion: "collectors-v1",
       participants: [participant("unknown", exact), { ...participant("collector"), collectionStatus: "collected" }],
     });
@@ -270,7 +272,9 @@ describe("individual action impact attribution", () => {
     });
     expect(result).toEqual(new Map());
   });
+});
 
+describe("individual impact conversion and formula provenance", () => {
   it("versions waste moisture normalization and preserves raw mass", () => {
     expect(toIndividualImpactMeasurement({
       individual_waste_kg: 10,

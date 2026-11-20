@@ -458,6 +458,8 @@ export type ActionListItem = {
       cigaretteButts: number | null;
       postActionPollutionScore?: number | null;
       volunteersCount: number | null;
+      collectorsCount?: number | null;
+      collectionAttributionVersion?: "collectors-v1" | null;
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;
       wasteBreakdown?: ActionWasteBreakdown | null;

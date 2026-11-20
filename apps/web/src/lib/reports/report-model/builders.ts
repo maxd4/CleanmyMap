@@ -101,6 +101,10 @@ export function buildMonthRows(items: ActionListItem[]): MonthRow[] {
       buttsKnownActions: 0,
       volunteers: 0,
       volunteersKnownActions: 0,
+      presentPeopleCount: 0,
+      presentPeopleKnownActions: 0,
+      collectorsCount: 0,
+      collectorsCountKnownActions: 0,
       minutes: 0,
     };
     previous.actions += 1;
@@ -117,12 +121,31 @@ export function buildMonthRows(items: ActionListItem[]): MonthRow[] {
       previous.volunteers += impact.volunteers;
       previous.volunteersKnownActions = (previous.volunteersKnownActions ?? 0) + 1;
     }
+    const presentPeople = item.volunteers_count ?? item.contract?.metadata.volunteersCount ?? null;
+    if (presentPeople !== null) {
+      previous.presentPeopleCount = (previous.presentPeopleCount ?? 0) + presentPeople;
+      previous.presentPeopleKnownActions = (previous.presentPeopleKnownActions ?? 0) + 1;
+    }
+    const collectorsCount = item.collectors_count ?? item.contract?.metadata.collectorsCount ?? null;
+    if (collectorsCount !== null) {
+      previous.collectorsCount = (previous.collectorsCount ?? 0) + collectorsCount;
+      previous.collectorsCountKnownActions = (previous.collectorsCountKnownActions ?? 0) + 1;
+    }
     previous.minutes += Number(
       item.contract?.metadata.durationMinutes ?? item.duration_minutes ?? 0,
     );
     grouped.set(key, previous);
   }
-  return [...grouped.values()].sort((a, b) => a.month.localeCompare(b.month));
+  return [...grouped.values()]
+    .map((row) => ({
+      ...row,
+      collectorsCountAvailability: row.collectorsCountKnownActions === 0
+        ? "unavailable" as const
+        : row.collectorsCountKnownActions === row.actions
+          ? "complete" as const
+          : "partial" as const,
+    }))
+    .sort((a, b) => a.month.localeCompare(b.month));
 }
 
 export function buildCalendarRows(now: Date): Array<[string, string, string, string]> {

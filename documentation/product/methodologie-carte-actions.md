@@ -1296,8 +1296,13 @@ laisser ce champ inconnu, sinon il ne peut dépasser l'effectif présent.
 
 Pour les actions déclarées avec cette attribution, la répartition conservatrice
 du reliquat d'impact collectif porte uniquement sur les comptes confirmés dont
-le statut individuel est `collected`. `not_collected` et `unknown` ne reçoivent
-pas de quote-part automatique ; une mesure individuelle exacte reste attachée
-à la personne même si son statut de collecte est inconnu. Les actions
+le statut individuel est `collected`, lorsque leur identification est complète :
+leur nombre doit correspondre au `collectors_count` connu et positif. Si le
+décompte est inconnu, nul ou si les statuts `collected` sont partiels, aucune
+quote-part n'est attribuée. `not_collected` et `unknown` ne reçoivent jamais de
+part automatique ; une mesure individuelle exacte reste attachée à la personne
+même si son statut de collecte est inconnu. Les contradictions entre une mesure
+positive et `not_collected`, ou entre les collecteurs confirmés et le décompte
+agrégé, sont refusées par la persistance transactionnelle. Les actions
 historiques sans marqueur de version gardent leur projection antérieure. Ces
 champs ne changent pas la confirmation de présence, les XP ou les rôles.

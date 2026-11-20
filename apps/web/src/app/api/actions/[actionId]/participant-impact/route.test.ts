@@ -81,6 +81,22 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     expect(body.collectionStatus).toBe("collected");
     expect(participant).not.toHaveProperty("individual_waste_kg");
     expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(groupJoinMocks.reconcileActionParticipantImpactProgressionMock).toHaveBeenCalledWith(expect.anything(), "action-1");
+  });
+
+  it("rejects not_collected when an existing individual measure is positive", async () => {
+    const participant = { ...createParticipantWithStatus("confirmed"), individual_waste_kg: 2 };
+    configureParticipantImpactSupabase([participant]);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      collectionStatus: "not_collected",
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.details.collectionStatus).toContain("Une mesure individuelle positive impose le statut collected.");
+    expect(participant).not.toHaveProperty("collection_status");
   });
 
   it("allows the action organizer, preserves raw values and audits the change", async () => {

@@ -95,6 +95,7 @@ export function hasActionMetadata(metadata: ActionInputMetadata): boolean {
   return (
     hasStructuredWasteMetadata(metadata) ||
     hasStructuredParticipationMetadata(metadata) ||
+    metadata.collectionAttributionVersion === "collectors-v1" ||
     hasStructuredLocationMetadata(metadata) ||
     hasContentMetadata(metadata)
   );

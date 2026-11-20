@@ -23,6 +23,7 @@ type ActionCsvRow = Pick<
   | "waste_kg"
   | "cigarette_butts"
   | "volunteers_count"
+  | "collectors_count"
   | "duration_minutes"
   | "status"
   | "notes"
@@ -278,6 +279,7 @@ function buildActionsCsvHeader(): string[] {
     "cigarette_butts_conversion_versions",
     "cigarette_butts_recalculation_status",
     "volunteers_count",
+    "collectors_count",
     "duration_minutes",
     "status",
     "notes",
@@ -327,6 +329,7 @@ function buildActionsCsvCells(row: ActionCsvRowWithDrawing): Array<string | numb
     toCsvCellValue(row.cigarette_butts_conversion_versions),
     toCsvCellValue(row.cigarette_butts_recalculation_status),
     row.volunteers_count,
+    toCsvCellValue(row.collectors_count),
     row.duration_minutes,
     row.status,
     row.notes,

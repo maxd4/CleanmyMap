@@ -48,6 +48,11 @@ export type MonthRow = {
   buttsKnownActions?: number;
   volunteers: number;
   volunteersKnownActions?: number;
+  presentPeopleCount?: number;
+  presentPeopleKnownActions?: number;
+  collectorsCount?: number;
+  collectorsCountKnownActions?: number;
+  collectorsCountAvailability?: "complete" | "partial" | "unavailable";
   minutes: number;
 };
 
@@ -75,6 +80,16 @@ export type ReportModel = {
     volunteersKnownActions?: number;
     volunteersActionCount?: number;
     volunteersCoverageRate?: number;
+    presentPeopleCount?: number;
+    presentPeopleKnownActions?: number;
+    presentPeopleAvailability?: "complete" | "partial" | "unavailable";
+    collectorsCount?: number;
+    collectorsCountKnownActions?: number;
+    collectorsCountAvailability?: "complete" | "partial" | "unavailable";
+    calculatedWasteKgPerCollector?: number | null;
+    calculatedButtsPerCollector?: number | null;
+    calculatedWasteActionCount?: number;
+    calculatedButtsActionCount?: number;
     hours: number;
   };
   map: {

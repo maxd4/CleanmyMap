@@ -404,11 +404,20 @@ type ConfirmedParticipant = {
   measurement: IndividualImpactMeasurement | null;
 };
 
+export function hasPositiveIndividualMeasurement(measurement: IndividualImpactMeasurement | null): boolean {
+  return Boolean(measurement && (
+    (measurement.wasteKg ?? 0) > 0 ||
+    (measurement.cigaretteButtsCount ?? 0) > 0 ||
+    (measurement.cigaretteButtsMassKg ?? 0) > 0
+  ));
+}
+
 function allocateMetric(
   total: number | null,
   participants: ConfirmedParticipant[],
   read: (measurement: IndividualImpactMeasurement) => number | null,
   restrictQuotesToCollectors: boolean,
+  collectorsCount: number | null,
 ): Map<string, { value: number | null; kind: AllocationKind; exactTotal: number; remaining: number | null; inconsistent: boolean }> {
   const measured = participants.flatMap((participant) => {
     const value = participant.measurement ? read(participant.measurement) : null;
@@ -416,14 +425,28 @@ function allocateMetric(
   });
   const exactTotal = measured.reduce((sum, item) => sum + item.value, 0);
   const measuredById = new Map(measured.map((item) => [item.participantId, item.value] as const));
-  const inconsistent = total !== null && exactTotal > total;
+  const collectorCountMismatch = restrictQuotesToCollectors &&
+    collectorsCount !== null &&
+    participants.filter((participant) => participant.collectionStatus === "collected").length > collectorsCount;
+  const statusMeasurementMismatch = restrictQuotesToCollectors && participants.some((participant) =>
+    participant.collectionStatus === "not_collected" && hasPositiveIndividualMeasurement(participant.measurement),
+  );
+  const inconsistent = (total !== null && exactTotal > total) || collectorCountMismatch || statusMeasurementMismatch;
+  const identifiedCollectorCount = participants.filter((participant) => participant.collectionStatus === "collected").length;
+  const collectorIdentificationComplete = restrictQuotesToCollectors &&
+    collectorsCount !== null && collectorsCount > 0 &&
+    identifiedCollectorCount === collectorsCount;
   const quoteEligible = restrictQuotesToCollectors
-    ? participants.filter((participant) => participant.collectionStatus === "collected")
+    ? collectorIdentificationComplete
+      ? participants.filter((participant) => participant.collectionStatus === "collected")
+      : []
     : participants;
   const quoteEligibleIds = new Set(quoteEligible.map((participant) => participant.id));
   const missingCount = quoteEligible.filter((participant) => !measuredById.has(participant.id)).length;
   const remaining = total === null || inconsistent ? null : Math.max(0, total - exactTotal);
-  const quotePart = total !== null && measured.length === 0 && quoteEligible.length > 0 ? total / quoteEligible.length : null;
+  const quotePart = !inconsistent && total !== null && measured.length === 0 && quoteEligible.length > 0
+    ? total / quoteEligible.length
+    : null;
   const result = new Map<string, { value: number | null; kind: AllocationKind; exactTotal: number; remaining: number | null; inconsistent: boolean }>();
 
   for (const participant of participants) {
@@ -537,6 +560,7 @@ function individualMeasurementValue<T>(kind: AllocationKind | undefined, value: 
 export function allocateActionParticipantImpact(params: {
   totalWasteKg: number | null;
   totalCigaretteButts: number | null;
+  collectorsCount?: number | null;
   participants: ConfirmedParticipant[];
   collectionAttributionVersion?: "collectors-v1" | null;
 }): Map<string, ActionParticipantImpactAttribution> {
@@ -548,12 +572,14 @@ export function allocateActionParticipantImpact(params: {
     participants,
     (measurement) => measurement.wasteKg,
     params.collectionAttributionVersion === "collectors-v1",
+    params.collectorsCount ?? null,
   );
   const butts = allocateMetric(
     normalizeNullableInteger(params.totalCigaretteButts),
     participants,
     (measurement) => measurement.comparableButtsCount,
     params.collectionAttributionVersion === "collectors-v1",
+    params.collectorsCount ?? null,
   );
 
   return new Map(participants.map((participant) => [

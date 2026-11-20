@@ -15,6 +15,15 @@ Les paramètres de génération déterminent **quelles données entrent dans un 
 
 Le générateur multi-actions accepte les périmètres `global`, `account`, `association` et `arrondissement`, ainsi que `thirty_days`, `three_months`, `six_months`, `twelve_months`, `current_year`, `full_history` et `custom_range`. Les dates personnalisées sont deux dates civiles inclusives `YYYY-MM-DD`, interprétées en UTC sur `dates.observedAt`. Le périmètre `single_action` est un contrat distinct : son identifiant est résolu côté serveur et ses bornes restent verrouillées sur l'action. Pour le fonctionnement courant, voir la [fiche `/reports`](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md) et le code associé.
 
+Les projections de rapport distinguent les personnes physiquement présentes
+(`volunteers_count`) des ramasseurs déclarés (`collectors_count`) et des unités
+de participation calculées selon `effective-volunteer-units-v1`. La somme des
+ramasseurs indique aussi combien d'actions ont un décompte connu et si la
+couverture est complète, partielle ou indisponible ; `NULL` n'est pas zéro.
+Les ratios calculés par ramasseur divisent les mesures collectives par les
+seuls décomptes connus et strictement positifs. Ils ne représentent pas des
+mesures individuelles, lesquelles ne sont pas projetées dans ces rapports.
+
 Pour `POST /api/reports/generations`, le navigateur transmet l'entrée typée, le niveau de détail, les modules et la sélection avancée. Le serveur recharge les actions publiques admissibles depuis la source canonique avec les critères `status = approved`, `moderation_visibility = visible`, `published_at` non nul et `action_phase = post_action_complete`, valide le scope contre ces identifiants et libellés canoniques, filtre la période puis les filtres avancés, et calcule `ReportModel` et le PDF sur ce même ensemble. La projection complète est paginée ; si un champ indispensable ou une page échoue, la génération multi-actions est refusée plutôt que présentée comme exhaustive. Le nom libre d'une association ne constitue ni une appartenance ni une permission privée : ce filtre ne porte que sur le corpus public résolu côté serveur.
 
 ### Reprise depuis `Mes fichiers` — `CURRENT`

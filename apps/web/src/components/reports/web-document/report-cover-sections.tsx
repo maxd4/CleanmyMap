@@ -19,7 +19,7 @@ export function ReportCoverHero(props: { report: ReportModel; activeScopeLabel: 
 
 export function ReportCoverDetails(props: { report: ReportModel; narrative: ReturnType<(typeof import("@/lib/reports/report-model/builders"))["buildExecutiveNarrative"]>; chapterCount?: number }) {
   const { narrative, report } = props;
-  const keyFigures = [`Actions validées: ${toFrInt(report.totals.actions)}`, `Masse impact (calculée): ${report.totals.knownWasteActions === undefined || report.totals.knownWasteActions > 0 ? `${toFrNumber(report.totals.kg)} kg` : "Non renseignée"}`, `Bénévoles mobilisés: ${report.totals.volunteersKnownActions === 0 ? "n/a" : toFrInt(report.totals.volunteers)}`, `Couverture géographique: ${toFrNumber(report.map.geoCoverage)}%`];
+  const keyFigures = [`Actions validées: ${toFrInt(report.totals.actions)}`, `Masse impact (calculée): ${report.totals.knownWasteActions === undefined || report.totals.knownWasteActions > 0 ? `${toFrNumber(report.totals.kg)} kg` : "Non renseignée"}`, `Personnes présentes: ${report.totals.presentPeopleAvailability === "unavailable" ? "n/a" : toFrInt(report.totals.presentPeopleCount ?? 0)}`, `Ramasseurs déclarés: ${report.totals.collectorsCountAvailability === "unavailable" ? "n/a" : toFrInt(report.totals.collectorsCount ?? 0)}`, `Unités de participation pondérées: ${report.totals.volunteersKnownActions === 0 ? "n/a" : toFrInt(report.totals.volunteers)}`, `Couverture géographique: ${toFrNumber(report.map.geoCoverage)}%`];
   const conclusions = narrative.watchouts.slice(0, 3);
   const topArea = report.areas[0];
   return <div className="space-y-3 bg-slate-50 p-[0.95cm]">

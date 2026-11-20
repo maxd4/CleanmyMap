@@ -25,6 +25,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.deepEqual(inventory.pgtap, [
     "apps/web/supabase/tests/action-buddy-contract.pgtap.sql",
     "apps/web/supabase/tests/action-collection-context-reference-rpc.pgtap.sql",
+    "apps/web/supabase/tests/action-collection-integrity.pgtap.sql",
     "apps/web/supabase/tests/action-collection-reference-averages.pgtap.sql",
     "apps/web/supabase/tests/action-event-timezones-integrity.pgtap.sql",
     "apps/web/supabase/tests/action-field-roles-server-boundary.pgtap.sql",
@@ -68,6 +69,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.equal(inventory.contracts.includes("apps/web/supabase/tests/spogomi-registration-quiz.sql"), true);
   assert.deepEqual(inventory.multisession, [
     "e2e/action-buddy-concurrency.mjs",
+    "e2e/action-collection-concurrency.mjs",
     "e2e/action-role-attestation-concurrency.mjs",
     "e2e/community-helper-skills-concurrency.mjs",
     "e2e/gamification-reconciliation-concurrency.mjs",
@@ -83,6 +85,7 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
   const knipConfig = JSON.parse(readFileSync(new URL("../knip.json", import.meta.url), "utf8"));
   const entries = new Set(knipConfig.workspaces["."].entry);
   for (const entrypoint of [
+    "e2e/action-collection-concurrency.mjs",
     "e2e/community-helper-skills-concurrency.mjs",
     "e2e/gamification-reconciliation-concurrency.mjs",
     "e2e/quiz-progression-concurrency.mjs",

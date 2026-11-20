@@ -37,6 +37,28 @@ function buildSnapshotGroups(report: ReportModel): SnapshotGroup[] {
       items: [
         { label: "Volumes collectés", value: `${toFrNumber(report.totals.kg)} kg`, icon: FileText },
         {
+          label: "Personnes présentes",
+          value: report.totals.presentPeopleAvailability === "unavailable"
+            ? "Non renseignées"
+            : `${toFrInt(report.totals.presentPeopleCount ?? 0)} (${report.totals.presentPeopleKnownActions ?? 0}/${report.totals.actions} actions renseignées)`,
+          icon: CalendarDays,
+        },
+        {
+          label: "Ramasseurs déclarés",
+          value: report.totals.collectorsCountAvailability === "unavailable"
+            ? "Non renseignés"
+            : `${toFrInt(report.totals.collectorsCount ?? 0)} (${report.totals.collectorsCountKnownActions ?? 0}/${report.totals.actions} actions renseignées)`,
+          icon: CalendarDays,
+        },
+        {
+          label: "Masse collective moyenne calculée par ramasseur",
+          value: report.totals.calculatedWasteKgPerCollector == null
+            ? "Indisponible"
+            : `${toFrNumber(report.totals.calculatedWasteKgPerCollector, 2)} kg (${report.totals.calculatedWasteActionCount ?? 0} actions mesurées)`,
+          icon: ArrowRight,
+        },
+        { label: "Mesures individuelles", value: "Non agrégées dans ce rapport", icon: FileText },
+        {
           label: "Couverture géolocalisée",
           value: formatScorePercent(report.map.geoCoverage, 1),
           icon: Map,

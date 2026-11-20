@@ -94,7 +94,7 @@ export async function runActionUpdatePostProcessing(
   });
 }
 
-function shouldReconcileParticipantImpact(
+export function shouldReconcileParticipantImpact(
   updateData: Record<string, unknown>,
   body: ActionUpdateInput,
 ): boolean {
@@ -102,6 +102,7 @@ function shouldReconcileParticipantImpact(
   return [
     "waste_kg",
     "cigarette_butts",
+    "collectors_count",
     "status",
     "action_phase",
     "published_at",

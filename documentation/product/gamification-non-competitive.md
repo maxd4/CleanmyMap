@@ -193,8 +193,8 @@ identités canoniques attribuables par `organizer_id`.
 
 - Une participation ne contribue a la progression personnelle et aux recompenses qu'une fois son statut `confirmed` etabli. Les statuts `pending`, `cancelled` et les demandes refusees ne generent ni progression ni credit.
 - Un claim post-action accepte suit exactement la meme source canonique de gamification qu'une participation confirmee normale; sa provenance `post_action_claim` ne change pas la valeur de la recompense.
-- Apres confirmation, la quote-part personnelle est une derivation de lecture, non une mesure scientifique individuelle lorsqu'aucune mesure individuelle n'existe. Pour une metrique additive finale disponible, les mesures individuelles confirmees remplacent uniquement la quote-part du participant concerne ; les autres participants se partagent le reliquat conservatif `remaining = totalAction - somme(mesures exactes)`.
-- Le denominateur est exclusivement `COUNT(action_participants WHERE participation_status = 'confirmed')`. Il exclut les demandes en attente, annulees ou refusees ainsi que les effectifs terrain et les `effectiveVolunteerUnits`.
+- Apres confirmation, une quote-part reste une derivation de lecture, non une mesure scientifique individuelle. Pour les actions `collectors-v1`, les mesures individuelles exactes restent attachees a leur compte ; les quotes-parts du reliquat ne sont disponibles que si les comptes confirmes identifies `collected` correspondent exactement au `collectors_count` connu et positif. Une identification partielle ou un decompte inconnu/nul ne cree aucune quote-part. Les actions historiques sans marqueur conservent leur projection anterieure.
+- Pour les actions historiques sans marqueur, le denominateur reste exclusivement `COUNT(action_participants WHERE participation_status = 'confirmed')`. Pour `collectors-v1`, seuls les comptes confirmes identifies `collected` peuvent entrer dans le denominateur, après vérification de la complétude avec `collectors_count`. Dans les deux cas, les demandes en attente, annulees ou refusees, les effectifs terrain et `effectiveVolunteerUnits` ne remplacent pas le roster applicable.
 - Les compteurs du formulaire décrivent la présence physique, pas les unités d'attribution : `participantsCount = childrenCount + adultCount + retiredCount` reste utilisé pour les statistiques, mais `childrenCount` est strictement exclu des répartitions personnelles. Les enfants accompagnants sont rattachés à la contribution du compte qui les accompagne. `volunteersCount`, `participantsCount`, `childrenCount`, `adultCount`, `retiredCount` et `effectiveVolunteerUnits` ne remplacent jamais le roster `action_participants` confirmé.
 - Une ligne `action_participants` confirmée vaut une seule unité d'attribution, indépendamment du nombre d'enfants accompagnants. Par exemple, deux comptes confirmés et deux enfants se partagent `20 kg` à `10 kg` chacun ; modifier `childrenCount` ne change rien tant que les comptes confirmés restent les mêmes.
 - Pour chaque métrique additive, `eligibleAccounts` est l'ensemble des comptes `action_participants` confirmés, `exactAccounts` les comptes confirmés portant une mesure individuelle exacte et `remainingAccounts` les comptes confirmés sans mesure. Le reliquat est `remaining = total collectif - somme des mesures individuelles exactes`, puis `quotePart = remaining / COUNT(remainingAccounts)` ; si `remainingAccounts = 0`, aucune division n'est effectuée.
@@ -353,7 +353,13 @@ absence de présence ou une absence de contribution.
 Pour la version d'attribution `collectors-v1`, les mesures exactes restent
 attribuées à leur compte. Le reliquat collectif connu est partagé à parts
 égales seulement entre les collecteurs explicitement marqués `collected` sans
-mesure exacte. Les autres statuts ne reçoivent aucune quote-part automatique.
+mesure exacte, lorsque leur nombre correspond au décompte agrégé connu. Sans
+décompte connu ou avec identification partielle, aucune quote-part n'est
+attribuée. Les mesures individuelles exactes restent disponibles. Les
+contradictions entre statut et mesure positive, ainsi qu'un nombre de
+collecteurs confirmés supérieur au décompte agrégé, sont refusées par la base.
+La mise à jour du statut de collecte relance la réconciliation de progression
+de tous les comptes liés à l'action.
 Les actions sans cette version conservent l'attribution historique. La
 présence confirmée et la progression XP restent gouvernées par leurs contrats
 existants ; le statut de collecte ne les retire ni ne les diminue.

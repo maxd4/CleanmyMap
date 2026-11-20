@@ -7,6 +7,7 @@ const getSupabaseServerClientMock=vi.hoisted(()=>vi.fn());
 const loadActionOrganizerIdsForActionMock=vi.hoisted(()=>vi.fn());
 const rebuildUserGamificationBadgesMock = vi.hoisted(()=>vi.fn(async()=>({inserted:0})));
 const refreshProgressionProfileMock=vi.hoisted(()=>vi.fn());
+const reconcileActionParticipantImpactProgressionMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 export type GroupJoinAuditEntry = {
@@ -41,6 +42,7 @@ vi.mock("@/lib/actions/participation/organizers", () => ({
 }));
 vi.mock("@/lib/gamification/reconciliation/progression-tracking", () => ({
   refreshProgressionProfile: refreshProgressionProfileMock,
+  reconcileActionParticipantImpactProgression: reconcileActionParticipantImpactProgressionMock,
 }));
 vi.mock("@/lib/gamification/badges/rebuild", () => ({ rebuildUserGamificationBadges: rebuildUserGamificationBadgesMock }));
 vi.mock("@/lib/rate-limit/server", () => ({
@@ -67,7 +69,7 @@ export type GroupJoinProfileRow = { id: string; display_name: string | null; han
 export type GroupJoinSupabaseErrors = { actionLookup?: string; actionUpdate?: string; participantLookup?: string; participantUpdate?: string; participantInsert?: string; participantCount?: string };
 type GroupJoinRegistrationSource = "group_form" | "admin" | "admin_override" | "import";
 function toRegistrationSource(source: GroupJoinParticipantRow["participation_source"] | GroupJoinRegistrationSource | undefined): GroupJoinRegistrationSource { return source === "post_action_claim" || !source ? "group_form" : source; }
-export const groupJoinMocks = { authMock,requireAuthenticatedAccessMock,getCurrentUserIdentityMock,getSupabaseServerClientMock,loadActionOrganizerIdsForActionMock,rebuildUserGamificationBadgesMock,refreshProgressionProfileMock,appendActionModerationAuditMock,hasPersistedAdministrativeParticipantRejectionMock,verifyRateLimitMock,createServerRateLimitResponseMock };
+export const groupJoinMocks = { authMock,requireAuthenticatedAccessMock,getCurrentUserIdentityMock,getSupabaseServerClientMock,loadActionOrganizerIdsForActionMock,rebuildUserGamificationBadgesMock,refreshProgressionProfileMock,reconcileActionParticipantImpactProgressionMock,appendActionModerationAuditMock,hasPersistedAdministrativeParticipantRejectionMock,verifyRateLimitMock,createServerRateLimitResponseMock };
 type GroupJoinRouteMethod = "DELETE" | "GET" | "PATCH" | "POST";
 type GroupJoinRouteCallOptions = {
   requestActionId?: string;
@@ -264,6 +266,7 @@ export function seedGroupJoinTestDefaults() {
   getCurrentUserIdentityMock.mockResolvedValue(null);
   loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-1"]);
   refreshProgressionProfileMock.mockResolvedValue(undefined);
+  reconcileActionParticipantImpactProgressionMock.mockResolvedValue(undefined);
   verifyRateLimitMock.mockResolvedValue({
     allowed: true,
     limit: 10,

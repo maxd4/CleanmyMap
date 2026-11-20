@@ -47,6 +47,16 @@ function toMapImpactInput(item: ActionMapItem): ActionImpactInput {
 
 function computeTotals(approvedActions: ActionListItem[]) {
   const impact = sumActionImpactKpis(approvedActions.map(toActionImpactInput));
+  const collectorRows = approvedActions.map((item) => ({
+    collectors: item.collectors_count ?? item.contract?.metadata.collectorsCount ?? null,
+    presentPeople: item.volunteers_count ?? item.contract?.metadata.volunteersCount ?? null,
+    impact: computeActionImpactKpis(toActionImpactInput(item)),
+  }));
+  const knownCollectorRows = collectorRows.filter((row) => row.collectors !== null);
+  const knownPresentPeopleRows = collectorRows.filter((row) => row.presentPeople !== null);
+  const wasteCollectorRows = collectorRows.filter((row) => row.collectors !== null && row.collectors > 0 && row.impact.wasteKnown);
+  const buttsCollectorRows = collectorRows.filter((row) => row.collectors !== null && row.collectors > 0 && row.impact.buttsKnown);
+  const collectorsCount = knownCollectorRows.reduce((sum, row) => sum + (row.collectors ?? 0), 0);
   const totalHours = approvedActions.reduce(
     (sum, item) => {
       const impact = computeActionImpactKpis(toActionImpactInput(item));
@@ -80,12 +90,40 @@ function computeTotals(approvedActions: ActionListItem[]) {
     volunteersKnownActions: impact.volunteersKnownActions,
     volunteersActionCount: impact.volunteersActionCount,
     volunteersCoverageRate: impact.volunteersCoverageRate,
+    presentPeopleCount: knownPresentPeopleRows.reduce((sum, row) => sum + (row.presentPeople ?? 0), 0),
+    presentPeopleKnownActions: knownPresentPeopleRows.length,
+    presentPeopleAvailability: knownPresentPeopleRows.length === 0
+      ? "unavailable" as const
+      : knownPresentPeopleRows.length === approvedActions.length
+        ? "complete" as const
+        : "partial" as const,
+    collectorsCount,
+    collectorsCountKnownActions: knownCollectorRows.length,
+    collectorsCountAvailability: knownCollectorRows.length === 0
+      ? "unavailable" as const
+      : knownCollectorRows.length === approvedActions.length
+        ? "complete" as const
+        : "partial" as const,
+    calculatedWasteKgPerCollector: ratioOfSums(wasteCollectorRows, "wasteKg"),
+    calculatedButtsPerCollector: ratioOfSums(buttsCollectorRows, "butts"),
+    calculatedWasteActionCount: wasteCollectorRows.length,
+    calculatedButtsActionCount: buttsCollectorRows.length,
     totalHours,
     co2AvoidedKg: impact.co2AvoidedKg,
     waterSavedLiters: impact.waterSavedLiters,
     streetCleaningSavings: impact.streetCleaningSavings,
     euroSaved: impact.euroSaved,
   };
+}
+
+function ratioOfSums(
+  rows: Array<{ collectors: number | null; impact: ReturnType<typeof computeActionImpactKpis> }>,
+  metric: "wasteKg" | "butts",
+): number | null {
+  const denominator = rows.reduce((sum, row) => sum + (row.collectors ?? 0), 0);
+  if (denominator <= 0) return null;
+  const numerator = rows.reduce((sum, row) => sum + row.impact[metric], 0);
+  return numerator / denominator;
 }
 
 function computeModerationStats(
@@ -328,6 +366,16 @@ function buildReportSections(input: ReportAssemblyInput) {
       volunteersKnownActions: totals.volunteersKnownActions,
       volunteersActionCount: totals.volunteersActionCount,
       volunteersCoverageRate: totals.volunteersCoverageRate,
+      presentPeopleCount: totals.presentPeopleCount,
+      presentPeopleKnownActions: totals.presentPeopleKnownActions,
+      presentPeopleAvailability: totals.presentPeopleAvailability,
+      collectorsCount: totals.collectorsCount,
+      collectorsCountKnownActions: totals.collectorsCountKnownActions,
+      collectorsCountAvailability: totals.collectorsCountAvailability,
+      calculatedWasteKgPerCollector: totals.calculatedWasteKgPerCollector,
+      calculatedButtsPerCollector: totals.calculatedButtsPerCollector,
+      calculatedWasteActionCount: totals.calculatedWasteActionCount,
+      calculatedButtsActionCount: totals.calculatedButtsActionCount,
       hours: totals.totalHours,
     },
     map: {

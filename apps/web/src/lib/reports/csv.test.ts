@@ -75,6 +75,7 @@ describe("report csv helpers", () => {
         cigarette_butts_mass_provenance: "estimated",
         cigarette_butts_conversion_versions: "impact-terrain-2026-butts-mass-v2",
         volunteers_count: 3,
+        collectors_count: 2,
         duration_minutes: 60,
         status: "pending",
         notes: "ligne 1\nligne 2",
@@ -95,6 +96,7 @@ describe("report csv helpers", () => {
 
     expect(csv).toContain('"Alice ""Eco"""');
     expect(csv).toContain("association_name");
+    expect(csv).toContain("collectors_count");
     expect(csv).toContain("Entreprise");
     expect(csv).toContain('"Rue, Paris"');
     expect(csv).toContain('"ligne 1\nligne 2"');

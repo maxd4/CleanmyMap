@@ -12,12 +12,16 @@ import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { individualCigaretteButtsLotsSchema } from "@/lib/validation/action-measurements";
 import {
   buildStoredIndividualImpactMeasurement,
+  hasPositiveIndividualMeasurement,
   toIndividualImpactMeasurement,
   REVIEW_SELECT,
   type IndividualImpactRow,
 } from "@/lib/actions/participation/individual-impact";
 import { resolveReviewerAccess } from "../group-join/route";
-import { refreshProgressionProfile } from "@/lib/gamification/reconciliation/progression-tracking";
+import {
+  reconcileActionParticipantImpactProgression,
+  refreshProgressionProfile,
+} from "@/lib/gamification/reconciliation/progression-tracking";
 import {
   captureActionParticipantImpactSnapshot,
   emitActionParticipantImpactNotifications,
@@ -370,6 +374,12 @@ async function persistParticipantCollectionStatus(
     p_expected_participant_updated_at: context.participant.updated_at ?? null,
     p_collection_status: collectionStatus,
   });
+  if (result.error?.code === "23514") {
+    return NextResponse.json({
+      error: "Cette qualification contredit les mesures ou le décompte de collecte de l'action.",
+      code: "collection_integrity_conflict",
+    }, { status: 409 });
+  }
   if (result.error) throw new Error(result.error.message);
   const persisted = result.data as { ok?: unknown; code?: unknown; changed?: unknown; id?: unknown; updatedAt?: unknown } | null;
   if (persisted?.ok !== true) {
@@ -383,6 +393,7 @@ async function persistParticipantCollectionStatus(
   if (persisted.changed === false) {
     return NextResponse.json({ status: "ok", actionId, participantId, collectionStatus });
   }
+  await reconcileActionParticipantImpactProgression(supabase, actionId);
   await appendActionModerationAudit({
     operationId: `action-participant-collection-${actionId}-${participantId}-${Date.now()}`,
     actorUserId: context.reviewerUserId,
@@ -435,6 +446,11 @@ export async function PATCH(request: Request, ctx: ParticipantImpactRouteContext
     const context = await loadImpactContext(supabase, trimmedActionId, parsed.data.participantId, access.userId);
     if (context instanceof NextResponse) return context;
     if (parsed.data.collectionStatus !== undefined) {
+      if (parsed.data.collectionStatus === "not_collected" && hasPositiveIndividualMeasurement(context.current)) {
+        return validationErrorResponse({
+          collectionStatus: ["Une mesure individuelle positive impose le statut collected."],
+        });
+      }
       return await persistParticipantCollectionStatus(
         supabase,
         trimmedActionId,

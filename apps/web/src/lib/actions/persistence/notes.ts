@@ -73,7 +73,8 @@ export function buildPersistedNotes(
       options.persistVolunteerParticipationMetadata === false
         ? undefined
         : resolveActionVolunteerParticipation(payload),
-    collectionAttributionVersion: payload.collectorsCount !== undefined ? "collectors-v1" : undefined,
+    collectionAttributionVersion: payload.collectionAttributionVersion ??
+      (payload.collectorsCount !== undefined ? "collectors-v1" : undefined),
     associationName: payload.associationName,
     groupJoinEnabled: payload.groupJoinEnabled,
     placeType: payload.placeType,

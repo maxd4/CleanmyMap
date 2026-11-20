@@ -607,7 +607,20 @@ fusionnées avec la nouvelle population.
 Dans l'attribution individuelle `collectors-v1`, une mesure personnelle exacte
 reste attachée au compte qui l'a fournie. Le reliquat collectif connu se
 répartit uniquement entre les comptes confirmés explicitement marqués
-`collected` qui n'ont pas de mesure exacte. `not_collected` et `NULL` ne
-reçoivent pas de part automatique. Ce contrat scientifique n'altère pas les
-faits de présence confirmée ni les règles XP ; il ne transforme pas une
-absence de statut en zéro collecte.
+`collected` qui n'ont pas de mesure exacte, et seulement si leur nombre
+correspond au `collectors_count` agrégé connu. Si le décompte est inconnu, nul,
+ou si l'identification des ramasseurs est partielle, les quotes-parts sont
+indisponibles. Les mesures exactes restent conservées comme telles.
+`not_collected` et `NULL` ne reçoivent pas de part automatique. Une mesure
+individuelle positive sous `not_collected` ou plus de statuts `collected`
+confirmés que le décompte agrégé est refusé par la persistance. Les écritures
+liées à une même action sont sérialisées en base pour vérifier ces invariants
+au commit. Ce contrat n'altère pas `effective-volunteer-units-v1` et ne
+transforme pas une absence de statut ou de décompte en zéro.
+
+Les rapports distinguent l'effectif présent (`volunteers_count`), le nombre
+agrégé connu de ramasseurs (`collectors_count`) et les unités bénévoles
+pondérées de `effective-volunteer-units-v1`. Les moyennes par ramasseur sont
+des ratios calculés à partir des mesures collectives et des seuls décomptes
+connus et strictement positifs ; elles ne sont pas des mesures individuelles.
+Les rapports ne projettent pas les mesures personnelles des participants.
