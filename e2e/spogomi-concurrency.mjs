@@ -558,9 +558,49 @@ async function concurrentCertificateReissue() {
 async function concurrentConsolidationPublication() {
   const actionId = await createAction(sessionA, { preserved: `${marker}-consolidation` });
   const event = await createEvent(sessionA, actionId, "casual");
+  const regulationConfig = {
+    rounding: { decimals: 0, mode: "half_up" },
+    eligibility: { requiresAllCategories: true, minimumPresentParticipants: null },
+    tiebreakers: ["sporting_score"],
+  };
+  await must(
+    await sessionA.from("spogomi_events").update({
+      regulation_source_reference: `${marker}-regulation`,
+      regulation_config: regulationConfig,
+    }).eq("id", event.id),
+    "complete consolidation concurrency event regulation",
+  );
+  const division = await must(
+    await sessionA.from("spogomi_divisions").select("id").eq("event_id", event.id).single(),
+    "read consolidation concurrency division",
+  );
+  await must(
+    await sessionA.from("spogomi_divisions").update({
+      regulation_source_reference: `${marker}-regulation`,
+      regulation_config: regulationConfig,
+    }).eq("id", division.id),
+    "complete consolidation concurrency division regulation",
+  );
+  const category = await must(
+    await sessionA.from("spogomi_category_rules").insert({
+      event_id: event.id,
+      division_id: division.id,
+      regulation_version: "synthetic-v1",
+      code: `${marker}-plastic`,
+      label: "Plastic",
+      measurement_kind: "mass",
+      unit: "g",
+      coefficient_status: "confirmed",
+      coefficient: 1,
+      display_order: 1,
+      is_complete: true,
+    }).select("id").single(),
+    "create consolidation concurrency category",
+  );
   const team = await must(
     await sessionA.from("spogomi_teams").insert({
       event_id: event.id,
+      division_id: division.id,
       team_number: 1,
       public_name: `${marker} consolidation team`,
       composition_state: "draft",
@@ -570,6 +610,7 @@ async function concurrentConsolidationPublication() {
   const participant = await must(
     await sessionA.from("spogomi_participants").insert({
       event_id: event.id,
+      division_id: division.id,
       team_id: team.id,
       external_reference: `${marker}-consolidation-ticket`,
       registration_status: "registered",
@@ -584,16 +625,35 @@ async function concurrentConsolidationPublication() {
   const submission = await must(
     await sessionA.from("spogomi_result_submissions").insert({
       event_id: event.id,
+      division_id: division.id,
       team_id: team.id,
       version: 1,
-      status: "certified",
+      status: "draft",
       regulation_version: "synthetic-v1",
+    }).select("id").single(),
+    "create consolidation concurrency submission",
+  );
+  await must(
+    await sessionA.from("spogomi_result_items").insert({
+      submission_id: submission.id,
+      event_id: event.id,
+      division_id: division.id,
+      category_rule_id: category.id,
+      quantity: 1250,
+      provenance: `${marker}-scale`,
+      measurement_method: "scale",
+    }),
+    "create consolidation concurrency result item",
+  );
+  await must(
+    await sessionA.from("spogomi_result_submissions").update({
+      status: "certified",
       submitted_by_clerk_id: `${marker}-team`,
       submitted_at: "2026-10-20T10:00:00.000Z",
       certified_by_clerk_id: `${marker}-referee`,
       certified_at: "2026-10-20T10:01:00.000Z",
-    }).select("id").single(),
-    "create consolidation concurrency submission",
+    }).eq("id", submission.id),
+    "certify consolidation concurrency submission",
   );
   await must(
     await sessionA.from("spogomi_teams").update({ certified_submission_id: submission.id }).eq("id", team.id),
