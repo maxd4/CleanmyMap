@@ -81,6 +81,22 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.ok(preflightPosition >= 0 && browserPosition > preflightPosition, "browser installation must follow the PostgreSQL preflight");
 });
 
+test("SPOGOMI business checks run before the Clerk-dependent Cachan integration", () => {
+  const workflow = read(".github/workflows/e2e-supabase.yml");
+  const businessIndex = workflow.indexOf("- name: Run SPOGOMI business tests");
+  const projectListIndex = workflow.indexOf("- name: Verify persistent Playwright projects are listable");
+  const cachanIndex = workflow.indexOf("- name: Run SPOGOMI Cachan mixed integration on ephemeral Supabase");
+  assert.ok(businessIndex >= 0 && projectListIndex > businessIndex && cachanIndex > projectListIndex);
+  for (const path of [
+    "src/lib/spogomi/preparation/preparation-service.gpx.test.ts",
+    "src/lib/spogomi/preparation/preparation-migration.contract.test.ts",
+    "src/lib/spogomi/preparation/composition-lock-routes.contract.test.ts",
+    "src/lib/spogomi/preparation/preparation-service.preview.test.ts",
+  ]) {
+    assert.ok(workflow.includes(path), `missing SPOGOMI business test: ${path}`);
+  }
+});
+
 test("SQL evidence is staged as a safe public report and never raw database output", () => {
   const staging = read("scripts/checks/stage-public-e2e-artifact.mjs");
   const validator = read("scripts/checks/check-public-e2e-artifact.mjs");
