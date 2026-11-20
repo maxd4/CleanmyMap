@@ -18,6 +18,15 @@ function blocked(reason) {
   return Object.freeze({ mode: "BLOCKED", apply: false, reason });
 }
 
+export function evaluateSupabasePostflight({ eventName, status, exitCode } = {}) {
+  if (exitCode !== 0) return { ...blocked("postflight preflight returned a non-zero exit code"), pass: false };
+  if (status === "ALIGNED") return { mode: "ALIGNED", pass: true, reason: "the linked migration queue is aligned" };
+  if ((eventName === "schedule" || eventName === "workflow_dispatch") && status === "READY_TO_APPLY") {
+    return { mode: "READ_ONLY_PENDING", pass: true, reason: `${eventName} is read-only; pending migrations are reported without application` };
+  }
+  return { ...blocked(`postflight status ${String(status ?? "MISSING")} is not valid for ${String(eventName ?? "unknown event")}`), pass: false };
+}
+
 export function validateEphemeralEvidence({ evidence, candidateSha }) {
   const candidate = requireSha(candidateSha, "candidate SHA");
   if (!evidence || typeof evidence !== "object") return blocked("ephemeral SQL evidence is missing");

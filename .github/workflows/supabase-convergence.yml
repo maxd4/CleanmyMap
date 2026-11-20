@@ -184,10 +184,7 @@ jobs:
           set -e
           cat "$RUNNER_TEMP/supabase-postflight.log"
           postflight_status=$(sed -n 's/^PREFLIGHT_STATUS: //p' "$RUNNER_TEMP/supabase-postflight.log" | tail -n 1)
-          if [ "$postflight_status" != "ALIGNED" ] || [ "$postflight_exit" -ne 0 ]; then
-            echo "Postflight did not prove an aligned, empty queue. No retry is performed."
-            exit 1
-          fi
+          node scripts/ci/supabase-convergence-postflight.mjs "$GITHUB_EVENT_NAME" "$postflight_status" "$postflight_exit"
           npm run audit:supabase-migration-trees
           node --test scripts/ci/supabase-migration-preflight.test.mjs scripts/audits/audit-supabase-migration-trees.test.mjs
           npm run test -w apps/web -- src/lib/supabase/migration-contracts/action-rides-transactions-migration.test.ts src/lib/supabase/migration-contracts/public-action-map-reconstruction-projection.test.ts

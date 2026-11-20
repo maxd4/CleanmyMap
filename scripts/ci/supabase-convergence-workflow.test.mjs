@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { evaluateSupabaseConvergenceGate, validateEphemeralEvidence } from "./supabase-convergence-gate.mjs";
+import { evaluateSupabaseConvergenceGate, evaluateSupabasePostflight, validateEphemeralEvidence } from "./supabase-convergence-gate.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const workflowPath = path.join(repositoryRoot, ".github", "workflows", "supabase-convergence.yml");
@@ -68,7 +68,7 @@ test("production secrets are scoped to the protected non-PR job and the canonica
 });
 
 test("the workflow verifies an empty queue and critical static contracts without pretending to run pgTAP remotely", () => {
-  assert.match(workflow, /postflight_status.*ALIGNED/);
+  assert.match(workflow, /supabase-convergence-postflight\.mjs "\$GITHUB_EVENT_NAME" "\$postflight_status" "\$postflight_exit"/);
   assert.match(workflow, /audit:supabase-migration-trees/);
   assert.match(workflow, /action-rides-transactions-migration\.test\.ts/);
   assert.match(workflow, /public-action-map-reconstruction-projection\.test\.ts/);
@@ -98,6 +98,22 @@ test("manual and scheduled controls are read-only", () => {
       reason: `${eventName} is read-only and cannot apply migrations`,
     });
   }
+});
+
+test("read-only events accept pending queues while real convergence requires ALIGNED", () => {
+  for (const eventName of ["schedule", "workflow_dispatch"]) {
+    assert.equal(evaluateSupabasePostflight({ eventName, status: "ALIGNED", exitCode: 0 }).pass, true);
+    assert.equal(evaluateSupabasePostflight({ eventName, status: "READY_TO_APPLY", exitCode: 0 }).mode, "READ_ONLY_PENDING");
+    for (const status of ["BLOCKED", "DIVERGED"]) {
+      assert.equal(evaluateSupabasePostflight({ eventName, status, exitCode: 0 }).pass, false, `${eventName} ${status}`);
+    }
+  }
+
+  assert.equal(evaluateSupabasePostflight({ eventName: "workflow_run", status: "ALIGNED", exitCode: 0 }).pass, true);
+  for (const status of ["READY_TO_APPLY", "BLOCKED", "DIVERGED"]) {
+    assert.equal(evaluateSupabasePostflight({ eventName: "workflow_run", status, exitCode: 0 }).pass, false, `workflow_run ${status}`);
+  }
+  assert.equal(evaluateSupabasePostflight({ eventName: "workflow_dispatch", status: "READY_TO_APPLY", exitCode: 1 }).pass, false);
 });
 
 test("wrong source, failed run, stale main, missing proof, and incomplete proof are refused", () => {
