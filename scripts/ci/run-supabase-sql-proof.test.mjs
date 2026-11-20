@@ -99,6 +99,7 @@ test("territorial revision proof uses explicit session barriers and the RPC cont
   assert.match(source, /const freshResult = await runQuery\(freshSessionSql, "fresh-publication"\)/);
   assert.match(source, /const staleResult = await runQuery\(staleSessionSql\(oldRevision\), "stale-publication"\)/);
   assert.match(source, /TERRITORIAL_PHASE=\$\{phase\}/);
+  assert.match(source, /TERRITORIAL_PHASE=parse-old-revision ERROR=/);
   assert.match(source, /TERRITORIAL_FRESH_RESULT=/);
   assert.match(source, /freshRpcResult\.status, "applied"/);
   assert.match(source, /freshRpcResult\.affectedUserIds\.includes\("legend-revision-fresh"\)/);

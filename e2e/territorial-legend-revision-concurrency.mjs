@@ -135,7 +135,15 @@ async function main() {
   await runQuery(setupSql, "setup");
   const oldRevisionResult = await runQuery(readOldRevisionSql, "read-old-revision");
   const oldOutput = output({ value: oldRevisionResult });
-  const oldRevision = parseTerritorialRevisionNotice(oldOutput);
+  let oldRevision;
+  try {
+    oldRevision = parseTerritorialRevisionNotice(oldOutput);
+  } catch (error) {
+    const notices = [...oldOutput.matchAll(/TERRITORIAL_OLD_REVISION=([^\r\n]+)/g)];
+    const revision = notices[0]?.[1];
+    console.error(`TERRITORIAL_PHASE=parse-old-revision ERROR=${error instanceof Error ? error.message : String(error)} notices=${notices.length} timestampValid=${revision ? TERRITORIAL_REVISION_PATTERN.test(revision) && !Number.isNaN(Date.parse(revision)) : false}`);
+    throw error;
+  }
   const freshResult = await runQuery(freshSessionSql, "fresh-publication");
   const freshOutput = output({ value: freshResult });
   const freshResultMatch = freshOutput.match(/TERRITORIAL_FRESH_RESULT=(\{.*\})/);
