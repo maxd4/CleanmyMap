@@ -563,7 +563,7 @@ async function concurrentConsolidationPublication() {
       event_id: event.id,
       team_number: 1,
       public_name: `${marker} consolidation team`,
-      composition_state: "verified",
+      composition_state: "draft",
     }).select("id").single(),
     "create consolidation concurrency team",
   );
