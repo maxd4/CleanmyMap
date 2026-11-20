@@ -716,11 +716,23 @@ async function concurrentConsolidationPublication() {
       p_published_by_clerk_id: `${marker}-publisher-b`,
     }),
   ]);
+  assert.equal(results.filter((result) => !result.error).length, 1, "exactly one concurrent publication must commit from the shared preview");
   assert.equal(
-    results.filter((result) => !result.error).length,
-    2,
-    `same-hash consolidation must serialize as one committed projection; rpc errors: ${JSON.stringify(results.map(({ error }) => error && ({ code: error.code, message: error.message, details: error.details })))}`,
+    results.filter((result) => result.error?.code === "40001" && result.error.message === "The SPOGOMI source snapshot changed since the preview").length,
+    1,
+    `the other concurrent publication must reject its stale source snapshot; rpc errors: ${JSON.stringify(results.map(({ error }) => error && ({ code: error.code, message: error.message, details: error.details })))}`,
   );
+  projection.sourceSnapshot = await consolidationSourceSnapshot(sessionA, event.id);
+  const retry = await sessionB.rpc("consolidate_spogomi_event_to_action", {
+    p_event_id: event.id,
+    p_consolidation_key: `${marker}-consolidation`,
+    p_source_hash: "a".repeat(64),
+    p_projection_version: "spogomi-cleanmymap-v1",
+    p_mappings: [],
+    p_projection: projection,
+    p_published_by_clerk_id: `${marker}-publisher-retry`,
+  });
+  assert.equal(retry.error, null, "a same-hash retry with a refreshed snapshot must be idempotent");
   const current = await must(
     await sessionA.from("spogomi_action_consolidations").select("source_hash, projection_revision, is_current").eq("event_id", event.id),
     "read concurrent consolidation projection",
