@@ -106,7 +106,7 @@ test("territorial revision proof uses explicit session barriers and the RPC cont
   assert.match(source, /TERRITORIAL_STALE_REJECTED=/);
   assert.doesNotMatch(source, /assert\.match\(output\(freshResult\), \/fresh-after-delete\//);
   assert.match(source, /'freshFingerprints'/);
-  assert.match(source, /to_char\(public\.get_territorial_legend_fact_revision\(\), 'YYYY-MM-DD"T"HH24:MI:SS\.USOF'\)/);
+  assert.match(source, /to_char\(public\.get_territorial_legend_fact_revision\(\) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS\.US'\) \|\| '\+00:00'/);
   assert.match(source, /parseTerritorialRevisionNotice\(oldOutput\)/);
   assert.match(source, /'\$\{oldRevision\}'::timestamptz/);
   assert.doesNotMatch(source, /TERRITORIAL_OLD_REVISION=\(\[\^\\s\]\+\)/);

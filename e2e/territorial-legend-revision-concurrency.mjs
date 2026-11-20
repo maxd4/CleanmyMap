@@ -66,7 +66,7 @@ select set_config('request.jwt.claims', '{"role":"service_role","sub":"territori
 select set_config('request.jwt.claim.role', 'service_role', true);
 do $$
 begin
-  raise notice 'TERRITORIAL_OLD_REVISION=%', to_char(public.get_territorial_legend_fact_revision(), 'YYYY-MM-DD"T"HH24:MI:SS.USOF');
+  raise notice 'TERRITORIAL_OLD_REVISION=%', to_char(public.get_territorial_legend_fact_revision() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US') || '+00:00';
   raise notice 'TERRITORIAL_SESSION=stale-read pid=%', pg_backend_pid();
 end;
 $$;
