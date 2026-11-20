@@ -434,3 +434,131 @@ describe("ecologits-adapter", () => {
     ).toThrow(/cachedTokens/);
   });
 });
+
+describe("EcoLogits v3.0.0 — intégrité des paramètres et de l'architecture", () => {
+  it("refuse les architectures partielles ou incohérentes et accepte une architecture MoE personnalisée complète", () => {
+    const gpt4o = requireAiModel("openai/gpt-4o");
+    const llama8b = requireAiModel("meta-llama/llama-3.1-8b-instruct");
+
+    // 1. customActiveParametersBillion sans customTotalParametersBillion (sans modèle ni total documenté)
+    const partialCustom = computeEcologitsCompatibleImpacts({
+      customActiveParametersBillion: 12,
+      outputTokens: 1_000,
+      region: "US",
+    });
+    expect(partialCustom.isEcologitsCompliant).toBe(false);
+    expect(partialCustom.gpuRequiredCount).toBeNull();
+    expect(partialCustom.diagnostic).toBe("NOT_CALCULABLE");
+
+    // 2. customActiveParametersBillion sans customTotalParametersBillion sur un modèle sans paramètres publiés
+    const partialOnUnreleased = computeEcologitsCompatibleImpacts({
+      model: gpt4o,
+      customActiveParametersBillion: 12,
+      outputTokens: 1_000,
+      region: "US",
+    });
+    expect(partialOnUnreleased.isEcologitsCompliant).toBe(false);
+    expect(partialOnUnreleased.gpuRequiredCount).toBeNull();
+    expect(partialOnUnreleased.diagnostic).toBe("NOT_CALCULABLE");
+
+    // 3. Résolution sans ambiguïté du total depuis un modèle documenté si seul active est personnalisé
+    const resolvedFromDocumented = computeEcologitsCompatibleImpacts({
+      model: llama8b,
+      customActiveParametersBillion: 4,
+      outputTokens: 1_000,
+      region: "US",
+    });
+    expect(resolvedFromDocumented.isEcologitsCompliant).toBe(true);
+    expect(resolvedFromDocumented.gpuRequiredCount).toBe(1);
+
+    // 4. Architecture personnalisée complète et valide (MoE 12B actifs / 100B totaux)
+    // 1.2 * 100 * 16 / 8 = 240 Go -> ceil(240/80) = 3 -> arrondi puissance de 2 = 4 GPU
+    const fullCustomMoe = computeEcologitsCompatibleImpacts({
+      customActiveParametersBillion: 12,
+      customTotalParametersBillion: 100,
+      outputTokens: 1_000,
+      region: "US",
+    });
+    expect(fullCustomMoe.isEcologitsCompliant).toBe(true);
+    expect(fullCustomMoe.gpuRequiredCount).toBe(4);
+    expect(fullCustomMoe.notes.some((n) => n.includes("Architecture MoE"))).toBe(true);
+
+    // 5. activeParameters > totalParameters rejeté dans l'adaptateur et dans le noyau
+    expect(() =>
+      computeEcologitsCompatibleImpacts({
+        customActiveParametersBillion: 70,
+        customTotalParametersBillion: 8,
+        outputTokens: 1_000,
+        region: "US",
+      }),
+    ).toThrow(/customActiveParametersBillion/);
+
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({
+        modelActiveParameterCount: 70,
+        modelTotalParameterCount: 8,
+        outputTokenCount: 200,
+        datacenterPue: 1.2,
+        datacenterWue: 0.5,
+        ifElectricityMixGwp: 0.5,
+        ifElectricityMixWue: 4,
+      }),
+    ).toThrow(/modelActiveParameterCount cannot exceed modelTotalParameterCount/);
+  });
+
+  it("rejette les facteurs physiques invalides (NaN, Infinity, négatifs, PUE < 1) et les débordements", () => {
+    const base = {
+      modelActiveParameterCount: 7.3,
+      modelTotalParameterCount: 7.3,
+      outputTokenCount: 200,
+      datacenterPue: 1.2,
+      datacenterWue: 0.569,
+      ifElectricityMixGwp: 0.590478,
+      ifElectricityMixAdpe: 7.37708e-8,
+      ifElectricityMixPe: 9.988,
+      ifElectricityMixWue: 5.04,
+    };
+
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, ifElectricityMixGwp: Number.NaN }),
+    ).toThrow(/ifElectricityMixGwp/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, ifElectricityMixWue: Number.POSITIVE_INFINITY }),
+    ).toThrow(/ifElectricityMixWue/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, ifElectricityMixGwp: -0.1 }),
+    ).toThrow(/ifElectricityMixGwp/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, ifElectricityMixAdpe: -1e-9 }),
+    ).toThrow(/ifElectricityMixAdpe/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, ifElectricityMixPe: Number.NaN }),
+    ).toThrow(/ifElectricityMixPe/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, datacenterPue: 0.95 }),
+    ).toThrow(/datacenterPue/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, datacenterPue: Number.POSITIVE_INFINITY }),
+    ).toThrow(/datacenterPue/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, datacenterWue: -0.5 }),
+    ).toThrow(/datacenterWue/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, serverPower: -1 }),
+    ).toThrow(/serverPower/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, gpuEmbodiedGwp: Number.NaN }),
+    ).toThrow(/gpuEmbodiedGwp/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, gpuEnergyAlpha: Number.POSITIVE_INFINITY }),
+    ).toThrow(/gpuEnergyAlpha/);
+
+    // Débordement sur volumes extrêmes
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, outputTokenCount: 1e308 }),
+    ).toThrow(/Physical integrity violation/);
+    expect(() =>
+      computeOfficialEcologitsLlmImpacts({ ...base, modelActiveParameterCount: 1e308, modelTotalParameterCount: 1e308 }),
+    ).toThrow(/Cannot size the GPU set|Physical integrity violation/);
+  });
+});
