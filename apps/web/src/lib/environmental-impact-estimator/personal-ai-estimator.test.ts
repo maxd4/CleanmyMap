@@ -406,6 +406,26 @@ describe("personal-ai-estimator", () => {
     expect(knownModel.methodologyNotes.join(" ")).toContain("seuls les 20 tokens générés");
     expect(estimatePersonalAiFootprint({ textUsage: { totalTokens: 100, inputTokens: 40 } }).physicalTotals.itEnergyKwh).toBeGreaterThan(0);
     expect(estimatePersonalAiFootprint({ textUsage: { totalTokens: 100, cachedTokens: 90 }, modelId: "meta-llama/llama-3.1-8b-instruct", region: "US" }).methodologyNotes.join(" ")).toContain("ventilation entrée/sortie est inconnue");
+    expect(() => estimatePersonalAiFootprint({ textUsage: { totalTokens: 100, outputTokens: 90, cachedTokens: 50 } })).toThrow(/cachedTokens/);
+    expect(() => estimatePersonalAiFootprint({ textUsage: { totalTokens: 100, outputTokens: 90, cachedTokens: 50 }, modelId: "meta-llama/llama-3.1-8b-instruct", region: "US" })).toThrow(/cachedTokens/);
+    expect(estimatePersonalAiFootprint({ textUsage: { totalTokens: 100, outputTokens: 90, cachedTokens: 10 } }).physicalTotals.itEnergyKwh).toBe(0.00003);
+
+    const derivedReasoning = estimatePersonalAiFootprint({
+      modelId: "meta-llama/llama-3.1-8b-instruct",
+      textUsage: { totalTokens: 100, inputTokens: 80, reasoningTokensIncluded: 10 },
+      region: "US",
+    });
+    const explicitReasoning = estimatePersonalAiFootprint({
+      modelId: "meta-llama/llama-3.1-8b-instruct",
+      textUsage: { totalTokens: 100, inputTokens: 80, outputTokens: 20, reasoningTokensIncluded: 10 },
+      region: "US",
+    });
+    expect(derivedReasoning.physicalTotals).toEqual(explicitReasoning.physicalTotals);
+    expect(() => estimatePersonalAiFootprint({ textUsage: { totalTokens: 100, inputTokens: 80, reasoningTokensIncluded: 21 } })).toThrow(/reasoningTokensIncluded/);
+
+    const cachedWithoutDirection = estimatePersonalAiFootprint({ textUsage: { totalTokens: 100, cachedTokens: 90 } });
+    expect(cachedWithoutDirection.methodologyNotes.join(" ")).toContain("ventilation entrée/sortie est inconnue");
+    expect(cachedWithoutDirection.physicalTotals.itEnergyKwh).toBe(0.00003);
     expect(() =>
       estimatePersonalAiFootprint({
         textUsage: { outputTokens: 100 },

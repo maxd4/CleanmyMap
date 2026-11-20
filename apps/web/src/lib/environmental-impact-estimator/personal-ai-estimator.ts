@@ -406,15 +406,10 @@ function computeTextImpacts(
 ): TextImpactsResult {
   const textInput = input.textUsage;
   let textTokens: number | null = null;
-  let resolvedInputTokens = textInput?.inputTokens;
-  let resolvedOutputTokens = textInput?.outputTokens;
+  const resolvedInputTokens = textInput?.inputTokens;
+  const resolvedOutputTokens = textInput?.outputTokens;
   if (typeof textInput?.totalTokens === "number") {
     textTokens = textInput.totalTokens;
-    if (typeof resolvedInputTokens === "number" && typeof resolvedOutputTokens !== "number") {
-      resolvedOutputTokens = textInput.totalTokens - resolvedInputTokens;
-    } else if (typeof resolvedOutputTokens === "number" && typeof resolvedInputTokens !== "number") {
-      resolvedInputTokens = textInput.totalTokens - resolvedOutputTokens;
-    }
   } else if (typeof textInput?.inputTokens === "number" || typeof textInput?.outputTokens === "number") {
     textTokens = (textInput.inputTokens ?? 0) + (textInput.outputTokens ?? 0);
   }
@@ -610,7 +605,7 @@ export function estimatePersonalAiFootprint(
   input: PersonalAiFootprintInput,
   generatedAt = new Date().toISOString(),
 ): PersonalAiFootprintEstimate {
-  validatePersonalAiInput(input);
+  input = validatePersonalAiInput(input);
 
   const scenario = input.energyScenario ?? "central";
   const region = input.region ?? "UNKNOWN";
