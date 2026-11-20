@@ -34,6 +34,7 @@ const ACTION_COLUMNS = [
   "waste_kg",
   "cigarette_butts",
   "volunteers_count",
+  "collectors_count",
   "children_count",
   "adult_count",
   "retired_count",

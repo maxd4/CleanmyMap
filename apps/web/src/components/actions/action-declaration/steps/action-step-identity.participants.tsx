@@ -176,6 +176,28 @@ function FinalParticipantCountInputs({
           {compositionMessage}
         </p>
       ) : null}
+      <label htmlFor="action-collectors-count" className="block space-y-1.5">
+        <span className="block text-sm font-semibold text-emerald-950">Personnes ayant réellement ramassé</span>
+        <input
+          id="action-collectors-count"
+          type="number"
+          min="0"
+          max={volunteersCount ?? 500}
+          step="1"
+          inputMode="numeric"
+          placeholder="À renseigner si connu"
+          aria-describedby="action-collectors-count-help"
+          className={compactInputCls}
+          value={form.collectorsCount}
+          onChange={(event) => updateField("collectorsCount", event.target.value)}
+        />
+        <span id="action-collectors-count-help" className="block text-xs text-emerald-900/60">
+          Comptez les personnes qui ont ramassé, quel que soit leur âge ou besoin d’accompagnement. Laissez vide si inconnu. Exemple : 20 personnes présentes, 12 ramasseurs.
+        </span>
+        {form.collectorsCount.trim() !== "" && volunteersCount !== null && Number(form.collectorsCount) > volunteersCount ? (
+          <span className="block text-xs font-medium text-rose-700" role="alert">Le nombre de personnes ayant ramassé ne peut pas dépasser le total présent ({volunteersCount}).</span>
+        ) : null}
+      </label>
       <ParticipantContextControl
         form={form}
         updateField={updateField}

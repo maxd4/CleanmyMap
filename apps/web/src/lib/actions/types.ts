@@ -380,6 +380,7 @@ export type ActionListItem = {
   cigarette_butts_pollution_score?: number | null;
   post_action_pollution_score?: number | null;
   volunteers_count: number | null;
+  collectors_count?: number | null;
   duration_minutes: number;
   notes: string | null;
   status: ActionStatus;
@@ -539,6 +540,8 @@ export type CreateActionPayload = {
   cigaretteButts: number | null;
   cigaretteButtsCount?: number | null;
   volunteersCount: number;
+  /** Number of physically present people who collected; null means unknown. */
+  collectorsCount?: number | null;
   durationMinutes: number;
   eventStartTime?: string | null;
   eventEndTime?: string | null;
@@ -606,6 +609,7 @@ export type ActionMapItem = Pick<
   | "waste_pollution_score"
   | "cigarette_butts_pollution_score"
   | "post_action_pollution_score"
+  | "collectors_count"
   | "status"
   | "created_by_clerk_id"
 > &

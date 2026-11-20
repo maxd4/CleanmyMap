@@ -30,6 +30,7 @@ describe("action declaration payload mesures", () => {
 
     expect(blankPayload.wasteKg).toBeNull();
     expect(blankPayload.cigaretteButts).toBeNull();
+    expect(blankPayload.collectorsCount).toBeNull();
     expect(blankPayload.cigaretteButtsMeasurements).toMatchObject({
       cigaretteButtsCount: null,
       cigaretteButtsMassKg: null,
@@ -44,6 +45,7 @@ describe("action declaration payload mesures", () => {
     zeroForm.childrenCount = "0";
     zeroForm.adultCount = "1";
     zeroForm.retiredCount = "0";
+    zeroForm.collectorsCount = "1";
     const zeroPayload = buildCreateActionPayload({
       form: zeroForm,
       declarationMode: "complete",
@@ -57,6 +59,7 @@ describe("action declaration payload mesures", () => {
     expect(zeroPayload.wasteKg).toBe(0);
     expect(zeroPayload.cigaretteButts).toBe(0);
     expect(zeroPayload.volunteersCount).toBe(1);
+    expect(zeroPayload.collectorsCount).toBe(1);
   });
 
   it("keeps synchronized megots count and weight coherent in the payload", () => {

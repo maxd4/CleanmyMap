@@ -316,14 +316,16 @@ Dans l'étape de déclaration, chaque indicateur choisit sa référence sans
 mélanger les dénominateurs. Lorsque la référence contextuelle pondérée et ses
 sources sont disponibles, le courant est divisé par les unités opérationnelles
 du contexte. Sinon, le formulaire peut utiliser `collectionReferences`, la
-moyenne historique brute `Moyenne historique par participant`, et divise alors
-le courant par `volunteersCount`. Si la référence globale est elle aussi
-indisponible, aucune jauge ni tendance n'est calculée. Les deux indicateurs
-peuvent donc utiliser des modes différents dans une même action. La référence
-globale chargée par le provider est la moyenne dynamique `CURRENT` de la RPC ;
-elle ne constitue pas une publication mensuelle figée. Une future référence
-mensuelle snapshot devra rester identifiée par son propre contrat et ne peut
-pas être déduite de cette interface.
+la référence globale actuelle `action-collection-reference-averages-v2`, dont
+le dénominateur est `collectors_count`. Le courant est alors divisé par le
+nombre de personnes ayant ramassé renseigné dans le bilan final. Si ce nombre
+est inconnu, aucune comparaison globale n'est calculée. Les moyennes
+contextuelles conservent leur dénominateur `effective-volunteer-units-v1`.
+Les deux indicateurs peuvent donc utiliser des modes différents dans une même
+action. La RPC globale reste dynamique et ne constitue pas une publication
+mensuelle figée. `action_collection_reference_averages_v1()` est conservée
+pour la lecture historique et ne doit pas être présentée comme la référence
+globale CURRENT.
 
 #### Observation historique de la référence globale — 06/11/2026
 
@@ -373,7 +375,9 @@ Les références et agrégats dérivés portent l'identité de la méthode qui l
 produits. Les propriétaires actuels sont distincts :
 
 - `action-collection-reference-averages-v1` pour la moyenne globale historique
-  du formulaire ;
+  des actions avant la collecte réelle ;
+- `action-collection-reference-averages-v2` pour la moyenne globale CURRENT,
+  calculée par personne ayant effectivement ramassé ;
 - `contextual-effective-units-v1` pour les moyennes contextualisées
   `citizen`, `company` et `school` du formulaire ;
 - `pollution-score-references-v2` pour les maxima globaux et départementaux du
@@ -1281,3 +1285,19 @@ Voir également :
 
 - `documentation/product/SCIENTIFIC_PROTOCOL.md` ;
 - `documentation/architecture/data-governance.md` lorsque le contrat de données concerné y est documenté.
+
+## Effectif présent et collecte réellement effectuée — CURRENT
+
+Le bilan final conserve `volunteers_count` comme effectif total physiquement
+présent, avec la composition par âge lorsqu'elle est connue. Le champ distinct
+`collectors_count` décrit les personnes ayant effectivement ramassé ; `NULL`
+signifie que ce décompte n'a pas été renseigné. Le formulaire de bilan peut
+laisser ce champ inconnu, sinon il ne peut dépasser l'effectif présent.
+
+Pour les actions déclarées avec cette attribution, la répartition conservatrice
+du reliquat d'impact collectif porte uniquement sur les comptes confirmés dont
+le statut individuel est `collected`. `not_collected` et `unknown` ne reçoivent
+pas de quote-part automatique ; une mesure individuelle exacte reste attachée
+à la personne même si son statut de collecte est inconnu. Les actions
+historiques sans marqueur de version gardent leur projection antérieure. Ces
+champs ne changent pas la confirmation de présence, les XP ou les rôles.

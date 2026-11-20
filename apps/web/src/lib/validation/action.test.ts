@@ -352,6 +352,15 @@ describe("createActionSchema", () => {
     ).toBe(false);
   });
 
+  it("validates the optional collector count against the physically present total", () => {
+    expect(createActionSchema.safeParse({ ...basePayload, collectorsCount: null }).success).toBe(true);
+    expect(createActionSchema.safeParse({ ...basePayload, collectorsCount: 2 }).success).toBe(true);
+    expect(createActionSchema.safeParse({ ...basePayload, collectorsCount: 3 }).success).toBe(false);
+    expect(updateActionSchema.safeParse({ collectorsCount: 0 }).success).toBe(true);
+    expect(updateActionSchema.safeParse({ collectorsCount: -1 }).success).toBe(false);
+    expect(updateActionSchema.safeParse({ collectorsCount: 501 }).success).toBe(false);
+  });
+
   it("requires a coherent volunteer forecast split for quick pre-actions", () => {
     const incoherent = createActionSchema.safeParse({
       ...basePayload,

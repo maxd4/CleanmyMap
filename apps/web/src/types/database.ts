@@ -42,6 +42,7 @@ export type ActionParticipantRow = {
     | "action_organizer"
     | "post_action_claim";
   individual_waste_kg?: number | null;
+  collection_status?: "collected" | "not_collected" | null;
   individual_waste_condition?: "sec" | "humide" | "mouille" | null;
   individual_waste_measurement_method?: string | null;
   individual_waste_normalization_version?: string | null;
@@ -135,6 +136,7 @@ export type ActionRow = {
   territorial_legend_attribution?: Record<string, unknown> | null;
   cigarette_butts: number | null;
   volunteers_count: number | null;
+  collectors_count?: number | null;
   children_count?: number | null;
   adult_count?: number | null;
   retired_count?: number | null;

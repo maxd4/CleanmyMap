@@ -53,11 +53,16 @@ const participantImpactSchema = z
     participantId: z.string().trim().min(1),
     waste: wasteSchema.nullable().optional(),
     butts: buttsSchema.nullable().optional(),
+    collectionStatus: z.enum(["collected", "not_collected"]).nullable().optional(),
     reason: z.string().trim().max(500).optional(),
   })
   .strict()
-  .refine((value) => value.waste !== undefined || value.butts !== undefined, {
-    message: "Une mesure de déchets ou de mégots est requise.",
+  .refine((value) => {
+    const hasMeasurement = value.waste !== undefined || value.butts !== undefined;
+    const hasCollectionStatus = value.collectionStatus !== undefined;
+    return hasMeasurement !== hasCollectionStatus;
+  }, {
+    message: "Envoyez soit une mesure individuelle, soit une qualification de collecte.",
     path: ["participantId"],
   });
 
@@ -70,6 +75,7 @@ type ImpactParticipant = Record<string, unknown> & {
   user_id: string;
   participation_status: "pending" | "confirmed" | "cancelled";
   updated_at?: string | null;
+  collection_status?: "collected" | "not_collected" | null;
 };
 
 type ImpactContext = {
@@ -348,6 +354,60 @@ async function persistParticipantImpact(
   );
 }
 
+async function persistParticipantCollectionStatus(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  actionId: string,
+  participantId: string,
+  collectionStatus: "collected" | "not_collected" | null,
+  context: ImpactContext,
+) {
+  const previousImpactSnapshot = await captureActionParticipantImpactSnapshot(supabase, actionId);
+  const result = await supabase.rpc("persist_action_participant_collection_status", {
+    p_action_id: actionId,
+    p_participant_id: participantId,
+    p_reviewer_user_id: context.reviewerUserId,
+    p_admin_override: context.reviewerCanOverride,
+    p_expected_participant_updated_at: context.participant.updated_at ?? null,
+    p_collection_status: collectionStatus,
+  });
+  if (result.error) throw new Error(result.error.message);
+  const persisted = result.data as { ok?: unknown; code?: unknown; changed?: unknown; id?: unknown; updatedAt?: unknown } | null;
+  if (persisted?.ok !== true) {
+    return NextResponse.json({
+      error: persisted?.code === "revision_conflict"
+        ? "La participation a été modifiée en parallèle. Rechargez-la puis réessayez."
+        : "La participation ou l'autorisation n'est plus éligible à cette qualification.",
+      code: persisted?.code === "revision_conflict" ? "revision_conflict" : "impact_target_not_eligible",
+    }, { status: 409 });
+  }
+  if (persisted.changed === false) {
+    return NextResponse.json({ status: "ok", actionId, participantId, collectionStatus });
+  }
+  await appendActionModerationAudit({
+    operationId: `action-participant-collection-${actionId}-${participantId}-${Date.now()}`,
+    actorUserId: context.reviewerUserId,
+    targetActionId: actionId,
+    targetUserId: context.participant.user_id,
+    operation: "qualify_collection_participation",
+    outcome: "success",
+    reason: undefined,
+    previousValue: { collectionStatus: context.participant.collection_status ?? null },
+    newValue: { collectionStatus },
+    details: { participantId, actionId },
+  });
+  if (previousImpactSnapshot) {
+    await emitActionParticipantImpactNotifications({
+      supabase,
+      actionId,
+      previousSnapshot: previousImpactSnapshot,
+      persistedRevision: typeof persisted.updatedAt === "string" && typeof persisted.id === "string"
+        ? `participant:${persisted.id}:${persisted.updatedAt}`
+        : null,
+    });
+  }
+  return NextResponse.json({ status: "ok", actionId, participantId, collectionStatus });
+}
+
 export async function PATCH(request: Request, ctx: ParticipantImpactRouteContext) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse();
@@ -374,6 +434,15 @@ export async function PATCH(request: Request, ctx: ParticipantImpactRouteContext
     const supabase = getSupabaseServerClient(true);
     const context = await loadImpactContext(supabase, trimmedActionId, parsed.data.participantId, access.userId);
     if (context instanceof NextResponse) return context;
+    if (parsed.data.collectionStatus !== undefined) {
+      return await persistParticipantCollectionStatus(
+        supabase,
+        trimmedActionId,
+        parsed.data.participantId,
+        parsed.data.collectionStatus,
+        context,
+      );
+    }
     const ambiguity = rejectAmbiguousLegacyReplacement(parsed.data, context.current);
     if (ambiguity) return ambiguity;
     return await persistParticipantImpact(supabase, trimmedActionId, parsed.data.participantId, parsed.data, context);

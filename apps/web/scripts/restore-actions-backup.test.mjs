@@ -188,6 +188,23 @@ test("lot-bearing backups use the additive lot-aware restore RPC", async () => {
   assert.equal(calls[0][0], "restore_action_backup_with_individual_butts_lots");
 });
 
+test("collection-attribution backups use the compatible typed-field restore RPC", async () => {
+  const backup = validBackup();
+  backup.tables.actions[0].collectors_count = 2;
+  backup.tables.action_participants[0].collection_status = "collected";
+  validateActionBackup(backup);
+  const calls = [];
+  await restoreActionBackup({
+    backup,
+    apply: true,
+    confirmation: "RESTORE ACTION BACKUP",
+    supabase: { rpc: async (...args) => { calls.push(args); return { data: { restored: 1 }, error: null }; } },
+  });
+  assert.equal(calls[0][0], "restore_action_backup_with_collection_attribution");
+  assert.equal(calls[0][1].p_backup.tables.actions[0].collectors_count, 2);
+  assert.equal(calls[0][1].p_backup.tables.action_participants[0].collection_status, "collected");
+});
+
 test("apply refuses a near-miss confirmation before calling the database", async () => {
   const backup = validBackup();
   let calls = 0;

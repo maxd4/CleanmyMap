@@ -12,7 +12,7 @@ import {
 } from "./volunteer-participation";
 
 export type VolunteerActionValidationIssue = {
-  field: "volunteersCount" | "volunteerParticipation" | "wasteKg";
+  field: "volunteersCount" | "collectorsCount" | "volunteerParticipation" | "wasteKg";
   message: string;
 };
 
@@ -136,6 +136,7 @@ type VolunteerActionSubmissionLike = Omit<
     | "cigaretteButts"
     | "cigaretteButtsMeasurements"
     | "volunteersCount"
+    | "collectorsCount"
     | "volunteerParticipation"
     | "wasteBreakdown"
   >,
@@ -170,6 +171,9 @@ export function getVolunteerActionValidationIssues(
       field: "volunteerParticipation",
       message: compositionMessage,
     });
+  }
+  if (payload.collectorsCount != null && payload.volunteersCount != null && payload.collectorsCount > payload.volunteersCount) {
+    issues.push({ field: "collectorsCount", message: "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes." });
   }
   const measurements = getVolunteerMeasurementFlags(payload);
 

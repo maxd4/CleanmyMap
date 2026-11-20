@@ -565,10 +565,17 @@ La restauration de `cleanmymap.action-backup` version 2 est classée
 `npm run restore:actions -w apps/web` : elle valide d'abord le format, le
 payload et les références de ses relations avant tout plan d'écriture. Le mode
 par défaut est un `dry-run`. Une mutation n'est autorisée qu'après confirmation
-explicite et appelle la RPC atomique `restore_action_backup` avec `service_role`
-dans le CLI autorisé. Elle conserve les identités historiques et les champs
+explicite et appelle la RPC atomique de restauration avec `service_role` dans
+le CLI autorisé. Elle conserve les identités historiques et les champs
 historiques sauvegardés. Cette voie est distincte de l'import métier, ne passe
 pas par `normalizeExternalActionImport` ni `createAction`, et ne doit pas être exposée sous un nom `import`.
+
+Le format version 2 conserve aussi `actions.collectors_count` et
+`action_participants.collection_status`. Pour ces archives, le CLI appelle le
+wrapper `restore_action_backup_with_collection_attribution`, qui passe par le
+restore versionné existant puis rétablit ces colonnes typées. Les archives
+antérieures qui omettent ces champs restent restaurables via leur chemin
+versionné historique.
 
 ## 9. Validation du schéma
 
@@ -631,3 +638,14 @@ annulation sont des événements `community` idempotents dans
 serveur revalide l'appartenance au match à chaque envoi avec `buddyRequestId`.
 Le mécanisme `action_share_contact_requests` conserve sa sémantique exclusive
 de partage d'action.
+
+## Effectif présent et personnes ayant ramassé — CURRENT
+
+`actions.volunteers_count` et les colonnes de composition décrivent l'effectif
+physiquement présent. `actions.collectors_count` est un décompte facultatif des
+personnes ayant réellement ramassé : `NULL` signifie non renseigné. Le statut
+individuel associé à une présence confirmée est porté par
+`action_participants.collection_status` (`collected`, `not_collected`, `NULL`
+= inconnu). Ces faits ne remplacent pas la présence confirmée ni la source de
+progression ludique. Les contributions historiques sans version
+`collectors-v1` gardent leur projection antérieure.

@@ -165,6 +165,13 @@ export function validateActionBackup(payload) {
     }
     assertOptionalNumber(action.latitude, `tables.actions[${index}].latitude`, -90, 90);
     assertOptionalNumber(action.longitude, `tables.actions[${index}].longitude`, -180, 180);
+    assertOptionalNumber(action.collectors_count, `tables.actions[${index}].collectors_count`, 0, 500);
+    if (action.collectors_count != null && !Number.isInteger(action.collectors_count)) {
+      fail(`tables.actions[${index}].collectors_count must be an integer`);
+    }
+    if (action.collectors_count != null && action.volunteers_count != null && action.collectors_count > action.volunteers_count) {
+      fail(`tables.actions[${index}].collectors_count cannot exceed volunteers_count`);
+    }
     assertOptionalNumber(action.geometry_confidence, `tables.actions[${index}].geometry_confidence`, 0, 1);
     if (!isRecord(action.preparation_data)) {
       fail(`tables.actions[${index}].preparation_data must be an object`);
@@ -177,6 +184,13 @@ export function validateActionBackup(payload) {
     for (const [index, row] of rows.entries()) {
       assertUuid(row.id, `tables.${table}[${index}].id`);
       assertActionReference(row, actionIds, `tables.${table}`, index);
+    }
+  }
+
+  for (const [index, participant] of payload.tables.action_participants.entries()) {
+    if (participant.collection_status !== undefined && participant.collection_status !== null &&
+      !["collected", "not_collected"].includes(participant.collection_status)) {
+      fail(`tables.action_participants[${index}].collection_status is invalid`);
     }
   }
 

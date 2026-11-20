@@ -39,6 +39,49 @@ function allocateForPhysicalCounts(params: {
 }
 
 describe("individual action impact attribution", () => {
+  it("allocates collector-version remainders only across explicitly confirmed collectors", () => {
+    const exact = toIndividualImpactMeasurement({ individual_waste_kg: 5, individual_waste_condition: "sec" });
+    const result = allocateActionParticipantImpact({
+      totalWasteKg: 20,
+      totalCigaretteButts: null,
+      collectionAttributionVersion: "collectors-v1",
+      participants: [
+        { ...participant("measured", exact), collectionStatus: "collected" },
+        { ...participant("collector"), collectionStatus: "collected" },
+        { ...participant("no-collection"), collectionStatus: "not_collected" },
+        participant("unknown"),
+      ],
+    });
+
+    expect(result.get("measured")).toMatchObject({ wasteKg: 5, wasteKind: "individual" });
+    expect(result.get("collector")).toMatchObject({ wasteKg: 15, wasteKind: "quote_part" });
+    expect(result.get("no-collection")).toMatchObject({ wasteKg: null, wasteKind: "unavailable" });
+    expect(result.get("unknown")).toMatchObject({ wasteKg: null, wasteKind: "unavailable" });
+  });
+
+  it("keeps exact measurements even when collector status is unknown", () => {
+    const exact = toIndividualImpactMeasurement({ individual_waste_kg: 7, individual_waste_condition: "sec" });
+    const result = allocateActionParticipantImpact({
+      totalWasteKg: 20,
+      totalCigaretteButts: null,
+      collectionAttributionVersion: "collectors-v1",
+      participants: [participant("unknown", exact), { ...participant("collector"), collectionStatus: "collected" }],
+    });
+
+    expect(result.get("unknown")).toMatchObject({ wasteKg: 7, wasteKind: "individual" });
+    expect(result.get("collector")).toMatchObject({ wasteKg: 13, wasteKind: "quote_part" });
+  });
+
+  it("preserves legacy confirmed-account quotes when no collector version is recorded", () => {
+    const result = allocateActionParticipantImpact({
+      totalWasteKg: 20,
+      totalCigaretteButts: null,
+      participants: [participant("collector", null), { ...participant("unknown"), collectionStatus: "not_collected" }],
+    });
+    expect(result.get("collector")).toMatchObject({ wasteKg: 10, wasteKind: "quote_part" });
+    expect(result.get("unknown")).toMatchObject({ wasteKg: 10, wasteKind: "quote_part" });
+  });
+
   it("uses confirmed accounts instead of children for a 20 kg quote-part", () => {
     const { attribution, physicalParticipation } = allocateForPhysicalCounts({
       childrenCount: 2,

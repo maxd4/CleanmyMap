@@ -229,8 +229,11 @@ function validateActionUpdateInput(params: {
     const forecastMessage = getVolunteerForecastValidationMessage({ volunteersExpected: body.preparationData.volunteersExpected, volunteerParticipation: body.preparationData.volunteerParticipation });
     if (forecastMessage) throw new ActionUpdateValidationError("preparationData", forecastMessage);
   }
+  if (body.collectorsCount !== undefined && nextActionPhase !== "post_action_complete") {
+    throw new ActionUpdateValidationError("collectorsCount", "Le nombre de personnes ayant ramassé ne peut être renseigné qu’au bilan final.");
+  }
   const isFinalization = isNewFinalization(current, nextActionPhase);
-  const isParticipantSubmission = nextActionPhase === "post_action_complete" && (body.volunteersCount !== undefined || body.volunteerParticipation !== undefined);
+  const isParticipantSubmission = nextActionPhase === "post_action_complete" && (body.volunteersCount !== undefined || body.volunteerParticipation !== undefined || body.collectorsCount !== undefined);
   if (isFinalization || isParticipantSubmission) validateParticipantUpdate({ current, body, currentMetadata, isFinalization });
   const temporalMessage = getTimeContractValidationMessage({
     actionDurationMinutes: body.durationMinutes !== undefined ? body.durationMinutes : current.duration_minutes,
@@ -259,6 +262,11 @@ function validateParticipantUpdate(params: {
     retiredCount: participation?.retiredCount ?? null,
   });
   if (compositionMessage) throw new ActionUpdateValidationError("volunteerParticipation", compositionMessage);
+  const total = isFinalization ? body.volunteersCount ?? null : body.volunteersCount ?? current.volunteers_count;
+  const collectorsCount = body.collectorsCount !== undefined ? body.collectorsCount : current.collectors_count ?? null;
+  if (collectorsCount != null && total != null && collectorsCount > total) {
+    throw new ActionUpdateValidationError("collectorsCount", "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes.");
+  }
 }
 
 export async function prepareActionUpdate(params: {

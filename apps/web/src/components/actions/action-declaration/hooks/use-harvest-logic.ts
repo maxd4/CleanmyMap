@@ -42,8 +42,8 @@ function resolveReferenceStatus(
 type HarvestReferenceMetric = {
   benchmark: number | null;
   sourceCount: number;
-  unitLabel: "unité opérationnelle" | "participant";
-  referenceLabel: "Moyenne contextuelle pondérée" | "Moyenne historique par participant";
+  unitLabel: "unité opérationnelle" | "collecteur";
+  referenceLabel: "Moyenne contextuelle pondérée" | "Moyenne historique par personne ayant ramassé";
   usesContextualUnits: boolean;
 };
 
@@ -86,8 +86,8 @@ function resolveHarvestReference(
       return {
         benchmark: globalValue!,
         sourceCount: globalSourceCount,
-        unitLabel: "participant",
-        referenceLabel: "Moyenne historique par participant",
+        unitLabel: "collecteur",
+        referenceLabel: "Moyenne historique par personne ayant ramassé",
         usesContextualUnits: false,
       };
     }
@@ -108,8 +108,8 @@ function resolveHarvestReference(
     return {
       benchmark: globalValue ?? null,
       sourceCount: globalSourceCount,
-      unitLabel: "participant",
-      referenceLabel: "Moyenne historique par participant",
+      unitLabel: "collecteur",
+      referenceLabel: "Moyenne historique par personne ayant ramassé",
       usesContextualUnits: false,
     };
   }
@@ -118,13 +118,13 @@ function resolveHarvestReference(
     waste: resolveMetric(
       contextual?.wastePerEffectiveUnit,
       contextual?.wasteSourceCount ?? 0,
-      globalReference?.wastePerVolunteer,
+      globalReference?.wastePerCollector,
       globalReference?.wasteSourceCount ?? 0,
     ),
     butts: resolveMetric(
       contextual?.buttsPerEffectiveUnit,
       contextual?.buttsSourceCount ?? 0,
-      globalReference?.buttsPerVolunteer,
+      globalReference?.buttsPerCollector,
       globalReference?.buttsSourceCount ?? 0,
     ),
   };
@@ -353,6 +353,7 @@ function deriveHarvestMetrics(
     adultCount: form.adultCount,
     retiredCount: form.retiredCount,
   });
+  const collectorsCount = readParticipantCount(form.collectorsCount);
   const hasValidContextualComposition =
     getVolunteerActionCompositionValidationMessage({
       volunteersCount,
@@ -373,10 +374,10 @@ function deriveHarvestMetrics(
       : { wasteUnits: volunteersCount, buttsUnits: volunteersCount };
   const wasteOperationalUnits = harvestReference.waste.usesContextualUnits
     ? contextualUnits.wasteUnits
-    : volunteersCount;
+    : collectorsCount;
   const megotsOperationalUnits = harvestReference.butts.usesContextualUnits
     ? contextualUnits.buttsUnits
-    : volunteersCount;
+    : collectorsCount;
   const wasteComparison = deriveWasteComparison({
     wasteKg,
     operationalUnits: harvestReference.waste.benchmark === null ? null : wasteOperationalUnits,

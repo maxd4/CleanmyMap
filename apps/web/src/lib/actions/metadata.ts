@@ -41,6 +41,7 @@ type ActionNotesExtractionState = {
   cigaretteButtsKg: number | null;
   cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
   volunteerParticipation: ActionVolunteerParticipation | null;
+  collectionAttributionVersion: "collectors-v1" | null;
   associationName: string | null;
   groupJoinEnabled: boolean;
   placeType: string | null;
@@ -94,6 +95,7 @@ function initializeActionNotesExtractionState(): ActionNotesExtractionState {
     cigaretteButtsKg: null,
     cigaretteButtsMeasurements: null,
     volunteerParticipation: null,
+    collectionAttributionVersion: null,
     associationName: null,
     groupJoinEnabled: false,
     placeType: null,
@@ -122,6 +124,7 @@ function toActionNotesExtractionResult(
       null,
     cigaretteButtsMeasurements: state.cigaretteButtsMeasurements,
     volunteerParticipation: state.volunteerParticipation,
+    collectionAttributionVersion: state.collectionAttributionVersion,
     associationName: state.associationName,
     groupJoinEnabled: state.groupJoinEnabled,
     placeType: state.placeType,
@@ -185,6 +188,9 @@ function applyParsedStructuredActionNotesMeta(
     state.volunteerParticipation = normalizeVolunteerParticipation(
       parsed.volunteerParticipation,
     );
+  }
+  if (parsed.collectionAttributionVersion === "collectors-v1") {
+    state.collectionAttributionVersion = parsed.collectionAttributionVersion;
   }
   if (
     typeof parsed.associationName === "string" &&

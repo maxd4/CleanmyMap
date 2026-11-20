@@ -147,12 +147,12 @@ describe("scientific formula change transverse integration", () => {
       retiredCount: 1,
     })).toEqual({ wasteUnits: 4.5, buttsUnits: 4.5 });
     const currentReference = normalizeActionCollectionReferenceAverageRow({
-      waste_per_volunteer: null,
-      butts_per_volunteer: current.summary.totalCount,
+      waste_per_collector: null,
+      butts_per_collector: current.summary.totalCount,
       waste_source_count: 0,
       butts_source_count: 1,
       eligible_action_count: 1,
-      formula_version: "action-collection-reference-averages-v1",
+      formula_version: "action-collection-reference-averages-v2",
       updated_at: "2026-11-01T00:00:00.000Z",
     });
     expect(isCurrentActionCollectionReferenceAverage(currentReference)).toBe(true);

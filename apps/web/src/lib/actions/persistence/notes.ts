@@ -37,7 +37,9 @@ type PersistedActionNotesPayload = Partial<Pick<
   | "cigaretteButtsCondition"
    | "cigaretteButtsLots"
   | "volunteerParticipation"
-  >> & {
+  | "collectorsCount"
+>> & {
+  collectionAttributionVersion?: "collectors-v1";
   photos?: Array<
     Pick<
       ActionPhotoAsset,
@@ -71,6 +73,7 @@ export function buildPersistedNotes(
       options.persistVolunteerParticipationMetadata === false
         ? undefined
         : resolveActionVolunteerParticipation(payload),
+    collectionAttributionVersion: payload.collectorsCount !== undefined ? "collectors-v1" : undefined,
     associationName: payload.associationName,
     groupJoinEnabled: payload.groupJoinEnabled,
     placeType: payload.placeType,

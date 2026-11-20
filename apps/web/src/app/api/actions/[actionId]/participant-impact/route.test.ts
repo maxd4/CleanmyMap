@@ -66,6 +66,23 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     appendActionModerationAuditMock.mockResolvedValue(undefined);
   });
 
+  it("persists a collector status independently from individual measurements", async () => {
+    const participant = createParticipantWithStatus("confirmed");
+    configureParticipantImpactSupabase([participant]);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      collectionStatus: "collected",
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(participant).toMatchObject({ collection_status: "collected" });
+    expect(body.collectionStatus).toBe("collected");
+    expect(participant).not.toHaveProperty("individual_waste_kg");
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+  });
+
   it("allows the action organizer, preserves raw values and audits the change", async () => {
     const participants = [createGroupJoinParticipant({
       id: "participant-1",

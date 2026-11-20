@@ -585,3 +585,29 @@ même population que la projection incrémentale : contributions canoniques
 `NULL` ne l'est pas. Les marqueurs techniques des métadonnées ne sont pas
 réévalués par la RPC de synthèse et ne peuvent donc pas exclure une action déjà
 classée éligible par la contribution canonique.
+
+## Effectifs, collecte et attribution individuelle — CURRENT
+
+`volunteers_count` décrit l'effectif physiquement présent, sans prouver que
+chaque personne a participé au ramassage. Le bilan peut enregistrer
+`collectors_count`, nombre de personnes ayant effectivement ramassé ; `NULL`
+signifie que l'information manque. Pour un compte à présence confirmée,
+`action_participants.collection_status` distingue `collected`, `not_collected`
+et `NULL` (inconnu).
+
+La référence globale `action-collection-reference-averages-v2` divise les
+mesures collectives admissibles par `collectors_count` connu et strictement
+positif. Le formulaire applique ce ratio au décompte des collecteurs déclaré
+pour l'action courante ; faute de ce décompte, il ne calcule pas la comparaison
+globale. Les références contextuelles gardent leur formule distincte
+`effective-volunteer-units-v1`. La RPC v1 et ses observations restent des
+éléments historiques utilisant l'effectif antérieur ; elles ne sont pas
+fusionnées avec la nouvelle population.
+
+Dans l'attribution individuelle `collectors-v1`, une mesure personnelle exacte
+reste attachée au compte qui l'a fournie. Le reliquat collectif connu se
+répartit uniquement entre les comptes confirmés explicitement marqués
+`collected` qui n'ont pas de mesure exacte. `not_collected` et `NULL` ne
+reçoivent pas de part automatique. Ce contrat scientifique n'altère pas les
+faits de présence confirmée ni les règles XP ; il ne transforme pas une
+absence de statut en zéro collecte.

@@ -18,6 +18,7 @@ type ActionAuditSnapshot = {
   cigaretteButtsKg: number | null;
   cigaretteButts: number | null;
   volunteersCount: number | null;
+  collectorsCount: number | null;
   durationMinutes: number | null;
   wasteMeasurementMethod: string | null;
   wasteBreakdown: unknown;
@@ -156,6 +157,7 @@ export function buildActionAuditSnapshots(
       cigaretteButtsKg: currentMetadata.cigaretteButtsKg,
       cigaretteButts: current.cigarette_butts ?? null,
       volunteersCount: current.volunteers_count ?? null,
+      collectorsCount: current.collectors_count ?? null,
       durationMinutes: current.duration_minutes ?? null,
       wasteMeasurementMethod: currentMetadata.wasteMeasurementMethod,
       wasteBreakdown: currentMetadata.wasteBreakdown,
@@ -180,6 +182,8 @@ export function buildActionAuditSnapshots(
           : current.cigarette_butts ?? null,
       volunteersCount:
         body.volunteersCount ?? current.volunteers_count ?? null,
+      collectorsCount:
+        body.collectorsCount !== undefined ? body.collectorsCount : current.collectors_count ?? null,
       durationMinutes:
         body.durationMinutes ?? current.duration_minutes ?? null,
       wasteMeasurementMethod:

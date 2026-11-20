@@ -250,7 +250,7 @@ export function HarvestMegotsSection({
   megotsReferenceStatus = megotsBenchmarkPerVolunteer === null || megotsBenchmarkPerVolunteer === undefined ? "unavailable" : "available",
   megotsDeltaPercent = null,
   megotsOperationalUnits = null,
-  megotsReferenceUnitLabel = "participant",
+  megotsReferenceUnitLabel = "collecteur",
   megotsReferenceLabel = "Moyenne historique par participant",
   cigaretteButtsCountProvenance,
   cigaretteButtsMassProvenance,

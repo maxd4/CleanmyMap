@@ -70,15 +70,15 @@ function mountLogic(initialForm: FormState) {
 }
 
 describe("useHarvestLogic cigarette-butt synchronization", () => {
-  it("uses the canonical per-volunteer references for both gauges", () => {
+  it("uses the canonical per-collector references for both gauges", () => {
     mockReferences.mockReturnValue({
       collectionReferences: {
-        wastePerVolunteer: 8,
+        wastePerCollector: 8,
         wasteSourceCount: 2,
-        buttsPerVolunteer: 100,
+        buttsPerCollector: 100,
         buttsSourceCount: 2,
         eligibleActionCount: 2,
-        formulaVersion: "test",
+        formulaVersion: "action-collection-reference-averages-v2",
         updatedAt: null,
       },
       contextualCollectionReferences: {
@@ -89,7 +89,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
           wasteSourceCount: 2,
           buttsSourceCount: 2,
           eligibleActionCount: 2,
-          formulaVersion: "test",
+          formulaVersion: "action-collection-reference-averages-v2",
           updatedAt: null,
         },
       },
@@ -128,7 +128,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
           wasteSourceCount: 2,
           buttsSourceCount: 2,
           eligibleActionCount: 2,
-          formulaVersion: "test",
+          formulaVersion: "action-collection-reference-averages-v2",
           updatedAt: null,
         },
       },
@@ -168,7 +168,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
           wasteSourceCount: 2,
           buttsSourceCount: 2,
           eligibleActionCount: 2,
-          formulaVersion: "test",
+          formulaVersion: "action-collection-reference-averages-v2",
           updatedAt: null,
         },
       },
@@ -203,7 +203,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
           wasteSourceCount: 2,
           buttsSourceCount: 2,
           eligibleActionCount: 2,
-          formulaVersion: "test",
+          formulaVersion: "action-collection-reference-averages-v2",
           updatedAt: null,
         },
       },
@@ -255,7 +255,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
           wasteSourceCount: 2,
           buttsSourceCount: 2,
           eligibleActionCount: 2,
-          formulaVersion: "test",
+          formulaVersion: "action-collection-reference-averages-v2",
           updatedAt: null,
         },
       },
@@ -293,7 +293,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
           wasteSourceCount: 2,
           buttsSourceCount: 2,
           eligibleActionCount: 2,
-          formulaVersion: "test",
+          formulaVersion: "action-collection-reference-averages-v2",
           updatedAt: null,
         },
       },
@@ -320,15 +320,15 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     mockReferences.mockReturnValue({ collectionReferences: null });
   });
 
-  it("falls back to the historical participant reference when the contextual reference is unavailable", () => {
+  it("uses the global per-collector reference when the contextual reference is unavailable", () => {
     mockReferences.mockReturnValue({
       collectionReferences: {
-        wastePerVolunteer: 1.5,
+        wastePerCollector: 1.5,
         wasteSourceCount: 2,
-        buttsPerVolunteer: 190,
+        buttsPerCollector: 190,
         buttsSourceCount: 5,
         eligibleActionCount: 5,
-        formulaVersion: "action-collection-reference-averages-v1",
+        formulaVersion: "action-collection-reference-averages-v2",
         updatedAt: "2026-11-06T00:00:00.000Z",
       },
       contextualCollectionReferences: {},
@@ -337,6 +337,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       ...createInitialFormState("Test"),
       actionContext: "school",
       volunteersCount: "10",
+      collectorsCount: "10",
       childrenCount: "10",
       adultCount: "0",
       retiredCount: "0",
@@ -350,10 +351,10 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(190);
     expect(harness.latest.logic.wasteBenchmarkPerVolunteer).toBe(1.5);
     expect(harness.latest.logic.megotsBenchmarkPerVolunteer).toBe(190);
-    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("participant");
-    expect(harness.latest.logic.megotsReferenceUnitLabel).toBe("participant");
-    expect(harness.latest.logic.wasteReferenceLabel).toBe("Moyenne historique par participant");
-    expect(harness.latest.logic.megotsReferenceLabel).toBe("Moyenne historique par participant");
+    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("collecteur");
+    expect(harness.latest.logic.megotsReferenceUnitLabel).toBe("collecteur");
+    expect(harness.latest.logic.wasteReferenceLabel).toBe("Moyenne historique par personne ayant ramassé");
+    expect(harness.latest.logic.megotsReferenceLabel).toBe("Moyenne historique par personne ayant ramassé");
     expect(harness.latest.logic.wasteDeltaPercent).toBe(0);
     expect(harness.latest.logic.megotsDeltaPercent).toBe(0);
 
@@ -364,12 +365,12 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
   it("does not mix denominators when only one contextual indicator is available", () => {
     mockReferences.mockReturnValue({
       collectionReferences: {
-        wastePerVolunteer: 1.5,
+        wastePerCollector: 1.5,
         wasteSourceCount: 2,
-        buttsPerVolunteer: 190,
+        buttsPerCollector: 190,
         buttsSourceCount: 5,
         eligibleActionCount: 5,
-        formulaVersion: "action-collection-reference-averages-v1",
+        formulaVersion: "action-collection-reference-averages-v2",
         updatedAt: "2026-11-06T00:00:00.000Z",
       },
       contextualCollectionReferences: {
@@ -380,7 +381,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
           wasteSourceCount: 2,
           buttsSourceCount: 2,
           eligibleActionCount: 2,
-          formulaVersion: "test",
+          formulaVersion: "action-collection-reference-averages-v2",
           updatedAt: null,
         },
       },
@@ -389,6 +390,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       ...createInitialFormState("Test"),
       actionContext: "school",
       volunteersCount: "12",
+      collectorsCount: "12",
       childrenCount: "10",
       adultCount: "2",
       retiredCount: "0",
@@ -403,7 +405,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     expect(harness.latest.logic.megotsOperationalUnits).toBe(12);
     expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(190);
     expect(harness.latest.logic.megotsBenchmarkPerVolunteer).toBe(190);
-    expect(harness.latest.logic.megotsReferenceUnitLabel).toBe("participant");
+    expect(harness.latest.logic.megotsReferenceUnitLabel).toBe("collecteur");
     expect(harness.latest.logic.wasteDeltaPercent).toBe(0);
     expect(harness.latest.logic.megotsDeltaPercent).toBe(0);
 
@@ -414,12 +416,12 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
   it("keeps loaded references while leaving comparisons unavailable for absent measurements", () => {
     mockReferences.mockReturnValue({
       collectionReferences: {
-        wastePerVolunteer: 1.5,
+        wastePerCollector: 1.5,
         wasteSourceCount: 2,
-        buttsPerVolunteer: 190,
+        buttsPerCollector: 190,
         buttsSourceCount: 5,
         eligibleActionCount: 5,
-        formulaVersion: "action-collection-reference-averages-v1",
+        formulaVersion: "action-collection-reference-averages-v2",
         updatedAt: "2026-11-06T00:00:00.000Z",
       },
     });
@@ -443,15 +445,15 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     mockReferences.mockReturnValue({ collectionReferences: null });
   });
 
-  it("keeps the global reference and participant denominator for legacy contexts", () => {
+  it("keeps the global collector denominator when the context is unknown", () => {
     mockReferences.mockReturnValue({
       collectionReferences: {
-        wastePerVolunteer: 2,
+        wastePerCollector: 2,
         wasteSourceCount: 2,
-        buttsPerVolunteer: 200,
+        buttsPerCollector: 200,
         buttsSourceCount: 2,
         eligibleActionCount: 2,
-        formulaVersion: "test",
+        formulaVersion: "action-collection-reference-averages-v2",
         updatedAt: null,
       },
       contextualCollectionReferences: {
@@ -462,7 +464,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
           wasteSourceCount: 2,
           buttsSourceCount: 2,
           eligibleActionCount: 2,
-          formulaVersion: "test",
+          formulaVersion: "action-collection-reference-averages-v2",
           updatedAt: null,
         },
       },
@@ -471,6 +473,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       ...createInitialFormState("Test"),
       actionContext: "",
       volunteersCount: "12",
+      collectorsCount: "12",
       childrenCount: "0",
       adultCount: "12",
       retiredCount: "0",
@@ -482,8 +485,8 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     expect(harness.latest.logic.megotsOperationalUnits).toBe(12);
     expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(2);
     expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(200);
-    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("participant");
-    expect(harness.latest.logic.megotsReferenceUnitLabel).toBe("participant");
+    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("collecteur");
+    expect(harness.latest.logic.megotsReferenceUnitLabel).toBe("collecteur");
 
     harness.renderer.unmount();
     mockReferences.mockReturnValue({ collectionReferences: null });
@@ -500,7 +503,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
           wasteSourceCount: 2,
           buttsSourceCount: 2,
           eligibleActionCount: 2,
-          formulaVersion: "test",
+          formulaVersion: "action-collection-reference-averages-v2",
           updatedAt: null,
         },
       },
@@ -538,7 +541,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
           wasteSourceCount: 2,
           buttsSourceCount: 2,
           eligibleActionCount: 2,
-          formulaVersion: "test",
+          formulaVersion: "action-collection-reference-averages-v2",
           updatedAt: null,
         },
       },
@@ -582,12 +585,12 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
 
     mockReferences.mockReturnValue({
       collectionReferences: {
-        wastePerVolunteer: 8,
+        wastePerCollector: 8,
         wasteSourceCount: 1,
-        buttsPerVolunteer: 100,
+        buttsPerCollector: 100,
         buttsSourceCount: 1,
         eligibleActionCount: 1,
-        formulaVersion: "test",
+        formulaVersion: "action-collection-reference-averages-v2",
         updatedAt: null,
       },
       isLoading: false,

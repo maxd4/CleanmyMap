@@ -153,6 +153,25 @@ async function clearImpactMeasurement(actionId: string, participantId: string, f
   }
 }
 
+async function persistCollectionStatus(
+  actionId: string,
+  participantId: string,
+  collectionStatus: "collected" | "not_collected" | null,
+  fr: boolean,
+): Promise<string | null> {
+  try {
+    const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/participant-impact`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ participantId, collectionStatus }),
+    });
+    const payload = (await response.json()) as { error?: string };
+    return response.ok ? null : payload.error || (fr ? "Le statut de collecte n’a pas été enregistré." : "The collection status was not saved.");
+  } catch (error) {
+    return error instanceof Error ? error.message : (fr ? "Le statut de collecte n’a pas été enregistré." : "The collection status was not saved.");
+  }
+}
+
 function ImpactMeasurementSummary({
   measurement,
   fr,
@@ -394,6 +413,7 @@ function ActionParticipantImpactEditorRow({
   const [draft, setDraft] = useState<Draft>(() => draftFromParticipant(participant));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [collectionStatus, setCollectionStatus] = useState(participant.collectionStatus ?? null);
 
   async function save() {
     setSaving(true);
@@ -421,11 +441,40 @@ function ActionParticipantImpactEditorRow({
     setSaving(false);
   }
 
+  async function updateCollectionStatus(value: string) {
+    const nextStatus = value === "collected" || value === "not_collected" ? value : null;
+    setSaving(true);
+    setError(null);
+    const saveError = await persistCollectionStatus(actionId, participant.id, nextStatus, fr);
+    if (saveError) setError(saveError);
+    else {
+      setCollectionStatus(nextStatus);
+      onSaved();
+    }
+    setSaving(false);
+  }
+
   const measurement = participant.individualImpact;
 
   return (
     <div className="rounded-lg border border-amber-100 bg-white px-3 py-3">
       <ActionParticipantImpactEditorHeader participant={participant} measurement={measurement} draft={draft} fr={fr} />
+
+      <CmmField
+        label={fr ? "A-t-elle réellement ramassé ?" : "Did this person actually collect waste?"}
+        hint={fr ? "Inconnu reste une valeur valide et n’affecte pas la présence confirmée ni ses XP." : "Unknown is valid and does not change confirmed presence or XP."}
+      >
+        <CmmSelect
+          value={collectionStatus ?? "unknown"}
+          disabled={saving}
+          onChange={(event) => { void updateCollectionStatus(event.target.value); }}
+        >
+          <option value="unknown">{fr ? "Inconnu" : "Unknown"}</option>
+          <option value="collected">{fr ? "A ramassé" : "Collected"}</option>
+          <option value="not_collected">{fr ? "N’a pas ramassé" : "Did not collect"}</option>
+        </CmmSelect>
+      </CmmField>
+      {error && draft.mode === "automatic" ? <p role="alert" className="mt-2 text-xs font-medium text-red-700">{error}</p> : null}
 
       <ActionParticipantImpactEditorBody
         measurement={measurement}

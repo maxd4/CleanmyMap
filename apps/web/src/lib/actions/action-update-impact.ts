@@ -13,6 +13,7 @@ const ACTION_IMPACT_FIELDS = [
   "wasteMeasurementMethod",
   "volunteerParticipation",
   "volunteersCount",
+  "collectorsCount",
   "durationMinutes",
   "actionContext",
 ] as const satisfies ReadonlyArray<keyof ActionUpdateInput>;

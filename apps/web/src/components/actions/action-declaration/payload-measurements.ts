@@ -137,6 +137,7 @@ export function buildCreateActionPayloadMeasurementFields(
     cigaretteButts: enteredButtsCount,
     cigaretteButtsCount: enteredButtsCount,
     volunteerParticipation: parts.volunteerParticipationInput as CreateActionPayload["volunteerParticipation"],
+    collectorsCount: form.collectorsCount.trim() === "" ? null : toOptionalNumber(form.collectorsCount) ?? null,
     ...(derivedVolunteersCount === null || derivedVolunteersCount === undefined
       ? {}
       : { volunteersCount: derivedVolunteersCount }),

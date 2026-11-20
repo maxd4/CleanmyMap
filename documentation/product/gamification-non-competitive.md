@@ -340,3 +340,20 @@ Les recommandations ci-dessus combinent:
 - et des inférences produit adaptees a CleanMyMap.
 
 Autrement dit, les sources n imposent pas une solution unique. Elles donnent surtout un cadre pour construire une gamification **utile, verifiable, sobre et non competitive**.
+
+## Collecte individuelle et attribution
+
+L'effectif présent, la présence confirmée dans `action_participants` et la
+collecte réellement effectuée sont des faits distincts. Le décompte
+`actions.collectors_count` est agrégé et facultatif ; le statut individuel est
+`action_participants.collection_status` (`collected`, `not_collected`, ou
+`NULL` = inconnu). L'absence de statut n'est jamais interprétée comme une
+absence de présence ou une absence de contribution.
+
+Pour la version d'attribution `collectors-v1`, les mesures exactes restent
+attribuées à leur compte. Le reliquat collectif connu est partagé à parts
+égales seulement entre les collecteurs explicitement marqués `collected` sans
+mesure exacte. Les autres statuts ne reçoivent aucune quote-part automatique.
+Les actions sans cette version conservent l'attribution historique. La
+présence confirmée et la progression XP restent gouvernées par leurs contrats
+existants ; le statut de collecte ne les retire ni ne les diminue.

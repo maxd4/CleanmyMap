@@ -203,6 +203,7 @@ const createActionLegacyBaseSchema = z.object({
   ...actionMeasurementSchemaFields,
   volunteerParticipation: volunteerParticipationSchema,
   volunteersCount: z.number().int().min(0).max(500).default(1),
+  collectorsCount: z.number().int().min(0).max(500).nullable().optional(),
   durationMinutes: z.number().int().min(0).max(24 * 60).default(0),
   notes: z.string().max(1000).optional(),
   manualDrawing: manualDrawingSchema.optional(),
@@ -223,6 +224,9 @@ const createActionLegacySchema = createActionLegacyBaseSchema
     addGpxImportIssue(value, ctx);
     addPreActionVolunteerForecastIssue(value, ctx);
     addWasteCharacterizationCoherenceIssue(value, ctx);
+    if (value.collectorsCount != null && value.collectorsCount > value.volunteersCount) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCount"], message: "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes." });
+    }
   });
 
 const createActionContractSchema = z.object({
@@ -249,6 +253,7 @@ const createActionContractSchema = z.object({
     ...actionMeasurementSchemaFields,
     volunteerParticipation: volunteerParticipationSchema,
     volunteersCount: z.number().int().min(0).max(500).optional(),
+    collectorsCount: z.number().int().min(0).max(500).nullable().optional(),
     durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     notes: z.string().max(1000).optional(),
     routeStyle: z.enum(["direct", "souple"]).optional(),
@@ -335,6 +340,7 @@ export const updateActionSchema = createActionLegacyBaseSchema
     // Create-only defaults must not appear on partial updates: omission means
     // "leave the stored value unchanged", not a new participant or duration.
     volunteersCount: z.number().int().min(0).max(500).optional(),
+    collectorsCount: z.number().int().min(0).max(500).nullable().optional(),
     durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     accessMode: z.enum(["public", "invite_link"]).optional(),
     preparationData: preparationDataSchema.nullable().optional(),
@@ -344,4 +350,7 @@ export const updateActionSchema = createActionLegacyBaseSchema
     addCompletedActionFutureDateIssue(value, ctx);
     addTemporalContractIssue(value, ctx);
     addPreActionVolunteerForecastIssue(value, ctx);
+    if (value.collectorsCount != null && value.volunteersCount != null && value.collectorsCount > value.volunteersCount) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCount"], message: "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes." });
+    }
   });

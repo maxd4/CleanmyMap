@@ -75,6 +75,8 @@ export type ActionContractCreatePayload = {
     cigaretteButtsKg?: number | null;
     cigaretteButts?: number | null;
     volunteersCount?: number;
+    collectorsCount?: number | null;
+    collectionAttributionVersion?: "collectors-v1" | null;
     durationMinutes?: number;
     notes?: string;
     routeStyle?: "direct" | "souple";
@@ -148,6 +150,8 @@ function buildContractMetadata(
     wasteKg: payload.wasteKg,
     cigaretteButtsMeasurements: payload.cigaretteButtsMeasurements,
     volunteerParticipation: payload.volunteerParticipation,
+    collectorsCount: payload.collectorsCount,
+    collectionAttributionVersion: payload.collectorsCount !== undefined ? "collectors-v1" : undefined,
     cigaretteButtsMassKg: payload.cigaretteButtsMassKg,
     cigaretteButtsVolumeLiters: payload.cigaretteButtsVolumeLiters,
     cigaretteButtsCondition: payload.cigaretteButtsCondition,
@@ -342,6 +346,8 @@ function buildNormalizedMeasurementFields(payload: ActionContractCreatePayload) 
     cigaretteButtsKg: payload.metadata.cigaretteButtsKg ?? null,
     cigaretteButts: payload.metadata.cigaretteButts ?? null,
     volunteersCount: fallbackNumber(payload.metadata.volunteersCount, 1),
+    collectorsCount: payload.metadata.collectorsCount ?? null,
+    collectionAttributionVersion: payload.metadata.collectorsCount !== undefined ? "collectors-v1" : null,
     durationMinutes: fallbackNumber(payload.metadata.durationMinutes, 0),
     eventStartTime: payload.dates.eventStartTime ?? null,
     eventEndTime: payload.dates.eventEndTime ?? null,

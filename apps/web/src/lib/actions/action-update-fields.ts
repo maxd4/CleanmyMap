@@ -167,6 +167,7 @@ function buildTimingFields(
 ): Record<string, unknown> {
   const updateData: Record<string, unknown> = {};
   if (body.wasteKg !== undefined) updateData["waste_kg"] = body.wasteKg;
+  if (body.collectorsCount !== undefined) updateData["collectors_count"] = body.collectorsCount;
   if (body.durationMinutes !== undefined) {
     updateData["duration_minutes"] = body.durationMinutes;
     if (body.preparationData === undefined) {

@@ -106,6 +106,7 @@ export type FormState = {
   /** null keeps the legacy single-measurement path; [] explicitly clears lots. */
   cigaretteButtsLots: CigaretteButtsLotDraft[] | null;
  volunteersCount: string;
+ collectorsCount: string;
  childrenCount: string;
  adultCount: string;
  retiredCount: string;
@@ -210,6 +211,7 @@ export const initialState: FormState = {
  longitude:"",
   ...EMPTY_ACTION_MEASUREMENT_FIELDS,
  volunteersCount:"",
+ collectorsCount:"",
  childrenCount:"",
  adultCount:"",
  retiredCount:"",
@@ -296,6 +298,7 @@ export type ValidationIssue = {
  |"cigaretteButtsVolumeLiters"
  |"cigaretteButtsLots"
  |"volunteersCount"
+ |"collectorsCount"
  |"volunteerParticipation"
  |"durationMinutes"
  |"eventStartTime"

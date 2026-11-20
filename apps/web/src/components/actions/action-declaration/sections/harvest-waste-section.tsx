@@ -137,7 +137,7 @@ export function HarvestWasteSection({
   wasteReferenceStatus = wasteBenchmarkPerVolunteer === null || wasteBenchmarkPerVolunteer === undefined ? "unavailable" : "available",
   wasteDeltaPercent = null,
   wasteOperationalUnits = null,
-  wasteReferenceUnitLabel = "participant",
+  wasteReferenceUnitLabel = "collecteur",
   wasteReferenceLabel = "Moyenne historique par participant",
   validationIssues,
 }: HarvestWasteSectionProps) {

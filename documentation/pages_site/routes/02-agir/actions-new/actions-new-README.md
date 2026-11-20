@@ -247,3 +247,8 @@ ne doit être inventée et aucune invitation externe n'est envoyée.
   l'organisateur principal est une demande explicite acceptée par le
   successeur ; une simple sauvegarde des coorganisateurs ne peut pas le faire
   implicitement.
+
+Le formulaire de bilan distingue désormais l'effectif physiquement présent du
+nombre de personnes ayant réellement ramassé. Ce dernier reste facultatif et
+ne peut dépasser l'effectif présent. Les valeurs sont persistées sous le
+contrat d'actions décrit dans [`methodologie-carte-actions.md`](../../../product/methodologie-carte-actions.md).

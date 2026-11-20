@@ -22,6 +22,7 @@ export type ActionNotesMeta = {
   cigaretteButtsKg?: number | null;
   cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements;
   volunteerParticipation?: ActionVolunteerParticipation;
+  collectionAttributionVersion?: "collectors-v1";
   associationName?: string;
   groupJoinEnabled?: boolean;
   placeType?: string;
@@ -109,6 +110,9 @@ function buildStructuredMetadataPayload(metadata: ActionInputMetadata): Partial<
       : {}),
     ...(hasVolunteerCategoryData(metadata.volunteerParticipation)
       ? { volunteerParticipation: normalizeVolunteerParticipation(metadata.volunteerParticipation) }
+      : {}),
+    ...(metadata.collectionAttributionVersion === "collectors-v1"
+      ? { collectionAttributionVersion: metadata.collectionAttributionVersion }
       : {}),
     ...(metadata.associationName?.trim() ? { associationName: metadata.associationName.trim() } : {}),
     ...(typeof metadata.groupJoinEnabled === "boolean" ? { groupJoinEnabled: metadata.groupJoinEnabled } : {}),

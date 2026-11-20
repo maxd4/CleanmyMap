@@ -148,6 +148,7 @@ export type ActionParticipationReviewItem = {
   /** Private reviewer context only; this never changes the review decision. */
   spogomiIdentityStatus?: "verified_present" | "verified_not_present";
   individualImpact: IndividualImpactMeasurement | null;
+  collectionStatus?: "collected" | "not_collected" | null;
   personalImpactAttribution?: ActionParticipantImpactAttribution | null;
 };
 

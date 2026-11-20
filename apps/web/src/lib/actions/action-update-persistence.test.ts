@@ -49,6 +49,21 @@ function buildCurrent(
 }
 
 describe("prepareActionUpdate administrative requirements boundary", () => {
+  it("only accepts collector totals on completed actions and enforces the physical total", async () => {
+    await expect(prepareActionUpdate({
+      current: buildCurrent({}),
+      parsedBody: ({ collectorsCount: 1 } as unknown as ActionUpdateInput),
+    })).rejects.toMatchObject({ field: "collectorsCount" });
+
+    await expect(prepareActionUpdate({
+      current: buildCurrent({}, { action_phase: "post_action_complete", volunteers_count: 2 }),
+      parsedBody: ({
+        collectorsCount: 3,
+        volunteerParticipation: { childrenCount: 0, adultCount: 2, retiredCount: 0 },
+      } as unknown as ActionUpdateInput),
+    })).rejects.toMatchObject({ field: "collectorsCount" });
+  });
+
   it("allows an independent PATCH when a legacy row has no temporal fields", async () => {
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({
       departmentCode: null,

@@ -11,8 +11,8 @@ export { deriveContextualCollectionUnits } from "./action-collection-reference-a
 export { ACTION_COLLECTION_CONTEXT_FORMULA_VERSION };
 
 export type ActionCollectionReferenceAverages = {
-  wastePerVolunteer: number | null;
-  buttsPerVolunteer: number | null;
+  wastePerCollector: number | null;
+  buttsPerCollector: number | null;
   wasteSourceCount: number;
   buttsSourceCount: number;
   eligibleActionCount: number;
@@ -40,8 +40,8 @@ export type ActionCollectionContextReferences = Partial<
 >;
 
 type ActionCollectionReferenceAverageRow = {
-  waste_per_volunteer?: number | string | null;
-  butts_per_volunteer?: number | string | null;
+  waste_per_collector?: number | string | null;
+  butts_per_collector?: number | string | null;
   waste_source_count?: number | string | null;
   butts_source_count?: number | string | null;
   eligible_action_count?: number | string | null;
@@ -120,8 +120,8 @@ export function normalizeActionCollectionReferenceAverageRow(
   }
 
   return {
-    wastePerVolunteer: toNonNegativeNumber(row.waste_per_volunteer),
-    buttsPerVolunteer: toNonNegativeNumber(row.butts_per_volunteer),
+    wastePerCollector: toNonNegativeNumber(row.waste_per_collector),
+    buttsPerCollector: toNonNegativeNumber(row.butts_per_collector),
     wasteSourceCount,
     buttsSourceCount,
     eligibleActionCount,
@@ -133,7 +133,7 @@ export function normalizeActionCollectionReferenceAverageRow(
 export async function fetchActionCollectionReferenceAverages(
   supabase: SupabaseClient,
 ): Promise<ActionCollectionReferenceAverages | null> {
-  const result = await supabase.rpc("action_collection_reference_averages_v1");
+  const result = await supabase.rpc("action_collection_reference_averages_v2");
   if (result.error) {
     throw result.error;
   }

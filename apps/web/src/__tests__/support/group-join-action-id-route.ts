@@ -166,7 +166,7 @@ export function createGroupJoinProfile(params: { id: string; display_name: strin
 }
 export function createGroupJoinSupabaseMock(params: { action: GroupJoinActionRow; participants?: GroupJoinParticipantRow[]; registrations?: GroupJoinParticipantRow[]; profiles?: GroupJoinProfileRow[]; errors?: GroupJoinSupabaseErrors }) {
   return {
-    rpc: vi.fn(async (functionName: string, args?: Record<string, unknown>) => {
+    rpc: vi.fn(async (functionName: string, args?: Record<string, unknown>): Promise<{ data: unknown; error: { message: string } | null }> => {
       if (functionName === "persist_action_participant_individual_impact") {
         if (params.errors?.participantUpdate) {
           return { data: null, error: { message: params.errors.participantUpdate } };
@@ -199,6 +199,27 @@ export function createGroupJoinSupabaseMock(params: { action: GroupJoinActionRow
           },
           error: null,
         };
+      }
+      if (functionName === "persist_action_participant_collection_status") {
+        const participant = (params.participants ?? []).find((row) => row.id === args?.p_participant_id);
+        const reviewerId = args?.p_reviewer_user_id;
+        const authorized = args?.p_admin_override === true || reviewerId === params.action.created_by_clerk_id;
+        if (
+          !participant ||
+          participant.action_id !== args?.p_action_id ||
+          participant.participation_status !== "confirmed" ||
+          params.action.status !== "approved" ||
+          !authorized
+        ) {
+          return { data: { ok: false, code: "impact_target_not_eligible" }, error: null };
+        }
+        const mutableParticipant = participant as Record<string, unknown>;
+        if (mutableParticipant.collection_status === args?.p_collection_status) {
+          return { data: { ok: true, changed: false }, error: null };
+        }
+        mutableParticipant.collection_status = args?.p_collection_status;
+        participant.updated_at = "2026-06-04T12:00:00Z";
+        return { data: { ok: true, changed: true, id: participant.id, updatedAt: participant.updated_at }, error: null };
       }
       return { data: "conversation-test", error: null };
     }),

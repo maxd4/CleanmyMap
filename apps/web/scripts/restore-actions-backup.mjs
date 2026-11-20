@@ -42,7 +42,11 @@ export async function restoreActionBackup({
 
   const hasFieldRoleTables = backup.fieldRoleTables && Object.values(backup.fieldRoleTables).some((rows) => rows.length > 0);
   const hasIndividualButtsLots = backup.tables.action_participants.some((row) => row.individual_cigarette_butts_lots != null);
-  const rpcName = hasIndividualButtsLots
+  const hasCollectionAttribution = backup.tables.actions.some((row) => Object.hasOwn(row, "collectors_count")) ||
+    backup.tables.action_participants.some((row) => Object.hasOwn(row, "collection_status"));
+  const rpcName = hasCollectionAttribution
+    ? "restore_action_backup_with_collection_attribution"
+    : hasIndividualButtsLots
     ? "restore_action_backup_with_individual_butts_lots"
     : hasFieldRoleTables ? "restore_action_backup_with_field_roles" : "restore_action_backup";
   const result = await supabase.rpc(rpcName, { p_backup: backup });

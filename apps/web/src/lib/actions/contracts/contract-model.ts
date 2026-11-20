@@ -91,6 +91,8 @@ type ActionDataMetadata = {
   /** Future canonical quantitative Trash Spotter observation, when available. */
   observedPollutionScore?: number | null;
   volunteersCount: number | null;
+  collectorsCount?: number | null;
+  collectionAttributionVersion?: "collectors-v1" | null;
   durationMinutes: number;
   manualDrawing: ActionDrawing | null;
 };
@@ -136,6 +138,8 @@ export type BuildActionContractParams = {
   /** Optional future measured score for a quantified Trash Spotter observation. */
   observedPollutionScore?: number | null;
   volunteersCount?: number | null;
+  collectorsCount?: number | null;
+  collectionAttributionVersion?: "collectors-v1" | null;
   durationMinutes?: number | null;
   eventStartTime?: string | null;
   eventEndTime?: string | null;
@@ -331,6 +335,8 @@ function buildActionMeasureMetadata(
   | "cigaretteButts"
   | "postActionPollutionScore"
   | "volunteersCount"
+  | "collectorsCount"
+  | "collectionAttributionVersion"
   | "durationMinutes"
 > & { observedPollutionScore?: number | null } {
   const metadata: Pick<
@@ -339,6 +345,8 @@ function buildActionMeasureMetadata(
     | "cigaretteButts"
     | "postActionPollutionScore"
     | "volunteersCount"
+    | "collectorsCount"
+    | "collectionAttributionVersion"
     | "durationMinutes"
   > & { observedPollutionScore?: number | null } = {
     wasteKg: normalizeNullableNumber(params.wasteKg),
@@ -349,6 +357,8 @@ function buildActionMeasureMetadata(
         ? undefined
         : toFiniteNumber(params.postActionPollutionScore, 0),
     volunteersCount: normalizeNullableCount(params.volunteersCount),
+    collectorsCount: normalizeNullableCount(params.collectorsCount),
+    collectionAttributionVersion: params.collectionAttributionVersion ?? null,
     durationMinutes: normalizeCount(params.durationMinutes),
   };
 

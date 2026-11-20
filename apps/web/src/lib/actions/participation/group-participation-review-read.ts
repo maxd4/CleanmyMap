@@ -140,6 +140,7 @@ type ParticipationReviewRow = {
   source: ParticipationSource;
   joined_at: string;
   individualImpact: ReturnType<typeof toIndividualImpactMeasurement>;
+  collectionStatus: "collected" | "not_collected" | null;
 };
 
 async function loadParticipationReviewRows(
@@ -188,6 +189,9 @@ async function loadParticipationReviewRows(
       source: (useRegs ? value["registration_source"] : value["participation_source"]) as ParticipationSource,
       joined_at: String(useRegs ? value["registered_at"] ?? value["created_at"] : value["joined_at"] ?? value["created_at"]),
       individualImpact: useRegs ? null : toIndividualImpactMeasurement(value),
+      collectionStatus: useRegs || (value["collection_status"] !== "collected" && value["collection_status"] !== "not_collected")
+        ? null
+        : value["collection_status"],
     };
   });
 }
@@ -243,6 +247,7 @@ function buildParticipationReviewItems(
         registeredBeforeAction.has(row.user_id),
       spogomiIdentityStatus: spogomiIdentityByUserId.get(row.user_id),
       individualImpact: row.individualImpact ?? null,
+      collectionStatus: row.collectionStatus,
     };
   });
 }

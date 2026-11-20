@@ -377,6 +377,7 @@ function buildActionInsertRecord(
     waste_kg: params.payload.wasteKg,
     cigarette_butts: resolvePersistedCigaretteButts(params.payload),
     volunteers_count: volunteersCount,
+    collectors_count: params.payload.collectorsCount ?? null,
     ...persistedVolunteerComposition,
     duration_minutes: params.payload.durationMinutes,
     event_start_time: params.payload.eventStartTime ?? null,

@@ -9,6 +9,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 
 type ButtonProps = { children?: React.ReactNode; disabled?: boolean; onClick?: () => void };
 type InputProps = { onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void; value?: string };
+type SelectProps = { onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void; value?: string };
 type AlertProps = { children?: React.ReactNode };
 
 function propsOf<Props>(node: ReactTestInstance): Props {
@@ -66,6 +67,26 @@ afterEach(() => {
 });
 
 describe("ActionParticipantImpactEditor behavior", () => {
+  it("persists explicit collection status without changing presence or measurement", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ status: "ok" }), { status: 200 }));
+    const onSaved = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(<ActionParticipantImpactEditor actionId="action-1" participants={[participant()]} fr onSaved={onSaved} />);
+    });
+
+    const collectionSelect = renderer.root.findAllByType("select")[0]!;
+    await act(async () => {
+      propsOf<SelectProps>(collectionSelect).onChange?.({ target: { value: "collected" } } as React.ChangeEvent<HTMLSelectElement>);
+    });
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({ participantId: "participant-1", collectionStatus: "collected" });
+    expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(renderer.toJSON())).toContain("N’a pas ramassé");
+    renderer.unmount();
+  });
+
   it("distinguishes empty, unknown and explicit zero measurements", () => {
     let renderer!: ReturnType<typeof create>;
     act(() => {

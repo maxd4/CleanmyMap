@@ -4,7 +4,7 @@
  * migration-contract tests keep the two owners aligned.
  */
 export const ACTION_COLLECTION_REFERENCE_FORMULA_VERSION =
-  "action-collection-reference-averages-v1" as const;
+  "action-collection-reference-averages-v2" as const;
 
 export const ACTION_COLLECTION_CONTEXT_FORMULA_VERSION =
   "contextual-effective-units-v1" as const;

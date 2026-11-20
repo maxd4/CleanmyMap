@@ -164,6 +164,7 @@ export function ActionStepReview({
               <DataRow icon={Cigarette} label="Masse de mégots" value={fmtKg(payload.cigaretteButtsKg)} valueClass="text-amber-700" />
               <DataRow icon={Cigarette} label="Nombre de mégots" value={payload.cigaretteButtsCount == null ? "Non renseigné" : String(payload.cigaretteButtsCount)} valueClass="text-amber-700" />
               <DataRow icon={Users} label="Participants présents" value={payload.volunteersCount == null ? "Non renseigné" : `${payload.volunteersCount} personne${payload.volunteersCount > 1 ? "s" : ""}`} />
+              <DataRow icon={Users} label="Personnes ayant ramassé" value={payload.collectorsCount == null ? "Non renseigné" : `${payload.collectorsCount} personne${payload.collectorsCount > 1 ? "s" : ""}`} />
             </>
           )}
         </section>

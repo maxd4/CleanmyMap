@@ -142,6 +142,8 @@ function buildActionContractDetailFields(
       volunteersCount: row.volunteers_count,
       legacyParticipation: parsedMetadata.volunteerParticipation,
     }),
+    collectorsCount: row.collectors_count,
+    collectionAttributionVersion: parsedMetadata.collectionAttributionVersion,
     cigaretteButtsKg: parsedMetadata.cigaretteButtsKg,
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,

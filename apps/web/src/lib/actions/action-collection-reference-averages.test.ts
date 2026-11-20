@@ -89,16 +89,16 @@ describe("action collection reference averages", () => {
 
   it("keeps independent source counts and a zero as a valid average", () => {
     expect(normalizeActionCollectionReferenceAverageRow({
-      waste_per_volunteer: "6",
-      butts_per_volunteer: "0",
+      waste_per_collector: "6",
+      butts_per_collector: "0",
       waste_source_count: 2,
       butts_source_count: 3,
       eligible_action_count: 4,
       formula_version: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
       updated_at: "2026-10-29T03:00:00.000Z",
     })).toEqual({
-      wastePerVolunteer: 6,
-      buttsPerVolunteer: 0,
+      wastePerCollector: 6,
+      buttsPerCollector: 0,
       wasteSourceCount: 2,
       buttsSourceCount: 3,
       eligibleActionCount: 4,
@@ -109,16 +109,16 @@ describe("action collection reference averages", () => {
 
   it("preserves NULL metrics and zero source counts without fabricating a reference", () => {
     expect(normalizeActionCollectionReferenceAverageRow({
-      waste_per_volunteer: null,
-      butts_per_volunteer: "0",
+      waste_per_collector: null,
+      butts_per_collector: "0",
       waste_source_count: 0,
       butts_source_count: "2",
       eligible_action_count: 2,
       formula_version: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
       updated_at: null,
     })).toEqual({
-      wastePerVolunteer: null,
-      buttsPerVolunteer: 0,
+      wastePerCollector: null,
+      buttsPerCollector: 0,
       wasteSourceCount: 0,
       buttsSourceCount: 2,
       eligibleActionCount: 2,
@@ -127,8 +127,8 @@ describe("action collection reference averages", () => {
     });
 
     expect(normalizeActionCollectionReferenceAverageRow({
-      waste_per_volunteer: null,
-      butts_per_volunteer: null,
+      waste_per_collector: null,
+      butts_per_collector: null,
       waste_source_count: null,
       butts_source_count: 0,
       eligible_action_count: 0,
@@ -140,8 +140,8 @@ describe("action collection reference averages", () => {
     "rejects an invalid or absent source count: %s",
     (sourceCount) => {
       expect(normalizeActionCollectionReferenceAverageRow({
-        waste_per_volunteer: null,
-        butts_per_volunteer: 0,
+        waste_per_collector: null,
+        butts_per_collector: 0,
         waste_source_count: sourceCount,
         butts_source_count: 2,
         eligible_action_count: 2,
@@ -199,8 +199,8 @@ describe("action collection reference averages", () => {
       buttsRows.reduce((sum, row) => sum + row.participants, 0);
     const rpc = vi.fn().mockResolvedValue({
       data: [{
-        waste_per_volunteer: wasteAverage,
-        butts_per_volunteer: buttsAverage,
+        waste_per_collector: wasteAverage,
+        butts_per_collector: buttsAverage,
         waste_source_count: wasteRows.length,
         butts_source_count: buttsRows.length,
         eligible_action_count: HISTORICAL_COLLECTION_REFERENCE_FIXTURE.length,
@@ -220,8 +220,8 @@ describe("action collection reference averages", () => {
     expect(buttsAverage).not.toBeCloseTo(buttsRatioOfTotals, 3);
 
     await expect(fetchActionCollectionReferenceAverages({ rpc } as never)).resolves.toEqual({
-      wastePerVolunteer: 1.5,
-      buttsPerVolunteer: 190,
+      wastePerCollector: 1.5,
+      buttsPerCollector: 190,
       wasteSourceCount: 2,
       buttsSourceCount: 5,
       eligibleActionCount: 5,
@@ -233,8 +233,8 @@ describe("action collection reference averages", () => {
   it("reads the versioned average RPC without touching the map score RPC", async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: [{
-        waste_per_volunteer: "6",
-        butts_per_volunteer: "200",
+        waste_per_collector: "6",
+        butts_per_collector: "200",
         waste_source_count: 2,
         butts_source_count: 3,
         eligible_action_count: 4,
@@ -245,19 +245,19 @@ describe("action collection reference averages", () => {
     });
 
     await expect(fetchActionCollectionReferenceAverages({ rpc } as never)).resolves.toMatchObject({
-      wastePerVolunteer: 6,
-      buttsPerVolunteer: 200,
+      wastePerCollector: 6,
+      buttsPerCollector: 200,
       wasteSourceCount: 2,
       buttsSourceCount: 3,
     });
-    expect(rpc).toHaveBeenCalledWith("action_collection_reference_averages_v1");
+    expect(rpc).toHaveBeenCalledWith("action_collection_reference_averages_v2");
   });
 
   it("returns a fetched NULL metric as NULL instead of zero", async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: [{
-        waste_per_volunteer: null,
-        butts_per_volunteer: "0",
+        waste_per_collector: null,
+        butts_per_collector: "0",
         waste_source_count: 0,
         butts_source_count: 2,
         eligible_action_count: 2,
@@ -268,8 +268,8 @@ describe("action collection reference averages", () => {
     });
 
     await expect(fetchActionCollectionReferenceAverages({ rpc } as never)).resolves.toEqual({
-      wastePerVolunteer: null,
-      buttsPerVolunteer: 0,
+      wastePerCollector: null,
+      buttsPerCollector: 0,
       wasteSourceCount: 0,
       buttsSourceCount: 2,
       eligibleActionCount: 2,
@@ -280,8 +280,8 @@ describe("action collection reference averages", () => {
 
   it("rejects malformed counts instead of fabricating a reference", () => {
     expect(normalizeActionCollectionReferenceAverageRow({
-      waste_per_volunteer: 6,
-      butts_per_volunteer: 200,
+      waste_per_collector: 6,
+      butts_per_collector: 200,
       waste_source_count: 1.5,
       butts_source_count: 3,
       eligible_action_count: 4,
@@ -291,8 +291,8 @@ describe("action collection reference averages", () => {
   it("does not serve a reference fetched with an obsolete formula version", async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: [{
-        waste_per_volunteer: 6,
-        butts_per_volunteer: 200,
+        waste_per_collector: 6,
+        butts_per_collector: 200,
         waste_source_count: 2,
         butts_source_count: 3,
         eligible_action_count: 4,

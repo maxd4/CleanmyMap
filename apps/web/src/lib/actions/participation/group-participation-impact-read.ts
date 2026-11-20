@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isActionRecord, runSingleActionQuery } from "@/lib/actions/query";
+import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import {
   ACTION_PREVIEW_COLUMNS,
   ACTIVE_PARTICIPATION_STATUS,
@@ -17,6 +18,7 @@ type ParticipantImpactRow = {
   id: string;
   updatedAt: string | null;
   participationStatus: string;
+  collectionStatus: "collected" | "not_collected" | null;
   measurement: ReturnType<typeof toIndividualImpactMeasurement>;
 };
 
@@ -62,6 +64,7 @@ function groupParticipantImpactRows(
       id,
       updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
       participationStatus: String(row.participation_status ?? "confirmed"),
+      collectionStatus: row.collection_status === "collected" || row.collection_status === "not_collected" ? row.collection_status : null,
       measurement: toIndividualImpactMeasurement(row, options),
     });
     rowsByActionId.set(actionId, rows);
@@ -81,6 +84,7 @@ function allocateParticipantImpactRows(
       totalWasteKg: action?.waste_kg ?? null,
       totalCigaretteButts: action?.cigarette_butts ?? null,
       participants: rowsByActionId.get(actionId) ?? [],
+      collectionAttributionVersion: extractActionMetadataFromNotes(action?.notes ?? null).collectionAttributionVersion,
     }));
   }
   return output;

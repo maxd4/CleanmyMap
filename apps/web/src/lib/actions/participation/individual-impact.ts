@@ -80,6 +80,7 @@ export type StoredIndividualImpactBuildOptions = {
 export type StoredIndividualImpactMeasurement = IndividualImpactFields;
 
 export type IndividualImpactRow = {
+  collection_status?: "collected" | "not_collected" | null;
   individual_waste_kg?: number | string | null;
   individual_waste_condition?: string | null;
   individual_waste_measurement_method?: string | null;
@@ -399,6 +400,7 @@ export type ActionParticipantImpactAttribution = {
 type ConfirmedParticipant = {
   id: string;
   participationStatus: string;
+  collectionStatus?: "collected" | "not_collected" | null;
   measurement: IndividualImpactMeasurement | null;
 };
 
@@ -406,6 +408,7 @@ function allocateMetric(
   total: number | null,
   participants: ConfirmedParticipant[],
   read: (measurement: IndividualImpactMeasurement) => number | null,
+  restrictQuotesToCollectors: boolean,
 ): Map<string, { value: number | null; kind: AllocationKind; exactTotal: number; remaining: number | null; inconsistent: boolean }> {
   const measured = participants.flatMap((participant) => {
     const value = participant.measurement ? read(participant.measurement) : null;
@@ -414,14 +417,22 @@ function allocateMetric(
   const exactTotal = measured.reduce((sum, item) => sum + item.value, 0);
   const measuredById = new Map(measured.map((item) => [item.participantId, item.value] as const));
   const inconsistent = total !== null && exactTotal > total;
-  const missingCount = participants.length - measured.length;
+  const quoteEligible = restrictQuotesToCollectors
+    ? participants.filter((participant) => participant.collectionStatus === "collected")
+    : participants;
+  const quoteEligibleIds = new Set(quoteEligible.map((participant) => participant.id));
+  const missingCount = quoteEligible.filter((participant) => !measuredById.has(participant.id)).length;
   const remaining = total === null || inconsistent ? null : Math.max(0, total - exactTotal);
-  const quotePart = total !== null && measured.length === 0 && participants.length > 0 ? total / participants.length : null;
+  const quotePart = total !== null && measured.length === 0 && quoteEligible.length > 0 ? total / quoteEligible.length : null;
   const result = new Map<string, { value: number | null; kind: AllocationKind; exactTotal: number; remaining: number | null; inconsistent: boolean }>();
 
   for (const participant of participants) {
     if (measuredById.has(participant.id)) {
       result.set(participant.id, { value: measuredById.get(participant.id) ?? null, kind: "individual", exactTotal, remaining, inconsistent });
+      continue;
+    }
+    if (!quoteEligibleIds.has(participant.id)) {
+      result.set(participant.id, { value: null, kind: "unavailable", exactTotal, remaining, inconsistent });
       continue;
     }
     const value = quotePart ?? (remaining !== null && missingCount > 0 ? remaining / missingCount : null);
@@ -527,6 +538,7 @@ export function allocateActionParticipantImpact(params: {
   totalWasteKg: number | null;
   totalCigaretteButts: number | null;
   participants: ConfirmedParticipant[];
+  collectionAttributionVersion?: "collectors-v1" | null;
 }): Map<string, ActionParticipantImpactAttribution> {
   const participants = params.participants.filter(
     (participant) => participant.participationStatus === "confirmed",
@@ -535,11 +547,13 @@ export function allocateActionParticipantImpact(params: {
     finiteNonNegative(params.totalWasteKg),
     participants,
     (measurement) => measurement.wasteKg,
+    params.collectionAttributionVersion === "collectors-v1",
   );
   const butts = allocateMetric(
     normalizeNullableInteger(params.totalCigaretteButts),
     participants,
     (measurement) => measurement.comparableButtsCount,
+    params.collectionAttributionVersion === "collectors-v1",
   );
 
   return new Map(participants.map((participant) => [
@@ -549,6 +563,7 @@ export function allocateActionParticipantImpact(params: {
 }
 
 const INDIVIDUAL_IMPACT_COLUMN_LIST = [
+  "collection_status",
   "individual_waste_kg",
   "individual_waste_condition",
   "individual_waste_measurement_method",
