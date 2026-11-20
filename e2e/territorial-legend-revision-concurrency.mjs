@@ -32,7 +32,9 @@ const winner = (userId, fingerprint) => `jsonb_build_array(jsonb_build_object(
 
 const cleanupSql = `
 begin;
-set local role postgres;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"territorial-revision-cleanup"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 delete from public.action_participants where action_id = '${actionId}'::uuid;
 delete from public.actions where id = '${actionId}'::uuid;
 delete from public.territorial_legend_award_proofs where user_id in ('legend-revision-stale', 'legend-revision-fresh');
