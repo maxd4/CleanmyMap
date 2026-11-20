@@ -275,7 +275,7 @@ async function teamPublicNameUniqueness() {
   assert.ok(unicodeCollision.error, "NFC-equivalent variants must collide");
   assert.match(unicodeCollision.error.message, /already used/i);
 
-  const sharedName = `${marker} shared name`;
+  const sharedName = `Shared-${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
   const firstSharedEvent = await createEvent(sessionA, await createAction(sessionA), "casual");
   const secondSharedEvent = await createEvent(sessionA, await createAction(sessionA), "casual");
   const sharedTeams = await must(await sessionA.from("spogomi_teams").insert([
