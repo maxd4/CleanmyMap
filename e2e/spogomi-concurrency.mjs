@@ -716,7 +716,11 @@ async function concurrentConsolidationPublication() {
       p_published_by_clerk_id: `${marker}-publisher-b`,
     }),
   ]);
-  assert.equal(results.filter((result) => !result.error).length, 2, "same-hash consolidation must serialize as one committed projection");
+  assert.equal(
+    results.filter((result) => !result.error).length,
+    2,
+    `same-hash consolidation must serialize as one committed projection; rpc errors: ${JSON.stringify(results.map(({ error }) => error && ({ code: error.code, message: error.message, details: error.details })))}`,
+  );
   const current = await must(
     await sessionA.from("spogomi_action_consolidations").select("source_hash, projection_revision, is_current").eq("event_id", event.id),
     "read concurrent consolidation projection",
