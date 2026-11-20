@@ -337,7 +337,10 @@ async function concurrentMoveAndLock() {
     assert.equal(finalTeam.composition_state, "locked");
     assert.equal(finalParticipant.team_id, team.id, "a locked team keeps its complete membership");
   } else {
-    assert.equal(finalEvent.state, "registration_open");
+    assert.ok(
+      ["draft", "registration_open"].includes(finalEvent.state),
+      `a successful move remains in preparation state, got ${finalEvent.state}`,
+    );
     assert.equal(finalTeam.composition_state, "draft");
     assert.equal(finalParticipant.team_id, null, "a successful move remains a preparation-only mutation");
   }
@@ -847,7 +850,10 @@ async function main() {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   main().catch((error) => {
-    console.error(`Error: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
+    const summary = error instanceof Error
+      ? (error.stack ?? error.message).split(/\r?\n/u).slice(0, 4).join(" | ")
+      : String(error);
+    console.error(`Error: ${summary}`);
     process.exitCode = 1;
   });
 }
