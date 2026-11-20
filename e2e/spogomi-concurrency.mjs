@@ -661,6 +661,8 @@ async function concurrentConsolidationPublication() {
       event_id: event.id,
       division_id: division.id,
       category_rule_id: category.id,
+      measurement_kind: "mass",
+      unit: "g",
       quantity: 1250,
       provenance: `${marker}-scale`,
       measurement_method: "scale",
