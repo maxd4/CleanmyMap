@@ -21,6 +21,14 @@ qui réutilise l'inventaire et le graphe de
 ne crée pas de scanner concurrent et ne modifie aucun des cinq quality gates,
 leurs seuils, leurs baselines ou leurs justifications.
 
+Les décisions humaines par dossier sont conservées dans le registre canonique
+[`quality-structure-decisions.md`](./quality-structure-decisions.md). Ce
+registre qualifie uniquement les dossiers effectivement revus, avec leur
+justification observable, leur SHA et leur condition de réexamen ; son absence
+d'une fiche ne supprime jamais un signal ni ne vaut exclusion automatique. Il
+est distinct du registre des décisions de modularisation par fichier
+([`modularity-decisions.md`](../architecture/modularity-decisions.md)).
+
 ```bash
 npm run quality:structure -- --dry-run
 npm run audit:quality -- structure

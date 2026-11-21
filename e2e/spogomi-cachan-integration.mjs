@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { execFileSync, spawn } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright";
 import * as XLSX from "xlsx";
+import { spawnLocalApp, stopLocalApp, waitForLocalApp } from "./spogomi-cachan-local-app.mjs";
 import { operationalInstantAt, teamSubmissionIdempotencyKey } from "./spogomi-cachan-inputs.mjs";
 import { assertManifestFormation, buildManifestFormation } from "./spogomi-cachan-formation.mjs";
 
@@ -63,23 +64,11 @@ function mustLocalAppUrl(raw) {
   return assertLocalUrl(raw, "application");
 }
 
-async function waitForApp(baseUrl) {
-  const deadline = Date.now() + 90_000;
-  while (Date.now() < deadline) {
-    try {
-      const response = await fetch(`${baseUrl}/spogomi`, { redirect: "manual" });
-      if (response.status < 500) return;
-    } catch { /* server is still booting */ }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-  throw new Error(`Application SPOGOMI indisponible sur ${baseUrl}.`);
-}
-
 function startApp({ port, userId, database }) {
   const publishableKey = process.env.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   const secretKey = process.env.CMM_E2E_CLERK_DEV_BACKEND_TOKEN ?? process.env.CLERK_SECRET_KEY;
   if (!publishableKey?.startsWith("pk_test_") || !secretKey?.startsWith("sk_test_")) throw new Error("Le scénario exige uniquement des clés Clerk Development pk_test_/sk_test_ pour son serveur local éphémère.");
-  const child = spawn(process.execPath, [path.join(root, "scripts", "dev", "dev-with-fallback-port.mjs")], {
+  return spawnLocalApp(process.execPath, [path.join(root, "scripts", "dev", "dev-with-fallback-port.mjs")], {
     cwd: root,
     env: {
       ...process.env,
@@ -97,17 +86,7 @@ function startApp({ port, userId, database }) {
       CMM_DEV_AUTH_BYPASS_USER_ID: userId,
       CMM_DEV_AUTH_BYPASS_ROLE: "coordinateur",
     },
-    stdio: ["ignore", "pipe", "pipe"],
   });
-  child.stdout.on("data", () => undefined);
-  child.stderr.on("data", () => undefined);
-  return child;
-}
-
-async function stopApp(child) {
-  if (!child || child.exitCode !== null) return;
-  child.kill("SIGTERM");
-  await new Promise((resolve) => { const timer = setTimeout(resolve, 5000); child.once("exit", () => { clearTimeout(timer); resolve(); }); });
 }
 
 async function runStep(name, action) {
@@ -198,13 +177,16 @@ async function main() {
   const database = databaseDestination();
   const supabase = createClient(database.url, database.key, { auth: { persistSession: false, autoRefreshToken: false } });
   const appUrl = process.env.CMM_SPOGOMI_APP_URL ? mustLocalAppUrl(process.env.CMM_SPOGOMI_APP_URL) : "http://127.0.0.1:3010";
-  ownerServer = process.env.CMM_SPOGOMI_APP_URL ? null : startApp({ port: 3010, userId: ownerId, database });
-  await waitForApp(appUrl);
-  if (!process.env.CMM_SPOGOMI_APP_URL) observerServer = startApp({ port: 3011, userId: observerId, database });
   const observerUrl = process.env.CMM_SPOGOMI_APP_URL ? null : "http://127.0.0.1:3011";
-  if (observerUrl) await waitForApp(observerUrl);
 
   try {
+    ownerServer = process.env.CMM_SPOGOMI_APP_URL ? null : startApp({ port: 3010, userId: ownerId, database });
+    await waitForLocalApp(appUrl, { server: ownerServer, getStartupOutput: () => ownerServer?.getStartupOutput?.() ?? "" });
+    if (observerUrl) {
+      observerServer = startApp({ port: 3011, userId: observerId, database });
+      await waitForLocalApp(observerUrl, { server: observerServer, getStartupOutput: () => observerServer?.getStartupOutput?.() ?? "" });
+    }
+
     await runStep("fixture-synthétique-et-partition", async () => {
       assert.equal(fixture.mode, "mixed");
       assert.equal(fixture.official, false);
@@ -496,8 +478,8 @@ async function main() {
 
     console.log(`EXECUTED_SPOGOMI_INTEGRATION: Cachan mixed fixture completed with ${steps.filter((step) => step.status === "PASS").length} PASS steps.`);
   } finally {
-    await stopApp(observerServer);
-    await stopApp(ownerServer);
+    await stopLocalApp(observerServer);
+    await stopLocalApp(ownerServer);
     if (createdEventId) {
       await supabase.from("spogomi_events").delete().eq("id", createdEventId);
     }
