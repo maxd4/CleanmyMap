@@ -52,4 +52,9 @@ describe("AiFootprintMethodologySection interactions", () => {
     act(() => { checks[1].click(); });
     expect(status()).toContain("FEASIBLE_SCENARIO");
   });
+
+  it("offers the secondary link to the personal declaration page", () => {
+    render();
+    expect(host.querySelector('a[href="/learn/empreinte-ia"]')?.textContent).toContain("Déclarer et estimer");
+  });
 });

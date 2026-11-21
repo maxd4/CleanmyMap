@@ -38,6 +38,7 @@ describe("indexability helpers", () => {
     expect(publicSitemapPaths).toContain("/signalement");
     expect(publicSitemapPaths).toContain("/contact");
     expect(publicSitemapPaths).toContain("/learn/ecole");
+    expect(publicSitemapPaths).toContain("/learn/empreinte-ia");
     expect(publicSitemapPaths).not.toContain("/explorer");
     expect(publicSitemapPaths).not.toContain("/en");
     expect(publicSitemapPaths).not.toContain("/conditions-utilisation");

@@ -39,7 +39,7 @@ export default defineConfig({
     {
       name: "local public",
       testMatch:
-        /(?:smoke-public|reports-public|spogomi-navigation|ui-consistency-geometry|footer-responsive-public|navigation-ribbon-variants|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls)\.(?:spec|test)\.ts/,
+        /(?:smoke-public|reports-public|spogomi-navigation|ui-consistency-geometry|footer-responsive-public|navigation-ribbon-variants|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls|personal-ai-public)\.(?:spec|test)\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
     {
@@ -49,7 +49,7 @@ export default defineConfig({
     },
     {
       name: "local authenticated",
-      testMatch: /route-campaign-3c\.spec\.ts/,
+      testMatch: /(?:route-campaign-3c|personal-ai-authenticated)\.spec\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },
@@ -154,6 +154,12 @@ export default defineConfig({
     {
       name: "route campaign 3c",
       testMatch: /route-campaign-3c\.spec\.ts/,
+      dependencies: ["global setup"],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "personal AI authenticated",
+      testMatch: /personal-ai-authenticated\.spec\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },

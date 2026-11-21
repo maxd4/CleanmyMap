@@ -64,10 +64,12 @@ conserve le même résultat sous Windows et Linux.
 Le contrôle complémentaire `scripts/checks/check-path-integrity.mjs` réutilise
 exactement ce même inventaire Git. Il signale comme `FAIL` uniquement les
 problèmes objectifs pouvant changer le chemin selon la plateforme : collision
-insensible à la casse, collision après normalisation Unicode NFC, nom réservé
-Windows (`CON`, `PRN`, `AUX`, `NUL`, `COM1` à `COM9`, `LPT1` à `LPT9`), caractère
-interdit, séparateur `\\` ambigu ou suffixe de segment terminé par un point ou
-un espace. Les exceptions historiques sont déclarées dans cette baseline par
+insensible à la casse, collision après normalisation Unicode NFC, ou collision
+combinant ces deux comparaisons (un seul finding combiné par chemin), nom
+réservé Windows (`CON`, `PRN`, `AUX`, `NUL`, `COM1` à `COM9`, `LPT1` à `LPT9`,
+ainsi que `COM¹` à `COM³` et `LPT¹` à `LPT³`), caractère interdit, séparateur
+`\\` ambigu ou suffixe de segment terminé par un point ou un espace. Les
+exceptions historiques sont déclarées dans cette baseline par
 chemin et par règle ; elles ne désactivent pas le contrôle pour les nouveaux
 chemins. `--dry-run` effectue l'analyse complète sans écrire d'artefact ni
 modifier le dépôt.

@@ -5,6 +5,7 @@ import { actionsAuthorizationContract } from "./api-authorization-contract.actio
 import { adminCommunityAuthorizationContract } from "./api-authorization-contract.admin-community";
 import { chatAuthorizationContract } from "./api-authorization-contract.chat";
 import { platformAuthorizationContract } from "./api-authorization-contract.platform";
+import { personalAiAuthorizationContract } from "./api-authorization-contract.personal-ai";
 import { spogomiAuthorizationContract } from "./api-authorization-contract.spogomi";
 
 export type {
@@ -18,6 +19,7 @@ const contractFragments = [
   { name: "admin-community", contract: adminCommunityAuthorizationContract },
   { name: "chat", contract: chatAuthorizationContract },
   { name: "platform", contract: platformAuthorizationContract },
+  { name: "personal-ai", contract: personalAiAuthorizationContract },
   { name: "spogomi", contract: spogomiAuthorizationContract },
 ] as const;
 
@@ -38,5 +40,6 @@ export const API_AUTHORIZATION_CONTRACT = {
   ...adminCommunityAuthorizationContract,
   ...chatAuthorizationContract,
   ...platformAuthorizationContract,
+  ...personalAiAuthorizationContract,
   ...spogomiAuthorizationContract,
 } as const satisfies ApiAuthorizationContract;

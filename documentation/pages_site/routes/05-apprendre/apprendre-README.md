@@ -30,6 +30,7 @@ Le runtime possède des pages :
 /learn/comprendre
 /learn/ecole
 /learn/sentrainer
+/learn/empreinte-ia
 ```
 
 Aucune page canonique `/learn` n'est définie dans l'état audité.
@@ -57,7 +58,7 @@ yellow / amber
 - distinguer fait, estimation et conseil ;
 - conserver les détails lourds à la demande ;
 - respecter la promesse « sans compte élève » tant qu'elle est affichée ;
-- garder les quatre routes publiques alignées entre code, documentation et sitemap ;
+- garder les routes publiques alignées entre code, documentation et sitemap ;
 - ne pas reproposer un objectif classé `NON_PERTINENT` sans nouvelle décision produit explicite.
 
 ## Snapshots

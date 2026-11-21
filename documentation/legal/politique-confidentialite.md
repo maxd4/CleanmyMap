@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 9 novembre 2026**
+**Dernière mise à jour : 21 novembre 2026**
 
 Cette politique décrit les traitements de données personnelles mis en œuvre
 par CleanMyMap au regard du code et de la configuration du service web. Les
@@ -25,6 +25,12 @@ Selon les parcours utilisés, CleanMyMap traite notamment :
   Clerk, email, téléphone lorsqu'il est fourni, nom d'affichage, avatar, rôle,
   visibilité, badges, progression, préférence d'opt-in du classement public,
   arrondissement et rattachement de parrainage ;
+- **Déclarations personnelles Mon empreinte IA (facultatif après connexion)** :
+  fournisseur, modèle et opérateur déclarés, région physique déclarée, période
+  UTC, granularité, nombres de requêtes, catégories de tokens, multimodalité,
+  frontière et preuve énergétique, ainsi qu'un snapshot scientifique
+  versionné. Les prompts, conversations, factures, clés d'API, credentials et
+  identifiants bruts de compte fournisseur ne sont ni demandés ni enregistrés ;
 - **Tranche d'âge déclarée** : statut `under_15`, `15_or_over` ou `unknown`
   pour les traitements facultatifs. Il est conservé dans les métadonnées
   privées Clerk et, pour le contrôle analytique côté navigateur, dans le
@@ -75,6 +81,7 @@ parrainage ou un contenu.
 | --- | --- | --- |
 | Compte, profil et authentification | Créer le compte, authentifier la personne et fournir les fonctions choisies | Exécution du service ou mesures précontractuelles pertinentes ; intérêt légitime de sécurité |
 | Actions, lieux, événements et messagerie | Enregistrer les contributions et fournir les fonctions communautaires demandées | Exécution du service |
+| Déclarations personnelles Mon empreinte IA | Calculer anonymement puis, au choix, sauvegarder et gérer les déclarations privées | Exécution de la fonctionnalité expressément demandée |
 | Support et demandes RGPD | Répondre, instruire une demande et en suivre le traitement | Intérêt légitime pour le support ; obligation légale pour les droits RGPD |
 | Notification de contenu | Recevoir, examiner et suivre une notification concernant un contenu potentiellement illicite | Intérêt légitime ; obligation légale lorsque le traitement l'impose |
 | Newsletter | Envoyer les communications demandées | Consentement |
@@ -176,6 +183,11 @@ Les règles suivantes sont celles qui peuvent être établies à partir du
 runtime :
 
 - le consentement cookies et le refus sont conservés six mois ;
+- les déclarations Mon empreinte IA restent dans l'espace privé owner-scoped
+  jusqu'à leur suppression par l'utilisateur ou au traitement d'une demande de
+  droits. Elles peuvent être modifiées, exclues, réactivées ou supprimées depuis
+  leur page. Aucun délai automatique d'expiration ni purge périodique n'est
+  configuré pour ces déclarations ;
 - `contact_requests` est couvert par le script de nettoyage générique. Son
   seuil par défaut est de 120 jours lorsqu'il est exécuté ; le dépôt ne prouve
   pas une exécution planifiée ni une durée garantie pour chaque demande ;

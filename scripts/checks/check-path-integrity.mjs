@@ -8,7 +8,7 @@ import {
 } from "./check-file-naming.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const WINDOWS_RESERVED_BASENAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
+const WINDOWS_RESERVED_BASENAME = /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\..*)?$/i;
 const WINDOWS_FORBIDDEN_CHARACTER = /[<>:"|?*\u0000-\u001f]/;
 
 function normalizeGitPath(file) {
@@ -41,13 +41,16 @@ export function findPathIntegrityViolations(trackedFiles) {
   const violations = [];
   const caseGroups = new Map();
   const unicodeGroups = new Map();
+  const combinedGroups = new Map();
 
   for (const file of files) {
     const slashPath = normalizeGitPath(file);
     const caseKey = slashPath.toLocaleLowerCase("en-US");
     const unicodeKey = slashPath.normalize("NFC");
+    const combinedKey = unicodeKey.toLocaleLowerCase("en-US");
     caseGroups.set(caseKey, [...(caseGroups.get(caseKey) ?? []), file]);
     unicodeGroups.set(unicodeKey, [...(unicodeGroups.get(unicodeKey) ?? []), file]);
+    combinedGroups.set(combinedKey, [...(combinedGroups.get(combinedKey) ?? []), file]);
 
     if (String(file).includes("\\")) {
       violations.push({
@@ -88,8 +91,22 @@ export function findPathIntegrityViolations(trackedFiles) {
     }
   }
 
-  for (const filesForKey of caseGroups.values()) addGroupViolations(violations, filesForKey, "case-collision", "Paths collide when compared case-insensitively");
-  for (const filesForKey of unicodeGroups.values()) addGroupViolations(violations, filesForKey, "unicode-normalization-collision", "Paths collide after Unicode NFC normalization");
+  const combinedCollisionGroups = [...combinedGroups.values()]
+    .filter((filesForKey) => new Set(filesForKey.map((file) => normalizeGitPath(file).normalize("NFC"))).size > 1
+      && new Set(filesForKey.map((file) => normalizeGitPath(file).toLocaleLowerCase("en-US"))).size > 1);
+  const coveredByCombinedCollision = (filesForKey) => combinedCollisionGroups.some((combinedFiles) => {
+    const combinedSet = new Set(combinedFiles);
+    return filesForKey.every((file) => combinedSet.has(file));
+  });
+  for (const filesForKey of caseGroups.values()) {
+    if (!coveredByCombinedCollision(filesForKey)) addGroupViolations(violations, filesForKey, "case-collision", "Paths collide when compared case-insensitively");
+  }
+  for (const filesForKey of unicodeGroups.values()) {
+    if (!coveredByCombinedCollision(filesForKey)) addGroupViolations(violations, filesForKey, "unicode-normalization-collision", "Paths collide after Unicode NFC normalization");
+  }
+  for (const filesForKey of combinedCollisionGroups) {
+    addGroupViolations(violations, filesForKey, "case-unicode-normalization-collision", "Paths collide after NFC normalization and case-insensitive comparison");
+  }
 
   const unique = new Map();
   for (const violation of violations) unique.set(`${violation.path}\0${violation.rule}`, violation);

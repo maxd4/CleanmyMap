@@ -17,6 +17,7 @@ const SITEMAP_PATH_PRIORITY: Record<string, number> = {
   "/methodologie": 0.7,
   "/learn/comprendre": 0.55,
   "/learn/bonnes-pratiques": 0.55,
+  "/learn/empreinte-ia": 0.55,
   "/learn/ecole": 0.55,
   "/learn/sentrainer": 0.55,
   "/mentions-legales": 0.3,

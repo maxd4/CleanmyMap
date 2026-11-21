@@ -60,6 +60,7 @@ export function AiFootprintMethodologySection({ isFrench }: Props) {
     <CmmCard as="article" tone="slate" variant="glass" size="lg" className="border-rose-200/20">
       <h2 id="ai-footprint-methodology-title" className="text-xl font-black text-slate-900">{labels.title}</h2>
       <p className="mt-2 max-w-4xl cmm-text-body cmm-text-primary">{labels.intro}</p>
+      <p className="mt-3 text-sm"><a href="/learn/empreinte-ia" className="font-bold text-rose-800 underline underline-offset-4">{fr ? "Déclarer et estimer mon usage IA" : "Declare and estimate my AI usage"}</a></p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <label className="grid gap-1 text-sm text-slate-800">{labels.energy}
           <select value={energyScenario} onChange={(event) => setEnergyScenario(event.target.value as typeof energyScenario)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950">

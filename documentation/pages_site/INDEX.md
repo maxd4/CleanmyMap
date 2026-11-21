@@ -85,6 +85,7 @@ tests runtime restent la preuve opérationnelle de cet alignement.
 | /learn/bonnes-pratiques | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /learn/comprendre | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /learn/ecole | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /learn/empreinte-ia | `HYBRID` | `INDEX` | `SITEMAP` | `SELF` |
 | /learn/sentrainer | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /sections/actors | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /sections/annuaire | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
@@ -347,6 +348,7 @@ Feedback, mais ne fait pas partie de ce bloc.
 | `/learn/comprendre` | [Ordres de grandeur](./routes/05-apprendre/learn-comprendre/learn-comprendre-README.md) | `public-visible` | apprendre | `apps/web/src/app/learn/comprendre/page.tsx` |
 | `/learn/sentrainer` | [S'entraîner](./routes/05-apprendre/learn-sentrainer/learn-sentrainer-README.md) | `public-visible` | apprendre | `apps/web/src/app/learn/sentrainer/page.tsx` |
 | `/learn/ecole` | [Mode École](./routes/05-apprendre/learn-ecole/learn-ecole-README.md) | `public-visible` | apprendre | `apps/web/src/app/learn/ecole/page.tsx` |
+| `/learn/empreinte-ia` | [Mon empreinte IA](./routes/05-apprendre/learn-empreinte-ia/learn-empreinte-ia-README.md) | `public-visible` + gestion owner-scoped | apprendre | `apps/web/src/app/learn/empreinte-ia/page.tsx` |
 
 Note : aucune page canonique `/learn` n'est documentée dans l'état actuel. Le sitemap ne doit pas l'inventer.
 

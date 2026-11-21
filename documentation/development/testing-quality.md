@@ -53,9 +53,11 @@ explicitement non bloquant et sert seulement à qualifier des basenames
 génériques, des noms réutilisés entre domaines ou des conventions mixtes.
 
 `npm run check:path-integrity -- --dry-run` réutilise le même inventaire
-`git ls-files` et vérifie les collisions de casse et Unicode, les noms ou
-caractères interdits Windows, les suffixes de chemin ambigus et les séparateurs
-non portables. Une violation objective nouvelle est un `FAIL`, sauf exception
+`git ls-files` et vérifie les collisions de casse et Unicode, y compris leur
+combinaison NFC + insensibilité à la casse sans findings dupliqués, les noms ou
+caractères interdits Windows (dont `COM¹` à `COM³` et `LPT¹` à `LPT³`), les
+suffixes de chemin ambigus et les séparateurs non portables. Une violation
+objective nouvelle est un `FAIL`, sauf exception
 historique chemin/règle explicitement documentée dans la baseline ; le dry-run
 ne produit aucun artefact. `checks:fast` exécute ces deux contrôles sans
 transformer les suggestions heuristiques en gate.

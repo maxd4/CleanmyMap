@@ -140,6 +140,7 @@ async function runPersistentE2E() {
         "--project=action sharing",
         "--project=authenticated campaign",
         "--project=signalement campaign 2",
+        "--project=personal AI authenticated",
       ],
       { cwd: root, env, stdio: "inherit" },
     );

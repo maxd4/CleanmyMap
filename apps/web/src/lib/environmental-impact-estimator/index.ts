@@ -54,6 +54,15 @@ export type {
   ModalityEstimate,
 } from "./personal-ai-estimator";
 export {
+  PERSONAL_AI_DECLARATION_VERSION,
+  normalizePersonalAiDeclaration,
+  toPersonalAiEstimatorInput,
+} from "./personal-ai-usage-normalization";
+export type {
+  PersonalAiDeclarationDraft,
+  PersonalAiNormalizedDeclaration,
+} from "./personal-ai-usage-normalization";
+export {
   AI_MODEL_CATALOG,
   STANDARD_HOSTERS,
   findAiModel,

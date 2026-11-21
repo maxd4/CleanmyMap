@@ -663,3 +663,16 @@ analogies, jamais une neutralisation, un crédit carbone ou une économie d'eau
 physique. La projection retourne aussi la version des règles de collecte et
 les versions effectives des facteurs BNR, fournisseur et proxy terrain.
 L'ancien ratio de « cleanwalks équivalentes » n'est pas utilisé.
+
+Les déclarations personnelles facultativement enregistrées sous `/learn/empreinte-ia`
+sont des données privées owner-scoped, distinctes des mesures du site, des KPI
+terrain, de la gamification et des snapshots environnementaux du projet. Leur
+normalisation est versionnée (`personal-ai-declaration-v1`) et le snapshot
+conserve séparément la version méthodologique et la version des facteurs du
+moteur canonique. Les champs inconnus restent `null`; les comptes et catégories
+de tokens explicites à zéro restent `0`. EcoLogits n'est consommé que par une
+requête explicitement qualifiée et non par un agrégat de période. Aucun prompt,
+contenu de conversation, facture, credential ou identifiant brut de compte
+fournisseur n'est stocké. L'utilisateur peut modifier, exclure, réactiver et
+supprimer chaque déclaration; aucune compensation carbone ou hydrique n'est
+revendiquée.

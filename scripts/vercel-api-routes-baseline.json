@@ -512,6 +512,20 @@
       "reason": "Export Markdown privé du dossier personnel de bénévolat généré à la demande depuis la projection canonique.",
       "costContract": "POST authentifié strictement owner-scoped, rate-limité, relecture live et réponse private/no-store sans persistance des champs libres ni des fichiers générés.",
       "reviewedAt": "2026-11-20"
+    },
+    {
+      "route": "apps/web/src/app/api/personal-ai/declarations/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Surface privée owner-scoped pour créer et lister les déclarations personnelles Mon empreinte IA après connexion.",
+      "costContract": "POST normalisé côté serveur et calculé par l'estimateur canonique; GET borné à 50 éléments/page et offset plafonné; RLS Clerk, filtre owner, réponses private/no-store, aucun prompt, conversation, facture ni identifiant fournisseur brut.",
+      "reviewedAt": "2026-11-21"
+    },
+    {
+      "route": "apps/web/src/app/api/personal-ai/declarations/[id]/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Surface privée owner-scoped pour corriger, exclure, réactiver et supprimer une déclaration personnelle adressée par UUID.",
+      "costContract": "PATCH/DELETE authentifiés, UUID validé, filtre d'identifiant et owner côté serveur, RLS Clerk, payload PATCH plafonné à 32 KiB, réponses private/no-store et 404 indistinguable en cas de non-propriété.",
+      "reviewedAt": "2026-11-21"
     }
   ],
   "apiRoutes": [
@@ -662,6 +676,8 @@
     "apps/web/src/app/api/parcours/brigade-verte/route.ts",
     "apps/web/src/app/api/partners/onboarding-requests/route.ts",
     "apps/web/src/app/api/partners/published-directory/route.ts",
+    "apps/web/src/app/api/personal-ai/declarations/[id]/route.ts",
+    "apps/web/src/app/api/personal-ai/declarations/route.ts",
     "apps/web/src/app/api/pilotage/overview/route.ts",
     "apps/web/src/app/api/recycling/breakdown/route.ts",
     "apps/web/src/app/api/reports/actions.csv/route.ts",

@@ -12,6 +12,7 @@ export function PrivacyPurposesSection() {
   const rows = [
     ["Compte et profil", "Créer, authentifier et fournir les fonctionnalités du compte", "Exécution du service / mesures précontractuelles lorsque pertinentes ; intérêt légitime de sécurité"],
     ["Actions, spots, événements et messagerie", "Enregistrer les contributions, coordonner la communauté et afficher les fonctionnalités choisies", "Exécution du service"],
+    ["Déclarations personnelles Mon empreinte IA", "Calculer une estimation anonymement puis, au choix de la personne connectée, enregistrer et gérer ses déclarations privées", "Exécution de la fonctionnalité expressément demandée"],
     ["Support et demandes RGPD", "Répondre aux messages, exercer les droits et assurer le suivi de la demande", "Intérêt légitime pour le support ; obligation légale pour les demandes de droits"],
     ["Notifications de contenu", "Recevoir, examiner et suivre les notifications électroniques concernant un contenu potentiellement illicite", "Intérêt légitime ; obligation légale lorsque le traitement concerné l'impose"],
     ["Décisions de modération liées aux notifications", "Examiner la légalité ou la conformité aux CGU, appliquer si possible une mesure canonique, assurer l'audit et informer les personnes concernées", "Intérêt légitime ; obligation légale lorsque la traçabilité ou l'information l'impose"],

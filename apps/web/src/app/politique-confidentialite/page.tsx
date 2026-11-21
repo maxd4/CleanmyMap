@@ -75,6 +75,7 @@ function PrivacyIdentityAndData({ contactEmail }: { contactEmail: string }) {
             "Rôle applicatif, visibilité du profil, badges, progression et arrondissement éventuellement renseigné.",
             "Préférence d'opt-in du classement public, désactivée par défaut et modifiable depuis `/reglages`.",
             "Parrainage : code d'invitation, identifiant du parrain et rattachement du compte invité.",
+            "Mon empreinte IA (facultatif après connexion) : fournisseur, modèle/opérateur déclarés, région physique déclarée, période UTC, granularité, nombres de requêtes, catégories de tokens, multimodalité, frontière/preuve énergétique et snapshot scientifique versionné. Les prompts, conversations, factures et identifiants bruts de compte fournisseur ne sont pas demandés ni enregistrés.",
             "Cookies de session Clerk et données techniques nécessaires à l'authentification et à la sécurité.",
           ]}
         />
@@ -218,6 +219,7 @@ function PrivacyProcessingSections() {
             "Profils, actions, lieux, médias de signalement, rapports, notifications, progression et audit : aucun mécanisme générique de suppression périodique n'est identifié dans ce dépôt ; conservation selon le fonctionnement du service et examen au cas par cas lors d'une demande de droits.",
             "Faits de paiement et événements Stripe : conservation selon les besoins de confirmation, de remboursement, de prévention de la fraude et de traçabilité applicable. Aucun mécanisme de purge ni durée fixe propre à ces tables n'est démontré par le dépôt ; les agrégats publics sont des projections de montants sans données de carte ni PII.",
             "Newsletter : l'inscription reste active jusqu'à son retrait ou sa mise à jour ; le code actuel ne fournit pas de parcours public de désinscription dédié, le retrait peut être demandé via le contact RGPD.",
+            "Déclarations Mon empreinte IA : conservées dans l'espace privé du compte jusqu'à suppression par l'utilisateur ou traitement d'une demande de droits ; aucun délai automatique d'expiration ou de purge n'est configuré. Chaque déclaration peut être supprimée depuis sa page de gestion.",
             "PostHog, Vercel et Sentry : la durée de conservation des données chez ces fournisseurs n'est pas configurée par ce dépôt ; elle dépend de leurs paramètres et conditions applicables et n'est pas présentée comme une durée CleanMyMap.",
           ]}
         />

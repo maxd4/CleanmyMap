@@ -41,6 +41,17 @@ test("detects Unicode NFC collisions", () => {
   ]);
 });
 
+test("detects combined NFC and case collisions without duplicate findings", () => {
+  const result = findPathIntegrityViolations([
+    "src/Café.ts",
+    "src/cafe\u0301.ts",
+  ]);
+  assert.deepEqual(result.map(({ path: file, rule }) => ({ path: file, rule })), [
+    { path: "src/cafe\u0301.ts", rule: "case-unicode-normalization-collision" },
+    { path: "src/Café.ts", rule: "case-unicode-normalization-collision" },
+  ]);
+});
+
 test("detects Windows reserved names and forbidden suffixes", () => {
   const result = findPathIntegrityViolations([
     "src/CON.ts",
@@ -56,6 +67,33 @@ test("detects Windows reserved names and forbidden suffixes", () => {
     { path: "src/trailing-dot.", rule: "windows-forbidden-suffix" },
     { path: "src/trailing-space ", rule: "windows-forbidden-suffix" },
   ]);
+});
+
+test("detects superscript Windows device names in every path segment", () => {
+  const result = findPathIntegrityViolations([
+    "src/COM¹.ts",
+    "src/COM².txt",
+    "src/COM³",
+    "src/LPT¹.ts",
+    "src/LPT².txt",
+    "src/LPT³",
+    "src/COM10.ts",
+    "src/LPT10.ts",
+    "src/portable/com¹x.ts",
+    "src/portable/com¹/file.ts",
+  ]);
+  assert.deepEqual(result.filter(({ rule }) => rule === "windows-reserved-name").map(({ path: file }) => file), [
+    "src/COM¹.ts",
+    "src/COM².txt",
+    "src/COM³",
+    "src/LPT¹.ts",
+    "src/LPT².txt",
+    "src/LPT³",
+    "src/portable/com¹/file.ts",
+  ]);
+  assert.equal(result.some(({ path: file }) => file.endsWith("COM10.ts")), false);
+  assert.equal(result.some(({ path: file }) => file.endsWith("LPT10.ts")), false);
+  assert.equal(result.some(({ path: file }) => file.endsWith("com¹x.ts")), false);
 });
 
 test("historical path exceptions remain explicit and do not hide new violations", () => {

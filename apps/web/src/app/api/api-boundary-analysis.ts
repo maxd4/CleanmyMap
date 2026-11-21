@@ -36,6 +36,8 @@ export const contractedApiRoutes = new Set([
   "gamification/territorial-leaderboard/overview",
   "spogomi/events/[eventId]/volunteer-help-proposals",
   "spogomi/events/[eventId]/volunteer-help-proposals/review",
+  "personal-ai/declarations",
+  "personal-ai/declarations/[id]",
 ]);
 
 export const apiRoot = dirname(fileURLToPath(import.meta.url));
