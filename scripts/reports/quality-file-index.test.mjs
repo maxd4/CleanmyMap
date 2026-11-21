@@ -675,6 +675,51 @@ test("refuse une projection structurelle dont le scope diverge du run agrégé",
   }
 });
 
+test("le Quality Index affiche les preuves structurelles et les décisions comme annotations", () => {
+  const run = buildRun();
+  run.aggregateManifest.scope = "all";
+  run.aggregateReport.scope = "all";
+  const folder = {
+    path: "apps/web/src/components/example",
+    files: { direct: 12, recursive: 16 },
+    concentration: { directFileShare: 0.75 },
+    functionalGroups: [],
+    signalFamilies: ["shape", "coupling"],
+    imports: { outgoing: 4, incoming: 1, externalOutgoing: 4, externalIncoming: 1 },
+    review: {
+      recommendation: "REVIEW_STRUCTURE",
+      reason: "shape + graph concordent sur les mesures citées",
+      proof: {
+        measured: { directFiles: 12, recursiveFiles: 16, imports: { internalRecursive: 3, internalShare: 0.428571, targetAreas: ["web/lib/actions"], dependencyClusters: [{}, {}] } },
+        unproven: ["Les mesures ne prouvent pas des responsabilités métier distinctes."],
+      },
+    },
+    humanDecision: {
+      classification: "KEEP_COHESIVE_OWNER",
+      reviewedSha: "d".repeat(40),
+      reviewedScope: "all",
+      reviewedSameSha: false,
+      justification: "owner partagé observable",
+      reexaminationCondition: "réexaminer si les responsabilités changent",
+      source: "documentation/development/quality-structure-decisions.md",
+      sourceLine: 40,
+      annotationOnly: true,
+    },
+  };
+  run.reports.structure = structureReport("all", { folders: [folder], foldersRequiringReview: [folder], summary: { foldersMeasured: 1, foldersRequiringReview: 1, descriptiveSignals: 2, humanDecisionAnnotations: 1 } });
+  run.manifests.structure = { schemaVersion: 1, audit: "structure", runId, auditedHead: sha, originMain: sha, readProvenance: "WORKTREE_LIVE", reproducible: true, resultClass: "REPRODUCIBLE", status: "PASS", attentionRequired: false };
+
+  const index = buildQualityFileIndex({ run });
+  const markdown = buildQualityFileIndexMarkdown(index);
+
+  assert.equal(index.architecture.structure.folders[0].humanDecision.annotationOnly, true);
+  assert.match(markdown, /preuve et éléments non prouvés/i);
+  assert.match(markdown, /shape \+ graph concordent/);
+  assert.match(markdown, /KEEP_COHESIVE_OWNER/);
+  assert.match(markdown, /annotation/);
+  assert.match(markdown, /NOT_MEASURED/);
+});
+
 test("écarte les structures fournies périmées sans contaminer les compteurs ni le Markdown", () => {
   const run = buildRun();
   run.aggregateManifest.scope = "all";

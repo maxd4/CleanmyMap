@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { buildArchitectureAudit, ARCHITECTURE_SCAN_ROOTS } from "./architecture-audit.mjs";
+import { createRepositoryView } from "../checks/repository-view.mjs";
 
 export const QUALITY_STRUCTURE_SCHEMA_VERSION = 1;
 export const QUALITY_STRUCTURE_THRESHOLDS = Object.freeze({
@@ -29,6 +30,7 @@ const STRUCTURAL_EXCLUSION_RULES = Object.freeze([
   { code: "NEXT_ROUTING_CONVENTION", pattern: /(?:^|\/)apps\/web\/src\/(?:app|pages)(?:\/|$)/i },
   { code: "EXPO_ROUTING_CONVENTION", pattern: /(?:^|\/)apps\/mobile\/app(?:\/|$)/i },
 ]);
+const HUMAN_DECISIONS_PATH = "documentation/development/quality-structure-decisions.md";
 
 function normalizePath(value) {
   return String(value ?? "").replaceAll("\\", "/");
@@ -54,6 +56,74 @@ function functionalPrefix(file) {
     .replace(/([a-z0-9])([A-Z])/g, "$1-$2");
   const prefix = base.split(/[-_.]+/).find(Boolean);
   return prefix?.toLowerCase() || "unknown";
+}
+
+function importTargetArea(file) {
+  const parts = normalizePath(file).split("/");
+  if (parts[0] === "apps" && parts[1] === "web" && parts[2] === "src") {
+    const sourcePath = parts.slice(3);
+    if (sourcePath[0] === "lib") return ["web", "lib", sourcePath[1] ?? "root"].join("/");
+    if (sourcePath[0] === "components") {
+      if (sourcePath[1] === "sections") {
+        const sectionPath = sourcePath[2] === "rubriques" ? sourcePath.slice(1, 4) : sourcePath.slice(1, 3);
+        return ["web", "components", ...sectionPath].join("/");
+      }
+      return ["web", "components", sourcePath[1] ?? "root"].join("/");
+    }
+    const nextArea = sourcePath[1] && !path.posix.extname(sourcePath[1]) ? sourcePath[1] : null;
+    return ["web", sourcePath[0] ?? "root", nextArea].filter(Boolean).join("/");
+  }
+  if (parts[0] === "apps" && parts[1] === "mobile") {
+    const modulePath = parts.slice(2);
+    return ["mobile", modulePath[0] ?? "root", modulePath[1] ?? "root"].join("/");
+  }
+  if (parts[0] === "scripts") return ["scripts", parts[1] ?? "root"].join("/");
+  return path.posix.dirname(normalizePath(file));
+}
+
+function dependencyClusters(recursiveFiles, internalEdges, externalOutgoingEdges) {
+  const parent = new Map();
+  const find = (value) => {
+    if (!parent.has(value)) parent.set(value, value);
+    if (parent.get(value) !== value) parent.set(value, find(parent.get(value)));
+    return parent.get(value);
+  };
+  const join = (left, right) => {
+    const leftRoot = find(left);
+    const rightRoot = find(right);
+    if (leftRoot !== rightRoot) parent.set(rightRoot, leftRoot);
+  };
+  const sourceFiles = new Set(recursiveFiles);
+  for (const edge of internalEdges) join(`file:${edge.from}`, `file:${edge.to}`);
+  for (const edge of externalOutgoingEdges) join(`file:${edge.from}`, `area:${importTargetArea(edge.to)}`);
+
+  const clusters = new Map();
+  for (const edge of externalOutgoingEdges) {
+    const root = find(`file:${edge.from}`);
+    const cluster = clusters.get(root) ?? { sourceFiles: new Set(), targetAreas: new Set(), internalRelations: 0, externalOutgoing: 0 };
+    cluster.sourceFiles.add(edge.from);
+    cluster.targetAreas.add(importTargetArea(edge.to));
+    cluster.externalOutgoing += 1;
+    clusters.set(root, cluster);
+  }
+  for (const edge of internalEdges) {
+    const root = find(`file:${edge.from}`);
+    const cluster = clusters.get(root);
+    if (cluster) {
+      cluster.sourceFiles.add(edge.from);
+      cluster.sourceFiles.add(edge.to);
+      cluster.internalRelations += 1;
+    }
+  }
+  return [...clusters.values()]
+    .filter((cluster) => [...cluster.sourceFiles].every((file) => sourceFiles.has(file)))
+    .map((cluster) => ({
+      sourceFiles: stableFiles([...cluster.sourceFiles]),
+      targetAreas: stableFiles([...cluster.targetAreas]),
+      internalRelations: cluster.internalRelations,
+      externalOutgoing: cluster.externalOutgoing,
+    }))
+    .sort((left, right) => left.sourceFiles[0].localeCompare(right.sourceFiles[0], "en"));
 }
 
 export function structureScanRoots(scope = "all") {
@@ -93,7 +163,10 @@ function relationMetrics(folder, imports, architecture) {
   const incoming = edges.filter((edge) => directFiles.has(edge.to) && !directFiles.has(edge.from));
   const outgoingSourceGroups = stableFiles(externalOutgoingEdges.map((edge) => functionalPrefix(edge.from)));
   const outgoingTargetDomains = stableFiles(externalOutgoingEdges.map((edge) => normalizePath(edge.toDomain ?? path.posix.dirname(edge.to))));
+  const outgoingTargetAreas = stableFiles(externalOutgoingEdges.map((edge) => importTargetArea(edge.to)));
+  const clusters = graphMeasured ? dependencyClusters(recursiveFiles, internalRecursive, externalOutgoingEdges) : null;
   const architectureFiles = new Map((architecture?.files ?? []).map((entry) => [normalizePath(entry.path), entry]));
+  const architectureMeasured = Array.isArray(architecture?.files);
   const coupling = [...directFiles].reduce((summary, file) => {
     const metrics = architectureFiles.get(file)?.metrics;
     if (!metrics) return summary;
@@ -106,20 +179,23 @@ function relationMetrics(folder, imports, architecture) {
   const cohesionRelationTotal = internalRecursive.length + externalOutgoingEdges.length;
   return {
     measurementStatus: graphMeasured ? "MEASURED" : "NOT_MEASURED",
-    total: relationTotal,
-    internalDirect: internalDirect.length,
-    internalRecursive: internalRecursive.length,
-    crossFolder: crossFolder.length,
-    outgoing: outgoing.length,
-    incoming: incoming.length,
-    externalOutgoing: externalOutgoingEdges.length,
-    externalIncoming: externalIncomingEdges.length,
-    outgoingSourceGroups,
-    outgoingTargetDomains,
-    dispersedOutgoing: outgoingSourceGroups.length >= 2 && outgoingTargetDomains.length >= 2,
-    cohesionRelationTotal,
-    internalShare: cohesionRelationTotal === 0 ? null : ratio(internalRecursive.length, cohesionRelationTotal),
-    coupling,
+    total: graphMeasured ? relationTotal : null,
+    internalDirect: graphMeasured ? internalDirect.length : null,
+    internalRecursive: graphMeasured ? internalRecursive.length : null,
+    crossFolder: graphMeasured ? crossFolder.length : null,
+    outgoing: graphMeasured ? outgoing.length : null,
+    incoming: graphMeasured ? incoming.length : null,
+    externalOutgoing: graphMeasured ? externalOutgoingEdges.length : null,
+    externalIncoming: graphMeasured ? externalIncomingEdges.length : null,
+    outgoingSourceGroups: graphMeasured ? outgoingSourceGroups : null,
+    outgoingTargetDomains: graphMeasured ? outgoingTargetDomains : null,
+    outgoingTargetAreas: graphMeasured ? outgoingTargetAreas : null,
+    dependencyClusters: clusters,
+    dispersedOutgoing: graphMeasured ? clusters.length >= 2 : null,
+    cohesionRelationTotal: graphMeasured ? cohesionRelationTotal : null,
+    internalShare: graphMeasured && cohesionRelationTotal > 0 ? ratio(internalRecursive.length, cohesionRelationTotal) : null,
+    coupling: architectureMeasured ? coupling : { fanIn: null, fanOut: null, measuredFiles: null },
+    couplingMeasurementStatus: architectureMeasured ? "MEASURED" : "NOT_MEASURED",
   };
 }
 
@@ -127,6 +203,38 @@ function folderPaths(folder) {
   return {
     direct: stableFiles(folder.paths?.eligibleDirect ?? folder.paths?.direct ?? []),
     recursive: stableFiles(folder.paths?.eligibleRecursive ?? folder.paths?.recursive ?? []),
+  };
+}
+
+function reviewProof({ direct, recursive, concentration, signals, imports }) {
+  const unproven = [];
+  if (signals.some((entry) => entry.id === "FUNCTIONAL_GROUPS")) {
+    unproven.push("Les préfixes de noms sont lexicaux et ne prouvent pas des responsabilités métier distinctes.");
+  }
+  if (imports.measurementStatus === "NOT_MEASURED") {
+    unproven.push("Le graphe d'import est NOT_MEASURED; la cohésion relationnelle reste inconnue.");
+  } else if (!imports.dispersedOutgoing) {
+    unproven.push("Les imports transversaux mesurés ne forment pas plusieurs clusters de dépendances indépendants.");
+  } else {
+    unproven.push("Les clusters de dépendances ne prouvent pas à eux seuls des owners ou responsabilités métier distincts.");
+  }
+  return {
+    measured: {
+      directFiles: direct,
+      recursiveFiles: recursive,
+      directShare: concentration,
+      signals: signals.map(({ id, family, evidence }) => ({ id, family, evidence })),
+      imports: {
+        measurementStatus: imports.measurementStatus,
+        internalRecursive: imports.internalRecursive,
+        externalOutgoing: imports.externalOutgoing,
+        externalIncoming: imports.externalIncoming,
+        targetAreas: imports.outgoingTargetAreas,
+        dependencyClusters: imports.dependencyClusters,
+        internalShare: imports.internalShare,
+      },
+    },
+    unproven,
   };
 }
 
@@ -149,7 +257,9 @@ function analyzeFolder(folder, imports, architecture) {
       { directFiles: direct, recursiveFiles: recursive, threshold: direct >= QUALITY_STRUCTURE_THRESHOLDS.directFilesReview ? QUALITY_STRUCTURE_THRESHOLDS.directFilesReview : QUALITY_STRUCTURE_THRESHOLDS.directFilesSurveillance },
     ));
   }
-  if (recursive >= QUALITY_STRUCTURE_THRESHOLDS.significantRecursiveFiles && concentration > QUALITY_STRUCTURE_THRESHOLDS.directConcentrationShare) {
+  if (recursive > direct
+    && recursive >= QUALITY_STRUCTURE_THRESHOLDS.significantRecursiveFiles
+    && concentration > QUALITY_STRUCTURE_THRESHOLDS.directConcentrationShare) {
     signals.push(signal(
       "DIRECT_CONCENTRATION",
       "shape",
@@ -162,27 +272,28 @@ function analyzeFolder(folder, imports, architecture) {
       "FUNCTIONAL_GROUPS",
       "functional-diversity",
       `${functionalGroups.length} préfixes fonctionnels distincts sont observés dans les fichiers directs`,
-      { groupCount: functionalGroups.length, groups: functionalGroups },
+      { groupCount: functionalGroups.length, groups: functionalGroups, interpretation: "LEXICAL_PREFIXES_ONLY" },
     ));
   }
   if (direct >= QUALITY_STRUCTURE_THRESHOLDS.minimumFunctionalFiles
-    && importsMeasured.dispersedOutgoing
-    && importsMeasured.externalOutgoing >= QUALITY_STRUCTURE_THRESHOLDS.minimumCrossFolderRelations) {
+    && importsMeasured.externalOutgoing >= QUALITY_STRUCTURE_THRESHOLDS.minimumCrossFolderRelations
+    && importsMeasured.outgoingTargetAreas.length >= 2) {
     signals.push(signal(
       "CROSS_FOLDER_IMPORTS",
       "coupling",
-      "des groupes fonctionnels distincts dépendent de cibles externes distinctes",
+      "les dépendances sortantes mesurées traversent plusieurs zones de chemins ; cela ne prouve pas une dispersion fonctionnelle",
       {
         externalOutgoing: importsMeasured.externalOutgoing,
         externalIncoming: importsMeasured.externalIncoming,
-        outgoingSourceGroups: importsMeasured.outgoingSourceGroups,
-        outgoingTargetDomains: importsMeasured.outgoingTargetDomains,
+        outgoingSourcePrefixes: importsMeasured.outgoingSourceGroups,
+        sourceGrouping: "LEXICAL_PREFIXES_ONLY",
+        outgoingTargetAreas: importsMeasured.outgoingTargetAreas,
+        dependencyClusters: importsMeasured.dependencyClusters,
         threshold: QUALITY_STRUCTURE_THRESHOLDS.minimumCrossFolderRelations,
       },
     ));
   }
   if (direct >= QUALITY_STRUCTURE_THRESHOLDS.minimumFunctionalFiles
-    && functionalGroups.length > 1
     && importsMeasured.dispersedOutgoing
     && importsMeasured.cohesionRelationTotal >= 4
     && importsMeasured.internalShare !== null
@@ -197,16 +308,20 @@ function analyzeFolder(folder, imports, architecture) {
         externalIncomingExcluded: importsMeasured.externalIncoming,
         internalShare: importsMeasured.internalShare,
         maximumInternalShare: 0.25,
+        dependencyClusters: importsMeasured.dependencyClusters,
       },
     ));
   }
 
   const families = [...new Set(signals.map((entry) => entry.family))].sort();
+  const graphSignalPresent = signals.some((entry) => entry.family === "coupling" || entry.family === "cohesion");
+  const independentGraphEvidence = importsMeasured.dispersedOutgoing === true;
   const reviewFamilies = [
     ...(families.includes("shape") ? ["shape"] : []),
-    ...(families.includes("coupling") || families.includes("cohesion") ? ["graph"] : []),
+    ...(graphSignalPresent && independentGraphEvidence ? ["graph"] : []),
   ];
   const reviewRequired = reviewFamilies.length >= QUALITY_STRUCTURE_THRESHOLDS.minimumConcordantFamilies;
+  const proof = reviewProof({ direct, recursive, concentration, signals, imports: importsMeasured });
   return {
     path: folder.path,
     root: folder.root,
@@ -220,11 +335,19 @@ function analyzeFolder(folder, imports, architecture) {
     review: {
       required: reviewRequired,
       recommendation: reviewRequired ? "REVIEW_STRUCTURE" : "DESCRIPTIVE_ONLY",
-      reason: reviewRequired ? "plusieurs familles de signaux indépendantes concordent ; aucune réorganisation automatique" : "indices insuffisants pour recommander une réorganisation",
+      reason: reviewRequired
+        ? `les familles ${reviewFamilies.join(" + ")} concordent sur les mesures citées ; aucune réorganisation automatique`
+        : graphSignalPresent && !independentGraphEvidence
+          ? "les imports transversaux sont mesurés mais ne prouvent pas une dispersion entre clusters indépendants"
+          : importsMeasured.measurementStatus === "NOT_MEASURED"
+            ? "NOT_MEASURED : le graphe d'import ne permet pas d'établir la cohésion"
+            : "les mesures ne forment pas deux familles indépendantes suffisantes pour recommander une réorganisation",
       evidence: reviewRequired ? { directFiles, recursiveFiles } : { directFiles: [], recursiveFiles: [] },
+      proof,
     },
     reviewFamilies,
     exception: null,
+    humanDecision: null,
   };
 }
 
@@ -233,6 +356,7 @@ export function analyzeQualityStructure({ folderMeasures, imports, architecture 
   const folders = folderMeasures.folders.map((folder) => analyzeFolder(folder, imports, architecture));
   const reviewed = folders.filter((folder) => folder.review.required);
   const signalCounts = Object.fromEntries([...new Set(folders.flatMap((folder) => folder.signals.map((entry) => entry.id)))].sort().map((id) => [id, folders.reduce((count, folder) => count + (folder.signals.some((entry) => entry.id === id) ? 1 : 0), 0)]));
+  const importGraphMeasured = imports?.available !== false && Array.isArray(imports?.edges);
   return {
     schemaVersion: QUALITY_STRUCTURE_SCHEMA_VERSION,
     kind: "quality-structure",
@@ -249,9 +373,9 @@ export function analyzeQualityStructure({ folderMeasures, imports, architecture 
       descriptiveSignals: folders.reduce((sum, folder) => sum + folder.signals.length, 0),
       concordantFamilyCount: reviewed.reduce((sum, folder) => sum + folder.reviewFamilies.length, 0),
       signalCounts,
-      importEdgesMeasured: imports?.edges?.length ?? 0,
-      unresolvedLocalImports: imports?.unresolvedLocalImports ?? 0,
-      excludedLocalImports: imports?.excludedLocalImports ?? 0,
+      importEdgesMeasured: importGraphMeasured ? imports.edges.length : null,
+      unresolvedLocalImports: importGraphMeasured ? imports.unresolvedLocalImports ?? null : null,
+      excludedLocalImports: importGraphMeasured ? imports.excludedLocalImports ?? null : null,
     },
     folders,
     foldersRequiringReview: reviewed,
@@ -263,11 +387,81 @@ export function analyzeQualityStructure({ folderMeasures, imports, architecture 
   };
 }
 
+function markdownBulletValue(section, label) {
+  const lines = String(section ?? "").split(/\r?\n/);
+  const start = lines.findIndex((line) => new RegExp(`^\\s*-\\s*\\*\\*${label}\\*\\*\\s*:`).test(line));
+  if (start < 0) return null;
+  const firstLine = lines[start].replace(new RegExp(`^\\s*-\\s*\\*\\*${label}\\*\\*\\s*:\\s*`), "");
+  const continuation = [];
+  for (let index = start + 1; index < lines.length && !/^\s*(?:-\s+\*\*|#{1,6}\s)/.test(lines[index]); index += 1) {
+    continuation.push(lines[index].trim());
+  }
+  return [firstLine.trim(), ...continuation].filter(Boolean).join(" ").replace(/\s+/g, " ");
+}
+
+export function parseQualityStructureDecisions(content) {
+  const text = String(content ?? "");
+  const headings = [...text.matchAll(/^### `([^`]+)`\s*$/gm)];
+  return headings.map((heading, index) => {
+    const start = heading.index + heading[0].length;
+    const end = headings[index + 1]?.index ?? text.length;
+    const section = text.slice(start, end);
+    const classificationValue = markdownBulletValue(section, "Classification");
+    const reviewValue = markdownBulletValue(section, "SHA de revue");
+    const classification = classificationValue?.match(/^`?([A-Z][A-Z0-9_]*)`?/)?.[1] ?? null;
+    const reviewedSha = reviewValue?.match(/\b[a-f0-9]{40}\b/i)?.[0] ?? null;
+    if (!classification || !reviewedSha) return null;
+    const description = classificationValue.replace(/^\s*`?[A-Z][A-Z0-9_]*`?\s*[—–-]?\s*/, "").trim();
+    return {
+      path: heading[1],
+      classification,
+      description,
+      justification: markdownBulletValue(section, "Justification observable"),
+      reviewedSha,
+      reviewedScope: reviewValue?.match(/\(([^)]+)\)/)?.[1] ?? null,
+      reexaminationCondition: markdownBulletValue(section, "Condition de réexamen"),
+      source: HUMAN_DECISIONS_PATH,
+      sourceLine: text.slice(0, heading.index).split(/\r?\n/).length,
+    };
+  }).filter(Boolean);
+}
+
+function attachHumanDecisionAnnotations(report, decisions) {
+  const byPath = new Map(decisions.map((decision) => [decision.path, decision]));
+  const folders = report.folders.map((folder) => {
+    const decision = byPath.get(folder.path);
+    if (!decision) return folder;
+    return {
+      ...folder,
+      humanDecision: {
+        ...decision,
+        reviewedSameSha: decision.reviewedSha === report.auditedHead,
+        annotationOnly: true,
+      },
+    };
+  });
+  return {
+    ...report,
+    folders,
+    foldersRequiringReview: folders.filter((folder) => folder.review.required),
+    summary: {
+      ...report.summary,
+      humanDecisionAnnotations: folders.filter((folder) => folder.humanDecision).length,
+    },
+  };
+}
+
 export function buildQualityStructureFromRepository({ root, auditedSha = "HEAD", architecture = null, now = () => new Date().toISOString(), runId = null, scope = "all" } = {}) {
   const activeScope = scope ?? "all";
   const architectureAudit = buildArchitectureAudit({ root, ref: auditedSha, now, scanRoots: structureScanRoots(activeScope) });
+  const report = analyzeQualityStructure({ folderMeasures: architectureAudit.folderMeasures, imports: architectureAudit.imports, architecture });
+  report.auditedHead = architectureAudit.sourceSha;
+  const sourceView = createRepositoryView({ root, ref: auditedSha });
+  const decisions = sourceView.exists(HUMAN_DECISIONS_PATH)
+    ? parseQualityStructureDecisions(sourceView.readText(HUMAN_DECISIONS_PATH))
+    : [];
   return {
-    ...analyzeQualityStructure({ folderMeasures: architectureAudit.folderMeasures, imports: architectureAudit.imports, architecture }),
+    ...attachHumanDecisionAnnotations(report, decisions),
     auditedHead: architectureAudit.sourceSha,
     runId,
     scope: activeScope,

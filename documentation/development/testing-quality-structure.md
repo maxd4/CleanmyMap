@@ -43,7 +43,9 @@ fichiers directs restent exposées séparément. Les signaux initiaux sont :
 
 - `15` fichiers directs : surveillance ; `25` : revue descriptive ;
 - concentration directe strictement supérieure à `75 %` sur au moins `8`
-  fichiers récursifs ;
+  fichiers récursifs, uniquement si le dossier contient aussi des fichiers dans
+  des sous-dossiers (`direct < recursive`). Une part de `100 %` dans un dossier
+  feuille ne constitue pas un signal de concentration ;
 - au moins deux préfixes fonctionnels parmi au moins `8` fichiers directs,
   comme indice lexical descriptif seulement ;
 - relations d'import croisées et faible part d'import interne lorsqu'elles
@@ -52,17 +54,27 @@ fichiers directs restent exposées séparément. Les signaux initiaux sont :
 La concentration et le volume appartiennent à une même famille de forme. Un
 dossier n'est retenu dans `foldersRequiringReview` que si au moins deux familles
 indépendantes concordent (`shape` et une preuve de graphe). La diversité
-lexicale reste un indice descriptif : elle ne devient une preuve de
-responsabilités dispersées que si des dépendances sortantes relient plusieurs
-groupes à plusieurs cibles distinctes, ou si la faible cohésion est mesurée sur
-les relations internes et sortantes. Les imports entrants de consommateurs,
+lexicale reste un indice descriptif : les préfixes de fichiers ne définissent
+pas des responsabilités métier. Les relations sortantes sont regroupées en
+clusters de dépendances à partir des fichiers reliés entre eux et de zones de
+chemins de cibles ; plusieurs cibles partagées par les mêmes consommateurs
+restent un seul cluster. `CROSS_FOLDER_IMPORTS` décrit les zones de chemins
+mesurées, mais ne suffit pas à établir une dispersion. La famille `graph` ne
+contribue à une revue que lorsque plusieurs clusters indépendants sont mesurés ;
+`LOW_INTERNAL_COHESION` s'appuie sur cette distinction et les relations
+internes/sortantes. Ces mesures ne prouvent pas à elles seules des owners métier
+différents : elles motivent une vérification humaine. Les imports entrants de consommateurs,
 y compris les helpers de tests réutilisés, sont mesurés séparément et ne
 abaissent pas artificiellement la cohésion ; une cible externe partagée ne
 constitue pas à elle seule une dispersion. Les familles `coupling` et
 `cohesion` issues du même graphe sont ramenées à une seule famille de décision.
-Le rapport expose les chemins directs et les métriques qui fondent chaque
-signal ; `REVIEW_STRUCTURE` signifie « réunir une preuve humaine », pas
-« réorganiser ».
+Le rapport expose les chemins directs, métriques, raison de revue et éléments
+qui restent non prouvés ; `REVIEW_STRUCTURE` signifie « réunir une preuve
+humaine », pas « réorganiser ». Les graphes absents ou partiels utilisent
+`NOT_MEASURED` et des valeurs nulles, jamais des zéros déduits. Les décisions du
+registre humain sont jointes avec leur SHA, scope, justification et condition
+de réexamen comme annotations uniquement : elles ne filtrent pas les signaux,
+ne réduisent pas le compteur de revue et ne créent pas d'exception automatique.
 
 Les conventions de routage Next.js et Expo, les assets, migrations, vendor,
 third-party et fichiers générés sont hors décision structurelle. Les petits
