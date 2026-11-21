@@ -1,0 +1,1080 @@
+{
+  "schemaVersion": 1,
+  "kind": "cleanmymap-supabase-sql-evidence",
+  "candidateSha": "4493eb32de560c8d3a978d58cfffea8debb3556d",
+  "headSha": "4493eb32de560c8d3a978d58cfffea8debb3556d",
+  "provenance": "COMMITTED_SNAPSHOT",
+  "workflow": "e2e-supabase-ephemeral",
+  "outcome": "FAIL",
+  "records": [
+    {
+      "path": "apps/web/supabase/tests/action-buddy-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 43,
+      "details": {
+        "expectedPlan": 43,
+        "actualPlan": null,
+        "planned": 43,
+        "executed": 43,
+        "passed": 43,
+        "failures": 0,
+        "files": 1,
+        "tests": 43,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-collection-context-reference-rpc.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 16,
+      "details": {
+        "expectedPlan": 16,
+        "actualPlan": null,
+        "planned": 16,
+        "executed": 16,
+        "passed": 16,
+        "failures": 0,
+        "files": 1,
+        "tests": 16,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-collection-reference-averages.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 20,
+      "details": {
+        "expectedPlan": 20,
+        "actualPlan": null,
+        "planned": 20,
+        "executed": 20,
+        "passed": 20,
+        "failures": 0,
+        "files": 1,
+        "tests": 20,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-event-timezones-integrity.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 33,
+      "details": {
+        "expectedPlan": 33,
+        "actualPlan": null,
+        "planned": 33,
+        "executed": 33,
+        "passed": 33,
+        "failures": 0,
+        "files": 1,
+        "tests": 33,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-field-roles-server-boundary.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 16,
+      "details": {
+        "expectedPlan": 16,
+        "actualPlan": null,
+        "planned": 16,
+        "executed": 16,
+        "passed": 16,
+        "failures": 0,
+        "files": 1,
+        "tests": 16,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-need-offers-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 54,
+      "details": {
+        "expectedPlan": 54,
+        "actualPlan": null,
+        "planned": 54,
+        "executed": 54,
+        "passed": 54,
+        "failures": 0,
+        "files": 1,
+        "tests": 54,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-needs-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 71,
+      "details": {
+        "expectedPlan": 71,
+        "actualPlan": null,
+        "planned": 71,
+        "executed": 71,
+        "passed": 71,
+        "failures": 0,
+        "files": 1,
+        "tests": 71,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-retention-and-statistical-versions.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 14,
+      "details": {
+        "expectedPlan": 14,
+        "actualPlan": null,
+        "planned": 14,
+        "executed": 14,
+        "passed": 14,
+        "failures": 0,
+        "files": 1,
+        "tests": 14,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-retrospectives-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 27,
+      "details": {
+        "expectedPlan": 27,
+        "actualPlan": null,
+        "planned": 27,
+        "executed": 27,
+        "passed": 27,
+        "failures": 0,
+        "files": 1,
+        "tests": 27,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-rides-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 54,
+      "details": {
+        "expectedPlan": 54,
+        "actualPlan": null,
+        "planned": 54,
+        "executed": 54,
+        "passed": 54,
+        "failures": 0,
+        "files": 1,
+        "tests": 54,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-rides-transactions-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 43,
+      "details": {
+        "expectedPlan": 43,
+        "actualPlan": null,
+        "planned": 43,
+        "executed": 43,
+        "passed": 43,
+        "failures": 0,
+        "files": 1,
+        "tests": 43,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-server-boundary.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 14,
+      "details": {
+        "expectedPlan": 14,
+        "actualPlan": null,
+        "planned": 14,
+        "executed": 14,
+        "passed": 14,
+        "failures": 0,
+        "files": 1,
+        "tests": 14,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-statistical-public-views.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 30,
+      "details": {
+        "expectedPlan": 30,
+        "actualPlan": null,
+        "planned": 30,
+        "executed": 30,
+        "passed": 30,
+        "failures": 0,
+        "files": 1,
+        "tests": 30,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-statistical-revocation-and-retention.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 26,
+      "details": {
+        "expectedPlan": 26,
+        "actualPlan": null,
+        "planned": 26,
+        "executed": 26,
+        "passed": 26,
+        "failures": 0,
+        "files": 1,
+        "tests": 26,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-statistical-version-propagation.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 34,
+      "details": {
+        "expectedPlan": 34,
+        "actualPlan": null,
+        "planned": 34,
+        "executed": 34,
+        "passed": 34,
+        "failures": 0,
+        "files": 1,
+        "tests": 34,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/association-action-announcement-retry.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 12,
+      "details": {
+        "expectedPlan": 12,
+        "actualPlan": null,
+        "planned": 12,
+        "executed": 12,
+        "passed": 12,
+        "failures": 0,
+        "files": 1,
+        "tests": 12,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/association-action-review-formalities.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 35,
+      "details": {
+        "expectedPlan": 35,
+        "actualPlan": null,
+        "planned": 35,
+        "executed": 35,
+        "passed": 35,
+        "failures": 0,
+        "files": 1,
+        "tests": 35,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/brigade-verte-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 51,
+      "details": {
+        "expectedPlan": 51,
+        "actualPlan": null,
+        "planned": 51,
+        "executed": 51,
+        "passed": 51,
+        "failures": 0,
+        "files": 1,
+        "tests": 51,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/chat-message-server-boundary.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 22,
+      "details": {
+        "expectedPlan": 22,
+        "actualPlan": null,
+        "planned": 22,
+        "executed": 22,
+        "passed": 22,
+        "failures": 0,
+        "files": 1,
+        "tests": 22,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/community-digest-runs-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 32,
+      "details": {
+        "expectedPlan": 32,
+        "actualPlan": null,
+        "planned": 32,
+        "executed": 32,
+        "passed": 32,
+        "failures": 0,
+        "files": 1,
+        "tests": 32,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/community-event-server-boundary.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 18,
+      "details": {
+        "expectedPlan": 18,
+        "actualPlan": null,
+        "planned": 18,
+        "executed": 18,
+        "passed": 18,
+        "failures": 0,
+        "files": 1,
+        "tests": 18,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/community-helper-skills-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 38,
+      "details": {
+        "expectedPlan": 38,
+        "actualPlan": null,
+        "planned": 38,
+        "executed": 38,
+        "passed": 38,
+        "failures": 0,
+        "files": 1,
+        "tests": 38,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/community-subscriptions-server-boundary.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 20,
+      "details": {
+        "expectedPlan": 20,
+        "actualPlan": null,
+        "planned": 20,
+        "executed": 20,
+        "passed": 20,
+        "failures": 0,
+        "files": 1,
+        "tests": 20,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/gamification-progression-boundary.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 56,
+      "details": {
+        "expectedPlan": 56,
+        "actualPlan": null,
+        "planned": 56,
+        "executed": 56,
+        "passed": 56,
+        "failures": 0,
+        "files": 1,
+        "tests": 56,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/gamification-progression-grants.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 24,
+      "details": {
+        "expectedPlan": 24,
+        "actualPlan": null,
+        "planned": 24,
+        "executed": 24,
+        "passed": 24,
+        "failures": 0,
+        "files": 1,
+        "tests": 24,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/gps-point-lifecycle-boundary.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 20,
+      "details": {
+        "expectedPlan": 20,
+        "actualPlan": null,
+        "planned": 20,
+        "executed": 20,
+        "passed": 20,
+        "failures": 0,
+        "files": 1,
+        "tests": 20,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/newsletter-server-boundary.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 11,
+      "details": {
+        "expectedPlan": 11,
+        "actualPlan": null,
+        "planned": 11,
+        "executed": 11,
+        "passed": 11,
+        "failures": 0,
+        "files": 1,
+        "tests": 11,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/notifications-decision-boundary.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 74,
+      "details": {
+        "expectedPlan": 74,
+        "actualPlan": null,
+        "planned": 74,
+        "executed": 74,
+        "passed": 74,
+        "failures": 0,
+        "files": 1,
+        "tests": 74,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/pedestrian-observation-cache-lease-atomicity.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 24,
+      "details": {
+        "expectedPlan": 24,
+        "actualPlan": null,
+        "planned": 24,
+        "executed": 24,
+        "passed": 24,
+        "failures": 0,
+        "files": 1,
+        "tests": 24,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/pedestrian-risk-projection-pagination-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 19,
+      "details": {
+        "expectedPlan": 19,
+        "actualPlan": null,
+        "planned": 19,
+        "executed": 19,
+        "passed": 19,
+        "failures": 0,
+        "files": 1,
+        "tests": 19,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/public-action-map-reconstruction-projection.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 19,
+      "details": {
+        "expectedPlan": 19,
+        "actualPlan": null,
+        "planned": 19,
+        "executed": 19,
+        "passed": 19,
+        "failures": 0,
+        "files": 1,
+        "tests": 19,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/public-impact-temporal-eligibility.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 32,
+      "details": {
+        "expectedPlan": 32,
+        "actualPlan": null,
+        "planned": 32,
+        "executed": 32,
+        "passed": 32,
+        "failures": 0,
+        "files": 1,
+        "tests": 32,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/public-impact-waste-coverage.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 22,
+      "details": {
+        "expectedPlan": 22,
+        "actualPlan": null,
+        "planned": 22,
+        "executed": 22,
+        "passed": 22,
+        "failures": 0,
+        "files": 1,
+        "tests": 22,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/quiz-progression-rpc-boundary.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 39,
+      "details": {
+        "expectedPlan": 39,
+        "actualPlan": null,
+        "planned": 39,
+        "executed": 39,
+        "passed": 39,
+        "failures": 0,
+        "files": 1,
+        "tests": 39,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/scientific-projection-volume-lot-reconciliation.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 29,
+      "details": {
+        "expectedPlan": 29,
+        "actualPlan": null,
+        "planned": 29,
+        "executed": 29,
+        "passed": 29,
+        "failures": 0,
+        "files": 1,
+        "tests": 29,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/spogomi-division-regulation-configuration.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 25,
+      "details": {
+        "expectedPlan": 25,
+        "actualPlan": null,
+        "planned": 25,
+        "executed": 25,
+        "passed": 25,
+        "failures": 0,
+        "files": 1,
+        "tests": 25,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/spogomi-mapping-coherence.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 15,
+      "details": {
+        "expectedPlan": 15,
+        "actualPlan": null,
+        "planned": 15,
+        "executed": 15,
+        "passed": 15,
+        "failures": 0,
+        "files": 1,
+        "tests": 15,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/spogomi-volunteer-help-proposals.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 7,
+      "details": {
+        "expectedPlan": 7,
+        "actualPlan": null,
+        "planned": 7,
+        "executed": 7,
+        "passed": 7,
+        "failures": 0,
+        "files": 1,
+        "tests": 7,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/territorial-legend-rewards-contract.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 78,
+      "details": {
+        "expectedPlan": 78,
+        "actualPlan": null,
+        "planned": 78,
+        "executed": 78,
+        "passed": 78,
+        "failures": 0,
+        "files": 1,
+        "tests": 78,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/user-data-boundaries.pgtap.sql",
+      "category": "PGTAP",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedAssertions": 61,
+      "details": {
+        "expectedPlan": 61,
+        "actualPlan": null,
+        "planned": 61,
+        "executed": 61,
+        "passed": 61,
+        "failures": 0,
+        "files": 1,
+        "tests": 61,
+        "failed": null,
+        "ignored": null,
+        "todo": null,
+        "skipped": null,
+        "verificationMode": "pg-prove-summary"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-participant-individual-impact-optimistic-concurrency.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: optimistic individual-impact revision, partial PATCH, <redacted-term> withdrawal and idempotent retry contract passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: optimistic individual-impact revision, partial PATCH, <redacted-term> withdrawal and idempotent retry contract passed"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/action-role-attestation-correction.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: Action role attestation correction contract passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: Action role attestation correction contract passed"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/reports-persistent-contract.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: Reports persistence, RLS, snapshots, quota, PDF artifacts, shares, publications and action_media contract passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: Reports persistence, RLS, snapshots, quota, PDF artifacts, shares, publications and action_media contract passed"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/spogomi-mixed-division-smoke.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: SPOGOMI mixed-division closure and replay contract passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: SPOGOMI mixed-division closure and replay contract passed"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/spogomi-registration-quiz.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: SPOGOMI registration quiz proof and admission gate passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: SPOGOMI registration quiz proof and admission gate passed"
+      }
+    },
+    {
+      "path": "apps/web/supabase/tests/spogomi-transactional-contract.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: SPOGOMI RLS, lock triggers and atomic A-B-A consolidation contract passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: SPOGOMI RLS, lock triggers and atomic A-B-A consolidation contract passed"
+      }
+    },
+    {
+      "path": "e2e/profile-security.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: SECURITY-01 profile and notification boundary contract passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: SECURITY-01 profile and notification boundary contract passed"
+      }
+    },
+    {
+      "path": "e2e/security-02-projection-revocation.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: SECURITY-02 projection revocation contract passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: SECURITY-02 projection revocation contract passed"
+      }
+    },
+    {
+      "path": "e2e/security-03-bug-report.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: SECURITY-03 bug-report boundary contract passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: SECURITY-03 bug-report boundary contract passed"
+      }
+    },
+    {
+      "path": "e2e/supabase-admission-requests.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: SPOGOMI admission request contract passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: SPOGOMI admission request contract passed"
+      }
+    },
+    {
+      "path": "e2e/supabase-advisory-hardening.sql",
+      "category": "SQL_CONTRACT",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "expectedMarker": "EXECUTED_DB_CONTRACT: Supabase advisory hardening contract passed",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: Supabase advisory hardening contract passed"
+      }
+    },
+    {
+      "path": "e2e/action-buddy-concurrency.mjs",
+      "category": "MULTISESSION",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "details": {
+        "marker": "Action buddy two-<redacted-term> matching invariant passed\\."
+      }
+    },
+    {
+      "path": "e2e/action-role-attestation-concurrency.mjs",
+      "category": "MULTISESSION",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "details": {
+        "marker": "Role attestation concurrent correction contract passed\\."
+      }
+    },
+    {
+      "path": "e2e/community-helper-skills-concurrency.mjs",
+      "category": "MULTISESSION",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "details": {
+        "marker": "Community helper skills two-<redacted-term> exact replacement contract passed\\."
+      }
+    },
+    {
+      "path": "e2e/gamification-reconciliation-concurrency.mjs",
+      "category": "MULTISESSION",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "details": {
+        "marker": "Gamification reconciliation two-<redacted-term> lock, CAS, atomicity and idempotence passed\\."
+      }
+    },
+    {
+      "path": "e2e/quiz-progression-concurrency.mjs",
+      "category": "MULTISESSION",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "details": {
+        "marker": "Quiz progression two-<redacted-term> user lock and balanced milestone passed\\."
+      }
+    },
+    {
+      "path": "e2e/reports-postgres-concurrency.mjs",
+      "category": "MULTISESSION",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: Reports quota and PDF artifact two-<redacted-term> concurrency contract passed\\."
+      }
+    },
+    {
+      "path": "e2e/security-02-two-sessions.mjs",
+      "category": "MULTISESSION",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "details": {
+        "marker": "SECURITY-02 two-<redacted-term> PostgreSQL contract passed\\."
+      }
+    },
+    {
+      "path": "e2e/spogomi-concurrency.mjs",
+      "category": "MULTISESSION",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "PASS",
+      "details": {
+        "marker": "EXECUTED_DB_CONTRACT: SPOGOMI composition, lock, GPX, certificate, consolidation and closure republication safety passed\\."
+      }
+    },
+    {
+      "path": "e2e/territorial-legend-revision-concurrency.mjs",
+      "category": "MULTISESSION",
+      "status": "INTEGRATION_PROOF",
+      "outcome": "FAIL",
+      "reason": "step=MULTISESSION; command exited with 1; diagnostic=unavailable"
+    }
+  ]
+}
