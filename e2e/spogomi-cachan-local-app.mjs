@@ -26,7 +26,6 @@ export async function waitForLocalApp(baseUrl, {
   getStartupOutput = () => "",
 } = {}) {
   const deadline = Date.now() + timeoutMs;
-  let receivedServerError = false;
 
   while (Date.now() < deadline) {
     if (server?.exitCode != null) {
@@ -37,9 +36,8 @@ export async function waitForLocalApp(baseUrl, {
 
     try {
       const response = await fetchImpl(`${baseUrl}/spogomi`, { redirect: "manual" });
-      if (response.status < 500) return;
-      receivedServerError = true;
       await response.body?.cancel().catch(() => undefined);
+      return;
     } catch {
       // The local server is still booting.
     }
@@ -48,9 +46,8 @@ export async function waitForLocalApp(baseUrl, {
   }
 
   const diagnostic = classifyLocalAppStartupOutput(getStartupOutput());
-  const statusDetail = receivedServerError ? " It returned HTTP 5xx responses." : " It did not accept local requests.";
   const startupDetail = diagnostic ? ` ${diagnostic.code}: ${diagnostic.message}` : " Startup output is suppressed.";
-  throw new Error(`Application SPOGOMI indisponible sur ${baseUrl}.${statusDetail}${startupDetail}`);
+  throw new Error(`Application SPOGOMI indisponible sur ${baseUrl}. It did not accept local requests.${startupDetail}`);
 }
 
 export function spawnLocalApp(command, args, options) {

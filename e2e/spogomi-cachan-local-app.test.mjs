@@ -41,6 +41,13 @@ test("local app readiness accepts redirects and non-server responses", async () 
   }));
 });
 
+test("local app readiness treats an HTTP 5xx as server liveness", async () => {
+  await assert.doesNotReject(waitForLocalApp("http://127.0.0.1:3010", {
+    timeoutMs: 100,
+    fetchImpl: async () => new Response(null, { status: 503 }),
+  }));
+});
+
 test("local app teardown terminates the spawned process group", async () => {
   const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
     detached: process.platform !== "win32",
