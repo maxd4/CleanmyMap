@@ -12,6 +12,15 @@ export function classifyLocalAppStartupOutput(output) {
   if (text.includes("EADDRINUSE") || text.includes("port is already in use")) {
     return { code: "APP_PORT_CONFLICT", message: APP_PORT_MESSAGE };
   }
+  if (/Failed to compile|Module not found|Cannot find module/i.test(text)) {
+    return { code: "APP_COMPILE_ERROR", message: "The local app could not compile; process output is suppressed." };
+  }
+  if (/fetch failed|ECONNREFUSED|ETIMEDOUT|connection refused/i.test(text)) {
+    return { code: "APP_BACKEND_CONNECTION", message: "The local app could not reach a backend; process output is suppressed." };
+  }
+  if (/\b(?:TypeError|ReferenceError|SyntaxError):/.test(text)) {
+    return { code: "APP_RUNTIME_ERROR", message: "The local app raised a runtime error; process output is suppressed." };
+  }
   if (/\b(?:Error|error):/.test(text)) {
     return { code: "APP_STARTUP_ERROR", message: APP_RUNTIME_MESSAGE };
   }

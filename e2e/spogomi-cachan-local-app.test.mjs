@@ -20,6 +20,16 @@ test("local app startup diagnostics identify Clerk boot failures without exposin
   assert.equal(JSON.stringify(diagnostic).includes("private"), false);
 });
 
+test("local app startup diagnostics classify compile and backend failures without exposing output", () => {
+  const compileFailure = classifyLocalAppStartupOutput("Module not found: secret-path/private-module");
+  const backendFailure = classifyLocalAppStartupOutput("TypeError: fetch failed ECONNREFUSED 127.0.0.1:54321");
+
+  assert.equal(compileFailure.code, "APP_COMPILE_ERROR");
+  assert.equal(JSON.stringify(compileFailure).includes("private-module"), false);
+  assert.equal(backendFailure.code, "APP_BACKEND_CONNECTION");
+  assert.equal(JSON.stringify(backendFailure).includes("54321"), false);
+});
+
 test("local app readiness fails immediately when its process exits", async () => {
   await assert.rejects(
     waitForLocalApp("http://127.0.0.1:3010", {

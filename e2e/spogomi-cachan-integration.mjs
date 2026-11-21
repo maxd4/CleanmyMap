@@ -106,7 +106,16 @@ async function api(baseUrl, route, init = {}, expected = [200]) {
   const response = await fetch(`${baseUrl}${route}`, { redirect: "manual", ...init });
   const contentType = response.headers.get("content-type") ?? "";
   const body = contentType.includes("json") ? await response.json() : await response.arrayBuffer();
-  if (!expected.includes(response.status)) throw new Error(`${init.method ?? "GET"} ${route}: HTTP ${response.status} ${typeof body === "object" && body !== null && !(body instanceof ArrayBuffer) ? JSON.stringify(body).slice(0, 500) : ""}`);
+  if (!expected.includes(response.status)) {
+    const diagnostic = classifyLocalAppStartupOutput(ownerServer?.getStartupOutput?.() ?? "");
+    const diagnosticCode = diagnostic ? ` ${diagnostic.code}` : "";
+    const responseType = contentType ? ` (${contentType})` : "";
+    const responseBody = typeof body === "object" && body !== null && !(body instanceof ArrayBuffer)
+      ? JSON.stringify(body).slice(0, 500)
+      : "";
+    const failure = `${init.method ?? "GET"} ${route}: HTTP ${response.status}${responseType}${diagnosticCode}`;
+    throw new Error(`${failure}${responseBody ? ` ${responseBody}` : ""}`);
+  }
   return { response, body };
 }
 
