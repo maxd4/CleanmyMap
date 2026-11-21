@@ -4,6 +4,7 @@ import path from "node:path";
 import { test } from "node:test";
 import {
   assertClerkDevelopmentEnvironment,
+  buildE2EPublicMetadata,
   CLERK_LIFECYCLE,
   createTemporaryMetadata,
   isOwnedTemporaryUser,
@@ -67,9 +68,16 @@ test("setup and teardown keep persistent accounts outside deletion paths", () =>
   const setup = read("e2e/global.setup.ts");
   const teardown = read("e2e/global.teardown.ts");
   assert.match(setup, /resolveClerkLifecycle/);
-  assert.match(setup, /cleanmymapLifecycle: lifecycle/);
+  assert.match(setup, /buildE2EPublicMetadata/);
   assert.match(setup, /isOwnedTemporaryUser/);
   assert.match(teardown, /isOwnedTemporaryUser/);
+  assert.deepEqual(
+    buildE2EPublicMetadata({}, CLERK_LIFECYCLE.PERSISTENT_DEVELOPMENT),
+    {
+      cleanmymapE2E: true,
+      cleanmymapLifecycle: CLERK_LIFECYCLE.PERSISTENT_DEVELOPMENT,
+    },
+  );
   assert.doesNotMatch(teardown, /users\.deleteUser\(.*E2E_CLERK_USER/);
   assert.doesNotMatch(`${setup}\n${teardown}`, /console\.(?:log|error)\([^\n]*(?:SECRET|TOKEN|KEY|cookie|storageState)/i);
 });
