@@ -169,17 +169,17 @@ function aggregateManifest() {
   };
 }
 
-function structureReport(scope = "all") {
+function structureReport(scope = "all", overrides = {}) {
   return {
     kind: "quality-structure",
     status: "PASS",
-    auditedHead: sha,
-    runId,
+    auditedHead: overrides.auditedHead ?? sha,
+    runId: overrides.runId ?? runId,
     scope,
-    folders: [],
-    foldersRequiringReview: [],
-    summary: { foldersMeasured: 0, foldersRequiringReview: 0, descriptiveSignals: 0 },
-    diagnostics: [],
+    folders: overrides.folders ?? [],
+    foldersRequiringReview: overrides.foldersRequiringReview ?? [],
+    summary: { foldersMeasured: 0, foldersRequiringReview: 0, descriptiveSignals: 0, ...overrides.summary },
+    diagnostics: overrides.diagnostics ?? [],
   };
 }
 
@@ -673,6 +673,86 @@ test("refuse une projection structurelle dont le scope diverge du run agrégé",
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("écarte les structures fournies périmées sans contaminer les compteurs ni le Markdown", () => {
+  const run = buildRun();
+  run.aggregateManifest.scope = "all";
+  run.aggregateReport.scope = "all";
+  const architecture = architectureProjectionFixture();
+  const staleFolder = {
+    path: "apps/web/src/stale-structure",
+    files: { direct: 30, recursive: 31 },
+    concentration: { directFileShare: "96%" },
+    functionalGroups: ["api", "ui"],
+    signalFamilies: ["DIRECT_CONCENTRATION", "FUNCTIONAL_GROUPS"],
+    imports: { outgoing: 2, incoming: 1 },
+    review: { recommendation: "REVIEW_STRUCTURE" },
+  };
+  const staleCases = [
+    { label: "SHA", candidate: structureReport("all", { auditedHead: "d".repeat(40) }) },
+    { label: "runId", candidate: structureReport("all", { runId: "stale-run" }) },
+  ];
+
+  for (const { label, candidate } of staleCases) {
+    candidate.foldersRequiringReview = [staleFolder];
+    candidate.summary = { foldersMeasured: 1, foldersRequiringReview: 1, descriptiveSignals: 2 };
+    const index = buildQualityFileIndex({ run, architecture: { ...architecture, structure: candidate } });
+    const markdown = buildQualityFileIndexMarkdown(index);
+
+    assert.equal(index.architecture.structure, undefined, `${label} structure must be rejected`);
+    assert.equal(index.globalCounts.structureFoldersRequiringReview, 0);
+    assert.equal(index.globalCounts.structureDescriptiveSignals, 0);
+    assert.doesNotMatch(markdown, /stale-structure/);
+    assert.match(markdown, /Dossiers avec revue concordante : \*\*NOT_MEASURED\*\*/);
+  }
+
+  const wrongScope = structureReport("web", { foldersRequiringReview: [staleFolder] });
+  assert.throws(
+    () => buildQualityFileIndex({ run, architecture: { ...architecture, structure: wrongScope } }),
+    /scope architecture\.structure/,
+  );
+});
+
+test("projette uniquement la structure valide fournie ou archivée pour le run exact", () => {
+  const run = buildRun();
+  run.aggregateManifest.scope = "all";
+  run.aggregateReport.scope = "all";
+  const architecture = architectureProjectionFixture();
+  const validFolder = {
+    path: "apps/web/src/valid-structure",
+    files: { direct: 18, recursive: 22 },
+    concentration: { directFileShare: "80%" },
+    functionalGroups: ["domain", "ui"],
+    signalFamilies: ["DIRECT_CONCENTRATION", "FUNCTIONAL_GROUPS"],
+    imports: { outgoing: 3, incoming: 2 },
+    review: { recommendation: "REVIEW_STRUCTURE" },
+  };
+  const valid = structureReport("all", {
+    foldersRequiringReview: [validFolder],
+    summary: { foldersMeasured: 1, foldersRequiringReview: 1, descriptiveSignals: 2 },
+  });
+
+  const suppliedIndex = buildQualityFileIndex({ run, architecture: { ...architecture, structure: valid } });
+  assert.deepEqual(suppliedIndex.architecture.structure, valid);
+  assert.equal(suppliedIndex.globalCounts.structureFoldersRequiringReview, 1);
+  assert.match(buildQualityFileIndexMarkdown(suppliedIndex), /valid-structure/);
+
+  const archived = structureReport("all", {
+    foldersRequiringReview: [{ ...validFolder, path: "apps/web/src/archived-structure" }],
+    summary: { foldersMeasured: 1, foldersRequiringReview: 1, descriptiveSignals: 2 },
+  });
+  run.reports.structure = archived;
+  const archivedIndex = buildQualityFileIndex({ run, architecture });
+  assert.deepEqual(archivedIndex.architecture.structure, archived);
+  assert.match(buildQualityFileIndexMarkdown(archivedIndex), /archived-structure/);
+
+  delete run.reports.structure;
+  const absentIndex = buildQualityFileIndex({ run, architecture });
+  assert.equal(absentIndex.architecture.structure, undefined);
+  assert.equal(absentIndex.globalCounts.structureFoldersRequiringReview, 0);
+  assert.equal(absentIndex.globalCounts.structureDescriptiveSignals, 0);
+  assert.doesNotMatch(buildQualityFileIndexMarkdown(absentIndex), /archived-structure|valid-structure/);
 });
 
 test("projette une comparaison historique exacte dans l'index et le triage sans changer le verdict", () => {

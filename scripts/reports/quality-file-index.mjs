@@ -962,11 +962,18 @@ function structureProjectionForRun(run, architecture) {
   return supplied ?? current;
 }
 
+function architectureGraphProjection(architecture) {
+  if (!architecture) return null;
+  const projection = { ...architecture };
+  delete projection.structure;
+  return projection;
+}
+
 export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new Date().toISOString(), architecture = null, previousRun = null, previousRunError = null, comparisonRequested = false } = {}) {
   if (!run?.reports || !run?.auditedSha || !run?.runId) throw new Error("Run quality absent pour construire l'index.");
   const structure = structureProjectionForRun(run, architecture);
   const architectureProjection = {
-    ...(architecture ?? {
+    ...(architectureGraphProjection(architecture) ?? {
     state: "NOT_MEASURED",
     detail: "projection du graphe architectural absente pour ce run",
     files: [],
