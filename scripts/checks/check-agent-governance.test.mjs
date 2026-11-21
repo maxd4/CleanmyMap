@@ -11,14 +11,41 @@ import { canonicalAgentFiles, validateAgentGovernance } from "./check-agent-gove
 function createValidFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-agent-governance-"));
   const content = {
-    "AGENTS.md": "apps/web scripts documentation fichiers scoped MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push\nPlusieurs writers Codex peuvent travailler dans le checkout canonique ; ils ne doivent jamais écraser silencieusement les changements d’un autre writer.\nLes modifications sur des fichiers distincts peuvent progresser en parallèle ; un même fichier, l’index, HEAD et les opérations Git mutantes doivent être relus et réconciliés explicitement.\nmain publié = référence versionnée ;\nune candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;\ntout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.\nWorkflow de chaque exécution de lot : validation → commit isolé → push main → vérification de convergence\nLe mode de développement rapide ne supprime pas l’exigence de commit et push ; une interdiction explicite de l'utilisateur autorise un commit local sans push\n\n### LEGACY / COMPATIBILITY\nMAIN-ONLY / SINGLE-WRITER workspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire",
-    "CHATGPT.md": "MAIN-ONLY / MULTI-WRITER COORDONNÉ\nChatGPT est limité à la lecture et à la revue de GitHub. Codex est responsable de l'intégration locale, du commit isolé et de la publication fast-forward, conformément à AGENTS.md et scripts/AGENTS.md.\nPour chaque exécution de travail qui produit un lot : validation → commit isolé → push main → vérification de convergence\nLe mode de développement rapide ne supprime pas cette publication ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
+    "AGENTS.md": [
+      "apps/web scripts documentation fichiers scoped MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
+      "Plusieurs writers Codex peuvent travailler dans le checkout canonique ; ils ne doivent jamais écraser silencieusement les changements d’un autre writer.",
+      "Les modifications sur des fichiers distincts peuvent progresser en parallèle ; un même fichier, l’index, HEAD et les opérations Git mutantes doivent être relus et réconciliés explicitement.",
+      "main publié = référence versionnée ;",
+      "une candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;",
+      "tout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.",
+      "L'allowlist initiale sert à l'attribution et au cadrage ; elle ne fige pas le candidat final.",
+      "Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque chaque changement est identifié, attribué, relu et validé sur le candidat final exact.",
+      "Si un commit local contient plus de fichiers que prévu, examiner son diff ; Le publier sans le reconstruire s'il est sûr et validé.",
+      "Workflow de chaque exécution de lot : validation → commit validé → push main → vérification de convergence",
+      "Le mode de développement rapide ne supprime pas l'exigence de commit et push ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
+      "",
+      "### LEGACY / COMPATIBILITY",
+      "MAIN-ONLY / SINGLE-WRITER workspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire",
+    ].join("\n"),
+    "CHATGPT.md": [
+      "MAIN-ONLY / MULTI-WRITER COORDONNÉ",
+      "ChatGPT est limité à la lecture et à la revue de GitHub. Codex est responsable de l'intégration locale, des commits validés et de la publication fast-forward, conformément à AGENTS.md et scripts/AGENTS.md.",
+      "Pour chaque exécution de travail qui produit un lot : validation → commit validé → push main → vérification de convergence",
+      "La Commit Review privilégie le résultat publié et les régressions démontrées. La taille, le regroupement ou l'organisation des commits ne suffisent pas à demander un prompt correctif.",
+      "Le mode de développement rapide ne supprime pas cette publication ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
+    ].join("\n"),
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
     "apps/web/supabase/AGENTS.md": "apps/web/supabase/migrations/ unique RLS",
     "apps/web/scripts/AGENTS.md": "dry-run --apply provenance",
     "apps/mobile/AGENTS.md": "ClerkProvider Third-Party Auth `sub` Clerk distance_m",
-    "scripts/AGENTS.md": "audit cleanup provenance MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
+    "scripts/AGENTS.md": [
+      "audit cleanup provenance MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
+      "L'allowlist initiale est un cadrage d'attribution, pas un plafond immuable.",
+      "Plusieurs chantiers ou writers peuvent être regroupés dans un commit si tous les changements sont identifiés, attribués, relus et validés sur le candidat final exact.",
+      "Un commit local plus large que prévu est examiné avec ses preuves ; le publier sans le reconstruire s'il est sûr et validé.",
+      "Workflow hors mode rapide : validation du candidat final exact → commit validé → push main → vérification de convergence",
+    ].join("\n"),
     ".github/AGENTS.md": "permissions CodeQL check:github-actions",
     "maintenance/python/AGENTS.md": "hors du requirements pytest",
     "documentation/AGENTS.md": "état actuel historique public",
@@ -54,6 +81,44 @@ describe("AGENTS hierarchy governance", () => {
       const result = runCheck(script, fixture);
       assert.equal(result.status, 0);
       assert.match(result.output, /11 canonical files/);
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("requires attribution and requalification when the final candidate differs from its initial scope", () => {
+    const fixture = createValidFixture();
+    const agentsPath = path.join(fixture, "AGENTS.md");
+    const current = fs.readFileSync(agentsPath, "utf8");
+    fs.writeFileSync(
+      agentsPath,
+      current.replace(
+        "Plusieurs chantiers ou writers peuvent être regroupés dans un commit",
+        "Un seul chantier doit être committé à la fois",
+      ),
+    );
+    try {
+      const findings = validateAgentGovernance(fixture);
+      assert.ok(findings.some((finding) => finding.includes("Plusieurs chantiers ou writers peuvent être regroupés dans un commit")));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("requires Commit Review to focus on published outcomes and demonstrated regressions", () => {
+    const fixture = createValidFixture();
+    const chatgptPath = path.join(fixture, "CHATGPT.md");
+    const current = fs.readFileSync(chatgptPath, "utf8");
+    fs.writeFileSync(
+      chatgptPath,
+      current.replace(
+        "La taille, le regroupement ou l'organisation des commits ne suffisent pas à demander un prompt correctif.",
+        "Un prompt correctif peut demander de séparer les commits selon leur taille.",
+      ),
+    );
+    try {
+      const findings = validateAgentGovernance(fixture);
+      assert.ok(findings.some((finding) => finding.includes("Commit Review must prioritize published outcomes and demonstrated regressions")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

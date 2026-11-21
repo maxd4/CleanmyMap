@@ -137,37 +137,54 @@ jamais être écrasé par une synchronisation avec Git.
   Les exigences de candidat exact s'appliquent au contrôle et à la publication,
   pas comme préconditions d'un diagnostic.
 - Capturer dès le départ l'état Git (dont chemins dirty/untracked), identifier
-  les fichiers attribués au lot et figer son allowlist avant mutation. Les
-  changements préexistants ou apparus en parallèle sont présumés étrangers
-  tant que leur attribution n'est pas démontrée. **Ne pas** les modifier,
+  les fichiers attribués au lot et établir son allowlist initiale avant
+  mutation. Les changements préexistants ou apparus en parallèle sont présumés
+  étrangers tant que leur attribution n'est pas démontrée.
+  **Ne pas** les modifier,
   restaurer, supprimer, stasher, déplacer, fusionner ou inclure implicitement.
   Un chemin ciblé dirty et étranger bloque seulement sa propre mutation.
 - Les modifications indépendantes peuvent continuer ; coordonner explicitement
   toute écriture d'un chemin partagé, de l'index, de `HEAD` ou des refs Git.
   Une synchronisation de refs n'autorise jamais à écraser un fichier étranger.
-- L'allowlist du lot gouverne le staging ; ne jamais utiliser `git add -A` par
-  commodité. Vérifier `git diff --cached --name-only`, le diff staged et
-l'ascendance non publiée avec `git log --oneline origin/main..HEAD`, y compris les commits d'autres writers. Un fichier
-  apparu après capture de l'allowlist n'est pas inclus implicitement.
+- L'allowlist initiale sert à l'attribution et au cadrage ; elle ne fige pas le
+  candidat final. Si les changements finaux diffèrent, réexaminer leurs auteurs,
+  leur périmètre et leurs preuves, puis compléter les validations nécessaires.
+  Cette différence seule n'est ni un blocage, ni un motif de réécriture
+  d'historique ou de lot correctif. Un fichier apparu après le cadrage n'est
+  inclus qu'après attribution explicite.
+- Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque
+  chaque changement est identifié, attribué, relu et validé sur le candidat
+  final exact. Le regroupement ou le nombre de fichiers ne justifie pas à lui
+  seul de séparer le commit.
+- Si un commit local contient plus de fichiers que prévu, examiner son diff,
+  leur attribution et les preuves exécutées sur son SHA. Le publier sans le
+  reconstruire si tout le contenu est attribué, sûr, validé et compatible avec
+  un push fast-forward sur `main`. Sinon, préserver l'historique et corriger
+  par un nouveau commit lorsque la correction est étayée.
+- Le staging reste explicite : ne jamais utiliser `git add -A` par commodité.
+  Vérifier `git diff --cached --name-only`, le diff staged et l'ascendance
+  non publiée avec `git log --oneline origin/main..HEAD`, y compris les commits
+  d'autres writers. Les changements qui restent non attribués sont exclus et
+  préservés.
 - Tous les fichiers modifiés ou créés **par le lot** et nécessaires à son
   contrat doivent être intégrés au commit validé ; ne laisser aucun changement
   du lot dirty/untracked. Les chemins étrangers restent intacts et sont signalés.
-- « Tous les fichiers du lot » désigne uniquement les fichiers attribués au lot
-  courant dans son allowlist, y compris ses tests et sa documentation nécessaires.
-  Cela n'autorise jamais à inclure dans son commit un fichier, un changement
-  staged ou un changement non commité appartenant à un autre lot. Laisser ces
-  changements intacts et hors du staging ; si l'index partagé contient déjà des
-  changements étrangers, coordonner l'usage de l'index avant toute opération de
-  commit, sans les désindexer ni les intégrer implicitement.
+- Un changement d'un autre writer peut rejoindre le même candidat seulement si
+  son attribution et son inclusion sont explicites, qu'aucune modification
+  n'est perdue et que les validations portent sur le candidat final complet.
+  Ne jamais intégrer implicitement un changement staged, dirty ou untracked
+  dont l'attribution n'est pas établie.
 
-**Workflow de chaque exécution de lot** : validation → staging ciblé complet →
-commit isolé non signé → push fast-forward sur `main` → fetch → vérification
-`HEAD = origin/main`, ahead/behind `0/0`. Un lot antérieur non poussé n'interdit
-pas de travailler ; il impose toutefois l'audit de l'ascendance avant
-publication. Un `main` distant qui a avancé ou divergé bloque ce push :
-refetcher pour caractériser, **ne pas** intégrer silencieusement, réconcilier
-les fichiers étrangers ou forcer l'historique ; aucun `force-push`. Respecter tout blocage de garde,
-d'attribution, de sécurité ou d'index avant commit/push.
+**Workflow de publication** : requalification du périmètre → validation du
+candidat final exact → staging explicite complet → commit validé (regroupé si
+les changements sont attribués et validés) → push fast-forward sur `main` →
+fetch → vérification `HEAD = origin/main`, ahead/behind `0/0`. Un lot antérieur
+non poussé n'interdit pas de travailler ; il impose l'audit de l'ascendance
+avant publication. Si `main` a avancé, refetcher et vérifier l'ascendance et le
+contenu candidat ; ne pas intégrer silencieusement des changements non attribués
+ni forcer l'historique. Aucun force-push ou contournement de garde n'est permis.
+Respecter les protections d'attribution, de sécurité et d'index avant commit et
+push.
 
 Un défaut, un préflight Supabase `BLOCKED`/`DIVERGED` ou une validation Supabase
 manquante ne retient jamais un commit ou un push Git autrement publiable. Les
@@ -184,13 +201,14 @@ donc produire un commit local sans push que si cette interdiction est explicite.
 
 ### Messages de commit Codex
 
-Chaque chantier cohérent produit un commit isolé. Ce commit contient toutes les
-modifications du chantier réellement concernées — runtime, tests et
-documentation lorsqu'elles existent — sans séparer artificiellement un même
-contrat par fichier ou par couche. Les chantiers indépendants restent dans des
-commits distincts. Cette règle précise le contenu et la traçabilité du commit ;
-elle ne modifie pas le workflow Git de validation, staging, commit, push et
-convergence défini ci-dessus.
+Chaque commit doit être traçable et contenir l'ensemble des changements qu'il
+publie. Il peut réunir plusieurs chantiers ou writers s'ils sont tous identifiés,
+attribués, relus et validés sur le candidat exact. Ne pas imposer des commits
+distincts à cause du seul regroupement, du nombre de fichiers ou d'une
+allowlist initiale devenue trop étroite. Pour un commit local plus large que
+prévu, examiner son contenu et ses preuves avant décision ; le publier sans le
+reconstruire s'il est sûr, validé et fast-forward compatible avec `main`.
+Toute correction ultérieure s'ajoute sans réécrire l'historique.
 
 Le sujet du commit doit être court, spécifique et compréhensible directement
 dans GitHub, de préférence sous la forme `type(scope): résultat`. Il ne doit pas
@@ -310,8 +328,9 @@ développement, macro-lot, correction, refactorisation ou campagne de qualité :
 6. **STOP CONDITION et publication obligatoires.** Chaque lot fixe sa
    `STOP CONDITION` avant intégration et ne peut être déclaré terminé tant
    qu'elle n'est pas satisfaite ou qu'un blocage n'est pas explicitement
-   classé. Le workflow normal reste : validation → commit isolé → push → fetch
-   et vérification de convergence (`HEAD = origin/main`, ahead/behind `0/0`).
+   classé. Le workflow normal reste : validation du candidat final exact →
+   commit attribué (regroupement permis) → push → fetch et vérification de
+   convergence (`HEAD = origin/main`, ahead/behind `0/0`).
    Un mode sans push ou une exception doit être explicitement demandé ou
    gouverné ; il ne peut pas être déduit d'une difficulté locale.
 7. **Une possibilité n'est pas une implémentation.** Les formulations

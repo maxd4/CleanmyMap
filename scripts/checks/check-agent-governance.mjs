@@ -36,13 +36,13 @@ const skippedDirectories = new Set([
 ]);
 
 const requiredMarkers = new Map([
-  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push"]],
+  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "Plusieurs chantiers ou writers peuvent être regroupés dans un commit", "L'allowlist initiale sert à l'attribution et au cadrage", "Le publier sans le reconstruire"]],
   ["apps/web/AGENTS.md", ["Next.js", "Server/Client", "Leaflet"]],
   ["apps/web/src/app/api/AGENTS.md", ["AuthN", "AuthZ", "contrat de réponse propre"]],
   ["apps/web/supabase/AGENTS.md", ["apps/web/supabase/migrations/", "unique", "RLS"]],
   ["apps/web/scripts/AGENTS.md", ["dry-run", "--apply", "provenance"]],
   ["apps/mobile/AGENTS.md", ["ClerkProvider", "Third-Party Auth", "`sub` Clerk", "distance_m"]],
-  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push"]],
+  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "Plusieurs chantiers ou writers peuvent être regroupés dans un commit", "L'allowlist initiale est un cadrage d'attribution", "le publier sans le reconstruire"]],
   [".github/AGENTS.md", ["permissions", "CodeQL", "check:github-actions"]],
   ["maintenance/python/AGENTS.md", ["hors du", "requirements", "pytest"]],
   ["documentation/AGENTS.md", ["état actuel", "historique", "public"]],
@@ -108,10 +108,15 @@ function validateCurrentCoordinatorDoctrine(view, findings) {
   }
 }
 
-const publicationPolicyTerms = ["commit isolé", "push", "vérification de convergence"];
+const publicationPolicyTerms = ["commit validé", "push", "vérification de convergence"];
 const explicitNoPushExceptionTerms = ["mode de développement rapide", "interdiction explicite", "sans push"];
 const chatgptReadOnlyPolicy = "ChatGPT est limité à la lecture et à la revue";
-const codexPublicationResponsibility = "Codex est responsable de l'intégration locale, du commit isolé et de la publication fast-forward";
+const codexPublicationResponsibility = "Codex est responsable de l'intégration locale, des commits validés et de la publication fast-forward";
+const commitReviewPolicyTerms = [
+  "la commit review privilégie le résultat publié",
+  "les régressions démontrées",
+  "la taille, le regroupement ou l'organisation des commits ne suffisent pas à demander un prompt correctif",
+];
 
 function validateCurrentWorkflowDoctrine(view, findings) {
   const rootAgents = readIfPresent(view, "AGENTS.md");
@@ -172,6 +177,9 @@ function validateCurrentWorkflowDoctrine(view, findings) {
   }
   if (!normalizedCurrentChatgptLower.includes(codexPublicationResponsibility.toLocaleLowerCase("fr-FR"))) {
     findings.push("CHATGPT.md: current policy must assign integration, commits and publication to Codex.");
+  }
+  if (!commitReviewPolicyTerms.every((term) => normalizedCurrentChatgptLower.includes(term))) {
+    findings.push("CHATGPT.md: Commit Review must prioritize published outcomes and demonstrated regressions, not commit size or grouping.");
   }
 }
 
@@ -246,8 +254,9 @@ function validateMarkers(view, findings) {
       continue;
     }
 
+    const normalizedContent = content.replace(/\s+/g, " ");
     for (const marker of markers) {
-      if (!content.includes(marker)) {
+      if (!normalizedContent.includes(marker)) {
         findings.push(
           `${relativePath}: missing structural invariant marker \`${marker}\`. Keep the rule at this boundary.`,
         );

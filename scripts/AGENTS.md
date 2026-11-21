@@ -50,18 +50,30 @@ pas de modifier le contenu dirty étranger. Aucun nouveau worktree, clone, claim
 coordinateur persistant ou branche de chantier n'est créé.
 
 Chaque lot capture d'abord l'état de `HEAD`, de `origin/main`, de l'index, du
-worktree et des untracked, identifie son allowlist, puis peut commencer même
-si le checkout est dirty, si des commits locaux ne sont pas publiés, si
+worktree et des untracked, établit son allowlist initiale, puis peut commencer
+même si le checkout est dirty, si des commits locaux ne sont pas publiés, si
 `HEAD != origin/main` ou si un autre writer est actif. Une mutation d'un chemin
 dirty étranger reste interdite sans autorisation, mais elle ne bloque pas les
 scripts ni les validations indépendants. `git fetch origin main` et la
 vérification des refs servent à requalifier une preuve ou à préparer la
 publication ; ils ne sont pas des prérequis d'exécution locale. Une évolution
 concurrente entraîne seulement la requalification ou le rejeu de la preuve
-affectée. Chaque lot stage ensuite une allowlist, valide `STAGED` et crée un
-commit local dont les fichiers et validations sont identifiés. Plusieurs
-responsabilités peuvent être publiées ensemble si elles ont été explicitement
-relues et validées.
+affectée.
+
+L'allowlist initiale est un cadrage d'attribution, pas un plafond immuable. Si
+le contenu final diffère, examiner chaque chemin, son auteur, son inclusion et
+ses validations, puis requalifier le périmètre. Cette différence seule ne
+bloque pas le lot et ne justifie ni une réécriture d'historique ni un lot
+correctif. Plusieurs chantiers ou writers peuvent être regroupés dans un commit
+si tous les changements sont identifiés, attribués, relus et validés sur le
+candidat final exact. Un commit local plus large que prévu est examiné avec ses
+preuves ; le publier sans le reconstruire s'il est sûr, validé et compatible
+avec un push fast-forward. Les modifications non attribuées restent exclues et
+intactes.
+
+Avant le commit, stage le périmètre final attribué, vérifie `STAGED` sur son
+contenu exact et conserve les autres changements. Les gardes, contrôles secrets,
+AuthZ, migrations et exigences fast-forward restent obligatoires.
 
 Les scopes sont strictement séparés : `WORKTREE_LIVE` est le checkout mouvant,
 `STAGED` l'index exact, `COMMITTED_SNAPSHOT` un arbre Git immuable par SHA, et
@@ -71,7 +83,7 @@ mesure live ne peut jamais être présentée comme preuve reproductible d'un SHA
 Hors mode de développement rapide :
 
 ```text
-validation → commit isolé → push main → vérification de convergence
+validation du candidat final exact → commit validé → push main → vérification de convergence
 ```
 
 Mode de développement rapide explicitement activé :

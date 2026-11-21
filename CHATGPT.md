@@ -62,8 +62,8 @@ du lot.
 
 **Politique GitHub de ChatGPT** : ChatGPT est limité à la lecture et à la revue
 de GitHub. Il ne modifie pas GitHub, ne committe pas, ne pousse pas, ne merge
-pas et ne publie pas. Codex est responsable de l'intégration locale, du commit
-isolé et de la publication fast-forward sur `main`, conformément à `AGENTS.md`
+pas et ne publie pas. Codex est responsable de l'intégration locale, des commits
+validés et de la publication fast-forward sur `main`, conformément à `AGENTS.md`
 et `scripts/AGENTS.md`. Les prompts doivent laisser Codex appliquer la
 validation proportionnée, le staging explicite de l'allowlist, la préservation
 des changements étrangers, la vérification de convergence et l'interdiction du
@@ -146,8 +146,15 @@ inspecter chaque commit, son message, son diff et les preuves qu'il revendique,
 puis inspecter l'état final de `main`. Le message de commit constitue la
 passation principale ; ne demander un bilan Codex séparé que lorsqu'une preuve
 matérielle manque ou qu'une ambiguïté ne peut pas être résolue par le dépôt.
-Les prompts correctifs restent séparés par chantier indépendant, généralement
-un ou deux, sans découper artificiellement un même chantier cohérent.
+La Commit Review privilégie le résultat publié et les régressions démontrées.
+La taille, le regroupement ou l'organisation des commits ne suffisent pas à
+demander un prompt correctif. Si un commit local contient plus de fichiers que
+prévu, inspecter leur attribution, leur sûreté et les preuves sur le candidat
+final exact ; le publier sans le reconstruire s'il est validé et compatible
+avec `main`. Si une correction est réellement nécessaire, la publier par un
+nouveau commit plutôt que réécrire l'historique. Les prompts correctifs portent
+sur un défaut actuel prouvé ou un objectif incomplet, jamais sur une préférence
+de découpage des commits.
 
 ## 5. Produit, responsabilité et sécurité
 
@@ -272,9 +279,12 @@ collision d’attribution en écrasement silencieux. Les scopes `WORKTREE_LIVE`,
 preuve locale ne devient pas une preuve de publication.
 
 Pour chaque exécution de travail qui produit un lot, le prompt demande à Codex :
-validation → commit isolé → push `main` → vérification de convergence. Le mode
-de développement rapide ne supprime pas cette publication ; seule une
-interdiction explicite de l'utilisateur autorise un commit local sans push.
+requalifier le périmètre, valider le candidat final exact, puis commit validé
+et attribué
+(plusieurs chantiers ou writers peuvent être regroupés) → push `main` →
+vérification de convergence. Le mode de développement rapide ne supprime pas
+cette publication ; seule une interdiction explicite de l'utilisateur autorise
+un commit local sans push.
 
 Les protections Git, secrets, intégrité, concurrence et fast-forward restent
 obligatoires, mais un défaut, un préflight Supabase bloqué ou une validation
@@ -286,8 +296,9 @@ ChatGPT respecte `MAIN-ONLY / MULTI-WRITER COORDONNÉ` sans imposer de checkout
 propre, de SHA figé, de push préalable ou d'arrêt des autres writers pour un
 diagnostic local. Les chemins dirty étrangers sont préservés ; un conflit sur
 un chemin bloque seulement sa mutation. Toute exécution qui produit un lot
-suit validation → commit isolé → push `main` → convergence, sauf interdiction
-explicite de l'utilisateur. Les scopes Git, hooks,
+requalifie puis valide le candidat final exact, committe les changements
+attribués (groupement multi-chantier permis), pousse `main` et vérifie la
+convergence, sauf interdiction explicite de l'utilisateur. Les scopes Git, hooks,
 pre-push, candidats et blocages host sont **uniquement** gouvernés par
 `AGENTS.md`, `scripts/AGENTS.md`, `TESTING.md` et
 `documentation/development/host-environment.md`. Ne pas recopier leur
