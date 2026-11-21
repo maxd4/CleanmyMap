@@ -152,6 +152,13 @@ l'ascendance non publiée avec `git log --oneline origin/main..HEAD`, y compris 
 - Tous les fichiers modifiés ou créés **par le lot** et nécessaires à son
   contrat doivent être intégrés au commit validé ; ne laisser aucun changement
   du lot dirty/untracked. Les chemins étrangers restent intacts et sont signalés.
+- « Tous les fichiers du lot » désigne uniquement les fichiers attribués au lot
+  courant dans son allowlist, y compris ses tests et sa documentation nécessaires.
+  Cela n'autorise jamais à inclure dans son commit un fichier, un changement
+  staged ou un changement non commité appartenant à un autre lot. Laisser ces
+  changements intacts et hors du staging ; si l'index partagé contient déjà des
+  changements étrangers, coordonner l'usage de l'index avant toute opération de
+  commit, sans les désindexer ni les intégrer implicitement.
 
 **Workflow de chaque exécution de lot** : validation → staging ciblé complet →
 commit isolé non signé → push fast-forward sur `main` → fetch → vérification
