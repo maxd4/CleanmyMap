@@ -16,10 +16,11 @@
 - La connexion rend disponible l'enregistrement explicite et la liste privée du compte.
 - Une personne peut corriger une déclaration, l'exclure, la réactiver ou la supprimer définitivement.
 - Les bornes de période sont des dates UTC, avec borne de fin exclusive.
+- La région d'inférence accepte `null`, `UNKNOWN` ou un code ISO 3166-1 alpha-2 valide ; une région sans facteur scientifique compatible conserve le carbone en `NA`.
 - Une entrée vide reste inconnue (`null`); zéro est un choix explicite.
 - Les frontières énergétiques IT, site et mur local restent distinctes; sans frontière ou preuve, le moteur ne revendique pas une mesure correspondante.
 - EcoLogits ne traite que les données qualifiées par requête. Les agrégats restent proxy ou `NA`.
-- Le moteur fournit les valeurs, les versions scientifiques, les sources et les limites; les inconnues restent `NA`.
+- Le moteur fournit les valeurs, les sources et les limites; les inconnues restent `NA`. `methodology_version` identifie la méthode, tandis que `factor_version` conserve les IDs/versions du registre réellement appliqués ou les facteurs indisponibles explicitement.
 
 ## Données et confidentialité
 

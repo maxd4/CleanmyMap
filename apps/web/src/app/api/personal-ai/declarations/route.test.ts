@@ -80,6 +80,9 @@ describe("personal AI declarations collection API", () => {
     expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({
       owner_clerk_id: "clerk-owner-a", methodology_version: expect.any(String), factor_version: expect.any(String),
     }));
+    const persisted = mocks.insert.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(persisted.methodology_version).toBe((persisted.snapshot as { version: string }).version);
+    expect(JSON.parse(persisted.factor_version as string)).toHaveProperty("applied");
     expect(mocks.insert).toHaveBeenCalledWith(expect.not.objectContaining({ prompt: expect.anything(), conversation: expect.anything() }));
   });
 

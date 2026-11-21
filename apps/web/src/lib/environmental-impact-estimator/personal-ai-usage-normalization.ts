@@ -1,5 +1,6 @@
 import { findAiModel } from "./model-catalog";
 import type { PersonalAiFootprintInput } from "./personal-ai-estimator";
+import { isCountryCode } from "../user-location-preference";
 
 export const PERSONAL_AI_DECLARATION_VERSION = "personal-ai-declaration-v1";
 
@@ -77,6 +78,11 @@ function assertShortLabel(value: string | null, field: string): void {
   }
 }
 
+function assertInferenceRegion(value: string | null): void {
+  if (value === null || value === "UNKNOWN" || isCountryCode(value)) return;
+  throw new Error("inferenceRegion doit être null, UNKNOWN ou un code ISO 3166-1 alpha-2 valide");
+}
+
 function parseUtc(value: string, field: string): number {
   if (value.length > 30 || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(value)) throw new Error(`${field}: date UTC ISO requise`);
   const time = Date.parse(value);
@@ -103,8 +109,7 @@ export function normalizePersonalAiDeclaration(draft: PersonalAiDeclarationDraft
   assertText(draft.sourceVersion, "sourceVersion", 80);
   assertShortLabel(draft.modelRaw, "modelRaw");
   assertShortLabel(draft.operator, "operator");
-  assertText(draft.inferenceRegion, "inferenceRegion", 2);
-  if (draft.inferenceRegion !== null && draft.inferenceRegion !== "UNKNOWN" && !/^[A-Z]{2}$/.test(draft.inferenceRegion)) throw new Error("inferenceRegion doit être un code ISO alpha-2 ou UNKNOWN");
+  assertInferenceRegion(draft.inferenceRegion);
   const canonicalModel = draft.modelCanonical === null ? null : findAiModel(draft.modelCanonical);
   if (draft.modelCanonical !== null && (!ID_PATTERN.test(draft.modelCanonical) || !canonicalModel)) {
     throw new Error("modelCanonical doit référencer un modèle du catalogue scientifique");

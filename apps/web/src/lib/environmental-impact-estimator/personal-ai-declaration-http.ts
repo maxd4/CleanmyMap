@@ -5,6 +5,7 @@ import {
   toPersonalAiEstimatorInput,
   type PersonalAiDeclarationDraft,
 } from "./personal-ai-usage-normalization";
+import { getScientificFactor, resolveElectricityFactorForRegion } from "./scientific-registry";
 
 const nullableCount = z.number().int().safe().nonnegative().nullable();
 const nullableMeasure = z.number().finite().nonnegative().nullable();
@@ -69,11 +70,69 @@ export function parsePersonalAiDeclaration(payload: unknown): StoredPersonalAiDe
 
 export function calculatePersonalAiDeclaration(payload: StoredPersonalAiDeclaration) {
   const estimate = estimatePersonalAiFootprint(toPersonalAiEstimatorInput(payload));
+  const factorVersion = getAppliedFactorVersion(estimate, payload.inferenceRegion);
   return {
     methodologyVersion: estimate.version,
-    factorVersion: estimate.methodologyTrace.version,
+    factorVersion,
     snapshot: estimate,
   };
+}
+
+function getAppliedFactorVersion(
+  estimate: ReturnType<typeof estimatePersonalAiFootprint>,
+  declaredRegion: string | null,
+): string {
+  const applied = new Set<string>();
+  const unavailable: string[] = [];
+  const addFactor = (id: string) => {
+    const factor = getScientificFactor(id);
+    applied.add(`${factor.id}@${factor.version}`);
+  };
+  const totals = estimate.physicalTotals;
+  const hasEnergy = totals.itEnergyKwh !== null || totals.facilityEnergyKwh !== null || totals.localWallEnergyKwh != null;
+  const hasTextActivity = (estimate.modalities.text.activityCount ?? 0) > 0;
+  const formula = estimate.methodologyTrace.formula;
+  const usesEcologits = formula.includes("E_GPU");
+
+  if (hasTextActivity && formula.includes("Tokens / 1M")) {
+    const scenarioFactorId = estimate.scenario === "low"
+      ? "ai-inference-energy-scenario-low-v1"
+      : estimate.scenario === "high"
+        ? "ai-inference-energy-scenario-high-v1"
+        : "ai-inference-energy-scenario-central-v1";
+    addFactor(scenarioFactorId);
+  }
+
+  if (totals.operationalKgCo2e !== null) {
+    const electricityFactor = resolveElectricityFactorForRegion(estimate.region);
+    if (electricityFactor && typeof electricityFactor.value === "number") {
+      applied.add(`${electricityFactor.id}@${electricityFactor.version}`);
+    } else {
+      unavailable.push(`location-based electricity: no numeric registry factor for ${declaredRegion ?? "UNKNOWN"}`);
+    }
+  } else if (hasEnergy || hasTextActivity) {
+    unavailable.push(`location-based electricity: no compatible regional factor for ${declaredRegion ?? "UNKNOWN"}`);
+  }
+
+  if (totals.indirectWaterLiters !== null && estimate.region === "US") {
+    addFactor("water-indirect-datacenter-us-2024");
+  } else if (hasEnergy && estimate.region !== "US") {
+    unavailable.push(`indirect water: no registered factor for ${declaredRegion ?? "UNKNOWN"}`);
+  }
+
+  if (totals.partialLcaKgCo2e !== null) {
+    if (usesEcologits) {
+      unavailable.push("EcoLogits embodied factors are bundled with the method and have no separate scientific-registry factor ID");
+    } else {
+      addFactor("ai-partial-lca-overhead-v1");
+    }
+  }
+
+  if (applied.size === 0 && unavailable.length === 0) {
+    unavailable.push("no scientific-registry factor applied by the selected calculation branch");
+  }
+
+  return JSON.stringify({ applied: [...applied].sort(), unavailable });
 }
 
 export function isPersonalAiId(value: string): boolean {

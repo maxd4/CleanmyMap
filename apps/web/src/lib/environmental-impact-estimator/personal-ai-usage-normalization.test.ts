@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { estimatePersonalAiFootprint } from "./personal-ai-estimator";
 import { normalizePersonalAiDeclaration, toPersonalAiEstimatorInput, type PersonalAiDeclarationDraft } from "./personal-ai-usage-normalization";
+import { calculatePersonalAiDeclaration } from "./personal-ai-declaration-http";
+import { getScientificFactor } from "./scientific-registry";
 
 function declaration(overrides: Partial<PersonalAiDeclarationDraft> = {}): PersonalAiDeclarationDraft {
   return {
@@ -15,6 +17,60 @@ function declaration(overrides: Partial<PersonalAiDeclarationDraft> = {}): Perso
 }
 
 describe("personal AI declaration normalization", () => {
+  it.each([null, "UNKNOWN", "FR", "DE"] as const)("accepts inference region %s", (inferenceRegion) => {
+    expect(normalizePersonalAiDeclaration(declaration({ inferenceRegion })).inferenceRegion).toBe(inferenceRegion);
+  });
+
+  it.each(["ZZ", "fr", "FRA", "Europe"])("rejects invalid ISO inference region %s", (inferenceRegion) => {
+    expect(() => normalizePersonalAiDeclaration(declaration({ inferenceRegion }))).toThrow(/ISO 3166-1 alpha-2/);
+  });
+
+  it("persists actual factor IDs and versions separately from methodology version", () => {
+    const payload = normalizePersonalAiDeclaration(declaration({
+      inferenceRegion: "FR",
+      tokens: { ...declaration().tokens, inputTotal: 42_000, outputTotal: 5_000 },
+    }));
+    const calculation = calculatePersonalAiDeclaration(payload);
+    const factorTrace = JSON.parse(calculation.factorVersion) as { applied: string[]; unavailable: string[] };
+    const expectedFactors = [
+      "ai-inference-energy-scenario-central-v1",
+      "electricity-fr-rte-2024",
+      "ai-partial-lca-overhead-v1",
+    ].map((id) => {
+      const factor = getScientificFactor(id);
+      return `${factor.id}@${factor.version}`;
+    });
+
+    expect(factorTrace.applied).toEqual(expect.arrayContaining(expectedFactors));
+    expect(calculation.methodologyVersion).toBe(calculation.snapshot.version);
+    expect(calculation.factorVersion).not.toBe(calculation.methodologyVersion);
+    expect(calculation.factorVersion).not.toContain(calculation.methodologyVersion);
+  });
+
+  it("records an explicit unavailable electricity factor for unknown physical regions", () => {
+    const payload = normalizePersonalAiDeclaration(declaration({
+      inferenceRegion: "DE",
+      tokens: { ...declaration().tokens, inputTotal: 1_000, outputTotal: 100 },
+    }));
+    const calculation = calculatePersonalAiDeclaration(payload);
+    const factorTrace = JSON.parse(calculation.factorVersion) as { applied: string[]; unavailable: string[] };
+
+    expect(factorTrace.applied).toContain(`${getScientificFactor("ai-inference-energy-scenario-central-v1").id}@${getScientificFactor("ai-inference-energy-scenario-central-v1").version}`);
+    expect(factorTrace.applied.some((factor) => factor.startsWith("electricity-"))).toBe(false);
+    expect(factorTrace.unavailable.join(" ")).toContain("location-based electricity: no compatible regional factor for DE");
+  });
+
+  it("does not report the token scenario factor for an explicitly zero-token calculation", () => {
+    const payload = normalizePersonalAiDeclaration(declaration({
+      inferenceRegion: "FR",
+      tokens: { ...declaration().tokens, inputTotal: 0, outputTotal: 0 },
+    }));
+    const calculation = calculatePersonalAiDeclaration(payload);
+    const factorTrace = JSON.parse(calculation.factorVersion) as { applied: string[] };
+
+    expect(factorTrace.applied.some((factor) => factor.startsWith("ai-inference-energy-scenario-"))).toBe(false);
+  });
+
   it("preserves unknown values separately from explicit zeros", () => {
     const unknown = normalizePersonalAiDeclaration(declaration());
     const zero = normalizePersonalAiDeclaration(declaration({ tokens: { ...declaration().tokens, inputTotal: 0, outputTotal: 0 } }));
