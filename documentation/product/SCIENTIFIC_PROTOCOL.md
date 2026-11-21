@@ -461,8 +461,8 @@ L'estimateur d'impact du site (`constants-core.ts` dérivant directement les val
      - Dimensionnement mémoire $M_{\text{req}} = 1,2 \times P_{\text{total}} \times \text{bits} / 8$ et $N_{\text{GPU}} = 2^{\lceil \log_2(\lceil M_{\text{req}} / M_{\text{GPU}} \rceil) \rceil}$ ;
      - Latence active dérivée de la régression officielle ($\alpha_L P_{\text{active}} + \beta_L \text{batch} + \gamma_L$) ou de `tps`/`ttft`, plafonnée par `requestLatency` ;
      - Impacts incorporés (serveur $5700\text{ kgCO₂e}$ hors GPU + $273\text{ kgCO₂e/GPU}$, ADPe, PE) pondérés par $N_{\text{GPU}} / 8$ et amortis sur $3 \times 365 \times 24 \times 3600\text{ s}$ ;
-   - Aucune conformité EcoLogits n'est revendiquée si `activeParametersBillion`, `totalParametersBillion` ou `outputTokens > 0` manquent : `totalTokens` ou `inputTokens` ne sont jamais substitués à `outputTokens` (bascule explicite sur le scénario générique `PROXY_SCENARIO` ou `NA`) ;
-   - Pour `local_device` sans mesure `LOCAL_WALL` ou puissance/durée locale, aucune extrapolation des constantes serveur cloud H100 n'est appliquée et les impacts physiques restent `null` (`NA`), jamais `0`. Les frontières `IT_FULL`, `FACILITY` et `LOCAL_WALL` restent distinctes; une mesure de site n'est pas remultipliée par le PUE, et la consommation locale à la prise murale n'est pas assimilée à l'énergie d'un datacenter.
+   - Aucune conformité EcoLogits n'est revendiquée si `activeParametersBillion`, `totalParametersBillion`, `outputTokens > 0` ou la qualification explicite `textUsage.granularity = PER_REQUEST` pour une seule requête manquent : `totalTokens` ou `inputTokens` ne sont jamais substitués à `outputTokens`; un agrégat non ventilé reste en scénario générique `PROXY_SCENARIO` ou `NA` ;
+   - Pour `local_device` sans mesure `LOCAL_WALL` ou puissance/durée locale, aucune extrapolation des constantes serveur cloud H100 n'est appliquée et les impacts physiques restent `null` (`NA`), jamais `0`. L'entrée historique `measuredEnergyKwh` sans frontière qualifiée n'est pas réinterprétée comme `IT_FULL`, `FACILITY` ou `LOCAL_WALL`. Les frontières restent distinctes; une mesure de site n'est pas remultipliée par le PUE, et la consommation locale à la prise murale n'est pas assimilée à l'énergie d'un datacenter.
    - `totalWaterLiters` n'est calculé que lorsque l'eau directe sur site et l'eau indirecte réseau sont toutes deux calculables ;
    - Herméticité absolue entre engagements contractuels market-based et inventaire physique location-based.
 
@@ -639,6 +639,11 @@ l'IT et de l'énergie de datacenter; la part incrémentale n'est calculée que s
 une puissance à vide est déclarée. `pueApplied` indique explicitement si le
 PUE a été appliqué aux kWh IT du calcul. Les scénarios textuels bas/central/haut
 restent des hypothèses versionnées et ne sont pas des mesures fournisseur.
+L'entrée historique `measuredEnergyKwh` conserve son interprétation IT pour
+`cloud_api`; avec `local_device`, faute de frontière physique, ses résultats
+énergétiques et dérivés restent `NA`. La conformité EcoLogits demande aussi
+une qualification `PER_REQUEST` explicite et `requestCount` absent ou égal à
+1; les agrégats non ventilés restent des scénarios proxy ou `NA`.
 
 Le solveur pédagogique 0+08 compare deux objectifs distincts à chacun des 101
 pas de préférence : carbone conditionnel lié à la matière réellement

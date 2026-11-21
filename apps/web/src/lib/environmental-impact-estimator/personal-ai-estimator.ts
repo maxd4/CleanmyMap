@@ -9,6 +9,8 @@ import {
 import {
   computeEcologitsCompatibleImpacts,
   evaluateEcologitsMethodology,
+  isEcologitsRequestGranularityQualified,
+  type EcologitsUsageGranularity,
 } from "./ecologits-adapter";
 import {
   ANTI_DOUBLE_COUNTING_RULES,
@@ -39,6 +41,8 @@ export type PersonalAiFootprintInput = {
     outputTokens?: number | null;
     cachedTokens?: number | null;
     reasoningTokensIncluded?: number | null;
+    /** Granularité de la donnée : seuls les tokens d'une requête identifiée peuvent alimenter EcoLogits. */
+    granularity?: EcologitsUsageGranularity;
   };
   imageUsage?: { imageCount?: number | null };
   audioUsage?: { durationMinutes?: number | null; requestCount?: number | null };
@@ -299,6 +303,7 @@ function computeEcologitsModelTextImpacts(
     outputTokens,
     cachedTokens: textInput?.cachedTokens ?? 0,
     reasoningTokensIncluded: textInput?.reasoningTokensIncluded ?? null,
+    usageGranularity: textInput?.granularity,
     requestCount: input.requestCount,
     durationSeconds: input.measuredDurationSeconds,
     tps: input.tps,
@@ -458,7 +463,9 @@ function computeTextImpacts(
 
   if (typeof input.measuredEnergyKwh === "number" && input.measuredEnergyKwh >= 0) {
     if (executionEnv === "local_device") {
-      notes.push("Exécution locale (local_device) avec consommation électrique mesurée : PUE = 1,0 ; l'impact matériel incorporé du terminal personnel reste non calculable (NA / null).");
+      const localBoundaryNote = "Mesure énergétique historique associée à local_device sans frontière physique qualifiée : elle n'est attribuée ni à IT_FULL, ni à FACILITY, ni à LOCAL_WALL ; impacts énergétiques et dérivés laissés à NA (null). Utiliser energyMeasurement avec une frontière explicitement établie.";
+      notes.push(localBoundaryNote);
+      return buildUnmeasuredTextImpacts(textTokens, localBoundaryNote);
     }
     return computeDirectMeasuredTextImpacts(
       input.measuredEnergyKwh,
@@ -496,11 +503,22 @@ function computeTextImpacts(
   }
 
   if (modelRecord && hasDocumentedModel) {
-    if (typeof resolvedOutputTokens === "number" && resolvedOutputTokens > 0) {
+    if (
+      typeof resolvedOutputTokens === "number" &&
+      resolvedOutputTokens > 0 &&
+      isEcologitsRequestGranularityQualified({
+        usageGranularity: textInput?.granularity,
+        requestCount: input.requestCount,
+      })
+    ) {
       const resolvedInput = { ...input, textUsage: { ...textInput, inputTokens: resolvedInputTokens, outputTokens: resolvedOutputTokens } };
       return computeEcologitsModelTextImpacts(resolvedInput, modelRecord, pue, region, scenario, executionEnv, textTokens, resolvedOutputTokens, notes);
     }
-    notes.push(`Modèle ${modelRecord.name} sélectionné sans nombre de tokens générés explicite (outputTokens absent ou nul) : les tokens d'entrée ou totaux (${textTokens} tokens) ne sont jamais assimilés à des tokens de sortie dans EcoLogits v3.0.0. Bascule sur le scénario énergétique générique hypothétique (${scenario}, PROXY_SCENARIO).`);
+    if (typeof resolvedOutputTokens === "number" && resolvedOutputTokens > 0) {
+      notes.push(`EcoLogits par requête non appliqué : seuls les ${resolvedOutputTokens} tokens générés sont pris comme volume de sortie, mais ils ne sont pas explicitement qualifiés PER_REQUEST pour une seule requête. L'agrégat non ventilé reste un scénario générique hypothétique (PROXY_SCENARIO).`);
+    } else {
+      notes.push(`Modèle ${modelRecord.name} sélectionné sans nombre de tokens générés explicite (outputTokens absent ou nul) : les tokens d'entrée ou totaux (${textTokens} tokens) ne sont jamais assimilés à des tokens de sortie dans EcoLogits v3.0.0. Bascule sur le scénario énergétique générique hypothétique (${scenario}, PROXY_SCENARIO).`);
+    }
   } else if (modelRecord && !hasDocumentedModel) {
     notes.push(`L'architecture du modèle ${modelRecord.name} n'est pas publiée par son éditeur : aucune conformité EcoLogits v3.0.0 n'est revendiquée ; bascule sur le scénario énergétique générique hypothétique (${scenario}, PROXY_SCENARIO).`);
   }
@@ -710,6 +728,8 @@ export function estimatePersonalAiFootprint(
         : input.energyMeasurement?.boundary === "LOCAL_WALL"
           ? "E_locale,prise = énergie mesurée à la prise ; part incrémentale inconnue sans puissance à vide"
           : "E_site = E_IT mesurée × PUE"
+  } else if (typeof input.measuredEnergyKwh === "number" && executionEnv === "local_device") {
+    formulaTrace = "NA (mesure locale historique sans frontière énergétique qualifiée)";
   } else if (typeof input.measuredEnergyKwh === "number") {
     formulaTrace = "E_total = E_IT_mesurée × PUE ; GWP = E_total × f_grid";
   } else if (usedOfficialEcologitsFormula) {
@@ -733,6 +753,8 @@ export function estimatePersonalAiFootprint(
     version: "personal-ai-estimator-2026.11-v4",
     limitations: [
       "Les équations EcoLogits v3.0.0 exigent des paramètres actifs/totaux publiés et un volume explicite de tokens générés (outputTokens > 0) ; à défaut, l'estimateur bascule sur un scénario générique ou NA sans substituer inputTokens à outputTokens.",
+      "La conformité EcoLogits exige une donnée textuelle explicitement qualifiée PER_REQUEST pour une seule requête ; tout agrégat non ventilé reste PROXY_SCENARIO ou NA.",
+      "La mesure historique measuredEnergyKwh avec local_device n'a pas de frontière connue et n'est attribuée ni à l'IT, ni au site d'un datacenter, ni à LOCAL_WALL.",
       "Les frontières énergétiques IT_FULL, FACILITY et LOCAL_WALL sont distinctes; le facteur PUE n'est appliqué qu'à une mesure IT cloud avec une valeur de PUE disponible.",
       "L'eau totale (totalWaterLiters) n'est renseignée que lorsque l'eau directe sur site et l'eau indirecte réseau sont toutes deux calculables.",
       "Les facteurs physiques image, audio et vidéo restent NA faute de méthode sourcée reproductible.",

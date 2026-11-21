@@ -1,9 +1,12 @@
+import type { EcologitsUsageGranularity } from "./ecologits-adapter";
+
 type TextUsageInput = {
   totalTokens?: number | null;
   inputTokens?: number | null;
   outputTokens?: number | null;
   cachedTokens?: number | null;
   reasoningTokensIncluded?: number | null;
+  granularity?: EcologitsUsageGranularity;
 };
 type ValidationInput = {
   pue?: number | null;
@@ -42,6 +45,9 @@ function assertNonNegativeInteger(value: number | null | undefined, fieldName: s
 
 function normalizeTextUsage(text: TextUsageInput): TextUsageInput {
   const normalized = { ...text };
+  if (normalized.granularity != null && !["PER_REQUEST", "AGGREGATE", "UNKNOWN"].includes(normalized.granularity)) {
+    throw new Error("Entrée invalide pour 'textUsage.granularity'.");
+  }
   if (typeof normalized.totalTokens === "number") {
     if (typeof normalized.inputTokens === "number" && normalized.outputTokens == null) {
       normalized.outputTokens = normalized.totalTokens - normalized.inputTokens;

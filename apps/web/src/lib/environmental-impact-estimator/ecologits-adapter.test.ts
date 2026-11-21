@@ -288,6 +288,7 @@ describe("ecologits-adapter", () => {
       model: llama70b,
       inputTokens: 10_000,
       outputTokens: 2_000,
+      usageGranularity: "PER_REQUEST",
       durationSeconds: 40,
       region: "US",
       pue: 1.15,
@@ -311,6 +312,7 @@ describe("ecologits-adapter", () => {
     const resultWithoutDirectWue = computeEcologitsCompatibleImpacts({
       model: llama70b,
       outputTokens: 2_000,
+      usageGranularity: "PER_REQUEST",
       region: "US",
       pue: 1.15,
     });
@@ -322,6 +324,7 @@ describe("ecologits-adapter", () => {
     const resultFrWithDirectWue = computeEcologitsCompatibleImpacts({
       model: llama70b,
       outputTokens: 2_000,
+      usageGranularity: "PER_REQUEST",
       region: "FR",
       pue: 1.15,
       datacenterWue: 0.5,
@@ -331,11 +334,44 @@ describe("ecologits-adapter", () => {
     expect(resultFrWithDirectWue.totalWaterLiters).toBeNull();
   });
 
+  it("refuse la conformité EcoLogits pour une granularité absente ou un agrégat multi-requêtes", () => {
+    const model = requireAiModel("meta-llama/llama-3.1-70b-instruct");
+    const aggregate = computeEcologitsCompatibleImpacts({
+      model,
+      inputTokens: 50_000,
+      outputTokens: 10_000,
+      requestCount: 12,
+      usageGranularity: "AGGREGATE",
+      region: "US",
+    });
+    const falselyLabeledAggregate = computeEcologitsCompatibleImpacts({
+      model,
+      outputTokens: 10_000,
+      requestCount: 12,
+      usageGranularity: "PER_REQUEST",
+      region: "US",
+    });
+    const unqualified = computeEcologitsCompatibleImpacts({
+      model,
+      outputTokens: 10_000,
+      region: "US",
+    });
+
+    for (const result of [aggregate, falselyLabeledAggregate, unqualified]) {
+      expect(result.isEcologitsCompliant).toBe(false);
+      expect(result.itEnergyKwh).toBeNull();
+      expect(result.facilityEnergyKwh).toBeNull();
+      expect(result.diagnostic).toBe("NOT_CALCULABLE");
+    }
+    expect(aggregate.warnings.some((warning) => warning.includes("agrégats non ventilés"))).toBe(true);
+  });
+
   it("gère l'absence de facteur électrique régional sans inventer de valeur (NA)", () => {
     const llama8b = requireAiModel("meta-llama/llama-3.1-8b-instruct");
     const result = computeEcologitsCompatibleImpacts({
       model: llama8b,
       outputTokens: 5_000,
+      usageGranularity: "PER_REQUEST",
       region: "UNKNOWN",
     });
 
@@ -405,6 +441,7 @@ describe("ecologits-adapter", () => {
       inputTokens: 10,
       cachedTokens: 5,
       outputTokens: 1,
+      usageGranularity: "PER_REQUEST",
       region: "US",
     });
     expect(tiny.itEnergyKwh).toBeGreaterThan(0);
@@ -417,6 +454,7 @@ describe("ecologits-adapter", () => {
       model: llama8b,
       inputTokens: 0,
       outputTokens: 0,
+      usageGranularity: "PER_REQUEST",
       region: "US",
     });
     expect(declaredZero.itEnergyKwh).toBe(0);
@@ -466,6 +504,7 @@ describe("EcoLogits v3.0.0 — intégrité des paramètres et de l'architecture"
       model: llama8b,
       customActiveParametersBillion: 4,
       outputTokens: 1_000,
+      usageGranularity: "PER_REQUEST",
       region: "US",
     });
     expect(resolvedFromDocumented.isEcologitsCompliant).toBe(true);
@@ -477,6 +516,7 @@ describe("EcoLogits v3.0.0 — intégrité des paramètres et de l'architecture"
       customActiveParametersBillion: 12,
       customTotalParametersBillion: 100,
       outputTokens: 1_000,
+      usageGranularity: "PER_REQUEST",
       region: "US",
     });
     expect(fullCustomMoe.isEcologitsCompliant).toBe(true);

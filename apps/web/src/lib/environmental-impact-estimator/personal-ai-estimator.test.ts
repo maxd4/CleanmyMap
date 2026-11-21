@@ -198,6 +198,7 @@ describe("personal-ai-estimator", () => {
         inputTokens: 50_000,
         outputTokens: 10_000,
         cachedTokens: 20_000,
+        granularity: "PER_REQUEST",
       },
       region: "US",
       pue: 1.15,
@@ -276,7 +277,7 @@ describe("personal-ai-estimator", () => {
     expect(result.marketBasedDisclosure?.note).toContain("Certificat de garantie d'origine");
   });
 
-  it("gère rigoureusement local_device : NA sans mesure électrique, calcul mesuré avec PUE 1.0 et incorporé NA (jamais 0)", () => {
+  it("gère local_device sans attribuer une mesure historique à une frontière inconnue", () => {
     // 1. Sans measuredEnergyKwh : aucune extrapolation serveur H100 et aucun 0 fictif sur l'incorporé
     const unmeasuredLocal = estimatePersonalAiFootprint({
       modelId: "meta-llama/llama-3.1-8b-instruct",
@@ -293,7 +294,7 @@ describe("personal-ai-estimator", () => {
     expect(unmeasuredLocal.physicalTotals.embodiedKgCo2e).toBeNull();
     expect(unmeasuredLocal.dataQuality).toBe("NOT_CALCULABLE");
 
-    // 2. Avec measuredEnergyKwh : énergie et carbone opérationnel calculés, PUE 1.0, incorporé strictement null (NA)
+    // Une mesure historique sans frontière établie ne devient ni énergie IT, ni énergie de site, ni LOCAL_WALL.
     const measuredLocal = estimatePersonalAiFootprint({
       modelId: "meta-llama/llama-3.1-8b-instruct",
       executionEnvironment: "local_device",
@@ -302,11 +303,31 @@ describe("personal-ai-estimator", () => {
     });
 
     expect(measuredLocal.pue).toBe(1.0);
-    expect(measuredLocal.physicalTotals.itEnergyKwh).toBe(2.0);
-    expect(measuredLocal.physicalTotals.facilityEnergyKwh).toBe(2.0);
-    expect(measuredLocal.physicalTotals.operationalKgCo2e).toBe(round6(2.0 * 0.0217));
+    expect(measuredLocal.physicalTotals.itEnergyKwh).toBeNull();
+    expect(measuredLocal.physicalTotals.facilityEnergyKwh).toBeNull();
+    expect(measuredLocal.physicalTotals.localWallEnergyKwh).toBeNull();
+    expect(measuredLocal.physicalTotals.operationalKgCo2e).toBeNull();
     expect(measuredLocal.physicalTotals.embodiedKgCo2e).toBeNull();
-    expect(measuredLocal.dataQuality).toBe("MEASURED");
+    expect(measuredLocal.dataQuality).toBe("NOT_CALCULABLE");
+    expect(measuredLocal.methodologyTrace.formula).toContain("sans frontière énergétique qualifiée");
+    expect(measuredLocal.methodologyNotes.some((note) => note.includes("ni à IT_FULL, ni à FACILITY, ni à LOCAL_WALL"))).toBe(true);
+  });
+
+  it("garde un agrégat multi-requêtes en PROXY_SCENARIO sans inventer une requête EcoLogits", () => {
+    const result = estimatePersonalAiFootprint({
+      modelId: "meta-llama/llama-3.1-70b-instruct",
+      textUsage: { inputTokens: 50_000, outputTokens: 10_000 },
+      requestCount: 12,
+      region: "US",
+      energyScenario: "central",
+      pue: 1.15,
+    });
+
+    expect(result.dataQuality).toBe("PROXY_SCENARIO");
+    expect(result.physicalTotals.itEnergyKwh).toBe(0.018);
+    expect(result.physicalTotals.facilityEnergyKwh).toBe(round6(0.018 * 1.15));
+    expect(result.methodologyNotes.some((note) => note.includes("EcoLogits par requête non appliqué"))).toBe(true);
+    expect(result.methodologyNotes.some((note) => note.includes("Hypothèses de déploiement EcoLogits"))).toBe(false);
   });
 
   it("ne traite jamais totalTokens seul comme outputTokens sur un modèle connu et n'invente aucune énergie sans activité", () => {

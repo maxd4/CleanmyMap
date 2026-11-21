@@ -151,6 +151,8 @@ export type EcologitsComputationParams = {
   cachedTokens?: number | null;
   /** Sous-ensemble de outputTokens correspondant au raisonnement (0 <= reasoningTokensIncluded <= outputTokens) */
   reasoningTokensIncluded?: number | null;
+  /** Qualification explicite de la granularité des tokens fournis. */
+  usageGranularity?: EcologitsUsageGranularity;
   /** Nombre de requêtes associées (entier >= 1) */
   requestCount?: number | null;
   /** Latence mesurée ou durée totale d'inférence en secondes */
@@ -178,6 +180,15 @@ export type EcologitsComputationParams = {
   /** Environnement d'exécution */
   executionEnvironment?: "cloud_api" | "local_device";
 };
+
+export type EcologitsUsageGranularity = "PER_REQUEST" | "AGGREGATE" | "UNKNOWN";
+
+export function isEcologitsRequestGranularityQualified(params: {
+  usageGranularity?: EcologitsUsageGranularity;
+  requestCount?: number | null;
+}): boolean {
+  return params.usageGranularity === "PER_REQUEST" && (params.requestCount ?? 1) === 1;
+}
 
 export type EcologitsImpactsResult = {
   /** Indique si le calcul a été exécuté selon les équations officielles EcoLogits v3.0.0 avec parité prouvée */
@@ -449,6 +460,13 @@ export function computeEcologitsCompatibleImpacts(
   if (outputTokens === 0 && inputTokens > 0) {
     warnings.push(
       "Requête sans génération (outputTokens = 0 avec inputTokens > 0) : l'équation officielle EcoLogits v3.0.0 ne modélise pas l'énergie de préfill isolée sans génération.",
+    );
+    return buildNotCalculableResult(notes, warnings);
+  }
+
+  if (!isEcologitsRequestGranularityQualified(params)) {
+    warnings.push(
+      "EcoLogits v3.0.0 exige des tokens explicitement qualifiés PER_REQUEST pour une seule requête. Les agrégats non ventilés ne sont pas assimilés à une requête conforme.",
     );
     return buildNotCalculableResult(notes, warnings);
   }
