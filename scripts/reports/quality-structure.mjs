@@ -475,6 +475,73 @@ export function qualityStructureOutputPath({ root, auditedHead, scope = "all" } 
   return path.resolve(root, "artifacts", "quality-structure", auditedHead, scopeSuffix);
 }
 
+function structureSignalNature(folders) {
+  const counts = new Map();
+  for (const folder of folders) {
+    for (const family of new Set(folder.signals.map((entry) => entry.family))) counts.set(family, (counts.get(family) ?? 0) + 1);
+  }
+  return [...counts].sort(([left], [right]) => left.localeCompare(right, "en"))
+    .map(([family, count]) => `${family} ${count}`).join(", ") || "aucun signal";
+}
+
+export function formatQualityStructureSummary(report, { maxReviews = 6 } = {}) {
+  const lines = [
+    "Structure audit — synthèse humaine",
+    `SHA: ${report?.auditedHead ?? "NOT_MEASURED"} | scope: ${report?.scope ?? "NOT_MEASURED"} | runId: ${report?.runId ?? "NOT_MEASURED"}`,
+    `Statut: ${report?.status ?? "NOT_MEASURED"} | blocking: ${report?.blocking ?? "NOT_MEASURED"}`,
+  ];
+  if (!report || report.measurementStatus === "NOT_MEASURED" || report.status === "NOT_MEASURED") {
+    lines.push(`Raison: ${report?.reason ?? "Aucune mesure structurelle disponible."}`);
+    return lines.join("\n");
+  }
+
+  const folders = report.folders ?? [];
+  const summary = report.summary ?? {};
+  const notMeasured = folders.filter((folder) => folder.imports?.measurementStatus === "NOT_MEASURED").length;
+  lines.push(
+    `Dossiers: ${summary.foldersMeasured ?? folders.length} | avec signaux: ${summary.foldersWithSignals ?? "NOT_MEASURED"} | revue pertinente: ${summary.foldersRequiringReview ?? "NOT_MEASURED"} | signaux descriptifs: ${summary.descriptiveSignals ?? "NOT_MEASURED"}`,
+    `Nature des signaux (dossiers): ${structureSignalNature(folders)}`,
+    `Graphe imports: ${summary.importEdgesMeasured ?? "NOT_MEASURED"} arêtes mesurées | dossiers NOT_MEASURED: ${notMeasured} | décisions humaines annotées: ${summary.humanDecisionAnnotations ?? "NOT_MEASURED"}`,
+  );
+
+  const reviews = [...(report.foldersRequiringReview ?? [])].sort((left, right) =>
+    right.files.direct - left.files.direct || left.path.localeCompare(right.path, "en"));
+  if (reviews.length === 0 && (notMeasured > 0 || summary.importEdgesMeasured === null)) {
+    lines.push(`Revue attendue: non déterminable pour ${notMeasured || "NOT_MEASURED"} dossier(s), car le graphe d'import n'est pas mesuré; aucune conclusion de cohésion.`);
+  } else if (reviews.length === 0) lines.push("Revue attendue: aucune; les signaux descriptifs restent consultables dans le JSON.");
+  else {
+    lines.push(`Dossiers à examiner (${Math.min(reviews.length, maxReviews)} affichés sur ${reviews.length}) — décision attendue: confirmer ou réfuter une séparation structurelle à partir des clusters, sans réorganisation automatique.`);
+    for (const folder of reviews.slice(0, maxReviews)) {
+      const proof = folder.review?.proof ?? {};
+      const measured = proof.measured ?? {};
+      const imports = measured.imports ?? {};
+      const signalIds = (folder.signals ?? []).map((entry) => entry.id).join(", ") || "NOT_MEASURED";
+      const sourceFiles = (folder.review?.evidence?.directFiles ?? []).slice(0, 2).join(", ") || "NOT_MEASURED";
+      const targetAreas = imports.targetAreas?.slice(0, 3).join(", ") ?? "NOT_MEASURED";
+      const extraAreas = (imports.targetAreas?.length ?? 0) > 3 ? ` +${imports.targetAreas.length - 3}` : "";
+      const evidence = `direct/récursif ${measured.directFiles ?? "NOT_MEASURED"}/${measured.recursiveFiles ?? "NOT_MEASURED"}; part directe ${measured.directShare ?? "NOT_MEASURED"}; imports internes/sortants ${imports.internalRecursive ?? "NOT_MEASURED"}/${imports.externalOutgoing ?? "NOT_MEASURED"}; clusters ${imports.dependencyClusters?.length ?? "NOT_MEASURED"}; cibles ${targetAreas}${extraAreas}; fichiers ${sourceFiles}`;
+      lines.push(`- ${folder.path} — ${folder.review.reason}; nature: ${signalIds}; preuve: ${evidence}.`);
+      for (const unknown of proof.unproven ?? []) lines.push(`  Non prouvé: ${unknown}`);
+    }
+    if (reviews.length > maxReviews) lines.push(`- … ${reviews.length - maxReviews} autres dossiers et leurs preuves dans le JSON.`);
+  }
+
+  const decisions = folders.filter((folder) => folder.humanDecision).sort((left, right) => left.path.localeCompare(right.path, "en"));
+  if (decisions.length) {
+    lines.push("Décisions humaines (annotations seulement; aucune exclusion):");
+    for (const folder of decisions) {
+      const decision = folder.humanDecision;
+      const shorten = (value, maxLength) => {
+        const text = String(value ?? "NOT_MEASURED");
+        return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+      };
+      lines.push(`- ${folder.path}: ${decision.classification} | SHA ${decision.reviewedSha ?? "NOT_MEASURED"} (${decision.reviewedSameSha ? "même SHA" : "antérieur/différent"}; scope ${decision.reviewedScope ?? "NOT_MEASURED"}) | ${shorten(decision.justification, 170)} | réexamen: ${shorten(decision.reexaminationCondition, 100)} | ${decision.source ?? "source NOT_MEASURED"}:L${decision.sourceLine ?? "?"}`);
+    }
+  }
+  lines.push("Preuves détaillées: signaux, chemins, relations et clusters dans le rapport JSON.");
+  return lines.join("\n");
+}
+
 function option(args, name) {
   const prefix = `--${name}=`;
   return args.find((value) => value.startsWith(prefix))?.slice(prefix.length) ?? null;
@@ -494,6 +561,7 @@ export function main(args = process.argv.slice(2)) {
     console.log(`QUALITY_STRUCTURE_REVIEW_FOLDERS: ${report.summary.foldersRequiringReview}`);
     console.log(`QUALITY_STRUCTURE_SIGNALS: ${report.summary.descriptiveSignals}`);
     console.log(`QUALITY_STRUCTURE_MODE: ${dryRun ? "DRY_RUN" : "WRITE"}`);
+    console.log(formatQualityStructureSummary(report));
     if (!dryRun) console.log(`QUALITY_STRUCTURE_OUTPUT: ${output}`);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

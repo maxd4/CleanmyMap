@@ -1,9 +1,16 @@
 import assert from "node:assert/strict";
+import childProcess from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
+  buildDocumentationNotMeasured,
   buildDocumentationMaintainabilityReport,
   DOCUMENTATION_THRESHOLDS,
+  formatDocumentationAuditSummary,
 } from "./documentation-maintainability.mjs";
 
 function viewFrom(entries) {
@@ -39,6 +46,61 @@ test("mesure un document court, ignore les blocs de code et valide les liens rel
   assert.equal(document.internalLinks.invalid[0].reason, "TARGET_NOT_FOUND");
   assert.equal(document.level, "NONE");
   assert.deepEqual(before["README.md"], "# Intro\n\n[Guide](./guide.md#target)\n[Absent](./missing.md)\n\n## Exemple\n\n```md\n# faux titre\n[ignoré](./missing-in-code.md)\n```\n");
+});
+
+test("résume contrats, documents longs, provenance des liens et références non vérifiables", () => {
+  const report = run({
+    "documentation/current.md": "Statut : CURRENT\n# Contrat\n\n[Absent](./missing.md)\n[Route](./unresolved)\n",
+    "documentation/history.md": "Statut : HISTORY\n# Ancien\n\n[Archive absente](./missing-history.md)\n",
+    "vendor/reference.md": "Statut : CURRENT\n# Vendor\n\n[Vendor absent](./missing-vendor.md)\n",
+    "documentation/long.md": `Statut : CURRENT\n# Long\n${Array.from({ length: DOCUMENTATION_THRESHOLDS.reviewRequired }, () => "ligne de preuve").join("\n")}`,
+  });
+  report.contractReviews.push({
+    path: "apps/web/src/lib/example.ts",
+    symbol: "example",
+    status: "REVIEW_REQUIRED",
+    reasons: ["MISSING_PERMISSIONS"],
+    documentsExamined: [{ path: "documentation/current.md", attributions: [{ line: 3 }] }],
+  });
+  const before = JSON.stringify(report);
+  const summary = formatDocumentationAuditSummary(report, { maxDetails: 3 });
+
+  assert.match(summary, /Liens actifs invalides: 1 \| historiques: 1 \| vendor: 1/);
+  assert.match(summary, /non vérifiables: 1/);
+  assert.match(summary, /documentation\/long\.md/);
+  assert.match(summary, /apps\/web\/src\/lib\/example\.ts#example.*MISSING_PERMISSIONS/);
+  assert.match(summary, /documentation\/current\.md:L4.*TARGET_NOT_FOUND/);
+  assert.equal(JSON.stringify(report), before);
+});
+
+test("rend un statut documentaire non mesuré sans déguiser le rapport en résultat vide", () => {
+  const report = buildDocumentationNotMeasured({ auditedHead: "b".repeat(40), runId: "documentation-unavailable", reason: "SOURCE_UNAVAILABLE" });
+  const summary = formatDocumentationAuditSummary(report);
+
+  assert.match(summary, /status|statut/i);
+  assert.match(summary, /NOT_MEASURED/);
+  assert.match(summary, /SOURCE_UNAVAILABLE/);
+});
+
+test("le dry-run CLI documentaire ne crée ni ne modifie de fichier", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "documentation-maintainability-dry-run-"));
+  const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "documentation-maintainability.mjs");
+  try {
+    fs.mkdirSync(path.join(root, "documentation"), { recursive: true });
+    fs.writeFileSync(path.join(root, "documentation", "README.md"), "# Documentation fixture\n", "utf8");
+    childProcess.execFileSync("git", ["init", "-q"], { cwd: root });
+    childProcess.execFileSync("git", ["add", "--", "documentation/README.md"], { cwd: root });
+    childProcess.execFileSync("git", ["-c", "user.name=Codex test", "-c", "user.email=codex-test", "commit", "-qm", "fixture"], { cwd: root });
+    const before = childProcess.execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" });
+    const output = childProcess.execFileSync(process.execPath, [script, "--root", root, "--dry-run"], { cwd: root, encoding: "utf8" });
+    const after = childProcess.execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" });
+
+    assert.match(output, /DOCUMENTATION_AUDIT_MODE: DRY_RUN/);
+    assert.match(output, /écriture: aucune/);
+    assert.equal(after, before);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("classe les liens locaux, externes et les chemins relatifs sans fallback racine", () => {

@@ -5,7 +5,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import test from "node:test";
 
-import { findPathIntegrityViolations, validatePathIntegrity } from "./check-path-integrity.mjs";
+import { findPathIntegrityViolations, formatPathIntegritySummary, validatePathIntegrity } from "./check-path-integrity.mjs";
 import { findNamingReviewCandidates, validateNaming } from "./check-file-naming.mjs";
 
 function fixtureBaseline(exceptions = [], pathIntegrityExceptions = []) {
@@ -156,4 +156,26 @@ test("path-integrity dry-run has no write side effect", () => {
   assert.match(output, /PATH_INTEGRITY_MODE: DRY_RUN/);
   assert.deepEqual(fs.readdirSync(root).sort(), before);
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("résume un inventaire propre sans imprimer la liste des chemins", () => {
+  const result = validatePathIntegrity({ trackedFiles: ["src/a.ts", "src/b.ts"], baseline: fixtureBaseline() });
+  const before = JSON.stringify(result);
+  const summary = formatPathIntegritySummary(result, { auditedSha: "a".repeat(40), dryRun: true });
+
+  assert.match(summary, /SHA: a{40} \| scope: tracked repository paths \| statut: PASS \| mode: DRY_RUN/);
+  assert.match(summary, /Chemins suivis: 2 \| nouvelles violations: 0/);
+  assert.match(summary, /Aucune violation/);
+  assert.doesNotMatch(summary, /src\/a\.ts|src\/b\.ts/);
+  assert.equal(JSON.stringify(result), before);
+});
+
+test("résume les violations avec chemin, règle, raison et décision attendue", () => {
+  const result = validatePathIntegrity({ trackedFiles: ["src/CON.ts"], baseline: fixtureBaseline() });
+  const summary = formatPathIntegritySummary(result, { auditedSha: "c".repeat(40) });
+
+  assert.match(summary, /statut: FAIL/);
+  assert.match(summary, /src\/CON\.ts \[windows-reserved-name\]/);
+  assert.match(summary, /Windows device name reserved/);
+  assert.match(summary, /décision attendue: corriger/);
 });

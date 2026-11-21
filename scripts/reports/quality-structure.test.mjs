@@ -7,7 +7,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { buildFolderMeasures } from "./architecture-audit.mjs";
-import { analyzeQualityStructure, parseQualityStructureDecisions, qualityStructureOutputPath, QUALITY_STRUCTURE_THRESHOLDS, structureScanRoots } from "./quality-structure.mjs";
+import { analyzeQualityStructure, formatQualityStructureSummary, parseQualityStructureDecisions, qualityStructureOutputPath, QUALITY_STRUCTURE_THRESHOLDS, structureScanRoots } from "./quality-structure.mjs";
 
 const ROOT = "apps/web/src";
 
@@ -210,6 +210,58 @@ test("un graphe absent ou partiel ne permet aucune conclusion de cohésion", () 
   assert.equal(folder.imports.dispersedOutgoing, null);
   assert.equal(folder.signals.some((entry) => entry.id === "LOW_INTERNAL_COHESION"), false);
   assert.equal(folder.review.required, false);
+  assert.match(formatQualityStructureSummary(report), /dossiers NOT_MEASURED: [1-9]\d*/);
+});
+
+test("résume une revue avec chemins, mesures, raisons, preuves et annotations sans mutation", () => {
+  const files = [
+    ...directFiles("summary", "action", 8),
+    ...directFiles("summary", "report", 8),
+    ...directFiles("summary/children", "helper", 2),
+  ];
+  const actionTarget = `${ROOT}/services/action/service.ts`;
+  const reportTarget = `${ROOT}/services/report/service.ts`;
+  const edges = [
+    ...files.slice(0, 8).map((from) => ({ from, to: actionTarget })),
+    ...files.slice(8, 16).map((from) => ({ from, to: reportTarget })),
+  ];
+  const report = fixture([...files, actionTarget, reportTarget], edges);
+  const folder = reviewedFolder(report, "summary");
+  report.auditedHead = "e".repeat(40);
+  report.runId = "structure-summary";
+  report.scope = "web";
+  report.summary.humanDecisionAnnotations = 1;
+  folder.humanDecision = {
+    classification: "KEEP_COHESIVE_OWNER",
+    reviewedSha: "d".repeat(40),
+    reviewedSameSha: false,
+    justification: "owner partagé",
+    reexaminationCondition: "réexaminer si le contrat change",
+    source: "documentation/development/quality-structure-decisions.md",
+    sourceLine: 4,
+    annotationOnly: true,
+  };
+  const before = JSON.stringify(report);
+  const summary = formatQualityStructureSummary(report);
+
+  assert.match(summary, /SHA: e{40} \| scope: web \| runId: structure-summary/);
+  assert.match(summary, /apps\/web\/src\/summary/);
+  assert.match(summary, /preuve: direct\/récursif 16\/18/);
+  assert.match(summary, /shape \+ graph/);
+  assert.match(summary, /Non prouvé:/);
+  assert.match(summary, /KEEP_COHESIVE_OWNER/);
+  assert.match(summary, /aucune exclusion/);
+  assert.equal(JSON.stringify(report), before);
+});
+
+test("rend les états vide et non mesuré sans inventer de dossiers", () => {
+  assert.match(formatQualityStructureSummary(null), /NOT_MEASURED/);
+  const empty = analyzeQualityStructure({ folderMeasures: { roots: [ROOT], folders: [] }, imports: { available: false } });
+  const summary = formatQualityStructureSummary(empty);
+
+  assert.match(summary, /Dossiers: 0/);
+  assert.match(summary, /NOT_MEASURED/);
+  assert.match(summary, /non déterminable/);
 });
 
 test("lit les décisions humaines en conservant leur SHA, scope et condition de réexamen", () => {
@@ -286,6 +338,20 @@ test("les écritures CLI successives des scopes restent séparées", () => {
     assert.equal(outputs.mobile.scope, "mobile");
     assert.notEqual(qualityStructureOutputPath({ root, auditedHead: "a".repeat(40), scope: "all" }), qualityStructureOutputPath({ root, auditedHead: "a".repeat(40), scope: "web" }));
     assert.notEqual(qualityStructureOutputPath({ root, auditedHead: "a".repeat(40), scope: "web" }), qualityStructureOutputPath({ root, auditedHead: "a".repeat(40), scope: "mobile" }));
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+test("le dry-run structurel ne crée pas le JSON demandé", () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+  const script = fileURLToPath(new URL("./quality-structure.mjs", import.meta.url));
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "quality-structure-dry-run-"));
+  try {
+    const output = path.join(temp, "structure.json");
+    const stdout = childProcess.execFileSync(process.execPath, [script, "--ref=HEAD", "--dry-run", `--output=${output}`], { cwd: root, encoding: "utf8" });
+    assert.match(stdout, /QUALITY_STRUCTURE_MODE: DRY_RUN/);
+    assert.equal(fs.existsSync(output), false);
   } finally {
     fs.rmSync(temp, { recursive: true, force: true });
   }

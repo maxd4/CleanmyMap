@@ -1,4 +1,5 @@
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -6,6 +7,7 @@ import {
   listTrackedFiles,
   loadBaseline,
 } from "./check-file-naming.mjs";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const WINDOWS_RESERVED_BASENAME = /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\..*)?$/i;
@@ -161,6 +163,46 @@ export function runPathIntegrityCheck({ root = repositoryRoot, baselinePath = DE
   });
 }
 
+export function formatPathIntegritySummary(result, { auditedSha = "NOT_MEASURED", dryRun = false, maxDetails = 8 } = {}) {
+  const blockingCount = result.newViolations.length + result.configurationErrors.length + result.staleExceptions.length;
+  const status = blockingCount > 0 ? "FAIL" : "PASS";
+  const lines = [
+    `PATH_INTEGRITY_MODE: ${dryRun ? "DRY_RUN" : "CHECK"}`,
+    "Path integrity — synthèse humaine",
+    `SHA: ${auditedSha} | scope: tracked repository paths | statut: ${status} | mode: ${dryRun ? "DRY_RUN" : "CHECK"}`,
+    `Chemins suivis: ${result.trackedFiles.length} | nouvelles violations: ${result.newViolations.length} | exceptions historiques acceptées: ${result.accepted.length} | exceptions périmées: ${result.staleExceptions.length} | erreurs de configuration: ${result.configurationErrors.length}`,
+  ];
+  if (blockingCount === 0) {
+    lines.push("Aucune violation; la liste détaillée des chemins reste disponible dans la sortie JSON.");
+    return lines.join("\n");
+  }
+
+  for (const violation of result.newViolations.slice(0, maxDetails)) {
+    const related = violation.relatedPaths?.length ? `; lié à ${violation.relatedPaths.slice(0, 3).join(", ")}` : "";
+    lines.push(`- NOUVEAU ${violation.path} [${violation.rule}] — ${violation.reason}${related}; décision attendue: corriger le chemin ou la collision.`);
+  }
+  if (result.newViolations.length > maxDetails) lines.push(`- … ${result.newViolations.length - maxDetails} autres violations dans le JSON.`);
+  for (const accepted of result.accepted.slice(0, maxDetails)) {
+    lines.push(`- HISTORIQUE ${accepted.path} [${accepted.rule}] — ${accepted.exception?.reason ?? accepted.reason ?? "exception du baseline"}; réexamen attendu lors d'une correction naturelle.`);
+  }
+  if (result.accepted.length > maxDetails) lines.push(`- … ${result.accepted.length - maxDetails} exceptions historiques dans le JSON.`);
+  for (const error of result.configurationErrors.slice(0, maxDetails)) lines.push(`- CONFIGURATION — ${error}`);
+  for (const stale of result.staleExceptions.slice(0, maxDetails)) {
+    const [file, rule] = stale.split("\0");
+    lines.push(`- EXCEPTION PÉRIMÉE — ${file} [${rule}]; vérifier le baseline.`);
+  }
+  lines.push("Preuves détaillées: violations, chemins liés, exceptions et erreurs dans la sortie JSON.");
+  return lines.join("\n");
+}
+
+function currentHead(root) {
+  try {
+    return execFileSync(gitExecutable(), ["-C", root, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  } catch {
+    return "NOT_MEASURED";
+  }
+}
+
 function parseArgs(argv) {
   const options = { root: repositoryRoot, baselinePath: DEFAULT_BASELINE_PATH, dryRun: false, json: false };
   for (let index = 0; index < argv.length; index += 1) {
@@ -180,12 +222,7 @@ function main() {
   const options = parseArgs(process.argv.slice(2));
   const result = runPathIntegrityCheck(options);
   if (options.json) console.log(JSON.stringify(result, null, 2));
-  else {
-    console.log(`PATH_INTEGRITY_MODE: ${options.dryRun ? "DRY_RUN" : "CHECK"}`);
-    console.log(`Path integrity audit: ${result.trackedFiles.length} tracked file(s).`);
-    console.log(`- Objective violations: ${result.newViolations.length}`);
-    console.log(`- Historical exceptions accepted: ${result.accepted.length}`);
-  }
+  else console.log(formatPathIntegritySummary(result, { auditedSha: currentHead(options.root), dryRun: options.dryRun }));
   const errors = [
     ...result.configurationErrors,
     ...result.newViolations.map((violation) => `new path integrity violation (${violation.rule}): ${violation.path}`),
@@ -193,9 +230,9 @@ function main() {
   ];
   if (errors.length > 0) {
     console.error("Path integrity check failed.");
-    for (const error of errors) console.error(`- ${error}`);
+    if (options.json) for (const error of errors) console.error(`- ${error}`);
     process.exitCode = 1;
-  } else console.log("Path integrity check passed: no new objective cross-platform path violation.");
+  }
 }
 
 const currentFile = path.resolve(fileURLToPath(import.meta.url));

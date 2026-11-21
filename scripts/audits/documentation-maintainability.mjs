@@ -564,6 +564,87 @@ export function validateDocumentationReport(report, { auditedSha, runId } = {}) 
   return report;
 }
 
+function referenceProvenance(document, referencePath = "") {
+  const pathValue = `${document.path} ${referencePath}`.toLowerCase();
+  if (/(?:^|[\\/._-])(?:vendor|third-party|third_party)(?:[\\/._-]|$)/.test(pathValue)) return "vendor";
+  const statuses = document.lifecycle?.statuses ?? [];
+  if (statuses.includes("CURRENT") && statuses.length === 1) return "active";
+  if (statuses.some((status) => ["HISTORY", "AUDIT", "SNAPSHOT", "ADR", "GENERATED", "PLAN"].includes(status))) return "historical";
+  return "unstated";
+}
+
+function documentReferenceRows(documents, key) {
+  return documents.flatMap((document) => (document.internalLinks?.[key] ?? []).map((reference) => ({
+    ...reference,
+    documentPath: document.path,
+    provenance: referenceProvenance(document, reference.resolvedPath ?? reference.target ?? ""),
+  })));
+}
+
+export function formatDocumentationAuditSummary(report, { maxDetails = 6 } = {}) {
+  const lines = [
+    "Documentation audit — synthèse humaine",
+    `SHA: ${report?.auditedHead ?? "NOT_MEASURED"} | scope: documentation | runId: ${report?.runId ?? "NOT_MEASURED"}`,
+    `Statut: ${report?.status ?? "NOT_MEASURED"} | attention requise: ${report?.attentionRequired ?? "NOT_MEASURED"} | écriture: aucune`,
+  ];
+  if (!report || report.status === "NOT_MEASURED") {
+    lines.push(`Raison: ${report?.reason ?? "NOT_MEASURED"}`);
+    return lines.join("\n");
+  }
+
+  const summary = report.summary ?? {};
+  lines.push(
+    `Documents: ${summary.trackedDocuments ?? "NOT_MEASURED"} | contrats critiques: ${summary.criticalContracts ?? "NOT_MEASURED"} (DOCUMENTED ${summary.documentedContracts ?? "NOT_MEASURED"}, REVIEW_REQUIRED ${summary.reviewRequiredContracts ?? "NOT_MEASURED"}, NOT_MEASURED ${summary.notMeasuredContracts ?? "NOT_MEASURED"})`,
+  );
+
+  const longDocuments = (report.documents ?? []).filter((document) => document.level !== "NONE")
+    .sort((left, right) => right.lines - left.lines || left.path.localeCompare(right.path, "en"));
+  const historicalDocuments = (report.documents ?? []).filter((document) => (document.lifecycle?.statuses ?? []).some((status) => ["HISTORY", "AUDIT", "SNAPSHOT", "ADR", "GENERATED", "PLAN"].includes(status)));
+  const vendorDocuments = (report.documents ?? []).filter((document) => /(?:^|[\\/._-])(?:vendor|third-party|third_party)(?:[\\/._-]|$)/i.test(document.path));
+  lines.push(`Provenance des documents: historiques/PLAN ${historicalDocuments.length} | vendor ${vendorDocuments.length}`);
+  lines.push(`Documents longs: ${longDocuments.length} (surveillance ${summary.surveillance ?? "NOT_MEASURED"}, REVIEW_REQUIRED ${summary.reviewRequired ?? "NOT_MEASURED"}, ARCHITECTURE_REVIEW ${summary.architectureReview ?? "NOT_MEASURED"})`);
+  for (const document of longDocuments.slice(0, maxDetails)) {
+    const section = document.largestSection
+      ? `${document.largestSection.title} (L${document.largestSection.startLine}-${document.largestSection.endLine})`
+      : "NOT_MEASURED";
+    lines.push(`- ${document.path} (${document.lines} lignes, ${document.level}) — preuve: section la plus longue ${section}; raison: volume documentaire; décision attendue: confirmer la lisibilité ou une découpe éditoriale.`);
+  }
+  if (longDocuments.length > maxDetails) lines.push(`- … ${longDocuments.length - maxDetails} autres documents dans le JSON.`);
+
+  const invalid = documentReferenceRows(report.documents ?? [], "invalid");
+  const invalidCounts = Object.fromEntries(["active", "historical", "vendor", "unstated"].map((source) => [source, invalid.filter((reference) => reference.provenance === source).length]));
+  const unverified = documentReferenceRows(report.documents ?? [], "unverified");
+  const unverifiedCounts = Object.fromEntries(["active", "historical", "vendor", "unstated"].map((source) => [source, unverified.filter((reference) => reference.provenance === source).length]));
+  lines.push(`Liens actifs invalides: ${invalidCounts.active} | historiques: ${invalidCounts.historical} | vendor: ${invalidCounts.vendor} | provenance non établie: ${invalidCounts.unstated} | non vérifiables: ${unverified.length} (vendor ${unverifiedCounts.vendor}, historiques ${unverifiedCounts.historical}, provenance inconnue ${unverifiedCounts.unstated})`);
+  for (const reference of invalid.filter((entry) => entry.provenance === "active").slice(0, maxDetails)) {
+    lines.push(`- ${reference.documentPath}:L${reference.line} → ${reference.resolvedPath ?? reference.target ?? "cible inconnue"} (${reference.reason}) — corriger ou confirmer la destination CURRENT.`);
+  }
+  if (invalidCounts.active > maxDetails) lines.push(`- … ${invalidCounts.active - maxDetails} autres liens actifs invalides dans le JSON.`);
+  for (const reference of unverified.slice(0, Math.min(3, maxDetails))) {
+    lines.push(`- Référence non vérifiable: ${reference.documentPath}:L${reference.line} → ${reference.target ?? "cible inconnue"} (${reference.reason}) — vérifier manuellement la syntaxe/provenance.`);
+  }
+  if (unverified.length > Math.min(3, maxDetails)) lines.push(`- … ${unverified.length - Math.min(3, maxDetails)} autres références non vérifiables dans le JSON.`);
+
+  const contracts = report.contractReviews ?? [];
+  const reviewRequired = contracts.filter((review) => review.status === "REVIEW_REQUIRED");
+  const notMeasuredContracts = contracts.filter((review) => review.status === "NOT_MEASURED");
+  const contractAttribution = (review) => review.documentsExamined?.flatMap((document) => (document.attributions ?? []).map((entry) => `${document.path}:L${entry.line}`))[0];
+  lines.push(`Contrats: ${summary.documentedContracts ?? "NOT_MEASURED"} DOCUMENTED | ${reviewRequired.length} REVIEW_REQUIRED | ${notMeasuredContracts.length} NOT_MEASURED.`);
+  lines.push(`Décision attendue: traiter les ${reviewRequired.length} REVIEW_REQUIRED avec attribution et preuve CURRENT.`);
+  if (notMeasuredContracts.length > 0) lines.push(`Les ${notMeasuredContracts.length} NOT_MEASURED restent sans conclusion tant qu'une attribution/preuve vérifiable manque.`);
+  for (const review of reviewRequired.slice(0, maxDetails)) {
+    const label = `${review.path}${review.symbol ? `#${review.symbol}` : ""}`;
+    lines.push(`- ${label} — raison: ${(review.reasons ?? []).slice(0, 2).join(" / ") || "preuve insuffisante"}; référence: ${contractAttribution(review) ?? "aucune attribution précise"}.`);
+  }
+  if (reviewRequired.length > maxDetails) lines.push(`- … ${reviewRequired.length - maxDetails} autres contrats REVIEW_REQUIRED dans le JSON.`);
+  for (const review of notMeasuredContracts.slice(0, Math.min(2, maxDetails))) {
+    const label = `${review.path}${review.symbol ? `#${review.symbol}` : ""}`;
+    lines.push(`- NOT_MEASURED ${label} — ${(review.reasons ?? []).slice(0, 2).join(" / ") || "aucune preuve attribuable"}; référence: ${contractAttribution(review) ?? "aucune attribution précise"}.`);
+  }
+  lines.push("Preuves détaillées: documents, liens, attributions et preuves dimensionnelles dans le rapport JSON.");
+  return lines.join("\n");
+}
+
 function cliValue(args, name, fallback = null) {
   const index = args.indexOf(name);
   return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
@@ -582,20 +663,8 @@ export function runDocumentationMaintainabilityCli(args = process.argv.slice(2))
   if (args.includes("--json")) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } else {
-    const summary = report.summary;
-    process.stdout.write([
-      `DOCUMENTATION_AUDIT_MODE: ${dryRun ? "DRY_RUN" : "READ_ONLY"}`,
-      `DOCUMENTATION_AUDIT_SHA: ${report.auditedHead}`,
-      `DOCUMENTATION_AUDIT_RUN_ID: ${report.runId}`,
-      `DOCUMENTATION_AUDIT_STATUS: ${report.status}`,
-      `DOCUMENTS_TRACKED: ${summary.trackedDocuments}`,
-      `CRITICAL_CONTRACTS: ${summary.criticalContracts}`,
-      `DOCUMENTED: ${summary.documentedContracts}`,
-      `REVIEW_REQUIRED: ${summary.reviewRequiredContracts}`,
-      `NOT_MEASURED: ${summary.notMeasuredContracts}`,
-      `INVALID_DOCUMENT_REFERENCES: ${summary.invalidReferences}`,
-      "DOCUMENTATION_AUDIT_WRITE: NONE",
-    ].join("\n") + "\n");
+    process.stdout.write(`DOCUMENTATION_AUDIT_MODE: ${dryRun ? "DRY_RUN" : "READ_ONLY"}\n`);
+    process.stdout.write(`${formatDocumentationAuditSummary(report)}\n`);
   }
   return report;
 }
