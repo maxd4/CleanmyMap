@@ -380,6 +380,13 @@ function addInitialChecks({ checks, normalizedScope }) {
     critical: true,
     command: npmCommand("check:file-naming"),
   });
+  addCheck(checks, {
+    id: "path-integrity",
+    label: "Intégrité cross-platform des chemins",
+    estimatedSeconds: 1,
+    critical: true,
+    command: npmCommand("check:path-integrity"),
+  });
 }
 
 function addFullModeChecks({ checks, deduplicated, normalizedScope }) {

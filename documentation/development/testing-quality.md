@@ -43,3 +43,19 @@ par SHA : `quality:coverage` pour Web et `quality:mobile-coverage` pour Mobile.
 Les agrégateurs, SonarQube et la CI doivent consommer le rapport du scope
 correspondant ; une preuve absente, stale ou d'un autre SHA reste
 `NOT_MEASURED`/bloquante selon le gate, jamais une couverture monorepo déduite.
+
+## Nommage et intégrité des chemins
+
+`npm run check:file-naming -- --json` conserve la classification et la
+baseline historiques. Ses violations de convention absentes de la baseline
+restent des `FAIL` déterministes ; son champ `reviewCandidates` est
+explicitement non bloquant et sert seulement à qualifier des basenames
+génériques, des noms réutilisés entre domaines ou des conventions mixtes.
+
+`npm run check:path-integrity -- --dry-run` réutilise le même inventaire
+`git ls-files` et vérifie les collisions de casse et Unicode, les noms ou
+caractères interdits Windows, les suffixes de chemin ambigus et les séparateurs
+non portables. Une violation objective nouvelle est un `FAIL`, sauf exception
+historique chemin/règle explicitement documentée dans la baseline ; le dry-run
+ne produit aucun artefact. `checks:fast` exécute ces deux contrôles sans
+transformer les suggestions heuristiques en gate.

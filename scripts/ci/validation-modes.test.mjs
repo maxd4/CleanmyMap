@@ -82,6 +82,7 @@ test("nested lockfiles preserve dead-code domain without changing FAST/FULL cont
   assert.deepEqual(ids(fast), [
     "diff-check",
     "file-naming",
+    "path-integrity",
     "diff-check-staged",
     "security-secrets",
     "lockfile-policy",
@@ -216,7 +217,7 @@ test("DEPLOY adds dependency, migration and smoke controls only for the affected
   assert.ok(deployIds.includes("deploy-smoke"));
   assert.ok(deployIds.includes("action-registrations-contract"));
   assert.ok(plan.checks
-    .filter((check) => !["diff-check", "file-naming", "deploy-candidate"].includes(check.id))
+    .filter((check) => !["diff-check", "file-naming", "path-integrity", "deploy-candidate"].includes(check.id))
     .every((check) => check.dependencies.includes("deploy-candidate")));
 });
 
@@ -260,7 +261,7 @@ test("DEPLOY audits a real package dependency change and makes lockfile drift bl
 
 test("DEPLOY with no exploitable Web diff plans only the provenance gate", () => {
   const plan = createModeValidationPlan({ mode: "DEPLOY", changedFiles: [] });
-  assert.deepEqual(ids(plan), ["diff-check", "file-naming", "deploy-candidate"]);
+  assert.deepEqual(ids(plan), ["diff-check", "file-naming", "path-integrity", "deploy-candidate"]);
 });
 
 test("FULL runs the equivalent mobile suite once and keeps coverage status separate", () => {

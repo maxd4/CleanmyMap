@@ -61,6 +61,17 @@ Le contrôle `scripts/checks/check-file-naming.mjs` ne lit que `git ls-files`.
 Il compare les chemins avec des séparateurs `/` sans réduire la casse, ce qui
 conserve le même résultat sous Windows et Linux.
 
+Le contrôle complémentaire `scripts/checks/check-path-integrity.mjs` réutilise
+exactement ce même inventaire Git. Il signale comme `FAIL` uniquement les
+problèmes objectifs pouvant changer le chemin selon la plateforme : collision
+insensible à la casse, collision après normalisation Unicode NFC, nom réservé
+Windows (`CON`, `PRN`, `AUX`, `NUL`, `COM1` à `COM9`, `LPT1` à `LPT9`), caractère
+interdit, séparateur `\\` ambigu ou suffixe de segment terminé par un point ou
+un espace. Les exceptions historiques sont déclarées dans cette baseline par
+chemin et par règle ; elles ne désactivent pas le contrôle pour les nouveaux
+chemins. `--dry-run` effectue l'analyse complète sans écrire d'artefact ni
+modifier le dépôt.
+
 La baseline versionnée est
 [`scripts/checks/file-naming-baseline.json`](../../scripts/checks/file-naming-baseline.json).
 Elle contient les 15 écarts TS/TSX et 17 specs Playwright historiques observés
@@ -75,7 +86,15 @@ ou lorsqu’une exception retirée est réintroduite sans être requalifiée. Un
 suppression ou un renommage historique n’est donc jamais nécessaire pour
 obtenir un résultat vert.
 
-Le check est exécuté par `checks:fast` avec une estimation de deux secondes.
+`check:file-naming --json` expose aussi `reviewCandidates`. Ces candidats sont
+toujours `blocking: false` : ils documentent un basename générique (`utils`,
+`helpers`, `manager`, `misc`), une réutilisation entre domaines ou un mélange
+de conventions dans un même répertoire. Ils fournissent un motif et les
+chemins concernés pour une revue humaine ; une heuristique seule ne justifie
+ni `FAIL`, ni renommage, ni ajout d’exception.
+
+Les deux contrôles sont exécutés par `checks:fast`, avec une estimation de
+deux secondes pour le nommage et une seconde pour l’intégrité des chemins.
 Les fixtures déterministes couvrent les fichiers réservés Next, un fichier
 applicatif kebab, un test canonique, `ActionStepLocation.tsx`, Python, une
 migration timestampée et un fichier generated/vendor.

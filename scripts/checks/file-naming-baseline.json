@@ -31,6 +31,7 @@
     { "path": "e2e/onboarding-progressive.spec.ts", "rule": "test-suffix", "observedStyle": "legacy-test-name", "reason": "existing Playwright spec suffix retained without mass rename" },
     { "path": "e2e/public-campaign-3b.spec.ts", "rule": "test-suffix", "observedStyle": "legacy-test-name", "reason": "existing Playwright spec suffix retained without mass rename" },
     { "path": "e2e/public-first-campaign.spec.ts", "rule": "test-suffix", "observedStyle": "legacy-test-name", "reason": "existing Playwright spec suffix retained without mass rename" },
+    { "path": "e2e/footer-responsive-public.spec.ts", "rule": "test-suffix", "observedStyle": "legacy-test-name", "reason": "existing Playwright spec suffix retained without mass rename" },
     { "path": "e2e/public-interactions-campaign-3a.spec.ts", "rule": "test-suffix", "observedStyle": "legacy-test-name", "reason": "existing Playwright spec suffix retained without mass rename" },
     { "path": "e2e/public-locale-explorer-campaign-3a1.spec.ts", "rule": "test-suffix", "observedStyle": "legacy-test-name", "reason": "existing Playwright spec suffix retained without mass rename" },
     { "path": "e2e/route-additionality.spec.ts", "rule": "test-suffix", "observedStyle": "legacy-test-name", "reason": "existing Playwright spec suffix retained without mass rename" },

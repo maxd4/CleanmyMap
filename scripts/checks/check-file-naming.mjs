@@ -50,9 +50,11 @@ function isMigrationFile(file) {
 
 const TEST_SUPPORT_SEGMENTS = new Set([
   "fixture", "fixtures", "helper", "helpers", "harness", "harnesses", "mock", "mocks",
-  "scenario", "scenarios", "support",
+  "payload", "scenario", "scenarios", "support",
 ]);
 const TEST_CONTEXT_SEGMENTS = new Set(["__tests__", "e2e", "fixture", "fixtures", "tests"]);
+const GENERIC_FILE_STEMS = new Set(["utils", "helpers", "manager", "misc"]);
+const REVIEWABLE_NAMING_CATEGORIES = new Set(["TS/TSX", "test support"]);
 
 function testNameTokens(file) {
   return fileName(file).split(".").slice(0, -1).flatMap((part) => part.split("-"));
@@ -154,6 +156,93 @@ export function findNamingViolations(trackedFiles) {
   return violations.sort((left, right) => left.path.localeCompare(right.path));
 }
 
+function isBaselineException(file, rule, baseline) {
+  return (Array.isArray(baseline?.exceptions) ? baseline.exceptions : [])
+    .some((exception) => normalizePath(exception?.path ?? "") === file && exception?.rule === rule);
+}
+
+function reviewableNamingFiles(trackedFiles) {
+  return trackedFiles
+    .map(normalizePath)
+    .filter((file) => REVIEWABLE_NAMING_CATEGORIES.has(classifyFile(file)));
+}
+
+function ownerDomain(file) {
+  const segments = normalizePath(file).split("/");
+  const srcIndex = segments.lastIndexOf("src");
+  if (srcIndex >= 0) return segments.slice(srcIndex + 1, srcIndex + 3).join("/") || "src";
+  const appsIndex = segments.indexOf("apps");
+  if (appsIndex >= 0) return segments.slice(appsIndex + 1, appsIndex + 3).join("/") || "apps";
+  return segments.slice(0, 2).join("/") || "root";
+}
+
+function addReviewCandidate(candidates, candidate) {
+  const key = `${candidate.path}\0${candidate.rule}`;
+  if (!candidates.some((entry) => `${entry.path}\0${entry.rule}` === key)) candidates.push(candidate);
+}
+
+export function findNamingReviewCandidates(trackedFiles, baseline = {}) {
+  const files = [...new Set(reviewableNamingFiles(trackedFiles))]
+    .sort((left, right) => left.localeCompare(right, "en"));
+  const candidates = [];
+  const byStem = new Map();
+  const byDirectory = new Map();
+
+  for (const file of files) {
+    const stem = extensionlessName(file).toLowerCase();
+    const directory = file.includes("/") ? file.slice(0, file.lastIndexOf("/")) : ".";
+    const entries = byStem.get(stem) ?? [];
+    entries.push(file);
+    byStem.set(stem, entries);
+    const directoryEntries = byDirectory.get(directory) ?? [];
+    directoryEntries.push(file);
+    byDirectory.set(directory, directoryEntries);
+
+    if (GENERIC_FILE_STEMS.has(stem)) {
+      addReviewCandidate(candidates, {
+        path: file,
+        rule: "generic-basename",
+        blocking: false,
+        reason: `basename '${stem}.ts' may hide the owning responsibility`,
+      });
+    }
+  }
+
+  for (const [stem, entries] of byStem) {
+    if (entries.length < 2 || GENERIC_FILE_STEMS.has(stem)) continue;
+    const domains = [...new Set(entries.map(ownerDomain))];
+    if (domains.length < 2) continue;
+    for (const file of entries) {
+      addReviewCandidate(candidates, {
+        path: file,
+        rule: "ambiguous-domain-basename",
+        blocking: false,
+        reason: `basename '${stem}' is reused across domains: ${domains.join(", ")}`,
+        relatedPaths: entries.filter((entry) => entry !== file),
+      });
+    }
+  }
+
+  for (const [directory, entries] of byDirectory) {
+    const styled = entries
+      .filter((file) => !isBaselineException(file, "ts-tsx-kebab-case", baseline))
+      .map((file) => ({ file, style: classifyStyle(extensionlessName(file)) }))
+      .filter(({ style }) => style !== "exception");
+    const styles = [...new Set(styled.map(({ style }) => style))];
+    if (styles.length < 2) continue;
+    for (const { file } of styled) {
+      addReviewCandidate(candidates, {
+        path: file,
+        rule: "mixed-directory-conventions",
+        blocking: false,
+        reason: `directory '${directory}' mixes naming styles: ${styles.join(", ")}`,
+      });
+    }
+  }
+
+  return candidates.sort((left, right) => left.path.localeCompare(right.path, "en") || left.rule.localeCompare(right.rule, "en"));
+}
+
 export function summarizeTrackedFiles(trackedFiles) {
   const categories = new Map();
   for (const file of trackedFiles) {
@@ -196,12 +285,15 @@ export function validateNaming({ trackedFiles, baseline }) {
     newViolations,
     staleExceptions,
     configurationErrors,
+    reviewCandidates: findNamingReviewCandidates(normalizedFiles, baseline),
   };
 }
 
-export function listTrackedFiles(root = repositoryRoot) {
+export function listTrackedFiles(root = repositoryRoot, { normalize = true } = {}) {
   return execFileSync(gitExecutable(), ["ls-files", "-z", "--"], { cwd: root })
-    .toString("utf8").split("\0").filter(Boolean).map(normalizePath).sort((left, right) => left.localeCompare(right, "en"));
+    .toString("utf8").split("\0").filter(Boolean)
+    .map((file) => normalize ? normalizePath(file) : file)
+    .sort((left, right) => left.localeCompare(right, "en"));
 }
 
 export function loadBaseline(root = repositoryRoot, baselinePath = DEFAULT_BASELINE_PATH) {
@@ -235,6 +327,7 @@ function main() {
     console.log(`File naming audit: ${result.trackedFiles.length} tracked file(s).`);
     for (const [category, count] of Object.entries(result.categories)) console.log(`- ${category}: ${count}`);
     console.log(`Historical naming exceptions accepted: ${result.accepted.length}`);
+    console.log(`Non-blocking naming review candidates: ${result.reviewCandidates.length}`);
   }
   const errors = [
     ...result.configurationErrors,
