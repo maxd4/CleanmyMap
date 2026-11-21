@@ -8,9 +8,14 @@ import { documentedSpecializedSurfaceOverrides } from "./check-surface-governanc
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const movedRubriquesRoots = [
+  "apps/web/src/components/sections/rubriques/feedback/",
   "apps/web/src/components/sections/rubriques/rejoindre-une-action/",
   "apps/web/src/components/sections/rubriques/weather/",
 ];
+const obsoleteRubriquesBaselinePaths = new Set([
+  "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
+  "apps/web/src/components/sections/rubriques/feedback-section-discussion.tsx",
+]);
 
 function isMovedRubriquePath(relativePath) {
   return movedRubriquesRoots.some((root) => relativePath.startsWith(root));
@@ -24,6 +29,11 @@ function assertRegisteredPathsExist(label, paths) {
     return !fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile();
   });
   assert.deepEqual(missing, [], `${label} contains missing paths: ${missing.join(", ")}`);
+}
+
+function assertNoObsoleteRubriquesBaselinePaths(label, paths) {
+  const obsolete = [...new Set(paths)].filter((relativePath) => obsoleteRubriquesBaselinePaths.has(relativePath));
+  assert.deepEqual(obsolete, [], `${label} contains obsolete Rubriques paths: ${obsolete.join(", ")}`);
 }
 
 function readBaselinePaths(relativePath) {
@@ -51,6 +61,14 @@ test("Rubriques governance controls and baselines contain existing paths", () =>
     "heavy-files baseline moved Rubriques entries",
     readBaselinePaths("scripts/checks/heavy-files-baseline.json").filter(isMovedRubriquePath),
   );
+  assertNoObsoleteRubriquesBaselinePaths(
+    "complexity baseline",
+    readBaselinePaths("scripts/checks/complexity-baseline.json"),
+  );
+  assertNoObsoleteRubriquesBaselinePaths(
+    "heavy-files baseline",
+    readBaselinePaths("scripts/checks/heavy-files-baseline.json"),
+  );
 });
 
 test("Rubriques governance rejects a registered path that does not exist", () => {
@@ -59,5 +77,14 @@ test("Rubriques governance rejects a registered path that does not exist", () =>
       "apps/web/src/components/sections/rubriques/rejoindre-une-action/__missing__.tsx",
     ]),
     /synthetic governance entry contains missing paths/,
+  );
+});
+
+test("Rubriques governance rejects an obsolete root baseline path", () => {
+  assert.throws(
+    () => assertNoObsoleteRubriquesBaselinePaths("synthetic Rubriques baseline", [
+      "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
+    ]),
+    /synthetic Rubriques baseline contains obsolete Rubriques paths/,
   );
 });

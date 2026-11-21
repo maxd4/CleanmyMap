@@ -211,7 +211,7 @@
       "maxBytes": 3016
     },
     {
-      "path": "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
+      "path": "apps/web/src/components/sections/rubriques/feedback/feedback-section-dashboard.tsx",
       "kind": "runtime",
       "status": "IMPROVED",
       "reviewedRef": "506d22869a32639e978282be0da6cbca01c8e3d2",

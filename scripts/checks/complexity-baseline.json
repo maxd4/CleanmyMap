@@ -3597,7 +3597,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/feedback-section-discussion.tsx",
+      "path": "apps/web/src/components/sections/rubriques/feedback/feedback-section-discussion.tsx",
       "line": 17,
       "category": "React/JSX",
       "ceiling": 133,
