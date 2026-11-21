@@ -437,7 +437,7 @@ L'estimateur d'impact du site (`constants-core.ts` dérivant directement les val
    - *Interdiction de conversion `aiCalls` en tokens* : le proxy applicatif `aiCalls` (détections photos, requêtes d'inférence) ne doit jamais être assimilé ou converti en tokens LLM.
    - *Refus de l'auto-application des facteurs américains sur infrastructure inconnue* : en l'absence de région avérée ou pour la région `UNKNOWN`, les coefficients américains (`0,35 kgCO₂e/kWh`, `4,52 L/kWh`) ne sont pas appliqués par défaut ; les émissions physiques correspondantes demeurent `null`.
    - *Multimodalité conditionnée et couverture explicite* : les quatre modalités (`text`, `image`, `audio`, `video`) sont modélisées, mais seule la modalité `text` produit des estimations physiques (`0,06`, `0,30` ou `0,60 kWh/M tokens`). Les modalités `image`, `audio` et `video` conservent leurs unités d'activité déclarées avec des impacts physiques `null` et statut `NOT_CALCULABLE` (`NA`). Lorsqu'une activité multimodale non calculable est déclarée, `modalityCoverage` indique explicitement `PARTIAL_MULTIMODAL` (ou `NONE`) et `dataQuality` global passe à `NOT_CALCULABLE`.
-   - *Diagnostic de qualité déterministe et précision interne* : aucun pourcentage de confiance arbitraire ; qualification systématique en `MEASURED` (réservé aux mesures électriques directes, jamais attribué à un zéro déclaré), `DOCUMENTED_MODEL`, `PROXY_SCENARIO` ou `NOT_CALCULABLE`. Les calculs intermédiaires conservent la pleine précision flottante (arrondi appliqué uniquement en sortie) après validation stricte des entrées (quantités finies, non négatives, entières pour les compteurs discrets, PUE borné dans `[1,0 ; 5,0]`, cohérence des sous-totaux de tokens). L'arrondi physique refuse les intermédiaires non finis et ne met jamais un résultat non calculable à zéro.
+   - *Diagnostic de qualité déterministe et précision interne* : aucun pourcentage de confiance arbitraire ; qualification systématique en `MEASURED` (réservé aux mesures électriques directes, jamais attribué à un zéro déclaré), `DECLARED`, `DOCUMENTED_MODEL`, `PROXY_SCENARIO` ou `NOT_CALCULABLE`. Les calculs intermédiaires conservent la pleine précision flottante (arrondi appliqué uniquement en sortie) après validation stricte des entrées (quantités finies, non négatives, entières pour les compteurs discrets, PUE borné dans `[1,0 ; 5,0]`, cohérence des sous-totaux de tokens). L'arrondi physique refuse les intermédiaires non finis et ne met jamais un résultat non calculable à zéro.
    - *Résolution déterministe des ventilations partielles* : si `totalTokens` et une seule catégorie parmi `inputTokens` ou `outputTokens` sont fournis, déduire uniquement l'autre catégorie comme différence non négative. Un total accompagné seulement de `cachedTokens` ne permet pas d'inférer entrée/sortie : le cache reste un sous-ensemble non additionné, EcoLogits n'est pas appliqué faute de génération prouvée, et le calculateur utilise le proxy générique applicable ou `NA`.
    - *Traçabilité anti-double-comptage honnête* : chaque règle distingue explicitement les invariants effectivement appliqués (`verifiedRules`), les règles non applicables au cas courant (`notApplicableRules`) et les limites externes non vérifiables localement (`unverifiableLimits`, par exemple `NO_CROSS_SCOPE_DOUBLE_COUNT`). L'état global vaut `VERIFIED`, `PARTIAL` ou `UNPROVEN` ; une limite externe non vérifiable ne peut pas être déclarée conforme simplement parce qu'aucune violation locale n'est détectée.
 
@@ -462,7 +462,7 @@ L'estimateur d'impact du site (`constants-core.ts` dérivant directement les val
      - Latence active dérivée de la régression officielle ($\alpha_L P_{\text{active}} + \beta_L \text{batch} + \gamma_L$) ou de `tps`/`ttft`, plafonnée par `requestLatency` ;
      - Impacts incorporés (serveur $5700\text{ kgCO₂e}$ hors GPU + $273\text{ kgCO₂e/GPU}$, ADPe, PE) pondérés par $N_{\text{GPU}} / 8$ et amortis sur $3 \times 365 \times 24 \times 3600\text{ s}$ ;
    - Aucune conformité EcoLogits n'est revendiquée si `activeParametersBillion`, `totalParametersBillion` ou `outputTokens > 0` manquent : `totalTokens` ou `inputTokens` ne sont jamais substitués à `outputTokens` (bascule explicite sur le scénario générique `PROXY_SCENARIO` ou `NA`) ;
-   - Pour `local_device` sans `measuredEnergyKwh`, aucune extrapolation des constantes serveur cloud H100 n'est appliquée et les impacts incorporés restent `null` (`NA`), jamais `0` ;
+   - Pour `local_device` sans mesure `LOCAL_WALL` ou puissance/durée locale, aucune extrapolation des constantes serveur cloud H100 n'est appliquée et les impacts physiques restent `null` (`NA`), jamais `0`. Les frontières `IT_FULL`, `FACILITY` et `LOCAL_WALL` restent distinctes; une mesure de site n'est pas remultipliée par le PUE, et la consommation locale à la prise murale n'est pas assimilée à l'énergie d'un datacenter.
    - `totalWaterLiters` n'est calculé que lorsque l'eau directe sur site et l'eau indirecte réseau sont toutes deux calculables ;
    - Herméticité absolue entre engagements contractuels market-based et inventaire physique location-based.
 
@@ -624,3 +624,37 @@ pondérées de `effective-volunteer-units-v1`. Les moyennes par ramasseur sont
 des ratios calculés à partir des mesures collectives et des seuls décomptes
 connus et strictement positifs ; elles ne sont pas des mesures individuelles.
 Les rapports ne projettent pas les mesures personnelles des participants.
+
+## Mon empreinte IA et objectifs de collecte — CURRENT
+
+Le registre scientifique partagé conserve le facteur France 2024 comme valeur
+par défaut historique. `electricity-fr-rte-consumption-2025` (20,0 gCO₂e/kWh)
+est une variante régionale opt-in; elle ne prouve pas le lieu d'inférence d'un
+fournisseur. En l'absence de région physique connue, le carbone reste `NA`.
+
+Les mesures d'énergie distinguent `IT_FULL`, `FACILITY` et `LOCAL_WALL`. Une
+mesure `FACILITY` comprend déjà le PUE; une mesure `IT_FULL` ne produit pas de
+total de site sans PUE. L'énergie locale à la prise murale reste distincte de
+l'IT et de l'énergie de datacenter; la part incrémentale n'est calculée que si
+une puissance à vide est déclarée. `pueApplied` indique explicitement si le
+PUE a été appliqué aux kWh IT du calcul. Les scénarios textuels bas/central/haut
+restent des hypothèses versionnées et ne sont pas des mesures fournisseur.
+
+Le solveur pédagogique 0+08 compare deux objectifs distincts à chacun des 101
+pas de préférence : carbone conditionnel lié à la matière réellement
+réincorporée et une seule voie hydrique choisie (`RISQUE_CONVENTIONNEL` ou
+`EAU_CONSOMMEE_ACV`). Le proxy de 500 L/mégot décrit un risque potentiel de
+pollution et n'est pas une économie d'eau consommée. Les facteurs ADEME BNR
+2021 (plastique 2,702; aluminium 6,407; verre 1,948 kgCO₂e/kg de MPR) portent
+sur la matière réincorporée, pas la masse collectée. L'incinération et le
+stockage ont un bénéfice de recyclage nul, mais leurs émissions de traitement
+restent `NA`.
+
+Une destination inconnue, un facteur absent, une cible inconnue ou une limite
+de mesure requise produit `UNKNOWN`; un mécanisme nul face à une cible positive
+produit `INFEASIBLE`; un plafond d'heures-personne choisi par l'utilisateur
+peut produire `OVER_BUDGET`. Les sorties décrivent des scénarios et des
+analogies, jamais une neutralisation, un crédit carbone ou une économie d'eau
+physique. La projection retourne aussi la version des règles de collecte et
+les versions effectives des facteurs BNR, fournisseur et proxy terrain.
+L'ancien ratio de « cleanwalks équivalentes » n'est pas utilisé.

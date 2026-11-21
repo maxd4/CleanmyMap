@@ -171,6 +171,8 @@ export type EcologitsComputationParams = {
   datacenterWue?: number | null;
   /** Région électrique */
   region?: ScientificFactorRegion | string | null;
+  /** Opt-in factor version; omitted means the historical regional default. */
+  electricityFactorId?: string;
   /** Scénario de sensibilité */
   scenario?: "low" | "central" | "high";
   /** Environnement d'exécution */
@@ -484,7 +486,7 @@ export function computeEcologitsCompatibleImpacts(
   }
 
   // 4. Facteurs régionaux d'électricité et d'eau
-  const electricityFactor = resolveElectricityFactorForRegion(params.region);
+  const electricityFactor = resolveElectricityFactorForRegion(params.region, params.electricityFactorId);
   const hasElectricityFactor =
     electricityFactor !== null && typeof electricityFactor.value === "number";
   const usWaterFactor =

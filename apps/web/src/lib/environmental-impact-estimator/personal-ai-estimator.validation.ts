@@ -14,6 +14,9 @@ type ValidationInput = {
   requestCount?: number | null;
   measuredDurationSeconds?: number | null;
   measuredEnergyKwh?: number | null;
+  energyMeasurement?: { kwh: number; boundary: "IT_FULL" | "FACILITY" | "LOCAL_WALL"; evidence: "MEASURED" | "DECLARED" | "ASSUMPTION" };
+  localPower?: { watts: number; durationSeconds: number; idleWatts?: number };
+  electricityFactorId?: string;
   datacenterWue?: number | null;
   ttftSeconds?: number | null;
   marketBasedDeclaration?: { claimedKgCo2ePerKwh?: number | null };
@@ -91,6 +94,12 @@ export function validatePersonalAiInput<T extends ValidationInput>(input: T): T 
   assertNonNegativeInteger(input.requestCount, "requestCount");
   assertNonNegativeFinite(input.measuredDurationSeconds, "measuredDurationSeconds");
   assertNonNegativeFinite(input.measuredEnergyKwh, "measuredEnergyKwh");
+  assertNonNegativeFinite(input.energyMeasurement?.kwh, "energyMeasurement.kwh");
+  assertNonNegativeFinite(input.localPower?.watts, "localPower.watts");
+  assertNonNegativeFinite(input.localPower?.durationSeconds, "localPower.durationSeconds");
+  assertNonNegativeFinite(input.localPower?.idleWatts, "localPower.idleWatts");
+  if (input.energyMeasurement && (input.measuredEnergyKwh != null || input.localPower)) throw new Error("Une seule origine énergétique peut être déclarée.");
+  if (input.localPower && input.measuredEnergyKwh != null) throw new Error("Une seule origine énergétique peut être déclarée.");
   assertNonNegativeFinite(input.datacenterWue, "datacenterWue");
   assertNonNegativeFinite(input.ttftSeconds, "ttftSeconds");
   assertNonNegativeFinite(input.marketBasedDeclaration?.claimedKgCo2ePerKwh, "marketBasedDeclaration.claimedKgCo2ePerKwh");
@@ -98,7 +107,7 @@ export function validatePersonalAiInput<T extends ValidationInput>(input: T): T 
   if (input.batchSize != null && (typeof input.batchSize !== "number" || !Number.isFinite(input.batchSize) || !Number.isInteger(input.batchSize) || input.batchSize < 1)) throw new Error("Entrée invalide pour 'batchSize' : un entier >= 1 est attendu.");
   const text = normalizedInput.textUsage;
   const declaredTokens = text?.totalTokens ?? (text?.inputTokens ?? 0) + (text?.outputTokens ?? 0);
-  const hasPositiveActivity = declaredTokens > 0 || (input.measuredEnergyKwh ?? 0) > 0 || (input.measuredDurationSeconds ?? 0) > 0;
+  const hasPositiveActivity = declaredTokens > 0 || (input.measuredEnergyKwh ?? 0) > 0 || (input.energyMeasurement?.kwh ?? 0) > 0 || (input.localPower?.watts ?? 0) > 0 || (input.measuredDurationSeconds ?? 0) > 0;
   if (input.requestCount === 0 && hasPositiveActivity) throw new Error("Déclaration incohérente : requestCount ne peut pas être 0 lorsqu'une activité non nulle est déclarée.");
   if (input.measuredDurationSeconds === 0 && declaredTokens > 0) throw new Error("Déclaration incohérente : measuredDurationSeconds ne peut pas être 0 lorsqu'une activité de tokens non nulle est déclarée.");
   return normalizedInput;

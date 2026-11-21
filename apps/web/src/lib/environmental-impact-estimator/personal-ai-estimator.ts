@@ -22,6 +22,8 @@ import {
 } from "./scientific-registry";
 import { roundPhysicalOutput } from "./physical-rounding";
 import { validatePersonalAiInput } from "./personal-ai-estimator.validation";
+import { type AiEnergyBoundary, type AiEnergyEvidence } from "./ai-cleanwalk-science";
+import { calculateQualifiedEnergyImpacts } from "./ai-qualified-energy-impacts";
 
 export type EnergyScenario = "low" | "central" | "high";
 export type AccountingRegion = ScientificFactorRegion;
@@ -47,10 +49,14 @@ export type PersonalAiFootprintInput = {
   ttftSeconds?: number | null;
   batchSize?: number | null;
   measuredEnergyKwh?: number | null;
+  energyMeasurement?: { kwh: number; boundary: AiEnergyBoundary; evidence: AiEnergyEvidence };
+  localPower?: { watts: number; durationSeconds: number; idleWatts?: number };
   datacenterWue?: number | null;
   marketBasedDeclaration?: { claimedKgCo2ePerKwh?: number | null; providerCertificateNote?: string };
   energyScenario?: "low" | "central" | "high";
   region?: ScientificFactorRegion;
+  /** Opt-in factor version. Omitting it preserves the historical regional default. */
+  electricityFactorId?: string;
   pue?: number;
 };
 
@@ -74,6 +80,7 @@ export type PersonalAiFootprintEstimate = {
   scenario: "low" | "central" | "high";
   region: ScientificFactorRegion;
   pue: number;
+  pueApplied: boolean;
   dataQuality: EnvironmentalDataQualityDiagnostic;
   executionEnvironment: ExecutionEnvironment;
   modelDetails?: {
@@ -91,6 +98,8 @@ export type PersonalAiFootprintEstimate = {
   physicalTotals: {
     itEnergyKwh: number | null;
     facilityEnergyKwh: number | null;
+    localWallEnergyKwh?: number | null;
+    localIncrementalEnergyKwh?: number | null;
     operationalKgCo2e: number | null;
     directWaterLiters: number | null;
     indirectWaterLiters: number | null;
@@ -120,7 +129,7 @@ export type PersonalAiFootprintEstimate = {
 };
 
 const EMPTY_PHYSICAL_TOTALS: PersonalAiFootprintEstimate["physicalTotals"] = {
-  itEnergyKwh: null, facilityEnergyKwh: null, operationalKgCo2e: null, directWaterLiters: null, indirectWaterLiters: null,
+  itEnergyKwh: null, facilityEnergyKwh: null, localWallEnergyKwh: null, operationalKgCo2e: null, directWaterLiters: null, indirectWaterLiters: null,
   totalWaterLiters: null, embodiedKgCo2e: null, partialLcaKgCo2e: null, primaryEnergyMj: null, abioticDepletionKgSbEq: null,
 };
 
@@ -170,7 +179,7 @@ function buildTextImpactsResult(params: {
   return {
     textModality: {
       category: "text", hasSourcedPhysicalMethod: true, activityCount, activityUnit: "tokens",
-      energyKwh: totals.facilityEnergyKwh, operationalKgCo2e: totals.operationalKgCo2e,
+      energyKwh: totals.facilityEnergyKwh ?? totals.localWallEnergyKwh ?? totals.itEnergyKwh, operationalKgCo2e: totals.operationalKgCo2e,
       indirectWaterLiters: totals.indirectWaterLiters, partialLcaKgCo2e: totals.partialLcaKgCo2e,
       qualityDiagnostic: textDiagnostic, methodologyNote,
     },
@@ -196,11 +205,12 @@ function computeRegionalPhysicalTotals(params: {
   datacenterWue: number | null;
   includeCloudPartialLca: boolean;
   recordRegionalWaterGapNote: boolean;
+  electricityFactorId?: string;
   notes: string[];
 }): { totals: PersonalAiFootprintEstimate["physicalTotals"]; electricityFactorValue: number | null } {
   const { itEnergyKwhRaw, pue, region, datacenterWue, includeCloudPartialLca, notes } = params;
   const facilityEnergyKwhRaw = itEnergyKwhRaw * pue;
-  const electricityFactor = resolveElectricityFactorForRegion(region);
+  const electricityFactor = resolveElectricityFactorForRegion(region, params.electricityFactorId);
   const directWaterRaw = typeof datacenterWue === "number" ? itEnergyKwhRaw * datacenterWue : null;
   let operationalCo2eRaw: number | null = null;
   let indirectWaterRaw: number | null = null;
@@ -244,6 +254,8 @@ function computeDirectMeasuredTextImpacts(
   executionEnv: ExecutionEnvironment,
   datacenterWue: number | null,
   activityCount: number | null,
+  electricityFactorId: string | undefined,
+  evidence: AiEnergyEvidence,
   notes: string[],
 ): TextImpactsResult {
   const { totals } = computeRegionalPhysicalTotals({
@@ -253,14 +265,19 @@ function computeDirectMeasuredTextImpacts(
     datacenterWue: executionEnv === "cloud_api" ? datacenterWue : null,
     includeCloudPartialLca: executionEnv === "cloud_api",
     recordRegionalWaterGapNote: false,
+    electricityFactorId,
     notes,
   });
 
   return buildTextImpactsResult({
     activityCount,
     totals,
-    textDiagnostic: "MEASURED",
-    methodologyNote: `Consommation électrique directe mesurée aux bornes (${totals.itEnergyKwh} kWh).`,
+    textDiagnostic: evidence === "MEASURED" ? "MEASURED" : evidence === "DECLARED" ? "DECLARED" : "PROXY_SCENARIO",
+    methodologyNote: evidence === "MEASURED"
+      ? `Consommation électrique directe mesurée aux bornes (${totals.itEnergyKwh} kWh).`
+      : evidence === "DECLARED"
+        ? `Consommation électrique IT déclarée (${totals.itEnergyKwh} kWh).`
+        : `Consommation électrique IT issue d'une hypothèse (${totals.itEnergyKwh} kWh).`,
   });
 }
 
@@ -290,6 +307,7 @@ function computeEcologitsModelTextImpacts(
     pue,
     datacenterWue: input.datacenterWue,
     region,
+    electricityFactorId: input.electricityFactorId,
     scenario,
     executionEnvironment: executionEnv,
   });
@@ -322,6 +340,7 @@ function computeGenericScenarioTextImpacts(
   region: AccountingRegion,
   pue: number,
   datacenterWue: number | null,
+  electricityFactorId: string | undefined,
   notes: string[],
 ): TextImpactsResult {
   const factorId =
@@ -338,6 +357,7 @@ function computeGenericScenarioTextImpacts(
     datacenterWue,
     includeCloudPartialLca: true,
     recordRegionalWaterGapNote: true,
+    electricityFactorId,
     notes,
   });
 
@@ -423,6 +443,19 @@ function computeTextImpacts(
       : `${textInput.cachedTokens} tokens servis depuis le cache, mais leur ventilation entrée/sortie est inconnue ; non ajoutés au total ni utilisés pour EcoLogits.`);
   }
 
+  if (input.energyMeasurement || input.localPower) {
+    if (input.localPower && executionEnv !== "local_device") throw new Error("Une mesure de puissance locale requiert local_device.");
+    if (executionEnv === "local_device") notes.push("Énergie locale mesurée ou déclarée : aucune consommation de serveur distant ni empreinte matérielle n'est inférée.");
+    const measured = calculateQualifiedEnergyImpacts({ input, region, activityCount: textTokens });
+    notes.push(...measured.notes);
+    return buildTextImpactsResult({
+      activityCount: textTokens,
+      totals: measured.totals,
+      textDiagnostic: measured.diagnostic,
+      methodologyNote: measured.methodologyNote,
+    });
+  }
+
   if (typeof input.measuredEnergyKwh === "number" && input.measuredEnergyKwh >= 0) {
     if (executionEnv === "local_device") {
       notes.push("Exécution locale (local_device) avec consommation électrique mesurée : PUE = 1,0 ; l'impact matériel incorporé du terminal personnel reste non calculable (NA / null).");
@@ -434,6 +467,8 @@ function computeTextImpacts(
       executionEnv,
       input.datacenterWue ?? null,
       textTokens,
+      input.electricityFactorId,
+      "MEASURED",
       notes,
     );
   }
@@ -470,7 +505,7 @@ function computeTextImpacts(
     notes.push(`L'architecture du modèle ${modelRecord.name} n'est pas publiée par son éditeur : aucune conformité EcoLogits v3.0.0 n'est revendiquée ; bascule sur le scénario énergétique générique hypothétique (${scenario}, PROXY_SCENARIO).`);
   }
 
-  return computeGenericScenarioTextImpacts(textTokens, scenario, region, pue, input.datacenterWue ?? null, notes);
+  return computeGenericScenarioTextImpacts(textTokens, scenario, region, pue, input.datacenterWue ?? null, input.electricityFactorId, notes);
 }
 
 function buildUnmeasuredModality(
@@ -609,6 +644,9 @@ export function estimatePersonalAiFootprint(
 
   const scenario = input.energyScenario ?? "central";
   const region = input.region ?? "UNKNOWN";
+  if (input.electricityFactorId && !resolveElectricityFactorForRegion(region, input.electricityFactorId)) {
+    throw new Error("Le facteur électrique sélectionné ne correspond pas à la région déclarée.");
+  }
   const executionEnv: ExecutionEnvironment = input.executionEnvironment ?? "cloud_api";
   const pue = executionEnv === "local_device" ? 1.0 : typeof input.pue === "number" ? input.pue : 1.15;
 
@@ -630,7 +668,7 @@ export function estimatePersonalAiFootprint(
     nonCalculableDeclaredModalities.push("video");
   }
 
-  const hasCalculableText = totals.itEnergyKwh !== null;
+  const hasCalculableText = totals.itEnergyKwh !== null || totals.facilityEnergyKwh !== null || totals.localWallEnergyKwh != null;
   const calculableModalities: MultimodalCategory[] = hasCalculableText ? ["text"] : [];
   const modalityCoverage: PersonalAiFootprintEstimate["modalityCoverage"] = {
     status:
@@ -655,6 +693,7 @@ export function estimatePersonalAiFootprint(
       ? "NOT_CALCULABLE"
       : evaluateDataQualityDiagnostic({
           hasDirectMeasurement: textDiagnostic === "MEASURED",
+          hasDeclaredInput: textDiagnostic === "DECLARED",
           hasDocumentedModel: textDiagnostic === "DOCUMENTED_MODEL",
           isScenarioOrRegionalProxy: textDiagnostic === "PROXY_SCENARIO",
           isMissingOrUnmeasured: textDiagnostic === "NOT_CALCULABLE",
@@ -663,7 +702,15 @@ export function estimatePersonalAiFootprint(
   const marketBasedDisclosure = resolveMarketBasedDisclosure(input, totals.facilityEnergyKwh, notes);
 
   let formulaTrace: string;
-  if (typeof input.measuredEnergyKwh === "number") {
+  if (input.energyMeasurement || input.localPower) {
+    formulaTrace = input.localPower
+      ? "E_local,murale = P_moyenne × durée ; E_incrémentale = max(0, P_charge − P_idle) × durée"
+      : input.energyMeasurement?.boundary === "FACILITY"
+        ? "E_site mesurée directement ; aucun PUE supplémentaire"
+        : input.energyMeasurement?.boundary === "LOCAL_WALL"
+          ? "E_locale,prise = énergie mesurée à la prise ; part incrémentale inconnue sans puissance à vide"
+          : "E_site = E_IT mesurée × PUE"
+  } else if (typeof input.measuredEnergyKwh === "number") {
     formulaTrace = "E_total = E_IT_mesurée × PUE ; GWP = E_total × f_grid";
   } else if (usedOfficialEcologitsFormula) {
     formulaTrace = "E_GPU = N_output × ((alpha × exp(beta × batch) × P_active + gamma) / 1000) × N_GPU ; E_IT = E_server + E_GPU ; E_total = E_IT × PUE ; GWP = E_total × f_grid + Embodied_GWP";
@@ -683,10 +730,10 @@ export function estimatePersonalAiFootprint(
       "CleanMyMap Rapport impact_IA (Annexe B)",
     ],
     date: "2026-05",
-    version: "personal-ai-estimator-2026.05-v3",
+    version: "personal-ai-estimator-2026.11-v4",
     limitations: [
       "Les équations EcoLogits v3.0.0 exigent des paramètres actifs/totaux publiés et un volume explicite de tokens générés (outputTokens > 0) ; à défaut, l'estimateur bascule sur un scénario générique ou NA sans substituer inputTokens à outputTokens.",
-      "L'exécution locale (local_device) sans mesure électrique directe (measuredEnergyKwh) retourne NA sans extrapoler les constantes serveur cloud H100 ni supposer une empreinte matérielle incorporée nulle.",
+      "Les frontières énergétiques IT_FULL, FACILITY et LOCAL_WALL sont distinctes; le facteur PUE n'est appliqué qu'à une mesure IT cloud avec une valeur de PUE disponible.",
       "L'eau totale (totalWaterLiters) n'est renseignée que lorsque l'eau directe sur site et l'eau indirecte réseau sont toutes deux calculables.",
       "Les facteurs physiques image, audio et vidéo restent NA faute de méthode sourcée reproductible.",
       "Le facteur électrique US n'est jamais propagé à une région inconnue ou non américaine.",
@@ -701,11 +748,12 @@ export function estimatePersonalAiFootprint(
 
   return {
     accountingScope: "PERSONAL_AI_USAGE",
-    version: "personal-ai-estimator-2026.05-v3",
+    version: "personal-ai-estimator-2026.11-v4",
     generatedAt,
     scenario,
     region,
     pue,
+    pueApplied: executionEnv === "cloud_api" && totals.itEnergyKwh !== null && totals.facilityEnergyKwh !== null,
     dataQuality: overallQuality,
     executionEnvironment: executionEnv,
     modelDetails,

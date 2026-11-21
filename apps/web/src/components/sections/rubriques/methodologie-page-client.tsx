@@ -6,6 +6,7 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import type { AppProfile } from "@/lib/profiles";
 import { cn } from "@/lib/utils";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { AiFootprintMethodologySection } from "@/components/learn/ai-footprint-methodology-section";
 import { PageHeader } from "@/components/ui/page-header";
 import type {
   EnvironmentalImpactElectricityEstimate,
@@ -126,6 +127,7 @@ function LegacyMethodologieLayout({
         {!contentOnly ? <PageHeader tone="red" title={t("header_title")} subtitle={t("header_desc")} /> : null}
         <MethodologieNavigationSections actionMapSection={<ActionMapMethodologySection isFrench={isFrench} />} includeMapAndRouteContent={includeMapAndRouteContent} includeReportsContent={includeReportsContent} impactTerrainResults={impactTerrainResults} impactTerrainGeneratedAt={impactTerrainGeneratedAt} impactTerrainMethodologyVersion={impactTerrainMethodologyVersion} isFrench={isFrench} />
         <MethodologieTransverseSections freePlanServices={freePlanServices} githubStats={githubStats} impactTotals={impactTotals} includeTransverseContent={includeTransverseContent} isFrench={isFrench} locale={locale} methodology={methodology} quotaServicesDoc={QUOTA_SERVICES_DOC} />
+        <AiFootprintMethodologySection isFrench={isFrench} />
         <MethodologieReportSections electricity={electricity} freePlanServices={freePlanServices} githubStats={githubStats} impactDoc={IMPACT_DOC} impactGeneratedAt={impactGeneratedAt} impactLaunchedAt={impactLaunchedAt} impactSnapshots={impactSnapshots} impactTotals={impactTotals} includeReportsContent={includeReportsContent} isFrench={isFrench} methodology={methodology} sources={sources} t={t} water={water} />
         <footer className="flex flex-col items-center justify-between gap-10 border-t border-rose-100 pt-10 sm:flex-row"><div className="space-y-3 text-center sm:text-left"><p className="cmm-text-caption font-black uppercase tracking-[0.4em] text-rose-700">CleanMyMap Engine v{version}</p><p className="max-w-md text-xs font-bold leading-relaxed text-rose-800">Les formules, sources et limites sont documentées dans les références associées à cette page.</p></div></footer>
       </div>

@@ -9,6 +9,7 @@ import {
   SCIENTIFIC_FACTOR_REGISTRY,
   type ScientificFactorRecord,
 } from "./scientific-registry";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 
 describe("scientific-registry", () => {
   it("contient des facteurs uniques et valides dans le registre canonique", () => {
@@ -78,6 +79,14 @@ describe("scientific-registry", () => {
     const carEq = getScientificFactor("digital-car-equivalent-ademe-v1");
     expect(carEq.value).toBe(14.2);
     expect(carEq.unit).toBe("kgCO2e/100km");
+  });
+
+  it("versionne le scénario France 2025 et les facteurs du lot de comparaison collecte", () => {
+    expect(getScientificFactor("electricity-fr-rte-consumption-2025").value).toBe(0.02);
+    expect(resolveElectricityFactorForRegion("FR")?.id).toBe("electricity-fr-rte-2024");
+    expect(resolveElectricityFactorForRegion("FR", "electricity-fr-rte-consumption-2025")?.value).toBe(0.02);
+    expect(getScientificFactor("ademe-bnr-glass-incorporation-2021").unit).toBe("kgCO2e/kg_MPR");
+    expect(IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt).toBe(500);
   });
 
   it("gère les modalités sans méthode sourcée avec valeur null et statut NA", () => {

@@ -338,6 +338,28 @@ Elle ne détaille pas encore les formules, pondérations ou coefficients du
 moteur.
 
 
+## Empreinte IA et scénarios de collecte
+
+La page affiche un bloc pédagogique « Mon empreinte IA » séparé des indicateurs
+terrain. Il calcule le scénario textuel existant pour un million de tokens,
+avec choix du scénario énergétique et d'un facteur régional explicitement
+hypothétique. Le facteur France 2025 est opt-in; la valeur historique France
+2024 reste le défaut du registre.
+
+Le même bloc permet d'examiner deux objectifs distincts via un curseur :
+recyclage carbone lié à la matière BNR effectivement réincorporée, et une seule
+voie hydrique à la fois (risque conventionnel des mégots ou eau consommée nette
+ACV). Les hypothèses de composition/réincorporation et l'allégation fournisseur
+sur le traitement des mégots sont désactivées par défaut et choisies comme
+scénarios. Les destinations inconnues restent `NA`; l'incinération ne reçoit
+aucun crédit de recyclage et ses émissions de traitement restent inconnues.
+
+Le composant ne sauvegarde pas les sélections, ne modifie ni les KPI terrain ni
+les contributions/gamification, et ne présente pas de nombre de cleanwalks,
+d'économie certifiée ou de compensation. L'énergie, le CO₂e, l'eau indirecte,
+le risque hydrique conventionnel et l'eau nette ACV restent des indicateurs
+séparés.
+
 ## Blocs fonctionnels
 
 Conserver séparés :
@@ -366,5 +388,7 @@ impact environnemental des actions terrain
 
 ```txt
 Page publique fonctionnelle.
-Contenu limité aux méthodes, sources, limites, carte d’actions, quotas et empreinte technique.
+Contenu des méthodes, sources, limites, carte d’actions, quotas, empreinte IA
+scénarisée et empreinte technique. Les scénarios IA restent non persistés et
+distincts des KPI terrain.
 ```

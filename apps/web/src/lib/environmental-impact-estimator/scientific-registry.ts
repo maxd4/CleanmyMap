@@ -40,7 +40,8 @@ export type ScientificFactorScope =
   | "pedagogical_equivalence"
   | "multimodal_image"
   | "multimodal_audio"
-  | "multimodal_video";
+  | "multimodal_video"
+  | "collection_recycling";
 
 export type ScientificPhysicalUnit =
   | "kgCO2e/kWh"
@@ -50,12 +51,15 @@ export type ScientificPhysicalUnit =
   | "kWh/minute"
   | "kWh/second"
   | "kgCO2e/100km"
+  | "kgCO2e/kg_MPR"
+  | "kgCO2e/butt"
   | "fraction";
 
 export type MultimodalCategory = "text" | "image" | "audio" | "video";
 
 export type EnvironmentalDataQualityDiagnostic =
   | "MEASURED"
+  | "DECLARED"
   | "DOCUMENTED_MODEL"
   | "PROXY_SCENARIO"
   | "NOT_CALCULABLE";
@@ -149,6 +153,85 @@ export const SCIENTIFIC_FACTOR_REGISTRY: readonly ScientificFactorRecord[] = [
       "Ne constitue pas une mesure directe de l'électricité consommée par un data center donné : utilisé comme proxy régional d'analyse de sensibilité pour des infrastructures situées en France.",
     ],
     proofStatus: "PROXY",
+    isProxy: true,
+  },
+  {
+    id: "electricity-fr-rte-consumption-2025",
+    version: "2025.1",
+    label: "Électricité — Émissions directes de consommation France (RTE)",
+    source: "RTE — Bilan électrique 2025, émissions liées à la consommation",
+    sourceUrls: ["https://analysesetdonnees.rte-france.com/bilan-electrique-2025/emissions"],
+    date: "2025",
+    region: "FR",
+    scope: "operational_scope_2",
+    unit: "kgCO2e/kWh",
+    value: 0.02,
+    hypotheses: [
+      "Scénario régional opt-in pour la consommation électrique France 2025 (20,0 gCO₂e/kWh).",
+      "Ne prouve pas la localisation physique de l'inférence d'un fournisseur.",
+      "Ne remplace pas le facteur historique 2024 utilisé par défaut.",
+    ],
+    proofStatus: "PROXY",
+    isProxy: true,
+  },
+  {
+    id: "ademe-bnr-plastic-incorporation-2021",
+    version: "2021.1",
+    label: "Substitution carbone — MPR plastique incorporée (ADEME BNR)",
+    source: "ADEME Base nationale des ressources — plastiques",
+    sourceUrls: ["https://economie-circulaire.ademe.fr/bnr/plastiques"],
+    date: "2021",
+    region: "FR",
+    scope: "collection_recycling",
+    unit: "kgCO2e/kg_MPR",
+    value: 2.702,
+    hypotheses: ["Facteur applicable à la matière recyclée effectivement réincorporée, pas à la masse collectée."],
+    proofStatus: "PROXY",
+    isProxy: true,
+  },
+  {
+    id: "ademe-bnr-aluminium-incorporation-2021",
+    version: "2021.1",
+    label: "Substitution carbone — MPR aluminium incorporée (ADEME BNR)",
+    source: "ADEME Base nationale des ressources — aluminium",
+    sourceUrls: ["https://economie-circulaire.ademe.fr/bnr/aluminium"],
+    date: "2021",
+    region: "FR",
+    scope: "collection_recycling",
+    unit: "kgCO2e/kg_MPR",
+    value: 6.407,
+    hypotheses: ["Facteur applicable à la matière recyclée effectivement réincorporée, pas à la masse collectée."],
+    proofStatus: "PROXY",
+    isProxy: true,
+  },
+  {
+    id: "ademe-bnr-glass-incorporation-2021",
+    version: "2021.1",
+    label: "Substitution carbone — MPR verre incorporée (ADEME BNR)",
+    source: "ADEME Base nationale des ressources — verre",
+    sourceUrls: ["https://economie-circulaire.ademe.fr/bnr/verre"],
+    date: "2021",
+    region: "FR",
+    scope: "collection_recycling",
+    unit: "kgCO2e/kg_MPR",
+    value: 1.948,
+    hypotheses: ["1 948 kgCO₂e par tonne de MPR verre incorporée ; pas par kg simplement ramassé."],
+    proofStatus: "PROXY",
+    isProxy: true,
+  },
+  {
+    id: "tchaomegot-smet71-provider-carbon-claim-2023",
+    version: "2023.1",
+    label: "Allégation fournisseur de recyclage carbone par mégot",
+    source: "SMET 71 — Rapport d'activité 2023",
+    sourceUrls: ["https://www.smet71.fr/media/Documents/RA_2023.pdf"],
+    date: "2023",
+    region: "FR",
+    scope: "collection_recycling",
+    unit: "kgCO2e/butt",
+    value: 63 / 18_000,
+    hypotheses: ["Allégation fournisseur non vérifiée indépendamment; comparabilité CO₂/CO₂e à accepter explicitement."],
+    proofStatus: "DECLARED",
     isProxy: true,
   },
   {
@@ -401,16 +484,19 @@ export function assertNoGenericAiCallsToTokensConversion(params: {
  */
 export function resolveElectricityFactorForRegion(
   region: ScientificFactorRegion | string | null | undefined,
+  factorId?: string,
 ): ScientificFactorRecord | null {
   if (!region || region === "UNKNOWN") {
     // Infrastructure inconnue : aucun facteur imposé arbitrairement
     return null;
   }
   if (region === "US") {
-    return getScientificFactor("electricity-us-egrid-2024");
+    const factor = getScientificFactor(factorId ?? "electricity-us-egrid-2024");
+    return factor.region === "US" && factor.scope === "operational_scope_2" ? factor : null;
   }
   if (region === "FR") {
-    return getScientificFactor("electricity-fr-rte-2024");
+    const factor = getScientificFactor(factorId ?? "electricity-fr-rte-2024");
+    return factor.region === "FR" && factor.scope === "operational_scope_2" ? factor : null;
   }
   return null;
 }
@@ -421,6 +507,7 @@ export function resolveElectricityFactorForRegion(
  */
 export function evaluateDataQualityDiagnostic(params: {
   hasDirectMeasurement?: boolean;
+  hasDeclaredInput?: boolean;
   hasDocumentedModel?: boolean;
   isScenarioOrRegionalProxy?: boolean;
   isMissingOrUnmeasured?: boolean;
@@ -430,6 +517,9 @@ export function evaluateDataQualityDiagnostic(params: {
   }
   if (params.hasDirectMeasurement) {
     return "MEASURED";
+  }
+  if (params.hasDeclaredInput) {
+    return "DECLARED";
   }
   if (params.hasDocumentedModel) {
     return "DOCUMENTED_MODEL";
