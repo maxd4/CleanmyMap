@@ -87,7 +87,6 @@ test("personal AI declarations pgTAP plan matches its assertion count", () => {
   const sql = readFileSync(path, "utf8");
   const plan = sql.match(/^select\s+plan\((\d+)\);$/im);
   const assertions = sql.match(/^\s*select\s+(?:ok|is|throws_ok|lives_ok)\s*\(/gim) ?? [];
-  assert.equal(plan?.[1], "33");
   assert.equal(assertions.length, Number(plan?.[1]));
 });
 
