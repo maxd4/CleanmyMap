@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(33);
 
 select ok(has_table('public', 'personal_ai_declarations'), 'private declarations table exists');
 select ok((select relrowsecurity from pg_class where oid = 'public.personal_ai_declarations'::regclass), 'row level security is enabled');
@@ -34,12 +34,35 @@ insert into public.personal_ai_declarations (
   methodology_version, factor_version
 )
 select fixture_row.id, fixture_row.owner_id, '2026-01-01T00:00:00Z', '2026-02-01T00:00:00Z',
-  fixture.declaration, fixture.snapshot, 'personal-ai-v1', 'factors-v1'
+  case when fixture_row.owner_id = 'user-b' then fixture.declaration || jsonb_build_object('modelRaw', 'gpt-4.1', 'operator', 'aws_bedrock') else fixture.declaration end,
+  fixture.snapshot, 'personal-ai-v1', 'factors-v1'
 from fixture
 cross join (values
   ('10000000-0000-4000-8000-000000000001'::uuid, 'user-a'),
   ('10000000-0000-4000-8000-000000000002'::uuid, 'user-b')
 ) as fixture_row(id, owner_id);
+
+select ok((
+  select declaration ?& array['modelRaw', 'operator']::text[]
+    and declaration -> 'modelRaw' = 'null'::jsonb
+    and declaration -> 'operator' = 'null'::jsonb
+  from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'
+), 'optional model and operator labels accept explicit null');
+select is((
+  select count(*)::integer from public.personal_ai_declarations
+  where id = '10000000-0000-4000-8000-000000000002'
+    and declaration ->> 'modelRaw' = 'gpt-4.1'
+    and declaration ->> 'operator' = 'aws_bedrock'
+), 1, 'non-null model and operator labels accept valid values');
+select throws_ok($$update public.personal_ai_declarations set declaration = declaration - 'provider' where id = '10000000-0000-4000-8000-000000000001'$$, '23514', null, 'missing required top-level key is rejected');
+select throws_ok($$update public.personal_ai_declarations set declaration = declaration || '{"providerAccountId":"account-fixture-value-12345"}'::jsonb where id = '10000000-0000-4000-8000-000000000001'$$, '23514', null, 'extra sensitive top-level key is rejected');
+select throws_ok($$update public.personal_ai_declarations set declaration = jsonb_set(declaration, '{tokens}', (declaration -> 'tokens') - 'inputTotal') where id = '10000000-0000-4000-8000-000000000001'$$, '23514', null, 'missing required nested key is rejected');
+select throws_ok($$update public.personal_ai_declarations set declaration = jsonb_set(declaration, '{tokens}', (declaration -> 'tokens') || '{"providerKey":"synthetic-fixture"}'::jsonb) where id = '10000000-0000-4000-8000-000000000001'$$, '23514', null, 'extra nested key is rejected');
+select throws_ok($$update public.personal_ai_declarations set declaration = jsonb_set(declaration, '{modelRaw}', '"account-identifier-fixture"'::jsonb) where id = '10000000-0000-4000-8000-000000000001'$$, '23514', null, 'sensitive model label is rejected');
+select throws_ok($$update public.personal_ai_declarations set declaration = jsonb_set(declaration, '{operator}', '"1234567890123456"'::jsonb) where id = '10000000-0000-4000-8000-000000000001'$$, '23514', null, 'numeric account-like operator is rejected');
+select throws_ok($$update public.personal_ai_declarations set declaration = jsonb_set(declaration, '{operator}', to_jsonb('person' || chr(64) || 'example.test')) where id = '10000000-0000-4000-8000-000000000001'$$, '23514', null, 'personal email-like operator is rejected');
+select throws_ok($$update public.personal_ai_declarations set status = 'INVALID' where id = '10000000-0000-4000-8000-000000000001'$$, '23514', null, 'invalid status is rejected');
+select throws_ok($$update public.personal_ai_declarations set period_start_utc = period_end_utc where id = '10000000-0000-4000-8000-000000000001'$$, '23514', null, 'empty period is rejected');
 
 reset role;
 set local role anon;

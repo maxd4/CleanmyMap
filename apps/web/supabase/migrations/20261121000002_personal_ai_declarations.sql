@@ -23,21 +23,31 @@ create table if not exists public.personal_ai_declarations (
       'operator', 'execution', 'inferenceRegion', 'access', 'requestCount', 'tokens',
       'modality', 'energy'
     ]::text[] = '{}'::jsonb
-    and jsonb_object_length(declaration) = 18
+    and declaration ?& array[
+      'normalizationVersion', 'provider', 'source', 'sourceVersion', 'provenance',
+      'granularity', 'periodStartUtc', 'periodEndUtc', 'modelRaw', 'modelCanonical',
+      'operator', 'execution', 'inferenceRegion', 'access', 'requestCount', 'tokens',
+      'modality', 'energy'
+    ]::text[]
     and jsonb_typeof(declaration -> 'tokens') = 'object'
     and declaration -> 'tokens' - array[
       'inputTotal', 'inputUncached', 'cacheRead', 'cacheWrite', 'outputVisible',
       'outputReasoning', 'outputTotal', 'reasoningRelation', 'logicalTotal'
     ]::text[] = '{}'::jsonb
-    and jsonb_object_length(declaration -> 'tokens') = 9
+    and (declaration -> 'tokens') ?& array[
+      'inputTotal', 'inputUncached', 'cacheRead', 'cacheWrite', 'outputVisible',
+      'outputReasoning', 'outputTotal', 'reasoningRelation', 'logicalTotal'
+    ]::text[]
     and jsonb_typeof(declaration -> 'modality') = 'object'
     and declaration -> 'modality' - array['images', 'audioMinutes', 'videoSeconds']::text[] = '{}'::jsonb
-    and jsonb_object_length(declaration -> 'modality') = 3
+    and (declaration -> 'modality') ?& array['images', 'audioMinutes', 'videoSeconds']::text[]
     and jsonb_typeof(declaration -> 'energy') = 'object'
     and declaration -> 'energy' - array[
       'kwh', 'boundary', 'evidence', 'averageWatts', 'durationSeconds', 'idleWatts'
     ]::text[] = '{}'::jsonb
-    and jsonb_object_length(declaration -> 'energy') = 6
+    and (declaration -> 'energy') ?& array[
+      'kwh', 'boundary', 'evidence', 'averageWatts', 'durationSeconds', 'idleWatts'
+    ]::text[]
     and declaration ->> 'normalizationVersion' = 'personal-ai-declaration-v1'
     and declaration ->> 'provider' in ('MANUAL', 'OPENAI', 'ANTHROPIC', 'GOOGLE', 'MISTRAL', 'OTHER')
     and declaration ->> 'source' in ('MANUAL', 'PROVIDER_EXPORT', 'PROVIDER_DASHBOARD', 'LOCAL_LOG')
@@ -45,17 +55,27 @@ create table if not exists public.personal_ai_declarations (
     and declaration ->> 'granularity' in ('PER_REQUEST', 'AGGREGATE', 'UNKNOWN')
     and declaration ->> 'execution' in ('CLOUD', 'LOCAL')
     and declaration ->> 'access' in ('API', 'SUBSCRIPTION', 'LOCAL_OWNED')
-    and length(coalesce(declaration ->> 'modelRaw', '')) <= 80
-    and coalesce(declaration ->> 'modelRaw', '') ~ '^[A-Za-z0-9][A-Za-z0-9._+/-]*( [A-Za-z0-9][A-Za-z0-9._+/-]*){0,4}$'
-    and coalesce(declaration ->> 'modelRaw', '') !~* '^(sk|key|acct|account|org|proj)[-_]?[a-z0-9_-]{8,}$'
-    and coalesce(declaration ->> 'modelRaw', '') !~ '^[0-9]{8,}$'
-    and coalesce(declaration ->> 'modelRaw', '') !~* '^[a-f0-9]{8}-[a-f0-9-]{27,}$'
+    and (
+      declaration ->> 'modelRaw' is null
+      or (
+        length(declaration ->> 'modelRaw') <= 80
+        and declaration ->> 'modelRaw' ~ '^[A-Za-z0-9][A-Za-z0-9._+/-]*( [A-Za-z0-9][A-Za-z0-9._+/-]*){0,4}$'
+        and declaration ->> 'modelRaw' !~* '^(sk|key|acct|account|org|proj)[-_]?[a-z0-9_-]{8,}$'
+        and declaration ->> 'modelRaw' !~ '^[0-9]{8,}$'
+        and declaration ->> 'modelRaw' !~* '^[a-f0-9]{8}-[a-f0-9-]{27,}$'
+      )
+    )
     and length(coalesce(declaration ->> 'modelCanonical', '')) <= 80
-    and length(coalesce(declaration ->> 'operator', '')) <= 80
-    and coalesce(declaration ->> 'operator', '') ~ '^[A-Za-z0-9][A-Za-z0-9._+/-]*( [A-Za-z0-9][A-Za-z0-9._+/-]*){0,4}$'
-    and coalesce(declaration ->> 'operator', '') !~* '^(sk|key|acct|account|org|proj)[-_]?[a-z0-9_-]{8,}$'
-    and coalesce(declaration ->> 'operator', '') !~ '^[0-9]{8,}$'
-    and coalesce(declaration ->> 'operator', '') !~* '^[a-f0-9]{8}-[a-f0-9-]{27,}$'
+    and (
+      declaration ->> 'operator' is null
+      or (
+        length(declaration ->> 'operator') <= 80
+        and declaration ->> 'operator' ~ '^[A-Za-z0-9][A-Za-z0-9._+/-]*( [A-Za-z0-9][A-Za-z0-9._+/-]*){0,4}$'
+        and declaration ->> 'operator' !~* '^(sk|key|acct|account|org|proj)[-_]?[a-z0-9_-]{8,}$'
+        and declaration ->> 'operator' !~ '^[0-9]{8,}$'
+        and declaration ->> 'operator' !~* '^[a-f0-9]{8}-[a-f0-9-]{27,}$'
+      )
+    )
     and length(coalesce(declaration ->> 'sourceVersion', '')) <= 80
     and (declaration ->> 'inferenceRegion' is null or declaration ->> 'inferenceRegion' = 'UNKNOWN' or length(declaration ->> 'inferenceRegion') = 2)
     and declaration ->> 'periodStartUtc' is not null

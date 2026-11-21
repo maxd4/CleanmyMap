@@ -191,6 +191,13 @@ it("approves only the bounded pre-application SPOGOMI signature repair", () => {
   assert.doesNotMatch(source, /6bd027f71baf58e821045deb32a80b6730fc91a0c7b5b77dd11cdae1e2a577dd/);
 });
 
+it("approves only the bounded PostgreSQL-compatible Personal AI migration repair", () => {
+  const source = readFileSync(auditScript, "utf8");
+  assert.match(source, /20261121000002_personal_ai_declarations\.sql/);
+  assert.match(source, /5012f09206e06d8fb002967310899a3d483dd7ee6fd2b29fec78de0bc62c988b/);
+  assert.doesNotMatch(source, /jsonb_object_length/);
+});
+
 it("normalizes Buffer and UTF-8 string contents before comparing migrations", () => {
   const name = "20260101000000_published.sql";
   assert.deepEqual(

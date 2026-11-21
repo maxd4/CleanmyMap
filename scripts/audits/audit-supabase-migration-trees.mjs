@@ -53,6 +53,7 @@ const APPROVED_PUBLISHED_REWRITE_HASHES = new Map([
   ["20261105000015_pedestrian_risk_projection_publication_revision.sql", new Set(["af7e5dd0f3464de70445cc30fe5cb55b04bcf3bcdec7c16d861b5a6d257da48a"])],
   ["20261109152000_spogomi_terminal_admission_immutability_and_actor_context.sql", new Set(["6ab6cf64c84f4967c2e0142fd5d314fe98bf1e24422017923cdd2f34005aae4a"])],
   ["20261109000007_spogomi_registration_lifecycle_and_event_changes.sql", new Set(["4c4c97b463e167e67cc0889d82fa00c9bba1e0a936db05e0e6b98f545e60f297"])],
+  ["20261121000002_personal_ai_declarations.sql", new Set(["5012f09206e06d8fb002967310899a3d483dd7ee6fd2b29fec78de0bc62c988b"])],
 ]);
 
 function normalizeMigrationContent(content) {

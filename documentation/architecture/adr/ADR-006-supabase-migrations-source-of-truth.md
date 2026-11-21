@@ -541,6 +541,29 @@ requise pour établir cette correction.
 20261109152000_AFTER_HASH:  6AB6CF64C84F4967C2E0142FD5D314FE98BF1E24422017923CDD2F34005AAE4A
 ```
 
+## Exception de replay bornée — `20261121000002`
+
+La table et la migration `20261121000002_personal_ai_declarations.sql` sont
+absentes de la base distante vérifiée lors du lot correctif. Son SQL utilisait
+`jsonb_object_length(jsonb)`, fonction absente de PostgreSQL 17.6, ce qui
+bloquait le replay. La correction bornée remplace ce comptage par des tests de
+clés obligatoires compatibles avec PostgreSQL et conserve le rejet des clés
+inconnues, les contraintes imbriquées et les protections de confidentialité.
+Les champs `modelRaw` et `operator` acceptent explicitement `null`, comme le
+contrat TypeScript, tout en validant les valeurs non nulles.
+
+Cette réécriture est une exception ponctuelle explicitement demandée pour une
+migration non enregistrée dans la base vérifiée. Elle ne modifie pas la base,
+n'autorise ni `migration repair`, ni DDL manuelle, ni application distante
+implicite. La validation PostgreSQL/pgTAP reste distincte et doit provenir de
+la lane éphémère autorisée ; tant qu'elle ne s'exécute pas, le résultat est
+`DB_SEMANTICS_NOT_EXECUTED`.
+
+```text
+20261121000002_BEFORE_HASH: 5BFEBAD8C2AE98C2C5534FEAAC2E84E71C185D30C8FC914737A2788DD67FEF1
+20261121000002_AFTER_HASH:  5012F09206E06D8FB002967310899A3D483DD7EE6FD2B29FEC78DE0BC62C988B
+```
+
 ## Interdiction
 
 Ne pas maintenir indéfiniment deux copies manuelles sans contrôle de synchronisation.

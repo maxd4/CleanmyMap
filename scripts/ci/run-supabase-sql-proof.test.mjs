@@ -54,6 +54,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/notifications-decision-boundary.pgtap.sql",
     "apps/web/supabase/tests/pedestrian-observation-cache-lease-atomicity.pgtap.sql",
     "apps/web/supabase/tests/pedestrian-risk-projection-pagination-contract.pgtap.sql",
+    "apps/web/supabase/tests/personal-ai-declarations-rls.pgtap.sql",
     "apps/web/supabase/tests/public-action-map-reconstruction-projection.pgtap.sql",
     "apps/web/supabase/tests/public-impact-temporal-eligibility.pgtap.sql",
     "apps/web/supabase/tests/public-impact-waste-coverage.pgtap.sql",
@@ -79,6 +80,15 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "e2e/spogomi-concurrency.mjs",
     "e2e/territorial-legend-revision-concurrency.mjs",
   ]);
+});
+
+test("personal AI declarations pgTAP plan matches its assertion count", () => {
+  const path = new URL("../../apps/web/supabase/tests/personal-ai-declarations-rls.pgtap.sql", import.meta.url);
+  const sql = readFileSync(path, "utf8");
+  const plan = sql.match(/^select\s+plan\((\d+)\);$/im);
+  const assertions = sql.match(/^\s*select\s+(?:ok|is|throws_ok|lives_ok)\s*\(/gim) ?? [];
+  assert.equal(plan?.[1], "33");
+  assert.equal(assertions.length, Number(plan?.[1]));
 });
 
 test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints", () => {
