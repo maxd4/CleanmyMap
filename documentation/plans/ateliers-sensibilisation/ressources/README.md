@@ -1,6 +1,6 @@
 # Ressources pédagogiques externes pour les ateliers CleanMyMap
 
-> **Statut : `PLAN / SOURCES EXTERNES`.** Sources vérifiées sur leurs pages officielles le 13 novembre 2026. Les fichiers tiers restent chez leurs éditeurs. Aucune autorisation, intervention, séance, licence commerciale ou partenariat supplémentaire n'est acquis par cette compilation.
+> **Statut : `PLAN / SOURCES EXTERNES`.** Les sources décrites dans les 23 fiches existantes ont été consultées sur leurs pages officielles le 13 novembre 2026. R22 est une référence prévue dont la source, l'accès et les droits n'ont pas été vérifiés. Les fichiers tiers restent chez leurs éditeurs. Aucune autorisation, intervention, séance, licence commerciale ou partenariat supplémentaire n'est acquis par cette compilation.
 
 ## Lecture et droits
 
@@ -13,7 +13,7 @@
 
 ## Catalogue
 
-| ID | Ressource officielle | Disponibilité et droit connu | Atelier(s) |
+| ID | Ressource ou référence | Disponibilité et droit connu | Atelier(s) |
 | --- | --- | --- | --- |
 | R01 | [Le Basket du Tri](R01-basket-du-tri-ville-paris.md) | PDF gratuit, droits à vérifier | 01 |
 | R02 | [Loto du Tri](R02-loto-du-tri-ville-paris.md) | Accès public, droits à vérifier | 01, 02 |
@@ -36,7 +36,7 @@
 | R19 | [Cycle de la plante et semis](R19-cycle-plante-semis-ecolotheque.md) | PDF gratuit, droits à vérifier | 05, 09 |
 | R20 | [Faire du papier recyclé](R20-papier-recycle-ecolotheque.md) | PDF gratuit, droits à vérifier | 10 |
 | R21 | [Fabriquer un tawashi](R21-tawashi-ecolotheque.md) | PDF gratuit, droits à vérifier | 08, 10 |
-| R22 | [Cerfs-volants, livret pédagogique](R22-cerfs-volants-cemea.md) | Accès public, droits à vérifier | 11 |
+| R22 | Cerfs-volants, livret pédagogique — référence prévue, fiche non rédigée | Source, accès et droits à vérifier | 11 |
 | R23 | [Cahiers et ressources de propreté urbaine](R23-proprete-paris-dpe.md) | Accès public, droits à vérifier | 12 |
 | R24 | [Déchets de A à Z](R24-dechets-a-z-ecolotheque.md) | PDF gratuit, droits à vérifier | 02, 06 |
 
@@ -53,4 +53,4 @@ Voir [CONTACTS_ET_DEMANDES.md](CONTACTS_ET_DEMANDES.md) pour les organismes, l'o
 5. Tester en petit groupe, relever les durées et les retours réels, puis seulement stabiliser l'atelier.
 6. Ne pas mesurer un impact environnemental en comptant les points d'un jeu ou les objets fabriqués.
 
-**Note :** les liens de fichiers sont des liens internes à la documentation CleanMyMap. Les pages officielles sont identifiées dans chaque fiche ressource.
+**Note :** les liens de fichiers sont des liens internes à la documentation CleanMyMap. Les pages officielles sont identifiées dans les 23 fiches rédigées; R22 reste à documenter avant toute affirmation sur la ressource ou ses conditions d'accès.

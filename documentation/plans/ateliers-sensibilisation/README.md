@@ -26,16 +26,16 @@
 | [08 Réemploi et Repair Café](08-reemploi-repair-cafe.md) | Réparation, réduction des emballages, prévention du gaspillage | Réparateur qualifié pour le format technique |
 | [09 Jardinage urbain](09-jardinage-urbain.md) | Nature en ville, plantations et compost | Autorisation et suivi des végétaux |
 | [10 Upcycling artistique](10-upcycling-artistique.md) | Créations à partir de matières réemployées, exposition éventuelle | Matériaux propres, artiste éventuel, droits des œuvres |
-| [11 Culture japonaise et Mottainai](11-culture-japonaise-mottainai.md) | Kokedama, cerfs-volants, respect de la matière et des objets | Référent culturel, provenance des matières |
+| 11 Culture japonaise et Mottainai — prévue, fiche non rédigée | À documenter avant conception | Contenu et source à confirmer |
 | [12 Propreté urbaine et métiers](12-proprete-urbaine-metiers.md) | Métier des agents, véhicules, démonstrations et civilité | Accord du service compétent pour les démonstrations |
 
 **Source commune :** [CHIKYU - PLANÈTE | Dossier SPOGOMI 2027](https://docs.google.com/document/d/1SBSVBDsAryj8Dp9qW2NIfnuvGfLwNkco65EdUZhVTcs/edit), proposition de concertation adressée à la mairie du 5e arrondissement. Aucun partenariat avec la mairie, la Direction de la Propreté et de l'Eau, le SYCTOM, ARTEMA Network ou une structure Repair Café n'est établi par ce document.
 
 **Éviter les doublons de comptage :** le compostage est traité dans la fiche 07 ; le jardinage utilisant du compost dans la 09 ; le réemploi/repair dans la 08 ; la création surcyclée dans la 10. La fiche 11 renvoie à ces protocoles lorsqu'elle reprend une activité déjà décrite. Une même séance ne devient pas plusieurs ateliers du seul fait qu'elle aborde plusieurs thèmes.
 
-## Ressources pédagogiques externes vérifiées
+## Ressources pédagogiques externes et référence prévue
 
-Une recherche sur les bibliothèques pédagogiques publiques et associatives a permis de constituer [un catalogue de 24 ressources externes](ressources/README.md), avec **une fiche dédiée par ressource** : support, public, accès, conditions de licence, adaptation pertinente et limites. Les **12 fiches d'ateliers** ci-dessus renvoient directement aux ressources qui les concernent.
+Le catalogue recense [24 références de ressources externes](ressources/README.md) : 23 ont une fiche dédiée, et R22 reste une référence prévue, sans fiche rédigée ni validation de source ou de droits. Le registre ci-dessus comporte 12 entrées d'atelier : 11 fiches existent; l'atelier 11 reste prévu et sa fiche n'est pas rédigée.
 
 - [Catalogue des ressources et licences](ressources/README.md)
 - [Démarches auprès des organismes et contacts](ressources/CONTACTS_ET_DEMANDES.md)
