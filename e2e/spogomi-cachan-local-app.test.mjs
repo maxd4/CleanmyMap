@@ -20,6 +20,10 @@ test("local app startup diagnostics identify Clerk boot failures without exposin
   assert.equal(JSON.stringify(diagnostic).includes("private"), false);
 });
 
+test("Cachan integration entry point resolves its local server helpers", async () => {
+  await import("./spogomi-cachan-integration.mjs");
+});
+
 test("local app startup diagnostics classify compile and backend failures without exposing output", () => {
   const compileFailure = classifyLocalAppStartupOutput("Module not found: secret-path/private-module");
   const backendFailure = classifyLocalAppStartupOutput("TypeError: fetch failed ECONNREFUSED 127.0.0.1:54321");
