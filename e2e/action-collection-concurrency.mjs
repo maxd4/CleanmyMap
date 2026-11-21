@@ -94,7 +94,10 @@ try {
     concurrentFailure = error;
   }
   assert.ok(concurrentFailure, "the second collector confirmation must fail after acquiring the action lock");
-  assert.match(`${concurrentFailure.stderr ?? ""}\n${concurrentFailure.stdout ?? ""}`, /23514|Confirmed collectors exceed/i);
+  assert.match(
+    `${concurrentFailure.message ?? ""}\n${concurrentFailure.stderr ?? ""}\n${concurrentFailure.stdout ?? ""}`,
+    /23514|Confirmed collectors exceed/i,
+  );
 
   const invariant = await run(`
     select case when (

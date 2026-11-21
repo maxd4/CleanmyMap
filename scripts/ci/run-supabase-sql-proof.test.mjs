@@ -100,6 +100,7 @@ test("collection concurrency proof uses service-role claims and scoped cleanup",
   assert.match(source, /collection-concurrency-cleanup/);
   assert.match(source, /collection-concurrency-a/);
   assert.match(source, /collection-concurrency-b/);
+  assert.match(source, /concurrentFailure\.message/);
   assert.match(source, /delete from public\.action_participants where id in \('\$\{firstId\}'::uuid, '\$\{secondId\}'::uuid\)/);
   assert.match(source, /created_by_clerk_id = 'collection-concurrency-setup'/);
 });
