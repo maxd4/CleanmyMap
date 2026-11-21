@@ -2,8 +2,8 @@
 
 import { localize, type FeedbackSource, type Locale } from "./feedback-section.shared";
 import { FeedbackSectionDashboardHeader } from "./feedback-section-dashboard-header";
-import { QUESTIONNAIRES, type FeedbackType } from "./feedback/questionnaire-config";
-import { QuestionnaireCard } from "./feedback/questionnaire-card";
+import { QUESTIONNAIRES, type FeedbackType } from "./questionnaire-config";
+import { QuestionnaireCard } from "./questionnaire-card";
 
 export function FeedbackSectionDashboardForm({
   pagePath,

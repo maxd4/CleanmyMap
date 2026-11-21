@@ -5,7 +5,7 @@ const uploadFeedbackScreenshotMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/community/feedback-screenshot-client", () => ({
   uploadFeedbackScreenshot: uploadFeedbackScreenshotMock,
 }));
-import { buildFeedbackCanonicalHref } from "../feedback-section.shared";
+import { buildFeedbackCanonicalHref } from "./feedback-section.shared";
 import {
   buildSuggestedFeedbackTitle,
   FEEDBACK_DESCRIPTION_MAX_LENGTH,

@@ -26,10 +26,13 @@ Son entrée publique consommée par le renderer reste
 `rejoindre-un-formulaire-section.tsx`; les contrats métier et les actions
 restent dans leurs modules canoniques.
 
-`weather/` regroupe la composition météo, ses modèles, son stockage de
-préférence et ses tests. Le hook d'interface partagé reste à la racine pour
-conserver sa frontière avec la création d'action ; le domaine météo réutilisable
-reste dans `src/lib/weather/`.
+`feedback/` regroupe la composition privée du tableau de feedback, le mode
+discussion, le contrat de contexte et les tests associés. L'entrée publique
+`feedback-section.tsx` reste à la racine car elle est consommée par le renderer
+des rubriques et par le chat.
+
+`weather/` regroupe la composition météo, ses hooks, modèles, stockage de
+préférence et tests. Le domaine météo réutilisable reste dans `src/lib/weather/`.
 
 Les autres sous-dossiers restent centrés sur une rubrique ou une capacité UI
 réelle. Les tests restent auprès des modules qu'ils couvrent.

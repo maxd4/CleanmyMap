@@ -6,7 +6,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { resolvePublicContactEmail } from "@/lib/email-config";
-import type { FeedbackType } from "./feedback/questionnaire-config";
+import type { FeedbackType } from "./questionnaire-config";
 
 export type Locale = "fr" | "en";
 export type FeedbackSource = "feedback_section" | "feedback_discussion";

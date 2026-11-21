@@ -14,11 +14,11 @@
 
 ```txt
 apps/web/src/app/(app)/sections/[sectionId]/page.tsx (redirection)
-apps/web/src/components/sections/rubriques/weather-section.tsx
-apps/web/src/components/sections/rubriques/weather-location-picker.tsx
-apps/web/src/components/sections/rubriques/use-weather-data.ts
-apps/web/src/components/sections/rubriques/weather-section.preparation.tsx
-apps/web/src/components/sections/rubriques/weather-section.preparation-controls.tsx
+apps/web/src/components/sections/rubriques/weather/weather-section.tsx
+apps/web/src/components/sections/rubriques/weather/weather-location-picker.tsx
+apps/web/src/components/sections/rubriques/weather/use-weather-data.ts
+apps/web/src/components/sections/rubriques/weather/weather-section.preparation.tsx
+apps/web/src/components/sections/rubriques/weather/weather-section.preparation-controls.tsx
 ```
 
 ## Objectif utilisateur

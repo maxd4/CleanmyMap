@@ -1,6 +1,6 @@
 import { Mic, Square } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { Locale } from "../feedback-section.shared";
+import type { Locale } from "./feedback-section.shared";
 import type { QuestionnaireConfig } from "./questionnaire-config";
 import { useSpeechRecognition } from "./use-speech-recognition";
 

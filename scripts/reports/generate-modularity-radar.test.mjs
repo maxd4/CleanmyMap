@@ -96,6 +96,10 @@ const HISTORICAL_DECISION_REFERENCE = Object.freeze([
 // the decision values without resurrecting the old physical path.
 const HISTORICAL_PATH_RENAMES = new Map([
   [
+    "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
+    "apps/web/src/components/sections/rubriques/feedback/feedback-section-dashboard.tsx",
+  ],
+  [
     "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
     "apps/web/src/components/sections/rubriques/weather/weather-section.conditions.tsx",
   ],

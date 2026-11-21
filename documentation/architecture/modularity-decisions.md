@@ -25,7 +25,7 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | `apps/web/src/components/sections/rubriques/community/action-needs-panel.tsx` | COHESIVE_SINGLE_FILE | AFTER_ACTIVE_CHANGES | préserver les droits de gestion, le filtre des besoins annulés/privés et les transitions confirmées côté serveur | nouveau contrat de formulaire/persistance consommé indépendamment |
 | `apps/web/src/components/sections/rubriques/elus-section.tsx` | ALREADY_MODULARIZED | NONE | conserver l'orchestration overview/navigation/panels | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/account/greater-paris-select.tsx` | ALREADY_MODULARIZED | NONE | préserver les façades et owners suggestions/controls/shell | nouveau contrat géographique autonome |
-| `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` | ALREADY_MODULARIZED | NONE | préserver le contrôleur, les états de soumission et les sous-vues | nouvelle responsabilité autonome réintroduite dans la façade |
+| `apps/web/src/components/sections/rubriques/feedback/feedback-section-dashboard.tsx` | ALREADY_MODULARIZED | NONE | préserver le contrôleur, les états de soumission et les sous-vues | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/lib/community/bug-report-screenshot.ts` | ALREADY_MODULARIZED | NONE | préserver la vérification du contenu, l'ownership, les états d'upload et la suppression sans fuite de chemin privé | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/lib/community/bug-reports-store.ts` | ALREADY_MODULARIZED | NONE | préserver les filtres owner, les curseurs, l'échec fermé des RPC et l'absence de nettoyage de captures hors contrat | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx` | ALREADY_MODULARIZED | NONE | préserver les textes, le honeypot, les validations, le comportement Clerk et la révocation des prévisualisations | nouvelle responsabilité autonome réintroduite dans la façade |
@@ -170,7 +170,7 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | NATURAL_EXTRACTION_BOUNDARY | normalisations territoriales dans `lib/geo/greater-paris-location.ts` ; interaction dans ce composant |
 | RATIONALE | les suggestions, contrôles, shell et transformations territoriales ont déjà des owners explicites ; la façade publique reste stable |
 
-#### `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx`
+#### `apps/web/src/components/sections/rubriques/feedback/feedback-section-dashboard.tsx`
 
 | Champ | Valeur |
 | --- | --- |

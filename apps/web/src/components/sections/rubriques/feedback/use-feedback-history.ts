@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import type { Locale } from "../feedback-section.shared";
+import type { Locale } from "./feedback-section.shared";
 import type { PersonalFeedbackItem } from "@/lib/community/feedback-history-contract";
 import { fetchPersonalFeedbackPage } from "./feedback-history-loader";
 

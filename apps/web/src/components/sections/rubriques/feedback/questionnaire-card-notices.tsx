@@ -1,7 +1,7 @@
 import { ArrowRight, BadgeCheck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
-import type { Locale } from "../feedback-section.shared";
+import type { Locale } from "./feedback-section.shared";
 
 export function QuestionnaireRecognitionNotice({ locale }: { locale: Locale }) {
   return (

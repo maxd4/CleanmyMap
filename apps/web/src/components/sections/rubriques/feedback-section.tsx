@@ -5,10 +5,10 @@ import { SectionShell } from "@/components/sections/rubriques/shared";
 import {
   resolveFeedbackSectionContext,
   type FeedbackSectionProps,
-} from "./feedback-section.shared";
+} from "./feedback/feedback-section.shared";
 import type { FeedbackType } from "./feedback/questionnaire-config";
-import { FeedbackSectionDashboard } from "./feedback-section-dashboard";
-import { FeedbackSectionDiscussion } from "./feedback-section-discussion";
+import { FeedbackSectionDashboard } from "./feedback/feedback-section-dashboard";
+import { FeedbackSectionDiscussion } from "./feedback/feedback-section-discussion";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 export function FeedbackSection({

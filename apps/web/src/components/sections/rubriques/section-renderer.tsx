@@ -9,7 +9,7 @@ import {
 } from "@/lib/sections-registry";
 import { PendingSection } from "./shared";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
-import type { FeedbackSectionProps } from "./feedback-section.shared";
+import type { FeedbackSectionProps } from "./feedback/feedback-section.shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type { PublicSectionInitialData } from "@/lib/sections/public-section-snapshot-contract";
 

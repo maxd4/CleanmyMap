@@ -7,7 +7,7 @@ import {
   type PersonalFeedbackStatus,
   type PersonalFeedbackTrackingStatus,
 } from "@/lib/community/feedback-history-contract";
-import type { Locale } from "../feedback-section.shared";
+import type { Locale } from "./feedback-section.shared";
 import { useFeedbackHistory } from "./use-feedback-history";
 
 const FEEDBACK_TYPE_LABELS: Record<PersonalFeedbackItem["type"], { fr: string; en: string }> = {

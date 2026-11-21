@@ -2,7 +2,7 @@
 
 import { FeedbackSectionDashboardForm } from "./feedback-section-dashboard-form";
 import { FeedbackSectionDashboardGuidance } from "./feedback-section-dashboard-guidance";
-import { FeedbackHistory } from "./feedback/feedback-history";
+import { FeedbackHistory } from "./feedback-history";
 import type { FeedbackSectionDashboardProps } from "./feedback-section-dashboard.types";
 
 export type { FeedbackSectionDashboardProps } from "./feedback-section-dashboard.types";

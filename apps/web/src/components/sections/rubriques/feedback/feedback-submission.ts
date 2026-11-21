@@ -1,4 +1,4 @@
-import type { Locale } from "../feedback-section.shared";
+import type { Locale } from "./feedback-section.shared";
 import type { QuestionnaireConfig } from "./questionnaire-config";
 import { uploadFeedbackScreenshot } from "@/lib/community/feedback-screenshot-client";
 

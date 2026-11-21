@@ -25,10 +25,10 @@ vi.mock("@/components/ui/cmm-button", () => ({
     <button {...props}>{children}</button>
   ),
 }));
-vi.mock("./feedback/feedback-history", () => ({
+vi.mock("./feedback-history", () => ({
   FeedbackHistory: () => <div data-testid="feedback-history" />,
 }));
-vi.mock("./feedback/feedback-history-loader", () => ({
+vi.mock("./feedback-history-loader", () => ({
   fetchPersonalFeedbackPage: fetchPersonalFeedbackPageMock,
 }));
 vi.mock("./feedback-section-dashboard-guidance", () => ({
@@ -38,7 +38,7 @@ vi.mock("./feedback-section-discussion", () => ({
   FeedbackSectionDiscussion: () => <div data-testid="feedback-discussion" />,
 }));
 
-import { FeedbackSection } from "./feedback-section";
+import { FeedbackSection } from "../feedback-section";
 
 type FakeLocation = {
   pathname: string;

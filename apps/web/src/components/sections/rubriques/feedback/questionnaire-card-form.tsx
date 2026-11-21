@@ -3,7 +3,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import type { FeedbackScreenshotPreview } from "@/lib/community/feedback-screenshot-client";
-import type { Locale } from "../feedback-section.shared";
+import type { Locale } from "./feedback-section.shared";
 import type { QuestionnaireConfig } from "./questionnaire-config";
 import { FEEDBACK_DESCRIPTION_MAX_LENGTH } from "./feedback-submission";
 import { QuestionnaireFields, QuestionnaireSpeechNotice, type QuestionnaireSpeechState } from "./questionnaire-card-fields";

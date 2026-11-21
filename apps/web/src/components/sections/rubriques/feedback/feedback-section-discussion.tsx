@@ -9,7 +9,7 @@ import {
   type Locale,
 } from "./feedback-section.shared";
 import { PageHeader } from "@/components/ui/page-header";
-import { QUESTIONNAIRES, type FeedbackType } from "./feedback/questionnaire-config";
+import { QUESTIONNAIRES, type FeedbackType } from "./questionnaire-config";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { CmmButton } from "@/components/ui/cmm-button";
 

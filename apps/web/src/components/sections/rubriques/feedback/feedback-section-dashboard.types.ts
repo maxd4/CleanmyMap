@@ -1,5 +1,5 @@
 import type { FeedbackSectionProps, FeedbackSectionContext, Locale } from "./feedback-section.shared";
-import type { FeedbackType } from "./feedback/questionnaire-config";
+import type { FeedbackType } from "./questionnaire-config";
 
 export type FeedbackSectionDashboardProps = Pick<
   FeedbackSectionContext,
