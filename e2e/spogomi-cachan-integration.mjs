@@ -6,7 +6,12 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright";
 import * as XLSX from "xlsx";
-import { spawnLocalApp, stopLocalApp, waitForLocalApp } from "./spogomi-cachan-local-app.mjs";
+import {
+  classifyLocalAppStartupOutput,
+  spawnLocalApp,
+  stopLocalApp,
+  waitForLocalApp,
+} from "./spogomi-cachan-local-app.mjs";
 import { operationalInstantAt, teamSubmissionIdempotencyKey } from "./spogomi-cachan-inputs.mjs";
 import { assertManifestFormation, buildManifestFormation } from "./spogomi-cachan-formation.mjs";
 
