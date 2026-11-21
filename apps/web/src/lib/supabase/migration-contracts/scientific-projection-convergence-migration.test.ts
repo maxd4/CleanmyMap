@@ -14,6 +14,13 @@ const convergenceMigration = readFileSync(
   ),
   "utf8",
 );
+const collectionAveragesMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261120000003_action_collection_participation.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const contextualMigration = readFileSync(
   new URL(
     "../../../../supabase/migrations/20261030000006_action_collection_context_references_public_minimum.sql",
@@ -38,7 +45,7 @@ const currentProjectionMigration = readFileSync(
 
 describe("scientific projection convergence migration STATIC_CONTRACT", () => {
   it("keeps SQL and TypeScript version identities in parity", () => {
-    expect(convergenceMigration).toContain(`'${ACTION_COLLECTION_REFERENCE_FORMULA_VERSION}'`);
+    expect(collectionAveragesMigration).toContain(`'${ACTION_COLLECTION_REFERENCE_FORMULA_VERSION}'`);
     expect(convergenceMigration).toContain(`'${POLLUTION_SCORE_REFERENCE_FORMULA_VERSION}'`);
     expect(volumeProxyMigration).toContain("'impact-terrain-public-2026.09-v4'");
     expect(currentProjectionMigration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);

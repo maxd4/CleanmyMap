@@ -426,7 +426,7 @@ describe("HarvestWasteSection comparison", () => {
     expect(markup).toContain('data-fill-percent="50"');
     expect(markup).toContain("Moyenne · 8,0 kg");
     expect(markup).toContain('data-testid="waste-comparison-trend"');
-    expect(markup).toContain("par rapport à la moyenne par participant");
+    expect(markup).toContain("par rapport à la moyenne par collecteur");
     expect(markup).not.toContain("unité opérationnelle");
     expect(markup).toContain("sm:grid-cols-2");
   });
