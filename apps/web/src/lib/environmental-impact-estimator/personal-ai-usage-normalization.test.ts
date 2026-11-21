@@ -57,7 +57,7 @@ describe("personal AI declaration normalization", () => {
 
   it("rejects free-form strings and account-like identifiers in model and operator labels", () => {
     expect(() => normalizePersonalAiDeclaration(declaration({ modelRaw: "https://provider.example/account" }))).toThrow(/libellé court/);
-    expect(() => normalizePersonalAiDeclaration(declaration({ operator: "person@example.test" }))).toThrow(/libellé court/);
+    expect(() => normalizePersonalAiDeclaration(declaration({ operator: "bad:operator" }))).toThrow(/libellé court/);
     expect(() => normalizePersonalAiDeclaration(declaration({ operator: "sk-proj-1234567890abcdef" }))).toThrow(/libellé court/);
     expect(() => normalizePersonalAiDeclaration(declaration({ modelRaw: "1234567890123456" }))).toThrow(/libellé court/);
   });
