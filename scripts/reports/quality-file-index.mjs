@@ -87,7 +87,7 @@ function ensureFile(files, filePath) {
       deadCode: { findings: new Map(), exceptions: [] },
       duplication: { findings: new Map() },
       cycles: { findings: new Map() },
-      documentation: { measurements: null, findings: new Map(), lifecycle: null, domain: null },
+      documentation: { measurements: null, findings: new Map(), lifecycle: null, domain: null, contractReviews: [] },
       architecture: null,
     });
   }
@@ -655,13 +655,22 @@ function addCycles(report, files, domains, candidateGroups) {
 
 function addDocumentation(report, files, domains) {
   if (!report) {
-    return { state: "NOT_MEASURED", status: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", detail: "run historique sans dimension documentaire", documents: [], ranking: [] };
+    return { state: "NOT_MEASURED", status: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", detail: "run historique sans dimension documentaire", documents: [], ranking: [], contractReviews: [], findingCounts: {} };
   }
   if (report.status === "NOT_MEASURED" || report.error) {
     const reason = report.reason ?? (report.error ? "MEASUREMENT_FAILED" : "HISTORICAL_ABSENCE");
-    return { state: "NOT_MEASURED", status: "NOT_MEASURED", reason, detail: reason === "MEASUREMENT_FAILED" ? "mesure documentaire échouée" : "run historique sans dimension documentaire", error: report.error ?? null, documents: [], ranking: [] };
+    return { state: "NOT_MEASURED", status: "NOT_MEASURED", reason, detail: reason === "MEASUREMENT_FAILED" ? "mesure documentaire échouée" : "run historique sans dimension documentaire", error: report.error ?? null, documents: [], ranking: [], contractReviews: [], findingCounts: {} };
   }
-  const findingCounts = { surveillance: 0, reviewRequired: 0, architectureReview: 0, invalidReferences: 0 };
+  const findingCounts = {
+    surveillance: 0,
+    reviewRequired: 0,
+    architectureReview: 0,
+    invalidReferences: 0,
+    criticalContracts: report.summary?.criticalContracts ?? report.contractReviews?.length ?? 0,
+    documentedContracts: report.summary?.documentedContracts ?? (report.contractReviews ?? []).filter((review) => review.status === "DOCUMENTED").length,
+    reviewRequiredContracts: report.summary?.reviewRequiredContracts ?? (report.contractReviews ?? []).filter((review) => review.status === "REVIEW_REQUIRED").length,
+    notMeasuredContracts: report.summary?.notMeasuredContracts ?? (report.contractReviews ?? []).filter((review) => review.status === "NOT_MEASURED").length,
+  };
   for (const document of report.documents ?? []) {
     const file = ensureFile(files, document.path);
     if (!file) continue;
@@ -714,6 +723,38 @@ function addDocumentation(report, files, domains) {
       addDomain(domains, domainId, "maintenabilité des documents Markdown et MDX", file, findingId);
     }
   }
+  for (const review of report.contractReviews ?? []) {
+    const file = ensureFile(files, review.path);
+    if (!file) continue;
+    file.documentation.contractReviews.push(review);
+    if (review.status !== "REVIEW_REQUIRED") continue;
+    const domainId = "documentation:critical-contracts";
+    if (!domains.has(domainId)) {
+      domains.set(domainId, {
+        id: domainId,
+        responsibility: "traçabilité des contrats critiques et owners existants",
+        files: new Set(),
+        findingIds: new Set(),
+        candidateGroups: new Set(),
+        statuses: new Map(),
+        levels: new Map(),
+        invalidReferences: 0,
+      });
+    }
+    const finding = {
+      type: "documentation-contract-review",
+      path: review.path,
+      kind: review.kind,
+      symbols: review.symbols,
+      responsibility: review.responsibility,
+      status: review.status,
+      reasons: review.reasons,
+      documentsExamined: review.documentsExamined,
+      evidence: review.evidence,
+    };
+    const findingId = addFinding(file, "documentation", finding, domainId, stableId("documentation-contract-review", finding));
+    addDomain(domains, domainId, "traçabilité des contrats critiques et owners existants", file, findingId);
+  }
   return {
     state: "PRESENT",
     status: report.status,
@@ -723,6 +764,7 @@ function addDocumentation(report, files, domains) {
     findingCounts,
     documents: report.documents ?? [],
     ranking: report.ranking ?? [],
+    contractReviews: report.contractReviews ?? [],
   };
 }
 
@@ -931,6 +973,10 @@ function buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDo
     documentationFiles: documentation.summary?.trackedDocuments ?? 0,
     documentationInvalidReferences: documentation.summary?.invalidReferences ?? 0,
     documentationUnverifiedReferences: documentation.summary?.unverifiedReferences ?? 0,
+    documentationCriticalContracts: documentation.findingCounts?.criticalContracts ?? 0,
+    documentationDocumentedContracts: documentation.findingCounts?.documentedContracts ?? 0,
+    documentationReviewRequiredContracts: documentation.findingCounts?.reviewRequiredContracts ?? 0,
+    documentationNotMeasuredContracts: documentation.findingCounts?.notMeasuredContracts ?? 0,
     typeSafetyFindings: typeSafety.findingCounts?.typeSafety ?? 0,
     asyncSafetyFindings: typeSafety.findingCounts?.asyncSafety ?? 0,
     hotspotCandidates: hotspots.findingCounts?.hotspotCandidates ?? 0,

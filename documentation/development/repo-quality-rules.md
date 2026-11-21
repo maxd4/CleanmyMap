@@ -54,6 +54,13 @@ d'architecture ou de domaine.
   être lisible.
 - Une règle technique transversale vit dans un document canonique, puis est
   liée depuis les index ; elle n'est pas copiée dans plusieurs backlogs.
+- Pour un contrat critique (RPC privilégiée, autorisation, service partagé ou
+  calcul scientifique), la revue documentaire s'appuie sur l'owner identifiable
+  et les documents `CURRENT` existants. Elle rapporte le chemin du code, les
+  documents examinés et les dimensions traçables ; `DOCUMENTED`,
+  `REVIEW_REQUIRED` et `NOT_MEASURED` restent descriptifs et non bloquants.
+  `PLAN` ne remplace pas un contrat `CURRENT`, et une recherche textuelle
+  négative ne prouve pas une absence documentaire.
 
 ## 5. Modularisation
 

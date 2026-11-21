@@ -1040,6 +1040,33 @@ test("projette la maintenabilité documentaire dans les fichiers et le domain in
   assert.match(buildQualityFileIndexMarkdown(index), /DOCUMENTATION DOMAIN INDEX/);
 });
 
+test("projette les revues de contrats critiques sans créer de gate", () => {
+  const run = buildRun();
+  run.documentation = documentationReport();
+  run.documentation.contractReviews = [{
+    path: "apps/web/supabase/migrations/001_rpc.sql",
+    kind: "PRIVILEGED_RPC",
+    symbols: ["secure_rpc"],
+    responsibility: "RPC privilégiée et frontière serveur/PostgreSQL",
+    status: "REVIEW_REQUIRED",
+    reasons: ["MISSING_TESTS"],
+    documentsExamined: [{ path: "documentation/rpc.md", lifecycle: { statuses: ["CURRENT"], source: "EXPLICIT_MARKER" }, invalidReferences: [] }],
+    evidence: { codePath: "apps/web/supabase/migrations/001_rpc.sql", responsibility: "RPC privilégiée et frontière serveur/PostgreSQL", dimensions: { permissions: true, tests: false } },
+  }];
+  const index = buildQualityFileIndex({ run, mode: "ALL" });
+  const codeFile = index.files.find((file) => file.path === "apps/web/supabase/migrations/001_rpc.sql");
+  const markdown = buildQualityFileIndexMarkdown(index);
+
+  assert.equal(index.audits.documentation.contractReviews[0].status, "REVIEW_REQUIRED");
+  assert.equal(index.globalCounts.documentationCriticalContracts, 1);
+  assert.equal(index.globalCounts.documentationReviewRequiredContracts, 1);
+  assert.equal(codeFile.findings.documentation.state, "PRESENT");
+  assert.equal(codeFile.findings.documentation.items[0].type, "documentation-contract-review");
+  assert.match(markdown, /Contrats critiques et traçabilité documentaire/);
+  assert.match(markdown, /apps\/web\/supabase\/migrations\/001_rpc\.sql/);
+  assert.match(markdown, /MISSING_TESTS/);
+});
+
 test("projette le couplage architectural par fichier et domaine sans confondre les types ni les tests", () => {
   const architecture = architectureProjectionFixture();
   assert.deepEqual(architecture, architectureProjectionFixture());

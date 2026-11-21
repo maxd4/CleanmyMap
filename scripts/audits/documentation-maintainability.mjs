@@ -1,9 +1,18 @@
 #!/usr/bin/env node
 
+import { execFileSync } from "node:child_process";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { createRepositoryView } from "../checks/repository-view.mjs";
 import { measureContent } from "../checks/top-heavy-measurement.mjs";
+import { gitExecutable } from "../ci/git-executable.mjs";
+import {
+  discoverCriticalContracts,
+  isSourceFileForContractReview,
+  reviewCriticalContracts,
+  summarizeCriticalContractReviews,
+} from "./documentation-contract-review.mjs";
 
 const DOCUMENTATION_MAINTAINABILITY_SCHEMA_VERSION = 1;
 const DOCUMENTATION_EXTENSIONS = Object.freeze([".md", ".mdx"]);
@@ -434,7 +443,19 @@ export function buildDocumentationNotMeasured({ auditedHead = null, runId = null
     thresholds: DOCUMENTATION_THRESHOLDS,
     documents: [],
     ranking: [],
-    summary: { trackedDocuments: 0, surveillance: 0, reviewRequired: 0, architectureReview: 0, invalidReferences: 0, unverifiedReferences: 0 },
+    contractReviews: [],
+    summary: {
+      trackedDocuments: 0,
+      surveillance: 0,
+      reviewRequired: 0,
+      architectureReview: 0,
+      invalidReferences: 0,
+      unverifiedReferences: 0,
+      criticalContracts: 0,
+      documentedContracts: 0,
+      reviewRequiredContracts: 0,
+      notMeasuredContracts: 0,
+    },
   };
 }
 
@@ -445,8 +466,18 @@ export function buildDocumentationMaintainabilityReport({ root = process.cwd(), 
   const files = new Set([...trackedFiles].filter(isDocumentationFile));
   const contents = new Map([...files].map((file) => [file, view.readBinary(file)]));
   const headingsByFile = new Map([...contents].map(([file, content]) => [file, parseMarkdownStructure(normalizeText(content))]));
-  const documents = [...files].sort((left, right) => left.localeCompare(right)).map((file) => analyzeDocument(file, contents.get(file), trackedFiles, headingsByFile));
+  const documentSources = [...files].sort((left, right) => left.localeCompare(right)).map((file) => ({
+    ...analyzeDocument(file, contents.get(file), trackedFiles, headingsByFile),
+    content: normalizeText(contents.get(file)),
+  }));
+  const documents = documentSources.map(({ content, ...document }) => document);
+  const sourceContents = new Map([...trackedFiles]
+    .filter((file) => isSourceFileForContractReview(file))
+    .map((file) => [file, normalizeText(view.readBinary(file))]));
+  const criticalContracts = discoverCriticalContracts({ files: [...sourceContents.keys()], readFile: (file) => sourceContents.get(file) });
+  const contractReviews = reviewCriticalContracts({ contracts: criticalContracts, documents: documentSources });
   const ranking = [...documents].sort((left, right) => right.lines - left.lines || right.bytes - left.bytes || left.path.localeCompare(right.path));
+  const contractSummary = summarizeCriticalContractReviews(contractReviews);
   const summary = {
     trackedDocuments: documents.length,
     surveillance: documents.filter((document) => document.level === "SURVEILLANCE").length,
@@ -454,18 +485,23 @@ export function buildDocumentationMaintainabilityReport({ root = process.cwd(), 
     architectureReview: documents.filter((document) => document.level === "ARCHITECTURE_REVIEW").length,
     invalidReferences: documents.reduce((sum, document) => sum + document.internalLinks.invalid.length, 0),
     unverifiedReferences: documents.reduce((sum, document) => sum + document.internalLinks.unverified.length, 0),
+    ...contractSummary,
   };
   return {
     schemaVersion: DOCUMENTATION_MAINTAINABILITY_SCHEMA_VERSION,
     kind: "documentation-maintainability",
     status: "PASS",
-    attentionRequired: summary.reviewRequired > 0 || summary.architectureReview > 0 || summary.invalidReferences > 0,
+    attentionRequired: summary.reviewRequired > 0
+      || summary.architectureReview > 0
+      || summary.invalidReferences > 0
+      || summary.reviewRequiredContracts > 0,
     auditedHead: auditedSha,
     runId,
     provenance: "COMMITTED_SNAPSHOT",
     thresholds: DOCUMENTATION_THRESHOLDS,
     documents,
     ranking,
+    contractReviews,
     summary,
   };
 }
@@ -479,5 +515,60 @@ export function validateDocumentationReport(report, { auditedSha, runId } = {}) 
   if (!["PASS", "NOT_MEASURED"].includes(report.status) || !Array.isArray(report.documents) || !Array.isArray(report.ranking)) {
     throw new Error("Rapport documentation-maintainability incomplet.");
   }
+  if (report.contractReviews !== undefined && !Array.isArray(report.contractReviews)) {
+    throw new Error("Rapport documentation-maintainability invalide: contractReviews.");
+  }
+  for (const field of ["criticalContracts", "documentedContracts", "reviewRequiredContracts", "notMeasuredContracts"]) {
+    if (report.summary?.[field] !== undefined && !Number.isInteger(report.summary[field])) {
+      throw new Error(`Rapport documentation-maintainability invalide: summary.${field}.`);
+    }
+  }
   return report;
+}
+
+function cliValue(args, name, fallback = null) {
+  const index = args.indexOf(name);
+  return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
+}
+
+function currentHead(root) {
+  return execFileSync(gitExecutable(), ["-C", root, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+}
+
+export function runDocumentationMaintainabilityCli(args = process.argv.slice(2)) {
+  const root = path.resolve(cliValue(args, "--root", process.cwd()));
+  const auditedSha = cliValue(args, "--sha", currentHead(root));
+  const runId = cliValue(args, "--run-id", "documentation-maintainability-cli");
+  const dryRun = args.includes("--dry-run");
+  const report = buildDocumentationMaintainabilityReport({ root, auditedSha, runId });
+  if (args.includes("--json")) {
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  } else {
+    const summary = report.summary;
+    process.stdout.write([
+      `DOCUMENTATION_AUDIT_MODE: ${dryRun ? "DRY_RUN" : "READ_ONLY"}`,
+      `DOCUMENTATION_AUDIT_SHA: ${report.auditedHead}`,
+      `DOCUMENTATION_AUDIT_RUN_ID: ${report.runId}`,
+      `DOCUMENTATION_AUDIT_STATUS: ${report.status}`,
+      `DOCUMENTS_TRACKED: ${summary.trackedDocuments}`,
+      `CRITICAL_CONTRACTS: ${summary.criticalContracts}`,
+      `DOCUMENTED: ${summary.documentedContracts}`,
+      `REVIEW_REQUIRED: ${summary.reviewRequiredContracts}`,
+      `NOT_MEASURED: ${summary.notMeasuredContracts}`,
+      `INVALID_DOCUMENT_REFERENCES: ${summary.invalidReferences}`,
+      "DOCUMENTATION_AUDIT_WRITE: NONE",
+    ].join("\n") + "\n");
+  }
+  return report;
+}
+
+const currentFile = path.resolve(fileURLToPath(import.meta.url));
+const invokedFile = process.argv[1] ? path.resolve(process.argv[1]) : "";
+if (currentFile === invokedFile) {
+  try {
+    runDocumentationMaintainabilityCli();
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
+    process.exitCode = 1;
+  }
 }

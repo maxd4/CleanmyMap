@@ -234,3 +234,70 @@ test("les ancres valides et invalides restent attribuées au fichier sans modifi
 function reportThresholds() {
   return DOCUMENTATION_THRESHOLDS;
 }
+
+const privilegedRpc = (name) => `create or replace function public.${name}(input jsonb)
+returns jsonb
+language sql
+security definer
+as $$ select input $$;
+grant execute on function public.${name}(jsonb) to service_role;
+`;
+
+function completeRpcDocumentation(path, lifecycle = "CURRENT", extra = "") {
+  return `> **Statut documentaire : ${lifecycle}.**
+
+# Contrat RPC ${path}
+
+Code : ${path}
+
+Responsabilité / owner : RPC privilégiée et source canonique du contrat.
+Acteurs : le requester authentifié et le service propriétaire.
+Permissions : service_role uniquement.
+Entrées / sorties : le paramètre JSON est validé et la fonction retourne le résultat.
+Erreurs : refus, exception et erreur sont documentés.
+Tests : scénario de régression et test pgTAP associés.
+${extra}
+`;
+}
+
+test("classe les contrats critiques selon la preuve CURRENT, PLAN, contradiction et référence", () => {
+  const entries = {
+    "apps/web/supabase/migrations/001_documented.sql": privilegedRpc("documented_rpc"),
+    "apps/web/supabase/migrations/002_contradictory.sql": privilegedRpc("contradictory_rpc"),
+    "apps/web/supabase/migrations/003_plan.sql": privilegedRpc("plan_rpc"),
+    "apps/web/supabase/migrations/004_missing-reference.sql": privilegedRpc("missing_rpc"),
+    "apps/web/supabase/migrations/005_unreferenced.sql": privilegedRpc("unreferenced_rpc"),
+    "apps/web/src/lib/trivial.ts": "function localOnly() { return 1; }\n",
+    "documentation/rpc/documented.md": completeRpcDocumentation("apps/web/supabase/migrations/001_documented.sql"),
+    "documentation/rpc/contradictory.md": completeRpcDocumentation("apps/web/supabase/migrations/002_contradictory.sql", "CURRENT", "Permissions : public."),
+    "documentation/rpc/plan.md": completeRpcDocumentation("apps/web/supabase/migrations/003_plan.sql", "PLAN"),
+    "documentation/rpc/missing.md": completeRpcDocumentation("apps/web/supabase/migrations/004_missing-reference.sql", "CURRENT", "[Contrat connexe](missing-contract.md)"),
+  };
+  const report = run(entries);
+  const byPath = Object.fromEntries(report.contractReviews.map((review) => [review.path, review]));
+
+  assert.equal(byPath["apps/web/supabase/migrations/001_documented.sql"].status, "DOCUMENTED");
+  assert.equal(byPath["apps/web/supabase/migrations/001_documented.sql"].documentsExamined[0].lifecycle.statuses[0], "CURRENT");
+  assert.equal(byPath["apps/web/supabase/migrations/002_contradictory.sql"].status, "REVIEW_REQUIRED");
+  assert.ok(byPath["apps/web/supabase/migrations/002_contradictory.sql"].reasons.includes("CONTRADICTORY_PERMISSION_CLAIM:documentation/rpc/contradictory.md"));
+  assert.equal(byPath["apps/web/supabase/migrations/003_plan.sql"].status, "REVIEW_REQUIRED");
+  assert.ok(byPath["apps/web/supabase/migrations/003_plan.sql"].reasons.includes("PLAN_IS_NOT_CURRENT_CONTRACT"));
+  assert.equal(byPath["apps/web/supabase/migrations/004_missing-reference.sql"].status, "REVIEW_REQUIRED");
+  assert.ok(byPath["apps/web/supabase/migrations/004_missing-reference.sql"].reasons.some((reason) => reason.startsWith("INVALID_DOCUMENT_REFERENCE:")));
+  assert.equal(byPath["apps/web/supabase/migrations/005_unreferenced.sql"].status, "NOT_MEASURED");
+  assert.equal(report.contractReviews.some((review) => review.path.endsWith("trivial.ts")), false);
+  assert.deepEqual(run(entries).contractReviews, report.contractReviews);
+  assert.deepEqual(run(entries).summary, report.summary);
+  assert.deepEqual(report.summary, {
+    trackedDocuments: 4,
+    surveillance: 0,
+    reviewRequired: 0,
+    architectureReview: 0,
+    invalidReferences: 1,
+    unverifiedReferences: 0,
+    criticalContracts: 5,
+    documentedContracts: 1,
+    reviewRequiredContracts: 3,
+    notMeasuredContracts: 1,
+  });
+});

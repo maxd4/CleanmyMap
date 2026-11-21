@@ -280,6 +280,19 @@ partir de 601 lignes, `REVIEW_REQUIRED` à partir de 1 001 et
 `ARCHITECTURE_REVIEW` à partir de 1 501. Un run historique sans cette
 dimension est projeté en `NOT_MEASURED`.
 
+La même analyse examine, sans gate supplémentaire, les contrats critiques dont
+un owner est identifiable dans le code : RPC privilégiées, autorisations,
+services partagés et calculs scientifiques. Elle rapproche le chemin du code
+des documents examinés et vérifie les dimensions pertinentes (responsabilité,
+acteurs, permissions, entrées/sorties, provenance, unités, erreurs et tests).
+`DOCUMENTED` exige une preuve `CURRENT` cohérente, `REVIEW_REQUIRED` expose une
+contradiction, une référence invalide ou une dimension non traçable, et
+`NOT_MEASURED` signifie qu'aucune documentation attribuable n'a été retenue.
+Une recherche textuelle négative ne suffit jamais à conclure à une absence.
+La revue ponctuelle, strictement read-only, est disponible avec
+`npm run audit:documentation -- --dry-run`; elle n'écrit aucun artefact et ne
+modifie pas les cinq gates historiques.
+
 En mode `all`, l'index enrichit également chaque fichier et domaine avec le
 graphe TypeScript canonique de `generate-architecture-import-graph.mjs`, lu sur
 le SHA Git exact du run, et l'évaluation des frontières de
