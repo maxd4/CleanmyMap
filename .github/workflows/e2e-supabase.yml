@@ -79,6 +79,9 @@ env:
 jobs:
   persistent-e2e:
     name: Persistent E2E on ephemeral Supabase
+    # Manual runs can execute credential-bearing Clerk steps only from the
+    # current main ref. Other dispatch refs are skipped before runner startup.
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
     # Hosted runner only. The generated Supabase network was absent in recent
     # failures, so the existing CLI lane receives one run-scoped bridge network.
     runs-on: ubuntu-22.04
@@ -93,6 +96,17 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Verify manual run targets current main
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_main_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ -z "$current_main_sha" || "$current_main_sha" != "$GITHUB_SHA" ]]; then
+            echo "Manual E2E runs must target the current main SHA."
+            exit 1
+          fi
 
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1

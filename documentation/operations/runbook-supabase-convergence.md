@@ -8,6 +8,13 @@ quotidien restent des contrôles read-only. Il n'a pas de déclencheur
 `pull_request` et utilise l'environnement GitHub protégé
 `supabase-production`.
 
+Le workflow éphémère accepte aussi `workflow_dispatch` pour relancer la preuve
+après configuration humaine des credentials Clerk Development. Ce déclenchement
+ne peut démarrer que depuis `main` et vérifie que le SHA du run est encore le
+`HEAD` distant de `main` avant toute étape qui utilise ces credentials. Les
+déclenchements `workflow_run` et leur attestation de provenance restent le seul
+chemin vers l'application automatique.
+
 ## Préconditions et références
 
 L'environnement fournit uniquement `SUPABASE_ACCESS_TOKEN` et

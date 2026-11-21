@@ -52,6 +52,14 @@ test("Supabase convergence is proof-triggered, scheduled, manual, and serialized
   assert.match(workflow, /github\.event_name == 'workflow_run'/);
 });
 
+test("manual ephemeral E2E is restricted to the current main SHA before any credentials run", () => {
+  const e2eWorkflow = fs.readFileSync(path.join(repositoryRoot, ".github", "workflows", "e2e-supabase.yml"), "utf8");
+  assert.match(e2eWorkflow, /workflow_dispatch:/);
+  assert.match(e2eWorkflow, /if: github\.event_name != 'workflow_dispatch' \|\| github\.ref == 'refs\/heads\/main'/);
+  assert.match(e2eWorkflow, /Verify manual run targets current main[\s\S]*?if: github\.event_name == 'workflow_dispatch'[\s\S]*?git ls-remote origin refs\/heads\/main[\s\S]*?current_main_sha.*GITHUB_SHA/);
+  assert.ok(e2eWorkflow.indexOf("Verify manual run targets current main") < e2eWorkflow.indexOf("Run SPOGOMI Cachan mixed integration on ephemeral Supabase"));
+});
+
 test("production secrets are scoped to the protected non-PR job and the canonical CLI gate", () => {
   assert.match(workflow, /SUPABASE_ACCESS_TOKEN:\s*\$\{\{ secrets\.SUPABASE_ACCESS_TOKEN \}\}/);
   assert.match(workflow, /SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
