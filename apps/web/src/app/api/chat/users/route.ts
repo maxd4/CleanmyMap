@@ -6,6 +6,7 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 
 const CHAT_USERS_CACHE_HEADERS = {
+  // Justification Vercel no-store: this authenticated search is user-specific and must not enter shared caches.
   "Cache-Control": "private, no-store",
 };
 
