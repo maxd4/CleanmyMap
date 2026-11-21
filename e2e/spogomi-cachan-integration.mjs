@@ -73,6 +73,7 @@ function startApp({ port, userId, database }) {
     env: {
       ...process.env,
       PORT: String(port),
+      DEV_HOST: "127.0.0.1",
       DEV_STRICT_PORT: "1",
       NEXT_PUBLIC_SUPABASE_URL: database.url,
       SUPABASE_URL: database.url,
