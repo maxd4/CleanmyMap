@@ -189,6 +189,8 @@ export type ActionPreparationData = {
   accessibility?: string;
   /** Structured observation state; this is not a PMR certification. */
   accessibilityStatus?: ActionAccessibilityStatus;
+  /** References an already-persisted route version; never stores or recalculates geometry. */
+  accessibilityAlternativeRouteVersionId?: string;
   safetyInstructions?: string;
   recommendedMaterials?: string;
   /** Organizer-provided equipment, kept separate from volunteer suggestions. */

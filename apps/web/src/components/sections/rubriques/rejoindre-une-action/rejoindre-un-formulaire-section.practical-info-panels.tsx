@@ -54,6 +54,7 @@ export function OrganizerPracticalInformation({
       <dl className="space-y-3">
         <PublicValue label={fr ? "État de l'accessibilité" : "Accessibility status"} value={accessibilityStatusLabel(info.accessibilityStatus, fr)} />
         <PublicValue label={fr ? "Accès, obstacles et conditions" : "Access, obstacles and conditions"} value={info.accessibility ?? accessibilityMissing} />
+        {info.accessibilityAlternativeRoute ? <PublicValue label={fr ? "Itinéraire alternatif déclaré" : "Declared alternative route"} value={`${info.accessibilityAlternativeRoute.routeCount} parcours enregistré(s), version du ${new Date(info.accessibilityAlternativeRoute.appliedAt).toLocaleDateString(fr ? "fr-FR" : "en-GB")}. Cette version n’est pas une garantie d’accessibilité actuelle.`} /> : null}
         <PublicValue label={fr ? "Consignes de sécurité" : "Safety instructions"} value={info.safetyInstructions ?? missing} />
         <PublicValue label={fr ? "Matériel à apporter" : "Equipment to bring"} value={info.materialsToBring ?? materialsMissing} />
         <PublicList label={fr ? "Suggestions rapides" : "Quick suggestions"} values={info.suggestedMaterials ?? []} empty={materialsMissing} />

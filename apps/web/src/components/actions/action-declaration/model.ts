@@ -69,6 +69,8 @@ export type FormState = {
  estimatedDifficulty: "" | "facile" |"moderee" |"soutenue";
  accessibility: string;
  accessibilityStatus: ActionAccessibilityStatus;
+ accessibilityAlternativeRouteVersionId: string;
+ accessibilityRouteVersionOptions: Array<{ versionId: string; label: string }>;
  formalitiesContext?: ActionFormalitiesFacts | null;
  safetyInstructions: string;
  recommendedMaterials: string;
@@ -195,6 +197,8 @@ export const initialState: FormState = {
  estimatedDifficulty:"",
  accessibility:"",
  accessibilityStatus:"not_evaluated",
+ accessibilityAlternativeRouteVersionId:"",
+ accessibilityRouteVersionOptions:[],
  formalitiesContext: null,
  safetyInstructions:"",
  recommendedMaterials:"",

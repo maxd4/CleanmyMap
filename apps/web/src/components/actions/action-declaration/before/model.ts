@@ -286,6 +286,7 @@ export function sanitizePreActionForm(form: FormState): FormState {
   next.locationLabel = next.departureLocationLabel.trim() || next.actionTitle;
   next.departureLocationLabel = next.departureLocationLabel.trim();
   next.accessibility = next.accessibility.trim();
+  next.accessibilityAlternativeRouteVersionId = next.accessibilityAlternativeRouteVersionId.trim();
   next.safetyInstructions = next.safetyInstructions.trim();
   next.recommendedMaterials = next.recommendedMaterials.trim();
   next.groupJoinEnabled = Boolean(next.groupJoinEnabled);

@@ -520,6 +520,36 @@ export const actionsAuthorizationContract = {
       evidenceScope: "module",
     },
   },
+  "actions/[actionId]/accessibility-support": {
+    GET: {
+      expected: "Confirmed participant reads their own private functional-support request, or authorized action manager reads requests scoped to that action",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + canonical action-manager authorization; participant requests are loaded only by the session userId and organizer projection is action-scoped",
+      evidence: ["requireAuthenticatedAccess", "resolveOrganizerAccess", "loadOwnActionAccessibilitySupportRequest", "loadActionAccessibilitySupportRequestsForOrganizer"],
+      evidenceScope: "module",
+    },
+    PUT: {
+      expected: "Confirmed participant replaces only their own functional needs and explicit day-tracking consent",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + saveActionAccessibilitySupportRequest validates the allowlisted needs and reads confirmed registration before service-role upsert",
+      evidence: ["requireAuthenticatedAccess", "saveActionAccessibilitySupportRequest"],
+      evidenceScope: "module",
+    },
+    PATCH: {
+      expected: "Authorized action manager records an allowlisted manual check-in only for an unexpired consented request scoped to the action",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + canonical action-manager authorization + validated fields; service update rechecks action scope, explicit consent and retention window",
+      evidence: ["requireAuthenticatedAccess", "resolveOrganizerAccess", "updateActionAccessibilityCheckIn"],
+      evidenceScope: "module",
+    },
+    DELETE: {
+      expected: "Authenticated participant deletes only their own action-scoped support request",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + deleteOwnActionAccessibilitySupportRequest scopes deletion to the action and Clerk session userId",
+      evidence: ["requireAuthenticatedAccess", "deleteOwnActionAccessibilitySupportRequest"],
+      evidenceScope: "module",
+    },
+  },
   "actions/[actionId]/field-roles": {
     GET: {
       expected: "Authenticated confirmed volunteer reads own per-action responsibilities, or authorized action manager reads the confirmed roster",

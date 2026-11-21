@@ -16,10 +16,12 @@ import type {
   PlannerWeatherContext,
   PlannerWeatherContextRequest,
 } from "@/lib/weather/planner-weather";
+import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
 
 export type PublicActionPracticalInformation = {
   accessibility: string | null;
   accessibilityStatus?: ActionPreparationData["accessibilityStatus"] | null;
+  accessibilityAlternativeRoute?: { versionId: string; appliedAt: string; routeCount: number } | null;
   safetyInstructions: string | null;
   derivedSafetyRecommendations: string[];
   materialsToBring: string | null;
@@ -67,7 +69,7 @@ function buildPublicRefreshments(preparationData: ActionPreparationData | null |
 function preparationWeatherContext(
   preparationData: ActionPreparationData | null | undefined,
 ): PlannerWeatherContext | null {
-  return preparationData?.routeVersioning?.active.calculation.weatherContext ??
+  return preparationData?.routeVersioning?.active?.calculation.weatherContext ??
     preparationData?.routeCalibrationContext?.plannerSnapshot?.weatherContext ??
     null;
 }
@@ -107,6 +109,15 @@ export function buildPublicActionPracticalInformation(
   return {
     accessibility: readPublicText(preparationData?.accessibility),
     accessibilityStatus: preparationData?.accessibilityStatus ?? null,
+    accessibilityAlternativeRoute: (() => {
+      const selectedId = preparationData?.accessibilityAlternativeRouteVersionId;
+      const version = preparationData?.routeVersioning?.history?.find((item) => item.versionId === selectedId);
+      if (!version) return null;
+      const routes = getPublicOperationalRouteSegments(version.operationalRoute);
+      return routes.length > 0
+        ? { versionId: version.versionId, appliedAt: version.appliedAt, routeCount: routes.length }
+        : null;
+    })(),
     safetyInstructions: readPublicText(preparationData?.safetyInstructions),
     derivedSafetyRecommendations: [...guidance.toAvoid, ...guidance.toReport],
     materialsToBring: readPublicText(preparationData?.recommendedMaterials),

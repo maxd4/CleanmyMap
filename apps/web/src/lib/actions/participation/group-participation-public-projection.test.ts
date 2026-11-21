@@ -77,6 +77,7 @@ describe("public action practical information", () => {
     expect(buildPublicActionPracticalInformation(undefined)).toEqual({
       accessibility: null,
       accessibilityStatus: null,
+      accessibilityAlternativeRoute: null,
       safetyInstructions: null,
       derivedSafetyRecommendations: [],
       materialsToBring: null,
@@ -98,6 +99,26 @@ describe("public action practical information", () => {
       },
       participantMessage: null,
     });
+  });
+
+  it("projects only the selected route version summary and never the planner history", () => {
+    const result = buildPublicActionPracticalInformation({
+      accessibilityAlternativeRouteVersionId: "route-old",
+      routeVersioning: {
+        history: [{
+          versionId: "route-old",
+          appliedAt: "2026-11-20T10:00:00.000Z",
+          operationalRoute: { routes: [{ routeId: "route-1", groupIndex: 1, geometry: { coordinates: [[48, 2], [48.1, 2.1]] } }] },
+        }],
+      },
+    } as never);
+
+    expect(result.accessibilityAlternativeRoute).toEqual({
+      versionId: "route-old",
+      appliedAt: "2026-11-20T10:00:00.000Z",
+      routeCount: 1,
+    });
+    expect(JSON.stringify(result)).not.toContain("routeVersioning");
   });
 
   it.each([

@@ -18,8 +18,36 @@ export type ActionRetentionJobResult = {
   blockedCount: number;
   conflictCount: number;
   failedCount: number;
+  expiredAccessibilityRequestsScanned: number;
+  expiredAccessibilityRequestsDeleted: number;
   cutoff: string;
 };
+
+type AccessibilityRetentionResult = {
+  scannedCount: number;
+  deletedCount: number;
+};
+
+function parseAccessibilityRetentionResult(value: unknown): AccessibilityRetentionResult {
+  if (!Array.isArray(value) || !value[0] || !isActionRecord(value[0])) {
+    throw new Error("La réponse de purge des demandes privées est invalide.");
+  }
+  const row = value[0];
+  if (!Number.isInteger(row.scanned_count) || !Number.isInteger(row.deleted_count)) {
+    throw new Error("La réponse de purge des demandes privées est invalide.");
+  }
+  return { scannedCount: Number(row.scanned_count), deletedCount: Number(row.deleted_count) };
+}
+
+async function callAccessibilityRetentionRpc(now: Date, dryRun: boolean, batchSize: number): Promise<AccessibilityRetentionResult> {
+  const rawResult: unknown = await getSupabaseServerClient(true).rpc(
+    "purge_expired_action_accessibility_support_requests",
+    { p_as_of: now.toISOString(), p_dry_run: dryRun, p_batch_size: batchSize },
+  );
+  const result = parseActionSupabaseResult(rawResult);
+  if (result.error) throw result.error;
+  return parseAccessibilityRetentionResult(result.data);
+}
 
 function parseRetentionRows(value: unknown): RetentionRow[] {
   if (!Array.isArray(value)) throw new Error("La réponse de rétention est invalide.");
@@ -99,12 +127,18 @@ export async function runActionRetentionJob(params: {
   const batchSize = Math.max(1, Math.min(500, Math.trunc(params.batchSize ?? DEFAULT_BATCH_SIZE)));
   const previewRows = await callRetentionRpc({ now, dryRun: true, batchSize });
   const preview = summarize(previewRows);
+  const accessibilityPreview = await callAccessibilityRetentionRpc(now, true, batchSize);
 
   if (dryRun || preview.wouldDeleteCount === 0) {
+    const accessibilityDeletion = dryRun || accessibilityPreview.scannedCount === 0
+      ? { scannedCount: accessibilityPreview.scannedCount, deletedCount: 0 }
+      : await callAccessibilityRetentionRpc(now, false, batchSize);
     const result: ActionRetentionJobResult = {
       status: dryRun ? "dry_run" : "completed",
       ...preview,
       deletedCount: 0,
+      expiredAccessibilityRequestsScanned: accessibilityDeletion.scannedCount,
+      expiredAccessibilityRequestsDeleted: accessibilityDeletion.deletedCount,
       cutoff: getCalendarMonthCutoff(now),
     };
     console.info("[cron/maintenance] action-retention", {
@@ -114,6 +148,7 @@ export async function runActionRetentionJob(params: {
       blockedCount: result.blockedCount,
       conflictCount: result.conflictCount,
       failedCount: result.failedCount,
+      expiredAccessibilityRequestsDeleted: result.expiredAccessibilityRequestsDeleted,
     });
     return result;
   }
@@ -128,6 +163,9 @@ export async function runActionRetentionJob(params: {
     expectedActionIds,
   });
   const deletion = summarize(deletionRows);
+  const accessibilityDeletion = accessibilityPreview.scannedCount === 0
+    ? { scannedCount: 0, deletedCount: 0 }
+    : await callAccessibilityRetentionRpc(now, false, batchSize);
   const result: ActionRetentionJobResult = {
     status: "completed",
     scannedCount: preview.scannedCount + deletion.scannedCount,
@@ -136,6 +174,8 @@ export async function runActionRetentionJob(params: {
     blockedCount: preview.blockedCount + deletion.blockedCount,
     conflictCount: preview.conflictCount + deletion.conflictCount,
     failedCount: preview.failedCount + deletion.failedCount,
+    expiredAccessibilityRequestsScanned: accessibilityDeletion.scannedCount,
+    expiredAccessibilityRequestsDeleted: accessibilityDeletion.deletedCount,
     cutoff: getCalendarMonthCutoff(now),
   };
   console.info("[cron/maintenance] action-retention", {
@@ -146,6 +186,7 @@ export async function runActionRetentionJob(params: {
     blockedCount: result.blockedCount,
     conflictCount: result.conflictCount,
     failedCount: result.failedCount,
+    expiredAccessibilityRequestsDeleted: result.expiredAccessibilityRequestsDeleted,
   });
   return result;
 }

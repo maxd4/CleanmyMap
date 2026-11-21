@@ -161,6 +161,9 @@ function buildPreparationContentFields(
     ...(form.estimatedDifficulty ? { estimatedDifficulty: form.estimatedDifficulty } : {}),
     ...buildPreparationGuidanceFields(form),
     accessibilityStatus: form.accessibilityStatus,
+    ...(form.accessibilityAlternativeRouteVersionId
+      ? { accessibilityAlternativeRouteVersionId: form.accessibilityAlternativeRouteVersionId }
+      : {}),
     formalitiesContext: form.formalitiesContext ?? undefined,
     materialsProvided: form.materialsProvided.trim() || undefined,
     suggestedMaterials: form.suggestedMaterials.length > 0 ? [...form.suggestedMaterials] : undefined,
@@ -283,6 +286,14 @@ function buildHydratedDescriptionFields(
     accessibility: preparationData.accessibility ?? form.accessibility,
     accessibilityStatus:
       normalizeAccessibilityStatus(preparationData.accessibilityStatus) ?? form.accessibilityStatus,
+    accessibilityAlternativeRouteVersionId:
+      typeof preparationData.accessibilityAlternativeRouteVersionId === "string"
+        ? preparationData.accessibilityAlternativeRouteVersionId
+        : "",
+    accessibilityRouteVersionOptions: (preparationData.routeVersioning?.history ?? []).map((version) => ({
+      versionId: version.versionId,
+      label: `Version du ${new Date(version.appliedAt).toLocaleDateString("fr-FR")}`,
+    })),
     formalitiesContext: preparationData.formalitiesContext ?? form.formalitiesContext,
     safetyInstructions:
       stripHistoricalDerivedGuidance(

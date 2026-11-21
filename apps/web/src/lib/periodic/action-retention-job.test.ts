@@ -17,16 +17,19 @@ function row(outcome: "would_delete" | "deleted" | "blocked" | "conflict" | "fai
   };
 }
 
+function accessibilityRetention(scannedCount: number, deletedCount: number) {
+  return { data: [{ scanned_count: scannedCount, deleted_count: deletedCount }], error: null };
+}
+
 describe("action retention job", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("conserve le dry-run agrégé et ne publie aucun résultat comme donnée réelle", async () => {
-    const rpc = vi.fn().mockResolvedValue({
-      data: [row("would_delete", "draft-1"), row("blocked", "draft-2")],
-      error: null,
-    });
+    const rpc = vi.fn((name: string) => name === "purge_expired_action_accessibility_support_requests"
+      ? Promise.resolve(accessibilityRetention(3, 0))
+      : Promise.resolve({ data: [row("would_delete", "draft-1"), row("blocked", "draft-2")], error: null }));
     getClient.mockReturnValue({ rpc } as never);
 
     await expect(runActionRetentionJob({
@@ -39,20 +42,25 @@ describe("action retention job", () => {
       wouldDeleteCount: 1,
       deletedCount: 0,
       blockedCount: 1,
+      expiredAccessibilityRequestsScanned: 3,
+      expiredAccessibilityRequestsDeleted: 0,
       cutoff: "2026-02-28T03:20:00.000Z",
     });
-    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledTimes(2);
     expect(rpc).toHaveBeenCalledWith("purge_inactive_action_records", expect.objectContaining({
       p_dry_run: true,
       p_batch_size: 12,
       p_expected_action_ids: null,
     }));
+    expect(rpc).toHaveBeenCalledWith("purge_expired_action_accessibility_support_requests", expect.objectContaining({ p_dry_run: true }));
   });
 
   it("valide explicitement la liste dry-run avant la suppression et re-émet les conflits", async () => {
     const rpc = vi.fn()
       .mockResolvedValueOnce({ data: [row("would_delete", "draft-1")], error: null })
-      .mockResolvedValueOnce({ data: [row("deleted", "draft-1"), row("conflict", "draft-2")], error: null });
+      .mockResolvedValueOnce(accessibilityRetention(1, 0))
+      .mockResolvedValueOnce({ data: [row("deleted", "draft-1"), row("conflict", "draft-2")], error: null })
+      .mockResolvedValueOnce(accessibilityRetention(1, 1));
     getClient.mockReturnValue({ rpc } as never);
 
     await expect(runActionRetentionJob({
@@ -63,10 +71,13 @@ describe("action retention job", () => {
       wouldDeleteCount: 1,
       deletedCount: 1,
       conflictCount: 1,
+      expiredAccessibilityRequestsScanned: 1,
+      expiredAccessibilityRequestsDeleted: 1,
     });
-    expect(rpc).toHaveBeenNthCalledWith(2, "purge_inactive_action_records", expect.objectContaining({
+    expect(rpc).toHaveBeenNthCalledWith(3, "purge_inactive_action_records", expect.objectContaining({
       p_dry_run: false,
       p_expected_action_ids: ["draft-1"],
     }));
+    expect(rpc).toHaveBeenNthCalledWith(4, "purge_expired_action_accessibility_support_requests", expect.objectContaining({ p_dry_run: false }));
   });
 });

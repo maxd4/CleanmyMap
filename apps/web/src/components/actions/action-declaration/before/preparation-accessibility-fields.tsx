@@ -42,7 +42,7 @@ export function PreparationAccessibilityFields({ form, updateField }: BaseSectio
         <CmmField
           id="before-accessibility-details"
           label="Précisions d'accessibilité"
-          hint={`Décrivez brièvement les accès, obstacles ou conditions observées. ${characterLimitHint(form.accessibility, PREPARATION_FIELD_LIMITS.accessibility)}`}
+          hint={`Indiquez les accès, obstacles, source et date de vérification si connus. Ne saisissez aucune donnée personnelle ou médicale. ${characterLimitHint(form.accessibility, PREPARATION_FIELD_LIMITS.accessibility)}`}
           error={accessibilityError}
         >
           <CmmTextarea
@@ -50,7 +50,7 @@ export function PreparationAccessibilityFields({ form, updateField }: BaseSectio
             onChange={(event) => updateField("accessibility", event.target.value)}
             rows={2}
             maxLength={PREPARATION_FIELD_LIMITS.accessibility}
-            placeholder="Ex. Escalier à éviter, sol irrégulier, accès possible par la rue latérale..."
+            placeholder="Ex. Escalier à éviter, sol irrégulier, accès possible par la rue latérale (vérifié le … auprès de …)."
           />
         </CmmField>
       ) : (
@@ -58,6 +58,19 @@ export function PreparationAccessibilityFields({ form, updateField }: BaseSectio
           Évaluation non demandée. Une description reprise reste affichée.
         </p>
       )}
+      {form.accessibilityRouteVersionOptions.length > 0 ? (
+        <CmmField id="before-accessibility-alternative-route" label="Itinéraire alternatif déjà enregistré" hint="Facultatif. Réutilise une version enregistrée du parcours; ne garantit pas son accessibilité actuelle.">
+          <CmmSelect
+            value={form.accessibilityAlternativeRouteVersionId}
+            onChange={(event) => updateField("accessibilityAlternativeRouteVersionId", event.target.value)}
+          >
+            <option value="">Aucun itinéraire alternatif indiqué</option>
+            {form.accessibilityRouteVersionOptions.map((option) => (
+              <option key={option.versionId} value={option.versionId}>{option.label}</option>
+            ))}
+          </CmmSelect>
+        </CmmField>
+      ) : null}
     </div>
   );
 }

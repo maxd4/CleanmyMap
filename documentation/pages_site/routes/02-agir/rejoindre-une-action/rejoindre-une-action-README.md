@@ -475,3 +475,9 @@ Rester en maintenance pour les futures commandes produit non encore modélisées
 ## Références
 
 - [Présentation détaillée](./rejoindre-une-action-presentation-detaillee.md)
+
+### Accompagnement fonctionnel et accueil
+
+Les cartes futures exposent l'état déclaré des conditions d'accès, les obstacles et, lorsqu'il est renseigné, un itinéraire alternatif issu d'une version déjà enregistrée. L'absence d'information reste visible et le filtre « informations d'accessibilité disponibles » ne masque aucune action par défaut. Ces indications ne certifient pas l'accessibilité.
+
+Après confirmation de son inscription, une personne peut transmettre une sélection de besoins fonctionnels sans diagnostic ni texte médical, la modifier ou la supprimer. La demande reste privée pour la personne et les organisateurs autorisés, n'est pas publiée ni exportée, et expire au plus tard 90 jours après la date de l'action. Le binôme reste une démarche séparée, volontaire et non professionnelle.

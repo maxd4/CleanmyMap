@@ -11,6 +11,7 @@ import { ActionPracticalInformation } from "./rejoindre-un-formulaire-section.pr
 import { getActionDisplayStatus, getCardDisplayStatus, getLifecycleLabel, getParticipationStatusLabel, getRegistrationStatusLabel, getStatusDotTone, type ActionCardStatus } from "./rejoindre-un-formulaire-section.status";
 import { buildCommunityEventHref } from "@/lib/community/event-links";
 import { ActionBuddyPanel } from "../action-buddy-panel";
+import { ActionAccessibilitySupportPanel } from "../action-accessibility-support-panel";
 import { ActionRidesPanel } from "../action-rides-panel";
 
 export function PillBadge({
@@ -270,6 +271,12 @@ export function ActionCard({
       </div>
 
       <ActionPracticalInformation info={item.practicalInfo} fr={fr} />
+
+      {isPreAction ? <ActionAccessibilitySupportPanel
+        actionId={item.id}
+        isRegistrationConfirmed={item.participationStatus === "confirmed"}
+        fr={fr}
+      /> : null}
 
       {authenticated && isPreAction && item.joined && !item.awaitingApproval ? (
         <>

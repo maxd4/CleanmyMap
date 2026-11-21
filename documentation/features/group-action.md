@@ -394,3 +394,9 @@ consentement concurrente et n'envoie aucun message automatique avant match.
 Les notifications de proposition, d'acceptation et d'annulation pertinente
 restent dans `app_notifications`, de type `community`, avec déduplication par
 événement et destinataire.
+
+### Accueil et accompagnement fonctionnel
+
+Les informations publiques de préparation restent déclaratives : état non évalué, conditions renseignées, obstacles identifiés ou à confirmer. Un itinéraire alternatif ne peut référencer qu'une version déjà présente dans l'historique du parcours. Les demandes individuelles sont conservées dans `action_accessibility_support_requests`, accessibles par les routes serveur après vérification de l'inscription finale confirmée ou du rôle d'organisateur canonique. Aucun diagnostic, commentaire libre, géolocalisation ni présence automatique n'est enregistré. Le suivi manuel (arrivée, point intermédiaire, départ) est possible uniquement avec consentement dédié; l'effacement automatique intervient au plus tard 90 jours après l'action.
+
+Les rapports n'infèrent aucune certification, présence ou partenariat à partir d'une demande. Les personnes présentes, les ramasseurs, les mesures individuelles et leurs moyennes restent des notions distinctes; `effective-volunteer-units-v1` n'est pas modifié.

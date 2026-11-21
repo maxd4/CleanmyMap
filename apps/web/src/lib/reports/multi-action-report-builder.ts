@@ -14,6 +14,7 @@ import { computeReportModel } from "@/lib/reports/report-model";
 import { computeReportAccountScopeCoverage, formatReportScopeLabel } from "@/lib/reports/scope";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
 import type { MultiActionReportSelection } from "@/lib/reports/multi-action-report-selection";
+import { buildReportAccessibilitySummary } from "@/lib/reports/report-accessibility-summary";
 
 type MultiActionWasteProfile = {
   categories: Array<{ key: string; label: string; kg: number; actions: number }>;
@@ -52,6 +53,7 @@ function buildMultiActionModel(
     wasteProfile,
     accountScopeCoverage: computeReportAccountScopeCoverage(listItems),
     exportRows: selection.filteredContracts.map(toReportsExportRow),
+    accessibilitySummary: buildReportAccessibilitySummary(selection.filteredContracts),
     dataAvailability: {
       isTruncated: selection.generationData.isTruncated,
       sourceHealth: selection.generationData.sourceHealth,

@@ -473,3 +473,7 @@ le match, le statut et l'acteur de session. Cette voie ne réutilise pas
 `action_share_contact_requests`, qui reste limitée au partage d'action. Les
 notifications buddy restent dans `app_notifications`, de type `community`, et
 sont dédupliquées par une clé d'événement stable et le destinataire.
+
+### Demandes privées d'accompagnement
+
+`action_accessibility_support_requests` ne donne aucun privilège direct aux rôles `anon` et `authenticated`; la table est lue et écrite par `service_role` uniquement après AuthN côté route et AuthZ de l'action. La personne ne lit, modifie ou supprime que sa propre demande et doit avoir une inscription `confirmed`. Le chargement inter-utilisateurs est réservé aux organisateurs canoniques. Les contrôles manuels sont enregistrés uniquement si la personne a donné son consentement séparé; l'accès ne repose sur aucune donnée de diagnostic ou de localisation. Le job de rétention purge ces données dans la limite de 90 jours après l'action.

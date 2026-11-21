@@ -115,6 +115,16 @@ describe("ActionDayView behavior", () => {
     expect(mounted.querySelector('a[href*="ll=48.8566%2C2.3522"]')).toBeTruthy();
   });
 
+  it("does not label the planned route as validated after obstacles are identified", async () => {
+    fetchBriefingMock.mockResolvedValueOnce(briefing("action-obstacles", {
+      accessibilityStatus: "obstacles_identified",
+    }));
+    const mounted = mount("action-obstacles");
+    await harness.flush();
+    expect(mounted.textContent).toContain("Parcours planifié à vérifier avec les obstacles signalés.");
+    expect(mounted.textContent).not.toContain("Itinéraire validé par le planificateur");
+  });
+
   it("exposes a recoverable loading error and keeps clipboard failure local to the copy action", async () => {
     fetchBriefingMock.mockRejectedValueOnce(new Error("Briefing indisponible côté réseau"));
     const mounted = mount("action-error");

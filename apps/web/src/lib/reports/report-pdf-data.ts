@@ -209,6 +209,14 @@ type ReportsWebDocumentModelLike = {
   };
   exportRows: Array<Record<string, string | number | null>>;
   dataAvailability?: ReportDataAvailability;
+  accessibilitySummary?: {
+    actionCount: number;
+    informationDeclared: number;
+    conditionsReported: number;
+    obstaclesIdentified: number;
+    toConfirm: number;
+    notEvaluated: number;
+  };
 };
 
 export type ReportPdfDataOptions = {
@@ -397,6 +405,10 @@ export function buildPdfData(params: ReportPdfDataOptions) {
       ],
       lines: [
         `La valeur RSVP décrit des réponses déclarées et ne constitue pas un taux de présence constatée.`,
+        ...(model.accessibilitySummary ? [
+          `Accueil et accessibilité déclarés : ${model.accessibilitySummary.informationDeclared}/${model.accessibilitySummary.actionCount} action(s) avec information; ${model.accessibilitySummary.conditionsReported} conditions renseignées, ${model.accessibilitySummary.obstaclesIdentified} avec obstacles identifiés, ${model.accessibilitySummary.toConfirm} à confirmer et ${model.accessibilitySummary.notEvaluated} non évaluées.`,
+          "Les mesures effectivement réalisées ne sont pas établies par cette projection; aucune certification ni preuve de présence n'en est déduite.",
+        ] : []),
       ],
     },
     {

@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-18T20:20:27.882Z",
-  "apiRouteCount": 194,
+  "apiRouteCount": 195,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -9,6 +9,13 @@
     "reviewedAt": "2026-10-09"
   },
   "additionalChangeJustifications": [
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/accessibility-support/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Surface privée d'accompagnement fonctionnel, strictement limitée à l'action, à l'inscription confirmée, au demandeur ou à son organisateur canonique.",
+      "costContract": "GET/PUT/DELETE bornés à un actionId et à l'identité Clerk ; PATCH organisateur limité à une ligne consentie et non expirée ; service_role uniquement côté serveur, réponses private/no-store, aucune projection publique ou export des demandes.",
+      "reviewedAt": "2026-11-22"
+    },
     {
       "route": "apps/web/src/app/api/actions/invitations/route.ts",
       "introducedBy": "3e305ec7edf7e2eb4ebdbd140e65622fc86b87aa",
@@ -539,6 +546,7 @@
     "apps/web/src/app/api/account/locations/route.ts",
     "apps/web/src/app/api/account/profile-role/route.ts",
     "apps/web/src/app/api/account/promotion-requests/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/accessibility-support/route.ts",
     "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/buddy/availability/route.ts",

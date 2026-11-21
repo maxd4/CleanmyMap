@@ -22,6 +22,8 @@ describe("FutureActionsPanel", () => {
           groupJoinEnabled: true,
           preparationData: {
             volunteerParticipation: { participantsCount: 7 },
+            accessibilityStatus: "to_confirm",
+            accessibility: "Revêtement irrégulier près du rendez-vous.",
           },
         },
       },
@@ -45,5 +47,9 @@ describe("FutureActionsPanel", () => {
     expect(markup).toContain("Événement associé : event-123");
     expect(markup).toContain("Rejoindre");
     expect(markup).toContain("estimés");
+    expect(markup).toContain("Accessibilité — À confirmer");
+    expect(markup).toContain("Revêtement irrégulier près du rendez-vous.");
+    expect(markup).toContain("Conditions et accompagnement");
+    expect(markup).toContain("Afficher uniquement les actions avec des informations d’accessibilité renseignées");
   });
 });

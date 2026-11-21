@@ -73,6 +73,7 @@ const FORM_STATE_KEYS = [
   "estimatedDifficulty",
   "accessibility",
   "accessibilityStatus",
+  "accessibilityAlternativeRouteVersionId",
   "formalitiesContext",
   "safetyInstructions",
   "recommendedMaterials",

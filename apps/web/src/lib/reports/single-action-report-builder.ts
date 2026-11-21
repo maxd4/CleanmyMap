@@ -14,6 +14,7 @@ import {
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
 import { REPORT_ADVANCED_FILTER_DEFAULTS } from "@/lib/reports/report-advanced-filters";
 import { buildWasteProfile } from "@/lib/reports/report-model/waste-profile";
+import { buildReportAccessibilitySummary } from "@/lib/reports/report-accessibility-summary";
 
 function buildSingleActionModel(contract: ActionDataContract, now: Date) {
   const listItem = toActionListItem(contract);
@@ -40,6 +41,7 @@ function buildSingleActionModel(contract: ActionDataContract, now: Date) {
     wasteProfile: buildWasteProfile([contract], (item) => item.metadata.wasteBreakdown),
     accountScopeCoverage: computeReportAccountScopeCoverage([listItem]),
     exportRows: [toReportsExportRow(contract)],
+    accessibilitySummary: buildReportAccessibilitySummary([contract]),
     dataAvailability: {
       communityEventsAvailability: "unavailable" as const,
       isTruncated: false,

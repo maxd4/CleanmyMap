@@ -2,6 +2,7 @@
 
 import { CalendarDays, MapPin, Route, Users2 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { AdministrativeRequirementsStatus } from "@/components/actions/administrative-requirements-status";
 import { extractEventRefFromNotes } from "@/lib/actions/event-link";
@@ -34,6 +35,21 @@ function timeWindowFor(item: ActionListItem): string | null {
   return [start, end].filter(Boolean).join(" – ");
 }
 
+function hasAccessibilityInformation(item: ActionListItem): boolean {
+  const preparation = item.contract?.metadata.preparationData;
+  return Boolean(
+    (preparation?.accessibilityStatus && preparation.accessibilityStatus !== "not_evaluated") ||
+    (typeof preparation?.accessibility === "string" && preparation.accessibility.trim()),
+  );
+}
+
+function accessibilityStatusLabel(status: string | undefined, fr: boolean): string {
+  if (status === "conditions_reported") return fr ? "Informations renseignées" : "Information provided";
+  if (status === "obstacles_identified") return fr ? "Obstacles identifiés" : "Known obstacles";
+  if (status === "to_confirm") return fr ? "À confirmer" : "To confirm";
+  return fr ? "Non évalué" : "Not assessed";
+}
+
 function FutureActionParticipants({ item, fr }: { item: ActionListItem; fr: boolean }) {
   const participants = plannedParticipants(item);
   return <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{participants === null ? (fr ? "Participants non renseignés" : "Participants not provided") : `${formatCount(participants)} ${fr ? "participants prévus" : "planned participants"}`}</p>;
@@ -49,7 +65,10 @@ function FutureActionCard({ item, authenticated, fr, onShareAction }: { item: Ac
   const title = titleFor(item);
   const eventRef = eventRefFor(item);
   const timeWindow = timeWindowFor(item);
-  return <article className="rounded-[1.2rem] border border-sky-100 bg-white p-4 shadow-sm"><div className="space-y-3"><div><h3 className="text-lg font-black tracking-tight text-sky-950">{title}</h3><p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><MapPin size={14} className="text-slate-400" />{item.location_label}</p></div><div className="grid gap-2 text-sm text-slate-600"><p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>{timeWindow ? <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{timeWindow}</p> : null}<FutureActionParticipants item={item} fr={fr} /><p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{item.geometry_kind ? (fr ? "Itinéraire prévu disponible" : "Planned route available") : (fr ? "Lieu uniquement" : "Location only")}</p><p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "estimés" : "estimated"}</p></div><p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p><AdministrativeRequirementsStatus actionId={item.id} surface="summary" />{eventRef ? <p className="text-xs font-semibold text-slate-500">{fr ? "Événement associé : " : "Linked event: "}{eventRef} <Link href={buildCommunityEventHref(eventRef, "future")} className="ml-2 underline underline-offset-2">{fr ? "Voir l’événement" : "View event"}</Link></p> : null}<FutureActionRegistration item={item} authenticated={authenticated} fr={fr} onShareAction={onShareAction} /></div></article>;
+  const preparation = item.contract?.metadata.preparationData;
+  const status = preparation?.accessibilityStatus;
+  const accessibilityText = preparation?.accessibility?.trim();
+  return <article className="rounded-[1.2rem] border border-sky-100 bg-white p-4 shadow-sm"><div className="space-y-3"><div><h3 className="text-lg font-black tracking-tight text-sky-950">{title}</h3><p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><MapPin size={14} className="text-slate-400" />{item.location_label}</p></div><div className="grid gap-2 text-sm text-slate-600"><p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>{timeWindow ? <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{timeWindow}</p> : null}<FutureActionParticipants item={item} fr={fr} /><p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{item.geometry_kind ? (fr ? "Itinéraire prévu disponible" : "Planned route available") : (fr ? "Lieu uniquement" : "Location only")}</p><p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "estimés" : "estimated"}</p></div><div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3"><p className="text-xs font-bold text-violet-950">{fr ? "Accessibilité — " : "Accessibility — "}{accessibilityStatusLabel(status, fr)}</p>{accessibilityText ? <p className="mt-1 whitespace-pre-line text-sm leading-5 text-violet-950">{accessibilityText}</p> : <p className="mt-1 text-xs text-violet-900">{fr ? "Aucune précision supplémentaire n’est renseignée. Cela ne signifie pas que l’action est inaccessible." : "No additional detail is available. This does not mean the action is inaccessible."}</p>}<Link href={`/sections/rejoindre-une-action?actionId=${encodeURIComponent(item.id)}`} className="mt-2 inline-flex min-h-10 items-center text-sm font-bold text-violet-900 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">{fr ? "Conditions et accompagnement" : "Conditions and support"}</Link></div><p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p><AdministrativeRequirementsStatus actionId={item.id} surface="summary" />{eventRef ? <p className="text-xs font-semibold text-slate-500">{fr ? "Événement associé : " : "Linked event: "}{eventRef} <Link href={buildCommunityEventHref(eventRef, "future")} className="ml-2 underline underline-offset-2">{fr ? "Voir l’événement" : "View event"}</Link></p> : null}<FutureActionRegistration item={item} authenticated={authenticated} fr={fr} onShareAction={onShareAction} /></div></article>;
 }
 
 export function FutureActionsPanel({
@@ -67,6 +86,8 @@ export function FutureActionsPanel({
   fr: boolean;
   onShareAction?: (actionId: string) => void;
 }) {
+  const [accessibilityOnly, setAccessibilityOnly] = useState(false);
+  const visibleItems = accessibilityOnly ? items.filter(hasAccessibilityInformation) : items;
   return (
     <section className="space-y-4 rounded-[1.5rem] border border-sky-100 bg-sky-50/45 p-4 md:p-5">
       <div className="space-y-1">
@@ -85,16 +106,23 @@ export function FutureActionsPanel({
         </p>
       </div>
 
+      <label className="flex min-h-11 items-start gap-3 rounded-xl border border-violet-200 bg-white p-3 text-sm font-semibold text-violet-950">
+        <input type="checkbox" checked={accessibilityOnly} onChange={(event) => setAccessibilityOnly(event.target.checked)} className="mt-0.5 size-4 accent-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" />
+        <span>{fr ? "Afficher uniquement les actions avec des informations d’accessibilité renseignées" : "Show only actions with accessibility information"}</span>
+      </label>
+
       {loading ? <p className="text-sm font-semibold text-sky-800">Chargement des actions futures...</p> : null}
       {error ? <p className="text-sm font-semibold text-rose-700">{error}</p> : null}
-      {!loading && !error && items.length === 0 ? (
+      {!loading && !error && visibleItems.length === 0 ? (
         <p className="rounded-xl border border-dashed border-sky-200 bg-white px-4 py-4 text-sm text-slate-600">
-          {fr ? "Aucune action future publiée pour le moment." : "No published future action yet."}
+          {accessibilityOnly
+            ? (fr ? "Aucune action ne comporte encore d’information d’accessibilité renseignée. Les autres actions restent disponibles en désactivant ce filtre." : "No action has accessibility information yet. Other actions remain available when you turn this filter off.")
+            : (fr ? "Aucune action future publiée pour le moment." : "No published future action yet.")}
         </p>
       ) : null}
 
       <div className="grid gap-3 md:grid-cols-2">
-        {items.map((item) => <FutureActionCard key={item.id} item={item} authenticated={authenticated} fr={fr} onShareAction={onShareAction} />)}
+        {visibleItems.map((item) => <FutureActionCard key={item.id} item={item} authenticated={authenticated} fr={fr} onShareAction={onShareAction} />)}
       </div>
     </section>
   );

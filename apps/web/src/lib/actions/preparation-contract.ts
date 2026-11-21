@@ -159,6 +159,25 @@ export function normalizeActionPreparationContract<T extends object>(data: T): T
     if (accessibilityStatus) next["accessibilityStatus"] = accessibilityStatus;
     else delete next["accessibilityStatus"];
   }
+  if ("accessibilityAlternativeRouteVersionId" in next) {
+    const selectedVersionId = next["accessibilityAlternativeRouteVersionId"];
+    const versioning = next["routeVersioning"];
+    const history = versioning && typeof versioning === "object" && !Array.isArray(versioning)
+      ? (versioning as { history?: unknown }).history
+      : null;
+    const knownVersionIds = Array.isArray(history)
+      ? history.flatMap((item) => {
+          if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+          const versionId = (item as { versionId?: unknown }).versionId;
+          return typeof versionId === "string" ? [versionId] : [];
+        })
+      : [];
+    if (typeof selectedVersionId === "string" && knownVersionIds.includes(selectedVersionId)) {
+      next["accessibilityAlternativeRouteVersionId"] = selectedVersionId;
+    } else {
+      delete next["accessibilityAlternativeRouteVersionId"];
+    }
+  }
   if ("suggestedMaterials" in next) {
     const suggestedMaterials = normalizeSuggestedMaterials(next["suggestedMaterials"]);
     if (suggestedMaterials && suggestedMaterials.length > 0) next["suggestedMaterials"] = suggestedMaterials;

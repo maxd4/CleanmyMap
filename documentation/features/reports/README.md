@@ -102,3 +102,5 @@ au runtime et à ses tests, pas à une copie documentaire.
 Le statut `PLAN` ne doit pas être interprété comme une description du rapport
 effectivement généré. Pour les fiches de pages et le contexte produit, suivre
 les documents canoniques de `documentation/pages_site/` et `documentation/product/`.
+
+Les informations d'accueil/accessibilité sont présentées comme déclarées, avec leur état de vérification et les limites connues. Une demande individuelle de soutien ou un suivi consenti n'est jamais projeté dans les rapports, exports ou statistiques publiques. Aucun agrégat ne doit permettre d'identifier une personne ou d'être interprété comme certification, résultat de financeur ou partenariat.

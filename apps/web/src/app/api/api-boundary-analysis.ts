@@ -38,6 +38,7 @@ export const contractedApiRoutes = new Set([
   "spogomi/events/[eventId]/volunteer-help-proposals/review",
   "personal-ai/declarations",
   "personal-ai/declarations/[id]",
+  "actions/[actionId]/accessibility-support",
 ]);
 
 export const apiRoot = dirname(fileURLToPath(import.meta.url));

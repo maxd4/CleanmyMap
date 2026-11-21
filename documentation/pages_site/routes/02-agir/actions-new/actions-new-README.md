@@ -252,3 +252,7 @@ Le formulaire de bilan distingue désormais l'effectif physiquement présent du
 nombre de personnes ayant réellement ramassé. Ce dernier reste facultatif et
 ne peut dépasser l'effectif présent. Les valeurs sont persistées sous le
 contrat d'actions décrit dans [`methodologie-carte-actions.md`](../../../../product/methodologie-carte-actions.md).
+
+### Préparation d'un accueil accessible
+
+Le champ d'accessibilité décrit seulement les conditions, obstacles, source et date de vérification connus, sans donnée personnelle ou médicale ni garantie d'accessibilité. Un itinéraire alternatif peut référencer une version antérieure déjà persistée; il ne déclenche aucun calcul de trajet. Les besoins individuels sont traités par le parcours privé après inscription confirmée et ne sont pas inclus dans la préparation publique.

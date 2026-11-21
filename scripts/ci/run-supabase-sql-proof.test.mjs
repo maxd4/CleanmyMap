@@ -23,6 +23,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   const inventory = inventorySqlProofs();
   assert.equal(inventory.unregistered.length, 0);
   assert.deepEqual(inventory.pgtap, [
+    "apps/web/supabase/tests/action-accessibility-support.pgtap.sql",
     "apps/web/supabase/tests/action-buddy-contract.pgtap.sql",
     "apps/web/supabase/tests/action-collection-context-reference-rpc.pgtap.sql",
     "apps/web/supabase/tests/action-collection-integrity.pgtap.sql",
@@ -87,6 +88,15 @@ test("personal AI declarations pgTAP plan matches its assertion count", () => {
   const sql = readFileSync(path, "utf8");
   const plan = sql.match(/^select\s+plan\((\d+)\);$/im);
   const assertions = sql.match(/^\s*select\s+(?:ok|is|throws_ok|lives_ok)\s*\(/gim) ?? [];
+  assert.equal(assertions.length, Number(plan?.[1]));
+});
+
+test("action accessibility support pgTAP plan matches its assertion count", () => {
+  const path = new URL("../../apps/web/supabase/tests/action-accessibility-support.pgtap.sql", import.meta.url);
+  const sql = readFileSync(path, "utf8");
+  const plan = sql.match(/^select\s+plan\((\d+)\);$/im);
+  const assertions = sql.match(/^\s*select\s+(?:ok|is|throws_ok|lives_ok|has_table|has_index)\s*\(/gim) ?? [];
+  assert.equal(plan?.[1], "20");
   assert.equal(assertions.length, Number(plan?.[1]));
 });
 
