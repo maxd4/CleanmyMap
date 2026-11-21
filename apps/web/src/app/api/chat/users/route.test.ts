@@ -48,7 +48,7 @@ describe("GET /api/chat/users", () => {
         select: vi.fn(() => query),
         neq: vi.fn(() => query),
         order: vi.fn(() => query),
-        limit: vi.fn(() => query),
+        range: vi.fn(() => query),
         eq: vi.fn(() => query),
         ilike: vi.fn((column: string, pattern: string) => {
           patterns.push({ column, pattern });
@@ -108,7 +108,7 @@ describe("GET /api/chat/users", () => {
         select: vi.fn(() => query),
         neq: vi.fn(() => query),
         order: vi.fn(() => query),
-        limit: vi.fn(() => query),
+        range: vi.fn(() => query),
         eq: vi.fn((column: string, value: string) => {
           patterns.push({ column, value });
           return Promise.resolve(result);
@@ -145,7 +145,7 @@ describe("GET /api/chat/users", () => {
         select: vi.fn(() => query),
         neq: vi.fn(() => query),
         order: vi.fn(() => query),
-        limit: vi.fn(() => query),
+        range: vi.fn(() => query),
         eq: vi.fn(() => Promise.resolve({ data: rows.slice(0, 1), error: null })),
         ilike: vi.fn(() => Promise.resolve({ data: rows, error: null })),
       };
@@ -174,7 +174,7 @@ describe("GET /api/chat/users", () => {
         select: vi.fn(() => query),
         neq: vi.fn(() => query),
         order: vi.fn(() => query),
-        limit: vi.fn(() => Promise.resolve({ data: rows, error: null })),
+        range: vi.fn(() => Promise.resolve({ data: rows, error: null })),
       };
       return query;
     };
@@ -196,7 +196,7 @@ describe("GET /api/chat/users", () => {
         select: vi.fn(() => query),
         neq: vi.fn(() => query),
         order: vi.fn(() => query),
-        limit: vi.fn(() => Promise.resolve({ data: [{ id: "unverified-profile", handle: "unknown", display_name: "Unknown", avatar_url: null }], error: null })),
+        range: vi.fn(() => Promise.resolve({ data: [{ id: "unverified-profile", handle: "unknown", display_name: "Unknown", avatar_url: null }], error: null })),
       };
       return query;
     };

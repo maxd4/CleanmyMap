@@ -2,10 +2,6 @@ import { clerkClient } from "@clerk/nextjs/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildFallbackHandle } from "@/lib/auth/identity-handle";
 import { isE2EClerkAccount, type E2EClerkAccountLike } from "@/lib/auth/e2e-account";
-import {
-  getVerifiedNonE2EClerkUsers,
-  MAX_CLERK_ACCOUNT_VERIFICATION_IDS,
-} from "@/lib/auth/e2e-account-server";
 import { persistManualParticipantDiff } from "./manual-participant-sync";
 
 type ProfileLookupRow = {
@@ -240,6 +236,10 @@ async function resolveActionAccountsByTokens(params: {
 }): Promise<{ accountsByToken: Map<string, ResolvedActionAccount>; unresolvedTokens: string[] }> {
   const tokens = uniqueTokens(params.tokens);
   const accountsByToken = new Map<string, ResolvedActionAccount>();
+  const {
+    getVerifiedNonE2EClerkUsers,
+    MAX_CLERK_ACCOUNT_VERIFICATION_IDS,
+  } = await import("@/lib/auth/e2e-account-server");
   if (tokens.length > MAX_CLERK_ACCOUNT_VERIFICATION_IDS) {
     return { accountsByToken, unresolvedTokens: tokens };
   }
