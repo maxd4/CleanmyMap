@@ -1043,27 +1043,58 @@ test("projette la maintenabilité documentaire dans les fichiers et le domain in
 test("projette les revues de contrats critiques sans créer de gate", () => {
   const run = buildRun();
   run.documentation = documentationReport();
-  run.documentation.contractReviews = [{
-    path: "apps/web/supabase/migrations/001_rpc.sql",
-    kind: "PRIVILEGED_RPC",
-    symbols: ["secure_rpc"],
-    responsibility: "RPC privilégiée et frontière serveur/PostgreSQL",
-    status: "REVIEW_REQUIRED",
-    reasons: ["MISSING_TESTS"],
-    documentsExamined: [{ path: "documentation/rpc.md", lifecycle: { statuses: ["CURRENT"], source: "EXPLICIT_MARKER" }, invalidReferences: [] }],
-    evidence: { codePath: "apps/web/supabase/migrations/001_rpc.sql", responsibility: "RPC privilégiée et frontière serveur/PostgreSQL", dimensions: { permissions: true, tests: false } },
-  }];
+  run.documentation.contractReviews = [
+    {
+      path: "apps/web/supabase/migrations/001_rpc.sql",
+      kind: "PRIVILEGED_RPC",
+      symbol: "secure_rpc",
+      symbols: ["secure_rpc"],
+      responsibility: "RPC privilégiée et frontière serveur/PostgreSQL",
+      status: "REVIEW_REQUIRED",
+      reasons: ["MISSING_TESTS"],
+      documentsExamined: [{ path: "documentation/rpc.md", lifecycle: { statuses: ["CURRENT"], source: "EXPLICIT_MARKER" }, attributions: [{ matchKind: "SOURCE_PATH", value: "apps/web/supabase/migrations/001_rpc.sql", line: 4 }], invalidReferences: [] }],
+      evidence: { codePath: "apps/web/supabase/migrations/001_rpc.sql", codeSymbol: "secure_rpc", responsibility: "RPC privilégiée et frontière serveur/PostgreSQL", privilege: { status: "PRIVILEGED", evidence: [{ path: "apps/web/supabase/migrations/001_rpc.sql", line: 5, type: "SECURITY_DEFINER" }] }, dimensions: { permissions: true, tests: false }, dimensionProofs: { permissions: [{ documentPath: "documentation/rpc.md", line: 6, section: "RPC", excerpt: "Permissions : service_role." }] } },
+    },
+    {
+      path: "apps/web/src/lib/rpc-client.ts",
+      kind: "RPC_CONSUMER",
+      symbols: ["loadLookup"],
+      rpcNames: ["public_lookup"],
+      responsibility: "consommation RPC sans preuve du privilège effectif",
+      status: "NOT_MEASURED",
+      reasons: ["RPC_CALLER_DOES_NOT_ESTABLISH_PRIVILEGE"],
+      documentsExamined: [],
+      evidence: { codePath: "apps/web/src/lib/rpc-client.ts", privilege: { status: "UNESTABLISHED", evidence: [] }, dimensions: {}, dimensionProofs: {} },
+    },
+    {
+      path: "apps/web/supabase/migrations/002_public_rpc.sql",
+      kind: "RPC_PUBLIC",
+      symbol: "public_lookup",
+      symbols: ["public_lookup"],
+      responsibility: "RPC explicitement accessible au rôle public ou anon",
+      status: "DOCUMENTED",
+      reasons: [],
+      documentsExamined: [{ path: "documentation/rpc/public.md", lifecycle: { statuses: ["CURRENT"], source: "EXPLICIT_MARKER" }, attributions: [{ matchKind: "SOURCE_SYMBOL", value: "public_lookup", line: 7 }], invalidReferences: [] }],
+      evidence: { codePath: "apps/web/supabase/migrations/002_public_rpc.sql", codeSymbol: "public_lookup", privilege: { status: "PUBLIC", evidence: [] }, dimensions: {}, dimensionProofs: {} },
+    },
+  ];
   const index = buildQualityFileIndex({ run, mode: "ALL" });
   const codeFile = index.files.find((file) => file.path === "apps/web/supabase/migrations/001_rpc.sql");
   const markdown = buildQualityFileIndexMarkdown(index);
 
   assert.equal(index.audits.documentation.contractReviews[0].status, "REVIEW_REQUIRED");
-  assert.equal(index.globalCounts.documentationCriticalContracts, 1);
+  assert.equal(index.audits.documentation.contractReviews[0].evidence.privilege.status, "PRIVILEGED");
+  assert.equal(index.audits.documentation.contractReviews[0].documentsExamined[0].attributions[0].line, 4);
+  assert.equal(index.globalCounts.documentationCriticalContracts, 3);
+  assert.equal(index.globalCounts.documentationDocumentedContracts, 1);
   assert.equal(index.globalCounts.documentationReviewRequiredContracts, 1);
+  assert.equal(index.globalCounts.documentationNotMeasuredContracts, 1);
   assert.equal(codeFile.findings.documentation.state, "PRESENT");
   assert.equal(codeFile.findings.documentation.items[0].type, "documentation-contract-review");
   assert.match(markdown, /Contrats critiques et traçabilité documentaire/);
   assert.match(markdown, /apps\/web\/supabase\/migrations\/001_rpc\.sql/);
+  assert.match(markdown, /documentation\/rpc\.md:L4 \(SOURCE_PATH\)/);
+  assert.match(markdown, /documentation\/rpc\.md:L6 \(RPC\)/);
   assert.match(markdown, /MISSING_TESTS/);
 });
 

@@ -216,6 +216,23 @@ test("conserve l'absence de statut et reconnaît les statuts canoniques explicit
   assert.deepEqual(byPath["documentation/sessions/history/old.md"].internalLinks.invalid, []);
 });
 
+test("les listes de statuts du README et des skills ne déclarent pas le cycle de vie du document", () => {
+  const report = run({
+    "documentation/README.md": "# Documentation\n\nLes statuts possibles sont CURRENT, PLAN, AUDIT, HISTORY, SNAPSHOT, ADR et GENERATED.\n",
+    ".agents/skills/cleanmymap-documentation/SKILL.md": "# Skill\n\nUtiliser les statuts CURRENT, PLAN, AUDIT, HISTORY, SNAPSHOT, ADR ou GENERATED.\n",
+    "documentation/declared.md": "> **Statut documentaire : `CURRENT`.**\n\n# Contrat\n",
+    "documentation/conflicting.md": "Statut : CURRENT / PLAN\n",
+    "documentation/example.md": "```md\nStatut : CURRENT\n```\n# Exemple\n",
+  });
+  const byPath = Object.fromEntries(report.documents.map((document) => [document.path, document.lifecycle]));
+
+  assert.deepEqual(byPath["documentation/README.md"], { statuses: [], source: "NOT_STATED" });
+  assert.deepEqual(byPath[".agents/skills/cleanmymap-documentation/SKILL.md"], { statuses: [], source: "NOT_STATED" });
+  assert.deepEqual(byPath["documentation/declared.md"], { statuses: ["CURRENT"], source: "EXPLICIT_MARKER" });
+  assert.deepEqual(byPath["documentation/conflicting.md"], { statuses: ["CURRENT", "PLAN"], source: "EXPLICIT_MARKER" });
+  assert.deepEqual(byPath["documentation/example.md"], { statuses: [], source: "NOT_STATED" });
+});
+
 test("les ancres valides et invalides restent attribuées au fichier sans modifier les entrées", () => {
   const entries = {
     "docs/index.md": "# Index\n\n[Valide](./guide.md#section)\n[Ancre absente](./guide.md#absente)\n",
@@ -279,11 +296,11 @@ test("classe les contrats critiques selon la preuve CURRENT, PLAN, contradiction
   assert.equal(byPath["apps/web/supabase/migrations/001_documented.sql"].status, "DOCUMENTED");
   assert.equal(byPath["apps/web/supabase/migrations/001_documented.sql"].documentsExamined[0].lifecycle.statuses[0], "CURRENT");
   assert.equal(byPath["apps/web/supabase/migrations/002_contradictory.sql"].status, "REVIEW_REQUIRED");
-  assert.ok(byPath["apps/web/supabase/migrations/002_contradictory.sql"].reasons.includes("CONTRADICTORY_PERMISSION_CLAIM:documentation/rpc/contradictory.md"));
+  assert.ok(byPath["apps/web/supabase/migrations/002_contradictory.sql"].reasons.some((reason) => reason.startsWith("CONTRADICTORY_PRIVILEGE_CLAIM:documentation/rpc/contradictory.md:")));
   assert.equal(byPath["apps/web/supabase/migrations/003_plan.sql"].status, "REVIEW_REQUIRED");
-  assert.ok(byPath["apps/web/supabase/migrations/003_plan.sql"].reasons.includes("PLAN_IS_NOT_CURRENT_CONTRACT"));
+  assert.ok(byPath["apps/web/supabase/migrations/003_plan.sql"].reasons.includes("PLAN_IS_NOT_CURRENT_CONTRACT:documentation/rpc/plan.md"));
   assert.equal(byPath["apps/web/supabase/migrations/004_missing-reference.sql"].status, "REVIEW_REQUIRED");
-  assert.ok(byPath["apps/web/supabase/migrations/004_missing-reference.sql"].reasons.some((reason) => reason.startsWith("INVALID_DOCUMENT_REFERENCE:")));
+  assert.ok(byPath["apps/web/supabase/migrations/004_missing-reference.sql"].reasons.some((reason) => reason.startsWith("INVALID_DOCUMENT_REFERENCE:documentation/rpc/missing.md:")));
   assert.equal(byPath["apps/web/supabase/migrations/005_unreferenced.sql"].status, "NOT_MEASURED");
   assert.equal(report.contractReviews.some((review) => review.path.endsWith("trivial.ts")), false);
   assert.deepEqual(run(entries).contractReviews, report.contractReviews);

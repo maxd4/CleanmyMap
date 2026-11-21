@@ -281,14 +281,34 @@ partir de 601 lignes, `REVIEW_REQUIRED` à partir de 1 001 et
 dimension est projeté en `NOT_MEASURED`.
 
 La même analyse examine, sans gate supplémentaire, les contrats critiques dont
-un owner est identifiable dans le code : RPC privilégiées, autorisations,
-services partagés et calculs scientifiques. Elle rapproche le chemin du code
-des documents examinés et vérifie les dimensions pertinentes (responsabilité,
-acteurs, permissions, entrées/sorties, provenance, unités, erreurs et tests).
-`DOCUMENTED` exige une preuve `CURRENT` cohérente, `REVIEW_REQUIRED` expose une
-contradiction, une référence invalide ou une dimension non traçable, et
-`NOT_MEASURED` signifie qu'aucune documentation attribuable n'a été retenue.
-Une recherche textuelle négative ne suffit jamais à conclure à une absence.
+un owner est identifiable dans le code : RPC privilégiées, consommateurs RPC,
+privilèges RPC non établis, autorisations, services partagés et calculs
+scientifiques. Un appel `.rpc()` classe le code appelant comme
+`RPC_CONSUMER` et ne prouve jamais le privilège de la fonction appelée. Une
+définition SQL est `PRIVILEGED_RPC` uniquement si sa source établit
+`SECURITY DEFINER` ou un droit `EXECUTE` explicite pour `service_role`/
+`postgres`; les droits explicites `PUBLIC`/`anon` et `authenticated` gardent
+leurs classifications distinctes. Sans preuve de privilège locale à la
+définition SQL, le contrat reste `RPC_PRIVILEGE_UNESTABLISHED`.
+
+Les cycles de vie sont extraits des déclarations de statut explicites dans
+l'en-tête du document (par exemple `Statut documentaire : CURRENT` ou un champ
+frontmatter `status: CURRENT`). Les listes de vocabulaire de
+`documentation/README.md` et des skills ne sont pas des déclarations; l'absence
+de marqueur reste `NOT_STATED`, et plusieurs statuts explicites contradictoires
+ne sont pas réduits à `CURRENT`.
+
+`DOCUMENTED` exige une attribution exacte au chemin du fichier source ou à un
+symbole non ambigu, un document explicitement `CURRENT`, puis des preuves
+localisables pour chaque dimension requise dans la section qui porte cette
+attribution. Les correspondances de basename et les mots-clés d'autres
+documents ne sont pas agrégés. `REVIEW_REQUIRED` conserve les références et
+raisons en cas de contradiction, cycle non courant, lien invalide ou dimension
+manquante; `NOT_MEASURED` conserve la raison lorsque l'attribution, le cycle ou
+le privilège n'est pas établi. Le Quality Index projette ces états et leurs
+références de façon additive, sans ajouter de gate ni modifier les cinq verdicts
+historiques.
+
 La revue ponctuelle, strictement read-only, est disponible avec
 `npm run audit:documentation -- --dry-run`; elle n'écrit aucun artefact et ne
 modifie pas les cinq gates historiques.

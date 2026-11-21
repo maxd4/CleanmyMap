@@ -49,6 +49,50 @@ function hasGeneratedMarker(lines) {
   });
 }
 
+function declaredStatuses(value) {
+  const statuses = [];
+  let remaining = String(value ?? "").trim().replace(/^[`*]+|[`*]+$/g, "").trim();
+  const statusPattern = /^(CURRENT|PLAN|AUDIT|HISTORY|SNAPSHOT|ADR|GENERATED)(?![\w-])/i;
+  while (remaining) {
+    const match = remaining.match(statusPattern);
+    if (!match) break;
+    statuses.push(match[1].toUpperCase());
+    remaining = remaining.slice(match[0].length).replace(/^[`*]+/, "").trimStart();
+    const separator = remaining.match(/^(?:\/|,|;|\band\b|\bet\b)\s*/i);
+    if (!separator) break;
+    remaining = remaining.slice(separator[0].length).replace(/^[`*]+/, "").trimStart();
+  }
+  return statuses;
+}
+
+function explicitLifecycleDeclarations(lines) {
+  const statuses = new Set();
+  let fence = null;
+  let inFrontmatter = lines[0]?.trim() === "---";
+  for (let index = 0; index < Math.min(lines.length, 32); index += 1) {
+    const line = lines[index];
+    const fenceState = updateFence(fence, line);
+    if (fenceState.isFence) {
+      fence = fenceState.fence;
+      continue;
+    }
+    if (fence) continue;
+    if (inFrontmatter) {
+      if (index > 0 && line.trim() === "---") {
+        inFrontmatter = false;
+        continue;
+      }
+      const field = line.match(/^\s*(?:status|lifecycle|statut(?:_documentaire)?|état(?:_documentaire)?)\s*:\s*(.+?)\s*$/i);
+      if (field) for (const status of declaredStatuses(field[1])) statuses.add(status);
+      continue;
+    }
+    const declaration = line.match(/(?:^|[>\s*])(?:statut(?:\s+documentaire)?|état(?:\s+documentaire)?|status|lifecycle)\s*[:=]\s*(.+?)\s*$/i);
+    if (!declaration) continue;
+    for (const status of declaredStatuses(declaration[1])) statuses.add(status);
+  }
+  return statuses;
+}
+
 function normalizeText(content) {
   return Buffer.isBuffer(content) ? content.toString("utf8").replaceAll("\r\n", "\n") : String(content).replaceAll("\r\n", "\n");
 }
@@ -192,20 +236,14 @@ function parseMarkdownStructure(text) {
 
 function documentLifecycle(file, lines) {
   const normalized = normalizePath(file);
-  const metadata = lines.slice(0, 32).filter((line) => /(?:statut|état|type|status|lifecycle|generated)/i.test(line));
-  const statuses = new Set();
-  for (const line of metadata) {
-    for (const status of LIFECYCLE_STATUSES) {
-      if (new RegExp(`\\b${status}\\b`, "i").test(line)) statuses.add(status);
-    }
-  }
+  const statuses = explicitLifecycleDeclarations(lines);
   if (statuses.size === 0 && /(?:^|\/)architecture\/adr(?:\/|$)/i.test(normalized)) statuses.add("ADR");
   if (statuses.size === 0 && /(?:^|\/)sessions\/history(?:\/|$)/i.test(normalized)) statuses.add("HISTORY");
   if (statuses.size === 0 && hasGeneratedMarker(lines)) statuses.add("GENERATED");
   return {
     statuses: LIFECYCLE_STATUSES.filter((status) => statuses.has(status)),
     source: statuses.size > 0
-      ? /(?:^|\/)architecture\/adr(?:\/|$)|(?:^|\/)sessions\/history(?:\/|$)/i.test(normalized) && metadata.length === 0 ? "CANONICAL_PATH" : "EXPLICIT_MARKER"
+      ? /(?:^|\/)architecture\/adr(?:\/|$)|(?:^|\/)sessions\/history(?:\/|$)/i.test(normalized) && explicitLifecycleDeclarations(lines).size === 0 ? "CANONICAL_PATH" : "EXPLICIT_MARKER"
       : "NOT_STATED",
   };
 }
