@@ -145,7 +145,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: cleanmymap-supabase-sql-evidence
-          path: artifacts/ci-public-evidence/evidence/supabase-sql.json
+          path: artifacts/ci-public-evidence
           if-no-files-found: error
           retention-days: 3
 

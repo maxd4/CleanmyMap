@@ -3,7 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import yaml from "js-yaml";
 import { evaluateAutomaticPreflight, evaluateSupabaseConvergenceGate, evaluateSupabasePostflight, validateEphemeralEvidence } from "./supabase-convergence-gate.mjs";
+import { validatePublicE2EArtifact } from "../checks/check-public-e2e-artifact.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const workflowPath = path.join(repositoryRoot, ".github", "workflows", "supabase-convergence.yml");
@@ -76,6 +78,76 @@ test("SQL proof is an independent serialized lane and application E2E no longer 
   assert.doesNotMatch(e2eWorkflow, /run-supabase-sql-proof\.mjs/);
   assert.match(e2eWorkflow, /Run SPOGOMI Cachan mixed integration on ephemeral Supabase/);
   assert.match(e2eWorkflow, /Run persistent E2E/);
+});
+
+test("SQL evidence keeps its relative path from upload through extraction, validation, and gate read", (context) => {
+  const sqlWorkflow = yaml.load(fs.readFileSync(path.join(repositoryRoot, ".github", "workflows", "supabase-sql-proof.yml"), "utf8"));
+  const convergenceWorkflow = yaml.load(workflow);
+  const upload = sqlWorkflow.jobs["sql-proof"].steps.find(({ name }) => name === "Upload complete SQL proof evidence");
+  const download = convergenceWorkflow.jobs.gate.steps.find(({ name }) => name === "Download sanitized ephemeral proof");
+  const validation = convergenceWorkflow.jobs.gate.steps.find(({ name }) => name === "Validate sanitized ephemeral proof envelope");
+  const gate = convergenceWorkflow.jobs.gate.steps.find(({ name }) => name === "Validate trigger, remote HEAD, and exact proof");
+
+  assert.equal(upload.with.name, download.with.name);
+  assert.equal(upload.with.path, "artifacts/ci-public-evidence");
+  assert.equal(download.with.path, "artifacts/ci-public-evidence");
+  assert.match(validation.run, /check-public-e2e-artifact\.mjs artifacts\/ci-public-evidence/);
+  assert.equal(gate.env.CMM_SUPABASE_EVIDENCE_PATH, "artifacts/ci-public-evidence/evidence/supabase-sql.json");
+
+  const allowedRoot = path.resolve(repositoryRoot, "artifacts/ci-public-evidence");
+  const createdAllowedRoot = !fs.existsSync(allowedRoot);
+  fs.mkdirSync(allowedRoot, { recursive: true });
+  const stagingRoot = fs.mkdtempSync(path.join(allowedRoot, "upload-contract-"));
+  const extractedRoot = fs.mkdtempSync(path.join(allowedRoot, "download-contract-"));
+  context.after(() => {
+    fs.rmSync(stagingRoot, { recursive: true, force: true });
+    fs.rmSync(extractedRoot, { recursive: true, force: true });
+    if (createdAllowedRoot && fs.readdirSync(allowedRoot).length === 0) fs.rmSync(allowedRoot, { recursive: true });
+    const artifactsRoot = path.dirname(allowedRoot);
+    if (createdAllowedRoot && fs.existsSync(artifactsRoot) && fs.readdirSync(artifactsRoot).length === 0) fs.rmdirSync(artifactsRoot);
+  });
+
+  const stagedEvidence = path.resolve(stagingRoot, path.relative(path.resolve(repositoryRoot, upload.with.path), path.resolve(repositoryRoot, gate.env.CMM_SUPABASE_EVIDENCE_PATH)));
+  fs.mkdirSync(path.dirname(stagedEvidence), { recursive: true });
+  fs.writeFileSync(stagedEvidence, JSON.stringify(passingEvidence()));
+  const archiveRelativePath = path.relative(stagingRoot, stagedEvidence);
+  fs.mkdirSync(path.dirname(path.resolve(extractedRoot, archiveRelativePath)), { recursive: true });
+  fs.copyFileSync(stagedEvidence, path.resolve(extractedRoot, archiveRelativePath));
+
+  assert.equal(archiveRelativePath.replace(/\\/g, "/"), "evidence/supabase-sql.json");
+  assert.deepEqual(validatePublicE2EArtifact(extractedRoot), []);
+  const extractedEvidencePath = path.resolve(extractedRoot, path.relative(path.resolve(repositoryRoot, download.with.path), path.resolve(repositoryRoot, gate.env.CMM_SUPABASE_EVIDENCE_PATH)));
+  const extractedEvidence = JSON.parse(fs.readFileSync(extractedEvidencePath, "utf8"));
+  assert.equal(evaluateSupabaseConvergenceGate({
+    eventName: "workflow_run",
+    repository: "maxd4/CleanmyMap",
+    sourceRepository: "maxd4/CleanmyMap",
+    sourceHeadRepository: "maxd4/CleanmyMap",
+    workflowName: "supabase-sql-proof-ephemeral",
+    headBranch: "main",
+    conclusion: "success",
+    candidateSha,
+    remoteHeadSha: candidateSha,
+    evidence: extractedEvidence,
+  }).apply, true);
+
+  fs.writeFileSync(path.join(extractedRoot, "secrets.log"), "private diagnostic");
+  assert.ok(validatePublicE2EArtifact(extractedRoot).some((issue) => issue.includes("outside the public evidence allowlist")));
+  fs.rmSync(path.join(extractedRoot, "secrets.log"));
+  fs.rmSync(extractedEvidencePath);
+  assert.equal(fs.existsSync(extractedEvidencePath), false);
+  assert.equal(evaluateSupabaseConvergenceGate({
+    eventName: "workflow_run",
+    repository: "maxd4/CleanmyMap",
+    sourceRepository: "maxd4/CleanmyMap",
+    sourceHeadRepository: "maxd4/CleanmyMap",
+    workflowName: "supabase-sql-proof-ephemeral",
+    headBranch: "main",
+    conclusion: "success",
+    candidateSha,
+    remoteHeadSha: candidateSha,
+    evidence: null,
+  }).mode, "BLOCKED");
 });
 
 test("production secrets are scoped to the protected non-PR job and the canonical CLI gate", () => {
