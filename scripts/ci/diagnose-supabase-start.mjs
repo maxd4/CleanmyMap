@@ -300,7 +300,7 @@ function sqlStateFromLogLine(line) {
     const visit = (value) => {
       if (!value || typeof value !== "object") return null;
       for (const [key, nested] of Object.entries(value)) {
-        if (/^(?:sqlstate|sql_state|sqlState)$/i.test(key) && /^[0-9A-Z]{5}$/i.test(String(nested ?? ""))) return String(nested).toUpperCase();
+        if (/^(?:sqlstate|sql_state|sql_state_code|sqlState)$/i.test(key) && /^[0-9A-Z]{5}$/i.test(String(nested ?? ""))) return String(nested).toUpperCase();
         if (typeof nested === "object") {
           const found = visit(nested);
           if (found) return found;
@@ -413,6 +413,8 @@ function postgresInstructionLocation(log) {
   const text = String(log ?? "");
   const character = text.match(/\bat character\s+(\d+)\b/i) ?? text.match(/\bat position\s+(\d+)\b/i);
   if (character) return `character_${character[1]}`;
+  const jsonPosition = text.match(/"(?:statement_position|internal_position)"\s*:\s*"?(\d+)"?/i);
+  if (jsonPosition) return `character_${jsonPosition[1]}`;
   const line = text.match(/\bline\s+(\d+)\s+at\s+(?:SQL statement|assignment|RETURN)/i);
   return line ? `line_${line[1]}` : null;
 }
@@ -420,10 +422,13 @@ function postgresInstructionLocation(log) {
 function postgresSqlErrorEvidence(log) {
   const text = String(log ?? "");
   const lines = text.split(/\r?\n/u);
-  const sqlState = lines.map(sqlStateFromLogLine).find(Boolean) ?? sqlStateFromText(text);
+  const stateIndex = lines.findIndex((line) => sqlStateFromLogLine(line));
+  const sqlState = stateIndex >= 0 ? sqlStateFromLogLine(lines[stateIndex]) : sqlStateFromText(text);
   if (!sqlState) return { sqlState: null, detail: null, instructionLocation: null };
-  const detail = safeSqlErrorDetail(lines.slice(0, Math.min(lines.length, 20)).join(" "), sqlState);
-  return { sqlState, detail, instructionLocation: postgresInstructionLocation(lines.slice(0, Math.min(lines.length, 20)).join(" ")) };
+  const errorContext = stateIndex >= 0 ? lines.slice(Math.max(0, stateIndex - 2), stateIndex + 4) : lines.slice(0, 6);
+  const context = errorContext.join(" ");
+  const detail = safeSqlErrorDetail(context, sqlState);
+  return { sqlState, detail, instructionLocation: postgresInstructionLocation(context) };
 }
 
 function inferFirstFailedStep(log, bootstrapJob, firstError, startPhase) {
@@ -772,6 +777,7 @@ export function collectBoundedStartEvidence({ log, postgresLog = "", dockerEvent
     firstErrorSignal: firstError.signal,
     firstErrorDetail: firstError.detail ?? null,
     firstErrorInstructionLocation: postgresError.instructionLocation,
+    postgresLogObserved: String(postgresLog ?? "").trim().length > 0,
     firstErrorExcerpt: firstError.excerpt,
     firstErrorSource: firstError.source,
     dockerLifecycleEvents: parseDockerLifecycleEvents(dockerEvents, configContract.projectId),
@@ -841,6 +847,7 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`first_error_signal=${evidence.firstErrorSignal ?? "unavailable"}`);
     lines.push(`first_error_detail=${evidence.firstErrorDetail ?? "unavailable"}`);
     lines.push(`first_error_instruction_location=${evidence.firstErrorInstructionLocation ?? "unavailable"}`);
+    lines.push(`postgres_log_observed=${evidence.postgresLogObserved ? "true" : "false"}`);
     lines.push(`first_error_excerpt=${evidence.firstErrorExcerpt ?? "unavailable"}`);
     lines.push(`first_error_source=${evidence.firstErrorSource ?? "unavailable"}`);
     lines.push(`bootstrap_last_started_job=${evidence.bootstrapLastStartedJob ?? "unavailable"}`);

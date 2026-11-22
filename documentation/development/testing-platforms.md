@@ -133,9 +133,10 @@ Pendant `supabase start`, le runner conserve aussi temporairement les logs du
 conteneur PostgreSQL dans son espace privé jusqu'à l'extraction du diagnostic,
 puis les supprime avec les autres journaux. Le diagnostic n'en publie que le
 SQLSTATE, un type PostgreSQL de la liste autorisée et, si le serveur le fournit,
-un emplacement numérique d'instruction. Un identifiant de migration n'est
-publié que lorsqu'une ligne d'échec le rattache explicitement ; un nom de
-migration simplement voisin du SQLSTATE reste non attribué.
+un emplacement numérique d'instruction, ainsi qu'un indicateur de disponibilité
+du journal PostgreSQL. Un identifiant de migration n'est publié que lorsqu'une
+ligne d'échec le rattache explicitement ; un nom de migration simplement voisin
+du SQLSTATE reste non attribué.
 Les sondes ne publient ni ce nom, ni nom d'image, ni sortie Docker, ni variable
 d'environnement. Une sortie
 `UNCLASSIFIED` reste une absence de preuve causale ; elle ne doit pas être

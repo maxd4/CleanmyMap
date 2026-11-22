@@ -239,11 +239,42 @@ test("extracts allowlisted PostgreSQL type and numeric instruction location with
   });
 
   assert.equal(evidence.firstErrorSqlState, "22P02");
+  assert.equal(evidence.postgresLogObserved, true);
   assert.equal(evidence.firstErrorDetail, "INVALID_TEXT_REPRESENTATION;type=timestamp_with_time_zone");
   assert.equal(evidence.firstErrorInstructionLocation, "character_129");
   assert.match(diagnostic, /type=timestamp_with_time_zone/);
   assert.match(diagnostic, /first_error_instruction_location=character_129/);
+  assert.match(diagnostic, /postgres_log_observed=true/);
   assert.doesNotMatch(diagnostic, /private-user-value|private_table|insert into/);
+});
+
+test("reads nested PostgreSQL JSON SQLSTATE, type and statement position without exposing values", () => {
+  const postgresLog = JSON.stringify({
+    record: {
+      error_severity: "ERROR",
+      sql_state_code: "22P02",
+      message: 'invalid input syntax for type uuid: "private-identity"',
+      detail: "private detail value",
+      statement_position: "87",
+      statement: "select private column from private table",
+    },
+  });
+  const evidence = collectBoundedStartEvidence({ log: "start failed", postgresLog, exitCode: 1, probeCommand: createProbeCommand() });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: classifySupabaseStartFailure({ log: "start failed", exitCode: 1, evidence }),
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+
+  assert.equal(evidence.firstErrorSqlState, "22P02");
+  assert.equal(evidence.firstErrorDetail, "INVALID_TEXT_REPRESENTATION;type=uuid");
+  assert.equal(evidence.firstErrorInstructionLocation, "character_87");
+  assert.equal(evidence.firstErrorSource, "POSTGRES_LOG");
+  assert.match(diagnostic, /postgres_log_observed=true/);
+  assert.doesNotMatch(diagnostic, /private-identity|private detail value|select private column|private table/);
 });
 
 test("rejects unallowlisted PostgreSQL type names in safe diagnostics", () => {
