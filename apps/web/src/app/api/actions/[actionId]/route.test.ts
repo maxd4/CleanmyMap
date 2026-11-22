@@ -85,10 +85,16 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     let writeNumber = 0;
     updateMock.mockImplementation(() => ({
       eq: () => ({
-        select: () => ({
-          single: async () => ({
-            data: { id: "action-test-1", updated_at: `persisted-revision-${++writeNumber}` },
-            error: null,
+        eq: () => ({
+          select: () => ({
+            single: async () => ({
+              data: { id: "action-test-1", updated_at: `persisted-revision-${++writeNumber}` },
+              error: null,
+            }),
+            maybeSingle: async () => ({
+              data: { id: "action-test-1", updated_at: `persisted-revision-${++writeNumber}` },
+              error: null,
+            }),
           }),
         }),
       }),
@@ -490,6 +496,7 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   it("treats canonical raw PATCH input as server-authoritative and preserves explicit nulls", async () => {
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",
+      updated_at: "old-revision",
       status: "pending",
       action_phase: "post_action_complete",
       preparation_data: {},
@@ -556,6 +563,7 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   it("does not let a user PATCH department fields bypass server attribution", async () => {
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",
+      updated_at: "old-revision",
       status: "pending",
       action_phase: "pre_action",
       preparation_data: {},
