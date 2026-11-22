@@ -138,6 +138,7 @@ test("classifies SQLSTATE migration failures without publishing private error te
     const log = [
       "Applying database migrations",
       "Applying migration 20261122000014_private_action_attendance_registry.sql...",
+      "failed to apply migration 20261122000014_private_action_attendance_registry.sql",
       JSON.stringify({ level: "error", error: { code: sqlState, message: "private table and token=secret" } }),
     ].join("\n");
     const evidence = collectBoundedStartEvidence({ log, exitCode: 1, probeCommand: createProbeCommand() });
@@ -158,10 +159,11 @@ test("classifies SQLSTATE migration failures without publishing private error te
   }
 });
 
-test("finds SQLSTATE and the preceding migration ID in structured private CLI logs", () => {
+test("finds SQLSTATE and an explicitly failed migration ID in structured private CLI logs", () => {
   const log = [
     "Applying database migrations",
     "Applying migration 20261122000014_private_action_attendance_registry.sql...",
+    "failed to apply migration 20261122000014_private_action_attendance_registry.sql",
     JSON.stringify({ level: "debug", context: { sqlstate: "22P02", detail: "private table token=secret" } }),
   ].join("\n");
   const evidence = collectBoundedStartEvidence({ log, exitCode: 1, probeCommand: createProbeCommand() });
@@ -183,10 +185,20 @@ test("finds SQLSTATE and the preceding migration ID in structured private CLI lo
   assert.doesNotMatch(diagnostic, /private table|token=secret|secret/);
 });
 
+test("does not attribute a SQL error to a nearby migration without explicit failure correlation", () => {
+  const log = [
+    "Applying migration 20261121000002_personal_ai_declarations.sql...",
+    JSON.stringify({ level: "debug", context: { sqlstate: "22P02" } }),
+  ].join("\n");
+  const evidence = collectBoundedStartEvidence({ log, exitCode: 1, probeCommand: createProbeCommand() });
+  assert.equal(evidence.firstFailedMigrationId, null);
+});
+
 test("reports only the data error type for invalid text representations", () => {
   const log = [
     "Applying database migrations",
     "Applying migration 20261121000002_personal_ai_declarations.sql...",
+    "failed to apply migration 20261121000002_personal_ai_declarations.sql",
     JSON.stringify({ level: "debug", context: { sqlstate: "22P02" } }),
     JSON.stringify({ level: "debug", context: { message: 'invalid input syntax for type timestamp with time zone: "private-value"' } }),
   ].join("\n");
@@ -206,6 +218,44 @@ test("reports only the data error type for invalid text representations", () => 
   assert.doesNotMatch(diagnostic, /private-value/);
 });
 
+test("extracts allowlisted PostgreSQL type and numeric instruction location without exposing database log text", () => {
+  const postgresLog = [
+    'ERROR: invalid input syntax for type timestamp with time zone: "private-user-value" SQLSTATE 22P02 at character 129',
+    'STATEMENT: insert into private_table(value) values (\'private-user-value\')',
+  ].join("\n");
+  const evidence = collectBoundedStartEvidence({
+    log: "migration execution failed SQLSTATE 22P02",
+    postgresLog,
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: classifySupabaseStartFailure({ log: "migration execution failed SQLSTATE 22P02", exitCode: 1, evidence }),
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+
+  assert.equal(evidence.firstErrorSqlState, "22P02");
+  assert.equal(evidence.firstErrorDetail, "INVALID_TEXT_REPRESENTATION;type=timestamp_with_time_zone");
+  assert.equal(evidence.firstErrorInstructionLocation, "character_129");
+  assert.match(diagnostic, /type=timestamp_with_time_zone/);
+  assert.match(diagnostic, /first_error_instruction_location=character_129/);
+  assert.doesNotMatch(diagnostic, /private-user-value|private_table|insert into/);
+});
+
+test("rejects unallowlisted PostgreSQL type names in safe diagnostics", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "invalid input syntax for type custom_sensitive_type: private-value SQLSTATE 22P02",
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+  assert.equal(evidence.firstErrorDetail, "INVALID_TEXT_REPRESENTATION");
+  assert.doesNotMatch(JSON.stringify(evidence), /custom_sensitive_type|private-value/);
+});
+
 test("turns a long failed start with no containers into an actionable bounded code", () => {
   const evidence = collectBoundedStartEvidence({
     log: "opaque startup failure",
@@ -214,7 +264,7 @@ test("turns a long failed start with no containers into an actionable bounded co
     probeCommand: createProbeCommand(),
   });
 
-  assert.equal(evidence.schemaVersion, 7);
+  assert.equal(evidence.schemaVersion, 8);
   assert.equal(
     classifySupabaseStartFailure({ log: "opaque startup failure", exitCode: 1, evidence }),
     SUPABASE_START_CATEGORIES.START_TIMEOUT,
@@ -1187,6 +1237,9 @@ test("the workflow keeps startup failure blocking and never prints the raw log",
   assert.match(startScript, /--docker-events-file="\$events_file" \\\s+--expected-network="\$network" \\\s+--root="\$root" \\\s+--exit-code="\$start_exit_code"/);
   assert.match(startScript, /docker events --since "\$start_started_at" --filter type=container/);
   assert.match(startScript, /events_pid=\$!/);
+  assert.match(startScript, /docker logs --follow --timestamps "\$container_id" > "\$postgres_log"/);
+  assert.match(startScript, /--postgres-log-file="\$postgres_log"/);
+  assert.match(startScript, /rm -f "\$start_log" "\$progress_file" "\$events_file" "\$postgres_log"/);
   assert.match(startScript, /--docker-events-file="\$events_file"/);
   assert.match(startScript, /if \[\[ "\$start_exit_code" -ne 0 \]\]; then\s+exit "\$start_exit_code"/);
   assert.match(startScript, /cat "\$diagnostic_output"/);

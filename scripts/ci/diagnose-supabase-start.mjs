@@ -1,4 +1,4 @@
-import { appendFileSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
@@ -40,7 +40,7 @@ const firstErrorSignalPatterns = [
   ["IMAGE_PULL", /(pull access denied|manifest unknown|failed to (pull|copy)|error response from daemon:.*(get|pull)|image .*not found)/i],
   ["TCP_REFUSED", /\b(econnrefused|connection refused|actively refused)\b/i],
   ["TCP_TIMEOUT", /\b(etimedout|connection timed out|connect timeout)\b/i],
-  ["NETWORK", /(failed to (create|connect|resolve).*network|network .*(not found|unavailable|fail|error|timeout|denied|refused|reset|exceeded)|(?:dns|name resolution|no such host|connection reset|connection refused|i\/o timeout|context deadline exceeded|tls handshake|proxy|registry).*(?:error|fail|timeout|denied|refused|reset|exceeded|unavailable|not found)|(?:error|failed|unable|cannot|could not).*(?:dns|name resolution|proxy|registry))/i],
+  ["NETWORK", /(failed to (create|connect|resolve).*network|network .*(not found|unavailable|fail|error|timeout|denied|refused|reset|exceeded)|(?:dns|name resolution|no such host|connection reset|connection refused|i\/o timeout|context deadline exceeded|tls handshake|proxy|package registry|container registry|docker registry|npm registry).*(?:error|fail|timeout|denied|refused|reset|exceeded|unavailable|not found)|(?:error|failed|unable|cannot|could not).*(?:dns|name resolution|proxy|package registry|container registry|docker registry|npm registry))/i],
   ["PORT_BIND", /(port is already allocated|address already in use|bind:.*address|listen tcp.*already)/i],
   ["HEALTHCHECK", /(?:\b(?:container|service)\s+[\w.-]+\s+(?:is\s+)?unhealthy\b|\bhealth checks?\s+(?:failed|timed out)\b|\bhealthcheck\s+(?:failed|timed out)\b|\btimed out waiting for (?:the )?health\b)/i],
   ["RESOURCE", /(no space left on device|out of memory|cannot allocate memory|disk quota|insufficient (memory|resources))/i],
@@ -63,6 +63,11 @@ const dockerContainersCommand = ["docker", "ps", "-a", "--filter", "name=supabas
 const dockerImagesCommand = ["docker", "images", "--format", "{{.Repository}}\t{{.Tag}}"];
 const dockerNetworksCommand = ["docker", "network", "ls", "--format", "{{.Name}}\t{{.Driver}}"];
 const progressObservationStates = new Set(["DOCKER_READY", "IMAGES_OBSERVED", "NETWORK_OBSERVED", "CONTAINERS_OBSERVED", "SERVICES_READY", "DOCKER_UNAVAILABLE"]);
+const postgresErrorTypes = new Set([
+  "bigint", "boolean", "bytea", "character", "character varying", "date", "double precision", "integer",
+  "interval", "json", "jsonb", "numeric", "real", "smallint", "text", "time", "time with time zone",
+  "time without time zone", "timestamp", "timestamp with time zone", "timestamp without time zone", "uuid",
+]);
 
 export function classifySupabaseStartFailure({
   log,
@@ -389,8 +394,9 @@ function inferFirstErrorEvidence(log) {
 function safeSqlErrorDetail(message, sqlState) {
   if (!sqlState) return null;
   if (sqlState === "22P02") {
-    const type = String(message ?? "").match(/invalid input syntax for type\s+([a-z][a-z0-9_ ]{0,48}?)(?::|\s*$)/i)?.[1]?.trim().toLowerCase();
-    return type ? `INVALID_TEXT_REPRESENTATION;type=${type.replace(/\s+/g, "_")}` : "INVALID_TEXT_REPRESENTATION";
+    const candidate = String(message ?? "").match(/invalid input syntax for type\s+([a-z][a-z0-9_ ]{0,48}?)(?::|\s*$)/i)?.[1]?.trim().toLowerCase();
+    const type = candidate && postgresErrorTypes.has(candidate) ? candidate.replace(/\s+/g, "_") : null;
+    return type ? `INVALID_TEXT_REPRESENTATION;type=${type}` : "INVALID_TEXT_REPRESENTATION";
   }
   if (sqlState.startsWith("22")) return `DATA_EXCEPTION;sqlstate=${sqlState}`;
   if (sqlState.startsWith("23")) return `INTEGRITY_CONSTRAINT;sqlstate=${sqlState}`;
@@ -398,18 +404,26 @@ function safeSqlErrorDetail(message, sqlState) {
 }
 
 function inferMigrationId(log) {
-  const lines = String(log ?? "").split(/\r?\n/u);
-  const errorIndex = lines.findIndex((line) => sqlStateFromLogLine(line) || sqlStateFromText(terminalLogMessage(line)));
-  if (errorIndex >= 0) {
-    for (let index = errorIndex; index >= Math.max(0, errorIndex - 20); index -= 1) {
-      const normalized = terminalLogMessage(lines[index]) ?? lines[index];
-      const match = normalized.match(/\b(20\d{12})_[a-z0-9_-]+\.sql\b/i)
-        ?? normalized.match(/\b(?:migration|version)\s*[=:"']?\s*(20\d{12})\b/i);
-      if (match) return match[1];
-    }
-  }
-  const failedMigration = String(log ?? "").match(/\b(?:failed to apply migration|migration)\s+["']?(20\d{12})\b/i);
-  return failedMigration?.[1] ?? null;
+  const explicitFailure = String(log ?? "").match(/\bfailed to apply migration\s+["']?(20\d{12})(?:_[a-z0-9_-]+\.sql)?\b/i)
+    ?? String(log ?? "").match(/\bmigration\s+["']?(20\d{12})(?:_[a-z0-9_-]+\.sql)?["']?\s+(?:failed|failed to apply)\b/i);
+  return explicitFailure?.[1] ?? null;
+}
+
+function postgresInstructionLocation(log) {
+  const text = String(log ?? "");
+  const character = text.match(/\bat character\s+(\d+)\b/i) ?? text.match(/\bat position\s+(\d+)\b/i);
+  if (character) return `character_${character[1]}`;
+  const line = text.match(/\bline\s+(\d+)\s+at\s+(?:SQL statement|assignment|RETURN)/i);
+  return line ? `line_${line[1]}` : null;
+}
+
+function postgresSqlErrorEvidence(log) {
+  const text = String(log ?? "");
+  const lines = text.split(/\r?\n/u);
+  const sqlState = lines.map(sqlStateFromLogLine).find(Boolean) ?? sqlStateFromText(text);
+  if (!sqlState) return { sqlState: null, detail: null, instructionLocation: null };
+  const detail = safeSqlErrorDetail(lines.slice(0, Math.min(lines.length, 20)).join(" "), sqlState);
+  return { sqlState, detail, instructionLocation: postgresInstructionLocation(lines.slice(0, Math.min(lines.length, 20)).join(" ")) };
 }
 
 function inferFirstFailedStep(log, bootstrapJob, firstError, startPhase) {
@@ -663,7 +677,7 @@ export function readProgressSnapshots(progressFile) {
   }
 }
 
-export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, durationSeconds = null, expectedNetwork, root = process.cwd(), probeCommand = probe, startProgressSnapshots = [], startProgressPartial = false }) {
+export function collectBoundedStartEvidence({ log, postgresLog = "", dockerEvents = "", exitCode, durationSeconds = null, expectedNetwork, root = process.cwd(), probeCommand = probe, startProgressSnapshots = [], startProgressPartial = false }) {
   const dockerVersion = probeCommand("docker", ["--version"]);
   const dockerDaemon = probeCommand("docker", ["info", "--format", "{{.ServerVersion}}"]);
   const dockerInfo = probeCommand("docker", ["info", "--format", "{{json .}}"]);
@@ -688,6 +702,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
   const progressSnapshots = normalizeProgressSnapshots(startProgressSnapshots);
   const bootstrapJobs = parseSupabaseBootstrapJobs(dockerEvents, configContract.projectId);
   const firstLogError = inferFirstErrorEvidence(log);
+  const postgresError = postgresSqlErrorEvidence(postgresLog);
   const firstDockerError = parseFirstDockerFailureEvent(dockerEvents, configContract.projectId);
   const firstBootstrapJob = bootstrapJobs.firstFailedJob;
   const dockerEventIsMoreSpecific = firstLogError.signal === "UNKNOWN_ERROR" && firstDockerError.signal !== "NONE";
@@ -695,8 +710,12 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     ? { signal: firstBootstrapJob.signal === "DOCKER_OOM" ? "DOCKER_OOM" : "BOOTSTRAP_JOB_EXIT", excerpt: sanitizeBootstrapJobError(firstBootstrapJob), source: "DOCKER_EVENT" }
     : dockerEventIsMoreSpecific
     ? { ...firstDockerError, source: "DOCKER_EVENT" }
-    : firstLogError.signal !== "NONE"
-      ? { ...firstLogError, source: "SUPABASE_CLI_LOG" }
+      : firstLogError.signal !== "NONE" && firstLogError.signal !== "UNKNOWN_ERROR"
+      ? { ...firstLogError, detail: postgresError.detail ?? firstLogError.detail, sqlState: firstLogError.sqlState ?? postgresError.sqlState, source: postgresError.sqlState ? "POSTGRES_LOG" : "SUPABASE_CLI_LOG" }
+      : postgresError.sqlState
+        ? { signal: signalForSqlState(postgresError.sqlState) ?? "UNKNOWN_ERROR", sqlState: postgresError.sqlState, detail: postgresError.detail, source: "POSTGRES_LOG" }
+      : firstLogError.signal !== "NONE"
+        ? { ...firstLogError, source: "SUPABASE_CLI_LOG" }
       : { ...firstDockerError, source: firstDockerError.signal === "NONE" ? "UNAVAILABLE" : "DOCKER_EVENT" };
   const startPhase = inferStartStep(log, bootstrapJobs);
   const dbConnectivity = dbConnectivityDiagnosis(progressSnapshots);
@@ -715,7 +734,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
           ? "db"
           : null;
   const evidence = {
-    schemaVersion: 7,
+    schemaVersion: 8,
     evidenceCodes: [],
     dockerCommandAvailable: dockerVersion.available,
     dockerDaemonAvailable: dockerDaemon.available,
@@ -752,6 +771,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     dbConnectivityTimeline: progressSnapshots.map((snapshot) => `${snapshot.elapsedSeconds ?? "unknown"}:docker=${snapshot.dbDockerHealth};postgres=${snapshot.dbPostgresInternal};host_tcp=${snapshot.dbHostTcp}`).join(","),
     firstErrorSignal: firstError.signal,
     firstErrorDetail: firstError.detail ?? null,
+    firstErrorInstructionLocation: postgresError.instructionLocation,
     firstErrorExcerpt: firstError.excerpt,
     firstErrorSource: firstError.source,
     dockerLifecycleEvents: parseDockerLifecycleEvents(dockerEvents, configContract.projectId),
@@ -820,6 +840,7 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`failure_service=${evidence.confirmedService ?? "unavailable"}`);
     lines.push(`first_error_signal=${evidence.firstErrorSignal ?? "unavailable"}`);
     lines.push(`first_error_detail=${evidence.firstErrorDetail ?? "unavailable"}`);
+    lines.push(`first_error_instruction_location=${evidence.firstErrorInstructionLocation ?? "unavailable"}`);
     lines.push(`first_error_excerpt=${evidence.firstErrorExcerpt ?? "unavailable"}`);
     lines.push(`first_error_source=${evidence.firstErrorSource ?? "unavailable"}`);
     lines.push(`bootstrap_last_started_job=${evidence.bootstrapLastStartedJob ?? "unavailable"}`);
@@ -883,6 +904,7 @@ function main() {
   const logFile = readArgument("--log-file");
   const progressFile = readArgument("--progress-file");
   const dockerEventsFile = readArgument("--docker-events-file");
+  const postgresLogFile = readArgument("--postgres-log-file");
   const watchPidValue = readArgument("--watch-pid");
   const exitCodeValue = readArgument("--exit-code");
   const durationValue = readArgument("--duration-seconds");
@@ -903,9 +925,10 @@ function main() {
   const durationSeconds = durationValue === undefined ? null : Number.parseInt(durationValue, 10);
   if (!logFile || !Number.isInteger(exitCode) || exitCode < 0 || (durationValue !== undefined && (!Number.isInteger(durationSeconds) || durationSeconds < 0))) throw new Error("Supabase start diagnostic requires --log-file and a non-negative --exit-code.");
   const log = readFileSync(logFile, "utf8");
+  const postgresLog = postgresLogFile && existsSync(postgresLogFile) ? readFileSync(postgresLogFile, "utf8") : "";
   const dockerEvents = dockerEventsFile ? readFileSync(dockerEventsFile, "utf8") : "";
   const progress = readProgressSnapshots(progressFile);
-  const evidence = collectBoundedStartEvidence({ log, dockerEvents, exitCode, durationSeconds, expectedNetwork, root, startProgressSnapshots: progress.snapshots, startProgressPartial: progress.partial });
+  const evidence = collectBoundedStartEvidence({ log, postgresLog, dockerEvents, exitCode, durationSeconds, expectedNetwork, root, startProgressSnapshots: progress.snapshots, startProgressPartial: progress.partial });
   const category = classifySupabaseStartFailure({ log, exitCode, dockerCommandAvailable: evidence.dockerCommandAvailable, dockerDaemonAvailable: evidence.dockerDaemonAvailable, supabaseCliAvailable: evidence.supabaseCliAvailable, evidence });
   process.stdout.write(renderSupabaseStartDiagnostic({ category, exitCode, dockerVersion: evidence.dockerServerVersion, supabaseCliVersion: evidence.supabaseCliVersion, dockerDaemonAvailable: evidence.dockerDaemonAvailable, evidence }) + "\n");
 }
