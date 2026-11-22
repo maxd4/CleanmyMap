@@ -38,6 +38,11 @@ Périmètre + période + données canoniques
 - **`detailLevel`** : `concis`, `default`, `exhaustif` ; détermine la profondeur documentaire, selon le contrat déjà livré.
 - **Thème** : détermine uniquement les surfaces, les couleurs, la typographie, les bordures, la hiérarchie décorative et les fonds. Aucun thème ne change les KPI, les unités, les limites ou la sélection des modules.
 
+L'export Markdown IA réutilise aussi `impact` ou `scientific` comme consigne de
+direction visuelle au destinataire. Il ne change aucun calcul, n'appelle pas le
+renderer PDF et ne modifie pas le thème, le snapshot ou l'artefact d'une
+génération historique. Voir le [contrat Markdown](./ai-markdown-export.md).
+
 À niveau de détail et modules identiques, les deux versions doivent être facilement comparables **page par page**.
 
 ## 2. Invariants de comparaison des pages

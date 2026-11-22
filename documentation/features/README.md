@@ -29,6 +29,7 @@
 | Générateur, snapshots, historique, partage et publications | [`reports/README.md`](./reports/README.md) et [fiche `/reports`](../pages_site/routes/03-cartographie-impact/reports/reports-README.md) | `CURRENT` selon code et tests |
 | Master Pack / chapitres réellement livrés | [`reports/master-pack.md`](./reports/master-pack.md) | `CURRENT` borné au contenu vérifié ; pas synonyme du PDF `/reports` |
 | Paramètres de génération et filtres avancés livrés | [`reports/reports-generation-parameters.md`](./reports/reports-generation-parameters.md) | `CURRENT` pour les paramètres acceptés, `PLAN` pour les extensions explicitement marquées |
+| Export Markdown IA et pipeline éditorial futur | [`reports/ai-markdown-export.md`](./reports/ai-markdown-export.md) | `CURRENT` pour le téléchargement local confirmé ; pipeline modèle `PLAN` |
 | Thèmes PDF Impact / Scientifique, réemploi et exports historiques | [`reports/report-pdf-themes-and-reuse.md`](./reports/report-pdf-themes-and-reuse.md) | `CURRENT` pour les fonctions livrées, `PLAN` pour accessibilité Tagged PDF et conformité non validées |
 | Objectifs mesurables / campagnes collectives | [`reports/impact-goals-and-progression.md`](./reports/impact-goals-and-progression.md) | `PLAN` ; pas de nouvelle table implicite |
 | Ancienne entrée commune | [`reports/reports-parameters-and-objectives.md`](./reports/reports-parameters-and-objectives.md) | `COMPATIBILITY`, conserver le lien, pas une deuxième source |

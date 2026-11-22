@@ -138,6 +138,20 @@ doivent être proposés que s'ils produisent réellement des sorties différente
 Le PDF vise plusieurs usages (bénévole, association, collectivité, partenaire,
 recherche) sans masquer les proxys, la qualité, les méthodes ni les limites.
 
+**Export Markdown IA local — P0 `CURRENT` :** le fichier versionné est
+téléchargeable depuis `/reports` et l'historique mono-action après
+confirmation. Il réutilise les données canoniques et une projection
+allowlistée ; aucun modèle n'est appelé. Le PDF natif et ses snapshots restent
+le parcours de rapport livré ; les exports JSON/CSV historiques restent des
+lectures du snapshot immuable. Le [contrat Markdown](../features/reports/ai-markdown-export.md)
+décrit le format et ses limites.
+
+**Rédaction par IA — `PLAN` :** étudier après benchmark le pipeline
+`données canoniques → projection sûre → prompt versionné → modèle API ou local
+évalué → JSON structuré → validation factuelle → template HTML/CSS fixe → PDF
+→ relecture humaine facultative`. Aucun fournisseur, coût, gain, appel de modèle
+ou PDF rédigé par IA n'est `CURRENT` sans intégration et preuve.
+
 ### P0 — Validation commerciale et structuration
 
 La validation commerciale reste une hypothèse `PLAN` : une preuve nécessite un

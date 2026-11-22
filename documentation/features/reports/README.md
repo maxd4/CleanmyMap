@@ -23,6 +23,8 @@ au runtime et à ses tests, pas à une copie documentaire.
   PDF` reste disponible en alternative. Les deux points d'entrée IA partagent
   le même popover de confirmation; l'export reprend la configuration active
   dans Reports et ne dépend pas du quota PDF.
+- [`ai-markdown-export.md`](./ai-markdown-export.md) documente le contrat
+  `CURRENT` du fichier et le pipeline éditorial IA encore `PLAN`.
 - Le Markdown fournit la configuration, les rubriques réellement disponibles,
   des identifiants de KPI stables, unités, statuts et versions méthodologiques.
   Les valeurs inconnues restent `null`/`UNKNOWN`, distinctes de zéro. Les

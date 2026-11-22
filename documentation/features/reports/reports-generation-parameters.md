@@ -15,6 +15,16 @@ Les paramètres de génération déterminent **quelles données entrent dans un 
 
 Le générateur multi-actions accepte les périmètres `global`, `account`, `association` et `arrondissement`, ainsi que `thirty_days`, `three_months`, `six_months`, `twelve_months`, `current_year`, `full_history` et `custom_range`. Les dates personnalisées sont deux dates civiles inclusives `YYYY-MM-DD`, interprétées en UTC sur `dates.observedAt`. Le périmètre `single_action` est un contrat distinct : son identifiant est résolu côté serveur et ses bornes restent verrouillées sur l'action. Pour le fonctionnement courant, voir la [fiche `/reports`](../../pages_site/routes/03-cartographie-impact/reports/reports-README.md) et le code associé.
 
+### Export Markdown IA — réutilisation du contrat `CURRENT`
+
+`POST /api/reports/ai-export` accepte les mêmes entrées mono-action et
+multi-actions et réutilise les validations, scopes, périodes et filtres serveur
+décrits ici. Le mode mono-action utilise les valeurs par défaut canoniques ;
+`/reports` réutilise sa sélection active. Cet export produit un fichier local
+sans génération historique ni consommation du quota PDF. Son format et sa
+projection allowlistée sont décrits dans le [contrat Markdown](./ai-markdown-export.md) ;
+il ne crée pas un second moteur de sélection.
+
 Les projections de rapport distinguent les personnes physiquement présentes
 (`volunteers_count`) des ramasseurs déclarés (`collectors_count`) et des unités
 de participation calculées selon `effective-volunteer-units-v1`. La somme des
