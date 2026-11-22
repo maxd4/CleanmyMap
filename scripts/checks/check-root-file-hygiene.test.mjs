@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -131,6 +132,10 @@ test("root directory contract always rejects work", () => {
   assert.deepEqual(findForbiddenRootDirectories(["work"]), ["work"]);
   assert.equal(allowedRootDirectories.includes("work"), false);
   assert.equal(localOnlyRootDirectories.includes("work"), false);
+
+  const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+  const rootIgnoreRules = fs.readFileSync(path.join(repositoryRoot, ".gitignore"), "utf8");
+  assert.equal(rootIgnoreRules.split(/\r?\n/).some((line) => /^\s*\/?work\/?\s*$/.test(line)), false);
 });
 
 test("local-only tracking guard rejects every local-only root directory", () => {
