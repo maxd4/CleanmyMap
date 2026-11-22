@@ -27,6 +27,8 @@ const strykerConfig = {
     related: true,
   },
   coverageAnalysis: "perTest",
+  // Vercel project files are not test inputs and cannot be copied from a linked candidate.
+  ignorePatterns: [".vercel"],
   concurrency: 2,
   timeoutMS: 30000,
   timeoutFactor: 2,
