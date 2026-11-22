@@ -340,12 +340,12 @@ describe("individual impact conversion and formula provenance", () => {
       individual_cigarette_butts_lots: lots,
     });
 
-    expect(lots.results.map((lot) => lot.count)).toEqual([10, 2_000, 1_400]);
+    expect(lots.results.map((lot) => lot.count)).toEqual([10, 2_000, 1_200]);
     expect(measurement).toMatchObject({
       cigaretteButtsLots: lots,
-      comparableButtsCount: 3_410,
+      comparableButtsCount: 3_210,
       comparableButtsProvenance: "derived",
-      cigaretteButtsCount: 3_410,
+      cigaretteButtsCount: 3_210,
       cigaretteButtsMassKg: lots.summary.totalMassKg,
     });
     expect(measurement?.cigaretteButtsLots?.summary.measuredMassKg).toBe(1);
@@ -387,7 +387,7 @@ describe("individual impact conversion and formula provenance", () => {
       ],
     });
 
-    expect(result.get("alice")).toMatchObject({ cigaretteButts: 800, cigaretteButtsKind: "individual" });
+    expect(result.get("alice")).toMatchObject({ cigaretteButts: 700, cigaretteButtsKind: "individual" });
     expect(result.get("bob")).toMatchObject({ cigaretteButts: 455, cigaretteButtsKind: "individual" });
     expect(result.has("pending")).toBe(false);
     expect(result.get("alice")?.cigaretteButtsInconsistent).toBe(false);
@@ -545,6 +545,6 @@ describe("individual impact conversion and formula provenance", () => {
       totalCigaretteButts: 1_000,
       participants: [participant("alice", toIndividualImpactMeasurement({ individual_cigarette_butts_lots: lots }))],
     });
-    expect(result.get("alice")).toMatchObject({ cigaretteButts: 1_400, cigaretteButtsInconsistent: true, cigaretteButtsMohsEligible: false });
+    expect(result.get("alice")).toMatchObject({ cigaretteButts: 1_200, cigaretteButtsInconsistent: true, cigaretteButtsMohsEligible: false });
   });
 });

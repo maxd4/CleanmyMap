@@ -113,7 +113,7 @@ describe("Impact terrain 2026 public results", () => {
     expect(result.estimatedButtsWeightKg).toBeCloseTo(0.22 + 1 / 1.75, 10);
     expect(result.buttsMassProvenance).toBe("estimated");
     expect(result.buttsMassConversionVersions).toEqual([
-      "impact-terrain-2026-butts-mass-v2",
+      "impact-terrain-2026-butts-mass-v3",
       "impact-terrain-2026-butts-mass-v1",
     ]);
   });

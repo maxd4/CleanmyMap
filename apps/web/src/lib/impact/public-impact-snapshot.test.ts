@@ -249,7 +249,7 @@ describe("public monthly impact snapshot", () => {
       toDate: "2026-09-08",
       timezone: "UTC",
     });
-    expect(payload.projectionVersion).toBe("impact-terrain-public-2026.09-v8");
+    expect(payload.projectionVersion).toBe(PUBLIC_IMPACT_PROJECTION_VERSION);
     expect(payload.kpis).toMatchObject({
       participantsTotal: 6,
       totalDurationMinutes: 120,

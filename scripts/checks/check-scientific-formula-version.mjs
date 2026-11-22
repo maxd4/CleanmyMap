@@ -43,9 +43,18 @@ function resolveAssignment(assignments, name) {
   return value;
 }
 
-function readMassV2Factors(source) {
+function readCurrentMassFactors(source) {
+  const assignments = readConstAssignments(source);
+  const currentVersion = resolveAssignment(
+    assignments,
+    "CIGARETTE_BUTTS_MASS_CONVERSION_VERSION",
+  );
+  const versionName = [...assignments.keys()].find(
+    (name) => resolveAssignment(assignments, name) === currentVersion &&
+      /^CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V[0-9]+$/.test(name),
+  );
   const block = source.match(
-    /\[CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2\]\s*:\s*\{([\s\S]*?)\}\s*,?/,
+    new RegExp(`\\[${versionName ?? "missing"}\\]\\s*:\\s*\\{([\\s\\S]*?)\\}\\s*,?`),
   )?.[1] ?? "";
   return ["propre", "humide", "mouille"].map((condition) =>
     normalizeExpression(
@@ -237,7 +246,7 @@ export function extractScientificMethodIdentity({ wasteSource, impactSource, pro
     volumeVersion,
     conversionResolutionPolicyVersion,
     massVersion,
-    massV2Factors: readMassV2Factors(impactSource ?? ""),
+    massFactors: readCurrentMassFactors(impactSource ?? ""),
     lotFormula: readFunctionBody(wasteSource, "calculateCigaretteButtsLot"),
     computeMassFormula: readFunctionBody(impactSource ?? "", "computeButtsCount"),
     volumeFactors: readVolumeFactorTable(wasteSource),
@@ -284,7 +293,7 @@ export function validateScientificFormulaIdentity({
     issues.push("volume factor changed without changing the effective volume conversion identity");
   }
   const massMethodChanged = base && (
-    base.massV2Factors.join("|") !== current.massV2Factors.join("|") ||
+    base.massFactors.join("|") !== current.massFactors.join("|") ||
     base.computeMassFormula !== current.computeMassFormula
   );
   if (base &&
@@ -293,7 +302,7 @@ export function validateScientificFormulaIdentity({
     issues.push("scientific factor changed without changing the public projection identity");
   }
   if (base &&
-    (base.massV2Factors.join("|") !== current.massV2Factors.join("|") ||
+    (base.massFactors.join("|") !== current.massFactors.join("|") ||
       base.computeMassFormula !== current.computeMassFormula) &&
     base.massVersion === current.massVersion) {
     issues.push("mass factors or formula changed without changing the effective mass conversion identity");

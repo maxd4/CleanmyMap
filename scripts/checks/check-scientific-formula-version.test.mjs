@@ -188,6 +188,33 @@ test("fails when mass factors change without a new mass identity", () => {
   assert.match(result.issues.join("\n"), /mass factors or formula changed/);
 });
 
+test("accepts a new mass v3 identity while retaining the historical v2 factors", () => {
+  const baseImpact = impact;
+  const currentImpact = `
+export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2 = "mass-v2";
+export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3 = "mass-v3";
+export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION = CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3;
+export const CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT = {
+  [CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2]: { propre: 0.22, humide: 0.5, mouille: 0.5 },
+  [CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3]: { propre: 0.22, humide: 0.5, mouille: 0.9 },
+};
+export function computeButtsCount(weightKg) { return Math.round(weightKg / 0.5); }
+`;
+  const result = validateScientificFormulaIdentity({
+    baseWasteSource: waste(600, "volume-v1"),
+    currentWasteSource: waste(600, "volume-v1"),
+    baseImpactSource: baseImpact,
+    currentImpactSource: currentImpact,
+    projectionSource: { base: projection("projection-v1"), current: projection("projection-v2") },
+    sqlSource: sql("projection-v2"),
+  });
+  assert.deepEqual(result.issues, []);
+  assert.equal(extractScientificMethodIdentity({
+    wasteSource: waste(600, "volume-v1"), impactSource: currentImpact,
+    projectionSource: projection("projection-v2"),
+  }).massVersion, "mass-v3");
+});
+
 test("rejects a duplicated coefficient in an active SQL definition but ignores superseded history", () => {
   const result = validateScientificFormulaIdentity({
     baseWasteSource: waste(600, "volume-v1"),

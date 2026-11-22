@@ -6,6 +6,8 @@ import {
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2,
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+  calculateCigaretteButtsLot,
   aggregateCigaretteButtsLots,
   estimateCigaretteButtsVolumeLiters,
   normalizeCigaretteButtsMeasurements,
@@ -22,7 +24,7 @@ describe("cigarette-butt lot engine", () => {
     });
 
     expect(measurement.cigaretteButtsCount).toBe(2_800);
-    expect(measurement.cigaretteButtsMassKg).toBeCloseTo(1.2 + 100 * 0.22 / 1_000 + 300 * 0.5 / 1_000, 10);
+    expect(measurement.cigaretteButtsMassKg).toBeCloseTo(1.2 + 100 * 0.22 / 1_000 + 300 * 0.9 / 1_000, 10);
     expect(measurement.cigaretteButtsVolumeLiters).toBe(0.5);
     expect(measurement.cigaretteButtsLotsSummary).toMatchObject({
       totalCount: 2_800,
@@ -95,5 +97,31 @@ describe("cigarette-butt lot engine", () => {
     expect(estimateCigaretteButtsVolumeLiters(700, "cleanmymap-butts-volume-v2")).toBe(1);
     expect(estimateCigaretteButtsVolumeLiters(-1)).toBeNull();
     expect(estimateCigaretteButtsVolumeLiters(Number.NaN)).toBeNull();
+  });
+
+  it("converts each declared condition reciprocally from count, mass and volume", () => {
+    const factors = { propre: 0.22, humide: 0.5, mouille: 0.9 } as const;
+    for (const [condition, gramsPerButt] of Object.entries(factors) as Array<[
+      keyof typeof factors,
+      number,
+    ]>) {
+      const count = calculateCigaretteButtsLot({
+        id: `${condition}-count`, source: "count", value: 600, condition,
+      });
+      const mass = calculateCigaretteButtsLot({
+        id: `${condition}-mass`, source: "mass_kg", value: 600 * gramsPerButt / 1_000, condition,
+      });
+      const volume = calculateCigaretteButtsLot({
+        id: `${condition}-volume`, source: "volume_l", value: 1, condition,
+      });
+
+      expect(count.massKg).toBeCloseTo(600 * gramsPerButt / 1_000, 12);
+      expect(count.estimatedVolumeLiters).toBe(1);
+      expect(mass.count).toBe(600);
+      expect(mass.estimatedVolumeLiters).toBe(1);
+      expect(volume.count).toBe(600);
+      expect(volume.massKg).toBeCloseTo(600 * gramsPerButt / 1_000, 12);
+      expect(volume.massConversionFormulaVersion).toBe(CIGARETTE_BUTTS_MASS_CONVERSION_VERSION);
+    }
   });
 });

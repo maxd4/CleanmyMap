@@ -460,11 +460,11 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     expect(body.individualImpact).toMatchObject({
       cigaretteButtsCount: null,
       comparableButtsCount: 2_000,
-      cigaretteButtsConversionVersion: "impact-terrain-2026-butts-mass-v2",
+      cigaretteButtsConversionVersion: "impact-terrain-2026-butts-mass-v3",
     });
     expect(participant).toMatchObject({
       individual_cigarette_butts_mass_kg: 1,
-      individual_cigarette_butts_conversion_version: "impact-terrain-2026-butts-mass-v2",
+      individual_cigarette_butts_conversion_version: "impact-terrain-2026-butts-mass-v3",
     });
   });
 
@@ -770,18 +770,18 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
 
     expect(response.status).toBe(200);
     expect(body.individualImpact).toMatchObject({
-      comparableButtsCount: 1_000,
+      comparableButtsCount: 900,
       cigaretteButtsLots: expect.objectContaining({
         lots: expect.arrayContaining([
           expect.objectContaining({ id: "count", source: "count", value: 100 }),
           expect.objectContaining({ id: "mass", source: "mass_kg", value: 0.1 }),
           expect.objectContaining({ id: "volume", source: "volume_l", value: 1 }),
         ]),
-        summary: expect.objectContaining({ totalCount: 1_000, measuredMassKg: 0.1, totalVolumeLiters: 1 }),
+        summary: expect.objectContaining({ totalCount: 900, measuredMassKg: 0.1, totalVolumeLiters: 1 }),
       }),
     });
     expect(participant).toMatchObject({
-      individual_cigarette_butts_count: 1_000,
+      individual_cigarette_butts_count: 900,
       individual_cigarette_butts_provenance: "derived",
       individual_cigarette_butts_lots: expect.objectContaining({
         results: expect.arrayContaining([expect.objectContaining({ volumeConversionFormulaVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION })]),

@@ -729,9 +729,11 @@ stable, une seule unité source (`count`, `mass_kg` ou `volume_l`), une valeur
 non négative et l'état de la collecte, choisi explicitement lorsqu'un
 équivalent doit être calculé. Le volume est une mesure source valide, pas un
 champ informatif : `cleanmymap-butts-volume-v3` applique `600 mégots/L`.
-Le calcul par lot réutilise `impact-terrain-2026-butts-mass-v2` pour une nouvelle
-saisie : `0,22 g/mégot` propre/sec, `0,50 g/mégot` humide et le même proxy pour
-mouille faute de référence indépendante. Les lots `cleanmymap-butts-volume-v1`
+Le calcul par lot réutilise `impact-terrain-2026-butts-mass-v3` pour une nouvelle
+saisie : `0,22 g/mégot` propre/sec, `0,50 g/mégot` humide et `0,90 g/mégot`
+mouillé. Le facteur mouillé est un proxy théorique provisoire, pas une mesure
+universelle. Le proxy volume reste `600 mégots/L` pour les trois états ; aucune
+différence volumique par état n'est démontrée. Les lots `cleanmymap-butts-volume-v1`
 et `v2` conservent respectivement `600` et `700 mégots/L` ; leurs sources ne
 sont pas réécrites. Le moteur calcule les deux autres équivalents depuis
 chaque source count, mass_kg ou volume_l ; le nombre dérivé est arrondi par lot.
