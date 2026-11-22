@@ -34,6 +34,18 @@ test.describe("published future action manual sharing", () => {
     await page.goto("/sections/rejoindre-un-formulaire");
     await dismissCookieConsent(page);
 
+    const publicActionResponse = await page.request.get(`/api/actions/${GROUP_JOIN_FIXTURE_ID}/public`);
+    expect(publicActionResponse.status()).toBe(200);
+    expect(publicActionResponse.headers()["cache-control"]).toContain("no-store");
+    const publicActionPayload = await publicActionResponse.json();
+    expect(publicActionPayload.reference).toMatchObject({
+      id: GROUP_JOIN_FIXTURE_ID,
+      locationLabel: FIXTURE_LABEL,
+    });
+    expect(publicActionPayload.reference).not.toHaveProperty("createdByClerkId");
+    expect(publicActionPayload.reference).not.toHaveProperty("preparationData");
+    expect(publicActionPayload.reference).not.toHaveProperty("wasteKg");
+
     const actionCard = page.getByRole("article").filter({ hasText: FIXTURE_LABEL });
     await expect(actionCard).toBeVisible();
     const shareButton = actionCard.getByRole("button", { name: "Partager dans la messagerie" });

@@ -124,8 +124,8 @@ describe("report publication route", () => {
   });
 
   it.each([
-    [new InvalidReportGenerationIdError("bad id"), 400, "Identifiant de rapport invalide."],
-    [new InvalidReportGenerationSnapshotError("invalid snapshot"), 422, "Le snapshot historique est invalide ou incompatible."],
+    [new InvalidReportGenerationIdError(), 400, "Identifiant de rapport invalide."],
+    [new InvalidReportGenerationSnapshotError(), 422, "Le snapshot historique est invalide ou incompatible."],
     [new Error("private database failure"), 503, "Impossible de charger le rapport historique."],
   ])("maps generation load errors to the contracted safe response", async (error, status, message) => {
     snapshotMock.mockRejectedValueOnce(error);
