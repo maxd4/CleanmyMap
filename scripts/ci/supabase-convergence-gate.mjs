@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { reviewedMigrationApprovals } from "./supabase-migration-sql.mjs";
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const EXPECTED_WORKFLOW = "supabase-sql-proof-ephemeral";
@@ -58,6 +59,17 @@ export function validateEphemeralEvidence({ evidence, candidateSha }) {
   }
   const gamification = evidence.records.find((record) => record?.path === "apps/web/supabase/tests/gamification-progression-boundary.pgtap.sql");
   if (gamification?.expectedAssertions !== 56) return blocked("gamification pgTAP proof is not 56 assertions");
+  if (!Array.isArray(evidence.migrations)) return blocked("ephemeral SQL evidence has no exact migration hashes");
+  for (const approval of reviewedMigrationApprovals) {
+    const migration = evidence.migrations.find((entry) => entry?.id === approval.id && entry?.path === approval.path);
+    if (migration?.contentSha256 !== approval.sha256) return blocked(`approved migration ${approval.id} hash does not match the reviewed content`);
+    for (const requiredProof of approval.proofs) {
+      const proof = evidence.records.find((record) => record?.path === requiredProof.path);
+      if (!proof || proof.status !== "INTEGRATION_PROOF" || proof.outcome !== "PASS" || proof.contentSha256 !== requiredProof.sha256) {
+        return blocked(`approved migration ${approval.id} lacks its exact passing proof for ${requiredProof.path}`);
+      }
+    }
+  }
   return { mode: "APPLY", apply: true, reason: "ephemeral SQL proof passed for the exact main SHA" };
 }
 

@@ -155,6 +155,15 @@ toute autre écriture distante restent hors de cette délégation. Le garde
 être exécutés sur le candidat exact ; ils complètent la revue et ne remplacent
 pas la vérification de convergence des deux historiques.
 
+Les exceptions de DML admissible sont versionnées dans
+`scripts/ci/supabase-migration-approvals.json`. Chaque entrée fixe l'identifiant,
+le chemin, l'empreinte SHA-256 exacte, une justification et les chemins et
+empreintes des preuves obligatoires. La preuve éphémère associe aussi les empreintes des migrations et
+des tests au SHA Git testé. Une modification du SQL invalide l'approbation. Ce
+mécanisme ne valide ni SQL destructif ni SQL indécidable ; il ne remplace pas
+les preuves PostgreSQL et ne permet pas encore l'application partielle d'une
+file.
+
 ## Exception bornée de rejouabilité — `20260913000006`
 
 Le principe append-only reste la règle générale. Une exception locale est

@@ -528,6 +528,19 @@ test("process spawn rejections reach the report as an unexecuted database proof"
   assert.ok(report.records.filter((record) => record.status === "NOT_RUN").every((record) => /not reached after failure/.test(record.reason)));
 });
 
+test("SQL evidence binds migration and proof file hashes to the checked-out candidate", async () => {
+  let report;
+  const result = await runSupabaseSqlProof({
+    run: false,
+    writeReportImpl: (nextReport) => { report = nextReport; },
+  });
+  const migration = result.migrations.find(({ id }) => id === "20261122000014");
+  const proof = result.records.find(({ path }) => path === "apps/web/supabase/tests/action-attendance-registry.pgtap.sql");
+  assert.equal(report, result);
+  assert.equal(migration.contentSha256, "2f4b4ea37497fa05d67b3566a78b57ef927644c70b41a2983b2487958d885234");
+  assert.equal(proof.contentSha256, "4da5e23312d7d76d649997f61c29771f470ef4cb0bea2f1b5f09a9f92a75653e");
+});
+
 test("SQL completion markers cannot precede a later assertion", () => {
   assert.equal(validateSqlContractMarkerPlacement("raise exception 'failure';\nNOTICE_MARKER", "NOTICE_MARKER"), true);
   assert.throws(

@@ -41,7 +41,8 @@ test("qualifies only the reviewed welcome-contact catalog migration", () => {
   const sql = readFileSync(resolve("apps/web/supabase/migrations", file), "utf8");
   const approved = classifyMigrationSql(sql, { id: "20261122000004", file });
   assert.equal(approved.dataMutation, false);
-  assert.equal(approved.reviewedDataMutation, "WELCOME_CONTACT_CATALOG_V1");
+  assert.equal(approved.reviewedDataMutation, "20261122000004");
+  assert.equal(approved.approval.kind, "BOUNDED_IDEMPOTENT_BACKFILL");
   for (const [id, candidateFile, candidateSql] of [
     ["20261122000005", file, sql],
     ["20261122000004", "other.sql", sql],
@@ -52,6 +53,20 @@ test("qualifies only the reviewed welcome-contact catalog migration", () => {
     assert.equal(result.dataMutation, true);
     assert.equal(result.reviewedDataMutation, undefined);
   }
+});
+
+test("approves only the exact attendance registry backfill and leaves destructive SQL blocked", () => {
+  const file = "20261122000014_private_action_attendance_registry.sql";
+  const sql = readFileSync(resolve("apps/web/supabase/migrations", file), "utf8");
+  const approved = classifyMigrationSql(sql, { id: "20261122000014", file });
+  assert.equal(approved.dataMutation, false);
+  assert.equal(approved.reviewedDataMutation, "20261122000014");
+  assert.deepEqual(approved.approval.proofs.map(({ path: proofPath }) => proofPath), [
+    "apps/web/supabase/tests/action-attendance-registry.pgtap.sql",
+    "e2e/action-attendance-registry-concurrency.mjs",
+  ]);
+  assert.equal(classifyMigrationSql(`${sql}\ndelete from public.actions;`, { id: "20261122000014", file }).dataMutation, true);
+  assert.equal(classifyMigrationSql(sql.replace(/do nothing/i, "DO UPDATE SET revision = revision"), { id: "20261122000014", file }).dataMutation, true);
 });
 
 test("requires review for SQL whose execution timing is indeterminate", () => {
@@ -96,6 +111,24 @@ test("returns DIVERGED when the remote sequence is not a local prefix", () => {
   const summary = evaluatePreflight({ ...readyContext, history: { ...alignedHistory(localIds, [localIds[0], "20261114000099"]), pending: [localIds[2]], aligned: false }, dryRunIds: [localIds[2]] });
   assert.equal(summary.status, "DIVERGED");
   assert.ok(summary.causes.some((cause) => cause.code === "MIGRATION_HISTORY_DIVERGED"));
+});
+
+test("attributes the first blocker to its migration and reports unrelated failures globally", () => {
+  const pending = ["20261114000001", "20261114000002"];
+  const analyses = [{ id: pending[1], dataMutation: true }];
+  assert.equal(evaluatePreflight({
+    ...readyContext,
+    history: alignedHistory(pending, []),
+    dryRunIds: pending,
+    analyses,
+    commandFailures: ["Supabase security advisors"],
+  }).firstBlockingMigration, pending[1]);
+  assert.equal(evaluatePreflight({
+    ...readyContext,
+    history: alignedHistory(pending, []),
+    dryRunIds: pending,
+    commandFailures: ["Supabase security advisors"],
+  }).firstBlockingMigration, "GLOBAL");
 });
 
 test("blocks unverified access, actual mutations, indeterminate SQL and critical regressions", () => {

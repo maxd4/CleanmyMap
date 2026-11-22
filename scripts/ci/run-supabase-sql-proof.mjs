@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -354,7 +355,26 @@ function candidateSha(explicitSha) {
 }
 
 function baseRecord(path, category) {
-  return { path, category, status: "NOT_RUN", outcome: "NOT_RUN" };
+  const content = readFileSync(resolve(repositoryRoot, path));
+  return {
+    path,
+    category,
+    contentSha256: createHash("sha256").update(content).digest("hex"),
+    status: "NOT_RUN",
+    outcome: "NOT_RUN",
+  };
+}
+
+function migrationEvidence() {
+  const directory = resolve(repositoryRoot, "apps/web/supabase/migrations");
+  return readdirSync(directory)
+    .filter((file) => /^\d{14}_.+\.sql$/.test(file))
+    .sort()
+    .map((file) => ({
+      id: file.slice(0, 14),
+      path: `apps/web/supabase/migrations/${file}`,
+      contentSha256: createHash("sha256").update(readFileSync(resolve(directory, file))).digest("hex"),
+    }));
 }
 
 export function assertEphemeralSupabaseTestEnvironment(env = process.env) {
@@ -446,6 +466,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
     provenance: "COMMITTED_SNAPSHOT",
     workflow: "supabase-sql-proof-ephemeral",
     outcome: "NOT_RUN",
+    migrations: migrationEvidence(),
     records,
   };
   if (!run) {

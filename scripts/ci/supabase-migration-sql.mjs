@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 const MUTATION_PATTERN = /\b(?:insert\s+into|update\s+(?:[a-z0-9_]+\.)?[a-z0-9_]+|delete\s+from|truncate\b|select\s+setval\s*\()/i;
 const DESTRUCTIVE_PATTERN = /^(?:delete\s+from|truncate\b|drop\s+(?:table|column|schema)\b)/i;
@@ -89,17 +90,23 @@ function topLevelMutation(statement) {
     || (/^do\b/i.test(statement) && MUTATION_PATTERN.test(statement));
 }
 
-const reviewedCatalogMigration = Object.freeze({
-  id: "20261122000004",
-  file: "20261122000004_action_accessibility_welcome_contact_role.sql",
-  sha256: "852da682aaccb16f639f2c46f162ec7a6ffb1fc5af4840df5be32ec4400e2e11",
-});
+const approvalManifest = JSON.parse(readFileSync(new URL("./supabase-migration-approvals.json", import.meta.url), "utf8"));
+if (approvalManifest.version !== 1 || !Array.isArray(approvalManifest.approvals)) {
+  throw new Error("Supabase migration approval manifest has an unsupported schema.");
+}
+export const reviewedMigrationApprovals = Object.freeze(approvalManifest.approvals.map((entry) => Object.freeze(entry)));
 
-function isReviewedWelcomeContactCatalogAddition(sql, migration) {
-  if (migration?.id !== reviewedCatalogMigration.id || migration?.file !== reviewedCatalogMigration.file) return false;
+function reviewedMigrationApproval(sql, migration) {
+  const approval = reviewedMigrationApprovals.find((entry) => entry.id === migration?.id
+    && entry.path?.endsWith(`/${migration?.file}`)
+    && entry.kind === "BOUNDED_IDEMPOTENT_BACKFILL"
+    && typeof entry.justification === "string" && entry.justification.trim().length > 0
+    && Array.isArray(entry.proofs) && entry.proofs.length > 0
+    && entry.proofs.every((proof) => typeof proof.path === "string" && /^[0-9a-f]{64}$/i.test(proof.sha256)));
+  if (!approval) return null;
   const normalizedSql = String(sql).replace(/\r\n/g, "\n");
   const digest = createHash("sha256").update(normalizedSql).digest("hex");
-  return digest === reviewedCatalogMigration.sha256;
+  return digest === approval.sha256 ? approval : null;
 }
 
 export function classifyMigrationSql(sql = "", migration = null) {
@@ -134,14 +141,15 @@ export function classifyMigrationSql(sql = "", migration = null) {
     }
   }
 
-  const reviewedCatalogAddition = dataMutation && !destructive && !embeddedDml && !reviewRequired
-    && isReviewedWelcomeContactCatalogAddition(sql, migration);
+  const approvedBackfill = dataMutation && !destructive && !reviewRequired
+    ? reviewedMigrationApproval(sql, migration)
+    : null;
   return {
-    dataMutation: dataMutation && !reviewedCatalogAddition,
+    dataMutation: dataMutation && !approvedBackfill,
     destructive,
     embeddedDml,
     reviewRequired,
-    ...(reviewedCatalogAddition ? { reviewedDataMutation: "WELCOME_CONTACT_CATALOG_V1" } : {}),
+    ...(approvedBackfill ? { reviewedDataMutation: approvedBackfill.id, approval: approvedBackfill } : {}),
     classification: [...new Set(classifications)],
   };
 }

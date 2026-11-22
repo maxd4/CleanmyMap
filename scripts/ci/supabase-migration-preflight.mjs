@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -121,6 +122,7 @@ function analyzeMigration(entry, creationIndex) {
   return {
     id: entry.id,
     file: entry.file,
+    sqlSha256: createHash("sha256").update(sql.replace(/\r\n/g, "\n")).digest("hex"),
     ...sqlClassification,
     rlsPolicyChanges,
     grantChanges,
@@ -194,12 +196,12 @@ export function preflightExitCode(status) {
 }
 
 export function firstBlockingMigration(pending = [], analyses = [], causes = []) {
-  const risky = new Set(
-    analyses
-      .filter((entry) => pending.includes(entry.id) && (entry.destructive || entry.dataMutation || entry.reviewRequired || entry.forwardDependencies?.length || entry.sqlContractIssues?.length))
-      .map((entry) => entry.id),
-  );
-  return pending.find((id) => risky.has(id)) ?? (causes.length > 0 ? pending[0] ?? "NONE" : "NONE");
+  const explicitCause = causes.find((cause) => cause.migrationId && pending.includes(cause.migrationId));
+  if (explicitCause) return explicitCause.migrationId;
+  const risky = analyses.find((entry) => pending.includes(entry.id)
+    && (entry.destructive || entry.dataMutation || entry.reviewRequired || entry.forwardDependencies?.length || entry.sqlContractIssues?.length));
+  if (risky) return risky.id;
+  return causes.length > 0 ? "GLOBAL" : "NONE";
 }
 
 export function actionRequiredForCauses(causes = []) {
@@ -232,13 +234,13 @@ export function evaluatePreflight({
   }
   for (const analysis of analyses.filter((entry) => pending.includes(entry.id))) {
     if (analysis.destructive || analysis.dataMutation) {
-      causes.push({ code: "MIGRATION_DATA_RISK", detail: `${analysis.id} contains data-mutating or destructive SQL.` });
+      causes.push({ code: "MIGRATION_DATA_RISK", migrationId: analysis.id, detail: `${analysis.id} contains data-mutating or destructive SQL.` });
     }
     if (analysis.reviewRequired) {
-      causes.push({ code: "MIGRATION_REVIEW_REQUIRED", detail: `${analysis.id} contains SQL whose execution timing cannot be classified safely.` });
+      causes.push({ code: "MIGRATION_REVIEW_REQUIRED", migrationId: analysis.id, detail: `${analysis.id} contains SQL whose execution timing cannot be classified safely.` });
     }
     if (analysis.forwardDependencies?.length) {
-      causes.push({ code: "SQL_FORWARD_DEPENDENCY", detail: `${analysis.id} references objects created by a later migration.` });
+      causes.push({ code: "SQL_FORWARD_DEPENDENCY", migrationId: analysis.id, dependencies: analysis.forwardDependencies, detail: `${analysis.id} references objects created by a later migration.` });
     }
   }
   if (pending.length > 0 && (advisors.criticalSecurity?.length || advisors.criticalPerformance?.length)) {
@@ -249,7 +251,7 @@ export function evaluatePreflight({
   }
   for (const analysis of analyses.filter((entry) => pending.includes(entry.id))) {
     if (analysis.sqlContractIssues?.length) {
-      causes.push({ code: "SQL_CONTRACT_INCOMPATIBLE", detail: `${analysis.id} removes SQL contracts used by existing application consumers.` });
+      causes.push({ code: "SQL_CONTRACT_INCOMPATIBLE", migrationId: analysis.id, contracts: analysis.sqlContractIssues, detail: `${analysis.id} removes SQL contracts used by existing application consumers.` });
     }
   }
   let status = "READY_TO_APPLY";
@@ -330,6 +332,7 @@ export function runPreflight({ argv = process.argv.slice(2), env = process.env, 
     remoteAppliedCount: history?.remoteIds.length ?? 0,
     dryRunIds,
     pendingExecutedDmlCount: localEntries.filter((entry) => history?.pending?.includes(entry.id) && entry.dataMutation).length,
+    pendingReviewedBackfillCount: localEntries.filter((entry) => history?.pending?.includes(entry.id) && entry.reviewedDataMutation).length,
     pendingReviewRequiredCount: localEntries.filter((entry) => history?.pending?.includes(entry.id) && entry.reviewRequired).length,
     pendingEmbeddedFunctionDmlCount: localEntries.filter((entry) => history?.pending?.includes(entry.id) && entry.embeddedDml).length,
     pendingSqlContractIssueCount: localEntries.reduce((count, entry) => count + (history?.pending?.includes(entry.id) ? entry.sqlContractIssues?.length ?? 0 : 0), 0),
@@ -372,6 +375,7 @@ function printSummary(summary) {
   for (const migration of summary.pending) console.log(`PENDING: ${migration}`);
   console.log(`DRY_RUN_MIGRATIONS: ${summary.dryRunIds.length}`);
   console.log(`PENDING_EXECUTED_DML: ${summary.pendingExecutedDmlCount ?? 0}`);
+  console.log(`PENDING_REVIEWED_BACKFILLS: ${summary.pendingReviewedBackfillCount ?? 0}`);
   console.log(`PENDING_REVIEW_REQUIRED: ${summary.pendingReviewRequiredCount ?? 0}`);
   console.log(`PENDING_EMBEDDED_FUNCTION_DML: ${summary.pendingEmbeddedFunctionDmlCount ?? 0}`);
   console.log(`PENDING_SQL_CONTRACT_ISSUES: ${summary.pendingSqlContractIssueCount ?? 0}`);

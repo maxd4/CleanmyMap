@@ -54,6 +54,15 @@ consommés et Advisors. Les WARN/INFO historiques restent dans le rapport ;
 seuls un risque critique ou une régression explicitement attribuée à la file
 bloque l'application.
 
+Les backfills DML ne sont admissibles que par une entrée du manifeste versionné
+`scripts/ci/supabase-migration-approvals.json`, qui lie version, identifiant,
+chemin, SHA-256 du SQL, justification et chemins/hash des preuves obligatoires. Le
+contenu doit rester identique et classé non destructif. La preuve éphémère
+enregistre le SHA-256 des migrations et tests exécutés ; la garde refuse une
+approbation dont l'empreinte ou une preuve requise manque. Ce manifeste ne peut
+pas autoriser un SQL destructif ou indécidable. La preuve actuelle reste une
+preuve complète de la file : aucun préfixe partiel n'est appliqué.
+
 `ALIGNED` signifie que l'historique est convergent et qu'il n'y a aucune
 migration en attente ; ce statut ne dépend pas de contrôles d'application, mais
 les alertes de sécurité restent visibles. `READY_TO_APPLY`, après preuve SQL
@@ -66,8 +75,10 @@ npx supabase db push --linked --yes
 
 `BLOCKED` et `DIVERGED`, une preuve absente, un contrôle bloquant ou un SHA
 obsolète n'appliquent rien. Le diagnostic reste assaini et publie le statut, la
-première migration concernée, les causes et les alertes ; toute la file reste
-en attente. Le contrôle préalable ne retient pas le push Git. Après correction
+première migration réellement attribuée ; `GLOBAL` indique un contrôle bloquant
+qui ne désigne pas une migration. Les dépendances et contrats incompatibles
+restent associés à leur migration. Toute la file reste en attente. Le contrôle
+préalable ne retient pas le push Git. Après correction
 validée, la reprise est automatique au prochain succès de la preuve SQL ;
 aucune confirmation manuelle répétitive n'est requise. Après application, le workflow rejoue le
 préflight et exige `ALIGNED`, puis relit les Advisors, les arbres de migration

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "approvals": [
+    {
+      "id": "20261122000004",
+      "path": "apps/web/supabase/migrations/20261122000004_action_accessibility_welcome_contact_role.sql",
+      "sha256": "852da682aaccb16f639f2c46f162ec7a6ffb1fc5af4840df5be32ec4400e2e11",
+      "kind": "BOUNDED_IDEMPOTENT_BACKFILL",
+      "justification": "Seeds the additive welcome-contact role catalog with conflict-safe inserts; the exact migration content is pinned.",
+      "proofs": [
+        { "path": "apps/web/supabase/tests/action-accessibility-support.pgtap.sql", "sha256": "57c02a5f0aa8ba2c27449deb613b3e5b1d10c845b9d06da56b952d452a040013" }
+      ]
+    },
+    {
+      "id": "20261122000014",
+      "path": "apps/web/supabase/migrations/20261122000014_private_action_attendance_registry.sql",
+      "sha256": "2f4b4ea37497fa05d67b3566a78b57ef927644c70b41a2983b2487958d885234",
+      "kind": "BOUNDED_IDEMPOTENT_BACKFILL",
+      "justification": "Backfills confirmed registrations into the private attendance registry using an action-scoped unique Clerk identity and ON CONFLICT DO NOTHING; no status is inferred beyond unknown.",
+      "proofs": [
+        { "path": "apps/web/supabase/tests/action-attendance-registry.pgtap.sql", "sha256": "4da5e23312d7d76d649997f61c29771f470ef4cb0bea2f1b5f09a9f92a75653e" },
+        { "path": "e2e/action-attendance-registry-concurrency.mjs", "sha256": "a77eee7ffaa7c37ebcbb8e1aafbbcf889d77f9ce58ebf69ff0b85098f23bf5ff" }
+      ]
+    }
+  ]
+}

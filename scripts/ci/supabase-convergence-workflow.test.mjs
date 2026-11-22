@@ -21,11 +21,31 @@ function passingEvidence(overrides = {}) {
     headSha: candidateSha,
     provenance: "COMMITTED_SNAPSHOT",
     outcome: "PASS",
+    migrations: [
+      { id: "20261122000004", path: "apps/web/supabase/migrations/20261122000004_action_accessibility_welcome_contact_role.sql", contentSha256: "852da682aaccb16f639f2c46f162ec7a6ffb1fc5af4840df5be32ec4400e2e11" },
+      { id: "20261122000014", path: "apps/web/supabase/migrations/20261122000014_private_action_attendance_registry.sql", contentSha256: "2f4b4ea37497fa05d67b3566a78b57ef927644c70b41a2983b2487958d885234" },
+    ],
     records: [{
       path: "apps/web/supabase/tests/gamification-progression-boundary.pgtap.sql",
       status: "INTEGRATION_PROOF",
       outcome: "PASS",
       expectedAssertions: 56,
+      contentSha256: "c".repeat(64),
+    }, {
+      path: "apps/web/supabase/tests/action-accessibility-support.pgtap.sql",
+      status: "INTEGRATION_PROOF",
+      outcome: "PASS",
+      contentSha256: "57c02a5f0aa8ba2c27449deb613b3e5b1d10c845b9d06da56b952d452a040013",
+    }, {
+      path: "apps/web/supabase/tests/action-attendance-registry.pgtap.sql",
+      status: "INTEGRATION_PROOF",
+      outcome: "PASS",
+      contentSha256: "4da5e23312d7d76d649997f61c29771f470ef4cb0bea2f1b5f09a9f92a75653e",
+    }, {
+      path: "e2e/action-attendance-registry-concurrency.mjs",
+      status: "INTEGRATION_PROOF",
+      outcome: "PASS",
+      contentSha256: "a77eee7ffaa7c37ebcbb8e1aafbbcf889d77f9ce58ebf69ff0b85098f23bf5ff",
     }],
     ...overrides,
   };
@@ -130,6 +150,10 @@ test("SQL evidence keeps its relative path from upload through extraction, valid
     remoteHeadSha: candidateSha,
     evidence: extractedEvidence,
   }).apply, true);
+
+  const changedBackfillProof = passingEvidence();
+  changedBackfillProof.records.find((record) => record.path === "apps/web/supabase/tests/action-attendance-registry.pgtap.sql").contentSha256 = "0".repeat(64);
+  assert.equal(validateEphemeralEvidence({ evidence: changedBackfillProof, candidateSha }).mode, "BLOCKED");
 
   fs.writeFileSync(path.join(extractedRoot, "secrets.log"), "private diagnostic");
   assert.ok(validatePublicE2EArtifact(extractedRoot).some((issue) => issue.includes("outside the public evidence allowlist")));
