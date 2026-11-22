@@ -10,6 +10,7 @@ import {
   classifySourceRevision,
   collectImportGraph,
   coverageAvailability,
+  formatUnresolvedImportSummary,
   readModularitySnapshot,
 } from "./architecture-audit.mjs";
 import { collectArchitectureRows, collectMeasuredRows } from "../checks/top-heavy-measurement.mjs";
@@ -147,6 +148,7 @@ test("architecture audit fails explicitly when a new radar has no registry", () 
 
 test("import graph reports resolved relative and alias edges without claiming external modules", () => {
   const files = {
+    "apps/web/tsconfig.json": JSON.stringify({ compilerOptions: { paths: { "@/*": ["./src/*"] } } }),
     "apps/web/src/domain/a.ts": "import { b } from './b'; import { c } from '@/domain/c'; import React from 'react';\n",
     "apps/web/src/domain/b.ts": "export const b = 1;\n",
     "apps/web/src/domain/c.ts": "export const c = 1;\n",
@@ -167,6 +169,77 @@ test("import graph reports resolved relative and alias edges without claiming ex
   });
   assert.equal(graph.modules.find((entry) => entry.file.endsWith("/b.ts")).importsIn, 1);
   assert.equal(graph.modules.find((entry) => entry.file.endsWith("/c.ts")).importsIn, 1);
+});
+
+test("classifies unresolved imports by scope, source evidence, assets, generated paths and resolver limits", () => {
+  const files = {
+    "apps/web/tsconfig.json": JSON.stringify({ compilerOptions: { paths: { "@/*": ["./src/*"] } } }),
+    "apps/web/src/domain/web.ts": [
+      "import './resolved';",
+      "import '@/domain/resolved';",
+      "import './missing.ts';",
+      "import './assets/logo.svg?url';",
+      "import './assets/theme';",
+      "// import './comment-only.ts';",
+      "import '../generated/schema';",
+    ].join("\n"),
+    "apps/web/src/domain/parse-error.ts": "import './unmeasured.ts';\nconst invalid: = ;\n",
+    "apps/web/src/domain/fixture.test.ts": "const fixtureSource = `import './fixture-only.ts';`;\n",
+    "apps/web/src/domain/resolved.ts": "export const resolved = true;\n",
+    "apps/web/src/domain/assets/logo.svg": "<svg />\n",
+    "apps/web/src/domain/assets/theme.css": "body {}\n",
+    "apps/mobile/src/mobile.ts": "import '@/screen';\nimport './screen';\n",
+    "apps/mobile/src/screen.ios.tsx": "export default function Screen() {}\n",
+    "scripts/checks/fixtures/architecture-import-boundary/web/tsconfig.json": JSON.stringify({
+      compilerOptions: { baseUrl: "./src", paths: { "@/*": ["*"] } },
+    }),
+    "scripts/checks/fixtures/architecture-import-boundary/web/src/components/alias.ts": "import '@/lib/domain/contracts';\n",
+    "scripts/checks/fixtures/architecture-import-boundary/web/src/lib/domain/contracts.ts": "export const fixtureContract = true;\n",
+    "scripts/tool.mjs": "import '@/not-a-configured-alias';\nimport './node-extensionless';\n",
+    "scripts/node-extensionless.mjs": "export const nodeTarget = true;\n",
+    "scripts/security/semgrep/fixtures/safe-redirect.ts": "import '@/lib/auth/redirect-url';\n",
+  };
+  const view = {
+    isFile: (file) => Object.hasOwn(files, file),
+    readText: (file) => files[file],
+  };
+  const rows = Object.keys(files).map((file) => ({ file, kind: "runtime", lines: 1, bytes: files[file].length }));
+  const graph = collectImportGraph(view, rows);
+  const bySpecifier = new Map(graph.unresolvedImportAudit.items.map((item) => [`${item.scope}:${item.specifier}`, item]));
+
+  assert.equal(graph.unresolvedLocalImports, 10);
+  assert.equal(graph.unresolvedImportAudit.method, "collectImportGraph");
+  assert.equal(bySpecifier.get("web:./missing.ts").classification, "BROKEN_REFERENCE");
+  assert.equal(bySpecifier.get("web:./missing.ts").reason, "NO_FILE_MATCHES_LOCAL_IMPORT_CANDIDATES");
+  assert.equal(bySpecifier.get("web:./assets/logo.svg?url").classification, "EXPECTED_EXTERNAL_OR_ASSET");
+  assert.equal(bySpecifier.get("web:./assets/theme").classification, "EXPECTED_EXTERNAL_OR_ASSET");
+  assert.equal(bySpecifier.get("web:../generated/schema").classification, "RESOLVER_LIMITATION");
+  assert.equal(bySpecifier.get("mobile:@/screen").classification, "RESOLVER_LIMITATION");
+  assert.equal(bySpecifier.get("mobile:./screen").classification, "RESOLVER_LIMITATION");
+  assert.equal(bySpecifier.get("scripts:@/not-a-configured-alias").classification, "RESOLVER_LIMITATION");
+  assert.equal(bySpecifier.get("scripts:./node-extensionless").classification, "BROKEN_REFERENCE");
+  assert.equal(bySpecifier.get("scripts:./node-extensionless").reason, "NODE_ESM_REQUIRES_EXPLICIT_EXTENSION");
+  assert.equal(bySpecifier.get("web:./unmeasured.ts").classification, "NOT_MEASURED");
+  assert.equal(bySpecifier.get("scripts:@/lib/auth/redirect-url").classification, "NOT_MEASURED");
+  assert.equal(bySpecifier.get("scripts:@/lib/auth/redirect-url").reason, "FIXTURE_SOURCE_HAS_NO_RUNTIME_IMPORT_RESOLUTION_SCOPE");
+  assert.equal(graph.unresolvedImportAudit.summary.total, 10);
+  assert.equal(graph.unresolvedImportAudit.items.some((item) => item.specifier.includes("comment-only") || item.specifier.includes("fixture-only")), false);
+  assert.deepEqual(graph.unresolvedImportAudit.summary.classifications, {
+    BROKEN_REFERENCE: 2,
+    EXPECTED_EXTERNAL_OR_ASSET: 2,
+    RESOLVER_LIMITATION: 4,
+    NOT_MEASURED: 2,
+  });
+  assert.match(formatUnresolvedImportSummary({ sourceSha: SHA_A, importGraph: graph }), /BROKEN_REFERENCE 2.*NOT_MEASURED 2/);
+  assert.match(formatUnresolvedImportSummary({ sourceSha: SHA_A, importGraph: graph }), /web\.ts:L3 \[web\] \.\/missing\.ts/);
+});
+
+test("keeps an unavailable import audit explicitly NOT_MEASURED in the human summary", () => {
+  const summary = formatUnresolvedImportSummary({
+    sourceSha: SHA_B,
+    importGraph: { unresolvedImportAudit: { available: false, reason: "SOURCE_UNAVAILABLE" } },
+  });
+  assert.match(summary, /SHA b{40}.*NOT_MEASURED: SOURCE_UNAVAILABLE/);
 });
 
 test("coverage audit accepts only validated web evidence for the exact audited SHA", () => {

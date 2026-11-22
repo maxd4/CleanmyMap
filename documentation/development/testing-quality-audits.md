@@ -153,6 +153,26 @@ réorganisation fondée sur le seul nombre de fichiers. Les conventions Next.js
 et Expo, assets, migrations, vendor et fichiers générés sont hors décision.
 Le rapport reste `PASS` non bloquant et expose ses chemins et métriques.
 
+Le même `collectImportGraph` extrait les imports via l'AST TypeScript et
+détaille chaque import local non résolu avec
+son fichier, sa ligne, son spécificateur et son scope (`web`, `mobile` ou
+`scripts`). Chaque cas est classé `BROKEN_REFERENCE`,
+`EXPECTED_EXTERNAL_OR_ASSET`, `RESOLVER_LIMITATION` ou `NOT_MEASURED`, avec une
+raison et un chemin candidat lorsque ces éléments sont établis. L'alias `@/`
+est résolu selon le `tsconfig` Web, et les fixtures utilisent leur `tsconfig`
+imbriqué. Mobile réutilise le `tsconfig` Expo ; un alias absent ou un candidat
+de suffixe `.ios`, `.android` ou `.native` reste une limite de résolution tant
+que le contexte Metro ne tranche pas. Les scripts suivent le `tsconfig` le plus
+proche lorsqu'il existe ; sans config, un import ESM Node doit nommer son
+extension. Les imports de ressources existantes hors graphe de code sont
+`EXPECTED_EXTERNAL_OR_ASSET`. Les sorties générées ou de build ne sont pas
+déclarées cassées sans preuve. Les sources sous `fixtures/` et les fichiers dont
+l'AST porte des diagnostics restent `NOT_MEASURED` pour la résolution runtime.
+Le résumé CLI expose les compteurs et des exemples ; le
+détail reste dans `imports.unresolvedImportAudit`. Cette dimension est
+descriptive : elle ne corrige aucun import, n'ajoute aucune exclusion ni gate et
+ne change pas les champs existants du graphe ou leurs projections Quality Index.
+
 `coverage` est une projection auxiliaire rapide et non bloquante : elle
 réutilise les rapports existants Web, mobile, Node et Python après validation
 en lecture seule, sans relancer Vitest, c8, pytest, Stryker ou les cinq

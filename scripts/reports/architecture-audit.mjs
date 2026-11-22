@@ -12,6 +12,7 @@ import { isAboveHard, isAboveReview } from "../checks/top-heavy-policy.mjs";
 import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
 import { aggregateCoverage } from "../checks/coverage-policy.mjs";
 import { readHumanDecisionsFromView } from "./generate-modularity-radar.mjs";
+import ts from "typescript";
 
 export const ARCHITECTURE_AUDIT_SCHEMA_VERSION = 3;
 export const ARCHITECTURE_AUDIT_ROOT = "artifacts/architecture";
@@ -30,6 +31,8 @@ const QUALITY_EVIDENCE = Object.freeze({
 });
 const CODE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]);
 const IMPORT_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+const MOBILE_PLATFORM_EXTENSIONS = [".ios", ".android", ".native"];
+const RESOURCE_EXTENSIONS = new Set([".css", ".scss", ".sass", ".less", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".woff", ".woff2", ".ttf", ".otf", ".json"]);
 const MODULARITY_PLAN = "documentation/architecture/monolith-split-plan.md";
 const ACTION_CREATION_SHELL = "apps/web/src/components/actions/action-creation-shell.tsx";
 
@@ -244,40 +247,189 @@ export function buildFolderMeasures(rows, { scanRoots = ARCHITECTURE_SCAN_ROOTS,
   };
 }
 
-function importSpecifiers(content) {
+function importSpecifiers(file, content) {
   const specs = [];
-  for (const line of content.split(/\r?\n/)) {
-    let cursor = 0;
-    while (cursor < line.length) {
-      const candidates = ["from", "import", "require"]
-        .map((keyword) => ({ keyword, index: line.indexOf(keyword, cursor) }))
-        .filter(({ index, keyword }) => index >= 0 && !/[A-Za-z0-9_$]/.test(line[index - 1] ?? "") && !/[A-Za-z0-9_$]/.test(line[index + keyword.length] ?? ""))
-        .sort((left, right) => left.index - right.index);
-      const marker = candidates[0];
-      if (!marker) break;
-      const doubleQuote = line.indexOf('"', marker.index + marker.keyword.length);
-      const singleQuote = line.indexOf("'", marker.index + marker.keyword.length);
-      const quoteStart = doubleQuote >= 0 && (singleQuote < 0 || doubleQuote < singleQuote) ? doubleQuote : singleQuote;
-      if (quoteStart < 0) break;
-      const quoteEnd = line.indexOf(line[quoteStart], quoteStart + 1);
-      if (quoteEnd <= quoteStart + 1) {
-        cursor = quoteStart + 1;
-        continue;
-      }
-      specs.push(line.slice(quoteStart + 1, quoteEnd));
-      cursor = quoteEnd + 1;
+  const scriptKind = file.endsWith(".tsx") ? ts.ScriptKind.TSX
+    : file.endsWith(".jsx") ? ts.ScriptKind.JSX
+      : /\.(?:mjs|cjs|js)$/.test(file) ? ts.ScriptKind.JS : ts.ScriptKind.TS;
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, scriptKind);
+  const syntaxEstablished = sourceFile.parseDiagnostics.length === 0;
+  const add = (node, resolutionMode) => {
+    if (!ts.isStringLiteralLike(node)) return;
+    specs.push({
+      specifier: node.text,
+      line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+      syntaxEstablished,
+      resolutionMode,
+    });
+  };
+  const visit = (node) => {
+    if (ts.isImportDeclaration(node) && node.moduleSpecifier) add(node.moduleSpecifier, "ESM");
+    if (ts.isExportDeclaration(node) && node.moduleSpecifier) add(node.moduleSpecifier, "ESM");
+    if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) add(node.moduleReference.expression, "COMMONJS");
+    if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || ts.isIdentifier(node.expression) && node.expression.text === "require")) {
+      add(node.arguments[0], node.expression.kind === ts.SyntaxKind.ImportKeyword ? "ESM" : "COMMONJS");
     }
-  }
-  return specs;
+    if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) add(node.argument.literal, "TYPE_ONLY");
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return specs.sort((left, right) => left.line - right.line || left.specifier.localeCompare(right.specifier, "en"));
 }
 
-function resolveImport(view, importer, specifier) {
+function nearestImportTsconfig(view, importer, scope) {
+  if (scope === "web") return "apps/web/tsconfig.json";
+  if (scope === "mobile") return "apps/mobile/tsconfig.json";
+  if (scope !== "scripts") return null;
+  let directory = path.posix.dirname(importer);
+  while (directory.startsWith("scripts/")) {
+    const candidate = `${directory}/tsconfig.json`;
+    if (view.isFile(candidate)) return candidate;
+    directory = path.posix.dirname(directory);
+  }
+  return null;
+}
+
+function readImportTsconfig(view, configPath, cache) {
+  if (!configPath) return null;
+  if (cache.has(configPath)) return cache.get(configPath);
+  let parsed = null;
+  if (view.isFile(configPath)) {
+    try {
+      parsed = ts.parseConfigFileTextToJson(configPath, view.readText(configPath)).config;
+    } catch {
+      parsed = null;
+    }
+  }
+  cache.set(configPath, parsed);
+  return parsed;
+}
+
+function aliasImportBases(view, importer, specifier, scope, configCache) {
+  const configPath = nearestImportTsconfig(view, importer, scope);
+  const config = readImportTsconfig(view, configPath, configCache);
+  const options = config?.compilerOptions ?? {};
+  const paths = options.paths ?? {};
+  const configDirectory = path.posix.dirname(configPath ?? "");
+  const baseUrl = path.posix.normalize(path.posix.join(configDirectory, options.baseUrl ?? "."));
+  const target = specifier;
+  const values = [];
+  for (const [pattern, replacements] of Object.entries(paths)) {
+    const wildcardIndex = pattern.indexOf("*");
+    const prefix = wildcardIndex < 0 ? pattern : pattern.slice(0, wildcardIndex);
+    const suffix = wildcardIndex < 0 ? "" : pattern.slice(wildcardIndex + 1);
+    if (!target.startsWith(prefix) || !target.endsWith(suffix)) continue;
+    if (wildcardIndex < 0 && target !== pattern) continue;
+    const matched = target.slice(prefix.length, target.length - suffix.length || undefined);
+    for (const replacement of replacements) {
+      const replaced = replacement.replace("*", matched);
+      values.push(path.posix.normalize(path.posix.isAbsolute(replaced) ? replaced : path.posix.join(baseUrl, replaced)));
+    }
+  }
+  return { configPath, bases: [...new Set(values)] };
+}
+
+function importCandidates(base) {
+  return [base, ...IMPORT_EXTENSIONS.map((extension) => `${base}${extension}`), ...IMPORT_EXTENSIONS.map((extension) => `${base}/index${extension}`)];
+}
+
+function resolveImport(view, importer, specifier, scope, resolutionMode, configCache) {
   if (!specifier.startsWith(".") && !specifier.startsWith("@/")) return null;
-  const base = specifier.startsWith("@/")
-    ? `apps/web/src/${specifier.slice(2)}`
-    : path.posix.normalize(path.posix.join(path.posix.dirname(importer), specifier));
-  const candidates = [base, ...IMPORT_EXTENSIONS.map((extension) => `${base}${extension}`), ...IMPORT_EXTENSIONS.map((extension) => `${base}/index${extension}`)];
+  const bases = specifier.startsWith("@/")
+    ? aliasImportBases(view, importer, specifier, scope, configCache).bases
+    : [path.posix.normalize(path.posix.join(path.posix.dirname(importer), specifier))];
+  const configPath = nearestImportTsconfig(view, importer, scope);
+  const usesNodeEsmResolution = scope === "scripts" && !configPath && resolutionMode !== "COMMONJS"
+    && !path.posix.extname(specifier.split(/[?#]/, 1)[0]);
+  const candidates = bases.flatMap((base) => usesNodeEsmResolution ? [base] : importCandidates(base));
   return candidates.find((candidate) => view.isFile(candidate)) ?? null;
+}
+
+function importScope(file) {
+  if (file.startsWith("apps/web/src/")) return "web";
+  if (file.startsWith("apps/mobile/")) return "mobile";
+  if (file.startsWith("scripts/")) return "scripts";
+  return "other";
+}
+
+function unresolvedImportClassification(view, { from, specifier, line, scope, syntaxEstablished, resolutionMode }) {
+  const unresolved = { from, specifier, line, scope };
+  if (!syntaxEstablished) {
+    return { ...unresolved, classification: "NOT_MEASURED", reason: "IMPORT_SOURCE_HAS_AST_PARSE_DIAGNOSTICS" };
+  }
+  if (/(?:^|\/)(?:fixtures?|__fixtures__)(?:\/|$)/i.test(from)) {
+    return { ...unresolved, classification: "NOT_MEASURED", reason: "FIXTURE_SOURCE_HAS_NO_RUNTIME_IMPORT_RESOLUTION_SCOPE" };
+  }
+
+  if (specifier.startsWith("@/")) {
+    const alias = aliasImportBases(view, from, specifier, scope, new Map());
+    if (alias.bases.length === 0) {
+      return { ...unresolved, classification: "RESOLVER_LIMITATION", reason: `ALIAS_NOT_RESOLVED_FROM_SCOPE_TSCONFIG:${alias.configPath ?? "NO_SCOPED_TSCONFIG"}` };
+    }
+  }
+
+  const resourceSpecifier = specifier.split(/[?#]/, 1)[0];
+  const importerBase = specifier.startsWith("@/")
+    ? aliasImportBases(view, from, resourceSpecifier, scope, new Map()).bases[0] ?? `apps/web/src/${resourceSpecifier.slice(2)}`
+    : path.posix.normalize(path.posix.join(path.posix.dirname(from), resourceSpecifier));
+  const resourceCandidates = RESOURCE_EXTENSIONS.has(path.posix.extname(resourceSpecifier).toLowerCase())
+    ? [importerBase]
+    : !path.posix.extname(resourceSpecifier) ? [...RESOURCE_EXTENSIONS].map((extension) => `${importerBase}${extension}`) : [];
+  const existingResource = resourceCandidates.find((candidate) => view.isFile(candidate));
+  if (existingResource) {
+    return { ...unresolved, classification: "EXPECTED_EXTERNAL_OR_ASSET", reason: "RESOURCE_FILE_EXISTS_OUTSIDE_CODE_GRAPH", resolvedPath: existingResource };
+  }
+
+  if (/(?:^|\/)(?:generated|__generated__|\.next|\.expo|dist|build)(?:\/|$)|\.(?:generated|gen)\.(?:[cm]?[jt]sx?)$/i.test(resourceSpecifier)) {
+    return { ...unresolved, classification: "RESOLVER_LIMITATION", reason: "GENERATED_OR_BUILD_OUTPUT_NOT_IN_REPOSITORY_VIEW", targetPath: importerBase };
+  }
+
+  if (scope === "mobile" && !path.posix.extname(importerBase)) {
+    const variants = MOBILE_PLATFORM_EXTENSIONS.flatMap((platform) => IMPORT_EXTENSIONS.map((extension) => `${importerBase}${platform}${extension}`));
+    const existingVariant = variants.find((candidate) => view.isFile(candidate));
+    if (existingVariant) {
+      return { ...unresolved, classification: "RESOLVER_LIMITATION", reason: "MOBILE_PLATFORM_SUFFIX_CANDIDATE_REQUIRES_METRO_CONTEXT", targetPath: existingVariant };
+    }
+  }
+
+  if (scope === "scripts" && !nearestImportTsconfig(view, from, scope) && resolutionMode !== "COMMONJS"
+    && !path.posix.extname(resourceSpecifier)) {
+    const nodeCandidate = importCandidates(importerBase).find((candidate) => view.isFile(candidate));
+    if (nodeCandidate) {
+      return { ...unresolved, classification: "BROKEN_REFERENCE", reason: "NODE_ESM_REQUIRES_EXPLICIT_EXTENSION", targetPath: nodeCandidate };
+    }
+  }
+
+  return {
+    ...unresolved,
+    classification: "BROKEN_REFERENCE",
+    reason: "NO_FILE_MATCHES_LOCAL_IMPORT_CANDIDATES",
+    targetPath: importerBase,
+  };
+}
+
+function summarizeUnresolvedImports(items) {
+  const classifications = ["BROKEN_REFERENCE", "EXPECTED_EXTERNAL_OR_ASSET", "RESOLVER_LIMITATION", "NOT_MEASURED"];
+  const counts = Object.fromEntries(classifications.map((classification) => [classification, 0]));
+  for (const item of items) counts[item.classification] = (counts[item.classification] ?? 0) + 1;
+  return { total: items.length, classifications: counts };
+}
+
+export function formatUnresolvedImportSummary({ sourceSha, importGraph, maxExamples = 2 }) {
+  const audit = importGraph?.unresolvedImportAudit;
+  if (!audit?.available) return `Imports non résolus — SHA ${sourceSha ?? "NOT_MEASURED"} | NOT_MEASURED: ${audit?.reason ?? "IMPORT_GRAPH_UNAVAILABLE"}.`;
+  const lines = [
+    `Imports internes non résolus — SHA ${sourceSha} | scope: web, mobile, scripts`,
+    `Total: ${audit.summary.total} (compteur historique du graphe: ${importGraph.unresolvedLocalImports}) | BROKEN_REFERENCE ${audit.summary.classifications.BROKEN_REFERENCE} | EXPECTED_EXTERNAL_OR_ASSET ${audit.summary.classifications.EXPECTED_EXTERNAL_OR_ASSET} | RESOLVER_LIMITATION ${audit.summary.classifications.RESOLVER_LIMITATION} | NOT_MEASURED ${audit.summary.classifications.NOT_MEASURED}`,
+  ];
+  for (const classification of ["BROKEN_REFERENCE", "RESOLVER_LIMITATION", "EXPECTED_EXTERNAL_OR_ASSET", "NOT_MEASURED"]) {
+    const examples = audit.items.filter((item) => item.classification === classification).slice(0, maxExamples);
+    if (examples.length === 0) continue;
+    lines.push(`${classification}:`);
+    for (const item of examples) lines.push(`- ${item.from}:L${item.line} [${item.scope}] ${item.specifier} — ${item.reason}${item.targetPath ? ` (${item.targetPath})` : ""}`);
+  }
+  lines.push("Détail reproductible: imports.unresolvedImportAudit.items dans architecture.json. Aucune correction ni exclusion automatique.");
+  return lines.join("\n");
 }
 
 export function collectImportGraph(view, rows) {
@@ -288,11 +440,15 @@ export function collectImportGraph(view, rows) {
   const outgoing = new Map(sourceFiles.map((file) => [file, new Set()]));
   const edges = [];
   const edgeKeys = new Set();
+  const unresolvedImports = [];
+  const importConfigCache = new Map();
   let unresolvedLocalImports = 0;
   let excludedLocalImports = 0;
   for (const file of sourceFiles) {
-    for (const specifier of importSpecifiers(view.readText(file))) {
-      const resolved = resolveImport(view, file, specifier);
+    const scope = importScope(file);
+    for (const imported of importSpecifiers(file, view.readText(file))) {
+      const { specifier } = imported;
+      const resolved = resolveImport(view, file, specifier, scope, imported.resolutionMode, importConfigCache);
       if (resolved && sourceFileSet.has(resolved)) {
         outgoing.get(file).add(resolved);
         const edgeKey = `${file}\0${resolved}`;
@@ -302,7 +458,10 @@ export function collectImportGraph(view, rows) {
         }
       }
       else if (resolved) excludedLocalImports += 1;
-      else if (specifier.startsWith(".") || specifier.startsWith("@/")) unresolvedLocalImports += 1;
+      else if (specifier.startsWith(".") || specifier.startsWith("@/")) {
+        unresolvedLocalImports += 1;
+        unresolvedImports.push(unresolvedImportClassification(view, { from: file, ...imported, scope }));
+      }
     }
   }
   const incoming = new Map(sourceFiles.map((file) => [file, 0]));
@@ -325,6 +484,12 @@ export function collectImportGraph(view, rows) {
     available: true,
     unresolvedLocalImports,
     excludedLocalImports,
+    unresolvedImportAudit: {
+      available: true,
+      method: "collectImportGraph",
+      items: unresolvedImports.sort((left, right) => `${left.from}:${left.line}:${left.specifier}`.localeCompare(`${right.from}:${right.line}:${right.specifier}`, "en")),
+      summary: summarizeUnresolvedImports(unresolvedImports),
+    },
     edges: edges.sort((left, right) => `${left.from}:${left.to}`.localeCompare(`${right.from}:${right.to}`, "en")),
     byDomain: Object.fromEntries(Object.entries(byDomain).sort(([left], [right]) => left.localeCompare(right))),
     modules,
@@ -539,6 +704,7 @@ export function main(args = process.argv.slice(2)) {
     console.log(`ARCHITECTURE_AUDIT_STATUS: ${artifact.freshness.status}`);
     console.log(`ARCHITECTURE_AUDIT_SHA: ${artifact.sourceSha}`);
     console.log(`ARCHITECTURE_AUDIT_OUTPUT: ${output}`);
+    console.log(formatUnresolvedImportSummary({ sourceSha: artifact.sourceSha, importGraph: artifact.imports }));
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
