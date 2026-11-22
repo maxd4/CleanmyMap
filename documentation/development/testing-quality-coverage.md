@@ -5,7 +5,7 @@
 ## Couverture runtime et ratchet
 
 La couverture est mesurée par le provider officiel V8 correspondant à la
-version de Vitest installée (`@vitest/coverage-v8@4.1.11`). La commande :
+version de Vitest installée (`@vitest/coverage-v8@4.1.12`). La commande :
 
 ```bash
 npm run test:coverage
@@ -347,6 +347,77 @@ mesure globale lorsque celle-ci fait partie de l'objectif. Rapportées
 explicitement, les situations `NOT_MEASURED`, `NOT_RUN`, `BLOCKED_*`, `FAIL` et
 `DB_SEMANTICS_NOT_EXECUTED` ne deviennent jamais un succès par défaut.
 
+### Clôture ciblée des lots Web et Mobile — 22 novembre 2026
+
+Les lots de tests publiés sur le `main` `e174cd88ffa8f23135ae4f86a500f98c9e50f192`
+comprennent les frontières d'accès aux actions (`e046996`), les transitions
+métier et la publication de rapports (`6d623eb`), le partage d'un rapport
+(`81cd574`) et la reprise/finalisation d'une mission Mobile (`e174cd8`). Les
+changements présents dans le worktree pour ce bilan ne modifient que cette
+source documentaire ; les autres modifications locales sont étrangères au lot.
+
+La validation Web `TARGETED` a exécuté les six suites propriétaires, soit
+101 tests : accès public, accès rétrospectif, API Mobile action, publication de
+rapport, service covoiturage et store des demandes de promotion. Les compteurs
+V8 concernent exactement les six owners ci-dessous, pas tout `apps/web/src` :
+
+| Owner Web | Branches initiales consignées | Statements finaux | Branches finales | Functions finales | Lines finales |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `api/actions/[actionId]/public/route.ts` | 38,88 % ; dénominateur initial non conservé | 21/30 | 8/18 | 1/1 | 21/30 |
+| `api/actions/[actionId]/retrospective/route-access.ts` | 0 % ; dénominateur initial non conservé | 17/17 | 19/19 | 2/2 | 17/17 |
+| `api/mobile/actions/[actionId]/route.ts` | 18/41 (43,90 %) | 42/51 | 27/41 | 6/8 | 36/41 |
+| `api/reports/generations/[id]/publication/route.ts` | 30/51 | 69/71 | 46/51 | 6/6 | 54/54 |
+| `lib/actions/action-rides-service.ts` | 36/115 | 141/143 | 109/115 | 29/29 | 113/113 |
+| `lib/admin/promotion-requests-store.ts` | 35/99 | 89/91 | 82/99 | 21/22 | 85/85 |
+
+Le total `TARGETED` Web est statements `379/403` (94,04 %), branches
+`291/343` (84,83 %), functions `65/68` (95,58 %) et lines `326/340`
+(95,88 %). Les rapports initiaux détaillés par statement, fonction et ligne
+n'ont pas tous été conservés ; ces métriques initiales sont donc
+`NOT_MEASURED`. Les taux initiaux de la route publique et de l'accès
+rétrospectif n'ont pas de dénominateur conservé. Plusieurs sources runtime ont
+évolué depuis les mesures historiques ; ce total ciblé n'est pas comparable à
+la photographie Web globale du 31 octobre. Il ne remplace pas une mesure Web
+globale, volontairement non exécutée dans cette clôture.
+
+Pour Mobile, la comparaison avant/après du lot de reprise est entre son parent
+publié `81cd5747147484ad5c297464b822fe1779773b2e` et le candidat
+`e174cd88ffa8f23135ae4f86a500f98c9e50f192`, sur le même scope V8, la même
+configuration et les mêmes dénominateurs :
+
+| Métrique Mobile | Initial | Final | Évolution des éléments couverts |
+| --- | ---: | ---: | ---: |
+| Statements | 2 486/2 779 (89,46 %) | 2 498/2 779 (89,88 %) | +12 |
+| Branches | 1 790/2 122 (84,35 %) | 1 799/2 122 (84,77 %) | +9 |
+| Functions | 682/798 (85,46 %) | 684/798 (85,71 %) | +2 |
+| Lines | 2 144/2 259 (94,91 %) | 2 153/2 259 (95,31 %) | +9 |
+
+La mesure finale Mobile a exécuté 402 tests dans 45 fichiers et satisfait le
+ratchet existant de 80 % sur les quatre métriques. Elle inclut toutefois cinq
+fichiers `tests/support` non nommés `.test.*` : `79` statements, `37` branches,
+`54` functions et `67` lines instrumentés. La configuration actuelle exclut
+les suites `.test.*`, `__tests__`, déclarations et vendor ; elle n'exclut pas
+ces helpers. Les nombres Mobile décrivent donc le périmètre effectivement
+instrumenté, helpers compris, sans correction artificielle du dénominateur.
+
+Des écarts restent visibles par owner malgré les agrégats conformes : les
+branches finales Web sont `8/18` sur l'API publique et `27/41` sur la route
+Mobile action. Côté Mobile, les fichiers de présentation
+`features/actions/action-create.tsx` et `features/account/account.tsx` restent
+sous 80 % respectivement en statements/functions (`68,85 %`/`64,15 %` et
+`82,35 %`/`78,46 %`). Ces valeurs sont des pistes résiduelles, pas des défauts
+runtime démontrés ; elles ne justifient ni changement de seuil, ni exclusion,
+ni assertion artificielle.
+
+Validations ciblées de clôture : `mobile:typecheck`, `mobile:test`
+(45 fichiers/402 tests), `mobile:security` (30/30), `mobile:lint` et
+`quality:mobile-coverage` passent. Le test comportemental Web du partage de
+rapport passe également (1 test). `expo-doctor` échoue à 20/21 sur le `main` :
+11 dépendances Expo ont des versions de patch antérieures à celles attendues
+par le SDK. Le contrôle Playwright `e2e/action-sharing.spec.ts` est `NOT_RUN` :
+il poste un message par `/api/chat` avec une fixture persistante et nécessite
+la lane Supabase éphémère autorisée.
+
 ### Porte de clôture et livrable
 
 Avant `VERDICT_REVIEW: terminé`, le compte rendu répond explicitement à ces
@@ -551,7 +622,9 @@ modification du dénominateur.
 npm run quality:mobile-coverage
 ```
 
-Le périmètre mobile est `apps/mobile` hors tests, déclarations et vendor. Sa
+Le périmètre mobile est défini par `apps/mobile/vitest.config.ts` : suites
+`.test.*`, `__tests__`, déclarations et vendor sont exclus, mais les helpers
+non `.test.*` sous `tests/support` restent instrumentés. Sa
 baseline indépendante est `scripts/checks/coverage-mobile-baseline.json`,
 ratifiée sur le SHA `5c0a7bde2193fe4ac88241bc0f06aa5bab6068c2` avec une mesure
 vérifiée : statements `47.56 %` (`420/883`), branches `40.41 %` (`196/485`),
