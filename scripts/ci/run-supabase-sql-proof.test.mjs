@@ -19,6 +19,21 @@ import {
 } from "./run-supabase-sql-proof.mjs";
 import { parseTerritorialRevisionNotice } from "../../e2e/territorial-legend-revision-concurrency.mjs";
 
+const PG_TAP_ASSERTION = /^\s*select\s+(?:ok|is|throws_ok|lives_ok|has_table|has_index|has_column|has_function_privilege|has_table_privilege)\s*\(/gim;
+
+function assertPgTapPlanMatchesAssertions(sql, label) {
+  const plans = [...sql.matchAll(/^\s*select\s+plan\s*\(([^)]*)\)\s*;\s*$/gim)];
+  assert.equal(plans.length, 1, `${label}: expected exactly one valid plan(n) declaration`);
+
+  const rawPlan = plans[0][1].trim();
+  assert.match(rawPlan, /^[1-9]\d*$/, `${label}: plan(n) must be a positive integer`);
+  const plan = Number(rawPlan);
+  assert.ok(Number.isSafeInteger(plan), `${label}: plan(n) must be a safe integer`);
+
+  const assertions = sql.match(PG_TAP_ASSERTION) ?? [];
+  assert.equal(plan, assertions.length, `${label}: plan(n) must equal the declared SQL assertion count`);
+}
+
 test("inventory includes all current pgTAP, SQL contract and multi-session proof files", () => {
   const inventory = inventorySqlProofs();
   assert.equal(inventory.unregistered.length, 0);
@@ -87,27 +102,37 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
 test("personal AI declarations pgTAP plan matches its assertion count", () => {
   const path = new URL("../../apps/web/supabase/tests/personal-ai-declarations-rls.pgtap.sql", import.meta.url);
   const sql = readFileSync(path, "utf8");
-  const plan = sql.match(/^select\s+plan\((\d+)\);$/im);
-  const assertions = sql.match(/^\s*select\s+(?:ok|is|throws_ok|lives_ok)\s*\(/gim) ?? [];
-  assert.equal(assertions.length, Number(plan?.[1]));
+  assertPgTapPlanMatchesAssertions(sql, "personal AI declarations");
 });
 
 test("action accessibility support pgTAP plan matches its assertion count", () => {
   const path = new URL("../../apps/web/supabase/tests/action-accessibility-support.pgtap.sql", import.meta.url);
   const sql = readFileSync(path, "utf8");
-  const plan = sql.match(/^select\s+plan\((\d+)\);$/im);
-  const assertions = sql.match(/^\s*select\s+(?:ok|is|throws_ok|lives_ok|has_table|has_index)\s*\(/gim) ?? [];
-  assert.equal(plan?.[1], "27");
-  assert.equal(assertions.length, Number(plan?.[1]));
+  assertPgTapPlanMatchesAssertions(sql, "action accessibility support");
 });
 
 test("action organizer types pgTAP plan matches its assertion count", () => {
   const path = new URL("../../apps/web/supabase/tests/action-organizer-types.pgtap.sql", import.meta.url);
   const sql = readFileSync(path, "utf8");
-  const plan = sql.match(/^select\s+plan\((\d+)\);$/im);
-  const assertions = sql.match(/^\s*select\s+(?:ok|is|throws_ok|lives_ok)\s*\(/gim) ?? [];
-  assert.equal(plan?.[1], "10");
-  assert.equal(assertions.length, Number(plan?.[1]));
+  assertPgTapPlanMatchesAssertions(sql, "action organizer types");
+});
+
+test("pgTAP assertion plan validation accepts a larger coherent plan and rejects a mismatch", () => {
+  const largerCoherentProof = [
+    "begin;",
+    "select plan(3);",
+    "select ok(true, 'first assertion');",
+    "select is(1, 1, 'second assertion');",
+    "select lives_ok('select 1', 'third assertion');",
+    "rollback;",
+  ].join("\n");
+  assert.doesNotThrow(() => assertPgTapPlanMatchesAssertions(largerCoherentProof, "synthetic proof"));
+
+  const mismatchedProof = largerCoherentProof.replace("plan(3)", "plan(4)");
+  assert.throws(
+    () => assertPgTapPlanMatchesAssertions(mismatchedProof, "synthetic proof"),
+    /plan\(n\) must equal the declared SQL assertion count/,
+  );
 });
 
 test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints", () => {
