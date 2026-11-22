@@ -122,13 +122,20 @@ conflits de ports, santé et présence des services indispensables à cette lane
 `apps/web/supabase/config.toml` et durée observée. Le script partagé
 `scripts/ci/start-supabase-ephemeral.sh` conserve temporairement les logs privés
 et interroge les événements Docker de la fenêtre de démarrage; le diagnostic
-ne publie que le premier type d'erreur allowlisté, le service reconnu et, si
-disponible, son code de sortie. Les sondes ne publient ni nom d'image, ni sortie
-Docker, ni variable d'environnement. Une sortie
+ne publie que le premier signal spécifique allowlisté, le service reconnu et,
+si disponible, son code de sortie. Un message générique ne masque pas un signal
+spécifique trouvé plus loin dans le journal. Les événements Docker `die` et
+`destroy` sont des événements de cycle de vie/cleanup, pas la cause initiale ;
+ils sont publiés séparément avec un type `lifecycle` ou `cleanup`. L'état du
+réseau est déterminé par le nom exact fourni par le workflow appelant ; il ne
+dépend pas d'un préfixe `supabase`.
+Les sondes ne publient ni ce nom, ni nom d'image, ni sortie Docker, ni variable
+d'environnement. Une sortie
 `UNCLASSIFIED` reste une absence de preuve causale ; elle ne doit pas être
 transformée en cause supposée. `START_TIMEOUT` signifie seulement qu'aucun
-conteneur et aucun statut n'ont été observés après la durée bornée ; il ne
-prouve pas à lui seul une cause réseau ou image. Les codes et les tests du
+conteneur et aucun statut n'ont été observés après au moins 80 secondes alors
+que le réseau attendu est absent ou non observable ; il ne prouve pas à lui seul
+une cause réseau ou image. Les codes et les tests du
 diagnostic sont la source de preuve pour enrichir la prochaine exécution sans
 publier de journal, credential, JWT, URL sensible ou configuration brute.
 

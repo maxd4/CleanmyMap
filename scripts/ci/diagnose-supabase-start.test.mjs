@@ -10,6 +10,7 @@ import {
   collectBoundedStartEvidence,
   collectStartProgressSnapshot,
   parseFirstDockerFailureEvent,
+  parseDockerLifecycleEvents,
   readProgressSnapshots,
   renderSupabaseStartDiagnostic,
   SUPABASE_START_CATEGORIES,
@@ -120,7 +121,7 @@ test("turns a long failed start with no containers into an actionable bounded co
     probeCommand: createProbeCommand(),
   });
 
-  assert.equal(evidence.schemaVersion, 3);
+  assert.equal(evidence.schemaVersion, 4);
   assert.equal(
     classifySupabaseStartFailure({ log: "opaque startup failure", exitCode: 1, evidence }),
     SUPABASE_START_CATEGORIES.START_TIMEOUT,
@@ -136,9 +137,10 @@ test("collects a public-safe startup progress snapshot without raw Docker output
     probeCommand: createProbeCommand({
       dockerDaemon: { available: true, output: "28.0.4 DockerRootDir=/secret" },
       dockerImages: { available: true, output: "private/image\tlatest\nsecond/image\tstable" },
-      dockerNetworks: { available: true, output: "supabase_network\tbridge" },
+      dockerNetworks: { available: true, output: "cleanmymap-sql-123\tbridge" },
       dockerContainers: { available: true, output: "supabase_db_web\tprivate/image\tUp 1 second\t" },
     }),
+    expectedNetwork: "cleanmymap-sql-123",
   });
 
   assert.deepEqual(snapshot, {
@@ -238,17 +240,94 @@ test("publishes only the first bounded startup error signal", () => {
 test("classifies only allowlisted service and exit details from the first Docker failure event", () => {
   const event = parseFirstDockerFailureEvent([
     JSON.stringify({ Action: "start", Actor: { Attributes: { name: "supabase_db_web", image: "private/image" } } }),
-    JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1", image: "private/image", token: "secret" } } }),
-    JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_rest_web", exitCode: "2" } } }),
+    JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1", image: "private/image", token: "secret" } } }),
+    JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_rest_web", exitCode: "2" } } }),
   ].join("\n"));
-  assert.deepEqual(event, { signal: "DOCKER_DIE", excerpt: "event=die;service=db;exit_code=1" });
+  assert.deepEqual(event, { signal: "DOCKER_OOM", excerpt: "event=oom;service=db;exit_code=1" });
   assert.doesNotMatch(JSON.stringify(event), /private\/image|secret/);
+});
+
+test("does not mistake a clean container stop or destroy cleanup for the startup failure", () => {
+  const events = [
+    JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "0" } } }),
+    JSON.stringify({ Action: "destroy", Actor: { Attributes: { name: "supabase_db_web" } } }),
+    JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_rest_web", exitCode: "137" } } }),
+  ].join("\n");
+
+  assert.deepEqual(parseFirstDockerFailureEvent(events), { signal: "NONE", excerpt: "none" });
+  assert.deepEqual(parseDockerLifecycleEvents(events), [
+    "event=die;service=db;exit_code=0;kind=lifecycle",
+    "event=destroy;service=db;exit_code=unknown;kind=cleanup",
+    "event=die;service=rest;exit_code=137;kind=lifecycle",
+  ]);
+});
+
+test("reports container die events separately from the sanitized initial error", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "Error: startup failed private-token",
+    dockerEvents: JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "0", token: "private-token" } } }),
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: SUPABASE_START_CATEGORIES.UNCLASSIFIED,
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+
+  assert.equal(evidence.firstErrorSignal, "UNKNOWN_ERROR");
+  assert.equal(evidence.firstErrorSource, "SUPABASE_CLI_LOG");
+  assert.deepEqual(evidence.dockerLifecycleEvents, ["event=die;service=db;exit_code=0;kind=lifecycle"]);
+  assert.match(diagnostic, /docker_lifecycle_events=event=die;service=db;exit_code=0;kind=lifecycle/);
+  assert.doesNotMatch(diagnostic, /private-token|supabase_db_web|token=/);
+});
+
+test("keeps a later specific CLI failure instead of an earlier generic error", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "Error: Supabase start failed\nError: no space left on device",
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+
+  assert.equal(evidence.firstErrorSource, "SUPABASE_CLI_LOG");
+  assert.equal(evidence.firstErrorSignal, "RESOURCE");
+  assert.equal(evidence.firstErrorExcerpt, "class=resource;service=unavailable");
+  assert.equal(evidence.dockerMemoryBytes, 8_000_000_000);
+});
+
+test("observes the exact isolated runner network without disclosing its name", () => {
+  const expectedNetwork = "cleanmymap-sql-run-42";
+  const evidence = collectBoundedStartEvidence({
+    log: "Error: start failed",
+    exitCode: 1,
+    durationSeconds: 88,
+    expectedNetwork,
+    probeCommand: createProbeCommand({
+      dockerNetworks: { available: true, output: "bridge\tbridge\ncleanmymap-sql-run-42\tbridge" },
+    }),
+  });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: classifySupabaseStartFailure({ log: "Error: start failed", exitCode: 1, evidence }),
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+
+  assert.equal(evidence.networkState, "observed");
+  assert.ok(!evidence.evidenceCodes.includes("SUPABASE_NETWORK_MISSING"));
+  assert.equal(classifySupabaseStartFailure({ log: "Error: start failed", exitCode: 1, evidence }), SUPABASE_START_CATEGORIES.UNCLASSIFIED);
+  assert.doesNotMatch(diagnostic, new RegExp(expectedNetwork));
 });
 
 test("prefers a specific sanitized Docker CLI error over later Docker lifecycle events", () => {
   const evidence = collectBoundedStartEvidence({
     log: "Error: no space left on device",
-    dockerEvents: JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1" } } }),
+    dockerEvents: JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1" } } }),
     exitCode: 1,
     probeCommand: createProbeCommand(),
   });
@@ -256,23 +335,23 @@ test("prefers a specific sanitized Docker CLI error over later Docker lifecycle 
   assert.equal(evidence.firstErrorSignal, "RESOURCE");
 });
 
-test("uses a classified Docker event when the first CLI error is generic", () => {
+test("uses an OOM Docker event when the first CLI error is generic", () => {
   const evidence = collectBoundedStartEvidence({
     log: "Error: start failed",
-    dockerEvents: JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1" } } }),
+    dockerEvents: JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1" } } }),
     exitCode: 1,
     probeCommand: createProbeCommand(),
   });
   assert.equal(evidence.firstErrorSource, "DOCKER_EVENT");
-  assert.equal(evidence.firstErrorSignal, "DOCKER_DIE");
-  assert.equal(evidence.firstErrorExcerpt, "event=die;service=db;exit_code=1");
+  assert.equal(evidence.firstErrorSignal, "DOCKER_OOM");
+  assert.equal(evidence.firstErrorExcerpt, "event=oom;service=db;exit_code=1");
   assert.equal(evidence.failureService, "db");
 });
 
 test("uses the first Docker failure event when the CLI log contains no classifiable error", () => {
   const evidence = collectBoundedStartEvidence({
     log: "starting local Supabase",
-    dockerEvents: JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_rest_web", exitCode: "137", image: "private/image" } } }),
+    dockerEvents: JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_rest_web", exitCode: "137", image: "private/image" } } }),
     exitCode: 1,
     probeCommand: createProbeCommand(),
   });
@@ -285,8 +364,8 @@ test("uses the first Docker failure event when the CLI log contains no classifia
     evidence,
   });
   assert.equal(evidence.firstErrorSource, "DOCKER_EVENT");
-  assert.equal(evidence.firstErrorSignal, "DOCKER_DIE");
-  assert.equal(evidence.firstErrorExcerpt, "event=die;service=rest;exit_code=137");
+  assert.equal(evidence.firstErrorSignal, "DOCKER_OOM");
+  assert.equal(evidence.firstErrorExcerpt, "event=oom;service=rest;exit_code=137");
   assert.ok(evidence.evidenceCodes.includes("DOCKER_FAILURE_EVENT_OBSERVED"));
   assert.doesNotMatch(diagnostic, /private\/image|supabase_rest/);
 });
@@ -799,6 +878,8 @@ test("the workflow keeps startup failure blocking and never prints the raw log",
   assert.match(startScript, /start_exit_code=\$\?/);
   assert.match(startScript, /--watch-pid="\$start_pid"/);
   assert.match(startScript, /--progress-file="\$progress_file"/);
+  assert.match(startScript, /--watch-pid="\$start_pid" --progress-file="\$progress_file" --expected-network="\$network"/);
+  assert.match(startScript, /--docker-events-file="\$events_file" \\\s+--expected-network="\$network" \\\s+--exit-code="\$start_exit_code"/);
   assert.match(startScript, /docker events --since "\$start_started_at" --until "\$start_finished_at" --filter type=container/);
   assert.match(startScript, /--docker-events-file="\$events_file"/);
   assert.match(startScript, /if \[\[ "\$start_exit_code" -ne 0 \]\]; then\s+exit "\$start_exit_code"/);

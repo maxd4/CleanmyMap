@@ -25,7 +25,7 @@ trap cleanup EXIT
 start_started_at="$(date +%s)"
 "$root/node_modules/.bin/supabase" start --workdir "$workdir" --yes --output-format json --network-id="$network" > "$start_log" 2>&1 &
 start_pid=$!
-node "$root/scripts/ci/diagnose-supabase-start.mjs" --watch-pid="$start_pid" --progress-file="$progress_file" >/dev/null 2>&1 &
+node "$root/scripts/ci/diagnose-supabase-start.mjs" --watch-pid="$start_pid" --progress-file="$progress_file" --expected-network="$network" >/dev/null 2>&1 &
 progress_pid=$!
 set +e
 wait "$start_pid"
@@ -42,6 +42,7 @@ node "$root/scripts/ci/diagnose-supabase-start.mjs" \
   --log-file="$start_log" \
   --progress-file="$progress_file" \
   --docker-events-file="$events_file" \
+  --expected-network="$network" \
   --exit-code="$start_exit_code" \
   --duration-seconds="$start_duration_seconds" > "$diagnostic_output" 2>&1
 diagnostic_exit_code=$?
