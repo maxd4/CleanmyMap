@@ -18,7 +18,7 @@ describe("POST /api/actions — validation des mesures", () => {
           actionDate: "2026-04-22",
           locationLabel: "Test lieu action",
           wasteKg: 1,
-          cigaretteButts: 0,
+          cigaretteButts: null,
           volunteersCount: 1,
           durationMinutes: 30,
         }),

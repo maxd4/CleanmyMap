@@ -1,4 +1,5 @@
 import type { CreateActionPayload } from "../../../lib/actions/types";
+import type { ActionMegotsCondition } from "../../../lib/actions/types";
 import {
   buildVolunteerParticipationFromForm as buildVolunteerParticipationFromCategories,
   normalizeVolunteerParticipation,
@@ -16,11 +17,11 @@ import {
 
 function resolveCigaretteButtsLots(form: FormState) {
   if (form.cigaretteButtsLots === null) return undefined;
-  return form.cigaretteButtsLots.map((lot) => ({
+  return form.cigaretteButtsLots.filter((lot) => lot.value.trim() !== "").map((lot) => ({
     id: lot.id,
     source: lot.source,
     value: Number(lot.value),
-    condition: lot.condition,
+    condition: lot.condition as ActionMegotsCondition,
   }));
 }
 
@@ -88,7 +89,7 @@ export function resolveCreateActionMeasurementParts(
   const enteredMegotsKg = toOptionalNumber(form.wasteMegotsKg) ?? null;
   const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount) ?? null;
   const enteredVolumeLiters = toOptionalNumber(form.cigaretteButtsVolumeLiters) ?? null;
-  const cigaretteButtsCondition = form.wasteMegotsCondition;
+  const cigaretteButtsCondition = form.wasteMegotsCondition || null;
   const rawCigaretteButtsMeasurements = {
     cigaretteButtsCount: enteredButtsCount,
     cigaretteButtsMassKg: enteredMegotsKg,

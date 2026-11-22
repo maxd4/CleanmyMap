@@ -146,8 +146,8 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain("sm:grid-cols-2");
     expect(markup).toContain("minmax(4rem,auto)");
     expect(markup).not.toContain('data-testid="butts-comparison-visual"');
-    expect(markup.indexOf('data-testid="butts-measurement-visual"')).toBeLessThan(markup.indexOf(">Nombre</span>"));
-    expect(markup.indexOf(">Nombre</span>")).toBeLessThan(markup.indexOf("État des mégots"));
+    expect(markup).toContain("État des mégots");
+    expect(markup.indexOf("État des mégots")).toBeLessThan(markup.indexOf(">Nombre</span>"));
     expect(markup).not.toContain("Référence moyenne");
   });
   it("does not present an unqualified historical value as measured", () => {
@@ -221,8 +221,17 @@ describe("HarvestMegotsSection", () => {
     expect(markup).not.toContain("mégots/L");
     expect(markup).toContain('data-testid="megots-lot-counted"');
     expect(markup).toContain('data-testid="megots-lot-volume"');
+    expect(markup).toContain("L estimés");
+    expect(markup).toContain("L mesurés");
+    expect(markup.indexOf('aria-label="État du lot 1"')).toBeLessThan(markup.indexOf("Valeur Nombre"));
     expect(markup).not.toContain('id="harvest-megots-count-slider"');
     expect(markup).toContain('readOnly=""');
     expect(markup).toContain("modifiez les contributions dans la zone ci-dessous");
+  });
+
+  it("does not select dry state implicitly", () => {
+    const markup = renderMegots({ wasteMegotsCondition: "" });
+
+    expect(markup.match(/type="radio" checked=""/g)).toBeNull();
   });
 });

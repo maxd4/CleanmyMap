@@ -726,12 +726,17 @@ comme non recalculables ou `NULL`.
 Pour les bilans multi-lots de mégots, la source de vérité est la collection de
 lots persistée dans les métadonnées de l'action. Chaque lot porte un identifiant
 stable, une seule unité source (`count`, `mass_kg` ou `volume_l`), une valeur
-non négative et l'état de la collecte. Le volume est une mesure source valide,
-pas un champ informatif : `cleanmymap-butts-volume-v2` applique `700 mégots/L`.
+non négative et l'état de la collecte, choisi explicitement lorsqu'un
+équivalent doit être calculé. Le volume est une mesure source valide, pas un
+champ informatif : `cleanmymap-butts-volume-v3` applique `600 mégots/L`.
 Le calcul par lot réutilise `impact-terrain-2026-butts-mass-v2` pour une nouvelle
 saisie : `0,22 g/mégot` propre/sec, `0,50 g/mégot` humide et le même proxy pour
-mouille faute de référence indépendante. Le volume courant applique `700 mégots/L` ;
-les lots `cleanmymap-butts-volume-v1` conservent `600 mégots/L`.
+mouille faute de référence indépendante. Les lots `cleanmymap-butts-volume-v1`
+et `v2` conservent respectivement `600` et `700 mégots/L` ; leurs sources ne
+sont pas réécrites. Le moteur calcule les deux autres équivalents depuis
+chaque source count, mass_kg ou volume_l ; le nombre dérivé est arrondi par lot.
+Pour les lots count ou mass_kg, le formulaire affiche également le volume
+estimé par v3, sans l'ajouter au total des volumes source mesurés.
 Ces coefficients sont des ordres de grandeur variables et estimatifs, non une
 densité ou une masse physique universelle ; les anciennes mesures gardent leur
 version `impact-terrain-2026-butts-mass-v1` et leurs valeurs. Le moteur arrondit

@@ -9,15 +9,18 @@ import {
   aggregateCigaretteButtsLots,
   calculateCigaretteButtsLot,
   calculateCigaretteButtsLotsTotalCount,
+  estimateCigaretteButtsVolumeLiters,
   CIGARETTE_BUTTS_CONVERSION_RESOLUTION_POLICY_VERSION,
   CIGARETTE_BUTTS_LOT_SOURCES,
   CIGARETTE_BUTTS_PER_VOLUME_LITER,
   CIGARETTE_BUTTS_PER_VOLUME_LITER_V1,
   CIGARETTE_BUTTS_PER_VOLUME_LITER_V2,
+  CIGARETTE_BUTTS_PER_VOLUME_LITER_V3,
   CIGARETTE_BUTTS_PROVENANCES,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2,
+  CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V3,
   CigaretteButtsLotsTotalLimitError,
   CigaretteButtsUnknownConversionVersionError,
   getCigaretteButtsLotsTotalLimitMessage,
@@ -51,15 +54,18 @@ export {
   aggregateCigaretteButtsLots,
   calculateCigaretteButtsLot,
   calculateCigaretteButtsLotsTotalCount,
+  estimateCigaretteButtsVolumeLiters,
   CIGARETTE_BUTTS_CONVERSION_RESOLUTION_POLICY_VERSION,
   CIGARETTE_BUTTS_LOT_SOURCES,
   CIGARETTE_BUTTS_PER_VOLUME_LITER,
   CIGARETTE_BUTTS_PER_VOLUME_LITER_V1,
   CIGARETTE_BUTTS_PER_VOLUME_LITER_V2,
+  CIGARETTE_BUTTS_PER_VOLUME_LITER_V3,
   CIGARETTE_BUTTS_PROVENANCES,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2,
+  CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V3,
   CigaretteButtsLotsTotalLimitError,
   CigaretteButtsUnknownConversionVersionError,
   getCigaretteButtsLotsTotalLimitMessage,
@@ -144,7 +150,7 @@ export function calculateCigaretteButtsMeasurementFromSource(input: {
     result.volumeConversionFormulaVersion ?? CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION;
   const volumeLiters = input.source === "volume_l"
     ? input.value
-    : result.count / getCigaretteButtsVolumeFactor(volumeConversionVersion);
+    : estimateCigaretteButtsVolumeLiters(result.count, volumeConversionVersion);
   return {
     cigaretteButtsCount: result.count,
     cigaretteButtsMassKg: result.massKg,

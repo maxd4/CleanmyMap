@@ -153,12 +153,12 @@ describe("action metadata notes", () => {
     const parsed = extractActionMetadataFromNotes(notes);
 
     expect(parsed.cigaretteButtsMeasurements).toMatchObject({
-      cigaretteButtsCount: 1_750,
-      cigaretteButtsMassKg: 0.875,
+      cigaretteButtsCount: 1_500,
+      cigaretteButtsMassKg: 0.75,
       cigaretteButtsVolumeLiters: 2.5,
       cigaretteButtsInputSource: "volume_l",
       cigaretteButtsVolumeProvenance: "measured",
-      cigaretteButtsVolumeConversionFormulaVersion: "cleanmymap-butts-volume-v2",
+      cigaretteButtsVolumeConversionFormulaVersion: "cleanmymap-butts-volume-v3",
     });
   });
 

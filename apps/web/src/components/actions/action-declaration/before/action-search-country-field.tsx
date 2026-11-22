@@ -7,13 +7,10 @@ import {
   parseCountryCode,
   type CountryCode,
 } from "@/lib/user-location-preference";
+import { ACTION_COUNTRY_LABELS_FR } from "./country-labels.fr";
 
 function countryLabel(countryCode: CountryCode): string {
-  try {
-    return new Intl.DisplayNames(["fr"], { type: "region" }).of(countryCode) ?? countryCode;
-  } catch {
-    return countryCode;
-  }
+  return ACTION_COUNTRY_LABELS_FR[countryCode] ?? countryCode;
 }
 
 export function ActionSearchCountryField({

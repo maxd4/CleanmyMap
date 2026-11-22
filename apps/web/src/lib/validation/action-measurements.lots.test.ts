@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createActionSchema } from "./action";
+import { createActionSchema, updateActionSchema } from "./action";
 import { individualCigaretteButtsLotsSchema } from "./action-measurements";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 
@@ -15,6 +15,48 @@ const basePayload = {
 };
 
 describe("createActionSchema cigarette-butt lots", () => {
+  it.each([
+    { cigaretteButtsCount: 12, cigaretteButtsInputSource: "count" },
+    { cigaretteButtsMassKg: 0.2, cigaretteButtsInputSource: "mass_kg" },
+    { cigaretteButtsVolumeLiters: 1, cigaretteButtsInputSource: "volume_l" },
+  ])("requires an explicit condition for a new scalar conversion (%o)", (source) => {
+    const withoutCondition = createActionSchema.safeParse({
+      ...basePayload,
+      cigaretteButtsMeasurements: source,
+    });
+    const withCondition = createActionSchema.safeParse({
+      ...basePayload,
+      cigaretteButtsMeasurements: {
+        ...source,
+        cigaretteButtsCondition: "humide",
+      },
+    });
+
+    expect(withoutCondition.success).toBe(false);
+    expect(withCondition.success).toBe(true);
+  });
+
+  it("keeps an incomplete historical scalar pair readable without inferring a source", () => {
+    const result = createActionSchema.safeParse({
+      ...basePayload,
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: 12,
+        cigaretteButtsMassKg: 0.2,
+        cigaretteButtsInputSource: "unknown",
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("requires state when a PATCH declares a single convertible source", () => {
+    expect(updateActionSchema.safeParse({ cigaretteButts: 12 }).success).toBe(false);
+    expect(updateActionSchema.safeParse({
+      cigaretteButts: 12,
+      cigaretteButtsCondition: "mouille",
+    }).success).toBe(true);
+  });
+
   it("accepts distinct count, mass and volume lots", () => {
     const result = createActionSchema.safeParse({
       ...basePayload,
@@ -68,7 +110,7 @@ describe("createActionSchema cigarette-butt lots", () => {
       ...basePayload,
       cigaretteButtsMeasurements: {
         cigaretteButtsLots: [
-          { id: "volume", source: "volume_l", value: 8_000, condition: "propre" },
+          { id: "volume", source: "volume_l", value: 8_500, condition: "propre" },
         ],
       },
     });

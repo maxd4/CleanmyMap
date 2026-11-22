@@ -375,8 +375,8 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
             "cigaretteButts field in the action contract.",
           ),
           text(
-            "World Cleanup Day France, mode opératoire 2025 ; Mégothon, guide collectivité : 0,22 g sec, 0,50 g humide et proxy volume courant de 700 mégots/L.",
-            "World Cleanup Day France 2025 operating guide; Mégothon local-authority guide: 0.22 g dry, 0.50 g damp and current 700 butts/L volume proxy.",
+            "World Cleanup Day France, mode opératoire 2025 ; Mégothon, guide collectivité : 0,22 g sec, 0,50 g humide ; le proxy volume courant v3 est de 600 mégots/L (v2 historique : 700).",
+            "World Cleanup Day France 2025 operating guide; Mégothon local-authority guide: 0.22 g dry, 0.50 g damp; the current v3 volume proxy is 600 butts/L (historical v2: 700).",
           ),
         ],
         limits: [

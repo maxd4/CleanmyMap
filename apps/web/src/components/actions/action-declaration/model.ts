@@ -112,7 +112,7 @@ export type FormState = {
   cigaretteButtsVolumeProvenance: CigaretteButtsProvenance;
   cigaretteButtsConversionFormulaVersion: string | null;
   cigaretteButtsVolumeConversionFormulaVersion: string | null;
- cigaretteButtsCondition: ActionMegotsCondition; // État des mégots pour conversion
+ cigaretteButtsCondition: ActionMegotsCondition | ""; // État explicite requis pour une conversion
  cigaretteButtsVolumeLiters: string;
   /** null keeps the legacy single-measurement path; [] explicitly clears lots. */
   cigaretteButtsLots: CigaretteButtsLotDraft[] | null;
@@ -130,7 +130,7 @@ export type FormState = {
  eventEndTime: string;
  notes: string;
  wasteMegotsKg: string;
- wasteMegotsCondition: ActionMegotsCondition;
+ wasteMegotsCondition: ActionMegotsCondition | "";
  wastePlastiqueKg: string;
  wasteVerreKg: string;
  wasteMetalKg: string;
@@ -147,7 +147,7 @@ export type CigaretteButtsLotDraft = {
   id: string;
   source: CigaretteButtsLotSource;
   value: string;
-  condition: ActionMegotsCondition;
+  condition: ActionMegotsCondition | "";
 };
 
 export const EMPTY_ACTION_MEASUREMENT_FIELDS = {
@@ -168,7 +168,7 @@ export const EMPTY_ACTION_MEASUREMENT_FIELDS = {
   cigaretteButtsVolumeProvenance: "unknown",
   cigaretteButtsConversionFormulaVersion: null,
   cigaretteButtsVolumeConversionFormulaVersion: null,
- cigaretteButtsCondition: "propre",
+  cigaretteButtsCondition: "",
  cigaretteButtsVolumeLiters: "",
   cigaretteButtsLots: null,
 } as const;
@@ -243,7 +243,7 @@ export const initialState: FormState = {
  eventEndTime:"",
  notes:"",
   wasteMegotsKg:"",
- wasteMegotsCondition:"propre",
+ wasteMegotsCondition:"",
  wastePlastiqueKg:"",
  wasteVerreKg:"",
  wasteMetalKg:"",
@@ -318,6 +318,7 @@ export type ValidationIssue = {
  |"cigaretteButtsCount"
  |"cigaretteButtsVolumeLiters"
  |"cigaretteButtsLots"
+ |"wasteMegotsCondition"
  |"volunteersCount"
  |"collectorsCount"
  |"volunteerParticipation"

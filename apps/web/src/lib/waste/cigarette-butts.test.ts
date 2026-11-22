@@ -150,14 +150,14 @@ describe("cigarette-butt raw and derived measurements", () => {
     });
 
     expect(measurement).toMatchObject({
-      cigaretteButtsCount: 1_750,
-      cigaretteButtsMassKg: 0.385,
+      cigaretteButtsCount: 1_500,
+      cigaretteButtsMassKg: 0.33,
       cigaretteButtsVolumeLiters: 2.5,
       cigaretteButtsCountProvenance: "volume_converted",
       cigaretteButtsMassProvenance: "weight_converted",
       cigaretteButtsVolumeProvenance: "measured",
       cigaretteButtsInputSource: "volume_l",
-      cigaretteButtsVolumeConversionFormulaVersion: "cleanmymap-butts-volume-v2",
+      cigaretteButtsVolumeConversionFormulaVersion: "cleanmymap-butts-volume-v3",
     });
   });
 
@@ -341,9 +341,9 @@ describe("cigarette-butt raw and derived measurements", () => {
 
     expect(measurement.cigaretteButtsVolumeLiters).toBe(
       "cigaretteButtsCount" in patch
-        ? 2_000 / 700
+        ? 2_000 / 600
         : "cigaretteButtsMassKg" in patch
-          ? 2_400 / 700
+          ? 2_400 / 600
           : 2.5,
     );
     expect(measurement.cigaretteButtsVolumeProvenance).toBe(
@@ -361,7 +361,7 @@ describe("cigarette-butt raw and derived measurements", () => {
       cigaretteButtsCount: 1_800,
     }, { existingMeasurements: existing });
 
-    expect(measurement.cigaretteButtsVolumeLiters).toBe(1_800 / 700);
+    expect(measurement.cigaretteButtsVolumeLiters).toBe(1_800 / 600);
     expect(measurement.cigaretteButtsVolumeProvenance).toBe("volume_converted");
   });
 

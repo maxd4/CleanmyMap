@@ -12,22 +12,27 @@ export const MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT = 500_000_000;
 export const MAX_CIGARETTE_BUTTS_LOTS = 100;
 /** Historical volume proxy retained for snapshots written before v2. */
 export const CIGARETTE_BUTTS_PER_VOLUME_LITER_V1 = 600;
-/** Current volume proxy: an estimative 700 butts/L, not a universal density. */
+/** Historical v2 proxy retained for measurements already recorded with it. */
 export const CIGARETTE_BUTTS_PER_VOLUME_LITER_V2 = 700;
+/** Current documented estimate: 600 butts/L, not a universal density. */
+export const CIGARETTE_BUTTS_PER_VOLUME_LITER_V3 = 600;
 export const CIGARETTE_BUTTS_PER_VOLUME_LITER =
-  CIGARETTE_BUTTS_PER_VOLUME_LITER_V2;
+  CIGARETTE_BUTTS_PER_VOLUME_LITER_V3;
 export const CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1 =
   "cleanmymap-butts-volume-v1" as const;
 export const CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2 =
   "cleanmymap-butts-volume-v2" as const;
+export const CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V3 =
+  "cleanmymap-butts-volume-v3" as const;
 export const CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION =
-  CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2;
+  CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V3;
 /** Explicit historical versions are never replaced by the current version. */
 export const CIGARETTE_BUTTS_CONVERSION_RESOLUTION_POLICY_VERSION =
   "cleanmymap-butts-conversion-resolution-v1" as const;
 export type CigaretteButtsVolumeConversionVersion =
   | typeof CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1
-  | typeof CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2;
+  | typeof CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2
+  | typeof CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V3;
 
 const CIGARETTE_BUTTS_VOLUME_FACTORS_PER_LITER: Record<
   CigaretteButtsVolumeConversionVersion,
@@ -37,13 +42,16 @@ const CIGARETTE_BUTTS_VOLUME_FACTORS_PER_LITER: Record<
     CIGARETTE_BUTTS_PER_VOLUME_LITER_V1,
   [CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2]:
     CIGARETTE_BUTTS_PER_VOLUME_LITER_V2,
+  [CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V3]:
+    CIGARETTE_BUTTS_PER_VOLUME_LITER_V3,
 };
 
 export function isCigaretteButtsVolumeConversionVersion(
   value: unknown,
 ): value is CigaretteButtsVolumeConversionVersion {
   return value === CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1 ||
-    value === CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2;
+    value === CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2 ||
+    value === CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V3;
 }
 
 export class CigaretteButtsUnknownConversionVersionError extends Error {
@@ -82,6 +90,15 @@ export function getCigaretteButtsVolumeFactor(
   return CIGARETTE_BUTTS_VOLUME_FACTORS_PER_LITER[
     resolveVolumeConversionVersion(version)
   ];
+}
+
+/** Returns an estimated volume for a known count using the selected proxy. */
+export function estimateCigaretteButtsVolumeLiters(
+  count: number,
+  version: string | null | undefined = CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+): number | null {
+  if (!Number.isFinite(count) || count < 0) return null;
+  return count / getCigaretteButtsVolumeFactor(version);
 }
 
 export const CIGARETTE_BUTTS_PROVENANCES = [
@@ -135,6 +152,8 @@ export type CigaretteButtsLotResult = CigaretteButtsLotInput & {
   count: number;
   /** Null when the historical mass conversion cannot be demonstrated. */
   massKg: number | null;
+  /** Derived current estimate for count/mass sources; never included in measured-volume totals. */
+  estimatedVolumeLiters?: number;
   rawMassKg: number | null;
   rawVolumeLiters: number | null;
   countProvenance: CigaretteButtsProvenance;
@@ -255,6 +274,9 @@ export function calculateCigaretteButtsLot(
       : Math.round(value * getCigaretteButtsVolumeFactor(volumeConversionVersion));
   const rawMassKg = input.source === "mass_kg" ? value : null;
   const rawVolumeLiters = input.source === "volume_l" ? value : null;
+  const estimatedVolumeLiters = input.source === "volume_l"
+    ? null
+    : estimateCigaretteButtsVolumeLiters(count, volumeConversionVersion);
   const massKg = input.source === "mass_kg"
     ? value
     : estimateButtsWeightKg(count, input.condition, massConversionVersion);
@@ -266,6 +288,7 @@ export function calculateCigaretteButtsLot(
     massKg,
     rawMassKg,
     rawVolumeLiters,
+    ...(estimatedVolumeLiters !== null ? { estimatedVolumeLiters } : {}),
     countProvenance:
       input.source === "count"
         ? "counted"
@@ -274,10 +297,7 @@ export function calculateCigaretteButtsLot(
           : "volume_converted",
     massProvenance: input.source === "mass_kg" ? "measured" : "weight_converted",
     massConversionFormulaVersion: massConversionVersion,
-    volumeConversionFormulaVersion:
-      input.source === "volume_l"
-        ? volumeConversionVersion
-        : null,
+    volumeConversionFormulaVersion: volumeConversionVersion,
   };
 }
 
@@ -493,6 +513,10 @@ export function isCigaretteButtsLotResultStructurallyValid(
     return false;
   }
   if (!Number.isFinite(result.count) || result.count < 0) return false;
+  if (result.estimatedVolumeLiters !== undefined &&
+    (!Number.isFinite(result.estimatedVolumeLiters) || result.estimatedVolumeLiters < 0)) return false;
+  if (result.volumeConversionFormulaVersion != null &&
+    !isCigaretteButtsVolumeConversionVersion(result.volumeConversionFormulaVersion)) return false;
   if (result.massKg !== null && (!Number.isFinite(result.massKg) || result.massKg < 0)) {
     return false;
   }
@@ -504,7 +528,8 @@ export function isCigaretteButtsLotResultStructurallyValid(
     return result.rawMassKg === lot.value &&
       result.rawVolumeLiters === null && result.massKg !== null;
   }
-  return result.rawMassKg === null && result.rawVolumeLiters === lot.value;
+  return result.rawMassKg === null && result.rawVolumeLiters === lot.value &&
+    result.estimatedVolumeLiters === undefined;
 }
 
 function isCompleteCigaretteButtsLotResult(

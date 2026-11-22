@@ -68,6 +68,22 @@ describe("action declaration submission model", () => {
     expect(result.routeStyle).toBe("souple");
   });
 
+  it("requires a chosen state for scalar conversions and ignores an untouched blank lot", () => {
+    const scalar = buildValidCompleteDeclaration();
+    scalar.cigaretteButtsCount = "600";
+    const scalarIssues = getCompleteDeclarationIssues(scalar);
+    expect(scalarIssues).toContainEqual(expect.objectContaining({
+      field: "wasteMegotsCondition",
+      message: "Choisissez l’état des mégots pour calculer leurs équivalents.",
+    }));
+
+    const lot = buildValidCompleteDeclaration();
+    lot.cigaretteButtsLots = [{ id: "draft", source: "count", value: "", condition: "" }];
+    expect(getCompleteDeclarationIssues(lot).some((issue) => issue.field === "cigaretteButtsLots")).toBe(false);
+    lot.cigaretteButtsLots[0]!.value = "600";
+    expect(getCompleteDeclarationIssues(lot).some((issue) => issue.field === "cigaretteButtsLots")).toBe(true);
+  });
+
   it("reports each missing step-one guard without changing the form", () => {
     const form = {
       ...createInitialFormState("Alex", "action"),
@@ -364,6 +380,7 @@ describe("action declaration submission model", () => {
     measured.wasteMegotsKg = "0.25";
     measured.cigaretteButtsCount = "2500";
     measured.cigaretteButtsVolumeLiters = "1.5";
+    measured.wasteMegotsCondition = "humide";
     measured.wasteRecyclablesKg = "4.0";
     measured.wasteGlassKg = "2.0";
     measured.wasteHouseholdKg = "3.0";

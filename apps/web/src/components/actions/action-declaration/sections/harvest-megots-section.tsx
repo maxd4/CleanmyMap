@@ -9,6 +9,7 @@ import type { HarvestReferenceStatus } from "../utils/harvest-utils";
 import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
 import {
   calculateCigaretteButtsLot,
+  estimateCigaretteButtsVolumeLiters,
   type CigaretteButtsLotInput,
 } from "@/lib/waste/cigarette-butts";
 import type { CigaretteButtsLotDraft } from "../model";
@@ -39,7 +40,7 @@ function MegotsHeader() {
 type HarvestMegotsSectionProps = {
   wasteMegotsKg: string;
   cigaretteButtsVolumeLiters: string;
-  wasteMegotsCondition: ActionMegotsCondition;
+  wasteMegotsCondition: ActionMegotsCondition | "";
   cigaretteButtsCount: string;
   megotsCount: number | null;
   megotsCurrentPerVolunteer: number | null;
@@ -71,13 +72,14 @@ type HarvestMegotsSectionProps = {
   onMegotsVolumeChange: (value: string) => void;
   onMegotsCountChange: (value: string) => void;
   onMegotsConditionChange: (value: ActionMegotsCondition) => void;
+  conditionError?: string;
   hidePrimaryMeasurements?: boolean;
 };
 
 function parseLot(draft: CigaretteButtsLotDraft): CigaretteButtsLotInput | null {
   if (!draft.value.trim()) return null;
   const value = Number(draft.value);
-  if (!Number.isFinite(value) || value < 0 || (draft.source === "count" && !Number.isInteger(value))) return null;
+  if (!Number.isFinite(value) || value < 0 || !draft.condition || (draft.source === "count" && !Number.isInteger(value))) return null;
   return { id: draft.id, source: draft.source, value, condition: draft.condition };
 }
 
@@ -91,12 +93,14 @@ const MEGOTS_CONDITIONS: Array<{ value: ActionMegotsCondition; label: string; Ic
   { value: "mouille", label: "Mouillé", Icon: Droplets },
 ];
 
-function MegotsConditionSelector({
+export function MegotsConditionSelector({
   value,
   onChange,
+  error,
 }: {
-  value: ActionMegotsCondition;
+  value: ActionMegotsCondition | "";
   onChange: (value: ActionMegotsCondition) => void;
+  error?: string;
 }) {
   return (
     <fieldset className="space-y-2">
@@ -125,6 +129,7 @@ function MegotsConditionSelector({
           );
         })}
       </div>
+      {error ? <p role="alert" className="text-xs font-medium text-red-700">{error}</p> : null}
     </fieldset>
   );
 }
@@ -213,6 +218,15 @@ function MegotsLotEditor({
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="space-y-1.5">
+          <span className="text-xs font-medium text-slate-500">État</span>
+          <select aria-label={`État du lot ${index + 1}`} value={draft.condition} onChange={(event) => onUpdate?.(draft.id, { condition: event.target.value as ActionMegotsCondition | "" })} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900">
+            <option value="">Choisir un état</option>
+            <option value="propre">Sec / Propre</option>
+            <option value="humide">Humide</option>
+            <option value="mouille">Mouillé</option>
+          </select>
+        </label>
+        <label className="space-y-1.5">
           <span className="text-xs font-medium text-slate-500">Mesure source</span>
           <select value={draft.source} onChange={(event) => onUpdate?.(draft.id, { source: event.target.value as CigaretteButtsLotDraft["source"] })} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900">
             <option value="count">Nombre de mégots</option>
@@ -224,16 +238,8 @@ function MegotsLotEditor({
           <span className="text-xs font-medium text-slate-500">Valeur {lotSourceLabel(draft.source)}</span>
           <input id={`harvest-megots-lot-${draft.id}`} inputMode="decimal" type="number" min="0" step={draft.source === "count" ? 1 : 0.01} value={draft.value} onChange={(event) => onUpdate?.(draft.id, { value: event.target.value })} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-base font-bold text-slate-900" />
         </label>
-        <label className="space-y-1.5">
-          <span className="text-xs font-medium text-slate-500">État</span>
-          <select value={draft.condition} onChange={(event) => onUpdate?.(draft.id, { condition: event.target.value as ActionMegotsCondition })} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900">
-            <option value="propre">Sec / Propre</option>
-            <option value="humide">Humide</option>
-            <option value="mouille">Mouillé</option>
-          </select>
-        </label>
       </div>
-      {result ? <p className="text-xs leading-5 text-amber-800">Équivalents : {formatCount(result.count)} mégots · {result.massKg === null ? "masse indisponible" : `${formatKg(result.massKg)} kg ${result.massProvenance === "measured" ? "mesurés" : "estimés"}`}.</p> : <p className="text-xs text-slate-500">Saisissez une valeur non négative.</p>}
+      {result ? <p className="text-xs leading-5 text-amber-800">Équivalents : {formatCount(result.count)} mégots · {result.massKg === null ? "masse indisponible" : `${formatKg(result.massKg)} kg ${result.massProvenance === "measured" ? "mesurés" : "estimés"}`} · {result.source === "volume_l" ? `${formatKg(result.rawVolumeLiters ?? 0)} L mesurés` : `${formatKg(result.estimatedVolumeLiters ?? estimateCigaretteButtsVolumeLiters(result.count) ?? 0)} L estimés`}.</p> : <p className="text-xs text-slate-500">Choisissez un état puis saisissez une valeur non négative.</p>}
     </div>
   );
 }
@@ -269,6 +275,7 @@ export function HarvestMegotsSection({
   onMegotsVolumeChange,
   onMegotsCountChange,
   onMegotsConditionChange,
+  conditionError,
   hidePrimaryMeasurements = false,
 }: HarvestMegotsSectionProps) {
   const scalarFieldsReadOnly = hidePrimaryMeasurements || megotsLots !== null;
@@ -276,6 +283,7 @@ export function HarvestMegotsSection({
   return (
     <section className="flex h-full min-w-0 flex-col space-y-4 rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50/30 p-4 shadow-[0_12px_32px_-24px_rgba(37,99,235,0.55)] sm:p-5">
       <MegotsHeader />
+      {megotsLots === null ? <MegotsConditionSelector value={wasteMegotsCondition} onChange={onMegotsConditionChange} error={conditionError} /> : null}
       <div className="grid items-center gap-4 sm:grid-cols-2">
         <DropletGauge
           value={megotsCount}
@@ -366,7 +374,6 @@ export function HarvestMegotsSection({
       </div>
       {megotsLots === null ? (
         <>
-          <MegotsConditionSelector value={wasteMegotsCondition} onChange={onMegotsConditionChange} />
           <button type="button" onClick={onAddMegotsLot} className="w-full rounded-xl border border-dashed border-orange-300 bg-orange-50/50 px-4 py-3 text-sm font-bold text-orange-800 transition hover:bg-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Ajouter un lot</button>
         </>
       ) : (

@@ -160,7 +160,20 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
       issues.push({ field: "wasteCharacterizationKg", message: "Saisissez une masse caractérisée numérique ou laissez le champ vide." });
     }
   }
-  if (form.cigaretteButtsLots === null) return issues;
+  if (form.cigaretteButtsLots === null) {
+    const hasScalarButtsMeasurement = [
+      form.cigaretteButtsCount,
+      form.wasteMegotsKg,
+      form.cigaretteButtsVolumeLiters,
+    ].some((value) => value.trim() !== "");
+    if (hasScalarButtsMeasurement && !form.wasteMegotsCondition) {
+      issues.push({
+        field: "wasteMegotsCondition",
+        message: "Choisissez l’état des mégots pour calculer leurs équivalents.",
+      });
+    }
+    return issues;
+  }
   if (form.cigaretteButtsLots.length > MAX_CIGARETTE_BUTTS_LOTS) {
     issues.push({ field: "cigaretteButtsLots", message: `Limitez les collectes de mégots à ${MAX_CIGARETTE_BUTTS_LOTS} lots.` });
   }
@@ -174,11 +187,12 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
   for (const lot of form.cigaretteButtsLots) {
     const value = lot.value.trim();
     const numericValue = Number(value);
+    if (!value) continue;
     if (!lot.id.trim() || seen.has(lot.id.trim())) {
       issues.push({ field: "cigaretteButtsLots", message: "Chaque lot de mégots doit avoir un identifiant unique." });
     }
     seen.add(lot.id.trim());
-    if (!value || !Number.isFinite(numericValue) || numericValue < 0) {
+    if (!Number.isFinite(numericValue) || numericValue < 0) {
       issues.push({ field: "cigaretteButtsLots", message: "Chaque lot de mégots doit contenir une valeur numérique non négative." });
       continue;
     }
@@ -188,6 +202,13 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
     }
     if (lot.source !== "count" && numericValue > ACTION_MEASUREMENT_MAX_KG) {
       issues.push({ field: "cigaretteButtsLots", message: `La masse ou le volume d’un lot doit rester inférieur ou égal à ${ACTION_MEASUREMENT_MAX_KG}.` });
+      continue;
+    }
+    if (!lot.condition) {
+      issues.push({
+        field: "cigaretteButtsLots",
+        message: `Choisissez l’état du lot ${lot.id} pour calculer ses équivalents.`,
+      });
       continue;
     }
     calculableLots.push({ id: lot.id.trim(), source: lot.source, value: numericValue, condition: lot.condition });

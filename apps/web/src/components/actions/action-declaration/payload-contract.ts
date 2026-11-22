@@ -54,12 +54,12 @@ export type CreateActionPayloadParts = {
   enteredMegotsKg: number | null;
   enteredButtsCount: number | null;
   enteredVolumeLiters: number | null;
-  cigaretteButtsCondition: ActionMegotsCondition;
+  cigaretteButtsCondition: ActionMegotsCondition | null;
   rawCigaretteButtsMeasurements: {
     cigaretteButtsCount: number | null;
     cigaretteButtsMassKg: number | null;
     cigaretteButtsVolumeLiters: number | null;
-    cigaretteButtsCondition: ActionMegotsCondition;
+    cigaretteButtsCondition: ActionMegotsCondition | null;
     cigaretteButtsInputSource: CigaretteButtsInputSource;
     cigaretteButtsLots?: CigaretteButtsLotInput[];
   };

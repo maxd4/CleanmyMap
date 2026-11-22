@@ -97,7 +97,7 @@ function WastePrimaryMeasurement({
   );
 }
 
-function WasteMeasurementMethod({
+export function WasteMeasurementMethod({
   value,
   onChange,
 }: { value: ActionWasteMeasurementMethod | ""; onChange: (value: ActionWasteMeasurementMethod | "") => void }) {
@@ -168,6 +168,7 @@ export function HarvestWasteSection({
   return (
     <section className="flex h-full min-w-0 flex-col space-y-4 rounded-3xl border border-emerald-100 bg-gradient-to-b from-white to-emerald-50/30 p-4 shadow-[0_12px_32px_-24px_rgba(5,150,105,0.55)] sm:p-5">
       <HarvestWasteHeader />
+      <WasteMeasurementMethod value={wasteMeasurementMethod} onChange={onMeasurementMethodChange} />
       <div className="grid items-center gap-4 sm:grid-cols-2">
         <TrashBinGauge
           value={parseKg(wasteKg)}
@@ -195,8 +196,6 @@ export function HarvestWasteSection({
           />
         </div>
       </div>
-      <WasteMeasurementMethod value={wasteMeasurementMethod} onChange={onMeasurementMethodChange} />
-
       <WasteCharacterizationSelector
         characterizationKg={wasteCharacterizationKg as WasteCharacterizationFormValues}
         totalWasteKg={parseKg(wasteKg)}

@@ -49,6 +49,14 @@ describe("ActionStepHarvest compact modes", () => {
     expect(html).toContain("Nombre de mégots");
     expect(html).toContain("Masse de mégots (kg)");
     expect(html).toContain('value="0"');
+    expect(html).toContain('value=""');
+    expect(html).toContain("Sec / Propre");
+    expect(html).toContain("Humide");
+    expect(html).toContain("Mouillé");
+    expect(html).not.toContain('value="propre" checked');
+    expect(html.indexOf("Méthode de mesure") ).toBeLessThan(html.indexOf("Masse collectée"));
+    expect(html.indexOf("État des mégots")).toBeLessThan(html.indexOf("Nombre de mégots"));
+    expect(html.match(/id="harvest-megots-condition"/g)).toHaveLength(1);
     expect(html).not.toContain('id="harvest-megots-volume"');
     expect(html).not.toContain("kg moyen");
     expect(html).not.toContain("Référence moyenne");
@@ -131,12 +139,11 @@ describe("ActionStepHarvest compact modes", () => {
       countInput.props.onChange({ target: { value: "1750" } });
     });
 
-    expect(updateFields).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cigaretteButtsCount: "1750",
-        wasteMegotsKg: "0.385",
-      }),
-    );
+    expect(updateFields).toHaveBeenCalledWith(expect.objectContaining({
+      cigaretteButtsCount: "1750",
+      wasteMegotsKg: "",
+      cigaretteButtsVolumeLiters: "",
+    }));
     renderer.unmount();
   });
 });

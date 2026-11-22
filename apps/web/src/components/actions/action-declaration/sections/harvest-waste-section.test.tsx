@@ -43,8 +43,8 @@ describe("HarvestWasteSection visual order", () => {
   it("places the unique gauge, direct input and method in the shared card order", () => {
     const markup = renderWasteSection();
 
+    expect(markup.indexOf("Méthode de mesure")).toBeLessThan(markup.indexOf('data-testid="waste-measurement-visual"'));
     expect(markup.indexOf('data-testid="waste-measurement-visual"')).toBeLessThan(markup.indexOf('id="harvest-waste-kg"'));
-    expect(markup.indexOf('id="harvest-waste-kg"')).toBeLessThan(markup.indexOf("Méthode de mesure"));
     expect(markup).not.toContain('data-testid="harvest-waste-kg-slider-panel"');
     expect(markup).not.toContain('data-testid="waste-comparison-visual"');
     expect(markup).toContain("Masse collectée (exacte)");

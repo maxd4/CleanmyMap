@@ -482,8 +482,11 @@ function main() {
     process.exitCode = 1;
     return;
   }
+  const currentVolumeFactor = result.current.volumeFactors.find(
+    (factor) => factor.version === result.current.volumeVersion,
+  )?.factor ?? "unknown";
   console.log(
-    `[scientific-formula-version] OK: volume=${result.current.volumeV2}/L (${result.current.volumeVersion}), projection=${result.current.projectionVersion}, base=${baseRef}`,
+    `[scientific-formula-version] OK: volume=${currentVolumeFactor}/L (${result.current.volumeVersion}), projection=${result.current.projectionVersion}, base=${baseRef}`,
   );
 }
 

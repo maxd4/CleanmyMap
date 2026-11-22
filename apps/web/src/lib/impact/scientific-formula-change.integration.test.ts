@@ -12,7 +12,7 @@ import {
 } from "./impact-terrain-2026";
 import {
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
-  CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
+  CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2,
   aggregateCigaretteButtsLots,
   projectCurrentCigaretteButts,
 } from "@/lib/waste/cigarette-butts";
@@ -46,19 +46,27 @@ function buildIndividualRow(historical: ReturnType<typeof aggregateCigaretteButt
 }
 
 describe("scientific formula change transverse integration", () => {
-  it("recalculates only the volume lot and converges action, public and individual projections once", () => {
+  it("recalculates the current volume estimate and converges projections without changing gamification policy", () => {
     const historical = aggregateCigaretteButtsLots(SOURCE_LOTS, {
-      volumeConversionVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
+      volumeConversionVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2,
     });
     const current = aggregateCigaretteButtsLots(SOURCE_LOTS);
 
     expect(current.lots).toEqual(historical.lots);
-    expect(current.results.slice(0, 2)).toEqual(historical.results.slice(0, 2));
-    expect(current.results[2]?.count).toBe(2_100);
-    expect(historical.results[2]?.count).toBe(1_800);
-    expect(current.summary.totalCount).toBe(4_200);
-    expect(historical.summary.totalCount).toBe(3_900);
-    expect(current.summary.totalCount - historical.summary.totalCount).toBe(300);
+    expect(current.results.slice(0, 2).map(({ id, source, value, count, massKg }) => ({
+      id, source, value, count, massKg,
+    }))).toEqual(historical.results.slice(0, 2).map(({ id, source, value, count, massKg }) => ({
+      id, source, value, count, massKg,
+    })));
+    expect(current.results.slice(0, 2).map((lot) => lot.volumeConversionFormulaVersion)).toEqual([
+      CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+      CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+    ]);
+    expect(current.results[2]?.count).toBe(1_800);
+    expect(historical.results[2]?.count).toBe(2_100);
+    expect(current.summary.totalCount).toBe(3_900);
+    expect(historical.summary.totalCount).toBe(4_200);
+    expect(current.summary.totalCount - historical.summary.totalCount).toBe(-300);
     expect(current.summary.totalCount).toBe(
       current.results.reduce((total, lot) => total + lot.count, 0),
     );
@@ -73,8 +81,8 @@ describe("scientific formula change transverse integration", () => {
       persistedHistoricalMeasurement,
     );
     expect(currentProjection.status).toBe("recalculable");
-    expect(currentProjection.count).toBe(4_200);
-    expect(currentProjection.results?.map((lot) => lot.count)).toEqual([100, 2_000, 2_100]);
+    expect(currentProjection.count).toBe(3_900);
+    expect(currentProjection.results?.map((lot) => lot.count)).toEqual([100, 2_000, 1_800]);
     expect(currentProjection.results?.[2]?.volumeConversionFormulaVersion).toBe(
       CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
     );
@@ -162,8 +170,8 @@ describe("scientific formula change transverse integration", () => {
       buildIndividualRow(historical),
       { recalculateDerived: true },
     );
-    expect(ordinaryIndividual?.comparableButtsCount).toBe(3_900);
-    expect(recalculatedIndividual?.comparableButtsCount).toBe(4_200);
+    expect(ordinaryIndividual?.comparableButtsCount).toBe(4_200);
+    expect(recalculatedIndividual?.comparableButtsCount).toBe(3_900);
     expect(recalculatedIndividual?.cigaretteButtsLots?.results[0]?.count).toBe(100);
     expect(recalculatedIndividual?.cigaretteButtsLots?.results[1]?.count).toBe(2_000);
     expect(recalculatedIndividual?.cigaretteButtsLots?.results[2]?.volumeConversionFormulaVersion).toBe(
@@ -180,9 +188,9 @@ describe("scientific formula change transverse integration", () => {
       wasteValue: null,
       buttsValue: current.summary.totalCount,
     }]);
-    expect(currentAwards.length).toBeGreaterThan(historicalAwards.length);
+    expect(currentAwards.length).toBeLessThanOrEqual(historicalAwards.length);
     expect(currentAwards.filter((award) => award.family === "butts").at(-1)?.sourceId).toBe(
-      "mohs:butts:grade:3",
+      "mohs:butts:grade:2",
     );
 
     const snapshot = buildPublicImpactSnapshotPayload({

@@ -6,15 +6,16 @@ import type {
   ActionPhotoAsset,
   ActionVisionEstimate,
 } from "@/lib/actions/types";
+import type { ActionMegotsCondition } from "@/lib/actions/types";
 import type { UpdateFormField } from "../types";
 import {
   useHarvestLogic,
   type UseHarvestLogicResult,
 } from "../hooks/use-harvest-logic";
 import { HarvestCleanPlaceSection } from "../sections/harvest-clean-place";
-import { HarvestMegotsSection } from "../sections/harvest-megots-section";
+import { HarvestMegotsSection, MegotsConditionSelector } from "../sections/harvest-megots-section";
 import { HarvestPhotoSection } from "../sections/harvest-photo-section";
-import { HarvestWasteSection } from "../sections/harvest-waste-section";
+import { HarvestWasteSection, WasteMeasurementMethod } from "../sections/harvest-waste-section";
 import { Cigarette } from "lucide-react";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { ACTION_MEASUREMENT_MAX_KG, ACTION_WASTE_MASS_RESOLUTION_KG } from "@/lib/waste";
@@ -52,14 +53,22 @@ function HarvestEssentials({
   isCleanPlaceMode,
   syncMegotsWeightFromCount,
   syncMegotsWeightFromWeight,
+  syncMegotsCondition,
+  conditionError,
 }: Pick<ActionStepHarvestProps, "form" | "updateField"> & {
   isCleanPlaceMode: boolean;
   syncMegotsWeightFromCount: (value: string) => void;
   syncMegotsWeightFromWeight: (value: string) => void;
+  syncMegotsCondition: (value: ActionMegotsCondition) => void;
+  conditionError?: string;
 }) {
   if (isCleanPlaceMode) return <HarvestCleanPlaceSection />;
   return (
     <div className="grid gap-3 lg:grid-cols-3">
+      <div className="space-y-3 lg:col-span-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+        <WasteMeasurementMethod value={form.wasteMeasurementMethod} onChange={(value) => updateField("wasteMeasurementMethod", value)} />
+        <MegotsConditionSelector value={form.wasteMegotsCondition} onChange={syncMegotsCondition} error={conditionError} />
+      </div>
       <HarvestMeasurementSlider
         id="harvest-waste-kg"
         exactInputId="harvest-waste-kg-exact"
@@ -177,6 +186,8 @@ function HarvestStepContent({
         isCleanPlaceMode={isCleanPlaceMode}
         syncMegotsWeightFromCount={syncMegotsWeightFromCount}
         syncMegotsWeightFromWeight={syncMegotsWeightFromWeight}
+        syncMegotsCondition={syncMegotsCondition}
+        conditionError={validationIssues.find((issue) => issue.field === "wasteMegotsCondition")?.message}
       />
     );
   }
@@ -261,6 +272,7 @@ function HarvestStepContent({
             onMegotsVolumeChange={harvest.syncMegotsVolume}
             onMegotsCountChange={syncMegotsWeightFromCount}
             onMegotsConditionChange={syncMegotsCondition}
+            conditionError={validationIssues.find((issue) => issue.field === "wasteMegotsCondition")?.message}
             hidePrimaryMeasurements={mode === "collection" || mode === "details"}
           />
         </div>

@@ -37,6 +37,38 @@ const actionPhaseSchema = z.enum([
 ]);
 const actionContextSchema = z.enum(["citizen", "company", "school"]);
 
+function addButtsConditionIssue(value: unknown, ctx: z.RefinementCtx) {
+  if (!value || typeof value !== "object") return;
+  const root = value as Record<string, unknown>;
+  const metadata = (root.metadata && typeof root.metadata === "object"
+    ? root.metadata
+    : root) as Record<string, unknown>;
+  const measurements = metadata.cigaretteButtsMeasurements &&
+      typeof metadata.cigaretteButtsMeasurements === "object"
+    ? metadata.cigaretteButtsMeasurements as Record<string, unknown>
+    : {};
+  const lots = measurements.cigaretteButtsLots ?? metadata.cigaretteButtsLots ?? root.cigaretteButtsLots;
+  if (Array.isArray(lots) && lots.length > 0) return;
+
+  const count = measurements.cigaretteButtsCount ?? metadata.cigaretteButtsCount ?? root.cigaretteButtsCount ?? root.cigaretteButts;
+  const mass = measurements.cigaretteButtsMassKg ?? metadata.cigaretteButtsMassKg ?? root.cigaretteButtsMassKg ?? root.cigaretteButtsKg;
+  const volume = measurements.cigaretteButtsVolumeLiters ?? metadata.cigaretteButtsVolumeLiters ?? root.cigaretteButtsVolumeLiters;
+  const enteredCount = [count, mass, volume].filter((entry) => entry !== null && entry !== undefined).length;
+  const source = measurements.cigaretteButtsInputSource;
+  const condition = measurements.cigaretteButtsCondition ?? metadata.cigaretteButtsCondition ?? root.cigaretteButtsCondition;
+  const hasConvertibleSource = enteredCount === 1 ||
+    source === "count" || source === "mass" || source === "mass_kg" || source === "volume_l";
+  if (hasConvertibleSource && condition == null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: measurements.cigaretteButtsCondition !== undefined
+        ? ["cigaretteButtsMeasurements", "cigaretteButtsCondition"]
+        : ["cigaretteButtsCondition"],
+      message: "Choisissez l’état des mégots pour calculer leurs équivalents.",
+    });
+  }
+}
+
 const eventTimeSchema = z
   .string()
   .trim()
@@ -320,6 +352,7 @@ const createActionContractSchema = z.object({
 
 export const createActionSchema = z
   .union([createActionLegacySchema, createActionContractSchema])
+  .superRefine(addButtsConditionIssue)
   .transform(
     (value): CreateActionPayload =>
       normalizeCreatePayload(
@@ -347,6 +380,7 @@ export const updateActionSchema = createActionLegacyBaseSchema
     reason: z.string().trim().max(500).optional(),
   })
   .superRefine((value, ctx) => {
+    addButtsConditionIssue(value, ctx);
     addCompletedActionFutureDateIssue(value, ctx);
     addTemporalContractIssue(value, ctx);
     addPreActionVolunteerForecastIssue(value, ctx);

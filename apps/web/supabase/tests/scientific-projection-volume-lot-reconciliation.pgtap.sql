@@ -1,6 +1,12 @@
 begin;
 
-select plan(29);
+select plan(32);
+
+select is(
+  public.current_public_impact_projection_version(),
+  'impact-terrain-public-2026.09-v8',
+  'the current volume proxy has a new public projection identity'
+);
 
 select has_table(
   'public',
@@ -172,17 +178,17 @@ select lives_ok(
       jsonb_build_object(
         'action_id', (select volume_action_id from scientific_projection_fixture),
         'source_updated_at', (select volume_source_updated_at from scientific_projection_fixture),
-        'projected_count', 700,
+        'projected_count', 600,
         'recalculation_status', 'recalculable',
         'projection_version', public.current_public_impact_projection_version(),
         'projected_lot_results', jsonb_build_array(jsonb_build_object(
           'id', 'volume-v1', 'source', 'volume_l', 'value', 1,
-          'condition', 'propre', 'count', 700, 'massKg', 0.22,
+          'condition', 'propre', 'count', 600, 'massKg', 0.132,
           'rawMassKg', null, 'rawVolumeLiters', 1,
           'countProvenance', 'volume_converted',
           'massProvenance', 'weight_converted',
           'massConversionFormulaVersion', 'cleanmymap-butts-mass-v1',
-          'volumeConversionFormulaVersion', 'cleanmymap-butts-volume-v2'
+          'volumeConversionFormulaVersion', 'cleanmymap-butts-volume-v3'
         ))
       ),
       jsonb_build_object(
@@ -251,21 +257,21 @@ select is(
   (select (public.project_public_impact_action_with_current_butt_projection(a)).cigarette_butts::bigint
    from public.actions a
    where a.id = (select volume_action_id from scientific_projection_fixture)),
-  700::bigint,
-  'a retained one-liter v1 lot is projected at 700 in the current action view'
+  600::bigint,
+  'a retained one-liter lot is projected at the current 600-count estimate'
 );
 select is(
   (select (public.build_public_impact_action_contribution(a)).cigarette_butts
    from public.actions a
    where a.id = (select volume_action_id from scientific_projection_fixture)),
-  700::bigint,
+  600::bigint,
   'the public contribution builder consumes the current volume projection'
 );
 select is(
   (select (public.build_public_impact_action_contribution(a)).butts_propre_count
    from public.actions a
    where a.id = (select volume_action_id from scientific_projection_fixture)),
-  700::bigint,
+  600::bigint,
   'condition counts use the recalculated lot result without double counting'
 );
 select is(
@@ -276,7 +282,7 @@ select is(
   'the current contribution is labelled with the current projection version'
 );
 select ok(
-  (select projected_lot_results @> '[{"volumeConversionFormulaVersion":"cleanmymap-butts-volume-v2"}]'::jsonb
+  (select projected_lot_results @> '[{"volumeConversionFormulaVersion":"cleanmymap-butts-volume-v3"}]'::jsonb
    from public.public_impact_action_cigarette_butt_projections
    where action_id = (select volume_action_id from scientific_projection_fixture)),
   'the current volume conversion version is retained in provenance'
@@ -368,8 +374,8 @@ select lives_ok(
 select is(
   (select cigarette_butts from public.public_impact_action_contributions
    where action_id = (select volume_action_id from scientific_projection_fixture)),
-  700::bigint,
-  'full reconstruction stores the current 700-count public contribution'
+  600::bigint,
+  'full reconstruction stores the current 600-count public contribution'
 );
 select is(
   (select methodology_version from public.public_impact_action_aggregate_state where state_id = true),
@@ -384,6 +390,22 @@ select lives_ok(
     (select rows from scientific_projection_rows)
   )$$,
   'replaying the full reconstruction is idempotent'
+);
+update public.public_impact_action_aggregate_state
+set methodology_version = 'impact-terrain-public-2026.09-v7'
+where state_id = true;
+select lives_ok(
+  $$select public.advance_public_impact_action_state(
+    current_date - 365,
+    public.current_public_impact_projection_version(),
+    (select rows from scientific_projection_rows)
+  )$$,
+  'the next advance rebuilds state when the projection identity changes'
+);
+select is(
+  (select methodology_version from public.public_impact_action_aggregate_state where state_id = true),
+  public.current_public_impact_projection_version(),
+  'the automatic rebuild publishes the new projection identity'
 );
 create temp table scientific_projection_state_snapshot as
 select to_jsonb(state) - 'initialized_at' - 'updated_at' as value

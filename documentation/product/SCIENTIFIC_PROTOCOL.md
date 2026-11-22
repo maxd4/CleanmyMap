@@ -82,7 +82,7 @@ Le facteur par défaut est `500 L/mégot`. Les conversions en piscines
 équivalences pédagogiques et ne signifient pas qu'un volume équivalent d'eau a
 été dépollué ou économisé.
 
-### Collectes de mégots multi-lots — `cleanmymap-butts-volume-v2`
+### Collectes de mégots multi-lots — `cleanmymap-butts-volume-v3`
 
 Le bilan peut conserver plusieurs lots distincts. Chaque lot possède un
 identifiant stable, une seule source (`count`, `mass_kg` ou `volume_l`), une
@@ -90,9 +90,12 @@ valeur non négative et un état (`propre`, `humide` ou `mouille`). Les unités 
 sont donc additionnées qu'entre lots différents ; un même lot n'est jamais
 recompté à partir de ses équivalents.
 
-Le proxy de volume historique `cleanmymap-butts-volume-v1` utilise
-`600 mégots/L`. La version courante `cleanmymap-butts-volume-v2` utilise
-`700 mégots/L`, indépendamment de l'état. La version courante du proxy
+Le proxy historique `cleanmymap-butts-volume-v1` utilise `600 mégots/L` et la
+version historique `cleanmymap-butts-volume-v2` utilise `700 mégots/L`. La
+version courante `cleanmymap-butts-volume-v3` suit l'ordre de grandeur publié
+par le mode opératoire World Cleanup Day France 2025 : `600 mégots/L`,
+indépendamment de l'état. Les versions v1 et v2 restent disponibles pour
+recalculer explicitement les lots qui les ont enregistrées. La version courante du proxy
 masse/nombre est `impact-terrain-2026-butts-mass-v2` : `0,22 g/mégot` pour
 `propre`, `0,50 g/mégot` pour `humide` et le même proxy `0,50 g/mégot` pour
 `mouille`, faute de référence indépendante. La version historique
