@@ -259,7 +259,7 @@ test("reads nested PostgreSQL JSON SQLSTATE, type and statement position without
       statement: "select private column from private table",
     },
   });
-  const evidence = collectBoundedStartEvidence({ log: "start failed", postgresLog, exitCode: 1, probeCommand: createProbeCommand() });
+  const evidence = collectBoundedStartEvidence({ log: "start failed", postgresLog, postgresServerLog: postgresLog, exitCode: 1, probeCommand: createProbeCommand() });
   const diagnostic = renderSupabaseStartDiagnostic({
     category: classifySupabaseStartFailure({ log: "start failed", exitCode: 1, evidence }),
     exitCode: 1,
@@ -273,6 +273,7 @@ test("reads nested PostgreSQL JSON SQLSTATE, type and statement position without
   assert.equal(evidence.firstErrorDetail, "INVALID_TEXT_REPRESENTATION;type=uuid");
   assert.equal(evidence.firstErrorInstructionLocation, "character_87");
   assert.equal(evidence.firstErrorSource, "POSTGRES_LOG");
+  assert.equal(evidence.postgresServerLogObserved, true);
   assert.match(diagnostic, /postgres_log_observed=true/);
   assert.doesNotMatch(diagnostic, /private-identity|private detail value|select private column|private table/);
 });
@@ -1304,8 +1305,10 @@ test("the workflow keeps startup failure blocking and never prints the raw log",
   assert.match(startScript, /docker events --since "\$start_started_at" --filter type=container/);
   assert.match(startScript, /events_pid=\$!/);
   assert.match(startScript, /docker logs --follow --timestamps "\$container_id" > "\$postgres_log"/);
+  assert.match(startScript, /docker exec "\$container_id" sh -c 'exec tail -n 0 -F \/var\/log\/postgresql\/\*\.json \/var\/lib\/postgresql\/data\/log\/\*\.json 2>\/dev\/null' > "\$postgres_server_log"/);
   assert.match(startScript, /--postgres-log-file="\$postgres_log"/);
-  assert.match(startScript, /rm -f "\$start_log" "\$progress_file" "\$events_file" "\$postgres_log"/);
+  assert.match(startScript, /--postgres-server-log-file="\$postgres_server_log"/);
+  assert.match(startScript, /rm -f "\$start_log" "\$progress_file" "\$events_file" "\$postgres_log" "\$postgres_server_log"/);
   assert.match(startScript, /--docker-events-file="\$events_file"/);
   assert.match(startScript, /if \[\[ "\$start_exit_code" -ne 0 \]\]; then\s+exit "\$start_exit_code"/);
   assert.match(startScript, /cat "\$diagnostic_output"/);

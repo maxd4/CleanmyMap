@@ -130,8 +130,9 @@ ils sont publiés séparément avec un type `lifecycle` ou `cleanup`. L'état du
 réseau est déterminé par le nom exact fourni par le workflow appelant ; il ne
 dépend pas d'un préfixe `supabase`.
 Pendant `supabase start`, le runner conserve aussi temporairement les logs du
-conteneur PostgreSQL dans son espace privé jusqu'à l'extraction du diagnostic,
-puis les supprime avec les autres journaux. Le diagnostic n'en publie que le
+conteneur PostgreSQL et ses fichiers JSON internes dans son espace privé
+jusqu'à l'extraction du diagnostic, puis les supprime avec les autres journaux.
+Le diagnostic n'en publie que le
 SQLSTATE, un type PostgreSQL de la liste autorisée et, si le serveur le fournit,
 un emplacement numérique d'instruction, ainsi qu'un indicateur de disponibilité
 du journal PostgreSQL. Un identifiant de migration n'est publié que lorsqu'une

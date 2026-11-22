@@ -16,6 +16,7 @@ start_log="$temp_root/supabase-start-$run_key.log"
 progress_file="$temp_root/supabase-start-$run_key-progress.ndjson"
 events_file="$temp_root/supabase-start-$run_key-events.ndjson"
 postgres_log="$temp_root/supabase-start-$run_key-postgres.log"
+postgres_server_log="$temp_root/supabase-start-$run_key-postgres-server.log"
 postgres_log_watch_pid=""
 
 cleanup() {
@@ -27,7 +28,7 @@ cleanup() {
     kill "$events_pid" 2>/dev/null || true
     wait "$events_pid" 2>/dev/null || true
   fi
-  rm -f "$start_log" "$progress_file" "$events_file" "$postgres_log"
+  rm -f "$start_log" "$progress_file" "$events_file" "$postgres_log" "$postgres_server_log"
 }
 trap cleanup EXIT
 
@@ -41,13 +42,16 @@ start_pid=$!
 watch_postgres_log() {
   local container_id=""
   local docker_log_pid=""
-  trap 'if [[ -n "$docker_log_pid" ]]; then kill "$docker_log_pid" 2>/dev/null || true; wait "$docker_log_pid" 2>/dev/null || true; fi' EXIT
+  local server_log_pid=""
+  trap 'if [[ -n "$docker_log_pid" ]]; then kill "$docker_log_pid" 2>/dev/null || true; wait "$docker_log_pid" 2>/dev/null || true; fi; if [[ -n "$server_log_pid" ]]; then kill "$server_log_pid" 2>/dev/null || true; wait "$server_log_pid" 2>/dev/null || true; fi' EXIT
   while kill -0 "$start_pid" 2>/dev/null; do
     container_id="$(docker ps -q --filter 'name=supabase_db_web' | head -n 1)"
     if [[ -n "$container_id" ]]; then
       docker logs --follow --timestamps "$container_id" > "$postgres_log" 2>&1 &
       docker_log_pid=$!
-      wait "$docker_log_pid" || true
+      docker exec "$container_id" sh -c 'exec tail -n 0 -F /var/log/postgresql/*.json /var/lib/postgresql/data/log/*.json 2>/dev/null' > "$postgres_server_log" 2>&1 &
+      server_log_pid=$!
+      while kill -0 "$start_pid" 2>/dev/null; do sleep 0.2; done
       return
     fi
     sleep 0.2
@@ -76,6 +80,7 @@ set +e
 node "$root/scripts/ci/diagnose-supabase-start.mjs" \
   --log-file="$start_log" \
   --postgres-log-file="$postgres_log" \
+  --postgres-server-log-file="$postgres_server_log" \
   --progress-file="$progress_file" \
   --docker-events-file="$events_file" \
   --expected-network="$network" \
