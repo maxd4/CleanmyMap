@@ -245,7 +245,7 @@ test("classifies only allowlisted service and exit details from the first Docker
   assert.doesNotMatch(JSON.stringify(event), /private\/image|secret/);
 });
 
-test("prefers the first sanitized Docker CLI error over later Docker lifecycle events", () => {
+test("prefers a specific sanitized Docker CLI error over later Docker lifecycle events", () => {
   const evidence = collectBoundedStartEvidence({
     log: "Error: no space left on device",
     dockerEvents: JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1" } } }),
@@ -254,6 +254,19 @@ test("prefers the first sanitized Docker CLI error over later Docker lifecycle e
   });
   assert.equal(evidence.firstErrorSource, "SUPABASE_CLI_LOG");
   assert.equal(evidence.firstErrorSignal, "RESOURCE");
+});
+
+test("uses a classified Docker event when the first CLI error is generic", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "Error: start failed",
+    dockerEvents: JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1" } } }),
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+  assert.equal(evidence.firstErrorSource, "DOCKER_EVENT");
+  assert.equal(evidence.firstErrorSignal, "DOCKER_DIE");
+  assert.equal(evidence.firstErrorExcerpt, "event=die;service=db;exit_code=1");
+  assert.equal(evidence.failureService, "db");
 });
 
 test("uses the first Docker failure event when the CLI log contains no classifiable error", () => {

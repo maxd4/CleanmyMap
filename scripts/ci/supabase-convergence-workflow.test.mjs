@@ -71,6 +71,7 @@ test("SQL proof is an independent serialized lane and application E2E no longer 
   assert.match(sqlWorkflow, /CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION:/);
   assert.match(sqlWorkflow, /run-supabase-sql-proof\.mjs/);
   assert.match(sqlWorkflow, /cleanmymap-supabase-sql-evidence/);
+  assert.match(sqlWorkflow, /hashFiles\('artifacts\/ci-public-evidence\/evidence\/supabase-sql\.json'\) != ''[\s\S]*?steps\.validate_evidence\.outcome == 'success'/);
   assert.doesNotMatch(sqlWorkflow, /CMM_E2E_CLERK_DEV_BACKEND_TOKEN|CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY/);
   assert.doesNotMatch(e2eWorkflow, /run-supabase-sql-proof\.mjs/);
   assert.match(e2eWorkflow, /Run SPOGOMI Cachan mixed integration on ephemeral Supabase/);

@@ -393,7 +393,13 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
   const progressSnapshots = normalizeProgressSnapshots(startProgressSnapshots);
   const firstLogError = inferFirstErrorEvidence(log);
   const firstDockerError = parseFirstDockerFailureEvent(dockerEvents);
-  const firstError = firstLogError.signal !== "NONE" ? { ...firstLogError, source: "SUPABASE_CLI_LOG" } : { ...firstDockerError, source: firstDockerError.signal === "NONE" ? "UNAVAILABLE" : "DOCKER_EVENT" };
+  const dockerEventIsMoreSpecific = firstLogError.signal === "UNKNOWN_ERROR" && firstDockerError.signal !== "NONE";
+  const firstError = dockerEventIsMoreSpecific
+    ? { ...firstDockerError, source: "DOCKER_EVENT" }
+    : firstLogError.signal !== "NONE"
+      ? { ...firstLogError, source: "SUPABASE_CLI_LOG" }
+      : { ...firstDockerError, source: firstDockerError.signal === "NONE" ? "UNAVAILABLE" : "DOCKER_EVENT" };
+  const dockerEventService = firstDockerError.excerpt.match(/;service=([a-z-]+)/)?.[1] ?? null;
   const evidence = {
     schemaVersion: 3,
     evidenceCodes: [],
@@ -418,7 +424,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     configContract: configContract.valid ? "valid" : configContract.available ? "invalid" : "unavailable",
     configuredPorts: configContract.ports,
     startPhase: inferStartStep(log),
-    failureService: inferFailureService(log),
+    failureService: dockerEventIsMoreSpecific ? dockerEventService : inferFailureService(log),
     firstErrorSignal: firstError.signal,
     firstErrorExcerpt: firstError.excerpt,
     firstErrorSource: firstError.source,
