@@ -300,6 +300,75 @@ describe('mobile companion mission controller runtime', () => {
     expect(state.alert).toHaveBeenCalledWith('Suivi GPS impossible', 'Permission GPS refusée.')
   })
 
+  it('reports a failed server restore and resumes only after an explicit retry succeeds', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    state.restoreActiveTracking.mockResolvedValue('mission-1')
+    state.getMission
+      .mockResolvedValueOnce({ ok: false, error: 'Mission temporairement inaccessible.' })
+      .mockResolvedValueOnce({ ok: true, data: mission })
+    const { getController } = await renderController()
+
+    await act(async () => { await settle() })
+
+    expect(getController().phase).toBe('error')
+    expect(getController().mission).toBeNull()
+    expect(getController().errorMsg).toContain('Mission temporairement inaccessible.')
+    expect(state.ensureNativeTracking).not.toHaveBeenCalled()
+
+    await act(async () => { getController().handleRetryMission(); await settle() })
+
+    expect(state.getMission).toHaveBeenCalledTimes(2)
+    expect(getController().phase).toBe('tracking')
+    expect(getController().mission?.id).toBe('mission-1')
+    expect(getController().errorMsg).toBeNull()
+  })
+
+  it('does not announce completion until server finalization resolves and exposes its active stage', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    const finalization = deferred<{ ok: true; data: Mission }>()
+    state.stopTracking.mockImplementationOnce((_missionId, onStage) => {
+      onStage('finalizing')
+      return finalization.promise
+    })
+    const { getController } = await renderController()
+    await act(async () => { await getController().handleStartMobileMission(); await settle() })
+    await act(async () => { getController().handleStop() })
+    const buttons = state.alert.mock.calls.at(-1)?.[2] as Array<{ text: string; onPress?: () => void }>
+
+    await act(async () => { buttons.find((button) => button.text === 'Terminer')?.onPress?.(); await settle() })
+
+    expect(getController().phase).toBe('stopping')
+    expect(getController().finalizationStage).toBe('finalizing')
+    expect(getController().completionSummary).toBeNull()
+    expect(state.clearStoredForegroundTrack).not.toHaveBeenCalled()
+
+    finalization.resolve({ ok: true, data: { ...mission, status: 'completed', distance_m: 120, duration_s: 1800 } })
+    await act(async () => { await finalization.promise; await settle() })
+
+    expect(getController().phase).toBe('idle')
+    expect(getController().finalizationStage).toBeNull()
+    expect(getController().completionSummary?.distance_m).toBe(120)
+    expect(state.clearStoredForegroundTrack).toHaveBeenCalledWith('user-a', 'mission-1')
+  })
+
+  it('updates elapsed duration from seconds to minutes without changing mission ownership', async () => {
+    vi.setSystemTime(new Date('2026-11-22T10:00:45.000Z'))
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    state.startMobileMission.mockResolvedValueOnce({
+      ok: true,
+      data: { ...mission, started_at: '2026-11-22T10:00:00.000Z' },
+    })
+    const { getController } = await renderController()
+
+    await act(async () => { await getController().handleStartMobileMission(); await settle() })
+    expect(getController().duration).toBe('45s')
+
+    await act(async () => { vi.advanceTimersByTime(15_000); await settle() })
+
+    expect(getController().duration).toBe('1m 0s')
+    expect(getController().mission?.volunteer_id).toBe('user-a')
+  })
+
   it('hides A data on the first render under B and ignores a late start from A', async () => {
     state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
     let resolveStart!: (value: { ok: true; data: Mission }) => void

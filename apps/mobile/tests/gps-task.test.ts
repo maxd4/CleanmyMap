@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSupabaseMock } from './support/tracking-mocks'
+import { getClerkUserId } from '../shared/lib/supabase'
 
 type GpsClient = { from: (table: string) => { upsert: ReturnType<typeof vi.fn> } }
 
@@ -155,6 +156,35 @@ describe('mobile GPS TaskManager task', () => {
     expect(upsert).not.toHaveBeenCalled()
     expect(state.bufferedPoints).toEqual([])
     expect(state.flushCount).toBe(0)
+  })
+
+  it('ignores a GPS batch when Clerk changes after the client is resolved', async () => {
+    const upsert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ upsert })) }
+    vi.mocked(getClerkUserId).mockClear()
+    vi.mocked(getClerkUserId)
+      .mockResolvedValueOnce('user_123')
+      .mockResolvedValueOnce('user_b')
+
+    await state.task?.({ data: { locations: [location] } })
+
+    expect(getClerkUserId).toHaveBeenCalledTimes(2)
+    expect(upsert).not.toHaveBeenCalled()
+    expect(state.bufferedPoints).toEqual([])
+    expect(state.flushCount).toBe(0)
+  })
+
+  it('buffers the same idempotent GPS point when the native client throws during insert', async () => {
+    const upsert = vi.fn(async () => { throw 'connection reset' })
+
+    await runGpsTaskWithInsert(upsert)
+
+    expect(upsert).toHaveBeenCalledOnce()
+    expect(state.bufferedPoints).toHaveLength(1)
+    const attemptedPoint = (upsert.mock.calls as unknown[][])[0]?.[0] as { client_point_id: string }
+    const bufferedPoint = state.bufferedPoints[0] as { client_point_id: string }
+    expect(bufferedPoint.client_point_id).toBe(attemptedPoint.client_point_id)
+    expect(state.flushCount).toBe(1)
   })
 
   it('ignores an OS task error or an empty wake without touching storage', async () => {
