@@ -165,7 +165,10 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
       form.cigaretteButtsCount,
       form.wasteMegotsKg,
       form.cigaretteButtsVolumeLiters,
-    ].some((value) => value.trim() !== "");
+    ].some((value) => {
+      const numericValue = Number(value.trim());
+      return value.trim() !== "" && Number.isFinite(numericValue) && numericValue > 0;
+    });
     if (hasScalarButtsMeasurement && !form.wasteMegotsCondition) {
       issues.push({
         field: "wasteMegotsCondition",
@@ -184,36 +187,45 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
     value: number;
     condition: "propre" | "humide" | "mouille";
   }>;
+  let canCalculateTotal = true;
   for (const lot of form.cigaretteButtsLots) {
     const value = lot.value.trim();
     const numericValue = Number(value);
-    if (!value) continue;
+    if (!value) {
+      canCalculateTotal = false;
+      continue;
+    }
     if (!lot.id.trim() || seen.has(lot.id.trim())) {
       issues.push({ field: "cigaretteButtsLots", message: "Chaque lot de mégots doit avoir un identifiant unique." });
     }
     seen.add(lot.id.trim());
     if (!Number.isFinite(numericValue) || numericValue < 0) {
       issues.push({ field: "cigaretteButtsLots", message: "Chaque lot de mégots doit contenir une valeur numérique non négative." });
+      canCalculateTotal = false;
       continue;
     }
     if (lot.source === "count" && (!Number.isInteger(numericValue) || numericValue > MAX_CIGARETTE_BUTTS_COUNT)) {
       issues.push({ field: "cigaretteButtsLots", message: `Un lot compté doit être un entier compris entre 0 et ${MAX_CIGARETTE_BUTTS_COUNT}.` });
+      canCalculateTotal = false;
       continue;
     }
     if (lot.source !== "count" && numericValue > ACTION_MEASUREMENT_MAX_KG) {
       issues.push({ field: "cigaretteButtsLots", message: `La masse ou le volume d’un lot doit rester inférieur ou égal à ${ACTION_MEASUREMENT_MAX_KG}.` });
+      canCalculateTotal = false;
       continue;
     }
+    if (numericValue === 0 && !lot.condition) continue;
     if (!lot.condition) {
       issues.push({
         field: "cigaretteButtsLots",
         message: `Choisissez l’état du lot ${lot.id} pour calculer ses équivalents.`,
       });
+      canCalculateTotal = false;
       continue;
     }
     calculableLots.push({ id: lot.id.trim(), source: lot.source, value: numericValue, condition: lot.condition });
   }
-  if (calculableLots.length === form.cigaretteButtsLots.length) {
+  if (canCalculateTotal) {
     const totalMessage = getCigaretteButtsLotsTotalLimitMessage(
       calculateCigaretteButtsLotsTotalCount(calculableLots),
     );

@@ -84,6 +84,26 @@ describe("action declaration submission model", () => {
     expect(getCompleteDeclarationIssues(lot).some((issue) => issue.field === "cigaretteButtsLots")).toBe(true);
   });
 
+  it("accepts explicit zero but still requires a state for positive cigarette-butt conversions", () => {
+    const zeroScalars = buildValidCompleteDeclaration();
+    zeroScalars.cigaretteButtsCount = "0";
+    zeroScalars.wasteMegotsKg = "0";
+    zeroScalars.cigaretteButtsVolumeLiters = "0";
+    expect(getCompleteDeclarationIssues(zeroScalars)).toEqual([]);
+
+    const zeroLot = buildValidCompleteDeclaration();
+    zeroLot.cigaretteButtsLots = [{ id: "zero", source: "count", value: "0", condition: "" }];
+    expect(getCompleteDeclarationIssues(zeroLot)).toEqual([]);
+
+    const positiveLot = buildValidCompleteDeclaration();
+    positiveLot.cigaretteButtsLots = [{ id: "positive", source: "count", value: "600", condition: "" }];
+    expect(getCompleteDeclarationIssues(positiveLot)).toContainEqual(
+      expect.objectContaining({ field: "cigaretteButtsLots" }),
+    );
+    positiveLot.cigaretteButtsLots[0]!.condition = "propre";
+    expect(getCompleteDeclarationIssues(positiveLot)).toEqual([]);
+  });
+
   it("reports each missing step-one guard without changing the form", () => {
     const form = {
       ...createInitialFormState("Alex", "action"),
