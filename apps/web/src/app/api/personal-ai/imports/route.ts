@@ -22,6 +22,7 @@ const importRow = z.object({
 }).strict().refine((row) => (row.costAmount === null) === (row.costCurrency === null));
 
 const requestSchema = z.object({ rows: z.array(importRow).min(1).max(20_000) }).strict();
+// no-store: owner-scoped usage and billing metadata must never enter a shared cache.
 const noStore = { "Cache-Control": "private, no-store" };
 
 class ImportBodyTooLargeError extends Error {}

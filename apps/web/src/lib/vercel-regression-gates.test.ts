@@ -97,6 +97,10 @@ describe("vercel regression gates", () => {
         "3fa9d62c47ee689f4b7042f4a308b293f43dfaa6",
       ],
       [
+        "apps/web/src/app/api/personal-ai/imports/route.ts",
+        "d035f6ee5337545634d38103109aff42cb6e07af",
+      ],
+      [
         "apps/web/src/app/api/reports/generations/[id]/csv/route.ts",
         "3a596b982c52915cda660317ace7c19b54afb4dd",
       ],

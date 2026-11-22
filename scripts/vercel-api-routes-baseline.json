@@ -533,6 +533,13 @@
       "reason": "Surface privée owner-scoped pour corriger, exclure, réactiver et supprimer une déclaration personnelle adressée par UUID.",
       "costContract": "PATCH/DELETE authentifiés, UUID validé, filtre d'identifiant et owner côté serveur, RLS Clerk, payload PATCH plafonné à 32 KiB, réponses private/no-store et 404 indistinguable en cas de non-propriété.",
       "reviewedAt": "2026-11-21"
+    },
+    {
+      "route": "apps/web/src/app/api/personal-ai/imports/route.ts",
+      "introducedBy": "d035f6ee5337545634d38103109aff42cb6e07af",
+      "reason": "Confirmation explicite owner-scoped des relevés IA normalisés, après aperçu local des sources, révisions et chevauchements.",
+      "costContract": "POST authentifié, corps plafonné à 16 MB, lignes normalisées et recalculées côté serveur, RPC PostgreSQL atomique et owner-derived, import réessayable idempotent, réponses private/no-store et aucun fichier brut transmis.",
+      "reviewedAt": "2026-11-22"
     }
   ],
   "apiRoutes": [
@@ -686,6 +693,7 @@
     "apps/web/src/app/api/partners/published-directory/route.ts",
     "apps/web/src/app/api/personal-ai/declarations/[id]/route.ts",
     "apps/web/src/app/api/personal-ai/declarations/route.ts",
+    "apps/web/src/app/api/personal-ai/imports/route.ts",
     "apps/web/src/app/api/pilotage/overview/route.ts",
     "apps/web/src/app/api/recycling/breakdown/route.ts",
     "apps/web/src/app/api/reports/actions.csv/route.ts",
