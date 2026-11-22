@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { canManageAction } from "@/lib/actions/permissions";
+import { resolveAccessibilitySupportOrganizerAccess } from "@/lib/actions/accessibility-support-access";
 import {
   deleteOwnActionAccessibilitySupportRequest,
   loadActionAccessibilitySupportRequestsForOrganizer,
@@ -7,11 +7,9 @@ import {
   saveActionAccessibilitySupportRequest,
   updateActionAccessibilityCheckIn,
 } from "@/lib/actions/accessibility-support";
-import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { loadParticipantProfilesForUserIds } from "@/lib/actions/participation/group-participation.helpers";
 import { readActionRegistrationRecord } from "@/lib/actions/participation/registration-records";
-import { loadActionById } from "@/lib/actions/store";
-import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz";
+import { requireAuthenticatedAccess } from "@/lib/authz";
 import { handleApiError } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -31,18 +29,10 @@ async function resolveActionId(context: AccessibilitySupportContext): Promise<st
 
 async function resolveOrganizerAccess(actionId: string, userId: string) {
   const supabase = getSupabaseServerClient(true);
-  const action = await loadActionById(supabase, actionId);
-  if (!action) return { supabase, action: null, isOrganizer: false };
-  const identity = await getCurrentUserIdentity({ userId });
-  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, actionId);
+  const access = await resolveAccessibilitySupportOrganizerAccess(supabase, { actionId, userId });
   return {
     supabase,
-    action,
-    isOrganizer: canManageAction(
-      { userId, role: identity?.role ?? null, activeRole: identity?.activeRole ?? null },
-      { createdByClerkId: action.created_by_clerk_id },
-      organizerIds,
-    ),
+    ...access,
   };
 }
 
@@ -126,13 +116,13 @@ export async function PATCH(request: Request, context: AccessibilitySupportConte
     const resolved = await resolveOrganizerAccess(actionId, access.userId);
     if (!resolved.action) return notFound();
     if (!resolved.isOrganizer) return NextResponse.json({ error: "Forbidden." }, { status: 403, headers: PRIVATE_HEADERS });
-    const updated = await updateActionAccessibilityCheckIn(resolved.supabase, {
+    await updateActionAccessibilityCheckIn(resolved.supabase, {
       actionId,
       requestId: value.requestId,
       field: value.field as "arrival_status" | "contact_status" | "departure_status",
       status: value.status,
     });
-    return NextResponse.json({ status: "ok", request: updated }, { headers: PRIVATE_HEADERS });
+    return NextResponse.json({ status: "ok", updated: true }, { headers: PRIVATE_HEADERS });
   } catch (error) {
     return handleApiError(error, "PATCH /api/actions/[actionId]/accessibility-support");
   }

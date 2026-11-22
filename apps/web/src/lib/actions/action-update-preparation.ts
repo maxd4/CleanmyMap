@@ -55,16 +55,25 @@ export function prepareActionUpdateBody(
     withFormalitiesWorkflow,
   ) as typeof parsedBody.preparationData;
 
+  const currentObservedMeasures = (
+    current.preparation_data as ActionPreparationData | null | undefined
+  )?.accessibilityObservedMeasures;
+  const preparationDataWithObservedMeasures = { ...preservedPreparationData } as Record<string, unknown>;
+  delete preparationDataWithObservedMeasures.accessibilityObservedMeasures;
+  if (Array.isArray(currentObservedMeasures)) {
+    preparationDataWithObservedMeasures.accessibilityObservedMeasures = structuredClone(currentObservedMeasures);
+  }
+
   const legacyPreparationState = (
     current.preparation_data as ActionPreparationData | null | undefined
   )?.preparationState;
   const nextLegacyPreparationState = (
-    preservedPreparationData as ActionPreparationData | null | undefined
+    preparationDataWithObservedMeasures as ActionPreparationData | null | undefined
   )?.preparationState;
   const preparationDataWithLegacyCompatibility =
     legacyPreparationState && preservedPreparationData && nextLegacyPreparationState === undefined
-      ? ({ ...preservedPreparationData, preparationState: legacyPreparationState } as typeof parsedBody.preparationData)
-      : preservedPreparationData;
+      ? ({ ...preparationDataWithObservedMeasures, preparationState: legacyPreparationState } as typeof parsedBody.preparationData)
+      : preparationDataWithObservedMeasures as typeof parsedBody.preparationData;
 
   return { ...parsedBody, preparationData: preparationDataWithLegacyCompatibility };
 }

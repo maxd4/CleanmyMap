@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(27);
 
 select has_table('public', 'action_accessibility_support_requests', 'private action accessibility requests exist');
 select ok((select relrowsecurity from pg_class where oid = 'public.action_accessibility_support_requests'::regclass), 'private requests have RLS enabled');
@@ -67,6 +67,36 @@ select is((
 ), current_date + 150, 'private request expiry follows the revised action date');
 select lives_ok($$update public.actions set action_date = current_date - 91 where id = (select action_id from accessibility_support_fixture)$$, 'moving an action far enough into the past reconciles an already-expired request');
 select is((select count(*)::integer from public.action_accessibility_support_requests request join accessibility_support_fixture fixture on fixture.request_id = request.id), 0, 'requests whose revised expiry predates their creation are removed');
+
+do $$
+declare
+  v_action_id uuid := gen_random_uuid();
+  v_request_id uuid := gen_random_uuid();
+begin
+  insert into public.actions (
+    id, created_by_clerk_id, action_date, event_start_time, location_label,
+    status, action_phase, access_mode, moderation_visibility, review_state, published_at
+  ) values (
+    v_action_id, 'accessibility-organizer', current_date + 200, time '10:00', 'Retroactive expiry fixture',
+    'approved', 'pre_action', 'public', 'visible', 'approved', now()
+  );
+  insert into public.action_accessibility_support_requests (
+    id, action_id, requester_user_id, requested_needs, created_at
+  ) values (
+    v_request_id, v_action_id, 'accessibility-participant-retroactive', array['shorter_route'], now() - interval '100 days'
+  );
+  insert into accessibility_support_fixture values (v_action_id, v_request_id);
+end;
+$$;
+
+select is((
+  select (((current_date - 91 + 90)::timestamp at time zone 'UTC') > request.created_at)::integer
+  from public.action_accessibility_support_requests request
+  join accessibility_support_fixture fixture on fixture.request_id = request.id
+  where request.requester_user_id = 'accessibility-participant-retroactive'
+), 1, 'retroactive revised expiry is after request creation but already in the past');
+select lives_ok($$update public.actions set action_date = current_date - 91 where id = (select action_id from accessibility_support_fixture where request_id in (select id from public.action_accessibility_support_requests where requester_user_id = 'accessibility-participant-retroactive'))$$, 'retroactive action date reconciliation completes');
+select is((select count(*)::integer from public.action_accessibility_support_requests where requester_user_id = 'accessibility-participant-retroactive'), 0, 'requests with a revised expiry before now are deleted even when expiry followed creation');
 
 reset role;
 set local role authenticated;

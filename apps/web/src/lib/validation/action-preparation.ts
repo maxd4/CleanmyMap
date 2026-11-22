@@ -124,17 +124,18 @@ export const preparationDataSchema = z
     estimatedDifficulty: z.enum(["facile", "moderee", "soutenue"]).optional(),
     accessibility: z.string().max(1000).optional(),
     accessibilityStatus: accessibilityStatusSchema.optional(),
+    accessibilityObservedMeasures: z.array(z.object({
+      key: z.string().trim().min(1).max(128),
+      definitionHash: z.string().regex(/^[a-f0-9]{64}$/i),
+      label: z.string().trim().min(1).max(120),
+      evidenceKind: z.enum(["organizer_observation", "participant_feedback"]),
+      observedAt: z.string().date(),
+    }).strict()).max(20).optional(),
     accessibilityConditionsSource: z.string().trim().min(1).max(160).optional(),
     accessibilityConditionsVerifiedAt: z.string().date().optional(),
     accessibilityPausePlan: z.string().trim().min(1).max(500).optional(),
     accessibilityEarlyDeparturePlan: z.string().trim().min(1).max(500).optional(),
     accessibilityAlternativeMissions: z.array(z.string().trim().min(1).max(120)).max(8).optional(),
-    accessibilityObservedMeasures: z.array(z.object({
-      key: z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/i),
-      label: z.string().trim().min(1).max(120),
-      evidenceKind: z.enum(["organizer_observation", "participant_feedback"]),
-      observedAt: z.string().date(),
-    }).strict()).max(20).optional(),
     safetyInstructions: z.string().max(2000).optional(),
     recommendedMaterials: z.string().max(2000).optional(),
     materialsProvided: z.string().max(2000).optional(),
@@ -188,6 +189,7 @@ export const preparationDataSchema = z
   .transform(({ actualRoute, operationalRoute, ...rest }) => {
     delete rest.administrativeRequirements;
     delete rest.formalitiesWorkflow;
+    delete rest.accessibilityObservedMeasures;
     return {
       ...rest,
       ...(operationalRoute

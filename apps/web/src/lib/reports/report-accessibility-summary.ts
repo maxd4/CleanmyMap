@@ -1,4 +1,6 @@
+import "server-only";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
+import { getCurrentAccessibilityObservations } from "@/lib/actions/accessibility-observations";
 
 export function buildReportAccessibilitySummary(contracts: readonly ActionDataContract[]) {
   const summary = {
@@ -28,7 +30,7 @@ export function buildReportAccessibilitySummary(contracts: readonly ActionDataCo
       + Number(Boolean(preparation?.accessibilityEarlyDeparturePlan))
       + (preparation?.accessibilityAlternativeMissions?.length ?? 0)
       + Number(Boolean(preparation?.accessibilityAlternativeRouteVersionId));
-    for (const measure of preparation?.accessibilityObservedMeasures ?? []) {
+    for (const measure of getCurrentAccessibilityObservations(preparation)) {
       summary.observedMeasures += 1;
       if (measure.evidenceKind === "organizer_observation") summary.observedByOrganizer += 1;
       if (measure.evidenceKind === "participant_feedback") summary.observedByParticipantFeedback += 1;

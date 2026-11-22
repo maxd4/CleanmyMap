@@ -72,12 +72,15 @@ describe("HTTP preparation data contract", () => {
       accessibilityPausePlan: "Pause au point de rendez-vous",
       accessibilityEarlyDeparturePlan: "Sortie convenue avec le référent",
       accessibilityAlternativeMissions: ["Tri manuel"],
-      accessibilityObservedMeasures: [{ key: "pause-plan", label: "Pause proposée", evidenceKind: "organizer_observation", observedAt: "2026-11-22" }],
+      accessibilityObservedMeasures: [{ key: "pause-plan", definitionHash: "a".repeat(64), label: "Pause proposée", evidenceKind: "organizer_observation", observedAt: "2026-11-22" }],
     } });
     expect(valid.success).toBe(true);
+    if (valid.success) expect(valid.data.preparationData).not.toHaveProperty("accessibilityObservedMeasures");
     expect(updateActionSchema.safeParse({ preparationData: { accessibilityConditionsVerifiedAt: "hier" } }).success).toBe(false);
     expect(updateActionSchema.safeParse({ preparationData: { accessibilityAlternativeMissions: ["x".repeat(121)] } }).success).toBe(false);
-    expect(updateActionSchema.safeParse({ preparationData: { accessibilityObservedMeasures: [{ key: "bad key", label: "Non", evidenceKind: "medical_record", observedAt: "2026-11-22" }] } }).success).toBe(false);
+    const serverManagedAttempt = updateActionSchema.safeParse({ preparationData: { accessibilityObservedMeasures: [{ key: "pause-plan", definitionHash: "a".repeat(64), label: "Non", evidenceKind: "organizer_observation", observedAt: "2026-11-22" }] } });
+    expect(serverManagedAttempt.success).toBe(true);
+    if (serverManagedAttempt.success) expect(serverManagedAttempt.data.preparationData).not.toHaveProperty("accessibilityObservedMeasures");
   });
 
   it("accepts bounded declarative organizational relations on create and PATCH", () => {

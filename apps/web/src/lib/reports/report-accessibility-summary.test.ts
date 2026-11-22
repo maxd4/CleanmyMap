@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 import { buildActionDataContract } from "@/lib/actions/data-contract";
+import { buildDeclaredAccessibilityObservationMeasures } from "@/lib/actions/accessibility-observations";
 import { buildReportAccessibilitySummary } from "./report-accessibility-summary";
 
 function action(id: string, preparationData: Parameters<typeof buildActionDataContract>[0]["preparationData"]) {
@@ -26,20 +28,22 @@ function action(id: string, preparationData: Parameters<typeof buildActionDataCo
 
 describe("report accessibility summary", () => {
   it("counts only public declared status and keeps unevaluated distinct from zero information", () => {
+    const preparation = {
+      accessibilityPausePlan: "Pause possible",
+      accessibilityAlternativeMissions: ["Tri adapté"],
+      accessibilityAlternativeRouteVersionId: "route-1",
+    };
+    const observations = buildDeclaredAccessibilityObservationMeasures(preparation).map((measure, index) => ({
+      ...measure,
+      evidenceKind: index === 0 ? "organizer_observation" as const : "participant_feedback" as const,
+      observedAt: new Date().toISOString().slice(0, 10),
+    }));
     expect(buildReportAccessibilitySummary([
       action("1", { accessibilityStatus: "conditions_reported", accessibility: "Chemin latéral" }),
       action("2", { accessibilityStatus: "obstacles_identified", accessibility: "Marche" }),
       action("3", { accessibilityStatus: "to_confirm" }),
       action("4", {}),
-      action("5", {
-        accessibilityPausePlan: "Pause possible",
-        accessibilityAlternativeMissions: ["Tri adapté"],
-        accessibilityAlternativeRouteVersionId: "route-1",
-        accessibilityObservedMeasures: [
-          { key: "pause-plan", label: "Pauses", evidenceKind: "organizer_observation", observedAt: "2026-11-21" },
-          { key: "alternative-mission-1", label: "Tri adapté", evidenceKind: "participant_feedback", observedAt: "2026-11-21" },
-        ],
-      }),
+      action("5", { ...preparation, accessibilityObservedMeasures: observations }),
     ])).toEqual({
       actionCount: 5,
       informationDeclared: 3,
@@ -52,5 +56,22 @@ describe("report accessibility summary", () => {
       observedByOrganizer: 1,
       observedByParticipantFeedback: 1,
     });
+  });
+
+  it("does not count attestations whose plan definition has changed", () => {
+    const original = {
+      accessibilityAlternativeMissions: ["Tri adapté", "Compostage"],
+    };
+    const oldObservations = buildDeclaredAccessibilityObservationMeasures(original).map((measure) => ({
+      ...measure,
+      evidenceKind: "organizer_observation" as const,
+      observedAt: new Date().toISOString().slice(0, 10),
+    }));
+    const changed = { accessibilityAlternativeMissions: ["Compostage", "Tri manuel"] };
+    const summary = buildReportAccessibilitySummary([
+      action("changed", { ...changed, accessibilityObservedMeasures: oldObservations }),
+    ]);
+    expect(summary.observedMeasures).toBe(1);
+    expect(summary.observedByOrganizer).toBe(1);
   });
 });

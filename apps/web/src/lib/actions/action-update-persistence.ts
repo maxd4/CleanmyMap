@@ -39,6 +39,13 @@ export class ActionUpdateValidationError extends Error {
   }
 }
 
+export class ActionUpdateConflictError extends Error {
+  constructor(message = "L'action a changé pendant la modification. Rechargez-la avant de réessayer.") {
+    super(message);
+    this.name = "ActionUpdateConflictError";
+  }
+}
+
 export type PreparedActionUpdate = {
   body: ActionUpdateInput;
   currentMetadata: ActionMetadata;
@@ -170,18 +177,24 @@ function validateEffectiveWasteCharacterization(params: {
 export async function persistActionUpdate(params: {
   supabase: SupabaseClient;
   actionId: string;
+  expectedRevision: string | null | undefined;
   updateData: Record<string, unknown>;
 }): Promise<{ succeeded: boolean; revision: string | null }> {
   if (Object.keys(params.updateData).length === 0) {
     return { succeeded: false, revision: null };
   }
+  if (typeof params.expectedRevision !== "string" || !params.expectedRevision) {
+    throw new ActionUpdateConflictError("La révision de l'action est indisponible. Rechargez-la avant de réessayer.");
+  }
   const updateResult = await params.supabase
     .from("actions")
     .update(params.updateData)
     .eq("id", params.actionId)
+    .eq("updated_at", params.expectedRevision)
     .select("id, updated_at")
-    .single();
+    .maybeSingle();
   if (updateResult.error) throw new Error("Action update failed");
+  if (!updateResult.data) throw new ActionUpdateConflictError();
   return {
     succeeded: Boolean(updateResult.data),
     revision: typeof updateResult.data?.updated_at === "string" ? updateResult.data.updated_at : null,

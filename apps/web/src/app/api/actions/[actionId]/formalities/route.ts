@@ -233,9 +233,13 @@ export async function PATCH(
       .from("actions")
       .update({ preparation_data: preparationData })
       .eq("id", trimmedActionId)
+      .eq("updated_at", current.updated_at)
       .select("id")
-      .single();
+      .maybeSingle();
     if (updated.error) throw updated.error;
+    if (!updated.data) {
+      return NextResponse.json({ error: "L'action a changé pendant l'enregistrement des formalités. Rechargez-la." }, { status: 409 });
+    }
 
     return responseFor({
       actionId: trimmedActionId,

@@ -14,6 +14,7 @@ export type ActionAccessibilityStatus = (typeof ACTION_ACCESSIBILITY_STATUSES)[n
 export type ActionAccessibilityEvidenceKind = "organizer_observation" | "participant_feedback";
 export type ActionAccessibilityObservedMeasure = {
   key: string;
+  definitionHash: string;
   label: string;
   evidenceKind: ActionAccessibilityEvidenceKind;
   observedAt: string;
@@ -107,11 +108,13 @@ export function normalizeAccessibilityObservedMeasures(value: unknown): ActionAc
     const label = typeof candidate.label === "string" ? candidate.label.trim() : "";
     const observedAt = typeof candidate.observedAt === "string" ? candidate.observedAt : "";
     const evidenceKind = candidate.evidenceKind;
-    if (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(key) || !label || label.length > 120 || seen.has(key)) return [];
+    const definitionHash = typeof candidate.definitionHash === "string" ? candidate.definitionHash : "";
+    if (!/^[a-z0-9][a-z0-9._:-]{0,127}$/i.test(key) || !/^[a-f0-9]{64}$/i.test(definitionHash)
+      || !label || label.length > 120 || seen.has(key)) return [];
     if (evidenceKind !== "organizer_observation" && evidenceKind !== "participant_feedback") return [];
-    if (!isValidCalendarDate(observedAt)) return [];
+    if (!isValidCalendarDate(observedAt) || observedAt > new Date().toISOString().slice(0, 10)) return [];
     seen.add(key);
-    return [{ key, label, evidenceKind, observedAt } as ActionAccessibilityObservedMeasure];
+    return [{ key, definitionHash, label, evidenceKind, observedAt } as ActionAccessibilityObservedMeasure];
   }).slice(0, 20);
   return measures.length > 0 ? measures : undefined;
 }

@@ -550,6 +550,22 @@ export const actionsAuthorizationContract = {
       evidenceScope: "module",
     },
   },
+  "actions/[actionId]/accessibility-observations": {
+    GET: {
+      expected: "Action creator or canonical organizer reads declared measures and only current matching observations",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + resolveAccessibilitySupportOrganizerAccess applies canonical action-manager authorization before returning the minimal current observation projection",
+      evidence: ["requireAuthenticatedAccess", "resolveAccessibilitySupportOrganizerAccess", "getActionAccessibilityObservationState"],
+      evidenceScope: "module",
+    },
+    PATCH: {
+      expected: "Authorized action manager records an observation only for the current stable measurement definition and exact action revision",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + resolveAccessibilitySupportOrganizerAccess + updateActionAccessibilityObservation validates stable definition identity, non-future date and compare-and-swap revision",
+      evidence: ["requireAuthenticatedAccess", "resolveAccessibilitySupportOrganizerAccess", "updateActionAccessibilityObservation"],
+      evidenceScope: "module",
+    },
+  },
   "actions/[actionId]/field-roles": {
     GET: {
       expected: "Authenticated confirmed volunteer reads own per-action responsibilities, or authorized action manager reads the confirmed roster",

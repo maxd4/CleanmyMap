@@ -1,6 +1,8 @@
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { NextResponse } from "next/server";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 import {
+  ActionUpdateConflictError,
   ActionUpdateValidationError,
   persistActionUpdate,
 } from "@/lib/actions/action-update-persistence";
@@ -67,7 +69,12 @@ async function persistScalarActionUpdate({
   updateData: Record<string, unknown>;
   state: PatchExecutionState;
 }) {
-  const actionWrite = await persistActionUpdate({ supabase, actionId, updateData });
+  const actionWrite = await persistActionUpdate({
+    supabase,
+    actionId,
+    expectedRevision: current.updated_at,
+    updateData,
+  });
   recordActionWriteState(state, actionWrite);
   await emitPublishedActionUpdateIfNeeded({
     supabase,
@@ -421,6 +428,9 @@ export async function handlePatchError({
 }): Promise<Response> {
   if (error instanceof ActionUpdateValidationError) {
     return validationErrorResponse({ [error.field]: [error.message] });
+  }
+  if (error instanceof ActionUpdateConflictError) {
+    return NextResponse.json({ error: error.message, code: "revision_conflict" }, { status: 409 });
   }
   if (shouldAuditModeration && auditSnapshots) {
     await appendAdminAuditOnce({

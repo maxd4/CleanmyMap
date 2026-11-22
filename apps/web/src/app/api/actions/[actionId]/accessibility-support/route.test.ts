@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const unauthorizedJsonResponseMock = vi.hoisted(() => vi.fn());
@@ -111,6 +112,10 @@ describe("/api/actions/[actionId]/accessibility-support", () => {
     const { PATCH } = await import("./route");
     const response = await PATCH(new Request("http://localhost/api/actions/action-1/accessibility-support", { method: "PATCH", body: JSON.stringify({ requestId: "request-1", field: "arrival_status", status: null }) }), { params: Promise.resolve({ actionId: "action-1" }) });
     expect(response.status).toBe(200);
+    const responseBody = await response.json();
+    expect(responseBody).toEqual({ status: "ok", updated: true });
+    expect(JSON.stringify(responseBody)).not.toContain("requester_user_id");
+    expect(JSON.stringify(responseBody)).not.toContain("member-1");
     expect(updateActionAccessibilityCheckInMock).toHaveBeenCalledWith(expect.anything(), { actionId: "action-1", requestId: "request-1", field: "arrival_status", status: null });
   });
 

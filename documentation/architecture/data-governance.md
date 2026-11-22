@@ -669,15 +669,24 @@ cache partagé. Le suivi manuel n'est possible qu'après consentement, reste
 réversible à « non renseigné » et ne constitue pas une preuve de présence.
 Les changements de date d'action réconcilient la rétention privée dans la
 même transaction : les demandes dont l'échéance de 90 jours précéderait leur
-création sont supprimées, les autres reçoivent la nouvelle échéance.
+création ou serait déjà passée sont supprimées ; les autres reçoivent la
+nouvelle échéance. L'insertion d'une demande et la modification de date restent
+sérialisées par verrou de ligne.
 
 Les aménagements de préparation sont `DECLARED`. Une ligne `OBSERVED` conserve
-la nature de sa preuve (observation de l'organisateur ou retour participant)
-et sa date ; elle ne transforme pas la déclaration en certification
-d'accessibilité ou en présence. Les rapports ne lisent pas les demandes
-privées. Les itinéraires alternatifs restent des versions planifiées : une
-sélection qui n'est plus la version active est signalée comme incertaine et
-doit être revue.
+une identité stable de mesure, l'empreinte de sa définition, la nature de sa
+preuve (observation de l'organisateur ou retour participant) et sa date, qui ne
+peut être future. La mutation dédiée vérifie la révision de l'action et
+fusionne uniquement l'attestation ; une modification concurrente produit un
+conflit sans écriture. Les PATCH génériques, les mises à jour de formalités et
+la publication préservent les attestations serveur et utilisent la révision
+lue pour refuser une écriture devenue obsolète. Une preuve n'est projetée que
+si la mesure et sa définition correspondent toujours à la préparation
+actuelle ; modifier ou retirer une mesure, ou changer la version de route,
+invalide son ancienne attestation. Les
+rapports ne lisent pas les demandes privées et ne comptent que ces preuves
+encore correspondantes. Une observation ne transforme pas la déclaration en
+certification d'accessibilité ou en présence.
 
 ## Effectif présent et personnes ayant ramassé — CURRENT
 

@@ -220,15 +220,20 @@ export function resetPatchRouteMocks() {
     photos: null,
     visionEstimate: null,
   });
+  const updateResult = {
+    data: { id: "action-test-1", updated_at: "next-revision" },
+    error: null,
+  };
+  const updateResultQuery = {
+    single: vi.fn().mockResolvedValue(updateResult),
+    maybeSingle: vi.fn().mockResolvedValue(updateResult),
+  };
+  const updateFilterQuery = {
+    eq: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnValue(updateResultQuery),
+  };
   updateMock.mockReset().mockReturnValue({
-    eq: vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({
-          data: { id: "action-test-1" },
-          error: null,
-        }),
-      }),
-    }),
+    eq: vi.fn().mockReturnValue(updateFilterQuery),
   });
   fromMock.mockReset().mockImplementation((table: string) => {
     if (table === "action_participants") {

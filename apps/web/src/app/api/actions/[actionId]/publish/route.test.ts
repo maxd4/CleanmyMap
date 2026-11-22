@@ -43,6 +43,7 @@ function createUpdateClient(result: { data: unknown; error: unknown }) {
   };
   return {
     from: vi.fn(() => chain),
+    eq: chain.eq,
     rpc: vi.fn().mockResolvedValue({ data: 0, error: null }),
   };
 }
@@ -60,6 +61,7 @@ describe("POST /api/actions/:actionId/publish", () => {
     loadActionOrganizerIdsForActionMock.mockResolvedValue([]);
     loadActionByIdMock.mockResolvedValue({
       id: "action-1",
+      updated_at: "2026-09-14T09:00:00.000Z",
       created_by_clerk_id: "owner-1",
       action_phase: "pre_action",
       published_at: null,
@@ -75,6 +77,7 @@ describe("POST /api/actions/:actionId/publish", () => {
     const body = await parseJsonSafely(response);
     expect(response.status).toBe(200);
     expect(body).toMatchObject({ status: "published", alreadyPublished: false });
+    expect(supabase.eq).toHaveBeenCalledWith("updated_at", "2026-09-14T09:00:00.000Z");
     const notificationCall: unknown = emitAdministrativeRequirementNotificationsMock.mock.calls[0]?.[0];
     expect(notificationCall).toMatchObject({
       supabase,

@@ -32,9 +32,8 @@ const resolveActionTerritoryMock = vi.hoisted(() =>
   vi.fn<typeof import("@/lib/geo/action-territory-resolver").resolveActionTerritory>(),
 );
 type FormalitiesUpdateQuery = {
-  eq: (column: string, value: unknown) => {
-    select: () => { single: () => Promise<{ data: { id: string } | null; error: Error | null }> };
-  };
+  eq: (column: string, value: unknown) => FormalitiesUpdateQuery;
+  select: (columns: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: Error | null }> };
 };
 type FormalitiesSupabase = {
   from: (table: string) => {
@@ -42,6 +41,13 @@ type FormalitiesSupabase = {
   };
 };
 type FormalitiesUpdate = (values: Record<string, unknown>) => FormalitiesUpdateQuery;
+function createFormalitiesUpdateQuery(result: { data: { id: string } | null; error: Error | null }) {
+  const query: FormalitiesUpdateQuery = {
+    eq: vi.fn(() => query),
+    select: vi.fn(() => ({ maybeSingle: vi.fn().mockResolvedValue(result) })),
+  };
+  return query;
+}
 const supabaseMock = vi.hoisted(() => vi.fn<() => FormalitiesSupabase>());
 const handleApiErrorMock = vi.hoisted(() =>
   vi.fn<typeof import("@/lib/http/api-errors").handleApiError>(),
@@ -81,6 +87,7 @@ vi.mock("@/lib/http/auth-responses", () => ({
 
 const action = (): ActionRow => ({
   id: "action-42",
+  updated_at: "2026-09-01T00:00:00.000Z",
   created_at: "2026-09-01T00:00:00.000Z",
   created_by_clerk_id: "user-1",
   actor_name: "Alice",
@@ -192,13 +199,7 @@ describe("/api/actions/:actionId/formalities", () => {
     loadActionMock.mockResolvedValue(action());
     loadOrganizersMock.mockResolvedValue(["user-1"]);
     resolveActionTerritoryMock.mockResolvedValue(null);
-    update = vi.fn<FormalitiesUpdate>().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: { id: "action-42" }, error: null }),
-        }),
-      }),
-    });
+    update = vi.fn<FormalitiesUpdate>().mockReturnValue(createFormalitiesUpdateQuery({ data: { id: "action-42" }, error: null }));
     from = vi.fn().mockReturnValue({ update });
     supabaseMock.mockReturnValue({ from });
     validationErrorMock.mockImplementation((details) => NextResponse.json({
@@ -331,6 +332,8 @@ describe("/api/actions/:actionId/formalities", () => {
         formalitiesWorkflow: { progress: [{ userStatus: "not_started" }] },
       },
     });
+    const updateQuery = update.mock.results.at(-1)?.value as FormalitiesUpdateQuery;
+    expect(updateQuery.eq).toHaveBeenCalledWith("updated_at", "2026-09-01T00:00:00.000Z");
   });
 
   it("rejects malformed JSON before loading the action", async () => {
@@ -342,6 +345,17 @@ describe("/api/actions/:actionId/formalities", () => {
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "Invalid JSON payload" });
     expect(loadActionMock).not.toHaveBeenCalled();
+  });
+
+  it("returns a conflict when another action edit wins the revision race", async () => {
+    update = vi.fn<FormalitiesUpdate>().mockReturnValue(createFormalitiesUpdateQuery({ data: null, error: null }));
+    from = vi.fn().mockReturnValue({ update });
+    supabaseMock.mockReturnValue({ from });
+    const response = await PATCH(
+      formalitiesRequest({ method: "PATCH", body: JSON.stringify({ facts: formalitiesFacts() }) }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+    expect(response.status).toBe(409);
   });
 
   it("rejects an empty patch before loading the action", async () => {
@@ -373,13 +387,7 @@ describe("/api/actions/:actionId/formalities", () => {
   });
 
   it("returns a server error when persisting the qualification fails", async () => {
-    update = vi.fn<FormalitiesUpdate>().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ error: new Error("database failure") }),
-        }),
-      }),
-    });
+    update = vi.fn<FormalitiesUpdate>().mockReturnValue(createFormalitiesUpdateQuery({ data: null, error: new Error("database failure") }));
     from = vi.fn().mockReturnValue({ update });
     supabaseMock.mockReturnValue({ from });
     const response = await PATCH(

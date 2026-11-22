@@ -106,6 +106,7 @@ async function completeActionPublication({
       formalitiesWorkflow,
     }))
     .eq("id", actionId)
+    .eq("updated_at", current.updated_at)
     .eq("created_by_clerk_id", current.created_by_clerk_id)
     .eq("action_phase", "pre_action")
     .is("published_at", null)

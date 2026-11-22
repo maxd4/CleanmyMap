@@ -4,6 +4,7 @@ import type { ActionUpdateInput } from "./action-update-audit";
 import type { ActionFormalitiesFacts } from "./formalities/qualification";
 import type { ActionFormalitiesWorkflowState } from "./formalities/workflow";
 import { prepareActionUpdate } from "./action-update-persistence";
+import { prepareActionUpdateBody } from "./action-update-preparation";
 import { extractActionMetadataFromNotes } from "./metadata";
 
 const resolveActionDepartmentForPersistenceMock = vi.hoisted(() => vi.fn());
@@ -746,6 +747,30 @@ describe("prepareActionUpdate duration declaration boundary", () => {
       routeTargetDistanceKm: 1,
       routeTargetDistanceSource: "derived",
       routeTargetDistancePolicyVersion: "route-distance-v3",
+    });
+  });
+});
+
+describe("server-owned accessibility observations during generic action edits", () => {
+  it("preserves attestations when a normal preparation edit sends the whole preparation object without them", () => {
+    const observedMeasure = {
+      key: "pause-plan",
+      definitionHash: "e".repeat(64),
+      label: "Modalités de pause prévues",
+      evidenceKind: "organizer_observation" as const,
+      observedAt: new Date().toISOString().slice(0, 10),
+    };
+    const current = buildCurrent({
+      accessibilityPausePlan: "Pause près du banc",
+      accessibilityObservedMeasures: [observedMeasure],
+    });
+    const prepared = prepareActionUpdateBody(current, {
+      preparationData: { accessibilityPausePlan: "Pause près de la fontaine", safetyInstructions: "Rester en binôme" },
+    } as unknown as ActionUpdateInput);
+    expect(prepared.preparationData).toMatchObject({
+      accessibilityPausePlan: "Pause près de la fontaine",
+      safetyInstructions: "Rester en binôme",
+      accessibilityObservedMeasures: [observedMeasure],
     });
   });
 });

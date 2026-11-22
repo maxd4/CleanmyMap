@@ -90,4 +90,15 @@ describe("ActionPreparationData preparation extensions", () => {
     expect(normalizeActionPreparationContract({ accessibilityConditionsVerifiedAt: "hier" })).toEqual({});
     expect(normalizeActionPreparationContract({ accessibilityConditionsVerifiedAt: "2026-02-31" })).toEqual({});
   });
+
+  it("retains only bounded server observations with a non-future date and definition fingerprint", () => {
+    const hash = "d".repeat(64);
+    expect(normalizeActionPreparationContract({ accessibilityObservedMeasures: [
+      { key: "pause-plan", definitionHash: hash, label: "Pause", evidenceKind: "organizer_observation", observedAt: new Date().toISOString().slice(0, 10) },
+      { key: "future", definitionHash: hash, label: "Future", evidenceKind: "participant_feedback", observedAt: "2999-01-01" },
+      { key: "legacy", label: "No version", evidenceKind: "organizer_observation", observedAt: "2026-11-22" },
+    ] })).toEqual({ accessibilityObservedMeasures: [
+      { key: "pause-plan", definitionHash: hash, label: "Pause", evidenceKind: "organizer_observation", observedAt: new Date().toISOString().slice(0, 10) },
+    ] });
+  });
 });
