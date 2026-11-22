@@ -4,9 +4,13 @@ import { publicAction } from "@/fixtures/public-action";
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const fetchActionsMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const loadRetrospectiveMock = vi.hoisted(() => vi.fn());
+const loadRecommendationsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock, fetchActions: fetchActionsMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: getSupabaseServerClientMock }));
+vi.mock("@/lib/actions/action-retrospectives", () => ({ loadPublicActionRetrospective: loadRetrospectiveMock }));
+vi.mock("@/lib/actions/public-action-recommendations.server", () => ({ loadPublicActionRecommendations: loadRecommendationsMock }));
 
 const action = publicAction;
 
@@ -14,6 +18,8 @@ describe("GET /api/actions/[actionId]/public", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fetchActionsMock.mockResolvedValue([]);
+    loadRetrospectiveMock.mockResolvedValue(null);
+    loadRecommendationsMock.mockResolvedValue([]);
     getSupabaseServerClientMock.mockReturnValue({
       rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
       from: vi.fn(() => ({
@@ -58,6 +64,7 @@ describe("GET /api/actions/[actionId]/public", () => {
     };
     loadActionByIdMock.mockResolvedValue(completed);
     fetchActionsMock.mockResolvedValue([candidate]);
+    loadRecommendationsMock.mockResolvedValueOnce([{ id: "future-action", title: "Nettoyage des berges", actionDate: "2099-01-02", eventStartTime: "10:00", sector: "11e arrondissement" }]);
     const { GET } = await import("./route");
     const response = await GET(
       new Request("http://localhost/api/actions/completed-action/public"),
@@ -77,5 +84,62 @@ describe("GET /api/actions/[actionId]/public", () => {
     );
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "Action indisponible" });
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(loadRetrospectiveMock).not.toHaveBeenCalled();
+  });
+
+  it("does not return a private action projection or query retrospective data for a missing action", async () => {
+    loadActionByIdMock.mockResolvedValue(null);
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/missing/public"), { params: Promise.resolve({ actionId: "missing" }) });
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toEqual({ error: "Action indisponible" });
+    expect(loadRetrospectiveMock).not.toHaveBeenCalled();
+    expect(loadRecommendationsMock).not.toHaveBeenCalled();
+  });
+
+  it("exposes only editorial retrospective fields and keeps the public response uncached", async () => {
+    loadActionByIdMock.mockResolvedValue({ ...action, action_phase: "post_action_complete" });
+    loadRetrospectiveMock.mockResolvedValue({
+      thanksMessage: "Merci aux bénévoles",
+      workedWell: "Organisation fluide",
+      blockers: null,
+      improveNextTime: null,
+      publishedAt: "2026-11-01T12:00:00.000Z",
+      updatedAt: "2026-11-01T12:00:00.000Z",
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/result/public"), { params: Promise.resolve({ actionId: "result" }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(body.reference.retrospective).toMatchObject({ thanksMessage: "Merci aux bénévoles", workedWell: "Organisation fluide" });
+    expect(Object.keys(body.reference.retrospective).sort()).toEqual([
+      "blockers", "improveNextTime", "publishedAt", "thanksMessage", "updatedAt", "workedWell",
+    ]);
+    expect(body.reference).not.toHaveProperty("created_by_clerk_id");
+    expect(loadRetrospectiveMock).toHaveBeenCalledWith(expect.anything(), action.id);
+  });
+
+  it("keeps public recommendations best-effort and maps unexpected failures to a generic error", async () => {
+    const completed = { ...action, action_phase: "post_action_complete" as const };
+    loadActionByIdMock.mockResolvedValue(completed);
+    loadRecommendationsMock.mockRejectedValueOnce(new Error("private provider detail"));
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/result/public"), { params: Promise.resolve({ actionId: "result" }) });
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.reference.recommendations).toEqual([]);
+
+    loadActionByIdMock.mockRejectedValueOnce(new Error("private database detail"));
+    const failed = await GET(new Request("http://localhost/api/actions/result/public"), { params: Promise.resolve({ actionId: "result" }) });
+    expect(failed.status).toBe(500);
+    expect(await failed.text()).not.toContain("private database detail");
   });
 });

@@ -96,4 +96,56 @@ describe("/api/mobile/actions/:actionId", () => {
     expect((await DELETE(req("DELETE"), ctx)).status).toBe(401);
     expect(mocks.cancel).not.toHaveBeenCalled();
   });
+
+  it("rejects unauthenticated reads and claims before touching persistence or audit", async () => {
+    mocks.mobileAuth.mockResolvedValue({ ok: false, status: 401, error: "Unauthorized" });
+
+    const read = await GET(req("GET"), ctx);
+    const claim = await POST(req("POST", { intent: "claim" }), ctx);
+
+    expect(read.status).toBe(401);
+    expect(claim.status).toBe(401);
+    expect(mocks.getSupabase).not.toHaveBeenCalled();
+    expect(mocks.loadJoinable).not.toHaveBeenCalled();
+    expect(mocks.loadHistory).not.toHaveBeenCalled();
+    expect(mocks.fetchUnified).not.toHaveBeenCalled();
+    expect(mocks.claim).not.toHaveBeenCalled();
+    expect(mocks.audit).not.toHaveBeenCalled();
+  });
+
+  it("returns a private not-found response when the action is outside the caller's scopes", async () => {
+    const response = await GET(req("GET"), ctx);
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get("cache-control")).toBeNull();
+    expect(await response.json()).toEqual({ error: "Action introuvable." });
+    expect(mocks.loadJoinable).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ userId: "user-mobile", actionId: "action-1" }));
+    expect(mocks.loadHistory).toHaveBeenCalledWith(expect.anything(), { userId: "user-mobile", limit: 200 });
+  });
+
+  it("prevents a third party from cancelling through the owner-scoped service and emits no response cache", async () => {
+    mocks.cancel.mockRejectedValueOnce(Object.assign(new Error("not found"), { name: "NotFoundError" }));
+
+    const response = await DELETE(req("DELETE"), ctx);
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get("cache-control")).toBeNull();
+    expect(await response.json()).toEqual({ error: "Inscription introuvable." });
+    expect(mocks.cancel).toHaveBeenCalledWith(expect.anything(), { actionId: "action-1", userId: "user-mobile" });
+    expect(mocks.refreshProgression).not.toHaveBeenCalled();
+  });
+
+  it("marks the caller-scoped projection private and no-store", async () => {
+    mocks.loadJoinable.mockResolvedValue([{ id: "action-1", joined: true, awaitingApproval: false }]);
+    mocks.loadHistory.mockResolvedValue([{ id: "action-1", joined: true }]);
+
+    const response = await GET(req("GET"), ctx);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(body.participation).toMatchObject({ id: "action-1" });
+    expect(mocks.loadJoinable).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ userId: "user-mobile", actionId: "action-1" }));
+    expect(mocks.loadHistory).toHaveBeenCalledWith(expect.anything(), { userId: "user-mobile", limit: 200 });
+  });
 });
