@@ -319,6 +319,12 @@ un commit local sans push.
 Les protections Git, secrets, intégrité, concurrence et fast-forward restent
 obligatoires, mais un défaut, un préflight Supabase bloqué ou une validation
 manquante ne retient pas un push autrement publiable.
+L'existence d'un ruleset ou un refus d'autorisation seulement supposé ne justifie
+pas un arrêt anticipé : vérifier l'identité Git et ses permissions effectives,
+puis tenter le push normal lorsque le candidat est sûr. Une publication n'est
+acquise qu'après le succès du push, un fetch et la convergence vérifiée de
+`HEAD` et `origin/main` (ahead/behind `0/0`). En cas d'échec réel, rapporter le
+refus observé et l'action nécessaire, sans contourner les hooks ou protections.
 
 ## 8. Exécution, tests, qualité et publication
 
