@@ -319,6 +319,21 @@ technique, pas un organisateur métier par défaut. Le backup
 l'import métier : il valide son payload avant écriture, conserve les identités
 et refuse un format incomplet ou sans version.
 
+L'import personnel IA constitue une frontière distincte, portée par
+`apps/web/src/lib/environmental-impact-estimator/ai-personal-import.ts` et
+`POST /api/personal-ai/imports`. Les fichiers fournisseurs sont analysés dans
+le navigateur; le serveur ne reçoit que des déclarations normalisées et en
+recalcule l'empreinte de contenu puis le snapshot scientifique avant l'appel atomique à
+`public.confirm_personal_ai_import`. La RPC dérive le propriétaire du JWT
+Clerk, sérialise les révisions par `(owner_clerk_id, source_identity_hash)` et
+annule toute la transaction si une ligne est invalide ou chevauche une plage
+active ambiguë. L'identité source et l'empreinte du contenu normalisé sont deux
+hashes distincts. Aucun fichier, nom de fichier, prompt, conversation,
+identifiant source fournisseur, facture brute ou secret d'accès n'est persisté.
+Les périodes inconnues restent `NULL`; une ligne partielle n'entre pas dans un
+agrégat temporel. Les coûts et devises restent distincts des tokens et des
+calculs d'énergie, d'émissions et d'eau.
+
 ### Contrats spécialisés conservés
 
 Les détails d'interface restent dans leurs owners spécialisés ; la présente

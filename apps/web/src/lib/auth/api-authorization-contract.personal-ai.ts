@@ -1,6 +1,16 @@
 import type { ApiAuthorizationContract } from "./api-authorization-contract.types";
 
 export const personalAiAuthorizationContract = {
+  "personal-ai/imports": {
+    POST: {
+      expected: "Authenticated atomic confirmation of normalized imports under the Clerk owner",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess derives the caller before strict validation, server verification of the normalized hash, recalculation, and owner-derived transactional RPC",
+      evidence: ["requireAuthenticatedAccess", "hashPersonalAiImportValue", "calculatePersonalAiDeclaration", "confirm_personal_ai_import", "noStore"],
+      evidenceScope: "module",
+      handlerEvidence: ["requireAuthenticatedAccess", "confirm_personal_ai_import"],
+    },
+  },
   "personal-ai/declarations": {
     GET: {
       expected: "Authenticated owner-scoped declaration list with bounded pagination",

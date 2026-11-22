@@ -1,6 +1,6 @@
 begin;
 
-select plan(33);
+select plan(47);
 
 select ok(has_table('public', 'personal_ai_declarations'), 'private declarations table exists');
 select ok((select relrowsecurity from pg_class where oid = 'public.personal_ai_declarations'::regclass), 'row level security is enabled');
@@ -75,6 +75,76 @@ select set_config('request.jwt.claims', '{"role":"authenticated","sub":"user-a"}
 select is((select count(*)::integer from public.personal_ai_declarations), 1, 'A sees only A declaration');
 select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-b'), 0, 'A cannot query B declaration');
 select lives_ok($$update public.personal_ai_declarations set status = 'EXCLUDED' where owner_clerk_id = 'user-b'$$, 'A update against B is filtered by RLS');
+select lives_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('a', 64), 'normalized_content_hash', repeat('b', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, 'owner A can atomically confirm one normalized import row');
+select is((select import_revision from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('a', 64)), 1, 'first import revision starts at one');
+select lives_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('a', 64), 'normalized_content_hash', repeat('b', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, 'exact retry remains a successful idempotent confirmation');
+select is((select import_revision from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('a', 64)), 1, 'exact retry does not create a revision');
+select lives_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('a', 64), 'normalized_content_hash', repeat('c', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, 'late revision replaces same stable source identity');
+select is((select import_revision from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('a', 64)), 2, 'changed normalized contents increment the revision');
+select throws_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('f', 64), 'normalized_content_hash', repeat('e', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, '23P01', 'overlapping personal AI import scope', 'overlapping provider model scope is rejected');
+select throws_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(
+    jsonb_build_object('declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'), '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb), 'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb, 'methodology_version', 'personal-ai-v1', 'factor_version', '{}', 'source_identity_hash', repeat('d', 64), 'normalized_content_hash', repeat('e', 64), 'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE"}'::jsonb),
+    jsonb_build_object('unexpected', true)
+  ))
+$$, '22023', 'invalid import row shape', 'malformed row rejects the whole import batch');
+select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('d', 64)), 0, 'failed multi-row import rolls back earlier rows');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"role":"authenticated","sub":"user-b"}', true);
+select lives_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000002'), '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('a', 64), 'normalized_content_hash', repeat('b', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, 'owner B can use the same source hash in the B-scoped namespace');
+select is((select count(*)::integer from public.personal_ai_declarations where source_identity_hash = repeat('a', 64) and owner_clerk_id = 'user-a'), 0, 'B cannot query A import by stable source identity');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"role":"authenticated","sub":"user-a"}', true);
+select is((select count(*)::integer from public.personal_ai_declarations where source_identity_hash = repeat('a', 64)), 1, 'A import identity remains isolated from B');
+select lives_ok($$delete from public.personal_ai_declarations where source_identity_hash = repeat('a', 64)$$, 'A can delete its own imported declaration');
+select is((select count(*)::integer from public.personal_ai_declarations where source_identity_hash = repeat('a', 64)), 0, 'deleted import is no longer visible to A');
 select is((select count(*)::integer from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001' and status = 'ACTIVE'), 1, 'A can still read own active declaration');
 select throws_ok($$update public.personal_ai_declarations set owner_clerk_id = 'user-b' where id = '10000000-0000-4000-8000-000000000001'$$, '42501', null, 'owner column cannot be updated');
 select lives_ok($$update public.personal_ai_declarations set status = 'EXCLUDED' where id = '10000000-0000-4000-8000-000000000001'$$, 'A can exclude own declaration');

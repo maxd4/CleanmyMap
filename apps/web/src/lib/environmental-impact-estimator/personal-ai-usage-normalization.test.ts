@@ -80,6 +80,13 @@ describe("personal AI declaration normalization", () => {
     expect(zero.tokens.logicalTotal).toBe(0);
   });
 
+  it("keeps an absent import period unknown and rejects a one-sided period", () => {
+    const imported = normalizePersonalAiDeclaration(declaration({ periodStartUtc: null, periodEndUtc: null, access: "UNKNOWN" }));
+    expect(imported.periodStartUtc).toBeNull();
+    expect(imported.periodEndUtc).toBeNull();
+    expect(() => normalizePersonalAiDeclaration(declaration({ periodStartUtc: null }))).toThrow(/présentes ensemble/);
+  });
+
   it.each([
     ["invalid UTC date", { periodStartUtc: "2026-02-30T00:00:00.000Z" }],
     ["reversed period", { periodStartUtc: "2026-02-01T00:00:00.000Z", periodEndUtc: "2026-01-01T00:00:00.000Z" }],

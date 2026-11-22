@@ -5,76 +5,18 @@ import {
   ALL_TOKEN_FIELDS,
   safeIso,
 } from "./summarize-jsonl-input.mjs";
+import { reconstructCumulativeCounters, reconstructDirectCounters } from "./codex-usage-counter-reconstruction.mjs";
 
 function emptyCounterStats() {
   return { present: 0, missing: 0, decreases: 0, repeats: 0 };
 }
 
-function addContribution(target, field, timestamp, value) {
-  if (!Number.isFinite(value)) return;
-  target[field] ??= [];
-  target[field].push({ timestamp, value });
-}
-
 function reconstructCumulativeSeries(records, sourceKey) {
-  const values = Object.fromEntries(TOKEN_FIELDS.map((field) => [field, NA]));
-  const contributions = {};
-  const stats = Object.fromEntries(TOKEN_FIELDS.map((field) => [field, emptyCounterStats()]));
-  const previous = Object.fromEntries(TOKEN_FIELDS.map((field) => [field, null]));
-  const totals = Object.fromEntries(TOKEN_FIELDS.map((field) => [field, 0]));
-  for (const record of records) {
-    const source = record.event?.payload?.[sourceKey];
-    if (!source || typeof source !== "object") continue;
-    const timestamp = safeIso(record.event.timestamp);
-    for (const field of TOKEN_FIELDS) {
-      const value = source[field];
-      if (!Number.isFinite(value)) {
-        stats[field].missing += 1;
-        continue;
-      }
-      stats[field].present += 1;
-      const previousValue = previous[field];
-      let delta = value;
-      if (previousValue !== null) {
-        if (value < previousValue) stats[field].decreases += 1;
-        else delta = value - previousValue;
-        if (value === previousValue) stats[field].repeats += 1;
-      }
-      totals[field] += delta;
-      previous[field] = value;
-      if (timestamp) addContribution(contributions, field, timestamp, delta);
-    }
-  }
-  for (const field of TOKEN_FIELDS) {
-    if (stats[field].present > 0) values[field] = totals[field];
-  }
-  return { values, contributions, stats, semantics: "cumulative_counter_with_reset_detection" };
+  return reconstructCumulativeCounters(records, { fields: TOKEN_FIELDS, sourceKey, safeTimestamp: safeIso });
 }
 
 function reconstructDirectUsage(records) {
-  const values = Object.fromEntries(TOKEN_FIELDS.map((field) => [field, NA]));
-  const contributions = {};
-  const stats = Object.fromEntries(TOKEN_FIELDS.map((field) => [field, emptyCounterStats()]));
-  const totals = Object.fromEntries(TOKEN_FIELDS.map((field) => [field, 0]));
-  for (const record of records) {
-    const source = record.event?.payload?.usage;
-    if (!source || typeof source !== "object") continue;
-    const timestamp = safeIso(record.event.timestamp);
-    for (const field of TOKEN_FIELDS) {
-      const value = source[field];
-      if (!Number.isFinite(value)) {
-        stats[field].missing += 1;
-        continue;
-      }
-      stats[field].present += 1;
-      totals[field] += value;
-      if (timestamp) addContribution(contributions, field, timestamp, value);
-    }
-  }
-  for (const field of TOKEN_FIELDS) {
-    if (stats[field].present > 0) values[field] = totals[field];
-  }
-  return { values, contributions, stats, semantics: "per_event_delta" };
+  return reconstructDirectCounters(records, { fields: TOKEN_FIELDS, sourceKey: "usage", safeTimestamp: safeIso });
 }
 
 function validateTotal(records, sourceKey) {

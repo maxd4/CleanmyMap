@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { estimatePersonalAiFootprint } from "./personal-ai-estimator";
 import {
+  PERSONAL_AI_DECLARATION_VERSION,
   normalizePersonalAiDeclaration,
   toPersonalAiEstimatorInput,
   type PersonalAiDeclarationDraft,
@@ -17,14 +18,14 @@ export const personalAiDeclarationSchema = z.object({
   sourceVersion: nullableLabel(80),
   provenance: z.enum(["USER_DECLARED", "PROVIDER_REPORTED", "DEVICE_MEASURED"]),
   granularity: z.enum(["PER_REQUEST", "AGGREGATE", "UNKNOWN"]),
-  periodStartUtc: z.string().max(30),
-  periodEndUtc: z.string().max(30),
+  periodStartUtc: z.string().max(30).nullable(),
+  periodEndUtc: z.string().max(30).nullable(),
   modelRaw: nullableLabel(120),
   modelCanonical: nullableLabel(80),
   operator: nullableLabel(120),
   execution: z.enum(["CLOUD", "LOCAL"]),
   inferenceRegion: nullableLabel(7),
-  access: z.enum(["API", "SUBSCRIPTION", "LOCAL_OWNED"]),
+  access: z.enum(["API", "SUBSCRIPTION", "LOCAL_OWNED", "UNKNOWN"]),
   requestCount: nullableCount,
   tokens: z.object({
     inputTotal: nullableCount,
@@ -66,6 +67,20 @@ export function parsePersonalAiDeclaration(payload: unknown): StoredPersonalAiDe
   } catch {
     throw new PersonalAiDeclarationInputError();
   }
+}
+
+export function parsePersonalAiNormalizedDeclaration(payload: unknown): StoredPersonalAiDeclaration {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new PersonalAiDeclarationInputError();
+  const normalized = payload as Record<string, unknown>;
+  if (normalized.normalizationVersion !== PERSONAL_AI_DECLARATION_VERSION
+    || !normalized.tokens || typeof normalized.tokens !== "object" || Array.isArray(normalized.tokens)
+    || !("logicalTotal" in normalized.tokens)) throw new PersonalAiDeclarationInputError();
+  const declaration = { ...normalized };
+  delete declaration.normalizationVersion;
+  const tokens = { ...(normalized.tokens as Record<string, unknown>) };
+  delete tokens.logicalTotal;
+  declaration.tokens = tokens;
+  return parsePersonalAiDeclaration(declaration);
 }
 
 export function calculatePersonalAiDeclaration(payload: StoredPersonalAiDeclaration) {

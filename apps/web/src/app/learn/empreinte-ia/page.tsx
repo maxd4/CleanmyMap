@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { buildPageMetadata } from "@/lib/metadata";
 import { PersonalAiDeclarationClient } from "./personal-ai-declaration-client";
+import { PersonalAiImportClient } from "./personal-ai-import-client";
 
 export const metadata: Metadata = buildPageMetadata("/learn/empreinte-ia", {
   title: "Mon empreinte IA",
@@ -9,5 +10,5 @@ export const metadata: Metadata = buildPageMetadata("/learn/empreinte-ia", {
 });
 
 export default function PersonalAiDeclarationPage() {
-  return <PersonalAiDeclarationClient />;
+  return <div className="grid gap-6"><PersonalAiDeclarationClient /><PersonalAiImportClient /></div>;
 }

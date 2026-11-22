@@ -10,14 +10,14 @@ export type PersonalAiDeclarationDraft = {
   sourceVersion: string | null;
   provenance: "USER_DECLARED" | "PROVIDER_REPORTED" | "DEVICE_MEASURED";
   granularity: "PER_REQUEST" | "AGGREGATE" | "UNKNOWN";
-  periodStartUtc: string;
-  periodEndUtc: string;
+  periodStartUtc: string | null;
+  periodEndUtc: string | null;
   modelRaw: string | null;
   modelCanonical: string | null;
   operator: string | null;
   execution: "CLOUD" | "LOCAL";
   inferenceRegion: string | null;
-  access: "API" | "SUBSCRIPTION" | "LOCAL_OWNED";
+  access: "API" | "SUBSCRIPTION" | "LOCAL_OWNED" | "UNKNOWN";
   requestCount: number | null;
   tokens: {
     inputTotal: number | null;
@@ -102,9 +102,14 @@ function sumIfComplete(values: Array<number | null>): number | null {
 }
 
 export function normalizePersonalAiDeclaration(draft: PersonalAiDeclarationDraft): PersonalAiNormalizedDeclaration {
-  const start = parseUtc(draft.periodStartUtc, "periodStartUtc");
-  const end = parseUtc(draft.periodEndUtc, "periodEndUtc");
-  if (start >= end) throw new Error("La période UTC doit respecter [début, fin[");
+  const hasStart = draft.periodStartUtc !== null;
+  const hasEnd = draft.periodEndUtc !== null;
+  if (hasStart !== hasEnd) throw new Error("Les bornes de période doivent être présentes ensemble");
+  if (hasStart && hasEnd) {
+    const start = parseUtc(draft.periodStartUtc!, "periodStartUtc");
+    const end = parseUtc(draft.periodEndUtc!, "periodEndUtc");
+    if (start >= end) throw new Error("La période UTC doit respecter [début, fin[");
+  }
 
   assertText(draft.sourceVersion, "sourceVersion", 80);
   assertShortLabel(draft.modelRaw, "modelRaw");
@@ -168,7 +173,7 @@ export function normalizePersonalAiDeclaration(draft: PersonalAiDeclarationDraft
   if (draft.energy.kwh !== null && draft.energy.averageWatts !== null) throw new Error("Choisir une seule méthode de mesure énergétique");
   if (draft.execution === "LOCAL") {
     if (draft.energy.boundary !== null && draft.energy.boundary !== "LOCAL_WALL") throw new Error("Une mesure locale doit être qualifiée LOCAL_WALL");
-    if (draft.access !== "LOCAL_OWNED") throw new Error("Un calcul local doit déclarer un accès LOCAL_OWNED");
+    if (draft.access !== "LOCAL_OWNED" && draft.access !== "UNKNOWN") throw new Error("Un calcul local doit déclarer un accès LOCAL_OWNED ou inconnu");
   } else {
     if (draft.energy.boundary === "LOCAL_WALL") throw new Error("LOCAL_WALL ne qualifie pas une exécution cloud");
     if (draft.access === "LOCAL_OWNED") throw new Error("LOCAL_OWNED exige une exécution locale");
