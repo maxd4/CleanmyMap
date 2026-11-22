@@ -28,12 +28,8 @@ type SectionedContentProps = {
   invitationStatuses: ActionManualInvitationStatusRecord[];
   validationIssues: string[];
   validationIssueFields: readonly string[];
-  submissionState: "idle" | "pending" | "success" | "error";
   errorMessage: string | null;
   guidedReadiness: "unknown" | "ready" | "blocked";
-  isAuthenticated: boolean;
-  signInHref?: string;
-  signUpHref?: string;
   actionId?: string | null;
   isExistingAction?: boolean;
   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
@@ -52,12 +48,8 @@ export function ActionBeforeSectionedContent({
   invitationStatuses,
   validationIssues,
   validationIssueFields,
-  submissionState,
   errorMessage,
   guidedReadiness,
-  isAuthenticated,
-  signInHref,
-  signUpHref,
   actionId,
   isExistingAction = false,
   onFormalitiesReadiness,
@@ -101,14 +93,10 @@ export function ActionBeforeSectionedContent({
         <h3 id="action-preparation-formalities-title" className="text-xl font-black text-emerald-950">Vérification et publication</h3>
         <ActionBeforeVerificationSection
           form={form}
-          submissionState={submissionState}
           validationIssues={validationIssues}
           validationIssueFields={validationIssueFields}
           errorMessage={errorMessage}
           guidedReadiness={guidedReadiness}
-          isAuthenticated={isAuthenticated}
-          signInHref={signInHref}
-          signUpHref={signUpHref}
           actionId={actionId}
           updateField={updateField}
           onEditDefinition={onEditDefinition}

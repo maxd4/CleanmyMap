@@ -158,6 +158,7 @@ function hydrateCigaretteButtsLots(
     source: lot.source,
     value: String(lot.value),
     condition: lot.condition,
+    historical: true,
   }));
 }
 

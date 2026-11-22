@@ -102,6 +102,11 @@ export function restoreDraftFields(
       continue;
     }
     if (key === "cigaretteButtsLots") {
+      const historicalLotIds = new Set(
+        (next.cigaretteButtsLots ?? [])
+          .filter((lot) => lot.historical)
+          .map((lot) => lot.id),
+      );
       if (
         value === null ||
         (Array.isArray(value) && value.every((lot) => {
@@ -113,11 +118,23 @@ export function restoreDraftFields(
             typeof candidate.value === "string" &&
             (candidate.condition === "propre" ||
               candidate.condition === "humide" ||
-              candidate.condition === "mouille")
+              candidate.condition === "mouille") &&
+            (candidate.historical === undefined || typeof candidate.historical === "boolean")
           );
         }))
       ) {
-        next.cigaretteButtsLots = value as FormState["cigaretteButtsLots"];
+        next.cigaretteButtsLots = Array.isArray(value)
+          ? value.map((lot) => {
+              const candidate = lot as Record<string, unknown>;
+              const id = candidate.id as string;
+              return {
+                ...(candidate as unknown as NonNullable<FormState["cigaretteButtsLots"]>[number]),
+                ...(candidate.historical === true || historicalLotIds.has(id)
+                  ? { historical: true }
+                  : {}),
+              };
+            })
+          : null;
       }
       continue;
     }

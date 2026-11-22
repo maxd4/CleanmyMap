@@ -198,7 +198,7 @@ describe("action declaration draft storage", () => {
     installLocalStorage();
     const draft = createInitialFormState("Alice");
     draft.cigaretteButtsLots = [
-      { id: "lot-a", source: "mass_kg", value: "0.25", condition: "humide" },
+      { id: "lot-a", source: "mass_kg", value: "0.25", condition: "humide", historical: true },
       { id: "lot-b", source: "volume_l", value: "0", condition: "mouille" },
     ];
 
@@ -376,7 +376,7 @@ describe("action declaration draft storage", () => {
     store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify(createInitialFormState("Alice")));
     store.set(ACTION_DECLARATION_DRAFT_DATE_KEY, "2026-05-13T10:45:00.000Z");
 
-    clearDraft();
+    expect(clearDraft()).toBe(true);
 
     expect(store.has(ACTION_DECLARATION_DRAFT_KEY)).toBe(false);
     expect(store.has(ACTION_DECLARATION_DRAFT_DATE_KEY)).toBe(false);
@@ -391,7 +391,7 @@ describe("action declaration draft storage", () => {
       },
     });
 
-    expect(() => clearDraft()).not.toThrow();
+    expect(clearDraft()).toBe(false);
   });
 
   it("does not overwrite a draft after a read failure until an explicit retry succeeds", () => {

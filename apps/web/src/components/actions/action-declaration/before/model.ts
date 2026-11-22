@@ -7,6 +7,7 @@ import type { ActionPreparationData, ActionStatus } from "@/lib/actions/types";
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 import type { ActiveRole } from "@/lib/domain-language";
 import type { CountryCode } from "@/lib/user-location-preference";
+import type { ActionCreationActionBarConfig } from "../../action-creation-action-bar";
 import { normalizeParticipantAccounts, parseOrganizerAccounts } from "../payload";
 import {
   normalizeAssociationSelectionForPrefill,
@@ -50,6 +51,7 @@ export type ActionBeforeDeclarationFormProps = {
   preparationContext?: ActionPreparationContext;
   activeSection?: "all" | ActionCreationSectionId;
   onEditDefinition?: (field?: string) => void;
+  actionBar?: ActionCreationActionBarConfig;
 };
 
 export type PublicationSummaryItem = {

@@ -10,6 +10,9 @@ import { useActionCreationShellController } from "./use-action-creation-shell-co
 import { PageHeader } from "@/components/ui/page-header";
 import { INACTIVE_LOCAL_DEV_AUTH } from "@/lib/auth/effective-auth-contract";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import type { ActionCreationActionBarConfig } from "./action-creation-action-bar";
+import { ACTION_WORKFLOW_STEPS } from "@/lib/actions/action-workflow";
+import { ACTION_CREATION_SECTIONS } from "@/lib/actions/action-creation-sections";
 
 export function ActionCreationShell({
   initialPanel,
@@ -35,7 +38,7 @@ export function ActionCreationShell({
     defaultActorName: formProps.defaultActorName,
     sectionsEnabled,
   });
-  return <ActionCreationShellView controller={controller} fr={fr} formProps={formProps} initialPanel={initialPanel} initialSubsection={initialSubsection} initialTab={initialTab} initialSpace={initialSpace} localDevAuth={localDevAuth} sectionsEnabled={sectionsEnabled} territoryPreference={territoryPreference} />;
+  return <ActionCreationShellView key={controller.draftResetVersion} controller={controller} fr={fr} formProps={formProps} initialPanel={initialPanel} initialSubsection={initialSubsection} initialTab={initialTab} initialSpace={initialSpace} localDevAuth={localDevAuth} sectionsEnabled={sectionsEnabled} territoryPreference={territoryPreference} />;
 }
 type ActionCreationShellController = ReturnType<typeof useActionCreationShellController>;
 
@@ -70,6 +73,7 @@ function ActionCreationShellView({
     formSnapshot,
     formalitiesReadiness,
     handleBeforeActionPersisted,
+    handleDiscardLocalDraft,
     handleBeforeFormChange,
     handleFormalitiesReadiness,
     handleNextSection,
@@ -88,8 +92,31 @@ function ActionCreationShellView({
     renderedSectionState,
     renderedWorkflow,
     transitionError,
+    draftResetVersion,
   } = controller;
+  const workflowStepIndex = ACTION_WORKFLOW_STEPS.indexOf(activeStep);
+  const sectionIndex = ACTION_CREATION_SECTIONS.indexOf(renderedSectionState.activeSection);
+  const actionBar: ActionCreationActionBarConfig = {
+    actionId: actionIdForRender,
+    onConfirmDiscard: handleDiscardLocalDraft,
+    onPrevious: sectionsEnabled
+      ? handlePreviousSection
+      : () => {
+          const previousStep = ACTION_WORKFLOW_STEPS[workflowStepIndex - 1];
+          if (previousStep) navigateToStep(previousStep);
+        },
+    previousDisabled: sectionsEnabled ? sectionIndex === 0 : workflowStepIndex === 0,
+    onNext: sectionsEnabled ? handleNextSection : handleNextStep,
+    isFinalStep: sectionsEnabled
+      ? renderedSectionState.activeSection === "preparer"
+      : activeStep === "preformulaire",
+    isAuthenticated: formProps.isAuthenticated,
+    signInHref: formProps.signInHref,
+    signUpHref: formProps.signUpHref,
+  };
   const sharedViewProps = {
+    actionBar,
+    draftResetVersion,
     currentActionId,
     draftContext: {
       locationLabel: preparationContext.locationLabel,
@@ -118,7 +145,7 @@ function ActionCreationShellView({
   if (initialSpace === "bilan" && actionIdForRender) return <ActionBilanView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} />;
   if (initialTab === "after") return <AfterActionCreationView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} />;
   if (sectionsEnabled) {
-    return <ActionCreationSectionsView state={renderedSectionState} fr={fr} activeSpace={initialSpace} formSnapshot={formSnapshot} currentActionId={actionIdForRender} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} onPrevious={handlePreviousSection} onNext={handleNextSection} content={<ActionCreationSectionContent {...sharedViewProps} onNavigateSection={navigateToSection} activeSection={renderedSectionState.activeSection} initialSubsection={initialSubsection} initialPanel={initialPanel} formSnapshot={formSnapshot} />} />;
+    return <ActionCreationSectionsView state={renderedSectionState} fr={fr} activeSpace={initialSpace} formSnapshot={formSnapshot} currentActionId={actionIdForRender} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} content={<ActionCreationSectionContent {...sharedViewProps} onNavigateSection={navigateToSection} activeSection={renderedSectionState.activeSection} initialSubsection={initialSubsection} initialPanel={initialPanel} formSnapshot={formSnapshot} />} />;
   }
-  return <GuidedActionWorkflowView state={renderedWorkflow} fr={fr} currentActionId={actionIdForRender} activeSpace={initialSpace} stepContent={<ActionWorkflowStepContent {...sharedViewProps} onFormChange={handleBeforeFormChange} activeStep={activeStep} />} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToStep} onNext={handleNextStep} />;
+  return <GuidedActionWorkflowView state={renderedWorkflow} fr={fr} currentActionId={actionIdForRender} activeSpace={initialSpace} stepContent={<ActionWorkflowStepContent {...sharedViewProps} onFormChange={handleBeforeFormChange} activeStep={activeStep} />} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToStep} actionBar={actionBar} />;
 }

@@ -108,6 +108,7 @@ describe("ActionDayView behavior", () => {
     await harness.flush();
 
     expect(mounted.querySelector('[data-testid="action-day-view"]')?.textContent).toContain("Action action-b");
+    expect(mounted.textContent).not.toContain("Feuille d’appel");
     expect(mounted.querySelector('a[href*="google.com/maps"]')).toBeTruthy();
     expect(mounted.querySelector('a[href*="waze.com"]')).toBeTruthy();
   });

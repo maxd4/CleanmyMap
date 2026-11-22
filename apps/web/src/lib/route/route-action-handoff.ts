@@ -75,6 +75,16 @@ export function peekPlannerActionHandoff(): PlannerActionHandoff | null {
   }
 }
 
+export function clearPlannerActionHandoff(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    window.sessionStorage.removeItem(ROUTE_ACTION_HANDOFF_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
   if (typeof window === "undefined") return null;
   let raw: string | null = null;

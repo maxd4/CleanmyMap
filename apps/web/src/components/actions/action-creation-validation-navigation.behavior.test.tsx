@@ -146,6 +146,16 @@ describe("action creation validation navigation", () => {
             formalitiesReadiness="unknown"
             formProps={formProps}
             localDevAuth={INACTIVE_LOCAL_DEV_AUTH}
+            actionBar={{
+              actionId: null,
+              onConfirmDiscard: vi.fn(() => true),
+              onPrevious: vi.fn(),
+              previousDisabled: false,
+              onNext: vi.fn(),
+              isFinalStep: false,
+              isAuthenticated: true,
+            }}
+            draftResetVersion={0}
             preparationPersistenceStatus="saved"
             onActionPersisted={vi.fn()}
             onFormChange={vi.fn()}

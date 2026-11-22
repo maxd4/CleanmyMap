@@ -72,7 +72,7 @@ function HarvestEssentials({
       <HarvestMeasurementSlider
         id="harvest-waste-kg"
         exactInputId="harvest-waste-kg-exact"
-        exactInputLabel="Saisie exacte (kg)"
+        exactInputLabel={form.wasteMeasurementMethod === "estimation_visuelle" ? "Estimation visuelle (kg)" : "Saisie (kg)"}
         exactInputMode="decimal"
         label="Masse collectée"
         value={form.wasteKg}

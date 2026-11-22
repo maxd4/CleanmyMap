@@ -659,16 +659,40 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
   it("does not turn an empty lot into zero and supports adding a stable lot", () => {
     const harness = mountLogic(createInitialFormState("Test"));
 
+    act(() => harness.latest.logic.syncMegotsCondition("mouille"));
     act(() => harness.latest.logic.addMegotsLot());
 
     expect(harness.latest.form.cigaretteButtsLots).toHaveLength(1);
     expect(harness.latest.form.cigaretteButtsLots?.[0]?.id).toBeTruthy();
     expect(harness.latest.form.cigaretteButtsLots?.[0]?.value).toBe("");
+    expect(harness.latest.form.cigaretteButtsLots?.[0]?.condition).toBe("mouille");
     expect(harness.latest.logic.megotsCount).toBeNull();
 
-    act(() => harness.latest.logic.updateMegotsLot(harness.latest.form.cigaretteButtsLots![0]!.id, { source: "volume_l", value: "0", condition: "mouille" }));
+    act(() => harness.latest.logic.updateMegotsLot(harness.latest.form.cigaretteButtsLots![0]!.id, { source: "volume_l", value: "0" }));
     expect(harness.latest.logic.megotsCount).toBe(0);
     expect(harness.latest.form.cigaretteButtsCount).toBe("0");
+
+    harness.renderer.unmount();
+  });
+
+  it("changes the global state for new lots without rewriting mixed historical lots", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      cigaretteButtsLots: [
+        { id: "old-dry", source: "count", value: "100", condition: "propre", historical: true },
+        { id: "old-wet", source: "mass_kg", value: "0.5", condition: "humide", historical: true },
+      ],
+    });
+
+    act(() => harness.latest.logic.syncMegotsCondition("mouille"));
+    expect(harness.latest.form.cigaretteButtsLots?.map((lot) => lot.condition)).toEqual(["propre", "humide"]);
+    expect(harness.latest.form.cigaretteButtsLots?.map((lot) => lot.value)).toEqual(["100", "0.5"]);
+    act(() => harness.latest.logic.addMegotsLot());
+    expect(harness.latest.form.cigaretteButtsLots?.[2]).toMatchObject({ condition: "mouille", value: "" });
+    expect(harness.latest.form.cigaretteButtsLots?.[2]).not.toHaveProperty("historical");
+    act(() => harness.latest.logic.syncMegotsCondition("humide"));
+    expect(harness.latest.form.cigaretteButtsLots?.map((lot) => lot.condition)).toEqual(["propre", "humide", "humide"]);
+    expect(harness.latest.form.cigaretteButtsLots?.map((lot) => lot.value)).toEqual(["100", "0.5", ""]);
 
     harness.renderer.unmount();
   });
@@ -690,7 +714,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     expect(harness.latest.logic.megotsKg).toBe(0.875);
     expect(harness.latest.logic.cigaretteButtsCountProvenance).toBe("counted");
     expect(harness.latest.logic.cigaretteButtsMassProvenance).toBe("weight_converted");
-    expect(harness.latest.logic.cigaretteButtsConversionFormulaVersion).toBe("impact-terrain-2026-butts-mass-v2");
+    expect(harness.latest.logic.cigaretteButtsConversionFormulaVersion).toBe("impact-terrain-2026-butts-mass-v3");
 
     harness.renderer.unmount();
   });
@@ -717,7 +741,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
 
     expect(harness.latest.form.wasteMegotsCondition).toBe("mouille");
     expect(harness.latest.form.cigaretteButtsCondition).toBe("mouille");
-    expect(harness.latest.form.cigaretteButtsCount).toBe("2000");
+    expect(harness.latest.form.cigaretteButtsCount).toBe("1111");
     expect(harness.latest.form.wasteMegotsKg).toBe("1");
 
     harness.renderer.unmount();

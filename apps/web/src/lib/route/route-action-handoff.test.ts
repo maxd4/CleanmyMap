@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   consumePlannerActionHandoff,
+  clearPlannerActionHandoff,
   peekPlannerActionHandoff,
   ROUTE_ACTION_HANDOFF_STORAGE_KEY,
   writePlannerActionHandoff,
@@ -81,6 +82,22 @@ describe("planner action handoff", () => {
     expect(storage.has(ROUTE_ACTION_HANDOFF_STORAGE_KEY)).toBe(true);
     expect(consumePlannerActionHandoff()?.operationalRoute).toEqual(operationalRoute);
     expect(peekPlannerActionHandoff()).toBeNull();
+  });
+
+  it("clears a planner handoff when the local action draft is discarded", () => {
+    const storage = installStorage();
+    writePlannerActionHandoff({
+      operationalRoute,
+      routeCalibrationContext: null,
+      plannerProof: null,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+
+    expect(clearPlannerActionHandoff()).toBe(true);
+    expect(storage.has(ROUTE_ACTION_HANDOFF_STORAGE_KEY)).toBe(false);
+
+    vi.stubGlobal("window", { sessionStorage: { removeItem: () => { throw new Error("unavailable"); } } });
+    expect(clearPlannerActionHandoff()).toBe(false);
   });
 
   it("reads a legacy actualRoute handoff and returns the canonical key", () => {

@@ -28,6 +28,10 @@ describe("ActionFieldRolesPanel role drafts", () => {
   it("keeps a checkbox draft through a render and sends exactly the selected roles", async () => {
     let renderer!: ReturnType<typeof create>;
     await act(async () => { renderer = create(<ActionFieldRolesPanel actionId="action-1" />); await Promise.resolve(); });
+    const participationSummary = renderer.root.findAllByType("p")
+      .map((paragraph) => Array.isArray(paragraph.props.children) ? paragraph.props.children.join("") : String(paragraph.props.children))
+      .find((text) => text.includes("participation confirmée"));
+    expect(participationSummary).toBe("1 participation confirmée · ce décompte ne constate pas les présences sur place.");
     const checkbox = renderer.root.findByType("input");
     act(() => { checkbox.props.onChange({ target: { checked: true } }); });
     renderer.update(<ActionFieldRolesPanel actionId="action-1" />);

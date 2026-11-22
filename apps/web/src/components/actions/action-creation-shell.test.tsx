@@ -12,6 +12,10 @@ const completeFormPropsMock = vi.hoisted(() => vi.fn());
 const updateActionMock = vi.hoisted(() => vi.fn(() => Promise.resolve({ id: "action-42" })));
 const routerReplaceMock = vi.hoisted(() => vi.fn());
 const weatherSectionPropsMock = vi.hoisted(() => vi.fn());
+const draftStorageMocks = vi.hoisted(() => ({
+  load: vi.fn(() => ({ snapshot: null, readError: false })),
+  clear: vi.fn(() => true),
+}));
 const preparationContextHookMock = vi.hoisted(() => vi.fn(({ actionId }: { actionId: string | null }) => ({
   preparationContext: {
     actionId,
@@ -29,6 +33,7 @@ const preparationContextHookMock = vi.hoisted(() => vi.fn(({ actionId }: { actio
   preparationContextReady: true,
   preparationPersistenceStatus: "saved",
   markPreparationPersisted: vi.fn(),
+  resetPreparationContext: vi.fn(),
 })));
 
 vi.mock("./action-declaration/before/form", () => ({
@@ -44,6 +49,16 @@ vi.mock("./action-declaration/action-declaration-form", () => ({
   },
 }));
 vi.mock("@/lib/actions/http", () => ({ updateAction: updateActionMock }));
+vi.mock("./action-declaration/draft-storage", async (importOriginal) => ({
+  ...await importOriginal<typeof import("./action-declaration/draft-storage")>(),
+  loadDraftSnapshotResult: draftStorageMocks.load,
+  clearDraft: draftStorageMocks.clear,
+}));
+vi.mock("@/lib/route/route-action-handoff", () => ({
+  clearPlannerActionHandoff: vi.fn(() => true),
+  peekPlannerActionHandoff: vi.fn(() => null),
+  writePlannerActionHandoff: vi.fn(),
+}));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: routerReplaceMock }),
   usePathname: () => "/actions/new",
@@ -73,6 +88,8 @@ describe("ActionCreationShell", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     updateActionMock.mockResolvedValue({ id: "action-42" });
+    draftStorageMocks.load.mockReturnValue({ snapshot: null, readError: false });
+    draftStorageMocks.clear.mockReturnValue(true);
   });
 
   it("renders the direct pre-form and keeps the transition on the same action", async () => {
@@ -211,6 +228,65 @@ describe("ActionCreationShell", () => {
     );
   });
 
+  it("deletes only the local draft after a readable check and resets navigation without changing the server action id", async () => {
+    let renderer!: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: false,
+        userMetadata: { userId: "test" },
+        initialActionId: "action-42",
+        initialPanel: "pre-formulaire",
+        initialSection: "preparer",
+      } as ComponentProps<typeof ActionCreationShell>));
+    });
+
+    const formProps = beforeFormPropsMock.mock.lastCall?.[0] as {
+      actionBar: { onConfirmDiscard: () => boolean };
+      initialActionId: string;
+    };
+    expect(formProps.initialActionId).toBe("action-42");
+    let cleared = false;
+    await act(async () => {
+      cleared = formProps.actionBar.onConfirmDiscard();
+    });
+
+    expect(cleared).toBe(true);
+    expect(draftStorageMocks.load).toHaveBeenCalledWith(expect.any(Object), "action", "action-42");
+    expect(draftStorageMocks.clear).toHaveBeenCalledWith("action-42");
+    expect(routerReplaceMock).toHaveBeenCalledWith("/actions/new?section=definir&actionId=action-42");
+    expect(beforeFormPropsMock).toHaveBeenLastCalledWith(expect.objectContaining({ initialActionId: "action-42" }));
+    await act(async () => renderer.unmount());
+  });
+
+  it("blocks discard when local storage cannot be read", async () => {
+    draftStorageMocks.load.mockReturnValue({ snapshot: null, readError: true });
+    let renderer!: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: false,
+        userMetadata: { userId: "test" },
+        initialPanel: "pre-formulaire",
+      } as ComponentProps<typeof ActionCreationShell>));
+    });
+
+    const formProps = beforeFormPropsMock.mock.lastCall?.[0] as {
+      actionBar: { onConfirmDiscard: () => boolean };
+    };
+    let cleared = true;
+    await act(async () => {
+      cleared = formProps.actionBar.onConfirmDiscard();
+    });
+
+    expect(cleared).toBe(false);
+    expect(draftStorageMocks.clear).not.toHaveBeenCalled();
+    expect(routerReplaceMock).not.toHaveBeenCalled();
+    await act(async () => renderer.unmount());
+  });
+
   it("opens the Formalités locales step with the existing action id", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionCreationShell, {
@@ -249,6 +325,9 @@ describe("ActionCreationShell", () => {
     expect(markup).toContain('data-workflow-section="preparer"');
     expect(markup).not.toContain('data-testid="route-engine"');
     expect(markup).toContain('data-testid="fixed-area-route-state"');
+    expect(beforeFormPropsMock).toHaveBeenLastCalledWith(expect.objectContaining({
+      actionBar: expect.objectContaining({ isFinalStep: true, previousDisabled: false }),
+    }));
     expect(markup).toContain('data-testid="weather-engine"');
     expect(weatherSectionPropsMock).toHaveBeenLastCalledWith(expect.objectContaining({
       canonicalActionContext: true,
@@ -384,6 +463,28 @@ describe("ActionCreationShell", () => {
     expect(markup).not.toContain('data-testid="action-creation-section-nav"');
     expect(markup).toContain("Itinéraire");
     expect(markup).toContain('data-testid="route-engine"');
+    expect(markup.match(/data-testid="action-creation-action-bar"/g)).toHaveLength(1);
+    expect(markup).toContain("Supprimer le brouillon");
+    expect(markup).toContain("Suivant");
+  });
+
+  it("uses the form-owned action bar on the legacy final step without a duplicate shell bar", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: true,
+        userMetadata: { userId: "test" },
+        initialPanel: "pre-formulaire",
+        sectionsEnabled: false,
+        tabSearchParams: { step: "preformulaire" },
+      } as ComponentProps<typeof ActionCreationShell>),
+    );
+
+    expect(markup).not.toContain('data-testid="action-creation-action-bar"');
+    expect(beforeFormPropsMock).toHaveBeenLastCalledWith(expect.objectContaining({
+      actionBar: expect.objectContaining({ isFinalStep: true, onNext: expect.any(Function) }),
+    }));
   });
 
   it("renders the shared before/after tabs with an independent panel query", () => {

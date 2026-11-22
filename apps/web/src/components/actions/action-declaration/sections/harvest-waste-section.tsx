@@ -70,13 +70,16 @@ function HarvestWasteHeader() {
 
 function WastePrimaryMeasurement({
   value,
+  method,
   hidden,
   onChange,
-}: { value: string; hidden: boolean; onChange: (value: string) => void }) {
+}: { value: string; method: ActionWasteMeasurementMethod | ""; hidden: boolean; onChange: (value: string) => void }) {
   if (hidden) return null;
+  const visuallyEstimated = method === "estimation_visuelle";
+  const measurementLabel = visuallyEstimated ? "Masse estimée visuellement" : "Masse collectée";
   return (
     <label className="block min-w-0 space-y-2 px-1 py-2 sm:px-3">
-      <span className="block text-sm font-bold text-emerald-950">Masse collectée (exacte)</span>
+      <span className="block text-sm font-bold text-emerald-950">{measurementLabel}</span>
       <div className="flex items-center rounded-xl border border-emerald-300 bg-white px-3 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/15">
         <input
           id="harvest-waste-kg"
@@ -87,7 +90,7 @@ function WastePrimaryMeasurement({
           step={ACTION_WASTE_MASS_RESOLUTION_KG}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          aria-label="Masse collectée exacte en kilogrammes"
+          aria-label={`${measurementLabel} en kilogrammes`}
           placeholder="0"
           className="min-w-0 flex-1 appearance-none !bg-white py-3 text-3xl font-black tracking-tight !text-emerald-950 outline-none sm:text-4xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
@@ -182,7 +185,7 @@ export function HarvestWasteSection({
           referenceLabel={wasteReferenceLabel}
         />
         <div className="min-w-0">
-          <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
+          <WastePrimaryMeasurement value={wasteKg} method={wasteMeasurementMethod} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
           <HarvestComparisonTrend
             currentPerVolunteer={wasteCurrentPerVolunteer}
             benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}

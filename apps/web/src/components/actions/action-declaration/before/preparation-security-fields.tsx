@@ -7,7 +7,11 @@ import {
   PREPARATION_FIELD_LIMITS,
 } from "./preparation-field-utils";
 
-export function PreparationSecurityFields({ form, updateField }: BaseSectionProps) {
+export function PreparationSecurityFields({
+  form,
+  updateField,
+  showGuide = true,
+}: BaseSectionProps & { showGuide?: boolean }) {
   const safetyError = characterLimitError(
     form.safetyInstructions,
     "Les consignes particulières",
@@ -16,7 +20,7 @@ export function PreparationSecurityFields({ form, updateField }: BaseSectionProp
 
   return (
     <div className="space-y-4">
-      <ActionSafetyGuide categories={form.wasteCategories} />
+      {showGuide ? <ActionSafetyGuide categories={form.wasteCategories} /> : null}
 
       <CmmField
         id="before-safety-instructions"

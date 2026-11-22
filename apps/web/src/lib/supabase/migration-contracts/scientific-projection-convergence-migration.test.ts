@@ -4,7 +4,6 @@ import {
   ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
   ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
   POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
-  PUBLIC_IMPACT_PROJECTION_VERSION,
 } from "@/lib/impact/scientific-projection-versions";
 
 const convergenceMigration = readFileSync(
@@ -48,7 +47,7 @@ describe("scientific projection convergence migration STATIC_CONTRACT", () => {
     expect(collectionAveragesMigration).toContain(`'${ACTION_COLLECTION_REFERENCE_FORMULA_VERSION}'`);
     expect(convergenceMigration).toContain(`'${POLLUTION_SCORE_REFERENCE_FORMULA_VERSION}'`);
     expect(volumeProxyMigration).toContain("'impact-terrain-public-2026.09-v4'");
-    expect(currentProjectionMigration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
+    expect(currentProjectionMigration).toContain("'impact-terrain-public-2026.09-v7'");
     expect(contextualMigration).toContain(`'${ACTION_COLLECTION_CONTEXT_FORMULA_VERSION}'`);
   });
 

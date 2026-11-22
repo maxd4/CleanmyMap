@@ -78,7 +78,10 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("Déclarer avant l&#x27;action");
     expect(html).not.toContain("Préparer le formulaire de groupe");
     expect(html).toContain("Enregistrer la préparation");
-    expect(html).toContain("Enregistrement privé.");
+    expect(html).not.toContain("Enregistrement privé.");
+    expect(html).not.toContain("La publication reste explicite et ne crée jamais une seconde action.");
+    expect(html.match(/data-testid="action-creation-action-bar"/g)).toHaveLength(1);
+    expect(html.match(/type="submit"/g)).toHaveLength(1);
     expect(html).toContain("Identité et organisation");
     expect(html).toContain("Type de structure");
     expect(html).toContain("Établissement scolaire/universitaire");
@@ -410,9 +413,10 @@ describe("ActionBeforeDeclarationForm", () => {
       }),
     );
 
-    expect(html.indexOf("Partenaires et comptes associés")).toBeLessThan(html.indexOf("Inscriptions et invitations"));
-    expect(html.indexOf("Inscriptions des bénévoles")).toBeLessThan(html.indexOf("Prévisions et informations pratiques"));
-    expect(html.indexOf("Prévisions et informations pratiques")).toBeLessThan(html.indexOf("Sécurité et risques"));
+    expect(html.indexOf("Coordination et participants")).toBeLessThan(html.indexOf("Matériel et équipements"));
+    expect(html.indexOf("Matériel et équipements")).toBeLessThan(html.indexOf("Sécurité et accessibilité"));
+    expect(html.indexOf("Sécurité et accessibilité")).toBeLessThan(html.indexOf("Logistique et déroulement"));
+    expect(html.indexOf("Partenaires et comptes associés")).toBeLessThan(html.indexOf("Inscriptions des bénévoles"));
     expect(html).toContain("Acceptée");
     expect(html).toContain("Refusée");
     expect(html).toContain("Retirée");

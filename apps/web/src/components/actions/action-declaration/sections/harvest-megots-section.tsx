@@ -65,7 +65,7 @@ type HarvestMegotsSectionProps = {
   megotsMeasuredMassKg?: number;
   megotsEstimatedMassKg?: number;
   onAddMegotsLot?: () => void;
-  onUpdateMegotsLot?: (id: string, patch: Partial<Omit<CigaretteButtsLotDraft, "id">>) => void;
+  onUpdateMegotsLot?: (id: string, patch: Partial<Pick<CigaretteButtsLotDraft, "source" | "value">>) => void;
   onRemoveMegotsLot?: (id: string) => void;
   onMoveMegotsLot?: (id: string, direction: -1 | 1) => void;
   onMegotsWeightChange: (value: string) => void;
@@ -87,8 +87,12 @@ function lotSourceLabel(source: CigaretteButtsLotDraft["source"]): string {
   return source === "count" ? "Nombre" : source === "mass_kg" ? "Masse (kg)" : "Volume (L)";
 }
 
+function conditionLabel(condition: ActionMegotsCondition | ""): string {
+  return MEGOTS_CONDITIONS.find((item) => item.value === condition)?.label ?? "État historique non renseigné";
+}
+
 const MEGOTS_CONDITIONS: Array<{ value: ActionMegotsCondition; label: string; Icon: typeof Droplet }> = [
-  { value: "propre", label: "Sec / Propre", Icon: Droplet },
+  { value: "propre", label: "Propre (sec)", Icon: Droplet },
   { value: "humide", label: "Humide", Icon: Droplets },
   { value: "mouille", label: "Mouillé", Icon: Droplets },
 ];
@@ -217,15 +221,10 @@ function MegotsLotEditor({
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="space-y-1.5">
-          <span className="text-xs font-medium text-slate-500">État</span>
-          <select aria-label={`État du lot ${index + 1}`} value={draft.condition} onChange={(event) => onUpdate?.(draft.id, { condition: event.target.value as ActionMegotsCondition | "" })} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900">
-            <option value="">Choisir un état</option>
-            <option value="propre">Sec / Propre</option>
-            <option value="humide">Humide</option>
-            <option value="mouille">Mouillé</option>
-          </select>
-        </label>
+        <div className="space-y-1.5" aria-label={`État du lot ${index + 1}`}>
+          <span className="block text-xs font-medium text-slate-500">État {draft.historical ? "historique" : "du lot"}</span>
+          <span className="flex min-h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700">{conditionLabel(draft.condition)}</span>
+        </div>
         <label className="space-y-1.5">
           <span className="text-xs font-medium text-slate-500">Mesure source</span>
           <select value={draft.source} onChange={(event) => onUpdate?.(draft.id, { source: event.target.value as CigaretteButtsLotDraft["source"] })} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900">
@@ -283,7 +282,8 @@ export function HarvestMegotsSection({
   return (
     <section className="flex h-full min-w-0 flex-col space-y-4 rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50/30 p-4 shadow-[0_12px_32px_-24px_rgba(37,99,235,0.55)] sm:p-5">
       <MegotsHeader />
-      {megotsLots === null ? <MegotsConditionSelector value={wasteMegotsCondition} onChange={onMegotsConditionChange} error={conditionError} /> : null}
+      <MegotsConditionSelector value={wasteMegotsCondition} onChange={onMegotsConditionChange} error={conditionError} />
+      {megotsLots !== null && megotsLots.some((lot) => lot.historical) ? <p className="text-xs text-slate-600">L’état choisi s’applique aux nouveaux lots. Les états historiques restent inchangés.</p> : null}
       <div className="grid items-center gap-4 sm:grid-cols-2">
         <DropletGauge
           value={megotsCount}

@@ -50,7 +50,7 @@ describe("ActionStepHarvest compact modes", () => {
     expect(html).toContain("Masse de mégots (kg)");
     expect(html).toContain('value="0"');
     expect(html).toContain('value=""');
-    expect(html).toContain("Sec / Propre");
+    expect(html).toContain("Propre (sec)");
     expect(html).toContain("Humide");
     expect(html).toContain("Mouillé");
     expect(html).not.toContain('value="propre" checked');
@@ -62,7 +62,7 @@ describe("ActionStepHarvest compact modes", () => {
     expect(html).not.toContain("Référence moyenne");
   });
 
-  it("exposes exact mass entry in the essentials variant without rewriting a historical value", () => {
+  it("preserves the mass entry in the essentials variant without rewriting a historical value", () => {
     const form = createInitialFormState("Aperçu local", "action");
     form.wasteKg = "12345.6";
     const html = renderToStaticMarkup(

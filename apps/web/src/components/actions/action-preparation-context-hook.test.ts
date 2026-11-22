@@ -77,4 +77,32 @@ describe("action preparation request sharing", () => {
     expect(latest.preparationPersistenceStatus).toBe("draft");
     renderer.unmount();
   });
+
+  it("does not recreate a cleared preparation draft until the user changes preparation data", async () => {
+    fetchActionById.mockReset();
+    loadDraftSnapshot.mockReset();
+    saveDraft.mockReset().mockReturnValue("2026-10-21T09:00:00.000Z");
+    let latest!: ReturnType<typeof useActionPreparationContext>;
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(createElement(ContextHarness, { actionId: null, onReady: (value) => { latest = value; } }));
+      await Promise.resolve();
+    });
+    saveDraft.mockClear();
+
+    await act(async () => {
+      latest.resetPreparationContext();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(latest.preparationContext.locationLabel).toBe("");
+    expect(saveDraft).not.toHaveBeenCalled();
+
+    await act(async () => {
+      latest.setPreparationContext((context) => ({ ...context, locationLabel: "Place de la République" }));
+    });
+    expect(saveDraft).toHaveBeenCalledOnce();
+    await act(async () => renderer.unmount());
+  });
 });

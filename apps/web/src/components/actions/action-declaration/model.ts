@@ -148,6 +148,8 @@ export type CigaretteButtsLotDraft = {
   source: CigaretteButtsLotSource;
   value: string;
   condition: ActionMegotsCondition | "";
+  /** True only for lots hydrated from a persisted action; their condition is historical. */
+  historical?: boolean;
 };
 
 export const EMPTY_ACTION_MEASUREMENT_FIELDS = {

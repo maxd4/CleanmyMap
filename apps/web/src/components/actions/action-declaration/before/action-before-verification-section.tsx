@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmPill } from "@/components/ui/cmm-pill";
@@ -17,28 +16,20 @@ import { createActionPreparationWeatherRequest, useActionPreparationWeather } fr
 
 export function ActionBeforeVerificationSection({
   form,
-  submissionState,
   validationIssues,
   validationIssueFields,
   errorMessage,
   guidedReadiness,
-  isAuthenticated,
-  signInHref,
-  signUpHref,
   actionId,
   updateField,
   onFormalitiesReadiness,
   onEditDefinition,
 }: {
   form: FormState;
-  submissionState: "idle" | "pending" | "success" | "error";
   validationIssues: string[];
   validationIssueFields: readonly string[];
   errorMessage: string | null;
   guidedReadiness: "unknown" | "ready" | "blocked";
-  isAuthenticated: boolean;
-  signInHref?: string;
-  signUpHref?: string;
   actionId?: string | null;
   updateField: (key: "formalitiesContext", value: ActionFormalitiesFacts | null) => void;
   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
@@ -95,11 +86,7 @@ export function ActionBeforeVerificationSection({
     suggestions={suggestions}
     readinessLabel={readinessLabel}
     readinessTone={readinessTone}
-    submissionState={submissionState}
     errorMessage={errorMessage}
-    isAuthenticated={isAuthenticated}
-    signInHref={signInHref}
-    signUpHref={signUpHref}
     actionId={actionId}
     onDraftFactsChange={(facts) => updateField("formalitiesContext", facts)}
     onFormalitiesReadiness={onFormalitiesReadiness}
@@ -119,11 +106,7 @@ type ActionBeforeVerificationViewProps = {
   suggestions: string[];
   readinessLabel: string;
   readinessTone: "emerald" | "amber";
-  submissionState: "idle" | "pending" | "success" | "error";
   errorMessage: string | null;
-  isAuthenticated: boolean;
-  signInHref?: string;
-  signUpHref?: string;
   actionId?: string | null;
   onDraftFactsChange: (facts: ActionFormalitiesFacts) => void;
   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
@@ -142,11 +125,7 @@ function ActionBeforeVerificationView({
   suggestions,
   readinessLabel,
   readinessTone,
-  submissionState,
   errorMessage,
-  isAuthenticated,
-  signInHref,
-  signUpHref,
   actionId,
   onDraftFactsChange,
   onFormalitiesReadiness,
@@ -169,7 +148,6 @@ function ActionBeforeVerificationView({
         <ActionBeforeVolunteerPreview publicInformation={publicInformation} weatherChecklist={weatherChecklist} requestWeather={requestWeather} />
       </CmmDisclosure>
       <ActionCreationLegalPanel actionId={actionId} draftFacts={draftFacts} onDraftFactsChange={onDraftFactsChange} onReadinessChange={onFormalitiesReadiness} />
-      <ActionBeforeVerificationFooter isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} submissionState={submissionState} />
     </div>
   </CmmCard>;
 }
@@ -207,19 +185,6 @@ function ActionBeforeVolunteerPreview({ publicInformation, weatherChecklist, req
       <PreviewWeatherValue checklist={weatherChecklist} onRequest={requestWeather} />
       <PreviewValue label="Accessibilité" value={publicInformation.accessibility ?? "Non évaluée"} />
     </dl>
-  </div>;
-}
-
-function ActionBeforeVerificationFooter({ isAuthenticated, signInHref, signUpHref, submissionState }: Pick<ActionBeforeVerificationViewProps, "isAuthenticated" | "signInHref" | "signUpHref" | "submissionState">) {
-  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200/70 bg-white/90 px-4 py-3">
-    <div className="flex items-start gap-2 text-sm text-emerald-900/75"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" /><span>La publication reste explicite et ne crée jamais une seconde action.</span></div>
-    <div className="flex flex-wrap gap-2">
-      {!isAuthenticated ? <><CmmButton href={signInHref} tone="primary" variant="pill" size="sm">Se connecter et reprendre</CmmButton><CmmButton href={signUpHref} tone="secondary" variant="pill" size="sm">Créer un compte</CmmButton></> : null}
-      <CmmButton type="submit" tone="primary" variant="pill" size="md" disabled={submissionState === "pending"}>
-        {submissionState === "pending" ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <ArrowRight size={14} aria-hidden="true" />}
-        {submissionState === "pending" ? "Enregistrement…" : "Enregistrer la préparation"}
-      </CmmButton>
-    </div>
   </div>;
 }
 

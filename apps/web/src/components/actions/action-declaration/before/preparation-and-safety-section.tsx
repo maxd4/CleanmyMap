@@ -17,12 +17,43 @@ import {
   PREPARATION_FIELD_LIMITS,
 } from "./preparation-field-utils";
 
-export function PreparationAndSafetySection({ form, updateField, embedded = false }: BaseSectionProps & { embedded?: boolean }) {
+export function PreparationLogisticsNotesFields({ form, updateField }: BaseSectionProps) {
   const logisticsError = characterLimitError(
     form.logisticsNotes,
     "Les notes logistiques",
     PREPARATION_FIELD_LIMITS.logisticsNotes,
   );
+
+  return (
+    <CmmDisclosure
+      summary={
+        <span className="flex flex-wrap items-center gap-2">
+          <span>Notes logistiques facultatives</span>
+          {form.logisticsNotes.trim() ? <span className="text-xs font-normal text-emerald-800">renseignées</span> : null}
+        </span>
+      }
+      tone="emerald"
+      size="sm"
+    >
+      <CmmField
+        id="before-logistics-notes"
+        label="Notes logistiques internes"
+        hint={`Accès technique, transport ou lieu de repli. Les horaires, le rendez-vous et les formalités restent portés par leurs champs canoniques. ${characterLimitHint(form.logisticsNotes, PREPARATION_FIELD_LIMITS.logisticsNotes)}`}
+        error={logisticsError}
+      >
+        <CmmTextarea
+          value={form.logisticsNotes}
+          onChange={(event) => updateField("logisticsNotes", event.target.value)}
+          rows={2}
+          maxLength={PREPARATION_FIELD_LIMITS.logisticsNotes}
+          placeholder="Ex. Accès technique, transport, météo à surveiller, lieu de repli..."
+        />
+      </CmmField>
+    </CmmDisclosure>
+  );
+}
+
+export function PreparationAndSafetySection({ form, updateField, embedded = false }: BaseSectionProps & { embedded?: boolean }) {
 
   const content = (
     <div className="space-y-5">
@@ -53,31 +84,7 @@ export function PreparationAndSafetySection({ form, updateField, embedded = fals
         <section aria-labelledby="before-logistics-group" className="space-y-3">
           <h4 id="before-logistics-group" className="text-base font-black text-emerald-950">Logistique et checklist</h4>
           <PreparationChecklistFields form={form} updateField={updateField} />
-          <CmmDisclosure
-            summary={
-              <span className="flex flex-wrap items-center gap-2">
-                <span>Notes logistiques facultatives</span>
-                {form.logisticsNotes.trim() ? <span className="text-xs font-normal text-emerald-800">renseignées</span> : null}
-              </span>
-            }
-            tone="emerald"
-            size="sm"
-          >
-            <CmmField
-              id="before-logistics-notes"
-              label="Notes logistiques internes"
-              hint={`Accès technique, transport ou lieu de repli. Les horaires, le rendez-vous et les formalités restent portés par leurs champs canoniques. ${characterLimitHint(form.logisticsNotes, PREPARATION_FIELD_LIMITS.logisticsNotes)}`}
-              error={logisticsError}
-            >
-              <CmmTextarea
-                value={form.logisticsNotes}
-                onChange={(event) => updateField("logisticsNotes", event.target.value)}
-                rows={2}
-                maxLength={PREPARATION_FIELD_LIMITS.logisticsNotes}
-                placeholder="Ex. Accès technique, transport, météo à surveiller, lieu de repli..."
-              />
-            </CmmField>
-          </CmmDisclosure>
+          <PreparationLogisticsNotesFields form={form} updateField={updateField} />
         </section>
     </div>
   );

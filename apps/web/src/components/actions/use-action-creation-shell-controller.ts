@@ -10,6 +10,9 @@ import { ACTION_CREATION_SECTIONS, createActionCreationSectionState, loadActionC
 import { ACTION_WORKFLOW_STEPS, createActionWorkflowState, loadActionWorkflowState, markActionWorkflowStep, saveActionWorkflowState, setActionWorkflowStepStatus, type ActionWorkflowState, type ActionWorkflowStepId } from "@/lib/actions/action-workflow";
 import { updateAction } from "@/lib/actions/http";
 import type { FormState } from "./action-declaration/model";
+import { createInitialFormState } from "./action-declaration/payload";
+import { clearDraft, loadDraftSnapshotResult } from "./action-declaration/draft-storage";
+import { clearPlannerActionHandoff, peekPlannerActionHandoff, writePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 
 const PANEL_TO_STEP: Record<ActionCreationPanelId, ActionWorkflowStepId> = {
   itineraire: "itineraire",
@@ -93,13 +96,14 @@ export function useActionCreationShellController({
   const [formSnapshotState, setFormSnapshotState] = useState<{ actionId: string | null; form: Partial<FormState> }>({ actionId: initialActionId, form: {} });
   const [formalitiesState, setFormalitiesState] = useState<{ actionId: string | null; readiness: "unknown" | "ready" | "blocked" }>({ actionId: initialActionId, readiness: "unknown" });
   const [transitionState, setTransitionState] = useState<{ actionId: string | null; error: string | null }>({ actionId: initialActionId, error: null });
+  const [draftResetVersion, setDraftResetVersion] = useState(0);
   const formSnapshot = formSnapshotState.actionId === currentActionId ? formSnapshotState.form : {};
   const formalitiesReadiness = formalitiesState.actionId === currentActionId ? formalitiesState.readiness : "unknown";
   const transitionError = transitionState.actionId === currentActionId ? transitionState.error : null;
   const actionIdForRender = currentActionId;
   const renderedWorkflow = workflow.actionId === actionIdForRender ? workflow : createActionWorkflowState(actionIdForRender, initialWorkflowStep(initialPanel, actionIdForRender, tabSearchParams));
   const renderedSectionState = sectionState.actionId === actionIdForRender ? sectionState : createActionCreationSectionState(actionIdForRender, initialSection);
-  const { preparationContext, setPreparationContext, preparationContextReady, preparationPersistenceStatus, markPreparationPersisted } = useActionPreparationContext({ defaultActorName, actionId: actionIdForRender });
+  const { preparationContext, setPreparationContext, preparationContextReady, preparationPersistenceStatus, markPreparationPersisted, resetPreparationContext } = useActionPreparationContext({ defaultActorName, actionId: actionIdForRender });
   const { handleBeforeFormChange, handlePreparationSelection, handlePreparationContextChange } = useActionCreationPreparationSync({ preparationContext, setPreparationContext, setWorkflow });
 
   const navigateToStep = useCallback((step: ActionWorkflowStepId) => {
@@ -162,6 +166,39 @@ export function useActionCreationShellController({
     const nextSection = ACTION_CREATION_SECTIONS[activeSectionIndex + 1];
     if (nextSection) navigateToSection(nextSection);
   }, [activeSectionIndex, navigateToSection]);
+  const handleDiscardLocalDraft = useCallback((): boolean => {
+    const draftRead = loadDraftSnapshotResult(
+      createInitialFormState(defaultActorName, "action"),
+      "action",
+      actionIdForRender,
+    );
+    if (draftRead.readError) return false;
+
+    const plannerHandoff = peekPlannerActionHandoff();
+    if (!clearPlannerActionHandoff()) return false;
+    if (!clearDraft(actionIdForRender)) {
+      if (plannerHandoff) writePlannerActionHandoff(plannerHandoff);
+      return false;
+    }
+
+    const resetSectionState = createActionCreationSectionState(actionIdForRender, "definir");
+    const resetWorkflowState = createActionWorkflowState(actionIdForRender, "itineraire");
+    setSectionState(resetSectionState);
+    setWorkflow(resetWorkflowState);
+    saveActionCreationSectionState(resetSectionState);
+    saveActionWorkflowState(resetWorkflowState);
+    setFormSnapshotState({ actionId: actionIdForRender, form: {} });
+    setFormalitiesState({ actionId: actionIdForRender, readiness: "unknown" });
+    setTransitionState({ actionId: actionIdForRender, error: null });
+    resetPreparationContext();
+    setDraftResetVersion((version) => version + 1);
+
+    const searchParams = { ...(tabSearchParams ?? {}), actionId: actionIdForRender ?? undefined };
+    router.replace(sectionsEnabled
+      ? buildActionCreationSectionHref("definir", searchParams)
+      : buildActionWorkflowStepHref("itineraire", searchParams));
+    return true;
+  }, [actionIdForRender, defaultActorName, resetPreparationContext, router, sectionsEnabled, setSectionState, setWorkflow, tabSearchParams]);
 
   return {
     actionIdForRender,
@@ -171,6 +208,7 @@ export function useActionCreationShellController({
     formSnapshot,
     formalitiesReadiness,
     handleBeforeActionPersisted,
+    handleDiscardLocalDraft,
     handleBeforeFormChange,
     handleFormalitiesReadiness,
     handleNextSection,
@@ -189,6 +227,7 @@ export function useActionCreationShellController({
     renderedSectionState,
     renderedWorkflow,
     transitionError,
+    draftResetVersion,
     initialSpace,
   };
 }

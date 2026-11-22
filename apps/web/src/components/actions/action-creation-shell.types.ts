@@ -15,6 +15,7 @@ import type {
 import type { ActionBeforeDeclarationForm } from "./action-declaration/before/form";
 import type { FormState } from "./action-declaration/model";
 import type { TerritoryLocationPreference } from "@/lib/user-location-preference";
+import type { ActionCreationActionBarConfig } from "./action-creation-action-bar";
 
 export type ActionCreationShellProps = Omit<
   ComponentProps<typeof ActionBeforeDeclarationForm>,
@@ -69,6 +70,8 @@ type ActionCreationCallbacks = {
 };
 
 export type ActionCreationSharedViewProps = ActionCreationCallbacks & {
+  actionBar: ActionCreationActionBarConfig;
+  draftResetVersion: number;
   currentActionId: string | null;
   draftContext: ActionCreationDraftContext;
   preparationContext: ActionPreparationContext;

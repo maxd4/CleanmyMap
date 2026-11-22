@@ -218,7 +218,7 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
     if (!lot.condition) {
       issues.push({
         field: "cigaretteButtsLots",
-        message: `Choisissez l’état du lot ${lot.id} pour calculer ses équivalents.`,
+        message: "Choisissez l’état global des mégots pour calculer les équivalents des lots.",
       });
       canCalculateTotal = false;
       continue;

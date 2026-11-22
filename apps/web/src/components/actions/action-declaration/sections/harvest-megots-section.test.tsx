@@ -76,7 +76,7 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain('value="propre"');
     expect(markup).toContain('value="humide"');
     expect(markup).toContain('value="mouille"');
-    expect(markup).toContain("Sec / Propre");
+    expect(markup).toContain("Propre (sec)");
     expect(markup).toContain("Humide");
     expect(markup).toContain("Mouillé");
   });
@@ -224,6 +224,8 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain("L estimés");
     expect(markup).toContain("L mesurés");
     expect(markup.indexOf('aria-label="État du lot 1"')).toBeLessThan(markup.indexOf("Valeur Nombre"));
+    expect(markup.match(/type="radio"/g)).toHaveLength(3);
+    expect(markup).not.toContain('aria-label="État du lot 1" value=');
     expect(markup).not.toContain('id="harvest-megots-count-slider"');
     expect(markup).toContain('readOnly=""');
     expect(markup).toContain("modifiez les contributions dans la zone ci-dessous");
@@ -233,5 +235,24 @@ describe("HarvestMegotsSection", () => {
     const markup = renderMegots({ wasteMegotsCondition: "" });
 
     expect(markup.match(/type="radio" checked=""/g)).toBeNull();
+  });
+
+  it("shows the single global condition before the lot editor and reads historical conditions", () => {
+    const markup = renderMegots({
+      wasteMegotsCondition: "",
+      megotsLots: [
+        { id: "old-dry", source: "count", value: "20", condition: "propre", historical: true },
+        { id: "old-wet", source: "mass_kg", value: "0.5", condition: "humide", historical: true },
+      ],
+      onAddMegotsLot: () => undefined,
+      onUpdateMegotsLot: () => undefined,
+    });
+
+    expect(markup.indexOf("État des mégots")).toBeLessThan(markup.indexOf("Valeur Nombre"));
+    expect(markup).toContain("L’état choisi s’applique aux nouveaux lots");
+    expect(markup).toContain("État historique");
+    expect(markup.match(/type="radio"/g)).toHaveLength(3);
+    expect(markup).not.toContain("État du lot 1</span>");
+    expect(markup).not.toContain("État du lot 2</span>");
   });
 });

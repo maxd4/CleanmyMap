@@ -260,7 +260,10 @@ function buildLegacyLotDraft(form: FormState): CigaretteButtsLotDraft[] {
   return [];
 }
 
-function buildLotMirrorUpdates(lots: CigaretteButtsLotDraft[]): Partial<FormState> {
+function buildLotMirrorUpdates(
+  lots: CigaretteButtsLotDraft[],
+  globalCondition: ActionMegotsCondition | "",
+): Partial<FormState> {
   const inputs = lots.map(parseDraftLot).filter((lot): lot is CigaretteButtsLotInput => lot !== null);
   if (inputs.length === 0 && lots.length > 0) return {};
   const normalized = normalizeCigaretteButtsMeasurementsFromUserInput({ cigaretteButtsLots: inputs });
@@ -269,8 +272,8 @@ function buildLotMirrorUpdates(lots: CigaretteButtsLotDraft[]): Partial<FormStat
     wasteMegotsKg: normalized.cigaretteButtsMassKg === null ? "" : formatDerivedNumber(normalized.cigaretteButtsMassKg),
     cigaretteButtsVolumeLiters: normalized.cigaretteButtsVolumeLiters === null ? "" : formatDerivedNumber(normalized.cigaretteButtsVolumeLiters),
     cigaretteButtsInputSource: null,
-    cigaretteButtsCondition: normalized.cigaretteButtsCondition ?? "",
-    wasteMegotsCondition: normalized.cigaretteButtsCondition ?? "",
+    cigaretteButtsCondition: globalCondition,
+    wasteMegotsCondition: globalCondition,
     ...buildMeasurementContextUpdates(normalized),
   };
 }
@@ -309,7 +312,7 @@ export type UseHarvestLogicResult = {
   megotsLotResults: CigaretteButtsLotResult[];
   hasExplicitMegotsLots: boolean;
   addMegotsLot: () => void;
-  updateMegotsLot: (id: string, patch: Partial<Omit<CigaretteButtsLotDraft, "id">>) => void;
+  updateMegotsLot: (id: string, patch: Partial<Pick<CigaretteButtsLotDraft, "source" | "value">>) => void;
   removeMegotsLot: (id: string) => void;
   moveMegotsLot: (id: string, direction: -1 | 1) => void;
   syncMegotsWeightFromWeight: (rawValue: string) => void;
@@ -504,21 +507,21 @@ export function useHarvestLogic({
       ? globalThis.crypto.randomUUID()
       : `lot-${Date.now()}-${currentLots.length}`;
     updateFields({
-      cigaretteButtsLots: [...currentLots, { id, source: "count", value: "", condition: "" }],
-      ...buildLotMirrorUpdates(currentLots),
+      cigaretteButtsLots: [...currentLots, { id, source: "count", value: "", condition: form.wasteMegotsCondition }],
+      ...buildLotMirrorUpdates(currentLots, form.wasteMegotsCondition),
     });
   }, [form, updateFields]);
 
-  const updateMegotsLot = useCallback((id: string, patch: Partial<Omit<CigaretteButtsLotDraft, "id">>) => {
+  const updateMegotsLot = useCallback((id: string, patch: Partial<Pick<CigaretteButtsLotDraft, "source" | "value">>) => {
     const currentLots = form.cigaretteButtsLots ?? buildLegacyLotDraft(form);
     const nextLots = currentLots.map((lot) => lot.id === id ? { ...lot, ...patch } : lot);
-    updateFields({ cigaretteButtsLots: nextLots, ...buildLotMirrorUpdates(nextLots) });
+    updateFields({ cigaretteButtsLots: nextLots, ...buildLotMirrorUpdates(nextLots, form.wasteMegotsCondition) });
   }, [form, updateFields]);
 
   const removeMegotsLot = useCallback((id: string) => {
     const currentLots = form.cigaretteButtsLots ?? buildLegacyLotDraft(form);
     const nextLots = currentLots.filter((lot) => lot.id !== id);
-    updateFields({ cigaretteButtsLots: nextLots, ...buildLotMirrorUpdates(nextLots) });
+    updateFields({ cigaretteButtsLots: nextLots, ...buildLotMirrorUpdates(nextLots, form.wasteMegotsCondition) });
   }, [form, updateFields]);
 
   const moveMegotsLot = useCallback((id: string, direction: -1 | 1) => {
@@ -529,7 +532,7 @@ export function useHarvestLogic({
     const nextLots = [...currentLots];
     const [lot] = nextLots.splice(index, 1);
     nextLots.splice(nextIndex, 0, lot!);
-    updateFields({ cigaretteButtsLots: nextLots, ...buildLotMirrorUpdates(nextLots) });
+    updateFields({ cigaretteButtsLots: nextLots, ...buildLotMirrorUpdates(nextLots, form.wasteMegotsCondition) });
   }, [form, updateFields]);
 
   const syncMegotsWeightFromWeight = useCallback(
@@ -614,6 +617,18 @@ export function useHarvestLogic({
 
   const syncMegotsCondition = useCallback(
     (rawValue: ActionMegotsCondition) => {
+      if (form.cigaretteButtsLots !== null) {
+        const nextLots = form.cigaretteButtsLots.map((lot) =>
+          lot.historical ? lot : { ...lot, condition: rawValue },
+        );
+        updateFields({
+          wasteMegotsCondition: rawValue,
+          cigaretteButtsCondition: rawValue,
+          cigaretteButtsLots: nextLots,
+          ...buildLotMirrorUpdates(nextLots, rawValue),
+        });
+        return;
+      }
       const source = form.cigaretteButtsInputSource;
       const count = source === "count" ? readValidCount(form.cigaretteButtsCount) : null;
       const mass = (source === "mass" || source === "mass_kg") ? readValidMass(form.wasteMegotsKg) : null;

@@ -17,13 +17,11 @@ describe("ActionBeforeVerificationSection", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionBeforeVerificationSection, {
         form,
-        submissionState: "idle",
         validationIssues: ["Le créneau doit être confirmé."],
         validationIssueFields: ["eventStartTime"],
         onEditDefinition: () => undefined,
         errorMessage: "Le créneau doit être confirmé.",
         guidedReadiness: "unknown",
-        isAuthenticated: true,
         updateField: () => undefined,
       }),
     );

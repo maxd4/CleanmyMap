@@ -1,11 +1,10 @@
-import { ArrowLeft, ArrowRight, CheckCircle2, CloudSun, ClipboardList, Map, Navigation, Users } from "lucide-react";
+import { CheckCircle2, CloudSun, ClipboardList, Map, Navigation, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { RouteSection } from "@/components/sections/rubriques/route";
 import { WeatherSection } from "@/components/sections/rubriques/weather/weather-section";
 import { EffectiveAuthStateProvider } from "@/lib/auth/use-effective-auth-state";
-import { ACTION_CREATION_SECTIONS, ACTION_CREATION_SECTION_LABELS, type ActionCreationSectionState } from "@/lib/actions/action-creation-sections";
+import { ACTION_CREATION_SECTION_LABELS, type ActionCreationSectionState } from "@/lib/actions/action-creation-sections";
 import type { ActionCreationPanelId, ActionCreationSectionId, ActionCreationSpace, ActionCreationSubsectionId } from "@/lib/actions/action-creation-routes";
-import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { isRouteInterventionMode } from "@/lib/actions/intervention-mode";
 import { ActionLifecycleNavigation, ActionCreationSectionNavigation } from "./action-creation-shell-navigation";
@@ -59,12 +58,14 @@ export function ActionCreationSectionContent({
   initialPanel: ActionCreationPanelId;
   onNavigateSection: (section: ActionCreationSectionId) => void;
 }) {
-  const { currentActionId, formProps, preparationContext, formalitiesReadiness, localDevAuth, draftContext, onFormChange, onActionPersisted, onFormalitiesReadiness, onPassToComplete, onPreparationSelection } = viewProps;
+  const { currentActionId, formProps, preparationContext, formalitiesReadiness, localDevAuth, draftContext, onFormChange, onActionPersisted, onFormalitiesReadiness, onPassToComplete, onPreparationSelection, actionBar, draftResetVersion } = viewProps;
   const routeRequested = initialPanel === "itineraire" || initialSubsection === "route";
   return (
     <div className="space-y-4">
       <ActionBeforeDeclarationForm
+        key={draftResetVersion}
         {...formProps}
+        actionBar={actionBar}
         onEditDefinition={(field) => {
           const targetSection = field === "arrivalLocationLabel" ? "preparer" : "definir";
           if (targetSection !== activeSection) onNavigateSection(targetSection);
@@ -115,8 +116,6 @@ export function ActionCreationSectionsView({
   transitionError,
   actionCreationSearchParams,
   onSelect,
-  onNext,
-  onPrevious,
 }: {
   state: ActionCreationSectionState;
   fr: boolean;
@@ -127,11 +126,8 @@ export function ActionCreationSectionsView({
   transitionError: string | null;
   actionCreationSearchParams?: Record<string, string | string[] | undefined>;
   onSelect: (section: ActionCreationSectionId) => void;
-  onNext: () => void;
-  onPrevious: () => void;
 }) {
   const activeSection = state.activeSection;
-  const index = ACTION_CREATION_SECTIONS.indexOf(activeSection);
   const labels = ACTION_CREATION_SECTION_LABELS[activeSection];
   const icon = activeSection === "preparer" ? <Map size={18} /> : <ClipboardList size={18} />;
   return (
@@ -145,7 +141,6 @@ export function ActionCreationSectionsView({
         <main aria-labelledby={`action-creation-section-${activeSection}`} className="min-w-0 space-y-4">
           <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700" aria-hidden="true">{icon}</span><div><h2 id={`action-creation-section-${activeSection}`} className="text-xl font-black text-emerald-950">{labels[fr ? "fr" : "en"]}</h2><p className="cmm-text-body cmm-text-primary mt-1">{labels.description[fr ? "fr" : "en"]}</p></div></div>
           {content}
-          <div className="flex flex-wrap justify-between gap-3 rounded-2xl border border-emerald-100 bg-white/85 p-3"><CmmButton type="button" tone="tertiary" variant="pill" size="sm" disabled={index === 0} onClick={onPrevious}><ArrowLeft size={14} />{fr ? "Étape précédente" : "Previous step"}</CmmButton>{index < ACTION_CREATION_SECTIONS.length - 1 ? <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onNext}>{fr ? "Étape suivante" : "Next step"}<ArrowRight size={14} /></CmmButton> : null}</div>
         </main>
         {activeSection === "preparer" ? (
           <div className="max-w-5xl">

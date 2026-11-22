@@ -47,7 +47,14 @@ describe("HarvestWasteSection visual order", () => {
     expect(markup.indexOf('data-testid="waste-measurement-visual"')).toBeLessThan(markup.indexOf('id="harvest-waste-kg"'));
     expect(markup).not.toContain('data-testid="harvest-waste-kg-slider-panel"');
     expect(markup).not.toContain('data-testid="waste-comparison-visual"');
-    expect(markup).toContain("Masse collectée (exacte)");
+    expect(markup).toContain("Masse collectée");
+  });
+
+  it("does not label a visual estimate as exact", () => {
+    const markup = renderWasteSection({ wasteMeasurementMethod: "estimation_visuelle" });
+    expect(markup).toContain("Masse estimée visuellement");
+    expect(markup).not.toContain("exacte");
+    expect(markup).toContain('aria-label="Masse estimée visuellement en kilogrammes"');
   });
 });
 

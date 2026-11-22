@@ -53,11 +53,14 @@ export function useActionPreparationContext({
   preparationContextReady: boolean;
   preparationPersistenceStatus: ActionPreparationPersistenceStatus;
   markPreparationPersisted: (persistedActionId?: string | null) => void;
+  resetPreparationContext: () => void;
 } {
   const [preparationContext, setPreparationContextState] = useState<ActionPreparationContext>(() => buildActionPreparationContext({}));
   const [loadedActionId, setLoadedActionId] = useState<string | null | undefined>(undefined);
   const [preparationPersistenceStatus, setPreparationPersistenceStatus] = useState<ActionPreparationPersistenceStatus>("saved");
+  const [reloadGeneration, setReloadGeneration] = useState(0);
   const persistedDraftSignatureRef = useRef<string | null>(null);
+  const suppressNextLocalPersistenceRef = useRef(false);
 
   const preparationContextReady = loadedActionId === actionId;
   const setPreparationContextWithDraftStatus = useCallback<Dispatch<SetStateAction<ActionPreparationContext>>>((update) => {
@@ -93,7 +96,7 @@ export function useActionPreparationContext({
     };
     void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadContext().catch(() => undefined);
     return () => { active = false; };
-  }, [actionId, defaultActorName]);
+  }, [actionId, defaultActorName, reloadGeneration]);
 
   useEffect(() => {
     if (!preparationContextReady) return;
@@ -114,6 +117,11 @@ export function useActionPreparationContext({
       refreshmentsProvided: preparationContext.refreshmentsProvided ?? draft.refreshmentsProvided,
     };
     const signature = preparationDraftSignature(preparationContext, draft);
+    if (suppressNextLocalPersistenceRef.current) {
+      suppressNextLocalPersistenceRef.current = false;
+      persistedDraftSignatureRef.current = signature;
+      return;
+    }
     if (persistedDraftSignatureRef.current === signature) return;
     try {
       const savedAt = saveDraft(nextDraft, undefined, null, actionId);
@@ -134,11 +142,21 @@ export function useActionPreparationContext({
     setPreparationPersistenceStatus("saved");
   };
 
+  const resetPreparationContext = useCallback(() => {
+    suppressNextLocalPersistenceRef.current = true;
+    persistedDraftSignatureRef.current = null;
+    setLoadedActionId(null);
+    setPreparationContextState(buildActionPreparationContext({}));
+    setPreparationPersistenceStatus("saved");
+    setReloadGeneration((generation) => generation + 1);
+  }, []);
+
   return {
     preparationContext: preparationContext.actionId === actionId ? preparationContext : buildActionPreparationContext({}),
     setPreparationContext: setPreparationContextWithDraftStatus,
     preparationContextReady: preparationContextReady && preparationContext.actionId === actionId,
     preparationPersistenceStatus: preparationContext.actionId === actionId ? preparationPersistenceStatus : "saved",
     markPreparationPersisted,
+    resetPreparationContext,
   };
 }

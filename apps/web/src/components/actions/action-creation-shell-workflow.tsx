@@ -1,24 +1,24 @@
-import { ArrowLeft, ArrowRight, ClipboardList, CloudSun, FileWarning, Navigation } from "lucide-react";
+import { ClipboardList, CloudSun, FileWarning, Navigation } from "lucide-react";
 import type { ReactNode } from "react";
 import { EffectiveAuthStateProvider } from "@/lib/auth/use-effective-auth-state";
 import { ActionCreationLegalPanel } from "./action-creation-legal-panel";
 import { ActionBeforeDeclarationForm } from "./action-declaration/before/form";
 import { RouteSection } from "@/components/sections/rubriques/route";
 import { WeatherSection } from "@/components/sections/rubriques/weather/weather-section";
-import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
-import { ACTION_WORKFLOW_STEP_LABELS, ACTION_WORKFLOW_STEPS, type ActionWorkflowState, type ActionWorkflowStepId } from "@/lib/actions/action-workflow";
+import { ACTION_WORKFLOW_STEP_LABELS, type ActionWorkflowState, type ActionWorkflowStepId } from "@/lib/actions/action-workflow";
 import { buildActionCreationTabHref, type ActionCreationSpace, type ActionCreationTab } from "@/lib/actions/action-creation-routes";
 import { JoinActionTabs } from "@/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs";
 import { WorkflowStepper, ActionLifecycleNavigation } from "./action-creation-shell-navigation";
 import type { ActionCreationSharedViewProps } from "./action-creation-shell.types";
+import { ActionCreationActionBar } from "./action-creation-action-bar";
 
 export function ActionWorkflowStepContent({ activeStep, ...viewProps }: ActionCreationSharedViewProps & { activeStep: ActionWorkflowStepId }) {
-  const { currentActionId, draftContext, preparationContext, formalitiesReadiness, formProps, localDevAuth, preparationPersistenceStatus, onActionPersisted, onFormChange, onFormalitiesReadiness, onPassToComplete, onPreparationValidated, onPreparationSelection, onPreparationContextChange } = viewProps;
+  const { currentActionId, draftContext, preparationContext, formalitiesReadiness, formProps, localDevAuth, preparationPersistenceStatus, onActionPersisted, onFormChange, onFormalitiesReadiness, onPassToComplete, onPreparationValidated, onPreparationSelection, onPreparationContextChange, actionBar, draftResetVersion } = viewProps;
   if (activeStep === "itineraire") return <EffectiveAuthStateProvider localDevAuth={localDevAuth}><RouteSection actionId={currentActionId} /></EffectiveAuthStateProvider>;
   if (activeStep === "paris") return <ActionCreationLegalPanel actionId={currentActionId} onReadinessChange={onFormalitiesReadiness} />;
   if (activeStep === "preparation") return <WeatherSection draftContext={draftContext} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} territoryPreference={viewProps.territoryPreference} />;
-  return <ActionBeforeDeclarationForm {...formProps} initialActionId={currentActionId} preparationContext={preparationContext} guidedWorkflow guidedReadiness={formalitiesReadiness} onFormChange={onFormChange} onActionPersisted={onActionPersisted} onPassToComplete={onPassToComplete} />;
+  return <ActionBeforeDeclarationForm key={draftResetVersion} {...formProps} actionBar={actionBar} initialActionId={currentActionId} preparationContext={preparationContext} guidedWorkflow guidedReadiness={formalitiesReadiness} onFormChange={onFormChange} onActionPersisted={onActionPersisted} onPassToComplete={onPassToComplete} />;
 }
 export function GuidedActionWorkflowView({
   state,
@@ -29,7 +29,7 @@ export function GuidedActionWorkflowView({
   transitionError,
   actionCreationSearchParams,
   onSelect,
-  onNext,
+  actionBar,
 }: {
   state: ActionWorkflowState;
   fr: boolean;
@@ -39,10 +39,9 @@ export function GuidedActionWorkflowView({
   transitionError: string | null;
   actionCreationSearchParams?: Record<string, string | string[] | undefined>;
   onSelect: (step: ActionWorkflowStepId) => void;
-  onNext: () => void;
+  actionBar: ActionCreationSharedViewProps["actionBar"];
 }) {
   const activeStep = state.activeStep;
-  const stepIndex = ACTION_WORKFLOW_STEPS.indexOf(activeStep);
   const icon = activeStep === "itineraire" ? <Navigation size={18} /> : activeStep === "paris" ? <FileWarning size={18} /> : activeStep === "preparation" ? <CloudSun size={18} /> : <ClipboardList size={18} />;
   return (
     <div data-testid="action-creation-shell" data-workflow-step={activeStep} className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6">
@@ -55,7 +54,7 @@ export function GuidedActionWorkflowView({
         <section aria-labelledby={`action-workflow-step-${activeStep}`} className="space-y-4" data-testid={`action-workflow-panel-${activeStep}`}>
           <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">{icon}</span><h2 id={`action-workflow-step-${activeStep}`} className="text-xl font-black text-emerald-950">{ACTION_WORKFLOW_STEP_LABELS[activeStep][fr ? "fr" : "en"]}</h2></div>
           {stepContent}
-          <div className="flex flex-wrap justify-between gap-3 rounded-2xl border border-emerald-100 bg-white/85 p-3"><CmmButton type="button" tone="tertiary" variant="pill" size="sm" disabled={stepIndex === 0} onClick={() => onSelect(ACTION_WORKFLOW_STEPS[stepIndex - 1])}><ArrowLeft size={14} />{fr ? "Étape précédente" : "Previous step"}</CmmButton>{stepIndex < ACTION_WORKFLOW_STEPS.length - 1 ? <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onNext}>{fr ? "Étape suivante" : "Next step"}<ArrowRight size={14} /></CmmButton> : null}</div>
+          {activeStep === "preformulaire" ? null : <ActionCreationActionBar config={actionBar} fr={fr} />}
         </section>
       </div>
     </div>

@@ -158,6 +158,20 @@ lectures nominatives anonymes et les accès directs navigateur sont interdits.
   notification de résultat et aucun XP. Le contrôle `attendance_status` reste
   indépendant du statut d'inscription et de la participation finale.
 
+Dans **Jour J**, les responsables voient une feuille d'appel privée avec filtre,
+compteurs par état et mutations révisées. Une saisie libre commence en
+`unknown` (« Ajouter à la liste ») ; « Ajouter comme présent » et un pointage
+`present` ne sont disponibles qu'au début effectif de l'action. Un bénévole
+qui consulte le briefing n'obtient pas la liste nominative. Celle-ci n'est
+jamais ajoutée au texte du briefing partageable.
+
+Dans **Bilan**, le nombre de présents identifiés est affiché séparément de
+l'effectif total déclaré et des catégories adultes, retraités et enfants. Un
+écart ne rapproche pas automatiquement des personnes anonymes et n'altère pas
+les mesures collectives ni le formulaire de participation finale. Une entrée
+du registre conservée au Jour J reste la même entrée au Bilan ; les corrections
+et retraits restent audités par le serveur.
+
 La source canonique dépend de la phase du cycle de vie :
 
 ```txt

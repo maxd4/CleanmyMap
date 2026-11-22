@@ -301,9 +301,9 @@ describe("action declaration hydration model", () => {
     );
 
     expect(result.cigaretteButtsLots).toEqual([
-      { id: "lot-count", source: "count", value: "12", condition: "propre" },
-      { id: "lot-mass", source: "mass_kg", value: "0.4", condition: "humide" },
-      { id: "lot-volume", source: "volume_l", value: "0", condition: "mouille" },
+      { id: "lot-count", source: "count", value: "12", condition: "propre", historical: true },
+      { id: "lot-mass", source: "mass_kg", value: "0.4", condition: "humide", historical: true },
+      { id: "lot-volume", source: "volume_l", value: "0", condition: "mouille", historical: true },
     ]);
   });
 });
