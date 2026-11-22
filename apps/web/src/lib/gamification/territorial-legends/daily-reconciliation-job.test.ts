@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const snapshotMock = vi.hoisted(() => vi.fn());
 const reconcileUserMock = vi.hoisted(() => vi.fn());
+const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: getSupabaseServerClientMock,
+}));
 vi.mock("./reconciliation", () => ({ reconcileTerritorialLegendSnapshot: snapshotMock }));
 vi.mock("../reconciliation/gamification-reconciliation", () => ({ reconcileUserGamification: reconcileUserMock }));
 
@@ -46,5 +50,21 @@ describe("territorial legend daily reconciliation", () => {
       reasonCategory: "other",
       reconcileTerritorialLegends: false,
     });
+  });
+
+  it("uses the service-role Supabase client when the cron creates its own client", async () => {
+    const serviceClient = {} as never;
+    getSupabaseServerClientMock.mockReturnValue(serviceClient);
+
+    await runTerritorialLegendDailyReconciliation({
+      now: new Date("2026-11-03T12:00:00.000Z"),
+    });
+
+    expect(getSupabaseServerClientMock).toHaveBeenCalledWith(true);
+    expect(snapshotMock).toHaveBeenCalledWith(
+      serviceClient,
+      new Date("2026-11-03T12:00:00.000Z"),
+      { refreshMissingAttributions: true },
+    );
   });
 });

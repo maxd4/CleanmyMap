@@ -21,6 +21,9 @@ describe("action permissions", () => {
 
   it("rejects missing identities and unrelated users for relation-only management", () => {
     expect(
+      canManageActionByRelation(null, { createdByClerkId: null }, []),
+    ).toBe(false);
+    expect(
       canManageActionByRelation(undefined, { createdByClerkId: null }, []),
     ).toBe(false);
     expect(

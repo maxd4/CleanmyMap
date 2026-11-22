@@ -213,12 +213,18 @@ export async function fetchActionCollectionContextReferenceAverages(
       })
     : await supabase.rpc("action_collection_context_reference_averages_v1");
   if (result.error) throw result.error;
+  if (!Array.isArray(result.data)) {
+    throw new Error("La RPC des références contextuelles a renvoyé une réponse invalide.");
+  }
   const references: ActionCollectionContextReferences = {};
-  for (const row of Array.isArray(result.data) ? result.data : []) {
+  for (const row of result.data) {
     const normalized = normalizeActionCollectionContextReferenceRow(
       row as ActionCollectionContextReferenceRow,
     );
-    if (normalized) references[normalized.actionContext] = normalized;
+    if (!normalized) {
+      throw new Error("La RPC des références contextuelles a renvoyé une ligne invalide.");
+    }
+    references[normalized.actionContext] = normalized;
   }
   return references;
 }

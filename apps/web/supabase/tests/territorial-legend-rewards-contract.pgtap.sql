@@ -3,7 +3,7 @@
 -- migration reset; it must never target the linked or production database.
 
 begin;
-select plan(78);
+select plan(81);
 
 set local role postgres;
 create temp table territorial_legend_contract_state (
@@ -354,6 +354,29 @@ select is(
 select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2026 and award_kind = 'conquest'), 1, 'conquest is deduplicated per user, grade and campaign across territories');
 select is((select territory_code from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2026 and validity_status = 'active'), '69123', 'the active title follows the current territory without transferring days');
 select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2026 and threshold_days in (365, 730)), 0, 'annual campaigns never create legacy 365 or 730 day rewards');
+
+reset role;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('request.jwt.claim.role', '', true);
+select throws_ok(
+  $$select public.set_territorial_legend_consent(null, true, '15_or_over', now())$$,
+  'P0001',
+  'user id required',
+  'service-only consent guard accepts JWT claims without the legacy role setting'
+);
+select throws_ok(
+  $$select public.reconcile_territorial_legend_snapshot(null::date, '[]'::jsonb)$$,
+  'P0001',
+  'effective date must be a non-future civil date',
+  'service-only snapshot writer accepts JWT claims without the legacy role setting'
+);
+select throws_ok(
+  $$select public.reconcile_territorial_legend_snapshot(current_date, '[]'::jsonb, null::timestamptz)$$,
+  'P0001',
+  'territorial legend fact revision is required',
+  'revision-checked snapshot writer accepts JWT claims without the legacy role setting'
+);
 
 reset role;
 set local role anon;

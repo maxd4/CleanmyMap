@@ -17,6 +17,11 @@ Le job de stockage énumère les objets avec le client serveur `service_role` vi
 l'API Storage paginée. Le schéma `storage` n'est pas ajouté aux schémas
 PostgREST exposés.
 
+La réconciliation territoriale conserve les grants `service_role` et les
+contrôles SQL. Le client du cron est créé avec l'option service role; les RPC
+lisent le rôle effectif via `auth.role()`, qui couvre les formes JWT PostgREST
+compatibles sans journaliser de clé ou de jeton.
+
 ## Rétention des brouillons et actions en attente
 
 Le cron unique `/api/cron/maintenance` (`20 3 * * *`, UTC) exécute chaque jour

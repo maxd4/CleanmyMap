@@ -29,6 +29,10 @@ const monotoneRevisionMigration = readFileSync(
   new URL("../../../supabase/migrations/20261105000014_territorial_legend_monotone_fact_revision.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ");
+const serviceRoleClaimMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261122000007_service_role_claim_compatibility.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ");
 const migrationSource = readFileSync(
   new URL("../../../supabase/migrations/20261103000003_territorial_legend_rewards.sql", import.meta.url),
   "utf8",
@@ -139,7 +143,7 @@ describe("territorial legend rewards migration", () => {
     expect(revisionMigration).toContain("revoke all on function public.reconcile_territorial_legend_snapshot(date, jsonb)");
     expect(revisionMigration).toContain("grant execute on function public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz) to service_role");
     expect(pgtap).toContain("public.get_territorial_legend_fact_revision()");
-    expect(pgtap).toContain("select plan(78)");
+    expect(pgtap).toContain("select plan(81)");
   });
 
   it("makes the privileged writer private and advances the watermark on every fact mutation", () => {
@@ -152,7 +156,7 @@ describe("territorial legend rewards migration", () => {
     expect(monotoneRevisionMigration).toContain("current_setting('request.jwt.claim.role', true), '') <> 'service_role'");
     expect(monotoneRevisionMigration).toContain("revoke all on function public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz)");
     expect(monotoneRevisionMigration).toContain("grant execute on function public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz)");
-    expect(pgtap).toContain("select plan(78)");
+    expect(pgtap).toContain("select plan(81)");
     expect(pgtap).toContain("non-maximal fact deletion advances the canonical revision");
     expect(pgtap).toContain("anon cannot execute snapshot reconciliation");
     expect(pgtap.indexOf("a two-winner snapshot is accepted")).toBeLessThan(
@@ -162,5 +166,15 @@ describe("territorial legend rewards migration", () => {
       pgtap.indexOf("date '2025-07-05'"),
     );
     expect(pgtap).toContain("delete from public.territorial_legend_consents where user_id = 'legend-consent-contract'");
+  });
+
+  it("keeps territorial and XP writers service-only while reading consolidated JWT claims", () => {
+    expect(serviceRoleClaimMigration).toContain("public.set_territorial_legend_consent(text, boolean, text, timestamptz)");
+    expect(serviceRoleClaimMigration).toContain("public.reconcile_territorial_legend_snapshot(date, jsonb)");
+    expect(serviceRoleClaimMigration).toContain("public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz)");
+    expect(serviceRoleClaimMigration).toContain("public.apply_gamification_reconciliation(text, jsonb, jsonb, jsonb, bigint[], timestamptz, jsonb, jsonb, jsonb)");
+    expect(serviceRoleClaimMigration).toContain("coalesce(auth.role(), '') <> 'service_role'");
+    expect(serviceRoleClaimMigration).toContain("function grants and the service_role equality check");
+    expect(pgtap).toContain("JWT claims without the legacy role setting");
   });
 });

@@ -175,7 +175,7 @@ test("territorial revision parser rejects truncation, malformed values and missi
 
 test("territorial pgTAP purges every current fixture before the 2025 campaign", () => {
   const source = readFileSync(new URL("../../apps/web/supabase/tests/territorial-legend-rewards-contract.pgtap.sql", import.meta.url), "utf8");
-  assert.match(source, /select plan\(78\);/);
+  assert.match(source, /select plan\(81\);/);
   const reactivation = source.indexOf("reactivation creates a new non-retroactive watermark");
   const historicalPurge = source.indexOf("-- Isolate the historical campaign");
   const historicalCampaign = source.indexOf("date '2025-07-05'");

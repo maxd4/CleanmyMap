@@ -357,4 +357,19 @@ describe("action collection reference averages", () => {
       { p_as_of_date: "2026-10-31" },
     );
   });
+
+  it("keeps a legitimate empty population distinct from an invalid RPC response", async () => {
+    const emptyRpc = vi.fn().mockResolvedValue({ data: [], error: null });
+    await expect(fetchActionCollectionContextReferenceAverages({ rpc: emptyRpc } as never, {
+      asOfDate: "2026-10-31",
+    })).resolves.toEqual({});
+
+    const invalidRpc = vi.fn().mockResolvedValue({
+      data: [{ action_context: "future-context" }],
+      error: null,
+    });
+    await expect(fetchActionCollectionContextReferenceAverages({ rpc: invalidRpc } as never, {
+      asOfDate: "2026-10-31",
+    })).rejects.toThrow("ligne invalide");
+  });
 });

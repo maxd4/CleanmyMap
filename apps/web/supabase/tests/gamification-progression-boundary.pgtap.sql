@@ -1,6 +1,6 @@
 begin;
 
-select plan(56);
+select plan(57);
 
 -- The projection is server-owned. The assertions below verify the effective
 -- grants first, then use the real reconciliation RPC for producer behavior.
@@ -235,6 +235,16 @@ select throws_ok($$select public.apply_gamification_reconciliation(
 select is((select count(*)::integer from public.progression_events where user_id = 'm7c-owner-a' and source_id = 'm7c-rollback-event'), 0, 'the failed reconciliation rolls back its ledger event');
 select is((select count(*)::integer from public.app_notifications where user_id = 'm7c-owner-a' and payload ->> 'reconciliationId' = 'm7c-rollback-receipt'), 0, 'the failed reconciliation creates no receipt');
 select is((select xp_total::integer from public.progression_profiles where user_id = 'm7c-owner-a'), 5, 'the failed reconciliation preserves the prior profile');
+
+select set_config('request.jwt.claim.role', '', true);
+select is(
+  (public.apply_gamification_reconciliation(
+    'm7c-role-claim-contract', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb,
+    '{}'::bigint[], null, null, null, null
+  )->>'status'),
+  'applied',
+  'service-only XP reconciliation accepts JWT claims without the legacy role setting'
+);
 
 reset role;
 set local role authenticated;
