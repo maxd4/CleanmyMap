@@ -9,14 +9,29 @@ const migration = readFileSync(
   ),
   "utf8",
 );
+const volumeProxyV3Migration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261122000010_scientific_projection_volume_proxy_v3.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("scientific projection volume-lot reconciliation migration STATIC_CONTRACT", () => {
   it("keeps the canonical TypeScript projection as the SQL input", () => {
     expect(migration).toContain("public_impact_action_cigarette_butt_projections");
     expect(migration).toContain("projected_lot_results jsonb");
     expect(migration).toContain("upsert_public_impact_action_cigarette_butt_projections");
-    expect(migration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
+    expect(migration).toContain("'impact-terrain-public-2026.09-v7'");
     expect(migration).not.toMatch(/(?:volume_l|volume)[\s\S]{0,160}(?:600|700)|(?:600|700)[\s\S]{0,160}(?:volume_l|volume)/i);
+  });
+
+  it("publishes the current version without mutating sources or cached state", () => {
+    expect(volumeProxyV3Migration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
+    expect(volumeProxyV3Migration).toContain("alter column methodology_version set default");
+    expect(volumeProxyV3Migration).not.toMatch(/update\s+public\.actions/i);
+    expect(volumeProxyV3Migration).not.toMatch(/delete\s+from\s+public\.actions/i);
+    expect(volumeProxyV3Migration).not.toMatch(/update\s+public\.public_impact_action_aggregate_state/i);
   });
 
   it("does not rewrite observations and preserves the compatible state RPC signatures", () => {
