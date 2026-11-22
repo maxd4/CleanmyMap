@@ -16,6 +16,6 @@ export function personalAiImportIdentityHash(
 ): Promise<string> {
   return hashPersonalAiImportValue([
     "personal-ai-import-v2", provider, sourceVersion, periodStartUtc, periodEndUtc, model,
-    Object.entries(sourceScope).sort(([left], [right]) => left.localeCompare(right)),
+    Object.entries(sourceScope).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0),
   ]);
 }
