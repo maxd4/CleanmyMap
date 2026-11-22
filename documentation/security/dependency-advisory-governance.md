@@ -34,26 +34,47 @@ Vérification des dernières releases compatibles Expo SDK 57 le 2026-11-22 :
 `@expo/metro-config ~57.0.14`. Les releases correspondantes d'Expo ont corrigé
 leurs plages `glob` en `^14.0.3`, également déclarée par
 `@sentry/bundler-plugins` ; l'override courant `14.0.2` est trop bas. En revanche,
-`@expo/fingerprint@0.20.16` déclare toujours `minimatch ^10.2.6`. La seule
-release publiée sur la ligne 10.x est `10.2.6`, que l'advisory
-`GHSA-g3hv-75wg-m249` identifie explicitement comme vulnérable ; sa plage
-n'accepte pas le premier correctif, `11.0.1`. La ligne Expo SDK 57 n'offre donc
-pas encore de graphe à la fois propre à `npm ls` et sécurisé pour ce chemin.
-Le lockfile courant conserve les versions effectives corrigées
-`glob@14.0.2` et `minimatch@11.0.1`. La résolution reste hors plage pour les
-déclarations actuellement verrouillées (`glob ^13.0.0` dans plusieurs packages
-Expo, `minimatch ^10.2.2` dans `@expo/fingerprint@0.20.13`) et pour
-`@sentry/bundler-plugins` (`glob ^14.0.3`). La dernière release Expo corrige
-les plages `glob`, mais ne corrige pas `@expo/fingerprint` ; la dernière
-`minimatch` de la ligne 10.x est encore vulnérable, tandis que le correctif
-`11.0.1` sort de sa plage. `npm ls glob minimatch --all` doit donc rester en
-échec `ELSPROBLEMS` tant que ces incompatibilités persistent. Aucun
-`glob@13.x` ni `minimatch@10.x` ne doit être installé pour faire disparaître ce
-diagnostic. L'override Sentry `glob` n'a pas été modifié : le correctif sûr
-nécessiterait aussi une régénération et une validation du lockfile sur tout le
-graphe, qui n'a pas été obtenue dans ce lot. Aucun override supplémentaire ni
-fork n'est ajouté ; la mise à jour des releases Expo reste en attente d'un
-correctif de plage pour `@expo/fingerprint`.
+`@expo/fingerprint` conserve volontairement une plage `minimatch ^10`. La PR
+officielle [expo/expo#53091](https://github.com/expo/expo/pull/53091), fusionnée
+le 2026-11-06, a fermé l'issue [#52735](https://github.com/expo/expo/issues/52735) :
+elle retire `glob` de `@expo/fingerprint`, mais garde minimatch en place et
+documente pourquoi.
+
+Trois constats doivent rester distincts :
+
+- **Vulnérabilité déclarée :** GHSA-g3hv-75wg-m249 classe les versions
+  `minimatch <11.0.1` dans sa plage affectée. `10.2.6` demeure donc déclarée
+  vulnérable par l'advisory et peut rester signalée par les scanners ; la
+  décision d'Expo ne modifie pas l'advisory ni les autres usages de minimatch.
+- **Exploitabilité selon Expo :** pour l'usage de `@expo/fingerprint`, le
+  mainteneur indique que le traitement vulnérable exige
+  `optimizationLevel >= 2`, alors que fingerprint utilise `dot: true`, garde
+  la valeur par défaut `1` et n'expose pas de configuration permettant de la
+  porter à `2`. Expo considère donc cette advisory non exploitable dans cet
+  usage précis. Ce constat ne vaut pas pour tous les consommateurs de minimatch.
+- **Compatibilité et comportement :** `minimatch@11` n'est pas tenu pour
+  compatible avec fingerprint. Expo relève des changements de correspondance
+  au-delà de globstar, notamment pour les extglobs et certains motifs malformés ;
+  ceux-ci peuvent modifier les chemins retenus et donc les résultats de
+  fingerprint. La version 11 n'est pas un remplacement sémantiquement neutre.
+
+Le lockfile courant contient `@expo/fingerprint@0.20.13`, dont la déclaration
+reste `minimatch ^10.2.2`, tandis que l'override racine résout minimatch vers
+`11.0.1`. C'est une incompatibilité de plage npm, distincte de la conclusion
+d'exploitabilité d'Expo : le graphe ne doit pas être présenté comme validé par
+`npm ls glob minimatch --all` ou Expo Doctor. `npm ls` reste bloqué par cette
+résolution hors plage (`ELSPROBLEMS` attendu) ; il n'a pas été exécuté dans ce
+lot documentaire. Ne pas rétablir une version 10.x pour faire disparaître ce
+diagnostic, puisque cette version reste déclarée dans la plage de l'advisory.
+Ne pas traiter non plus `11.0.1` comme la résolution upstream attendue pour
+Expo SDK 57.
+
+Le blocage de résolution reste ouvert sans échéance fictive. Une résolution
+ultérieure demandera soit une compatibilité officiellement établie qui préserve
+le comportement de fingerprint attendu, soit un arbitrage distinct de migration
+SDK. Aucun override supplémentaire ni fork n'est ajouté dans l'attente de cette
+preuve. Les changements de plages `glob` décrits ci-dessus sont indépendants de
+la décision Expo sur minimatch.
 
 Les chemins et versions sont vérifiés par
 `apps/mobile/security/expo-glob-minimatch-security.test.mjs`,
