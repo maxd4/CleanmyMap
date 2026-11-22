@@ -99,6 +99,36 @@ fonctionnalités liées dans une même exécution). Ces durées et volumes de li
 restent indicatifs : ils ne sont ni quotas, ni budgets bloquants, ni conditions
 d'arrêt.
 
+### Fichiers Markdown à exécutions Codex successives
+
+Lorsqu'un fichier Markdown contient plusieurs prompts Codex à exécuter dans
+l'ordre, appliquer le format suivant, sauf demande utilisateur explicite d'un
+autre format :
+
+1. Ouvrir par un titre court qui identifie le chantier.
+2. Placer immédiatement après le titre un seul paragraphe d'introduction dans
+   un bloc copiable ```` ```text ```` destiné au début de la conversation Codex.
+   Il expose l'objectif global, l'enchaînement des lots et les règles
+   transversales indispensables, sans liste ni sous-rubrique.
+3. Enchaîner immédiatement avec tous les lots, dans leur ordre réel d'exécution.
+   Chaque titre comporte le rang et le nombre total (`01/N`), un identifiant,
+   une priorité et un intitulé.
+4. Placer immédiatement après chaque titre un bloc Markdown ```` ```text ````
+   indépendant et directement copiable. Chaque prompt reste autonome et précise
+   son objectif, ses modifications attendues, ses invariants pertinents, ses
+   validations et sa `STOP CONDITION`.
+5. Terminer avec le bloc du dernier lot : aucune annexe, table de suivi,
+   conclusion ni instruction ne suit. Toute consigne opérationnelle nécessaire
+   figure dans l'introduction ou dans le prompt qui en dépend.
+
+Avant de découper, réconcilier les exigences contradictoires, établir les
+dépendances et choisir des lots cohérents plutôt qu'un lot massif ou des
+micro-corrections. Éviter les répétitions entre l'introduction et les prompts,
+sans supprimer l'autonomie de chaque prompt. Le nombre, les priorités et l'ordre
+des lots décrivent uniquement le programme concerné et ne deviennent pas des
+règles permanentes. Ne pas recopier les procédures déjà gouvernées par
+`AGENTS.md` ; respecter toute demande utilisateur qui impose un autre format.
+
 Pour un lot XL, le prompt doit énumérer 2 à 4 jalons internes ordonnés. Codex
 les implémente successivement sans interrompre le chantier au premier jalon
 réussi ; la `STOP CONDITION` porte sur le résultat fonctionnel et les
