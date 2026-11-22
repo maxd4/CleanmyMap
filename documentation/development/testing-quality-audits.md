@@ -284,12 +284,15 @@ La même analyse examine, sans gate supplémentaire, les contrats critiques dont
 un owner est identifiable dans le code : RPC privilégiées, consommateurs RPC,
 privilèges RPC non établis, autorisations, services partagés et calculs
 scientifiques. Un appel `.rpc()` classe le code appelant comme
-`RPC_CONSUMER` et ne prouve jamais le privilège de la fonction appelée. Une
-définition SQL est `PRIVILEGED_RPC` uniquement si sa source établit
-`SECURITY DEFINER` ou un droit `EXECUTE` explicite pour `service_role`/
-`postgres`; les droits explicites `PUBLIC`/`anon` et `authenticated` gardent
-leurs classifications distinctes. Sans preuve de privilège locale à la
-définition SQL, le contrat reste `RPC_PRIVILEGE_UNESTABLISHED`.
+`RPC_CONSUMER` et ne prouve jamais le privilège de la fonction appelée. Pour
+une définition SQL, `SECURITY DEFINER`/`INVOKER` décrit le mode d'exécution et
+les `GRANT EXECUTE` de la migration documentent les rôles explicitement visés ;
+ni l'un ni l'autre ne suffit à établir l'ACL effective après l'application de
+toutes les migrations. Le rapport conserve ces preuves avec leurs chemins et
+lignes, mais classe le privilège effectif `RPC_PRIVILEGE_UNESTABLISHED` tant
+qu'il n'est pas établi à l'échelle de la base. Les GRANT mixtes ne deviennent
+donc jamais un accès exclusivement privilégié du seul fait qu'ils incluent
+`service_role`.
 
 Les cycles de vie sont extraits des déclarations de statut explicites dans
 l'en-tête du document (par exemple `Statut documentaire : CURRENT`,

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -54,7 +55,7 @@ const completeRpcLines = (source, permission) => [
   "Tests : scénario de régression et test pgTAP associés.",
 ];
 
-test("distingue RPC privilégiée, RPC publique, privilège inconnu et consommateur navigateur", () => {
+test("sépare les rôles GRANT, le mode SECURITY et le privilège effectif inconnu", () => {
   const contracts = discover({
     [paths.publicRpc]: sqlFunction({ name: "public_lookup", grant: "anon" }),
     [paths.privilegedRpc]: sqlFunction({ name: "secure_lookup", security: "definer", grant: "service_role" }),
@@ -63,8 +64,16 @@ test("distingue RPC privilégiée, RPC publique, privilège inconnu et consommat
   });
   const byPathAndKind = new Map(contracts.map((contract) => [`${contract.path}:${contract.kind}`, contract]));
 
-  assert.equal(byPathAndKind.get(`${paths.publicRpc}:RPC_PUBLIC`).privilege.status, "PUBLIC");
-  assert.equal(byPathAndKind.get(`${paths.privilegedRpc}:PRIVILEGED_RPC`).privilege.status, "PRIVILEGED");
+  const declaredPublic = byPathAndKind.get(`${paths.publicRpc}:RPC_PRIVILEGE_UNESTABLISHED`);
+  assert.equal(declaredPublic.privilege.status, "UNESTABLISHED");
+  assert.deepEqual(declaredPublic.privilege.declaredRoles.map((entry) => entry.role), ["anon"]);
+  const declaredPrivileged = byPathAndKind.get(`${paths.privilegedRpc}:RPC_PRIVILEGE_UNESTABLISHED`);
+  assert.equal(declaredPrivileged.privilege.status, "UNESTABLISHED");
+  assert.deepEqual(declaredPrivileged.privilege.declaredRoles.map((entry) => entry.role), ["service_role"]);
+  assert.equal(declaredPrivileged.privilege.executionMode.value, "DEFINER");
+  assert.deepEqual(declaredPrivileged.privilege.executionMode.evidence[0], {
+    path: paths.privilegedRpc, line: 1, type: "SECURITY_DEFINER",
+  });
   assert.equal(byPathAndKind.get(`${paths.unknownRpc}:RPC_PRIVILEGE_UNESTABLISHED`).privilege.status, "UNESTABLISHED");
   const consumer = byPathAndKind.get(`${paths.consumer}:RPC_CONSUMER`);
   assert.equal(consumer.signals.privileged, false);
@@ -72,7 +81,37 @@ test("distingue RPC privilégiée, RPC publique, privilège inconnu et consommat
   assert.deepEqual(consumer.rpcNames, ["public_lookup"]);
 });
 
-test("attribue DOCUMENTED au fichier source cité et produit des preuves CURRENT localisables", () => {
+test("préserve les GRANT mixtes de la fonction réelle sans établir l'ACL effective", () => {
+  const migrationPath = "apps/web/supabase/migrations/20261030000008_association_action_review.sql";
+  const migrationText = readFileSync(new URL(`../../${migrationPath}`, import.meta.url), "utf8");
+  const contract = discover({ [migrationPath]: migrationText })
+    .find((entry) => entry.symbol === "is_public_future_pre_action_reviewed");
+
+  assert.ok(contract);
+  assert.equal(contract.kind, "RPC_PRIVILEGE_UNESTABLISHED");
+  assert.equal(contract.privilege.status, "UNESTABLISHED");
+  assert.deepEqual(contract.privilege.declaredRoles.map(({ role, line, path }) => ({ role, line, path })), [
+    { role: "public", line: 76, path: migrationPath },
+    { role: "anon", line: 76, path: migrationPath },
+    { role: "authenticated", line: 76, path: migrationPath },
+    { role: "service_role", line: 76, path: migrationPath },
+  ]);
+  assert.deepEqual(contract.privilege.executionMode, {
+    value: "INVOKER", provenance: "SQL_DEFAULT", evidence: [],
+  });
+
+  const contradictory = document("documentation/rpc/mixed-grant.md", "CURRENT", completeRpcLines(
+    migrationPath,
+    "service_role uniquement",
+  ));
+  const review = reviewCriticalContracts({ contracts: [contract], documents: [contradictory] })[0];
+  assert.equal(review.status, "REVIEW_REQUIRED");
+  assert.ok(review.reasons.some((reason) => reason.startsWith("CONTRADICTORY_PRIVILEGE_CLAIM:")));
+  assert.equal(review.evidence.privilege.declaredRoles[0].path, migrationPath);
+  assert.equal(review.evidence.privilege.declaredRoles[0].line, 76);
+});
+
+test("attribue la source CURRENT sans prétendre établir l'ACL effective depuis un GRANT isolé", () => {
   const contracts = discover({ [paths.publicRpc]: sqlFunction({ name: "public_lookup", grant: "anon" }) });
   const reviews = reviewCriticalContracts({
     contracts,
@@ -80,13 +119,13 @@ test("attribue DOCUMENTED au fichier source cité et produit des preuves CURRENT
   });
   const review = reviews[0];
 
-  assert.equal(review.kind, "RPC_PUBLIC");
-  assert.equal(review.status, "DOCUMENTED");
+  assert.equal(review.kind, "RPC_PRIVILEGE_UNESTABLISHED");
+  assert.equal(review.status, "NOT_MEASURED");
   assert.equal(review.documentsExamined[0].attributions[0].matchKind, "SOURCE_PATH");
   assert.ok(review.evidence.dimensionProofs.permissions[0].line > 0);
   assert.equal(review.evidence.dimensionProofs.permissions[0].documentPath, "documentation/rpc/public-lookup.md");
   assert.deepEqual(summarizeCriticalContractReviews(reviews), {
-    criticalContracts: 1, documentedContracts: 1, reviewRequiredContracts: 0, notMeasuredContracts: 0,
+    criticalContracts: 1, documentedContracts: 0, reviewRequiredContracts: 0, notMeasuredContracts: 1,
   });
 });
 
@@ -130,19 +169,19 @@ test("requiert une preuve CURRENT et laisse PLAN et HISTORY en revue", () => {
     ],
   });
 
-  assert.equal(reviews[0].status, "REVIEW_REQUIRED");
+  assert.equal(reviews[0].status, "NOT_MEASURED");
   assert.ok(reviews[0].reasons.includes("PLAN_IS_NOT_CURRENT_CONTRACT:documentation/rpc/plan.md"));
   assert.ok(reviews[0].reasons.includes("NON_CURRENT_DOCUMENTATION:documentation/rpc/history.md"));
   assert.deepEqual(reviews[0].documentsExamined.map((entry) => entry.path), ["documentation/rpc/plan.md", "documentation/rpc/history.md"]);
 });
 
-test("une preuve CURRENT complète reste valide malgré une référence HISTORY attribuée", () => {
+test("une preuve CURRENT attribuée ne transforme pas un GRANT isolé en privilège effectif", () => {
   const contracts = discover({ [paths.publicRpc]: sqlFunction({ name: "public_lookup", grant: "anon" }) });
   const current = document("documentation/rpc/current.md", "CURRENT", completeRpcLines(paths.publicRpc, "anon et public"));
   const history = document("documentation/rpc/history.md", "HISTORY", completeRpcLines(paths.publicRpc, "anon et public"));
   const review = reviewCriticalContracts({ contracts, documents: [current, history] })[0];
 
-  assert.equal(review.status, "DOCUMENTED");
+  assert.equal(review.status, "NOT_MEASURED");
   assert.deepEqual(review.documentsExamined.map((entry) => entry.path), ["documentation/rpc/current.md", "documentation/rpc/history.md"]);
   assert.ok(review.evidence.dimensionProofs.permissions.every((proof) => proof.documentPath === "documentation/rpc/current.md"));
 });

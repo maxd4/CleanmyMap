@@ -118,17 +118,27 @@ function grantStatements(text) {
 }
 
 function privilegeForSqlFunction(definition, definitions, grants, file) {
-  if (/\bsecurity\s+definer\b/i.test(definition.text)) {
-    return { status: "PRIVILEGED", evidence: [{ path: file, line: definition.line, type: "SECURITY_DEFINER" }] };
-  }
   const sameName = definitions.filter((candidate) => candidate.symbol === definition.symbol);
   const matchingGrants = grants.filter((grant) => grant.symbol === definition.symbol
     && (sameName.length === 1 || normalizedSqlArguments(grant.arguments) === normalizedSqlArguments(definition.arguments)));
-  const evidence = matchingGrants.flatMap((grant) => grant.roles.map((role) => ({ path: file, line: grant.line, type: "GRANT_EXECUTE", role })));
-  if (evidence.some((entry) => ["service_role", "postgres"].includes(entry.role))) return { status: "PRIVILEGED", evidence };
-  if (evidence.some((entry) => ["public", "anon"].includes(entry.role))) return { status: "PUBLIC", evidence };
-  if (evidence.some((entry) => entry.role === "authenticated")) return { status: "AUTHENTICATED", evidence };
-  return { status: "UNESTABLISHED", evidence };
+  const declaredRoles = matchingGrants.flatMap((grant) => grant.roles.map((role) => ({ path: file, line: grant.line, type: "GRANT_EXECUTE", role })));
+  const explicitSecurityMode = definition.text.match(/\bsecurity\s+(definer|invoker)\b/i)?.[1]?.toUpperCase() ?? null;
+  const securityEvidence = explicitSecurityMode
+    ? [{ path: file, line: definition.line, type: `SECURITY_${explicitSecurityMode}` }]
+    : [];
+  return {
+    // A migration-local grant is evidence of declared ACL changes, not the final
+    // effective ACL after every migration has run. Security mode is separate
+    // from caller authorization and cannot establish an exclusive role.
+    status: "UNESTABLISHED",
+    declaredRoles,
+    executionMode: {
+      value: explicitSecurityMode ?? "INVOKER",
+      provenance: explicitSecurityMode ? "EXPLICIT" : "SQL_DEFAULT",
+      evidence: securityEvidence,
+    },
+    evidence: [...declaredRoles, ...securityEvidence],
+  };
 }
 
 function privilegeKind(status) {
@@ -337,6 +347,18 @@ function claimEvidence(document, attributions) {
 
 function hasPrivilegeContradiction(contract, claims) {
   const privilege = contract.privilege?.status ?? (contract.signals?.privileged ? "PRIVILEGED" : "UNESTABLISHED");
+  const declared = new Set((contract.privilege?.declaredRoles ?? []).map((entry) => {
+    if (["public", "anon"].includes(entry.role)) return "PUBLIC";
+    if (entry.role === "authenticated") return "AUTHENTICATED";
+    if (["service_role", "postgres"].includes(entry.role)) return "PRIVILEGED";
+    return null;
+  }).filter(Boolean));
+  const exclusiveClaim = claims.some((claim) => /\b(?:only|uniquement|exclusivement|seulement)\b/i.test(claim.excerpt));
+  if (exclusiveClaim && declared.size > 0) {
+    const claimed = new Set(claims.map((claim) => claim.type));
+    if ([...declared].some((role) => !claimed.has(role)) || [...claimed].some((role) => !declared.has(role))) return true;
+  }
+  if (privilege === "UNESTABLISHED") return false;
   if (privilege === "PRIVILEGED") return claims.some((claim) => claim.type === "PUBLIC");
   if (privilege === "PUBLIC") return claims.some((claim) => claim.type === "PRIVILEGED" || claim.type === "AUTHENTICATED");
   if (privilege === "AUTHENTICATED") return claims.some((claim) => claim.type === "PUBLIC" || claim.type === "PRIVILEGED");
