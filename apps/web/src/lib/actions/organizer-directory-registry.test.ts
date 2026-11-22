@@ -120,6 +120,25 @@ describe("organizer directory registry", () => {
     expect(insert).not.toHaveBeenCalled();
   });
 
+  it("does not trust client provenance for a spontaneous organizer without a resolved account", async () => {
+    const supabase = { from: () => { throw new Error("spontaneous identity must not query the directory"); } } as never;
+    await expect(resolveActionOrganizer({
+      supabase,
+      organizerType: "spontaneous",
+      organizerName: "Pseudo déclaré",
+      referenceStatus: "referenced",
+    })).resolves.toMatchObject({ organizerId: null, referenceStatus: "declared_unreferenced" });
+  });
+
+  it("uses the resolved organizer relation count when building a persisted create payload", async () => {
+    const supabase = { from: () => { throw new Error("spontaneous identity must not query the directory"); } } as never;
+    const payload = { organizerType: "spontaneous", organizerName: "Pseudo", preparationData: { organizerReferenceStatus: "referenced" } } as never;
+    await expect(resolveCanonicalCreateActionPayload({ supabase, payload, resolvedOrganizerAccountCount: 0 }))
+      .resolves.toMatchObject({ preparationData: { organizerReferenceStatus: "declared_unreferenced" } });
+    await expect(resolveCanonicalCreateActionPayload({ supabase, payload, resolvedOrganizerAccountCount: 1 }))
+      .resolves.toMatchObject({ preparationData: { organizerReferenceStatus: "referenced" } });
+  });
+
   it("resolves a duplicate-looking declaration to the existing referenced entry", async () => {
     const supabase = { from: () => ({
       select() { return this; }, eq() { return this; },

@@ -145,7 +145,7 @@ describe("POST /api/actions — création standard et pré-action", () => {
       submissionMode: "quick",
     }));
     expect(draftResponse.status).toBe(201);
-    expect(createActionMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ payload: expect.objectContaining({ organizerId: null, organizerName: "Pseudo descriptif" }) }));
+    expect(createActionMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ payload: expect.objectContaining({ organizerId: null, organizerName: "Pseudo descriptif", preparationData: expect.objectContaining({ organizerReferenceStatus: "declared_unreferenced" }) }) }));
     createActionMock.mockClear();
 
     const finalResponse = await postSubmitPayload(buildSubmitPayload({
@@ -155,6 +155,35 @@ describe("POST /api/actions — création standard et pré-action", () => {
     }));
     expect(finalResponse.status).toBe(422);
     expect(createActionMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("derives spontaneous provenance from resolved accounts instead of client declarations", async () => {
+    const noAccountResponse = await postSubmitPayload(buildSubmitPayload({
+      organizerAccounts: [],
+      organizerName: "Pseudo descriptif",
+      preparationData: { organizerReferenceStatus: "referenced" },
+      submissionMode: "quick",
+    }));
+    expect(noAccountResponse.status).toBe(201);
+    expect(createActionMock).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({
+      payload: expect.objectContaining({
+        organizerId: null,
+        preparationData: expect.objectContaining({ organizerReferenceStatus: "declared_unreferenced" }),
+      }),
+    }));
+
+    const accountResponse = await postSubmitPayload(buildSubmitPayload({
+      organizerAccounts: ["user-test-1"],
+      preparationData: undefined,
+      submissionMode: "quick",
+    }));
+    expect(accountResponse.status).toBe(201);
+    expect(createActionMock).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({
+      organizers: [expect.objectContaining({ userId: "user-test-1" })],
+      payload: expect.objectContaining({
+        preparationData: expect.objectContaining({ organizerReferenceStatus: "referenced" }),
+      }),
+    }));
   }, 15000);
 
   it("refuses creation without an authenticated identity before parsing or writing", async () => {

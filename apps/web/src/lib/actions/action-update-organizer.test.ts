@@ -33,6 +33,47 @@ describe("resolveActionUpdateOrganizer", () => {
     })).resolves.toBe(body);
   });
 
+  it("preserves historical provenance and other preparation edits without inferring a new status", async () => {
+    const supabase = { from: () => { throw new Error("unchanged historical organizer must not be resolved"); } } as never;
+    await expect(resolveActionUpdateOrganizer({
+      supabase,
+      body: {
+        preparationData: { organizerReferenceStatus: "referenced", safetyInstructions: "Gants" },
+      } as ActionUpdateInput,
+      current: { ...historicalCurrent(), preparation_data: {} },
+    })).resolves.toMatchObject({ preparationData: { safetyInstructions: "Gants" } });
+  });
+
+  it("preserves a known historical provenance when other preparation fields change", async () => {
+    const supabase = { from: () => { throw new Error("unchanged organizer must not be resolved"); } } as never;
+    await expect(resolveActionUpdateOrganizer({
+      supabase,
+      body: { preparationData: { organizerReferenceStatus: "declared_unreferenced", safetyInstructions: "Gants" } } as ActionUpdateInput,
+      current: { ...historicalCurrent(), preparation_data: { organizerReferenceStatus: "declared_unreferenced" } },
+    })).resolves.toMatchObject({ preparationData: { organizerReferenceStatus: "declared_unreferenced", safetyInstructions: "Gants" } });
+  });
+
+  it("derives spontaneous provenance from resolved account count, ignoring submitted provenance", async () => {
+    const supabase = { from: () => { throw new Error("spontaneous identity must not query the directory"); } } as never;
+    const body = {
+      organizerType: "spontaneous",
+      organizerName: "Pseudo descriptif",
+      preparationData: { organizerReferenceStatus: "referenced" },
+    } as ActionUpdateInput;
+    await expect(resolveActionUpdateOrganizer({
+      supabase,
+      body,
+      current: { ...historicalCurrent(), organizer_type: "spontaneous", organizer_name: "Ancien pseudo" },
+      resolvedOrganizerAccountCount: 0,
+    })).resolves.toMatchObject({ preparationData: { organizerReferenceStatus: "declared_unreferenced" } });
+    await expect(resolveActionUpdateOrganizer({
+      supabase,
+      body,
+      current: { ...historicalCurrent(), organizer_type: "spontaneous", organizer_name: "Ancien pseudo" },
+      resolvedOrganizerAccountCount: 1,
+    })).resolves.toMatchObject({ preparationData: { organizerReferenceStatus: "referenced" } });
+  });
+
   it("rejects a forged unknown organizer without inserting it", async () => {
     let insertCalled = false;
     const supabase = {

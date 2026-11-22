@@ -170,8 +170,12 @@ export async function resolveActionOrganizer(params: {
     const name = enteredName === SPONTANEOUS_PENDING_ORGANIZER_LABEL
       ? SPONTANEOUS_PENDING_ORGANIZER_LABEL
       : enteredName;
-    const referenceStatus: OrganizerReferenceStatus = params.referenceStatus === "referenced" ? "referenced" : "declared_unreferenced";
-    return { organizerId: null, organizerName: name, legacyAssociationName: "Action spontanée", referenceStatus };
+    return {
+      organizerId: null,
+      organizerName: name,
+      legacyAssociationName: "Action spontanée",
+      referenceStatus: "declared_unreferenced",
+    };
   }
   const selectedId = params.organizerId?.trim();
   const staticEntry = getStaticOrganizerById(selectedId);
@@ -279,6 +283,7 @@ export async function createActionOrganizer(params: {
 export async function resolveCanonicalCreateActionPayload(params: {
   supabase: SupabaseClient;
   payload: CreateActionPayload;
+  resolvedOrganizerAccountCount?: number;
 }): Promise<CreateActionPayload> {
   if (!params.payload.organizerType) return params.payload;
   const resolved = await resolveActionOrganizer({
@@ -293,6 +298,11 @@ export async function resolveCanonicalCreateActionPayload(params: {
     actorName: params.payload.actorName,
     referenceStatus: params.payload.preparationData?.organizerReferenceStatus,
   });
+  const referenceStatus = params.payload.organizerType === "spontaneous"
+    ? (params.resolvedOrganizerAccountCount ?? 0) > 0
+      ? "referenced"
+      : "declared_unreferenced"
+    : resolved.referenceStatus;
   return {
     ...params.payload,
     organizerId: resolved.organizerId,
@@ -300,7 +310,7 @@ export async function resolveCanonicalCreateActionPayload(params: {
     associationName: resolved.legacyAssociationName,
     preparationData: {
       ...(params.payload.preparationData ?? {}),
-      organizerReferenceStatus: resolved.referenceStatus,
+      organizerReferenceStatus: referenceStatus,
     },
   };
 }

@@ -222,6 +222,14 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
       organizer_type: "spontaneous",
       organizer_name: "Compte A",
     }));
+    loadActionOrganizerRowsForActionMock.mockResolvedValueOnce([{
+      action_id: "action-test-1",
+      organizer_clerk_id: "user-primary",
+      organizer_label: "Compte A",
+      organizer_handle: "compte-a",
+      is_primary: true,
+      created_at: "2026-01-01T00:00:00.000Z",
+    }]);
 
     const response = await patchAction({
       organizerType: "spontaneous",
@@ -231,6 +239,85 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
     expect(response.status).toBe(400);
     expect(updateMock).not.toHaveBeenCalled();
     expect(syncActionOrganizersMock).not.toHaveBeenCalled();
+  });
+
+  it("allows a descriptive spontaneous pseudo on a non-final pre-action PATCH", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      organizer_type: "spontaneous",
+      organizer_id: null,
+      organizer_name: "Ancien pseudo",
+      preparation_data: { organizerReferenceStatus: "declared_unreferenced" },
+    }));
+    loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+
+    const response = await patchAction({
+      organizerName: "Nouveau pseudo descriptif",
+      preparationData: {
+        organizerReferenceStatus: "referenced",
+        safetyInstructions: "Rester sur le chemin balisé",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({
+      organizer_name: "Nouveau pseudo descriptif",
+      preparation_data: expect.objectContaining({
+        organizerReferenceStatus: "declared_unreferenced",
+        safetyInstructions: "Rester sur le chemin balisé",
+      }),
+    }));
+  });
+
+  it("rejects a spontaneous finalization without a real organizer account", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      organizer_type: "spontaneous",
+      organizer_id: null,
+      organizer_name: "Pseudo descriptif",
+    }));
+    loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+
+    const response = await patchAction({
+      actionPhase: "post_action_complete",
+      organizerName: "Pseudo descriptif",
+    });
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an isolated organizer provenance change without writing", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      organizer_type: "spontaneous",
+      organizer_id: null,
+      organizer_name: "Historique",
+      preparation_data: { organizerReferenceStatus: "declared_unreferenced" },
+    }));
+
+    const response = await patchAction({
+      preparationData: {
+        organizerReferenceStatus: "referenced",
+        safetyInstructions: "Gants recommandés",
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("marks a spontaneous organizer as referenced only after resolving a real account", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      organizer_type: "spontaneous",
+      organizer_id: null,
+      organizer_name: "Pseudo descriptif",
+    }));
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+
+    const response = await patchAction({ organizerAccounts: ["user-real"] });
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({
+      preparation_data: expect.objectContaining({ organizerReferenceStatus: "referenced" }),
+    }));
   });
 
   it("does not add organizer mutations to a patch that does not edit organizer fields", async () => {

@@ -376,6 +376,7 @@ export async function createAction(
   params.payload = await resolveCanonicalCreateActionPayload({
     supabase,
     payload: params.payload,
+    resolvedOrganizerAccountCount: params.organizers.length,
   });
   const context = await resolveCreateActionPersistenceContext(params);
   const created = await persistActionWithRelations(supabase, {

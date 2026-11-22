@@ -7,11 +7,12 @@ import type { ActionRow } from "@/types/database";
 import type { ActionUpdateInput } from "@/lib/actions/action-update-audit";
 
 export function validateSpontaneousOrganizerPatch(
-  current: Pick<ActionRow, "organizer_type">,
+  current: Pick<ActionRow, "organizer_type" | "action_phase">,
   parsed: ActionUpdateInput,
   persistedOrganizerIds: string[],
 ): Response | null {
   const nextOrganizerType = parsed.organizerType ?? current.organizer_type;
+  const nextActionPhase = parsed.actionPhase ?? current.action_phase;
   const organizerAccounts = parsed.organizerAccounts;
   const organizerName = parsed.organizerName?.trim();
   const isExplicitlyUnassignedSpontaneous = nextOrganizerType === "spontaneous"
@@ -19,7 +20,8 @@ export function validateSpontaneousOrganizerPatch(
     && organizerAccounts.length === 0;
   if (nextOrganizerType === "spontaneous" && organizerName
     && organizerName !== SPONTANEOUS_PENDING_ORGANIZER_LABEL
-    && (organizerAccounts === undefined || isExplicitlyUnassignedSpontaneous)) {
+    && (organizerAccounts === undefined || isExplicitlyUnassignedSpontaneous)
+    && !["pre_action", "post_action_draft"].includes(parsed.actionPhase ?? current.action_phase)) {
     return validationErrorResponse({
       organizerAccounts: [
         "Sélectionnez un compte utilisateur comme organisateur ou choisissez « Autre ».",
@@ -31,7 +33,7 @@ export function validateSpontaneousOrganizerPatch(
     ? hasPersistedOrganizer
     : organizerAccounts.length > 0;
   if (nextOrganizerType === "spontaneous"
-    && parsed.actionPhase === "post_action_complete"
+    && nextActionPhase === "post_action_complete"
     && !hasSelectedOrganizer) {
     return validationErrorResponse({
       organizerAccounts: [
@@ -52,8 +54,8 @@ export async function validatePatchOrganizerAccounts({
   userId: string;
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
   organizerAccounts: string[] | undefined;
-}): Promise<Response | null> {
-  if (!organizerAccounts?.length) return null;
+}): Promise<Response | number> {
+  if (!organizerAccounts?.length) return 0;
   const resolvedIdentity = identity ?? {
     displayName: userId,
     handle: userId,
@@ -71,7 +73,7 @@ export async function validatePatchOrganizerAccounts({
     },
     organizerAccounts,
   });
-  if (organizerResolution.unresolvedTokens.length === 0) return null;
+  if (organizerResolution.unresolvedTokens.length === 0) return organizerResolution.organizers.length;
   return validationErrorResponse({
     organizerAccounts: [
       `Comptes organisateurs introuvables: ${organizerResolution.unresolvedTokens.join(", ")}`,

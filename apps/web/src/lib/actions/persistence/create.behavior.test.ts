@@ -82,6 +82,22 @@ describe("createAction behavioral persistence orchestration", () => {
     expect(recordRepollutionPredictionEvaluationForActionMock).not.toHaveBeenCalled();
   });
 
+  it("passes the count of resolved spontaneous organizers into canonical provenance", async () => {
+    const fixture = harness({ action_id: "action-spontaneous", replayed: false });
+    const organizers = [{ userId: "organizer-1", displayName: "Compte réel", handle: "compte-reel", isPrimary: true, sourceToken: "organizer-1" }];
+
+    await createAction(fixture.client, {
+      userId: "user-1",
+      payload: payload({ organizerType: "spontaneous", organizerName: "Compte réel" }),
+      organizers,
+      status: "pending",
+    });
+
+    expect(resolveCanonicalCreateActionPayloadMock).toHaveBeenCalledWith(expect.objectContaining({
+      resolvedOrganizerAccountCount: 1,
+    }));
+  });
+
   it("passes the absent-duration status and the persisted fallback target to reconstruction", async () => {
     const fixture = harness({ action_id: "action-absent-duration", replayed: false });
 

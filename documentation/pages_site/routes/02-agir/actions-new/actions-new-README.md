@@ -123,7 +123,18 @@ structure déclarée est conservée avec l'action avec `organizerId = null` et
 crée jamais une entrée de `organizer_directory_entries`. L'ajout administratif
 par `+ Ajouter` reste une commande séparée, réservée aux rôles déjà autorisés.
 `referenced` signifie une structure résolue dans l'annuaire ou, pour un
-organisateur spontané, un compte CleanMyMap effectivement sélectionné.
+organisateur spontané, un compte CleanMyMap effectivement résolu ou déjà
+persisté dans `action_organizers`. Pour les parcours spontanés, le serveur
+calcule la provenance après résolution des comptes : la valeur envoyée par le
+client ne peut pas créer `referenced`, et un compte réel ne reste pas déclaré
+non référencé par omission du champ. En POST comme en PATCH, un pseudo sans
+compte reste descriptif pour une pré-action non finalisée ; une déclaration
+finale exige un compte réel. Lorsqu'une édition ne change pas l'identité de
+l'organisateur, le PATCH conserve la provenance historique, y compris son
+absence, et refuse une modification isolée de ce statut. Les autres champs de
+préparation continuent d'être traités selon leur contrat. Ces règles sont
+portées par `organizer-directory-registry.ts`, `create-submission.ts`,
+`action-update-organizer.ts` et `route.patch-organizers.ts`.
 L'initiateur et les partenaires saisis dans `ActionPreparationData` restent
 déclaratifs, sans compte, permission ni collaboration vérifiée.
 

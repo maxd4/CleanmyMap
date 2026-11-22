@@ -261,10 +261,16 @@ export function resetPatchRouteMocks() {
   loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
   loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
   loadActionOrganizerRowsForActionMock.mockResolvedValue([]);
-  resolveActionOrganizersMock.mockResolvedValue({
-    organizers: [],
+  resolveActionOrganizersMock.mockImplementation(async ({ organizerAccounts = [] }: { organizerAccounts?: string[] }) => ({
+    organizers: organizerAccounts.map((userId, index) => ({
+      userId,
+      displayName: userId,
+      handle: null,
+      isPrimary: index === 0,
+      sourceToken: userId,
+    })),
     unresolvedTokens: [],
-  });
+  }));
   syncActionManualParticipantsMock.mockResolvedValue({
     participants: [],
     unresolvedTokens: [],

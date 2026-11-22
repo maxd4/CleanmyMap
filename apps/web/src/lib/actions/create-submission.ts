@@ -241,6 +241,9 @@ function buildResolvedActionPayload(
   organizerResolution: OrganizerResolution,
 ): CreateActionPayload {
   if (!isSpontaneousAction) return payload;
+  const referenceStatus = organizerResolution.organizers.length > 0
+    ? "referenced"
+    : "declared_unreferenced";
   return {
     ...payload,
     organizerId: null,
@@ -248,6 +251,10 @@ function buildResolvedActionPayload(
       organizerResolution.organizers[0]?.displayName ??
       payload.organizerName?.trim() ?? "",
     associationName: "Action spontanée",
+    preparationData: {
+      ...(payload.preparationData ?? {}),
+      organizerReferenceStatus: referenceStatus,
+    },
   };
 }
 

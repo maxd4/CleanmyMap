@@ -8,15 +8,28 @@ export async function resolveActionUpdateOrganizer(params: {
   supabase: SupabaseClient;
   body: ActionUpdateInput;
   current: Pick<ActionRow, "organizer_type" | "organizer_id" | "organizer_name" | "actor_name" | "created_by_clerk_id" | "preparation_data">;
+  resolvedOrganizerAccountCount?: number;
 }): Promise<ActionUpdateInput> {
   const { body, current } = params;
-  if (!hasOrganizerFields(body)) {
-    return body;
-  }
-  if (organizerFieldsUnchanged(body, current)) {
+  const identityUnchanged = body.organizerAccounts === undefined
+    && (!hasOrganizerFields(body) || organizerFieldsUnchanged(body, current));
+  if (identityUnchanged) {
     // Historical actions may have a display-only organizer name without a
-    // directory id. Preserve it when the edit does not change the organizer.
-    return body;
+    // directory id or provenance. Keep that history when only preparation
+    // fields are edited; client-supplied provenance is not an identity proof.
+    if (body.preparationData === undefined) return body;
+    const currentPreparationData = normalizeActionPreparationData(current.preparation_data ?? {});
+    const nextPreparationData = normalizeActionPreparationData(body.preparationData ?? {});
+    const preservedFields = { ...nextPreparationData };
+    delete preservedFields.organizerReferenceStatus;
+    const historicalStatus = (currentPreparationData as { organizerReferenceStatus?: unknown }).organizerReferenceStatus;
+    return {
+      ...body,
+      preparationData: {
+        ...preservedFields,
+        ...(historicalStatus === undefined ? {} : { organizerReferenceStatus: historicalStatus }),
+      } as ActionUpdateInput["preparationData"],
+    };
   }
   const organizerType = body.organizerType ?? current.organizer_type ?? "spontaneous";
   const organizerTypeChanged = body.organizerType !== undefined
@@ -41,20 +54,26 @@ export async function resolveActionUpdateOrganizer(params: {
   const nextPreparationData = body.preparationData === undefined
     ? currentPreparationData
     : normalizeActionPreparationData(body.preparationData ?? {});
+  const referenceStatus = organizerType === "spontaneous"
+    ? (params.resolvedOrganizerAccountCount ?? 0) > 0
+      ? "referenced"
+      : "declared_unreferenced"
+    : resolved.referenceStatus;
   return {
     ...body,
     organizerType: body.organizerType ?? current.organizer_type,
     organizerId: resolved.organizerId,
     organizerName: resolved.organizerName,
     associationName: resolved.legacyAssociationName,
-    preparationData: { ...nextPreparationData, organizerReferenceStatus: resolved.referenceStatus } as ActionUpdateInput["preparationData"],
+    preparationData: { ...nextPreparationData, organizerReferenceStatus: referenceStatus } as ActionUpdateInput["preparationData"],
   };
 }
 
 function hasOrganizerFields(body: ActionUpdateInput): boolean {
   return body.organizerType !== undefined
     || body.organizerId !== undefined
-    || body.organizerName !== undefined;
+    || body.organizerName !== undefined
+    || body.organizerAccounts !== undefined;
 }
 
 function organizerFieldsUnchanged(

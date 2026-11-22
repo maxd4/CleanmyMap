@@ -93,6 +93,26 @@ async function preparePatchOrganizerFields({
   parsed: ActionUpdateInput;
 }): Promise<Response | ActionUpdateInput> {
   const nextOrganizerType = parsed.organizerType ?? current.organizer_type;
+  const organizerIdentityUnchanged =
+    parsed.organizerAccounts === undefined
+    &&
+    (parsed.organizerType === undefined || parsed.organizerType === current.organizer_type)
+    && (parsed.organizerId === undefined
+      || (parsed.organizerId?.trim() || null) === (current.organizer_id?.trim() || null))
+    && (parsed.organizerName === undefined
+      || parsed.organizerName.trim() === (current.organizer_name ?? "").trim());
+  const currentPreparationData = current.preparation_data && typeof current.preparation_data === "object"
+    ? current.preparation_data as { organizerReferenceStatus?: unknown }
+    : {};
+  if (
+    organizerIdentityUnchanged
+    && parsed.preparationData?.organizerReferenceStatus !== undefined
+    && parsed.preparationData.organizerReferenceStatus !== currentPreparationData.organizerReferenceStatus
+  ) {
+    return validationErrorResponse({
+      preparationData: ["La provenance de l'organisateur ne peut pas être modifiée sans résoudre à nouveau son identité."],
+    });
+  }
   if (parsed.organizerAccounts?.length === 0 && nextOrganizerType !== "spontaneous") {
     return validationErrorResponse({
       organizerAccounts: [
@@ -115,13 +135,22 @@ async function preparePatchOrganizerFields({
   });
   if (canonicalizedBody instanceof Response) return canonicalizedBody;
 
-  const parsedBody = await resolveActionUpdateOrganizer({ supabase, body: canonicalizedBody, current });
-  return await validatePatchOrganizerAccounts({
+  const validatedOrganizerAccountCount = await validatePatchOrganizerAccounts({
     supabase,
     userId,
     identity,
-    organizerAccounts: parsedBody.organizerAccounts,
-  }) ?? parsedBody;
+    organizerAccounts: canonicalizedBody.organizerAccounts,
+  });
+  if (validatedOrganizerAccountCount instanceof Response) return validatedOrganizerAccountCount;
+  const resolvedOrganizerAccountCount = canonicalizedBody.organizerAccounts === undefined
+    ? organizerIds.length
+    : validatedOrganizerAccountCount;
+  return await resolveActionUpdateOrganizer({
+    supabase,
+    body: canonicalizedBody,
+    current,
+    resolvedOrganizerAccountCount,
+  });
 }
 export async function preparePatchMutation({
   supabase,
