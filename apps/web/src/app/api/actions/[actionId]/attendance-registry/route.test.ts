@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   client: vi.fn(),
   list: vi.fn(),
   mutate: vi.fn(),
+  clerk: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/action-request-access", () => ({ requireActionRequestAccess: mocks.access }));
@@ -18,7 +19,7 @@ vi.mock("@/lib/actions/participation/organizers", () => ({ loadActionOrganizerRo
 vi.mock("@/lib/actions/permissions", () => ({ canManageAction: mocks.canManage }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.client }));
 vi.mock("@/lib/actions/participation/attendance-registry", () => ({ listActionAttendanceEntries: mocks.list, mutateActionAttendanceEntry: mocks.mutate }));
-vi.mock("@clerk/nextjs/server", () => ({ clerkClient: vi.fn() }));
+vi.mock("@clerk/nextjs/server", () => ({ clerkClient: mocks.clerk }));
 
 import { GET, POST } from "./route";
 
@@ -34,6 +35,7 @@ describe("private action attendance registry routes", () => {
     mocks.organizers.mockResolvedValue([{ organizer_clerk_id: "clerk-manager" }]);
     mocks.canManage.mockReturnValue(true);
     mocks.list.mockResolvedValue([]);
+    mocks.clerk.mockResolvedValue({ users: { getUser: vi.fn().mockResolvedValue({ id: "user_123" }) } });
   });
 
   it("rejects anonymous reads before constructing a privileged client", async () => {
@@ -62,12 +64,29 @@ describe("private action attendance registry routes", () => {
     expect(response.status).toBe(409);
   });
 
+  it("maps duplicate Clerk links to HTTP 409 without retrying a merge", async () => {
+    mocks.mutate.mockRejectedValue(Object.assign(new Error("duplicate key"), { code: "23505" }));
+    const response = await POST(new Request("https://example.test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requestId: "b8ea39b4-30bb-44b8-a827-a59371b10031", operation: "link", entryId: "fb144215-e3a8-4537-a0eb-895c42763ac3", expectedRevision: 2, clerkUserId: "user_123" }),
+    }), context);
+    expect(response.status).toBe(409);
+    expect(mocks.mutate).toHaveBeenCalledTimes(1);
+  });
+
   it("returns declared counts only after organizer authorization", async () => {
     mocks.loadAction.mockResolvedValue({ id: "action-1", created_by_clerk_id: "clerk-owner", action_phase: "post_action", status: "approved", volunteers_count: 7, adult_count: 4, retired_count: 1, children_count: 2, event_start_at: "2026-10-21T09:00:00.000Z" });
     const response = await GET(new Request("https://example.test"), context);
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ declared: { total: 7, adults: 4, retired: 1, children: 2 }, canMarkPresent: true });
     expect(mocks.list).toHaveBeenCalledWith({}, "action-1");
+  });
+
+  it("gates pointage on the scheduled event start timestamp", async () => {
+    mocks.loadAction.mockResolvedValue({ id: "action-1", created_by_clerk_id: "clerk-owner", action_phase: "pre_action", status: "approved", event_start_at: "2030-10-21T09:00:00.000Z" });
+    const response = await GET(new Request("https://example.test"), context);
+    expect(await response.json()).toMatchObject({ canMarkPresent: false });
   });
 
   it("accepts an atomic add-as-present request through the authorized route", async () => {

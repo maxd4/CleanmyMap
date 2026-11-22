@@ -7,6 +7,7 @@
 | Domaine / tâche Codex | Source spécialisée | Owners et validation |
 |---|---|---|
 | Actions de groupe, participant, historique | [`group-action.md`](./group-action.md) (`CURRENT`) | `apps/web/src/lib/actions/`, handlers API et tests ; lire la [fiche carte](../pages_site/routes/02-agir/agir-README.md) si UI concernée |
+| Registre privé de présence aux actions | [`private-action-attendance-registry-CURRENT.md`](./private-action-attendance-registry-CURRENT.md) | `apps/web/src/components/actions/action-attendance-registry-panel.tsx`, hook, API et RPC existante ; AuthZ organisateur, historique et conflits 409 |
 | Itinéraire | [`../architecture/methodologie-creation-itineraire.md`](../architecture/methodologie-creation-itineraire.md) | Planner, géométrie et tests ; ne pas recréer une source produit |
 | Recyclage | [`recycling.md`](./recycling.md) (`CURRENT`) | Projection publique et lecture privée bornées |
 | Gamification / XP | [`gamification/README.md`](./gamification/README.md), [`gamification/GAMIFICATION_ENGINE.md`](./gamification/GAMIFICATION_ENGINE.md) (`CURRENT`) | `apps/web/src/lib/gamification/`, ledger et tests ; spec fonctionnelle [gamification](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md) |
