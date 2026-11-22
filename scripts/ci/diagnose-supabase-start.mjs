@@ -13,6 +13,12 @@ export const SUPABASE_START_CATEGORIES = Object.freeze({
   AUTHENTICATION_FAILURE: "AUTHENTICATION_FAILURE",
   HEALTHCHECK_FAILURE: "HEALTHCHECK_FAILURE",
   BOOTSTRAP_JOB_FAILURE: "BOOTSTRAP_JOB_FAILURE",
+  MIGRATION_SQL_SYNTAX: "MIGRATION_SQL_SYNTAX",
+  MIGRATION_SQL_DEPENDENCY: "MIGRATION_SQL_DEPENDENCY",
+  MIGRATION_SQL_DATA: "MIGRATION_SQL_DATA",
+  MIGRATION_RLS_PERMISSION: "MIGRATION_RLS_PERMISSION",
+  MIGRATION_SQL_CONCURRENCY: "MIGRATION_SQL_CONCURRENCY",
+  DATABASE_CONNECTION_FAILURE: "DATABASE_CONNECTION_FAILURE",
   CLI_CONFIGURATION_INCOMPATIBILITY: "CLI_CONFIGURATION_INCOMPATIBILITY",
   INSUFFICIENT_RESOURCES: "INSUFFICIENT_RESOURCES",
   START_TIMEOUT: "START_TIMEOUT",
@@ -25,6 +31,12 @@ export const SUPABASE_START_REQUIRED_SERVICES = Object.freeze(["db", "kong", "re
 const firstErrorSignalPatterns = [
   ["DOCKER_UNAVAILABLE", /(cannot connect to the docker daemon|is the docker daemon running|docker daemon.*(?:not running|unavailable)|docker command not found|error during connect)/i],
   ["AUTHENTICATION", /(password authentication failed|authentication failed|invalid password|no password supplied|role .+ does not exist|sqlstate\s*28[0-9a-z]{3})/i],
+  ["SQLSTATE_SYNTAX", /\bsql\s*state\s*[:=]?\s*42601\b/i],
+  ["SQLSTATE_DEPENDENCY", /\bsql\s*state\s*[:=]?\s*(?:42p01|42703|42883|2bp01)\b/i],
+  ["SQLSTATE_RLS", /\bsql\s*state\s*[:=]?\s*42501\b/i],
+  ["SQLSTATE_CONCURRENCY", /\bsql\s*state\s*[:=]?\s*(?:40001|40p01|55p03)\b/i],
+  ["SQLSTATE_DATA", /\bsql\s*state\s*[:=]?\s*(?:22[0-9a-z]{3}|23[0-9a-z]{3})\b/i],
+  ["SQLSTATE_CONNECTION", /\bsql\s*state\s*[:=]?\s*08[0-9a-z]{3}\b/i],
   ["IMAGE_PULL", /(pull access denied|manifest unknown|failed to (pull|copy)|error response from daemon:.*(get|pull)|image .*not found)/i],
   ["TCP_REFUSED", /\b(econnrefused|connection refused|actively refused)\b/i],
   ["TCP_TIMEOUT", /\b(etimedout|connection timed out|connect timeout)\b/i],
@@ -76,6 +88,12 @@ export function classifySupabaseStartFailure({
     HEALTHCHECK: SUPABASE_START_CATEGORIES.HEALTHCHECK_FAILURE,
     RESOURCE: SUPABASE_START_CATEGORIES.INSUFFICIENT_RESOURCES,
     CLI_CONFIGURATION: SUPABASE_START_CATEGORIES.CLI_CONFIGURATION_INCOMPATIBILITY,
+    SQLSTATE_SYNTAX: SUPABASE_START_CATEGORIES.MIGRATION_SQL_SYNTAX,
+    SQLSTATE_DEPENDENCY: SUPABASE_START_CATEGORIES.MIGRATION_SQL_DEPENDENCY,
+    SQLSTATE_DATA: SUPABASE_START_CATEGORIES.MIGRATION_SQL_DATA,
+    SQLSTATE_RLS: SUPABASE_START_CATEGORIES.MIGRATION_RLS_PERMISSION,
+    SQLSTATE_CONCURRENCY: SUPABASE_START_CATEGORIES.MIGRATION_SQL_CONCURRENCY,
+    SQLSTATE_CONNECTION: SUPABASE_START_CATEGORIES.DATABASE_CONNECTION_FAILURE,
   };
   if (signalCategories[error.signal]) return signalCategories[error.signal];
   if (evidence && typeof evidence === "object") {
@@ -256,12 +274,22 @@ const firstErrorDiagnosticLabels = Object.freeze({
   CONTAINER_CREATE: "container_create",
   CONTAINER_EXIT: "container_exit",
   UNKNOWN_ERROR: "unknown_error",
+  SQLSTATE_SYNTAX: "sql_syntax",
+  SQLSTATE_DEPENDENCY: "sql_dependency",
+  SQLSTATE_DATA: "sql_data",
+  SQLSTATE_RLS: "rls_permission",
+  SQLSTATE_CONCURRENCY: "sql_concurrency",
+  SQLSTATE_CONNECTION: "database_connection",
 });
 
-function sanitizeErrorExcerpt(signal, service) {
+function sqlStateFromText(text) {
+  return String(text ?? "").match(/\bsql\s*state\s*[:=]?\s*([0-9A-Z]{5})\b/i)?.[1]?.toUpperCase() ?? null;
+}
+
+function sanitizeErrorExcerpt(signal, service, sqlState = null) {
   const label = firstErrorDiagnosticLabels[signal] ?? "unknown";
   const safeService = service ?? "unavailable";
-  return `class=${label};service=${safeService}`;
+  return `class=${label};service=${safeService}${sqlState ? `;sqlstate=${sqlState}` : ""}`;
 }
 
 function sanitizeBootstrapJobError(job) {
@@ -280,7 +308,10 @@ function terminalLogMessage(line) {
       const error = entry.error ?? entry.Error;
       if (!/(error|fatal|panic)/.test(level) && error === undefined) return null;
       const message = [error, entry.msg, entry.message, entry.Message].filter((value) => typeof value === "string").join(" ") || "structured terminal error";
-      return `Error: ${message}`;
+      const errorObject = error && typeof error === "object" ? error : {};
+      const sqlState = [entry.sqlstate, entry.sqlState, entry.code, errorObject.sqlstate, errorObject.sqlState, errorObject.code]
+        .find((value) => /^[0-9A-Z]{5}$/i.test(String(value ?? "")));
+      return `Error: ${message}${sqlState ? ` SQLSTATE ${String(sqlState).toUpperCase()}` : ""}`;
     } catch {
       return null;
     }
@@ -298,15 +329,45 @@ function inferFirstErrorEvidence(log) {
     const hasErrorSignal = firstErrorSignalPatterns.some(([candidate, pattern]) => candidate !== "UNKNOWN_ERROR" && pattern.test(normalized));
     if (!signal && !isTerminalError && !hasErrorSignal) continue;
     const resolvedSignal = signal ?? "UNKNOWN_ERROR";
-    const result = { signal: resolvedSignal, excerpt: sanitizeErrorExcerpt(resolvedSignal, inferFailureService(normalized)) };
+    const sqlState = sqlStateFromText(normalized);
+    const result = { signal: resolvedSignal, sqlState, excerpt: sanitizeErrorExcerpt(resolvedSignal, inferFailureService(normalized), sqlState) };
     if (resolvedSignal !== "UNKNOWN_ERROR") return result;
     genericError ??= result;
   }
   return genericError ?? { signal: "NONE", excerpt: "none" };
 }
 
-function inferFirstFailedStep(log, bootstrapJob) {
+function inferMigrationId(log) {
+  const lines = String(log ?? "").split(/\r?\n/u);
+  const errorIndex = lines.findIndex((line) => sqlStateFromText(terminalLogMessage(line)));
+  if (errorIndex >= 0) {
+    for (let index = errorIndex; index >= Math.max(0, errorIndex - 20); index -= 1) {
+      const match = lines[index].match(/\b(20\d{12})_[a-z0-9_-]+\.sql\b/i)
+        ?? lines[index].match(/\b(?:migration|version)\s*[=:"']?\s*(20\d{12})\b/i);
+      if (match) return match[1];
+    }
+  }
+  const failedMigration = String(log ?? "").match(/\b(?:failed to apply migration|migration)\s+["']?(20\d{12})\b/i);
+  return failedMigration?.[1] ?? null;
+}
+
+function inferFirstFailedStep(log, bootstrapJob, firstError, startPhase) {
   if (bootstrapJob) return `BOOTSTRAP_${bootstrapJob.service.toUpperCase()}_JOB`;
+  if (startPhase === "MIGRATIONS") {
+    const migrationSteps = {
+      SQLSTATE_SYNTAX: "MIGRATION_SQL_SYNTAX",
+      SQLSTATE_DEPENDENCY: "MIGRATION_SQL_DEPENDENCY",
+      SQLSTATE_DATA: "MIGRATION_SQL_DATA",
+      SQLSTATE_RLS: "MIGRATION_RLS_PERMISSION",
+      SQLSTATE_CONCURRENCY: "MIGRATION_SQL_CONCURRENCY",
+      SQLSTATE_CONNECTION: "MIGRATION_DATABASE_CONNECTION",
+    };
+    return migrationSteps[firstError?.signal] ?? "MIGRATION_EXECUTION_CAUSE_UNCLASSIFIED";
+  }
+  if (startPhase === "SCHEMA_INITIALIZATION") return "SCHEMA_INITIALIZATION_CAUSE_UNCLASSIFIED";
+  if (["DOCKER_UNAVAILABLE", "IMAGE_PULL", "NETWORK", "PORT_BIND", "RESOURCE", "CONTAINER_CREATE", "CONTAINER_EXIT"].includes(firstError?.signal)) {
+    return "DOCKER_INFRASTRUCTURE_FAILURE";
+  }
   const lines = String(log ?? "").split(/\r?\n/u).map(terminalLogMessage).filter(Boolean);
   for (const line of lines) {
     if (/\b(?:migration|migrations)\b.*\b(?:failed|failure|error|unable|exited)\b|\bfailed to apply (?:database )?migration\b/i.test(line)) return "MIGRATIONS";
@@ -576,6 +637,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     : firstLogError.signal !== "NONE"
       ? { ...firstLogError, source: "SUPABASE_CLI_LOG" }
       : { ...firstDockerError, source: firstDockerError.signal === "NONE" ? "UNAVAILABLE" : "DOCKER_EVENT" };
+  const startPhase = inferStartStep(log, bootstrapJobs);
   const dbConnectivity = dbConnectivityDiagnosis(progressSnapshots);
   const lastDbObservation = [...progressSnapshots].reverse().find((snapshot) => snapshot.dbDockerHealth !== "unobserved"
     || snapshot.dbPostgresInternal !== "unobserved"
@@ -592,7 +654,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
           ? "db"
           : null;
   const evidence = {
-    schemaVersion: 6,
+    schemaVersion: 7,
     evidenceCodes: [],
     dockerCommandAvailable: dockerVersion.available,
     dockerDaemonAvailable: dockerDaemon.available,
@@ -614,8 +676,10 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     supabaseStatus: supabaseStatus.available ? "available" : "unavailable",
     configContract: configContract.valid ? "valid" : configContract.available ? "invalid" : "unavailable",
     configuredPorts: configContract.ports,
-    startPhase: inferStartStep(log, bootstrapJobs),
-    firstFailedStep: inferFirstFailedStep(log, firstBootstrapJob),
+    startPhase,
+    firstFailedStep: inferFirstFailedStep(log, firstBootstrapJob, firstError, startPhase),
+    firstFailedMigrationId: startPhase === "MIGRATIONS" ? inferMigrationId(log) : null,
+    firstErrorSqlState: firstError.sqlState ?? sqlStateFromText(log),
     failureService: confirmedService,
     confirmedService,
     suspectedService,
@@ -686,6 +750,8 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`evidence_codes=${evidence.evidenceCodes.join(",")}`);
     lines.push(`start_phase=${evidence.startPhase}`);
     lines.push(`first_failed_step=${evidence.firstFailedStep ?? "UNPROVEN"}`);
+    lines.push(`first_failed_migration_id=${evidence.firstFailedMigrationId ?? "unavailable"}`);
+    lines.push(`first_error_sqlstate=${evidence.firstErrorSqlState ?? "unavailable"}`);
     lines.push(`service_attribution=${evidence.serviceAttribution ?? "unknown"}`);
     lines.push(`confirmed_service=${evidence.confirmedService ?? "unavailable"}`);
     lines.push(`suspected_service=${evidence.suspectedService ?? "unavailable"}`);
