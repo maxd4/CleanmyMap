@@ -150,6 +150,7 @@ test("collects a public-safe startup progress snapshot without raw Docker output
     dockerImages: 2,
     dockerContainers: 1,
     dockerContainerStates: { running: 1, exited: 0, created: 0, restarting: 0, other: 0 },
+    dockerContainerServices: { db: "running" },
     requiredServicesState: "incomplete",
     networkState: "observed",
     observationState: "CONTAINERS_OBSERVED",
@@ -251,15 +252,30 @@ test("does not mistake a clean container stop or destroy cleanup for the startup
   const events = [
     JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "0" } } }),
     JSON.stringify({ Action: "destroy", Actor: { Attributes: { name: "supabase_db_web" } } }),
-    JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_rest_web", exitCode: "137" } } }),
   ].join("\n");
 
   assert.deepEqual(parseFirstDockerFailureEvent(events), { signal: "NONE", excerpt: "none" });
   assert.deepEqual(parseDockerLifecycleEvents(events), [
-    "event=die;service=db;exit_code=0;kind=lifecycle",
+    "event=die;service=db;exit_code=0;kind=normal_exit",
     "event=destroy;service=db;exit_code=unknown;kind=cleanup",
-    "event=die;service=rest;exit_code=137;kind=lifecycle",
   ]);
+  assert.deepEqual(parseFirstDockerFailureEvent(JSON.stringify({ Action: "die", Actor: { Attributes: { "com.docker.compose.service": "db", exitCode: "137", id: "private-id" } } })), {
+    signal: "DOCKER_CONTAINER_EXIT",
+    excerpt: "event=die;service=db;exit_code=137",
+  });
+});
+
+test("captures allowlisted health and lifecycle transitions without private Docker fields", () => {
+  const raw = [
+    { Action: "start", Actor: { Attributes: { name: "supabase_db_web", image: "private/image", token: "private-token" } } },
+    { Action: "health_status: unhealthy", Actor: { Attributes: { name: "supabase_db_web", health: "password=private" } } },
+  ].map(JSON.stringify).join("\n");
+  const summaries = parseDockerLifecycleEvents(raw);
+  assert.deepEqual(summaries, [
+    "event=start;service=db;exit_code=unknown;kind=transition",
+    "event=health_status: unhealthy;service=db;exit_code=unknown;kind=health",
+  ]);
+  assert.doesNotMatch(JSON.stringify(summaries), /private|password|image|token/);
 });
 
 test("reports container die events separately from the sanitized initial error", () => {
@@ -280,8 +296,8 @@ test("reports container die events separately from the sanitized initial error",
 
   assert.equal(evidence.firstErrorSignal, "UNKNOWN_ERROR");
   assert.equal(evidence.firstErrorSource, "SUPABASE_CLI_LOG");
-  assert.deepEqual(evidence.dockerLifecycleEvents, ["event=die;service=db;exit_code=0;kind=lifecycle"]);
-  assert.match(diagnostic, /docker_lifecycle_events=event=die;service=db;exit_code=0;kind=lifecycle/);
+  assert.deepEqual(evidence.dockerLifecycleEvents, ["event=die;service=db;exit_code=0;kind=normal_exit"]);
+  assert.match(diagnostic, /docker_lifecycle_events=event=die;service=db;exit_code=0;kind=normal_exit/);
   assert.doesNotMatch(diagnostic, /private-token|supabase_db_web|token=/);
 });
 
@@ -880,7 +896,8 @@ test("the workflow keeps startup failure blocking and never prints the raw log",
   assert.match(startScript, /--progress-file="\$progress_file"/);
   assert.match(startScript, /--watch-pid="\$start_pid" --progress-file="\$progress_file" --expected-network="\$network"/);
   assert.match(startScript, /--docker-events-file="\$events_file" \\\s+--expected-network="\$network" \\\s+--exit-code="\$start_exit_code"/);
-  assert.match(startScript, /docker events --since "\$start_started_at" --until "\$start_finished_at" --filter type=container/);
+  assert.match(startScript, /docker events --since "\$start_started_at" --filter type=container/);
+  assert.match(startScript, /events_pid=\$!/);
   assert.match(startScript, /--docker-events-file="\$events_file"/);
   assert.match(startScript, /if \[\[ "\$start_exit_code" -ne 0 \]\]; then\s+exit "\$start_exit_code"/);
   assert.match(startScript, /cat "\$diagnostic_output"/);

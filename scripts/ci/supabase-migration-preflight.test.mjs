@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 import { parseSupabaseJson } from "./audit-supabase-release.mjs";
 import { classifyMigrationSql, findSqlContractCompatibilityIssues } from "./supabase-migration-sql.mjs";
@@ -32,6 +34,24 @@ test("classifies RPC DML as embedded and migration DML as executed", () => {
   assert.equal(rpc.embeddedDml, true);
   assert.deepEqual(classifyMigrationSql("insert into public.rows(id) values (1); update public.rows set id = 2;"), { dataMutation: true, destructive: false, embeddedDml: false, reviewRequired: false, classification: ["EXECUTED_DML"] });
   assert.equal(classifyMigrationSql("do $$ begin delete from public.rows; end $$;").dataMutation, true);
+});
+
+test("qualifies only the reviewed welcome-contact catalog migration", () => {
+  const file = "20261122000004_action_accessibility_welcome_contact_role.sql";
+  const sql = readFileSync(resolve("apps/web/supabase/migrations", file), "utf8");
+  const approved = classifyMigrationSql(sql, { id: "20261122000004", file });
+  assert.equal(approved.dataMutation, false);
+  assert.equal(approved.reviewedDataMutation, "WELCOME_CONTACT_CATALOG_V1");
+  for (const [id, candidateFile, candidateSql] of [
+    ["20261122000005", file, sql],
+    ["20261122000004", "other.sql", sql],
+    ["20261122000004", file, sql.replace("welcome_contact", "another_role")],
+    ["20261122000004", file, `${sql}\ndelete from public.action_field_role_catalog;`],
+  ]) {
+    const result = classifyMigrationSql(candidateSql, { id, file: candidateFile });
+    assert.equal(result.dataMutation, true);
+    assert.equal(result.reviewedDataMutation, undefined);
+  }
 });
 
 test("requires review for SQL whose execution timing is indeterminate", () => {

@@ -75,6 +75,14 @@ et les contrats statiques critiques Web. La lane SQL éphémère reste le seul
 endroit autorisé pour exécuter les pgTAP mutatifs ; ce workflow ne lance jamais
 pgTAP contre la base liée.
 
+Au démarrage éphémère, le diagnostic conserve les états périodiques des services
+et les événements Docker observés pendant l'exécution de la CLI. Journaux bruts,
+événements complets et détails structurés de la CLI restent dans des fichiers
+privés temporaires du runner puis sont supprimés. Seuls services, phases, états
+et codes explicitement autorisés paraissent dans les preuves. Un `die` à code
+zéro et un `destroy` de nettoyage sont rapportés comme arrêt normal et nettoyage;
+aucun des deux n'est présenté seul comme cause racine.
+
 ## Blocages et reprise
 
 Un blocage doit être traité à sa cause : authentification/cible, divergence

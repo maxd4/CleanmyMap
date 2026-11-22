@@ -111,7 +111,7 @@ function extractReferencedObjects(sql) {
 
 function analyzeMigration(entry, creationIndex) {
   const sql = entry.sql;
-  const sqlClassification = classifyMigrationSql(sql);
+  const sqlClassification = classifyMigrationSql(sql, entry);
   const rlsPolicyChanges = /\b(?:create|alter|drop)\s+policy\b|\benable\s+row\s+level\s+security\b/i.test(sql);
   const grantChanges = /\b(?:grant|revoke)\b/i.test(sql);
   const rpcChanges = /\b(?:create|replace|drop)\s+(?:or\s+replace\s+)?(?:function|procedure)\b/i.test(sql);

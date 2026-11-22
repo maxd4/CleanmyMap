@@ -149,6 +149,14 @@ function normalizeServiceName(value) {
   return serviceAliases.find(([alias]) => normalized.includes(alias))?.[1] ?? null;
 }
 
+function dockerEventService(attributes) {
+  const value = String(attributes.name ?? attributes["com.docker.compose.service"] ?? attributes["com.docker.swarm.service.name"] ?? "");
+  const service = inferFailureService(value);
+  if (service) return service;
+  const normalized = value.toLowerCase().replace(/_/g, "-");
+  return serviceAliases.find(([alias]) => normalized === alias)?.[1] ?? null;
+}
+
 function parseContainerServices(output) {
   const services = {};
   for (const line of String(output ?? "").split(/\r?\n/).filter(Boolean)) {
@@ -234,14 +242,13 @@ export function parseFirstDockerFailureEvent(rawEvents) {
     }
     const action = String(event.Action ?? event.status ?? "").toLowerCase();
     const attributes = event.Actor?.Attributes ?? event.actor?.attributes ?? {};
-    const name = String(attributes.name ?? "");
-    const service = inferFailureService(name);
+    const service = dockerEventService(attributes);
     if (!service) continue;
     if (action === "destroy") continue;
-    if (action === "oom" || action === "health_status: unhealthy") {
-      const rawExitCode = attributes.exitCode ?? attributes.exitcode;
-      const exitCode = /^\d{1,3}$/.test(String(rawExitCode ?? "")) ? String(rawExitCode) : "unknown";
-      const signal = action === "health_status: unhealthy" ? "DOCKER_HEALTH_UNHEALTHY" : action === "oom" ? "DOCKER_OOM" : `DOCKER_${action.toUpperCase()}`;
+    const rawExitCode = attributes.exitCode ?? attributes.exitcode;
+    const exitCode = /^\d{1,3}$/.test(String(rawExitCode ?? "")) ? String(rawExitCode) : "unknown";
+    if (action === "oom" || action === "health_status: unhealthy" || (action === "die" && exitCode !== "unknown" && exitCode !== "0")) {
+      const signal = action === "health_status: unhealthy" ? "DOCKER_HEALTH_UNHEALTHY" : action === "oom" ? "DOCKER_OOM" : "DOCKER_CONTAINER_EXIT";
       return { signal, excerpt: `event=${action};service=${service};exit_code=${exitCode}` };
     }
   }
@@ -259,13 +266,13 @@ export function parseDockerLifecycleEvents(rawEvents) {
       continue;
     }
     const action = String(event.Action ?? event.status ?? "").toLowerCase();
-    if (action !== "die" && action !== "destroy") continue;
+    if (!["create", "start", "health_status: healthy", "health_status: unhealthy", "die", "destroy"].includes(action)) continue;
     const attributes = event.Actor?.Attributes ?? event.actor?.attributes ?? {};
-    const service = inferFailureService(String(attributes.name ?? ""));
+    const service = dockerEventService(attributes);
     if (!service) continue;
     const rawExitCode = attributes.exitCode ?? attributes.exitcode;
     const exitCode = /^\d{1,3}$/.test(String(rawExitCode ?? "")) ? String(rawExitCode) : "unknown";
-    const kind = action === "destroy" ? "cleanup" : "lifecycle";
+    const kind = action === "destroy" ? "cleanup" : action === "die" ? (exitCode === "0" ? "normal_exit" : "failure") : action.startsWith("health_status:") ? "health" : "transition";
     summaries.push(`event=${action};service=${service};exit_code=${exitCode};kind=${kind}`);
     if (summaries.length === 10) break;
   }
@@ -324,6 +331,7 @@ export function collectStartProgressSnapshot({ elapsedSeconds = 0, expectedNetwo
     dockerImages: imageCount,
     dockerContainers: containerCount,
     dockerContainerStates: containerStates,
+    dockerContainerServices: containerServices,
     requiredServicesState,
     networkState,
     observationState: progressObservationState({
@@ -346,6 +354,7 @@ function normalizeProgressSnapshots(snapshots) {
       dockerDaemon: snapshot.dockerDaemon === "available" ? "available" : "unavailable",
       dockerImages: Number.isInteger(snapshot.dockerImages) ? snapshot.dockerImages : null,
       dockerContainers: Number.isInteger(snapshot.dockerContainers) ? snapshot.dockerContainers : null,
+      dockerContainerServices: Object.fromEntries(Object.entries(snapshot.dockerContainerServices ?? {}).filter(([service, state]) => serviceAliases.some(([, allowed]) => allowed === service) && containerStateNames.includes(state))),
       requiredServicesState: typeof snapshot.requiredServicesState === "string" ? snapshot.requiredServicesState : "unobserved",
       networkState: typeof snapshot.networkState === "string" ? snapshot.networkState : "unobserved",
     }));
@@ -466,7 +475,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     dockerLifecycleEvents: parseDockerLifecycleEvents(dockerEvents),
     durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
     startObservationCount: progressSnapshots.length,
-    startObservationTimeline: progressSnapshots.map((snapshot) => `${snapshot.elapsedSeconds ?? "unknown"}:${snapshot.observationState}`).join(","),
+    startObservationTimeline: progressSnapshots.map((snapshot) => `${snapshot.elapsedSeconds ?? "unknown"}:${Object.entries(snapshot.dockerContainerServices).map(([service, state]) => `${service}=${state}`).join("/") || snapshot.observationState}`).join(","),
   };
   const evidenceCodes = [
     dockerVersion.available ? "DOCKER_COMMAND_AVAILABLE" : "DOCKER_COMMAND_UNAVAILABLE",
@@ -517,6 +526,7 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`first_error_excerpt=${evidence.firstErrorExcerpt ?? "unavailable"}`);
     lines.push(`first_error_source=${evidence.firstErrorSource ?? "unavailable"}`);
     lines.push(`docker_lifecycle_events=${evidence.dockerLifecycleEvents?.join(",") || "none"}`);
+    lines.push(`startup_service_timeline=${evidence.startObservationTimeline || "none"}`);
     lines.push(`docker_containers=${evidence.dockerContainers ?? "unavailable"}`);
     lines.push(`docker_container_states=${Object.entries(evidence.dockerContainerStates).map(([state, count]) => `${state}:${count}`).join(",")}`);
     lines.push(`docker_images=${evidence.dockerImages ?? "unavailable"}`);

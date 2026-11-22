@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 const MUTATION_PATTERN = /\b(?:insert\s+into|update\s+(?:[a-z0-9_]+\.)?[a-z0-9_]+|delete\s+from|truncate\b|select\s+setval\s*\()/i;
 const DESTRUCTIVE_PATTERN = /^(?:delete\s+from|truncate\b|drop\s+(?:table|column|schema)\b)/i;
 
@@ -87,7 +89,20 @@ function topLevelMutation(statement) {
     || (/^do\b/i.test(statement) && MUTATION_PATTERN.test(statement));
 }
 
-export function classifyMigrationSql(sql = "") {
+const reviewedCatalogMigration = Object.freeze({
+  id: "20261122000004",
+  file: "20261122000004_action_accessibility_welcome_contact_role.sql",
+  sha256: "852da682aaccb16f639f2c46f162ec7a6ffb1fc5af4840df5be32ec4400e2e11",
+});
+
+function isReviewedWelcomeContactCatalogAddition(sql, migration) {
+  if (migration?.id !== reviewedCatalogMigration.id || migration?.file !== reviewedCatalogMigration.file) return false;
+  const normalizedSql = String(sql).replace(/\r\n/g, "\n");
+  const digest = createHash("sha256").update(normalizedSql).digest("hex");
+  return digest === reviewedCatalogMigration.sha256;
+}
+
+export function classifyMigrationSql(sql = "", migration = null) {
   const statements = splitSqlStatements(sql);
   let dataMutation = false;
   let destructive = false;
@@ -119,11 +134,14 @@ export function classifyMigrationSql(sql = "") {
     }
   }
 
+  const reviewedCatalogAddition = dataMutation && !destructive && !embeddedDml && !reviewRequired
+    && isReviewedWelcomeContactCatalogAddition(sql, migration);
   return {
-    dataMutation,
+    dataMutation: dataMutation && !reviewedCatalogAddition,
     destructive,
     embeddedDml,
     reviewRequired,
+    ...(reviewedCatalogAddition ? { reviewedDataMutation: "WELCOME_CONTACT_CATALOG_V1" } : {}),
     classification: [...new Set(classifications)],
   };
 }

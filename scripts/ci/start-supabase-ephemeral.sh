@@ -17,13 +17,20 @@ progress_file="$temp_root/supabase-start-$run_key-progress.ndjson"
 events_file="$temp_root/supabase-start-$run_key-events.ndjson"
 
 cleanup() {
+  if [[ -n "${events_pid:-}" ]]; then
+    kill "$events_pid" 2>/dev/null || true
+    wait "$events_pid" 2>/dev/null || true
+  fi
   rm -f "$start_log" "$progress_file" "$events_file"
 }
 trap cleanup EXIT
 
 : > "$progress_file"
+: > "$events_file"
 start_started_at="$(date +%s)"
-"$root/node_modules/.bin/supabase" start --workdir "$workdir" --yes --output-format json --network-id="$network" > "$start_log" 2>&1 &
+docker events --since "$start_started_at" --filter type=container --format '{{json .}}' > "$events_file" 2>/dev/null &
+events_pid=$!
+"$root/node_modules/.bin/supabase" start --debug --workdir "$workdir" --yes --output-format json --network-id="$network" > "$start_log" 2>&1 &
 start_pid=$!
 node "$root/scripts/ci/diagnose-supabase-start.mjs" --watch-pid="$start_pid" --progress-file="$progress_file" --expected-network="$network" >/dev/null 2>&1 &
 progress_pid=$!
@@ -34,7 +41,9 @@ set -e
 start_finished_at="$(date +%s)"
 kill "$progress_pid" 2>/dev/null || true
 wait "$progress_pid" 2>/dev/null || true
-docker events --since "$start_started_at" --until "$start_finished_at" --filter type=container --format '{{json .}}' > "$events_file" 2>/dev/null || true
+kill "$events_pid" 2>/dev/null || true
+wait "$events_pid" 2>/dev/null || true
+events_pid=""
 start_duration_seconds=$((start_finished_at - start_started_at))
 
 set +e
