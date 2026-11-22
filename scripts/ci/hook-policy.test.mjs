@@ -369,7 +369,7 @@ test("governance coordinates parallel dirty work without losing published scope"
   assert.doesNotMatch(scriptsAgents, /HEAD == origin\/main/);
   assert.match(scriptsAgents, /pré-commit doit utiliser exclusivement la portée `STAGED`/);
   assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);
-  assert.match(scriptsPolicy, /peut commencer même\s+si le checkout est dirty/);
+  assert.match(scriptsPolicy, /peut commencer\s+même\s+si le checkout est dirty/);
   assert.match(scriptsPolicy, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/s);
   assert.match(testingGuide, /## Exécution non bloquante du checkout/);
   assert.match(testingGuide, /Aucun worktree propre,\s+SHA figé, gel des writers ou convergence Git n'est un prérequis/);
