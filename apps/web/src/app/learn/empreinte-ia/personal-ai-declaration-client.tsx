@@ -147,11 +147,12 @@ export function PersonalAiDeclarationClient() {
 
   async function save() {
     if (!normalized || !isSignedIn) return;
+    const draft = toDraft(form);
     setBusy(true); setError(""); setMessage("");
     try {
       const response = await fetch(editingId ? `/api/personal-ai/declarations/${editingId}` : "/api/personal-ai/declarations", {
         method: editingId ? "PATCH" : "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingId ? { declaration: normalized } : normalized),
+        body: JSON.stringify(editingId ? { declaration: draft } : draft),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Enregistrement indisponible.");
