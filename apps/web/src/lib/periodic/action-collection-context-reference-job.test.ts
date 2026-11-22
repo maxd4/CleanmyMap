@@ -70,6 +70,7 @@ describe("action collection contextual monthly reference job", () => {
 
     expect(asOfDate).toBe("2026-10-31");
     expect(result.status).toBe("captured");
+    if (result.status !== "captured") throw new Error("Expected a captured snapshot.");
     expect(result.snapshot.payload).toMatchObject({
       period: "2026-11-01",
       formulaVersion: ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
@@ -87,11 +88,13 @@ describe("action collection contextual monthly reference job", () => {
   });
 
   it("does not let one unavailable metric replace a valid prior metric", async () => {
-    const previousPayload = (await runActionCollectionContextReferenceJob({
+    const previousResult = await runActionCollectionContextReferenceJob({
       now: new Date("2026-10-01T03:20:00.000Z"),
       fetchReferences: async () => candidate({ citizenWaste: 10, citizenButts: 200 }),
       writeSnapshot: async () => "applied",
-    })).snapshot.payload;
+    });
+    if (previousResult.status !== "captured") throw new Error("Expected the first snapshot to be captured.");
+    const previousPayload = previousResult.snapshot.payload;
     const result = await runActionCollectionContextReferenceJob({
       now: new Date("2026-11-01T03:20:00.000Z"),
       readSnapshot: async () => storedSnapshot({
@@ -109,6 +112,7 @@ describe("action collection contextual monthly reference job", () => {
     });
 
     expect(result.status).toBe("captured");
+    if (result.status !== "captured") throw new Error("Expected a captured snapshot.");
     expect(result.snapshot.payload.references.citizen.waste).toMatchObject({
       value: 10,
       sourceCount: 2,
@@ -131,6 +135,7 @@ describe("action collection contextual monthly reference job", () => {
       },
       writeSnapshot: async () => "applied",
     });
+    if (first.status !== "captured") throw new Error("Expected a captured snapshot.");
     const second = await runActionCollectionContextReferenceJob({
       now: new Date("2026-11-01T04:20:00.000Z"),
       readSnapshot: async () => first.snapshot,
@@ -141,17 +146,19 @@ describe("action collection contextual monthly reference job", () => {
       writeSnapshot: async () => "applied",
     });
 
-    expect(second.status).toBe("reused");
+    if (second.status !== "reused") throw new Error("Expected the prior snapshot to be reused.");
     expect(calls).toBe(1);
     expect(second.snapshot.payload.references.citizen.waste.value).toBe(12);
   });
 
   it("keeps the last valid snapshot when the new population is unavailable", async () => {
-    const previous = storedSnapshot((await runActionCollectionContextReferenceJob({
+    const previousResult = await runActionCollectionContextReferenceJob({
       now: new Date("2026-10-01T03:20:00.000Z"),
       fetchReferences: async () => candidate({ citizenWaste: 10, citizenButts: 200 }),
       writeSnapshot: async () => "applied",
-    })).snapshot.payload);
+    });
+    if (previousResult.status !== "captured") throw new Error("Expected a captured snapshot.");
+    const previous = storedSnapshot(previousResult.snapshot.payload);
 
     const result = await runActionCollectionContextReferenceJob({
       now: new Date("2026-11-01T03:20:00.000Z"),
@@ -163,21 +170,63 @@ describe("action collection contextual monthly reference job", () => {
     });
 
     expect(result.status).toBe("reused");
+    if (result.status !== "reused") throw new Error("Expected the prior snapshot to be reused.");
     expect(result.snapshot).toBe(previous);
   });
 
-  it("does not create a first snapshot from fewer than two sources", async () => {
+  it("defers a first snapshot when source data is insufficient", async () => {
     let writes = 0;
 
-    await expect(runActionCollectionContextReferenceJob({
+    const result = await runActionCollectionContextReferenceJob({
       now: new Date("2026-11-01T03:20:00.000Z"),
       fetchReferences: async () => candidate({ allUnavailable: true }),
       writeSnapshot: async () => {
         writes += 1;
         return "applied";
       },
-    })).rejects.toThrow("Aucune référence contextuelle");
+    });
 
+    expect(result).toEqual({ status: "deferred", reason: "insufficient_data" });
     expect(writes).toBe(0);
+  });
+
+  it("keeps transport and RPC failures as failures", async () => {
+    await expect(runActionCollectionContextReferenceJob({
+      now: new Date("2026-11-01T03:20:00.000Z"),
+      fetchReferences: async () => {
+        throw new Error("RPC unavailable");
+      },
+      writeSnapshot: async () => "must-not-write",
+    })).rejects.toThrow("RPC unavailable");
+  });
+
+  it("does not reuse a prior structurally valid snapshot with no usable metrics", async () => {
+    const generatedAt = "2026-10-01T03:20:00.000Z";
+    const emptyMetric = { value: null, sourceCount: 1, period: null, generatedAt: null };
+    const previous = storedSnapshot({
+      period: "2026-10-01",
+      generatedAt,
+      formulaVersion: ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+      source: "action_collection_context_reference_averages_v1",
+      references: Object.fromEntries(["citizen", "company", "school"].map((actionContext) => [
+        actionContext,
+        {
+          actionContext,
+          waste: emptyMetric,
+          butts: emptyMetric,
+          eligibleActionCount: 0,
+          formulaVersion: ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+        },
+      ])) as ActionCollectionContextReferenceSnapshotPayload["references"],
+    });
+
+    const result = await runActionCollectionContextReferenceJob({
+      now: new Date("2026-11-01T03:20:00.000Z"),
+      readSnapshot: async () => previous,
+      fetchReferences: async () => candidate({ allUnavailable: true }),
+      writeSnapshot: async () => "must-not-write",
+    });
+
+    expect(result).toEqual({ status: "deferred", reason: "insufficient_data" });
   });
 });

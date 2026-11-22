@@ -18,12 +18,9 @@ import { getUtcMonthStart } from "./periodic-job-calendar";
 
 export const GOVERNANCE_MONTHLY_JOB_VERSION = GOVERNANCE_MONTHLY_REPORT_VERSION;
 
-class GovernanceMonthlyJobError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "GovernanceMonthlyJobError";
-  }
-}
+export type GovernanceMonthlyJobResult =
+  | { status: "captured" | "reused"; report: GovernanceMonthlyReportRecord }
+  | { status: "deferred"; reason: "dependency_unavailable" };
 
 export async function runGovernanceMonthlyJob(params: {
   now?: Date;
@@ -35,7 +32,7 @@ export async function runGovernanceMonthlyJob(params: {
     storageUsage: PlatformUsageSnapshotPayload["storageUsage"];
     generatedAt: string;
   }) => Promise<GovernanceMonthlyReportRecord>;
-} = {}): Promise<{ status: "captured" | "reused"; report: GovernanceMonthlyReportRecord }> {
+} = {}): Promise<GovernanceMonthlyJobResult> {
   const now = params.now ?? new Date();
   const reportMonth = getUtcMonthStart(now);
   const readReport = params.readReport ?? loadGovernanceMonthlyReport;
@@ -50,9 +47,7 @@ export async function runGovernanceMonthlyJob(params: {
       readLatestPublicSurfaceSnapshot<PlatformUsageSnapshotPayload>(PLATFORM_USAGE_SNAPSHOT_KEY));
   const platformSnapshot = await readPlatformUsageSnapshot();
   if (!platformSnapshot) {
-    throw new GovernanceMonthlyJobError(
-      "Impossible de produire le rapport mensuel : aucun snapshot PLATFORM_USAGE disponible.",
-    );
+    return { status: "deferred", reason: "dependency_unavailable" };
   }
 
   const captureReport = params.captureReport ?? captureGovernanceMonthlyReport;

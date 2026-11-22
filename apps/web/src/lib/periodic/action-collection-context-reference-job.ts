@@ -26,6 +26,9 @@ const CONTEXTS = ["citizen", "company", "school"] as const;
 export type ActionCollectionContextReferenceJobResult = {
   status: "captured" | "reused";
   snapshot: PublicSurfaceSnapshotRecord<ActionCollectionContextReferenceSnapshotPayload>;
+} | {
+  status: "deferred";
+  reason: "insufficient_data";
 };
 
 function getPreviousUtcDay(monthStart: string): string {
@@ -159,6 +162,14 @@ function hasUsableCandidate(
   });
 }
 
+function hasUsableSnapshot(
+  payload: ActionCollectionContextReferenceSnapshotPayload,
+): boolean {
+  return Object.values(payload.references).some((reference) =>
+    Boolean(reference && (isUsableMetric(reference.waste) || isUsableMetric(reference.butts))),
+  );
+}
+
 export async function runActionCollectionContextReferenceJob(params: {
   now?: Date;
   force?: boolean;
@@ -194,19 +205,20 @@ export async function runActionCollectionContextReferenceJob(params: {
   const fetchReferences = params.fetchReferences ?? ((asOfDate: string) =>
     fetchActionCollectionContextReferenceAverages(getSupabaseServerClient(true), { asOfDate }));
   const references = await fetchReferences(getPreviousUtcDay(period));
+
+  if (!hasUsableCandidate(references)) {
+    if (existing && existingPayload && hasUsableSnapshot(existingPayload)) {
+      return { status: "reused", snapshot: existing };
+    }
+    return { status: "deferred", reason: "insufficient_data" };
+  }
+
   const snapshot = buildSnapshot({
     now,
     period,
     references,
     previous: existingPayload,
   });
-
-  if (!hasUsableCandidate(references)) {
-    if (existing && existingPayload) {
-      return { status: "reused", snapshot: existing };
-    }
-    throw new Error("Aucune référence contextuelle de collecte disponible.");
-  }
 
   const writeSnapshot = params.writeSnapshot ?? ((value) => upsertPublicSurfaceSnapshot(value));
   const writeResult = await writeSnapshot(toPersistedPublicSurfaceSnapshot(snapshot));

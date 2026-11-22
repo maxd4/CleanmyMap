@@ -188,6 +188,9 @@ describe("captureStorageUsageReport", () => {
       { onConflict: "snapshot_month" },
     );
     expect(mocks.fetchAllStorageObjects).toHaveBeenCalledOnce();
+    expect(mocks.fetchAllStorageObjects).toHaveBeenCalledWith(harness.client);
+    expect(harness.client.schema).not.toHaveBeenCalled();
+    expect(mocks.getSupabaseServerClient).toHaveBeenCalledWith(true);
   });
 
   it("keeps the report usable and exposes a warning when persistence returns an error", async () => {

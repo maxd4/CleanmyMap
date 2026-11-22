@@ -50,13 +50,18 @@ export const MAINTENANCE_JOB_IDS = [
 type MaintenanceJobId = (typeof MAINTENANCE_JOB_IDS)[number];
 type MaintenanceJobCadence = "daily" | "weekly" | "monthly";
 type MaintenanceJobStatus = "executed" | "skipped" | "failed";
+type MaintenanceJobSkipReason =
+  | "reused"
+  | "not_due"
+  | "dependency_unavailable"
+  | "insufficient_data";
 
 type MaintenanceJobOutcome = {
   job: MaintenanceJobId;
   cadence: MaintenanceJobCadence;
   period: string;
   status: MaintenanceJobStatus;
-  reason?: "reused" | "not_due";
+  reason?: MaintenanceJobSkipReason;
   error?: "Échec du job.";
 };
 
@@ -73,6 +78,16 @@ export type MaintenanceJobDefinition = {
   isProduced: (period: string) => Promise<boolean>;
   run: (now: Date) => Promise<unknown>;
 };
+
+function deferredReason(value: unknown): MaintenanceJobSkipReason | null {
+  if (!value || typeof value !== "object") return null;
+  const result = value as { status?: unknown; reason?: unknown };
+  if (result.status !== "deferred") return null;
+  if (result.reason !== "dependency_unavailable" && result.reason !== "insufficient_data") {
+    throw new Error("Maintenance job returned an invalid deferred reason.");
+  }
+  return result.reason;
+}
 
 function isPeriodDue(now: Date, period: string): boolean {
   return new Date(`${period}T00:00:00.000Z`).getTime() <= now.getTime();
@@ -264,12 +279,14 @@ export async function runMaintenanceJobs(params: {
         continue;
       }
 
-      await job.run(now);
+      const result = await job.run(now);
+      const deferred = deferredReason(result);
       outcomes.push({
         job: job.id,
         cadence: job.cadence,
         period,
-        status: "executed",
+        status: deferred ? "skipped" : "executed",
+        ...(deferred ? { reason: deferred } : {}),
       });
     } catch (error) {
       console.error(

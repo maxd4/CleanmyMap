@@ -1,5 +1,22 @@
 # Maintenance — commandes et frontières réelles
 
+## Résultats différés du dispatcher quotidien
+
+Le registre conserve ses huit jobs et leurs calendriers. Un job qui dépend
+d'une donnée encore absente peut retourner `deferred`; le dispatcher l'expose
+comme `skipped` avec `dependency_unavailable` ou `insufficient_data`. Le
+calendrier ne change pas et l'appel quotidien retente le job tant que son
+artefact de la période n'est pas produit. Les erreurs de lecture, RPC ou
+écriture restent `failed` et ne sont pas converties en absence de données.
+
+`governance-report` consomme le snapshot hebdomadaire `PLATFORM_USAGE`; il ne
+relance pas les captures de stockage ou d'impact si ce snapshot manque. Les
+références de collecte restent indisponibles tant qu'une mesure ne satisfait
+pas le minimum de deux sources; aucune valeur de remplacement n'est publiée.
+Le job de stockage énumère les objets avec le client serveur `service_role` via
+l'API Storage paginée. Le schéma `storage` n'est pas ajouté aux schémas
+PostgREST exposés.
+
 ## Rétention des brouillons et actions en attente
 
 Le cron unique `/api/cron/maintenance` (`20 3 * * *`, UTC) exécute chaque jour

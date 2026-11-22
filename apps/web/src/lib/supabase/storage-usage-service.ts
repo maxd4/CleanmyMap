@@ -16,7 +16,6 @@ import {
   toStorageUsageSnapshot,
   type StorageUsageMonthComparison,
   type StorageUsageSnapshot,
-  type StorageUsageObjectRow,
   type StorageUsageSnapshotRecord,
 } from "@/lib/supabase/storage-usage";
 import {
@@ -125,10 +124,6 @@ function getCurrentSnapshotMonth(now = new Date()): string {
   return `${year}-${month}-01`;
 }
 
-function toStorageObjectsQuery(supabase: ReturnType<typeof getSupabaseServerClient>) {
-  return supabase.schema("storage").from("objects");
-}
-
 async function readStorageUsageSnapshotRecords(
   supabase = getSupabaseServerClient(true),
   limit = getStorageHistoryLimit(),
@@ -157,9 +152,7 @@ async function buildStorageUsageReport(params: {
   const snapshotMonth = getCurrentSnapshotMonth(new Date(generatedAt));
   const cron = buildStorageUsageCronStatus(isCronSecretConfigured(), new Date(generatedAt));
 
-  const storageObjects = (await fetchAllStorageObjects(
-    toStorageObjectsQuery(supabase),
-  )) as StorageUsageObjectRow[];
+  const storageObjects = await fetchAllStorageObjects(supabase);
 
   const currentSnapshot = buildStorageUsageSnapshot(
     storageObjects,

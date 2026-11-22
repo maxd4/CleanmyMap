@@ -47,7 +47,7 @@ describe("runGovernanceMonthlyJob", () => {
     });
   });
 
-  it("réutilise le rapport du mois et échoue explicitement sans snapshot source", async () => {
+  it("réutilise le rapport du mois et diffère sans snapshot source", async () => {
     const reused = await runGovernanceMonthlyJob({
       now: new Date("2026-09-08T10:00:00.000Z"),
       readReport: async (month) => {
@@ -57,12 +57,16 @@ describe("runGovernanceMonthlyJob", () => {
     });
     expect(reused).toEqual({ status: "reused", report: report() });
 
-    await expect(
-      runGovernanceMonthlyJob({
-        now: new Date("2026-09-08T10:00:00.000Z"),
-        readReport: async () => null,
-        readPlatformUsageSnapshot: async () => null,
-      }),
-    ).rejects.toThrow("aucun snapshot PLATFORM_USAGE");
+    await expect(runGovernanceMonthlyJob({
+      now: new Date("2026-09-08T10:00:00.000Z"),
+      readReport: async () => null,
+      readPlatformUsageSnapshot: async () => null,
+    })).resolves.toEqual({ status: "deferred", reason: "dependency_unavailable" });
+
+    await expect(runGovernanceMonthlyJob({
+      now: new Date("2026-09-08T10:00:00.000Z"),
+      readReport: async () => null,
+      readPlatformUsageSnapshot: async () => { throw new Error("snapshot read failed"); },
+    })).rejects.toThrow("snapshot read failed");
   });
 });

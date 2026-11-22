@@ -39,6 +39,13 @@ describe("cron maintenance route", () => {
           status: "skipped",
           reason: "reused",
         },
+        {
+          job: "governance-report",
+          cadence: "monthly",
+          period: "2026-09-01",
+          status: "skipped",
+          reason: "dependency_unavailable",
+        },
       ],
     });
   });
@@ -72,6 +79,7 @@ describe("cron maintenance route", () => {
       jobs: [
         { job: "platform-usage", status: "executed", period: "2026-09-07" },
         { job: "impact-terrain", status: "skipped", period: "2026-09-01" },
+        { job: "governance-report", status: "skipped", reason: "dependency_unavailable" },
       ],
     });
     expect(runMaintenanceJobsMock).toHaveBeenCalledOnce();

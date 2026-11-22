@@ -289,6 +289,42 @@ describe("maintenance job registry", () => {
     ]);
   });
 
+  it("reporte explicitement une dépendance ou une population encore indisponible", async () => {
+    const result = await runMaintenanceJobs({
+      now: new Date("2026-09-08T03:20:00.000Z"),
+      jobs: [
+        {
+          id: "governance-report",
+          cadence: "monthly",
+          getPeriod: () => "2026-09-01",
+          isProduced: async () => false,
+          run: async () => ({ status: "deferred", reason: "dependency_unavailable" }),
+        },
+        {
+          id: "action-collection-context-references",
+          cadence: "monthly",
+          getPeriod: () => "2026-09-01",
+          isProduced: async () => false,
+          run: async () => ({ status: "deferred", reason: "insufficient_data" }),
+        },
+      ],
+    });
+
+    expect(result.status).toBe("ok");
+    expect(result.jobs).toEqual([
+      expect.objectContaining({
+        job: "governance-report",
+        status: "skipped",
+        reason: "dependency_unavailable",
+      }),
+      expect.objectContaining({
+        job: "action-collection-context-references",
+        status: "skipped",
+        reason: "insufficient_data",
+      }),
+    ]);
+  });
+
   it("garde une configuration Vercel avec un seul cron commun", () => {
     const config = JSON.parse(
       readFileSync(join(process.cwd(), "vercel.json"), "utf8"),

@@ -267,7 +267,8 @@ Les tables ci-dessous ressortent comme les plus exposées dans le code.
   - plafonnées à `6000` lignes chacune via `PROJECT_SIGNAL_ROW_LIMIT`
   - c'est le plus gros consommateur de requêtes de lecture dans le dépôt
 - `apps/web/src/lib/supabase/storage-usage-service.ts:58-120`
-  - scan complet de `storage.objects` par pagination
+  - inventaire paginé via l'API Storage serveur (liste des buckets puis des
+    objets et dossiers), sans exposer `storage` dans PostgREST
   - déclenche aussi un `upsert` mensuel dans `supabase_storage_usage_snapshots`
 - `apps/web/src/lib/gamification/progression-backfill.ts:163-166`
   - lecture de plusieurs tables pour recalculer la progression
