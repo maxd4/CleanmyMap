@@ -187,7 +187,8 @@ test("reports only the data error type for invalid text representations", () => 
   const log = [
     "Applying database migrations",
     "Applying migration 20261121000002_personal_ai_declarations.sql...",
-    JSON.stringify({ level: "debug", context: { sqlstate: "22P02", message: 'invalid input syntax for type timestamp with time zone: "private-value"' } }),
+    JSON.stringify({ level: "debug", context: { sqlstate: "22P02" } }),
+    JSON.stringify({ level: "debug", context: { message: 'invalid input syntax for type timestamp with time zone: "private-value"' } }),
   ].join("\n");
   const evidence = collectBoundedStartEvidence({ log, exitCode: 1, probeCommand: createProbeCommand() });
   const diagnostic = renderSupabaseStartDiagnostic({

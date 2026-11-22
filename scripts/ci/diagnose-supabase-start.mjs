@@ -364,7 +364,8 @@ function terminalLogMessage(line) {
 
 function inferFirstErrorEvidence(log) {
   let genericError = null;
-  for (const line of String(log ?? "").split(/\r?\n/)) {
+  const lines = String(log ?? "").split(/\r?\n/);
+  for (const [index, line] of lines.entries()) {
     const normalized = terminalLogMessage(line);
     const sqlState = sqlStateFromLogLine(line) ?? sqlStateFromText(normalized);
     const signal = firstErrorSignalPatterns.find(([candidate, pattern]) => candidate !== "UNKNOWN_ERROR" && normalized && pattern.test(normalized))?.[0]
@@ -376,7 +377,7 @@ function inferFirstErrorEvidence(log) {
     const result = {
       signal: resolvedSignal,
       sqlState,
-      detail: safeSqlErrorDetail(normalized, sqlState),
+      detail: safeSqlErrorDetail(lines.slice(index, index + 12).join(" "), sqlState),
       excerpt: sanitizeErrorExcerpt(resolvedSignal, inferFailureService(normalized), sqlState),
     };
     if (resolvedSignal !== "UNKNOWN_ERROR") return result;
