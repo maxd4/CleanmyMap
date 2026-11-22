@@ -2,7 +2,7 @@ import { ActionParticipantImpactManager } from "@/components/actions/action-part
 import { ActionRetrospectivePanel } from "@/components/actions/action-retrospective-panel";
 import { ActionRoleAttestationsPanel } from "@/components/actions/action-role-attestations-panel";
 import { ActionMediaProofs } from "@/components/actions/action-media/action-media-proofs";
-import { CmmButton } from "@/components/ui/cmm-button";
+import { ActionHistoryAiReportExport } from "@/components/actions/action-history-ai-report-export";
 import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import type { ActionParticipationReviewItem } from "@/lib/actions/participation/group-participation";
 import {
@@ -56,10 +56,8 @@ function ActionHistoryModerationSections({
     {isSingleActionReportEligible(selectedItem) ? (
       <div className="mt-3 rounded-xl border border-red-200 bg-red-50/70 p-3">
         <p className="cmm-text-caption font-semibold uppercase tracking-wide text-red-700">Rapport mono-action</p>
-        <p className="mt-1 cmm-text-small cmm-text-secondary">Vérifiez le résumé serveur de cette action avant de générer son rapport d&apos;impact.</p>
-        <CmmButton href={`/reports?tab=generation&actionId=${encodeURIComponent(selectedItem.id)}`} tone="primary" variant="pill" className="mt-3 min-h-11">
-          Générer un rapport d&apos;impact
-        </CmmButton>
+        <p className="mt-1 cmm-text-small cmm-text-secondary">Téléchargez les données autorisées et leur configuration pour préparer un rapport français avec un outil IA.</p>
+        <ActionHistoryAiReportExport actionId={selectedItem.id} />
       </div>
     ) : null}
     {selectedCanModerateGroupJoin ? (

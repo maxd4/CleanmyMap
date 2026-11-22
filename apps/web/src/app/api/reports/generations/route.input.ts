@@ -20,7 +20,7 @@ import {
   ReportAdvancedFilterSourceUnavailableError,
 } from "@/lib/reports/report-advanced-filters";
 
-const MAX_REPORT_GENERATION_REQUEST_BYTES = 2 * 1024 * 1024;
+export const MAX_REPORT_GENERATION_REQUEST_BYTES = 2 * 1024 * 1024;
 const detailLevelSchema = z.enum(["concis", "default", "exhaustif"]);
 const reportThemeSchema = z.enum(["impact", "scientific"]);
 const scopeKindSchema = z.enum(["global", "account", "association", "arrondissement"]);
@@ -60,7 +60,7 @@ const multiActionRequestSchema = z.object({
   theme: reportThemeSchema.optional(),
 }).strict();
 
-type ParsedReportGenerationRequest =
+export type ParsedReportGenerationRequest =
   | { kind: "single_action"; request: z.infer<typeof singleActionRequestSchema> }
   | { kind: "multi_action"; request: z.infer<typeof multiActionRequestSchema> };
 
@@ -72,10 +72,12 @@ export async function parseReportGenerationRequest(
   request: Request,
   operationId: string,
   actorUserId: string,
+  options: { auditFailures?: boolean } = {},
 ): Promise<{ request: ParsedReportGenerationRequest } | { response: NextResponse }> {
+  const auditFailures = options.auditFailures !== false;
   const body = await readJsonBodyWithLimit(request, MAX_REPORT_GENERATION_REQUEST_BYTES);
   if (!body.ok) {
-    await auditReportGenerationError(operationId, actorUserId, {
+    if (auditFailures) await auditReportGenerationError(operationId, actorUserId, {
       stage: "validation",
       code: body.reason === "too_large" ? "payload_too_large" : "invalid_json",
     });
@@ -89,16 +91,16 @@ export async function parseReportGenerationRequest(
   const singleAction = singleActionRequestSchema.safeParse(body.data);
   const multiAction = multiActionRequestSchema.safeParse(body.data);
   if (hasTypedInput(body.data) && !singleAction.success && !multiAction.success) {
-    await auditReportGenerationError(operationId, actorUserId, { stage: "validation", code: "invalid_typed_input" });
+    if (auditFailures) await auditReportGenerationError(operationId, actorUserId, { stage: "validation", code: "invalid_typed_input" });
     return { response: NextResponse.json({ error: "Invalid report generation input" }, { status: 400 }) };
   }
   if (singleAction.success) return { request: { kind: "single_action", request: singleAction.data } };
   if (multiAction.success) return { request: { kind: "multi_action", request: multiAction.data } };
   if (body.data && typeof body.data === "object" && "payload" in body.data) {
-    await auditReportGenerationError(operationId, actorUserId, { stage: "validation", code: "legacy_payload_rejected" });
+    if (auditFailures) await auditReportGenerationError(operationId, actorUserId, { stage: "validation", code: "legacy_payload_rejected" });
     return { response: NextResponse.json({ error: "A typed report generation input is required." }, { status: 400 }) };
   }
-  await auditReportGenerationError(operationId, actorUserId, { stage: "validation", code: "invalid_typed_input" });
+  if (auditFailures) await auditReportGenerationError(operationId, actorUserId, { stage: "validation", code: "invalid_typed_input" });
   return { response: NextResponse.json({ error: "Invalid report generation input" }, { status: 400 }) };
 }
 
@@ -107,6 +109,7 @@ async function resolveSingleActionInput(
   operationId: string,
   actorUserId: string,
   generationId: string,
+  auditFailures: boolean,
 ): Promise<{ input: ReportGenerationHistoryInput } | { response: NextResponse }> {
   try {
     const contract = await resolveSingleActionReportContract(parsed.request.input.actionId);
@@ -125,7 +128,7 @@ async function resolveSingleActionInput(
     };
   } catch (error) {
     const unavailable = error instanceof SingleActionReportTargetUnavailableError;
-    await auditReportGenerationError(operationId, actorUserId, {
+    if (auditFailures) await auditReportGenerationError(operationId, actorUserId, {
       stage: "source",
       code: unavailable ? "action_unavailable" : "action_resolution_failed",
     });
@@ -140,6 +143,7 @@ async function resolveMultiActionInput(
   operationId: string,
   actorUserId: string,
   generationId: string,
+  auditFailures: boolean,
 ): Promise<{ input: ReportGenerationHistoryInput } | { response: NextResponse }> {
   try {
     return {
@@ -157,7 +161,7 @@ async function resolveMultiActionInput(
     };
   } catch (error) {
     const failure = getMultiActionFailure(error);
-    await auditReportGenerationError(operationId, actorUserId, { stage: failure.stage, code: failure.code });
+    if (auditFailures) await auditReportGenerationError(operationId, actorUserId, { stage: failure.stage, code: failure.code });
     return { response: NextResponse.json({ error: failure.message }, { status: failure.status }) };
   }
 }
@@ -191,8 +195,10 @@ export async function resolveReportGenerationInput(
   operationId: string,
   actorUserId: string,
   generationId: string,
+  options: { auditFailures?: boolean } = {},
 ): Promise<{ input: ReportGenerationHistoryInput } | { response: NextResponse }> {
+  const auditFailures = options.auditFailures !== false;
   return parsed.kind === "single_action"
-    ? resolveSingleActionInput(parsed, operationId, actorUserId, generationId)
-    : resolveMultiActionInput(parsed, operationId, actorUserId, generationId);
+    ? resolveSingleActionInput(parsed, operationId, actorUserId, generationId, auditFailures)
+    : resolveMultiActionInput(parsed, operationId, actorUserId, generationId, auditFailures);
 }

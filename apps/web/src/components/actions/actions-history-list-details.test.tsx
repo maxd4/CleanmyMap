@@ -58,7 +58,7 @@ describe("actions history signalement media entry point", () => {
     expect(markup).not.toContain("Voir les preuves photo");
   });
 
-  it("exposes the mono-action report CTA only for an eligible completed action", () => {
+  it("exposes the Markdown AI export only for an eligible completed action", () => {
     const markup = renderToStaticMarkup(
       React.createElement(
         ActionsHistoryListDetails,
@@ -66,11 +66,11 @@ describe("actions history signalement media entry point", () => {
       ),
     );
 
-    expect(markup).toContain("Générer un rapport d&#x27;impact");
-    expect(markup).toContain("/reports?tab=generation&amp;actionId=history-action");
+    expect(markup).toContain("Télécharger le brief Markdown pour IA");
+    expect(markup).not.toContain("/reports?tab=generation&amp;actionId=history-action");
   });
 
-  it("does not expose the report CTA for an action that is not completed and published", () => {
+  it("does not expose the report export for an action that is not completed and published", () => {
     const markup = renderToStaticMarkup(
       React.createElement(
         ActionsHistoryListDetails,
@@ -78,7 +78,7 @@ describe("actions history signalement media entry point", () => {
       ),
     );
 
-    expect(markup).not.toContain("Générer un rapport d&#x27;impact");
+    expect(markup).not.toContain("Télécharger le brief Markdown pour IA");
   });
 
   it("shows data diagnostics without correction links when edit access is not established", () => {

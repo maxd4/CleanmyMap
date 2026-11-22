@@ -4,6 +4,15 @@ Ce dossier sépare les contrats observables (`CURRENT`), les évolutions encore 
 
 ## `CURRENT`
 
+- `POST /api/reports/ai-export` sert les configurations `single_action` et
+  `multi_action` avec le même contrat strict, la même sélection canonique et
+  les mêmes builders que la génération de rapport. Il produit un unique
+  Markdown téléchargeable, sans renderer PDF, quota, historique ni appel IA.
+  L'action depuis `/actions/history` utilise cet endpoint. La projection exclut
+  les lignes libres et les identifiants directs, marque les valeurs nulles
+  `UNKNOWN`, et renvoie `private, no-store` ; un dépassement de taille est
+  refusé sans troncature.
+
 - [Master Pack](../../../../features/reports/master-pack.md) : **repère de chapitres**, borné aux constantes et à leurs consommateurs vérifiés. Il n'est pas la preuve que le PDF produit par `/reports` contient exactement ces chapitres.
 - [Présentation détaillée](./reports-presentation-detaillee.md) : parcours, surfaces et limites fonctionnelles de la page.
 - Cette fiche est la référence canonique de `/reports` : accès, onglets, modules réellement exposés, quota, historique et états.

@@ -11,9 +11,19 @@ au runtime et à ses tests, pas à une copie documentaire.
 - Le modèle et le moteur sont dans `apps/web/src/lib/reports/report-model/`
   et `apps/web/src/lib/reports/master-pack/`.
 - Depuis `/actions/history`, une action approuvée, publiée et terminée expose
-  le CTA `Générer un rapport d’impact`. Il ouvre
-  `/reports?tab=generation&actionId=<id canonique>` ; `/reports` résout alors
-  l’action côté serveur et verrouille le périmètre mono-action avant génération.
+  un téléchargement Markdown pour préparer un rapport IA. Il appelle
+  `POST /api/reports/ai-export`, le même endpoint que les configurations
+  mono-action et multi-actions. Le serveur réutilise les schémas stricts,
+  l'admissibilité et les builders canoniques, puis émet une projection
+  allowlistée versionnée ; le payload PDF et ses lignes libres ne sont pas
+  sérialisés. L'export est `no-store`, limité en taille avec refus sans
+  troncature, et ne consomme ni quota PDF ni historique de génération.
+- Le Markdown fournit la configuration, les rubriques réellement disponibles,
+  des identifiants de KPI stables, unités, statuts et versions méthodologiques.
+  Les valeurs inconnues restent `null`/`UNKNOWN`, distinctes de zéro. Les
+  instructions de création PDF conditionnent cette sortie à la capacité réelle
+  de l'outil destinataire ; le texte source ne peut pas devenir une instruction
+  ni justifier des chiffres ou sources inventés.
 - Le rapport mono-action réutilise le renderer PDF et l’historique existants.
   Le navigateur envoie seulement le type de périmètre, l’identifiant de
   l’action, le niveau de détail et les modules ; le payload final est celui
