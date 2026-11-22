@@ -27,7 +27,7 @@ function renderIdentity(
       updateField: () => undefined,
       updateFields: () => undefined,
       userMetadata,
-      recordType: "action",
+      recordType: form.recordType,
       hasAttemptedSubmit: false,
       mode,
     } as ComponentProps<typeof ActionStepIdentity>),
@@ -55,12 +55,21 @@ describe("ActionStepIdentity", () => {
   });
 
   it("keeps clean-place out of the action entry form", () => {
-    const form = createInitialFormState("Aperçu local", "action");
+    const form = createInitialFormState("Aperçu local", "clean_place");
     const html = renderIdentity(form);
 
     expect(html).not.toContain("Type d&#x27;action");
     expect(html).not.toContain("Action terrain");
     expect(html).not.toContain("Lieu propre");
+    expect(html).not.toContain("Initiative et partenaires déclarés");
+  });
+
+  it("offers declarative organizational relations without treating them as accounts", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    const html = renderIdentity(form);
+    expect(html).toContain("Initiative et partenaires déclarés");
+    expect(html).toContain("aucun accès");
+    expect(html).toContain("Ajouter un partenaire");
   });
 
   it("keeps an ambiguous historical collection place visible until explicit reclassification", () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ACTION_PREPARATION_CHECKLIST_DEFAULTS,
   normalizeActionPreparationContract,
+  normalizeActionOrganizationalRelations,
   normalizeEquipmentInventory,
   normalizeRefreshmentsProvided,
   normalizePreparationChecklist,
@@ -12,6 +13,19 @@ describe("ActionPreparationData preparation extensions", () => {
   it("keeps the default checklist explicit and entirely unchecked", () => {
     expect(ACTION_PREPARATION_CHECKLIST_DEFAULTS).toHaveLength(4);
     expect(ACTION_PREPARATION_CHECKLIST_DEFAULTS.every((item) => !item.checked)).toBe(true);
+  });
+
+  it("normalizes declared organizational relations without granting identity", () => {
+    expect(normalizeActionOrganizationalRelations({
+      initiator: { kind: "external_structure", organizerType: "school", name: " Université Exemple " },
+      partners: [{ organizerType: "local_authority", name: " Ville Exemple ", role: "funding" }, { organizerType: "school", name: "", role: "other" }],
+      participantOrigins: [{ category: " Lycée " }, { category: " Lycée " }, { category: "" }],
+    })).toEqual({
+      initiator: { kind: "external_structure", organizerType: "school", name: "Université Exemple" },
+      partners: [{ organizerType: "local_authority", name: "Ville Exemple", role: "funding" }],
+      participantOrigins: [{ category: "Lycée" }],
+    });
+    expect(normalizeActionPreparationContract({ organizationalRelations: { partners: [{ organizerType: "school", name: "École", role: "admin" }] } })).toEqual({});
   });
 
   it("bounds and deduplicates structured checklist items without converting prose", () => {

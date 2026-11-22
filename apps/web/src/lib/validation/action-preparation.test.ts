@@ -80,6 +80,18 @@ describe("HTTP preparation data contract", () => {
     expect(updateActionSchema.safeParse({ preparationData: { accessibilityObservedMeasures: [{ key: "bad key", label: "Non", evidenceKind: "medical_record", observedAt: "2026-11-22" }] } }).success).toBe(false);
   });
 
+  it("accepts bounded declarative organizational relations on create and PATCH", () => {
+    const relations = {
+      initiator: { kind: "external_structure", organizerType: "school", name: "Université Exemple" },
+      partners: [{ organizerType: "local_authority", name: "Ville Exemple", role: "participants" }],
+      participantOrigins: [{ category: "Étudiants volontaires" }],
+    };
+    expect(createActionSchema.safeParse({ ...basePayload, organizerType: "school", organizerName: "École Exemple", organizerId: null, preparationData: { organizationalRelations: relations } }).success).toBe(true);
+    expect(updateActionSchema.safeParse({ preparationData: { organizationalRelations: relations } }).success).toBe(true);
+    expect(updateActionSchema.safeParse({ preparationData: { organizationalRelations: { partners: [{ organizerType: "school", name: "École", role: "admin" }] } } }).success).toBe(false);
+    expect(updateActionSchema.safeParse({ preparationData: { organizationalRelations: { partners: Array.from({ length: 11 }, () => ({ organizerType: "school", name: "École", role: "other" })) } } }).success).toBe(false);
+  });
+
   it("rejects unknown values, duplicates, overlong arrays and invalid labels", () => {
     const valid = {
       ...basePayload,

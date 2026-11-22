@@ -44,8 +44,10 @@ vi.mock('../features/actions/mobile-actions-service', () => ({
     { value: 'student_association', label: 'Association étudiante' },
     { value: 'collective', label: 'Collectif' },
     { value: 'other', label: 'Autre' },
+    { value: 'school', label: 'Établissement scolaire ou universitaire' },
+    { value: 'local_authority', label: 'Collectivité territoriale' },
   ],
-  isMobileOrganizerType: (value: unknown) => ['spontaneous', 'company', 'association', 'student_association', 'collective', 'other'].includes(value as string),
+  isMobileOrganizerType: (value: unknown) => ['spontaneous', 'company', 'association', 'student_association', 'collective', 'other', 'school', 'local_authority'].includes(value as string),
   createMobileAction: state.createMobileAction,
   updateMobileAction: state.updateMobileAction,
   loadMobileActionEditor: state.loadMobileActionEditor,
@@ -788,6 +790,8 @@ describe('mobile action creation runtime', () => {
       'Association étudiante',
       'Collectif',
       'Autre',
+      'Établissement scolaire ou universitaire',
+      'Collectivité territoriale',
     ])
     expect(radios.every((radio) => testProp<{ checked?: boolean }>(radio, 'accessibilityState')?.checked === false)).toBe(true)
   })
@@ -796,6 +800,8 @@ describe('mobile action creation runtime', () => {
     { label: 'Action spontanée', value: 'spontaneous', name: '' },
     { label: 'Entreprise', value: 'company', name: 'Entreprise locale' },
     { label: 'Collectif', value: 'collective', name: 'Collectif du parc' },
+    { label: 'Établissement scolaire ou universitaire', value: 'school', name: 'Université Exemple' },
+    { label: 'Collectivité territoriale', value: 'local_authority', name: 'Ville Exemple' },
   ] as const)('persists the canonical organizer configuration: $label', async ({ label, value, name }) => {
     state.getItem.mockResolvedValue(null)
     const renderer = await renderScreen()

@@ -6,6 +6,7 @@ import { ActionOrganizerSection } from "./action-step-identity.organizer";
 import { ActionParticipantSection } from "./action-step-identity.participants";
 import { ActionTimeSection } from "./action-step-identity.time";
 import { SectionTitle } from "./action-step-identity.ui";
+import { ActionOrganizationalRelationsSection } from "./ActionOrganizationalRelationsSection";
 
 export function ActionStepIdentity({
   form,
@@ -35,6 +36,7 @@ export function ActionStepIdentity({
                 isExistingAction={isExistingAction}
                 variant="full"
               />
+              {isActionMode ? <ActionOrganizationalRelationsSection form={form} updateField={updateField} /> : null}
 
               {isActionMode ? (
                 <ActionParticipantSection
@@ -84,7 +86,7 @@ export function ActionStepIdentity({
   }
 
   if (mode === "action") {
-    return (
+    return <div className="space-y-4">
       <ActionOrganizerSection
         form={form}
         updateField={updateField}
@@ -95,7 +97,8 @@ export function ActionStepIdentity({
         isExistingAction={isExistingAction}
         variant="compact"
       />
-    );
+      {isActionMode ? <ActionOrganizationalRelationsSection form={form} updateField={updateField} /> : null}
+    </div>;
   }
 
   if (mode === "participants") {

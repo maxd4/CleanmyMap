@@ -199,6 +199,31 @@ describe("POST /api/actions/organizers", () => {
     expect(insertMock).toHaveBeenCalledTimes(1);
   });
 
+  it("allows an administrator to explicitly add a school directory entry", async () => {
+    const insert = vi.fn();
+    const insertChain = {
+      select: () => insertChain,
+      single: async () => ({
+        data: { id: "school-entry", name: "Université Exemple", normalized_name: "universite exemple", organizer_type: "school" },
+        error: null,
+      }),
+    };
+    const query = {
+      select: () => query,
+      eq: () => query,
+      maybeSingle: async () => ({ data: null, error: null }),
+      insert: (value: unknown) => { insert(value); return insertChain; },
+    };
+    getSupabaseServerClientMock.mockReturnValue({ from: () => query });
+    const response = await POST(new Request("http://localhost/api/actions/organizers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Université Exemple", organizerType: "school" }),
+    }));
+    expect(response.status).toBe(200);
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ organizer_type: "school", created_by_clerk_id: "admin-1" }));
+  });
+
   it("rejects invalid types and names before persistence", async () => {
     const fromMock = vi.fn();
     getSupabaseServerClientMock.mockReturnValue({ from: fromMock });

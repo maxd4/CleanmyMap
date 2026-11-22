@@ -7,7 +7,7 @@ import {
 } from "./organizer-type";
 
 describe("organizer type contract", () => {
-  it("exposes exactly the six canonical values and French labels", () => {
+  it("exposes exactly the eight canonical values and French labels", () => {
     expect(ORGANIZER_TYPE_VALUES).toEqual([
       "spontaneous",
       "company",
@@ -15,6 +15,8 @@ describe("organizer type contract", () => {
       "student_association",
       "collective",
       "other",
+      "school",
+      "local_authority",
     ]);
     expect(ORGANIZER_TYPE_OPTIONS.map((option) => option.label)).toEqual([
       "Action spontanée",
@@ -23,6 +25,8 @@ describe("organizer type contract", () => {
       "Association étudiante",
       "Collectif",
       "Autre",
+      "Établissement scolaire ou universitaire",
+      "Collectivité territoriale",
     ]);
   });
 
@@ -31,6 +35,12 @@ describe("organizer type contract", () => {
     expect(isOrganizerType("student_association")).toBe(true);
     expect("association").not.toBe("student_association");
     expect(getOrganizerTypeLabel("student_association")).toBe("Association étudiante");
+  });
+
+  it("recognizes the two declarative organizer types", () => {
+    expect(isOrganizerType("school")).toBe(true);
+    expect(isOrganizerType("local_authority")).toBe(true);
+    expect(getOrganizerTypeLabel("school")).toBe("Établissement scolaire ou universitaire");
   });
 
   it("rejects unknown values without inferring from organizer names", () => {

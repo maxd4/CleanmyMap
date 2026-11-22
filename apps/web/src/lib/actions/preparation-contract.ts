@@ -1,4 +1,6 @@
 import { normalizeActionInterventionMode } from "./intervention-mode";
+import { isOrganizerType } from "./organizer-type";
+import type { OrganizerType } from "./organizer-type";
 
 export const ACTION_ACCESSIBILITY_STATUSES = [
   "not_evaluated",
@@ -182,6 +184,11 @@ export function normalizePreparationChecklist(
 
 export function normalizeActionPreparationContract<T extends object>(data: T): T {
   const next = { ...data } as Record<string, unknown>;
+  if ("organizationalRelations" in next) {
+    const relations = normalizeActionOrganizationalRelations(next.organizationalRelations);
+    if (relations) next.organizationalRelations = relations;
+    else delete next.organizationalRelations;
+  }
   for (const field of ["accessibilityPausePlan", "accessibilityEarlyDeparturePlan"] as const) {
     const value = next[field];
     if (typeof value === "string" && value.trim().length > 0 && value.trim().length <= 500) next[field] = value.trim();
@@ -260,4 +267,62 @@ export function normalizeActionPreparationContract<T extends object>(data: T): T
     else delete next["preparationChecklist"];
   }
   return next as T;
+}
+export type ActionOrganizationalInitiator =
+  | { kind: "organizer" }
+  | { kind: "external_structure"; organizerType: Exclude<OrganizerType, "spontaneous">; name: string };
+export type ActionOrganizationalPartner = {
+  organizerType: Exclude<OrganizerType, "spontaneous">;
+  name: string;
+  role: "material" | "logistics" | "funding" | "participants" | "other";
+};
+export type ActionParticipantOrigin = { category: string };
+export type ActionOrganizationalRelations = {
+  initiator?: ActionOrganizationalInitiator;
+  partners?: ActionOrganizationalPartner[];
+  participantOrigins?: ActionParticipantOrigin[];
+};
+
+const PARTNER_ROLES = new Set(["material", "logistics", "funding", "participants", "other"]);
+
+export function normalizeActionOrganizationalRelations(value: unknown): ActionOrganizationalRelations | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const source = value as Record<string, unknown>;
+  const result: ActionOrganizationalRelations = {};
+  const initiator = source.initiator;
+  if (initiator && typeof initiator === "object" && !Array.isArray(initiator)) {
+    const candidate = initiator as Record<string, unknown>;
+    if (candidate.kind === "organizer") result.initiator = { kind: "organizer" };
+    else if (candidate.kind === "external_structure" && isNonSpontaneousOrganizerType(candidate.organizerType) && typeof candidate.name === "string") {
+      const name = candidate.name.trim();
+      if (name.length > 0 && name.length <= 120) result.initiator = { kind: "external_structure", organizerType: candidate.organizerType, name };
+    }
+  }
+  if (Array.isArray(source.partners)) {
+    const partners = source.partners.flatMap((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+      const candidate = item as Record<string, unknown>;
+      if (!isNonSpontaneousOrganizerType(candidate.organizerType) || typeof candidate.name !== "string" || typeof candidate.role !== "string" || !PARTNER_ROLES.has(candidate.role)) return [];
+      const name = candidate.name.trim();
+      return name.length > 0 && name.length <= 120 ? [{ organizerType: candidate.organizerType, name, role: candidate.role as ActionOrganizationalPartner["role"] }] : [];
+    }).slice(0, 10);
+    if (partners.length) result.partners = partners;
+  }
+  if (Array.isArray(source.participantOrigins)) {
+    const seenOrigins = new Set<string>();
+    const participantOrigins = source.participantOrigins.flatMap((item) => {
+      const category = item && typeof item === "object" && !Array.isArray(item) ? (item as Record<string, unknown>).category : null;
+      if (typeof category !== "string") return [];
+      const normalized = category.trim();
+      if (normalized.length === 0 || normalized.length > 80 || seenOrigins.has(normalized.toLocaleLowerCase())) return [];
+      seenOrigins.add(normalized.toLocaleLowerCase());
+      return [{ category: normalized }];
+    }).slice(0, 12);
+    if (participantOrigins.length) result.participantOrigins = participantOrigins;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
+function isNonSpontaneousOrganizerType(value: unknown): value is Exclude<OrganizerType, "spontaneous"> {
+  return isOrganizerType(value) && value !== "spontaneous";
 }

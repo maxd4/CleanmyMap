@@ -29,6 +29,7 @@ import type {
   ActionEquipmentInventory,
   ActionMaterialSuggestion,
   ActionPreparationChecklistItem,
+  ActionOrganizationalRelations,
   ActionRefreshmentsProvided,
 } from "@/lib/actions/preparation-contract";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
@@ -40,6 +41,7 @@ export type FormState = {
  organizerType: OrganizerType | "";
  organizerId: string | null;
  organizerName: string;
+ organizationalRelations: ActionOrganizationalRelations;
   /** Empty means automatic final classification; a value is an explicit choice. */
   actionContext: ActionContext | "";
   schoolContextConfirmed: boolean;
@@ -175,6 +177,7 @@ export const initialState: FormState = {
  organizerType:"",
  organizerId: null,
  organizerName:"",
+ organizationalRelations: {},
  actionContext:"",
  schoolContextConfirmed: false,
  organizerAccounts:"",

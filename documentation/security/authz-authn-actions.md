@@ -95,6 +95,8 @@ admin demande normalement à rejoindre l'action d'un tiers
 
 Le rôle privilégié ne doit pas transformer automatiquement cette demande en participation confirmée.
 
+Les déclarations organisationnelles de `preparation_data` (initiateur externe, partenaires et origines) sont descriptives uniquement. Seul l'organisateur principal et les identifiants explicitement reliés dans `action_organizers` portent des permissions ; un nom de partenaire ne crée ni compte, ni relation, ni collaboration vérifiée.
+
 ## Retour d'expérience post-action
 
 Le retour d'expérience est une capacité relationnelle distincte des capacités

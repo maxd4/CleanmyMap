@@ -20,6 +20,7 @@ import {
   normalizePreparationChecklist,
   normalizeRefreshmentsProvided,
   normalizeSuggestedMaterials,
+  normalizeActionOrganizationalRelations,
 } from "../../../lib/actions/preparation-contract";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { normalizeActionFieldRoleCodes } from "@/lib/actions/field-roles";
@@ -180,6 +181,7 @@ function buildPreparationContentFields(
     preparationChecklist:
       form.preparationChecklist.length > 0 ? [...form.preparationChecklist] : undefined,
     checklistBeforeDeparture: form.checklistBeforeDeparture.trim() || undefined,
+    organizationalRelations: normalizeActionOrganizationalRelations(form.organizationalRelations),
   };
 }
 
@@ -327,6 +329,7 @@ function buildHydratedDescriptionFields(
     preparationChecklist:
       normalizePreparationChecklist(preparationData.preparationChecklist) ?? form.preparationChecklist,
     checklistBeforeDeparture: preparationData.checklistBeforeDeparture ?? form.checklistBeforeDeparture,
+    organizationalRelations: normalizeActionOrganizationalRelations(preparationData.organizationalRelations) ?? {},
   };
 }
 

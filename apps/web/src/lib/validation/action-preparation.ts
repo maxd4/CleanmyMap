@@ -32,6 +32,8 @@ import type {
   ActionMaterialSuggestion,
   ActionRefreshmentsProvided,
 } from "@/lib/actions/preparation-contract";
+import { isOrganizerType } from "@/lib/actions/organizer-type";
+import type { OrganizerType } from "@/lib/actions/organizer-type";
 
 export const routeCalibrationContextSchema = z.custom<RouteCalibrationContext>(
   isRouteCalibrationContext,
@@ -78,9 +80,22 @@ const fieldRoleIntentionsSchema = z.array(z.object({
   roleCodes: z.array(fieldRoleCodeSchema).max(FIELD_ROLE_OPTIONS.length),
   status: z.literal("pending"),
 }).strict()).max(20) as z.ZodType<ActionFieldRoleIntention[]>;
+const externalOrganizerTypeSchema = z.custom<Exclude<OrganizerType, "spontaneous">>(
+  (value) => isOrganizerType(value) && value !== "spontaneous",
+  "Type de structure externe invalide.",
+);
+const organizationalRelationsSchema = z.object({
+  initiator: z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("organizer") }).strict(),
+    z.object({ kind: z.literal("external_structure"), organizerType: externalOrganizerTypeSchema, name: z.string().trim().min(1).max(120) }).strict(),
+  ]).optional(),
+  partners: z.array(z.object({ organizerType: externalOrganizerTypeSchema, name: z.string().trim().min(1).max(120), role: z.enum(["material", "logistics", "funding", "participants", "other"]) }).strict()).max(10).optional(),
+  participantOrigins: z.array(z.object({ category: z.string().trim().min(1).max(80) }).strict()).max(12).optional(),
+}).strict();
 
 export const preparationDataSchema = z
   .object({
+    organizationalRelations: organizationalRelationsSchema.optional(),
     actionTitle: z.string().max(200).optional(),
     shortDescription: z.string().max(1000).optional(),
     communeZoneLabel: z.string().max(200).optional(),

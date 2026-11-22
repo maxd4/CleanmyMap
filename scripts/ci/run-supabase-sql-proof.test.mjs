@@ -32,6 +32,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/action-field-roles-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/action-need-offers-contract.pgtap.sql",
     "apps/web/supabase/tests/action-needs-contract.pgtap.sql",
+    "apps/web/supabase/tests/action-organizer-types.pgtap.sql",
     "apps/web/supabase/tests/action-retention-and-statistical-versions.pgtap.sql",
     "apps/web/supabase/tests/action-retrospectives-contract.pgtap.sql",
     "apps/web/supabase/tests/action-rides-contract.pgtap.sql",
@@ -96,7 +97,16 @@ test("action accessibility support pgTAP plan matches its assertion count", () =
   const sql = readFileSync(path, "utf8");
   const plan = sql.match(/^select\s+plan\((\d+)\);$/im);
   const assertions = sql.match(/^\s*select\s+(?:ok|is|throws_ok|lives_ok|has_table|has_index)\s*\(/gim) ?? [];
-  assert.equal(plan?.[1], "20");
+  assert.equal(plan?.[1], "24");
+  assert.equal(assertions.length, Number(plan?.[1]));
+});
+
+test("action organizer types pgTAP plan matches its assertion count", () => {
+  const path = new URL("../../apps/web/supabase/tests/action-organizer-types.pgtap.sql", import.meta.url);
+  const sql = readFileSync(path, "utf8");
+  const plan = sql.match(/^select\s+plan\((\d+)\);$/im);
+  const assertions = sql.match(/^\s*select\s+(?:ok|is|throws_ok|lives_ok)\s*\(/gim) ?? [];
+  assert.equal(plan?.[1], "10");
   assert.equal(assertions.length, Number(plan?.[1]));
 });
 

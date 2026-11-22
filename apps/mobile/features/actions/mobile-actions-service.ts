@@ -72,7 +72,7 @@ export type MobileActionEditor = MobileActionItem & {
   publishedAt?: string | null
   actionPhase?: string
   preparationData?: Record<string, unknown> | null
-  organizerType?: string | null
+  organizerType?: MobileOrganizerType | null
   organizerName?: string | null
   groupJoinEnabled?: boolean
   eventStartTime?: string | null
@@ -89,6 +89,8 @@ export const MOBILE_ORGANIZER_TYPE_OPTIONS = [
   { value: 'student_association', label: 'Association étudiante' },
   { value: 'collective', label: 'Collectif' },
   { value: 'other', label: 'Autre' },
+  { value: 'school', label: 'Établissement scolaire ou universitaire' },
+  { value: 'local_authority', label: 'Collectivité territoriale' },
 ] as const
 
 // Wire value required by the canonical server Actions contract for a

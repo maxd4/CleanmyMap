@@ -4,6 +4,7 @@ import {
   normalizePreparationChecklist,
   normalizeRefreshmentsProvided,
   normalizeSuggestedMaterials,
+  normalizeActionOrganizationalRelations,
 } from "@/lib/actions/preparation-contract";
 import type { FormState } from "./types";
 import {
@@ -19,6 +20,10 @@ function restorePreparationDraftField(
   if (key === "accessibilityStatus") {
     const normalized = normalizeAccessibilityStatus(value);
     if (normalized) next.accessibilityStatus = normalized;
+    return true;
+  }
+  if (key === "organizationalRelations") {
+    next.organizationalRelations = normalizeActionOrganizationalRelations(value) ?? {};
     return true;
   }
   if (key === "suggestedMaterials") {

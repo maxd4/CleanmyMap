@@ -253,6 +253,15 @@ describe("organizer directory registry", () => {
     });
   });
 
+  it.each(["school", "local_authority"] as const)("accepts a declared %s organizer name without canonical insertion", async (organizerType) => {
+    const supabase = { from: () => { throw new Error("declarative names must not access or insert the directory"); } } as never;
+    await expect(resolveActionOrganizer({ supabase, organizerType, organizerName: " Structure saisie " })).resolves.toEqual({
+      organizerId: null,
+      organizerName: "Structure saisie",
+      legacyAssociationName: "Structure saisie",
+    });
+  });
+
   it("does not invent a spontaneous organizer from the actor or the legacy label", async () => {
     const supabase = { from: () => { throw new Error("catalog must not be accessed"); } } as never;
 

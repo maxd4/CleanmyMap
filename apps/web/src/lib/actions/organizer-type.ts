@@ -5,6 +5,8 @@ export const ORGANIZER_TYPE_VALUES = [
   "student_association",
   "collective",
   "other",
+  "school",
+  "local_authority",
 ] as const;
 
 export type OrganizerType = (typeof ORGANIZER_TYPE_VALUES)[number];
@@ -18,6 +20,8 @@ export const ORGANIZER_TYPE_OPTIONS = [
   { value: "student_association", label: "Association étudiante" },
   { value: "collective", label: "Collectif" },
   { value: "other", label: "Autre" },
+  { value: "school", label: "Établissement scolaire ou universitaire" },
+  { value: "local_authority", label: "Collectivité territoriale" },
 ] as const satisfies ReadonlyArray<{ value: OrganizerType; label: string }>;
 
 const ORGANIZER_TYPE_SET = new Set<string>(ORGANIZER_TYPE_VALUES);

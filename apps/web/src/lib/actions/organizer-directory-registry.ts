@@ -181,6 +181,10 @@ export async function resolveActionOrganizer(params: {
   }
   if (selectedId) return resolveSelectedOrganizer(params.supabase, selectedId, params.organizerType);
   if (!enteredName) throw new Error("Renseignez un organisateur pour le type choisi.");
+  if (params.organizerType === "school" || params.organizerType === "local_authority") {
+    if (!normalizeOrganizerName(enteredName)) throw new Error("Validation: le nom de l'organisateur doit contenir des caractères lisibles.");
+    return { organizerId: null, organizerName: enteredName, legacyAssociationName: enteredName };
+  }
   return resolveNamedOrganizer(params.supabase, params.organizerType, enteredName);
 }
 

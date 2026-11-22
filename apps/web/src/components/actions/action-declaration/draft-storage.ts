@@ -48,6 +48,7 @@ const FORM_STATE_KEYS = [
   "organizerType",
   "organizerId",
   "organizerName",
+  "organizationalRelations",
   "actionContext",
   "schoolContextConfirmed",
   "organizerAccounts",

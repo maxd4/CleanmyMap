@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, parseJsonBodyWithValidation, validationErrorResponse } from "@/lib/http/api-errors";
 import { adminAccessErrorJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { isOrganizerType } from "@/lib/actions/organizer-type";
+import type { OrganizerType } from "@/lib/actions/organizer-type";
 import {
   createActionOrganizer,
   normalizeOrganizerName,
@@ -22,7 +23,10 @@ const createOrganizerSchema = z.object({
     .min(1, "Le nom de la structure est requis.")
     .max(120, "Le nom de la structure est trop long.")
     .refine((value) => normalizeOrganizerName(value).length > 0, "Le nom de la structure doit contenir des caractères lisibles."),
-  organizerType: z.enum(["company", "association", "student_association", "collective", "other"]),
+  organizerType: z.custom<Exclude<OrganizerType, "spontaneous">>(
+    (value) => isOrganizerType(value) && value !== "spontaneous",
+    "Type de structure invalide.",
+  ),
 }).strict();
 
 export async function GET(request: Request) {

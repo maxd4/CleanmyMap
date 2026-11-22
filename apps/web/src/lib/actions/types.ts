@@ -46,6 +46,7 @@ import type {
   ActionEquipmentInventory,
   ActionMaterialSuggestion,
   ActionPreparationChecklistItem,
+  ActionOrganizationalRelations,
   ActionRefreshmentsProvided,
 } from "./preparation-contract";
 import type { ActionInterventionModeSelection } from "./intervention-mode";
@@ -170,6 +171,8 @@ export type ActionVisionSource = "heuristic" | "hybrid" | "vision";
 export type ActionVisionDensity = "sec" | "humide_dense" | "mouille";
 
 export type ActionPreparationData = {
+  /** Declared organizational relationships; they confer no account or permission. */
+  organizationalRelations?: ActionOrganizationalRelations;
   /** Optional, versioned organizer choice; absent on historical actions. */
   interventionMode?: ActionInterventionModeSelection;
   actionTitle?: string;

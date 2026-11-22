@@ -53,7 +53,7 @@ describe("organizer directory", () => {
     for (const organizerType of ORGANIZER_TYPE_VALUES) {
       const entries = getOrganizerDirectoryEntries(organizerType);
 
-      if (organizerType === "spontaneous") {
+      if (organizerType === "spontaneous" || organizerType === "school" || organizerType === "local_authority") {
         expect(entries).toEqual([]);
         continue;
       }

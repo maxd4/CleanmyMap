@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createInitialFormState } from "./payload";
+import type { FormState } from "./model";
 import {
   ACTION_DECLARATION_DRAFT_DATE_KEY,
   ACTION_DECLARATION_DRAFT_KEY,
@@ -74,7 +75,7 @@ describe("action declaration draft storage", () => {
     installLocalStorage();
     const savedAt = "2026-05-13T10:45:00.000Z";
     const fallback = createInitialFormState("Alice");
-    const draft = {
+    const draft: FormState = {
       ...fallback,
       actionTitle: "Nettoyage test",
       shortDescription: "Préparation avant action",
@@ -83,6 +84,9 @@ describe("action declaration draft storage", () => {
       organizerType: "spontaneous" as const,
       organizerId: null,
       organizerName: "Alice",
+      organizationalRelations: {
+        partners: [{ organizerType: "local_authority", name: "Ville Exemple", role: "material" }],
+      },
       wasteKg: "12",
     };
 
@@ -99,6 +103,9 @@ describe("action declaration draft storage", () => {
     expect(snapshot?.form.organizerType).toBe("spontaneous");
     expect(snapshot?.form.organizerId).toBeNull();
     expect(snapshot?.form.organizerName).toBe("Alice");
+    expect(snapshot?.form.organizationalRelations.partners).toEqual([
+      { organizerType: "local_authority", name: "Ville Exemple", role: "material" },
+    ]);
     expect(snapshot?.form).not.toHaveProperty("preparationState");
     expect(snapshot?.form.wasteKg).toBe("12");
   });

@@ -128,6 +128,18 @@ describe("action declaration payload données de préparation", () => {
     expect(preparation.safetyInstructions).toBeUndefined();
   });
 
+  it("round-trips declared initiator, partners and participant origins", () => {
+    const form = buildBaseForm();
+    form.organizationalRelations = {
+      initiator: { kind: "external_structure", organizerType: "school", name: "Université Exemple" },
+      partners: [{ organizerType: "local_authority", name: "Ville Exemple", role: "logistics" }],
+      participantOrigins: [{ category: "Étudiants volontaires" }],
+    };
+    const preparation = buildPreparationDataFromForm(form);
+    const hydrated = applyPreparationDataToForm(createInitialFormState("Alice", "action"), preparation);
+    expect(hydrated.organizationalRelations).toEqual(form.organizationalRelations);
+  });
+
   it("round-trips pending field-role intentions only for selected organizer accounts", () => {
     const form = buildBaseForm();
     form.organizerAccounts = "user-organizer, user-second";

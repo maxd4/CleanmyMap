@@ -185,6 +185,8 @@ La phase distingue durablement `action_registrations` (inscription future) de
 Le créateur ou l'organisateur d'une action n'est pas automatiquement un
 participant terrain ; tout rattachement post-action suit le workflow canonique.
 
+Le type de l'organisateur principal est porté par `actions.organizer_type`, `organizer_id` et `organizer_name`. Les types `school` et `local_authority` peuvent conserver un nom déclaré sans entrée dans le catalogue. Les relations avec l'initiateur externe, les partenaires et les origines descriptives restent des métadonnées de préparation dans `actions.preparation_data` ; elles ne sont ni comptes, ni relations de permission, ni collaboration vérifiée, et ne modifient pas les effectifs déclarés. Les lignes historiques avec `organizer_type IS NULL` ne sont pas reclassées.
+
 Les missions ajoutent une troisième frontière :
 `action_field_role_assignments` est la source des rôles prévus avant le terrain,
 `action_participants` reste la source exclusive de la présence finale, et

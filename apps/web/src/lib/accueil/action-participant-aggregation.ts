@@ -70,6 +70,8 @@ const STRUCTURED_CATEGORIES: Record<
   },
   collective: { key: "collective", category: "Collectif" },
   other: { key: "other", category: "Autres" },
+  school: { key: "school", category: "Établissement scolaire ou universitaire" },
+  local_authority: { key: "local_authority", category: "Collectivité territoriale" },
 };
 
 const SPONTANEOUS_GROUP_NAMES: Record<number, string> = {
