@@ -125,6 +125,39 @@ test("classifies Docker, port, healthcheck, resources and CLI failures", () => {
   }
 });
 
+test("classifies SQLSTATE migration failures without publishing private error text", () => {
+  const cases = [
+    ["42601", SUPABASE_START_CATEGORIES.MIGRATION_SQL_SYNTAX, "MIGRATION_SQL_SYNTAX"],
+    ["42P01", SUPABASE_START_CATEGORIES.MIGRATION_SQL_DEPENDENCY, "MIGRATION_SQL_DEPENDENCY"],
+    ["23505", SUPABASE_START_CATEGORIES.MIGRATION_SQL_DATA, "MIGRATION_SQL_DATA"],
+    ["42501", SUPABASE_START_CATEGORIES.MIGRATION_RLS_PERMISSION, "MIGRATION_RLS_PERMISSION"],
+    ["40001", SUPABASE_START_CATEGORIES.MIGRATION_SQL_CONCURRENCY, "MIGRATION_SQL_CONCURRENCY"],
+    ["08006", SUPABASE_START_CATEGORIES.DATABASE_CONNECTION_FAILURE, "MIGRATION_DATABASE_CONNECTION"],
+  ];
+  for (const [sqlState, category, failedStep] of cases) {
+    const log = [
+      "Applying database migrations",
+      "Applying migration 20261122000014_private_action_attendance_registry.sql...",
+      JSON.stringify({ level: "error", error: { code: sqlState, message: "private table and token=secret" } }),
+    ].join("\n");
+    const evidence = collectBoundedStartEvidence({ log, exitCode: 1, probeCommand: createProbeCommand() });
+    const diagnostic = renderSupabaseStartDiagnostic({
+      category: classifySupabaseStartFailure({ log, exitCode: 1, evidence }),
+      exitCode: 1,
+      dockerVersion: evidence.dockerServerVersion,
+      supabaseCliVersion: evidence.supabaseCliVersion,
+      dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+      evidence,
+    });
+    assert.equal(classifySupabaseStartFailure({ log, exitCode: 1, evidence }), category);
+    assert.equal(evidence.firstFailedStep, failedStep);
+    assert.equal(evidence.firstFailedMigrationId, "20261122000014");
+    assert.equal(evidence.firstErrorSqlState, sqlState);
+    assert.match(diagnostic, new RegExp(`first_error_sqlstate=${sqlState}`));
+    assert.doesNotMatch(diagnostic, /private table|token=secret|secret/);
+  }
+});
+
 test("turns a long failed start with no containers into an actionable bounded code", () => {
   const evidence = collectBoundedStartEvidence({
     log: "opaque startup failure",
@@ -133,7 +166,7 @@ test("turns a long failed start with no containers into an actionable bounded co
     probeCommand: createProbeCommand(),
   });
 
-  assert.equal(evidence.schemaVersion, 6);
+  assert.equal(evidence.schemaVersion, 7);
   assert.equal(
     classifySupabaseStartFailure({ log: "opaque startup failure", exitCode: 1, evidence }),
     SUPABASE_START_CATEGORIES.START_TIMEOUT,

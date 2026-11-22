@@ -104,10 +104,14 @@ conteneur persistant. Le rapport expose le dernier job démarré, le premier job
 Les lignes de progression comme `Waiting for health checks` et l'appel normal
 `Realtime.Tenants.health_check` ne sont pas des erreurs. La classification
 repose sur des signaux terminaux précis ou un job temporaire explicitement
-échoué ; une erreur de debug non reconnue reste `UNCLASSIFIED`. `start_phase`
-indique une phase observée et ne prouve pas à lui seul qu'elle a échoué ;
-`first_failed_step` n'est renseigné que lorsqu'un job ou une erreur de phase
-spécifique l'établit.
+échoué ; une erreur de debug non reconnue reste `UNCLASSIFIED`. Le diagnostic
+expurgé peut classer les SQLSTATE PostgreSQL connus (syntaxe, dépendance,
+données, permissions/RLS, concurrence ou connexion) et ne publie que le code,
+la catégorie et un identifiant de migration validé. `start_phase` indique une
+phase observée et ne prouve pas à lui seul qu'elle a échoué ;
+`first_failed_step` distingue une cause établie d'une phase de migration dont la
+cause reste inconnue. Un arrêt Docker normal ou le nettoyage ne devient jamais
+la cause de l'échec.
 Journaux bruts, événements complets et détails structurés de la CLI restent dans
 des fichiers privés temporaires du runner puis sont supprimés. Seuls services,
 phases, états et codes explicitement autorisés paraissent dans les preuves. Un
