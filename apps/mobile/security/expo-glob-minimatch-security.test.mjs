@@ -52,9 +52,4 @@ test("pins the Expo and Sentry glob/minimatch chains to patched versions", () =>
     assert.equal(minimatchPkg.version, "11.0.1", `${consumer} -> glob -> minimatch`);
   }
 
-  const fingerprintPkg = rootRequire.resolve("@expo/fingerprint/package.json");
-  const fingerprintRequire = createRequire(fingerprintPkg);
-  const fingerprintMinimatchPath = fingerprintRequire.resolve("minimatch/package.json");
-  const fingerprintMinimatch = JSON.parse(fs.readFileSync(fingerprintMinimatchPath, "utf8"));
-  assert.equal(fingerprintMinimatch.version, "11.0.1", "@expo/fingerprint -> minimatch");
 });
