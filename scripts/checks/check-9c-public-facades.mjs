@@ -22,41 +22,34 @@ const sectionsRegistryApi = [
   "RUBRIQUE_CATEGORIES",
   "RUBRIQUE_REGISTRY",
   "LocalizedText",
-  "RubriqueAvailability",
-  "RubriqueCategory",
-  "RubriqueDefinition",
-  "RubriqueImplementation",
-  "RubriqueKind",
+  "LocalizedKeywords",
   "Rubrique",
-  "SectionRubrique",
   "SectionRubriqueDefinition",
-  "SectionId",
-  "FinalizedSectionId",
   "VisibleFinalizedSectionId",
-  "isRubriqueVisible",
   "getVisibleRubriquesByCategory",
-  "normalizeSectionId",
   "getSectionRubriqueById",
   "isSectionRouteEnabled",
   "getSectionRouteParams",
-  "getPendingSectionRubriques",
 ];
 
-const unifiedSourceApi = [
-  "UnifiedActionContractsParams",
+const unifiedSourceFacadeApi = [
   "UnifiedSourceHealth",
-  "TrashSpotterSpotRow",
-  "UnifiedActionSourceLoadResult",
-  "UnifiedContractOrigin",
-  "UnifiedContractCandidate",
   "normalizeExternalActionImport",
-  "mapActionStatusToSpotStatuses",
-  "toActionContract",
   "toCanonicalSpotContract",
+  "TrashSpotterSpotRow",
   "parseEntityTypesParam",
   "fetchUnifiedActionContracts",
-  "buildUnifiedActionContracts",
-  "filterContractsByViewport",
+];
+
+const unifiedSourceIndexApi = [
+  "UnifiedSourceHealth",
+  "parseEntityTypesParam",
+  "fetchUnifiedActionContracts",
+];
+
+const unifiedSourceFacades = [
+  ["unified-source.ts", paths.unifiedSource, unifiedSourceFacadeApi],
+  ["unified-source/index.ts", paths.unifiedSourceIndex, unifiedSourceIndexApi],
 ];
 
 export function findPublicFacadeViolations(view) {
@@ -82,12 +75,9 @@ export function findPublicFacadeViolations(view) {
     }
   }
 
-  for (const [label, sourcePath] of [
-    ["unified-source.ts", paths.unifiedSource],
-    ["unified-source/index.ts", paths.unifiedSourceIndex],
-  ]) {
+  for (const [label, sourcePath, api] of unifiedSourceFacades) {
     const source = view.readText(sourcePath);
-    for (const symbol of unifiedSourceApi) {
+    for (const symbol of api) {
       if (!new RegExp(`\\b${symbol}\\b`).test(source)) {
         violations.push(`${label} public API is missing ${symbol}`);
       }
