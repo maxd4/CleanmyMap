@@ -1,41 +1,70 @@
 {
-  "schemaVersion": 1,
-  "sourceCommit": "2316826735c69e0ecf446b0fbf384381c3dd4b50",
+  "schemaVersion": 2,
+  "sourceCommit": "f31cf7f7aa3e67a0a89eae71b91403d416713ec8",
   "tool": "stryker",
-  "toolVersion": "10.0.0",
-  "runnerVersion": "10.0.0",
-  "scopeFingerprint": "908a0aea1677debbc490026df3afc063ea0b4baf39578ba28c38cf15eb67fc60",
+  "toolVersion": "10.1.1",
+  "runnerVersion": "10.1.1",
+  "scopeFingerprint": "8dffe057b9bcb1cd77246dffce46093c2783f80fff041956947d50a24f3abb3c",
   "summary": {
-    "total": 328,
+    "total": 411,
     "counts": {
-      "Killed": 316,
+      "Killed": 399,
       "Survived": 11,
       "NoCoverage": 1,
       "Timeout": 0,
       "error": 0
     },
-    "score": 96.63608562691131
+    "score": 97.3170731707317,
+    "allMutantsKillRate": 97.08029197080292
   },
   "files": {
-    "src/lib/actions/formalities/qualification.ts": {
-      "total": 145,
-      "counts": { "Killed": 142, "Survived": 3, "NoCoverage": 0, "Timeout": 0, "error": 0 },
-      "score": 97.93103448275862
-    },
     "src/lib/actions/impact-calculators.ts": {
-      "total": 89,
-      "counts": { "Killed": 84, "Survived": 4, "NoCoverage": 1, "Timeout": 0, "error": 0 },
-      "score": 95.45454545454545
-    },
-    "src/lib/actions/permissions.ts": {
-      "total": 81,
-      "counts": { "Killed": 77, "Survived": 4, "NoCoverage": 0, "Timeout": 0, "error": 0 },
-      "score": 95.06172839506173
+      "total": 143,
+      "counts": {
+        "Killed": 136,
+        "Survived": 6,
+        "NoCoverage": 1,
+        "Timeout": 0,
+        "error": 0
+      },
+      "score": 95.77464788732394,
+      "allMutantsKillRate": 95.1048951048951
     },
     "src/lib/actions/action-update-status.ts": {
       "total": 13,
-      "counts": { "Killed": 13, "Survived": 0, "NoCoverage": 0, "Timeout": 0, "error": 0 },
-      "score": 100
+      "counts": {
+        "Killed": 13,
+        "Survived": 0,
+        "NoCoverage": 0,
+        "Timeout": 0,
+        "error": 0
+      },
+      "score": 100,
+      "allMutantsKillRate": 100
+    },
+    "src/lib/actions/formalities/qualification.ts": {
+      "total": 154,
+      "counts": {
+        "Killed": 152,
+        "Survived": 2,
+        "NoCoverage": 0,
+        "Timeout": 0,
+        "error": 0
+      },
+      "score": 98.7012987012987,
+      "allMutantsKillRate": 98.7012987012987
+    },
+    "src/lib/actions/permissions.ts": {
+      "total": 101,
+      "counts": {
+        "Killed": 98,
+        "Survived": 3,
+        "NoCoverage": 0,
+        "Timeout": 0,
+        "error": 0
+      },
+      "score": 97.02970297029702,
+      "allMutantsKillRate": 97.02970297029702
     }
   }
 }

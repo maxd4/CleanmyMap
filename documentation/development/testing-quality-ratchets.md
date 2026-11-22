@@ -193,15 +193,37 @@ consommateurs ni la requalification explicite d'un finding devenu stale.
 
 ## Mutation ciblée des tests
 
-La qualité des tests de quelques fonctions pures critiques est mesurée avec
-Stryker `10.0.0` et son runner Vitest `10.0.0`. Le périmètre est explicitement
-borné dans `apps/web/stryker.config.mjs` aux qualifications de formalités, aux
-permissions, aux calculs d'impact et aux transitions de statut des actions ; il
-ne mute pas tout `apps/web`. `formalities-workflow.ts` et
-`route-operational-budget.ts` restent `NOT_MEASURED_YET` dans ce lot, car le
-runner Babel de Stryker ne produit pas de code instrumenté fiable pour leur
-syntaxe générique TypeScript 7. Cette incompatibilité est signalée, non
-convertie en couverture nulle et ne justifie aucune modification métier.
+La qualité des tests de fonctions métier Web critiques est mesurée avec
+Stryker et `@stryker-mutator/vitest-runner` `10.1.1`. Le périmètre est borné
+dans `apps/web/stryker.config.mjs` aux qualifications de formalités
+(`qualification.ts:353-455`), permissions (`permissions.ts:22-128`), calculs
+d'impact (`impact-calculators.ts:114-243`) et transitions de statut des actions
+(`action-update-status.ts:15-28`). Les constantes et règles statiques de
+qualification sont hors mutation. Les quatre domaines utilisent leurs suites
+Vitest dédiées ; la suite existante
+`impact-calculators.mass-provenance.test.ts` complète les calculs d'impact.
+
+`vitest.related: true` restreint les tests de chaque mutant aux tests reliés au
+fichier muté, parmi les chemins déclarés dans `testFiles`. Il ne découvre pas
+une suite absente de cette liste : le rapport JSON doit donc conserver les
+quatre domaines et la suite complémentaire de provenance dans `testFiles`.
+`NoCoverage` désigne des mutants pour lesquels aucune suite sélectionnée ne
+rapporte de test couvrant le site muté ; ce compte reste visible et ne devient
+pas un score de couverture de lignes.
+
+Le champ `score` du résumé est le score Stryker global du périmètre, calculé sur
+les mutants exécutables : `Killed / (Killed + Survived + Timeout + error)`.
+`NoCoverage` en est exclu conformément à cette formule, mais reste soumis à son
+propre ratchet. `allMutantsKillRate` complète cette lecture en divisant les
+mutants tués par le nombre total de mutants, y compris `NoCoverage`. Les mêmes
+deux valeurs sont rapportées pour chaque fichier afin de séparer le résultat
+global de celui du code couvert dans chaque module.
+
+`formalities-workflow.ts` et `route-operational-budget.ts` restent
+`NOT_MEASURED_YET` dans ce lot, car le runner Babel de Stryker ne produit pas
+de code instrumenté fiable pour leur syntaxe générique TypeScript 7. Cette
+limite n'est pas convertie en couverture nulle et ne justifie aucune
+modification métier.
 
 La commande spécialisée est :
 
@@ -216,16 +238,43 @@ Son rapport distingue `Killed`, `Survived`, `NoCoverage`, `Timeout` et
   `6a0a420bf7313535788f3e0dcb297f0aaa13dd2c` comptait 329 mutants, 270
   `Killed`, 52 `Survived`, 7 `NoCoverage`, 0 `Timeout/error`, soit `83.85 %`
   sur les mutants exécutables de ce périmètre ;
-* le baseline actuellement enregistré dans
-  `scripts/checks/mutation-baseline.json` provient du commit
-  `2316826735c69e0ecf446b0fbf384381c3dd4b50` et de son
-  `scopeFingerprint`. Il compte 328 mutants : 316 `Killed`, 11 `Survived`,
-  1 `NoCoverage`, 0 `Timeout/error`. Son score est `96.64 %`, calculé sur les
-  mutants exécutables par `316 / (316 + 11)` ; le `NoCoverage` reste signalé et
-  n'est pas transformé en couverture.
+* la référence historique `10.0.0`/`scopeFingerprint`
+  `908a0aea1677debbc490026df3afc063ea0b4baf39578ba28c38cf15eb67fc60`
+  compte 328 mutants : 316 `Killed`, 11 `Survived`, 1 `NoCoverage`,
+  0 `Timeout/error`. Son score Stryker est `96.64 %` (`316 / (316 + 11)`),
+  et son taux sur tous les mutants `96.34 %` (`316 / 328`). Cette valeur reste
+  une référence historique distincte : elle n'est pas comparable au nouveau
+  périmètre/version ;
+* le baseline courant est celui de la version `10.1.1`, du fingerprint courant
+  `8dffe057b9bcb1cd77246dffce46093c2783f80fff041956947d50a24f3abb3c`.
+  La mesure de référence de ce périmètre compte 411 mutants : 399 `Killed`,
+  11 `Survived`, 1 `NoCoverage`, 0 `Timeout/error`. Le score Stryker est
+  `97.32 %`; le taux sur tous les mutants est `97.08 %`. La baseline détaillée
+  est conservée dans `scripts/checks/mutation-baseline.json`.
 
-Le second état est une baseline ratchetée, pas une exécution récente. Une
-baisse de son score, une augmentation de `NoCoverage`, un timeout, une erreur
+| Fichier | Effectifs `Killed / Survived / NoCoverage` | Score Stryker | Tués / total |
+| --- | ---: | ---: | ---: |
+| `impact-calculators.ts` | 136 / 6 / 1 | 95.77 % | 95.10 % |
+| `permissions.ts` | 98 / 3 / 0 | 97.03 % | 97.03 % |
+| `qualification.ts` | 152 / 2 / 0 | 98.70 % | 98.70 % |
+| `action-update-status.ts` | 13 / 0 / 0 | 100.00 % | 100.00 % |
+
+Les mutants équivalents ou non pertinents restants sont qualifiés explicitement
+par leur comportement observable :
+
+| Source | Qualification |
+| --- | --- |
+| `impact-calculators.ts:118` | Le mutant retire le contrôle `undefined`; `Number(undefined)` produit `NaN`, déjà rejeté par `Number.isFinite`. |
+| `impact-calculators.ts:132,135` | `estimateActionWasteKg` ne retourne que `null` ou une valeur finie non négative. La branche `>= 0` est donc toujours vraie pour une valeur connue et le retour final `"none"` est inatteignable. Le `NoCoverage` ligne 135 est ce chemin redondant, pas une mesure de couverture globale. |
+| `impact-calculators.ts:143,157` | Les optional chains sont protégés par le retour anticipé `if (!measurements) return null`; leur retrait ne change aucun appel valide. |
+| `impact-calculators.ts:181,209` | Les contrôles `undefined` sont redondants avec `Number.isFinite(Number(value))`, qui échoue déjà sur `undefined`. |
+| `permissions.ts:24` | Les variantes `null` et chaîne vide sont toutes deux refusées par les gardes de truthiness avant comparaison ou autorisation relationnelle. |
+| `permissions.ts:30` | Le garde `role != null` est redondant avec `includes`, qui refuse `null` et `undefined` dans la liste de rôles. |
+| `qualification.ts:441` | Le test `publicSpace === "unknown"` est dans la branche qui exige déjà une formalité déterminative, laquelle ne peut être créée sans `public_domain`; ce cas ne peut donc pas atteindre ce test. |
+
+La baseline versionnée est le seuil ratcheté issu d'une mesure identifiée ; le
+rapport JSON de la commande reste la preuve de l'exécution courante. Une baisse
+du score Stryker, une augmentation de `NoCoverage`, un timeout, une erreur
 d'exécution ou une baseline stale sont bloquants. Le score n'est pas un
 objectif arbitraire de 100 % ; chaque survivant reste un élément d'audit. Une
 assertion n'est ajoutée que lorsqu'elle protège un comportement métier réel,

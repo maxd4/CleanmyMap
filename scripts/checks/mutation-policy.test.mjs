@@ -22,6 +22,7 @@ test("summarizes killed, survived, no coverage, timeout and error mutants", () =
   const summary = summarizeMutationReport(report(["Killed", "Survived", "NoCoverage", "Timeout", "RuntimeError"]));
   assert.deepEqual(summary.counts, { Killed: 1, Survived: 1, NoCoverage: 1, Timeout: 1, error: 1 });
   assert.equal(summary.score, 25);
+  assert.equal(summary.allMutantsKillRate, 20);
   assert.equal(normalizeMutationStatus("CompileError"), "error");
 });
 
@@ -43,10 +44,10 @@ test("new no-coverage, timeout or error status fails the ratchet", () => {
 test("malformed or stale scope baselines fail explicitly", () => {
   assert.deepEqual(getMutationScope(config), config);
   const baseline = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     tool: "stryker",
-    toolVersion: "10.0.0",
-    runnerVersion: "10.0.0",
+    toolVersion: "10.1.1",
+    runnerVersion: "10.1.1",
     sourceCommit: "a".repeat(40),
     scopeFingerprint: mutationScopeFingerprint(config),
     summary: summarizeMutationReport(report(["Killed"])),
@@ -55,4 +56,8 @@ test("malformed or stale scope baselines fail explicitly", () => {
   assert.doesNotThrow(() => validateMutationBaseline(baseline, config));
   assert.throws(() => validateMutationBaseline({ ...baseline, scopeFingerprint: "stale" }, config), /scope changed/);
   assert.throws(() => validateMutationBaseline({ ...baseline, summary: { ...baseline.summary, total: 2 } }, config), /does not match counts/);
+  assert.throws(() => validateMutationBaseline({
+    ...baseline,
+    summary: { ...baseline.summary, score: 0 },
+  }, config), /score does not match counts/);
 });

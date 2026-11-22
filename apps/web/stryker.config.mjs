@@ -1,22 +1,23 @@
 /**
  * Mutation scope volontairement borné aux fonctions pures critiques.
  * formalities-workflow.ts et route-operational-budget.ts sont laissés hors
- * périmètre : Stryker 10.0.0 ne génère pas de code instrumenté fiable pour
+ * périmètre : les modules à syntaxe TypeScript 7 générique restent hors
+ * périmètre tant que leur instrumentation fiable n'est pas démontrée pour
  * leur syntaxe TypeScript 7 générique dans le runner Babel actuel.
  * Le gate de ratchet est porté par scripts/checks/check-mutation.mjs.
  */
 const strykerConfig = {
   mutate: [
-    "src/lib/actions/formalities/qualification.ts:349-425",
-    "src/lib/actions/formalities/qualification.ts:438-458",
-    "src/lib/actions/permissions.ts:22-104",
-    "src/lib/actions/impact-calculators.ts:70-205",
+    "src/lib/actions/formalities/qualification.ts:353-455",
+    "src/lib/actions/permissions.ts:22-128",
+    "src/lib/actions/impact-calculators.ts:114-243",
     "src/lib/actions/action-update-status.ts:15-28",
   ],
   testFiles: [
     "src/lib/actions/formalities/qualification.test.ts",
     "src/lib/actions/permissions.test.ts",
     "src/lib/actions/impact-calculators.test.ts",
+    "src/lib/actions/impact-calculators.mass-provenance.test.ts",
     "src/lib/actions/action-update-status.test.ts",
   ],
   testRunner: "vitest",

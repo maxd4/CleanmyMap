@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CIGARETTE_BUTTS_MASS_CONVERSION_VERSION } from "@/lib/impact/impact-terrain-2026";
 import { buildActionDataContract } from "./contracts/contract-model";
 import {
   computeActionImpactKpis,
@@ -70,13 +71,17 @@ describe("cigarette-butt mass provenance across impact consumers", () => {
     });
 
     expect(incomplete.cigaretteButtsMassProvenance).toBe("unknown");
-    expect(computeActionImpactKpis(makeContract({
+    const impact = computeActionImpactKpis(makeContract({
       cigaretteButts: aggregate.summary.totalCount,
       cigaretteButtsMeasurements: incomplete,
-    }))).toMatchObject({
+    }));
+    expect(impact).toMatchObject({
       buttsMassKg: aggregate.summary.totalMassKg,
       buttsMassProvenance: "unknown",
     });
+    expect(impact.buttsMassConversionVersions).toEqual([
+      aggregate.results[0]!.massConversionFormulaVersion,
+    ]);
     expect(sumActionImpactKpis([makeContract({
       cigaretteButts: aggregate.summary.totalCount,
       cigaretteButtsMeasurements: incomplete,
@@ -154,6 +159,113 @@ describe("cigarette-butt mass provenance across impact consumers", () => {
         cigaretteButtsMassKg: 1,
       } as ActionCigaretteButtsMeasurements,
     })).buttsMassProvenance).toBe("unknown");
+  });
+
+  it.each([
+    ["measured", "measured"],
+    ["estimated", "estimated"],
+    ["weight_converted", "estimated"],
+    ["volume_converted", "estimated"],
+    ["unknown", "unknown"],
+  ] as const)(
+    "preserves the legacy %s mass provenance contract",
+    (provenance, expectedProvenance) => {
+      const measurements = {
+        cigaretteButtsMassKg: 1,
+        cigaretteButtsMassProvenance: provenance,
+        cigaretteButtsConversionFormulaVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+      } as ActionCigaretteButtsMeasurements;
+      const legacyContract = { metadata: { cigaretteButtsMeasurements: measurements } };
+
+      expect(computeActionImpactKpis(legacyContract)).toMatchObject({
+        buttsMassProvenance: expectedProvenance,
+        buttsMassConversionVersions: [CIGARETTE_BUTTS_MASS_CONVERSION_VERSION],
+      });
+      if (expectedProvenance === "estimated") {
+        expect(computeActionImpactKpis({
+          metadata: {
+            cigaretteButtsMeasurements: {
+              ...measurements,
+              cigaretteButtsConversionFormulaVersion: "unsupported-version",
+            },
+          },
+        }).buttsMassProvenance).toBe("unknown");
+      }
+    },
+  );
+
+  it("does not trust measured provenance when a lot snapshot is incomplete or mass is absent", () => {
+    const complete = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [{
+        id: "measured",
+        source: "mass_kg",
+        value: 1,
+        condition: "propre",
+      }],
+    });
+    const incomplete = {
+      ...complete,
+      cigaretteButtsLots: [],
+      cigaretteButtsMassProvenance: "measured",
+    } as ActionCigaretteButtsMeasurements;
+
+    expect(computeActionImpactKpis({
+      metadata: { cigaretteButtsMeasurements: incomplete },
+    }).buttsMassProvenance).toBe("unknown");
+
+    const missingLotList = { ...complete, cigaretteButtsLots: undefined };
+    expect(computeActionImpactKpis({
+      metadata: { cigaretteButtsMeasurements: missingLotList },
+    }).buttsMassProvenance).toBe("unknown");
+
+    expect(computeActionImpactKpis({
+      metadata: {
+        cigaretteButtsMeasurements: {
+          cigaretteButtsMassKg: null,
+          cigaretteButtsMassProvenance: "measured",
+        } as ActionCigaretteButtsMeasurements,
+      },
+    }).buttsMassProvenance).toBe("unknown");
+  });
+
+  it("keeps an explicitly unknown complete lot snapshot unknown", () => {
+    const complete = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [{
+        id: "measured",
+        source: "mass_kg",
+        value: 1,
+        condition: "propre",
+      }],
+    });
+
+    expect(computeActionImpactKpis({
+      metadata: {
+        cigaretteButtsMeasurements: {
+          ...complete,
+          cigaretteButtsMassProvenance: "unknown",
+        },
+      },
+    }).buttsMassProvenance).toBe("unknown");
+  });
+
+  it("exports the conversion versions used by persisted lots", () => {
+    const aggregate = aggregateCigaretteButtsLots([{
+      id: "volume",
+      source: "volume_l",
+      value: 1,
+      condition: "propre",
+    }]);
+    const expectedVersions = [...new Set(aggregate.results.flatMap((result) => [
+      result.massConversionFormulaVersion,
+      result.volumeConversionFormulaVersion,
+    ]).filter((version): version is string => Boolean(version)))];
+
+    expect(expectedVersions.length).toBeGreaterThan(0);
+    expect(computeActionImpactKpis(makeContract({
+      cigaretteButtsMeasurements: normalizeCigaretteButtsMeasurements({
+        cigaretteButtsLots: aggregate.lots,
+      }),
+    })).buttsMassConversionVersions).toEqual(expectedVersions);
   });
 
   it("keeps unknown mass in the aggregate of measured and estimated actions", () => {

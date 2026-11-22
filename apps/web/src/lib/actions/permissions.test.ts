@@ -18,6 +18,19 @@ describe("action permissions", () => {
     expect(canManageActionByRelation({ userId: "coorganizer-1" }, action, ["coorganizer-1"])).toBe(true);
     expect(canManageActionByRelation({ userId: "admin-1" }, action, [])).toBe(false);
   });
+
+  it("rejects missing identities and unrelated users for relation-only management", () => {
+    expect(
+      canManageActionByRelation(undefined, { createdByClerkId: null }, []),
+    ).toBe(false);
+    expect(
+      canManageActionByRelation(
+        { userId: "outsider-1" },
+        { createdByClerkId: null },
+        ["organizer-1"],
+      ),
+    ).toBe(false);
+  });
   it.each(["admin", "max", "elu"] as const)(
     "allows the privileged active role %s to validate administrative requirements",
     (activeRole) => {

@@ -90,7 +90,7 @@ export function enrichAndPublishMutationReport(
 }
 
 function runMutation() {
-  if (!fs.existsSync(runnerPath)) throw new Error("HOST_ENVIRONMENT: Stryker 10.0.0 is not installed.");
+  if (!fs.existsSync(runnerPath)) throw new Error("HOST_ENVIRONMENT: Stryker 10.1.1 is not installed.");
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   const result = spawnSync(process.execPath, [runnerPath, "run", "stryker.config.mjs", "--reporters", "json", "--logLevel", "warn"], {
     cwd: path.join(repositoryRoot, "apps", "web"),
@@ -116,12 +116,12 @@ export function runMutationPolicy() {
   const head = assertMutationBaselineFresh(baseline, { repositoryRoot });
   const report = runMutation();
   const current = summarizeMutationReport(report);
-  return { baseline, current, failures: compareMutationReport(current, baseline), head };
+  return { baseline, current, failures: compareMutationReport(current, baseline), head, report };
 }
 
 function formatSummary(label, summary) {
   const { counts } = summary;
-  return `${label}: ${summary.score.toFixed(2)}% (${counts.Killed} killed, ${counts.Survived} survived, ${counts.NoCoverage} no coverage, ${counts.Timeout} timeout, ${counts.error} error)`;
+  return `${label}: ${summary.score.toFixed(2)}% Stryker score / ${summary.allMutantsKillRate.toFixed(2)}% of all mutants killed (${counts.Killed} killed, ${counts.Survived} survived, ${counts.NoCoverage} no coverage, ${counts.Timeout} timeout, ${counts.error} error)`;
 }
 
 async function main() {
@@ -129,6 +129,7 @@ async function main() {
     const result = runMutationPolicy();
     console.log(`Mutation scope: ${getMutationScope(strykerConfig).mutate.join(", ")}`);
     console.log(`Mutation scope fingerprint: ${mutationScopeFingerprint(strykerConfig)}`);
+    console.log(`Mutation evidence: ${result.report.provenance} (${result.report.candidateScope}, ${result.report.candidateSha ?? "unattributed"})`);
     console.log(formatSummary("Baseline", result.baseline.summary));
     console.log(formatSummary("Current", result.current));
     for (const [file, summary] of Object.entries(result.current.files)) console.log(formatSummary(`Current ${file}`, summary));

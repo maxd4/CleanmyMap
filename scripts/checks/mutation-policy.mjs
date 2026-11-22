@@ -2,10 +2,10 @@ import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { gitExecutable } from "../ci/git-executable.mjs";
 
-const MUTATION_POLICY_VERSION = 1;
+const MUTATION_POLICY_VERSION = 2;
 const MUTATION_TOOL = "stryker";
-const MUTATION_TOOL_VERSION = "10.0.0";
-const MUTATION_RUNNER_VERSION = "10.0.0";
+const MUTATION_TOOL_VERSION = "10.1.1";
+const MUTATION_RUNNER_VERSION = "10.1.1";
 const MUTATION_STATUSES = Object.freeze([
   "Killed",
   "Survived",
@@ -60,6 +60,7 @@ function summarizeMutants(mutants) {
     total: mutants.length,
     counts,
     score: scoreForCounts(counts),
+    allMutantsKillRate: mutants.length === 0 ? 100 : (counts.Killed / mutants.length) * 100,
   };
 }
 
@@ -91,6 +92,19 @@ function validateSummary(summary, label) {
   }
   if (typeof summary.score !== "number" || summary.score < 0 || summary.score > 100) {
     throw new Error(`Mutation baseline malformed: ${label}.score is invalid.`);
+  }
+  if (typeof summary.allMutantsKillRate !== "number" || summary.allMutantsKillRate < 0 || summary.allMutantsKillRate > 100) {
+    throw new Error(`Mutation baseline malformed: ${label}.allMutantsKillRate is invalid.`);
+  }
+  const expectedScore = scoreForCounts(summary.counts);
+  const expectedAllMutantsKillRate = summary.total === 0
+    ? 100
+    : (summary.counts.Killed / summary.total) * 100;
+  if (Math.abs(summary.score - expectedScore) > 1e-9) {
+    throw new Error(`Mutation baseline malformed: ${label}.score does not match counts.`);
+  }
+  if (Math.abs(summary.allMutantsKillRate - expectedAllMutantsKillRate) > 1e-9) {
+    throw new Error(`Mutation baseline malformed: ${label}.allMutantsKillRate does not match counts.`);
   }
 }
 
@@ -138,7 +152,7 @@ function scoreDecreased(current, baseline) {
 
 function compareMutationSummary(current, baseline) {
   const failures = [];
-  if (scoreDecreased(current, baseline)) failures.push(`mutation score decreased from ${baseline.score.toFixed(2)}% to ${current.score.toFixed(2)}%`);
+  if (scoreDecreased(current, baseline)) failures.push(`Stryker mutation score decreased from ${baseline.score.toFixed(2)}% to ${current.score.toFixed(2)}%`);
   if (current.counts.NoCoverage > baseline.counts.NoCoverage) failures.push(`no coverage increased from ${baseline.counts.NoCoverage} to ${current.counts.NoCoverage}`);
   if (current.counts.Timeout > 0) failures.push(`${current.counts.Timeout} mutant(s) timed out`);
   if (current.counts.error > 0) failures.push(`${current.counts.error} mutant execution error(s)`);
