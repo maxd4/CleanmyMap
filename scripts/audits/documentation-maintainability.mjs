@@ -8,7 +8,7 @@ import { createRepositoryView } from "../checks/repository-view.mjs";
 import { measureContent } from "../checks/top-heavy-measurement.mjs";
 import { gitExecutable } from "../ci/git-executable.mjs";
 import {
-  discoverCriticalContracts,
+  discoverCriticalContractInventory,
   isSourceFileForContractReview,
   reviewCriticalContracts,
   summarizeCriticalContractReviews,
@@ -533,6 +533,10 @@ export function buildDocumentationNotMeasured({ auditedHead = null, runId = null
     documents: [],
     ranking: [],
     contractReviews: [],
+    contractInventory: {
+      sqlMigrations: { status: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", occurrences: [], summary: {} },
+      excludedCandidateSources: { status: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", items: [] },
+    },
     summary: {
       trackedDocuments: 0,
       surveillance: 0,
@@ -544,6 +548,11 @@ export function buildDocumentationNotMeasured({ auditedHead = null, runId = null
       documentedContracts: 0,
       reviewRequiredContracts: 0,
       notMeasuredContracts: 0,
+      sqlMigrationOccurrences: null,
+      sqlMigrationDrops: null,
+      sqlSourceCandidates: null,
+      sqlDatabasePresence: "NOT_MEASURED",
+      excludedNonRuntimeCandidateSources: null,
     },
   };
 }
@@ -563,8 +572,8 @@ export function buildDocumentationMaintainabilityReport({ root = process.cwd(), 
   const sourceContents = new Map([...trackedFiles]
     .filter((file) => isSourceFileForContractReview(file))
     .map((file) => [file, normalizeText(view.readBinary(file))]));
-  const criticalContracts = discoverCriticalContracts({ files: [...sourceContents.keys()], readFile: (file) => sourceContents.get(file) });
-  const contractReviews = reviewCriticalContracts({ contracts: criticalContracts, documents: documentSources });
+  const contractInventory = discoverCriticalContractInventory({ files: [...sourceContents.keys()], readFile: (file) => sourceContents.get(file) });
+  const contractReviews = reviewCriticalContracts({ contracts: contractInventory.contracts, documents: documentSources });
   const ranking = [...documents].sort((left, right) => right.lines - left.lines || right.bytes - left.bytes || left.path.localeCompare(right.path));
   const contractSummary = summarizeCriticalContractReviews(contractReviews);
   const summary = {
@@ -575,6 +584,7 @@ export function buildDocumentationMaintainabilityReport({ root = process.cwd(), 
     invalidReferences: documents.reduce((sum, document) => sum + document.internalLinks.invalid.length, 0),
     unverifiedReferences: documents.reduce((sum, document) => sum + document.internalLinks.unverified.length, 0),
     ...contractSummary,
+    ...contractInventory.summary,
   };
   return {
     schemaVersion: DOCUMENTATION_MAINTAINABILITY_SCHEMA_VERSION,
@@ -591,6 +601,18 @@ export function buildDocumentationMaintainabilityReport({ root = process.cwd(), 
     documents,
     ranking,
     contractReviews,
+    contractInventory: {
+      sqlMigrations: {
+        status: "VERSIONED_SOURCE_HISTORY_MEASURED",
+        runtimePresence: "NOT_MEASURED",
+        runtimeReason: "NO_POSTGRES_CATALOG_EVIDENCE_MATCHING_AUDITED_SHA",
+        occurrences: contractInventory.sqlMigrationHistory,
+      },
+      excludedCandidateSources: {
+        status: "MEASURED_EXCLUDED_FROM_RUNTIME_DISCOVERY",
+        items: contractInventory.excludedCandidateSources,
+      },
+    },
     summary,
   };
 }
@@ -647,6 +669,14 @@ export function formatDocumentationAuditSummary(report, { maxDetails = 6 } = {})
   lines.push(
     `Documents: ${summary.trackedDocuments ?? "NOT_MEASURED"} | contrats critiques: ${summary.criticalContracts ?? "NOT_MEASURED"} (DOCUMENTED ${summary.documentedContracts ?? "NOT_MEASURED"}, REVIEW_REQUIRED ${summary.reviewRequiredContracts ?? "NOT_MEASURED"}, NOT_MEASURED ${summary.notMeasuredContracts ?? "NOT_MEASURED"})`,
   );
+  const contractInventory = report.contractInventory ?? {};
+  const sqlMigrations = contractInventory.sqlMigrations ?? {};
+  const candidateSources = contractInventory.excludedCandidateSources?.items ?? [];
+  lines.push(`Historique SQL versionné: ${summary.sqlMigrationOccurrences ?? "NOT_MEASURED"} définitions, ${summary.sqlMigrationDrops ?? "NOT_MEASURED"} suppressions; ${summary.sqlSourceCandidates ?? "NOT_MEASURED"} dernières signatures source. Présence PostgreSQL: ${sqlMigrations.runtimePresence ?? "NOT_MEASURED"}.`);
+  lines.push(`Candidats TS/TSX non intégrés exclus du runtime: ${candidateSources.length} (provenance conservée).`);
+  for (const candidate of candidateSources.slice(0, Math.min(3, maxDetails))) {
+    lines.push(`- ${candidate.path} — ${candidate.provenance}; ${candidate.reason}.`);
+  }
 
   const longDocuments = (report.documents ?? []).filter((document) => document.level !== "NONE")
     .sort((left, right) => right.lines - left.lines || left.path.localeCompare(right.path, "en"));
@@ -689,8 +719,12 @@ export function formatDocumentationAuditSummary(report, { maxDetails = 6 } = {})
   const prioritizedReviews = [...reviewRequired].sort((left, right) => reviewPriority(left) - reviewPriority(right)
     || left.path.localeCompare(right.path, "en") || String(left.symbol ?? "").localeCompare(String(right.symbol ?? ""), "en"));
   const notMeasuredContracts = contracts.filter((review) => review.status === "NOT_MEASURED");
+  const sqlSourceContracts = contracts.filter((review) => review.sourceLifecycle?.kind === "SQL_MIGRATION_CANDIDATE");
+  const noCodeTestReferences = contracts.filter((review) => review.evidence?.tests?.code?.status === "NO_CODE_TEST_REFERENCE_FOUND").length;
+  const noTestDocumentation = contracts.filter((review) => review.evidence?.tests?.documentation?.status === "NO_TEST_DOCUMENTATION_EVIDENCE").length;
   const contractAttribution = (review) => review.documentsExamined?.flatMap((document) => (document.attributions ?? []).map((entry) => `${document.path}:L${entry.line}`))[0];
   lines.push(`Contrats: ${summary.documentedContracts ?? "NOT_MEASURED"} DOCUMENTED | ${reviewRequired.length} REVIEW_REQUIRED | ${notMeasuredContracts.length} NOT_MEASURED.`);
+  lines.push(`Preuves de tests distinctes: ${noCodeTestReferences} contrats sans référence vers un fichier de test dans le code; ${noTestDocumentation} sans preuve de test attribuée dans la documentation. Une référence de code ne prouve pas l'exécution.`);
   lines.push(`Décision attendue: traiter les ${reviewRequired.length} REVIEW_REQUIRED avec attribution et preuve CURRENT.`);
   if (notMeasuredContracts.length > 0) lines.push(`Les ${notMeasuredContracts.length} NOT_MEASURED restent sans conclusion tant qu'une attribution/preuve vérifiable manque.`);
   for (const review of prioritizedReviews.slice(0, maxDetails)) {
@@ -701,6 +735,11 @@ export function formatDocumentationAuditSummary(report, { maxDetails = 6 } = {})
   for (const review of notMeasuredContracts.slice(0, Math.min(2, maxDetails))) {
     const label = `${review.path}${review.symbol ? `#${review.symbol}` : ""}`;
     lines.push(`- NOT_MEASURED ${label} — ${(review.reasons ?? []).slice(0, 2).join(" / ") || "aucune preuve attribuable"}; référence: ${contractAttribution(review) ?? "aucune attribution précise"}.`);
+  }
+  for (const review of sqlSourceContracts.slice(0, Math.min(3, maxDetails))) {
+    const latest = review.sourceLifecycle.latestDefinition;
+    const historyCount = review.sourceLifecycle.history?.length ?? 0;
+    lines.push(`Candidat SQL non déclaré actif ${review.evidence.codeSymbol}(${review.sourceLifecycle.signature}) — ${review.databasePresence?.status ?? "NOT_MEASURED"}; dernière définition ${latest.path}:L${latest.line}, ${historyCount} événement(s) de migration versionné(s).`);
   }
   lines.push("Preuves détaillées: documents, liens, attributions et preuves dimensionnelles dans le rapport JSON.");
   return lines.join("\n");

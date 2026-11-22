@@ -103,6 +103,37 @@ test("priorise les revues AuthZ/RLS, puis scientifiques, sans changer leur class
   assert.deepEqual(report.contractReviews.map((review) => review.status), ["REVIEW_REQUIRED", "REVIEW_REQUIRED", "REVIEW_REQUIRED"]);
 });
 
+test("distingue l'historique SQL, la présence PostgreSQL et les deux provenances de tests dans la synthèse", () => {
+  const report = run({ "README.md": "# Index\n" });
+  report.contractInventory = {
+    sqlMigrations: { runtimePresence: "NOT_MEASURED", occurrences: [{ path: "apps/web/supabase/migrations/001.sql" }] },
+    excludedCandidateSources: { items: [{ path: "documentation/specs/empreinte-ia/CANDIDATS_LOT_21/apps/web/src/lib/a.ts", provenance: "DOCUMENTATION_CANDIDATE", reason: "CANDIDATE_TREE_IS_NOT_RUNTIME_SOURCE" }] },
+  };
+  Object.assign(report.summary, { sqlMigrationOccurrences: 7, sqlMigrationDrops: 2, sqlSourceCandidates: 3 });
+  report.contractReviews = [{
+    path: "apps/web/supabase/migrations/003.sql",
+    symbol: "lookup",
+    kind: "RPC_PRIVILEGE_UNESTABLISHED",
+    status: "NOT_MEASURED",
+    reasons: ["NO_POSTGRES_CATALOG_EVIDENCE_MATCHING_AUDITED_SHA"],
+    sourceLifecycle: { kind: "SQL_MIGRATION_CANDIDATE", signature: "integer", latestDefinition: { path: "apps/web/supabase/migrations/003.sql", line: 4 }, history: [{}, {}] },
+    databasePresence: { status: "NOT_MEASURED" },
+    evidence: {
+      codeSymbol: "lookup",
+      tests: {
+        code: { status: "NO_CODE_TEST_REFERENCE_FOUND" },
+        documentation: { status: "NO_TEST_DOCUMENTATION_EVIDENCE" },
+      },
+    },
+  }];
+
+  const summary = formatDocumentationAuditSummary(report);
+  assert.match(summary, /Historique SQL versionné: 7 définitions, 2 suppressions; 3 dernières signatures source\. Présence PostgreSQL: NOT_MEASURED/);
+  assert.match(summary, /Candidats TS\/TSX non intégrés exclus du runtime: 1/);
+  assert.match(summary, /sans référence vers un fichier de test dans le code; 1 sans preuve de test attribuée dans la documentation/);
+  assert.match(summary, /Candidat SQL non déclaré actif lookup\(integer\).*NOT_MEASURED/);
+});
+
 test("le dry-run CLI documentaire ne crée ni ne modifie de fichier", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "documentation-maintainability-dry-run-"));
   const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "documentation-maintainability.mjs");
@@ -423,15 +454,20 @@ test("classe les contrats critiques selon la preuve CURRENT, PLAN, contradiction
   const report = run(entries);
   const byPath = Object.fromEntries(report.contractReviews.map((review) => [review.path, review]));
 
-  assert.equal(byPath["apps/web/supabase/migrations/001_documented.sql"].status, "DOCUMENTED");
+  assert.equal(byPath["apps/web/supabase/migrations/001_documented.sql"].status, "NOT_MEASURED");
+  assert.equal(byPath["apps/web/supabase/migrations/001_documented.sql"].databasePresence.status, "NOT_MEASURED");
   assert.equal(byPath["apps/web/supabase/migrations/001_documented.sql"].documentsExamined[0].lifecycle.statuses[0], "CURRENT");
   assert.equal(byPath["apps/web/supabase/migrations/002_contradictory.sql"].status, "REVIEW_REQUIRED");
   assert.ok(byPath["apps/web/supabase/migrations/002_contradictory.sql"].reasons.some((reason) => reason.startsWith("CONTRADICTORY_PRIVILEGE_CLAIM:documentation/rpc/contradictory.md:")));
-  assert.equal(byPath["apps/web/supabase/migrations/003_plan.sql"].status, "REVIEW_REQUIRED");
+  assert.equal(byPath["apps/web/supabase/migrations/003_plan.sql"].status, "NOT_MEASURED");
   assert.ok(byPath["apps/web/supabase/migrations/003_plan.sql"].reasons.includes("PLAN_IS_NOT_CURRENT_CONTRACT:documentation/rpc/plan.md"));
-  assert.equal(byPath["apps/web/supabase/migrations/004_missing-reference.sql"].status, "REVIEW_REQUIRED");
+  assert.equal(byPath["apps/web/supabase/migrations/004_missing-reference.sql"].status, "NOT_MEASURED");
   assert.ok(byPath["apps/web/supabase/migrations/004_missing-reference.sql"].reasons.some((reason) => reason.startsWith("INVALID_DOCUMENT_REFERENCE:documentation/rpc/missing.md:")));
   assert.equal(byPath["apps/web/supabase/migrations/005_unreferenced.sql"].status, "NOT_MEASURED");
+  assert.equal(report.contractInventory.sqlMigrations.occurrences.length, 5);
+  assert.equal(report.summary.sqlMigrationOccurrences, 5);
+  assert.equal(report.summary.sqlSourceCandidates, 5);
+  assert.equal(report.contractInventory.sqlMigrations.runtimePresence, "NOT_MEASURED");
   assert.equal(report.contractReviews.some((review) => review.path.endsWith("trivial.ts")), false);
   assert.deepEqual(run(entries).contractReviews, report.contractReviews);
   assert.deepEqual(run(entries).summary, report.summary);
@@ -443,8 +479,14 @@ test("classe les contrats critiques selon la preuve CURRENT, PLAN, contradiction
     invalidReferences: 1,
     unverifiedReferences: 0,
     criticalContracts: 5,
-    documentedContracts: 1,
-    reviewRequiredContracts: 3,
-    notMeasuredContracts: 1,
+    documentedContracts: 0,
+    reviewRequiredContracts: 1,
+    notMeasuredContracts: 4,
+    sqlMigrationOccurrences: 5,
+    sqlMigrationDrops: 0,
+    sqlSourceCandidates: 5,
+    sqlMigrationSourceConflicts: 0,
+    sqlDatabasePresence: "NOT_MEASURED",
+    excludedNonRuntimeCandidateSources: 0,
   });
 });

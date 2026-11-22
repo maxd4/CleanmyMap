@@ -1,8 +1,11 @@
 import path from "node:path";
+import { splitSqlStatements } from "../ci/supabase-migration-sql.mjs";
 
 const SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".sql"]);
 const TEST_MARKER = /(?:\.test|\.spec)(?:\.|$)|(?:^|\/)tests?(?:\/|$)|__tests__/i;
 const GENERATED_OR_VENDOR = /(?:^|\/)(?:vendor|generated|dist|build|coverage)(?:\/|$)/i;
+const NON_RUNTIME_CANDIDATE = /^documentation\/specs\/empreinte-ia\/CANDIDATS_LOTS?_.*\/apps\/web\/src\/.*\.(?:ts|tsx)$/i;
+const CANONICAL_MIGRATION = /^apps\/web\/supabase\/migrations\/[^/]+\.sql$/i;
 
 const DIMENSION_PATTERNS = Object.freeze({
   responsibility: /responsab|owner|source\s+canonique|canonical|contrat/i,
@@ -44,6 +47,10 @@ export function isSourceFileForContractReview(file) {
   return isSourceFile(file);
 }
 
+export function isNonRuntimeContractCandidate(file) {
+  return NON_RUNTIME_CANDIDATE.test(normalizePath(file));
+}
+
 function isTestOrGenerated(file) {
   const normalized = normalizePath(file);
   return TEST_MARKER.test(normalized) || GENERATED_OR_VENDOR.test(normalized);
@@ -69,58 +76,254 @@ function extractExportedSymbols(text) {
   return [...symbols].sort((left, right) => left.localeCompare(right, "en"));
 }
 
-function lastSqlIdentifier(value) {
-  return String(value ?? "").split(".").at(-1).replaceAll('"', "").toLowerCase();
-}
-
-function sqlFunctionDefinitions(text) {
-  const pattern = /\bcreate\s+(?:or\s+replace\s+)?function\s+((?:(?:"[\w$-]+"|[\w$-]+)\.)?(?:"[\w$-]+"|[\w$-]+))\s*\(([^)]*)\)/gi;
-  const matches = [...text.matchAll(pattern)];
-  return matches.map((match, index) => {
-    const start = match.index ?? 0;
-    const headerEnd = start + match[0].length;
-    const nextStart = matches[index + 1]?.index ?? text.length;
-    const tail = text.slice(headerEnd, nextStart);
-    const tag = tail.match(/\bas\s+(\$[\w]*\$)/i)?.[1];
-    let end = nextStart;
-    if (tag) {
-      const opening = tail.indexOf(tag);
-      const closing = tail.indexOf(tag, opening + tag.length);
-      if (closing >= 0) end = headerEnd + closing + tag.length;
-    } else {
-      const statementEnd = tail.search(/;\s*(?:\r?\n|$)/);
-      if (statementEnd >= 0) end = headerEnd + statementEnd + 1;
+function skipSqlTrivia(value, start = 0) {
+  let index = start;
+  while (index < value.length) {
+    if (/\s/.test(value[index])) { index += 1; continue; }
+    if (value.startsWith("--", index)) {
+      const newline = value.indexOf("\n", index + 2);
+      index = newline < 0 ? value.length : newline + 1;
+      continue;
     }
-    const qualifiedName = match[1];
-    return {
-      symbol: lastSqlIdentifier(qualifiedName),
-      qualifiedName,
-      arguments: match[2],
-      start,
-      line: 1 + text.slice(0, start).split("\n").length - 1,
-      text: text.slice(start, end),
-    };
-  });
+    if (value.startsWith("/*", index)) {
+      let depth = 1;
+      index += 2;
+      while (index < value.length && depth > 0) {
+        if (value.startsWith("/*", index)) { depth += 1; index += 2; }
+        else if (value.startsWith("*/", index)) { depth -= 1; index += 2; }
+        else index += 1;
+      }
+      continue;
+    }
+    break;
+  }
+  return index;
 }
 
-function normalizedSqlArguments(value) {
-  return String(value ?? "").toLowerCase().replaceAll('"', "").replace(/\s+/g, "").trim();
+function leadingCommentFreeStatement(statement) {
+  return statement.slice(skipSqlTrivia(statement));
+}
+
+function readQualifiedFunctionName(value, start) {
+  const identifier = '(?:"(?:[^"]|"")*"|[A-Za-z_][\\w$]*)';
+  const match = value.slice(start).match(new RegExp(`^(${identifier})(?:\\s*\\.\\s*(${identifier}))?`));
+  if (!match) return null;
+  return {
+    schema: match[2] ? displaySqlIdentifier(match[1]) : null,
+    schemaKey: match[2] ? normalizeSqlIdentifier(match[1]) : null,
+    name: displaySqlIdentifier(match[2] ?? match[1]),
+    nameKey: normalizeSqlIdentifier(match[2] ?? match[1]),
+    end: start + match[0].length,
+    qualifiedName: match[0],
+  };
+}
+
+function normalizeSqlIdentifier(value) {
+  const identifier = String(value ?? "").trim();
+  if (identifier.startsWith('"') && identifier.endsWith('"')) return `q:${identifier.slice(1, -1).replaceAll('""', '"')}`;
+  return `u:${identifier.toLowerCase()}`;
+}
+
+function displaySqlIdentifier(value) {
+  const identifier = String(value ?? "").trim();
+  if (identifier.startsWith('"') && identifier.endsWith('"')) return identifier.slice(1, -1).replaceAll('""', '"');
+  return identifier.toLowerCase();
+}
+
+function matchingParen(value, opening) {
+  let depth = 0;
+  let quote = "";
+  for (let index = opening; index < value.length; index += 1) {
+    const character = value[index];
+    if (quote) {
+      if (character === quote && value[index + 1] === quote) index += 1;
+      else if (character === quote) quote = "";
+      continue;
+    }
+    if (character === '"' || character === "'") { quote = character; continue; }
+    if (character === "(") depth += 1;
+    else if (character === ")" && --depth === 0) return index;
+  }
+  return -1;
+}
+
+function splitSqlArguments(value) {
+  const items = [];
+  let start = 0;
+  let depth = 0;
+  let quote = "";
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    if (quote) {
+      if (character === quote && value[index + 1] === quote) index += 1;
+      else if (character === quote) quote = "";
+      continue;
+    }
+    if (character === '"' || character === "'") quote = character;
+    else if (character === "(" || character === "[") depth += 1;
+    else if (character === ")" || character === "]") depth -= 1;
+    else if (character === "," && depth === 0) {
+      items.push(value.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+  if (value.slice(start).trim()) items.push(value.slice(start).trim());
+  return items;
+}
+
+const KNOWN_MULTIWORD_TYPES = /^(?:double\s+precision|character\s+varying|bit\s+varying|timestamp\s+(?:with|without)\s+time\s+zone|time\s+(?:with|without)\s+time\s+zone|national\s+(?:character\s+)?varying|national\s+character)$/i;
+const KNOWN_TYPE_START = /^(?:smallint|int2|integer|int4|int|bigint|int8|numeric|decimal|real|float4|double\s+precision|float8|smallserial|serial|bigserial|boolean|bool|text|character|char|varchar|character\s+varying|bit|bit\s+varying|date|time|timetz|timestamp|timestamptz|interval|uuid|json|jsonb|bytea|record|void|oid|name|inet|cidr|macaddr|anyelement|anyarray|anycompatible|anycompatiblearray)\b/i;
+
+function stripArgumentDefault(value) {
+  const defaultIndex = value.search(/\s+default\s+/i);
+  if (defaultIndex >= 0) return value.slice(0, defaultIndex).trim();
+  const equalIndex = value.indexOf("=");
+  return equalIndex >= 0 ? value.slice(0, equalIndex).trim() : value.trim();
+}
+
+function functionInputType(argument, { definition = false } = {}) {
+  const value = stripArgumentDefault(argument).replace(/^\s*(?:inout|variadic|in|out)\s+/i, "");
+  const isOutOnly = /^\s*out\s+/i.test(argument);
+  if (isOutOnly) return null;
+  if (!definition) return normalizeSqlType(value);
+  const firstToken = value.match(/^(?:"(?:[^"]|"")*"|[A-Za-z_][\w$]*)(?:\s*\.\s*(?:"(?:[^"]|"")*"|[A-Za-z_][\w$]*))?/u)?.[0] ?? "";
+  const remainder = value.slice(firstToken.length).trim();
+  const possibleType = value.replace(/(?:\[\])+(?:\s|$)/g, "").replace(/\([^()]*\)/g, "").trim();
+  const typeStartsWithKnownName = KNOWN_TYPE_START.test(possibleType);
+  const typeStartsWithKnownMultiword = KNOWN_MULTIWORD_TYPES.test(possibleType);
+  const type = remainder && !typeStartsWithKnownName && !typeStartsWithKnownMultiword ? remainder : value;
+  return normalizeSqlType(type);
+}
+
+function normalizeSqlType(value) {
+  const protectedIdentifiers = [];
+  const protectedValue = String(value ?? "").replace(/"(?:[^"]|"")*"/g, (identifier) => {
+    protectedIdentifiers.push(identifier);
+    return `\u0000${protectedIdentifiers.length - 1}\u0000`;
+  });
+  let compact = protectedValue.trim().replace(/\s+/g, " ").toLowerCase()
+    .replace(/\s*\(\s*[^()]*\s*\)/g, "")
+    .replace(/\s*\[\s*\]/g, "[]");
+  let suffix = "";
+  while (compact.endsWith("[]")) { suffix += "[]"; compact = compact.slice(0, -2).trim(); }
+  const aliases = new Map([
+    ["int2", "smallint"], ["int4", "integer"], ["int8", "bigint"], ["decimal", "numeric"],
+    ["bool", "boolean"], ["float4", "real"], ["float8", "double precision"], ["varchar", "character varying"],
+    ["varbit", "bit varying"], ["timestamptz", "timestamp with time zone"], ["timestamp", "timestamp without time zone"],
+    ["timetz", "time with time zone"], ["time", "time without time zone"],
+  ]);
+  compact = (aliases.get(compact) ?? compact) + suffix;
+  return compact.replace(/\u0000(\d+)\u0000/g, (_, index) => protectedIdentifiers[Number(index)]);
+}
+
+function functionSignature(argumentsText, options = {}) {
+  return splitSqlArguments(argumentsText)
+    .map((argument) => functionInputType(argument, options))
+    .filter(Boolean)
+    .join(",");
+}
+
+function functionIdentity(schemaKey, nameKey, signature) {
+  return `${schemaKey ?? "schema:unknown"}|${nameKey}|(${signature})`;
+}
+
+function sqlFunctionEvents(file, text) {
+  const normalizedFile = normalizePath(file);
+  const canonicalMigration = CANONICAL_MIGRATION.test(normalizedFile);
+  const events = [];
+  let searchFrom = 0;
+  for (const statement of splitSqlStatements(text)) {
+    const offset = text.indexOf(statement, searchFrom);
+    searchFrom = Math.max(searchFrom, offset + statement.length);
+    const clean = leadingCommentFreeStatement(statement);
+    const create = clean.match(/^create\s+(or\s+replace\s+)?function\s+/i);
+    const drop = clean.match(/^drop\s+function\s+(?:if\s+exists\s+)?/i);
+    const operation = create ? (create[1] ? "REPLACE" : "CREATE") : drop ? "DROP" : null;
+    if (!operation) continue;
+    let cursor = clean.search(/\S/u) + (create ? create[0].length : drop[0].length);
+    const definitions = [];
+    do {
+      const name = readQualifiedFunctionName(clean, cursor);
+      if (!name) break;
+      cursor = skipSqlTrivia(clean, name.end);
+      if (clean[cursor] !== "(") break;
+      const close = matchingParen(clean, cursor);
+      if (close < 0) break;
+      const argumentsText = clean.slice(cursor + 1, close);
+      const signature = functionSignature(argumentsText, { definition: Boolean(create) });
+      const position = offset + statement.indexOf(clean) + name.end - name.qualifiedName.length;
+      definitions.push({
+        schema: name.schema,
+        name: name.name,
+        qualifiedName: name.qualifiedName,
+        arguments: argumentsText,
+        signature,
+        identity: functionIdentity(name.schemaKey, name.nameKey, signature),
+        start: position,
+        line: 1 + text.slice(0, position).split("\n").length - 1,
+        text: statement,
+      });
+      cursor = close + 1;
+      if (operation !== "DROP") break;
+      cursor = skipSqlTrivia(clean, cursor);
+      if (clean[cursor] !== ",") break;
+      cursor += 1;
+      cursor = skipSqlTrivia(clean, cursor);
+    } while (cursor < clean.length);
+    for (const definition of definitions) {
+      events.push({
+        ...definition,
+        operation,
+        path: normalizedFile,
+        canonicalMigration,
+        provenance: canonicalMigration ? "VERSIONED_MIGRATION" : "NON_CANONICAL_SQL_SOURCE",
+      });
+    }
+  }
+  return events;
 }
 
 function grantStatements(text) {
-  const pattern = /\bgrant\s+execute\s+on\s+function\s+((?:(?:"[\w$-]+"|[\w$-]+)\.)?(?:"[\w$-]+"|[\w$-]+))\s*\(([^)]*)\)\s+to\s+([^;]+);/gi;
-  return [...text.matchAll(pattern)].map((match) => ({
-    symbol: lastSqlIdentifier(match[1]),
-    arguments: match[2],
-    roles: match[3].split(",").map((role) => role.trim().replaceAll('"', "").toLowerCase()),
-    line: 1 + text.slice(0, match.index ?? 0).split("\n").length - 1,
-  }));
+  const grants = [];
+  let searchFrom = 0;
+  for (const statement of splitSqlStatements(text)) {
+    const offset = text.indexOf(statement, searchFrom);
+    searchFrom = Math.max(searchFrom, offset + statement.length);
+    const clean = leadingCommentFreeStatement(statement);
+    const prefix = clean.match(/^grant\s+execute\s+on\s+function\s+/i);
+    if (!prefix) continue;
+    let cursor = prefix[0].length;
+    const identities = [];
+    while (cursor < clean.length) {
+      const name = readQualifiedFunctionName(clean, cursor);
+      if (!name) break;
+      cursor = skipSqlTrivia(clean, name.end);
+      if (clean[cursor] !== "(") break;
+      const close = matchingParen(clean, cursor);
+      if (close < 0) break;
+      const signature = functionSignature(clean.slice(cursor + 1, close));
+      identities.push(functionIdentity(name.schemaKey, name.nameKey, signature));
+      cursor = skipSqlTrivia(clean, close + 1);
+      if (clean[cursor] !== ",") break;
+      cursor = skipSqlTrivia(clean, cursor + 1);
+      if (/^to\b/i.test(clean.slice(cursor))) break;
+    }
+    const to = clean.slice(cursor).match(/^to\s+(.+?)(?:\s+with\s+grant\s+option)?\s*$/i)?.[1];
+    if (!to) continue;
+    const line = 1 + text.slice(0, offset + statement.indexOf(clean)).split("\n").length - 1;
+    for (const identity of identities) {
+      grants.push({
+        identity,
+        roles: to.split(",").map((role) => role.trim().replaceAll('"', "").toLowerCase()),
+        line,
+      });
+    }
+  }
+  return grants;
 }
 
-function privilegeForSqlFunction(definition, definitions, grants, file) {
-  const sameName = definitions.filter((candidate) => candidate.symbol === definition.symbol);
-  const matchingGrants = grants.filter((grant) => grant.symbol === definition.symbol
-    && (sameName.length === 1 || normalizedSqlArguments(grant.arguments) === normalizedSqlArguments(definition.arguments)));
+function privilegeForSqlFunction(definition, grants, file) {
+  const matchingGrants = grants.filter((grant) => grant.identity === definition.identity);
   const declaredRoles = matchingGrants.flatMap((grant) => grant.roles.map((role) => ({ path: file, line: grant.line, type: "GRANT_EXECUTE", role })));
   const explicitSecurityMode = definition.text.match(/\bsecurity\s+(definer|invoker)\b/i)?.[1]?.toUpperCase() ?? null;
   const securityEvidence = explicitSecurityMode
@@ -188,6 +391,45 @@ function rpcConsumerNames(text) {
   return [...names].sort((left, right) => left.localeCompare(right, "en"));
 }
 
+function buildCodeTestIndex(testSources) {
+  const index = new Map();
+  for (const { path, content } of testSources) {
+    const lines = String(content).split("\n");
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+      const tokens = new Set((lines[lineIndex].match(/[A-Za-z_$][\w$]*/g) ?? []));
+      for (const token of tokens) {
+        const entries = index.get(token) ?? [];
+        entries.push({ path, line: lineIndex + 1, type: "TEST_SOURCE_REFERENCE" });
+        index.set(token, entries);
+      }
+    }
+  }
+  return index;
+}
+
+function codeTestEvidence(contract, testSources, testIndex) {
+  const tokens = [...new Set([
+    contract.symbol,
+    ...(contract.symbols ?? []),
+    ...(contract.rpcNames ?? []),
+  ].filter((value) => typeof value === "string" && value.length > 3))];
+  const byTestFile = new Map();
+  for (const reference of tokens.flatMap((token) => testIndex.get(token) ?? [])) {
+    const previous = byTestFile.get(reference.path);
+    if (!previous || reference.line < previous.line) byTestFile.set(reference.path, reference);
+  }
+  const references = [...byTestFile.values()].sort((left, right) => left.path.localeCompare(right.path, "en") || left.line - right.line);
+  return {
+    status: references.length > 0 ? "CODE_TEST_REFERENCE_FOUND" : "NO_CODE_TEST_REFERENCE_FOUND",
+    searchedTestFiles: testSources.length,
+    references,
+    execution: "NOT_MEASURED",
+    reason: references.length > 0
+      ? "A_TRACKED_TEST_FILE_REFERENCES_A_SOURCE_SYMBOL;_EXECUTION_AND_COVERAGE_NOT_PROVEN"
+      : "NO_TRACKED_TEST_FILE_REFERENCES_A_SOURCE_SYMBOL",
+  };
+}
+
 function makeContract({ file, kind, symbols, symbol = null, rpcNames = [], privilege = { status: "UNESTABLISHED", evidence: [] }, text }) {
   return {
     path: file,
@@ -201,38 +443,150 @@ function makeContract({ file, kind, symbols, symbol = null, rpcNames = [], privi
   };
 }
 
-export function discoverCriticalContracts({ files, readFile }) {
-  return files
-    .map(normalizePath)
-    .filter(isSourceFile)
-    .filter((file) => !isTestOrGenerated(file))
-    .sort((left, right) => left.localeCompare(right, "en"))
-    .flatMap((file) => {
-      const text = String(readFile(file));
-      if (extensionOf(file) === ".sql") {
-        const definitions = sqlFunctionDefinitions(text);
-        if (definitions.length === 0) return [];
-        const grants = grantStatements(text);
-        return definitions.map((definition) => {
-          const privilege = privilegeForSqlFunction(definition, definitions, grants, file);
-          return makeContract({ file, kind: privilegeKind(privilege.status), symbols: [definition.symbol], symbol: definition.symbol, privilege, text: definition.text });
-        });
-      }
+function sourceCandidateSqlEvents(file, content) {
+  return sqlFunctionEvents(file, content);
+}
 
-      const symbols = extractExportedSymbols(text);
-      if (symbols.length === 0) return [];
-      const contracts = [];
-      const rpcNames = rpcConsumerNames(text);
-      if (rpcNames.length > 0) {
-        contracts.push(makeContract({ file, kind: "RPC_CONSUMER", symbols, rpcNames, text }));
+function replaySqlMigrationHistory(events) {
+  const active = new Map();
+  const conflicts = new Set();
+  const ordered = [...events].filter((event) => event.canonicalMigration)
+    .sort((left, right) => left.path.localeCompare(right.path, "en") || left.line - right.line);
+  for (const event of ordered) {
+    if (event.operation === "DROP") {
+      event.lifecycle = "DROP_EVENT";
+      const prior = active.get(event.identity);
+      if (prior) {
+        prior.lifecycle = "DROPPED_BY_LATER_MIGRATION";
+        prior.supersededBy = { path: event.path, line: event.line, operation: "DROP" };
+        event.lifecycle = "DROPPED_PRIOR_DEFINITION";
+      } else {
+        event.lifecycle = "DROP_WITHOUT_PRIOR_REPOSITORY_DEFINITION";
       }
-      const semanticKind = semanticContractKind(file, text);
-      if (semanticKind) contracts.push(makeContract({ file, kind: semanticKind, symbols, text }));
-      return contracts;
-    })
-    .sort((left, right) => left.path.localeCompare(right.path, "en")
-      || left.kind.localeCompare(right.kind, "en")
-      || String(left.symbol ?? left.rpcNames[0] ?? "").localeCompare(String(right.symbol ?? right.rpcNames[0] ?? ""), "en"));
+      active.delete(event.identity);
+      continue;
+    }
+    const prior = active.get(event.identity);
+    if (prior) {
+      prior.lifecycle = "REPLACED_BY_LATER_MIGRATION";
+      prior.supersededBy = { path: event.path, line: event.line, operation: event.operation };
+      if (event.operation === "CREATE") conflicts.add(event.identity);
+    }
+    event.lifecycle = conflicts.has(event.identity) ? "MIGRATION_SOURCE_CONFLICT" : "LATEST_MIGRATION_DEFINITION";
+    active.set(event.identity, event);
+  }
+  return {
+    active: [...active.values()].sort((left, right) => left.path.localeCompare(right.path, "en") || left.line - right.line),
+    conflicts,
+    ordered,
+  };
+}
+
+function summarySqlEvent(event) {
+  return {
+    path: event.path,
+    line: event.line,
+    operation: event.operation,
+    schema: event.schema,
+    symbol: event.name,
+    signature: event.signature,
+    identity: event.identity,
+    provenance: event.provenance,
+    lifecycle: event.lifecycle ?? (event.canonicalMigration ? "VERSIONED_MIGRATION_EVIDENCE" : "NON_CANONICAL_SQL_SOURCE"),
+    supersededBy: event.supersededBy ?? null,
+  };
+}
+
+function contractFromSqlCandidate(event, migrationEvents, conflicts, testSources, testIndex, readFile) {
+  const symbol = event.name;
+  const grants = grantStatements(String(readFile(event.path)));
+  const definition = { ...event, symbol };
+  const privilege = privilegeForSqlFunction(definition, grants, event.path);
+  const history = migrationEvents.filter((candidate) => candidate.identity === event.identity).map(summarySqlEvent);
+  return {
+    ...makeContract({ file: event.path, kind: privilegeKind(privilege.status), symbols: [symbol], symbol, privilege, text: event.text }),
+    sourceLifecycle: {
+      kind: "SQL_MIGRATION_CANDIDATE",
+      status: conflicts.has(event.identity) ? "REVIEW_REQUIRED" : "LATEST_MIGRATION_DEFINITION",
+      identity: event.identity,
+      schema: event.schema,
+      signature: event.signature,
+      latestDefinition: { path: event.path, line: event.line, operation: event.operation },
+      history,
+    },
+    databasePresence: {
+      status: "NOT_MEASURED",
+      reason: "NO_POSTGRES_CATALOG_EVIDENCE_MATCHING_AUDITED_SHA",
+    },
+    codeTests: codeTestEvidence({ path: event.path, symbol, symbols: [symbol] }, testSources, testIndex),
+  };
+}
+
+export function discoverCriticalContractInventory({ files, readFile }) {
+  const normalizedFiles = files.map(normalizePath).filter(isSourceFile).sort((left, right) => left.localeCompare(right, "en"));
+  const candidateFiles = normalizedFiles.filter((file) => !isTestOrGenerated(file) && isNonRuntimeContractCandidate(file));
+  const excludedCandidateSources = candidateFiles.map((file) => ({
+    path: file,
+    candidateDirectory: file.match(/^documentation\/specs\/empreinte-ia\/(CANDIDATS_LOTS?_)[^/]+/i)?.[0] ?? null,
+    provenance: "DOCUMENTATION_CANDIDATE",
+    runtimeDiscovery: "EXCLUDED_NOT_INTEGRATED",
+    reason: "CANDIDATE_TREE_IS_NOT_RUNTIME_SOURCE",
+  }));
+  const includedFiles = normalizedFiles
+    .filter((file) => !isTestOrGenerated(file) && !isNonRuntimeContractCandidate(file));
+  const testSources = normalizedFiles.filter((file) => isTestOrGenerated(file) && !isNonRuntimeContractCandidate(file))
+    .map((file) => ({ path: file, content: String(readFile(file)) }));
+  const testIndex = buildCodeTestIndex(testSources);
+  const sqlEvents = includedFiles.filter((file) => extensionOf(file) === ".sql")
+    .flatMap((file) => sourceCandidateSqlEvents(file, String(readFile(file))))
+    .sort((left, right) => left.path.localeCompare(right.path, "en") || left.line - right.line);
+  const migrationEvents = sqlEvents.filter((event) => event.canonicalMigration);
+  const replay = replaySqlMigrationHistory(migrationEvents);
+  const contracts = [];
+
+  for (const file of includedFiles) {
+    if (extensionOf(file) === ".sql") continue;
+    const text = String(readFile(file));
+    const symbols = extractExportedSymbols(text);
+    if (symbols.length === 0) continue;
+    const rpcNames = rpcConsumerNames(text);
+    const contractKinds = [];
+    if (rpcNames.length > 0) contractKinds.push({ kind: "RPC_CONSUMER", rpcNames });
+    const semanticKind = semanticContractKind(file, text);
+    if (semanticKind) contractKinds.push({ kind: semanticKind, rpcNames: [] });
+    for (const entry of contractKinds) {
+      const contract = makeContract({ file, kind: entry.kind, symbols, rpcNames: entry.rpcNames, text });
+      contracts.push({ ...contract, codeTests: codeTestEvidence(contract, testSources, testIndex) });
+    }
+  }
+
+  for (const event of replay.active) {
+    contracts.push(contractFromSqlCandidate(event, migrationEvents, replay.conflicts, testSources, testIndex, readFile));
+  }
+
+  contracts.sort((left, right) => left.path.localeCompare(right.path, "en")
+    || left.kind.localeCompare(right.kind, "en")
+    || String(left.symbol ?? left.rpcNames[0] ?? "").localeCompare(String(right.symbol ?? right.rpcNames[0] ?? ""), "en"));
+
+  const history = migrationEvents.map(summarySqlEvent);
+  const definitionEvents = migrationEvents.filter((event) => event.operation !== "DROP");
+  return {
+    contracts,
+    sqlMigrationHistory: history,
+    excludedCandidateSources,
+    summary: {
+      sqlMigrationOccurrences: definitionEvents.length,
+      sqlMigrationDrops: migrationEvents.filter((event) => event.operation === "DROP").length,
+      sqlSourceCandidates: replay.active.length,
+      sqlMigrationSourceConflicts: replay.conflicts.size,
+      sqlDatabasePresence: "NOT_MEASURED",
+      excludedNonRuntimeCandidateSources: excludedCandidateSources.length,
+    },
+  };
+}
+
+export function discoverCriticalContracts(options) {
+  return discoverCriticalContractInventory(options).contracts;
 }
 
 function escapeRegExp(value) {
@@ -388,7 +742,7 @@ function reviewCriticalContract(contract, documents, uniqueSymbols) {
   const proofs = dimensionProofs(current);
   const dimensions = Object.fromEntries(Object.entries(proofs).map(([dimension, items]) => [dimension, items.length > 0]));
   for (const dimension of KIND_REQUIREMENTS[contract.kind] ?? []) {
-    if (!dimensions[dimension]) reasons.push(`MISSING_${dimension.toUpperCase()}`);
+    if (!dimensions[dimension]) reasons.push(dimension === "tests" ? "MISSING_TEST_DOCUMENTATION" : `MISSING_${dimension.toUpperCase()}`);
   }
   const claims = current.flatMap(({ document, attributions }) => claimEvidence(document, attributions).map((claim) => ({ ...claim, documentPath: document.path })));
   if (claims.length > 0 && hasPrivilegeContradiction(contract, claims)) {
@@ -400,11 +754,24 @@ function reviewCriticalContract(contract, documents, uniqueSymbols) {
   if (contract.kind === "RPC_PRIVILEGE_UNESTABLISHED" || privilegeStatus === "UNESTABLISHED" && contract.kind === "PRIVILEGED_RPC") {
     reasons.push("SOURCE_PRIVILEGE_NOT_ESTABLISHED");
   }
-  const hasContradiction = reasons.some((reason) => reason.startsWith("CONTRADICTORY_PRIVILEGE_CLAIM:") || reason.startsWith("CONFLICTING_DOCUMENT_LIFECYCLE:"));
+  if (contract.databasePresence?.status === "NOT_MEASURED") reasons.push(contract.databasePresence.reason);
+  if (contract.sourceLifecycle?.status === "REVIEW_REQUIRED") reasons.push("MIGRATION_SOURCE_SIGNATURE_CONFLICT");
+  const hasContradiction = reasons.some((reason) => reason.startsWith("CONTRADICTORY_PRIVILEGE_CLAIM:")
+    || reason.startsWith("CONFLICTING_DOCUMENT_LIFECYCLE:")
+    || reason === "MIGRATION_SOURCE_SIGNATURE_CONFLICT");
   const cannotMeasurePrivilege = contract.kind === "RPC_CONSUMER" || privilegeStatus === "UNESTABLISHED" && contract.kind.startsWith("RPC_");
+  const cannotMeasureDatabasePresence = contract.databasePresence?.status === "NOT_MEASURED";
   const status = hasContradiction ? "REVIEW_REQUIRED"
-    : cannotMeasurePrivilege || examined.length === 0 ? "NOT_MEASURED"
+    : cannotMeasurePrivilege || cannotMeasureDatabasePresence || examined.length === 0 ? "NOT_MEASURED"
       : reasons.length === 0 ? "DOCUMENTED" : "REVIEW_REQUIRED";
+
+  const codeTests = contract.codeTests ?? {
+    status: "NOT_MEASURED",
+    searchedTestFiles: null,
+    references: [],
+    execution: "NOT_MEASURED",
+    reason: "CODE_TEST_INVENTORY_NOT_SUPPLIED",
+  };
 
   return {
     path: contract.path,
@@ -413,6 +780,8 @@ function reviewCriticalContract(contract, documents, uniqueSymbols) {
     symbols: contract.symbols,
     rpcNames: contract.rpcNames,
     responsibility: contract.responsibility,
+    sourceLifecycle: contract.sourceLifecycle ?? { kind: "RUNTIME_SOURCE", status: "CURRENT_TRACKED_SOURCE" },
+    databasePresence: contract.databasePresence ?? null,
     status,
     reasons: [...new Set(reasons)],
     documentsExamined: examined.map(({ document, attributions }) => ({
@@ -429,6 +798,13 @@ function reviewCriticalContract(contract, documents, uniqueSymbols) {
       claims,
       dimensions,
       dimensionProofs: proofs,
+      tests: {
+        code: codeTests,
+        documentation: {
+          status: dimensions.tests ? "DOCUMENTATION_TEST_EVIDENCE_FOUND" : "NO_TEST_DOCUMENTATION_EVIDENCE",
+          proofs: proofs.tests,
+        },
+      },
     },
   };
 }
@@ -436,9 +812,12 @@ function reviewCriticalContract(contract, documents, uniqueSymbols) {
 export function reviewCriticalContracts({ contracts, documents }) {
   const symbolOwners = new Map();
   for (const contract of contracts) {
+    const ownerIdentity = contract.sourceLifecycle?.identity
+      ? `${contract.path}|${contract.sourceLifecycle.identity}`
+      : contract.path;
     for (const symbol of new Set([contract.symbol, ...(contract.symbols ?? []), ...(contract.rpcNames ?? [])].filter(Boolean))) {
       const owners = symbolOwners.get(symbol) ?? new Set();
-      owners.add(contract.path);
+      owners.add(ownerIdentity);
       symbolOwners.set(symbol, owners);
     }
   }

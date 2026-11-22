@@ -655,11 +655,11 @@ function addCycles(report, files, domains, candidateGroups) {
 
 function addDocumentation(report, files, domains) {
   if (!report) {
-    return { state: "NOT_MEASURED", status: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", detail: "run historique sans dimension documentaire", documents: [], ranking: [], contractReviews: [], findingCounts: {} };
+    return { state: "NOT_MEASURED", status: "NOT_MEASURED", reason: "HISTORICAL_ABSENCE", detail: "run historique sans dimension documentaire", documents: [], ranking: [], contractReviews: [], contractInventory: { sqlMigrations: { status: "NOT_MEASURED" }, excludedCandidateSources: { status: "NOT_MEASURED", items: [] } }, findingCounts: {} };
   }
   if (report.status === "NOT_MEASURED" || report.error) {
     const reason = report.reason ?? (report.error ? "MEASUREMENT_FAILED" : "HISTORICAL_ABSENCE");
-    return { state: "NOT_MEASURED", status: "NOT_MEASURED", reason, detail: reason === "MEASUREMENT_FAILED" ? "mesure documentaire échouée" : "run historique sans dimension documentaire", error: report.error ?? null, documents: [], ranking: [], contractReviews: [], findingCounts: {} };
+    return { state: "NOT_MEASURED", status: "NOT_MEASURED", reason, detail: reason === "MEASUREMENT_FAILED" ? "mesure documentaire échouée" : "run historique sans dimension documentaire", error: report.error ?? null, documents: [], ranking: [], contractReviews: [], contractInventory: { sqlMigrations: { status: "NOT_MEASURED" }, excludedCandidateSources: { status: "NOT_MEASURED", items: [] } }, findingCounts: {} };
   }
   const findingCounts = {
     surveillance: 0,
@@ -761,6 +761,18 @@ function addDocumentation(report, files, domains) {
     attentionRequired: Boolean(report.attentionRequired),
     thresholds: report.thresholds,
     summary: report.summary,
+    contractInventory: {
+      sqlMigrations: {
+        status: report.contractInventory?.sqlMigrations?.status ?? "NOT_MEASURED",
+        runtimePresence: report.contractInventory?.sqlMigrations?.runtimePresence ?? "NOT_MEASURED",
+        runtimeReason: report.contractInventory?.sqlMigrations?.runtimeReason ?? "HISTORICAL_REPORT_HAS_NO_SQL_MIGRATION_INVENTORY",
+        occurrenceCount: report.summary?.sqlMigrationOccurrences ?? null,
+        dropCount: report.summary?.sqlMigrationDrops ?? null,
+        sourceCandidateCount: report.summary?.sqlSourceCandidates ?? null,
+        sourceConflictCount: report.summary?.sqlMigrationSourceConflicts ?? null,
+      },
+      excludedCandidateSources: report.contractInventory?.excludedCandidateSources ?? { status: "NOT_MEASURED", items: [] },
+    },
     findingCounts,
     documents: report.documents ?? [],
     ranking: report.ranking ?? [],

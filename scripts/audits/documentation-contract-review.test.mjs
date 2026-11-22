@@ -3,7 +3,9 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  discoverCriticalContractInventory,
   discoverCriticalContracts,
+  isNonRuntimeContractCandidate,
   reviewCriticalContracts,
   summarizeCriticalContractReviews,
 } from "./documentation-contract-review.mjs";
@@ -154,9 +156,109 @@ test("ne traite pas un symbole partagé par plusieurs migrations comme attributi
     documents: [document("documentation/rpc/shared.md", "CURRENT", completeRpcLines("shared_lookup", "anon et public"))],
   });
 
-  assert.equal(review.length, 2);
-  assert.ok(review.every((entry) => entry.status === "NOT_MEASURED"));
-  assert.ok(review.every((entry) => entry.reasons.includes("NO_PRECISE_DOCUMENTATION_ATTRIBUTION")));
+  assert.equal(review.length, 1);
+  assert.equal(review[0].status, "NOT_MEASURED");
+  assert.equal(review[0].sourceLifecycle.history.length, 2);
+  assert.equal(review[0].reasons.includes("NO_PRECISE_DOCUMENTATION_ATTRIBUTION"), false);
+  assert.equal(review[0].documentsExamined[0].path, "documentation/rpc/shared.md");
+  assert.equal(review[0].documentsExamined[0].attributions[0].matchKind, "SOURCE_SYMBOL");
+  assert.ok(review[0].reasons.includes("NO_POSTGRES_CATALOG_EVIDENCE_MATCHING_AUDITED_SHA"));
+});
+
+test("rejoue le code source SQL par schéma et signature en conservant les remplacements et suppressions historiques", () => {
+  const inventory = discoverCriticalContractInventory({
+    files: [
+      "apps/web/supabase/migrations/001_initial.sql",
+      "apps/web/supabase/migrations/002_update.sql",
+      "apps/web/supabase/migrations/003_drop.sql",
+    ],
+    readFile: (file) => ({
+      "apps/web/supabase/migrations/001_initial.sql": [
+        "CREATE FUNCTION public.lookup(integer) RETURNS integer LANGUAGE sql AS 'select 1';",
+        "CREATE FUNCTION public.lookup(text) RETURNS text LANGUAGE sql AS 'select 1';",
+        "CREATE FUNCTION private.lookup(integer) RETURNS integer LANGUAGE sql AS 'select 1';",
+      ].join("\n"),
+      "apps/web/supabase/migrations/002_update.sql": [
+        "CREATE OR REPLACE FUNCTION public.lookup(p_id int4) RETURNS integer LANGUAGE sql AS 'select 2';",
+      ].join("\n"),
+      "apps/web/supabase/migrations/003_drop.sql": "DROP FUNCTION IF EXISTS public.lookup(text);",
+    }[file]),
+  });
+
+  assert.equal(inventory.summary.sqlMigrationOccurrences, 4);
+  assert.equal(inventory.summary.sqlMigrationDrops, 1);
+  assert.equal(inventory.summary.sqlSourceCandidates, 2);
+  assert.deepEqual(inventory.contracts.map((entry) => entry.sourceLifecycle.identity), [
+    "u:private|u:lookup|(integer)",
+    "u:public|u:lookup|(integer)",
+  ]);
+  const publicOverload = inventory.contracts.find((entry) => entry.sourceLifecycle.identity === "u:public|u:lookup|(integer)");
+  assert.deepEqual(publicOverload.sourceLifecycle.history.map((event) => event.operation), ["CREATE", "REPLACE"]);
+  assert.equal(publicOverload.sourceLifecycle.latestDefinition.path, "apps/web/supabase/migrations/002_update.sql");
+  assert.equal(publicOverload.databasePresence.status, "NOT_MEASURED");
+  const dropped = inventory.sqlMigrationHistory.find((event) => event.operation === "DROP");
+  assert.equal(dropped.symbol, "lookup");
+  assert.equal(dropped.signature, "text");
+  assert.equal(dropped.lifecycle, "DROPPED_PRIOR_DEFINITION");
+  assert.equal(inventory.sqlMigrationHistory.find((event) => event.path.endsWith("001_initial.sql") && event.signature === "text").lifecycle, "DROPPED_BY_LATER_MIGRATION");
+});
+
+test("signale un CREATE répété sans DROP ni OR REPLACE comme conflit de source", () => {
+  const inventory = discoverCriticalContractInventory({
+    files: ["apps/web/supabase/migrations/001_first.sql", "apps/web/supabase/migrations/002_duplicate.sql"],
+    readFile: (file) => file.endsWith("001_first.sql")
+      ? "CREATE FUNCTION public.repeated(integer) RETURNS integer LANGUAGE sql AS 'select 1';"
+      : "CREATE FUNCTION public.repeated(p_id integer) RETURNS integer LANGUAGE sql AS 'select 2';",
+  });
+
+  assert.equal(inventory.summary.sqlMigrationSourceConflicts, 1);
+  assert.equal(inventory.contracts[0].sourceLifecycle.status, "REVIEW_REQUIRED");
+  const review = reviewCriticalContracts({ contracts: inventory.contracts, documents: [] })[0];
+  assert.equal(review.status, "REVIEW_REQUIRED");
+  assert.ok(review.reasons.includes("MIGRATION_SOURCE_SIGNATURE_CONFLICT"));
+});
+
+test("écarte les sources candidates non intégrées tout en conservant leur provenance", () => {
+  const candidate = "documentation/specs/empreinte-ia/CANDIDATS_LOT_21/apps/web/src/lib/environmental-impact-estimator/offer-comparison.ts";
+  const pluralCandidate = "documentation/specs/empreinte-ia/CANDIDATS_LOTS_0_08/apps/web/src/lib/environmental-impact-estimator/personal.tsx";
+  const candidateTest = "documentation/specs/empreinte-ia/CANDIDATS_LOT_21/apps/web/src/lib/environmental-impact-estimator/offer-comparison.test.ts";
+  const runtime = "apps/web/src/lib/environmental-impact-estimator/offer-comparison.ts";
+  const inventory = discoverCriticalContractInventory({
+    files: [candidate, pluralCandidate, candidateTest, runtime],
+    readFile: (file) => file === candidateTest
+      ? "import { compareOffers } from './offer-comparison'; expect(compareOffers()).toBeDefined();"
+      : "export function compareOffers() { const impactCalculation = 'kg provenance'; return impactCalculation; }",
+  });
+
+  assert.equal(isNonRuntimeContractCandidate(candidate), true);
+  assert.equal(isNonRuntimeContractCandidate(pluralCandidate), true);
+  assert.equal(isNonRuntimeContractCandidate(runtime), false);
+  assert.deepEqual(inventory.contracts.map((entry) => entry.path), [runtime]);
+  assert.deepEqual(inventory.excludedCandidateSources.map(({ path, provenance, runtimeDiscovery }) => ({ path, provenance, runtimeDiscovery })), [
+    { path: candidate, provenance: "DOCUMENTATION_CANDIDATE", runtimeDiscovery: "EXCLUDED_NOT_INTEGRATED" },
+    { path: pluralCandidate, provenance: "DOCUMENTATION_CANDIDATE", runtimeDiscovery: "EXCLUDED_NOT_INTEGRATED" },
+  ]);
+  assert.equal(inventory.contracts[0].codeTests.status, "NO_CODE_TEST_REFERENCE_FOUND");
+  assert.equal(inventory.contracts[0].codeTests.searchedTestFiles, 0);
+});
+
+test("sépare les références de tests dans le code des preuves de tests documentées", () => {
+  const codePath = "apps/web/src/lib/auth/role-policy.ts";
+  const testPath = "apps/web/src/lib/auth/role-policy.test.ts";
+  const contracts = discoverCriticalContractInventory({
+    files: [codePath, testPath],
+    readFile: (file) => file === codePath
+      ? "export function resolveRolePolicy(user: User) { return user.role; }"
+      : "import { resolveRolePolicy } from './role-policy';\nexpect(resolveRolePolicy(user)).toBe('admin');",
+  }).contracts;
+  const reviews = reviewCriticalContracts({ contracts, documents: [] });
+  const review = reviews[0];
+
+  assert.equal(review.evidence.tests.code.status, "CODE_TEST_REFERENCE_FOUND");
+  assert.deepEqual(review.evidence.tests.code.references, [{ path: testPath, line: 1, type: "TEST_SOURCE_REFERENCE" }]);
+  assert.equal(review.evidence.tests.code.execution, "NOT_MEASURED");
+  assert.equal(review.evidence.tests.documentation.status, "NO_TEST_DOCUMENTATION_EVIDENCE");
+  assert.equal(review.status, "NOT_MEASURED");
 });
 
 test("requiert une preuve CURRENT et laisse PLAN et HISTORY en revue", () => {

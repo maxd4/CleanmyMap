@@ -314,6 +314,26 @@ qu'il n'est pas établi à l'échelle de la base. Les GRANT mixtes ne deviennent
 donc jamais un accès exclusivement privilégié du seul fait qu'ils incluent
 `service_role`.
 
+Les définitions `CREATE [OR REPLACE] FUNCTION` des migrations sont conservées
+comme historique versionné par fichier, ligne, schéma et signature d'entrée.
+Le replay des seules migrations canoniques retient la dernière définition
+source par identité, respecte les surcharges, les remplacements et les
+`DROP FUNCTION`, et ne compte pas chaque version comme RPC `CURRENT`. Une
+dernière définition source reste un candidat de migration, pas une preuve de
+présence effective en PostgreSQL : sans preuve de catalogue correspondant au
+SHA audité, `databasePresence` et le statut restent `NOT_MEASURED`. Les preuves
+pgTAP/CI d'un autre SHA ne démontrent pas l'état de cette base. L'historique
+détaillé est conservé dans `contractInventory.sqlMigrations.occurrences`.
+
+Les fichiers TS/TSX sous
+`documentation/specs/empreinte-ia/CANDIDATS_LOT_*` et
+`CANDIDATS_LOTS_*` restent archivés comme provenance de candidats non intégrés,
+mais ne participent pas à la découverte runtime. La preuve d'une référence vers
+un fichier de test dans le code est rapportée séparément de la preuve de tests
+dans un document CURRENT. Une référence au code de test ne prouve ni son
+exécution ni sa couverture ; aucune suite de tests métier n'est créée par cet
+audit.
+
 Les cycles de vie sont extraits des déclarations de statut explicites dans
 l'en-tête du document (par exemple `Statut documentaire : CURRENT`,
 `Statut documentaire — AUDIT historique` ou un champ frontmatter
@@ -332,7 +352,8 @@ attribués au document et à sa ligne ; la provenance `CURRENT`, historique ou
 vendor est conservée dans le triage sans neutraliser les preuves du JSON.
 
 `DOCUMENTED` exige une attribution exacte au chemin du fichier source ou à un
-symbole non ambigu, un document explicitement `CURRENT`, puis des preuves
+symbole non ambigu, une preuve runtime `CURRENT` lorsque le contrat dépend de
+l'état PostgreSQL, un document explicitement `CURRENT`, puis des preuves
 localisables pour chaque dimension requise dans la section qui porte cette
 attribution. Les correspondances de basename et les mots-clés d'autres
 documents ne sont pas agrégés. `REVIEW_REQUIRED` conserve les références et

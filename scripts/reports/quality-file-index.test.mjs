@@ -221,6 +221,18 @@ function documentationReport() {
     thresholds: { surveillance: 601, reviewRequired: 1_001, architectureReview: 1_501 },
     documents: [document],
     ranking: [document],
+    contractInventory: {
+      sqlMigrations: {
+        status: "VERSIONED_SOURCE_HISTORY_MEASURED",
+        runtimePresence: "NOT_MEASURED",
+        runtimeReason: "NO_POSTGRES_CATALOG_EVIDENCE_MATCHING_AUDITED_SHA",
+        occurrences: [{ path: "apps/web/supabase/migrations/001_test.sql", line: 1, operation: "CREATE", symbol: "test_rpc" }],
+      },
+      excludedCandidateSources: {
+        status: "MEASURED_EXCLUDED_FROM_RUNTIME_DISCOVERY",
+        items: [{ path: "documentation/specs/empreinte-ia/CANDIDATS_LOT_21/apps/web/src/lib/test.ts", reason: "CANDIDATE_TREE_IS_NOT_RUNTIME_SOURCE" }],
+      },
+    },
     summary: { trackedDocuments: 1, surveillance: 0, reviewRequired: 1, architectureReview: 0, invalidReferences: 0 },
   };
 }
@@ -1123,6 +1135,10 @@ test("projette les revues de contrats critiques sans créer de gate", () => {
       evidence: { codePath: "apps/web/supabase/migrations/002_public_rpc.sql", codeSymbol: "public_lookup", privilege: { status: "PUBLIC", evidence: [] }, dimensions: {}, dimensionProofs: {} },
     },
   ];
+  run.documentation.contractInventory = {
+    sqlMigrations: { status: "VERSIONED_SOURCE_HISTORY_MEASURED", runtimePresence: "NOT_MEASURED", runtimeReason: "NO_POSTGRES_CATALOG_EVIDENCE_MATCHING_AUDITED_SHA" },
+    excludedCandidateSources: { status: "MEASURED_EXCLUDED_FROM_RUNTIME_DISCOVERY", items: [{ path: "documentation/specs/empreinte-ia/CANDIDATS_LOT_21/apps/web/src/lib/test.ts", reason: "CANDIDATE_TREE_IS_NOT_RUNTIME_SOURCE" }] },
+  };
   const index = buildQualityFileIndex({ run, mode: "ALL" });
   const codeFile = index.files.find((file) => file.path === "apps/web/supabase/migrations/001_rpc.sql");
   const markdown = buildQualityFileIndexMarkdown(index);
@@ -1141,6 +1157,11 @@ test("projette les revues de contrats critiques sans créer de gate", () => {
   assert.match(markdown, /documentation\/rpc\.md:L4 \(SOURCE_PATH\)/);
   assert.match(markdown, /documentation\/rpc\.md:L6 \(RPC\)/);
   assert.match(markdown, /MISSING_TESTS/);
+  assert.equal(index.audits.documentation.contractInventory.sqlMigrations.runtimePresence, "NOT_MEASURED");
+  assert.equal(index.audits.documentation.contractInventory.excludedCandidateSources.items.length, 1);
+  assert.match(markdown, /Présence PostgreSQL : NOT_MEASURED/);
+  assert.match(markdown, /Candidats non intégrés exclus du runtime : 1/);
+  assert.match(markdown, /Tests code \/ documentation/);
 });
 
 test("projette le couplage architectural par fichier et domaine sans confondre les types ni les tests", () => {
