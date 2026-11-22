@@ -51,5 +51,4 @@ test("pins the Expo and Sentry glob/minimatch chains to patched versions", () =>
     const minimatchPkg = JSON.parse(fs.readFileSync(globRequire.resolve("minimatch/package.json"), "utf8"));
     assert.equal(minimatchPkg.version, "11.0.1", `${consumer} -> glob -> minimatch`);
   }
-
 });
