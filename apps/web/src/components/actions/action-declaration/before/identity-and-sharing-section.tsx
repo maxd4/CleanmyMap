@@ -1,10 +1,7 @@
 "use client";
 
 import { ClipboardList, Users } from "lucide-react";
-import {
-  ORGANIZER_TYPE_OPTIONS,
-  SPONTANEOUS_PENDING_ORGANIZER_LABEL,
-} from "@/lib/actions/organizer-type";
+import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
 import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
@@ -20,10 +17,11 @@ import {
   preserveSpontaneousOrganizerName,
 } from "../payload";
 import { FieldShell, GroupJoinPublishCard, SectionLabel } from "./ui";
-import { cn } from "@/lib/utils";
-import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
+import { hasValidationIssue, type BaseSectionProps } from "./section-contract";
 import { PrivateActionAccessSection } from "./private-action-access-section";
 import { ACTION_FIELD_ROLE_OPTIONS, normalizeActionFieldRoleCodes } from "@/lib/actions/field-roles";
+import { ActionOrganizerTypeChoices, getOrganizerFieldPresentation } from "../steps/ActionOrganizerTypeChoices";
+import { ActionOrganizationalRelationsSection, shouldShowActionOrganizationalRelations } from "../steps/ActionOrganizationalRelationsSection";
 
 type IdentityAndSharingSectionProps = BaseSectionProps & {
   userMetadata: {
@@ -76,6 +74,7 @@ export function IdentityAndSharingSection({
           missingAssociation={missingAssociation}
           isExistingAction={isExistingAction}
         />
+        {shouldShowActionOrganizationalRelations(form) ? <ActionOrganizationalRelationsSection form={form} updateField={updateField} /> : null}
 
         <AssociatedAccountsFields
           form={form}
@@ -126,6 +125,7 @@ function IdentityFieldGrid({
     || userMetadata.username?.trim()
     || userMetadata.userId;
   const creatorHandle = userMetadata.handle?.trim() || userMetadata.username?.trim();
+  const organizerPresentation = getOrganizerFieldPresentation(form.organizerType);
 
   function handleOrganizerChange(selection: {
     id: string | null;
@@ -170,23 +170,18 @@ function IdentityFieldGrid({
         {creatorHandle ? <span className="mt-1 block text-xs text-emerald-900/60">@{creatorHandle}</span> : null}
       </FieldShell>
 
-      <FieldShell label={<span>Type de structure<RequiredMark /></span>}>
-        <select
-          id="before-organizer-type"
+      <div className="md:col-span-2 lg:col-span-3">
+        <ActionOrganizerTypeChoices
           value={form.organizerType}
-          onChange={(event) => updateField("organizerType", event.target.value as FormState["organizerType"])}
+          onChange={(organizerType) => updateField("organizerType", organizerType)}
           required
-          aria-invalid={missingOrganizerType}
-          aria-describedby={missingOrganizerType ? "before-organizer-type-error" : undefined}
-          className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingOrganizerType ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")}
-        >
-          <option value="">Sélectionnez un type de structure</option>
-          {ORGANIZER_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
+          invalid={missingOrganizerType}
+          describedBy={missingOrganizerType ? "before-organizer-type-error" : undefined}
+        />
         {missingOrganizerType ? <span id="before-organizer-type-error" className="block text-xs font-medium text-rose-700">Sélectionnez un type de structure.</span> : null}
-      </FieldShell>
+      </div>
 
-      <FieldShell label="">
+      <FieldShell label={organizerPresentation.label}>
         <OrganizerCombobox
           id="before-organizer-structure"
           organizerType={form.organizerType}
@@ -195,6 +190,8 @@ function IdentityFieldGrid({
           organizerAccountIds={parseOrganizerAccounts(form.organizerAccounts)}
           currentUserId={userMetadata.userId}
           activeRole={userMetadata.activeRole}
+          label={organizerPresentation.label}
+          description={organizerPresentation.description}
           onChange={handleOrganizerChange}
           isExistingAction={isExistingAction}
           required

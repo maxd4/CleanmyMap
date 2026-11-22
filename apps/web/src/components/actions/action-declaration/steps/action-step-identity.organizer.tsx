@@ -1,4 +1,4 @@
-import { Building, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
 import {
   mergeOrganizerAccountSelection,
@@ -6,9 +6,9 @@ import {
   preserveSpontaneousOrganizerName,
 } from "../payload";
 import {
-  ORGANIZER_TYPE_OPTIONS,
   SPONTANEOUS_PENDING_ORGANIZER_LABEL,
 } from "@/lib/actions/organizer-type";
+import { ActionOrganizerTypeChoices, getOrganizerFieldPresentation } from "./ActionOrganizerTypeChoices";
 import type { ActiveRole } from "@/lib/domain-language";
 import type { FormState } from "../model";
 import {
@@ -56,6 +56,8 @@ type OrganizerRenderProps = {
   activeRole?: ActiveRole;
   currentUserId: string;
   isExistingAction: boolean;
+  organizerLabel: string;
+  organizerDescription: string;
 };
 
 function OrganizerSelection({
@@ -67,6 +69,8 @@ function OrganizerSelection({
   activeRole,
   currentUserId,
   isExistingAction,
+  organizerLabel,
+  organizerDescription,
   compact = false,
   className,
   errorClassName,
@@ -82,6 +86,8 @@ function OrganizerSelection({
   compact?: boolean;
   className: string;
   errorClassName?: string;
+  organizerLabel: string;
+  organizerDescription: string;
 }) {
   return (
     <div className={className}>
@@ -99,6 +105,8 @@ function OrganizerSelection({
         describedBy={missingAssociation ? associationErrorId : undefined}
         isExistingAction={isExistingAction}
         compact={compact}
+        label={organizerLabel}
+        description={organizerDescription}
       />
       {missingAssociation ? (
         <p
@@ -109,43 +117,6 @@ function OrganizerSelection({
         </p>
       ) : null}
     </div>
-  );
-}
-
-function OrganizerTypeSelect({
-  form,
-  isActionMode,
-  missingOrganizerType,
-  organizerTypeErrorId,
-  className,
-  placeholder,
-  onChange,
-}: {
-  form: FormState;
-  isActionMode: boolean;
-  missingOrganizerType: boolean | undefined;
-  organizerTypeErrorId: string;
-  className: string;
-  placeholder: string;
-  onChange: (nextType: FormState["organizerType"]) => void;
-}) {
-  return (
-    <select
-      id="action-organizer-type"
-      className={`${className} appearance-none cursor-pointer ${missingOrganizerType ? inputErrCls : ""}`}
-      value={form.organizerType}
-      onChange={(event) => onChange(event.target.value as FormState["organizerType"])}
-      required={isActionMode}
-      aria-invalid={missingOrganizerType}
-      aria-describedby={missingOrganizerType ? organizerTypeErrorId : undefined}
-    >
-      <option value="">{placeholder}</option>
-      {ORGANIZER_TYPE_OPTIONS.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
   );
 }
 
@@ -164,6 +135,8 @@ function CompactOrganizerSection({
   activeRole,
   currentUserId,
   isExistingAction,
+  organizerLabel,
+  organizerDescription,
 }: OrganizerRenderProps) {
   return (
     <div className="grid gap-3 md:grid-cols-3">
@@ -194,24 +167,7 @@ function CompactOrganizerSection({
       </div>
 
       <div className="space-y-1.5">
-        <label
-          htmlFor="action-organizer-type"
-          className="text-xs font-semibold text-emerald-900/75"
-        >
-          Type de structure <span aria-hidden="true">*</span>
-          <span className="ml-2 text-xs font-semibold text-rose-700">
-            Obligatoire
-          </span>
-        </label>
-        <OrganizerTypeSelect
-          form={form}
-          isActionMode={isActionMode}
-          missingOrganizerType={missingOrganizerType}
-          organizerTypeErrorId={organizerTypeErrorId}
-          className={compactInputCls}
-          placeholder="Sélectionnez un type"
-          onChange={onOrganizerTypeChange}
-        />
+        <ActionOrganizerTypeChoices value={form.organizerType} required={isActionMode} invalid={Boolean(missingOrganizerType)} describedBy={missingOrganizerType ? organizerTypeErrorId : undefined} onChange={onOrganizerTypeChange} />
         {missingOrganizerType ? (
           <p
             id={organizerTypeErrorId}
@@ -232,6 +188,8 @@ function CompactOrganizerSection({
         currentUserId={currentUserId}
         isExistingAction={isExistingAction}
         className="space-y-1.5"
+        organizerLabel={organizerLabel}
+        organizerDescription={organizerDescription}
       />
     </div>
   );
@@ -252,29 +210,15 @@ function FullOrganizerSection({
   activeRole,
   currentUserId,
   isExistingAction,
+  organizerLabel,
+  organizerDescription,
 }: OrganizerRenderProps) {
   return (
     <div>
       <SectionTitle color="bg-violet-500">Cadre &amp; calendrier</SectionTitle>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="space-y-1">
-          <label
-            htmlFor="action-organizer-type"
-            className="pl-1 text-xs font-semibold text-emerald-900/70"
-          >
-            Type de structure <span aria-hidden="true">*</span>
-          </label>
-          <Field icon={Building}>
-            <OrganizerTypeSelect
-              form={form}
-              isActionMode={isActionMode}
-              missingOrganizerType={missingOrganizerType}
-              organizerTypeErrorId={organizerTypeErrorId}
-              className={inputCls}
-              placeholder="Sélectionnez un type de structure"
-              onChange={onOrganizerTypeChange}
-            />
-          </Field>
+        <div className="space-y-1 md:col-span-3">
+          <ActionOrganizerTypeChoices value={form.organizerType} required={isActionMode} invalid={Boolean(missingOrganizerType)} describedBy={missingOrganizerType ? organizerTypeErrorId : undefined} onChange={onOrganizerTypeChange} />
           {missingOrganizerType ? (
             <p
               id={organizerTypeErrorId}
@@ -318,6 +262,8 @@ function FullOrganizerSection({
           isExistingAction={isExistingAction}
           className="space-y-1"
           errorClassName="pl-1"
+          organizerLabel={organizerLabel}
+          organizerDescription={organizerDescription}
         />
       </div>
     </div>
@@ -335,28 +281,15 @@ function IdentityOrganizerMeta({
   onOrganizerTypeChange,
 }: OrganizerRenderProps) {
   return (
-    <>
-      <div className="min-w-0 space-y-1.5">
-        <label htmlFor="action-organizer-type" className="sr-only">
-          Type de structure
-        </label>
-        <OrganizerTypeSelect
-          form={form}
-          isActionMode={isActionMode}
-          missingOrganizerType={missingOrganizerType}
-          organizerTypeErrorId={organizerTypeErrorId}
-          className={compactInputCls}
-          placeholder="TYPE DE STRUCTURE · Sélectionnez…"
-          onChange={onOrganizerTypeChange}
-        />
+    <div className="min-w-0 space-y-3 sm:col-span-2 xl:col-span-3">
+        <ActionOrganizerTypeChoices value={form.organizerType} required={isActionMode} invalid={Boolean(missingOrganizerType)} describedBy={missingOrganizerType ? organizerTypeErrorId : undefined} onChange={onOrganizerTypeChange} />
         {missingOrganizerType ? (
           <p id={organizerTypeErrorId} className="text-xs font-medium text-rose-700">
             Sélectionnez un type de structure.
           </p>
         ) : null}
-      </div>
-
-      <div className="min-w-0 space-y-1.5">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+        <div className="min-w-0 space-y-1.5">
         <label htmlFor="action-action-date" className="sr-only">
           Date de l’action
         </label>
@@ -376,7 +309,8 @@ function IdentityOrganizerMeta({
           </p>
         ) : null}
       </div>
-    </>
+      </div>
+    </div>
   );
 }
 
@@ -389,6 +323,8 @@ function IdentityOrganizerAssociation({
   activeRole,
   currentUserId,
   isExistingAction,
+  organizerLabel,
+  organizerDescription,
 }: OrganizerRenderProps) {
   return (
     <OrganizerSelection
@@ -402,6 +338,8 @@ function IdentityOrganizerAssociation({
       isExistingAction={isExistingAction}
       compact
       className="min-w-0 space-y-1.5"
+      organizerLabel={organizerLabel}
+      organizerDescription={organizerDescription}
     />
   );
 }
@@ -423,6 +361,7 @@ export function ActionOrganizerSection({
   const associationErrorId = "action-association-error";
   const organizerTypeErrorId = "action-organizer-type-error";
   const dateErrorId = "action-date-error";
+  const { label: organizerLabel, description: organizerDescription } = getOrganizerFieldPresentation(form.organizerType);
 
   function handleAssociationChange(selection: {
     id: string | null;
@@ -459,16 +398,7 @@ export function ActionOrganizerSection({
   }
 
   function handleOrganizerTypeChange(nextType: FormState["organizerType"]) {
-    updateFields({
-      organizerType: nextType,
-      organizerId: null,
-      organizerName:
-        nextType === "spontaneous" && parseOrganizerAccounts(form.organizerAccounts).length > 0
-          ? SPONTANEOUS_PENDING_ORGANIZER_LABEL
-          : "",
-      associationName:
-        nextType === "spontaneous" ? "Action spontanée" : "",
-    });
+    updateFields({ organizerType: nextType });
   }
 
   const renderProps = {
@@ -486,6 +416,8 @@ export function ActionOrganizerSection({
     activeRole: userMetadata.activeRole,
     currentUserId: userMetadata.userId,
     isExistingAction,
+    organizerLabel,
+    organizerDescription,
   } satisfies OrganizerRenderProps;
 
   if (variant === "compact") return <CompactOrganizerSection {...renderProps} />;

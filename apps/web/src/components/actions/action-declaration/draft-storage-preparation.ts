@@ -7,6 +7,7 @@ import {
   normalizeActionOrganizationalRelations,
 } from "@/lib/actions/preparation-contract";
 import type { FormState } from "./types";
+import { ORGANIZER_TYPE_VALUES } from "@/lib/actions/organizer-type";
 import {
   ACTION_WASTE_CHARACTERIZATION_SLUGS,
   isActionWasteCharacterizationSlug,
@@ -24,6 +25,29 @@ function restorePreparationDraftField(
   }
   if (key === "organizationalRelations") {
     next.organizationalRelations = normalizeActionOrganizationalRelations(value) ?? {};
+    return true;
+  }
+  if (key === "organizerTypeDrafts") {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const source = value as Record<string, unknown>;
+      next.organizerTypeDrafts = Object.fromEntries(
+        ORGANIZER_TYPE_VALUES.flatMap((organizerType) => {
+          const candidate = source[organizerType];
+          if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return [];
+          const draft = candidate as Record<string, unknown>;
+          if (
+            (draft.organizerId !== null && typeof draft.organizerId !== "string") ||
+            typeof draft.organizerName !== "string" ||
+            typeof draft.associationName !== "string"
+          ) return [];
+          return [[organizerType, {
+            organizerId: draft.organizerId as string | null,
+            organizerName: draft.organizerName.slice(0, 120),
+            associationName: draft.associationName.slice(0, 120),
+          }]];
+        }),
+      );
+    }
     return true;
   }
   if (key === "suggestedMaterials") {

@@ -6,7 +6,7 @@ import { ActionOrganizerSection } from "./action-step-identity.organizer";
 import { ActionParticipantSection } from "./action-step-identity.participants";
 import { ActionTimeSection } from "./action-step-identity.time";
 import { SectionTitle } from "./action-step-identity.ui";
-import { ActionOrganizationalRelationsSection } from "./ActionOrganizationalRelationsSection";
+import { ActionOrganizationalRelationsSection, shouldShowActionOrganizationalRelations } from "./ActionOrganizationalRelationsSection";
 
 export function ActionStepIdentity({
   form,
@@ -36,7 +36,7 @@ export function ActionStepIdentity({
                 isExistingAction={isExistingAction}
                 variant="full"
               />
-              {isActionMode ? <ActionOrganizationalRelationsSection form={form} updateField={updateField} /> : null}
+              {isActionMode && shouldShowActionOrganizationalRelations(form) ? <ActionOrganizationalRelationsSection form={form} updateField={updateField} /> : null}
 
               {isActionMode ? (
                 <ActionParticipantSection
@@ -97,7 +97,7 @@ export function ActionStepIdentity({
         isExistingAction={isExistingAction}
         variant="compact"
       />
-      {isActionMode ? <ActionOrganizationalRelationsSection form={form} updateField={updateField} /> : null}
+      {isActionMode && shouldShowActionOrganizationalRelations(form) ? <ActionOrganizationalRelationsSection form={form} updateField={updateField} /> : null}
     </div>;
   }
 

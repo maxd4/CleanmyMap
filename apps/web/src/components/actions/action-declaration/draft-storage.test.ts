@@ -84,6 +84,10 @@ describe("action declaration draft storage", () => {
       organizerType: "spontaneous" as const,
       organizerId: null,
       organizerName: "Alice",
+      organizerTypeDrafts: {
+        association: { organizerId: "association-1", organizerName: "Association locale", associationName: "Association locale" },
+        company: { organizerId: null, organizerName: "Entreprise locale", associationName: "Entreprise locale" },
+      },
       organizationalRelations: {
         partners: [{ organizerType: "local_authority", name: "Ville Exemple", role: "material" }],
       },
@@ -103,6 +107,7 @@ describe("action declaration draft storage", () => {
     expect(snapshot?.form.organizerType).toBe("spontaneous");
     expect(snapshot?.form.organizerId).toBeNull();
     expect(snapshot?.form.organizerName).toBe("Alice");
+    expect(snapshot?.form.organizerTypeDrafts).toEqual(draft.organizerTypeDrafts);
     expect(snapshot?.form.organizationalRelations.partners).toEqual([
       { organizerType: "local_authority", name: "Ville Exemple", role: "material" },
     ]);

@@ -25,6 +25,8 @@ type OrganizerComboboxProps = {
   describedBy?: string;
   isExistingAction?: boolean;
   compact?: boolean;
+  label?: string;
+  description?: string;
 };
 
 export type OrganizerComboboxKeyAction =
@@ -65,9 +67,11 @@ function SpontaneousOrganizerSelector({
   onChange,
   isExistingAction,
   compact,
-}: Pick<OrganizerComboboxProps, "currentUserId" | "value" | "organizerAccountIds" | "onChange" | "isExistingAction" | "compact">) {
+  label,
+}: Pick<OrganizerComboboxProps, "currentUserId" | "value" | "organizerAccountIds" | "onChange" | "isExistingAction" | "compact" | "label">) {
   return (
     <div className="space-y-2">
+      <p className={compact ? "sr-only" : "block text-xs font-semibold text-emerald-900/75"}>{label ?? "Créateur ou référent"}</p>
       <ActionAccountSelector
         currentUserId={currentUserId ?? ""}
         value={organizerAccountIds ?? []}
@@ -125,6 +129,8 @@ export function OrganizerCombobox({
   describedBy,
   isExistingAction = false,
   compact = false,
+  label,
+  description,
 }: OrganizerComboboxProps) {
   const listboxId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -138,7 +144,7 @@ export function OrganizerCombobox({
   const addNameInputRef = useRef<HTMLInputElement>(null);
   const suggestions = useOrganizerSuggestions(organizerType, value);
 
-  const canAddOrganizer = canAddOrganizerForActiveRole(activeRole);
+  const canAddOrganizer = canAddOrganizerForActiveRole(activeRole) && organizerType !== "school" && organizerType !== "local_authority";
   const addOptionVisible = canAddOrganizer && Boolean(organizerType) && organizerType !== "spontaneous";
 
   useEffect(() => {
@@ -214,7 +220,7 @@ export function OrganizerCombobox({
 
   const spontaneous = organizerType === "spontaneous";
   if (spontaneous) {
-    return <SpontaneousOrganizerSelector currentUserId={currentUserId} value={value} organizerAccountIds={organizerAccountIds} onChange={onChange} isExistingAction={isExistingAction} compact={compact} />;
+    return <SpontaneousOrganizerSelector currentUserId={currentUserId} value={value} organizerAccountIds={organizerAccountIds} onChange={onChange} isExistingAction={isExistingAction} compact={compact} label={label} />;
   }
   const activeOptionId = activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined;
   return (
@@ -250,6 +256,8 @@ export function OrganizerCombobox({
       onSubmitNewOrganizer={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitNewOrganizer(); }}
       onCancelAddForm={cancelAddForm}
       compact={compact}
+      label={label}
+      description={description}
     />
   );
 }
@@ -286,6 +294,8 @@ function OrganizerComboboxView({
   onSubmitNewOrganizer,
   onCancelAddForm,
   compact,
+  label,
+  description,
 }: {
   id: string;
   listboxId: string;
@@ -318,11 +328,13 @@ function OrganizerComboboxView({
   onSubmitNewOrganizer: () => void;
   onCancelAddForm: () => void;
   compact: boolean;
+  label?: string;
+  description?: string;
 }) {
   return (
     <div className="relative space-y-1.5">
       <label htmlFor={id} className={compact ? "sr-only" : "block text-xs font-semibold text-emerald-900/75"}>
-        Organisateur <span aria-hidden="true">{required ? "*" : ""}</span>
+        {label ?? "Organisateur"} <span aria-hidden="true">{required ? "*" : ""}</span>
       </label>
       <input
         ref={inputRef}
@@ -373,7 +385,11 @@ function OrganizerComboboxView({
       ) : null}
       {addFeedback ? <p className="text-xs font-medium text-emerald-700" aria-live="polite">{addFeedback}</p> : null}
       <p className="text-xs text-emerald-900/55">
-        {spontaneous ? "Le référent reste lié à l’action et n’est pas ajouté au catalogue des structures." : "Sélectionnez une structure existante ; les administrateurs peuvent utiliser « + Ajouter »."}
+        {description ?? (spontaneous
+          ? "Le référent reste lié à l’action et n’est pas ajouté au catalogue des structures."
+          : organizerType === "school" || organizerType === "local_authority"
+            ? "Nom déclaré sans vérification d’identité ni ajout automatique au répertoire."
+            : "Sélectionnez une structure existante ; les administrateurs peuvent utiliser « + Ajouter ».")}
       </p>
     </div>
   );

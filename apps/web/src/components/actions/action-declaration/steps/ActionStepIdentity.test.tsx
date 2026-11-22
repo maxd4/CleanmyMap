@@ -66,6 +66,7 @@ describe("ActionStepIdentity", () => {
 
   it("offers declarative organizational relations without treating them as accounts", () => {
     const form = createInitialFormState("Aperçu local", "action");
+    form.organizerType = "association";
     const html = renderIdentity(form);
     expect(html).toContain("Initiative et partenaires déclarés");
     expect(html).toContain("aucun accès");
@@ -137,6 +138,7 @@ describe("ActionStepIdentity", () => {
        const html = renderIdentity(form);
 
       expect(html).toContain('role="combobox"');
+      expect(html).toMatch(new RegExp(`<input[^>]*(?:value="${organizerType}"[^>]*checked=""|checked=""[^>]*value="${organizerType}")`));
       if (organizerType === "spontaneous") {
         expect(html).toContain("Sélectionner un compte utilisateur");
         expect(html).not.toContain('value="Aperçu local"');
@@ -145,6 +147,39 @@ describe("ActionStepIdentity", () => {
         expect(html).not.toContain("World Cleanup Day France");
       }
     }
+  });
+
+  it.each(ORGANIZER_TYPE_VALUES)("shows the conditional identity and relations fields for %s", (organizerType) => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.organizerType = organizerType;
+    form.organizerName = "Nom de test";
+    form.associationName = organizerType === "spontaneous" ? "Action spontanée" : "Nom de test";
+    const html = renderIdentity(form);
+
+    expect(html).toMatch(new RegExp(`<input[^>]*(?:value="${organizerType}"[^>]*checked=""|checked=""[^>]*value="${organizerType}")`));
+    if (organizerType === "spontaneous") {
+      expect(html).toContain("Créateur ou référent");
+      expect(html).not.toContain("Initiative et partenaires déclarés");
+    } else {
+      expect(html).toContain("Initiative et partenaires déclarés");
+      expect(html).toContain("Origines descriptives facultatives des participants");
+    }
+    if (organizerType === "collective") expect(html).toContain("sans le présenter comme une association constituée");
+    if (organizerType === "school") expect(html).toContain("Aucun participant mineur n’est requis");
+  });
+
+  it("keeps populated relations visible after switching to spontaneous so they are not silently dropped", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.organizerType = "spontaneous";
+    form.organizationalRelations = {
+      partners: [{ organizerType: "association", name: "Association partenaire", role: "material" }],
+    };
+
+    const html = renderIdentity(form);
+
+    expect(html).toContain("Initiative et partenaires déclarés");
+    expect(html).toContain("Association partenaire");
+    expect(html).toContain("prêt de matériel");
   });
 
   it("keeps the date slot and co-organizer picker stable across organizer types", () => {

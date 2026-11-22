@@ -3,6 +3,25 @@ import { applyPreparationDataToForm, buildCreateActionPayload, buildPreparationD
 import { buildBaseForm } from "./payload.test-fixtures";
 
 describe("action declaration payload données de préparation", () => {
+  it("keeps per-path identity drafts in the resumable form only, not in server payloads", () => {
+    const form = createInitialFormState("Alice", "action");
+    form.organizerTypeDrafts = {
+      association: { organizerId: "association-1", organizerName: "Association locale", associationName: "Association locale" },
+    };
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "quick",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload).not.toHaveProperty("organizerTypeDrafts");
+    expect(payload.preparationData).not.toHaveProperty("organizerTypeDrafts");
+  });
+
   it("omits unselected descriptive choices while preserving explicit choices", () => {
     const blankForm = createInitialFormState("Alice");
     const blankPreparation = buildPreparationDataFromForm(blankForm);

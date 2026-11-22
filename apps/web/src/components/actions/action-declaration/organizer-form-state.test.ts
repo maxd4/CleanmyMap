@@ -24,4 +24,26 @@ describe("action organizer form identity transitions", () => {
     expect(nextForm.organizerAccounts).toBe("user-primary, user-helper");
     expect(nextForm.fieldRoleSelections).toEqual(previousForm.fieldRoleSelections);
   });
+
+  it("restores each organizer selection after visiting another path without putting hidden drafts in the action payload", () => {
+    const form = createInitialFormState("Créateur", "action");
+    const first = { ...form };
+    first.organizerType = "association";
+    first.organizerId = "association-1";
+    first.organizerName = "Association locale";
+    first.associationName = "Association locale";
+    const company = { ...first };
+    applyOrganizerFormUpdates(company, first, { organizerType: "company" });
+
+    expect(company.organizerName).toBe("");
+    expect(company.organizerTypeDrafts.association).toEqual({ organizerId: "association-1", organizerName: "Association locale", associationName: "Association locale" });
+    const companyWithName = { ...company };
+    applyOrganizerFormUpdates(companyWithName, company, { organizerName: "Entreprise locale" });
+    const backToAssociation = { ...companyWithName };
+    applyOrganizerFormUpdates(backToAssociation, companyWithName, { organizerType: "association" });
+
+    expect(backToAssociation.organizerName).toBe("Association locale");
+    expect(backToAssociation.organizerId).toBe("association-1");
+    expect(backToAssociation.organizerName).not.toBe("Entreprise locale");
+  });
 });

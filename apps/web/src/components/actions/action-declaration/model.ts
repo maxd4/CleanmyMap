@@ -41,6 +41,7 @@ export type FormState = {
  organizerType: OrganizerType | "";
  organizerId: string | null;
  organizerName: string;
+ organizerTypeDrafts: Partial<Record<OrganizerType, { organizerId: string | null; organizerName: string; associationName: string }>>;
  organizationalRelations: ActionOrganizationalRelations;
   /** Empty means automatic final classification; a value is an explicit choice. */
   actionContext: ActionContext | "";
@@ -177,6 +178,7 @@ export const initialState: FormState = {
  organizerType:"",
  organizerId: null,
  organizerName:"",
+ organizerTypeDrafts: {},
  organizationalRelations: {},
  actionContext:"",
  schoolContextConfirmed: false,

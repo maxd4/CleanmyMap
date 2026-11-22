@@ -63,6 +63,45 @@ describe("ActionDeclarationValidationSummary", () => {
     expect(markup).toContain("Ajoutez une localisation.");
   });
 
+  it("shows structured declarations in the final form and keeps populated declarations visible if the path changes", () => {
+    const form = createInitialFormState("Alice", "action");
+    form.organizerType = "company";
+    form.organizationalRelations = {
+      partners: [{ organizerType: "association", name: "Association partenaire", role: "material" }],
+      participantOrigins: [{ category: "Membres associatifs et salariés" }],
+    };
+    const props = {
+      form,
+      identity: {
+        form,
+        updateField: vi.fn(),
+        updateFields: vi.fn(),
+        userMetadata: { userId: "user-1" },
+        recordType: "action" as const,
+        hasAttemptedSubmit: false,
+      },
+      harvest: {} as never,
+      location: {} as never,
+      showPreparationSummary: false,
+      hasAttemptedSubmit: false,
+      formIdentityKey: 0,
+      validationIssues: [],
+      submissionState: "idle" as const,
+      validationStatus: "not_attempted" as const,
+      errorMessage: null,
+      onOpenExport: () => undefined,
+    };
+
+    const structuredMarkup = renderToStaticMarkup(<ActionDeclarationFormSections {...props} />);
+    expect(structuredMarkup).toContain("Association partenaire");
+    expect(structuredMarkup).toContain("Membres associatifs et salariés");
+
+    form.organizerType = "spontaneous";
+    const retainedMarkup = renderToStaticMarkup(<ActionDeclarationFormSections {...props} />);
+    expect(retainedMarkup).toContain("Association partenaire");
+    expect(retainedMarkup).toContain("Initiative et partenaires déclarés");
+  });
+
   it("renders the five groups once and keeps the primary CTA unique", () => {
     const form = createInitialFormState("Alice", "action");
     const markup = renderToStaticMarkup(

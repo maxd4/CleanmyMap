@@ -16,7 +16,7 @@ const BEFORE_VALIDATION_FIELD_IDS: Record<string, string> = {
   actionTitle: "before-action-title",
   actionDate: "before-action-date",
   associationName: "before-organizer-structure",
-  organizerType: "before-organizer-type",
+  organizerType: "action-organizer-type",
   departureLocationLabel: "before-departure-location",
   arrivalLocationLabel: "before-arrival-location",
   meetingTime: "before-meeting-time",

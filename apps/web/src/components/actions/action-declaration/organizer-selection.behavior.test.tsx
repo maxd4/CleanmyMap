@@ -22,7 +22,7 @@ function findAccountSelector(renderer: ReactTestRenderer) {
 }
 
 describe("spontaneous organizer selection behavior", () => {
-  it("keeps identity metadata compact while retaining accessible labels", () => {
+  it("renders the accessible organizer type choices in identity metadata", () => {
     const form = createInitialFormState("Créateur", "action");
     const markup = renderToStaticMarkup(
       React.createElement(ActionOrganizerSection, {
@@ -35,7 +35,9 @@ describe("spontaneous organizer selection behavior", () => {
       }),
     );
 
-    expect(markup).toContain("TYPE DE STRUCTURE · Sélectionnez…");
+    expect(markup).toContain('name="action-organizer-type"');
+    expect(markup).toContain("Spontanée");
+    expect(markup).toContain("Collectivité");
     expect(markup).toContain('id="action-action-date"');
     expect(markup).toContain('class="sr-only"');
     expect(markup).not.toContain("Cadre &amp; calendrier");

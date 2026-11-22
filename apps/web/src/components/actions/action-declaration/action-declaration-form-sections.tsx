@@ -9,6 +9,7 @@ import { ActionParticipantSection } from "./steps/action-step-identity.participa
 import { ActionTimeSection } from "./steps/action-step-identity.time";
 import { ActionStepHarvest } from "./steps/ActionStepHarvest";
 import { ActionStepIdentity } from "./steps/ActionStepIdentity";
+import { ActionOrganizationalRelationsSection, shouldShowActionOrganizationalRelations } from "./steps/ActionOrganizationalRelationsSection";
 import { ActionStepLocation } from "./steps/ActionStepLocation";
 import type {
   ActionDeclarationValidationStatus,
@@ -336,6 +337,9 @@ export function ActionDeclarationFormSections({
               showParticipantAccounts={false}
             />
           </div>
+          {identity.form.organizerType && shouldShowActionOrganizationalRelations(identity.form) ? (
+            <ActionOrganizationalRelationsSection form={identity.form} updateField={identity.updateField} />
+          ) : null}
         </section>
       ) : null}
 

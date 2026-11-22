@@ -59,7 +59,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Enregistrement privé.");
     expect(html).toContain("Identité et organisation");
     expect(html).toContain("Type de structure");
-    expect(html).toContain("Sélectionnez un type de structure");
+    expect(html).toContain("Établissement scolaire/universitaire");
     expect(html).toContain("Action prévue");
     expect(html).toContain("Préparation et sécurité");
     expect(html).toContain("Déchets attendus");
