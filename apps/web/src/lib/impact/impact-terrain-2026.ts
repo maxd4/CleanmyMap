@@ -31,11 +31,14 @@ export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 =
   "impact-terrain-2026-butts-mass-v1" as const;
 export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2 =
   "impact-terrain-2026-butts-mass-v2" as const;
+export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3 =
+  "impact-terrain-2026-butts-mass-v3" as const;
 export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION =
-  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2;
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3;
 export type CigaretteButtsMassConversionVersion =
   | typeof CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1
-  | typeof CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2;
+  | typeof CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2
+  | typeof CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3;
 
 /**
  * Current clean-butt reference expressed as butts per kilogram. The runtime
@@ -51,10 +54,10 @@ export const MEGOTS_CONDITIONS = ["propre", "humide", "mouille"] as const;
 type CigaretteButtsMassFactors = Record<ActionMegotsCondition, number>;
 
 /**
- * Grams per butt, sourced from the World Cleanup Day France operating guide
- * and the Mégothon guide. `mouille` intentionally reuses `humide`: no
- * independent reference was found for this state, so this is an explicit
- * proxy limitation rather than a physical density claim.
+ * Grams per butt. The v3 `mouille` value (0.90 g) is a provisional theoretical
+ * proxy, not a universal measurement; no independent wet-state mass or
+ * state-specific volume difference has been demonstrated. Historical factors
+ * remain available under their original version identities.
  */
 export const CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT: Record<
   CigaretteButtsMassConversionVersion,
@@ -70,6 +73,11 @@ export const CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT: Record<
     humide: 0.5,
     mouille: 0.5,
   },
+  [CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3]: {
+    propre: 0.22,
+    humide: 0.5,
+    mouille: 0.9,
+  },
 };
 
 function resolveMassFactors(
@@ -81,7 +89,8 @@ function resolveMassFactors(
     ];
   }
   return version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 ||
-    version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2
+    version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2 ||
+    version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3
     ? CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT[version]
     : null;
 }
@@ -90,7 +99,8 @@ export function isCigaretteButtsMassConversionVersion(
   version: unknown,
 ): version is CigaretteButtsMassConversionVersion {
   return version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 ||
-    version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2;
+    version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2 ||
+    version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3;
 }
 
 export const MEGOTS_CONDITION_LABELS: Record<
@@ -375,8 +385,8 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
             "cigaretteButts field in the action contract.",
           ),
           text(
-            "World Cleanup Day France, mode opératoire 2025 ; Mégothon, guide collectivité : 0,22 g sec, 0,50 g humide ; le proxy volume courant v3 est de 600 mégots/L (v2 historique : 700).",
-            "World Cleanup Day France 2025 operating guide; Mégothon local-authority guide: 0.22 g dry, 0.50 g damp; the current v3 volume proxy is 600 butts/L (historical v2: 700).",
+            "World Cleanup Day France, mode opératoire 2025 ; Mégothon, guide collectivité : 0,22 g sec, 0,50 g humide ; le proxy théorique provisoire mouillé v3 est 0,90 g. Le proxy volume v3 reste de 600 mégots/L, sans différence démontrée selon l’état (v2 historique : 700/L).",
+            "World Cleanup Day France 2025 operating guide; Mégothon local-authority guide: 0.22 g dry, 0.50 g damp; the provisional theoretical wet v3 proxy is 0.90 g. The v3 volume proxy remains 600 butts/L, with no demonstrated state difference (historical v2: 700/L).",
           ),
         ],
         limits: [
@@ -385,8 +395,8 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
             "The qualified distribution only includes butts whose condition is actually available; the others remain unqualified.",
           ),
           text(
-            "Ces masses sont des ordres de grandeur variables, pas une densité ni une masse physique universelle. Mouillé réutilise le proxy humide faute de référence indépendante.",
-            "These masses are variable orders of magnitude, not a density or universal physical mass. Wet reuses the damp proxy because no independent reference is available.",
+            "Ces masses sont des ordres de grandeur variables, pas une densité ni une masse physique universelle. Le proxy mouillé de 0,90 g est théorique et provisoire, non une mesure universelle.",
+            "These masses are variable orders of magnitude, not a density or universal physical mass. The 0.90 g wet proxy is theoretical and provisional, not a universal measurement.",
           ),
         ],
       },

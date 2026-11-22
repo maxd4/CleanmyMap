@@ -246,8 +246,15 @@ describe("createActionSchema counts and participation", () => {
   it("uses the canonical five-million bound for every ordinary count alias", () => {
     for (const field of ["cigaretteButts", "cigaretteButtsCount"] as const) {
       expect(
-        createActionSchema.safeParse({ ...basePayload, [field]: 5_000_000 }).success,
+        createActionSchema.safeParse({
+          ...basePayload,
+          [field]: 5_000_000,
+          cigaretteButtsCondition: "propre",
+        }).success,
       ).toBe(true);
+      expect(
+        createActionSchema.safeParse({ ...basePayload, [field]: 5_000_000 }).success,
+      ).toBe(false);
       expect(
         createActionSchema.safeParse({ ...basePayload, [field]: 5_000_001 }).success,
       ).toBe(false);
@@ -256,9 +263,18 @@ describe("createActionSchema counts and participation", () => {
     expect(
       createActionSchema.safeParse({
         ...basePayload,
-        cigaretteButtsMeasurements: { cigaretteButtsCount: 5_000_000 },
+        cigaretteButtsMeasurements: {
+          cigaretteButtsCount: 5_000_000,
+          cigaretteButtsCondition: "propre",
+        },
       }).success,
     ).toBe(true);
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        cigaretteButtsMeasurements: { cigaretteButtsCount: 5_000_000 },
+      }).success,
+    ).toBe(false);
     expect(
       createActionSchema.safeParse({
         ...basePayload,

@@ -113,7 +113,7 @@ describe("Impact terrain 2026 public results", () => {
     expect(result.estimatedButtsWeightKg).toBeCloseTo(0.22 + 1 / 1.75, 10);
     expect(result.buttsMassProvenance).toBe("estimated");
     expect(result.buttsMassConversionVersions).toEqual([
-      "impact-terrain-2026-butts-mass-v2",
+      "impact-terrain-2026-butts-mass-v3",
       "impact-terrain-2026-butts-mass-v1",
     ]);
   });
@@ -142,7 +142,10 @@ describe("Impact terrain 2026 public results", () => {
     ).toBeNull();
   });
 
-  it("keeps v1, v2 and measured masses when the aggregate carries canonical contributions", () => {
+  it("keeps v1, v2, v3 and measured masses when the aggregate carries canonical contributions", () => {
+    const v3 = aggregateCigaretteButtsLots(
+      [{ id: "v3", source: "count", value: 1_000, condition: "mouille" }],
+    );
     const v2 = aggregateCigaretteButtsLots(
       [{ id: "v2", source: "count", value: 1_000, condition: "propre" }],
       { massConversionVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2 },
@@ -159,6 +162,9 @@ describe("Impact terrain 2026 public results", () => {
       { wasteKg: 0, cigaretteButts: v2.summary.totalCount, cigaretteButtsMeasurements: {
         cigaretteButtsLotResults: v2.results,
       } as never },
+      { wasteKg: 0, cigaretteButts: v3.summary.totalCount, cigaretteButtsMeasurements: {
+        cigaretteButtsLotResults: v3.results,
+      } as never },
       { wasteKg: 0, cigaretteButts: v1.summary.totalCount, cigaretteButtsMeasurements: {
         cigaretteButtsLotResults: v1.results,
       } as never },
@@ -173,6 +179,7 @@ describe("Impact terrain 2026 public results", () => {
         count: detailed.buttsByCondition[0]?.count,
         massContributions: [
           ...v2.results,
+          ...v3.results,
           ...v1.results,
           ...measured.results,
         ].map((result) => ({
@@ -191,6 +198,7 @@ describe("Impact terrain 2026 public results", () => {
     expect(aggregate.buttsMassProvenance).toBe("mixed");
     expect(aggregate.buttsMassConversionVersions).toEqual([
       CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2,
+      "impact-terrain-2026-butts-mass-v3",
       CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
     ]);
   });

@@ -30,6 +30,13 @@ const restoreProjectionV8Migration = readFileSync(
   ),
   "utf8",
 );
+const restoreProjectionV9Migration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261122000013_restore_scientific_projection_v9.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("scientific projection volume-lot reconciliation migration STATIC_CONTRACT", () => {
   it("keeps the canonical TypeScript projection as the SQL input", () => {
@@ -42,7 +49,7 @@ describe("scientific projection volume-lot reconciliation migration STATIC_CONTR
 
   it("restores the supported projection after the unsupported mass proxy migration", () => {
     expect(massProxyV3Migration).toContain("'impact-terrain-public-2026.09-v9'");
-    expect(restoreProjectionV8Migration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
+    expect(restoreProjectionV8Migration).toContain("'impact-terrain-public-2026.09-v8'");
     expect(restoreProjectionV8Migration).toContain("alter column methodology_version set default");
     expect(restoreProjectionV8Migration).not.toMatch(/update\s+public\.actions/i);
     expect(restoreProjectionV8Migration).not.toMatch(/delete\s+from\s+public\.actions/i);
@@ -50,11 +57,22 @@ describe("scientific projection volume-lot reconciliation migration STATIC_CONTR
   });
 
   it("publishes the volume projection without mutating sources or cached state", () => {
-    expect(volumeProxyV3Migration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
+    expect(volumeProxyV3Migration).toContain("'impact-terrain-public-2026.09-v8'");
     expect(volumeProxyV3Migration).toContain("alter column methodology_version set default");
     expect(volumeProxyV3Migration).not.toMatch(/update\s+public\.actions/i);
     expect(volumeProxyV3Migration).not.toMatch(/delete\s+from\s+public\.actions/i);
     expect(volumeProxyV3Migration).not.toMatch(/update\s+public\.public_impact_action_aggregate_state/i);
+  });
+
+  it("restores v9 as the current identity without rewriting historical rows", () => {
+    expect(PUBLIC_IMPACT_PROJECTION_VERSION).toBe("impact-terrain-public-2026.09-v9");
+    expect(restoreProjectionV9Migration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
+    expect(restoreProjectionV9Migration).toContain("alter column methodology_version set default");
+    expect(restoreProjectionV9Migration).toMatch(/set search_path = pg_catalog, public/i);
+    expect(restoreProjectionV9Migration).toMatch(/grant execute[\s\S]+to service_role/i);
+    expect(restoreProjectionV9Migration).not.toMatch(/update\s+public\.actions/i);
+    expect(restoreProjectionV9Migration).not.toMatch(/delete\s+from\s+public\.actions/i);
+    expect(restoreProjectionV9Migration).not.toMatch(/update\s+public\.public_impact_action_aggregate_state/i);
   });
 
   it("does not rewrite observations and preserves the compatible state RPC signatures", () => {

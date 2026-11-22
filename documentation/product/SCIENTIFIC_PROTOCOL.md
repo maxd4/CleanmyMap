@@ -96,10 +96,12 @@ version courante `cleanmymap-butts-volume-v3` suit l'ordre de grandeur publié
 par le mode opératoire World Cleanup Day France 2025 : `600 mégots/L`,
 indépendamment de l'état. Les versions v1 et v2 restent disponibles pour
 recalculer explicitement les lots qui les ont enregistrées. La version courante du proxy
-masse/nombre est `impact-terrain-2026-butts-mass-v2` : `0,22 g/mégot` pour
-`propre`, `0,50 g/mégot` pour `humide` et le même proxy `0,50 g/mégot` pour
-`mouille`, faute de référence indépendante. La version historique
-`impact-terrain-2026-butts-mass-v1` et ses facteurs enregistrés restent
+masse/nombre est `impact-terrain-2026-butts-mass-v3` : `0,22 g/mégot` pour
+`propre`, `0,50 g/mégot` pour `humide` et `0,90 g/mégot` pour `mouille`.
+Cette dernière valeur est un proxy théorique provisoire, pas une mesure
+universelle. Aucune différence volumique selon l'état n'est démontrée. Les
+versions historiques `impact-terrain-2026-butts-mass-v1` et
+`impact-terrain-2026-butts-mass-v2` et leurs facteurs enregistrés restent
 disponibles pour les mesures anciennes. Les valeurs sont des ordres de grandeur
 variables, pas une densité ni une masse physique universelle ; les références
 sont le [mode opératoire World Cleanup Day France](https://www.worldcleanupday.fr/wp-content/uploads/2025/03/Mode-operatoire-dune-collecte-megots-2025.pdf)
@@ -548,11 +550,11 @@ Pour la gamification uniquement, la masse brute de déchets reçoit l'hypothèse
 versionnée `impact-terrain-2026-waste-moisture-v1` : `sec = 1,0`, `humide =
 0,7`, `mouille = 0,4`. L'équivalent sec est donc `masse_brute × facteur` ; il
 ne modifie ni la masse collective ni les rapports. Le moteur canonique porte la
-version `impact-terrain-2026-butts-mass-v2` pour les nouvelles saisies ou les
+version `impact-terrain-2026-butts-mass-v3` pour les nouvelles saisies ou les
 modifications explicites, tandis que chaque mesure historique conserve sa
 version et sa valeur. Un nombre compté explicitement est prioritaire sur toute
 conversion de masse ; une mesure historique sans version reconstructible n'est
-jamais recalculée avec v2.
+jamais recalculée avec une version courante.
 Une ancienne paire nombre/masse reste une mesure legacy unique et n'est jamais
 interprétée comme deux lots.
 

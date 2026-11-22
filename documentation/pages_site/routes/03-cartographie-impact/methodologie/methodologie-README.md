@@ -128,8 +128,9 @@ sont pas attribués arbitrairement à `propre`, `humide` ou `mouille` ; ils sont
 signalés séparément comme non qualifiés. Chaque mesure porte une provenance
 (`counted`, `measured`, `weight_converted`, `volume_converted`, `estimated` ou
 `unknown`) et la conversion masse ↔ nombre porte sa version. La version courante
-`impact-terrain-2026-butts-mass-v2` utilise `0,22 g/mégot` propre/sec et
-`0,50 g/mégot` humide ou mouille (proxy explicite faute de référence indépendante) ;
+`impact-terrain-2026-butts-mass-v3` utilise `0,22 g/mégot` propre/sec et
+`0,50 g/mégot` humide et `0,90 g/mégot` mouillé, ce dernier étant un proxy
+théorique provisoire et non une mesure universelle ;
 `cleanmymap-butts-volume-v1` reste à `600 mégots/L`. Les valeurs sont des ordres
 de grandeur variables, non une densité universelle. Une mesure brute n'est jamais
 remplacée par son dérivé et une mesure historique n'est jamais recalculée avec
