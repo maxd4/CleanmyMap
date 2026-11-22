@@ -33,10 +33,14 @@ function basename(path) {
 }
 
 export function extractSafePostgresError(output, migrationVersion) {
-  const sqlstate = output.match(/(?:SQLSTATE|SQL\s+state|code)\s*[:=]?\s*([0-9A-Z]{5})/iu)?.[1]?.toUpperCase()
+  const structured = collectStructuredErrorFields(output);
+  const sqlstate = structured.sqlstate
+    ?? String(output).match(/(?:SQLSTATE|SQL\s+state)\s*[:=]?\s*([0-9A-Z]{5})/iu)?.[1]?.toUpperCase()
     ?? "unavailable";
-  const position = Number(output.match(/(?:position|character)\s*[:=]?\s*(\d+)/iu)?.[1] ?? NaN);
-  const typeCandidate = output.match(/invalid input syntax for type ([a-z][a-z0-9_ ]*):/iu)?.[1]?.trim().toLowerCase();
+  const position = structured.position
+    ?? Number(String(output).match(/(?:position|character)\s*[:=]?\s*(\d+)/iu)?.[1] ?? NaN);
+  const errorText = [structured.message, String(output)].filter(Boolean).join(" ");
+  const typeCandidate = errorText.match(/invalid input syntax for type ([a-z][a-z0-9_ ]*):/iu)?.[1]?.trim().toLowerCase();
   const type = typeCandidate && allowedTypes.has(typeCandidate) ? typeCandidate : "unavailable";
   return {
     migrationVersion,
@@ -44,6 +48,42 @@ export function extractSafePostgresError(output, migrationVersion) {
     expectedType: type,
     statementPosition: Number.isSafeInteger(position) && position > 0 ? position : null,
   };
+}
+
+function collectStructuredErrorFields(output) {
+  let rootObject = null;
+  const text = String(output ?? "").trim();
+  try {
+    rootObject = JSON.parse(text);
+  } catch {
+    for (const line of text.split(/\r?\n/u)) {
+      try {
+        const parsed = JSON.parse(line);
+        if (parsed && typeof parsed === "object") {
+          rootObject = parsed;
+          break;
+        }
+      } catch {
+        // Non-JSON CLI progress lines are ignored; only structured fields below are used.
+      }
+    }
+  }
+  const fields = { sqlstate: null, position: null, message: "" };
+  const visit = (value, depth = 0) => {
+    if (!value || typeof value !== "object" || depth > 8) return;
+    for (const [key, nested] of Object.entries(value)) {
+      if (/^(?:sqlstate|sql_state|sql_state_code|code)$/iu.test(key) && /^[0-9A-Z]{5}$/iu.test(String(nested ?? ""))) {
+        fields.sqlstate ??= String(nested).toUpperCase();
+      } else if (/^(?:position|internalposition|internal_position|character_position)$/iu.test(key) && Number.isSafeInteger(Number(nested)) && Number(nested) > 0) {
+        fields.position ??= Number(nested);
+      } else if (/^(?:message|detail|context|hint)$/iu.test(key) && typeof nested === "string") {
+        fields.message = `${fields.message} ${nested}`.trim();
+      }
+      if (nested && typeof nested === "object") visit(nested, depth + 1);
+    }
+  };
+  visit(rootObject);
+  return fields;
 }
 
 function migrationFiles() {
@@ -171,13 +211,13 @@ function main() {
         }
         if (isolatedPrefixReady) {
           currentStage = "ISOLATED_MIGRATION_STATEMENT";
-          run(cli, ["db", "query", "--local", "--workdir", workdir, "--file", failing.path], {
+          const statementRun = run(cli, ["db", "query", "--local", "--workdir", workdir, "--file", failing.path, "--output", "json", "--output-format", "json"], {
             cwd: root,
             allowFailure: true,
             privateLog: statementLog,
           });
           evidence.failure = {
-            stage: "ISOLATED_MIGRATION_STATEMENT",
+            stage: statementRun.status === 0 ? "ISOLATED_MIGRATION_UNEXPECTED_PASS" : "ISOLATED_MIGRATION_STATEMENT",
             ...extractSafePostgresError(readFileSync(statementLog, "utf8"), failing.version),
           };
           const statementPosition = evidence.failure.statementPosition;
