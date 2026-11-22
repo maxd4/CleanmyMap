@@ -136,7 +136,9 @@ SQLSTATE, un type PostgreSQL de la liste autorisée et, si le serveur le fournit
 un emplacement numérique d'instruction, ainsi qu'un indicateur de disponibilité
 du journal PostgreSQL. Un identifiant de migration n'est publié que lorsqu'une
 ligne d'échec le rattache explicitement ; un nom de migration simplement voisin
-du SQLSTATE reste non attribué.
+du SQLSTATE reste non attribué. Si le journal contient l'instruction fautive,
+son texte reste privé et l'ID n'est attribué que lorsque cette instruction
+correspond de façon unique au contenu d'une migration du candidat.
 Les sondes ne publient ni ce nom, ni nom d'image, ni sortie Docker, ni variable
 d'environnement. Une sortie
 `UNCLASSIFIED` reste une absence de preuve causale ; elle ne doit pas être

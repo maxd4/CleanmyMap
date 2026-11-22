@@ -277,6 +277,41 @@ test("reads nested PostgreSQL JSON SQLSTATE, type and statement position without
   assert.doesNotMatch(diagnostic, /private-identity|private detail value|select private column|private table/);
 });
 
+test("extracts a type without SQLSTATE and correlates a logged statement to one migration privately", async () => {
+  const root = await mkdtemp(resolve(tmpdir(), "diagnose-supabase-statement-correlation-"));
+  try {
+    const migrations = resolve(root, "apps", "web", "supabase", "migrations");
+    await mkdir(migrations, { recursive: true });
+    await writeFile(resolve(migrations, "20261121000002_private_fixture.sql"), "select gen_random_uuid()::uuid;\n", "utf8");
+    const postgresLog = [
+      'ERROR: invalid input syntax for type uuid: "private-value"',
+      "STATEMENT: select gen_random_uuid()::uuid;",
+      "LOCATION: exec_simple_query, postgres.c:1234",
+    ].join("\n");
+    const evidence = collectBoundedStartEvidence({
+      log: "Applying database migrations\nSQLSTATE 22P02",
+      postgresLog,
+      exitCode: 1,
+      root,
+      probeCommand: createProbeCommand(),
+    });
+    const diagnostic = renderSupabaseStartDiagnostic({
+      category: classifySupabaseStartFailure({ log: "Applying database migrations\nSQLSTATE 22P02", exitCode: 1, evidence }),
+      exitCode: 1,
+      dockerVersion: evidence.dockerServerVersion,
+      supabaseCliVersion: evidence.supabaseCliVersion,
+      dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+      evidence,
+    });
+
+    assert.equal(evidence.firstErrorDetail, "INVALID_TEXT_REPRESENTATION;type=uuid");
+    assert.equal(evidence.firstFailedMigrationId, "20261121000002");
+    assert.doesNotMatch(diagnostic, /private-value|select gen_random_uuid/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("rejects unallowlisted PostgreSQL type names in safe diagnostics", () => {
   const evidence = collectBoundedStartEvidence({
     log: "invalid input syntax for type custom_sensitive_type: private-value SQLSTATE 22P02",

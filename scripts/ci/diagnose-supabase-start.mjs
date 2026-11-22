@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
@@ -403,10 +403,52 @@ function safeSqlErrorDetail(message, sqlState) {
   return `SQL_ERROR;sqlstate=${sqlState}`;
 }
 
-function inferMigrationId(log) {
+function inferMigrationId(log, postgresLog = "", root = process.cwd()) {
   const explicitFailure = String(log ?? "").match(/\bfailed to apply migration\s+["']?(20\d{12})(?:_[a-z0-9_-]+\.sql)?\b/i)
     ?? String(log ?? "").match(/\bmigration\s+["']?(20\d{12})(?:_[a-z0-9_-]+\.sql)?["']?\s+(?:failed|failed to apply)\b/i);
-  return explicitFailure?.[1] ?? null;
+  if (explicitFailure) return explicitFailure[1];
+  const statement = postgresFailingStatement(postgresLog);
+  if (!statement || statement.length < 24) return null;
+  try {
+    const migrationsDirectory = path.join(root, "apps/web/supabase/migrations");
+    const matchingIds = readdirSync(migrationsDirectory)
+      .filter((fileName) => /^20\d{12}_[a-z0-9_-]+\.sql$/i.test(fileName))
+      .filter((fileName) => readFileSync(path.join(migrationsDirectory, fileName), "utf8").includes(statement))
+      .map((fileName) => fileName.slice(0, 14));
+    return matchingIds.length === 1 ? matchingIds[0] : null;
+  } catch {
+    return null;
+  }
+}
+
+function postgresFailingStatement(log) {
+  const lines = String(log ?? "").split(/\r?\n/u);
+  const errorIndex = lines.findIndex((line) => sqlStateFromLogLine(line) || /invalid input syntax for type/i.test(line));
+  if (errorIndex < 0) return null;
+  const context = lines.slice(Math.max(0, errorIndex - 2), errorIndex + 6);
+  for (const line of context) {
+    const statement = line.match(/\bSTATEMENT:\s*(.+)$/i)?.[1];
+    if (statement) return statement.trim();
+    try {
+      const parsed = JSON.parse(line);
+      const findStatement = (value, depth = 0) => {
+        if (!value || typeof value !== "object" || depth > 6) return null;
+        for (const [key, nested] of Object.entries(value)) {
+          if (/^(?:statement|query)$/i.test(key) && typeof nested === "string") return nested.trim();
+          if (nested && typeof nested === "object") {
+            const found = findStatement(nested, depth + 1);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const statementValue = findStatement(parsed);
+      if (statementValue) return statementValue;
+    } catch {
+      // Plain PostgreSQL text log lines are expected alongside JSON log records.
+    }
+  }
+  return null;
 }
 
 function postgresInstructionLocation(log) {
@@ -423,11 +465,14 @@ function postgresSqlErrorEvidence(log) {
   const text = String(log ?? "");
   const lines = text.split(/\r?\n/u);
   const stateIndex = lines.findIndex((line) => sqlStateFromLogLine(line));
-  const sqlState = stateIndex >= 0 ? sqlStateFromLogLine(lines[stateIndex]) : sqlStateFromText(text);
-  if (!sqlState) return { sqlState: null, detail: null, instructionLocation: null };
-  const errorContext = stateIndex >= 0 ? lines.slice(Math.max(0, stateIndex - 2), stateIndex + 4) : lines.slice(0, 6);
+  const invalidTextIndex = lines.findIndex((line) => /invalid input syntax for type/i.test(line));
+  const textState = sqlStateFromText(text);
+  const sqlState = stateIndex >= 0 ? sqlStateFromLogLine(lines[stateIndex]) : textState;
+  const errorIndex = stateIndex >= 0 ? stateIndex : invalidTextIndex;
+  if (!sqlState && invalidTextIndex < 0) return { sqlState: null, detail: null, instructionLocation: null };
+  const errorContext = errorIndex >= 0 ? lines.slice(Math.max(0, errorIndex - 2), errorIndex + 6) : lines.slice(0, 8);
   const context = errorContext.join(" ");
-  const detail = safeSqlErrorDetail(context, sqlState);
+  const detail = safeSqlErrorDetail(context, sqlState ?? "22P02");
   return { sqlState, detail, instructionLocation: postgresInstructionLocation(context) };
 }
 
@@ -763,7 +808,7 @@ export function collectBoundedStartEvidence({ log, postgresLog = "", dockerEvent
     configuredPorts: configContract.ports,
     startPhase,
     firstFailedStep: inferFirstFailedStep(log, firstBootstrapJob, firstError, startPhase),
-    firstFailedMigrationId: startPhase === "MIGRATIONS" ? inferMigrationId(log) : null,
+    firstFailedMigrationId: startPhase === "MIGRATIONS" ? inferMigrationId(log, postgresLog, root) : null,
     firstErrorSqlState: firstError.sqlState ?? String(log ?? "").split(/\r?\n/u).map(sqlStateFromLogLine).find(Boolean) ?? null,
     failureService: confirmedService,
     confirmedService,
