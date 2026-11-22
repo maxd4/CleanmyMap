@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2,
-  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3,
   CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT,
   buildImpactTerrain2026Methodology,
   computeButtsCount,
@@ -57,20 +57,14 @@ describe("Impact terrain 2026 methodology domain", () => {
     );
 
     expect(BUTTS_PER_KG_REFERENCE).toBeCloseTo(1_000 / 0.22, 10);
+    expect(CIGARETTE_BUTTS_MASS_CONVERSION_VERSION).toBe(CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2);
     expect(CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT[CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2]).toEqual({
       propre: 0.22,
       humide: 0.5,
       mouille: 0.5,
     });
-    expect(CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT[CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3]).toEqual({
-      propre: 0.22,
-      humide: 0.5,
-      mouille: 0.9,
-    });
     expect(computeButtsCount(0.9, "mouille", CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2)).toBe(1_800);
-    expect(computeButtsCount(0.9, "mouille", CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3)).toBe(1_000);
     expect(estimateButtsWeightKg(1_000, "mouille", CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2)).toBe(0.5);
-    expect(estimateButtsWeightKg(1_000, "mouille", CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V3)).toBe(0.9);
     expect(byKey.co2?.formula.fr).toContain(
       String(IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg),
     );

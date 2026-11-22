@@ -339,7 +339,7 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
       cigaretteButtsCountProvenance: "counted",
     });
     expect(result.nextCigaretteButtsMeasurements?.cigaretteButtsConversionFormulaVersion).toBe(
-      "impact-terrain-2026-butts-mass-v3",
+      "impact-terrain-2026-butts-mass-v2",
     );
   });
 
@@ -534,7 +534,7 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
       cigaretteButtsCount: null,
       cigaretteButtsMassKg: 1,
       cigaretteButtsMassProvenance: "measured",
-      cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v3",
+      cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v2",
     });
   });
 });

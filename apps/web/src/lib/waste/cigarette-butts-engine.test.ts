@@ -24,7 +24,7 @@ describe("cigarette-butt lot engine", () => {
     });
 
     expect(measurement.cigaretteButtsCount).toBe(2_800);
-    expect(measurement.cigaretteButtsMassKg).toBeCloseTo(1.2 + 100 * 0.22 / 1_000 + 300 * 0.9 / 1_000, 10);
+    expect(measurement.cigaretteButtsMassKg).toBeCloseTo(1.2 + 100 * 0.22 / 1_000 + 300 * 0.5 / 1_000, 10);
     expect(measurement.cigaretteButtsVolumeLiters).toBe(0.5);
     expect(measurement.cigaretteButtsLotsSummary).toMatchObject({
       totalCount: 2_800,
@@ -100,7 +100,7 @@ describe("cigarette-butt lot engine", () => {
   });
 
   it("converts each declared condition reciprocally from count, mass and volume", () => {
-    const factors = { propre: 0.22, humide: 0.5, mouille: 0.9 } as const;
+    const factors = { propre: 0.22, humide: 0.5, mouille: 0.5 } as const;
     for (const [condition, gramsPerButt] of Object.entries(factors) as Array<[
       keyof typeof factors,
       number,

@@ -23,6 +23,13 @@ const massProxyV3Migration = readFileSync(
   ),
   "utf8",
 );
+const restoreProjectionV8Migration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261122000012_restore_scientific_projection_v8.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("scientific projection volume-lot reconciliation migration STATIC_CONTRACT", () => {
   it("keeps the canonical TypeScript projection as the SQL input", () => {
@@ -33,13 +40,21 @@ describe("scientific projection volume-lot reconciliation migration STATIC_CONTR
     expect(migration).not.toMatch(/(?:volume_l|volume)[\s\S]{0,160}(?:600|700)|(?:600|700)[\s\S]{0,160}(?:volume_l|volume)/i);
   });
 
-  it("preserves volume v3 history and publishes the mass v3 projection identity", () => {
-    expect(volumeProxyV3Migration).toContain("'impact-terrain-public-2026.09-v8'");
-    expect(massProxyV3Migration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
-    expect(massProxyV3Migration).toContain("alter column methodology_version set default");
-    expect(massProxyV3Migration).not.toMatch(/update\s+public\.actions/i);
-    expect(massProxyV3Migration).not.toMatch(/delete\s+from\s+public\.actions/i);
-    expect(massProxyV3Migration).not.toMatch(/update\s+public\.public_impact_action_aggregate_state/i);
+  it("restores the supported projection after the unsupported mass proxy migration", () => {
+    expect(massProxyV3Migration).toContain("'impact-terrain-public-2026.09-v9'");
+    expect(restoreProjectionV8Migration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
+    expect(restoreProjectionV8Migration).toContain("alter column methodology_version set default");
+    expect(restoreProjectionV8Migration).not.toMatch(/update\s+public\.actions/i);
+    expect(restoreProjectionV8Migration).not.toMatch(/delete\s+from\s+public\.actions/i);
+    expect(restoreProjectionV8Migration).not.toMatch(/update\s+public\.public_impact_action_aggregate_state/i);
+  });
+
+  it("publishes the volume projection without mutating sources or cached state", () => {
+    expect(volumeProxyV3Migration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
+    expect(volumeProxyV3Migration).toContain("alter column methodology_version set default");
+    expect(volumeProxyV3Migration).not.toMatch(/update\s+public\.actions/i);
+    expect(volumeProxyV3Migration).not.toMatch(/delete\s+from\s+public\.actions/i);
+    expect(volumeProxyV3Migration).not.toMatch(/update\s+public\.public_impact_action_aggregate_state/i);
   });
 
   it("does not rewrite observations and preserves the compatible state RPC signatures", () => {

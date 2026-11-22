@@ -13,7 +13,7 @@ export const POLLUTION_SCORE_REFERENCE_FORMULA_VERSION =
   "pollution-score-references-v2" as const;
 
 export const PUBLIC_IMPACT_PROJECTION_VERSION =
-  "impact-terrain-public-2026.09-v9" as const;
+  "impact-terrain-public-2026.09-v8" as const;
 
 export const LEGACY_PUBLIC_IMPACT_PROJECTION_VERSIONS = [
   "impact-terrain-public-2026.09-v2",
@@ -22,7 +22,6 @@ export const LEGACY_PUBLIC_IMPACT_PROJECTION_VERSIONS = [
   "impact-terrain-public-2026.09-v5",
   "impact-terrain-public-2026.09-v6",
   "impact-terrain-public-2026.09-v7",
-  "impact-terrain-public-2026.09-v8",
 ] as const;
 
 export function isKnownPublicImpactProjectionVersion(
