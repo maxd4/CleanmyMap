@@ -76,12 +76,17 @@ endroit autorisé pour exécuter les pgTAP mutatifs ; ce workflow ne lance jamai
 pgTAP contre la base liée.
 
 Au démarrage éphémère, le diagnostic conserve les états périodiques des services
-et les événements Docker observés pendant l'exécution de la CLI. Journaux bruts,
-événements complets et détails structurés de la CLI restent dans des fichiers
-privés temporaires du runner puis sont supprimés. Seuls services, phases, états
-et codes explicitement autorisés paraissent dans les preuves. Un `die` à code
-zéro et un `destroy` de nettoyage sont rapportés comme arrêt normal et nettoyage;
-aucun des deux n'est présenté seul comme cause racine.
+et les événements Docker observés pendant l'exécution de la CLI. Tant que le
+conteneur `db` est actif, les observations distinguent la santé Docker,
+`pg_isready` exécuté dans PostgreSQL et une connexion TCP du runner vers le port
+configuré. Une disponibilité interne ne prouve donc pas la joignabilité du
+runner. Les attributions de service sont séparées en confirmée, suspectée ou
+inconnue ; une simple mention dans le journal ne confirme pas une cause.
+Journaux bruts, événements complets et détails structurés de la CLI restent dans
+des fichiers privés temporaires du runner puis sont supprimés. Seuls services,
+phases, états et codes explicitement autorisés paraissent dans les preuves. Un
+`die` à code zéro et un `destroy` de nettoyage sont rapportés comme arrêt normal
+et nettoyage ; aucun des deux n'est présenté seul comme cause racine.
 
 ## Blocages et reprise
 

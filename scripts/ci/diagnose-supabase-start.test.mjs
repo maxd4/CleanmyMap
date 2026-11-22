@@ -35,6 +35,9 @@ function createProbeCommand({
   listeningPorts = { available: true, output: "" },
   supabaseCli = { available: true, output: "2.117.0" },
   supabaseStatus = { available: false, output: "status unavailable" },
+  dbDockerHealth = { available: true, output: "healthy" },
+  dbPostgresInternal = { available: true, output: "ready" },
+  dbHostTcp = { available: true, output: "tcp=connected" },
 } = {}) {
   const probeOutputs = new Map([
     ["docker --version", dockerVersion],
@@ -47,7 +50,12 @@ function createProbeCommand({
     ["npx --no-install supabase --version", supabaseCli],
     ["npx --no-install supabase status --workdir apps/web --output json", supabaseStatus],
   ]);
-  return (command, args) => probeOutputs.get([command, ...args].join(" ")) ?? { available: false, output: "unexpected" };
+  return (command, args) => {
+    if (command === "docker" && args[0] === "inspect") return dbDockerHealth;
+    if (command === "docker" && args[0] === "exec") return dbPostgresInternal;
+    if (command === "node" && args[0] === "-e") return dbHostTcp;
+    return probeOutputs.get([command, ...args].join(" ")) ?? { available: false, output: "unexpected" };
+  };
 }
 
 async function withTempConfig(config, callback) {
@@ -96,7 +104,10 @@ test("classifies Docker, port, healthcheck, resources and CLI failures", () => {
   const cases = [
     ["Cannot connect to the Docker daemon", SUPABASE_START_CATEGORIES.DOCKER_UNAVAILABLE],
     ["failed to resolve registry network: i/o timeout", SUPABASE_START_CATEGORIES.NETWORK_FAILURE],
+    ["connect ECONNREFUSED 127.0.0.1:54322", SUPABASE_START_CATEGORIES.NETWORK_FAILURE],
+    ["connect ETIMEDOUT 127.0.0.1:54322", SUPABASE_START_CATEGORIES.NETWORK_FAILURE],
     ["Error: port is already allocated", SUPABASE_START_CATEGORIES.PORT_CONFLICT],
+    ["password authentication failed for user private_role", SUPABASE_START_CATEGORIES.AUTHENTICATION_FAILURE],
     ["container db is unhealthy", SUPABASE_START_CATEGORIES.HEALTHCHECK_FAILURE],
     ["no space left on device", SUPABASE_START_CATEGORIES.INSUFFICIENT_RESOURCES],
     ["unknown flag: --workdir", SUPABASE_START_CATEGORIES.CLI_CONFIGURATION_INCOMPATIBILITY],
@@ -121,7 +132,7 @@ test("turns a long failed start with no containers into an actionable bounded co
     probeCommand: createProbeCommand(),
   });
 
-  assert.equal(evidence.schemaVersion, 4);
+  assert.equal(evidence.schemaVersion, 5);
   assert.equal(
     classifySupabaseStartFailure({ log: "opaque startup failure", exitCode: 1, evidence }),
     SUPABASE_START_CATEGORIES.START_TIMEOUT,
@@ -151,6 +162,9 @@ test("collects a public-safe startup progress snapshot without raw Docker output
     dockerContainers: 1,
     dockerContainerStates: { running: 1, exited: 0, created: 0, restarting: 0, other: 0 },
     dockerContainerServices: { db: "running" },
+    dbDockerHealth: "healthy",
+    dbPostgresInternal: "ready",
+    dbHostTcp: "connected",
     requiredServicesState: "incomplete",
     networkState: "observed",
     observationState: "CONTAINERS_OBSERVED",
@@ -310,6 +324,7 @@ test("keeps a later specific CLI failure instead of an earlier generic error", (
 
   assert.equal(evidence.firstErrorSource, "SUPABASE_CLI_LOG");
   assert.equal(evidence.firstErrorSignal, "RESOURCE");
+  assert.equal(evidence.confirmedService, null);
   assert.equal(evidence.firstErrorExcerpt, "class=resource;service=unavailable");
   assert.equal(evidence.dockerMemoryBytes, 8_000_000_000);
 });
@@ -362,6 +377,98 @@ test("uses an OOM Docker event when the first CLI error is generic", () => {
   assert.equal(evidence.firstErrorSignal, "DOCKER_OOM");
   assert.equal(evidence.firstErrorExcerpt, "event=oom;service=db;exit_code=1");
   assert.equal(evidence.failureService, "db");
+  assert.equal(evidence.serviceAttribution, "confirmed");
+});
+
+test("separates healthy PostgreSQL from a refused runner TCP connection and redacts debug details", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "Error: health check failed for supabase_db_web at 127.0.0.1:54322 token=private-token",
+    exitCode: 1,
+    startProgressSnapshots: [{
+      schemaVersion: 1, elapsedSeconds: 35, observationState: "SERVICES_READY",
+      dbDockerHealth: "healthy", dbPostgresInternal: "ready", dbHostTcp: "refused",
+    }],
+    probeCommand: createProbeCommand(),
+  });
+  const diagnostic = renderSupabaseStartDiagnostic({ category: SUPABASE_START_CATEGORIES.HEALTHCHECK_FAILURE, exitCode: 1, dockerVersion: "28.0.4", supabaseCliVersion: "2.117.0", dockerDaemonAvailable: true, evidence });
+
+  assert.equal(evidence.dbConnectivity, "host_tcp_refused");
+  assert.equal(evidence.confirmedService, null);
+  assert.equal(evidence.suspectedService, "db");
+  assert.equal(evidence.serviceAttribution, "suspected");
+  assert.match(diagnostic, /db_docker_health=healthy/);
+  assert.match(diagnostic, /db_postgres_internal=ready/);
+  assert.match(diagnostic, /db_host_tcp=refused/);
+  assert.match(diagnostic, /confirmed_service=unavailable/);
+  assert.match(diagnostic, /suspected_service=db/);
+  assert.doesNotMatch(diagnostic, /127\.0\.0\.1|private-token|supabase_db_web/);
+  assert.equal(evidence.firstErrorSource, "SUPABASE_CLI_LOG");
+});
+
+test("reports Docker health and internal PostgreSQL failures as separate signals", () => {
+  const snapshots = [
+    { schemaVersion: 1, elapsedSeconds: 10, observationState: "CONTAINERS_OBSERVED", dbDockerHealth: "starting", dbPostgresInternal: "not_ready", dbHostTcp: "refused" },
+    { schemaVersion: 1, elapsedSeconds: 15, observationState: "CONTAINERS_OBSERVED", dbDockerHealth: "unhealthy", dbPostgresInternal: "not_ready", dbHostTcp: "refused" },
+  ];
+  const evidence = collectBoundedStartEvidence({ log: "Error: health check failed", exitCode: 1, startProgressSnapshots: snapshots, probeCommand: createProbeCommand() });
+
+  assert.equal(evidence.dbConnectivity, "docker_unhealthy");
+  assert.equal(evidence.confirmedService, null);
+  assert.equal(evidence.suspectedService, "db");
+  assert.equal(evidence.dbConnectivityTimeline, "10:docker=starting;postgres=not_ready;host_tcp=refused,15:docker=unhealthy;postgres=not_ready;host_tcp=refused");
+});
+
+test("distinguishes a runner TCP timeout from PostgreSQL readiness", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "Error: connection timed out",
+    exitCode: 1,
+    startProgressSnapshots: [{
+      schemaVersion: 1, elapsedSeconds: 25, observationState: "SERVICES_READY",
+      dbDockerHealth: "healthy", dbPostgresInternal: "ready", dbHostTcp: "timeout",
+    }],
+    probeCommand: createProbeCommand(),
+  });
+
+  assert.equal(evidence.dbConnectivity, "host_tcp_timeout");
+  assert.equal(evidence.dbDockerHealth, "healthy");
+  assert.equal(evidence.dbPostgresInternal, "ready");
+  assert.equal(evidence.dbHostTcp, "timeout");
+  assert.equal(evidence.serviceAttribution, "suspected");
+});
+
+test("classifies a terminal PostgreSQL authentication error without exposing its message", () => {
+  const log = "FATAL: password authentication failed for user private_role token=private-token";
+  const evidence = collectBoundedStartEvidence({ log, exitCode: 1, probeCommand: createProbeCommand() });
+  const diagnostic = renderSupabaseStartDiagnostic({ category: classifySupabaseStartFailure({ log, exitCode: 1, evidence }), exitCode: 1, dockerVersion: "28.0.4", supabaseCliVersion: "2.117.0", dockerDaemonAvailable: true, evidence });
+
+  assert.equal(evidence.firstErrorSignal, "AUTHENTICATION");
+  assert.equal(evidence.firstErrorExcerpt, "class=authentication;service=unavailable");
+  assert.match(diagnostic, /category=AUTHENTICATION_FAILURE/);
+  assert.doesNotMatch(diagnostic, /private_role|private-token|password authentication/);
+});
+
+test("does not attribute an orderly db stop and cleanup as the startup failure", () => {
+  const dockerEvents = [
+    { Action: "health_status: healthy", Actor: { Attributes: { name: "supabase_db_web" } } },
+    { Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "0" } } },
+    { Action: "destroy", Actor: { Attributes: { name: "supabase_db_web" } } },
+  ].map(JSON.stringify).join("\n");
+  const evidence = collectBoundedStartEvidence({
+    log: "Error: CLI health check failed",
+    dockerEvents,
+    exitCode: 1,
+    startProgressSnapshots: [{ schemaVersion: 1, elapsedSeconds: 20, observationState: "SERVICES_READY", dbDockerHealth: "healthy", dbPostgresInternal: "ready", dbHostTcp: "connected" }],
+    probeCommand: createProbeCommand(),
+  });
+  const diagnostic = renderSupabaseStartDiagnostic({ category: SUPABASE_START_CATEGORIES.HEALTHCHECK_FAILURE, exitCode: 1, dockerVersion: "28.0.4", supabaseCliVersion: "2.117.0", dockerDaemonAvailable: true, evidence });
+
+  assert.equal(evidence.confirmedService, null);
+  assert.equal(evidence.suspectedService, null);
+  assert.equal(evidence.serviceAttribution, "unknown");
+  assert.equal(evidence.dbConnectivity, "connected");
+  assert.match(diagnostic, /docker_lifecycle_events=.*kind=normal_exit.*kind=cleanup/);
+  assert.match(diagnostic, /confirmed_service=unavailable/);
+  assert.match(diagnostic, /suspected_service=unavailable/);
 });
 
 test("uses the first Docker failure event when the CLI log contains no classifiable error", () => {
@@ -684,7 +791,7 @@ test("identifies the configured E2E services and port conflict without publishin
   assert.match(diagnostic, /category=PORT_CONFLICT/);
   assert.match(diagnostic, /failure_service=kong/);
   assert.match(diagnostic, /port_conflicts=54321/);
-  assert.doesNotMatch(diagnostic, /postgres|private|token|docker-secret/);
+  assert.doesNotMatch(diagnostic, /postgres:|private|token|docker-secret|supabase_db_web/);
 });
 
 test("classifies explicit probe failures before log heuristics", () => {
@@ -894,8 +1001,8 @@ test("the workflow keeps startup failure blocking and never prints the raw log",
   assert.match(startScript, /start_exit_code=\$\?/);
   assert.match(startScript, /--watch-pid="\$start_pid"/);
   assert.match(startScript, /--progress-file="\$progress_file"/);
-  assert.match(startScript, /--watch-pid="\$start_pid" --progress-file="\$progress_file" --expected-network="\$network"/);
-  assert.match(startScript, /--docker-events-file="\$events_file" \\\s+--expected-network="\$network" \\\s+--exit-code="\$start_exit_code"/);
+  assert.match(startScript, /--watch-pid="\$start_pid" --progress-file="\$progress_file" --expected-network="\$network" --root="\$root"/);
+  assert.match(startScript, /--docker-events-file="\$events_file" \\\s+--expected-network="\$network" \\\s+--root="\$root" \\\s+--exit-code="\$start_exit_code"/);
   assert.match(startScript, /docker events --since "\$start_started_at" --filter type=container/);
   assert.match(startScript, /events_pid=\$!/);
   assert.match(startScript, /--docker-events-file="\$events_file"/);

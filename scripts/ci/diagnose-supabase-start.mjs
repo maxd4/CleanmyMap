@@ -9,6 +9,7 @@ export const SUPABASE_START_CATEGORIES = Object.freeze({
   IMAGE_UNAVAILABLE: "IMAGE_UNAVAILABLE",
   NETWORK_FAILURE: "NETWORK_FAILURE",
   PORT_CONFLICT: "PORT_CONFLICT",
+  AUTHENTICATION_FAILURE: "AUTHENTICATION_FAILURE",
   HEALTHCHECK_FAILURE: "HEALTHCHECK_FAILURE",
   CLI_CONFIGURATION_INCOMPATIBILITY: "CLI_CONFIGURATION_INCOMPATIBILITY",
   INSUFFICIENT_RESOURCES: "INSUFFICIENT_RESOURCES",
@@ -20,7 +21,8 @@ export const SUPABASE_START_CATEGORIES = Object.freeze({
 export const SUPABASE_START_REQUIRED_SERVICES = Object.freeze(["db", "kong", "rest", "storage"]);
 
 const categoryPatterns = [
-  [SUPABASE_START_CATEGORIES.NETWORK_FAILURE, /(failed to (create|connect|resolve).*network|network .*\b(not found|unavailable|fail|error|timeout|denied|refused|reset|exceeded)\b|dns|name resolution|no such host|connection reset|connection refused|i\/o timeout|context deadline exceeded|tls handshake|proxy|registry).*\b(fail|error|timeout|unavailable|denied|refused|reset|exceeded|not found)\b/i],
+  [SUPABASE_START_CATEGORIES.AUTHENTICATION_FAILURE, /(password authentication failed|authentication failed|invalid password|no password supplied|role .+ does not exist|sqlstate\s*28[0-9a-z]{3})/i],
+  [SUPABASE_START_CATEGORIES.NETWORK_FAILURE, /(failed to (create|connect|resolve).*network|network .*\b(not found|unavailable|fail|error|timeout|denied|refused|reset|exceeded)\b|dns|name resolution|no such host|connection reset|connection refused|i\/o timeout|context deadline exceeded|tls handshake|proxy|registry).*\b(fail|error|timeout|unavailable|denied|refused|reset|exceeded|not found)\b|\b(econnrefused|etimedout)\b|connection (refused|timed out)/i],
   [SUPABASE_START_CATEGORIES.IMAGE_UNAVAILABLE, /(pull access denied|manifest unknown|failed to (resolve|pull|copy)|error response from daemon:.*(get|pull)|image .*not found)/i],
   [SUPABASE_START_CATEGORIES.PORT_CONFLICT, /(port is already allocated|address already in use|bind:.*address|listen tcp.*already)/i],
   [SUPABASE_START_CATEGORIES.HEALTHCHECK_FAILURE, /(health.?check|unhealthy|timed out waiting|container .* failed to become healthy)/i],
@@ -29,6 +31,9 @@ const categoryPatterns = [
 ];
 
 const firstErrorSignalPatterns = [
+  ["AUTHENTICATION", /(password authentication failed|authentication failed|invalid password|no password supplied|role .+ does not exist|sqlstate\s*28[0-9a-z]{3})/i],
+  ["TCP_REFUSED", /\b(econnrefused|connection refused|actively refused)\b/i],
+  ["TCP_TIMEOUT", /\b(etimedout|connection timed out|connect timeout)\b/i],
   ["NETWORK", /(failed to (create|connect|resolve).*network|network .*(not found|unavailable|fail|error|timeout|denied|refused|reset|exceeded)|(?:dns|name resolution|no such host|connection reset|connection refused|i\/o timeout|context deadline exceeded|tls handshake|proxy|registry).*(?:error|fail|timeout|denied|refused|reset|exceeded|unavailable|not found)|(?:error|failed|unable|cannot|could not).*(?:dns|name resolution|proxy|registry))/i],
   ["IMAGE_PULL", /(pull access denied|manifest unknown|failed to (resolve|pull|copy)|error response from daemon:.*(get|pull)|image .*not found)/i],
   ["PORT_BIND", /(port is already allocated|address already in use|bind:.*address|listen tcp.*already)/i],
@@ -121,10 +126,35 @@ function readConfigContract(root) {
     const healthTimeout = config.match(/^health_timeout\s*=\s*"([^"]+)"\s*$/m)?.[1] ?? null;
     const ports = parsePortConfig(config);
     const validPorts = Object.values(ports).every((port) => Number.isInteger(port) && port > 0);
-    return { available: true, valid: projectId === "web" && majorVersion === "17" && healthTimeout === "2m" && validPorts, ports };
+    return { available: true, valid: projectId === "web" && majorVersion === "17" && healthTimeout === "2m" && validPorts, projectId, ports };
   } catch {
-    return { available: false, valid: false, ports: {} };
+    return { available: false, valid: false, projectId: null, ports: {} };
   }
+}
+
+const DB_HEALTH_STATES = new Set(["healthy", "unhealthy", "starting", "no_health", "unobserved"]);
+const DB_POSTGRES_STATES = new Set(["ready", "not_ready", "unavailable", "unobserved"]);
+const DB_HOST_TCP_STATES = new Set(["connected", "refused", "timeout", "unavailable", "unobserved"]);
+
+function safeProbeState(result, allowedStates, defaultState = "unavailable") {
+  const value = String(result?.output ?? "").trim().split(/\s+/u).at(-1)?.replace(/^[^=]+=/u, "");
+  return result?.available && allowedStates.has(value) ? value : defaultState;
+}
+
+function collectDbRuntimeChecks({ projectId, dbPort, dbRunning, probeCommand }) {
+  if (!dbRunning || !projectId || !Number.isInteger(dbPort) || dbPort <= 0 || dbPort > 65535) {
+    return { dbDockerHealth: "unobserved", dbPostgresInternal: "unobserved", dbHostTcp: "unobserved" };
+  }
+  const container = `supabase_db_${projectId}`;
+  const health = probeCommand("docker", ["inspect", "--format", "{{if .State.Health}}{{.State.Health.Status}}{{else}}no_health{{end}}", container]);
+  const postgres = probeCommand("docker", ["exec", container, "sh", "-c", "pg_isready -q -h 127.0.0.1 -p 5432; code=$?; if [ \"$code\" -eq 0 ]; then echo ready; elif [ \"$code\" -eq 1 ]; then echo not_ready; else echo unavailable; fi; exit 0"]);
+  const tcpScript = "const net=require('node:net');const socket=net.connect({host:'127.0.0.1',port:Number(process.argv[1])});let done=false;const finish=(state)=>{if(done)return;done=true;console.log('tcp='+state);socket.destroy()};socket.setTimeout(900,()=>finish('timeout'));socket.once('connect',()=>finish('connected'));socket.once('error',(error)=>finish(error.code==='ECONNREFUSED'?'refused':'unavailable'));";
+  const tcp = probeCommand("node", ["-e", tcpScript, String(dbPort)]);
+  return {
+    dbDockerHealth: safeProbeState(health, DB_HEALTH_STATES),
+    dbPostgresInternal: safeProbeState(postgres, DB_POSTGRES_STATES),
+    dbHostTcp: safeProbeState(tcp, DB_HOST_TCP_STATES),
+  };
 }
 
 function classifyContainerStates(output) {
@@ -203,6 +233,9 @@ const firstErrorDiagnosticLabels = Object.freeze({
   IMAGE_PULL: "image_pull",
   PORT_BIND: "port_bind",
   HEALTHCHECK: "healthcheck",
+  AUTHENTICATION: "authentication",
+  TCP_REFUSED: "tcp_refused",
+  TCP_TIMEOUT: "tcp_timeout",
   RESOURCE: "resource",
   CLI_CONFIGURATION: "cli_configuration",
   PERMISSION: "permission",
@@ -312,7 +345,7 @@ function networkStateFromOutput(networkOutput, expectedNetwork) {
   return observed ? "observed" : "missing";
 }
 
-export function collectStartProgressSnapshot({ elapsedSeconds = 0, expectedNetwork, probeCommand = (command, args) => probe(command, args, 2_000) }) {
+export function collectStartProgressSnapshot({ elapsedSeconds = 0, expectedNetwork, root = process.cwd(), probeCommand = (command, args) => probe(command, args, 2_000) }) {
   const dockerDaemon = probeCommand("docker", ["info", "--format", "{{.ServerVersion}}"]);
   const dockerContainers = probeCommand(dockerContainersCommand[0], dockerContainersCommand.slice(1));
   const dockerImages = probeCommand(dockerImagesCommand[0], dockerImagesCommand.slice(1));
@@ -322,6 +355,13 @@ export function collectStartProgressSnapshot({ elapsedSeconds = 0, expectedNetwo
   const containerStates = containerInspectionAvailable ? classifyContainerStates(dockerContainers.output) : unavailableContainerStates();
   const containerCount = containerInspectionAvailable ? Object.values(containerStates).reduce((total, count) => total + count, 0) : null;
   const requiredServicesState = requiredServiceState(containerServices, containerCount);
+  const configContract = readConfigContract(root);
+  const dbChecks = collectDbRuntimeChecks({
+    projectId: configContract.projectId,
+    dbPort: configContract.ports.db,
+    dbRunning: containerServices.db === "running",
+    probeCommand,
+  });
   const imageCount = dockerImages.available ? String(dockerImages.output).split(/\r?\n/).filter(Boolean).length : null;
   const networkState = dockerNetworks.available ? networkStateFromOutput(dockerNetworks.output, expectedNetwork) : "unobserved";
   return {
@@ -332,6 +372,7 @@ export function collectStartProgressSnapshot({ elapsedSeconds = 0, expectedNetwo
     dockerContainers: containerCount,
     dockerContainerStates: containerStates,
     dockerContainerServices: containerServices,
+    ...dbChecks,
     requiredServicesState,
     networkState,
     observationState: progressObservationState({
@@ -355,9 +396,35 @@ function normalizeProgressSnapshots(snapshots) {
       dockerImages: Number.isInteger(snapshot.dockerImages) ? snapshot.dockerImages : null,
       dockerContainers: Number.isInteger(snapshot.dockerContainers) ? snapshot.dockerContainers : null,
       dockerContainerServices: Object.fromEntries(Object.entries(snapshot.dockerContainerServices ?? {}).filter(([service, state]) => serviceAliases.some(([, allowed]) => allowed === service) && containerStateNames.includes(state))),
+      dbDockerHealth: DB_HEALTH_STATES.has(snapshot.dbDockerHealth) ? snapshot.dbDockerHealth : "unobserved",
+      dbPostgresInternal: DB_POSTGRES_STATES.has(snapshot.dbPostgresInternal) ? snapshot.dbPostgresInternal : "unobserved",
+      dbHostTcp: DB_HOST_TCP_STATES.has(snapshot.dbHostTcp) ? snapshot.dbHostTcp : "unobserved",
       requiredServicesState: typeof snapshot.requiredServicesState === "string" ? snapshot.requiredServicesState : "unobserved",
       networkState: typeof snapshot.networkState === "string" ? snapshot.networkState : "unobserved",
     }));
+}
+
+function dbConnectivityDiagnosis(snapshots) {
+  const dbSnapshots = snapshots.filter((snapshot) => snapshot.dbDockerHealth !== "unobserved"
+    || snapshot.dbPostgresInternal !== "unobserved"
+    || snapshot.dbHostTcp !== "unobserved");
+  if (dbSnapshots.length === 0) return "unobserved";
+  const latest = dbSnapshots.at(-1);
+  if (latest.dbDockerHealth === "unhealthy") return "docker_unhealthy";
+  if (latest.dbPostgresInternal === "not_ready") return "postgres_not_ready";
+  if (latest.dbPostgresInternal === "ready" && latest.dbHostTcp === "refused") return "host_tcp_refused";
+  if (latest.dbPostgresInternal === "ready" && latest.dbHostTcp === "timeout") return "host_tcp_timeout";
+  if (latest.dbPostgresInternal === "ready" && latest.dbHostTcp === "connected") return "connected";
+  return "inconclusive";
+}
+
+function inferConfirmedFailureService(log, firstDockerError, firstLogError) {
+  if (["NONE", "UNKNOWN_ERROR"].includes(firstLogError.signal) && firstDockerError.signal !== "NONE") {
+    return firstDockerError.excerpt.match(/;service=([a-z-]+)/)?.[1] ?? null;
+  }
+  const firstError = firstLogError;
+  if (!["PORT_BIND", "IMAGE_PULL", "CONTAINER_CREATE", "RESOURCE", "PERMISSION"].includes(firstError.signal)) return null;
+  return inferFailureService(String(log ?? "").split(/\r?\n/u).find((line) => firstErrorSignalPatterns.some(([signal, pattern]) => signal === firstError.signal && pattern.test(line))) ?? "");
 }
 
 function isIncompleteJsonLine(line) {
@@ -443,9 +510,23 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     : firstLogError.signal !== "NONE"
       ? { ...firstLogError, source: "SUPABASE_CLI_LOG" }
       : { ...firstDockerError, source: firstDockerError.signal === "NONE" ? "UNAVAILABLE" : "DOCKER_EVENT" };
-  const dockerEventService = firstDockerError.excerpt.match(/;service=([a-z-]+)/)?.[1] ?? null;
+  const dbConnectivity = dbConnectivityDiagnosis(progressSnapshots);
+  const lastDbObservation = [...progressSnapshots].reverse().find((snapshot) => snapshot.dbDockerHealth !== "unobserved"
+    || snapshot.dbPostgresInternal !== "unobserved"
+    || snapshot.dbHostTcp !== "unobserved");
+  const confirmedService = inferConfirmedFailureService(log, firstDockerError, firstLogError);
+  const logService = inferFailureService(log);
+  const suspectedService = confirmedService
+    ? null
+    : dbConnectivity === "connected"
+      ? null
+      : logService && (firstError.signal === "HEALTHCHECK" || firstError.signal === "CONTAINER_EXIT")
+        ? logService
+        : dbConnectivity.startsWith("host_tcp_") || dbConnectivity === "postgres_not_ready" || dbConnectivity === "docker_unhealthy"
+          ? "db"
+          : null;
   const evidence = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     evidenceCodes: [],
     dockerCommandAvailable: dockerVersion.available,
     dockerDaemonAvailable: dockerDaemon.available,
@@ -468,7 +549,15 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     configContract: configContract.valid ? "valid" : configContract.available ? "invalid" : "unavailable",
     configuredPorts: configContract.ports,
     startPhase: inferStartStep(log),
-    failureService: dockerEventIsMoreSpecific ? dockerEventService : inferFailureService(log),
+    failureService: confirmedService,
+    confirmedService,
+    suspectedService,
+    serviceAttribution: confirmedService ? "confirmed" : suspectedService ? "suspected" : "unknown",
+    dbConnectivity,
+    dbDockerHealth: lastDbObservation?.dbDockerHealth ?? "unobserved",
+    dbPostgresInternal: lastDbObservation?.dbPostgresInternal ?? "unobserved",
+    dbHostTcp: lastDbObservation?.dbHostTcp ?? "unobserved",
+    dbConnectivityTimeline: progressSnapshots.map((snapshot) => `${snapshot.elapsedSeconds ?? "unknown"}:docker=${snapshot.dbDockerHealth};postgres=${snapshot.dbPostgresInternal};host_tcp=${snapshot.dbHostTcp}`).join(","),
     firstErrorSignal: firstError.signal,
     firstErrorExcerpt: firstError.excerpt,
     firstErrorSource: firstError.source,
@@ -496,7 +585,9 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
   if (evidence.startPhase === "UNKNOWN") evidenceCodes.push("START_PHASE_UNOBSERVED");
   evidenceCodes.push(progressSnapshots.length > 0 ? "START_PROGRESS_OBSERVED" : "START_PROGRESS_UNOBSERVED");
   if (startProgressPartial) evidenceCodes.push("START_PROGRESS_PARTIAL");
-  if (evidence.failureService) evidenceCodes.push("FAILED_SERVICE_IDENTIFIED");
+  if (evidence.confirmedService) evidenceCodes.push("FAILED_SERVICE_CONFIRMED");
+  else if (evidence.suspectedService) evidenceCodes.push("FAILED_SERVICE_SUSPECTED");
+  if (evidence.dbConnectivity !== "unobserved") evidenceCodes.push(`DB_CONNECTIVITY_${evidence.dbConnectivity.toUpperCase()}`);
   if (firstDockerError.signal !== "NONE") evidenceCodes.push("DOCKER_FAILURE_EVENT_OBSERVED");
   if (evidence.dockerLifecycleEvents.length > 0) evidenceCodes.push("DOCKER_LIFECYCLE_EVENTS_OBSERVED");
   const category = classifySupabaseStartFailure({ log, exitCode, evidence });
@@ -521,7 +612,10 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`evidence_schema_version=${evidence.schemaVersion}`);
     lines.push(`evidence_codes=${evidence.evidenceCodes.join(",")}`);
     lines.push(`start_phase=${evidence.startPhase}`);
-    lines.push(`failure_service=${evidence.failureService ?? "unavailable"}`);
+    lines.push(`service_attribution=${evidence.serviceAttribution ?? "unknown"}`);
+    lines.push(`confirmed_service=${evidence.confirmedService ?? "unavailable"}`);
+    lines.push(`suspected_service=${evidence.suspectedService ?? "unavailable"}`);
+    lines.push(`failure_service=${evidence.confirmedService ?? "unavailable"}`);
     lines.push(`first_error_signal=${evidence.firstErrorSignal ?? "unavailable"}`);
     lines.push(`first_error_excerpt=${evidence.firstErrorExcerpt ?? "unavailable"}`);
     lines.push(`first_error_source=${evidence.firstErrorSource ?? "unavailable"}`);
@@ -544,6 +638,11 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`duration_seconds=${evidence.durationSeconds ?? "unavailable"}`);
     lines.push(`start_observation_count=${evidence.startObservationCount ?? 0}`);
     lines.push(`start_observation_timeline=${evidence.startObservationTimeline || "unavailable"}`);
+    lines.push(`db_docker_health=${evidence.dbDockerHealth ?? "unobserved"}`);
+    lines.push(`db_postgres_internal=${evidence.dbPostgresInternal ?? "unobserved"}`);
+    lines.push(`db_host_tcp=${evidence.dbHostTcp ?? "unobserved"}`);
+    lines.push(`db_connectivity=${evidence.dbConnectivity ?? "unobserved"}`);
+    lines.push(`db_connectivity_timeline=${evidence.dbConnectivityTimeline || "unavailable"}`);
   }
   return lines.join("\n");
 }
@@ -581,12 +680,13 @@ function main() {
   const exitCodeValue = readArgument("--exit-code");
   const durationValue = readArgument("--duration-seconds");
   const expectedNetwork = readArgument("--expected-network");
+  const root = readArgument("--root") ?? process.cwd();
   if (watchPidValue !== undefined) {
     const watchPid = Number.parseInt(watchPidValue, 10);
     if (!progressFile || !Number.isInteger(watchPid) || watchPid <= 0) throw new Error("Supabase start progress monitor requires --progress-file and a positive --watch-pid.");
     const startedAt = Date.now();
     do {
-      appendFileSync(progressFile, `${JSON.stringify(collectStartProgressSnapshot({ elapsedSeconds: Math.floor((Date.now() - startedAt) / 1000), expectedNetwork }))}\n`);
+      appendFileSync(progressFile, `${JSON.stringify(collectStartProgressSnapshot({ elapsedSeconds: Math.floor((Date.now() - startedAt) / 1000), expectedNetwork, root }))}\n`);
       if (!isProcessAlive(watchPid)) break;
       sleepSync(5_000);
     } while (isProcessAlive(watchPid));
@@ -598,7 +698,7 @@ function main() {
   const log = readFileSync(logFile, "utf8");
   const dockerEvents = dockerEventsFile ? readFileSync(dockerEventsFile, "utf8") : "";
   const progress = readProgressSnapshots(progressFile);
-  const evidence = collectBoundedStartEvidence({ log, dockerEvents, exitCode, durationSeconds, expectedNetwork, startProgressSnapshots: progress.snapshots, startProgressPartial: progress.partial });
+  const evidence = collectBoundedStartEvidence({ log, dockerEvents, exitCode, durationSeconds, expectedNetwork, root, startProgressSnapshots: progress.snapshots, startProgressPartial: progress.partial });
   const category = classifySupabaseStartFailure({ log, exitCode, dockerCommandAvailable: evidence.dockerCommandAvailable, dockerDaemonAvailable: evidence.dockerDaemonAvailable, supabaseCliAvailable: evidence.supabaseCliAvailable, evidence });
   process.stdout.write(renderSupabaseStartDiagnostic({ category, exitCode, dockerVersion: evidence.dockerServerVersion, supabaseCliVersion: evidence.supabaseCliVersion, dockerDaemonAvailable: evidence.dockerDaemonAvailable, evidence }) + "\n");
 }
