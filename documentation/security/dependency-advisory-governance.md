@@ -28,6 +28,33 @@ plugins ESLint historiques conservent `minimatch@3.1.5` non vulnérable), sans
 changer les manifests Expo ni les permissions natives. Le backport `deepmerge`
 est limité au consommateur Expo et garde l'API CommonJS requise.
 
+Vérification des dernières releases compatibles Expo SDK 57 le 2026-11-22 :
+`expo@57.0.33` déclare `@expo/cli ^57.0.34`, `@expo/config ~57.0.11`,
+`@expo/config-plugins ~57.0.13`, `@expo/fingerprint ^0.20.16` et
+`@expo/metro-config ~57.0.14`. Les releases correspondantes d'Expo ont corrigé
+leurs plages `glob` en `^14.0.3`, également déclarée par
+`@sentry/bundler-plugins` ; l'override courant `14.0.2` est trop bas. En revanche,
+`@expo/fingerprint@0.20.16` déclare toujours `minimatch ^10.2.6`. La seule
+release publiée sur la ligne 10.x est `10.2.6`, que l'advisory
+`GHSA-g3hv-75wg-m249` identifie explicitement comme vulnérable ; sa plage
+n'accepte pas le premier correctif, `11.0.1`. La ligne Expo SDK 57 n'offre donc
+pas encore de graphe à la fois propre à `npm ls` et sécurisé pour ce chemin.
+Le lockfile courant conserve les versions effectives corrigées
+`glob@14.0.2` et `minimatch@11.0.1`. La résolution reste hors plage pour les
+déclarations actuellement verrouillées (`glob ^13.0.0` dans plusieurs packages
+Expo, `minimatch ^10.2.2` dans `@expo/fingerprint@0.20.13`) et pour
+`@sentry/bundler-plugins` (`glob ^14.0.3`). La dernière release Expo corrige
+les plages `glob`, mais ne corrige pas `@expo/fingerprint` ; la dernière
+`minimatch` de la ligne 10.x est encore vulnérable, tandis que le correctif
+`11.0.1` sort de sa plage. `npm ls glob minimatch --all` doit donc rester en
+échec `ELSPROBLEMS` tant que ces incompatibilités persistent. Aucun
+`glob@13.x` ni `minimatch@10.x` ne doit être installé pour faire disparaître ce
+diagnostic. L'override Sentry `glob` n'a pas été modifié : le correctif sûr
+nécessiterait aussi une régénération et une validation du lockfile sur tout le
+graphe, qui n'a pas été obtenue dans ce lot. Aucun override supplémentaire ni
+fork n'est ajouté ; la mise à jour des releases Expo reste en attente d'un
+correctif de plage pour `@expo/fingerprint`.
+
 Les chemins et versions sont vérifiés par
 `apps/mobile/security/expo-glob-minimatch-security.test.mjs`,
 `apps/mobile/security/deepmerge-security.test.mjs` et par le lockfile ; aucun
