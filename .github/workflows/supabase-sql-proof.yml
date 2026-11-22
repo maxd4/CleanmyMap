@@ -8,6 +8,15 @@ concurrency:
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Proof mode; isolation is read-only against Supabase and uses only an ephemeral runner database"
+        required: true
+        type: choice
+        default: complete-proof
+        options:
+          - complete-proof
+          - isolate-replay
   push:
     branches:
       - main
@@ -36,7 +45,7 @@ env:
 jobs:
   sql-proof:
     name: Replay and attest complete ephemeral SQL proof
-    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    if: (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main') && (github.event_name != 'workflow_dispatch' || inputs.mode != 'isolate-replay')
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     permissions:
@@ -161,3 +170,50 @@ jobs:
       - name: Remove private startup logs
         if: always()
         run: rm -f "$RUNNER_TEMP"/supabase-start-*.log "$RUNNER_TEMP"/supabase-start-*-progress.ndjson "$RUNNER_TEMP"/supabase-start-*-events.ndjson
+
+  isolate-replay:
+    name: Isolate bootstrap and first failing migration prefix
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.mode == 'isolate-replay'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify manual run targets current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_main_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
+          test -n "$current_main_sha"
+          test "$current_main_sha" = "$GITHUB_SHA"
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Node dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Isolate Supabase bootstrap and canonical migration prefixes
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: node scripts/ci/isolate-supabase-migration-failure.mjs
+
+      - name: Upload sanitized isolation evidence
+        if: always() && hashFiles('artifacts/ci/supabase-isolation-diagnostic.json') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: supabase-isolated-migration-diagnostic
+          path: artifacts/ci/supabase-isolation-diagnostic.json
+          if-no-files-found: error
+          retention-days: 3

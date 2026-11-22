@@ -1,0 +1,44 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { extractSafePostgresError, findFirstFailedPrefix } from "./isolate-supabase-migration-failure.mjs";
+
+test("binary prefix isolation returns the exact first failing migration index", () => {
+  for (const expected of [0, 1, 27, 498]) {
+    const firstFailed = findFirstFailedPrefix(499, (prefixLength) => prefixLength <= expected);
+    assert.equal(firstFailed, expected);
+  }
+});
+
+test("binary prefix isolation returns no failure when every prefix succeeds", () => {
+  assert.equal(findFirstFailedPrefix(499, () => true), null);
+});
+
+test("safe PostgreSQL attribution keeps only allowlisted type and position", () => {
+  const result = extractSafePostgresError(
+    'ERROR: invalid input syntax for type bigint: "private-rejected-value" SQL state: 22P02 Position: 187',
+    "20261121000002",
+  );
+
+  assert.deepEqual(result, {
+    migrationVersion: "20261121000002",
+    sqlstate: "22P02",
+    expectedType: "bigint",
+    statementPosition: 187,
+  });
+  assert.equal(JSON.stringify(result).includes("private-rejected-value"), false);
+});
+
+test("unknown types and missing positions are omitted", () => {
+  const result = extractSafePostgresError(
+    'invalid input syntax for type secret_domain: "do-not-publish" SQLSTATE=22P02',
+    null,
+  );
+  assert.deepEqual(result, {
+    migrationVersion: null,
+    sqlstate: "22P02",
+    expectedType: "unavailable",
+    statementPosition: null,
+  });
+  assert.equal(JSON.stringify(result).includes("do-not-publish"), false);
+});

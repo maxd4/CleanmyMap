@@ -100,6 +100,16 @@ test("SQL proof is an independent serialized lane and application E2E no longer 
   assert.match(e2eWorkflow, /Run persistent E2E/);
 });
 
+test("manual migration isolation is read-only and cannot attest convergence", () => {
+  const sqlWorkflow = yaml.load(fs.readFileSync(path.join(repositoryRoot, ".github", "workflows", "supabase-sql-proof.yml"), "utf8"));
+  assert.equal(sqlWorkflow.jobs["isolate-replay"].permissions.contents, "read");
+  assert.match(sqlWorkflow.jobs["isolate-replay"].if, /inputs\.mode == 'isolate-replay'/);
+  assert.match(sqlWorkflow.jobs["sql-proof"].if, /inputs\.mode != 'isolate-replay'/);
+  assert.doesNotMatch(JSON.stringify(sqlWorkflow.jobs["isolate-replay"]), /SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|service_role/i);
+  assert.ok(sqlWorkflow.jobs["isolate-replay"].steps.some(({ name }) => name === "Verify manual run targets current main"));
+  assert.ok(sqlWorkflow.jobs["isolate-replay"].steps.some(({ name }) => name === "Upload sanitized isolation evidence"));
+});
+
 test("SQL evidence keeps its relative path from upload through extraction, validation, and gate read", (context) => {
   const sqlWorkflow = yaml.load(fs.readFileSync(path.join(repositoryRoot, ".github", "workflows", "supabase-sql-proof.yml"), "utf8"));
   const convergenceWorkflow = yaml.load(workflow);
