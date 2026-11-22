@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 const workflow = await readFile(new URL('../../.github/workflows/supabase-backup-restore-proof.yml', import.meta.url), 'utf8');
 
 test('ephemeral backup proof reconstructs source and canonical target without Production credentials', () => {
+  assert.match(workflow, /cancel-in-progress:\s*false/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /push:/);
   assert.match(workflow, /branches:\s*\n\s+- main/);
@@ -32,5 +33,6 @@ test('ephemeral backup proof reconstructs source and canonical target without Pr
 
 test('proof delegates SQL and diagnostics to the shared private executor', () => {
   assert.match(workflow, /bash scripts\/ci\/run-supabase-restore-check\.sh/);
+  assert.equal((workflow.match(/bash scripts\/ci\/start-supabase-ephemeral\.sh/g) ?? []).length, 2);
   assert.doesNotMatch(workflow, /run_stage\s+|docker exec .*psql .*cmm-restore-checks|cat .*restore-.*\.log/);
 });

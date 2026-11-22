@@ -89,8 +89,12 @@ const diagnosticUploadStep = e2eWorkflow.match(/- name: Upload redacted Supabase
 assert.doesNotMatch(diagnosticUploadStep, /supabase-start\.log/);
 assert.deepEqual(auditWorkflowContent(e2eWorkflow, ".github/workflows/e2e-supabase.yml"), []);
 assert.match(e2eWorkflow, /Preflight canonical ephemeral PostgreSQL schema/);
-assert.match(e2eWorkflow, /Execute and attest all existing PostgreSQL proofs/);
-assert.match(e2eWorkflow, /scripts\/ci\/run-supabase-sql-proof\.mjs/);
+assert.doesNotMatch(e2eWorkflow, /scripts\/ci\/run-supabase-sql-proof\.mjs/);
+const sqlProofWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "supabase-sql-proof.yml"), "utf8");
+assert.deepEqual(auditWorkflowContent(sqlProofWorkflow, ".github/workflows/supabase-sql-proof.yml"), []);
+assert.match(sqlProofWorkflow, /scripts\/ci\/run-supabase-sql-proof\.mjs/);
+assert.match(sqlProofWorkflow, /check-public-e2e-artifact\.mjs/);
+assert.doesNotMatch(sqlProofWorkflow, /CMM_E2E_CLERK_DEV_BACKEND_TOKEN|CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY/);
 assert.doesNotMatch(e2eWorkflow, /combined_sql="\$\(printf '%s\\n'/);
 
 // Installation and CLI execution remain local and lockfile-controlled. These
@@ -102,7 +106,7 @@ for (const workflow of [ciWorkflow, e2eWorkflow, sonarqubeWorkflow]) {
 assert.match(ciWorkflow, /npm install --global --ignore-scripts gitnexus@1\.6\.12/);
 assert.equal((ciWorkflow.match(/--only-binary=:all:/g) ?? []).length, 3);
 assert.doesNotMatch(e2eWorkflow, /\bnpx\s+(?:supabase|playwright)\b/);
-assert.match(e2eWorkflow, /\.\/node_modules\/\.bin\/supabase start/);
+assert.match(e2eWorkflow, /bash scripts\/ci\/start-supabase-ephemeral\.sh/);
 assert.match(e2eWorkflow, /\.\/node_modules\/\.bin\/playwright install/);
 assert.match(e2eWorkflow, /\.\/node_modules\/\.bin\/playwright test/);
 assert.equal(packageLock.packages["node_modules/supabase"].version, "2.117.0");

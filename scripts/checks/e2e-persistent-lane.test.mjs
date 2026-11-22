@@ -13,16 +13,18 @@ const read = (relativePath) => readFileSync(path.join(root, relativePath), "utf8
 
 test("persistent E2E workflow is hosted, ephemeral, and never targets production Supabase", () => {
   const workflow = read(".github/workflows/e2e-supabase.yml");
+  const startScript = read("scripts/ci/start-supabase-ephemeral.sh");
   assert.match(workflow, /runs-on:\s+ubuntu-(?:latest|22\.04)/);
   assert.match(workflow, /SUPABASE_INTERNAL_IMAGE_REGISTRY:\s+ghcr\.io/);
-  assert.match(workflow, /supabase start --workdir apps\/web --yes/);
+  assert.match(workflow, /bash scripts\/ci\/start-supabase-ephemeral\.sh apps\/web/);
+  assert.match(startScript, /supabase" start --workdir "\$workdir" --yes/);
   assert.match(workflow, /supabase db reset --local --workdir apps\/web --yes/);
   assert.doesNotMatch(workflow, /--workdir apps\/web\/supabase/);
   const supabaseCliInvocations = workflow
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.includes("./node_modules/.bin/supabase"));
-  assert.ok(supabaseCliInvocations.length > 0, "workflow must invoke the Supabase CLI");
+  assert.ok(supabaseCliInvocations.length > 0, "workflow must invoke the Supabase CLI for the app database reset");
   for (const invocation of supabaseCliInvocations) {
     assert.match(
       invocation,
@@ -37,7 +39,7 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.match(workflow, /supabase_migrations\.schema_migrations/);
   assert.match(workflow, /6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71/);
   assert.match(workflow, /E2E_FIXTURE:group-join:v1/);
-  assert.match(workflow, /Synchronize PostgREST schema after PostgreSQL proof/);
+  assert.match(workflow, /Synchronize PostgREST schema before application tests/);
   assert.match(workflow, /notify pgrst, ['"]reload schema/);
   assert.equal((workflow.match(/notify pgrst, ['"]reload schema/g) ?? []).length, 1, "PostgREST synchronization must be single-shot");
   assert.doesNotMatch(workflow, /docker restart/);
@@ -52,7 +54,6 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.match(workflow, /cleanmymap-supabase-\$\{GITHUB_RUN_ID\}-\$\{GITHUB_RUN_ATTEMPT\}/);
   assert.match(workflow, /--network-id="\$\{\{ steps\.supabase_network\.outputs\.network_name \}\}"/);
   assert.match(workflow, /supabase db reset --local --workdir apps\/web --yes --network-id="\$\{\{ steps\.supabase_network\.outputs\.network_name \}\}"/);
-  assert.match(workflow, /CMM_SUPABASE_NETWORK_ID:\s+\$\{\{ steps\.supabase_network\.outputs\.network_name \}\}/);
   assert.match(workflow, /docker network rm "\$network_name"/);
   assert.match(workflow, /No isolated Supabase Docker network was created; skipping removal/);
   assert.match(workflow, /Isolated Supabase Docker network is already absent; skipping removal/);
@@ -65,12 +66,13 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.match(workflow, /push:\s*\n\s+branches:\s*\n\s+- main/);
   assert.match(workflow, /apps\/web\/supabase\/tests\/\*\*/);
   assert.match(workflow, /e2e\/\*\.sql/);
-  assert.match(workflow, /Execute and attest all existing PostgreSQL proofs/);
-  assert.match(workflow, /node scripts\/ci\/run-supabase-sql-proof\.mjs/);
+  assert.doesNotMatch(workflow, /node scripts\/ci\/run-supabase-sql-proof\.mjs/);
   assert.match(workflow, /select case/);
   assert.match(workflow, /then 'Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present'/);
   assert.match(workflow, /grep -q "Preflight passed:/);
-  assert.match(workflow, /CMM_SUPABASE_CANDIDATE_SHA:/);
+  const sqlWorkflow = read(".github/workflows/supabase-sql-proof.yml");
+  assert.match(sqlWorkflow, /CMM_SUPABASE_CANDIDATE_SHA:/);
+  assert.match(sqlWorkflow, /node scripts\/ci\/run-supabase-sql-proof\.mjs/);
   assert.doesNotMatch(workflow, /mgvmuambbxmmkrjjlryo\.supabase\.co/);
   assert.doesNotMatch(workflow, /https:\/\/[^\s]+\.supabase\.co/);
   assert.doesNotMatch(workflow, /CLERK_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY/);
@@ -97,11 +99,13 @@ test("SPOGOMI business checks run before the Clerk-dependent Cachan integration"
   }
 });
 
-test("SQL evidence is staged as a safe public report and never raw database output", () => {
+test("only the independent SQL proof lane stages the SQL attestation", () => {
   const staging = read("scripts/checks/stage-public-e2e-artifact.mjs");
   const validator = read("scripts/checks/check-public-e2e-artifact.mjs");
-  assert.match(staging, /supabase-sql-evidence\.json/);
-  assert.match(staging, /evidence\/supabase-sql\.json/);
+  const workflow = read(".github/workflows/supabase-sql-proof.yml");
+  assert.doesNotMatch(staging, /supabase-sql-evidence|inventorySqlProofs/);
+  assert.match(workflow, /supabase-sql-evidence\.json/);
+  assert.match(workflow, /evidence\/supabase-sql\.json/);
   assert.match(validator, /evidence\\\//);
   assert.match(validator, /\.json/);
 });

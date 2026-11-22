@@ -443,7 +443,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
     candidateSha: candidate,
     headSha: candidate,
     provenance: "COMMITTED_SNAPSHOT",
-    workflow: "e2e-supabase-ephemeral",
+    workflow: "supabase-sql-proof-ephemeral",
     outcome: "NOT_RUN",
     records,
   };

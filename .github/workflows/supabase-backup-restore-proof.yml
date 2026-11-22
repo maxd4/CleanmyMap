@@ -4,7 +4,7 @@ permissions: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   workflow_dispatch:
@@ -24,6 +24,9 @@ on:
       - "scripts/ci/prepare-supabase-restore-roles.mjs"
       - "scripts/ci/prepare-supabase-restore-target.mjs"
       - "scripts/ci/run-supabase-restore-check.sh"
+      - "scripts/ci/start-supabase-ephemeral.sh"
+      - "scripts/ci/diagnose-supabase-start.mjs"
+      - "scripts/ci/diagnose-supabase-start.test.mjs"
       - "package.json"
       - "package-lock.json"
 
@@ -80,7 +83,8 @@ jobs:
           proof_step="source-start"
           network_id="$(docker network create --driver bridge --label com.cleanmymap.ci=backup-restore-proof "$PROOF_NETWORK")"
           test -n "$network_id"
-          ./node_modules/.bin/supabase start --workdir apps/web --yes --output-format json --network-id="$PROOF_NETWORK" > "$PROOF_ROOT/source-start.log" 2>&1
+          proof_step="source-start"
+          bash scripts/ci/start-supabase-ephemeral.sh apps/web "$PROOF_NETWORK" "$PROOF_ROOT/source-start-diagnostic.txt"
           echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=source-start PASS"
           proof_step="source-reset"
           ./node_modules/.bin/supabase db reset --local --workdir apps/web --yes --network-id="$PROOF_NETWORK" > "$PROOF_ROOT/source-reset.log" 2>&1
@@ -104,17 +108,10 @@ jobs:
           proof_step="target-start"
           target_start_started_at="$(date +%s)"
           set +e
-          ./node_modules/.bin/supabase start --workdir "$PROOF_TARGET_WORKDIR" --yes --output-format json --network-id="$PROOF_NETWORK" > "$PROOF_ROOT/target-start.log" 2>&1
+          bash scripts/ci/start-supabase-ephemeral.sh "$PROOF_TARGET_WORKDIR" "$PROOF_NETWORK" "$PROOF_ROOT/target-start-diagnostic.txt"
           target_start_exit_code=$?
           set -e
           if [ "$target_start_exit_code" -ne 0 ]; then
-            target_start_duration_seconds=$(( $(date +%s) - target_start_started_at ))
-            node scripts/ci/diagnose-supabase-start.mjs \
-              --log-file="$PROOF_ROOT/target-start.log" \
-              --exit-code="$target_start_exit_code" \
-              --duration-seconds="$target_start_duration_seconds" \
-              > "$PROOF_ROOT/target-start-diagnostic.txt" 2>&1 || true
-            cat "$PROOF_ROOT/target-start-diagnostic.txt"
             exit "$target_start_exit_code"
           fi
           echo "EPHEMERAL_BACKUP_RESTORE_PROOF: phase=target-start PASS"

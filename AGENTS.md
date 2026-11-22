@@ -635,3 +635,23 @@ qu'aucun changement étranger n'a été écrasé. Signaler les incertitudes
 matérielles, blocages et écarts, sans rapport encyclopédique. Réponse finale
 en français, avec résultat, commit éventuel et
 validation importante seulement si elle éclaire la décision.
+
+### Preuve SQL et convergence Supabase
+
+La preuve SQL éphémère complète est portée par
+`.github/workflows/supabase-sql-proof.yml` et
+`scripts/ci/run-supabase-sql-proof.mjs`. Elle rejoue l'arbre canonique, le
+seed, tout l'inventaire pgTAP/SQL/concurrence, puis produit une attestation
+publique assainie sur le SHA commité exact. Sa concurrence ne doit pas annuler
+une preuve utile lors de pushes parallèles. E2E applicatif et backup/restore
+restent des preuves séparées et leurs échecs ne modifient pas l'attestation SQL.
+
+La convergence Production automatique exige la provenance du workflow SQL,
+le dépôt canonique, la branche `main`, le SHA exact toujours présent en HEAD
+distant et un préflight complet `READY_TO_APPLY`. L'environnement
+`supabase-production`, les secrets minimaux, la revue de toute la file, le
+backup vérifié, le fast-forward et le postflight `ALIGNED` restent obligatoires.
+Ne pas déclencher une application accélérée exceptionnelle sans accord humain
+explicite donné pour cette exécution; ses conditions sont définies dans le
+runbook canonique. Une preuve échouée, absente ou obsolète laisse toute la file
+en attente.

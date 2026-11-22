@@ -181,6 +181,8 @@ function inferStartStep(log) {
 function inferFailureService(log) {
   const text = String(log ?? "");
   const servicePattern = "(?:db|postgres(?:ql)?|auth|gotrue|rest|postgrest|storage(?:-api)?|realtime|kong|studio|mailpit|inbucket|edge-runtime|logflare|vector|supavisor|imgproxy)";
+  const containerNameMatch = text.match(new RegExp(`(?:^|\\b)supabase_(${servicePattern})(?:_|\\b)`, "i"));
+  if (containerNameMatch) return normalizeServiceName(containerNameMatch[1]);
   const explicitMatch = text.match(new RegExp(`\\b(?:service|container|component|process)\\s+(${servicePattern})\\b`, "i"));
   if (explicitMatch) return normalizeServiceName(explicitMatch[1]);
   if (/\bpostgres(?:ql)?:\/\//i.test(text)) return "db";
@@ -213,6 +215,30 @@ function inferFirstErrorEvidence(log) {
     if (!normalized.trim()) continue;
     const signal = firstErrorSignalPatterns.find(([, pattern]) => pattern.test(normalized))?.[0];
     if (signal) return { signal, excerpt: sanitizeErrorExcerpt(signal, inferFailureService(normalized)) };
+  }
+  return { signal: "NONE", excerpt: "none" };
+}
+
+export function parseFirstDockerFailureEvent(rawEvents) {
+  for (const line of String(rawEvents ?? "").split(/\r?\n/u)) {
+    if (!line.trim()) continue;
+    let event;
+    try {
+      event = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const action = String(event.Action ?? event.status ?? "").toLowerCase();
+    const attributes = event.Actor?.Attributes ?? event.actor?.attributes ?? {};
+    const name = String(attributes.name ?? "");
+    const service = inferFailureService(name);
+    if (!service) continue;
+    if (action === "oom" || action === "die" || action === "destroy" || action === "health_status: unhealthy") {
+      const rawExitCode = attributes.exitCode ?? attributes.exitcode;
+      const exitCode = /^\d{1,3}$/.test(String(rawExitCode ?? "")) ? String(rawExitCode) : "unknown";
+      const signal = action === "health_status: unhealthy" ? "DOCKER_HEALTH_UNHEALTHY" : action === "oom" ? "DOCKER_OOM" : `DOCKER_${action.toUpperCase()}`;
+      return { signal, excerpt: `event=${action};service=${service};exit_code=${exitCode}` };
+    }
   }
   return { signal: "NONE", excerpt: "none" };
 }
@@ -341,7 +367,7 @@ export function readProgressSnapshots(progressFile) {
   }
 }
 
-export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = null, root = process.cwd(), probeCommand = probe, startProgressSnapshots = [], startProgressPartial = false }) {
+export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, durationSeconds = null, root = process.cwd(), probeCommand = probe, startProgressSnapshots = [], startProgressPartial = false }) {
   const dockerVersion = probeCommand("docker", ["--version"]);
   const dockerDaemon = probeCommand("docker", ["info", "--format", "{{.ServerVersion}}"]);
   const dockerInfo = probeCommand("docker", ["info", "--format", "{{json .}}"]);
@@ -365,7 +391,9 @@ export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = n
   const networkNames = dockerNetworks.available ? String(dockerNetworks.output).split(/\r?\n/).filter(Boolean) : null;
   const networkState = networkNames === null ? "unobserved" : networkNames.some((line) => /supabase/i.test(line)) ? "observed" : "missing";
   const progressSnapshots = normalizeProgressSnapshots(startProgressSnapshots);
-  const firstError = inferFirstErrorEvidence(log);
+  const firstLogError = inferFirstErrorEvidence(log);
+  const firstDockerError = parseFirstDockerFailureEvent(dockerEvents);
+  const firstError = firstLogError.signal !== "NONE" ? { ...firstLogError, source: "SUPABASE_CLI_LOG" } : { ...firstDockerError, source: firstDockerError.signal === "NONE" ? "UNAVAILABLE" : "DOCKER_EVENT" };
   const evidence = {
     schemaVersion: 3,
     evidenceCodes: [],
@@ -393,6 +421,7 @@ export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = n
     failureService: inferFailureService(log),
     firstErrorSignal: firstError.signal,
     firstErrorExcerpt: firstError.excerpt,
+    firstErrorSource: firstError.source,
     durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
     startObservationCount: progressSnapshots.length,
     startObservationTimeline: progressSnapshots.map((snapshot) => `${snapshot.elapsedSeconds ?? "unknown"}:${snapshot.observationState}`).join(","),
@@ -417,6 +446,7 @@ export function collectBoundedStartEvidence({ log, exitCode, durationSeconds = n
   evidenceCodes.push(progressSnapshots.length > 0 ? "START_PROGRESS_OBSERVED" : "START_PROGRESS_UNOBSERVED");
   if (startProgressPartial) evidenceCodes.push("START_PROGRESS_PARTIAL");
   if (evidence.failureService) evidenceCodes.push("FAILED_SERVICE_IDENTIFIED");
+  if (firstDockerError.signal !== "NONE") evidenceCodes.push("DOCKER_FAILURE_EVENT_OBSERVED");
   const category = classifySupabaseStartFailure({ log, exitCode, evidence });
   evidenceCodes.push(category === SUPABASE_START_CATEGORIES.UNCLASSIFIED ? "NO_CLASSIFIABLE_START_LOG_SIGNAL" : category === SUPABASE_START_CATEGORIES.START_SUCCEEDED ? "START_SUCCEEDED" : `LOG_SIGNAL_${category}`);
   evidence.evidenceCodes = [...new Set(evidenceCodes)].sort((left, right) => left.localeCompare(right, "en"));
@@ -442,6 +472,7 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`failure_service=${evidence.failureService ?? "unavailable"}`);
     lines.push(`first_error_signal=${evidence.firstErrorSignal ?? "unavailable"}`);
     lines.push(`first_error_excerpt=${evidence.firstErrorExcerpt ?? "unavailable"}`);
+    lines.push(`first_error_source=${evidence.firstErrorSource ?? "unavailable"}`);
     lines.push(`docker_containers=${evidence.dockerContainers ?? "unavailable"}`);
     lines.push(`docker_container_states=${Object.entries(evidence.dockerContainerStates).map(([state, count]) => `${state}:${count}`).join(",")}`);
     lines.push(`docker_images=${evidence.dockerImages ?? "unavailable"}`);
@@ -491,6 +522,7 @@ function readArgument(name) {
 function main() {
   const logFile = readArgument("--log-file");
   const progressFile = readArgument("--progress-file");
+  const dockerEventsFile = readArgument("--docker-events-file");
   const watchPidValue = readArgument("--watch-pid");
   const exitCodeValue = readArgument("--exit-code");
   const durationValue = readArgument("--duration-seconds");
@@ -509,8 +541,9 @@ function main() {
   const durationSeconds = durationValue === undefined ? null : Number.parseInt(durationValue, 10);
   if (!logFile || !Number.isInteger(exitCode) || exitCode < 0 || (durationValue !== undefined && (!Number.isInteger(durationSeconds) || durationSeconds < 0))) throw new Error("Supabase start diagnostic requires --log-file and a non-negative --exit-code.");
   const log = readFileSync(logFile, "utf8");
+  const dockerEvents = dockerEventsFile ? readFileSync(dockerEventsFile, "utf8") : "";
   const progress = readProgressSnapshots(progressFile);
-  const evidence = collectBoundedStartEvidence({ log, exitCode, durationSeconds, startProgressSnapshots: progress.snapshots, startProgressPartial: progress.partial });
+  const evidence = collectBoundedStartEvidence({ log, dockerEvents, exitCode, durationSeconds, startProgressSnapshots: progress.snapshots, startProgressPartial: progress.partial });
   const category = classifySupabaseStartFailure({ log, exitCode, dockerCommandAvailable: evidence.dockerCommandAvailable, dockerDaemonAvailable: evidence.dockerDaemonAvailable, supabaseCliAvailable: evidence.supabaseCliAvailable, evidence });
   process.stdout.write(renderSupabaseStartDiagnostic({ category, exitCode, dockerVersion: evidence.dockerServerVersion, supabaseCliVersion: evidence.supabaseCliVersion, dockerDaemonAvailable: evidence.dockerDaemonAvailable, evidence }) + "\n");
 }

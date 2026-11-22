@@ -1,19 +1,22 @@
 # Runbook CURRENT — convergence Supabase publiée
 
 Le workflow `.github/workflows/supabase-convergence.yml` maintient le projet
-lié avec toute la file canonique de migrations de `main`. Il démarre, pour une
-application éventuelle, uniquement après le succès du workflow
-`e2e-supabase-ephemeral` via `workflow_run`. Les déclenchements manuel et
-quotidien restent des contrôles read-only. Il n'a pas de déclencheur
-`pull_request` et utilise l'environnement GitHub protégé
-`supabase-production`.
+lié avec toute la file canonique de migrations de `main`. Son mode automatique
+attend `supabase-sql-proof-ephemeral` via `workflow_run` : ce workflow rejoue
+la file complète sur une instance éphémère, le seed, pgTAP, les contrats SQL et
+la concurrence PostgreSQL. La convergence vérifie ensuite le dépôt, la branche
+`main`, le SHA attesté toujours égal au HEAD distant et le préflight complet
+`READY_TO_APPLY` avant toute écriture. Les déclenchements manuel et quotidien
+restent read-only. Le workflow n'a pas de déclencheur `pull_request` et utilise
+l'environnement GitHub protégé `supabase-production`.
 
-Le workflow éphémère accepte aussi `workflow_dispatch` pour relancer la preuve
-après configuration humaine des credentials Clerk Development. Ce déclenchement
+Le workflow SQL accepte aussi `workflow_dispatch` pour relancer la preuve; il
 ne peut démarrer que depuis `main` et vérifie que le SHA du run est encore le
-`HEAD` distant de `main` avant toute étape qui utilise ces credentials. Les
-déclenchements `workflow_run` et leur attestation de provenance restent le seul
-chemin vers l'application automatique.
+`HEAD` distant. Le workflow applicatif `e2e-supabase-ephemeral` conserve ses
+contrôles de provenance et ses secrets Clerk Development. Ses résultats et
+ceux du backup/restore sont indépendants de l'attestation SQL : leurs échecs
+ne sont ni cachés ni utilisés comme preuve SQL positive ou négative. Le runner
+SQL canonique n'est pas dupliqué dans ces workflows.
 
 ## Préconditions et références
 
@@ -53,8 +56,9 @@ bloque l'application.
 
 `ALIGNED` signifie que l'historique est convergent et qu'il n'y a aucune
 migration en attente ; ce statut ne dépend pas de contrôles d'application, mais
-les alertes de sécurité restent visibles. `READY_TO_APPLY` autorise l'unique
-commande mutative :
+les alertes de sécurité restent visibles. `READY_TO_APPLY`, après preuve SQL
+complète et provenance exacte, autorise le workflow automatique à exécuter
+l'unique commande mutative :
 
 ```text
 npx supabase db push --linked --yes
@@ -64,7 +68,7 @@ npx supabase db push --linked --yes
 obsolète n'appliquent rien. Le diagnostic reste assaini et publie le statut, la
 première migration concernée, les causes et les alertes ; toute la file reste
 en attente. Le contrôle préalable ne retient pas le push Git. Après correction
-validée, la reprise est automatique au prochain succès de la preuve éphémère ;
+validée, la reprise est automatique au prochain succès de la preuve SQL ;
 aucune confirmation manuelle répétitive n'est requise. Après application, le workflow rejoue le
 préflight et exige `ALIGNED`, puis relit les Advisors, les arbres de migration
 et les contrats statiques critiques Web. La lane SQL éphémère reste le seul
@@ -93,3 +97,33 @@ Une exécution locale du préflight et de `db push --dry-run` reste read-only et
 ne constitue pas une preuve d'application, de RLS, de triggers, de concurrence
 ou de pgTAP. Sans lane PostgreSQL éphémère autorisée, conserver le statut
 `DB_SEMANTICS_NOT_EXECUTED`.
+
+## Application accélérée exceptionnelle
+
+Cette voie ne s'exécute pas via un dispatch read-only et n'est pas autorisée
+implicitement par la disponibilité du projet ou un simple préflight favorable.
+Elle exige un accord humain explicite pour l'exécution concernée. Avant de la
+demander, l'opérateur doit :
+
+1. examiner toutes les migrations en attente et leurs dépendances dans l'ordre
+   canonique, sans en exclure aucune;
+2. produire et vérifier une sauvegarde récente récupérable (manifeste,
+   intégrité et restauration de contrôle selon le runbook backup/restore);
+3. obtenir `READY_TO_APPLY` du préflight canonique read-only sur la cible liée,
+   sans `BLOCKED`, `DIVERGED`, migration ambiguë ni régression bloquante;
+4. obtenir l'accord explicite d'un humain habilité pour le SHA courant de
+   `main`, en consignant la revue de file, le résultat du backup et du
+   préflight;
+5. déclencher manuellement `supabase-sql-proof-ephemeral` sur `main` pour ce
+   SHA. Le garde de provenance exige à nouveau le HEAD courant, l'attestation
+   SQL complète et `READY_TO_APPLY` avant l'application automatique.
+
+Le dispatch direct de `supabase-convergence.yml` reste read-only. L'accélération
+ne lance jamais `db push` depuis un poste local ni ne contourne la preuve ou le
+workflow canonique; elle consiste à lancer immédiatement la preuve exacte après
+la revue et l'accord explicite.
+
+Si un contrôle manque, la voie accélérée reste bloquée. Elle n'autorise ni SQL
+manuel, ni `migration repair`, ni exclusion de migration, ni contournement de
+l'environnement protégé. Elle doit utiliser le workflow canonique approuvé;
+aucune exception n'est exécutée dans le cadre de ce changement.

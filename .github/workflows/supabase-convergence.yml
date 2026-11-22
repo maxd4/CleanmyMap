@@ -9,7 +9,7 @@ concurrency:
 on:
   workflow_run:
     workflows:
-      - e2e-supabase-ephemeral
+      - supabase-sql-proof-ephemeral
     types:
       - completed
   workflow_dispatch:
@@ -46,7 +46,7 @@ jobs:
         continue-on-error: true
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: cleanmymap-public-e2e-evidence
+          name: cleanmymap-supabase-sql-evidence
           path: artifacts/ci-public-evidence
           repository: ${{ github.repository }}
           run-id: ${{ github.event.workflow_run.id }}
@@ -145,10 +145,7 @@ jobs:
           status=$(sed -n 's/^PREFLIGHT_STATUS: //p' "$RUNNER_TEMP/supabase-preflight.log" | tail -n 1)
           first=$(sed -n 's/^FIRST_BLOCKING_MIGRATION: //p' "$RUNNER_TEMP/supabase-preflight.log" | tail -n 1)
           action=$(sed -n 's/^ACTION_REQUIRED: //p' "$RUNNER_TEMP/supabase-preflight.log" | tail -n 1)
-          {
-            echo "status=$status"
-            echo "first_blocking_migration=$first"
-          } >> "$GITHUB_OUTPUT"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
           {
             echo "## Supabase migration convergence"
             echo "- Status: \`$status\`"
@@ -156,17 +153,12 @@ jobs:
             echo "- Required action: ${action:-not reported}"
             echo "- Remote writes during preflight: \`NONE\`"
           } >> "$GITHUB_STEP_SUMMARY"
-          if [ "$preflight_exit" -ne 0 ]; then
-            echo "Preflight returned a non-zero exit code; no migration was applied."
-            exit 1
-          fi
-          if [ "$status" != "READY_TO_APPLY" ] && [ "$status" != "ALIGNED" ]; then
-            echo "Preflight blocked the deployment; no migration was applied."
-            exit 1
-          fi
+          CMM_SUPABASE_PREFLIGHT_STATUS="$status" \
+          CMM_SUPABASE_PREFLIGHT_EXIT_CODE="$preflight_exit" \
+          node scripts/ci/supabase-convergence-gate.mjs --preflight
 
       - name: Apply the complete canonical queue after exact ephemeral proof
-        if: github.event_name == 'workflow_run' && steps.preflight.outputs.status == 'READY_TO_APPLY'
+        if: github.event_name == 'workflow_run' && steps.preflight.outputs.apply == 'true'
         working-directory: apps/web
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

@@ -93,6 +93,9 @@ Next.js contre cette instance locale du runner, puis arrête la stack. Elle
 utilise exclusivement des identifiants Clerk Development ; l'absence de ces
 identifiants fait échouer la lane avant tout E2E. Aucun projet Supabase distant,
 URL de production ou clé de production ne doit être injecté dans cette lane.
+Cette lane applicative ne lance pas le runner pgTAP/SQL/concurrence. Elle peut
+échouer sur Clerk ou Playwright sans modifier l'attestation SQL ni bloquer à
+elle seule la convergence.
 
 La chronologie documentée de l'incident de démarrage et de replay du
 14 novembre 2026 est conservée dans
@@ -116,8 +119,12 @@ diagnostic borné : catégorie et code stable, phase, service Supabase connu,
 versions, disponibilité du daemon, état des images et du réseau Docker,
 conflits de ports, santé et présence des services indispensables à cette lane
 (`db`, `kong`, `rest`, `storage`), `supabase status`, contrat minimal de
-`apps/web/supabase/config.toml` et durée observée. Les sondes ne publient ni
-nom d'image, ni sortie Docker, ni variable d'environnement. Une sortie
+`apps/web/supabase/config.toml` et durée observée. Le script partagé
+`scripts/ci/start-supabase-ephemeral.sh` conserve temporairement les logs privés
+et interroge les événements Docker de la fenêtre de démarrage; le diagnostic
+ne publie que le premier type d'erreur allowlisté, le service reconnu et, si
+disponible, son code de sortie. Les sondes ne publient ni nom d'image, ni sortie
+Docker, ni variable d'environnement. Une sortie
 `UNCLASSIFIED` reste une absence de preuve causale ; elle ne doit pas être
 transformée en cause supposée. `START_TIMEOUT` signifie seulement qu'aucun
 conteneur et aucun statut n'ont été observés après la durée bornée ; il ne
@@ -155,8 +162,11 @@ replay ; elles ne font pas partie du workflow local.
 
 ### Contrats PostgreSQL existants et pgTAP
 
-La même lane est l'unique owner de la preuve SQL exécutée. Après les migrations
-canoniques et `seed.sql`, `scripts/ci/run-supabase-sql-proof.mjs` dérive son
+Le workflow `.github/workflows/supabase-sql-proof.yml` est l'unique lane
+d'exécution de la preuve SQL; son nom GitHub est
+`supabase-sql-proof-ephemeral`. Il démarre une instance éphémère, rejoue les
+migrations canoniques et `seed.sql`, puis
+`scripts/ci/run-supabase-sql-proof.mjs` dérive son
 inventaire des fichiers présents sous `apps/web/supabase/tests/` et `e2e/` :
 
 - les fichiers `*.pgtap.sql` passent par `supabase test db --local` et leur
@@ -177,6 +187,9 @@ pas les sorties SQL brutes. Les statuts sont `INTEGRATION_PROOF`, `NOT_RUN` ou
 `DB_SEMANTICS_NOT_EXECUTED`. Une CI déclenchée par `push` sur `main` vérifie le
 commit déjà publié : elle fournit une vérification post-publication et ne
 constitue pas une protection serveur préalable à l'admission du push.
+La lane d'E2E applicatif et le workflow backup/restore ont leurs propres
+instances et résultats; ils ne réexécutent pas l'inventaire SQL complet et
+leurs échecs ne modifient pas l'attestation de cette preuve.
 
 Ou via le script PowerShell :
 

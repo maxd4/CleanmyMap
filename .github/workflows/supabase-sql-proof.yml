@@ -1,0 +1,163 @@
+name: supabase-sql-proof-ephemeral
+
+permissions: {}
+
+concurrency:
+  group: supabase-sql-proof-${{ github.ref }}
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/web/supabase/config.toml"
+      - "apps/web/supabase/migrations/**"
+      - "apps/web/supabase/seed.sql"
+      - "apps/web/supabase/tests/**"
+      - "e2e/*.sql"
+      - "e2e/*-concurrency.mjs"
+      - "e2e/spogomi-cachan-integration.mjs"
+      - "e2e/security-02-two-sessions.mjs"
+      - "scripts/ci/run-supabase-sql-proof.mjs"
+      - "scripts/ci/run-supabase-sql-proof.test.mjs"
+      - "scripts/ci/diagnose-supabase-start.mjs"
+      - "scripts/ci/diagnose-supabase-start.test.mjs"
+      - "scripts/ci/start-supabase-ephemeral.sh"
+      - ".github/workflows/supabase-sql-proof.yml"
+      - "package.json"
+      - "package-lock.json"
+
+env:
+  NODE_VERSION_FILE: apps/web/.nvmrc
+  SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+
+jobs:
+  sql-proof:
+    name: Replay and attest complete ephemeral SQL proof
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify manual run targets current main
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_main_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
+          test -n "$current_main_sha"
+          test "$current_main_sha" = "$GITHUB_SHA"
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Verify Node runtime contract
+        run: node scripts/checks/check-node-version-contract.mjs
+
+      - name: Install Node dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Audit canonical migration tree and SQL syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run audit:supabase-migration-trees
+          mapfile -t sql_files < <(find apps/web/supabase/migrations apps/web/supabase/tests e2e -type f -name '*.sql' -print | sort)
+          args=(scripts/ci/validate-sql-syntax.mjs "--ref=$GITHUB_SHA")
+          for file in "${sql_files[@]}"; do args+=("--changed-file=$file"); done
+          node "${args[@]}"
+
+      - name: Verify canonical ephemeral inputs
+        run: test -d apps/web/supabase/migrations && test -f apps/web/supabase/seed.sql
+
+      - name: Prepare isolated Supabase Docker network
+        id: supabase_network
+        run: |
+          set -euo pipefail
+          network_name="cleanmymap-sql-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          docker network create --driver bridge --label com.cleanmymap.ci=ephemeral "$network_name"
+          echo "network_name=$network_name" >> "$GITHUB_OUTPUT"
+
+      - name: Start ephemeral Supabase
+        id: start_supabase
+        run: |
+          mkdir -p artifacts/ci
+          bash scripts/ci/start-supabase-ephemeral.sh apps/web "${{ steps.supabase_network.outputs.network_name }}" artifacts/ci/supabase-start-diagnostic.txt
+
+      - name: Apply canonical migrations and seed
+        run: ./node_modules/.bin/supabase db reset --local --workdir apps/web --yes --network-id="${{ steps.supabase_network.outputs.network_name }}"
+
+      - name: Verify canonical ephemeral schema and seed
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/supabase status --workdir apps/web --output json > "$RUNNER_TEMP/supabase-status.json"
+          ./node_modules/.bin/supabase db query --workdir apps/web --local "select case when to_regclass('public.actions') is not null and to_regclass('public.spogomi_events') is not null and exists (select 1 from supabase_migrations.schema_migrations where version ~ '^[0-9]{14}$') and exists (select 1 from public.actions where id = '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid and notes like 'E2E_FIXTURE:group-join:v1%') then 'PASS' else 'FAIL' end" | grep -q PASS
+
+      - name: Run complete PostgreSQL and concurrency proof
+        env:
+          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.sha }}
+          CMM_SUPABASE_TEST_ENVIRONMENT: ephemeral
+          CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: I_UNDERSTAND_EPHEMERAL_ONLY
+          CMM_SUPABASE_NETWORK_ID: ${{ steps.supabase_network.outputs.network_name }}
+        run: node scripts/ci/run-supabase-sql-proof.mjs
+
+      - name: Stop ephemeral Supabase and remove network
+        if: always()
+        env:
+          SUPABASE_NETWORK_NAME: ${{ steps.supabase_network.outputs.network_name }}
+        run: |
+          set +e
+          ./node_modules/.bin/supabase stop --workdir apps/web --no-backup >/dev/null 2>&1
+          if [ -n "$SUPABASE_NETWORK_NAME" ] && docker network inspect "$SUPABASE_NETWORK_NAME" >/dev/null 2>&1; then
+            docker network rm "$SUPABASE_NETWORK_NAME" >/dev/null
+          fi
+          rm -f apps/web/.env.local
+
+      - name: Stage SQL evidence for convergence
+        if: always()
+        run: |
+          mkdir -p artifacts/ci-public-evidence/evidence
+          if [ -f artifacts/ci/supabase-sql-evidence.json ]; then
+            cp artifacts/ci/supabase-sql-evidence.json artifacts/ci-public-evidence/evidence/supabase-sql.json
+          fi
+
+      - name: Validate public SQL evidence
+        id: validate_evidence
+        if: always()
+        run: node scripts/checks/check-public-e2e-artifact.mjs artifacts/ci-public-evidence
+
+      - name: Upload complete SQL proof evidence
+        if: always() && steps.validate_evidence.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: cleanmymap-supabase-sql-evidence
+          path: artifacts/ci-public-evidence/evidence/supabase-sql.json
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Upload redacted start diagnostic
+        if: always() && steps.start_supabase.outcome == 'failure'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: supabase-start-diagnostic
+          path: artifacts/ci/supabase-start-diagnostic.txt
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Remove private startup logs
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/supabase-start-*.log "$RUNNER_TEMP"/supabase-start-*-progress.ndjson "$RUNNER_TEMP"/supabase-start-*-events.ndjson

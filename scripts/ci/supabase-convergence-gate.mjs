@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
-const EXPECTED_WORKFLOW = "e2e-supabase-ephemeral";
+const EXPECTED_WORKFLOW = "supabase-sql-proof-ephemeral";
 const EXPECTED_PROOF_KIND = "cleanmymap-supabase-sql-evidence";
 
 function requireSha(value, label) {
@@ -25,6 +25,20 @@ export function evaluateSupabasePostflight({ eventName, status, exitCode } = {})
     return { mode: "READ_ONLY_PENDING", pass: true, reason: `${eventName} is read-only; pending migrations are reported without application` };
   }
   return { ...blocked(`postflight status ${String(status ?? "MISSING")} is not valid for ${String(eventName ?? "unknown event")}`), pass: false };
+}
+
+export function evaluateAutomaticPreflight({ eventName, status, exitCode } = {}) {
+  if (exitCode !== 0) return { ...blocked("read-only preflight returned a non-zero exit code"), pass: false };
+  if (eventName !== "workflow_run") {
+    return { mode: "READ_ONLY", apply: false, pass: true, reason: `${String(eventName)} cannot apply migrations` };
+  }
+  if (status === "READY_TO_APPLY") {
+    return { mode: "READY_TO_APPLY", apply: true, pass: true, reason: "complete canonical queue passed the preflight" };
+  }
+  if (status === "ALIGNED") {
+    return { mode: "ALIGNED", apply: false, pass: true, reason: "the linked migration queue is already aligned" };
+  }
+  return { ...blocked(`preflight status ${String(status ?? "MISSING")} does not authorize application`), pass: false };
 }
 
 export function validateEphemeralEvidence({ evidence, candidateSha }) {
@@ -63,7 +77,7 @@ export function evaluateSupabaseConvergenceGate({
     return { mode: "READ_ONLY", apply: false, reason: `${eventName} is read-only and cannot apply migrations` };
   }
   if (eventName !== "workflow_run") return blocked("unsupported convergence trigger");
-  if (workflowName !== EXPECTED_WORKFLOW) return blocked("source workflow is not the canonical ephemeral Supabase workflow");
+  if (workflowName !== EXPECTED_WORKFLOW) return blocked("source workflow is not the canonical ephemeral SQL proof workflow");
   if (repository !== "maxd4/CleanmyMap" || sourceRepository !== repository || sourceHeadRepository !== repository) {
     return blocked("source workflow repository is not the canonical repository");
   }
@@ -79,6 +93,19 @@ function readJson(filePath) {
 }
 
 function main() {
+  if (process.argv.includes("--preflight")) {
+    const result = evaluateAutomaticPreflight({
+      eventName: process.env.GITHUB_EVENT_NAME,
+      status: process.env.CMM_SUPABASE_PREFLIGHT_STATUS,
+      exitCode: Number.parseInt(process.env.CMM_SUPABASE_PREFLIGHT_EXIT_CODE ?? "", 10),
+    });
+    console.log(`SUPABASE_PREFLIGHT_GATE: ${result.mode} ${result.reason}`);
+    if (process.env.GITHUB_OUTPUT) {
+      fs.appendFileSync(process.env.GITHUB_OUTPUT, `preflight_mode=${result.mode}\napply=${result.apply ? "true" : "false"}\n`);
+    }
+    if (!result.pass) process.exitCode = 1;
+    return;
+  }
   const evidencePath = process.env.CMM_SUPABASE_EVIDENCE_PATH;
   let evidence = null;
   if (evidencePath && fs.existsSync(evidencePath)) {

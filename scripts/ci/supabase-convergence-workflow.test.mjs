@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { evaluateSupabaseConvergenceGate, evaluateSupabasePostflight, validateEphemeralEvidence } from "./supabase-convergence-gate.mjs";
+import { evaluateAutomaticPreflight, evaluateSupabaseConvergenceGate, evaluateSupabasePostflight, validateEphemeralEvidence } from "./supabase-convergence-gate.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const workflowPath = path.join(repositoryRoot, ".github", "workflows", "supabase-convergence.yml");
@@ -14,7 +14,7 @@ const candidateSha = "b".repeat(40);
 function passingEvidence(overrides = {}) {
   return {
     kind: "cleanmymap-supabase-sql-evidence",
-    workflow: "e2e-supabase-ephemeral",
+    workflow: "supabase-sql-proof-ephemeral",
     candidateSha,
     headSha: candidateSha,
     provenance: "COMMITTED_SNAPSHOT",
@@ -32,7 +32,7 @@ function passingEvidence(overrides = {}) {
 test("Supabase convergence is proof-triggered, scheduled, manual, and serialized", () => {
   assert.doesNotMatch(workflow, /^\s+push:/m);
   assert.match(workflow, /workflow_run:/);
-  assert.match(workflow, /workflows:\s*\n\s+- e2e-supabase-ephemeral/);
+  assert.match(workflow, /workflows:\s*\n\s+- supabase-sql-proof-ephemeral/);
   assert.match(workflow, /types:\s*\n\s+- completed/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /schedule:/);
@@ -60,6 +60,23 @@ test("manual ephemeral E2E is restricted to the current main SHA before any cred
   assert.ok(e2eWorkflow.indexOf("Verify manual run targets current main") < e2eWorkflow.indexOf("Run SPOGOMI Cachan mixed integration on ephemeral Supabase"));
 });
 
+test("SQL proof is an independent serialized lane and application E2E no longer runs pgTAP proofs", () => {
+  const sqlWorkflow = fs.readFileSync(path.join(repositoryRoot, ".github", "workflows", "supabase-sql-proof.yml"), "utf8");
+  const e2eWorkflow = fs.readFileSync(path.join(repositoryRoot, ".github", "workflows", "e2e-supabase.yml"), "utf8");
+  assert.match(sqlWorkflow, /name: supabase-sql-proof-ephemeral/);
+  assert.match(sqlWorkflow, /cancel-in-progress:\s*false/);
+  assert.match(sqlWorkflow, /find apps\/web\/supabase\/migrations apps\/web\/supabase\/tests e2e -type f -name '\*\.sql'/);
+  assert.match(sqlWorkflow, /npm run audit:supabase-migration-trees/);
+  assert.match(sqlWorkflow, /CMM_SUPABASE_TEST_ENVIRONMENT:\s*ephemeral/);
+  assert.match(sqlWorkflow, /CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION:/);
+  assert.match(sqlWorkflow, /run-supabase-sql-proof\.mjs/);
+  assert.match(sqlWorkflow, /cleanmymap-supabase-sql-evidence/);
+  assert.doesNotMatch(sqlWorkflow, /CMM_E2E_CLERK_DEV_BACKEND_TOKEN|CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY/);
+  assert.doesNotMatch(e2eWorkflow, /run-supabase-sql-proof\.mjs/);
+  assert.match(e2eWorkflow, /Run SPOGOMI Cachan mixed integration on ephemeral Supabase/);
+  assert.match(e2eWorkflow, /Run persistent E2E/);
+});
+
 test("production secrets are scoped to the protected non-PR job and the canonical CLI gate", () => {
   assert.match(workflow, /SUPABASE_ACCESS_TOKEN:\s*\$\{\{ secrets\.SUPABASE_ACCESS_TOKEN \}\}/);
   assert.match(workflow, /SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
@@ -68,11 +85,34 @@ test("production secrets are scoped to the protected non-PR job and the canonica
   assert.match(workflow, /supabase:migration:preflight -- --dry-run/);
   assert.match(workflow, /Run read-only preflight and gate the queue[\s\S]*?SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
   assert.match(workflow, /Verify history, Advisors, and critical SQL contracts[\s\S]*?SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
-  assert.match(workflow, /if \[ "\$preflight_exit" -ne 0 \]/);
-  assert.match(workflow, /Preflight returned a non-zero exit code/);
-  assert.match(workflow, /github\.event_name == 'workflow_run' && steps\.preflight\.outputs\.status == 'READY_TO_APPLY'/);
+  assert.match(workflow, /supabase-convergence-gate\.mjs --preflight/);
+  assert.match(workflow, /github\.event_name == 'workflow_run' && steps\.preflight\.outputs\.apply == 'true'/);
   assert.match(workflow, /npx supabase db push --linked --yes/);
   assert.doesNotMatch(workflow, /migration repair|db reset|CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION/i);
+});
+
+test("complete SQL success is independent of app E2E; automatic apply still requires READY_TO_APPLY", () => {
+  const source = {
+    eventName: "workflow_run",
+    repository: "maxd4/CleanmyMap",
+    sourceRepository: "maxd4/CleanmyMap",
+    sourceHeadRepository: "maxd4/CleanmyMap",
+    workflowName: "supabase-sql-proof-ephemeral",
+    headBranch: "main",
+    conclusion: "success",
+    candidateSha,
+    remoteHeadSha: candidateSha,
+    evidence: passingEvidence(),
+  };
+  assert.equal(evaluateSupabaseConvergenceGate(source).apply, true);
+  assert.equal(evaluateSupabaseConvergenceGate({ ...source, workflowName: "e2e-supabase-ephemeral", conclusion: "failure" }).mode, "BLOCKED");
+  assert.equal(evaluateAutomaticPreflight({ eventName: "workflow_run", status: "READY_TO_APPLY", exitCode: 0 }).apply, true);
+  assert.equal(evaluateAutomaticPreflight({ eventName: "workflow_run", status: "ALIGNED", exitCode: 0 }).apply, false);
+  for (const status of ["BLOCKED", "DIVERGED", "MISSING"]) {
+    assert.equal(evaluateAutomaticPreflight({ eventName: "workflow_run", status, exitCode: 0 }).pass, false, status);
+  }
+  assert.equal(evaluateAutomaticPreflight({ eventName: "workflow_run", status: "READY_TO_APPLY", exitCode: 1 }).pass, false);
+  assert.equal(evaluateAutomaticPreflight({ eventName: "workflow_dispatch", status: "READY_TO_APPLY", exitCode: 0 }).apply, false);
 });
 
 test("the workflow verifies an empty queue and critical static contracts without pretending to run pgTAP remotely", () => {
@@ -89,7 +129,7 @@ test("only a successful exact main run with complete SQL evidence can apply", ()
     repository: "maxd4/CleanmyMap",
     sourceRepository: "maxd4/CleanmyMap",
     sourceHeadRepository: "maxd4/CleanmyMap",
-    workflowName: "e2e-supabase-ephemeral",
+    workflowName: "supabase-sql-proof-ephemeral",
     headBranch: "main",
     conclusion: "success",
     candidateSha,
@@ -130,7 +170,7 @@ test("wrong source, failed run, stale main, missing proof, and incomplete proof 
     repository: "maxd4/CleanmyMap",
     sourceRepository: "maxd4/CleanmyMap",
     sourceHeadRepository: "maxd4/CleanmyMap",
-    workflowName: "e2e-supabase-ephemeral",
+    workflowName: "supabase-sql-proof-ephemeral",
     headBranch: "main",
     conclusion: "success",
     candidateSha,
@@ -139,6 +179,7 @@ test("wrong source, failed run, stale main, missing proof, and incomplete proof 
   };
   for (const [field, value] of [
     ["workflowName", "other-workflow"],
+    ["workflowName", "e2e-supabase-ephemeral"],
     ["sourceRepository", "fork/CleanmyMap"],
     ["sourceHeadRepository", "fork/CleanmyMap"],
     ["headBranch", "feature"],
@@ -159,7 +200,7 @@ test("a workflow_run produced by a pull request is blocked before any production
     repository: "maxd4/CleanmyMap",
     sourceRepository: "maxd4/CleanmyMap",
     sourceHeadRepository: "attacker/CleanmyMap",
-    workflowName: "e2e-supabase-ephemeral",
+    workflowName: "supabase-sql-proof-ephemeral",
     headBranch: "feature/untrusted-change",
     conclusion: "success",
     candidateSha,

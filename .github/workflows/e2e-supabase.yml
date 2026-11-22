@@ -21,8 +21,9 @@ on:
       - "apps/web/supabase/migrations/**"
       - "apps/web/supabase/seed.sql"
       - "apps/web/supabase/tests/**"
-      - "scripts/ci/run-supabase-sql-proof.mjs"
-      - "scripts/ci/run-supabase-sql-proof.test.mjs"
+      - "scripts/ci/start-supabase-ephemeral.sh"
+      - "scripts/ci/diagnose-supabase-start.mjs"
+      - "scripts/ci/diagnose-supabase-start.test.mjs"
       - ".github/workflows/e2e-supabase.yml"
       - "package.json"
       - "package-lock.json"
@@ -51,8 +52,7 @@ on:
       - "documentation/features/spogomi-references/fixtures/**"
       - "scripts/ci/diagnose-supabase-start.mjs"
       - "scripts/ci/diagnose-supabase-start.test.mjs"
-      - "scripts/ci/run-supabase-sql-proof.mjs"
-      - "scripts/ci/run-supabase-sql-proof.test.mjs"
+      - "scripts/ci/start-supabase-ephemeral.sh"
       - "scripts/checks/spogomi-concurrency-destination.test.mjs"
       - "apps/web/src/lib/spogomi/**"
       - "apps/web/src/app/api/spogomi/**"
@@ -159,36 +159,8 @@ jobs:
       - name: Start ephemeral Supabase
         id: start_supabase
         run: |
-          set +e
           mkdir -p artifacts/ci
-          start_log="artifacts/ci/supabase-start.log"
-          start_progress_file="artifacts/ci/supabase-start-progress.ndjson"
-          trap 'rm -f "$start_log" "$start_progress_file"' EXIT
-          : > "$start_progress_file"
-          start_started_at="$(date +%s)"
-          ./node_modules/.bin/supabase start --workdir apps/web --yes --output-format json --network-id="${{ steps.supabase_network.outputs.network_name }}" > "$start_log" 2>&1 &
-          start_pid=$!
-          node scripts/ci/diagnose-supabase-start.mjs \
-            --watch-pid="$start_pid" \
-            --progress-file="$start_progress_file" >/dev/null 2>&1 &
-          progress_pid=$!
-          wait "$start_pid"
-          start_exit_code=$?
-          kill "$progress_pid" 2>/dev/null || true
-          wait "$progress_pid" 2>/dev/null || true
-          start_duration_seconds=$(( $(date +%s) - start_started_at ))
-          diagnostic_exit_code=0
-          node scripts/ci/diagnose-supabase-start.mjs \
-            --log-file="$start_log" \
-            --progress-file="$start_progress_file" \
-            --exit-code="$start_exit_code" \
-            --duration-seconds="$start_duration_seconds" > artifacts/ci/supabase-start-diagnostic.txt 2>&1
-          diagnostic_exit_code=$?
-          cat artifacts/ci/supabase-start-diagnostic.txt
-          if [ "$start_exit_code" -ne 0 ]; then
-            exit "$start_exit_code"
-          fi
-          exit "$diagnostic_exit_code"
+          bash scripts/ci/start-supabase-ephemeral.sh apps/web "${{ steps.supabase_network.outputs.network_name }}" artifacts/ci/supabase-start-diagnostic.txt
 
       - name: Apply canonical migrations and seed
         run: |
@@ -253,16 +225,7 @@ jobs:
           ./node_modules/.bin/supabase db query --workdir apps/web --local "$preflight_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
           grep -q "Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present" artifacts/ci/supabase-preflight.log
 
-      - name: Execute and attest all existing PostgreSQL proofs
-        env:
-          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          CMM_SUPABASE_TEST_ENVIRONMENT: ephemeral
-          CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: I_UNDERSTAND_EPHEMERAL_ONLY
-          CMM_SUPABASE_NETWORK_ID: ${{ steps.supabase_network.outputs.network_name }}
-          CMM_SUPABASE_PRIORITY_FILES: ${{ steps.validate_sql.outputs.priority_files }}
-        run: node scripts/ci/run-supabase-sql-proof.mjs
-
-      - name: Synchronize PostgREST schema after PostgreSQL proof
+      - name: Synchronize PostgREST schema before application tests
         run: |
           ./node_modules/.bin/supabase db query --workdir apps/web --local "notify pgrst, 'reload schema';"
 
@@ -339,7 +302,6 @@ jobs:
         if: always()
         env:
           E2E_OUTCOME: ${{ steps.persistent_e2e.outcome }}
-          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: node scripts/checks/stage-public-e2e-artifact.mjs
 
       - name: Validate safe public E2E evidence

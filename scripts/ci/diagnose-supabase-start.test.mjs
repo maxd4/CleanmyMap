@@ -9,12 +9,16 @@ import {
   classifySupabaseStartFailure,
   collectBoundedStartEvidence,
   collectStartProgressSnapshot,
+  parseFirstDockerFailureEvent,
   readProgressSnapshots,
   renderSupabaseStartDiagnostic,
   SUPABASE_START_CATEGORIES,
 } from "./diagnose-supabase-start.mjs";
 
-const workflow = readFileSyncFromFs(resolve(".github", "workflows", "e2e-supabase.yml"), "utf8");
+const sqlWorkflow = readFileSyncFromFs(resolve(".github", "workflows", "supabase-sql-proof.yml"), "utf8");
+const appWorkflow = readFileSyncFromFs(resolve(".github", "workflows", "e2e-supabase.yml"), "utf8");
+const restoreWorkflow = readFileSyncFromFs(resolve(".github", "workflows", "supabase-backup-restore-proof.yml"), "utf8");
+const startScript = readFileSyncFromFs(resolve("scripts", "ci", "start-supabase-ephemeral.sh"), "utf8");
 const dockerContainersCommand = "docker ps -a --filter name=supabase_ --format {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}";
 const dockerImagesCommand = "docker images --format {{.Repository}}\t{{.Tag}}";
 const dockerNetworksCommand = "docker network ls --format {{.Name}}\t{{.Driver}}";
@@ -229,6 +233,49 @@ test("publishes only the first bounded startup error signal", () => {
   assert.match(diagnostic, /first_error_signal=CONTAINER_CREATE/);
   assert.match(diagnostic, /first_error_excerpt=class=container_create;service=db/);
   assert.doesNotMatch(diagnostic, /password=do-not-publish|<redacted-secret>|Error:/);
+});
+
+test("classifies only allowlisted service and exit details from the first Docker failure event", () => {
+  const event = parseFirstDockerFailureEvent([
+    JSON.stringify({ Action: "start", Actor: { Attributes: { name: "supabase_db_web", image: "private/image" } } }),
+    JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1", image: "private/image", token: "secret" } } }),
+    JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_rest_web", exitCode: "2" } } }),
+  ].join("\n"));
+  assert.deepEqual(event, { signal: "DOCKER_DIE", excerpt: "event=die;service=db;exit_code=1" });
+  assert.doesNotMatch(JSON.stringify(event), /private\/image|secret/);
+});
+
+test("prefers the first sanitized Docker CLI error over later Docker lifecycle events", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "Error: no space left on device",
+    dockerEvents: JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1" } } }),
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+  assert.equal(evidence.firstErrorSource, "SUPABASE_CLI_LOG");
+  assert.equal(evidence.firstErrorSignal, "RESOURCE");
+});
+
+test("uses the first Docker failure event when the CLI log contains no classifiable error", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "starting local Supabase",
+    dockerEvents: JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_rest_web", exitCode: "137", image: "private/image" } } }),
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: SUPABASE_START_CATEGORIES.UNCLASSIFIED,
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+  assert.equal(evidence.firstErrorSource, "DOCKER_EVENT");
+  assert.equal(evidence.firstErrorSignal, "DOCKER_DIE");
+  assert.equal(evidence.firstErrorExcerpt, "event=die;service=rest;exit_code=137");
+  assert.ok(evidence.evidenceCodes.includes("DOCKER_FAILURE_EVENT_OBSERVED"));
+  assert.doesNotMatch(diagnostic, /private\/image|supabase_rest/);
 });
 
 test("publishes only allowlisted error categories for adversarial log formats", async () => {
@@ -731,15 +778,17 @@ test("renders all evidence fields while withholding raw logs and sensitive conta
 });
 
 test("the workflow keeps startup failure blocking and never prints the raw log", () => {
-  assert.match(workflow, /set \+e[\s\S]*?start_exit_code=\$\?/);
-  assert.match(workflow, /node scripts\/ci\/diagnose-supabase-start\.mjs/);
-  assert.match(workflow, /--duration-seconds="\$start_duration_seconds"/);
-  assert.match(workflow, /--watch-pid="\$start_pid"/);
-  assert.match(workflow, /--progress-file="\$start_progress_file"/);
-  assert.match(workflow, /start_progress_file="artifacts\/ci\/supabase-start-progress\.ndjson"/);
-  assert.match(workflow, /supabase start --workdir apps\/web --yes --output-format json/);
-  assert.doesNotMatch(workflow, /--ignore-health-check/);
-  assert.match(workflow, /if \[ "\$start_exit_code" -ne 0 \]; then\s+exit "\$start_exit_code"/);
-  assert.match(workflow, /trap 'rm -f "\$start_log" "\$start_progress_file"' EXIT/);
-  assert.doesNotMatch(workflow, /cat\s+[^\n]*supabase-start\.log/);
+  for (const source of [sqlWorkflow, appWorkflow, restoreWorkflow]) {
+    assert.match(source, /bash scripts\/ci\/start-supabase-ephemeral\.sh/);
+    assert.doesNotMatch(source, /--ignore-health-check/);
+  }
+  assert.match(startScript, /set -euo pipefail/);
+  assert.match(startScript, /start_exit_code=\$\?/);
+  assert.match(startScript, /--watch-pid="\$start_pid"/);
+  assert.match(startScript, /--progress-file="\$progress_file"/);
+  assert.match(startScript, /docker events --since "\$start_started_at" --until "\$start_finished_at" --filter type=container/);
+  assert.match(startScript, /--docker-events-file="\$events_file"/);
+  assert.match(startScript, /if \[\[ "\$start_exit_code" -ne 0 \]\]; then\s+exit "\$start_exit_code"/);
+  assert.match(startScript, /cat "\$diagnostic_output"/);
+  assert.doesNotMatch(startScript, /cat "\$start_log"|cat "\$events_file"/);
 });

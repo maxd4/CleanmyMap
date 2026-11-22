@@ -79,8 +79,9 @@ d'associer les mesures et scores. Il vérifie aussi les séparations de division
 `null` contre zéro, les masses contre les nombres de mégots, la révocation de
 session et le refus d'une capacité terrain absente.
 
-Cette intégration est volontairement exécutable uniquement dans le job GitHub
-Actions `e2e-supabase-ephemeral`. Elle exige
+Cette intégration applicative est volontairement exécutable uniquement dans le
+job GitHub Actions `e2e-supabase-ephemeral`; la preuve PostgreSQL complète
+relève du workflow indépendant `supabase-sql-proof-ephemeral`. Elle exige
 `CMM_SUPABASE_TEST_ENVIRONMENT=ephemeral` et
 `CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION=I_UNDERSTAND_EPHEMERAL_ONLY`,
 refuse toute URL Supabase distante, démarre deux serveurs Next locaux avec des
