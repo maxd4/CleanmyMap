@@ -87,10 +87,11 @@ validation du candidat final exact → commit validé → push main → vérific
 ```
 
 Cette clôture est obligatoire par défaut pour tout lot qui produit un changement
-validé ; seul un refus explicite de commit ou de push par l'utilisateur constitue
-une exception. Un blocage seulement supposé — ruleset présent, identité supposée
-non autorisée ou refus anticipé — ne permet pas d'arrêter avant d'avoir vérifié
-l'identité et ses droits effectifs, puis tenté le push normal du candidat sûr.
+validé, sauf exception déjà explicitement gouvernée dans `AGENTS.md` ou refus
+explicite de l'utilisateur. Un blocage seulement supposé — ruleset présent,
+identité supposée non autorisée ou refus anticipé — ne permet pas d'arrêter avant
+d'avoir vérifié l'identité et ses droits effectifs, puis tenté le push normal du
+candidat sûr.
 Une publication n'est réussie qu'après un push accepté, un fetch et la preuve
 `HEAD = origin/main` avec ahead/behind `0/0`. Si le push échoue réellement,
 rapporter sa cause observée sans donnée sensible et l'action nécessaire ; ne
