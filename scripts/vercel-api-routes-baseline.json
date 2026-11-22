@@ -17,6 +17,13 @@
       "reviewedAt": "2026-11-22"
     },
     {
+      "route": "apps/web/src/app/api/actions/[actionId]/accessibility-observations/route.ts",
+      "introducedBy": "188e08adab248645ee037b2d19076b01f8d7290a",
+      "reason": "Surface privée de consultation des mesures d’accessibilité courantes et d’attestation d’observations, réservée aux organisateurs autorisés de l’action et validée par le propriétaire canonique d’accès.",
+      "costContract": "GET borné à une action et renvoyant sa révision, ses définitions et attestations courantes ; PATCH limité à une mesure par requête, avec vérification d’autorisation, de révision, de définition, de preuve et de date avant écriture. Supabase service_role reste côté serveur ; les réponses private/no-store empêchent le partage ou la conservation de plans et observations privés.",
+      "reviewedAt": "2026-11-22"
+    },
+    {
       "route": "apps/web/src/app/api/actions/invitations/route.ts",
       "introducedBy": "3e305ec7edf7e2eb4ebdbd140e65622fc86b87aa",
       "reason": "Surface authentifiée réservée au destinataire d'une invitation manual_add : lecture de ses invitations encore pendantes et décision atomique acceptation/refus via respond_to_action_invitation.",
@@ -553,6 +560,7 @@
     "apps/web/src/app/api/account/locations/route.ts",
     "apps/web/src/app/api/account/profile-role/route.ts",
     "apps/web/src/app/api/account/promotion-requests/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/accessibility-observations/route.ts",
     "apps/web/src/app/api/actions/[actionId]/accessibility-support/route.ts",
     "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",

@@ -81,6 +81,10 @@ describe("vercel regression gates", () => {
   it("documents the owners and contracts of the newly ratified media and report routes", () => {
     const expectedIntroductions = new Map([
       [
+        "apps/web/src/app/api/actions/[actionId]/accessibility-observations/route.ts",
+        "188e08adab248645ee037b2d19076b01f8d7290a",
+      ],
+      [
         "apps/web/src/app/api/actions/[actionId]/media/[mediaId]/finalize/route.ts",
         "23abf71c8fb3bc7e459459c69596b8b28eaf74a2",
       ],

@@ -13,7 +13,9 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+// Vercel justification: GET/PATCH use the current Clerk session and organizer authorization to read private action state or write one revision-checked attestation.
 export const dynamic = "force-dynamic";
+// Vercel justification: accessibility plans and observations are private per-action data; every response must bypass shared and stale caches.
 const PRIVATE_HEADERS = { "Cache-Control": "private, no-store, max-age=0" };
 type Context = { params: Promise<{ actionId: string }> };
 
