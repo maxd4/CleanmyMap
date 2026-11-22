@@ -183,6 +183,28 @@ test("finds SQLSTATE and the preceding migration ID in structured private CLI lo
   assert.doesNotMatch(diagnostic, /private table|token=secret|secret/);
 });
 
+test("reports only the data error type for invalid text representations", () => {
+  const log = [
+    "Applying database migrations",
+    "Applying migration 20261121000002_personal_ai_declarations.sql...",
+    JSON.stringify({ level: "debug", context: { sqlstate: "22P02", message: 'invalid input syntax for type timestamp with time zone: "private-value"' } }),
+  ].join("\n");
+  const evidence = collectBoundedStartEvidence({ log, exitCode: 1, probeCommand: createProbeCommand() });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: classifySupabaseStartFailure({ log, exitCode: 1, evidence }),
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+
+  assert.equal(evidence.firstFailedMigrationId, "20261121000002");
+  assert.equal(evidence.firstErrorDetail, "INVALID_TEXT_REPRESENTATION;type=timestamp_with_time_zone");
+  assert.match(diagnostic, /first_error_detail=INVALID_TEXT_REPRESENTATION;type=timestamp_with_time_zone/);
+  assert.doesNotMatch(diagnostic, /private-value/);
+});
+
 test("turns a long failed start with no containers into an actionable bounded code", () => {
   const evidence = collectBoundedStartEvidence({
     log: "opaque startup failure",

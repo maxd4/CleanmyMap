@@ -339,8 +339,18 @@ function terminalLogMessage(line) {
       if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
       const level = String(entry.level ?? entry.severity ?? "").toLowerCase();
       const error = entry.error ?? entry.Error;
-      if (!/(error|fatal|panic)/.test(level) && error === undefined) return null;
-      const message = [error, entry.msg, entry.message, entry.Message].filter((value) => typeof value === "string").join(" ") || "structured terminal error";
+      if (!/(error|fatal|panic)/.test(level) && error === undefined && !sqlStateFromLogLine(normalized)) return null;
+      const messages = [];
+      const collectMessages = (value, depth = 0) => {
+        if (!value || typeof value !== "object" || depth > 6 || messages.length >= 5) return;
+        for (const [key, nested] of Object.entries(value)) {
+          if (/^(?:message|msg|detail|hint)$/i.test(key) && typeof nested === "string") messages.push(nested.slice(0, 500));
+          else if (nested && typeof nested === "object") collectMessages(nested, depth + 1);
+          if (messages.length >= 5) break;
+        }
+      };
+      collectMessages(entry);
+      const message = messages.join(" ") || "structured terminal error";
       const errorObject = error && typeof error === "object" ? error : {};
       const sqlState = [entry.sqlstate, entry.sqlState, entry.code, errorObject.sqlstate, errorObject.sqlState, errorObject.code]
         .find((value) => /^[0-9A-Z]{5}$/i.test(String(value ?? "")));
@@ -363,11 +373,27 @@ function inferFirstErrorEvidence(log) {
     const hasErrorSignal = normalized && firstErrorSignalPatterns.some(([candidate, pattern]) => candidate !== "UNKNOWN_ERROR" && pattern.test(normalized));
     if (!signal && !isTerminalError && !hasErrorSignal) continue;
     const resolvedSignal = signal ?? "UNKNOWN_ERROR";
-    const result = { signal: resolvedSignal, sqlState, excerpt: sanitizeErrorExcerpt(resolvedSignal, inferFailureService(normalized), sqlState) };
+    const result = {
+      signal: resolvedSignal,
+      sqlState,
+      detail: safeSqlErrorDetail(normalized, sqlState),
+      excerpt: sanitizeErrorExcerpt(resolvedSignal, inferFailureService(normalized), sqlState),
+    };
     if (resolvedSignal !== "UNKNOWN_ERROR") return result;
     genericError ??= result;
   }
   return genericError ?? { signal: "NONE", excerpt: "none" };
+}
+
+function safeSqlErrorDetail(message, sqlState) {
+  if (!sqlState) return null;
+  if (sqlState === "22P02") {
+    const type = String(message ?? "").match(/invalid input syntax for type\s+([a-z][a-z0-9_ ]{0,48}?)(?::|\s*$)/i)?.[1]?.trim().toLowerCase();
+    return type ? `INVALID_TEXT_REPRESENTATION;type=${type.replace(/\s+/g, "_")}` : "INVALID_TEXT_REPRESENTATION";
+  }
+  if (sqlState.startsWith("22")) return `DATA_EXCEPTION;sqlstate=${sqlState}`;
+  if (sqlState.startsWith("23")) return `INTEGRITY_CONSTRAINT;sqlstate=${sqlState}`;
+  return `SQL_ERROR;sqlstate=${sqlState}`;
 }
 
 function inferMigrationId(log) {
@@ -724,6 +750,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     dbHostTcp: lastDbObservation?.dbHostTcp ?? "unobserved",
     dbConnectivityTimeline: progressSnapshots.map((snapshot) => `${snapshot.elapsedSeconds ?? "unknown"}:docker=${snapshot.dbDockerHealth};postgres=${snapshot.dbPostgresInternal};host_tcp=${snapshot.dbHostTcp}`).join(","),
     firstErrorSignal: firstError.signal,
+    firstErrorDetail: firstError.detail ?? null,
     firstErrorExcerpt: firstError.excerpt,
     firstErrorSource: firstError.source,
     dockerLifecycleEvents: parseDockerLifecycleEvents(dockerEvents, configContract.projectId),
@@ -791,6 +818,7 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`suspected_service=${evidence.suspectedService ?? "unavailable"}`);
     lines.push(`failure_service=${evidence.confirmedService ?? "unavailable"}`);
     lines.push(`first_error_signal=${evidence.firstErrorSignal ?? "unavailable"}`);
+    lines.push(`first_error_detail=${evidence.firstErrorDetail ?? "unavailable"}`);
     lines.push(`first_error_excerpt=${evidence.firstErrorExcerpt ?? "unavailable"}`);
     lines.push(`first_error_source=${evidence.firstErrorSource ?? "unavailable"}`);
     lines.push(`bootstrap_last_started_job=${evidence.bootstrapLastStartedJob ?? "unavailable"}`);

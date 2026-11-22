@@ -107,7 +107,10 @@ repose sur des signaux terminaux précis ou un job temporaire explicitement
 échoué ; une erreur de debug non reconnue reste `UNCLASSIFIED`. Le diagnostic
 expurgé peut classer les SQLSTATE PostgreSQL connus (syntaxe, dépendance,
 données, permissions/RLS, concurrence ou connexion) et ne publie que le code,
-la catégorie et un identifiant de migration validé. `start_phase` indique une
+la catégorie et un identifiant de migration validé. Pour `22P02`, il peut aussi
+indiquer le type PostgreSQL attendu sans conserver la valeur rejetée ; les
+messages structurés imbriqués sont analysés mais jamais recopiés dans l’artefact.
+`start_phase` indique une
 phase observée et ne prouve pas à lui seul qu'elle a échoué ;
 `first_failed_step` distingue une cause établie d'une phase de migration dont la
 cause reste inconnue. Un arrêt Docker normal ou le nettoyage ne devient jamais
