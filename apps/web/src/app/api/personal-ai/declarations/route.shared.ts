@@ -25,6 +25,13 @@ export class PersonalAiDeclarationNotFoundError extends Error {
   }
 }
 
+export class PersonalAiImportedDeclarationEditError extends Error {
+  constructor() {
+    super("Un relevé importé se modifie en réimportant sa source.");
+    this.name = "PersonalAiImportedDeclarationEditError";
+  }
+}
+
 function assertNoPersonalAiOverlap(error: { code?: string } | null): void {
   if (error?.code === "23P01") throw new PersonalAiActivityOverlapError();
   if (error?.code === "42501") throw new PersonalAiDeclarationNotFoundError();
@@ -124,12 +131,21 @@ export async function updatePersonalAiDeclaration(params: { userId: string; id: 
   try { update = updateSchema.parse(params.payload); } catch { throw new PersonalAiDeclarationInputError(); }
   const values: Record<string, unknown> = {};
   if (update.status !== undefined) values.status = update.status;
+  const client = await requireSupabaseClerkRlsClient();
   if (update.declaration !== undefined) {
+    const { data: existing, error: lookupError } = await client.from("personal_ai_declarations")
+      .select("source_identity_hash")
+      .eq("id", params.id)
+      .eq("owner_clerk_id", params.userId)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
+    if (!existing) throw new PersonalAiDeclarationNotFoundError();
+    if (existing.source_identity_hash !== null) throw new PersonalAiImportedDeclarationEditError();
+
     const declaration = parsePersonalAiDeclaration(update.declaration);
     requirePersistableQuickPeriod(declaration);
     const calculated = calculatePersonalAiDeclaration(declaration);
     if (declaration.quickScenario) {
-      const client = await requireSupabaseClerkRlsClient();
       const { data, error } = await client.rpc("save_personal_ai_chat_scenario", {
         p_id: params.id,
         p_declaration: declarationForStorage(declaration).declaration,
@@ -150,7 +166,6 @@ export async function updatePersonalAiDeclaration(params: { userId: string; id: 
     values.methodology_version = calculated.methodologyVersion;
     values.factor_version = calculated.factorVersion;
   }
-  const client = await requireSupabaseClerkRlsClient();
   const { data, error } = await client.from("personal_ai_declarations").update(values)
     .eq("id", params.id)
     .eq("owner_clerk_id", params.userId)

@@ -22,7 +22,7 @@ describe("personal AI import preview identity and conflicts", () => {
     }])[0].status).toBe("REVISION");
   });
 
-  it("blocks overlapping same-provider/model buckets and leaves unknown periods unconflicted", async () => {
+  it("blocks overlapping same-provider/model buckets and treats unknown periods as possible overlap", async () => {
     const first = (await parseOpenAiOrganizationUsage(openAi)).rows[0];
     const overlap = await parseOpenAiOrganizationUsage({ ...openAi, data: [{ ...openAi.data[0], start_time: openAi.data[0].start_time + 3600, end_time: openAi.data[0].end_time + 3600 }] });
     expect(previewPersonalAiImport(overlap.rows, [{
@@ -33,6 +33,21 @@ describe("personal AI import preview identity and conflicts", () => {
     expect(previewPersonalAiImport(overlap.rows, [{
       source_identity_hash: first.sourceIdentityHash, normalized_content_hash: first.normalizedContentHash,
       import_metadata: first.metadata, declaration: cataloguedExisting, status: "ACTIVE",
+    }])[0].status).toBe("CONFLICT");
+    const unidentifiedExisting = { ...first.declaration, modelRaw: null, modelCanonical: null };
+    expect(previewPersonalAiImport(overlap.rows, [{
+      source_identity_hash: first.sourceIdentityHash, normalized_content_hash: first.normalizedContentHash,
+      import_metadata: first.metadata, declaration: unidentifiedExisting, status: "ACTIVE",
+    }])[0].status).toBe("CONFLICT");
+    const unidentifiedIncoming = { ...overlap.rows[0]!, declaration: { ...overlap.rows[0]!.declaration, modelRaw: null, modelCanonical: null } };
+    expect(previewPersonalAiImport([unidentifiedIncoming], [{
+      source_identity_hash: first.sourceIdentityHash, normalized_content_hash: first.normalizedContentHash,
+      import_metadata: first.metadata, declaration: first.declaration, status: "ACTIVE",
+    }])[0].status).toBe("CONFLICT");
+    const unknownPeriodExisting = { ...first.declaration, periodStartUtc: null, periodEndUtc: null };
+    expect(previewPersonalAiImport(overlap.rows, [{
+      source_identity_hash: first.sourceIdentityHash, normalized_content_hash: first.normalizedContentHash,
+      source_scope: first.sourceScope, import_metadata: first.metadata, declaration: unknownPeriodExisting, status: "ACTIVE",
     }])[0].status).toBe("CONFLICT");
     const gemini = await parseGeminiGenerateContentUsage({ modelVersion: "gemini-model-example", usageMetadata: {
       promptTokenCount: 1, cachedContentTokenCount: 0, candidatesTokenCount: 1, toolUsePromptTokenCount: 0, thoughtsTokenCount: 0, totalTokenCount: 2,

@@ -1,6 +1,6 @@
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { isPersonalAiId, PersonalAiDeclarationInputError } from "@/lib/environmental-impact-estimator/personal-ai-declaration-http";
-import { deletePersonalAiDeclaration, parseRequestJson, PersonalAiActivityOverlapError, PersonalAiDeclarationNotFoundError, personalAiJson, updatePersonalAiDeclaration } from "../route.shared";
+import { deletePersonalAiDeclaration, parseRequestJson, PersonalAiActivityOverlapError, PersonalAiDeclarationNotFoundError, PersonalAiImportedDeclarationEditError, personalAiJson, updatePersonalAiDeclaration } from "../route.shared";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -18,6 +18,7 @@ export async function PATCH(request: Request, context: Context) {
   } catch (error) {
     if (error instanceof PersonalAiDeclarationInputError) return personalAiJson({ error: error.message }, 400);
     if (error instanceof PersonalAiActivityOverlapError) return personalAiJson({ error: error.message }, 409);
+    if (error instanceof PersonalAiImportedDeclarationEditError) return personalAiJson({ error: error.message }, 409);
     if (error instanceof PersonalAiDeclarationNotFoundError) return personalAiJson({ error: error.message }, 404);
     return personalAiJson({ error: "Mise à jour indisponible" }, 503);
   }

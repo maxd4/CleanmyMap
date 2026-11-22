@@ -87,6 +87,23 @@ describe("personal AI declaration client", () => {
     expect(updateBody.declaration.tokens).not.toHaveProperty("logicalTotal");
   });
 
+  it("offers reimport instead of generic editing for a stored import", async () => {
+    const imported = {
+      id: "imported-declaration-1", source_identity_hash: "a".repeat(64), status: "ACTIVE",
+      declaration: { provider: "OPENAI", periodStartUtc: null, periodEndUtc: null },
+      snapshot: { physicalTotals: { operationalKgCo2e: null, totalWaterLiters: null } },
+      created_at: "2026-11-22T00:00:00.000Z",
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ items: [imported], hasMore: false }), { status: 200 })));
+
+    await mount(<PersonalAiDeclarationClient />);
+
+    const row = container.querySelector('[data-declaration-id="imported-declaration-1"]');
+    expect(row?.textContent).toContain("réimportez la source");
+    expect([...row!.querySelectorAll("button")].some((button) => button.textContent?.trim() === "Modifier")).toBe(false);
+    expect([...row!.querySelectorAll("button")].some((button) => button.textContent?.trim() === "Exclure")).toBe(true);
+  });
+
   it("keeps the anonymous quick chatbot path first and its personal impacts NA without sending a request", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

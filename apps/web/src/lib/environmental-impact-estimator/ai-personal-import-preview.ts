@@ -16,10 +16,10 @@ export type PersonalAiImportPreviewItem = {
   conflictsWith: readonly number[];
 };
 
-function sameKnownModel(left: PersonalAiStoredImport["declaration"], right: PersonalAiImportRow["declaration"]): boolean {
+function modelsMayOverlap(left: PersonalAiStoredImport["declaration"], right: PersonalAiImportRow["declaration"]): boolean {
   const leftNames = [left.modelCanonical, left.modelRaw].filter((value): value is string => Boolean(value));
   const rightNames = [right.modelCanonical, right.modelRaw].filter((value): value is string => Boolean(value));
-  if (leftNames.length === 0 && rightNames.length === 0) return true;
+  if (leftNames.length === 0 || rightNames.length === 0) return true;
   return leftNames.some((name) => rightNames.includes(name));
 }
 
@@ -62,7 +62,7 @@ export function previewPersonalAiImport(
         && candidate.row.declaration.periodStartUtc! < other.declaration.periodEndUtc!);
       if (periodsOverlap
         && other.import_metadata?.provider === candidate.row.metadata.provider
-        && sameKnownModel(other.declaration, candidate.row.declaration)) {
+        && modelsMayOverlap(other.declaration, candidate.row.declaration)) {
         const commonKeys = Object.keys(other.source_scope ?? {}).filter((key) => key in (candidate.row.sourceScope ?? {}));
         const scopesAreDisjoint = commonKeys.some((key) => other.source_scope?.[key] !== candidate.row.sourceScope?.[key]);
         if (!scopesAreDisjoint) {

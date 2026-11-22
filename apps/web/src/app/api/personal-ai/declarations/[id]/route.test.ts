@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(), requireSupabaseClerkRlsClient: vi.fn(), from: vi.fn(), eq: vi.fn(),
-  update: vi.fn(), updateSelect: vi.fn(), maybeSingle: vi.fn(), delete: vi.fn(), deleteSelect: vi.fn(),
+  select: vi.fn(), update: vi.fn(), updateSelect: vi.fn(), maybeSingle: vi.fn(), delete: vi.fn(), deleteSelect: vi.fn(),
   rpc: vi.fn(),
 }));
 
@@ -13,21 +13,31 @@ import { DELETE, PATCH } from "./route";
 
 const id = "10000000-0000-4000-8000-000000000001";
 const context = { params: Promise.resolve({ id }) };
+const manualDeclaration = {
+  provider: "MANUAL", source: "MANUAL", sourceVersion: null, provenance: "USER_DECLARED", granularity: "UNKNOWN",
+  periodStartUtc: "2026-01-01T00:00:00.000Z", periodEndUtc: "2026-02-01T00:00:00.000Z",
+  modelRaw: null, modelCanonical: null, operator: null, execution: "CLOUD", inferenceRegion: null, access: "API", requestCount: null,
+  tokens: { inputTotal: null, inputUncached: null, cacheRead: null, cacheWrite: null, outputVisible: null, outputReasoning: null, outputTotal: null, reasoningRelation: "UNKNOWN" },
+  modality: { images: null, audioMinutes: null, videoSeconds: null },
+  energy: { kwh: null, boundary: null, evidence: null, averageWatts: null, durationSeconds: null, idleWatts: null },
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "clerk-owner-a" });
   mocks.requireSupabaseClerkRlsClient.mockResolvedValue({ from: mocks.from, rpc: mocks.rpc });
-  mocks.from.mockReturnValue({ update: mocks.update, delete: mocks.delete });
+  mocks.from.mockReturnValue({ select: mocks.select, update: mocks.update, delete: mocks.delete });
+  mocks.select.mockReturnValue({ eq: mocks.eq });
   mocks.update.mockReturnValue({ eq: mocks.eq });
   mocks.delete.mockReturnValue({ eq: mocks.eq });
-  mocks.eq.mockReturnValue({ eq: mocks.eq, select: mocks.updateSelect });
+  mocks.eq.mockReturnValue({ eq: mocks.eq, select: mocks.updateSelect, maybeSingle: mocks.maybeSingle });
   mocks.updateSelect.mockReturnValue({ maybeSingle: mocks.maybeSingle });
   mocks.maybeSingle.mockResolvedValue({ data: null, error: null });
 });
 
 describe("personal AI declaration item API", () => {
   it("hides a quick-scenario ID not owned by the caller behind 404", async () => {
+    mocks.maybeSingle.mockResolvedValue({ data: { source_identity_hash: null }, error: null });
     mocks.rpc.mockResolvedValue({ data: null, error: { code: "42501" } });
     const response = await PATCH(new Request("https://example.test", {
       method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ declaration: {
@@ -43,6 +53,31 @@ describe("personal AI declaration item API", () => {
     expect(response.status).toBe(404);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(mocks.rpc).toHaveBeenCalledWith("save_personal_ai_chat_scenario", expect.objectContaining({ p_id: id }));
+  });
+
+  it("refuses generic content updates for an owner-scoped imported row", async () => {
+    mocks.maybeSingle.mockResolvedValue({ data: { source_identity_hash: "a".repeat(64) }, error: null });
+    const response = await PATCH(new Request("https://example.test", {
+      method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ declaration: {} }),
+    }), context);
+    expect(response.status).toBe(409);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(mocks.select).toHaveBeenCalledWith("source_identity_hash");
+    expect(mocks.eq).toHaveBeenCalledWith("owner_clerk_id", "clerk-owner-a");
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("keeps generic content updates available for an owner-scoped manual declaration", async () => {
+    mocks.maybeSingle
+      .mockResolvedValueOnce({ data: { source_identity_hash: null }, error: null })
+      .mockResolvedValueOnce({ data: { id, status: "ACTIVE", declaration: manualDeclaration }, error: null });
+    const response = await PATCH(new Request("https://example.test", {
+      method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ declaration: manualDeclaration }),
+    }), context);
+    expect(response.status).toBe(200);
+    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ declaration: expect.any(Object), methodology_version: expect.any(String) }));
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("hides another owner's UUID behind 404 and applies the server owner predicate", async () => {

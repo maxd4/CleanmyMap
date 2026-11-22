@@ -38,7 +38,7 @@ test("anonymous user calculates a qualified AI footprint without private writes"
   await expect(page.getByRole("heading", { name: "Mon empreinte IA" })).toBeVisible();
   await page.getByLabel("Tokens d’entrée déclarés").fill("30000");
   await page.getByLabel("Tokens de sortie visibles").fill("3000");
-  await page.getByRole("button", { name: "Calculer" }).click();
+  await page.getByRole("button", { name: "Calculer", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Résultats qualifiés" })).toBeVisible();
   await expect(page.getByText(/Qualité des données/)).toBeVisible();
   await expect(page.getByText(/aucune compensation carbone ou hydrique/i)).toBeVisible();

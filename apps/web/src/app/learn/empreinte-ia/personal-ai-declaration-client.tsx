@@ -24,7 +24,7 @@ type FormState = {
 
 type DeclarationRow = {
   id: string; status: "ACTIVE" | "EXCLUDED"; declaration: PersonalAiDeclarationDraft;
-  snapshot: PersonalAiFootprintEstimate; created_at: string;
+  snapshot: PersonalAiFootprintEstimate; created_at: string; source_identity_hash?: string | null;
 };
 
 function utcDay(offsetDays: number): string {
@@ -256,13 +256,17 @@ export function PersonalAiDeclarationClient() {
                   CO₂e : {number(item.snapshot.physicalTotals.operationalKgCo2e)} kg · eau : {number(item.snapshot.physicalTotals.totalWaterLiters)} L
                 </p>
                 <div className="mt-3 flex flex-wrap gap-3 text-sm">
-                  <button type="button" className="font-bold text-rose-800 underline" onClick={() => {
-                    if (item.declaration.quickScenario) {
-                      window.dispatchEvent(new CustomEvent("personal-ai-edit-chat-scenario", { detail: item }));
-                    } else {
-                      setForm(formFromDraft(item.declaration)); setEditingId(item.id); setEstimate(item.snapshot);
-                    }
-                  }}>Modifier</button>
+                  {item.source_identity_hash ? (
+                    <span className="text-slate-700">Pour modifier ce relevé, réimportez la source.</span>
+                  ) : (
+                    <button type="button" className="font-bold text-rose-800 underline" onClick={() => {
+                      if (item.declaration.quickScenario) {
+                        window.dispatchEvent(new CustomEvent("personal-ai-edit-chat-scenario", { detail: item }));
+                      } else {
+                        setForm(formFromDraft(item.declaration)); setEditingId(item.id); setEstimate(item.snapshot);
+                      }
+                    }}>Modifier</button>
+                  )}
                   <button type="button" className="font-bold text-rose-800 underline" onClick={() => void updateStatus(item, item.status === "ACTIVE" ? "EXCLUDED" : "ACTIVE").catch((cause: unknown) => setError(cause instanceof Error ? cause.message : "Mise à jour indisponible."))}>
                     {item.status === "ACTIVE" ? "Exclure" : "Réactiver"}
                   </button>

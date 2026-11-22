@@ -1,6 +1,6 @@
 begin;
 
-select plan(64);
+select plan(75);
 
 select ok(has_table('public', 'personal_ai_declarations'), 'private declarations table exists');
 select ok(has_column('public', 'personal_ai_declarations', 'quick_scenario'), 'optional chatbot scenario is stored on the existing private table');
@@ -132,6 +132,56 @@ $$, '23P01', null, 'overlapping import cannot be added beside active chatbot act
 select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('2', 64)), 0, 'overlap conflict rolls back the import row');
 select lives_ok($$update public.personal_ai_declarations set status = 'EXCLUDED' where owner_clerk_id = 'user-a' and quick_scenario ->> 'chatbot' = 'CHATGPT'$$, 'owner can exclude a quick scenario before reconciling an import');
 select lives_ok($$
+  with base as (
+    select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'
+  ), providers(provider, hash_char) as (
+    values ('GOOGLE', 'c'), ('OPENAI', 'd'), ('OTHER', 'e'), ('ANTHROPIC', 'f')
+  )
+  select * from public.confirm_personal_ai_import((
+    select jsonb_agg(jsonb_build_object(
+      'declaration', jsonb_set(
+        jsonb_set(jsonb_set(jsonb_set(base.declaration, '{provider}', to_jsonb(providers.provider)), '{access}', '"UNKNOWN"'::jsonb),
+          '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb),
+      'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+      'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+      'source_identity_hash', repeat(providers.hash_char, 64),
+      'source_scope', jsonb_build_object('response_id', repeat(providers.hash_char, 64)),
+      'normalized_content_hash', repeat('1', 64),
+      'import_metadata', jsonb_build_object('provider', providers.provider, 'granularity', 'UNKNOWN', 'completeness', 'PARTIAL'),
+      'cost_amount', null, 'cost_currency', null
+    )) from base cross join providers
+  ))
+$$, 'Gemini, Codex, PDF and CSV imports persist with both period bounds unknown');
+select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a'
+  and source_identity_hash in (repeat('c', 64), repeat('d', 64), repeat('e', 64), repeat('f', 64))
+  and period_start_utc is null and period_end_utc is null
+  and declaration -> 'periodStartUtc' = 'null'::jsonb and declaration -> 'periodEndUtc' = 'null'::jsonb),
+  4, 'unknown import periods remain consistently null in columns and declaration JSON');
+select lives_ok($$update public.personal_ai_declarations set status = 'EXCLUDED' where owner_clerk_id = 'user-a'
+  and source_identity_hash in (repeat('c', 64), repeat('d', 64), repeat('e', 64), repeat('f', 64))$$,
+  'unknown-period fixture imports can be excluded without creating a period');
+select throws_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', jsonb_set(jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+      '{provider}', '"OTHER"'::jsonb), '{periodStartUtc}', '"2026-05-01T00:00:00.000Z"'::jsonb), '{periodEndUtc}', 'null'::jsonb),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('8', 64), 'source_scope', jsonb_build_object('file_hash', repeat('8', 64)),
+    'normalized_content_hash', repeat('9', 64),
+    'import_metadata', '{"provider":"OTHER","granularity":"UNKNOWN","completeness":"PARTIAL"}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, '23514', null, 'a half-known period is rejected by the table contract');
+select throws_ok($$
+  select * from public.save_personal_ai_chat_scenario(
+    null,
+    jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+      '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb),
+    '{"version":"personal-ai-chat-usage-v1","sourceKind":"SELF_REPORTED_CHAT_USAGE","chatbot":"CHATGPT","chatbotLabel":null,"accessMode":"FREE","frequency":"UNKNOWN","exchanges":null,"questionCharacters":null,"answerCharacters":null,"imageUse":null,"audioUse":null}'::jsonb,
+    '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb, 'personal-ai-v1', '{}'
+  )
+$$, '23514', null, 'a quick scenario still requires a complete period');
+select lives_ok($$
   select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
     'declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'), '{provider}', '"OPENAI"'::jsonb), '{access}', '"UNKNOWN"'::jsonb) || jsonb_build_object('periodStartUtc', '2026-03-01T00:00:00.000Z', 'periodEndUtc', '2026-04-01T00:00:00.000Z'),
     'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
@@ -156,6 +206,31 @@ $$, 'owner A can atomically confirm one normalized import row');
 select is((select import_revision from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('a', 64)), 1, 'first import revision starts at one');
 select lives_ok($$
   select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where source_identity_hash = repeat('a', 64)),
+      '{modelRaw}', '"gpt-4.1"'::jsonb), '{modelCanonical}', '"gpt-4.1"'::jsonb),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('0', 64),
+    'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('3', 64)),
+    'normalized_content_hash', repeat('0', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE"}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, 'known model import can coexist with unknown model when an attested API-key scope is disjoint');
+select throws_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('1', 64),
+    'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('3', 64)),
+    'normalized_content_hash', repeat('1', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE"}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, '23P01', 'overlapping personal AI import scope', 'an unknown incoming model conflicts with an active known model in the same scope');
+select lives_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
     'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
     'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
     'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
@@ -178,20 +253,21 @@ $$, 'late revision replaces same stable source identity');
 select is((select import_revision from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('a', 64)), 2, 'changed normalized contents increment the revision');
 select throws_ok($$
   select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
-    'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+    'declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+      '{modelRaw}', '"gpt-4.1"'::jsonb), '{modelCanonical}', '"gpt-4.1"'::jsonb),
     'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
     'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
     'source_identity_hash', repeat('f', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('2', 64)), 'normalized_content_hash', repeat('e', 64),
     'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
     'cost_amount', null, 'cost_currency', null
   )))
-$$, '23P01', 'overlapping personal AI import scope', 'overlapping provider model scope is rejected');
+$$, '23P01', 'overlapping personal AI import scope', 'a known incoming model conflicts with an active unknown model in the same scope');
 select lives_ok($$
   select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
     'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
     'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
     'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
-    'source_identity_hash', repeat('9', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('3', 64)),
+    'source_identity_hash', repeat('9', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('4', 64)),
     'normalized_content_hash', repeat('8', 64),
     'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
     'cost_amount', null, 'cost_currency', null
@@ -208,6 +284,24 @@ select throws_ok($$
     'cost_amount', null, 'cost_currency', null
   )))
 $$, '23P01', 'overlapping personal AI import scope', 'an aggregate scope cannot silently replace or overlap its api-key subset');
+select lives_ok($$update public.personal_ai_declarations set status = 'EXCLUDED' where owner_clerk_id = 'user-a' and source_identity_hash = repeat('2', 64)$$,
+  'an imported source can be excluded while retaining its identity');
+select lives_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', (select declaration from public.personal_ai_declarations where source_identity_hash = repeat('2', 64)),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('7', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64)),
+    'normalized_content_hash', repeat('7', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE"}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, 'a concurrent source can be confirmed after the prior source is excluded');
+select throws_ok($$update public.personal_ai_declarations set status = 'ACTIVE' where owner_clerk_id = 'user-a' and source_identity_hash = repeat('2', 64)$$,
+  '23P01', null, 'reactivation of an import is rejected while a compatible source is active');
+select throws_ok($$update public.personal_ai_declarations set declaration = jsonb_set(declaration, '{modelRaw}', '"manual-edit"'::jsonb)
+  where owner_clerk_id = 'user-a' and source_identity_hash = repeat('a', 64)$$,
+  '42501', null, 'direct RLS content edits cannot bypass versioned import confirmation');
 select throws_ok($$
   select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
     'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
