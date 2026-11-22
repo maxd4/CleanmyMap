@@ -22,9 +22,13 @@ Ne pas créer ni conserver hors de cette racine :
 - snapshot destiné à devenir une seconde source de travail.
 
 Cette règle couvre aussi `%TEMP%`, `%TMP%`, `%LOCALAPPDATA%`, le dossier parent
-`business` et les dossiers frères. Utiliser uniquement les emplacements
-canoniques prévus dans le dépôt (`work/` ou `artifacts/`) pour
-les artefacts locaux et les candidates de validation ; les preuves durables
+`business` et les dossiers frères. `work/` est interdit à la racine du dépôt,
+y compris pour les fichiers temporaires. `artifacts/` est la destination par
+défaut des rapports, audits, preuves, exports, ZIP et candidates de validation.
+Les seules exceptions sont les sorties natives d'outils, caches techniques,
+fichiers de production ou documents durables lorsqu'un contrat existant impose
+leur destination ; toute nouvelle exception doit être documentée et
+vérifiable. Aucun dossier racine ad hoc n'est créé. Les preuves durables
 relèvent de `documentation/`.
 
 Une candidate de validation dynamique doit rester sous

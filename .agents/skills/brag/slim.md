@@ -17,7 +17,7 @@ Usage: `/brag-slim [input] [options]`. Options (flags or plain language):
 | `--format landscape\|vertical\|square` | landscape (1920×1080; vertical 1080×1920, square 1080×1080), 30fps |
 | `--duration <s>` | about 20s |
 
-Write the deliverables to `brag-output/` in the current directory (timestamped `brag-output-YYYY-MM-DD-HHmmss/` if it already exists). Keep every intermediate file (frames, downloads, scripts, stems) in a `work/` subfolder inside it.
+Write the deliverables to `artifacts/brag-output/` (timestamped `artifacts/brag-output-YYYY-MM-DD-HHmmss/` if it already exists). Keep every intermediate file (frames, downloads, scripts, stems) under `artifacts/brag-output/tmp/`.
 
 ## 1. Inspect
 
@@ -44,7 +44,7 @@ Get the site as a visitor sees it. Many sites build their page with JavaScript, 
 
 - **Copy:** headline, tagline, section headings, feature names, calls to action, testimonials. Also check the title, meta description and social-preview tags.
 - **Identity:** exact colors from the site's CSS and the fonts it loads.
-- **Visuals:** the logo, product screenshots, hero images, demo videos. Download the ones you'll use into `work/`.
+- **Visuals:** the logo, product screenshots, hero images, demo videos. Download the ones you'll use into `artifacts/brag-output/tmp/`.
 - **Screenshots:** capture the page at the video's aspect ratio to understand the layout. In the video, reuse the site's real markup, CSS and assets and animate those, rather than panning over flat screenshots.
 - **The product in use:** check the demo videos, how-it-works sections and linked docs for the entry → key action → result flow.
 

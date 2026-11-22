@@ -489,6 +489,17 @@ contrat `CURRENT`. Détails, registre et commande de contrôle :
 
 ## Documentation et validation
 
+### Artefacts générés
+
+La racine du dépôt ne doit jamais contenir `work/`, même pour un fichier
+temporaire. Tous les rapports, audits, JSON, ZIP, preuves, exports et fichiers
+temporaires générés utilisent `artifacts/` par défaut, rangés par SHA et
+`runId` lorsque ces identités s'appliquent. Les exceptions sont limitées aux
+sorties natives d'outils, caches techniques, fichiers de production et
+documentation durable lorsqu'un contrat existant impose leur destination ;
+chaque nouvelle exception doit être documentée et vérifiable. Aucun dossier
+racine ad hoc ni exception implicite n'est autorisé.
+
 ### Contexte d'exécution des commandes Web
 
 Les commandes Web qui chargent Vitest, Vite, les alias TypeScript (`@/*`) ou

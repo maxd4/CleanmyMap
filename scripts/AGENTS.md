@@ -208,9 +208,15 @@ projection offline.
   Python dans un `DYNAMIC_CANDIDATE` avant de vérifier le SHA exact. Une preuve
   absente, périmée, falsifiée ou appartenant à un autre candidat est bloquante
   pour `ENFORCE` et ne peut jamais être reclassée `PASS` ;
-- `artifacts/` est ignoré par Git et porte les sorties générées ainsi que les
-  candidates temporaires de validation ; une preuve durable doit être déplacée vers
-  `documentation/` avant d'être versionnée ;
+- `work/` est interdit à la racine du dépôt, y compris pour les fichiers
+  temporaires ; aucun générateur ne doit y écrire. `artifacts/` est la
+  destination par défaut de tous les rapports, audits, preuves, exports, ZIP
+  et temporaires, avec SHA et `runId` lorsque disponibles. Une exception
+  n'existe que si un contrat précis impose une sortie native d'outil, un cache
+  technique, un fichier de production ou une documentation durable ; toute
+  nouvelle exception est documentée et vérifiable. Aucun dossier racine ad hoc
+  n'est autorisé ; une preuve durable destinée au dépôt relève de
+  `documentation/` ;
 - les lifecycle de candidates doivent réutiliser le helper
   `scripts/ci/candidate-lifecycle.mjs` et la seule racine
   `artifacts/validation/prepush-candidate/<sha>/`. Toute candidate porte un

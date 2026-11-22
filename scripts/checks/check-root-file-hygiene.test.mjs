@@ -127,6 +127,12 @@ test("root directory contract rejects an unknown directory", () => {
   ]);
 });
 
+test("root directory contract always rejects work", () => {
+  assert.deepEqual(findForbiddenRootDirectories(["work"]), ["work"]);
+  assert.equal(allowedRootDirectories.includes("work"), false);
+  assert.equal(localOnlyRootDirectories.includes("work"), false);
+});
+
 test("local-only tracking guard rejects every local-only root directory", () => {
   assert.deepEqual(
     localOnlyTrackedPrefixes,
@@ -215,6 +221,28 @@ test("filesystem mode still reports unknown root directories", (t) => {
   );
   assert.deepEqual(result.forbiddenTrackedPaths, []);
   assert.deepEqual(result.forbiddenRootDirectories, ["reports", "work"]);
+});
+
+test("filesystem mode detects an ignored, untracked root work directory", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-root-hygiene-work-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  execFileSync("git", ["init", "-q"], { cwd: root });
+  writeFile(root, ".gitignore", "/work/\n/artifacts/\n");
+  writeFile(root, "README.md", "fixture\n");
+  writeFile(root, "work/local-work.txt", "ignored local work\n");
+  execFileSync("git", ["add", "--", ".gitignore", "README.md"], { cwd: root });
+  execFileSync("git", [
+    "-c", "user.name=Codex test", "-c", "user.email=codex-test",
+    "commit", "-qm", "fixture",
+  ], { cwd: root });
+
+  const result = validateRootFileHygiene(
+    createFilesystemRepositoryView(root),
+    { repositoryRoot: root },
+  );
+  assert.deepEqual(result.forbiddenRootDirectories, ["work"]);
+  assert.deepEqual(result.forbiddenTrackedPaths, []);
 });
 
 test("Git ref mode keeps every file in the candidate tree tracked", () => {

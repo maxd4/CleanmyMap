@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -80,6 +81,18 @@ export function findForbiddenRootDirectories(rootDirectories) {
     .sort((left, right) => left.localeCompare(right, "en"));
 }
 
+function findForbiddenPhysicalRootDirectories(repositoryRoot) {
+  const forbidden = [];
+  const workPath = path.join(repositoryRoot, "work");
+  try {
+    fs.lstatSync(workPath);
+    forbidden.push("work");
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+  return forbidden;
+}
+
 export function findForbiddenTrackedPaths(trackedFiles) {
   return trackedFiles.filter((file) =>
     localOnlyTrackedPrefixes.some((prefix) => file.startsWith(prefix)),
@@ -111,7 +124,10 @@ export function validateRootFileHygiene(
   const forbidden = allowRootFileGeneration
     ? []
     : rootFiles.filter((file) => !versionableRootFiles.has(file));
-  const forbiddenRootDirectories = findForbiddenRootDirectories(rootDirectories);
+  const forbiddenRootDirectories = [...new Set([
+    ...findForbiddenRootDirectories(rootDirectories),
+    ...findForbiddenPhysicalRootDirectories(repositoryRoot),
+  ])].sort((left, right) => left.localeCompare(right, "en"));
   const forbiddenTrackedPaths = findForbiddenTrackedPaths(
     getTrackedFilesForHygiene(view, repositoryRoot),
   );
@@ -157,6 +173,7 @@ function main() {
         ...forbiddenRootDirectories.map((directory) => `- ${directory}`),
         "",
         "Use one of the declared canonical, transitional or local-only root directories.",
+        "The repository-root work/ directory is forbidden, including when Git ignores it; generated reports and temporary files belong under artifacts/.",
       );
     }
     if (forbiddenTrackedPaths.length > 0) {
