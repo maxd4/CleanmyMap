@@ -53,7 +53,7 @@ export function ActionBeforeDeclarationForm({
   const [searchCountryCode, setSearchCountryCode] = useState<CountryCode>(countryCode ?? DEFAULT_COUNTRY_CODE);
   const [shareActionId, setShareActionId] = useState<string | null>(null);
   const focusValidationField = (field?: string) => {
-    onEditDefinition?.();
+    onEditDefinition?.(field);
     if (!field) return;
     const id = BEFORE_VALIDATION_FIELD_IDS[field];
     if (!id) return;

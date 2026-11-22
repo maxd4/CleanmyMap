@@ -65,7 +65,10 @@ export function ActionCreationSectionContent({
     <div className="space-y-4">
       <ActionBeforeDeclarationForm
         {...formProps}
-        onEditDefinition={() => onNavigateSection("definir")}
+        onEditDefinition={(field) => {
+          const targetSection = field === "arrivalLocationLabel" ? "preparer" : "definir";
+          if (targetSection !== activeSection) onNavigateSection(targetSection);
+        }}
         initialActionId={currentActionId}
         activeSection={activeSection}
         preparationContext={preparationContext}
