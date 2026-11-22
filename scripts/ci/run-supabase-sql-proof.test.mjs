@@ -97,7 +97,7 @@ test("action accessibility support pgTAP plan matches its assertion count", () =
   const sql = readFileSync(path, "utf8");
   const plan = sql.match(/^select\s+plan\((\d+)\);$/im);
   const assertions = sql.match(/^\s*select\s+(?:ok|is|throws_ok|lives_ok|has_table|has_index)\s*\(/gim) ?? [];
-  assert.equal(plan?.[1], "24");
+  assert.equal(plan?.[1], "27");
   assert.equal(assertions.length, Number(plan?.[1]));
 });
 
