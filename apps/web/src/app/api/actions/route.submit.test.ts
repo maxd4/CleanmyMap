@@ -123,9 +123,9 @@ describe("POST /api/actions — création standard et pré-action", () => {
       status: 201,
     },
     {
-      label: "avec nom libre non rattaché",
+      label: "avec pseudo descriptif sans compte identifié pour la pré-action",
       overrides: { organizerAccounts: [] as string[], organizerName: "Collectif non rattaché" },
-      status: 422,
+      status: 201,
     },
   ])("applique le contrat serveur aux payloads mobiles: $label", async ({ overrides, status }) => {
     const response = await postSubmitPayload(buildSubmitPayload(overrides));
@@ -136,6 +136,25 @@ describe("POST /api/actions — création standard et pré-action", () => {
     } else {
       expect(createActionMock).not.toHaveBeenCalled();
     }
+  }, 15000);
+
+  it("keeps a declared spontaneous pseudo descriptive and rejects it for a final declaration without a real account", async () => {
+    const draftResponse = await postSubmitPayload(buildSubmitPayload({
+      organizerAccounts: [],
+      organizerName: "Pseudo descriptif",
+      submissionMode: "quick",
+    }));
+    expect(draftResponse.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ payload: expect.objectContaining({ organizerId: null, organizerName: "Pseudo descriptif" }) }));
+    createActionMock.mockClear();
+
+    const finalResponse = await postSubmitPayload(buildSubmitPayload({
+      organizerAccounts: [],
+      organizerName: "Pseudo descriptif",
+      submissionMode: "complete",
+    }));
+    expect(finalResponse.status).toBe(422);
+    expect(createActionMock).not.toHaveBeenCalled();
   }, 15000);
 
   it("refuses creation without an authenticated identity before parsing or writing", async () => {

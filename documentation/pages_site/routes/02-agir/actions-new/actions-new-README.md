@@ -114,6 +114,39 @@ préparés sans compte. Lorsqu'une création, une complétion ou un envoi doit
 création de compte avec reprise du parcours. L'accès à l'entrée ne constitue
 pas une permission de mutation et ne modifie pas les règles métier existantes.
 
+### Valeurs déclarées et suggestions
+
+Les champs de structure de `OrganizerCombobox` conservent les suggestions
+référencées et proposent aussi `Utiliser [valeur]` pour un nom absent. Une
+structure déclarée est conservée avec l'action avec `organizerId = null` et
+`preparationData.organizerReferenceStatus = declared_unreferenced` ; elle ne
+crée jamais une entrée de `organizer_directory_entries`. L'ajout administratif
+par `+ Ajouter` reste une commande séparée, réservée aux rôles déjà autorisés.
+`referenced` signifie une structure résolue dans l'annuaire ou, pour un
+organisateur spontané, un compte CleanMyMap effectivement sélectionné.
+L'initiateur et les partenaires saisis dans `ActionPreparationData` restent
+déclaratifs, sans compte, permission ni collaboration vérifiée.
+
+`ActionAddressAutocomplete` garde le texte libre lorsque la recherche échoue
+ou qu'aucune suggestion ne correspond. `Adresse sans coordonnées` signifie que
+le texte est conservé avec latitude/longitude nulles ; sélectionner une
+suggestion renseigne les coordonnées fournies et confirmées par le résultat.
+Une adresse libre ne satisfait pas un parcours qui exige explicitement une
+localisation précise. `ActionAccountSelector` et `ActionParticipantPicker`
+continuent de sélectionner uniquement des comptes réels : un nom ou pseudo
+déclaré sert uniquement de libellé, jamais de Clerk ID, invitation, preuve de
+présence ou permission. Les effectifs agrégés restent suffisants pour les
+participants non inscrits et les mineurs ; aucune identité individuelle ne
+leur est imposée.
+
+Les owners sont `apps/web/src/components/actions/organizer-combobox.tsx`,
+`apps/web/src/components/actions/action-declaration/action-address-autocomplete.tsx`,
+`apps/web/src/components/actions/action-declaration/hooks/use-action-address-autocomplete.ts`,
+`apps/web/src/lib/actions/organizer-directory-registry.ts`,
+`apps/web/src/lib/actions/action-update-organizer.ts` et le schéma
+`apps/web/src/lib/validation/action-preparation.ts`. Les mêmes valeurs suivent
+les brouillons, le pré-formulaire, la création, le PATCH et l'hydratation.
+
 ### Checklist bénévole dérivée
 
 La carte « Équipements fournis » affiche une checklist calculée en lecture

@@ -7,7 +7,6 @@ import {
   resolveActionParticipants,
   resolveDefaultActionOrganizerIds,
 } from "@/lib/actions/participation/organizers";
-import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
 import { createAction } from "@/lib/actions/store";
 import { ActionRouteReconstructionError } from "@/lib/actions/geometry/route-reconstruction-error";
 import {
@@ -204,10 +203,10 @@ function validateSpontaneousOrganizerSelection(payload: CreateActionPayload) {
     return;
   }
   const organizerName = payload.organizerName?.trim() ?? "";
-  if (organizerName !== SPONTANEOUS_PENDING_ORGANIZER_LABEL) {
+  if (!organizerName) {
     throw validationError(
       "organizerAccounts",
-      "Sélectionnez un compte utilisateur comme organisateur ou choisissez « Autre ».",
+      "Sélectionnez un compte utilisateur ou renseignez un nom ou pseudo descriptif pour le brouillon.",
     );
   }
   if (
@@ -217,7 +216,7 @@ function validateSpontaneousOrganizerSelection(payload: CreateActionPayload) {
   ) {
     throw validationError(
       "organizerAccounts",
-      "Une déclaration finale exige un compte utilisateur organisateur réel.",
+      "Une déclaration finale exige un compte utilisateur organisateur réel ; le nom déclaré reste descriptif.",
     );
   }
 }
@@ -247,9 +246,7 @@ function buildResolvedActionPayload(
     organizerId: null,
     organizerName:
       organizerResolution.organizers[0]?.displayName ??
-      (payload.organizerName?.trim() === SPONTANEOUS_PENDING_ORGANIZER_LABEL
-        ? SPONTANEOUS_PENDING_ORGANIZER_LABEL
-        : ""),
+      payload.organizerName?.trim() ?? "",
     associationName: "Action spontanée",
   };
 }

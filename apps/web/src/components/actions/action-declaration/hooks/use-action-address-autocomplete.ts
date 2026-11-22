@@ -21,13 +21,14 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [referencedValue, setReferencedValue] = useState<string | null>(null);
   const blurTimerRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const trimmedValue = value.trim();
-  const hasVisibleSuggestions = isOpen && trimmedValue.length >= 3;
+  const hasVisibleSuggestions = isOpen && trimmedValue.length > 0;
 
   useEffect(() => {
-    if (!hasVisibleSuggestions) return;
+    if (!hasVisibleSuggestions || trimmedValue.length < 3) return;
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -71,10 +72,12 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
     setHighlightedIndex(0);
   };
   const selectSuggestion = (suggestion: GeoAddressSuggestion) => {
+    setReferencedValue(suggestion.label);
     onChange(suggestion.label, { latitude: suggestion.latitude, longitude: suggestion.longitude });
     closeSuggestions();
   };
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setReferencedValue(null);
     onChange(event.target.value, parseActionCoordinateInput(event.target.value));
     setIsOpen(true);
     setHighlightedIndex(0);
@@ -96,18 +99,28 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
     blurTimerRef.current = window.setTimeout(closeSuggestions, 120);
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (!hasVisibleSuggestions || suggestions.length === 0) {
+    if (!hasVisibleSuggestions) {
       if (event.key === "Escape") closeSuggestions();
       return;
     }
-    const nextIndex = getAddressSuggestionHighlightIndex({ key: event.key, currentIndex: highlightedIndex, suggestionCount: suggestions.length });
+    const nextIndex = getAddressSuggestionHighlightIndex({ key: event.key, currentIndex: highlightedIndex, suggestionCount: suggestions.length + 1 });
     if (nextIndex !== null) {
       event.preventDefault();
       setHighlightedIndex(nextIndex);
       return;
     }
     if (event.key === "Enter") {
-      const suggestion = suggestions[highlightedIndex];
+      if (highlightedIndex === 0) {
+        event.preventDefault();
+        const address = trimmedValue;
+        if (address) {
+          setReferencedValue(null);
+          onChange(address, null);
+          closeSuggestions();
+        }
+        return;
+      }
+      const suggestion = suggestions[highlightedIndex - 1];
       if (suggestion) {
         event.preventDefault();
         selectSuggestion(suggestion);
@@ -130,6 +143,14 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
     handleBlur,
     handleKeyDown,
     selectSuggestion,
+    selectFreeAddress: () => {
+      const address = trimmedValue;
+      if (!address) return;
+      setReferencedValue(null);
+      onChange(address, null);
+      closeSuggestions();
+    },
+    isReferenced: referencedValue === trimmedValue,
     setHighlightedIndex,
   };
 }

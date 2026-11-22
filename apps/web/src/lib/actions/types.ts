@@ -171,6 +171,8 @@ export type ActionVisionSource = "heuristic" | "hybrid" | "vision";
 export type ActionVisionDensity = "sec" | "humide_dense" | "mouille";
 
 export type ActionPreparationData = {
+  /** Provenance of the primary organizer display name; absent on historical actions. */
+  organizerReferenceStatus?: import("./organizer-type").OrganizerReferenceStatus;
   /** Declared organizational relationships; they confer no account or permission. */
   organizationalRelations?: ActionOrganizationalRelations;
   /** Optional, versioned organizer choice; absent on historical actions. */

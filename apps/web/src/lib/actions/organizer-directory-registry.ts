@@ -3,7 +3,7 @@ import {
   getOrganizerDirectoryEntries,
   ORGANIZER_DIRECTORY,
 } from "./association-options";
-import { type OrganizerType, SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "./organizer-type";
+import { type OrganizerReferenceStatus, type OrganizerType, SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "./organizer-type";
 import type { CreateActionPayload } from "./types";
 
 export type OrganizerDirectorySuggestion = {
@@ -159,7 +159,8 @@ export async function resolveActionOrganizer(params: {
   organizerId?: string | null;
   organizerName?: string | null;
   actorName?: string | null;
-}): Promise<{ organizerId: string | null; organizerName: string; legacyAssociationName: string }> {
+  referenceStatus?: OrganizerReferenceStatus | null;
+}): Promise<{ organizerId: string | null; organizerName: string; legacyAssociationName: string; referenceStatus: OrganizerReferenceStatus }> {
   const enteredName = (params.organizerName ?? "").trim();
   if (params.organizerType === "spontaneous") {
     void params.actorName;
@@ -169,7 +170,8 @@ export async function resolveActionOrganizer(params: {
     const name = enteredName === SPONTANEOUS_PENDING_ORGANIZER_LABEL
       ? SPONTANEOUS_PENDING_ORGANIZER_LABEL
       : enteredName;
-    return { organizerId: null, organizerName: name, legacyAssociationName: "Action spontanée" };
+    const referenceStatus: OrganizerReferenceStatus = params.referenceStatus === "referenced" ? "referenced" : "declared_unreferenced";
+    return { organizerId: null, organizerName: name, legacyAssociationName: "Action spontanée", referenceStatus };
   }
   const selectedId = params.organizerId?.trim();
   const staticEntry = getStaticOrganizerById(selectedId);
@@ -177,22 +179,24 @@ export async function resolveActionOrganizer(params: {
     if (staticEntry.organizerType !== params.organizerType) {
       throw new Error("L'organisateur sélectionné ne correspond pas au type choisi.");
     }
-    return { organizerId: staticEntry.id, organizerName: staticEntry.name, legacyAssociationName: staticEntry.name };
+    return { organizerId: staticEntry.id, organizerName: staticEntry.name, legacyAssociationName: staticEntry.name, referenceStatus: "referenced" };
   }
   if (selectedId) return resolveSelectedOrganizer(params.supabase, selectedId, params.organizerType);
   if (!enteredName) throw new Error("Renseignez un organisateur pour le type choisi.");
-  if (params.organizerType === "school" || params.organizerType === "local_authority") {
+  const existing = await findExistingNamedOrganizer(params.supabase, params.organizerType, enteredName);
+  if (existing) return { ...existing, referenceStatus: "referenced" };
+  if (params.referenceStatus === "declared_unreferenced" || params.organizerType === "school" || params.organizerType === "local_authority") {
     if (!normalizeOrganizerName(enteredName)) throw new Error("Validation: le nom de l'organisateur doit contenir des caractères lisibles.");
-    return { organizerId: null, organizerName: enteredName, legacyAssociationName: enteredName };
+    return { organizerId: null, organizerName: enteredName, legacyAssociationName: enteredName, referenceStatus: "declared_unreferenced" };
   }
-  return resolveNamedOrganizer(params.supabase, params.organizerType, enteredName);
+  throw new Error("Validation: choisissez une structure référencée ou confirmez explicitement cette valeur comme déclarée.");
 }
 
 async function resolveSelectedOrganizer(
   supabase: SupabaseClient,
   selectedId: string,
   organizerType: Exclude<OrganizerType, "spontaneous">,
-) {
+): Promise<{ organizerId: string; organizerName: string; legacyAssociationName: string; referenceStatus: OrganizerReferenceStatus }> {
   const { data, error } = await supabase
     .from("organizer_directory_entries")
     .select("id, name, normalized_name, organizer_type")
@@ -202,18 +206,7 @@ async function resolveSelectedOrganizer(
   if (error) throw error;
   if (!data) throw new Error("L'organisateur sélectionné est introuvable.");
   const row = data as PersistedOrganizerRow;
-  return { organizerId: row.id, organizerName: row.name, legacyAssociationName: row.name };
-}
-
-async function resolveNamedOrganizer(
-  supabase: SupabaseClient,
-  organizerType: Exclude<OrganizerType, "spontaneous">,
-  enteredName: string,
-) {
-  const existing = await findExistingNamedOrganizer(supabase, organizerType, enteredName);
-  if (existing) return existing;
-
-  throw new Error("Validation: sélectionnez une structure existante dans la liste.");
+  return { organizerId: row.id, organizerName: row.name, legacyAssociationName: row.name, referenceStatus: "referenced" };
 }
 
 async function findExistingNamedOrganizer(
@@ -298,11 +291,16 @@ export async function resolveCanonicalCreateActionPayload(params: {
         ? undefined
         : params.payload.associationName),
     actorName: params.payload.actorName,
+    referenceStatus: params.payload.preparationData?.organizerReferenceStatus,
   });
   return {
     ...params.payload,
     organizerId: resolved.organizerId,
     organizerName: resolved.organizerName,
     associationName: resolved.legacyAssociationName,
+    preparationData: {
+      ...(params.payload.preparationData ?? {}),
+      organizerReferenceStatus: resolved.referenceStatus,
+    },
   };
 }

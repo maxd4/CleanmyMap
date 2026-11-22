@@ -4,7 +4,13 @@ import { AlertCircle, CheckCircle2, Crosshair, Loader2, MapPin, Navigation } fro
 import { cn } from "@/lib/utils";
 import { ActionAddressAutocomplete } from "./action-address-autocomplete";
 import type { ActionGeometryMethod } from "@/lib/actions/types";
+import { hasValidCoordinatePair, toOptionalNumber } from "./payload-numbers";
 import type { ActionLocationInputProps } from "./action-location.types";
+
+function coordinatesFromForm(latitude: string, longitude: string) {
+  if (!hasValidCoordinatePair(latitude, longitude)) return null;
+  return { latitude: toOptionalNumber(latitude)!, longitude: toOptionalNumber(longitude)! };
+}
 
 function SectionTitle({ color, children, compact = false }: { color: string; children: React.ReactNode; compact?: boolean }) {
   return (
@@ -185,6 +191,7 @@ export function ActionLocationInputs({
       label={isCleanPlaceMode ? "Adresse du lieu" : "Départ"}
       placeholder={isCleanPlaceMode ? "Ex : Square des Batignolles" : "Ex : Rue de Rivoli, Paris"}
       value={form.departureLocationLabel}
+      coordinates={coordinatesFromForm(form.latitude, form.longitude)}
       countryCode={countryCode}
       onChange={(value, coordinates) => {
         updateFields({
@@ -209,6 +216,7 @@ export function ActionLocationInputs({
             label={pointToPoint ? "Départ" : "Départ et arrivée"}
             placeholder={pointToPoint ? "DÉPART · Ex. Rue de Rivoli, Paris" : "DÉPART ET ARRIVÉE · Ex. Rue de Rivoli, Paris"}
             value={form.departureLocationLabel}
+            coordinates={coordinatesFromForm(form.latitude, form.longitude)}
             countryCode={countryCode}
             onChange={(value, coordinates) => {
               updateFields({
@@ -227,6 +235,7 @@ export function ActionLocationInputs({
               label="Arrivée"
               placeholder="ARRIVÉE · Ex. Place de la République, Paris"
               value={form.arrivalLocationLabel}
+              coordinates={form.arrivalCoordinates}
               countryCode={countryCode}
               onChange={(value, coordinates) => updateFields({ arrivalLocationLabel: value, arrivalCoordinates: coordinates ?? null })}
               helperText="Adresse exacte de l’arrivée"
@@ -254,6 +263,7 @@ export function ActionLocationInputs({
           label="Mi-parcours"
           placeholder="Zone intermédiaire (optionnel)"
           value={form.midRouteLocationLabel ?? ""}
+          coordinates={form.midRouteCoordinates}
           countryCode={countryCode}
           onChange={(value, coordinates) => {
             updateFields({
@@ -271,6 +281,7 @@ export function ActionLocationInputs({
             label={isCleanPlaceMode ? "Complément" : "Arrivée"}
             placeholder={isCleanPlaceMode ? "Précision (optionnel)" : "Ex : Place de la République"}
             value={form.arrivalLocationLabel}
+            coordinates={form.arrivalCoordinates}
             countryCode={countryCode}
             onChange={(value, coordinates) => {
               updateFields({

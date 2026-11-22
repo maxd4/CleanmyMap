@@ -21,6 +21,7 @@ export type ActionAddressAutocompleteProps = {
   ariaDescribedBy?: string;
   hideLabel?: boolean;
   countryCode?: CountryCode;
+  coordinates?: ActionLocationCoordinates | null;
 };
 
 export function ActionAddressAutocomplete({
@@ -38,13 +39,14 @@ export function ActionAddressAutocomplete({
   ariaDescribedBy,
   hideLabel = false,
   countryCode,
+  coordinates,
 }: ActionAddressAutocompleteProps) {
   const behavior = useActionAddressAutocomplete({ value, onChange, countryCode });
 
   return (
-    <label className="block space-y-1.5">
+    <div className="block space-y-1.5">
       <span className={hideLabel ? "sr-only" : "flex items-center gap-1.5 text-xs font-medium text-emerald-900/55"}>
-        {label}
+        <label htmlFor={id}>{label}</label>
         {optional ? <span className="rounded-full bg-[#ECF8EF] px-1.5 py-0.5 cmm-text-caption text-emerald-900/45">optionnel</span> : null}
       </span>
       <div className="relative">
@@ -62,7 +64,7 @@ export function ActionAddressAutocomplete({
           aria-autocomplete="list"
           aria-expanded={behavior.hasVisibleSuggestions}
           aria-controls={behavior.listboxId}
-          aria-activedescendant={behavior.highlightedIndex >= 0 && behavior.suggestions[behavior.highlightedIndex]
+          aria-activedescendant={behavior.hasVisibleSuggestions
             ? `${behavior.listboxId}-option-${behavior.highlightedIndex}`
             : undefined}
           aria-invalid={ariaInvalid}
@@ -79,17 +81,31 @@ export function ActionAddressAutocomplete({
           <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-[1.35rem] border border-emerald-200/80 bg-white shadow-[0_22px_44px_-24px_rgba(16,24,40,0.35)]">
             <div className="border-b border-emerald-100 bg-[#F7FCF9] px-4 py-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-900/45">{helperText}</div>
             <div id={behavior.listboxId} role="listbox" className="max-h-72 overflow-auto p-1.5">
-              {behavior.suggestions.length > 0 ? behavior.suggestions.map((suggestion, index) => {
-                const isHighlighted = index === behavior.highlightedIndex;
+              {behavior.trimmedValue ? <button
+                id={`${behavior.listboxId}-option-0`}
+                type="button"
+                role="option"
+                aria-selected={behavior.highlightedIndex === 0}
+                onMouseDown={(event) => { event.preventDefault(); behavior.selectFreeAddress(); }}
+                onMouseEnter={() => behavior.setHighlightedIndex(0)}
+                className={cn("block w-full rounded-[1rem] px-3 py-2.5 text-left text-sm font-semibold text-amber-900 transition-colors", behavior.highlightedIndex === 0 ? "bg-amber-50" : "hover:bg-amber-50/70")}
+              >Utiliser « {behavior.trimmedValue} » · Adresse sans coordonnées</button> : null}
+              {behavior.suggestions.length === 0 ? (
+                <div className="px-4 py-3 text-sm text-emerald-900/55">
+                  {behavior.trimmedValue.length < 3 ? "Tapez au moins 3 caractères pour obtenir des adresses exactes." : "Aucune adresse exacte trouvée pour cette saisie."}
+                </div>
+              ) : behavior.suggestions.map((suggestion, index) => {
+                const optionIndex = index + 1;
+                const isHighlighted = optionIndex === behavior.highlightedIndex;
                 return (
                   <button
                     key={`${suggestion.label}-${index}`}
-                    id={`${behavior.listboxId}-option-${index}`}
+                    id={`${behavior.listboxId}-option-${optionIndex}`}
                     type="button"
                     role="option"
                     aria-selected={isHighlighted}
                     onMouseDown={(event) => { event.preventDefault(); behavior.selectSuggestion(suggestion); }}
-                    onMouseEnter={() => behavior.setHighlightedIndex(index)}
+                    onMouseEnter={() => behavior.setHighlightedIndex(optionIndex)}
                     className={cn("flex w-full items-start gap-3 rounded-[1rem] px-3 py-2.5 text-left transition-colors", isHighlighted ? "bg-emerald-50 text-emerald-950" : "hover:bg-emerald-50/70")}
                   >
                     <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700"><MapPin size={14} /></span>
@@ -99,15 +115,14 @@ export function ActionAddressAutocomplete({
                     </span>
                   </button>
                 );
-              }) : (
-                <div className="px-4 py-3 text-sm text-emerald-900/55">
-                  {behavior.trimmedValue.length < 3 ? "Tapez au moins 3 caractères pour obtenir des adresses exactes." : "Aucune adresse exacte trouvée pour cette saisie."}
-                </div>
-              )}
+              })}
             </div>
           </div>
         ) : null}
       </div>
-    </label>
+      <p role="status" className="text-xs text-emerald-900/65">
+        {behavior.isReferenced ? "Référencé · adresse exacte et coordonnées issues d’une suggestion" : coordinates && Number.isFinite(coordinates.latitude) && Number.isFinite(coordinates.longitude) ? "Coordonnées présentes" : value.trim() ? "Adresse sans coordonnées" : "Localisation à préciser"}
+      </p>
+    </div>
   );
 }

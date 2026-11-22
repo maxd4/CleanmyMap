@@ -18,6 +18,10 @@ function restorePreparationDraftField(
   key: string,
   value: unknown,
 ): boolean {
+  if (key === "organizerReferenceStatus") {
+    if (value === "referenced" || value === "declared_unreferenced") next.organizerReferenceStatus = value;
+    return true;
+  }
   if (key === "accessibilityStatus") {
     const normalized = normalizeAccessibilityStatus(value);
     if (normalized) next.accessibilityStatus = normalized;
@@ -38,12 +42,14 @@ function restorePreparationDraftField(
           if (
             (draft.organizerId !== null && typeof draft.organizerId !== "string") ||
             typeof draft.organizerName !== "string" ||
-            typeof draft.associationName !== "string"
+            typeof draft.associationName !== "string" ||
+            (draft.organizerReferenceStatus !== undefined && draft.organizerReferenceStatus !== null && draft.organizerReferenceStatus !== "referenced" && draft.organizerReferenceStatus !== "declared_unreferenced")
           ) return [];
           return [[organizerType, {
             organizerId: draft.organizerId as string | null,
             organizerName: draft.organizerName.slice(0, 120),
             associationName: draft.associationName.slice(0, 120),
+            ...(draft.organizerReferenceStatus === "referenced" || draft.organizerReferenceStatus === "declared_unreferenced" ? { organizerReferenceStatus: draft.organizerReferenceStatus } : {}),
           }]];
         }),
       );

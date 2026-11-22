@@ -10,13 +10,15 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { ActionAccountSelector } from "./action-participant-picker";
 import { cn } from "@/lib/utils";
 import { useOrganizerSuggestions } from "./organizer-combobox-suggestions";
+import { normalizeOrganizerName } from "@/lib/actions/organizer-directory-registry";
+import type { OrganizerReferenceStatus } from "@/lib/actions/organizer-type";
 
 type OrganizerComboboxProps = {
   id: string;
   organizerType: OrganizerType | "";
   organizerId: string | null;
   value: string;
-  onChange: (selection: { id: string | null; name: string; accountIds?: string[] }) => void;
+  onChange: (selection: { id: string | null; name: string; accountIds?: string[]; referenceStatus?: OrganizerReferenceStatus | null }) => void;
   organizerAccountIds?: string[];
   currentUserId?: string;
   activeRole?: ActiveRole;
@@ -27,6 +29,7 @@ type OrganizerComboboxProps = {
   compact?: boolean;
   label?: string;
   description?: string;
+  organizerReferenceStatus?: OrganizerReferenceStatus | null;
 };
 
 export type OrganizerComboboxKeyAction =
@@ -61,6 +64,7 @@ export function getOrganizerComboboxKeyAction(
 }
 
 function SpontaneousOrganizerSelector({
+  id,
   currentUserId,
   value,
   organizerAccountIds,
@@ -68,7 +72,7 @@ function SpontaneousOrganizerSelector({
   isExistingAction,
   compact,
   label,
-}: Pick<OrganizerComboboxProps, "currentUserId" | "value" | "organizerAccountIds" | "onChange" | "isExistingAction" | "compact" | "label">) {
+}: Pick<OrganizerComboboxProps, "id" | "currentUserId" | "value" | "organizerAccountIds" | "onChange" | "isExistingAction" | "compact" | "label"> & { organizerReferenceStatus?: OrganizerReferenceStatus | null }) {
   return (
     <div className="space-y-2">
       <p className={compact ? "sr-only" : "block text-xs font-semibold text-emerald-900/75"}>{label ?? "Créateur ou référent"}</p>
@@ -82,14 +86,32 @@ function SpontaneousOrganizerSelector({
           id: null,
           name: user.display_name?.trim() || user.handle?.trim() || user.id,
           accountIds: [user.id],
+          referenceStatus: "referenced",
         })}
         onOther={() => onChange({
           id: null,
           name: SPONTANEOUS_PENDING_ORGANIZER_LABEL,
           accountIds: [],
+          referenceStatus: "declared_unreferenced",
         })}
         compact={compact}
       />
+      {!isExistingAction || !organizerAccountIds?.length ? <label className="block text-xs font-medium text-emerald-900/75" htmlFor={`${id}-declared-name`}>
+        Nom ou pseudo déclaré du référent <span className="font-normal text-emerald-900/55">· descriptif, sans compte ni permission</span>
+        <input
+          id={`${id}-declared-name`}
+          type="text"
+          maxLength={120}
+          autoComplete="nickname"
+          value={organizerAccountIds?.length ? "" : value === SPONTANEOUS_PENDING_ORGANIZER_LABEL ? "" : value}
+          onChange={(event) => onChange({ id: null, name: event.target.value, accountIds: [], referenceStatus: event.target.value.trim() ? "declared_unreferenced" : null })}
+          className="mt-1 min-h-11 w-full rounded-xl border border-emerald-200/70 bg-white px-3.5 text-sm text-emerald-950 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+          placeholder="Nom affiché ou pseudo, sans @ si possible"
+        />
+      </label> : null}
+      <p role="status" className="text-xs text-emerald-900/65">
+        {organizerAccountIds?.length ? "Référencé · compte CleanMyMap sélectionné" : value.trim() && value !== SPONTANEOUS_PENDING_ORGANIZER_LABEL ? "Déclaré, non référencé · aucune identité de compte créée" : "Les personnes non inscrites restent comptées sans identité individuelle."}
+      </p>
       {isExistingAction && organizerAccountIds?.length ? (
         <p className="text-xs leading-5 text-emerald-900/70">
           Le référent principal actuel est conservé. Une sélection ordinaire ajoute ou conserve un coorganisateur ; son changement nécessite le workflow de transfert explicite.
@@ -131,6 +153,7 @@ export function OrganizerCombobox({
   compact = false,
   label,
   description,
+  organizerReferenceStatus,
 }: OrganizerComboboxProps) {
   const listboxId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -152,7 +175,7 @@ export function OrganizerCombobox({
   }, [isAddFormOpen]);
 
   function selectSuggestion(suggestion: OrganizerDirectorySuggestion) {
-    onChange({ id: suggestion.id, name: suggestion.name });
+    onChange({ id: suggestion.id, name: suggestion.name, referenceStatus: "referenced" });
     setOpen(false);
     setActiveIndex(-1);
   }
@@ -183,7 +206,7 @@ export function OrganizerCombobox({
     setAddFeedback(null);
     try {
       const organizer = await createOrganizerFromCombobox(name, organizerType);
-      onChange({ id: organizer.id, name: organizer.name });
+      onChange({ id: organizer.id, name: organizer.name, referenceStatus: "referenced" });
       setIsAddFormOpen(false);
       setNewOrganizerName("");
       setAddState("success");
@@ -196,7 +219,10 @@ export function OrganizerCombobox({
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     const addOptionOffset = addOptionVisible ? 1 : 0;
-    const optionCount = addOptionOffset + suggestions.length;
+    const declareOptionVisible = Boolean(value.trim()) && !suggestions.some((suggestion) => normalizeOrganizerName(suggestion.name) === normalizeOrganizerName(value));
+    const declareOptionOffset = addOptionOffset;
+    const suggestionOffset = addOptionOffset + (declareOptionVisible ? 1 : 0);
+    const optionCount = suggestionOffset + suggestions.length;
     const action = getOrganizerComboboxKeyAction(event.key, activeIndex, optionCount, open);
     if (action?.type === "move") {
       event.preventDefault();
@@ -207,7 +233,13 @@ export function OrganizerCombobox({
       if (addOptionVisible && action.index === 0) {
         openAddForm();
       } else {
-        const suggestionIndex = action.index - addOptionOffset;
+        if (declareOptionVisible && action.index === declareOptionOffset) {
+          onChange({ id: null, name: value.trim(), referenceStatus: "declared_unreferenced" });
+          setOpen(false);
+          setActiveIndex(-1);
+          return;
+        }
+        const suggestionIndex = action.index - suggestionOffset;
         if (suggestionIndex >= 0 && suggestionIndex < suggestions.length) {
           selectSuggestion(suggestions[suggestionIndex]);
         }
@@ -220,7 +252,21 @@ export function OrganizerCombobox({
 
   const spontaneous = organizerType === "spontaneous";
   if (spontaneous) {
-    return <SpontaneousOrganizerSelector currentUserId={currentUserId} value={value} organizerAccountIds={organizerAccountIds} onChange={onChange} isExistingAction={isExistingAction} compact={compact} label={label} />;
+    return <SpontaneousOrganizerSelector id={id} currentUserId={currentUserId} value={value} organizerAccountIds={organizerAccountIds} onChange={onChange} isExistingAction={isExistingAction} compact={compact} label={label} organizerReferenceStatus={organizerReferenceStatus} />;
+  }
+
+  function handleValueChange(name: string) {
+    onChange({ id: null, name, referenceStatus: null });
+    setOpen(true);
+    setActiveIndex(-1);
+  }
+
+  function declareCurrentValue() {
+    const name = value.trim();
+    if (!name) return;
+    onChange({ id: null, name, referenceStatus: "declared_unreferenced" });
+    setOpen(false);
+    setActiveIndex(-1);
   }
   const activeOptionId = activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined;
   return (
@@ -246,11 +292,12 @@ export function OrganizerCombobox({
       addState={addState}
       addError={addError}
       addFeedback={addFeedback}
-      onValueChange={(name) => onChange({ id: null, name })}
-      onFocus={() => setOpen(Boolean(!spontaneous && (addOptionVisible || suggestions.length)))}
+      onValueChange={handleValueChange}
+      onFocus={() => setOpen(Boolean(value.trim() || addOptionVisible || suggestions.length))}
       onBlur={() => window.setTimeout(() => setOpen(false), 120)}
       onKeyDown={handleKeyDown}
       onOpenAddForm={openAddForm}
+      onDeclareValue={declareCurrentValue}
       onSelectSuggestion={selectSuggestion}
       onNewOrganizerNameChange={setNewOrganizerName}
       onSubmitNewOrganizer={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitNewOrganizer(); }}
@@ -258,6 +305,7 @@ export function OrganizerCombobox({
       compact={compact}
       label={label}
       description={description}
+      organizerReferenceStatus={organizerReferenceStatus}
     />
   );
 }
@@ -289,6 +337,7 @@ function OrganizerComboboxView({
   onBlur,
   onKeyDown,
   onOpenAddForm,
+  onDeclareValue,
   onSelectSuggestion,
   onNewOrganizerNameChange,
   onSubmitNewOrganizer,
@@ -296,6 +345,7 @@ function OrganizerComboboxView({
   compact,
   label,
   description,
+  organizerReferenceStatus,
 }: {
   id: string;
   listboxId: string;
@@ -323,6 +373,7 @@ function OrganizerComboboxView({
   onBlur: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
   onOpenAddForm: () => void;
+  onDeclareValue: () => void;
   onSelectSuggestion: (suggestion: OrganizerDirectorySuggestion) => void;
   onNewOrganizerNameChange: (name: string) => void;
   onSubmitNewOrganizer: () => void;
@@ -330,7 +381,9 @@ function OrganizerComboboxView({
   compact: boolean;
   label?: string;
   description?: string;
+  organizerReferenceStatus?: OrganizerReferenceStatus | null;
 }) {
+  const declareOptionVisible = Boolean(value.trim()) && !suggestions.some((suggestion) => normalizeOrganizerName(suggestion.name) === normalizeOrganizerName(value));
   return (
     <div className="relative space-y-1.5">
       <label htmlFor={id} className={compact ? "sr-only" : "block text-xs font-semibold text-emerald-900/75"}>
@@ -358,6 +411,7 @@ function OrganizerComboboxView({
         onKeyDown={onKeyDown}
         className={cn("min-h-12 w-full rounded-xl border bg-[#F3FBF6] px-3.5 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15", invalid ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")}
       />
+      {value.trim() ? <p role="status" className="text-xs text-emerald-900/65">{organizerId || organizerReferenceStatus === "referenced" ? "Référencé · structure de l’annuaire" : organizerReferenceStatus === "declared_unreferenced" ? "Déclaré, non référencé · conservé avec cette action" : "Saisie en cours · choisissez une suggestion ou confirmez la valeur déclarée."}</p> : null}
       {open && !spontaneous ? (
         <OrganizerSuggestionsMenu
           listboxId={listboxId}
@@ -366,7 +420,9 @@ function OrganizerComboboxView({
           activeIndex={activeIndex}
           suggestions={suggestions}
           addOptionVisible={addOptionVisible}
+          declareOptionVisible={declareOptionVisible}
           onOpenAddForm={onOpenAddForm}
+          onDeclareValue={onDeclareValue}
           onSelectSuggestion={onSelectSuggestion}
         />
       ) : null}
@@ -402,7 +458,9 @@ function OrganizerSuggestionsMenu({
   activeIndex,
   suggestions,
   addOptionVisible,
+  declareOptionVisible,
   onOpenAddForm,
+  onDeclareValue,
   onSelectSuggestion,
 }: {
   listboxId: string;
@@ -411,10 +469,13 @@ function OrganizerSuggestionsMenu({
   activeIndex: number;
   suggestions: OrganizerDirectorySuggestion[];
   addOptionVisible: boolean;
+  declareOptionVisible: boolean;
   onOpenAddForm: () => void;
+  onDeclareValue: () => void;
   onSelectSuggestion: (suggestion: OrganizerDirectorySuggestion) => void;
 }) {
   const addOptionOffset = addOptionVisible ? 1 : 0;
+  const suggestionOffset = addOptionOffset + (declareOptionVisible ? 1 : 0);
   return (
     <div id={listboxId} role="listbox" className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-emerald-200 bg-white p-1 shadow-lg">
       {addOptionVisible ? (
@@ -430,8 +491,21 @@ function OrganizerSuggestionsMenu({
           + Ajouter
         </button>
       ) : null}
+      {declareOptionVisible ? (
+        <button
+          id={`${listboxId}-option-${addOptionOffset}`}
+          type="button"
+          role="option"
+          aria-selected={false}
+          className="block w-full rounded-lg border-b border-emerald-100 px-3 py-2 text-left text-sm font-semibold text-amber-800 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={onDeclareValue}
+        >
+          Utiliser « {value.trim()} » · Déclaré, non référencé
+        </button>
+      ) : null}
       {suggestions.map((suggestion, index) => {
-        const optionIndex = index + addOptionOffset;
+        const optionIndex = index + suggestionOffset;
         return (
           <button
             key={suggestion.id}

@@ -131,6 +131,7 @@ function IdentityFieldGrid({
     id: string | null;
     name: string;
     accountIds?: string[];
+    referenceStatus?: FormState["organizerReferenceStatus"];
   }) {
     const spontaneousAccountIds =
       form.organizerType === "spontaneous"
@@ -153,6 +154,7 @@ function IdentityFieldGrid({
     updateFields?.({
       organizerId: selection.id,
       organizerName,
+      organizerReferenceStatus: selection.referenceStatus ?? null,
       ...(spontaneousAccountIds ? { organizerAccounts: spontaneousAccountIds.join(", ") } : {}),
     });
   }

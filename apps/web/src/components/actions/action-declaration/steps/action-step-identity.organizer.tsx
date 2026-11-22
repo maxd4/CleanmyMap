@@ -367,6 +367,7 @@ export function ActionOrganizerSection({
     id: string | null;
     name: string;
     accountIds?: string[];
+    referenceStatus?: FormState["organizerReferenceStatus"];
   }) {
     const spontaneousAccountIds =
       form.organizerType === "spontaneous"
@@ -389,6 +390,7 @@ export function ActionOrganizerSection({
     updateFields({
       organizerId: selection.id,
       organizerName,
+      organizerReferenceStatus: selection.referenceStatus ?? null,
       ...(spontaneousAccountIds ? { organizerAccounts: spontaneousAccountIds.join(", ") } : {}),
       associationName:
         form.organizerType === "spontaneous"

@@ -68,7 +68,7 @@ describe("organizer directory registry", () => {
       supabase,
       organizerType: "association",
       organizerName: "SEA Plastics",
-    })).rejects.toThrow(/structure existante/i);
+    })).rejects.toThrow(/référencée|déclarée/i);
     expect(calls).toEqual(["from"]);
   });
 
@@ -99,8 +99,33 @@ describe("organizer directory registry", () => {
       supabase,
       organizerType: "association",
       organizerName: "Collectif Inconnu",
-    })).rejects.toThrow(/structure existante/i);
+    })).rejects.toThrow(/référencée|déclarée/i);
     expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("accepts an explicitly declared unknown structure without an account or directory insert", async () => {
+    const insert = vi.fn();
+    const supabase = { from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: null, error: null }), insert }) } as never;
+    await expect(resolveActionOrganizer({
+      supabase,
+      organizerType: "company",
+      organizerName: "Entreprise du quartier",
+      referenceStatus: "declared_unreferenced",
+    })).resolves.toEqual({
+      organizerId: null,
+      organizerName: "Entreprise du quartier",
+      legacyAssociationName: "Entreprise du quartier",
+      referenceStatus: "declared_unreferenced",
+    });
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("resolves a duplicate-looking declaration to the existing referenced entry", async () => {
+    const supabase = { from: () => ({
+      select() { return this; }, eq() { return this; },
+      maybeSingle: async () => ({ data: { id: "company-1", name: "Éco & Go", normalized_name: "eco go", organizer_type: "company" }, error: null }),
+    }) } as never;
+    await expect(resolveActionOrganizer({ supabase, organizerType: "company", organizerName: " ECO   GO ", referenceStatus: "declared_unreferenced" })).resolves.toMatchObject({ organizerId: "company-1", referenceStatus: "referenced" });
   });
 
   it("rejects an unknown organizer before the canonical action insert", async () => {
@@ -123,8 +148,22 @@ describe("organizer directory registry", () => {
         organizerId: null,
         organizerName: "Structure forgée",
       } as never,
-    })).rejects.toThrow(/structure existante/i);
+    })).rejects.toThrow(/référencée|déclarée/i);
     expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("persists explicit non-reference provenance on the action preparation payload", async () => {
+    const supabase = { from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: null, error: null }) }) } as never;
+    const result = await resolveCanonicalCreateActionPayload({
+      supabase,
+      payload: {
+        organizerType: "company",
+        organizerId: null,
+        organizerName: "Entreprise déclarée",
+        preparationData: { organizerReferenceStatus: "declared_unreferenced" },
+      } as never,
+    });
+    expect(result).toMatchObject({ organizerId: null, organizerName: "Entreprise déclarée", preparationData: { organizerReferenceStatus: "declared_unreferenced" } });
   });
 
   it("creates a normal user-entered organizer only through the explicit command", async () => {
@@ -250,15 +289,17 @@ describe("organizer directory registry", () => {
       organizerId: null,
       organizerName: "Alice",
       legacyAssociationName: "Action spontanée",
+      referenceStatus: "declared_unreferenced",
     });
   });
 
   it.each(["school", "local_authority"] as const)("accepts a declared %s organizer name without canonical insertion", async (organizerType) => {
-    const supabase = { from: () => { throw new Error("declarative names must not access or insert the directory"); } } as never;
+    const supabase = { from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: null, error: null }) }) } as never;
     await expect(resolveActionOrganizer({ supabase, organizerType, organizerName: " Structure saisie " })).resolves.toEqual({
       organizerId: null,
       organizerName: "Structure saisie",
       legacyAssociationName: "Structure saisie",
+      referenceStatus: "declared_unreferenced",
     });
   });
 
@@ -274,6 +315,7 @@ describe("organizer directory registry", () => {
       organizerId: null,
       organizerName: "",
       legacyAssociationName: "Action spontanée",
+      referenceStatus: "declared_unreferenced",
     });
   });
 });

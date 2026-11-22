@@ -95,6 +95,7 @@ const organizationalRelationsSchema = z.object({
 
 export const preparationDataSchema = z
   .object({
+    organizerReferenceStatus: z.enum(["referenced", "declared_unreferenced"]).optional(),
     organizationalRelations: organizationalRelationsSchema.optional(),
     actionTitle: z.string().max(200).optional(),
     shortDescription: z.string().max(1000).optional(),

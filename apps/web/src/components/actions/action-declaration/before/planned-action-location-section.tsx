@@ -1,14 +1,13 @@
-import { CheckCircle2, Info, Navigation } from "lucide-react";
+import { Navigation } from "lucide-react";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import { ActionAddressAutocomplete } from "../action-address-autocomplete";
 import { OperationalRouteEditor } from "../operational-route-editor";
 import type { FormState } from "../model";
-import { cn } from "@/lib/utils";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
 import { SectionHeading } from "./ui";
-import { hasValidCoordinatePair } from "../payload-numbers";
+import { hasValidCoordinatePair, toOptionalNumber } from "../payload-numbers";
 
 export { hasValidCoordinatePair } from "../payload-numbers";
 
@@ -80,7 +79,7 @@ export function MeetingLocationFields({
 }: BaseSectionProps) {
   const missingDeparture = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "departureLocationLabel"));
   const hasConfirmedCoordinates = hasValidCoordinatePair(form.latitude, form.longitude);
-  const hasFreeAddress = form.departureLocationLabel.trim().length > 0;
+  const coordinates = hasConfirmedCoordinates ? { latitude: toOptionalNumber(form.latitude)!, longitude: toOptionalNumber(form.longitude)! } : null;
   const updateDepartureLocation = (value: string, coordinates?: FormState["midRouteCoordinates"]) => {
     updateFields?.({
       departureLocationLabel: value,
@@ -97,17 +96,14 @@ export function MeetingLocationFields({
         label="Point de rendez-vous précis"
         placeholder="Ex. Entrée principale, côté métro"
         value={form.departureLocationLabel}
+        coordinates={coordinates}
         onChange={updateDepartureLocation}
         countryCode={countryCode}
         helperText="Adresse exacte du rendez-vous"
         ariaInvalid={missingDeparture}
-        ariaDescribedBy={missingDeparture ? "before-departure-location-error" : "before-location-status"}
+        ariaDescribedBy={missingDeparture ? "before-departure-location-error" : undefined}
       />
       {missingDeparture ? <span id="before-departure-location-error" className="block text-xs font-medium text-rose-700">Indiquez le point de rendez-vous avant d’enregistrer.</span> : null}
-      <p id="before-location-status" role="status" className={cn("flex items-center gap-1.5 px-1 text-xs", hasConfirmedCoordinates ? "text-emerald-700" : hasFreeAddress ? "text-amber-700" : "text-emerald-900/50")}>
-        {hasConfirmedCoordinates ? <CheckCircle2 size={13} aria-hidden="true" /> : <Info size={13} aria-hidden="true" />}
-        <span>{hasConfirmedCoordinates ? "Coordonnées confirmées" : hasFreeAddress ? "Adresse libre · sans coordonnées" : "Localisation à préciser"}</span>
-      </p>
     </div>
   );
 }
@@ -136,6 +132,7 @@ export function RouteDestinationField({
         label={<span>Arrivée<RequiredMark /></span>}
         placeholder="Ex. Place de la République"
         value={form.arrivalLocationLabel}
+        coordinates={form.arrivalCoordinates}
         onChange={(value, coordinates) => updateFields?.({ arrivalLocationLabel: value, arrivalCoordinates: coordinates ?? null })}
         countryCode={countryCode}
         helperText="Adresse exacte de l’arrivée"

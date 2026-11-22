@@ -16,6 +16,7 @@ export function applyOrganizerFormUpdates(
           organizerId: previousForm.organizerId,
           organizerName: previousForm.organizerName,
           associationName: previousForm.associationName,
+          ...(previousForm.organizerReferenceStatus ? { organizerReferenceStatus: previousForm.organizerReferenceStatus } : {}),
         },
       } : {}),
     };
@@ -28,6 +29,7 @@ export function applyOrganizerFormUpdates(
         : nextForm.actorName
       : "");
     nextForm.associationName = restored?.associationName ?? (nextOrganizerType === "spontaneous" ? "Action spontanée" : "");
+    nextForm.organizerReferenceStatus = restored?.organizerReferenceStatus ?? null;
   }
   if ("organizerName" in updates && !("organizerId" in updates)) {
     nextForm.organizerId = null;
@@ -45,6 +47,7 @@ export function applyOrganizerFormUpdates(
         organizerId: nextForm.organizerId,
         organizerName: nextForm.organizerName,
         associationName: nextForm.associationName,
+        ...(nextForm.organizerReferenceStatus ? { organizerReferenceStatus: nextForm.organizerReferenceStatus } : {}),
       },
     };
   }

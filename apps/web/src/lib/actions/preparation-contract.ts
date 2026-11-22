@@ -184,6 +184,9 @@ export function normalizePreparationChecklist(
 
 export function normalizeActionPreparationContract<T extends object>(data: T): T {
   const next = { ...data } as Record<string, unknown>;
+  if ("organizerReferenceStatus" in next && next.organizerReferenceStatus !== "referenced" && next.organizerReferenceStatus !== "declared_unreferenced") {
+    delete next.organizerReferenceStatus;
+  }
   if ("organizationalRelations" in next) {
     const relations = normalizeActionOrganizationalRelations(next.organizationalRelations);
     if (relations) next.organizationalRelations = relations;

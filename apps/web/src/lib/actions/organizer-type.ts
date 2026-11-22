@@ -10,6 +10,8 @@ export const ORGANIZER_TYPE_VALUES = [
 ] as const;
 
 export type OrganizerType = (typeof ORGANIZER_TYPE_VALUES)[number];
+/** Provenance for an action-local organizer label. */
+export type OrganizerReferenceStatus = "referenced" | "declared_unreferenced";
 
 export const SPONTANEOUS_PENDING_ORGANIZER_LABEL = "Organisateur en attente de compte";
 

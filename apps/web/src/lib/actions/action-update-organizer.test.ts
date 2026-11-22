@@ -9,6 +9,7 @@ function historicalCurrent() {
     organizer_name: "Structure historique",
     actor_name: "Alice",
     created_by_clerk_id: "creator-1",
+    preparation_data: {},
   };
 }
 
@@ -50,7 +51,7 @@ describe("resolveActionUpdateOrganizer", () => {
         organizerName: "Structure forgée",
       } as ActionUpdateInput,
       current: historicalCurrent(),
-    })).rejects.toThrow(/structure existante/i);
+    })).rejects.toThrow(/référencée|déclarée/i);
     expect(insertCalled).toBe(false);
   });
 
@@ -85,6 +86,15 @@ describe("resolveActionUpdateOrganizer", () => {
       organizerName: "Association locale",
       associationName: "Association locale",
     });
+  });
+
+  it("accepts a declared organizer in PATCH and persists its provenance without an id", async () => {
+    const supabase = { from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: null, error: null }) }) } as never;
+    await expect(resolveActionUpdateOrganizer({
+      supabase,
+      body: { organizerType: "company", organizerId: null, organizerName: "Société locale", preparationData: { organizerReferenceStatus: "declared_unreferenced" } } as ActionUpdateInput,
+      current: historicalCurrent(),
+    })).resolves.toMatchObject({ organizerId: null, organizerName: "Société locale", preparationData: { organizerReferenceStatus: "declared_unreferenced" } });
   });
 
   it("does not reuse the previous organizer id when the organizer type changes", async () => {

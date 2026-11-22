@@ -159,6 +159,15 @@ describe("action declaration payload données de préparation", () => {
     expect(hydrated.organizationalRelations).toEqual(form.organizationalRelations);
   });
 
+  it("round-trips explicit organizer reference provenance without inferring it for older drafts", () => {
+    const form = buildBaseForm();
+    form.organizerReferenceStatus = "declared_unreferenced";
+    const preparation = buildPreparationDataFromForm(form);
+    expect(preparation.organizerReferenceStatus).toBe("declared_unreferenced");
+    expect(applyPreparationDataToForm(createInitialFormState("Alice", "action"), preparation).organizerReferenceStatus).toBe("declared_unreferenced");
+    expect(applyPreparationDataToForm(createInitialFormState("Alice", "action"), {}).organizerReferenceStatus).toBeNull();
+  });
+
   it("round-trips pending field-role intentions only for selected organizer accounts", () => {
     const form = buildBaseForm();
     form.organizerAccounts = "user-organizer, user-second";

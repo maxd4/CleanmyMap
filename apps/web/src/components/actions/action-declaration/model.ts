@@ -17,7 +17,7 @@ import type {
   CigaretteButtsLotSource,
 } from "@/lib/waste/cigarette-butts";
 import type { ActionWasteCharacterizationSlug, WasteCategorySlug } from "@/lib/waste";
-import type { OrganizerType } from "@/lib/actions/organizer-type";
+import type { OrganizerReferenceStatus, OrganizerType } from "@/lib/actions/organizer-type";
 import type { ActionContext } from "@/lib/actions/action-context";
 import type { ActionInterventionModeSelection } from "@/lib/actions/intervention-mode";
 import type { OperationalRoute } from "@/lib/route/route-operational";
@@ -41,7 +41,8 @@ export type FormState = {
  organizerType: OrganizerType | "";
  organizerId: string | null;
  organizerName: string;
- organizerTypeDrafts: Partial<Record<OrganizerType, { organizerId: string | null; organizerName: string; associationName: string }>>;
+ organizerReferenceStatus: OrganizerReferenceStatus | null;
+ organizerTypeDrafts: Partial<Record<OrganizerType, { organizerId: string | null; organizerName: string; associationName: string; organizerReferenceStatus?: OrganizerReferenceStatus | null }>>;
  organizationalRelations: ActionOrganizationalRelations;
   /** Empty means automatic final classification; a value is an explicit choice. */
   actionContext: ActionContext | "";
@@ -178,6 +179,7 @@ export const initialState: FormState = {
  organizerType:"",
  organizerId: null,
  organizerName:"",
+ organizerReferenceStatus: null,
  organizerTypeDrafts: {},
  organizationalRelations: {},
  actionContext:"",

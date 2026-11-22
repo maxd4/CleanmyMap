@@ -2,11 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionRow } from "@/types/database";
 import type { ActionUpdateInput } from "./action-update-audit";
 import { resolveActionOrganizer } from "./organizer-directory-registry";
+import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 
 export async function resolveActionUpdateOrganizer(params: {
   supabase: SupabaseClient;
   body: ActionUpdateInput;
-  current: Pick<ActionRow, "organizer_type" | "organizer_id" | "organizer_name" | "actor_name" | "created_by_clerk_id">;
+  current: Pick<ActionRow, "organizer_type" | "organizer_id" | "organizer_name" | "actor_name" | "created_by_clerk_id" | "preparation_data">;
 }): Promise<ActionUpdateInput> {
   const { body, current } = params;
   if (!hasOrganizerFields(body)) {
@@ -20,6 +21,7 @@ export async function resolveActionUpdateOrganizer(params: {
   const organizerType = body.organizerType ?? current.organizer_type ?? "spontaneous";
   const organizerTypeChanged = body.organizerType !== undefined
     && body.organizerType !== current.organizer_type;
+  const currentPreparationData = normalizeActionPreparationData(current.preparation_data ?? {});
   const resolved = await resolveActionOrganizer({
     supabase: params.supabase,
     organizerType,
@@ -34,13 +36,18 @@ export async function resolveActionUpdateOrganizer(params: {
         ? null
         : current.organizer_name,
     actorName: current.actor_name,
+    referenceStatus: body.preparationData?.organizerReferenceStatus ?? currentPreparationData.organizerReferenceStatus,
   });
+  const nextPreparationData = body.preparationData === undefined
+    ? currentPreparationData
+    : normalizeActionPreparationData(body.preparationData ?? {});
   return {
     ...body,
     organizerType: body.organizerType ?? current.organizer_type,
     organizerId: resolved.organizerId,
     organizerName: resolved.organizerName,
     associationName: resolved.legacyAssociationName,
+    preparationData: { ...nextPreparationData, organizerReferenceStatus: resolved.referenceStatus } as ActionUpdateInput["preparationData"],
   };
 }
 

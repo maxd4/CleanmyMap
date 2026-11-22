@@ -152,6 +152,7 @@ function buildPreparationContentFields(
   const equipmentInventory = normalizeEquipmentInventory(form.equipmentInventory);
   const refreshmentsProvided = normalizeRefreshmentsProvided(form.refreshmentsProvided);
   return {
+    ...(form.organizerReferenceStatus ? { organizerReferenceStatus: form.organizerReferenceStatus } : {}),
     actionTitle: form.actionTitle.trim() || undefined,
     shortDescription: form.shortDescription.trim() || undefined,
     communeZoneLabel: form.communeZoneLabel.trim() || undefined,
@@ -248,6 +249,7 @@ function buildHydratedLocationFields(
   routeTopology: ReturnType<typeof resolveActionRouteTopology>,
 ) {
   return {
+    organizerReferenceStatus: preparationData.organizerReferenceStatus ?? form.organizerReferenceStatus,
     actionTitle: preparationData.actionTitle ?? form.actionTitle,
     shortDescription: preparationData.shortDescription ?? form.shortDescription,
     communeZoneLabel: preparationData.communeZoneLabel ?? form.communeZoneLabel,
