@@ -86,7 +86,7 @@ function explicitLifecycleDeclarations(lines) {
       if (field) for (const status of declaredStatuses(field[1])) statuses.add(status);
       continue;
     }
-    const declaration = line.match(/(?:^|[>\s*])(?:statut(?:\s+documentaire)?|état(?:\s+documentaire)?|status|lifecycle)\s*[:=]\s*(.+?)\s*$/i);
+    const declaration = line.match(/(?:^|[>\s*])(?:statut(?:\s+documentaire)?|état(?:\s+documentaire)?|status|lifecycle)\s*[:=—–-]\s*(.+?)\s*$/i);
     if (!declaration) continue;
     for (const status of declaredStatuses(declaration[1])) statuses.add(status);
   }
@@ -295,7 +295,33 @@ function buildDirectoryIndex(files) {
   return directories;
 }
 
-function resolveDocumentTarget(file, target, files, directories) {
+function buildApplicationRouteIndex(files) {
+  const routes = new Set();
+  for (const file of files) {
+    const match = file.match(/^apps\/web\/src\/app\/(.*?)(?:\/)?(?:page|route)\.(?:js|jsx|ts|tsx)$/i);
+    if (!match) continue;
+    const segments = match[1].split("/").filter((segment) => !/^\([^/]+\)$/.test(segment));
+    const route = segments.map((segment) => segment
+      .replace(/^\[\.\.\.(.+)\]$/, ":$1*")
+      .replace(/^\[\[\.\.\.(.+)\]\]$/, ":$1*")
+      .replace(/^\[(.+)\]$/, ":$1"))
+      .join("/");
+    routes.add(`/${route}`.replace(/\/$/, "") || "/");
+  }
+  return [...routes].map((route) => {
+    const pattern = route.split("/").map((segment) => segment.startsWith(":")
+      ? segment.endsWith("*") ? ".*" : "[^/]+"
+      : segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("/");
+    return new RegExp(`^${pattern}/?$`);
+  });
+}
+
+function matchesApplicationRoute(pathname, routes) {
+  const normalized = `/${pathname.split("/").filter(Boolean).join("/")}` || "/";
+  return routes.some((route) => route.test(normalized));
+}
+
+function resolveDocumentTarget(file, target, files, directories, applicationRoutes) {
   const hashIndex = target.indexOf("#");
   const beforeFragment = hashIndex >= 0 ? target.slice(0, hashIndex) : target;
   const rawFragment = hashIndex >= 0 ? target.slice(hashIndex + 1) : null;
@@ -303,16 +329,28 @@ function resolveDocumentTarget(file, target, files, directories) {
   const rawPath = queryIndex >= 0 ? beforeFragment.slice(0, queryIndex) : beforeFragment;
   const decodedPath = decodePath(rawPath);
   const fragment = rawFragment === null ? null : decodeFragment(rawFragment);
-  if (decodedPath === null || rawFragment !== null && fragment === null) return { targetFile: null, fragment: null, exists: false, verifiable: false, reason: "UNVERIFIED_REFERENCE" };
+  if (decodedPath === null || rawFragment !== null && fragment === null) return { targetFile: null, fragment: null, exists: false, verifiable: false, targetKind: "UNVERIFIABLE_REFERENCE", reason: "UNVERIFIED_REFERENCE" };
+  if (rawPath.startsWith("/") && matchesApplicationRoute(decodedPath, applicationRoutes)) {
+    return { targetFile: decodedPath, fragment, exists: true, verifiable: true, targetKind: "APPLICATION_ROUTE" };
+  }
   const candidate = rawPath
     ? rawPath.startsWith("/") ? normalizePath(path.posix.normalize(decodedPath.slice(1))) : normalizePath(path.posix.normalize(path.posix.join(path.posix.dirname(file), decodedPath)))
     : normalizePath(file);
+  const normalizedCandidate = candidate.replace(/\/$/, "");
   const existsAsFile = (candidate) => files.has(candidate);
   const existsAsDirectory = (candidate) => directories.has(candidate);
-  const targetFile = candidate;
-  const exists = existsAsFile(targetFile) || existsAsDirectory(targetFile);
+  const targetFile = normalizedCandidate;
+  const existsAsFileValue = existsAsFile(targetFile);
+  const existsAsDirectoryValue = existsAsDirectory(targetFile);
+  const exists = existsAsFileValue || existsAsDirectoryValue;
   const verifiable = exists || Boolean(path.posix.extname(decodedPath)) || !rawPath;
-  return { targetFile, fragment, exists, verifiable };
+  return {
+    targetFile,
+    fragment,
+    exists,
+    verifiable,
+    targetKind: existsAsFileValue ? "FILE" : existsAsDirectoryValue ? "DIRECTORY" : verifiable ? "FILE_MISSING" : "UNVERIFIABLE_REFERENCE",
+  };
 }
 
 function isHorizontalWhitespace(character) {
@@ -374,7 +412,19 @@ function findMarkdownLinks(line) {
       position += 1;
     } else {
       const targetStart = position;
-      while (position < line.length && line[position] !== ")" && !isHorizontalWhitespace(line[position])) position += 1;
+      let nestedParentheses = 0;
+      while (position < line.length && !isHorizontalWhitespace(line[position])) {
+        if (line[position] === "\\" && position + 1 < line.length) {
+          position += 2;
+          continue;
+        }
+        if (line[position] === "(") nestedParentheses += 1;
+        if (line[position] === ")") {
+          if (nestedParentheses === 0) break;
+          nestedParentheses -= 1;
+        }
+        position += 1;
+      }
       if (position === targetStart) {
         cursor = labelEnd + 1;
         continue;
@@ -401,6 +451,7 @@ function inspectLinks(file, lines, files, headingsByFile) {
   const invalid = [];
   const unverified = [];
   const directories = buildDirectoryIndex(files);
+  const applicationRoutes = buildApplicationRouteIndex(files);
   let fence = null;
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -414,9 +465,9 @@ function inspectLinks(file, lines, files, headingsByFile) {
     for (const match of findMarkdownLinks(line)) {
       const rawTarget = match.target;
       if (isInsideInlineCode(inlineRanges, match.index ?? -1) || !isInternalLink(rawTarget, file, files)) continue;
-      const link = { text: match.text, target: rawTarget, line: index + 1 };
+      const resolved = resolveDocumentTarget(file, rawTarget, files, directories, applicationRoutes);
+      const link = { text: match.text, target: rawTarget, line: index + 1, targetKind: resolved.targetKind };
       links.push(link);
-      const resolved = resolveDocumentTarget(file, rawTarget, files, directories);
       if (!resolved.verifiable) {
         unverified.push({ ...link, reason: resolved.reason ?? "UNVERIFIED_REFERENCE" });
         continue;
@@ -615,7 +666,10 @@ export function formatDocumentationAuditSummary(report, { maxDetails = 6 } = {})
   const invalidCounts = Object.fromEntries(["active", "historical", "vendor", "unstated"].map((source) => [source, invalid.filter((reference) => reference.provenance === source).length]));
   const unverified = documentReferenceRows(report.documents ?? [], "unverified");
   const unverifiedCounts = Object.fromEntries(["active", "historical", "vendor", "unstated"].map((source) => [source, unverified.filter((reference) => reference.provenance === source).length]));
+  const allReferences = (report.documents ?? []).flatMap((document) => (document.internalLinks?.items ?? []));
+  const targetKindCounts = Object.fromEntries(["FILE_MISSING", "DIRECTORY", "APPLICATION_ROUTE", "UNVERIFIABLE_REFERENCE"].map((kind) => [kind, allReferences.filter((reference) => reference.targetKind === kind).length]));
   lines.push(`Liens actifs invalides: ${invalidCounts.active} | historiques: ${invalidCounts.historical} | vendor: ${invalidCounts.vendor} | provenance non établie: ${invalidCounts.unstated} | non vérifiables: ${unverified.length} (vendor ${unverifiedCounts.vendor}, historiques ${unverifiedCounts.historical}, provenance inconnue ${unverifiedCounts.unstated})`);
+  lines.push(`Nature des références: fichiers absents ${targetKindCounts.FILE_MISSING} | liens vers dossiers ${targetKindCounts.DIRECTORY} | routes applicatives reconnues ${targetKindCounts.APPLICATION_ROUTE} | cibles non vérifiables ${targetKindCounts.UNVERIFIABLE_REFERENCE}.`);
   for (const reference of invalid.filter((entry) => entry.provenance === "active").slice(0, maxDetails)) {
     lines.push(`- ${reference.documentPath}:L${reference.line} → ${reference.resolvedPath ?? reference.target ?? "cible inconnue"} (${reference.reason}) — corriger ou confirmer la destination CURRENT.`);
   }
@@ -627,16 +681,23 @@ export function formatDocumentationAuditSummary(report, { maxDetails = 6 } = {})
 
   const contracts = report.contractReviews ?? [];
   const reviewRequired = contracts.filter((review) => review.status === "REVIEW_REQUIRED");
+  const reviewPriority = (review) => {
+    if (["AUTHORIZATION", "PRIVILEGED_RPC", "RPC_PUBLIC", "RPC_AUTHENTICATED", "RPC_PRIVILEGE_UNESTABLISHED"].includes(review.kind)) return 0;
+    if (review.kind === "SCIENTIFIC_CALCULATION") return 1;
+    return 2;
+  };
+  const prioritizedReviews = [...reviewRequired].sort((left, right) => reviewPriority(left) - reviewPriority(right)
+    || left.path.localeCompare(right.path, "en") || String(left.symbol ?? "").localeCompare(String(right.symbol ?? ""), "en"));
   const notMeasuredContracts = contracts.filter((review) => review.status === "NOT_MEASURED");
   const contractAttribution = (review) => review.documentsExamined?.flatMap((document) => (document.attributions ?? []).map((entry) => `${document.path}:L${entry.line}`))[0];
   lines.push(`Contrats: ${summary.documentedContracts ?? "NOT_MEASURED"} DOCUMENTED | ${reviewRequired.length} REVIEW_REQUIRED | ${notMeasuredContracts.length} NOT_MEASURED.`);
   lines.push(`Décision attendue: traiter les ${reviewRequired.length} REVIEW_REQUIRED avec attribution et preuve CURRENT.`);
   if (notMeasuredContracts.length > 0) lines.push(`Les ${notMeasuredContracts.length} NOT_MEASURED restent sans conclusion tant qu'une attribution/preuve vérifiable manque.`);
-  for (const review of reviewRequired.slice(0, maxDetails)) {
+  for (const review of prioritizedReviews.slice(0, maxDetails)) {
     const label = `${review.path}${review.symbol ? `#${review.symbol}` : ""}`;
     lines.push(`- ${label} — raison: ${(review.reasons ?? []).slice(0, 2).join(" / ") || "preuve insuffisante"}; référence: ${contractAttribution(review) ?? "aucune attribution précise"}.`);
   }
-  if (reviewRequired.length > maxDetails) lines.push(`- … ${reviewRequired.length - maxDetails} autres contrats REVIEW_REQUIRED dans le JSON.`);
+  if (prioritizedReviews.length > maxDetails) lines.push(`- … ${prioritizedReviews.length - maxDetails} autres contrats REVIEW_REQUIRED dans le JSON.`);
   for (const review of notMeasuredContracts.slice(0, Math.min(2, maxDetails))) {
     const label = `${review.path}${review.symbol ? `#${review.symbol}` : ""}`;
     lines.push(`- NOT_MEASURED ${label} — ${(review.reasons ?? []).slice(0, 2).join(" / ") || "aucune preuve attribuable"}; référence: ${contractAttribution(review) ?? "aucune attribution précise"}.`);

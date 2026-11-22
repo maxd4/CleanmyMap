@@ -67,6 +67,7 @@ test("résume contrats, documents longs, provenance des liens et références no
 
   assert.match(summary, /Liens actifs invalides: 1 \| historiques: 1 \| vendor: 1/);
   assert.match(summary, /non vérifiables: 1/);
+  assert.match(summary, /Nature des références: fichiers absents 3 \| liens vers dossiers 0 \| routes applicatives reconnues 0 \| cibles non vérifiables 1/);
   assert.match(summary, /documentation\/long\.md/);
   assert.match(summary, /apps\/web\/src\/lib\/example\.ts#example.*MISSING_PERMISSIONS/);
   assert.match(summary, /documentation\/current\.md:L4.*TARGET_NOT_FOUND/);
@@ -80,6 +81,26 @@ test("rend un statut documentaire non mesuré sans déguiser le rapport en résu
   assert.match(summary, /status|statut/i);
   assert.match(summary, /NOT_MEASURED/);
   assert.match(summary, /SOURCE_UNAVAILABLE/);
+});
+
+test("priorise les revues AuthZ/RLS, puis scientifiques, sans changer leur classement", () => {
+  const report = {
+    auditedHead: "c".repeat(40), runId: "priority", status: "PASS", attentionRequired: true,
+    summary: { trackedDocuments: 0, criticalContracts: 3, documentedContracts: 0, reviewRequiredContracts: 3, notMeasuredContracts: 0 },
+    documents: [],
+    contractReviews: [
+      { path: "z/other.ts", kind: "SHARED_SERVICE", status: "REVIEW_REQUIRED", reasons: ["MISSING_TESTS"] },
+      { path: "b/science.ts", kind: "SCIENTIFIC_CALCULATION", status: "REVIEW_REQUIRED", reasons: ["MISSING_UNITS"] },
+      { path: "a/auth.ts", kind: "AUTHORIZATION", status: "REVIEW_REQUIRED", reasons: ["MISSING_RLS"] },
+    ],
+  };
+  const summary = formatDocumentationAuditSummary(report, { maxDetails: 3 });
+  const authIndex = summary.indexOf("a/auth.ts");
+  const scienceIndex = summary.indexOf("b/science.ts");
+  const otherIndex = summary.indexOf("z/other.ts");
+
+  assert.ok(authIndex < scienceIndex && scienceIndex < otherIndex);
+  assert.deepEqual(report.contractReviews.map((review) => review.status), ["REVIEW_REQUIRED", "REVIEW_REQUIRED", "REVIEW_REQUIRED"]);
 });
 
 test("le dry-run CLI documentaire ne crée ni ne modifie de fichier", () => {
@@ -293,6 +314,53 @@ test("les listes de statuts du README et des skills ne déclarent pas le cycle d
   assert.deepEqual(byPath["documentation/declared.md"], { statuses: ["CURRENT"], source: "EXPLICIT_MARKER" });
   assert.deepEqual(byPath["documentation/conflicting.md"], { statuses: ["CURRENT", "PLAN"], source: "EXPLICIT_MARKER" });
   assert.deepEqual(byPath["documentation/example.md"], { statuses: [], source: "NOT_STATED" });
+});
+
+test("reconnaît les déclarations AUDIT avec tiret sans inférer depuis une simple occurrence", () => {
+  const report = run({
+    "documentation/operations/audit.md": "Statut documentaire — AUDIT historique\n\n# Preuve\n",
+    "documentation/operations/audit-en-dash.md": "> **Statut documentaire – AUDIT.**\n\n# Preuve\n",
+    "documentation/README.md": "# Statuts\n\nLes statuts documentaires possibles sont CURRENT, PLAN, AUDIT, HISTORY, SNAPSHOT, ADR et GENERATED.\n",
+    ".agents/skills/example/SKILL.md": "# Cycle\n\nListe des statuts : CURRENT / PLAN / AUDIT / HISTORY.\n",
+  });
+  const byPath = Object.fromEntries(report.documents.map((document) => [document.path, document.lifecycle]));
+
+  assert.deepEqual(byPath["documentation/operations/audit.md"], { statuses: ["AUDIT"], source: "EXPLICIT_MARKER" });
+  assert.deepEqual(byPath["documentation/operations/audit-en-dash.md"], { statuses: ["AUDIT"], source: "EXPLICIT_MARKER" });
+  assert.deepEqual(byPath["documentation/README.md"], { statuses: [], source: "NOT_STATED" });
+  assert.deepEqual(byPath[".agents/skills/example/SKILL.md"], { statuses: [], source: "NOT_STATED" });
+});
+
+test("parse les destinations Markdown aux parenthèses équilibrées et distingue routes et dossiers", () => {
+  const report = run({
+    "documentation/index.md": [
+      "# Index",
+      "[Rapports](../apps/web/src/app/(app)/reports/page.tsx)",
+      "[Historique imbriqué](../apps/web/src/app/(app)/reports/[id]/history/(detail)/page.tsx)",
+      "[Route](/reports/42)",
+      "[Dossier](../apps/web/src/app/(app)/reports/)",
+      "[Fichier absent](../apps/web/src/app/(app)/reports/missing.tsx)",
+      "[Référence opaque](../unresolved-target)",
+    ].join("\n"),
+    "apps/web/src/app/(app)/reports/page.tsx": "export default function Page() {}\n",
+    "apps/web/src/app/(app)/reports/[id]/history/(detail)/page.tsx": "export default function Page() {}\n",
+    "apps/web/src/app/(app)/reports/[id]/page.tsx": "export default function Page() {}\n",
+  });
+  const document = report.documents.find((entry) => entry.path === "documentation/index.md");
+
+  assert.deepEqual(document.internalLinks.items.map((link) => link.target), [
+    "../apps/web/src/app/(app)/reports/page.tsx",
+    "../apps/web/src/app/(app)/reports/[id]/history/(detail)/page.tsx",
+    "/reports/42",
+    "../apps/web/src/app/(app)/reports/",
+    "../apps/web/src/app/(app)/reports/missing.tsx",
+    "../unresolved-target",
+  ]);
+  assert.deepEqual(document.internalLinks.items.map((link) => link.targetKind), ["FILE", "FILE", "APPLICATION_ROUTE", "DIRECTORY", "FILE_MISSING", "UNVERIFIABLE_REFERENCE"]);
+  assert.equal(document.internalLinks.invalid.length, 1);
+  assert.equal(document.internalLinks.invalid[0].reason, "TARGET_NOT_FOUND");
+  assert.equal(document.internalLinks.unverified.length, 1);
+  assert.equal(document.internalLinks.unverified[0].reason, "UNVERIFIED_REFERENCE");
 });
 
 test("les ancres valides et invalides restent attribuées au fichier sans modifier les entrées", () => {

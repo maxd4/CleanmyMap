@@ -292,11 +292,21 @@ leurs classifications distinctes. Sans preuve de privilège locale à la
 définition SQL, le contrat reste `RPC_PRIVILEGE_UNESTABLISHED`.
 
 Les cycles de vie sont extraits des déclarations de statut explicites dans
-l'en-tête du document (par exemple `Statut documentaire : CURRENT` ou un champ
-frontmatter `status: CURRENT`). Les listes de vocabulaire de
+l'en-tête du document (par exemple `Statut documentaire : CURRENT`,
+`Statut documentaire — AUDIT historique` ou un champ frontmatter
+`status: CURRENT`). La déclaration est reconnue par son libellé et son
+séparateur ; une occurrence d'un statut dans une phrase, une liste ou un bloc de
+code ne suffit pas. Les listes de vocabulaire de
 `documentation/README.md` et des skills ne sont pas des déclarations; l'absence
 de marqueur reste `NOT_STATED`, et plusieurs statuts explicites contradictoires
 ne sont pas réduits à `CURRENT`.
+
+Le parseur des liens Markdown respecte les parenthèses équilibrées d'une
+destination, notamment les groupes de routes Next.js. Le rapport distingue les
+fichiers présents ou absents, les destinations vers un dossier, les routes
+applicatives reconnues et les références non vérifiables. Les constats restent
+attribués au document et à sa ligne ; la provenance `CURRENT`, historique ou
+vendor est conservée dans le triage sans neutraliser les preuves du JSON.
 
 `DOCUMENTED` exige une attribution exacte au chemin du fichier source ou à un
 symbole non ambigu, un document explicitement `CURRENT`, puis des preuves
@@ -305,7 +315,9 @@ attribution. Les correspondances de basename et les mots-clés d'autres
 documents ne sont pas agrégés. `REVIEW_REQUIRED` conserve les références et
 raisons en cas de contradiction, cycle non courant, lien invalide ou dimension
 manquante; `NOT_MEASURED` conserve la raison lorsque l'attribution, le cycle ou
-le privilège n'est pas établi. Le Quality Index projette ces états et leurs
+le privilège n'est pas établi. La synthèse ordonne les revues `REVIEW_REQUIRED`
+par AuthZ/RLS et RPC, contrats scientifiques, puis autres owners ; cet ordre
+n'altère ni les statuts ni les compteurs. Le Quality Index projette ces états et leurs
 références de façon additive, sans ajouter de gate ni modifier les cinq verdicts
 historiques.
 
