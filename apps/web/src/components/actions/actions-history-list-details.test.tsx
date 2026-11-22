@@ -7,10 +7,12 @@ import { ActionsHistoryListDetails } from "./actions-history-list-details";
 function buildProps(
   type: "action" | "spot" | "clean_place",
   eligibleForSingleActionReport = false,
+  canCorrect = false,
 ): ActionsHistoryListDetailsProps {
   return {
     selectedItem: {
       id: `history-${type}`,
+      created_by_clerk_id: canCorrect ? "current-user" : "other-user",
       location_label: "Quai de test",
       status: eligibleForSingleActionReport ? "approved" : null,
       published_at: eligibleForSingleActionReport ? "2026-08-27T10:00:00.000Z" : null,
@@ -32,6 +34,7 @@ function buildProps(
     selectedOperational: null,
     selectedLostPoints: 10,
     correctiveAction: "Aucune action corrective.",
+    selectedCanCorrectAction: canCorrect,
     selectedCanModerateGroupJoin: false,
     selectedCanViewActionAudit: false,
     pendingGroupJoinRequests: [],
@@ -76,6 +79,26 @@ describe("actions history signalement media entry point", () => {
     );
 
     expect(markup).not.toContain("Générer un rapport d&#x27;impact");
+  });
+
+  it("shows data diagnostics without correction links when edit access is not established", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionsHistoryListDetails, buildProps("action")),
+    );
+
+    expect(markup).toContain("Qualité des données");
+    expect(markup).toContain("ne la modifiez pas pour améliorer le diagnostic");
+    expect(markup).toContain("Limites de preuve géographique");
+    expect(markup).not.toContain("Ouvrir le champ concerné");
+  });
+
+  it("links an anomaly to the existing editable form only for the creator", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionsHistoryListDetails, buildProps("action", false, true)),
+    );
+
+    expect(markup).toContain("/actions/new?actionId=history-action#action-declaration-terrain");
+    expect(markup).toContain("Ouvrir le champ concerné");
   });
 
   it.each(["spot", "clean_place"] as const)(

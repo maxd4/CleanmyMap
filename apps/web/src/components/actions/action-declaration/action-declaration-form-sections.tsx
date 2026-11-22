@@ -22,6 +22,8 @@ import {
   getActionValidationTargetId,
 } from "./action-declaration-form.model";
 import { deriveVolunteerCountFromForm } from "@/lib/actions/volunteer-participation";
+import { auditActionData } from "@/lib/actions/quality/data-quality";
+import { ActionDataQualityPanel } from "@/components/actions/action-data-quality-panel";
 
 type IdentityProps = Omit<ComponentProps<typeof ActionStepIdentity>, "mode">;
 type HarvestProps = Omit<ComponentProps<typeof ActionStepHarvest>, "mode">;
@@ -69,12 +71,13 @@ function ActionTitleField({ form, updateField }: Pick<IdentityProps, "form" | "u
 
 function ActionDeclarationReviewSummary({
   form,
+  visionEstimate,
   hasAttemptedSubmit,
   validationIssues,
   submissionState,
   validationStatus,
   errorMessage,
-}: Pick<ActionDeclarationFormSectionsProps, "form" | "hasAttemptedSubmit" | "validationIssues" | "submissionState" | "validationStatus" | "errorMessage">) {
+}: Pick<ActionDeclarationFormSectionsProps, "form" | "hasAttemptedSubmit" | "validationIssues" | "submissionState" | "validationStatus" | "errorMessage"> & { visionEstimate: HarvestProps["visionEstimate"] }) {
   const validationPresentation = getReviewValidationPresentation({
     hasAttemptedSubmit,
     validationIssues,
@@ -96,6 +99,32 @@ function ActionDeclarationReviewSummary({
       : hasCategoryInput
         ? "Effectif à compléter"
         : form.volunteersCount || "Effectif à renseigner";
+  const parseOptionalMeasurement = (raw: string): number | null => {
+    const value = raw.trim();
+    if (!value) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  };
+  const audit = auditActionData({
+    status: null,
+    observedAt: form.actionDate || null,
+    locationLabel: form.departureLocationLabel || form.locationLabel || null,
+    latitude: parseOptionalMeasurement(form.latitude),
+    longitude: parseOptionalMeasurement(form.longitude),
+    wasteKg: parseOptionalMeasurement(form.wasteKg),
+    cigaretteButts: parseOptionalMeasurement(form.cigaretteButtsCount),
+    volunteersCount: derivedVolunteersCount ?? parseOptionalMeasurement(form.volunteersCount),
+    durationMinutes: parseOptionalMeasurement(form.durationMinutes),
+    wasteMeasurementMethod: form.wasteMeasurementMethod || null,
+    visionEstimate,
+  });
+  const hasAnyMeasurement = [form.wasteKg, form.wasteMegotsKg, form.cigaretteButtsCount, form.cigaretteButtsVolumeLiters]
+    .some((value) => value.trim().length > 0);
+  const megotsSourceValues = [
+    form.cigaretteButtsCount.trim() ? `nombre ${form.cigaretteButtsCount}` : null,
+    form.wasteMegotsKg.trim() ? `masse ${form.wasteMegotsKg} kg` : null,
+    form.cigaretteButtsVolumeLiters.trim() ? `volume ${form.cigaretteButtsVolumeLiters} L` : null,
+  ].filter((value): value is string => value !== null);
 
   return (
     <div className="space-y-4">
@@ -124,6 +153,27 @@ function ActionDeclarationReviewSummary({
           <p className="mt-1 text-sm font-bold text-emerald-950">{form.recordType === "clean_place" ? "Lieu propre" : form.wasteKg || "Mesure à renseigner"}</p>
         </div>
       </div>
+      <ActionDataQualityPanel
+        summary={audit}
+        localCorrectionTargets
+        fields={[
+          { label: "Déchets collectés", value: form.wasteKg.trim() ? `${form.wasteKg} kg` : "Absent", provenance: form.wasteMeasurementMethod || "non précisée" },
+          { label: "Mégots", value: megotsSourceValues.length > 0 ? megotsSourceValues.join(" · ") : "Absent", provenance: form.cigaretteButtsInputSource ?? "unknown" },
+          { label: "État des mégots", value: form.wasteMegotsCondition || "Non renseigné" },
+          { label: "Présence déclarée", value: participantsSummary },
+          { label: "Géolocalisation", value: form.latitude.trim() && form.longitude.trim() ? "Coordonnées déclarées" : "Coordonnées absentes" },
+        ]}
+      />
+      <section aria-labelledby="action-finalization-checklist-title" className="rounded-xl border border-emerald-200 bg-white p-4">
+        <h3 id="action-finalization-checklist-title" className="text-sm font-bold text-emerald-950">Checklist de finalisation</h3>
+        <p className="mt-1 text-xs text-slate-700">Lecture temporaire des valeurs saisies ; cette checklist n’est pas enregistrée et ne vaut pas validation.</p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          <li className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-950"><strong>Mesures :</strong> {form.recordType !== "action" ? "non applicable" : hasAnyMeasurement ? "au moins une source est renseignée" : "à renseigner si mesuré"}</li>
+          <li className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-950"><strong>Présences :</strong> {participantsSummary}</li>
+          <li className="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-950"><strong>Missions :</strong> les attestations sont examinées après finalisation ; aucune n’est validée automatiquement.</li>
+          <li className="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-950"><strong>Publication :</strong> dépend du statut serveur et de la modération ; l’envoi ne vaut pas publication.</li>
+        </ul>
+      </section>
     </div>
   );
 }
@@ -375,6 +425,7 @@ export function ActionDeclarationFormSections({
         />
         <ActionDeclarationReviewSummary
           form={form}
+          visionEstimate={harvest.visionEstimate}
           hasAttemptedSubmit={hasAttemptedSubmit}
           validationIssues={validationIssues}
           submissionState={submissionState}

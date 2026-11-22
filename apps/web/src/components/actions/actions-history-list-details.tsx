@@ -21,6 +21,7 @@ export type ActionsHistoryListDetailsProps = {
   selectedOperational: SelectedOperationalContext;
   selectedLostPoints: number;
   correctiveAction: string | null;
+  selectedCanCorrectAction: boolean;
   selectedCanModerateGroupJoin: boolean;
   selectedCanViewActionAudit: boolean;
   pendingGroupJoinRequests: ActionParticipationReviewItem[];
@@ -117,12 +118,13 @@ function ActionHistoryPrimarySections({
   selectedOperational,
   selectedLostPoints,
   correctiveAction,
-}: Pick<ActionsHistoryListDetailsProps, "selectedItem" | "selectedQuality" | "selectedOperational" | "selectedLostPoints" | "correctiveAction"> & {
+  selectedCanCorrectAction,
+}: Pick<ActionsHistoryListDetailsProps, "selectedItem" | "selectedQuality" | "selectedOperational" | "selectedLostPoints" | "correctiveAction" | "selectedCanCorrectAction"> & {
   selectedItem: NonNullable<ActionsHistoryListDetailsProps["selectedItem"]>;
   selectedQuality: ActionQualityResult;
 }) {
   return <>
-    <ActionHistoryQualitySection selectedItem={selectedItem} selectedQuality={selectedQuality} selectedOperational={selectedOperational} selectedLostPoints={selectedLostPoints} correctiveAction={correctiveAction} />
+    <ActionHistoryQualitySection selectedItem={selectedItem} selectedQuality={selectedQuality} selectedOperational={selectedOperational} selectedLostPoints={selectedLostPoints} correctiveAction={correctiveAction} canCorrect={selectedCanCorrectAction} />
     <div className="mt-4"><ActionRoleAttestationsPanel actionId={selectedItem.id} /></div>
   </>;
 }
@@ -133,6 +135,7 @@ export function ActionsHistoryListDetails({
   selectedOperational,
   selectedLostPoints,
   correctiveAction,
+  selectedCanCorrectAction,
   selectedCanModerateGroupJoin,
   selectedCanViewActionAudit,
   pendingGroupJoinRequests,
@@ -154,6 +157,7 @@ export function ActionsHistoryListDetails({
         selectedOperational={selectedOperational}
         selectedLostPoints={selectedLostPoints}
         correctiveAction={correctiveAction}
+        selectedCanCorrectAction={selectedCanCorrectAction}
       />
       <ActionHistoryModerationSections
         selectedItem={selectedItem}

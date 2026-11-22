@@ -104,6 +104,7 @@ describe("ActionDeclarationValidationSummary", () => {
 
   it("renders the five groups once and keeps the primary CTA unique", () => {
     const form = createInitialFormState("Alice", "action");
+    form.wasteKg = "0";
     const markup = renderToStaticMarkup(
       <ActionDeclarationFormSections
         form={form}
@@ -141,6 +142,13 @@ describe("ActionDeclarationValidationSummary", () => {
     expect(markup).toContain("Identifier l’action");
     expect(markup).toContain("05");
     expect(markup).toContain("Vérifier et transmettre");
+    expect(markup).toContain("Qualité des données");
+    expect(markup).toContain("0 kg");
+    expect(markup).toContain('href="#action-declaration-terrain"');
+    expect(markup).toContain("Checklist de finalisation");
+    expect(markup).toContain("cette checklist n’est pas enregistrée");
+    expect(markup).toContain("aucune n’est validée automatiquement");
+    expect(markup).toContain("l’envoi ne vaut pas publication");
     expect(markup).not.toContain("Participants prévus");
     expect(markup).not.toContain("Comptes identifiés pour la présence");
     expect(markup).not.toContain("Présences confirmées");
@@ -261,6 +269,8 @@ describe("ActionDeclarationReviewSummary submission state", () => {
     const markup = reviewMarkup(rendered);
 
     expect(markup).toContain("Validation en attente.");
+    expect(markup).toContain("Qualité des données");
+    expect(markup).toContain("Checklist de finalisation");
     expect(markup).not.toContain("Validation locale réussie");
   });
 

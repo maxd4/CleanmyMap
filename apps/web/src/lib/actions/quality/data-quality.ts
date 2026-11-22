@@ -4,6 +4,7 @@ import type {
   ActionStatus,
   ActionVisionEstimate,
 } from "../types";
+import type { ActionWasteMeasurementMethod } from "@/lib/waste/measurement";
 import type {
   ActionDataAnomaly,
   ActionDataAnomalyCode,
@@ -40,6 +41,7 @@ export type ActionDataQualityInput = {
   volunteersCount?: unknown;
   durationMinutes?: unknown;
   visionEstimate?: ActionVisionEstimate | null;
+  wasteMeasurementMethod?: ActionWasteMeasurementMethod | null;
   geometrySource?: ActionGeometrySource | null;
   geometryConfidence?: number | null;
   hasGeometry?: boolean;
@@ -119,7 +121,7 @@ export function auditActionData(
   const measuresProvenance: ActionDataProvenance =
     input.wasteKg === null || input.wasteKg === undefined
       ? "missing"
-      : input.visionEstimate?.provisional
+      : input.visionEstimate?.provisional || input.wasteMeasurementMethod === "estimation_visuelle"
         ? "estimated"
         : "measured";
   const anomalies: ActionDataAnomaly[] = [];
@@ -281,6 +283,7 @@ export function auditActionContract(
     volunteersCount: contract.metadata.volunteersCount,
     durationMinutes: contract.metadata.durationMinutes,
     visionEstimate: contract.metadata.visionEstimate,
+    wasteMeasurementMethod: contract.metadata.wasteMeasurementMethod,
     geometrySource: contract.geometry.geometrySource,
     geometryConfidence: contract.geometry.confidence,
     hasGeometry: contract.geometry.coordinates.length > 0,

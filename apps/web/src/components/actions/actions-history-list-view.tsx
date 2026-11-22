@@ -189,6 +189,7 @@ export function ActionsHistoryListView({
             <ActionsHistoryListDetails
               selectedItem={selectedItem}
               selectedQuality={selectedQuality}
+              selectedCanCorrectAction={Boolean(currentUserId && selectedItem.created_by_clerk_id === currentUserId)}
               selectedOperational={selectedOperational}
               selectedLostPoints={selectedLostPoints}
               correctiveAction={correctiveAction}

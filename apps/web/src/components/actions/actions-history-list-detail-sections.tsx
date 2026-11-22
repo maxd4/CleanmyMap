@@ -8,6 +8,10 @@ import { SignalementMediaProofs } from "@/components/actions/signalement-media/s
 import { formatDate } from "./actions-history-list.helpers";
 import { formatScorePercent } from "@/lib/formatters/score";
 import { getPlaceTypeLabel } from "@/lib/actions/place-type-options";
+import { ActionDataQualityPanel } from "@/components/actions/action-data-quality-panel";
+import { auditActionData } from "@/lib/actions/quality/data-quality";
+import type { ActionListItem, ActionVisionEstimate } from "@/lib/actions/types";
+import type { ActionWasteMeasurementMethod } from "@/lib/waste/measurement";
 
 export type ActionQualityResult = {
   score: number;
@@ -28,10 +32,38 @@ export type SelectedOperationalContext = {
 export type ActionHistorySelectedItem = {
   id: string;
   location_label: string | null;
-  status?: string | null;
+  status?: ActionListItem["status"] | null;
   published_at?: string | null;
   record_type?: string | null;
-  contract?: { type?: string; metadata: { placeType?: string | null; actionPhase?: string | null } } | null;
+  created_by_clerk_id?: string | null;
+  action_date?: string | null;
+  observed_at?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  waste_kg?: number | null;
+  cigarette_butts?: number | null;
+  volunteers_count?: number | null;
+  duration_minutes?: number | null;
+  geometry_geojson?: string | null;
+  geometry_source?: ActionListItem["geometry_source"];
+  geometry_confidence?: number | null;
+  manual_drawing?: ActionListItem["manual_drawing"];
+  contract?: {
+    type?: string;
+    metadata: {
+      placeType?: string | null;
+      actionPhase?: string | null;
+      wasteKg?: number | null;
+      cigaretteButts?: number | null;
+      volunteersCount?: number | null;
+      durationMinutes?: number | null;
+      wasteMeasurementMethod?: ActionWasteMeasurementMethod | null;
+      visionEstimate?: ActionVisionEstimate | null;
+    };
+    dates?: { observedAt?: string | null };
+    location?: { label?: string | null; latitude?: number | null; longitude?: number | null };
+    geometry?: { coordinates?: unknown[]; geometrySource?: ActionListItem["geometry_source"]; confidence?: number | null };
+  } | null;
 };
 
 export function isSingleActionReportEligible(item: ActionHistorySelectedItem): boolean {
@@ -48,13 +80,32 @@ export function ActionHistoryQualitySection({
   selectedOperational,
   selectedLostPoints,
   correctiveAction,
+  canCorrect,
 }: {
   selectedItem: ActionHistorySelectedItem;
   selectedQuality: ActionQualityResult;
   selectedOperational: SelectedOperationalContext;
   selectedLostPoints: number;
   correctiveAction: string | null;
+  canCorrect: boolean;
 }) {
+  const audit = auditActionData({
+    status: selectedItem.status,
+    observedAt: selectedItem.contract?.dates?.observedAt ?? selectedItem.observed_at ?? selectedItem.action_date,
+    locationLabel: selectedItem.contract?.location?.label ?? selectedItem.location_label,
+    latitude: selectedItem.contract?.location?.latitude ?? selectedItem.latitude,
+    longitude: selectedItem.contract?.location?.longitude ?? selectedItem.longitude,
+    wasteKg: selectedItem.contract?.metadata.wasteKg ?? selectedItem.waste_kg,
+    cigaretteButts: selectedItem.contract?.metadata.cigaretteButts ?? selectedItem.cigarette_butts,
+    volunteersCount: selectedItem.contract?.metadata.volunteersCount ?? selectedItem.volunteers_count,
+    durationMinutes: selectedItem.contract?.metadata.durationMinutes ?? selectedItem.duration_minutes,
+    wasteMeasurementMethod: selectedItem.contract?.metadata.wasteMeasurementMethod,
+    visionEstimate: selectedItem.contract?.metadata.visionEstimate,
+    geometrySource: selectedItem.contract?.geometry?.geometrySource ?? selectedItem.geometry_source,
+    geometryConfidence: selectedItem.contract?.geometry?.confidence ?? selectedItem.geometry_confidence,
+    hasGeometry: Boolean(selectedItem.contract?.geometry?.coordinates?.length || selectedItem.geometry_geojson || selectedItem.manual_drawing),
+  });
+  const actionId = canCorrect ? selectedItem.id : null;
   return (
     <>
       <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">Detail score qualite</p>
@@ -63,7 +114,19 @@ export function ActionHistoryQualitySection({
         {selectedItem.contract?.metadata.placeType && <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 cmm-text-caption cmm-text-secondary">Type: {getPlaceTypeLabel(selectedItem.contract.metadata.placeType)}</span>}
       </p>
       <p className="mt-1 cmm-text-caption cmm-text-secondary">Facteurs: {" "}{selectedQuality.flags.length > 0 ? selectedQuality.flags.join(",") : "Aucun facteur critique."}</p>
-      <p className="mt-1 cmm-text-caption cmm-text-secondary">Action corrective recommandee: {correctiveAction}</p>
+      <p className="mt-1 cmm-text-caption cmm-text-secondary">Piste de correction : {correctiveAction} La date observée est une trace historique ; ne la modifiez pas pour améliorer le diagnostic.</p>
+      <div className="mt-3">
+        <ActionDataQualityPanel
+          summary={audit}
+          correctionActionId={actionId}
+          fields={[
+            { label: "Date observée", value: selectedItem.contract?.dates?.observedAt ?? selectedItem.observed_at ?? selectedItem.action_date ?? "Absente" },
+            { label: "Déchets", value: selectedItem.contract?.metadata.wasteKg != null || selectedItem.waste_kg != null ? `${selectedItem.contract?.metadata.wasteKg ?? selectedItem.waste_kg} kg` : "Absents", provenance: selectedItem.contract?.metadata.wasteMeasurementMethod ?? audit.provenance.measures },
+            { label: "Mégots", value: selectedItem.contract?.metadata.cigaretteButts != null || selectedItem.cigarette_butts != null ? String(selectedItem.contract?.metadata.cigaretteButts ?? selectedItem.cigarette_butts) : "Absents" },
+            { label: "Présences déclarées", value: selectedItem.contract?.metadata.volunteersCount != null || selectedItem.volunteers_count != null ? String(selectedItem.contract?.metadata.volunteersCount ?? selectedItem.volunteers_count) : "Absentes" },
+          ]}
+        />
+      </div>
       {selectedOperational ? (
         <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
           <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">Contexte métier</p>

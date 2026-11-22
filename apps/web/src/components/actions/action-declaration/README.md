@@ -28,6 +28,12 @@ présentation strictement liés au formulaire sont absorbés par les propriétai
 `hooks/`, `sections/`, `ui/`, `utils/` et la racine du parcours. Une règle métier
 réutilisable par d'autres surfaces
 doit être réévaluée pour un placement dans `apps/web/src/lib/actions/`.
+La section active « Vérifier et transmettre » relit les champs courants avec
+`lib/actions/quality/data-quality.ts`, expose les anomalies et leurs
+provenances, puis affiche une checklist de finalisation non persistée. Les
+attestations de mission et la publication restent des étapes distinctes ; le
+récapitulatif ne les valide pas automatiquement. Le composant historique
+`steps/ActionStepReview.tsx` n'est pas le consommateur runtime de cette revue.
 Le dossier `before/` regroupe le modèle déterministe, le hook d'orchestration
 et les sections contrôlées du parcours pré-action. Il ne contient ni champ de
 récolte finale ni copie des contrats métier canoniques.

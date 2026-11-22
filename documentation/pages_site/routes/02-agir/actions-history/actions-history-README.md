@@ -15,6 +15,7 @@
 - **Contexte nécessaire** : Compte Clerk connecté ; le rappel de complétion du compte reste non bloquant. Les fonctions de supervision et d'audit appliquent leurs autorisations propres.
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; l'historique reste soumis à l'authentification et à ses contrôles propres.
 - **Objectif utilisateur principal** : Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer.
+- **Diagnostics de qualité** : le détail recalcule en mémoire `auditActionData` depuis les valeurs accessibles du contrat, affiche date, mesures, présences, provenance, anomalies bloquantes, améliorations et limites géographiques sans créer de score. Un lien vers le champ du formulaire n'est rendu que pour le créateur connu de l'action ; sinon, les diagnostics restent en lecture seule. Le contrôle ne modifie ni l'enregistrement ni son historique.
 - **Action principale attendue** : Filtrer et inspecter les lignes, consulter le détail qualité/contexte, ouvrir le rapport d'impact mono-action lorsqu'une action est terminée, approuvée, publiée et visible, consulter les photos de bilan d'une action ou les preuves photo d'un signalement lorsque demandé, l'audit autorisé et exporter les lignes approuvées filtrées en PDF.
 - **Palette attendue** : emerald
 - **Scope** : historique et supervision des enregistrements d'actions et de signalements accessibles au compte connecté, avec filtres de statut/qualité, recherche, correction prioritaire, détail, preuves et export.

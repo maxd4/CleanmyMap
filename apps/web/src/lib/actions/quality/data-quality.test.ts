@@ -89,6 +89,18 @@ describe("action data quality contract", () => {
     );
   });
 
+  it("keeps a visual waste estimate distinct from a measured mass", () => {
+    const result = auditActionData({
+      observedAt: "2026-08-04",
+      locationLabel: "Quai de test",
+      wasteKg: 4,
+      wasteMeasurementMethod: "estimation_visuelle",
+    });
+
+    expect(result.provenance.measures).toBe("estimated");
+    expect(result.warnings.map((item) => item.code)).toContain("estimated_measure");
+  });
+
   it.each([
     ["gpx_import", "observed"],
     ["gps_tracking", "observed"],

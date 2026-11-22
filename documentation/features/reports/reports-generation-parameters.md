@@ -56,7 +56,7 @@ Le panneau secondaire **« Filtres avancés »** est fermé par défaut. Sa sél
 
 Le contrat livré couvre uniquement les champs canoniques suivants :
 
-- qualité : toutes les données ou aucune anomalie bloquante, niveau de qualité existant (`A`, `B`, `C`), provenance des mesures (`measured`, `derived`, `estimated`, `missing`), coordonnées valides, provenance géométrique et mode de déclaration (`quick` / `complete`) lorsqu'il est renseigné ;
+- qualité : toutes les données ou aucune anomalie bloquante, niveau de qualité existant (`A`, `B`, `C`), provenance des mesures (`measured`, `derived`, `estimated`, `missing`), coordonnées valides, provenance géométrique et mode de déclaration (`quick` / `complete`) lorsqu'il est renseigné. Une mesure `wasteMeasurementMethod=estimation_visuelle` est classée `estimated`, distincte d'une pesée, y compris quand une estimation par vision n'est pas utilisée ;
 - résultats : bornes inclusives de `metadata.wasteKg` et `metadata.cigaretteButts` ; catégories limitées aux champs structurés de `metadata.wasteBreakdown` (`recyclablesKg`, `glassKg`, `householdWasteKg`, `otherWasteKg`) ; les notes et marqueurs textuels ne satisfont aucun filtre de mesure ;
 - preuves : présence ou absence d'une géométrie exploitable et preuve photographique finalisée.
 
