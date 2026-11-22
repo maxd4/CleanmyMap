@@ -15,6 +15,7 @@ import {
   renderSupabaseStartDiagnostic,
   SUPABASE_START_CATEGORIES,
 } from "./diagnose-supabase-start.mjs";
+import { parseSupabaseBootstrapJobs } from "./supabase-start-bootstrap.mjs";
 
 const sqlWorkflow = readFileSyncFromFs(resolve(".github", "workflows", "supabase-sql-proof.yml"), "utf8");
 const appWorkflow = readFileSyncFromFs(resolve(".github", "workflows", "e2e-supabase.yml"), "utf8");
@@ -132,7 +133,7 @@ test("turns a long failed start with no containers into an actionable bounded co
     probeCommand: createProbeCommand(),
   });
 
-  assert.equal(evidence.schemaVersion, 5);
+  assert.equal(evidence.schemaVersion, 6);
   assert.equal(
     classifySupabaseStartFailure({ log: "opaque startup failure", exitCode: 1, evidence }),
     SUPABASE_START_CATEGORIES.START_TIMEOUT,
@@ -279,6 +280,106 @@ test("does not mistake a clean container stop or destroy cleanup for the startup
   });
 });
 
+test("ignores Realtime health_check calls and normal health progress as failure evidence", () => {
+  const log = [
+    "Waiting for health checks...",
+    '{:ok, _} = Realtime.Tenants.health_check("realtime-dev")',
+    "Initializing schema...",
+  ].join("\n");
+
+  assert.equal(classifySupabaseStartFailure({ log, exitCode: 1 }), SUPABASE_START_CATEGORIES.UNCLASSIFIED);
+  const evidence = collectBoundedStartEvidence({ log, exitCode: 1, probeCommand: createProbeCommand() });
+  assert.equal(evidence.firstErrorSignal, "NONE");
+  assert.equal(evidence.startPhase, "SCHEMA_INITIALIZATION");
+  assert.equal(evidence.failureService, null);
+});
+
+test("identifies only a failed allowlisted bootstrap job for the exact Supabase project", () => {
+  const label = { "com.supabase.cli.project": "web" };
+  const events = [
+    { Action: "start", Actor: { ID: "private-job-id", Attributes: { name: "/random_name", image: "public.ecr.aws/supabase/realtime:v2", labels: label } } },
+    { Action: "die", Actor: { ID: "private-job-id", Attributes: { exitCode: "1", token: "private-token" } } },
+    { Action: "start", Actor: { ID: "foreign-job-id", Attributes: { name: "/other_job", image: "supabase/storage-api:v1", labels: { "com.supabase.cli.project": "another-project" } } } },
+    { Action: "die", Actor: { ID: "foreign-job-id", Attributes: { name: "/other_job", image: "supabase/storage-api:v1", exitCode: "7", labels: { "com.supabase.cli.project": "another-project" } } } },
+  ].map(JSON.stringify).join("\n");
+  const jobs = parseSupabaseBootstrapJobs(events, "web");
+  const evidence = collectBoundedStartEvidence({ log: "Initialising schema...", dockerEvents: events, exitCode: 1, probeCommand: createProbeCommand() });
+  const category = classifySupabaseStartFailure({ log: "Initialising schema...", exitCode: 1, evidence });
+  const diagnostic = renderSupabaseStartDiagnostic({ category, exitCode: 1, dockerVersion: "28.0.4", supabaseCliVersion: "2.117.0", dockerDaemonAvailable: true, evidence });
+
+  assert.deepEqual(jobs, {
+    lastStartedJob: "realtime",
+    lastStartedJobExitCode: "1",
+    firstFailedJob: { service: "realtime", exitCode: "1", signal: "JOB_EXIT" },
+    jobs: ["realtime:failed:exit_1"],
+    observed: true,
+  });
+  assert.equal(category, SUPABASE_START_CATEGORIES.BOOTSTRAP_JOB_FAILURE);
+  assert.equal(evidence.startPhase, "BOOTSTRAP_REALTIME_JOB");
+  assert.equal(evidence.firstFailedStep, "BOOTSTRAP_REALTIME_JOB");
+  assert.equal(evidence.confirmedService, "realtime");
+  assert.equal(evidence.firstErrorSignal, "BOOTSTRAP_JOB_EXIT");
+  assert.match(diagnostic, /bootstrap_first_failed_job=realtime;exit_code=1/);
+  assert.match(diagnostic, /bootstrap_last_started_job_exit_code=1/);
+  assert.doesNotMatch(diagnostic, /private-job-id|foreign-job-id|random_name|private-token|another-project|public\.ecr\.aws|token=/);
+});
+
+test("keeps an unknown start error unclassified when no allowlisted bootstrap job failed", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "Error: opaque bootstrap failure private-token",
+    dockerEvents: JSON.stringify({
+      Action: "die",
+      Actor: { ID: "unknown-job-id", Attributes: { name: "/unknown", image: "supabase/custom-job:v1", exitCode: "9", labels: { "com.supabase.cli.project": "web" } } },
+    }),
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+  assert.equal(evidence.firstFailedBootstrapJob, null);
+  assert.equal(evidence.firstFailedStep, "UNPROVEN");
+  assert.equal(classifySupabaseStartFailure({ log: "Error: opaque bootstrap failure private-token", exitCode: 1, evidence }), SUPABASE_START_CATEGORIES.UNCLASSIFIED);
+  assert.equal(evidence.firstErrorSignal, "UNKNOWN_ERROR");
+  assert.doesNotMatch(evidence.firstErrorExcerpt, /private-token|unknown-job-id|custom-job/);
+});
+
+test("follows the CLI bootstrap order through Realtime, Storage and Auth jobs", () => {
+  const labels = { "com.supabase.cli.project": "web" };
+  const definitions = [["realtime", "realtime", "0"], ["storage-api", "storage", "0"], ["gotrue", "auth", "4"]];
+  const events = definitions.flatMap(([image, , exitCode], index) => {
+    const attributes = { name: `/temporary-${index}`, image: `supabase/${image}:v1`, labels };
+    return [
+      { Action: "start", Actor: { ID: `job-${index}`, Attributes: attributes } },
+      { Action: "die", Actor: { ID: `job-${index}`, Attributes: { exitCode } } },
+    ];
+  });
+  events.unshift({ Action: "die", Actor: { ID: "persistent-realtime", Attributes: { name: "supabase_realtime_web", image: "supabase/realtime:v1", exitCode: "9", labels } } });
+
+  assert.deepEqual(parseSupabaseBootstrapJobs(events.map(JSON.stringify).join("\n"), "web"), {
+    lastStartedJob: "auth",
+    lastStartedJobExitCode: "4",
+    firstFailedJob: { service: "auth", exitCode: "4", signal: "JOB_EXIT" },
+    jobs: ["realtime:succeeded:exit_0", "storage:succeeded:exit_0", "auth:failed:exit_4"],
+    observed: true,
+  });
+});
+
+test("extracts an allowlisted failure step from structured debug errors without publishing its message", () => {
+  const secretMigrationName = "20261122000002_private_migration.sql";
+  const log = [
+    JSON.stringify({ level: "debug", msg: "Waiting for health checks" }),
+    JSON.stringify({ level: "debug", msg: "Realtime.Tenants.health_check returned ok" }),
+    JSON.stringify({ level: "error", msg: `failed to apply migration ${secretMigrationName} token=private-token` }),
+  ].join("\n");
+  const evidence = collectBoundedStartEvidence({ log, exitCode: 1, probeCommand: createProbeCommand() });
+  const category = classifySupabaseStartFailure({ log, exitCode: 1, evidence });
+  const diagnostic = renderSupabaseStartDiagnostic({ category, exitCode: 1, dockerVersion: "28.0.4", supabaseCliVersion: "2.117.0", dockerDaemonAvailable: true, evidence });
+
+  assert.equal(evidence.firstErrorSignal, "UNKNOWN_ERROR");
+  assert.equal(evidence.firstFailedStep, "MIGRATIONS");
+  assert.equal(category, SUPABASE_START_CATEGORIES.UNCLASSIFIED);
+  assert.match(diagnostic, /first_failed_step=MIGRATIONS/);
+  assert.doesNotMatch(diagnostic, new RegExp(`${secretMigrationName}|private-token|Realtime\.Tenants`));
+});
+
 test("captures allowlisted health and lifecycle transitions without private Docker fields", () => {
   const raw = [
     { Action: "start", Actor: { Attributes: { name: "supabase_db_web", image: "private/image", token: "private-token" } } },
@@ -295,7 +396,7 @@ test("captures allowlisted health and lifecycle transitions without private Dock
 test("reports container die events separately from the sanitized initial error", () => {
   const evidence = collectBoundedStartEvidence({
     log: "Error: startup failed private-token",
-    dockerEvents: JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "0", token: "private-token" } } }),
+    dockerEvents: JSON.stringify({ Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "0", token: "private-token", labels: { "com.supabase.cli.project": "web" } } } }),
     exitCode: 1,
     probeCommand: createProbeCommand(),
   });
@@ -358,7 +459,7 @@ test("observes the exact isolated runner network without disclosing its name", (
 test("prefers a specific sanitized Docker CLI error over later Docker lifecycle events", () => {
   const evidence = collectBoundedStartEvidence({
     log: "Error: no space left on device",
-    dockerEvents: JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1" } } }),
+    dockerEvents: JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1", labels: { "com.supabase.cli.project": "web" } } } }),
     exitCode: 1,
     probeCommand: createProbeCommand(),
   });
@@ -369,7 +470,7 @@ test("prefers a specific sanitized Docker CLI error over later Docker lifecycle 
 test("uses an OOM Docker event when the first CLI error is generic", () => {
   const evidence = collectBoundedStartEvidence({
     log: "Error: start failed",
-    dockerEvents: JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1" } } }),
+    dockerEvents: JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_db_web", exitCode: "1", labels: { "com.supabase.cli.project": "web" } } } }),
     exitCode: 1,
     probeCommand: createProbeCommand(),
   });
@@ -449,9 +550,9 @@ test("classifies a terminal PostgreSQL authentication error without exposing its
 
 test("does not attribute an orderly db stop and cleanup as the startup failure", () => {
   const dockerEvents = [
-    { Action: "health_status: healthy", Actor: { Attributes: { name: "supabase_db_web" } } },
-    { Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "0" } } },
-    { Action: "destroy", Actor: { Attributes: { name: "supabase_db_web" } } },
+    { Action: "health_status: healthy", Actor: { Attributes: { name: "supabase_db_web", labels: { "com.supabase.cli.project": "web" } } } },
+    { Action: "die", Actor: { Attributes: { name: "supabase_db_web", exitCode: "0", labels: { "com.supabase.cli.project": "web" } } } },
+    { Action: "destroy", Actor: { Attributes: { name: "supabase_db_web", labels: { "com.supabase.cli.project": "web" } } } },
   ].map(JSON.stringify).join("\n");
   const evidence = collectBoundedStartEvidence({
     log: "Error: CLI health check failed",
@@ -474,7 +575,7 @@ test("does not attribute an orderly db stop and cleanup as the startup failure",
 test("uses the first Docker failure event when the CLI log contains no classifiable error", () => {
   const evidence = collectBoundedStartEvidence({
     log: "starting local Supabase",
-    dockerEvents: JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_rest_web", exitCode: "137", image: "private/image" } } }),
+    dockerEvents: JSON.stringify({ Action: "oom", Actor: { Attributes: { name: "supabase_rest_web", exitCode: "137", image: "private/image", labels: { "com.supabase.cli.project": "web" } } } }),
     exitCode: 1,
     probeCommand: createProbeCommand(),
   });
@@ -557,7 +658,7 @@ test("publishes only allowlisted error categories for adversarial log formats", 
   }
 });
 
-test("does not classify a benign migration filename as a network error", () => {
+test("records an observed migration phase without inferring a network failure", () => {
   const evidence = collectBoundedStartEvidence({
     log: "Applying migration 20261101000004_scientific_projection_volume_proxy_v2.sql...",
     exitCode: 1,
@@ -566,7 +667,7 @@ test("does not classify a benign migration filename as a network error", () => {
 
   assert.equal(evidence.firstErrorSignal, "NONE");
   assert.equal(evidence.firstErrorExcerpt, "none");
-  assert.equal(evidence.startPhase, "UNKNOWN");
+  assert.equal(evidence.startPhase, "MIGRATIONS");
 });
 
 test("renders the bounded startup observation timeline without publishing raw snapshots", () => {

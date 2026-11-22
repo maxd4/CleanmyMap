@@ -81,7 +81,22 @@ conteneur `db` est actif, les observations distinguent la santé Docker,
 `pg_isready` exécuté dans PostgreSQL et une connexion TCP du runner vers le port
 configuré. Une disponibilité interne ne prouve donc pas la joignabilité du
 runner. Les attributions de service sont séparées en confirmée, suspectée ou
-inconnue ; une simple mention dans le journal ne confirme pas une cause.
+inconnue ; une simple mention dans le journal ne confirme pas une cause. Pour
+Supabase CLI 2.117.0, le diagnostic tient compte de l'ordre de bootstrap : santé
+de PostgreSQL, initialisation du schéma, jobs temporaires Realtime, Storage et
+Auth, migrations et seed, puis services persistants. Les jobs temporaires ne
+sont reconnus que par le label exact `com.supabase.cli.project` du projet
+configuré, une image de service autorisée et un nom qui ne correspond pas à un
+conteneur persistant. Le rapport expose le dernier job démarré, le premier job
+échoué et son code de sortie, sans exposer son nom Docker ou son image.
+
+Les lignes de progression comme `Waiting for health checks` et l'appel normal
+`Realtime.Tenants.health_check` ne sont pas des erreurs. La classification
+repose sur des signaux terminaux précis ou un job temporaire explicitement
+échoué ; une erreur de debug non reconnue reste `UNCLASSIFIED`. `start_phase`
+indique une phase observée et ne prouve pas à lui seul qu'elle a échoué ;
+`first_failed_step` n'est renseigné que lorsqu'un job ou une erreur de phase
+spécifique l'établit.
 Journaux bruts, événements complets et détails structurés de la CLI restent dans
 des fichiers privés temporaires du runner puis sont supprimés. Seuls services,
 phases, états et codes explicitement autorisés paraissent dans les preuves. Un

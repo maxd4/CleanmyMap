@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { parseSupabaseBootstrapJobs } from "./supabase-start-bootstrap.mjs";
 
 export const SUPABASE_START_CATEGORIES = Object.freeze({
   DOCKER_UNAVAILABLE: "DOCKER_UNAVAILABLE",
@@ -11,6 +12,7 @@ export const SUPABASE_START_CATEGORIES = Object.freeze({
   PORT_CONFLICT: "PORT_CONFLICT",
   AUTHENTICATION_FAILURE: "AUTHENTICATION_FAILURE",
   HEALTHCHECK_FAILURE: "HEALTHCHECK_FAILURE",
+  BOOTSTRAP_JOB_FAILURE: "BOOTSTRAP_JOB_FAILURE",
   CLI_CONFIGURATION_INCOMPATIBILITY: "CLI_CONFIGURATION_INCOMPATIBILITY",
   INSUFFICIENT_RESOURCES: "INSUFFICIENT_RESOURCES",
   START_TIMEOUT: "START_TIMEOUT",
@@ -20,24 +22,15 @@ export const SUPABASE_START_CATEGORIES = Object.freeze({
 
 export const SUPABASE_START_REQUIRED_SERVICES = Object.freeze(["db", "kong", "rest", "storage"]);
 
-const categoryPatterns = [
-  [SUPABASE_START_CATEGORIES.AUTHENTICATION_FAILURE, /(password authentication failed|authentication failed|invalid password|no password supplied|role .+ does not exist|sqlstate\s*28[0-9a-z]{3})/i],
-  [SUPABASE_START_CATEGORIES.NETWORK_FAILURE, /(failed to (create|connect|resolve).*network|network .*\b(not found|unavailable|fail|error|timeout|denied|refused|reset|exceeded)\b|dns|name resolution|no such host|connection reset|connection refused|i\/o timeout|context deadline exceeded|tls handshake|proxy|registry).*\b(fail|error|timeout|unavailable|denied|refused|reset|exceeded|not found)\b|\b(econnrefused|etimedout)\b|connection (refused|timed out)/i],
-  [SUPABASE_START_CATEGORIES.IMAGE_UNAVAILABLE, /(pull access denied|manifest unknown|failed to (resolve|pull|copy)|error response from daemon:.*(get|pull)|image .*not found)/i],
-  [SUPABASE_START_CATEGORIES.PORT_CONFLICT, /(port is already allocated|address already in use|bind:.*address|listen tcp.*already)/i],
-  [SUPABASE_START_CATEGORIES.HEALTHCHECK_FAILURE, /(health.?check|unhealthy|timed out waiting|container .* failed to become healthy)/i],
-  [SUPABASE_START_CATEGORIES.INSUFFICIENT_RESOURCES, /(no space left on device|out of memory|cannot allocate memory|disk quota|insufficient (memory|resources))/i],
-  [SUPABASE_START_CATEGORIES.CLI_CONFIGURATION_INCOMPATIBILITY, /(unknown option|unknown flag|invalid configuration|could not find.*config|project_id|unsupported .*version|cannot find module|could not determine executable|command not found)/i],
-];
-
 const firstErrorSignalPatterns = [
+  ["DOCKER_UNAVAILABLE", /(cannot connect to the docker daemon|is the docker daemon running|docker daemon.*(?:not running|unavailable)|docker command not found|error during connect)/i],
   ["AUTHENTICATION", /(password authentication failed|authentication failed|invalid password|no password supplied|role .+ does not exist|sqlstate\s*28[0-9a-z]{3})/i],
+  ["IMAGE_PULL", /(pull access denied|manifest unknown|failed to (pull|copy)|error response from daemon:.*(get|pull)|image .*not found)/i],
   ["TCP_REFUSED", /\b(econnrefused|connection refused|actively refused)\b/i],
   ["TCP_TIMEOUT", /\b(etimedout|connection timed out|connect timeout)\b/i],
   ["NETWORK", /(failed to (create|connect|resolve).*network|network .*(not found|unavailable|fail|error|timeout|denied|refused|reset|exceeded)|(?:dns|name resolution|no such host|connection reset|connection refused|i\/o timeout|context deadline exceeded|tls handshake|proxy|registry).*(?:error|fail|timeout|denied|refused|reset|exceeded|unavailable|not found)|(?:error|failed|unable|cannot|could not).*(?:dns|name resolution|proxy|registry))/i],
-  ["IMAGE_PULL", /(pull access denied|manifest unknown|failed to (resolve|pull|copy)|error response from daemon:.*(get|pull)|image .*not found)/i],
   ["PORT_BIND", /(port is already allocated|address already in use|bind:.*address|listen tcp.*already)/i],
-  ["HEALTHCHECK", /(health.?check|unhealthy|timed out waiting|container .* failed to become healthy)/i],
+  ["HEALTHCHECK", /(?:\b(?:container|service)\s+[\w.-]+\s+(?:is\s+)?unhealthy\b|\bhealth checks?\s+(?:failed|timed out)\b|\bhealthcheck\s+(?:failed|timed out)\b|\btimed out waiting for (?:the )?health\b)/i],
   ["RESOURCE", /(no space left on device|out of memory|cannot allocate memory|disk quota|insufficient (memory|resources))/i],
   ["CLI_CONFIGURATION", /(unknown option|unknown flag|invalid configuration|could not find.*config|project_id|unsupported .*version|cannot find module|could not determine executable|command not found)/i],
   ["PERMISSION", /(permission denied|access denied|forbidden)/i],
@@ -46,7 +39,6 @@ const firstErrorSignalPatterns = [
   ["UNKNOWN_ERROR", /\b(error|failed|fatal|panic)\b/i],
 ];
 
-const dockerUnavailablePattern = /(cannot connect to the docker daemon|is the docker daemon running|docker daemon.*(not running|unavailable)|docker command not found|error during connect)/i;
 const containerStateNames = Object.freeze(["running", "exited", "created", "restarting", "other"]);
 const serviceAliases = Object.freeze([
   ["storage-api", "storage"], ["postgres-meta", "meta"], ["postgrest", "rest"], ["rest", "rest"], ["gotrue", "auth"], ["auth", "auth"],
@@ -69,9 +61,23 @@ export function classifySupabaseStartFailure({
   evidence = null,
 }) {
   if (exitCode === 0) return SUPABASE_START_CATEGORIES.START_SUCCEEDED;
-  if (!dockerCommandAvailable || !dockerDaemonAvailable || dockerUnavailablePattern.test(log)) return SUPABASE_START_CATEGORIES.DOCKER_UNAVAILABLE;
+  if (!dockerCommandAvailable || !dockerDaemonAvailable) return SUPABASE_START_CATEGORIES.DOCKER_UNAVAILABLE;
   if (!supabaseCliAvailable) return SUPABASE_START_CATEGORIES.CLI_CONFIGURATION_INCOMPATIBILITY;
-  for (const [category, pattern] of categoryPatterns) if (pattern.test(log)) return category;
+  if (evidence?.firstFailedBootstrapJob) return SUPABASE_START_CATEGORIES.BOOTSTRAP_JOB_FAILURE;
+  const error = inferFirstErrorEvidence(log);
+  const signalCategories = {
+    DOCKER_UNAVAILABLE: SUPABASE_START_CATEGORIES.DOCKER_UNAVAILABLE,
+    AUTHENTICATION: SUPABASE_START_CATEGORIES.AUTHENTICATION_FAILURE,
+    TCP_REFUSED: SUPABASE_START_CATEGORIES.NETWORK_FAILURE,
+    TCP_TIMEOUT: SUPABASE_START_CATEGORIES.NETWORK_FAILURE,
+    NETWORK: SUPABASE_START_CATEGORIES.NETWORK_FAILURE,
+    IMAGE_PULL: SUPABASE_START_CATEGORIES.IMAGE_UNAVAILABLE,
+    PORT_BIND: SUPABASE_START_CATEGORIES.PORT_CONFLICT,
+    HEALTHCHECK: SUPABASE_START_CATEGORIES.HEALTHCHECK_FAILURE,
+    RESOURCE: SUPABASE_START_CATEGORIES.INSUFFICIENT_RESOURCES,
+    CLI_CONFIGURATION: SUPABASE_START_CATEGORIES.CLI_CONFIGURATION_INCOMPATIBILITY,
+  };
+  if (signalCategories[error.signal]) return signalCategories[error.signal];
   if (evidence && typeof evidence === "object") {
     if (evidence.portState === "conflict") return SUPABASE_START_CATEGORIES.PORT_CONFLICT;
     if (evidence.durationSeconds >= 80
@@ -205,14 +211,22 @@ function parseListeningPorts(output) {
   return [...ports].sort((left, right) => left - right);
 }
 
-function inferStartStep(log) {
-  const text = String(log ?? "");
-  if (/(pull access denied|manifest unknown|failed to (resolve|pull|copy)|image .*not found)/i.test(text)) return "IMAGE_PULL";
-  if (/(?:network|dns|name resolution|connection reset|i\/o timeout|proxy|registry).*(?:error|fail|timeout|denied|refused|reset|exceeded|unavailable|not found)|(?:error|failed|unable|cannot|could not).*(?:network|dns|name resolution|proxy|registry)/i.test(text)) return "NETWORK";
-  if (/(port is already allocated|address already in use|bind:.*address)/i.test(text)) return "PORT_BIND";
-  if (/(health.?check|unhealthy|timed out waiting|failed to become healthy)/i.test(text)) return "HEALTH_CHECK";
-  if (/(unknown option|unknown flag|invalid configuration|could not find.*config|project_id)/i.test(text)) return "CLI_CONFIGURATION";
-  if (/(create|start).*container/i.test(text)) return "CONTAINER_START";
+function inferStartStep(log, bootstrapJobs = null) {
+  if (bootstrapJobs?.firstFailedJob) return `BOOTSTRAP_${bootstrapJobs.firstFailedJob.service.toUpperCase()}_JOB`;
+  const phases = [
+    ["DATABASE_HEALTH", /waiting for health checks|waiting for database health/i],
+    ["SCHEMA_INITIALIZATION", /initiali[sz]ing schema/i],
+    ["MIGRATIONS", /applying (?:database )?migrations?/i],
+    ["SEED", /(?:running|applying) (?:the )?seed|seeding data/i],
+    ["PERSISTENT_SERVICES", /starting (?:persistent )?services|starting containers/i],
+  ];
+  let phase = "UNKNOWN";
+  for (const line of String(log ?? "").split(/\r?\n/u)) {
+    const matched = phases.find(([, pattern]) => pattern.test(line));
+    if (matched) phase = matched[0];
+  }
+  if (phase !== "UNKNOWN") return phase;
+  if (bootstrapJobs?.lastStartedJob) return `BOOTSTRAP_${bootstrapJobs.lastStartedJob.toUpperCase()}_JOB`;
   return "UNKNOWN";
 }
 
@@ -250,21 +264,67 @@ function sanitizeErrorExcerpt(signal, service) {
   return `class=${label};service=${safeService}`;
 }
 
+function sanitizeBootstrapJobError(job) {
+  if (!job) return null;
+  return `class=bootstrap_job_exit;service=${job.service};exit_code=${job.exitCode}`;
+}
+
+function terminalLogMessage(line) {
+  const normalized = String(line ?? "").replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "").trim();
+  if (!normalized) return null;
+  if (normalized.startsWith("{")) {
+    try {
+      const entry = JSON.parse(normalized);
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+      const level = String(entry.level ?? entry.severity ?? "").toLowerCase();
+      const error = entry.error ?? entry.Error;
+      if (!/(error|fatal|panic)/.test(level) && error === undefined) return null;
+      const message = [error, entry.msg, entry.message, entry.Message].filter((value) => typeof value === "string").join(" ") || "structured terminal error";
+      return `Error: ${message}`;
+    } catch {
+      return null;
+    }
+  }
+  return normalized;
+}
+
 function inferFirstErrorEvidence(log) {
   let genericError = null;
   for (const line of String(log ?? "").split(/\r?\n/)) {
-    const normalized = line.replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "");
-    if (!normalized.trim()) continue;
-    const signal = firstErrorSignalPatterns.find(([, pattern]) => pattern.test(normalized))?.[0];
-    if (!signal) continue;
-    const result = { signal, excerpt: sanitizeErrorExcerpt(signal, inferFailureService(normalized)) };
-    if (signal !== "UNKNOWN_ERROR") return result;
+    const normalized = terminalLogMessage(line);
+    if (!normalized) continue;
+    const signal = firstErrorSignalPatterns.find(([candidate, pattern]) => candidate !== "UNKNOWN_ERROR" && pattern.test(normalized))?.[0];
+    const isTerminalError = /^\s*(?:error\b|fatal\b|panic:|failed\b|unable\b|cannot\b|could not\b)/i.test(normalized);
+    const hasErrorSignal = firstErrorSignalPatterns.some(([candidate, pattern]) => candidate !== "UNKNOWN_ERROR" && pattern.test(normalized));
+    if (!signal && !isTerminalError && !hasErrorSignal) continue;
+    const resolvedSignal = signal ?? "UNKNOWN_ERROR";
+    const result = { signal: resolvedSignal, excerpt: sanitizeErrorExcerpt(resolvedSignal, inferFailureService(normalized)) };
+    if (resolvedSignal !== "UNKNOWN_ERROR") return result;
     genericError ??= result;
   }
   return genericError ?? { signal: "NONE", excerpt: "none" };
 }
 
-export function parseFirstDockerFailureEvent(rawEvents) {
+function inferFirstFailedStep(log, bootstrapJob) {
+  if (bootstrapJob) return `BOOTSTRAP_${bootstrapJob.service.toUpperCase()}_JOB`;
+  const lines = String(log ?? "").split(/\r?\n/u).map(terminalLogMessage).filter(Boolean);
+  for (const line of lines) {
+    if (/\b(?:migration|migrations)\b.*\b(?:failed|failure|error|unable|exited)\b|\bfailed to apply (?:database )?migration\b/i.test(line)) return "MIGRATIONS";
+    if (/\bseed\b.*\b(?:failed|failure|error|unable|exited)\b|\bfailed to seed\b/i.test(line)) return "SEED";
+    if (/\bschema\b.*\b(?:failed|failure|error|unable|exited)\b|\bfailed to initialize schema\b|\bfailed to initialise schema\b/i.test(line)) return "SCHEMA_INITIALIZATION";
+    if (/\bhealth checks?\b.*\b(?:failed|failure|timeout|timed out)\b|\bhealthcheck\b.*\b(?:failed|failure|timeout|timed out)\b/i.test(line)) return "DATABASE_HEALTH";
+    if (/\b(?:service|container)\b.*\b(?:failed to start|failed|failure|error|exited)\b/i.test(line)) return "PERSISTENT_SERVICES";
+  }
+  return "UNPROVEN";
+}
+
+function dockerEventMatchesProject(attributes, projectId) {
+  if (projectId === undefined || projectId === null) return true;
+  const labels = attributes.labels ?? attributes.Labels ?? attributes;
+  return labels["com.supabase.cli.project"] === projectId;
+}
+
+export function parseFirstDockerFailureEvent(rawEvents, projectId) {
   for (const line of String(rawEvents ?? "").split(/\r?\n/u)) {
     if (!line.trim()) continue;
     let event;
@@ -275,6 +335,7 @@ export function parseFirstDockerFailureEvent(rawEvents) {
     }
     const action = String(event.Action ?? event.status ?? "").toLowerCase();
     const attributes = event.Actor?.Attributes ?? event.actor?.attributes ?? {};
+    if (!dockerEventMatchesProject(attributes, projectId)) continue;
     const service = dockerEventService(attributes);
     if (!service) continue;
     if (action === "destroy") continue;
@@ -288,7 +349,7 @@ export function parseFirstDockerFailureEvent(rawEvents) {
   return { signal: "NONE", excerpt: "none" };
 }
 
-export function parseDockerLifecycleEvents(rawEvents) {
+export function parseDockerLifecycleEvents(rawEvents, projectId) {
   const summaries = [];
   for (const line of String(rawEvents ?? "").split(/\r?\n/u)) {
     if (!line.trim()) continue;
@@ -301,6 +362,7 @@ export function parseDockerLifecycleEvents(rawEvents) {
     const action = String(event.Action ?? event.status ?? "").toLowerCase();
     if (!["create", "start", "health_status: healthy", "health_status: unhealthy", "die", "destroy"].includes(action)) continue;
     const attributes = event.Actor?.Attributes ?? event.actor?.attributes ?? {};
+    if (!dockerEventMatchesProject(attributes, projectId)) continue;
     const service = dockerEventService(attributes);
     if (!service) continue;
     const rawExitCode = attributes.exitCode ?? attributes.exitcode;
@@ -502,10 +564,14 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
   const imageCount = dockerImages.available ? String(dockerImages.output).split(/\r?\n/).filter(Boolean).length : null;
   const networkState = dockerNetworks.available ? networkStateFromOutput(dockerNetworks.output, expectedNetwork) : "unobserved";
   const progressSnapshots = normalizeProgressSnapshots(startProgressSnapshots);
+  const bootstrapJobs = parseSupabaseBootstrapJobs(dockerEvents, configContract.projectId);
   const firstLogError = inferFirstErrorEvidence(log);
-  const firstDockerError = parseFirstDockerFailureEvent(dockerEvents);
+  const firstDockerError = parseFirstDockerFailureEvent(dockerEvents, configContract.projectId);
+  const firstBootstrapJob = bootstrapJobs.firstFailedJob;
   const dockerEventIsMoreSpecific = firstLogError.signal === "UNKNOWN_ERROR" && firstDockerError.signal !== "NONE";
-  const firstError = dockerEventIsMoreSpecific
+  const firstError = firstBootstrapJob
+    ? { signal: firstBootstrapJob.signal === "DOCKER_OOM" ? "DOCKER_OOM" : "BOOTSTRAP_JOB_EXIT", excerpt: sanitizeBootstrapJobError(firstBootstrapJob), source: "DOCKER_EVENT" }
+    : dockerEventIsMoreSpecific
     ? { ...firstDockerError, source: "DOCKER_EVENT" }
     : firstLogError.signal !== "NONE"
       ? { ...firstLogError, source: "SUPABASE_CLI_LOG" }
@@ -514,7 +580,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
   const lastDbObservation = [...progressSnapshots].reverse().find((snapshot) => snapshot.dbDockerHealth !== "unobserved"
     || snapshot.dbPostgresInternal !== "unobserved"
     || snapshot.dbHostTcp !== "unobserved");
-  const confirmedService = inferConfirmedFailureService(log, firstDockerError, firstLogError);
+  const confirmedService = firstBootstrapJob?.service ?? inferConfirmedFailureService(log, firstDockerError, firstLogError);
   const logService = inferFailureService(log);
   const suspectedService = confirmedService
     ? null
@@ -526,7 +592,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
           ? "db"
           : null;
   const evidence = {
-    schemaVersion: 5,
+    schemaVersion: 6,
     evidenceCodes: [],
     dockerCommandAvailable: dockerVersion.available,
     dockerDaemonAvailable: dockerDaemon.available,
@@ -548,7 +614,8 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     supabaseStatus: supabaseStatus.available ? "available" : "unavailable",
     configContract: configContract.valid ? "valid" : configContract.available ? "invalid" : "unavailable",
     configuredPorts: configContract.ports,
-    startPhase: inferStartStep(log),
+    startPhase: inferStartStep(log, bootstrapJobs),
+    firstFailedStep: inferFirstFailedStep(log, firstBootstrapJob),
     failureService: confirmedService,
     confirmedService,
     suspectedService,
@@ -561,7 +628,11 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     firstErrorSignal: firstError.signal,
     firstErrorExcerpt: firstError.excerpt,
     firstErrorSource: firstError.source,
-    dockerLifecycleEvents: parseDockerLifecycleEvents(dockerEvents),
+    dockerLifecycleEvents: parseDockerLifecycleEvents(dockerEvents, configContract.projectId),
+    bootstrapLastStartedJob: bootstrapJobs.lastStartedJob,
+    bootstrapLastStartedJobExitCode: bootstrapJobs.lastStartedJobExitCode,
+    firstFailedBootstrapJob: firstBootstrapJob,
+    bootstrapJobTimeline: bootstrapJobs.jobs.join(","),
     durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
     startObservationCount: progressSnapshots.length,
     startObservationTimeline: progressSnapshots.map((snapshot) => `${snapshot.elapsedSeconds ?? "unknown"}:${Object.entries(snapshot.dockerContainerServices).map(([service, state]) => `${service}=${state}`).join("/") || snapshot.observationState}`).join(","),
@@ -589,6 +660,8 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
   else if (evidence.suspectedService) evidenceCodes.push("FAILED_SERVICE_SUSPECTED");
   if (evidence.dbConnectivity !== "unobserved") evidenceCodes.push(`DB_CONNECTIVITY_${evidence.dbConnectivity.toUpperCase()}`);
   if (firstDockerError.signal !== "NONE") evidenceCodes.push("DOCKER_FAILURE_EVENT_OBSERVED");
+  if (bootstrapJobs.observed) evidenceCodes.push("BOOTSTRAP_JOBS_OBSERVED");
+  if (firstBootstrapJob) evidenceCodes.push("BOOTSTRAP_JOB_FAILURE_CONFIRMED");
   if (evidence.dockerLifecycleEvents.length > 0) evidenceCodes.push("DOCKER_LIFECYCLE_EVENTS_OBSERVED");
   const category = classifySupabaseStartFailure({ log, exitCode, evidence });
   evidenceCodes.push(category === SUPABASE_START_CATEGORIES.UNCLASSIFIED ? "NO_CLASSIFIABLE_START_LOG_SIGNAL" : category === SUPABASE_START_CATEGORIES.START_SUCCEEDED ? "START_SUCCEEDED" : `LOG_SIGNAL_${category}`);
@@ -612,6 +685,7 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`evidence_schema_version=${evidence.schemaVersion}`);
     lines.push(`evidence_codes=${evidence.evidenceCodes.join(",")}`);
     lines.push(`start_phase=${evidence.startPhase}`);
+    lines.push(`first_failed_step=${evidence.firstFailedStep ?? "UNPROVEN"}`);
     lines.push(`service_attribution=${evidence.serviceAttribution ?? "unknown"}`);
     lines.push(`confirmed_service=${evidence.confirmedService ?? "unavailable"}`);
     lines.push(`suspected_service=${evidence.suspectedService ?? "unavailable"}`);
@@ -619,6 +693,10 @@ export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersio
     lines.push(`first_error_signal=${evidence.firstErrorSignal ?? "unavailable"}`);
     lines.push(`first_error_excerpt=${evidence.firstErrorExcerpt ?? "unavailable"}`);
     lines.push(`first_error_source=${evidence.firstErrorSource ?? "unavailable"}`);
+    lines.push(`bootstrap_last_started_job=${evidence.bootstrapLastStartedJob ?? "unavailable"}`);
+    lines.push(`bootstrap_last_started_job_exit_code=${evidence.bootstrapLastStartedJobExitCode ?? "unavailable"}`);
+    lines.push(`bootstrap_first_failed_job=${evidence.firstFailedBootstrapJob ? `${evidence.firstFailedBootstrapJob.service};exit_code=${evidence.firstFailedBootstrapJob.exitCode}` : "none"}`);
+    lines.push(`bootstrap_job_timeline=${evidence.bootstrapJobTimeline || "none"}`);
     lines.push(`docker_lifecycle_events=${evidence.dockerLifecycleEvents?.join(",") || "none"}`);
     lines.push(`startup_service_timeline=${evidence.startObservationTimeline || "none"}`);
     lines.push(`docker_containers=${evidence.dockerContainers ?? "unavailable"}`);
