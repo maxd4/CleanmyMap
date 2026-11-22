@@ -59,7 +59,7 @@ export function ActionCreationSectionContent({
   initialPanel: ActionCreationPanelId;
   onNavigateSection: (section: ActionCreationSectionId) => void;
 }) {
-  const { currentActionId, formProps, preparationContext, formalitiesReadiness, localDevAuth, draftContext, preparationPersistenceStatus, onFormChange, onActionPersisted, onFormalitiesReadiness, onPassToComplete, onPreparationValidated, onPreparationSelection, onPreparationContextChange } = viewProps;
+  const { currentActionId, formProps, preparationContext, formalitiesReadiness, localDevAuth, draftContext, onFormChange, onActionPersisted, onFormalitiesReadiness, onPassToComplete, onPreparationSelection } = viewProps;
   const routeRequested = initialPanel === "itineraire" || initialSubsection === "route";
   return (
     <div className="space-y-4">
@@ -93,7 +93,7 @@ export function ActionCreationSectionContent({
             <CmmCard tone="emerald" variant="glass" size="lg" className={routeRequested ? "xl:col-span-2" : undefined}>
               <div className="space-y-3">
                 <div className="flex items-center gap-2"><CloudSun size={18} className="text-emerald-700" aria-hidden="true" /><h3 className="text-lg font-black text-emerald-950">Météo et créneau</h3></div>
-                <WeatherSection draftContext={draftContext} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} territoryPreference={viewProps.territoryPreference} />
+                <WeatherSection draftContext={draftContext} preparationContext={preparationContext} onEditActionContext={() => onNavigateSection("definir")} canonicalActionContext compactSummary onPreparationSelection={onPreparationSelection} territoryPreference={viewProps.territoryPreference} />
               </div>
             </CmmCard>
           </div>

@@ -4,6 +4,7 @@ import { CalendarDays, CheckCircle2, CloudRain, MapPin, Thermometer, TriangleAle
 import { useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import type { ActionPreparationContext, ActionPreparationPersistenceStatus, PreparationSelection } from "@/lib/actions/action-preparation-context";
 import type { resolvePreparationSelection } from "@/lib/actions/action-preparation-context";
 import { ACTION_PREPARATION_CHECKLIST_DEFAULTS, type ActionPreparationChecklistItem } from "@/lib/actions/preparation-contract";
@@ -75,6 +76,8 @@ export function PreparationLocationBlock({
   actionDate,
   weather,
   fr,
+  canonicalActionContext = false,
+  onEditActionContext,
 }: {
   actionLocation: string;
   actionLatitude?: string;
@@ -82,6 +85,8 @@ export function PreparationLocationBlock({
   actionDate: string;
   weather: Pick<WeatherData, "weatherStatus" | "locationResolution" | "selectedLocation" | "locationQuery" | "setLocationQuery" | "locationSuggestions" | "locationSuggestionsError" | "isLocationSuggestionsLoading" | "selectLocation">;
   fr: boolean;
+  canonicalActionContext?: boolean;
+  onEditActionContext?: () => void;
 }) {
   const weatherState = getWeatherStateCopy({
     weatherStatus: weather.weatherStatus,
@@ -96,9 +101,9 @@ export function PreparationLocationBlock({
     <CmmCard tone="emerald" variant="outlined" size="md" className="space-y-4" data-testid="preparation-location-block">
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><MapPin size={18} aria-hidden="true" /></span>
-        <div><h3 className="text-lg font-black text-emerald-950">{fr ? "Lieu et date" : "Place and date"}</h3><p className="mt-1 cmm-text-body cmm-text-primary">{fr ? "La météo est analysée pour le lieu affiché. Changez-le ici si nécessaire." : "Weather is analyzed for the displayed place. Change it here if needed."}</p></div>
+        <div><h3 className="text-lg font-black text-emerald-950">{fr ? "Lieu et date" : "Place and date"}</h3><p className="mt-1 cmm-text-body cmm-text-primary">{canonicalActionContext ? (fr ? "La météo suit le lieu et la date de l’action." : "Weather follows the action place and date.") : (fr ? "La météo est analysée pour le lieu affiché. Changez-le ici si nécessaire." : "Weather is analyzed for the displayed place. Change it here if needed.")}</p></div>
       </div>
-      <WeatherLocationPicker
+      {canonicalActionContext ? <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"><span className="min-w-0"><strong>{fr ? "Lieu de l’action : " : "Action place: "}</strong>{actionLocation || (fr ? "À préciser dans Définir" : "Set in Define")}</span>{onEditActionContext ? <CmmButton type="button" tone="tertiary" variant="pill" size="sm" onClick={onEditActionContext}>{fr ? "Modifier" : "Edit"}</CmmButton> : null}</div> : <WeatherLocationPicker
         query={weather.locationQuery}
         onQueryChange={weather.setLocationQuery}
         suggestions={weather.locationSuggestions}
@@ -109,12 +114,12 @@ export function PreparationLocationBlock({
         label={fr ? "Rechercher ou changer le lieu" : "Search or change the place"}
         currentLocationLabel={fr ? "Lieu analysé" : "Analyzed place"}
         helperText={fr ? "Sélectionnez une commune ou un lieu géocodé pour obtenir une prévision associée." : "Select a geocoded town or place to obtain an associated forecast."}
-      />
-      <div className="grid gap-3 sm:grid-cols-2">
+      />}
+      <div className="grid gap-2 sm:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"><p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">{fr ? "Date de l’action" : "Action date"}</p><p className="mt-1 text-sm font-bold text-slate-900">{actionDate || (fr ? "À préciser dans le pré-formulaire" : "To be specified in the pre-form")}</p></div>
         <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700" role={weatherState.variant === "error" ? "alert" : undefined}><StateIcon size={16} className={weatherState.variant === "loading" ? "mt-0.5 animate-spin text-emerald-600" : "mt-0.5 text-emerald-700"} aria-hidden="true" /><span><strong className="font-bold text-slate-900">{weatherState.title}</strong><span className="mt-0.5 block text-xs text-slate-600">{weatherState.description}</span></span></div>
       </div>
-      {locationDiffers ? <p role="note" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950">{fr ? `Lieu météo différent du lieu de l’action : « ${weather.selectedLocation.label} » au lieu de « ${actionLocation} ».` : `Weather place differs from the action place: “${weather.selectedLocation.label}” instead of “${actionLocation}”.`}</p> : null}
+      {locationDiffers && !canonicalActionContext ? <p role="note" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950">{fr ? `Lieu météo différent du lieu de l’action : « ${weather.selectedLocation.label} » au lieu de « ${actionLocation} ».` : `Weather place differs from the action place: “${weather.selectedLocation.label}” instead of “${actionLocation}”.`}</p> : null}
     </CmmCard>
   );
 }
@@ -179,11 +184,13 @@ export function PreparationForecastBlock({
   actionDate,
   onPreparationSelection,
   fr,
+  compact = false,
 }: {
   weather: Pick<WeatherData, "weatherStatus" | "currentRisk" | "selectedForecastRisk" | "forecastDays" | "forecastSelectionStatus" | "selectedForecastDay" | "selectedForecastDayIndex" | "setSelectedForecastDayIndex" | "windows">;
   actionDate: string;
   onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
   fr: boolean;
+  compact?: boolean;
 }) {
   const selectedDay = weather.selectedForecastDay;
   const recommendedWindow = weather.windows.recommended[0] ?? null;
@@ -192,11 +199,18 @@ export function PreparationForecastBlock({
   return (
     <CmmCard tone="emerald" variant="outlined" size="md" className="space-y-4" data-testid="preparation-forecast-block">
       <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><CalendarDays size={18} aria-hidden="true" /></span><div><h3 className="text-lg font-black text-emerald-950">{fr ? "Prévisions et créneau conseillé" : "Forecast and suggested slot"}</h3><p className="mt-1 cmm-text-body cmm-text-primary">{fr ? "La météo actuelle et la prévision du jour sélectionné restent séparées." : "Current weather and the selected day's forecast remain separate."}</p></div></div>
-      {weather.weatherStatus === "ready" && weather.forecastDays.length > 0 ? <ForecastDayButtons forecastDays={weather.forecastDays} selectedForecastDayIndex={weather.selectedForecastDayIndex} setSelectedForecastDayIndex={weather.setSelectedForecastDayIndex} /> : null}
-      <ForecastMetrics selectedDay={selectedDay} riskLabel={selectedRiskLabel} fr={fr} />
-      <CurrentWeatherNote currentRisk={weather.currentRisk} selectedDay={selectedDay} actionDate={actionDate} fr={fr} />
-      <RecommendedWindowNote window={selectedDay ? recommendedWindow : null} fr={fr} />
-      <ForecastSelectionActions selectedDay={selectedDay} recommendedWindow={recommendedWindow} onPreparationSelection={onPreparationSelection} fr={fr} />
+      {compact ? <>
+        <p className="text-sm font-semibold text-slate-800" data-testid="weather-compact-summary">{weather.weatherStatus === "ready" && selectedDay ? `${selectedDay.label} · ${formatMetric(selectedDay.min, "°")} / ${formatMetric(selectedDay.max, "°")} · ${selectedRiskLabel}` : weather.weatherStatus === "loading" ? (fr ? "Prévisions en cours de chargement" : "Forecast loading") : (fr ? "Prévisions indisponibles — la préparation peut continuer." : "Forecast unavailable — preparation can continue.")}</p>
+        <CmmDisclosure summary={fr ? "Détails et créneau conseillé" : "Details and suggested slot"} tone="emerald" size="sm">
+          <div className="space-y-3">{weather.weatherStatus === "ready" && weather.forecastDays.length > 0 ? <ForecastDayButtons forecastDays={weather.forecastDays} selectedForecastDayIndex={weather.selectedForecastDayIndex} setSelectedForecastDayIndex={weather.setSelectedForecastDayIndex} /> : null}<ForecastMetrics selectedDay={selectedDay} riskLabel={selectedRiskLabel} fr={fr} /><CurrentWeatherNote currentRisk={weather.currentRisk} selectedDay={selectedDay} actionDate={actionDate} fr={fr} /><RecommendedWindowNote window={selectedDay ? recommendedWindow : null} fr={fr} /><ForecastSelectionActions selectedDay={selectedDay} recommendedWindow={recommendedWindow} onPreparationSelection={onPreparationSelection} fr={fr} /></div>
+        </CmmDisclosure>
+      </> : <>
+        {weather.weatherStatus === "ready" && weather.forecastDays.length > 0 ? <ForecastDayButtons forecastDays={weather.forecastDays} selectedForecastDayIndex={weather.selectedForecastDayIndex} setSelectedForecastDayIndex={weather.setSelectedForecastDayIndex} /> : null}
+        <ForecastMetrics selectedDay={selectedDay} riskLabel={selectedRiskLabel} fr={fr} />
+        <CurrentWeatherNote currentRisk={weather.currentRisk} selectedDay={selectedDay} actionDate={actionDate} fr={fr} />
+        <RecommendedWindowNote window={selectedDay ? recommendedWindow : null} fr={fr} />
+        <ForecastSelectionActions selectedDay={selectedDay} recommendedWindow={recommendedWindow} onPreparationSelection={onPreparationSelection} fr={fr} />
+      </>}
     </CmmCard>
   );
 }

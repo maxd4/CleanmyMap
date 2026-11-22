@@ -19,7 +19,9 @@ describe("ActionBeforeVerificationSection", () => {
         form,
         submissionState: "idle",
         validationIssues: ["Le créneau doit être confirmé."],
-        errorMessage: null,
+        validationIssueFields: ["eventStartTime"],
+        onEditDefinition: () => undefined,
+        errorMessage: "Le créneau doit être confirmé.",
         guidedReadiness: "unknown",
         isAuthenticated: true,
         updateField: () => undefined,
@@ -27,11 +29,16 @@ describe("ActionBeforeVerificationSection", () => {
     );
 
     expect(markup).toContain('data-testid="action-publication-review-groups"');
-    expect(markup).toContain("À corriger avant publication");
+    expect(markup).toContain("À traiter avant de continuer");
     expect(markup).toContain("À vérifier");
-    expect(markup).toContain("Suggestions");
+    expect(markup).toContain("Suggestion ·");
     const preview = markup.match(/data-testid="action-volunteer-preview"[\s\S]*?<\/div>\s*<div class="flex flex-wrap items-center/)?.[0] ?? "";
     expect(preview).not.toContain("NOTE INTERNE NE PAS PUBLIER");
     expect(markup).toContain("Informations pratiques publiques");
+    expect(markup).toContain("Début");
+    expect(markup).toContain("Formalités locales");
+    expect(markup).toContain("Comment interpréter la qualification");
+    expect(markup.match(/Le créneau doit être confirmé\./g)).toHaveLength(1);
+    expect(markup).not.toContain(">Complet<");
   });
 });

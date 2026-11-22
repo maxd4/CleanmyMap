@@ -52,6 +52,16 @@ export function ActionBeforeDeclarationForm({
 }: ActionBeforeDeclarationFormProps) {
   const [searchCountryCode, setSearchCountryCode] = useState<CountryCode>(countryCode ?? DEFAULT_COUNTRY_CODE);
   const [shareActionId, setShareActionId] = useState<string | null>(null);
+  const focusValidationField = (field?: string) => {
+    onEditDefinition?.();
+    if (!field) return;
+    const id = BEFORE_VALIDATION_FIELD_IDS[field];
+    if (!id) return;
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      const target = document.getElementById(id);
+      if (target instanceof HTMLElement) target.focus();
+    }));
+  };
   const {
     form,
     submissionState,
@@ -100,5 +110,5 @@ export function ActionBeforeDeclarationForm({
     return <><ActionBeforePersistenceStatus status={persistenceStatus} onRetry={() => { void /* fire-and-forget -- the UI status control delegates rejection handling to the workflow. */ retryDraftPersistence(); }} /><ActionBeforePublicationView form={form} publishedAction={publishedAction} createdId={createdId} publishedAt={publishedAt} publicationState={publicationState} publicationError={publicationError} publicationConfirmationOpen={publicationConfirmationOpen} guidedWorkflow={guidedWorkflow} guidedReadiness={guidedReadiness} shareActionId={shareActionId} onRequestPublish={requestPublish} onCancelPublication={cancelPublication} onConfirmPublish={() => { void /* fire-and-forget -- the UI confirmation control delegates rejection handling to the workflow. */ confirmPublish().catch(() => undefined); }} onContinueComplete={onContinueComplete} onShare={setShareActionId} /></>;
   }
 
-  return <ActionBeforeFormView activeSection={activeSection} onEditDefinition={onEditDefinition} form={form} submissionState={submissionState} validationIssues={validationIssues} validationIssueFields={validationIssueFields} errorMessage={errorMessage} countryCode={searchCountryCode} onCountryCodeChange={setSearchCountryCode} userMetadata={userMetadata} updateField={updateField} updateFields={updateFields} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} invitationStatuses={invitationStatuses} handleSubmit={handleSubmit} guidedReadiness={guidedReadiness} isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} persistenceStatus={persistenceStatus} actionId={createdId} isExistingAction={Boolean(initialActionId)} onFormalitiesReadiness={onFormalitiesReadiness} onRetryDraftLoad={retryDraftPersistence} />;
+  return <ActionBeforeFormView activeSection={activeSection} onEditDefinition={focusValidationField} form={form} submissionState={submissionState} validationIssues={validationIssues} validationIssueFields={validationIssueFields} errorMessage={errorMessage} countryCode={searchCountryCode} onCountryCodeChange={setSearchCountryCode} userMetadata={userMetadata} updateField={updateField} updateFields={updateFields} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} invitationStatuses={invitationStatuses} handleSubmit={handleSubmit} guidedReadiness={guidedReadiness} isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} persistenceStatus={persistenceStatus} actionId={createdId} isExistingAction={Boolean(initialActionId)} onFormalitiesReadiness={onFormalitiesReadiness} onRetryDraftLoad={retryDraftPersistence} />;
 }

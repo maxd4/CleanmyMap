@@ -45,7 +45,7 @@ export function ActionBeforeFormView({
   onRetryDraftLoad,
 }: {
   activeSection: "all" | ActionCreationSectionId;
-  onEditDefinition?: () => void;
+  onEditDefinition?: (field?: string) => void;
   form: FormState;
   submissionState: "idle" | "pending" | "success" | "error";
   validationIssues: string[];

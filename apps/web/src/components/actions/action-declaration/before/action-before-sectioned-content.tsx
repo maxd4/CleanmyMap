@@ -11,7 +11,7 @@ import type { CountryCode } from "@/lib/user-location-preference";
 
 type SectionedContentProps = {
   activeSection: ActionCreationSectionId;
-  onEditDefinition?: () => void;
+  onEditDefinition?: (field?: string) => void;
   form: FormState;
   updateField: BeforeActionFieldUpdater;
   updateFields: (updates: Partial<FormState>) => void;
@@ -103,6 +103,7 @@ export function ActionBeforeSectionedContent({
           form={form}
           submissionState={submissionState}
           validationIssues={validationIssues}
+          validationIssueFields={validationIssueFields}
           errorMessage={errorMessage}
           guidedReadiness={guidedReadiness}
           isAuthenticated={isAuthenticated}
@@ -110,6 +111,7 @@ export function ActionBeforeSectionedContent({
           signUpHref={signUpHref}
           actionId={actionId}
           updateField={updateField}
+          onEditDefinition={onEditDefinition}
           onFormalitiesReadiness={onFormalitiesReadiness}
         />
       </section>

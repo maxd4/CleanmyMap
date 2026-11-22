@@ -52,6 +52,9 @@ function PreparationOverview({
   weather,
   fr,
   onPreparationSelection,
+  canonicalActionContext,
+  compactSummary,
+  onEditActionContext,
 }: {
   actionLocation: string;
   actionDate: string;
@@ -60,10 +63,13 @@ function PreparationOverview({
   weather: WeatherData;
   fr: boolean;
   onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
+  canonicalActionContext?: boolean;
+  compactSummary?: boolean;
+  onEditActionContext?: () => void;
 }) {
   return <div className="space-y-4" data-testid="preparation-overview">
-    <PreparationLocationBlock actionLocation={actionLocation} actionLatitude={actionLatitude} actionLongitude={actionLongitude} actionDate={actionDate} weather={weather} fr={fr} />
-    <PreparationForecastBlock weather={weather} actionDate={actionDate} onPreparationSelection={onPreparationSelection} fr={fr} />
+    <PreparationLocationBlock actionLocation={actionLocation} actionLatitude={actionLatitude} actionLongitude={actionLongitude} actionDate={actionDate} weather={weather} fr={fr} canonicalActionContext={canonicalActionContext} onEditActionContext={onEditActionContext} />
+    <PreparationForecastBlock weather={weather} actionDate={actionDate} onPreparationSelection={onPreparationSelection} fr={fr} compact={compactSummary} />
   </div>;
 }
 
@@ -89,6 +95,9 @@ function WeatherSectionView({
   actionLongitude,
   weather,
   onPreparationSelection,
+  canonicalActionContext,
+  compactSummary,
+  onEditActionContext,
 }: {
   pageFamily: ReturnType<typeof resolvePageFamily>;
   fr: boolean;
@@ -98,11 +107,14 @@ function WeatherSectionView({
   actionLongitude?: string;
   weather: WeatherData;
   onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
+  canonicalActionContext?: boolean;
+  compactSummary?: boolean;
+  onEditActionContext?: () => void;
 }) {
   return <SectionShell id="weather" hideHeader>
     <div className="space-y-6 pt-8 text-slate-900">
       <PageHeader family={pageFamily} align="center" title={fr ? "Préparer l’action" : "Prepare the action"} subtitle={fr ? "Vérifiez le lieu et le jour sélectionnés, puis retenez explicitement un créneau si nécessaire." : "Check the selected place and day, then explicitly keep a slot if needed."} />
-      <PreparationOverview actionLocation={actionLocation} actionDate={actionDate} actionLatitude={actionLatitude} actionLongitude={actionLongitude} weather={weather} fr={fr} onPreparationSelection={onPreparationSelection} />
+      <PreparationOverview actionLocation={actionLocation} actionDate={actionDate} actionLatitude={actionLatitude} actionLongitude={actionLongitude} weather={weather} fr={fr} onPreparationSelection={onPreparationSelection} canonicalActionContext={canonicalActionContext} compactSummary={compactSummary} onEditActionContext={onEditActionContext} />
       <WeatherDetailsDisclosure weather={weather} fr={fr} />
     </div>
   </SectionShell>;
@@ -113,11 +125,17 @@ export function WeatherSection({
   preparationContext,
   onPreparationSelection,
   territoryPreference,
+  canonicalActionContext = false,
+  compactSummary = false,
+  onEditActionContext,
 }: {
   draftContext?: WeatherDraftContext;
   preparationContext?: ActionPreparationContext;
   onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
   territoryPreference?: TerritoryLocationPreference | null;
+  canonicalActionContext?: boolean;
+  compactSummary?: boolean;
+  onEditActionContext?: () => void;
   onPreparationValidated?: (validated: boolean) => void;
   onPreparationContextChange?: (update: Partial<Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials">>) => void;
   preparationPersistenceStatus?: ActionPreparationPersistenceStatus;
@@ -142,5 +160,8 @@ export function WeatherSection({
     actionLongitude={context.actionLongitude}
     weather={weather}
     onPreparationSelection={onPreparationSelection}
+    canonicalActionContext={canonicalActionContext}
+    compactSummary={compactSummary}
+    onEditActionContext={onEditActionContext}
   />;
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmPill } from "@/components/ui/cmm-pill";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import type { FormState } from "../model";
 import { buildPublicationSummary } from "./model";
 import { buildPreparationDataFromForm } from "../payload";
@@ -18,6 +19,7 @@ export function ActionBeforeVerificationSection({
   form,
   submissionState,
   validationIssues,
+  validationIssueFields,
   errorMessage,
   guidedReadiness,
   isAuthenticated,
@@ -26,10 +28,12 @@ export function ActionBeforeVerificationSection({
   actionId,
   updateField,
   onFormalitiesReadiness,
+  onEditDefinition,
 }: {
   form: FormState;
   submissionState: "idle" | "pending" | "success" | "error";
   validationIssues: string[];
+  validationIssueFields: readonly string[];
   errorMessage: string | null;
   guidedReadiness: "unknown" | "ready" | "blocked";
   isAuthenticated: boolean;
@@ -38,6 +42,7 @@ export function ActionBeforeVerificationSection({
   actionId?: string | null;
   updateField: (key: "formalitiesContext", value: ActionFormalitiesFacts | null) => void;
   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
+  onEditDefinition?: (field?: string) => void;
 }) {
   const summary = buildPublicationSummary(form);
   const draftFacts = form.formalitiesContext ?? deriveActionFormalitiesFacts({
@@ -75,7 +80,7 @@ export function ActionBeforeVerificationSection({
     ...(!publicInformation.participantMessage ? ["Ajouter un message pratique visible par les bénévoles."] : []),
     ...(publicInformation.accessibilityStatus === "not_evaluated" ? ["Renseigner les conditions d’accessibilité si elles sont connues."] : []),
   ];
-  const readinessLabel = guidedReadiness === "ready" ? "Complet" : guidedReadiness === "blocked" ? "À vérifier" : "À compléter";
+  const readinessLabel = guidedReadiness === "ready" ? "Qualification enregistrée" : "Formalités à vérifier";
   const readinessTone = guidedReadiness === "ready" ? "emerald" : "amber";
 
   return <ActionBeforeVerificationView
@@ -85,6 +90,7 @@ export function ActionBeforeVerificationSection({
     weatherChecklist={weatherChecklist}
     requestWeather={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ weather.requestWeather(); }}
     corrections={corrections}
+    validationIssueFields={validationIssueFields}
     checks={checks}
     suggestions={suggestions}
     readinessLabel={readinessLabel}
@@ -97,6 +103,7 @@ export function ActionBeforeVerificationSection({
     actionId={actionId}
     onDraftFactsChange={(facts) => updateField("formalitiesContext", facts)}
     onFormalitiesReadiness={onFormalitiesReadiness}
+    onEditDefinition={onEditDefinition}
   />;
 }
 
@@ -107,6 +114,7 @@ type ActionBeforeVerificationViewProps = {
   weatherChecklist: ReturnType<typeof deriveActionVolunteerChecklist>;
   requestWeather: () => void;
   corrections: string[];
+  validationIssueFields: readonly string[];
   checks: string[];
   suggestions: string[];
   readinessLabel: string;
@@ -119,6 +127,7 @@ type ActionBeforeVerificationViewProps = {
   actionId?: string | null;
   onDraftFactsChange: (facts: ActionFormalitiesFacts) => void;
   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
+  onEditDefinition?: (field?: string) => void;
 };
 
 function ActionBeforeVerificationView({
@@ -128,6 +137,7 @@ function ActionBeforeVerificationView({
   weatherChecklist,
   requestWeather,
   corrections,
+  validationIssueFields,
   checks,
   suggestions,
   readinessLabel,
@@ -140,35 +150,48 @@ function ActionBeforeVerificationView({
   actionId,
   onDraftFactsChange,
   onFormalitiesReadiness,
+  onEditDefinition,
 }: ActionBeforeVerificationViewProps) {
   return <CmmCard tone="emerald" variant="glass" size="lg">
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-black uppercase tracking-[0.14em] text-emerald-700">Vérifier et publier</p>
-          <h3 className="mt-2 text-2xl font-black tracking-tight text-emerald-950">Un dernier regard sur votre action</h3>
-          <p className="cmm-text-body cmm-text-primary mt-2 max-w-2xl">Relecture avant publication.</p>
+          <h3 className="text-lg font-black tracking-tight text-emerald-950">Vérifier et publier</h3>
+          <p className="cmm-text-body cmm-text-primary mt-1 max-w-2xl text-sm">Enregistrez le brouillon ici. La publication reste une confirmation distincte.</p>
         </div>
         <CmmPill tone={readinessTone} size="sm">{readinessLabel}</CmmPill>
       </div>
-      <dl className="grid gap-3 sm:grid-cols-2" data-testid="action-creation-preview-summary">
-        {summary.map((item) => <div key={item.label} className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3"><dt className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{item.label}</dt><dd className="mt-1 whitespace-pre-line text-sm leading-6 text-emerald-950">{item.value}</dd></div>)}
+      <dl className="grid gap-x-5 gap-y-2 border-y border-emerald-100 py-3 text-sm sm:grid-cols-2" data-testid="action-creation-preview-summary">
+        {summary.map((item) => <div key={item.label} className="min-w-0"><dt className="text-xs font-bold uppercase tracking-wide text-emerald-700">{item.label}</dt><dd className="mt-0.5 whitespace-pre-line leading-5 text-emerald-950">{item.value}</dd></div>)}
       </dl>
-      <ActionBeforeReviewGroups corrections={corrections} checks={checks} suggestions={suggestions} />
-      <ActionBeforeVolunteerPreview publicInformation={publicInformation} weatherChecklist={weatherChecklist} requestWeather={requestWeather} />
+      <ActionBeforeReviewGroups corrections={corrections} checks={checks} suggestions={suggestions} errorMessage={errorMessage} validationIssueFields={validationIssueFields} onEditDefinition={onEditDefinition} />
+      <CmmDisclosure summary="Aperçu public bénévole" tone="sky" size="sm">
+        <ActionBeforeVolunteerPreview publicInformation={publicInformation} weatherChecklist={weatherChecklist} requestWeather={requestWeather} />
+      </CmmDisclosure>
       <ActionCreationLegalPanel actionId={actionId} draftFacts={draftFacts} onDraftFactsChange={onDraftFactsChange} onReadinessChange={onFormalitiesReadiness} />
-      <ActionBeforeVerificationAlert corrections={corrections} errorMessage={errorMessage} />
       <ActionBeforeVerificationFooter isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} submissionState={submissionState} />
     </div>
   </CmmCard>;
 }
 
-function ActionBeforeReviewGroups({ corrections, checks, suggestions }: Pick<ActionBeforeVerificationViewProps, "corrections" | "checks" | "suggestions">) {
-  return <div className="grid gap-3 lg:grid-cols-3" data-testid="action-publication-review-groups">
-    <ReviewGroup title="À corriger avant publication" tone="rose" items={corrections.length > 0 ? corrections : ["Aucun blocage démontré."]} />
-    <ReviewGroup title="À vérifier" tone="amber" items={checks.length > 0 ? checks : ["Données saisies."]} />
-    <ReviewGroup title="Suggestions" tone="sky" items={suggestions.length > 0 ? suggestions : ["Aucune suggestion supplémentaire."]} />
-  </div>;
+const FIELD_LABELS: Record<string, string> = {
+  actionTitle: "Titre", actionDate: "Date", associationName: "Structure", organizerType: "Type d’organisateur",
+  departureLocationLabel: "Rendez-vous", arrivalLocationLabel: "Arrivée", meetingTime: "Heure de rendez-vous",
+  departureTime: "Heure de départ", durationMinutes: "Durée", eventStartTime: "Début", eventEndTime: "Fin",
+  volunteersCount: "Effectif prévu", volunteerParticipation: "Répartition des bénévoles",
+};
+
+function ActionBeforeReviewGroups({ corrections, checks, suggestions, errorMessage, validationIssueFields, onEditDefinition }: Pick<ActionBeforeVerificationViewProps, "corrections" | "checks" | "suggestions" | "validationIssueFields" | "onEditDefinition"> & { errorMessage: string | null }) {
+  return <section className="space-y-2" data-testid="action-publication-review-groups" aria-labelledby="action-review-title">
+    <h3 id="action-review-title" className="text-sm font-black text-slate-900">À traiter avant de continuer</h3>
+    {errorMessage || corrections.length || checks.length || suggestions.length ? <ul className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800">
+      {errorMessage && !corrections.includes(errorMessage) ? <li role="alert" className="font-semibold text-rose-800">{errorMessage}</li> : null}
+      {corrections.map((item) => <li key={`correction-${item}`}>{item}</li>)}
+      {checks.map((item) => <li key={`check-${item}`}><span className="font-semibold text-amber-900">À vérifier · </span>{item}</li>)}
+      {suggestions.map((item) => <li key={`suggestion-${item}`}><span className="font-semibold text-sky-900">Suggestion · </span>{item}</li>)}
+      {validationIssueFields.length && onEditDefinition ? <li className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-2"><span>Accéder aux champs concernés :</span>{Array.from(new Set(validationIssueFields)).map((field) => <CmmButton key={field} type="button" tone="tertiary" variant="pill" size="sm" onClick={() => onEditDefinition(field)}>{FIELD_LABELS[field] ?? "Modifier dans Définir"}</CmmButton>)}</li> : null}
+    </ul> : <p className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-sm text-emerald-950">Aucun blocage de formulaire détecté. Formalités à vérifier selon le contexte.</p>}
+  </section>;
 }
 
 function ActionBeforeVolunteerPreview({ publicInformation, weatherChecklist, requestWeather }: Pick<ActionBeforeVerificationViewProps, "publicInformation" | "weatherChecklist" | "requestWeather">) {
@@ -187,15 +210,6 @@ function ActionBeforeVolunteerPreview({ publicInformation, weatherChecklist, req
   </div>;
 }
 
-function ActionBeforeVerificationAlert({ corrections, errorMessage }: Pick<ActionBeforeVerificationViewProps, "corrections" | "errorMessage">) {
-  if (corrections.length === 0 && !errorMessage) return null;
-  return <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950" role="alert">
-    <div className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} aria-hidden="true" />Certains éléments doivent être traités avant la publication.</div>
-    {corrections.length > 0 ? <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">{corrections.map((issue) => <li key={issue}>{issue}</li>)}</ul> : null}
-    {errorMessage && corrections.length === 0 ? <p className="mt-2 text-xs">{errorMessage}</p> : null}
-  </div>;
-}
-
 function ActionBeforeVerificationFooter({ isAuthenticated, signInHref, signUpHref, submissionState }: Pick<ActionBeforeVerificationViewProps, "isAuthenticated" | "signInHref" | "signUpHref" | "submissionState">) {
   return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200/70 bg-white/90 px-4 py-3">
     <div className="flex items-start gap-2 text-sm text-emerald-900/75"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" /><span>La publication reste explicite et ne crée jamais une seconde action.</span></div>
@@ -207,15 +221,6 @@ function ActionBeforeVerificationFooter({ isAuthenticated, signInHref, signUpHre
       </CmmButton>
     </div>
   </div>;
-}
-
-function ReviewGroup({ title, tone, items }: { title: string; tone: "rose" | "amber" | "sky"; items: string[] }) {
-  const classes = tone === "rose"
-    ? "border-rose-200 bg-rose-50 text-rose-950"
-    : tone === "amber"
-      ? "border-amber-200 bg-amber-50 text-amber-950"
-      : "border-sky-200 bg-sky-50 text-sky-950";
-  return <section className={`rounded-2xl border px-4 py-3 ${classes}`}><h3 className="text-sm font-black">{title}</h3><ul className="mt-2 space-y-1 text-xs leading-5">{items.map((item) => <li key={item}>• {item}</li>)}</ul></section>;
 }
 
 function PreviewValue({ label, value }: { label: string; value: string }) {

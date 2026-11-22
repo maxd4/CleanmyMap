@@ -250,6 +250,11 @@ describe("ActionCreationShell", () => {
     expect(markup).not.toContain('data-testid="route-engine"');
     expect(markup).toContain('data-testid="fixed-area-route-state"');
     expect(markup).toContain('data-testid="weather-engine"');
+    expect(weatherSectionPropsMock).toHaveBeenLastCalledWith(expect.objectContaining({
+      canonicalActionContext: true,
+      compactSummary: true,
+      onEditActionContext: expect.any(Function),
+    }));
     const mainEnd = markup.indexOf("</main>");
     const preview = markup.indexOf('data-testid="action-creation-context-preview"');
     expect(preview).toBeGreaterThan(mainEnd);

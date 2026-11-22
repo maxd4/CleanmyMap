@@ -28,13 +28,14 @@ export function TerrainMapPanel({ form, onEditDefinition }: { form: FormState; o
         </div>
         {onEditDefinition ? <CmmButton type="button" tone="tertiary" variant="pill" size="sm" onClick={onEditDefinition}>Modifier</CmmButton> : null}
       </div>
-      <div ref={ref} className="relative h-[360px] overflow-hidden rounded-2xl border border-emerald-200/70 bg-emerald-50/70" aria-label="Carte du secteur d’intervention">
+      <div ref={ref} className="relative h-52 overflow-hidden rounded-2xl border border-emerald-200/70 bg-emerald-50/70 sm:h-60" aria-label="Carte du secteur d’intervention">
         {hasCoordinates && isInView ? <TerrainMapCanvas coordinate={coordinate} label="Point de rendez-vous confirmé" /> : (
           <div className="flex h-full items-center justify-center p-6 text-center">
             <div className="max-w-sm space-y-2 text-emerald-950">
               <Info size={24} className="mx-auto text-amber-600" aria-hidden="true" />
               <p className="font-bold">Carte en attente de coordonnées fiables</p>
-              <p className="cmm-text-body text-sm leading-6">Adresse libre : sélectionnez une suggestion pour géocoder.</p>
+              <p className="cmm-text-body text-sm leading-6">Sélectionnez une suggestion pour géocoder le rendez-vous.</p>
+              {onEditDefinition ? <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onEditDefinition}>Géocoder l’adresse dans Définir</CmmButton> : null}
             </div>
           </div>
         )}

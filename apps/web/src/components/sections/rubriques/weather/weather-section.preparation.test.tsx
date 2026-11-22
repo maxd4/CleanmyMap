@@ -284,6 +284,24 @@ describe("PreparationPanel", () => {
 });
 
 describe("PreparationLocationBlock", () => {
+  it("keeps the action location canonical and provides a path back to edit it", () => {
+    const html = renderToStaticMarkup(
+      <PreparationLocationBlock
+        actionLocation="Rendez-vous de l’action"
+        actionDate="2026-10-12"
+        weather={locationWeather()}
+        fr={true}
+        canonicalActionContext
+        onEditActionContext={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Lieu de l’action : ");
+    expect(html).toContain("Rendez-vous de l’action");
+    expect(html).toContain("Modifier");
+    expect(html).not.toContain("Rechercher ou changer le lieu");
+  });
+
   it("does not warn when GPS coordinates identify the same place despite different labels", () => {
     const html = renderToStaticMarkup(
       <PreparationLocationBlock
@@ -332,6 +350,22 @@ describe("PreparationLocationBlock", () => {
 });
 
 describe("PreparationForecastBlock", () => {
+  it("shows a compact, non-blocking summary with details collapsed", () => {
+    const html = renderToStaticMarkup(
+      <PreparationForecastBlock
+        weather={forecastWeather({ weatherStatus: "empty", forecastDays: [], selectedForecastDay: null, selectedForecastRisk: null, forecastSelectionStatus: "unavailable" })}
+        actionDate="2026-10-20"
+        fr={true}
+        compact
+      />,
+    );
+
+    expect(html).toContain('data-testid="weather-compact-summary"');
+    expect(html).toContain("Prévisions indisponibles — la préparation peut continuer.");
+    expect(html).toContain("<summary");
+    expect(html).not.toContain("Utiliser cette date");
+  });
+
   it("renders an available forecast, metrics, the recommended window and French actions", () => {
     const setDay = vi.fn();
     const onSelection = vi.fn();
