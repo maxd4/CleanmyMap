@@ -81,6 +81,30 @@ export const platformAuthorizationContract = {
       evidence: ["requireAdminAccess"],
     },
   },
+  "reports/ai-export": {
+    POST: {
+      expected: "Authenticated user may download a bounded Markdown projection only after the server resolves the canonical report scope and admissible public actions",
+      dimensions: ["authentication", "business permission"],
+      actual: "requireAuthenticatedAccess + server rate limit + strict canonical report parser and resolver; an allowlisted projection is returned private/no-store with a 1 MiB refusal limit and no PDF quota, history, or persistence",
+      evidence: [
+        "requireAuthenticatedAccess",
+        "verifyRateLimit",
+        "parseReportGenerationRequest",
+        "resolveReportGenerationInput",
+        "resolveSingleActionReportContract",
+        "buildMultiActionReportGenerationInput",
+        "readerUserId",
+        "buildAiMarkdownExport",
+      ],
+      evidenceScope: "module",
+      handlerEvidence: [
+        "requireAuthenticatedAccess",
+        "verifyRateLimit",
+        "resolveReportGenerationInput",
+        "privateResponse",
+      ],
+    },
+  },
   "reports/generations": {
     GET: {
       expected: "Authenticated user may list their own Reports generation history with server pagination and filters",
