@@ -11,13 +11,18 @@ au runtime et à ses tests, pas à une copie documentaire.
 - Le modèle et le moteur sont dans `apps/web/src/lib/reports/report-model/`
   et `apps/web/src/lib/reports/master-pack/`.
 - Depuis `/actions/history`, une action approuvée, publiée et terminée expose
-  un téléchargement Markdown pour préparer un rapport IA. Il appelle
+  côte à côte `Générer le PDF` et `Exporter les données`. Ce dernier ouvre un
+  popover de confirmation avant tout téléchargement et appelle
   `POST /api/reports/ai-export`, le même endpoint que les configurations
   mono-action et multi-actions. Le serveur réutilise les schémas stricts,
   l'admissibilité et les builders canoniques, puis émet une projection
   allowlistée versionnée ; le payload PDF et ses lignes libres ne sont pas
   sérialisés. L'export est `no-store`, limité en taille avec refus sans
   troncature, et ne consomme ni quota PDF ni historique de génération.
+- Dans Reports, `Exporter pour une IA` est l'action principale et `Générer le
+  PDF` reste disponible en alternative. Les deux points d'entrée IA partagent
+  le même popover de confirmation; l'export reprend la configuration active
+  dans Reports et ne dépend pas du quota PDF.
 - Le Markdown fournit la configuration, les rubriques réellement disponibles,
   des identifiants de KPI stables, unités, statuts et versions méthodologiques.
   Les valeurs inconnues restent `null`/`UNKNOWN`, distinctes de zéro. Les

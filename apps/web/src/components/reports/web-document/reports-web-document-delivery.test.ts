@@ -10,12 +10,19 @@ import {
   type ReportsWebDocumentExportStatus,
   type ReportsWebDocumentHistoryRow,
 } from "./reports-web-document-delivery";
-import {
-  collectDomElements,
-  type TestDomElementProps,
-} from "./__tests__/reports-web-document.test-support";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+const aiExportProps = {
+  aiExportRequest: {
+    input: { type: "multi_action" as const, period: { id: "full_history" as const }, scope: { kind: "global" as const } },
+    detailLevel: "default" as const,
+    modules: { dataAndCartography: true, transparencyAndMethods: true, rawData: false, detailedFiles: true },
+    theme: "impact" as const,
+  },
+  aiExportFallbackFilename: "cleanmymap-multi-action-rapport-ia.md",
+  isAiExportDisabled: false,
+};
 
 const historyRows: ReportsWebDocumentHistoryRow[] = [
   {
@@ -90,6 +97,7 @@ describe("ReportsWebDocumentDelivery", () => {
   ] as const)("preserves the %s export state", (state, label) => {
     const markup = renderToStaticMarkup(
       React.createElement(ReportsWebDocumentDelivery, {
+        ...aiExportProps,
         state,
         message: state === "error" ? "Erreur de génération." : null,
         pendingLabel: "Génération en cours",
@@ -110,28 +118,9 @@ describe("ReportsWebDocumentDelivery", () => {
       expect(markup).toContain('role="alert"');
     }
     expect(markup).toContain("1 export détaillé par jour civil · Europe/Paris");
-  });
-
-  it("keeps the generation callback on the export action", () => {
-    const onGenerate = vi.fn();
-    const deliveryElements = collectDomElements(
-      React.createElement(ReportsWebDocumentDelivery, {
-        state: "idle",
-        message: null,
-        pendingLabel: "Génération en cours",
-        isDisabled: false,
-        exportStatus: createStatus("idle"),
-        dailyExportAvailability: "available",
-        historyWarning: null,
-        onGenerate,
-      }),
-    );
-    const deliveryButton = deliveryElements.find(
-      (element: React.ReactElement<TestDomElementProps>) => element.type === "button",
-    );
-    deliveryButton?.props.onClick?.();
-
-    expect(onGenerate).toHaveBeenCalledTimes(1);
+    expect(markup).toContain("Le brief Markdown pour IA reste indépendant de ce quota.");
+    expect(markup).toContain("Exporter pour une IA");
+    if (state !== "pending") expect(markup).toContain("Générer le PDF");
   });
 
   it("executes the export click and disables the control during a pending quota-bound run", async () => {
@@ -141,6 +130,7 @@ describe("ReportsWebDocumentDelivery", () => {
     try {
       act(() => {
         renderer = create(React.createElement(ReportsWebDocumentDelivery, {
+          ...aiExportProps,
           state: "idle",
           message: null,
           pendingLabel: "Génération en cours",
@@ -151,12 +141,13 @@ describe("ReportsWebDocumentDelivery", () => {
           onGenerate,
         }));
       });
-      const button = renderer.root.findByType("button");
-    await act(() => button.props.onClick());
+      const button = renderer.root.findAllByType("button")[1];
+      await act(() => button?.props.onClick());
       expect(onGenerate).toHaveBeenCalledTimes(1);
 
       act(() => {
         renderer.update(React.createElement(ReportsWebDocumentDelivery, {
+          ...aiExportProps,
           state: "pending",
           message: null,
           pendingLabel: "Génération en cours",
@@ -167,7 +158,8 @@ describe("ReportsWebDocumentDelivery", () => {
           onGenerate,
         }));
       });
-      expect(renderer.root.findByType("button").props.disabled).toBe(true);
+      expect(renderer.root.findAllByType("button")[1]?.props.disabled).toBe(true);
+      expect(renderer.root.findAllByType("button")[0]?.props.disabled).toBe(false);
       expect(JSON.stringify(renderer.toJSON())).toContain("Déjà utilisé aujourd'hui");
     } finally {
       renderer?.unmount();

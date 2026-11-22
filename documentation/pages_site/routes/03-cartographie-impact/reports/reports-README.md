@@ -8,7 +8,11 @@ Ce dossier sépare les contrats observables (`CURRENT`), les évolutions encore 
   `multi_action` avec le même contrat strict, la même sélection canonique et
   les mêmes builders que la génération de rapport. Il produit un unique
   Markdown téléchargeable, sans renderer PDF, quota, historique ni appel IA.
-  L'action depuis `/actions/history` utilise cet endpoint. La projection exclut
+  `Exporter pour une IA` ouvre un popover de confirmation; `Générer le PDF`
+  reste l'alternative native inchangée. Le téléchargement Markdown reprend la
+  configuration courante et reste disponible après consommation du quota PDF.
+  `/actions/history` expose aussi son export IA confirmé et le bouton PDF sous
+  la même admissibilité mono-action. La projection exclut
   les lignes libres et les identifiants directs, marque les valeurs nulles
   `UNKNOWN`, et renvoie `private, no-store` ; un dépassement de taille est
   refusé sans troncature.

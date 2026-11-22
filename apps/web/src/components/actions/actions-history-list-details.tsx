@@ -3,6 +3,7 @@ import { ActionRetrospectivePanel } from "@/components/actions/action-retrospect
 import { ActionRoleAttestationsPanel } from "@/components/actions/action-role-attestations-panel";
 import { ActionMediaProofs } from "@/components/actions/action-media/action-media-proofs";
 import { ActionHistoryAiReportExport } from "@/components/actions/action-history-ai-report-export";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import type { ActionParticipationReviewItem } from "@/lib/actions/participation/group-participation";
 import {
@@ -56,8 +57,13 @@ function ActionHistoryModerationSections({
     {isSingleActionReportEligible(selectedItem) ? (
       <div className="mt-3 rounded-xl border border-red-200 bg-red-50/70 p-3">
         <p className="cmm-text-caption font-semibold uppercase tracking-wide text-red-700">Rapport mono-action</p>
-        <p className="mt-1 cmm-text-small cmm-text-secondary">Téléchargez les données autorisées et leur configuration pour préparer un rapport français avec un outil IA.</p>
-        <ActionHistoryAiReportExport actionId={selectedItem.id} />
+        <p className="mt-1 cmm-text-small cmm-text-secondary">Choisissez le PDF natif ou téléchargez un fichier Markdown à transmettre vous-même à un outil IA externe.</p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <CmmButton href={`/reports?tab=generation&actionId=${encodeURIComponent(selectedItem.id)}`} tone="secondary" variant="pill" className="min-h-11 w-full sm:w-auto">
+            Générer le PDF
+          </CmmButton>
+          <ActionHistoryAiReportExport actionId={selectedItem.id} />
+        </div>
       </div>
     ) : null}
     {selectedCanModerateGroupJoin ? (

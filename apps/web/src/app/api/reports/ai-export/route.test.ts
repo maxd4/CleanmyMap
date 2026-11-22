@@ -77,7 +77,7 @@ describe("POST /api/reports/ai-export", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/markdown; charset=utf-8");
-    expect(response.headers.get("content-disposition")).toContain("attachment; filename=\"cleanmymap-rapport-ia-");
+    expect(response.headers.get("content-disposition")).toBe(`attachment; filename="cleanmymap-action-${validBody.input.actionId}-rapport-ia.md"`);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(body).toContain('"id": "cigarette_butts.count"');
     expect(body).not.toContain("PII_EMAIL_SENTINEL");
@@ -115,6 +115,7 @@ describe("POST /api/reports/ai-export", () => {
       }));
 
       expect(response.status).toBe(200);
+      expect(response.headers.get("content-disposition")).toBe('attachment; filename="cleanmymap-multi-action-rapport-ia.md"');
       expect(mocks.resolve).toHaveBeenCalledWith(expect.objectContaining({
         kind: "multi_action",
         request: expect.objectContaining({ theme: "scientific" }),

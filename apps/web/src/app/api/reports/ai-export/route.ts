@@ -62,12 +62,15 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  const day = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+  const requestInput = parsed.request.request.input;
+  const filename = requestInput.type === "single_action"
+    ? `cleanmymap-action-${requestInput.actionId}-rapport-ia.md`
+    : "cleanmymap-multi-action-rapport-ia.md";
   return privateResponse(markdown, {
     status: 200,
     headers: {
       "Content-Type": "text/markdown; charset=utf-8",
-      "Content-Disposition": `attachment; filename="cleanmymap-rapport-ia-${day}.md"`,
+      "Content-Disposition": `attachment; filename="${filename}"`,
       "X-Content-Type-Options": "nosniff",
     },
   });

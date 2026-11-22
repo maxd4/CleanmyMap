@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/system-state";
 import type { ReportGenerationHistoryRow } from "@/lib/reports/report-generation-history-contract";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
+import type { ReportGenerationRequest } from "@/lib/reports/report-generation-request";
+import { AiMarkdownExportConfirmation } from "@/components/reports/ai-markdown-export-confirmation";
 import type { ReportsWebDocumentDeliveryHistoryProps } from "./reports-history-contract";
 import { ReportsHistoryRows } from "./reports-history-rows";
 
@@ -34,6 +36,9 @@ export type ReportsWebDocumentDeliveryProps = {
   exportStatus: ReportsWebDocumentExportStatus;
   historyWarning: string | null;
   dailyExportAvailability: ReportExportAvailability;
+  aiExportRequest: ReportGenerationRequest;
+  aiExportFallbackFilename: string;
+  isAiExportDisabled: boolean;
   onGenerate: () => void;
 };
 
@@ -45,6 +50,9 @@ export function ReportsWebDocumentDelivery({
   exportStatus,
   historyWarning,
   dailyExportAvailability,
+  aiExportRequest,
+  aiExportFallbackFilename,
+  isAiExportDisabled,
   onGenerate,
 }: ReportsWebDocumentDeliveryProps) {
   const ExportStatusIcon = exportStatus.icon;
@@ -55,7 +63,7 @@ export function ReportsWebDocumentDelivery({
       <div className="flex min-w-0 flex-col gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold text-slate-500">
-            État de l&apos;export
+            État du PDF
           </p>
           <CmmFeedback
             tone={feedbackTone}
@@ -68,30 +76,41 @@ export function ReportsWebDocumentDelivery({
             </span>
           </CmmFeedback>
         </div>
-        <CmmButton
-          onClick={onGenerate}
-          disabled={isDisabled}
-          loading={state === "pending"}
-          tone="primary"
-          size="lg"
-          width="wide"
-          className="shrink-0"
-        >
-          <FileText size={18} aria-hidden="true" />
-          {state === "pending" ? pendingLabel : "Générer le rapport"}
-        </CmmButton>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <AiMarkdownExportConfirmation
+            request={aiExportRequest}
+            fallbackFilename={aiExportFallbackFilename}
+            triggerLabel="Exporter pour une IA"
+            disabled={isAiExportDisabled}
+            tone="primary"
+            className="min-h-11 w-full sm:w-auto"
+          />
+          <CmmButton
+            onClick={onGenerate}
+            disabled={isDisabled}
+            loading={state === "pending"}
+            tone="secondary"
+            size="lg"
+            width="wide"
+            className="shrink-0"
+          >
+            <FileText size={18} aria-hidden="true" />
+            {state === "pending" ? pendingLabel : "Générer le PDF"}
+          </CmmButton>
+        </div>
       </div>
       <p
         className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-5 text-slate-700"
         role="status"
       >
-        <strong>Quota :</strong> 1 export détaillé par jour civil ·
+        <strong>Quota PDF :</strong> 1 export détaillé par jour civil ·
         Europe/Paris.{" "}
         {dailyExportAvailability === "available"
           ? "Disponible aujourd'hui."
           : dailyExportAvailability === "used"
             ? "Déjà utilisé aujourd'hui ; prochain créneau le jour civil suivant."
             : "Disponibilité temporairement indisponible ; réessayez plus tard."}
+        {" "}Le brief Markdown pour IA reste indépendant de ce quota.
       </p>
       {message && state !== "success" ? (
         <CmmFeedback tone={state === "error" ? "error" : "info"}>

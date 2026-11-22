@@ -3,6 +3,7 @@ import { z } from "zod";
 import { readJsonBodyWithLimit } from "@/lib/http/request-body";
 import { auditReportGenerationError } from "./route.persistence";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
+import type { ReportGenerationRequest } from "@/lib/reports/report-generation-request";
 import {
   buildSingleActionReportGenerationInput,
   resolveSingleActionReportContract,
@@ -61,8 +62,8 @@ const multiActionRequestSchema = z.object({
 }).strict();
 
 export type ParsedReportGenerationRequest =
-  | { kind: "single_action"; request: z.infer<typeof singleActionRequestSchema> }
-  | { kind: "multi_action"; request: z.infer<typeof multiActionRequestSchema> };
+  | { kind: "single_action"; request: Extract<ReportGenerationRequest, { input: { type: "single_action" } }> }
+  | { kind: "multi_action"; request: Extract<ReportGenerationRequest, { input: { type: "multi_action" } }> };
 
 function hasTypedInput(value: unknown): boolean {
   return Boolean(value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "input"));

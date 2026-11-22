@@ -6,12 +6,16 @@ import { buildPdfReportFilename, type PdfReportPayload } from "@/lib/pdf-export/
 import { openPrintableReport } from "@/lib/pdf-export/browser-report";
 import { isReportGenerationPayload } from "@/lib/reports/report-generation-payload";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
+import type { ReportGenerationRequest } from "@/lib/reports/report-generation-request";
 import { resolveReportExportStatus } from "./reports-web-document.shared";
 import type { useReportsWebDocumentConfig } from "./use-reports-web-document-config";
 
 type ReportConfig = ReturnType<typeof useReportsWebDocumentConfig>;
+type ReportGenerationRequestConfig = Pick<ReportConfig, "advancedFilters" | "detailLevel" | "modules" | "periodSelection" | "reportTheme" | "singleAction"> & {
+  model: Pick<ReportConfig["model"], "scopeKind" | "scopeValue">;
+};
 
-function buildGenerationRequest(config: ReportConfig) {
+export function buildGenerationRequest(config: ReportGenerationRequestConfig): ReportGenerationRequest {
   const { advancedFilters, detailLevel, modules, periodSelection, reportTheme, singleAction } = config;
   return singleAction
     ? { input: { type: "single_action" as const, actionId: singleAction.actionId }, detailLevel, modules, theme: reportTheme }

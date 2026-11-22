@@ -10,7 +10,7 @@ import {
   reportPeriodLabel,
 } from "@/components/reports/web-document/reports-web-document.shared";
 import { useReportsWebDocumentConfig } from "@/components/reports/web-document/use-reports-web-document-config";
-import { useReportsWebDocumentExport } from "@/components/reports/web-document/use-reports-web-document-export";
+import { buildGenerationRequest, useReportsWebDocumentExport } from "@/components/reports/web-document/use-reports-web-document-export";
 import type { ReportsWebDocumentProps } from "@/components/reports/web-document/reports-web-document.types";
 
 export type { ReportsWebDocumentProps } from "@/components/reports/web-document/reports-web-document.types";
@@ -20,6 +20,10 @@ export function ReportsWebDocument(props: ReportsWebDocumentProps) {
   const config = useReportsWebDocumentConfig(props);
   const exportController = useReportsWebDocumentExport(config);
   const { actionMediaAvailability = "available", singleAction } = props;
+  const aiExportRequest = buildGenerationRequest(config);
+  const aiExportFallbackFilename = aiExportRequest.input.type === "single_action"
+    ? `cleanmymap-action-${aiExportRequest.input.actionId}-rapport-ia.md`
+    : "cleanmymap-multi-action-rapport-ia.md";
   const {
     model,
     report,
@@ -106,6 +110,9 @@ export function ReportsWebDocument(props: ReportsWebDocumentProps) {
             exportStatus={exportController.exportStatus}
             historyWarning={historyWarning}
             dailyExportAvailability={exportController.dailyExportAvailability}
+            aiExportRequest={aiExportRequest}
+            aiExportFallbackFilename={aiExportFallbackFilename}
+            isAiExportDisabled={config.model.isLoading || config.model.hasError || !config.periodSelectionValid || config.scopeNeedsNewSelection}
             onGenerate={exportController.handleGenerate}
           />
         </section>
