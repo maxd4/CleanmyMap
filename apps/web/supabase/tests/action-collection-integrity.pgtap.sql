@@ -1,6 +1,6 @@
 begin;
 
-select plan(5);
+select plan(8);
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"collection-integrity-test"}', true);
@@ -58,5 +58,26 @@ select ok(pg_temp.reject_collector_count_underflow(),
 
 select is((select count(*)::integer from public.action_participants where user_id = 'integrity-first-collector'), 1,
   'the existing confirmed participant is preserved after a rejected aggregate update');
+select is((select collectors_count from public.actions where location_label = 'Known one collector'), 1,
+  'the aggregate count is restored after its deferred consistency check fails');
+
+update public.actions
+   set collectors_count = 0
+ where location_label = 'Known one collector';
+update public.action_participants
+   set collection_status = 'not_collected'
+ where user_id = 'integrity-first-collector';
+set constraints actions_collection_consistency, action_participants_collection_consistency immediate;
+
+select is((select collectors_count from public.actions where location_label = 'Known one collector'), 0,
+  'a coordinated participant and aggregate transition can reach a known zero');
+select is((
+  select count(*)::integer
+    from public.action_participants
+   where user_id = 'integrity-first-collector'
+     and participation_status = 'confirmed'
+     and collection_status = 'collected'
+), 0,
+  'the zero aggregate has no confirmed collected participant');
 
 rollback;
