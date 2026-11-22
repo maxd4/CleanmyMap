@@ -51,18 +51,22 @@ Le document contient, dans l'ordre :
 3. `## Structure des rubriques disponibles`, dérivée des chapitres autorisés
    réellement présents ;
 4. `## Données autorisées`, avec le JSON
-   `cleanmymap.ai-report-input`, `schemaVersion: 1`.
+   `cleanmymap.ai-report-input`, `schemaVersion: 2`.
 
-Le JSON contient `configuration` (type, niveau, modules, thème, période,
-fuseau, scope, filtres), `sources` (compte, statut, provenance), `methodology`
-(versions disponibles, fingerprint/facteurs issus de leur owner, limites),
-`chapters` (identifiants, titres, catégorie et KPI liés) et `kpis` (identifiant
-stable, valeur, unité, statut, provenance). Les KPI inconnus ne sont pas
-fabriqués : une valeur inconnue est `null` avec `UNKNOWN`, distincte de zéro.
-Un KPI non reconnu est omis. Les statuts `OBSERVED`, `DERIVED`, `PROXY` et
-`UNKNOWN` qualifient les données ; la provenance identifie l'origine. Les
-chapitres non sélectionnés ou non étayés sont omis. Les formules et facteurs
-restent dans leurs owners runtime, pas dans ce document.
+Le JSON contient `configuration`, `sources`, `context`, `execution`,
+`participation`, `measurements`, `analyses`, `methodology`, `chapters`
+et `limitations`. Les sections métier proviennent d'une projection structurée
+attachée aux résultats des builders canoniques, jamais des lignes, tableaux ou
+payloads PDF. Contexte et objectifs sont des enums agrégés ; le déroulement
+contient uniquement le nombre de résultats, l'état d'achèvement et les dates
+observées disponibles. Les indicateurs ont un identifiant stable, une valeur,
+une unité, un statut, une provenance, la couverture connue et les versions ou
+facteurs qui les expliquent. Une absence reste `null` avec `UNKNOWN`, distincte
+du zéro explicite. Le volume massique déclaré reste distinct des indicateurs
+`PROXY`. Les chapitres sont résolus par identifiants stables connus ; les titres,
+rubriques et KPI sont projetés par allowlist. Les chapitres non sélectionnés ou
+non étayés sont omis. Les contenus libres, lignes, tableaux, coordonnées,
+identifiants personnels et médias du payload PDF ne sont jamais sérialisés.
 
 ## Confidentialité et intégrité
 
@@ -122,100 +126,37 @@ Créer un PDF français autonome à partir de la configuration et des données J
 ```json
 {
   "schema": "cleanmymap.ai-report-input",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "configuration": {
     "type": "single_action",
     "detailLevel": "concis",
-    "modules": {
-      "dataAndCartography": true,
-      "transparencyAndMethods": true,
-      "rawData": false,
-      "detailedFiles": true
-    },
+    "modules": { "dataAndCartography": true, "transparencyAndMethods": true, "rawData": false, "detailedFiles": true },
     "theme": "scientific",
-    "period": {
-      "id": "custom_range",
-      "from": "2099-01-01",
-      "to": "2099-01-31",
-      "timeZone": "UTC"
-    },
+    "period": { "id": "custom_range", "from": "2099-01-01", "to": "2099-01-31", "timeZone": "UTC" },
     "timeZone": "UTC",
     "scopeKind": "single_action",
-    "filters": {
-      "dataQuality": "all",
-      "qualityGradeAtLeast": "any",
-      "measureProvenance": "any",
-      "validCoordinates": "any",
-      "geometryProvenance": "any",
-      "declarationOrigin": "any",
-      "wasteKgMin": null,
-      "wasteKgMax": null,
-      "cigaretteButtsMin": null,
-      "cigaretteButtsMax": null,
-      "wasteCategory": "any",
-      "exploitableGeometry": "any",
-      "photographicEvidence": "any"
-    }
+    "filters": { "dataQuality": "all", "qualityGradeAtLeast": "any", "measureProvenance": "any", "validCoordinates": "any", "geometryProvenance": "any", "declarationOrigin": "any", "wasteKgMin": null, "wasteKgMax": null, "cigaretteButtsMin": null, "cigaretteButtsMax": null, "wasteCategory": "any", "exploitableGeometry": "any", "photographicEvidence": "any" }
   },
-  "sources": {
-    "count": 1,
-    "status": "OBSERVED",
-    "provenance": [
-      { "type": "canonical_public_actions", "resolvedAt": "2099-02-01T12:00:00.000Z" }
-    ]
-  },
-  "methodology": {
-    "proxyVersion": "fixture-proxy-v1",
-    "qualityRulesVersion": "fixture-quality-v1",
-    "filtersVersion": "fixture-filters-v1",
-    "templateVersion": "fixture-template-v1",
-    "proxyFactorSet": {
-      "version": "fixture-factor-set-v1",
-      "fingerprint": "fixture-only",
-      "status": "PROXY",
-      "unitFactors": {
-        "waterLitersPerCigaretteButt": 0,
-        "co2KgPerWasteKg": 0,
-        "surfaceM2PerWasteKg": 0,
-        "surfaceM2PerVolunteerMinute": 0,
-        "euroSavedPerWasteKg": 0
-      },
-      "sources": {
-        "water": "FIXTURE ONLY — source fictive",
-        "co2": "FIXTURE ONLY — source fictive",
-        "surface": "FIXTURE ONLY — source fictive",
-        "roi": "FIXTURE ONLY — source fictive"
-      }
-    },
-    "limitations": [
-      "Exemple entièrement fictif, sans observation réelle.",
-      "Une valeur null avec le statut UNKNOWN signifie indisponible ou non mesurée ; elle ne vaut pas zéro."
-    ]
-  },
-  "chapters": [
-    {
-      "id": "resultats-terrain",
-      "title": "Résultats terrain",
-      "section": "résultats",
-      "kpiIds": ["waste.mass", "terrain.spots.count"]
-    }
+  "sources": { "count": 1, "status": "OBSERVED", "provenance": ["public.actions"], "sourceIds": ["public.actions"] },
+  "context": { "actionContexts": [{ "value": "citizen", "count": 1 }], "plannedObjectives": [{ "value": "nettoyage", "count": 1 }] },
+  "execution": { "actionCount": 1, "completedActionCount": 1, "observedDateRange": { "from": "2099-01-15", "to": "2099-01-15" } },
+  "participation": [{ "id": "participation.volunteers.count", "value": 0, "unit": "personne", "status": "OBSERVED", "provenance": ["declared_action_volunteers"], "coverage": { "known": 1, "total": 1 } }],
+  "measurements": [
+    { "id": "waste.mass", "value": null, "unit": "kg", "status": "UNKNOWN", "provenance": [], "coverage": { "known": 0, "total": 1 } },
+    { "id": "cigarette_butts.count", "value": 0, "unit": "mégot", "status": "OBSERVED", "provenance": ["counted"], "coverage": { "known": 1, "total": 1 }, "versions": ["fixture-butts-v3"] }
   ],
-  "kpis": [
-    {
-      "id": "waste.mass",
-      "value": null,
-      "unit": "kg",
-      "status": "UNKNOWN",
-      "provenance": []
-    },
-    {
-      "id": "terrain.spots.count",
-      "value": 0,
-      "unit": "signalement",
-      "status": "OBSERVED",
-      "provenance": ["canonical_public_actions"]
-    }
-  ]
+  "analyses": [{ "id": "impact.co2_avoided", "value": 0, "unit": "kgCO2e", "status": "PROXY", "provenance": ["impact_proxy_config"], "versions": ["fixture-proxy-v3"], "factors": { "kgCO2ePerWasteKg": 0.4 } }],
+  "methodology": {
+    "proxyVersion": "fixture-proxy-v3",
+    "qualityRulesVersion": "fixture-quality-v1",
+    "massConversionVersions": ["fixture-butts-v3"],
+    "wasteMeasurementMethods": [{ "method": "unknown", "count": 1 }],
+    "proxyFactors": { "co2KgPerWasteKg": 0.4 },
+    "proxySources": { "co2": "FIXTURE ONLY — source fictive" },
+    "formulaIds": ["co2_avoided"]
+  },
+  "chapters": [{ "id": "resultats-terrain", "title": "Résultats terrain", "section": "résultats", "kpiIds": ["waste.mass", "cigarette_butts.count"] }],
+  "limitations": ["Exemple entièrement fictif, sans observation réelle.", "Une valeur null avec le statut UNKNOWN signifie indisponible ou non mesurée ; elle ne vaut pas zéro."]
 }
 ```
 ~~~~

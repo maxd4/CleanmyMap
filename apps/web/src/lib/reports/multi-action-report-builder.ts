@@ -15,6 +15,7 @@ import { computeReportAccountScopeCoverage, formatReportScopeLabel } from "@/lib
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
 import type { MultiActionReportSelection } from "@/lib/reports/multi-action-report-selection";
 import { buildReportAccessibilitySummary } from "@/lib/reports/report-accessibility-summary";
+import { buildAiReportProjection } from "@/lib/reports/report-ai-projection";
 
 type MultiActionWasteProfile = {
   categories: Array<{ key: string; label: string; kg: number; actions: number }>;
@@ -111,6 +112,11 @@ export function buildMultiActionReportGenerationResult(params: {
   const model = buildMultiActionModel(selection, now, wasteProfile);
   const snapshot = buildMultiActionPayload({ selection, model, detailLevel, modules, now });
   return {
+    aiProjection: buildAiReportProjection({
+      report: model.report,
+      contracts: selection.filteredContracts,
+      eventAvailability: model.dataAvailability.communityEventsAvailability,
+    }),
     payload: {
       title: snapshot.data.title,
       rubrique: "reporting",

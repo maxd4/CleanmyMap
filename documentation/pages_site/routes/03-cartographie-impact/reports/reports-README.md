@@ -13,9 +13,13 @@ Ce dossier sépare les contrats observables (`CURRENT`), les évolutions encore 
   configuration courante et reste disponible après consommation du quota PDF.
   `/actions/history` expose aussi son export IA confirmé et le bouton PDF sous
   la même admissibilité mono-action. La projection exclut
-  les lignes libres et les identifiants directs, marque les valeurs nulles
-  `UNKNOWN`, et renvoie `private, no-store` ; un dépassement de taille est
-  refusé sans troncature.
+  les lignes libres et les identifiants directs. Son JSON v2 porte une
+  projection structurée allowlistée issue des builders : contexte enuméré,
+  déroulement agrégé, participation, mesures, analyses, KPI stables, unités,
+  statuts, provenances, couverture et facteurs/version lorsqu'ils sont
+  disponibles. Les valeurs nulles restent `UNKNOWN`, distinctes de zéro.
+  La route renvoie `private, no-store` ; un dépassement de taille est refusé
+  sans troncature.
 
 - [Contrat de l'export Markdown IA](../../../../features/reports/ai-markdown-export.md) : structure effective, paramètres et limites `CURRENT`, avec le pipeline de rédaction par modèle explicitement `PLAN`.
 - **Formats distincts :** le bouton IA télécharge un brief Markdown sans appel de modèle ; le PDF natif utilise le renderer officiel. Dans l'historique, JSON/CSV relisent le snapshot immuable et ne recalculent pas les actions. Aucun de ces formats ne rend l'export IA CURRENT comme une génération de rapport ou une rédaction par IA.

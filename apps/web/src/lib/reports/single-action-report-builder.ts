@@ -15,6 +15,7 @@ import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generati
 import { REPORT_ADVANCED_FILTER_DEFAULTS } from "@/lib/reports/report-advanced-filters";
 import { buildWasteProfile } from "@/lib/reports/report-model/waste-profile";
 import { buildReportAccessibilitySummary } from "@/lib/reports/report-accessibility-summary";
+import { buildAiReportProjection } from "@/lib/reports/report-ai-projection";
 
 function buildSingleActionModel(contract: ActionDataContract, now: Date) {
   const listItem = toActionListItem(contract);
@@ -105,6 +106,11 @@ export function buildSingleActionReportGenerationResult(params: {
     generatedAt,
   });
   return {
+    aiProjection: buildAiReportProjection({
+      report: model.report,
+      contracts: [params.contract],
+      eventAvailability: "unavailable",
+    }),
     payload: {
       title: data.title,
       rubrique: "reporting",

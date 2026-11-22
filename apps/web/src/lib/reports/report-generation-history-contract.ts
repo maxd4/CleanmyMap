@@ -6,6 +6,7 @@ import {
   type PeriodId,
 } from "@/lib/reports/report-pdf-data";
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
+import type { AiReportProjection } from "@/lib/reports/report-ai-projection";
 
 export const REPORT_GENERATION_HISTORY_LIMIT = 12;
 
@@ -44,6 +45,8 @@ export type ReportGenerationHistoryFilters = {
 
 export type ReportGenerationHistoryInput = {
   payload: PdfReportPayload;
+  /** Ephemeral allowlisted projection used only by the Markdown IA endpoint. */
+  aiProjection?: AiReportProjection;
   scopeKind: "global" | "account" | "association" | "arrondissement" | "single_action";
   scopeValue: string;
   scopeLabel: string;

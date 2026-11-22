@@ -208,6 +208,8 @@ describe("multi-action report server resolver", () => {
     expect(result.scopeKind).toBe("association");
     expect(result.scopeValue).toBe("Association Canonique");
     expect(result.payload.organizationType).toBe("multi_action");
+    expect(result.aiProjection?.execution.actionCount).toBe(1);
+    expect(JSON.stringify(result.aiProjection)).not.toContain("excluded");
     expect(result.payload.snapshotSchemaVersion).toBe(2);
     expect(result.payload.snapshotMetadata).toMatchObject({
       templateVersion: "reports-template-v1",

@@ -34,7 +34,12 @@ const contract = buildActionDataContract({
   volunteersCount: 4,
   durationMinutes: 60,
   actionPhase: "post_action_complete",
-  preparationData: { actionTitle: "Action terrain canonique" },
+  actorName: "NOM_PERSONNEL_SENTINEL",
+  associationName: "ORGANISATION_SENTINEL",
+  notes: "TEXTE_LIBRE_SENTINEL",
+  actionContext: "citizen",
+  wasteMeasurementMethod: "balance_au_sol",
+  preparationData: { actionTitle: "TITRE_LIBRE_SENTINEL", plannedObjective: "nettoyage" },
 });
 
 const row = {
@@ -121,6 +126,24 @@ describe("single-action report server boundary", () => {
     expect(input.payload.data.rows?.[0]?.Lieu).toBe("Parc canonique");
     expect(JSON.stringify(input.payload)).not.toContain("another-action");
     expect(JSON.stringify(input.payload)).not.toContain("Valeur injectée");
+    expect(input.aiProjection).toMatchObject({
+      context: {
+        actionContexts: [{ value: "citizen", count: 1 }],
+        plannedObjectives: [{ value: "nettoyage", count: 1 }],
+      },
+      execution: {
+        actionCount: 1,
+        completedActionCount: 1,
+        observedDateRange: { from: "2026-08-27", to: "2026-08-27" },
+      },
+      measurements: expect.arrayContaining([
+        expect.objectContaining({ id: "waste.mass", value: 3, unit: "kg", status: "OBSERVED" }),
+      ]),
+    });
+    const aiJson = JSON.stringify(input.aiProjection);
+    for (const forbidden of ["NOM_PERSONNEL_SENTINEL", "ORGANISATION_SENTINEL", "TEXTE_LIBRE_SENTINEL", "TITRE_LIBRE_SENTINEL", actionId, "Parc canonique"]) {
+      expect(aiJson).not.toContain(forbidden);
+    }
   });
 
   it("keeps missing measures unknown in the server snapshot", () => {

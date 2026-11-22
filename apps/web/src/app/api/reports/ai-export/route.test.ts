@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   quota: vi.fn(),
   persistence: vi.fn(),
   audit: vi.fn(),
+  markdown: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -22,6 +23,10 @@ vi.mock("../generations/route.input", async (importOriginal) => {
   return { ...original, resolveReportGenerationInput: mocks.resolve };
 });
 vi.mock("@/lib/reports/report-export-quota", () => ({ reserveReportExportSlot: mocks.quota }));
+vi.mock("@/lib/reports/ai-markdown-export", () => ({
+  buildAiMarkdownExport: mocks.markdown,
+  MAX_AI_MARKDOWN_EXPORT_BYTES: 1024 * 1024,
+}));
 vi.mock("../generations/route.persistence", () => ({
   persistReportGenerationWithQuota: mocks.persistence,
   auditReportGenerationError: mocks.audit,
@@ -66,6 +71,7 @@ function request(body: unknown): Request {
 describe("POST /api/reports/ai-export", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.markdown.mockReturnValue("# Brief contrôlé");
     mocks.auth.mockResolvedValue({ ok: true, userId: "reader" });
     mocks.rateLimit.mockResolvedValue({ allowed: true, retryAfter: 0 });
     mocks.resolve.mockImplementation(async () => ({ input: resolvedInput() }));
@@ -79,9 +85,25 @@ describe("POST /api/reports/ai-export", () => {
     expect(response.headers.get("content-type")).toContain("text/markdown; charset=utf-8");
     expect(response.headers.get("content-disposition")).toBe(`attachment; filename="cleanmymap-action-${validBody.input.actionId}-rapport-ia.md"`);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(body).toContain('"id": "cigarette_butts.count"');
+    expect(body).toBe("# Brief contrôlé");
     expect(body).not.toContain("PII_EMAIL_SENTINEL");
+    expect(mocks.markdown).toHaveBeenCalledWith(expect.objectContaining({ scopeKind: "single_action" }));
     expect(mocks.resolve).toHaveBeenCalledWith(expect.objectContaining({ kind: "single_action" }), expect.any(String), "reader", expect.any(String), { auditFailures: false });
+    expect(mocks.quota).not.toHaveBeenCalled();
+    expect(mocks.persistence).not.toHaveBeenCalled();
+  });
+
+  it("refuses an oversized Markdown document with 413 and no truncation", async () => {
+    const oversized = "x".repeat(1024 * 1024 + 1);
+    mocks.markdown.mockReturnValueOnce(oversized);
+
+    const response = await POST(request(validBody));
+    const body = await response.text();
+
+    expect(response.status).toBe(413);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("content-disposition")).toBeNull();
+    expect(body).not.toContain(oversized);
     expect(mocks.quota).not.toHaveBeenCalled();
     expect(mocks.persistence).not.toHaveBeenCalled();
   });
