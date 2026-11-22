@@ -81,6 +81,6 @@ describe("action day briefing projection", () => {
 
     const legacy = buildActionDayBriefingText(briefing);
     expect(legacy).toContain("Aucune catégorie sûre n’est déclarée");
-    expect(legacy).toContain("recommandations de préparation");
+    expect(legacy).not.toContain("recommandations de préparation");
   });
 });

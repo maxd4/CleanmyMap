@@ -24,6 +24,7 @@ const ESSENTIAL_RULES: Record<SafetyGuideLocale, string[]> = {
 function buildActionSafetyGuideSections(
   categories: readonly WasteCategorySlug[] | null | undefined,
   locale: SafetyGuideLocale,
+  schoolContextConfirmed: boolean,
 ): GuideSection[] {
   const guidance = buildWasteFieldGuidance(categories);
   const labels = (values: readonly { fr: string; en: string }[]) => values.map((value) => value[locale]);
@@ -76,9 +77,16 @@ function buildActionSafetyGuideSections(
     },
     {
       title: general ? "Sécurité du groupe" : "Group safety",
-      items: general
-        ? ["Rester avec son groupe et respecter le périmètre, le parcours et les consignes de l’organisateur.", "Pour un groupe scolaire, prévoir une organisation renforcée : adultes référents identifiés, comptages réguliers et consignes adaptées à l’âge. Ce sont des recommandations de préparation, pas des obligations légales universelles ; les règles applicables dépendent de l’établissement et du contexte local."]
-        : ["Stay with the group and follow its boundaries, route and organizer instructions.", "For a school group, consider additional organization: identified adult leads, regular headcounts and age-appropriate instructions. These are planning recommendations, not universal legal requirements; applicable rules depend on the school and local context."],
+      items: [
+        general
+          ? "Rester avec son groupe et respecter le périmètre, le parcours et les consignes de l’organisateur."
+          : "Stay with the group and follow its boundaries, route and organizer instructions.",
+        ...(schoolContextConfirmed
+          ? [general
+            ? "Pour un contexte scolaire confirmé, convenir avec l’établissement des adultes référents, des comptages utiles et des consignes adaptées au groupe. Ce sont des recommandations de préparation, pas des obligations légales universelles ; les règles dépendent de l’établissement et du contexte local."
+            : "For a confirmed school context, agree with the school on adult leads, useful headcounts and instructions suited to the group. These are planning recommendations, not universal legal requirements; applicable rules depend on the school and local context."]
+          : []),
+      ],
     },
     {
       title: general ? "Signalement" : "Reporting a hazard",
@@ -95,8 +103,11 @@ function buildActionSafetyGuideSections(
   ];
 }
 
-export function buildActionSafetyGuideText(categories: readonly WasteCategorySlug[] | null | undefined): string {
-  const sections = buildActionSafetyGuideSections(categories, "fr");
+export function buildActionSafetyGuideText(
+  categories: readonly WasteCategorySlug[] | null | undefined,
+  options: { schoolContextConfirmed?: boolean } = {},
+): string {
+  const sections = buildActionSafetyGuideSections(categories, "fr", options.schoolContextConfirmed === true);
   return [
     "Règles essentielles",
     ...ESSENTIAL_RULES.fr.map((rule) => `- ${rule}`),
@@ -109,19 +120,25 @@ export function ActionSafetyGuide({
   categories,
   locale = "fr",
   defaultOpen = false,
+  schoolContextConfirmed = false,
+  headingLevel = 3,
 }: {
   categories?: readonly WasteCategorySlug[] | null;
   locale?: SafetyGuideLocale;
   defaultOpen?: boolean;
+  schoolContextConfirmed?: boolean;
+  headingLevel?: 3 | 4;
 }) {
   const fr = locale === "fr";
   const titleId = useId();
-  const sections = buildActionSafetyGuideSections(categories, locale);
+  const sections = buildActionSafetyGuideSections(categories, locale, schoolContextConfirmed);
+  const Heading = headingLevel === 4 ? "h4" : "h3";
+  const GuideSectionHeading = headingLevel === 4 ? "h5" : "h4";
   return (
     <section aria-labelledby={titleId} className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4">
-      <h3 id={titleId} className="text-base font-black text-sky-950">
+      <Heading id={titleId} className="text-base font-black text-sky-950">
         {fr ? "Guide de sécurité et de collecte" : "Safety and collection guide"}
-      </h3>
+      </Heading>
       <p className="mt-1 text-sm leading-6 text-sky-950">
         {fr ? "Les consignes de l’organisateur et les règles locales restent prioritaires." : "Organizer instructions and local rules take priority."}
       </p>
@@ -138,7 +155,7 @@ export function ActionSafetyGuide({
         <div className="space-y-4">
           {sections.map((section) => (
             <section key={section.title} aria-label={section.title}>
-              <h4 className="font-bold text-sky-950">{section.title}</h4>
+              <GuideSectionHeading className="font-bold text-sky-950">{section.title}</GuideSectionHeading>
               <ul className="mt-1 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-800">
                 {section.items.map((item) => <li key={item}>{item}</li>)}
               </ul>

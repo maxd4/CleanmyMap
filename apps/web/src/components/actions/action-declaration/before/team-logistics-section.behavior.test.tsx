@@ -17,11 +17,12 @@ let host: HTMLDivElement;
 let root: Root;
 
 function renderTeam(form: FormState, validationIssueFields: string[] = []) {
+  const updateField = vi.fn();
   act(() => {
     root.render(
       <TeamLogisticsSection
         form={form}
-        updateField={vi.fn()}
+        updateField={updateField}
         updateFields={vi.fn()}
         userMetadata={{ userId: "user-1", displayName: "Alex Martin" }}
         showGroupJoinHelp={false}
@@ -31,6 +32,7 @@ function renderTeam(form: FormState, validationIssueFields: string[] = []) {
       />,
     );
   });
+  return updateField;
 }
 
 beforeEach(() => {
@@ -104,11 +106,68 @@ describe("TeamLogisticsSection", () => {
     const form = createInitialFormState("Lycée", "action");
     form.organizerType = "school";
     form.actionContext = "school";
+    form.schoolContextConfirmed = true;
     form.interventionMode = { mode: "multi_zone" } as FormState["interventionMode"];
     renderTeam(form);
 
     expect(host.textContent).toContain("pas des obligations légales universelles");
     expect(host.textContent).toContain("Plusieurs groupes ou zones");
     expect(host.textContent).toContain("Aucun nombre de groupes ni de personnes présentes n’est déduit automatiquement");
+  });
+
+  it("does not infer a school group from the organizer type alone", () => {
+    const form = createInitialFormState("Lycée", "action");
+    form.organizerType = "school";
+    renderTeam(form);
+
+    expect(form.schoolContextConfirmed).toBe(false);
+    expect(host.textContent).not.toContain("Pour un contexte scolaire confirmé");
+    expect(host.textContent).not.toContain("ne déduisent ni présence ni nombre de mineurs");
+  });
+
+  it.each([
+    ["fixed_area", "Zone fixe : repérer les accès piétons"],
+    ["itinerary", "Itinéraire : parcourir les traversées"],
+    ["multi_zone", "Plusieurs groupes ou zones : convenir des limites"],
+  ] as const)("shows only the terrain prompt for %s mode", (mode, prompt) => {
+    const form = createInitialFormState("Organisateur", "action");
+    form.interventionMode = { mode, version: "intervention-mode-v1" };
+    renderTeam(form);
+
+    expect(host.textContent).toContain(prompt);
+  });
+
+  it("opens accessibility details for validation and invalidates route evidence when the alternative changes", () => {
+    const form = createInitialFormState("Organisateur", "action");
+    form.accessibilityStatus = "conditions_reported";
+    form.accessibilityConditionsSource = "Gestionnaire du site";
+    form.accessibilityConditionsVerifiedAt = "2026-11-10";
+    form.accessibilityAlternativeRouteVersionId = "route-a";
+    form.accessibilityRouteVersionOptions = [
+      { versionId: "route-a", label: "Parcours A" },
+      { versionId: "route-b", label: "Parcours B" },
+    ];
+    const updateField = renderTeam(form, ["accessibilityAlternativeRouteVersionId"]);
+
+    expect(host.querySelector<HTMLDetailsElement>("#team-logistics-safety")?.open).toBe(true);
+    const accessibilityDisclosure = Array.from(host.querySelectorAll<HTMLDetailsElement>("#team-logistics-safety details"))
+      .find((details) => details.querySelector("summary")?.textContent?.includes("Détails, preuves"));
+    expect(accessibilityDisclosure?.open).toBe(true);
+
+    const routeSelect = Array.from(host.querySelectorAll<HTMLSelectElement>("select"))
+      .find((select) => Array.from(select.options).some((option) => option.value === "route-b"));
+    expect(routeSelect).not.toBeNull();
+    act(() => {
+      routeSelect!.value = "route-b";
+      routeSelect!.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    expect(updateField).toHaveBeenNthCalledWith(1, "accessibilityAlternativeRouteVersionId", "route-b");
+    expect(updateField).toHaveBeenNthCalledWith(2, "accessibilityStatus", "to_confirm");
+    expect(updateField).toHaveBeenNthCalledWith(3, "accessibilityConditionsVerifiedAt", "");
+    expect(host.textContent).toContain("Source de vérification");
+    expect(host.textContent).toContain("Date de vérification des conditions");
+    expect(host.textContent).toContain("Modalités de pause");
+    expect(host.textContent).toContain("Sortie anticipée");
   });
 });

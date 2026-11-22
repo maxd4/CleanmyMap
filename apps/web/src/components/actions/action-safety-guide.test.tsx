@@ -13,10 +13,21 @@ describe("action safety guide", () => {
     expect(html).toContain("Consulter le guide complet");
     expect(html).toContain("Déchets ramassables");
     expect(html).toContain("bonbonnes et récipients sous pression");
-    expect(html).toContain("adultes référents identifiés");
-    expect(html).toContain("pas des obligations légales universelles");
+    expect(html).not.toContain("adultes référents identifiés");
+    expect(html).not.toContain("pas des obligations légales universelles");
     expect(html).toContain("sm:grid-cols-2");
     expect(html).not.toContain('open=""');
+  });
+
+  it("does not infer a school group from an organizer label alone", () => {
+    const html = renderToStaticMarkup(<ActionSafetyGuide categories={[]} />);
+    const confirmedSchoolHtml = renderToStaticMarkup(
+      <ActionSafetyGuide categories={[]} schoolContextConfirmed />,
+    );
+
+    expect(html).not.toContain("Pour un contexte scolaire confirmé");
+    expect(confirmedSchoolHtml).toContain("Pour un contexte scolaire confirmé");
+    expect(confirmedSchoolHtml).toContain("pas des obligations légales universelles");
   });
 
   it("uses catalog pickup policies for ordinary, trained-only and no-pickup categories", () => {

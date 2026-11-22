@@ -89,6 +89,14 @@ export function TeamLogisticsSection({
   const completedChecklistCount = form.preparationChecklist.filter((item) => item.checked).length;
   const expectedWasteCount = form.wasteCategories?.length ?? 0;
   const interventionMode = form.interventionMode?.mode ?? (form.operationalRoute ? "itinerary" : "fixed_area");
+  const terrainInterventionMode = form.interventionMode?.mode ?? (form.operationalRoute ? "itinerary" : undefined);
+  const terrainGuidance = terrainInterventionMode === "fixed_area"
+    ? "Zone fixe : repérer les accès piétons autour du rendez-vous et vérifier sur place les obstacles et l’état du sol."
+    : terrainInterventionMode === "itinerary"
+      ? "Itinéraire : parcourir les traversées et cheminements prévus, vérifier les obstacles et repérer les points où le groupe peut s’arrêter ou sortir du parcours."
+      : terrainInterventionMode === "multi_zone"
+        ? "Plusieurs groupes ou zones : convenir des limites de chaque zone et des points de regroupement. Le nombre de groupes et les conditions du terrain restent à confirmer."
+        : "Mode non renseigné : vérifier sur place les accès piétons, obstacles et conditions du sol ; l’adresse seule ne décrit pas leur état actuel.";
   const interventionModeLabel = interventionMode === "multi_zone"
     ? "plusieurs groupes"
     : interventionMode === "itinerary" ? "itinéraire" : "zone fixe";
@@ -109,6 +117,8 @@ export function TeamLogisticsSection({
   );
   const safetyHasError = hasAnyFieldIssue(validationIssueFields, [
     "safetyInstructions", "accessibility", "accessibilityStatus", "accessibilityAlternativeRouteVersionId",
+    "accessibilityConditionsSource", "accessibilityConditionsVerifiedAt", "accessibilityPausePlan",
+    "accessibilityEarlyDeparturePlan", "accessibilityAlternativeMissions", "accessibilityAlternativeMissionsText",
   ]) || Boolean(
     characterLimitError(form.safetyInstructions, "Les consignes particulières", PREPARATION_FIELD_LIMITS.safetyInstructions)
     || characterLimitError(form.accessibility, "La précision d'accessibilité", PREPARATION_FIELD_LIMITS.accessibility),
@@ -150,8 +160,6 @@ export function TeamLogisticsSection({
 
   return (
     <div className="space-y-4" data-testid="team-logistics-section">
-      <ActionSafetyGuide categories={form.wasteCategories} />
-
       <CmmDisclosure
         id="team-logistics-coordination"
         open={openDisclosures.coordination}
@@ -234,13 +242,33 @@ export function TeamLogisticsSection({
         size="md"
       >
         <div className="space-y-5">
-          <section aria-labelledby="before-security-group" className="space-y-3">
-            <h3 id="before-security-group" className="text-base font-black text-emerald-950">Consignes de l’organisateur</h3>
+          <section aria-labelledby="before-collection-risk-group" className="space-y-3">
+            <h3 id="before-collection-risk-group" className="text-base font-black text-emerald-950">Déchets et risques de collecte</h3>
+            <ActionSafetyGuide
+              categories={form.wasteCategories}
+              schoolContextConfirmed={form.schoolContextConfirmed}
+              headingLevel={4}
+            />
             <PreparationSecurityFields form={form} updateField={updateField} showGuide={false} />
           </section>
-          <section aria-labelledby="before-accessibility-group" className="space-y-3">
+          <section aria-labelledby="before-terrain-group" className="space-y-3 border-t border-emerald-100 pt-4">
+            <h3 id="before-terrain-group" className="text-base font-black text-emerald-950">Terrain</h3>
+            <p role="note" className="rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-sm leading-6 text-amber-950">{terrainGuidance}</p>
+          </section>
+          <section aria-labelledby="before-supervision-group" className="space-y-3 border-t border-emerald-100 pt-4">
+            <h3 id="before-supervision-group" className="text-base font-black text-emerald-950">Encadrement</h3>
+            <p role="note" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-800">
+              Identifier le référent à prévenir et le point de regroupement. En cas d’incident, appliquer les consignes du guide ; le nombre de personnes présentes n’est pas déduit de l’effectif prévu.
+            </p>
+            {terrainInterventionMode === "multi_zone" ? (
+              <p role="note" className="rounded-xl border border-indigo-200 bg-indigo-50/70 px-3 py-2 text-sm leading-6 text-indigo-950">
+                Pour plusieurs groupes, convenir d’un référent joignable et d’un point de regroupement pour chacun, selon l’organisation retenue. Aucun effectif ni nombre de groupes n’est supposé.
+              </p>
+            ) : null}
+          </section>
+          <section aria-labelledby="before-accessibility-group" className="space-y-3 border-t border-emerald-100 pt-4">
             <h3 id="before-accessibility-group" className="text-base font-black text-emerald-950">Accessibilité</h3>
-            <PreparationAccessibilityFields form={form} updateField={updateField} />
+            <PreparationAccessibilityFields form={form} updateField={updateField} validationIssueFields={validationIssueFields} />
           </section>
         </div>
       </CmmDisclosure>

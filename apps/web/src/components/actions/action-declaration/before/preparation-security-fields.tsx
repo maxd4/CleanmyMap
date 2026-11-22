@@ -20,7 +20,7 @@ export function PreparationSecurityFields({
 
   return (
     <div className="space-y-4">
-      {showGuide ? <ActionSafetyGuide categories={form.wasteCategories} /> : null}
+      {showGuide ? <ActionSafetyGuide categories={form.wasteCategories} schoolContextConfirmed={form.schoolContextConfirmed} /> : null}
 
       <CmmField
         id="before-safety-instructions"
