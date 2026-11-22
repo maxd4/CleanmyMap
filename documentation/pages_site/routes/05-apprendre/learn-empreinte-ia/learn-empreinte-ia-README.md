@@ -12,6 +12,13 @@
 
 ## Parcours
 
+- Le parcours prioritaire « Estimation rapide » fonctionne sans compte fournisseur ni connexion : chatbot, période, fréquence approximative, échanges, longueurs de questions/réponses et présence éventuelle d'usages image/audio.
+- « Je ne sais pas » reste une valeur inconnue distincte de zéro. Les longueurs sont conservées en caractères et ne sont jamais converties en tokens mesurés. Les offres gratuites et abonnements n'influencent pas le calcul énergétique.
+- Sans modèle, tokenizer et conversion caractères→tokens empiriquement validés, l'énergie et les impacts attribués à l'activité personnelle restent `NA`. Image/audio restent déclarés séparément avec quantité et impact `NA`.
+- Le parcours affiche séparément trois simulations pédagogiques pour un million de tokens hypothétiques, issues du registre scientifique. Une région `UNKNOWN` laisse le CO₂e et l'eau `NA`; choisir une région est une hypothèse de simulation, jamais une localisation déclarée ni une compensation.
+- Le calcul rapide reste anonyme. Après connexion, une période connue est requise pour enregistrer le scénario dans la table existante, sous le type `SELF_REPORTED_CHAT_USAGE`, avec compteurs de tokens et énergie nuls. Il n'est jamais classé EcoLogits.
+- Un scénario rapide actif en conflit de période avec une déclaration/import actif du même fournisseur ne peut coexister : l'API/RPC le refuse jusqu'à exclusion et rapprochement explicite. Le scénario enregistré est modifiable, excluable, réactivable et supprimable via la gestion privée existante.
+- La saisie technique existante reste disponible après le parcours rapide.
 - La saisie peut rester anonyme. Elle n'appelle aucune API de sauvegarde.
 - La connexion rend disponible l'enregistrement explicite et la liste privée du compte.
 - Une personne peut corriger une déclaration, l'exclure, la réactiver ou la supprimer définitivement.

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(), requireSupabaseClerkRlsClient: vi.fn(), from: vi.fn(), eq: vi.fn(),
   update: vi.fn(), updateSelect: vi.fn(), maybeSingle: vi.fn(), delete: vi.fn(), deleteSelect: vi.fn(),
+  rpc: vi.fn(),
 }));
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
@@ -16,7 +17,7 @@ const context = { params: Promise.resolve({ id }) };
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "clerk-owner-a" });
-  mocks.requireSupabaseClerkRlsClient.mockResolvedValue({ from: mocks.from });
+  mocks.requireSupabaseClerkRlsClient.mockResolvedValue({ from: mocks.from, rpc: mocks.rpc });
   mocks.from.mockReturnValue({ update: mocks.update, delete: mocks.delete });
   mocks.update.mockReturnValue({ eq: mocks.eq });
   mocks.delete.mockReturnValue({ eq: mocks.eq });
@@ -26,6 +27,24 @@ beforeEach(() => {
 });
 
 describe("personal AI declaration item API", () => {
+  it("hides a quick-scenario ID not owned by the caller behind 404", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "42501" } });
+    const response = await PATCH(new Request("https://example.test", {
+      method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ declaration: {
+        provider: "OPENAI", source: "MANUAL", sourceVersion: null, provenance: "USER_DECLARED", granularity: "UNKNOWN",
+        periodStartUtc: "2026-01-01T00:00:00.000Z", periodEndUtc: "2026-02-01T00:00:00.000Z",
+        modelRaw: null, modelCanonical: null, operator: null, execution: "CLOUD", inferenceRegion: null, access: "UNKNOWN", requestCount: null,
+        tokens: { inputTotal: null, inputUncached: null, cacheRead: null, cacheWrite: null, outputVisible: null, outputReasoning: null, outputTotal: null, reasoningRelation: "UNKNOWN" },
+        modality: { images: null, audioMinutes: null, videoSeconds: null },
+        energy: { kwh: null, boundary: null, evidence: null, averageWatts: null, durationSeconds: null, idleWatts: null },
+        quickScenario: { version: "personal-ai-chat-usage-v1", sourceKind: "SELF_REPORTED_CHAT_USAGE", chatbot: "CHATGPT", chatbotLabel: null, accessMode: "FREE", frequency: "UNKNOWN", exchanges: null, questionCharacters: null, answerCharacters: null, imageUse: null, audioUse: null },
+      } }),
+    }), context);
+    expect(response.status).toBe(404);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(mocks.rpc).toHaveBeenCalledWith("save_personal_ai_chat_scenario", expect.objectContaining({ p_id: id }));
+  });
+
   it("hides another owner's UUID behind 404 and applies the server owner predicate", async () => {
     const response = await PATCH(new Request("https://example.test", { method: "PATCH", body: JSON.stringify({ status: "EXCLUDED" }) }), context);
     expect(response.status).toBe(404);

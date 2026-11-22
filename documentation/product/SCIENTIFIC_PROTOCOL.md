@@ -681,3 +681,22 @@ contenu de conversation, facture, credential ou identifiant brut de compte
 fournisseur n'est stocké. L'utilisateur peut modifier, exclure, réactiver et
 supprimer chaque déclaration; aucune compensation carbone ou hydrique n'est
 revendiquée.
+
+Le parcours « Estimation rapide » est une déclaration qualitative d'usage de
+chatbot, pas une mesure de tokens. Les longueurs saisies sont des caractères;
+aucun ratio universel caractères→tokens n'est appliqué, car il dépend au moins
+de la langue et du modèle/tokenizer. Sans conversion empirique documentée,
+l'énergie, le CO₂e et l'eau attribués à l'usage personnel restent `NA`. Les
+scénarios bas/central/haut affichés à part décrivent uniquement une référence
+hypothétique d'un million de tokens selon les facteurs versionnés. Une région
+choisie pour cette simulation est explicitement hypothétique. Le statut gratuit
+ou abonnement, son prix et ses quotas ne sont pas des entrées énergétiques.
+Les usages image/audio sont conservés séparément sans impact quantifié. Cette
+voie ne peut jamais revendiquer de conformité EcoLogits.
+
+Un scénario sauvegardé porte le type `SELF_REPORTED_CHAT_USAGE` dans la table
+privée existante, avec provenance utilisateur, et conserve les tokens et
+l'énergie à `null`. La période est requise pour sa sauvegarde. Une contrainte
+owner-scoped empêche son double comptage avec une déclaration/import actif
+chevauchant de même fournisseur; la résolution passe par exclusion et
+rapprochement explicites.

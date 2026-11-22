@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   updateSelect: vi.fn(),
   maybeSingle: vi.fn(),
   delete: vi.fn(),
+  rpc: vi.fn(),
 }));
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
@@ -34,7 +35,7 @@ const validDeclaration = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "clerk-owner-a" });
-  mocks.requireSupabaseClerkRlsClient.mockResolvedValue({ from: mocks.from });
+  mocks.requireSupabaseClerkRlsClient.mockResolvedValue({ from: mocks.from, rpc: mocks.rpc });
   mocks.from.mockReturnValue({
     select: mocks.select.mockReturnThis(), eq: mocks.eq.mockReturnThis(), order: mocks.order.mockReturnThis(), range: mocks.range,
     insert: mocks.insert, update: mocks.update, delete: mocks.delete,
@@ -46,6 +47,7 @@ beforeEach(() => {
   mocks.updateSelect.mockReturnValue({ maybeSingle: mocks.maybeSingle });
   mocks.delete.mockReturnValue({ eq: mocks.eq.mockReturnThis() });
   mocks.range.mockResolvedValue({ data: [], error: null });
+  mocks.rpc.mockResolvedValue({ data: [{ id: "quick-id", declaration: validDeclaration, quick_scenario: { sourceKind: "SELF_REPORTED_CHAT_USAGE" } }], error: null });
   mocks.single.mockResolvedValue({ data: { id: "new-id", owner_clerk_id: "clerk-owner-a", declaration: validDeclaration }, error: null });
   mocks.maybeSingle.mockResolvedValue({ data: null, error: null });
 });
@@ -84,6 +86,46 @@ describe("personal AI declarations collection API", () => {
     expect(persisted.methodology_version).toBe((persisted.snapshot as { version: string }).version);
     expect(JSON.parse(persisted.factor_version as string)).toHaveProperty("applied");
     expect(mocks.insert).toHaveBeenCalledWith(expect.not.objectContaining({ prompt: expect.anything(), conversation: expect.anything() }));
+  });
+
+  it("saves a quick chatbot scenario through the private owner RPC without tokenizing the activity", async () => {
+    const quickDeclaration = {
+      ...validDeclaration,
+      provider: "OPENAI",
+      access: "UNKNOWN",
+      quickScenario: {
+        version: "personal-ai-chat-usage-v1", sourceKind: "SELF_REPORTED_CHAT_USAGE", chatbot: "CHATGPT", chatbotLabel: null,
+        accessMode: "SUBSCRIPTION", frequency: "DAILY", exchanges: 3, questionCharacters: 80, answerCharacters: 250,
+        imageUse: false, audioUse: null,
+      },
+    };
+    const response = await POST(new Request("https://example.test/api/personal-ai/declarations", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(quickDeclaration),
+    }));
+    expect(response.status).toBe(201);
+    const [rpcName, rpcArgs] = mocks.rpc.mock.calls[0] as [string, Record<string, unknown>];
+    expect(rpcName).toBe("save_personal_ai_chat_scenario");
+    expect(rpcArgs.p_id).toBeNull();
+    expect(rpcArgs.p_declaration).not.toHaveProperty("quickScenario");
+    expect(rpcArgs.p_quick_scenario).toMatchObject({ sourceKind: "SELF_REPORTED_CHAT_USAGE", accessMode: "SUBSCRIPTION", exchanges: 3 });
+    expect(JSON.stringify(rpcArgs)).not.toMatch(/prompt|conversation|transcript/i);
+    expect(mocks.insert).not.toHaveBeenCalled();
+  });
+
+  it("returns an explicit conflict when a quick scenario overlaps an active source", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "23P01" } });
+    const response = await POST(new Request("https://example.test/api/personal-ai/declarations", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
+        ...validDeclaration, provider: "OPENAI", access: "UNKNOWN",
+        quickScenario: {
+          version: "personal-ai-chat-usage-v1", sourceKind: "SELF_REPORTED_CHAT_USAGE", chatbot: "CHATGPT", chatbotLabel: null,
+          accessMode: "FREE", frequency: "UNKNOWN", exchanges: null, questionCharacters: null, answerCharacters: null,
+          imageUse: null, audioUse: null,
+        },
+      }),
+    }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toContain("réconciliez une source");
   });
 
   it("rejects unknown fields and oversized bodies before persistence", async () => {

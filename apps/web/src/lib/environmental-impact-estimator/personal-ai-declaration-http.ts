@@ -50,6 +50,19 @@ export const personalAiDeclarationSchema = z.object({
     durationSeconds: nullableMeasure,
     idleWatts: nullableMeasure,
   }).strict(),
+  quickScenario: z.object({
+    version: z.literal("personal-ai-chat-usage-v1"),
+    sourceKind: z.literal("SELF_REPORTED_CHAT_USAGE"),
+    chatbot: z.enum(["CHATGPT", "CLAUDE", "GEMINI", "COPILOT", "MISTRAL", "PERPLEXITY", "OTHER", "UNKNOWN"]),
+    chatbotLabel: nullableLabel(80),
+    accessMode: z.enum(["FREE", "SUBSCRIPTION", "UNKNOWN"]),
+    frequency: z.enum(["OCCASIONAL", "WEEKLY", "SEVERAL_WEEKLY", "DAILY", "MULTIPLE_DAILY", "UNKNOWN"]),
+    exchanges: nullableCount,
+    questionCharacters: nullableCount,
+    answerCharacters: nullableCount,
+    imageUse: z.boolean().nullable(),
+    audioUse: z.boolean().nullable(),
+  }).strict().optional(),
 }).strict();
 
 export type StoredPersonalAiDeclaration = ReturnType<typeof normalizePersonalAiDeclaration>;

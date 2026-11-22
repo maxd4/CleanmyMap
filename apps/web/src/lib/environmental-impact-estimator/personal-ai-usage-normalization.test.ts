@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { estimatePersonalAiFootprint } from "./personal-ai-estimator";
 import { normalizePersonalAiDeclaration, toPersonalAiEstimatorInput, type PersonalAiDeclarationDraft } from "./personal-ai-usage-normalization";
-import { calculatePersonalAiDeclaration } from "./personal-ai-declaration-http";
+import { calculatePersonalAiDeclaration, parsePersonalAiDeclaration } from "./personal-ai-declaration-http";
 import { getScientificFactor } from "./scientific-registry";
 
 function declaration(overrides: Partial<PersonalAiDeclarationDraft> = {}): PersonalAiDeclarationDraft {
@@ -17,6 +17,38 @@ function declaration(overrides: Partial<PersonalAiDeclarationDraft> = {}): Perso
 }
 
 describe("personal AI declaration normalization", () => {
+  const quickScenario = {
+    version: "personal-ai-chat-usage-v1" as const,
+    sourceKind: "SELF_REPORTED_CHAT_USAGE" as const,
+    chatbot: "CHATGPT" as const,
+    chatbotLabel: null,
+    accessMode: "FREE" as const,
+    frequency: "WEEKLY" as const,
+    exchanges: 0,
+    questionCharacters: null,
+    answerCharacters: 120,
+    imageUse: true,
+    audioUse: null,
+  };
+
+  it("accepts a separately typed chatbot scenario without turning activity into measured tokens", () => {
+    const normalized = parsePersonalAiDeclaration(declaration({ provider: "OPENAI", access: "UNKNOWN", quickScenario }));
+    expect(normalized.quickScenario?.sourceKind).toBe("SELF_REPORTED_CHAT_USAGE");
+    expect(normalized.tokens.logicalTotal).toBeNull();
+    expect(normalized.requestCount).toBeNull();
+    expect(normalized.energy.kwh).toBeNull();
+    const snapshot = calculatePersonalAiDeclaration(normalized).snapshot;
+    expect(snapshot.physicalTotals.facilityEnergyKwh).toBeNull();
+    expect(snapshot.physicalTotals.operationalKgCo2e).toBeNull();
+  });
+
+  it("rejects measured counters, provider mismatches and unsafe chatbot labels on quick scenarios", () => {
+    expect(() => normalizePersonalAiDeclaration(declaration({ provider: "OPENAI", tokens: { ...declaration().tokens, inputTotal: 1 }, quickScenario }))).toThrow(/ne peut pas contenir/);
+    expect(() => normalizePersonalAiDeclaration(declaration({ provider: "GOOGLE", quickScenario }))).toThrow(/ne peut pas contenir/);
+    expect(() => normalizePersonalAiDeclaration(declaration({ provider: "OTHER", quickScenario: { ...quickScenario, chatbot: "OTHER", chatbotLabel: "account-identifier-12345678" } }))).toThrow(/libellé court/);
+    expect(() => normalizePersonalAiDeclaration(declaration({ provider: "OTHER", quickScenario: { ...quickScenario, chatbot: "OTHER", chatbotLabel: null } }))).toThrow(/requis uniquement/);
+  });
+
   it.each([null, "UNKNOWN", "FR", "DE"] as const)("accepts inference region %s", (inferenceRegion) => {
     expect(normalizePersonalAiDeclaration(declaration({ inferenceRegion })).inferenceRegion).toBe(inferenceRegion);
   });

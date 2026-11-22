@@ -7,6 +7,39 @@ const openAiUsageFixture = {
   }] }], has_more: false, next_page: null,
 };
 
+test("authenticated user saves and manages a private chatbot scenario without token values", async ({ page }) => {
+  await page.goto("/learn/empreinte-ia");
+  await page.getByRole("button", { name: "Tout refuser" }).click();
+  await page.getByLabel("Chatbot").selectOption("CHATGPT");
+  await page.getByLabel("Je ne sais pas la période").uncheck();
+  await page.getByLabel("Période (début inclus, fin exclue)").fill("2026-11-01");
+  await page.getByLabel("Fin de période (UTC)").fill("2026-11-02");
+  await page.getByLabel("Fréquence approximative").selectOption("DAILY");
+  await page.getByLabel("Nombre d’échanges sur cette période (facultatif)").fill("3");
+  await page.getByLabel("Offre utilisée (n’influence pas le calcul énergétique)").selectOption("SUBSCRIPTION");
+  await page.getByRole("button", { name: "Calculer sans compte" }).click();
+  await expect(page.getByRole("button", { name: "Enregistrer mon scénario" })).toBeVisible();
+  await page.getByRole("button", { name: "Enregistrer mon scénario" }).click();
+  await expect(page.getByRole("status")).toContainText("Scénario enregistré");
+  let item = page.getByTestId("personal-ai-declaration-row").filter({ hasText: "Estimation rapide · CHATGPT" }).first();
+  await expect(item).toContainText("Active");
+
+  await item.getByRole("button", { name: "Modifier" }).click();
+  await page.getByLabel("Nombre d’échanges sur cette période (facultatif)").fill("5");
+  await page.getByRole("button", { name: "Calculer sans compte" }).click();
+  await page.getByRole("button", { name: "Enregistrer la modification" }).click();
+  await expect(page.getByRole("status")).toContainText("Scénario enregistré");
+
+  item = page.getByTestId("personal-ai-declaration-row").filter({ hasText: "Estimation rapide · CHATGPT" }).first();
+  await item.getByRole("button", { name: "Exclure" }).click();
+  await expect(item).toContainText("Exclue");
+  await item.getByRole("button", { name: "Réactiver" }).click();
+  await expect(item).toContainText("Active");
+  page.once("dialog", (dialog) => dialog.accept());
+  await item.getByRole("button", { name: "Supprimer" }).click();
+  await expect(page.getByTestId("personal-ai-declaration-row").filter({ hasText: "Estimation rapide · CHATGPT" })).toHaveCount(0);
+});
+
 test("authenticated user saves, edits, excludes, reactivates and deletes only personal declarations", async ({ page }) => {
   await page.goto("/learn/empreinte-ia");
   await page.getByRole("button", { name: "Tout refuser" }).click();

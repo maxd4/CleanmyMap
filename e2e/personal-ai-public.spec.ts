@@ -47,6 +47,40 @@ test("anonymous user calculates a qualified AI footprint without private writes"
   expect(privateApiCalls).toBe(0);
 });
 
+test("anonymous chatbot user gets a traceable quick scenario without tokens or private writes", async ({ page }) => {
+  let privateApiCalls = 0;
+  page.on("request", (request) => { if (request.url().includes("/api/personal-ai/declarations")) privateApiCalls += 1; });
+  await page.goto("/learn/empreinte-ia");
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.getByRole("button", { name: "Tout refuser" }).click();
+  await expect(page.getByRole("heading", { name: "Estimation rapide" })).toBeVisible();
+  await page.getByLabel("Chatbot").focus();
+  await page.keyboard.press("Tab");
+  await expect(page.getByLabel("Je ne sais pas la période")).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByLabel("Chatbot").selectOption("CHATGPT");
+  await page.getByLabel("Je ne sais pas la période").uncheck();
+  await page.getByLabel("Période (début inclus, fin exclue)").fill("2026-11-01");
+  await page.getByLabel("Fin de période (UTC)").fill("2026-11-08");
+  await page.getByLabel("Fréquence approximative").selectOption("SEVERAL_WEEKLY");
+  await page.getByLabel("Nombre d’échanges sur cette période (facultatif)").fill("24");
+  await page.getByLabel("Longueur habituelle d’une question, en caractères (facultatif)").fill("160");
+  await page.getByLabel("Longueur habituelle d’une réponse, en caractères (facultatif)").fill("800");
+  await page.getByLabel("Offre utilisée (n’influence pas le calcul énergétique)").selectOption("FREE");
+  await page.getByRole("button", { name: "Calculer sans compte" }).click();
+  await expect(page.getByRole("heading", { name: "Votre activité déclarée" })).toBeVisible();
+  await expect(page.getByText(/Énergie attribuable à cette activité : NA kWh/)).toBeVisible();
+  await expect(page.getByText(/les longueurs visibles ne révèlent ni les tokens réellement traités/i)).toBeVisible();
+
+  await page.getByLabel("Simulation régionale séparée (hypothétique)").selectOption("FR");
+  await page.getByRole("button", { name: "Calculer sans compte" }).click();
+  await expect(page.getByRole("heading", { name: "Simulation indépendante : 1 million de tokens hypothétiques" })).toBeVisible();
+  await expect(page.getByText(/scénarios bas, central et haut sont des sensibilités/i)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Connectez-vous pour enregistrer ce scénario privé" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Enregistrer mon scénario" })).toHaveCount(0);
+  expect(privateApiCalls).toBe(0);
+});
+
 test("anonymous user previews a local provider export without sending the file", async ({ page }) => {
   const privateRequests: string[] = [];
   page.on("request", (request) => {

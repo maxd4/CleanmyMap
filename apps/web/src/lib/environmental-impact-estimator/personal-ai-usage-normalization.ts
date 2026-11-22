@@ -4,6 +4,20 @@ import { isCountryCode } from "../user-location-preference";
 
 export const PERSONAL_AI_DECLARATION_VERSION = "personal-ai-declaration-v1";
 
+export type PersonalAiQuickScenario = {
+  version: "personal-ai-chat-usage-v1";
+  sourceKind: "SELF_REPORTED_CHAT_USAGE";
+  chatbot: "CHATGPT" | "CLAUDE" | "GEMINI" | "COPILOT" | "MISTRAL" | "PERPLEXITY" | "OTHER" | "UNKNOWN";
+  chatbotLabel: string | null;
+  accessMode: "FREE" | "SUBSCRIPTION" | "UNKNOWN";
+  frequency: "OCCASIONAL" | "WEEKLY" | "SEVERAL_WEEKLY" | "DAILY" | "MULTIPLE_DAILY" | "UNKNOWN";
+  exchanges: number | null;
+  questionCharacters: number | null;
+  answerCharacters: number | null;
+  imageUse: boolean | null;
+  audioUse: boolean | null;
+};
+
 export type PersonalAiDeclarationDraft = {
   provider: "MANUAL" | "OPENAI" | "ANTHROPIC" | "GOOGLE" | "MISTRAL" | "OTHER";
   source: "MANUAL" | "PROVIDER_EXPORT" | "PROVIDER_DASHBOARD" | "LOCAL_LOG";
@@ -42,6 +56,7 @@ export type PersonalAiDeclarationDraft = {
     durationSeconds: number | null;
     idleWatts: number | null;
   };
+  quickScenario?: PersonalAiQuickScenario;
 };
 
 export type PersonalAiNormalizedDeclaration = PersonalAiDeclarationDraft & {
@@ -75,6 +90,40 @@ function assertShortLabel(value: string | null, field: string): void {
     || /^[a-f0-9]{8}-[a-f0-9-]{27,}$/i.test(value ?? "");
   if (value !== null && (value.length > 80 || !labelPattern.test(value) || accountLike)) {
     throw new Error(`${field}: libellé court requis, sans URL ni identifiant de compte`);
+  }
+}
+
+function validateQuickScenario(draft: PersonalAiDeclarationDraft): void {
+  const quick = draft.quickScenario;
+  if (!quick) return;
+  const expectedProvider: PersonalAiDeclarationDraft["provider"] = quick.chatbot === "CHATGPT" ? "OPENAI"
+    : quick.chatbot === "CLAUDE" ? "ANTHROPIC" : quick.chatbot === "GEMINI" ? "GOOGLE"
+      : quick.chatbot === "MISTRAL" ? "MISTRAL" : "OTHER";
+  const onlyUnknownMeasurements = Object.entries(draft.tokens).every(([key, value]) => key === "reasoningRelation" || value === null)
+    && draft.requestCount === null
+    && draft.modality.images === null && draft.modality.audioMinutes === null && draft.modality.videoSeconds === null
+    && draft.energy.kwh === null && draft.energy.averageWatts === null && draft.energy.durationSeconds === null && draft.energy.idleWatts === null;
+  const validType = quick.version === "personal-ai-chat-usage-v1" && quick.sourceKind === "SELF_REPORTED_CHAT_USAGE"
+    && ["CHATGPT", "CLAUDE", "GEMINI", "COPILOT", "MISTRAL", "PERPLEXITY", "OTHER", "UNKNOWN"].includes(quick.chatbot)
+    && ["FREE", "SUBSCRIPTION", "UNKNOWN"].includes(quick.accessMode)
+    && ["OCCASIONAL", "WEEKLY", "SEVERAL_WEEKLY", "DAILY", "MULTIPLE_DAILY", "UNKNOWN"].includes(quick.frequency);
+  if (!validType) throw new Error("Type de scénario de chatbot invalide");
+  assertShortLabel(quick.chatbotLabel, "quickScenario.chatbotLabel");
+  if ((quick.chatbot === "OTHER") !== (quick.chatbotLabel !== null)) throw new Error("Le nom du chatbot est requis uniquement pour Autre");
+  assertCount(quick.exchanges, "quickScenario.exchanges");
+  assertCount(quick.questionCharacters, "quickScenario.questionCharacters");
+  assertCount(quick.answerCharacters, "quickScenario.answerCharacters");
+  if ([quick.questionCharacters, quick.answerCharacters].some((value) => value !== null && value > 1_000_000)) {
+    throw new Error("La longueur déclarée dépasse la limite autorisée");
+  }
+  if (![true, false, null].includes(quick.imageUse) || ![true, false, null].includes(quick.audioUse)) {
+    throw new Error("Les usages image et audio doivent être oui, non ou inconnus");
+  }
+  const safeDeclaration = draft.provider === expectedProvider && draft.source === "MANUAL" && draft.provenance === "USER_DECLARED"
+    && draft.granularity === "UNKNOWN" && draft.execution === "CLOUD" && draft.access === "UNKNOWN"
+    && draft.inferenceRegion === null && draft.modelRaw === null && draft.modelCanonical === null && draft.operator === null;
+  if (!safeDeclaration || !onlyUnknownMeasurements) {
+    throw new Error("Un scénario rapide ne peut pas contenir une mesure, de tokens ou de modèle non vérifiés");
   }
 }
 
@@ -131,6 +180,8 @@ export function normalizePersonalAiDeclaration(draft: PersonalAiDeclarationDraft
   assertMeasure(draft.energy.averageWatts, "energy.averageWatts");
   assertMeasure(draft.energy.durationSeconds, "energy.durationSeconds");
   assertMeasure(draft.energy.idleWatts, "energy.idleWatts");
+
+  validateQuickScenario(draft);
 
   const cacheParts = sumIfComplete([draft.tokens.inputUncached, draft.tokens.cacheRead, draft.tokens.cacheWrite]);
   let inputTotal = draft.tokens.inputTotal;

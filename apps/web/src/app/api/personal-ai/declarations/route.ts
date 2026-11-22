@@ -1,6 +1,6 @@
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { PersonalAiDeclarationInputError } from "@/lib/environmental-impact-estimator/personal-ai-declaration-http";
-import { personalAiJson, listPersonalAiDeclarations, createPersonalAiDeclaration, parseRequestJson } from "./route.shared";
+import { PersonalAiActivityOverlapError, personalAiJson, listPersonalAiDeclarations, createPersonalAiDeclaration, parseRequestJson } from "./route.shared";
 
 export async function GET(request: Request) {
   // API_AUTHORIZATION_CONTRACT: private rows are always scoped to the Clerk session owner.
@@ -29,6 +29,7 @@ export async function POST(request: Request) {
     return personalAiJson({ item: await createPersonalAiDeclaration(access.userId, parsed.value) }, 201);
   } catch (error) {
     if (error instanceof PersonalAiDeclarationInputError) return personalAiJson({ error: error.message }, 400);
+    if (error instanceof PersonalAiActivityOverlapError) return personalAiJson({ error: error.message }, 409);
     return personalAiJson({ error: "Enregistrement indisponible" }, 503);
   }
 }

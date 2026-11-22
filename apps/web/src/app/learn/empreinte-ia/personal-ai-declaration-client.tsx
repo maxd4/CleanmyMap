@@ -6,6 +6,7 @@ import { CmmCard } from "@/components/ui/cmm-card";
 import { estimatePersonalAiFootprint, type PersonalAiFootprintEstimate } from "@/lib/environmental-impact-estimator/personal-ai-estimator";
 import { listAiModels } from "@/lib/environmental-impact-estimator/model-catalog";
 import { normalizePersonalAiDeclaration, toPersonalAiEstimatorInput, type PersonalAiDeclarationDraft } from "@/lib/environmental-impact-estimator/personal-ai-usage-normalization";
+import { PersonalAiQuickScenarioClient } from "./personal-ai-quick-scenario-client";
 
 type FormState = {
   periodStart: string; periodEnd: string; provider: PersonalAiDeclarationDraft["provider"];
@@ -112,11 +113,15 @@ export function PersonalAiDeclarationClient() {
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
     let active = true;
-    void fetch("/api/personal-ai/declarations?limit=50", { cache: "no-store" })
-      .then(async (response) => response.ok ? response.json() : Promise.reject(new Error("Historique privé indisponible.")))
-      .then((payload: { items: DeclarationRow[]; hasMore: boolean }) => { if (active) { setItems(payload.items); setHasMore(payload.hasMore); } })
-      .catch((cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : "Historique privé indisponible."); });
-    return () => { active = false; };
+    const refresh = () => {
+      void fetch("/api/personal-ai/declarations?limit=50", { cache: "no-store" })
+        .then(async (response) => response.ok ? response.json() : Promise.reject(new Error("Historique privé indisponible.")))
+        .then((payload: { items: DeclarationRow[]; hasMore: boolean }) => { if (active) { setItems(payload.items); setHasMore(payload.hasMore); } })
+        .catch((cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : "Historique privé indisponible."); });
+    };
+    refresh();
+    window.addEventListener("personal-ai-chat-scenario-saved", refresh);
+    return () => { active = false; window.removeEventListener("personal-ai-chat-scenario-saved", refresh); };
   }, [isLoaded, isSignedIn]);
 
   const normalized = useMemo(() => {
@@ -192,6 +197,7 @@ export function PersonalAiDeclarationClient() {
 
   return <div className="mx-auto grid w-full max-w-5xl gap-6 px-4 py-8 sm:px-6">
     <header><p className="text-sm font-bold uppercase tracking-wide text-rose-700">Apprendre · calcul personnel</p><h1 className="mt-2 text-3xl font-black text-slate-950">Mon empreinte IA</h1><p className="mt-3 max-w-3xl text-slate-700">Déclarez une période d’usage et consultez une estimation à partir des données disponibles. Les champs laissés vides restent inconnus; aucune conversation ni aucun prompt ne sont demandés.</p></header>
+    <PersonalAiQuickScenarioClient isSignedIn={isSignedIn === true} isLoaded={isLoaded} />
     <CmmCard as="section" tone="slate" variant="glass" size="lg">
       <h2 className="text-xl font-black text-slate-950">Déclaration d’usage</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -239,7 +245,9 @@ export function PersonalAiDeclarationClient() {
             {items.map((item) => (
               <li key={item.id} data-testid="personal-ai-declaration-row" data-declaration-id={item.id} className="rounded-xl border border-slate-200 bg-white p-4">
                 <p className="font-bold text-slate-950">
-                  {item.declaration.provider} · {item.declaration.periodStartUtc?.slice(0, 10) ?? "Période inconnue"}
+                  {item.declaration.quickScenario
+                    ? `Estimation rapide · ${item.declaration.quickScenario.chatbot === "OTHER" ? item.declaration.quickScenario.chatbotLabel : item.declaration.quickScenario.chatbot}`
+                    : item.declaration.provider} · {item.declaration.periodStartUtc?.slice(0, 10) ?? "Période inconnue"}
                   {item.declaration.periodEndUtc ? ` – ${item.declaration.periodEndUtc.slice(0, 10)} UTC` : ""}
                   {" · "}{item.status === "ACTIVE" ? "Active" : "Exclue"}
                 </p>
@@ -247,7 +255,13 @@ export function PersonalAiDeclarationClient() {
                   CO₂e : {number(item.snapshot.physicalTotals.operationalKgCo2e)} kg · eau : {number(item.snapshot.physicalTotals.totalWaterLiters)} L
                 </p>
                 <div className="mt-3 flex flex-wrap gap-3 text-sm">
-                  <button type="button" className="font-bold text-rose-800 underline" onClick={() => { setForm(formFromDraft(item.declaration)); setEditingId(item.id); setEstimate(item.snapshot); }}>Modifier</button>
+                  <button type="button" className="font-bold text-rose-800 underline" onClick={() => {
+                    if (item.declaration.quickScenario) {
+                      window.dispatchEvent(new CustomEvent("personal-ai-edit-chat-scenario", { detail: item }));
+                    } else {
+                      setForm(formFromDraft(item.declaration)); setEditingId(item.id); setEstimate(item.snapshot);
+                    }
+                  }}>Modifier</button>
                   <button type="button" className="font-bold text-rose-800 underline" onClick={() => void updateStatus(item, item.status === "ACTIVE" ? "EXCLUDED" : "ACTIVE").catch((cause: unknown) => setError(cause instanceof Error ? cause.message : "Mise à jour indisponible."))}>
                     {item.status === "ACTIVE" ? "Exclure" : "Réactiver"}
                   </button>

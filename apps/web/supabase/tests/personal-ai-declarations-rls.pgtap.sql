@@ -1,8 +1,10 @@
 begin;
 
-select plan(50);
+select plan(64);
 
 select ok(has_table('public', 'personal_ai_declarations'), 'private declarations table exists');
+select ok(has_column('public', 'personal_ai_declarations', 'quick_scenario'), 'optional chatbot scenario is stored on the existing private table');
+select ok(has_function_privilege('authenticated', 'public.save_personal_ai_chat_scenario(uuid,jsonb,jsonb,jsonb,text,text)', 'EXECUTE'), 'authenticated owner can call the scenario RPC');
 select ok((select relrowsecurity from pg_class where oid = 'public.personal_ai_declarations'::regclass), 'row level security is enabled');
 select ok(not has_table_privilege('anon', 'public.personal_ai_declarations', 'SELECT'), 'anon cannot read declarations');
 select ok(not has_table_privilege('anon', 'public.personal_ai_declarations', 'INSERT'), 'anon cannot insert declarations');
@@ -75,6 +77,72 @@ select set_config('request.jwt.claims', '{"role":"authenticated","sub":"user-a"}
 select is((select count(*)::integer from public.personal_ai_declarations), 1, 'A sees only A declaration');
 select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-b'), 0, 'A cannot query B declaration');
 select lives_ok($$update public.personal_ai_declarations set status = 'EXCLUDED' where owner_clerk_id = 'user-b'$$, 'A update against B is filtered by RLS');
+select lives_ok($$
+  select * from public.save_personal_ai_chat_scenario(
+    null,
+    jsonb_build_object(
+      'normalizationVersion', 'personal-ai-declaration-v1', 'provider', 'OPENAI', 'source', 'MANUAL',
+      'sourceVersion', null, 'provenance', 'USER_DECLARED', 'granularity', 'UNKNOWN',
+      'periodStartUtc', '2026-03-01T00:00:00.000Z', 'periodEndUtc', '2026-04-01T00:00:00.000Z',
+      'modelRaw', null, 'modelCanonical', null, 'operator', null, 'execution', 'CLOUD',
+      'inferenceRegion', null, 'access', 'UNKNOWN', 'requestCount', null,
+      'tokens', jsonb_build_object('inputTotal', null, 'inputUncached', null, 'cacheRead', null, 'cacheWrite', null,
+        'outputVisible', null, 'outputReasoning', null, 'outputTotal', null, 'reasoningRelation', 'UNKNOWN', 'logicalTotal', null),
+      'modality', jsonb_build_object('images', null, 'audioMinutes', null, 'videoSeconds', null),
+      'energy', jsonb_build_object('kwh', null, 'boundary', null, 'evidence', null, 'averageWatts', null, 'durationSeconds', null, 'idleWatts', null)
+    ),
+    '{"version":"personal-ai-chat-usage-v1","sourceKind":"SELF_REPORTED_CHAT_USAGE","chatbot":"CHATGPT","chatbotLabel":null,"accessMode":"FREE","frequency":"DAILY","exchanges":3,"questionCharacters":100,"answerCharacters":400,"imageUse":null,"audioUse":false}'::jsonb,
+    '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'personal-ai-v1', '{}'
+  )
+$$, 'owner A can privately save a self-reported chatbot scenario');
+select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a' and quick_scenario ->> 'chatbot' = 'CHATGPT'), 1, 'quick scenario is persisted once under owner A');
+select lives_ok($$
+  select * from public.save_personal_ai_chat_scenario(
+    null,
+    jsonb_build_object(
+      'normalizationVersion', 'personal-ai-declaration-v1', 'provider', 'OPENAI', 'source', 'MANUAL',
+      'sourceVersion', null, 'provenance', 'USER_DECLARED', 'granularity', 'UNKNOWN',
+      'periodStartUtc', '2026-03-01T00:00:00.000Z', 'periodEndUtc', '2026-04-01T00:00:00.000Z',
+      'modelRaw', null, 'modelCanonical', null, 'operator', null, 'execution', 'CLOUD',
+      'inferenceRegion', null, 'access', 'UNKNOWN', 'requestCount', null,
+      'tokens', jsonb_build_object('inputTotal', null, 'inputUncached', null, 'cacheRead', null, 'cacheWrite', null,
+        'outputVisible', null, 'outputReasoning', null, 'outputTotal', null, 'reasoningRelation', 'UNKNOWN', 'logicalTotal', null),
+      'modality', jsonb_build_object('images', null, 'audioMinutes', null, 'videoSeconds', null),
+      'energy', jsonb_build_object('kwh', null, 'boundary', null, 'evidence', null, 'averageWatts', null, 'durationSeconds', null, 'idleWatts', null)
+    ),
+    '{"version":"personal-ai-chat-usage-v1","sourceKind":"SELF_REPORTED_CHAT_USAGE","chatbot":"CHATGPT","chatbotLabel":null,"accessMode":"SUBSCRIPTION","frequency":"DAILY","exchanges":5,"questionCharacters":100,"answerCharacters":400,"imageUse":null,"audioUse":false}'::jsonb,
+    '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'personal-ai-v1', '{}'
+  )
+$$, 'retry of the same chatbot and period updates its stable owner scope');
+select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a' and quick_scenario ->> 'chatbot' = 'CHATGPT'), 1, 'quick scenario retry is idempotent');
+select is((select quick_scenario ->> 'exchanges' from public.personal_ai_declarations where owner_clerk_id = 'user-a' and quick_scenario ->> 'chatbot' = 'CHATGPT'), '5', 'retry replaces declared counts without addition');
+select throws_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'), '{provider}', '"OPENAI"'::jsonb), '{access}', '"UNKNOWN"'::jsonb) || jsonb_build_object('periodStartUtc', '2026-03-01T00:00:00.000Z', 'periodEndUtc', '2026-04-01T00:00:00.000Z'),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('2', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64)),
+    'normalized_content_hash', repeat('3', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE"}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, '23P01', null, 'overlapping import cannot be added beside active chatbot activity');
+select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('2', 64)), 0, 'overlap conflict rolls back the import row');
+select lives_ok($$update public.personal_ai_declarations set status = 'EXCLUDED' where owner_clerk_id = 'user-a' and quick_scenario ->> 'chatbot' = 'CHATGPT'$$, 'owner can exclude a quick scenario before reconciling an import');
+select lives_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'), '{provider}', '"OPENAI"'::jsonb), '{access}', '"UNKNOWN"'::jsonb) || jsonb_build_object('periodStartUtc', '2026-03-01T00:00:00.000Z', 'periodEndUtc', '2026-04-01T00:00:00.000Z'),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('2', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64)),
+    'normalized_content_hash', repeat('3', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE"}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, 'owner can import after excluding the overlapping scenario');
+select throws_ok($$update public.personal_ai_declarations set status = 'ACTIVE' where owner_clerk_id = 'user-a' and quick_scenario ->> 'chatbot' = 'CHATGPT'$$, '23P01', null, 'reactivation is rejected while a covering import is active');
 select lives_ok($$
   select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
     'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
@@ -161,6 +229,16 @@ select is((select count(*)::integer from public.personal_ai_declarations where o
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"user-b"}', true);
+select is((select count(*)::integer from public.personal_ai_declarations where quick_scenario is not null), 0, 'owner B cannot read owner A quick scenario');
+select throws_ok($$
+  select * from public.save_personal_ai_chat_scenario(
+    '10000000-0000-4000-8000-000000000001'::uuid,
+    (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000002'),
+    '{"version":"personal-ai-chat-usage-v1","sourceKind":"SELF_REPORTED_CHAT_USAGE","chatbot":"CHATGPT","chatbotLabel":null,"accessMode":"FREE","frequency":"UNKNOWN","exchanges":null,"questionCharacters":null,"answerCharacters":null,"imageUse":null,"audioUse":null}'::jsonb,
+    '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'personal-ai-v1', '{}'
+  )
+$$, '42501', 'personal AI scenario not found', 'owner B cannot update owner A quick scenario by ID');
 select lives_ok($$
   select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
     'declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000002'), '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb),
