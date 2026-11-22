@@ -15,6 +15,7 @@ describe("action field roles contract", () => {
       "organizer_primary",
       "coorganizer",
       "group_lead",
+      "welcome_contact",
       "cigarette_bag_lead",
       "recyclable_bag_lead",
       "household_waste_bag_lead",

@@ -70,6 +70,11 @@ export type FormState = {
  accessibility: string;
  accessibilityStatus: ActionAccessibilityStatus;
  accessibilityAlternativeRouteVersionId: string;
+ accessibilityPausePlan: string;
+ accessibilityEarlyDeparturePlan: string;
+ accessibilityAlternativeMissionsText: string;
+ accessibilityConditionsSource: string;
+ accessibilityConditionsVerifiedAt: string;
  accessibilityRouteVersionOptions: Array<{ versionId: string; label: string }>;
  formalitiesContext?: ActionFormalitiesFacts | null;
  safetyInstructions: string;
@@ -198,6 +203,11 @@ export const initialState: FormState = {
  accessibility:"",
  accessibilityStatus:"not_evaluated",
  accessibilityAlternativeRouteVersionId:"",
+ accessibilityPausePlan:"",
+ accessibilityEarlyDeparturePlan:"",
+ accessibilityAlternativeMissionsText:"",
+ accessibilityConditionsSource:"",
+ accessibilityConditionsVerifiedAt:"",
  accessibilityRouteVersionOptions:[],
  formalitiesContext: null,
  safetyInstructions:"",

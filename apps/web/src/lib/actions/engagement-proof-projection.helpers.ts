@@ -165,6 +165,7 @@ const FIELD_ROLE_CATEGORIES: Record<ActionFieldRoleCode, EngagementProofMissionC
   organizer_primary: "organization_coordination",
   coorganizer: "organization_coordination",
   group_lead: "accompaniment_awareness_logistics",
+  welcome_contact: "accompaniment_awareness_logistics",
   cigarette_bag_lead: "waste_stream_referent",
   recyclable_bag_lead: "waste_stream_referent",
   household_waste_bag_lead: "waste_stream_referent",

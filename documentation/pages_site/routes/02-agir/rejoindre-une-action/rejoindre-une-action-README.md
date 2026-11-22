@@ -481,3 +481,17 @@ Rester en maintenance pour les futures commandes produit non encore modélisées
 Les cartes futures exposent l'état déclaré des conditions d'accès, les obstacles et, lorsqu'il est renseigné, un itinéraire alternatif issu d'une version déjà enregistrée. L'absence d'information reste visible et le filtre « informations d'accessibilité disponibles » ne masque aucune action par défaut. Ces indications ne certifient pas l'accessibilité.
 
 Après confirmation de son inscription, une personne peut transmettre une sélection de besoins fonctionnels sans diagnostic ni texte médical, la modifier ou la supprimer. La demande reste privée pour la personne et les organisateurs autorisés, n'est pas publiée ni exportée, et expire au plus tard 90 jours après la date de l'action. Le binôme reste une démarche séparée, volontaire et non professionnelle.
+
+Le panneau participant garde sa réponse privée distincte du tableau organisateur,
+y compris lorsqu'un compte occupe les deux rôles. Le suivi d'arrivée, de point
+intermédiaire et de fin est manuel, réservé aux responsables habilités et aux
+personnes ayant consenti ; chaque statut peut revenir à « Non renseigné » et
+ne vaut jamais confirmation de présence. Un binôme accepté et son référent
+d'accueil sont affichés uniquement dans le briefing privé concerné.
+
+La préparation peut documenter les missions alternatives, les pauses, la
+sortie anticipée et la provenance/date de vérification des conditions de
+parcours. Le Jour J signale une sélection d'itinéraire qui ne correspond plus
+à la version active. Ni cette sélection ni sa source ne garantissent une
+accessibilité actuelle ; une modification de tracé ou de conditions rend la
+vérification antérieure incertaine.

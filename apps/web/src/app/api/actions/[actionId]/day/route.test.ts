@@ -14,6 +14,9 @@ const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn<() => Promise<{ userId
 const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn<typeof loadCanonicalActionOrganizerIdsForAction>());
 const readActionRegistrationRecordMock = vi.hoisted(() => vi.fn<typeof readActionRegistrationRecord>());
 const canManageActionMock = vi.hoisted(() => vi.fn<typeof canManageAction>());
+const loadActiveActionFieldRoleAssignmentsMock = vi.hoisted(() => vi.fn());
+const loadParticipantProfilesForUserIdsMock = vi.hoisted(() => vi.fn());
+const loadActionBuddyStateMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: getSupabaseServerClientMock }));
@@ -21,6 +24,9 @@ vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: requireAuthenticated
 vi.mock("@/lib/actions/participation/organizers", () => ({ loadCanonicalActionOrganizerIdsForAction: loadCanonicalActionOrganizerIdsForActionMock }));
 vi.mock("@/lib/actions/participation/registration-records", () => ({ readActionRegistrationRecord: readActionRegistrationRecordMock }));
 vi.mock("@/lib/actions/permissions", () => ({ canManageAction: canManageActionMock }));
+vi.mock("@/lib/actions/field-roles", () => ({ loadActiveActionFieldRoleAssignments: loadActiveActionFieldRoleAssignmentsMock }));
+vi.mock("@/lib/actions/participation/group-participation.helpers", () => ({ loadParticipantProfilesForUserIds: loadParticipantProfilesForUserIdsMock }));
+vi.mock("@/lib/actions/action-buddy", () => ({ loadActionBuddyState: loadActionBuddyStateMock }));
 
 const dayResponseSchema = z.object({
   access: z.enum(["organizer", "confirmed_volunteer"]),
@@ -49,6 +55,9 @@ describe("GET /api/actions/[actionId]/day", () => {
     getSupabaseServerClientMock.mockReturnValue({});
     loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue([]);
     canManageActionMock.mockReturnValue(true);
+    loadActiveActionFieldRoleAssignmentsMock.mockResolvedValue([]);
+    loadParticipantProfilesForUserIdsMock.mockResolvedValue(new Map());
+    loadActionBuddyStateMock.mockResolvedValue({ matchedPartner: null });
   });
 
   it("returns a briefing projection without creating attendance or claim data", async () => {
@@ -104,7 +113,7 @@ describe("GET /api/actions/[actionId]/day", () => {
     expect(serialized).not.toContain("routeCalibrationContext");
     expect(serialized).not.toContain("plannerSnapshot");
     expect(serialized).not.toContain("weatherContext");
-    expect(readActionRegistrationRecordMock).not.toHaveBeenCalled();
+    expect(readActionRegistrationRecordMock).toHaveBeenCalledWith(expect.anything(), { actionId: publicAction.id, userId: "owner-1" });
   }, 15000);
 
   it("denies an authenticated requester whose future registration is only pending", async () => {
@@ -118,7 +127,6 @@ describe("GET /api/actions/[actionId]/day", () => {
       registration_status: "pending",
       registration_source: "invite_link",
       registration_cancellation_reason: null,
-      manual_invitation_version: 1,
     });
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/actions/a/day"), { params: Promise.resolve({ actionId: publicAction.id }) });
@@ -147,6 +155,7 @@ describe("GET /api/actions/[actionId]/day", () => {
       registration_cancellation_reason: null,
       manual_invitation_version: 1,
     });
+    loadActionBuddyStateMock.mockResolvedValue({ matchedPartner: { userId: "private-id", displayName: "Binôme accepté", handle: null } });
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/actions/private/day"), { params: Promise.resolve({ actionId: publicAction.id }) });
     const body = await readDayResponse(response);
@@ -160,6 +169,31 @@ describe("GET /api/actions/[actionId]/day", () => {
     expect(JSON.stringify(body.action)).not.toContain("PRIVATE_INTERNAL_LABEL");
     expect(JSON.stringify(body.action)).not.toContain('"checked"');
     expect(body.action.volunteerChecklist).toBeDefined();
+    expect(body.action.acceptedBuddyLabel).toBe("Binôme accepté");
+    expect(JSON.stringify(body.action)).not.toContain("private-id");
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
+
+  it("keeps the accepted buddy visible to an organizer who is also a confirmed participant", async () => {
+    loadActionByIdMock.mockResolvedValue({ ...publicAction, access_mode: "public" });
+    canManageActionMock.mockReturnValue(true);
+    readActionRegistrationRecordMock.mockResolvedValue({
+      action_id: publicAction.id,
+      created_at: "2026-10-19T08:00:00.000Z",
+      registered_at: "2026-10-19T08:00:00.000Z",
+      updated_at: "2026-10-19T08:00:00.000Z",
+      registration_status: "confirmed",
+      registration_source: "invite_link",
+      registration_cancellation_reason: null,
+      manual_invitation_version: 1,
+    });
+    loadActionBuddyStateMock.mockResolvedValue({ matchedPartner: { userId: "secret-partner-id", displayName: "Binôme confirmé", handle: null } });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/a/day"), { params: Promise.resolve({ actionId: publicAction.id }) });
+    const body = await readDayResponse(response);
+    expect(body.access).toBe("organizer");
+    expect(body.action.acceptedBuddyLabel).toBe("Binôme confirmé");
+    expect(JSON.stringify(body.action)).not.toContain("secret-partner-id");
   });
 
   it("does not let a private actionId bypass a pending registration", async () => {
@@ -173,7 +207,6 @@ describe("GET /api/actions/[actionId]/day", () => {
       registration_status: "pending",
       registration_source: "invite_link",
       registration_cancellation_reason: null,
-      manual_invitation_version: 1,
     });
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/actions/private/day"), { params: Promise.resolve({ actionId: publicAction.id }) });

@@ -216,6 +216,10 @@ type ReportsWebDocumentModelLike = {
     obstaclesIdentified: number;
     toConfirm: number;
     notEvaluated: number;
+    declaredPlanMeasures: number;
+    observedMeasures: number;
+    observedByOrganizer: number;
+    observedByParticipantFeedback: number;
   };
 };
 
@@ -407,6 +411,7 @@ export function buildPdfData(params: ReportPdfDataOptions) {
         `La valeur RSVP décrit des réponses déclarées et ne constitue pas un taux de présence constatée.`,
         ...(model.accessibilitySummary ? [
           `Accueil et accessibilité déclarés : ${model.accessibilitySummary.informationDeclared}/${model.accessibilitySummary.actionCount} action(s) avec information; ${model.accessibilitySummary.conditionsReported} conditions renseignées, ${model.accessibilitySummary.obstaclesIdentified} avec obstacles identifiés, ${model.accessibilitySummary.toConfirm} à confirmer et ${model.accessibilitySummary.notEvaluated} non évaluées.`,
+          `Mesures d’inclusion : DECLARED ${model.accessibilitySummary.declaredPlanMeasures} mesure(s) prévues; OBSERVED ${model.accessibilitySummary.observedMeasures} attestation(s) documentée(s) (${model.accessibilitySummary.observedByOrganizer} observation(s) organisateur, ${model.accessibilitySummary.observedByParticipantFeedback} retour(s) participant). Les attestations ne certifient ni accessibilité ni présence.`,
           "Les mesures effectivement réalisées ne sont pas établies par cette projection; aucune certification ni preuve de présence n'en est déduite.",
         ] : []),
       ],

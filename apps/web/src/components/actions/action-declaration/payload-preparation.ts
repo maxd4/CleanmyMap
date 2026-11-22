@@ -161,6 +161,11 @@ function buildPreparationContentFields(
     ...(form.estimatedDifficulty ? { estimatedDifficulty: form.estimatedDifficulty } : {}),
     ...buildPreparationGuidanceFields(form),
     accessibilityStatus: form.accessibilityStatus,
+    accessibilityPausePlan: form.accessibilityPausePlan.trim() || undefined,
+    accessibilityEarlyDeparturePlan: form.accessibilityEarlyDeparturePlan.trim() || undefined,
+    accessibilityAlternativeMissions: form.accessibilityAlternativeMissionsText.split(/\r?\n/).map((mission) => mission.trim()).filter(Boolean).slice(0, 8),
+    accessibilityConditionsSource: form.accessibilityConditionsSource.trim() || undefined,
+    accessibilityConditionsVerifiedAt: form.accessibilityConditionsVerifiedAt || undefined,
     ...(form.accessibilityAlternativeRouteVersionId
       ? { accessibilityAlternativeRouteVersionId: form.accessibilityAlternativeRouteVersionId }
       : {}),
@@ -290,6 +295,11 @@ function buildHydratedDescriptionFields(
       typeof preparationData.accessibilityAlternativeRouteVersionId === "string"
         ? preparationData.accessibilityAlternativeRouteVersionId
         : "",
+    accessibilityPausePlan: preparationData.accessibilityPausePlan ?? "",
+    accessibilityEarlyDeparturePlan: preparationData.accessibilityEarlyDeparturePlan ?? "",
+    accessibilityAlternativeMissionsText: preparationData.accessibilityAlternativeMissions?.join("\n") ?? "",
+    accessibilityConditionsSource: preparationData.accessibilityConditionsSource ?? "",
+    accessibilityConditionsVerifiedAt: preparationData.accessibilityConditionsVerifiedAt ?? "",
     accessibilityRouteVersionOptions: (preparationData.routeVersioning?.history ?? []).map((version) => ({
       versionId: version.versionId,
       label: `Version du ${new Date(version.appliedAt).toLocaleDateString("fr-FR")}`,

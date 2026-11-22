@@ -55,8 +55,9 @@ export function ActionAccessibilitySupportPanel({
   fr: boolean;
 }) {
   const endpoint = `/api/actions/${encodeURIComponent(actionId)}/accessibility-support`;
+  const participantKey = `${endpoint}?audience=participant`;
   const { data, error, isLoading, mutate } = useSWR<SupportResponse>(
-    isRegistrationConfirmed ? endpoint : null,
+    isRegistrationConfirmed ? participantKey : null,
     fetchSupportRequest,
   );
   const request = data?.request ?? null;

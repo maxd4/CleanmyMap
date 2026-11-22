@@ -116,7 +116,9 @@ describe("public action practical information", () => {
     expect(result.accessibilityAlternativeRoute).toEqual({
       versionId: "route-old",
       appliedAt: "2026-11-20T10:00:00.000Z",
+      isCurrentVersion: false,
       routeCount: 1,
+      routes: [{ routeId: "route-1", groupIndex: 1, coordinates: [[48, 2], [48.1, 2.1]] }],
     });
     expect(JSON.stringify(result)).not.toContain("routeVersioning");
   });

@@ -659,6 +659,24 @@ serveur revalide l'appartenance au match à chaque envoi avec `buddyRequestId`.
 Le mécanisme `action_share_contact_requests` conserve sa sémantique exclusive
 de partage d'action.
 
+Le briefing Jour J ne projette le nom du binôme qu'à un inscrit confirmé et
+uniquement lorsque le match est accepté ; il ne retourne pas son identifiant
+Clerk. Les demandes privées d'accompagnement fonctionnel restent accessibles
+à leur auteur et aux organisateurs autorisés, séparées par audience et sans
+cache partagé. Le suivi manuel n'est possible qu'après consentement, reste
+réversible à « non renseigné » et ne constitue pas une preuve de présence.
+Les changements de date d'action réconcilient la rétention privée dans la
+même transaction : les demandes dont l'échéance de 90 jours précéderait leur
+création sont supprimées, les autres reçoivent la nouvelle échéance.
+
+Les aménagements de préparation sont `DECLARED`. Une ligne `OBSERVED` conserve
+la nature de sa preuve (observation de l'organisateur ou retour participant)
+et sa date ; elle ne transforme pas la déclaration en certification
+d'accessibilité ou en présence. Les rapports ne lisent pas les demandes
+privées. Les itinéraires alternatifs restent des versions planifiées : une
+sélection qui n'est plus la version active est signalée comme incertaine et
+doit être revue.
+
 ## Effectif présent et personnes ayant ramassé — CURRENT
 
 `actions.volunteers_count` et les colonnes de composition décrivent l'effectif

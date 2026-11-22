@@ -21,7 +21,13 @@ import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational
 export type PublicActionPracticalInformation = {
   accessibility: string | null;
   accessibilityStatus?: ActionPreparationData["accessibilityStatus"] | null;
-  accessibilityAlternativeRoute?: { versionId: string; appliedAt: string; routeCount: number } | null;
+  accessibilityAlternativeRoute?: {
+    versionId: string;
+    appliedAt: string;
+    isCurrentVersion: boolean;
+    routeCount: number;
+    routes: ReturnType<typeof getPublicOperationalRouteSegments>;
+  } | null;
   safetyInstructions: string | null;
   derivedSafetyRecommendations: string[];
   materialsToBring: string | null;
@@ -115,7 +121,7 @@ export function buildPublicActionPracticalInformation(
       if (!version) return null;
       const routes = getPublicOperationalRouteSegments(version.operationalRoute);
       return routes.length > 0
-        ? { versionId: version.versionId, appliedAt: version.appliedAt, routeCount: routes.length }
+        ? { versionId: version.versionId, appliedAt: version.appliedAt, isCurrentVersion: preparationData?.routeVersioning?.active?.versionId === version.versionId, routeCount: routes.length, routes }
         : null;
     })(),
     safetyInstructions: readPublicText(preparationData?.safetyInstructions),

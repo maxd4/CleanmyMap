@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { readActionRegistrationRecord } from "./participation/registration-records";
 import {
   ACTION_ACCESSIBILITY_NEEDS,
-  type ActionAccessibilityCheckIn,
+  type ActionAccessibilityCheckInUpdate,
   type ActionAccessibilityNeed,
   type ActionAccessibilitySupportRequest,
 } from "./accessibility-support-contract";
@@ -134,7 +134,7 @@ export async function updateActionAccessibilityCheckIn(
     actionId: string;
     requestId: string;
     field: "arrival_status" | "contact_status" | "departure_status";
-    status: ActionAccessibilityCheckIn;
+    status: ActionAccessibilityCheckInUpdate;
   },
 ): Promise<ActionAccessibilitySupportRequest> {
   const result = await supabase

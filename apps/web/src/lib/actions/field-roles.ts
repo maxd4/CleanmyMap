@@ -17,6 +17,11 @@ export const ACTION_FIELD_ROLE_OPTIONS = [
     description: "Coordination du groupe et du déroulé terrain.",
   },
   {
+    code: "welcome_contact",
+    label: "Référent d’accueil",
+    description: "Point de contact identifié pour l’accueil et l’orientation le jour de l’action.",
+  },
+  {
     code: "cigarette_bag_lead",
     label: "Référent sacs mégots",
     description: "Organisation et suivi des sacs dédiés aux mégots.",

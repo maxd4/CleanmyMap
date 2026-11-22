@@ -26,6 +26,20 @@ export type ActionDayBriefing = {
     volunteerChecklist?: ActionVolunteerChecklistPublic;
     accessibility: string | null;
     accessibilityStatus: string;
+    accessibilityConditionsSource: string | null;
+    accessibilityConditionsVerifiedAt: string | null;
+    accessibilityPausePlan: string | null;
+    accessibilityEarlyDeparturePlan: string | null;
+    accessibilityAlternativeMissions: string[];
+    accessibilityAlternativeRoute: {
+      versionId: string;
+      appliedAt: string;
+      isCurrentVersion: boolean;
+      routeCount: number;
+      routes: Array<{ routeId: string; groupIndex: number; coordinates: [number, number][] }>;
+    } | null;
+    welcomeContactLabel: string | null;
+    acceptedBuddyLabel: string | null;
     route: {
       topology: "loop" | "point_to_point" | null;
       departureLabel: string | null;

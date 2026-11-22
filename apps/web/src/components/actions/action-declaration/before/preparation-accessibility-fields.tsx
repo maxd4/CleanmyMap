@@ -62,7 +62,13 @@ export function PreparationAccessibilityFields({ form, updateField }: BaseSectio
         <CmmField id="before-accessibility-alternative-route" label="Itinéraire alternatif déjà enregistré" hint="Facultatif. Réutilise une version enregistrée du parcours; ne garantit pas son accessibilité actuelle.">
           <CmmSelect
             value={form.accessibilityAlternativeRouteVersionId}
-            onChange={(event) => updateField("accessibilityAlternativeRouteVersionId", event.target.value)}
+            onChange={(event) => {
+              if (event.target.value !== form.accessibilityAlternativeRouteVersionId) {
+                updateField("accessibilityAlternativeRouteVersionId", event.target.value);
+                updateField("accessibilityStatus", "to_confirm");
+                updateField("accessibilityConditionsVerifiedAt", "");
+              }
+            }}
           >
             <option value="">Aucun itinéraire alternatif indiqué</option>
             {form.accessibilityRouteVersionOptions.map((option) => (
@@ -71,6 +77,22 @@ export function PreparationAccessibilityFields({ form, updateField }: BaseSectio
           </CmmSelect>
         </CmmField>
       ) : null}
+      <CmmField id="before-accessibility-condition-source" label="Source de vérification" hint="Nom d&apos;un service, gestionnaire ou source consultée; aucune donnée personnelle ou médicale.">
+        <input id="before-accessibility-condition-source" value={form.accessibilityConditionsSource} maxLength={160} onChange={(event) => updateField("accessibilityConditionsSource", event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm" />
+      </CmmField>
+      <CmmField id="before-accessibility-condition-date" label="Date de vérification des conditions">
+        <input id="before-accessibility-condition-date" type="date" value={form.accessibilityConditionsVerifiedAt} onChange={(event) => updateField("accessibilityConditionsVerifiedAt", event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm" />
+      </CmmField>
+      <p className="text-xs leading-5 text-amber-900">Une vérification ancienne ou un changement du tracé rend ces conditions incertaines. Renseignez « À confirmer » jusqu&apos;à une nouvelle vérification; aucune accessibilité actuelle n&apos;est garantie.</p>
+      <CmmField id="before-accessibility-pause-plan" label="Modalités de pause">
+        <CmmTextarea id="before-accessibility-pause-plan" value={form.accessibilityPausePlan} maxLength={500} rows={2} onChange={(event) => updateField("accessibilityPausePlan", event.target.value)} placeholder="Ex. pause possible au point de rendez-vous ou au point d'étape indiqué." />
+      </CmmField>
+      <CmmField id="before-accessibility-early-departure-plan" label="Sortie anticipée">
+        <CmmTextarea id="before-accessibility-early-departure-plan" value={form.accessibilityEarlyDeparturePlan} maxLength={500} rows={2} onChange={(event) => updateField("accessibilityEarlyDeparturePlan", event.target.value)} placeholder="Ex. prévenir le référent d'accueil et rejoindre le point de sortie convenu." />
+      </CmmField>
+      <CmmField id="before-accessibility-alternative-missions" label="Missions alternatives prévues" hint="Une mission alternative est une option, pas une obligation de participation.">
+        <CmmTextarea id="before-accessibility-alternative-missions" value={form.accessibilityAlternativeMissionsText} maxLength={960} rows={3} onChange={(event) => updateField("accessibilityAlternativeMissionsText", event.target.value)} placeholder="Une mission par ligne" />
+      </CmmField>
     </div>
   );
 }

@@ -42,6 +42,7 @@ import type { RouteGeometryMode, RouteGeometryProvider } from "@/lib/route/route
 import type { ActionRouteVersioning } from "@/lib/route/route-active-version";
 import type {
   ActionAccessibilityStatus,
+  ActionAccessibilityObservedMeasure,
   ActionEquipmentInventory,
   ActionMaterialSuggestion,
   ActionPreparationChecklistItem,
@@ -191,6 +192,14 @@ export type ActionPreparationData = {
   accessibilityStatus?: ActionAccessibilityStatus;
   /** References an already-persisted route version; never stores or recalculates geometry. */
   accessibilityAlternativeRouteVersionId?: string;
+  /** Organizer instructions; these are plans, not proof that support was delivered. */
+  accessibilityPausePlan?: string;
+  accessibilityEarlyDeparturePlan?: string;
+  accessibilityAlternativeMissions?: string[];
+  accessibilityConditionsSource?: string;
+  accessibilityConditionsVerifiedAt?: string;
+  /** Organizer/participant attestations; kept distinct from preparation declarations and private requests. */
+  accessibilityObservedMeasures?: ActionAccessibilityObservedMeasure[];
   safetyInstructions?: string;
   recommendedMaterials?: string;
   /** Organizer-provided equipment, kept separate from volunteer suggestions. */

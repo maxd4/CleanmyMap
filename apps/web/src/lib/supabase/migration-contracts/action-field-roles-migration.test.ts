@@ -13,6 +13,14 @@ const lifecycleMigration = readFileSync(
   new URL("../../../../supabase/migrations/20261019000005_action_field_roles_transfer_lifecycle.sql", import.meta.url),
   "utf8",
 );
+const welcomeRoleMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261122000004_action_accessibility_welcome_contact_role.sql", import.meta.url),
+  "utf8",
+);
+const supportDateRetentionMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261122000005_action_accessibility_support_date_retention.sql", import.meta.url),
+  "utf8",
+);
 
 describe("action field roles migration STATIC_CONTRACT", () => {
   it("keeps field roles separate from the organizer authority and closes direct client access", () => {
@@ -48,5 +56,21 @@ describe("action field roles migration STATIC_CONTRACT", () => {
     expect(lifecycleMigration).toContain("if tg_op = 'DELETE'");
     expect(lifecycleMigration).toContain("assignment_status = 'revoked'");
     expect(lifecycleMigration).toContain("'expired'");
+  });
+
+  it("adds the inclusive welcome contact only as an informational catalog role", () => {
+    expect(welcomeRoleMigration).toContain("'welcome_contact'");
+    expect(welcomeRoleMigration).toContain("on conflict (code) do update");
+    expect(welcomeRoleMigration.replace(/^--.*$/gm, "")).not.toMatch(/\bgrant\b|\brevoke\b|security\s+definer/i);
+  });
+
+  it("reconciles private request expiry inside the action date update transaction", () => {
+    expect(supportDateRetentionMigration).toContain("after update of action_date on public.actions");
+    expect(supportDateRetentionMigration).toContain("set retention_expires_at = v_expires_at");
+    expect(supportDateRetentionMigration).toContain("v_expires_at <= request.created_at");
+    expect(supportDateRetentionMigration).toMatch(/where a\.id = new\.action_id[\s\S]*?for update;/i);
+    expect(supportDateRetentionMigration).toContain("security definer");
+    expect(supportDateRetentionMigration).toContain("set search_path = pg_catalog, public");
+    expect(supportDateRetentionMigration).toContain("revoke all on function public.reconcile_action_accessibility_support_retention() from public, anon, authenticated");
   });
 });

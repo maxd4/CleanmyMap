@@ -58,4 +58,22 @@ describe("ActionPreparationData preparation extensions", () => {
       checklistBeforeDeparture: "Matériel vérifié",
     });
   });
+
+  it("bounds inclusive day-of plans and drops invalid source dates without inventing observations", () => {
+    expect(normalizeActionPreparationContract({
+      accessibilityPausePlan: "  Pause près du point de rendez-vous  ",
+      accessibilityEarlyDeparturePlan: "Sortie convenue avec le référent",
+      accessibilityAlternativeMissions: ["Tri", "Tri", " ", "x".repeat(121)],
+      accessibilityConditionsSource: "Service municipal",
+      accessibilityConditionsVerifiedAt: "2026-11-21",
+    })).toEqual({
+      accessibilityPausePlan: "Pause près du point de rendez-vous",
+      accessibilityEarlyDeparturePlan: "Sortie convenue avec le référent",
+      accessibilityAlternativeMissions: ["Tri"],
+      accessibilityConditionsSource: "Service municipal",
+      accessibilityConditionsVerifiedAt: "2026-11-21",
+    });
+    expect(normalizeActionPreparationContract({ accessibilityConditionsVerifiedAt: "hier" })).toEqual({});
+    expect(normalizeActionPreparationContract({ accessibilityConditionsVerifiedAt: "2026-02-31" })).toEqual({});
+  });
 });

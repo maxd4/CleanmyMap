@@ -12,6 +12,7 @@ export const ACTION_ACCESSIBILITY_NEEDS = [
 
 export type ActionAccessibilityNeed = (typeof ACTION_ACCESSIBILITY_NEEDS)[number];
 export type ActionAccessibilityCheckIn = "completed" | "not_applicable";
+export type ActionAccessibilityCheckInUpdate = ActionAccessibilityCheckIn | null;
 
 export type ActionAccessibilitySupportRequest = {
   id: string;
@@ -25,4 +26,8 @@ export type ActionAccessibilitySupportRequest = {
   retention_expires_at: string;
   created_at: string;
   updated_at: string;
+};
+
+export type ActionAccessibilitySupportOrganizerRequest = Omit<ActionAccessibilitySupportRequest, "requester_user_id"> & {
+  participantLabel: string;
 };

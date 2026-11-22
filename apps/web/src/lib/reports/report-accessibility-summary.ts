@@ -8,6 +8,10 @@ export function buildReportAccessibilitySummary(contracts: readonly ActionDataCo
     obstaclesIdentified: 0,
     toConfirm: 0,
     notEvaluated: 0,
+    declaredPlanMeasures: 0,
+    observedMeasures: 0,
+    observedByOrganizer: 0,
+    observedByParticipantFeedback: 0,
   };
   for (const contract of contracts) {
     const preparation = contract.metadata.preparationData;
@@ -19,6 +23,15 @@ export function buildReportAccessibilitySummary(contracts: readonly ActionDataCo
       case "obstacles_identified": summary.obstaclesIdentified += 1; break;
       case "to_confirm": summary.toConfirm += 1; break;
       default: summary.notEvaluated += 1;
+    }
+    summary.declaredPlanMeasures += Number(Boolean(preparation?.accessibilityPausePlan))
+      + Number(Boolean(preparation?.accessibilityEarlyDeparturePlan))
+      + (preparation?.accessibilityAlternativeMissions?.length ?? 0)
+      + Number(Boolean(preparation?.accessibilityAlternativeRouteVersionId));
+    for (const measure of preparation?.accessibilityObservedMeasures ?? []) {
+      summary.observedMeasures += 1;
+      if (measure.evidenceKind === "organizer_observation") summary.observedByOrganizer += 1;
+      if (measure.evidenceKind === "participant_feedback") summary.observedByParticipantFeedback += 1;
     }
   }
   return summary;

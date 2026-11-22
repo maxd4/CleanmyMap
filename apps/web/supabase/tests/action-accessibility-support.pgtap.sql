@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(24);
 
 select has_table('public', 'action_accessibility_support_requests', 'private action accessibility requests exist');
 select ok((select relrowsecurity from pg_class where oid = 'public.action_accessibility_support_requests'::regclass), 'private requests have RLS enabled');
@@ -58,6 +58,15 @@ select is((select request.arrival_status from public.action_accessibility_suppor
 select throws_ok($$update public.action_accessibility_support_requests set arrival_status = 'completed' where id = (select request_id from accessibility_support_fixture)$$, '23514', null, 'check-ins cannot be added after consent is withdrawn');
 select throws_ok($$update public.action_accessibility_support_requests set requested_needs = array['medical_diagnosis'] where id = (select request_id from accessibility_support_fixture)$$, '23514', null, 'medical or unknown needs are rejected');
 select throws_ok($$update public.action_accessibility_support_requests set requested_needs = array[]::text[] where id = (select request_id from accessibility_support_fixture)$$, '23514', null, 'empty need selection is rejected');
+
+select lives_ok($$update public.actions set action_date = current_date + 60 where id = (select action_id from accessibility_support_fixture)$$, 'changing the action date updates private request retention atomically');
+select is((
+  select request.retention_expires_at::date
+  from public.action_accessibility_support_requests request
+  join accessibility_support_fixture fixture on fixture.request_id = request.id
+), current_date + 150, 'private request expiry follows the revised action date');
+select lives_ok($$update public.actions set action_date = current_date - 91 where id = (select action_id from accessibility_support_fixture)$$, 'moving an action far enough into the past reconciles an already-expired request');
+select is((select count(*)::integer from public.action_accessibility_support_requests request join accessibility_support_fixture fixture on fixture.request_id = request.id), 0, 'requests whose revised expiry predates their creation are removed');
 
 reset role;
 set local role authenticated;

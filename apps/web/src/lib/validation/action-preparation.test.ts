@@ -65,6 +65,21 @@ describe("HTTP preparation data contract", () => {
     expect(updateActionSchema.safeParse({ preparationData: { safetyInstructions: "Rester en binôme." } }).success).toBe(true);
   });
 
+  it("validates provenance, bounded inclusion plans and dated evidence", () => {
+    const valid = updateActionSchema.safeParse({ preparationData: {
+      accessibilityConditionsSource: "Gestionnaire du parc",
+      accessibilityConditionsVerifiedAt: "2026-11-21",
+      accessibilityPausePlan: "Pause au point de rendez-vous",
+      accessibilityEarlyDeparturePlan: "Sortie convenue avec le référent",
+      accessibilityAlternativeMissions: ["Tri manuel"],
+      accessibilityObservedMeasures: [{ key: "pause-plan", label: "Pause proposée", evidenceKind: "organizer_observation", observedAt: "2026-11-22" }],
+    } });
+    expect(valid.success).toBe(true);
+    expect(updateActionSchema.safeParse({ preparationData: { accessibilityConditionsVerifiedAt: "hier" } }).success).toBe(false);
+    expect(updateActionSchema.safeParse({ preparationData: { accessibilityAlternativeMissions: ["x".repeat(121)] } }).success).toBe(false);
+    expect(updateActionSchema.safeParse({ preparationData: { accessibilityObservedMeasures: [{ key: "bad key", label: "Non", evidenceKind: "medical_record", observedAt: "2026-11-22" }] } }).success).toBe(false);
+  });
+
   it("rejects unknown values, duplicates, overlong arrays and invalid labels", () => {
     const valid = {
       ...basePayload,

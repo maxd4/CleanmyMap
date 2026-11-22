@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import type { ActionAccessibilitySupportRequest, ActionAccessibilityNeed } from "@/lib/actions/accessibility-support-contract";
+import type { ActionAccessibilitySupportOrganizerRequest, ActionAccessibilityNeed } from "@/lib/actions/accessibility-support-contract";
 
 const NEED_LABELS: Record<ActionAccessibilityNeed, string> = {
   step_free_route: "Parcours sans marche",
@@ -16,7 +16,7 @@ const NEED_LABELS: Record<ActionAccessibilityNeed, string> = {
   personal_companion: "Accompagnant personnel",
 };
 
-type OrganizerRequests = { audience: "organizer"; requests: ActionAccessibilitySupportRequest[] };
+type OrganizerRequests = { audience: "organizer"; requests: ActionAccessibilitySupportOrganizerRequest[] };
 type CheckInField = "arrival_status" | "contact_status" | "departure_status";
 
 async function fetchOrganizerRequests(url: string): Promise<OrganizerRequests> {
@@ -30,11 +30,12 @@ async function fetchOrganizerRequests(url: string): Promise<OrganizerRequests> {
 
 export function ActionAccessibilityCheckInPanel({ actionId }: { actionId: string }) {
   const endpoint = `/api/actions/${encodeURIComponent(actionId)}/accessibility-support`;
-  const { data, error, isLoading, mutate } = useSWR(endpoint, fetchOrganizerRequests);
+  const organizerKey = `${endpoint}?audience=organizer`;
+  const { data, error, isLoading, mutate } = useSWR(organizerKey, fetchOrganizerRequests);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const requests = data?.requests ?? [];
 
-  async function updateCheckIn(requestId: string, field: CheckInField, status: "completed" | "not_applicable") {
+  async function updateCheckIn(requestId: string, field: CheckInField, status: "completed" | "not_applicable" | null) {
     try {
       const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/accessibility-support`, {
         method: "PATCH",
@@ -57,10 +58,11 @@ export function ActionAccessibilityCheckInPanel({ actionId }: { actionId: string
     {mutationError ? <p role="alert" className="mt-3 text-sm font-semibold text-rose-800">{mutationError}</p> : null}
     {!isLoading && !error && requests.length === 0 ? <p className="mt-3 text-sm text-violet-900">Aucune demande à afficher.</p> : null}
     <ul className="mt-3 space-y-3">{requests.map((request) => <li key={request.id} className="rounded-xl border border-white bg-white p-3">
-      <p className="text-sm font-semibold">{request.requested_needs.map((need) => NEED_LABELS[need]).join(" · ")}</p>
+      <p className="text-sm font-black">{request.participantLabel}</p>
+      <p className="mt-1 text-sm font-semibold">{request.requested_needs.map((need) => NEED_LABELS[need]).join(" · ")}</p>
       {request.day_tracking_consent ? <div className="mt-3 grid gap-2 sm:grid-cols-3">{([
         ["arrival_status", "Arrivée"], ["contact_status", "Point pendant l’action"], ["departure_status", "Fin de l’action"],
-      ] as const).map(([field, label]) => <label key={field} className="text-xs font-semibold">{label}<select value={request[field] ?? ""} onChange={(event) => { if (event.target.value === "completed" || event.target.value === "not_applicable") void updateCheckIn(request.id, field, event.target.value); }} className="mt-1 min-h-10 w-full rounded-lg border border-violet-200 bg-white px-2 text-sm"><option value="">Non renseigné</option><option value="completed">Effectué</option><option value="not_applicable">Non applicable</option></select></label>)}</div> : <p className="mt-2 text-xs text-slate-600">La personne n’a pas consenti au suivi Jour J.</p>}
+      ] as const).map(([field, label]) => <label key={field} className="text-xs font-semibold">{label}<select value={request[field] ?? ""} onChange={(event) => { const value = event.target.value; if (value === "" || value === "completed" || value === "not_applicable") void updateCheckIn(request.id, field, value === "" ? null : value); }} className="mt-1 min-h-10 w-full rounded-lg border border-violet-200 bg-white px-2 text-sm"><option value="">Non renseigné</option><option value="completed">Effectué</option><option value="not_applicable">Non applicable</option></select></label>)}</div> : <p className="mt-2 text-xs text-slate-600">La personne n’a pas consenti au suivi Jour J.</p>}
     </li>)}</ul>
     <p className="mt-3 text-xs text-violet-800">Ces mentions documentent un accueil proposé; elles ne certifient pas l’accessibilité et ne valent pas preuve de présence.</p>
   </section>;

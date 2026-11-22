@@ -31,13 +31,26 @@ describe("report accessibility summary", () => {
       action("2", { accessibilityStatus: "obstacles_identified", accessibility: "Marche" }),
       action("3", { accessibilityStatus: "to_confirm" }),
       action("4", {}),
+      action("5", {
+        accessibilityPausePlan: "Pause possible",
+        accessibilityAlternativeMissions: ["Tri adapté"],
+        accessibilityAlternativeRouteVersionId: "route-1",
+        accessibilityObservedMeasures: [
+          { key: "pause-plan", label: "Pauses", evidenceKind: "organizer_observation", observedAt: "2026-11-21" },
+          { key: "alternative-mission-1", label: "Tri adapté", evidenceKind: "participant_feedback", observedAt: "2026-11-21" },
+        ],
+      }),
     ])).toEqual({
-      actionCount: 4,
+      actionCount: 5,
       informationDeclared: 3,
       conditionsReported: 1,
       obstaclesIdentified: 1,
       toConfirm: 1,
-      notEvaluated: 1,
+      notEvaluated: 2,
+      declaredPlanMeasures: 2,
+      observedMeasures: 2,
+      observedByOrganizer: 1,
+      observedByParticipantFeedback: 1,
     });
   });
 });

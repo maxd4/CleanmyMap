@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(17);
 
 select ok(not has_table_privilege('anon', 'public.action_field_role_assignments', 'SELECT'), 'anon cannot read field-role assignments directly');
 select ok(not has_table_privilege('authenticated', 'public.action_field_role_assignments', 'SELECT'), 'authenticated cannot read field-role assignments directly');
@@ -18,6 +18,7 @@ select ok(not exists (select 1 from pg_proc where proname = 'respond_action_fiel
 select ok(exists (select 1 from pg_class where relname = 'action_field_role_transfer_audit' and relrowsecurity), 'transfer audit has RLS enabled');
 select ok(exists (select 1 from pg_trigger where tgname = 'action_field_roles_registration_boundary'), 'registration cancellation reconciles active field roles');
 select ok(not has_function_privilege('authenticated', 'public.revoke_action_field_roles_for_unconfirmed_registration()', 'EXECUTE'), 'browser roles cannot execute the reconciliation trigger function');
+select ok(exists (select 1 from public.action_field_role_catalog where code = 'welcome_contact'), 'inclusive day-of welcome contact is an assignable field role');
 
 select * from finish();
 rollback;

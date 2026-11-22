@@ -9,6 +9,14 @@ export const ACTION_ACCESSIBILITY_STATUSES = [
 
 export type ActionAccessibilityStatus = (typeof ACTION_ACCESSIBILITY_STATUSES)[number];
 
+export type ActionAccessibilityEvidenceKind = "organizer_observation" | "participant_feedback";
+export type ActionAccessibilityObservedMeasure = {
+  key: string;
+  label: string;
+  evidenceKind: ActionAccessibilityEvidenceKind;
+  observedAt: string;
+};
+
 export const ACTION_MATERIAL_SUGGESTIONS = [
   { value: "gloves", label: "Gants" },
   { value: "bags", label: "Sacs" },
@@ -87,6 +95,31 @@ export function normalizeAccessibilityStatus(value: unknown): ActionAccessibilit
     : undefined;
 }
 
+export function normalizeAccessibilityObservedMeasures(value: unknown): ActionAccessibilityObservedMeasure[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const seen = new Set<string>();
+  const measures = value.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const candidate = item as Record<string, unknown>;
+    const key = typeof candidate.key === "string" ? candidate.key.trim() : "";
+    const label = typeof candidate.label === "string" ? candidate.label.trim() : "";
+    const observedAt = typeof candidate.observedAt === "string" ? candidate.observedAt : "";
+    const evidenceKind = candidate.evidenceKind;
+    if (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(key) || !label || label.length > 120 || seen.has(key)) return [];
+    if (evidenceKind !== "organizer_observation" && evidenceKind !== "participant_feedback") return [];
+    if (!isValidCalendarDate(observedAt)) return [];
+    seen.add(key);
+    return [{ key, label, evidenceKind, observedAt } as ActionAccessibilityObservedMeasure];
+  }).slice(0, 20);
+  return measures.length > 0 ? measures : undefined;
+}
+
+function isValidCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 export function normalizeSuggestedMaterials(value: unknown): ActionMaterialSuggestion[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const normalized = value.filter(
@@ -149,6 +182,34 @@ export function normalizePreparationChecklist(
 
 export function normalizeActionPreparationContract<T extends object>(data: T): T {
   const next = { ...data } as Record<string, unknown>;
+  for (const field of ["accessibilityPausePlan", "accessibilityEarlyDeparturePlan"] as const) {
+    const value = next[field];
+    if (typeof value === "string" && value.trim().length > 0 && value.trim().length <= 500) next[field] = value.trim();
+    else delete next[field];
+  }
+  if ("accessibilityAlternativeMissions" in next) {
+    const value = next["accessibilityAlternativeMissions"];
+    const missions = Array.isArray(value)
+      ? [...new Set(value.filter((item): item is string => typeof item === "string").map((item) => item.trim()).filter((item) => item.length > 0 && item.length <= 120))].slice(0, 8)
+      : [];
+    if (missions.length > 0) next["accessibilityAlternativeMissions"] = missions;
+    else delete next["accessibilityAlternativeMissions"];
+  }
+  if ("accessibilityConditionsSource" in next) {
+    const source = next["accessibilityConditionsSource"];
+    if (typeof source === "string" && source.trim().length > 0 && source.trim().length <= 160) next["accessibilityConditionsSource"] = source.trim();
+    else delete next["accessibilityConditionsSource"];
+  }
+  if ("accessibilityConditionsVerifiedAt" in next) {
+    const date = next["accessibilityConditionsVerifiedAt"];
+    if (typeof date === "string" && isValidCalendarDate(date)) next["accessibilityConditionsVerifiedAt"] = date;
+    else delete next["accessibilityConditionsVerifiedAt"];
+  }
+  if ("accessibilityObservedMeasures" in next) {
+    const observedMeasures = normalizeAccessibilityObservedMeasures(next["accessibilityObservedMeasures"]);
+    if (observedMeasures) next["accessibilityObservedMeasures"] = observedMeasures;
+    else delete next["accessibilityObservedMeasures"];
+  }
   if ("interventionMode" in next) {
     const interventionMode = normalizeActionInterventionMode(next["interventionMode"]);
     if (interventionMode) next["interventionMode"] = interventionMode;
