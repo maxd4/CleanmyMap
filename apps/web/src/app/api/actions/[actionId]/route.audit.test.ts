@@ -4,6 +4,7 @@ import { appendActionModerationAuditMock, getCurrentUserIdentityMock, loadAction
 function buildActionFixture() {
   return {
     id: "action-test-1",
+    updated_at: "old-revision",
     status: "pending",
     action_phase: "pre_action",
     preparation_data: {},

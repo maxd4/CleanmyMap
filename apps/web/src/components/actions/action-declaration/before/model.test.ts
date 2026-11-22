@@ -62,7 +62,7 @@ describe("sanitizePreActionForm", () => {
     expect(sanitized.wasteKg).toBe("");
     expect(sanitized.cigaretteButts).toBe("");
     expect(sanitized.cigaretteButtsCount).toBe("");
-    expect(sanitized.cigaretteButtsCondition).toBe("propre");
+    expect(sanitized.cigaretteButtsCondition).toBe("");
     expect(sanitized.wasteMegotsKg).toBe("");
     expect(sanitized.wasteMegotsCondition).toBe("propre");
     expect(sanitized.wastePlastiqueKg).toBe("");

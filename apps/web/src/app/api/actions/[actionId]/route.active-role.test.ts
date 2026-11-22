@@ -91,7 +91,8 @@ function buildUpdateClient() {
     },
     eq: vi.fn(() => chain),
     select: vi.fn(() => chain),
-    single: vi.fn(async () => ({ data: { id: "action-test-1" }, error: null })),
+    single: vi.fn(async () => ({ data: { id: "action-test-1", updated_at: "next-revision" }, error: null })),
+    maybeSingle: vi.fn(async () => ({ data: { id: "action-test-1", updated_at: "next-revision" }, error: null })),
   };
   return { from: vi.fn(() => chain) };
 }
@@ -99,6 +100,7 @@ function buildUpdateClient() {
 function buildApprovedAction() {
   return {
     id: "action-test-1",
+    updated_at: "old-revision",
     status: "approved",
     action_phase: "post_action_complete",
     preparation_data: {},

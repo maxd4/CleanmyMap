@@ -15,6 +15,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
   it("rejects a creator trying to change validated impact", async () => {
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",
+      updated_at: "old-revision",
       status: "approved",
       action_phase: "post_action_complete",
       preparation_data: {},
@@ -144,6 +145,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",
+      updated_at: "old-revision",
       status: "pending",
       action_phase: "pre_action",
       preparation_data: {},
@@ -174,6 +176,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",
+      updated_at: "old-revision",
       status: "pending",
       action_phase: "pre_action",
       preparation_data: { actionTitle: "Ancienne préparation" },
@@ -224,6 +227,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
           longitude: 2.4,
           wasteKg: 2,
           cigaretteButts: 4,
+          cigaretteButtsCondition: "propre",
           volunteersCount: 5,
           collectorsCount: 4,
           volunteerParticipation: { childrenCount: 1, adultCount: 3, retiredCount: 1 },

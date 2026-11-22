@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 import { buildActionDataContract } from "@/lib/actions/data-contract";
 
 const loadActionByIdMock = vi.hoisted(() => vi.fn());

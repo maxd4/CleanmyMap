@@ -559,6 +559,7 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-test-2"]);
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",
+      updated_at: "old-revision",
       status: "pending",
       action_phase: "pre_action",
       preparation_data: {},

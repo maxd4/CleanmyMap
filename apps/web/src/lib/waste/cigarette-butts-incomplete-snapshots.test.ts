@@ -61,12 +61,12 @@ describe("incomplete historical cigarette-butt snapshots", () => {
     const current = aggregateCigaretteButtsLots(historical.lots);
 
     expect(project(historical)).toMatchObject({
-      count: 700,
+      count: 600,
       status: "recalculable",
       volumeConversionVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
     });
     expect(project(current)).toMatchObject({
-      count: 700,
+      count: 600,
       status: "recalculable",
       volumeConversionVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
     });

@@ -94,13 +94,13 @@ describe("individual impact incomplete cigarette-butt lots", () => {
     const replayed = read(current, current.summary.totalCount);
 
     expect(recalculated).toMatchObject({
-      cigaretteButtsCount: 700,
+      cigaretteButtsCount: 600,
       cigaretteButtsRecalculationStatus: "recalculable",
     });
     expect(recalculated?.cigaretteButtsLots?.results[0]?.volumeConversionFormulaVersion)
       .toBe(CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION);
     expect(replayed).toMatchObject({
-      cigaretteButtsCount: 700,
+      cigaretteButtsCount: 600,
       cigaretteButtsRecalculationStatus: "recalculable",
     });
   });

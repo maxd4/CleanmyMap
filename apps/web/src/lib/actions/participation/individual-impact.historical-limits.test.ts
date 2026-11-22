@@ -9,6 +9,7 @@ import {
   CigaretteButtsLotsTotalLimitError,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
+  CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2,
 } from "@/lib/waste/cigarette-butts";
 
 function participant(id: string, measurement: ReturnType<typeof toIndividualImpactMeasurement>) {
@@ -19,15 +20,18 @@ describe("individual impact historical cigarette-butt lot limits", () => {
   it("rejects a new volume lot when its current total exceeds the five-million limit", () => {
     expect(() => buildStoredIndividualImpactMeasurement({
       cigaretteButtsLots: [
-        { id: "new-volume", source: "volume_l", value: 8_000, condition: "propre" },
+        { id: "new-volume", source: "volume_l", value: 8_500, condition: "propre" },
       ],
     })).toThrow(CigaretteButtsLotsTotalLimitError);
   });
 
-  it("keeps an admissible historical v1 snapshot readable when current recalculation exceeds the limit", () => {
+  it("keeps an over-limit historical v2 snapshot readable when current recalculation exceeds the limit", () => {
     const historical = aggregateCigaretteButtsLots([
-      { id: "historical-volume", source: "volume_l", value: 8_000, condition: "propre" },
-    ], { volumeConversionVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1 });
+      { id: "historical-volume", source: "volume_l", value: 9_000, condition: "propre" },
+    ], {
+      volumeConversionVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2,
+      totalCountLimit: 6_300_000,
+    });
     const row = {
       individual_cigarette_butts_count: historical.summary.totalCount,
       individual_cigarette_butts_mass_kg: historical.summary.totalMassKg,
@@ -35,17 +39,17 @@ describe("individual impact historical cigarette-butt lot limits", () => {
       individual_cigarette_butts_lots: historical,
     };
 
-    expect(historical.summary.totalCount).toBe(4_800_000);
+    expect(historical.summary.totalCount).toBe(6_300_000);
     const recalculated = toIndividualImpactMeasurement(row, { recalculateDerived: true });
 
     expect(recalculated).toMatchObject({
-      cigaretteButtsCount: 4_800_000,
-      comparableButtsCount: 4_800_000,
+      cigaretteButtsCount: 6_300_000,
+      comparableButtsCount: 6_300_000,
       cigaretteButtsRecalculationStatus: "not_recalculable",
     });
     expect(recalculated?.cigaretteButtsLots?.results[0]).toMatchObject({
-      count: 4_800_000,
-      volumeConversionFormulaVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
+      count: 6_300_000,
+      volumeConversionFormulaVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2,
     });
     const attribution = allocateActionParticipantImpact({
       totalWasteKg: null,
@@ -53,7 +57,7 @@ describe("individual impact historical cigarette-butt lot limits", () => {
       participants: [participant("alice", recalculated)],
     }).get("alice");
     expect(attribution).toMatchObject({
-      cigaretteButts: 4_800_000,
+      cigaretteButts: 6_300_000,
       cigaretteButtsMohsEligible: false,
     });
   });
@@ -71,12 +75,12 @@ describe("individual impact historical cigarette-butt lot limits", () => {
     }, { recalculateDerived: true });
 
     expect(recalculated).toMatchObject({
-      cigaretteButtsCount: 700,
-      comparableButtsCount: 700,
+      cigaretteButtsCount: 600,
+      comparableButtsCount: 600,
       cigaretteButtsRecalculationStatus: "recalculable",
       cigaretteButtsConversionVersion: null,
     });
-    expect(recalculated?.cigaretteButtsLots?.results[0]?.count).toBe(700);
+    expect(recalculated?.cigaretteButtsLots?.results[0]?.count).toBe(600);
     expect(recalculated?.cigaretteButtsLots?.results[0]?.volumeConversionFormulaVersion)
       .toBe(CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION);
   });
@@ -97,13 +101,13 @@ describe("individual impact historical cigarette-butt lot limits", () => {
 
     expect(historical.summary.totalCount).toBe(2_610);
     expect(recalculated).toMatchObject({
-      cigaretteButtsCount: 2_710,
-      comparableButtsCount: 2_710,
+      cigaretteButtsCount: 2_610,
+      comparableButtsCount: 2_610,
       cigaretteButtsRecalculationStatus: "recalculable",
     });
     expect(recalculated?.cigaretteButtsLots?.lots).toHaveLength(3);
     expect(recalculated?.cigaretteButtsLots?.results.map((result) => result.count))
-      .toEqual([10, 2_000, 700]);
+      .toEqual([10, 2_000, 600]);
     expect(recalculated?.cigaretteButtsLots?.results[2]?.volumeConversionFormulaVersion)
       .toBe(CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION);
     expect(historical.summary.totalCount).toBe(2_610);

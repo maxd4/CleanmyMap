@@ -255,10 +255,9 @@ describe("cigarette-butt mass provenance across impact consumers", () => {
       value: 1,
       condition: "propre",
     }]);
-    const expectedVersions = [...new Set(aggregate.results.flatMap((result) => [
-      result.massConversionFormulaVersion,
-      result.volumeConversionFormulaVersion,
-    ]).filter((version): version is string => Boolean(version)))];
+    const expectedVersions = [...new Set(aggregate.results
+      .map((result) => result.massConversionFormulaVersion)
+      .filter((version): version is string => Boolean(version)))];
 
     expect(expectedVersions.length).toBeGreaterThan(0);
     expect(computeActionImpactKpis(makeContract({

@@ -53,11 +53,18 @@ function addButtsConditionIssue(value: unknown, ctx: z.RefinementCtx) {
   const count = measurements.cigaretteButtsCount ?? metadata.cigaretteButtsCount ?? root.cigaretteButtsCount ?? root.cigaretteButts;
   const mass = measurements.cigaretteButtsMassKg ?? metadata.cigaretteButtsMassKg ?? root.cigaretteButtsMassKg ?? root.cigaretteButtsKg;
   const volume = measurements.cigaretteButtsVolumeLiters ?? metadata.cigaretteButtsVolumeLiters ?? root.cigaretteButtsVolumeLiters;
-  const enteredCount = [count, mass, volume].filter((entry) => entry !== null && entry !== undefined).length;
+  const enteredMeasurementCount = [count, mass, volume].filter(
+    (entry) => entry !== null && entry !== undefined,
+  ).length;
   const source = measurements.cigaretteButtsInputSource;
   const condition = measurements.cigaretteButtsCondition ?? metadata.cigaretteButtsCondition ?? root.cigaretteButtsCondition;
-  const hasConvertibleSource = enteredCount === 1 ||
-    source === "count" || source === "mass" || source === "mass_kg" || source === "volume_l";
+  const hasPositiveMeasurement = [count, mass, volume].some(
+    (entry) => typeof entry === "number" && entry > 0,
+  );
+  const hasConvertibleSource = hasPositiveMeasurement && (
+    enteredMeasurementCount === 1 ||
+    source === "count" || source === "mass" || source === "mass_kg" || source === "volume_l"
+  );
   if (hasConvertibleSource && condition == null) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

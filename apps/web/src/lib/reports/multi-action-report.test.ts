@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 import { buildActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
   toActionListItem as actualToActionListItem,

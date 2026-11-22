@@ -36,6 +36,13 @@ describe("createActionSchema cigarette-butt lots", () => {
     expect(withCondition.success).toBe(true);
   });
 
+  it("accepts an explicitly measured zero without a conversion condition", () => {
+    expect(createActionSchema.safeParse({
+      ...basePayload,
+      cigaretteButts: 0,
+    }).success).toBe(true);
+  });
+
   it("keeps an incomplete historical scalar pair readable without inferring a source", () => {
     const result = createActionSchema.safeParse({
       ...basePayload,

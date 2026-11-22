@@ -49,7 +49,7 @@ describe("public cigarette-butt condition projection", () => {
       { id: "mass", source: "mass_kg", value: 0.1, condition: "humide" },
       { id: "volume", source: "volume_l", value: 0.5, condition: "mouille" },
     ]);
-    expect(countsFor(initial)).toEqual({ propre: 100, humide: 200, mouille: 350 });
+    expect(countsFor(initial)).toEqual({ propre: 100, humide: 200, mouille: 300 });
 
     const edited = aggregateCigaretteButtsLots([
       { id: "count", source: "count", value: 100, condition: "propre" },

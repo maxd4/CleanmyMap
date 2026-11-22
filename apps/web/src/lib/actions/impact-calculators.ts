@@ -192,10 +192,7 @@ export function computeActionImpactKpis(
   const buttsMassConversionVersions = [
     ...new Set(
       cigaretteButtsMeasurements?.cigaretteButtsLotResults
-        ?.flatMap((result) => [
-          result.massConversionFormulaVersion,
-          result.volumeConversionFormulaVersion,
-        ])
+        ?.map((result) => result.massConversionFormulaVersion)
         .filter((version): version is string => Boolean(version)) ??
         (cigaretteButtsMeasurements?.cigaretteButtsConversionFormulaVersion
           ? [cigaretteButtsMeasurements.cigaretteButtsConversionFormulaVersion]

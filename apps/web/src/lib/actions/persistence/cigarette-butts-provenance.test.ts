@@ -60,11 +60,11 @@ describe("server cigarette-butt source resolution", () => {
     const metadata = extractActionMetadataFromNotes(notes);
 
     expect(metadata.cigaretteButtsMeasurements).toMatchObject({
-      cigaretteButtsCount: 2_450,
+      cigaretteButtsCount: 2_400,
       cigaretteButtsLotsSummary: {
-        totalCount: 2_450,
+        totalCount: 2_400,
         countedCount: 100,
-        estimatedCount: 2_350,
+        estimatedCount: 2_300,
       },
       cigaretteButtsLots: [
         { id: "counted", source: "count", value: 100 },
