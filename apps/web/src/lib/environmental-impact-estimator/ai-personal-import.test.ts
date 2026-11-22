@@ -14,7 +14,7 @@ import { hashPersonalAiImportValue } from "./ai-personal-import-hash";
 const openAiFixture = {
   object: "page", data: [{ object: "bucket", start_time: 1730419200, end_time: 1730505600, results: [{
     input_tokens: 1000, input_cached_tokens: 400, input_cache_write_tokens: 100, input_uncached_tokens: 500,
-    output_tokens: 500, num_model_requests: 5, model: null, project_id: null,
+    output_tokens: 500, num_model_requests: 5, model: null, project_id: "private-project-id",
   }] }], has_more: false, next_page: null,
 };
 
@@ -43,6 +43,19 @@ describe("personal AI provider imports", () => {
     expect(rows[0].declaration.tokens).toMatchObject({ inputTotal: 1000, cacheRead: 400, cacheWrite: 100, outputTotal: 500, logicalTotal: 1500 });
     expect(rows[0].declaration.modelRaw).toBeNull();
     expect(rows[0].declaration.inferenceRegion).toBeNull();
+    expect(rows[0].sourceIdentityHash).not.toBeNull();
+    expect(JSON.stringify(rows[0])).not.toContain("private-project-id");
+  });
+
+  it("keeps OpenAI API key and other reported grouping dimensions in the hashed scope", async () => {
+    const bucket = openAiFixture.data[0];
+    const first = await parseOpenAiOrganizationUsage({ ...openAiFixture, data: [{ ...bucket, results: [{ ...bucket.results[0], project_id: "project-a", api_key_id: "key-a", user_id: "user-a", batch: false, service_tier: "default", api_source: "api" }] }] });
+    const second = await parseOpenAiOrganizationUsage({ ...openAiFixture, data: [{ ...bucket, results: [{ ...bucket.results[0], project_id: "project-a", api_key_id: "key-b", user_id: "user-a", batch: false, service_tier: "default", api_source: "api" }] }] });
+    expect(first.rows[0].sourceIdentityHash).not.toBe(second.rows[0].sourceIdentityHash);
+    expect(first.rows[0].sourceScope).toHaveProperty("api_key_id");
+    expect(JSON.stringify(first.rows[0].sourceScope)).not.toContain("key-a");
+    const anotherModel = await parseOpenAiOrganizationUsage({ ...openAiFixture, data: [{ ...bucket, results: [{ ...bucket.results[0], project_id: "project-a", api_key_id: "key-a", user_id: "user-a", batch: false, service_tier: "default", api_source: "api", model: "gpt-4.2" }] }] });
+    expect(first.rows[0].sourceIdentityHash).not.toBe(anotherModel.rows[0].sourceIdentityHash);
   });
 
   it("marks a paginated OpenAI response incomplete and rejects cache above input", async () => {
@@ -74,6 +87,15 @@ describe("personal AI provider imports", () => {
     const toolFixture = { ...geminiFixture, usageMetadata: { ...geminiFixture.usageMetadata, toolUsePromptTokenCount: 100, totalTokenCount: 1097 } };
     expect((await parseGeminiGenerateContentUsage(toolFixture)).rows[0].declaration.tokens.logicalTotal).toBe(1097);
     await expect(parseGeminiGenerateContentUsage({ ...geminiFixture, usageMetadata: { ...geminiFixture.usageMetadata, totalTokenCount: 473 } })).rejects.toThrow();
+  });
+
+  it("requires a reliable Gemini response id for identity and does not deduplicate equal counters", async () => {
+    const first = await parseGeminiGenerateContentUsage({ ...geminiFixture, responseId: "response-a" });
+    const second = await parseGeminiGenerateContentUsage({ ...geminiFixture, responseId: "response-b" });
+    expect(first.rows[0].sourceIdentityHash).not.toBe(second.rows[0].sourceIdentityHash);
+    expect(JSON.stringify(first.rows[0])).not.toContain("response-a");
+    const unidentified = await parseGeminiGenerateContentUsage(geminiFixture);
+    expect(unidentified.rows[0].sourceIdentityHash).toBeNull();
   });
 
   it("reconstructs Codex cumulative increments and resets without retaining transcript text", async () => {

@@ -4,7 +4,7 @@ import { previewPersonalAiImport } from "./ai-personal-import-preview";
 
 const openAi = { object: "page", data: [{ object: "bucket", start_time: 1730419200, end_time: 1730505600, results: [{
   input_tokens: 100, input_cached_tokens: 20, input_cache_write_tokens: 0, input_uncached_tokens: 80,
-  output_tokens: 40, num_model_requests: 1, model: "gpt-4.1", project_id: "private-project-id",
+  output_tokens: 40, num_model_requests: 1, model: "gpt-4.1", project_id: "private-project-id", api_key_id: "key-a",
 }] }], has_more: false, next_page: null };
 
 describe("personal AI import preview identity and conflicts", () => {
@@ -39,8 +39,19 @@ describe("personal AI import preview identity and conflicts", () => {
     } });
     expect(previewPersonalAiImport(gemini.rows, [{
       source_identity_hash: first.sourceIdentityHash, normalized_content_hash: first.normalizedContentHash,
-      import_metadata: first.metadata, declaration: first.declaration, status: "ACTIVE",
-    }])[0].status).toBe("READY");
+      source_scope: first.sourceScope, import_metadata: first.metadata, declaration: first.declaration, status: "ACTIVE",
+    }])[0].status).toBe("IDENTITY_INCOMPLETE");
+  });
+
+  it("allows disjoint OpenAI API-key scopes and blocks aggregate-to-subset overlap", async () => {
+    const first = (await parseOpenAiOrganizationUsage(openAi)).rows[0];
+    const store = [{ source_identity_hash: first.sourceIdentityHash, normalized_content_hash: first.normalizedContentHash,
+      source_scope: first.sourceScope, import_metadata: first.metadata, declaration: first.declaration, status: "ACTIVE" as const }];
+    const bucket = openAi.data[0];
+    const differentKey = await parseOpenAiOrganizationUsage({ ...openAi, data: [{ ...bucket, results: [{ ...bucket.results[0], api_key_id: "key-b" }] }] });
+    expect(previewPersonalAiImport(differentKey.rows, store)[0].status).toBe("READY");
+    const global = await parseOpenAiOrganizationUsage({ ...openAi, data: [{ ...bucket, results: [{ ...bucket.results[0], api_key_id: null }] }] });
+    expect(previewPersonalAiImport(global.rows, store)[0].status).toBe("CONFLICT");
   });
 
   it("keeps one exact duplicate in a file and blocks conflicting incoming revisions", async () => {

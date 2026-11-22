@@ -7,7 +7,7 @@ vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthent
 vi.mock("@/lib/supabase/clerk-rls", () => ({ requireSupabaseClerkRlsClient: mocks.requireSupabaseClerkRlsClient }));
 
 import { POST } from "./route";
-import { hashPersonalAiImportValue } from "@/lib/environmental-impact-estimator/ai-personal-import-hash";
+import { hashPersonalAiImportValue, personalAiImportIdentityHash } from "@/lib/environmental-impact-estimator/ai-personal-import-hash";
 import { parsePersonalAiDeclaration, parsePersonalAiNormalizedDeclaration } from "@/lib/environmental-impact-estimator/personal-ai-declaration-http";
 
 const declaration = parsePersonalAiDeclaration({
@@ -19,7 +19,7 @@ const declaration = parsePersonalAiDeclaration({
   energy: { kwh: null, boundary: null, evidence: null, averageWatts: null, durationSeconds: null, idleWatts: null },
 });
 const row = {
-  declaration, sourceIdentityHash: "a".repeat(64), normalizedContentHash: "b".repeat(64),
+  declaration, sourceIdentityHash: "a".repeat(64), sourceScope: { response_id: "c".repeat(64) }, normalizedContentHash: "b".repeat(64),
   metadata: { provider: "GOOGLE", granularity: "PER_REQUEST", completeness: "COMPLETE", freshnessUtc: null },
   costAmount: null, costCurrency: null,
 };
@@ -29,6 +29,8 @@ beforeEach(async () => {
   row.normalizedContentHash = await hashPersonalAiImportValue({
     declaration, metadata: row.metadata, costAmount: row.costAmount, costCurrency: row.costCurrency,
   });
+  row.sourceIdentityHash = await personalAiImportIdentityHash("GOOGLE", declaration.sourceVersion, declaration.periodStartUtc, declaration.periodEndUtc,
+    declaration.modelCanonical ?? declaration.modelRaw, row.sourceScope);
   mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "owner-a" });
   mocks.requireSupabaseClerkRlsClient.mockResolvedValue({ rpc: mocks.rpc });
   mocks.rpc.mockResolvedValue({ data: [{ id: "saved", owner_clerk_id: "owner-a", declaration }], error: null });
@@ -65,6 +67,14 @@ describe("POST /api/personal-ai/imports", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
+  it("rejects a source identity hash that does not match the hashed scope", async () => {
+    const response = await POST(new Request("https://example.test/api/personal-ai/imports", {
+      method: "POST", body: JSON.stringify({ rows: [{ ...row, sourceIdentityHash: "d".repeat(64) }] }),
+    }));
+    expect(response.status).toBe(400);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
   it("recomputes snapshots on the server and sends no owner or raw file data", async () => {
     expect(await hashPersonalAiImportValue({
       declaration: parsePersonalAiNormalizedDeclaration(row.declaration), metadata: row.metadata, costAmount: row.costAmount, costCurrency: row.costCurrency,
@@ -76,6 +86,7 @@ describe("POST /api/personal-ai/imports", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(mocks.rpc).toHaveBeenCalledWith("confirm_personal_ai_import", { p_rows: [expect.objectContaining({
       source_identity_hash: row.sourceIdentityHash, normalized_content_hash: row.normalizedContentHash,
+      source_scope: row.sourceScope,
       snapshot: expect.objectContaining({ physicalTotals: expect.any(Object) }),
     })] });
     const body = mocks.rpc.mock.calls[0][1].p_rows[0];

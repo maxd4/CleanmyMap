@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 const openAiUsageFixture = {
   object: "page", data: [{ object: "bucket", start_time: 1730419200, end_time: 1730505600, results: [{
     input_tokens: 1000, input_cached_tokens: 400, input_cache_write_tokens: 100, input_uncached_tokens: 500,
-    output_tokens: 500, num_model_requests: 5, model: null, project_id: null,
+    output_tokens: 500, num_model_requests: 5, model: null, project_id: "project-fixture", api_key_id: "key-fixture",
   }] }], has_more: false, next_page: null,
 };
 
@@ -54,4 +54,6 @@ test("authenticated user explicitly confirms a normalized import batch", async (
   expect(postedBody).not.toContain("prompt");
   expect(postedBody).not.toContain("project_id");
   expect(JSON.parse(postedBody).rows[0]).toHaveProperty("sourceIdentityHash");
+  expect(JSON.parse(postedBody).rows[0]).toHaveProperty("sourceScope");
+  expect(postedBody).not.toContain("key-fixture");
 });

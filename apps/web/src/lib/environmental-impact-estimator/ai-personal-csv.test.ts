@@ -23,6 +23,25 @@ describe("mapped personal AI CSV import", () => {
     expect(result.rows[0].declaration.periodStartUtc).toBeNull();
   });
 
+  it("uses explicit CSV identity columns instead of period, model, cost, or counter equality", async () => {
+    const csvMapping = { ...mapping, startUtcColumn: "start", endUtcColumn: "end", modelColumn: "model", costColumn: "cost", currencyColumn: "currency", identityColumns: ["event_id"] };
+    const firstText = "event_id;start;end;model;input;output;cost;currency\nrequest-1;2026-11-01T00:00:00Z;2026-11-02T00:00:00Z;model-x;10;2;1.00;EUR";
+    const secondText = firstText.replace("request-1", "request-2");
+    const first = (await parseExplicitlyMappedPersonalAiCsv(firstText, csvMapping)).rows[0];
+    const second = (await parseExplicitlyMappedPersonalAiCsv(secondText, csvMapping)).rows[0];
+    const retry = (await parseExplicitlyMappedPersonalAiCsv(firstText, csvMapping)).rows[0];
+    expect(first.sourceIdentityHash).not.toBe(second.sourceIdentityHash);
+    expect(first.sourceIdentityHash).toBe(retry.sourceIdentityHash);
+    expect(first.normalizedContentHash).toBe(retry.normalizedContentHash);
+    expect(JSON.stringify(first)).not.toContain("request-1");
+  });
+
+  it("leaves CSV rows without an explicitly selected stable identity incomplete", async () => {
+    const result = await parseExplicitlyMappedPersonalAiCsv("model;input\nmodel-x;10", { delimiter: ";", unit: "tokens", sourceVersion: "mapped-v1", modelColumn: "model", inputColumn: "input" });
+    expect(result.rows[0].sourceIdentityHash).toBeNull();
+    expect(result.rows[0].sourceScope).toBeNull();
+  });
+
   it("rejects malformed rows individually and reports accepted/rejected counts", async () => {
     const result = await parseExplicitlyMappedPersonalAiCsv("start;end;input;output\n2026-11-01T00:00:00Z;2026-11-02T00:00:00Z;10;5\n2026-11-01T00:00:00Z;2026-11-02T00:00:00Z;formula;5", {
       ...mapping, modelColumn: undefined,

@@ -8,7 +8,7 @@ import { parseExplicitlyMappedPersonalAiCsv, readPersonalAiCsvHeaders, type Pers
 import { previewPersonalAiImport, type PersonalAiImportPreviewItem, type PersonalAiStoredImport } from "@/lib/environmental-impact-estimator/ai-personal-import-preview";
 
 const STATUS_LABELS: Record<PersonalAiImportPreviewItem["status"], string> = {
-  READY: "Prêt", PARTIAL: "Partiel", DUPLICATE: "Doublon exact", REVISION: "Révision fournisseur", CONFLICT: "Chevauchement à résoudre", REJECTED: "Rejeté",
+  READY: "Prêt", PARTIAL: "Partiel", DUPLICATE: "Doublon exact", REVISION: "Révision fournisseur", CONFLICT: "Chevauchement à résoudre", IDENTITY_INCOMPLETE: "Identité source insuffisante", REJECTED: "Rejeté",
 };
 
 const TOKEN_FIELDS = [
@@ -38,6 +38,7 @@ export function PersonalAiImportClient() {
   const [delimiter, setDelimiter] = useState<"," | ";">(",");
   const [csvUnit, setCsvUnit] = useState<"" | "tokens">("");
   const [mapping, setMapping] = useState<Partial<Record<typeof TOKEN_FIELDS[number][0], string>>>({});
+  const [identityColumns, setIdentityColumns] = useState<ReadonlySet<string>>(new Set());
   const [preview, setPreview] = useState<readonly PersonalAiImportPreviewItem[]>([]);
   const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
   const [warnings, setWarnings] = useState<readonly string[]>([]);
@@ -57,7 +58,7 @@ export function PersonalAiImportClient() {
   }
 
   async function chooseFile(candidate: File | undefined) {
-    clearPreview(); setHeaders([]); setMapping({});
+    clearPreview(); setHeaders([]); setMapping({}); setIdentityColumns(new Set());
     if (!candidate) { setFile(null); return; }
     const extension = candidate.name.split(".").pop()?.toLowerCase();
     const max = extension === "jsonl" ? 50_000_000 : extension === "pdf" ? 5_000_000 : 10_000_000;
@@ -112,6 +113,7 @@ export function PersonalAiImportClient() {
       if (csvUnit !== "tokens") throw new Error("Confirmez l'unité des colonnes de tokens avant de poursuivre.");
       const csvMapping: PersonalAiCsvMapping = {
         delimiter, unit: csvUnit, sourceVersion: "user-mapped-csv-v1",
+        identityColumns: [...identityColumns],
         ...Object.fromEntries(TOKEN_FIELDS.flatMap(([field]) => mapping[field] ? [[field, mapping[field]]] : [])),
       } as PersonalAiCsvMapping;
       const parsed = await parseExplicitlyMappedPersonalAiCsv(await file.text(), csvMapping);
@@ -129,7 +131,7 @@ export function PersonalAiImportClient() {
       const response = await fetch("/api/personal-ai/imports", {
         method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rows: rows.map((row: PersonalAiImportRow) => ({
-          declaration: row.declaration, sourceIdentityHash: row.sourceIdentityHash, normalizedContentHash: row.normalizedContentHash,
+          declaration: row.declaration, sourceIdentityHash: row.sourceIdentityHash, sourceScope: row.sourceScope, normalizedContentHash: row.normalizedContentHash,
           metadata: row.metadata, costAmount: row.costAmount, costCurrency: row.costCurrency,
         })) }),
       });
@@ -185,6 +187,7 @@ export function PersonalAiImportClient() {
       <label className="mt-3 flex items-center gap-2 text-sm">Unité des tokens<select className="rounded border border-slate-300 p-2" value={csvUnit} onChange={(event) => setCsvUnit(event.target.value as "" | "tokens")}><option value="">Choisir une unité</option><option value="tokens">Tokens entiers</option></select></label>
       <label className="mt-3 flex items-center gap-2 text-sm">Séparateur<select className="rounded border border-slate-300 p-2" value={delimiter} onChange={(event) => setDelimiter(event.target.value as "," | ";")}><option value=",">Virgule</option><option value=";">Point-virgule</option></select></label>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">{TOKEN_FIELDS.map(([key, label]) => <label key={key} className="grid gap-1 text-sm">{label}<select className="rounded border border-slate-300 p-2" value={mapping[key] ?? ""} onChange={(event) => setMapping((current) => ({ ...current, [key]: event.target.value || undefined }))}><option value="">Non mappée</option>{headers.map((header) => <option key={header} value={header}>{header}</option>)}</select></label>)}</div>
+      <fieldset className="mt-3 rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-semibold">Colonnes attestant l’identité de la source</legend><p className="text-xs text-slate-600">Sélectionnez une ou plusieurs clés stables (par exemple ID de ligne ou de facture). Sans clé renseignée, la ligne reste non confirmable. Les valeurs sélectionnées sont hachées localement.</p><div className="mt-2 flex flex-wrap gap-3">{headers.map((header) => <label key={header} className="flex items-center gap-1 text-sm"><input type="checkbox" checked={identityColumns.has(header)} onChange={() => setIdentityColumns((current) => { const next = new Set(current); if (next.has(header)) next.delete(header); else next.add(header); return next; })} />{header}</label>)}</div></fieldset>
       <p className="mt-3 text-xs text-slate-600">Les quantités de tokens sont en unités de tokens entiers. Une facture avec coût seul conserve coût et devise; ses tokens restent NA.</p>
       <button type="button" onClick={() => void mapCsv()} disabled={busy || csvUnit !== "tokens"} className="mt-3 rounded-lg bg-rose-700 px-4 py-2 font-bold text-white disabled:opacity-50">Analyser le mapping</button>
     </div> : null}
@@ -194,7 +197,7 @@ export function PersonalAiImportClient() {
       <p className="mt-1 text-sm text-slate-700">{preview.length} ligne(s) analysée(s), {rejectedCount} rejetée(s).</p>
       <p className="mt-1 text-sm text-slate-700">{Object.entries(summary).map(([key, value]) => `${STATUS_LABELS[key as keyof typeof STATUS_LABELS]} : ${value}`).join(" · ")}</p>
       <ul className="mt-3 grid max-h-96 gap-2 overflow-auto">{preview.map((item, index) => <li key={`${item.row.sourceIdentityHash}-${index}`} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
-        <label className="flex items-start gap-2"><input type="checkbox" checked={selected.has(index)} disabled={item.status === "DUPLICATE" || item.status === "CONFLICT" || item.status === "REJECTED"} onChange={() => toggle(index)} />
+        <label className="flex items-start gap-2"><input type="checkbox" checked={selected.has(index)} disabled={item.status === "DUPLICATE" || item.status === "CONFLICT" || item.status === "IDENTITY_INCOMPLETE" || item.status === "REJECTED"} onChange={() => toggle(index)} />
           <span><strong>{STATUS_LABELS[item.status]}</strong> · {item.row.metadata.provider} · {item.row.declaration.sourceVersion ?? "Version de source inconnue"} · {item.row.declaration.modelRaw ?? "Modèle inconnu"}<br />Période : {item.row.declaration.periodStartUtc ?? "inconnue"}{item.row.declaration.periodEndUtc ? ` – ${item.row.declaration.periodEndUtc}` : ""} · région : {item.row.declaration.inferenceRegion ?? "inconnue"} · fraîcheur : {item.row.metadata.freshnessUtc ?? "inconnue"} · requêtes : {item.row.declaration.requestCount ?? "NA"}<br />Entrée {formatToken(item.row.declaration.tokens.inputTotal)} · sortie {formatToken(item.row.declaration.tokens.outputTotal)} · coût {item.row.costAmount ?? "NA"} {item.row.costCurrency ?? ""}</span>
         </label>
       </li>)}</ul>

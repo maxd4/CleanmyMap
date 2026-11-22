@@ -5,6 +5,7 @@ import {
   type PersonalAiImportMetadata,
   type PersonalAiImportRow,
 } from "./ai-personal-import";
+import { hashPersonalAiImportValue } from "./ai-personal-import-hash";
 
 export type PersonalAiCsvMapping = {
   delimiter: "," | ";";
@@ -19,6 +20,7 @@ export type PersonalAiCsvMapping = {
   modelColumn?: string;
   costColumn?: string;
   currencyColumn?: string;
+  identityColumns?: readonly string[];
 };
 
 function csvCells(text: string, delimiter: string): string[][] {
@@ -91,12 +93,14 @@ export async function parseExplicitlyMappedPersonalAiCsv(text: string, mapping: 
   const headers = rows[0];
   if (new Set(headers).size !== headers.length) throw new Error("CSV: en-têtes dupliqués");
   const mappedColumns = [mapping.startUtcColumn, mapping.endUtcColumn, mapping.inputColumn, mapping.outputColumn,
-    mapping.cacheReadColumn, mapping.cacheWriteColumn, mapping.modelColumn, mapping.costColumn, mapping.currencyColumn]
+    mapping.cacheReadColumn, mapping.cacheWriteColumn, mapping.modelColumn, mapping.costColumn, mapping.currencyColumn,
+    ...(mapping.identityColumns ?? [])]
     .filter((value): value is string => value !== undefined);
   for (const column of mappedColumns) if (!headers.includes(column)) throw new Error(`CSV: colonne mappée absente (${column})`);
   if ((mapping.startUtcColumn === undefined) !== (mapping.endUtcColumn === undefined)) throw new Error("CSV: les deux bornes de période doivent être mappées ensemble");
   if (!mapping.inputColumn && !mapping.outputColumn && !mapping.costColumn) throw new Error("CSV: mappez au moins un token ou un coût");
   if ((mapping.costColumn === undefined) !== (mapping.currencyColumn === undefined)) throw new Error("CSV: un coût exige une devise mappée");
+  if (new Set(mapping.identityColumns ?? []).size !== (mapping.identityColumns ?? []).length) throw new Error("CSV: colonnes d'identité dupliquées");
 
   const result: PersonalAiImportRow[] = [];
   const warnings: string[] = [];
@@ -138,8 +142,15 @@ export async function parseExplicitlyMappedPersonalAiCsv(text: string, mapping: 
       provider: "OTHER", granularity: start === null ? "UNKNOWN" : "AGGREGATE",
       completeness: hasTokens ? "UNKNOWN" : "PARTIAL", freshnessUtc: null,
     };
+    const identityDimensions: Record<string, string> = {};
+    let identityIsComplete = (mapping.identityColumns?.length ?? 0) > 0;
+    for (const column of mapping.identityColumns ?? []) {
+      const identityValue = value(column).trim();
+      if (!identityValue) identityIsComplete = false;
+      else identityDimensions[`csv_${await hashPersonalAiImportValue(column)}`] = identityValue;
+    }
     result.push(await normalizePersonalAiImportRow(draft, metadata,
-      ["csv-mapped", mapping.sourceVersion, start, end, draft.modelRaw, start === null ? draft.tokens : null, cost], cost, currency));
+      identityIsComplete ? identityDimensions : null, cost, currency));
     } catch (error) {
       rejectedCount += 1;
       const reason = error instanceof Error ? error.message : "contenu non conforme";

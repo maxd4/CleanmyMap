@@ -3,13 +3,16 @@ import { requireSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { calculatePersonalAiDeclaration, parsePersonalAiNormalizedDeclaration } from "@/lib/environmental-impact-estimator/personal-ai-declaration-http";
-import { hashPersonalAiImportValue } from "@/lib/environmental-impact-estimator/ai-personal-import-hash";
+import { hashPersonalAiImportValue, personalAiImportIdentityHash } from "@/lib/environmental-impact-estimator/ai-personal-import-hash";
 
 const MAX_IMPORT_BODY_BYTES = 16_000_000;
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
+const scope = z.record(z.string().regex(/^[a-z][a-z0-9_]{0,79}$/), hash)
+  .refine((value) => Object.keys(value).length >= 1 && Object.keys(value).length <= 16);
 const importRow = z.object({
   declaration: z.unknown(),
-  sourceIdentityHash: hash,
+  sourceIdentityHash: hash.nullable(),
+  sourceScope: scope.nullable(),
   normalizedContentHash: hash,
   metadata: z.object({
     provider: z.enum(["OPENAI", "ANTHROPIC", "GOOGLE", "OTHER"]),
@@ -81,6 +84,13 @@ export async function POST(request: Request) {
   try {
     rows = await Promise.all(parsed.data.rows.map(async (item) => {
       const declaration = parsePersonalAiNormalizedDeclaration(item.declaration);
+      if (declaration.provider !== item.metadata.provider) throw new Error("source provider mismatch");
+      if (item.sourceScope === null || item.sourceIdentityHash === null) throw new Error("source identity incomplete");
+      const expectedIdentityHash = await personalAiImportIdentityHash(
+        item.metadata.provider, declaration.sourceVersion, declaration.periodStartUtc, declaration.periodEndUtc,
+        declaration.modelCanonical ?? declaration.modelRaw, item.sourceScope,
+      );
+      if (expectedIdentityHash !== item.sourceIdentityHash) throw new Error("source identity hash mismatch");
       const expectedContentHash = await hashPersonalAiImportValue({
         declaration, metadata: item.metadata, costAmount: item.costAmount, costCurrency: item.costCurrency,
       });
@@ -92,6 +102,7 @@ export async function POST(request: Request) {
         methodology_version: calculated.methodologyVersion,
         factor_version: calculated.factorVersion,
         source_identity_hash: item.sourceIdentityHash,
+        source_scope: item.sourceScope,
         normalized_content_hash: item.normalizedContentHash,
         import_metadata: item.metadata,
         cost_amount: item.costAmount,

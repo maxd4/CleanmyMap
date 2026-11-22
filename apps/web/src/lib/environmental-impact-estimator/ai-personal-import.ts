@@ -4,7 +4,7 @@ import {
   type PersonalAiNormalizedDeclaration,
 } from "./personal-ai-usage-normalization";
 import { isCountryCode } from "../user-location-preference";
-import { hashPersonalAiImportValue } from "./ai-personal-import-hash";
+import { hashPersonalAiImportValue, personalAiImportIdentityHash } from "./ai-personal-import-hash";
 import { reconstructCumulativeCounters, reconstructDirectCounters } from "../../../../../scripts/data/codex-usage-counter-reconstruction.mjs";
 
 export type PersonalAiImportMetadata = {
@@ -19,7 +19,8 @@ export type PersonalAiImportRow = {
   metadata: PersonalAiImportMetadata;
   costAmount: number | null;
   costCurrency: string | null;
-  sourceIdentityHash: string;
+  sourceIdentityHash: string | null;
+  sourceScope: Readonly<Record<string, string>> | null;
   normalizedContentHash: string;
 };
 
@@ -112,14 +113,20 @@ function baseDraft(
 }
 
 export async function normalizePersonalAiImportRow(
-  draft: ImportDraft, metadata: PersonalAiImportMetadata, identity: unknown, costAmount: number | null = null, costCurrency: string | null = null,
+  draft: ImportDraft, metadata: PersonalAiImportMetadata, identityDimensions: Readonly<Record<string, unknown>> | null,
+  costAmount: number | null = null, costCurrency: string | null = null,
 ): Promise<PersonalAiImportRow> {
   const declaration = normalizePersonalAiDeclaration(draft);
-  const stableIdentity = ["personal-ai-import-v1", identity];
+  const entries = Object.entries(identityDimensions ?? {}).filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "");
+  const sourceScope = entries.length === 0 ? null : Object.fromEntries(await Promise.all(entries.map(async ([key, value]) => [key, await hashPersonalAiImportValue(String(value))] as const)));
+  const sourceIdentityHash = sourceScope === null ? null : await personalAiImportIdentityHash(
+    metadata.provider, declaration.sourceVersion, declaration.periodStartUtc, declaration.periodEndUtc,
+    declaration.modelCanonical ?? declaration.modelRaw, sourceScope,
+  );
   const canonicalContent = { declaration, metadata, costAmount, costCurrency };
   return {
     declaration, metadata, costAmount, costCurrency,
-    sourceIdentityHash: await hashPersonalAiImportValue(stableIdentity),
+    sourceIdentityHash, sourceScope,
     normalizedContentHash: await hashPersonalAiImportValue(canonicalContent),
   };
 }
@@ -149,8 +156,9 @@ export async function parseOpenAiOrganizationUsage(value: unknown): Promise<Pers
       draft.modelRaw = label(result.model);
       draft.requestCount = count(result.num_model_requests, "num_model_requests", true);
       draft.tokens = { ...EMPTY_TOKENS, inputTotal: input, inputUncached: uncached, cacheRead: cached, cacheWrite: written, outputTotal: output };
-      rows.push(await normalizePersonalAiImportRow(draft, { provider: "OPENAI", granularity: "AGGREGATE", completeness: partial ? "PARTIAL" : "COMPLETE", freshnessUtc: null },
-        ["openai", "organization", result.project_id ?? null, start, end, result.model ?? null]));
+      const dimensions = Object.fromEntries(["project_id", "user_id", "api_key_id", "batch", "service_tier", "api_source"]
+        .flatMap((key) => result[key] === undefined || result[key] === null ? [] : [[key, result[key]]]));
+      rows.push(await normalizePersonalAiImportRow(draft, { provider: "OPENAI", granularity: "AGGREGATE", completeness: partial ? "PARTIAL" : "COMPLETE", freshnessUtc: null }, dimensions));
     }
   }
   return { rows, status: partial ? "PARTIAL" : "READY", warnings: partial ? ["Pagination incomplète : données conservées comme partielles."] : [] };
@@ -192,7 +200,7 @@ export async function parseAnthropicAnalytics2026(value: unknown): Promise<Perso
     draft.requestCount = count(usage.requests, "requests", true);
     draft.tokens = { ...EMPTY_TOKENS, inputTotal: input, inputUncached: uncached, cacheRead: cached, cacheWrite: write5m + write1h, outputTotal: output };
     rows.push(await normalizePersonalAiImportRow(draft, { provider: "ANTHROPIC", granularity: "AGGREGATE", completeness: complete ? "COMPLETE" : "PARTIAL", freshnessUtc: refreshed },
-      ["anthropic", "analytics-2026", group.workspace_id ?? null, group.model ?? null, start, end]));
+      group.workspace_id === null || group.workspace_id === undefined ? null : { workspace_id: group.workspace_id }));
   }
   const partial = partialPagination || rows.some((row) => row.metadata.completeness !== "COMPLETE");
   if (partialPagination) warnings.push("Pagination Anthropic incomplète.");
@@ -214,7 +222,9 @@ export async function parseGeminiGenerateContentUsage(value: unknown): Promise<P
   draft.requestCount = 1;
   draft.tokens = { ...EMPTY_TOKENS, inputTotal: prompt + tool, inputUncached: cache === null ? null : prompt - cache + tool, cacheRead: cache,
     outputVisible: candidates, outputReasoning: thoughts, outputTotal: candidates + thoughts, reasoningRelation: "ADDITIONAL" };
-  const row = await normalizePersonalAiImportRow(draft, { provider: "GOOGLE", granularity: "PER_REQUEST", completeness: "COMPLETE", freshnessUtc: null }, ["gemini-response", draft.modelRaw, total, draft.tokens]);
+  const responseId = label(root.responseId);
+  const row = await normalizePersonalAiImportRow(draft, { provider: "GOOGLE", granularity: "PER_REQUEST", completeness: "COMPLETE", freshnessUtc: null },
+    responseId === null ? null : { response_id: responseId });
   return { rows: [row], status: "READY", warnings: ["Le cache est inclus dans promptTokenCount; les tokens outils sont inclus dans l'entrée, et le raisonnement est additionnel."] };
 }
 
@@ -282,14 +292,12 @@ function createCodexRolloutAccumulator() {
   draft.tokens = { ...EMPTY_TOKENS, inputTotal: input, inputUncached: uncached, cacheRead: cached, cacheWrite,
     outputVisible: visible, outputReasoning: reasoning, outputTotal: outputNormalized, reasoningRelation: "INCLUDED" };
   const sessionId = sessionIds.values().next().value ?? null;
-  const identity = sessionId === null
-    ? ["codex-rollout-content", input, cached, cacheWrite, rawOutput, reasoning, directTotal]
-    : ["codex-rollout", sessionId];
   const row = await normalizePersonalAiImportRow(draft,
-    { provider: "OTHER", granularity: "AGGREGATE", completeness: "PARTIAL", freshnessUtc: null }, identity);
+    { provider: "OTHER", granularity: "AGGREGATE", completeness: "PARTIAL", freshnessUtc: null },
+    sessionId === null ? null : { session_id: sessionId });
   const warnings = ["Période et type d'accès non identifiés; ce relevé de session reste hors agrégation temporelle."];
   if (coherentTotal === null && directTotal !== null) warnings.push("Le total Codex fourni est incohérent; il reste inconnu.");
-  if (sessionIds.size === 0) warnings.push("Identifiant de session absent; seul un import strictement identique est idempotent.");
+  if (sessionIds.size === 0) warnings.push("Identifiant de session absent; l'identité source est indéterminée et la confirmation est bloquée.");
   return { rows: [row], status: "PARTIAL", warnings };
   }
   return { addLine, finish };
@@ -415,12 +423,9 @@ export async function parsePersonalAiTextualPdf(file: File): Promise<PersonalAiI
     draft.source = "MANUAL";
     draft.provenance = "USER_DECLARED";
     draft.tokens = { ...EMPTY_TOKENS, inputTotal, outputVisible: outputTotal, outputTotal, reasoningRelation: "UNKNOWN" };
-    const normalizedIdentity = invoiceId && issuer
-      ? ["invoice-id", issuer, invoiceId]
-      : ["invoice-content-digest", await hashPersonalAiImportValue(text)];
     const row = await normalizePersonalAiImportRow(draft,
       { provider: "OTHER", granularity: "UNKNOWN", completeness: "PARTIAL", freshnessUtc: null },
-      normalizedIdentity, costAmount, currency);
+      invoiceId && issuer ? { issuer, invoiceId } : null, costAmount, currency);
     return { rows: [row], status: "PARTIAL", warnings: [
       "PDF analysé localement; aucune période, région, fournisseur ou activité absente du texte n'est inventée.",
       inputTotal === null || outputTotal === null ? "Le coût seul ne permet pas de déduire tokens, énergie ou CO₂e." : "Les tokens extraits restent une déclaration partielle faute de ventilation complète.",

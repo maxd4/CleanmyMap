@@ -1,6 +1,6 @@
 begin;
 
-select plan(47);
+select plan(50);
 
 select ok(has_table('public', 'personal_ai_declarations'), 'private declarations table exists');
 select ok((select relrowsecurity from pg_class where oid = 'public.personal_ai_declarations'::regclass), 'row level security is enabled');
@@ -80,7 +80,7 @@ select lives_ok($$
     'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
     'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
     'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
-    'source_identity_hash', repeat('a', 64), 'normalized_content_hash', repeat('b', 64),
+    'source_identity_hash', repeat('a', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('2', 64)), 'normalized_content_hash', repeat('b', 64),
     'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
     'cost_amount', null, 'cost_currency', null
   )))
@@ -91,7 +91,7 @@ select lives_ok($$
     'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
     'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
     'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
-    'source_identity_hash', repeat('a', 64), 'normalized_content_hash', repeat('b', 64),
+    'source_identity_hash', repeat('a', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('2', 64)), 'normalized_content_hash', repeat('b', 64),
     'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
     'cost_amount', null, 'cost_currency', null
   )))
@@ -102,7 +102,7 @@ select lives_ok($$
     'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
     'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
     'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
-    'source_identity_hash', repeat('a', 64), 'normalized_content_hash', repeat('c', 64),
+    'source_identity_hash', repeat('a', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('2', 64)), 'normalized_content_hash', repeat('c', 64),
     'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
     'cost_amount', null, 'cost_currency', null
   )))
@@ -113,14 +113,47 @@ select throws_ok($$
     'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
     'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
     'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
-    'source_identity_hash', repeat('f', 64), 'normalized_content_hash', repeat('e', 64),
+    'source_identity_hash', repeat('f', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('2', 64)), 'normalized_content_hash', repeat('e', 64),
     'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
     'cost_amount', null, 'cost_currency', null
   )))
 $$, '23P01', 'overlapping personal AI import scope', 'overlapping provider model scope is rejected');
+select lives_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('9', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('3', 64)),
+    'normalized_content_hash', repeat('8', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, 'different attested api_key_id scopes may overlap without merging');
+select throws_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('7', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64)),
+    'normalized_content_hash', repeat('6', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, '23P01', 'overlapping personal AI import scope', 'an aggregate scope cannot silently replace or overlap its api-key subset');
+select throws_ok($$
+  select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
+    'declaration', (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+    'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
+    'source_identity_hash', repeat('5', 64), 'source_scope', jsonb_build_object('api_key_id', 'raw-provider-id'),
+    'normalized_content_hash', repeat('4', 64),
+    'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
+    'cost_amount', null, 'cost_currency', null
+  )))
+$$, '22023', 'invalid import identity scope', 'raw provider identifiers cannot be stored as source scope');
 select throws_ok($$
   select * from public.confirm_personal_ai_import(jsonb_build_array(
-    jsonb_build_object('declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'), '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb), 'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb, 'methodology_version', 'personal-ai-v1', 'factor_version', '{}', 'source_identity_hash', repeat('d', 64), 'normalized_content_hash', repeat('e', 64), 'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE"}'::jsonb),
+    jsonb_build_object('declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'), '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb), 'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb, 'methodology_version', 'personal-ai-v1', 'factor_version', '{}', 'source_identity_hash', repeat('d', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('4', 64)), 'normalized_content_hash', repeat('e', 64), 'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE"}'::jsonb),
     jsonb_build_object('unexpected', true)
   ))
 $$, '22023', 'invalid import row shape', 'malformed row rejects the whole import batch');
@@ -133,7 +166,7 @@ select lives_ok($$
     'declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000002'), '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb),
     'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
     'methodology_version', 'personal-ai-v1', 'factor_version', '{}',
-    'source_identity_hash', repeat('a', 64), 'normalized_content_hash', repeat('b', 64),
+    'source_identity_hash', repeat('a', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('2', 64)), 'normalized_content_hash', repeat('b', 64),
     'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE","freshnessUtc":null}'::jsonb,
     'cost_amount', null, 'cost_currency', null
   )))

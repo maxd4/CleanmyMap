@@ -328,7 +328,12 @@ recalcule l'empreinte de contenu puis le snapshot scientifique avant l'appel ato
 Clerk, sérialise les révisions par `(owner_clerk_id, source_identity_hash)` et
 annule toute la transaction si une ligne est invalide ou chevauche une plage
 active ambiguë. L'identité source et l'empreinte du contenu normalisé sont deux
-hashes distincts. Aucun fichier, nom de fichier, prompt, conversation,
+hashes distincts; une portée contient les empreintes des dimensions sources
+attestées et jamais leurs identifiants bruts. Seules des portées dont une même
+dimension atteste des valeurs différentes sont disjointes. Les portées égales,
+englobantes, sans dimension commune ou héritées sans portée restent ambiguës et
+sont bloquées, y compris lorsque la période est inconnue. Un import sans clé
+stable prouvée ne peut pas être confirmé. Aucun fichier, nom de fichier, prompt, conversation,
 identifiant source fournisseur, facture brute ou secret d'accès n'est persisté.
 Les périodes inconnues restent `NULL`; une ligne partielle n'entre pas dans un
 agrégat temporel. Les coûts et devises restent distincts des tokens et des
