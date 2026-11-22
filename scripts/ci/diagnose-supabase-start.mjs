@@ -286,6 +286,39 @@ function sqlStateFromText(text) {
   return String(text ?? "").match(/\bsql\s*state\s*[:=]?\s*([0-9A-Z]{5})\b/i)?.[1]?.toUpperCase() ?? null;
 }
 
+function sqlStateFromLogLine(line) {
+  const text = String(line ?? "");
+  const fromText = sqlStateFromText(text);
+  if (fromText) return fromText;
+  try {
+    const parsed = JSON.parse(text);
+    const visit = (value) => {
+      if (!value || typeof value !== "object") return null;
+      for (const [key, nested] of Object.entries(value)) {
+        if (/^(?:sqlstate|sql_state|sqlState)$/i.test(key) && /^[0-9A-Z]{5}$/i.test(String(nested ?? ""))) return String(nested).toUpperCase();
+        if (typeof nested === "object") {
+          const found = visit(nested);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return visit(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function signalForSqlState(sqlState) {
+  if (sqlState === "42601") return "SQLSTATE_SYNTAX";
+  if (sqlState === "42501") return "SQLSTATE_RLS";
+  if (/^(?:22|23)[0-9A-Z]{3}$/.test(sqlState ?? "")) return "SQLSTATE_DATA";
+  if (/^(?:40001|40P01|55P03)$/.test(sqlState ?? "")) return "SQLSTATE_CONCURRENCY";
+  if (/^08[0-9A-Z]{3}$/.test(sqlState ?? "")) return "SQLSTATE_CONNECTION";
+  if (/^42[0-9A-Z]{3}$/.test(sqlState ?? "")) return "SQLSTATE_DEPENDENCY";
+  return null;
+}
+
 function sanitizeErrorExcerpt(signal, service, sqlState = null) {
   const label = firstErrorDiagnosticLabels[signal] ?? "unknown";
   const safeService = service ?? "unavailable";
@@ -323,13 +356,13 @@ function inferFirstErrorEvidence(log) {
   let genericError = null;
   for (const line of String(log ?? "").split(/\r?\n/)) {
     const normalized = terminalLogMessage(line);
-    if (!normalized) continue;
-    const signal = firstErrorSignalPatterns.find(([candidate, pattern]) => candidate !== "UNKNOWN_ERROR" && pattern.test(normalized))?.[0];
-    const isTerminalError = /^\s*(?:error\b|fatal\b|panic:|failed\b|unable\b|cannot\b|could not\b)/i.test(normalized);
-    const hasErrorSignal = firstErrorSignalPatterns.some(([candidate, pattern]) => candidate !== "UNKNOWN_ERROR" && pattern.test(normalized));
+    const sqlState = sqlStateFromLogLine(line) ?? sqlStateFromText(normalized);
+    const signal = firstErrorSignalPatterns.find(([candidate, pattern]) => candidate !== "UNKNOWN_ERROR" && normalized && pattern.test(normalized))?.[0]
+      ?? signalForSqlState(sqlState);
+    const isTerminalError = normalized && /^\s*(?:error\b|fatal\b|panic:|failed\b|unable\b|cannot\b|could not\b)/i.test(normalized);
+    const hasErrorSignal = normalized && firstErrorSignalPatterns.some(([candidate, pattern]) => candidate !== "UNKNOWN_ERROR" && pattern.test(normalized));
     if (!signal && !isTerminalError && !hasErrorSignal) continue;
     const resolvedSignal = signal ?? "UNKNOWN_ERROR";
-    const sqlState = sqlStateFromText(normalized);
     const result = { signal: resolvedSignal, sqlState, excerpt: sanitizeErrorExcerpt(resolvedSignal, inferFailureService(normalized), sqlState) };
     if (resolvedSignal !== "UNKNOWN_ERROR") return result;
     genericError ??= result;
@@ -339,11 +372,12 @@ function inferFirstErrorEvidence(log) {
 
 function inferMigrationId(log) {
   const lines = String(log ?? "").split(/\r?\n/u);
-  const errorIndex = lines.findIndex((line) => sqlStateFromText(terminalLogMessage(line)));
+  const errorIndex = lines.findIndex((line) => sqlStateFromLogLine(line) || sqlStateFromText(terminalLogMessage(line)));
   if (errorIndex >= 0) {
     for (let index = errorIndex; index >= Math.max(0, errorIndex - 20); index -= 1) {
-      const match = lines[index].match(/\b(20\d{12})_[a-z0-9_-]+\.sql\b/i)
-        ?? lines[index].match(/\b(?:migration|version)\s*[=:"']?\s*(20\d{12})\b/i);
+      const normalized = terminalLogMessage(lines[index]) ?? lines[index];
+      const match = normalized.match(/\b(20\d{12})_[a-z0-9_-]+\.sql\b/i)
+        ?? normalized.match(/\b(?:migration|version)\s*[=:"']?\s*(20\d{12})\b/i);
       if (match) return match[1];
     }
   }
@@ -679,7 +713,7 @@ export function collectBoundedStartEvidence({ log, dockerEvents = "", exitCode, 
     startPhase,
     firstFailedStep: inferFirstFailedStep(log, firstBootstrapJob, firstError, startPhase),
     firstFailedMigrationId: startPhase === "MIGRATIONS" ? inferMigrationId(log) : null,
-    firstErrorSqlState: firstError.sqlState ?? sqlStateFromText(log),
+    firstErrorSqlState: firstError.sqlState ?? String(log ?? "").split(/\r?\n/u).map(sqlStateFromLogLine).find(Boolean) ?? null,
     failureService: confirmedService,
     confirmedService,
     suspectedService,

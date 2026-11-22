@@ -158,6 +158,31 @@ test("classifies SQLSTATE migration failures without publishing private error te
   }
 });
 
+test("finds SQLSTATE and the preceding migration ID in structured private CLI logs", () => {
+  const log = [
+    "Applying database migrations",
+    "Applying migration 20261122000014_private_action_attendance_registry.sql...",
+    JSON.stringify({ level: "debug", context: { sqlstate: "22P02", detail: "private table token=secret" } }),
+  ].join("\n");
+  const evidence = collectBoundedStartEvidence({ log, exitCode: 1, probeCommand: createProbeCommand() });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: classifySupabaseStartFailure({ log, exitCode: 1, evidence }),
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+
+  assert.equal(evidence.firstErrorSignal, "SQLSTATE_DATA");
+  assert.equal(evidence.firstErrorSqlState, "22P02");
+  assert.equal(evidence.firstFailedStep, "MIGRATION_SQL_DATA");
+  assert.equal(evidence.firstFailedMigrationId, "20261122000014");
+  assert.match(diagnostic, /category=MIGRATION_SQL_DATA/);
+  assert.match(diagnostic, /first_failed_migration_id=20261122000014/);
+  assert.doesNotMatch(diagnostic, /private table|token=secret|secret/);
+});
+
 test("turns a long failed start with no containers into an actionable bounded code", () => {
   const evidence = collectBoundedStartEvidence({
     log: "opaque startup failure",
