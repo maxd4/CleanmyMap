@@ -1,5 +1,6 @@
 "use client";
 
+import { useId, useState } from "react";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
 import type { ActionOrganizationalPartner, ActionOrganizationalRelations } from "@/lib/actions/preparation-contract";
@@ -55,6 +56,11 @@ function getRelationCopy(organizerType: OrganizerType | "") {
 
 export function ActionOrganizationalRelationsSection({ form, updateField }: Props) {
   const relations = form.organizationalRelations;
+  const partnerKeyPrefix = useId();
+  const [partnerKeys, setPartnerKeys] = useState<string[]>([]);
+  const [nextPartnerKey, setNextPartnerKey] = useState(0);
+  const currentPartners = relations.partners ?? [];
+  const renderedPartnerKeys = currentPartners.map((_, index) => partnerKeys[index] ?? `${partnerKeyPrefix}-external-${index}`);
   const copy = getRelationCopy(form.organizerType);
   const update = (next: ActionOrganizationalRelations) => updateField("organizationalRelations", next);
   const initiator = relations.initiator;
@@ -99,8 +105,8 @@ export function ActionOrganizationalRelationsSection({ form, updateField }: Prop
 
       <div className="space-y-2">
         <h4 className="text-sm font-medium text-emerald-950">{copy.partnersLabel}</h4>
-        {(relations.partners ?? []).map((partner, index) => (
-          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]" key={`${index}-${partner.name}`}>
+        {currentPartners.map((partner, index) => (
+          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]" key={renderedPartnerKeys[index]}>
             <label className="sr-only" htmlFor={`org-partner-name-${index}`}>Nom du partenaire {index + 1}</label>
             <input id={`org-partner-name-${index}`} className="min-h-11 rounded-lg border border-emerald-200 bg-white px-3" maxLength={120} placeholder="Nom de la structure" value={partner.name} onChange={(event) => update({ ...relations, partners: replacePartner(relations.partners ?? [], index, { ...partner, name: event.target.value }) })} />
             <label className="sr-only" htmlFor={`org-partner-type-${index}`}>Type du partenaire {index + 1}</label>
@@ -111,17 +117,17 @@ export function ActionOrganizationalRelationsSection({ form, updateField }: Prop
             <select id={`org-partner-role-${index}`} className="min-h-11 rounded-lg border border-emerald-200 bg-white px-3" value={partner.role} onChange={(event) => update({ ...relations, partners: replacePartner(relations.partners ?? [], index, { ...partner, role: event.target.value as ActionOrganizationalPartner["role"] }) })}>
               {partnerRoles.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
             </select>
-            <button type="button" className="min-h-11 rounded-lg border border-emerald-300 bg-white px-3 text-sm font-medium" onClick={() => update({ ...relations, partners: (relations.partners ?? []).filter((_, partnerIndex) => partnerIndex !== index) })}>Retirer</button>
+            <button type="button" className="min-h-11 rounded-lg border border-emerald-300 bg-white px-3 text-sm font-medium" onClick={() => { setPartnerKeys(renderedPartnerKeys.filter((_, partnerIndex) => partnerIndex !== index)); update({ ...relations, partners: currentPartners.filter((_, partnerIndex) => partnerIndex !== index) }); }}>Retirer</button>
           </div>
         ))}
         {(relations.partners?.length ?? 0) < 10 ? (
-          <button type="button" className="min-h-11 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-900" onClick={() => update({ ...relations, partners: [...(relations.partners ?? []), { organizerType: defaultPartnerType(form.organizerType), name: "", role: "other" }] })}>Ajouter un partenaire</button>
+          <button type="button" className="min-h-11 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-900" onClick={() => { setPartnerKeys([...renderedPartnerKeys, `${partnerKeyPrefix}-partner-${nextPartnerKey}`]); setNextPartnerKey(nextPartnerKey + 1); update({ ...relations, partners: [...currentPartners, { organizerType: defaultPartnerType(form.organizerType), name: "", role: "other" }] }); }}>Ajouter un partenaire</button>
         ) : null}
       </div>
 
       <label className="block text-sm font-medium text-emerald-950">Origines descriptives facultatives des participants
         <span className="mt-1 block font-normal text-emerald-900/70">{copy.originHint}</span>
-        <textarea className="mt-2 block w-full rounded-lg border border-emerald-200 bg-white p-3" rows={2} maxLength={1000} value={(relations.participantOrigins ?? []).map(({ category }) => category).join("\n")} onChange={(event) => update({ ...relations, participantOrigins: event.target.value.split(/\r?\n/).map((category) => category.trim()).filter(Boolean).slice(0, 12).map((category) => ({ category })) })} />
+        <textarea className="mt-2 block w-full rounded-lg border border-emerald-200 bg-white p-3" rows={2} maxLength={1000} value={(relations.participantOrigins ?? []).map(({ category }) => category).join("\n")} onChange={(event) => update({ ...relations, participantOrigins: event.target.value.split(/\r?\n/).map((category) => ({ category })) })} />
       </label>
     </section>
   );
