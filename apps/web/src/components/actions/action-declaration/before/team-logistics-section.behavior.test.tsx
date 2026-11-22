@@ -18,12 +18,13 @@ let root: Root;
 
 function renderTeam(form: FormState, validationIssueFields: string[] = []) {
   const updateField = vi.fn();
+  const updateFields = vi.fn();
   act(() => {
     root.render(
       <TeamLogisticsSection
         form={form}
         updateField={updateField}
-        updateFields={vi.fn()}
+        updateFields={updateFields}
         userMetadata={{ userId: "user-1", displayName: "Alex Martin" }}
         showGroupJoinHelp={false}
         onToggleGroupJoinHelp={vi.fn()}
@@ -32,7 +33,7 @@ function renderTeam(form: FormState, validationIssueFields: string[] = []) {
       />,
     );
   });
-  return updateField;
+  return { updateField, updateFields };
 }
 
 beforeEach(() => {
@@ -63,9 +64,18 @@ describe("TeamLogisticsSection", () => {
       expect.stringContaining("Sécurité et accessibilité"),
       expect.stringContaining("Logistique et déroulement"),
     ]);
-    expect(host.querySelector("#team-logistics-safety")?.hasAttribute("open")).toBe(false);
+    expect(mainDisclosures.every((item) => !item.open)).toBe(true);
     expect(host.textContent).toContain("Ne ramasser que les déchets identifiés et sûrs");
     expect(host.textContent).toContain("Ne pas toucher aux objets dangereux");
+    const essentialRule = Array.from(host.querySelectorAll("li")).find((item) => item.textContent?.includes("Ne pas toucher aux objets dangereux"));
+    expect(essentialRule).not.toBeNull();
+    expect(essentialRule?.closest("details")).toBeNull();
+    const safetyPanel = host.querySelector<HTMLDetailsElement>("#team-logistics-safety");
+    expect(safetyPanel?.querySelector("summary")?.textContent).toContain("Sécurité et accessibilité");
+    const fullGuideSummary = Array.from(safetyPanel?.querySelectorAll("summary") ?? [])
+      .find((summary) => summary.textContent?.includes("Consulter le guide complet"));
+    expect(fullGuideSummary).not.toBeUndefined();
+    expect(safetyPanel?.querySelector("details")?.open).toBe(false);
     expect(host.textContent).not.toContain(">Complet<");
     expect(host.querySelectorAll("#before-volunteer-registration-title")).toHaveLength(1);
   });
@@ -147,7 +157,7 @@ describe("TeamLogisticsSection", () => {
       { versionId: "route-a", label: "Parcours A" },
       { versionId: "route-b", label: "Parcours B" },
     ];
-    const updateField = renderTeam(form, ["accessibilityAlternativeRouteVersionId"]);
+    const { updateFields } = renderTeam(form, ["accessibilityAlternativeRouteVersionId"]);
 
     expect(host.querySelector<HTMLDetailsElement>("#team-logistics-safety")?.open).toBe(true);
     const accessibilityDisclosure = Array.from(host.querySelectorAll<HTMLDetailsElement>("#team-logistics-safety details"))
@@ -162,12 +172,28 @@ describe("TeamLogisticsSection", () => {
       routeSelect!.dispatchEvent(new Event("change", { bubbles: true }));
     });
 
-    expect(updateField).toHaveBeenNthCalledWith(1, "accessibilityAlternativeRouteVersionId", "route-b");
-    expect(updateField).toHaveBeenNthCalledWith(2, "accessibilityStatus", "to_confirm");
-    expect(updateField).toHaveBeenNthCalledWith(3, "accessibilityConditionsVerifiedAt", "");
+    expect(updateFields).toHaveBeenCalledTimes(1);
+    expect(updateFields).toHaveBeenCalledWith({
+      accessibilityAlternativeRouteVersionId: "route-b",
+      accessibilityStatus: "to_confirm",
+      accessibilityConditionsVerifiedAt: "",
+    });
     expect(host.textContent).toContain("Source de vérification");
     expect(host.textContent).toContain("Date de vérification des conditions");
     expect(host.textContent).toContain("Modalités de pause");
     expect(host.textContent).toContain("Sortie anticipée");
+  });
+
+  it("opens the accessibility detail disclosure for a local historical value error without server issues", () => {
+    const form = createInitialFormState("Organisateur", "action");
+    form.accessibility = "Description historique ".repeat(80);
+    renderTeam(form);
+
+    const safetyPanel = host.querySelector<HTMLDetailsElement>("#team-logistics-safety");
+    expect(safetyPanel?.open).toBe(true);
+    const accessibilityDisclosure = Array.from(safetyPanel?.querySelectorAll<HTMLDetailsElement>("details") ?? [])
+      .find((details) => details.querySelector("summary")?.textContent?.includes("Détails, preuves"));
+    expect(accessibilityDisclosure?.open).toBe(true);
+    expect(host.querySelector("#before-accessibility-details")?.getAttribute("aria-invalid")).toBe("true");
   });
 });

@@ -147,6 +147,39 @@ describe("ActionDayView behavior", () => {
     expect(mounted.querySelector("details")?.open).toBe(true);
   });
 
+  it("shows count-only readiness in the printable briefing and keeps the print action available", async () => {
+    fetchBriefingMock.mockResolvedValueOnce(briefing("action-readiness", {
+      preparationReadiness: {
+        confirmedChecks: 2,
+        unconfirmedChecks: 1,
+        missingInformation: ["Point de rendez-vous"],
+      },
+      volunteerChecklist: {
+        toBring: [],
+        weatherRecommendations: [],
+        provided: [],
+        weatherStatus: "unavailable",
+        weatherState: "idle",
+        weatherMessage: "",
+        staffing: { source: "unknown", count: null, label: "Effectif exploitable non renseigné" },
+        insufficiencies: [],
+      },
+    }));
+    const mounted = mount("action-readiness");
+    await harness.flush();
+
+    expect(mounted.textContent).toContain("2 contrôle(s) confirmé(s), 1 à confirmer");
+    expect(mounted.textContent).toContain("Informations manquantes : Point de rendez-vous");
+    expect(mounted.textContent).not.toContain("logisticsNotes");
+    expect(mounted.querySelector('[data-testid="action-day-volunteer-checklist"]')).toBeTruthy();
+    const print = vi.fn();
+    Object.defineProperty(window, "print", { configurable: true, value: print });
+    const printButton = [...mounted.querySelectorAll("button")].find((button) => button.textContent?.includes("Imprimer"));
+    expect(printButton).toBeTruthy();
+    act(() => printButton?.click());
+    expect(print).toHaveBeenCalledTimes(1);
+  });
+
   it("exposes a recoverable loading error and keeps clipboard failure local to the copy action", async () => {
     fetchBriefingMock.mockRejectedValueOnce(new Error("Briefing indisponible côté réseau"));
     const mounted = mount("action-error");

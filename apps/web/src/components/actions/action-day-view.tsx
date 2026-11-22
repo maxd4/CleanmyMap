@@ -69,10 +69,11 @@ function ActionDayGuidanceCards({ action }: { action: ActionDayAction }) {
   </div>;
 }
 
-function ActionDayChecklistCard({ checklist, onRequestWeather }: { checklist: ActionDayChecklist; onRequestWeather: () => void }) {
+function ActionDayChecklistCard({ checklist, readiness, onRequestWeather }: { checklist: ActionDayChecklist; readiness?: ActionDayAction["preparationReadiness"]; onRequestWeather: () => void }) {
   return <CmmCard tone="sky" variant="outlined" size="md" data-testid="action-day-volunteer-checklist">
     <div className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2"><div><h3 className="text-lg font-black text-sky-950">Checklist bénévole</h3><p className="mt-1 text-sm text-sky-900">{checklist.staffing.label}. Les recommandations ne constituent pas une garantie de sécurité.</p></div>{checklist.weatherMessage ? <p className="text-xs font-semibold text-sky-800">{checklist.weatherMessage}</p> : null}</div>
+      {readiness ? <div className="rounded-xl border border-sky-100 bg-white p-3 text-sm"><p className="font-bold text-sky-950">Préparation déclarée : {readiness.confirmedChecks} contrôle(s) confirmé(s), {readiness.unconfirmedChecks} à confirmer.</p>{readiness.missingInformation.length > 0 ? <p className="mt-1 text-slate-700">Informations manquantes : {readiness.missingInformation.join(" · ")}</p> : <p className="mt-1 text-slate-700">Aucune information logistique manquante dans les champs vérifiés.</p>}</div> : null}
       <div className="grid gap-4 md:grid-cols-3">
         <div><h4 className="mb-2 text-sm font-bold text-sky-950">À apporter</h4><ChecklistGroup values={checklist.toBring} empty="Aucun complément calculé." /></div>
         <div><h4 className="mb-2 text-sm font-bold text-sky-950">Recommandé selon la météo</h4><ActionDayWeatherChecklist checklist={checklist} onRequestWeather={onRequestWeather} /></div>
@@ -152,7 +153,7 @@ export function ActionDayView({ actionId }: { actionId: string }) {
       {briefing.access === "organizer" ? <><ActionAccessibilityImplementationPanel actionId={actionId} /><ActionAccessibilityCheckInPanel actionId={actionId} /></> : null}
       <ActionDayGuidanceCards action={action} />
       <ActionSafetyGuide categories={action.wasteCategories} defaultOpen />
-      {checklist ? <ActionDayChecklistCard checklist={checklist} onRequestWeather={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ weather.requestWeather(); }} /> : null}
+      {checklist ? <ActionDayChecklistCard checklist={checklist} readiness={action.preparationReadiness} onRequestWeather={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ weather.requestWeather(); }} /> : null}
     </div>
   );
 }

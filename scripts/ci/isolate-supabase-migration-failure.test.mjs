@@ -44,12 +44,12 @@ test("unknown types and missing positions are omitted", () => {
 });
 
 test("nested CLI JSON errors expose only safe PostgreSQL diagnostics", () => {
-  const result = extractSafePostgresError(JSON.stringify({
-    error: {
-      code: "22P02",
-      details: { message: 'invalid input syntax for type uuid: "private-identity-value"', internal_position: 71 },
-    },
-  }), "20261121000002");
+  const result = extractSafePostgresError(`2026-11-23T00:00:00Z ${JSON.stringify({
+    error_severity: "ERROR",
+    state_code: "22P02",
+    detail: { message: 'invalid input syntax for type uuid: "private-identity-value"' },
+    statement_position: 71,
+  })}`, "20261121000002");
 
   assert.deepEqual(result, {
     migrationVersion: "20261121000002",

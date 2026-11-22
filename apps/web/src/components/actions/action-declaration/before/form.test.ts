@@ -102,7 +102,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("unités opérationnelles");
     expect(html).toContain("Message complémentaire aux participants");
     expect(html).toContain("Notes logistiques internes");
-    expect(html).toContain("Checklist avant départ");
+    expect(html).toContain("Déroulement opérationnel");
     expect(html).toContain("Présentation");
     expect(html).toContain("Localisation et parcours");
     expect(html).toContain("Options avancées");
@@ -240,6 +240,7 @@ describe("ActionBeforeDeclarationForm", () => {
       React.createElement(PreparationAndSafetySection, {
         form,
         updateField: vi.fn(),
+        updateFields: vi.fn(),
       }),
     );
 
@@ -260,7 +261,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Matériel ou contribution annoncée sur place");
     expect(html).toContain("Complément libre à apporter (facultatif)");
     expect(html).toContain("Précisions d&#x27;accessibilité");
-    expect(html).toContain("Checklist avant départ");
+    expect(html).toContain("Déroulement opérationnel");
     expect(html).toContain('class="cmm-disclosure"');
     expect(html).toContain("Notes logistiques facultatives");
     expect(html).not.toContain("Bon à savoir");
@@ -310,6 +311,7 @@ describe("ActionBeforeDeclarationForm", () => {
       React.createElement(PreparationAndSafetySection, {
         form,
         updateField: vi.fn(),
+        updateFields: vi.fn(),
       }),
     );
 
@@ -326,6 +328,7 @@ describe("ActionBeforeDeclarationForm", () => {
       React.createElement(PreparationAndSafetySection, {
         form,
         updateField: vi.fn(),
+        updateFields: vi.fn(),
       }),
     );
 
@@ -424,7 +427,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Non évaluée");
     expect(html).toContain("Les consignes de l’organisateur et les règles locales restent prioritaires.");
     expect(html).toContain("Notes logistiques internes");
-    expect(html).toContain("Checklist avant départ");
+    expect(html).toContain("Déroulement opérationnel");
     expect(html).not.toContain('id="before-organizer-structure"');
     expect(html).not.toContain('id="before-volunteers-count"');
     expect(html).not.toContain("Visibilité de l’action");

@@ -30,8 +30,9 @@ const ACCESSIBILITY_DETAIL_FIELDS = [
 export function PreparationAccessibilityFields({
   form,
   updateField,
+  updateFields,
   validationIssueFields = [],
-}: BaseSectionProps) {
+}: BaseSectionProps & { updateFields: NonNullable<BaseSectionProps["updateFields"]> }) {
   const hasAccessibilityDetail = form.accessibility.trim().length > 0
     || form.accessibilityStatus !== "not_evaluated"
     || Boolean(
@@ -78,7 +79,7 @@ export function PreparationAccessibilityFields({
         summary="Détails, preuves et aménagements d’accessibilité"
         tone="emerald"
         size="sm"
-        open={detailsOpen || accessibilityDetailsHaveIssue}
+        open={detailsOpen || accessibilityDetailsHaveIssue || Boolean(accessibilityError)}
         onToggle={setDetailsOpen}
       >
         <div className="space-y-3">
@@ -108,9 +109,11 @@ export function PreparationAccessibilityFields({
                 value={form.accessibilityAlternativeRouteVersionId}
                 onChange={(event) => {
                   if (event.target.value !== form.accessibilityAlternativeRouteVersionId) {
-                    updateField("accessibilityAlternativeRouteVersionId", event.target.value);
-                    updateField("accessibilityStatus", "to_confirm");
-                    updateField("accessibilityConditionsVerifiedAt", "");
+                    updateFields({
+                      accessibilityAlternativeRouteVersionId: event.target.value,
+                      accessibilityStatus: "to_confirm",
+                      accessibilityConditionsVerifiedAt: "",
+                    });
                   }
                 }}
               >

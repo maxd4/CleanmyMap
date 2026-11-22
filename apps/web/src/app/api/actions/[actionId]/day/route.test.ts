@@ -101,6 +101,11 @@ describe("GET /api/actions/[actionId]/day", () => {
     expect(body.action.equipmentProvided).toEqual(["Pinces de ramassage : 2", "Trousse de premiers secours"]);
     expect(body.action.equipmentNotProvided).toEqual(["Paires de gants : aucune unité fournie"]);
     expect(body.action.refreshmentsProvided).toEqual(["Eau fournie pendant l'action", "Collation prévue après l'action"]);
+    expect(body.action.preparationReadiness).toMatchObject({
+      confirmedChecks: 0,
+      unconfirmedChecks: 1,
+    });
+    expect(body.action.preparationReadiness).not.toHaveProperty("checklist");
     expect(body.action).not.toHaveProperty("participantAccounts");
     expect(body.action).not.toHaveProperty("checklist");
     expect(body.action).not.toHaveProperty("preparationChecklist");
@@ -108,6 +113,7 @@ describe("GET /api/actions/[actionId]/day", () => {
     const serialized = JSON.stringify(body.action);
     expect(serialized).not.toContain("internal-preparation-key");
     expect(serialized).not.toContain("INTERNAL_ONLY_PREP_CHECKLIST_LABEL");
+    expect(serialized).not.toContain("logisticsNotes");
     expect(serialized).not.toContain('"checked"');
     expect(serialized).not.toContain("day-private-planner-context");
     expect(serialized).not.toContain("routeCalibrationContext");
@@ -162,6 +168,7 @@ describe("GET /api/actions/[actionId]/day", () => {
     expect(response.status).toBe(200);
     expect(body.access).toBe("confirmed_volunteer");
     expect(body.action.participantMessage).toBe("Rendez-vous sur place.");
+    expect(body.action.preparationReadiness).toMatchObject({ confirmedChecks: 1, unconfirmedChecks: 0 });
     expect(body.action).not.toHaveProperty("logisticsNotes");
     expect(body.action).not.toHaveProperty("checklist");
     expect(JSON.stringify(body.action)).not.toContain("preparationChecklist");

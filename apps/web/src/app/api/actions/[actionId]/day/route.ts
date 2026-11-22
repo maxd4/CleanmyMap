@@ -12,6 +12,7 @@ import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { buildPublicActionPracticalInformation } from "@/lib/actions/participation/group-participation-public-projection";
+import { deriveActionPreparationReadiness } from "@/lib/actions/action-preparation-checklist";
 import { loadActionParticipantSummaries } from "@/lib/actions/participation/participant-summaries";
 import { buildPlannerWeatherRequest } from "@/lib/weather/planner-weather";
 import { loadActiveActionFieldRoleAssignments } from "@/lib/actions/field-roles";
@@ -122,6 +123,13 @@ function buildDayPayload(
       equipmentNotProvided: projectedPracticalInfo.equipmentNotProvided,
       refreshmentsProvided: projectedPracticalInfo.refreshmentsProvided,
       volunteerChecklist: projectedPracticalInfo.volunteerChecklist,
+      preparationReadiness: deriveActionPreparationReadiness({
+        ...preparation,
+        actionDate: firstText(preparation.actionDate, action.action_date) ?? "",
+        pointDeRendezVous: firstText(preparation.pointDeRendezVous, action.location_label) ?? "",
+        meetingTime: firstText(preparation.meetingTime, action.event_start_time) ?? "",
+        departureTime: firstText(preparation.departureTime, action.event_start_time) ?? "",
+      }),
       accessibility: firstText(preparation.accessibility),
       accessibilityStatus: preparation.accessibilityStatus ?? "not_evaluated",
       accessibilityConditionsSource: preparation.accessibilityConditionsSource ?? null,

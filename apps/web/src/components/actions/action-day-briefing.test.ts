@@ -70,6 +70,27 @@ describe("action day briefing projection", () => {
     expect(buildActionDayBriefingText(withWeather)).toContain("Checklist — météo : Prévoir une veste imperméable");
   });
 
+  it("projects preparation status counts and missing information without private notes or checklist labels", () => {
+    const text = buildActionDayBriefingText({
+      ...briefing,
+      action: {
+        ...briefing.action,
+        preparationReadiness: {
+          confirmedChecks: 2,
+          unconfirmedChecks: 3,
+          missingInformation: ["Point de rendez-vous", "Consignes opérationnelles"],
+        },
+        logisticsNotes: "PRIVATE_INTERNAL_NOTE",
+        preparationChecklist: [{ key: "private-key", label: "PRIVATE_CHECK_LABEL", checked: false }],
+      },
+    } as ActionDayBriefing);
+
+    expect(text).toContain("Préparation déclarée : 2 contrôle(s) confirmé(s) · 3 à confirmer");
+    expect(text).toContain("Informations à compléter : Point de rendez-vous, Consignes opérationnelles");
+    expect(text).not.toContain("PRIVATE_INTERNAL_NOTE");
+    expect(text).not.toContain("PRIVATE_CHECK_LABEL");
+  });
+
   it("uses the catalog categories in the copyable guide and remains useful for legacy actions", () => {
     const categorized = buildActionDayBriefingText({
       ...briefing,

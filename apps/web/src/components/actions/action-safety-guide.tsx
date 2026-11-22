@@ -122,22 +122,49 @@ export function ActionSafetyGuide({
   defaultOpen = false,
   schoolContextConfirmed = false,
   headingLevel = 3,
+  displayMode = "all",
 }: {
   categories?: readonly WasteCategorySlug[] | null;
   locale?: SafetyGuideLocale;
   defaultOpen?: boolean;
   schoolContextConfirmed?: boolean;
   headingLevel?: 3 | 4;
+  displayMode?: "all" | "essentials" | "details";
 }) {
   const fr = locale === "fr";
   const titleId = useId();
   const sections = buildActionSafetyGuideSections(categories, locale, schoolContextConfirmed);
   const Heading = headingLevel === 4 ? "h4" : "h3";
   const GuideSectionHeading = headingLevel === 4 ? "h5" : "h4";
+  const details = (
+    <CmmDisclosure
+      summary={fr ? "Consulter le guide complet" : "Read the full guide"}
+      tone="sky"
+      size="sm"
+      className={displayMode === "all" ? "mt-3" : undefined}
+      defaultOpen={defaultOpen}
+    >
+      <div className="space-y-4">
+        {sections.map((section) => (
+          <section key={section.title} aria-label={section.title}>
+            <GuideSectionHeading className="font-bold text-sky-950">{section.title}</GuideSectionHeading>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-800">
+              {section.items.map((item) => <li key={item}>{item}</li>)}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </CmmDisclosure>
+  );
+
+  if (displayMode === "details") return details;
+
   return (
     <section aria-labelledby={titleId} className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4">
       <Heading id={titleId} className="text-base font-black text-sky-950">
-        {fr ? "Guide de sécurité et de collecte" : "Safety and collection guide"}
+        {displayMode === "essentials"
+          ? (fr ? "Consignes essentielles de sécurité et de collecte" : "Essential safety and collection rules")
+          : (fr ? "Guide de sécurité et de collecte" : "Safety and collection guide")}
       </Heading>
       <p className="mt-1 text-sm leading-6 text-sky-950">
         {fr ? "Les consignes de l’organisateur et les règles locales restent prioritaires." : "Organizer instructions and local rules take priority."}
@@ -145,24 +172,7 @@ export function ActionSafetyGuide({
       <ul className="mt-3 grid gap-2 text-sm leading-6 text-sky-950 sm:grid-cols-2">
         {ESSENTIAL_RULES[locale].map((rule) => <li key={rule} className="rounded-xl border border-sky-100 bg-white/90 px-3 py-2">{rule}</li>)}
       </ul>
-      <CmmDisclosure
-        summary={fr ? "Consulter le guide complet" : "Read the full guide"}
-        tone="sky"
-        size="sm"
-        className="mt-3"
-        defaultOpen={defaultOpen}
-      >
-        <div className="space-y-4">
-          {sections.map((section) => (
-            <section key={section.title} aria-label={section.title}>
-              <GuideSectionHeading className="font-bold text-sky-950">{section.title}</GuideSectionHeading>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-800">
-                {section.items.map((item) => <li key={item}>{item}</li>)}
-              </ul>
-            </section>
-          ))}
-        </div>
-      </CmmDisclosure>
+      {displayMode === "essentials" ? null : details}
     </section>
   );
 }

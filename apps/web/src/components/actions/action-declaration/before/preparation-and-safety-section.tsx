@@ -52,7 +52,10 @@ export function PreparationLogisticsNotesFields({ form, updateField }: BaseSecti
   );
 }
 
-export function PreparationAndSafetySection({ form, updateField, embedded = false }: BaseSectionProps & { embedded?: boolean }) {
+export function PreparationAndSafetySection({ form, updateField, updateFields, embedded = false }: BaseSectionProps & {
+  updateFields: NonNullable<BaseSectionProps["updateFields"]>;
+  embedded?: boolean;
+}) {
 
   const content = (
     <div className="space-y-5">
@@ -70,7 +73,7 @@ export function PreparationAndSafetySection({ form, updateField, embedded = fals
 
         <section aria-labelledby="before-accessibility-group" className="space-y-3 border-b border-emerald-100 pb-5">
           <h4 id="before-accessibility-group" className="text-base font-black text-emerald-950">Accessibilité</h4>
-          <PreparationAccessibilityFields form={form} updateField={updateField} />
+          <PreparationAccessibilityFields form={form} updateField={updateField} updateFields={updateFields} />
         </section>
 
         <section aria-labelledby="before-logistics-group" className="space-y-3">

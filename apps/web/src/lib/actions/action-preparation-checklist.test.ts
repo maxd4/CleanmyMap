@@ -4,7 +4,7 @@ import {
   type PlannerWeatherContext,
 } from "@/lib/weather/planner-weather";
 import type { ActionPreparationData } from "./types";
-import { deriveActionVolunteerChecklist } from "./action-preparation-checklist";
+import { deriveActionPreparationReadiness, deriveActionVolunteerChecklist } from "./action-preparation-checklist";
 
 function weather(points: Array<{ temperatureC: number; precipitationMm: number; windKmh: number }>): PlannerWeatherContext {
   const completePoints = points.length === 1 ? [...points, points[0]!] : points;
@@ -41,6 +41,41 @@ function weatherRequest() {
 }
 
 describe("action volunteer preparation checklist", () => {
+  it("projects only preparation counts and missing operational information", () => {
+    const preparation: ActionPreparationData = {
+      actionDate: "2026-11-23",
+      meetingTime: "09:30",
+      departureTime: "10:00",
+      pointDeRendezVous: "Entrée nord",
+      participantMessage: "Prévoir de l’eau.",
+      safetyInstructions: "Rester avec le groupe.",
+      logisticsNotes: "Cette note interne ne doit jamais être projetée.",
+      preparationChecklist: [
+        { key: "materials_checked", label: "Matériel vérifié", checked: true },
+        { key: "participants_informed", label: "Participants informés", checked: false },
+      ],
+    };
+    const readiness = deriveActionPreparationReadiness(preparation);
+
+    expect(readiness).toEqual({ confirmedChecks: 1, unconfirmedChecks: 1, missingInformation: [] });
+    expect(JSON.stringify(readiness)).not.toContain("Matériel vérifié");
+    expect(JSON.stringify(readiness)).not.toContain("Cette note interne");
+  });
+
+  it("reports missing canonical logistics data without manufacturing schedule values", () => {
+    expect(deriveActionPreparationReadiness({ preparationChecklist: [] })).toEqual({
+      confirmedChecks: 0,
+      unconfirmedChecks: 0,
+      missingInformation: [
+        "Date de l’action",
+        "Point de rendez-vous",
+        "Horaire de rendez-vous ou de départ",
+        "Informations pratiques aux participants",
+        "Consignes opérationnelles",
+      ],
+    });
+  });
+
   it("crosses Waste recommendations with a complete declared inventory without inventing stock ratios", () => {
     const result = deriveActionVolunteerChecklist({
       preparation: {

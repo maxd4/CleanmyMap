@@ -108,7 +108,7 @@ export function ActionBeforeFormView({
               <div className="space-y-6">
                 <IdentityAndSharingSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} actionId={actionId} isExistingAction={isExistingAction} />
                 <PlannedActionSection form={form} updateField={updateField} updateFields={updateFields} countryCode={countryCode} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
-                <PreparationAndSafetySection form={form} updateField={updateField} />
+                <PreparationAndSafetySection form={form} updateField={updateField} updateFields={updateFields} />
               </div>
               {validationIssues.length > 0 || errorMessage ? <div className="rounded-[1.5rem] border border-rose-200/70 bg-[#FFF7F8] px-4 py-3 text-sm leading-6 text-rose-950"><div className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} className="text-rose-500" />La préparation n&apos;a pas encore pu être enregistrée</div>{validationIssues.length > 0 ? <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-rose-800/80">{validationIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul> : null}{errorMessage && validationIssues.length === 0 ? <p className="mt-2 text-xs text-rose-800/80">{errorMessage}</p> : null}</div> : null}
             </>

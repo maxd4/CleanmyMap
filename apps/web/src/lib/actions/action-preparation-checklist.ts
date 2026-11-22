@@ -68,6 +68,32 @@ export type ActionVolunteerChecklistInput = {
   weatherState?: ActionWeatherState;
 };
 
+export type ActionPreparationReadiness = {
+  confirmedChecks: number;
+  unconfirmedChecks: number;
+  missingInformation: string[];
+};
+
+/** A count-only briefing projection: checklist labels and internal notes stay private. */
+export function deriveActionPreparationReadiness(
+  preparation: Pick<ActionPreparationData, "preparationChecklist" | "actionDate" | "meetingTime" | "departureTime" | "participantMessage" | "safetyInstructions"> & { pointDeRendezVous?: string } | null | undefined,
+): ActionPreparationReadiness {
+  const checklist = preparation?.preparationChecklist ?? [];
+  const confirmedChecks = checklist.filter((entry) => entry.checked).length;
+  const missingInformation = [
+    !preparation?.actionDate?.trim() ? "Date de l’action" : null,
+    !preparation?.pointDeRendezVous?.trim() ? "Point de rendez-vous" : null,
+    !preparation?.meetingTime?.trim() && !preparation?.departureTime?.trim() ? "Horaire de rendez-vous ou de départ" : null,
+    !preparation?.participantMessage?.trim() ? "Informations pratiques aux participants" : null,
+    !preparation?.safetyInstructions?.trim() ? "Consignes opérationnelles" : null,
+  ].filter((value): value is string => Boolean(value));
+  return {
+    confirmedChecks,
+    unconfirmedChecks: checklist.length - confirmedChecks,
+    missingInformation,
+  };
+}
+
 const PROVENANCE_LABELS: Record<ActionChecklistProvenance, string> = {
   preparation: "préparation générale",
   organizer: "déclaration de l’organisateur",

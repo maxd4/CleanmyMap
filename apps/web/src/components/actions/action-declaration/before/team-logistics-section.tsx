@@ -160,6 +160,12 @@ export function TeamLogisticsSection({
 
   return (
     <div className="space-y-4" data-testid="team-logistics-section">
+      <ActionSafetyGuide
+        categories={form.wasteCategories}
+        schoolContextConfirmed={form.schoolContextConfirmed}
+        displayMode="essentials"
+      />
+
       <CmmDisclosure
         id="team-logistics-coordination"
         open={openDisclosures.coordination}
@@ -248,6 +254,7 @@ export function TeamLogisticsSection({
               categories={form.wasteCategories}
               schoolContextConfirmed={form.schoolContextConfirmed}
               headingLevel={4}
+              displayMode="details"
             />
             <PreparationSecurityFields form={form} updateField={updateField} showGuide={false} />
           </section>
@@ -268,7 +275,7 @@ export function TeamLogisticsSection({
           </section>
           <section aria-labelledby="before-accessibility-group" className="space-y-3 border-t border-emerald-100 pt-4">
             <h3 id="before-accessibility-group" className="text-base font-black text-emerald-950">Accessibilité</h3>
-            <PreparationAccessibilityFields form={form} updateField={updateField} validationIssueFields={validationIssueFields} />
+            <PreparationAccessibilityFields form={form} updateField={updateField} updateFields={updateFields} validationIssueFields={validationIssueFields} />
           </section>
         </div>
       </CmmDisclosure>

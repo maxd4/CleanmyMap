@@ -19,6 +19,22 @@ describe("action safety guide", () => {
     expect(html).not.toContain('open=""');
   });
 
+  it("can show shared essentials outside a panel and category guidance inside it", () => {
+    const essentials = renderToStaticMarkup(
+      <ActionSafetyGuide categories={["plastic"]} displayMode="essentials" />,
+    );
+    const details = renderToStaticMarkup(
+      <ActionSafetyGuide categories={["plastic"]} displayMode="details" />,
+    );
+
+    expect(essentials).toContain("Consignes essentielles de sécurité et de collecte");
+    expect(essentials).toContain("Ne pas toucher aux objets dangereux");
+    expect(essentials).not.toContain("Consulter le guide complet");
+    expect(details).toContain("Consulter le guide complet");
+    expect(details).toContain("Bouteille et emballage plastique");
+    expect(details).not.toContain("Ne pas toucher aux objets dangereux");
+  });
+
   it("does not infer a school group from an organizer label alone", () => {
     const html = renderToStaticMarkup(<ActionSafetyGuide categories={[]} />);
     const confirmedSchoolHtml = renderToStaticMarkup(

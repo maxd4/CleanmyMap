@@ -31,6 +31,12 @@ function buildBriefingPreparationLines(action: BriefingAction): Array<string | n
 
 function buildBriefingChecklistLines(action: BriefingAction): Array<string | null> {
   return [
+    action.preparationReadiness
+      ? `Préparation déclarée : ${action.preparationReadiness.confirmedChecks} contrôle(s) confirmé(s) · ${action.preparationReadiness.unconfirmedChecks} à confirmer`
+      : null,
+    action.preparationReadiness?.missingInformation.length
+      ? `Informations à compléter : ${action.preparationReadiness.missingInformation.join(", ")}`
+      : null,
     action.volunteerChecklist?.toBring.length ? `Checklist — à apporter : ${action.volunteerChecklist.toBring.map((item) => item.label).join(", ")}` : null,
     action.volunteerChecklist?.weatherState === "success" && action.volunteerChecklist.weatherRecommendations.length
       ? `Checklist — météo : ${action.volunteerChecklist.weatherRecommendations.map((item) => item.label).join(", ")}`

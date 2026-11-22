@@ -57,8 +57,10 @@ function collectStructuredErrorFields(output) {
     rootObject = JSON.parse(text);
   } catch {
     for (const line of text.split(/\r?\n/u)) {
+      const jsonStart = line.indexOf("{");
+      if (jsonStart < 0) continue;
       try {
-        const parsed = JSON.parse(line);
+        const parsed = JSON.parse(line.slice(jsonStart));
         if (parsed && typeof parsed === "object") {
           rootObject = parsed;
           break;
@@ -72,9 +74,9 @@ function collectStructuredErrorFields(output) {
   const visit = (value, depth = 0) => {
     if (!value || typeof value !== "object" || depth > 8) return;
     for (const [key, nested] of Object.entries(value)) {
-      if (/^(?:sqlstate|sql_state|sql_state_code|code)$/iu.test(key) && /^[0-9A-Z]{5}$/iu.test(String(nested ?? ""))) {
+      if (/^(?:sqlstate|sql_state|sql_state_code|state_code|code)$/iu.test(key) && /^[0-9A-Z]{5}$/iu.test(String(nested ?? ""))) {
         fields.sqlstate ??= String(nested).toUpperCase();
-      } else if (/^(?:position|internalposition|internal_position|character_position)$/iu.test(key) && Number.isSafeInteger(Number(nested)) && Number(nested) > 0) {
+      } else if (/^(?:position|internalposition|internal_position|character_position|statement_position)$/iu.test(key) && Number.isSafeInteger(Number(nested)) && Number(nested) > 0) {
         fields.position ??= Number(nested);
       } else if (/^(?:message|detail|context|hint)$/iu.test(key) && typeof nested === "string") {
         fields.message = `${fields.message} ${nested}`.trim();
@@ -107,6 +109,19 @@ function makeTemporaryProject(workdir) {
     "[api]", "enabled = false", "[db]", "major_version = 17", "health_timeout = \"2m\"",
     "[db.migrations]", "enabled = false", "[db.seed]", "enabled = false", "sql_paths = []", "",
   ].join("\n"));
+}
+
+function readPrivatePostgresLogs(since, privateLog) {
+  const containerList = run("docker", [
+    "ps", "--filter", `label=com.supabase.cli.project=cmm-isolated-replay`, "--format", "{{.ID}} {{.Names}}",
+  ], { cwd: root, allowFailure: true }).output;
+  const dbContainer = containerList.split(/\r?\n/u)
+    .map((line) => line.trim().split(/\s+/u))
+    .find(([, name]) => name?.startsWith("supabase_db_"))?.[0];
+  if (!dbContainer) return "";
+  const log = run("docker", ["logs", "--since", since, dbContainer], { cwd: root, allowFailure: true }).output;
+  writeFileSync(privateLog, log, { mode: 0o600 });
+  return log;
 }
 
 export function findFirstFailedPrefix(length, resetPrefix) {
@@ -211,11 +226,15 @@ function main() {
         }
         if (isolatedPrefixReady) {
           currentStage = "ISOLATED_MIGRATION_STATEMENT";
+          const queryStartedAt = new Date(Date.now() - 1000).toISOString();
           const statementRun = run(cli, ["db", "query", "--local", "--workdir", workdir, "--file", failing.path, "--output", "json", "--output-format", "json"], {
             cwd: root,
             allowFailure: true,
             privateLog: statementLog,
           });
+          const cliOutput = readFileSync(statementLog, "utf8");
+          const postgresOutput = readPrivatePostgresLogs(queryStartedAt, join(privateDir, "postgres-query.jsonl"));
+          writeFileSync(statementLog, `${cliOutput}\n${postgresOutput}`, { mode: 0o600 });
           evidence.failure = {
             stage: statementRun.status === 0 ? "ISOLATED_MIGRATION_UNEXPECTED_PASS" : "ISOLATED_MIGRATION_STATEMENT",
             ...extractSafePostgresError(readFileSync(statementLog, "utf8"), failing.version),
