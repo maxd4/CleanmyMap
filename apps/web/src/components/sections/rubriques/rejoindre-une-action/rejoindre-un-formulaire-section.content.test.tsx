@@ -139,6 +139,9 @@ describe("Rejoindre une action content contract", () => {
     expect(markup).toContain("Informations pratiques");
     expect(markup).toContain("Indications de l’organisateur");
     expect(markup).toContain("Recommandations CleanMyMap");
+    expect(markup).toContain("Guide de sécurité et de collecte");
+    expect(markup).toContain("Rester avec le groupe");
+    expect(markup).toContain("Consulter le guide complet");
     expect(markup).toContain("Ne pas ramasser les objets piquants.");
     expect(markup).not.toContain("checklistBeforeDeparture");
   });

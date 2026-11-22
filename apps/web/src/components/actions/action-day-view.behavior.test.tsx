@@ -133,6 +133,19 @@ describe("ActionDayView behavior", () => {
     expect(mounted.textContent).not.toContain("Itinéraire validé par le planificateur");
   });
 
+  it("shows the persistent safety reminders and catalog-specific guide on Jour J", async () => {
+    fetchBriefingMock.mockResolvedValueOnce(briefing("action-safety", {
+      wasteCategories: ["sharps", "plastic"],
+    }));
+    const mounted = mount("action-safety");
+    await harness.flush();
+
+    expect(mounted.textContent).toContain("Guide de sécurité et de collecte");
+    expect(mounted.textContent).toContain("Rester avec le groupe");
+    expect(mounted.textContent).toContain("Seringue ou aiguille à risque");
+    expect(mounted.querySelector("details")?.open).toBe(true);
+  });
+
   it("exposes a recoverable loading error and keeps clipboard failure local to the copy action", async () => {
     fetchBriefingMock.mockRejectedValueOnce(new Error("Briefing indisponible côté réseau"));
     const mounted = mount("action-error");

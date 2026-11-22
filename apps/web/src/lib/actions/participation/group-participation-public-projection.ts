@@ -19,6 +19,8 @@ import type {
 import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
 
 export type PublicActionPracticalInformation = {
+  /** Read-only projection used to render the canonical safety guide. */
+  wasteCategories?: ActionPreparationData["expectedWasteCategories"];
   accessibility: string | null;
   accessibilityStatus?: ActionPreparationData["accessibilityStatus"] | null;
   accessibilityAlternativeRoute?: {
@@ -113,6 +115,7 @@ export function buildPublicActionPracticalInformation(
   const volunteerChecklist = projectActionVolunteerChecklistForPublic(internalVolunteerChecklist);
 
   return {
+    wasteCategories: guidance.definitions.map((category) => category.slug),
     accessibility: readPublicText(preparationData?.accessibility),
     accessibilityStatus: preparationData?.accessibilityStatus ?? null,
     accessibilityAlternativeRoute: (() => {

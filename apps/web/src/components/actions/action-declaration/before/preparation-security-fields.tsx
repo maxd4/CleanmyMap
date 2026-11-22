@@ -1,4 +1,4 @@
-import { buildWasteFieldGuidance } from "@/lib/waste";
+import { ActionSafetyGuide } from "@/components/actions/action-safety-guide";
 import { CmmField, CmmTextarea } from "@/components/ui/cmm-field";
 import type { BaseSectionProps } from "./section-contract";
 import {
@@ -8,9 +8,6 @@ import {
 } from "./preparation-field-utils";
 
 export function PreparationSecurityFields({ form, updateField }: BaseSectionProps) {
-  const guidance = buildWasteFieldGuidance(form.wasteCategories);
-  const dangerousGuidance = [...guidance.toAvoid, ...guidance.toReport];
-  const hasGuidance = guidance.toPrepare.length > 0 || dangerousGuidance.length > 0;
   const safetyError = characterLimitError(
     form.safetyInstructions,
     "Les consignes particulières",
@@ -19,25 +16,7 @@ export function PreparationSecurityFields({ form, updateField }: BaseSectionProp
 
   return (
     <div className="space-y-4">
-      <aside
-        aria-labelledby="before-safety-recommendations-title"
-        className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
-      >
-        <p id="before-safety-recommendations-title" className="font-bold">
-          Recommandations calculées depuis les déchets attendus
-        </p>
-        {hasGuidance ? (
-          <div className="mt-2 space-y-1 leading-6">
-            {guidance.toPrepare.length > 0 ? <p>Protections suggérées : {guidance.toPrepare.join(" · ")}</p> : null}
-            {dangerousGuidance.length > 0 ? <p>Vigilances et interdictions : {dangerousGuidance.join(" · ")}</p> : null}
-          </div>
-        ) : (
-          <p className="mt-2 leading-6">Aucune recommandation.</p>
-        )}
-        <p className="mt-2 text-xs leading-5 text-amber-900/75">
-          Lecture seule · séparées des consignes.
-        </p>
-      </aside>
+      <ActionSafetyGuide categories={form.wasteCategories} />
 
       <CmmField
         id="before-safety-instructions"

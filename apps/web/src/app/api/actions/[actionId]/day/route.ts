@@ -115,6 +115,7 @@ function buildDayPayload(
       organizerLabel: textOrDefault("Organisateur", metadata.associationName, action.actor_name),
       participantMessage: firstText(preparation.participantMessage),
       safetyInstructions: firstText(preparation.safetyInstructions),
+      wasteCategories: projectedPracticalInfo.wasteCategories ?? [],
       recommendedMaterials: firstText(preparation.recommendedMaterials),
       materialsProvided: firstText(preparation.materialsProvided),
       equipmentProvided: projectedPracticalInfo.equipmentProvided,

@@ -1,4 +1,5 @@
 import type { ActionVolunteerChecklistPublic } from "./action-preparation-checklist";
+import type { WasteCategorySlug } from "@/lib/waste";
 
 export type ActionDayBriefing = {
   status: "ok";
@@ -18,6 +19,7 @@ export type ActionDayBriefing = {
     organizerLabel: string;
     participantMessage: string | null;
     safetyInstructions: string | null;
+    wasteCategories?: WasteCategorySlug[];
     recommendedMaterials: string | null;
     materialsProvided: string | null;
     equipmentProvided: string[];

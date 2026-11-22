@@ -1,6 +1,7 @@
 "use client";
 
 import { PackageCheck } from "lucide-react";
+import { ActionSafetyGuide } from "@/components/actions/action-safety-guide";
 import type { PublicActionPracticalInformation } from "@/lib/actions/participation/group-participation";
 import {
   actionChecklistProvenanceLabel,
@@ -29,6 +30,9 @@ export function ActionPracticalInformation({
       <div className="grid gap-4 md:grid-cols-2">
         <OrganizerPracticalInformation info={info} fr={fr} />
         <CataloguePracticalInformation info={info} fr={fr} />
+      </div>
+      <div className="mt-4">
+        <ActionSafetyGuide categories={info.wasteCategories} locale={fr ? "fr" : "en"} />
       </div>
       {info.volunteerChecklist ? <VolunteerChecklist info={info} fr={fr} /> : null}
     </section>

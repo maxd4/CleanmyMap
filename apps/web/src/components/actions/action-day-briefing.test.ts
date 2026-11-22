@@ -48,6 +48,10 @@ describe("action day briefing projection", () => {
     expect(text).not.toContain("notes");
     expect(text).not.toContain("actionId");
     expect(text).not.toContain("météo");
+    expect(text).toContain("Règles essentielles");
+    expect(text).toContain("ne jamais aller sur la chaussée");
+    expect(text).toContain("bonbonnes et récipients sous pression");
+    expect(text).toContain("Gants obligatoires");
   });
 
   it("includes weather only after a successful explicit forecast request", () => {
@@ -64,5 +68,19 @@ describe("action day briefing projection", () => {
     } as ActionDayBriefing;
 
     expect(buildActionDayBriefingText(withWeather)).toContain("Checklist — météo : Prévoir une veste imperméable");
+  });
+
+  it("uses the catalog categories in the copyable guide and remains useful for legacy actions", () => {
+    const categorized = buildActionDayBriefingText({
+      ...briefing,
+      action: { ...briefing.action, wasteCategories: ["sharps", "plastic"] },
+    } as ActionDayBriefing);
+    expect(categorized).toContain("Plastique :");
+    expect(categorized).toContain("Seringue ou aiguille à risque");
+    expect(categorized).toContain("Ne pas toucher");
+
+    const legacy = buildActionDayBriefingText(briefing);
+    expect(legacy).toContain("Aucune catégorie sûre n’est déclarée");
+    expect(legacy).toContain("recommandations de préparation");
   });
 });

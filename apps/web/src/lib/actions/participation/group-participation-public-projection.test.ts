@@ -66,6 +66,7 @@ describe("public action practical information", () => {
     expect(result.refreshmentsProvided).toEqual(["Eau fournie pendant l'action", "Collation prévue après l'action"]);
     expect(result.accessibilityStatus).toBe("conditions_reported");
     expect(result.participantMessage).toBe("Rendez-vous devant la grille.");
+    expect(result.wasteCategories).toEqual(["battery"]);
     expect(result.derivedSafetyRecommendations.length).toBeGreaterThan(0);
     expect(result.derivedMaterials.length).toBeGreaterThan(0);
     expect(result).not.toHaveProperty("logisticsNotes");
@@ -75,6 +76,7 @@ describe("public action practical information", () => {
 
   it("returns explicit empty values for legacy actions without structured preparation", () => {
     expect(buildPublicActionPracticalInformation(undefined)).toEqual({
+      wasteCategories: [],
       accessibility: null,
       accessibilityStatus: null,
       accessibilityAlternativeRoute: null,

@@ -106,6 +106,17 @@ date/heure de début future selon le fuseau IANA validé de l’action
 access_mode != invite_link
 ```
 
+## Sécurité et collecte
+
+Les informations pratiques publiques réutilisent le guide partagé avec la
+préparation et `Jour J`. Les règles essentielles restent visibles et le détail
+est dans un `CmmDisclosure`. Les règles propres aux catégories attendues sont
+dérivées de `buildWasteFieldGuidance` et du catalogue Waste ; une action
+historique sans catégories conserve les consignes générales. Les consignes de
+l’organisateur restent séparées. Les recommandations renforcées pour un groupe
+scolaire sont explicitement contextuelles et ne sont pas présentées comme des
+obligations légales universelles.
+
 La liste `Besoins` réutilise ce même prédicat d’éligibilité pour l’action. Elle
 retire les besoins `cancelled` des projections publiques ; `expired` est un
 statut effectif calculé à la lecture pour un besoin resté `open` dont
@@ -396,7 +407,10 @@ Chaque carte d'action future publiée contient un bloc compact `Informations
 pratiques`. Sa projection publique minimale distingue les indications de
 l'organisateur (accessibilité, consignes, matériel à apporter ou fourni,
 message aux participants) des recommandations produites par le catalogue Waste
-à partir des déchets attendus. Les champs absents restent explicites :
+à partir des déchets attendus. Un guide de sécurité réutilise les slugs des
+catégories de déchets déclarées et les règles du catalogue ; les règles
+générales restent visibles pour les actions historiques sans catégorie. Les
+champs absents restent explicites :
 `Accessibilité non évaluée`, `Non renseigné` ou `Matériel à confirmer`.
 
 La carte ne renvoie jamais `preparation_data` dans son intégralité : les notes

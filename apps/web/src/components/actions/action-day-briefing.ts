@@ -1,4 +1,5 @@
 import type { ActionDayBriefing } from "@/lib/actions/day-briefing-http";
+import { buildActionSafetyGuideText } from "./action-safety-guide";
 
 type BriefingAction = ActionDayBriefing["action"];
 
@@ -45,6 +46,7 @@ export function buildActionDayBriefingText(briefing: ActionDayBriefing): string 
   ...buildBriefingScheduleLines(action),
   ...buildBriefingPreparationLines(action),
   ...buildBriefingChecklistLines(action),
+  buildActionSafetyGuideText(action.wasteCategories),
   action.safetyInstructions ? `Consignes : ${action.safetyInstructions}` : null,
   action.participantMessage ? `Informations pratiques : ${action.participantMessage}` : null,
   action.accessibility ? `Accessibilité : ${action.accessibility}` : null,

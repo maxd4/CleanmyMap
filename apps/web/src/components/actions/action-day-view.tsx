@@ -14,6 +14,7 @@ import { ActionFieldRolesPanel } from "./action-field-roles-panel";
 import { ActionAccessibilityCheckInPanel } from "./action-accessibility-check-in-panel";
 import { ActionAccessibilityImplementationPanel } from "./action-accessibility-implementation-panel";
 import { buildActionNavigationLinks, type ActionNavigationLinks } from "@/lib/actions/navigation-links";
+import { ActionSafetyGuide } from "./action-safety-guide";
 
 function formatRoute(briefing: ActionDayBriefing["action"]): string {
   if (briefing.route.topology === "loop") return "Boucle";
@@ -148,6 +149,7 @@ export function ActionDayView({ actionId }: { actionId: string }) {
       <ActionFieldRolesPanel actionId={actionId} />
       {briefing.access === "organizer" ? <><ActionAccessibilityImplementationPanel actionId={actionId} /><ActionAccessibilityCheckInPanel actionId={actionId} /></> : null}
       <ActionDayGuidanceCards action={action} />
+      <ActionSafetyGuide categories={action.wasteCategories} defaultOpen />
       {checklist ? <ActionDayChecklistCard checklist={checklist} onRequestWeather={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ weather.requestWeather(); }} /> : null}
     </div>
   );

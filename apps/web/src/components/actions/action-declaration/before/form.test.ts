@@ -226,7 +226,10 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(materialIndex).toBeGreaterThan(securityIndex);
     expect(accessibilityIndex).toBeGreaterThan(materialIndex);
     expect(logisticsIndex).toBeGreaterThan(accessibilityIndex);
-    expect(html).toContain("Recommandations calculées depuis les déchets attendus");
+    expect(html).toContain("Guide de sécurité et de collecte");
+    expect(html).toContain("Consulter le guide complet");
+    expect(html).toContain("Gants anti-coupure et contenant rigide adapté");
+    expect(html).toContain("bonbonnes et récipients sous pression");
     expect(html).toContain("Balisser");
     expect(html).toContain("Consignes particulières de l&#x27;organisateur");
     expect(html).toContain("Matériel fourni par l&#x27;organisateur");
@@ -285,7 +288,7 @@ describe("ActionBeforeDeclarationForm", () => {
 
     expect(html).toContain("Description historique à conserver.");
     expect(html).toContain("Précisions d&#x27;accessibilité");
-    expect(html).toContain("Aucune recommandation.");
+    expect(html).toContain("Aucune catégorie sûre n’est déclarée pour cette action.");
   });
 
   it("keeps a length error beside an overlong legacy value", () => {
@@ -391,7 +394,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Retirée");
     expect(html).toContain("Invitation après publication · présence non confirmée.");
     expect(html).toContain("Non évaluée");
-    expect(html).toContain("Lecture seule · séparées des consignes.");
+    expect(html).toContain("Les consignes de l’organisateur et les règles locales restent prioritaires.");
     expect(html).toContain("Notes logistiques internes");
     expect(html).toContain("Checklist avant départ");
   });
