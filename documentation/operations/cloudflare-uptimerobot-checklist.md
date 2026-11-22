@@ -19,122 +19,121 @@ Les moniteurs externes ne sont pas des cron Vercel. Leurs requêtes peuvent
 néanmoins consommer des `CDN Requests`, du `Fast Data Transfer` et, selon le
 cache et la route, des ressources serveur ou Supabase.
 
-## Rôles des trois points de contrôle
+## Rôles et limites des trois points de contrôle
 
-| Endpoint | Ce qui est réellement contrôlé | Limite |
+| Endpoint | Ce qui est contrôlé | Limites |
 |---|---|---|
-| `GET /api/uptime` | Disponibilité HTTP de la route et présence/cohérence de configurations critiques (Supabase, Clerk) | Ne teste **pas** la connectivité de Supabase. Répond HTTP `200` même si le JSON indique `criticalStatus: "degraded"` : une simple alerte HTTP 2xx/5xx ne détecte donc pas toutes les dégradations. Cache CDN `s-maxage=120`, avec `stale-while-revalidate=300`. |
-| `GET /api/health` | Disponibilité de la route, variables indispensables et connectivité Supabase via une lecture légère (`HEAD`/`select id`, `limit(1)`) | Répond `503` en cas de dégradation détectée ; requête potentiellement plus coûteuse. Cache CDN `s-maxage=60`, avec `stale-while-revalidate=120`. |
-| `GET /` | Accessibilité HTTP du véritable accueil public | Télécharge une réponse HTML nettement plus volumineuse ; HTTP `200` ne prouve pas l'hydratation ou le fonctionnement intégral de l'interface. |
+| `GET /api/uptime` | Disponibilité HTTP et cohérence des configurations critiques (Supabase, Clerk) | Ne teste pas la connectivité Supabase. Peut répondre HTTP `200` avec `criticalStatus: "degraded"`, donc une alerte fondée uniquement sur le code HTTP ne voit pas tous les états dégradés. Cache CDN `s-maxage=120`, `stale-while-revalidate=300`. |
+| `GET /api/health` | Configuration et connectivité Supabase via une lecture légère (`select id`, `limit(1)`, requête Supabase en HEAD) | Renvoie `503` en cas de dégradation. Cache CDN `s-maxage=60`, `stale-while-revalidate=120`. |
+| `GET /` | Accueil public et réponse HTML | La disponibilité HTTP ne prouve pas l'hydratation ni le fonctionnement intégral de l'interface. |
 
-Ne pas remplacer le contrôle de `/` par le seul `/api/uptime` : ils couvrent des
-pannes différentes. Ne pas multiplier les sondes fréquentes d'une même route
-sans besoin de redondance documenté.
+Ne pas supprimer le contrôle de `/` au seul motif que `/api/uptime` répond :
+ces sondes couvrent des pannes différentes. Ne pas multiplier les moniteurs
+d'une même URL sans besoin documenté.
 
-## Réglages recommandés pour l'exploitation courante (Hobby)
+## Configuration rapportée et cadence théorique — 22 novembre 2026
 
-| Fournisseur | Moniteur | Méthode et URL | Intervalle cible | But |
-|---|---|---|---|---|
-| **Sentry Uptime** | Accessibilité légère | `GET https://cleanmymap.fr/api/uptime` | **1 minute** | Détection rapide d'une panne HTTP sans recharger continuellement l'accueil |
-| **UptimeRobot** | Accueil public | `GET https://cleanmymap.fr/` | **30 minutes** | Vérification périodique de la vraie page |
-| **UptimeRobot** | Backend et Supabase | `GET https://cleanmymap.fr/api/health` | **15 minutes** | Détection de la dégradation de configuration ou de connectivité serveur |
+Le bilan Codex du 22 novembre rapporte trois moniteurs actifs. Ces réglages
+fournisseur sont **rapportés**, pas indépendamment revérifiés dans les tableaux
+de bord pendant la mise à jour de ce runbook. Ce profil est rapporté comme
+applicable sans abonnement payant ; aucune montée d'offre n'est recommandée.
 
-**Sentry Uptime** : conserver initialement le timeout de **10 secondes**, le
-seuil de **3 échecs consécutifs**, la méthode `GET` et `Allow Sampling` désactivé
-observés sur le moniteur existant. Le seuil correspond à environ trois minutes
-pour une sonde exécutée chaque minute, hors retards et erreurs de plateforme.
-Aucun en-tête HTTP personnalisé n'est requis par ces routes publiques ; ne pas
-ajouter d'en-tête factice ni de secret dans les captures ou la documentation.
+| Fournisseur | URL et méthode rapportées | Intervalle rapporté | Requêtes théoriques / jour | Alerte / rôle |
+|---|---|---:|---:|---|
+| Sentry Uptime | `GET https://cleanmymap.fr/api/uptime` | 1 h | 24 | Alerte après 3 échecs consécutifs ; disponibilité HTTP/configuration |
+| UptimeRobot | `HEAD https://cleanmymap.fr/api/health` | 12 h | 2 | Vérification de la route santé et potentiellement de Supabase |
+| UptimeRobot | `HEAD https://cleanmymap.fr/` | 12 h | 2 | Accessibilité de l'accueil ; contrôle moins probant du HTML |
+| **Total** | **3 moniteurs** |  | **28** | Calcul théorique, pas une mesure Vercel |
 
-**UptimeRobot** : conserver le type HTTP(s) et les notifications utiles.
-Les intervalles de 30 et 15 minutes doivent être vérifiés dans l'offre et
-l'interface effectivement disponibles. Le seuil d'alerte et les destinataires
-ne sont pas déduits des captures : les relire dans la configuration du service.
+Le bilan annonce une baisse théorique de **216 à 28 sondes/jour**, soit environ
+**87 %**. Ce calcul porte sur la fréquence nominale des moniteurs uniquement ;
+il ne mesure ni les invocations de fonctions, ni le cache, ni les unités de
+consommation, ni une économie réelle ou financière sur Vercel.
 
-### État observé avant changement — captures du 8 octobre 2026
+### Ce qui a été vérifié indépendamment
 
-Ce tableau est une **observation datée**, pas une preuve de l'état actuel après
-sauvegarde des paramètres :
+Le lockfile local fixe Next.js à `16.4.6`. Dans cette version, les Route
+Handlers App Router qui n'exportent pas `HEAD` réutilisent leur gestionnaire
+`GET` pour une requête `HEAD` ([implémentation Next.js 16.4.6](https://github.com/vercel/next.js/blob/v16.4.6/packages/next/src/server/route-modules/app-route/helpers/auto-implement-methods.ts)).
+La route `/api/health` exporte uniquement `GET`; ce gestionnaire effectue une
+lecture Supabase. Ainsi, `HEAD /api/health` peut exécuter cette lecture après
+résolution de la route. La réponse HEAD ne transporte pas le corps de la
+réponse, mais cela ne signifie pas que le gestionnaire GET n'a pas été exécuté.
 
-| Fournisseur | URL observée | Intervalle observé |
-|---|---|---|
+Cette lecture de source et du lockfile ne prouve pas les réglages UptimeRobot
+enregistrés, le résultat du dernier contrôle ni un cache HIT/MISS sur Vercel.
+Les headers de cache de la route santé peuvent influer sur l'exécution réelle ;
+le coût effectif doit être observé dans les données Vercel.
+
+Pour `HEAD /`, le contrôle reste utile à l'accessibilité HTTP, mais il est moins
+probant qu'un `GET` pour valider la présence et le contenu HTML complet. Il ne
+vérifie pas l'hydratation client. Le nombre de sondes ne permet pas à lui seul
+de conclure que les fonctions ou la génération de page ont été évitées.
+
+### Délai de détection et alertes
+
+Avec une sonde Sentry chaque heure et un seuil de 3 échecs consécutifs, une
+alerte peut nécessiter environ **2 à 3 heures** après la panne, selon le moment
+où elle survient dans le cycle, plus les délais de timeout et de notification.
+Sur UptimeRobot, une vérification toutes les 12 heures peut laisser une panne
+inconnue jusqu'à presque **12 heures** avant le prochain contrôle, puis ajouter
+les délais de retries ou d'escalade configurés. Le seuil UptimeRobot n'étant pas
+établi ici, ne pas promettre un délai plus court. Ces cadences sont un compromis
+de coût avec une détection moins rapide ; conserver les alertes utiles et
+connaître explicitement ce délai.
+
+## Historique distinct — captures du 8 octobre 2026
+
+Les captures du 8 octobre montrent un état antérieur et ne démontrent ni la
+configuration courante ni l'application des réglages rapportés le 22 novembre.
+
+| Fournisseur | URL observée en octobre | Intervalle observé |
+|---|---|---:|
 | Sentry Uptime | `https://cleanmymap.fr` | 1 minute |
 | UptimeRobot | `cleanmymap.fr` | 5 minutes |
 | UptimeRobot | `cleanmymap.fr/api/health` | 5 minutes |
 
-Les captures n'établissent pas que les modifications recommandées ont déjà
-été enregistrées. Après changement, vérifier à nouveau chaque fiche moniteur.
+Les captures d'octobre ne permettent pas de confirmer les méthodes HTTP
+utilisées alors ; ne pas leur attribuer rétroactivement `GET` ou `HEAD`.
 
-## Procédure de configuration
+Le relevé Vercel transmis le 8 octobre indiquait pour `/` environ **883
+requêtes en 12 heures**, **133 Mo sortants** et **150 Ko par réponse**. Ces
+valeurs restent une observation historique de la page d'accueil ; elles ne
+mesurent pas l'état post-configuration ni n'attribuent toutes les requêtes aux
+moniteurs.
 
-### Sentry Uptime
+## Vérification des réglages et mesure Vercel
 
-1. Dans l'organisation Sentry concernée, ouvrir **Monitors → Uptime**, puis le
-   moniteur qui vise actuellement `https://cleanmymap.fr`.
-2. Modifier seulement l'URL vers
-   `https://cleanmymap.fr/api/uptime` ; conserver `GET`, intervalle 1 minute,
-   timeout 10 secondes et seuil de 3 échecs, sauf décision d'exploitation
-   spécifique.
-3. Enregistrer et confirmer que la fiche active affiche l'URL et la fréquence
-   attendues ; observer au moins un contrôle réussi.
-4. Pour une surveillance de dégradation applicative, ne pas considérer le seul
-   statut HTTP `200` de `/api/uptime` comme suffisant : contrôler le champ
-   `criticalStatus` séparément si un moniteur de contenu est explicitement
-   configuré, ou s'appuyer sur `/api/health`.
+Pour vérifier la configuration réelle, ouvrir les tableaux de bord Sentry et
+UptimeRobot et confirmer URL, méthode, cadence, état actif, seuils et
+destinataires d'alerte. Observer un contrôle réussi par moniteur. Ce contrôle
+indépendant est nécessaire avant de qualifier le profil de configuration
+effective.
 
-### UptimeRobot
+Pour évaluer les coûts Vercel, comparer deux fenêtres équivalentes de **12 à
+24 heures** avant/après, couvrant des jours et des volumes de trafic
+comparables. Relever séparément pour `/`, `/api/uptime`, `/api/health` et les
+fonctions associées :
 
-1. Ouvrir **Monitoring**, puis le menu d'édition du moniteur
-   `cleanmymap.fr` ; conserver la cible `/` et régler l'intervalle à **30 min**.
-2. Ouvrir le moniteur `cleanmymap.fr/api/health` ; conserver son URL et régler
-   l'intervalle à **15 min**.
-3. Enregistrer chacun des moniteurs. Confirmer les nouvelles cadences, le type
-   HTTP(s), leur état actif et les destinataires d'alerte.
-4. Si la cadence souhaitée n'est pas disponible dans le plan utilisé, choisir
-   une cadence effectivement offerte et documenter l'écart ; ne pas inventer
-   une limitation ou changer d'abonnement sans décision explicite.
+- **Active CPU** ;
+- **Provisioned Memory** ;
+- **Invocations** ;
+- cache **HIT/MISS** (et revalidations si disponibles).
 
-## Justification coût et méthode de validation
+Inclure dates/heures des fenêtres et changements de trafic, déploiement ou
+autres clients. La baisse théorique de 216 à 28 sondes/jour ne constitue pas le
+résultat de cette comparaison. Ne déclarer une économie Vercel qu'à partir des
+métriques mesurées, et distinguer baisse de sondes, baisse d'invocations et
+baisse de consommation facturable.
 
-Le relevé Vercel transmis le 8 octobre 2026 montrait pour `/` environ **883
-requêtes en 12 heures**, **133 Mo sortants** et **150 Ko par réponse**.
-Avant modification, les fréquences nominales Sentry (720/12 h) et UptimeRobot
-accueil (144/12 h) représentent ensemble **864 sondes théoriques par 12 heures**.
-La proximité des volumes est un indice fort, **pas une attribution exhaustive** :
-les fenêtres, les éventuelles redirections et les autres clients peuvent varier.
-
-À fréquence nominale constante, le passage des deux sondes d'accueil à la
-seule vérification UptimeRobot toutes les 30 minutes réduit leur nombre
-théorique de **1 728 à 48 téléchargements de `/` par jour**, soit environ
-**97 %** des *téléchargements d'accueil dus à ces deux moniteurs*.
-Il ne prédit pas une économie identique sur le trafic total ni sur le prix de
-Vercel. Le moniteur Sentry continue de solliciter `/api/uptime` chaque minute.
-
-Après sauvegarde des trois moniteurs :
-
-1. Confirmer les URL, cadences et statuts dans **Sentry** et **UptimeRobot**.
-2. Contrôler la disponibilité des trois endpoints et le maintien des alertes.
-3. Dans Vercel Hobby, comparer deux fenêtres de **12 h** de la même route `/`
-   (nombre de requêtes, transfert sortant, taille moyenne de réponse), en
-   tenant compte des autres changements de trafic et des redirections.
-4. Examiner également les requêtes de `/api/uptime` et `/api/health`, les
-   invocations de fonctions et, si disponible, les cache hits, afin de vérifier
-   qu'aucune économie n'a seulement déplacé une charge plus coûteuse.
-5. Si les volumes restent élevés, examiner les robots de recherche, previews
-   de liens et autres moniteurs avant de modifier le rendu de l'accueil ou les
-   règles Firewall.
-
-La présence d'un cache CDN ne rend pas gratuits les octets envoyés à chaque
-sonde. Ne pas attribuer un gain réel avant la mesure post-configuration.
-
-## Diagnostic et escalade
+## Procédure de vérification et diagnostic
 
 ```mermaid
 flowchart TD
   A[Alerte de supervision] --> B{Cible en échec ?}
-  B -- /api/health --> C[Examiner configuration critique et connectivité Supabase]
-  B -- /api/uptime --> D[Examiner HTTP, déploiement et état critique JSON]
-  B -- / --> E[Examiner CDN, domaine, DNS et rendu d'accueil]
+  B -- /api/health --> C[Examiner configuration et connectivité Supabase]
+  B -- /api/uptime --> D[Examiner HTTP et état critique JSON]
+  B -- / --> E[Examiner domaine, DNS, CDN et réponse HTML]
   C --> F[Consulter logs Vercel et service concerné]
   D --> F
   E --> F
@@ -145,16 +144,15 @@ flowchart TD
 
 - `/api/health` en HTTP `503` : examiner les variables de configuration et la
   connectivité Supabase avant de conclure à une indisponibilité générale.
-- `/api/uptime` en HTTP `200` avec `criticalStatus: "degraded"` : signal de
-  configuration dégradée **non visible par une alerte fondée sur le seul code HTTP**.
-- `/` inaccessible : vérifier en priorité domaine/DNS, TLS, déploiement Vercel,
-  CDN et erreur de rendu ; ne pas neutraliser cette sonde sous prétexte de coût.
+- `/api/uptime` en HTTP `200` avec `criticalStatus: "degraded"` : une alerte
+  fondée uniquement sur le code HTTP ne verra pas cet état.
+- `/` inaccessible : vérifier domaine/DNS, TLS, déploiement Vercel, CDN et
+  réponse HTML ; ne pas neutraliser le contrôle pour viser une économie non mesurée.
 
 Voir [`runbook-monitoring-logs.md`](./runbook-monitoring-logs.md) et
 [`incidents-frequents-et-reprise.md`](./incidents-frequents-et-reprise.md)
-pour la qualification et la résolution des incidents. Les seuils d'escalade
-opérationnels doivent être ajustés à la cadence choisie : un moniteur toutes
-les 30 minutes ne peut pas garantir une détection sous cinq minutes.
+pour la qualification et la résolution des incidents. Caler les attentes
+d'escalade sur le délai pouvant atteindre 12 heures des contrôles UptimeRobot.
 
 ## Checklist historique — cutover Cloudflare / Next.js
 
