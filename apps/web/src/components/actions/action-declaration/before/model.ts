@@ -49,6 +49,7 @@ export type ActionBeforeDeclarationFormProps = {
   guidedReadiness?: "unknown" | "ready" | "blocked";
   preparationContext?: ActionPreparationContext;
   activeSection?: "all" | ActionCreationSectionId;
+  onEditDefinition?: () => void;
 };
 
 export type PublicationSummaryItem = {

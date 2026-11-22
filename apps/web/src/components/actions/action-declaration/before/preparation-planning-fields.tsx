@@ -4,32 +4,21 @@ import { ClipboardList } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmField, CmmTextarea } from "@/components/ui/cmm-field";
 import { getPlaceTypeFormOptions } from "@/lib/actions/place-type-options";
-import { getVolunteerParticipationDisclosureDetail } from "@/lib/actions/volunteer-participation";
 import type { BaseSectionProps } from "./section-contract";
-import { SelectField, VolunteerForecast } from "./planned-action-volunteer-section";
+import { SelectField } from "./planned-action-volunteer-section";
 import { ExpectedWasteSection } from "./planned-action-waste-section";
-import { DIFFICULTY_OPTIONS, PLANNED_OBJECTIVE_OPTIONS } from "./model";
+import { DIFFICULTY_OPTIONS } from "./model";
 import { SectionLabel } from "./ui";
 
-export function PreparationPlanningFields({
-  form,
-  updateField,
-  validationIssueFields,
-  embedded = false,
-}: BaseSectionProps & { embedded?: boolean }) {
-  const splitDetail = getVolunteerParticipationDisclosureDetail(form);
-
+export function PreparationPlanningFields(
+  props: BaseSectionProps & { embedded?: boolean },
+) {
+  const { form, updateField, embedded = false } = props;
   const content = (
     <div className="space-y-5">
         <SectionLabel
           icon={ClipboardList}
           title="Prévisions et informations pratiques"
-        />
-        <VolunteerForecast
-          form={form}
-          updateField={updateField}
-          splitDetail={splitDetail}
-          validationIssueFields={validationIssueFields}
         />
         <CmmField
           id="before-participant-message"
@@ -43,14 +32,7 @@ export function PreparationPlanningFields({
             placeholder="Ex. Merci d’arriver 10 minutes avant."
           />
         </CmmField>
-        <div className="grid gap-4 md:grid-cols-3">
-          <SelectField
-            label="Type d’action prévue"
-            value={form.plannedObjective}
-            onChange={(value) => updateField("plannedObjective", value as typeof form.plannedObjective)}
-            options={PLANNED_OBJECTIVE_OPTIONS}
-            placeholder="Sélectionnez un type d’action"
-          />
+        <div className="grid gap-4 md:grid-cols-2">
           <SelectField
             label="Type de zone"
             value={form.placeType}

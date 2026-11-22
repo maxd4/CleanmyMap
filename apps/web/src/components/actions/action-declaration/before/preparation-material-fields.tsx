@@ -8,11 +8,6 @@ import {
 } from "./preparation-field-utils";
 
 export function PreparationMaterialFields({ form, updateField }: BaseSectionProps) {
-  const providedError = characterLimitError(
-    form.materialsProvided,
-    "Le matériel fourni",
-    PREPARATION_FIELD_LIMITS.materialsProvided,
-  );
   const recommendedError = characterLimitError(
     form.recommendedMaterials,
     "Le complément matériel",
@@ -28,21 +23,6 @@ export function PreparationMaterialFields({ form, updateField }: BaseSectionProp
 
   return (
     <div className="space-y-4">
-      <CmmField
-        id="before-materials-provided"
-        label="Matériel fourni par l'organisateur"
-        hint={`Disponible sur place. ${characterLimitHint(form.materialsProvided, PREPARATION_FIELD_LIMITS.materialsProvided)}`}
-        error={providedError}
-      >
-        <CmmTextarea
-          value={form.materialsProvided}
-          onChange={(event) => updateField("materialsProvided", event.target.value)}
-          rows={2}
-          maxLength={PREPARATION_FIELD_LIMITS.materialsProvided}
-          placeholder="Ex. Sacs renforcés et pinces disponibles au point de rendez-vous..."
-        />
-      </CmmField>
-
       <fieldset className="space-y-2">
         <legend className="text-sm font-semibold text-emerald-950">Matériel à apporter par les bénévoles</legend>
         <div className="grid gap-2 sm:grid-cols-2">

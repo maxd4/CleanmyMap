@@ -19,6 +19,7 @@ import { ActionSearchCountryField } from "./action-search-country-field";
 
 export function ActionBeforeFormView({
   activeSection,
+  onEditDefinition,
   form,
   submissionState,
   validationIssues,
@@ -44,6 +45,7 @@ export function ActionBeforeFormView({
   onRetryDraftLoad,
 }: {
   activeSection: "all" | ActionCreationSectionId;
+  onEditDefinition?: () => void;
   form: FormState;
   submissionState: "idle" | "pending" | "success" | "error";
   validationIssues: string[];
@@ -88,6 +90,7 @@ export function ActionBeforeFormView({
           {sectioned ? (
             <ActionBeforeSectionedContent
               activeSection={activeSection}
+              onEditDefinition={onEditDefinition}
               form={form}
               updateField={updateField}
               updateFields={updateFields}

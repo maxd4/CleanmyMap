@@ -73,8 +73,8 @@ export function ActionCreationSectionNavigation({
   onSelect: (section: ActionCreationSectionState["activeSection"]) => void;
 }) {
   return (
-    <nav aria-label={fr ? "Sections de l’action" : "Action sections"} data-testid="action-creation-section-nav">
-      <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+    <nav aria-label={fr ? "Étapes de l’action" : "Action steps"} data-testid="action-creation-section-nav">
+      <ol className="grid grid-cols-2 gap-2">
         {ACTION_CREATION_SECTIONS.map((section, index) => {
           const labels = ACTION_CREATION_SECTION_LABELS[section];
           const status = state.statuses[section];
@@ -88,7 +88,7 @@ export function ActionCreationSectionNavigation({
                 aria-describedby={`action-creation-section-description-${section}`}
                 onClick={() => onSelect(section)}
                 className={cn(
-                  "flex min-h-16 w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left transition motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+                  "flex min-h-12 w-full items-center gap-2 rounded-xl border px-2 py-2 text-left transition motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 sm:px-3",
                   active ? "border-emerald-500 bg-emerald-50" : "border-emerald-100 bg-white/85 hover:border-emerald-300 hover:bg-emerald-50/60",
                 )}
               >
@@ -96,9 +96,9 @@ export function ActionCreationSectionNavigation({
                   {status === "done" ? <Check size={15} aria-hidden="true" /> : index + 1}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-black text-emerald-950">{labels[fr ? "fr" : "en"]}</span>
-                  <span className="mt-0.5 block text-xs font-semibold text-emerald-900/70">{statusLabel}</span>
-                  <span id={`action-creation-section-description-${section}`} className="mt-1 block text-xs leading-5 text-emerald-900/60">{labels.description[fr ? "fr" : "en"]}</span>
+                  <span className="block text-xs font-black leading-4 text-emerald-950 sm:text-sm">{labels[fr ? "fr" : "en"]}</span>
+                  <span className="block text-xs font-semibold leading-4 text-emerald-900/70">{statusLabel}</span>
+                  <span id={`action-creation-section-description-${section}`} className="sr-only">{labels.description[fr ? "fr" : "en"]}</span>
                 </span>
               </button>
             </li>

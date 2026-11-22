@@ -1,62 +1,85 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ACTION_CREATION_SECTIONS,
   ACTION_CREATION_SECTION_STATUS_LABELS,
   createActionCreationSectionState,
-  setActionCreationSectionStatus,
+  loadActionCreationSectionState,
   migrateLegacyActionWorkflowState,
+  migrateV1ActionCreationSectionState,
+  saveActionCreationSectionState,
+  setActionCreationSectionStatus,
 } from "./action-creation-sections";
 
-describe("action creation sections contract", () => {
-  it("keeps the four sections stable and freely navigable", () => {
-    const state = createActionCreationSectionState("action-42", "verification");
+describe("action creation stages contract", () => {
+  afterEach(() => vi.unstubAllGlobals());
 
-    expect(ACTION_CREATION_SECTIONS).toEqual([
-      "essentiel",
-      "terrain",
-      "equipe",
-      "verification",
-    ]);
-    expect(state.activeSection).toBe("verification");
-    expect(Object.values(state.statuses)).toEqual(["todo", "todo", "todo", "todo"]);
+  it("exposes exactly the two navigable stages", () => {
+    const state = createActionCreationSectionState("action-42", "preparer");
+
+    expect(ACTION_CREATION_SECTIONS).toEqual(["definir", "preparer"]);
+    expect(state.activeSection).toBe("preparer");
+    expect(Object.values(state.statuses)).toEqual(["todo", "todo"]);
   });
 
-  it("exposes only derived UX labels and keeps incomplete sections non-blocking", () => {
-    const state = createActionCreationSectionState(null, "essentiel");
-    const reviewed = setActionCreationSectionStatus(state, "verification", "review");
-    const complete = setActionCreationSectionStatus(reviewed, "essentiel", "done");
+  it("keeps stage status derived and formalities do not complete preparation", () => {
+    const state = createActionCreationSectionState(null, "definir");
+    const reviewed = setActionCreationSectionStatus(state, "preparer", "review");
+    const complete = setActionCreationSectionStatus(reviewed, "definir", "done");
 
     expect(ACTION_CREATION_SECTION_STATUS_LABELS.todo.fr).toBe("À compléter");
     expect(ACTION_CREATION_SECTION_STATUS_LABELS.review.fr).toBe("À vérifier");
     expect(ACTION_CREATION_SECTION_STATUS_LABELS.done.fr).toBe("Complet");
-    expect(complete.activeSection).toBe("essentiel");
-    expect(complete.statuses.terrain).toBe("todo");
-    expect(complete.statuses.verification).toBe("review");
+    expect(complete.statuses.preparer).toBe("review");
   });
 
-  it("migrates the legacy workflow without losing the action identity or review states", () => {
-    const migrated = migrateLegacyActionWorkflowState({
-      schemaVersion: "action-workflow-v1",
-      actionId: "action-42",
-      activeStep: "paris",
-      statuses: {
-        itineraire: "done",
-        preparation: "review",
-        paris: "done",
-        preformulaire: "done",
-      },
-    });
-
-    expect(migrated).toEqual({
+  it("migrates v1 active steps and statuses to v2 without losing the action id", () => {
+    const migrated = migrateV1ActionCreationSectionState({
       schemaVersion: "action-creation-sections-v1",
       actionId: "action-42",
       activeSection: "verification",
-      statuses: {
-        essentiel: "done",
-        terrain: "review",
-        equipe: "todo",
-        verification: "done",
-      },
+      statuses: { essentiel: "done", terrain: "done", equipe: "todo", verification: "done" },
     });
+
+    expect(migrated).toEqual({
+      schemaVersion: "action-creation-sections-v2",
+      actionId: "action-42",
+      activeSection: "preparer",
+      statuses: { definir: "done", preparer: "todo" },
+    });
+  });
+
+  it("migrates v1 from localStorage and writes the v2 key", () => {
+    const values = new Map<string, string>([["cleanmymap.action-creation-sections.v1", JSON.stringify({
+      schemaVersion: "action-creation-sections-v1",
+      actionId: "action-42",
+      activeSection: "essentiel",
+      statuses: { essentiel: "review", terrain: "review", equipe: "todo", verification: "done" },
+    })]]);
+    vi.stubGlobal("window", { localStorage: {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    } });
+
+    expect(loadActionCreationSectionState()).toMatchObject({ actionId: "action-42", activeSection: "definir", schemaVersion: "action-creation-sections-v2" });
+    expect(JSON.parse(values.get("cleanmymap.action-creation-sections.v2") ?? "{}")).toMatchObject({ actionId: "action-42", statuses: { preparer: "review" } });
+  });
+
+  it("migrates legacy workflow formalities without treating them as complete", () => {
+    const migrated = migrateLegacyActionWorkflowState({
+      actionId: "action-42",
+      activeStep: "paris",
+      statuses: { itineraire: "done", preparation: "done", paris: "done", preformulaire: "done" },
+    });
+
+    expect(migrated.activeSection).toBe("preparer");
+    expect(migrated.statuses).toEqual({ definir: "done", preparer: "todo" });
+  });
+
+  it("writes a v2 local state without changing server-side draft contracts", () => {
+    const values = new Map<string, string>();
+    vi.stubGlobal("window", { localStorage: { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value) } });
+    const state = createActionCreationSectionState("action-9", "preparer");
+    saveActionCreationSectionState(state);
+    expect(JSON.parse(values.get("cleanmymap.action-creation-sections.v2") ?? "{}")).toEqual(state);
   });
 });

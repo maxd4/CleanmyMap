@@ -29,13 +29,21 @@ describe("action creation panel routes", () => {
     );
   });
 
-  it("maps legacy steps and panels to the four UX sections", () => {
-    expect(normalizeActionCreationSection("terrain")).toBe("terrain");
-    expect(normalizeActionCreationSection(undefined, { step: "itineraire" })).toBe("terrain");
-    expect(normalizeActionCreationSection(undefined, { step: "preparation" })).toBe("terrain");
-    expect(normalizeActionCreationSection(undefined, { step: "paris" })).toBe("verification");
-    expect(normalizeActionCreationSection(undefined, { panel: "formalites" })).toBe("verification");
-    expect(normalizeActionCreationSection(undefined)).toBe("essentiel");
+  it("maps historical section, step, panel and subsection links to the two stages", () => {
+    expect(normalizeActionCreationSection("definir")).toBe("definir");
+    expect(normalizeActionCreationSection("essentiel")).toBe("definir");
+    expect(normalizeActionCreationSection("terrain")).toBe("preparer");
+    expect(normalizeActionCreationSection("equipe")).toBe("preparer");
+    expect(normalizeActionCreationSection("verification")).toBe("preparer");
+    expect(normalizeActionCreationSection(undefined, { step: "itineraire" })).toBe("preparer");
+    expect(normalizeActionCreationSection(undefined, { step: "preparation" })).toBe("preparer");
+    expect(normalizeActionCreationSection(undefined, { step: "paris" })).toBe("preparer");
+    expect(normalizeActionCreationSection(undefined, { step: "preformulaire" })).toBe("definir");
+    expect(normalizeActionCreationSection(undefined, { panel: "formalites" })).toBe("preparer");
+    expect(normalizeActionCreationSection(undefined, { panel: "pre-formulaire" })).toBe("definir");
+    expect(normalizeActionCreationSection(undefined, { subsection: "formalites" })).toBe("preparer");
+    expect(normalizeActionCreationSection(undefined, { subsection: "pre-formulaire" })).toBe("definir");
+    expect(normalizeActionCreationSection(undefined)).toBe("definir");
     expect(normalizeActionCreationSubsection(undefined, { step: "itineraire" })).toBe("route");
     expect(normalizeActionCreationSubsection(undefined, { step: "preparation" })).toBe("meteo");
     expect(normalizeActionCreationSubsection(undefined, { step: "paris" })).toBe("formalites");
@@ -43,14 +51,20 @@ describe("action creation panel routes", () => {
 
   it("builds a section deep-link without losing the action identity or source context", () => {
     expect(
-      buildActionCreationSectionHref("verification", {
+      buildActionCreationSectionHref("preparer", {
         actionId: "action-42",
         from: "planner",
         fromEventId: "event-7",
         tag: ["review", "publish"],
       }),
     ).toBe(
-      "/actions/new?section=verification&actionId=action-42&from=planner&fromEventId=event-7&tag=review&tag=publish",
+      "/actions/new?section=preparer&actionId=action-42&from=planner&fromEventId=event-7&tag=review&tag=publish",
+    );
+  });
+
+  it("canonicalizes old stage query parameters when building the next link", () => {
+    expect(buildActionCreationSectionHref("preparer", { step: "paris", panel: "formalites", subsection: "formalites", actionId: "action-42" })).toBe(
+      "/actions/new?section=preparer&actionId=action-42",
     );
   });
 

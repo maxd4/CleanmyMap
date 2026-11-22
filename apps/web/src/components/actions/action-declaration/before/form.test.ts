@@ -9,13 +9,15 @@ import { PreparationAndSafetySection } from "./preparation-and-safety-section";
 import { PreparationPlanningFields } from "./preparation-planning-fields";
 import { ScheduleFields } from "./planned-action-schedule-fields";
 import { createInitialFormState } from "../payload";
+import { InterventionModeFields } from "./intervention-mode-fields";
 import { TerrainActionSection } from "./terrain-action-section";
 import { TeamLogisticsSection } from "./team-logistics-section";
 
 describe("ActionBeforeDeclarationForm", () => {
-  it("offers the three terrain modes and keeps a fixed-area form out of route controls", () => {
+  it("keeps the collection mode in Define and a fixed-area preparation out of route controls", () => {
     const form = createInitialFormState("Aperçu local", "action");
     form.interventionMode = { version: "intervention-mode-v1", mode: "fixed_area" };
+    const modeHtml = renderToStaticMarkup(React.createElement(InterventionModeFields, { form, updateFields: vi.fn() }));
     const html = renderToStaticMarkup(
       React.createElement(TerrainActionSection, {
         form,
@@ -26,11 +28,31 @@ describe("ActionBeforeDeclarationForm", () => {
       }),
     );
 
-    expect(html).toContain("Collecte sur une zone précise");
-    expect(html).toContain("Cleanwalk itinérante");
-    expect(html).toContain("Plusieurs zones ou groupes");
+    expect(modeHtml).toContain("Zone fixe");
+    expect(modeHtml).toContain("Itinéraire");
+    expect(modeHtml).toContain("Plusieurs groupes");
+    expect(html).not.toContain('data-testid="intervention-mode-selector"');
     expect(html).toContain("Zone fixe : secteur et rendez-vous.");
+    expect(html).not.toContain('id="before-departure-location"');
+    expect(html).not.toContain('id="before-action-date"');
+    expect(html).not.toContain('id="before-meeting-time"');
     expect(html).not.toContain("Type de parcours");
+  });
+
+  it("shows the main place read-only with a return to Define", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.communeZoneLabel = "Paris 15e";
+    form.departureLocationLabel = "Quai nord";
+    const html = renderToStaticMarkup(React.createElement(TerrainActionSection, {
+      form,
+      updateField: vi.fn(),
+      updateFields: vi.fn(),
+      onEditDefinition: vi.fn(),
+    }));
+
+    expect(html).toContain("Lieu principal : Quai nord");
+    expect(html).toContain("Modifier");
+    expect(html).not.toContain('id="before-departure-location"');
   });
 
   it("renders the lightweight pre-action form", () => {
@@ -219,7 +241,7 @@ describe("ActionBeforeDeclarationForm", () => {
     );
 
     const securityIndex = html.indexOf("Sécurité et risques");
-    const materialIndex = html.indexOf("Matériel à prévoir");
+    const materialIndex = html.indexOf("Matériel");
     const accessibilityIndex = html.indexOf("Accessibilité");
     const logisticsIndex = html.indexOf("Logistique et checklist");
     expect(securityIndex).toBeGreaterThan(-1);
@@ -232,7 +254,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("bonbonnes et récipients sous pression");
     expect(html).toContain("Balisser");
     expect(html).toContain("Consignes particulières de l&#x27;organisateur");
-    expect(html).toContain("Matériel fourni par l&#x27;organisateur");
+    expect(html).toContain("Matériel fourni par l’organisateur");
     expect(html).toContain("Complément libre à apporter (facultatif)");
     expect(html).toContain("Précisions d&#x27;accessibilité");
     expect(html).toContain("Checklist avant départ");
@@ -267,9 +289,11 @@ describe("ActionBeforeDeclarationForm", () => {
       }),
     );
 
-    expect(html).toMatch(/id="before-volunteers-count"[^>]*value="12"/);
+    expect(html).not.toContain('id="before-volunteers-count"');
+    expect(html).not.toContain("Type d’action prévue");
+    expect(html).not.toContain('id="before-action-objective"');
     expect(html).toContain("Merci d’arriver dix minutes avant.");
-    expect(html).toContain("Nettoyage");
+    expect(html).toContain("À identifier");
     expect(html).toContain("Bois/Parc/Jardin/Square/Sentier");
     expect(html).toContain("Modérée");
     expect(html).toContain("Gants anti-coupure et contenant rigide adapté");
@@ -386,7 +410,7 @@ describe("ActionBeforeDeclarationForm", () => {
       }),
     );
 
-    expect(html.indexOf("Organisateurs")).toBeLessThan(html.indexOf("Inscriptions des bénévoles"));
+    expect(html.indexOf("Partenaires et comptes associés")).toBeLessThan(html.indexOf("Inscriptions et invitations"));
     expect(html.indexOf("Inscriptions des bénévoles")).toBeLessThan(html.indexOf("Prévisions et informations pratiques"));
     expect(html.indexOf("Prévisions et informations pratiques")).toBeLessThan(html.indexOf("Sécurité et risques"));
     expect(html).toContain("Acceptée");
@@ -397,6 +421,9 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Les consignes de l’organisateur et les règles locales restent prioritaires.");
     expect(html).toContain("Notes logistiques internes");
     expect(html).toContain("Checklist avant départ");
+    expect(html).not.toContain('id="before-organizer-structure"');
+    expect(html).not.toContain('id="before-volunteers-count"');
+    expect(html).not.toContain("Visibilité de l’action");
   });
 
   it.each([

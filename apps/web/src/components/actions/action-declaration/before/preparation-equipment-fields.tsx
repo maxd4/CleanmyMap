@@ -1,5 +1,5 @@
 import { CmmCard } from "@/components/ui/cmm-card";
-import { CmmField, CmmInput } from "@/components/ui/cmm-field";
+import { CmmField, CmmInput, CmmTextarea } from "@/components/ui/cmm-field";
 import {
   ACTION_EQUIPMENT_INVENTORY,
   ACTION_MATERIAL_SUGGESTIONS,
@@ -11,6 +11,7 @@ import {
 import type { ActionEquipmentInventory } from "@/lib/actions/preparation-contract";
 import { deriveActionVolunteerChecklist, actionChecklistProvenanceLabel } from "@/lib/actions/action-preparation-checklist";
 import type { BaseSectionProps } from "./section-contract";
+import { characterLimitError, characterLimitHint, PREPARATION_FIELD_LIMITS } from "./preparation-field-utils";
 import {
   createActionPreparationWeatherRequest,
   useActionPreparationWeather,
@@ -131,6 +132,7 @@ function PreparationEquipmentPreview({
 }
 
 export function PreparationEquipmentFields({ form, updateField }: BaseSectionProps) {
+  const providedMaterialsError = characterLimitError(form.materialsProvided, "Le matériel fourni", PREPARATION_FIELD_LIMITS.materialsProvided);
   const inventoryLines = declaredEquipmentLines(form.equipmentInventory);
   const unavailableEquipmentLines = explicitlyUnavailableEquipmentLines(form.equipmentInventory);
   const refreshmentLines = declaredRefreshmentLines(form.refreshmentsProvided);
@@ -180,6 +182,9 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
   return (
     <div className="grid gap-4 lg:grid-cols-2" data-testid="preparation-equipment-fields">
       <div className="space-y-4">
+        <CmmField id="before-materials-provided" label="Matériel fourni par l’organisateur" hint={`Disponible sur place. ${characterLimitHint(form.materialsProvided, PREPARATION_FIELD_LIMITS.materialsProvided)}`} error={providedMaterialsError}>
+          <CmmTextarea value={form.materialsProvided} onChange={(event) => updateField("materialsProvided", event.target.value)} rows={2} maxLength={PREPARATION_FIELD_LIMITS.materialsProvided} placeholder="Ex. Sacs renforcés et pinces disponibles au point de rendez-vous..." />
+        </CmmField>
         <fieldset className="space-y-3">
           <legend className="text-sm font-semibold text-emerald-950">Équipements quantifiables</legend>
           <p className="text-xs leading-5 text-emerald-900/70">Vide = inconnu · 0 = absent.</p>

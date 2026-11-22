@@ -8,10 +8,8 @@ export type ActionCreationTab = "before" | "after";
 export type ActionCreationSpace = "prepare" | "day" | "bilan";
 
 export type ActionCreationSectionId =
-  | "essentiel"
-  | "terrain"
-  | "equipe"
-  | "verification";
+  | "definir"
+  | "preparer";
 
 export type ActionCreationSubsectionId =
   | "route"
@@ -27,19 +25,19 @@ export type ActionWorkflowStepId =
 
 const ACTION_CREATION_ROUTE = "/actions/new";
 const ACTION_CREATION_SPACES: readonly ActionCreationSpace[] = ["prepare", "day", "bilan"];
-const ACTION_CREATION_SECTION_VALUES: readonly ActionCreationSectionId[] = ["essentiel", "terrain", "equipe", "verification"];
+const ACTION_CREATION_SECTION_VALUES: readonly ActionCreationSectionId[] = ["definir", "preparer"];
 const ACTION_CREATION_SUBSECTION_VALUES: readonly ActionCreationSubsectionId[] = ["route", "meteo", "formalites", "pre-formulaire"];
 const LEGACY_STEP_TO_SECTION: Record<string, ActionCreationSectionId> = {
-  itineraire: "terrain",
-  preparation: "terrain",
-  paris: "verification",
-  preformulaire: "essentiel",
+  itineraire: "preparer",
+  preparation: "preparer",
+  paris: "preparer",
+  preformulaire: "definir",
 };
 const LEGACY_PANEL_TO_SECTION: Record<ActionCreationPanelId, ActionCreationSectionId> = {
-  itineraire: "terrain",
-  meteo: "terrain",
-  formalites: "verification",
-  "pre-formulaire": "essentiel",
+  itineraire: "preparer",
+  meteo: "preparer",
+  formalites: "preparer",
+  "pre-formulaire": "definir",
 };
 const LEGACY_STEP_TO_SUBSECTION: Record<string, ActionCreationSubsectionId> = {
   itineraire: "route",
@@ -92,6 +90,7 @@ export function normalizeActionCreationSection(
   context: {
     step?: string | string[];
     panel?: ActionCreationPanelId;
+    subsection?: string | string[];
     from?: string;
   } = {},
 ): ActionCreationSectionId {
@@ -99,10 +98,15 @@ export function normalizeActionCreationSection(
   if (ACTION_CREATION_SECTION_VALUES.includes(candidate as ActionCreationSectionId)) {
     return candidate as ActionCreationSectionId;
   }
+  if (candidate === "essentiel") return "definir";
+  if (candidate === "terrain" || candidate === "equipe" || candidate === "verification") return "preparer";
   const legacyStep = LEGACY_STEP_TO_SECTION[firstSearchParam(context.step) ?? ""];
   if (legacyStep) return legacyStep;
-  if (context.panel && context.panel !== "pre-formulaire") return LEGACY_PANEL_TO_SECTION[context.panel];
-  return context.from === "planner" ? "terrain" : "essentiel";
+  const legacySubsection = firstSearchParam(context.subsection);
+  if (legacySubsection === "pre-formulaire") return "definir";
+  if (legacySubsection && ACTION_CREATION_SUBSECTION_VALUES.includes(legacySubsection as ActionCreationSubsectionId)) return "preparer";
+  if (context.panel) return LEGACY_PANEL_TO_SECTION[context.panel];
+  return context.from === "planner" ? "preparer" : "definir";
 }
 
 export function normalizeActionCreationSubsection(
@@ -179,7 +183,11 @@ export function buildActionCreationSectionHref(
   searchParams: Record<string, string | string[] | undefined> = {},
 ): string {
   const params = new URLSearchParams({ section });
-  appendSearchParams(params, searchParams, "section");
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (["section", "step", "panel", "subsection"].includes(key) || value === undefined) continue;
+    if (Array.isArray(value)) value.forEach((item) => params.append(key, item));
+    else params.append(key, value);
+  }
   return `${ACTION_CREATION_ROUTE}?${params.toString()}`;
 }
 

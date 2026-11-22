@@ -95,7 +95,7 @@ describe("action creation entry point", () => {
     expect(html).toContain('data-action-id="action-7"');
     expect(html).toContain('data-event-id="event-42"');
     expect(html).toContain('data-initial-panel="pre-formulaire"');
-    expect(html).toContain('data-initial-section="essentiel"');
+    expect(html).toContain('data-initial-section="definir"');
     expect(html).toContain('data-initial-tab="after"');
     expect(html).toContain(
       'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3Ftab%3Dafter%26fromEventId%3Devent-42%26actionId%3Daction-7"',
@@ -155,9 +155,9 @@ describe("action creation entry point", () => {
 
     expect(html).toContain('data-initial-tab="before"');
     expect(html).toContain('data-initial-panel="pre-formulaire"');
-    expect(html).toContain('data-initial-section="terrain"');
+    expect(html).toContain('data-initial-section="preparer"');
     expect(html).toContain(
-      'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3Fsection%3Dterrain%26fromEventId%3Devent-42%26from%3Dplanner"',
+      'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3Fsection%3Dpreparer%26fromEventId%3Devent-42%26from%3Dplanner"',
     );
   });
 
@@ -176,7 +176,7 @@ describe("action creation entry point", () => {
     );
   });
 
-  it("maps legacy formalities links to verification without changing the action identity", async () => {
+  it("maps legacy formalities links to preparation without changing the action identity", async () => {
     const html = renderToStaticMarkup(
       await NewActionPage({
         searchParams: Promise.resolve({
@@ -187,7 +187,7 @@ describe("action creation entry point", () => {
       }),
     );
 
-    expect(html).toContain('data-initial-section="verification"');
+    expect(html).toContain('data-initial-section="preparer"');
     expect(html).toContain('data-action-id="action-42"');
     expect(html).toContain('data-event-id="event-42"');
   });

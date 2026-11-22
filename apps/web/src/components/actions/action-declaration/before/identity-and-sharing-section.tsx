@@ -34,6 +34,7 @@ type IdentityAndSharingSectionProps = BaseSectionProps & {
   showGroupJoinHelp: boolean;
   onToggleGroupJoinHelp: () => void;
   showVolunteerRegistration?: boolean;
+  fieldMode?: "all" | "definition" | "coordination";
   invitationStatuses?: readonly InvitationStatus[];
   embedded?: boolean;
   actionId?: string | null;
@@ -48,6 +49,7 @@ export function IdentityAndSharingSection({
   showGroupJoinHelp,
   onToggleGroupJoinHelp,
   showVolunteerRegistration = true,
+  fieldMode = "all",
   invitationStatuses,
   embedded = false,
   actionId,
@@ -62,10 +64,10 @@ export function IdentityAndSharingSection({
     <div className="space-y-6">
         <SectionLabel
           icon={ClipboardList}
-          title="Identité et organisation"
+          title={fieldMode === "coordination" ? "Partenaires et comptes associés" : "Identité et organisation"}
         />
 
-        <IdentityFieldGrid
+        {fieldMode !== "coordination" ? <IdentityFieldGrid
           form={form}
           updateField={updateField}
           updateFields={updateFields}
@@ -73,20 +75,20 @@ export function IdentityAndSharingSection({
           missingOrganizerType={missingOrganizerType}
           missingAssociation={missingAssociation}
           isExistingAction={isExistingAction}
-        />
-        {shouldShowActionOrganizationalRelations(form) ? <ActionOrganizationalRelationsSection form={form} updateField={updateField} /> : null}
+        /> : null}
+        {fieldMode !== "definition" && shouldShowActionOrganizationalRelations(form) ? <ActionOrganizationalRelationsSection form={form} updateField={updateField} /> : null}
 
-        <AssociatedAccountsFields
+        {fieldMode !== "definition" ? <AssociatedAccountsFields
           form={form}
           updateField={updateField}
           currentUserId={userMetadata.userId}
-        />
+        /> : null}
 
-        <PrivateActionAccessSection
+        {fieldMode !== "coordination" ? <PrivateActionAccessSection
           accessMode={form.accessMode}
           actionId={actionId}
           onChange={(next) => updateField("accessMode", next)}
-        />
+        /> : null}
 
         {showVolunteerRegistration ? (
           <VolunteerRegistrationSection

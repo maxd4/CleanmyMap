@@ -13,6 +13,9 @@ function renderEssential(form: FormState) {
       updateFields: vi.fn(),
       hasAttemptedSubmit: false,
       validationIssueFields: [],
+      userMetadata: { userId: "user-1", displayName: "Alice" },
+      showGroupJoinHelp: false,
+      onToggleGroupJoinHelp: vi.fn(),
     }),
   );
 }
@@ -44,11 +47,12 @@ describe("EssentialActionSection", () => {
     expect(markup).toContain("Point de rendez-vous");
     expect(markup).not.toContain('id="before-latitude"');
     expect(markup).not.toContain('id="before-longitude"');
-    expect(markup).not.toContain('id="before-volunteers-count"');
+    expect(markup).toContain('id="before-volunteers-count"');
+    expect(markup).toContain('data-testid="intervention-mode-selector"');
     expect(markup).not.toContain("Difficulté");
   });
 
-  it("keeps the persisted global window and point-to-point arrival editable", () => {
+  it("keeps the persisted global window and leaves arrival for preparation", () => {
     const form = {
       ...createInitialFormState("Alice"),
       actionTitle: "Nettoyage du quai",
@@ -66,7 +70,7 @@ describe("EssentialActionSection", () => {
 
     expect(markup).toMatch(/id="before-action-event-start"[^>]*value="08:30"/);
     expect(markup).toMatch(/id="before-action-event-end"[^>]*value="11:00"/);
-    expect(markup).toMatch(/id="before-arrival-location"[^>]*value="Place de la République"/);
+    expect(markup).not.toContain('id="before-arrival-location"');
     expect(markup).not.toContain("aucune arrivée pour une boucle");
   });
 });

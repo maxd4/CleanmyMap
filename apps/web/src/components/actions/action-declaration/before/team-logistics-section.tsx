@@ -1,6 +1,5 @@
 "use client";
 
-import { UsersRound } from "lucide-react";
 import type { ActiveRole } from "@/lib/domain-language";
 import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -9,8 +8,9 @@ import type { BeforeActionFieldUpdater } from "./model";
 import { IdentityAndSharingSection, VolunteerRegistrationPanel } from "./identity-and-sharing-section";
 import { PreparationPlanningFields } from "./preparation-planning-fields";
 import { PreparationAndSafetySection } from "./preparation-and-safety-section";
-import { SectionLabel } from "./ui";
 import { ActionFieldRolesPanel } from "../../action-field-roles-panel";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 
 type TeamLogisticsSectionProps = {
   form: FormState;
@@ -46,14 +46,8 @@ export function TeamLogisticsSection({
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
       <div className="space-y-6">
-        <SectionLabel
-          icon={UsersRound}
-          title="Équipe et logistique"
-        />
-
         <section aria-labelledby="before-organizers-group" className="space-y-3 border-b border-emerald-100 pb-5">
           <h3 id="before-organizers-group" className="text-base font-black text-emerald-950">Organisateurs</h3>
-          <p className="cmm-text-body cmm-text-primary">Créateur en lecture seule · catalogues et permissions.</p>
           <IdentityAndSharingSection
             form={form}
             updateField={updateField}
@@ -62,6 +56,7 @@ export function TeamLogisticsSection({
             showGroupJoinHelp={showGroupJoinHelp}
             onToggleGroupJoinHelp={onToggleGroupJoinHelp}
             showVolunteerRegistration={false}
+            fieldMode="coordination"
             embedded
             hasAttemptedSubmit={validationIssueFields.length > 0}
             validationIssueFields={validationIssueFields}
@@ -70,9 +65,11 @@ export function TeamLogisticsSection({
           />
         </section>
 
-        <ActionFieldRolesPanel actionId={actionId} />
+        <CmmDisclosure summary={<ActionFormDisclosureSummary label="Rôles avancés" detail="Attribution facultative des responsabilités" />} tone="emerald" size="sm">
+          <ActionFieldRolesPanel actionId={actionId} />
+        </CmmDisclosure>
 
-        <section aria-labelledby="before-team-registration-group" className="border-b border-emerald-100 pb-5">
+        <CmmDisclosure summary={<ActionFormDisclosureSummary label="Inscriptions et invitations" detail={form.groupJoinEnabled ? "inscriptions activées" : "options facultatives"} />} tone="emerald" size="sm">
           <VolunteerRegistrationPanel
             form={form}
             updateField={updateField}
@@ -82,7 +79,7 @@ export function TeamLogisticsSection({
             invitationStatuses={invitationStatuses}
             embedded
           />
-        </section>
+        </CmmDisclosure>
 
         <section aria-labelledby="before-team-planning-group" className="border-b border-emerald-100 pb-5">
           <PreparationPlanningFields

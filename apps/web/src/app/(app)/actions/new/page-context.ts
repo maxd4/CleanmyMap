@@ -78,7 +78,7 @@ export async function resolveNewActionPageContext(
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
   const duplicateFromActionId = resolveSingleSearchParam(params?.["duplicateFrom"]);
   const panel = normalizeActionCreationPanel(params?.["panel"]);
-  const section = normalizeActionCreationSection(params?.["section"], { step: params?.["step"], panel, from });
+  const section = normalizeActionCreationSection(params?.["section"], { step: params?.["step"], panel: params?.["panel"] ? panel : undefined, subsection: params?.["subsection"], from });
   const subsection = normalizeActionCreationSubsection(params?.["subsection"], { step: params?.["step"], panel });
   const requestedTab = resolveSingleSearchParam(params?.["tab"]);
   const { userId } = await getSafeAuthSession();
@@ -218,7 +218,7 @@ function buildActionReturnUrl({
 }): string {
   const returnParams = new URLSearchParams();
   if (panel !== "pre-formulaire") returnParams.set("panel", panel);
-  if (section !== "essentiel") returnParams.set("section", section);
+  if (section !== "definir") returnParams.set("section", section);
   if (tab !== "before") returnParams.set("tab", tab);
   if (fromEventId) returnParams.set("fromEventId", fromEventId);
   if (actionId) returnParams.set("actionId", actionId);

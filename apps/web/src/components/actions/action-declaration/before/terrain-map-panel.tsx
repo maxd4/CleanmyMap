@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Info, MapPinned } from "lucide-react";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { FormState } from "../model";
 import { hasValidCoordinatePair } from "./planned-action-location-section";
 
@@ -12,19 +13,20 @@ const TerrainMapCanvas = dynamic(
   { ssr: false },
 );
 
-export function TerrainMapPanel({ form }: { form: FormState }) {
+export function TerrainMapPanel({ form, onEditDefinition }: { form: FormState; onEditDefinition?: () => void }) {
   const { ref, isInView } = useInViewOnce<HTMLDivElement>({ rootMargin: "260px 0px" });
   const hasCoordinates = hasValidCoordinatePair(form.latitude, form.longitude);
   const coordinate: [number, number] = [Number(form.latitude), Number(form.longitude)];
 
   return (
     <CmmCard tone="emerald" variant="outlined" size="lg" className="space-y-3" data-testid="terrain-map-panel">
-      <div className="flex items-start gap-3">
+      <div className="flex items-start justify-between gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><MapPinned size={18} aria-hidden="true" /></span>
-        <div>
+        <div className="min-w-0 flex-1">
           <h3 className="text-lg font-black text-emerald-950">Carte du secteur</h3>
-          <p className="cmm-text-body mt-1 text-sm leading-6">Repère géocodé.</p>
+          <p className="cmm-text-body mt-1 text-sm leading-6">Lieu principal : {form.departureLocationLabel.trim() || form.locationLabel.trim() || form.communeZoneLabel.trim() || "À préciser à l’étape Définir"}</p>
         </div>
+        {onEditDefinition ? <CmmButton type="button" tone="tertiary" variant="pill" size="sm" onClick={onEditDefinition}>Modifier</CmmButton> : null}
       </div>
       <div ref={ref} className="relative h-[360px] overflow-hidden rounded-2xl border border-emerald-200/70 bg-emerald-50/70" aria-label="Carte du secteur d’intervention">
         {hasCoordinates && isInView ? <TerrainMapCanvas coordinate={coordinate} label="Point de rendez-vous confirmé" /> : (

@@ -2,20 +2,28 @@
 
 import { ClipboardList } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
-import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmField, CmmInput, CmmSelect, CmmTextarea } from "@/components/ui/cmm-field";
 import type { FormState } from "../model";
 import { PLANNED_OBJECTIVE_OPTIONS } from "./model";
-import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
-import { MeetingLocationFields, RouteDestinationField } from "./planned-action-location-section";
+import { MeetingLocationFields } from "./planned-action-location-section";
 import { ScheduleFields } from "./planned-action-schedule-fields";
 import { SectionLabel } from "./ui";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
+import { VolunteerForecast } from "./planned-action-volunteer-section";
+import { getVolunteerParticipationDisclosureDetail } from "@/lib/actions/volunteer-participation";
+import { IdentityAndSharingSection } from "./identity-and-sharing-section";
+import { InterventionModeFields } from "./intervention-mode-fields";
+import type { ActiveRole } from "@/lib/domain-language";
 
 type EssentialActionSectionProps = Pick<
   BaseSectionProps,
   "form" | "updateField" | "updateFields" | "countryCode" | "hasAttemptedSubmit" | "validationIssueFields"
->;
+> & {
+  userMetadata: { userId: string; activeRole?: ActiveRole; handle?: string; username?: string; displayName?: string };
+  showGroupJoinHelp: boolean;
+  onToggleGroupJoinHelp: () => void;
+  isExistingAction?: boolean;
+};
 
 export function EssentialActionSection({
   form,
@@ -24,8 +32,13 @@ export function EssentialActionSection({
   countryCode,
   hasAttemptedSubmit = false,
   validationIssueFields = [],
+  userMetadata,
+  showGroupJoinHelp,
+  onToggleGroupJoinHelp,
+  isExistingAction = false,
 }: EssentialActionSectionProps) {
   const missingTitle = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionTitle"));
+  const splitDetail = getVolunteerParticipationDisclosureDetail(form);
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
       <div className="space-y-6">
@@ -87,8 +100,7 @@ export function EssentialActionSection({
         />
 
         <section aria-labelledby="before-essential-location" className="space-y-3">
-          <h4 id="before-essential-location" className="text-base font-black text-emerald-950">Lieu et parcours</h4>
-          <p className="text-xs leading-5 text-emerald-900/65">Rendez-vous conservé séparément.</p>
+          <h4 id="before-essential-location" className="text-base font-black text-emerald-950">Lieu et rendez-vous</h4>
           <MeetingLocationFields
             form={form}
             updateField={updateField}
@@ -97,16 +109,30 @@ export function EssentialActionSection({
             validationIssueFields={validationIssueFields}
             countryCode={countryCode}
           />
-          <CmmDisclosure summary={<ActionFormDisclosureSummary label="Arrivée du parcours" detail={form.routeTopology === "point_to_point" ? (form.arrivalLocationLabel.trim() || "à compléter") : "aucune arrivée pour une boucle"} />} tone="emerald" size="sm">
-            <RouteDestinationField
-              form={form}
-              updateField={updateField}
-              updateFields={updateFields}
-              hasAttemptedSubmit={hasAttemptedSubmit}
-              validationIssueFields={validationIssueFields}
-              countryCode={countryCode}
-            />
-          </CmmDisclosure>
+        </section>
+
+        <section aria-labelledby="before-essential-organization" className="space-y-3">
+          <h4 id="before-essential-organization" className="text-base font-black text-emerald-950">Organisation et visibilité</h4>
+          <IdentityAndSharingSection
+            form={form}
+            updateField={updateField}
+            updateFields={updateFields}
+            userMetadata={userMetadata}
+            showGroupJoinHelp={showGroupJoinHelp}
+            onToggleGroupJoinHelp={onToggleGroupJoinHelp}
+            showVolunteerRegistration={false}
+            fieldMode="definition"
+            embedded
+            hasAttemptedSubmit={hasAttemptedSubmit}
+            validationIssueFields={validationIssueFields}
+            isExistingAction={isExistingAction}
+          />
+          <VolunteerForecast form={form} updateField={updateField} splitDetail={splitDetail} validationIssueFields={validationIssueFields} />
+        </section>
+
+        <section aria-labelledby="before-essential-mode" className="space-y-3">
+          <h4 id="before-essential-mode" className="text-base font-black text-emerald-950">Mode de collecte</h4>
+          <InterventionModeFields form={form} updateFields={updateFields} />
         </section>
 
       </div>

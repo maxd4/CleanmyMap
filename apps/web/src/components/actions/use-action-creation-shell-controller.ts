@@ -28,16 +28,23 @@ function initialWorkflowStep(initialPanel: ActionCreationPanelId, initialActionI
   if (initialActionId) return "preformulaire";
   return params?.panel ? PANEL_TO_STEP[initialPanel] : "itineraire";
 }
-function useActionCreationSectionState(initialActionId: string | null, initialSection: ActionCreationSectionId): [ActionCreationSectionState, Dispatch<SetStateAction<ActionCreationSectionState>>] {
+function hasLegacySectionUrl(params?: SearchParams): boolean {
+  if (!params) return false;
+  const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
+  const section = first(params.section);
+  return Boolean(params.step || params.panel || params.subsection || (section && !["definir", "preparer"].includes(section)));
+}
+
+function useActionCreationSectionState(initialActionId: string | null, initialSection: ActionCreationSectionId, tabSearchParams?: SearchParams): [ActionCreationSectionState, Dispatch<SetStateAction<ActionCreationSectionState>>] {
   const [state, setState] = useState<ActionCreationSectionState>(() => createActionCreationSectionState(initialActionId, initialSection));
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     const saved = loadActionCreationSectionState();
     startTransition(() => {
-      setState(saved && saved.actionId === initialActionId ? saved : createActionCreationSectionState(initialActionId, initialSection));
+      setState(saved && saved.actionId === initialActionId && !hasLegacySectionUrl(tabSearchParams) ? saved : createActionCreationSectionState(initialActionId, initialSection));
       setHydrated(true);
     });
-  }, [initialActionId, initialSection]);
+  }, [initialActionId, initialSection, tabSearchParams]);
   useEffect(() => {
     if (hydrated && state.actionId === initialActionId) saveActionCreationSectionState(state);
   }, [hydrated, initialActionId, state]);
@@ -82,7 +89,7 @@ export function useActionCreationShellController({
   const [createdActionId, setCreatedActionId] = useState<string | null>(null);
   const currentActionId = initialActionId ?? createdActionId;
   const [workflow, setWorkflow] = useActionWorkflowState(initialActionId, initialPanel, tabSearchParams);
-  const [sectionState, setSectionState] = useActionCreationSectionState(initialActionId, initialSection);
+  const [sectionState, setSectionState] = useActionCreationSectionState(initialActionId, initialSection, tabSearchParams);
   const [formSnapshotState, setFormSnapshotState] = useState<{ actionId: string | null; form: Partial<FormState> }>({ actionId: initialActionId, form: {} });
   const [formalitiesState, setFormalitiesState] = useState<{ actionId: string | null; readiness: "unknown" | "ready" | "blocked" }>({ actionId: initialActionId, readiness: "unknown" });
   const [transitionState, setTransitionState] = useState<{ actionId: string | null; error: string | null }>({ actionId: initialActionId, error: null });
@@ -105,17 +112,17 @@ export function useActionCreationShellController({
     setCreatedActionId(actionId);
     setPreparationContext((current) => ({ ...current, actionId }));
     setWorkflow((current) => ({ ...current, actionId, activeStep: "preformulaire", statuses: { ...current.statuses, preformulaire: "done" } }));
-    setSectionState((current) => setActionCreationSectionStatus({ ...current, actionId }, "essentiel", "done"));
+    setSectionState((current) => setActionCreationSectionStatus({ ...current, actionId }, "definir", "done"));
     markPreparationPersisted(actionId);
   }, [markPreparationPersisted, router, sectionState.activeSection, sectionsEnabled, setPreparationContext, setSectionState, setWorkflow, tabSearchParams, workflow.activeStep]);
   const handlePreparationValidated = useCallback((validated: boolean) => {
     setWorkflow((current) => setActionWorkflowStepStatus(current, "preparation", validated ? "done" : "review"));
-    setSectionState((current) => setActionCreationSectionStatus(current, "terrain", validated ? "done" : "review"));
+    setSectionState((current) => setActionCreationSectionStatus(current, "preparer", validated ? "review" : "todo"));
   }, [setSectionState, setWorkflow]);
   const handleFormalitiesReadiness = useCallback((readiness: { known: boolean; blocked: boolean }) => {
     setFormalitiesState({ actionId: currentActionId, readiness: !readiness.known ? "unknown" : readiness.blocked ? "blocked" : "ready" });
     if (readiness.known) setWorkflow((current) => ({ ...current, statuses: { ...current.statuses, paris: readiness.blocked ? "review" : "done" } }));
-    setSectionState((current) => setActionCreationSectionStatus(current, "verification", !readiness.known ? "todo" : readiness.blocked ? "review" : "done"));
+    setSectionState((current) => setActionCreationSectionStatus(current, "preparer", !readiness.known ? "todo" : "review"));
   }, [currentActionId, setSectionState, setWorkflow]);
   const handlePassToComplete = useCallback(async (actionId: string) => {
     setTransitionState({ actionId: currentActionId, error: null });
@@ -127,6 +134,10 @@ export function useActionCreationShellController({
     }
   }, [currentActionId, router, tabSearchParams]);
   const actionCreationSearchParams = actionIdForRender ? { ...(tabSearchParams ?? {}), actionId: actionIdForRender } : tabSearchParams;
+  useEffect(() => {
+    if (!sectionsEnabled || initialSpace !== "prepare" || tabSearchParams?.tab === "after" || !hasLegacySectionUrl(tabSearchParams)) return;
+    router.replace(buildActionCreationSectionHref(initialSection, { ...(tabSearchParams ?? {}), actionId: actionIdForRender ?? undefined }));
+  }, [actionIdForRender, initialSection, initialSpace, router, sectionsEnabled, tabSearchParams]);
   const handleSectionFormChange = useCallback((form: FormState) => {
     setFormSnapshotState({ actionId: currentActionId, form });
     handleBeforeFormChange(form);

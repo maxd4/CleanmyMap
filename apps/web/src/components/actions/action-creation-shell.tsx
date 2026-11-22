@@ -13,7 +13,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 export function ActionCreationShell({
   initialPanel,
-  initialSection = "essentiel",
+  initialSection = "definir",
   initialSubsection,
   initialTab = "before",
   initialSpace = "prepare",
@@ -118,7 +118,7 @@ function ActionCreationShellView({
   if (initialSpace === "bilan" && actionIdForRender) return <ActionBilanView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} />;
   if (initialTab === "after") return <AfterActionCreationView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} />;
   if (sectionsEnabled) {
-    return <ActionCreationSectionsView state={renderedSectionState} fr={fr} activeSpace={initialSpace} formSnapshot={formSnapshot} currentActionId={actionIdForRender} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} onPrevious={handlePreviousSection} onNext={handleNextSection} content={<ActionCreationSectionContent {...sharedViewProps} activeSection={renderedSectionState.activeSection} initialSubsection={initialSubsection} initialPanel={initialPanel} formSnapshot={formSnapshot} />} />;
+    return <ActionCreationSectionsView state={renderedSectionState} fr={fr} activeSpace={initialSpace} formSnapshot={formSnapshot} currentActionId={actionIdForRender} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} onPrevious={handlePreviousSection} onNext={handleNextSection} content={<ActionCreationSectionContent {...sharedViewProps} onNavigateSection={navigateToSection} activeSection={renderedSectionState.activeSection} initialSubsection={initialSubsection} initialPanel={initialPanel} formSnapshot={formSnapshot} />} />;
   }
   return <GuidedActionWorkflowView state={renderedWorkflow} fr={fr} currentActionId={actionIdForRender} activeSpace={initialSpace} stepContent={<ActionWorkflowStepContent {...sharedViewProps} onFormChange={handleBeforeFormChange} activeStep={activeStep} />} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToStep} onNext={handleNextStep} />;
 }

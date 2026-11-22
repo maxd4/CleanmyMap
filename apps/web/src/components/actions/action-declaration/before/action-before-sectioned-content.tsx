@@ -11,6 +11,7 @@ import type { CountryCode } from "@/lib/user-location-preference";
 
 type SectionedContentProps = {
   activeSection: ActionCreationSectionId;
+  onEditDefinition?: () => void;
   form: FormState;
   updateField: BeforeActionFieldUpdater;
   updateFields: (updates: Partial<FormState>) => void;
@@ -40,6 +41,7 @@ type SectionedContentProps = {
 
 export function ActionBeforeSectionedContent({
   activeSection,
+  onEditDefinition,
   form,
   updateField,
   updateFields,
@@ -60,51 +62,57 @@ export function ActionBeforeSectionedContent({
   isExistingAction = false,
   onFormalitiesReadiness,
 }: SectionedContentProps) {
-  if (activeSection === "terrain") {
+  if (activeSection === "definir") {
     return (
-      <TerrainActionSection
+      <EssentialActionSection
         form={form}
         updateField={updateField}
         updateFields={updateFields}
         countryCode={countryCode}
         hasAttemptedSubmit={validationIssueFields.length > 0}
         validationIssueFields={validationIssueFields}
+        userMetadata={userMetadata}
+        showGroupJoinHelp={showGroupJoinHelp}
+        onToggleGroupJoinHelp={onToggleGroupJoinHelp}
+        isExistingAction={isExistingAction}
       />
     );
   }
 
-  if (activeSection === "essentiel") {
-    return (
-      <>
-        <EssentialActionSection
+  return (
+    <div className="space-y-5">
+      <section aria-labelledby="action-preparation-terrain-title" className="space-y-3">
+        <h3 id="action-preparation-terrain-title" className="text-xl font-black text-emerald-950">Terrain</h3>
+        <TerrainActionSection
           form={form}
           updateField={updateField}
           updateFields={updateFields}
           countryCode={countryCode}
           hasAttemptedSubmit={validationIssueFields.length > 0}
           validationIssueFields={validationIssueFields}
+          onEditDefinition={onEditDefinition}
         />
-      </>
-    );
-  }
-
-  if (activeSection === "equipe") {
-    return <TeamLogisticsSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} invitationStatuses={invitationStatuses} validationIssueFields={validationIssueFields} actionId={actionId} isExistingAction={isExistingAction} />;
-  }
-
-  return (
-    <ActionBeforeVerificationSection
-      form={form}
-      submissionState={submissionState}
-      validationIssues={validationIssues}
-      errorMessage={errorMessage}
-      guidedReadiness={guidedReadiness}
-      isAuthenticated={isAuthenticated}
-      signInHref={signInHref}
-      signUpHref={signUpHref}
-      actionId={actionId}
-      updateField={updateField}
-      onFormalitiesReadiness={onFormalitiesReadiness}
-    />
+      </section>
+      <section aria-labelledby="action-preparation-team-title" className="space-y-3">
+        <h3 id="action-preparation-team-title" className="text-xl font-black text-emerald-950">Équipe et logistique</h3>
+        <TeamLogisticsSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} invitationStatuses={invitationStatuses} validationIssueFields={validationIssueFields} actionId={actionId} isExistingAction={isExistingAction} />
+      </section>
+      <section aria-labelledby="action-preparation-formalities-title" className="space-y-3">
+        <h3 id="action-preparation-formalities-title" className="text-xl font-black text-emerald-950">Vérification et publication</h3>
+        <ActionBeforeVerificationSection
+          form={form}
+          submissionState={submissionState}
+          validationIssues={validationIssues}
+          errorMessage={errorMessage}
+          guidedReadiness={guidedReadiness}
+          isAuthenticated={isAuthenticated}
+          signInHref={signInHref}
+          signUpHref={signUpHref}
+          actionId={actionId}
+          updateField={updateField}
+          onFormalitiesReadiness={onFormalitiesReadiness}
+        />
+      </section>
+    </div>
   );
 }

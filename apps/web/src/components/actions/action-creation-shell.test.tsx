@@ -123,8 +123,25 @@ describe("ActionCreationShell", () => {
     beforeProps.onActionPersisted("action-created");
 
     expect(routerReplaceMock).toHaveBeenCalledWith(
-      "/actions/new?section=essentiel&actionId=action-created",
+      "/actions/new?section=definir&actionId=action-created",
     );
+  });
+
+  it("replaces historical stage links with the two-stage URL while preserving the action identity", async () => {
+    await act(async () => {
+      create(React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: false,
+        userMetadata: { userId: "test" },
+        initialActionId: "action-42",
+        initialPanel: "formalites",
+        initialSection: "preparer",
+        tabSearchParams: { step: "paris", panel: "formalites", subsection: "formalites", actionId: "action-42", from: "planner" },
+      } as ComponentProps<typeof ActionCreationShell>));
+    });
+
+    expect(routerReplaceMock).toHaveBeenCalledWith("/actions/new?section=preparer&actionId=action-42&from=planner");
   });
 
   it("switches the form and section identity when the resource changes", async () => {
@@ -141,7 +158,7 @@ describe("ActionCreationShell", () => {
             userMetadata: { userId: "test" },
             initialActionId: "action-a",
             initialPanel: "pre-formulaire",
-            initialSection: "terrain",
+            initialSection: "preparer",
           } as ComponentProps<typeof ActionCreationShell>),
         ),
       );
@@ -159,14 +176,14 @@ describe("ActionCreationShell", () => {
             userMetadata: { userId: "test" },
             initialActionId: "action-b",
             initialPanel: "pre-formulaire",
-            initialSection: "equipe",
+            initialSection: "definir",
           } as ComponentProps<typeof ActionCreationShell>),
         ),
       );
     });
 
     expect(beforeFormPropsMock).toHaveBeenLastCalledWith(
-      expect.objectContaining({ initialActionId: "action-b", activeSection: "equipe" }),
+      expect.objectContaining({ initialActionId: "action-b", activeSection: "definir" }),
     );
     expect(preparationContextHookMock).toHaveBeenLastCalledWith(
       expect.objectContaining({ actionId: "action-b" }),
@@ -203,16 +220,16 @@ describe("ActionCreationShell", () => {
         userMetadata: { userId: "test" },
         initialActionId: "action-42",
         initialPanel: "formalites",
-        initialSection: "verification",
+        initialSection: "preparer",
         tabSearchParams: { step: "paris" },
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
     expect(markup).toContain('data-testid="pre-formulaire-engine"');
-    expect(beforeFormPropsMock).toHaveBeenCalledWith(expect.objectContaining({ activeSection: "verification", initialActionId: "action-42" }));
+    expect(beforeFormPropsMock).toHaveBeenCalledWith(expect.objectContaining({ activeSection: "preparer", initialActionId: "action-42" }));
   });
 
-  it("exposes the four new sections and opens the requested one", () => {
+  it("exposes the two new stages and opens the requested preparation stage", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionCreationShell, {
         actorNameOptions: ["Test"],
@@ -220,33 +237,52 @@ describe("ActionCreationShell", () => {
         isAuthenticated: false,
         userMetadata: { userId: "test" },
         initialPanel: "itineraire",
-        initialSection: "terrain",
+        initialSection: "preparer",
         tabSearchParams: { step: "itineraire" },
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
     expect(markup).toContain('data-testid="action-creation-section-nav"');
-    expect(markup).toContain("Essentiel");
+    expect(markup).toContain("Définir l&#x27;action");
     expect(markup).toContain("Organiser une action");
-    expect(markup).toContain("Terrain");
-    expect(markup).toContain("Équipe et logistique");
-    expect(markup).toContain("Vérifier et publier");
-    expect(markup).toContain('data-workflow-section="terrain"');
-    expect(markup).toContain('data-testid="route-engine"');
-    expect(markup).not.toContain('data-testid="fixed-area-route-state"');
+    expect(markup).toContain("Préparer et publier");
+    expect(markup).toContain('data-workflow-section="preparer"');
+    expect(markup).not.toContain('data-testid="route-engine"');
+    expect(markup).toContain('data-testid="fixed-area-route-state"');
     expect(markup).toContain('data-testid="weather-engine"');
+    const mainEnd = markup.indexOf("</main>");
+    const preview = markup.indexOf('data-testid="action-creation-context-preview"');
+    expect(preview).toBeGreaterThan(mainEnd);
     expect(markup).toContain('data-testid="pre-formulaire-engine"');
     expect(beforeFormPropsMock).toHaveBeenCalledTimes(1);
     expect(beforeFormPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        activeSection: "terrain",
+        activeSection: "preparer",
         guidedWorkflow: true,
       }),
     );
   });
 
+  it("shows the contextual preview below the form only in the preparation stage", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: false,
+        userMetadata: { userId: "test" },
+        initialPanel: "pre-formulaire",
+        initialSection: "preparer",
+      } as ComponentProps<typeof ActionCreationShell>),
+    );
+
+    const mainEnd = markup.indexOf("</main>");
+    const preview = markup.indexOf('data-testid="action-creation-context-preview"');
+    expect(mainEnd).toBeGreaterThan(-1);
+    expect(preview).toBeGreaterThan(mainEnd);
+  });
+
   it.each([
-    { label: "section parcours", sectionsEnabled: true, initialPanel: "meteo" as const, initialSection: "terrain" as const, tabSearchParams: undefined },
+    { label: "section parcours", sectionsEnabled: true, initialPanel: "meteo" as const, initialSection: "preparer" as const, tabSearchParams: undefined },
     { label: "workflow parcours", sectionsEnabled: false, initialPanel: "meteo" as const, initialSection: undefined, tabSearchParams: { step: "preparation" } },
   ])("transmits the server territory preference through the $label", ({ sectionsEnabled, initialPanel, initialSection, tabSearchParams }) => {
     const preference = {
@@ -277,7 +313,7 @@ describe("ActionCreationShell", () => {
   });
 
   it.each([
-    { label: "section parcours", sectionsEnabled: true, initialPanel: "meteo" as const, initialSection: "terrain" as const, tabSearchParams: undefined },
+    { label: "section parcours", sectionsEnabled: true, initialPanel: "meteo" as const, initialSection: "preparer" as const, tabSearchParams: undefined },
     { label: "workflow parcours", sectionsEnabled: false, initialPanel: "meteo" as const, initialSection: undefined, tabSearchParams: { step: "preparation" } },
   ])("preserves an explicit empty or absent preference in the $label", ({ sectionsEnabled, initialPanel, initialSection, tabSearchParams }) => {
     renderToStaticMarkup(
@@ -318,13 +354,14 @@ describe("ActionCreationShell", () => {
         isAuthenticated: false,
         userMetadata: { userId: "test" },
         initialPanel: "pre-formulaire",
-        initialSection: "terrain",
+        initialSection: "preparer",
         initialSubsection: "route",
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
-    expect(markup).toContain('data-workflow-section="terrain"');
-    expect(markup).toContain('data-testid="route-engine"');
+    expect(markup).toContain('data-workflow-section="preparer"');
+    expect(markup).not.toContain('data-testid="route-engine"');
+    expect(markup).toContain('data-testid="fixed-area-route-state"');
   });
 
   it("keeps the legacy guided journey available behind the migration flag", () => {
