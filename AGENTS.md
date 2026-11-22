@@ -139,6 +139,8 @@ jamais être écrasé par une synchronisation avec Git.
 - Capturer au démarrage une référence initiale (`HEAD`, `origin/main`, index,
   chemins tracked dirty et untracked) et établir l'allowlist attribuée au lot.
   Cette référence et ce périmètre restent gelés pendant toute l'exécution.
+  L'allowlist initiale sert à l'attribution et au cadrage, et fixe les chemins
+  admissibles à ce candidat jusqu'à sa clôture.
   Les changements préexistants ou apparus ensuite sont présumés étrangers et
   exclus du candidat ; seules les modifications de Codex sur les fichiers
   attribués au lot sont incluses.
@@ -161,8 +163,10 @@ jamais être écrasé par une synchronisation avec Git.
   statique par SHA ou `DYNAMIC_CANDIDATE`). Une preuve issue du worktree mutable
   ne peut pas être attribuée à un SHA. Aucun contrôle ne peut convertir un
   échec en `PASS` ni imposer la réparation d'un défaut hors périmètre.
-- Les changements des différents owners ne sont regroupés que s'ils figurent
-  dans le périmètre attribué au démarrage. Un commit local qui contient des
+- Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque
+  chacun figure dans le périmètre attribué au démarrage. Le publier sans le
+  reconstruire n'est permis que si tous ses chemins étaient attribués au lot
+  avant le gel. Un commit local qui contient des
   chemins étrangers ou apparus ensuite ne peut pas être transmis par ce lot ;
   préserver cet historique et arrêter la publication avec le conflit exact.
 - Le staging reste explicite : ne jamais utiliser `git add -A` par commodité.

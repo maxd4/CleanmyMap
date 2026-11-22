@@ -321,7 +321,7 @@ Les scopes `WORKTREE_LIVE`, `STAGED`, `COMMITTED_SNAPSHOT` et `PUSH_CANDIDATE`
 restent distincts ; une preuve locale ne devient pas une preuve de publication.
 
 Pour chaque exécution de travail qui produit un lot, le prompt demande à Codex :
-valider le candidat gelé, puis commit attribué → push fast-forward `main` →
+valider le candidat gelé, puis commit validé et attribué → push fast-forward `main` →
 vérification de convergence. Au moment de publier, contrôler uniquement
 l'attribution des commits transmis, le fast-forward, les hooks, permissions et
 convergence ; une évolution externe sans conflit ne relance pas les validations.

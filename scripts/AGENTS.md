@@ -57,6 +57,8 @@ seules les modifications de Codex sur les fichiers attribués au lot sont
 incluses. Un changement concurrent du même chemin attribué est une collision :
 préserver les deux états, arrêter la mutation/publication du chemin et rapporter
 le conflit exact, sans absorption, fusion ni écrasement silencieux.
+L'allowlist initiale est un cadrage d'attribution qui fixe les chemins
+admissibles jusqu'à la clôture.
 
 Aucune évolution ultérieure de `HEAD`, `origin/main`, de l'index ou de fichiers
 dirty/untracked étrangers n'étend l'allowlist, ne déclenche une
@@ -69,9 +71,12 @@ convergence. Une évolution externe sans conflit ne provoque aucune campagne de
 validation supplémentaire ; un conflit réel arrête la publication avec son
 diagnostic.
 
-Avant le commit, stage le périmètre final attribué, vérifie `STAGED` sur son
-contenu exact et conserve les autres changements. Les gardes, contrôles secrets,
-AuthZ, migrations et exigences fast-forward restent obligatoires.
+Avant le commit, stage le périmètre attribué au démarrage, vérifie `STAGED` sur
+son contenu exact et conserve les autres changements. Plusieurs chantiers ou
+writers peuvent être regroupés dans un commit seulement si tous étaient
+initialement attribués ; le publier sans le reconstruire ne permet pas
+d'ajouter des chemins apparus ensuite. Les gardes, secrets, AuthZ, migrations et
+fast-forward restent obligatoires.
 
 Les scopes sont strictement séparés : `WORKTREE_LIVE` est le checkout mouvant,
 `STAGED` l'index exact, `COMMITTED_SNAPSHOT` un arbre Git immuable par SHA, et
