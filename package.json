@@ -198,7 +198,7 @@
   "devDependencies": {
     "@aws-sdk/client-s3": "3.1173.0",
     "@clerk/backend": "^3.29.0",
-    "@clerk/testing": "2.3.0",
+    "@clerk/testing": "2.3.3",
     "@playwright/test": "^1.65.1",
     "@stryker-mutator/core": "10.1.1",
     "@stryker-mutator/vitest-runner": "10.1.1",
@@ -210,7 +210,7 @@
     "jiti": "^2.7.0",
     "js-yaml": "4.3.2",
     "jscpd": "5.4.3",
-    "knip": "6.45.1",
+    "knip": "6.46.1",
     "pg-query-emscripten": "^5.1.0",
     "playwright": "^1.65.1",
     "react-test-renderer": "19.2.3",
