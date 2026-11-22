@@ -12,16 +12,22 @@ séparément, pas des modes supplémentaires.
 
 ## Exécution non bloquante du checkout
 
-Les analyses et validations locales peuvent toujours démarrer et se poursuivre
-dans un checkout staged, unstaged, untracked, avec des commits locaux non
-publiés, `HEAD != origin/main` ou un autre writer actif. Aucun worktree propre,
-SHA figé, gel des writers ou convergence Git n'est un prérequis de
-`DEVELOPMENT`, d'un diagnostic ciblé ou d'une validation indépendante. Le
-runner capture l'état Git initial et les chemins du lot, préserve les chemins
-étrangers et poursuit les opérations non conflictuelles. Une évolution de
-`HEAD`, de `origin/main`, de l'index ou du worktree requalifie et rejoue
-uniquement la preuve devenue incohérente ; un chemin ciblé dirty d'un autre
-writer bloque sa mutation, pas le reste du lot.
+Au démarrage, chaque exécution capture sa référence initiale (`HEAD`,
+`origin/main`, index, chemins tracked dirty et untracked) et l'allowlist de ses
+fichiers attribués. Référence et périmètre restent gelés jusqu'à la clôture.
+Les changements préexistants et ceux apparus ensuite sont étrangers par défaut,
+préservés et exclus ; seules les modifications de Codex sur ses propres chemins
+attribués sont incluses. Une écriture concurrente sur le même chemin est une
+collision à préserver et signaler, sans fusion ni écrasement silencieux.
+
+Une évolution ultérieure de `HEAD`, `origin/main`, de l'index ou du worktree ne
+déclenche ni extension de périmètre, ni resynchronisation fonctionnelle, ni
+rejeu de preuve, ni nouvelle validation globale. Les validations globales
+utilisent les candidats immuables des mécanismes existants dans `scripts/ci`
+(arbre statique par SHA ou `DYNAMIC_CANDIDATE`). Une preuve issue du worktree
+mutable ne peut être attribuée à un SHA. Le rapport conserve tout échec observé
+sur le candidat vérifié : corriger uniquement les causes attribuables au lot,
+et signaler séparément les défauts préexistants ou étrangers.
 
 Les provenances sont distinctes et doivent être affichées : `WORKTREE_LIVE`
 pour le checkout mouvant, `STAGED` pour l'index exact, `COMMITTED_SNAPSHOT`
@@ -159,7 +165,8 @@ Le résultat doit séparer explicitement :
 
 Une preuve d'un autre SHA, une validation périmée ou une erreur qualifiée
 `PREEXISTING_PARALLEL_FAILURE` reste visible et ne peut jamais produire un
-`PASS` de livraison. Les exigences et tests canoniques ne doivent pas être
+`PASS` de livraison. Une collision ou une dérive du candidat invalide son
+attestation sans relancer la campagne. Les exigences et tests canoniques ne doivent pas être
 réécrits pour ratifier implicitement l'implémentation candidate ; une
 évolution légitime du contrat doit être documentée et accompagnée de la
 preuve correspondante dans son owner canonique.

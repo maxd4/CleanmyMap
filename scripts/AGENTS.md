@@ -49,27 +49,25 @@ déplacé ou réconcilié par ce lot. La coordination des références Git ne pe
 pas de modifier le contenu dirty étranger. Aucun nouveau worktree, clone, claim,
 coordinateur persistant ou branche de chantier n'est créé.
 
-Chaque lot capture d'abord l'état de `HEAD`, de `origin/main`, de l'index, du
-worktree et des untracked, établit son allowlist initiale, puis peut commencer
-même si le checkout est dirty, si des commits locaux ne sont pas publiés, si
-`HEAD != origin/main` ou si un autre writer est actif. Une mutation d'un chemin
-dirty étranger reste interdite sans autorisation, mais elle ne bloque pas les
-scripts ni les validations indépendants. `git fetch origin main` et la
-vérification des refs servent à requalifier une preuve ou à préparer la
-publication ; ils ne sont pas des prérequis d'exécution locale. Une évolution
-concurrente entraîne seulement la requalification ou le rejeu de la preuve
-affectée.
+Chaque exécution capture au démarrage une référence (`HEAD`, `origin/main`,
+index, chemins tracked dirty et untracked) et l'allowlist attribuée au lot.
+Cette référence et ce périmètre restent gelés pour toute l'exécution. Les
+changements préexistants ou apparus ensuite sont présumés étrangers et exclus ;
+seules les modifications de Codex sur les fichiers attribués au lot sont
+incluses. Un changement concurrent du même chemin attribué est une collision :
+préserver les deux états, arrêter la mutation/publication du chemin et rapporter
+le conflit exact, sans absorption, fusion ni écrasement silencieux.
 
-L'allowlist initiale est un cadrage d'attribution, pas un plafond immuable. Si
-le contenu final diffère, examiner chaque chemin, son auteur, son inclusion et
-ses validations, puis requalifier le périmètre. Cette différence seule ne
-bloque pas le lot et ne justifie ni une réécriture d'historique ni un lot
-correctif. Plusieurs chantiers ou writers peuvent être regroupés dans un commit
-si tous les changements sont identifiés, attribués, relus et validés sur le
-candidat final exact. Un commit local plus large que prévu est examiné avec ses
-preuves ; le publier sans le reconstruire s'il est sûr, validé et compatible
-avec un push fast-forward. Les modifications non attribuées restent exclues et
-intactes.
+Aucune évolution ultérieure de `HEAD`, `origin/main`, de l'index ou de fichiers
+dirty/untracked étrangers n'étend l'allowlist, ne déclenche une
+resynchronisation fonctionnelle, un rejeu de preuve ou une nouvelle validation
+globale. Rapporter les échecs constatés sur le candidat gelé ; corriger ceux
+attribuables au lot et signaler séparément les défauts préexistants ou étrangers
+sans modifier leurs fichiers. À la publication, vérifier uniquement
+l'attribution des commits transmis, le fast-forward, les hooks, permissions et
+convergence. Une évolution externe sans conflit ne provoque aucune campagne de
+validation supplémentaire ; un conflit réel arrête la publication avec son
+diagnostic.
 
 Avant le commit, stage le périmètre final attribué, vérifie `STAGED` sur son
 contenu exact et conserve les autres changements. Les gardes, contrôles secrets,
@@ -79,6 +77,9 @@ Les scopes sont strictement séparés : `WORKTREE_LIVE` est le checkout mouvant,
 `STAGED` l'index exact, `COMMITTED_SNAPSHOT` un arbre Git immuable par SHA, et
 `PUSH_CANDIDATE` les refs effectivement transmises par le protocole Git. Une
 mesure live ne peut jamais être présentée comme preuve reproductible d'un SHA.
+Les validations globales utilisent les matérialisateurs statiques ou
+`DYNAMIC_CANDIDATE` existants, sur le contenu exact examiné, et ne lisent pas le
+worktree mutable comme une preuve de SHA.
 
 Hors mode de développement rapide :
 
@@ -103,11 +104,12 @@ Mode de développement rapide explicitement activé :
 commit local selon son protocole, sans push tant que le mode reste actif
 ```
 
-Lorsqu’un push concurrent échoue, le publisher attend de façon bornée, refetch
-`origin/main`, relit les commits locaux et tente une synchronisation
-non destructive avant de réessayer en fast-forward. Une divergence ou un
-conflit non résolu est signalé explicitement ; aucun force-push ni contournement
-des protections GitHub n’est permis.
+Lorsqu’un push échoue parce que `main` a avancé, ne pas refetcher pour relancer
+la campagne, rebaser, merger ou synchroniser fonctionnellement. Rapporter le
+refus fast-forward et arrêter la publication avec les changements locaux
+préservés. Après un push accepté, le fetch sert uniquement à prouver la
+convergence `HEAD = origin/main` et ahead/behind `0/0`. Aucun force-push ni
+contournement des protections GitHub n’est permis.
 
 ### LEGACY / COMPATIBILITY
 
@@ -280,18 +282,17 @@ Le workflow CURRENT destiné à Codex possède trois modes clairement séparés 
 
 - `DEVELOPMENT` via `npm run checks:fast`, budget dur de 180 secondes, ciblé et
   préventif par défaut ;
-- `FULL` via `npm run checks:full`, sans budget global, uniquement sur demande
-  explicite ou préparation Vercel ; il couvre tous les domaines sans dépendre
-  du diff ;
+- `FULL` via la voie de validation globale sur candidat immuable, sans budget
+  global, uniquement sur demande explicite ou préparation Vercel ; il couvre
+  tous les domaines sans dépendre du diff ;
 - `RELEASE` via `npm run release:check -- --sha=<sha>`, qui autorise uniquement
   un SHA disposant d'une preuve FULL verte et d'un worktree propre.
 
-Lorsqu'un `FULL` est explicitement lancé, toute erreur actionnable observée par
-ses contrôles doit être corrigée dans l'exécution courante, même si les
-fichiers causaux sont hors du lot initial. Un échec ne peut pas être laissé
-rouge au seul motif qu'il est préexistant ou hors périmètre. Les blocages
-externes et environnementaux restent `BLOCKED_*`, avec une preuve explicite,
-et ne doivent jamais être masqués ou reclassés en `PASS`.
+Lorsqu'un `FULL` est explicitement lancé, rapporter fidèlement ses résultats et
+corriger uniquement les erreurs attribuables au lot gelé. Signaler séparément
+les défauts préexistants ou étrangers, sans modifier leurs fichiers. Aucun
+échec hors périmètre ne justifie l'extension du lot ou une nouvelle campagne.
+Une dérive de candidat est un échec de stabilité, jamais un `PASS`.
 
 Le planificateur ne déclenche jamais `FULL` implicitement. Les suites Web
 complètes, duplication, cycles, Knip, mutation, E2E et audits distants restent

@@ -513,6 +513,7 @@ export async function runValidationMode(
       candidateScope: plan.candidateScope,
       changedFiles,
       candidateSha,
+      freezeCandidateFiles: plan.mode === "FULL",
     });
     releaseFullValidationLock = plan.mode === "FULL"
       ? acquireFullValidationLock({ repositoryRoot, candidateSha })
@@ -655,7 +656,7 @@ export async function runValidationMode(
       })
       : null;
     const completionChangedFiles = plan.mode === "FULL"
-      ? getCandidateFiles(plan.candidateScope, repositoryRoot)
+      ? changedFiles
       : plan.mode === "DEPLOY"
         ? completionDeployScope?.changedFiles ?? []
         : [];
@@ -665,6 +666,7 @@ export async function runValidationMode(
         candidateScope: plan.candidateScope,
         changedFiles: completionChangedFiles,
         candidateSha,
+        freezeCandidateFiles: plan.mode === "FULL",
       })
       : undefined;
     const worktreeStable = publicationCandidate
@@ -695,6 +697,7 @@ export async function runValidationMode(
       failed.push(`deploy-candidate: ${deployScope?.reason ?? "DEPLOY_SCOPE_NOT_ESTABLISHED"}`);
     }
     if (plan.mode === "DEPLOY" && !checkoutStable) failed.push("candidate: CHECKOUT_CHANGED");
+    if (plan.mode === "FULL" && !checkoutStable) failed.push("candidate: CHECKOUT_CHANGED");
     const verdict = printReport({
       plan,
       elapsedSeconds,

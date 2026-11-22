@@ -300,21 +300,35 @@ sur les anciennes listes de commandes systématiques.
 
 ## MAIN-ONLY / MULTI-WRITER COORDONNÉ
 
-Le workflow normal du dépôt autorise des writers concurrents sur des fichiers
-distincts. ChatGPT doit préserver les changements dirty, staged et untracked
-étrangers ; cette règle MAIN-ONLY / MULTI-WRITER est héritée automatiquement par tous les prompts Codex. ChatGPT ne doit pas demander de nettoyer le checkout
-et ne transforme pas une
-collision d’attribution en écrasement silencieux. Les scopes `WORKTREE_LIVE`,
-`STAGED`, `COMMITTED_SNAPSHOT` et `PUSH_CANDIDATE` restent distincts ; une
-preuve locale ne devient pas une preuve de publication.
+Le workflow `MAIN-ONLY / MULTI-WRITER COORDONNÉ` reste applicable aux writers
+concurrents : le prompt
+de chaque exécution identifie au démarrage la référence Git et les
+fichiers attribués ; cette référence et ce périmètre restent gelés jusqu'à la
+clôture. Les changements préexistants ou apparus ensuite sont étrangers,
+préservés et exclus. Seules les modifications de Codex sur les fichiers
+attribués sont intégrées au candidat final. Les prompts interdisent l'extension
+automatique du périmètre, la resynchronisation fonctionnelle et le rejeu de
+validations globales à cause d'une évolution externe de `HEAD`, `origin/main`,
+de l'index ou du worktree. Ils demandent de préserver et signaler toute
+collision sur un même chemin, sans écrasement ni fusion silencieuse.
+
+Les validations globales se font sur les candidats immuables déjà fournis par
+`scripts/ci`, correspondant au contenu contrôlé ; aucun résultat du worktree
+mutable n'est attribué à un SHA. Un échec sur le candidat gelé reste visible :
+corriger les défauts du lot, distinguer les défauts préexistants ou étrangers,
+et ne pas relancer un contrôle global ni transformer FAIL en PASS.
+Les scopes `WORKTREE_LIVE`, `STAGED`, `COMMITTED_SNAPSHOT` et `PUSH_CANDIDATE`
+restent distincts ; une preuve locale ne devient pas une preuve de publication.
 
 Pour chaque exécution de travail qui produit un lot, le prompt demande à Codex :
-requalifier le périmètre, valider le candidat final exact, puis commit validé
-et attribué
-(plusieurs chantiers ou writers peuvent être regroupés) → push `main` →
-vérification de convergence. Le mode de développement rapide ne supprime pas
-cette publication ; seule une interdiction explicite de l'utilisateur autorise
-un commit local sans push.
+valider le candidat gelé, puis commit attribué → push fast-forward `main` →
+vérification de convergence. Au moment de publier, contrôler uniquement
+l'attribution des commits transmis, le fast-forward, les hooks, permissions et
+convergence ; une évolution externe sans conflit ne relance pas les validations.
+Un conflit réel arrête la publication avec son diagnostic exact, sans boucle
+de synchronisation. Le mode de développement rapide ne supprime pas cette
+publication ; seule une interdiction explicite de l'utilisateur autorise un
+commit local sans push.
 
 Les protections Git, secrets, intégrité, concurrence et fast-forward restent
 obligatoires, mais un défaut, un préflight Supabase bloqué ou une validation
@@ -328,13 +342,12 @@ refus observé et l'action nécessaire, sans contourner les hooks ou protections
 
 ## 8. Exécution, tests, qualité et publication
 
-ChatGPT respecte `MAIN-ONLY / MULTI-WRITER COORDONNÉ` sans imposer de checkout
-propre, de SHA figé, de push préalable ou d'arrêt des autres writers pour un
-diagnostic local. Les chemins dirty étrangers sont préservés ; un conflit sur
-un chemin bloque seulement sa mutation. Toute exécution qui produit un lot
-requalifie puis valide le candidat final exact, committe les changements
-attribués (groupement multi-chantier permis), pousse `main` et vérifie la
-convergence, sauf interdiction explicite de l'utilisateur. Les scopes Git, hooks,
+ChatGPT respecte `MAIN-ONLY / MULTI-WRITER COORDONNÉ` sans exiger l'arrêt des
+autres writers. Les chemins dirty étrangers sont préservés ; un conflit sur un
+chemin attribué est signalé et bloque sa mutation/publication. Toute exécution
+qui produit un lot valide uniquement le candidat gelé, committe ses changements
+attribués, pousse `main` en fast-forward et vérifie la convergence, sauf
+interdiction explicite de l'utilisateur. Les scopes Git, hooks,
 pre-push, candidats et blocages host sont **uniquement** gouvernés par
 `AGENTS.md`, `scripts/AGENTS.md`, `TESTING.md` et
 `documentation/development/host-environment.md`. Ne pas recopier leur
@@ -342,9 +355,10 @@ implémentation dans un prompt.
 
 Choisir des validations proportionnées : tests ciblés et cas contraires,
 contrats partagés, sécurité et lint/typecheck concernés ; `checks:fast` si rayon
-d'impact suffisant. `checks:full` est réservé à une demande qui lui est dédiée
-ou à la préparation immédiate d'un déploiement Vercel explicitement demandé.
-Son absence ne bloque jamais un lot ordinaire. `RELEASE` contrôle un SHA et la
+d'impact suffisant. Le `FULL` sur candidat immuable (`prepush:guard -- -Full`)
+est réservé à une demande qui lui est dédiée ou à la préparation immédiate d'un
+déploiement Vercel explicitement demandé. Son absence ne bloque jamais un lot
+ordinaire. `RELEASE` contrôle un SHA et la
 preuve FULL requise, ne déclenche pas un déploiement. Les tests statiques et
 mockés ne prouvent ni l'exécution PostgreSQL, ni un navigateur réel, ni la
 production. Mentionner `DB_SEMANTICS_NOT_EXECUTED` le cas échéant.

@@ -133,58 +133,58 @@ jamais être écrasé par une synchronisation avec Git.
 - Un checkout dirty, des untracked, des commits locaux non publiés ou
   `HEAD != origin/main` **ne bloquent pas** l'analyse ni le travail indépendant.
   Cette présence ne constitue jamais un motif d'arrêt global.
-  Ces exigences ne deviennent pas des préconditions de diagnostic local ; elles ne deviennent pas des préconditions de diagnostic local.
+  Ces exigences ne deviennent pas des préconditions de diagnostic local.
   Les exigences de candidat exact s'appliquent au contrôle et à la publication,
   pas comme préconditions d'un diagnostic.
-- Capturer dès le départ l'état Git (dont chemins dirty/untracked), identifier
-  les fichiers attribués au lot et établir son allowlist initiale avant
-  mutation. Les changements préexistants ou apparus en parallèle sont présumés
-  étrangers tant que leur attribution n'est pas démontrée.
+- Capturer au démarrage une référence initiale (`HEAD`, `origin/main`, index,
+  chemins tracked dirty et untracked) et établir l'allowlist attribuée au lot.
+  Cette référence et ce périmètre restent gelés pendant toute l'exécution.
+  Les changements préexistants ou apparus ensuite sont présumés étrangers et
+  exclus du candidat ; seules les modifications de Codex sur les fichiers
+  attribués au lot sont incluses.
   **Ne pas** les modifier,
   restaurer, supprimer, stasher, déplacer, fusionner ou inclure implicitement.
   Un chemin ciblé dirty et étranger bloque seulement sa propre mutation.
-- Les modifications indépendantes peuvent continuer ; coordonner explicitement
-  toute écriture d'un chemin partagé, de l'index, de `HEAD` ou des refs Git.
-  Une synchronisation de refs n'autorise jamais à écraser un fichier étranger.
-- L'allowlist initiale sert à l'attribution et au cadrage ; elle ne fige pas le
-  candidat final. Si les changements finaux diffèrent, réexaminer leurs auteurs,
-  leur périmètre et leurs preuves, puis compléter les validations nécessaires.
-  Cette différence seule n'est ni un blocage, ni un motif de réécriture
-  d'historique ou de lot correctif. Un fichier apparu après le cadrage n'est
-  inclus qu'après attribution explicite.
-- Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque
-  chaque changement est identifié, attribué, relu et validé sur le candidat
-  final exact. Le regroupement ou le nombre de fichiers ne justifie pas à lui
-  seul de séparer le commit.
-- Si un commit local contient plus de fichiers que prévu, examiner son diff,
-  leur attribution et les preuves exécutées sur son SHA. Le publier sans le
-  reconstruire si tout le contenu est attribué, sûr, validé et compatible avec
-  un push fast-forward sur `main`. Sinon, préserver l'historique et corriger
-  par un nouveau commit lorsque la correction est étayée.
+- Les modifications indépendantes peuvent continuer sur des chemins distincts.
+  Une écriture concurrente du même chemin attribué constitue une collision :
+  préserver les deux états, arrêter la mutation/publication de ce chemin et
+  rapporter le diagnostic exact. Ne jamais absorber, fusionner ni écraser
+  silencieusement le travail de l'autre writer.
+- Aucune évolution ultérieure de `HEAD`, `origin/main`, de l'index ou des
+  fichiers dirty/untracked n'étend le périmètre, ne déclenche une
+  resynchronisation fonctionnelle, une nouvelle validation globale ou un
+  nouveau `FULL`. Un échec observé sur le candidat gelé reste rapporté tel quel.
+  Corriger seulement les défauts attribuables au lot ; signaler séparément les
+  échecs préexistants ou étrangers sans modifier leurs fichiers.
+- Les validations globales utilisent un candidat immuable correspondant au
+  contenu vérifié, via les mécanismes existants de `scripts/ci` (candidat
+  statique par SHA ou `DYNAMIC_CANDIDATE`). Une preuve issue du worktree mutable
+  ne peut pas être attribuée à un SHA. Aucun contrôle ne peut convertir un
+  échec en `PASS` ni imposer la réparation d'un défaut hors périmètre.
+- Les changements des différents owners ne sont regroupés que s'ils figurent
+  dans le périmètre attribué au démarrage. Un commit local qui contient des
+  chemins étrangers ou apparus ensuite ne peut pas être transmis par ce lot ;
+  préserver cet historique et arrêter la publication avec le conflit exact.
 - Le staging reste explicite : ne jamais utiliser `git add -A` par commodité.
-  Vérifier `git diff --cached --name-only`, le diff staged et l'ascendance
-  non publiée avec `git log --oneline origin/main..HEAD`, y compris les commits
-  d'autres writers. Les changements qui restent non attribués sont exclus et
-  préservés.
+  Vérifier `git diff --cached --name-only`, le diff staged et l'attribution des
+  commits effectivement transmis. Les changements qui restent non attribués
+  sont exclus et préservés.
 - Tous les fichiers modifiés ou créés **par le lot** et nécessaires à son
   contrat doivent être intégrés au commit validé ; ne laisser aucun changement
   du lot dirty/untracked. Les chemins étrangers restent intacts et sont signalés.
-- Un changement d'un autre writer peut rejoindre le même candidat seulement si
-  son attribution et son inclusion sont explicites, qu'aucune modification
-  n'est perdue et que les validations portent sur le candidat final complet.
-  Ne jamais intégrer implicitement un changement staged, dirty ou untracked
-  dont l'attribution n'est pas établie.
+- Aucun changement d'un autre writer apparu après le gel ne rejoint le candidat,
+  même si son attribution devient ensuite connue. Ne jamais intégrer un
+  changement staged, dirty ou untracked hors périmètre.
 
-**Workflow de publication** : requalification du périmètre → validation du
-candidat final exact → staging explicite complet → commit validé (regroupé si
-les changements sont attribués et validés) → push fast-forward sur `main` →
-fetch → vérification `HEAD = origin/main`, ahead/behind `0/0`. Un lot antérieur
-non poussé n'interdit pas de travailler ; il impose l'audit de l'ascendance
-avant publication. Si `main` a avancé, refetcher et vérifier l'ascendance et le
-contenu candidat ; ne pas intégrer silencieusement des changements non attribués
-ni forcer l'historique. Aucun force-push ou contournement de garde n'est permis.
-Respecter les protections d'attribution, de sécurité et d'index avant commit et
-push.
+**Workflow de publication** : validation du candidat gelé → staging explicite
+complet → commit validé → push fast-forward sur `main` → fetch → vérification
+`HEAD = origin/main`, ahead/behind `0/0`. Au moment de publier, contrôler
+uniquement l'attribution des commits transmis, le fast-forward, les hooks, les
+permissions et la convergence. Une évolution externe sans conflit ne déclenche
+pas de nouvelle campagne de validation. En cas de conflit réel ou de push non
+fast-forward, arrêter avec le diagnostic exact ; ne pas resynchroniser le
+contenu fonctionnel ni relancer les validations. Aucun force-push ou
+contournement de garde n'est permis.
 
 Un défaut, un préflight Supabase `BLOCKED`/`DIVERGED` ou une validation Supabase
 manquante ne retient jamais un commit ou un push Git autrement publiable. Les
@@ -201,14 +201,12 @@ donc produire un commit local sans push que si cette interdiction est explicite.
 
 ### Messages de commit Codex
 
-Chaque commit doit être traçable et contenir l'ensemble des changements qu'il
-publie. Il peut réunir plusieurs chantiers ou writers s'ils sont tous identifiés,
-attribués, relus et validés sur le candidat exact. Ne pas imposer des commits
-distincts à cause du seul regroupement, du nombre de fichiers ou d'une
-allowlist initiale devenue trop étroite. Pour un commit local plus large que
-prévu, examiner son contenu et ses preuves avant décision ; le publier sans le
-reconstruire s'il est sûr, validé et fast-forward compatible avec `main`.
-Toute correction ultérieure s'ajoute sans réécrire l'historique.
+Chaque commit doit être traçable et contenir uniquement les changements
+attribués au lot au démarrage, relus et validés sur le candidat gelé. Plusieurs
+changements ainsi attribués peuvent être regroupés dans un même commit. Une
+évolution ultérieure du worktree ou un commit plus large que le périmètre ne
+permet pas d'ajouter les changements d'autres writers ; les préserver et les
+exclure. Toute correction ultérieure s'ajoute sans réécrire l'historique.
 
 Le sujet du commit doit être court, spécifique et compréhensible directement
 dans GitHub, de préférence sous la forme `type(scope): résultat`. Il ne doit pas
@@ -585,18 +583,22 @@ les nouveaux clones et distinguer la dette préexistante de celle introduite par
 le lot. La méthode détaillée est dans
 [`documentation/development/testing-quality-structure.md`](documentation/development/testing-quality-structure.md) ; elle n'impose pas `FULL` aux petits correctifs.
 
-`npm run checks:full` / `FULL` **uniquement** sur demande explicite dédiée ou
+`FULL` **uniquement** sur demande explicite dédiée ou
 préparation immédiate, explicitement demandée, d'un déploiement Vercel. Ne
 jamais en faire la STOP CONDITION d'un lot ordinaire ; hors de ces cas, renvoyer
-`NOT_RUN_POLICY`. Une fois `FULL` explicitement lancé, réparer **toute erreur
-actionnable** du contrôle dans la même exécution, même préexistante ; un blocage
-externe prouvé reste `BLOCKED_*`, jamais un faux succès. `RELEASE` exige la
-preuve FULL du SHA concerné ; ce n'est pas un déploiement.
+`NOT_RUN_POLICY`. Les validations globales utilisent un candidat immuable via
+les mécanismes existants de `scripts/ci` ; la voie et ses scopes sont détaillés
+dans [`scripts/AGENTS.md`](scripts/AGENTS.md). Une fois `FULL` explicitement lancé,
+rapporter fidèlement les résultats et corriger uniquement les erreurs
+attribuables au lot. Les défauts préexistants ou étrangers sont signalés
+séparément ; aucun échec hors périmètre n'impose l'extension du lot ou une
+nouvelle campagne. Un candidat instable ne peut pas être attesté `PASS`.
+`RELEASE` exige la preuve FULL du SHA concerné ; ce n'est pas un déploiement.
 
-Une exécution ne lance qu'un seul `FULL`. Le runner capture le SHA candidat
-avant son premier contrôle et conserve le résultat sous ce SHA, même si `main`
-avance pendant l'exécution ; l'avance de `HEAD` est signalée séparément et ne
-déclenche ni second FULL ni réattribution de la preuve.
+Une exécution ne lance qu'un seul `FULL`. Le runner capture le candidat avant
+son premier contrôle. Toute dérive pendant l'exécution est signalée comme échec
+de stabilité, sans second `FULL`, sans élargissement du candidat et sans
+réattribution des résultats.
 
 `precommit:guard` échoué bloque commit/push : diagnostiquer et réparer dans le
 même lot si autorisé, puis relancer ; sinon signaler le blocage sans contourner.

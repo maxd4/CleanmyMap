@@ -257,9 +257,10 @@ export function createCandidateFingerprint({
   candidateScope = "WORKTREE",
   changedFiles = [],
   candidateSha,
+  freezeCandidateFiles = false,
 } = {}) {
   const scope = String(candidateScope).toUpperCase();
-  const candidateFiles = scope === "STAGED"
+  const candidateFiles = scope === "STAGED" && !freezeCandidateFiles
     ? getStagedCandidateFiles(repositoryRoot)
     : changedFiles;
   const files = [...new Set(candidateFiles.map((file) => normalizeCandidatePath(repositoryRoot, file, scope)))].sort((left, right) => left.localeCompare(right, "en"));

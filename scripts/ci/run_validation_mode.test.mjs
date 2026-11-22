@@ -456,7 +456,7 @@ test("FULL keeps one active execution and rejects a concurrent second FULL", asy
   }
 });
 
-test("FULL evidence remains bound to the SHA captured before main advances", async () => {
+test("FULL fails without rerunning when HEAD advances during validation", async () => {
   const root = makeRepository();
   const lines = [];
   let advanced = false;
@@ -487,7 +487,7 @@ test("FULL evidence remains bound to the SHA captured before main advances", asy
       },
     });
 
-    assert.equal(result, 0);
+    assert.equal(result, 1);
     const completionSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
     assert.notEqual(completionSha, candidateSha);
     const evidence = JSON.parse(fs.readFileSync(
@@ -500,9 +500,164 @@ test("FULL evidence remains bound to the SHA captured before main advances", asy
     assert.equal(evidence.checkoutStable, false);
     assert.equal(evidence.attestationStatus, "NOT_ATTESTED_CHECKOUT_CHANGED");
     assert.equal(evidence.releaseReady, false);
+    assert.equal(evidence.verdict, "FAIL");
+    assert.ok(evidence.failed.includes("candidate: CHECKOUT_CHANGED"));
     assert.equal(fs.existsSync(path.join(root, "artifacts", "validation", "full", `${completionSha}.json`)), false);
     assert.ok(lines.includes(`CANDIDATE_SHA: ${candidateSha}`));
     assert.ok(lines.includes(`HEAD_AT_COMPLETION: ${completionSha}`));
+  } finally {
+    removeFixture(root);
+  }
+});
+
+test("FULL keeps its initial allowlist and does not rerun after foreign files appear", async () => {
+  const root = makeRepository();
+  const checkIds = [];
+  let injected = false;
+  try {
+    initializeGitFixture(root);
+    const result = await runValidationMode({
+      mode: "FULL",
+      candidateScope: "WORKTREE",
+      changedFiles: ["documentation/development/TESTING.md"],
+      maxParallel: 1,
+    }, {
+      repositoryRoot: root,
+      interactive: false,
+      runCheck: async (check) => {
+        checkIds.push(check.id);
+        if (!injected) {
+          injected = true;
+          fs.writeFileSync(path.join(root, "foreign-untracked.txt"), "parallel writer\n");
+        }
+        return { status: "PASS", exitCode: 0 };
+      },
+    });
+
+    assert.equal(result, 0);
+    assert.ok(checkIds.length > 1);
+    assert.equal(new Set(checkIds).size, checkIds.length);
+    assert.equal(fs.readFileSync(path.join(root, "foreign-untracked.txt"), "utf8"), "parallel writer\n");
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    const evidence = JSON.parse(fs.readFileSync(
+      path.join(root, "artifacts", "validation", "full", `${candidateSha}.json`),
+      "utf8",
+    ));
+    assert.equal(evidence.checkoutStable, true);
+    assert.deepEqual(evidence.failed, []);
+  } finally {
+    removeFixture(root);
+  }
+});
+
+test("FULL includes the lot's pre-validation changes in its frozen candidate", async () => {
+  const root = makeRepository();
+  const candidatePath = path.join(root, "documentation", "development", "TESTING.md");
+  let observedOwnChange = false;
+  try {
+    initializeGitFixture(root);
+    fs.appendFileSync(candidatePath, "codex lot change\n");
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    const result = await runValidationMode({
+      mode: "FULL",
+      candidateScope: "WORKTREE",
+      changedFiles: ["documentation/development/TESTING.md"],
+      maxParallel: 1,
+    }, {
+      repositoryRoot: root,
+      interactive: false,
+      runCheck: async () => {
+        observedOwnChange = fs.readFileSync(candidatePath, "utf8").includes("codex lot change");
+        return { status: "PASS", exitCode: 0 };
+      },
+    });
+
+    assert.equal(result, 0);
+    assert.equal(observedOwnChange, true);
+    const evidence = JSON.parse(fs.readFileSync(
+      path.join(root, "artifacts", "validation", "full", `${candidateSha}.json`),
+      "utf8",
+    ));
+    assert.equal(evidence.checkoutStable, true);
+    assert.equal(evidence.releaseReady, true);
+  } finally {
+    removeFixture(root);
+  }
+});
+
+test("FULL preserves a concurrent same-file edit and reports candidate drift", async () => {
+  const root = makeRepository();
+  const checkIds = [];
+  let collided = false;
+  const candidatePath = path.join(root, "documentation", "development", "TESTING.md");
+  try {
+    initializeGitFixture(root);
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    const result = await runValidationMode({
+      mode: "FULL",
+      candidateScope: "WORKTREE",
+      changedFiles: ["documentation/development/TESTING.md"],
+      maxParallel: 1,
+    }, {
+      repositoryRoot: root,
+      interactive: false,
+      runCheck: async (check) => {
+        checkIds.push(check.id);
+        if (!collided) {
+          collided = true;
+          fs.appendFileSync(candidatePath, "parallel same-path edit\n");
+        }
+        return { status: "PASS", exitCode: 0 };
+      },
+    });
+
+    assert.equal(result, 1);
+    assert.equal(new Set(checkIds).size, checkIds.length);
+    assert.match(fs.readFileSync(candidatePath, "utf8"), /parallel same-path edit/);
+    const evidence = JSON.parse(fs.readFileSync(
+      path.join(root, "artifacts", "validation", "full", `${candidateSha}.json`),
+      "utf8",
+    ));
+    assert.equal(evidence.verdict, "FAIL");
+    assert.ok(evidence.failed.includes("candidate: CHECKOUT_CHANGED"));
+  } finally {
+    removeFixture(root);
+  }
+});
+
+test("a foreign origin/main SHA advance does not trigger a global validation rerun", async () => {
+  const root = makeRepository();
+  const checkIds = [];
+  let advanced = false;
+  try {
+    initializeGitFixture(root);
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    execFileSync("git", ["update-ref", "refs/remotes/origin/main", candidateSha], { cwd: root, stdio: "ignore" });
+    const result = await runValidationMode({
+      mode: "FULL",
+      candidateScope: "WORKTREE",
+      changedFiles: ["documentation/development/TESTING.md"],
+      maxParallel: 1,
+    }, {
+      repositoryRoot: root,
+      interactive: false,
+      runCheck: async (check) => {
+        checkIds.push(check.id);
+        if (!advanced) {
+          advanced = true;
+          const remoteAdvance = execFileSync("git", ["commit-tree", `${candidateSha}^{tree}`, "-p", candidateSha, "-m", "parallel remote advance"], {
+            cwd: root,
+            encoding: "utf8",
+          }).trim();
+          execFileSync("git", ["update-ref", "refs/remotes/origin/main", remoteAdvance], { cwd: root, stdio: "ignore" });
+        }
+        return { status: "PASS", exitCode: 0 };
+      },
+    });
+
+    assert.equal(result, 0);
+    assert.ok(checkIds.length > 1);
+    assert.equal(new Set(checkIds).size, checkIds.length);
   } finally {
     removeFixture(root);
   }

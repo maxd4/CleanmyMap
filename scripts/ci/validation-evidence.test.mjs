@@ -183,6 +183,52 @@ test("STAGED candidate fingerprints use the index rather than WORKTREE file list
   }
 });
 
+test("a frozen STAGED candidate ignores files staged after its initial inventory", () => {
+  const root = makeRoot();
+  try {
+    git(root, ["init", "--quiet"]);
+    git(root, ["config", "user.email", "validation-test.local"]);
+    git(root, ["config", "user.name", "Validation Evidence Test"]);
+    fs.writeFileSync(path.join(root, "assigned.txt"), "baseline\n");
+    git(root, ["add", "assigned.txt"]);
+    git(root, ["commit", "--quiet", "-m", "baseline"]);
+
+    fs.writeFileSync(path.join(root, "assigned.txt"), "lot candidate\n");
+    git(root, ["add", "assigned.txt"]);
+    const candidateSha = getCandidateSha(root);
+    const candidateFiles = ["assigned.txt"];
+    const fingerprint = createCandidateFingerprint({
+      repositoryRoot: root,
+      candidateScope: "STAGED",
+      changedFiles: candidateFiles,
+      candidateSha,
+      freezeCandidateFiles: true,
+    });
+
+    fs.writeFileSync(path.join(root, "foreign-staged.txt"), "foreign\n");
+    git(root, ["add", "foreign-staged.txt"]);
+    assert.equal(createCandidateFingerprint({
+      repositoryRoot: root,
+      candidateScope: "STAGED",
+      changedFiles: candidateFiles,
+      candidateSha,
+      freezeCandidateFiles: true,
+    }), fingerprint);
+
+    fs.writeFileSync(path.join(root, "assigned.txt"), "changed candidate\n");
+    git(root, ["add", "assigned.txt"]);
+    assert.notEqual(createCandidateFingerprint({
+      repositoryRoot: root,
+      candidateScope: "STAGED",
+      changedFiles: candidateFiles,
+      candidateSha,
+      freezeCandidateFiles: true,
+    }), fingerprint);
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
 test("STAGED candidate fingerprints change when the indexed blob changes", () => {
   const root = makeRoot();
   try {
