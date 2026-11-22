@@ -257,7 +257,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("bonbonnes et récipients sous pression");
     expect(html).toContain("Balisser");
     expect(html).toContain("Consignes particulières de l&#x27;organisateur");
-    expect(html).toContain("Matériel fourni par l’organisateur");
+    expect(html).toContain("Matériel ou contribution annoncée sur place");
     expect(html).toContain("Complément libre à apporter (facultatif)");
     expect(html).toContain("Précisions d&#x27;accessibilité");
     expect(html).toContain("Checklist avant départ");
@@ -268,11 +268,11 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("min-h-[132px]");
     expect(html).toContain('data-cmm-field-control="textarea"');
     expect(html).toContain('data-cmm-field-control="select"');
-    expect(html).toContain("Équipements fournis");
+    expect(html).toContain("Équipements quantifiables");
     expect(html).toContain("Paires de gants");
     expect(html).toContain("Convivialité");
-    expect(html).toContain("Aperçu déclaré");
-    expect(html).toContain('data-testid="preparation-equipment-preview"');
+    expect(html).toContain('data-testid="preparation-equipment-summary"');
+    expect(html).not.toContain("Aperçu déclaré");
   });
 
   it("keeps historical preparation values editable in the team section", () => {

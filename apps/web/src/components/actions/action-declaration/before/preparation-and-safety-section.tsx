@@ -7,7 +7,6 @@ import { CmmField, CmmTextarea } from "@/components/ui/cmm-field";
 import { SectionLabel } from "./ui";
 import type { BaseSectionProps } from "./section-contract";
 import { PreparationAccessibilityFields } from "./preparation-accessibility-fields";
-import { PreparationMaterialFields } from "./preparation-material-fields";
 import { PreparationEquipmentFields } from "./preparation-equipment-fields";
 import { PreparationChecklistFields } from "./preparation-checklist-fields";
 import { PreparationSecurityFields } from "./preparation-security-fields";
@@ -65,15 +64,8 @@ export function PreparationAndSafetySection({ form, updateField, embedded = fals
         </section>
 
         <section aria-labelledby="before-equipment-group" className="space-y-4 border-b border-emerald-100 pb-5">
-          <h4 id="before-equipment-group" className="text-base font-black text-emerald-950">Matériel</h4>
-          <div className="space-y-3 rounded-2xl border border-emerald-100 bg-white/60 p-4">
-            <h5 className="text-sm font-bold text-emerald-950">À apporter</h5>
-            <PreparationMaterialFields form={form} updateField={updateField} />
-          </div>
-          <div className="space-y-3 rounded-2xl border border-sky-100 bg-sky-50/40 p-4">
-            <h5 className="text-sm font-bold text-sky-950">Fourni sur place</h5>
-            <PreparationEquipmentFields form={form} updateField={updateField} />
-          </div>
+          <h4 id="before-equipment-group" className="text-base font-black text-emerald-950">Matériel et équipements</h4>
+          <PreparationEquipmentFields form={form} updateField={updateField} />
         </section>
 
         <section aria-labelledby="before-accessibility-group" className="space-y-3 border-b border-emerald-100 pb-5">

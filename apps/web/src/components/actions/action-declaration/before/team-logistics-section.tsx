@@ -8,7 +8,6 @@ import type { FormState } from "../model";
 import type { BeforeActionFieldUpdater } from "./model";
 import { IdentityAndSharingSection, VolunteerRegistrationPanel } from "./identity-and-sharing-section";
 import { PreparationPlanningFields } from "./preparation-planning-fields";
-import { PreparationMaterialFields } from "./preparation-material-fields";
 import { PreparationEquipmentFields } from "./preparation-equipment-fields";
 import { PreparationSecurityFields } from "./preparation-security-fields";
 import { PreparationAccessibilityFields } from "./preparation-accessibility-fields";
@@ -219,20 +218,11 @@ export function TeamLogisticsSection({
         id="team-logistics-equipment"
         open={openDisclosures.equipment}
         onToggle={(open) => toggleDisclosure("equipment", open)}
-        summary={<ActionFormDisclosureSummary label="Matériel et équipements" detail={`${form.suggestedMaterials.length} suggestion${form.suggestedMaterials.length === 1 ? "" : "s"} à apporter · ${equipmentLinesCount} ligne${equipmentLinesCount === 1 ? "" : "s"} de matériel sur place renseignée${equipmentLinesCount === 1 ? "" : "s"}`} />}
+        summary={<ActionFormDisclosureSummary label="Matériel et équipements" detail={`${form.suggestedMaterials.length} suggestion${form.suggestedMaterials.length === 1 ? "" : "s"} à apporter · ${equipmentLinesCount} donnée${equipmentLinesCount === 1 ? "" : "s"} d’inventaire renseignée${equipmentLinesCount === 1 ? "" : "s"}`} />}
         tone="emerald"
         size="md"
       >
-        <div className="space-y-4">
-          <div className="space-y-3 rounded-2xl border border-emerald-100 bg-white/60 p-4">
-            <h3 className="text-sm font-bold text-emerald-950">À apporter</h3>
-            <PreparationMaterialFields form={form} updateField={updateField} />
-          </div>
-          <div className="space-y-3 rounded-2xl border border-sky-100 bg-sky-50/40 p-4">
-            <h3 className="text-sm font-bold text-sky-950">Fourni sur place</h3>
-            <PreparationEquipmentFields form={form} updateField={updateField} />
-          </div>
-        </div>
+        <PreparationEquipmentFields form={form} updateField={updateField} />
       </CmmDisclosure>
 
       <CmmDisclosure
