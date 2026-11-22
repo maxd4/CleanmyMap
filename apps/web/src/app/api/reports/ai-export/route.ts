@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 
 function privateResponse(body: BodyInit | null, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers);
+  // Justification no-store: generated report content is private and must not persist in shared caches.
   headers.set("Cache-Control", "private, no-store");
   return new Response(body, { ...init, headers });
 }

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-18T20:20:27.882Z",
-  "apiRouteCount": 195,
+  "generatedAt": "2026-11-22T00:00:00.000Z",
+  "apiRouteCount": 248,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -9,6 +9,20 @@
     "reviewedAt": "2026-10-09"
   },
   "additionalChangeJustifications": [
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/attendance-registry/route.ts",
+      "introducedBy": "8c2c161f592ea57458af2251fad228abb1a78298",
+      "reason": "Registre privé d’assiduité par action, dont l’accès aux données et les mutations restent sous le contrôle d’ownership organisateur et du propriétaire canonique de participation.",
+      "costContract": "GET limité à une action ; POST limite chaque mutation à une entrée, un requestId et une révision attendue. Authentification Clerk et autorisation organisateur sont vérifiées côté serveur ; le pointeur service_role reste serveur, l’identité Clerk liée est validée, et la RPC propriétaire protège atomicité/révisions. Réponse private/no-store et aucune projection publique du roster.",
+      "reviewedAt": "2026-11-22"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/ai-export/route.ts",
+      "introducedBy": "6ce460fbc79a99066a0f00de074a7fd977457808",
+      "reason": "Export Markdown ponctuel des données de rapport fournies par l’utilisateur authentifié, produit via les propriétaires existants de parsing, résolution et rendu des rapports.",
+      "costContract": "POST requiert AuthN et limite le débit à 5 appels par minute ; le contrat partagé borne et valide la requête, le rendu est plafonné à MAX_AI_MARKDOWN_EXPORT_BYTES et n’est ni persisté ni recalculé en tâche de fond. Réponses private/no-store et attachment nosniff évitent la conservation ou le partage de contenu personnel.",
+      "reviewedAt": "2026-11-22"
+    },
     {
       "route": "apps/web/src/app/api/actions/[actionId]/accessibility-support/route.ts",
       "introducedBy": "WORKTREE-CANDIDATE",
@@ -563,6 +577,7 @@
     "apps/web/src/app/api/actions/[actionId]/accessibility-observations/route.ts",
     "apps/web/src/app/api/actions/[actionId]/accessibility-support/route.ts",
     "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/attendance-registry/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/buddy/availability/route.ts",
     "apps/web/src/app/api/actions/[actionId]/buddy/proposals/[proposalId]/accept/route.ts",
@@ -706,6 +721,7 @@
     "apps/web/src/app/api/recycling/breakdown/route.ts",
     "apps/web/src/app/api/reports/actions.csv/route.ts",
     "apps/web/src/app/api/reports/actions.json/route.ts",
+    "apps/web/src/app/api/reports/ai-export/route.ts",
     "apps/web/src/app/api/reports/elus-dossier/route.ts",
     "apps/web/src/app/api/reports/exports.csv/route.ts",
     "apps/web/src/app/api/reports/generations/[id]/csv/route.ts",

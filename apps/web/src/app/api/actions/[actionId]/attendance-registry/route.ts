@@ -12,6 +12,7 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+// Justification force-dynamic: the authenticated action registry reflects current private attendance state.
 export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ actionId: string }> };
@@ -26,6 +27,7 @@ const mutationSchema = z.object({
 });
 
 function privateJson(body: unknown, status = 200) {
+  // Justification no-store: attendance entries and account links are private, mutable action data.
   return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
 }
 

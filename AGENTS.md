@@ -161,8 +161,10 @@ jamais être écrasé par une synchronisation avec Git.
 - Les validations globales utilisent un candidat immuable correspondant au
   contenu vérifié, via les mécanismes existants de `scripts/ci` (candidat
   statique par SHA ou `DYNAMIC_CANDIDATE`). Une preuve issue du worktree mutable
-  ne peut pas être attribuée à un SHA. Aucun contrôle ne peut convertir un
-  échec en `PASS` ni imposer la réparation d'un défaut hors périmètre.
+  ne peut pas être attribuée à un SHA. Le publier sans le reconstruire : le
+  candidat immuable publié doit conserver le contenu exact déjà contrôlé.
+  Aucun contrôle ne peut convertir un échec en `PASS` ni imposer la réparation
+  d'un défaut hors périmètre.
 - Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque
   chacun figure dans le périmètre attribué au démarrage. Cette règle contrôle
   la création des nouveaux commits, pas la publication des commits déjà créés.
