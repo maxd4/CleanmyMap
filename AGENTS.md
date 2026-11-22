@@ -164,15 +164,19 @@ jamais être écrasé par une synchronisation avec Git.
   ne peut pas être attribuée à un SHA. Aucun contrôle ne peut convertir un
   échec en `PASS` ni imposer la réparation d'un défaut hors périmètre.
 - Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque
-  chacun figure dans le périmètre attribué au démarrage. Le publier sans le
-  reconstruire n'est permis que si tous ses chemins étaient attribués au lot
-  avant le gel. Un commit local qui contient des
-  chemins étrangers ou apparus ensuite ne peut pas être transmis par ce lot ;
-  préserver cet historique et arrêter la publication avec le conflit exact.
+  chacun figure dans le périmètre attribué au démarrage. Cette règle contrôle
+  la création des nouveaux commits, pas la publication des commits déjà créés.
+  Lorsqu'un push est explicitement demandé, tous les commits locaux en avance
+  sur la branche distante cible sont publiés dans leur ordre d'historique,
+  même s'ils contiennent des chemins étrangers au lot courant ou proviennent
+  d'autres writers. Ne jamais bloquer, réécrire, reconstruire ou exclure un
+  commit déjà présent dans cette file en raison de son attribution. Les fichiers
+  dirty ou untracked non commités restent hors du push et sont préservés.
 - Le staging reste explicite : ne jamais utiliser `git add -A` par commodité.
-  Vérifier `git diff --cached --name-only`, le diff staged et l'attribution des
-  commits effectivement transmis. Les changements qui restent non attribués
-  sont exclus et préservés.
+  Vérifier `git diff --cached --name-only` et le diff staged avant tout nouveau
+  commit. À la publication, vérifier la liste et l'ordre des commits déjà en
+  avance, sans filtrage d'attribution ; seuls les changements non commités
+  restent exclus et préservés.
 - Tous les fichiers modifiés ou créés **par le lot** et nécessaires à son
   contrat doivent être intégrés au commit validé ; ne laisser aucun changement
   du lot dirty/untracked. Les chemins étrangers restent intacts et sont signalés.
@@ -180,12 +184,17 @@ jamais être écrasé par une synchronisation avec Git.
   même si son attribution devient ensuite connue. Ne jamais intégrer un
   changement staged, dirty ou untracked hors périmètre.
 
-**Workflow de publication** : validation du candidat gelé → staging explicite
-complet → commit validé → push fast-forward sur `main` → fetch → vérification
-`HEAD = origin/main`, ahead/behind `0/0`. Au moment de publier, contrôler
-uniquement l'attribution des commits transmis, le fast-forward, les hooks, les
-permissions et la convergence. Une évolution externe sans conflit ne déclenche
-pas de nouvelle campagne de validation. En cas de conflit réel ou de push non
+**Workflow de publication** : validation du candidat courant → staging explicite
+des seuls fichiers commités par le lot → commit validé si nécessaire → push de
+tous les commits locaux en avance sur `main` → fetch → vérification
+`HEAD = origin/main`, ahead/behind `0/0`. L'attribution limite les nouveaux
+fichiers stagés et commités par le lot, mais ne filtre pas la file des commits
+déjà créée. Un push explicitement demandé ne s'arrête donc jamais parce qu'un
+commit en attente contient des changements d'un autre writer ou un périmètre
+plus large. Les changements dirty/untracked ne sont pas ajoutés au commit ni au
+push. Contrôler la branche cible, le fast-forward, les hooks, les permissions et
+la convergence. Une évolution externe sans conflit ne déclenche pas une
+nouvelle campagne de validation. En cas de conflit réel ou de push non
 fast-forward, arrêter avec le diagnostic exact ; ne pas resynchroniser le
 contenu fonctionnel ni relancer les validations. Aucun force-push ou
 contournement de garde n'est permis.
@@ -205,12 +214,15 @@ donc produire un commit local sans push que si cette interdiction est explicite.
 
 ### Messages de commit Codex
 
-Chaque commit doit être traçable et contenir uniquement les changements
-attribués au lot au démarrage, relus et validés sur le candidat gelé. Plusieurs
-changements ainsi attribués peuvent être regroupés dans un même commit. Une
-évolution ultérieure du worktree ou un commit plus large que le périmètre ne
-permet pas d'ajouter les changements d'autres writers ; les préserver et les
-exclure. Toute correction ultérieure s'ajoute sans réécrire l'historique.
+Chaque nouveau commit créé par le lot doit être traçable et contenir uniquement
+les changements attribués au lot au démarrage, relus et validés sur le candidat
+gelé. Plusieurs changements ainsi attribués peuvent être regroupés dans un même
+commit. Une évolution ultérieure du worktree ne permet pas d'ajouter des fichiers
+dirty ou untracked au commit. Lorsqu'un push est explicitement demandé, les
+commits déjà présents en avance sur la branche distante sont tous publiés sans
+filtrage d'auteur ou de périmètre ; cette règle s'applique même si leur contenu
+dépasse le lot courant. Toute correction ultérieure s'ajoute sans réécrire
+l'historique.
 
 Le sujet du commit doit être court, spécifique et compréhensible directement
 dans GitHub, de préférence sous la forme `type(scope): résultat`. Il ne doit pas
@@ -330,9 +342,11 @@ développement, macro-lot, correction, refactorisation ou campagne de qualité :
 6. **STOP CONDITION et publication obligatoires.** Chaque lot fixe sa
    `STOP CONDITION` avant intégration et ne peut être déclaré terminé tant
    qu'elle n'est pas satisfaite ou qu'un blocage n'est pas explicitement
-   classé. Le workflow normal reste : validation du candidat final exact →
-   commit attribué (regroupement permis) → push → fetch et vérification de
-   convergence (`HEAD = origin/main`, ahead/behind `0/0`).
+   classé. Le workflow normal reste : validation du candidat courant → commit
+   attribué pour les nouveaux changements → push de tous les commits locaux en
+   avance, même s'ils contiennent des changements d'autres writers → fetch et
+   vérification de convergence (`HEAD = origin/main`, ahead/behind `0/0`). Les
+   fichiers dirty/untracked non commités restent exclus du push.
    Un mode sans push ou une exception doit être explicitement demandé ou
    gouverné ; il ne peut pas être déduit d'une difficulté locale.
 7. **Une possibilité n'est pas une implémentation.** Les formulations
