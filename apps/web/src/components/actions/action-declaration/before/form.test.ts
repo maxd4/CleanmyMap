@@ -319,7 +319,7 @@ describe("ActionBeforeDeclarationForm", () => {
       }),
     );
 
-    expect(html).toContain("Adresse libre · sans coordonnées");
+    expect(html).toMatch(/<p\b[^>]*role="status"[^>]*>Adresse sans coordonnées<\/p>/);
   });
 
   it("keeps the authenticated creator read-only and separates co-organizers from participants", () => {
