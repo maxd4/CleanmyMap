@@ -7,14 +7,27 @@ le job `action-retention` enregistré dans
 `apps/web/src/lib/periodic/maintenance-job-registry.ts`. Aucun scheduler
 secondaire n'est créé.
 
-Le job appelle `purge_inactive_action_records` par lots bornés. Il commence par
-un inventaire `dry_run`; la suppression physique ne reçoit que la liste
-d'identifiants issue de cet inventaire. La fonction recalcule ensuite
+Le job appelle d'abord `purge_inactive_action_records` par lots bornés. Il
+commence par un inventaire `dry_run`; la suppression physique ne reçoit que la
+liste d'identifiants issue de cet inventaire. La fonction recalcule ensuite
 l'éligibilité et la dernière activité persistée sous `FOR UPDATE SKIP LOCKED`,
 avec une fenêtre d'un mois calendaire (`as_of - 1 month`). Une mise à jour
 concurrente, une clé étrangère, une référence de notification/message, un
 objet Storage ou toute autre dépendance non résolue bloque la ligne sans
 interrompre le lot.
+
+Après cette purge historique, le job appelle la RPC
+`purge_expired_action_accessibility_support_requests` ajoutée par la migration
+`20261121000003_action_accessibility_support.sql`. Tant que cette migration
+n'est pas appliquée et que PostgREST renvoie `PGRST202` en nommant précisément
+cette RPC absente de son schema cache, le job conserve le résultat de la purge
+historique et expose `expiredAccessibilityRequestsStatus: rpc_unavailable`;
+ses compteurs privés à zéro signifient alors « indisponibles », pas « aucune
+demande expirée ». Dès que la RPC est disponible, son inventaire puis sa
+suppression appliquent le `retention_expires_at` défini par la migration
+(plafond de 90 jours après la date de l'action). Toute erreur de permission,
+SQL, paramètre, réponse ou autre RPC reste une erreur du job et est remontée au
+registre de maintenance.
 
 Les enregistrements `approved`, publiés, futurs publiés, en modération active
 ou possédant une dépendance métier ne sont jamais candidats. Les résultats sont
