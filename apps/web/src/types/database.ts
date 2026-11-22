@@ -79,6 +79,23 @@ export type ActionRegistrationRow = {
   manual_invitation_version?: number;
 };
 
+export type ActionAttendanceEntryRow = {
+  id: string;
+  action_id: string;
+  display_label: string;
+  clerk_user_id: string | null;
+  provenance: "confirmed_registration" | "organizer_entry" | "organizer_link";
+  attendance_status: "unknown" | "present" | "absent";
+  observed_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  updated_by: string;
+  revision: number;
+  deleted_at: string | null;
+  deleted_by: string | null;
+};
+
 export type ActionBuddyAvailabilityRow = {
   action_id: string;
   mentor_user_id: string;

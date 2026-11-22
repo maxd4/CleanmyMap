@@ -129,6 +129,35 @@ un compte Clerk doit être l'organisateur autorisé ou disposer d'une inscriptio
 
 ### Frontière persistée entre inscription et participation
 
+#### Registre nominatif privé de présence
+
+`action_attendance_entries` porte l'identité stable des personnes attendues ou
+pointées. Il complète sans les remplacer `action_registrations` (inscription
+future) et `action_participants` (participation finale approuvée). Son accès
+passe exclusivement par les routes serveur réservées au créateur, aux
+organisateurs de `action_organizers` et aux rôles globaux `admin`/`max` ; les
+lectures nominatives anonymes et les accès directs navigateur sont interdits.
+
+- Chaque entrée a un UUID propre, un libellé NFC normalisé (espaces trimés et
+  regroupés), une provenance, un état `unknown | present | absent`, une
+  révision et un audit de création/modification/suppression logique. Le libellé
+  n'est jamais une clé d'identité : plusieurs homonymes sont autorisés.
+- `clerk_user_id` reste nul pour une saisie libre. Il n'est renseigné qu'à
+  l'ajout ou au rattachement explicite d'un compte Clerk vérifié, avec une
+  unicité partielle `(action_id, clerk_user_id)`.
+- Toute inscription réellement `confirmed` crée idempotemment une entrée liée
+  en `unknown`. Une annulation d'inscription ne supprime pas l'entrée et ne
+  transforme jamais une présence observée en absence. Une réinscription ne
+  réinitialise pas le pointage.
+- Ajout, renommage, rattachement, suppression logique et pointage passent par
+  une RPC transactionnelle avec révision attendue et clé de requête idempotente.
+  Un conflit de révision retourne HTTP 409 ; chaque mutation conserve les
+  valeurs avant/après. Le pointage `present` ou `absent` est refusé avant
+  `actions.event_start_at` lorsque le début effectif n'est pas atteint.
+- Le registre ne crée aucune ligne `action_participants.confirmed`, aucune
+  notification de résultat et aucun XP. Le contrôle `attendance_status` reste
+  indépendant du statut d'inscription et de la participation finale.
+
 La source canonique dépend de la phase du cycle de vie :
 
 ```txt

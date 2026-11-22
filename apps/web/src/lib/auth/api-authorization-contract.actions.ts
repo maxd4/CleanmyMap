@@ -256,6 +256,22 @@ export const actionsAuthorizationContract = {
       ],
     },
   },
+  "actions/[actionId]/attendance-registry": {
+    GET: {
+      expected: "Only an authenticated action creator, action_organizers member, or admin/max reads the private nominative attendance register",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireActionRequestAccess + canManageAction run before listing through the service-only attendance registry owner; private no-store response",
+      evidence: ["requireActionRequestAccess", "canManageAction", "listActionAttendanceEntries"],
+      evidenceScope: "module",
+    },
+    POST: {
+      expected: "Authorized action manager adds, renames, deletes, links, or marks an entry through revision-checked idempotent audited server mutations",
+      dimensions: ["authentication", "business permission", "ownership", "audit"],
+      actual: "requireActionRequestAccess + canManageAction + verified Clerk account link + service-only transactional RPC with expected revision, start-time guard and private no-store response",
+      evidence: ["requireActionRequestAccess", "canManageAction", "mutateActionAttendanceEntry"],
+      evidenceScope: "module",
+    },
+  },
   ...schoolAttestationAuthorizationContract,
   "actions/[actionId]/formalities": {
     GET: {

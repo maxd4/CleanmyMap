@@ -29,6 +29,7 @@ const CONTRACT_MARKERS = new Map([
 ]);
 
 const MULTISESSION_PROOFS = new Map([
+  ["e2e/action-attendance-registry-concurrency.mjs", /Attendance registry idempotent retry and two-session revision conflict passed\./],
   ["e2e/action-role-attestation-concurrency.mjs", /Role attestation concurrent correction contract passed\./],
   ["e2e/action-collection-concurrency.mjs", /Action collection count write serialization and concurrency contract passed\./],
   ["e2e/action-buddy-concurrency.mjs", /Action buddy two-session matching invariant passed\./],

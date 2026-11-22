@@ -39,6 +39,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.equal(inventory.unregistered.length, 0);
   assert.deepEqual(inventory.pgtap, [
     "apps/web/supabase/tests/action-accessibility-support.pgtap.sql",
+    "apps/web/supabase/tests/action-attendance-registry.pgtap.sql",
     "apps/web/supabase/tests/action-buddy-contract.pgtap.sql",
     "apps/web/supabase/tests/action-collection-context-reference-rpc.pgtap.sql",
     "apps/web/supabase/tests/action-collection-integrity.pgtap.sql",
@@ -86,6 +87,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.equal(inventory.contracts.length, 11);
   assert.equal(inventory.contracts.includes("apps/web/supabase/tests/spogomi-registration-quiz.sql"), true);
   assert.deepEqual(inventory.multisession, [
+    "e2e/action-attendance-registry-concurrency.mjs",
     "e2e/action-buddy-concurrency.mjs",
     "e2e/action-collection-concurrency.mjs",
     "e2e/action-role-attestation-concurrency.mjs",
@@ -109,6 +111,12 @@ test("action accessibility support pgTAP plan matches its assertion count", () =
   const path = new URL("../../apps/web/supabase/tests/action-accessibility-support.pgtap.sql", import.meta.url);
   const sql = readFileSync(path, "utf8");
   assertPgTapPlanMatchesAssertions(sql, "action accessibility support");
+});
+
+test("action attendance registry pgTAP plan matches its assertion count", () => {
+  const path = new URL("../../apps/web/supabase/tests/action-attendance-registry.pgtap.sql", import.meta.url);
+  const sql = readFileSync(path, "utf8");
+  assertPgTapPlanMatchesAssertions(sql, "action attendance registry");
 });
 
 test("action organizer types pgTAP plan matches its assertion count", () => {
