@@ -1,5 +1,7 @@
 # AGENTS.md — CleanMyMap
 
+Pour les sources privées complémentaires, appliquer la politique canonique dans `documentation/development/DOCUMENTATION_POLICY.md` ; les contrats techniques du dépôt restent autoritaires.
+
 ## Portée et priorité
 
 Ce fichier porte les **invariants universels d'exécution**. Les instructions
@@ -208,6 +210,23 @@ obligatoires. Une migration peut donc être publiée indépendamment de son
 application ; la convergence Production automatique attend ensuite les preuves
 et contrôles requis. Si un contrôle bloquant échoue ou manque, la file reste
 entièrement en attente et le défaut est corrigé avant toute application.
+
+**Autorisation explicite de publier tout le worktree dirty** : lorsque
+l'utilisateur demande explicitement « commit et push tout le worktree dirty »
+(ou formule clairement la même autorisation), cette instruction autorise à
+inclure dans un même commit tous les changements tracked, staged ou unstaged,
+ainsi que tous les fichiers untracked présents dans le snapshot initial du
+worktree, même s'ils sont préexistants, étrangers au lot ou attribués à d'autres
+writers. Cette exception prévaut sur les règles d'exclusion et d'attribution
+des fichiers dirty/untracked, mais n'autorise ni les changements apparus après
+le snapshot initial, ni les fichiers ignorés, ni les secrets, ni le
+contournement des hooks, permissions, protections ou garde-fous de sécurité.
+Inventorier et relire chaque chemin initialement dirty, vérifier le candidat
+complet et ses contrôles, puis stager explicitement la liste complète (sans
+`git add -A` par commodité), relire le diff staged et commit avant de pousser
+tous les commits locaux en avance selon le workflow normal. Si une écriture
+concurrente modifie un de ces chemins après le snapshot, préserver les deux
+états et arrêter pour ce chemin ; ne pas absorber son nouveau contenu.
 
 Une interdiction explicite de committer ou pousser donnée par l'utilisateur
 reste prioritaire et doit être signalée comme exception. Le mode de

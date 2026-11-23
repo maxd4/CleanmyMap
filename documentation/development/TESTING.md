@@ -29,6 +29,15 @@ mutable ne peut être attribuée à un SHA. Le rapport conserve tout échec obse
 sur le candidat vérifié : corriger uniquement les causes attribuables au lot,
 et signaler séparément les défauts préexistants ou étrangers.
 
+Si l'utilisateur demande explicitement « commit et push tout le worktree dirty »
+(ou formule clairement la même autorisation), les chemins tracked staged ou
+unstaged et untracked du snapshot initial sont autorisés dans le candidat,
+même s'ils préexistent ou sont étrangers au lot. Cette exception ne couvre pas
+les fichiers ignorés, secrets, changements apparus ensuite ou contournements
+de garde-fous. Le candidat doit être relu et contrôlé dans son ensemble, puis
+stagé avec une liste explicite ; ne pas utiliser `git add -A` par commodité.
+Une modification concurrente postérieure au snapshot est préservée et signalée.
+
 Les provenances sont distinctes et doivent être affichées : `WORKTREE_LIVE`
 pour le checkout mouvant, `STAGED` pour l'index exact, `COMMITTED_SNAPSHOT`
 pour un arbre Git immuable identifié par SHA, et `PUSH_CANDIDATE` pour les refs

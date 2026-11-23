@@ -1,5 +1,7 @@
 # Documentation — CleanMyMap
 
+La politique des sources privées complémentaires et leur hiérarchie figurent dans [DOCUMENTATION_POLICY.md](development/DOCUMENTATION_POLICY.md).
+
 Point d'entrée de la documentation technique, produit et opérationnelle du
 projet.
 

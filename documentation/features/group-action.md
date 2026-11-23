@@ -146,7 +146,11 @@ lectures nominatives anonymes et les accès directs navigateur sont interdits.
   n'est jamais une clé d'identité : plusieurs homonymes sont autorisés.
 - `clerk_user_id` reste nul pour une saisie libre. Il n'est renseigné qu'à
   l'ajout ou au rattachement explicite d'un compte Clerk vérifié, avec une
-  unicité partielle `(action_id, clerk_user_id)`.
+  unicité partielle `(action_id, clerk_user_id)` limitée aux entrées actives.
+- Un « Ajouter à la liste » explicite du même compte réactive sa ligne supprimée
+  avec le même UUID, en `unknown`, sans `observed_at`, avec révision incrémentée
+  et audit avant/après. Le trigger d'inscription confirmée ne recrée ni ne
+  réactive jamais une identité supprimée ; un doublon actif reste refusé.
 - Toute inscription réellement `confirmed` crée idempotemment une entrée liée
   en `unknown`. Une annulation d'inscription ne supprime pas l'entrée et ne
   transforme jamais une présence observée en absence. Une réinscription ne

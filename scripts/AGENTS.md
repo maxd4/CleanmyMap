@@ -80,6 +80,18 @@ distante sans filtrage d'attribution, même s'ils contiennent des chemins d'un
 autre lot ; les fichiers dirty et untracked restent exclus. Les gardes,
 secrets, AuthZ, migrations et fast-forward restent obligatoires.
 
+Exception sur demande explicite : si l'utilisateur demande explicitement
+« commit et push tout le worktree dirty » (ou formule clairement la même
+autorisation), l'ensemble des chemins tracked, staged ou unstaged, et untracked
+présents dans le snapshot initial peut être inclus dans le commit, y compris
+les changements préexistants étrangers au lot. Cette autorisation ne couvre
+pas les fichiers ignorés, les secrets, les changements apparus après ce
+snapshot, ni aucun contournement des hooks, protections ou permissions. Relire
+le contenu de chaque chemin, vérifier le candidat complet, stager explicitement
+toute la liste sans `git add -A`, relire `STAGED`, puis suivre la publication
+normale. Une modification concurrente d'un chemin après le snapshot reste une
+collision à préserver et signaler.
+
 Les scopes sont strictement séparés : `WORKTREE_LIVE` est le checkout mouvant,
 `STAGED` l'index exact, `COMMITTED_SNAPSHOT` un arbre Git immuable par SHA, et
 `PUSH_CANDIDATE` les refs effectivement transmises par le protocole Git. Une

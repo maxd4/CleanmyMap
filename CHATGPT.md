@@ -1,5 +1,7 @@
 # Contrat de travail ChatGPT — CleanMyMap
 
+Pour les sources privées complémentaires, appliquer la politique canonique `documentation/development/DOCUMENTATION_POLICY.md` ; les contrats techniques du dépôt restent autoritaires.
+
 Ce document gouverne **ChatGPT en tant qu'analyste, concepteur et rédacteur de
 prompts ou fichiers** pour le dépôt. `AGENTS.md` gouverne l'exécution locale de
 Codex ; les `AGENTS.md` scoped et les sources documentaires spécialisées portent

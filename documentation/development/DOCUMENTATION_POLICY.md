@@ -8,6 +8,14 @@ gérer son cycle de vie.
 La structure canonique des dossiers est définie dans
 `documentation/AGENTS.md`.
 
+## Sources publiques et privées
+
+GitHub `maxd4/CleanMyMap` sur `main` reste autoritaire pour le code, le runtime, la sécurité, l’architecture et la méthodologie scientifique. Le dossier privé Google Drive `cleanmymap` complète les documents de pilotage, finances, partenariats, ateliers, données de terrain et archives, sans créer de contrats techniques concurrents.
+
+ChatGPT et Codex consultent Drive uniquement lorsque pertinent, via le connecteur Google Drive autorisé : rechercher `cleanmymap` par son nom, puis lire `AGENTS.md`, `README.md` et les règles du sous-dossier concerné. Le connecteur peut manquer dans certains environnements ; signaler son indisponibilité sans inventer d’information.
+
+Distinguer `CURRENT`, `PLAN`, `HISTORY`, `SNAPSHOT`, propositions et preuves réellement observées. Aucun document privé ne remplace la vérification du code courant. Aucune synchronisation automatique ni copie de données privées vers GitHub sans autorisation explicite. Ne publier aucun lien ou identifiant Drive privé.
+
 ## Quand documenter
 
 Documenter uniquement une connaissance durable pertinente, notamment :
