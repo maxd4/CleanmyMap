@@ -26,6 +26,7 @@ type ReviewActionParticipationParams = {
   actionPhase?: ActionPhase;
   requirePending?: boolean;
   allowAdministrativeRejectionRetry?: boolean;
+  reviewerUserId?: string;
 };
 
 type ReviewActionParticipationResult = ParticipationMutationResult & {
@@ -174,6 +175,10 @@ async function updateReviewRecord(
         expectedStatus: existing.status === PENDING_PARTICIPATION_STATUS
           ? PENDING_PARTICIPATION_STATUS
           : undefined,
+        attendanceClaimReviewedByClerkId:
+          params.decision === "accept" && existing.source === "post_action_claim"
+            ? params.reviewerUserId
+            : undefined,
       }),
   });
 }

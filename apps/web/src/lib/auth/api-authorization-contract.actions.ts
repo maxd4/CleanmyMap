@@ -184,14 +184,17 @@ export const actionsAuthorizationContract = {
   },
   "actions/[actionId]/participation-claim": {
     POST: {
-      expected: "Authenticated user creates or reuses only their own eligible post-action claim",
+      expected: "Authenticated member submits an organizer-provided present roster id without roster search; an authorized review is required before participation is confirmed",
       dimensions: ["authentication", "ownership", "business permission", "audit"],
-      actual: "requireAuthenticatedAccess + shared public access_mode guard + user-scoped action_participants mutation + appendParticipationClaimAudit delegates to appendActionModerationAudit",
+      actual: "requireAuthenticatedAccess + rate limit + opaque roster UUID + service-only atomic claim RPC; review trigger links attendance with participation confirmation",
       evidence: [
         "requireAuthenticatedAccess",
+        "verifyRateLimit",
+        "rosterEntryId",
         "claimFinishedActionParticipation",
         "appendParticipationClaimAudit",
       ],
+      evidenceScope: "module",
     },
   },
   "actions/[actionId]/participant-impact": {
@@ -712,6 +715,22 @@ export const actionsAuthorizationContract = {
       dimensions: ["public-safe"],
       actual: "loadActionById + isPublicActionReferenceAvailable before buildPublicActionReference; no private preparation or measurements are returned",
       evidence: ["loadActionById", "isPublicActionReferenceAvailable", "buildPublicActionReference"],
+      evidenceScope: "module",
+    },
+  },
+  "actions/[actionId]/participant-visibility": {
+    GET: {
+      expected: "Only the authenticated holder can read their own action visibility consent",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + action/user predicate on a server-only consent table + private no-store response",
+      evidence: ["requireAuthenticatedAccess", "action_participant_visibility_consents", "private, no-store"],
+      evidenceScope: "module",
+    },
+    PATCH: {
+      expected: "Only the authenticated holder can opt in or revoke; enabling also requires current server-verified age eligibility and confirmed action participation",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + Clerk eligibility + service-only set_action_participant_visibility_consent RPC with the authenticated user id",
+      evidence: ["requireAuthenticatedAccess", "getUserOptionalConsentEligibility", "set_action_participant_visibility_consent", "p_user_id: access.userId"],
       evidenceScope: "module",
     },
   },

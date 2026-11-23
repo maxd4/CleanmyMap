@@ -102,10 +102,12 @@ describe("Rejoindre une action content contract", () => {
     const confirmedMarkup = renderCard(buildItem({ joined: true, participationStatus: "confirmed" }));
     expect(confirmedMarkup).toContain("binôme");
     expect(confirmedMarkup).toContain("Chargement du panneau binôme");
+    expect(confirmedMarkup).toContain("Visibilité de mon profil pour cette action");
     expect(confirmedMarkup).not.toContain("user-");
 
     const pendingMarkup = renderCard(buildItem({ awaitingApproval: true, participationStatus: "pending" }));
     expect(pendingMarkup).not.toContain("Besoin d'un binôme ?");
+    expect(pendingMarkup).not.toContain("Visibilité de mon profil pour cette action");
     const anonymousMarkup = renderToStaticMarkup(
       <ActionCard
         item={buildItem({ joined: true, participationStatus: "confirmed" })}
@@ -119,6 +121,7 @@ describe("Rejoindre une action content contract", () => {
       />,
     );
     expect(anonymousMarkup).not.toContain("Besoin d'un binôme ?");
+    expect(anonymousMarkup).not.toContain("Visibilité de mon profil pour cette action");
   });
 
   it("shows organizer information separately from catalogue recommendations", () => {

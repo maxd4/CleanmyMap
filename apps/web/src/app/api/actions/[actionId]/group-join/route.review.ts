@@ -397,6 +397,7 @@ export async function handleGroupJoinReview(
             actionId: trimmedActionId,
             participantId: parsed.data.participantId,
             decision: parsed.data.decision,
+            reviewerUserId: userId,
             actionPhase: actionResult.action_phase,
             allowAdministrativeRejectionRetry: administrativeRejectionRetry,
             requirePending:

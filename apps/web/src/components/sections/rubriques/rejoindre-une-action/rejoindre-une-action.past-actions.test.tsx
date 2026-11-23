@@ -188,6 +188,60 @@ describe("PastActionsPanel", () => {
     renderer.unmount();
   });
 
+  it("submits only an organizer-provided roster id for an identified attendance claim", async () => {
+    const response = { ok: true, json: async () => ({ participationStatus: "pending", participationSource: "post_action_claim" }) };
+    const fetchMock = vi.fn().mockResolvedValue(response);
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<PastActionsPanel items={[pastAction()]} loading={false} error={null} fr authenticated />);
+    });
+    const idInput = renderer.root.findByProps({ id: "attendance-entry-past-action" });
+    await act(async () => {
+      idInput.props.onChange({ target: { value: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } });
+    });
+    const claimButton = renderer.root.findAllByType("button").find((node) => node.children.join("").includes("Revendiquer cette présence identifiée"));
+    expect(claimButton).toBeDefined();
+    await act(async () => { claimButton!.props.onClick(); await Promise.resolve(); });
+
+    expect(fetchMock.mock.calls.find(([url]) => String(url).includes("/participation-claim"))).toEqual(["/api/actions/past-action/participation-claim", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ rosterEntryId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }),
+    }]);
+    renderer.unmount();
+  });
+
+  it("loads and saves the holder-only public profile consent from a confirmed action", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ enabled: false }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ enabled: true }) });
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<PastActionsPanel
+        items={[pastAction()]}
+        loading={false}
+        error={null}
+        fr
+        authenticated
+        historyItems={[participationHistory({ participationStatus: "confirmed" })]}
+      />);
+    });
+    const visibilityButton = renderer.root.findAllByType("button").find((node) => node.children.join("").includes("Visibilité de mon profil"));
+    expect(visibilityButton).toBeDefined();
+    await act(async () => { visibilityButton!.props.onClick(); await Promise.resolve(); });
+    expect(fetchMock).toHaveBeenCalledWith("/api/actions/past-action/participant-visibility", { cache: "no-store" });
+    const checkbox = renderer.root.findByType("input");
+    await act(async () => { checkbox.props.onChange({ target: { checked: true } }); await Promise.resolve(); });
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/actions/past-action/participant-visibility", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled: true }),
+    });
+    renderer.unmount();
+  });
+
   it("transmet le suivi historique au propriétaire et le masque aux autres utilisateurs", () => {
     const getOpsDraft = () => ({ attendanceCount: "4", postMortem: "Retour" });
     const updateOpsDraft = () => undefined;

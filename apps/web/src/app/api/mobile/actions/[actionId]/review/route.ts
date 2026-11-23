@@ -80,7 +80,7 @@ export async function POST(request: Request, ctx: ReviewContext) {
     }
     const result = "participantUserId" in parsed.data
       ? await addActionParticipationByAdmin(context.supabase, { actionId, targetUserId: parsed.data.participantUserId, actionPhase: context.action.action_phase })
-      : await reviewActionParticipation(context.supabase, { actionId, participantId: parsed.data.participantId, decision: parsed.data.decision, actionPhase: context.action.action_phase, requirePending: true });
+      : await reviewActionParticipation(context.supabase, { actionId, participantId: parsed.data.participantId, decision: parsed.data.decision, reviewerUserId: access.userId, actionPhase: context.action.action_phase, requirePending: true });
     if ("participantUserId" in parsed.data || parsed.data.decision === "accept") {
       await rebuildUserGamificationBadges(context.supabase, result.participantUserId).catch(() => null);
       await refreshProgressionProfile(context.supabase, result.participantUserId).catch(() => null);

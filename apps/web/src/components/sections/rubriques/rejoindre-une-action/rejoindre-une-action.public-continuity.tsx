@@ -83,6 +83,17 @@ export function PublicActionContinuity({ state, fr }: { state: PublicActionConti
         <p className="mt-1 text-sm text-emerald-950/80">{retrospective?.thanksMessage || (fr ? "Merci à toutes les personnes qui ont contribué à cette action." : "Thank you to everyone who contributed to this action.")}</p>
       </div>
 
+      {reference.participantVisibility?.profiles.length ? (
+        <div className="border-t border-emerald-200 pt-3">
+          <h4 className="font-bold text-emerald-950">{fr ? "Participants qui ont choisi d’être visibles" : "Participants who chose to be visible"}</h4>
+          <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-700">
+            {reference.participantVisibility.profiles.map((profile, index) => (
+              <li key={`${profile.handle ?? profile.displayName}-${index}`}>{profile.displayName}{profile.handle ? ` (@${profile.handle})` : ""}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {retrospectiveEntries.length > 0 ? (
         <div className="space-y-2 border-t border-emerald-200 pt-3">
           <h4 className="font-bold text-emerald-950">{fr ? "Retour d’expérience" : "Retrospective"}</h4>

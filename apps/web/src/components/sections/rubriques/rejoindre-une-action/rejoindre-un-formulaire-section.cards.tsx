@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { ActionParticipationReviewItem, JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { ParticipantVisibilityConsentControl } from "@/components/actions/participant-visibility-consent-control";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 import { ActionThumbnail } from "./rejoindre-un-formulaire-section.illustrations";
 import { ActionCardActions } from "./rejoindre-un-formulaire-section.card-actions";
@@ -280,6 +281,7 @@ export function ActionCard({
 
       {authenticated && isPreAction && item.joined && !item.awaitingApproval ? (
         <>
+          {item.participationStatus === "confirmed" ? <ParticipantVisibilityConsentControl actionId={item.id} fr={fr} /> : null}
           <ActionBuddyPanel
             actionId={item.id}
             fr={fr}

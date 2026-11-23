@@ -15,6 +15,7 @@ import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 import { toPublicActionListItem } from "@/lib/actions/data-contract";
 import { isActionStartInFuture } from "@/lib/actions/temporal";
 import { refreshProgressionProfile } from "@/lib/gamification/reconciliation/progression-tracking";
+import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 
 export const runtime = "nodejs";
 // Justification Vercel: this authenticated mobile action projection changes with workflow state.
@@ -22,7 +23,12 @@ export const dynamic = "force-dynamic";
 
 type ActionRouteContext = { params: Promise<{ actionId: string }> };
 
-const mutationSchema = z.object({ intent: z.enum(["claim"]) });
+const mutationSchema = z.object({ intent: z.enum(["claim"]), rosterEntryId: z.string().uuid().optional() }).strict();
+
+function privateResponse(response: Response): Response {
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
 
 async function resolveAction(supabase: ReturnType<typeof getSupabaseServerClient>, actionId: string, userId: string) {
   const [future, history, publicActions] = await Promise.all([
@@ -80,24 +86,28 @@ export async function GET(request: Request, ctx: ActionRouteContext) {
 }
 
 export async function POST(request: Request, ctx: ActionRouteContext) {
+  const rateLimit = await verifyRateLimit(request, { limit: 10, window: 60 });
+  const rateLimitResponse = createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter, rateLimit);
+  if (rateLimitResponse) return privateResponse(rateLimitResponse);
   const access = await requireMobileAuthenticatedAccess(request);
-  if (!access.ok) return unauthorizedJsonResponse();
+  if (!access.ok) return privateResponse(unauthorizedJsonResponse());
   const { actionId } = await ctx.params;
   const parsed = mutationSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return privateResponse(validationErrorResponse(parsed.error.flatten().fieldErrors));
 
   try {
     const claim = await claimFinishedActionParticipation(getSupabaseServerClient(true), {
       actionId,
       userId: access.userId,
+      ...(parsed.data.rosterEntryId ? { rosterEntryId: parsed.data.rosterEntryId } : {}),
     });
     await appendParticipationClaimAudit({ actionId, userId: access.userId, operationIdPrefix: "mobile-action-post-claim", claim });
-    return NextResponse.json({ status: "ok", intent: parsed.data.intent, ...claim });
+    return privateResponse(NextResponse.json({ status: "ok", intent: parsed.data.intent, ...claim }));
   } catch (error) {
     if (error instanceof Error && error.name === "NotFoundError") {
-      return NextResponse.json({ error: "Action introuvable ou non éligible." }, { status: 404 });
+      return privateResponse(NextResponse.json({ error: "Action introuvable ou non éligible." }, { status: 404 }));
     }
-    return handleApiError(error, "POST /api/mobile/actions/:actionId");
+    return privateResponse(handleApiError(error, "POST /api/mobile/actions/:actionId"));
   }
 }
 

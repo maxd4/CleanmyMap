@@ -105,6 +105,7 @@ export async function updateParticipationRecordForPhase(params: {
   source: ParticipationSource;
   recordId: string;
   expectedStatus?: ParticipationStatus;
+  attendanceClaimReviewedByClerkId?: string;
 }): Promise<ParticipationRecord> {
   const row = params.useRegistrations
     ? await updateActionRegistrationRecord(params.supabase, {
@@ -122,6 +123,7 @@ export async function updateParticipationRecordForPhase(params: {
         participationStatus: params.status,
         participationSource: params.source,
         expectedParticipationStatus: params.expectedStatus,
+        attendanceClaimReviewedByClerkId: params.attendanceClaimReviewedByClerkId,
       });
   return fromStoreRow({ ...row, id: params.recordId, user_id: params.userId } as ParticipationStoreRow, params.userId);
 }

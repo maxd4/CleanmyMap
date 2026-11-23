@@ -32,6 +32,13 @@ describe("GET /api/actions/[actionId]/public", () => {
 
   it("returns only the current public action projection", async () => {
     loadActionByIdMock.mockResolvedValue(action);
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ registered_count: 2, profiles: [{ displayName: "Membre", handle: "membre", avatarUrl: null, id: "private-id" }] }],
+      error: null,
+    });
+    getSupabaseServerClientMock.mockReturnValue({ rpc, from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+    })) });
     const { GET } = await import("./route");
     const response = await GET(
       new Request("http://localhost/api/actions/11111111-1111-4111-8111-111111111111/public"),
@@ -42,6 +49,12 @@ describe("GET /api/actions/[actionId]/public", () => {
     expect(body.reference).toMatchObject({ id: action.id, title: "Nettoyage des berges" });
     expect(body.reference).not.toHaveProperty("preparationData");
     expect(body.reference).not.toHaveProperty("waste_kg");
+    expect(body.reference?.participantVisibility).toEqual({
+      registeredCount: 2,
+      profiles: [{ displayName: "Membre", handle: "membre", avatarUrl: null }],
+    });
+    expect(JSON.stringify(body)).not.toContain("private-id");
+    expect(rpc).toHaveBeenCalledWith("load_public_action_participant_visibility", { p_action_id: action.id });
   });
 
   it("adds only derived public recommendations to a completed action", async () => {
@@ -99,6 +112,21 @@ describe("GET /api/actions/[actionId]/public", () => {
     expect(await response.json()).toEqual({ error: "Action indisponible" });
     expect(loadRetrospectiveMock).not.toHaveBeenCalled();
     expect(loadRecommendationsMock).not.toHaveBeenCalled();
+  });
+
+  it("does not request or expose participant data for a private action", async () => {
+    loadActionByIdMock.mockResolvedValue({ ...action, access_mode: "invite_link" });
+    const rpc = vi.fn();
+    getSupabaseServerClientMock.mockReturnValue({ rpc, from: vi.fn() });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("https://example.test/api/actions/private/public"), {
+      params: Promise.resolve({ actionId: action.id }),
+    });
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(rpc).not.toHaveBeenCalled();
+    expect(loadRetrospectiveMock).not.toHaveBeenCalled();
   });
 
   it("exposes only editorial retrospective fields and keeps the public response uncached", async () => {

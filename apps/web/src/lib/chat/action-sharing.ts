@@ -10,6 +10,7 @@ import {
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 import type { ActionRetrospectivePublic } from "@/lib/actions/action-retrospective-contract";
 import type { PublicActionRecommendation } from "@/lib/actions/public-action-recommendations";
+import type { PublicActionParticipantVisibility } from "@/lib/actions/participation/group-participation-public-projection";
 
 type ShareDestinationChannel = "community" | "territory" | "dm";
 
@@ -52,6 +53,7 @@ export type PublicActionReference = {
   retrospective?: ActionRetrospectivePublic | null;
   retrospectivePreview?: string | null;
   recommendations?: PublicActionRecommendation[];
+  participantVisibility?: PublicActionParticipantVisibility;
   event: {
     id: string;
     title: string;
@@ -171,7 +173,10 @@ export function buildPublicActionReference(
   row: ActionRow,
   event: PublicActionEvent | null = null,
   retrospective: ActionRetrospectivePublic | null = null,
-  options: { recommendations?: PublicActionRecommendation[] } = {},
+  options: {
+    recommendations?: PublicActionRecommendation[];
+    participantVisibility?: PublicActionParticipantVisibility;
+  } = {},
 ): PublicActionReference {
   const contract = toActionContract(row);
   const preparation = contract.metadata.preparationData;
@@ -206,6 +211,7 @@ export function buildPublicActionReference(
     retrospective,
     retrospectivePreview: buildRetrospectivePreview(retrospective),
     recommendations: options.recommendations ?? [],
+    participantVisibility: options.participantVisibility ?? { registeredCount: 0, profiles: [] },
     event,
   };
 }

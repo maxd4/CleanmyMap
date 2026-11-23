@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   toPublic: vi.fn((value: unknown) => value),
   audit: vi.fn(),
   refreshProgression: vi.fn(),
+  verifyRateLimit: vi.fn(),
+  createRateLimitResponse: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/mobile-bearer", () => ({ requireMobileAuthenticatedAccess: mocks.mobileAuth }));
@@ -25,6 +27,10 @@ vi.mock("@/lib/actions/unified-source", () => ({ fetchUnifiedActionContracts: mo
 vi.mock("@/lib/actions/data-contract", () => ({ toPublicActionListItem: mocks.toPublic }));
 vi.mock("@/lib/actions/moderation-audit", () => ({ appendActionModerationAudit: mocks.audit }));
 vi.mock("@/lib/gamification/reconciliation/progression-tracking", () => ({ refreshProgressionProfile: mocks.refreshProgression }));
+vi.mock("@/lib/rate-limit/server", () => ({
+  verifyRateLimit: mocks.verifyRateLimit,
+  createServerRateLimitResponse: mocks.createRateLimitResponse,
+}));
 
 import { DELETE, GET, POST } from "./route";
 
@@ -47,6 +53,8 @@ describe("/api/mobile/actions/:actionId", () => {
     mocks.fetchUnified.mockResolvedValue({ items: [] });
     mocks.audit.mockResolvedValue(undefined);
     mocks.refreshProgression.mockResolvedValue(undefined);
+    mocks.verifyRateLimit.mockResolvedValue({ allowed: true, retryAfter: 0 });
+    mocks.createRateLimitResponse.mockReturnValue(null);
   });
 
   it("cancels only the authenticated user's registration", async () => {
@@ -65,6 +73,17 @@ describe("/api/mobile/actions/:actionId", () => {
       operation: "post_action_claim",
       outcome: "success",
     }));
+  });
+
+  it("passes only the organizer-provided attendance id into the shared claim workflow", async () => {
+    const rosterEntryId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const response = await POST(req("POST", { intent: "claim", rosterEntryId }), ctx);
+    expect(response.status).toBe(200);
+    expect(mocks.verifyRateLimit).toHaveBeenCalledWith(expect.anything(), { limit: 10, window: 60 });
+    expect(mocks.claim).toHaveBeenCalledWith(expect.anything(), {
+      actionId: "action-1", userId: "user-mobile", rosterEntryId,
+    });
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("returns the private projection for a joinable action", async () => {

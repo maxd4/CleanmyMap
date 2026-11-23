@@ -43,6 +43,43 @@ export type PublicActionPracticalInformation = {
   participantMessage: string | null;
 };
 
+export type PublicActionParticipantProfile = {
+  displayName: string;
+  handle: string | null;
+  avatarUrl: string | null;
+};
+
+export type PublicActionParticipantVisibility = {
+  registeredCount: number;
+  profiles: PublicActionParticipantProfile[];
+};
+
+/** Accepts only the explicit public SQL projection; account and roster IDs never cross this boundary. */
+export function projectPublicActionParticipantVisibility(value: unknown): PublicActionParticipantVisibility {
+  const row = Array.isArray(value) ? value[0] : value;
+  if (!row || typeof row !== "object" || Array.isArray(row)) return { registeredCount: 0, profiles: [] };
+  const record = row as Record<string, unknown>;
+  const count = Number(record.registered_count ?? record.registeredCount);
+  const rawProfiles = Array.isArray(record.profiles) ? record.profiles : [];
+  const profiles = rawProfiles.slice(0, 100).flatMap((raw): PublicActionParticipantProfile[] => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
+    const profile = raw as Record<string, unknown>;
+    const displayName = typeof profile.displayName === "string" ? profile.displayName.trim() : "";
+    const handle = typeof profile.handle === "string" ? profile.handle.trim() : "";
+    const avatarUrl = typeof profile.avatarUrl === "string" ? profile.avatarUrl.trim() : "";
+    if (!displayName) return [];
+    return [{
+      displayName: displayName.slice(0, 80),
+      handle: handle ? handle.slice(0, 40) : null,
+      avatarUrl: /^https:\/\//iu.test(avatarUrl) ? avatarUrl.slice(0, 500) : null,
+    }];
+  });
+  return {
+    registeredCount: Number.isSafeInteger(count) && count > 0 ? count : 0,
+    profiles,
+  };
+}
+
 function readPublicText(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }

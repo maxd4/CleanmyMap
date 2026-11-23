@@ -9,6 +9,7 @@ import { extractEventRefFromNotes } from "@/lib/actions/event-link";
 import { buildCommunityEventHref } from "@/lib/community/event-links";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { ParticipantVisibilityConsentControl } from "@/components/actions/participant-visibility-consent-control";
 import { SpogomiContextLink } from "@/components/spogomi/spogomi-context-link";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import { buildJoinActionTabHref } from "@/lib/sections/join-action-routes";
@@ -166,12 +167,34 @@ function PastActionCardActions({
   claimState: ClaimState | null;
   claiming: boolean;
   claimError?: string;
-  onRequestClaim: (actionId: string) => void;
+  onRequestClaim: (actionId: string, rosterEntryId?: string) => void;
 }) {
+  const [rosterEntryId, setRosterEntryId] = useState("");
   return (
     <div className="space-y-2 border-t border-slate-100 pt-3">
       {claimState ? <p className="text-sm font-bold text-emerald-800" role="status">{claimStatusLabel(claimState, fr)}</p> : authenticated ? <CmmButton type="button" tone="primary" variant="pill" className="w-full justify-center text-xs" loading={claiming} onClick={() => onRequestClaim(item.id)}>{fr ? "J’ai participé à cette action" : "I participated in this action"}</CmmButton> : <CmmButton href={buildSignInRedirectHref("/sections/rejoindre-une-action?tab=past")} tone="primary" variant="pill" className="w-full justify-center text-xs">{fr ? "J’ai participé à cette action" : "I participated in this action"}</CmmButton>}
+      {authenticated && !claimState ? <div className="space-y-2 rounded-xl bg-slate-50 p-3">
+        <label htmlFor={`attendance-entry-${item.id}`} className="block text-xs font-semibold text-slate-800">
+          {fr ? "Vous avez un identifiant communiqué par l’organisateur ?" : "Did the organizer give you an attendance ID?"}
+        </label>
+        <input
+          id={`attendance-entry-${item.id}`}
+          value={rosterEntryId}
+          onChange={(event) => setRosterEntryId(event.target.value)}
+          autoComplete="off"
+          inputMode="text"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          aria-describedby={`attendance-entry-help-${item.id}`}
+        />
+        <p id={`attendance-entry-help-${item.id}`} className="text-xs text-slate-600">
+          {fr ? "Saisissez uniquement cet identifiant. La liste nominative reste privée." : "Enter only that ID. The named roster stays private."}
+        </p>
+        <CmmButton type="button" tone="secondary" variant="pill" className="w-full justify-center text-xs" loading={claiming} disabled={!rosterEntryId.trim()} onClick={() => onRequestClaim(item.id, rosterEntryId.trim())}>
+          {fr ? "Revendiquer cette présence identifiée" : "Claim this identified attendance"}
+        </CmmButton>
+      </div> : null}
       {authenticated && claimState?.participationStatus === "confirmed" ? <CmmButton href={`/sections/messagerie?channel=action&actionId=${encodeURIComponent(item.id)}`} tone="secondary" variant="pill" className="w-full justify-center text-xs">{fr ? "Discussion de l’action" : "Action discussion"}</CmmButton> : null}
+      {authenticated && claimState?.participationStatus === "confirmed" ? <ParticipantVisibilityConsentControl actionId={item.id} fr={fr} /> : null}
       <CmmButton href={buildJoinActionTabHref("past", item.id)} tone="tertiary" variant="pill" className="w-full justify-center text-xs">{fr ? "Voir le retour et les prochaines actions" : "View the retrospective and next actions"}</CmmButton>
       <SpogomiContextLink actionId={item.id} />
       {claimError ? <p className="text-xs font-semibold text-rose-700" role="alert">{claimError}</p> : null}
@@ -198,7 +221,7 @@ function PastActionCard({
   claimState: ClaimState | null;
   claiming: boolean;
   claimError?: string;
-  onRequestClaim: (actionId: string) => void;
+  onRequestClaim: (actionId: string, rosterEntryId?: string) => void;
   onShareAction?: (actionId: string) => void;
   continuity?: PublicActionContinuityState;
 }) {
@@ -234,12 +257,18 @@ function usePastActionClaims(historyItems: readonly JoinableActionHistoryItem[],
     personalImpactAttribution: item.personalImpactAttribution,
   }] as const)), [historyItems]);
 
-  async function requestClaim(actionId: string) {
+  async function requestClaim(actionId: string, rosterEntryId?: string) {
     if (claimingActionId) return;
     setClaimingActionId(actionId);
     setClaimErrors((previous) => ({ ...previous, [actionId]: "" }));
     try {
-      const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/participation-claim`, { method: "POST" });
+      const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/participation-claim`, {
+        method: "POST",
+        ...(rosterEntryId ? {
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ rosterEntryId }),
+        } : {}),
+      });
       const payload = await response.json() as { participationStatus?: ClaimState["participationStatus"]; participationSource?: ClaimState["participationSource"]; error?: string };
       if (!response.ok || !payload.participationStatus || !payload.participationSource) {
         setClaimErrors((previous) => ({ ...previous, [actionId]: payload.error || (fr ? "La demande n’a pas pu être envoyée." : "The request could not be sent.") }));
@@ -294,13 +323,13 @@ function PastActionItemsGrid({
   historyByActionId: Map<string, ClaimState>;
   claimingActionId: string | null;
   claimErrors: Record<string, string>;
-  requestClaim: (actionId: string) => Promise<void>;
+  requestClaim: (actionId: string, rosterEntryId?: string) => Promise<void>;
   onShareAction?: (actionId: string) => void;
   continuity?: PublicActionContinuityState;
 }) {
   return <div className="grid gap-3 md:grid-cols-2">{items.map((item) => {
     const claimState = claimOverrides[item.id] ?? historyByActionId.get(item.id) ?? null;
-    return <PastActionCard key={item.id} item={item} fr={fr} focused={focusedActionId === item.id} authenticated={authenticated} claimState={claimState} claiming={claimingActionId === item.id} claimError={claimErrors[item.id]} onRequestClaim={(actionId) => { void requestClaim(actionId); }} onShareAction={onShareAction} continuity={continuity} />;
+    return <PastActionCard key={item.id} item={item} fr={fr} focused={focusedActionId === item.id} authenticated={authenticated} claimState={claimState} claiming={claimingActionId === item.id} claimError={claimErrors[item.id]} onRequestClaim={(actionId, rosterEntryId) => { void requestClaim(actionId, rosterEntryId); }} onShareAction={onShareAction} continuity={continuity} />;
   })}</div>;
 }
 

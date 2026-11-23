@@ -19,6 +19,7 @@ import {
   parseActionSingleRow,
   parseActionSupabaseResult,
 } from "@/lib/actions/query";
+import { projectPublicActionParticipantVisibility } from "@/lib/actions/participation/group-participation-public-projection";
 
 export const runtime = "nodejs";
 // Justification Vercel: cette projection publique doit relire l’action courante et ne pas être mise en cache.
@@ -82,6 +83,18 @@ export async function GET(
     }
 
     const retrospective = await loadPublicActionRetrospective(supabase, action.id);
+    const participantVisibilityResult = await supabase.rpc(
+      "load_public_action_participant_visibility",
+      { p_action_id: action.id },
+    );
+    const participantVisibility = participantVisibilityResult.error
+      ? { registeredCount: 0, profiles: [] }
+      : projectPublicActionParticipantVisibility(participantVisibilityResult.data);
+    if (participantVisibilityResult.error) {
+      logWarning("Actions/PublicParticipantVisibility", "Public participant visibility unavailable", {
+        actionId: action.id,
+      });
+    }
     let recommendations: PublicActionRecommendation[] = [];
     if (getPublicActionShareKind(action) === "result") {
       try {
@@ -95,7 +108,7 @@ export async function GET(
     }
 
     return NextResponse.json(
-      { reference: buildPublicActionReference(action, event, retrospective, { recommendations }) },
+      { reference: buildPublicActionReference(action, event, retrospective, { recommendations, participantVisibility }) },
       { headers: PUBLIC_NO_STORE_HEADERS },
     );
   } catch (error) {

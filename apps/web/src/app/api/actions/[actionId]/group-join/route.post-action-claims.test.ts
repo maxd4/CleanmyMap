@@ -66,13 +66,14 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
     ["accept", "confirmed" as const],
     ["reject", "cancelled" as const],
   ])("lets the action owner %s a claim without changing group access", async (decision, expectedStatus) => {
+    const participant = createPostActionClaimParticipant();
     const supabase = createGroupJoinSupabaseMock({
       action: createGroupJoinAction({
         createdByClerkId: "user-1",
         actionPhase: "post_action_complete",
         actionDate: "2026-09-13",
       }),
-      participants: [createPostActionClaimParticipant()],
+      participants: [participant],
     });
     getSupabaseServerClientMock.mockReturnValue(supabase);
 
@@ -86,11 +87,13 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
     });
     expect(supabase.rpc).not.toHaveBeenCalled();
     if (decision === "accept") {
+      expect((participant as unknown as Record<string, unknown>).attendance_claim_reviewed_by_clerk_id).toBe("user-1");
       expect(rebuildUserGamificationBadgesMock).toHaveBeenCalledWith(expect.anything(), "user-2");
       expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-2", {
         reconcileLegacyImpact: true,
       });
     } else {
+      expect((participant as unknown as Record<string, unknown>).attendance_claim_reviewed_by_clerk_id).toBeUndefined();
       expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
       expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
     }

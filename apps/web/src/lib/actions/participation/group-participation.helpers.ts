@@ -316,15 +316,20 @@ export async function updateParticipantRecord(
     participationStatus: ParticipationStatus;
     participationSource: ParticipationSource;
     expectedParticipationStatus?: ParticipationStatus;
+    attendanceClaimReviewedByClerkId?: string;
   },
 ): Promise<ActionParticipantStatusRow> {
+  const updateValues: Record<string, unknown> = {
+    joined_at: params.joinedAt,
+    participation_status: params.participationStatus,
+    participation_source: params.participationSource,
+  };
+  if (params.attendanceClaimReviewedByClerkId) {
+    updateValues.attendance_claim_reviewed_by_clerk_id = params.attendanceClaimReviewedByClerkId;
+  }
   let query = supabase
     .from("action_participants")
-    .update({
-      joined_at: params.joinedAt,
-      participation_status: params.participationStatus,
-      participation_source: params.participationSource,
-    })
+    .update(updateValues)
     .eq("action_id", params.actionId)
     .eq("user_id", params.userId);
   if (params.expectedParticipationStatus) {

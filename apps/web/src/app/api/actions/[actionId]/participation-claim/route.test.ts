@@ -220,6 +220,21 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 
+  it("treats malformed claim JSON as a neutral absence and never falls back to an unscoped claim", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/participation-claim", {
+        method: "POST", headers: { "content-type": "application/json" }, body: "{",
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "Action introuvable." });
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
   it("stops before authentication and persistence when the rate limit denies the request", async () => {
     groupJoinMocks.verifyRateLimitMock.mockResolvedValueOnce({
       allowed: false,

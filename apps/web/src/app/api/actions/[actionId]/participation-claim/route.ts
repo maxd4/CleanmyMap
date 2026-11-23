@@ -13,13 +13,19 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const actionIdSchema = z.string().trim().min(1);
+const claimInputSchema = z.object({ rosterEntryId: z.string().uuid().optional() }).strict();
+
+function privateResponse(response: Response): Response {
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
 
 type ClaimRouteContext = {
   params: Promise<{ actionId: string }>;
 };
 
-export async function POST(_request: Request, ctx: ClaimRouteContext) {
-  const rateLimit = await verifyRateLimit(_request, {
+export async function POST(request: Request, ctx: ClaimRouteContext) {
+  const rateLimit = await verifyRateLimit(request, {
     limit: 10,
     window: 60,
   });
@@ -28,21 +34,35 @@ export async function POST(_request: Request, ctx: ClaimRouteContext) {
     rateLimit.retryAfter,
     rateLimit,
   );
-  if (rateLimitResponse) {
-    return rateLimitResponse;
-  }
+  if (rateLimitResponse) return privateResponse(rateLimitResponse);
 
   const access = await requireAuthenticatedAccess();
   if (!access.ok) {
-    return unauthorizedJsonResponse();
+    return privateResponse(unauthorizedJsonResponse());
+  }
+
+  const bodyText = await request.text().catch(() => "");
+  let rawBody: unknown = {};
+  if (bodyText.trim()) {
+    try {
+      rawBody = JSON.parse(bodyText);
+    } catch {
+      rawBody = null;
+    }
+  }
+  const parsedBody = claimInputSchema.safeParse(rawBody);
+  if (!parsedBody.success) {
+    // A roster identifier is a bearer-like pointer, so invalid values do not
+    // disclose whether an entry or action exists.
+    return privateResponse(NextResponse.json({ error: "Action introuvable." }, { status: 404 }));
   }
 
   const { actionId: rawActionId } = await ctx.params;
   const parsedActionId = actionIdSchema.safeParse(rawActionId);
   if (!parsedActionId.success) {
-    return validationErrorResponse({
+    return privateResponse(validationErrorResponse({
       actionId: ["Identifiant d'action manquant."],
-    });
+    }));
   }
   const actionId = parsedActionId.data;
 
@@ -51,11 +71,12 @@ export async function POST(_request: Request, ctx: ClaimRouteContext) {
     const claim = await claimFinishedActionParticipation(supabase, {
       actionId,
       userId: access.userId,
+      ...(parsedBody.data.rosterEntryId ? { rosterEntryId: parsedBody.data.rosterEntryId } : {}),
     });
 
     await appendParticipationClaimAudit({ actionId, userId: access.userId, operationIdPrefix: "action-post-claim", claim });
 
-    return NextResponse.json({
+    return privateResponse(NextResponse.json({
       status: "ok",
       actionId,
       alreadyRequested: claim.alreadyRequested,
@@ -63,16 +84,16 @@ export async function POST(_request: Request, ctx: ClaimRouteContext) {
       participationSource: claim.participationSource,
       joinedAt: claim.joinedAt,
       updatedAt: claim.updatedAt,
-    });
+    }));
   } catch (error) {
     if (error instanceof Error) {
       if (error.name === "NotFoundError") {
-        return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
+        return privateResponse(NextResponse.json({ error: "Action introuvable." }, { status: 404 }));
       }
       if (error.name === "ValidationError") {
-        return validationErrorResponse({ actionId: [error.message] });
+        return privateResponse(validationErrorResponse({ actionId: [error.message] }));
       }
     }
-    return handleApiError(error, "POST /api/actions/:actionId/participation-claim");
+    return privateResponse(handleApiError(error, "POST /api/actions/:actionId/participation-claim"));
   }
 }

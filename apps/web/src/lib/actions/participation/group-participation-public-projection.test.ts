@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
-import { buildPublicActionPracticalInformation } from "./group-participation-public-projection";
+import {
+  buildPublicActionPracticalInformation,
+  projectPublicActionParticipantVisibility,
+} from "./group-participation-public-projection";
 
 const persistedWeatherContext = {
   version: "planner-weather-snapshot-v1",
@@ -31,6 +34,37 @@ const publicWeatherRequest = {
 };
 
 describe("public action practical information", () => {
+  it("keeps only consented public profile fields and a safe registration count", () => {
+    const result = projectPublicActionParticipantVisibility([{
+      registered_count: "3",
+      profiles: [{
+        displayName: "  Alex  ",
+        handle: "alex",
+        avatarUrl: "https://cdn.example/avatar.png",
+        id: "internal-user-id",
+        rosterEntryId: "private-roster-id",
+      }, {
+        displayName: "   ",
+        handle: "ignored",
+      }],
+    }]);
+
+    expect(result).toEqual({
+      registeredCount: 3,
+      profiles: [{ displayName: "Alex", handle: "alex", avatarUrl: "https://cdn.example/avatar.png" }],
+    });
+    expect(JSON.stringify(result)).not.toContain("internal-user-id");
+    expect(JSON.stringify(result)).not.toContain("private-roster-id");
+  });
+
+  it("fails closed for malformed visibility projections and non-HTTPS avatars", () => {
+    expect(projectPublicActionParticipantVisibility(null)).toEqual({ registeredCount: 0, profiles: [] });
+    expect(projectPublicActionParticipantVisibility({
+      registered_count: -1,
+      profiles: [{ displayName: "Sam", avatarUrl: "javascript:alert(1)" }],
+    })).toEqual({ registeredCount: 0, profiles: [{ displayName: "Sam", handle: null, avatarUrl: null }] });
+  });
+
   it("keeps organizer text separate from canonical waste recommendations", () => {
     const result = buildPublicActionPracticalInformation({
       accessibility: "Accès par la rampe nord.",

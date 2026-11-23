@@ -90,4 +90,44 @@ describe("claimFinishedActionParticipation private access boundary", () => {
       message: "Cette demande a déjà été refusée ou annulée.",
     });
   });
+
+  it("submits only the supplied present roster id to the atomic claim RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{
+        action_id: "public-action-1", participant_user_id: "user-9",
+        participation_status: "pending", participation_source: "post_action_claim",
+        joined_at: "2026-11-20T10:00:00.000Z", updated_at: null,
+        already_requested: false, attendance_entry_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      }],
+      error: null,
+    });
+    const supabase = createSupabase({
+      ...privateAction,
+      access_mode: "public",
+    }, rpc);
+
+    await expect(claimFinishedActionParticipation(supabase, {
+      actionId: "public-action-1",
+      userId: "user-9",
+      rosterEntryId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    })).resolves.toMatchObject({
+      participationStatus: "pending",
+      participationSource: "post_action_claim",
+      alreadyRequested: false,
+    });
+    expect(rpc).toHaveBeenCalledWith("request_action_attendance_claim", {
+      p_action_id: "public-action-1",
+      p_user_id: "user-9",
+      p_attendance_entry_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    });
+  });
+
+  it("maps an unknown or unavailable roster id to the same non-enumerable not-found result", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { code: "P0002", message: "attendance_claim_unavailable" } });
+    const supabase = createSupabase({ ...privateAction, access_mode: "public" }, rpc);
+
+    await expect(claimFinishedActionParticipation(supabase, {
+      actionId: "public-action-1", userId: "user-9", rosterEntryId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    })).rejects.toMatchObject({ name: "NotFoundError" });
+  });
 });

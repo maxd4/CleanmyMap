@@ -106,7 +106,8 @@ describe("/api/account/age-band", () => {
     const update = vi.fn(() => ({
       eq: vi.fn().mockResolvedValue({ error: null }),
     }));
-    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => ({ update })) });
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn(() => ({ update })), rpc });
     const { PATCH } = await import("./route");
 
     const response = await PATCH(request({ ageBand: "under_15" }));
@@ -114,6 +115,7 @@ describe("/api/account/age-band", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ageBand: "under_15", parentalConsentVerified: false });
     expect(update).toHaveBeenCalledWith(expect.objectContaining({ leaderboard_public_opt_in: false }));
+    expect(rpc).toHaveBeenCalledWith("revoke_all_action_participant_visibility_consents", { p_user_id: "user-1" });
     expect(updateUserMetadataMock).toHaveBeenCalledWith("user-1", {
       privateMetadata: { cleanmymap_age_band: "under_15" },
     });

@@ -41,6 +41,8 @@ export type ActionParticipantRow = {
     | "action_creator"
     | "action_organizer"
     | "post_action_claim";
+  attendance_entry_id?: string | null;
+  attendance_claim_reviewed_by_clerk_id?: string | null;
   individual_waste_kg?: number | null;
   collection_status?: "collected" | "not_collected" | null;
   individual_waste_condition?: "sec" | "humide" | "mouille" | null;
@@ -84,7 +86,7 @@ export type ActionAttendanceEntryRow = {
   action_id: string;
   display_label: string;
   clerk_user_id: string | null;
-  provenance: "confirmed_registration" | "organizer_entry" | "organizer_link";
+  provenance: "confirmed_registration" | "organizer_entry" | "organizer_link" | "member_claim";
   attendance_status: "unknown" | "present" | "absent";
   observed_at: string | null;
   created_by: string;
@@ -94,6 +96,15 @@ export type ActionAttendanceEntryRow = {
   revision: number;
   deleted_at: string | null;
   deleted_by: string | null;
+};
+
+export type ActionParticipantVisibilityConsentRow = {
+  action_id: string;
+  user_id: string;
+  consented_at: string | null;
+  revoked_at: string | null;
+  age_eligible: boolean;
+  updated_at: string;
 };
 
 export type ActionAttendanceTeamRow = {

@@ -59,6 +59,8 @@ export function ChatActionReferenceCard({
           <span className="inline-flex items-center gap-2"><CalendarDays size={13} />{dateLabel(data)}{time ? ` · ${time}` : ""}</span>
           <span className="inline-flex items-center gap-2"><MapPin size={13} />{data.locationLabel}</span>
           <span className="inline-flex items-center gap-2"><Users2 size={13} />{data.participantsExpected} participants recherchés</span>
+          {data.shareKind === "invitation" && data.participantVisibility?.registeredCount ? <span className="inline-flex items-center gap-2"><Users2 size={13} />{data.participantVisibility.registeredCount} inscrits</span> : null}
+          {data.shareKind === "invitation" && data.participantVisibility?.profiles.length ? <span className="text-slate-600">{data.participantVisibility.profiles.map((profile) => profile.displayName).join(", ")}</span> : null}
           <span className="inline-flex items-center gap-2"><Clock3 size={13} />{formatBusinessDurationMinutes(data.durationMinutes)} estimés</span>
           {data.objective ? <span className="font-semibold">Objectif : {data.objective}</span> : null}
           <span className="font-semibold">Organisateur : {data.organizerLabel}</span>

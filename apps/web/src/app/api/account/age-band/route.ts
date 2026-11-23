@@ -88,6 +88,11 @@ export async function PATCH(request: Request) {
         })
         .eq("id", access.userId);
       if (revocation.error) throw revocation.error;
+      const actionVisibilityRevocation = await supabase.rpc(
+        "revoke_all_action_participant_visibility_consents",
+        { p_user_id: access.userId },
+      );
+      if (actionVisibilityRevocation.error) throw actionVisibilityRevocation.error;
     }
     const updatedUser = await client.users.updateUserMetadata(access.userId, {
       privateMetadata: {

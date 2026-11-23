@@ -79,7 +79,7 @@ function isDuplicateError(error: unknown): boolean {
   );
 }
 
-type ClaimParams = { actionId: string; userId: string; now?: Date; tokenHash?: string };
+type ClaimParams = { actionId: string; userId: string; now?: Date; tokenHash?: string; rosterEntryId?: string };
 
 type ClaimableAction = {
   status: "pending" | "approved" | "rejected";
@@ -88,6 +88,8 @@ type ClaimableAction = {
   access_mode?: "public" | "invite_link" | null;
   action_date: string;
   event_start_time?: string | null;
+  event_start_at?: string | null;
+  action_timezone?: string | null;
   published_at?: string | null;
 };
 
@@ -131,6 +133,41 @@ async function claimPrivateActionParticipation(
   const row = (Array.isArray(result.data) ? result.data[0] : result.data) as PrivateClaimRpcRow | null;
   if (!row) throw createValidationError("La demande de participation n’a pas pu être vérifiée.");
 
+  const value = createParticipationAuditValue({
+    participationStatus: row.participation_status,
+    participationSource: row.participation_source,
+    joinedAt: row.joined_at,
+    updatedAt: row.updated_at,
+  });
+  return buildClaimResult({
+    alreadyRequested: row.already_requested,
+    actionId: row.action_id,
+    participantUserId: row.participant_user_id,
+    value,
+    previousValue: row.already_requested ? value : null,
+  });
+}
+
+async function claimIdentifiedAttendance(
+  supabase: SupabaseClient,
+  params: ClaimParams & { rosterEntryId: string },
+): Promise<PostActionClaimResult> {
+  const result = await supabase.rpc("request_action_attendance_claim", {
+    p_action_id: params.actionId,
+    p_user_id: params.userId,
+    p_attendance_entry_id: params.rosterEntryId,
+  });
+  if (result.error) {
+    if (result.error.code === "P0002" || result.error.message?.includes("attendance_claim_unavailable")) {
+      throw createNotFoundError();
+    }
+    throw result.error;
+  }
+  const row = (Array.isArray(result.data) ? result.data[0] : result.data) as PrivateClaimRpcRow | null;
+  if (!row || row.action_id !== params.actionId || row.participant_user_id !== params.userId
+      || row.participation_source !== POST_ACTION_CLAIM_PARTICIPATION_SOURCE) {
+    throw createNotFoundError();
+  }
   const value = createParticipationAuditValue({
     participationStatus: row.participation_status,
     participationSource: row.participation_source,
@@ -263,6 +300,13 @@ export async function claimFinishedActionParticipation(
   }
   if (!isPublicClaimEligible(action, now)) {
     throw createNotFoundError();
+  }
+  if (params.rosterEntryId) {
+    return claimIdentifiedAttendance(supabase, {
+      actionId: params.actionId,
+      userId: params.userId,
+      rosterEntryId: params.rosterEntryId,
+    });
   }
   return claimPublicActionParticipation(supabase, params);
 }
