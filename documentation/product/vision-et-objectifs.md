@@ -10,6 +10,14 @@ Les initiatives locales de collecte de déchets utilisent souvent des outils dis
 
 **Proposition de valeur :** permettre à un acteur de créer ou rejoindre une action de dépollution, d'en documenter les résultats avec une provenance identifiable et d'obtenir des restitutions utiles à la continuité de l'engagement, à la coordination et aux partenaires.
 
+## Identité de marque — `CURRENT`
+
+- **Slogan principal :** « Agir · Cartographier · Impacter · Sensibiliser ».
+- **Slogan secondaire :** « Cultivons l'entraide ».
+- Le slogan principal identifie la marque et sert d'accroche sur la homepage ;
+  le slogan secondaire signe notamment son footer. Ces formulations gardent
+  leur graphie officielle, y compris lorsque l'interface est en anglais.
+
 Le produit conjugue transition écologique, civic-tech et sensibilisation. L'inclusion sociale, les bénéfices d'activité physique et l'économie sociale et solidaire relèvent actuellement d'objectifs ou de trajectoires, et non de résultats sociaux ou de statuts juridiques démontrés.
 
 Le projet se situe aussi à l'intersection de l'innovation numérique, de la

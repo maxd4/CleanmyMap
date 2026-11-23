@@ -10,7 +10,7 @@ describe("HomeFooter", () => {
 
     expect(html).toContain("Politique cookies");
     expect(html).toContain("Gérer mes cookies");
-    expect(html).toContain("Cultivons");
+    expect(html).toContain("Cultivons l&#x27;entraide");
     expect(html).toContain("@cleanmymap.fr");
     expect(html).toContain('type="button"');
     expect(html).toContain("logo-grand-sombre.png");

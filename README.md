@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Agir localement. Mesurer collectivement.</strong><br />
+  <strong>Agir · Cartographier · Impacter · Sensibiliser</strong><br />
   Plateforme civic-tech pour repérer, organiser, mesurer et coordonner des actions citoyennes de dépollution.
 </p>
 

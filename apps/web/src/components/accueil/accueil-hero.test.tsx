@@ -45,6 +45,9 @@ describe("HomeHero orientation and impact links", () => {
 
     expect(html).toContain('href="/methodologie#indicateurs-impact-terrain"');
     expect(html).toContain(">CleanMyMap</h1>");
+    expect(html).toContain("Agir · Cartographier · Impacter · Sensibiliser");
+    expect(html).not.toContain("Agir localement. Mesurer collectivement.");
+    expect(html).not.toContain("Cultivons l’entraide pour");
     expect(html).not.toContain("Clean My Map");
     expect(html).toContain("text-white");
     expect(html).toContain("grid-cols-2 gap-3 px-1 min-[768px]:grid-cols-3");
@@ -148,7 +151,7 @@ describe("HomeHero orientation and impact links", () => {
     );
 
     expect(html).toContain("Cleaner places, together");
-    expect(html).toContain("Let&#x27;s work together");
+    expect(html).toContain("Agir · Cartographier · Impacter · Sensibiliser");
     expect(html).toContain("New to CleanMyMap?");
     expect(html).toContain("Ribbon tutorial");
     expect(html).toContain('aria-label="French"');

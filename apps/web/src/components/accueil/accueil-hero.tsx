@@ -58,9 +58,11 @@ const heroActions = [
   },
 ] as const;
 
+const HOME_BRAND_SLOGAN = "Agir · Cartographier · Impacter · Sensibiliser";
+
 const HOME_HERO_COPY: Record<Locale, {
   eyebrow: string;
-  description: string;
+  brandSlogan: string;
   impactTitle: string;
   methodology: string;
   snapshotUnavailable: string;
@@ -72,7 +74,7 @@ const HOME_HERO_COPY: Record<Locale, {
 }> = {
   fr: {
     eyebrow: "Des territoires plus propres, ensemble",
-    description: "Cultivons l’entraide pour dépolluer, cartographier et transformer chaque action terrain en preuve utile.",
+    brandSlogan: HOME_BRAND_SLOGAN,
     impactTitle: "Impact terrain 2026",
     methodology: "Méthodologie",
     snapshotUnavailable: "Données d’impact indisponibles.",
@@ -89,7 +91,7 @@ const HOME_HERO_COPY: Record<Locale, {
   },
   en: {
     eyebrow: "Cleaner places, together",
-    description: "Let's work together to clean up, map, and turn every field action into useful evidence.",
+    brandSlogan: HOME_BRAND_SLOGAN,
     impactTitle: "Field impact 2026",
     methodology: "Methodology",
     snapshotUnavailable: "Impact data is currently unavailable.",
@@ -166,7 +168,7 @@ export function HomeHero({
                 <HomeHeroLocaleSwitcher locale={locale} setLocale={setLocale} />
               </div>
               <p className="mt-5 max-w-[37rem] text-[clamp(1.05rem,1.4vw,1.24rem)] leading-[1.48] text-white/90">
-                {copy.description}
+                {copy.brandSlogan}
               </p>
 
               <CmmButtonGroup
