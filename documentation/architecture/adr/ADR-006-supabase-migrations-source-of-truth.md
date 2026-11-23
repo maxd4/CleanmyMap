@@ -586,6 +586,28 @@ la lane éphémère autorisée ; tant qu'elle ne s'exécute pas, le résultat es
 20261121000002_REPLAY_FIX_AFTER_HASH:  C000203D13129943003E61D804D64F9E9579FD3E7D11A092FA4FE42E94604540
 ```
 
+Le replay de `eabae4a79b7e18f344ffe4d38bfaa272fb71aeba` confirme que
+`20261121000002` passe ensuite, puis échoue à l'instruction 3 de
+`20261122000001_personal_ai_imports_atomic.sql`, lors de l'ajout du contrôle
+`personal_ai_declaration_shape`, avec le même `22P02` et `Token "tokens" is
+invalid`. Le même fragment de contrainte a été recopié dans
+`20261122000003_personal_ai_chat_usage_scenarios.sql` et
+`20261122000008_personal_ai_import_integrity.sql`; l'inspection de toutes les
+occurrences du motif dans l'arbre canonique a confirmé les trois fichiers.
+La correction parenthèse exclusivement les extractions `tokens`, `modality`
+et `energy` avant l'opérateur JSONB `-`. Ces exceptions utilisent des hashes
+exacts et ne changent pas les règles de validation métier. Aucun changement de
+gate ni écriture distante n'est autorisé par cette exception.
+
+```text
+20261122000001_BEFORE_HASH: 9289D8D77B767391DB2A6611F6FD93FA85317F19E1E3B5F2170D72E571B63C4F
+20261122000001_AFTER_HASH:  AE5B1FB64815C521F1BD12E9CDF9F9155AFB8E90DED6A021959E14729618B7F5
+20261122000003_BEFORE_HASH: CF056A4AA39D1F54B651B97F8AC6E92DEEA9D1AAAD462FBC6EFD78EEAF8F1999
+20261122000003_AFTER_HASH:  6D2B77237DDB77ABFDD99AE297A913BA555E27E7B194294246E1582C194BE255
+20261122000008_BEFORE_HASH: BCF76A07F5687FD054FEADF3380E1828199D4C976CFD16635633449CC170AFF9
+20261122000008_AFTER_HASH:  EE1C38CC5604EE07370A582CAF5393D37DEB17B520674F08715052EE392A4E3B
+```
+
 ## Interdiction
 
 Ne pas maintenir indéfiniment deux copies manuelles sans contrôle de synchronisation.
