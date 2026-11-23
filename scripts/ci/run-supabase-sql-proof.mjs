@@ -7,6 +7,16 @@ import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gitExecutable, trustedCommandEnvironment } from "./git-executable.mjs";
+import {
+  WORKFLOW_STAGES,
+  createEvidenceReport,
+  finalizeWorkflowEvidence,
+  initializeWorkflowEvidence,
+  readExistingWorkflowStages,
+  runCanonicalReset,
+  stageRecord,
+  verifyCanonicalSchemaSeed,
+} from "./supabase-sql-proof-lifecycle.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const evidencePath = resolve(repositoryRoot, "artifacts/ci/supabase-sql-evidence.json");
@@ -14,6 +24,8 @@ const logDirectory = resolve(repositoryRoot, "artifacts/ci/supabase-sql");
 const pgtapDirectory = "apps/web/supabase/tests";
 const applicationContractDirectory = "apps/web/supabase/tests";
 const e2eContractDirectory = "e2e";
+const MAX_CAPTURED_PROCESS_BYTES = 1024 * 1024;
+const DEFAULT_PROCESS_TIMEOUT_MS = 8 * 60 * 1000;
 
 const CONTRACT_MARKERS = new Map([
   ["apps/web/supabase/tests/action-participant-individual-impact-optimistic-concurrency.sql", "EXECUTED_DB_CONTRACT: optimistic individual-impact revision, partial PATCH, authorization withdrawal and idempotent retry contract passed"],
@@ -98,7 +110,6 @@ function parseSummaryCounter(output, label) {
   return matches[0] ?? null;
 }
 
-const proofDiagnosticLine = /\b(?:territorial_phase|not ok|error|fatal|panic|bail out|failed|result|files|tests|detail|context|hint|permission denied|forbidden|does not exist|violates|duplicate key|assertion|notests|container|network|image|manifest|pull|rate|toomanyrequests|connection|connect|dbi|psql|host|port|refused|timeout|no such|cannot|could not|invalid|usage)\b/i;
 const publicEvidenceForbiddenTerm = /\b(?:authorization|cookie|set-cookie|bearer|storageState|access_token|refresh_token|session(?:_?id|_?token)?|clerk(?:_?session)?|supabase(?:_?service)?_?role)\b/gi;
 
 export function sanitizePublicEvidenceText(value) {
@@ -108,20 +119,27 @@ export function sanitizePublicEvidenceText(value) {
 export function sanitizeProofFailureExcerpt(output) {
   const lines = String(output ?? "")
     .split(/\r?\n/u)
-    .map((line) => line
-      .replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "")
-      .replace(/\s+/g, " ")
-      .trim())
-    .filter((line) => line && proofDiagnosticLine.test(line));
-  const selectedLines = [...new Set([...lines.slice(0, 6), ...lines.slice(-10)])]
-    .map((line) => sanitizePublicEvidenceText(line
-      .replace(/\b(?:bearer|basic)\s+\S+/gi, "$1 <redacted>")
-      .replace(/\b(?:token|password|secret|api[_-]?key|authorization|cookie|jwt|access[_-]?key)\b\s*[:=]\s*\S+/gi, "<redacted-secret>")
-      .replace(/https?:\/\/\S+/gi, "<url>")
-      .replace(/(?:\/home\/runner|\/github|\/workspace|[A-Za-z]:\\)\S*/g, "<path>")
-      .replace(/\b[0-9a-f]{32,}\b/gi, "<id>"))
-      .slice(0, 240));
-  return selectedLines.join(" | ").slice(0, 1200) || "unavailable";
+    .map((line) => line.replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const safeLines = lines.map((line) => {
+    const sqlstate = line.match(/\b(?:SQLSTATE|SQL\s+state)\s*[:=]?\s*([0-9A-Z]{5})\b/i)?.[1]?.toUpperCase();
+    if (sqlstate) return `SQLSTATE=${sqlstate}`;
+    const assertion = line.match(/^\s*not ok\s+(\d+)\b/i);
+    if (assertion) return `not ok ${assertion[1]}`;
+    const counts = line.match(/\bFiles\s*=\s*(\d+)\s*,\s*Tests\s*=\s*(\d+)/i);
+    if (counts) return `Files=${counts[1]}, Tests=${counts[2]}`;
+    const result = line.match(/\bResult\s*:\s*(PASS|FAIL)\b/i);
+    if (result) return `Result: ${result[1].toUpperCase()}`;
+    if (/\bbail out!/i.test(line)) return "Bail out!";
+    if (/\bpermission denied\b/i.test(line)) return "permission denied";
+    const phase = line.match(/\bTERRITORIAL_PHASE=([A-Z0-9_-]{1,40})\b/i);
+    if (phase) return `TERRITORIAL_PHASE=${phase[1]}`;
+    if (/\b(?:ERROR|FATAL|PANIC):/i.test(line)) return "ERROR (details withheld)";
+    if (/\b(?:timeout|timed out|connection refused|could not connect)\b/i.test(line)) return "PROCESS OR CONNECTION FAILURE";
+    if (/\b(?:invalid|violates|duplicate key|does not exist)\b/i.test(line)) return "DATABASE REJECTION (details withheld)";
+    return null;
+  }).filter(Boolean);
+  return [...new Set(safeLines)].slice(0, 12).join(" | ").slice(0, 1200) || "unavailable";
 }
 
 function parsePgProveSummary(output, expectedPlan) {
@@ -331,19 +349,87 @@ export function prioritizePaths(paths, priorityPaths = []) {
   });
 }
 
-function runCommand(command, args, { logName, env = trustedCommandEnvironment(process.env, [command]) } = {}) {
+export function captureProcessText(current, chunk, maxBytes = MAX_CAPTURED_PROCESS_BYTES) {
+  const remaining = Math.max(0, maxBytes - Buffer.byteLength(current, "utf8"));
+  if (remaining === 0) return current;
+  let captured = current + Buffer.from(chunk).subarray(0, remaining).toString("utf8");
+  while (Buffer.byteLength(captured, "utf8") > maxBytes) captured = captured.slice(0, -1);
+  return captured;
+}
+
+export function classifyProofFailure({ output = "", code = null, signal = null, timedOut = false, diagnostic = "" } = {}) {
+  const text = `${output}\n${diagnostic}`;
+  const sqlstate = text.match(/\b(?:SQLSTATE|SQL\s+state)\s*[:=]?\s*([0-9A-Z]{5})\b/i)?.[1]?.toUpperCase() ?? null;
+  let category = "UNKNOWN";
+  let origin = "UNPROVEN";
+  if (timedOut || signal) {
+    category = "PROCESS_INTERRUPTED";
+    origin = "PROCESS";
+  } else if (/\bfixture (?:is )?(?:invalid|malformed)\b/i.test(text)) {
+    category = "FIXTURE_INVALID";
+    origin = "FIXTURE_DIAGNOSTIC";
+  } else if (sqlstate === "42501" || /\bpermission denied\b/i.test(text)) {
+    category = "PRIVILEGE_ERROR";
+    origin = "POSTGRESQL";
+  } else if (sqlstate || /\bERROR:\s|\bFATAL:\s/i.test(text)) {
+    category = "UNCAUGHT_SQL_ERROR";
+    origin = sqlstate ? "POSTGRESQL" : "UNPROVEN";
+  } else if (/\bnot ok\s+\d+\b|\bfailed (?:assertion|tests?)\b|\bResult\s*:\s*FAIL\b/i.test(text)) {
+    category = "ASSERTION_FAILED";
+    origin = "PGTAP_ASSERTION";
+  } else if (/\bbail out!\b/i.test(text) || /(?:incomplete|plan mismatch|numbering is incomplete)/i.test(diagnostic)) {
+    category = "PLAN_INCOMPLETE_OR_INTERRUPTED";
+    origin = "PGTAP_STREAM";
+  } else if (code !== null) {
+    category = "PROCESS_EXIT";
+    origin = "PROCESS";
+  }
+  return { category, origin, sqlstate };
+}
+
+function pgTapCounts(output, planned = null) {
+  const lines = String(output ?? "").split(/\r?\n/u);
+  const assertions = lines.filter((line) => /^\s*(?:ok|not ok)\s+\d+\b/i.test(line));
+  const failed = assertions.filter((line) => /^\s*not ok\b/i.test(line)).length;
+  const plan = lines.map(parsePlanLine).find((value) => value !== null) ?? planned;
+  const summaryTests = String(output ?? "").match(/\bTests\s*=\s*(\d+)\b/i)?.[1];
+  return { planned: plan ?? null, executed: assertions.length || (summaryTests ? Number(summaryTests) : null), failed };
+}
+
+export function runCommand(command, args, { logName, env = trustedCommandEnvironment(process.env, [command]), timeoutMs = DEFAULT_PROCESS_TIMEOUT_MS } = {}) {
   return new Promise((resolveResult, rejectResult) => {
     const child = spawn(command, args, { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
-    child.stdout.on("data", (chunk) => { stdout += chunk; });
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
-    child.on("error", rejectResult);
+    let stdoutBytes = 0;
+    let stderrBytes = 0;
+    let timedOut = false;
+    let settled = false;
+    let forceKillTimer = null;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGTERM");
+      forceKillTimer = setTimeout(() => child.kill("SIGKILL"), 5000);
+      forceKillTimer.unref();
+    }, timeoutMs);
+    child.stdout.on("data", (chunk) => { stdoutBytes += chunk.length; stdout = captureProcessText(stdout, chunk); });
+    child.stderr.on("data", (chunk) => { stderrBytes += chunk.length; stderr = captureProcessText(stderr, chunk); });
+    child.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (forceKillTimer) clearTimeout(forceKillTimer);
+      rejectResult(error);
+    });
     child.on("close", (code, signal) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (forceKillTimer) clearTimeout(forceKillTimer);
       const output = `${stdout}${stderr}`;
       mkdirSync(logDirectory, { recursive: true });
       writeFileSync(resolve(logDirectory, `${logName}.log`), output, "utf8");
-      resolveResult({ code: code ?? 1, signal, stdout, stderr, output });
+      resolveResult({ code: code ?? 1, signal, stdout, stderr, output, timedOut, outputTruncated: stdoutBytes > MAX_CAPTURED_PROCESS_BYTES || stderrBytes > MAX_CAPTURED_PROCESS_BYTES });
     });
   });
 }
@@ -405,9 +491,10 @@ export function attestProofResult(record, result, validate) {
   if (result.code !== 0) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
-    const line = String(result.output ?? "").match(/\b(?:LINE|line)\s+(\d+)\b/)?.[1];
-    if (line) record.sqlLine = Number(line);
-    record.reason = `step=${record.category ?? "SQL_PROOF"}; command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}${line ? `; line=${line}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
+    const failure = classifyProofFailure({ ...result, diagnostic: sanitizeProofFailureExcerpt(result.output) });
+    record.failure = failure;
+    if (record.category === "PGTAP") record.counts = pgTapCounts(result.output, record.expectedAssertions ?? null);
+    record.reason = `step=${record.category ?? "SQL_PROOF"}; command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}${result.timedOut ? "; timeout=true" : ""}${result.outputTruncated ? "; output_truncated=true" : ""}; category=${failure.category}; origin=${failure.origin}${failure.sqlstate ? `; sqlstate=${failure.sqlstate}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
     throw new Error(record.reason);
   }
   try {
@@ -417,7 +504,10 @@ export function attestProofResult(record, result, validate) {
   } catch (error) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
-    record.reason = `step=${record.category ?? "SQL_PROOF"}; ${error instanceof Error ? error.message : String(error)}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
+    const diagnostic = error instanceof Error ? error.message : String(error);
+    record.failure = classifyProofFailure({ ...result, diagnostic });
+    if (record.category === "PGTAP") record.counts = pgTapCounts(result.output, record.expectedAssertions ?? null);
+    record.reason = `step=${record.category ?? "SQL_PROOF"}; category=${record.failure.category}; origin=${record.failure.origin}${record.failure.sqlstate ? `; sqlstate=${record.failure.sqlstate}` : ""}; ${sanitizePublicEvidenceText(diagnostic).slice(0, 400)}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
     throw new Error(record.reason);
   }
 }
@@ -429,7 +519,8 @@ async function runProof(record, command, args, validate, commandRunner = runComm
   } catch (error) {
     record.status = "DB_SEMANTICS_NOT_EXECUTED";
     record.outcome = "FAIL";
-    record.reason = error instanceof Error ? error.message : String(error);
+    record.failure = { category: "COMMAND_START_FAILED", origin: "PROCESS", sqlstate: null };
+    record.reason = `step=${record.category ?? "SQL_PROOF"}; category=COMMAND_START_FAILED; origin=PROCESS; code=${error?.code ?? error?.name ?? "unknown"}`;
     throw new Error(`${record.path}: ${record.reason}`);
   }
   try {
@@ -446,40 +537,21 @@ function writeReport(report) {
 
 export async function runSupabaseSqlProof({ sha, run = true, commandRunner = runCommand, writeReportImpl = writeReport } = {}) {
   const candidate = candidateSha(sha);
-  const inventory = inventorySqlProofs();
-  const priorityPaths = String(process.env.CMM_SUPABASE_PRIORITY_FILES ?? "")
-    .split(",")
-    .map((path) => path.trim())
-    .filter(Boolean);
-  const records = [
-    ...prioritizePaths(inventory.pgtap, priorityPaths).map((path) => baseRecord(path, "PGTAP")),
-    ...inventory.contracts.map((path) => baseRecord(path, "SQL_CONTRACT")),
-    ...inventory.multisession.map((path) => baseRecord(path, "MULTISESSION")),
-  ];
-  for (const path of inventory.unregistered) {
-    records.push({ path, category: "UNREGISTERED_SQL_PROOF", status: "DB_SEMANTICS_NOT_EXECUTED", outcome: "NOT_RUN", reason: "No canonical runner protocol is registered for this SQL proof." });
-  }
-
-  const report = {
-    schemaVersion: 1,
-    kind: "cleanmymap-supabase-sql-evidence",
-    candidateSha: candidate,
-    headSha: candidate,
-    provenance: "COMMITTED_SNAPSHOT",
-    workflow: "supabase-sql-proof-ephemeral",
-    outcome: "NOT_RUN",
-    migrations: migrationEvidence(),
-    records,
-  };
+  const priorStages = readExistingWorkflowStages(candidate, evidencePath);
+  const report = createEvidenceReport(candidate, { inventorySqlProofs, prioritizePaths, baseRecord, migrationEvidence });
+  if (priorStages.length > 0) report.workflowStages = WORKFLOW_STAGES.map((stage) => priorStages.find((entry) => entry.stage === stage) ?? stageRecord(stage));
+  const records = report.records;
   if (!run) {
     writeReportImpl(report);
     return report;
   }
   if (commandRunner === runCommand) assertEphemeralSupabaseTestEnvironment();
-  if (inventory.unregistered.length > 0) {
+  const unregistered = records.filter((record) => record.category === "UNREGISTERED_SQL_PROOF").map((record) => record.path);
+  if (unregistered.length > 0) {
     report.outcome = "FAIL";
+    report.firstFailure = { stage: "inventory", file: unregistered[0], category: "UNREGISTERED_SQL_PROOF", origin: "STATIC_INVENTORY" };
     writeReportImpl(report);
-    throw new Error(`Unregistered SQL proof files: ${inventory.unregistered.join(", ")}`);
+    throw new Error(`Unregistered SQL proof files: ${unregistered.join(", ")}`);
   }
 
   try {
@@ -490,7 +562,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const expectedPlan = extractPlan(sql);
         record.expectedAssertions = expectedPlan;
-        await runProof(record, commandName(), ["test", "db", "--workdir", "apps/web", "--local", ...networkArgs, pgtapCliPath(record.path)], (output) => parsePgTapOutput(output, expectedPlan), commandRunner);
+        await runProof(record, commandName(), ["test", "db", "--workdir", "apps/web", "--local", ...networkArgs, "--debug", pgtapCliPath(record.path)], (output) => parsePgTapOutput(output, expectedPlan), commandRunner);
       } else if (record.category === "SQL_CONTRACT") {
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const marker = CONTRACT_MARKERS.get(record.path);
@@ -526,6 +598,15 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
   } catch (error) {
     report.outcome = "FAIL";
     const failedPath = error instanceof Error ? error.message.split(": ")[0] : "unknown";
+    const failedRecord = records.find((record) => record.outcome === "FAIL");
+    report.firstFailure = {
+      stage: failedRecord?.category ?? "SQL_PROOF",
+      ...(failedRecord?.path ? { file: failedRecord.path } : {}),
+      category: failedRecord?.failure?.category ?? "PROOF_VALIDATION_FAILED",
+      origin: failedRecord?.failure?.origin ?? "UNPROVEN",
+      ...(failedRecord?.failure?.sqlstate ? { sqlstate: failedRecord.failure.sqlstate } : {}),
+      ...(failedRecord?.counts ? { counts: failedRecord.counts } : {}),
+    };
     for (const record of records) {
       if (record.status === "NOT_RUN") record.reason = `not reached after failure in ${failedPath}`;
     }
@@ -538,11 +619,16 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
 
 export async function main(run = runSupabaseSqlProof) {
   try {
+    const createReport = (candidate) => createEvidenceReport(candidate, { inventorySqlProofs, prioritizePaths, baseRecord, migrationEvidence });
+    if (process.argv.includes("--initialize-workflow-evidence")) return initializeWorkflowEvidence({ candidateSha, createEvidenceReport: createReport, writeReport });
+    if (process.argv.includes("--reset-canonical-db")) return await runCanonicalReset({ assertEphemeralSupabaseTestEnvironment, candidateSha, evidencePath, runCommand, commandName, writeReport });
+    if (process.argv.includes("--verify-canonical-schema-seed")) return await verifyCanonicalSchemaSeed({ assertEphemeralSupabaseTestEnvironment, candidateSha, evidencePath, runCommand, commandName, writeReport, networkArgs: supabaseNetworkArgs });
+    if (process.argv.includes("--finalize-workflow-evidence")) return finalizeWorkflowEvidence({ candidateSha, evidencePath, readFileSync, writeReport, createEvidenceReport: createReport, repositoryRoot });
     const report = await run();
     console.log(`SUPABASE_SQL_EVIDENCE: ${report.outcome} candidate=${report.candidateSha} records=${report.records.length}`);
     return 0;
   } catch (error) {
-    console.error(`SUPABASE_SQL_EVIDENCE: FAIL ${error instanceof Error ? (error.stack || error.message) : String(error)}`);
+    console.error(`SUPABASE_SQL_EVIDENCE: FAIL ${error instanceof Error ? error.name : "non-error rejection"}`);
     return 1;
   }
 }

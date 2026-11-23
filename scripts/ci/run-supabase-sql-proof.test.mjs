@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
+import { resolve } from "node:path";
 import { test } from "node:test";
 import {
   extractPlan,
@@ -9,7 +10,10 @@ import {
   parsePgTapOutput,
   reportMainRejection,
   runSupabaseSqlProof,
+  runCommand,
   assertEphemeralSupabaseTestEnvironment,
+  captureProcessText,
+  classifyProofFailure,
   sanitizeProofFailureExcerpt,
   sanitizePublicEvidenceText,
   supabaseNetworkArgs,
@@ -17,6 +21,7 @@ import {
   prioritizePaths,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
+import { classifyDbResetFailure } from "./supabase-sql-proof-lifecycle.mjs";
 import { parseTerritorialRevisionNotice } from "../../e2e/territorial-legend-revision-concurrency.mjs";
 
 const PG_TAP_ASSERTION = /^\s*select\s+(?:ok|is|throws_ok|lives_ok|has_table|has_index|has_column|col_not_null|has_function_privilege|has_table_privilege)\s*\(/gim;
@@ -475,10 +480,12 @@ test("proof attestation maps verified and failed executions to explicit statuses
   const failedRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
   assert.throws(
     () => attestProofResult(failedRecord, { code: 1, output: "ERROR: permission denied\nResult: FAIL" }, () => ({ unreachable: true })),
-    /command exited with 1; diagnostic=.*permission denied/,
+    /command exited with 1; category=PRIVILEGE_ERROR; origin=POSTGRESQL; diagnostic=.*permission denied/,
   );
   assert.equal(failedRecord.status, "INTEGRATION_PROOF");
   assert.equal(failedRecord.outcome, "FAIL");
+  assert.equal(failedRecord.failure.category, "PRIVILEGE_ERROR");
+  assert.equal("sqlLine" in failedRecord, false);
 
   const incompleteRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
   assert.throws(
@@ -489,6 +496,69 @@ test("proof attestation maps verified and failed executions to explicit statuses
   assert.equal(incompleteRecord.outcome, "FAIL");
 });
 
+test("proof diagnostics classify only observed causes and ignore ambiguous SQL line numbers", () => {
+  assert.deepEqual(classifyProofFailure({ output: "ERROR: permission denied\nLINE 2: SELECT plan(3);" }), {
+    category: "PRIVILEGE_ERROR",
+    origin: "POSTGRESQL",
+    sqlstate: null,
+  });
+  assert.deepEqual(classifyProofFailure({ output: "ERROR: invalid input\nSQLSTATE 22P02\nLINE 2: SELECT plan(3);" }), {
+    category: "UNCAUGHT_SQL_ERROR",
+    origin: "POSTGRESQL",
+    sqlstate: "22P02",
+  });
+  assert.deepEqual(classifyProofFailure({ output: "not ok 4 - expected participant" }), {
+    category: "ASSERTION_FAILED",
+    origin: "PGTAP_ASSERTION",
+    sqlstate: null,
+  });
+  assert.deepEqual(classifyProofFailure({ timedOut: true, signal: "SIGTERM" }), {
+    category: "PROCESS_INTERRUPTED",
+    origin: "PROCESS",
+    sqlstate: null,
+  });
+  assert.equal(captureProcessText("abc", "defgh", 5), "abcde");
+  assert.ok(Buffer.byteLength(captureProcessText("", "é", 1), "utf8") <= 1);
+});
+
+test("subprocess timeout terminates the child and caps private log capture", async () => {
+  const timeoutLog = `test-timeout-${process.pid}`;
+  const outputLog = `test-output-${process.pid}`;
+  const logRoot = resolve("artifacts/ci/supabase-sql");
+  try {
+    const timedOut = await runCommand(process.execPath, ["-e", "setTimeout(() => {}, 5000)"], { logName: timeoutLog, env: process.env, timeoutMs: 100 });
+    assert.equal(timedOut.timedOut, true);
+    const bounded = await runCommand(process.execPath, ["-e", "process.stdout.write('x'.repeat(2 * 1024 * 1024))"], { logName: outputLog, env: process.env, timeoutMs: 5000 });
+    assert.equal(bounded.outputTruncated, true);
+    assert.ok(Buffer.byteLength(bounded.stdout, "utf8") <= 1024 * 1024);
+  } finally {
+    rmSync(resolve(logRoot, `${timeoutLog}.log`), { force: true });
+    rmSync(resolve(logRoot, `${outputLog}.log`), { force: true });
+  }
+});
+
+test("canonical reset diagnostics classify only explicit phase evidence", () => {
+  assert.deepEqual(classifyDbResetFailure("Applying migration 20261123000005\nERROR: invalid input SQLSTATE 22P02", 1), {
+    category: "MIGRATION_FAILURE", origin: "MIGRATION_REPLAY", sqlstate: "22P02", migrationId: "20261123000005", code: 1,
+  });
+  assert.deepEqual(classifyDbResetFailure("Seeding data from apps/web/supabase/seed.sql\nERROR: duplicate SQLSTATE 23505", 1), {
+    category: "SEED_FAILURE", origin: "SEED", sqlstate: "23505", migrationId: null, code: 1,
+  });
+  assert.deepEqual(classifyDbResetFailure("connection refused SQLSTATE 08006", 1), {
+    category: "INFRASTRUCTURE_FAILURE", origin: "INFRASTRUCTURE", sqlstate: "08006", migrationId: null, code: 1,
+  });
+  const ambiguous = classifyDbResetFailure("Applying migration 20261123000005\nApplying migration 20261123000006\nERROR: invalid input SQLSTATE 22P02", 1);
+  assert.deepEqual(ambiguous, {
+    category: "MIGRATION_FAILURE", origin: "MIGRATION_REPLAY", sqlstate: "22P02", migrationId: null, code: 1,
+  });
+  assert.equal(ambiguous.origin, "MIGRATION_REPLAY");
+  assert.equal(ambiguous.migrationId, null);
+  assert.equal("output" in ambiguous, false);
+  const phaseMismatch = classifyDbResetFailure("SQLSTATE 22P02\nSeeding data from seed.sql\nERROR: details unavailable", 1);
+  assert.equal(phaseMismatch.category, "RESET_FAILURE_UNCLASSIFIED");
+  assert.equal(phaseMismatch.origin, "UNPROVEN");
+});
+
 test("proof failure excerpts are bounded and redact sensitive values", () => {
   const excerpt = sanitizeProofFailureExcerpt([
     "NOTICE: an ordinary non-diagnostic line",
@@ -497,8 +567,8 @@ test("proof failure excerpts are bounded and redact sensitive values", () => {
     "Result: FAIL",
   ].join("\n"));
   assert.match(excerpt, /ERROR/);
-  assert.match(excerpt, /<redacted-secret>/);
-  assert.match(excerpt, /<path>/);
+  assert.match(excerpt, /not ok 4/);
+  assert.doesNotMatch(excerpt, /<path>|<redacted-secret>|runner|project/);
   assert.doesNotMatch(excerpt, /super-secret-value/);
   assert.doesNotMatch(excerpt, /0123456789abcdef0123456789abcdef/);
   assert.ok(excerpt.length <= 1200);
@@ -524,6 +594,25 @@ test("changed pgTAP files can be executed first without changing the inventory",
   const paths = ["a.pgtap.sql", "changed.pgtap.sql", "z.pgtap.sql"];
   assert.deepEqual(prioritizePaths(paths, ["changed.pgtap.sql"]), ["changed.pgtap.sql", "a.pgtap.sql", "z.pgtap.sql"]);
   assert.deepEqual(prioritizePaths(paths, ["missing.pgtap.sql"]), paths);
+});
+
+test("pgTAP uses the detailed local CLI path and records a safe first diagnostic", async () => {
+  let report;
+  const calls = [];
+  await assert.rejects(() => runSupabaseSqlProof({
+    commandRunner: async (command, args) => {
+      calls.push({ command, args });
+      return { code: 1, signal: null, timedOut: false, output: "ERROR: permission denied SQLSTATE 42501\nLINE 2: SELECT plan(3);\nnot ok 1 - private fixture" };
+    },
+    writeReportImpl: (value) => { report = value; },
+  }));
+  assert.ok(calls[0].args.includes("--debug"));
+  assert.ok(calls[0].args.includes("--local"));
+  assert.equal(report.firstFailure.stage, "PGTAP");
+  assert.equal(report.firstFailure.origin, "POSTGRESQL");
+  assert.equal(report.firstFailure.sqlstate, "42501");
+  assert.equal("sqlLine" in report.records[0], false);
+  assert.doesNotMatch(JSON.stringify(report), /private fixture/);
 });
 
 test("rejected proof reaches the runner failure exit code", async () => {
@@ -583,13 +672,14 @@ test("process spawn rejections reach the report as an unexecuted database proof"
       commandRunner: async () => { throw new Error("spawn failed"); },
       writeReportImpl: (nextReport) => { report = nextReport; },
     }),
-    /spawn failed/,
+    /COMMAND_START_FAILED/,
   );
   assert.equal(report.outcome, "FAIL");
   const failedRecord = report.records.find((record) => record.category === "PGTAP");
   assert.equal(failedRecord.status, "DB_SEMANTICS_NOT_EXECUTED");
   assert.equal(failedRecord.outcome, "FAIL");
-  assert.match(failedRecord.reason, /spawn failed/);
+  assert.match(failedRecord.reason, /COMMAND_START_FAILED/);
+  assert.doesNotMatch(failedRecord.reason, /spawn failed/);
   assert.ok(report.records.filter((record) => record.status === "NOT_RUN").every((record) => /not reached after failure/.test(record.reason)));
 });
 

@@ -1304,8 +1304,10 @@ test("the workflow keeps startup failure blocking and never prints the raw log",
   assert.match(startScript, /--docker-events-file="\$events_file" \\\s+--expected-network="\$network" \\\s+--root="\$root" \\\s+--exit-code="\$start_exit_code"/);
   assert.match(startScript, /docker events --since "\$start_started_at" --filter type=container/);
   assert.match(startScript, /events_pid=\$!/);
-  assert.match(startScript, /docker logs --follow --timestamps "\$container_id" > "\$postgres_log"/);
-  assert.match(startScript, /docker exec "\$container_id" sh -c 'exec tail -n 0 -F \/var\/log\/postgresql\/\*\.json \/var\/lib\/postgresql\/data\/log\/\*\.json 2>\/dev\/null' > "\$postgres_server_log"/);
+  assert.match(startScript, /docker logs --follow --timestamps "\$container_id" 2>\/dev\/null \| node "\$root\/scripts\/ci\/capture-bounded-log\.mjs" "\$postgres_log" 8388608/);
+  assert.match(startScript, /docker exec "\$container_id" sh -c 'exec tail -n 0 -F \/var\/log\/postgresql\/\*\.json \/var\/lib\/postgresql\/data\/log\/\*\.json 2>\/dev\/null' 2>\/dev\/null \| node "\$root\/scripts\/ci\/capture-bounded-log\.mjs" "\$postgres_server_log" 8388608/);
+  assert.match(startScript, /timeout --signal=TERM --kill-after=15s "\$start_timeout_seconds"/);
+  assert.match(startScript, /capture-bounded-log\.mjs/);
   assert.match(startScript, /--postgres-log-file="\$postgres_log"/);
   assert.match(startScript, /--postgres-server-log-file="\$postgres_server_log"/);
   assert.match(startScript, /rm -f "\$start_log" "\$progress_file" "\$events_file" "\$postgres_log" "\$postgres_server_log"/);

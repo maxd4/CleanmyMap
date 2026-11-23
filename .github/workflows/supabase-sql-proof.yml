@@ -97,6 +97,11 @@ jobs:
       - name: Verify canonical ephemeral inputs
         run: test -d apps/web/supabase/migrations && test -f apps/web/supabase/seed.sql
 
+      - name: Initialize SHA-bound SQL evidence
+        env:
+          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.sha }}
+        run: node scripts/ci/run-supabase-sql-proof.mjs --initialize-workflow-evidence
+
       - name: Prepare isolated Supabase Docker network
         id: supabase_network
         run: |
@@ -112,15 +117,25 @@ jobs:
           bash scripts/ci/start-supabase-ephemeral.sh apps/web "${{ steps.supabase_network.outputs.network_name }}" artifacts/ci/supabase-start-diagnostic.txt
 
       - name: Apply canonical migrations and seed
-        run: ./node_modules/.bin/supabase db reset --local --workdir apps/web --yes --network-id="${{ steps.supabase_network.outputs.network_name }}"
+        id: apply_reset
+        env:
+          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.sha }}
+          CMM_SUPABASE_TEST_ENVIRONMENT: ephemeral
+          CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: I_UNDERSTAND_EPHEMERAL_ONLY
+          CMM_SUPABASE_NETWORK_ID: ${{ steps.supabase_network.outputs.network_name }}
+        run: node scripts/ci/run-supabase-sql-proof.mjs --reset-canonical-db
 
       - name: Verify canonical ephemeral schema and seed
-        run: |
-          set -euo pipefail
-          ./node_modules/.bin/supabase status --workdir apps/web --output json > "$RUNNER_TEMP/supabase-status.json"
-          ./node_modules/.bin/supabase db query --workdir apps/web --local "select case when to_regclass('public.actions') is not null and to_regclass('public.spogomi_events') is not null and exists (select 1 from supabase_migrations.schema_migrations where version ~ '^[0-9]{14}$') and exists (select 1 from public.actions where id = '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid and notes like 'E2E_FIXTURE:group-join:v1%') then 'PASS' else 'FAIL' end" | grep -q PASS
+        id: verify_schema_seed
+        env:
+          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.sha }}
+          CMM_SUPABASE_TEST_ENVIRONMENT: ephemeral
+          CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: I_UNDERSTAND_EPHEMERAL_ONLY
+          CMM_SUPABASE_NETWORK_ID: ${{ steps.supabase_network.outputs.network_name }}
+        run: node scripts/ci/run-supabase-sql-proof.mjs --verify-canonical-schema-seed
 
       - name: Run complete PostgreSQL and concurrency proof
+        id: run_sql_proof
         env:
           CMM_SUPABASE_CANDIDATE_SHA: ${{ github.sha }}
           CMM_SUPABASE_TEST_ENVIRONMENT: ephemeral
@@ -139,6 +154,16 @@ jobs:
             docker network rm "$SUPABASE_NETWORK_NAME" >/dev/null
           fi
           rm -f apps/web/.env.local
+
+      - name: Finalize SQL stage evidence
+        if: always()
+        env:
+          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.sha }}
+          CMM_STEP_BOOTSTRAP: ${{ steps.start_supabase.outcome }}
+          CMM_STEP_DB_RESET: ${{ steps.apply_reset.outcome }}
+          CMM_STEP_SCHEMA_SEED: ${{ steps.verify_schema_seed.outcome }}
+          CMM_STEP_SQL_PROOF: ${{ steps.run_sql_proof.outcome }}
+        run: node scripts/ci/run-supabase-sql-proof.mjs --finalize-workflow-evidence
 
       - name: Stage SQL evidence for convergence
         if: always()
@@ -173,7 +198,7 @@ jobs:
 
       - name: Remove private startup logs
         if: always()
-        run: rm -f "$RUNNER_TEMP"/supabase-start-*.log "$RUNNER_TEMP"/supabase-start-*-progress.ndjson "$RUNNER_TEMP"/supabase-start-*-events.ndjson
+        run: rm -f "$RUNNER_TEMP"/supabase-start-*.log "$RUNNER_TEMP"/supabase-start-*-progress.ndjson "$RUNNER_TEMP"/supabase-start-*-events.ndjson artifacts/ci/supabase-sql/*.log
 
   isolate-replay:
     name: Isolate bootstrap and first failing migration prefix

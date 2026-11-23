@@ -146,6 +146,14 @@ Une nouvelle extension `.sql` non enregistrée fait échouer le runner plutôt
 que de devenir silencieusement une preuve. Les contrats non pgTAP ne sont pas
 convertis en pgTAP : chacun conserve son protocole, et les scénarios de
 concurrence restent exécutés par leurs scripts multi-sessions existants.
+Le même artefact consigne aussi les étapes `bootstrap`, `dbReset`, `migrations`,
+`seed`, `schemaSeedValidation` et `sqlProofRunner` avec les statuts `PASS`, `FAIL`, `NOT_RUN` ou
+`INCONCLUSIVE`. L'absence d'une étape réussie bloque la convergence, même si
+les enregistrements pgTAP ou SQL restants paraissent valides. Les sorties CLI
+complètes restent dans des journaux privés bornés ; seuls une catégorie, un
+SQLSTATE observé et une provenance démontrée peuvent être publiés. Un numéro
+de plan/assertion TAP n'est jamais traité comme une ligne SQL. Le runbook de
+convergence décrit les diagnostics et les reprises autorisées par étape.
 
 ## Gouvernance des preuves pour les changements sensibles
 

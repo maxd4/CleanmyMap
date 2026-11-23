@@ -19,8 +19,25 @@ postgres_log="$temp_root/supabase-start-$run_key-postgres.log"
 postgres_server_log="$temp_root/supabase-start-$run_key-postgres-server.log"
 bootstrap_workdir="$temp_root/supabase-bootstrap-$run_key"
 postgres_log_watch_pid=""
+start_timeout_seconds="${CMM_SUPABASE_START_TIMEOUT_SECONDS:-1200}"
+if [[ ! "$start_timeout_seconds" =~ ^[0-9]+$ ]] || (( start_timeout_seconds < 60 || start_timeout_seconds > 1800 )); then
+  echo "CMM_SUPABASE_START_TIMEOUT_SECONDS must be between 60 and 1800." >&2
+  exit 2
+fi
+if ! command -v timeout >/dev/null 2>&1; then
+  echo "GNU timeout is required to bound the ephemeral Supabase startup." >&2
+  exit 2
+fi
 
 cleanup() {
+  if [[ -n "${start_pid:-}" ]]; then
+    kill "$start_pid" 2>/dev/null || true
+    wait "$start_pid" 2>/dev/null || true
+  fi
+  if [[ -n "${progress_pid:-}" ]]; then
+    kill "$progress_pid" 2>/dev/null || true
+    wait "$progress_pid" 2>/dev/null || true
+  fi
   if [[ -n "$postgres_log_watch_pid" ]]; then
     kill "$postgres_log_watch_pid" 2>/dev/null || true
     wait "$postgres_log_watch_pid" 2>/dev/null || true
@@ -44,9 +61,9 @@ node "$root/scripts/ci/supabase-config.mjs" \
   --source-config="$workdir/supabase/config.toml" \
   --target-config="$bootstrap_workdir/supabase/config.toml"
 start_started_at="$(date +%s)"
-docker events --since "$start_started_at" --filter type=container --format '{{json .}}' > "$events_file" 2>/dev/null &
+docker events --since "$start_started_at" --filter type=container --format '{{json .}}' 2>/dev/null | node "$root/scripts/ci/capture-bounded-log.mjs" "$events_file" 4194304 &
 events_pid=$!
-"$root/node_modules/.bin/supabase" start --debug --workdir "$bootstrap_workdir" --yes --output-format json --network-id="$network" > "$start_log" 2>&1 &
+timeout --signal=TERM --kill-after=15s "$start_timeout_seconds" "$root/node_modules/.bin/supabase" start --debug --workdir "$bootstrap_workdir" --yes --output-format json --network-id="$network" 2>&1 | node "$root/scripts/ci/capture-bounded-log.mjs" "$start_log" 8388608 &
 start_pid=$!
 watch_postgres_log() {
   local container_id=""
@@ -56,9 +73,9 @@ watch_postgres_log() {
   while kill -0 "$start_pid" 2>/dev/null; do
     container_id="$(docker ps -q --filter 'name=supabase_db_web' | head -n 1)"
     if [[ -n "$container_id" ]]; then
-      docker logs --follow --timestamps "$container_id" > "$postgres_log" 2>&1 &
+      docker logs --follow --timestamps "$container_id" 2>/dev/null | node "$root/scripts/ci/capture-bounded-log.mjs" "$postgres_log" 8388608 &
       docker_log_pid=$!
-      docker exec "$container_id" sh -c 'exec tail -n 0 -F /var/log/postgresql/*.json /var/lib/postgresql/data/log/*.json 2>/dev/null' > "$postgres_server_log" 2>&1 &
+      docker exec "$container_id" sh -c 'exec tail -n 0 -F /var/log/postgresql/*.json /var/lib/postgresql/data/log/*.json 2>/dev/null' 2>/dev/null | node "$root/scripts/ci/capture-bounded-log.mjs" "$postgres_server_log" 8388608 &
       server_log_pid=$!
       while kill -0 "$start_pid" 2>/dev/null; do sleep 0.2; done
       return
@@ -74,9 +91,11 @@ set +e
 wait "$start_pid"
 start_exit_code=$?
 set -e
+start_pid=""
 start_finished_at="$(date +%s)"
 kill "$progress_pid" 2>/dev/null || true
 wait "$progress_pid" 2>/dev/null || true
+progress_pid=""
 kill "$postgres_log_watch_pid" 2>/dev/null || true
 wait "$postgres_log_watch_pid" 2>/dev/null || true
 postgres_log_watch_pid=""

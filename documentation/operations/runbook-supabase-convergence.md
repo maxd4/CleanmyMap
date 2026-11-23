@@ -133,6 +133,56 @@ et nettoyage ; aucun des deux n'est présenté seul comme cause racine.
 
 ## Blocages et reprise
 
+### Diagnostic de la preuve SQL éphémère
+
+`supabase-sql-proof-ephemeral` initialise l'artefact dès que le checkout et Node
+est prêt, avant le bootstrap. L'objet `workflowStages` lie le SHA candidat et
+les états `bootstrap`, `dbReset`, `migrations`, `seed`,
+`schemaSeedValidation` et `sqlProofRunner` à l'artefact de pgTAP, contrats et concurrence. Chaque
+étape porte `PASS`, `FAIL`,
+`NOT_RUN` ou `INCONCLUSIVE`. `firstFailure` désigne la première cause
+attribuable ; `file`, `migrationId` et `sqlstate` ne sont renseignés que si la
+source les établit. Une preuve absente, un statut non réussi, un SHA différent,
+un manifeste incomplet ou un runner jamais atteint bloque le gate de
+convergence.
+Le gate exige le schéma d'artefact version 2, qui porte ces états par étape.
+
+Le reset canonique reste une seule commande `supabase db reset --local` avec
+la configuration de l'application : il applique l'arbre complet puis le seed.
+Le runner la capture dans un journal privé borné, avec délai maximal, puis
+classe seulement les marqueurs explicites. Un SQLSTATE après un marqueur de
+replay, avant le marqueur de seed et accompagné d'une erreur SQL permet la
+catégorie `MIGRATION_FAILURE` ; l'identifiant et le fichier de migration ne
+sont publiés que si la sortie en établit un seul sans ambiguïté. Un SQLSTATE
+après le marqueur explicite de seed permet `SEED_FAILURE`. Un problème de
+Docker, réseau ou connexion explicitement reconnu est `INFRASTRUCTURE_FAILURE`.
+Toute origine de phase ambiguë reste `RESET_FAILURE_UNCLASSIFIED` avec origine
+`UNPROVEN` ; aucun identifiant de migration ou fichier n'est déduit d'un simple
+voisinage de lignes. Dans ce cas, le résumé public n'expose
+pas les journaux privés et l'opérateur doit consulter la sortie privée
+corrélée au SHA et au run GitHub exact avant toute nouvelle attribution.
+
+| Étape | Diagnostic utile | Reprise autorisée |
+| --- | --- | --- |
+| Bootstrap | Lire l'artefact `supabase-start-diagnostic` expurgé ; comparer les états Docker, PostgreSQL et réseau observés. Une phase ou un message isolé ne prouve pas la cause ; une annulation est `INCONCLUSIVE/PROCESS_INTERRUPTED`. | Corriger la cause démontrée puis relancer le workflow SQL éphémère sur le SHA courant. `isolate-replay` est read-only et ne prouve pas seed, pgTAP ni convergence. |
+| dbReset | Examiner `firstFailure` et `workflowStages.dbReset` ; le runner conserve la commande reset canonique et journalise sa sortie en privé. | Corriger l'origine prouvée, ou conserver `INCONCLUSIVE` et obtenir le diagnostic privé corrélé avant toute reprise. |
+| Migrations | Vérifier le SQLSTATE et `migrationId` seulement s'ils sont prouvés. Sinon utiliser la sortie privée corrélée ; aucun SQL distant manuel. | Après correction append-only validée, relancer la preuve complète. `isolate-replay` peut confirmer une frontière sur l'instance éphémère, jamais autoriser l'application. |
+| Seed | Distinguer le marqueur explicite de phase du simple échec du processus ; sans cause prouvée, garder `INCONCLUSIVE`. | Corriger la fixture ou le seed dans son owner, puis relancer reset et preuve éphémère complète. Pas de commande seed contre la base liée. |
+| Validation schéma/seed | Vérifier l'étape de contrôle read-only immédiatement après reset. Son échec ne se requalifie pas en échec de migration. | Corriger le contrat propriétaire, puis relancer le workflow complet. |
+| pgTAP | `failure.category` distingue assertion, plan incomplet, erreur SQL/SQLSTATE, privilège, fixture explicitement invalide et interruption. `counts` rapporte plan/exécuté/échecs ; le numéro TAP n'est jamais une ligne SQL. La sortie `--debug` reste privée hors champs allowlistés. | Corriger la cause dans le test ou son owner et exécuter la lane canonique entière sur PostgreSQL éphémère. Une preuve partielle n'est pas positive. |
+| Contrats SQL | Examiner le fichier et son marqueur de fin ; le marqueur ne remplace pas l'observation PostgreSQL réelle. | Rejouer la lane éphémère après correction ; un test statique ne remplace pas l'exécution SQL. |
+| Concurrence | Vérifier exit code et marqueur multi-session ; un résultat d'une session seule ne vaut pas preuve complète. | Corriger le contrat de concurrence puis rejouer la lane éphémère. Aucun test sur Supabase lié. |
+| Runner SQL | Vérifier `sqlProofRunner` et chaque enregistrement pgTAP, contrat SQL ou scénario multi-session. Un runner non démarré reste `NOT_RUN`. | Réexécuter seulement après correction identifiée, par le workflow canonique complet sur PostgreSQL éphémère. |
+| Convergence | Vérifier le workflow source, branche, SHA distant exact, tous les enregistrements `INTEGRATION_PROOF: PASS`, les six étapes et le préflight complet. | Seul le workflow canonique protégé applique la file si toutes ses conditions passent. Les déclenchements manuels et quotidiens restent read-only. |
+
+### À faire / À éviter
+
+- **À faire** : utiliser des fixtures déterministes et isolées, faire correspondre le plan pgTAP aux assertions exécutées, attribuer explicitement les rôles et vérifier les SQLSTATE/messages contractuels des erreurs attendues.
+- **À faire** : ajouter les migrations en append-only, conserver les journaux détaillés dans l'environnement privé temporaire et vérifier le SHA exact ainsi que le statut explicite de chaque étape.
+- **À faire** : séparer tests statiques, comportements exécutés et preuves d'intégration PostgreSQL ; garder `NOT_RUN` ou `INCONCLUSIVE` lorsqu'une étape n'est pas atteinte ou que l'origine n'est pas prouvée.
+- **À éviter** : relancer aveuglément un run en échec, transformer une preuve partielle en succès, ou attribuer une migration, ligne SQL ou fixture à partir d'un indice ambigu.
+- **À éviter** : réécrire une migration publiée, utiliser `migration repair`, exécuter SQL/DDL manuel sur le projet lié ou contourner le gate. Les migrations appliquées se corrigent par une nouvelle migration validée.
+
 Un blocage doit être traité à sa cause : authentification/cible, divergence
 d'historique, sortie CLI ambiguë, mutation réelle, incompatibilité SQL, risque
 Advisor critique ou revue obligatoire. Il est interdit de réparer l'historique,

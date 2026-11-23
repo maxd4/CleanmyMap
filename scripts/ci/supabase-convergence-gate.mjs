@@ -45,6 +45,7 @@ export function evaluateAutomaticPreflight({ eventName, status, exitCode } = {})
 export function validateEphemeralEvidence({ evidence, candidateSha }) {
   const candidate = requireSha(candidateSha, "candidate SHA");
   if (!evidence || typeof evidence !== "object") return blocked("ephemeral SQL evidence is missing");
+  if (evidence.schemaVersion !== 2) return blocked("ephemeral SQL evidence schema version is not current");
   if (evidence.kind !== EXPECTED_PROOF_KIND) return blocked("ephemeral SQL evidence kind is invalid");
   if (String(evidence.workflow ?? "") !== EXPECTED_WORKFLOW) return blocked("ephemeral SQL evidence workflow is invalid");
   if (String(evidence.candidateSha ?? "").toLowerCase() !== candidate || String(evidence.headSha ?? "").toLowerCase() !== candidate) {
@@ -53,6 +54,11 @@ export function validateEphemeralEvidence({ evidence, candidateSha }) {
   if (evidence.provenance !== "COMMITTED_SNAPSHOT" || evidence.outcome !== "PASS") {
     return blocked("ephemeral SQL evidence is not a passing committed-snapshot proof");
   }
+  const requiredStages = ["bootstrap", "dbReset", "migrations", "seed", "schemaSeedValidation", "sqlProofRunner"];
+  if (!Array.isArray(evidence.workflowStages) || requiredStages.some((stage) => {
+    const matching = evidence.workflowStages.filter((entry) => entry?.stage === stage);
+    return matching.length !== 1 || matching[0].status !== "PASS";
+  })) return blocked("ephemeral SQL evidence is missing a passing bootstrap, migration, seed, or schema-validation stage");
   if (!Array.isArray(evidence.records) || evidence.records.length === 0) return blocked("ephemeral SQL evidence has no proof records");
   if (evidence.records.some((record) => record?.status !== "INTEGRATION_PROOF" || record?.outcome !== "PASS")) {
     return blocked("ephemeral SQL evidence contains a failed or missing proof");

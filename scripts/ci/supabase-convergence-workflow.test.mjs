@@ -15,12 +15,21 @@ const candidateSha = "b".repeat(40);
 
 function passingEvidence(overrides = {}) {
   return {
+    schemaVersion: 2,
     kind: "cleanmymap-supabase-sql-evidence",
     workflow: "supabase-sql-proof-ephemeral",
     candidateSha,
     headSha: candidateSha,
     provenance: "COMMITTED_SNAPSHOT",
     outcome: "PASS",
+    workflowStages: [
+      { stage: "bootstrap", status: "PASS", origin: "SUPABASE_START" },
+      { stage: "dbReset", status: "PASS", origin: "CANONICAL_DB_RESET" },
+      { stage: "migrations", status: "PASS", origin: "CANONICAL_DB_RESET" },
+      { stage: "seed", status: "PASS", origin: "CANONICAL_DB_RESET" },
+      { stage: "schemaSeedValidation", status: "PASS", origin: "POST_RESET_SQL_CHECK" },
+      { stage: "sqlProofRunner", status: "PASS", origin: "CANONICAL_SQL_PROOF_RUNNER" },
+    ],
     migrations: [
       { id: "20261122000004", path: "apps/web/supabase/migrations/20261122000004_action_accessibility_welcome_contact_role.sql", contentSha256: "852da682aaccb16f639f2c46f162ec7a6ffb1fc5af4840df5be32ec4400e2e11" },
       { id: "20261122000014", path: "apps/web/supabase/migrations/20261122000014_private_action_attendance_registry.sql", contentSha256: "2f4b4ea37497fa05d67b3566a78b57ef927644c70b41a2983b2487958d885234" },
@@ -97,6 +106,10 @@ test("SQL proof is an independent serialized lane and application E2E no longer 
   assert.match(sqlWorkflow, /scripts\/ci\/supabase-config\.mjs/);
   assert.match(sqlWorkflow, /scripts\/ci\/isolate-supabase-migration-failure\.mjs/);
   assert.match(sqlWorkflow, /hashFiles\('artifacts\/ci-public-evidence\/evidence\/supabase-sql\.json'\) != ''[\s\S]*?steps\.validate_evidence\.outcome == 'success'/);
+  assert.match(sqlWorkflow, /--initialize-workflow-evidence/);
+  assert.match(sqlWorkflow, /--reset-canonical-db/);
+  assert.match(sqlWorkflow, /--verify-canonical-schema-seed/);
+  assert.match(sqlWorkflow, /--finalize-workflow-evidence/);
   assert.doesNotMatch(sqlWorkflow, /CMM_E2E_CLERK_DEV_BACKEND_TOKEN|CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY/);
   assert.doesNotMatch(e2eWorkflow, /run-supabase-sql-proof\.mjs/);
   assert.match(e2eWorkflow, /Run SPOGOMI Cachan mixed integration on ephemeral Supabase/);
@@ -109,7 +122,11 @@ test("SQL proof is an independent serialized lane and application E2E no longer 
     const resetIndex = workflowText.indexOf("name: Apply canonical migrations and seed");
     assert.ok(bootstrapIndex >= 0 && resetIndex > bootstrapIndex, "the canonical reset must follow bootstrap");
     assert.match(workflowText.slice(bootstrapIndex, resetIndex), /start-supabase-ephemeral\.sh/);
-    assert.match(workflowText.slice(resetIndex, resetIndex + 600), /supabase db reset --local --workdir apps\/web --yes/);
+    if (workflowText === sqlWorkflow) {
+      assert.match(workflowText.slice(resetIndex, resetIndex + 600), /--reset-canonical-db/);
+    } else {
+      assert.match(workflowText.slice(resetIndex, resetIndex + 600), /supabase db reset --local --workdir apps\/web --yes/);
+    }
   }
 });
 
@@ -320,6 +337,14 @@ test("wrong source, failed run, stale main, missing proof, and incomplete proof 
     assert.equal(evaluateSupabaseConvergenceGate({ ...base, [field]: value }).mode, "BLOCKED", field);
   }
   assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ candidateSha: "a".repeat(40) }), candidateSha }).mode, "BLOCKED");
+  const passingStages = passingEvidence().workflowStages;
+  for (const stage of ["bootstrap", "dbReset", "migrations", "seed", "schemaSeedValidation", "sqlProofRunner"]) {
+    for (const status of ["FAIL", "NOT_RUN", "INCONCLUSIVE"]) {
+      const evidence = passingEvidence({ workflowStages: passingStages.map((entry) => entry.stage === stage ? { ...entry, status } : entry) });
+      assert.equal(validateEphemeralEvidence({ evidence, candidateSha }).mode, "BLOCKED", `${stage}=${status}`);
+    }
+  }
+  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ workflowStages: undefined }), candidateSha }).mode, "BLOCKED");
 });
 
 test("a workflow_run produced by a pull request is blocked before any production convergence", () => {
