@@ -16,6 +16,7 @@ import type { ActionBeforeDeclarationForm } from "./action-declaration/before/fo
 import type { FormState } from "./action-declaration/model";
 import type { TerritoryLocationPreference } from "@/lib/user-location-preference";
 import type { ActionCreationActionBarConfig } from "./action-creation-action-bar";
+import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
 
 export type ActionCreationShellProps = Omit<
   ComponentProps<typeof ActionBeforeDeclarationForm>,
@@ -41,6 +42,7 @@ type ActionCreationDraftContext = {
   actionDate?: string;
   departureTime?: string;
   contextReady?: boolean;
+  emailActionData?: FormalitiesEmailActionData;
 };
 
 type ActionCreationFormalitiesReadiness = "unknown" | "ready" | "blocked";

@@ -12,6 +12,7 @@ import { ActionCreationLegalPanel } from "../../action-creation-legal-panel";
 import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities/facts";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import { deriveActionVolunteerChecklist } from "@/lib/actions/action-preparation-checklist";
+import { buildFormalitiesEmailActionDataFromForm } from "@/lib/actions/formalities/email-draft";
 import { createActionPreparationWeatherRequest, useActionPreparationWeather } from "../../use-action-preparation-weather";
 
 export function ActionBeforeVerificationSection({
@@ -88,6 +89,7 @@ export function ActionBeforeVerificationSection({
     readinessTone={readinessTone}
     errorMessage={errorMessage}
     actionId={actionId}
+    actionEmailData={buildFormalitiesEmailActionDataFromForm(form)}
     onDraftFactsChange={(facts) => updateField("formalitiesContext", facts)}
     onFormalitiesReadiness={onFormalitiesReadiness}
     onEditDefinition={onEditDefinition}
@@ -108,6 +110,7 @@ type ActionBeforeVerificationViewProps = {
   readinessTone: "emerald" | "amber";
   errorMessage: string | null;
   actionId?: string | null;
+  actionEmailData: ReturnType<typeof buildFormalitiesEmailActionDataFromForm>;
   onDraftFactsChange: (facts: ActionFormalitiesFacts) => void;
   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
   onEditDefinition?: (field?: string) => void;
@@ -127,6 +130,7 @@ function ActionBeforeVerificationView({
   readinessTone,
   errorMessage,
   actionId,
+  actionEmailData,
   onDraftFactsChange,
   onFormalitiesReadiness,
   onEditDefinition,
@@ -147,7 +151,7 @@ function ActionBeforeVerificationView({
       <CmmDisclosure summary="Aperçu public bénévole" tone="sky" size="sm">
         <ActionBeforeVolunteerPreview publicInformation={publicInformation} weatherChecklist={weatherChecklist} requestWeather={requestWeather} />
       </CmmDisclosure>
-      <ActionCreationLegalPanel actionId={actionId} draftFacts={draftFacts} onDraftFactsChange={onDraftFactsChange} onReadinessChange={onFormalitiesReadiness} />
+      <ActionCreationLegalPanel actionId={actionId} draftFacts={draftFacts} onDraftFactsChange={onDraftFactsChange} onReadinessChange={onFormalitiesReadiness} actionEmailData={actionEmailData} />
     </div>
   </CmmCard>;
 }

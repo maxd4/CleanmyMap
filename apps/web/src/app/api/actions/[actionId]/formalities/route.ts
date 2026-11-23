@@ -25,6 +25,7 @@ import {
 } from "@/lib/actions/formalities/rules";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalities/action-context";
+import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
 
 export const runtime = "nodejs";
 // Justification : cette route dynamique dépend de l'autorisation, des faits de qualification et de l'état persisté de l'action.
@@ -104,6 +105,7 @@ async function loadAuthorizedAction(actionId: string, userId: string) {
 
 function responseFor(params: {
   actionId: string;
+  action: NonNullable<Awaited<ReturnType<typeof loadActionById>>>;
   facts: ActionFormalitiesFacts;
   qualification: ReturnType<typeof qualifyActionFormalities>;
   workflow: ReturnType<typeof buildFormalitiesWorkflowState>;
@@ -114,7 +116,34 @@ function responseFor(params: {
     facts: params.facts,
     qualification: params.qualification,
     workflow: params.workflow,
+    actionData: buildFormalitiesEmailActionData(params.action, params.facts),
   });
+}
+
+function buildFormalitiesEmailActionData(
+  action: NonNullable<Awaited<ReturnType<typeof loadActionById>>>,
+  facts: ActionFormalitiesFacts,
+): FormalitiesEmailActionData {
+  const preparation = action.preparation_data;
+  const contactAreaMode = action.derived_geometry_kind === "point"
+    ? "single_location"
+    : action.derived_geometry_kind
+      ? "route_or_area"
+      : "unknown";
+
+  return {
+    title: preparation.actionTitle ?? null,
+    description: preparation.shortDescription ?? null,
+    location: action.location_label,
+    date: action.action_date,
+    startTime: action.event_start_time ?? preparation.departureTime ?? preparation.meetingTime ?? null,
+    endTime: action.event_end_time ?? null,
+    participantCount: action.volunteers_count,
+    organizerName: action.organizer_name ?? action.actor_name,
+    contactAreaMode,
+    contactArrondissementCode:
+      contactAreaMode === "single_location" ? facts.territory.arrondissement?.code ?? null : null,
+  };
 }
 
 export async function GET(
@@ -156,6 +185,7 @@ export async function GET(
     });
     return responseFor({
       actionId: trimmedActionId,
+      action: current,
       facts,
       qualification,
       workflow,
@@ -248,6 +278,7 @@ export async function PATCH(
 
     return responseFor({
       actionId: trimmedActionId,
+      action: current,
       facts,
       qualification,
       workflow,

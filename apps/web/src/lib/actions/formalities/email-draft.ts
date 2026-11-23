@@ -9,6 +9,8 @@ export type FormalitiesEmailActionData = {
   endTime?: string | null;
   participantCount?: number | null;
   organizerName?: string | null;
+  contactAreaMode?: "single_location" | "route_or_area" | "unknown";
+  contactArrondissementCode?: string | null;
 };
 
 export type ReviewableFormalityEmailDraft = {
@@ -19,16 +21,67 @@ export type ReviewableFormalityEmailDraft = {
   sent: false;
 };
 
+export type FormalitiesEmailActionFormInput = {
+  actionTitle?: string | null;
+  shortDescription?: string | null;
+  locationLabel?: string | null;
+  departureLocationLabel?: string | null;
+  actionDate?: string | null;
+  eventStartTime?: string | null;
+  eventEndTime?: string | null;
+  departureTime?: string | null;
+  meetingTime?: string | null;
+  volunteersCount?: string | null;
+  organizerName?: string | null;
+  associationName?: string | null;
+  actorName?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  operationalRoute?: unknown;
+  interventionMode?: { mode?: string } | null;
+  formalitiesContext?: { territory?: { arrondissement?: { code?: string } | null } } | null;
+};
+
 function isMeaningful(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function parseOptionalCount(value: string | null | undefined): number | null {
+  if (!isMeaningful(value)) return null;
+  const count = Number(value);
+  return Number.isFinite(count) && count >= 0 ? count : null;
+}
+
+export function buildFormalitiesEmailActionDataFromForm(
+  form: FormalitiesEmailActionFormInput,
+): FormalitiesEmailActionData {
+  const hasCoordinates = isMeaningful(form.latitude) && isMeaningful(form.longitude);
+  const isRouteOrArea = Boolean(form.operationalRoute) || form.interventionMode?.mode === "itinerary";
+
+  return {
+    title: form.actionTitle ?? null,
+    description: form.shortDescription ?? null,
+    location: form.departureLocationLabel || form.locationLabel || null,
+    date: form.actionDate ?? null,
+    startTime: form.eventStartTime || form.departureTime || form.meetingTime || null,
+    endTime: form.eventEndTime ?? null,
+    participantCount: parseOptionalCount(form.volunteersCount),
+    organizerName: form.organizerName || form.associationName || form.actorName || null,
+    contactAreaMode: isRouteOrArea ? "route_or_area" : hasCoordinates ? "single_location" : "unknown",
+    contactArrondissementCode: form.formalitiesContext?.territory?.arrondissement?.code ?? null,
+  };
 }
 
 export function buildReviewableFormalityEmailDraft(params: {
   formality: ActionFormality;
   action: FormalitiesEmailActionData;
+  purpose?: "participatory_cleaning";
+  verifiedRecipientEmail?: string;
 }): ReviewableFormalityEmailDraft | null {
   const channel = params.formality.officialChannel;
-  if (channel?.kind !== "official_email" || !isMeaningful(channel.emailAddress)) {
+  const recipientEmail = params.verifiedRecipientEmail ??
+    (channel?.kind === "official_email" ? channel.emailAddress : null);
+  if (!isMeaningful(recipientEmail)) {
     return null;
   }
 
@@ -36,7 +89,9 @@ export function buildReviewableFormalityEmailDraft(params: {
   const lines = [
     "Bonjour,",
     "",
-    "Je souhaite vous soumettre une demande concernant l’action suivante :",
+    params.purpose === "participatory_cleaning"
+      ? "Je vous contacte au sujet du nettoyage participatif suivant :"
+      : "Je souhaite vous soumettre une demande concernant l’action suivante :",
     isMeaningful(action.title) ? `Titre : ${action.title.trim()}` : null,
     isMeaningful(action.description) ? `Description : ${action.description.trim()}` : null,
     isMeaningful(action.location) ? `Lieu : ${action.location.trim()}` : null,
@@ -50,16 +105,22 @@ export function buildReviewableFormalityEmailDraft(params: {
       ? `Organisateur : ${action.organizerName.trim()}`
       : null,
     "",
-    "Merci de m’indiquer la procédure et les pièces complémentaires éventuellement nécessaires.",
+    params.purpose === "participatory_cleaning"
+      ? "Pourriez-vous nous indiquer si des gants et des sacs peuvent être prêtés, selon disponibilité, et organiser ou préciser les modalités de prise en charge des déchets ramassés en fin d’opération ?"
+      : "Merci de m’indiquer la procédure et les pièces complémentaires éventuellement nécessaires.",
     "",
     "Cordialement,",
   ].filter((line): line is string => line !== null);
 
   return {
-    to: channel.emailAddress.trim(),
-    subject: isMeaningful(action.title)
-      ? `Demande concernant ${action.title.trim()}`
-      : "Demande concernant une action",
+    to: recipientEmail.trim(),
+    subject: params.purpose === "participatory_cleaning"
+      ? isMeaningful(action.title)
+        ? `Nettoyage participatif — ${action.title.trim()}`
+        : "Nettoyage participatif à Paris"
+      : isMeaningful(action.title)
+        ? `Demande concernant ${action.title.trim()}`
+        : "Demande concernant une action",
     body: lines.join("\n"),
     requiresReview: true,
     sent: false,

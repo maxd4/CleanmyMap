@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Loader2, Save } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import {
   fetchActionFormalities,
   updateActionFormalities,
@@ -16,6 +17,7 @@ import {
 import {
   ActionFormalitiesQualificationView,
 } from "./action-formalities-qualification-view";
+import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
 
 export { ActionFormalitiesQualificationView } from "./action-formalities-qualification-view";
 
@@ -25,6 +27,7 @@ function hasUnknownFacts(facts: ActionFormalitiesFacts | null): boolean {
     facts.publicSpace,
     facts.manager.kind,
     facts.isPublicRoadwayActivity,
+    facts.isCortegeOrGathering,
     facts.isItinerant,
     facts.isClaiming,
     facts.hasInstallations,
@@ -40,11 +43,12 @@ function factValue(value: boolean | "unknown"): string {
 
 function buildDraftFormalitiesData(
   effectiveDraftFacts: ActionFormalitiesFacts | null,
+  actionEmailData?: FormalitiesEmailActionData,
 ): ActionFormalitiesResponse | null {
   if (!effectiveDraftFacts) return null;
   const qualification = qualifyActionFormalities(effectiveDraftFacts);
   const workflow = buildFormalitiesWorkflowState({ facts: effectiveDraftFacts, qualification });
-  return { status: "ok", actionId: "draft", facts: effectiveDraftFacts, qualification, workflow };
+  return { status: "ok", actionId: "draft", facts: effectiveDraftFacts, qualification, workflow, actionData: actionEmailData };
 }
 
 function useActionFormalitiesData({
@@ -175,6 +179,7 @@ type ActionFormalitiesWorkflowPanelProps = {
   draftFacts?: ActionFormalitiesFacts | null;
   onDraftFactsChange?: (facts: ActionFormalitiesFacts) => void;
   onReadinessChange?: (readiness: { known: boolean; blocked: boolean }) => void;
+  actionEmailData?: FormalitiesEmailActionData;
 };
 
 export function ActionFormalitiesWorkflowPanel(props: ActionFormalitiesWorkflowPanelProps) {
@@ -186,11 +191,15 @@ function ActionFormalitiesWorkflowPanelRuntime({
   draftFacts,
   onDraftFactsChange,
   onReadinessChange,
+  actionEmailData,
 }: ActionFormalitiesWorkflowPanelProps) {
   const [draftFactsOverride, setDraftFactsOverride] = useState<ActionFormalitiesFacts | null>(null);
 
   const effectiveDraftFacts = draftFactsOverride ?? draftFacts ?? null;
-  const draftData = useMemo(() => buildDraftFormalitiesData(effectiveDraftFacts), [effectiveDraftFacts]);
+  const draftData = useMemo(
+    () => buildDraftFormalitiesData(effectiveDraftFacts, actionEmailData),
+    [actionEmailData, effectiveDraftFacts],
+  );
 
   const notifyReadiness = useActionFormalitiesReadiness(onReadinessChange);
 
@@ -236,6 +245,7 @@ function ActionFormalitiesWorkflowPanelRuntime({
     applyTransition={applyTransition}
     visibleData={visibleData}
     visibleFacts={visibleFacts}
+    actionEmailData={visibleData.actionData ?? actionEmailData}
   />;
 }
 
@@ -249,6 +259,7 @@ function ActionFormalitiesWorkflowContent({
   applyTransition,
   visibleData,
   visibleFacts,
+  actionEmailData,
 }: {
   actionId?: string | null;
   error: string | null;
@@ -259,6 +270,7 @@ function ActionFormalitiesWorkflowContent({
   applyTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => Promise<void>;
   visibleData: ActionFormalitiesResponse;
   visibleFacts: ActionFormalitiesFacts;
+  actionEmailData?: FormalitiesEmailActionData;
 }) {
   const managerNeedsLabel = visibleFacts.manager.kind === "other_public";
   return (
@@ -271,6 +283,7 @@ function ActionFormalitiesWorkflowContent({
         </p>
       </div>
 
+      <CmmDisclosure summary="Questions détaillées de qualification" tone="emerald" size="sm">
       <div className="grid gap-3 rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-4 sm:grid-cols-2">
         <SelectField label="Espace concerné" value={visibleFacts.publicSpace} onChange={(value) => updateDraftFacts({ ...visibleFacts, publicSpace: value as ActionFormalitiesFacts["publicSpace"] })} options={[
           { value: "unknown", label: "À préciser" },
@@ -296,6 +309,7 @@ function ActionFormalitiesWorkflowContent({
         <FactSelect label="Foule importante ou installation complexe" value={visibleFacts.largeCrowdOrComplexInstallations} onChange={(value) => updateDraftFacts({ ...visibleFacts, largeCrowdOrComplexInstallations: value })} />
         <FactSelect label="Usage local établi" value={visibleFacts.localCustomaryUse} onChange={(value) => updateDraftFacts({ ...visibleFacts, localCustomaryUse: value })} />
       </div>
+      </CmmDisclosure>
 
       <div className="flex flex-wrap items-center gap-3">
         {actionId ? <CmmButton tone="primary" variant="pill" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ saveFacts(); }} disabled={isSaving}>
@@ -305,7 +319,7 @@ function ActionFormalitiesWorkflowContent({
         {hasUnknown ? <span className="text-xs text-amber-800">Certaines données doivent encore être confirmées.</span> : null}
       </div>
       {error ? <p className="text-sm text-rose-700" role="alert">{error}</p> : null}
-      <ActionFormalitiesQualificationView qualification={visibleData.qualification} workflow={visibleData.workflow} isSaving={isSaving} readOnly={!actionId} onTransition={(formalityId, kind) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyTransition(formalityId, kind); }} />
+      <ActionFormalitiesQualificationView qualification={visibleData.qualification} workflow={visibleData.workflow} facts={visibleFacts} actionEmailData={actionEmailData} isSaving={isSaving} readOnly={!actionId} onTransition={(formalityId, kind) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyTransition(formalityId, kind); }} />
     </div>
   );
 }

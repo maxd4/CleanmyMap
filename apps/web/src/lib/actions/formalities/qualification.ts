@@ -61,6 +61,10 @@ export type FormalitiesTerritory = {
     code: string;
     label: string;
   } | null;
+  arrondissement?: {
+    code: string;
+    label: string;
+  } | null;
 };
 
 export type FormalitiesOfficialSource = {

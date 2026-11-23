@@ -5,17 +5,20 @@ import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { AdministrativeRequirementsStatus } from "./administrative-requirements-status";
 import { ActionFormalitiesWorkflowPanel } from "./action-formalities-workflow-panel";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
+import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
 
 export function ActionCreationLegalPanel({
   actionId,
   draftFacts,
   onDraftFactsChange,
   onReadinessChange,
+  actionEmailData,
 }: {
   actionId?: string | null;
   draftFacts?: ActionFormalitiesFacts | null;
   onDraftFactsChange?: (facts: ActionFormalitiesFacts) => void;
   onReadinessChange?: (readiness: { known: boolean; blocked: boolean }) => void;
+  actionEmailData?: FormalitiesEmailActionData;
 }) {
   return (
     <CmmCard tone="amber" variant="glass" size="lg">
@@ -37,7 +40,7 @@ export function ActionCreationLegalPanel({
             <p>Aucune procédure n&apos;est envoyée par ce panneau. Une incertitude ne bloque pas automatiquement la publication ; seule une formalité démontrée comme requise peut la conditionner. Une simple cleanwalk sans installation ne vaut pas automatiquement AOT.</p>
           </div>
         </CmmDisclosure>
-        <ActionFormalitiesWorkflowPanel actionId={actionId} draftFacts={draftFacts} onDraftFactsChange={onDraftFactsChange} onReadinessChange={onReadinessChange} />
+        <ActionFormalitiesWorkflowPanel actionId={actionId} draftFacts={draftFacts} onDraftFactsChange={onDraftFactsChange} onReadinessChange={onReadinessChange} actionEmailData={actionEmailData} />
         <div className="border-t border-amber-200/70 pt-4">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-800/70">
             État technique de la pré-action

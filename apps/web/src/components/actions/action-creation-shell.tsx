@@ -13,6 +13,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type { ActionCreationActionBarConfig } from "./action-creation-action-bar";
 import { ACTION_WORKFLOW_STEPS } from "@/lib/actions/action-workflow";
 import { ACTION_CREATION_SECTIONS } from "@/lib/actions/action-creation-sections";
+import { buildFormalitiesEmailActionDataFromForm } from "@/lib/actions/formalities/email-draft";
 
 export function ActionCreationShell({
   initialPanel,
@@ -123,6 +124,7 @@ function ActionCreationShellView({
       actionDate: preparationContext.actionDate,
       departureTime: preparationContext.departureTime,
       contextReady: preparationContextReady,
+      emailActionData: buildFormalitiesEmailActionDataFromForm(formSnapshot),
     },
     preparationContext,
     formalitiesReadiness,

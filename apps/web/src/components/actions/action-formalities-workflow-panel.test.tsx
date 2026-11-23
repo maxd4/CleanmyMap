@@ -67,7 +67,7 @@ describe("ActionFormalitiesQualificationView", () => {
     expect(markup).toContain("La Ville de Paris décrit une AOT préalable");
     expect(markup).toContain("Délai indicatif");
     expect(markup).toContain("2 mois");
-    expect(markup).toContain("Message préparé");
+    expect(markup).toContain("Pièces listées pour la démarche requise");
     expect(markup).toContain("https://www.paris.fr/pages/evenements-dans-l-espace-public-33659");
   });
 
@@ -199,7 +199,7 @@ describe("ActionFormalitiesQualificationView", () => {
     expect(markup).toContain("Non requis dans ce cas");
     expect(markup).toContain("À confirmer");
     expect(markup).toContain("Informations demandées");
-    expect(markup).toContain("Pièces demandées");
+    expect(markup).toContain("Pièces listées pour la démarche requise");
     expect(markup).toContain("Canal officiel");
     expect(markup).toContain("Canal à confirmer");
     expect(markup).toContain("Je déclare l&#x27;avoir envoyée");

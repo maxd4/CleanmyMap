@@ -11,6 +11,7 @@ import type {
   ActionFormalitiesWorkflowState,
   FormalitiesWorkflowTransition,
 } from "./formalities/workflow";
+import type { FormalitiesEmailActionData } from "./formalities/email-draft";
 import { createActionError, parseErrorMessage, parseJsonSafely } from "./http-errors";
 
 export type ActionAdministrativeRequirementsResponse = AdministrativeRequirementsRead & {
@@ -23,6 +24,7 @@ export type ActionFormalitiesResponse = {
   facts: ActionFormalitiesFacts;
   qualification: ActionFormalitiesQualification;
   workflow: ActionFormalitiesWorkflowState;
+  actionData?: FormalitiesEmailActionData;
 };
 
 function parseActionFormalitiesResponse(

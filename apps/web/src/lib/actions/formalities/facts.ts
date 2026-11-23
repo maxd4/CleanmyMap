@@ -28,6 +28,10 @@ export const actionFormalitiesFactsSchema = z
           .object({ code: z.string().trim().min(1).max(40), label: z.string().trim().min(1).max(120) })
           .nullable()
           .optional(),
+        arrondissement: z
+          .object({ code: z.string().trim().min(1).max(20), label: z.string().trim().min(1).max(120) })
+          .nullable()
+          .optional(),
       })
       .strict(),
     publicSpace: z.enum(["public_domain", "private_domain", "unknown"]),
@@ -168,6 +172,9 @@ function buildFormalitiesTerritory(params: {
     department: buildDepartmentTerritoryPart(department.code, department.name),
     region: buildRegionTerritoryPart(resolved),
     specialTerritory: buildSpecialTerritoryPart(resolved, isParis),
+    arrondissement: resolved?.arrondissement
+      ? { code: resolved.arrondissement.code, label: resolved.arrondissement.name }
+      : null,
   };
 }
 

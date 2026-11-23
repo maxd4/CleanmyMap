@@ -156,6 +156,18 @@ const responseFormalitySchema = z.object({
 const formalitiesResponseSchema = z.object({
   facts: actionFormalitiesFactsSchema,
   qualification: z.object({ formalities: z.array(responseFormalitySchema) }),
+  actionData: z.object({
+    title: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
+    location: z.string().nullable().optional(),
+    date: z.string().nullable().optional(),
+    startTime: z.string().nullable().optional(),
+    endTime: z.string().nullable().optional(),
+    participantCount: z.number().nullable().optional(),
+    organizerName: z.string().nullable().optional(),
+    contactAreaMode: z.enum(["single_location", "route_or_area", "unknown"]).optional(),
+    contactArrondissementCode: z.string().nullable().optional(),
+  }).optional(),
   workflow: z.object({
     progress: z.array(z.object({
       formalityId: z.string(),
@@ -175,6 +187,12 @@ type FormalitiesResponse = {
     formalities: Array<Pick<ActionFormality, "id" | "requirementStatus" | "procedureKind"> & {
       source: Pick<NonNullable<ActionFormality["source"]>, "verifiedOn"> | null;
     }>;
+  };
+  actionData?: {
+    date?: string | null;
+    location?: string | null;
+    organizerName?: string | null;
+    contactAreaMode?: "single_location" | "route_or_area" | "unknown";
   };
   workflow: {
     progress: Array<Pick<ActionFormalitiesWorkflowState["progress"][number], "formalityId" | "userStatus" | "validForQualification" | "invalidatedAt">>;
@@ -308,6 +326,12 @@ describe("/api/actions/:actionId/formalities", () => {
     );
     expect(body.workflow.progress[0].userStatus).toBe("not_started");
     expect(body.workflow.trace.verifiedOn).toBeNull();
+    expect(body.actionData).toMatchObject({
+      date: "2026-09-01",
+      location: "Paris",
+      organizerName: "Alice",
+      contactAreaMode: "single_location",
+    });
   });
 
   it("qualifies and persists the user-owned context without accepting a forged sent state", async () => {
@@ -512,6 +536,7 @@ describe("/api/actions/:actionId/formalities", () => {
       department: { code: "92", label: "Hauts-de-Seine" },
       region: { code: "11", label: "Île-de-France" },
       specialTerritory: null,
+      arrondissement: null,
     });
   });
 
