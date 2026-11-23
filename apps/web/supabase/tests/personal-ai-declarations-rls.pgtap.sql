@@ -316,11 +316,29 @@ select throws_ok($$
 $$, '22023', 'invalid import identity scope', 'raw provider identifiers cannot be stored as source scope');
 select throws_ok($$
   select * from public.confirm_personal_ai_import(jsonb_build_array(
-    jsonb_build_object('declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'), '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb), 'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb, 'methodology_version', 'personal-ai-v1', 'factor_version', '{}', 'source_identity_hash', repeat('d', 64), 'source_scope', jsonb_build_object('project_id', repeat('1', 64), 'api_key_id', repeat('4', 64)), 'normalized_content_hash', repeat('e', 64), 'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE"}'::jsonb),
+    jsonb_build_object(
+      'declaration', jsonb_set(
+        jsonb_set(
+          (select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
+          '{provider}', '"OPENAI"'::jsonb
+        ) || jsonb_build_object(
+          'periodStartUtc', '2026-03-01T00:00:00.000Z',
+          'periodEndUtc', '2026-04-01T00:00:00.000Z'
+        ),
+        '{access}', '"UNKNOWN"'::jsonb
+      ),
+      'snapshot', '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+      'methodology_version', 'personal-ai-v1',
+      'factor_version', '{}',
+      'source_identity_hash', repeat('6', 64),
+      'source_scope', jsonb_build_object('project_id', repeat('6', 64), 'api_key_id', repeat('7', 64)),
+      'normalized_content_hash', repeat('8', 64),
+      'import_metadata', '{"provider":"OPENAI","granularity":"AGGREGATE","completeness":"COMPLETE"}'::jsonb
+    ),
     jsonb_build_object('unexpected', true)
   ))
 $$, '22023', 'invalid import row shape', 'malformed row rejects the whole import batch');
-select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('d', 64)), 0, 'failed multi-row import rolls back earlier rows');
+select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('6', 64)), 0, 'failed multi-row import rolls back the preceding valid row');
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"user-b"}', true);
