@@ -14,7 +14,7 @@ import {
   type ActionMediaReadItem,
   type ActionMediaPurpose,
 } from "./action-media-contract";
-import { verifyActionMediaStorageObject, verifyActionRouteReferenceObject } from "./action-media-storage";
+import { removeActionMediaObjectIfPresent, verifyActionMediaStorageObject, verifyActionRouteReferenceObject } from "./action-media-storage";
 import { mapCommonMediaRecord } from "../media/media-record-mapper";
 import { validateMediaUploadInput } from "../media/media-upload-validation";
 import {
@@ -504,8 +504,11 @@ export async function removeActionRouteReference(
     }
   }
 
-  const removed = await supabase.storage.from(ACTION_MEDIA_BUCKET).remove([row.storage_path]);
-  if (removed.error) throw storageError("La référence est désactivée, mais son nettoyage du stockage a échoué. Réessayez.");
+  try {
+    await removeActionMediaObjectIfPresent(supabase, row.storage_path);
+  } catch {
+    throw storageError("La référence est désactivée, mais son nettoyage du stockage a échoué. Réessayez.");
+  }
   const completed = await supabase.from("action_media").update({ failure_reason: "user_removed" })
     .eq("id", row.id).eq("action_id", params.actionId).eq("purpose", "route_reference")
     .eq("upload_state", "failed").eq("failure_reason", "user_removed_pending_cleanup").select("id").maybeSingle();

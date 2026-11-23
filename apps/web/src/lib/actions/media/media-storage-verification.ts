@@ -8,7 +8,7 @@ type MediaStorageObjectInfo = {
 
 export type MediaStorageVerification = "valid" | "missing" | "invalid" | "error";
 
-function isMissingObjectError(error: unknown): boolean {
+export function isMissingMediaStorageObjectError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const candidate = error as { status?: unknown; statusCode?: unknown; code?: unknown };
   return (
@@ -36,7 +36,7 @@ export async function verifyMediaStorageObject(
   params: { bucket: string; storagePath: string; sizeBytes: number; mimeType: string },
 ): Promise<MediaStorageVerification> {
   const objectInfo = await supabase.storage.from(params.bucket).info(params.storagePath);
-  if (objectInfo.error) return isMissingObjectError(objectInfo.error) ? "missing" : "error";
+  if (objectInfo.error) return isMissingMediaStorageObjectError(objectInfo.error) ? "missing" : "error";
   if (!objectInfo.data) return "missing";
 
   const data = objectInfo.data as MediaStorageObjectInfo;

@@ -421,11 +421,19 @@ describe("action media contract", () => {
 
   it("records removal before storage cleanup and retries an interrupted cleanup idempotently", async () => {
     let attempts = 0;
+    let objectPresent = true;
     const supabase = makeEvolvingSupabase({
       action,
       row: { ...readyMedia, purpose: "route_reference" },
-      storageInfo: async () => ({ data: null, error: null }),
-      storageRemove: async () => ({ error: ++attempts === 1 ? new Error("storage unavailable") : null }),
+      storageInfo: async () => objectPresent
+        ? ({ data: { metadata: {} }, error: null })
+        : ({ data: null, error: { status: 404, statusCode: "404" } }),
+      storageRemove: async () => {
+        attempts += 1;
+        if (attempts === 1) return { error: new Error("storage unavailable") };
+        objectPresent = false;
+        return { error: null };
+      },
     });
     const params = { actionId: action.id, mediaId: readyMedia.id, ...ownerIdentity, identity: ownerIdentity };
     await expect(removeActionRouteReference(supabase as never, params)).rejects.toThrow("désactivée");
@@ -455,10 +463,14 @@ describe("action media contract", () => {
 
   it("retries final SQL bookkeeping after the Storage object was removed", async () => {
     let failCompletion = true;
+    let objectPresent = true;
     const supabase = makeEvolvingSupabase({
       action,
       row: { ...readyMedia, purpose: "route_reference" },
-      storageInfo: async () => ({ data: null, error: null }),
+      storageInfo: async () => objectPresent
+        ? ({ data: { metadata: {} }, error: null })
+        : ({ data: null, error: { status: 404, statusCode: "404" } }),
+      storageRemove: async () => { objectPresent = false; return { error: null }; },
       beforeUpdate: async (payload) => {
         if (payload.failure_reason === "user_removed" && failCompletion) {
           failCompletion = false;
@@ -471,7 +483,7 @@ describe("action media contract", () => {
     expect(supabase.__state.row).toMatchObject({ upload_state: "failed", failure_reason: "user_removed_pending_cleanup" });
     expect(supabase.__storageRemove).toHaveBeenCalledTimes(1);
     await expect(removeActionRouteReference(supabase as never, params)).resolves.toBeUndefined();
-    expect(supabase.__storageRemove).toHaveBeenCalledTimes(2);
+    expect(supabase.__storageRemove).toHaveBeenCalledTimes(1);
     expect(supabase.__state.row.failure_reason).toBe("user_removed");
   });
 

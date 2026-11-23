@@ -1,11 +1,29 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ACTION_MEDIA_BUCKET } from "./action-media-contract";
 import {
+  isMissingMediaStorageObjectError,
   verifyMediaStorageObject,
   type MediaStorageVerification,
 } from "../media/media-storage-verification";
 
 export type ActionMediaStorageVerification = MediaStorageVerification;
+
+export async function removeActionMediaObjectIfPresent(
+  supabase: SupabaseClient,
+  storagePath: string,
+): Promise<void> {
+  const storage = supabase.storage.from(ACTION_MEDIA_BUCKET);
+  const existing = await storage.info(storagePath);
+  if (existing.error && !isMissingMediaStorageObjectError(existing.error)) {
+    throw new Error("Le stockage de la référence ne peut pas être vérifié.");
+  }
+  if (existing.error || !existing.data) return;
+
+  const removed = await storage.remove([storagePath]);
+  if (removed.error && !isMissingMediaStorageObjectError(removed.error)) {
+    throw new Error("La référence ne peut pas être supprimée du stockage.");
+  }
+}
 
 export async function verifyActionMediaStorageObject(
   supabase: SupabaseClient,
