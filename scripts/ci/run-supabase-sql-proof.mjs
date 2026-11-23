@@ -40,6 +40,7 @@ const MULTISESSION_PROOFS = new Map([
   ["e2e/territorial-legend-revision-concurrency.mjs", /Territorial legend monotone fact revision and stale same-day reconciliation concurrency passed\./],
   ["e2e/quiz-progression-concurrency.mjs", /Quiz progression two-session user lock and balanced milestone passed\./],
   ["e2e/reports-postgres-concurrency.mjs", /EXECUTED_DB_CONTRACT: Reports quota and PDF artifact two-session concurrency contract passed\./],
+  ["e2e/action-media-route-reference-concurrency.mjs", /EXECUTED_DB_CONTRACT: Route-reference quota advisory lock serializes concurrent uploads at the purpose-specific limit\./],
   ["e2e/security-02-two-sessions.mjs", /SECURITY-02 two-session PostgreSQL contract passed\./],
   ["e2e/spogomi-concurrency.mjs", /EXECUTED_DB_CONTRACT: SPOGOMI composition, lock, GPX, certificate, consolidation and closure republication safety passed\./],
 ]);

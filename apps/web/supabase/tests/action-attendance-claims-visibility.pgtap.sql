@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(19);
 
 select ok(not has_table_privilege('anon', 'public.action_participant_visibility_consents', 'SELECT'), 'anonymous users cannot read visibility consent rows');
 select ok(not has_table_privilege('authenticated', 'public.action_participant_visibility_consents', 'SELECT'), 'authenticated users cannot read visibility consent rows directly');
@@ -36,11 +36,11 @@ begin
 end $$;
 
 set local role service_role;
-select * from public.request_action_attendance_claim(
+select is((select already_requested from public.request_action_attendance_claim(
   (select action_id from claim_visibility_fixture),
   (select member_id from claim_visibility_fixture),
   (select entry_id from claim_visibility_fixture)
-);
+)), false, 'the first roster claim creates a new pending request');
 select is((select already_requested from public.request_action_attendance_claim(
   (select action_id from claim_visibility_fixture),
   (select member_id from claim_visibility_fixture),

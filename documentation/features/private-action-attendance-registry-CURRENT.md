@@ -65,6 +65,13 @@ registre. Le pointage reste une observation explicite de l’organisateur ; une
 entrée inconnue, une inscription confirmée ou un compte associé ne prouvent
 pas à eux seuls une présence.
 
+La demande privée « J’ai participé » utilise le RPC serveur
+`request_action_attendance_claim`, réservé à `service_role`. Il verrouille
+l’action, l’entrée présente et la clé action/compte ; un même compte retrouve
+sa demande `pending` au retry, et une entrée ne peut être réclamée par un autre
+compte. La confirmation reste une décision séparée qui lie le compte à cette
+entrée sans changer l’observation de présence.
+
 L’API conserve ses contrôles AuthN/AuthZ côté serveur, les révisions
 optimistes, l’idempotence par requête, l’audit avant/après et le conflit HTTP
 409. Le registre ne crée pas de participation finale ni d’XP.

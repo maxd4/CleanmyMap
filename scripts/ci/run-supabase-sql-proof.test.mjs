@@ -97,6 +97,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "e2e/action-attendance-teams-concurrency.mjs",
     "e2e/action-buddy-concurrency.mjs",
     "e2e/action-collection-concurrency.mjs",
+    "e2e/action-media-route-reference-concurrency.mjs",
     "e2e/action-role-attestation-concurrency.mjs",
     "e2e/community-helper-skills-concurrency.mjs",
     "e2e/gamification-reconciliation-concurrency.mjs",
@@ -137,6 +138,11 @@ test("action attendance retention pgTAP plan matches its assertion count", () =>
   assertPgTapPlanMatchesAssertions(readFileSync(path, "utf8"), "action attendance retention");
 });
 
+test("attendance claims and route-reference pgTAP plans match their assertions", () => {
+  assertPgTapPlanMatchesAssertions(readFileSync(new URL("../../apps/web/supabase/tests/action-attendance-claims-visibility.pgtap.sql", import.meta.url), "utf8"), "attendance claims visibility");
+  assertPgTapPlanMatchesAssertions(readFileSync(new URL("../../apps/web/supabase/tests/action-media-route-reference.pgtap.sql", import.meta.url), "utf8"), "route-reference media");
+});
+
 test("action attendance teams pgTAP plan matches its assertion count", () => {
   const path = new URL("../../apps/web/supabase/tests/action-attendance-teams.pgtap.sql", import.meta.url);
   const sql = readFileSync(path, "utf8");
@@ -171,6 +177,7 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
   const knipConfig = JSON.parse(readFileSync(new URL("../knip.json", import.meta.url), "utf8"));
   const entries = new Set(knipConfig.workspaces["."].entry);
   for (const entrypoint of [
+    "e2e/action-media-route-reference-concurrency.mjs",
     "e2e/action-collection-concurrency.mjs",
     "e2e/action-attendance-teams-concurrency.mjs",
     "e2e/community-helper-skills-concurrency.mjs",
@@ -180,6 +187,15 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
   ]) {
     assert.equal(entries.has(entrypoint), true, `missing Knip entrypoint: ${entrypoint}`);
   }
+});
+
+test("route-reference concurrency proof exercises the purpose-specific advisory quota lock", () => {
+  const source = readFileSync(new URL("../../e2e/action-media-route-reference-concurrency.mjs", import.meta.url), "utf8");
+  assert.match(source, /pg_advisory_lock\(\$\{ownKey\}\)/);
+  assert.match(source, /ROUTE_REFERENCE_QUOTA_RESULT=accepted/);
+  assert.match(source, /ROUTE_REFERENCE_QUOTA_RESULT=denied/);
+  assert.match(source, /purpose = 'route_reference'/);
+  assert.match(source, /resolveLocalEphemeralDbUrl/);
 });
 
 test("attendance team concurrency proof uses scoped fixtures and two-session serialization", () => {

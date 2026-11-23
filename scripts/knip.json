@@ -20,6 +20,7 @@
         "e2e/territorial-legend-revision-concurrency.mjs",
         "e2e/quiz-progression-concurrency.mjs",
         "e2e/reports-postgres-concurrency.mjs",
+        "e2e/action-media-route-reference-concurrency.mjs",
         "scripts/ci/run-static-candidate-check.mjs",
         "scripts/ci/run-dynamic-candidate-check.mjs",
         "scripts/checks/check-canonical-workspaces.mjs",
