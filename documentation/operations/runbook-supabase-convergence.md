@@ -141,19 +141,29 @@ Supabase distante. Il démarre la version CLI du workflow avec une configuration
 éphémère minimale où migrations et seed applicatifs sont désactivés. Si ce
 bootstrap échoue, le replay applicatif n'est pas lancé. S'il réussit, le mode
 active l'arbre canonique en lecture seule par symlink et teste les préfixes
-chronologiques par dichotomie, sans seed, puis rejoue la migration fautive
-seule sur le préfixe immédiatement antérieur valide via `psql` dans le
-conteneur éphémère. Le flux ajoute uniquement `SET log_error_verbosity=verbose`
-et utilise la verbosité client PostgreSQL pour rendre SQLSTATE et position
-lisibles dans les logs privés.
+chronologiques par dichotomie, sans seed. Chaque tentative conserve un journal
+privé distinct avec son numéro de préfixe, sa version et son code de sortie. La
+dichotomie commence par tester le préfixe complet. Elle est suivie d'un rejeu
+explicite du préfixe immédiatement précédent, qui doit réussir, puis du
+préfixe fautif, qui doit échouer avec le même contexte `supabase db reset`.
+Une migration n'est attribuée que si cette frontière PASS/FAIL est reproductible ;
+une erreur CLI, un résultat discordant ou un prédécesseur en échec produit
+`INCONCLUSIVE` sans version causale.
+
+Après une frontière confirmée, un rejeu `psql` de la migration depuis son
+prédécesseur peut être exécuté comme diagnostic complémentaire. Son SQLSTATE,
+son type et sa position restent dans un champ distinct `isolatedPsqlDiagnostic`.
+Ils ne remplacent jamais le diagnostic du replay Supabase canonique : un
+`42501` de `psql` ne démontre pas la cause d'un `22P02` du replay.
 
 Les sorties brutes du CLI, des journaux Docker et des journaux JSON privés de
 PostgreSQL restent dans `$RUNNER_TEMP` et sont supprimées avec le runner. Le
 seul artefact publié contient le SHA candidat, les hashes des migrations
-canoniques, le résultat séparé du bootstrap/replay, la version corrélée par le
-préfixe expérimental, l'observation des sources de logs, le SQLSTATE, le type
-PostgreSQL si allowlisté et la position/ligne d'instruction si disponible. Il
-ne contient ni valeur rejetée, ni SQL, ni message brut. Cette preuve diagnostique ne vaut
+canoniques, le résultat séparé du bootstrap/replay, le statut de reproductibilité
+de la frontière, la version seulement si elle est confirmée, et le SQLSTATE, le
+type PostgreSQL allowlisté ou la position numérique quand ils proviennent du
+replay canonique. Le diagnostic `psql` est explicitement séparé. L'artefact ne
+contient ni instruction SQL complète, ni valeur rejetée, ni message brut. Cette preuve diagnostique ne vaut
 pas `REPLAY_FROM_ZERO`, ne lance ni seed ni pgTAP/concurrence, et ne permet
 jamais la convergence Production. Le workflow complet reste le seul à produire
 l'attestation consommée par `supabase-convergence.yml`.

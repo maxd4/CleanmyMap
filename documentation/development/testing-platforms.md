@@ -210,13 +210,19 @@ instances et résultats; ils ne réexécutent pas l'inventaire SQL complet et
 leurs échecs ne modifient pas l'attestation de cette preuve.
 
 Le dispatch `mode=isolate-replay` du même workflow est un diagnostic distinct :
-il démarre Supabase avec migrations/seed désactivés, puis isole par préfixes la
-première migration SQL fautive et la rejoue seule sur son préfixe valide. Les
-logs bruts du CLI, de Docker et de PostgreSQL restent dans le runner; l'artefact
-diagnostic ne contient que le SHA, les empreintes SQL, l'observation des
-sources de logs et une attribution assainie. La verbosité SQL peut être élevée
-uniquement sur la base éphémère du runner; la requête isolée est exécutée avec
-`psql` dans ce conteneur. Ce mode ne produit pas une
+il démarre Supabase avec migrations/seed désactivés, teste d'abord le préfixe
+complet, puis isole la première frontière par préfixes. Chaque essai conserve
+un log privé et une entrée versionnée avec le résultat et le code de sortie.
+Après la dichotomie, le préfixe précédent est rejoué et doit réussir ; le
+préfixe candidat est ensuite rejoué avec la même commande Supabase et doit
+échouer. Une migration n'est attribuée que si cette paire est reproductible ;
+sinon l'artefact indique `INCONCLUSIVE` sans version causale. Les logs bruts du
+CLI, de Docker et de PostgreSQL restent dans le runner. L'artefact ne publie que
+le SHA, les empreintes SQL et les champs PostgreSQL expurgés. Une exécution
+complémentaire avec `psql` est rapportée dans un champ indépendant et ne peut
+pas remplacer le résultat du replay Supabase : notamment, un SQLSTATE `42501`
+isolé ne démontre pas la cause d'un `22P02` canonique. La verbosité SQL peut
+être élevée uniquement sur la base éphémère du runner. Ce mode ne produit pas une
 attestation d'intégration, ne lance pas pgTAP/concurrence et n'est jamais
 consommé par la convergence Production. `complete-proof` reste la seule voie
 d'attestation.

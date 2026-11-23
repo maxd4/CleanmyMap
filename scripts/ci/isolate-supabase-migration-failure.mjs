@@ -2,7 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -60,6 +60,16 @@ export function classifyPrivateFailure(output) {
   if (/permission denied|insufficient privilege/iu.test(text)) return "LOCAL_DATABASE_PERMISSION";
   if (/error|failed|fatal/iu.test(text)) return "UNCLASSIFIED_COMMAND_FAILURE";
   return "NO_ERROR_TEXT_OBSERVED";
+}
+
+export function classifyPrefixReplayAttempt(result) {
+  if (result.commandError) return "COMMAND_ERROR";
+  if (result.status === 0) return "PASS";
+  const diagnostic = extractSafePostgresError(result.output, null);
+  if (diagnostic.sqlstate !== "unavailable") return "POSTGRES_FAIL";
+  const failureClass = classifyPrivateFailure(result.output);
+  if (["LOCAL_DATABASE_CONNECTION", "SUPABASE_CLI_USAGE"].includes(failureClass)) return "COMMAND_ERROR";
+  return "UNPROVEN_FAILURE";
 }
 
 function collectStructuredErrorFields(output) {
@@ -149,17 +159,222 @@ function readPrivatePostgresLogs(since, privateLog, dbContainer = findPostgresCo
   return { containerFound: true, dockerOutput: log, serverOutput: serverLog };
 }
 
+function runSupplementalPsqlDiagnostic(migration, migrationIndex, privateDir, replayPrefix) {
+  const psqlBase = replayPrefix(migrationIndex, "psql-base-reconstruction");
+  if (psqlBase.outcome !== "PASS") {
+    return { status: "NOT_RUN_PREDECESSOR_REPLAY_FAILED", exitCode: psqlBase.exitCode, error: null };
+  }
+
+  let dbContainer = null;
+  try {
+    dbContainer = findPostgresContainer() ?? null;
+  } catch {
+    // The canonical Supabase replay remains authoritative if Docker inspection fails.
+  }
+  const statementLog = join(privateDir, "statement.log");
+  if (!dbContainer) {
+    writeFileSync(statementLog, "", { mode: 0o600 });
+    return { status: "NOT_RUN_NO_DATABASE", exitCode: null, error: null };
+  }
+
+  const originalSql = readFileSync(migration.path, "utf8");
+  const diagnosticSql = `SET log_error_verbosity = 'verbose';\n${originalSql}`;
+  const queryStartedAt = new Date(Date.now() - 1000).toISOString();
+  let statementRun;
+  try {
+    statementRun = run("docker", ["exec", "-i", dbContainer, "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose"], {
+      cwd: root,
+      allowFailure: true,
+      privateLog: statementLog,
+      input: diagnosticSql,
+    });
+  } catch {
+    statementRun = { status: null, commandError: true };
+  }
+  if (statementRun.commandError) writeFileSync(statementLog, "", { mode: 0o600 });
+  const psqlOutput = readFileSync(statementLog, "utf8");
+  let postgresLogs = { containerFound: true, dockerOutput: "", serverOutput: "" };
+  try {
+    postgresLogs = readPrivatePostgresLogs(queryStartedAt, join(privateDir, "postgres-query.jsonl"), dbContainer);
+  } catch {
+    // PostgreSQL logs supplement psql and never replace its isolated diagnostic.
+  }
+  const commandError = Boolean(statementRun.commandError);
+  const error = commandError || statementRun.status === 0 ? null : extractSafePostgresError(psqlOutput, migration.version);
+  let status = "FAIL";
+  if (commandError) status = "COMMAND_ERROR";
+  else if (statementRun.status === 0) status = "PASS";
+  return {
+    status,
+    exitCode: commandError ? null : statementRun.status,
+    error,
+    failureClass: commandError || statementRun.status === 0 ? null : classifyPrivateFailure(psqlOutput),
+    postgresContainerFound: postgresLogs.containerFound,
+    postgresDockerLogObserved: postgresLogs.dockerOutput.trim().length > 0,
+    postgresServerLogObserved: postgresLogs.serverOutput.trim().length > 0,
+  };
+}
+
 export function findFirstFailedPrefix(length, resetPrefix) {
+  if (length < 1) return null;
   if (resetPrefix(length)) return null;
   let low = 0;
   let high = length;
-  while (low < high) {
+  while (low + 1 < high) {
     const middle = Math.floor((low + high) / 2);
     const success = resetPrefix(middle);
-    if (success) low = middle + 1;
+    if (success) low = middle;
     else high = middle;
   }
   return high - 1;
+}
+
+export function verifyFailedPrefixBoundary(migrations, firstFailedIndex, replayPrefix) {
+  if (!Number.isInteger(firstFailedIndex) || firstFailedIndex < 0 || firstFailedIndex >= migrations.length) {
+    return {
+      status: "INCONCLUSIVE",
+      reason: "NO_CANDIDATE_BOUNDARY",
+      migrationVersion: null,
+      predecessor: null,
+      failing: null,
+    };
+  }
+
+  const predecessor = replayPrefix(firstFailedIndex, "boundary-predecessor");
+  const failing = replayPrefix(firstFailedIndex + 1, "boundary-failure");
+  const predecessorPassed = predecessor.outcome === "PASS";
+  const failingFailed = failing.outcome === "POSTGRES_FAIL";
+  const status = predecessorPassed && failingFailed ? "CONFIRMED" : "INCONCLUSIVE";
+  let reason = null;
+  if (!predecessorPassed) {
+    if (predecessor.outcome === "COMMAND_ERROR") reason = "PREDECESSOR_COMMAND_ERROR";
+    else if (predecessor.outcome === "UNPROVEN_FAILURE") reason = "PREDECESSOR_UNPROVEN_FAILURE";
+    else reason = "PREDECESSOR_NOT_PASS";
+  }
+  else if (!failingFailed) {
+    if (failing.outcome === "COMMAND_ERROR") reason = "FAILING_PREFIX_COMMAND_ERROR";
+    else if (failing.outcome === "UNPROVEN_FAILURE") reason = "FAILING_PREFIX_UNPROVEN_FAILURE";
+    else reason = "FAILING_PREFIX_DID_NOT_FAIL";
+  }
+
+  return {
+    status,
+    reason,
+    migrationVersion: status === "CONFIRMED" ? migrations[firstFailedIndex].version : null,
+    predecessor: {
+      prefixLength: firstFailedIndex,
+      version: firstFailedIndex > 0 ? migrations[firstFailedIndex - 1].version : null,
+      outcome: predecessor.outcome,
+      exitCode: predecessor.exitCode,
+    },
+    failing: {
+      prefixLength: firstFailedIndex + 1,
+      version: migrations[firstFailedIndex].version,
+      outcome: failing.outcome,
+      exitCode: failing.exitCode,
+    },
+    failingAttempt: failing,
+  };
+}
+
+export function writePrivatePrefixAttempt({ privateDir, attempt, phase, prefixLength, version, result }) {
+  const outcome = classifyPrefixReplayAttempt(result);
+  const logFile = `prefix-${String(attempt).padStart(3, "0")}-${phase}-${version ?? "empty"}.log`;
+  const logPath = join(privateDir, logFile);
+  const record = {
+    attempt,
+    phase,
+    prefixLength,
+    version,
+    outcome,
+    exitCode: Number.isInteger(result.status) ? result.status : null,
+    logFile,
+  };
+  writeFileSync(logPath, String(result.output ?? ""), { mode: 0o600 });
+  appendFileSync(join(privateDir, "prefix-attempts.jsonl"), `${JSON.stringify(record)}\n`, { mode: 0o600 });
+  return { ...record, logPath };
+}
+
+export function buildSafeIsolationDiagnostic({ candidateSha, bootstrap, replay, migrationCount, boundary, canonicalError, psqlDiagnostic }) {
+  const confirmed = boundary?.status === "CONFIRMED"
+    && boundary.predecessor?.outcome === "PASS"
+    && boundary.failing?.outcome === "POSTGRES_FAIL"
+    && boundary.failing?.version === boundary.migrationVersion
+    && boundary.failing?.prefixLength === boundary.predecessor?.prefixLength + 1;
+  const canonical = canonicalError ?? { sqlstate: "unavailable", expectedType: "unavailable", statementPosition: null };
+  const psql = psqlDiagnostic ?? { status: "NOT_RUN", exitCode: null, error: null };
+  const allowedReasons = new Set([
+    "NO_CANDIDATE_BOUNDARY", "PREDECESSOR_COMMAND_ERROR", "PREDECESSOR_NOT_PASS", "PREDECESSOR_UNPROVEN_FAILURE",
+    "FAILING_PREFIX_COMMAND_ERROR", "FAILING_PREFIX_UNPROVEN_FAILURE", "FAILING_PREFIX_DID_NOT_FAIL",
+    "FULL_PREFIX_SUCCEEDED", "NO_BOUNDARY_RESULT",
+  ]);
+  const safeAttempt = (attempt) => attempt ? {
+    prefixLength: Number.isInteger(attempt.prefixLength) ? attempt.prefixLength : null,
+    version: /^\d{14}$/u.test(String(attempt.version ?? "")) ? attempt.version : null,
+    outcome: ["PASS", "POSTGRES_FAIL", "COMMAND_ERROR", "UNPROVEN_FAILURE"].includes(attempt.outcome) ? attempt.outcome : "UNKNOWN",
+    exitCode: Number.isInteger(attempt.exitCode) ? attempt.exitCode : null,
+  } : null;
+  const safeVersion = confirmed && /^\d{14}$/u.test(String(boundary.migrationVersion ?? ""))
+    ? boundary.migrationVersion
+    : null;
+  const safeDiagnostic = (error) => ({
+    sqlstate: /^[0-9A-Z]{5}$/u.test(String(error?.sqlstate ?? "")) ? error.sqlstate : "unavailable",
+    expectedType: allowedTypes.has(String(error?.expectedType ?? "")) ? error.expectedType : "unavailable",
+    statementPosition: Number.isSafeInteger(error?.statementPosition) && error.statementPosition > 0 ? error.statementPosition : null,
+  });
+  const safePsqlStatus = ["NOT_RUN", "NOT_RUN_NO_DATABASE", "NOT_RUN_PREDECESSOR_REPLAY_FAILED", "PASS", "FAIL", "COMMAND_ERROR"].includes(psql.status)
+    ? psql.status
+    : "NOT_RUN";
+  const safeFailureClass = [
+    "POSTGRES_INVALID_TEXT_REPRESENTATION", "POSTGRES_SQL_DEPENDENCY_OR_SYNTAX",
+    "LOCAL_DATABASE_CONNECTION", "SUPABASE_CLI_USAGE", "LOCAL_DATABASE_PERMISSION",
+    "UNCLASSIFIED_COMMAND_FAILURE", "NO_ERROR_TEXT_OBSERVED",
+  ].includes(psql.failureClass) ? psql.failureClass : null;
+  let safeBoundaryStatus = "INCONCLUSIVE";
+  if (confirmed) safeBoundaryStatus = "CONFIRMED";
+  else if (boundary?.status === "NOT_APPLICABLE") safeBoundaryStatus = "NOT_APPLICABLE";
+  const safeBootstrap = ["NOT_RUN", "NOT_RUN_INFRASTRUCTURE_FAILURE", "FAIL", "PASS"].includes(bootstrap) ? bootstrap : "NOT_RUN";
+  const safeReplay = ["NOT_RUN", "NOT_RUN_BOOTSTRAP_FAILED", "FAIL", "PASS"].includes(replay) ? replay : "NOT_RUN";
+  const canonicalSafe = safeDiagnostic(canonical);
+  const psqlErrorSafe = psql.error ? safeDiagnostic(psql.error) : null;
+  let safeReason = "NO_BOUNDARY_RESULT";
+  if (confirmed) safeReason = null;
+  else if (allowedReasons.has(boundary?.reason)) safeReason = boundary.reason;
+  let safeFailing = null;
+  if (confirmed) safeFailing = safeAttempt(boundary.failing);
+  else if (boundary?.failing) {
+    safeFailing = {
+      prefixLength: Number.isInteger(boundary.failing.prefixLength) ? boundary.failing.prefixLength : null,
+      version: null,
+      outcome: ["PASS", "POSTGRES_FAIL", "COMMAND_ERROR", "UNPROVEN_FAILURE"].includes(boundary.failing.outcome) ? boundary.failing.outcome : "UNKNOWN",
+      exitCode: Number.isInteger(boundary.failing.exitCode) ? boundary.failing.exitCode : null,
+    };
+  }
+  return {
+    candidateSha: /^[0-9a-f]{40}$/iu.test(String(candidateSha ?? "")) ? candidateSha : "unavailable",
+    bootstrap: safeBootstrap,
+    replay: safeReplay,
+    migrationCount: Number.isSafeInteger(migrationCount) && migrationCount >= 0 ? migrationCount : null,
+    attribution: {
+      status: safeBoundaryStatus,
+      reason: safeReason,
+      migrationVersion: safeVersion,
+      predecessor: safeAttempt(boundary?.predecessor),
+      failing: safeFailing,
+    },
+    canonicalReplayError: {
+      source: "SUPABASE_CLI_PREFIX_REPLAY",
+      migrationVersion: safeVersion,
+      ...canonicalSafe,
+      reproducibility: safeBoundaryStatus,
+    },
+    isolatedPsqlDiagnostic: {
+      source: "ISOLATED_PSQL_ONLY",
+      status: safePsqlStatus,
+      exitCode: Number.isInteger(psql.exitCode) ? psql.exitCode : null,
+      error: psqlErrorSafe ? { ...psqlErrorSafe, failureClass: safeFailureClass } : null,
+    },
+  };
 }
 
 function main() {
@@ -168,7 +383,7 @@ function main() {
   const runTemp = process.env.RUNNER_TEMP ?? tmpdir();
   const workdir = mkdtempSync(join(runTemp, "cmm-supabase-isolation-"));
   makeTemporaryProject(workdir);
-  const privateDir = join(runTemp, "supabase-isolation-private");
+  const privateDir = mkdtempSync(join(runTemp, "supabase-isolation-private-"));
   mkdirSync(privateDir, { recursive: true, mode: 0o700 });
   const network = `cmm-isolation-${process.env.GITHUB_RUN_ID ?? process.pid}`;
   let networkCreated = false;
@@ -185,8 +400,33 @@ function main() {
     failure: null,
     hashes: migrations.map(({ version, sha256 }) => ({ version, sha256 })),
   };
-  const prefixLog = join(privateDir, "prefix.log");
-  const statementLog = join(privateDir, "statement.log");
+  let prefixAttemptNumber = 0;
+  let boundary = null;
+  let canonicalError = null;
+  let psqlDiagnostic = { status: "NOT_RUN", exitCode: null, error: null };
+
+  const replayPrefix = (prefixLength, phase) => {
+    const version = prefixLength === 0 ? "00000000000000" : migrations[prefixLength - 1]?.version;
+    const attemptNumber = ++prefixAttemptNumber;
+    let result;
+    try {
+      result = run(cli, [
+        "db", "reset", "--local", "--workdir", workdir, "--yes", "--no-seed",
+        "--version", version, `--network-id=${network}`,
+      ], { cwd: root, allowFailure: true });
+    } catch {
+      result = { status: null, output: "", commandError: true };
+    }
+    const attempt = writePrivatePrefixAttempt({
+      privateDir,
+      attempt: attemptNumber,
+      phase,
+      prefixLength,
+      version: prefixLength === 0 ? null : version,
+      result,
+    });
+    return attempt;
+  };
 
   try {
     run("docker", ["network", "create", "--driver", "bridge", "--label", "com.cleanmymap.ci=ephemeral", network], { cwd: root });
@@ -213,83 +453,39 @@ function main() {
       writeFileSync(configPath, config);
 
       currentStage = "CANONICAL_MIGRATION_PREFIX_REPLAY";
-      const firstFailed = findFirstFailedPrefix(migrations.length, (index) => {
-        if (index === 0) return true;
-        const prefix = migrations[index - 1];
-        return run(cli, ["db", "reset", "--local", "--workdir", workdir, "--yes", "--no-seed", "--version", prefix.version, `--network-id=${network}`], {
-          cwd: root,
-          allowFailure: true,
-          privateLog: prefixLog,
-        }).status === 0;
-      });
+      const firstFailed = findFirstFailedPrefix(migrations.length, (prefixLength) =>
+        replayPrefix(prefixLength, "binary-search").outcome === "PASS");
 
       if (firstFailed === null) {
         evidence.replay = "PASS";
         evidence.seed = "NOT_RUN_DIAGNOSTIC_MODE";
+        boundary = { status: "NOT_APPLICABLE", reason: "FULL_PREFIX_SUCCEEDED", migrationVersion: null };
       } else {
         evidence.replay = "FAIL";
-        const failing = migrations[firstFailed];
-        let isolatedPrefixReady = firstFailed === 0;
-        evidence.failure = {
-          stage: "CANONICAL_MIGRATION_PREFIX",
-          ...extractSafePostgresError(readFileSync(prefixLog, "utf8"), failing.version),
-        };
-        if (firstFailed > 0) {
-          const previous = migrations[firstFailed - 1];
-          const prefixReset = run(cli, ["db", "reset", "--local", "--workdir", workdir, "--yes", "--no-seed", "--version", previous.version, `--network-id=${network}`], { cwd: root, allowFailure: true, privateLog: prefixLog });
-          isolatedPrefixReady = prefixReset.status === 0;
-        }
-        if (firstFailed === 0) {
-          config = config.replace("[db.migrations]\nenabled = true", "[db.migrations]\nenabled = false");
-          writeFileSync(configPath, config);
-          run(cli, ["db", "reset", "--local", "--workdir", workdir, "--yes", "--no-seed", `--network-id=${network}`], {
-            cwd: root,
-            privateLog: prefixLog,
-          });
-          config = config.replace("[db.migrations]\nenabled = false", "[db.migrations]\nenabled = true");
-          writeFileSync(configPath, config);
-        }
-        if (isolatedPrefixReady) {
+        boundary = verifyFailedPrefixBoundary(migrations, firstFailed, replayPrefix);
+        if (boundary.status === "CONFIRMED") {
+          canonicalError = extractSafePostgresError(readFileSync(boundary.failingAttempt.logPath, "utf8"), boundary.migrationVersion);
+          evidence.failure = { stage: "CANONICAL_MIGRATION_REPLAY", ...canonicalError, reproducible: true };
+
+          // psql is supplemental only. Reconstruct the confirmed predecessor using the same CLI command first.
           currentStage = "ISOLATED_MIGRATION_STATEMENT";
-          const originalSql = readFileSync(failing.path, "utf8");
-          const diagnosticSql = `SET log_error_verbosity = 'verbose';\n${originalSql}`;
-          const dbContainer = findPostgresContainer();
-          const queryStartedAt = new Date(Date.now() - 1000).toISOString();
-          const statementRun = dbContainer
-            ? run("docker", ["exec", "-i", dbContainer, "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose"], {
-              cwd: root,
-              allowFailure: true,
-              privateLog: statementLog,
-              input: diagnosticSql,
-            })
-            : { status: 1, output: "" };
-          if (!dbContainer) writeFileSync(statementLog, "", { mode: 0o600 });
-          const cliOutput = readFileSync(statementLog, "utf8");
-          const postgresLogs = readPrivatePostgresLogs(queryStartedAt, join(privateDir, "postgres-query.jsonl"), dbContainer);
-          const postgresOutput = `${postgresLogs.dockerOutput}\n${postgresLogs.serverOutput}`;
-          const combinedPrivateOutput = `${cliOutput}\n${postgresOutput}`;
-          writeFileSync(statementLog, combinedPrivateOutput, { mode: 0o600 });
-          const safePostgresError = extractSafePostgresError(combinedPrivateOutput, failing.version);
-          evidence.failure = {
-            stage: statementRun.status === 0 ? "ISOLATED_MIGRATION_UNEXPECTED_PASS" : "ISOLATED_MIGRATION_STATEMENT",
-            ...safePostgresError,
-            isolatedStatementFailureClass: classifyPrivateFailure(combinedPrivateOutput),
-            isolatedStatementExitCode: statementRun.status,
-            logVerbosityInjected: true,
-            postgresContainerFound: postgresLogs.containerFound,
-            isolatedPsqlInvoked: Boolean(dbContainer),
-            postgresDockerLogObserved: postgresLogs.dockerOutput.trim().length > 0,
-            postgresServerLogObserved: postgresLogs.serverOutput.trim().length > 0,
-          };
-          const statementPosition = evidence.failure.statementPosition;
-          if (statementPosition !== null) {
-            const diagnosticLine = diagnosticSql.slice(0, statementPosition - 1).split("\n").length;
-            evidence.failure.instructionLine = Math.max(1, diagnosticLine - 1);
-          } else {
-            evidence.failure.instructionLine = null;
+          try {
+            psqlDiagnostic = runSupplementalPsqlDiagnostic(migrations[firstFailed], firstFailed, privateDir, replayPrefix);
+          } catch {
+            psqlDiagnostic = { status: "COMMAND_ERROR", exitCode: null, error: null };
           }
         } else {
-          evidence.failure.stage = "FAILED_PREFIX_COULD_NOT_BE_RECONSTRUCTED";
+          const candidateAttempt = boundary.failingAttempt;
+          if (["POSTGRES_FAIL", "UNPROVEN_FAILURE"].includes(candidateAttempt.outcome)) {
+            canonicalError = extractSafePostgresError(readFileSync(candidateAttempt.logPath, "utf8"), null);
+          }
+          evidence.failure = {
+            stage: "CANONICAL_MIGRATION_REPLAY_INCONCLUSIVE",
+            ...(canonicalError ?? { migrationVersion: null, sqlstate: "unavailable", expectedType: "unavailable", statementPosition: null }),
+            migrationVersion: null,
+            reproducible: false,
+            reason: boundary.reason,
+          };
         }
       }
     }
@@ -309,14 +505,19 @@ function main() {
     rmSync(workdir, { recursive: true, force: true });
   }
   mkdirSync(dirname(outputPath), { recursive: true });
-  writeFileSync(outputPath, `${JSON.stringify(evidence, null, 2)}\n`);
-  console.log(JSON.stringify({
+  evidence.diagnostic = buildSafeIsolationDiagnostic({
     candidateSha: evidence.candidateSha,
-    ephemeralInfrastructure: networkCreated ? "PASS" : "FAIL",
     bootstrap: evidence.bootstrap,
     replay: evidence.replay,
     migrationCount: evidence.migrations,
-    firstFailure: evidence.failure,
+    boundary,
+    canonicalError,
+    psqlDiagnostic,
+  });
+  writeFileSync(outputPath, `${JSON.stringify(evidence, null, 2)}\n`);
+  console.log(JSON.stringify({
+    ephemeralInfrastructure: networkCreated ? "PASS" : "FAIL",
+    ...evidence.diagnostic,
     seed: evidence.seed,
     rawLogs: "runner-private-only",
   }, null, 2));
