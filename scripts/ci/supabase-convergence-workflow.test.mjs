@@ -116,7 +116,8 @@ test("SQL proof is an independent serialized lane and application E2E no longer 
   assert.match(e2eWorkflow, /Run persistent E2E/);
   assert.match(e2eWorkflow, /scripts\/ci\/supabase-config\.mjs/);
   assert.match(startScript, /supabase-config\.mjs/);
-  assert.match(startScript, /supabase" start --debug --workdir "\$bootstrap_workdir/);
+  assert.match(startScript, /timeout --signal=TERM --kill-after=15s "\$start_timeout_seconds" "\$root\/node_modules\/\.bin\/supabase" start --debug --workdir "\$bootstrap_workdir/);
+  assert.match(startScript, /capture-bounded-log\.mjs" "\$start_log" 8388608/);
   for (const workflowText of [sqlWorkflow, e2eWorkflow]) {
     const bootstrapIndex = workflowText.indexOf("name: Start ephemeral Supabase");
     const resetIndex = workflowText.indexOf("name: Apply canonical migrations and seed");
