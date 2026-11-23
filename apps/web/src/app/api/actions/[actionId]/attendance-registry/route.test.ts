@@ -111,6 +111,18 @@ describe("private action attendance registry routes", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
+  it("does not return or log raw nominative database errors", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mocks.list.mockRejectedValue(new Error("duplicate key detail: Identité confidentielle; équipe privée"));
+    const response = await GET(new Request("https://example.test"), context);
+    const body = await response.text();
+    expect(body).not.toContain("Identité confidentielle");
+    expect(body).not.toContain("équipe privée");
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain("Identité confidentielle");
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain("équipe privée");
+    expect(JSON.stringify(consoleError.mock.calls)).toContain("Private attendance registry read failed.");
+  });
+
   it("routes team creation through the authorized idempotent RPC owner", async () => {
     mocks.mutateTeam.mockResolvedValue({ alreadyProcessed: false, teams: [] });
     const response = await POST(new Request("https://example.test", {

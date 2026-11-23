@@ -58,3 +58,42 @@ pas à eux seuls une présence.
 L’API conserve ses contrôles AuthN/AuthZ côté serveur, les révisions
 optimistes, l’idempotence par requête, l’audit avant/après et le conflit HTTP
 409. Le registre ne crée pas de participation finale ni d’XP.
+
+## Minimisation, confidentialité et effacement
+
+Le seul champ d’identité accepte un libellé minimal. L’interface invite à ne
+pas saisir de données médicales, de coordonnées ou d’informations inutiles,
+en particulier pour les mineurs ; aucun âge, date de naissance ou découpage
+nom/prénom n’est demandé. La finalité est l’organisation et le pointage de
+l’action.
+
+Les identités, les équipes, leurs membres, leurs chefs et les audits nominatifs
+sont privés. La lecture passe par l’API organisateur et le client serveur ; les
+réponses sont `private, no-store`. Les rôles navigateur n’ont aucun accès SQL
+direct. Les projections publiques, exports et briefings ne consomment pas les
+tables du registre. Les erreurs d’API journalisent un message générique et le
+job de maintenance n’émet que des statuts et compteurs agrégés.
+
+« Retirer de la liste » est une suppression logique auditée : l’entrée quitte
+la liste active et sa composition d’équipe est détachée, mais ses données
+restent dans l’audit privé jusqu’à l’échéance de purge. Ce geste n’est pas un
+effacement définitif et ne modifie jamais les participations finales. La
+purge physique des entrées actives ou retirées, des audits avant/après, des
+équipes, compositions et audits d’équipe devient éligible 90 jours après la
+fin de l’action. Pour une action historique sans fin horodatée, le calcul
+utilise la fin du jour local de `action_date` dans le fuseau de l’action, ce
+qui évite une purge anticipée. Les suppressions des quatre familles de données
+sont atomiques par lot et rejouables ; le dry-run expose les actions candidates
+et des nombres, sans identité ni composition. Le job quotidien existant
+`action-retention` réalise le dry-run puis la purge avec revalidation ; aucun
+cron parallèle n’est ajouté. La synchronisation des inscriptions confirmées
+respecte aussi cette échéance et ne peut pas recréer une identité opérationnelle
+déjà purgée. Ses journaux restent agrégés.
+
+La demande de rectification ou d’effacement passe par le canal RGPD documenté
+dans la politique de confidentialité. Elle est instruite selon les droits des
+tiers et les obligations de conservation applicables. Actions, inscriptions,
+participations finales, instantanés statistiques collectifs et preuves
+juridiques conservés dans leurs contrats indépendants ne sont ni supprimés ni
+recalculés par cette purge. Les durées des sauvegardes et des fournisseurs
+externes ne sont pas établies par ce mécanisme.

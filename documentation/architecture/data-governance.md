@@ -314,6 +314,21 @@ le snapshot, et une réhabilitation réutilise la même version.
 Le dry-run fournit la liste explicite nécessaire à une suppression bornée,
 transactionnelle et rejouable; les journaux de maintenance restent agrégés.
 
+Le même job quotidien `action-retention` purge désormais les identités
+opérationnelles privées du registre de présence et des équipes 90 jours après
+la fin de l’action. Sont inclus les entrées actives et retirées, les snapshots
+des audits d’entrée et d’équipe, les équipes et leurs compositions. Le dry-run
+retourne des identifiants d’action et des compteurs agrégés à l’exécution
+serveur, jamais de libellés ni de membres ; les journaux ne contiennent que
+des agrégats. La mutation requiert la liste explicite issue du dry-run,
+revalide la fenêtre sous verrou et supprime ces tables dans la même
+transaction. Les actions, inscriptions, `action_participants`, snapshots
+statistiques collectifs et autres preuves conservées dans leurs contrats
+indépendants ne sont pas modifiés. Les historiques sans fin d’événement
+horodatée utilisent la fin du jour local de `action_date` dans le fuseau de
+l’action, comme borne prudente. La synchronisation des inscriptions confirmées
+consulte cette même échéance et ne recrée pas une entrée après sa purge.
+
 Toute ingestion externe passe par `apps/web/src/lib/actions/unified-source.ts`
 avant la persistance canonique. Un acteur d'import est une provenance
 technique, pas un organisateur métier par défaut. Le backup

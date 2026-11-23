@@ -21,12 +21,33 @@ export type ActionRetentionJobResult = {
   expiredAccessibilityRequestsStatus: "available" | "rpc_unavailable";
   expiredAccessibilityRequestsScanned: number;
   expiredAccessibilityRequestsDeleted: number;
+  attendanceRegistryStatus: "available" | "rpc_unavailable";
+  attendanceRegistryScanned: number;
+  attendanceRegistryWouldPurge: number;
+  attendanceRegistryPurged: number;
+  attendanceRegistryConflicts: number;
   cutoff: string;
 };
 
 type AccessibilityRetentionResult = {
   scannedCount: number;
   deletedCount: number;
+};
+
+type AttendanceRetentionRow = {
+  action_id: string;
+  outcome: "would_purge" | "purged" | "conflict" | "already_purged";
+  entry_count: number;
+  entry_audit_count: number;
+  team_count: number;
+  team_audit_count: number;
+};
+
+type AttendanceRetentionSummary = {
+  scannedCount: number;
+  wouldPurgeCount: number;
+  purgedCount: number;
+  conflictsCount: number;
 };
 
 function parseAccessibilityRetentionResult(value: unknown): AccessibilityRetentionResult {
@@ -51,6 +72,71 @@ async function callAccessibilityRetentionRpc(now: Date, dryRun: boolean, batchSi
     throw result.error;
   }
   return parseAccessibilityRetentionResult(result.data);
+}
+
+async function callAttendanceRetentionRpc(params: {
+  now: Date;
+  dryRun: boolean;
+  batchSize: number;
+  expectedActionIds?: string[];
+}): Promise<AttendanceRetentionRow[] | null> {
+  const rawResult: unknown = await getSupabaseServerClient(true).rpc(
+    "purge_expired_action_attendance_data",
+    {
+      p_as_of: params.now.toISOString(),
+      p_dry_run: params.dryRun,
+      p_batch_size: params.batchSize,
+      p_expected_action_ids: params.expectedActionIds ?? null,
+    },
+  );
+  const result = parseActionSupabaseResult(rawResult);
+  if (result.error) {
+    if (isAttendanceRetentionRpcMissing(result.error)) return null;
+    throw result.error;
+  }
+  return parseAttendanceRetentionRows(result.data);
+}
+
+function isAttendanceRetentionRpcMissing(error: ActionSupabaseError): boolean {
+  const diagnostic = [error.message, error.details, error.hint].filter(Boolean).join(" ");
+  return error.code === "PGRST202"
+    && /public\.purge_expired_action_attendance_data\b/i.test(diagnostic)
+    && /could not find (?:the )?function/i.test(diagnostic)
+    && /schema cache/i.test(diagnostic);
+}
+
+function parseAttendanceRetentionRows(value: unknown): AttendanceRetentionRow[] {
+  if (!Array.isArray(value)) throw new Error("La réponse de purge du registre privé est invalide.");
+  return value.map((row) => {
+    if (
+      !isActionRecord(row)
+      || typeof row.action_id !== "string"
+      || !["would_purge", "purged", "conflict", "already_purged"].includes(String(row.outcome))
+      || !Number.isInteger(row.entry_count)
+      || !Number.isInteger(row.entry_audit_count)
+      || !Number.isInteger(row.team_count)
+      || !Number.isInteger(row.team_audit_count)
+    ) {
+      throw new Error("La réponse de purge du registre privé est invalide.");
+    }
+    return {
+      action_id: row.action_id,
+      outcome: row.outcome as AttendanceRetentionRow["outcome"],
+      entry_count: Number(row.entry_count),
+      entry_audit_count: Number(row.entry_audit_count),
+      team_count: Number(row.team_count),
+      team_audit_count: Number(row.team_audit_count),
+    };
+  });
+}
+
+function summarizeAttendanceRetention(rows: AttendanceRetentionRow[]): AttendanceRetentionSummary {
+  return {
+    scannedCount: rows.length,
+    wouldPurgeCount: rows.filter((row) => row.outcome === "would_purge").length,
+    purgedCount: rows.filter((row) => row.outcome === "purged").length,
+    conflictsCount: rows.filter((row) => row.outcome === "conflict").length,
+  };
 }
 
 function isAccessibilityRetentionRpcMissing(error: ActionSupabaseError): boolean {
@@ -156,6 +242,23 @@ export async function runActionRetentionJob(params: {
   if (!dryRun && accessibilityPreview && accessibilityPreview.scannedCount > 0) {
     accessibilityDeletion = await callAccessibilityRetentionRpc(now, false, batchSize);
   }
+  const attendancePreviewRows = await callAttendanceRetentionRpc({ now, dryRun: true, batchSize });
+  const attendancePreview = attendancePreviewRows ? summarizeAttendanceRetention(attendancePreviewRows) : null;
+  let attendanceDeletionRows: AttendanceRetentionRow[] | null = attendancePreviewRows ? [] : null;
+  if (!dryRun && attendancePreview && attendancePreview.wouldPurgeCount > 0 && attendancePreviewRows) {
+    attendanceDeletionRows = await callAttendanceRetentionRpc({
+      now,
+      dryRun: false,
+      batchSize,
+      expectedActionIds: attendancePreviewRows
+        .filter((row) => row.outcome === "would_purge")
+        .map((row) => row.action_id),
+    });
+    if (!attendanceDeletionRows) {
+      throw new Error("La RPC de purge du registre privé est devenue indisponible après son dry-run.");
+    }
+  }
+  const attendanceDeletion = attendanceDeletionRows ? summarizeAttendanceRetention(attendanceDeletionRows) : null;
   const result: ActionRetentionJobResult = {
     status: dryRun ? "dry_run" : "completed",
     scannedCount: preview.scannedCount + (deletion?.scannedCount ?? 0),
@@ -167,6 +270,11 @@ export async function runActionRetentionJob(params: {
     expiredAccessibilityRequestsStatus: accessibilityDeletion ? "available" : "rpc_unavailable",
     expiredAccessibilityRequestsScanned: accessibilityDeletion?.scannedCount ?? 0,
     expiredAccessibilityRequestsDeleted: accessibilityDeletion?.deletedCount ?? 0,
+    attendanceRegistryStatus: attendancePreviewRows ? "available" : "rpc_unavailable",
+    attendanceRegistryScanned: attendancePreview?.scannedCount ?? 0,
+    attendanceRegistryWouldPurge: attendancePreview?.wouldPurgeCount ?? 0,
+    attendanceRegistryPurged: attendanceDeletion?.purgedCount ?? 0,
+    attendanceRegistryConflicts: (attendancePreview?.conflictsCount ?? 0) + (attendanceDeletion?.conflictsCount ?? 0),
     cutoff: getCalendarMonthCutoff(now),
   };
   console.info("[cron/maintenance] action-retention", {
@@ -179,6 +287,11 @@ export async function runActionRetentionJob(params: {
     failedCount: result.failedCount,
     expiredAccessibilityRequestsStatus: result.expiredAccessibilityRequestsStatus,
     expiredAccessibilityRequestsDeleted: result.expiredAccessibilityRequestsDeleted,
+    attendanceRegistryStatus: result.attendanceRegistryStatus,
+    attendanceRegistryScanned: result.attendanceRegistryScanned,
+    attendanceRegistryWouldPurge: result.attendanceRegistryWouldPurge,
+    attendanceRegistryPurged: result.attendanceRegistryPurged,
+    attendanceRegistryConflicts: result.attendanceRegistryConflicts,
   });
   return result;
 }

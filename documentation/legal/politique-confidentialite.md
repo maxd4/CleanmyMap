@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 21 novembre 2026**
+**Dernière mise à jour : 23 novembre 2026**
 
 Cette politique décrit les traitements de données personnelles mis en œuvre
 par CleanMyMap au regard du code et de la configuration du service web. Les
@@ -41,6 +41,15 @@ Selon les parcours utilisés, CleanMyMap traite notamment :
 - **Actions, lieux et médias** : dates, types, libellés, coordonnées, notes,
   mesures déclarées, tracés, statuts de modération et métadonnées de médias.
   Les fichiers sont stockés séparément de la table métier ;
+- **Registre privé de présence** : libellé minimal choisi par l’organisateur,
+  statut de pointage observé, éventuel identifiant de compte associé, équipe
+  facultative et chef d’équipe. Ces données servent uniquement à préparer,
+  organiser et rapprocher le déroulement d’une action ; aucune donnée médicale,
+  coordonnée, date de naissance ou séparation nom/prénom n’est requise. Les
+  organisateurs autorisés et les administrateurs habilités y accèdent par les
+  surfaces privées. Les identités, équipes et chefs ne sont pas diffusés dans
+  les projections publiques, exports ou briefings partageables ; les erreurs
+  API et journaux de maintenance sont expurgés ou agrégés ;
 - **Communauté** : événements, organisateurs, RSVP, messages, destinataires,
   zones et pièces jointes lorsqu'elles sont utilisées ;
 - **Demandes et communication** : feedback, demandes de support, promotion,
@@ -204,6 +213,18 @@ runtime :
   Ils contiennent des deltas nécessaires à l'historique utilisateur, pas un
   snapshot exhaustif du compte ; le dépôt ne prouve ni une exécution planifiée
   ni une purge automatique hors de ce cleanup ;
+- les identités opérationnelles du registre privé, y compris celles retirées
+  logiquement, les équipes, leurs membres et chefs ainsi que les snapshots
+  nominatifs d’audit sont éligibles à l’effacement définitif 90 jours après la
+  fin de l’action. Pour les actions historiques sans heure de fin enregistrée,
+  l’échéance est calculée depuis la fin du jour local de l’action dans son
+  fuseau, afin de ne pas effacer trop tôt. Le job quotidien existant vérifie
+  d’abord les candidats en dry-run, puis purge atomiquement ces seules données
+  privées après revalidation. Le dry-run et les logs de maintenance ne
+  contiennent aucun libellé ni composition d’équipe. La synchronisation
+  d’inscriptions confirmées ne recrée pas une identité opérationnelle après
+  l’échéance ; les durées des
+  sauvegardes et fournisseurs restent soumises à leurs configurations propres ;
 - les profils, actions, lieux, médias, rapports, notifications, progression et
   audits suivent le besoin du service, les paramètres de publication et les
   nécessités de sécurité ou de preuve. Aucune durée générique non vérifiée
@@ -225,10 +246,20 @@ runtime :
   Vercel, Resend, PostHog et Sentry dépendent de leurs configurations et
   conditions propres et ne sont pas fixées par ce dépôt.
 
-Une demande d'effacement est examinée au regard des données concernées, des
-droits des tiers, des obligations de conservation et des nécessités de preuve
-ou de sécurité. Aucune suppression globale de toutes les données n'est
-promise.
+« Retirer de la liste » masque l’entrée du registre actif mais constitue une
+suppression logique auditée, pas l’effacement définitif. Une demande d’accès,
+de rectification ou d’effacement du registre est examinée au regard des
+données concernées, des droits des tiers, des obligations de conservation et
+des nécessités de preuve ou de sécurité. Si une conservation légale s’applique,
+seules les données nécessaires à cette obligation peuvent être conservées dans
+le contrat de preuve concerné ; la purge du registre ne modifie pas les
+actions, inscriptions, participations finales ni statistiques collectives.
+Aucune suppression globale de toutes les données n'est promise. Les durées
+spécifiques sont définies par la présente politique et les règles CNIL
+applicables ; le délai de 90 jours est une cible produit pour ce registre, pas
+une durée universelle applicable aux autres traitements. Voir [l’article 5 du
+RGPD](https://eur-lex.europa.eu/eli/reg/2016/679/oj/fra) et les repères CNIL
+sur les [durées de conservation](https://www.cnil.fr/fr/passer-laction/les-durees-de-conservation-des-donnees).
 
 ## 8. Droits et demandes
 

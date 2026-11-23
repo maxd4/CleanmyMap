@@ -70,6 +70,8 @@ describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
     expect(mounted.querySelector('[data-testid="action-attendance-registry-preparation"]')).not.toBeNull();
     expect(mounted.textContent).toContain("Les inscriptions confirmées apparaissent ici");
+    expect(mounted.textContent).toContain("Saisissez un libellé minimal.");
+    expect(mounted.textContent).toContain("Évitez les données médicales, coordonnées ou informations inutiles, surtout pour les mineurs.");
     expect(mounted.querySelectorAll("ul.divide-y > li")).toHaveLength(3);
     expect(mounted.textContent).toContain("Présent");
     expect([...mounted.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Présent")?.disabled).toBe(true);
@@ -153,7 +155,7 @@ describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
     expect(row?.className).toContain("sm:flex-row");
     await setInput(identity, "Équipe du pont");
     expect(requests).toHaveLength(0);
-    expect(mounted.textContent).toContain("recherchez un compte Clerk (facultatif)");
+    expect(mounted.textContent).toContain("Vous pouvez rechercher un compte Clerk (facultatif)");
     const addButton = [...panel.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Ajouter à la liste");
     await act(async () => { addButton?.click(); await Promise.resolve(); await Promise.resolve(); });
     expect(requests[0]).toMatchObject({ operation: "add", displayLabel: "Équipe du pont", attendanceStatus: "unknown" });

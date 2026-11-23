@@ -53,9 +53,9 @@ async function authorizeAction(actionId: string, userId: string) {
 }
 
 function mutationStatus(error: unknown): number {
-  const value = error as { code?: string; message?: string };
-  if (value.code === "40001" || value.code === "23505" || value.message?.includes("revision_conflict")) return 409;
-  if (value.code === "P0001" || value.message?.includes("attendance_before_start")) return 409;
+  const value = error as { code?: string };
+  if (value.code === "40001" || value.code === "23505") return 409;
+  if (value.code === "P0001") return 409;
   if (value.code === "22023") return 400;
   if (value.code === "P0002") return 404;
   return 500;
@@ -84,8 +84,8 @@ export async function GET(request: Request, context: Context) {
       },
       canMarkPresent: Boolean(access.action.event_start_at && Date.now() >= Date.parse(access.action.event_start_at)),
     });
-  } catch (error) {
-    return handleApiError(error, "GET /api/actions/[actionId]/attendance-registry");
+  } catch {
+    return handleApiError(new Error("Private attendance registry read failed."), "GET /api/actions/[actionId]/attendance-registry");
   }
 }
 
@@ -151,9 +151,9 @@ export async function POST(request: Request, context: Context) {
     });
     return privateJson({ entry });
   } catch (error) {
-    const value = error as { code?: string; message?: string };
+    const value = error as { code?: string };
     const status = mutationStatus(error);
     if (status !== 500) return privateJson({ error: value.code === "23505" ? "Une équipe porte déjà ce nom dans cette action." : status === 409 ? "Cette entrée a changé. Rechargez le registre." : "La mutation du registre n’est pas applicable." }, status);
-    return handleApiError(error, "POST /api/actions/[actionId]/attendance-registry");
+    return handleApiError(new Error("Private attendance registry mutation failed."), "POST /api/actions/[actionId]/attendance-registry");
   }
 }
