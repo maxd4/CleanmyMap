@@ -122,6 +122,46 @@ function collectStructuredErrorFields(output) {
   return fallback;
 }
 
+function collectPrivateStatementFields(value, fields, depth = 0) {
+  if (!value || typeof value !== "object" || depth > 8) return;
+  for (const [key, nested] of Object.entries(value)) {
+    if (/^(?:sqlstate|sql_state|sql_state_code|state_code|code)$/iu.test(key) && /^[0-9A-Z]{5}$/iu.test(String(nested ?? ""))) {
+      fields.sqlstate ??= String(nested).toUpperCase();
+    } else if (/^(?:statement|query)$/iu.test(key) && typeof nested === "string") {
+      fields.statements.push(nested);
+    } else if (/^(?:statement_position|internal_position|position|character_position)$/iu.test(key) && Number.isSafeInteger(Number(nested)) && Number(nested) > 0) {
+      fields.position ??= Number(nested);
+    }
+    if (nested && typeof nested === "object") collectPrivateStatementFields(nested, fields, depth + 1);
+  }
+}
+
+export function locatePrivateStatementSourceLine(output, migrationSql, expectedSqlState) {
+  const sqlState = String(expectedSqlState ?? "").toUpperCase();
+  if (!/^[0-9A-Z]{5}$/u.test(sqlState)) return null;
+  const matches = [];
+  for (const line of String(output ?? "").split(/\r?\n/u)) {
+    const jsonStart = line.indexOf("{");
+    if (jsonStart < 0) continue;
+    let parsed;
+    try {
+      parsed = JSON.parse(line.slice(jsonStart));
+    } catch {
+      continue;
+    }
+    const fields = { sqlstate: null, statements: [], position: null };
+    collectPrivateStatementFields(parsed, fields);
+    if (fields.sqlstate !== sqlState) continue;
+    for (const statement of fields.statements) {
+      const sourceIndex = String(migrationSql ?? "").indexOf(statement);
+      if (sourceIndex < 0 || String(migrationSql).indexOf(statement, sourceIndex + 1) >= 0) continue;
+      const sourceLine = String(migrationSql).slice(0, sourceIndex).split("\n").length;
+      matches.push({ sourceLine, position: fields.position });
+    }
+  }
+  return matches.length === 1 ? matches[0] : null;
+}
+
 function migrationFiles() {
   return readdirSync(migrationDirectory, { withFileTypes: true })
     .filter((entry) => entry.isFile() && /^\d{14}_.+\.sql$/u.test(entry.name))
@@ -207,7 +247,12 @@ function runSupplementalPsqlDiagnostic(migration, migrationIndex, privateDir, re
     // PostgreSQL logs supplement psql and never replace its isolated diagnostic.
   }
   const commandError = Boolean(statementRun.commandError);
-  const error = commandError || statementRun.status === 0 ? null : extractSafePostgresError(psqlOutput, migration.version);
+  const combinedErrorOutput = `${psqlOutput}\n${postgresLogs.serverOutput}`;
+  const error = commandError || statementRun.status === 0 ? null : extractSafePostgresError(combinedErrorOutput, migration.version);
+  if (error) {
+    const sourceLocation = locatePrivateStatementSourceLine(postgresLogs.serverOutput, originalSql, error.sqlstate);
+    if (sourceLocation) error.migrationSourceLine = sourceLocation.sourceLine;
+  }
   let status = "FAIL";
   if (commandError) status = "COMMAND_ERROR";
   else if (statementRun.status === 0) status = "PASS";
@@ -328,6 +373,7 @@ export function buildSafeIsolationDiagnostic({ candidateSha, bootstrap, replay, 
     sqlstate: /^[0-9A-Z]{5}$/u.test(String(error?.sqlstate ?? "")) ? error.sqlstate : "unavailable",
     expectedType: allowedTypes.has(String(error?.expectedType ?? "")) ? error.expectedType : "unavailable",
     statementPosition: Number.isSafeInteger(error?.statementPosition) && error.statementPosition > 0 ? error.statementPosition : null,
+    migrationSourceLine: Number.isSafeInteger(error?.migrationSourceLine) && error.migrationSourceLine > 0 ? error.migrationSourceLine : null,
   });
   const safePsqlStatus = ["NOT_RUN", "NOT_RUN_NO_DATABASE", "NOT_RUN_PREDECESSOR_REPLAY_FAILED", "PASS", "FAIL", "COMMAND_ERROR"].includes(psql.status)
     ? psql.status

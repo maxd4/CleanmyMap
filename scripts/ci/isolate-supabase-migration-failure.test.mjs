@@ -11,6 +11,7 @@ import {
   classifyPrivateFailure,
   extractSafePostgresError,
   findFirstFailedPrefix,
+  locatePrivateStatementSourceLine,
   verifyFailedPrefixBoundary,
   writePrivatePrefixAttempt,
 } from "./isolate-supabase-migration-failure.mjs";
@@ -186,6 +187,33 @@ test("nested CLI JSON errors expose only safe PostgreSQL diagnostics", () => {
   assert.equal(JSON.stringify(result).includes("private-identity-value"), false);
 });
 
+test("private PostgreSQL error logs correlate an exact migration statement to a safe source line", () => {
+  const migrationSql = "begin;\nselect 'not-a-uuid'::uuid;\ncommit;\n";
+  const privateStatement = "select 'not-a-uuid'::uuid;";
+  const privateLog = JSON.stringify({
+    state_code: "22P02",
+    message: 'invalid input syntax for type uuid: "not-a-uuid"',
+    statement_position: 8,
+    statement: privateStatement,
+  });
+  assert.deepEqual(locatePrivateStatementSourceLine(privateLog, migrationSql, "22P02"), {
+    sourceLine: 2,
+    position: 8,
+  });
+  const safeDiagnostic = extractSafePostgresError(privateLog, "20261121000002");
+  assert.equal(safeDiagnostic.expectedType, "uuid");
+  assert.equal(safeDiagnostic.statementPosition, 8);
+  assert.equal(JSON.stringify(safeDiagnostic).includes(privateStatement), false);
+  assert.equal(JSON.stringify(safeDiagnostic).includes("not-a-uuid"), false);
+});
+
+test("private SQL line attribution refuses unmatched, ambiguous and unrelated statements", () => {
+  const migrationSql = "select 1;\nselect 1;\n";
+  assert.equal(locatePrivateStatementSourceLine(JSON.stringify({ state_code: "22P02", statement: "select 2;" }), migrationSql, "22P02"), null);
+  assert.equal(locatePrivateStatementSourceLine(JSON.stringify({ state_code: "22P02", statement: "select 1;" }), migrationSql, "22P02"), null);
+  assert.equal(locatePrivateStatementSourceLine(JSON.stringify({ state_code: "42501", statement: "select 1;" }), migrationSql, "22P02"), null);
+});
+
 test("psql verbose errors expose only SQLSTATE, type and instruction position", () => {
   const result = extractSafePostgresError('ERROR: 22P02: invalid input syntax for type bigint: "private-integer"\nPOSITION: 43', "20261121000002");
   assert.deepEqual(result, {
@@ -254,6 +282,7 @@ test("public evidence separates canonical replay from psql and redacts raw SQL d
     'ERROR: 42501: permission denied for table "private_table" POSITION: 9',
     "20261121000002",
   );
+  psqlError.migrationSourceLine = 4;
   const publicEvidence = buildSafeIsolationDiagnostic({
     candidateSha: "a".repeat(40),
     bootstrap: "PASS",
@@ -272,6 +301,7 @@ test("public evidence separates canonical replay from psql and redacts raw SQL d
   assert.equal(publicEvidence.canonicalReplayError.sqlstate, "22P02");
   assert.equal(publicEvidence.canonicalReplayError.migrationVersion, "20261121000002");
   assert.equal(publicEvidence.isolatedPsqlDiagnostic.error.sqlstate, "42501");
+  assert.equal(publicEvidence.isolatedPsqlDiagnostic.error.migrationSourceLine, 4);
   assert.equal(JSON.stringify(publicEvidence).includes("canonical-secret"), false);
   assert.equal(JSON.stringify(publicEvidence).includes("private_table"), false);
   assert.equal(JSON.stringify(publicEvidence).includes("raw rejected value"), false);

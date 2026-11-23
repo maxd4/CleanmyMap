@@ -225,8 +225,10 @@ le SHA, les empreintes SQL et les champs PostgreSQL expurgés. Une exécution
 complémentaire avec `psql` est rapportée dans un champ indépendant et ne peut
 pas remplacer le résultat du replay Supabase : notamment, un SQLSTATE `42501`
 isolé ne démontre pas la cause d'un `22P02` canonique. `psql` active la verbosité
-avec `-v VERBOSITY=verbose`, sans `SET` privilégié dans le SQL rejoué. Cette
-exécution reste limitée à la base éphémère du runner. Ce mode ne produit pas une
+avec `-v VERBOSITY=verbose`, sans `SET` privilégié dans le SQL rejoué. Les logs
+PostgreSQL privés peuvent aussi corréler l'instruction à une ligne source exacte ;
+l'artefact ne publie que cette ligne si l'égalité est unique. Cette exécution reste
+limitée à la base éphémère du runner. Ce mode ne produit pas une
 attestation d'intégration, ne lance pas pgTAP/concurrence et n'est jamais
 consommé par la convergence Production. `complete-proof` reste la seule voie
 d'attestation.

@@ -166,7 +166,9 @@ son type et sa position restent dans un champ distinct `isolatedPsqlDiagnostic`.
 Ils ne remplacent jamais le diagnostic du replay Supabase canonique : un
 `42501` de `psql` ne démontre pas la cause d'un `22P02` du replay. `psql` demande
 la verbosité avec `-v VERBOSITY=verbose`, sans ajouter de `SET` privilégié au
-SQL rejoué.
+SQL rejoué. Les journaux PostgreSQL privés sont analysés pour le type, la position
+et la ligne source uniquement lorsqu'une instruction complète correspond à un
+unique emplacement du SQL de migration ; aucun SQL ou message brut n'est publié.
 
 Les sorties brutes du CLI, des journaux Docker et des journaux JSON privés de
 PostgreSQL restent dans `$RUNNER_TEMP` et sont supprimées avec le runner. Le
