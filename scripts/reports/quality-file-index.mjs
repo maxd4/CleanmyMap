@@ -36,6 +36,7 @@ import {
   compareLexical,
   normalizePath,
   stableId,
+  state,
 } from "./quality-index-primitives.mjs";
 import { readOfflineQualityRun } from "./quality-index-offline.mjs";
 import { buildQualityFileIndexMarkdown } from "./quality-index-markdown.mjs";
@@ -937,10 +938,30 @@ function buildCategorySummaries(values) {
     hotspots: values.hotspots,
     testability: values.testability,
     coverage: values.coverage,
+    uiDensity: values.uiDensity,
     deadCode: values.deadCode,
     duplication: values.duplication,
     cycles: values.cycles,
     documentation: values.documentation,
+  };
+}
+
+function summarizeUiDensity(report) {
+  if (!report || report.measurementStatus === "MEASUREMENT_FAILED") {
+    return {
+      ...state("NOT_MEASURED", report?.diagnostics?.[0]?.reason ?? "UI_DENSITY_NOT_MEASURED"),
+      measurementStatus: report?.measurementStatus ?? "NOT_MEASURED",
+    };
+  }
+  return {
+    ...state((report.summary?.signals ?? 0) > 0 ? "PRESENT" : "NONE", "signaux heuristiques statiques non bloquants"),
+    measurementStatus: report.measurementStatus,
+    componentsMeasured: report.summary?.componentsMeasured ?? 0,
+    staticTextCharacters: report.summary?.staticTextCharacters ?? 0,
+    dynamicOrConditionalLocations: report.summary?.dynamicOrConditionalLocations ?? 0,
+    reviewSignals: report.summary?.signals ?? 0,
+    byPriority: report.summary?.byPriority ?? {},
+    bySurface: report.summary?.bySurface ?? {},
   };
 }
 
@@ -967,7 +988,7 @@ function projectCandidateGroups(candidateGroups) {
     .sort((left, right) => left.id.localeCompare(right.id));
 }
 
-function buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDomains, candidateGroups, findingsByCategory, duplication, cycles, architecture, documentation, typeSafety, hotspots, testability }) {
+function buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDomains, candidateGroups, findingsByCategory, duplication, cycles, architecture, documentation, typeSafety, hotspots, testability, uiDensity }) {
   return {
     files: finalFiles.length,
     auditCategories: finalAuditCategories.length,
@@ -993,6 +1014,7 @@ function buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDo
     asyncSafetyFindings: typeSafety.findingCounts?.asyncSafety ?? 0,
     hotspotCandidates: hotspots.findingCounts?.hotspotCandidates ?? 0,
     testabilityDomains: testability.measuredDomains ?? 0,
+    uiDensityReviewSignals: uiDensity.reviewSignals ?? "NOT_MEASURED",
   };
 }
 
@@ -1064,7 +1086,8 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
   const finalAuditCategories = finalizeAuditCategories(auditCategories);
   const finalFunctionalDomains = finalizeFunctionalDomains(functionalDomains, architectureProjection);
   const finalDocumentationDomains = finalizeDocumentationDomains(documentationDomains, documentation);
-  const categorySummaries = buildCategorySummaries({ topHeavy, complexity, maintainability, typeSafety, hotspots, testability, coverage, deadCode, duplication, cycles, documentation });
+  const uiDensity = summarizeUiDensity(run.reports["ui-density"]);
+  const categorySummaries = buildCategorySummaries({ topHeavy, complexity, maintainability, typeSafety, hotspots, testability, coverage, uiDensity, deadCode, duplication, cycles, documentation });
   const findingsByCategory = Object.fromEntries(Object.entries(categorySummaries).map(([key, value]) => [key, value.findingCounts ?? value.counts ?? {}]));
   const source = buildSourceProjection(run);
   const projectedCandidateGroups = projectCandidateGroups(candidateGroups);
@@ -1086,7 +1109,7 @@ export function buildQualityFileIndex({ run, mode = "OFFLINE", generatedAt = new
     },
     audits: categorySummaries,
     architecture: architectureProjection,
-    globalCounts: buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDomains, candidateGroups, findingsByCategory, duplication, cycles, architecture: architectureProjection, documentation, typeSafety, hotspots, testability }),
+    globalCounts: buildGlobalCounts({ finalFiles, finalAuditCategories, finalFunctionalDomains, candidateGroups, findingsByCategory, duplication, cycles, architecture: architectureProjection, documentation, typeSafety, hotspots, testability, uiDensity }),
     files: finalFiles,
     triage,
     auditCategories: finalAuditCategories,

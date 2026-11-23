@@ -20,6 +20,9 @@ npm run audit:quality -- testability
 npm run quality:structure -- --dry-run
 npm run audit:quality -- structure
 npm run audit:quality -- coverage
+npm run audit:quality -- ui-density --scope=web
+npm run audit:quality -- ui-density --scope=mobile
+npm run audit:quality -- ui-density --scope=all
 npm run audit:quality -- all
 npm run audit:quality -- all --scope=web
 npm run audit:quality -- all --scope=mobile
@@ -189,6 +192,46 @@ des cinq gates. Les rapports absents ou non attribuables produisent un
 diagnostic de disponibilité, jamais une couverture à 0 %. Le rapport de
 duplication est réutilisé quand il existe déjà dans le même run ; `jscpd` n'est
 pas relancé.
+
+`ui-density` est un auxiliaire descriptif fondé sur l'AST TypeScript des JSX/TSX
+du SHA audité. Il produit le triplet habituel JSON/manifest/Markdown et peut
+être lancé sur `web`, `mobile` ou `all`. Le rapport détaille les textes statiques
+par composant et zone, les paragraphes et aides de champs longs, les répétitions,
+les termes internes, les blocs de texte avant un candidat d'action principale et
+la densité secondaire relative aux titres, données et actions. Les signaux sont
+classés `P1_REVIEW`, `P2_REVIEW` ou `P3_REVIEW` selon les heuristiques suivantes :
+
+| Signal de revue | Heuristique indicative |
+| --- | --- |
+| Paragraphe long | Dès 240 caractères ; priorité P1 à partir de 460 |
+| Aide de champ longue | `helperText`/`hint` dès 140 caractères ; priorité P1 à partir de 220 |
+| Plusieurs blocs avant une action | Au moins deux blocs statiques de 40 caractères avant le premier bouton ou composant explicitement marqué `primary`/`important` ; c'est un candidat heuristique |
+| Description répétée | Description, sous-titre ou aide identique d'au moins 48 caractères, répétée dans le composant |
+| Réserve générique répétée | Phrase générique reconnue présente plusieurs fois dans le composant |
+| Terme interne visible | Au moins une occurrence statique ; priorité P1 à partir de trois occurrences |
+| Densité secondaire relative | Au moins 300 caractères secondaires et ratio d'au moins 3:1 sur titres, données et actions statiques |
+| Volume statique | Au moins 1 200 caractères statiques non protégés dans un composant |
+
+Ces seuils heuristiques n'ajoutent ni baseline ni ratchet ni verdict qualité.
+Les surfaces sont classées séparément en transactionnelles, pédagogiques,
+méthodologiques, légales ou générales. Les signaux de longueur et de densité ne
+sont pas émis automatiquement pour les surfaces légales, pédagogiques et
+méthodologiques. Les paragraphes et aides avec des termes de sécurité,
+d'accessibilité, d'erreur ou d'obligation restent dans les métriques, mais sont
+exclus des signaux de longueur et de volume.
+
+Le parseur compte le texte JSX statique et certaines propriétés textuelles
+explicites. Les libellés réservés aux technologies d'assistance ne sont pas
+comptés comme du texte visible. Les traductions, expressions, valeurs dynamiques et branches
+conditionnelles sont signalées comme non mesurées ; elles ne sont jamais
+converties en une valeur de rendu supposée. La route n'est renseignée que pour
+un fichier Next `page.tsx`/`page.jsx` traçable ; autrement elle vaut `null`.
+Les fichiers de test, fixtures, stories et sources générées sont exclus. Les
+erreurs de parse restent `NOT_MEASURED` dans un rapport non bloquant. Les métriques
+sont des proxys du source, pas une preuve de densité visuelle, et ne modifient
+aucun des cinq verdicts historiques. Le mode `all` inclut le rapport dans
+l'agrégat et le Quality Index avec son état descriptif, sans convertir ses
+signaux en findings de gate.
 
 `audit:quality -- all` produit en plus, après les triplets des cinq gates et
 des auxiliaires présents, puis le triplet agrégé, une projection non normative

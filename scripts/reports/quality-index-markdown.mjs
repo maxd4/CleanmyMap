@@ -68,7 +68,7 @@ function renderTriageSummary(index) {
 export function buildQualityFileIndexMarkdown(index) {
   const lines = ["# Quality Audit — index consolidé par fichier et domaine", "", `- SHA audité : \`${index.auditedHead}\``, `- runId : \`${index.runId}\``, `- Mode de projection : **${index.mode}**`, `- Provenance globale : **${index.source.provenance}**`, `- Verdict initial du run : **${index.source.initialStatus}**`, `- Fichiers indexés : **${index.globalCounts.files}**`, `- Groupes candidats relationnels : **${index.globalCounts.candidateGroups}**`, "", "La projection lit les cinq moteurs de gate, les audits auxiliaires de maintenabilité, sûreté typée/asynchrone, couverture détaillée, hotspots et testabilité, ainsi que la dimension documentaire du run identifié lorsqu'ils existent. Elle ne modifie ni les rapports, ni les manifestes, ni les baselines. La comparaison historique éventuelle est dérivée de deux runs exacts et reste informative.", "", ...renderTriageSummary(index), "## États et audits", "", "| Audit | État | Verdict initial | Provenance |", "| --- | --- | --- | --- |"];
   for (const audit of QUALITY_INDEX_AUDITS) {
-    const summary = index.audits[audit === "top-heavy" ? "topHeavy" : audit === "dead-code" ? "deadCode" : audit === "type-safety" ? "typeSafety" : audit];
+    const summary = index.audits[audit === "top-heavy" ? "topHeavy" : audit === "dead-code" ? "deadCode" : audit === "type-safety" ? "typeSafety" : audit === "ui-density" ? "uiDensity" : audit];
     const source = index.source.sourceReports.find((entry) => entry.audit === audit);
     lines.push(`| ${audit} | ${summary.state ?? "PRESENT"} | ${source?.status ?? "NOT_MEASURED"} | ${source?.readProvenance ?? "NOT_MEASURED"} |`);
   }
@@ -142,5 +142,6 @@ export function buildQualityFileIndexMarkdown(index) {
     if (domain.coupling) lines.push(`- Fan-in runtime/type-only/tests : ${domain.coupling.runtimeFanIn}/${domain.coupling.typeOnlyFanIn}/${domain.coupling.testFanIn}`, `- Fan-out runtime/type-only/tests : ${domain.coupling.runtimeFanOut}/${domain.coupling.typeOnlyFanOut}/${domain.coupling.testFanOut}`, "");
   }
   lines.push("## Limites conservées", "", ...index.limitations.map((limitation) => `- ${limitation}`), "");
+  lines.push("## Densité de texte UI", "", `- État de revue : **${index.audits.uiDensity.state}**`, `- Composants mesurés : **${index.audits.uiDensity.componentsMeasured ?? "NOT_MEASURED"}**`, `- Caractères statiques : **${index.audits.uiDensity.staticTextCharacters ?? "NOT_MEASURED"}**`, `- Signaux heuristiques : **${index.audits.uiDensity.reviewSignals ?? "NOT_MEASURED"}**`, `- Contenus dynamiques/conditionnels non mesurés : **${index.audits.uiDensity.dynamicOrConditionalLocations ?? "NOT_MEASURED"}**`, "", "Cette mesure statique ne prouve pas la densité visuelle et ne modifie aucune gate historique.", "");
   return `${lines.join("\n")}\n`;
 }

@@ -161,6 +161,13 @@ et non bloquants pour ce runner : ils ne constituent pas une preuve de candidat
 publié et aucun audit ne modifie automatiquement une baseline, une
 justification ou un seuil.
 
+`ui-density` est un auxiliaire du même runner. Il lit uniquement le snapshot Git
+du SHA audité, dans les scopes `apps/web/src` ou `apps/mobile`, et écrit son
+rapport non bloquant au triplet standard. Ses proxies TypeScript/JSX ne
+constituent pas une mesure du rendu ; toute évolution de ses exclusions,
+heuristiques, champs ou artefacts doit conserver les gates historiques,
+`all`, le Quality Index et la rétention des rapports.
+
 Pour `all`, les projections `quality-index--<runId>--{index.json,summary.md,bundle.zip}`
 restent dans le dossier SHA et sont des artefacts système reconnus par le même
 inventaire uniquement lorsqu'un manifeste `all` valide du même SHA et du même

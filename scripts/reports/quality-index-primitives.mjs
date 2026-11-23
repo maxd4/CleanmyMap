@@ -2,8 +2,8 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const QUALITY_INDEX_SCHEMA_VERSION = 7;
-export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage"]);
+export const QUALITY_INDEX_SCHEMA_VERSION = 8;
+export const QUALITY_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage", "ui-density"]);
 export const QUALITY_GATE_INDEX_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
 export const QUALITY_INDEX_PREFIX = "quality-index";
 export const QUALITY_ARCHITECTURE_DOMAIN_PREFIX = "architecture:";

@@ -68,6 +68,7 @@ function validateReport(audit, report, { auditedSha = null, runId = null, scope 
     if (scope && report.scope !== scope) throw new Error("Rapport structure incohérent: scope.");
   }
   if (audit === "coverage" && (!Array.isArray(report.scopes) || !report.summary || !report.duplication || !Array.isArray(report.warnings) || !Array.isArray(report.diagnostics))) throw new Error("Rapport coverage incomplet.");
+  if (audit === "ui-density" && (report.kind !== "quality-ui-density" || report.blocking !== false || !Array.isArray(report.files) || !Array.isArray(report.diagnostics) || !report.summary)) throw new Error("Rapport ui-density incomplet.");
   return report;
 }
 
@@ -96,7 +97,7 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
     reports[audit] = entry.report;
     sourceFiles.push(...entry.sourceFiles);
   }
-  const optionalAudits = ["maintainability", "type-safety", "hotspots", "testability", "structure", "coverage"].filter((audit) => manifestPathExists(root, auditedSha, runId, audit, fsApi));
+  const optionalAudits = ["maintainability", "type-safety", "hotspots", "testability", "structure", "coverage", "ui-density"].filter((audit) => manifestPathExists(root, auditedSha, runId, audit, fsApi));
   for (const audit of optionalAudits) {
     const entry = readAudit({ root, auditedSha, runId, audit, fsApi });
     manifests[audit] = entry.manifest;
@@ -115,6 +116,9 @@ export function readOfflineQualityRun({ root = REPOSITORY_ROOT, auditedSha, runI
     if (!runScope) throw new Error("Manifeste all incohérent: scope absent pour la projection structurelle.");
     if (manifests.structure.scope !== runScope) throw new Error("Manifeste structure incohérent: scope du run.");
     if (reports.structure.scope !== runScope) throw new Error("Rapport structure incohérent: scope du run.");
+  }
+  if (optionalAudits.includes("ui-density") && runScope && reports["ui-density"].scope !== runScope) {
+    throw new Error("Rapport ui-density incohérent: scope du run.");
   }
   if (runScope) {
     for (const audit of expectedAudits) {

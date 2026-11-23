@@ -32,6 +32,7 @@ import { buildArchitectureCouplingFromRepository, buildArchitectureCouplingProje
 import { buildQualityHotspotsReport, buildQualityTestabilityReport } from "../reports/quality-audit-signals.mjs";
 import { buildQualityStructureFromRepository } from "../reports/quality-structure.mjs";
 import { buildDocumentationMaintainabilityReport, buildDocumentationNotMeasured } from "./documentation-maintainability.mjs";
+import { buildUiDensityNotMeasured, buildUiDensityReport, formatUiDensityReport } from "./ui-density.mjs";
 import {
   QUALITY_AUDIT_ROOT,
   beginActiveAudit,
@@ -44,7 +45,7 @@ import { qualityAuditPolicy } from "./quality-audit-policy.mjs";
 import { normalizeQualityScope, scopeMetadata } from "../checks/quality-scope.mjs";
 
 export const QUALITY_GATE_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
-export const AUXILIARY_AUDITS = Object.freeze(["maintainability", "type-safety", "hotspots", "testability", "structure", "coverage"]);
+export const AUXILIARY_AUDITS = Object.freeze(["maintainability", "type-safety", "hotspots", "testability", "structure", "coverage", "ui-density"]);
 export const AUDIT_MODES = Object.freeze([...QUALITY_GATE_AUDITS, ...AUXILIARY_AUDITS, "all"]);
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const ACQUIRED_ARCHITECTURE_DECISIONS = new Set([
@@ -268,6 +269,17 @@ function isStructureResult(result) {
     && Array.isArray(result.diagnostics);
 }
 
+function isUiDensityResult(result) {
+  return Boolean(result)
+    && result.kind === "quality-ui-density"
+    && result.status === "PASS"
+    && result.blocking === false
+    && ["MEASURED", "MEASURED_WITH_LIMITS", "MEASUREMENT_FAILED"].includes(result.measurementStatus)
+    && Array.isArray(result.files)
+    && Array.isArray(result.diagnostics)
+    && result.summary;
+}
+
 function preserveMalformedAsyncResult(audit, result) {
   return {
     ...(result && typeof result === "object" ? result : {}),
@@ -346,6 +358,7 @@ export function attentionRequired(audit, result) {
   if (audit === "hotspots" || audit === "testability") return false;
   if (audit === "structure") return (result.summary?.foldersRequiringReview ?? 0) > 0;
   if (audit === "coverage") return Boolean(result.attentionRequired) || result.measurementStatus === "MEASUREMENT_FAILED";
+  if (audit === "ui-density") return (result.summary?.signals ?? 0) > 0 || (result.summary?.filesNotMeasured ?? 0) > 0;
   return false;
 }
 
@@ -408,6 +421,8 @@ function makeSummary({ audit, manifest, result, paths }) {
     "",
     audit === "maintainability"
       ? "This summary is a generated projection of the raw auxiliary result. `attentionRequired: false` means that no measurement failure, selected local finding, or cognitive function above the informative target was observed; it does not define or waive a historical ratchet."
+      : audit === "ui-density"
+        ? "This summary is a generated projection of non-blocking static text heuristics. It does not establish rendered visual density or alter historical quality gates."
       : "This summary is a generated projection of the raw gate result. `attentionRequired: false` means that no new top-heavy delta or unqualified REVIEW requiring a new analysis was observed; it does not mean that historical large-file debt is absent.",
   ];
   if (audit === "dead-code" && result?.comparison) {
@@ -499,6 +514,15 @@ function makeSummary({ audit, manifest, result, paths }) {
       `- Elapsed: ${result.summary.elapsedMs ?? "NOT_MEASURED"} ms`,
     );
   }
+  if (audit === "ui-density" && result?.summary) {
+    lines.splice(6, 0,
+      `- Components measured: ${result.summary.componentsMeasured}`,
+      `- Static text characters: ${result.summary.staticTextCharacters}`,
+      `- Signals (P1/P2/P3): ${result.summary.byPriority.P1_REVIEW}/${result.summary.byPriority.P2_REVIEW}/${result.summary.byPriority.P3_REVIEW}`,
+      `- Dynamic/conditional locations not measured: ${result.summary.dynamicOrConditionalLocations}`,
+      "- Static text heuristics are non-blocking and do not measure rendered visual density.",
+    );
+  }
   if (audit === "cycles" && result?.comparison) {
     lines.splice(6, 0, `- Current cycles: ${result.cycles.length}`, `- New cycles: ${result.comparison.added.length}`, `- Stale baseline entries: ${result.comparison.stale.length}`);
   }
@@ -520,6 +544,7 @@ function createAuditExecutors({
   testabilityRunner,
   coverageRunner,
   structureRunner,
+  uiDensityRunner,
   runId,
   complexityResult,
   previousResults,
@@ -552,6 +577,7 @@ function createAuditExecutors({
     testability: () => ({ result: testabilityRunner({ root, auditedSha: auditedHead, scope: activeScope }), readProvenance: "MIXED", validate: isTestabilityResult }),
     structure: () => ({ result: structureRunner({ root, auditedSha: auditedHead, runId, scope: activeScope }), readProvenance: "COMMITTED_SNAPSHOT", validate: isStructureResult }),
     coverage: () => ({ result: coverageRunner({ root, auditedSha: auditedHead, duplicationReport: previousResults.duplication ?? null, scope: activeScope }), readProvenance: "MIXED", validate: isCoverageResult, format: formatCoverageInsightsReport }),
+    "ui-density": () => ({ result: uiDensityRunner({ root, auditedSha: auditedHead, scope: activeScope }), readProvenance: "COMMITTED_SNAPSHOT", validate: isUiDensityResult, format: formatUiDensityReport }),
     cycles: async () => {
       const result = await cycleRunner({ scope: activeScope });
       const policy = qualityAuditPolicy("cycles");
@@ -564,7 +590,17 @@ function createAuditExecutors({
 }
 
 function normalizeAuditExecution(audit, execution) {
-  if (execution.validate && !execution.validate(execution.result)) return preserveMalformedAsyncResult(audit, execution.result);
+  if (execution.validate && !execution.validate(execution.result)) {
+    if (audit === "ui-density") {
+      const fallback = buildUiDensityNotMeasured({
+        auditedSha: execution.result?.auditedHead,
+        scope: execution.result?.scope ?? "all",
+        error: new QualityAuditError("Résultat ui-density absent ou malformé.", "MALFORMED_RESULT"),
+      });
+      return { ...fallback, formatted: formatUiDensityReport(fallback), readProvenance: execution.readProvenance };
+    }
+    return preserveMalformedAsyncResult(audit, execution.result);
+  }
   const formatted = execution.format ? { formatted: execution.format(execution.result) } : {};
   return { ...execution.result, ...formatted, readProvenance: execution.readProvenance };
 }
@@ -583,6 +619,7 @@ export async function executeAudit(
     testabilityRunner = buildQualityTestabilityReport,
     coverageRunner = buildCoverageInsightsReport,
     structureRunner = buildQualityStructureFromRepository,
+    uiDensityRunner = buildUiDensityReport,
     complexityResult = null,
     previousResults = {},
     topHeavyRunner = runTopHeavyPolicy,
@@ -602,6 +639,7 @@ export async function executeAudit(
     testabilityRunner,
     coverageRunner,
     structureRunner,
+    uiDensityRunner,
     runId,
     complexityResult,
     previousResults,
@@ -676,10 +714,15 @@ async function executeAuditBatch(audits, { engine, root, snapshot, runId, scope 
         scope,
       });
     } catch (error) {
-      raw = auditErrorResult(error);
+      raw = audit === "ui-density"
+        ? buildUiDensityNotMeasured({ auditedSha: snapshot.auditedHead, scope, error })
+        : auditErrorResult(error);
     }
     if (audit === "structure" && raw?.kind === "quality-structure") {
       raw = { ...raw, auditedHead: raw.auditedHead ?? snapshot.auditedHead, runId: raw.runId ?? runId, scope: raw.scope ?? scope };
+    }
+    if (audit === "ui-density" && raw?.kind === "quality-ui-density") {
+      raw = { ...raw, auditedHead: raw.auditedHead ?? snapshot.auditedHead, scope: raw.scope ?? scope };
     }
     const status = statusForAudit(audit, raw);
     const attention = attentionRequired(audit, raw);

@@ -473,7 +473,7 @@ test("conserve l'identité du run et un ordre décisionnel reproductible", () =>
   const first = buildQualityFileIndex({ run, mode: "ALL" });
   const second = buildQualityFileIndex({ run, mode: "ALL" });
 
-  assert.equal(first.schemaVersion, 7);
+  assert.equal(first.schemaVersion, 8);
   assert.equal(first.triage.decision.source.auditedHead, sha);
   assert.equal(first.triage.decision.source.runId, runId);
   assert.deepEqual(first.triage.decision, second.triage.decision);
