@@ -2,8 +2,8 @@ begin;
 
 select plan(76);
 
-select ok(has_table('public', 'personal_ai_declarations'), 'private declarations table exists');
-select ok(has_column('public', 'personal_ai_declarations', 'quick_scenario'), 'optional chatbot scenario is stored on the existing private table');
+select has_table('public', 'personal_ai_declarations', 'private declarations table exists');
+select has_column('public', 'personal_ai_declarations', 'quick_scenario', 'optional chatbot scenario is stored on the existing private table');
 select ok(has_function_privilege('authenticated', 'public.save_personal_ai_chat_scenario(uuid,jsonb,jsonb,jsonb,text,text)', 'EXECUTE'), 'authenticated owner can call the scenario RPC');
 select ok((select relrowsecurity from pg_class where oid = 'public.personal_ai_declarations'::regclass), 'row level security is enabled');
 select ok(not has_table_privilege('anon', 'public.personal_ai_declarations', 'SELECT'), 'anon cannot read declarations');
