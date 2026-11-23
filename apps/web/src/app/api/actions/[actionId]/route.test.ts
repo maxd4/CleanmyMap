@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { patchAction } from "@/__tests__/support/action-route-helpers";
-import { appendActionModerationAuditMock, createPatchAction, emitActionUpdateNotificationsMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, createPatchAction, emitActionUpdateNotificationsMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionFormEditorIdsMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   beforeEach(() => {
@@ -64,6 +64,48 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
 
     expect(response.status).toBe(403);
     expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("allows a delegated editor to update form fields without rewriting organization relations", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId: "form-editor" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ userId: "form-editor", role: "benevole", activeRole: "benevole" });
+    loadActionFormEditorIdsMock.mockResolvedValueOnce(["form-editor"]);
+
+    const response = await patchAction({ preparationData: { safetyInstructions: "Consignes vérifiées" } });
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({
+      preparation_data: expect.objectContaining({ safetyInstructions: "Consignes vérifiées" }),
+    }));
+    expect(updateMock.mock.calls[0]?.[0]).not.toHaveProperty("organizer_accounts");
+  });
+
+  it("rejects a delegated editor changing protected organizer or invitation relations", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId: "form-editor" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ userId: "form-editor", role: "benevole", activeRole: "benevole" });
+    loadActionFormEditorIdsMock.mockResolvedValueOnce(["form-editor"]);
+
+    const response = await patchAction({ organizerAccounts: ["attacker"] });
+
+    expect(response.status).toBe(403);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("ignores unchanged protected relations echoed by an ordinary delegated form save", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId: "form-editor" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ userId: "form-editor", role: "benevole", activeRole: "benevole" });
+    loadActionFormEditorIdsMock.mockResolvedValueOnce(["form-editor"]);
+
+    const response = await patchAction({
+      organizerAccounts: [],
+      participantAccounts: ["user-manual-1"],
+      accessMode: "public",
+      groupJoinEnabled: false,
+    });
+
+    expect(response.status).toBe(200);
+    expect(syncActionOrganizersMock).not.toHaveBeenCalled();
+    expect(updateMock.mock.calls[0]?.[0]).not.toHaveProperty("access_mode");
   });
 
   it("uses the revision returned by each persisted write for concurrent operational notifications", async () => {

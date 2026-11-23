@@ -4,6 +4,9 @@ import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createReactDomHarness } from "@/__tests__/support/action-behavior-test-helpers";
 import type { ActionAttendanceEntryRow } from "@/types/database";
+vi.mock("./action-field-roles-panel", () => ({ ActionFieldRolesPanel: () => null }));
+vi.mock("./action-role-attestations-panel", () => ({ ActionRoleAttestationsPanel: () => null }));
+vi.mock("./action-form-editors-panel", () => ({ ActionFormEditorsPanel: () => null }));
 import { ActionAttendanceRegistryEntryPoint, ActionAttendanceRegistryPanel } from "./action-attendance-registry-panel";
 
 function entry(id: string, display_label: string, status: ActionAttendanceEntryRow["attendance_status"] = "unknown", clerk_user_id: string | null = null): ActionAttendanceEntryRow {

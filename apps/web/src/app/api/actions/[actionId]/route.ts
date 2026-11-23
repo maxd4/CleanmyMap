@@ -11,7 +11,8 @@ import {
   getCurrentUserIdentity,
   requireAuthenticatedAccess,
 } from "@/lib/authz";
-import { canManageAction } from "@/lib/actions/permissions";
+import { canEditActionForm, canManageAction } from "@/lib/actions/permissions";
+import { loadActionFormEditorIds } from "@/lib/actions/action-form-editors";
 import { loadActionRegistrationProjectionForAction, loadManualInvitationStatusesForAction, loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
 import {
   loadActionOrganizerRowsForAction,
@@ -33,6 +34,8 @@ import {
 import type { EditableAction } from "./route.types";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { isActionFinalizationEligible } from "@/lib/actions/finalization-eligibility";
+import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
+import type { ActionRow } from "@/types/database";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -47,8 +50,11 @@ async function loadActionPermissionContext(
   const permissionIdentity = identity
     ? { userId, role: identity.role, activeRole: identity.activeRole }
     : null;
-  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, actionId);
-  return { identity, permissionIdentity, organizerIds };
+  const [organizerIds, editorIds] = await Promise.all([
+    loadCanonicalActionOrganizerIdsForAction(supabase, actionId),
+    loadActionFormEditorIds(supabase, actionId),
+  ]);
+  return { identity, permissionIdentity, organizerIds, editorIds };
 }
 
 async function parsePatchRequest(
@@ -81,17 +87,20 @@ async function loadAuthorizedPatchAction({
   current: EditableAction;
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
   organizerIds: string[];
+  editorIds: string[];
+  isFormDelegate: boolean;
 }> {
   const current = await loadActionById(supabase, actionId);
   if (!current) return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
 
-  const { identity, permissionIdentity, organizerIds } = await loadActionPermissionContext(
+  const { identity, permissionIdentity, organizerIds, editorIds } = await loadActionPermissionContext(
     supabase,
     userId,
     actionId,
   );
   // This owner/organizer/admin decision stays visible at the HTTP boundary.
-  if (!canManageAction(permissionIdentity, { createdByClerkId: current.created_by_clerk_id }, organizerIds)) {
+  const permissionTarget = { createdByClerkId: current.created_by_clerk_id };
+  if (!canEditActionForm(permissionIdentity, permissionTarget, organizerIds, editorIds)) {
     return NextResponse.json(
       { error: "Vous n'êtes pas autorisé à modifier cette action." },
       { status: 403 },
@@ -106,7 +115,75 @@ async function loadAuthorizedPatchAction({
       { status: 409 },
     );
   }
-  return { current, identity, organizerIds };
+  return {
+    current,
+    identity,
+    organizerIds,
+    editorIds,
+    isFormDelegate: !canManageAction(permissionIdentity, permissionTarget, organizerIds),
+  };
+}
+
+function sameIdentifiers(left: string[] | undefined, right: string[]): boolean {
+  if (left === undefined) return true;
+  const normalize = (values: string[]) => [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort();
+  return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right));
+}
+
+async function restrictDelegatedFormPayload(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  actionId: string,
+  current: ActionRow,
+  organizerIds: string[],
+  parsed: ActionUpdateInput,
+): Promise<Response | ActionUpdateInput> {
+  const metadata = extractActionMetadataFromNotes(current.notes);
+  const manualParticipantIds = await loadManualRegistrationIdsForAction(supabase, actionId);
+  const displayedOrganizerIds = current.organizer_type === "spontaneous"
+    ? organizerIds
+    : organizerIds.filter((organizerId) => organizerId !== current.created_by_clerk_id);
+  const displayedOrganizerName = current.organizer_name ?? metadata.associationName ?? "";
+  const forbidden = () => NextResponse.json(
+    { error: "Ce privilège autorise uniquement les champs du formulaire, pas la gestion des personnes, invitations ou organisateurs." },
+    { status: 403 },
+  );
+  if (!sameIdentifiers(parsed.organizerAccounts, displayedOrganizerIds)
+      || (parsed.organizerType !== undefined && parsed.organizerType !== current.organizer_type)
+      || (parsed.organizerId !== undefined && (parsed.organizerId?.trim() || null) !== (current.organizer_id?.trim() || null))
+      || (parsed.organizerName !== undefined && parsed.organizerName.trim() !== displayedOrganizerName.trim())
+      || (parsed.associationName !== undefined && parsed.associationName !== metadata.associationName)
+      || !sameIdentifiers(parsed.participantAccounts, manualParticipantIds)
+      || (parsed.accessMode !== undefined && parsed.accessMode !== (current.access_mode ?? "public"))
+      || (parsed.groupJoinEnabled !== undefined && parsed.groupJoinEnabled !== metadata.groupJoinEnabled)) {
+    return forbidden();
+  }
+
+  const preparationData = parsed.preparationData ? { ...parsed.preparationData } : undefined;
+  const currentPreparation = (current.preparation_data ?? {}) as Record<string, unknown>;
+  if (preparationData?.groupJoinEnabled !== undefined
+      && preparationData.groupJoinEnabled !== metadata.groupJoinEnabled) return forbidden();
+  if (preparationData?.organizerReferenceStatus !== undefined
+      && preparationData.organizerReferenceStatus !== currentPreparation.organizerReferenceStatus) return forbidden();
+  if (preparationData) {
+    delete preparationData.groupJoinEnabled;
+    delete preparationData.organizerReferenceStatus;
+  }
+
+  const result = { ...parsed };
+  delete result.organizerAccounts;
+  delete result.organizerType;
+  delete result.organizerId;
+  delete result.organizerName;
+  delete result.associationName;
+  delete result.participantAccounts;
+  delete result.accessMode;
+  delete result.groupJoinEnabled;
+  if (preparationData && Object.keys(preparationData).length > 0) {
+    result.preparationData = preparationData;
+  } else {
+    delete result.preparationData;
+  }
+  return result;
 }
 
 function createPatchExecutionState(): PatchExecutionState {
@@ -144,7 +221,11 @@ async function executePatchRequest({
       actionId: trimmedActionId,
     });
     if (actionContext instanceof Response) return actionContext;
-    const { current, identity, organizerIds } = actionContext;
+    const { current, identity, organizerIds, isFormDelegate } = actionContext;
+    const patchBody = isFormDelegate
+      ? await restrictDelegatedFormPayload(supabase, trimmedActionId, current, organizerIds, parsed)
+      : parsed;
+    if (patchBody instanceof Response) return patchBody;
     const mutation = await preparePatchMutation({
       supabase,
       actionId: trimmedActionId,
@@ -152,7 +233,7 @@ async function executePatchRequest({
       current,
       identity,
       organizerIds,
-      parsed,
+      parsed: patchBody,
     });
     if (mutation instanceof Response) return mutation;
 
@@ -220,13 +301,13 @@ export async function GET(
     const row = await loadActionById(supabase, trimmedActionId);
     if (!row) return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
 
-    const { permissionIdentity, organizerIds } = await loadActionPermissionContext(
+    const { permissionIdentity, organizerIds, editorIds } = await loadActionPermissionContext(
       supabase,
       userId,
       trimmedActionId,
     );
-    // GET has the same management boundary as PATCH; visitors cannot read this editor payload.
-    if (!canManageAction(permissionIdentity, { createdByClerkId: row.created_by_clerk_id }, organizerIds)) {
+    // GET has the same form-edit boundary as PATCH; visitors cannot read this editor payload.
+    if (!canEditActionForm(permissionIdentity, { createdByClerkId: row.created_by_clerk_id }, organizerIds, editorIds)) {
       return NextResponse.json(
         { error: "Vous n'êtes pas autorisé à lire cette action." },
         { status: 403 },
@@ -288,9 +369,9 @@ async function executePatchAfterAuthentication(
   ctx: { params: Promise<{ actionId: string }> },
   access: Awaited<ReturnType<typeof requireActionRequestAccess>> & { ok: true },
 ): Promise<Response> {
-  // Authorization is enforced by loadAuthorizedPatchAction via canManageAction;
-  // preparePatchMutation applies canEditValidatedImpact and canManageActionsGlobally
-  // to their respective privileged paths, while the execution owner audits failures.
+  // Form access is enforced by loadAuthorizedPatchAction via canEditActionForm;
+  // preparePatchMutation still applies the narrower validated-impact and
+  // global-moderation capabilities before their respective privileged paths.
   const parsedRequest = await parsePatchRequest(request, ctx, access);
   if (parsedRequest instanceof Response) return parsedRequest;
   const { userId, trimmedActionId, parsedBody } = parsedRequest;

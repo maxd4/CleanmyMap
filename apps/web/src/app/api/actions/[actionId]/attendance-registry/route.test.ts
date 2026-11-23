@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   listTeams: vi.fn(),
   mutate: vi.fn(),
   mutateTeam: vi.fn(),
+  registrations: vi.fn(),
   clerk: vi.fn(),
 }));
 
@@ -21,6 +22,7 @@ vi.mock("@/lib/actions/participation/organizers", () => ({ loadActionOrganizerRo
 vi.mock("@/lib/actions/permissions", () => ({ canManageAction: mocks.canManage }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.client }));
 vi.mock("@/lib/actions/participation/attendance-registry", () => ({ listActionAttendanceEntries: mocks.list, listActionAttendanceTeams: mocks.listTeams, mutateActionAttendanceEntry: mocks.mutate, mutateActionAttendanceTeam: mocks.mutateTeam }));
+vi.mock("@/lib/actions/participation/registration-records", () => ({ loadActionRegistrationProjectionForAction: mocks.registrations }));
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: mocks.clerk }));
 
 import { GET, POST } from "./route";
@@ -38,6 +40,7 @@ describe("private action attendance registry routes", () => {
     mocks.canManage.mockReturnValue(true);
     mocks.list.mockResolvedValue([]);
     mocks.listTeams.mockResolvedValue([]);
+    mocks.registrations.mockResolvedValue([]);
     mocks.clerk.mockResolvedValue({ users: { getUser: vi.fn().mockResolvedValue({ id: "user_123" }) } });
   });
 

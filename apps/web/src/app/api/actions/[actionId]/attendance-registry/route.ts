@@ -4,6 +4,7 @@ import { z } from "zod";
 import { canManageAction } from "@/lib/actions/permissions";
 import { loadActionById } from "@/lib/actions/store";
 import { loadActionOrganizerRowsForAction } from "@/lib/actions/participation/organizers";
+import { loadActionRegistrationProjectionForAction } from "@/lib/actions/participation/registration-records";
 import { listActionAttendanceEntries, listActionAttendanceTeams, mutateActionAttendanceEntry, mutateActionAttendanceTeam } from "@/lib/actions/participation/attendance-registry";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { getCurrentUserIdentity } from "@/lib/authz";
@@ -68,14 +69,16 @@ export async function GET(request: Request, context: Context) {
     const { actionId } = await context.params;
     const access = await authorizeAction(actionId.trim(), auth.userId);
     if (!access.ok) return privateJson({ error: access.status === 404 ? "Action introuvable." : "Accès refusé." }, access.status);
-    const [entries, teams] = await Promise.all([
+    const [entries, teams, registrations] = await Promise.all([
       listActionAttendanceEntries(access.supabase, access.action.id),
       listActionAttendanceTeams(access.supabase, access.action.id),
+      loadActionRegistrationProjectionForAction(access.supabase, access.action.id),
     ]);
     return privateJson({
       actionId: access.action.id,
       entries,
       teams,
+      registrations,
       declared: {
         total: access.action.volunteers_count ?? null,
         adults: access.action.adult_count ?? null,

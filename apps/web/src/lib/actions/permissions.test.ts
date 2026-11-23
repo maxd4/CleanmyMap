@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   canManageAction,
+  canEditActionForm,
+  canManageActionFormEditors,
   canManageActionByRelation,
   canManageActionsGlobally,
   canModerateActionsGlobally,
@@ -12,6 +14,24 @@ import {
 } from "./permissions";
 
 describe("action permissions", () => {
+  it("grants form editing to an explicit delegate without granting action management", () => {
+    const identity = { userId: "delegate-1", role: "benevole" as const, activeRole: "benevole" as const };
+    const action = { createdByClerkId: "creator-1" };
+    expect(canEditActionForm(identity, action, ["organizer-1"], ["delegate-1"])).toBe(true);
+    expect(canEditActionForm(identity, action, ["organizer-1"], [])).toBe(false);
+    expect(canManageAction(identity, action, ["organizer-1"])).toBe(false);
+  });
+
+  it("limits privilege grants to the creator, primary organizer and active admin/max", () => {
+    const action = { createdByClerkId: "creator-1" };
+    expect(canManageActionFormEditors({ userId: "creator-1", role: "benevole", activeRole: "benevole" }, action, "primary-1")).toBe(true);
+    expect(canManageActionFormEditors({ userId: "primary-1", role: "benevole", activeRole: "benevole" }, action, "primary-1")).toBe(true);
+    expect(canManageActionFormEditors({ userId: "secondary-1", role: "benevole", activeRole: "benevole" }, action, "primary-1")).toBe(false);
+    expect(canManageActionFormEditors({ userId: "admin-1", role: "admin", activeRole: "benevole" }, action, "primary-1")).toBe(false);
+    expect(canManageActionFormEditors({ userId: "admin-1", role: "benevole", activeRole: "admin" }, action, "primary-1")).toBe(true);
+    expect(canManageActionFormEditors({ userId: "max-1", role: "max", activeRole: "max" }, action, "primary-1")).toBe(true);
+  });
+
   it("keeps retrospective ownership relation-only, including for privileged roles", () => {
     const action = { createdByClerkId: "creator-1" };
     expect(canManageActionByRelation({ userId: "creator-1" }, action, [])).toBe(true);

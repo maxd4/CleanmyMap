@@ -70,6 +70,37 @@ export function canManageAction(
 }
 
 /**
+ * Form editing is narrower than action management: an explicitly delegated
+ * editor can work on the pre/post action form, but does not inherit organizer,
+ * moderation, attendance, invitation, or other action-management rights.
+ */
+export function canEditActionForm(
+  identity: ActionPermissionIdentity | null | undefined,
+  action: ActionPermissionTarget,
+  organizerIds: string[],
+  editorIds: string[],
+): boolean {
+  if (canManageAction(identity, action, organizerIds)) return true;
+  const userId = normalizeUserId(identity?.userId);
+  return Boolean(userId && editorIds.some((editorId) => normalizeUserId(editorId) === userId));
+}
+
+/** Only the creator, primary organizer, or an active global action admin may
+ * grant or revoke this action-scoped privilege. */
+export function canManageActionFormEditors(
+  identity: ActionPermissionIdentity | null | undefined,
+  action: ActionPermissionTarget,
+  primaryOrganizerId: string | null | undefined,
+): boolean {
+  if (hasGlobalActionCapability(identity?.activeRole)) return true;
+  const userId = normalizeUserId(identity?.userId);
+  return Boolean(userId && (
+    userId === normalizeUserId(action.createdByClerkId) ||
+    userId === normalizeUserId(primaryOrganizerId)
+  ));
+}
+
+/**
  * Retrospective ownership is deliberately relation-only. Global roles without
  * a creator or action_organizers relation do not gain this write capability.
  */

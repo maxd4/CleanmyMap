@@ -213,18 +213,19 @@ export const actionsAuthorizationContract = {
   },
   "actions/[actionId]": {
     GET: {
-      expected: "Authenticated creator/organizer or admin/max action-management read",
+      expected: "Authenticated creator/organizer/admin/max or explicitly delegated action-form editor reads the form",
       dimensions: ["authentication", "business permission", "ownership"],
-      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports before canManageAction",
-      evidence: ["requireActionRequestAccess", "canManageAction"],
+      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports before canEditActionForm",
+      evidence: ["requireActionRequestAccess", "canEditActionForm"],
     },
     PATCH: {
-      expected: "Authenticated creator/organizer normal edit; admin/max validated-impact correction is explicit, reasoned and audited",
+      expected: "Authenticated creator/organizer/admin/max or delegated editor can edit allowed pre/post form fields; protected relations stay manager-only and admin/max validated-impact correction is explicit, reasoned and audited",
       dimensions: ["authentication", "business permission", "ownership", "validated impact correction", "audit"],
-      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports before canManageAction; approved impact changes require canEditValidatedImpact, a reason and appendActionModerationAudit",
+      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports before canEditActionForm; delegated payloads strip unchanged protected relations and reject changes; approved impact changes still require canEditValidatedImpact, a reason and appendActionModerationAudit",
       evidence: [
         "requireActionRequestAccess",
         "canManageAction",
+        "canEditActionForm",
         "canManageActionsGlobally",
         "canEditValidatedImpact",
         "appendActionModerationAudit",
@@ -272,6 +273,22 @@ export const actionsAuthorizationContract = {
       dimensions: ["authentication", "business permission", "ownership", "audit"],
       actual: "requireActionRequestAccess + canManageAction + verified Clerk account link + service-only transactional RPC with expected revision, start-time guard and private no-store response",
       evidence: ["requireActionRequestAccess", "canManageAction", "mutateActionAttendanceEntry"],
+      evidenceScope: "module",
+    },
+  },
+  "actions/[actionId]/form-editors": {
+    GET: {
+      expected: "Only the action creator, primary action organizer, or ACTIVE_ROLE admin/max can inspect editor grants",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireActionRequestAccess + canManageActionFormEditors using the action creator, primary action_organizers row, or active global action role before private no-store projection",
+      evidence: ["requireActionRequestAccess", "canManageActionFormEditors", "is_primary", "loadActionFormEditorIds"],
+      evidenceScope: "module",
+    },
+    POST: {
+      expected: "Only the action creator, primary action organizer, or ACTIVE_ROLE admin/max can grant/revoke a verified Clerk account through an atomic audited RPC",
+      dimensions: ["authentication", "business permission", "ownership", "audit"],
+      actual: "requireActionRequestAccess + canManageActionFormEditors + Clerk users.getUser on grants + mutate_action_form_editor service-only RPC rechecks creator/primary and commits grant/revoke with idempotency and audit",
+      evidence: ["requireActionRequestAccess", "canManageActionFormEditors", "users.getUser", "mutate_action_form_editor"],
       evidenceScope: "module",
     },
   },

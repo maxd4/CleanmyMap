@@ -5,7 +5,6 @@ import { ActionDeclarationForm } from "./action-declaration/form";
 import { ActionLifecycleNavigation } from "./action-creation-shell-navigation";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { ActionRoleAttestationsPanel } from "@/components/actions/action-role-attestations-panel";
 import type { ActionCreationSectionFormProps } from "./action-creation-shell.types";
 import { ActionAttendanceRegistryEntryPoint, ActionAttendanceRegistryPanel } from "./action-attendance-registry-panel";
 import { fetchActionById, updateAction, type ActionEditorRecord } from "@/lib/actions/http";
@@ -107,5 +106,5 @@ export function ActionBilanView({
   searchParams?: SearchParams;
   fr: boolean;
 }) {
-  return <div data-testid="action-bilan-view" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-2"><p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Bilan</p><h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950">Finaliser la même action</h1><p className="cmm-text-body cmm-text-primary">Les photos, mesures, présences confirmées et règles de validation restent ceux du formulaire final existant.</p></div></CmmCard><ActionLifecycleNavigation actionId={actionId} activeSpace="bilan" fr={fr} searchParams={searchParams} /><ActionAttendanceRegistryPanel actionId={actionId} mode="bilan" /><ActionRoleAttestationsPanel actionId={actionId} /><div role="tabpanel" aria-labelledby="action-creation-space-bilan"><ActionFinalizationEntry actionId={actionId} formProps={formProps} /></div></div></div>;
+  return <div data-testid="action-bilan-view" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-2"><p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Bilan</p><h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950">Finaliser la même action</h1><p className="cmm-text-body cmm-text-primary">Les photos, mesures, présences confirmées et règles de validation restent ceux du formulaire final existant.</p></div></CmmCard><ActionLifecycleNavigation actionId={actionId} activeSpace="bilan" fr={fr} searchParams={searchParams} /><ActionAttendanceRegistryPanel actionId={actionId} mode="bilan" /><div role="tabpanel" aria-labelledby="action-creation-space-bilan"><ActionFinalizationEntry actionId={actionId} formProps={formProps} /></div></div></div>;
 }

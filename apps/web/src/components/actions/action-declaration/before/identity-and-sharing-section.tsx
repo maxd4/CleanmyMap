@@ -235,7 +235,7 @@ function AssociatedAccountsFields({
           title="Organisateurs associés"
           description="20 comptes max · relation organisateur."
           maxSelected={20}
-          roleOptions={ACTION_FIELD_ROLE_OPTIONS.filter(({ code }) => code !== "organizer_primary")}
+          roleOptions={ACTION_FIELD_ROLE_OPTIONS.filter(({ code }) => code !== "organizer_primary" && code !== "coorganizer")}
           roleSelections={form.fieldRoleSelections}
           onRoleSelectionsChange={(next) => updateField("fieldRoleSelections", Object.fromEntries(Object.entries(next).map(([userId, roleCodes]) => [userId, normalizeActionFieldRoleCodes(roleCodes)])))}
         />

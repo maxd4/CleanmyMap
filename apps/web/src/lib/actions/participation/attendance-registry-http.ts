@@ -1,9 +1,11 @@
 import type { ActionAttendanceEntryRow, ActionAttendanceTeamSnapshot } from "@/types/database";
+import type { ActionRegistrationProjectionRecord } from "./registration-records";
 
 export type AttendanceRegistrySnapshot = {
   actionId: string;
   entries: ActionAttendanceEntryRow[];
   teams: ActionAttendanceTeamSnapshot[];
+  registrations: ActionRegistrationProjectionRecord[];
   declared: {
     total: number | null;
     adults: number | null;

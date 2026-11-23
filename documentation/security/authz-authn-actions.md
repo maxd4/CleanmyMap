@@ -97,6 +97,24 @@ Le rôle privilégié ne doit pas transformer automatiquement cette demande en p
 
 Les déclarations organisationnelles de `preparation_data` (initiateur externe, partenaires et origines) sont descriptives uniquement. Seul l'organisateur principal et les identifiants explicitement reliés dans `action_organizers` portent des permissions ; un nom de partenaire ne crée ni compte, ni relation, ni collaboration vérifiée.
 
+### Édition déléguée du formulaire d’action
+
+La capacité limitée `canEditActionForm` donne à un compte explicitement relié
+par `action_form_editors` le droit de lire, reprendre et soumettre le formulaire
+pré/post-action de cette seule action. Le créateur, l’organisateur principal
+actuel ou `ACTIVE_ROLE=admin|max` gère les octrois et révocations. L’octroi
+vérifie l’existence du compte dans Clerk ; la relation et son audit sont
+modifiés par une RPC atomique réservée au serveur.
+
+Cette relation n’ajoute aucun droit de gestion de l’action. Les délégataires ne
+gèrent pas les organisateurs, invitations, présences, équipes, missions,
+attestations, modération, correction d’impact validé ou privilèges. Les
+payloads ordinaires qui contiennent des relations protégées inchangées ne les
+réécrivent pas ; toute tentative de les changer est refusée. Chaque mutation
+relit le privilège actuel afin qu’une révocation bloque immédiatement les
+requêtes suivantes. `canManageAction` et les gardes des parcours distincts
+restent inchangés.
+
 ## Retour d'expérience post-action
 
 Le retour d'expérience est une capacité relationnelle distincte des capacités

@@ -100,3 +100,35 @@ participations finales, instantanés statistiques collectifs et preuves
 juridiques conservés dans leurs contrats indépendants ne sont ni supprimés ni
 recalculés par cette purge. Les durées des sauvegardes et des fournisseurs
 externes ne sont pas établies par ce mécanisme.
+
+## Délégation de l’édition du formulaire et gestion unifiée
+
+`action_form_editors` est une relation limitée à une action, indépendante de
+`action_organizers` et des rôles Clerk. Le créateur, l’organisateur principal
+actuel ou `ACTIVE_ROLE=admin|max` peut accorder ou retirer ce privilège après
+vérification côté serveur du compte Clerk cible. Une RPC réservée au serveur
+verrouille l’action et enregistre l’octroi ou le retrait avec une clé
+d’idempotence et un audit avant/après dans la même transaction. Les rôles
+navigateur n’accèdent ni à la table ni à la RPC.
+
+`canEditActionForm` permet au créateur, aux organisateurs, aux rôles actifs
+admin/max et aux comptes explicitement délégués de lire, reprendre, modifier et
+soumettre le formulaire pré/post-action existant. Un délégataire ne devient pas
+gestionnaire de l’action : l’API du formulaire retire les relations protégées
+inchangées des sauvegardes ordinaires et refuse leurs modifications. Le
+pointage, les équipes, les missions, l’organisation, les attestations, la
+modération, la correction d’un impact validé et la gestion des délégations
+conservent leurs gardes dédiées. Chaque mutation du formulaire relit les
+délégations ; une révocation s’applique dès la requête suivante.
+`canManageAction` reste inchangé.
+
+Le même panneau de liste d’appel est utilisé en préparation, Jour J et Bilan.
+Il regroupe les personnes et présences observées, les équipes et leurs
+identifiants stables de chefs, les missions terrain, l’organisation actuelle,
+les privilèges de formulaire et, au bilan, les attestations. L’API projette les
+états d’inscription existants avec les entrées de présence ; elle ne crée pas
+d’entrée d’appel pour une inscription sans liaison existante. Les identités
+libres et les homonymes restent indépendants. La participation finale confirmée
+garde sa source et son parcours distincts. Les anciennes affectations de rôles
+`organizer_primary` et `coorganizer` et leurs attestations restent lisibles,
+mais ces valeurs ne sont plus proposées comme missions opérationnelles.

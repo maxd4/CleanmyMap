@@ -12,7 +12,6 @@ import { PreparationEquipmentFields } from "./preparation-equipment-fields";
 import { PreparationSecurityFields } from "./preparation-security-fields";
 import { PreparationAccessibilityFields } from "./preparation-accessibility-fields";
 import { PreparationChecklistFields } from "./preparation-checklist-fields";
-import { ActionFieldRolesPanel } from "../../action-field-roles-panel";
 import { ActionAttendanceRegistryEntryPoint } from "../../action-attendance-registry-panel";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
@@ -208,14 +207,6 @@ export function TeamLogisticsSection({
             actionId={actionId}
             isExistingAction={isExistingAction}
           />
-
-          <CmmDisclosure
-            summary={<ActionFormDisclosureSummary label="Responsabilités terrain" detail="Rôles liés aux participants confirmés ; aucun droit d’organisation supplémentaire." />}
-            tone="emerald"
-            size="sm"
-          >
-            <ActionFieldRolesPanel actionId={actionId} />
-          </CmmDisclosure>
 
           <VolunteerRegistrationPanel
             form={form}

@@ -1,8 +1,9 @@
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import {
-  canManageAction,
+  canEditActionForm,
   type ActionPermissionIdentity,
 } from "@/lib/actions/permissions";
+import { loadActionFormEditorIds } from "@/lib/actions/action-form-editors";
 import {
   loadActionById,
   loadActionResumeRowById,
@@ -61,7 +62,8 @@ async function loadAuthorizedResumePhase(
     supabase,
     actionId,
   ).catch(() => []);
-  return canManageAction(identity, action, organizerIds)
+  const editorIds = await loadActionFormEditorIds(supabase, actionId).catch(() => []);
+  return canEditActionForm(identity, action, organizerIds, editorIds)
     ? action.action_phase ?? null
     : null;
 }

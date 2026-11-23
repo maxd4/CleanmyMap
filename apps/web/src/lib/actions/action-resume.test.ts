@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   loadActionById: vi.fn(),
   loadActionResumeRowById: vi.fn(),
   loadCanonicalActionOrganizerIdsForAction: vi.fn(),
+  loadActionFormEditorIds: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -25,6 +26,9 @@ vi.mock("@/lib/actions/store", () => ({
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadCanonicalActionOrganizerIdsForAction:
     mocks.loadCanonicalActionOrganizerIdsForAction,
+}));
+vi.mock("@/lib/actions/action-form-editors", () => ({
+  loadActionFormEditorIds: mocks.loadActionFormEditorIds,
 }));
 
 import { resolveActionResumePhase } from "./action-resume";
@@ -53,6 +57,7 @@ describe("resolveActionResumePhase", () => {
     mocks.loadActionResumeRowById.mockResolvedValue(null);
     mocks.loadActionById.mockResolvedValue(null);
     mocks.loadCanonicalActionOrganizerIdsForAction.mockResolvedValue([]);
+    mocks.loadActionFormEditorIds.mockResolvedValue([]);
   });
 
   it("does not use a privileged client or leak a private phase to an anonymous visitor", async () => {
@@ -163,5 +168,22 @@ describe("resolveActionResumePhase", () => {
         },
       }),
     ).resolves.toBeNull();
+  });
+
+  it("allows a delegated form editor to resume the same private action draft", async () => {
+    mocks.getSupabaseClerkRlsClient.mockResolvedValue({});
+    mocks.loadActionResumeRowById.mockResolvedValue(null);
+    mocks.loadActionById.mockResolvedValue(makeResumeRow({
+      created_by_clerk_id: "owner-1",
+      published_at: null,
+      moderation_visibility: "hidden",
+    }));
+    mocks.loadActionFormEditorIds.mockResolvedValue(["editor-1"]);
+
+    await expect(resolveActionResumePhase({
+      actionId: "private-action",
+      userId: "editor-1",
+      identity: { userId: "editor-1", role: "benevole", activeRole: "benevole" },
+    })).resolves.toBe("pre_action");
   });
 });

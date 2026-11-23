@@ -19,6 +19,8 @@ vi.mock("./action-creation-shell-navigation", () => ({
 vi.mock("@/components/actions/action-role-attestations-panel", () => ({
   ActionRoleAttestationsPanel: () => null,
 }));
+vi.mock("./action-field-roles-panel", () => ({ ActionFieldRolesPanel: () => null }));
+vi.mock("./action-form-editors-panel", () => ({ ActionFormEditorsPanel: () => null }));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 const formProps = {} as ActionCreationSectionFormProps;

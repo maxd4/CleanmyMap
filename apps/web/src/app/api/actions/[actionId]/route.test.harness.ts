@@ -10,6 +10,7 @@ const loadManualInvitationStatusesForActionMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerRowsForActionMock = vi.hoisted(() => vi.fn());
+const loadActionFormEditorIdsMock = vi.hoisted(() => vi.fn());
 const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
 const syncActionManualParticipantsMock = vi.hoisted(() => vi.fn());
 const syncActionOrganizersMock = vi.hoisted(() => vi.fn());
@@ -63,6 +64,10 @@ vi.mock("@/lib/actions/participation/organizers", () => ({
   loadCanonicalActionOrganizerIdsForAction: loadCanonicalActionOrganizerIdsForActionMock,
   resolveActionOrganizers: resolveActionOrganizersMock,
   syncActionManualParticipants: syncActionManualParticipantsMock,
+}));
+
+vi.mock("@/lib/actions/action-form-editors", () => ({
+  loadActionFormEditorIds: loadActionFormEditorIdsMock,
 }));
 
 vi.mock("@/lib/actions/participation/organizer-sync", () => ({
@@ -147,6 +152,7 @@ export {
   loadActionByIdMock,
   loadCanonicalActionOrganizerIdsForActionMock,
   loadActionOrganizerRowsForActionMock,
+  loadActionFormEditorIdsMock,
   loadActionOrganizerIdsForActionMock,
   loadManualRegistrationIdsForActionMock,
   loadActionRegistrationProjectionForActionMock,
@@ -269,6 +275,7 @@ export function resetPatchRouteMocks() {
   loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
   loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
   loadActionOrganizerRowsForActionMock.mockResolvedValue([]);
+  loadActionFormEditorIdsMock.mockResolvedValue([]);
   resolveActionOrganizersMock.mockImplementation(async ({ organizerAccounts = [] }: { organizerAccounts?: string[] }) => ({
     organizers: organizerAccounts.map((userId, index) => ({
       userId,
