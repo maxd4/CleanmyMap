@@ -27,6 +27,8 @@ create temp table attendance_team_fixture (
 );
 grant select, insert, update on attendance_team_fixture to service_role;
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"attendance-teams-test"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 do $$
 declare
   v_action_id uuid := gen_random_uuid();

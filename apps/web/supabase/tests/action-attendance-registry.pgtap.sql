@@ -14,6 +14,8 @@ select ok(exists (select 1 from pg_trigger where tgname = 'action_registrations_
 create temp table attendance_fixture(action_id uuid primary key);
 grant select, insert on attendance_fixture to service_role;
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"attendance-registry-test"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 do $$
 declare
   v_action_id uuid := gen_random_uuid();

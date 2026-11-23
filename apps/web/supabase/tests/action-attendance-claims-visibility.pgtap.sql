@@ -13,6 +13,7 @@ create temp table claim_visibility_fixture(action_id uuid primary key, entry_id 
 grant select, insert on claim_visibility_fixture to service_role;
 
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"claims-visibility-service"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 select is(auth.role(), 'service_role', 'fixture sets the service role claim required by action triggers');
 
 do $$

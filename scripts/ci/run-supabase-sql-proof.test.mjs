@@ -143,6 +143,19 @@ test("attendance claims and route-reference pgTAP plans match their assertions",
   assertPgTapPlanMatchesAssertions(readFileSync(new URL("../../apps/web/supabase/tests/action-media-route-reference.pgtap.sql", import.meta.url), "utf8"), "route-reference media");
 });
 
+test("attendance registry pgTAP fixtures provide the service role JWT claim", () => {
+  for (const file of [
+    "action-attendance-claims-visibility.pgtap.sql",
+    "action-attendance-explicit-reactivation.pgtap.sql",
+    "action-attendance-registry.pgtap.sql",
+    "action-attendance-teams.pgtap.sql",
+  ]) {
+    const sql = readFileSync(new URL(`../../apps/web/supabase/tests/${file}`, import.meta.url), "utf8");
+    assert.match(sql, /request\.jwt\.claims'.*\"role\":\"service_role\"/s, `${file} must set the service JWT role claim`);
+    assert.match(sql, /request\.jwt\.claim\.role', 'service_role'/, `${file} must set the service JWT role setting`);
+  }
+});
+
 test("action attendance teams pgTAP plan matches its assertion count", () => {
   const path = new URL("../../apps/web/supabase/tests/action-attendance-teams.pgtap.sql", import.meta.url);
   const sql = readFileSync(path, "utf8");
@@ -588,7 +601,7 @@ test("SQL evidence binds migration and proof file hashes to the checked-out cand
   const proof = result.records.find(({ path }) => path === "apps/web/supabase/tests/action-attendance-registry.pgtap.sql");
   assert.equal(report, result);
   assert.equal(migration.contentSha256, "2f4b4ea37497fa05d67b3566a78b57ef927644c70b41a2983b2487958d885234");
-  assert.equal(proof.contentSha256, "4da5e23312d7d76d649997f61c29771f470ef4cb0bea2f1b5f09a9f92a75653e");
+  assert.equal(proof.contentSha256, "c4a1d674aa4a02dd3ba60a455fcdc8d3c098d36f26e397a61f488780058130f6");
 });
 
 test("SQL completion markers cannot precede a later assertion", () => {
