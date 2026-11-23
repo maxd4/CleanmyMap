@@ -1,6 +1,6 @@
 begin;
 
-select plan(75);
+select plan(76);
 
 select ok(has_table('public', 'personal_ai_declarations'), 'private declarations table exists');
 select ok(has_column('public', 'personal_ai_declarations', 'quick_scenario'), 'optional chatbot scenario is stored on the existing private table');
@@ -118,6 +118,7 @@ select lives_ok($$
 $$, 'retry of the same chatbot and period updates its stable owner scope');
 select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a' and quick_scenario ->> 'chatbot' = 'CHATGPT'), 1, 'quick scenario retry is idempotent');
 select is((select quick_scenario ->> 'exchanges' from public.personal_ai_declarations where owner_clerk_id = 'user-a' and quick_scenario ->> 'chatbot' = 'CHATGPT'), '5', 'retry replaces declared counts without addition');
+select throws_ok($$update public.personal_ai_declarations set declaration = jsonb_set(declaration, '{tokens,inputTotal}', '1'::jsonb) where owner_clerk_id = 'user-a' and quick_scenario ->> 'chatbot' = 'CHATGPT'$$, '23514', null, 'quick scenario requires each measured token value to remain unknown');
 select throws_ok($$
   select * from public.confirm_personal_ai_import(jsonb_build_array(jsonb_build_object(
     'declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'), '{provider}', '"OPENAI"'::jsonb), '{access}', '"UNKNOWN"'::jsonb) || jsonb_build_object('periodStartUtc', '2026-03-01T00:00:00.000Z', 'periodEndUtc', '2026-04-01T00:00:00.000Z'),

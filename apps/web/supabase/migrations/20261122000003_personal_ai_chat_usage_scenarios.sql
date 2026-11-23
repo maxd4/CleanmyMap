@@ -125,10 +125,14 @@ alter table public.personal_ai_declarations
         'inputTotal', 'inputUncached', 'cacheRead', 'cacheWrite', 'outputVisible',
         'outputReasoning', 'outputTotal', 'reasoningRelation', 'logicalTotal'
       ]::text[] = '{}'::jsonb
-      and not exists (
-        select 1 from jsonb_each(declaration -> 'tokens') token
-        where token.key <> 'reasoningRelation' and token.value <> 'null'::jsonb
-      )
+      and declaration #> '{tokens,inputTotal}' = 'null'::jsonb
+      and declaration #> '{tokens,inputUncached}' = 'null'::jsonb
+      and declaration #> '{tokens,cacheRead}' = 'null'::jsonb
+      and declaration #> '{tokens,cacheWrite}' = 'null'::jsonb
+      and declaration #> '{tokens,outputVisible}' = 'null'::jsonb
+      and declaration #> '{tokens,outputReasoning}' = 'null'::jsonb
+      and declaration #> '{tokens,outputTotal}' = 'null'::jsonb
+      and declaration #> '{tokens,logicalTotal}' = 'null'::jsonb
       and declaration #> '{modality,images}' = 'null'::jsonb
       and declaration #> '{modality,audioMinutes}' = 'null'::jsonb
       and declaration #> '{modality,videoSeconds}' = 'null'::jsonb

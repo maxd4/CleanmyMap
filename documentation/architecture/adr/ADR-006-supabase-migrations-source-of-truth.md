@@ -599,6 +599,24 @@ et `energy` avant l'opérateur JSONB `-`. Ces exceptions utilisent des hashes
 exacts et ne changent pas les règles de validation métier. Aucun changement de
 gate ni écriture distante n'est autorisé par cette exception.
 
+Après cette correction, le replay éphémère sur le SHA
+`d59c6bcbfd936eb0a68a64513e9c3e55bd94008d` a confirmé que
+`20261122000002` passe et que `20261122000003` échoue de façon reproductible
+avec `0A000`. Le diagnostic `psql` privé classe le message exact comme
+`cannot use subquery in check constraint` ; la source correspond à l'expression
+`NOT EXISTS (SELECT ... FROM jsonb_each(...))` de la contrainte
+`personal_ai_quick_scenario_shape`. Cette migration est absente de l'historique
+lié vérifié par `migration list --linked`. L'exception pré-application
+remplace cette sous-requête par des comparaisons JSONB explicites à `null` pour
+les huit valeurs de mesure, en conservant l'exception existante de
+`reasoningRelation`. La preuve pgTAP conserve le cas valide et vérifie qu'une
+mesure non nulle est refusée. La règle métier ne change pas.
+
+```text
+20261122000003_SUBQUERY_FIX_BEFORE_HASH: 6D2B77237DDB77ABFDD99AE297A913BA555E27E7B194294246E1582C194BE255
+20261122000003_SUBQUERY_FIX_AFTER_HASH: 1C71F6951EF553317676D0D38A9B133FB9FC7A4A6B111B20363DFFF3E52EBA0F
+```
+
 ```text
 20261122000001_BEFORE_HASH: 9289D8D77B767391DB2A6611F6FD93FA85317F19E1E3B5F2170D72E571B63C4F
 20261122000001_AFTER_HASH:  AE5B1FB64815C521F1BD12E9CDF9F9155AFB8E90DED6A021959E14729618B7F5
