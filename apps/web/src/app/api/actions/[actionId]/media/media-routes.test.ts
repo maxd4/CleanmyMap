@@ -6,6 +6,7 @@ const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const listActionMediaMock = vi.hoisted(() => vi.fn());
 const createActionMediaUploadIntentMock = vi.hoisted(() => vi.fn());
+const removeActionRouteReferenceMock = vi.hoisted(() => vi.fn());
 const finalizeActionMediaMock = vi.hoisted(() => vi.fn());
 const handleApiErrorMock = vi.hoisted(() => vi.fn());
 const validationErrorResponseMock = vi.hoisted(() => vi.fn());
@@ -30,6 +31,7 @@ vi.mock("@/lib/actions/action-media/action-media", async () => ({
   )),
   listActionMedia: listActionMediaMock,
   createActionMediaUploadIntent: createActionMediaUploadIntentMock,
+  removeActionRouteReference: removeActionRouteReferenceMock,
   finalizeActionMedia: finalizeActionMediaMock,
 }));
 
@@ -193,6 +195,22 @@ describe("Action media HTTP boundaries", () => {
       actionId: "action-1",
       purpose: "report_photo",
     });
+  });
+
+  it("removes only an authenticated route reference through the existing media intent API", async () => {
+    const response = await createUploadIntent(uploadIntentRequest({
+      operation: "remove_route_reference",
+      mediaId: "22222222-2222-4222-8222-222222222222",
+    }), { params });
+
+    expect(response.status).toBe(200);
+    expect(removeActionRouteReferenceMock).toHaveBeenCalledWith(supabase, {
+      actionId: "action-1",
+      mediaId: "22222222-2222-4222-8222-222222222222",
+      userId: "owner-1",
+      identity,
+    });
+    expect(createActionMediaUploadIntentMock).not.toHaveBeenCalled();
   });
 
   it("maps an inadmissible upload intent to a stable conflict without exposing service details", async () => {

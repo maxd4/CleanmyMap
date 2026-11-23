@@ -10,3 +10,8 @@ export const mediaUploadIntentSchema = z.object({
   sortOrder: z.number().int().min(0).max(2).optional(),
   clientUploadId: z.string().trim().min(1).max(128),
 });
+
+export const actionRouteReferenceRemovalSchema = z.object({
+  operation: z.literal("remove_route_reference"),
+  mediaId: z.string().uuid(),
+});

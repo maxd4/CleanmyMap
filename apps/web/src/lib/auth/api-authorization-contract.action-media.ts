@@ -3,10 +3,10 @@ import type { ApiAuthorizationContract } from "./api-authorization-contract.type
 export const actionMediaAuthorizationContract = {
   "actions/[actionId]/media/intents": {
     POST: {
-      expected: "Authenticated action creator/organizer or admin/max creates an idempotent completed-action photo intent",
+      expected: "Authenticated action creator/organizer or admin/max creates an idempotent report-photo intent; an action form editor can remove only a same-action route reference",
       dimensions: ["authentication", "business permission", "ownership"],
-      actual: "requireActionRequestAccess + getCurrentUserIdentity + createActionMediaUploadIntent, which rechecks canManageAction, the canonical action_organizers relation and the admissible action phase",
-      evidence: ["requireActionRequestAccess", "getCurrentUserIdentity", "createActionMediaUploadIntent"],
+      actual: "requireActionRequestAccess + getCurrentUserIdentity + createActionMediaUploadIntent or removeActionRouteReference; server services recheck canManageAction for report photos or canEditActionForm and route_reference purpose for deletion",
+      evidence: ["requireActionRequestAccess", "getCurrentUserIdentity", "createActionMediaUploadIntent", "removeActionRouteReference"],
       evidenceScope: "method",
     },
   },
@@ -25,15 +25,6 @@ export const actionMediaAuthorizationContract = {
       dimensions: ["authentication", "business permission", "ownership"],
       actual: "requireActionRequestAccess + getCurrentUserIdentity + listActionMedia, which rechecks canManageAction, filters ready rows and generates transient signed URLs",
       evidence: ["requireActionRequestAccess", "getCurrentUserIdentity", "listActionMedia"],
-      evidenceScope: "method",
-    },
-  },
-  "actions/[actionId]/media/[mediaId]": {
-    DELETE: {
-      expected: "An authenticated action form editor removes only a same-action route reference; report-photo management remains restricted to canManageAction",
-      dimensions: ["authentication", "business permission", "ownership"],
-      actual: "requireActionRequestAccess + getCurrentUserIdentity + removeActionRouteReference, which rechecks canEditActionForm and scopes the lookup and removal to the action and route_reference purpose",
-      evidence: ["requireActionRequestAccess", "getCurrentUserIdentity", "removeActionRouteReference"],
       evidenceScope: "method",
     },
   },

@@ -4,10 +4,11 @@ import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createActionMediaUploadIntent,
+  removeActionRouteReference,
 } from "@/lib/actions/action-media/action-media";
 import { validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { mediaUploadIntentSchema } from "@/lib/actions/media/media-upload-intent-schema";
+import { actionRouteReferenceRemovalSchema, mediaUploadIntentSchema } from "@/lib/actions/media/media-upload-intent-schema";
 import { actionMediaErrorResponse } from "@/lib/actions/action-media/action-media-route-error";
 
 export const runtime = "nodejs";
@@ -27,12 +28,25 @@ export async function POST(
   } catch {
     return validationErrorResponse({ body: ["Le contenu de la requête est invalide."] });
   }
-  const parsed = mediaUploadIntentSchema.safeParse(body);
-  if (!parsed.success) return validationErrorResponse({ media: ["Les métadonnées photo sont invalides."] });
+  const removeReference = actionRouteReferenceRemovalSchema.safeParse(body);
+  const parsed = removeReference.success ? null : mediaUploadIntentSchema.safeParse(body);
+  if (!removeReference.success && !parsed?.success) {
+    return validationErrorResponse({ media: ["Les métadonnées photo sont invalides."] });
+  }
 
   try {
     const { actionId } = await context.params;
     const identity = await getCurrentUserIdentity({ userId: access.userId });
+    if (removeReference.success) {
+      await removeActionRouteReference(getSupabaseServerClient(true), {
+        actionId,
+        mediaId: removeReference.data.mediaId,
+        userId: access.userId,
+        identity,
+      });
+      return NextResponse.json({ status: "ok" });
+    }
+    if (!parsed?.success) return validationErrorResponse({ media: ["Les métadonnées photo sont invalides."] });
     const intent = await createActionMediaUploadIntent(getSupabaseServerClient(true), {
       ...parsed.data,
       purpose: parsed.data.purpose ?? "report_photo",

@@ -51,6 +51,10 @@ export async function readActionRouteReference(actionId: string, mediaId: string
 }
 
 export async function deleteActionRouteReference(actionId: string, mediaId: string): Promise<void> {
-  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/media/${encodeURIComponent(mediaId)}`, { method: "DELETE" });
+  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/media/intents`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ operation: "remove_route_reference", mediaId }),
+  });
   if (!response.ok) throw new Error(await responseError(response, "La suppression de l’image a échoué."));
 }
