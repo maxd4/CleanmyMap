@@ -4,7 +4,7 @@ import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createReactDomHarness } from "@/__tests__/support/action-behavior-test-helpers";
 import type { ActionAttendanceEntryRow } from "@/types/database";
-import { ActionAttendanceRegistryPanel } from "./action-attendance-registry-panel";
+import { ActionAttendanceRegistryEntryPoint, ActionAttendanceRegistryPanel } from "./action-attendance-registry-panel";
 
 function entry(id: string, display_label: string, status: ActionAttendanceEntryRow["attendance_status"] = "unknown", clerk_user_id: string | null = null): ActionAttendanceEntryRow {
   return {
@@ -42,6 +42,58 @@ afterEach(() => {
 });
 
 describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
+  it("waits for a persisted actionId, then reuses the same roster through preparation, day, and bilan", async () => {
+    const fetchMock = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      if (init?.method === "POST") return response({ entry: active[0] });
+      return response({ actionId: "action-1", entries: active, declared: { total: 4, adults: 2, retired: 1, children: 1 }, canMarkPresent: false });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const mounted = harness.mount(<ActionAttendanceRegistryEntryPoint actionId={null} mode="preparation" />);
+    expect(mounted.textContent).toContain("accessible après l’enregistrement de l’action");
+    expect(mounted.querySelector('[data-testid="action-attendance-registry-preparation"]')).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    harness.render(<ActionAttendanceRegistryEntryPoint actionId="action-1" mode="preparation" />);
+    await harness.flush();
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    expect(mounted.querySelector('[data-testid="action-attendance-registry-preparation"]')).not.toBeNull();
+    expect(mounted.textContent).toContain("Les inscriptions confirmées apparaissent ici");
+    expect(mounted.querySelectorAll("ul.divide-y > li")).toHaveLength(3);
+    expect(mounted.textContent).toContain("Présent");
+    expect([...mounted.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Présent")?.disabled).toBe(true);
+
+    harness.render(<ActionAttendanceRegistryPanel actionId="action-1" mode="day" />);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    expect(mounted.querySelector('[data-testid="action-attendance-registry-day"]')).not.toBeNull();
+    expect(mounted.querySelectorAll("ul.divide-y > li")).toHaveLength(3);
+    harness.render(<ActionAttendanceRegistryPanel actionId="action-1" mode="bilan" />);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    expect(mounted.querySelector('[data-testid="action-attendance-registry-bilan"]')).not.toBeNull();
+    expect(mounted.querySelectorAll("ul.divide-y > li")).toHaveLength(3);
+    expect(mounted.textContent).toContain("Écart non rapproché : 3");
+    const registryReads = fetchMock.mock.calls.filter(([, init]) => init?.method !== "POST");
+    expect(registryReads).toHaveLength(2);
+    expect(registryReads.every(([url]) => String(url).includes("/api/actions/action-1/attendance-registry"))).toBe(true);
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+  });
+
+  it("keeps the preparation entry point unavailable when the organizer cannot access the registry", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => response({ error: "Accès refusé." }, 403)));
+    const mounted = harness.mount(<ActionAttendanceRegistryEntryPoint actionId="action-1" mode="preparation" />);
+    await harness.flush();
+    expect(mounted.querySelector('[data-testid="action-attendance-registry-preparation"]')).toBeNull();
+    expect(mounted.textContent).not.toContain("Alex Martin");
+  });
+
+  it("shows a server read error and retry affordance in preparation mode", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => response({ error: "Indisponible" }, 500)));
+    const mounted = harness.mount(<ActionAttendanceRegistryEntryPoint actionId="action-1" mode="preparation" />);
+    await harness.flush();
+    expect(mounted.textContent).toContain("Le registre privé est indisponible.");
+    expect(mounted.querySelector('[role="alert"]')).not.toBeNull();
+    expect([...mounted.querySelectorAll("button")].some((button) => button.textContent === "Réessayer")).toBe(true);
+  });
+
   it("keeps counters and bilan independent from the displayed search results", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       if (String(url).includes("/api/chat/users")) return response({ users: [] });

@@ -51,27 +51,27 @@ export function extractSafePostgresError(output, migrationVersion) {
 }
 
 function collectStructuredErrorFields(output) {
-  let rootObject = null;
   const text = String(output ?? "").trim();
+  const objects = [];
   try {
-    rootObject = JSON.parse(text);
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === "object") objects.push(parsed);
   } catch {
     for (const line of text.split(/\r?\n/u)) {
       const jsonStart = line.indexOf("{");
       if (jsonStart < 0) continue;
       try {
         const parsed = JSON.parse(line.slice(jsonStart));
-        if (parsed && typeof parsed === "object") {
-          rootObject = parsed;
-          break;
-        }
+        if (parsed && typeof parsed === "object") objects.push(parsed);
       } catch {
         // Non-JSON CLI progress lines are ignored; only structured fields below are used.
       }
     }
   }
-  const fields = { sqlstate: null, position: null, message: "" };
-  const visit = (value, depth = 0) => {
+  let fallback = { sqlstate: null, position: null, message: "" };
+  for (const rootObject of objects) {
+    const fields = { sqlstate: null, position: null, message: "" };
+    const visit = (value, depth = 0) => {
     if (!value || typeof value !== "object" || depth > 8) return;
     for (const [key, nested] of Object.entries(value)) {
       if (/^(?:sqlstate|sql_state|sql_state_code|state_code|code)$/iu.test(key) && /^[0-9A-Z]{5}$/iu.test(String(nested ?? ""))) {
@@ -84,8 +84,13 @@ function collectStructuredErrorFields(output) {
       if (nested && typeof nested === "object") visit(nested, depth + 1);
     }
   };
-  visit(rootObject);
-  return fields;
+    visit(rootObject);
+    if (fields.sqlstate && fields.sqlstate !== "00000") return fields;
+    if (!fallback.sqlstate) fallback.sqlstate = fields.sqlstate;
+    if (fallback.position === null) fallback.position = fields.position;
+    fallback.message = `${fallback.message} ${fields.message}`.trim();
+  }
+  return fallback;
 }
 
 function migrationFiles() {
@@ -118,10 +123,15 @@ function readPrivatePostgresLogs(since, privateLog) {
   const dbContainer = containerList.split(/\r?\n/u)
     .map((line) => line.trim().split(/\s+/u))
     .find(([, name]) => name?.startsWith("supabase_db_"))?.[0];
-  if (!dbContainer) return "";
+  if (!dbContainer) return { containerFound: false, dockerOutput: "", serverOutput: "" };
   const log = run("docker", ["logs", "--since", since, dbContainer], { cwd: root, allowFailure: true }).output;
   writeFileSync(privateLog, log, { mode: 0o600 });
-  return log;
+  const serverLog = run("docker", ["exec", dbContainer, "sh", "-c", "for file in /var/log/postgresql/*.json /var/lib/postgresql/data/log/*.json; do if [ -f \"$file\" ]; then tail -n 300 \"$file\"; fi; done"], {
+    cwd: root,
+    allowFailure: true,
+    privateLog: join(dirname(privateLog), "postgres-server-query.jsonl"),
+  }).output;
+  return { containerFound: true, dockerOutput: log, serverOutput: serverLog };
 }
 
 export function findFirstFailedPrefix(length, resetPrefix) {
@@ -233,11 +243,17 @@ function main() {
             privateLog: statementLog,
           });
           const cliOutput = readFileSync(statementLog, "utf8");
-          const postgresOutput = readPrivatePostgresLogs(queryStartedAt, join(privateDir, "postgres-query.jsonl"));
+          const postgresLogs = readPrivatePostgresLogs(queryStartedAt, join(privateDir, "postgres-query.jsonl"));
+          const postgresOutput = `${postgresLogs.dockerOutput}\n${postgresLogs.serverOutput}`;
           writeFileSync(statementLog, `${cliOutput}\n${postgresOutput}`, { mode: 0o600 });
+          const safePostgresError = extractSafePostgresError(readFileSync(statementLog, "utf8"), failing.version);
           evidence.failure = {
             stage: statementRun.status === 0 ? "ISOLATED_MIGRATION_UNEXPECTED_PASS" : "ISOLATED_MIGRATION_STATEMENT",
-            ...extractSafePostgresError(readFileSync(statementLog, "utf8"), failing.version),
+            ...safePostgresError,
+            isolatedStatementExitCode: statementRun.status,
+            postgresContainerFound: postgresLogs.containerFound,
+            postgresDockerLogObserved: postgresLogs.dockerOutput.trim().length > 0,
+            postgresServerLogObserved: postgresLogs.serverOutput.trim().length > 0,
           };
           const statementPosition = evidence.failure.statementPosition;
           if (statementPosition !== null) {

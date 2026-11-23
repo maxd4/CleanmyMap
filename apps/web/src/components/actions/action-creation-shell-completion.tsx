@@ -3,7 +3,7 @@ import { ActionLifecycleNavigation } from "./action-creation-shell-navigation";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { ActionRoleAttestationsPanel } from "@/components/actions/action-role-attestations-panel";
 import type { ActionCreationSectionFormProps } from "./action-creation-shell.types";
-import { ActionAttendanceRegistryPanel } from "./action-attendance-registry-panel";
+import { ActionAttendanceRegistryEntryPoint, ActionAttendanceRegistryPanel } from "./action-attendance-registry-panel";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -12,13 +12,15 @@ export function AfterActionCreationView({
   actionId,
   searchParams,
   fr,
+  onActionPersisted,
 }: {
   formProps: ActionCreationSectionFormProps;
   actionId: string | null;
   searchParams?: SearchParams;
   fr: boolean;
+  onActionPersisted?: (actionId: string) => void;
 }) {
-  return <div data-testid="action-creation-shell" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950">Bilan d’une action réalisée</h1></CmmCard><ActionLifecycleNavigation actionId={actionId} activeSpace="bilan" fr={fr} searchParams={searchParams} /><div role="tabpanel" aria-labelledby={actionId ? "action-creation-space-bilan" : "action-creation-tab-after"}><ActionDeclarationForm {...formProps} initialActionId={actionId} /></div></div></div>;
+  return <div data-testid="action-creation-shell" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950">Bilan d’une action réalisée</h1></CmmCard><ActionLifecycleNavigation actionId={actionId} activeSpace="bilan" fr={fr} searchParams={searchParams} /><ActionAttendanceRegistryEntryPoint actionId={actionId} mode="bilan" /><div role="tabpanel" aria-labelledby={actionId ? "action-creation-space-bilan" : "action-creation-tab-after"}><ActionDeclarationForm {...formProps} initialActionId={actionId} onActionPersisted={onActionPersisted} /></div></div></div>;
 }
 export function ActionBilanView({
   formProps,

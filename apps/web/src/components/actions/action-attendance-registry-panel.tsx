@@ -10,7 +10,18 @@ import { useActionAttendanceRegistry } from "./use-action-attendance-registry";
 
 const STATUS_LABELS = { unknown: "À confirmer", present: "Présent", absent: "Absent" } as const;
 
-export function ActionAttendanceRegistryPanel({ actionId, mode }: { actionId: string; mode: "day" | "bilan" }) {
+type AttendanceRegistryMode = "preparation" | "day" | "bilan";
+
+export function ActionAttendanceRegistryEntryPoint({ actionId, mode }: { actionId: string | null | undefined; mode: "preparation" | "bilan" }) {
+  if (!actionId) {
+    return <p role="note" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950" data-testid="action-attendance-registry-not-persisted">
+      La liste d’appel privée sera accessible après l’enregistrement de l’action. Cette étape ne crée pas l’action automatiquement.
+    </p>;
+  }
+  return <ActionAttendanceRegistryPanel actionId={actionId} mode={mode} />;
+}
+
+export function ActionAttendanceRegistryPanel({ actionId, mode }: { actionId: string; mode: AttendanceRegistryMode }) {
   const { snapshot, loadState, errorMessage, busyKey, mutate, refresh } = useActionAttendanceRegistry(actionId);
   const [label, setLabel] = useState("");
   const [selectedUser, setSelectedUser] = useState<ChatUserOption | null>(null);
@@ -70,7 +81,7 @@ export function ActionAttendanceRegistryPanel({ actionId, mode }: { actionId: st
   const gap = declaredTotal === null || declaredTotal === undefined ? null : declaredTotal - counts.present;
   return <CmmCard as="section" tone="violet" variant="outlined" size="md" data-testid={`action-attendance-registry-${mode}`}>
     <div className="space-y-4">
-      <header><p className="text-xs font-black uppercase tracking-wide text-violet-700">Registre privé</p><h2 className="mt-1 text-xl font-black text-violet-950">{mode === "day" ? "Feuille d’appel" : "Présences identifiées"}</h2><p className="mt-1 text-sm text-violet-900">Ce suivi nominatif reste privé. Il ne valide pas la participation finale.</p></header>
+      <header><p className="text-xs font-black uppercase tracking-wide text-violet-700">Registre privé</p><h2 className="mt-1 text-xl font-black text-violet-950">{mode === "day" ? "Feuille d’appel" : mode === "preparation" ? "Liste d’appel et personnes attendues" : "Présences identifiées"}</h2><p className="mt-1 text-sm text-violet-900">Ce suivi nominatif reste privé. Il ne valide pas la participation finale.</p>{mode === "preparation" ? <p className="mt-1 text-sm text-violet-900">Les inscriptions confirmées apparaissent ici après synchronisation. Une identité ajoutée librement ne crée ni inscription ni compte.</p> : null}</header>
       {loadState === "loading" ? <p role="status" className="text-sm">Chargement du registre…</p> : null}
       {loadState === "error" ? <div role="alert" className="space-y-2 text-sm"><p>Le registre privé est indisponible.</p><CmmButton type="button" size="sm" onClick={() => { void refresh(); }}>Réessayer</CmmButton></div> : null}
       {snapshot ? <>

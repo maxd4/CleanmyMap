@@ -143,7 +143,7 @@ function ActionCreationShellView({
     return <div data-testid="action-day-shell" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><PageHeader tone="emerald" title="Jour J" subtitle="Retrouvez le rendez-vous et le briefing de la même action." /><ActionLifecycleNavigation actionId={actionIdForRender} activeSpace="day" fr={fr} searchParams={actionCreationSearchParams} /><ActionDayView actionId={actionIdForRender} /></div></div>;
   }
   if (initialSpace === "bilan" && actionIdForRender) return <ActionBilanView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} />;
-  if (initialTab === "after") return <AfterActionCreationView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} />;
+  if (initialTab === "after") return <AfterActionCreationView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} onActionPersisted={handleBeforeActionPersisted} />;
   if (sectionsEnabled) {
     return <ActionCreationSectionsView state={renderedSectionState} fr={fr} activeSpace={initialSpace} formSnapshot={formSnapshot} currentActionId={actionIdForRender} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} content={<ActionCreationSectionContent {...sharedViewProps} onNavigateSection={navigateToSection} activeSection={renderedSectionState.activeSection} initialSubsection={initialSubsection} initialPanel={initialPanel} formSnapshot={formSnapshot} />} />;
   }

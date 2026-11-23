@@ -13,6 +13,7 @@ import { PreparationSecurityFields } from "./preparation-security-fields";
 import { PreparationAccessibilityFields } from "./preparation-accessibility-fields";
 import { PreparationChecklistFields } from "./preparation-checklist-fields";
 import { ActionFieldRolesPanel } from "../../action-field-roles-panel";
+import { ActionAttendanceRegistryEntryPoint } from "../../action-attendance-registry-panel";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import { parseOrganizerAccounts, normalizeParticipantAccounts } from "../payload";
@@ -225,6 +226,15 @@ export function TeamLogisticsSection({
             invitationStatuses={invitationStatuses}
             embedded
           />
+
+          <CmmDisclosure
+            id="team-logistics-attendance-registry"
+            summary={<ActionFormDisclosureSummary label="Liste d’appel et personnes attendues" detail={actionId ? "inscriptions confirmées synchronisées · liste privée partagée avec Jour J et le bilan" : "accessible après l’enregistrement de l’action"} />}
+            tone="emerald"
+            size="sm"
+          >
+            <ActionAttendanceRegistryEntryPoint actionId={actionId} mode="preparation" />
+          </CmmDisclosure>
         </div>
       </CmmDisclosure>
 

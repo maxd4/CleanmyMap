@@ -12,4 +12,6 @@ export type ActionDeclarationFormProps = Pick<
   | "initialActionId"
   | "signInHref"
   | "signUpHref"
->;
+> & {
+  onActionPersisted?: (actionId: string) => void;
+};

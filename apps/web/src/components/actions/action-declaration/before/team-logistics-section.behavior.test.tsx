@@ -16,7 +16,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let host: HTMLDivElement;
 let root: Root;
 
-function renderTeam(form: FormState, validationIssueFields: string[] = []) {
+function renderTeam(form: FormState, validationIssueFields: string[] = [], actionId?: string | null) {
   const updateField = vi.fn();
   const updateFields = vi.fn();
   act(() => {
@@ -30,6 +30,7 @@ function renderTeam(form: FormState, validationIssueFields: string[] = []) {
         onToggleGroupJoinHelp={vi.fn()}
         invitationStatuses={[]}
         validationIssueFields={validationIssueFields}
+        actionId={actionId}
       />,
     );
   });
@@ -48,10 +49,38 @@ afterEach(() => {
 });
 
 describe("TeamLogisticsSection", () => {
+  it("keeps the call-list entry point informational before save and loads the shared registry after an actionId arrives", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes("attendance-registry")) {
+        return new Response(JSON.stringify({
+          actionId: "action-after-save",
+          entries: [],
+          declared: { total: null, adults: null, retired: null, children: null },
+          canMarkPresent: false,
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify({}), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const form = createInitialFormState("Organisateur", "action");
+
+    renderTeam(form);
+    expect(host.querySelector("#team-logistics-attendance-registry")?.textContent).toContain("accessible après l’enregistrement de l’action");
+    expect(host.querySelector('[data-testid="action-attendance-registry-preparation"]')).toBeNull();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("attendance-registry"))).toBe(false);
+
+    renderTeam(form, [], "action-after-save");
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(host.querySelector('[data-testid="action-attendance-registry-preparation"]')).not.toBeNull();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/api/actions/action-after-save/attendance-registry"))).toBe(true);
+  });
+
   it("shows four named main disclosures and keeps essential safety guidance visible", () => {
     renderTeam(createInitialFormState("Organisateur", "action"));
 
-    const mainDisclosures = Array.from(host.querySelectorAll<HTMLDetailsElement>("details[id^='team-logistics-']"));
+    const mainDisclosures = ["coordination", "equipment", "safety", "flow"].map((name) =>
+      host.querySelector<HTMLDetailsElement>(`#team-logistics-${name}`),
+    ).filter((item): item is HTMLDetailsElement => item !== null);
     expect(mainDisclosures.map((item) => item.id)).toEqual([
       "team-logistics-coordination",
       "team-logistics-equipment",

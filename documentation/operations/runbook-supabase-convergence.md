@@ -144,12 +144,13 @@ active l'arbre canonique en lecture seule par symlink et teste les préfixes
 chronologiques par dichotomie, sans seed, puis rejoue la migration fautive
 seule sur le préfixe immédiatement antérieur valide.
 
-Les sorties brutes de commandes restent privées dans `$RUNNER_TEMP` et sont
-supprimées avec le runner. Le seul artefact publié contient le SHA candidat,
-les hashes des migrations canoniques, le résultat séparé du bootstrap/replay,
-la version corrélée par le préfixe expérimental, le SQLSTATE, le type PostgreSQL
-si allowlisté et la position/ligne d'instruction si disponible. Il ne contient
-ni valeur rejetée, ni SQL, ni message brut. Cette preuve diagnostique ne vaut
+Les sorties brutes du CLI, des journaux Docker et des journaux JSON privés de
+PostgreSQL restent dans `$RUNNER_TEMP` et sont supprimées avec le runner. Le
+seul artefact publié contient le SHA candidat, les hashes des migrations
+canoniques, le résultat séparé du bootstrap/replay, la version corrélée par le
+préfixe expérimental, l'observation des sources de logs, le SQLSTATE, le type
+PostgreSQL si allowlisté et la position/ligne d'instruction si disponible. Il
+ne contient ni valeur rejetée, ni SQL, ni message brut. Cette preuve diagnostique ne vaut
 pas `REPLAY_FROM_ZERO`, ne lance ni seed ni pgTAP/concurrence, et ne permet
 jamais la convergence Production. Le workflow complet reste le seul à produire
 l'attestation consommée par `supabase-convergence.yml`.

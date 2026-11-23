@@ -2,8 +2,13 @@
 
 ## Propriétaire et surfaces
 
-Le registre nominatif est rendu dans la feuille d’appel Jour J et dans le
-bilan d’action. Il reste privé et distinct des inscriptions et de la
+Le registre nominatif partagé est rendu en préparation, dans la feuille
+d’appel Jour J et dans le bilan d’action. Ces trois phases lisent et modifient
+les mêmes entrées via le même `actionId` et la même API ; aucune copie n’est
+stockée dans `preparationData`. Avant la première sauvegarde, l’interface
+indique que la liste sera accessible après l’enregistrement sans créer
+l’action. La reprise utilise l’identifiant de l’action déjà persistée. Le
+registre reste privé et distinct des inscriptions et de la
 participation finale. Les entrées actives et leurs compteurs sont la source
 des totaux du registre ; la recherche de lignes ne filtre que l’affichage.
 L’écart du bilan compare l’effectif déclaré au nombre de présences identifiées
