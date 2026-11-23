@@ -80,6 +80,7 @@ select ok(
         'created_by_clerk_id', 'backup-restore-owner',
         'action_date', '2026-11-24',
         'location_label', 'Backup fixture',
+        'duration_minutes', 30,
         'status', 'pending',
         'action_phase', 'pre_action',
         'preparation_data', '{}'::jsonb
