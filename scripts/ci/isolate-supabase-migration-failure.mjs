@@ -247,13 +247,12 @@ function main() {
         }
         if (isolatedPrefixReady) {
           currentStage = "ISOLATED_MIGRATION_STATEMENT";
-          const verbosityRun = run(cli, ["db", "query", "--local", "--workdir", workdir, "ALTER SYSTEM SET log_error_verbosity = 'verbose'; SELECT pg_reload_conf();", "--output-format", "json"], {
-            cwd: root,
-            allowFailure: true,
-            privateLog: join(privateDir, "set-log-verbosity.log"),
-          });
+          const originalSql = readFileSync(failing.path, "utf8");
+          const diagnosticSql = `SET log_error_verbosity = 'verbose';\n${originalSql}`;
+          const diagnosticMigrationPath = join(privateDir, `${failing.version}-verbose.sql`);
+          writeFileSync(diagnosticMigrationPath, diagnosticSql, { mode: 0o600 });
           const queryStartedAt = new Date(Date.now() - 1000).toISOString();
-          const statementRun = run(cli, ["db", "query", "--local", "--workdir", workdir, "--file", failing.path, "--output-format", "json", "--debug"], {
+          const statementRun = run(cli, ["db", "query", "--local", "--workdir", workdir, "--file", diagnosticMigrationPath, "--output-format", "json", "--debug"], {
             cwd: root,
             allowFailure: true,
             privateLog: statementLog,
@@ -269,15 +268,15 @@ function main() {
             ...safePostgresError,
             isolatedStatementFailureClass: classifyPrivateFailure(combinedPrivateOutput),
             isolatedStatementExitCode: statementRun.status,
-            logVerbosityEnabled: verbosityRun.status === 0,
+            logVerbosityInjected: true,
             postgresContainerFound: postgresLogs.containerFound,
             postgresDockerLogObserved: postgresLogs.dockerOutput.trim().length > 0,
             postgresServerLogObserved: postgresLogs.serverOutput.trim().length > 0,
           };
           const statementPosition = evidence.failure.statementPosition;
           if (statementPosition !== null) {
-            const sql = readFileSync(failing.path, "utf8");
-            evidence.failure.instructionLine = sql.slice(0, statementPosition - 1).split("\n").length;
+            const diagnosticLine = diagnosticSql.slice(0, statementPosition - 1).split("\n").length;
+            evidence.failure.instructionLine = Math.max(1, diagnosticLine - 1);
           } else {
             evidence.failure.instructionLine = null;
           }
