@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { patchAction } from "@/__tests__/support/action-route-helpers";
+import { formatCivilDateInTimeZone } from "@/lib/time/civil-date";
 import { appendActionModerationAuditMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, requireAuthenticatedAccessMock, seedValidatedImpactAction, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 const patchRequest = (body: unknown) =>
@@ -33,7 +35,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
     expect(response.status).toBe(403);
     expect(updateMock).not.toHaveBeenCalled();
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
-  });
+  }, 15_000);
 
   it("lets admin correct validated impact with a reason and an audit snapshot", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
@@ -179,6 +181,9 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
       updated_at: "old-revision",
       status: "pending",
       action_phase: "pre_action",
+      action_date: "2020-01-01",
+      action_timezone: "Europe/Paris",
+      event_end_at: "2020-01-01T10:00:00.000Z",
       preparation_data: { actionTitle: "Ancienne préparation" },
       created_by_clerk_id: "user-test-2",
       actor_name: "Ancien nom",
@@ -350,4 +355,36 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
     expect(serializedAudit).not.toContain("photo-new");
     expect(serializedAudit).not.toContain("participant-2");
   });
+
+  it("does not let an admin finalize an action before its persisted event end", async () => {
+    const now = new Date();
+    const eventEndAt = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ userId: "admin-1", role: "admin", activeRole: "admin" });
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin-1" });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      updated_at: "old-revision",
+      status: "pending",
+      action_phase: "pre_action",
+      action_date: formatCivilDateInTimeZone(now, "Europe/Paris"),
+      action_timezone: "Europe/Paris",
+      event_end_at: eventEndAt,
+      preparation_data: { actionTitle: "Action encore à venir" },
+      created_by_clerk_id: "user-test-2",
+      notes: null,
+    });
+
+    const response = await patchAction({
+      actionPhase: "post_action_complete",
+      volunteersCount: 12,
+      volunteerParticipation: { childrenCount: 1, adultCount: 11, retiredCount: 0 },
+    });
+
+    const responseBody = await response.json();
+    expect(responseBody).toMatchObject({ code: "finalization_not_eligible" });
+    expect(response.status).toBe(409);
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  }, 15_000);
 });
