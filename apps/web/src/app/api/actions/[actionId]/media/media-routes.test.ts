@@ -129,6 +129,7 @@ describe("Action media HTTP boundaries", () => {
       actionId: "action-1",
       userId: "owner-1",
       identity,
+      purpose: "report_photo",
     });
   });
 
@@ -190,6 +191,7 @@ describe("Action media HTTP boundaries", () => {
       userId: "owner-1",
       identity,
       actionId: "action-1",
+      purpose: "report_photo",
     });
   });
 

@@ -182,6 +182,16 @@ export async function preparePatchMutation({
   if (parsedBodyResult instanceof Response) return parsedBodyResult;
   const parsedBody = parsedBodyResult;
 
+  const routeReferenceMediaId = parsedBody.preparationData?.routeReferenceImageMediaId;
+  if (typeof routeReferenceMediaId === "string") {
+    const media = await supabase.from("action_media").select("id, purpose, upload_state")
+      .eq("id", routeReferenceMediaId).eq("action_id", actionId).maybeSingle();
+    if (media.error) throw media.error;
+    if (!media.data || media.data.purpose !== "route_reference" || media.data.upload_state !== "ready") {
+      return validationErrorResponse({ preparationData: ["L’image de référence doit être un média privé prêt de cette action."] });
+    }
+  }
+
   const preparedUpdate = await prepareActionUpdate({ current, parsedBody, userId }).catch((error: unknown) => {
     if (error instanceof ActionUpdateValidationError) {
       return validationErrorResponse({ [error.field]: [error.message] });

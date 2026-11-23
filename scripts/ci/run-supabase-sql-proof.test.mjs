@@ -51,6 +51,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/action-event-timezones-integrity.pgtap.sql",
     "apps/web/supabase/tests/action-field-roles-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/action-form-editors.pgtap.sql",
+    "apps/web/supabase/tests/action-media-route-reference.pgtap.sql",
     "apps/web/supabase/tests/action-need-offers-contract.pgtap.sql",
     "apps/web/supabase/tests/action-needs-contract.pgtap.sql",
     "apps/web/supabase/tests/action-organizer-types.pgtap.sql",

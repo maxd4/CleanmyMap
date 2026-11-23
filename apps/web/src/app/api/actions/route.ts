@@ -120,6 +120,9 @@ function resolveIdempotencyKey(request: Request): string | Response | undefined 
 }
 
 function validateActionCreationPayload(payload: CreateActionRequest): Response | null {
+  if (typeof payload.preparationData?.routeReferenceImageMediaId === "string") {
+    return validationErrorResponse({ preparationData: ["Une image de référence ne peut être liée qu’après la création de l’action."] });
+  }
   if ((payload.recordType ?? "action") === "action" && !payload.organizerType) {
     return validationErrorResponse({
       organizerType: ["Sélectionnez un type de structure."],

@@ -1,17 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { canManageAction, type ActionPermissionIdentity } from "@/lib/actions/permissions";
+import { canEditActionForm, canManageAction, type ActionPermissionIdentity } from "@/lib/actions/permissions";
+import { loadActionFormEditorIds } from "@/lib/actions/action-form-editors";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import {
   ACTION_MEDIA_ALLOWED_MIME_TYPES,
   ACTION_MEDIA_BUCKET,
   ACTION_MEDIA_MAX_MEDIA,
   ACTION_MEDIA_MAX_SIZE_BYTES,
+  ACTION_ROUTE_REFERENCE_MAX_MEDIA,
   ACTION_MEDIA_SIGNED_URL_TTL_SECONDS,
   type ActionMediaMimeType,
   type ActionMediaRecord,
   type ActionMediaReadItem,
+  type ActionMediaPurpose,
 } from "./action-media-contract";
-import { verifyActionMediaStorageObject } from "./action-media-storage";
+import { verifyActionMediaStorageObject, verifyActionRouteReferenceObject } from "./action-media-storage";
 import { mapCommonMediaRecord } from "../media/media-record-mapper";
 import { validateMediaUploadInput } from "../media/media-upload-validation";
 import {
@@ -99,6 +102,7 @@ function toRecord(row: ActionMediaRow): ActionMediaRecord {
   return {
     ...mapCommonMediaRecord(row),
     actionId: row.action_id,
+    purpose: row.purpose ?? "report_photo",
   };
 }
 
@@ -125,28 +129,28 @@ async function assertActionAccess(params: {
   actionId: string;
   userId: string;
   identity: ActionPermissionIdentity | null;
+  purpose?: ActionMediaPurpose;
 }): Promise<ActionMediaParent> {
   const action = await getAction(params.supabase, params.actionId);
   const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
     params.supabase,
     params.actionId,
   );
-  const allowed = canManageAction(
-    params.identity ?? { userId: params.userId, role: null, activeRole: null },
-    {
+  const target = {
       createdByClerkId: action.created_by_clerk_id,
       actionPhase: action.action_phase ?? undefined,
-    },
-    organizerIds,
-  );
+  };
+  const identity = params.identity ?? { userId: params.userId, role: null, activeRole: null };
+  const allowed = params.purpose === "route_reference"
+    ? canEditActionForm(identity, target, organizerIds, await loadActionFormEditorIds(params.supabase, params.actionId))
+    : canManageAction(identity, target, organizerIds);
   if (!allowed) {
     throw new ActionMediaError("Accès refusé.", "forbidden");
   }
-  if (
-    action.action_phase !== "post_action_complete" ||
-    action.status === "cancelled" ||
-    action.status === "rejected"
-  ) {
+  if (action.status === "cancelled" || action.status === "rejected") {
+    throw new ActionMediaError("Cette action ne peut plus recevoir de média.", "not_admissible");
+  }
+  if (params.purpose !== "route_reference" && action.action_phase !== "post_action_complete") {
     throw new ActionMediaError(
       "Les photos de bilan ne sont pas admissibles dans l'état actuel de l'action.",
       "not_admissible",
@@ -163,11 +167,19 @@ async function verifyStoredActionMediaObject(
   supabase: SupabaseClient,
   row: ActionMediaRow,
 ): Promise<void> {
-  const verification = await verifyActionMediaStorageObject(supabase, {
-    storagePath: row.storage_path,
-    sizeBytes: row.size_bytes,
-    mimeType: row.mime_type,
-  });
+  const verification = row.purpose === "route_reference"
+    ? await verifyActionRouteReferenceObject(supabase, {
+      storagePath: row.storage_path,
+      sizeBytes: row.size_bytes,
+      mimeType: row.mime_type,
+      width: row.width,
+      height: row.height,
+    })
+    : await verifyActionMediaStorageObject(supabase, {
+      storagePath: row.storage_path,
+      sizeBytes: row.size_bytes,
+      mimeType: row.mime_type,
+    });
   if (verification === "missing") {
     throw new ActionMediaError("La photo n'a pas été reçue par le stockage.", "storage_missing");
   }
@@ -233,6 +245,7 @@ type ActionMediaUploadParams = {
   height?: number | null;
   sortOrder?: number;
   clientUploadId: string;
+  purpose?: ActionMediaPurpose;
 };
 
 async function findExistingActionMedia(
@@ -244,6 +257,7 @@ async function findExistingActionMedia(
     .select("*")
     .eq("action_id", params.actionId)
     .eq("created_by_clerk_id", params.userId)
+    .eq("purpose", params.purpose ?? "report_photo")
     .eq("client_upload_id", params.clientUploadId.trim())
     .maybeSingle();
   if (result.error) throw storageError("La photo ne peut pas être préparée.");
@@ -258,10 +272,12 @@ async function insertNewActionMedia(
     .from("action_media")
     .select("id", { count: "exact", head: true })
     .eq("action_id", params.actionId)
+    .eq("purpose", params.purpose ?? "report_photo")
     .in("upload_state", ["pending", "ready"]);
   if (active.error) throw storageError("Le quota photo ne peut pas être vérifié.");
-  if ((active.count ?? 0) >= ACTION_MEDIA_MAX_MEDIA) {
-    throw new ActionMediaError("Cette action contient déjà le nombre maximal de photos de bilan.", "limit_reached");
+  const limit = params.purpose === "route_reference" ? ACTION_ROUTE_REFERENCE_MAX_MEDIA : ACTION_MEDIA_MAX_MEDIA;
+  if ((active.count ?? 0) >= limit) {
+    throw new ActionMediaError("Cette action contient déjà le nombre maximal de médias pour cette finalité.", "limit_reached");
   }
 
   const mediaId = globalThis.crypto?.randomUUID?.();
@@ -273,6 +289,7 @@ async function insertNewActionMedia(
       action_id: params.actionId,
       created_by_clerk_id: params.userId,
       client_upload_id: params.clientUploadId.trim(),
+      purpose: params.purpose ?? "report_photo",
       storage_bucket: ACTION_MEDIA_BUCKET,
       storage_path: buildActionMediaPath(params.actionId, mediaId, params.mimeType),
       original_name: params.originalName.trim(),
@@ -345,7 +362,7 @@ export async function createActionMediaUploadIntent(
   params: Omit<ActionMediaUploadParams, "mimeType"> & { mimeType: string },
 ): Promise<ActionMediaUploadIntent | { mediaId: string; uploadState: "ready" }> {
   validateActionMediaInput(params);
-  await assertActionAccess({ supabase, ...params });
+  await assertActionAccess({ supabase, ...params, purpose: params.purpose ?? "report_photo" });
   const normalizedParams = params as ActionMediaUploadParams;
   const resolved = await resolveActionMediaRow(supabase, normalizedParams);
   let row = resolved.row;
@@ -367,7 +384,6 @@ export async function finalizeActionMedia(
     mediaId: string;
   },
 ): Promise<ActionMediaReadyResult> {
-  await assertActionAccess({ supabase, ...params });
   const result = await supabase
     .from("action_media")
     .select("*")
@@ -377,6 +393,7 @@ export async function finalizeActionMedia(
   if (result.error) throw storageError("La photo ne peut pas être finalisée.");
   if (!result.data) throw new ActionMediaError("Photo introuvable.", "not_found");
   const row = result.data as ActionMediaRow;
+  await assertActionAccess({ supabase, ...params, purpose: row.purpose ?? "report_photo" });
   if (row.storage_bucket !== ACTION_MEDIA_BUCKET) {
     throw new ActionMediaError("Le bucket photo est invalide.", "validation");
   }
@@ -421,13 +438,16 @@ export async function listActionMedia(
     actionId: string;
     userId: string;
     identity: ActionPermissionIdentity | null;
+    purpose?: ActionMediaPurpose;
   },
 ): Promise<ActionMediaReadItem[]> {
-  await assertActionAccess({ supabase, ...params });
+  const purpose = params.purpose ?? "report_photo";
+  await assertActionAccess({ supabase, ...params, purpose });
   const mediaResult = await supabase
     .from("action_media")
     .select("*")
     .eq("action_id", params.actionId)
+    .eq("purpose", purpose)
     .eq("upload_state", "ready")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -445,4 +465,25 @@ export async function listActionMedia(
     items.push({ ...row, signedUrl: signed.data.signedUrl });
   }
   return items;
+}
+
+export async function removeActionRouteReference(
+  supabase: SupabaseClient,
+  params: { actionId: string; mediaId: string; userId: string; identity: ActionPermissionIdentity | null },
+): Promise<void> {
+  await assertActionAccess({ supabase, ...params, purpose: "route_reference" });
+  const result = await supabase.from("action_media").select("*")
+    .eq("id", params.mediaId).eq("action_id", params.actionId)
+    .eq("purpose", "route_reference").maybeSingle();
+  if (result.error) throw storageError("La référence d’itinéraire ne peut pas être vérifiée.");
+  if (!result.data) throw new ActionMediaError("Référence introuvable.", "not_found");
+  const row = result.data as ActionMediaRow;
+  if (row.upload_state !== "failed") {
+    const removed = await supabase.storage.from(ACTION_MEDIA_BUCKET).remove([row.storage_path]);
+    if (removed.error) throw storageError("La référence ne peut pas être supprimée du stockage.");
+  }
+  const updated = await supabase.from("action_media").update({ upload_state: "failed", failure_reason: "user_removed" })
+    .eq("id", row.id).eq("action_id", params.actionId).eq("purpose", "route_reference")
+    .in("upload_state", ["pending", "ready"]);
+  if (updated.error) throw storageError("La suppression de la référence n’a pas pu être enregistrée.");
 }

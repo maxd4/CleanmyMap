@@ -186,4 +186,37 @@ describe("action declaration payload données de préparation", () => {
       "user-organizer": ["coorganizer", "group_lead"],
     });
   });
+
+  it("keeps the planned GPX, observed GPX and route text distinct", () => {
+    const form = buildBaseForm();
+    form.plannedRouteDescription = "Boucle prévue dans le parc";
+    form.observedRouteDescription = "Détour réellement effectué";
+    form.routeReferenceImageMediaId = "2a8c02c4-87a5-4e5c-92aa-00f2d3bb44aa";
+    form.plannedRouteGpx = {
+      source: "gpx_import", observedDistanceKm: 3, pointCount: 4, inferredTopology: "loop",
+      intent: "planned", provenance: "planned", files: [],
+    };
+    form.gpxImport = {
+      source: "gpx_import", observedDistanceKm: 4, pointCount: 5, inferredTopology: "loop",
+      intent: "observed", provenance: "unknown", files: [],
+    };
+
+    const preparation = buildPreparationDataFromForm(form, {
+      drawing: { kind: "polyline", coordinates: [[48.85, 2.35], [48.86, 2.36]] },
+      source: "gpx_import",
+      operationalRoute: null,
+    });
+    expect(preparation).toMatchObject({
+      plannedRouteDescription: "Boucle prévue dans le parc",
+      observedRouteDescription: "Détour réellement effectué",
+      plannedRouteGpx: { observedDistanceKm: 3, intent: "planned" },
+      gpxImport: { observedDistanceKm: 4, intent: "observed" },
+      routeObservedDistanceKm: 4,
+      routeReferenceImageMediaId: "2a8c02c4-87a5-4e5c-92aa-00f2d3bb44aa",
+    });
+    const restored = applyPreparationDataToForm(createInitialFormState("Alice", "action"), preparation);
+    expect(restored.plannedRouteGpx?.observedDistanceKm).toBe(3);
+    expect(restored.gpxImport?.observedDistanceKm).toBe(4);
+    expect(restored.plannedRouteDescription).toBe("Boucle prévue dans le parc");
+  });
 });

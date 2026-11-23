@@ -267,6 +267,8 @@ export function sanitizePreActionForm(form: FormState): FormState {
     ...form,
     routeStyle: "souple",
     routeAdjustmentMessage: "",
+    plannedRouteDescription: form.plannedRouteDescription?.trim() ?? "",
+    observedRouteDescription: "",
     notes: "",
     ...EMPTY_ACTION_MEASUREMENT_FIELDS,
     wasteMegotsKg: "",

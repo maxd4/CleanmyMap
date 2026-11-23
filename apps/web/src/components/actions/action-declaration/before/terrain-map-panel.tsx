@@ -16,7 +16,10 @@ const TerrainMapCanvas = dynamic(
 export function TerrainMapPanel({ form, onEditDefinition }: { form: FormState; onEditDefinition?: () => void }) {
   const { ref, isInView } = useInViewOnce<HTMLDivElement>({ rootMargin: "260px 0px" });
   const hasCoordinates = hasValidCoordinatePair(form.latitude, form.longitude);
-  const coordinate: [number, number] = [Number(form.latitude), Number(form.longitude)];
+  const plannedRoutes = form.plannedRouteGpx?.files?.flatMap((file) => file.segments.map((segment) => segment.coordinates)) ?? [];
+  const plannedRoutePoints = plannedRoutes.flat();
+  const hasMapLocation = hasCoordinates || plannedRoutePoints.length > 0;
+  const coordinate: [number, number] = hasCoordinates ? [Number(form.latitude), Number(form.longitude)] : plannedRoutePoints[0] ?? [0, 0];
 
   return (
     <CmmCard tone="emerald" variant="outlined" size="lg" className="space-y-3" data-testid="terrain-map-panel">
@@ -29,7 +32,7 @@ export function TerrainMapPanel({ form, onEditDefinition }: { form: FormState; o
         {onEditDefinition ? <CmmButton type="button" tone="tertiary" variant="pill" size="sm" onClick={onEditDefinition}>Modifier</CmmButton> : null}
       </div>
       <div ref={ref} className="relative h-52 overflow-hidden rounded-2xl border border-emerald-200/70 bg-emerald-50/70 sm:h-60" aria-label="Carte du secteur d’intervention">
-        {hasCoordinates && isInView ? <TerrainMapCanvas coordinate={coordinate} label="Point de rendez-vous confirmé" /> : (
+        {hasMapLocation && isInView ? <TerrainMapCanvas coordinate={coordinate} label={hasCoordinates ? "Point de rendez-vous confirmé" : "Parcours GPX prévu"} plannedRoutes={plannedRoutes} /> : (
           <div className="flex h-full items-center justify-center p-6 text-center">
             <div className="max-w-sm space-y-2 text-emerald-950">
               <Info size={24} className="mx-auto text-amber-600" aria-hidden="true" />
@@ -41,7 +44,7 @@ export function TerrainMapPanel({ form, onEditDefinition }: { form: FormState; o
         )}
       </div>
       <p role="status" className="text-xs font-semibold text-emerald-900/65">
-        {hasCoordinates ? "Coordonnées confirmées." : "Adresse libre · aucune coordonnée."}
+        {hasCoordinates ? plannedRoutePoints.length ? "Coordonnées confirmées · parcours GPX prévu affiché." : "Coordonnées confirmées." : plannedRoutePoints.length ? "Parcours GPX prévu · aucune géométrie observée." : "Adresse libre · aucune coordonnée."}
       </p>
     </CmmCard>
   );

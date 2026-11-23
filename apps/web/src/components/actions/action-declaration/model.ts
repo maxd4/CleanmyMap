@@ -139,6 +139,10 @@ export type FormState = {
  placeType: string;
  operationalRoute?: OperationalRoute | null;
  gpxImport?: ActionGpxImportMetadata | null;
+ plannedRouteDescription?: string;
+ observedRouteDescription?: string;
+ plannedRouteGpx?: ActionGpxImportMetadata | null;
+ routeReferenceImageMediaId?: string | null;
  routeCalibrationContext?: RouteCalibrationContext | null;
  plannerProof?: RoutePlannerProof | null;
 };
@@ -254,6 +258,10 @@ export const initialState: FormState = {
  placeType: "",
  operationalRoute: null,
  gpxImport: null,
+ plannedRouteDescription: "",
+ observedRouteDescription: "",
+ plannedRouteGpx: null,
+ routeReferenceImageMediaId: null,
  routeCalibrationContext: null,
 };
 

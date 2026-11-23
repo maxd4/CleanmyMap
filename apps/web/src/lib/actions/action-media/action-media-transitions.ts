@@ -4,6 +4,7 @@ import {
   type ActionMediaMimeType,
   type ActionMediaRecord,
   type ActionMediaUploadState,
+  type ActionMediaPurpose,
 } from "./action-media-contract";
 
 export type ActionMediaRow = {
@@ -21,6 +22,7 @@ export type ActionMediaRow = {
   height: number | null;
   sort_order: number;
   upload_state: ActionMediaUploadState;
+  purpose?: ActionMediaPurpose;
 };
 
 export type ActionMediaReadyResult = {

@@ -35,6 +35,7 @@ export async function POST(
     const identity = await getCurrentUserIdentity({ userId: access.userId });
     const intent = await createActionMediaUploadIntent(getSupabaseServerClient(true), {
       ...parsed.data,
+      purpose: parsed.data.purpose ?? "report_photo",
       userId: access.userId,
       identity,
       actionId,

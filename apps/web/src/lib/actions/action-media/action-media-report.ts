@@ -45,6 +45,7 @@ async function readReportPage(
       .from("action_media")
       .select("id, action_id, created_by_clerk_id", { count: "exact" })
       .in("action_id", [...actionIds])
+      .eq("purpose", "report_photo")
       .eq("upload_state", "ready");
     if (cursor) {
       query = query.or(`action_id.gt.${cursor.actionId},and(action_id.eq.${cursor.actionId},id.gt.${cursor.mediaId})`);

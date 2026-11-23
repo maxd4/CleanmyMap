@@ -32,6 +32,7 @@ export type ActionStepLocationProps = {
   onAutofillGps: () => void;
   mode?: "all" | "primary" | "details";
   countryCode?: CountryCode;
+  actionId?: string | null;
 };
 
 export type ActionLocationGeometryInput = Pick<
@@ -56,6 +57,7 @@ export type ActionLocationGeometryPanelProps = ActionLocationGeometryInput &
     | "gpxError"
   > & {
     compact?: boolean;
+    actionId?: string | null;
   };
 
 export type ActionLocationInputProps = Pick<

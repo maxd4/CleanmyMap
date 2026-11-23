@@ -19,11 +19,16 @@ export async function GET(
   if (!access.ok) return unauthorizedJsonResponse();
   try {
     const { actionId } = await context.params;
+    const requestedPurpose = new URL(request.url).searchParams.get("purpose");
+    if (requestedPurpose && requestedPurpose !== "route_reference" && requestedPurpose !== "report_photo") {
+      return new Response(JSON.stringify({ error: "Finalité média invalide." }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
     const identity = await getCurrentUserIdentity({ userId: access.userId });
     const items = await listActionMedia(getSupabaseServerClient(true), {
       actionId,
       userId: access.userId,
       identity,
+      purpose: requestedPurpose === "route_reference" ? "route_reference" : "report_photo",
     });
     return NextResponse.json({ status: "ok", items });
   } catch (error) {

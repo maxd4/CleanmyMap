@@ -36,6 +36,7 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
       .select("id, upload_state")
       .eq("id", parsed.data.mediaId)
       .eq("action_id", authorized.event.action_id)
+      .eq("purpose", "report_photo")
       .maybeSingle();
     if (media.error) throw media.error;
     if (!media.data || media.data.upload_state !== "ready") return NextResponse.json({ error: "Cette image n’est pas prête ou n’appartient pas à l’édition." }, { status: 422 });

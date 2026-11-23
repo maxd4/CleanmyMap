@@ -98,10 +98,15 @@ function buildPreparationGeometryFields(
       form.recordType === "action" && routeTopology === "point_to_point"
         ? form.arrivalCoordinates ?? undefined
         : undefined,
+    plannedRouteGpx: form.plannedRouteGpx ?? (form.gpxImport?.intent === "planned" ? form.gpxImport : undefined),
     routeObservedDistanceKm:
-      finalGeometry?.source === "gpx_import" ? form.gpxImport?.observedDistanceKm : undefined,
+      finalGeometry?.source === "gpx_import" && form.gpxImport?.intent === "observed"
+        ? form.gpxImport.observedDistanceKm
+        : undefined,
     gpxImport:
-      finalGeometry?.source === "gpx_import" ? form.gpxImport ?? undefined : undefined,
+      finalGeometry?.source === "gpx_import" && form.gpxImport?.intent === "observed"
+        ? form.gpxImport
+        : undefined,
   };
 }
 
@@ -155,6 +160,9 @@ function buildPreparationContentFields(
     ...(form.organizerReferenceStatus ? { organizerReferenceStatus: form.organizerReferenceStatus } : {}),
     actionTitle: form.actionTitle.trim() || undefined,
     shortDescription: form.shortDescription.trim() || undefined,
+    plannedRouteDescription: form.plannedRouteDescription?.trim() || undefined,
+    observedRouteDescription: form.observedRouteDescription?.trim() || undefined,
+    routeReferenceImageMediaId: form.routeReferenceImageMediaId ?? null,
     communeZoneLabel: form.communeZoneLabel.trim() || undefined,
     pointDeRendezVous: form.departureLocationLabel.trim() || undefined,
     midRouteLocationLabel: form.midRouteLocationLabel?.trim() || undefined,
@@ -410,6 +418,15 @@ export function applyPreparationDataToForm(
     midRouteCoordinates: preparationData.midRouteCoordinates ?? form.midRouteCoordinates,
     arrivalCoordinates: preparationData.arrivalCoordinates ?? form.arrivalCoordinates,
     gpxImport: preparationData.gpxImport ?? form.gpxImport,
+    plannedRouteGpx: preparationData.plannedRouteGpx ??
+      ((preparationData.gpxImport?.intent === "planned" || preparationData.gpxImport?.provenance === "planned")
+        ? preparationData.gpxImport
+        : form.plannedRouteGpx),
+    plannedRouteDescription: preparationData.plannedRouteDescription ?? form.plannedRouteDescription,
+    observedRouteDescription: preparationData.observedRouteDescription ?? form.observedRouteDescription,
+    routeReferenceImageMediaId: preparationData.routeReferenceImageMediaId === undefined
+      ? form.routeReferenceImageMediaId
+      : preparationData.routeReferenceImageMediaId,
     ...buildHydratedDescriptionFields(form, preparationData),
     ...buildHydratedParticipationFields(form, preparationData),
     operationalRoute: preparationData.operationalRoute ?? form.operationalRoute,

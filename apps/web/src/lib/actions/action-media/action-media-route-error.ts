@@ -5,7 +5,7 @@ import { ActionMediaError } from "./action-media";
 
 const NOT_ADMISSIBLE_MEDIA_MESSAGE = "Les photos de bilan ne sont pas admissibles dans l'état actuel de l'action.";
 
-type ActionMediaRouteOperation = "read" | "intent" | "finalize";
+type ActionMediaRouteOperation = "read" | "intent" | "finalize" | "delete-route-reference";
 
 export function actionMediaErrorResponse(
   error: unknown,
@@ -15,7 +15,10 @@ export function actionMediaErrorResponse(
     if (error.code === "validation") return validationErrorResponse({ media: [error.message] });
     if (error.code === "forbidden") return forbiddenJsonResponse();
     if (error.code === "not_found") {
-      return NextResponse.json({ error: operation === "finalize" ? "Photo introuvable." : "Action introuvable." }, { status: 404 });
+      const message = operation === "finalize" ? "Média introuvable."
+        : operation === "delete-route-reference" ? "Référence d’itinéraire introuvable."
+          : "Action introuvable.";
+      return NextResponse.json({ error: message }, { status: 404 });
     }
     if (error.code === "not_admissible") {
       return NextResponse.json({

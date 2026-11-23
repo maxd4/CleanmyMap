@@ -106,6 +106,7 @@ describe("action media report readiness", () => {
       count: "exact",
     });
     expect(queries[0].in).toHaveBeenCalledWith("action_id", ["a1", "a2"]);
+    expect(queries[0].eq).toHaveBeenCalledWith("purpose", "report_photo");
     expect(queries[0].eq).toHaveBeenCalledWith("upload_state", "ready");
     expect(queries[0].order).toHaveBeenNthCalledWith(1, "action_id", { ascending: true });
     expect(queries[0].order).toHaveBeenNthCalledWith(2, "id", { ascending: true });

@@ -73,6 +73,7 @@ function buildActionDeclarationSectionProps(
     onAutofillGps: smartAssist.autofillGps,
     recordType: form.recordType,
     countryCode: searchCountryCode,
+    actionId: props.initialActionId ?? state.createdId,
   };
   return {
     form,

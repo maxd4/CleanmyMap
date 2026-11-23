@@ -269,6 +269,14 @@ export type ActionPreparationData = {
   arrivalCoordinates?: ActionLocationCoordinates;
   /** Measured length of an observed route (GPS tracking or GPX), kept separate from the target. */
   routeObservedDistanceKm?: number;
+  /** Human description of the intended route; text never creates geometry. */
+  plannedRouteDescription?: string;
+  /** Human description of the route actually observed; text never creates geometry. */
+  observedRouteDescription?: string;
+  /** Validated planned GPX, persisted separately from observed GPX evidence. */
+  plannedRouteGpx?: ActionGpxImportMetadata;
+  /** ID of a private action_media route reference image; binary data is never in action JSON. */
+  routeReferenceImageMediaId?: string | null;
   /** Canonical metadata for a validated user-provided GPX trace. */
   gpxImport?: ActionGpxImportMetadata;
   /** Official SPOGOMI route reference; never an observed ground trace. */

@@ -9,6 +9,7 @@ export type BaseSectionProps = {
   hasAttemptedSubmit?: boolean;
   validationIssueFields?: readonly string[];
   countryCode?: CountryCode;
+  actionId?: string | null;
 };
 
 export function hasValidationIssue(

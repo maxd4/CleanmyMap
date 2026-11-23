@@ -83,6 +83,7 @@ export function ActionBeforeSectionedContent({
           hasAttemptedSubmit={validationIssueFields.length > 0}
           validationIssueFields={validationIssueFields}
           onEditDefinition={onEditDefinition}
+          actionId={actionId}
         />
       </section>
       <section aria-labelledby="action-preparation-team-title" className="space-y-3">

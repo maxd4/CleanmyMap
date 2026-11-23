@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const mediaUploadIntentSchema = z.object({
+  purpose: z.enum(["report_photo", "route_reference"]).optional(),
   originalName: z.string().trim().min(1).max(255),
   mimeType: z.string().trim().min(1).max(100),
   sizeBytes: z.number().int().positive(),

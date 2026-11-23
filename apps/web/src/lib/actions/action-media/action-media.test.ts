@@ -9,6 +9,7 @@ import {
   createActionMediaUploadIntent,
   finalizeActionMedia,
   listActionMedia,
+  removeActionRouteReference,
   validateActionMediaInput,
 } from "./action-media";
 
@@ -43,9 +44,11 @@ function makeSupabase(params: {
   organizers?: unknown[];
   existingMedia?: Record<string, unknown> | null;
   activeCount?: number;
+  editors?: string[];
   insertedMedia?: Record<string, unknown>;
   updatedMedia?: Record<string, unknown>;
   objectInfo?: Record<string, unknown> | null;
+  downloadedBytes?: Uint8Array;
   storageError?: unknown;
 }) {
   const actionQuery = makeQuery({ data: params.action ?? null, error: null });
@@ -54,16 +57,24 @@ function makeSupabase(params: {
     { data: params.existingMedia ?? null, error: null, count: params.activeCount ?? 0 },
     { listData: params.existingMedia ? [params.existingMedia] : [], insertData: params.insertedMedia, updateData: params.updatedMedia },
   );
+  const editorQuery = makeQuery({ data: null, error: null }, { listData: (params.editors ?? []).map((clerk_user_id) => ({ clerk_user_id })) });
   const from = vi.fn((table: string) => {
     if (table === "actions") return actionQuery;
     if (table === "action_organizers") return organizerQuery;
     if (table === "action_media") return mediaQuery;
+    if (table === "action_form_editors") return editorQuery;
     throw new Error(`Unexpected table ${table}`);
   });
   const createSignedUploadUrl = vi.fn(async () => ({ data: { token: "upload-token" }, error: null }));
   const storageClient = {
     createSignedUploadUrl,
     info: vi.fn(async () => ({ data: params.objectInfo, error: params.storageError ?? null })),
+    download: vi.fn(async () => ({
+      data: params.downloadedBytes
+        ? { arrayBuffer: async () => params.downloadedBytes!.slice().buffer }
+        : null,
+      error: null,
+    })),
     createSignedUrl: vi.fn(async () => ({ data: { signedUrl: "https://signed.test/action" }, error: null })),
   };
   const storageFrom = vi.fn(() => storageClient);
@@ -176,6 +187,7 @@ const readyMedia = {
   created_at: "2026-10-17T12:00:00Z",
   created_by_clerk_id: "user-1",
   client_upload_id: "client-1",
+  purpose: "report_photo",
   storage_bucket: ACTION_MEDIA_BUCKET,
   storage_path: `${action.id}/22222222-2222-4222-8222-222222222222.jpg`,
   original_name: "bilan.jpg",
@@ -309,11 +321,14 @@ describe("action media contract", () => {
     let checks = 0;
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
+    let resolveChecksReady!: () => void;
+    const checksReady = new Promise<void>((resolve) => { resolveChecksReady = resolve; });
     const supabase = makeEvolvingSupabase({
       action,
       row: { ...readyMedia, upload_state: "pending" },
       storageInfo: async () => {
         checks += 1;
+        if (checks === 2) resolveChecksReady();
         if (checks <= 2) await gate;
         return { data: { metadata: { size: readyMedia.size_bytes, mimetype: readyMedia.mime_type } }, error: null };
       },
@@ -321,7 +336,8 @@ describe("action media contract", () => {
     const params = uploadParams();
     const first = createActionMediaUploadIntent(supabase as never, params);
     const second = createActionMediaUploadIntent(supabase as never, params);
-    while (checks < 2) await Promise.resolve();
+    const completion = Promise.allSettled([first, second]);
+    await Promise.race([checksReady, completion]);
     release();
     const results = await Promise.all([first, second]);
     expect(results).toEqual([
@@ -375,15 +391,88 @@ describe("action media contract", () => {
     expect(supabase.__storage).toHaveBeenCalledWith(ACTION_MEDIA_BUCKET);
   });
 
+  it("allows an action form editor to read only route-reference media", async () => {
+    const row = { ...readyMedia, purpose: "route_reference" };
+    const supabase = makeSupabase({ action, editors: ["delegate-1"], existingMedia: row });
+    const items = await listActionMedia(supabase as never, {
+      actionId: action.id,
+      userId: "delegate-1",
+      identity: { userId: "delegate-1", role: "benevole", activeRole: "benevole" },
+      purpose: "route_reference",
+    });
+    expect(items).toMatchObject([{ id: readyMedia.id, purpose: "route_reference", signedUrl: "https://signed.test/action" }]);
+    expect(supabase.from).toHaveBeenCalledWith("action_form_editors");
+  });
+
+  it("rechecks delegated form-edit access for route media reads and writes after revocation", async () => {
+    const delegate = { userId: "delegate-1", role: "benevole" as const, activeRole: "benevole" as const };
+    const supabase = makeSupabase({
+      action,
+      editors: [],
+      existingMedia: { ...readyMedia, purpose: "route_reference" },
+    });
+
+    await expect(createActionMediaUploadIntent(supabase as never, uploadParams({
+      ...delegate,
+      identity: delegate,
+      purpose: "route_reference",
+    }))).rejects.toMatchObject({ code: "forbidden" });
+    await expect(listActionMedia(supabase as never, {
+      actionId: action.id,
+      ...delegate,
+      identity: delegate,
+      purpose: "route_reference",
+    })).rejects.toMatchObject({ code: "forbidden" });
+    await expect(removeActionRouteReference(supabase as never, {
+      actionId: action.id,
+      mediaId: readyMedia.id,
+      ...delegate,
+      identity: delegate,
+    })).rejects.toMatchObject({ code: "forbidden" });
+    await expect(finalizeActionMedia(supabase as never, {
+      actionId: action.id,
+      mediaId: readyMedia.id,
+      ...delegate,
+      identity: delegate,
+    })).rejects.toMatchObject({ code: "forbidden" });
+
+    expect(supabase.from.mock.calls.filter(([table]) => table === "action_form_editors")).toHaveLength(4);
+    expect(supabase.__storage).not.toHaveBeenCalled();
+  });
+
+  it("rejects route-reference bytes when their content does not match the declared image type", async () => {
+    const invalidBytes = Uint8Array.of(0, 1, 2);
+    const routeReference = {
+      ...readyMedia,
+      purpose: "route_reference",
+      upload_state: "pending",
+      size_bytes: invalidBytes.byteLength,
+    };
+    const supabase = makeSupabase({
+      action,
+      editors: ["user-1"],
+      existingMedia: routeReference,
+      objectInfo: { metadata: { size: invalidBytes.byteLength, mimetype: "image/jpeg" } },
+      downloadedBytes: invalidBytes,
+    });
+
+    await expect(finalizeActionMedia(supabase as never, finalizeParams())).rejects.toMatchObject({ code: "storage_invalid" });
+    expect(supabase.__storage().download).toHaveBeenCalledWith(routeReference.storage_path);
+    expect(supabase.__queries.mediaQuery.update).toHaveBeenCalledWith(expect.objectContaining({ upload_state: "failed" }));
+  });
+
   it("keeps ready terminal when two finalizations observe the same pending row", async () => {
     let checks = 0;
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
+    let resolveChecksReady!: () => void;
+    const checksReady = new Promise<void>((resolve) => { resolveChecksReady = resolve; });
     const supabase = makeEvolvingSupabase({
       action,
       row: { ...readyMedia, upload_state: "pending" },
       storageInfo: async () => {
         checks += 1;
+        if (checks === 2) resolveChecksReady();
         if (checks <= 2) await gate;
         return { data: { metadata: { size: readyMedia.size_bytes, mimetype: readyMedia.mime_type } }, error: null };
       },
@@ -391,7 +480,8 @@ describe("action media contract", () => {
     const params = finalizeParams();
     const first = finalizeActionMedia(supabase as never, params);
     const second = finalizeActionMedia(supabase as never, params);
-    while (checks < 2) await Promise.resolve();
+    const completion = Promise.allSettled([first, second]);
+    await Promise.race([checksReady, completion]);
     release();
     const results = await Promise.all([first, second]);
 
