@@ -642,6 +642,7 @@ limite, pas automatiquement un bug.
 | Domaine | Source |
 |---|---|
 | Web, Next.js, UI | `apps/web/AGENTS.md` |
+| Concision des textes UI Web et Mobile | `documentation/design-system/UI_COPY_CONCISION.md` |
 | API | `apps/web/src/app/api/AGENTS.md` |
 | Supabase, migrations | `apps/web/supabase/AGENTS.md` |
 | Scripts web | `apps/web/scripts/AGENTS.md` |

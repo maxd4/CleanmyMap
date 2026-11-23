@@ -44,6 +44,10 @@ Les dossiers suivants portent les responsabilités documentaires principales :
 Ne pas créer un nouveau dossier racine si un de ces domaines peut porter le
 contenu sans ambiguïté.
 
+Pour les textes visibles Web et Mobile, le contrat spécialisé unique est
+[`design-system/UI_COPY_CONCISION.md`](design-system/UI_COPY_CONCISION.md) ; les
+autres consignes y renvoient sans en recopier les règles.
+
 ### Zones de cycle de vie et de support
 
 Ces dossiers ne sont pas des domaines métier concurrents :

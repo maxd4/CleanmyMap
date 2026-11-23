@@ -15,6 +15,10 @@ activité GPS live avec carte et tracé temps réel, la reprise/offline, la
 finalisation serveur, les contacts d'urgence et les trois parcours métier
 natifs du bloc Agir.
 
+Les textes visibles de toute nouvelle interface et de toute modification
+suivent le contrat canonique partagé :
+[`documentation/design-system/UI_COPY_CONCISION.md`](../../documentation/design-system/UI_COPY_CONCISION.md).
+
 Le mobile est autonome pour son runtime, son UI native et ses modules métier :
 shell/navigation, mission/GPS et reprise locale, participation/création d'action,
 signalement/média, compte/identité et contact d'urgence. Il réutilise les

@@ -221,6 +221,8 @@ les targets de complexité et de longueur applicables au code nouveau.
 
 ## UI web
 
+- appliquer le contrat canonique de concision des textes visibles Web et
+  Mobile : `documentation/design-system/UI_COPY_CONCISION.md` ;
 - appliquer l'invariant global de textes publics en français à l'UI web ;
 - charger Leaflet avec `next/dynamic` et `{ ssr: false }` lorsque la surface
   l'utilise ; ne pas accéder aux APIs navigateur pendant le SSR ;

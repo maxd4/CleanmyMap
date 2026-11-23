@@ -12,6 +12,7 @@ expérimentales. Un README oriente ; il ne remplace pas un contrat spécialisé.
 | Layout et densité | `LAYOUT_SPACING.md` | Shell et CSS layout |
 | Ruban de navigation | `NAVIGATION_RIBBON.md` | Shell, dock classic et dropdowns |
 | Titres de page | `PAGE_HEADER.md` | Composant PageHeader |
+| Concision des textes UI Web et Mobile | `UI_COPY_CONCISION.md` | Textes visibles des deux applications |
 | Mouvement | `MOTION_TRANSITIONS.md` | `motion.css` et préférences |
 | Contraste | `theme-visibility-rules.md` | CSS et états réels |
 | Exceptions | `UI_EXCEPTION_PAGES.md` | Runtime et fiche route protégée |
@@ -22,6 +23,8 @@ Les états `PLAN`, `COMPATIBILITY`, `HISTORY` et `EXPERIMENTATION` n'impliquent 
 
 - [`Design-system.md`](./Design-system.md) — vue transversale `CURRENT` qui
   relie les primitives et les modes sans remplacer leurs contrats spécialisés.
+- [`UI_COPY_CONCISION.md`](./UI_COPY_CONCISION.md) — règle `CURRENT` unique pour
+  la concision des textes visibles Web et Mobile.
 
 - [`BLOC_COLOR_SYSTEM_PREMIUM.md`](./BLOC_COLOR_SYSTEM_PREMIUM.md) — familles,
   tokens de couleur et hiérarchie des actions.
