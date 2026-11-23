@@ -39,6 +39,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.equal(inventory.unregistered.length, 0);
   assert.deepEqual(inventory.pgtap, [
     "apps/web/supabase/tests/action-accessibility-support.pgtap.sql",
+    "apps/web/supabase/tests/action-attendance-claims-visibility.pgtap.sql",
     "apps/web/supabase/tests/action-attendance-registry.pgtap.sql",
     "apps/web/supabase/tests/action-attendance-retention.pgtap.sql",
     "apps/web/supabase/tests/action-attendance-teams.pgtap.sql",
@@ -48,6 +49,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/action-collection-reference-averages.pgtap.sql",
     "apps/web/supabase/tests/action-event-timezones-integrity.pgtap.sql",
     "apps/web/supabase/tests/action-field-roles-server-boundary.pgtap.sql",
+    "apps/web/supabase/tests/action-form-editors.pgtap.sql",
     "apps/web/supabase/tests/action-need-offers-contract.pgtap.sql",
     "apps/web/supabase/tests/action-needs-contract.pgtap.sql",
     "apps/web/supabase/tests/action-organizer-types.pgtap.sql",

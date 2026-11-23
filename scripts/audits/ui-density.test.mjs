@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildUiDensityReport, formatUiDensityReport } from "./ui-density.mjs";
+import { buildUiDensityNotMeasured, buildUiDensityReport, formatUiDensityReport } from "./ui-density.mjs";
 
 const sha = "a".repeat(40);
 
@@ -55,7 +55,7 @@ test("measures JSX text zones, classifies surfaces and keeps conditional copy ex
 });
 
 test("ranks long copy, extensive field help, technical terms and explanations before actions as review signals", () => {
-  const longText = "Cette description explique le fonctionnement de la projection et de l'API pour les participants. ".repeat(5);
+  const longText = "Cette description explique le fonctionnement de la projection et de l&apos;API pour les participants. ".repeat(5);
   const longHelp = "Saisissez les informations qui permettront à l’équipe de préparer correctement cette activité avant le rendez-vous et le départ. ".repeat(2);
   const report = analyze({
     "apps/web/src/app/actions/new/page.tsx": `
@@ -76,6 +76,8 @@ test("ranks long copy, extensive field help, technical terms and explanations be
   assert.ok(codes.includes("LONG_FIELD_HELP"));
   assert.ok(codes.includes("EXPLANATION_BEFORE_ACTION"));
   assert.ok(codes.includes("INTERNAL_TERM_VISIBLE"));
+  assert.ok(component.signals.every((signal) => Number.isInteger(signal.line)));
+  assert.ok(component.signals.find((signal) => signal.code === "LONG_PARAGRAPH" || signal.code === "VERY_LONG_PARAGRAPH")?.excerpt.includes("l'API"));
   assert.equal(component.surface, "transactional");
   assert.ok(component.signals.every((signal) => signal.priority.endsWith("REVIEW")));
   assert.equal(report.status, "PASS");
@@ -102,6 +104,49 @@ test("keeps legal, pedagogical and methodological text separate from transaction
   });
   assert.deepEqual(report.summary.bySurface, { transactional: 0, pedagogical: 1, methodological: 1, legal: 1, general: 0 });
   assert.equal(report.summary.signals, 0);
+});
+
+test("excludes always sr-only copy from visible text while retaining responsive sr-only copy", () => {
+  const report = analyze({
+    "apps/web/src/app/actions/new/page.tsx": `export function Page(){ return <main>
+      <h1>Créer une action</h1>
+      <span className="sr-only">Nom accessible du bouton</span>
+      <p>Texte visible <span className="sr-only">aide invisible sur toutes les tailles</span> puis la suite visible.</p>
+      <span className="sr-only sm:not-sr-only">Texte rendu visible sur écran large.</span>
+      <span className={compact ? "sr-only" : "not-sr-only"}>Texte conditionnel selon la taille.</span>
+      <button className="sr-only">Commande accessible seulement</button>
+    </main>; }`,
+  });
+  const component = report.files[0].components[0];
+  assert.equal(component.metrics.staticVisibleCharacters,
+    "Créer une action".length
+      + "Texte visible".length
+      + "puis la suite visible.".length
+      + "Texte rendu visible sur écran large.".length
+      + "Texte conditionnel selon la taille.".length);
+  assert.equal(component.paragraphs.some((paragraph) => paragraph.excerpt.includes("aide invisible sur toutes les tailles")), false);
+  assert.ok(component.metrics.accessibilityOnlyCharacters > 0);
+  assert.equal(report.summary.accessibilityOnlyCharacters, component.metrics.accessibilityOnlyCharacters);
+});
+
+test("classifies the French privacy policy route as legal", () => {
+  const report = analyze({
+    "apps/web/src/app/politique-confidentialite/page.tsx": "export function PrivacyPolicy(){ return <main><h1>Confidentialité</h1><p>Informations sur les données personnelles.</p></main>; }",
+  });
+  assert.equal(report.files[0].components[0].route, "/politique-confidentialite");
+  assert.equal(report.files[0].components[0].surface, "legal");
+});
+
+test("represents a failed source scan as a measurement failure, not an invented file", () => {
+  const report = buildUiDensityNotMeasured({ auditedSha: sha, scope: "web", error: new Error("snapshot unavailable") });
+  assert.equal(report.summary.filesInScope, 0);
+  assert.equal(report.summary.filesMeasured, 0);
+  assert.equal(report.summary.filesNotMeasured, 0);
+  assert.equal(report.measurementFailures, 1);
+  assert.equal(report.diagnostics[0].file, "(source scan)");
+  const markdown = formatUiDensityReport(report);
+  assert.match(markdown, /Fichiers mesurés\/non mesurés : \*\*0\/0\*\*/);
+  assert.match(markdown, /Échecs de mesure : \*\*1\*\*/);
 });
 
 test("reports repeated copy, generic caveats and secondary density without counting accessibility-only labels", () => {

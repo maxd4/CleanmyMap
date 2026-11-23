@@ -220,6 +220,19 @@ méthodologiques. Les paragraphes et aides avec des termes de sécurité,
 d'accessibilité, d'erreur ou d'obligation restent dans les métriques, mais sont
 exclus des signaux de longueur et de volume.
 
+Les classes statiques `sr-only` excluent leur texte du total visible et des
+signaux ; ce volume est rapporté séparément comme texte réservé aux lecteurs
+d'écran. Les classes responsive telles que `sr-only sm:not-sr-only` restent
+comptées, car leur contenu est visible à certains seuils. Les routes françaises
+de confidentialité sont classées comme surfaces légales. Un échec du scan
+global est compté comme un échec de mesure, distinct du nombre de fichiers
+présents ou non mesurés ; il conserve son statut non bloquant et appelle une
+revue explicite dans le Quality Index.
+
+Les extraits JSX décodent les références de caractères usuelles et chaque signal
+porte une ligne de navigation dans son fichier, avec la ligne du composant en
+repli lorsqu'une heuristique ne pointe pas un bloc précis.
+
 Le parseur compte le texte JSX statique et certaines propriétés textuelles
 explicites. Les libellés réservés aux technologies d'assistance ne sont pas
 comptés comme du texte visible. Les traductions, expressions, valeurs dynamiques et branches

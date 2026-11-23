@@ -358,7 +358,9 @@ export function attentionRequired(audit, result) {
   if (audit === "hotspots" || audit === "testability") return false;
   if (audit === "structure") return (result.summary?.foldersRequiringReview ?? 0) > 0;
   if (audit === "coverage") return Boolean(result.attentionRequired) || result.measurementStatus === "MEASUREMENT_FAILED";
-  if (audit === "ui-density") return (result.summary?.signals ?? 0) > 0 || (result.summary?.filesNotMeasured ?? 0) > 0;
+  if (audit === "ui-density") return result.measurementStatus === "MEASUREMENT_FAILED"
+    || (result.summary?.signals ?? 0) > 0
+    || (result.summary?.filesNotMeasured ?? 0) > 0;
   return false;
 }
 
@@ -518,8 +520,10 @@ function makeSummary({ audit, manifest, result, paths }) {
     lines.splice(6, 0,
       `- Components measured: ${result.summary.componentsMeasured}`,
       `- Static text characters: ${result.summary.staticTextCharacters}`,
+      `- Screen-reader-only text characters (excluded from visible total): ${result.summary.accessibilityOnlyCharacters ?? 0}`,
       `- Signals (P1/P2/P3): ${result.summary.byPriority.P1_REVIEW}/${result.summary.byPriority.P2_REVIEW}/${result.summary.byPriority.P3_REVIEW}`,
       `- Dynamic/conditional locations not measured: ${result.summary.dynamicOrConditionalLocations}`,
+      `- Measurement failures: ${result.measurementFailures ?? 0}`,
       "- Static text heuristics are non-blocking and do not measure rendered visual density.",
     );
   }

@@ -5,6 +5,7 @@ const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
+const loadActionFormEditorIdsMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const extractActionMetadataFromNotesMock = vi.hoisted(() => vi.fn());
 const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
@@ -14,6 +15,9 @@ const updateMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
+}));
+vi.mock("@/lib/auth/action-request-access", () => ({
+  requireActionRequestAccess: requireAuthenticatedAccessMock,
 }));
 vi.mock("@/lib/actions/store", () => ({
   loadActionById: loadActionByIdMock,
@@ -30,6 +34,9 @@ vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
   loadCanonicalActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
   syncActionManualParticipants: vi.fn(),
+}));
+vi.mock("@/lib/actions/action-form-editors", () => ({
+  loadActionFormEditorIds: loadActionFormEditorIdsMock,
 }));
 vi.mock("@/lib/actions/persistence/notes", () => ({
   buildPersistedNotes: vi.fn(),
@@ -125,6 +132,7 @@ describe("PATCH /api/actions/:actionId ACTIVE_ROLE boundaries", () => {
     loadActionByIdMock.mockResolvedValue(buildApprovedAction());
     loadActionOrganizerIdsForActionMock.mockResolvedValue([]);
     loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue([]);
+    loadActionFormEditorIdsMock.mockResolvedValue([]);
     extractActionMetadataFromNotesMock.mockReturnValue({
       cleanNotes: null,
       associationName: null,

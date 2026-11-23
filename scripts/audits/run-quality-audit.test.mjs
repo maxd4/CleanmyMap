@@ -258,6 +258,8 @@ test("ui-density standalone mode writes a non-blocking snapshot report and prese
     assert.equal(report.readProvenance, "COMMITTED_SNAPSHOT");
     assert.equal(manifest.readProvenance, "COMMITTED_SNAPSHOT");
     assert.match(summary, /Static text heuristics are non-blocking/);
+    assert.match(summary, /Screen-reader-only text characters \(excluded from visible total\): 0/);
+    assert.match(summary, /Measurement failures: 0/);
     assert.deepEqual(calls, [{ root, auditedSha: sha, scope: "mobile" }]);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -341,6 +343,10 @@ test("all keeps ui-density measurement failure non-blocking for historical gates
     assert.equal(uiDensity.status, "PASS");
     assert.equal(result.attentionRequired, true);
     assert.equal(uiDensityReport.measurementStatus, "MEASUREMENT_FAILED");
+    assert.equal(uiDensityReport.summary.filesInScope, 0);
+    assert.equal(uiDensityReport.summary.filesNotMeasured, 0);
+    assert.equal(uiDensityReport.measurementFailures, 1);
+    assert.equal(attentionRequired("ui-density", uiDensityReport), true);
     assert.equal(result.projectionStatus, "PASS");
     assert.ok(fs.existsSync(uiDensity.paths.report));
   } finally {

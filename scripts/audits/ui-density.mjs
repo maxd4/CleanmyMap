@@ -40,6 +40,17 @@ function normalizedWhitespace(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
 
+function decodeJsxEntities(value) {
+  const namedEntities = { amp: "&", apos: "'", gt: ">", lt: "<", nbsp: "\u00a0", quot: '"' };
+  return String(value ?? "").replace(/&(#(?:x[\da-f]+|\d+)|[a-z][a-z\d]+);/gi, (entity, reference) => {
+    if (reference.startsWith("#")) {
+      const codePoint = reference[1]?.toLowerCase() === "x" ? Number.parseInt(reference.slice(2), 16) : Number.parseInt(reference.slice(1), 10);
+      return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : entity;
+    }
+    return namedEntities[reference.toLowerCase()] ?? entity;
+  });
+}
+
 function compareText(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
 }
@@ -59,8 +70,8 @@ function routeFromPage(filePath) {
 }
 
 function classifySurface(filePath, route, componentName) {
-  const source = `${route ?? ""} ${filePath} ${componentName}`.toLowerCase();
-  if (/\b(legal|legal|privacy|rgpd|cookies|terms|mentions-legales|conditions)\b/.test(source)) return "legal";
+  const source = `${route ?? ""} ${filePath} ${componentName}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (/\b(legal|privacy|confidentialite|rgpd|cookies|terms|mentions-legales|conditions)\b/.test(source)) return "legal";
   if (/\b(methodologie|methodology|protocol|method)\b/.test(source)) return "methodological";
   if (/\b(learn|learning|education|guide|academy|tutorial|faq|pedagog)\b/.test(source)) return "pedagogical";
   if (/\b(actions?|participation|join|inscription|signup|account|report|create|attendance|register)\b/.test(source)) return "transactional";
@@ -123,6 +134,17 @@ function staticAttributeValue(attribute) {
   return null;
 }
 
+function hasAlwaysScreenReaderOnlyClass(opening, sourceFile) {
+  const classAttribute = opening.attributes.properties.find((attribute) => ts.isJsxAttribute(attribute)
+    && ["className", "class"].includes(attribute.name.getText(sourceFile)));
+  const classes = classAttribute ? staticAttributeValue(classAttribute) : null;
+  if (classes === null) return false;
+  const tokens = classes.split(/\s+/);
+  const hasSrOnly = tokens.includes("sr-only");
+  const becomesVisible = tokens.some((token) => /(?:^|:)not-sr-only$/.test(token));
+  return hasSrOnly && !becomesVisible;
+}
+
 function isPotentialVisibleExpression(expression) {
   if (!expression) return false;
   if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression) || ts.isNumericLiteral(expression)) return false;
@@ -151,7 +173,7 @@ function visibleAttributeRecord(attribute, sourceFile) {
   if (!ts.isJsxAttribute(attribute) || !ts.isIdentifier(attribute.name) || !STATIC_TEXT_ATTRIBUTES.has(attribute.name.text)) return null;
   const value = staticAttributeValue(attribute);
   if (value !== null) {
-    const text = normalizedWhitespace(value);
+    const text = normalizedWhitespace(ts.isStringLiteral(attribute.initializer) ? decodeJsxEntities(value) : value);
     return text ? { text, zone: attribute.name.text, start: attribute.getStart(sourceFile), end: attribute.end, dynamic: false } : null;
   }
   const expression = attribute.initializer && ts.isJsxExpression(attribute.initializer) ? attribute.initializer.expression : null;
@@ -165,13 +187,16 @@ function collectParagraph(node, sourceFile, { isMobile, ancestors, contextName }
   let text = "";
   let dynamic = false;
   const gather = (child) => {
-    if (ts.isJsxText(child)) text += ` ${child.text}`;
+    if (ts.isJsxText(child)) text += ` ${decodeJsxEntities(child.text)}`;
     else if (ts.isJsxExpression(child)) {
       const expression = child.expression;
       if (expression && (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression) || ts.isNumericLiteral(expression))) text += ` ${expression.text}`;
       else if (isPotentialVisibleExpression(expression)) dynamic = true;
     }
-    else if (ts.isJsxElement(child) || ts.isJsxFragment(child)) child.forEachChild(gather);
+    else if (ts.isJsxElement(child) || ts.isJsxFragment(child)) {
+      if (ts.isJsxElement(child) && hasAlwaysScreenReaderOnlyClass(child.openingElement, sourceFile)) return;
+      child.forEachChild(gather);
+    }
   };
   node.children?.forEach(gather);
   const normalized = normalizedWhitespace(text);
@@ -187,23 +212,26 @@ function collectParagraph(node, sourceFile, { isMobile, ancestors, contextName }
 
 function collectComponentEvidence(component, sourceFile, filePath) {
   const records = [];
+  const accessibilityOnlyRecords = [];
   const paragraphs = [];
   const dynamicLocations = [];
   const actions = [];
   const isMobile = filePath.startsWith("apps/mobile/");
 
-  const visit = (node, tagStack = []) => {
+  const visit = (node, tagStack = [], screenReaderOnly = false) => {
     if (ts.isJsxText(node)) {
-      const text = normalizedWhitespace(node.text);
-      if (text) records.push({ text, zone: "visible-text", start: node.getStart(sourceFile), end: node.end, tags: tagStack, dynamic: false });
+      const text = normalizedWhitespace(decodeJsxEntities(node.text));
+      if (text) (screenReaderOnly ? accessibilityOnlyRecords : records).push({ text, zone: screenReaderOnly ? "accessibility-only" : "visible-text", start: node.getStart(sourceFile), end: node.end, tags: tagStack, dynamic: false });
       return;
     }
     if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
       const tag = jsxTagName(node, sourceFile);
       const opening = ts.isJsxElement(node) ? node.openingElement : node;
+      const childScreenReaderOnly = screenReaderOnly || hasAlwaysScreenReaderOnlyClass(opening, sourceFile);
       const nextTags = [...tagStack, tag];
-      if (primaryAction(node, sourceFile)) actions.push({ start: node.getStart(sourceFile), tag });
+      if (!childScreenReaderOnly && primaryAction(node, sourceFile)) actions.push({ start: node.getStart(sourceFile), tag });
       for (const attribute of opening.attributes.properties) {
+        if (childScreenReaderOnly) continue;
         const record = visibleAttributeRecord(attribute, sourceFile);
         if (!record) {
           if (ts.isJsxAttribute(attribute) && STATIC_TEXT_ATTRIBUTES.has(attribute.name.getText(sourceFile)) && attribute.initializer && ts.isJsxExpression(attribute.initializer) && isPotentialVisibleExpression(attribute.initializer.expression)) {
@@ -218,16 +246,17 @@ function collectComponentEvidence(component, sourceFile, filePath) {
         if (FIELD_HELP_ATTRIBUTES.has(record.zone) && !record.dynamic) record.fieldHelp = true;
       }
       if (ts.isJsxElement(node)) {
-        const paragraph = collectParagraph(node, sourceFile, { isMobile, ancestors: nextTags, contextName: `${filePath} ${component.name}` });
+        const paragraph = childScreenReaderOnly ? null : collectParagraph(node, sourceFile, { isMobile, ancestors: nextTags, contextName: `${filePath} ${component.name}` });
         if (paragraph) paragraphs.push(paragraph);
-        node.children.forEach((child) => visit(child, nextTags));
+        node.children.forEach((child) => visit(child, nextTags, childScreenReaderOnly));
       }
       return;
     }
     if (ts.isJsxExpression(node)) {
       const expression = node.expression;
       if (expression && (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression) || ts.isNumericLiteral(expression))) {
-        records.push({ text: normalizedWhitespace(expression.text), zone: "visible-text", start: node.getStart(sourceFile), end: node.end, tags: tagStack, dynamic: false, protected: isProtectedCopy(expression.text, tagStack, `${filePath} ${component.name}`) });
+        const destination = screenReaderOnly ? accessibilityOnlyRecords : records;
+        destination.push({ text: normalizedWhitespace(expression.text), zone: screenReaderOnly ? "accessibility-only" : "visible-text", start: node.getStart(sourceFile), end: node.end, tags: tagStack, dynamic: false, protected: isProtectedCopy(expression.text, tagStack, `${filePath} ${component.name}`) });
       } else if (isPotentialVisibleExpression(expression)) dynamicLocations.push({
         line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
         zone: "conditional-or-dynamic-child",
@@ -240,6 +269,7 @@ function collectComponentEvidence(component, sourceFile, filePath) {
   visit(component.node);
 
   const staticRecords = records.filter((record) => !record.dynamic);
+  const staticAccessibilityOnlyRecords = accessibilityOnlyRecords.filter((record) => !record.dynamic);
   const allText = staticRecords.map((record) => record.text);
   const totalChars = allText.reduce((sum, text) => sum + text.length, 0);
   const reviewableRecords = staticRecords.filter((record) => !record.protected);
@@ -275,6 +305,7 @@ function collectComponentEvidence(component, sourceFile, filePath) {
     lines: { start: line(component.node.getStart(sourceFile)), end: line(component.node.end) },
     metrics: {
       staticVisibleCharacters: totalChars,
+      accessibilityOnlyCharacters: staticAccessibilityOnlyRecords.reduce((sum, record) => sum + record.text.length, 0),
       reviewableStaticCharacters: reviewableChars,
       staticTextBlocks: staticRecords.length,
       byZone: Object.fromEntries([...new Set(staticRecords.map((record) => record.zone))].sort().map((zone) => [zone, { blocks: staticRecords.filter((record) => record.zone === zone).length, characters: staticRecords.filter((record) => record.zone === zone).reduce((sum, record) => sum + record.text.length, 0) }])),
@@ -302,7 +333,7 @@ function collectComponentEvidence(component, sourceFile, filePath) {
       explanatoryBlocksBeforeFirstPrimaryAction: blocksBeforeAction,
       hasPrimaryActionCandidate: Boolean(firstAction),
     },
-    staticText: staticRecords.map((record) => ({ line: line(record.start), zone: record.zone, text: record.text, tags: record.tags })),
+    staticText: staticRecords.map((record) => ({ line: line(record.start), zone: record.zone, text: record.text, tags: record.tags, protected: Boolean(record.protected) })),
   };
 }
 
@@ -314,6 +345,12 @@ function signalsForComponent(component) {
   const signals = [];
   const { metrics, privateAnalysis, paragraphs, surface } = component;
   const expectsLongCopy = surfaceExpectsLongCopy(surface);
+  const repeatedText = new Set(privateAnalysis.repeatedDescriptions.map((entry) => entry.excerpt));
+  const firstRepeatedDescription = component.staticText.find((entry) => repeatedText.has(truncate(entry.text.toLowerCase().replace(/[\p{P}\s]+/gu, " ").trim())));
+  const firstInternalTerm = component.staticText.find((entry) => countInternalTerms(entry.text) > 0);
+  const firstSecondaryText = component.staticText.find((entry) => !entry.protected
+    && !entry.tags.some((tag) => STRUCTURED_TEXT_TAGS.has(tag) || ACTION_TAGS.has(tag) || tag === "button" || ["output", "data", "meter", "progress"].includes(tag)));
+  const firstReviewableText = component.staticText.find((entry) => !entry.protected);
   const longParagraphs = paragraphs.filter((paragraph) => !paragraph.dynamicContent && !paragraph.protectedContent && paragraph.characters >= UI_DENSITY_THRESHOLDS.longParagraphChars);
   for (const paragraph of longParagraphs) {
     if (paragraph.characters >= UI_DENSITY_THRESHOLDS.veryLongParagraphChars && !expectsLongCopy) {
@@ -328,19 +365,20 @@ function signalsForComponent(component) {
     addSignal(signals, (help?.text.length ?? 0) >= UI_DENSITY_THRESHOLDS.veryLongFieldHelpChars ? "P1_REVIEW" : "P2_REVIEW", "LONG_FIELD_HELP", `${metrics.longFieldHelpCount} aide(s) statique(s) dépassent ${UI_DENSITY_THRESHOLDS.longFieldHelpChars} caractères.`, help?.text, help?.line ?? null);
   }
   if (!expectsLongCopy && privateAnalysis.hasPrimaryActionCandidate && privateAnalysis.explanatoryBlocksBeforeFirstPrimaryAction >= UI_DENSITY_THRESHOLDS.explanatoryBlocksBeforeAction) {
-    addSignal(signals, "P2_REVIEW", "EXPLANATION_BEFORE_ACTION", `${privateAnalysis.explanatoryBlocksBeforeFirstPrimaryAction} blocs de texte précèdent le premier candidat d’action principale.`, component.staticText.find((entry) => entry.zone === "visible-text")?.text);
+    const firstExplanation = component.staticText.find((entry) => entry.zone === "visible-text" && entry.text.length >= 40);
+    addSignal(signals, "P2_REVIEW", "EXPLANATION_BEFORE_ACTION", `${privateAnalysis.explanatoryBlocksBeforeFirstPrimaryAction} blocs de texte précèdent le premier candidat d’action principale.`, firstExplanation?.text, firstExplanation?.line);
   }
-  if (privateAnalysis.repeatedDescriptions.length > 0) addSignal(signals, "P2_REVIEW", "REPEATED_DESCRIPTION", "Une description ou aide statique est répétée dans le même composant.", privateAnalysis.repeatedDescriptions[0].excerpt);
+  if (privateAnalysis.repeatedDescriptions.length > 0) addSignal(signals, "P2_REVIEW", "REPEATED_DESCRIPTION", "Une description ou aide statique est répétée dans le même composant.", privateAnalysis.repeatedDescriptions[0].excerpt, firstRepeatedDescription?.line);
   if (!expectsLongCopy && privateAnalysis.repeatedCaveats.length > 0) addSignal(signals, "P2_REVIEW", "REPEATED_GENERIC_CAVEAT", "Une précaution générique apparaît plusieurs fois dans le même composant.", privateAnalysis.repeatedCaveats[0].code);
-  if (privateAnalysis.internalTermCount > 0) addSignal(signals, privateAnalysis.internalTermCount >= 3 ? "P1_REVIEW" : "P2_REVIEW", "INTERNAL_TERM_VISIBLE", `${privateAnalysis.internalTermCount} occurrence(s) de termes internes dans les textes statiques.`, component.staticText.find((entry) => countInternalTerms(entry.text) > 0)?.text);
+  if (privateAnalysis.internalTermCount > 0) addSignal(signals, privateAnalysis.internalTermCount >= 3 ? "P1_REVIEW" : "P2_REVIEW", "INTERNAL_TERM_VISIBLE", `${privateAnalysis.internalTermCount} occurrence(s) de termes internes dans les textes statiques.`, firstInternalTerm?.text, firstInternalTerm?.line);
   if (!expectsLongCopy && metrics.secondaryCharacters >= UI_DENSITY_THRESHOLDS.secondaryCharsForDensitySignal && (metrics.secondaryToStructuredRatio ?? 0) >= UI_DENSITY_THRESHOLDS.secondaryToStructuredRatio) {
-    addSignal(signals, "P2_REVIEW", "SECONDARY_TEXT_DENSITY", `Le volume secondaire représente ${metrics.secondaryToStructuredRatio}:1 par rapport aux titres, données et actions statiques.`, `${metrics.secondaryCharacters} caractères secondaires`);
+    addSignal(signals, "P2_REVIEW", "SECONDARY_TEXT_DENSITY", `Le volume secondaire représente ${metrics.secondaryToStructuredRatio}:1 par rapport aux titres, données et actions statiques.`, `${metrics.secondaryCharacters} caractères secondaires`, firstSecondaryText?.line);
   }
   if (!expectsLongCopy && metrics.reviewableStaticCharacters >= UI_DENSITY_THRESHOLDS.componentTextVolumeChars) {
-    addSignal(signals, "P3_REVIEW", "HIGH_STATIC_TEXT_VOLUME", `${metrics.reviewableStaticCharacters} caractères statiques non protégés mesurés dans le composant.`, `${metrics.staticTextBlocks} blocs mesurés`);
+    addSignal(signals, "P3_REVIEW", "HIGH_STATIC_TEXT_VOLUME", `${metrics.reviewableStaticCharacters} caractères statiques non protégés mesurés dans le composant.`, `${metrics.staticTextBlocks} blocs mesurés`, firstReviewableText?.line);
   }
   const actionLine = component.staticText.find((entry) => ACTION_TAGS.has(entry.tags.at(-1)) || entry.tags.at(-1) === "button")?.line ?? null;
-  return signals.sort((left, right) => compareText(left.priority, right.priority) || (left.line ?? 0) - (right.line ?? 0) || compareText(left.code, right.code)).map((signal) => ({ ...signal, component: component.component, file: component.file, route: component.route, surface, line: signal.line ?? actionLine }));
+  return signals.sort((left, right) => compareText(left.priority, right.priority) || (left.line ?? 0) - (right.line ?? 0) || compareText(left.code, right.code)).map((signal) => ({ ...signal, component: component.component, file: component.file, route: component.route, surface, line: signal.line ?? actionLine ?? component.lines.start }));
 }
 
 function analyzeFile(view, filePath) {
@@ -368,6 +406,7 @@ export function summarizeUiDensityReport(report) {
     filesNotMeasured: files.filter((file) => file.status === "NOT_MEASURED").length,
     componentsMeasured: components.length,
     staticTextCharacters: components.reduce((sum, component) => sum + component.metrics.staticVisibleCharacters, 0),
+    accessibilityOnlyCharacters: components.reduce((sum, component) => sum + (component.metrics.accessibilityOnlyCharacters ?? 0), 0),
     dynamicOrConditionalLocations: components.reduce((sum, component) => sum + component.metrics.dynamicOrConditionalLocations, 0),
     signals: components.reduce((sum, component) => sum + component.signals.length, 0),
     byPriority: Object.fromEntries(["P1_REVIEW", "P2_REVIEW", "P3_REVIEW"].map((priority) => [priority, components.reduce((sum, component) => sum + component.signals.filter((signal) => signal.priority === priority).length, 0)])),
@@ -394,9 +433,10 @@ export function buildUiDensityNotMeasured({ auditedSha, scope = "all", error } =
     summary: {
       filesInScope: 0,
       filesMeasured: 0,
-      filesNotMeasured: 1,
+      filesNotMeasured: 0,
       componentsMeasured: 0,
       staticTextCharacters: 0,
+      accessibilityOnlyCharacters: 0,
       dynamicOrConditionalLocations: 0,
       signals: 0,
       byPriority: { P1_REVIEW: 0, P2_REVIEW: 0, P3_REVIEW: 0 },
@@ -404,6 +444,7 @@ export function buildUiDensityNotMeasured({ auditedSha, scope = "all", error } =
     },
     files: [],
     diagnostics: [{ file: "(source scan)", reason: "MEASUREMENT_FAILED", message: error?.message ?? String(error ?? "Measurement failed") }],
+    measurementFailures: 1,
   };
 }
 
@@ -415,6 +456,8 @@ export function formatUiDensityReport(report) {
     `- Provenance : **${report.readProvenance}** (${report.auditedHead})`,
     `- Mesure : **${report.measurementStatus}**`,
     `- Fichiers mesurés/non mesurés : **${report.summary.filesMeasured}/${report.summary.filesNotMeasured}**`,
+    `- Échecs de mesure : **${report.measurementFailures ?? 0}**`,
+    `- Texte réservé aux lecteurs d’écran : **${report.summary.accessibilityOnlyCharacters ?? 0} caractères** (exclu des textes visibles)`,
     `- Composants mesurés : **${report.summary.componentsMeasured}**`,
     `- Signaux : P1 ${report.summary.byPriority.P1_REVIEW}, P2 ${report.summary.byPriority.P2_REVIEW}, P3 ${report.summary.byPriority.P3_REVIEW}`,
     `- Contenus dynamiques ou conditionnels non mesurés : **${report.summary.dynamicOrConditionalLocations}**`,
@@ -475,6 +518,7 @@ export function buildUiDensityReport({ root = process.cwd(), auditedSha, scope =
     summary: null,
     files,
     diagnostics: analyzed.filter((file) => file.status === "NOT_MEASURED").map(({ file, reason, diagnosticCount }) => ({ file, reason, diagnosticCount })),
+    measurementFailures: 0,
   };
   report.summary = summarizeUiDensityReport(report);
   report.measurementStatus = report.diagnostics.length > 0 ? "MEASURED_WITH_LIMITS" : "MEASURED";
