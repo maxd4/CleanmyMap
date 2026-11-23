@@ -14,6 +14,28 @@ des totaux du registre ; la recherche de lignes ne filtre que l’affichage.
 L’écart du bilan compare l’effectif déclaré au nombre de présences identifiées
 sur toutes les entrées actives.
 
+## Équipes facultatives
+
+Les organisateurs autorisés peuvent gérer des équipes privées depuis les trois
+phases du même registre : créer, renommer, retirer une équipe, affecter ou
+déplacer une entrée et la remettre « Sans équipe ». Une entrée stable appartient
+à zéro ou une équipe. Les équipes sans membre restent présentes et aucun
+participant n’est supprimé lorsque l’équipe est retirée.
+
+Le chef est une entrée active de cette équipe, avec ou sans compte associé ;
+son rôle sert uniquement à l’organisation. Une entrée déplacée ou retirée qui
+était chef libère cette désignation explicitement. « À désigner » et « Sans
+équipe » sont des états de préparation, sans règle de taille, verrouillage,
+classement ou vocabulaire compétitif SPOGOMI.
+
+Les noms sont normalisés et uniques par action. L’affectation, la désignation du
+chef et les modifications d’équipe utilisent le RPC serveur atomique, des
+révisions optimistes, l’idempotence par requête et un audit avant/après. Les
+références sont limitées à la même action ; RLS et grants empêchent l’accès
+direct au navigateur. Les nombres attendues/présentes/absentes/à confirmer d’une
+équipe dérivent de ses membres actifs et ne modifient pas les compteurs globaux.
+Les équipes n’ajoutent aucun droit, participation finale, classement ni XP.
+
 ## Identités et liaison
 
 L’organisateur peut saisir librement une identité sous un seul libellé

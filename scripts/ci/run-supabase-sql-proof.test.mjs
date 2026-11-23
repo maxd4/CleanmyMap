@@ -40,6 +40,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.deepEqual(inventory.pgtap, [
     "apps/web/supabase/tests/action-accessibility-support.pgtap.sql",
     "apps/web/supabase/tests/action-attendance-registry.pgtap.sql",
+    "apps/web/supabase/tests/action-attendance-teams.pgtap.sql",
     "apps/web/supabase/tests/action-buddy-contract.pgtap.sql",
     "apps/web/supabase/tests/action-collection-context-reference-rpc.pgtap.sql",
     "apps/web/supabase/tests/action-collection-integrity.pgtap.sql",
@@ -88,6 +89,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.equal(inventory.contracts.includes("apps/web/supabase/tests/spogomi-registration-quiz.sql"), true);
   assert.deepEqual(inventory.multisession, [
     "e2e/action-attendance-registry-concurrency.mjs",
+    "e2e/action-attendance-teams-concurrency.mjs",
     "e2e/action-buddy-concurrency.mjs",
     "e2e/action-collection-concurrency.mjs",
     "e2e/action-role-attestation-concurrency.mjs",
@@ -119,6 +121,12 @@ test("action attendance registry pgTAP plan matches its assertion count", () => 
   assertPgTapPlanMatchesAssertions(sql, "action attendance registry");
 });
 
+test("action attendance teams pgTAP plan matches its assertion count", () => {
+  const path = new URL("../../apps/web/supabase/tests/action-attendance-teams.pgtap.sql", import.meta.url);
+  const sql = readFileSync(path, "utf8");
+  assertPgTapPlanMatchesAssertions(sql, "action attendance teams");
+});
+
 test("action organizer types pgTAP plan matches its assertion count", () => {
   const path = new URL("../../apps/web/supabase/tests/action-organizer-types.pgtap.sql", import.meta.url);
   const sql = readFileSync(path, "utf8");
@@ -148,6 +156,7 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
   const entries = new Set(knipConfig.workspaces["."].entry);
   for (const entrypoint of [
     "e2e/action-collection-concurrency.mjs",
+    "e2e/action-attendance-teams-concurrency.mjs",
     "e2e/community-helper-skills-concurrency.mjs",
     "e2e/gamification-reconciliation-concurrency.mjs",
     "e2e/quiz-progression-concurrency.mjs",
@@ -155,6 +164,15 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
   ]) {
     assert.equal(entries.has(entrypoint), true, `missing Knip entrypoint: ${entrypoint}`);
   }
+});
+
+test("attendance team concurrency proof uses scoped fixtures and two-session serialization", () => {
+  const source = readFileSync(new URL("../../e2e/action-attendance-teams-concurrency.mjs", import.meta.url), "utf8");
+  assert.match(source, /attendance-teams-writer-a/);
+  assert.match(source, /attendance-teams-writer-b/);
+  assert.match(source, /waitForActivity/);
+  assert.match(source, /40001\|revision_conflict/);
+  assert.match(source, /created_by_clerk_id = 'attendance-teams-setup'/);
 });
 
 test("collection concurrency proof uses service-role claims and scoped cleanup", () => {

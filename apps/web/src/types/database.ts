@@ -96,6 +96,34 @@ export type ActionAttendanceEntryRow = {
   deleted_by: string | null;
 };
 
+export type ActionAttendanceTeamRow = {
+  id: string;
+  action_id: string;
+  name: string;
+  normalized_name: string;
+  leader_entry_id: string | null;
+  revision: number;
+  created_by: string;
+  created_at: string;
+  updated_by: string;
+  updated_at: string;
+};
+
+export type ActionAttendanceTeamMembershipRow = {
+  action_id: string;
+  entry_id: string;
+  team_id: string;
+  revision: number;
+  created_by: string;
+  created_at: string;
+  updated_by: string;
+  updated_at: string;
+};
+
+export type ActionAttendanceTeamSnapshot = ActionAttendanceTeamRow & {
+  member_entry_ids: string[];
+};
+
 export type ActionBuddyAvailabilityRow = {
   action_id: string;
   mentor_user_id: string;

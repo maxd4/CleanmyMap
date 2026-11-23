@@ -34,6 +34,12 @@ async function setInput(input: HTMLInputElement, value: string) {
   });
 }
 
+function fieldInput(host: HTMLElement, labelText: string): HTMLInputElement | null {
+  return [...host.querySelectorAll<HTMLElement>(".cmm-field")]
+    .find((field) => field.querySelector("label")?.textContent?.includes(labelText))
+    ?.querySelector("input") ?? null;
+}
+
 afterEach(() => {
   harness.cleanup();
   active = [entry("entry-1", "Alex Martin"), entry("entry-2", "Alex Martin", "present"), entry("entry-3", "Sam", "absent")];
@@ -45,7 +51,13 @@ describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
   it("waits for a persisted actionId, then reuses the same roster through preparation, day, and bilan", async () => {
     const fetchMock = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
       if (init?.method === "POST") return response({ entry: active[0] });
-      return response({ actionId: "action-1", entries: active, declared: { total: 4, adults: 2, retired: 1, children: 1 }, canMarkPresent: false });
+      return response({
+        actionId: "action-1", entries: active, teams: [{
+          id: "team-1", action_id: "action-1", name: "Équipe berge", normalized_name: "équipe berge",
+          leader_entry_id: "entry-1", revision: 2, created_by: "clerk-owner", created_at: "2026-10-20T09:00:00.000Z",
+          updated_by: "clerk-owner", updated_at: "2026-10-20T09:00:00.000Z", member_entry_ids: ["entry-1", "entry-2"],
+        }], declared: { total: 4, adults: 2, retired: 1, children: 1 }, canMarkPresent: false,
+      });
     });
     vi.stubGlobal("fetch", fetchMock);
     const mounted = harness.mount(<ActionAttendanceRegistryEntryPoint actionId={null} mode="preparation" />);
@@ -61,15 +73,19 @@ describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
     expect(mounted.querySelectorAll("ul.divide-y > li")).toHaveLength(3);
     expect(mounted.textContent).toContain("Présent");
     expect([...mounted.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Présent")?.disabled).toBe(true);
+    expect(mounted.querySelector('[data-testid="action-attendance-teams"]')?.textContent).toContain("Équipe berge");
+    expect(mounted.querySelector('[data-testid="action-attendance-teams"]')?.textContent).toContain("2 personnes attendues");
 
     harness.render(<ActionAttendanceRegistryPanel actionId="action-1" mode="day" />);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
     expect(mounted.querySelector('[data-testid="action-attendance-registry-day"]')).not.toBeNull();
     expect(mounted.querySelectorAll("ul.divide-y > li")).toHaveLength(3);
+    expect(mounted.querySelector('[data-testid="action-attendance-teams"]')?.textContent).toContain("Équipe berge");
     harness.render(<ActionAttendanceRegistryPanel actionId="action-1" mode="bilan" />);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
     expect(mounted.querySelector('[data-testid="action-attendance-registry-bilan"]')).not.toBeNull();
     expect(mounted.querySelectorAll("ul.divide-y > li")).toHaveLength(3);
+    expect(mounted.querySelector('[data-testid="action-attendance-teams"]')?.textContent).toContain("Équipe berge");
     expect(mounted.textContent).toContain("Écart non rapproché : 3");
     const registryReads = fetchMock.mock.calls.filter(([, init]) => init?.method !== "POST");
     expect(registryReads).toHaveLength(2);
@@ -104,10 +120,11 @@ describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     expect(mounted.textContent).toContain("Écart non rapproché : 3");
     expect(mounted.textContent).toContain("Présents identifiés : 1");
-    const filter = mounted.querySelectorAll<HTMLInputElement>("input")[1];
+    const panel = mounted.querySelector<HTMLElement>('[data-testid="action-attendance-registry-bilan"]');
+    const filter = panel ? fieldInput(panel, "Rechercher dans la liste") : null;
     if (!filter) throw new Error("filter input missing");
     await setInput(filter, "Alex");
-    expect(mounted.querySelectorAll("ul.divide-y > li")).toHaveLength(2);
+    expect(panel?.querySelectorAll("ul.divide-y > li")).toHaveLength(2);
     expect([...mounted.querySelectorAll("dl[aria-label='Compteurs de présence'] dd")].map((count) => count.textContent)).toEqual(["1", "1", "1"]);
     expect(mounted.textContent).toContain("Écart non rapproché : 3");
   });
@@ -125,16 +142,20 @@ describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
     }));
     const mounted = harness.mount(<ActionAttendanceRegistryPanel actionId="action-1" mode="day" />);
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
-    const identity = mounted.querySelector<HTMLInputElement>('input[aria-describedby]');
+    const panel = mounted.querySelector<HTMLElement>('[data-testid="action-attendance-registry-day"]');
+    if (!panel) throw new Error("attendance panel missing");
+    const identity = fieldInput(panel, "Identité");
     if (!identity) throw new Error("identity input missing");
-    expect(mounted.querySelectorAll("input")).toHaveLength(2); // identité et filtre de liste
-    const row = mounted.querySelector<HTMLElement>("ul.divide-y > li");
+    expect([...panel.querySelectorAll(".cmm-field label")].map((label) => label.textContent)).toContain("Identité");
+    expect(panel.querySelectorAll(".cmm-field label").length).toBeGreaterThanOrEqual(2);
+    const row = panel.querySelector<HTMLElement>("ul.divide-y > li");
     expect(row?.className).toContain("flex-col");
     expect(row?.className).toContain("sm:flex-row");
     await setInput(identity, "Équipe du pont");
     expect(requests).toHaveLength(0);
     expect(mounted.textContent).toContain("recherchez un compte Clerk (facultatif)");
-    await act(async () => { mounted.querySelector<HTMLButtonElement>("button")?.click(); await Promise.resolve(); await Promise.resolve(); });
+    const addButton = [...panel.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Ajouter à la liste");
+    await act(async () => { addButton?.click(); await Promise.resolve(); await Promise.resolve(); });
     expect(requests[0]).toMatchObject({ operation: "add", displayLabel: "Équipe du pont", attendanceStatus: "unknown" });
     expect(requests[0]).not.toHaveProperty("clerkUserId");
   });
@@ -155,11 +176,12 @@ describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     const linkButtons = [...mounted.querySelectorAll<HTMLButtonElement>("button")].filter((button) => button.textContent === "Associer un compte");
     await act(async () => { linkButtons[0]?.click(); });
-    const identity = mounted.querySelector<HTMLInputElement>('input[aria-describedby]');
+    const panel = mounted.querySelector<HTMLElement>('[data-testid="action-attendance-registry-day"]');
+    const identity = panel ? fieldInput(panel, "Identité") : null;
     if (!identity) throw new Error("identity input missing");
     await setInput(identity, "alex");
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
-    const result = [...mounted.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.includes("associer"));
+    const result = [...panel!.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.includes("associer"));
     await act(async () => { result?.click(); await Promise.resolve(); await Promise.resolve(); });
     expect(requests[0]).toMatchObject({ operation: "link", entryId: "entry-1", expectedRevision: 1, clerkUserId: "user_123" });
     expect(active[0]).toMatchObject({ display_label: "Alex Martin", attendance_status: "unknown", observed_at: null, clerk_user_id: "user_123" });
@@ -176,13 +198,14 @@ describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     const linkButton = [...mounted.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Associer un compte");
     await act(async () => { linkButton?.click(); });
-    const identity = mounted.querySelector<HTMLInputElement>('input[aria-describedby]');
+    const panel = mounted.querySelector<HTMLElement>('[data-testid="action-attendance-registry-day"]');
+    const identity = panel ? fieldInput(panel, "Identité") : null;
     if (!identity) throw new Error("identity input missing");
     await setInput(identity, "alex");
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
-    const result = [...mounted.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.includes("associer"));
+    const result = [...panel!.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.includes("associer"));
     await act(async () => { result?.click(); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
-    expect(mounted.textContent).toContain("La liste a été actualisée");
+    expect(mounted.textContent).toContain("Cette entrée a changé. Rechargez le registre.");
     expect(mounted.textContent).toContain("Choisissez un compte");
   });
 
@@ -201,7 +224,8 @@ describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
     }));
     const mounted = harness.mount(<ActionAttendanceRegistryPanel actionId="action-1" mode="day" />);
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
-    const identity = mounted.querySelector<HTMLInputElement>('input[aria-describedby]');
+    const panel = mounted.querySelector<HTMLElement>('[data-testid="action-attendance-registry-day"]');
+    const identity = panel ? fieldInput(panel, "Identité") : null;
     if (!identity) throw new Error("identity input missing");
     await setInput(identity, "Équipe vélo");
     const addButton = [...mounted.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Ajouter à la liste");
@@ -221,7 +245,8 @@ describe("ActionAttendanceRegistryPanel with the real registry hook", () => {
     }));
     const mounted = harness.mount(<ActionAttendanceRegistryPanel actionId="action-1" mode="day" />);
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
-    const identity = mounted.querySelector<HTMLInputElement>("input");
+    const panel = mounted.querySelector<HTMLElement>('[data-testid="action-attendance-registry-day"]');
+    const identity = panel ? fieldInput(panel, "Identité") : null;
     if (!identity) throw new Error("identity input missing");
     await setInput(identity, "Patrouille nord");
     await act(async () => {

@@ -13,7 +13,7 @@ type LoadState = "loading" | "ready" | "error" | "forbidden";
 
 function describeMutationError(error: unknown): string {
   if (error instanceof AttendanceRegistryHttpError && error.status === 409) {
-    return "Le registre a changé pendant cette opération. La liste a été actualisée ; vérifiez la ligne avant de réessayer.";
+    return error.message || "Le registre a changé pendant cette opération. La liste a été actualisée ; vérifiez la ligne avant de réessayer.";
   }
   if (error instanceof AttendanceRegistryHttpError && (error.status === 401 || error.status === 403)) {
     return "Votre accès au registre a été retiré.";
@@ -68,6 +68,11 @@ export function useActionAttendanceRegistry(actionId: string) {
       mutation.displayLabel?.trim() ?? null,
       mutation.clerkUserId ?? null,
       mutation.attendanceStatus ?? null,
+      mutation.teamId ?? null,
+      mutation.targetTeamId ?? null,
+      mutation.expectedRevisions ?? null,
+      mutation.teamName?.trim() ?? null,
+      mutation.leaderEntryId ?? null,
     ]);
     let requestId = requestKeys.current.get(key);
     if (!requestId) {
@@ -80,7 +85,7 @@ export function useActionAttendanceRegistry(actionId: string) {
       const result = await mutateAttendanceRegistry(actionId, { ...mutation, requestId });
       requestKeys.current.delete(key);
       await refresh();
-      return result.entry;
+      return result.entry ?? null;
     } catch (error) {
       if (error instanceof AttendanceRegistryHttpError && error.status === 409) await refresh();
       setErrorMessage(describeMutationError(error));

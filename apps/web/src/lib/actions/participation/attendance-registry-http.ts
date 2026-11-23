@@ -1,8 +1,9 @@
-import type { ActionAttendanceEntryRow } from "@/types/database";
+import type { ActionAttendanceEntryRow, ActionAttendanceTeamSnapshot } from "@/types/database";
 
 export type AttendanceRegistrySnapshot = {
   actionId: string;
   entries: ActionAttendanceEntryRow[];
+  teams: ActionAttendanceTeamSnapshot[];
   declared: {
     total: number | null;
     adults: number | null;
@@ -14,12 +15,17 @@ export type AttendanceRegistrySnapshot = {
 
 export type AttendanceRegistryMutationRequest = {
   requestId: string;
-  operation: "add" | "rename" | "delete" | "link" | "mark";
+  operation: "add" | "rename" | "delete" | "link" | "mark" | "team_create" | "team_rename" | "team_delete" | "member_assign" | "leader_set";
   entryId?: string;
   expectedRevision?: number;
   displayLabel?: string;
   clerkUserId?: string;
   attendanceStatus?: "unknown" | "present" | "absent";
+  teamId?: string;
+  targetTeamId?: string | null;
+  expectedRevisions?: Array<{ teamId: string; revision: number }>;
+  teamName?: string;
+  leaderEntryId?: string | null;
 };
 
 export class AttendanceRegistryHttpError extends Error {
@@ -49,11 +55,11 @@ export function fetchAttendanceRegistry(actionId: string): Promise<AttendanceReg
 export function mutateAttendanceRegistry(
   actionId: string,
   mutation: AttendanceRegistryMutationRequest,
-): Promise<{ entry: ActionAttendanceEntryRow }> {
+): Promise<{ entry?: ActionAttendanceEntryRow; teamMutation?: Record<string, unknown> }> {
   return fetch(`/api/actions/${encodeURIComponent(actionId)}/attendance-registry`, {
     method: "POST",
     cache: "no-store",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(mutation),
-  }).then((response) => readResponse<{ entry: ActionAttendanceEntryRow }>(response));
+  }).then((response) => readResponse<{ entry?: ActionAttendanceEntryRow; teamMutation?: Record<string, unknown> }>(response));
 }

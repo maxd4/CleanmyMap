@@ -8,7 +8,9 @@ const mocks = vi.hoisted(() => ({
   canManage: vi.fn(),
   client: vi.fn(),
   list: vi.fn(),
+  listTeams: vi.fn(),
   mutate: vi.fn(),
+  mutateTeam: vi.fn(),
   clerk: vi.fn(),
 }));
 
@@ -18,7 +20,7 @@ vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: mocks.identity }));
 vi.mock("@/lib/actions/participation/organizers", () => ({ loadActionOrganizerRowsForAction: mocks.organizers }));
 vi.mock("@/lib/actions/permissions", () => ({ canManageAction: mocks.canManage }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.client }));
-vi.mock("@/lib/actions/participation/attendance-registry", () => ({ listActionAttendanceEntries: mocks.list, mutateActionAttendanceEntry: mocks.mutate }));
+vi.mock("@/lib/actions/participation/attendance-registry", () => ({ listActionAttendanceEntries: mocks.list, listActionAttendanceTeams: mocks.listTeams, mutateActionAttendanceEntry: mocks.mutate, mutateActionAttendanceTeam: mocks.mutateTeam }));
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: mocks.clerk }));
 
 import { GET, POST } from "./route";
@@ -35,6 +37,7 @@ describe("private action attendance registry routes", () => {
     mocks.organizers.mockResolvedValue([{ organizer_clerk_id: "clerk-manager" }]);
     mocks.canManage.mockReturnValue(true);
     mocks.list.mockResolvedValue([]);
+    mocks.listTeams.mockResolvedValue([]);
     mocks.clerk.mockResolvedValue({ users: { getUser: vi.fn().mockResolvedValue({ id: "user_123" }) } });
   });
 
@@ -98,5 +101,46 @@ describe("private action attendance registry routes", () => {
     }), context);
     expect(response.status).toBe(200);
     expect(mocks.mutate).toHaveBeenCalledWith({}, expect.objectContaining({ actionId: "action-1", payload: { display_label: "Sam", attendance_status: "present" } }));
+  });
+
+  it("returns teams in the same authorized, private registry snapshot", async () => {
+    mocks.listTeams.mockResolvedValue([{ id: "team-1", action_id: "action-1", name: "Équipe A", normalized_name: "équipe a", leader_entry_id: null, revision: 1, member_entry_ids: [] }]);
+    const response = await GET(new Request("https://example.test"), context);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ teams: [{ id: "team-1", name: "Équipe A", member_entry_ids: [] }] });
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("routes team creation through the authorized idempotent RPC owner", async () => {
+    mocks.mutateTeam.mockResolvedValue({ alreadyProcessed: false, teams: [] });
+    const response = await POST(new Request("https://example.test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requestId: "b8ea39b4-30bb-44b8-a827-a59371b10031", operation: "team_create", teamName: "Équipe A" }),
+    }), context);
+    expect(response.status).toBe(200);
+    expect(mocks.mutateTeam).toHaveBeenCalledWith({}, expect.objectContaining({
+      actionId: "action-1", actorClerkId: "clerk-manager", operation: "team_create", payload: { name: "Équipe A" },
+    }));
+    expect(mocks.mutate).not.toHaveBeenCalled();
+  });
+
+  it("keeps team mutations behind the existing organizer AuthZ and maps duplicate team names", async () => {
+    mocks.canManage.mockReturnValue(false);
+    const denied = await POST(new Request("https://example.test", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requestId: "b8ea39b4-30bb-44b8-a827-a59371b10032", operation: "team_create", teamName: "Équipe A" }),
+    }), context);
+    expect(denied.status).toBe(403);
+    expect(mocks.mutateTeam).not.toHaveBeenCalled();
+
+    mocks.canManage.mockReturnValue(true);
+    mocks.mutateTeam.mockRejectedValue(Object.assign(new Error("duplicate key"), { code: "23505" }));
+    const conflict = await POST(new Request("https://example.test", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requestId: "b8ea39b4-30bb-44b8-a827-a59371b10033", operation: "team_create", teamName: "Équipe A" }),
+    }), context);
+    expect(conflict.status).toBe(409);
+    expect(await conflict.json()).toMatchObject({ error: "Une équipe porte déjà ce nom dans cette action." });
   });
 });

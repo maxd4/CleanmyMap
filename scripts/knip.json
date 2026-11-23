@@ -13,6 +13,7 @@
         "e2e/run-*.mjs",
         "e2e/action-collection-concurrency.mjs",
         "e2e/action-attendance-registry-concurrency.mjs",
+      "e2e/action-attendance-teams-concurrency.mjs",
         "e2e/action-buddy-concurrency.mjs",
         "e2e/community-helper-skills-concurrency.mjs",
         "e2e/gamification-reconciliation-concurrency.mjs",
