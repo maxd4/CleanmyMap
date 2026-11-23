@@ -20,6 +20,8 @@ create temp table attendance_reactivation_fixture (
 );
 grant select, insert, update on attendance_reactivation_fixture to service_role;
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"attendance-reactivation-test"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 
 do $$
 declare
