@@ -17,8 +17,8 @@ const allowedTypes = new Set([
   "inet", "cidr", "macaddr", "bytea", "enum", "array",
 ]);
 
-function run(command, args, { cwd, env = process.env, privateLog, allowFailure = false } = {}) {
-  const result = spawnSync(command, args, { cwd, env, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+function run(command, args, { cwd, env = process.env, privateLog, allowFailure = false, input } = {}) {
+  const result = spawnSync(command, args, { cwd, env, input, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
   const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
   if (privateLog) writeFileSync(privateLog, output, { mode: 0o600 });
   if (result.error) throw result.error;
@@ -36,6 +36,7 @@ export function extractSafePostgresError(output, migrationVersion) {
   const structured = collectStructuredErrorFields(output);
   const sqlstate = structured.sqlstate
     ?? String(output).match(/(?:SQLSTATE|SQL\s+state)\s*[:=]?\s*([0-9A-Z]{5})/iu)?.[1]?.toUpperCase()
+    ?? String(output).match(/\bERROR\s*:\s*([0-9A-Z]{5})\s*:/iu)?.[1]?.toUpperCase()
     ?? "unavailable";
   const position = structured.position
     ?? Number(String(output).match(/(?:position|character)\s*[:=]?\s*(\d+)/iu)?.[1] ?? NaN);
@@ -127,13 +128,16 @@ function makeTemporaryProject(workdir) {
   ].join("\n"));
 }
 
-function readPrivatePostgresLogs(since, privateLog) {
+function findPostgresContainer() {
   const containerList = run("docker", [
     "ps", "--filter", `label=com.supabase.cli.project=cmm-isolated-replay`, "--format", "{{.ID}} {{.Names}}",
   ], { cwd: root, allowFailure: true }).output;
-  const dbContainer = containerList.split(/\r?\n/u)
+  return containerList.split(/\r?\n/u)
     .map((line) => line.trim().split(/\s+/u))
     .find(([, name]) => name?.startsWith("supabase_db_"))?.[0];
+}
+
+function readPrivatePostgresLogs(since, privateLog, dbContainer = findPostgresContainer()) {
   if (!dbContainer) return { containerFound: false, dockerOutput: "", serverOutput: "" };
   const log = run("docker", ["logs", "--since", since, dbContainer], { cwd: root, allowFailure: true }).output;
   writeFileSync(privateLog, log, { mode: 0o600 });
@@ -249,16 +253,19 @@ function main() {
           currentStage = "ISOLATED_MIGRATION_STATEMENT";
           const originalSql = readFileSync(failing.path, "utf8");
           const diagnosticSql = `SET log_error_verbosity = 'verbose';\n${originalSql}`;
-          const diagnosticMigrationPath = join(privateDir, `${failing.version}-verbose.sql`);
-          writeFileSync(diagnosticMigrationPath, diagnosticSql, { mode: 0o600 });
+          const dbContainer = findPostgresContainer();
           const queryStartedAt = new Date(Date.now() - 1000).toISOString();
-          const statementRun = run(cli, ["db", "query", "--local", "--workdir", workdir, "--file", diagnosticMigrationPath, "--output-format", "json", "--debug"], {
-            cwd: root,
-            allowFailure: true,
-            privateLog: statementLog,
-          });
+          const statementRun = dbContainer
+            ? run("docker", ["exec", "-i", dbContainer, "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose"], {
+              cwd: root,
+              allowFailure: true,
+              privateLog: statementLog,
+              input: diagnosticSql,
+            })
+            : { status: 1, output: "" };
+          if (!dbContainer) writeFileSync(statementLog, "", { mode: 0o600 });
           const cliOutput = readFileSync(statementLog, "utf8");
-          const postgresLogs = readPrivatePostgresLogs(queryStartedAt, join(privateDir, "postgres-query.jsonl"));
+          const postgresLogs = readPrivatePostgresLogs(queryStartedAt, join(privateDir, "postgres-query.jsonl"), dbContainer);
           const postgresOutput = `${postgresLogs.dockerOutput}\n${postgresLogs.serverOutput}`;
           const combinedPrivateOutput = `${cliOutput}\n${postgresOutput}`;
           writeFileSync(statementLog, combinedPrivateOutput, { mode: 0o600 });
@@ -270,6 +277,7 @@ function main() {
             isolatedStatementExitCode: statementRun.status,
             logVerbosityInjected: true,
             postgresContainerFound: postgresLogs.containerFound,
+            isolatedPsqlInvoked: Boolean(dbContainer),
             postgresDockerLogObserved: postgresLogs.dockerOutput.trim().length > 0,
             postgresServerLogObserved: postgresLogs.serverOutput.trim().length > 0,
           };

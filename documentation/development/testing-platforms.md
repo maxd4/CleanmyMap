@@ -215,7 +215,8 @@ première migration SQL fautive et la rejoue seule sur son préfixe valide. Les
 logs bruts du CLI, de Docker et de PostgreSQL restent dans le runner; l'artefact
 diagnostic ne contient que le SHA, les empreintes SQL, l'observation des
 sources de logs et une attribution assainie. La verbosité SQL peut être élevée
-uniquement sur la base éphémère du runner. Ce mode ne produit pas une
+uniquement sur la base éphémère du runner; la requête isolée est exécutée avec
+`psql` dans ce conteneur. Ce mode ne produit pas une
 attestation d'intégration, ne lance pas pgTAP/concurrence et n'est jamais
 consommé par la convergence Production. `complete-proof` reste la seule voie
 d'attestation.

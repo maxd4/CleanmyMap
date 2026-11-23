@@ -142,9 +142,10 @@ Supabase distante. Il démarre la version CLI du workflow avec une configuration
 bootstrap échoue, le replay applicatif n'est pas lancé. S'il réussit, le mode
 active l'arbre canonique en lecture seule par symlink et teste les préfixes
 chronologiques par dichotomie, sans seed, puis rejoue la migration fautive
-seule sur le préfixe immédiatement antérieur valide. Avant cette exécution, le
-runner peut activer `log_error_verbosity=verbose` uniquement sur sa base
-éphémère afin que SQLSTATE et position soient présents dans les logs privés.
+seule sur le préfixe immédiatement antérieur valide via `psql` dans le
+conteneur éphémère. Le flux ajoute uniquement `SET log_error_verbosity=verbose`
+et utilise la verbosité client PostgreSQL pour rendre SQLSTATE et position
+lisibles dans les logs privés.
 
 Les sorties brutes du CLI, des journaux Docker et des journaux JSON privés de
 PostgreSQL restent dans `$RUNNER_TEMP` et sont supprimées avec le runner. Le

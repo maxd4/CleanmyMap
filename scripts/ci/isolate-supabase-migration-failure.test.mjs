@@ -60,6 +60,17 @@ test("nested CLI JSON errors expose only safe PostgreSQL diagnostics", () => {
   assert.equal(JSON.stringify(result).includes("private-identity-value"), false);
 });
 
+test("psql verbose errors expose only SQLSTATE, type and instruction position", () => {
+  const result = extractSafePostgresError('ERROR: 22P02: invalid input syntax for type bigint: "private-integer"\nPOSITION: 43', "20261121000002");
+  assert.deepEqual(result, {
+    migrationVersion: "20261121000002",
+    sqlstate: "22P02",
+    expectedType: "bigint",
+    statementPosition: 43,
+  });
+  assert.equal(JSON.stringify(result).includes("private-integer"), false);
+});
+
 test("the parser skips ordinary JSON log rows and selects the structured error row", () => {
   const output = [
     JSON.stringify({ error_severity: "LOG", state_code: "00000", message: "connection authorized" }),
