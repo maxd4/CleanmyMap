@@ -253,6 +253,8 @@ test("the parser skips ordinary JSON log rows and selects the structured error r
 
 test("private failure classification is finite and never returns command text", () => {
   assert.equal(classifyPrivateFailure('ERROR: invalid input syntax for type bigint: "private-value"'), "POSTGRES_INVALID_TEXT_REPRESENTATION");
+  assert.equal(classifyPrivateFailure("ERROR: 0A000: cannot use subquery in check constraint"), "POSTGRES_CHECK_CONSTRAINT_SUBQUERY");
+  assert.equal(classifyPrivateFailure("ERROR: 0A000: unsupported database feature"), "POSTGRES_FEATURE_NOT_SUPPORTED");
   assert.equal(classifyPrivateFailure("ERROR: 42501: permission denied"), "LOCAL_DATABASE_PERMISSION");
   assert.equal(classifyPrivateFailure("Error: unknown flag --file"), "SUPABASE_CLI_USAGE");
   assert.equal(classifyPrivateFailure("failed without a recognized signature"), "UNCLASSIFIED_COMMAND_FAILURE");
@@ -306,6 +308,23 @@ test("public evidence separates canonical replay from psql and redacts raw SQL d
   assert.equal(JSON.stringify(publicEvidence).includes("private_table"), false);
   assert.equal(JSON.stringify(publicEvidence).includes("raw rejected value"), false);
   assert.equal(JSON.stringify(publicEvidence).includes("psql private diagnostic"), false);
+
+  const unsupportedFeature = buildSafeIsolationDiagnostic({
+    candidateSha: "c".repeat(40),
+    bootstrap: "PASS",
+    replay: "FAIL",
+    migrationCount: 499,
+    boundary,
+    canonicalError,
+    psqlDiagnostic: {
+      status: "FAIL",
+      exitCode: 3,
+      error: extractSafePostgresError("ERROR: 0A000: cannot use subquery in check constraint; private value", "20261121000002"),
+      failureClass: classifyPrivateFailure("ERROR: 0A000: cannot use subquery in check constraint; private value"),
+    },
+  });
+  assert.equal(unsupportedFeature.isolatedPsqlDiagnostic.error.failureClass, "POSTGRES_CHECK_CONSTRAINT_SUBQUERY");
+  assert.equal(JSON.stringify(unsupportedFeature).includes("private value"), false);
 });
 
 test("inconclusive public evidence never publishes a guessed migration version", () => {

@@ -162,7 +162,10 @@ une erreur CLI, un résultat discordant ou un prédécesseur en échec produit
 
 Après une frontière confirmée, un rejeu `psql` de la migration depuis son
 prédécesseur peut être exécuté comme diagnostic complémentaire. Son SQLSTATE,
-son type et sa position restent dans un champ distinct `isolatedPsqlDiagnostic`.
+son type, sa position et sa catégorie PostgreSQL allowlistée restent dans un
+champ distinct `isolatedPsqlDiagnostic` (`POSTGRES_CHECK_CONSTRAINT_SUBQUERY`
+pour le message PostgreSQL exact correspondant, ou
+`POSTGRES_FEATURE_NOT_SUPPORTED` pour un `0A000` non précisé).
 Ils ne remplacent jamais le diagnostic du replay Supabase canonique : un
 `42501` de `psql` ne démontre pas la cause d'un `22P02` du replay. `psql` demande
 la verbosité avec `-v VERBOSITY=verbose`, sans ajouter de `SET` privilégié au

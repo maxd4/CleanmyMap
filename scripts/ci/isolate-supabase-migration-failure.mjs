@@ -53,6 +53,8 @@ export function extractSafePostgresError(output, migrationVersion) {
 
 export function classifyPrivateFailure(output) {
   const text = String(output ?? "");
+  if (/cannot use subquery in check constraint/iu.test(text)) return "POSTGRES_CHECK_CONSTRAINT_SUBQUERY";
+  if (/\b0A000\b/iu.test(text)) return "POSTGRES_FEATURE_NOT_SUPPORTED";
   if (/\b22P02\b|invalid input syntax for type/iu.test(text)) return "POSTGRES_INVALID_TEXT_REPRESENTATION";
   if (/\b42501\b|permission denied|insufficient privilege/iu.test(text)) return "LOCAL_DATABASE_PERMISSION";
   if (/\bSQLSTATE\s*[:=]?\s*42/iu.test(text)) return "POSTGRES_SQL_DEPENDENCY_OR_SYNTAX";
@@ -380,6 +382,7 @@ export function buildSafeIsolationDiagnostic({ candidateSha, bootstrap, replay, 
     : "NOT_RUN";
   const safeFailureClass = [
     "POSTGRES_INVALID_TEXT_REPRESENTATION", "POSTGRES_SQL_DEPENDENCY_OR_SYNTAX",
+    "POSTGRES_CHECK_CONSTRAINT_SUBQUERY", "POSTGRES_FEATURE_NOT_SUPPORTED",
     "LOCAL_DATABASE_CONNECTION", "SUPABASE_CLI_USAGE", "LOCAL_DATABASE_PERMISSION",
     "UNCLASSIFIED_COMMAND_FAILURE", "NO_ERROR_TEXT_OBSERVED",
   ].includes(psql.failureClass) ? psql.failureClass : null;
