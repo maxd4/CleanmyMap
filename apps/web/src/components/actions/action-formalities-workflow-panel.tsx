@@ -287,11 +287,12 @@ function ActionFormalitiesWorkflowContent({
           { value: "private", label: "Gestionnaire privé" },
         ]} />
         {managerNeedsLabel ? <label className="grid gap-1 text-xs font-semibold text-emerald-950 sm:col-span-2"><span>Nom du gestionnaire (si connu)</span><input value={visibleFacts.manager.label ?? ""} onChange={(event) => updateDraftFacts({ ...visibleFacts, manager: { ...visibleFacts.manager, label: event.target.value || null } })} maxLength={200} className="min-h-10 rounded-xl border border-emerald-200 bg-white px-3 text-sm font-normal outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" /></label> : null}
-        <FactSelect label="Activité sur la voie publique" value={visibleFacts.isPublicRoadwayActivity} onChange={(value) => updateDraftFacts({ ...visibleFacts, isPublicRoadwayActivity: value })} />
-        <FactSelect label="Action itinérante" value={visibleFacts.isItinerant} onChange={(value) => updateDraftFacts({ ...visibleFacts, isItinerant: value })} />
-        <FactSelect label="Dimension revendicative" value={visibleFacts.isClaiming} onChange={(value) => updateDraftFacts({ ...visibleFacts, isClaiming: value })} />
-        <FactSelect label="Installation ou structure" value={visibleFacts.hasInstallations} onChange={(value) => updateDraftFacts({ ...visibleFacts, hasInstallations: value })} />
-        <FactSelect label="Occupation physique du lieu" value={visibleFacts.requiresPhysicalOccupation} onChange={(value) => updateDraftFacts({ ...visibleFacts, requiresPhysicalOccupation: value })} />
+        <FactSelect description="Pour une cleanwalk, le fait d'emprunter une rue ne suffit pas à caractériser un cortège : répondez aussi à la question dédiée." label="Activité sur la voie publique" value={visibleFacts.isPublicRoadwayActivity} onChange={(value) => updateDraftFacts({ ...visibleFacts, isPublicRoadwayActivity: value })} />
+        <FactSelect description="Le déplacement du groupe pendant le ramassage ne suffit pas à caractériser un cortège." label="Nettoyage avec déplacement du groupe" value={visibleFacts.isItinerant} onChange={(value) => updateDraftFacts({ ...visibleFacts, isItinerant: value })} />
+        <FactSelect description="Oui seulement si l'opération organise un cortège, défilé ou rassemblement sur la voie publique. Une cleanwalk en déplacement ne devient pas un cortège pour ce seul motif." label="Cortège, défilé ou rassemblement organisé" value={visibleFacts.isCortegeOrGathering} onChange={(value) => updateDraftFacts({ ...visibleFacts, isCortegeOrGathering: value })} />
+        <FactSelect description="Répondez oui en présence d'un objet ou message revendicatif organisé, pas simplement parce que l'action défend la propreté." label="Dimension revendicative" value={visibleFacts.isClaiming} onChange={(value) => updateDraftFacts({ ...visibleFacts, isClaiming: value })} />
+        <FactSelect description="Exemples : tente, scène, stand ou structure. Les gants et sacs de collecte ne sont pas une installation événementielle." label="Installation ou structure événementielle" value={visibleFacts.hasInstallations} onChange={(value) => updateDraftFacts({ ...visibleFacts, hasInstallations: value })} />
+        <FactSelect description="Emprise particulière ou espace immobilisé/réservé au-delà du simple passage et du ramassage." label="Emprise physique particulière" value={visibleFacts.requiresPhysicalOccupation} onChange={(value) => updateDraftFacts({ ...visibleFacts, requiresPhysicalOccupation: value })} />
         <FactSelect label="Foule importante ou installation complexe" value={visibleFacts.largeCrowdOrComplexInstallations} onChange={(value) => updateDraftFacts({ ...visibleFacts, largeCrowdOrComplexInstallations: value })} />
         <FactSelect label="Usage local établi" value={visibleFacts.localCustomaryUse} onChange={(value) => updateDraftFacts({ ...visibleFacts, localCustomaryUse: value })} />
       </div>
@@ -311,11 +312,15 @@ function ActionFormalitiesWorkflowContent({
 
 function SelectField({
   label,
+  description,
+  descriptionId,
   value,
   onChange,
   options,
 }: {
   label: string;
+  description?: string;
+  descriptionId?: string;
   value: string;
   onChange: (value: string) => void;
   options: Array<{ value: string; label: string }>;
@@ -323,7 +328,8 @@ function SelectField({
   return (
     <label className="grid gap-1 text-xs font-semibold text-emerald-950">
       <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="min-h-10 rounded-xl border border-emerald-200 bg-white px-3 text-sm font-normal text-emerald-950 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+      {description ? <span id={descriptionId} className="text-xs font-normal leading-5 text-emerald-900/70">{description}</span> : null}
+      <select aria-describedby={descriptionId} value={value} onChange={(event) => onChange(event.target.value)} className="min-h-10 rounded-xl border border-emerald-200 bg-white px-3 text-sm font-normal text-emerald-950 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
         {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
     </label>
@@ -338,12 +344,15 @@ const TERNARY_OPTIONS = [
 
 function FactSelect({
   label,
+  description,
   value,
   onChange,
 }: {
   label: string;
+  description?: string;
   value: boolean | "unknown";
   onChange: (value: boolean | "unknown") => void;
 }) {
-  return <SelectField label={label} value={factValue(value)} onChange={(next) => onChange(next === "true" ? true : next === "false" ? false : "unknown")} options={TERNARY_OPTIONS} />;
+  const descriptionId = description ? `formalities-help-${label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase()}` : undefined;
+  return <SelectField label={label} description={description} descriptionId={descriptionId} value={factValue(value)} onChange={(next) => onChange(next === "true" ? true : next === "false" ? false : "unknown")} options={TERNARY_OPTIONS} />;
 }

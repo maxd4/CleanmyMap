@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
+  FORMALITIES_RULE_VERIFIED_ON,
   qualifyActionFormalities,
   type ActionFormality,
 } from "@/lib/actions/formalities/qualification";
@@ -121,6 +122,7 @@ const formalitiesFacts = (overrides: Record<string, unknown> = {}) => ({
   manager: { kind: "paris_city", label: null },
   isCleanwalk: true,
   isPublicRoadwayActivity: false,
+  isCortegeOrGathering: false,
   isItinerant: false,
   isClaiming: false,
   hasInstallations: true,
@@ -149,7 +151,7 @@ const responseFormalitySchema = z.object({
   id: z.string(),
   requirementStatus: z.enum(["required", "recommended", "not_required", "unknown"]),
   procedureKind: z.enum(["city_aot", "police_declaration", "other_manager", "information_only", "none", "unknown"]),
-  source: z.object({ verifiedOn: z.literal("2026-09-17") }).nullable(),
+  source: z.object({ verifiedOn: z.literal(FORMALITIES_RULE_VERIFIED_ON) }).nullable(),
 });
 const formalitiesResponseSchema = z.object({
   facts: actionFormalitiesFactsSchema,
@@ -321,17 +323,23 @@ describe("/api/actions/:actionId/formalities", () => {
     const body = await readFormalitiesResponse(response);
 
     expect(response.status).toBe(200);
-    expect(body.qualification.formalities[0].requirementStatus).toBe("required");
-    expect(body.qualification.formalities[0].source).toMatchObject({ verifiedOn: "2026-09-17" });
-    expect(body.workflow.progress[0].userStatus).toBe("not_started");
+    const aotFormality = body.qualification.formalities.find((item) => item.id === "paris-city-public-domain-aot");
+    expect(aotFormality?.requirementStatus).toBe("required");
+    expect(aotFormality?.source).toMatchObject({ verifiedOn: FORMALITIES_RULE_VERIFIED_ON });
+    expect(body.qualification.formalities.some((item) => item.requirementStatus === "recommended")).toBe(true);
+    expect(body.workflow.progress.find((item) => item.formalityId === "paris-city-public-domain-aot")?.userStatus).toBe("not_started");
     const persisted = update.mock.calls.at(-1)?.[0];
     if (!persisted) throw new Error("Expected formalities persistence payload");
     expect(persisted).toMatchObject({
       preparation_data: {
         formalitiesContext: { publicSpace: "public_domain" },
-        formalitiesWorkflow: { progress: [{ userStatus: "not_started" }] },
       },
     });
+    expect(
+      (persisted.preparation_data as { formalitiesWorkflow: { progress: unknown[] } }).formalitiesWorkflow.progress,
+    ).toEqual(expect.arrayContaining([
+      expect.objectContaining({ formalityId: "paris-city-public-domain-aot", userStatus: "not_started" }),
+    ]));
     const updateQuery = update.mock.results.at(-1)?.value as FormalitiesUpdateQuery;
     expect(updateQuery.eq).toHaveBeenCalledWith("updated_at", "2026-09-01T00:00:00.000Z");
   });
@@ -528,6 +536,7 @@ describe("/api/actions/:actionId/formalities", () => {
           manager: { kind: "unknown", label: null },
           isCleanwalk: true,
           isPublicRoadwayActivity: "unknown",
+          isCortegeOrGathering: "unknown",
           isItinerant: "unknown",
           isClaiming: "unknown",
           hasInstallations: "unknown",

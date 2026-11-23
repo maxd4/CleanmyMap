@@ -12,6 +12,7 @@ const parisFacts: ActionFormalitiesFacts = {
   manager: { kind: "paris_city", label: "Ville de Paris" },
   isCleanwalk: true,
   isPublicRoadwayActivity: false,
+  isCortegeOrGathering: false,
   isItinerant: false,
   isClaiming: false,
   hasInstallations: false,
@@ -94,9 +95,10 @@ describe("action formalities qualification", () => {
     });
   });
 
-  it("requires a police declaration for a public-roadway activity on its own", () => {
+  it("retains the existing police rule for a non-cleanwalk public-roadway manifestation", () => {
     const result = qualifyActionFormalities({
       ...parisFacts,
+      isCleanwalk: false,
       isPublicRoadwayActivity: true,
     });
 
@@ -126,30 +128,95 @@ describe("action formalities qualification", () => {
     expect(result.formalities.some((item) => item.procedureKind === "police_declaration")).toBe(false);
   });
 
-  it("qualifies an itinerant cleanwalk without installation for police declaration, not AOT", () => {
+  it.each([false, true] as const)(
+    "recognizes an ordinary %s cleanwalk without AOT or police declaration",
+    (isItinerant) => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      isItinerant,
+      isPublicRoadwayActivity: true,
+      isCortegeOrGathering: false,
+    });
+    const notRequired = result.formalities.find(
+      (formality) => formality.id === "paris-participatory-cleaning-no-declaration",
+    );
+    const recommendation = result.formalities.find(
+      (formality) => formality.id === "paris-participatory-cleaning-contact-cleanliness-service",
+    );
+
+    expect(notRequired).toMatchObject({ requirementStatus: "not_required", procedureKind: "none" });
+    expect(notRequired?.source?.url).toBe("https://www.paris.fr/pages/nettoyages-participatifs-ensemble-rendons-paris-plus-propre-15425");
+    expect(recommendation).toMatchObject({ requirementStatus: "recommended", procedureKind: "information_only" });
+    expect(recommendation?.justification).toContain("pas une formalité administrative obligatoire");
+    expect(result.formalities.some((item) => item.procedureKind === "city_aot")).toBe(false);
+    expect(result.formalities.some((item) => item.procedureKind === "police_declaration")).toBe(false);
+    expect(result.unresolvedQuestions).toEqual([]);
+  });
+
+  it("keeps an unknown qualification until an ambiguous roadway activity is distinguished from a cortège", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      isPublicRoadwayActivity: true,
+      isCortegeOrGathering: "unknown",
+    });
+
+    expect(result.formalities.some((item) => item.id === "paris-participatory-cleaning-no-declaration")).toBe(false);
+    expect(result.formalities.some((item) => item.requirementStatus === "unknown")).toBe(true);
+    expect(result.formalities.some((item) => item.procedureKind === "police_declaration")).toBe(false);
+    expect(result.unresolvedQuestions).not.toHaveLength(0);
+  });
+
+  it("requires the police declaration for an explicit cleanwalk cortège on a public roadway", () => {
     const result = qualifyActionFormalities({
       ...parisFacts,
       isItinerant: true,
+      isPublicRoadwayActivity: true,
+      isCortegeOrGathering: true,
     });
-    const police = result.formalities.find(
-      (formality) => formality.procedureKind === "police_declaration",
-    );
 
-    expect(police?.requirementStatus).toBe("required");
-    expect(police?.competentAuthority.kind).toBe("police_prefecture");
-    expect(result.formalities.some((item) => item.procedureKind === "city_aot")).toBe(false);
-    expect(police?.deadline).toMatchObject({ minimumValue: 1, unit: "months" });
-    expect(police?.officialChannel?.url).toBe("https://declaration-manifestations.gouv.fr/");
+    expect(result.formalities.some((item) => item.procedureKind === "police_declaration" && item.requirementStatus === "required")).toBe(true);
+    expect(result.formalities.some((item) => item.id === "paris-participatory-cleaning-no-declaration")).toBe(false);
   });
+
+  it("requires police review for a revendicative cleanwalk", () => {
+    const result = qualifyActionFormalities({ ...parisFacts, isClaiming: true });
+    expect(result.formalities.some((item) => item.procedureKind === "police_declaration" && item.requirementStatus === "required")).toBe(true);
+    expect(result.formalities.some((item) => item.id === "paris-participatory-cleaning-no-declaration")).toBe(false);
+  });
+
+  it("keeps the ordinary-cleaning classification unknown when the manager is unknown", () => {
+    const result = qualifyActionFormalities({ ...parisFacts, manager: { kind: "unknown", label: null } });
+    expect(result.formalities.some((item) => item.id === "paris-participatory-cleaning-no-declaration")).toBe(false);
+    expect(result.formalities.some((item) => item.requirementStatus === "unknown")).toBe(true);
+  });
+
+  it("preserves legacy facts snapshots without assuming whether the action is a cortège", async () => {
+    const { actionFormalitiesFactsSchema } = await import("./facts");
+    const legacy = { ...parisFacts } as Partial<ActionFormalitiesFacts>;
+    delete (legacy as Record<string, unknown>).isCortegeOrGathering;
+    const parsed = actionFormalitiesFactsSchema.safeParse(legacy);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+
+    const result = qualifyActionFormalities({ ...parsed.data, isCortegeOrGathering: "unknown" });
+    expect(result.formalities.some((item) => item.id === "paris-participatory-cleaning-no-declaration")).toBe(false);
+    expect(result.formalities.some((item) => item.procedureKind === "police_declaration")).toBe(false);
+    expect(result.formalities.some((item) => item.requirementStatus === "unknown")).toBe(true);
+  });
+
+});
+
+describe("action formalities qualification — existing scopes", () => {
 
   it("keeps the three-month police deadline source-driven when the facts state a large or complex event", () => {
     const result = qualifyActionFormalities({
       ...parisFacts,
       isPublicRoadwayActivity: true,
+      isCortegeOrGathering: true,
       largeCrowdOrComplexInstallations: true,
     });
 
-    expect(result.formalities[0].deadline).toMatchObject({
+    expect(result.formalities.find((item) => item.procedureKind === "police_declaration")?.deadline).toMatchObject({
       minimumValue: 3,
       unit: "months",
     });
@@ -160,12 +227,11 @@ describe("action formalities qualification", () => {
       ...parisFacts,
       hasInstallations: true,
       isPublicRoadwayActivity: true,
+      isCortegeOrGathering: true,
     });
 
-    expect(result.formalities.map((item) => item.procedureKind)).toEqual([
-      "city_aot",
-      "police_declaration",
-    ]);
+    expect(result.formalities.map((item) => item.procedureKind)).toContain("city_aot");
+    expect(result.formalities.map((item) => item.procedureKind)).toContain("police_declaration");
   });
 
   it("keeps unresolved facts visible when a qualified formalities path still has unknown inputs", () => {
@@ -185,13 +251,14 @@ describe("action formalities qualification", () => {
     const result = qualifyActionFormalities({
       ...parisFacts,
       isPublicRoadwayActivity: true,
+      isCortegeOrGathering: true,
       hasInstallations: "unknown",
     });
 
-    expect(result.formalities[0].procedureKind).toBe("police_declaration");
-    expect(result.unresolvedQuestions).toEqual([
+    expect(result.formalities.some((item) => item.procedureKind === "police_declaration")).toBe(true);
+    expect(result.unresolvedQuestions).toContain(
       "faits manquants sur le lieu, l'installation ou la manifestation",
-    ]);
+    );
   });
 
   it("qualifies an explicitly non-municipal managed site separately", () => {
@@ -340,14 +407,15 @@ describe("action formalities qualification", () => {
     });
   });
 
-  it("does not turn a simple cleanwalk without installation into an AOT or a police declaration", () => {
+  it("classifies a fully characterized simple cleanwalk without AOT or police declaration", () => {
     const result = qualifyActionFormalities(parisFacts);
 
-    expect(result.formalities).toHaveLength(1);
-    expect(result.formalities[0].requirementStatus).toBe("unknown");
-    expect(result.formalities[0].procedureKind).toBe("unknown");
+    expect(result.formalities.some((item) => item.requirementStatus === "not_required")).toBe(true);
+    expect(result.formalities.some((item) => item.requirementStatus === "recommended")).toBe(true);
+    expect(result.formalities.some((item) => item.requirementStatus === "required")).toBe(false);
+    expect(result.formalities.some((item) => item.requirementStatus === "unknown")).toBe(false);
     expect(result.formalities[0].source?.verifiedOn).toBe(FORMALITIES_RULE_VERIFIED_ON);
-    expect(result.unresolvedQuestions).toEqual(["forme et occupation exacte de l'action"]);
+    expect(result.unresolvedQuestions).toEqual([]);
   });
 
   it("does not extend the public-space exemption to an insufficiently scoped private site", () => {

@@ -6,9 +6,33 @@ import {
   buildFormalitiesWorkflowState,
   deriveActionFormalitiesFacts,
 } from "@/lib/actions/formalities/workflow";
-import { ActionFormalitiesQualificationView } from "./action-formalities-workflow-panel";
+import {
+  ActionFormalitiesQualificationView,
+  ActionFormalitiesWorkflowPanel,
+} from "./action-formalities-workflow-panel";
 
 describe("ActionFormalitiesQualificationView", () => {
+  it("clarifies the difference between an ordinary itinerant cleanwalk and a cortège in the preparation questions", () => {
+    const facts = {
+      ...deriveActionFormalitiesFacts({
+        departmentCode: "75",
+        departmentName: "Paris",
+        plannedObjective: "nettoyage",
+      }),
+      publicSpace: "public_domain" as const,
+      manager: { kind: "paris_city" as const, label: "Ville de Paris" },
+    };
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionFormalitiesWorkflowPanel, { draftFacts: facts }),
+    );
+
+    expect(markup).toContain("Activité sur la voie publique");
+    expect(markup).toContain("Cortège, défilé ou rassemblement organisé");
+    expect(markup).toContain("Une cleanwalk en déplacement ne devient pas un cortège pour ce seul motif");
+    expect(markup).toContain("Les gants et sacs de collecte ne sont pas une installation événementielle");
+    expect(markup).toContain("pas une formalité administrative obligatoire");
+  });
+
   it("renders the qualification facts, explanation, authority, deadline and official link", () => {
     const facts = {
       ...deriveActionFormalitiesFacts({

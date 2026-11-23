@@ -14,14 +14,14 @@ import { createNationalFormalitiesRule } from "./national-rule";
  */
 
 const ACTION_FORMALITIES_SCHEMA_VERSION = "action-formalities-qualification-v1" as const;
-const PARIS_FORMALITIES_RULESET_VERSION = "paris-public-space-formalities-2026-04-16" as const;
+const PARIS_FORMALITIES_RULESET_VERSION = "paris-public-space-formalities-2026-11-23" as const;
 const PARIS_FORMALITIES_RULE_ID = "paris-public-space-formalities" as const;
 const PARIS_FORMALITIES_RULE_SCOPE: FormalityRuleScope = {
   kind: "special_territory",
   countryCode: "FR",
   code: "FR-PARIS",
 };
-export const FORMALITIES_RULE_VERIFIED_ON = "2026-09-17" as const;
+export const FORMALITIES_RULE_VERIFIED_ON = "2026-11-23" as const;
 export type FormalityRequirementStatus =
   | "required"
   | "recommended"
@@ -125,6 +125,7 @@ export type ActionFormalitiesFacts = {
   };
   isCleanwalk: boolean;
   isPublicRoadwayActivity: FormalitiesBoolean;
+  isCortegeOrGathering: FormalitiesBoolean;
   isItinerant: FormalitiesBoolean;
   isClaiming: FormalitiesBoolean;
   hasInstallations: FormalitiesBoolean;
@@ -149,6 +150,16 @@ const CITY_EVENTS_SOURCE: FormalitiesOfficialSource = {
   verifiedOn: FORMALITIES_RULE_VERIFIED_ON,
   scope:
     "Domaine public municipal parisien, événements, AOT, gestionnaires exclus et manifestations déambulatoires sans installations.",
+};
+
+const CITY_PARTICIPATORY_CLEANING_SOURCE: FormalitiesOfficialSource = {
+  id: "ville-paris-nettoyage-participatif-15425",
+  title: "Nettoyage participatif : ensemble, rendons Paris plus propre",
+  authorityLevel: "municipal",
+  url: "https://www.paris.fr/pages/nettoyages-participatifs-ensemble-rendons-paris-plus-propre-15425",
+  verifiedOn: FORMALITIES_RULE_VERIFIED_ON,
+  scope:
+    "Nettoyages participatifs ordinaires organisés à Paris : la Ville indique qu'ils ne nécessitent pas de déclaration ni d'AOT et recommande de contacter le service de propreté de l'arrondissement.",
 };
 
 const SERVICE_PUBLIC_MANIFESTATION_SOURCE: FormalitiesOfficialSource = {
@@ -350,6 +361,58 @@ function buildLocalCustomaryUseExemption(): ActionFormality {
   };
 }
 
+function buildParisParticipatoryCleaningNotRequired(): ActionFormality {
+  return {
+    id: "paris-participatory-cleaning-no-declaration",
+    requirementStatus: "not_required",
+    procedureKind: "none",
+    competentAuthority: {
+      kind: "paris_city",
+      label: "Ville de Paris — nettoyage participatif",
+    },
+    recipient: null,
+    source: CITY_PARTICIPATORY_CLEANING_SOURCE,
+    supportingSources: [CITY_EVENTS_SOURCE],
+    scope:
+      "Nettoyage participatif ordinaire sur le domaine public municipal parisien, sans cortège ou rassemblement organisé, revendication, installation ni emprise physique particulière.",
+    justification:
+      "Pour ce cas caractérisé, la Ville de Paris indique qu'un nettoyage participatif ne nécessite ni déclaration ni autorisation d'occupation temporaire. Le déplacement du groupe pendant le ramassage ne suffit pas à le qualifier de cortège.",
+    deadline: null,
+    officialChannel: null,
+    requestedInformation: [],
+    requestedDocuments: [],
+  };
+}
+
+function buildParisCleaningDivisionRecommendation(): ActionFormality {
+  return {
+    id: "paris-participatory-cleaning-contact-cleanliness-service",
+    requirementStatus: "recommended",
+    procedureKind: "information_only",
+    competentAuthority: {
+      kind: "paris_city",
+      label: "Service de propreté de l'arrondissement",
+    },
+    recipient: "Service de propreté de l'arrondissement concerné",
+    source: CITY_PARTICIPATORY_CLEANING_SOURCE,
+    supportingSources: [],
+    scope: "Coordination pratique de la collecte des déchets après un nettoyage participatif à Paris.",
+    justification:
+      "La Ville recommande de contacter le service de propreté de l'arrondissement pour faciliter la prise en charge des déchets et, selon disponibilité, obtenir des gants ou des sacs. Cette prise de contact est une recommandation pratique, pas une formalité administrative obligatoire.",
+    deadline: null,
+    officialChannel: {
+      kind: "official_page",
+      label: "Informations et formulaire Nettoyage participatif de Paris",
+      url: CITY_PARTICIPATORY_CLEANING_SOURCE.url,
+    },
+    requestedInformation: [
+      "arrondissement et lieu du nettoyage",
+      "date de l'opération et modalités souhaitées pour la collecte des déchets",
+    ],
+    requestedDocuments: [],
+  };
+}
+
 function buildManagerIdentificationRecommendation(): ActionFormality {
   return {
     id: "identify-public-space-manager",
@@ -384,9 +447,10 @@ function qualifyParisFormalities(
     (facts.hasInstallations === true || facts.requiresPhysicalOccupation === true);
   const hasPoliceManifestation =
     hasPublicDomainFacts &&
-    (facts.isPublicRoadwayActivity === true ||
-      facts.isClaiming === true ||
-      (facts.isItinerant === true && facts.hasInstallations === false));
+    (facts.isClaiming === true ||
+      (facts.isCleanwalk
+        ? facts.isPublicRoadwayActivity === true && facts.isCortegeOrGathering === true
+        : facts.isPublicRoadwayActivity === true || facts.isCortegeOrGathering === true));
   const hasOtherManagerOccupation =
     hasPublicDomainFacts &&
     facts.manager.kind !== "paris_city" &&
@@ -406,6 +470,24 @@ function qualifyParisFormalities(
   }
   if (hasOtherManagerOccupation) {
     formalities.push(buildOtherManagerRecommendation(facts.manager.label));
+  }
+
+  const isParisMunicipalCleanwalk =
+    facts.isCleanwalk &&
+    hasPublicDomainFacts &&
+    facts.manager.kind === "paris_city";
+  const isOrdinaryParisMunicipalCleanwalk =
+    isParisMunicipalCleanwalk &&
+    facts.hasInstallations === false &&
+    facts.requiresPhysicalOccupation === false &&
+    facts.isClaiming === false &&
+    facts.isCortegeOrGathering === false;
+
+  if (isParisMunicipalCleanwalk) {
+    formalities.push(buildParisCleaningDivisionRecommendation());
+  }
+  if (isOrdinaryParisMunicipalCleanwalk) {
+    formalities.push(buildParisParticipatoryCleaningNotRequired());
   }
 
   if (
@@ -440,7 +522,10 @@ function qualifyParisFormalities(
   } else if (
     facts.publicSpace === "unknown" ||
     facts.hasInstallations === "unknown" ||
-    facts.isPublicRoadwayActivity === "unknown"
+    facts.isPublicRoadwayActivity === "unknown" ||
+    facts.isCortegeOrGathering === "unknown" ||
+    facts.isClaiming === "unknown" ||
+    facts.requiresPhysicalOccupation === "unknown"
   ) {
     unresolvedQuestions.push("faits manquants sur le lieu, l'installation ou la manifestation");
   }

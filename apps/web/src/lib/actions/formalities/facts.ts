@@ -47,6 +47,8 @@ export const actionFormalitiesFactsSchema = z
       .strict(),
     isCleanwalk: z.boolean(),
     isPublicRoadwayActivity: z.union([z.boolean(), z.literal("unknown")]),
+    // Optional only for reading persisted v1 snapshots; new derived facts always provide it.
+    isCortegeOrGathering: z.union([z.boolean(), z.literal("unknown")]).optional().default("unknown"),
     isItinerant: z.union([z.boolean(), z.literal("unknown")]),
     isClaiming: z.union([z.boolean(), z.literal("unknown")]),
     hasInstallations: z.union([z.boolean(), z.literal("unknown")]),
@@ -66,6 +68,7 @@ export type FormalitiesFactsSnapshot = Pick<
   | "manager"
   | "isCleanwalk"
   | "isPublicRoadwayActivity"
+  | "isCortegeOrGathering"
   | "isItinerant"
   | "isClaiming"
   | "hasInstallations"
@@ -189,6 +192,7 @@ export function deriveActionFormalitiesFacts(params: {
     manager: { kind: "unknown", label: null },
     isCleanwalk: ["nettoyage", "collecte_mégots", "action_mixte"].includes(objective),
     isPublicRoadwayActivity: "unknown",
+    isCortegeOrGathering: "unknown",
     isItinerant: "unknown",
     isClaiming: "unknown",
     hasInstallations: "unknown",

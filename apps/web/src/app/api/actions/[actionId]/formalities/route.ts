@@ -193,7 +193,12 @@ export async function PATCH(
 
     const currentFacts = await deriveActionFormalitiesFactsFromAction(current);
     const facts = parsed.facts
-      ? { ...parsed.facts, territory: currentFacts.territory }
+      ? {
+          ...parsed.facts,
+          isCortegeOrGathering:
+            parsed.facts.isCortegeOrGathering ?? currentFacts.isCortegeOrGathering,
+          territory: currentFacts.territory,
+        }
       : currentFacts;
     const qualification = qualifyActionFormalities(facts);
     const previous = normalizeActionFormalitiesWorkflow(

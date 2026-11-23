@@ -47,6 +47,7 @@ export async function deriveActionFormalitiesFactsFromAction(
 
   return {
     ...parsed.data,
+    isCortegeOrGathering: parsed.data.isCortegeOrGathering ?? "unknown",
     territory:
       resolvedTerritory || fallback.territory.code !== "FR-unknown"
         ? fallback.territory

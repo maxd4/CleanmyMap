@@ -416,6 +416,45 @@ describe("formalities workflow", () => {
     expect(isFormalitiesPublicationBlocked(qualification, workflow)).toBe(false);
   });
 
+  it("requalifies a formerly declared cleanwalk without losing its historical sent proof", () => {
+    const manifestationFacts = parisFacts({
+      isCleanwalk: true,
+      isPublicRoadwayActivity: true,
+      isCortegeOrGathering: true,
+      isClaiming: false,
+      hasInstallations: false,
+      requiresPhysicalOccupation: false,
+    });
+    const manifestationQualification = qualifyActionFormalities(manifestationFacts);
+    const policeId = "paris-police-public-roadway-declaration";
+    const initial = buildFormalitiesWorkflowState({
+      facts: manifestationFacts,
+      qualification: manifestationQualification,
+      now: "2026-11-23T10:00:00.000Z",
+    });
+    const sent = applyFormalitiesWorkflowTransition({
+      workflow: initial,
+      transition: { formalityId: policeId, kind: "declare_sent", proofReference: "déclaration déclarée par l’organisateur" },
+      now: "2026-11-23T10:01:00.000Z",
+    });
+    const ordinaryFacts = { ...manifestationFacts, isCortegeOrGathering: false };
+    const ordinaryQualification = qualifyActionFormalities(ordinaryFacts);
+    const requalified = buildFormalitiesWorkflowState({
+      facts: ordinaryFacts,
+      qualification: ordinaryQualification,
+      previous: sent,
+      now: "2026-11-23T10:02:00.000Z",
+    });
+    const historicalPolice = requalified.progress.find((item) => item.formalityId === policeId);
+
+    expect(ordinaryQualification.formalities.some((item) => item.id === policeId)).toBe(false);
+    expect(ordinaryQualification.formalities.some((item) => item.requirementStatus === "not_required")).toBe(true);
+    expect(isFormalitiesPublicationBlocked(ordinaryQualification, requalified)).toBe(false);
+    expect(historicalPolice).toMatchObject({ active: false, validForQualification: false, userStatus: "sent" });
+    expect(historicalPolice?.proof?.reference).toBe("déclaration déclarée par l’organisateur");
+    expect(requalified.progress.filter((item) => item.active).every((item) => item.userStatus === "not_started")).toBe(true);
+  });
+
   it("does not block publication for the national unknown fallback", () => {
     const facts = deriveActionFormalitiesFacts({
       departmentCode: "69",
