@@ -29,7 +29,7 @@
 | 11 Culture japonaise et Mottainai — prévue, fiche non rédigée | À documenter avant conception | Contenu et source à confirmer |
 | [12 Propreté urbaine et métiers](12-proprete-urbaine-metiers.md) | Métier des agents, véhicules, démonstrations et civilité | Accord du service compétent pour les démonstrations |
 
-**Source commune :** [CHIKYU - PLANÈTE | Dossier SPOGOMI 2027](https://docs.google.com/document/d/1SBSVBDsAryj8Dp9qW2NIfnuvGfLwNkco65EdUZhVTcs/edit), proposition de concertation adressée à la mairie du 5e arrondissement. Aucun partenariat avec la mairie, la Direction de la Propreté et de l'Eau, le SYCTOM, ARTEMA Network ou une structure Repair Café n'est établi par ce document.
+**Source commune :** CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, proposition de concertation adressée à la mairie du 5e arrondissement. Aucun partenariat avec la mairie, la Direction de la Propreté et de l'Eau, le SYCTOM, ARTEMA Network ou une structure Repair Café n'est établi par ce document.
 
 **Éviter les doublons de comptage :** le compostage est traité dans la fiche 07 ; le jardinage utilisant du compost dans la 09 ; le réemploi/repair dans la 08 ; la création surcyclée dans la 10. La fiche 11 renvoie à ces protocoles lorsqu'elle reprend une activité déjà décrite. Une même séance ne devient pas plusieurs ateliers du seul fait qu'elle aborde plusieurs thèmes.
 
@@ -52,8 +52,8 @@ Le catalogue recense [24 références de ressources externes](ressources/README.
 
 ## Sources et frontières
 
-- [Candidature Culture-ActionS](https://docs.google.com/document/d/1dAUNhdI2-BlVqfhAVMP5v2MF1VdjTioWlzOxIWfStak/edit) : liste initiale des cinq ateliers.
-- [Budget Culture-ActionS](https://docs.google.com/document/d/1qRPhuPlW8lhWzOKWuze4p42jQxP4oWhpV-7mK_qBgOc/edit) : scénarios de séances A1 à A5 et **118,98 euros de matériel mutualisé** prévisionnel pour les cinq, sans ventilation par atelier établie ici.
+- Candidature Culture-ActionS : liste initiale des cinq ateliers.
+- Budget Culture-ActionS : scénarios de séances A1 à A5 et **118,98 euros de matériel mutualisé** prévisionnel pour les cinq, sans ventilation par atelier établie ici.
 - [Roadmap hors code](../roadmap-2027-hors-code.md) : exécution, partenariats, responsabilités et preuves.
 - [Mode École CURRENT](../../pages_site/routes/05-apprendre/learn-ecole/learn-ecole-README.md) : support numérique de quiz et d'atelier de 30 ou 60 minutes pour la 6e à la 3e, distinct des animations physiques.
 - [Business model PLAN](../../product/business-model.md) : hypothèses de tarification; aucune prestation vendue n'est démontrée par ces fiches.

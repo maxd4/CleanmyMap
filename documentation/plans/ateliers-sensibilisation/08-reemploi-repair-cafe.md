@@ -54,7 +54,7 @@ Accueil et diagnostic par une structure de réparation compétente, objets et in
 
 ## Source et frontière
 
-- [CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, « Économie circulaire : réduire, réparer et réemployer » et ateliers scolaires](https://docs.google.com/document/d/1SBSVBDsAryj8Dp9qW2NIfnuvGfLwNkco65EdUZhVTcs/edit).
+- CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, « Économie circulaire : réduire, réparer et réemployer » et ateliers scolaires.
 - Le déroulé et la séparation entre formats A/B sont des propositions de préparation, non des engagements du dossier.
 
 ## Ressources externes vérifiées (13 novembre 2026)

@@ -54,7 +54,7 @@ Préparer un inventaire des matériaux et les productions modèles. Ne pas colle
 
 ## Source et frontière
 
-- [CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, « Art et upcycling : donner une seconde vie aux matières »](https://docs.google.com/document/d/1SBSVBDsAryj8Dp9qW2NIfnuvGfLwNkco65EdUZhVTcs/edit).
+- CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, « Art et upcycling : donner une seconde vie aux matières ».
 - Cette fiche décrit une animation possible ; aucune participation d'artiste ou vente effective n'est attestée.
 
 ## Ressources externes vérifiées (13 novembre 2026)

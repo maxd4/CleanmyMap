@@ -27,15 +27,15 @@
 
 ## 1. Emplacement et fichiers de référence Google Drive
 
-**Dossier unique :** [cleanmymap / ateliers / quiz+petit-bac](https://drive.google.com/drive/folders/1oJo93rvHeKmtC1RZ_tbHwRYzSHG9UpBb).
+**Dossier unique :** cleanmymap / ateliers / quiz+petit-bac.
 
 | Ressource | Lien et rôle | État documentaire au 14/11/2026 |
 | --- | --- | --- |
-| **Feuilles de jeu officielles** | [Google Slides : 2 diapositives, deux publics](https://docs.google.com/presentation/d/1FukAB_dTx8qy8CUuyk1s7Msjx7X84EC2PrMwiB8bG7Y/edit) | **Créé** : huit colonnes, quatre manches, score /72, mise en page modifiée. Impression physique A4 paysage encore à valider. |
-| **Guide animateur et corrigé** | [Google Doc : règles, déroulé, lexique de 25 définitions](https://docs.google.com/document/d/1pevov46FhplLZcAAaDJMnogwPbDyeQ2FPvvwwnq8VdA/edit) | **Mis à jour** : deux publics, 8 catégories, formats 60/75/90 min, points et définitions. |
-| **Banque de mini-présentations** | [Google Slides : 41 diapositives](https://docs.google.com/presentation/d/1OP7RD-QtNsxDh9WFRGl7N7FOOdp0gSgKyQa7IALIXZQ/edit) | **Créé** : 3 diapositives introductives + 38 fiches de notions avec exemple, confusion, question possible et source. **Sélection pédagogique à faire**. |
-| **Anciennes grilles** | [Dossier d'archives](https://drive.google.com/drive/folders/1zu6cLySTqbfeOqS_prmLqPvM0Zr8h78G) | **LEGACY** : anciennes versions à 10 catégories et 2 manches, non utilisables comme référence courante. |
-| **Synthèse des 11 ateliers** | [Google Doc : catalogue des ateliers](https://docs.google.com/document/d/18XiQMmEsxBYanBWGu4USxK-AzFRoLPqFZwY75VSbBsk/edit) | **Mise à jour** : le descriptif de l'atelier 04 reflète les nouvelles règles. |
+| **Feuilles de jeu officielles** | Google Slides : 2 diapositives, deux publics | **Créé** : huit colonnes, quatre manches, score /72, mise en page modifiée. Impression physique A4 paysage encore à valider. |
+| **Guide animateur et corrigé** | Google Doc : règles, déroulé, lexique de 25 définitions | **Mis à jour** : deux publics, 8 catégories, formats 60/75/90 min, points et définitions. |
+| **Banque de mini-présentations** | Google Slides : 41 diapositives | **Créé** : 3 diapositives introductives + 38 fiches de notions avec exemple, confusion, question possible et source. **Sélection pédagogique à faire**. |
+| **Anciennes grilles** | Dossier d'archives | **LEGACY** : anciennes versions à 10 catégories et 2 manches, non utilisables comme référence courante. |
+| **Synthèse des 11 ateliers** | Google Doc : catalogue des ateliers | **Mise à jour** : le descriptif de l'atelier 04 reflète les nouvelles règles. |
 
 **Source de vérité des supports papier :** la présentation **fusionnée** ci-dessus et le guide animateur. Le présent fichier est la **fiche de conception / reprise du développement**. Ne pas recréer de troisième jeu de grilles ni dupliquer systématiquement les 41 diapositives dans le dépôt.
 
@@ -153,7 +153,7 @@ Les quatre bandes horizontales des feuilles servent à **quatre manches différe
 
 ### Banque de mini-présentations créée
 
-La [banque de 41 diapositives](https://docs.google.com/presentation/d/1OP7RD-QtNsxDh9WFRGl7N7FOOdp0gSgKyQa7IALIXZQ/edit) contient **3 pages d'introduction** et **38 fiches de notions**. Thèmes : développement durable et ODD ; météo, climat, effet de serre, CO₂, CH₄, N₂O, CO₂e et cycle du carbone ; énergie, sobriété, matériaux, prévention des déchets, réemploi et recyclage ; biodiversité, écosystèmes, alimentation, sols et eau ; limites planétaires et système Terre ; aléas, vulnérabilité, adaptation, atténuation et résilience ; GIEC, COP, CCNUCC, Accord de Paris ; engagement local et CleanMyMap.
+La banque de 41 diapositives contient **3 pages d'introduction** et **38 fiches de notions**. Thèmes : développement durable et ODD ; météo, climat, effet de serre, CO₂, CH₄, N₂O, CO₂e et cycle du carbone ; énergie, sobriété, matériaux, prévention des déchets, réemploi et recyclage ; biodiversité, écosystèmes, alimentation, sols et eau ; limites planétaires et système Terre ; aléas, vulnérabilité, adaptation, atténuation et résilience ; GIEC, COP, CCNUCC, Accord de Paris ; engagement local et CleanMyMap.
 
 **À décider à la reprise :** cinq diapositives adaptées à chaque profil et à la progression de la séance, puis cinq questions diagnostiques et cinq questions d'application par profil. La banque comporte des **idées de questions**, pas une banque de quiz déjà validée et codée. Pour les 4e, éviter les mécanismes trop techniques ; au lycée, proposer des approfondissements oraux. Aucun chiffre, protocole scientifique ou effet environnemental ne doit être présenté comme démontré sans source.
 
@@ -219,8 +219,8 @@ Les prompts se trouvent dans la conversation de préparation. Les descriptions c
 
 ### Provenance et budget
 
-- [Candidature Culture-ActionS : atelier 04](https://docs.google.com/document/d/1dAUNhdI2-BlVqfhAVMP5v2MF1VdjTioWlzOxIWfStak/edit).
-- [Budget Culture-ActionS, ligne A4](https://docs.google.com/document/d/1qRPhuPlW8lhWzOKWuze4p42jQxP4oWhpV-7mK_qBgOc/edit), **prévisionnel** : ne prouve aucun financement acquis.
-- [Catalogue général des 11 ateliers](https://docs.google.com/document/d/18XiQMmEsxBYanBWGu4USxK-AzFRoLPqFZwY75VSbBsk/edit).
+- Candidature Culture-ActionS : atelier 04.
+- Budget Culture-ActionS, ligne A4, **prévisionnel** : ne prouve aucun financement acquis.
+- Catalogue général des 11 ateliers.
 
 Les sources tierces servent de références pour les faits et l'animation, pas de licence implicite pour redistribuer leurs documents. **Vérifier les droits d'usage avant intégration au dépôt ou diffusion publique**, notamment pour les supports ADEME ou Parc amazonien de Guyane.

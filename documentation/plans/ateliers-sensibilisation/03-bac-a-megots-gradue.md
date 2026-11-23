@@ -42,8 +42,8 @@ Le facteur « 500 litres par mégot » documenté dans CleanMyMap est un **proxy
 
 ## Sources
 
-- [Candidature Culture-ActionS, atelier 3](https://docs.google.com/document/d/1dAUNhdI2-BlVqfhAVMP5v2MF1VdjTioWlzOxIWfStak/edit).
-- [Budget Culture-ActionS, atelier A1](https://docs.google.com/document/d/1qRPhuPlW8lhWzOKWuze4p42jQxP4oWhpV-7mK_qBgOc/edit).
+- Candidature Culture-ActionS, atelier 3.
+- Budget Culture-ActionS, atelier A1.
 
 ## Ressources externes vérifiées (13 novembre 2026)
 

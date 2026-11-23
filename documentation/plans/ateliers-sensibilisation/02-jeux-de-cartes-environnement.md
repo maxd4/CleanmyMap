@@ -41,8 +41,8 @@ Choix du support précis et droits d'utilisation, âge des élèves, encadrement
 
 ## Sources
 
-- [Candidature Culture-ActionS, atelier 2](https://docs.google.com/document/d/1dAUNhdI2-BlVqfhAVMP5v2MF1VdjTioWlzOxIWfStak/edit).
-- [Budget Culture-ActionS, atelier A5](https://docs.google.com/document/d/1qRPhuPlW8lhWzOKWuze4p42jQxP4oWhpV-7mK_qBgOc/edit).
+- Candidature Culture-ActionS, atelier 2.
+- Budget Culture-ActionS, atelier A5.
 
 ## Ressources externes vérifiées (13 novembre 2026)
 

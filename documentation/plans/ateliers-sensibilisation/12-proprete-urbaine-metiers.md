@@ -59,7 +59,7 @@ Les réponses exactes dépendent de la collectivité. Les procédures sont à v�
 
 ## Source et frontière
 
-- [CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, vendredi « Le respect », « Valoriser les métiers de la propreté parisienne »](https://docs.google.com/document/d/1SBSVBDsAryj8Dp9qW2NIfnuvGfLwNkco65EdUZhVTcs/edit).
+- CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, vendredi « Le respect », « Valoriser les métiers de la propreté parisienne ».
 - Ni l'engagement de la mairie du 5e arrondissement, ni celui de la Direction de la Propreté et de l'Eau, ni la disponibilité d'agents n'est prouvé par ce dossier.
 
 ## Ressources externes vérifiées (13 novembre 2026)

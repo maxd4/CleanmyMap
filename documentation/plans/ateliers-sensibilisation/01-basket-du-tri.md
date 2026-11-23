@@ -40,8 +40,8 @@ Vérifier les règles de la salle et l'espace de jeu, éviter les objets petits,
 
 ## Sources
 
-- [Candidature Culture-ActionS, atelier 1](https://docs.google.com/document/d/1dAUNhdI2-BlVqfhAVMP5v2MF1VdjTioWlzOxIWfStak/edit).
-- [Budget Culture-ActionS, atelier A2](https://docs.google.com/document/d/1qRPhuPlW8lhWzOKWuze4p42jQxP4oWhpV-7mK_qBgOc/edit).
+- Candidature Culture-ActionS, atelier 1.
+- Budget Culture-ActionS, atelier A2.
 
 Le déroulé à quatre étapes reprend le projet budgétaire; indicateurs et garde-fous opérationnels sont des propositions complémentaires.
 

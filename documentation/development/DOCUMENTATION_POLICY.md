@@ -71,9 +71,15 @@ Toujours distinguer :
 - `SNAPSHOT` : photographie figée ;
 - `ADR` : décision d'architecture ;
 - `GENERATED` : sortie reproductible.
+- `PROPOSITION` : piste ou offre non acceptée ;
+- preuve observée : résultat étayé par une trace vérifiable, avec sa date,
+  provenance, portée et limites.
 
-Ne jamais présenter un `PLAN`, un audit ou un snapshot comme comportement
-implémenté.
+Ne jamais présenter une `PROPOSITION`, un `PLAN`, un audit ou un snapshot comme
+engagement acquis ou comportement implémenté. Un document privé peut apporter
+du contexte ou une pièce justificative pour son domaine, mais ne constitue pas
+à lui seul une preuve indépendante de réalisation, de paiement, d'accord ou de
+mesure. Vérifier le code et l'état courant avant toute affirmation technique.
 
 Un historique reste historique. Il n'est pas réécrit uniquement pour refléter
 le présent.

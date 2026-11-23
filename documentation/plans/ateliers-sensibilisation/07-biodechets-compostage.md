@@ -55,7 +55,7 @@
 
 ## Source et frontière
 
-- [CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, « Compostage et valorisation des biodéchets » et « Compostage et nature en ville »](https://docs.google.com/document/d/1SBSVBDsAryj8Dp9qW2NIfnuvGfLwNkco65EdUZhVTcs/edit).
+- CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, « Compostage et valorisation des biodéchets » et « Compostage et nature en ville ».
 - La présente fiche ajoute un scénario pédagogique. Elle ne constitue ni une convention avec le SYCTOM ni une preuve d'animation réalisée.
 
 ## Ressources externes vérifiées (13 novembre 2026)

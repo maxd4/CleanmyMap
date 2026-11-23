@@ -384,9 +384,10 @@ Pour les services externes, vérifier coûts, quotas et limites **actuels** lors
 la décision en dépend ; préférer solution déjà intégrée, chargement à la demande,
 cache ou pagination lorsque le contrat le permet. Ne pas présenter une mesure
 offline, une fixture ou un snapshot comme l'état d'un fournisseur. Pour les
-documents administratifs et financiers du projet, consulter les sources
-Google Drive actuelles lorsque disponibles via leur index dans
-`documentation/product/README.md` ; sinon signaler l'absence d'accès.
+sources privées complémentaires, appliquer la politique canonique
+`documentation/development/DOCUMENTATION_POLICY.md` ; consulter Drive uniquement
+lorsque pertinent via le connecteur autorisé, et signaler son indisponibilité
+sans inventer d’information.
 
 ### Pré-intégration proactive et livrables candidats
 

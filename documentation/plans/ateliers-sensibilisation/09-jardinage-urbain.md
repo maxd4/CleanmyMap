@@ -50,7 +50,7 @@ Cette fiche traite du **jardinage et de son suivi**. Les mécanismes de fabricat
 
 ## Source et frontière
 
-- [CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, « Compostage et nature en ville »](https://docs.google.com/document/d/1SBSVBDsAryj8Dp9qW2NIfnuvGfLwNkco65EdUZhVTcs/edit).
+- CHIKYU - PLANÈTE | Dossier SPOGOMI 2027, « Compostage et nature en ville ».
 - La culture en pots et le déroulé sont des modalités pédagogiques ajoutées ; le dossier ne prouve aucune plantation réalisée.
 
 ## Ressources externes vérifiées (13 novembre 2026)

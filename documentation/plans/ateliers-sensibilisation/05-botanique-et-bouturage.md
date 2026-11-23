@@ -38,8 +38,8 @@ Relever les présents, les boutures réellement préparées, la qualité des fic
 
 ## Sources
 
-- [Candidature Culture-ActionS, atelier 5](https://docs.google.com/document/d/1dAUNhdI2-BlVqfhAVMP5v2MF1VdjTioWlzOxIWfStak/edit).
-- [Budget Culture-ActionS, atelier A3](https://docs.google.com/document/d/1qRPhuPlW8lhWzOKWuze4p42jQxP4oWhpV-7mK_qBgOc/edit).
+- Candidature Culture-ActionS, atelier 5.
+- Budget Culture-ActionS, atelier A3.
 
 ## Ressources externes vérifiées (13 novembre 2026)
 

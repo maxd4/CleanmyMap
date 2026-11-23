@@ -272,8 +272,8 @@ Ne pas publier un chiffre de participation, kg ou mégots quand sa mesure n'est 
 
 ### Suivi SNEE et justificatifs : ne pas recopier les données privées ici
 
-- [Feuille de route entrepreneuriale SNEE](https://docs.google.com/document/d/1eY-ib8GxGkvZcGjtknouORV5xj8uBIlXUR1LZ8t1AGI/edit) : suivi opérationnel et rendez-vous.
-- [Prévisionnel et plan de financement](https://docs.google.com/document/d/1FYk5GDypDoxJudGrLrlVLYYy6hQghq66fD_1jOTv7gA/edit) : budget hypothétique et trésorerie à justifier.
+- Feuille de route entrepreneuriale SNEE : suivi opérationnel et rendez-vous.
+- Prévisionnel et plan de financement : budget hypothétique et trésorerie à justifier.
 - [Dossier Culture-ActionS](https://www.crous-paris.fr/sortir-bouger-creer/soutiens-aux-projets-etudiants/appel-a-projets-culture-actions/) : critères et calendrier officiels à revérifier avant dépôt.
 - [Pépite Sorbonne Université](https://pepite.sorbonne-universite.fr/) : accompagnements SNEE et dispositifs d'appui.
 - [Fonds propreté, Région Île-de-France](https://www.iledefrance.fr/aides-et-appels-a-projets/projets-territoriaux-de-prevention-et-lutte-contre-les-depots-sauvages-de-dechets) : éligibilité territoriale et calendrier à confirmer.
