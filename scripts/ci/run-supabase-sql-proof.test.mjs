@@ -19,7 +19,7 @@ import {
 } from "./run-supabase-sql-proof.mjs";
 import { parseTerritorialRevisionNotice } from "../../e2e/territorial-legend-revision-concurrency.mjs";
 
-const PG_TAP_ASSERTION = /^\s*select\s+(?:ok|is|throws_ok|lives_ok|has_table|has_index|has_column|has_function_privilege|has_table_privilege)\s*\(/gim;
+const PG_TAP_ASSERTION = /^\s*select\s+(?:ok|is|throws_ok|lives_ok|has_table|has_index|has_column|col_not_null|has_function_privilege|has_table_privilege)\s*\(/gim;
 
 function assertPgTapPlanMatchesAssertions(sql, label) {
   const plans = [...sql.matchAll(/^\s*select\s+plan\s*\(([^)]*)\)\s*;\s*$/gim)];

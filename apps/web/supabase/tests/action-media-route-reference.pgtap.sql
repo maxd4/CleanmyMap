@@ -1,5 +1,5 @@
 begin;
-select plan(20);
+select plan(21);
 
 select has_column('public', 'action_media', 'purpose', 'action media records identify their purpose');
 select col_not_null('public', 'action_media', 'purpose', 'media purpose is required');
