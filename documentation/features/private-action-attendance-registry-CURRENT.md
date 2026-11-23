@@ -91,7 +91,11 @@ et des nombres, sans identité ni composition. Le job quotidien existant
 `action-retention` réalise le dry-run puis la purge avec revalidation ; aucun
 cron parallèle n’est ajouté. La synchronisation des inscriptions confirmées
 respecte aussi cette échéance et ne peut pas recréer une identité opérationnelle
-déjà purgée. Ses journaux restent agrégés.
+déjà purgée. Les écritures d’entrées, d’équipes, de compositions et d’audits
+sont aussi refusées à la frontière PostgreSQL une fois l’échéance atteinte ;
+les retries idempotents déjà audités restent lisibles sans écriture de ligne.
+La purge physique n’est pas bloquée par ces garde-fous. Ses journaux restent
+agrégés.
 
 La demande de rectification ou d’effacement passe par le canal RGPD documenté
 dans la politique de confidentialité. Elle est instruite selon les droits des

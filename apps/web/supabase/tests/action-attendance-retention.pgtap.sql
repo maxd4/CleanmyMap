@@ -21,6 +21,8 @@ create temp table attendance_retention_fixture (
   expired_action_id uuid primary key,
   recent_action_id uuid not null,
   legacy_action_id uuid not null,
+  recent_entry_id uuid,
+  legacy_entry_id uuid,
   linked_entry_id uuid,
   free_entry_id uuid,
   removed_entry_id uuid,
@@ -62,6 +64,11 @@ begin
   insert into attendance_retention_fixture(expired_action_id, recent_action_id, legacy_action_id, expired_action_date, expired_deadline, legacy_deadline)
     values (v_expired, v_recent, v_legacy, v_expired_action_date, v_expired_deadline, v_legacy_deadline);
 end $$;
+
+update attendance_retention_fixture as fixture set recent_entry_id =
+  (public.mutate_action_attendance_entry(fixture.recent_action_id, 'organizer-a', '44444444-4444-4444-8444-444444449011', 'add', null, null, '{"display_label":"Présence récente","attendance_status":"unknown"}'::jsonb)->>'id')::uuid;
+update attendance_retention_fixture as fixture set legacy_entry_id =
+  (public.mutate_action_attendance_entry(fixture.legacy_action_id, 'organizer-a', '44444444-4444-4444-8444-444444449012', 'add', null, null, '{"display_label":"Présence historique","attendance_status":"unknown"}'::jsonb)->>'id')::uuid;
 
 update attendance_retention_fixture set
   linked_entry_id = (select id from public.action_attendance_entries where action_id = expired_action_id and clerk_user_id = 'attendance-retention-registered-user');
