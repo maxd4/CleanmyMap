@@ -28,6 +28,9 @@ son rôle sert uniquement à l’organisation. Une entrée déplacée ou retiré
 équipe » sont des états de préparation, sans règle de taille, verrouillage,
 classement ou vocabulaire compétitif SPOGOMI.
 
+Le retrait d’une autre entrée détache uniquement cette entrée : le chef, les
+autres membres, la révision d’équipe et l’audit avant/après restent cohérents.
+
 Les noms sont normalisés et uniques par action. L’affectation, la désignation du
 chef et les modifications d’équipe utilisent le RPC serveur atomique, des
 révisions optimistes, l’idempotence par requête et un audit avant/après. Les

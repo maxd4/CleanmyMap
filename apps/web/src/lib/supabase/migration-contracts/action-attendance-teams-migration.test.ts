@@ -5,6 +5,10 @@ const migration = readFileSync(
   new URL("../../../../supabase/migrations/20261123000001_private_action_attendance_teams.sql", import.meta.url),
   "utf8",
 );
+const leaderDeletionFixMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261123000004_fix_action_attendance_team_leader_detach.sql", import.meta.url),
+  "utf8",
+);
 
 describe("private action attendance teams migration", () => {
   it("adds a forward-only private schema over stable entries with same-action references", () => {
@@ -34,5 +38,15 @@ describe("private action attendance teams migration", () => {
     expect(migration).toContain("to service_role");
     expect(migration).not.toMatch(/action_participants|spogomi/iu);
     expect(migration).not.toMatch(/drop\s+table\s+public\.action_attendance_entries/iu);
+  });
+
+  it("releases a leader only when the detached entry is that leader", () => {
+    expect(leaderDeletionFixMigration).toContain("create or replace function public.detach_deleted_action_attendance_team_member()");
+    expect(leaderDeletionFixMigration).toContain("leader_entry_id = case when leader_entry_id = new.id then null else leader_entry_id end");
+    expect(leaderDeletionFixMigration).toContain("revision = revision + 1");
+    expect(leaderDeletionFixMigration).toContain("v_before := public.action_attendance_team_snapshot");
+    expect(leaderDeletionFixMigration).toContain("v_after := public.action_attendance_team_snapshot");
+    expect(leaderDeletionFixMigration).toContain("'member_removed_with_entry', v_before, v_after");
+    expect(leaderDeletionFixMigration).not.toMatch(/^\s*(?:grant|revoke)\b/imu);
   });
 });
