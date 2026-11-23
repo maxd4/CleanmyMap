@@ -122,6 +122,8 @@ function buildActionEditorResult(
     createdByClerkId: row.created_by_clerk_id,
     actorName: row.actor_name,
     actionDate: row.action_date,
+    eventStartAt: row.event_start_at ?? null,
+    eventEndAt: row.event_end_at ?? null,
     locationLabel: row.location_label,
     departmentCode: row.department_code ?? null,
     departmentName: row.department_name ?? null,

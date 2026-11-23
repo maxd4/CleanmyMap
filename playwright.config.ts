@@ -126,7 +126,7 @@ export default defineConfig({
     },
     {
       name: "action sharing",
-      testMatch: /action-sharing\.spec\.ts/,
+      testMatch: /(?:action-sharing|action-finalization)\.spec\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },

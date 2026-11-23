@@ -4,7 +4,7 @@ import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ActionCreationSectionFormProps } from "./action-creation-shell.types";
-import { AfterActionCreationView } from "./action-creation-shell-completion";
+import { ActionBilanView, AfterActionCreationView } from "./action-creation-shell-completion";
 
 vi.mock("./action-declaration/form", () => ({
   ActionDeclarationForm: ({ initialActionId, onActionPersisted }: { initialActionId: string | null; onActionPersisted?: (actionId: string) => void }) => (
@@ -15,6 +15,9 @@ vi.mock("./action-declaration/form", () => ({
 }));
 vi.mock("./action-creation-shell-navigation", () => ({
   ActionLifecycleNavigation: ({ actionId }: { actionId: string | null }) => <nav data-testid="lifecycle-navigation" data-action-id={actionId ?? "none"} />,
+}));
+vi.mock("@/components/actions/action-role-attestations-panel", () => ({
+  ActionRoleAttestationsPanel: () => null,
 }));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -36,7 +39,12 @@ describe("AfterActionCreationView attendance registry lifecycle", () => {
   it("reveals the same server registry immediately after first persistence and on resume", async () => {
     const reads: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request) => {
-      reads.push(String(url));
+      const path = String(url);
+      reads.push(path);
+      if (path === "/api/actions/action-created") return response({
+        status: "ok",
+        action: { id: "action-created", actionPhase: "post_action_draft", status: "approved", finalizationEligible: true },
+      });
       return response({
         actionId: "action-created",
         entries: [{
@@ -59,22 +67,26 @@ describe("AfterActionCreationView attendance registry lifecycle", () => {
     }
 
     act(() => root.render(<CreationAndResumeHarness />));
-    expect(host.textContent).toContain("accessible après l’enregistrement de l’action");
+    expect(host.querySelector('[data-testid="declaration-form"]')?.getAttribute("data-action-id")).toBe("none");
     expect(reads).toHaveLength(0);
     await act(async () => {
-      host.querySelector<HTMLButtonElement>("button")?.click();
+      [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.includes("Enregistrer l’action"))?.click();
       await Promise.resolve(); await Promise.resolve();
     });
     expect(host.querySelector('[data-testid="declaration-form"]')?.getAttribute("data-action-id")).toBe("action-created");
-    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
     expect(host.querySelector('[data-testid="action-attendance-registry-bilan"]')).not.toBeNull();
     expect(host.textContent).toContain("Alex Martin");
-    expect(reads).toEqual(["/api/actions/action-created/attendance-registry"]);
+    expect(reads).toEqual(["/api/actions/action-created", "/api/actions/action-created/attendance-registry"]);
     expect(host.querySelector('[data-testid="lifecycle-navigation"]')?.getAttribute("data-action-id")).toBe("action-created");
   });
 
   it("renders a resumed action's existing ID into the bilan registry without creating another roster", async () => {
-    const fetchMock = vi.fn(async () => response({
+    const fetchMock = vi.fn(async (url: string | URL | Request) => String(url) === "/api/actions/action-resumed"
+      ? response({ status: "ok", action: { id: "action-resumed", actionPhase: "post_action_draft", status: "approved", finalizationEligible: true } })
+      : String(url) === "/api/actions/action-resumed/attendance-registry"
+      ? response({ actionId: "action-resumed", entries: [], declared: { total: 0, adults: 0, retired: 0, children: 0 }, canMarkPresent: false })
+      : response({
       actionId: "action-resumed",
       entries: [],
       declared: { total: 0, adults: 0, retired: 0, children: 0 },
@@ -85,9 +97,74 @@ describe("AfterActionCreationView attendance registry lifecycle", () => {
     document.body.append(host);
     root = createRoot(host);
     act(() => root.render(<AfterActionCreationView formProps={formProps} actionId="action-resumed" fr searchParams={{ tab: "after", actionId: "action-resumed" }} />));
-    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
     expect(host.querySelector('[data-testid="action-attendance-registry-bilan"]')).not.toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith("/api/actions/action-resumed", { method: "GET", cache: "no-store" });
     expect(fetchMock).toHaveBeenCalledWith("/api/actions/action-resumed/attendance-registry", { cache: "no-store" });
     expect(host.querySelector('[data-testid="declaration-form"]')?.getAttribute("data-action-id")).toBe("action-resumed");
+  });
+});
+
+describe("action finalization access", () => {
+  it("keeps a pre-action form out of a direct bilan URL before the event ends", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request) => String(url) === "/api/actions/same-action"
+      ? response({ status: "ok", action: { id: "same-action", actionPhase: "pre_action", status: "approved", finalizationEligible: false } })
+      : response({ actionId: "same-action", entries: [], declared: { total: 0, adults: 0, retired: 0, children: 0 }, canMarkPresent: false }));
+    vi.stubGlobal("fetch", fetchMock);
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+
+    act(() => root.render(<ActionBilanView formProps={formProps} actionId="same-action" fr searchParams={{ space: "bilan", actionId: "same-action" }} />));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+
+    expect(host.textContent).toContain("La pré-action reste ouverte");
+    expect(host.querySelector('[data-testid="declaration-form"]')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps a pre-action form out of the legacy tab=after deep link too", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request) => String(url) === "/api/actions/same-action"
+      ? response({ status: "ok", action: { id: "same-action", actionPhase: "pre_action", status: "approved", finalizationEligible: false } })
+      : response({ actionId: "same-action", entries: [], declared: { total: 0, adults: 0, retired: 0, children: 0 }, canMarkPresent: false })));
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+
+    act(() => root.render(<AfterActionCreationView formProps={formProps} actionId="same-action" fr searchParams={{ tab: "after", actionId: "same-action" }} />));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+
+    expect(host.textContent).toContain("La pré-action reste ouverte");
+    expect(host.querySelector('[data-testid="declaration-form"]')).toBeNull();
+  });
+
+  it("requires an explicit click after the event end and resumes the same action ID", async () => {
+    const calls: Array<{ url: string; method: string; body?: string }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const path = String(url);
+      const method = init?.method ?? "GET";
+      calls.push({ url: path, method, body: typeof init?.body === "string" ? init.body : undefined });
+      if (path === "/api/actions/same-action" && method === "GET") return response({ status: "ok", action: { id: "same-action", actionPhase: "pre_action", status: "approved", finalizationEligible: true } });
+      if (path === "/api/actions/same-action" && method === "PATCH") return response({ actionId: "same-action", actionPhase: "post_action_draft" });
+      if (path.endsWith("/attendance-registry")) return response({ actionId: "same-action", entries: [], declared: { total: 0, adults: 0, retired: 0, children: 0 }, canMarkPresent: false });
+      return response({});
+    }));
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+
+    act(() => root.render(<ActionBilanView formProps={formProps} actionId="same-action" fr searchParams={{ space: "bilan", actionId: "same-action" }} />));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    expect(host.querySelector('[data-testid="declaration-form"]')).toBeNull();
+    expect(host.textContent).toContain("Compléter le bilan");
+    expect(calls.filter((call) => call.method === "PATCH")).toHaveLength(0);
+
+    await act(async () => {
+      [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.includes("Compléter le bilan"))?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(JSON.parse(calls.find((call) => call.method === "PATCH")?.body ?? "{}")).toEqual({ actionPhase: "post_action_draft" });
+    expect(host.querySelector('[data-testid="declaration-form"]')?.getAttribute("data-action-id")).toBe("same-action");
   });
 });

@@ -207,7 +207,7 @@ de matériel.
 - **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
 - **shell** : la navigation Web présente exactement deux étapes dans une barre horizontale compacte ; une étape est active à la fois et le formulaire occupe la largeur disponible. `Définir l'action` conserve le formulaire Essentiel ; `Préparer et publier` affiche ensemble les contenus terrain, équipe/logistique et vérification/publication. L’aperçu contextuel apparaît sous le contenu de préparation, jamais en colonne latérale. Les statuts restent dérivés et les formalités seules ne marquent pas l’étape complète. Le parcours mobile conserve son workflow natif à quatre sections. Les contenus métier ne sont pas recalculés par l’orchestrateur.
 - **choice initial** : sans `actionId`, le shell présente directement deux choix compacts et persistants : `Organiser une action future` ou `Déclarer une action déjà réalisée`. Avec `actionId`, la navigation affiche `Préparer`, `Jour J` et `Bilan`; l'accès direct à `/actions/new` ouvre le premier choix, sans créer d'action.
-- **success** : affichage direct de la préparation avant action ou de la déclaration des résultats terrain après action, puis passage possible vers les résultats terrain après la préparation.
+- **success** : affichage de la préparation avant action ; la déclaration des résultats terrain devient accessible après l’échéance serveur de l’événement et une action explicite de l’organisateur autorisé.
 - **error** : panneau compact avec message explicite et navigation conservée par les onglets.
 - **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
@@ -228,10 +228,20 @@ pré-action éditable que si `actionPhase = pre_action` et que son statut est
 `pending` ou `approved`. Une pré-action `pending` non publiée peut donc rester
 en préparation puis être publiée explicitement ; une pré-action approuvée peut
 être reprise selon le même contrat. Sa finalisation après l'action reste
-possible pour son propriétaire ou un coorganisateur autorisé, avec une
-déclaration explicite des participants et des résultats ; elle repasse alors
-dans le statut `pending` pour la modération du bilan. Cette première
-finalisation n'est pas une correction administrative d'un impact déjà validé.
+disponible au créateur ou à un organisateur autorisé uniquement après la fin
+de `event_end_at` lorsqu'il existe, sinon après le jour local révolu dans le
+fuseau IANA de l'action. La consultation de `space=bilan` ou `tab=after` ne
+change jamais la phase : avant l'échéance, l'interface conserve l'accès à la
+pré-action et aux inscriptions. Après l'échéance, `Compléter le bilan` fait
+passer explicitement la même action en `post_action_draft`, puis le formulaire
+final canonique reprend les données existantes. Le serveur refuse les mesures
+finales tant que l'action est en `pre_action` et vérifie l'échéance même pour
+un PATCH direct. Les créations rétrospectives contrôlent aussi l'heure de fin
+quand elle est connue. Les catégories de présence, mesures et participants
+restent à saisir ; aucune prévision, inscription ou présence du registre ne
+les complète automatiquement. La soumission explicite les fait passer dans
+le statut `pending` pour la modération du bilan. Cette première finalisation
+n'est pas une correction administrative d'un impact déjà validé.
 
 Les statuts `rejected` et `cancelled` sont terminaux pour ce parcours : ils
 sont affichés comme tels, ne sont pas éditables comme pré-actions, ne peuvent
@@ -284,7 +294,7 @@ l'organisateur demeurent distinctes.
 - Cette fiche est la source de vérité canonique pour la page.
 - Le point d'entrée est le shell unique `Organiser une action`, dont le stepper orchestre les quatre étapes sans dupliquer route, météo, action ou formalités.
 - `/actions/new` conserve `recordType = action` comme invariant interne et affiche directement l'onglet demandé.
-- Le changement d'espace ne crée aucune action ; le passage vers le formulaire complet met à jour le même `actionId` puis sélectionne `Bilan`. Les inscriptions futures (`action_registrations`) restent séparées des présences finales (`action_participants`) et aucune ouverture de `Jour J` ne vaut présence.
+- Le changement d'espace ne crée aucune action et ne change pas sa phase. Après l'échéance serveur, l'organisateur autorisé peut explicitement ouvrir le formulaire complet sur le même `actionId`. Les inscriptions futures (`action_registrations`) restent séparées des présences finales (`action_participants`) et aucune ouverture de `Jour J` ne vaut présence.
 - La déclaration après action affiche un bandeau compact lorsqu'une préparation existante est reprise; les phases techniques ne sont pas affichées.
 - Le header utilisateur est `Déclarer les résultats terrain`; les badges redondants de date, déchets et structure du formulaire ne sont pas affichés.
 - La revue du formulaire affiche une aide à la relecture et des points d'attention concrets; elle ne présente pas de score ou de grade local comme une mesure de qualité démontrée.

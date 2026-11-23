@@ -72,6 +72,73 @@ describe("action declaration draft recovery", () => {
     expect(latest.errorMessage).toContain("lecture du brouillon");
   });
 
+  it("submits a resumed pre-action as an explicit finalization on the same action ID", async () => {
+    const form = createInitialFormState("Test User");
+    form.organizerType = "spontaneous";
+    form.organizerAccounts = "user-1";
+    form.associationName = "Action spontanée";
+    form.actionDate = "2026-10-01";
+    form.locationLabel = "Quai de test";
+    form.departureLocationLabel = "Quai de test";
+    form.volunteersCount = "1";
+    form.childrenCount = "0";
+    form.adultCount = "1";
+    form.retiredCount = "0";
+    form.wasteKg = "1";
+    form.durationMinutes = "60";
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+    updateActionMock.mockResolvedValue({ actionId: "existing-pre-action", actionPhase: "post_action_complete" });
+    fetchActionByIdMock.mockResolvedValue(null);
+    const setLoadedActionPhase = vi.fn();
+    let latest!: ReturnType<typeof useActionDeclarationSubmission>;
+
+    function Harness() {
+      latest = useActionDeclarationSubmission({
+        form,
+        declarationMode: "complete",
+        isAuthenticated: true,
+        draftStorageReadError: false,
+        initialActionId: "existing-pre-action",
+        loadedActionPhase: "pre_action",
+        manualDrawingEnabled: false,
+        manualDrawing: null,
+        manualDrawingSource: null,
+        drawingIsValid: false,
+        effectiveRoutePreviewDrawing: null,
+        routePreviewSource: null,
+        hasValidDrawing: true,
+        hasServerRouteInput: false,
+        isCleanPlaceMode: false,
+        payload,
+        photoAssets: [],
+        visionEstimate: null,
+        userMetadata: { userId: "user-1" },
+        clearDraft: vi.fn(),
+        creationRequestId: null,
+        setLoadedActionPhase,
+        setHasAttemptedSubmit: vi.fn(),
+      });
+      return null;
+    }
+
+    act(() => { create(<Harness />); });
+    act(() => { expect(latest.validateBeforeConfirmation()).toBe(true); });
+    await act(async () => { await latest.handleConfirmSubmit(); });
+
+    expect(updateActionMock).toHaveBeenCalledTimes(1);
+    expect(updateActionMock).toHaveBeenCalledWith("existing-pre-action", expect.objectContaining({ actionPhase: "post_action_complete" }));
+    expect(createActionMock).not.toHaveBeenCalled();
+    expect(setLoadedActionPhase).toHaveBeenCalledWith("post_action_complete");
+  });
+
   it("does not submit a partially prepared photo state", async () => {
     let submit!: () => Promise<void>;
     let latest!: ReturnType<typeof useActionDeclarationSubmission>;

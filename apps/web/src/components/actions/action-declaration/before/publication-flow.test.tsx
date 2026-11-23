@@ -92,6 +92,34 @@ describe("ActionBeforeDeclarationForm publication flow", () => {
     expect(html).not.toContain("Publier cette action");
   });
 
+  it("offers the bilan action only after server eligibility", () => {
+    useBeforeActionFormMock.mockReturnValue(buildHookState({
+      publishedAction: { ...buildHookState().publishedAction, finalizationEligible: false },
+    }));
+    const before = renderToStaticMarkup(React.createElement(ActionBeforeDeclarationForm, props));
+    expect(before).not.toContain("Compléter le bilan");
+
+    useBeforeActionFormMock.mockReturnValue(buildHookState({
+      publishedAction: { ...buildHookState().publishedAction, finalizationEligible: true },
+    }));
+    const after = renderToStaticMarkup(React.createElement(ActionBeforeDeclarationForm, props));
+    expect(after).toContain("Compléter le bilan");
+  });
+
+  it("offers bilan continuation only when the server says the event has ended", () => {
+    useBeforeActionFormMock.mockReturnValue(buildHookState({
+      publishedAction: { ...buildHookState().publishedAction, finalizationEligible: false },
+    }));
+    const before = renderToStaticMarkup(React.createElement(ActionBeforeDeclarationForm, props));
+    expect(before).not.toContain("Compléter le bilan");
+
+    useBeforeActionFormMock.mockReturnValue(buildHookState({
+      publishedAction: { ...buildHookState().publishedAction, finalizationEligible: true },
+    }));
+    const after = renderToStaticMarkup(React.createElement(ActionBeforeDeclarationForm, props));
+    expect(after).toContain("Compléter le bilan");
+  });
+
   it("forwards the persisted-action callback to the form hook", () => {
     useBeforeActionFormMock.mockReturnValue(buildHookState());
     const onActionPersisted = vi.fn();

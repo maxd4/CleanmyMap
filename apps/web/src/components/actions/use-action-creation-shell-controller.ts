@@ -8,7 +8,7 @@ import type { ActionCreationPanelId, ActionCreationSectionId } from "@/lib/actio
 import { buildActionCreationSectionHref, buildActionCreationSpaceHref, buildActionWorkflowStepHref, type ActionCreationSpace } from "@/lib/actions/action-creation-routes";
 import { ACTION_CREATION_SECTIONS, createActionCreationSectionState, loadActionCreationSectionState, saveActionCreationSectionState, setActionCreationSectionStatus, type ActionCreationSectionState } from "@/lib/actions/action-creation-sections";
 import { ACTION_WORKFLOW_STEPS, createActionWorkflowState, loadActionWorkflowState, markActionWorkflowStep, saveActionWorkflowState, setActionWorkflowStepStatus, type ActionWorkflowState, type ActionWorkflowStepId } from "@/lib/actions/action-workflow";
-import { updateAction } from "@/lib/actions/http";
+import { fetchActionById, updateAction } from "@/lib/actions/http";
 import type { FormState } from "./action-declaration/model";
 import { createInitialFormState } from "./action-declaration/payload";
 import { clearDraft, loadDraftSnapshotResult } from "./action-declaration/draft-storage";
@@ -131,6 +131,9 @@ export function useActionCreationShellController({
   const handlePassToComplete = useCallback(async (actionId: string) => {
     setTransitionState({ actionId: currentActionId, error: null });
     try {
+      const action = await fetchActionById(actionId);
+      if (action.id !== actionId) throw new Error("L’action chargée ne correspond pas à cette demande.");
+      if (!action.finalizationEligible) throw new Error("Le bilan sera disponible après la fin de l’action.");
       await updateAction(actionId, { actionPhase: "post_action_draft" });
       router.replace(buildActionCreationSpaceHref("bilan", { ...(tabSearchParams ?? {}), actionId }));
     } catch (error: unknown) {

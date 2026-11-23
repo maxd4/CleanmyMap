@@ -22,6 +22,7 @@ import {
 import { validationErrorResponse } from "@/lib/http/api-errors";
 import { loadActionOrganizerRowsForAction } from "@/lib/actions/participation/organizers";
 import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
+import { isActionFinalizationEligible } from "@/lib/actions/finalization-eligibility";
 
 export type PreparedPatchMutation = {
   preparedUpdate: PreparedActionUpdate;
@@ -189,6 +190,50 @@ export async function preparePatchMutation({
   });
   if (preparedUpdate instanceof Response) return preparedUpdate;
 
+  const nextPhase = preparedUpdate.updateData.action_phase as ActionRow["action_phase"] | undefined
+    ?? current.action_phase;
+  if (current.action_phase === "post_action_complete" && nextPhase !== "post_action_complete") {
+    return NextResponse.json(
+      { error: "Une action finalisée ne peut pas revenir à une phase antérieure.", code: "state_conflict" },
+      { status: 409 },
+    );
+  }
+  const hasFinalResults = hasFinalReportFields(parsedBody);
+  const isFinalizationWork =
+    current.action_phase !== "post_action_complete" &&
+    (nextPhase === "post_action_draft" || nextPhase === "post_action_complete") &&
+    (parsedBody.actionPhase !== undefined || hasFinalResults);
+  const effectiveTemporalAction = {
+    ...current,
+    action_date: typeof preparedUpdate.updateData.action_date === "string"
+      ? preparedUpdate.updateData.action_date
+      : current.action_date,
+    action_timezone: typeof preparedUpdate.updateData.action_timezone === "string"
+      ? preparedUpdate.updateData.action_timezone
+      : current.action_timezone,
+    event_end_at: Object.prototype.hasOwnProperty.call(preparedUpdate.updateData, "event_end_at")
+      ? preparedUpdate.updateData.event_end_at as string | null
+      : current.event_end_at,
+  };
+  if (isFinalizationWork && !isActionFinalizationEligible(effectiveTemporalAction)) {
+    return NextResponse.json(
+      {
+        error: "Le bilan ne peut être complété qu'après la fin de l'action.",
+        code: "finalization_not_eligible",
+      },
+      { status: 409 },
+    );
+  }
+  if (current.action_phase === "pre_action" && nextPhase === "pre_action" && hasFinalResults) {
+    return NextResponse.json(
+      {
+        error: "Les résultats terrain doivent être enregistrés dans le bilan après l'action.",
+        code: "final_results_require_post_action_phase",
+      },
+      { status: 409 },
+    );
+  }
+
   const isFirstFinalization =
     current.action_phase !== "post_action_complete" &&
     preparedUpdate.updateData.action_phase === "post_action_complete";
@@ -222,4 +267,21 @@ export async function preparePatchMutation({
     moderationOperation: validatedImpactCorrection ? "correct_impact" : "edit_action",
     moderationReason,
   };
+}
+
+function hasFinalReportFields(body: ActionUpdateInput): boolean {
+  return body.wasteKg !== undefined ||
+    body.cigaretteButts !== undefined ||
+    body.cigaretteButtsKg !== undefined ||
+    body.cigaretteButtsMeasurements !== undefined ||
+    body.cigaretteButtsMassKg !== undefined ||
+    body.cigaretteButtsVolumeLiters !== undefined ||
+    body.cigaretteButtsCondition !== undefined ||
+    body.volunteersCount !== undefined ||
+    body.volunteerParticipation !== undefined ||
+    body.collectorsCount !== undefined ||
+    body.wasteBreakdown !== undefined ||
+    body.wasteMeasurementMethod !== undefined ||
+    body.photos !== undefined ||
+    body.visionEstimate !== undefined;
 }

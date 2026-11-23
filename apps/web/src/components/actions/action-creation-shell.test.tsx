@@ -10,6 +10,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 const beforeFormPropsMock = vi.hoisted(() => vi.fn());
 const completeFormPropsMock = vi.hoisted(() => vi.fn());
 const updateActionMock = vi.hoisted(() => vi.fn(() => Promise.resolve({ id: "action-42" })));
+const fetchActionByIdMock = vi.hoisted(() => vi.fn(() => Promise.resolve({ id: "action-42", finalizationEligible: true })));
 const routerReplaceMock = vi.hoisted(() => vi.fn());
 const weatherSectionPropsMock = vi.hoisted(() => vi.fn());
 const draftStorageMocks = vi.hoisted(() => ({
@@ -48,7 +49,13 @@ vi.mock("./action-declaration/action-declaration-form", () => ({
     return <div data-testid="formulaire-engine" />;
   },
 }));
-vi.mock("@/lib/actions/http", () => ({ updateAction: updateActionMock }));
+vi.mock("./action-declaration/form", () => ({
+  ActionDeclarationForm: (props: Record<string, unknown>) => {
+    completeFormPropsMock(props);
+    return <div data-testid="formulaire-engine" />;
+  },
+}));
+vi.mock("@/lib/actions/http", () => ({ updateAction: updateActionMock, fetchActionById: fetchActionByIdMock }));
 vi.mock("./action-declaration/draft-storage", async (importOriginal) => ({
   ...await importOriginal<typeof import("./action-declaration/draft-storage")>(),
   loadDraftSnapshotResult: draftStorageMocks.load,
@@ -88,6 +95,7 @@ describe("ActionCreationShell", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     updateActionMock.mockResolvedValue({ id: "action-42" });
+    fetchActionByIdMock.mockResolvedValue({ id: "action-42", finalizationEligible: true });
     draftStorageMocks.load.mockReturnValue({ snapshot: null, readError: false });
     draftStorageMocks.clear.mockReturnValue(true);
   });
@@ -118,6 +126,7 @@ describe("ActionCreationShell", () => {
     expect(updateActionMock).toHaveBeenCalledWith("action-42", {
       actionPhase: "post_action_draft",
     });
+    expect(fetchActionByIdMock).toHaveBeenCalledWith("action-42");
     expect(routerReplaceMock).toHaveBeenCalledWith(
       "/actions/new?space=bilan&actionId=action-42",
     );
@@ -220,12 +229,11 @@ describe("ActionCreationShell", () => {
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
-    expect(markup).toContain('data-testid="formulaire-engine"');
+    expect(markup).toContain("Vérification de l’échéance de l’action");
+    expect(markup).not.toContain('data-testid="formulaire-engine"');
     expect(markup).not.toContain('data-testid="pre-formulaire-engine"');
     expect(updateActionMock).not.toHaveBeenCalled();
-    expect(completeFormPropsMock).toHaveBeenLastCalledWith(
-      expect.objectContaining({ initialActionId: "action-42" }),
-    );
+    expect(completeFormPropsMock).not.toHaveBeenCalled();
   });
 
   it("deletes only the local draft after a readable check and resets navigation without changing the server action id", async () => {
@@ -519,8 +527,7 @@ describe("ActionCreationShell", () => {
     expect(markup).not.toContain('id="action-creation-panel-meteo"');
     expect(markup).not.toContain('id="action-creation-panel-formalites"');
     expect(markup).not.toContain('data-testid="weather-engine"');
-    expect(completeFormPropsMock).toHaveBeenLastCalledWith(
-      expect.objectContaining({ initialActionId: "action-42" }),
-    );
+    expect(markup).toContain("Vérification de l’échéance de l’action");
+    expect(completeFormPropsMock).not.toHaveBeenCalled();
   });
 });

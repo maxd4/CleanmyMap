@@ -79,7 +79,6 @@ type SubmissionExecutionParams = Pick<
   | "form"
   | "declarationMode"
   | "initialActionId"
-  | "loadedActionPhase"
   | "manualDrawingEnabled"
   | "manualDrawing"
   | "manualDrawingSource"
@@ -138,12 +137,9 @@ async function persistDeclarationSubmission(
     visionEstimate: params.visionEstimate,
     userMetadata: params.userMetadata,
   });
-  const effectiveSubmissionPayload = params.initialActionId && params.loadedActionPhase === "pre_action"
-    ? { ...submissionPayload, actionPhase: "pre_action" as const }
-    : submissionPayload;
   const result = params.initialActionId
-    ? await updateAction(params.initialActionId, effectiveSubmissionPayload)
-    : await createAction(effectiveSubmissionPayload, { idempotencyKey: params.creationRequestId ?? undefined });
+    ? await updateAction(params.initialActionId, submissionPayload)
+    : await createAction(submissionPayload, { idempotencyKey: params.creationRequestId ?? undefined });
   const persistedActionId = "id" in result ? result.id : result.actionId;
   const persistedAction = await fetchActionById(persistedActionId).catch(() => null);
   const mediaResult = params.photoAssets.length > 0
@@ -227,7 +223,6 @@ async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> 
       form: params.form,
       declarationMode: params.declarationMode,
       initialActionId: params.initialActionId,
-      loadedActionPhase: params.loadedActionPhase,
       manualDrawingEnabled: params.manualDrawingEnabled,
       manualDrawing: params.manualDrawing,
       manualDrawingSource: params.manualDrawingSource,
@@ -256,9 +251,7 @@ async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> 
     params.setValidationStatus("transmitted");
     params.setShowConfirmation(false);
     params.setLoadedActionPhase(
-      params.initialActionId && params.loadedActionPhase === "pre_action"
-        ? "pre_action"
-        : "post_action_complete",
+      "post_action_complete",
     );
     params.clearDraft();
   } catch (error: unknown) {

@@ -174,6 +174,36 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     );
   });
 
+  it("rejects a direct PATCH to post-action draft before the persisted event end", async () => {
+    loadActionByIdMock.mockResolvedValue(createPatchAction({
+      action_date: "2026-11-24",
+      event_end_at: "2026-11-24T11:00:00.000Z",
+    }));
+
+    const response = await patchAction({ actionPhase: "post_action_draft" });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "finalization_not_eligible" });
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects final result fields persisted while the action remains pre-action", async () => {
+    const response = await patchAction({ wasteKg: 4 });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "final_results_require_post_action_phase" });
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("does not allow a finalized action to return to a draft phase", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({ action_phase: "post_action_complete" }));
+    const response = await patchAction({ actionPhase: "post_action_draft" });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "state_conflict" });
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
   it("refuses finalization without an explicit participant composition", async () => {
     const response = await patchAction({ actionPhase: "post_action_complete" });
 
@@ -350,6 +380,9 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
       id: "action-test-1",
       status: "pending",
       action_phase: "pre_action",
+      action_date: "2026-01-15",
+      action_timezone: "Europe/Paris",
+      event_end_at: "2026-01-15T11:00:00.000Z",
       organizer_type: "spontaneous",
       organizer_id: null,
       organizer_name: "Organisateur en attente de compte",
@@ -424,7 +457,7 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     const response = await PATCH(
       new Request("http://localhost/api/actions/action-test-1", {
         method: "PATCH",
-        body: JSON.stringify({ wasteKg: null, cigaretteButts: null }),
+        body: JSON.stringify({ actionPhase: "post_action_draft", wasteKg: null, cigaretteButts: null }),
       }),
       { params: Promise.resolve({ actionId: "action-test-1" }) },
     );

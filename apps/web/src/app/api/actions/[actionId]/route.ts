@@ -32,6 +32,7 @@ import {
 } from "./route.patch-execution";
 import type { EditableAction } from "./route.types";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
+import { isActionFinalizationEligible } from "@/lib/actions/finalization-eligibility";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -253,6 +254,7 @@ export async function GET(
     const editorPayload = buildActionEditorPayload(row);
     const action = {
       ...editorPayload,
+      finalizationEligible: isActionFinalizationEligible(row),
       ...(row.organizer_type === "spontaneous" && primaryOrganizerName
         ? { organizerName: primaryOrganizerName }
         : {}),

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toContractCreatePayload } from "@/lib/actions/data-contract";
 import {
   createInitialFormState,
@@ -105,6 +105,40 @@ describe("POST /api/actions — création standard et pré-action", () => {
     });
     expect(trackServerEventMock).not.toHaveBeenCalled();
   }, 15000);
+
+  it("rejects a final report creation before the same-day event end", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-23T12:00:00.000Z"));
+    try {
+      const response = await postSubmitPayload(buildSubmitPayload({
+        actionDate: "2026-11-23",
+        actionTimezone: "Europe/Paris",
+        eventStartTime: "10:00",
+        eventEndTime: "18:00",
+        submissionMode: "complete",
+        actionPhase: "post_action_complete",
+      }));
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({ code: "finalization_not_eligible" });
+      expect(createActionMock).not.toHaveBeenCalled();
+      expect(trackActionCreatedMock).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not persist a complete payload as a pre-action", async () => {
+    const response = await postSubmitPayload(buildSubmitPayload({
+      actionDate: "2026-10-01",
+      actionPhase: "pre_action",
+      submissionMode: "complete",
+    }));
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "final_results_require_post_action_phase" });
+    expect(createActionMock).not.toHaveBeenCalled();
+  });
 
   it.each([
     {
@@ -304,6 +338,9 @@ describe("POST /api/actions — création standard et pré-action", () => {
         payload: expect.objectContaining({
           actionDate: "2999-01-01",
           actionPhase: "pre_action",
+          wasteKg: null,
+          cigaretteButts: null,
+          wasteBreakdown: undefined,
         }),
       }),
     );

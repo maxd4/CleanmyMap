@@ -46,6 +46,7 @@ export type ActionEditorRecord = {
   actorName: string | null;
   actionDate: string;
   actionTimezone?: string | null;
+  finalizationEligible?: boolean;
   locationLabel: string;
   latitude: number | null;
   longitude: number | null;
