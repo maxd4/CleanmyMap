@@ -207,6 +207,40 @@ test("paginates a relation group beyond 1000 rows with stable ordering", async (
   assert.deepEqual(organizerPages[0].orders.map(({ column }) => column), ["created_at", "id"]);
 });
 
+test("exports delegated editors and their audit history with stable multi-page ordering", async () => {
+  const editors = Array.from({ length: 1001 }, (_, index) => ({
+    action_id: actionId,
+    clerk_user_id: `user-editor-${index}`,
+    granted_by_clerk_id: "user_backup_owner",
+    granted_at: "2026-10-01T10:00:00.000Z",
+  }));
+  const audit = Array.from({ length: 1001 }, (_, index) => ({
+    id: index + 1,
+    action_id: actionId,
+    request_id: uuid(index + 1),
+    actor_clerk_id: "user_backup_owner",
+    target_clerk_id: `user-editor-${index}`,
+    operation: "grant",
+    before_granted: false,
+    after_granted: true,
+    created_at: "2026-10-01T10:00:00.000Z",
+  }));
+  const { supabase, calls } = makeSupabase({
+    rowsByTable: { actions: [actionRow()], action_form_editors: editors, action_form_editor_audit: audit },
+    pageCap: 400,
+  });
+
+  const backup = await exportActionBackup(supabase, "2026-10-18T10:00:00.000Z");
+  const editorPages = calls.filter(({ table }) => table === "action_form_editors");
+  const auditPages = calls.filter(({ table }) => table === "action_form_editor_audit");
+  assert.equal(backup.tables.action_form_editors.length, 1001);
+  assert.equal(backup.tables.action_form_editor_audit.length, 1001);
+  assert.deepEqual(editorPages[0].orders.map(({ column }) => column), ["granted_at", "action_id", "clerk_user_id"]);
+  assert.deepEqual(auditPages[0].orders.map(({ column }) => column), ["created_at", "id"]);
+  assert.deepEqual(editorPages.map(({ from }) => from), [0, 400, 800, 1001]);
+  assert.deepEqual(auditPages.map(({ from }) => from), [0, 400, 800, 1001]);
+});
+
 test("rejects duplicate relations instead of producing a valid backup", async () => {
   const first = organizerRow(1);
   const relations = [

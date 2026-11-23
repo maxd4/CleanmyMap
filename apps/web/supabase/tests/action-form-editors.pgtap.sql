@@ -1,5 +1,5 @@
 begin;
-select plan(19);
+select plan(22);
 
 select ok((select relrowsecurity from pg_class where oid = 'public.action_form_editors'::regclass), 'form editors keep RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.action_form_editor_audit'::regclass), 'form editor audit keeps RLS enabled');
@@ -61,6 +61,70 @@ select throws_ok(
   format($sql$select public.mutate_action_form_editor(%L, 'form-editor-primary', 'benevole', 'user_editor', %L, 'grant')$sql$,
     (select other_action_id from form_editor_fixture), '44444444-4444-4444-8444-444444444406'),
   '42501', null, 'a primary organizer of another action cannot grant privileges here'
+);
+
+create temp table restored_action_fixture(action_id uuid primary key);
+grant select, insert on restored_action_fixture to service_role;
+insert into restored_action_fixture values ('55555555-5555-4555-8555-555555555501');
+select ok(
+  (public.restore_action_backup_with_form_editors(jsonb_build_object(
+    'format', 'cleanmymap.action-backup',
+    'version', 2,
+    'tables', jsonb_build_object(
+      'actions', jsonb_build_array(jsonb_build_object(
+        'id', (select action_id from restored_action_fixture),
+        'created_at', '2026-11-23T10:00:00Z',
+        'updated_at', '2026-11-23T10:00:00Z',
+        'created_by_clerk_id', 'backup-restore-owner',
+        'action_date', '2026-11-24',
+        'location_label', 'Backup fixture',
+        'status', 'pending',
+        'action_phase', 'pre_action',
+        'preparation_data', '{}'::jsonb
+      )),
+      'action_organizers', '[]'::jsonb,
+      'action_registrations', '[]'::jsonb,
+      'action_participants', '[]'::jsonb,
+      'training_examples', '[]'::jsonb,
+      'forms', '[]'::jsonb,
+      'action_conversations', '[]'::jsonb,
+      'action_conversation_members', '[]'::jsonb,
+      'action_conversation_exclusions', '[]'::jsonb,
+      'action_share_contact_requests', '[]'::jsonb,
+      'action_form_editors', jsonb_build_array(jsonb_build_object(
+        'action_id', (select action_id from restored_action_fixture),
+        'clerk_user_id', 'backup-restored-editor',
+        'granted_by_clerk_id', 'backup-restore-owner',
+        'granted_at', '2026-11-23T10:00:00Z'
+      )),
+      'action_form_editor_audit', jsonb_build_array(jsonb_build_object(
+        'action_id', (select action_id from restored_action_fixture),
+        'request_id', '55555555-5555-4555-8555-555555555502',
+        'actor_clerk_id', 'backup-restore-owner',
+        'target_clerk_id', 'backup-restored-editor',
+        'operation', 'grant',
+        'before_granted', false,
+        'after_granted', true,
+        'created_at', '2026-11-23T10:00:00Z'
+      ))
+    ),
+    'fieldRoleTables', jsonb_build_object(
+      'action_field_role_assignments', '[]'::jsonb,
+      'action_field_role_transfer_proposals', '[]'::jsonb,
+      'action_field_role_transfer_audit', '[]'::jsonb
+    )
+  ))) ? 'restored', 'restore RPC accepts the version-2 editor contract with field-role relations');
+select is(
+  (select count(*)::integer from public.action_form_editors
+    where action_id = (select action_id from restored_action_fixture)
+      and clerk_user_id = 'backup-restored-editor'),
+  1, 'action backup restoration retains the delegated editor relation'
+);
+select is(
+  (select count(*)::integer from public.action_form_editor_audit
+    where action_id = (select action_id from restored_action_fixture)
+      and request_id = '55555555-5555-4555-8555-555555555502'),
+  1, 'action backup restoration retains the editor audit record'
 );
 reset role;
 select * from finish();

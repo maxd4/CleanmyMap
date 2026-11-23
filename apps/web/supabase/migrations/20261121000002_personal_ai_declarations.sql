@@ -30,7 +30,7 @@ create table if not exists public.personal_ai_declarations (
       'modality', 'energy'
     ]::text[]
     and jsonb_typeof(declaration -> 'tokens') = 'object'
-    and declaration -> 'tokens' - array[
+    and (declaration -> 'tokens') - array[
       'inputTotal', 'inputUncached', 'cacheRead', 'cacheWrite', 'outputVisible',
       'outputReasoning', 'outputTotal', 'reasoningRelation', 'logicalTotal'
     ]::text[] = '{}'::jsonb
@@ -39,10 +39,10 @@ create table if not exists public.personal_ai_declarations (
       'outputReasoning', 'outputTotal', 'reasoningRelation', 'logicalTotal'
     ]::text[]
     and jsonb_typeof(declaration -> 'modality') = 'object'
-    and declaration -> 'modality' - array['images', 'audioMinutes', 'videoSeconds']::text[] = '{}'::jsonb
+    and (declaration -> 'modality') - array['images', 'audioMinutes', 'videoSeconds']::text[] = '{}'::jsonb
     and (declaration -> 'modality') ?& array['images', 'audioMinutes', 'videoSeconds']::text[]
     and jsonb_typeof(declaration -> 'energy') = 'object'
-    and declaration -> 'energy' - array[
+    and (declaration -> 'energy') - array[
       'kwh', 'boundary', 'evidence', 'averageWatts', 'durationSeconds', 'idleWatts'
     ]::text[] = '{}'::jsonb
     and (declaration -> 'energy') ?& array[

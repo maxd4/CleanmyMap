@@ -561,6 +561,17 @@ inconnues, les contraintes imbriquées et les protections de confidentialité.
 Les champs `modelRaw` et `operator` acceptent explicitement `null`, comme le
 contrat TypeScript, tout en validant les valeurs non nulles.
 
+Le replay éphémère du 23 novembre 2026 a ensuite reproduit un second défaut
+dans cette même contrainte : l'extraction JSONB imbriquée utilisée avec
+l'opérateur de soustraction n'était pas délimitée par des parenthèses. PostgreSQL
+levait `22P02` (`invalid input syntax for type json`, jeton `tokens`) dès
+`CREATE TABLE`. Le préfixe antérieur à cette migration passe et son ajout échoue
+de façon reproductible. La réparation bornée parenthèse les extractions de
+`tokens`, `modality` et `energy`; elle ne change ni les clés autorisées ni les
+valeurs acceptées. Le runner privé ne fournit pas de position SQL et le
+diagnostic psql séparé reste `42501`; l'attribution à l'instruction provient de
+l'erreur PostgreSQL du replay canonique et de son extrait de migration.
+
 Cette réécriture est une exception ponctuelle explicitement demandée pour une
 migration non enregistrée dans la base vérifiée. Elle ne modifie pas la base,
 n'autorise ni `migration repair`, ni DDL manuelle, ni application distante
@@ -571,6 +582,8 @@ la lane éphémère autorisée ; tant qu'elle ne s'exécute pas, le résultat es
 ```text
 20261121000002_BEFORE_HASH: 5BFEBAD8C2AE98C2C5534FEAAC2E84E71C185D30C8FC914737A2788DD67FEF1
 20261121000002_AFTER_HASH:  5012F09206E06D8FB002967310899A3D483DD7EE6FD2B29FEC78DE0BC62C988B
+20261121000002_REPLAY_FIX_BEFORE_HASH: 5012F09206E06D8FB002967310899A3D483DD7EE6FD2B29FEC78DE0BC62C988B
+20261121000002_REPLAY_FIX_AFTER_HASH:  C000203D13129943003E61D804D64F9E9579FD3E7D11A092FA4FE42E94604540
 ```
 
 ## Interdiction

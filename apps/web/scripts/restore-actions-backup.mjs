@@ -41,10 +41,13 @@ export async function restoreActionBackup({
   }
 
   const hasFieldRoleTables = backup.fieldRoleTables && Object.values(backup.fieldRoleTables).some((rows) => rows.length > 0);
+  const hasFormEditorTables = Object.hasOwn(backup.tables, "action_form_editors");
   const hasIndividualButtsLots = backup.tables.action_participants.some((row) => row.individual_cigarette_butts_lots != null);
   const hasCollectionAttribution = backup.tables.actions.some((row) => Object.hasOwn(row, "collectors_count")) ||
     backup.tables.action_participants.some((row) => Object.hasOwn(row, "collection_status"));
-  const rpcName = hasCollectionAttribution
+  const rpcName = hasFormEditorTables
+    ? "restore_action_backup_with_form_editors"
+    : hasCollectionAttribution
     ? "restore_action_backup_with_collection_attribution"
     : hasIndividualButtsLots
     ? "restore_action_backup_with_individual_butts_lots"

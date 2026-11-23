@@ -195,6 +195,7 @@ it("approves only the bounded PostgreSQL-compatible Personal AI migration repair
   const source = readFileSync(auditScript, "utf8");
   assert.match(source, /20261121000002_personal_ai_declarations\.sql/);
   assert.match(source, /5012f09206e06d8fb002967310899a3d483dd7ee6fd2b29fec78de0bc62c988b/);
+  assert.match(source, /c000203d13129943003e61d804d64f9e9579fd3e7d11a092fa4fe42e94604540/);
   assert.doesNotMatch(source, /jsonb_object_length/);
 });
 

@@ -15,6 +15,7 @@ const organizerRowId = "33333333-3333-4333-8333-333333333333";
 const registrationRowId = "44444444-4444-4444-8444-444444444444";
 const participantRowId = "55555555-5555-4555-8555-555555555555";
 const shareRequestId = "66666666-6666-4666-8666-666666666666";
+const editorRequestId = "77777777-7777-4777-8777-777777777777";
 const ownerId = "user_restore_owner";
 
 function validBackup() {
@@ -86,6 +87,12 @@ function validBackup() {
           status: "pending",
         },
       ],
+      action_form_editors: [
+        { action_id: actionId, clerk_user_id: "user_delegated_editor", granted_by_clerk_id: ownerId, granted_at: "2026-10-01T09:00:00.000Z" },
+      ],
+      action_form_editor_audit: [
+        { id: 7, action_id: actionId, request_id: editorRequestId, actor_clerk_id: ownerId, target_clerk_id: "user_delegated_editor", operation: "grant", before_granted: false, after_granted: true, created_at: "2026-10-01T09:00:00.000Z" },
+      ],
     },
   });
 }
@@ -127,6 +134,28 @@ test("incompatible version and incomplete tables are rejected before mutation", 
   );
 });
 
+test("historical version-2 backups without editor relations remain valid and restore through the legacy RPC", async () => {
+  const backup = validBackup();
+  delete backup.tables.action_form_editors;
+  delete backup.tables.action_form_editor_audit;
+  delete backup.counts.action_form_editors;
+  delete backup.counts.action_form_editor_audit;
+  assert.doesNotThrow(() => validateActionBackup(backup));
+
+  const calls = [];
+  await restoreActionBackup({ backup, apply: true, confirmation: "RESTORE ACTION BACKUP", supabase: {
+    rpc: async (...args) => { calls.push(args); return { data: { restored: 1 }, error: null }; },
+  } });
+  assert.equal(calls[0][0], "restore_action_backup");
+});
+
+test("an archive must include the editor relation and audit together", () => {
+  const backup = validBackup();
+  delete backup.tables.action_form_editor_audit;
+  delete backup.counts.action_form_editor_audit;
+  assert.throws(() => validateActionBackup(backup), /must be present together/);
+});
+
 test("restore keeps partial historical geolocation instead of inventing coordinates", () => {
   const backup = validBackup();
   assert.doesNotThrow(() => validateActionBackup(backup));
@@ -165,10 +194,12 @@ test("valid restore uses one atomic RPC and preserves action relations", async (
 
   assert.equal(result.status, "restored");
   assert.equal(calls.length, 1);
-  assert.equal(calls[0][0], "restore_action_backup");
+  assert.equal(calls[0][0], "restore_action_backup_with_form_editors");
   assert.equal(calls[0][1].p_backup.tables.actions[0].id, actionId);
   assert.equal(calls[0][1].p_backup.tables.action_organizers[0].action_id, actionId);
   assert.equal(calls[0][1].p_backup.tables.action_conversation_members[0].conversation_id, conversationId);
+  assert.equal(calls[0][1].p_backup.tables.action_form_editors[0].clerk_user_id, "user_delegated_editor");
+  assert.equal(calls[0][1].p_backup.tables.action_form_editor_audit[0].request_id, editorRequestId);
 });
 
 test("lot-bearing backups use the additive lot-aware restore RPC", async () => {
@@ -185,7 +216,7 @@ test("lot-bearing backups use the additive lot-aware restore RPC", async () => {
     confirmation: "RESTORE ACTION BACKUP",
     supabase: { rpc: async (...args) => { calls.push(args); return { data: { restored: 1 }, error: null }; } },
   });
-  assert.equal(calls[0][0], "restore_action_backup_with_individual_butts_lots");
+  assert.equal(calls[0][0], "restore_action_backup_with_form_editors");
 });
 
 test("collection-attribution backups use the compatible typed-field restore RPC", async () => {
@@ -200,7 +231,7 @@ test("collection-attribution backups use the compatible typed-field restore RPC"
     confirmation: "RESTORE ACTION BACKUP",
     supabase: { rpc: async (...args) => { calls.push(args); return { data: { restored: 1 }, error: null }; } },
   });
-  assert.equal(calls[0][0], "restore_action_backup_with_collection_attribution");
+  assert.equal(calls[0][0], "restore_action_backup_with_form_editors");
   assert.equal(calls[0][1].p_backup.tables.actions[0].collectors_count, 2);
   assert.equal(calls[0][1].p_backup.tables.action_participants[0].collection_status, "collected");
 });

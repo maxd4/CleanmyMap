@@ -13,7 +13,14 @@ export const ACTION_BACKUP_TABLES = [
   "action_conversation_members",
   "action_conversation_exclusions",
   "action_share_contact_requests",
+  "action_form_editors",
+  "action_form_editor_audit",
 ];
+
+const OPTIONAL_TABLES = new Set([
+  "action_form_editors",
+  "action_form_editor_audit",
+]);
 
 const ACTION_ID_TABLES = [
   "action_organizers",
@@ -52,12 +59,19 @@ function assertOptionalNumber(value, label, minimum, maximum) {
   }
 }
 
+function assertIsoDateTime(value, label) {
+  if (typeof value !== "string" || Number.isNaN(Date.parse(value))) {
+    fail(`${label} must be an ISO date`);
+  }
+}
+
 function assertCounts(counts, tables) {
   if (!isRecord(counts)) {
     fail("counts is required");
   }
 
   for (const table of ACTION_BACKUP_TABLES) {
+    if (OPTIONAL_TABLES.has(table) && !(table in tables)) continue;
     if (!Number.isInteger(counts[table]) || counts[table] !== tables[table].length) {
       fail(`counts.${table} does not match tables.${table}.length`);
     }
@@ -147,8 +161,15 @@ export function validateActionBackup(payload) {
   if (!isRecord(payload.tables)) fail("tables is required");
 
   for (const table of ACTION_BACKUP_TABLES) {
+    if (OPTIONAL_TABLES.has(table) && !(table in payload.tables)) continue;
     if (!(table in payload.tables)) fail(`tables.${table} is required`);
     assertArray(payload.tables[table], `tables.${table}`);
+  }
+
+  const hasFormEditors = "action_form_editors" in payload.tables;
+  const hasFormEditorAudit = "action_form_editor_audit" in payload.tables;
+  if (hasFormEditors !== hasFormEditorAudit) {
+    fail("tables.action_form_editors and tables.action_form_editor_audit must be present together");
   }
   assertCounts(payload.counts, payload.tables);
 
@@ -184,6 +205,40 @@ export function validateActionBackup(payload) {
     for (const [index, row] of rows.entries()) {
       assertUuid(row.id, `tables.${table}[${index}].id`);
       assertActionReference(row, actionIds, `tables.${table}`, index);
+    }
+  }
+
+  if (hasFormEditors) {
+    const editors = payload.tables.action_form_editors;
+    assertUniqueComposite(editors, ["action_id", "clerk_user_id"], "tables.action_form_editors");
+    for (const [index, editor] of editors.entries()) {
+      assertActionReference(editor, actionIds, "tables.action_form_editors", index);
+      for (const field of ["clerk_user_id", "granted_by_clerk_id"]) {
+        if (typeof editor[field] !== "string" || editor[field].trim() === "") {
+          fail(`tables.action_form_editors[${index}].${field} is required`);
+        }
+      }
+      assertIsoDateTime(editor.granted_at, `tables.action_form_editors[${index}].granted_at`);
+    }
+
+    const audits = payload.tables.action_form_editor_audit;
+    assertUniqueComposite(audits, ["action_id", "request_id"], "tables.action_form_editor_audit");
+    for (const [index, audit] of audits.entries()) {
+      assertActionReference(audit, actionIds, "tables.action_form_editor_audit", index);
+      assertUuid(audit.request_id, `tables.action_form_editor_audit[${index}].request_id`);
+      if (!Number.isSafeInteger(audit.id) || audit.id < 1) {
+        fail(`tables.action_form_editor_audit[${index}].id must be a positive safe integer`);
+      }
+      for (const field of ["actor_clerk_id", "target_clerk_id"]) {
+        if (typeof audit[field] !== "string" || audit[field].trim() === "") {
+          fail(`tables.action_form_editor_audit[${index}].${field} is required`);
+        }
+      }
+      if (!["grant", "revoke"].includes(audit.operation) ||
+          typeof audit.before_granted !== "boolean" || typeof audit.after_granted !== "boolean") {
+        fail(`tables.action_form_editor_audit[${index}] has invalid operation state`);
+      }
+      assertIsoDateTime(audit.created_at, `tables.action_form_editor_audit[${index}].created_at`);
     }
   }
 
@@ -273,7 +328,7 @@ export function formatRestorePlan(payload) {
     version: payload.version,
     actionCount: counts.actions,
     relationCounts: Object.fromEntries(
-      ACTION_BACKUP_TABLES.filter((table) => table !== "actions").map((table) => [table, counts[table]]),
+      ACTION_BACKUP_TABLES.filter((table) => table !== "actions").map((table) => [table, counts[table] ?? 0]),
     ),
     mutation: "none until --apply and explicit confirmation",
   };

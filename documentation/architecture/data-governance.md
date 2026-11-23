@@ -595,7 +595,7 @@ La migration existe dans Git au SHA de référence ; son état d'application dis
 
 ## 8. Export, sauvegardes et intégrité
 
-Le script `apps/web/scripts/export-actions-backup.mjs` assemble un format d'archive Actions version 2 (`cleanmymap.action-backup`, via `action-backup-contract.mjs`), incluant actions, relations et conversations associées. L'export parcourt des pages et chunks ; **l'exhaustivité d'une relation à forte cardinalité doit être prouvée** et un export incomplet ne doit jamais être accepté comme une archive valide.
+Le script `apps/web/scripts/export-actions-backup.mjs` assemble un format d'archive Actions version 2 (`cleanmymap.action-backup`, via `action-backup-contract.mjs`), incluant actions, relations et conversations associées, ainsi que les délégations d'édition du formulaire et leur audit privé. Ces deux tables sont facultatives lors de la lecture d'une archive v2 historique et présentes ensemble dans les nouveaux exports. L'export parcourt des pages et chunks ; **l'exhaustivité d'une relation à forte cardinalité doit être prouvée** et un export incomplet ne doit jamais être accepté comme une archive valide.
 
 La restauration de `cleanmymap.action-backup` version 2 est classée
 `DISASTER_RECOVERY_RESTORE`. La commande opératoire est
@@ -604,7 +604,10 @@ payload et les références de ses relations avant tout plan d'écriture. Le mod
 par défaut est un `dry-run`. Une mutation n'est autorisée qu'après confirmation
 explicite et appelle la RPC atomique de restauration avec `service_role` dans
 le CLI autorisé. Elle conserve les identités historiques et les champs
-historiques sauvegardés. Cette voie est distincte de l'import métier, ne passe
+historiques sauvegardés. Le wrapper `restore_action_backup_with_form_editors`
+compose les missions, l'attribution de collecte et les tables de délégation
+dans la même transaction, sans créer une seconde voie de restauration. Cette
+voie est distincte de l'import métier, ne passe
 pas par `normalizeExternalActionImport` ni `createAction`, et ne doit pas être exposée sous un nom `import`.
 
 Le format version 2 conserve aussi `actions.collectors_count` et

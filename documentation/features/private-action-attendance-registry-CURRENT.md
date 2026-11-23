@@ -31,6 +31,13 @@ classement ou vocabulaire compétitif SPOGOMI.
 Le retrait d’une autre entrée détache uniquement cette entrée : le chef, les
 autres membres, la révision d’équipe et l’audit avant/après restent cohérents.
 
+Une identité Clerk liée retirée reste une entrée supprimée logiquement. La
+synchronisation d’une inscription confirmée ne la réactive pas. Seul un geste
+explicite d’organisateur autorisé peut la réactiver ; il conserve son
+`leader_entry_id`, son identifiant stable et son historique d’audit, incrémente
+la révision et écrit un nouvel audit avant/après. Une entrée déjà active reste
+en conflit et n’est jamais réactivée implicitement.
+
 Les noms sont normalisés et uniques par action. L’affectation, la désignation du
 chef et les modifications d’équipe utilisent le RPC serveur atomique, des
 révisions optimistes, l’idempotence par requête et un audit avant/après. Les

@@ -68,6 +68,8 @@ const STABLE_TIE_BREAKERS = Object.freeze({
   action_conversation_members: ["conversation_id", "user_id"],
   action_conversation_exclusions: ["conversation_id", "user_id"],
   action_share_contact_requests: ["id"],
+  action_form_editors: ["action_id", "clerk_user_id"],
+  action_form_editor_audit: ["id"],
 });
 
 function getStableTieBreakers(table, orderColumn) {
@@ -165,6 +167,19 @@ export async function exportActionBackup(supabase, exportedAt = new Date().toISO
     action_share_contact_requests: await fetchRowsForIds(
       supabase,
       "action_share_contact_requests",
+      "action_id",
+      actionIds,
+    ),
+    action_form_editors: await fetchRowsForIds(
+      supabase,
+      "action_form_editors",
+      "action_id",
+      actionIds,
+      "granted_at",
+    ),
+    action_form_editor_audit: await fetchRowsForIds(
+      supabase,
+      "action_form_editor_audit",
       "action_id",
       actionIds,
     ),
