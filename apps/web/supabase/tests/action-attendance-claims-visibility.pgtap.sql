@@ -33,6 +33,7 @@ begin
 end $$;
 
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select * from public.request_action_attendance_claim(
   (select action_id from claim_visibility_fixture),
   (select member_id from claim_visibility_fixture),
