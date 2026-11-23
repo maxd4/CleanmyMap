@@ -20,7 +20,7 @@ function createValidFixture() {
       "tout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.",
       "L'allowlist initiale sert à l'attribution et au cadrage ; elle ne fige pas le candidat final.",
       "Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque chaque changement est identifié, attribué, relu et validé sur le candidat final exact.",
-      "Si un commit local contient plus de fichiers que prévu, examiner son diff ; Le publier sans le reconstruire s'il est sûr et validé.",
+      "Cette règle contrôle la création des nouveaux commits, pas la publication des commits déjà créés. Lorsqu'un push est explicitement demandé, tous les commits locaux en avance sur la branche distante cible sont publiés dans leur ordre d'historique, même s'ils contiennent des chemins étrangers au lot courant ou proviennent d'autres writers.",
       "Workflow de chaque exécution de lot : validation → commit validé → push main → vérification de convergence",
       "Le mode de développement rapide ne supprime pas l'exigence de commit et push ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
       "",
@@ -42,8 +42,8 @@ function createValidFixture() {
     "scripts/AGENTS.md": [
       "audit cleanup provenance MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
       "L'allowlist initiale est un cadrage d'attribution, pas un plafond immuable.",
-      "Plusieurs chantiers ou writers peuvent être regroupés dans un commit si tous les changements sont identifiés, attribués, relus et validés sur le candidat final exact.",
-      "Un commit local plus large que prévu est examiné avec ses preuves ; le publier sans le reconstruire s'il est sûr et validé.",
+      "Plusieurs chantiers ou writers peuvent être regroupés dans un nouveau commit si tous les changements sont identifiés, attribués, relus et validés sur le candidat final exact.",
+      "Les commits déjà créés en avance sont publiés sans filtrage d'attribution, même s'ils dépassent le lot courant.",
       "Workflow hors mode rapide : validation du candidat final exact → commit validé → push main → vérification de convergence",
     ].join("\n"),
     ".github/AGENTS.md": "permissions CodeQL check:github-actions",
@@ -81,6 +81,25 @@ describe("AGENTS hierarchy governance", () => {
       const result = runCheck(script, fixture);
       assert.equal(result.status, 0);
       assert.match(result.output, /11 canonical files/);
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("requires the current rule to publish already-created commits without attribution filtering", () => {
+    const fixture = createValidFixture();
+    const agentsPath = path.join(fixture, "AGENTS.md");
+    const current = fs.readFileSync(agentsPath, "utf8");
+    fs.writeFileSync(
+      agentsPath,
+      current.replace(
+        "tous les commits locaux en avance sur la branche distante cible sont publiés",
+        "seuls les commits attribués au lot courant sont publiés",
+      ),
+    );
+    try {
+      const findings = validateAgentGovernance(fixture);
+      assert.ok(findings.some((finding) => finding.includes("tous les commits locaux en avance")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

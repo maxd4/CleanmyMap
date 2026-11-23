@@ -71,12 +71,14 @@ convergence. Une évolution externe sans conflit ne provoque aucune campagne de
 validation supplémentaire ; un conflit réel arrête la publication avec son
 diagnostic.
 
-Avant le commit, stage le périmètre attribué au démarrage, vérifie `STAGED` sur
-son contenu exact et conserve les autres changements. Plusieurs chantiers ou
-writers peuvent être regroupés dans un commit seulement si tous étaient
-initialement attribués ; le publier sans le reconstruire ne permet pas
-d'ajouter des chemins apparus ensuite. Les gardes, secrets, AuthZ, migrations et
-fast-forward restent obligatoires.
+Avant un nouveau commit, stage uniquement les changements attribués au lot au
+démarrage, vérifie `STAGED` sur son contenu exact et conserve les autres
+changements. Plusieurs chantiers ou writers peuvent être regroupés dans un
+nouveau commit uniquement si tous étaient initialement attribués. Lorsqu'un
+push est demandé, publier tous les commits déjà créés en avance sur la branche
+distante sans filtrage d'attribution, même s'ils contiennent des chemins d'un
+autre lot ; les fichiers dirty et untracked restent exclus. Les gardes,
+secrets, AuthZ, migrations et fast-forward restent obligatoires.
 
 Les scopes sont strictement séparés : `WORKTREE_LIVE` est le checkout mouvant,
 `STAGED` l'index exact, `COMMITTED_SNAPSHOT` un arbre Git immuable par SHA, et
