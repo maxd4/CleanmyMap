@@ -78,6 +78,7 @@ select ok(
         'created_at', '2026-11-23T10:00:00Z',
         'updated_at', '2026-11-23T10:00:00Z',
         'created_by_clerk_id', 'backup-restore-owner',
+        'type', 'action',
         'action_date', '2026-11-24',
         'location_label', 'Backup fixture',
         'duration_minutes', 30,
