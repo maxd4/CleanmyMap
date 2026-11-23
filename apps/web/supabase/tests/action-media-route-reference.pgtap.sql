@@ -34,6 +34,8 @@ select ok(not has_table_privilege('anon', 'public.action_media', 'SELECT'), 'ano
 select ok(has_table_privilege('authenticated', 'public.action_media', 'SELECT'), 'authenticated media reads remain constrained by RLS');
 
 create temp table action_media_route_fixture(action_id uuid primary key, media_owner text not null);
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"route-reference-fixture"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 
 do $$
 declare

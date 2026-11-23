@@ -150,6 +150,7 @@ test("attendance and action editor pgTAP fixtures provide the service role JWT c
     "action-attendance-registry.pgtap.sql",
     "action-attendance-teams.pgtap.sql",
     "action-form-editors.pgtap.sql",
+    "action-media-route-reference.pgtap.sql",
   ]) {
     const sql = readFileSync(new URL(`../../apps/web/supabase/tests/${file}`, import.meta.url), "utf8");
     assert.match(sql, /request\.jwt\.claims'.*\"role\":\"service_role\"/s, `${file} must set the service JWT role claim`);
