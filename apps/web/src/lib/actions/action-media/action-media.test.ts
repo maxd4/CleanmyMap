@@ -30,6 +30,7 @@ function makeQuery(
   });
   query.eq = vi.fn(() => query);
   query.in = vi.fn(() => query);
+  query.or = vi.fn(() => query);
   query.order = vi.fn(() => { list = true; return query; });
   query.insert = vi.fn(() => { result = { data: options.insertData ?? initial.data, error: null }; return query; });
   query.update = vi.fn(() => { result = { data: options.updateData ?? initial.data, error: null }; return query; });
@@ -93,9 +94,11 @@ function makeEvolvingSupabase(params: {
   storageInfo: () => Promise<{ data: Record<string, unknown> | null; error: unknown }>;
   signedUpload?: () => Promise<{ data: { token: string } | null; error: unknown }>;
   beforeUpdate?: (payload: Record<string, unknown>) => Promise<void> | void;
+  storageRemove?: () => Promise<{ error: unknown }>;
 }) {
   const actionQuery = makeQuery({ data: params.action ?? action, error: null });
   const organizerQuery = makeQuery({ data: null, error: null }, { listData: [] });
+  const editorQuery = makeQuery({ data: null, error: null }, { listData: [{ clerk_user_id: "user-1" }] });
   const state = { row: params.row };
   const updates: Record<string, unknown>[] = [];
   const appliedUpdates: Record<string, unknown>[] = [];
@@ -143,6 +146,7 @@ function makeEvolvingSupabase(params: {
     });
     query.eq = vi.fn((key: string, value: unknown) => { equals.set(key, value); return query; });
     query.in = vi.fn((key: string, values: unknown[]) => { inFilters.set(key, values); return query; });
+    query.or = vi.fn(() => query);
     query.order = vi.fn(() => { list = true; return query; });
     query.update = vi.fn((payload: Record<string, unknown>) => { operation = "update"; updatePayload = payload; return query; });
     query.maybeSingle = vi.fn(() => executeSingle());
@@ -155,12 +159,14 @@ function makeEvolvingSupabase(params: {
     if (table === "actions") return actionQuery;
     if (table === "action_organizers") return organizerQuery;
     if (table === "action_media") return makeMediaQuery();
+    if (table === "action_form_editors") return editorQuery;
     throw new Error(`Unexpected table ${table}`);
   });
   const storageClient = {
     createSignedUploadUrl: vi.fn(() => params.signedUpload?.() ?? Promise.resolve({ data: { token: "upload-token" }, error: null })),
     info: vi.fn(() => params.storageInfo()),
     createSignedUrl: vi.fn(async () => ({ data: { signedUrl: "https://signed.test/action" }, error: null })),
+    remove: vi.fn(() => params.storageRemove?.() ?? Promise.resolve({ error: null })),
   };
   const storageFrom = vi.fn(() => storageClient);
   return {
@@ -171,6 +177,7 @@ function makeEvolvingSupabase(params: {
     __appliedUpdates: appliedUpdates,
     __storageUpload: storageClient.createSignedUploadUrl,
     __storageInfo: storageClient.info,
+    __storageRemove: storageClient.remove,
   };
 }
 
@@ -402,6 +409,77 @@ describe("action media contract", () => {
     });
     expect(items).toMatchObject([{ id: readyMedia.id, purpose: "route_reference", signedUrl: "https://signed.test/action" }]);
     expect(supabase.from).toHaveBeenCalledWith("action_form_editors");
+  });
+
+  it("lists disabled route references as retryable cleanup without signing their URL", async () => {
+    const pendingCleanup = { ...readyMedia, purpose: "route_reference", upload_state: "failed", failure_reason: "user_removed_pending_cleanup" };
+    const supabase = makeSupabase({ action, editors: ["user-1"], existingMedia: pendingCleanup });
+    const items = await listActionMedia(supabase as never, { actionId: action.id, ...ownerIdentity, identity: ownerIdentity, purpose: "route_reference" });
+    expect(items).toMatchObject([{ id: pendingCleanup.id, cleanupPending: true, signedUrl: "" }]);
+    expect(supabase.__storage).not.toHaveBeenCalled();
+  });
+
+  it("records removal before storage cleanup and retries an interrupted cleanup idempotently", async () => {
+    let attempts = 0;
+    const supabase = makeEvolvingSupabase({
+      action,
+      row: { ...readyMedia, purpose: "route_reference" },
+      storageInfo: async () => ({ data: null, error: null }),
+      storageRemove: async () => ({ error: ++attempts === 1 ? new Error("storage unavailable") : null }),
+    });
+    const params = { actionId: action.id, mediaId: readyMedia.id, ...ownerIdentity, identity: ownerIdentity };
+    await expect(removeActionRouteReference(supabase as never, params)).rejects.toThrow("désactivée");
+    expect(supabase.__state.row).toMatchObject({ upload_state: "failed", failure_reason: "user_removed_pending_cleanup" });
+    expect(supabase.__storageRemove).toHaveBeenCalledTimes(1);
+
+    await expect(removeActionRouteReference(supabase as never, params)).resolves.toBeUndefined();
+    expect(supabase.__storageRemove).toHaveBeenCalledTimes(2);
+    expect(supabase.__state.row).toMatchObject({ upload_state: "failed", failure_reason: "user_removed" });
+    await expect(removeActionRouteReference(supabase as never, params)).resolves.toBeUndefined();
+    expect(supabase.__storageRemove).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not delete the storage object when the SQL tombstone update fails", async () => {
+    const supabase = makeEvolvingSupabase({
+      action,
+      row: { ...readyMedia, purpose: "route_reference" },
+      storageInfo: async () => ({ data: null, error: null }),
+      beforeUpdate: async () => { throw new Error("SQL unavailable"); },
+    });
+    await expect(removeActionRouteReference(supabase as never, {
+      actionId: action.id, mediaId: readyMedia.id, ...ownerIdentity, identity: ownerIdentity,
+    })).rejects.toThrow("SQL unavailable");
+    expect(supabase.__storageRemove).not.toHaveBeenCalled();
+    expect(supabase.__state.row.upload_state).toBe("ready");
+  });
+
+  it("retries final SQL bookkeeping after the Storage object was removed", async () => {
+    let failCompletion = true;
+    const supabase = makeEvolvingSupabase({
+      action,
+      row: { ...readyMedia, purpose: "route_reference" },
+      storageInfo: async () => ({ data: null, error: null }),
+      beforeUpdate: async (payload) => {
+        if (payload.failure_reason === "user_removed" && failCompletion) {
+          failCompletion = false;
+          throw new Error("SQL completion unavailable");
+        }
+      },
+    });
+    const params = { actionId: action.id, mediaId: readyMedia.id, ...ownerIdentity, identity: ownerIdentity };
+    await expect(removeActionRouteReference(supabase as never, params)).rejects.toThrow("SQL completion unavailable");
+    expect(supabase.__state.row).toMatchObject({ upload_state: "failed", failure_reason: "user_removed_pending_cleanup" });
+    expect(supabase.__storageRemove).toHaveBeenCalledTimes(1);
+    await expect(removeActionRouteReference(supabase as never, params)).resolves.toBeUndefined();
+    expect(supabase.__storageRemove).toHaveBeenCalledTimes(2);
+    expect(supabase.__state.row.failure_reason).toBe("user_removed");
+  });
+
+  it("preserves the two-reference replacement quota", async () => {
+    const supabase = makeSupabase({ action, editors: ["user-1"], activeCount: 2 });
+    await expect(createActionMediaUploadIntent(supabase as never, uploadParams({ purpose: "route_reference" })))
+      .rejects.toMatchObject({ code: "limit_reached" });
+    expect(supabase.__storageUpload).not.toHaveBeenCalled();
   });
 
   it("rechecks delegated form-edit access for route media reads and writes after revocation", async () => {

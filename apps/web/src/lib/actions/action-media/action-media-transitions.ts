@@ -22,6 +22,7 @@ export type ActionMediaRow = {
   height: number | null;
   sort_order: number;
   upload_state: ActionMediaUploadState;
+  failure_reason?: string | null;
   purpose?: ActionMediaPurpose;
 };
 

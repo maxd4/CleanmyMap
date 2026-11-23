@@ -32,4 +32,4 @@ export type ActionMediaRecord = {
   purpose?: ActionMediaPurpose;
 };
 
-export type ActionMediaReadItem = ActionMediaRecord & { signedUrl: string };
+export type ActionMediaReadItem = ActionMediaRecord & { signedUrl: string; cleanupPending?: boolean };

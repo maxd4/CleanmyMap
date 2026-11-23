@@ -38,16 +38,17 @@ export async function uploadActionRouteReference(actionId: string, file: File): 
     const finalized = await fetch(`/api/actions/${encodeURIComponent(actionId)}/media/${encodeURIComponent(intent.mediaId)}/finalize`, { method: "POST" });
     if (!finalized.ok) throw new Error(await responseError(finalized, "La vérification de l’image a échoué."));
   }
-  return readActionRouteReference(actionId, intent.mediaId);
+  const items = await readActionRouteReferences(actionId);
+  const item = items.find((candidate) => candidate.id === intent.mediaId && candidate.signedUrl);
+  if (!item) throw new Error("L’image enregistrée n’a pas pu être relue.");
+  return item;
 }
 
-export async function readActionRouteReference(actionId: string, mediaId: string): Promise<ActionMediaReadItem> {
+export async function readActionRouteReferences(actionId: string): Promise<ActionMediaReadItem[]> {
   const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/media?purpose=route_reference`, { cache: "no-store" });
   if (!response.ok) throw new Error(await responseError(response, "La référence privée n’a pas pu être chargée."));
   const body = await response.json() as { items?: ActionMediaReadItem[] };
-  const item = body.items?.find((candidate) => candidate.id === mediaId);
-  if (!item) throw new Error("La référence enregistrée est introuvable.");
-  return item;
+  return body.items ?? [];
 }
 
 export async function deleteActionRouteReference(actionId: string, mediaId: string): Promise<void> {

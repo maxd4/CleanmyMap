@@ -443,19 +443,24 @@ export async function listActionMedia(
 ): Promise<ActionMediaReadItem[]> {
   const purpose = params.purpose ?? "report_photo";
   await assertActionAccess({ supabase, ...params, purpose });
-  const mediaResult = await supabase
+  let mediaQuery = supabase
     .from("action_media")
     .select("*")
     .eq("action_id", params.actionId)
-    .eq("purpose", purpose)
-    .eq("upload_state", "ready")
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
+    .eq("purpose", purpose);
+  mediaQuery = purpose === "route_reference"
+    ? mediaQuery.or("upload_state.eq.ready,and(upload_state.eq.failed,failure_reason.eq.user_removed_pending_cleanup)")
+    : mediaQuery.eq("upload_state", "ready");
+  const mediaResult = await mediaQuery.order("sort_order", { ascending: true }).order("created_at", { ascending: true });
   if (mediaResult.error) throw storageError("Les photos ne peuvent pas être chargées.");
 
   const items: ActionMediaReadItem[] = [];
   for (const rawRow of (mediaResult.data ?? []) as ActionMediaRow[]) {
     const row = toRecord(rawRow);
+    if (rawRow.upload_state === "failed" && rawRow.failure_reason === "user_removed_pending_cleanup") {
+      items.push({ ...row, signedUrl: "", cleanupPending: true });
+      continue;
+    }
     const signed = await supabase.storage
       .from(ACTION_MEDIA_BUCKET)
       .createSignedUrl(row.storagePath, ACTION_MEDIA_SIGNED_URL_TTL_SECONDS);
@@ -478,12 +483,38 @@ export async function removeActionRouteReference(
   if (result.error) throw storageError("La référence d’itinéraire ne peut pas être vérifiée.");
   if (!result.data) throw new ActionMediaError("Référence introuvable.", "not_found");
   const row = result.data as ActionMediaRow;
-  if (row.upload_state !== "failed") {
-    const removed = await supabase.storage.from(ACTION_MEDIA_BUCKET).remove([row.storage_path]);
-    if (removed.error) throw storageError("La référence ne peut pas être supprimée du stockage.");
+  if (row.upload_state === "failed" && row.failure_reason === "user_removed") return;
+  if (row.upload_state === "failed" && row.failure_reason !== "user_removed_pending_cleanup") {
+    throw new ActionMediaError("Cette référence n’est pas supprimable dans son état actuel.", "conflict");
   }
-  const updated = await supabase.from("action_media").update({ upload_state: "failed", failure_reason: "user_removed" })
+  if (row.upload_state !== "failed") {
+    const tombstone = await supabase.from("action_media")
+      .update({ upload_state: "failed", failure_reason: "user_removed_pending_cleanup" })
+      .eq("id", row.id).eq("action_id", params.actionId).eq("purpose", "route_reference")
+      .eq("upload_state", row.upload_state).select("id").maybeSingle();
+    if (tombstone.error) throw storageError("La suppression de la référence n’a pas pu être enregistrée.");
+    if (!tombstone.data) {
+      const latest = await supabase.from("action_media").select("upload_state, failure_reason")
+        .eq("id", row.id).eq("action_id", params.actionId).eq("purpose", "route_reference").maybeSingle();
+      if (latest.error) throw storageError("L’état de suppression ne peut pas être vérifié.");
+      if (latest.data?.upload_state === "failed" && latest.data.failure_reason === "user_removed") return;
+      if (latest.data?.upload_state !== "failed" || latest.data.failure_reason !== "user_removed_pending_cleanup") {
+        throw new ActionMediaError("La référence a changé pendant sa suppression. Réessayez.", "conflict");
+      }
+    }
+  }
+
+  const removed = await supabase.storage.from(ACTION_MEDIA_BUCKET).remove([row.storage_path]);
+  if (removed.error) throw storageError("La référence est désactivée, mais son nettoyage du stockage a échoué. Réessayez.");
+  const completed = await supabase.from("action_media").update({ failure_reason: "user_removed" })
     .eq("id", row.id).eq("action_id", params.actionId).eq("purpose", "route_reference")
-    .in("upload_state", ["pending", "ready"]);
-  if (updated.error) throw storageError("La suppression de la référence n’a pas pu être enregistrée.");
+    .eq("upload_state", "failed").eq("failure_reason", "user_removed_pending_cleanup").select("id").maybeSingle();
+  if (completed.error) throw storageError("L’image est supprimée du stockage, mais le nettoyage reste à confirmer. Réessayez.");
+  if (!completed.data) {
+    const latest = await supabase.from("action_media").select("upload_state, failure_reason")
+      .eq("id", row.id).eq("action_id", params.actionId).eq("purpose", "route_reference").maybeSingle();
+    if (latest.error || latest.data?.upload_state !== "failed" || latest.data.failure_reason !== "user_removed") {
+      throw storageError("L’image a été supprimée du stockage, mais le nettoyage reste à confirmer. Réessayez.");
+    }
+  }
 }
