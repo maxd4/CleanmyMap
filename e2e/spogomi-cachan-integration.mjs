@@ -7,7 +7,8 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright";
 import * as XLSX from "xlsx";
 import {
-  classifyLocalAppStartupOutput,
+  classifyLocalAppHttpStatus,
+  classifyLocalAppTransportFailure,
   spawnLocalApp,
   stopLocalApp,
   waitForLocalApp,
@@ -69,7 +70,7 @@ function mustLocalAppUrl(raw) {
   return assertLocalUrl(raw, "application");
 }
 
-function startApp({ port, userId, database }) {
+function startApp({ port, userId, role, database }) {
   const publishableKey = process.env.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   const secretKey = process.env.CMM_E2E_CLERK_DEV_BACKEND_TOKEN ?? process.env.CLERK_SECRET_KEY;
   if (!publishableKey?.startsWith("pk_test_") || !secretKey?.startsWith("sk_test_")) throw new Error("Le scénario exige uniquement des clés Clerk Development pk_test_/sk_test_ pour son serveur local éphémère.");
@@ -90,7 +91,7 @@ function startApp({ port, userId, database }) {
       CMM_DEV_AUTH_BYPASS: "1",
       CMM_DISABLE_DEV_AUTH_BYPASS: "0",
       CMM_DEV_AUTH_BYPASS_USER_ID: userId,
-      CMM_DEV_AUTH_BYPASS_ROLE: "coordinateur",
+      CMM_DEV_AUTH_BYPASS_ROLE: role,
     },
   });
 }
@@ -108,19 +109,22 @@ async function runStep(name, action) {
 }
 
 async function api(baseUrl, route, init = {}, expected = [200]) {
-  const response = await fetch(`${baseUrl}${route}`, { redirect: "manual", ...init });
+  let response;
+  try {
+    response = await fetch(`${baseUrl}${route}`, { redirect: "manual", ...init });
+  } catch {
+    const diagnostic = classifyLocalAppTransportFailure();
+    throw new Error(`${init.method ?? "GET"} ${route}: ${diagnostic.code}: ${diagnostic.message}`);
+  }
+  if (!expected.includes(response.status)) {
+    await response.body?.cancel().catch(() => undefined);
+    const diagnostic = classifyLocalAppHttpStatus(response.status);
+    const diagnosticCode = diagnostic ? ` ${diagnostic.code}` : " HTTP_UNEXPECTED_RESPONSE";
+    const diagnosticMessage = diagnostic?.message ?? "The response status was not expected.";
+    throw new Error(`${init.method ?? "GET"} ${route}:${diagnosticCode} HTTP ${response.status}. ${diagnosticMessage}`);
+  }
   const contentType = response.headers.get("content-type") ?? "";
   const body = contentType.includes("json") ? await response.json() : await response.arrayBuffer();
-  if (!expected.includes(response.status)) {
-    const diagnostic = classifyLocalAppStartupOutput(ownerServer?.getStartupOutput?.() ?? "");
-    const diagnosticCode = diagnostic ? ` ${diagnostic.code}` : "";
-    const responseType = contentType ? ` (${contentType})` : "";
-    const responseBody = typeof body === "object" && body !== null && !(body instanceof ArrayBuffer)
-      ? JSON.stringify(body).slice(0, 500)
-      : "";
-    const failure = `${init.method ?? "GET"} ${route}: HTTP ${response.status}${responseType}${diagnosticCode}`;
-    throw new Error(`${failure}${responseBody ? ` ${responseBody}` : ""}`);
-  }
   return { response, body };
 }
 
@@ -195,10 +199,10 @@ async function main() {
   const observerUrl = process.env.CMM_SPOGOMI_APP_URL ? null : "http://127.0.0.1:3011";
 
   try {
-    ownerServer = process.env.CMM_SPOGOMI_APP_URL ? null : startApp({ port: 3010, userId: ownerId, database });
+    ownerServer = process.env.CMM_SPOGOMI_APP_URL ? null : startApp({ port: 3010, userId: ownerId, role: "admin", database });
     await waitForLocalApp(appUrl, { server: ownerServer, getStartupOutput: () => ownerServer?.getStartupOutput?.() ?? "" });
     if (observerUrl) {
-      observerServer = startApp({ port: 3011, userId: observerId, database });
+      observerServer = startApp({ port: 3011, userId: observerId, role: "benevole", database });
       await waitForLocalApp(observerUrl, { server: observerServer, getStartupOutput: () => observerServer?.getStartupOutput?.() ?? "" });
     }
 
@@ -224,16 +228,28 @@ async function main() {
       }
     });
 
-    let event;
     let management;
     await runStep("création-idempotente-une-action-parent", async () => {
-      const payload = { idempotencyKey: "cachan-cleanmymap-mixed-v1", name: `${fixture.scenario_name} — ${marker}`, locationLabel: "Cachan · fixture synthétique", mode: "mixed", startsAt: operationalInstantAt(operationalDate, 9), endsAt: operationalInstantAt(operationalDate, 16) };
+      const payload = {
+        idempotencyKey: "cachan-cleanmymap-mixed-v1",
+        name: `${fixture.scenario_name} — ${marker}`,
+        locationLabel: "Coordonnées synthétiques de test — aucune localisation réelle",
+        latitude: 12.3456,
+        longitude: -98.7654,
+        mode: "mixed",
+        startsAt: operationalInstantAt(operationalDate, 9),
+      };
+      const missingCoordinates = { ...payload, latitude: undefined, longitude: undefined };
+      await api(appUrl, "/api/spogomi/events", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(missingCoordinates),
+      }, [422]);
       const first = jsonBody((await api(appUrl, "/api/spogomi/events", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }, [201])).body);
-      const second = jsonBody((await api(appUrl, "/api/spogomi/events", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }, [200, 201])).body);
+      const second = jsonBody((await api(appUrl, "/api/spogomi/events", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }, [201])).body);
       assert.equal(first.eventId, second.eventId);
       assert.equal(first.actionId, second.actionId);
       createdEventId = String(first.eventId);
-      event = { id: createdEventId, actionId: String(first.actionId) };
       const actionRows = await supabase.from("spogomi_events").select("id, action_id, event_slug, composition_revision, mode, name").eq("id", createdEventId).single();
       assert.ifError(actionRows.error);
       assert.equal(actionRows.data.mode, "mixed");
@@ -384,7 +400,15 @@ async function main() {
             assert(measurement, `${teamRef}/${category.code}: mesure manquante`);
             return { categoryRuleId: category.id, measurementKind: "mass", unit: "g", quantity: measurement.mass_grams, massGrams: measurement.mass_grams, objectCount: null, measurementMethod: "balance-synthetic", provenance: measurement.provenance_ref, arbitrationComment: null };
           });
-          const first = jsonBody((await api(appUrl, "/api/spogomi/team-form", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ submissionId: null, idempotencyKey: teamSubmissionIdempotencyKey(teamRef), status: "submitted", correctionReason: null, items }) }, [200])).body);
+          const draftPayload = { submissionId: null, idempotencyKey: teamSubmissionIdempotencyKey(teamRef, 3), status: "draft", correctionReason: null, items };
+          const draft = jsonBody((await api(appUrl, "/api/spogomi/team-form", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify(draftPayload) }, [200])).body);
+          assert(draft.submission?.id, `${teamRef}: brouillon absent`);
+          const draftRetry = jsonBody((await api(appUrl, "/api/spogomi/team-form", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify(draftPayload) }, [200])).body);
+          assert.equal(draftRetry.already_processed, true, `${teamRef}: le retry doit être reconnu comme déjà traité`);
+          assert.equal(draftRetry.submission?.id, draft.submission.id, `${teamRef}: retry idempotent doit conserver la soumission`);
+          assert.equal(draftRetry.submission?.version, draft.submission.version, `${teamRef}: retry idempotent ne doit pas créer de nouvelle version`);
+          const submissionPayload = { submissionId: draft.submission.id, idempotencyKey: teamSubmissionIdempotencyKey(teamRef), status: "submitted", correctionReason: null, items };
+          const first = jsonBody((await api(appUrl, "/api/spogomi/team-form", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify(submissionPayload) }, [200])).body);
           assert(first.submission?.id, `${teamRef}: soumission absente`);
           if (sourceTeam.team_ref === "CAS-01") {
             const correction = jsonBody((await api(appUrl, "/api/spogomi/team-form", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ submissionId: null, idempotencyKey: teamSubmissionIdempotencyKey(teamRef, 2), status: "submitted", correctionReason: "Correction contrôlée du relevé synthétique", items }) }, [200])).body);

@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 const CLERK_BOOT_CONFIG_MESSAGE = "Local Clerk Development configuration was rejected; secret values are suppressed.";
 const APP_PORT_MESSAGE = "The local app port could not be opened; process output is suppressed.";
 const APP_RUNTIME_MESSAGE = "The local app reported a startup error; process output is suppressed.";
+const APP_TRANSPORT_MESSAGE = "The local application could not be reached; transport details are suppressed.";
 
 export function classifyLocalAppStartupOutput(output) {
   const text = String(output ?? "");
@@ -27,6 +28,19 @@ export function classifyLocalAppStartupOutput(output) {
   return null;
 }
 
+export function classifyLocalAppTransportFailure() {
+  return { code: "HTTP_TRANSPORT_ERROR", message: APP_TRANSPORT_MESSAGE };
+}
+
+export function classifyLocalAppHttpStatus(status) {
+  if (status === 401) return { code: "HTTP_AUTHN_ERROR", message: "The request was not authenticated." };
+  if (status === 403) return { code: "HTTP_AUTHZ_ERROR", message: "The request was not authorized." };
+  if (status === 422) return { code: "HTTP_VALIDATION_ERROR", message: "The request failed input validation." };
+  if (status >= 500) return { code: "HTTP_SERVER_ERROR", message: "The server returned an error; response details are suppressed." };
+  if (status >= 400) return { code: "HTTP_CLIENT_ERROR", message: "The request returned an unexpected client error." };
+  return null;
+}
+
 export async function waitForLocalApp(baseUrl, {
   server = null,
   timeoutMs = 90_000,
@@ -35,6 +49,8 @@ export async function waitForLocalApp(baseUrl, {
   getStartupOutput = () => "",
 } = {}) {
   const deadline = Date.now() + timeoutMs;
+  let lastHttpErrorStatus = null;
+  let sawTransportFailure = false;
 
   while (Date.now() < deadline) {
     if (server?.exitCode != null) {
@@ -46,9 +62,10 @@ export async function waitForLocalApp(baseUrl, {
     try {
       const response = await fetchImpl(`${baseUrl}/spogomi`, { redirect: "manual" });
       await response.body?.cancel().catch(() => undefined);
-      return;
+      if (response.status < 500) return;
+      lastHttpErrorStatus = response.status;
     } catch {
-      // The local server is still booting.
+      sawTransportFailure = true;
     }
 
     await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
@@ -56,7 +73,10 @@ export async function waitForLocalApp(baseUrl, {
 
   const diagnostic = classifyLocalAppStartupOutput(getStartupOutput());
   const startupDetail = diagnostic ? ` ${diagnostic.code}: ${diagnostic.message}` : " Startup output is suppressed.";
-  throw new Error(`Application SPOGOMI indisponible sur ${baseUrl}. It did not accept local requests.${startupDetail}`);
+  const readinessDetail = lastHttpErrorStatus !== null
+    ? ` APP_READINESS_HTTP_ERROR HTTP ${lastHttpErrorStatus}.`
+    : sawTransportFailure ? " APP_TRANSPORT_UNAVAILABLE." : " APP_READINESS_TIMEOUT.";
+  throw new Error(`Application SPOGOMI indisponible sur ${baseUrl}.${readinessDetail}${startupDetail}`);
 }
 
 export function spawnLocalApp(command, args, options) {

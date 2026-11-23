@@ -3,7 +3,9 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import test from "node:test";
 import {
+  classifyLocalAppHttpStatus,
   classifyLocalAppStartupOutput,
+  classifyLocalAppTransportFailure,
   stopLocalApp,
   waitForLocalApp,
 } from "./spogomi-cachan-local-app.mjs";
@@ -34,6 +36,29 @@ test("local app startup diagnostics classify compile and backend failures withou
   assert.equal(JSON.stringify(backendFailure).includes("54321"), false);
 });
 
+test("HTTP diagnostics distinguish authentication, authorization, validation and server failures", () => {
+  assert.equal(classifyLocalAppHttpStatus(200), null);
+  assert.equal(classifyLocalAppHttpStatus(201), null);
+  assert.deepEqual(classifyLocalAppHttpStatus(401), {
+    code: "HTTP_AUTHN_ERROR",
+    message: "The request was not authenticated.",
+  });
+  assert.deepEqual(classifyLocalAppHttpStatus(403), {
+    code: "HTTP_AUTHZ_ERROR",
+    message: "The request was not authorized.",
+  });
+  assert.deepEqual(classifyLocalAppHttpStatus(422), {
+    code: "HTTP_VALIDATION_ERROR",
+    message: "The request failed input validation.",
+  });
+  assert.deepEqual(classifyLocalAppHttpStatus(500), {
+    code: "HTTP_SERVER_ERROR",
+    message: "The server returned an error; response details are suppressed.",
+  });
+  assert.equal(JSON.stringify(classifyLocalAppHttpStatus(500)).includes("private"), false);
+  assert.equal(classifyLocalAppTransportFailure().code, "HTTP_TRANSPORT_ERROR");
+});
+
 test("local app readiness fails immediately when its process exits", async () => {
   await assert.rejects(
     waitForLocalApp("http://127.0.0.1:3010", {
@@ -48,18 +73,41 @@ test("local app readiness fails immediately when its process exits", async () =>
   );
 });
 
-test("local app readiness accepts redirects and non-server responses", async () => {
+test("local app readiness accepts redirects and client responses from the live server", async () => {
   await assert.doesNotReject(waitForLocalApp("http://127.0.0.1:3010", {
     timeoutMs: 100,
     fetchImpl: async () => new Response(null, { status: 307 }),
   }));
 });
 
-test("local app readiness treats an HTTP 5xx as server liveness", async () => {
+test("local app readiness retries a 5xx until the app serves a non-server response", async () => {
+  let calls = 0;
   await assert.doesNotReject(waitForLocalApp("http://127.0.0.1:3010", {
     timeoutMs: 100,
-    fetchImpl: async () => new Response(null, { status: 503 }),
+    pollIntervalMs: 1,
+    fetchImpl: async () => new Response(null, { status: ++calls === 1 ? 503 : 200 }),
   }));
+  assert.equal(calls, 2);
+});
+
+test("local app readiness does not treat an HTTP 503 as ready", async () => {
+  await assert.rejects(waitForLocalApp("http://127.0.0.1:3010", {
+    timeoutMs: 5,
+    pollIntervalMs: 1,
+    fetchImpl: async () => new Response(null, { status: 503 }),
+  }), /APP_READINESS_HTTP_ERROR HTTP 503/);
+});
+
+test("local app readiness classifies transport failures without exposing their details", async () => {
+  await assert.rejects(waitForLocalApp("http://127.0.0.1:3010", {
+    timeoutMs: 5,
+    pollIntervalMs: 1,
+    fetchImpl: async () => { throw new Error("private token transport detail"); },
+  }), (error) => {
+    assert.match(error.message, /APP_TRANSPORT_UNAVAILABLE/);
+    assert.equal(error.message.includes("private token"), false);
+    return true;
+  });
 });
 
 test("local app teardown terminates the spawned process group", async () => {
