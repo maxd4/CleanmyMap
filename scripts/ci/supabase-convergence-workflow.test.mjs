@@ -85,6 +85,7 @@ test("manual ephemeral E2E is restricted to the current main SHA before any cred
 test("SQL proof is an independent serialized lane and application E2E no longer runs pgTAP proofs", () => {
   const sqlWorkflow = fs.readFileSync(path.join(repositoryRoot, ".github", "workflows", "supabase-sql-proof.yml"), "utf8");
   const e2eWorkflow = fs.readFileSync(path.join(repositoryRoot, ".github", "workflows", "e2e-supabase.yml"), "utf8");
+  const startScript = fs.readFileSync(path.join(repositoryRoot, "scripts", "ci", "start-supabase-ephemeral.sh"), "utf8");
   assert.match(sqlWorkflow, /name: supabase-sql-proof-ephemeral/);
   assert.match(sqlWorkflow, /cancel-in-progress:\s*false/);
   assert.match(sqlWorkflow, /find apps\/web\/supabase\/migrations apps\/web\/supabase\/tests e2e -type f -name '\*\.sql'/);
@@ -93,11 +94,23 @@ test("SQL proof is an independent serialized lane and application E2E no longer 
   assert.match(sqlWorkflow, /CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION:/);
   assert.match(sqlWorkflow, /run-supabase-sql-proof\.mjs/);
   assert.match(sqlWorkflow, /cleanmymap-supabase-sql-evidence/);
+  assert.match(sqlWorkflow, /scripts\/ci\/supabase-config\.mjs/);
+  assert.match(sqlWorkflow, /scripts\/ci\/isolate-supabase-migration-failure\.mjs/);
   assert.match(sqlWorkflow, /hashFiles\('artifacts\/ci-public-evidence\/evidence\/supabase-sql\.json'\) != ''[\s\S]*?steps\.validate_evidence\.outcome == 'success'/);
   assert.doesNotMatch(sqlWorkflow, /CMM_E2E_CLERK_DEV_BACKEND_TOKEN|CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY/);
   assert.doesNotMatch(e2eWorkflow, /run-supabase-sql-proof\.mjs/);
   assert.match(e2eWorkflow, /Run SPOGOMI Cachan mixed integration on ephemeral Supabase/);
   assert.match(e2eWorkflow, /Run persistent E2E/);
+  assert.match(e2eWorkflow, /scripts\/ci\/supabase-config\.mjs/);
+  assert.match(startScript, /supabase-config\.mjs/);
+  assert.match(startScript, /supabase" start --debug --workdir "\$bootstrap_workdir/);
+  for (const workflowText of [sqlWorkflow, e2eWorkflow]) {
+    const bootstrapIndex = workflowText.indexOf("name: Start ephemeral Supabase");
+    const resetIndex = workflowText.indexOf("name: Apply canonical migrations and seed");
+    assert.ok(bootstrapIndex >= 0 && resetIndex > bootstrapIndex, "the canonical reset must follow bootstrap");
+    assert.match(workflowText.slice(bootstrapIndex, resetIndex), /start-supabase-ephemeral\.sh/);
+    assert.match(workflowText.slice(resetIndex, resetIndex + 600), /supabase db reset --local --workdir apps\/web --yes/);
+  }
 });
 
 test("manual migration isolation is read-only and cannot attest convergence", () => {
@@ -196,6 +209,14 @@ test("production secrets are scoped to the protected non-PR job and the canonica
   assert.match(workflow, /github\.event_name == 'workflow_run' && steps\.preflight\.outputs\.apply == 'true'/);
   assert.match(workflow, /npx supabase db push --linked --yes/);
   assert.doesNotMatch(workflow, /migration repair|db reset|CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION/i);
+});
+
+test("read-only convergence summary reports pending count and age of the oldest pending migration", () => {
+  assert.match(workflow, /PENDING_MIGRATIONS: \/\/p/);
+  assert.match(workflow, /PENDING: \/\/p/);
+  assert.match(workflow, /Oldest pending migration/);
+  assert.match(workflow, /oldest_age_days=\$\(\(\(now_epoch - oldest_epoch\) \/ 86400\)\)/);
+  assert.match(workflow, /Pending migrations:.*pending_count:-UNKNOWN/s);
 });
 
 test("complete SQL success is independent of app E2E; automatic apply still requires READY_TO_APPLY", () => {

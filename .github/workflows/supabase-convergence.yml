@@ -145,10 +145,26 @@ jobs:
           status=$(sed -n 's/^PREFLIGHT_STATUS: //p' "$RUNNER_TEMP/supabase-preflight.log" | tail -n 1)
           first=$(sed -n 's/^FIRST_BLOCKING_MIGRATION: //p' "$RUNNER_TEMP/supabase-preflight.log" | tail -n 1)
           action=$(sed -n 's/^ACTION_REQUIRED: //p' "$RUNNER_TEMP/supabase-preflight.log" | tail -n 1)
+          pending_count=$(sed -n 's/^PENDING_MIGRATIONS: //p' "$RUNNER_TEMP/supabase-preflight.log" | tail -n 1)
+          oldest_pending=$(sed -n 's/^PENDING: //p' "$RUNNER_TEMP/supabase-preflight.log" | head -n 1)
+          oldest_pending=${oldest_pending:-NONE}
+          oldest_age_days=NOT_APPLICABLE
+          if [[ "$oldest_pending" =~ ^[0-9]{14}$ ]]; then
+            oldest_date="${oldest_pending:0:4}-${oldest_pending:4:2}-${oldest_pending:6:2}"
+            if oldest_epoch=$(date -u -d "$oldest_date" +%s 2>/dev/null); then
+              now_epoch=$(date -u +%s)
+              oldest_age_days=$(((now_epoch - oldest_epoch) / 86400))
+              if (( oldest_age_days < 0 )); then oldest_age_days=0; fi
+            else
+              oldest_age_days=UNKNOWN
+            fi
+          fi
           echo "status=$status" >> "$GITHUB_OUTPUT"
           {
             echo "## Supabase migration convergence"
             echo "- Status: \`$status\`"
+            echo "- Pending migrations: \`${pending_count:-UNKNOWN}\`"
+            echo "- Oldest pending migration: \`$oldest_pending\` (\`${oldest_age_days}\` days)"
             echo "- First blocking migration: \`${first:-NONE}\`"
             echo "- Required action: ${action:-not reported}"
             echo "- Remote writes during preflight: \`NONE\`"

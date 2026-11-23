@@ -17,6 +17,7 @@ progress_file="$temp_root/supabase-start-$run_key-progress.ndjson"
 events_file="$temp_root/supabase-start-$run_key-events.ndjson"
 postgres_log="$temp_root/supabase-start-$run_key-postgres.log"
 postgres_server_log="$temp_root/supabase-start-$run_key-postgres-server.log"
+bootstrap_workdir="$temp_root/supabase-bootstrap-$run_key"
 postgres_log_watch_pid=""
 
 cleanup() {
@@ -29,15 +30,23 @@ cleanup() {
     wait "$events_pid" 2>/dev/null || true
   fi
   rm -f "$start_log" "$progress_file" "$events_file" "$postgres_log" "$postgres_server_log"
+  case "$bootstrap_workdir" in
+    "$temp_root"/supabase-bootstrap-*) rm -rf -- "$bootstrap_workdir" ;;
+    *) echo "Refusing to remove an unexpected bootstrap workdir path." >&2 ;;
+  esac
 }
 trap cleanup EXIT
 
 : > "$progress_file"
 : > "$events_file"
+mkdir -p "$bootstrap_workdir/supabase"
+node "$root/scripts/ci/supabase-config.mjs" \
+  --source-config="$workdir/supabase/config.toml" \
+  --target-config="$bootstrap_workdir/supabase/config.toml"
 start_started_at="$(date +%s)"
 docker events --since "$start_started_at" --filter type=container --format '{{json .}}' > "$events_file" 2>/dev/null &
 events_pid=$!
-"$root/node_modules/.bin/supabase" start --debug --workdir "$workdir" --yes --output-format json --network-id="$network" > "$start_log" 2>&1 &
+"$root/node_modules/.bin/supabase" start --debug --workdir "$bootstrap_workdir" --yes --output-format json --network-id="$network" > "$start_log" 2>&1 &
 start_pid=$!
 watch_postgres_log() {
   local container_id=""

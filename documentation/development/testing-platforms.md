@@ -87,8 +87,11 @@ npx playwright test --list --project="action sharing" --project="authenticated c
 ```
 
 La lane `.github/workflows/e2e-supabase.yml` utilise un runner Linux GitHub
-hébergé et éphémère. Elle démarre Supabase, applique les migrations
-`apps/web/supabase/migrations/`, charge `apps/web/supabase/seed.sql`, lance
+hébergé et éphémère. Le bootstrap Supabase utilise une configuration temporaire
+qui désactive les migrations applicatives et le seed ; après démarrage des
+services, un unique `supabase db reset` avec la configuration canonique applique
+les migrations `apps/web/supabase/migrations/` et charge
+`apps/web/supabase/seed.sql`, puis la lane lance
 Next.js contre cette instance locale du runner, puis arrête la stack. Elle
 utilise exclusivement des identifiants Clerk Development ; l'absence de ces
 identifiants fait échouer la lane avant tout E2E. Aucun projet Supabase distant,
@@ -221,8 +224,9 @@ CLI, de Docker et de PostgreSQL restent dans le runner. L'artefact ne publie que
 le SHA, les empreintes SQL et les champs PostgreSQL expurgés. Une exécution
 complémentaire avec `psql` est rapportée dans un champ indépendant et ne peut
 pas remplacer le résultat du replay Supabase : notamment, un SQLSTATE `42501`
-isolé ne démontre pas la cause d'un `22P02` canonique. La verbosité SQL peut
-être élevée uniquement sur la base éphémère du runner. Ce mode ne produit pas une
+isolé ne démontre pas la cause d'un `22P02` canonique. `psql` active la verbosité
+avec `-v VERBOSITY=verbose`, sans `SET` privilégié dans le SQL rejoué. Cette
+exécution reste limitée à la base éphémère du runner. Ce mode ne produit pas une
 attestation d'intégration, ne lance pas pgTAP/concurrence et n'est jamais
 consommé par la convergence Production. `complete-proof` reste la seule voie
 d'attestation.

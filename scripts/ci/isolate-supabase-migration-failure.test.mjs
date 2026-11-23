@@ -6,6 +6,7 @@ import test from "node:test";
 
 import {
   buildSafeIsolationDiagnostic,
+  buildSupplementalPsqlInvocation,
   classifyPrefixReplayAttempt,
   classifyPrivateFailure,
   extractSafePostgresError,
@@ -196,6 +197,16 @@ test("psql verbose errors expose only SQLSTATE, type and instruction position", 
   assert.equal(JSON.stringify(result).includes("private-integer"), false);
 });
 
+test("supplemental psql uses client verbosity without a privileged SQL SET", () => {
+  const sql = "CREATE TABLE proof_target(id integer);";
+  const invocation = buildSupplementalPsqlInvocation(sql, "container-id");
+  assert.ok(invocation.args.includes("VERBOSITY=verbose"));
+  assert.ok(invocation.args.includes("ON_ERROR_STOP=1"));
+  assert.equal(invocation.args[2], "container-id");
+  assert.equal(invocation.input, sql);
+  assert.doesNotMatch(invocation.input, /SET\s+log_error_verbosity/iu);
+});
+
 test("the parser skips ordinary JSON log rows and selects the structured error row", () => {
   const output = [
     JSON.stringify({ error_severity: "LOG", state_code: "00000", message: "connection authorized" }),
@@ -214,6 +225,7 @@ test("the parser skips ordinary JSON log rows and selects the structured error r
 
 test("private failure classification is finite and never returns command text", () => {
   assert.equal(classifyPrivateFailure('ERROR: invalid input syntax for type bigint: "private-value"'), "POSTGRES_INVALID_TEXT_REPRESENTATION");
+  assert.equal(classifyPrivateFailure("ERROR: 42501: permission denied"), "LOCAL_DATABASE_PERMISSION");
   assert.equal(classifyPrivateFailure("Error: unknown flag --file"), "SUPABASE_CLI_USAGE");
   assert.equal(classifyPrivateFailure("failed without a recognized signature"), "UNCLASSIFIED_COMMAND_FAILURE");
 });

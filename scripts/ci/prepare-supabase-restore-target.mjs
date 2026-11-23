@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { setSupabaseSectionEnabled } from "./supabase-config.mjs";
 
 const CANONICAL_PORTS = Object.freeze([
   ["port = 54321", "port = 54321"],
@@ -25,15 +26,6 @@ function replaceExactly(text, needle, replacement) {
   return text.replace(needle, replacement);
 }
 
-function replaceSectionEnabled(text, section) {
-  const sectionPattern = new RegExp(`(\\[${section.replaceAll(".", "\\.")}\\][\\s\\S]*?)(?=\\n\\[|$)`);
-  const match = text.match(sectionPattern);
-  if (!match) throw new Error(`canonical Supabase config is missing [${section}]`);
-  const updated = match[1].replace(/^enabled = true\r?$/m, "enabled = false");
-  if (updated === match[1]) throw new Error(`[${section}] is already disabled or has no enabled flag`);
-  return text.replace(match[1], updated);
-}
-
 export function rewriteRestoreTargetConfig(configText, { projectId, portOffset = 1000 } = {}) {
   if (!/^[A-Za-z0-9_-]+$/.test(projectId ?? "")) throw new Error("projectId must be a safe Supabase project identifier");
   if (!Number.isInteger(portOffset) || portOffset < 1) throw new Error("portOffset must be a positive integer");
@@ -45,8 +37,8 @@ export function rewriteRestoreTargetConfig(configText, { projectId, portOffset =
     result = replaceExactly(result, source, replacement);
   }
   result = replaceExactly(result, "inspector_port = 8083", "inspector_port = 54803");
-  result = replaceSectionEnabled(result, "db.migrations");
-  result = replaceSectionEnabled(result, "db.seed");
+  result = setSupabaseSectionEnabled(result, "db.migrations", false);
+  result = setSupabaseSectionEnabled(result, "db.seed", false);
   return result;
 }
 

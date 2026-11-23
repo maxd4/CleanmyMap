@@ -54,10 +54,10 @@ export function extractSafePostgresError(output, migrationVersion) {
 export function classifyPrivateFailure(output) {
   const text = String(output ?? "");
   if (/\b22P02\b|invalid input syntax for type/iu.test(text)) return "POSTGRES_INVALID_TEXT_REPRESENTATION";
+  if (/\b42501\b|permission denied|insufficient privilege/iu.test(text)) return "LOCAL_DATABASE_PERMISSION";
   if (/\bSQLSTATE\s*[:=]?\s*42/iu.test(text)) return "POSTGRES_SQL_DEPENDENCY_OR_SYNTAX";
   if (/connection refused|could not connect|connection timed out/iu.test(text)) return "LOCAL_DATABASE_CONNECTION";
   if (/unknown flag|unknown command|flag provided but not defined/iu.test(text)) return "SUPABASE_CLI_USAGE";
-  if (/permission denied|insufficient privilege/iu.test(text)) return "LOCAL_DATABASE_PERMISSION";
   if (/error|failed|fatal/iu.test(text)) return "UNCLASSIFIED_COMMAND_FAILURE";
   return "NO_ERROR_TEXT_OBSERVED";
 }
@@ -70,6 +70,13 @@ export function classifyPrefixReplayAttempt(result) {
   const failureClass = classifyPrivateFailure(result.output);
   if (["LOCAL_DATABASE_CONNECTION", "SUPABASE_CLI_USAGE"].includes(failureClass)) return "COMMAND_ERROR";
   return "UNPROVEN_FAILURE";
+}
+
+export function buildSupplementalPsqlInvocation(sql, dbContainer) {
+  return {
+    args: ["exec", "-i", dbContainer, "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose"],
+    input: String(sql ?? ""),
+  };
 }
 
 function collectStructuredErrorFields(output) {
@@ -178,15 +185,15 @@ function runSupplementalPsqlDiagnostic(migration, migrationIndex, privateDir, re
   }
 
   const originalSql = readFileSync(migration.path, "utf8");
-  const diagnosticSql = `SET log_error_verbosity = 'verbose';\n${originalSql}`;
+  const invocation = buildSupplementalPsqlInvocation(originalSql, dbContainer);
   const queryStartedAt = new Date(Date.now() - 1000).toISOString();
   let statementRun;
   try {
-    statementRun = run("docker", ["exec", "-i", dbContainer, "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose"], {
+    statementRun = run("docker", invocation.args, {
       cwd: root,
       allowFailure: true,
       privateLog: statementLog,
-      input: diagnosticSql,
+      input: invocation.input,
     });
   } catch {
     statementRun = { status: null, commandError: true };

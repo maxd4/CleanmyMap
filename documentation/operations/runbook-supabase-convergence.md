@@ -54,6 +54,11 @@ consommés et Advisors. Les WARN/INFO historiques restent dans le rapport ;
 seuls un risque critique ou une régression explicitement attribuée à la file
 bloque l'application.
 
+Le résumé du job expose le nombre de migrations en attente, leur premier
+identifiant chronologique et son ancienneté en jours. Ces valeurs viennent de
+la sortie de la file canonique du préflight ; elles n'ajoutent aucun inventaire
+ni aucune autorisation d'application.
+
 Les backfills DML ne sont admissibles que par une entrée du manifeste versionné
 `scripts/ci/supabase-migration-approvals.json`, qui lie version, identifiant,
 chemin, SHA-256 du SQL, justification et chemins/hash des preuves obligatoires. Le
@@ -86,16 +91,21 @@ et les contrats statiques critiques Web. La lane SQL éphémère reste le seul
 endroit autorisé pour exécuter les pgTAP mutatifs ; ce workflow ne lance jamais
 pgTAP contre la base liée.
 
-Au démarrage éphémère, le diagnostic conserve les états périodiques des services
-et les événements Docker observés pendant l'exécution de la CLI. Tant que le
-conteneur `db` est actif, les observations distinguent la santé Docker,
+Au démarrage éphémère, le script prépare une configuration temporaire issue de
+la configuration canonique où migrations applicatives et seed sont désactivés.
+`supabase start` ne fait que démarrer les services ; le workflow lance ensuite
+un seul `supabase db reset` avec la configuration canonique pour appliquer les
+migrations et charger le seed. Le diagnostic conserve les états périodiques des
+services et les événements Docker observés pendant l'exécution de la CLI. Tant
+que le conteneur `db` est actif, les observations distinguent la santé Docker,
 `pg_isready` exécuté dans PostgreSQL et une connexion TCP du runner vers le port
 configuré. Une disponibilité interne ne prouve donc pas la joignabilité du
 runner. Les attributions de service sont séparées en confirmée, suspectée ou
 inconnue ; une simple mention dans le journal ne confirme pas une cause. Pour
 Supabase CLI 2.117.0, le diagnostic tient compte de l'ordre de bootstrap : santé
 de PostgreSQL, initialisation du schéma, jobs temporaires Realtime, Storage et
-Auth, migrations et seed, puis services persistants. Les jobs temporaires ne
+Auth, puis services persistants. Les migrations et le seed sont traités
+séparément par le reset canonique après ce bootstrap. Les jobs temporaires ne
 sont reconnus que par le label exact `com.supabase.cli.project` du projet
 configuré, une image de service autorisée et un nom qui ne correspond pas à un
 conteneur persistant. Le rapport expose le dernier job démarré, le premier job
@@ -154,7 +164,9 @@ Après une frontière confirmée, un rejeu `psql` de la migration depuis son
 prédécesseur peut être exécuté comme diagnostic complémentaire. Son SQLSTATE,
 son type et sa position restent dans un champ distinct `isolatedPsqlDiagnostic`.
 Ils ne remplacent jamais le diagnostic du replay Supabase canonique : un
-`42501` de `psql` ne démontre pas la cause d'un `22P02` du replay.
+`42501` de `psql` ne démontre pas la cause d'un `22P02` du replay. `psql` demande
+la verbosité avec `-v VERBOSITY=verbose`, sans ajouter de `SET` privilégié au
+SQL rejoué.
 
 Les sorties brutes du CLI, des journaux Docker et des journaux JSON privés de
 PostgreSQL restent dans `$RUNNER_TEMP` et sont supprimées avec le runner. Le
