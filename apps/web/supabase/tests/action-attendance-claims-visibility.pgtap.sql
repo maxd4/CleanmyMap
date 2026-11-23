@@ -1,5 +1,5 @@
 begin;
-select plan(17);
+select plan(18);
 
 select ok(not has_table_privilege('anon', 'public.action_participant_visibility_consents', 'SELECT'), 'anonymous users cannot read visibility consent rows');
 select ok(not has_table_privilege('authenticated', 'public.action_participant_visibility_consents', 'SELECT'), 'authenticated users cannot read visibility consent rows directly');
@@ -11,6 +11,9 @@ select ok(not has_function_privilege('anon', 'public.load_public_action_particip
 
 create temp table claim_visibility_fixture(action_id uuid primary key, entry_id uuid, member_id text);
 grant select, insert on claim_visibility_fixture to service_role;
+
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"claims-visibility-service"}', true);
+select is(auth.role(), 'service_role', 'fixture sets the service role claim required by action triggers');
 
 do $$
 declare
@@ -33,7 +36,6 @@ begin
 end $$;
 
 set local role service_role;
-select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select * from public.request_action_attendance_claim(
   (select action_id from claim_visibility_fixture),
   (select member_id from claim_visibility_fixture),
