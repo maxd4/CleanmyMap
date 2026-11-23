@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 const actionIdSchema = z.string().uuid();
 const consentSchema = z.object({ enabled: z.boolean() }).strict();
 
+// Vercel contract: account-specific consent and eligibility must never be cached or shared.
 function privateJson(body: unknown, status = 200): Response {
   return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
 }

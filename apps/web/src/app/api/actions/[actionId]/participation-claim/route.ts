@@ -16,6 +16,7 @@ const actionIdSchema = z.string().trim().min(1);
 const claimInputSchema = z.object({ rosterEntryId: z.string().uuid().optional() }).strict();
 
 function privateResponse(response: Response): Response {
+  // Vercel contract: claim state is per authenticated member and action, so it cannot be cached/shared.
   response.headers.set("Cache-Control", "private, no-store");
   return response;
 }

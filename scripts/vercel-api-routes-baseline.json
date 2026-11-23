@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-11-22T00:00:00.000Z",
-  "apiRouteCount": 248,
+  "apiRouteCount": 249,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -9,6 +9,13 @@
     "reviewedAt": "2026-10-09"
   },
   "additionalChangeJustifications": [
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/participant-visibility/route.ts",
+      "introducedBy": "320b6f50fe5631ff7f0feeda93792f0f70dbaa49",
+      "reason": "Préférence de visibilité facultative détenue par le membre pour une action précise ; aucune visibilité n'est activée par défaut et le titulaire peut la révoquer.",
+      "costContract": "GET/PATCH limités à une action et au compte Clerk authentifié ; aucun accès au registre nominatif. La préférence est relue côté serveur avec l'éligibilité d'âge et la participation confirmée ; réponses private/no-store, aucun cache partagé ni traitement en arrière-plan.",
+      "reviewedAt": "2026-11-23"
+    },
     {
       "route": "apps/web/src/app/api/actions/[actionId]/attendance-registry/route.ts",
       "introducedBy": "8c2c161f592ea57458af2251fad228abb1a78298",
@@ -598,6 +605,7 @@
     "apps/web/src/app/api/actions/[actionId]/media/intents/route.ts",
     "apps/web/src/app/api/actions/[actionId]/media/route.ts",
     "apps/web/src/app/api/actions/[actionId]/participant-impact/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/participant-visibility/route.ts",
     "apps/web/src/app/api/actions/[actionId]/participation-claim/route.ts",
     "apps/web/src/app/api/actions/[actionId]/public/route.ts",
     "apps/web/src/app/api/actions/[actionId]/publish/route.ts",
