@@ -15,7 +15,7 @@ export function actionMediaErrorResponse(
     if (error.code === "validation") return validationErrorResponse({ media: [error.message] });
     if (error.code === "forbidden") return forbiddenJsonResponse();
     if (error.code === "not_found") {
-      const message = operation === "finalize" ? "Média introuvable."
+      const message = operation === "finalize" ? "Photo introuvable."
         : operation === "delete-route-reference" ? "Référence d’itinéraire introuvable."
           : "Action introuvable.";
       return NextResponse.json({ error: message }, { status: 404 });

@@ -329,6 +329,7 @@ describe("action declaration payload géométrie", () => {
     form.routeTopology = "loop";
     form.gpxImport = {
       source: "gpx_import",
+      intent: "observed",
       observedDistanceKm: 2.35,
       pointCount: 3,
       inferredTopology: "loop",
