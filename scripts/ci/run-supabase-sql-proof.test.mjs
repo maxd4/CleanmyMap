@@ -40,6 +40,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.deepEqual(inventory.pgtap, [
     "apps/web/supabase/tests/action-accessibility-support.pgtap.sql",
     "apps/web/supabase/tests/action-attendance-claims-visibility.pgtap.sql",
+    "apps/web/supabase/tests/action-attendance-explicit-reactivation.pgtap.sql",
     "apps/web/supabase/tests/action-attendance-registry.pgtap.sql",
     "apps/web/supabase/tests/action-attendance-retention.pgtap.sql",
     "apps/web/supabase/tests/action-attendance-teams.pgtap.sql",
@@ -122,6 +123,12 @@ test("action attendance registry pgTAP plan matches its assertion count", () => 
   const path = new URL("../../apps/web/supabase/tests/action-attendance-registry.pgtap.sql", import.meta.url);
   const sql = readFileSync(path, "utf8");
   assertPgTapPlanMatchesAssertions(sql, "action attendance registry");
+});
+
+test("action attendance explicit reactivation pgTAP plan matches its assertion count", () => {
+  const path = new URL("../../apps/web/supabase/tests/action-attendance-explicit-reactivation.pgtap.sql", import.meta.url);
+  const sql = readFileSync(path, "utf8");
+  assertPgTapPlanMatchesAssertions(sql, "action attendance explicit reactivation");
 });
 
 test("action attendance retention pgTAP plan matches its assertion count", () => {

@@ -5,8 +5,12 @@ const actionId = "33333333-3333-4333-8333-333333333391";
 const retryRequestId = "33333333-3333-4333-8333-333333333392";
 const renameARequestId = "33333333-3333-4333-8333-333333333393";
 const renameBRequestId = "33333333-3333-4333-8333-333333333394";
+const restoreARequestId = "33333333-3333-4333-8333-333333333395";
+const restoreBRequestId = "33333333-3333-4333-8333-333333333396";
 const writerAName = "attendance-registry-writer-a";
 const writerBName = "attendance-registry-writer-b";
+const restoreWriterAName = "attendance-registry-restore-a";
+const restoreWriterBName = "attendance-registry-restore-b";
 const run = (sql, timeoutMs = 15_000) => runLocalPsqlQuery(sql, { timeoutMs, rawError: true });
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -86,7 +90,53 @@ try {
 
   const final = await run(`select display_label || ':' || revision::text || ':' || (select count(*)::text from public.action_attendance_entry_audit where action_id = e.action_id and entry_id = e.id and operation = 'rename') from public.action_attendance_entries e where e.id = '${entryId}'::uuid;`);
   assert.equal(final.stdout.trim(), "Winner:2:1", "only the winning update and its audit record must persist");
-  console.log("EXECUTED_DB_CONTRACT: Attendance registry idempotent retry and two-session revision conflict passed.");
+
+  await run(`
+    begin;
+    set local role service_role;
+    select set_config('request.jwt.claims', '{"role":"service_role","sub":"attendance-reactivation-setup"}', true);
+    select set_config('request.jwt.claim.role', 'service_role', true);
+    select public.mutate_action_attendance_entry('${actionId}'::uuid, 'attendance-reactivation-setup', '33333333-3333-4333-8333-333333333397'::uuid, 'add', null, null, '{"display_label":"Linked person","clerk_user_id":"attendance-registry-linked-member"}'::jsonb);
+    select public.mutate_action_attendance_entry('${actionId}'::uuid, 'attendance-reactivation-setup', '33333333-3333-4333-8333-333333333398'::uuid, 'delete', (select id from public.action_attendance_entries where action_id = '${actionId}'::uuid and clerk_user_id = 'attendance-registry-linked-member'), 1, '{}'::jsonb);
+    commit;
+  `);
+  const linkedEntryResult = await run(`select id from public.action_attendance_entries where action_id = '${actionId}'::uuid and clerk_user_id = 'attendance-registry-linked-member';`);
+  const linkedEntryId = linkedEntryResult.stdout.trim();
+  assert.match(linkedEntryId, /^[0-9a-f-]{36}$/i, "the removed linked account must retain its registry identity");
+
+  const restoreWriterA = run(`
+    begin;
+    set local role service_role;
+    select set_config('request.jwt.claims', '{"role":"service_role","sub":"attendance-reactivation-a"}', true);
+    select set_config('request.jwt.claim.role', 'service_role', true);
+    select set_config('application_name', '${restoreWriterAName}', true);
+    select public.mutate_action_attendance_entry('${actionId}'::uuid, 'attendance-reactivation-a', '${restoreARequestId}'::uuid, 'add', null, null, '{"display_label":"Restored person A","clerk_user_id":"attendance-registry-linked-member"}'::jsonb);
+    select pg_sleep(1.5);
+    commit;
+  `);
+  await waitForActivity(`select case when exists (select 1 from pg_stat_activity where application_name = '${restoreWriterAName}' and state = 'active' and wait_event = 'PgSleep') then 'RESTORE_A_LOCKED' else 'RESTORE_A_NOT_LOCKED' end;`, "RESTORE_A_LOCKED");
+  const restoreWriterB = run(`
+    begin;
+    set local role service_role;
+    select set_config('request.jwt.claims', '{"role":"service_role","sub":"attendance-reactivation-b"}', true);
+    select set_config('request.jwt.claim.role', 'service_role', true);
+    select set_config('application_name', '${restoreWriterBName}', true);
+    select public.mutate_action_attendance_entry('${actionId}'::uuid, 'attendance-reactivation-b', '${restoreBRequestId}'::uuid, 'add', null, null, '{"display_label":"Restored person B","clerk_user_id":"attendance-registry-linked-member"}'::jsonb);
+    commit;
+  `);
+  await waitForActivity(`select case when exists (select 1 from pg_stat_activity where application_name = '${restoreWriterBName}' and wait_event_type = 'Lock') then 'RESTORE_B_WAITING' else 'RESTORE_B_NOT_WAITING' end;`, "RESTORE_B_WAITING");
+  await restoreWriterA;
+  let duplicateRestoreFailure;
+  try {
+    await restoreWriterB;
+  } catch (error) {
+    duplicateRestoreFailure = error;
+  }
+  assert.ok(duplicateRestoreFailure, "the second concurrent restore must fail after the first commits");
+  assert.match(`${duplicateRestoreFailure.message ?? ""}\n${duplicateRestoreFailure.stderr ?? ""}\n${duplicateRestoreFailure.stdout ?? ""}`, /23505|entry_already_linked/i);
+  const restored = await run(`select id::text || ':' || attendance_status || ':' || revision::text || ':' || (select count(*)::text from public.action_attendance_entry_audit where action_id = e.action_id and entry_id = e.id and request_id in ('${restoreARequestId}'::uuid, '${restoreBRequestId}'::uuid)) from public.action_attendance_entries e where e.id = '${linkedEntryId}'::uuid and deleted_at is null;`);
+  assert.equal(restored.stdout.trim(), `${linkedEntryId}:unknown:3:1`, "one concurrent restore must preserve one stable unknown identity and one audit");
+  console.log("EXECUTED_DB_CONTRACT: Attendance registry idempotent retry, two-session revision conflict and explicit reactivation uniqueness passed.");
 } finally {
   await run(cleanup);
 }
