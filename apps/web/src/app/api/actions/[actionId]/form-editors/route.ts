@@ -11,6 +11,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadActionFormEditorIds } from "@/lib/actions/action-form-editors";
 
 export const runtime = "nodejs";
+// Vercel: this private grant snapshot is action-scoped and must recheck the current editor relation.
 export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ actionId: string }> };
@@ -21,6 +22,7 @@ const mutationSchema = z.object({
 }).strict();
 
 function privateJson(body: unknown, status = 200) {
+  // Vercel: private editor identifiers and action phases must never enter a shared cache (no-store).
   return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
 }
 

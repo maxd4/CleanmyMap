@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-11-22T00:00:00.000Z",
-  "apiRouteCount": 249,
+  "apiRouteCount": 250,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -568,6 +568,13 @@
       "reason": "Confirmation explicite owner-scoped des relevés IA normalisés, après aperçu local des sources, révisions et chevauchements.",
       "costContract": "POST authentifié, corps plafonné à 16 MB, lignes normalisées et recalculées côté serveur, RPC PostgreSQL atomique et owner-derived, import réessayable idempotent, réponses private/no-store et aucun fichier brut transmis.",
       "reviewedAt": "2026-11-22"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/form-editors/route.ts",
+      "introducedBy": "c2b92238f17fba3eb6979fe430cd37e83e372d4d",
+      "reason": "Gestion privée, par action, des comptes explicitement autorisés à modifier le formulaire sans recevoir de droits d’organisation ou de participation.",
+      "costContract": "GET/POST limités à une action, authentification Clerk, vérification du rôle ACTIVE_ROLE et du compte cible Clerk ; RPC service_role atomique et auditée. Les identifiants et phases restent en réponse private/no-store, sans lecture ni mutation des présences.",
+      "reviewedAt": "2026-11-23"
     }
   ],
   "apiRoutes": [
@@ -598,6 +605,7 @@
     "apps/web/src/app/api/actions/[actionId]/duplicate/route.ts",
     "apps/web/src/app/api/actions/[actionId]/field-roles/route.ts",
     "apps/web/src/app/api/actions/[actionId]/field-roles/transfer/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/form-editors/route.ts",
     "apps/web/src/app/api/actions/[actionId]/formalities/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/[actionId]/invite-link/route.ts",
