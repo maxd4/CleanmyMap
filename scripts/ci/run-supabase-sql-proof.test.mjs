@@ -143,12 +143,13 @@ test("attendance claims and route-reference pgTAP plans match their assertions",
   assertPgTapPlanMatchesAssertions(readFileSync(new URL("../../apps/web/supabase/tests/action-media-route-reference.pgtap.sql", import.meta.url), "utf8"), "route-reference media");
 });
 
-test("attendance registry pgTAP fixtures provide the service role JWT claim", () => {
+test("attendance and action editor pgTAP fixtures provide the service role JWT claim", () => {
   for (const file of [
     "action-attendance-claims-visibility.pgtap.sql",
     "action-attendance-explicit-reactivation.pgtap.sql",
     "action-attendance-registry.pgtap.sql",
     "action-attendance-teams.pgtap.sql",
+    "action-form-editors.pgtap.sql",
   ]) {
     const sql = readFileSync(new URL(`../../apps/web/supabase/tests/${file}`, import.meta.url), "utf8");
     assert.match(sql, /request\.jwt\.claims'.*\"role\":\"service_role\"/s, `${file} must set the service JWT role claim`);

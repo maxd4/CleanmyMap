@@ -13,6 +13,8 @@ select ok(not has_function_privilege('authenticated', 'public.mutate_action_form
 create temp table form_editor_fixture(action_id uuid primary key, other_action_id uuid not null);
 grant select, insert on form_editor_fixture to service_role;
 set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"form-editors-test"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 do $$
 declare
   v_action_id uuid := gen_random_uuid();
