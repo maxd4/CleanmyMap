@@ -50,6 +50,17 @@ export function extractSafePostgresError(output, migrationVersion) {
   };
 }
 
+export function classifyPrivateFailure(output) {
+  const text = String(output ?? "");
+  if (/\b22P02\b|invalid input syntax for type/iu.test(text)) return "POSTGRES_INVALID_TEXT_REPRESENTATION";
+  if (/\bSQLSTATE\s*[:=]?\s*42/iu.test(text)) return "POSTGRES_SQL_DEPENDENCY_OR_SYNTAX";
+  if (/connection refused|could not connect|connection timed out/iu.test(text)) return "LOCAL_DATABASE_CONNECTION";
+  if (/unknown flag|unknown command|flag provided but not defined/iu.test(text)) return "SUPABASE_CLI_USAGE";
+  if (/permission denied|insufficient privilege/iu.test(text)) return "LOCAL_DATABASE_PERMISSION";
+  if (/error|failed|fatal/iu.test(text)) return "UNCLASSIFIED_COMMAND_FAILURE";
+  return "NO_ERROR_TEXT_OBSERVED";
+}
+
 function collectStructuredErrorFields(output) {
   const text = String(output ?? "").trim();
   const objects = [];
@@ -236,8 +247,13 @@ function main() {
         }
         if (isolatedPrefixReady) {
           currentStage = "ISOLATED_MIGRATION_STATEMENT";
+          const verbosityRun = run(cli, ["db", "query", "--local", "--workdir", workdir, "ALTER SYSTEM SET log_error_verbosity = 'verbose'; SELECT pg_reload_conf();", "--output-format", "json"], {
+            cwd: root,
+            allowFailure: true,
+            privateLog: join(privateDir, "set-log-verbosity.log"),
+          });
           const queryStartedAt = new Date(Date.now() - 1000).toISOString();
-          const statementRun = run(cli, ["db", "query", "--local", "--workdir", workdir, "--file", failing.path, "--output", "json", "--output-format", "json"], {
+          const statementRun = run(cli, ["db", "query", "--local", "--workdir", workdir, "--file", failing.path, "--output-format", "json", "--debug"], {
             cwd: root,
             allowFailure: true,
             privateLog: statementLog,
@@ -245,12 +261,15 @@ function main() {
           const cliOutput = readFileSync(statementLog, "utf8");
           const postgresLogs = readPrivatePostgresLogs(queryStartedAt, join(privateDir, "postgres-query.jsonl"));
           const postgresOutput = `${postgresLogs.dockerOutput}\n${postgresLogs.serverOutput}`;
-          writeFileSync(statementLog, `${cliOutput}\n${postgresOutput}`, { mode: 0o600 });
-          const safePostgresError = extractSafePostgresError(readFileSync(statementLog, "utf8"), failing.version);
+          const combinedPrivateOutput = `${cliOutput}\n${postgresOutput}`;
+          writeFileSync(statementLog, combinedPrivateOutput, { mode: 0o600 });
+          const safePostgresError = extractSafePostgresError(combinedPrivateOutput, failing.version);
           evidence.failure = {
             stage: statementRun.status === 0 ? "ISOLATED_MIGRATION_UNEXPECTED_PASS" : "ISOLATED_MIGRATION_STATEMENT",
             ...safePostgresError,
+            isolatedStatementFailureClass: classifyPrivateFailure(combinedPrivateOutput),
             isolatedStatementExitCode: statementRun.status,
+            logVerbosityEnabled: verbosityRun.status === 0,
             postgresContainerFound: postgresLogs.containerFound,
             postgresDockerLogObserved: postgresLogs.dockerOutput.trim().length > 0,
             postgresServerLogObserved: postgresLogs.serverOutput.trim().length > 0,

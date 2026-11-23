@@ -214,7 +214,8 @@ il démarre Supabase avec migrations/seed désactivés, puis isole par préfixes
 première migration SQL fautive et la rejoue seule sur son préfixe valide. Les
 logs bruts du CLI, de Docker et de PostgreSQL restent dans le runner; l'artefact
 diagnostic ne contient que le SHA, les empreintes SQL, l'observation des
-sources de logs et une attribution assainie. Ce mode ne produit pas une
+sources de logs et une attribution assainie. La verbosité SQL peut être élevée
+uniquement sur la base éphémère du runner. Ce mode ne produit pas une
 attestation d'intégration, ne lance pas pgTAP/concurrence et n'est jamais
 consommé par la convergence Production. `complete-proof` reste la seule voie
 d'attestation.

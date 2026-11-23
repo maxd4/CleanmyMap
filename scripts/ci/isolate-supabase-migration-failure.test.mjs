@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { extractSafePostgresError, findFirstFailedPrefix } from "./isolate-supabase-migration-failure.mjs";
+import { classifyPrivateFailure, extractSafePostgresError, findFirstFailedPrefix } from "./isolate-supabase-migration-failure.mjs";
 
 test("binary prefix isolation returns the exact first failing migration index", () => {
   for (const expected of [0, 1, 27, 498]) {
@@ -74,4 +74,10 @@ test("the parser skips ordinary JSON log rows and selects the structured error r
     statementPosition: 19,
   });
   assert.equal(JSON.stringify(result).includes("private-number"), false);
+});
+
+test("private failure classification is finite and never returns command text", () => {
+  assert.equal(classifyPrivateFailure('ERROR: invalid input syntax for type bigint: "private-value"'), "POSTGRES_INVALID_TEXT_REPRESENTATION");
+  assert.equal(classifyPrivateFailure("Error: unknown flag --file"), "SUPABASE_CLI_USAGE");
+  assert.equal(classifyPrivateFailure("failed without a recognized signature"), "UNCLASSIFIED_COMMAND_FAILURE");
 });
