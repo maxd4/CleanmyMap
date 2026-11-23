@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const migrationDirectory = resolve(root, "apps/web/supabase/migrations");
 const cli = resolve(root, "node_modules/.bin/supabase");
+const comparisonMigrationVersion = "20261121000002";
 const allowedTypes = new Set([
   "smallint", "integer", "bigint", "numeric", "real", "double precision", "boolean",
   "character", "character varying", "text", "uuid", "json", "jsonb", "date", "time",
@@ -72,6 +73,25 @@ export function classifyPrefixReplayAttempt(result) {
   const failureClass = classifyPrivateFailure(result.output);
   if (["LOCAL_DATABASE_CONNECTION", "SUPABASE_CLI_USAGE"].includes(failureClass)) return "COMMAND_ERROR";
   return "UNPROVEN_FAILURE";
+}
+
+export function compareMigrationExecutors({ cliStatus, cliError = null, psqlStatus, psqlError = null }) {
+  if (!["PASS", "FAIL"].includes(cliStatus) || !["PASS", "FAIL"].includes(psqlStatus)) {
+    return { result: "INCONCLUSIVE", divergence: null };
+  }
+  if (cliStatus === "PASS" && psqlStatus === "PASS") {
+    return { result: "MATCH", divergence: null };
+  }
+  if (cliStatus === "FAIL" && psqlStatus === "FAIL" && (!cliError?.sqlstate || !psqlError?.sqlstate)) {
+    return { result: "INCONCLUSIVE", divergence: null };
+  }
+  if (cliStatus === "FAIL" && psqlStatus === "FAIL" && cliError?.sqlstate && cliError.sqlstate === psqlError?.sqlstate) {
+    return { result: "MATCH", divergence: null };
+  }
+  let divergence = "DIFFERENT_POSTGRES_FAILURES";
+  if (cliStatus === "FAIL" && psqlStatus === "PASS") divergence = "CLI_FAILS_PSQL_PASSES";
+  else if (cliStatus === "PASS" && psqlStatus === "FAIL") divergence = "CLI_PASSES_PSQL_FAILS";
+  return { result: "DIVERGED", divergence };
 }
 
 export function buildSupplementalPsqlInvocation(sql, dbContainer) {
@@ -269,6 +289,50 @@ function runSupplementalPsqlDiagnostic(migration, migrationIndex, privateDir, re
   };
 }
 
+function runMigrationExecutorComparison(migrations, privateDir, replayPrefix) {
+  const migrationIndex = migrations.findIndex(({ version }) => version === comparisonMigrationVersion);
+  if (migrationIndex < 0) {
+    return {
+      migrationVersion: null,
+      predecessorVersion: null,
+      cliStatus: "NOT_RUN",
+      psqlStatus: "NOT_RUN",
+      result: "INCONCLUSIVE",
+    };
+  }
+
+  const migration = migrations[migrationIndex];
+  const predecessorVersion = migrations[migrationIndex - 1]?.version ?? null;
+  const cliAttempt = replayPrefix(migrationIndex + 1, "target-migration-cli-comparison");
+  let cliStatus = cliAttempt.outcome;
+  if (cliAttempt.outcome === "PASS") cliStatus = "PASS";
+  else if (cliAttempt.outcome === "POSTGRES_FAIL") cliStatus = "FAIL";
+  const cliError = cliStatus === "FAIL"
+    ? extractSafePostgresError(readFileSync(cliAttempt.logPath, "utf8"), migration.version)
+    : null;
+
+  let psqlDiagnostic;
+  try {
+    psqlDiagnostic = runSupplementalPsqlDiagnostic(migration, migrationIndex, privateDir, replayPrefix);
+  } catch {
+    psqlDiagnostic = { status: "COMMAND_ERROR", exitCode: null, error: null };
+  }
+  return {
+    migrationVersion: migration.version,
+    predecessorVersion,
+    cliStatus,
+    cliError,
+    psqlStatus: psqlDiagnostic.status,
+    psqlError: psqlDiagnostic.error,
+    ...compareMigrationExecutors({
+      cliStatus,
+      cliError,
+      psqlStatus: psqlDiagnostic.status,
+      psqlError: psqlDiagnostic.error,
+    }),
+  };
+}
+
 export function findFirstFailedPrefix(length, resetPrefix) {
   if (length < 1) return null;
   if (resetPrefix(length)) return null;
@@ -349,7 +413,7 @@ export function writePrivatePrefixAttempt({ privateDir, attempt, phase, prefixLe
   return { ...record, logPath };
 }
 
-export function buildSafeIsolationDiagnostic({ candidateSha, bootstrap, replay, migrationCount, boundary, canonicalError, psqlDiagnostic }) {
+export function buildSafeIsolationDiagnostic({ candidateSha, bootstrap, replay, migrationCount, boundary, canonicalError, psqlDiagnostic, migrationComparison }) {
   const confirmed = boundary?.status === "CONFIRMED"
     && boundary.predecessor?.outcome === "PASS"
     && boundary.failing?.outcome === "POSTGRES_FAIL"
@@ -377,6 +441,31 @@ export function buildSafeIsolationDiagnostic({ candidateSha, bootstrap, replay, 
     statementPosition: Number.isSafeInteger(error?.statementPosition) && error.statementPosition > 0 ? error.statementPosition : null,
     migrationSourceLine: Number.isSafeInteger(error?.migrationSourceLine) && error.migrationSourceLine > 0 ? error.migrationSourceLine : null,
   });
+  const safeMigrationComparison = (value) => {
+    const safeVersion = (version) => /^\d{14}$/u.test(String(version ?? "")) ? version : null;
+    const safeCliStatus = ["NOT_RUN", "PASS", "FAIL", "COMMAND_ERROR", "UNPROVEN_FAILURE"].includes(value?.cliStatus)
+      ? value.cliStatus
+      : "NOT_RUN";
+    const safePsqlStatus = ["NOT_RUN", "NOT_RUN_NO_DATABASE", "NOT_RUN_PREDECESSOR_REPLAY_FAILED", "PASS", "FAIL", "COMMAND_ERROR"].includes(value?.psqlStatus)
+      ? value.psqlStatus
+      : "NOT_RUN";
+    const safeResult = ["MATCH", "DIVERGED", "INCONCLUSIVE"].includes(value?.result)
+      ? value.result
+      : "NOT_RUN";
+    const safeDivergence = ["CLI_FAILS_PSQL_PASSES", "CLI_PASSES_PSQL_FAILS", "DIFFERENT_POSTGRES_FAILURES"].includes(value?.divergence)
+      ? value.divergence
+      : null;
+    return {
+      migrationVersion: safeVersion(value?.migrationVersion),
+      predecessorVersion: safeVersion(value?.predecessorVersion),
+      cliStatus: safeCliStatus,
+      cliError: value?.cliError ? safeDiagnostic(value.cliError) : null,
+      psqlStatus: safePsqlStatus,
+      psqlError: value?.psqlError ? safeDiagnostic(value.psqlError) : null,
+      result: safeResult,
+      divergence: safeDivergence,
+    };
+  };
   const safePsqlStatus = ["NOT_RUN", "NOT_RUN_NO_DATABASE", "NOT_RUN_PREDECESSOR_REPLAY_FAILED", "PASS", "FAIL", "COMMAND_ERROR"].includes(psql.status)
     ? psql.status
     : "NOT_RUN";
@@ -430,6 +519,7 @@ export function buildSafeIsolationDiagnostic({ candidateSha, bootstrap, replay, 
       exitCode: Number.isInteger(psql.exitCode) ? psql.exitCode : null,
       error: psqlErrorSafe ? { ...psqlErrorSafe, failureClass: safeFailureClass } : null,
     },
+    migrationComparison: safeMigrationComparison(migrationComparison),
   };
 }
 
@@ -460,6 +550,7 @@ function main() {
   let boundary = null;
   let canonicalError = null;
   let psqlDiagnostic = { status: "NOT_RUN", exitCode: null, error: null };
+  let migrationComparison = { cliStatus: "NOT_RUN", psqlStatus: "NOT_RUN", result: "INCONCLUSIVE" };
 
   const replayPrefix = (prefixLength, phase) => {
     const version = prefixLength === 0 ? "00000000000000" : migrations[prefixLength - 1]?.version;
@@ -544,6 +635,8 @@ function main() {
           };
         }
       }
+      currentStage = "TARGET_MIGRATION_CLI_PSQL_COMPARISON";
+      migrationComparison = runMigrationExecutorComparison(migrations, privateDir, replayPrefix);
     }
   } catch {
     evidence.failure = {
@@ -569,6 +662,7 @@ function main() {
     boundary,
     canonicalError,
     psqlDiagnostic,
+    migrationComparison,
   });
   writeFileSync(outputPath, `${JSON.stringify(evidence, null, 2)}\n`);
   console.log(JSON.stringify({
@@ -577,7 +671,12 @@ function main() {
     seed: evidence.seed,
     rawLogs: "runner-private-only",
   }, null, 2));
-  if (evidence.bootstrap === "FAIL" || evidence.bootstrap === "NOT_RUN_INFRASTRUCTURE_FAILURE" || evidence.replay === "FAIL") process.exitCode = 1;
+  if (
+    evidence.bootstrap === "FAIL"
+    || evidence.bootstrap === "NOT_RUN_INFRASTRUCTURE_FAILURE"
+    || evidence.replay === "FAIL"
+    || migrationComparison.result !== "MATCH"
+  ) process.exitCode = 1;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

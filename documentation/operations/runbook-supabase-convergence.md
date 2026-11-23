@@ -160,8 +160,16 @@ Une migration n'est attribuée que si cette frontière PASS/FAIL est reproductib
 une erreur CLI, un résultat discordant ou un prédécesseur en échec produit
 `INCONCLUSIVE` sans version causale.
 
+Pour la migration `20261121000002`, le diagnostic reconstruit aussi le préfixe
+confirmé `20261121000001` deux fois et compare le rejeu du préfixe Supabase CLI
+à l'exécution du même SQL par `psql`. Le champ public `migrationComparison`
+rapporte `MATCH`, `DIVERGED` ou `INCONCLUSIVE`, avec états CLI/psql séparés et
+champs d'erreur allowlistés. Cette comparaison ciblée s'exécute même lorsque le
+préfixe canonique complet réussit ; elle vérifie ainsi une migration corrigée
+sans réintroduire l'échec historique.
+
 Après une frontière confirmée, un rejeu `psql` de la migration depuis son
-prédécesseur peut être exécuté comme diagnostic complémentaire. Son SQLSTATE,
+prédécesseur peut aussi être exécuté comme diagnostic complémentaire. Son SQLSTATE,
 son type, sa position et sa catégorie PostgreSQL allowlistée restent dans un
 champ distinct `isolatedPsqlDiagnostic` (`POSTGRES_CHECK_CONSTRAINT_SUBQUERY`
 pour le message PostgreSQL exact correspondant, ou

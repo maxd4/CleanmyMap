@@ -9,6 +9,7 @@ import {
   buildSupplementalPsqlInvocation,
   classifyPrefixReplayAttempt,
   classifyPrivateFailure,
+  compareMigrationExecutors,
   extractSafePostgresError,
   findFirstFailedPrefix,
   locatePrivateStatementSourceLine,
@@ -269,6 +270,41 @@ test("prefix replay failures require a PostgreSQL SQLSTATE; CLI and unknown erro
   assert.equal(classifyPrefixReplayAttempt({ commandError: true, status: null, output: "" }), "COMMAND_ERROR");
 });
 
+test("CLI and psql migration comparison distinguishes agreement, divergence and unproven runs", () => {
+  assert.deepEqual(compareMigrationExecutors({ cliStatus: "PASS", psqlStatus: "PASS" }), {
+    result: "MATCH",
+    divergence: null,
+  });
+  assert.deepEqual(compareMigrationExecutors({
+    cliStatus: "FAIL",
+    cliError: { sqlstate: "22P02" },
+    psqlStatus: "PASS",
+  }), {
+    result: "DIVERGED",
+    divergence: "CLI_FAILS_PSQL_PASSES",
+  });
+  assert.deepEqual(compareMigrationExecutors({
+    cliStatus: "FAIL",
+    cliError: { sqlstate: "22P02" },
+    psqlStatus: "FAIL",
+    psqlError: { sqlstate: "22P02" },
+  }), {
+    result: "MATCH",
+    divergence: null,
+  });
+  assert.deepEqual(compareMigrationExecutors({
+    cliStatus: "FAIL",
+    psqlStatus: "FAIL",
+  }), {
+    result: "INCONCLUSIVE",
+    divergence: null,
+  });
+  assert.deepEqual(compareMigrationExecutors({ cliStatus: "COMMAND_ERROR", psqlStatus: "PASS" }), {
+    result: "INCONCLUSIVE",
+    divergence: null,
+  });
+});
+
 test("public evidence separates canonical replay from psql and redacts raw SQL diagnostics", () => {
   const migrations = [{ version: "20261121000001" }, { version: "20261121000002" }];
   const boundary = verifyFailedPrefixBoundary(migrations, 1, (prefixLength) => ({
@@ -299,6 +335,17 @@ test("public evidence separates canonical replay from psql and redacts raw SQL d
       failureClass: "LOCAL_DATABASE_PERMISSION",
       rawOutput: "psql private diagnostic",
     },
+    migrationComparison: {
+      migrationVersion: "20261121000002",
+      predecessorVersion: "20261121000001",
+      cliStatus: "FAIL",
+      cliError: extractSafePostgresError('ERROR: 22P02: invalid input syntax for type bigint: "cli-private"', "20261121000002"),
+      psqlStatus: "PASS",
+      psqlError: null,
+      result: "DIVERGED",
+      divergence: "CLI_FAILS_PSQL_PASSES",
+      rawOutput: "comparison private diagnostic",
+    },
   });
   assert.equal(publicEvidence.canonicalReplayError.sqlstate, "22P02");
   assert.equal(publicEvidence.canonicalReplayError.migrationVersion, "20261121000002");
@@ -308,6 +355,23 @@ test("public evidence separates canonical replay from psql and redacts raw SQL d
   assert.equal(JSON.stringify(publicEvidence).includes("private_table"), false);
   assert.equal(JSON.stringify(publicEvidence).includes("raw rejected value"), false);
   assert.equal(JSON.stringify(publicEvidence).includes("psql private diagnostic"), false);
+  assert.deepEqual(publicEvidence.migrationComparison, {
+    migrationVersion: "20261121000002",
+    predecessorVersion: "20261121000001",
+    cliStatus: "FAIL",
+    cliError: {
+      sqlstate: "22P02",
+      expectedType: "bigint",
+      statementPosition: null,
+      migrationSourceLine: null,
+    },
+    psqlStatus: "PASS",
+    psqlError: null,
+    result: "DIVERGED",
+    divergence: "CLI_FAILS_PSQL_PASSES",
+  });
+  assert.equal(JSON.stringify(publicEvidence).includes("cli-private"), false);
+  assert.equal(JSON.stringify(publicEvidence).includes("comparison private diagnostic"), false);
 
   const unsupportedFeature = buildSafeIsolationDiagnostic({
     candidateSha: "c".repeat(40),
