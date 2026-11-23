@@ -28,4 +28,13 @@ export const actionMediaAuthorizationContract = {
       evidenceScope: "method",
     },
   },
+  "actions/[actionId]/media/[mediaId]": {
+    DELETE: {
+      expected: "An authenticated action form editor removes only a same-action route reference; report-photo management remains restricted to canManageAction",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireActionRequestAccess + getCurrentUserIdentity + removeActionRouteReference, which rechecks canEditActionForm and scopes the lookup and removal to the action and route_reference purpose",
+      evidence: ["requireActionRequestAccess", "getCurrentUserIdentity", "removeActionRouteReference"],
+      evidenceScope: "method",
+    },
+  },
 } as const satisfies ApiAuthorizationContract;
