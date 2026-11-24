@@ -83,6 +83,17 @@ test("mobile: filters, progressive navigation, zoom, sources and roving tab focu
   await organization.getByRole("button", { name: "Réinitialiser le zoom" }).click();
   await expect(organization.getByRole("button", { name: "Réinitialiser le zoom" })).toHaveText("100%");
 
+  const matrixToggle = organization.getByRole("button", { name: "Couverture institutionnelle par arrondissement" });
+  await matrixToggle.click();
+  const matrix = organization.getByRole("table", { name: "Couverture institutionnelle par arrondissement" });
+  await expect(matrix.locator("tbody tr")).toHaveCount(20);
+  await expect(matrix.getByText("Accueil propreté : 01 55 34 77 17").first()).toBeVisible();
+  await matrix.getByRole("button", { name: "Carine Ekon", exact: true }).click();
+  await expect(organization.locator("aside h3")).toHaveText("Carine Ekon");
+  await expect(organization.locator("aside")).toContainText("Mandat politique");
+  await expect(organization.locator("aside")).toBeFocused();
+  await expect(page.locator("#annuaire-panel-network canvas")).toHaveCount(0);
+
   await networkTab.click();
   await expect(page.locator("#annuaire-panel-network")).toBeVisible();
   await expect(organization.locator("canvas")).toHaveCount(0);

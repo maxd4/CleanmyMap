@@ -7,11 +7,10 @@ export function getPublicCleanlinessCoverage(dataset: PublicCleanlinessCityDatas
     const local = dataset.nodes.filter(n => n.territoryIds.includes(territoryId));
     const group = (id: string) => local.filter(n => n.territoryCoverageGroup === id);
     const roles = (kind: Node['coverageRole']) => local.filter(n => n.coverageRole === kind);
-    const roleIds = new Set(local.filter(n => n.coverageRole).map(n => n.id));
     // Do not infer a local assignment from a person's citywide territory.
     const holders = (kind: Node['coverageRole']) => {
       const ids = new Set(roles(kind).map(n => n.id));
-      return dataset.relations.filter(e => ids.has(e.to) && roleIds.has(e.to) && (e.kind === 'assignment' || e.kind === 'mandate'))
+      return dataset.relations.filter(e => ids.has(e.to) && (e.kind === 'assignment' || e.kind === 'mandate'))
         .flatMap(e => {
           const person = nodeById.get(e.from);
           const role = nodeById.get(e.to);
@@ -22,7 +21,7 @@ export function getPublicCleanlinessCoverage(dataset: PublicCleanlinessCityDatas
     const hall = group('town-halls');
     const dpe = group('stpp-divisions');
     const dpmp = group('dpmp-divisions');
-    const contacts = hall.flatMap(n => n.publicContact ? [n.publicContact] : []);
+    const contacts = [...hall, ...dpe, ...dpmp].flatMap(n => n.publicContact ? [n.publicContact] : []);
     const localMayor = holders('local_mayor');
     const delegates = holders('local_delegation');
     const dgs = roles('local_dgs');
@@ -41,6 +40,7 @@ export function getPublicCleanlinessCoverage(dataset: PublicCleanlinessCityDatas
       req: !reqHolders.some(h => h.status === 'confirmed'),
       field: !field.some(n => n.assignment === 'confirmed'),
       contacts: !contacts.some(c => c.kind === 'functional_contact'),
+      reqContact: !reqRoles.some(n => n.publicContact?.kind === 'functional_contact'),
     };
     return { territoryId, hall, dpe, dpmp, localMayor, delegates, dgs, dgaep, reqRoles, reqHolders, field, contacts, gaps };
   });

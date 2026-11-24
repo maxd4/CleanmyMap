@@ -5,15 +5,14 @@ import type {
   PublicCleanlinessOrganizationRelation as Edge,
 } from './public-cleanliness-organization';
 
-// Candidate extension: existing IDs and exports remain canonical. See README_CODEX.
+// Paris institutional data extension. Existing IDs remain canonical; sources and evidence accompany each new fact.
 const checked = '2026-11-24';
-const all = Array.from({ length: 20 }, (_, i) => `Paris:${i + 1}`);
 const territories = (...numbers: number[]) => numbers.map(n => `Paris:${n}`);
 const refs = (...ids: string[]) => ids;
 const additionalSources: readonly OrganizationSource[] = [
   { id: 'paris-org-sept-2026', label: 'Organigramme municipal du 9 septembre 2026', url: 'https://paris-v4.paris.fr/pages/organigramme-de-la-ville-de-paris-2380', sourceContentDate: '2026-09-09', verifiedAt: checked, evidence: 'official_current' },
   { id: 'dpe-arrete-2024', label: 'Arrêté de structure DPE, 3 avril 2024, articles 1 à 6', url: 'https://bovp.apps.paris.fr/doc_num_data.php?explnum_id=25035', sourceContentDate: '2024-04-03', verifiedAt: checked, evidence: 'official_historical' },
-  { id: 'sg-arrete-index', label: 'BOVP : arrêté de réorganisation du Secrétariat général du 23 juillet 2026 (notice)', url: 'https://bovp.apps.paris.fr/index.php?action=segment_results&id=155&lvl=search_segment&new_search=1', sourceContentDate: '2026-07-23', verifiedAt: checked, evidence: 'official_current' },
+  { id: 'sg-arrete-index', label: 'BOVP : notice de réorganisation du Secrétariat général du 23 juillet 2026 (texte intégral non obtenu)', url: 'https://bovp.apps.paris.fr/index.php?action=segment_results&id=155&lvl=search_segment&new_search=1', sourceContentDate: '2026-07-23', verifiedAt: checked, evidence: 'official_current' },
   { id: 'paris-elus-2026', label: 'Élus d’arrondissement, mandature 2026', url: 'https://www.paris.fr/pages/elus-d-arrondissements-2365', sourceContentDate: '2026-03-31', verifiedAt: checked, evidence: 'official_current' },
   { id: 'paris-conseil-2026', label: 'Fonctionnement du Conseil de Paris', url: 'https://www.paris.fr/pages/fonctionnement-du-conseil-de-paris-216', sourceContentDate: '2026-04-07', verifiedAt: checked, evidence: 'official_current' },
   { id: 'pierre-lombard-2026', label: 'Fiche municipale Pierre Lombard', url: 'https://www.paris.fr/pages/pierre-lombard-34351', sourceContentDate: '2026-04-09', verifiedAt: checked, evidence: 'official_current' },
@@ -106,6 +105,9 @@ const regulationUnits: readonly [string, string, string, Node['kind'], Node['ser
 ];
 
 export function extendParisPublicCleanlinessDataset(base: Pick<PublicCleanlinessCityDataset, 'nodes' | 'relations' | 'sources'>) {
+  const city = base.nodes.find(node => node.id === 'city-paris');
+  if (!city) throw new Error('Missing Paris root');
+  const all = city.territoryIds;
   const nodes = [...base.nodes];
   const relations = [...base.relations];
   const sources = [...base.sources, ...additionalSources];
@@ -212,6 +214,20 @@ export function extendParisPublicCleanlinessDataset(base: Pick<PublicCleanliness
   unit('dpmp-territorial-management', 'Sous-direction des divisions territoriales', 'municipal-police', 'service', 'police', dpmpDecree, 'Organisation réglementaire attestée en janvier 2025 ; maintien détaillé à vérifier.', all, 'historical');
   unit('ddct-territorial-action', 'Sous-direction de l’action territoriale', 'ddct', 'service', 'coordination', refs('req-20-recruitment'), 'Entité citée dans le recrutement REQ ; coordinateur opérationnel inconnu.');
   add('paris-neighborhood-councils', 'Conseils de quartier parisiens', 'unit', 'coordination', refs('conseils-quartier-paris'), 'Instances de concertation ; pas d’autorité hiérarchique sur les services.');
+  // Published reception desk numbers: functional public contacts, not individual agents.
+  const divisionPhones: readonly [string, string][] = [
+    ['division-01-04', '01 55 34 77 17'], ['division-05-06', '01 53 63 03 30'],
+    ['division-07-08', '01 45 61 57 00'], ['division-09-10', '01 53 34 11 11'],
+    ['division-11', '01 55 28 36 60'], ['division-12', '01 43 41 74 44'],
+    ['division-13', '01 53 94 15 30'], ['division-14', '01 56 53 10 20'],
+    ['division-15', '01 45 45 86 00'], ['division-16', '01 55 74 44 60'],
+    ['division-17', '01 45 61 57 17'], ['division-18', '01 53 09 22 60'],
+    ['division-19', '01 53 72 54 00'], ['division-20', '01 40 33 83 33'],
+  ];
+  for (const [id, phone] of divisionPhones) {
+    change(id, { publicContact: { label: `Accueil propreté : ${phone}`, url: 'https://www.paris.fr/pages/la-proprete-239/', sourceIds: refs('paris-cleanliness'), kind: 'functional_contact' } });
+  }
+  link('dpe', 'syctom', 'cooperation', decree, 'historical');
   // Municipal local level: one town hall per administrative sector, not DPE division.
   for (const [id, label, districts, name, host] of mayors) {
     const territoryIds = territories(...districts);
@@ -220,8 +236,9 @@ export function extendParisPublicCleanlinessDataset(base: Pick<PublicCleanliness
     const divisionId = `dpmp-division-${id}`;
     unit(hallId, `Mairie ${label === 'Paris Centre' ? 'de ' : 'du '}${label}`, 'borough-mayors', 'unit', 'governance', elected, 'Mairie de secteur, distincte de la division de propreté.', territoryIds, 'confirmed', { territoryCoverageGroup: 'town-halls', publicContact: { label: 'Portail officiel de la mairie', url: `https://${host}/`, sourceIds: elected, kind: 'official_portal' } });
     role(mayorId, `Maire ${label === 'Paris Centre' ? 'de ' : 'du '}${label}`, 'governance', elected, 'Mandat local ; ne constitue pas la hiérarchie des directions techniques.', territoryIds, 'local_mayor');
-    person(`person-mayor-${id}`, name, 'governance', elected, 'Maire indiqué dans la liste municipale des élus de la mandature 2026.', territoryIds);
-    link(`person-mayor-${id}`, mayorId, 'mandate', elected);
+    const personId = `person-${name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    person(personId, name, 'governance', elected, 'Maire indiqué dans la liste municipale des élus de la mandature 2026.', territoryIds);
+    link(personId, mayorId, 'mandate', elected);
     link(mayorId, hallId, 'mandate', elected);
     unit(divisionId, `Division de tranquillité publique ${label}`, 'municipal-police', 'unit', 'police', police, 'Division de police municipale, distincte de la division DPE.', territoryIds, 'confirmed', { territoryCoverageGroup: 'dpmp-divisions' });
     link(hallId, divisionId, 'coordination', police);
@@ -244,6 +261,7 @@ export function extendParisPublicCleanlinessDataset(base: Pick<PublicCleanliness
   }
   const req8 = refs('req-8-portrait');
   role('req-08', 'Référent de l’entretien du quartier du 8e', 'coordination', req8, 'Prise de fonction attestée le 14 septembre 2026 ; quartiers précis inconnus.', territories(8), 'req');
+  change('req-08', { searchTerms: ['REQ'] });
   person('person-regine-merlin', 'Régine Merlin', 'coordination', req8, 'Prise de fonction publiée dans le magazine municipal ; pas de contact nominatif direct.', territories(8));
   link('person-regine-merlin', 'req-08', 'assignment', req8);
   link('req-08', 'town-hall-08', 'coordination', req8);

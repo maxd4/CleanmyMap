@@ -30,7 +30,10 @@ describe('Paris institutional extension', () => {
     expect(rows[8].reqHolders).toEqual(expect.arrayContaining([expect.objectContaining({ status: 'historical' })]));
     expect(rows[8].gaps.req).toBe(true);
     expect(rows[19].gaps.req).toBe(true);
-    expect(rows.every(r => r.gaps.contacts)).toBe(true);
+    expect(rows.every(r => !r.gaps.contacts && r.gaps.reqContact)).toBe(true);
+    expect(new Set(rows.flatMap(r => r.contacts.filter(c => c.kind === 'functional_contact').map(c => c.label))).size).toBe(14);
+    expect(rows[0].contacts).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'functional_contact', label: 'Accueil propreté : 01 55 34 77 17' })]));
+    expect(rows[0].contacts).toEqual(rows[3].contacts);
   });
   it('preserves the regulatory reporting line of occupational prevention', () => {
     const data = PARIS_PUBLIC_CLEANLINESS_DATASET;

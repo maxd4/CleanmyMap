@@ -113,6 +113,37 @@ describe("PublicCleanlinessOrganization behavior", () => {
     expect(view.querySelector<HTMLButtonElement>('button[aria-label="Réinitialiser le zoom"]')?.textContent).toBe("110%");
   });
 
+  it("opens the complete matrix, selects a multi-mandate person and exposes public channels", () => {
+    const view = mount();
+    const toggle = [...view.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent?.includes("Couverture institutionnelle par arrondissement"))!;
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(view.querySelector("table")).toBeNull();
+    act(() => toggle.click());
+    const table = view.querySelector("table")!;
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(table.querySelectorAll("tbody tr")).toHaveLength(20);
+    expect(table.textContent).toContain("Accueil propreté : 01 55 34 77 17");
+    expect(table.textContent).toContain("contact REQ");
+    const ekon = [...table.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent === "Carine Ekon")!;
+    act(() => ekon.click());
+    expect(view.querySelector("aside h3")?.textContent).toBe("Carine Ekon");
+    expect(view.querySelector("aside")?.textContent).toContain("Mandat politique");
+    expect(view.querySelector("aside")?.textContent).toContain("Vice-présidence de la 8e commission");
+    expect(view.querySelector("aside")?.textContent).toContain("Conseil de Paris");
+    expect(document.activeElement).toBe(view.querySelector("aside"));
+    expect(view.querySelector("table tbody")?.children).toHaveLength(20);
+    act(() => toggle.click());
+    expect(view.querySelector("table")).toBeNull();
+  });
+
+  it("translates the matrix controls in English", () => {
+    const view = mount(<PublicCleanlinessOrganization fr={false} />);
+    const toggle = [...view.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent?.includes("Institutional coverage by district"))!;
+    act(() => toggle.click());
+    expect(view.querySelector("table")?.textContent).toContain("Town hall / mayor");
+    expect(view.querySelector("table")?.textContent).toContain("REQ contact");
+  });
+
   it("translates the full interface and renders an injected non-Paris dataset", () => {
     const dataset: PublicCleanlinessCityDataset = {
       city: "Lyon",

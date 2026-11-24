@@ -73,6 +73,24 @@ describe("public cleanliness organization contract", () => {
     ]));
   });
 
+  it("rejects missing coverage, fabricated assignments and recruitment contacts", () => {
+    const data = PARIS_PUBLIC_CLEANLINESS_DATASET;
+    const edge = { id: "invalid-assignment", from: "dpe", to: "req", kind: "assignment" as const, status: "confirmed" as const, sourceIds: ["req-20-recruitment"] };
+    const invalid: PublicCleanlinessCityDataset = {
+      ...data,
+      nodes: data.nodes.map(node => node.id === "division-20" ? { ...node, territoryIds: [] } : node.id === "dpe" ? { ...node, publicContact: { label: "Contact de recrutement", url: "https://travaillerpourparis.offres.paris.fr/13375", kind: "functional_contact" as const, sourceIds: ["req-20-recruitment"] } } : node),
+      relations: [...data.relations, edge],
+    };
+    expect(validatePublicCleanlinessOrganization(invalid)).toEqual(expect.arrayContaining([
+      "missing-coverage-territory:stpp-divisions:Paris:20",
+      "invalid-assignment:invalid-assignment",
+      "unproven-current-assignment:invalid-assignment",
+      "invalid-public-contact:dpe",
+      "invalid-public-contact-url:dpe",
+      "unproven-functional-contact:dpe",
+    ]));
+  });
+
   it("detects duplicate IDs, broken endpoints, multiple parents, hierarchy cycles and overlapping coverage groups", () => {
     const node = PARIS_PUBLIC_CLEANLINESS_NODES.find((entry) => entry.id === "req")!;
     const cycle = { id: "bad-cycle", from: "ddct", to: "city-paris", kind: "hierarchy" as const, status: "unknown" as const, sourceIds: ["req-20-recruitment"] };
