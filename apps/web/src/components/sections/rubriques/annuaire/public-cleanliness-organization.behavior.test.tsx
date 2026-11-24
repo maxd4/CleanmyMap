@@ -2,7 +2,9 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { PublicCleanlinessCityDataset } from "@/lib/partners/public-cleanliness-organization";
 
 vi.mock("./paris-network-3d-section", () => ({ ParisNetwork3DSection: () => null }));
 import { PublicCleanlinessOrganization } from "./public-cleanliness-organization";
@@ -12,11 +14,11 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
 
-function mount(): HTMLDivElement {
+function mount(component: ReactNode = <PublicCleanlinessOrganization />): HTMLDivElement {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  act(() => root?.render(<PublicCleanlinessOrganization />));
+  act(() => root?.render(component));
   return host;
 }
 
@@ -38,11 +40,11 @@ describe("PublicCleanlinessOrganization behavior", () => {
 
   it("finds REQ by abbreviation and opens its unknown assignment details", () => {
     const view = mount();
-    const search = view.querySelector<HTMLInputElement>('input[aria-label="Rechercher dans l\'organigramme"]');
+    const search = view.querySelector<HTMLInputElement>('input[type="search"]');
     expect(search).not.toBeNull();
     act(() => {
       search!.value = "REQ";
-      search!.dispatchEvent(new Event("change", { bubbles: true }));
+      search!.dispatchEvent(new Event("input", { bubbles: true }));
     });
     const req = [...view.querySelectorAll("button")].find((button) => button.textContent?.includes("Référents et référentes de l'entretien du quartier"));
     expect(req).toBeDefined();
@@ -58,7 +60,7 @@ describe("PublicCleanlinessOrganization behavior", () => {
       city.value = "Lyon";
       city.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    expect(view.textContent).toContain("Aucun référentiel institutionnel n'a encore été validé pour Lyon");
+    expect(view.textContent).toContain("Aucun référentiel institutionnel n’a encore été validé pour Lyon");
     act(() => {
       city.value = "Paris";
       city.dispatchEvent(new Event("change", { bubbles: true }));
@@ -80,6 +82,53 @@ describe("PublicCleanlinessOrganization behavior", () => {
     expect(rootToggle?.getAttribute("aria-expanded")).toBe("true");
     act(() => rootToggle?.click());
     expect(rootToggle?.getAttribute("aria-expanded")).toBe("false");
-    expect([...view.querySelectorAll("button")].some((button) => button.textContent?.includes("Direction de la Propreté et de l'Eau (DPE)"))).toBe(false);
+    expect(view.querySelector("#org-children-city-paris")).toBeNull();
+  });
+
+  it("progresses through levels, navigates related structures, and exposes relation sources", () => {
+    const view = mount();
+    expect(view.querySelector('[aria-label="Navigation par niveau"]')).not.toBeNull();
+    expect(view.textContent).toContain("Sources de cette relation");
+    const reqLink = [...view.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.includes("Explorer: Référents et référentes de l'entretien du quartier"));
+    expect(reqLink).toBeDefined();
+    act(() => reqLink?.click());
+    expect(view.querySelector("aside h3")?.textContent).toContain("Référents et référentes de l'entretien du quartier");
+    expect(view.textContent).toContain("Affectation inconnue");
+    expect(view.querySelector('a[href*="travaillerpourparis.offres.paris.fr/13375"]')).not.toBeNull();
+  });
+
+  it("resets a selection excluded by combined filters and provides usable zoom controls", () => {
+    const view = mount();
+    const service = view.querySelector<HTMLSelectElement>('select[aria-label="Filtrer par service"]')!;
+    const district = view.querySelector<HTMLSelectElement>('select[aria-label="Filtrer par arrondissement"]')!;
+    act(() => {
+      service.value = "coordination";
+      service.dispatchEvent(new Event("change", { bubbles: true }));
+      district.value = "20";
+      district.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(view.querySelector("aside h3")?.textContent).not.toBe("Direction de la Propreté et de l'Eau (DPE)");
+    const zoom = view.querySelector<HTMLButtonElement>('button[aria-label="Augmenter le zoom"]')!;
+    act(() => zoom.click());
+    expect(view.querySelector<HTMLButtonElement>('button[aria-label="Réinitialiser le zoom"]')?.textContent).toBe("110%");
+  });
+
+  it("translates the full interface and renders an injected non-Paris dataset", () => {
+    const dataset: PublicCleanlinessCityDataset = {
+      city: "Lyon",
+      territoryIds: ["Lyon:1"],
+      sources: [{ id: "lyon-source", label: "Fiche officielle fictive", url: "https://example.test/lyon", verifiedAt: "2026-11-25", evidence: "official_current" }],
+      nodes: [
+        { id: "lyon-city", name: "Ville de Lyon", kind: "city", territoryIds: ["Lyon:1"], service: "governance", assignment: "confirmed", description: "Fiche municipale synthétique.", sourceIds: ["lyon-source"] },
+        { id: "lyon-service", name: "Service de propreté", kind: "service", legalEmployerId: "lyon-city", unitId: "lyon-city", territoryIds: ["Lyon:1"], service: "cleaning", assignment: "confirmed", description: "Unité synthétique.", sourceIds: ["lyon-source"] },
+      ],
+      relations: [{ id: "lyon-link", from: "lyon-city", to: "lyon-service", kind: "hierarchy", status: "confirmed", sourceIds: ["lyon-source"] }],
+    };
+    const view = mount(<PublicCleanlinessOrganization fr={false} datasets={{ Lyon: dataset }} />);
+    expect((view.querySelector('select[aria-label="Select a city"]') as HTMLSelectElement | null)?.value).toBe("Lyon");
+    expect(view.textContent).toContain("Public services organization");
+    expect(view.textContent).toContain("Legal employer");
+    expect(view.textContent).toContain("Street cleaning");
+    expect(view.textContent).toContain("Service de propreté");
   });
 });

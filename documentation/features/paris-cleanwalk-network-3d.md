@@ -4,7 +4,7 @@
 
 Ce document décrit le contrat de données, de relations et de rendu de la visualisation 3D de l'écosystème des cleanwalks, de la prévention et de la sensibilisation aux déchets rattaché à Paris et intégré dans `/sections/annuaire` (26 acteurs publiés).
 
-Dans `/sections/annuaire`, le réseau est présenté dans l'onglet « Réseau 3D des cleanwalks », à côté de l'onglet « Organisation des services publics ». Ce dernier possède un référentiel et des types de relations institutionnelles distincts ; les types relationnels du réseau 3D restent inchangés. Le canvas WebGL continue d'être chargé uniquement à l'entrée dans le viewport ou sur action explicite. Le panneau 3D masqué par l'onglet ne monte donc pas la scène lorsqu'un usager consulte seulement l'organigramme 2D. Voir le [contrat des services publics de propreté](organisation-services-publics-proprete.md).
+Dans `/sections/annuaire`, le réseau est présenté dans l'onglet « Réseau 3D des cleanwalks », à côté de l'onglet « Organisation des services publics ». Ce dernier possède un référentiel et des types de relations institutionnelles distincts ; les types relationnels du réseau 3D restent inchangés. Le canvas WebGL est chargé uniquement à l'entrée dans le viewport ou sur action explicite et la scène est démontée lorsque l'onglet 2D est actif. Le panneau réseau peut rester monté afin de préserver ses filtres et sélections ; au retour en 3D, la scène est rétablie. Les onglets appliquent le patron ARIA à tabulation mobile unique et navigation par flèches, `Home` et `End`. Voir le [contrat des services publics de propreté](organisation-services-publics-proprete.md).
 
 ## 1. Sources runtime
 

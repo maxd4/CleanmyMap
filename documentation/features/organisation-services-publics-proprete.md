@@ -6,16 +6,17 @@
 
 La vue « Organisation des services publics » se trouve dans `/sections/annuaire`, à côté du réseau 3D des cleanwalks. Son owner de données est `apps/web/src/lib/partners/public-cleanliness-organization.ts`; son owner d'interface est `apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx`. Elle utilise le référentiel géographique `apps/web/src/lib/geo/paris-arrondissements.ts` et réutilise les identifiants d'organisation déjà employés par le réseau (`evt-paris-nettoyages` pour la DPE et `collectivite-syctom` pour Syctom).
 
-La sélection d'une ville résout une entrée dans `PUBLIC_CLEANLINESS_CITY_DATASETS`. Paris est actuellement la seule ville documentée. Lyon et Marseille restent sélectionnables via le référentiel géographique, mais affichent explicitement l'absence de données institutionnelles validées ; le moteur ne contient pas de branches propres à ces villes.
+La sélection d'une ville résout une entrée dans `PUBLIC_CLEANLINESS_CITY_DATASETS`. Paris est actuellement la seule ville documentée. Lyon et Marseille restent sélectionnables via le référentiel géographique et affichent explicitement l'absence de données institutionnelles validées. Le validateur reçoit le dataset choisi et contrôle ses territoires contre le référentiel géographique de cette ville, ses propres sources et ses références internes ; l'ajout d'un dataset municipal synthétique ne requiert pas de branche spéciale dans le moteur.
 
 ## Contrat des entités et relations
 
-- Un nœud possède un identifiant stable, un type distinct (`direction`, `service`, `unit`, `team`, `position`, `profession`, `person`, `provider` ou `city`), un employeur/rattachement, un territoire, un état d'affectation et une ou plusieurs sources.
+- Un nœud possède un identifiant stable, un type distinct (`direction`, `service`, `unit`, `team`, `position`, `profession`, `person`, `provider` ou `city`), un employeur juridique (`legalEmployerId`), une unité de rattachement (`unitId`) et un ou plusieurs territoires d'intervention. Ces trois notions ne sont pas interchangeables.
 - Les types `position` et `profession` ne désignent pas un titulaire. Les personnels de terrain sont représentés par corps de métier collectifs. Aucun nom de titulaire ou effectif n'est déduit d'une offre d'emploi.
-- Les territoires sont un tableau : une division mutualisée est un unique nœud relié à chacun des arrondissements desservis.
+- Les territoires sont des identifiants géographiques canoniques du dataset de la ville : une division mutualisée est un unique nœud relié à chacun des arrondissements desservis, sans duplication de l'unité.
 - Les relations distinguent `hierarchy`, `coordination`, `programme` et `service`. Une prestation, une coordination fonctionnelle ou le lancement d'un programme ne sont jamais convertis en lien hiérarchique.
 - L'état `confirmed` décrit une organisation, un métier ou une relation étayés par la source citée ; `historical` qualifie une structure/poste décrits à une date donnée sans attester son maintien ni son titulaire ; `unknown` signale une affectation ou un rattachement non établi.
-- Chaque référence contient l'URL, le niveau de preuve et la date de vérification. Les dates affichées comme mise à jour publiée ne sont renseignées que pour les pages qui les publient explicitement.
+- Le validateur vérifie l'unicité des IDs, l'existence des références de sources, les URLs HTTPS, les références Annuaire réelles, les employeurs admissibles, l'unité de rattachement et les relations hiérarchiques (endpoints, parent unique, absence de cycle). Les groupes de couverture explicitement déclarés repèrent les unités mutualisées qui se chevaucheraient.
+- Chaque source et chaque relation citée contient l'URL, le niveau de preuve et la date de vérification. Les dates affichées comme mise à jour publiée ne sont renseignées que pour les pages qui les publient explicitement.
 
 ## Référentiel Paris
 
@@ -27,9 +28,9 @@ Les fonctions de prévention, sensibilisation et tri sont représentées sans in
 
 ## Interface, accessibilité et performance
 
-Les onglets utilisent le patron ARIA `tablist`/`tab`/`tabpanel`, activables au clavier par flèches, `Home` et `End`. L'arborescence repose sur listes HTML imbriquées et boutons natifs repliables/sélectionnables ; elle reste navigable au clavier sur mobile et défile horizontalement lorsque les niveaux sont profonds. Les filtres réutilisent les choix de ville/arrondissement du référentiel géographique.
+Les onglets utilisent le patron ARIA `tablist`/`tab`/`tabpanel`, activables au clavier par flèches, `Home` et `End`, avec un seul onglet dans l'ordre de tabulation (`tabIndex=0`) et un focus mobile entre onglets. L'arborescence repose sur listes HTML imbriquées et boutons natifs repliables/sélectionnables. Les fils d'Ariane et commandes de niveau donnent une navigation progressive ; les structures associées et les relations permettent d'ouvrir les nœuds liés et leurs sources datées. Les états confirmé, historique et inconnu sont visibles sur les nœuds de l'arborescence. Les filtres ville/arrondissement/service/recherche invalident immédiatement une fiche devenue incompatible. Un zoom réglable avec remise à 100 % facilite l'exploration sur petit écran.
 
-Le panneau WebGL reste monté sous son onglet masqué pour préserver l'état existant, mais la scène 3D est chargée dynamiquement par son composant actuel seulement quand il entre dans le viewport. La consultation seule de l'organigramme ne monte pas le canvas Three.js. Aucun nouveau moteur graphique ou droit applicatif n'est ajouté.
+Le panneau réseau 3D peut rester monté sous son onglet masqué afin de préserver ses filtres et sa sélection, mais la scène et son canvas Three.js sont effectivement démontés dès que l'onglet 2D devient actif. Au retour sur l'onglet 3D, la scène se recharge lorsque nécessaire. La consultation seule de l'organigramme ne monte donc pas le canvas, même après une première initialisation du réseau. Aucun nouveau moteur graphique ou droit applicatif n'est ajouté.
 
 ## Sources consultées le 24 novembre 2026
 

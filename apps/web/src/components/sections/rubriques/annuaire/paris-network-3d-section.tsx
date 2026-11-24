@@ -82,12 +82,19 @@ class WebGLErrorBoundary extends Component<
 export function ParisNetwork3DSection({
   fr: externalFr,
   onTerritoryChange,
+  active = true,
 }: {
   fr?: boolean;
   onTerritoryChange?: (territoryId: string) => void;
+  active?: boolean;
 }) {
   const { locale, displayMode } = useSitePreferences();
   const fr = externalFr ?? locale === "fr";
+  const [sceneActive, setSceneActive] = useState(active);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setSceneActive(active));
+    return () => window.cancelAnimationFrame(frame);
+  }, [active]);
   const reducedMotion = useReducedMotion() === true;
   const animateMotion = !reducedMotion && displayMode !== "sobre";
   const { user } = useUser();
@@ -115,7 +122,7 @@ export function ParisNetwork3DSection({
 
   const clientWebglSupported = useSyncExternalStore(
     () => () => {},
-    () => detectWebGLSupport(),
+    detectWebGLSupport,
     () => true,
   );
   const webglAvailable = clientWebglSupported && !webglRuntimeError;
@@ -318,7 +325,7 @@ export function ParisNetwork3DSection({
     [filtered.actors, activeActorId],
   );
 
-  const show3DCanvas = webglAvailable && viewMode === "3d";
+  const show3DCanvas = sceneActive && webglAvailable && viewMode === "3d";
   const surfaceClassName = cn(
     "relative overflow-hidden rounded-[var(--radius-lg)] border border-violet-300/18 p-6 md:p-8",
     displayMode === "sobre"
@@ -470,7 +477,7 @@ export function ParisNetwork3DSection({
             />
 
             <div className="relative h-[500px] w-full min-w-0 overflow-hidden rounded-2xl border border-violet-300/20 bg-slate-950/90 sm:h-[580px]">
-          {show3DCanvas ? (
+          {sceneActive && (show3DCanvas ? (
             hasEnteredViewport ? (
               <WebGLErrorBoundary
                 onError={() => setWebglRuntimeError(true)}
@@ -531,7 +538,7 @@ export function ParisNetwork3DSection({
               reason={webglAvailable ? "user_selected" : "webgl_unavailable"}
               fr={fr}
             />
-          )}
+          ))}
 
           {activeActor ? (
             <ParisNetwork3DBubble

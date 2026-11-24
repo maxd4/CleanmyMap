@@ -178,7 +178,7 @@ export function AnnuaireSection() {
         </motion.section>
 
         <section aria-label={fr ? "Vues des réseaux de l'annuaire" : "Directory network views"}>
-          <div role="tablist" aria-label={fr ? "Choisir une visualisation" : "Choose a visualization"} onKeyDown={(event) => {
+          <div role="tablist" aria-orientation="horizontal" aria-label={fr ? "Choisir une visualisation" : "Choose a visualization"} onKeyDown={(event) => {
             if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
             const currentTab = (event.target as HTMLElement).closest<HTMLElement>('[role="tab"]');
             if (!currentTab) return;
@@ -188,18 +188,18 @@ export function AnnuaireSection() {
             setNetworkTab(next);
             document.getElementById(`annuaire-tab-${next}`)?.focus();
           }} className="mb-4 flex flex-wrap gap-2 border-b border-white/10 pb-3">
-            <button id="annuaire-tab-network" type="button" role="tab" aria-selected={networkTab === "network"} aria-controls="annuaire-panel-network" tabIndex={0} onClick={() => setNetworkTab("network")} className={`rounded-xl border px-4 py-3 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 ${networkTab === "network" ? "border-violet-300/60 bg-violet-400/15 text-white" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>
+            <button id="annuaire-tab-network" type="button" role="tab" aria-selected={networkTab === "network"} aria-controls="annuaire-panel-network" tabIndex={networkTab === "network" ? 0 : -1} onClick={() => setNetworkTab("network")} className={`rounded-xl border px-4 py-3 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 ${networkTab === "network" ? "border-violet-300/60 bg-violet-400/15 text-white" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>
               {fr ? "Réseau 3D des cleanwalks" : "3D cleanwalk network"}
             </button>
-            <button id="annuaire-tab-organization" type="button" role="tab" aria-selected={networkTab === "organization"} aria-controls="annuaire-panel-organization" tabIndex={0} onClick={() => setNetworkTab("organization")} className={`rounded-xl border px-4 py-3 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 ${networkTab === "organization" ? "border-sky-300/60 bg-sky-400/15 text-white" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>
+            <button id="annuaire-tab-organization" type="button" role="tab" aria-selected={networkTab === "organization"} aria-controls="annuaire-panel-organization" tabIndex={networkTab === "organization" ? 0 : -1} onClick={() => setNetworkTab("organization")} className={`rounded-xl border px-4 py-3 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 ${networkTab === "organization" ? "border-sky-300/60 bg-sky-400/15 text-white" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>
               {fr ? "Organisation des services publics" : "Public service organization"}
             </button>
           </div>
-          <div id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network" hidden={networkTab !== "network"}>
-            <ParisNetwork3DSection fr={fr} onTerritoryChange={setSelectedTerritoryId} />
+          <div id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network" tabIndex={0} hidden={networkTab !== "network"}>
+            <ParisNetwork3DSection fr={fr} onTerritoryChange={setSelectedTerritoryId} active={networkTab === "network"} />
             <ParisNetworkContributionCard fr={fr} territoryId={selectedTerritoryId} />
           </div>
-          <div id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" hidden={networkTab !== "organization"}>
+          <div id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" tabIndex={0} hidden={networkTab !== "organization"}>
             <PublicCleanlinessOrganization fr={fr} />
           </div>
         </section>

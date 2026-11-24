@@ -103,7 +103,7 @@ describe("AnnuaireSection partner onboarding CTA", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
     expect(markup).toContain('id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network"');
     expect(markup).toContain('id="annuaire-tab-network" type="button" role="tab" aria-selected="true"');
-    expect(markup).toContain('id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" hidden=""');
+    expect(markup).toContain('id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" tabindex="0" hidden=""');
   });
 
   it("targets the canonical partner onboarding route", () => {

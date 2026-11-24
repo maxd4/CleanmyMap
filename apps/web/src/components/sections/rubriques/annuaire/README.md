@@ -10,8 +10,8 @@
 | `seed-index.ts` | Assemble les sources, impose des IDs uniques et marque l'origine `editorial_seed` |
 | `annuaire-seed-contract.test.ts` | Régression des champs, faits et entrées synthétiques/éditoriales |
 | `annuaire-section.tsx` et composants locaux | Composition UI ; la projection publique doit rester bornée |
-| `public-cleanliness-organization.tsx` | Onglet 2D des services publics, alimenté par `lib/partners/public-cleanliness-organization.ts` ; Paris documenté, autres villes sans données affichées tant qu'elles ne sont pas sourcées |
-| `documentation/features/organisation-services-publics-proprete.md` | Contrat des entités, relations, preuves, sources et comportement des deux onglets |
+| `public-cleanliness-organization.tsx` | Onglet 2D des services publics, alimenté par `lib/partners/public-cleanliness-organization.ts` ; moteur générique par ville, Paris documenté et autres villes sans données tant qu'elles ne sont pas sourcées |
+| `documentation/features/organisation-services-publics-proprete.md` | Contrat CURRENT des datasets municipaux, entités, relations, preuves, navigation et isolation WebGL des deux onglets |
 
 ## Invariants de maintenance
 

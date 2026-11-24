@@ -13,6 +13,7 @@ Cette fiche est l'index contractuel de la page. Elle ne duplique pas les détail
 
 - [Présentation détaillée et fonctionnement actuel](./annuaire-presentation-detaillee.md)
 - [Contrat du réseau 3D des cleanwalks à Paris](../../../../features/paris-cleanwalk-network-3d.md)
+- [Contrat CURRENT de l'organisation des services publics](../../../../features/organisation-services-publics-proprete.md)
 - [Propositions réellement restantes](./annuaire-liste-propositions-a-traiter.md)
 - [Objectifs hors périmètre](./annuaire-objectifs-non-pertinents.md)
 

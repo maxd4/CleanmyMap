@@ -269,6 +269,7 @@ export const ParisNetwork3DCanvas = forwardRef<
   },
   ref,
 ) {
+  const isUnmountingRef = useRef(false);
   const activeFocusId = selectedActorId ?? hoveredActorId;
   const connectedIds = useMemo(
     () => getConnectedActorIds(activeFocusId, relations),
@@ -281,6 +282,7 @@ export const ParisNetwork3DCanvas = forwardRef<
 
   useEffect(() => {
     return () => {
+      isUnmountingRef.current = true;
       document.body.style.cursor = "auto";
     };
   }, []);
@@ -293,7 +295,7 @@ export const ParisNetwork3DCanvas = forwardRef<
       onCreated={({ gl }) => {
         gl.domElement.addEventListener("webglcontextlost", (event) => {
           event.preventDefault();
-          onWebGLError?.();
+          if (!isUnmountingRef.current) onWebGLError?.();
         });
       }}
       className="h-full w-full"
