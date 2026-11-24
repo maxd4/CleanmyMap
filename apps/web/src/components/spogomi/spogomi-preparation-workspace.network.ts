@@ -16,14 +16,25 @@ async function readJsonRecord(response: Response): Promise<Record<string, unknow
   return raw as Record<string, unknown>;
 }
 
-function responseError(body: Record<string, unknown>, fallback: string): Error {
-  return new Error(typeof body.error === "string" ? body.error : fallback);
+export class WorkspaceActionError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "WorkspaceActionError";
+  }
+}
+
+function responseError(body: Record<string, unknown>, fallback: string, status?: number): Error {
+  const message = typeof body.error === "string" ? body.error : fallback;
+  return typeof status === "number" ? new WorkspaceActionError(message, status) : new Error(message);
 }
 
 export async function fetchWorkspaceData(eventId: string, divisionId: string | null): Promise<WorkspaceData> {
   const response = await fetch(scopedUrl(`/api/spogomi/events/${eventId}`, divisionId), { cache: "no-store" });
   const body = await readJsonRecord(response);
-  if (!response.ok) throw responseError(body, "Événement indisponible.");
+  if (!response.ok) throw responseError(body, "Événement indisponible.", response.status);
   const data = parseWorkspaceData(body);
   if (!data) throw new Error("Événement renvoyé dans un format invalide.");
   return data;
@@ -32,7 +43,7 @@ export async function fetchWorkspaceData(eventId: string, divisionId: string | n
 export async function requestWorkspaceAction(divisionId: string | null, url: string, init?: RequestInit): Promise<Record<string, unknown>> {
   const response = await fetch(scopedUrl(url, divisionId), init);
   const body = await readJsonRecord(response);
-  if (!response.ok) throw responseError(body, "Opération refusée.");
+  if (!response.ok) throw responseError(body, "Opération refusée.", response.status);
   return body;
 }
 

@@ -19,7 +19,7 @@ import {
   summarizeSelectedImport,
   validateTeamPreview,
 } from "./spogomi-preparation-workspace.model";
-import { fetchWorkspaceData, requestRosterPreview, requestTeamPreview, requestWorkspaceAction, type RosterPreviewOptions } from "./spogomi-preparation-workspace.network";
+import { fetchWorkspaceData, requestRosterPreview, requestTeamPreview, requestWorkspaceAction, WorkspaceActionError, type RosterPreviewOptions } from "./spogomi-preparation-workspace.network";
 import type { DivisionRegulationInput } from "@/lib/spogomi/division-regulation-service";
 import { applySpogomiCompositionDraft, createSpogomiCompositionDraft, isSpogomiCompositionDraftDirty, serializeSpogomiCompositionDraft, type SpogomiCompositionDraft } from "./spogomi-composition-draft";
 
@@ -141,10 +141,21 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     setError(null);
     setMessage(null);
     return runWorkspaceRequest(request, () => requestWorkspaceAction(activeDivisionIdRef.current, url, init), async (body) => {
-      setMessage("Opération enregistrée.");
       await refresh(request);
-      return isCurrentRequest(request) ? body : null;
-    }, "Opération refusée.");
+      if (!isCurrentRequest(request)) return null;
+      setMessage("Opération enregistrée.");
+      return body;
+    }, "Opération refusée.", (reason) => {
+      if (reason instanceof WorkspaceActionError && reason.status === 409) {
+        const refreshRequest = beginRequest();
+        setBusy(true);
+        void refresh(refreshRequest)
+          .catch(() => undefined)
+          .finally(() => {
+            if (isCurrentRequest(refreshRequest)) setBusy(false);
+          });
+      }
+    });
   }
   function updateDraft(mutator: (draft: SpogomiCompositionDraft) => SpogomiCompositionDraft) {
     if (!currentData || !activeDivisionId || !compositionEditable) return;

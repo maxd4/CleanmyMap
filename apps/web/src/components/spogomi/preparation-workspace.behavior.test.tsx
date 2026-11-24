@@ -562,4 +562,60 @@ describe("SPOGOMI preparation workspace", () => {
     expect(String(fetchCalls()[1]?.[0])).toBe("/api/spogomi/events/event-1?divisionId=division-world");
     renderer.unmount();
   });
+
+  it("refreshes the server projection after a 409 conflict and never confirms a failed refresh", async () => {
+    const baseBody = body;
+    let getCount = 0;
+    let routePostMode: "conflict" | "ok" = "conflict";
+    let failNextRefresh = false;
+
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/teams/lock") || url.includes("/routes")) {
+        if (routePostMode === "conflict") {
+          return Promise.resolve(new Response(JSON.stringify({ error: "Conflit de révision 409" }), { status: 409 }));
+        }
+        return Promise.resolve(new Response(JSON.stringify({ compositionRevision: 10 }), { status: 200 }));
+      }
+      getCount += 1;
+      if (failNextRefresh) {
+        return Promise.resolve(new Response(JSON.stringify({ error: "Actualisation impossible" }), { status: 500 }));
+      }
+      const rev = getCount >= 2 ? 9 : 1;
+      return Promise.resolve(new Response(JSON.stringify({
+        ...baseBody,
+        event: { ...baseBody.event, composition_revision: rev },
+      }), { status: 200 }));
+    });
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(getCount).toBe(1);
+
+    // 1. Trigger a 409 conflict -> workspace must refresh server projection (getCount === 2) and keep error visible
+    const lockButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Verrouiller"));
+    expect(lockButton).toBeTruthy();
+    await act(async () => {
+      await propsOf<ButtonProps>(lockButton!).onClick?.();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(getCount).toBe(2);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Conflit de révision 409");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Opération enregistrée.");
+
+    // 2. Mutation succeeds (HTTP 200) but refresh fails -> must NOT show "Opération enregistrée."
+    routePostMode = "ok";
+    failNextRefresh = true;
+    await act(async () => {
+      await propsOf<ButtonProps>(lockButton!).onClick?.();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Actualisation impossible");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Opération enregistrée.");
+    renderer.unmount();
+  });
 });

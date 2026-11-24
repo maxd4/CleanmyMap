@@ -50,6 +50,8 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
   const [correctionReason, setCorrectionReason] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const [mediaStatus, setMediaStatus] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isLocked = busy || isSubmitting;
 
   if (trackedDivisionId !== activeDivisionId) {
     setTrackedDivisionId(activeDivisionId);
@@ -90,10 +92,12 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
   };
 
   const saveDrawing = async () => {
+    if (isLocked) return;
     setLocalError(null);
     if (hasRemoteUpdate) return setLocalError("Le parcours a été mis à jour sur le serveur. Chargez la version serveur avant d’enregistrer.");
     if (!drawing) return setLocalError("Dessinez un parcours comportant au moins deux points.");
     if (requiresReason && correctionReason.trim().length < 3) return setLocalError("Un motif est obligatoire pendant l’épreuve.");
+    setIsSubmitting(true);
     try {
       const result = await action(`/api/spogomi/events/${eventId}/routes`, {
         method: "POST",
@@ -104,16 +108,21 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
         setLocalError("Le parcours n’a pas pu être enregistré.");
         return;
       }
+      if (typeof result.compositionRevision === "number") setBaseRevision(result.compositionRevision);
       setIsDirty(false);
       setHasRemoteUpdate(false);
       setCorrectionReason("");
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "Le parcours n’a pas pu être enregistré.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const importGpx = async (file: File) => {
+    if (isLocked) return;
     setLocalError(null);
+    setIsSubmitting(true);
     try {
       if (hasRemoteUpdate) throw new Error("Le parcours a été mis à jour sur le serveur. Chargez la version serveur avant d’importer un GPX.");
       const parsed = await parseGpxFile(file);
@@ -130,18 +139,23 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
         setLocalError("Le GPX n’a pas pu être importé.");
         return;
       }
+      if (typeof result.compositionRevision === "number") setBaseRevision(result.compositionRevision);
       setDrawing({ kind: "polyline", coordinates: next.coordinates });
       setIsDirty(false);
       setHasRemoteUpdate(false);
       setCorrectionReason("");
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "Le GPX n’a pas pu être importé.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const addReferenceImage = async (file: File) => {
+    if (isLocked) return;
     setLocalError(null);
     setMediaStatus("Téléversement de la référence privée…");
+    setIsSubmitting(true);
     try {
       if (hasRemoteUpdate) throw new Error("Le parcours a été mis à jour sur le serveur. Chargez la version serveur avant d’associer une image.");
       if (!route) throw new Error("Enregistrez d’abord un parcours avant d’ajouter son image de référence.");
@@ -157,23 +171,26 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
         setLocalError("L’image n’a pas pu être associée.");
         return;
       }
+      if (typeof result.compositionRevision === "number") setBaseRevision(result.compositionRevision);
       setCorrectionReason("");
       setMediaStatus("Image de référence privée enregistrée.");
     } catch (error) {
       setMediaStatus(null);
       setLocalError(error instanceof Error ? error.message : "L’image n’a pas pu être associée.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return <CmmCard tone="amber" variant="glass" className="space-y-4 p-5">
     <div><h2 className="cmm-text-h3">Parcours prévu · {divisionLabel}</h2><p className="cmm-text-small">Ce parcours est une référence préparatoire, indépendante de toute trace réellement parcourue et de tout calcul environnemental.</p></div>
     <div className="grid gap-3 sm:grid-cols-3"><div className="rounded-xl border border-black/10 bg-white/75 p-3"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Source</p><p className="font-bold">{route?.source === "manual_reference" ? "Dessiné sur la carte" : route?.source === "official_reference" ? "Référence historique" : route ? "GPX importé" : "À définir"}</p></div><div className="rounded-xl border border-black/10 bg-white/75 p-3"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Distance</p><p className="font-bold">{distance ?? route?.reference_distance_km ?? "—"} km</p></div><div className="rounded-xl border border-black/10 bg-white/75 p-3"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Version</p><p className="font-bold">{route ? `v${route.route_version}` : "Première version"}</p></div></div>
-    {hasRemoteUpdate ? <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"><span>Une nouvelle version serveur du parcours est disponible. Votre dessin local est conservé tant que vous ne chargez pas la version serveur.</span><CmmButton type="button" size="sm" tone="secondary" onClick={loadServerVersion}>Charger la version serveur</CmmButton></div> : null}
-    <ActionDrawingMap value={drawing} onChange={(next) => { setIsDirty(true); if (next?.kind === "polyline") setDrawing({ kind: "polyline", coordinates: next.coordinates }); else setDrawing(null); }} />
-    <div className="grid gap-3 md:grid-cols-2"><label className="block text-sm font-bold">Importer un GPX<input className="mt-1 block w-full rounded-lg border border-black/10 bg-white p-2" type="file" accept=".gpx,application/gpx+xml" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void importGpx(file); }} /></label><label className="block text-sm font-bold">Ajouter une image de référence privée<input className="mt-1 block w-full rounded-lg border border-black/10 bg-white p-2" type="file" accept="image/jpeg,image/png,image/webp" disabled={busy || !route} onChange={(event) => { const file = event.target.files?.[0]; if (file) void addReferenceImage(file); }} /></label></div>
+    {hasRemoteUpdate ? <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"><span>Une nouvelle version serveur du parcours est disponible. Votre dessin local est conservé tant que vous ne chargez pas la version serveur.</span><CmmButton type="button" size="sm" tone="secondary" disabled={isLocked} onClick={loadServerVersion}>Charger la version serveur</CmmButton></div> : null}
+    <ActionDrawingMap value={drawing} readOnly={isLocked} onChange={(next) => { if (isLocked) return; setIsDirty(true); if (next?.kind === "polyline") setDrawing({ kind: "polyline", coordinates: next.coordinates }); else setDrawing(null); }} />
+    <div className="grid gap-3 md:grid-cols-2"><label className="block text-sm font-bold">Importer un GPX<input className="mt-1 block w-full rounded-lg border border-black/10 bg-white p-2" type="file" accept=".gpx,application/gpx+xml" disabled={isLocked} onChange={(event) => { const file = event.target.files?.[0]; if (file) void importGpx(file); }} /></label><label className="block text-sm font-bold">Ajouter une image de référence privée<input className="mt-1 block w-full rounded-lg border border-black/10 bg-white p-2" type="file" accept="image/jpeg,image/png,image/webp" disabled={isLocked || !route} onChange={(event) => { const file = event.target.files?.[0]; if (file) void addReferenceImage(file); }} /></label></div>
     {route?.reference_media_id ? <p className="text-sm font-bold text-slate-700">Une image de référence privée est associée. Elle ne sert ni à générer la géométrie ni à calculer la distance.</p> : null}
-    <label className="block text-sm font-bold">Motif de modification{requiresReason ? " (obligatoire pendant l’épreuve)" : " (facultatif hors épreuve)"}<textarea className="mt-1 min-h-20 w-full rounded-lg border border-black/10 bg-white p-2" value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="Expliquez la correction ou la provenance de la nouvelle référence." /></label>
-    <div className="flex flex-wrap items-center gap-3"><CmmButton type="button" tone="primary" disabled={busy || !drawing || hasRemoteUpdate} onClick={() => void saveDrawing()}>Enregistrer le parcours</CmmButton>{mediaStatus ? <p role="status" className="text-sm font-bold text-emerald-800">{mediaStatus}</p> : null}{localError ? <p role="alert" className="text-sm font-bold text-red-800">{localError}</p> : null}</div>
+    <label className="block text-sm font-bold">Motif de modification{requiresReason ? " (obligatoire pendant l’épreuve)" : " (facultatif hors épreuve)"}<textarea className="mt-1 min-h-20 w-full rounded-lg border border-black/10 bg-white p-2" disabled={isLocked} value={correctionReason} onChange={(event) => { if (!isLocked) setCorrectionReason(event.target.value); }} placeholder="Expliquez la correction ou la provenance de la nouvelle référence." /></label>
+    <div className="flex flex-wrap items-center gap-3"><CmmButton type="button" tone="primary" disabled={isLocked || !drawing || hasRemoteUpdate} onClick={() => void saveDrawing()}>Enregistrer le parcours</CmmButton>{mediaStatus ? <p role="status" className="text-sm font-bold text-emerald-800">{mediaStatus}</p> : null}{localError ? <p role="alert" className="text-sm font-bold text-red-800">{localError}</p> : null}</div>
     {route?.last_change_reason ? <p className="text-sm text-slate-700">Dernier motif : {route.last_change_reason}</p> : null}
     <p className="text-xs text-slate-600">Topologie estimée pour la version dessinée : {drawing ? inferGpxTopology(drawing.coordinates) : route?.inferred_topology ?? "—"}.</p>
   </CmmCard>;

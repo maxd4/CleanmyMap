@@ -15,18 +15,22 @@ vi.mock("next/dynamic", () => ({
   default: () => function DynamicDrawingMap({
     value,
     onChange,
+    readOnly,
   }: {
     value: { kind: string; coordinates: Array<[number, number]> } | null;
     onChange: (next: { kind: "polyline"; coordinates: Array<[number, number]> }) => void;
+    readOnly?: boolean;
   }) {
     mocks.lastMapValue = value;
     mocks.triggerMapChange = onChange;
     return (
       <div>
         <span data-testid="map-coords">{value ? JSON.stringify(value.coordinates) : "none"}</span>
+        <span data-testid="map-readonly">{readOnly ? "readonly" : "editable"}</span>
         <button
           type="button"
           data-testid="edit-map"
+          disabled={readOnly}
           onClick={() => onChange({ kind: "polyline", coordinates: [[48.81, 2.31], [48.82, 2.32]] })}
         >
           Modifier dessin
@@ -295,5 +299,91 @@ describe("SpogomiRouteEditor", () => {
       null,
     );
     expect(container.querySelector("textarea")?.value).toBe("");
+  });
+
+  it("locks map and reason during deferred save and synchronizes baseRevision across two consecutive saves", async () => {
+    let resolveSave1!: (value: Record<string, unknown> | null) => void;
+    const action = vi.fn(
+      () => new Promise<Record<string, unknown> | null>((resolve) => { resolveSave1 = resolve; }),
+    );
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    const routeV1 = makeRoute({ route_version: 1 });
+    const renderWith = (route: SpogomiRouteProjection, expectedRevision: number) => {
+      root!.render(
+        <SpogomiRouteEditor
+          eventId="event-1"
+          actionId="action-1"
+          activeDivisionId={null}
+          divisionLabel="Casual"
+          eventState="in_progress"
+          expectedRevision={expectedRevision}
+          route={route}
+          busy={false}
+          action={action}
+        />,
+      );
+    };
+
+    await act(async () => { renderWith(routeV1, 5); });
+    const textarea = container.querySelector("textarea")!;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+      setter.call(textarea, "Motif initial");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      container!.querySelector<HTMLButtonElement>('[data-testid="edit-map"]')!.click();
+    });
+
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((btn) => btn.textContent?.includes("Enregistrer le parcours"))!;
+    await act(async () => { saveBtn.click(); });
+
+    // Map and textarea must be locked while save is in flight, and programmatic onChange ignored
+    expect(container.querySelector('[data-testid="map-readonly"]')?.textContent).toBe("readonly");
+    expect(textarea.disabled).toBe(true);
+    await act(async () => {
+      mocks.triggerMapChange?.({ kind: "polyline", coordinates: [[49.0, 2.0], [49.1, 2.1]] });
+    });
+    expect(container.querySelector('[data-testid="map-coords"]')?.textContent).toBe("[[48.81,2.31],[48.82,2.32]]");
+
+    // Resolve 1st save + renew props from server refresh (revision 6)
+    const routeV2 = makeRoute({
+      route_version: 2,
+      geometry_geojson: { type: "LineString", coordinates: [[2.31, 48.81], [2.32, 48.82]] },
+    });
+    await act(async () => {
+      resolveSave1({ compositionRevision: 6 });
+      await Promise.resolve();
+      renderWith(routeV2, 6);
+    });
+    expect(container.querySelector('[data-testid="map-readonly"]')?.textContent).toBe("editable");
+    expect(textarea.disabled).toBe(false);
+
+    // Second consecutive edit and save must send expectedRevision: 6
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+      setter.call(textarea, "Deuxième correction");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      mocks.triggerMapChange?.({ kind: "polyline", coordinates: [[48.91, 2.41], [48.92, 2.42]] });
+    });
+    action.mockResolvedValueOnce({ compositionRevision: 7 });
+    await act(async () => {
+      saveBtn.click();
+      await Promise.resolve();
+    });
+    expect(action).toHaveBeenLastCalledWith(
+      "/api/spogomi/events/event-1/routes",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          divisionId: null,
+          expectedRevision: 6,
+          correctionReason: "Deuxième correction",
+          coordinates: [[48.91, 2.41], [48.92, 2.42]],
+        }),
+      }),
+      null,
+    );
   });
 });
