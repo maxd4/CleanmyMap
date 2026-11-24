@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { ExternalLink, MapPin } from "lucide-react";
 import type { ActionLocationCoordinates } from "@/lib/actions/types";
@@ -9,6 +10,12 @@ const SpogomiLocationMap = dynamic(
   () => import("./spogomi-location-map").then((module) => module.SpogomiLocationMap),
   { ssr: false, loading: () => <div className="h-[280px] animate-pulse rounded-2xl bg-emerald-50 sm:h-[320px]" aria-label="Chargement de la carte" /> },
 );
+
+type LocationSelectionSource = "address" | "map" | null;
+
+export function formatSpogomiMapPointLabel(coordinates: ActionLocationCoordinates): string {
+  return `Point choisi sur la carte (${coordinates.latitude.toFixed(5)}, ${coordinates.longitude.toFixed(5)})`;
+}
 
 export function SpogomiLocationPicker({
   value,
@@ -21,6 +28,10 @@ export function SpogomiLocationPicker({
   onChange: (value: string, coordinates: ActionLocationCoordinates | null) => void;
   error?: readonly string[];
 }) {
+  const [selectionSource, setSelectionSource] = useState<LocationSelectionSource>(null);
+  const effectiveSource: LocationSelectionSource = !coordinates
+    ? null
+    : selectionSource ?? (value === formatSpogomiMapPointLabel(coordinates) ? "map" : "address");
   const googleMapsHref = coordinates
     ? `https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}`
     : null;
@@ -34,8 +45,12 @@ export function SpogomiLocationPicker({
         label="Lieu"
         placeholder="Recherchez une adresse ou collez un lien Google Maps"
         value={value}
+        coordinates={coordinates}
         required
-        onChange={(nextValue, nextCoordinates) => onChange(nextValue, nextCoordinates ?? null)}
+        onChange={(nextValue, nextCoordinates) => {
+          setSelectionSource(nextCoordinates ? "address" : null);
+          onChange(nextValue, nextCoordinates ?? null);
+        }}
         helperText="Sélectionnez une adresse précise pour placer la compétition"
         ariaInvalid={Boolean(error?.length)}
         ariaDescribedBy={error?.length ? "spogomi-create-locationLabel-error" : "spogomi-create-location-help"}
@@ -44,7 +59,20 @@ export function SpogomiLocationPicker({
         <MapPin size={14} className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />
         Un libellé seul ne suffit pas : confirmez une adresse, utilisez un lien Google Maps ou choisissez le point sur la carte.
       </p>
-      <SpogomiLocationMap coordinates={coordinates} onSelect={(nextCoordinates) => onChange(value, nextCoordinates)} />
+      <SpogomiLocationMap
+        coordinates={coordinates}
+        onSelect={(nextCoordinates) => {
+          setSelectionSource("map");
+          onChange(formatSpogomiMapPointLabel(nextCoordinates), nextCoordinates);
+        }}
+      />
+      {coordinates ? (
+        <p className="text-xs font-semibold text-emerald-900/75" data-testid="spogomi-location-source">
+          {effectiveSource === "map"
+            ? "Origine : point choisi manuellement sur la carte."
+            : "Origine : adresse ou lien Google Maps géolocalisé."}
+        </p>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2" aria-live="polite">
         <output className="rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-3 py-2 text-sm text-emerald-950">
           <span className="block text-xs font-bold uppercase tracking-[0.12em] text-emerald-800/65">Latitude</span>

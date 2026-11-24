@@ -11,7 +11,10 @@ La création privée depuis `/spogomi/nouveau` réutilise la géolocalisation de
 l’action CleanMyMap canonique. Le formulaire conserve un libellé de lieu pour
 l’affichage, mais ne valide pas ce libellé seul : une adresse sélectionnée, un
 lien Google Maps interprété ou un point choisi/déplacé sur la carte doit fournir
-une paire WGS84 `latitude` / `longitude`. Cette paire est transmise à la
+une paire WGS84 `latitude` / `longitude`. Lorsqu’un point est choisi ou déplacé
+manuellement sur la carte, le libellé est mis à jour simultanément vers un
+libellé descriptif non trompeur (`Point choisi sur la carte (<lat>, <lng>)`) afin
+de ne jamais conserver une ancienne adresse incohérente. Cette paire est transmise à la
 création de l’action unique liée à l’édition ; aucune seconde géolocalisation
 SPOGOMI n’est créée.
 
