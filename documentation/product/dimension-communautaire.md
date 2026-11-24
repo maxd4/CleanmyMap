@@ -2,6 +2,14 @@
 
 CleanMyMap peut renforcer son utilite en transformant la participation ponctuelle en reseau local lisible, reconnu et recurrent.
 
+À long terme, ce réseau peut s'appuyer sur un maillage de référents locaux
+coordonnant les actions de proximité, la mobilisation récurrente et la
+coopération entre collectifs. À Paris, l'hypothèse de un à deux brigadiers
+référents par arrondissement est une cible stratégique, non un rôle ou une
+permission de l'application. Les associations gardent leur autonomie et les
+services publics leurs responsabilités. Le détail de cette cible relève de
+l'[ambition territoriale de référence](./ambition-territoriale-paris.md) (`PLAN / TARGET`).
+
 > **Statut documentaire : PLAN / OBJECTIF PRODUIT.** Les intentions, axes,
 > fonctionnalités MVP et indicateurs ci-dessous décrivent une direction à
 > développer ; ils ne constituent pas un inventaire de capacités disponibles

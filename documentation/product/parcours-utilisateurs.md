@@ -134,6 +134,19 @@ Règles UX :
 | Scientifique | Méthodologie, rapports, Open Data | Étudier des données publiques/assainies | Aucun privilège sur données privées |
 | Admin | `/admin` | Qualifier, modérer, superviser | Capacité et garde serveur propres aux opérations sensibles |
 
+### Usages territoriaux envisagés (`PLAN / TARGET`)
+
+Dans une expérimentation territoriale future, un coordinateur local pourrait
+repérer les besoins, relayer les actions et aider les collectifs à maintenir
+une mobilisation récurrente. Une collectivité pourrait faciliter les contacts,
+les consignes, les soutiens matériels et la restitution ; une association
+conserverait l'organisation et la gouvernance de ses propres actions ; un
+établissement d'enseignement pourrait encadrer des activités pédagogiques de
+prévention et de terrain. Ces usages supposent des accords et responsabilités
+réels, ne décrivent pas des capacités actuellement disponibles et n'ajoutent
+aucun droit à un persona. La source stratégique spécialisée est l'[ambition
+territoriale pour Paris](./ambition-territoriale-paris.md).
+
 `/pilotage` n'est pas une vue globale attribuée au simple rôle admin. Un coordinateur sans ressource liée obtient un état vide, pas les données d'autres utilisateurs.
 
 ### Publics et responsabilités

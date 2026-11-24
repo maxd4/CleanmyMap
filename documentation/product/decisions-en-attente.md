@@ -27,6 +27,24 @@ flowchart TD
 - Perimetre exact du PDF web complet attendu pour validation academique.
 - Seuils minimaux de qualite et de performance pour cloturer chaque lot critique.
 
+## Arbitrages territoriaux (`PLAN`)
+
+Les éléments suivants restent à décider après les preuves P0 et les échanges
+avec des acteurs disponibles ; ils ne remettent pas en cause l'ambition
+stratégique décrite dans l'[ambition territoriale de référence](./ambition-territoriale-paris.md) :
+
+- territoire et partenaires qui accepteraient effectivement de participer à
+  une première expérimentation, ainsi que le périmètre et le calendrier ;
+- responsabilités opérationnelles, consignes, soutiens matériels et cadre
+  conventionnel applicables au pilote ;
+- critères de validation terrain, charge acceptable et conditions autorisant
+  ou écartant un essaimage vers d'autres communes.
+
+Le nombre cible de référents et le positionnement de Paris comme territoire
+d'expérimentation sont des éléments de stratégie `PLAN / TARGET`, non des
+arbitrages ouverts ni des engagements acquis. Aucun rôle applicatif ni
+permission territoriale n'est décidé ici.
+
 ## Chantier futur — rôles scientifique et entreprise
 
 **Statut : `PLAN / ARBITRAGE OUVERT` — non implémenté.**

@@ -26,6 +26,16 @@ la science participative conditionnelle. Ces qualificatifs décrivent un
 positionnement, pas un agrément, une certification, un statut juridique ou un
 résultat déjà mesuré.
 
+À long terme, CleanMyMap vise à devenir une infrastructure numérique commune
+de coordination de la dépollution citoyenne : coopération entre habitants,
+collectifs, associations, établissements d'enseignement, collectivités et
+services publics, dans le respect de leurs responsabilités respectives. La
+prévention et la sensibilisation complètent la collecte. Une expérimentation à
+Paris doit éprouver cette ambition avant tout essaimage ; le produit reste
+national et reproductible à l'international. Cette orientation est `PLAN / TARGET`,
+pas une capacité territoriale ou un partenariat `CURRENT`. Sa source spécialisée
+est l'[ambition territoriale pour Paris](./ambition-territoriale-paris.md).
+
 | Qualification | Statut documentaire |
 |---|---|
 | Projet environnemental, numérique, civic-tech et open source | `CURRENT` |
@@ -77,6 +87,7 @@ scientifique exhaustive ni validation de science participative n'est implicite.
 
 - Compléter la validation terrain de bout en bout et garantir la reproductibilité des rapports.
 - Tester les premières prestations et programmes territoriaux avec des partenaires réels.
+- Éprouver à Paris, après les validations P0, une coordination locale complémentaire aux services publics et aux associations autonomes ; évaluer les usages et la prévention avant de décider d'un essaimage dans d'autres communes.
 - Structurer juridiquement et financièrement le projet, sans supposer l'association déjà constituée.
 - Finaliser les validations mobile sur appareils physiques, background et distribution.
 - Étendre les usages institutionnels et scientifiques seulement sur besoin et droit démontrés.

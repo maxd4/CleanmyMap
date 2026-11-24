@@ -36,6 +36,7 @@ Repères transversaux à conserver dans toute la documentation produit :
 ### Vision et stratégie
 
 - `vision-et-objectifs.md` — vision globale et positionnement du projet ;
+- [`ambition-territoriale-paris.md`](./ambition-territoriale-paris.md) — source spécialisée `PLAN / TARGET` pour l'expérimentation parisienne et la reproductibilité territoriale ;
 - `business-model.md` — hypothèses économiques et critères de validation (`PLAN`) ;
 - `roadmap-priorisee.md` — priorités produit ;
 - `roadmap-priorisee-long.md` — historique détaillé (`HISTORY`), conservé pour son contexte et ses critères, sans autorité sur l'ordre courant ;

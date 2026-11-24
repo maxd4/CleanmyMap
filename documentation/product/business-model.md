@@ -20,6 +20,15 @@ CleanMyMap vise un modèle économique hybride qui préserve **l'accès citoyen 
 
 **Positionnement proposé :** vendre une **prestation, un accompagnement, une configuration, une restitution personnalisée ou un service continu**, et non la donnée personnelle, le pouvoir de modération, la priorité artificielle d'un partenaire ou l'exclusivité d'un code open source.
 
+Les programmes territoriaux constituent une hypothèse de déploiement à tester
+avec les collectivités et les réseaux associatifs, en complémentarité avec les
+services publics. Ils peuvent nécessiter des conventions de projet, des
+soutiens matériels ou logistiques, et, selon le portage et le besoin réels,
+une prestation, une subvention ou un mécénat. Ces mécanismes restent des
+hypothèses soumises aux règles ci-dessous : aucun partenaire, financement,
+convention ou moyen municipal n'est acquis. L'expérimentation parisienne et
+ses conditions sont détaillées dans l'[ambition territoriale de référence](./ambition-territoriale-paris.md).
+
 Publicité, cagnotte de dons et achat de visibilité publicitaire ne sont **pas** les axes retenus pour cette étude. Le mécénat, les subventions et les financements fléchés restent pertinents car ils diffèrent d'une simple cagnotte publique.
 
 ## 2. État actuel et frontières de vérité

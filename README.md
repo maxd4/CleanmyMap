@@ -38,6 +38,12 @@ décrivent le périmètre de référence : relier repérer, préparer, mobiliser
 documenter et partager, tout en distinguant les capacités `CURRENT` des
 objectifs et extensions encore en développement.
 
+À long terme, CleanMyMap vise à devenir une infrastructure numérique commune
+de coordination de la dépollution citoyenne, expérimentée à Paris puis
+reproductible dans d'autres communes. Paris est un territoire d'expérimentation,
+pas une limite géographique du produit ; cette ambition reste `PLAN / TARGET`.
+Voir l'[ambition territoriale de référence](./documentation/product/ambition-territoriale-paris.md).
+
 ## Capacités principales
 
 - **Agir** — signaler, rejoindre, préparer ou organiser une action de terrain.

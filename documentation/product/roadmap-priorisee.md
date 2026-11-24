@@ -189,8 +189,15 @@ partenariat, licence officielle ou revenu acquis présumé.
 
 ### P1 — Territoires, communauté, messagerie et administration
 
-Les programmes territoriaux et workflows partenaires ne s'ouvrent qu'après des
-preuves P0, avec partenaire, périmètre, responsabilités, confidentialité et
+Après les preuves P0, mener une expérimentation territoriale à Paris sur un
+périmètre et avec des partenaires effectivement confirmés. La cible de long
+terme — un à deux brigadiers référents par arrondissement, en lien avec les
+mairies, la DPE, les associations, les habitants et les établissements
+d'enseignement — est décrite dans l'[ambition territoriale de référence](./ambition-territoriale-paris.md) ; elle ne constitue ni un effectif acquis ni un rôle applicatif.
+Valider l'utilité, la charge, la coopération et les résultats documentés avec
+les acteurs avant tout essaimage dans d'autres communes. Paris reste un terrain
+d'expérimentation, pas une limite géographique du produit. Aucun workflow
+partenaire ne s'ouvre sans périmètre, responsabilités, confidentialité et
 provenance écrits. Une communauté déjà équipée doit d'abord être rendue lisible
 et testée : ne pas recréer un réseau social, dupliquer la messagerie ou ajouter
 des fils publics sans besoin démontré.
