@@ -160,6 +160,10 @@ describe("vercel regression gates", () => {
         "apps/web/src/app/api/spogomi/events/[eventId]/volunteer-help-proposals/review/route.ts",
         "6ea855543fea156ae76114067dc8b446543f0874",
       ],
+      [
+        "apps/web/src/app/api/spogomi/events/[eventId]/team-referees/route.ts",
+        "da2fe4ef73bf7a59ecc4c10825e11990399968aa",
+      ],
     ]);
     const justifications = new Map(
       (readBaseline().additionalChangeJustifications ?? [])
