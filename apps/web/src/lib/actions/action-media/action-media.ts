@@ -20,6 +20,7 @@ import { validateMediaUploadInput } from "../media/media-upload-validation";
 import {
   markActionMediaFailedIfCurrent,
   markActionMediaReady,
+  isRemovedRouteReference,
   prepareRetryState,
   type ActionMediaReadyResult,
   type ActionMediaRow,
@@ -323,6 +324,9 @@ async function resolveRetryUploadState(
   params: ActionMediaUploadParams,
 ): Promise<{ row: ActionMediaRow; ready: { mediaId: string; uploadState: "ready" } | null }> {
   assertImmutableRetryMetadata(params.actionId, row, params);
+  if (isRemovedRouteReference(row)) {
+    throw new ActionMediaError("La référence d’itinéraire a été désactivée et ne peut pas être réactivée.", "conflict");
+  }
   if (row.upload_state === "ready") {
     await verifyStoredActionMediaObject(supabase, row);
     return { row, ready: { mediaId: row.id, uploadState: "ready" } };
@@ -394,6 +398,9 @@ export async function finalizeActionMedia(
   if (!result.data) throw new ActionMediaError("Photo introuvable.", "not_found");
   const row = result.data as ActionMediaRow;
   await assertActionAccess({ supabase, ...params, purpose: row.purpose ?? "report_photo" });
+  if (isRemovedRouteReference(row)) {
+    throw new ActionMediaError("La référence d’itinéraire a été désactivée et ne peut pas être réactivée.", "conflict");
+  }
   if (row.storage_bucket !== ACTION_MEDIA_BUCKET) {
     throw new ActionMediaError("Le bucket photo est invalide.", "validation");
   }
@@ -488,10 +495,14 @@ export async function removeActionRouteReference(
     throw new ActionMediaError("Cette référence n’est pas supprimable dans son état actuel.", "conflict");
   }
   if (row.upload_state !== "failed") {
-    const tombstone = await supabase.from("action_media")
+    let tombstoneQuery = supabase.from("action_media")
       .update({ upload_state: "failed", failure_reason: "user_removed_pending_cleanup" })
       .eq("id", row.id).eq("action_id", params.actionId).eq("purpose", "route_reference")
-      .eq("upload_state", row.upload_state).select("id").maybeSingle();
+      .eq("upload_state", row.upload_state);
+    tombstoneQuery = row.failure_reason == null
+      ? tombstoneQuery.is("failure_reason", null)
+      : tombstoneQuery.eq("failure_reason", row.failure_reason);
+    const tombstone = await tombstoneQuery.select("id").maybeSingle();
     if (tombstone.error) throw storageError("La suppression de la référence n’a pas pu être enregistrée.");
     if (!tombstone.data) {
       const latest = await supabase.from("action_media").select("upload_state, failure_reason")

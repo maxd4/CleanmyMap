@@ -12,6 +12,7 @@ import {
   removeActionRouteReference,
   validateActionMediaInput,
 } from "./action-media";
+import { markActionMediaReady, type ActionMediaRow } from "./action-media-transitions";
 
 type QueryResult = { data?: unknown; error?: unknown; count?: number | null };
 
@@ -29,6 +30,7 @@ function makeQuery(
     return query;
   });
   query.eq = vi.fn(() => query);
+  query.is = vi.fn(() => query);
   query.in = vi.fn(() => query);
   query.or = vi.fn(() => query);
   query.order = vi.fn(() => { list = true; return query; });
@@ -116,7 +118,11 @@ function makeEvolvingSupabase(params: {
 
     const matches = () => {
       if (!state.row) return false;
-      for (const [key, value] of equals) if (state.row[key] !== value) return false;
+      for (const [key, value] of equals) {
+        if (value === null
+          ? state.row[key] !== undefined && state.row[key] !== null
+          : state.row[key] !== value) return false;
+      }
       for (const [key, values] of inFilters) if (!values.includes(state.row[key])) return false;
       return true;
     };
@@ -145,6 +151,7 @@ function makeEvolvingSupabase(params: {
       return query;
     });
     query.eq = vi.fn((key: string, value: unknown) => { equals.set(key, value); return query; });
+    query.is = vi.fn((key: string, value: unknown) => { equals.set(key, value); return query; });
     query.in = vi.fn((key: string, values: unknown[]) => { inFilters.set(key, values); return query; });
     query.or = vi.fn(() => query);
     query.order = vi.fn(() => { list = true; return query; });
@@ -311,6 +318,40 @@ describe("action media contract", () => {
 
     expect(intent).toMatchObject({ mediaId: failedMedia.id, uploadState: "pending" });
   });
+
+});
+
+describe("route-reference tombstone guards", () => {
+
+  it.each(["user_removed_pending_cleanup", "user_removed"] as const)(
+    "does not retry a route reference disabled as %s",
+    async (failureReason) => {
+      const row = { ...readyMedia, purpose: "route_reference", upload_state: "failed", failure_reason: failureReason };
+      const supabase = makeEvolvingSupabase({ action, row, storageInfo: async () => ({ data: null, error: null }) });
+      await expect(createActionMediaUploadIntent(supabase as never, uploadParams({ purpose: "route_reference" })))
+        .rejects.toMatchObject({ code: "conflict" });
+      expect(supabase.__storageInfo).not.toHaveBeenCalled();
+      expect(supabase.__storageUpload).not.toHaveBeenCalled();
+      expect(supabase.__state.row).toMatchObject({ upload_state: "failed", failure_reason: failureReason });
+    },
+  );
+
+  it.each(["user_removed_pending_cleanup", "user_removed"] as const)(
+    "does not finalize a route reference disabled as %s",
+    async (failureReason) => {
+      const row = { ...readyMedia, purpose: "route_reference", upload_state: "failed", failure_reason: failureReason };
+      const supabase = makeEvolvingSupabase({ action, row, storageInfo: async () => ({ data: null, error: null }) });
+      await expect(finalizeActionMedia(supabase as never, finalizeParams()))
+        .rejects.toMatchObject({ code: "conflict" });
+      expect(supabase.__storageInfo).not.toHaveBeenCalled();
+      expect(supabase.__appliedUpdates).toHaveLength(0);
+      expect(supabase.__state.row).toMatchObject({ upload_state: "failed", failure_reason: failureReason });
+    },
+  );
+
+});
+
+describe("action media contract continuation", () => {
 
   it("finalizes an already transmitted object without issuing another upload", async () => {
     const supabase = makeSupabase({
@@ -602,6 +643,55 @@ describe("action media contract", () => {
     expect(supabase.__storageUpload).not.toHaveBeenCalled();
     expect(sharedRow.upload_state).toBe("ready");
   });
+
+});
+
+describe("route-reference tombstone races", () => {
+
+  it("does not restore ready when the ready transition races a route-reference tombstone", async () => {
+    const sharedRow = { ...readyMedia, purpose: "route_reference", upload_state: "pending", failure_reason: null };
+    const supabase = makeEvolvingSupabase({
+      action,
+      row: sharedRow,
+      storageInfo: async () => ({ data: null, error: null }),
+      beforeUpdate: async (payload) => {
+        if (payload.upload_state === "ready") {
+          Object.assign(sharedRow, { upload_state: "failed", failure_reason: "user_removed_pending_cleanup" });
+        }
+      },
+    });
+    await expect(markActionMediaReady(supabase as never, sharedRow as ActionMediaRow, {
+      storageError: (message) => new ActionMediaError(message, "storage_error"),
+      verifyStoredActionMediaObject: vi.fn(async () => undefined),
+      toRecord: (row) => row as unknown as import("./action-media-contract").ActionMediaRecord,
+    })).rejects.toMatchObject({ code: "storage_error" });
+    expect(sharedRow).toMatchObject({ upload_state: "failed", failure_reason: "user_removed_pending_cleanup" });
+    expect(supabase.__appliedUpdates.filter((payload) => payload.upload_state === "ready")).toHaveLength(0);
+  });
+
+  it("does not restore pending when an upload retry races a route-reference tombstone", async () => {
+    const sharedRow = { ...readyMedia, purpose: "route_reference", upload_state: "failed", failure_reason: "object_missing" };
+    const supabase = makeEvolvingSupabase({
+      action,
+      row: sharedRow,
+      storageInfo: async () => ({ data: null, error: null }),
+      beforeUpdate: async (payload) => {
+        if (payload.upload_state === "pending") {
+          Object.assign(sharedRow, { upload_state: "failed", failure_reason: "user_removed_pending_cleanup" });
+        }
+      },
+    });
+
+    await expect(createActionMediaUploadIntent(supabase as never, uploadParams({ purpose: "route_reference" })))
+      .rejects.toMatchObject({ code: "storage_error" });
+    expect(sharedRow).toMatchObject({ upload_state: "failed", failure_reason: "user_removed_pending_cleanup" });
+    expect(supabase.__appliedUpdates.filter((payload) => payload.upload_state === "pending")).toHaveLength(0);
+    expect(supabase.__storageUpload).not.toHaveBeenCalled();
+  });
+
+});
+
+describe("action media contract finalization", () => {
 
   it("returns ready when signed URL failure arrives after finalization", async () => {
     let checks = 0;
