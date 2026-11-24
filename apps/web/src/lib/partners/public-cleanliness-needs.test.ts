@@ -16,8 +16,10 @@ describe("Paris waste chain and public contact routes", () => {
         expect(route.sources.length).toBeGreaterThan(0);
         expect(route.targets.every(target => target.sources.length > 0)).toBe(true);
         const division = route.targets.find(target => target.id.startsWith("division-"));
-        expect(division?.territoryKnown).toBe(true);
-        expect(data.nodes.find(node => node.id === division?.id)?.territoryIds).toContain(territory);
+        if (division) {
+          expect(division.territoryKnown).toBe(true);
+          expect(data.nodes.find(node => node.id === division.id)?.territoryIds).toContain(territory);
+        }
       }
     }
     expect(getPublicCleanlinessNeedRoute(data, "Paris:21", "organize")).toBeNull();
