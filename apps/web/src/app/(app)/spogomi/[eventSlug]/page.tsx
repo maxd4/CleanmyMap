@@ -158,7 +158,15 @@ export default async function SpogomiPublicEventPage({
           selectedDivisionType={selectedDivisionType}
           activeTab={intent.tab}
           keyFigures={[
-            { label: "Divisions", value: String(event.divisions.length) },
+            {
+              label: "Formats",
+              value:
+                event.mode === "mixed"
+                  ? "Casual et World Cup"
+                  : event.mode === "world_cup"
+                    ? "World Cup"
+                    : "Casual",
+            },
             { label: "Équipes publiées", value: String(visibleTeams.length) },
             {
               label: "Inscrits",
@@ -176,7 +184,7 @@ export default async function SpogomiPublicEventPage({
             <p>
               Cette fiche publique éventuelle présente uniquement une
               simulation. Les résultats restent non officiels et la publication
-              de chaque division dépend des contrôles de certification.
+              de chaque format dépend des contrôles de certification.
             </p>
           </SpogomiSyntheticDemoNotice>
         ) : null}

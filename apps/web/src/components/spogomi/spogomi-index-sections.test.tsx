@@ -186,7 +186,8 @@ describe("SpogomiPublicEvents", () => {
     expect(markup).toContain("Voir la démonstration Cachan");
     expect(markup).toContain("/spogomi/demonstration/cachan");
     expect(markup).toContain('data-testid="spogomi-cachan-demo-stats"');
-    expect(markup).toContain(">2</dt>");
+    expect(markup).toContain("Casual et World Cup");
+    expect(markup).toContain(">Formats</dd>");
     expect(markup).toContain(">11</dt>");
     expect(markup).toContain(">37</dt>");
     expect(markup).toContain("Résultats indisponibles");

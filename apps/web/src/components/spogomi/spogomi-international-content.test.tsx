@@ -7,13 +7,13 @@ const copy = {
   worldTitle: "SPOGOMI dans le monde",
   worldDescription: "Présentation du mouvement.",
   cleanMyMapRole: "Rôle local de CleanMyMap.",
-  worldDetails: "Voir le rôle de CleanMyMap et les sources",
+  worldDetails: "À propos de SPOGOMI et sources officielles",
   officialSources: "Références officielles vérifiées",
   verifiedOn: "Vérifié le",
   newsTitle: "Actualités officielles",
   confirmed: "Confirmé",
   planned: "Prévisionnel",
-  dateSet: "Date Set",
+  dateSet: "Date fixée",
   internationalEvents: "Événements internationaux",
   year: "Année",
   country: "Pays",
@@ -25,7 +25,7 @@ const copy = {
 };
 
 describe("SpogomiInternationalContent", () => {
-  it("keeps the international content in three compact blocks without changing its data", () => {
+  it("renders two balanced columns on desktop and a full-width closed disclosure below", () => {
     const markup = renderToStaticMarkup(
       <SpogomiInternationalContent
         locale="fr"
@@ -36,19 +36,23 @@ describe("SpogomiInternationalContent", () => {
       />,
     );
 
-    expect(markup.match(/data-cmm-card-tone="slate"/g)).toHaveLength(3);
+    expect(markup.match(/data-cmm-card-tone="slate"/g)).toHaveLength(2);
+    expect(markup).toContain("lg:grid-cols-2");
     expect(markup).toContain("<details");
-    expect(markup).toContain("Voir le rôle de CleanMyMap et les sources");
+    expect(markup).not.toContain("<details open");
+    expect(markup).toContain("À propos de SPOGOMI et sources officielles");
     expect(markup).toContain('data-testid="spogomi-international-news-list"');
     expect(markup).toContain('data-testid="spogomi-international-events-list"');
     expect(markup).toContain("https://spogomi.or.jp/");
-    expect(markup).toContain("2026-11-08");
+    expect(markup).toContain("8 novembre 2026");
+    expect(markup).not.toContain("Vérifié le 2026-11-08");
     expect(markup).toContain("Règles générales japonaises");
     expect(markup).toContain("40 pays et régions annoncés");
     expect(markup).toContain("5 novembre 2026");
-    expect(markup).toContain("Date Set");
+    expect(markup).toContain("Date fixée");
     expect(markup).toContain("Prévisionnel");
     expect(markup).toContain("Octobre 2027 — date précise à confirmer");
+    expect(markup).not.toContain("5 juin 2027 — lieu à confirmer · Lieu à confirmer");
     expect(markup).toContain('aria-label="Événements internationaux filters"');
     expect(markup).toContain("Toutes les années");
     expect(markup).toContain("Tous les pays connus");

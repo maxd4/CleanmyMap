@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   CalendarDays,
   ExternalLink,
-  Globe2,
   Megaphone,
   SlidersHorizontal,
 } from "lucide-react";
@@ -61,12 +60,19 @@ function formatDate(value: string, locale: Locale) {
   return formatCivilDateInLocale(value, locale === "fr" ? "fr-FR" : "en-US");
 }
 
+function formatEventSchedule(period: string, place: string): string {
+  if (!place || period.toLowerCase().includes(place.toLowerCase())) {
+    return period;
+  }
+  return `${period} · ${place}`;
+}
+
 export function SpogomiInternationalContent({
   locale,
   sources,
   news,
   externalEvents,
-  visibleSections = ["world", "news", "events"],
+  visibleSections = ["events", "news"],
   copy,
 }: SpogomiInternationalContentProps) {
   const [year, setYear] = useState<number | null>(null);
@@ -89,10 +95,14 @@ export function SpogomiInternationalContent({
     () => filterSpogomiExternalEvents(externalEvents, { year, country }),
     [externalEvents, year, country],
   );
+  const activeColumns = [
+    visibleSections.includes("events"),
+    visibleSections.includes("news"),
+  ].filter(Boolean).length;
   const gridClassName =
-    visibleSections.length === 1
+    activeColumns <= 1
       ? "grid items-start gap-4"
-      : "grid items-start gap-4 lg:grid-cols-3";
+      : "grid items-start gap-4 lg:grid-cols-2";
 
   return (
     <section
@@ -101,102 +111,6 @@ export function SpogomiInternationalContent({
       aria-label={copy.worldTitle}
     >
       <div className={gridClassName}>
-        {visibleSections.includes("world") ? (
-          <CmmCard
-            tone="slate"
-            variant="glass"
-            className="min-w-0 space-y-4 p-4 sm:p-5"
-            data-testid="spogomi-international-world"
-          >
-            <div className="flex items-start gap-3">
-              <CmmIcon icon={Globe2} className="mt-1 shrink-0 text-emerald-700" />
-              <div className="min-w-0">
-                <h2 className="text-xl font-black text-slate-950">
-                  {copy.worldTitle}
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-900">
-                  {copy.worldDescription}
-                </p>
-              </div>
-            </div>
-            <CmmDisclosure summary={copy.worldDetails} tone="emerald" size="sm">
-              <div className="space-y-4 text-sm leading-6 text-slate-900">
-                <p>{copy.cleanMyMapRole}</p>
-                <div data-testid="spogomi-international-sources">
-                  <p className="font-black text-slate-950">{copy.officialSources}</p>
-                  <ul className="mt-2 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white/60 px-4">
-                    {sources.map((source) => (
-                      <li key={source.id} className="py-3 first:pt-4 last:pb-4">
-                        <a
-                          href={source.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex min-h-10 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                        >
-                          {source.label[locale]}
-                          <ExternalLink size={15} aria-hidden="true" />
-                        </a>
-                        <p className="cmm-text-small mt-1 text-slate-800">
-                          {source.description[locale]} · {copy.verifiedOn}{" "}
-                          {source.verifiedAt}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </CmmDisclosure>
-          </CmmCard>
-        ) : null}
-
-        {visibleSections.includes("news") ? (
-          <CmmCard
-            tone="slate"
-            variant="glass"
-            className="min-w-0 space-y-4 p-4 sm:p-5"
-            data-testid="spogomi-international-news"
-          >
-            <div className="flex items-start gap-3">
-              <CmmIcon icon={Megaphone} className="mt-1 shrink-0 text-emerald-700" />
-              <div className="min-w-0">
-                <h2 className="text-xl font-black text-slate-950">
-                  {copy.newsTitle}
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-900">
-                  {copy.officialSources}
-                </p>
-              </div>
-            </div>
-            <div className="grid gap-3" data-testid="spogomi-international-news-list">
-              {news.map((item) => (
-                <article
-                  key={item.id}
-                  className="space-y-3 rounded-2xl border border-emerald-100 bg-white/80 p-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="cmm-text-small rounded-full bg-emerald-50 px-2.5 py-1 font-bold uppercase tracking-[0.12em] text-emerald-900">
-                      {stateLabel(item.state, copy)}
-                    </span>
-                    <time className="cmm-text-small text-slate-800" dateTime={item.publishedAt}>
-                      {formatDate(item.publishedAt, locale)}
-                    </time>
-                  </div>
-                  <h3 className="font-black text-slate-950">{item.title[locale]}</h3>
-                  <a
-                    href={item.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                  >
-                    {item.sourceLabel}
-                    <ExternalLink size={14} aria-hidden="true" />
-                  </a>
-                </article>
-              ))}
-            </div>
-          </CmmCard>
-        ) : null}
-
         {visibleSections.includes("events") ? (
           <CmmCard
             tone="slate"
@@ -266,7 +180,7 @@ export function SpogomiInternationalContent({
                     </div>
                     <p className="flex items-center gap-2 text-sm leading-6 text-slate-900">
                       <CalendarDays size={15} className="shrink-0 text-emerald-700" aria-hidden="true" />
-                      {event.period[locale]} · {event.place[locale]}
+                      {formatEventSchedule(event.period[locale], event.place[locale])}
                     </p>
                     <a
                       href={event.sourceUrl}
@@ -283,7 +197,84 @@ export function SpogomiInternationalContent({
             )}
           </CmmCard>
         ) : null}
+
+        {visibleSections.includes("news") ? (
+          <CmmCard
+            tone="slate"
+            variant="glass"
+            className="min-w-0 space-y-4 p-4 sm:p-5"
+            data-testid="spogomi-international-news"
+          >
+            <div className="flex items-start gap-3">
+              <CmmIcon icon={Megaphone} className="mt-1 shrink-0 text-emerald-700" />
+              <div className="min-w-0">
+                <h2 className="text-xl font-black text-slate-950">
+                  {copy.newsTitle}
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-900">
+                  {copy.officialSources}
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-3" data-testid="spogomi-international-news-list">
+              {news.map((item) => (
+                <article
+                  key={item.id}
+                  className="space-y-3 rounded-2xl border border-emerald-100 bg-white/80 p-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="cmm-text-small rounded-full bg-emerald-50 px-2.5 py-1 font-bold uppercase tracking-[0.12em] text-emerald-900">
+                      {stateLabel(item.state, copy)}
+                    </span>
+                    <time className="cmm-text-small text-slate-800" dateTime={item.publishedAt}>
+                      {formatDate(item.publishedAt, locale)}
+                    </time>
+                  </div>
+                  <h3 className="font-black text-slate-950">{item.title[locale]}</h3>
+                  <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
+                    {item.sourceLabel}
+                    <ExternalLink size={14} aria-hidden="true" />
+                  </a>
+                </article>
+              ))}
+            </div>
+          </CmmCard>
+        ) : null}
       </div>
+
+      <CmmDisclosure summary={copy.worldDetails} tone="emerald" size="sm">
+        <div className="space-y-4 text-sm leading-6 text-slate-900" data-testid="spogomi-international-world">
+          <p>{copy.worldDescription}</p>
+          <p>{copy.cleanMyMapRole}</p>
+          <div data-testid="spogomi-international-sources">
+            <p className="font-black text-slate-950">{copy.officialSources}</p>
+            <ul className="mt-2 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white/60 px-4">
+              {sources.map((source) => (
+                <li key={source.id} className="py-3 first:pt-4 last:pb-4">
+                  <a
+                    href={source.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-10 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
+                    {source.label[locale]}
+                    <ExternalLink size={15} aria-hidden="true" />
+                  </a>
+                  <p className="cmm-text-small mt-1 text-slate-800">
+                    {source.description[locale]} · {copy.verifiedOn}{" "}
+                    {formatDate(source.verifiedAt, locale)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </CmmDisclosure>
     </section>
   );
 }

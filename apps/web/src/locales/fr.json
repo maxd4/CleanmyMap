@@ -246,7 +246,7 @@
       "newsTitle": "Actualités officielles",
       "confirmed": "Confirmé",
       "planned": "Prévisionnel",
-      "dateSet": "Date Set",
+      "dateSet": "Date fixée",
       "eventsTitle": "Événements internationaux",
       "year": "Année",
       "country": "Pays",
@@ -258,7 +258,7 @@
       "noExternalEvents": "Aucun événement externe vérifié pour ces filtres.",
       "newsDetails": "Voir les actualités vérifiées",
       "filtersDetails": "Voir les filtres et événements",
-    "worldDetails": "Voir le rôle de CleanMyMap et les sources"
+      "worldDetails": "À propos de SPOGOMI et sources officielles"
     },
     "understanding": {
       "title": "Comprendre SPOGOMI",

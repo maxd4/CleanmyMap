@@ -118,11 +118,11 @@ export function SpogomiPublicEventNavigation({
               id="spogomi-division-selector-title"
               className="cmm-text-small font-black uppercase tracking-wide text-slate-600"
             >
-              Division affichée
+              Format affiché
             </p>
             <nav
               className="flex flex-wrap gap-2"
-              aria-label="Sélection de division"
+              aria-label="Sélection du format"
             >
               {divisions.map((division) => (
                 <Link

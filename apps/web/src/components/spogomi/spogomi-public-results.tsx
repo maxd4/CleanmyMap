@@ -156,7 +156,7 @@ function EnvironmentalSummary({
         </div>
         <p className="cmm-text-small text-slate-700">
           Projection CleanMyMap {environmental.projectionVersion ?? "—"}. Les
-          mesures certifiées des divisions sont consolidées une seule fois dans
+          mesures certifiées des formats sont consolidées une seule fois dans
           l’action parent.
         </p>
       </CmmCard>
@@ -199,7 +199,7 @@ function PublicResultsContent({
           </p>
           {activeDivision ? (
             <p className="cmm-text-small mt-1 font-black text-emerald-800">
-              Division affichée : {activeDivision.type === "world_cup" ? "World Cup" : "Casual"}
+              Format affiché : {activeDivision.type === "world_cup" ? "World Cup" : "Casual"}
             </p>
           ) : null}
         </div>

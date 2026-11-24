@@ -110,9 +110,9 @@ function DivisionSelector({
   if (divisionTypes.length < 2) return null;
 
   return (
-    <nav aria-label="Choisir la division" className="space-y-2">
+    <nav aria-label="Choisir un format" className="space-y-2">
       <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-600">
-        Division de cette édition
+        Format consulté
       </p>
       <div className="flex flex-wrap gap-2">
         {divisionTypes.map((divisionType) => (
@@ -122,7 +122,7 @@ function DivisionSelector({
             tone={selectedDivisionType === divisionType ? "primary" : "secondary"}
             size="sm"
             variant="pill"
-            ariaLabel={`Afficher la division ${divisionLabel[divisionType]}`}
+            ariaLabel={`Afficher le format ${divisionLabel[divisionType]}`}
           >
             <a
               href={buildSpogomiEventHref(eventSlug, { division: divisionType })}

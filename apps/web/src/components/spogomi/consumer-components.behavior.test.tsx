@@ -744,7 +744,7 @@ describe("SPOGOMI consumer components", () => {
     expect(JSON.stringify(renderer.toJSON())).toContain("Beta");
     expect(JSON.stringify(renderer.toJSON())).not.toContain("Alpha");
     expect(JSON.stringify(renderer.toJSON())).not.toMatch(/displayName|clerkId|email|ticket/i);
-    act(() => { findButton(renderer, "Toutes les divisions").props.onClick(); });
+    act(() => { findButton(renderer, "Tous les formats").props.onClick(); });
     expect(findButton(renderer, "World Cup").props["aria-pressed"]).toBe(false);
     act(() => { findButton(renderer, "World Cup").props.onClick(); });
     expect(findButton(renderer, "World Cup").props["aria-pressed"]).toBe(true);

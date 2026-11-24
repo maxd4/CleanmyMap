@@ -209,7 +209,7 @@ function DemoCatalogCard() {
         </span>
       </div>
       <dl className="grid grid-cols-3 gap-2" data-testid="spogomi-cachan-demo-stats">
-        <DemoStat icon={Layers3} value={CACHAN_DEMO_STATS.divisions} label="Divisions" />
+        <DemoStat icon={Layers3} value="Casual et World Cup" label="Formats" />
         <DemoStat icon={Users} value={CACHAN_DEMO_STATS.teams} label="Équipes" />
         <DemoStat icon={MapPin} value={CACHAN_DEMO_STATS.places} label="Places" />
       </dl>
@@ -234,13 +234,15 @@ function DemoStat({
   label,
 }: {
   icon: typeof Layers3;
-  value: number;
+  value: number | string;
   label: string;
 }) {
   return (
     <div className="rounded-2xl border border-amber-200 bg-white/80 px-3 py-3 text-center">
       <Icon size={18} className="mx-auto text-amber-800" aria-hidden="true" />
-      <dt className="mt-1 text-2xl font-black leading-none text-amber-950">{value}</dt>
+      <dt className={`mt-1 font-black text-amber-950 ${typeof value === "string" ? "text-sm leading-tight" : "text-2xl leading-none"}`}>
+        {value}
+      </dt>
       <dd className="mt-1 text-xs font-black uppercase tracking-[0.1em] text-slate-700">{label}</dd>
     </div>
   );
@@ -532,7 +534,7 @@ export function SpogomiInternational({
       </div>
       <SpogomiInternationalContent
         {...buildInternational(locale, t)}
-        visibleSections={["world", "news", "events"]}
+        visibleSections={["events", "news"]}
       />
     </div>
   );
