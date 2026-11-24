@@ -6,6 +6,38 @@ export function stageRecord(stage, status = "NOT_RUN", extra = {}) {
   return { stage, status, origin: "UNPROVEN", ...extra };
 }
 
+function parseFirstJsonObject(output) {
+  const text = String(output ?? "");
+  const start = text.indexOf("{");
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < text.length; index += 1) {
+    const character = text[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+    if (character === '"') inString = true;
+    else if (character === "{") depth += 1;
+    else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        try {
+          const parsed = JSON.parse(text.slice(start, index + 1));
+          return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+        } catch {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export function readExistingWorkflowStages(candidate, evidencePath) {
   try {
     const prior = JSON.parse(readFileSync(evidencePath, "utf8"));
@@ -116,16 +148,19 @@ export async function verifyCanonicalSchemaSeed({ assertEphemeralSupabaseTestEnv
   if (statusResult.code !== 0 || statusResult.timedOut) {
     return recordSchemaValidationFailure(report, statusResult.timedOut ? "SCHEMA_STATUS_TIMEOUT" : "SCHEMA_STATUS_FAILED", "SUPABASE_CLI", writeReport, statusResult.output);
   }
+  const status = parseFirstJsonObject(statusResult.output);
+  if (!status) return recordSchemaValidationFailure(report, "SCHEMA_STATUS_JSON_INVALID", "SUPABASE_CLI", writeReport);
+  if (typeof status.DB_URL !== "string" || status.DB_URL.trim() === "") {
+    return recordSchemaValidationFailure(report, "SCHEMA_STATUS_DB_URL_MISSING", "SUPABASE_CLI", writeReport);
+  }
+  let databaseUrl;
   try {
-    const jsonStart = statusResult.output.indexOf("{");
-    if (jsonStart < 0) throw new Error("status JSON missing");
-    const status = JSON.parse(statusResult.output.slice(jsonStart));
-    const databaseUrl = new URL(String(status.DB_URL ?? ""));
-    if (databaseUrl.hostname !== "127.0.0.1" && databaseUrl.hostname !== "localhost") {
-      return recordSchemaValidationFailure(report, "NON_LOCAL_DATABASE_URL", "ENVIRONMENT_GUARD", writeReport);
-    }
+    databaseUrl = new URL(status.DB_URL);
   } catch {
-    return recordSchemaValidationFailure(report, "SCHEMA_STATUS_JSON_INVALID", "SUPABASE_CLI", writeReport);
+    return recordSchemaValidationFailure(report, "SCHEMA_STATUS_DB_URL_INVALID", "SUPABASE_CLI", writeReport);
+  }
+  if (databaseUrl.hostname !== "127.0.0.1" && databaseUrl.hostname !== "localhost") {
+    return recordSchemaValidationFailure(report, "NON_LOCAL_DATABASE_URL", "ENVIRONMENT_GUARD", writeReport);
   }
   const validationSql = "select case when to_regclass('public.actions') is not null and to_regclass('public.spogomi_events') is not null and exists (select 1 from supabase_migrations.schema_migrations where version ~ '^[0-9]{14}$') and exists (select 1 from public.actions where id = '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid and notes like 'E2E_FIXTURE:group-join:v1%') then 'PASS' else 'FAIL' end";
   let queryResult;

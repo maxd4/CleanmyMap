@@ -121,7 +121,7 @@ test("schema and seed verification stays local, bounded, and publishes no raw CL
     runCommand: async (command, args, options) => {
       calls.push({ command, args, options });
       return args[0] === "status"
-        ? { code: 0, output: JSON.stringify({ DB_URL: "postgresql://localhost:5432/postgres" }) }
+        ? { code: 0, output: `Supabase status follows:\n${JSON.stringify({ DB_URL: "postgresql://localhost:5432/postgres" })}\nCLI status complete.` }
         : { code: 0, output: "PASS" };
     },
     writeReport: temp.write,
@@ -149,6 +149,25 @@ test("schema and seed verification stays local, bounded, and publishes no raw CL
   assert.equal(callsOnNonLocal.length, 1, "remote target must be rejected before db query");
   assert.equal(privateReport.read().firstFailure.category, "NON_LOCAL_DATABASE_URL");
   assert.doesNotMatch(JSON.stringify(privateReport.read()), /remote\.example/);
+
+  for (const [output, expectedCategory] of [
+    ["status output without a JSON object", "SCHEMA_STATUS_JSON_INVALID"],
+    ['{"API_URL":"http://127.0.0.1:54321"}', "SCHEMA_STATUS_DB_URL_MISSING"],
+    ['{"DB_URL":"not a URL"}', "SCHEMA_STATUS_DB_URL_INVALID"],
+  ]) {
+    const invalidReport = makeTempReport(context, baseReport());
+    await verifyCanonicalSchemaSeed({
+      assertEphemeralSupabaseTestEnvironment: () => true,
+      candidateSha: () => candidate,
+      evidencePath: invalidReport.evidencePath,
+      commandName: () => "supabase",
+      networkArgs: () => [],
+      runCommand: async () => ({ code: 0, output }),
+      writeReport: invalidReport.write,
+    });
+    assert.equal(invalidReport.read().firstFailure.category, expectedCategory);
+    assert.doesNotMatch(JSON.stringify(invalidReport.read()), /not a URL/);
+  }
 });
 
 test("a timed out reset and skipped schema validation remain non-passing", async (context) => {
