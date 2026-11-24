@@ -443,6 +443,7 @@ export default async function SpogomiPublicEventPage({
                       journey.registrationReadinessReady === true
                     }
                     initialQuizProofs={journey.quizProofs}
+                    initialQuizProofsOwnerId={userId}
                     signInHref={signInHrefFor("registration")}
                   />
                 </CmmCard>

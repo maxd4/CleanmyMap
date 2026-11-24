@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpogomiPublicResults as SpogomiPublicResultsData } from "@/lib/spogomi/results-projection";
 import type { SpogomiPublicGalleryPhoto } from "@/lib/spogomi/photo-gallery";
 
-const authState = vi.hoisted(() => ({ isLoaded: true, isSignedIn: false, userId: "user-1" }));
+const authState = vi.hoisted(() => ({ isLoaded: true, isSignedIn: false, userId: "user-1" as string | null }));
 const fetchMock = vi.hoisted(() => vi.fn());
 const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
 const intervalMock = vi.hoisted(() => vi.fn(() => 1));
@@ -161,7 +161,7 @@ describe("SPOGOMI consumer components", () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [] }));
     let renderer!: ReturnType<typeof create>;
     await act(async () => {
-      renderer = create(<SpogomiAdmissionRequestCard eventId="event-1" lifecycle="upcoming" initialDivisionId="casual" initialQuizProofs={{ casual: "quiz-v1" }} signInHref="/sign-in" registrationReadinessReady divisions={[{ id: "casual", type: "casual", directRegistrationAvailable: true }, { id: "world", type: "world_cup", directRegistrationAvailable: true }]} />);
+      renderer = create(<SpogomiAdmissionRequestCard eventId="event-1" lifecycle="upcoming" initialDivisionId="casual" initialQuizProofs={{ casual: "quiz-v1" }} initialQuizProofsOwnerId="user-1" signInHref="/sign-in" registrationReadinessReady divisions={[{ id: "casual", type: "casual", directRegistrationAvailable: true }, { id: "world", type: "world_cup", directRegistrationAvailable: true }]} />);
       await flushEffects();
       await new Promise((resolve) => setTimeout(resolve, 100));
     });
@@ -188,7 +188,7 @@ describe("SPOGOMI consumer components", () => {
         : Promise.resolve(jsonResponse({ requests: [] })),
     );
     let renderer!: ReturnType<typeof create>;
-    const props = { eventId: "event-1", lifecycle: "upcoming" as const, initialDivisionId: "casual", signInHref: "/sign-in", registrationReadinessReady: true, divisions: [{ id: "casual", type: "casual" as const, directRegistrationAvailable: true }] };
+    const props = { eventId: "event-1", lifecycle: "upcoming" as const, initialDivisionId: "casual", initialQuizProofsOwnerId: "user-1", signInHref: "/sign-in", registrationReadinessReady: true, divisions: [{ id: "casual", type: "casual" as const, directRegistrationAvailable: true }] };
     await act(async () => {
       renderer = create(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} />);
       await flushEffects();
@@ -210,7 +210,7 @@ describe("SPOGOMI consumer components", () => {
     authState.isSignedIn = true;
     fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [] }));
     let renderer!: ReturnType<typeof create>;
-    const props = { eventId: "event-1", lifecycle: "upcoming" as const, initialDivisionId: "casual", signInHref: "/sign-in", registrationReadinessReady: true, divisions: [{ id: "casual", type: "casual" as const, directRegistrationAvailable: true }] };
+    const props = { eventId: "event-1", lifecycle: "upcoming" as const, initialDivisionId: "casual", initialQuizProofsOwnerId: "user-1", signInHref: "/sign-in", registrationReadinessReady: true, divisions: [{ id: "casual", type: "casual" as const, directRegistrationAvailable: true }] };
     await act(async () => {
       renderer = create(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{ casual: "quiz-v1" }} />);
       await flushEffects();
@@ -246,24 +246,128 @@ describe("SPOGOMI consumer components", () => {
     renderer.unmount();
   });
 
-  it("drops a proof when the account or event proof context changes", async () => {
+  it("drops a proof when the account or event proof context changes, even before server props refresh, and recognizes the new account proof once refreshed", async () => {
     authState.isSignedIn = true;
-    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [] }));
+    authState.userId = "user-1";
+    fetchMock.mockImplementation((input: RequestInfo | URL) =>
+      String(input).includes("/registration-quiz")
+        ? Promise.resolve(jsonResponse({ version: "quiz-v2", questions: [] }))
+        : Promise.resolve(jsonResponse({ requests: [] })),
+    );
     let renderer!: ReturnType<typeof create>;
     const props = { eventId: "event-1", lifecycle: "upcoming" as const, initialDivisionId: "casual", signInHref: "/sign-in", registrationReadinessReady: true, divisions: [{ id: "casual", type: "casual" as const, directRegistrationAvailable: true }] };
     await act(async () => {
-      renderer = create(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{ casual: "quiz-v1" }} />);
+      renderer = create(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{ casual: "quiz-v1" }} initialQuizProofsOwnerId="user-1" />);
       await flushEffects();
     });
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Quiz validé pour cette version du règlement"))).toHaveLength(1);
+
+    // Switch to user-2 WITHOUT updating server props (still carrying user-1's initialQuizProofs)
     authState.userId = "user-2";
     await act(async () => {
-      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} />);
+      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{ casual: "quiz-v1" }} initialQuizProofsOwnerId="user-1" />);
       await flushEffects();
     });
-
     expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Quiz validé pour cette version du règlement"))).toHaveLength(0);
     expect(renderer.root.findAllByType(SpogomiRegistrationQuiz)).toHaveLength(1);
+
+    // Refresh server projection for user-2: user-2's own proof is recognized
+    await act(async () => {
+      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{ casual: "quiz-b" }} initialQuizProofsOwnerId="user-2" />);
+      await flushEffects();
+    });
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Quiz validé pour cette version du règlement"))).toHaveLength(1);
     renderer.unmount();
+    authState.userId = "user-1";
+  });
+
+  it("isolates admission requests across account switches, ignores late responses from a previous session, handles GET errors without fallback, and clears on sign-out", async () => {
+    authState.isSignedIn = true;
+    authState.userId = "user-1";
+    let resolveLatePreviousSession!: (res: Response) => void;
+    const latePreviousPromise = new Promise<Response>((resolve) => { resolveLatePreviousSession = resolve; });
+    let admissionCallIndex = 0;
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/registration-quiz")) {
+        return Promise.resolve(jsonResponse({ version: "quiz-v1", questions: [] }));
+      }
+      admissionCallIndex += 1;
+      if (admissionCallIndex === 1) {
+        return Promise.resolve(jsonResponse({
+          requests: [{
+            id: "req-a", requestKind: "registration", divisionId: "casual", status: "pending",
+            providedContext: "", decisionMessage: "Message privé compte A", createdAt: "2026-10-01T08:00:00Z",
+          }],
+        }));
+      }
+      if (admissionCallIndex === 2) return Promise.resolve(jsonResponse({ requests: [] }));
+      if (admissionCallIndex === 3) return latePreviousPromise;
+      if (admissionCallIndex === 4) return Promise.resolve(jsonResponse({ requests: [] }));
+      return Promise.resolve(jsonResponse({ error: "Erreur réseau B" }, 500));
+    });
+
+    let renderer!: ReturnType<typeof create>;
+    const props = { eventId: "event-1", lifecycle: "upcoming" as const, initialDivisionId: "casual", signInHref: "/sign-in", registrationReadinessReady: true, divisions: [{ id: "casual", type: "casual" as const, directRegistrationAvailable: true }] };
+    await act(async () => {
+      renderer = create(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} initialQuizProofsOwnerId="user-1" />);
+      await flushEffects();
+    });
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Message privé compte A"))).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("bloque une nouvelle demande"))).toHaveLength(1);
+
+    // Switch directly to user-2 while isSignedIn stays true -> A's requests/messages disappear, B is not blocked, new GET triggered
+    authState.userId = "user-2";
+    await act(async () => {
+      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} initialQuizProofsOwnerId="user-2" />);
+      await flushEffects();
+    });
+    expect(admissionCallIndex).toBe(2);
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Message privé compte A"))).toHaveLength(0);
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("bloque une nouvelle demande"))).toHaveLength(0);
+    expect(renderer.root.findAllByType(SpogomiRegistrationQuiz)).toHaveLength(1);
+
+    // Switch to user-3 (slow GET) -> switch to user-4 before user-3's GET resolves, then resolve user-3 late
+    authState.userId = "user-3";
+    await act(async () => {
+      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} initialQuizProofsOwnerId="user-3" />);
+      await flushEffects();
+    });
+    authState.userId = "user-4";
+    await act(async () => {
+      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} initialQuizProofsOwnerId="user-4" />);
+      await flushEffects();
+    });
+    await act(async () => {
+      resolveLatePreviousSession(jsonResponse({
+        requests: [{
+          id: "req-stale", requestKind: "registration", divisionId: "casual", status: "pending",
+          providedContext: "", decisionMessage: "Fuite tardive session précédente", createdAt: "2026-10-01T08:00:00Z",
+        }],
+      }));
+      await flushEffects();
+    });
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Fuite tardive session précédente"))).toHaveLength(0);
+
+    // Sign out then sign in as user-5 whose GET fails -> error shown, no fallback to any previous account
+    authState.isSignedIn = false;
+    authState.userId = null;
+    await act(async () => {
+      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} initialQuizProofsOwnerId={null} />);
+      await flushEffects();
+    });
+    authState.isSignedIn = true;
+    authState.userId = "user-5";
+    await act(async () => {
+      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} initialQuizProofsOwnerId="user-5" />);
+      await flushEffects();
+    });
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Erreur réseau B"))).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Message privé compte A"))).toHaveLength(0);
+
+    renderer.unmount();
+    fetchMock.mockReset();
+    authState.isSignedIn = false;
     authState.userId = "user-1";
   });
 

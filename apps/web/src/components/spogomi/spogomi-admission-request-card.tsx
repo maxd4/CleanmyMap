@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -50,6 +50,7 @@ export function SpogomiAdmissionRequestCard({
   divisions,
   initialDivisionId,
   initialQuizProofs,
+  initialQuizProofsOwnerId,
   registrationReadinessReady = false,
   signInHref,
 }: {
@@ -58,11 +59,14 @@ export function SpogomiAdmissionRequestCard({
   divisions: Division[];
   initialDivisionId?: string;
   initialQuizProofs?: Readonly<Record<string, string>>;
+  initialQuizProofsOwnerId?: string | null;
   registrationReadinessReady?: boolean;
   signInHref: string;
 }) {
   const { isLoaded, isSignedIn, userId } = useAuth();
   const router = useRouter();
+  const sessionScopeKey = isLoaded && isSignedIn && userId ? `${eventId}:${userId}` : null;
+  const [trackedScopeKey, setTrackedScopeKey] = useState<string | null>(sessionScopeKey);
   const [requests, setRequests] = useState<Request[]>([]);
   const [requestLoadState, setRequestLoadState] = useState<RequestLoadState>("loading");
   const [busy, setBusy] = useState(false);
@@ -70,39 +74,68 @@ export function SpogomiAdmissionRequestCard({
   const [context, setContext] = useState("");
   const [divisionId, setDivisionId] = useState(initialDivisionId && divisions.some((division) => division.id === initialDivisionId) ? initialDivisionId : divisions[0]?.id ?? "");
   const [kind, setKind] = useState<RequestKind>(lifecycle === "in_progress" ? "presence_regularization" : "registration");
+  const activeScopeRef = useRef<string | null>(sessionScopeKey);
+
+  useEffect(() => {
+    activeScopeRef.current = sessionScopeKey;
+  }, [sessionScopeKey]);
+
+  if (trackedScopeKey !== sessionScopeKey) {
+    setTrackedScopeKey(sessionScopeKey);
+    setRequests([]);
+    setRequestLoadState("loading");
+    setError(null);
+    setBusy(false);
+    setContext("");
+  }
+
   const quizProofContext = `${eventId}:${userId ?? "anonymous"}:${divisions
     .map((division) => `${division.id}:${division.type}`)
     .sort()
     .join("|")}`;
-  const serverQuizProofSnapshot = useMemo(() => quizProofSnapshot(initialQuizProofs), [initialQuizProofs]);
+  const serverProjectionMatchesUser = Boolean(isSignedIn && userId && initialQuizProofsOwnerId === userId);
+  const rawServerQuizProofSnapshot = useMemo(() => quizProofSnapshot(initialQuizProofs), [initialQuizProofs]);
+  const serverQuizProofSnapshot = serverProjectionMatchesUser ? rawServerQuizProofSnapshot : "[]";
   const serverQuizProofs = useMemo(
-    () => Object.fromEntries(JSON.parse(serverQuizProofSnapshot) as [string, string][]),
-    [serverQuizProofSnapshot],
+    () => (serverProjectionMatchesUser
+      ? Object.fromEntries(JSON.parse(rawServerQuizProofSnapshot) as [string, string][])
+      : {}),
+    [rawServerQuizProofSnapshot, serverProjectionMatchesUser],
   );
   const [quizProofState, setQuizProofState] = useState<QuizProofState>(() => ({
     context: quizProofContext,
     snapshot: serverQuizProofSnapshot,
-    proofs: { ...initialQuizProofs },
+    proofs: { ...serverQuizProofs },
   }));
 
   const endpoint = `/api/spogomi/events/${encodeURIComponent(eventId)}/admission-requests`;
-  const loadRequests = useCallback(async () => {
-    if (!isLoaded || !isSignedIn) return;
+  const loadRequests = useCallback(async (signal?: AbortSignal) => {
+    const requestScopeKey = sessionScopeKey;
+    if (!requestScopeKey) return;
     setRequestLoadState("loading");
     setError(null);
-    const response = await fetch(endpoint, { cache: "no-store" });
+    const response = await fetch(endpoint, { cache: "no-store", signal });
+    if (signal?.aborted || activeScopeRef.current !== requestScopeKey) return;
     const body = (await response.json().catch(() => ({}))) as { requests?: Request[]; error?: string };
+    if (signal?.aborted || activeScopeRef.current !== requestScopeKey) return;
     if (!response.ok) throw new Error(body.error ?? "Le statut de vos demandes n’a pas pu être chargé.");
     setRequests(body.requests ?? []);
     setRequestLoadState("loaded");
-  }, [endpoint, isLoaded, isSignedIn]);
+  }, [endpoint, sessionScopeKey]);
 
   useEffect(() => {
-    void Promise.resolve().then(() => loadRequests()).catch((reason) => {
+    if (!sessionScopeKey) return;
+    const controller = new AbortController();
+    void Promise.resolve().then(() => loadRequests(controller.signal)).catch((reason) => {
+      if (controller.signal.aborted || activeScopeRef.current !== sessionScopeKey) return;
+      setRequests([]);
       setRequestLoadState("error");
       setError(reason instanceof Error ? reason.message : "Le statut de vos demandes n’a pas pu être chargé.");
     });
-  }, [loadRequests]);
+    return () => {
+      controller.abort();
+    };
+  }, [loadRequests, sessionScopeKey]);
 
   const selectedDivision = useMemo(() => divisions.find((division) => division.id === divisionId) ?? null, [divisionId, divisions]);
   const current = useMemo(() => requests.find((request) => request.requestKind === kind && request.divisionId === divisionId && request.status === "pending") ?? requests.find((request) => request.requestKind === kind && request.divisionId === divisionId), [divisionId, kind, requests]);
@@ -131,6 +164,8 @@ export function SpogomiAdmissionRequestCard({
       setError("Validez le quiz obligatoire de cette division avant d’envoyer la demande d’inscription.");
       return;
     }
+    const requestScopeKey = sessionScopeKey;
+    if (!requestScopeKey) return;
     setBusy(true);
     setError(null);
     try {
@@ -139,29 +174,37 @@ export function SpogomiAdmissionRequestCard({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ requestKind: kind, divisionId, providedContext: context }),
       });
+      if (activeScopeRef.current !== requestScopeKey) return;
       const body = (await response.json().catch(() => ({}))) as { request?: Request; error?: string };
+      if (activeScopeRef.current !== requestScopeKey) return;
       if (!response.ok) throw new Error(body.error ?? "La demande n’a pas pu être envoyée.");
       if (body.request) setRequests((currentRequests) => [body.request!, ...currentRequests.filter((request) => request.id !== body.request!.id)]);
       setContext("");
     } catch (reason) {
+      if (activeScopeRef.current !== requestScopeKey) return;
       setError(reason instanceof Error ? reason.message : "La demande n’a pas pu être envoyée.");
     } finally {
-      setBusy(false);
+      if (activeScopeRef.current === requestScopeKey) setBusy(false);
     }
   }
 
   async function cancel(request: Request) {
+    const requestScopeKey = sessionScopeKey;
+    if (!requestScopeKey) return;
     setBusy(true);
     setError(null);
     try {
       const response = await fetch(endpoint, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ requestId: request.id }) });
+      if (activeScopeRef.current !== requestScopeKey) return;
       const body = (await response.json().catch(() => ({}))) as { request?: Request; error?: string };
+      if (activeScopeRef.current !== requestScopeKey) return;
       if (!response.ok) throw new Error(body.error ?? "La demande n’a pas pu être annulée.");
       if (body.request) setRequests((currentRequests) => currentRequests.map((item) => item.id === request.id ? body.request! : item));
     } catch (reason) {
+      if (activeScopeRef.current !== requestScopeKey) return;
       setError(reason instanceof Error ? reason.message : "La demande n’a pas pu être annulée.");
     } finally {
-      setBusy(false);
+      if (activeScopeRef.current === requestScopeKey) setBusy(false);
     }
   }
 
