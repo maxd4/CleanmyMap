@@ -24,7 +24,13 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
     const expectedRevision = form.get("expectedRevision");
     if (divisionId !== null && typeof divisionId !== "string") return NextResponse.json({ error: "Division de parcours invalide." }, { status: 422 });
     if (correctionReason !== null && typeof correctionReason !== "string") return NextResponse.json({ error: "Motif de correction invalide." }, { status: 422 });
-    if (expectedRevision !== null && (typeof expectedRevision !== "string" || !/^\d+$/.test(expectedRevision))) return NextResponse.json({ error: "Révision du parcours invalide." }, { status: 422 });
+    if (typeof expectedRevision !== "string" || !/^\d+$/.test(expectedRevision)) {
+      return NextResponse.json({ error: "La révision du parcours est obligatoire." }, { status: 422 });
+    }
+    const parsedRevision = Number(expectedRevision);
+    if (Number(event.composition_revision ?? 0) !== parsedRevision) {
+      return NextResponse.json({ error: "Le parcours a été modifié entre-temps. Rechargez l’édition avant de réessayer." }, { status: 409 });
+    }
     return NextResponse.json(await attachOfficialGpx({
       supabase,
       event,
@@ -32,7 +38,7 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
       file,
       divisionId: divisionId || null,
       correctionReason: correctionReason || null,
-      expectedRevision: expectedRevision === null ? undefined : Number(expectedRevision),
+      expectedRevision: parsedRevision,
     }), { status: 201 });
   } catch (error) {
     return handleApiError(error, "spogomi.route.attach");

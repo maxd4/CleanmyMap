@@ -439,7 +439,7 @@ describe("SPOGOMI persistence routes", () => {
     expect((await confirm.POST(formRequest("http://localhost", { file, acceptedRowNumbers: "[2]" }), eventContext)).status).toBe(201);
 
     const gpx = await import("./events/[eventId]/route-gpx/route");
-    const gpxResponse = await gpx.POST(formRequest("http://localhost", { file: new File(["<gpx />"], "route.gpx", { type: "application/gpx+xml" }) }), eventContext);
+    const gpxResponse = await gpx.POST(formRequest("http://localhost", { file: new File(["<gpx />"], "route.gpx", { type: "application/gpx+xml" }), expectedRevision: "0" }), eventContext);
     expect(gpxResponse.status).toBe(201);
     expect(await gpxResponse.json()).toMatchObject({
       synchronization: { already_processed: false, routeId: "route-1", source: "official_reference" },
@@ -448,7 +448,7 @@ describe("SPOGOMI persistence routes", () => {
       route: { source: "official_reference" },
       synchronization: { already_processed: true, routeId: "route-1", source: "official_reference" },
     });
-    const replayGpxResponse = await gpx.POST(formRequest("http://localhost", { file: new File(["<gpx />"], "route.gpx", { type: "application/gpx+xml" }) }), eventContext);
+    const replayGpxResponse = await gpx.POST(formRequest("http://localhost", { file: new File(["<gpx />"], "route.gpx", { type: "application/gpx+xml" }), expectedRevision: "0" }), eventContext);
     expect(await replayGpxResponse.json()).toMatchObject({
       synchronization: { already_processed: true, routeId: "route-1", source: "official_reference" },
     });

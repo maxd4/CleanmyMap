@@ -51,9 +51,15 @@ export async function upsertPlannedRoute(params: {
   event: EventRow;
   userId: string;
   input: SpogomiRouteInput;
-  expectedRevision?: number;
+  expectedRevision: number;
 }) {
   assertPolyline(params.input.drawing);
+  if (!Number.isInteger(params.expectedRevision) || params.expectedRevision < 0) {
+    throw new Error("Validation : la révision attendue du parcours est obligatoire.");
+  }
+  if (Number(params.event.composition_revision ?? 0) !== params.expectedRevision) {
+    throw new Error("Conflict: le parcours a été modifié entre-temps.");
+  }
   if (params.event.state === "composition_locked" || params.event.state === "certified" || params.event.state === "closed") {
     throw new Error("Validation : le parcours ne peut plus être modifié après clôture ou verrouillage.");
   }
@@ -63,7 +69,7 @@ export async function upsertPlannedRoute(params: {
   const synchronized = await params.supabase.rpc("spogomi_upsert_planned_route", {
     p_event_id: params.event.id,
     p_division_id: params.input.divisionId,
-    p_expected_revision: params.expectedRevision ?? Number(params.event.composition_revision ?? 0),
+    p_expected_revision: params.expectedRevision,
     p_source: params.input.source,
     p_file_name: params.input.fileName,
     p_point_count: params.input.drawing.coordinates.length,
@@ -78,7 +84,7 @@ export async function upsertPlannedRoute(params: {
   return { ...params.input, synchronization: parseRouteSynchronization(synchronized.data) };
 }
 
-export async function attachOfficialGpx(params: { supabase: SupabaseClient; event: EventRow; userId: string; file: File; divisionId?: string | null; correctionReason?: string | null; expectedRevision?: number }) {
+export async function attachOfficialGpx(params: { supabase: SupabaseClient; event: EventRow; userId: string; file: File; divisionId?: string | null; correctionReason?: string | null; expectedRevision: number }) {
   const parsed = await parseGpxFile(params.file);
   assertPolyline(parsed.drawing);
   return upsertPlannedRoute({

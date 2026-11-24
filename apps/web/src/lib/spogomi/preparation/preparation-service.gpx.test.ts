@@ -44,6 +44,7 @@ describe("SPOGOMI official GPX synchronization", () => {
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
       correctionReason: "Correction de parcours",
+      expectedRevision: 7,
     });
 
     expect(rpc).toHaveBeenCalledWith("spogomi_upsert_planned_route", expect.objectContaining({
@@ -94,6 +95,7 @@ describe("SPOGOMI official GPX synchronization", () => {
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
       correctionReason: "Correction de parcours",
+      expectedRevision: 7,
     });
 
     expect(result.synchronization).toMatchObject({ already_processed: true, inferredTopology: "loop" });
@@ -116,6 +118,7 @@ describe("SPOGOMI official GPX synchronization", () => {
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
       correctionReason: "Correction de parcours",
+      expectedRevision: 7,
     })).rejects.toThrow(/synchronisation.*invalide/i);
   });
 
@@ -129,6 +132,7 @@ describe("SPOGOMI official GPX synchronization", () => {
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
       correctionReason: "Correction de parcours",
+      expectedRevision: 7,
     })).rejects.toBe(rpcError);
   });
 
@@ -139,7 +143,36 @@ describe("SPOGOMI official GPX synchronization", () => {
       event: spogomiPreparationEvent({ state: "composition_locked" }),
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+      expectedRevision: 7,
     })).rejects.toThrow(/verrouillage/i);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects stale or missing expectedRevision and missing in_progress correctionReason before calling RPC", async () => {
+    const rpc = vi.fn();
+    await expect(attachOfficialGpx({
+      supabase: { rpc } as never,
+      event: spogomiPreparationEvent({ state: "draft", composition_revision: 7 }),
+      userId: "organizer-1",
+      file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+      expectedRevision: -1,
+    })).rejects.toThrow(/révision/i);
+
+    await expect(attachOfficialGpx({
+      supabase: { rpc } as never,
+      event: spogomiPreparationEvent({ state: "draft", composition_revision: 7 }),
+      userId: "organizer-1",
+      file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+      expectedRevision: 6,
+    })).rejects.toThrow(/Conflict/i);
+
+    await expect(attachOfficialGpx({
+      supabase: { rpc } as never,
+      event: spogomiPreparationEvent({ state: "in_progress", composition_revision: 7 }),
+      userId: "organizer-1",
+      file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+      expectedRevision: 7,
+    })).rejects.toThrow(/motif/i);
     expect(rpc).not.toHaveBeenCalled();
   });
 });
