@@ -569,7 +569,7 @@ contribution d'un enfant est comprise dans celle du compte accompagnateur.
 
 ### Répartition publique des mégots par état
 
-La projection publique `impact-terrain-public-2026.09-v7` additionne les
+La projection publique `impact-terrain-public-2026.09-v9` additionne les
 résultats courants canoniques des lots persistés séparément pour `propre`, `humide` et
 `mouille`. Elle transporte aussi, par état, les masses mesurées ou estimées,
 leur provenance et leur version de conversion : elle ne reconvertit jamais les

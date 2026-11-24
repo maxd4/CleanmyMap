@@ -4,8 +4,8 @@ select plan(32);
 
 select is(
   public.current_public_impact_projection_version(),
-  'impact-terrain-public-2026.09-v8',
-  'the current volume proxy has a new public projection identity'
+  'impact-terrain-public-2026.09-v9',
+  'the current volume proxy uses the restored public projection identity'
 );
 
 select has_table(

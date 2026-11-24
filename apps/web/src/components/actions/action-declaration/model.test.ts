@@ -5,7 +5,7 @@ describe("action form cigarette-butt conversion", () => {
   it("uses the canonical qualified runtime conversion", () => {
     expect(convertCigaretteButtsToKg(2_500, "propre")).toBe(0.55);
     expect(convertCigaretteButtsToKg(2_500, "humide")).toBe(1.25);
-    expect(convertCigaretteButtsToKg(2_500, "mouille")).toBe(1.25);
+    expect(convertCigaretteButtsToKg(2_500, "mouille")).toBe(2.25);
   });
 });
 

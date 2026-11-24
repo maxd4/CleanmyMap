@@ -164,7 +164,7 @@ describe("resolvePersistedCigaretteButts", () => {
       cigaretteButtsCountProvenance: "weight_converted",
       cigaretteButtsMassProvenance: "measured",
       cigaretteButtsConversionFormulaVersion:
-        "impact-terrain-2026-butts-mass-v2",
+        "impact-terrain-2026-butts-mass-v3",
     });
   });
 });

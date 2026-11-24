@@ -460,11 +460,11 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     expect(body.individualImpact).toMatchObject({
       cigaretteButtsCount: null,
       comparableButtsCount: 2_000,
-      cigaretteButtsConversionVersion: "impact-terrain-2026-butts-mass-v2",
+      cigaretteButtsConversionVersion: "impact-terrain-2026-butts-mass-v3",
     });
     expect(participant).toMatchObject({
       individual_cigarette_butts_mass_kg: 1,
-      individual_cigarette_butts_conversion_version: "impact-terrain-2026-butts-mass-v2",
+      individual_cigarette_butts_conversion_version: "impact-terrain-2026-butts-mass-v3",
     });
   });
 
