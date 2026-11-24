@@ -157,10 +157,14 @@ function parsePgProveSummary(output, expectedPlan) {
   const files = Number(filesMatches[0][1]);
   const tests = Number(testsMatches[0][1]);
   const result = resultMatches[0][1].toUpperCase();
-  const failed = parseSummaryCounter(output, "Failed");
-  const ignored = parseSummaryCounter(output, "Ignored");
-  const todo = parseSummaryCounter(output, "Todo");
-  const skipped = parseSummaryCounter(output, "Skipped");
+  const counterLines = String(output).split(/\r?\n/u).filter((line) =>
+    /\b(?:Files|Tests)\s*=|\bResult\s*:|\b(?:Failed|Ignored|Todo|Skipped)\s*=|\b\d+\s+(?:Failed|Ignored|Todo|Skipped)\b/i.test(line),
+  );
+  const summaryCounters = counterLines.join("\n");
+  const failed = parseSummaryCounter(summaryCounters, "Failed");
+  const ignored = parseSummaryCounter(summaryCounters, "Ignored");
+  const todo = parseSummaryCounter(summaryCounters, "Todo");
+  const skipped = parseSummaryCounter(summaryCounters, "Skipped");
 
   if (result !== "PASS") throw new Error(`pg_prove reported Result: ${result}`);
   if ((failed ?? 0) !== 0) {
