@@ -88,8 +88,8 @@ type RawApplicationRow = {
   division_id: string;
   status: string;
   regulation_version: string | null;
-  quiz_proof_id: string | null;
-  practical_confirmation_id: string | null;
+  theory_proof_id: string | null;
+  practical_confirmed_at: string | null;
 };
 type RawParticipantRow = { clerk_id: string | null; registration_status: string };
 
@@ -115,7 +115,7 @@ export async function loadSpogomiTeamRefereeState(params: {
       .eq("event_id", params.eventId),
     params.supabase
       .from("spogomi_referee_applications")
-      .select("clerk_id, division_id, status, regulation_version, quiz_proof_id, practical_confirmation_id")
+      .select("clerk_id, division_id, status, regulation_version, theory_proof_id, practical_confirmed_at")
       .eq("event_id", params.eventId),
     params.registeredParticipantClerkIds
       ? Promise.resolve({ data: [], error: null })
@@ -184,8 +184,8 @@ export async function loadSpogomiTeamRefereeState(params: {
       applicationStatus: app?.status ?? null,
       applicationRegulationVersion: app?.regulation_version ?? null,
       eventRegulationVersion: params.eventRegulationVersion,
-      hasQuizProof: Boolean(app?.quiz_proof_id),
-      hasPracticalConfirmation: Boolean(app?.practical_confirmation_id),
+      hasQuizProof: Boolean(app?.theory_proof_id),
+      hasPracticalConfirmation: Boolean(app?.practical_confirmed_at),
     });
     return {
       teamId: team.id,
@@ -206,8 +206,8 @@ export async function loadSpogomiTeamRefereeState(params: {
           (app) =>
             app.status === "habilitated" &&
             app.regulation_version === params.eventRegulationVersion &&
-            Boolean(app.quiz_proof_id) &&
-            Boolean(app.practical_confirmation_id) &&
+            Boolean(app.theory_proof_id) &&
+            Boolean(app.practical_confirmed_at) &&
             activeReviewerIds.has(app.clerk_id) &&
             !participantIds.has(app.clerk_id),
         )

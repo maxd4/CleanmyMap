@@ -127,7 +127,7 @@ begin
   ) values (
     v_event_id, v_action_id, v_org_clerk, 'SPOGOMI Referee Contract',
     'Paris', 'mixed', now(), 'reg-v1', 'complete', '{}'::jsonb,
-    '{}'::jsonb, 'event_ready', 'published', 'spogomi-ref-contract-' || substr(v_event_id::text, 1, 8)
+    '{}'::jsonb, 'ready', 'published', 'spogomi-ref-contract-' || substr(v_event_id::text, 1, 8)
   );
 
   perform public.spogomi_ensure_parent_divisions(v_event_id, 'mixed');
