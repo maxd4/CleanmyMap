@@ -17,7 +17,7 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.match(workflow, /runs-on:\s+ubuntu-(?:latest|22\.04)/);
   assert.match(workflow, /SUPABASE_INTERNAL_IMAGE_REGISTRY:\s+ghcr\.io/);
   assert.match(workflow, /bash scripts\/ci\/start-supabase-ephemeral\.sh apps\/web/);
-  assert.match(startScript, /supabase" start --debug --workdir "\$workdir" --yes/);
+  assert.match(startScript, /supabase" start --debug --workdir "\$bootstrap_workdir" --yes/);
   assert.match(workflow, /supabase db reset --local --workdir apps\/web --yes/);
   assert.doesNotMatch(workflow, /--workdir apps\/web\/supabase/);
   const supabaseCliInvocations = workflow

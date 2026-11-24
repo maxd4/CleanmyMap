@@ -330,7 +330,7 @@ test("governance coordinates parallel dirty work without losing published scope"
   assert.match(executionPolicy, /origin\/main/);
   assert.match(executionPolicy, /force-push/);
   assert.match(rootAgents, /git diff --cached --name-only/);
-  assert.match(rootAgents, /attribution des\s+commits effectivement transmis/);
+  assert.match(rootAgents, /liste et l['’]ordre des commits déjà en\s+avance, sans filtrage d'attribution/);
   assert.match(rootAgents, /WORKTREE/);
   assert.match(rootAgents, /STAGED/);
   assert.match(rootAgents, /PUSH_CANDIDATE/);

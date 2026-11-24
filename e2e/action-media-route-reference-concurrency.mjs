@@ -45,7 +45,7 @@ insert into public.action_media (
   original_name, mime_type, size_bytes, sort_order, upload_state
 ) values (
   '${baselineId}'::uuid, '${actionId}'::uuid, '${owner}', 'baseline', 'route_reference',
-  '${actionId}/baseline.jpg', 'baseline.jpg', 'image/jpeg', 1024, 0, 'pending'
+  '${actionId}/${baselineId}.jpg', 'baseline.jpg', 'image/jpeg', 1024, 0, 'pending'
 );
 commit;
 `);
@@ -59,7 +59,7 @@ insert into public.action_media (
   original_name, mime_type, size_bytes, sort_order, upload_state
 ) values (
   '${tombstoneRaceId}'::uuid, '${actionId}'::uuid, '${owner}', 'tombstone-race', 'route_reference',
-  '${actionId}/tombstone-race.jpg', 'tombstone-race.jpg', 'image/jpeg', 1024, 0, 'pending'
+  '${actionId}/${tombstoneRaceId}.jpg', 'tombstone-race.jpg', 'image/jpeg', 1024, 0, 'pending'
 );
 `);
   const tombstone = run(`
@@ -118,7 +118,7 @@ begin
     original_name, mime_type, size_bytes, sort_order, upload_state
   ) values (
     '${id}'::uuid, '${actionId}'::uuid, '${owner}', 'concurrent-${index}', 'route_reference',
-    '${actionId}/concurrent-${index}.jpg', 'concurrent.jpg', 'image/jpeg', 1024, ${index + 1}, 'pending'
+    '${actionId}/${id}.jpg', 'concurrent.jpg', 'image/jpeg', 1024, ${index + 1}, 'pending'
   );
   raise notice 'ROUTE_REFERENCE_QUOTA_RESULT=accepted participant=${index}';
 exception when sqlstate 'P0001' then

@@ -217,16 +217,22 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   });
 
   it("rejects a direct PATCH to post-action draft before the persisted event end", async () => {
-    loadActionByIdMock.mockResolvedValue(createPatchAction({
-      action_date: "2026-11-24",
-      event_end_at: "2026-11-24T11:00:00.000Z",
-    }));
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-11-24T10:00:00.000Z"));
+      loadActionByIdMock.mockResolvedValue(createPatchAction({
+        action_date: "2026-11-24",
+        event_end_at: "2026-11-24T11:00:00.000Z",
+      }));
 
-    const response = await patchAction({ actionPhase: "post_action_draft" });
+      const response = await patchAction({ actionPhase: "post_action_draft" });
 
-    expect(response.status).toBe(409);
-    expect(await response.json()).toMatchObject({ code: "finalization_not_eligible" });
-    expect(updateMock).not.toHaveBeenCalled();
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({ code: "finalization_not_eligible" });
+      expect(updateMock).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("rejects final result fields persisted while the action remains pre-action", async () => {

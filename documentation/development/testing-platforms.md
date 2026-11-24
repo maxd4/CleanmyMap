@@ -162,10 +162,23 @@ le diagnostic émet `SUPABASE_CONTAINERS_UNOBSERVED`, rend le nombre
 jamais être publiée comme une absence confirmée ; son stderr et les identifiants
 de conteneurs restent supprimés.
 
-La classification du démarrage utilise le véritable code de sortie de
-`supabase start`. Le code zéro produit l'état explicite `START_SUCCEEDED` et
-n'émet aucun signal d'échec de journal. Les catégories d'échec, y compris
-`UNCLASSIFIED`, ne sont évaluées que pour un démarrage effectivement non nul.
+La classification du démarrage utilise le code de sortie du processus `timeout`
+qui supervise `supabase start` et les sondes opérationnelles recueillies après
+sa fin. `START_SUCCEEDED` exige un code zéro, les services requis prêts et
+sains, ainsi qu'un `supabase status` disponible. Le code zéro sans ces preuves
+est `START_INCOMPLETE` ou `HEALTHCHECK_FAILURE`, jamais un succès. Le code 124
+atteste le timeout interne (`START_TIMEOUT`) ; une terminaison par signal est
+classée `START_CANCELLED` et ne se confond pas avec un timeout observé. Une
+durée longue seule n'établit aucune de ces causes.
+
+Le bootstrap garde le PID du groupe `setsid timeout` séparé de celui du
+collecteur FIFO. Les observateurs Docker et Postgres ont également leurs groupes
+et leurs collecteurs bornés. À la fin ou lors d'une interruption, le script
+demande TERM, attend brièvement, envoie KILL si le groupe subsiste, puis récolte
+les processus et supprime les journaux privés. Le runner Node des preuves SQL
+applique la même terminaison de groupe à la commande et à ses descendants ; son
+délai comprend la fermeture des flux hérités. Les journaux bruts restent privés
+et les artefacts publics ne reçoivent que les diagnostics allowlistés.
 
 Pendant `supabase start`, la lane exécute en parallèle une sonde bornée toutes
 les cinq secondes. Elle conserve uniquement une chronologie NDJSON temporaire

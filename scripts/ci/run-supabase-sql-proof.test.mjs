@@ -540,6 +540,61 @@ test("subprocess timeout terminates the child and caps private log capture", asy
   }
 });
 
+test("subprocess supervision preserves success and CLI failure exit codes", async () => {
+  const successLog = `test-process-success-${process.pid}`;
+  const failureLog = `test-process-failure-${process.pid}`;
+  const logRoot = resolve("artifacts/ci/supabase-sql");
+  try {
+    const success = await runCommand(process.execPath, ["-e", "process.stdout.write('ready')"], { logName: successLog, env: process.env, timeoutMs: 5000 });
+    const failure = await runCommand(process.execPath, ["-e", "process.stderr.write('cli failed'); process.exitCode = 23"], { logName: failureLog, env: process.env, timeoutMs: 5000 });
+    assert.equal(success.code, 0);
+    assert.equal(success.stdout, "ready");
+    assert.equal(failure.code, 23);
+    assert.match(failure.stderr, /cli failed/);
+    assert.equal(failure.timedOut, false);
+  } finally {
+    rmSync(resolve(logRoot, `${successLog}.log`), { force: true });
+    rmSync(resolve(logRoot, `${failureLog}.log`), { force: true });
+  }
+});
+
+test("external termination is distinct from timeout and cleans the process group", async () => {
+  const logName = `test-process-cancel-${process.pid}`;
+  const logRoot = resolve("artifacts/ci/supabase-sql");
+  try {
+    const pending = runCommand(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { logName, env: process.env, timeoutMs: 10_000 });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 100));
+    process.emit("SIGTERM");
+    const result = await pending;
+    assert.equal(result.externallyCancelled, true);
+    assert.equal(result.timedOut, false);
+    assert.equal(result.signal, "SIGTERM");
+  } finally {
+    rmSync(resolve(logRoot, `${logName}.log`), { force: true });
+  }
+});
+
+test("a completed CLI keeps its exit code while descendants holding stdout are reaped", { skip: process.platform === "win32" }, async () => {
+  const logName = `test-held-pipe-${process.pid}`;
+  const logRoot = resolve("artifacts/ci/supabase-sql");
+  const startedAt = Date.now();
+  const script = [
+    "const { spawn } = require('node:child_process');",
+    "const child = spawn(process.execPath, ['-e', \"process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)\"], { stdio: 'inherit' });",
+    "process.stdout.write(`descendant=${child.pid}\\n`);",
+    "child.unref();",
+  ].join("\n");
+  const result = await runCommand(process.execPath, ["-e", script], { logName, env: process.env, timeoutMs: 5000 });
+  try {
+    assert.equal(result.code, 0);
+    assert.equal(result.timedOut, false);
+    assert.match(result.stdout, /descendant=\d+/);
+    assert.ok(Date.now() - startedAt < 8000, "timeout must close inherited pipes within its bounded cleanup window");
+  } finally {
+    rmSync(resolve(logRoot, `${logName}.log`), { force: true });
+  }
+});
+
 test("canonical reset diagnostics classify only explicit phase evidence", () => {
   assert.deepEqual(classifyDbResetFailure("Applying migration 20261123000005\nERROR: invalid input SQLSTATE 22P02", 1), {
     category: "MIGRATION_FAILURE", origin: "MIGRATION_REPLAY", sqlstate: "22P02", migrationId: "20261123000005", code: 1,

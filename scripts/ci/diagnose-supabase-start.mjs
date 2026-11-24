@@ -22,6 +22,8 @@ export const SUPABASE_START_CATEGORIES = Object.freeze({
   CLI_CONFIGURATION_INCOMPATIBILITY: "CLI_CONFIGURATION_INCOMPATIBILITY",
   INSUFFICIENT_RESOURCES: "INSUFFICIENT_RESOURCES",
   START_TIMEOUT: "START_TIMEOUT",
+  START_CANCELLED: "START_CANCELLED",
+  START_INCOMPLETE: "START_INCOMPLETE",
   UNCLASSIFIED: "UNCLASSIFIED",
   START_SUCCEEDED: "START_SUCCEEDED",
 });
@@ -77,7 +79,13 @@ export function classifySupabaseStartFailure({
   supabaseCliAvailable = true,
   evidence = null,
 }) {
-  if (exitCode === 0) return SUPABASE_START_CATEGORIES.START_SUCCEEDED;
+  if (exitCode === 124) return SUPABASE_START_CATEGORIES.START_TIMEOUT;
+  if ([130, 137, 143].includes(exitCode)) return SUPABASE_START_CATEGORIES.START_CANCELLED;
+  if (exitCode === 0) {
+    if (evidence?.requiredServicesState === "ready" && evidence?.healthState === "healthy" && evidence?.supabaseStatus === "available") return SUPABASE_START_CATEGORIES.START_SUCCEEDED;
+    if (evidence?.requiredServicesState === "unhealthy" || evidence?.healthState === "failed") return SUPABASE_START_CATEGORIES.HEALTHCHECK_FAILURE;
+    return SUPABASE_START_CATEGORIES.START_INCOMPLETE;
+  }
   if (!dockerCommandAvailable || !dockerDaemonAvailable) return SUPABASE_START_CATEGORIES.DOCKER_UNAVAILABLE;
   if (!supabaseCliAvailable) return SUPABASE_START_CATEGORIES.CLI_CONFIGURATION_INCOMPATIBILITY;
   if (evidence?.firstFailedBootstrapJob) return SUPABASE_START_CATEGORIES.BOOTSTRAP_JOB_FAILURE;
@@ -103,12 +111,7 @@ export function classifySupabaseStartFailure({
   if (signalCategories[error.signal]) return signalCategories[error.signal];
   if (evidence && typeof evidence === "object") {
     if (evidence.portState === "conflict") return SUPABASE_START_CATEGORIES.PORT_CONFLICT;
-    if (evidence.durationSeconds >= 80
-      && evidence.dockerContainers === 0
-      && evidence.supabaseStatus === "unavailable"
-      && (!evidence.networkState || ["missing", "unobserved"].includes(evidence.networkState))) {
-      return SUPABASE_START_CATEGORIES.START_TIMEOUT;
-    }
+    if (evidence.timeoutObserved === true) return SUPABASE_START_CATEGORIES.START_TIMEOUT;
   }
   return SUPABASE_START_CATEGORIES.UNCLASSIFIED;
 }
@@ -868,7 +871,7 @@ export function collectBoundedStartEvidence({ log, postgresLog = "", postgresSer
 }
 
 export function renderSupabaseStartDiagnostic({ category, exitCode, dockerVersion, supabaseCliVersion, dockerDaemonAvailable, evidence }) {
-  const result = exitCode === 0 ? "success" : "failure";
+  const result = category === SUPABASE_START_CATEGORIES.START_SUCCEEDED ? "success" : "failure";
   const daemon = dockerDaemonAvailable ? "available" : "unavailable";
   const lines = [
     "Supabase start diagnostic (bounded; raw log withheld):",

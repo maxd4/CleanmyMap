@@ -398,38 +398,76 @@ function pgTapCounts(output, planned = null) {
 
 export function runCommand(command, args, { logName, env = trustedCommandEnvironment(process.env, [command]), timeoutMs = DEFAULT_PROCESS_TIMEOUT_MS } = {}) {
   return new Promise((resolveResult, rejectResult) => {
-    const child = spawn(command, args, { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"], detached: process.platform !== "win32" });
     let stdout = "";
     let stderr = "";
     let stdoutBytes = 0;
     let stderrBytes = 0;
     let timedOut = false;
+    let externallyCancelled = null;
     let settled = false;
     let forceKillTimer = null;
+    let closeDeadline = null;
+    let orphanDrainTimer = null;
+    const signalChild = (signal) => {
+      if (!child.pid) return;
+      try {
+        if (process.platform !== "win32") process.kill(-child.pid, signal);
+        else child.kill(signal);
+      } catch { /* The process group may already have exited. */ }
+    };
+    const terminate = (signal) => {
+      signalChild(signal);
+      forceKillTimer = setTimeout(() => signalChild("SIGKILL"), 5000);
+      forceKillTimer.unref();
+      closeDeadline = setTimeout(() => {
+        child.stdout.destroy();
+        child.stderr.destroy();
+      }, 6500);
+      closeDeadline.unref();
+    };
+    const onTerm = () => { externallyCancelled = "SIGTERM"; terminate("SIGTERM"); };
+    const onInt = () => { externallyCancelled = "SIGINT"; terminate("SIGTERM"); };
+    process.once("SIGTERM", onTerm);
+    process.once("SIGINT", onInt);
     const timeout = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGTERM");
-      forceKillTimer = setTimeout(() => child.kill("SIGKILL"), 5000);
-      forceKillTimer.unref();
+      terminate("SIGTERM");
     }, timeoutMs);
     child.stdout.on("data", (chunk) => { stdoutBytes += chunk.length; stdout = captureProcessText(stdout, chunk); });
     child.stderr.on("data", (chunk) => { stderrBytes += chunk.length; stderr = captureProcessText(stderr, chunk); });
     child.on("error", (error) => {
       if (settled) return;
       settled = true;
+      process.removeListener("SIGTERM", onTerm);
+      process.removeListener("SIGINT", onInt);
       clearTimeout(timeout);
       if (forceKillTimer) clearTimeout(forceKillTimer);
+      if (closeDeadline) clearTimeout(closeDeadline);
+      if (orphanDrainTimer) clearTimeout(orphanDrainTimer);
       rejectResult(error);
+    });
+    child.once("exit", () => {
+      clearTimeout(timeout);
+      if (timedOut || externallyCancelled) return;
+      orphanDrainTimer = setTimeout(() => {
+        if (!settled) terminate("SIGTERM");
+      }, 1000);
+      orphanDrainTimer.unref();
     });
     child.on("close", (code, signal) => {
       if (settled) return;
       settled = true;
+      process.removeListener("SIGTERM", onTerm);
+      process.removeListener("SIGINT", onInt);
       clearTimeout(timeout);
       if (forceKillTimer) clearTimeout(forceKillTimer);
+      if (closeDeadline) clearTimeout(closeDeadline);
+      if (orphanDrainTimer) clearTimeout(orphanDrainTimer);
       const output = `${stdout}${stderr}`;
       mkdirSync(logDirectory, { recursive: true });
       writeFileSync(resolve(logDirectory, `${logName}.log`), output, "utf8");
-      resolveResult({ code: code ?? 1, signal, stdout, stderr, output, timedOut, outputTruncated: stdoutBytes > MAX_CAPTURED_PROCESS_BYTES || stderrBytes > MAX_CAPTURED_PROCESS_BYTES });
+      resolveResult({ code: code ?? 1, signal: externallyCancelled ?? signal, stdout, stderr, output, timedOut, externallyCancelled: Boolean(externallyCancelled), outputTruncated: stdoutBytes > MAX_CAPTURED_PROCESS_BYTES || stderrBytes > MAX_CAPTURED_PROCESS_BYTES });
     });
   });
 }

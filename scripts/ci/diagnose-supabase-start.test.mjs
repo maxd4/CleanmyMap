@@ -95,7 +95,7 @@ test("keeps classification safe when bounded startup evidence is absent", () => 
   assert.equal(
     classifySupabaseStartFailure({
       ...input,
-      evidence: { durationSeconds: 95, dockerContainers: 0, supabaseStatus: "unavailable" },
+      evidence: { timeoutObserved: true, durationSeconds: 95, dockerContainers: 0, supabaseStatus: "unavailable" },
     }),
     SUPABASE_START_CATEGORIES.START_TIMEOUT,
   );
@@ -334,7 +334,7 @@ test("turns a long failed start with no containers into an actionable bounded co
   assert.equal(evidence.schemaVersion, 8);
   assert.equal(
     classifySupabaseStartFailure({ log: "opaque startup failure", exitCode: 1, evidence }),
-    SUPABASE_START_CATEGORIES.START_TIMEOUT,
+    SUPABASE_START_CATEGORIES.UNCLASSIFIED,
   );
   assert.ok(evidence.evidenceCodes.includes("REQUIRED_SERVICES_MISSING"));
   assert.ok(evidence.evidenceCodes.includes("SUPABASE_NETWORK_MISSING"));
@@ -371,7 +371,7 @@ test("collects a public-safe startup progress snapshot without raw Docker output
   assert.doesNotMatch(JSON.stringify(snapshot), /private\/image|DockerRootDir|supabase_db_web/);
 });
 
-test("classifies a delayed start with no Supabase network or containers as a timeout", () => {
+test("does not infer timeout from elapsed duration alone", () => {
   const evidence = collectBoundedStartEvidence({
     log: "opaque startup failure",
     exitCode: 1,
@@ -381,18 +381,18 @@ test("classifies a delayed start with no Supabase network or containers as a tim
 
   assert.equal(
     classifySupabaseStartFailure({ log: "opaque startup failure", exitCode: 1, evidence }),
-    SUPABASE_START_CATEGORIES.START_TIMEOUT,
+    SUPABASE_START_CATEGORIES.UNCLASSIFIED,
   );
 });
 
 test("never reports success for a non-zero Supabase start result", () => {
   assert.notEqual(
     classifySupabaseStartFailure({ log: "", exitCode: 1 }),
-    SUPABASE_START_CATEGORIES.START_SUCCEEDED,
+    SUPABASE_START_CATEGORIES.START_INCOMPLETE,
   );
   assert.equal(
     classifySupabaseStartFailure({ log: "", exitCode: 0 }),
-    SUPABASE_START_CATEGORIES.START_SUCCEEDED,
+    SUPABASE_START_CATEGORIES.START_INCOMPLETE,
   );
 });
 
@@ -1028,19 +1028,18 @@ test("does not disclose docker ps stderr when container inspection fails", () =>
   assert.doesNotMatch(diagnostic, new RegExp(secret));
 });
 
-test("keeps START_SUCCEEDED explicit and does not emit a failure log signal", () => {
+test("startup success requires a favorable exit and healthy operational services", () => {
   const evidence = collectBoundedStartEvidence({
     log: "",
     exitCode: 0,
     probeCommand: createProbeCommand({ dockerContainers: { available: true, output: "" } }),
   });
 
-  assert.equal(
-    classifySupabaseStartFailure({ log: "", exitCode: 0 }),
-    SUPABASE_START_CATEGORIES.START_SUCCEEDED,
-  );
-  assert.ok(evidence.evidenceCodes.includes("START_SUCCEEDED"));
-  assert.ok(!evidence.evidenceCodes.includes("NO_CLASSIFIABLE_START_LOG_SIGNAL"));
+  assert.equal(classifySupabaseStartFailure({ log: "", exitCode: 0, evidence }), SUPABASE_START_CATEGORIES.START_INCOMPLETE);
+  assert.equal(classifySupabaseStartFailure({ log: "", exitCode: 124, evidence }), SUPABASE_START_CATEGORIES.START_TIMEOUT);
+  assert.equal(classifySupabaseStartFailure({ log: "", exitCode: 143, evidence }), SUPABASE_START_CATEGORIES.START_CANCELLED);
+  const healthy = { ...evidence, requiredServicesState: "ready", healthState: "healthy", supabaseStatus: "available" };
+  assert.equal(classifySupabaseStartFailure({ log: "", exitCode: 0, evidence: healthy }), SUPABASE_START_CATEGORIES.START_SUCCEEDED);
 });
 
 test("preserves failure classification when supabase start fails", () => {
@@ -1108,7 +1107,7 @@ test("classifies explicit probe failures before log heuristics", () => {
   );
   assert.equal(
     classifySupabaseStartFailure({ log: "opaque", exitCode: 0, dockerCommandAvailable: false }),
-    SUPABASE_START_CATEGORIES.START_SUCCEEDED,
+    SUPABASE_START_CATEGORIES.START_INCOMPLETE,
   );
 });
 
@@ -1302,15 +1301,17 @@ test("the workflow keeps startup failure blocking and never prints the raw log",
   assert.match(startScript, /--progress-file="\$progress_file"/);
   assert.match(startScript, /--watch-pid="\$start_pid" --progress-file="\$progress_file" --expected-network="\$network" --root="\$root"/);
   assert.match(startScript, /--docker-events-file="\$events_file" \\\s+--expected-network="\$network" \\\s+--root="\$root" \\\s+--exit-code="\$start_exit_code"/);
-  assert.match(startScript, /docker events --since "\$start_started_at" --filter type=container/);
+  assert.match(startScript, /docker events --since "\$1" --filter type=container/);
   assert.match(startScript, /events_pid=\$!/);
-  assert.match(startScript, /docker logs --follow --timestamps "\$container_id" 2>\/dev\/null \| node "\$root\/scripts\/ci\/capture-bounded-log\.mjs" "\$postgres_log" 8388608/);
-  assert.match(startScript, /docker exec "\$container_id" sh -c 'exec tail -n 0 -F \/var\/log\/postgresql\/\*\.json \/var\/lib\/postgresql\/data\/log\/\*\.json 2>\/dev\/null' 2>\/dev\/null \| node "\$root\/scripts\/ci\/capture-bounded-log\.mjs" "\$postgres_server_log" 8388608/);
+  assert.match(startScript, /setsid bash -c 'docker logs --follow --timestamps "\$1" 2>\/dev\/null \| node "\$2\/scripts\/ci\/capture-bounded-log\.mjs" "\$3" 8388608'/);
+  assert.match(startScript, /setsid bash -c 'docker exec "\$1" sh -c .*capture-bounded-log\.mjs.*\$3.*8388608'/);
   assert.match(startScript, /timeout --signal=TERM --kill-after=15s "\$start_timeout_seconds"/);
   assert.match(startScript, /capture-bounded-log\.mjs/);
   assert.match(startScript, /--postgres-log-file="\$postgres_log"/);
   assert.match(startScript, /--postgres-server-log-file="\$postgres_server_log"/);
-  assert.match(startScript, /rm -f "\$start_log" "\$progress_file" "\$events_file" "\$postgres_log" "\$postgres_server_log"/);
+  assert.match(startScript, /rm -f "\$start_log" "\$start_fifo" "\$progress_file" "\$events_file" "\$postgres_log" "\$postgres_server_log"/);
+  assert.match(startScript, /stop_pid_or_group/);
+  assert.match(startScript, /kill -KILL -- "-\$pid"/);
   assert.match(startScript, /--docker-events-file="\$events_file"/);
   assert.match(startScript, /if \[\[ "\$start_exit_code" -ne 0 \]\]; then\s+exit "\$start_exit_code"/);
   assert.match(startScript, /cat "\$diagnostic_output"/);
