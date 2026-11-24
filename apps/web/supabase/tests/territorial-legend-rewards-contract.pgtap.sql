@@ -366,10 +366,14 @@ select throws_ok(
   'service-only consent guard accepts JWT claims without the legacy role setting'
 );
 select throws_ok(
-  $$select public.reconcile_territorial_legend_snapshot(null::date, '[]'::jsonb)$$,
+  $$select public.reconcile_territorial_legend_snapshot(
+    null::date,
+    '[]'::jsonb,
+    public.get_territorial_legend_fact_revision()
+  )$$,
   'P0001',
   'effective date must be a non-future civil date',
-  'service-only snapshot writer accepts JWT claims without the legacy role setting'
+  'revision-checked snapshot writer accepts JWT claims without the legacy role setting'
 );
 select throws_ok(
   $$select public.reconcile_territorial_legend_snapshot(current_date, '[]'::jsonb, null::timestamptz)$$,
