@@ -62,5 +62,7 @@ describe("external action connector normalization", () => {
     expect(buildExternalActionIdentityHash({ ...mer, startTime: undefined }, "association-brigade-verte-paris")).toBeNull();
     expect(buildExternalActionIdentityHash({ ...mer, actionDate: "2027-04-19" }, "association-brigade-verte-paris"))
       .not.toBe(buildExternalActionIdentityHash(jagis, "association-brigade-verte-paris"));
+    expect(buildExternalActionIdentityHash({ ...mer, commune: "Marseille" }, "association-brigade-verte-paris"))
+      .not.toBe(buildExternalActionIdentityHash(jagis, "association-brigade-verte-paris"));
   });
 });

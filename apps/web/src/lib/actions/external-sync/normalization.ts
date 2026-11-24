@@ -102,10 +102,11 @@ function normalizeIdentityText(value: string | null | undefined): string {
 /** Exact, conservative identity for cross-platform duplicates; incomplete data is never fuzzy-matched. */
 export function buildExternalActionIdentityHash(event: ExternalActionEvent, organizerDirectoryId: string): string | null {
   const startTime = event.startTime;
+  const commune = normalizeIdentityText(event.commune ?? null);
   const location = normalizeIdentityText(event.meetingPoint ?? event.address ?? null);
   const route = normalizeIdentityText(event.routeReference ?? null);
-  if (!organizerDirectoryId.trim() || !startTime || !location || !route) return null;
-  const identity = [organizerDirectoryId.trim(), event.actionDate, startTime, location, route].join("\u001f");
+  if (!organizerDirectoryId.trim() || !startTime || !commune || !location || !route) return null;
+  const identity = [organizerDirectoryId.trim(), event.actionDate, startTime, commune, location, route].join("\u001f");
   return createHash("sha256").update(identity).digest("hex");
 }
 

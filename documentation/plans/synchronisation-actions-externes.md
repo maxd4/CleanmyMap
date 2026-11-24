@@ -12,7 +12,7 @@ Pilote : Brigade Verte Paris, avec J'agis pour la nature (Fondation pour la Natu
 
 La cible comporte deux flux distincts, progressifs :
 
-1. Synchroniser les événements et créer automatiquement une pré-action privée, durable et modifiable, dès la prochaine synchronisation autorisée. L'organisateur ne ressaisit pas les informations disponibles. La publication CleanMyMap reste une décision explicite au départ.
+1. Synchroniser les événements et créer automatiquement une pré-action privée, durable et modifiable. La commande manuelle « Synchroniser maintenant », réservée aux administrateurs, publie automatiquement les actions admissibles après création. L'organisateur conserve ses droits de préparation et de finalisation ; cette commande ne lui est pas accessible.
 2. Synchroniser automatiquement les inscriptions et leurs changements, uniquement après validation du canal technique et du cadre juridique correspondant. Pas de workflow CSV/XLSX comme solution nominale.
 
 Ce chantier ne crée pas un agrégateur national exhaustif, ne republie pas automatiquement sur les plateformes sources, ne modifie pas le parcours mobile natif et n'introduit ni CRM ni gestion de stocks. Le backend et les actions restent communs ; préserver les consommateurs mobiles existants. Une extension nationale et une diffusion sortante feront l'objet de décisions séparées.
@@ -115,7 +115,7 @@ Pour le pilote, J'agis pour la nature est la source préférée des horaires et 
 - Suppression, retrait, absence : une annulation explicite n'est pas une simple absence de page. En cas d'échec, réponse partielle, disparition ou 404, signaler l'état à vérifier et conserver la dernière version connue ; jamais supprimer automatiquement. Une annulation explicite déclenche une revue urgente ; fermer les inscriptions publiques CleanMyMap de l'action concernée si nécessaire via les mécanismes existants et empêcher les nouvelles inscriptions tant que le conflit d'annulation n'est pas levé. Si l'annulation d'un seul canal est constatée alors qu'un autre reste actif, ne pas conclure seul que l'action terrain est annulée. Respecter les transitions autorisées.
 - Bilan en cours ou terminé : ne jamais modifier automatiquement les mesures, présences, géométrie observée, bilan ou rapports historiques. Ne pas recréer les actions anciennes, supprimées ou révoquées lors d'une synchronisation. Garder une référence minimale non nominative et un état de retrait lorsque nécessaire à l'idempotence.
 
-La création automatique est une préparation et non une preuve d'activité. Exclure les effets de gamification, d'XP, de présence, d'impact, d'entraînement de modèles ou de notification publique injustifiée. Ne pas modifier les conventions globales `data_provenance`, les statuts Actions ou le moteur scientifique pour simuler un historique. Les actions importées doivent suivre les mêmes contrôles de visibilité, de modération et de complétude que les actions natives.
+La synchronisation ne constitue pas une preuve d'activité. La création, la publication automatique admissible et l'inscription externe n'émettent aucun effet de gamification, d'XP, de présence, d'impact, d'entraînement de modèles ou de notification publique injustifiée. Différer notamment `trackActionCreated` et `trackNewPlaceVisited` ; réutiliser la réconciliation canonique uniquement après finalisation admissible du bilan. Ne pas modifier les conventions globales `data_provenance`, les statuts Actions ou le moteur scientifique pour simuler un historique. Les actions importées suivent les mêmes contrôles de visibilité, de modération et de complétude que les actions natives.
 
 ## 5. Synchronisation des inscriptions : cible conditionnelle
 
@@ -133,7 +133,7 @@ RLS et grants restrictifs, lecture/écriture privée avec contrôle de relation,
 
 ### Planification
 
-Réutiliser `/api/cron/maintenance`, son authentification et son registre de jobs. Démarrage du pilote : un passage quotidien, et un bouton privé « Synchroniser maintenant » limité en débit pour l'organisateur habilité, consommant le même moteur. Pas de promesse d'instantanéité : le prochain passage suit la publication externe, sa validation éventuelle par l'opérateur et la disponibilité du flux. Cible plus rapide par webhook si proposé et autorisé ; sinon cadence accrue seulement après mesure des besoins, coût et limites de service. Ne pas ajouter un cron par association ou par site.
+Réutiliser `/api/cron/maintenance`, son authentification et son registre de jobs. Le cron prépare les pré-actions et ne publie pas. La commande « Synchroniser maintenant » est exclusivement administrative, limitée en débit, consomme le même moteur puis publie automatiquement les formulaires admissibles. La suppression d'une action synchronisée et l'inscription de son tombstone sont également exclusivement administratives et auditées ; ce tombstone bloque toute recréation par une source ultérieure. Pas de promesse d'instantanéité : le prochain passage suit la publication externe, sa validation éventuelle par l'opérateur et la disponibilité du flux. Cible plus rapide par webhook si proposé et autorisé ; sinon cadence accrue seulement après mesure des besoins, coût et limites de service. Ne pas ajouter un cron par association ou par site.
 
 Limiter la fenêtre aux événements futurs après activation (première découverte : événements futurs déjà publiés autorisés, en dry-run avant activation), pagination bornée avec indication de complétude, concurrence limitée, délais réseau, backoff, reprise, ETag/Last-Modified si supportés, et checkpoints atomiques. Protection SSRF : URLs et hôtes approuvés côté serveur, HTTPS, contrôle des redirections et interdiction des adresses privées/locales, limites de taille ; pas de HTML non nettoyé. Les erreurs d'une source n'empêchent pas l'autre de fonctionner. Aucune absence déduite d'une lecture tronquée ou dégradée.
 
@@ -147,7 +147,7 @@ Sur le formulaire, afficher « Synchronisée depuis » et liens source, fraîche
 
 ### Lot A : socle et création automatique
 
-Implémenter abonnement borné et révocable, normalisation des événements, identités externes, rapprochement, création automatique de pré-actions non publiées, reprise, conflits, actualisation des champs et traitement des annulations. Réutiliser les owners listés. Tests sur adaptateurs synthétiques représentant les deux sources ; aucun endpoint réel fictif. Le moteur doit fonctionner de bout en bout dans la lane de test même si aucun accès opérateur n'est disponible.
+Implémenter abonnement borné et révocable, normalisation des événements, réservation durable de l'identité source avant création canonique, rapprochement, création automatique de pré-actions, reprise après interruption, conflits, actualisation des champs et traitement des annulations. Le cron prépare les pré-actions ; seule la commande administrative les publie automatiquement si elles sont admissibles. La suppression administrative persistée empêche toute recréation. Réutiliser les owners listés. Tests sur adaptateurs synthétiques représentant les deux sources ; aucun endpoint réel fictif. Le moteur doit fonctionner de bout en bout dans la lane de test même si aucun accès opérateur n'est disponible.
 
 ### Lot B : activation des sources autorisées
 
@@ -161,7 +161,10 @@ Conditionnel à l'accès technique et juridique privé autorisé. Implémenter l
 
 | Scénario | Résultat exigé |
 | --- | --- |
-| Nouvelle annonce complète d'une source autorisée | Une seule pré-action privée, récupérable dans le formulaire existant, sans effet de gamification. |
+| Nouvelle annonce complète découverte par cron | Une seule pré-action privée, récupérable dans le formulaire existant, sans publication ni effet de gamification. |
+| Commande administrative de synchronisation | Crée puis publie automatiquement les formulaires admissibles ; aucune gamification avant finalisation admissible. |
+| Commande manuelle par un organisateur non-admin | Refusée côté serveur, sans écriture. |
+| Suppression administrative suivie d'une source ou d'une révision nouvelle | Tombstone audité conservé ; aucune recréation ou rattachement à une action native étrangère. |
 | Même annonce répétée, relance après erreur, jobs concurrents | Une seule action et un lien externe unique ; aucun effet doublé. |
 | Deux annonces du même événement, deux sources, titres différents | Une seule action si identité établie, deux références ; sinon revue. |
 | Deux événements distincts le même jour ou parcours récurrent | Aucune fusion abusive. |
@@ -180,7 +183,7 @@ Tests unitaires de mapping et rapprochement, tests de routes et comportements We
 
 ## 8. Conditions d'arrêt
 
-**Lot A terminé :** avec deux sources simulées et un organisateur de test explicitement habilité, la création/reprise automatique d'une action unique est démontrée, y compris réessai concurrent, modification et conflit. Aucun accès externe non autorisé et aucune publication implicite. Les docs distinguent moteur livré et intégrations inactives.
+**Lot A terminé :** avec deux sources simulées et un organisateur de test explicitement habilité, le cron prépare et la commande administrative crée/reprend puis publie automatiquement une action unique admissible ; reprise après expiration de verrou, réessai concurrent, changement d'identité de parcours/date, tombstone, modification et conflit sont démontrés en PostgreSQL/RLS. La gamification n'intervient qu'après finalisation admissible. Aucun accès externe non autorisé. Les docs distinguent moteur livré et intégrations inactives.
 
 **Lot B terminé :** les sources effectivement autorisées sont validées sur des données d'événements réels, sans écriture non voulue ; la Brigade Verte retrouve une nouvelle pré-action automatiquement. Le statut des autres sources est indiqué. En l'absence d'accès autorisé, ne pas déclarer la synchronisation réelle opérationnelle.
 
