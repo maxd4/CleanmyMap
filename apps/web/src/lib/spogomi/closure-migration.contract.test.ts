@@ -7,6 +7,7 @@ const rankingMigration = readFileSync(new URL("../../../supabase/migrations/2026
 const correctionMigration = readFileSync(new URL("../../../supabase/migrations/20261015000029_spogomi_closure_republication_safety.sql", import.meta.url), "utf8");
 const admissionNotificationMigration = readFileSync(new URL("../../../supabase/migrations/20261015000030_spogomi_admission_decision_notifications.sql", import.meta.url), "utf8");
 const eventClosureMigration = readFileSync(new URL("../../../supabase/migrations/20261110000005_spogomi_event_closure_snapshot.sql", import.meta.url), "utf8");
+const closureResultsDiagnosticMigration = readFileSync(new URL("../../../supabase/migrations/20261124000002_spogomi_closure_snapshot_results_diagnostic.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI closure STATIC_CONTRACT", () => {
   it("keeps the field transition explicit, versioned, idempotent and private", () => {
@@ -89,5 +90,19 @@ describe("SPOGOMI closure STATIC_CONTRACT", () => {
     expect(admissionNotificationMigration).toContain("on conflict do nothing");
     expect(admissionNotificationMigration).toContain("grant execute on function public.emit_spogomi_admission_decision_notification()");
     expect(admissionNotificationMigration).toContain("spogomi_admission_decision_notification");
+  });
+
+  it("evaluates closure snapshot results from current team certified submissions and closure decisions forward-only", () => {
+    expect(closureResultsDiagnosticMigration).toContain("create or replace function public.spogomi_transition_event");
+    expect(closureResultsDiagnosticMigration).toContain("t.certified_submission_id");
+    expect(closureResultsDiagnosticMigration).toContain("s.status = 'certified'");
+    expect(closureResultsDiagnosticMigration).toContain("spogomi_team_closure_decisions d");
+    expect(closureResultsDiagnosticMigration).toContain("d.is_current");
+    expect(closureResultsDiagnosticMigration).toContain("not in ('absent', 'forfeit')");
+    expect(closureResultsDiagnosticMigration).toContain("in ('result_missing', 'contested')");
+    expect(closureResultsDiagnosticMigration).toContain("revoke all on function public.spogomi_transition_event(uuid, text, bigint, text) from public, anon, authenticated");
+    expect(closureResultsDiagnosticMigration).toContain("grant execute on function public.spogomi_transition_event(uuid, text, bigint, text) to service_role");
+    expect(closureResultsDiagnosticMigration).not.toContain("state = 'certified'");
+    expect(closureResultsDiagnosticMigration).not.toContain("public_results_visibility = 'certified'");
   });
 });

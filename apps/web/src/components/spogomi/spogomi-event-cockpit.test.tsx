@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { act, create } from "react-test-renderer";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./spogomi-preparation-workspace", () => ({
@@ -181,5 +182,90 @@ describe("SpogomiEventCockpit", () => {
     expect(markup).toContain('href="#bilan"');
     expect(markup).not.toContain('href="#attendance"');
     expect(markup).not.toContain('href="#operations"');
+  });
+
+  it.each(["judging", "certified", "archived"] as const)(
+    "hides attendance and operations in %s for checkin, field operators, and cumulative organizer profiles while preserving review sections",
+    (closedState) => {
+      const cumulativeMarkup = renderToStaticMarkup(
+        <SpogomiEventCockpit
+          event={{ ...event, state: closedState }}
+          role="organizer"
+          capabilities={["manage", "checkin", "arbitrate", "observe"]}
+          reviewerRoles={["checkin", "referee", "observer"]}
+          fieldCapabilities={["arrival", "weighing", "measurement_entry", "arbitration", "certification"]}
+          activeRole="admin"
+        />,
+      );
+      expect(cumulativeMarkup).not.toContain('href="#attendance"');
+      expect(cumulativeMarkup).not.toContain('href="#operations"');
+      expect(cumulativeMarkup).toContain('href="#results"');
+      expect(cumulativeMarkup).toContain('href="#arbitration"');
+      expect(cumulativeMarkup).toContain('href="#bilan"');
+
+      const checkinFieldMarkup = renderToStaticMarkup(
+        <SpogomiEventCockpit
+          event={{ ...event, state: closedState }}
+          role="checkin"
+          capabilities={["checkin", "observe"]}
+          reviewerRoles={["checkin", "observer"]}
+          fieldCapabilities={["arrival", "weighing"]}
+        />,
+      );
+      expect(checkinFieldMarkup).not.toContain('href="#attendance"');
+      expect(checkinFieldMarkup).not.toContain('href="#operations"');
+      expect(checkinFieldMarkup).toContain('href="#results"');
+
+      const refereeMarkup = renderToStaticMarkup(
+        <SpogomiEventCockpit
+          event={{ ...event, state: closedState }}
+          role="referee"
+          capabilities={["arbitrate", "observe"]}
+          reviewerRoles={["referee"]}
+          fieldCapabilities={["arbitration", "certification"]}
+        />,
+      );
+      expect(refereeMarkup).not.toContain('href="#attendance"');
+      expect(refereeMarkup).not.toContain('href="#operations"');
+      expect(refereeMarkup).toContain('href="#arbitration"');
+      expect(refereeMarkup).toContain('href="#results"');
+    },
+  );
+
+  it("reconciles the active section back to presentation when a closure transition hides attendance or operations", () => {
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <SpogomiEventCockpit
+          event={{ ...event, state: "in_progress" }}
+          role="organizer"
+          capabilities={["manage", "checkin"]}
+          reviewerRoles={["checkin"]}
+          fieldCapabilities={["arrival", "weighing"]}
+        />,
+      );
+    });
+
+    const attendanceLink = renderer.root.findAllByType("a").find((link) => link.props.href === "#attendance");
+    expect(attendanceLink).toBeDefined();
+    act(() => { attendanceLink?.props.onClick({ preventDefault: () => undefined }); });
+    expect(renderer.root.findAllByType("a").find((link) => link.props.href === "#attendance")?.props["aria-current"]).toBe("page");
+
+    act(() => {
+      renderer.update(
+        <SpogomiEventCockpit
+          event={{ ...event, state: "judging" }}
+          role="organizer"
+          capabilities={["manage", "checkin"]}
+          reviewerRoles={["checkin"]}
+          fieldCapabilities={["arrival", "weighing"]}
+        />,
+      );
+    });
+
+    expect(renderer.root.findAllByType("a").find((link) => link.props.href === "#attendance")).toBeUndefined();
+    expect(renderer.root.findAllByType("a").find((link) => link.props.href === "#operations")).toBeUndefined();
+    expect(renderer.root.findAllByType("a").find((link) => link.props.href === "#presentation")?.props["aria-current"]).toBe("page");
+    renderer.unmount();
   });
 });

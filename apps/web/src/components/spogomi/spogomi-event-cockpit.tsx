@@ -102,8 +102,8 @@ function accessLabel(role: SpogomiEventAccessRole | null, fieldCapabilities: rea
 
 function buildCockpitSections(organizer: boolean, proposalManager: boolean, reviewerRoles: ReadonlySet<SpogomiReviewerRole>, hasFieldOperations: boolean, eventState: string): CockpitSection[] {
   const next = new Set<CockpitSection>(["presentation"]);
+  const fieldFinished = ["judging", "certified", "archived"].includes(eventState);
   if (organizer) {
-    const fieldFinished = ["judging", "certified", "archived"].includes(eventState);
     const organizerSections: CockpitSection[] = fieldFinished
       ? ["teams", "results", "arbitration", "bilan", "settings"]
       : ["teams", "attendance", "operations", "results", "arbitration", "bilan", "settings"];
@@ -111,7 +111,7 @@ function buildCockpitSections(organizer: boolean, proposalManager: boolean, revi
   }
   if (proposalManager) next.add("help_proposals");
   else {
-    if (reviewerRoles.has("checkin")) next.add("attendance");
+    if (reviewerRoles.has("checkin") && !fieldFinished) next.add("attendance");
     if (reviewerRoles.has("referee")) {
       next.add("results");
       next.add("arbitration");
@@ -121,7 +121,7 @@ function buildCockpitSections(organizer: boolean, proposalManager: boolean, revi
       next.add("results");
     }
   }
-  if (hasFieldOperations) next.add("operations");
+  if (hasFieldOperations && !fieldFinished) next.add("operations");
   return [...next];
 }
 
@@ -196,6 +196,10 @@ export function SpogomiEventCockpit({ event, role, capabilities, reviewerRoles, 
   useEffect(() => { activeSectionRef.current = activeSection; }, [activeSection]);
   useEffect(() => { draftControlsRef.current = draftControls; }, [draftControls]);
   const sections = useMemo(() => buildCockpitSections(organizer, proposalManager, verifiedReviewerRoles, hasFieldOperations, event.state), [event.state, hasFieldOperations, organizer, proposalManager, verifiedReviewerRoles]);
+  if (!sections.includes(activeSection)) {
+    setActiveSection("presentation");
+    setPendingSection(null);
+  }
 
   const acceptSection = useCallback((section: CockpitSection, pushHistory: boolean) => {
     setPendingSection(null);

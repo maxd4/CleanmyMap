@@ -198,4 +198,45 @@ describe("SPOGOMI closure decisions", () => {
     await expect(setSpogomiTeamClosureDecision(params)).rejects.toThrow("décision de clôture a changé");
     expect(rpc).toHaveBeenCalledTimes(2);
   });
+
+  it("ignores historical draft or superseded submissions when loading current certified team results and handles multi-division mixed statuses", async () => {
+    const rows: Record<string, unknown> = {
+      spogomi_divisions: [
+        { id: "div-casual", division_type: "casual", regulation_status: "complete" },
+        { id: "div-wc", division_type: "world_cup", regulation_status: "complete" },
+      ],
+      spogomi_teams: [
+        { id: "team-c1", division_id: "div-casual", team_number: 1, public_name: "C1", certified_submission_id: "sub-c1-cert" },
+        { id: "team-c2", division_id: "div-casual", team_number: 2, public_name: "C2", certified_submission_id: null },
+        { id: "team-w1", division_id: "div-wc", team_number: 1, public_name: "W1", certified_submission_id: null },
+      ],
+      spogomi_result_submissions: [
+        { id: "sub-c1-draft", status: "draft", version: 1 },
+        { id: "sub-c1-superseded", status: "superseded", version: 2 },
+        { id: "sub-c1-cert", status: "certified", version: 3 },
+      ],
+      spogomi_team_closure_decisions: [
+        { id: "dec-c2", team_id: "team-c2", division_id: "div-casual", status: "absent", sport_eligible: false, environmental_eligibility: "excluded", decision_version: 1, reason: "Équipe absente." },
+      ],
+      spogomi_official_rankings: [{ division_id: "div-casual", status: "certified" }],
+      spogomi_team_join_requests: [],
+    };
+    const supabase = {
+      from(table: string) {
+        const chain = {
+          select: () => chain,
+          eq: () => chain,
+          order: () => chain,
+          range: async () => ({ data: rows[table] ?? [], error: null }),
+          maybeSingle: async () => ({ data: table === "spogomi_events" ? { id: "event-1", state: "judging", public_results_visibility: "hidden", action_id: "action-1" } : table === "spogomi_action_consolidations" ? null : { status: "draft", published_at: null }, error: null }),
+        };
+        return chain;
+      },
+    };
+    const summary = await loadSpogomiClosureSummary({ supabase: supabase as never, eventId: "event-1" });
+    expect(summary?.divisions[0]).toMatchObject({ id: "div-casual", certifiedTeams: 1, blockers: ["ranking_not_published"] });
+    expect(summary?.divisions[1]).toMatchObject({ id: "div-wc", certifiedTeams: 0, blockers: ["certification_remaining"] });
+    expect(summary?.certificationsRemaining).toBe(1);
+    expect(summary?.arbitration).toBe("ongoing");
+  });
 });
