@@ -188,6 +188,20 @@ begin
   if (select count(*) from public.spogomi_team_referee_assignment_audit where team_id = v_team_wc_1 and action = 'replaced') <> 1 then
     raise exception 'missing replaced audit record';
   end if;
+  if not exists (
+    select 1
+    from public.spogomi_team_referee_assignments old_assignment
+    join public.spogomi_team_referee_assignments new_assignment
+      on new_assignment.id = old_assignment.replaced_by_assignment_id
+    where old_assignment.team_id = v_team_wc_1
+      and old_assignment.referee_clerk_id = v_ref_1
+      and old_assignment.revoked_at is not null
+      and new_assignment.team_id = v_team_wc_1
+      and new_assignment.referee_clerk_id = v_ref_3
+      and new_assignment.revoked_at is null
+  ) then
+    raise exception 'replacement did not preserve the old-to-new assignment chain';
+  end if;
 
   -- 5. Operational readiness & field launch gate
   if not public.spogomi_division_referee_coverage_ready(v_event_id, v_world_cup_id) then

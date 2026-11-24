@@ -191,6 +191,13 @@ it("approves only the bounded pre-application SPOGOMI signature repair", () => {
   assert.doesNotMatch(source, /6bd027f71baf58e821045deb32a80b6730fc91a0c7b5b77dd11cdae1e2a577dd/);
 });
 
+it("approves only the exact pre-application SPOGOMI team-referee repair", () => {
+  const source = readFileSync(auditScript, "utf8");
+  assert.match(source, /20261124000005_spogomi_team_referee_assignments\.sql/);
+  assert.match(source, /90f04df9393990395ecfe10c5ccb83873407360ac5bb0b6b080b732bc7d836ea/);
+  assert.doesNotMatch(source, /dfac03aed90b74bf7af47b8a9ffe9c781c2278bc543bbcfa1808b4bd6d3cbab4/);
+});
+
 it("approves only the bounded PostgreSQL-compatible Personal AI migration repair", () => {
   const source = readFileSync(auditScript, "utf8");
   assert.match(source, /20261121000002_personal_ai_declarations\.sql/);

@@ -626,6 +626,34 @@ mesure non nulle est refusée. La règle métier ne change pas.
 20261122000008_AFTER_HASH:  EE1C38CC5604EE07370A582CAF5393D37DEB17B520674F08715052EE392A4E3B
 ```
 
+## Exception de replay bornée — `20261124000005`
+
+La migration `20261124000005_spogomi_team_referee_assignments.sql` est
+corrigée avant sa première application. La définition de
+`spogomi_team_referee_status` prend trois UUID, tandis qu'un `REVOKE` visait une
+surcharge avec un troisième argument `text` qui n'est pas créée dans l'arbre
+canonique. Ce nom de signature erroné peut interrompre le replay. La mutation
+de remplacement des arbitres insérait également une nouvelle affectation
+active avant de révoquer l'ancienne, en contradiction avec l'index unique
+partiel sur une affectation active par équipe.
+
+La correction bornée révoque d'abord l'affectation existante, insère la
+nouvelle, puis lie l'ancienne à son remplacement. Ces écritures restent dans
+la même transaction RPC : toute erreur annule la révocation et l'insertion.
+Le contrat pgTAP vérifie le remplacement, la chaîne ancien → nouveau, les
+droits et le maintien du roster sportif. Une migration forward-only
+`20261125000001_fix_spogomi_team_referee_replacement.sql` porte la même
+définition pour un déploiement ayant déjà enregistré la migration initiale.
+
+Cette exception pré-application autorise uniquement la réécriture exacte
+ci-dessous et n'autorise ni `migration repair`, ni DDL manuelle, ni application
+distante implicite.
+
+```text
+20261124000005_BEFORE_HASH: DFAC03AED90B74BF7AF47B8A9FFE9C781C2278BC543BBCFA1808B4BD6D3CBAB4
+20261124000005_AFTER_HASH:  90F04DF9393990395ECFE10C5CCB83873407360AC5BB0B6B080B732BC7D836EA
+```
+
 ## Interdiction
 
 Ne pas maintenir indéfiniment deux copies manuelles sans contrôle de synchronisation.

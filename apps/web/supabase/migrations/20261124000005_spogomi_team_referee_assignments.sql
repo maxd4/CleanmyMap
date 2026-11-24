@@ -266,7 +266,6 @@ begin
 end;
 $$;
 
-revoke all on function public.spogomi_team_referee_status(uuid, uuid, text) from public, anon, authenticated;
 revoke all on function public.spogomi_team_referee_status(uuid, uuid, uuid) from public, anon, authenticated;
 grant execute on function public.spogomi_team_referee_status(uuid, uuid, uuid) to service_role;
 
@@ -403,6 +402,19 @@ begin
     raise exception using errcode = '23505', message = 'spogomi_referee_already_assigned_in_event';
   end if;
 
+  -- Revoke the current row before inserting its replacement: the partial
+  -- unique index permits only one active assignment per team. Any later
+  -- failure rolls this update back with the function call's transaction.
+  if v_existing.id is not null then
+    v_action := 'replaced';
+    update public.spogomi_team_referee_assignments
+    set revoked_at = now(),
+        revoked_by_clerk_id = v_actor_id,
+        revocation_reason = coalesce(v_reason, 'replaced'),
+        updated_at = now()
+    where id = v_existing.id;
+  end if;
+
   insert into public.spogomi_team_referee_assignments (
     event_id,
     division_id,
@@ -419,12 +431,8 @@ begin
   returning * into v_inserted;
 
   if v_existing.id is not null then
-    v_action := 'replaced';
     update public.spogomi_team_referee_assignments
-    set revoked_at = now(),
-        revoked_by_clerk_id = v_actor_id,
-        revocation_reason = coalesce(v_reason, 'replaced'),
-        replaced_by_assignment_id = v_inserted.id,
+    set replaced_by_assignment_id = v_inserted.id,
         updated_at = now()
     where id = v_existing.id;
   end if;
