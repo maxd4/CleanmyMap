@@ -42,6 +42,7 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
   const currentRouteKey = routeSnapshotKey(route);
   const [trackedDivisionId, setTrackedDivisionId] = useState(activeDivisionId);
   const [syncedRouteKey, setSyncedRouteKey] = useState(currentRouteKey);
+  const [syncedRevision, setSyncedRevision] = useState(expectedRevision);
   const [baseRevision, setBaseRevision] = useState(expectedRevision);
   const [drawing, setDrawing] = useState<PolylineDrawing | null>(() => routeDrawing(route));
   const [isDirty, setIsDirty] = useState(false);
@@ -53,6 +54,7 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
   if (trackedDivisionId !== activeDivisionId) {
     setTrackedDivisionId(activeDivisionId);
     setSyncedRouteKey(currentRouteKey);
+    setSyncedRevision(expectedRevision);
     setBaseRevision(expectedRevision);
     setDrawing(routeDrawing(route));
     setIsDirty(false);
@@ -60,14 +62,16 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
     setCorrectionReason("");
     setLocalError(null);
     setMediaStatus(null);
-  } else if (syncedRouteKey !== currentRouteKey || (!isDirty && baseRevision !== expectedRevision)) {
+  } else if (syncedRouteKey !== currentRouteKey || syncedRevision !== expectedRevision) {
     if (!isDirty) {
       setSyncedRouteKey(currentRouteKey);
+      setSyncedRevision(expectedRevision);
       setBaseRevision(expectedRevision);
       setDrawing(routeDrawing(route));
       setHasRemoteUpdate(false);
     } else {
       setSyncedRouteKey(currentRouteKey);
+      setSyncedRevision(expectedRevision);
       setHasRemoteUpdate(true);
     }
   }
@@ -77,6 +81,7 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
 
   const loadServerVersion = () => {
     setSyncedRouteKey(currentRouteKey);
+    setSyncedRevision(expectedRevision);
     setBaseRevision(expectedRevision);
     setDrawing(routeDrawing(route));
     setIsDirty(false);
@@ -90,11 +95,15 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
     if (!drawing) return setLocalError("Dessinez un parcours comportant au moins deux points.");
     if (requiresReason && correctionReason.trim().length < 3) return setLocalError("Un motif est obligatoire pendant l’épreuve.");
     try {
-      await action(`/api/spogomi/events/${eventId}/routes`, {
+      const result = await action(`/api/spogomi/events/${eventId}/routes`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ divisionId: activeDivisionId, expectedRevision: baseRevision, correctionReason: correctionReason.trim() || null, coordinates: drawing.coordinates }),
       }, activeDivisionId);
+      if (!result) {
+        setLocalError("Le parcours n’a pas pu être enregistré.");
+        return;
+      }
       setIsDirty(false);
       setHasRemoteUpdate(false);
       setCorrectionReason("");
@@ -116,7 +125,11 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
       form.set("expectedRevision", String(baseRevision));
       if (activeDivisionId) form.set("divisionId", activeDivisionId);
       if (correctionReason.trim()) form.set("correctionReason", correctionReason.trim());
-      await action(`/api/spogomi/events/${eventId}/route-gpx`, { method: "POST", body: form }, activeDivisionId);
+      const result = await action(`/api/spogomi/events/${eventId}/route-gpx`, { method: "POST", body: form }, activeDivisionId);
+      if (!result) {
+        setLocalError("Le GPX n’a pas pu être importé.");
+        return;
+      }
       setDrawing({ kind: "polyline", coordinates: next.coordinates });
       setIsDirty(false);
       setHasRemoteUpdate(false);
@@ -134,11 +147,16 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
       if (!route) throw new Error("Enregistrez d’abord un parcours avant d’ajouter son image de référence.");
       if (requiresReason && correctionReason.trim().length < 3) throw new Error("Un motif est obligatoire pendant l’épreuve.");
       const media = await uploadActionRouteReference(actionId, file);
-      await action(`/api/spogomi/events/${eventId}/routes/reference-media`, {
+      const result = await action(`/api/spogomi/events/${eventId}/routes/reference-media`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ divisionId: activeDivisionId, expectedRevision: baseRevision, mediaId: media.id, correctionReason: correctionReason.trim() || null }),
       }, activeDivisionId);
+      if (!result) {
+        setMediaStatus(null);
+        setLocalError("L’image n’a pas pu être associée.");
+        return;
+      }
       setCorrectionReason("");
       setMediaStatus("Image de référence privée enregistrée.");
     } catch (error) {

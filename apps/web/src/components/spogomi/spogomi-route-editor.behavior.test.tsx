@@ -40,6 +40,17 @@ vi.mock("@/lib/actions/action-media/action-route-reference-client", () => ({
   uploadActionRouteReference: mocks.uploadActionRouteReference,
 }));
 
+vi.mock("@/lib/actions/geometry/gpx", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/actions/geometry/gpx")>();
+  return {
+    ...actual,
+    parseGpxFile: vi.fn(async () => ({
+      drawing: { kind: "polyline", coordinates: [[48.77, 2.27], [48.78, 2.28]] },
+      metadata: { fileName: "import.gpx", pointCount: 2, observedDistanceKm: 1.5, inferredTopology: "point_to_point" },
+    })),
+  };
+});
+
 import { SpogomiRouteEditor } from "./spogomi-route-editor";
 
 (globalThis as unknown as Record<string, boolean>).IS_REACT_ACT_ENVIRONMENT = true;
@@ -188,5 +199,101 @@ describe("SpogomiRouteEditor", () => {
     const wcRoute = makeRoute({ id: "route-wc", division_id: "div-wc", route_version: 1, geometry_geojson: { type: "LineString", coordinates: [[2.1, 48.1], [2.2, 48.2]] } });
     await act(async () => { renderWith(wcRoute, 5, "div-wc"); });
     expect(container.querySelector('[data-testid="map-coords"]')?.textContent).toBe("[[48.1,2.1],[48.2,2.2]]");
+  });
+
+  it("preserves local edits and shows explicit errors when action() returns null for saveDrawing, importGpx, or addReferenceImage", async () => {
+    const action = vi.fn().mockResolvedValue(null);
+    mocks.uploadActionRouteReference.mockResolvedValue({ id: "media-ref-2", signedUrl: "https://example.test/signed" });
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    const v1 = makeRoute({ route_version: 1, geometry_geojson: { type: "LineString", coordinates: [[2.35, 48.85], [2.36, 48.86]] } });
+    const renderWith = (route: SpogomiRouteProjection | null, expectedRevision: number) =>
+      root!.render(
+        <SpogomiRouteEditor
+          eventId="event-1"
+          actionId="action-1"
+          activeDivisionId={null}
+          divisionLabel="Partagé"
+          eventState="in_progress"
+          expectedRevision={expectedRevision}
+          route={route}
+          busy={false}
+          action={action}
+        />,
+      );
+
+    await act(async () => { renderWith(v1, 3); });
+    await act(async () => { container!.querySelector<HTMLButtonElement>('[data-testid="edit-map"]')!.click(); });
+    const textarea = container.querySelector("textarea")!;
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
+    await act(async () => {
+      descriptor?.set?.call(textarea, "Motif conservé");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      textarea.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    // 1. saveDrawing returns null -> keeps dirty drawing & reason, shows error, and subsequent refresh does not wipe drawing
+    const saveButton = () => Array.from(container!.querySelectorAll("button")).find((btn) => btn.textContent?.includes("Enregistrer le parcours"))!;
+    await act(async () => { saveButton().click(); await Promise.resolve(); });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Le parcours n’a pas pu être enregistré.");
+    expect(container.querySelector('[data-testid="map-coords"]')?.textContent).toBe("[[48.81,2.31],[48.82,2.32]]");
+    expect(container.querySelector("textarea")?.value).toBe("Motif conservé");
+
+    // 2. importGpx returns null -> keeps local drawing & reason, shows GPX error
+    const gpxInput = container.querySelector<HTMLInputElement>('input[accept=".gpx,application/gpx+xml"]')!;
+    const gpxFile = new File(["<gpx />"], "route.gpx", { type: "application/gpx+xml" });
+    Object.defineProperty(gpxInput, "files", { value: [gpxFile], configurable: true });
+    await act(async () => {
+      gpxInput.dispatchEvent(new Event("change", { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Le GPX n’a pas pu être importé.");
+    expect(container.querySelector('[data-testid="map-coords"]')?.textContent).toBe("[[48.81,2.31],[48.82,2.32]]");
+    expect(container.querySelector("textarea")?.value).toBe("Motif conservé");
+
+    // 3. addReferenceImage returns null -> clears success status, keeps reason, shows media error
+    const imageInput = container.querySelector<HTMLInputElement>('input[accept="image/jpeg,image/png,image/webp"]')!;
+    const imgFile = new File(["img"], "ref.png", { type: "image/png" });
+    Object.defineProperty(imageInput, "files", { value: [imgFile], configurable: true });
+    await act(async () => {
+      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[role="status"]')).toBeNull();
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("L’image n’a pas pu être associée.");
+    expect(container.querySelector("textarea")?.value).toBe("Motif conservé");
+
+    // 4. Remote expectedRevision changes (3 -> 4) while routeSnapshotKey stays identical -> blocks save until reconciled, then saves with rev 4
+    await act(async () => { renderWith(v1, 4); });
+    expect(container.querySelector('[data-testid="map-coords"]')?.textContent).toBe("[[48.81,2.31],[48.82,2.32]]");
+    expect(container.textContent).toContain("Une nouvelle version serveur du parcours est disponible");
+    expect(saveButton().disabled).toBe(true);
+
+    const loadServerButton = Array.from(container.querySelectorAll("button")).find((btn) => btn.textContent?.includes("Charger la version serveur"))!;
+    await act(async () => { loadServerButton.click(); });
+    expect(container.querySelector('[data-testid="map-coords"]')?.textContent).toBe("[[48.85,2.35],[48.86,2.36]]");
+    expect(saveButton().disabled).toBe(false);
+
+    action.mockResolvedValueOnce({ synchronization: { routeVersion: 2 } });
+    await act(async () => { saveButton().click(); await Promise.resolve(); });
+    expect(action).toHaveBeenLastCalledWith(
+      "/api/spogomi/events/event-1/routes",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          divisionId: null,
+          expectedRevision: 4,
+          correctionReason: "Motif conservé",
+          coordinates: [[48.85, 2.35], [48.86, 2.36]],
+        }),
+      }),
+      null,
+    );
+    expect(container.querySelector("textarea")?.value).toBe("");
   });
 });

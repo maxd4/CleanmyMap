@@ -252,8 +252,8 @@ modification commerciale. Ainsi, une importation concurrente est soit observée
 par le verrouillage, soit refusée comme ajout post-verrouillage : elle ne peut
 pas produire une composition officiellement partielle.
 
-L'attachement du GPX officiel passe par
-`spogomi_attach_official_gpx`. La route `spogomi_event_routes` et la référence
+L'attachement du GPX officiel et la sauvegarde des parcours par division passent par
+`spogomi_upsert_planned_route`. La route `spogomi_event_routes` et la référence
 `spogomiOfficialReference` de l'Action sont écrites dans la même transaction,
 après verrouillage de l'événement puis de l'Action. La mise à jour utilise
 `jsonb_set` et ne remplace donc pas les autres métadonnées de préparation ; une
