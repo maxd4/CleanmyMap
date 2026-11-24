@@ -209,12 +209,15 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
   }
 });
 
-test("route-reference concurrency proof exercises the purpose-specific advisory quota lock", () => {
+test("route-reference concurrency proof exercises quota locks and tombstone CAS", () => {
   const source = readFileSync(new URL("../../e2e/action-media-route-reference-concurrency.mjs", import.meta.url), "utf8");
   assert.match(source, /pg_advisory_lock\(\$\{ownKey\}\)/);
   assert.match(source, /ROUTE_REFERENCE_QUOTA_RESULT=accepted/);
   assert.match(source, /ROUTE_REFERENCE_QUOTA_RESULT=denied/);
   assert.match(source, /purpose = 'route_reference'/);
+  assert.match(source, /user_removed_pending_cleanup/);
+  assert.match(source, /set upload_state = 'ready', failure_reason = null[\s\S]*upload_state = 'pending' and failure_reason is null/);
+  assert.match(source, /UPDATE 0/);
   assert.match(source, /resolveLocalEphemeralDbUrl/);
 });
 

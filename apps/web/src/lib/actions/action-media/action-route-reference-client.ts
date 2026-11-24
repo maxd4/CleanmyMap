@@ -36,7 +36,15 @@ export async function uploadActionRouteReference(actionId: string, file: File): 
     });
     if (uploaded.error) throw new Error("La transmission de l’image a échoué.");
     const finalized = await fetch(`/api/actions/${encodeURIComponent(actionId)}/media/${encodeURIComponent(intent.mediaId)}/finalize`, { method: "POST" });
-    if (!finalized.ok) throw new Error(await responseError(finalized, "La vérification de l’image a échoué."));
+    if (!finalized.ok) {
+      const message = await responseError(finalized, "La vérification de l’image a échoué.");
+      try {
+        await deleteActionRouteReference(actionId, intent.mediaId);
+      } catch {
+        // The server leaves a retryable tombstone when cleanup itself fails.
+      }
+      throw new Error(message);
+    }
   }
   const items = await readActionRouteReferences(actionId);
   const item = items.find((candidate) => candidate.id === intent.mediaId && candidate.signedUrl);

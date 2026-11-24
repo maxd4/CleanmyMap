@@ -4,6 +4,7 @@ import { resolveLocalEphemeralDbUrl, runLocalPsqlQuery } from "./supabase-local-
 const actionId = "10000000-0000-4000-8000-000000000071";
 const baselineId = "10000000-0000-4000-8000-000000000072";
 const candidateIds = ["10000000-0000-4000-8000-000000000073", "10000000-0000-4000-8000-000000000074"];
+const tombstoneRaceId = "10000000-0000-4000-8000-000000000075";
 const barrierKeys = [918273645101n, 918273645102n];
 const owner = "route-reference-concurrency-owner";
 
@@ -48,6 +49,38 @@ insert into public.action_media (
 );
 commit;
 `);
+}
+
+async function proveTombstoneWinsLateFinalization() {
+  await run(`
+delete from public.action_media where action_id = '${actionId}'::uuid and client_upload_id like 'concurrent-%';
+insert into public.action_media (
+  id, action_id, created_by_clerk_id, client_upload_id, purpose, storage_path,
+  original_name, mime_type, size_bytes, sort_order, upload_state
+) values (
+  '${tombstoneRaceId}'::uuid, '${actionId}'::uuid, '${owner}', 'tombstone-race', 'route_reference',
+  '${actionId}/tombstone-race.jpg', 'tombstone-race.jpg', 'image/jpeg', 1024, 0, 'pending'
+);
+`);
+  const tombstone = run(`
+begin;
+update public.action_media
+   set upload_state = 'failed', failure_reason = 'user_removed_pending_cleanup'
+ where id = '${tombstoneRaceId}'::uuid and upload_state = 'pending' and failure_reason is null;
+select pg_sleep(0.5);
+commit;
+`);
+  await new Promise((resolve) => setTimeout(resolve, 75));
+  const finalization = run(`
+update public.action_media
+   set upload_state = 'ready', failure_reason = null
+ where id = '${tombstoneRaceId}'::uuid and upload_state = 'pending' and failure_reason is null;
+`);
+  const [tombstoneResult, finalizationResult] = await Promise.all([tombstone, finalization]);
+  assert.match(tombstoneResult.stdout, /UPDATE 1/);
+  assert.match(finalizationResult.stdout, /UPDATE 0/);
+  const row = await run(`select upload_state || ':' || failure_reason from public.action_media where id = '${tombstoneRaceId}'::uuid;`);
+  assert.match(row.stdout, /failed:user_removed_pending_cleanup/);
 }
 
 function sessionSql(index) {
@@ -110,7 +143,8 @@ async function main() {
     assert.equal(outputs.filter((output) => output.includes("ROUTE_REFERENCE_QUOTA_RESULT=denied")).length, 1);
     const rows = await run(`select count(*)::text from public.action_media where action_id = '${actionId}'::uuid and purpose = 'route_reference' and upload_state in ('pending', 'ready');`);
     assert.match(rows.stdout, /\b2\b/);
-    console.log("EXECUTED_DB_CONTRACT: Route-reference quota advisory lock serializes concurrent uploads at the purpose-specific limit.");
+    await proveTombstoneWinsLateFinalization();
+    console.log("EXECUTED_DB_CONTRACT: Route-reference quota serialization and tombstone compare-and-set prevent late finalization from reactivating a removed intent.");
   } finally {
     await run(cleanupSql);
   }

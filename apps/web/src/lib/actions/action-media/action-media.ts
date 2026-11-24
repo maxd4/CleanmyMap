@@ -205,6 +205,9 @@ function assertImmutableRetryMetadata(
   actionId: string,
   row: ActionMediaRow,
   params: {
+    userId: string;
+    clientUploadId: string;
+    purpose?: ActionMediaPurpose;
     originalName: string;
     mimeType: ActionMediaMimeType;
     sizeBytes: number;
@@ -221,6 +224,10 @@ function assertImmutableRetryMetadata(
   }
 
   const matches =
+    row.action_id === actionId &&
+    row.created_by_clerk_id === params.userId &&
+    row.client_upload_id === params.clientUploadId.trim() &&
+    (row.purpose ?? "report_photo") === (params.purpose ?? "report_photo") &&
     row.original_name === params.originalName.trim() &&
     row.mime_type === params.mimeType &&
     row.size_bytes === params.sizeBytes &&
@@ -268,7 +275,7 @@ async function findExistingActionMedia(
 async function insertNewActionMedia(
   supabase: SupabaseClient,
   params: ActionMediaUploadParams,
-): Promise<ActionMediaRow> {
+): Promise<{ row: ActionMediaRow; inserted: boolean }> {
   const active = await supabase
     .from("action_media")
     .select("id", { count: "exact", head: true })
@@ -303,10 +310,10 @@ async function insertNewActionMedia(
     })
     .select("*")
     .single();
-  if (!insert.error && insert.data) return insert.data as ActionMediaRow;
+  if (!insert.error && insert.data) return { row: insert.data as ActionMediaRow, inserted: true };
   const concurrent = await findExistingActionMedia(supabase, params);
   if (!concurrent) throw storageError("La photo ne peut pas être enregistrée.");
-  return concurrent;
+  return { row: concurrent, inserted: false };
 }
 
 async function resolveActionMediaRow(
@@ -315,7 +322,8 @@ async function resolveActionMediaRow(
 ): Promise<{ row: ActionMediaRow; isRetry: boolean }> {
   const existing = await findExistingActionMedia(supabase, params);
   if (existing) return { row: existing, isRetry: true };
-  return { row: await insertNewActionMedia(supabase, params), isRetry: false };
+  const inserted = await insertNewActionMedia(supabase, params);
+  return { row: inserted.row, isRetry: !inserted.inserted };
 }
 
 async function resolveRetryUploadState(
@@ -399,6 +407,17 @@ export async function finalizeActionMedia(
   const row = result.data as ActionMediaRow;
   await assertActionAccess({ supabase, ...params, purpose: row.purpose ?? "report_photo" });
   if (isRemovedRouteReference(row)) {
+    try {
+      await removeActionMediaObjectIfPresent(supabase, row.storage_path);
+    } catch {
+      if (row.failure_reason === "user_removed") {
+        const cleanup = await supabase.from("action_media").update({ failure_reason: "user_removed_pending_cleanup" })
+          .eq("id", row.id).eq("action_id", params.actionId).eq("purpose", "route_reference")
+          .eq("upload_state", "failed").eq("failure_reason", "user_removed").select("id").maybeSingle();
+        if (cleanup.error) throw storageError("La référence reste désactivée, mais son nettoyage Storage est à réessayer.");
+      }
+      throw storageError("La référence reste désactivée, mais son nettoyage Storage a échoué. Réessayez.");
+    }
     throw new ActionMediaError("La référence d’itinéraire a été désactivée et ne peut pas être réactivée.", "conflict");
   }
   if (row.storage_bucket !== ACTION_MEDIA_BUCKET) {
@@ -456,7 +475,7 @@ export async function listActionMedia(
     .eq("action_id", params.actionId)
     .eq("purpose", purpose);
   mediaQuery = purpose === "route_reference"
-    ? mediaQuery.or("upload_state.eq.ready,and(upload_state.eq.failed,failure_reason.eq.user_removed_pending_cleanup)")
+    ? mediaQuery.or("upload_state.eq.ready,and(upload_state.eq.failed,failure_reason.in.(user_removed_pending_cleanup,user_removed))")
     : mediaQuery.eq("upload_state", "ready");
   const mediaResult = await mediaQuery.order("sort_order", { ascending: true }).order("created_at", { ascending: true });
   if (mediaResult.error) throw storageError("Les photos ne peuvent pas être chargées.");
@@ -464,7 +483,11 @@ export async function listActionMedia(
   const items: ActionMediaReadItem[] = [];
   for (const rawRow of (mediaResult.data ?? []) as ActionMediaRow[]) {
     const row = toRecord(rawRow);
-    if (rawRow.upload_state === "failed" && rawRow.failure_reason === "user_removed_pending_cleanup") {
+    if (rawRow.upload_state === "failed" && isRemovedRouteReference(rawRow)) {
+      if (rawRow.failure_reason === "user_removed") {
+        const object = await supabase.storage.from(ACTION_MEDIA_BUCKET).info(rawRow.storage_path);
+        if (!object.error && !object.data) continue;
+      }
       items.push({ ...row, signedUrl: "", cleanupPending: true });
       continue;
     }
@@ -490,8 +513,7 @@ export async function removeActionRouteReference(
   if (result.error) throw storageError("La référence d’itinéraire ne peut pas être vérifiée.");
   if (!result.data) throw new ActionMediaError("Référence introuvable.", "not_found");
   const row = result.data as ActionMediaRow;
-  if (row.upload_state === "failed" && row.failure_reason === "user_removed") return;
-  if (row.upload_state === "failed" && row.failure_reason !== "user_removed_pending_cleanup") {
+  if (row.upload_state === "failed" && !isRemovedRouteReference(row)) {
     throw new ActionMediaError("Cette référence n’est pas supprimable dans son état actuel.", "conflict");
   }
   if (row.upload_state !== "failed") {
@@ -518,6 +540,12 @@ export async function removeActionRouteReference(
   try {
     await removeActionMediaObjectIfPresent(supabase, row.storage_path);
   } catch {
+    if (row.failure_reason === "user_removed") {
+      const retryable = await supabase.from("action_media").update({ failure_reason: "user_removed_pending_cleanup" })
+        .eq("id", row.id).eq("action_id", params.actionId).eq("purpose", "route_reference")
+        .eq("upload_state", "failed").eq("failure_reason", "user_removed").select("id").maybeSingle();
+      if (retryable.error) throw storageError("La référence reste désactivée, mais son nettoyage Storage est à réessayer.");
+    }
     throw storageError("La référence est désactivée, mais son nettoyage du stockage a échoué. Réessayez.");
   }
   const completed = await supabase.from("action_media").update({ failure_reason: "user_removed" })

@@ -79,6 +79,7 @@ function makeSupabase(params: {
       error: null,
     })),
     createSignedUrl: vi.fn(async () => ({ data: { signedUrl: "https://signed.test/action" }, error: null })),
+    remove: vi.fn(async () => ({ error: null })),
   };
   const storageFrom = vi.fn(() => storageClient);
   return {
@@ -87,6 +88,9 @@ function makeSupabase(params: {
     __queries: { mediaQuery },
     __storage: storageFrom,
     __storageUpload: createSignedUploadUrl,
+    __storageInfo: storageClient.info,
+    __storageRemove: storageClient.remove,
+    __signedUrl: storageClient.createSignedUrl,
   };
 }
 
@@ -336,14 +340,36 @@ describe("route-reference tombstone guards", () => {
     },
   );
 
+  it.each([
+    ["tombstone", { ...readyMedia, purpose: "route_reference", upload_state: "failed", failure_reason: "user_removed_pending_cleanup" }],
+    ["immutable metadata", { ...readyMedia, original_name: "other.jpg", purpose: "route_reference", upload_state: "pending" }],
+  ])("rejects a concurrently recovered intent with invalid %s", async (_case, recovered) => {
+    const supabase = makeSupabase({ action, existingMedia: null });
+    const query = supabase.__queries.mediaQuery;
+    query.maybeSingle
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: recovered, error: null });
+    query.insert.mockImplementation(() => query);
+    query.single.mockResolvedValueOnce({ data: null, error: { code: "23505" } });
+
+    await expect(createActionMediaUploadIntent(supabase as never, uploadParams({ purpose: "route_reference" })))
+      .rejects.toMatchObject({ code: "conflict" });
+    expect(supabase.__storageUpload).not.toHaveBeenCalled();
+  });
+
   it.each(["user_removed_pending_cleanup", "user_removed"] as const)(
     "does not finalize a route reference disabled as %s",
     async (failureReason) => {
       const row = { ...readyMedia, purpose: "route_reference", upload_state: "failed", failure_reason: failureReason };
-      const supabase = makeEvolvingSupabase({ action, row, storageInfo: async () => ({ data: null, error: null }) });
+      const supabase = makeEvolvingSupabase({
+        action,
+        row,
+        storageInfo: async () => ({ data: { metadata: { size: 1234, mimetype: "image/jpeg" } }, error: null }),
+      });
       await expect(finalizeActionMedia(supabase as never, finalizeParams()))
         .rejects.toMatchObject({ code: "conflict" });
-      expect(supabase.__storageInfo).not.toHaveBeenCalled();
+      expect(supabase.__storageInfo).toHaveBeenCalled();
+      expect(supabase.__storageRemove).toHaveBeenCalledWith([row.storage_path]);
       expect(supabase.__appliedUpdates).toHaveLength(0);
       expect(supabase.__state.row).toMatchObject({ upload_state: "failed", failure_reason: failureReason });
     },
@@ -460,6 +486,20 @@ describe("action media contract continuation", () => {
     expect(supabase.__storage).not.toHaveBeenCalled();
   });
 
+  it("surfaces a late object on a completed tombstone after reload for cleanup retry", async () => {
+    const removed = { ...readyMedia, purpose: "route_reference", upload_state: "failed", failure_reason: "user_removed" };
+    const supabase = makeSupabase({
+      action,
+      editors: ["user-1"],
+      existingMedia: removed,
+      objectInfo: { metadata: { size: removed.size_bytes, mimetype: removed.mime_type } },
+    });
+    const items = await listActionMedia(supabase as never, { actionId: action.id, ...ownerIdentity, identity: ownerIdentity, purpose: "route_reference" });
+    expect(items).toMatchObject([{ id: removed.id, cleanupPending: true, signedUrl: "" }]);
+    expect(supabase.__storageInfo).toHaveBeenCalledWith(removed.storage_path);
+    expect(supabase.__signedUrl).not.toHaveBeenCalled();
+  });
+
   it("records removal before storage cleanup and retries an interrupted cleanup idempotently", async () => {
     let attempts = 0;
     let objectPresent = true;
@@ -486,6 +526,23 @@ describe("action media contract continuation", () => {
     expect(supabase.__state.row).toMatchObject({ upload_state: "failed", failure_reason: "user_removed" });
     await expect(removeActionRouteReference(supabase as never, params)).resolves.toBeUndefined();
     expect(supabase.__storageRemove).toHaveBeenCalledTimes(2);
+  });
+
+  it("removes a late object when cleanup is retried for an already completed tombstone", async () => {
+    let objectPresent = true;
+    const supabase = makeEvolvingSupabase({
+      action,
+      row: { ...readyMedia, purpose: "route_reference", upload_state: "failed", failure_reason: "user_removed" },
+      storageInfo: async () => objectPresent
+        ? ({ data: { metadata: {} }, error: null })
+        : ({ data: null, error: { status: 404, statusCode: "404" } }),
+      storageRemove: async () => { objectPresent = false; return { error: null }; },
+    });
+    await expect(removeActionRouteReference(supabase as never, {
+      actionId: action.id, mediaId: readyMedia.id, ...ownerIdentity, identity: ownerIdentity,
+    })).resolves.toBeUndefined();
+    expect(supabase.__storageRemove).toHaveBeenCalledTimes(1);
+    expect(supabase.__state.row).toMatchObject({ upload_state: "failed", failure_reason: "user_removed" });
   });
 
   it("does not delete the storage object when the SQL tombstone update fails", async () => {
