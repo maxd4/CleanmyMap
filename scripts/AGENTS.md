@@ -53,8 +53,9 @@ Chaque exécution capture au démarrage une référence (`HEAD`, `origin/main`,
 index, chemins tracked dirty et untracked) et l'allowlist attribuée au lot.
 Cette référence et ce périmètre restent gelés pour toute l'exécution. Les
 changements préexistants ou apparus ensuite sont présumés étrangers et exclus ;
-seules les modifications de Codex sur les fichiers attribués au lot sont
-incluses. Un changement concurrent du même chemin attribué est une collision :
+seules les modifications du writer attribué (ChatGPT ou Codex) sur ses chemins
+du lot sont incluses. Un changement concurrent du même chemin attribué est une
+collision :
 préserver les deux états, arrêter la mutation/publication du chemin et rapporter
 le conflit exact, sans absorption, fusion ni écrasement silencieux.
 L'allowlist initiale est un cadrage d'attribution qui fixe les chemins

@@ -183,17 +183,17 @@ Les prompts se trouvent dans la conversation de préparation. Les descriptions c
 | **C** | **Prompt complémentaire : finaliser les deux profils pédagogiques** | Retenir `grand-public` et `fin-college-lycee` ; couvrir les 31 min numériques, **5 + 5 questions**, cinq capsules sourcées, tests de difficulté, éligibilité et parcours. **Intégrer idéalement ces décisions au lot B s'il n'a pas commencé**, sans créer un lot redondant. | **EN ATTENTE** |
 | **D** | **Prompt complémentaire : intégration des grilles imprimables** | Distribution des grilles par profil depuis le parcours, accessibilité et contrôles d'impression. **Mettre à jour les liens du prompt** : anciennes présentations individuelles archivées, remplacées par la **présentation fusionnée** à deux diapositives, **8 catégories / 4 manches / 18 points**. Ne jamais publier une URL Drive privée comme ressource publique garantie. | **EN ATTENTE, LIENS OBSOLÈTES** |
 
-**Ordre de reprise recommandé :** **A**, puis **B et C ensemble** si le chantier B est encore vierge, puis **D** après stabilisation des interfaces et des supports. Codex intégrera et testera selon `AGENTS.md` et les règles scoped du dépôt. ChatGPT n'effectue sur GitHub que des vérifications en lecture.
+**Ordre de reprise recommandé :** **A**, puis **B et C ensemble** si le chantier B est encore vierge, puis **D** après stabilisation des interfaces et des supports. ChatGPT peut intégrer directement les changements de code, de tests et de documentation, les valider avec les outils disponibles et les publier selon `CHATGPT.md` et `AGENTS.md`. Codex complète les contrôles qui nécessitent le checkout ou un runtime local.
 
-**Frontière de responsabilités :** ChatGPT décide des contrats, catégories, notions, arbitrages et critères d'acceptation ; Codex intègre, adapte les consommateurs, écrit et exécute les tests puis publie. Le Google Drive est une ressource de préparation éditoriale ; le code GitHub réellement publié demeure autorité pour les fonctionnalités `CURRENT`.
+**Frontière de responsabilités :** ChatGPT décide et peut aussi implémenter les contrats, catégories, notions, arbitrages et critères d'acceptation ; ChatGPT ou Codex adapte les consommateurs, écrit et exécute les tests et publie selon les règles du dépôt. Le Google Drive est une ressource de préparation éditoriale ; le code GitHub réellement publié demeure autorité pour les fonctionnalités `CURRENT`.
 
-### Dépendances et critères de validation après Codex
+### Dépendances et critères de validation après intégration
 
 - Le Mode Ateliers liste les 11 ateliers, conserve les accès historiques et n'affiche comme jouables que les parcours effectivement implémentés.
 - Le parcours 04 propose **deux** profils, non trois ; il couvre tous les segments numériques de 31 min et permet la pause pour le Petit Bac physique.
 - Les notions et questions ont été relues, sourcées et testées ; aucune question `needsReview` n'est publiée.
 - Les grilles téléchargeables reflètent **exactement** les huit colonnes actuelles, quatre lignes de manche, 19 lettres et barème **/18** ; impression paysage vérifiée.
-- Les tests comportementaux, contrôles de compatibilité, vérification UI et couverture du Web sont exécutés et rapportés par Codex. Après publication, relecture du **nouveau `main`** avant de changer les statuts `PLAN` en `CURRENT`.
+- Les tests comportementaux, contrôles de compatibilité, vérification UI et couverture du Web sont exécutés et rapportés par ChatGPT ou Codex selon l'environnement de validation disponible. Après publication, relecture du **nouveau `main`** avant de changer les statuts `PLAN` en `CURRENT`.
 
 ## 7. Matériel, risques et séance pilote
 

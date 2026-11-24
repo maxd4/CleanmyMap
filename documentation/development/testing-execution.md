@@ -175,10 +175,11 @@ les contrats de migration. Une extraction, une création de module, une
 modification d'import ou un refactor ne déclenche automatiquement aucun
 `quality:cycles`, `quality:duplication`, `quality:complexity`,
 `quality:dead-code` ou `quality:top-heavy`, y compris avant staging, commit,
-push ou clôture. Codex reste responsable de la conception et peut lancer une
-vérification ciblée lorsqu'un risque concret le justifie, sans en faire une
-condition systématique. Les suites Web/mobile complètes, la couverture
-globale, GitNexus, Knip, mutation testing, la campagne E2E complète et les
+push ou clôture. Le writer attribué (ChatGPT ou Codex) reste responsable de la
+conception et peut lancer une vérification ciblée lorsqu'un risque concret le
+justifie, sans en faire une condition systématique. Les suites Web/mobile
+complètes, la couverture globale, GitNexus, Knip, mutation testing, la campagne
+E2E complète et les
 audits distants restent également hors DEVELOPMENT. Un contrôle différé est
 `SKIPPED_BY_POLICY`, jamais `PASS`.
 

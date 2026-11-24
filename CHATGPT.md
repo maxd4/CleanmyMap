@@ -2,10 +2,11 @@
 
 Pour les sources privées complémentaires, appliquer la politique canonique `documentation/development/DOCUMENTATION_POLICY.md` ; les contrats techniques du dépôt restent autoritaires.
 
-Ce document gouverne **ChatGPT en tant qu'analyste, concepteur et rédacteur de
-prompts ou fichiers** pour le dépôt. `AGENTS.md` gouverne l'exécution locale de
-Codex ; les `AGENTS.md` scoped et les sources documentaires spécialisées portent
-leurs contrats techniques. Ne pas transformer ce fichier en historique de lot,
+Ce document gouverne **ChatGPT comme analyste et contributeur direct** au dépôt,
+y compris l'écriture, les tests, la documentation, les commits et la publication
+GitHub. `AGENTS.md` gouverne les règles communes et l'exécution locale de Codex ;
+les `AGENTS.md` scoped et les sources documentaires spécialisées portent leurs
+contrats techniques. Ne pas transformer ce fichier en historique de lot,
 roadmap, snapshot de SHA ou copie des procédures Git et de validation.
 
 ## 1. Autorité et preuves
@@ -51,29 +52,44 @@ Kaizen et ses limites sont canoniques dans
 **ChatGPT décide** : objectif réel, cause racine, contrat métier, architecture,
 UI, alternatives, invariants, périmètre cohérent, validations attendues,
 `STOP CONDITION`, ordre des lots, documents et fichiers finaux. Il rédige le
-prompt d'intégration après lecture suffisante du dépôt, au lieu de déléguer
-l'analyse ou l'arbitrage à Codex. En cas de preuve insuffisante, distinguer
-explicitement ce qui reste à vérifier.
+prompt d'intégration seulement lorsque l'exécution est confiée à Codex après
+lecture suffisante du dépôt ; sinon, il réalise directement le lot lorsque ses
+outils le permettent. Il ne délègue pas à Codex l'analyse ou l'arbitrage qu'il
+peut établir lui-même. En cas de preuve insuffisante, distinguer explicitement
+ce qui reste à vérifier.
 
-**Codex intègre localement** : confronte ces décisions au checkout complet,
-protège les modifications des autres writers, adapte callers, consommateurs,
-tests, types et documentation réellement touchés, exécute les validations et
-publie selon `AGENTS.md`. Il remonte un conflit réel, une impossibilité ou une
-meilleure alternative étayée ; il n'élargit pas unilatéralement la responsabilité
-du lot.
+**ChatGPT contribue directement par défaut** lorsque les outils GitHub
+authentifiés disponibles permettent de lire, modifier, valider et publier le lot. Il peut
+adapter le code, les tests et la documentation du dépôt, puis créer le commit et
+le pousser sur `main` sans demander une confirmation séparée pour chaque lot.
+Toute demande de l'utilisateur visant à implémenter, corriger ou mettre à jour le
+dépôt autorise ces opérations dans le périmètre de cette demande. Une consigne
+explicite « sans commit », « sans push », « brouillon », « branche » ou « PR »
+reste prioritaire.
 
-**Politique GitHub de ChatGPT** : ChatGPT est limité à la lecture et à la revue
-de GitHub. Il ne modifie pas GitHub, ne committe pas, ne pousse pas, ne merge
-pas et ne publie pas. Codex est responsable de l'intégration locale, des commits
-validés et de la publication fast-forward sur `main`, conformément à `AGENTS.md`
-et `scripts/AGENTS.md`. Les prompts doivent laisser Codex appliquer la
-validation proportionnée, le staging explicite de l'allowlist, la préservation
-des changements étrangers, la vérification de convergence et l'interdiction du
-force-push ou de la réécriture d'historique. ChatGPT peut ensuite relire l'état
-publié en lecture seule ; cette revue ne remplace pas la preuve observée par
-Codex.
-La création d'une branche, d'une PR, d'un clone ou d'un worktree reste soumise
-à la demande du lot et aux règles d'exécution de Codex.
+Avant une écriture directe, ChatGPT lit l'état publié courant, les consignes
+applicables et les fichiers réellement concernés ; il vérifie les changements
+concurrents, ne modifie que les chemins attribués au lot, exécute les contrôles
+qu'il peut réellement lancer et vérifie le SHA et la référence distante après
+publication. Il distingue les vérifications locales des checks GitHub et ne
+présente jamais un test non exécuté comme passé. Il n'inclut pas les changements
+dirty étrangers et ne confond pas une demande de modification ciblée avec
+l'autorisation de publier tout le worktree dirty.
+
+Les protections de branche, permissions, hooks et contrôles requis restent
+actifs : aucune écriture directe ne justifie un force-push, une réécriture
+d'historique, un contournement de garde ou une modification des protections. Si
+les outils ChatGPT ne permettent pas une validation ou une publication sûre,
+ChatGPT prépare le changement et transmet à Codex uniquement les étapes locales
+ou les preuves runtime qui nécessitent le checkout ; le recours à Codex ne
+remplace pas par défaut la contribution directe que ChatGPT peut réaliser.
+
+Codex reste le chemin d'exécution pour les contrôles exigeant le runtime local,
+les secrets ou l'environnement poste. ChatGPT et Codex peuvent contribuer en
+parallèle selon `MAIN-ONLY / MULTI-WRITER COORDONNÉ` dans `AGENTS.md` ; ils
+coordonnent explicitement toute collision de fichier, d'index ou de référence.
+La création d'une branche, d'une PR, d'un clone ou d'un worktree suit la demande
+du lot et les règles du dépôt.
 
 ## 4. Conversation et prompts Codex
 
@@ -303,12 +319,13 @@ sur les anciennes listes de commandes systématiques.
 ## MAIN-ONLY / MULTI-WRITER COORDONNÉ
 
 Le workflow `MAIN-ONLY / MULTI-WRITER COORDONNÉ` reste applicable aux writers
-concurrents : le prompt
-de chaque exécution identifie au démarrage la référence Git et les
-fichiers attribués ; cette référence et ce périmètre restent gelés jusqu'à la
+concurrents : ChatGPT identifie au début de toute contribution directe la
+référence Git et les fichiers attribués ; Codex le fait au début de son
+exécution locale. Cette référence et ce périmètre restent gelés jusqu'à la
 clôture. Les changements préexistants ou apparus ensuite sont étrangers,
-préservés et exclus. Seules les modifications de Codex sur les fichiers
-attribués sont intégrées au candidat final. Les prompts interdisent l'extension
+préservés et exclus. Seules les modifications du writer attribué (ChatGPT ou
+Codex) sont intégrées au candidat final. Les prompts de passation interdisent
+l'extension
 automatique du périmètre, la resynchronisation fonctionnelle et le rejeu de
 validations globales à cause d'une évolution externe de `HEAD`, `origin/main`,
 de l'index ou du worktree. Ils demandent de préserver et signaler toute
@@ -322,15 +339,16 @@ et ne pas relancer un contrôle global ni transformer FAIL en PASS.
 Les scopes `WORKTREE_LIVE`, `STAGED`, `COMMITTED_SNAPSHOT` et `PUSH_CANDIDATE`
 restent distincts ; une preuve locale ne devient pas une preuve de publication.
 
-Pour chaque exécution de travail qui produit un lot, le prompt demande à Codex :
-valider le candidat gelé, puis commit validé et attribué → push fast-forward `main` →
-vérification de convergence. Au moment de publier, contrôler uniquement
+Pour un lot réalisé directement, ChatGPT valide le candidat attribué, puis
+commit → push fast-forward `main` → fetch et vérification de convergence. Si le
+lot est confié à Codex pour ses besoins de checkout ou de runtime local, son
+prompt prescrit cette même séquence. Au moment de publier, contrôler uniquement
 l'attribution des commits transmis, le fast-forward, les hooks, permissions et
 convergence ; une évolution externe sans conflit ne relance pas les validations.
 Un conflit réel arrête la publication avec son diagnostic exact, sans boucle
 de synchronisation. Le mode de développement rapide ne supprime pas cette
-publication ; seule une interdiction explicite de l'utilisateur autorise un
-commit local sans push.
+publication ; une interdiction explicite de l'utilisateur reste la seule raison
+de clôturer un lot sans push.
 
 Les protections Git, secrets, intégrité, concurrence et fast-forward restent
 obligatoires, mais un défaut, un préflight Supabase bloqué ou une validation
@@ -428,8 +446,11 @@ permettre de repérer les versions obsolètes, les dépendances et les collision
 Éviter les archives doublonnées et les copies dans les chemins runtime avant
 intégration. Un prompt Codex doit pointer explicitement vers les candidats à
 examiner, réutiliser ou adapter ; leur découverte par recherche agentique ne
-suffit pas comme garantie d'intégration. Codex reste responsable du checkout,
-des consommateurs, des tests réels, des migrations autorisées et de la publication.
+suffit pas comme garantie d'intégration. ChatGPT prend en charge le checkout
+GitHub, les consommateurs, les tests accessibles et la publication directe.
+Codex complète les validations qui nécessitent l'environnement local, les
+secrets ou un runtime non disponible à ChatGPT ; les migrations suivent toujours
+leurs autorisations spécifiques.
 
 Cette proactivité reste **proportionnée** : pas de pack artificiel pour une
 question, une étude exploratoire ou un défaut local simple ; pas de code
@@ -443,7 +464,10 @@ son nom cible et indiquer son emplacement dans le dépôt. Pour plusieurs
 fichiers, livrer séparément ou en ZIP si utile, en préservant les chemins ;
 le ZIP n'est qu'un transport, jamais une source de vérité. Ne jamais fournir
 un extrait présenté comme remplacement complet. Ne pas créer de clone ou
-worktree Git, ni modifier le dépôt distant.
+worktree Git. La modification du dépôt GitHub, le commit et le push direct
+restent autorisés pour une contribution attribuée, validée et publiée selon la
+section 3 et `AGENTS.md` ; ne pas contourner les protections ni intégrer les
+changements étrangers.
 
 Un chantier long conserve seulement : objectif, état vérifié, décision,
 incertitudes actives, `STOP CONDITION` et prochaine action. Pour la passation,
@@ -459,7 +483,7 @@ Avant de conclure : objectif réel traité, source canonique respectée, contrat
 et AuthZ préservés, effets et consommateurs vérifiés au niveau approprié,
 preuves réellement exécutées, aucune donnée ni modification étrangère perdue,
 documentation `CURRENT` réalignée si nécessaire, limites déclarées et
-`STOP CONDITION` atteinte. Après un lot Codex publié, **relire `main`** et
+`STOP CONDITION` atteinte. Après un lot ChatGPT ou Codex publié, **relire `main`** et
 vérifier ce qui est effectivement intégré. Sinon qualifier le blocage sans
 inventer une réussite.
 

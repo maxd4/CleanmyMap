@@ -16,9 +16,10 @@ Au démarrage, chaque exécution capture sa référence initiale (`HEAD`,
 `origin/main`, index, chemins tracked dirty et untracked) et l'allowlist de ses
 fichiers attribués. Référence et périmètre restent gelés jusqu'à la clôture.
 Les changements préexistants et ceux apparus ensuite sont étrangers par défaut,
-préservés et exclus ; seules les modifications de Codex sur ses propres chemins
-attribués sont incluses. Une écriture concurrente sur le même chemin est une
-collision à préserver et signaler, sans fusion ni écrasement silencieux.
+préservés et exclus ; seules les modifications du writer attribué (ChatGPT ou
+Codex) sur ses propres chemins sont incluses. Une écriture concurrente sur le
+même chemin est une collision à préserver et signaler, sans fusion ni écrasement
+silencieux.
 
 Une évolution ultérieure de `HEAD`, `origin/main`, de l'index ou du worktree ne
 déclenche ni extension de périmètre, ni resynchronisation fonctionnelle, ni

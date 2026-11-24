@@ -118,8 +118,13 @@ interdiction artificielle de corriger un owner externe réellement concerné.
 
 Le workflow courant est `MAIN-ONLY / MULTI-WRITER COORDONNÉ`.
 
-Plusieurs writers Codex peuvent travailler dans le checkout canonique ; ils doivent ne jamais écraser silencieusement les changements d’un autre writer. Les
-modifications sur des fichiers distincts peuvent progresser en parallèle ; un
+Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt et travailler
+sur des chemins distincts ; aucun ne doit jamais écraser silencieusement les
+changements d'un autre writer. Les changements GitHub directs par ChatGPT suivent les mêmes règles
+de périmètre, de stabilité de candidat et de coordination que les changements
+locaux Codex. La politique d'autorisation directe est détaillée dans
+`CHATGPT.md`. Les modifications sur des fichiers distincts peuvent progresser
+en parallèle ; un
 même fichier, l’index, `HEAD` et les opérations Git mutantes doivent être
 relus et coordonnés explicitement. Les fichiers scoped restent la source des
 règles spécialisées de chaque sous-arbre.
@@ -144,8 +149,8 @@ jamais être écrasé par une synchronisation avec Git.
   L'allowlist initiale sert à l'attribution et au cadrage, et fixe les chemins
   admissibles à ce candidat jusqu'à sa clôture.
   Les changements préexistants ou apparus ensuite sont présumés étrangers et
-  exclus du candidat ; seules les modifications de Codex sur les fichiers
-  attribués au lot sont incluses.
+  exclus du candidat ; seules les modifications du writer (ChatGPT ou Codex)
+  attribué aux fichiers du lot sont incluses.
   **Ne pas** les modifier,
   restaurer, supprimer, stasher, déplacer, fusionner ou inclure implicitement.
   Un chemin ciblé dirty et étranger bloque seulement sa propre mutation.
@@ -203,6 +208,21 @@ fast-forward, arrêter avec le diagnostic exact ; ne pas resynchroniser le
 contenu fonctionnel ni relancer les validations. Aucun force-push ou
 contournement de garde n'est permis.
 
+**Autorisation permanente d'écriture directe pour ChatGPT** : conformément à
+`CHATGPT.md`, toute demande utilisateur d'implémentation, de correction ou de
+mise à jour de ce dépôt autorise ChatGPT à modifier les fichiers attribués,
+committer les changements validés et pousser directement sur `main`, sans
+confirmation supplémentaire. ChatGPT est encouragé à réaliser lui-même le
+travail de code, tests et documentation lorsque ses outils permettent les
+vérifications requises. Cette autorisation est limitée au lot et ne remplace
+pas l'autorisation distincte exigée pour publier tout le worktree dirty. Les
+interdictions explicites de commit/push prévalent ; protections, hooks,
+permissions, vérifications du candidat, fast-forward, préservation des autres
+writers et contrôle de convergence restent obligatoires. Si un contrôle local
+requis n'est pas accessible à ChatGPT, il doit l'indiquer précisément et
+transmettre à Codex seulement cette étape ou la preuve runtime manquante, sans
+présenter le résultat comme validé.
+
 Un défaut, un préflight Supabase `BLOCKED`/`DIVERGED` ou une validation Supabase
 manquante ne retient jamais un commit ou un push Git autrement publiable. Les
 protections Git, secrets, intégrité, concurrence et fast-forward restent
@@ -233,12 +253,12 @@ reste prioritaire et doit être signalée comme exception. Le mode de
 développement rapide ne supprime pas l'exigence de commit et push ; il ne peut
 donc produire un commit local sans push que si cette interdiction est explicite.
 
-### Messages de commit Codex
+### Messages de commit
 
-Chaque nouveau commit créé par le lot doit être traçable et contenir uniquement
-les changements attribués au lot au démarrage, relus et validés sur le candidat
-gelé. Plusieurs changements ainsi attribués peuvent être regroupés dans un même
-commit. Une évolution ultérieure du worktree ne permet pas d'ajouter des fichiers
+Chaque nouveau commit ChatGPT ou Codex créé par le lot doit être traçable et
+contenir uniquement les changements attribués au lot au démarrage, relus et
+validés sur le candidat gelé. Plusieurs changements ainsi attribués peuvent
+être regroupés dans un même commit. Une évolution ultérieure du worktree ne permet pas d'ajouter des fichiers
 dirty ou untracked au commit. Lorsqu'un push est explicitement demandé, les
 commits déjà présents en avance sur la branche distante sont tous publiés sans
 filtrage d'auteur ou de périmètre ; cette règle s'applique même si leur contenu
@@ -368,8 +388,11 @@ développement, macro-lot, correction, refactorisation ou campagne de qualité :
    avance, même s'ils contiennent des changements d'autres writers → fetch et
    vérification de convergence (`HEAD = origin/main`, ahead/behind `0/0`). Les
    fichiers dirty/untracked non commités restent exclus du push.
-   Un mode sans push ou une exception doit être explicitement demandé ou
-   gouverné ; il ne peut pas être déduit d'une difficulté locale.
+   Pour ChatGPT, l'autorisation permanente décrite dans `CHATGPT.md` gouverne
+   le commit et le push directs, sauf instruction contraire de l'utilisateur.
+   Pour les autres writers, un mode sans push ou une exception doit être
+   explicitement demandé ou gouverné ; il ne peut pas être déduit d'une
+   difficulté locale.
 7. **Une possibilité n'est pas une implémentation.** Les formulations
    « éventuellement », « pourrait » et « à envisager » désignent une cible à
    examiner, jamais une fonctionnalité livrée. Déclarer une amélioration

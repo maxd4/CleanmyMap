@@ -13,7 +13,7 @@ function createValidFixture() {
   const content = {
     "AGENTS.md": [
       "apps/web scripts documentation fichiers scoped MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
-      "Plusieurs writers Codex peuvent travailler dans le checkout canonique ; ils ne doivent jamais écraser silencieusement les changements d’un autre writer.",
+      "Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt et travailler sur des chemins distincts ; aucun ne doit jamais écraser silencieusement les changements d'un autre writer.",
       "Les modifications sur des fichiers distincts peuvent progresser en parallèle ; un même fichier, l’index, HEAD et les opérations Git mutantes doivent être relus et réconciliés explicitement.",
       "main publié = référence versionnée ;",
       "une candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;",
@@ -29,10 +29,10 @@ function createValidFixture() {
     ].join("\n"),
     "CHATGPT.md": [
       "MAIN-ONLY / MULTI-WRITER COORDONNÉ",
-      "ChatGPT est limité à la lecture et à la revue de GitHub. Codex est responsable de l'intégration locale, des commits validés et de la publication fast-forward, conformément à AGENTS.md et scripts/AGENTS.md.",
-      "Pour chaque exécution de travail qui produit un lot : validation → commit validé → push main → vérification de convergence",
+      "ChatGPT contribue directement par défaut lorsque les outils GitHub authentifiés permettent de lire, modifier, valider et publier le lot. Toute demande de l'utilisateur visant à implémenter, corriger ou mettre à jour le dépôt autorise ces opérations.",
+      "Pour un lot réalisé directement, ChatGPT valide le candidat attribué, puis commit → push fast-forward main → fetch et vérification de convergence.",
       "La Commit Review privilégie le résultat publié et les régressions démontrées. La taille, le regroupement ou l'organisation des commits ne suffisent pas à demander un prompt correctif.",
-      "Le mode de développement rapide ne supprime pas cette publication ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
+      "Le mode de développement rapide ne supprime pas la publication ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
     ].join("\n"),
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
@@ -178,7 +178,7 @@ describe("AGENTS hierarchy governance", () => {
     }
   });
 
-  it("rejects contradictory CURRENT workflow wording", () => {
+  it("requires direct ChatGPT write authority and rejects contradictory CURRENT workflow wording", () => {
     const fixture = createValidFixture();
     const agentsPath = path.join(fixture, "AGENTS.md");
     const chatgptPath = path.join(fixture, "CHATGPT.md");
@@ -192,14 +192,26 @@ describe("AGENTS hierarchy governance", () => {
     fs.writeFileSync(
       chatgptPath,
       fs.readFileSync(chatgptPath, "utf8").replace(
+        "ChatGPT contribue directement par défaut",
         "ChatGPT est limité à la lecture et à la revue de GitHub",
-        "ChatGPT est autorisé à modifier GitHub, committer et pousser sur main",
       ),
     );
     try {
       const findings = validateAgentGovernance(fixture);
       assert.ok(findings.some((finding) => finding.includes("global local-over-GitHub priority")));
-      assert.ok(findings.some((finding) => finding.includes("current policy must limit ChatGPT to GitHub reading and review")));
+      assert.ok(findings.some((finding) => finding.includes("current policy must authorize scoped direct ChatGPT edits, commits and pushes on main")));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a leftover ChatGPT read-only rule alongside direct-write authorization", () => {
+    const fixture = createValidFixture();
+    const chatgptPath = path.join(fixture, "CHATGPT.md");
+    fs.appendFileSync(chatgptPath, "\nChatGPT n'effectue sur GitHub que des vérifications en lecture.\n");
+    try {
+      const findings = validateAgentGovernance(fixture);
+      assert.ok(findings.some((finding) => finding.includes("must not restrict ChatGPT to read-only GitHub access")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

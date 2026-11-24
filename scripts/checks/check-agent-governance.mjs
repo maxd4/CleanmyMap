@@ -36,7 +36,7 @@ const skippedDirectories = new Set([
 ]);
 
 const requiredMarkers = new Map([
-  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "Plusieurs chantiers ou writers peuvent être regroupés dans un commit", "L'allowlist initiale sert à l'attribution et au cadrage", "Lorsqu'un push est explicitement demandé, tous les commits locaux en avance"]],
+  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt", "Plusieurs chantiers ou writers peuvent être regroupés dans un commit", "L'allowlist initiale sert à l'attribution et au cadrage", "Lorsqu'un push est explicitement demandé, tous les commits locaux en avance"]],
   ["apps/web/AGENTS.md", ["Next.js", "Server/Client", "Leaflet"]],
   ["apps/web/src/app/api/AGENTS.md", ["AuthN", "AuthZ", "contrat de réponse propre"]],
   ["apps/web/supabase/AGENTS.md", ["apps/web/supabase/migrations/", "unique", "RLS"]],
@@ -108,10 +108,17 @@ function validateCurrentCoordinatorDoctrine(view, findings) {
   }
 }
 
-const publicationPolicyTerms = ["commit validé", "push", "vérification de convergence"];
+const publicationPolicyTerms = ["commit", "push", "vérification de convergence"];
 const explicitNoPushExceptionTerms = ["mode de développement rapide", "interdiction explicite", "sans push"];
-const chatgptReadOnlyPolicy = "ChatGPT est limité à la lecture et à la revue";
-const codexPublicationResponsibility = "Codex est responsable de l'intégration locale, des commits validés et de la publication fast-forward";
+const chatgptDirectWritePolicyTerms = [
+  "chatgpt contribue directement par défaut",
+  "toute demande de l'utilisateur visant à implémenter, corriger ou mettre à jour le dépôt autorise ces opérations",
+  "commit → push fast-forward",
+];
+const forbiddenChatgptReadOnlyTerms = [
+  "chatgpt est limité à la lecture et à la revue de github",
+  "chatgpt n'effectue sur github que des vérifications en lecture",
+];
 const commitReviewPolicyTerms = [
   "la commit review privilégie le résultat publié",
   "les régressions démontrées",
@@ -136,13 +143,13 @@ function validateCurrentWorkflowDoctrine(view, findings) {
     .replace(/\s+/g, " ")
     .trim();
 
-  if (rootAgents && !normalizedRootLower.includes("plusieurs writers codex peuvent travailler dans le checkout canonique")) {
+  if (rootAgents && !normalizedRootLower.includes("plusieurs writers chatgpt et codex peuvent contribuer au dépôt")) {
     findings.push("AGENTS.md: CURRENT workflow must describe coordinated parallel writers in the canonical checkout.");
   }
   if (rootAgents && !normalizedRootLower.includes("les modifications sur des fichiers distincts peuvent progresser en parallèle")) {
     findings.push("AGENTS.md: CURRENT workflow must permit independent file changes to progress in parallel.");
   }
-  if (rootAgents && !normalizedRootLower.includes("jamais écraser silencieusement les changements d’un autre writer")) {
+  if (rootAgents && !normalizedRootLower.includes("aucun ne doit jamais écraser silencieusement les changements d'un autre writer")) {
     findings.push("AGENTS.md: CURRENT workflow must prohibit silent loss of another writer's changes.");
   }
   if (rootAgents && !normalizedRoot.includes("main publié = référence versionnée ;")) {
@@ -172,11 +179,11 @@ function validateCurrentWorkflowDoctrine(view, findings) {
     findings.push("AGENTS.md: global local-over-GitHub priority is not a CURRENT rule.");
   }
   const normalizedCurrentChatgptLower = normalizedCurrentChatgpt.toLocaleLowerCase("fr-FR");
-  if (!normalizedCurrentChatgptLower.includes(chatgptReadOnlyPolicy.toLocaleLowerCase("fr-FR"))) {
-    findings.push("CHATGPT.md: current policy must limit ChatGPT to GitHub reading and review.");
+  if (!chatgptDirectWritePolicyTerms.every((term) => normalizedCurrentChatgptLower.includes(term))) {
+    findings.push("CHATGPT.md: current policy must authorize scoped direct ChatGPT edits, commits and pushes on main.");
   }
-  if (!normalizedCurrentChatgptLower.includes(codexPublicationResponsibility.toLocaleLowerCase("fr-FR"))) {
-    findings.push("CHATGPT.md: current policy must assign integration, commits and publication to Codex.");
+  if (forbiddenChatgptReadOnlyTerms.some((term) => normalizedCurrentChatgptLower.includes(term))) {
+    findings.push("CHATGPT.md: current policy must not restrict ChatGPT to read-only GitHub access.");
   }
   if (!commitReviewPolicyTerms.every((term) => normalizedCurrentChatgptLower.includes(term))) {
     findings.push("CHATGPT.md: Commit Review must prioritize published outcomes and demonstrated regressions, not commit size or grouping.");
