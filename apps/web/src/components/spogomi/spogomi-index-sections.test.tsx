@@ -296,7 +296,10 @@ describe("SpogomiPublicEvents", () => {
     expect(frAnonMarkup).toContain('href="/spogomi#spogomi-formats-rules"');
     expect(frAnonMarkup).toContain('href="/spogomi#spogomi-events"');
     expect(frAnonMarkup).toContain('href="/sign-in?redirect_url=%2Fspogomi"');
-    expect(frAnonMarkup).toContain('href="/spogomi/mes-evenements?parcours=referees"');
+    expect(frAnonMarkup).not.toContain('href="/spogomi/mes-evenements?parcours=referees"');
+    expect(frAnonMarkup).toContain("modalités d’accompagnement arbitral et les éventuelles sanctions dépendent du règlement applicable à l’édition");
+    expect(frAnonMarkup).toContain("numérique et/ou papier selon l’organisation de l’édition");
+    expect(frAnonMarkup).toContain("consolider manuellement les résultats");
     expect(frAnonMarkup).toContain('href="/sections/messagerie?tab=discussions&amp;channel=community&amp;topicId=spogomi"');
     expect(frAnonMarkup).toContain("underline decoration-2");
     expect(frAnonMarkup).toContain("focus-visible:ring-2");
@@ -329,6 +332,21 @@ describe("SpogomiPublicEvents", () => {
           worldCupDescription: "WC desc",
           examples: [],
           stepSegments: {
+            step1: {
+              beforeRules: "Lire ",
+              rulesLink: "règlement",
+              beforeEvent: " puis ",
+              eventLink: "événement",
+              beforeAccount: " et ",
+              accountLink: "compte",
+              beforeQuiz: " : ",
+              quizLink: "quiz",
+              beforeTeam: " ou ",
+              teamLink: "équipe",
+              beforePath: " ou ",
+              refereeLink: "arbitre",
+              after: ".",
+            },
             step4: { beforeForm: "Remplit ", formLink: "formulaire de collecte", after: "." },
             step5: { beforeResults: "Voir ", resultsLink: "classement", beforeAction: " puis ", actionLink: "action globale", after: "." },
           },
@@ -342,6 +360,7 @@ describe("SpogomiPublicEvents", () => {
         }}
       />,
     );
+    expect(contextualMarkup).toContain('href="/spogomi/paris-2026#spogomi-referee-application"');
     expect(contextualMarkup).toContain('href="/spogomi/paris-2026/espace?section=operations"');
     expect(contextualMarkup).toContain('href="/actions/action-1"');
     expect(contextualMarkup).toContain('href="/spogomi/paris-2026?focus=results#spogomi-public-results"');

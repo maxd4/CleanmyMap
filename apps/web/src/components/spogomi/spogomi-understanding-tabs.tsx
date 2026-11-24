@@ -154,6 +154,9 @@ function renderStepBody(
   const quizHref = eventSlug
     ? buildSpogomiEventHref(eventSlug, { focus: "quiz" })
     : "/spogomi#spogomi-events";
+  const refereeHref = eventSlug
+    ? `/spogomi/${encodeURIComponent(eventSlug)}#spogomi-referee-application`
+    : "/spogomi#spogomi-events";
   const teamHref = eventSlug
     ? buildSpogomiEventHref(eventSlug, { focus: "team" })
     : "/spogomi#spogomi-events";
@@ -176,10 +179,10 @@ function renderStepBody(
         <StepLink href={accountHref}>{s.accountLink}</StepLink>
         {s.beforeQuiz}
         <StepLink href={quizHref}>{s.quizLink}</StepLink>
-        {s.beforePath}
-        <StepLink href="/spogomi/mes-evenements?parcours=referees">{s.refereeLink}</StepLink>
         {s.beforeTeam}
         <StepLink href={teamHref}>{s.teamLink}</StepLink>
+        {s.beforePath}
+        <StepLink href={refereeHref}>{s.refereeLink}</StepLink>
         {s.after}
       </>
     );
