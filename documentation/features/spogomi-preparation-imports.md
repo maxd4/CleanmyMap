@@ -266,6 +266,19 @@ parcours officiel et ne touche ni la certification publiée dans la migration
 `20261012000021_spogomi_certificate_reissue_concurrency.sql`, ni les
 projections de compétition.
 
+Côté interface, `SpogomiRouteEditor` consomme le contrat `synchronization`
+(`RouteSynchronization` : `compositionRevision`, `routeVersion`) retourné par
+les trois routes API de parcours (`/routes`, `/route-gpx`,
+`/routes/reference-media`), verrouille l'édition locale pendant la requête
+asynchrone et réconcilie atomiquement `baseRevision`, `syncedRevision` et le
+dessin confirmé quel que soit l'ordre entre le renouvellement des props serveur
+et la résolution de la promesse. Si une mise à jour distante survient entre la
+mutation et l'actualisation, l'éditeur conserve le dessin local en état dirty
+et exige un chargement explicite de la version serveur ; en cas d'échec de
+l'actualisation déclenchée par un conflit HTTP 409, `SpogomiPreparationWorkspace`
+expose une relance explicite (« Réessayer l’actualisation ») sans perte du
+brouillon local.
+
 La migration `20261013000009_spogomi_preparation_concurrency.sql` est
 forward-only. La CI Supabase éphémère exécute les tests métier ciblés puis un
 scénario PostgreSQL réel avec deux clients/sessions couvrant confirmation

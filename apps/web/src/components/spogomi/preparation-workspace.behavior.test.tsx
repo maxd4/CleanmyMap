@@ -616,6 +616,28 @@ describe("SPOGOMI preparation workspace", () => {
     });
     expect(JSON.stringify(renderer.toJSON())).toContain("Actualisation impossible");
     expect(JSON.stringify(renderer.toJSON())).not.toContain("Opération enregistrée.");
+
+    // 3. 409 conflict whose automatic refresh fails -> shows explicit retry action and recovers when clicked
+    routePostMode = "conflict";
+    failNextRefresh = true;
+    await act(async () => {
+      await propsOf<ButtonProps>(lockButton!).onClick?.();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Actualisation impossible");
+    const retryRefreshButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Réessayer l’actualisation"));
+    expect(retryRefreshButton).toBeTruthy();
+
+    failNextRefresh = false;
+    await act(async () => {
+      await propsOf<ButtonProps>(retryRefreshButton!).onClick?.();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(getCount).toBe(5);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Actualisation impossible");
     renderer.unmount();
   });
 });

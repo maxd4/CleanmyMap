@@ -56,6 +56,7 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   const [rosterFile, setRosterFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [canRetryRefresh, setCanRetryRefresh] = useState(false);
   const [busy, setBusy] = useState(true);
   const [identityCodes, setIdentityCodes] = useState<Record<string, string>>({});
   const [acceptedRowNumbers, setAcceptedRowNumbers] = useState<number[]>([]);
@@ -143,6 +144,7 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     return runWorkspaceRequest(request, () => requestWorkspaceAction(activeDivisionIdRef.current, url, init), async (body) => {
       await refresh(request);
       if (!isCurrentRequest(request)) return null;
+      setCanRetryRefresh(false);
       setMessage("Opération enregistrée.");
       return body;
     }, "Opération refusée.", (reason) => {
@@ -150,12 +152,39 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
         const refreshRequest = beginRequest();
         setBusy(true);
         void refresh(refreshRequest)
-          .catch(() => undefined)
+          .then(() => {
+            if (isCurrentRequest(refreshRequest)) setCanRetryRefresh(false);
+          })
+          .catch((refreshError) => {
+            if (isCurrentRequest(refreshRequest)) {
+              setCanRetryRefresh(true);
+              setError(refreshError instanceof Error ? refreshError.message : "Actualisation du parcours impossible.");
+            }
+          })
           .finally(() => {
             if (isCurrentRequest(refreshRequest)) setBusy(false);
           });
       }
     });
+  }
+  async function retryWorkspaceRefresh(): Promise<boolean> {
+    const request = beginRequest();
+    setBusy(true);
+    setError(null);
+    try {
+      const nextData = await refresh(request);
+      if (!nextData) return false;
+      setCanRetryRefresh(false);
+      return true;
+    } catch (reason) {
+      if (isCurrentRequest(request)) {
+        setCanRetryRefresh(true);
+        setError(reason instanceof Error ? reason.message : "Actualisation du parcours impossible.");
+      }
+      return false;
+    } finally {
+      if (isCurrentRequest(request)) setBusy(false);
+    }
   }
   function updateDraft(mutator: (draft: SpogomiCompositionDraft) => SpogomiCompositionDraft) {
     if (!currentData || !activeDivisionId || !compositionEditable) return;
@@ -350,5 +379,5 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   const activeDivision = currentData.divisions.find((division) => division.id === activeDivisionId) ?? currentData.divisions[0] ?? null;
   const divisionLabel = activeDivision ? (activeDivision.division_type === "world_cup" ? "World Cup" : "Casual") : spogomiModeLabel(currentData.event.mode);
   const editorData = draftData ?? currentData;
-  return <SpogomiPreparationWorkspaceView eventId={eventId} section={section} showHeader={showHeader} showAdminTeamJoinRequests={showAdminTeamJoinRequests} data={editorData} activeDivisionId={activeDivisionId} activeDivisionType={activeDivision?.division_type ?? "casual"} activeDivision={activeDivision} divisionLabel={divisionLabel} busy={busy} message={message} error={error} compositionEditable={compositionEditable} compositionLocked={compositionLocked} publicTeamNameTemplate={SPOGOMI_PUBLIC_TEAM_NAME_TEMPLATE} compositionArbitrationMessage={SPOGOMI_COMPOSITION_ARBITRATION_MESSAGE} compositionEligibilityWarning={SPOGOMI_COMPOSITION_ELIGIBILITY_WARNING} compositionRevision={() => buildSpogomiCompositionRevision(currentData)} teamEditorLabels={SPOGOMI_TEAM_EDITOR_LABELS} teamNameInput={SpogomiTeamNameInput} assignedCount={countAssignedParticipants(editorData)} preview={activeRosterPreview} rosterFile={activeRosterPreview ? rosterFile : null} acceptedRowNumbers={acceptedRowNumbers} mappingSelection={mappingSelection} sheetSelection={sheetSelection} headerRowSelection={headerRowSelection} rosterPage={rosterPage} validRosterRows={validRosterRows} visibleRosterRows={visibleRosterRows} rosterPageCount={rosterPageCount} selectedImportSummary={selectedImportSummary} teamPreview={activeTeamPreview} teamPreviewError={teamPreviewError} identityCodes={identityCodes} action={action} saveDivisionRegulation={saveDivisionRegulation} onDivisionChange={changeDivision} navigateChecklist={navigateChecklist} clearTeamPreview={() => setTeamPreview(null)} setAcceptedRowNumbers={setAcceptedRowNumbers} setMappingSelection={setMappingSelection} setSheetSelection={setSheetSelection} setRosterPage={setRosterPage} previewRoster={previewRoster} confirmRoster={confirmRoster} toggleAcceptedRow={toggleAcceptedRow} previewTeams={previewTeams} movePreviewParticipant={movePreviewParticipant} confirmTeams={confirmTeams} issueIdentityCode={issueIdentityCode} draft={activeDraft ?? createSpogomiCompositionDraft(currentData, activeDivisionId ?? "")} draftStatus={draftDirty ? (draftStatus === "unchanged" ? "modified" : draftStatus) : draftStatus} saveCompositionDraft={saveCompositionDraft} cancelCompositionDraft={cancelCompositionDraft} createTeamDraft={createTeamDraft} createPlaceDraft={createPlaceDraft} renameTeamDraft={renameTeamDraft} changePrivateLabelDraft={changePrivateLabelDraft} assignParticipantDraft={assignParticipantDraft} />;
+  return <SpogomiPreparationWorkspaceView eventId={eventId} section={section} showHeader={showHeader} showAdminTeamJoinRequests={showAdminTeamJoinRequests} data={editorData} activeDivisionId={activeDivisionId} activeDivisionType={activeDivision?.division_type ?? "casual"} activeDivision={activeDivision} divisionLabel={divisionLabel} busy={busy} message={message} error={error} canRetryRefresh={canRetryRefresh} retryWorkspaceRefresh={retryWorkspaceRefresh} compositionEditable={compositionEditable} compositionLocked={compositionLocked} publicTeamNameTemplate={SPOGOMI_PUBLIC_TEAM_NAME_TEMPLATE} compositionArbitrationMessage={SPOGOMI_COMPOSITION_ARBITRATION_MESSAGE} compositionEligibilityWarning={SPOGOMI_COMPOSITION_ELIGIBILITY_WARNING} compositionRevision={() => buildSpogomiCompositionRevision(currentData)} teamEditorLabels={SPOGOMI_TEAM_EDITOR_LABELS} teamNameInput={SpogomiTeamNameInput} assignedCount={countAssignedParticipants(editorData)} preview={activeRosterPreview} rosterFile={activeRosterPreview ? rosterFile : null} acceptedRowNumbers={acceptedRowNumbers} mappingSelection={mappingSelection} sheetSelection={sheetSelection} headerRowSelection={headerRowSelection} rosterPage={rosterPage} validRosterRows={validRosterRows} visibleRosterRows={visibleRosterRows} rosterPageCount={rosterPageCount} selectedImportSummary={selectedImportSummary} teamPreview={activeTeamPreview} teamPreviewError={teamPreviewError} identityCodes={identityCodes} action={action} saveDivisionRegulation={saveDivisionRegulation} onDivisionChange={changeDivision} navigateChecklist={navigateChecklist} clearTeamPreview={() => setTeamPreview(null)} setAcceptedRowNumbers={setAcceptedRowNumbers} setMappingSelection={setMappingSelection} setSheetSelection={setSheetSelection} setRosterPage={setRosterPage} previewRoster={previewRoster} confirmRoster={confirmRoster} toggleAcceptedRow={toggleAcceptedRow} previewTeams={previewTeams} movePreviewParticipant={movePreviewParticipant} confirmTeams={confirmTeams} issueIdentityCode={issueIdentityCode} draft={activeDraft ?? createSpogomiCompositionDraft(currentData, activeDivisionId ?? "")} draftStatus={draftDirty ? (draftStatus === "unchanged" ? "modified" : draftStatus) : draftStatus} saveCompositionDraft={saveCompositionDraft} cancelCompositionDraft={cancelCompositionDraft} createTeamDraft={createTeamDraft} createPlaceDraft={createPlaceDraft} renameTeamDraft={renameTeamDraft} changePrivateLabelDraft={changePrivateLabelDraft} assignParticipantDraft={assignParticipantDraft} />;
 }

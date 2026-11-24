@@ -283,7 +283,22 @@ describe("SpogomiRouteEditor", () => {
     expect(container.querySelector('[data-testid="map-coords"]')?.textContent).toBe("[[48.85,2.35],[48.86,2.36]]");
     expect(saveButton().disabled).toBe(false);
 
-    action.mockResolvedValueOnce({ synchronization: { routeVersion: 2 } });
+    action.mockResolvedValueOnce({
+      synchronization: {
+        already_processed: false,
+        eventId: "event-1",
+        actionId: "action-1",
+        routeId: "route-1",
+        divisionId: null,
+        routeVersion: 2,
+        compositionRevision: 5,
+        source: "manual_reference",
+        fileName: "manual-route.json",
+        pointCount: 2,
+        referenceDistanceKm: 1.5,
+        inferredTopology: "point_to_point",
+      },
+    });
     await act(async () => { saveButton().click(); await Promise.resolve(); });
     expect(action).toHaveBeenLastCalledWith(
       "/api/spogomi/events/event-1/routes",
@@ -347,13 +362,34 @@ describe("SpogomiRouteEditor", () => {
     });
     expect(container.querySelector('[data-testid="map-coords"]')?.textContent).toBe("[[48.81,2.31],[48.82,2.32]]");
 
+    const makeSync = (
+      compositionRevision: number,
+      routeVersion: number,
+      source: "manual_reference" | "gpx_reference" | "official_reference" = "manual_reference",
+    ) => ({
+      synchronization: {
+        already_processed: false,
+        eventId: "event-1",
+        actionId: "action-1",
+        routeId: "route-1",
+        divisionId: null,
+        routeVersion,
+        compositionRevision,
+        source,
+        fileName: source === "gpx_reference" ? "route.gpx" : "manual-route.json",
+        pointCount: 2,
+        referenceDistanceKm: 1.5,
+        inferredTopology: "point_to_point",
+      },
+    });
+
     // Resolve 1st save + renew props from server refresh (revision 6)
     const routeV2 = makeRoute({
       route_version: 2,
       geometry_geojson: { type: "LineString", coordinates: [[2.31, 48.81], [2.32, 48.82]] },
     });
     await act(async () => {
-      resolveSave1({ compositionRevision: 6 });
+      resolveSave1(makeSync(6, 2));
       await Promise.resolve();
       renderWith(routeV2, 6);
     });
@@ -367,7 +403,7 @@ describe("SpogomiRouteEditor", () => {
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
       mocks.triggerMapChange?.({ kind: "polyline", coordinates: [[48.91, 2.41], [48.92, 2.42]] });
     });
-    action.mockResolvedValueOnce({ compositionRevision: 7 });
+    action.mockResolvedValueOnce(makeSync(7, 3));
     await act(async () => {
       saveBtn.click();
       await Promise.resolve();
@@ -385,5 +421,161 @@ describe("SpogomiRouteEditor", () => {
       }),
       null,
     );
+  });
+
+  it("reconciles RouteSynchronization when props renew before action resolves (save, GPX, image) and flags intervening remote edits", async () => {
+    const makeSync = (
+      compositionRevision: number,
+      routeVersion: number,
+      source: "manual_reference" | "gpx_reference" | "official_reference" = "manual_reference",
+    ) => ({
+      synchronization: {
+        already_processed: false,
+        eventId: "event-1",
+        actionId: "action-1",
+        routeId: "route-1",
+        divisionId: null,
+        routeVersion,
+        compositionRevision,
+        source,
+        fileName: source === "gpx_reference" ? "route.gpx" : "manual-route.json",
+        pointCount: 2,
+        referenceDistanceKm: 1.5,
+        inferredTopology: "point_to_point",
+      },
+    });
+
+    let resolveAction!: (value: Record<string, unknown> | null) => void;
+    const action = vi.fn(
+      () => new Promise<Record<string, unknown> | null>((resolve) => { resolveAction = resolve; }),
+    );
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    const routeV1 = makeRoute({ route_version: 1 });
+    const renderWith = (route: SpogomiRouteProjection, expectedRevision: number) => {
+      root!.render(
+        <SpogomiRouteEditor
+          eventId="event-1"
+          actionId="action-1"
+          activeDivisionId={null}
+          divisionLabel="Casual"
+          eventState="in_progress"
+          expectedRevision={expectedRevision}
+          route={route}
+          busy={false}
+          action={action}
+        />,
+      );
+    };
+
+    await act(async () => { renderWith(routeV1, 5); });
+    const textarea = container.querySelector("textarea")!;
+    const setReason = (value: string) => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+      setter.call(textarea, value);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+
+    // 1. Save drawing where props renew BEFORE action resolves (like SpogomiPreparationWorkspace.action())
+    await act(async () => {
+      setReason("Correction 1");
+      container!.querySelector<HTMLButtonElement>('[data-testid="edit-map"]')!.click();
+    });
+    const saveBtn = () => Array.from(container!.querySelectorAll("button")).find((btn) => btn.textContent?.includes("Enregistrer le parcours"))!;
+    await act(async () => { saveBtn().click(); });
+
+    const routeV2 = makeRoute({
+      route_version: 2,
+      geometry_geojson: { type: "LineString", coordinates: [[2.31, 48.81], [2.32, 48.82]] },
+    });
+    await act(async () => { renderWith(routeV2, 6); });
+    await act(async () => {
+      resolveAction(makeSync(6, 2));
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(textarea.value).toBe("");
+
+    // 2. Import GPX where props renew BEFORE action resolves, then verify media upload uses rev 7
+    await act(async () => { setReason("Import GPX"); });
+    const gpxInput = container.querySelector<HTMLInputElement>('input[accept=".gpx,application/gpx+xml"]')!;
+    const gpxFile = new File(["<gpx />"], "route.gpx", { type: "application/gpx+xml" });
+    Object.defineProperty(gpxInput, "files", { value: [gpxFile], configurable: true });
+    await act(async () => {
+      gpxInput.dispatchEvent(new Event("change", { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const routeV3 = makeRoute({
+      route_version: 3,
+      source: "gpx_reference",
+      geometry_geojson: { type: "LineString", coordinates: [[2.33, 48.83], [2.34, 48.84]] },
+    });
+    await act(async () => { renderWith(routeV3, 7); });
+    await act(async () => {
+      resolveAction(makeSync(7, 3, "gpx_reference"));
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+
+    // 3. Reference image upload sends expectedRevision: 7 and reconciles to rev 8
+    await act(async () => { setReason("Photo carte"); });
+    const imageInput = container.querySelector<HTMLInputElement>('input[accept="image/jpeg,image/png,image/webp"]')!;
+    const imgFile = new File(["img"], "ref.png", { type: "image/png" });
+    Object.defineProperty(imageInput, "files", { value: [imgFile], configurable: true });
+    await act(async () => {
+      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(action).toHaveBeenLastCalledWith(
+      "/api/spogomi/events/event-1/routes/reference-media",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          divisionId: null,
+          expectedRevision: 7,
+          mediaId: "media-ref-2",
+          correctionReason: "Photo carte",
+        }),
+      }),
+      null,
+    );
+    const routeV4 = makeRoute({
+      route_version: 4,
+      reference_media_id: "media-1",
+      geometry_geojson: { type: "LineString", coordinates: [[2.33, 48.83], [2.34, 48.84]] },
+    });
+    await act(async () => { renderWith(routeV4, 8); });
+    await act(async () => {
+      resolveAction(makeSync(8, 4, "gpx_reference"));
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[role="status"]')?.textContent).toContain("Image de référence privée enregistrée.");
+
+    // 4. Intervening remote edit between mutation (rev 9, v5) and refresh (rev 10, v6)
+    await act(async () => {
+      setReason("Ma version locale");
+      mocks.triggerMapChange?.({ kind: "polyline", coordinates: [[48.95, 2.45], [48.96, 2.46]] });
+    });
+    expect(container.querySelector('[data-testid="map-coords"]')?.textContent).toBe("[[48.95,2.45],[48.96,2.46]]");
+    await act(async () => { saveBtn().click(); });
+    const routeV6Remote = makeRoute({
+      route_version: 6,
+      geometry_geojson: { type: "LineString", coordinates: [[2.99, 48.99], [2.98, 48.98]] },
+    });
+    await act(async () => { renderWith(routeV6Remote, 10); });
+    await act(async () => {
+      resolveAction(makeSync(9, 5));
+      await Promise.resolve();
+    });
+    expect(container.textContent).toContain("Une nouvelle version serveur du parcours est disponible");
+    expect(container.textContent).toContain("Le parcours a été modifié sur le serveur pendant l’enregistrement");
+    expect(container.querySelector('[data-testid="map-coords"]')?.textContent).toBe("[[48.95,2.45],[48.96,2.46]]");
+    expect(saveBtn().disabled).toBe(true);
   });
 });

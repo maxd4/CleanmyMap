@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { parseGpxFile, inferGpxTopology } from "@/lib/actions/geometry/gpx";
@@ -25,6 +25,22 @@ type Props = {
 };
 
 type PolylineDrawing = ActionDrawing & { kind: "polyline" };
+type RouteSyncAck = {
+  compositionRevision: number;
+  routeVersion: number | null;
+};
+
+function readRouteSynchronization(result: Record<string, unknown>): RouteSyncAck | null {
+  const sync = result.synchronization;
+  if (typeof sync !== "object" || sync === null || Array.isArray(sync)) return null;
+  const record = sync as Record<string, unknown>;
+  if (typeof record.compositionRevision !== "number" || !Number.isFinite(record.compositionRevision)) return null;
+  const routeVersion = typeof record.routeVersion === "number" && Number.isFinite(record.routeVersion) ? record.routeVersion : null;
+  return {
+    compositionRevision: record.compositionRevision,
+    routeVersion,
+  };
+}
 
 function routeDrawing(route: SpogomiRouteProjection | null): PolylineDrawing | null {
   return route ? {
@@ -51,9 +67,29 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
   const [localError, setLocalError] = useState<string | null>(null);
   const [mediaStatus, setMediaStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingConfirmedSync, setPendingConfirmedSync] = useState<{
+    divisionId: string | null;
+    compositionRevision: number;
+    routeVersion: number | null;
+  } | null>(null);
+  const latestPropsRef = useRef({
+    divisionId: activeDivisionId,
+    expectedRevision,
+    routeVersion: route?.route_version ?? 0,
+    routeKey: currentRouteKey,
+  });
+  useEffect(() => {
+    latestPropsRef.current = {
+      divisionId: activeDivisionId,
+      expectedRevision,
+      routeVersion: route?.route_version ?? 0,
+      routeKey: currentRouteKey,
+    };
+  });
   const isLocked = busy || isSubmitting;
 
   if (trackedDivisionId !== activeDivisionId) {
+    setPendingConfirmedSync(null);
     setTrackedDivisionId(activeDivisionId);
     setSyncedRouteKey(currentRouteKey);
     setSyncedRevision(expectedRevision);
@@ -65,16 +101,33 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
     setLocalError(null);
     setMediaStatus(null);
   } else if (syncedRouteKey !== currentRouteKey || syncedRevision !== expectedRevision) {
-    if (!isDirty) {
+    const isOwnConfirmedSync = Boolean(
+      pendingConfirmedSync &&
+      pendingConfirmedSync.divisionId === activeDivisionId &&
+      expectedRevision <= pendingConfirmedSync.compositionRevision &&
+      (pendingConfirmedSync.routeVersion === null || (route?.route_version ?? 0) <= pendingConfirmedSync.routeVersion),
+    );
+    if (pendingConfirmedSync && pendingConfirmedSync.divisionId === activeDivisionId && isOwnConfirmedSync) {
+      const nextRevision = Math.max(expectedRevision, pendingConfirmedSync.compositionRevision);
+      setPendingConfirmedSync(null);
       setSyncedRouteKey(currentRouteKey);
-      setSyncedRevision(expectedRevision);
-      setBaseRevision(expectedRevision);
-      setDrawing(routeDrawing(route));
+      setSyncedRevision(nextRevision);
+      setBaseRevision(nextRevision);
       setHasRemoteUpdate(false);
+      if (!isDirty) setDrawing(routeDrawing(route));
     } else {
-      setSyncedRouteKey(currentRouteKey);
-      setSyncedRevision(expectedRevision);
-      setHasRemoteUpdate(true);
+      setPendingConfirmedSync(null);
+      if (!isDirty) {
+        setSyncedRouteKey(currentRouteKey);
+        setSyncedRevision(expectedRevision);
+        setBaseRevision(expectedRevision);
+        setDrawing(routeDrawing(route));
+        setHasRemoteUpdate(false);
+      } else {
+        setSyncedRouteKey(currentRouteKey);
+        setSyncedRevision(expectedRevision);
+        setHasRemoteUpdate(true);
+      }
     }
   }
 
@@ -82,6 +135,7 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
   const requiresReason = eventState === "in_progress";
 
   const loadServerVersion = () => {
+    setPendingConfirmedSync(null);
     setSyncedRouteKey(currentRouteKey);
     setSyncedRevision(expectedRevision);
     setBaseRevision(expectedRevision);
@@ -89,6 +143,45 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
     setIsDirty(false);
     setHasRemoteUpdate(false);
     setLocalError(null);
+  };
+
+  const reconcileMutationResult = (
+    result: Record<string, unknown>,
+    onConfirmed: () => void,
+    missingSyncMessage: string,
+  ): boolean => {
+    const sync = readRouteSynchronization(result);
+    if (!sync) {
+      setLocalError(missingSyncMessage);
+      return false;
+    }
+    const latest = latestPropsRef.current;
+    if (latest.divisionId !== activeDivisionId) return false;
+    const hasInterveningRemoteUpdate =
+      latest.expectedRevision > sync.compositionRevision ||
+      (sync.routeVersion !== null && latest.routeVersion > sync.routeVersion);
+    if (hasInterveningRemoteUpdate) {
+      setPendingConfirmedSync(null);
+      setSyncedRouteKey(latest.routeKey);
+      setSyncedRevision(latest.expectedRevision);
+      setHasRemoteUpdate(true);
+      setLocalError("Le parcours a été modifié sur le serveur pendant l’enregistrement. Chargez la version serveur pour vous réconcilier.");
+      return false;
+    }
+    const propsCaughtUp =
+      latest.expectedRevision === sync.compositionRevision &&
+      (sync.routeVersion === null || latest.routeVersion >= sync.routeVersion);
+    setPendingConfirmedSync(
+      propsCaughtUp
+        ? null
+        : { divisionId: activeDivisionId, compositionRevision: sync.compositionRevision, routeVersion: sync.routeVersion },
+    );
+    const nextRevision = Math.max(sync.compositionRevision, latest.expectedRevision);
+    setBaseRevision(nextRevision);
+    setSyncedRevision(nextRevision);
+    if (propsCaughtUp) setSyncedRouteKey(latest.routeKey);
+    onConfirmed();
+    return true;
   };
 
   const saveDrawing = async () => {
@@ -108,10 +201,11 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
         setLocalError("Le parcours n’a pas pu être enregistré.");
         return;
       }
-      if (typeof result.compositionRevision === "number") setBaseRevision(result.compositionRevision);
-      setIsDirty(false);
-      setHasRemoteUpdate(false);
-      setCorrectionReason("");
+      reconcileMutationResult(result, () => {
+        setIsDirty(false);
+        setHasRemoteUpdate(false);
+        setCorrectionReason("");
+      }, "Le parcours n’a pas pu être enregistré.");
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "Le parcours n’a pas pu être enregistré.");
     } finally {
@@ -139,11 +233,12 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
         setLocalError("Le GPX n’a pas pu être importé.");
         return;
       }
-      if (typeof result.compositionRevision === "number") setBaseRevision(result.compositionRevision);
-      setDrawing({ kind: "polyline", coordinates: next.coordinates });
-      setIsDirty(false);
-      setHasRemoteUpdate(false);
-      setCorrectionReason("");
+      reconcileMutationResult(result, () => {
+        setDrawing({ kind: "polyline", coordinates: next.coordinates });
+        setIsDirty(false);
+        setHasRemoteUpdate(false);
+        setCorrectionReason("");
+      }, "Le GPX n’a pas pu être importé.");
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "Le GPX n’a pas pu être importé.");
     } finally {
@@ -171,9 +266,12 @@ export function SpogomiRouteEditor({ eventId, actionId, activeDivisionId, divisi
         setLocalError("L’image n’a pas pu être associée.");
         return;
       }
-      if (typeof result.compositionRevision === "number") setBaseRevision(result.compositionRevision);
-      setCorrectionReason("");
-      setMediaStatus("Image de référence privée enregistrée.");
+      const reconciled = reconcileMutationResult(result, () => {
+        setHasRemoteUpdate(false);
+        setCorrectionReason("");
+        setMediaStatus("Image de référence privée enregistrée.");
+      }, "L’image n’a pas pu être associée.");
+      if (!reconciled) setMediaStatus(null);
     } catch (error) {
       setMediaStatus(null);
       setLocalError(error instanceof Error ? error.message : "L’image n’a pas pu être associée.");
