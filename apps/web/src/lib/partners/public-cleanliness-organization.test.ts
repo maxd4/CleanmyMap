@@ -25,7 +25,8 @@ describe("public cleanliness organization contract", () => {
   it("validates sourced Paris data, canonical Annuaire identifiers and unique shared divisions", () => {
     expect(validatePublicCleanlinessOrganization(PARIS_PUBLIC_CLEANLINESS_DATASET)).toEqual([]);
     expect(new Set(PARIS_PUBLIC_CLEANLINESS_NODES.map((node) => node.id)).size).toBe(PARIS_PUBLIC_CLEANLINESS_NODES.length);
-    expect(PUBLIC_CLEANLINESS_SOURCES.every((source) => source.verifiedAt === "2026-11-24")).toBe(true);
+    expect(PUBLIC_CLEANLINESS_SOURCES.every((source) => /^\d{4}-\d{2}-\d{2}$/.test(source.verifiedAt))).toBe(true);
+    expect(PUBLIC_CLEANLINESS_SOURCES.find(source => source.id === "paris-participatory-cleaning")?.verifiedAt).toBe("2026-11-25");
     expect(PARIS_PUBLIC_CLEANLINESS_NODES.find((node) => node.id === "dpe")).toMatchObject({ legalEmployerId: "city-paris", unitId: "city-paris", directoryId: "evt-paris-nettoyages" });
     expect(PARIS_PUBLIC_CLEANLINESS_NODES.find((node) => node.id === "stpp")).toMatchObject({ legalEmployerId: "city-paris", unitId: "dpe" });
     expect(PARIS_PUBLIC_CLEANLINESS_NODES.find((node) => node.id === "syctom")?.directoryId).toBeUndefined();
@@ -70,6 +71,24 @@ describe("public cleanliness organization contract", () => {
       "missing-employer:lyon-cleaning:missing-employer",
       "missing-unit:lyon-cleaning:missing-unit",
       "unit-hierarchy-mismatch:lyon-cleaning:missing-unit",
+    ]));
+  });
+
+  it("rejects missing coverage, fabricated assignments and recruitment contacts", () => {
+    const data = PARIS_PUBLIC_CLEANLINESS_DATASET;
+    const edge = { id: "invalid-assignment", from: "dpe", to: "req", kind: "assignment" as const, status: "confirmed" as const, sourceIds: ["req-20-recruitment"] };
+    const invalid: PublicCleanlinessCityDataset = {
+      ...data,
+      nodes: data.nodes.map(node => node.id === "division-20" ? { ...node, territoryIds: [] } : node.id === "dpe" ? { ...node, publicContact: { label: "Contact de recrutement", url: "https://travaillerpourparis.offres.paris.fr/13375", kind: "functional_contact" as const, sourceIds: ["req-20-recruitment"] } } : node),
+      relations: [...data.relations, edge],
+    };
+    expect(validatePublicCleanlinessOrganization(invalid)).toEqual(expect.arrayContaining([
+      "missing-coverage-territory:stpp-divisions:Paris:20",
+      "invalid-assignment:invalid-assignment",
+      "unproven-current-assignment:invalid-assignment",
+      "invalid-public-contact:dpe",
+      "invalid-public-contact-url:dpe",
+      "unproven-functional-contact:dpe",
     ]));
   });
 

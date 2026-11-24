@@ -515,8 +515,8 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
     equipmentAvailability: {
       status: "fournit_materiel",
       summary:
-        "Prêt et fourniture de matériel de collecte et de protection sur demande via le dispositif Nettoyages participatifs.",
-      items: ["Gants", "Pinces de ramassage", "Sacs poubelles", "Chasubles"],
+        "Gants et sacs proposés sur demande ; cendriers de poche selon disponibilité. Pinces, chasubles, quantités et retrait restent à confirmer. Aucun accès au stock ni accord de prêt présumé.",
+      items: ["Gants", "Sacs poubelles", "Cendriers de poche (selon disponibilité)"],
       sourceUrl:
         "https://www.paris.fr/pages/nettoyages-participatifs-ensemble-rendons-paris-plus-propre-15425",
       certainty: "verifie",

@@ -1,11 +1,15 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
+import { PublicCleanlinessCoverageTable } from "./public-cleanliness-coverage-table";
+import { PublicCleanlinessNeedPanel } from "./public-cleanliness-need-panel";
+import { getPublicInstitutionalContributions } from "@/lib/partners/public-cleanliness-needs";
 import { getArrondissementCityOptions, getArrondissementMunicipalLabel, type ArrondissementCity } from "@/lib/geo/paris-arrondissements";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { cn } from "@/lib/utils";
 import {
   filterPublicCleanlinessNodes,
+  getPublicCleanlinessContact,
   getPublicCleanlinessCityDataset,
   PUBLIC_CLEANLINESS_CITY_DATASETS,
   type PublicCleanlinessCityDatasets,
@@ -18,44 +22,44 @@ const COPY = {
   fr: {
     eyebrow: "Référentiel institutionnel sourcé · Paris documenté en premier",
     title: "Organisation des services publics",
-    intro: "Cette vue décrit des organisations, des métiers et des liens documentés. Elle n’affiche ni effectifs inventés, ni partenariat CleanMyMap, ni mandat municipal.",
-    types: "Types", typesBody: "Organisation et unité administrative ; poste/fonction, métier, équipe et personne sont des catégories distinctes. Les agents de terrain sont regroupés collectivement.",
+    intro: "Cette vue décrit les institutions, fonctions, personnes et relations documentées. Les mandats politiques ne sont ni des habilitations CleanMyMap ni des partenariats.",
+    types: "Types", typesBody: "Organisation et unité administrative ; poste/fonction, métier, équipe et personne sont des catégories distinctes. Les agents de terrain sont représentés par métier, sauf fonctions nominatives publiquement attestées et pertinentes.",
     scope: "Périmètre", scopeBody: "Employeur juridique, unité de rattachement et territoire d’intervention sont distingués. Une unité mutualisée n’apparaît qu’une fois avec plusieurs territoires.",
-    relations: "Relations", relationsBody: "Hiérarchie, coordination fonctionnelle, programme et prestation ont des libellés séparés ; coordination et prestation ne créent pas de hiérarchie.",
+    relations: "Relations", relationsBody: "Seul le rattachement hiérarchique construit l’arbre. Mandat, affectation, coordination, coopération, programme et prestation restent des relations distinctes.",
     evidence: "Preuve", evidenceBody: "Organisation documentée, structure historique ou affectation inconnue sont affichées séparément. Une offre d’emploi n’établit jamais qui occupe le poste aujourd’hui.",
     city: "Ville", cityAria: "Sélectionner une ville", district: "Arrondissement", districtAria: "Filtrer par arrondissement", all: "Tous", service: "Service", serviceAria: "Filtrer par service", search: "Recherche", searchAria: "Rechercher dans l’organigramme", searchPlaceholder: "DPE, REQ, division…",
     noDataset: "Aucun référentiel institutionnel n’a encore été validé pour", noDatasetTail: "Le moteur accepte d’autres villes ; leurs données doivent être documentées avant affichage.",
     noResults: "Aucune fiche ne correspond aux filtres. Les affectations non établies restent indiquées comme inconnues.",
     tree: "Arborescence des services publics de propreté", zoom: "Zoom de l’arborescence", zoomOut: "Réduire le zoom", zoomIn: "Augmenter le zoom", zoomReset: "Réinitialiser le zoom",
-    levels: "Navigation par niveau", levelNext: "Unités du niveau suivant", selected: "Fiche détaillée", relationsTitle: "Structures associées et relations", sources: "Sources et preuve", legalEmployer: "Employeur juridique", unit: "Unité de rattachement", territory: "Territoire d’intervention", assignmentUnknown: "Territoire d’affectation inconnu", annuaireId: "Identifiant Annuaire", kind: "Type", status: "État", sourceUpdated: "Mise à jour publiée le", verified: "vérifié le", proof: "preuve", relationSource: "Sources de cette relation", explore: "Explorer", collapse: "Replier", expand: "Déplier", noLevelChildren: "Aucun rattachement hiérarchique supplémentaire à ce niveau.", footer: "Les divisions mutualisées apparaissent une fois avec plusieurs territoires. Les relations de coordination, de programme et de prestation ne sont pas des rattachements hiérarchiques.",
+    levels: "Navigation par niveau", levelNext: "Unités du niveau suivant", selected: "Fiche détaillée", relationsTitle: "Structures associées et relations", sources: "Sources et preuve", legalEmployer: "Employeur juridique", unit: "Unité de rattachement", territory: "Territoire d’intervention", assignmentUnknown: "Territoire d’affectation inconnu", annuaireId: "Identifiant Annuaire", kind: "Type", status: "État", sourceUpdated: "Mise à jour publiée le", verified: "vérifié le", proof: "preuve", relationSource: "Sources de cette relation", explore: "Explorer", collapse: "Replier", expand: "Déplier", noLevelChildren: "Aucun rattachement hiérarchique supplémentaire à ce niveau.", footer: "Une division mutualisée n’apparaît qu’une fois. Les mandats, affectations et autres relations non hiérarchiques sont accessibles depuis les fiches. Les lacunes ne signifient pas une absence de service.",
     serviceLabels: { all: "Tous les services", governance: "Gouvernance", cleaning: "Nettoiement", collection: "Collecte", emergency: "Urgence Propreté", prevention: "Prévention et tri", coordination: "Coordination territoriale", police: "Police municipale et prévention", provider: "Traitement et prestataires" },
     kinds: { city: "Ville", direction: "Direction", service: "Service", unit: "Unité", team: "Équipe", position: "Poste / fonction", profession: "Métier", person: "Personne", provider: "Prestataire" },
     assignment: { confirmed: "Documenté par la source", historical: "Historique à la date de la source", unknown: "Affectation inconnue" },
-    relationKinds: { hierarchy: "Rattachement hiérarchique", coordination: "Coordination fonctionnelle", programme: "Programme", service: "Prestation ou service" },
+    relationKinds: { hierarchy: "Rattachement hiérarchique", mandate: "Mandat politique", assignment: "Affectation", coordination: "Coordination fonctionnelle", cooperation: "Coopération documentée", programme: "Programme", service: "Prestation ou service" },
     relationStatus: { confirmed: "confirmé par la source", historical: "historique à la date de la source", unknown: "inconnu" },
-    evidenceLabels: { official_current: "source institutionnelle actuelle", official_historical: "source institutionnelle historique", official_job_profile: "fiche de poste officielle" },
-    kindLegend: "Légende des états", cityName: "Ville", arrSuffix: "arrondissement",
+    evidenceLabels: { official_current: "source institutionnelle actuelle", official_historical: "source institutionnelle historique", official_job_profile: "fiche de poste officielle", operator_statement: "offre déclarée par l’opérateur" },
+    kindLegend: "Légende des états", cityName: "Ville", arrSuffix: "arrondissement", standalone: "Mandats, fonctions et personnes", contact: "Canal institutionnel public",
   },
   en: {
     eyebrow: "Sourced institutional registry · Paris documented first",
     title: "Public services organization",
-    intro: "This view describes sourced organizations, occupations and relationships. It does not imply CleanMyMap partnerships, staffing numbers or municipal mandates.",
-    types: "Entity types", typesBody: "Organizations and administrative units are distinct from roles, occupations, teams and people. Field staff are represented collectively.",
+    intro: "This view describes documented institutions, roles, people and relationships. Political mandates do not imply CleanMyMap authorization or partnership.",
+    types: "Entity types", typesBody: "Organizations and administrative units are distinct from roles, occupations, teams and people. Field occupations are represented collectively unless an individual role is publicly documented and relevant.",
     scope: "Scope", scopeBody: "Legal employer, reporting unit and service territory are separate. A shared unit appears once with several territories.",
-    relations: "Relationships", relationsBody: "Hierarchy, functional coordination, programmes and services are separate labels. Coordination and service do not imply hierarchy.",
+    relations: "Relationships", relationsBody: "Only hierarchical reporting builds the tree. Mandates, assignments, coordination, cooperation, programmes and services remain distinct.",
     evidence: "Evidence", evidenceBody: "Documented organization, historical structure and unknown assignment are shown separately. A job listing never proves who currently holds a role.",
     city: "City", cityAria: "Select a city", district: "District", districtAria: "Filter by district", all: "All", service: "Service", serviceAria: "Filter by service", search: "Search", searchAria: "Search the organization chart", searchPlaceholder: "DPE, REQ, division…",
     noDataset: "No institutional registry has been validated for", noDatasetTail: "The engine supports other cities; their data must be documented before display.",
     noResults: "No records match these filters. Unverified assignments remain marked unknown.",
     tree: "Public cleanliness services tree", zoom: "Tree zoom", zoomOut: "Zoom out", zoomIn: "Zoom in", zoomReset: "Reset zoom",
-    levels: "Navigate by level", levelNext: "Units at the next level", selected: "Details", relationsTitle: "Related organizations and relationships", sources: "Sources and evidence", legalEmployer: "Legal employer", unit: "Reporting unit", territory: "Service territory", assignmentUnknown: "Assignment territory unknown", annuaireId: "Directory ID", kind: "Type", status: "Status", sourceUpdated: "Source updated", verified: "verified", proof: "evidence", relationSource: "Sources for this relationship", explore: "Explore", collapse: "Collapse", expand: "Expand", noLevelChildren: "No further hierarchical unit at this level.", footer: "Shared divisions appear once with all territories. Coordination, programme and service relationships are not reporting lines.",
+    levels: "Navigate by level", levelNext: "Units at the next level", selected: "Details", relationsTitle: "Related organizations and relationships", sources: "Sources and evidence", legalEmployer: "Legal employer", unit: "Reporting unit", territory: "Service territory", assignmentUnknown: "Assignment territory unknown", annuaireId: "Directory ID", kind: "Type", status: "Status", sourceUpdated: "Source updated", verified: "verified", proof: "evidence", relationSource: "Sources for this relationship", explore: "Explore", collapse: "Collapse", expand: "Expand", noLevelChildren: "No further hierarchical unit at this level.", footer: "Shared divisions appear once with all territories. Mandates, assignments and other non-hierarchical relationships are accessible from the records. Gaps do not establish absence of service.",
     serviceLabels: { all: "All services", governance: "Governance", cleaning: "Street cleaning", collection: "Waste collection", emergency: "Urgent cleanliness", prevention: "Prevention and sorting", coordination: "Territorial coordination", police: "Municipal police and prevention", provider: "Treatment and contractors" },
     kinds: { city: "City", direction: "Directorate", service: "Service", unit: "Unit", team: "Team", position: "Role", profession: "Occupation", person: "Person", provider: "Provider" },
     assignment: { confirmed: "Documented by source", historical: "Historical at source date", unknown: "Assignment unknown" },
-    relationKinds: { hierarchy: "Hierarchical reporting", coordination: "Functional coordination", programme: "Programme", service: "Service provision" },
+    relationKinds: { hierarchy: "Hierarchical reporting", mandate: "Political mandate", assignment: "Assignment", coordination: "Functional coordination", cooperation: "Documented cooperation", programme: "Programme", service: "Service provision" },
     relationStatus: { confirmed: "confirmed by source", historical: "historical at source date", unknown: "unknown" },
-    evidenceLabels: { official_current: "current institutional source", official_historical: "historical institutional source", official_job_profile: "official job profile" },
-    kindLegend: "Evidence status", cityName: "City", arrSuffix: "district",
+    evidenceLabels: { official_current: "current institutional source", official_historical: "historical institutional source", official_job_profile: "official job profile", operator_statement: "provider-reported offer" },
+    kindLegend: "Evidence status", cityName: "City", arrSuffix: "district", standalone: "Mandates, roles and people", contact: "Public institutional channel",
   },
 } as const;
 
@@ -98,7 +102,7 @@ const STATUS_STYLE = {
 
 const EMPTY_NODES: readonly PublicCleanlinessOrganizationNode[] = [];
 const EMPTY_RELATIONS: readonly PublicCleanlinessOrganizationRelation[] = [];
-const EMPTY_SOURCES: readonly { id: string; label: string; url: string; sourceContentDate?: string; verifiedAt: string; evidence: "official_current" | "official_historical" | "official_job_profile" }[] = [];
+const EMPTY_SOURCES: readonly { id: string; label: string; url: string; sourceContentDate?: string; verifiedAt: string; evidence: "official_current" | "official_historical" | "official_job_profile" | "operator_statement" }[] = [];
 
 export function PublicCleanlinessOrganization({
   fr = true,
@@ -114,6 +118,7 @@ export function PublicCleanlinessOrganization({
   const [selectedId, setSelectedId] = useState("dpe");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [zoom, setZoom] = useState(1);
+  const detailsRef = useRef<HTMLElement>(null);
   const dataset = getPublicCleanlinessCityDataset(filters.city, datasets);
   const visibleNodes = useMemo(() => filterPublicCleanlinessNodes(filters, datasets), [filters, datasets]);
   const visibleIds = useMemo(() => new Set(visibleNodes.map((node) => node.id)), [visibleNodes]);
@@ -143,8 +148,14 @@ export function PublicCleanlinessOrganization({
     }
   }
   const roots = nodes.filter((node) => !parentById.has(node.id) && includedIds.has(node.id));
+  const mandateNodes = new Set(relations.filter(edge => edge.kind === "mandate").flatMap(edge => [edge.from, edge.to]));
+  const standaloneRoots = roots.filter(node => node.kind === "person" || node.kind === "position" || (node.kind === "unit" && mandateNodes.has(node.id)));
+  const standaloneRootIds = new Set(standaloneRoots.map(node => node.id));
+  const administrativeRoots = roots.filter(node => !standaloneRootIds.has(node.id));
   const selected = visibleNodes.find((node) => node.id === selectedId) ?? visibleNodes[0] ?? null;
   const selectedRelations = selected ? relations.filter((edge) => edge.from === selected.id || edge.to === selected.id) : [];
+  const documentedContributions = selected && dataset ? getPublicInstitutionalContributions(dataset, selected.id) : [];
+  const selectedContact = selected ? getPublicCleanlinessContact(selected, sources) : null;
 
   const getPath = (nodeId: string): PublicCleanlinessOrganizationNode[] => {
     const path: PublicCleanlinessOrganizationNode[] = [];
@@ -192,7 +203,13 @@ export function PublicCleanlinessOrganization({
     } satisfies PublicCleanlinessFilters;
     updateFilters(nextFilters);
     setSelectedId(nodeId);
+    setCollapsed((current) => {
+      const next = { ...current };
+      for (const node of getPath(nodeId)) next[node.id] = false;
+      return next;
+    });
   };
+  const selectTreeNode = (nodeId: string) => visibleIds.has(nodeId) ? setSelectedId(nodeId) : selectRelatedNode(nodeId);
 
   const renderNode = (node: PublicCleanlinessOrganizationNode, depth: number): ReactNode => {
     const children = (childrenById.get(node.id) ?? []).filter((id) => includedIds.has(id)).map((id) => nodeById.get(id)).filter((value): value is PublicCleanlinessOrganizationNode => Boolean(value));
@@ -201,7 +218,7 @@ export function PublicCleanlinessOrganization({
     return <li key={node.id}>
       <div className="flex items-start gap-2" style={{ marginInlineStart: `${Math.min(depth, 8) * 1.25}rem` }}>
         {children.length > 0 ? <button type="button" aria-label={`${isCollapsed ? text.expand : text.collapse} ${displayName(node)}`} aria-expanded={!isCollapsed} aria-controls={`org-children-${node.id}`} onClick={() => setCollapsed((current) => ({ ...current, [node.id]: !isCollapsed }))} className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/15 text-slate-200 hover:bg-white/10">{isCollapsed ? "+" : "−"}</button> : <span className="mt-1 inline-block h-8 w-8 shrink-0" aria-hidden="true" />}
-        <button type="button" aria-current={selected?.id === node.id ? "true" : undefined} data-assignment={node.assignment} onClick={() => setSelectedId(node.id)} className={cn("min-w-0 flex-1 rounded-xl border px-3 py-2 text-left transition", selected?.id === node.id ? "border-violet-300/60 bg-violet-400/15" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.08]")}>
+        <button type="button" aria-current={selected?.id === node.id ? "true" : undefined} data-assignment={node.assignment} onClick={() => selectTreeNode(node.id)} className={cn("min-w-0 flex-1 rounded-xl border px-3 py-2 text-left transition", selected?.id === node.id ? "border-violet-300/60 bg-violet-400/15" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.08]")}>
           <span className="flex flex-wrap items-center gap-2"><span className="font-bold text-white">{displayName(node)}</span><span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-slate-300">{kindLabel(node.kind)}</span><span className={cn("rounded-full border px-2 py-0.5 text-xs", STATUS_STYLE[node.assignment])}>{stateLabel}</span></span>
         </button>
       </div>
@@ -235,6 +252,11 @@ export function PublicCleanlinessOrganization({
         <label className="text-xs font-bold text-slate-300">{text.search}<input type="search" aria-label={text.searchAria} value={filters.query} onChange={(event) => updateFilter("query", event.target.value)} placeholder={text.searchPlaceholder} className="mt-1 block w-full rounded-xl border border-white/15 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500" /></label>
       </div>
 
+      {dataset?.city === "Paris" ? <PublicCleanlinessNeedPanel dataset={dataset} fr={fr} onSelect={nodeId => {
+        selectRelatedNode(nodeId);
+        detailsRef.current?.focus();
+      }} /> : null}
+
       {!dataset ? <p role="status" className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm text-amber-100">{text.noDataset} {filters.city}. {text.noDatasetTail}</p> : <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
         <div className="min-w-0 space-y-5">
           <div className="overflow-hidden rounded-2xl border border-white/10 p-3 md:p-4">
@@ -247,19 +269,25 @@ export function PublicCleanlinessOrganization({
               </div>
             </div>
             <div className="max-h-[38rem] overflow-auto">
-              {roots.length ? <ul aria-label={text.tree} className="min-w-[34rem] list-none space-y-2" style={{ width: `${100 / zoom}%`, transform: `scale(${zoom})`, transformOrigin: "top left" }}>{roots.map((rootNode) => renderNode(rootNode, 0))}</ul> : <p role="status" className="p-5 text-sm text-slate-300">{text.noResults}</p>}
+              {roots.length ? <div className="min-w-[34rem]" style={{ width: `${100 / zoom}%`, transform: `scale(${zoom})`, transformOrigin: "top left" }}>
+                <ul aria-label={text.tree} className="list-none space-y-2">{administrativeRoots.map(rootNode => renderNode(rootNode, 0))}</ul>
+                {standaloneRoots.length ? <details className="mt-3 rounded-xl border border-white/10 p-2" open={Boolean(filters.query.trim()) || Boolean(selectedPath[0] && standaloneRootIds.has(selectedPath[0].id))}>
+                  <summary className="cursor-pointer text-sm font-semibold text-sky-200">{text.standalone} ({standaloneRoots.length})</summary>
+                  <ul aria-label={text.standalone} className="mt-2 list-none space-y-2">{standaloneRoots.map(rootNode => renderNode(rootNode, 0))}</ul>
+                </details> : null}
+              </div> : <p role="status" className="p-5 text-sm text-slate-300">{text.noResults}</p>}
             </div>
           </div>
 
           <section aria-label={text.levels} className="rounded-2xl border border-sky-300/20 bg-sky-300/[0.04] p-4">
             <h3 className="text-sm font-black text-white">{text.levels}</h3>
-            {selectedPath.length ? <nav aria-label={text.levels} className="mt-3 flex flex-wrap items-center gap-2">{selectedPath.map((node, index) => <span key={node.id} className="flex items-center gap-2">{index > 0 ? <span aria-hidden="true" className="text-slate-500">›</span> : null}<button type="button" aria-current={index === selectedPath.length - 1 ? "location" : undefined} onClick={() => setSelectedId(node.id)} className="rounded-lg border border-white/15 px-3 py-2 text-left text-xs font-bold text-sky-100 hover:bg-white/10">{displayName(node)}</button></span>)}</nav> : <p className="mt-3 text-xs text-slate-300">{text.noResults}</p>}
+            {selectedPath.length ? <nav aria-label={text.levels} className="mt-3 flex flex-wrap items-center gap-2">{selectedPath.map((node, index) => <span key={node.id} className="flex items-center gap-2">{index > 0 ? <span aria-hidden="true" className="text-slate-500">›</span> : null}<button type="button" aria-current={index === selectedPath.length - 1 ? "location" : undefined} onClick={() => selectTreeNode(node.id)} className="rounded-lg border border-white/15 px-3 py-2 text-left text-xs font-bold text-sky-100 hover:bg-white/10">{displayName(node)}</button></span>)}</nav> : <p className="mt-3 text-xs text-slate-300">{text.noResults}</p>}
             <h4 className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-300">{text.levelNext}</h4>
-            {nextLevelNodes.length ? <ul className="mt-2 flex flex-wrap gap-2">{nextLevelNodes.map((node) => <li key={node.id}><button type="button" onClick={() => setSelectedId(node.id)} className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/10">{text.explore}: {displayName(node)} <span className={cn("ml-1 inline-block rounded-full border px-2 py-0.5", STATUS_STYLE[node.assignment])}>{statusLabel(node.assignment)}</span></button></li>)}</ul> : <p className="mt-2 text-xs text-slate-400">{text.noLevelChildren}</p>}
+            {nextLevelNodes.length ? <ul className="mt-2 flex flex-wrap gap-2">{nextLevelNodes.map((node) => <li key={node.id}><button type="button" onClick={() => selectTreeNode(node.id)} className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/10">{text.explore}: {displayName(node)} <span className={cn("ml-1 inline-block rounded-full border px-2 py-0.5", STATUS_STYLE[node.assignment])}>{statusLabel(node.assignment)}</span></button></li>)}</ul> : <p className="mt-2 text-xs text-slate-400">{text.noLevelChildren}</p>}
           </section>
         </div>
 
-        <aside aria-live="polite" aria-label={text.selected} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <aside ref={detailsRef} tabIndex={-1} aria-live="polite" aria-label={text.selected} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
           {selected ? <>
             <p className="text-xs font-black uppercase tracking-widest text-sky-200">{text.selected} · {kindLabel(selected.kind)}</p>
             <h3 className="mt-2 text-xl font-black text-white">{displayName(selected)}</h3>
@@ -268,6 +296,7 @@ export function PublicCleanlinessOrganization({
             {selected.territoryIds.length ? <p className="mt-2 text-xs text-slate-300">{text.territory}: {selected.territoryIds.map((id) => id.replace(`${filters.city}:`, `${filters.city} `)).join(", ")}</p> : <p className="mt-2 text-xs text-slate-300">{text.assignmentUnknown}</p>}
             {selected.legalEmployerId ? <p className="mt-2 text-xs text-slate-300">{text.legalEmployer}: {nodeById.has(selected.legalEmployerId) ? displayName(nodeById.get(selected.legalEmployerId)!) : selected.legalEmployerId}</p> : null}
             {selected.unitId ? <p className="mt-2 text-xs text-slate-300">{text.unit}: {nodeById.has(selected.unitId) ? displayName(nodeById.get(selected.unitId)!) : selected.unitId}</p> : null}
+            {selectedContact ? <p className="mt-2 text-xs text-slate-300">{text.contact}: <a href={selectedContact.url} target="_blank" rel="noreferrer" className="text-sky-200 underline underline-offset-2">{selectedContact.label}</a></p> : null}
             {selected.directoryId ? <p className="mt-2 text-xs text-slate-300">{text.annuaireId}: <code>{selected.directoryId}</code></p> : null}
             {selectedRelations.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider text-slate-200">{text.relationsTitle}</h4><ul className="mt-2 space-y-3">{selectedRelations.map((edge) => {
               const relatedId = edge.from === selected.id ? edge.to : edge.from;
@@ -275,14 +304,22 @@ export function PublicCleanlinessOrganization({
               const relationSources = edge.sourceIds.map((id) => sources.find((source) => source.id === id)).filter((source): source is (typeof sources)[number] => Boolean(source));
               return <li key={edge.id} className="rounded-xl border border-white/10 p-3 text-xs text-slate-300">
                 <p>{relationKindLabel(edge.kind)} · <span className={cn("inline-flex rounded-full border px-2 py-0.5", STATUS_STYLE[edge.status])}>{relationStatusLabel(edge.status)}</span></p>
+                {edge.validFrom || edge.validUntil ? <p className="mt-1 text-slate-400">{fr ? "Période publiée" : "Published period"}: {edge.validFrom ?? "?"} → {edge.validUntil ?? "?"}</p> : null}
                 {related ? <button type="button" onClick={() => selectRelatedNode(related.id)} className="mt-2 text-left font-bold text-sky-200 underline underline-offset-2">{text.explore}: {displayName(related)}</button> : null}
                 <div className="mt-2"><span className="font-bold text-slate-200">{text.relationSource}:</span><ul className="mt-1 space-y-1">{relationSources.map((source) => <li key={source.id}><a href={source.url} target="_blank" rel="noreferrer" className="text-sky-200 underline underline-offset-2">{source.label}</a><span className="text-slate-400"> · {text.verified} {source.verifiedAt}</span></li>)}</ul></div>
               </li>;
             })}</ul></section> : null}
+            {documentedContributions.length ? <section className="mt-4 text-xs text-slate-300"><h4 className="font-black uppercase tracking-wider text-slate-200">{fr ? "Contributions publiques documentées" : "Documented public contributions"}</h4><p className="mt-1">{fr ? "Relations reprises du réseau public, pas un partenariat CleanMyMap ni un engagement actuel." : "Relations from the public network; not a CleanMyMap partnership or current commitment."}</p><ul className="mt-2 space-y-2">{documentedContributions.map(item => <li key={item.id} className="rounded-xl border border-white/10 p-3">
+              <p className="font-semibold text-white">{item.title}</p><button type="button" onClick={() => selectRelatedNode(item.otherId)} className="text-sky-200 underline">{item.otherName}</button><p className="mt-1">{item.summary}</p><p><a href={item.source.url} target="_blank" rel="noreferrer" className="text-sky-200 underline">{item.source.label}</a> · {item.source.verifiedAt}</p>
+            </li>)}</ul></section> : null}
             <div className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider text-slate-200">{text.sources}</h4><ul className="mt-2 space-y-2">{selected.sourceIds.map((id) => sources.find((item) => item.id === id)).filter((item): item is (typeof sources)[number] => Boolean(item)).map((item) => <li key={item.id}><a href={item.url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-sky-200 underline underline-offset-2">{item.label}</a><p className="mt-0.5 text-xs text-slate-400">{item.sourceContentDate ? `${text.sourceUpdated} ${item.sourceContentDate} · ` : ""}{text.verified} {item.verifiedAt} · {text.proof}: {text.evidenceLabels[item.evidence]}</p></li>)}</ul></div>
           </> : <p role="status" className="text-sm text-slate-300">{text.noResults}</p>}
         </aside>
       </div>}
+      {dataset ? <PublicCleanlinessCoverageTable dataset={dataset} fr={fr} onSelect={nodeId => {
+        selectRelatedNode(nodeId);
+        detailsRef.current?.focus();
+      }} /> : null}
       <p className="mt-5 text-xs leading-5 text-slate-400">{text.footer}</p>
     </section>
   </CmmSectionGroup>;

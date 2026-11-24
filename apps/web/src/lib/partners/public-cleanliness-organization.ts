@@ -1,8 +1,11 @@
 import { getArrondissementCityCount, getArrondissementCityOptions, type ArrondissementCity } from "@/lib/geo/paris-arrondissements";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
+import { extendParisPublicCleanlinessDataset } from "./public-cleanliness-organization.paris-extension";
+import { extendParisWasteChain } from "./public-cleanliness-chain.paris";
+import { isPrivateOrUnauthorizedInviteUrl } from "./paris-cleanwalk-network.channels";
 
 export type OrganizationNodeKind = "city" | "direction" | "service" | "unit" | "team" | "position" | "profession" | "person" | "provider";
-export type OrganizationRelationKind = "hierarchy" | "coordination" | "programme" | "service";
+export type OrganizationRelationKind = "hierarchy" | "coordination" | "programme" | "service" | "mandate" | "assignment" | "cooperation";
 export type OrganizationAssignmentStatus = "confirmed" | "historical" | "unknown";
 
 export type OrganizationSource = {
@@ -11,7 +14,14 @@ export type OrganizationSource = {
   url: string;
   sourceContentDate?: string;
   verifiedAt: string;
-  evidence: "official_current" | "official_historical" | "official_job_profile";
+  evidence: "official_current" | "official_historical" | "official_job_profile" | "operator_statement";
+};
+
+export type OrganizationPublicContact = {
+  label: string;
+  url: string;
+  kind: "official_portal" | "functional_contact";
+  sourceIds: readonly string[];
 };
 
 export type PublicCleanlinessOrganizationNode = {
@@ -21,12 +31,17 @@ export type PublicCleanlinessOrganizationNode = {
   searchTerms?: readonly string[];
   /** Existing directory identifier where this organization already has one. */
   directoryId?: string;
+  /** Cross-reference to an existing public network actor, not another organization identity. */
+  networkActorId?: string;
   /** Legal entity that employs this organization or role. */
   legalEmployerId?: string;
   /** Immediate organizational unit; must match one hierarchy edge. */
   unitId?: string;
   /** Optional mutually exclusive coverage set, such as territorial divisions. */
   territoryCoverageGroup?: string;
+  coverageRole?: "local_mayor" | "local_delegation" | "local_dgs" | "local_dgaep" | "req";
+  /** Public institutional channel, never an individual or recruitment contact. */
+  publicContact?: OrganizationPublicContact;
   territoryIds: readonly string[];
   service: "governance" | "cleaning" | "collection" | "emergency" | "prevention" | "coordination" | "police" | "provider";
   assignment: OrganizationAssignmentStatus;
@@ -40,13 +55,16 @@ export type PublicCleanlinessOrganizationRelation = {
   to: string;
   kind: OrganizationRelationKind;
   status: OrganizationAssignmentStatus;
+  /** Published validity dates when known; an award is not proof of execution. */
+  validFrom?: string;
+  validUntil?: string;
   sourceIds: readonly string[];
 };
 
-export const PUBLIC_CLEANLINESS_SOURCES: readonly OrganizationSource[] = [
+const BASE_PUBLIC_CLEANLINESS_SOURCES: readonly OrganizationSource[] = [
   { id: "paris-org-chart", label: "Organigramme de la Ville de Paris", url: "https://www.paris.fr/pages/organigramme-de-la-ville-de-paris-2380", sourceContentDate: "2026-09-09", verifiedAt: "2026-11-24", evidence: "official_current" },
   { id: "paris-cleanliness", label: "Propreté : comment la Ville de Paris entretient l'espace public", url: "https://www.paris.fr/pages/la-proprete-239/", sourceContentDate: "2026-09-16", verifiedAt: "2026-11-24", evidence: "official_current" },
-  { id: "paris-collection", label: "La collecte des déchets ménagers", url: "https://www.paris.fr/pages/la-collecte-44", sourceContentDate: "2026-09-22", verifiedAt: "2026-11-24", evidence: "official_current" },
+  { id: "paris-collection", label: "La collecte des déchets ménagers", url: "https://www.paris.fr/pages/la-collecte-44", sourceContentDate: "2026-02-13", verifiedAt: "2026-11-25", evidence: "official_current" },
   { id: "paris-directories", label: "Liste des directions de la Ville de Paris — Paris Data", url: "https://opendata.paris.fr/explore/dataset/liste-des-directions-de-la-ville-de-paris/", verifiedAt: "2026-11-24", evidence: "official_current" },
   { id: "req-20-recruitment", label: "Offre REQ du 20e — référence V02400-14932", url: "https://travaillerpourparis.offres.paris.fr/13375/1/referents-referentes-de-l-entretien-du-quartier-20eme-arrondissements-f-h", verifiedAt: "2026-11-24", evidence: "official_job_profile" },
   { id: "tson-17-recruitment", label: "Offre TSON — Division 17, référence V69121002-5188", url: "https://travaillerpourparis.offres.paris.fr/5521/1/technicien-technicienne-des-services-operationnels-de-nettoiement-tson-atelier-as-engins-apm-f", verifiedAt: "2026-11-24", evidence: "official_historical" },
@@ -64,7 +82,7 @@ const parisDivisions: { id: string; label: string; districts: number[] }[] = [
   ...Array.from({ length: 10 }, (_, index) => ({ id: `division-${String(index + 11).padStart(2, "0")}`, label: `Division territoriale ${index + 11}e`, districts: [index + 11] })),
 ];
 
-export const PARIS_PUBLIC_CLEANLINESS_NODES: readonly PublicCleanlinessOrganizationNode[] = [
+const BASE_PARIS_PUBLIC_CLEANLINESS_NODES: readonly PublicCleanlinessOrganizationNode[] = [
   { id: "city-paris", name: "Ville de Paris", kind: "city", territoryIds: ALL_PARIS_ARRONDISSEMENTS, service: "governance", assignment: "confirmed", description: "Collectivité territoriale ; périmètre général du référentiel parisien.", sourceIds: source("paris-org-chart", "paris-directories") },
   { id: "dpe", name: "Direction de la Propreté et de l'Eau (DPE)", kind: "direction", unitId: "city-paris", legalEmployerId: "city-paris", directoryId: "evt-paris-nettoyages", territoryIds: ALL_PARIS_ARRONDISSEMENTS, service: "cleaning", assignment: "confirmed", description: "Direction responsable du nettoiement et de la collecte municipale selon les secteurs.", sourceIds: source("paris-cleanliness", "paris-collection") },
   { id: "stpp", name: "Service technique de la propreté de Paris (STPP)", kind: "service", unitId: "dpe", legalEmployerId: "city-paris", territoryIds: ALL_PARIS_ARRONDISSEMENTS, service: "cleaning", assignment: "confirmed", description: "Service de la DPE chargé du nettoiement de la voie publique et de la collecte des déchets.", sourceIds: source("paris-cleanliness") },
@@ -89,7 +107,7 @@ export const PARIS_PUBLIC_CLEANLINESS_NODES: readonly PublicCleanlinessOrganizat
   { id: "private-collectors", name: "Prestataires privés de collecte", kind: "provider", territoryIds: [], service: "provider", assignment: "confirmed", description: "La collecte municipale de certains arrondissements est réalisée par des entreprises privées. Les titulaires de marché et périmètres précis ne sont pas copiés ici.", sourceIds: source("paris-collection") },
 ];
 
-export const PARIS_PUBLIC_CLEANLINESS_RELATIONS: readonly PublicCleanlinessOrganizationRelation[] = [
+const BASE_PARIS_PUBLIC_CLEANLINESS_RELATIONS: readonly PublicCleanlinessOrganizationRelation[] = [
   { id: "city-dpe", from: "city-paris", to: "dpe", kind: "hierarchy", status: "confirmed", sourceIds: source("paris-org-chart", "paris-directories") },
   { id: "dpe-stpp", from: "dpe", to: "stpp", kind: "hierarchy", status: "confirmed", sourceIds: source("paris-cleanliness") },
   ...parisDivisions.map(({ id }) => ({ id: `stpp-${id}`, from: "stpp", to: id, kind: "hierarchy" as const, status: "confirmed" as const, sourceIds: source("paris-cleanliness") })),
@@ -112,7 +130,6 @@ export const PARIS_PUBLIC_CLEANLINESS_RELATIONS: readonly PublicCleanlinessOrgan
   { id: "ddct-req-programme", from: "ddct", to: "req", kind: "programme", status: "confirmed", sourceIds: source("req-20-recruitment") },
   { id: "req-dpe-coordination", from: "req", to: "dpe", kind: "coordination", status: "confirmed", sourceIds: source("req-20-recruitment") },
   { id: "req-police-coordination", from: "req", to: "municipal-police", kind: "coordination", status: "confirmed", sourceIds: source("req-20-recruitment") },
-  { id: "city-prevention", from: "city-paris", to: "prevention-sorting", kind: "hierarchy", status: "unknown", sourceIds: source("paris-org-chart") },
   { id: "city-syctom", from: "city-paris", to: "syctom", kind: "service", status: "confirmed", sourceIds: source("paris-collection") },
   { id: "city-private-collectors", from: "city-paris", to: "private-collectors", kind: "service", status: "confirmed", sourceIds: source("paris-collection") },
 ];
@@ -124,7 +141,18 @@ export type PublicCleanlinessCityDataset = {
   nodes: readonly PublicCleanlinessOrganizationNode[];
   relations: readonly PublicCleanlinessOrganizationRelation[];
   sources: readonly OrganizationSource[];
+  /** Groups that must partition every territory exactly once. */
+  requiredCoverageGroups?: readonly string[];
 };
+
+const parisInstitutional = extendParisWasteChain(extendParisPublicCleanlinessDataset({
+  nodes: BASE_PARIS_PUBLIC_CLEANLINESS_NODES,
+  relations: BASE_PARIS_PUBLIC_CLEANLINESS_RELATIONS,
+  sources: BASE_PUBLIC_CLEANLINESS_SOURCES,
+}));
+export const PARIS_PUBLIC_CLEANLINESS_NODES: readonly PublicCleanlinessOrganizationNode[] = parisInstitutional.nodes;
+export const PARIS_PUBLIC_CLEANLINESS_RELATIONS: readonly PublicCleanlinessOrganizationRelation[] = parisInstitutional.relations;
+export const PUBLIC_CLEANLINESS_SOURCES: readonly OrganizationSource[] = parisInstitutional.sources;
 
 /** Add a city's documented registry entry here; filters and rendering are city-agnostic. */
 export const PARIS_PUBLIC_CLEANLINESS_DATASET: PublicCleanlinessCityDataset = {
@@ -133,6 +161,7 @@ export const PARIS_PUBLIC_CLEANLINESS_DATASET: PublicCleanlinessCityDataset = {
   nodes: PARIS_PUBLIC_CLEANLINESS_NODES,
   relations: PARIS_PUBLIC_CLEANLINESS_RELATIONS,
   sources: PUBLIC_CLEANLINESS_SOURCES,
+  requiredCoverageGroups: ["town-halls", "stpp-divisions", "dpmp-divisions"],
 };
 
 export type PublicCleanlinessCityDatasets = Partial<Record<ArrondissementCity, PublicCleanlinessCityDataset>>;
@@ -152,6 +181,32 @@ export function getPublicCleanlinessCityDataset(
 
 export type PublicCleanlinessFilters = { city: string; arrondissement: number | null; service: PublicCleanlinessOrganizationNode["service"] | "all"; query: string };
 
+/** Fail closed for public contact projections; only the explicitly sourced institutional channel is returned. */
+export function getPublicCleanlinessContact(node: PublicCleanlinessOrganizationNode, sources: readonly OrganizationSource[]): OrganizationPublicContact | null {
+  const contact = node.publicContact;
+  if (!contact || node.kind === "person" || node.kind === "position" || node.kind === "profession" ||
+      !contact.label.trim() || contact.label.includes("@") || !contact.sourceIds.length ||
+      (contact.kind !== "functional_contact" && contact.kind !== "official_portal")) return null;
+  try {
+    const url = new URL(contact.url);
+    if (url.protocol !== "https:" || url.username || url.password ||
+        /offres|recrutement/i.test(url.hostname + url.pathname) || isPrivateOrUnauthorizedInviteUrl(contact.url)) return null;
+    const sourceById = new Map(sources.map(source => [source.id, source]));
+    const cited = contact.sourceIds.map(id => sourceById.get(id));
+    if (cited.some(source => !source || (source.evidence !== "official_current" &&
+        !(source.evidence === "operator_statement" && node.kind === "provider" && contact.kind === "official_portal")))) return null;
+    const sameInstitution = (source: OrganizationSource) => {
+      const host = new URL(source.url).hostname.replace(/^www\./, "");
+      const contactHost = url.hostname.replace(/^www\./, "");
+      return contactHost === host || contactHost.endsWith("." + host);
+    };
+    if (!cited.some(source => source && (contact.kind === "functional_contact" ? source.url === contact.url : sameInstitution(source)))) return null;
+    return { label: contact.label, url: contact.url, kind: contact.kind, sourceIds: [...contact.sourceIds] };
+  } catch {
+    return null;
+  }
+}
+
 export function validatePublicCleanlinessOrganization(
   dataset: PublicCleanlinessCityDataset = PARIS_PUBLIC_CLEANLINESS_DATASET,
   annuaireIds: ReadonlySet<string> = new Set(INITIAL_ANNUAIRE_ENTRIES.map((entry) => entry.id)),
@@ -163,7 +218,10 @@ export function validatePublicCleanlinessOrganization(
   const nodesById = new Map<string, PublicCleanlinessOrganizationNode>();
   const ids = new Set<string>();
   const directoryIds = new Set<string>();
+  const networkIds = new Set<string>();
   const sourceRefs = new Set<string>();
+  const peopleByEvidence = new Set<string>();
+  const sourcesById = new Map(dataset.sources.map((item) => [item.id, item]));
   if (!cityOption) errors.push(`unknown-city:${dataset.city}`);
   if (dataset.territoryIds.length === 0) errors.push(`missing-city-territories:${dataset.city}`);
   if (validTerritories.size !== dataset.territoryIds.length) errors.push(`duplicate-city-territory:${dataset.city}`);
@@ -189,6 +247,35 @@ export function validatePublicCleanlinessOrganization(
     nodesById.set(node.id, node);
     if (!node.sourceIds.length || node.sourceIds.some((id) => !sourceIds.has(id))) errors.push(`invalid-source:${node.id}`);
     for (const territory of node.territoryIds) if (!validTerritories.has(territory)) errors.push(`invalid-territory:${node.id}:${territory}`);
+    if (new Set(node.territoryIds).size !== node.territoryIds.length) errors.push(`duplicate-node-territory:${node.id}`);
+    if (node.kind === "person") {
+      // Identical names alone do not prove identical people.
+      const key = JSON.stringify([node.name.normalize("NFKC").toLocaleLowerCase("fr-FR"), [...node.sourceIds].sort(), [...node.territoryIds].sort()]);
+      if (peopleByEvidence.has(key)) errors.push(`duplicate-person-evidence:${node.id}`);
+      peopleByEvidence.add(key);
+    }
+    if (node.networkActorId) {
+      if (networkIds.has(node.networkActorId)) errors.push(`duplicate-network-actor:${node.networkActorId}`);
+      networkIds.add(node.networkActorId);
+    }
+    if (node.publicContact) {
+      const contact = node.publicContact;
+      const contactSources = contact.sourceIds.map((id) => sourcesById.get(id));
+      if (node.kind === "person" || node.kind === "position" || node.kind === "profession" ||
+          !contact.label.trim() || contact.label.includes("@") ||
+          !contactSources.length || contactSources.some((item) => !item || (item.evidence !== "official_current" && !(item.evidence === "operator_statement" && node.kind === "provider" && contact.kind === "official_portal")))) {
+        errors.push(`invalid-public-contact:${node.id}`);
+      }
+      try {
+        const url = new URL(contact.url);
+        if (url.protocol !== "https:" || url.username || url.password || /offres|recrutement/i.test(url.hostname + url.pathname)) errors.push(`invalid-public-contact-url:${node.id}`);
+      } catch {
+        errors.push(`invalid-public-contact-url:${node.id}`);
+      }
+      if (contact.kind === "functional_contact" && !contactSources.some((item) => item?.url === contact.url)) errors.push(`unproven-functional-contact:${node.id}`);
+      if (!getPublicCleanlinessContact(node, dataset.sources)) errors.push(`unsafe-public-contact:${node.id}`);
+      for (const id of contact.sourceIds) sourceRefs.add(id);
+    }
     if (node.directoryId) {
       if (!annuaireIds.has(node.directoryId)) errors.push(`unknown-directory-id:${node.id}:${node.directoryId}`);
       if (directoryIds.has(node.directoryId)) errors.push(`duplicate-directory-id:${node.directoryId}`);
@@ -197,11 +284,24 @@ export function validatePublicCleanlinessOrganization(
     for (const sourceId of node.sourceIds) sourceRefs.add(sourceId);
   }
   const edgeIds = new Set<string>();
+  const edgeKeys = new Set<string>();
   const hierarchy = new Map<string, string[]>();
   const hierarchyParents = new Map<string, string[]>();
   for (const relation of dataset.relations) {
     if (edgeIds.has(relation.id)) errors.push(`duplicate-relation:${relation.id}`);
     edgeIds.add(relation.id);
+    const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+    if ((relation.validFrom && !isDate(relation.validFrom)) || (relation.validUntil && !isDate(relation.validUntil)) || (relation.validFrom && relation.validUntil && relation.validFrom > relation.validUntil)) errors.push(`invalid-relation-validity:${relation.id}`);
+    const edgeKey = JSON.stringify([relation.kind, relation.from, relation.to]);
+    if (edgeKeys.has(edgeKey)) errors.push(`duplicate-relation-endpoints:${relation.id}`);
+    edgeKeys.add(edgeKey);
+    if (relation.kind === "assignment") {
+      const person = nodesById.get(relation.from);
+      const role = nodesById.get(relation.to);
+      if (person?.kind !== "person" || role?.kind !== "position") errors.push(`invalid-assignment:${relation.id}`);
+      if (relation.status === "confirmed" && (person?.assignment !== "confirmed" || role?.assignment !== "confirmed")) errors.push(`unproven-current-assignment:${relation.id}`);
+      if (person?.territoryIds.length && role?.territoryIds.length && !person.territoryIds.some((id) => role.territoryIds.includes(id))) errors.push(`assignment-territory-mismatch:${relation.id}`);
+    }
     if (!ids.has(relation.from) || !ids.has(relation.to)) errors.push(`missing-endpoint:${relation.id}`);
     if (!relation.sourceIds.length || relation.sourceIds.some((id) => !sourceIds.has(id))) errors.push(`invalid-relation-source:${relation.id}`);
     for (const sourceId of relation.sourceIds) sourceRefs.add(sourceId);
@@ -244,6 +344,10 @@ export function validatePublicCleanlinessOrganization(
       covered.add(territory);
     }
     coverageByGroup.set(node.territoryCoverageGroup!, covered);
+  }
+  for (const group of dataset.requiredCoverageGroups ?? []) {
+    const coverage = coverageByGroup.get(group);
+    for (const territory of dataset.territoryIds) if (!coverage?.has(territory)) errors.push(`missing-coverage-territory:${group}:${territory}`);
   }
   return errors;
 }
