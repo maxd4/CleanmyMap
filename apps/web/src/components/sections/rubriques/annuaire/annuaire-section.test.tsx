@@ -94,7 +94,16 @@ describe("AnnuaireSection partner onboarding CTA", () => {
   it("composes the dedicated Paris 3D network section alongside the directory", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
     expect(markup).toContain('data-testid="paris-network-3d-section"');
+    expect(markup).toContain('id="annuaire-tab-organization"');
+    expect(markup).toContain("Organisation des services publics");
     expect(markup).toContain('data-testid="paris-network-contribution-card"');
+  });
+
+  it("preserves both panels and default-selects the existing 3D network", () => {
+    const markup = renderToStaticMarkup(<AnnuaireSection />);
+    expect(markup).toContain('id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network"');
+    expect(markup).toContain('id="annuaire-tab-network" type="button" role="tab" aria-selected="true"');
+    expect(markup).toContain('id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" hidden=""');
   });
 
   it("targets the canonical partner onboarding route", () => {

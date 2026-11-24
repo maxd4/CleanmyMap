@@ -6,6 +6,7 @@ import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { AnnuaireFeaturedSection } from "./annuaire-featured-section";
 import { AnnuaireExplorationView } from "./annuaire-exploration-view";
 import { ParisNetwork3DSection } from "./paris-network-3d-section";
+import { PublicCleanlinessOrganization } from "./public-cleanliness-organization";
 import { ParisNetworkContributionCard } from "./paris-network-contribution-card";
 import { useAnnuaireLogic } from "./use-annuaire-logic";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -63,6 +64,7 @@ export function AnnuaireSection() {
   const fr = locale === "fr";
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>("FR:REG:11");
+  const [networkTab, setNetworkTab] = useState<"network" | "organization">("network");
 
   const annuaireLogic = useAnnuaireLogic();
   const {
@@ -175,17 +177,32 @@ export function AnnuaireSection() {
           </CmmSectionGroup>
         </motion.section>
 
-        {/* Dedicated Paris 3D Cleanwalk Network Section */}
-        <ParisNetwork3DSection
-          fr={fr}
-          onTerritoryChange={setSelectedTerritoryId}
-        />
-
-        {/* Citizen contribution block (moderated via /api/community/bug-reports) */}
-        <ParisNetworkContributionCard
-          fr={fr}
-          territoryId={selectedTerritoryId}
-        />
+        <section aria-label={fr ? "Vues des réseaux de l'annuaire" : "Directory network views"}>
+          <div role="tablist" aria-label={fr ? "Choisir une visualisation" : "Choose a visualization"} onKeyDown={(event) => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            const currentTab = (event.target as HTMLElement).closest<HTMLElement>('[role="tab"]');
+            if (!currentTab) return;
+            event.preventDefault();
+            const current = currentTab.id === "annuaire-tab-network" ? "network" : "organization";
+            const next = event.key === "Home" ? "network" : event.key === "End" ? "organization" : current === "network" ? "organization" : "network";
+            setNetworkTab(next);
+            document.getElementById(`annuaire-tab-${next}`)?.focus();
+          }} className="mb-4 flex flex-wrap gap-2 border-b border-white/10 pb-3">
+            <button id="annuaire-tab-network" type="button" role="tab" aria-selected={networkTab === "network"} aria-controls="annuaire-panel-network" tabIndex={0} onClick={() => setNetworkTab("network")} className={`rounded-xl border px-4 py-3 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 ${networkTab === "network" ? "border-violet-300/60 bg-violet-400/15 text-white" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>
+              {fr ? "Réseau 3D des cleanwalks" : "3D cleanwalk network"}
+            </button>
+            <button id="annuaire-tab-organization" type="button" role="tab" aria-selected={networkTab === "organization"} aria-controls="annuaire-panel-organization" tabIndex={0} onClick={() => setNetworkTab("organization")} className={`rounded-xl border px-4 py-3 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 ${networkTab === "organization" ? "border-sky-300/60 bg-sky-400/15 text-white" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>
+              {fr ? "Organisation des services publics" : "Public service organization"}
+            </button>
+          </div>
+          <div id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network" hidden={networkTab !== "network"}>
+            <ParisNetwork3DSection fr={fr} onTerritoryChange={setSelectedTerritoryId} />
+            <ParisNetworkContributionCard fr={fr} territoryId={selectedTerritoryId} />
+          </div>
+          <div id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" hidden={networkTab !== "organization"}>
+            <PublicCleanlinessOrganization fr={fr} />
+          </div>
+        </section>
 
         {/* Final CTA - Institutional Premium */}
         <AnnuaireJoinCta fr={fr} />
