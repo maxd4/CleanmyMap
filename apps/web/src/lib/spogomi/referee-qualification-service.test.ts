@@ -68,4 +68,46 @@ describe("SPOGOMI referee qualification service", () => {
     await decideSpogomiRefereeApplication({ supabase, applicationId: "application-1", actorClerkId: "organizer-1", decision: "approve" });
     expect(supabase.rpc).toHaveBeenLastCalledWith("spogomi_decide_referee_application", expect.objectContaining({ p_decision: "approve" }));
   });
+
+  it("validates critical unanimity, 9/10 non-critical threshold, and non-null explanations in quiz evaluation", async () => {
+    const passing = {
+      passed: true,
+      quizVersion: "quiz-v2",
+      score: 95,
+      totalQuestions: 22,
+      criticalCorrect: 12,
+      criticalTotal: 12,
+      otherCorrect: 9,
+      otherTotal: 10,
+      errors: [{ questionId: "q22", explanation: "La comparaison doit rester dans la version réglementaire et la division concernées." }],
+      proofId: "proof-v2",
+    };
+    await expect(
+      submitSpogomiRefereeQuiz({
+        supabase: supabaseFor({ data: passing }),
+        eventId: "event-1",
+        divisionId: "division-1",
+        userId: "user-1",
+        quizVersion: "quiz-v2",
+        answers: { q01: "choice_a" },
+      }),
+    ).resolves.toEqual(passing);
+
+    const nullExplanation = {
+      ...passing,
+      passed: false,
+      proofId: null,
+      errors: [{ questionId: "q01", explanation: null }],
+    };
+    await expect(
+      submitSpogomiRefereeQuiz({
+        supabase: supabaseFor({ data: nullExplanation }),
+        eventId: "event-1",
+        divisionId: "division-1",
+        userId: "user-1",
+        quizVersion: "quiz-v2",
+        answers: { q01: "choice_b" },
+      }),
+    ).rejects.toMatchObject({ kind: "validation" });
+  });
 });

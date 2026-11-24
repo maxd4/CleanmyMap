@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 
 const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/20261110000006_spogomi_referee_qualification_hardening.sql"), "utf8");
 const baseMigration = readFileSync(resolve(process.cwd(), "supabase/migrations/20261110000001_spogomi_referee_qualification.sql"), "utf8");
+const fixMigration = readFileSync(resolve(process.cwd(), "supabase/migrations/20261124000003_spogomi_referee_quiz_and_requalification_fix.sql"), "utf8");
 
 describe("SPOGOMI referee qualification migration contract", () => {
   it("keeps applications and proofs distinct from participant quiz proofs", () => {
@@ -38,5 +39,19 @@ describe("SPOGOMI referee qualification migration contract", () => {
     expect(migration).toContain("partial_or_total");
     expect(migration).toContain("referee_application_refused");
     expect(migration).toContain("spogomi-role:%s:%s");
+  });
+
+  it("separates private answer keys from public redacted quiz projection and resets obsolete organizer decisions atomically", () => {
+    expect(fixMigration).toContain("create or replace function public.spogomi_referee_quiz_definition_private");
+    expect(fixMigration).toContain("v_definition := public.spogomi_referee_quiz_definition_private(p_event_id, p_division_id);");
+    expect(fixMigration).toContain("question - 'correctOptionId' - 'explanation'");
+    expect(fixMigration).toContain("coalesce(v_question ->> 'explanation'");
+    expect(fixMigration).toContain("regulation_version = v_reg_version");
+    expect(fixMigration).toContain("organizer_decision = null");
+    expect(fixMigration).toContain("practical_confirmation_version = null");
+    expect(fixMigration).toContain("v_application.status in ('theory_qualified', 'practical_pending', 'habilitated')");
+    expect(fixMigration).toContain("regulation_version = v_division.regulation_version");
+    expect(fixMigration).toContain("revoke all on function public.spogomi_referee_quiz_definition_private(uuid, uuid), public.spogomi_referee_quiz_definition_internal(uuid, uuid) from public, anon, authenticated;");
+    expect(fixMigration).toContain("to service_role;");
   });
 });
