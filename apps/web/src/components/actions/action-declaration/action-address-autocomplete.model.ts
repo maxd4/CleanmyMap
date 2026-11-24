@@ -11,7 +11,12 @@ type AddressSuggestionsResponse = {
   items: GeoAddressSuggestion[];
 };
 
-export async function loadRemoteAddressSuggestions({
+export type RemoteAddressSuggestionsResult = {
+  status: "ok" | "error" | "aborted";
+  items: GeoAddressSuggestion[];
+};
+
+export async function loadRemoteAddressSuggestionsWithStatus({
   query,
   localSuggestions,
   countryCode = DEFAULT_COUNTRY_CODE,
@@ -23,10 +28,13 @@ export async function loadRemoteAddressSuggestions({
   countryCode?: CountryCode;
   signal: AbortSignal;
   fetcher?: typeof fetch;
-}): Promise<GeoAddressSuggestion[] | null> {
+}): Promise<RemoteAddressSuggestionsResult> {
   const effectiveLocalSuggestions = countryCode === DEFAULT_COUNTRY_CODE ? localSuggestions : [];
   if (effectiveLocalSuggestions.length >= 6) {
-    return effectiveLocalSuggestions;
+    return { status: "ok", items: effectiveLocalSuggestions };
+  }
+  if (signal.aborted) {
+    return { status: "aborted", items: [] };
   }
 
   try {
@@ -38,19 +46,38 @@ export async function loadRemoteAddressSuggestions({
         signal,
       },
     );
+    if (signal.aborted) {
+      return { status: "aborted", items: [] };
+    }
     if (!response.ok) {
-      return effectiveLocalSuggestions;
+      return { status: "error", items: effectiveLocalSuggestions };
     }
 
     const data = (await response.json()) as AddressSuggestionsResponse;
     if (signal.aborted) {
-      return null;
+      return { status: "aborted", items: [] };
     }
 
-    return mergeGeoAddressSuggestions(effectiveLocalSuggestions, data.items ?? [], 6);
+    return {
+      status: "ok",
+      items: mergeGeoAddressSuggestions(effectiveLocalSuggestions, data.items ?? [], 6),
+    };
   } catch {
-    return signal.aborted ? null : effectiveLocalSuggestions;
+    return signal.aborted
+      ? { status: "aborted", items: [] }
+      : { status: "error", items: effectiveLocalSuggestions };
   }
+}
+
+export async function loadRemoteAddressSuggestions(params: {
+  query: string;
+  localSuggestions: GeoAddressSuggestion[];
+  countryCode?: CountryCode;
+  signal: AbortSignal;
+  fetcher?: typeof fetch;
+}): Promise<GeoAddressSuggestion[] | null> {
+  const result = await loadRemoteAddressSuggestionsWithStatus(params);
+  return result.status === "aborted" ? null : result.items;
 }
 
 export function getAddressSuggestionHighlightIndex({

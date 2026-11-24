@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   getAddressSuggestionHighlightIndex,
   loadRemoteAddressSuggestions,
+  loadRemoteAddressSuggestionsWithStatus,
 } from "./action-address-autocomplete.model";
 
 const localSuggestion = {
@@ -103,6 +104,13 @@ describe("action address autocomplete model", () => {
       fetcher: quotaFetcher,
     })).resolves.toEqual([]);
     expect(quotaFetcher).toHaveBeenCalledTimes(1);
+
+    await expect(loadRemoteAddressSuggestionsWithStatus({
+      query: "entrée non répertoriée",
+      localSuggestions: [localSuggestion],
+      signal: new AbortController().signal,
+      fetcher: quotaFetcher,
+    })).resolves.toEqual({ status: "error", items: [localSuggestion] });
 
     const emptyFetcher = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({ status: "ok", query: "inconnu", items: [] }), {

@@ -41,22 +41,27 @@ vi.mock("@/components/actions/action-declaration/action-address-autocomplete.mod
   const actual = await importOriginal<
     typeof import("@/components/actions/action-declaration/action-address-autocomplete.model")
   >();
+  const defaultSuggestions = [
+    {
+      label: "12 Rue de Rivoli, 75004 Paris",
+      subtitle: "75004 Paris",
+      latitude: 48.8557,
+      longitude: 2.3562,
+    },
+    {
+      label: "20 Avenue de l'Opéra, 75001 Paris",
+      subtitle: "75001 Paris",
+      latitude: 48.8662,
+      longitude: 2.3338,
+    },
+  ];
   return {
     ...actual,
-    loadRemoteAddressSuggestions: vi.fn(async () => [
-      {
-        label: "12 Rue de Rivoli, 75004 Paris",
-        subtitle: "75004 Paris",
-        latitude: 48.8557,
-        longitude: 2.3562,
-      },
-      {
-        label: "20 Avenue de l'Opéra, 75001 Paris",
-        subtitle: "75001 Paris",
-        latitude: 48.8662,
-        longitude: 2.3338,
-      },
-    ]),
+    loadRemoteAddressSuggestions: vi.fn(async () => defaultSuggestions),
+    loadRemoteAddressSuggestionsWithStatus: vi.fn(async () => ({
+      status: "ok",
+      items: defaultSuggestions,
+    })),
   };
 });
 
