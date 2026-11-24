@@ -13,6 +13,7 @@ root="$(git rev-parse --show-toplevel)"
 temp_root="${RUNNER_TEMP:?RUNNER_TEMP is required for private startup diagnostics}"
 run_key="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-$$"
 start_log="$temp_root/supabase-start-$run_key.log"
+start_fifo="$temp_root/supabase-start-$run_key.fifo"
 progress_file="$temp_root/supabase-start-$run_key-progress.ndjson"
 events_file="$temp_root/supabase-start-$run_key-events.ndjson"
 postgres_log="$temp_root/supabase-start-$run_key-postgres.log"
@@ -28,12 +29,15 @@ if ! command -v timeout >/dev/null 2>&1; then
   echo "GNU timeout is required to bound the ephemeral Supabase startup." >&2
   exit 2
 fi
+if ! command -v setsid >/dev/null 2>&1; then
+  echo "setsid is required to supervise the ephemeral Supabase process group." >&2
+  exit 2
+fi
 
 cleanup() {
-  if [[ -n "${start_pid:-}" ]]; then
-    kill "$start_pid" 2>/dev/null || true
-    wait "$start_pid" 2>/dev/null || true
-  fi
+  if [[ -n "${start_pid:-}" ]]; then kill -TERM -- "-$start_pid" 2>/dev/null || kill "$start_pid" 2>/dev/null || true; fi
+  if [[ -n "${start_pid:-}" ]]; then wait "$start_pid" 2>/dev/null || true; fi
+  if [[ -n "${capture_pid:-}" ]]; then kill "$capture_pid" 2>/dev/null || true; wait "$capture_pid" 2>/dev/null || true; fi
   if [[ -n "${progress_pid:-}" ]]; then
     kill "$progress_pid" 2>/dev/null || true
     wait "$progress_pid" 2>/dev/null || true
@@ -46,7 +50,7 @@ cleanup() {
     kill "$events_pid" 2>/dev/null || true
     wait "$events_pid" 2>/dev/null || true
   fi
-  rm -f "$start_log" "$progress_file" "$events_file" "$postgres_log" "$postgres_server_log"
+  rm -f "$start_log" "$start_fifo" "$progress_file" "$events_file" "$postgres_log" "$postgres_server_log"
   case "$bootstrap_workdir" in
     "$temp_root"/supabase-bootstrap-*) rm -rf -- "$bootstrap_workdir" ;;
     *) echo "Refusing to remove an unexpected bootstrap workdir path." >&2 ;;
@@ -63,7 +67,10 @@ node "$root/scripts/ci/supabase-config.mjs" \
 start_started_at="$(date +%s)"
 docker events --since "$start_started_at" --filter type=container --format '{{json .}}' 2>/dev/null | node "$root/scripts/ci/capture-bounded-log.mjs" "$events_file" 4194304 &
 events_pid=$!
-timeout --signal=TERM --kill-after=15s "$start_timeout_seconds" "$root/node_modules/.bin/supabase" start --debug --workdir "$bootstrap_workdir" --yes --output-format json --network-id="$network" 2>&1 | node "$root/scripts/ci/capture-bounded-log.mjs" "$start_log" 8388608 &
+mkfifo "$start_fifo"
+node "$root/scripts/ci/capture-bounded-log.mjs" "$start_log" 8388608 < "$start_fifo" &
+capture_pid=$!
+setsid timeout --signal=TERM --kill-after=15s "$start_timeout_seconds" "$root/node_modules/.bin/supabase" start --debug --workdir "$bootstrap_workdir" --yes --output-format json --network-id="$network" > "$start_fifo" 2>&1 &
 start_pid=$!
 watch_postgres_log() {
   local container_id=""
@@ -92,6 +99,12 @@ wait "$start_pid"
 start_exit_code=$?
 set -e
 start_pid=""
+set +e
+wait "$capture_pid"
+capture_exit_code=$?
+set -e
+capture_pid=""
+if [[ "$capture_exit_code" -ne 0 && "$start_exit_code" -eq 0 ]]; then start_exit_code="$capture_exit_code"; fi
 start_finished_at="$(date +%s)"
 kill "$progress_pid" 2>/dev/null || true
 wait "$progress_pid" 2>/dev/null || true

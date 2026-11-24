@@ -52,8 +52,10 @@ async function persistCreatedActionPostProcessing(
     actionId: string;
     payload: CreateActionPayload;
     status?: Exclude<ActionStatus, "cancelled">;
+    skipTrainingExamples?: boolean;
   },
 ): Promise<void> {
+  if (params.skipTrainingExamples) return;
   await recordCreateActionTrainingExample(supabase, {
     actionId: params.actionId,
     payload: params.payload,
@@ -290,6 +292,7 @@ type CreateActionParams = {
   organizerRequirement?: "required" | "optional";
   manualParticipants?: ResolvedActionParticipant[];
   status?: Exclude<ActionStatus, "cancelled">;
+  skipTrainingExamples?: boolean;
   departmentAttribution?: { trust: "trusted"; source: "admin_import" };
   clientRequestId?: string;
 };
@@ -397,6 +400,7 @@ export async function createAction(
     actionId: created.id,
     payload: context.payload,
     status: params.status,
+    skipTrainingExamples: params.skipTrainingExamples,
   });
 
   return { id: String(created.id) };

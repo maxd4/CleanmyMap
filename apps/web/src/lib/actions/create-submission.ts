@@ -50,6 +50,8 @@ export type CreateActionSubmissionParams = {
   creator: CreatorIdentity;
   isCreatorGlobalAdmin: boolean;
   consentGranted: boolean;
+  /** Internal server workflows may defer all creation gamification until a canonical eligible reconciliation. */
+  deferGamification?: boolean;
 };
 
 export type CreateActionSubmissionResult =
@@ -363,6 +365,7 @@ async function createPersistedAction(params: {
   idempotencyKey?: string;
   organizerResolution: OrganizerResolution;
   participantResolution: ParticipantResolution;
+  deferGamification?: boolean;
 }): Promise<CreatedAction> {
   try {
     return await createAction(params.supabase, {
@@ -373,6 +376,7 @@ async function createPersistedAction(params: {
       manualParticipants: params.participantResolution.participants,
       status: "pending",
       clientRequestId: params.idempotencyKey,
+      skipTrainingExamples: params.deferGamification,
     });
   } catch (error) {
     if (error instanceof ActionRouteReconstructionError) {
@@ -411,6 +415,7 @@ async function createStandardActionSubmission(
     idempotencyKey: params.idempotencyKey,
     organizerResolution: context.organizerResolution,
     participantResolution: context.participantResolution,
+    deferGamification: params.deferGamification,
   });
 }
 
@@ -421,6 +426,7 @@ async function persistStandardActionSubmission(params: {
   idempotencyKey?: string;
   organizerResolution: OrganizerResolution;
   participantResolution: ParticipantResolution;
+  deferGamification?: boolean;
 }): Promise<Extract<CreateActionSubmissionResult, { kind: "action" }>> {
   const created = await createPersistedAction(params);
   const geometryContribution = await persistCreatedGpxContributions({
@@ -450,12 +456,14 @@ async function persistStandardActionSubmission(params: {
 
   await invalidateActionSnapshots(created.id);
 
-  await runActionCreationProgressionSideEffects({
-    supabase: params.supabase,
-    userId: params.userId,
-    actionId: created.id,
-    locationLabel: params.payload.locationLabel,
-  });
+  if (!params.deferGamification) {
+    await runActionCreationProgressionSideEffects({
+      supabase: params.supabase,
+      userId: params.userId,
+      actionId: created.id,
+      locationLabel: params.payload.locationLabel,
+    });
+  }
   const retentionLoop = await buildActionRetentionLoop(
     params.supabase,
     params.userId,
