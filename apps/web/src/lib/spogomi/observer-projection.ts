@@ -3,6 +3,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hasSpogomiCapability, resolveSpogomiEventAccess } from "./authorization";
 import { readAllSpogomiPages } from "./pagination";
+import type { SpogomiTeamRefereeStatus } from "./team-referees";
+import { loadSpogomiPublicTeamRefereeStatuses } from "./team-referee-service";
 
 export type SpogomiObserverProjection = {
   event: {
@@ -27,6 +29,7 @@ export type SpogomiObserverProjection = {
     submissionVersion: number | null;
     submittedAt: string | null;
     certified: boolean;
+    refereeStatus?: SpogomiTeamRefereeStatus;
   }>;
   participation: {
     registered: number;
@@ -43,12 +46,12 @@ function latestObserverSubmissions(submissions: Array<{ team_id: string; status:
   return latest;
 }
 
-function buildObserverProjection(access: NonNullable<Awaited<ReturnType<typeof resolveSpogomiEventAccess>>>, divisionsResult: { data: Array<Record<string, unknown>> | null }, teams: unknown[], submissions: unknown[], registeredResult: { count?: number | null }, presentResult: { count?: number | null }): SpogomiObserverProjection {
+function buildObserverProjection(access: NonNullable<Awaited<ReturnType<typeof resolveSpogomiEventAccess>>>, divisionsResult: { data: Array<Record<string, unknown>> | null }, teams: unknown[], submissions: unknown[], registeredResult: { count?: number | null }, presentResult: { count?: number | null }, refereeStatuses: Map<string, SpogomiTeamRefereeStatus>): SpogomiObserverProjection {
   const latest = latestObserverSubmissions(submissions as Array<{ team_id: string; status: string; version: number; submitted_at: string | null }>);
   return {
     event: { id: String(access.event.id), name: String(access.event.name), eventSlug: access.event.event_slug ? String(access.event.event_slug) : null, mode: String(access.event.mode), state: String(access.event.state), startsAt: String(access.event.starts_at), endsAt: access.event.ends_at ? String(access.event.ends_at) : null, publicVisibility: String(access.event.public_visibility), publicResultsVisibility: String(access.event.public_results_visibility) },
     divisions: (divisionsResult.data ?? []).map((division) => ({ id: String(division.id), divisionType: String(division.division_type), divisionKey: String(division.division_key) })),
-    teams: (teams as Array<Record<string, unknown>>).map((team) => { const submission = latest.get(String(team.id)); return { id: String(team.id), divisionId: team.division_id ? String(team.division_id) : null, teamNumber: Number(team.team_number), publicName: String(team.public_name), compositionState: String(team.composition_state), submissionStatus: submission?.status ?? null, submissionVersion: submission?.version ?? null, submittedAt: submission?.submittedAt ?? null, certified: Boolean(team.certified_submission_id) }; }),
+    teams: (teams as Array<Record<string, unknown>>).map((team) => { const submission = latest.get(String(team.id)); return { id: String(team.id), divisionId: team.division_id ? String(team.division_id) : null, teamNumber: Number(team.team_number), publicName: String(team.public_name), compositionState: String(team.composition_state), submissionStatus: submission?.status ?? null, submissionVersion: submission?.version ?? null, submittedAt: submission?.submittedAt ?? null, certified: Boolean(team.certified_submission_id), refereeStatus: refereeStatuses.get(String(team.id)) ?? "to_assign" }; }),
     participation: { registered: registeredResult.count ?? 0, present: presentResult.count ?? 0 },
   };
 }
@@ -104,5 +107,21 @@ export async function loadSpogomiObserverProjection(params: {
     if (result.error) throw result.error;
   }
 
-  return buildObserverProjection(access, divisionsResult as { data: Array<Record<string, unknown>> | null }, teams, submissions, registeredResult, presentResult);
+  const teamRows = (teams as Array<Record<string, unknown>>).map((team) => ({
+    id: String(team.id),
+    division_id: team.division_id ? String(team.division_id) : "",
+  }));
+  const refereeStatuses = teamRows.length
+    ? await loadSpogomiPublicTeamRefereeStatuses({
+        supabase: params.supabase,
+        eventId: params.eventId,
+        eventRegulationVersion:
+          "regulation_version" in access.event && typeof access.event.regulation_version === "string"
+            ? access.event.regulation_version
+            : null,
+        teams: teamRows,
+      })
+    : new Map<string, SpogomiTeamRefereeStatus>();
+
+  return buildObserverProjection(access, divisionsResult as { data: Array<Record<string, unknown>> | null }, teams, submissions, registeredResult, presentResult, refereeStatuses);
 }

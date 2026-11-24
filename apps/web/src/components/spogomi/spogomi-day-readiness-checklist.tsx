@@ -1,10 +1,15 @@
 import { CmmCard } from "@/components/ui/cmm-card";
+import {
+  computeSpogomiTeamRefereeReadiness,
+  type SpogomiTeamRefereePrivateProjection,
+} from "@/lib/spogomi/team-referees";
 
 type ReadinessProps = {
   event: { location_label: string; starts_at: string; ends_at: string | null };
   divisions: Array<{ id: string; division_type: string; regulation_status?: string; regulation_version?: string; regulation_source_reference?: string | null }>;
   participants: Array<{ division_id: string; team_id: string | null }>;
   teams: Array<{ id: string; division_id: string; composition_state: string }>;
+  teamReferees?: SpogomiTeamRefereePrivateProjection[];
   route: { file_name: string } | null;
   categoryRules: Array<{ division_id: string; label: string; measurement_kind: string; unit: string; is_complete: boolean }>;
   eventAccess: Array<{ role: string; revoked_at: string | null }>;
@@ -28,7 +33,13 @@ export function SpogomiDayReadinessChecklist({ data }: { data: ReadinessProps })
       const unassigned = divisionParticipants.filter((participant) => !participant.team_id).length;
       const locked = divisionTeams.length > 0 && divisionTeams.every((team) => ["locked", "verified"].includes(team.composition_state));
       const categories = data.categoryRules.filter((rule) => rule.division_id === division.id);
-      return <div key={division.id} className="rounded-xl border border-black/10 bg-white/75 p-3 text-sm"><p className="font-bold">{divisionLabel(division.division_type)}</p><p>Règlement : {division.regulation_status ?? "non renseigné"} · version {division.regulation_version ?? "—"}</p><p>Catégories / unités : {categories.length ? categories.map((category) => `${category.label} (${category.unit})`).join(", ") : "non renseignées"}</p><p>Équipes : {divisionTeams.length} · places non affectées : {unassigned}</p><p>Composition : {locked ? "verrouillée" : "provisoire"}</p>{division.regulation_source_reference ? <p className="text-xs text-slate-600">Source : {division.regulation_source_reference}</p> : null}</div>;
+      const divisionTeamReferees = (data.teamReferees ?? []).filter((item) => item.divisionId === division.id);
+      const refereeReadiness = computeSpogomiTeamRefereeReadiness({
+        teams: divisionTeams,
+        assignments: divisionTeamReferees,
+      });
+      const operationalReady = locked && refereeReadiness.ready;
+      return <div key={division.id} className="rounded-xl border border-black/10 bg-white/75 p-3 text-sm"><p className="font-bold">{divisionLabel(division.division_type)}</p><p>Règlement : {division.regulation_status ?? "non renseigné"} · version {division.regulation_version ?? "—"}</p><p>Catégories / unités : {categories.length ? categories.map((category) => `${category.label} (${category.unit})`).join(", ") : "non renseignées"}</p><p>Équipes : {divisionTeams.length} · places non affectées : {unassigned}</p><p>Composition : {locked ? "verrouillée" : "provisoire"}</p><p>Arbitres référents : {refereeReadiness.assignedCount}/{refereeReadiness.totalTeams} affecté(s)</p>{refereeReadiness.conflicts.length > 0 ? <p className="font-bold text-rose-700">Conflits d’affectation : {refereeReadiness.conflicts.length}</p> : null}<p className={`font-bold ${operationalReady ? "text-emerald-800" : "text-amber-900"}`}>Prêt au départ : {operationalReady ? "oui" : "non (couverture arbitre ou verrouillage incomplet)"}</p>{division.regulation_source_reference ? <p className="text-xs text-slate-600">Source : {division.regulation_source_reference}</p> : null}</div>;
     })}</div>
     <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-3 text-sm"><p className="font-bold">Secours réseau</p><p>Utiliser la feuille de pointage imprimée ou l’export privé minimal, conserver la provenance papier, puis ressaisir chaque décision dans cette section après retour du réseau. Aucune synchronisation hors ligne automatique n’est activée.</p></div>
   </CmmCard>;

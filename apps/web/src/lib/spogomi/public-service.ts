@@ -22,6 +22,8 @@ import {
   buildSpogomiPublicPracticalInformation,
   type SpogomiPublicPracticalInformation,
 } from "./public-practical-information";
+import type { SpogomiTeamRefereeStatus } from "./team-referees";
+import { loadSpogomiPublicTeamRefereeStatuses } from "./team-referee-service";
 
 export type SpogomiPublicLifecycle = SpogomiCalendarStatus;
 export type SpogomiPublicDataProvenance = "published_event";
@@ -33,6 +35,7 @@ type SpogomiPublicTeam = {
   teamNumber: number;
   publicName: string;
   compositionState: string;
+  refereeStatus?: SpogomiTeamRefereeStatus;
 };
 
 type SpogomiPublicDivision = {
@@ -490,6 +493,22 @@ export async function loadPublishedSpogomiEventBySlug(
     divisions,
     operations: (operationsResult.data ?? []) as Parameters<typeof buildSpogomiPublicPracticalInformation>[0]["operations"],
   });
+  const publicTeamsRaw = (teamsResult.data ?? []).map((team) => ({
+    id: String(team.id),
+    division_id: String(team.division_id),
+  }));
+  const refereeStatuses = publicTeamsRaw.length
+    ? await loadSpogomiPublicTeamRefereeStatuses({
+        supabase,
+        eventId: row.id,
+        eventRegulationVersion:
+          "regulation_version" in row && typeof row.regulation_version === "string"
+            ? row.regulation_version
+            : null,
+        teams: publicTeamsRaw,
+      })
+    : new Map<string, SpogomiTeamRefereeStatus>();
+
   const mapped = mapEvent(
     row,
     actionIds,
@@ -500,6 +519,7 @@ export async function loadPublishedSpogomiEventBySlug(
       teamNumber: Number(team.team_number),
       publicName: String(team.public_name),
       compositionState: String(team.composition_state),
+      refereeStatus: refereeStatuses.get(String(team.id)) ?? "to_assign",
     })),
     divisions,
     route,

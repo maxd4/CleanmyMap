@@ -4,6 +4,11 @@ import { useState, type FormEvent } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { WorkspaceData } from "./spogomi-preparation-workspace-contract";
 import type { SpogomiCompositionDraft, DraftParticipant, DraftTeam } from "./spogomi-composition-draft";
+import { SpogomiTeamRefereeSlot } from "./spogomi-team-referee-slot";
+import {
+  computeSpogomiTeamRefereeReadiness,
+  formatSpogomiTeamMobilizedSummary,
+} from "@/lib/spogomi/team-referees";
 
 type Props = {
   data: WorkspaceData;
@@ -20,6 +25,8 @@ type Props = {
   onRenameTeam: (teamId: string, publicName: string) => void;
   onChangePrivateLabel: (participantId: string, privateLabel: string) => void;
   onAssignParticipant: (participantId: string, teamId: string | null) => void;
+  onAssignTeamReferee?: (teamId: string, divisionId: string, refereeClerkId: string) => void;
+  onRevokeTeamReferee?: (teamId: string, divisionId: string) => void;
 };
 
 function participantLabel(participant: DraftParticipant): string { return participant.display_name?.trim() || "Place à identifier"; }
@@ -51,7 +58,9 @@ function TeamEditor({ team, members, props, minMembers, maxMembers }: { team: Dr
   const [name, setName] = useState(team.public_name);
   const applyName = () => { if (name.trim()) { props.onRenameTeam(team.id, name); setEditing(false); } };
   const startEditing = () => { setName(team.public_name); setEditing(true); };
-  return <section className="rounded-xl border border-slate-200 bg-white/80 p-3" aria-label={`${team.public_name}, ${members.length} places`}><div className="flex items-start justify-between gap-2"><div className="min-w-0 flex-1">{editing ? <label className="text-sm font-bold">Nom public de l’équipe<input aria-label={`Nom public de l’équipe ${team.team_number}`} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" maxLength={60} value={name} onChange={(event) => setName(event.target.value)} disabled={props.busy || !props.compositionEditable} /></label> : <h4 className="font-black">{team.public_name}</h4>}<span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-1 text-xs font-bold">{members.length} place(s)</span></div>{editing ? <div className="flex gap-2"><CmmButton type="button" size="sm" tone="primary" disabled={props.busy || !name.trim()} onClick={applyName}>Appliquer</CmmButton><CmmButton type="button" size="sm" tone="secondary" disabled={props.busy} onClick={() => { setName(team.public_name); setEditing(false); }}>Annuler</CmmButton></div> : <CmmButton type="button" size="sm" tone="secondary" disabled={props.busy || !props.compositionEditable || team.composition_state !== "draft"} onClick={startEditing}>Renommer</CmmButton>}</div><TeamSizeNotice divisionType={props.divisionType} count={members.length} minMembers={minMembers} maxMembers={maxMembers} /><div className="mt-3 space-y-2">{members.length ? members.map((participant) => <PlaceRow key={`${participant.id}-${participant.display_name ?? ""}`} participant={participant} teams={props.draft.teams} props={props} />) : <p className="text-sm text-slate-600">Équipe vide : vous pouvez y affecter une place.</p>}</div></section>;
+  const teamReferee = (props.data.teamReferees ?? []).find((item) => item.teamId === team.id);
+  const refereeDivisionId = team.division_id ?? props.activeDivisionId ?? undefined;
+  return <section className="rounded-xl border border-slate-200 bg-white/80 p-3" aria-label={`${team.public_name}, ${members.length} places`}><div className="flex items-start justify-between gap-2"><div className="min-w-0 flex-1">{editing ? <label className="text-sm font-bold">Nom public de l’équipe<input aria-label={`Nom public de l’équipe ${team.team_number}`} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" maxLength={60} value={name} onChange={(event) => setName(event.target.value)} disabled={props.busy || !props.compositionEditable} /></label> : <h4 className="font-black">{team.public_name}</h4>}<span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-1 text-xs font-bold">{members.length} place(s)</span><p className="mt-1 text-xs font-semibold text-slate-700">{formatSpogomiTeamMobilizedSummary(props.divisionType, members.length)}</p></div>{editing ? <div className="flex gap-2"><CmmButton type="button" size="sm" tone="primary" disabled={props.busy || !name.trim()} onClick={applyName}>Appliquer</CmmButton><CmmButton type="button" size="sm" tone="secondary" disabled={props.busy} onClick={() => { setName(team.public_name); setEditing(false); }}>Annuler</CmmButton></div> : <CmmButton type="button" size="sm" tone="secondary" disabled={props.busy || !props.compositionEditable || team.composition_state !== "draft"} onClick={startEditing}>Renommer</CmmButton>}</div><TeamSizeNotice divisionType={props.divisionType} count={members.length} minMembers={minMembers} maxMembers={maxMembers} /><SpogomiTeamRefereeSlot teamId={team.id} teamName={team.public_name} divisionId={refereeDivisionId} divisionType={props.divisionType} status={teamReferee?.status ?? "to_assign"} refereeDisplayName={teamReferee?.refereeDisplayName ?? null} refereeClerkId={teamReferee?.refereeClerkId ?? null} conflictReason={teamReferee?.conflictReason ?? null} showIdentity={true} editable={Boolean(props.onAssignTeamReferee)} busy={props.busy} candidates={props.data.refereeCandidates ?? []} onAssign={props.onAssignTeamReferee && refereeDivisionId ? (clerkId) => props.onAssignTeamReferee?.(team.id, refereeDivisionId, clerkId) : undefined} onRevoke={props.onRevokeTeamReferee && refereeDivisionId ? () => props.onRevokeTeamReferee?.(team.id, refereeDivisionId) : undefined} /><div className="mt-3 space-y-2">{members.length ? members.map((participant) => <PlaceRow key={`${participant.id}-${participant.display_name ?? ""}`} participant={participant} teams={props.draft.teams} props={props} />) : <p className="text-sm text-slate-600">Équipe vide : vous pouvez y affecter une place.</p>}</div></section>;
 }
 
 export function SpogomiManualTeamEditor(props: Props) {
@@ -62,6 +71,13 @@ export function SpogomiManualTeamEditor(props: Props) {
   const minMembers = props.data.divisions.find((division) => division.id === props.activeDivisionId)?.team_size_config?.casual?.minMembers ?? props.data.event.team_size_config?.casual?.minMembers ?? null;
   const maxMembers = props.data.divisions.find((division) => division.id === props.activeDivisionId)?.team_size_config?.casual?.maxMembers ?? props.data.event.team_size_config?.casual?.maxMembers ?? null;
   const unassigned = participants.filter((participant) => !participant.team_id);
+  const persistedTeams = teams.filter((team) => !team.id.startsWith("local-team-"));
+  const refereeReadiness = computeSpogomiTeamRefereeReadiness({
+    teams: persistedTeams,
+    assignments: (props.data.teamReferees ?? []).filter(
+      (item) => !props.activeDivisionId || item.divisionId === props.activeDivisionId,
+    ),
+  });
   const submitTeam = (event: FormEvent) => { event.preventDefault(); if (teamName.trim()) { props.onCreateTeam(teamName); setTeamName(""); } };
   const submitPlace = (event: FormEvent) => { event.preventDefault(); if (placeLabel.trim()) { props.onCreatePlace(placeLabel); setPlaceLabel(""); } };
   return (
@@ -98,6 +114,23 @@ export function SpogomiManualTeamEditor(props: Props) {
         <p className="font-black">Places à affecter · {unassigned.length}</p>
         {unassigned.length ? <div className="mt-3 space-y-2">{unassigned.map((participant) => <PlaceRow key={participant.id} participant={participant} teams={teams} props={props} />)}</div> : <p className="mt-1 text-sm text-slate-700">Aucune place en attente.</p>}
       </div>
+      {persistedTeams.length > 0 ? (
+        <div className="rounded-xl border border-orange-300 bg-orange-50/85 p-3 text-sm text-orange-950" role="status">
+          <p className="font-black">
+            Couverture arbitres référents · {refereeReadiness.assignedCount}/{refereeReadiness.totalTeams} équipe(s) couverte(s)
+          </p>
+          {refereeReadiness.unassignedTeamIds.length > 0 ? (
+            <p className="mt-1 text-xs font-semibold">
+              {refereeReadiness.unassignedTeamIds.length} équipe(s) sans arbitre référent affecté.
+            </p>
+          ) : null}
+          {refereeReadiness.conflicts.length > 0 ? (
+            <p className="mt-1 text-xs font-bold text-rose-800">
+              {refereeReadiness.conflicts.length} conflit(s) d’affectation détecté(s) : chaque équipe doit avoir un arbitre référent distinct.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <div className="grid gap-3 md:grid-cols-2">
         {teams.map((team) => <TeamEditor key={`${team.id}-${team.public_name}`} team={team} members={participants.filter((participant) => participant.team_id === team.id)} props={props} minMembers={minMembers} maxMembers={maxMembers} />)}
       </div>

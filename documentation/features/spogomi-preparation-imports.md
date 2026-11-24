@@ -178,10 +178,14 @@ Le cockpit événementiel conserve une distinction stricte entre la fiche publia
 et la préparation privée du jour J. La préparation privée regroupe, par division,
 le statut et la source du règlement, les catégories et unités, les équipes, les
 places non affectées, l’état de verrouillage, les informations pratiques, le
-parcours officiel lorsqu’il existe et les habilitations de l’édition. Une
+parcours officiel lorsqu’il existe, la couverture des arbitres référents par équipe et les habilitations de l’édition. Une
 publication d’annonce n’exige pas que les compositions soient déjà terminées ;
 une composition provisoire ne peut toutefois pas être présentée comme officielle
-et une certification reste soumise au règlement complet.
+et une certification reste soumise au règlement complet. La création de brouillons,
+l’import de participants et la formation préparatoire des équipes ne sont pas
+bloqués par l’absence d’arbitre référent ; World Cup distingue 3 compétiteurs et
+1 arbitre référent (4 personnes mobilisées) tandis que Casual conserve les bornes
+configurées par l’édition.
 
 L’accès `checkin` est attribué et révoqué par l’organisateur dans
 `spogomi_event_reviewers` pour une seule édition. Il ne s’agit pas d’un rôle Clerk

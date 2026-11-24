@@ -28,6 +28,8 @@ Le serveur refuse le chevauchement compétiteur/arbitre actif pour une même
 édition, y compris lorsqu’une inscription sportive est créée par une autre
 voie. Aucun rôle Clerk global supplémentaire n’est introduit.
 
+L’affectation nominative d’un **arbitre référent par équipe** (`spogomi_team_referee_assignments`, auditée dans `spogomi_team_referee_assignment_audit`, mutée par `spogomi_assign_team_referee` / `spogomi_revoke_team_referee` via `POST`/`DELETE /api/spogomi/events/[eventId]/team-referees`) applique la politique d’organisation CleanMyMap : 1 arbitre référent distinct et actif par équipe au sein d’une même édition, habilité sur la division et le règlement courants (`quiz_proof_id` et `practical_confirmation_id` valides), sans jamais l’ajouter aux compétiteurs. Les tables d’affectation restent `service_role`-only ; les projections publiques et observateur n’exposent que le statut (`À affecter`, `En attente de validation`, `Affecté`, `Indisponible`) sans identité nominative.
+
 ```txt
 public
 → projection effectivement publiée

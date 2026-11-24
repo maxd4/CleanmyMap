@@ -6,6 +6,8 @@ import type { EventRow } from "./preparation/preparation-service";
 import { loadSpogomiRegistrationReadiness } from "./preparation/registration-readiness-service";
 import { selectSpogomiRouteForDivision } from "./route-types";
 import type { SpogomiRouteProjection } from "./route-types";
+import { computeSpogomiTeamRefereeReadiness } from "./team-referees";
+import { loadSpogomiTeamRefereeState } from "./team-referee-service";
 
 function mapManagementParticipants(participants: Array<Record<string, unknown>>) {
   return participants.map((participant) => ({ ...participant, composition_eligible: isCachanTicketCompositionEligible({ sourceSystem: participant.source_system as string | null, ticketStatus: participant.ticket_status as string | null, ticketDeleted: Boolean(participant.ticket_deleted), registrationStatus: String(participant.registration_status) }) }));
@@ -31,7 +33,7 @@ export async function loadSpogomiManagementProjection(params: {
 
   let participantsQuery = supabase
     .from("spogomi_participants")
-    .select("id, division_id, display_name, external_reference, order_reference, identity_status, group_preference, source_row_number, team_id, attendance_status, registration_status, account_link_status, source_system, ticket_status, ticket_deleted")
+    .select("id, division_id, display_name, external_reference, order_reference, identity_status, group_preference, source_row_number, team_id, attendance_status, registration_status, account_link_status, source_system, ticket_status, ticket_deleted, clerk_id")
     .eq("event_id", event.id)
     .order("source_row_number");
   let teamsQuery = supabase
@@ -74,11 +76,38 @@ export async function loadSpogomiManagementProjection(params: {
   if (categoryRules.error) throw categoryRules.error;
   if (environmentMappings.error) throw environmentMappings.error;
 
+  const teamRows = (teams.data ?? []) as Array<{ id: string; division_id: string; public_name: string }>;
+  const participantRows = (participants.data ?? []) as Array<Record<string, unknown>>;
+  const registeredParticipantClerkIds = new Set(
+    participantRows
+      .filter((p) => p.registration_status === "registered" && typeof p.clerk_id === "string" && p.clerk_id.length > 0)
+      .map((p) => String(p.clerk_id)),
+  );
+  const eventRegulationVersion =
+    "regulation_version" in event && typeof event.regulation_version === "string"
+      ? event.regulation_version
+      : null;
+  const { teamReferees, refereeCandidates } = await loadSpogomiTeamRefereeState({
+    supabase,
+    eventId: event.id,
+    eventRegulationVersion,
+    teams: teamRows,
+    includeIdentityNames: true,
+    registeredParticipantClerkIds,
+  });
+  const teamRefereeReadiness = computeSpogomiTeamRefereeReadiness({
+    teams: teamRows,
+    assignments: teamReferees,
+  });
+
   return {
     event,
     divisions: divisions.data ?? [],
     participants: mapManagementParticipants((participants.data ?? []) as Array<Record<string, unknown>>),
     teams: teams.data ?? [],
+    teamReferees,
+    refereeCandidates,
+    teamRefereeReadiness,
     routes: (routes.data ?? []) as SpogomiRouteProjection[],
     route: selectSpogomiRouteForDivision((routes.data ?? []) as SpogomiRouteProjection[], effectiveDivisionId),
     eventAccess: eventAccess.data ?? [],

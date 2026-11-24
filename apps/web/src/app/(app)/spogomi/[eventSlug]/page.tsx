@@ -21,6 +21,7 @@ import { SpogomiEventJourneyPanel } from "@/components/spogomi/spogomi-event-jou
 import { SpogomiEventPathChooser } from "@/components/spogomi/spogomi-event-path-chooser";
 import { SpogomiPublicEventNavigation } from "@/components/spogomi/spogomi-public-event-navigation";
 import { SpogomiRefereeApplicationCard } from "@/components/spogomi/spogomi-referee-application-card";
+import { SpogomiTeamRefereeSlot } from "@/components/spogomi/spogomi-team-referee-slot";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadSpogomiEventJourney } from "@/lib/spogomi/event-journey-service";
 import {
@@ -340,6 +341,12 @@ export default async function SpogomiPublicEventPage({
                         <p className="cmm-text-small mt-1 text-slate-600">
                           Équipe {team.teamNumber}
                         </p>
+                        <SpogomiTeamRefereeSlot
+                          teamName={team.publicName}
+                          divisionType={team.divisionType}
+                          status={team.refereeStatus ?? "to_assign"}
+                          showIdentity={false}
+                        />
                         <div className="mt-3">
                           {event.lifecycle === "finished" ||
                           event.lifecycle === "cancelled" ? (

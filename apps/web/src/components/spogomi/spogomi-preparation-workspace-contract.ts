@@ -1,6 +1,11 @@
 import type { SpogomiDivisionType } from "@/lib/spogomi/types";
 import type { SpogomiRegistrationReadiness } from "@/lib/spogomi/registration-readiness";
 import type { SpogomiRouteProjection } from "@/lib/spogomi/route-types";
+import type {
+  SpogomiTeamRefereeCandidate,
+  SpogomiTeamRefereePrivateProjection,
+  SpogomiTeamRefereeReadiness,
+} from "@/lib/spogomi/team-referees";
 
 export type WorkspaceData = {
   event: {
@@ -55,6 +60,9 @@ export type WorkspaceData = {
     public_name: string;
     composition_state: string;
   }>;
+  teamReferees?: SpogomiTeamRefereePrivateProjection[];
+  refereeCandidates?: SpogomiTeamRefereeCandidate[];
+  teamRefereeReadiness?: SpogomiTeamRefereeReadiness;
   route: SpogomiRouteProjection | null;
   routes: SpogomiRouteProjection[];
   categoryRules: Array<{

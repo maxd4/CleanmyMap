@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CmmCard } from "@/components/ui/cmm-card";
+import type { SpogomiTeamRefereeStatus } from "@/lib/spogomi/team-referees";
+import { SpogomiTeamRefereeSlot } from "./spogomi-team-referee-slot";
 
 type ObserverProjection = {
   divisions: Array<{ id: string; divisionType: string; divisionKey: string }>;
@@ -15,6 +17,7 @@ type ObserverProjection = {
     submissionVersion: number | null;
     submittedAt: string | null;
     certified: boolean;
+    refereeStatus?: SpogomiTeamRefereeStatus;
   }>;
   participation: { registered: number; present: number };
 };
@@ -87,7 +90,7 @@ function SpogomiObserverCockpitPanelContent({ eventId, view }: { eventId: string
     </div>
     <CmmCard tone="slate" variant="glass" className="space-y-3 p-5">
       <div><h3 className="cmm-text-h3">{view === "teams" ? "Équipes et composition" : "Suivi des résultats"}</h3><p className="cmm-text-small">Lecture seule · les contrôles serveur conservent les droits et les données sensibles hors de cette vue.</p></div>
-      {teams.length ? <div className="grid gap-3 md:grid-cols-2">{teams.map((team) => <article key={team.id} className="rounded-xl border border-black/10 bg-white/75 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><p className="font-black text-slate-950">Équipe {team.teamNumber} · {team.publicName}</p><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-800">{statusLabel(team.submissionStatus)}</span></div><p className="mt-2 text-sm text-slate-700">Division : {projection.divisions.find((division) => division.id === team.divisionId)?.divisionType ? divisionLabel(projection.divisions.find((division) => division.id === team.divisionId)!.divisionType) : "édition simple"}</p>{view === "teams" ? <p className="mt-1 text-sm text-slate-700">Composition : {team.compositionState}</p> : <p className="mt-1 text-sm text-slate-700">{team.submissionVersion ? `Version ${team.submissionVersion}` : "Aucune version"}{team.certified ? " · certification enregistrée" : ""}</p>}</article>)}</div> : <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-700">Aucune équipe disponible pour cette sélection.</p>}
+      {teams.length ? <div className="grid gap-3 md:grid-cols-2">{teams.map((team) => <article key={team.id} className="rounded-xl border border-black/10 bg-white/75 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><p className="font-black text-slate-950">Équipe {team.teamNumber} · {team.publicName}</p><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-800">{statusLabel(team.submissionStatus)}</span></div><p className="mt-2 text-sm text-slate-700">Division : {projection.divisions.find((division) => division.id === team.divisionId)?.divisionType ? divisionLabel(projection.divisions.find((division) => division.id === team.divisionId)!.divisionType) : "édition simple"}</p>{view === "teams" ? <><p className="mt-1 text-sm text-slate-700">Composition : {team.compositionState}</p><SpogomiTeamRefereeSlot teamName={team.publicName} status={team.refereeStatus ?? "to_assign"} showIdentity={false} /></> : <p className="mt-1 text-sm text-slate-700">{team.submissionVersion ? `Version ${team.submissionVersion}` : "Aucune version"}{team.certified ? " · certification enregistrée" : ""}</p>}</article>)}</div> : <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-700">Aucune équipe disponible pour cette sélection.</p>}
       {view === "results" ? <p className="text-sm text-slate-700">Les décisions d’arbitrage et les classements publiés apparaissent dans les sections autorisées correspondantes.</p> : null}
     </CmmCard>
   </div>;
