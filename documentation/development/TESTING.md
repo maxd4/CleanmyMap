@@ -116,7 +116,9 @@ PL/pgSQL dollar-quotés sont validés comme syntaxe de leur instruction
 `CREATE FUNCTION`, tandis que leur sémantique et leur exécution restent une
 preuve PostgreSQL.
 
-Le pre-commit lit uniquement l'index staged. Le pre-push et la CI lisent
+Le pre-commit lit uniquement l'index staged et sélectionne les contrôles selon
+les fichiers stagés (tout en conservant systématiquement sentinelles canoniques,
+audit des secrets et `git diff --cached --check`). Le pre-push et la CI lisent
 l'arbre du SHA candidat et seulement les fichiers SQL modifiés dans sa plage.
 Un résultat `PASS` est donc un `STATIC_CONTRACT` de syntaxe/structure, pas un
 `EXECUTED_DB_CONTRACT`. La suite pgTAP complète reste exécutée par la lane

@@ -39,7 +39,7 @@ const { spawnSync } = require("node:child_process");
 const args = process.argv.slice(2);
 const command = ${JSON.stringify(name)};
 const logPath = process.env.GUARD_TEST_LOG;
-if (command === "npm" && args[0] === "run" && args[1] === "security:secrets") {
+if (command === "node" && args[0] === "scripts/checks/secret-audit.mjs") {
   const exitCode = Number(process.env.GUARD_TEST_SECRET_AUDIT_EXIT ?? 0);
   if (exitCode !== 0) process.exit(exitCode);
 }
@@ -137,13 +137,13 @@ function runGuard({
   writeFileSync(join(scriptsRoot, "validation-process.mjs"), VALIDATION_PROCESS_SOURCE);
   writeFileSync(join(checksRoot, "validation-policy.mjs"), POLICY_SOURCE);
   writeCommandStub(binRoot, "npm", [
-    ...(secretAuditExit === 0
-      ? []
-      : [`if /I "%~1"=="run" if /I "%~2"=="security:secrets" exit /b ${secretAuditExit}`]),
     '>>"%GUARD_TEST_LOG%" echo npm %*',
   ]);
   writeCommandStub(binRoot, "npx", ['>>"%GUARD_TEST_LOG%" echo npx %*']);
   writeCommandStub(binRoot, "node", [
+    ...(secretAuditExit === 0
+      ? []
+      : [`if /I "%~1"=="scripts/checks/secret-audit.mjs" exit /b ${secretAuditExit}`]),
     'if /I "%~1"=="scripts/checks/validation-policy.mjs" goto :runreal',
     'if /I "%~nx1"=="git-test.cjs" goto :runreal',
     '>>"%GUARD_TEST_LOG%" echo node %*',
@@ -247,7 +247,7 @@ test("docs-only push ignores a foreign web commit in HEAD", () => {
   assert.match(result.output, /mode = push-protocol/);
   assert.match(result.output, /Quick PUSH_CANDIDATE checks/);
   assertCommand(result.log, candidateCheckCommand("refs/docs-local"));
-  assertCommand(result.log, "npm run security:secrets -- --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local");
+  assertCommand(result.log, "node scripts/checks/secret-audit.mjs --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local");
   assertNoCommand(result.log, "npm run lint");
   assertNoCommand(result.log, "npm run typecheck");
   assertNoCommand(result.log, "npm run build");
@@ -269,7 +269,7 @@ test("web push keeps only quick candidate gates by default", () => {
   assert.match(result.output, /PREPUSH_TOTAL_SECONDS:/);
   assert.match(result.output, /GUARD_STEP_SECONDS:/);
   assertCommand(result.log, candidateCheckCommand("refs/web-local"));
-  assertCommand(result.log, "npm run security:secrets -- --candidate-ref=refs/web-local --candidate-range=refs/web-remote..refs/web-local");
+  assertCommand(result.log, "node scripts/checks/secret-audit.mjs --candidate-ref=refs/web-local --candidate-range=refs/web-remote..refs/web-local");
   assertCommand(result.log, "git diff --check refs/web-remote..refs/web-local --");
   assertNoCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "lint"]));
   assertNoCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "typecheck"]));
@@ -358,7 +358,7 @@ test("multi-ref push validates each exact candidate without heavy gates", () => 
   assert.equal(result.status, 0, result.output);
   assertCommandCount(result.log, candidateCheckCommand("refs/docs-local"), 1);
   assertCommandCount(result.log, candidateCheckCommand("refs/scripts-local"), 1);
-  assertCommandCount(result.log, "npm run security:secrets -- --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local --candidate-ref=refs/scripts-local --candidate-range=refs/scripts-remote..refs/scripts-local", 1);
+  assertCommandCount(result.log, "node scripts/checks/secret-audit.mjs --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local --candidate-ref=refs/scripts-local --candidate-range=refs/scripts-remote..refs/scripts-local", 1);
   assertNoCommand(result.log, "npm run test:scripts");
   assertNoCommand(result.log, "scripts/checks/check-doc-visuals.mjs");
   assertNoCommand(result.log, dynamicCandidateCommand("refs/scripts-local", "npm", ["run", "lint"]));
@@ -407,7 +407,7 @@ test("invalid push candidate stops before static checks", () => {
 
   assert.notEqual(result.status, 0);
   assert.match(result.output, /Local push candidate is not a commit/);
-  assertNoCommand(result.log, "npm run security:secrets");
+  assertNoCommand(result.log, "node scripts/checks/secret-audit.mjs");
   assertNoCommand(result.log, "run-static-candidate-check.mjs");
 });
 
@@ -433,7 +433,7 @@ test("manual invocation keeps the documented fallback visible", () => {
   assert.match(result.output, /mode = manual-fallback/);
   assert.match(result.output, /Pre-push quick guardrail passed/);
   assertCommand(result.log, candidateCheckCommand("HEAD"));
-  assertCommand(result.log, "npm run security:secrets -- --candidate-ref=HEAD --candidate-range=remote-main-sha...HEAD");
+  assertCommand(result.log, "node scripts/checks/secret-audit.mjs --candidate-ref=HEAD --candidate-range=remote-main-sha...HEAD");
   assertNoCommand(result.log, "npm run lint");
 });
 

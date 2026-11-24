@@ -63,7 +63,7 @@ const APPROVED_PUBLISHED_REWRITE_HASHES = new Map([
     "1c71f6951ef553317676d0d38a9b133fb9fc7a4a6b111b20363dfff3e52eba0f",
   ])],
   ["20261122000008_personal_ai_import_integrity.sql", new Set(["ee1c38cc5604ee07370a582caf5393d37deb17b520674f08715052ee392a4e3b"])],
-  ["20261124000005_spogomi_team_referee_assignments.sql", new Set(["90f04df9393990395ecfe10c5ccb83873407360ac5bb0b6b080b732bc7d836ea"])],
+  ["20261124000005_spogomi_team_referee_assignments.sql", new Set(["b1b574385b56eeb184c8d9faffe6a013c2f6ab6aa6141584648369d5129d88e1"])],
 ]);
 
 function normalizeMigrationContent(content) {

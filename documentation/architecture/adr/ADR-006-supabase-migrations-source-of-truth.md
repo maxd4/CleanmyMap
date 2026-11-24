@@ -629,21 +629,28 @@ mesure non nulle est refusée. La règle métier ne change pas.
 ## Exception de replay bornée — `20261124000005`
 
 La migration `20261124000005_spogomi_team_referee_assignments.sql` est
-corrigée avant sa première application. La définition de
-`spogomi_team_referee_status` prend trois UUID, tandis qu'un `REVOKE` visait une
-surcharge avec un troisième argument `text` qui n'est pas créée dans l'arbre
-canonique. Ce nom de signature erroné peut interrompre le replay. La mutation
-de remplacement des arbitres insérait également une nouvelle affectation
-active avant de révoquer l'ancienne, en contradiction avec l'index unique
-partiel sur une affectation active par équipe.
+corrigée avant sa première application. Sur le candidat `ffcca7fc`, le replay
+complet a échoué avec `SQLSTATE 42703` : `spogomi_actor_is_event_organizer`
+référençait `action_organizers.user_id`, alors que le contrat canonique expose
+`organizer_clerk_id`. Le bootstrap Supabase éphémère du SHA `349eadd4` avait
+réussi en 97 secondes. La lecture de `migration list --linked` établit que
+`20261124000005` n'était pas enregistrée sur la base liée au diagnostic ; la
+réparation est donc strictement pré-application.
 
-La correction bornée révoque d'abord l'affectation existante, insère la
-nouvelle, puis lie l'ancienne à son remplacement. Ces écritures restent dans
-la même transaction RPC : toute erreur annule la révocation et l'insertion.
-Le contrat pgTAP vérifie le remplacement, la chaîne ancien → nouveau, les
-droits et le maintien du roster sportif. Une migration forward-only
-`20261125000001_fix_spogomi_team_referee_replacement.sql` porte la même
-définition pour un déploiement ayant déjà enregistré la migration initiale.
+La revue des contrats consommateurs a également aligné les autres références
+de qualification sur `spogomi_referee_applications` : `theory_proof_id`,
+`practical_confirmed_at` et le statut initial `candidate`. La fonction
+`spogomi_team_referee_status` est déclarée avec trois UUID ; le `REVOKE` erroné
+pour une surcharge `(uuid, uuid, text)` sans définition canonique est retiré.
+
+La mutation de remplacement révoque d'abord l'affectation active, insère la
+nouvelle puis renseigne `replaced_by_assignment_id`, sous le verrou par édition
+et dans la même transaction RPC. Une erreur annule toute la mutation. Le
+contrat pgTAP vérifie le remplacement, la chaîne ancien → nouveau, les droits,
+l'idempotence et le maintien du roster sportif. La migration forward-only
+`20261125000001_fix_spogomi_team_referee_replacement.sql` porte ce correctif
+transactionnel ; `20261125000002_fix_spogomi_team_referee_columns.sql` réaligne
+les fonctions déjà enregistrées sur les colonnes canoniques.
 
 Cette exception pré-application autorise uniquement la réécriture exacte
 ci-dessous et n'autorise ni `migration repair`, ni DDL manuelle, ni application
@@ -651,7 +658,7 @@ distante implicite.
 
 ```text
 20261124000005_BEFORE_HASH: DFAC03AED90B74BF7AF47B8A9FFE9C781C2278BC543BBCFA1808B4BD6D3CBAB4
-20261124000005_AFTER_HASH:  90F04DF9393990395ECFE10C5CCB83873407360AC5BB0B6B080B732BC7D836EA
+20261124000005_AFTER_HASH:  B1B574385B56EEB184C8D9AFFE6A013C2F6AB6AA6141584648369D5129D88E1
 ```
 
 ## Interdiction

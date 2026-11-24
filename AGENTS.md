@@ -1,5 +1,7 @@
 # AGENTS.md — CleanMyMap
 
+> **Lecture complète obligatoire** : tout agent ou sous-agent (quel que soit le fournisseur ou le modèle) doit lire **explicitement et intégralement** ce fichier `AGENTS.md` ainsi que les `AGENTS.md` scoped applicables à son périmètre avant toute modification, sans supposer un chargement automatique complet. Les règles universelles ci-dessous (y compris le workflow `MAIN-ONLY / MULTI-WRITER COORDONNÉ`) s'appliquent indépendamment de l'outil, du fournisseur ou du modèle utilisé.
+
 Pour les sources privées complémentaires, appliquer la politique canonique dans `documentation/development/DOCUMENTATION_POLICY.md` ; les contrats techniques du dépôt restent autoritaires.
 
 ## Portée et priorité
@@ -602,37 +604,34 @@ Pour tout changement fonctionnel, Codex ajoute ou adapte les tests nécessaires
 avant publication et respecte la politique canonique de couverture de
 `documentation/development/testing-quality-coverage.md`.
 
-### Tests massifs et couverture approfondie — obligatoire pour les lots fonctionnels
+### Validation proportionnée au risque et à l'étendue du lot
 
-Tous les lots Codex qui modifient le runtime, y compris les corrections de
-bugs, refactorisations, évolutions fonctionnelles, chantiers d'architecture et
-campagnes de qualité, exigent une campagne de tests large sur l'intégralité du
-périmètre autorisé. Quelques tests ciblés ne suffisent jamais à clôturer un lot
-fonctionnel. Cette exigence ne s'applique pas à un lot purement documentaire,
-qui ne doit pas recevoir de tests ou de runtime artificiels.
+En `DEVELOPMENT`, sélectionner les contrôles selon les fichiers modifiés, leurs
+consommateurs et le risque réel, sans dupliquer les contrôles que les hooks
+(`pre-commit` / `pre-push`) exécutent déjà avec une couverture équivalente
+(sauf nécessité de diagnostic) :
 
-**TESTS MASSIFS OBLIGATOIRES :** enrichir largement et méthodiquement les
-suites de tests du périmètre traité. Explorer les branches et comportements
-importants, ajouter de nombreuses régressions et vérifier les consommateurs
-directs. Ne pas considérer quelques tests ciblés comme suffisants. Conserver
-les contrats existants, mesurer les progrès et signaler explicitement toute
-propriété importante non prouvée.
+- **Documentation pure** : contrôles documentaires pertinents, diff, secrets et
+  intégrité Git uniquement (aucun test ou runtime artificiel).
+- **Correctif local non sensible** : tests de régression ciblés et contrôles
+  techniques nécessaires ; pas d'obligation systématique de campagne massive ni
+  de mesure de couverture avant/après.
+- **Lot fonctionnel substantiel** : campagne proportionnée à l'ensemble du
+  périmètre et de ses consommateurs directs, avec couverture pertinente.
+- **Changement sensible** (AuthN/AuthZ, RLS, PostgreSQL, concurrence, secrets,
+  intégrité) : conserver toutes les preuves de sécurité, AuthZ, RLS,
+  PostgreSQL, concurrence et intégrité nécessaires.
 
-La campagne doit examiner les fonctions, services, routes, composants,
-dépendances directes et consommateurs concernés, puis couvrir autant que le
-risque l'exige les scénarios nominaux, limites, invalides, adversariaux,
-erreurs, transitions d'état, concurrence, reprises et régressions historiques.
-Les tests comportementaux et les preuves d'intégration, API, UI, PostgreSQL ou
-E2E sont privilégiés lorsque les invariants ne sont pas prouvables par des
-tests unitaires et que l'environnement autorisé est disponible. Pour chaque
-invariant, établir une matrice propriétaire → tests existants → lacunes →
-nouvelles preuves, et mesurer les quatre métriques de couverture avant/après
-lorsqu'elles sont comparables.
+Réutiliser les preuves existantes uniquement lorsque leur candidat, leurs
+entrées et leur périmètre correspondent exactement. Déléguer les validations
+larges à la CI lorsqu'elles ne sont pas nécessaires à la preuve locale du lot ;
+ne pas attendre systématiquement leur conclusion pour clôturer une correction
+ordinaire publiée, et signaler leur statut réel.
 
-Cette exigence ne justifie jamais une règle métier modifiée, un seuil abaissé,
-une métrique manipulée, un test artificiel ou une extension hors périmètre.
-Les tests restent déterministes, maintenables et proportionnés au risque ; les
-propriétés importantes non prouvées restent explicitement signalées.
+Cette proportionnalité ne justifie jamais une règle métier modifiée, un seuil
+abaissé, une métrique manipulée, un test artificiel ou une extension hors
+périmètre. Les tests restent déterministes et maintenables ; les propriétés
+importantes non prouvées restent explicitement signalées.
 
 La structure de toute campagne doit limiter la duplication : rechercher d'abord
 les scénarios, fixtures, mocks, builders et helpers du domaine ; paramétrer les

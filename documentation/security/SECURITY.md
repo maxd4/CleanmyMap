@@ -192,7 +192,12 @@ signed webhook
 Une catégorie d'accès doit être reliée à une capacité et à son scope minimal,
 pas uniquement à une comparaison de rôle.
 
-## Email
+## Gouvernance des coordonnees professionnelles publiques et RGPD
+
+- **Publication autorisee** : adresses generiques officielles (administrations, services publics, associations, entreprises), coordonnees fonctionnelles publiques necessaires aux fonctionnalites (Annuaire, organigramme institutionnel, contacts DPE, REQ, partenaires) et liens vers les sources institutionnelles officielles.
+- **Donnees nominatives** : stockage Supabase rectifiable et supprimable privilegie, avec projection publique uniquement si justifiee ; espaces prives exclusifs pour les echanges prives, notes relationnelles et engagements non publics ; interdiction des adresses deduites et donnees excessives.
+- **Audit des secrets (`secret-audit.mjs`)** : exceptions `Email address` tracees dans `scripts/checks/secret-audit.allowlist.json` avec `path`, `category`, `exact`, `sourceUrl`, `verifiedAt` et `justification` (chargees depuis le candidat Git controle), sans jamais masquer un secret technique adjacent.
+- **Conformite RGPD / CNIL** : finalite explicite, minimisation, mise en balance de l'interet legitime, information selon l'article 14 du RGPD, droits de rectification, opposition, effacement et revalidation.
 
 La route `/api/email/test` est la surface de test admin recommandée.
 

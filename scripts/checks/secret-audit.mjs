@@ -357,15 +357,33 @@ function shouldScan(relativePath) {
   return SCANNED_EXTENSIONS.has(extname(normalized).toLowerCase());
 }
 
-function loadAllowlist(relativePath) {
+function loadAllowlist(relativePath, gitRef = null, { explicit = false } = {}) {
   if (!relativePath) {
     return [];
   }
-  const absolutePath = resolve(ROOT, relativePath);
-  if (!existsSync(absolutePath)) {
-    throw new Error(`Allowlist not found: ${relativePath}`);
+  let rawContent = null;
+  if (gitRef) {
+    const objectSpec = gitRef === ":" ? `:${relativePath}` : `${gitRef}:${relativePath}`;
+    try {
+      rawContent = execFileSync(gitExecutable(), ["show", objectSpec], {
+        cwd: ROOT,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch {
+      if (explicit) {
+        throw new Error(`Allowlist not found in Git ref ${gitRef}: ${relativePath}`);
+      }
+      return [];
+    }
+  } else {
+    const absolutePath = resolve(ROOT, relativePath);
+    if (!existsSync(absolutePath)) {
+      throw new Error(`Allowlist not found: ${relativePath}`);
+    }
+    rawContent = readFileSync(absolutePath, "utf8");
   }
-  const parsed = JSON.parse(readFileSync(absolutePath, "utf8"));
+  const parsed = JSON.parse(rawContent);
   if (!Array.isArray(parsed.allow)) {
     throw new Error(`Allowlist must contain an "allow" array: ${relativePath}`);
   }
@@ -392,6 +410,31 @@ function isSuspiciousSupabaseUrl(value) {
   return !PUBLIC_SUPABASE_URLS.has(value.toLowerCase());
 }
 
+function isStructuredEmailAllowlistEntry(entry) {
+  return (
+    entry.exact !== undefined ||
+    entry.sourceUrl !== undefined ||
+    entry.verifiedAt !== undefined ||
+    entry.justification !== undefined
+  );
+}
+
+function isValidStructuredEmailEntry(entry) {
+  return (
+    entry.category === "Email address" &&
+    typeof entry.path === "string" &&
+    entry.path.trim().length > 0 &&
+    typeof entry.exact === "string" &&
+    entry.exact.trim().length > 0 &&
+    typeof entry.sourceUrl === "string" &&
+    /^https?:\/\/\S+$/i.test(entry.sourceUrl.trim()) &&
+    typeof entry.verifiedAt === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(entry.verifiedAt.trim()) &&
+    typeof entry.justification === "string" &&
+    entry.justification.trim().length > 0
+  );
+}
+
 function isAllowed(finding, allowlist) {
   return allowlist.some((entry) => {
     if (entry.path && entry.path !== finding.file) {
@@ -399,6 +442,14 @@ function isAllowed(finding, allowlist) {
     }
     if (entry.category && entry.category !== finding.category) {
       return false;
+    }
+    if (entry.category === "Email address" && isStructuredEmailAllowlistEntry(entry)) {
+      if (finding.category !== "Email address" || !isValidStructuredEmailEntry(entry)) {
+        return false;
+      }
+      const emails = finding.raw.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? [];
+      const targetEmail = entry.exact.trim().toLowerCase();
+      return emails.some((email) => email.toLowerCase() === targetEmail);
     }
     if (entry.line && entry.line !== finding.line) {
       return false;
@@ -566,16 +617,18 @@ function main() {
     return;
   }
 
-  const allowlist = loadAllowlist(options.allowlistPath);
+  const explicitAllowlist = process.argv.slice(2).some((arg) => arg.startsWith("--allowlist="));
   try {
     let files;
     let findings;
     if (options.scope === "staged") {
+      const allowlist = loadAllowlist(options.allowlistPath, ":", { explicit: explicitAllowlist });
       files = listStagedFiles().filter(shouldScan);
-      findings = scanGitFiles(files, ":");
+      findings = scanGitFiles(files, ":").filter((finding) => !isAllowed(finding, allowlist));
     } else if (options.scope === "ref") {
+      const allowlist = loadAllowlist(options.allowlistPath, options.ref, { explicit: explicitAllowlist });
       files = listRefFiles(options.ref).filter(shouldScan);
-      findings = scanGitFiles(files, options.ref);
+      findings = scanGitFiles(files, options.ref).filter((finding) => !isAllowed(finding, allowlist));
     } else if (options.scope === "candidate") {
       const candidates = options.candidateRefs.map((ref, index) => ({
         ref,
@@ -586,14 +639,15 @@ function main() {
         files: listCandidateFiles([{ range }]).filter(shouldScan),
       }));
       files = [...new Set(filesByCandidate.flatMap(({ files: candidateFiles }) => candidateFiles))];
-      findings = filesByCandidate.flatMap(({ ref, files: candidateFiles }) =>
-        scanGitFiles(candidateFiles, ref),
-      );
+      findings = filesByCandidate.flatMap(({ ref, files: candidateFiles }) => {
+        const allowlist = loadAllowlist(options.allowlistPath, ref, { explicit: explicitAllowlist });
+        return scanGitFiles(candidateFiles, ref).filter((finding) => !isAllowed(finding, allowlist));
+      });
     } else {
+      const allowlist = loadAllowlist(options.allowlistPath, null, { explicit: explicitAllowlist });
       files = listRepoFiles().filter(shouldScan);
-      findings = files.flatMap(scanFile);
+      findings = files.flatMap(scanFile).filter((finding) => !isAllowed(finding, allowlist));
     }
-    findings = findings.filter((finding) => !isAllowed(finding, allowlist));
     writeSecretEvidence({ options, findings, scannedCount: files.length });
 
     if (options.scope === "candidate") {

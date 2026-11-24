@@ -255,3 +255,88 @@ test("a real token pattern remains blocked", () => {
   assert.equal(result.status, 1, result.stderr);
   assert.match(result.stderr, /JWT token/);
 });
+
+test("structured public email allowlist allows exact address and blocks same-domain, partial, malformed, and adjacent secrets", () => {
+  const repo = mkdtempSync(join(tmpdir(), "cmm-secret-allowlist-"));
+  const email = (local, domain = "paris.fr") => `${local}@${domain}`;
+  const publicEmail = email("proprete");
+  const malformedEmail = email("accueil");
+  try {
+    runGit(repo, ["init"]);
+    runGit(repo, ["config", "user.email", "test@example.com"]);
+    runGit(repo, ["config", "user.name", "Test"]);
+    writeFixture(
+      repo,
+      "scripts/checks/secret-audit.allowlist.json",
+      JSON.stringify({
+        allow: [
+          {
+            path: "documentation/contacts.md",
+            category: "Email address",
+            exact: publicEmail,
+            sourceUrl: "https://www.paris.fr/pages/proprete",
+            verifiedAt: "2026-11-24",
+            justification: "Adresse generique publique officielle de la Ville de Paris.",
+          },
+          {
+            path: "documentation/malformed.md",
+            category: "Email address",
+            exact: malformedEmail,
+            justification: "Missing sourceUrl and verifiedAt",
+          },
+        ],
+      }),
+    );
+    runGit(repo, ["add", "scripts/checks/secret-audit.allowlist.json"]);
+    runGit(repo, ["commit", "-m", "add email allowlist fixture"]);
+
+    const run = (args) =>
+      spawnSync(process.execPath, [resolve("scripts/checks/secret-audit.mjs"), ...args], {
+        cwd: repo,
+        encoding: "utf8",
+      });
+
+    // 1. Exact allowlisted public email passes
+    writeFixture(repo, "documentation/contacts.md", `Contact: ${publicEmail}\n`);
+    runGit(repo, ["add", "."]);
+    const staged = run(["--staged-only"]);
+    assert.equal(staged.status, 0, staged.stderr || staged.stdout);
+    runGit(repo, ["commit", "-m", "exact public email"]);
+    const res1 = run(["--ref=HEAD"]);
+    assert.equal(res1.status, 0, res1.stderr || res1.stdout);
+    const candidate = run(["--candidate-ref=HEAD", "--candidate-range=HEAD^..HEAD"]);
+    assert.equal(candidate.status, 0, candidate.stderr || candidate.stdout);
+
+    // 2. Unauthorized email on the same domain is blocked
+    writeFixture(repo, "documentation/contacts.md", `Contact: ${email("perso.agent")}\n`);
+    runGit(repo, ["add", "documentation/contacts.md"]);
+    runGit(repo, ["commit", "-m", "unauthorized same domain"]);
+    assert.notEqual(run(["--ref=HEAD"]).status, 0);
+
+    // 3. Partial match does not bypass
+    writeFixture(repo, "documentation/contacts.md", `Contact: ${email("other-proprete")}\n`);
+    runGit(repo, ["add", "documentation/contacts.md"]);
+    runGit(repo, ["commit", "-m", "partial match"]);
+    assert.notEqual(run(["--ref=HEAD"]).status, 0);
+
+    // 4. Malformed allowlist entry does not allow
+    writeFixture(repo, "documentation/contacts.md", `Contact: ${publicEmail}\n`);
+    writeFixture(repo, "documentation/malformed.md", `Contact: ${malformedEmail}\n`);
+    runGit(repo, ["add", "documentation/contacts.md", "documentation/malformed.md"]);
+    runGit(repo, ["commit", "-m", "malformed entry"]);
+    assert.notEqual(run(["--ref=HEAD"]).status, 0);
+
+    // 5. Secret beside allowlisted email is still blocked
+    runGit(repo, ["rm", "-f", "documentation/malformed.md"]);
+    writeFixture(
+      repo,
+      "documentation/contacts.md",
+      `Contact: ${publicEmail}\nAWS=${["AKIA", "1234567890ABCDEF"].join("")}\n`,
+    );
+    runGit(repo, ["add", "documentation/contacts.md"]);
+    runGit(repo, ["commit", "-m", "secret beside allowlisted email"]);
+    assert.notEqual(run(["--ref=HEAD"]).status, 0);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});

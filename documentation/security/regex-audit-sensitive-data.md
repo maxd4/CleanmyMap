@@ -60,3 +60,17 @@ strictement ciblée par fichier, catégorie et valeur, avec justification, dans
 l'allowlist existante. Ne jamais affaiblir globalement le scanner.
 
 Limites : un audit regex peut produire des faux positifs et ne remplace pas la rotation d'un secret reellement expose, ni un outil specialise comme GitHub secret scanning, Gitleaks ou TruffleHog.
+
+## Coordonnees professionnelles publiques et allowlist Email
+
+- **Politique de publication** :
+  - Autorises dans GitHub, le code et la documentation publique : adresses generiques officielles des administrations, services publics, associations et entreprises, coordonnees fonctionnelles publiques necessaires aux fonctionnalites et liens vers les sources institutionnelles officielles.
+  - Identites et coordonnees professionnelles nominatives : privilegier un stockage Supabase rectifiable et supprimable, avec projection publique uniquement lorsque la publication est justifiee.
+  - Espaces prives uniquement : coordonnees obtenues lors d'echanges prives, notes relationnelles et engagements non publics.
+  - Interdits : adresses deduites, coordonnees personnelles non autorisees et donnees excessives.
+- **Schema strict d'exception (`secret-audit.allowlist.json`)** : chaque nouvelle exception `Email address` exige `path` (chemin exact), `category: "Email address"`, `exact` (correspondance exacte de l'adresse), `sourceUrl` (URL publique `http(s)://`), `verifiedAt` (`YYYY-MM-DD`) et `justification`.
+- **Garanties du scanner** :
+  - Aucune autorisation globale des domaines `paris.fr`, `gouv.fr`, associatifs ou fournisseurs de messagerie.
+  - Une exception `Email address` ne neutralise jamais la detection d'un token, mot de passe ou credential dans le meme fichier.
+  - Pour les scans `STAGED`, `REF` et `PUSH_CANDIDATE`, `secret-audit.mjs` charge `secret-audit.allowlist.json` depuis le candidat Git effectivement controle.
+- **RGPD (UE 2016/679) & CNIL** : finalite d'interet general/annuaire professionnel, minimisation, base legale (interet legitime mis en balance), information au titre de l'article 14, rectification, opposition, effacement et revalidation periodique.

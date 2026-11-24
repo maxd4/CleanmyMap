@@ -401,26 +401,43 @@ function Invoke-GuardStep {
         foreach ($candidateRef in @($CandidateRefs | Sort-Object -Unique)) {
             Write-Host ""
             Write-Host "==> static candidate checks ($candidateRef)"
-            Invoke-GuardStep "environment contract ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-env-contract.mjs -- "--ref=$candidateRef" }
-            Invoke-GuardStep "root file hygiene ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-root-file-hygiene.mjs -- "--ref=$candidateRef" }
-            Invoke-GuardStep "canonical workspace sentinels ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-canonical-workspaces.mjs -- "--ref=$candidateRef" }
-            Invoke-GuardStep "GitNexus hygiene ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-gitnexus-hygiene.mjs -- "--ref=$candidateRef" }
-            Invoke-GuardStep "documentation governance ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-documentation-governance.mjs -- "--ref=$candidateRef" }
-            Invoke-GuardStep "AGENTS governance ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-agent-governance.mjs -- "--ref=$candidateRef" }
-            Invoke-GuardStep "agent skills ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-agent-skill-mirrors.mjs -- "--ref=$candidateRef" }
-            Invoke-GuardStep "stack documentation drift ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-stack-doc-drift.mjs -- "--ref=$candidateRef" }
-            Invoke-GuardStep "GitHub Actions security ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-github-actions-security.mjs -- "--ref=$candidateRef" }
-            Invoke-GuardStep "9C public facades ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-9c-public-facades.mjs -- "--ref=$candidateRef" }
-
+            $staticChecks = @(
+                "scripts/checks/check-env-contract.mjs",
+                "scripts/checks/check-root-file-hygiene.mjs",
+                "scripts/checks/check-canonical-workspaces.mjs",
+                "scripts/checks/check-gitnexus-hygiene.mjs",
+                "scripts/checks/check-documentation-governance.mjs",
+                "scripts/checks/check-agent-governance.mjs",
+                "scripts/checks/check-agent-skill-mirrors.mjs",
+                "scripts/checks/check-stack-doc-drift.mjs",
+                "scripts/checks/check-github-actions-security.mjs",
+                "scripts/checks/check-9c-public-facades.mjs"
+            )
             if ($DocumentationRelevant) {
-                Invoke-GuardStep "documentation visuals ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-doc-visuals.mjs -- "--ref=$candidateRef" }
+                $staticChecks += "scripts/checks/check-doc-visuals.mjs"
             }
             if ($SupabaseRelevant) {
-                Invoke-GuardStep "Supabase migration tree audit ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/audits/audit-supabase-migration-trees.mjs -- "--ref=$candidateRef" }
+                $staticChecks += "scripts/audits/audit-supabase-migration-trees.mjs"
             }
             if ($WebRelevant) {
-                Invoke-GuardStep "lockfile policy ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-lockfile-policy.mjs -- "--ref=$candidateRef" }
-                Invoke-GuardStep "Vercel CI audit ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/audits/audit-vercel-ci.mjs -- "--ref=$candidateRef" }
+                $staticChecks += "scripts/checks/check-lockfile-policy.mjs"
+                $staticChecks += "scripts/audits/audit-vercel-ci.mjs"
+            }
+
+            $script:StaticRunnerInvocations += 1
+            $runnerArguments = @("--ref=$candidateRef")
+            foreach ($script in $staticChecks) {
+                $runnerArguments += "--script=$script"
+            }
+            $runnerArguments += "--"
+            $runnerArguments += "--ref=$candidateRef"
+
+            Invoke-GuardStep "static candidate checks ($candidateRef)" {
+                node scripts/ci/run-static-candidate-check.mjs @runnerArguments
+            }
+
+            if ($WebRelevant) {
+                $script:StaticRunnerInvocations += 1
                 Invoke-GuardStep "top-heavy files policy ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-top-heavy-files.mjs -- --enforce "--ref=$candidateRef" }
             }
         }
@@ -650,8 +667,7 @@ function Invoke-GuardStep {
         $secretArgs += "--candidate-ref=$($parts[0])"
         $secretArgs += "--candidate-range=$($parts[1])"
     }
-    $secretCommandArgs = @("run", "security:secrets", "--") + $secretArgs
-    Invoke-GuardStep "secret audit" { & npm @secretCommandArgs }
+    Invoke-GuardStep "secret audit" { & node scripts/checks/secret-audit.mjs @secretArgs }
 
     if (-not $Full) {
         Write-Host ""

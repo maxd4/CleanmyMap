@@ -119,7 +119,6 @@ $webSourceFiles = @($changedFiles | Where-Object {
 
 $webTestFiles = @($webSourceFiles | Where-Object { $_ -match "(\.test|\.spec)\.(ts|tsx|js|jsx)$" })
 $webTestFilesRelative = @($webTestFiles | ForEach-Object { $_ -replace '^apps/web/', '' })
-$npmCommand = Get-NpmCommand
 
 $pythonFiles = @($changedFiles | Where-Object { $_ -match "\.py$" })
 $worktreeReadFiles = @($webSourceFiles) + @($pythonFiles)
@@ -135,7 +134,14 @@ Write-Host "[quick] changed web source files: $($webSourceFiles.Count)"
 Write-Host "[quick] changed web test files: $($webTestFiles.Count)"
 Write-Host "[quick] changed python files: $($pythonFiles.Count)"
 
+$npmCommand = $null
+if ($webSourceFiles.Count -gt 0 -or $webTestFiles.Count -gt 0 -or $IncludeBuild) {
+    $npmCommand = Get-NpmCommand
+}
+
 if ($webSourceFiles.Count -gt 0) {
+    $eslintBin = Join-Path $PSScriptRoot "..\..\apps\web\node_modules\eslint\bin\eslint.js"
+    $useDirectEslint = Test-Path -LiteralPath $eslintBin
     # Keep each process invocation below Windows' command-line limit when a
     # large coordinated candidate changes many Web files.
     $eslintBatchSize = 32
@@ -146,7 +152,11 @@ if ($webSourceFiles.Count -gt 0) {
             # The package lint script intentionally owns the full `src` scope.
             # A staged check invokes ESLint directly so foreign Web files are
             # not pulled into the candidate by that script's fixed argument.
-            & $npmCommand exec -- eslint --max-warnings=0 --config apps/web/eslint.config.mjs @batch
+            if ($useDirectEslint) {
+                & node $eslintBin --max-warnings=0 --config apps/web/eslint.config.mjs @batch
+            } else {
+                & $npmCommand exec -- eslint --max-warnings=0 --config apps/web/eslint.config.mjs @batch
+            }
         }
     }
 } else {
@@ -166,11 +176,10 @@ if ($webTestFiles.Count -gt 0) {
     Write-Host "[quick] Skip vitest (no changed web test files)."
 }
 
-foreach ($file in $pythonFiles) {
-    if (Test-Path -LiteralPath $file) {
-        Invoke-Step "py_compile($file)" {
-            & python -m py_compile $file
-        }
+$existingPythonFiles = @($pythonFiles | Where-Object { Test-Path -LiteralPath $_ })
+if ($existingPythonFiles.Count -gt 0) {
+    Invoke-Step "py_compile ($($existingPythonFiles.Count) file(s))" {
+        & python -m py_compile @existingPythonFiles
     }
 }
 

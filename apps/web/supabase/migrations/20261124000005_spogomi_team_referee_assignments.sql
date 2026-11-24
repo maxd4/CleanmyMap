@@ -82,7 +82,7 @@ as $$
           select 1
           from public.action_organizers ao
           where ao.action_id = e.action_id
-            and ao.user_id = btrim(p_actor_clerk_id)
+            and ao.organizer_clerk_id = btrim(p_actor_clerk_id)
         )
       )
   );
@@ -157,8 +157,8 @@ begin
       and app.clerk_id = v_referee_id
       and app.status = 'habilitated'
       and app.regulation_version = v_event.regulation_version
-      and app.quiz_proof_id is not null
-      and app.practical_confirmation_id is not null
+      and app.theory_proof_id is not null
+      and app.practical_confirmed_at is not null
   ) then
     return false;
   end if;
@@ -251,10 +251,10 @@ begin
     return 'unavailable';
   end if;
 
-  if v_app.status in ('registered', 'theory_qualified', 'practical_pending')
+  if v_app.status in ('candidate', 'theory_qualified', 'practical_pending')
      or v_app.regulation_version is distinct from v_event.regulation_version
-     or v_app.quiz_proof_id is null
-     or v_app.practical_confirmation_id is null then
+     or v_app.theory_proof_id is null
+     or v_app.practical_confirmed_at is null then
     return 'pending_validation';
   end if;
 

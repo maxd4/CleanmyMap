@@ -279,10 +279,15 @@ projection offline.
 - l'invocation manuelle du guard sans protocole peut utiliser le fallback
   `origin/main...HEAD`, affiché explicitement comme `manual-fallback`, mais
   ses checks statiques doivent utiliser `--ref=HEAD` ;
-- le hook `.githooks/pre-commit` reste automatique et bloquant sur `STAGED` ; le
-  hook `.githooks/pre-push` doit exécuter le garde rapide sur le
-  `PUSH_CANDIDATE` exact transmis par Git ; les contrôles statiques du candidat
-  doivent rester sans installation de dépendances. Si une ressource temporaire
+- le hook `.githooks/pre-commit` reste automatique et bloquant sur `STAGED` en
+  sélectionnant les contrôles selon les fichiers stagés (tout en conservant
+  systématiquement sentinelles canoniques, audit des secrets et `git diff
+  --cached --check`) ; le hook `.githooks/pre-push` doit exécuter le garde
+  rapide sur le `PUSH_CANDIDATE` exact transmis par Git ; les contrôles
+  statiques du candidat doivent rester sans installation de dépendances et
+  sans démarrages de processus redondants. Ne jamais relancer manuellement un
+  contrôle déjà couvert de façon équivalente par ces hooks, sauf nécessité de
+  diagnostic. Si une ressource temporaire
   est indisponible, attendre puis réessayer avec un backoff borné (30 s, 60 s,
   120 s ; maximum environ 5 minutes) ; ne pas abandonner au premier échec
   transitoire ; si le blocage est structurel (outil absent,

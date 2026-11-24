@@ -169,9 +169,25 @@ La boucle normale sélectionne selon le blast radius du `WORKTREE` :
 npm run checks:fast
 ```
 
-Le mode `DEVELOPMENT` est borné à 180 secondes. Il exécute les tests ciblés,
-typecheck/lint pertinents, les contrôles secrets et sécurité/AuthN/AuthZ/RLS et
-les contrats de migration. Une extraction, une création de module, une
+Le mode `DEVELOPMENT` est borné à 180 secondes. Il sélectionne les contrôles
+selon les fichiers modifiés, leurs consommateurs et le risque réel :
+
+- **Documentation pure** : contrôles documentaires pertinents, diff, secrets et
+  intégrité Git uniquement.
+- **Correctif local non sensible** : tests de régression ciblés et contrôles
+  techniques nécessaires, sans campagne massive ni mesure systématique de
+  couverture avant/après.
+- **Lot fonctionnel substantiel** : campagne proportionnée au périmètre et à ses
+  consommateurs directs, avec mesure de couverture pertinente.
+- **Changement sensible** : toutes les preuves de sécurité, AuthN/AuthZ, RLS,
+  PostgreSQL, concurrence et intégrité nécessaires.
+
+Ne jamais relancer manuellement un contrôle que les hooks (`pre-commit` /
+`pre-push`) exécutent déjà avec une couverture équivalente, sauf nécessité de
+diagnostic. Les validations larges non nécessaires à la preuve locale du lot
+sont déléguées à la CI (sans attendre systématiquement leur conclusion pour
+clôturer une correction ordinaire publiée, en signalant leur statut réel).
+Une extraction, une création de module, une
 modification d'import ou un refactor ne déclenche automatiquement aucun
 `quality:cycles`, `quality:duplication`, `quality:complexity`,
 `quality:dead-code` ou `quality:top-heavy`, y compris avant staging, commit,

@@ -194,7 +194,8 @@ it("approves only the bounded pre-application SPOGOMI signature repair", () => {
 it("approves only the exact pre-application SPOGOMI team-referee repair", () => {
   const source = readFileSync(auditScript, "utf8");
   assert.match(source, /20261124000005_spogomi_team_referee_assignments\.sql/);
-  assert.match(source, /90f04df9393990395ecfe10c5ccb83873407360ac5bb0b6b080b732bc7d836ea/);
+  assert.match(source, /b1b574385b56eeb184c8d9faffe6a013c2f6ab6aa6141584648369d5129d88e1/);
+  assert.doesNotMatch(source, /90f04df9393990395ecfe10c5ccb83873407360ac5bb0b6b080b732bc7d836ea/);
   assert.doesNotMatch(source, /dfac03aed90b74bf7af47b8a9ffe9c781c2278bc543bbcfa1808b4bd6d3cbab4/);
 });
 
