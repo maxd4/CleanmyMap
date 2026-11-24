@@ -24,11 +24,20 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
   const [referencedValue, setReferencedValue] = useState<string | null>(null);
   const blurTimerRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const lastRemoteQueryRef = useRef<{ key: string; suggestions: GeoAddressSuggestion[] } | null>(null);
   const trimmedValue = value.trim();
   const hasVisibleSuggestions = isOpen && trimmedValue.length > 0;
 
   useEffect(() => {
     if (!hasVisibleSuggestions || trimmedValue.length < 3) return;
+    const queryKey = `${countryCode}:${trimmedValue}`;
+    if (
+      referencedValue === trimmedValue ||
+      parseActionCoordinateInput(trimmedValue) !== null ||
+      lastRemoteQueryRef.current?.key === queryKey
+    ) {
+      return;
+    }
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -46,7 +55,10 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
           countryCode,
           signal: controller.signal,
         });
-        if (nextSuggestions !== null) setSuggestions(nextSuggestions);
+        if (nextSuggestions !== null) {
+          lastRemoteQueryRef.current = { key: queryKey, suggestions: nextSuggestions };
+          setSuggestions(nextSuggestions);
+        }
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
       }
@@ -58,7 +70,7 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
       clearTimeout(timer);
       controller.abort();
     };
-  }, [countryCode, hasVisibleSuggestions, trimmedValue]);
+  }, [countryCode, hasVisibleSuggestions, referencedValue, trimmedValue]);
 
   useEffect(() => () => {
     if (blurTimerRef.current !== null) window.clearTimeout(blurTimerRef.current);
@@ -92,6 +104,10 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
       setSuggestions([]);
       setIsLoading(false);
       setHighlightedIndex(0);
+      return;
+    }
+    if (lastRemoteQueryRef.current?.key === `${countryCode}:${trimmedValue}`) {
+      setSuggestions(lastRemoteQueryRef.current.suggestions);
     }
   };
   const handleBlur = () => {

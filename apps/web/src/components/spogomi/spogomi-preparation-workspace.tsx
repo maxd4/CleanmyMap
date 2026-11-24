@@ -70,6 +70,7 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   const [loadAttempt, setLoadAttempt] = useState(0);
   const pendingChecklistNavigation = useRef<{ anchor: string; divisionId?: string } | null>(null);
   const activeDivisionIdRef = useRef<string | null>(null);
+  const hydratedInitialDivisionRef = useRef<{ eventId: string; divisionId: string } | null>(null);
   const requestSequence = useRef(0);
   const beginRequest = useCallback(() => ({ id: ++requestSequence.current }), []);
   const isCurrentRequest = useCallback((request: { id: number }) => request.id === requestSequence.current, []);
@@ -96,11 +97,25 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   }, [isCurrentRequest]);
   useEffect(() => {
     activeDivisionIdRef.current = activeDivisionId;
+    if (
+      activeDivisionId &&
+      hydratedInitialDivisionRef.current?.eventId === eventId &&
+      hydratedInitialDivisionRef.current.divisionId === activeDivisionId
+    ) {
+      hydratedInitialDivisionRef.current = null;
+      return;
+    }
+    hydratedInitialDivisionRef.current = null;
     const request = { id: ++requestSequence.current };
     void fetchWorkspaceData(eventId, activeDivisionId).then((nextData) => {
       if (!isCurrentRequest(request)) return;
-      setData({ eventId, divisionId: activeDivisionId, value: nextData });
-      if (!activeDivisionId && nextData.divisions[0]?.id) setActiveDivisionId(nextData.divisions[0].id);
+      const resolvedDivisionId = activeDivisionId ?? nextData.divisions[0]?.id ?? null;
+      setData({ eventId, divisionId: resolvedDivisionId, value: nextData });
+      if (!activeDivisionId && nextData.divisions[0]?.id) {
+        hydratedInitialDivisionRef.current = { eventId, divisionId: nextData.divisions[0].id };
+        activeDivisionIdRef.current = nextData.divisions[0].id;
+        setActiveDivisionId(nextData.divisions[0].id);
+      }
     }).catch((reason) => {
       if (isCurrentRequest(request)) setError(reason instanceof Error ? reason.message : "Événement indisponible.");
     }).finally(() => {
@@ -265,6 +280,7 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     if (nextDivisionId === activeDivisionIdRef.current) return;
     if (draftDirty) { setError("Enregistrez ou annulez les modifications avant de changer de division."); return; }
     activeDivisionIdRef.current = nextDivisionId;
+    hydratedInitialDivisionRef.current = null;
     requestSequence.current += 1;
     setBusy(true);
     setData(null);
@@ -314,6 +330,7 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     window.requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
   }, [activeDivisionId, currentData]);
   function retryWorkspaceLoad() {
+    hydratedInitialDivisionRef.current = null;
     setBusy(true);
     setError(null);
     setLoadAttempt((attempt) => attempt + 1);

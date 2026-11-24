@@ -547,4 +547,19 @@ describe("SPOGOMI preparation workspace", () => {
     expect(JSON.stringify(renderer.toJSON())).toContain("Équipe World récupérée");
     renderer.unmount();
   });
+
+  it("loads the initial division in a single GET request instead of refetching after auto-selecting divisions[0]", async () => {
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="settings" showHeader={false} />); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
+    expect(fetchCalls()).toHaveLength(1);
+    expect(String(fetchCalls()[0]?.[0])).toBe("/api/spogomi/events/event-1");
+
+    const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
+    act(() => { propsOf<TabProps>(worldTab!).onClick?.(); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
+    expect(fetchCalls()).toHaveLength(2);
+    expect(String(fetchCalls()[1]?.[0])).toBe("/api/spogomi/events/event-1?divisionId=division-world");
+    renderer.unmount();
+  });
 });

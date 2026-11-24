@@ -75,6 +75,10 @@ describe("SPOGOMI management projection", () => {
     expect(result).toMatchObject({ event, divisions: [{ id: "casual" }], teams: [{ id: "team-1" }], route: { file_name: "route.gpx" } });
     expect(result.participants.map((participant) => participant.composition_eligible)).toEqual([true, false]);
     expect(fixture.queries.get("spogomi_participants")?.[0].calls.eq).toContainEqual(["division_id", "casual"]);
+
+    const defaultDivisionResult = await loadSpogomiManagementProjection({ supabase: fixture.supabase, event });
+    expect(defaultDivisionResult.route).toMatchObject({ file_name: "route.gpx" });
+    expect(fixture.queries.get("spogomi_participants")?.[1].calls.eq).toContainEqual(["division_id", "casual"]);
   });
 
   it("does not hide database failures behind an empty management projection", async () => {

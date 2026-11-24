@@ -27,6 +27,7 @@ export async function loadSpogomiManagementProjection(params: {
     .eq("event_id", event.id)
     .order("division_type");
   if (divisions.error) throw divisions.error;
+  const effectiveDivisionId = divisionId ?? (divisions.data?.[0]?.id ? String(divisions.data[0].id) : null);
 
   let participantsQuery = supabase
     .from("spogomi_participants")
@@ -38,9 +39,9 @@ export async function loadSpogomiManagementProjection(params: {
     .select("id, division_id, team_number, public_name, composition_state")
     .eq("event_id", event.id)
     .order("team_number");
-  if (divisionId) {
-    participantsQuery = participantsQuery.eq("division_id", divisionId);
-    teamsQuery = teamsQuery.eq("division_id", divisionId);
+  if (effectiveDivisionId) {
+    participantsQuery = participantsQuery.eq("division_id", effectiveDivisionId);
+    teamsQuery = teamsQuery.eq("division_id", effectiveDivisionId);
   }
 
   const [participants, teams, routes, eventAccess, categoryRules, environmentMappings, registrationReadiness] = await Promise.all([
@@ -79,7 +80,7 @@ export async function loadSpogomiManagementProjection(params: {
     participants: mapManagementParticipants((participants.data ?? []) as Array<Record<string, unknown>>),
     teams: teams.data ?? [],
     routes: (routes.data ?? []) as SpogomiRouteProjection[],
-    route: selectSpogomiRouteForDivision((routes.data ?? []) as SpogomiRouteProjection[], divisionId ?? null),
+    route: selectSpogomiRouteForDivision((routes.data ?? []) as SpogomiRouteProjection[], effectiveDivisionId),
     eventAccess: eventAccess.data ?? [],
     categoryRules: categoryRules.data ?? [],
     environmentMappings: environmentMappings.data ?? [],
