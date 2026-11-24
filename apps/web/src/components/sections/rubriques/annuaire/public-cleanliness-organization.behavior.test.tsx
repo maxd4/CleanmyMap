@@ -35,7 +35,7 @@ describe("PublicCleanlinessOrganization behavior", () => {
     expect(view.textContent).toContain("Direction de la Propreté et de l'Eau (DPE)");
     expect(view.textContent).toContain("Agents de terrain");
     expect(view.textContent).not.toMatch(/Caroline GROS|Delphine THIEFFRY/);
-    expect(view.querySelector('a[href="https://www.paris.fr/pages/la-proprete-239/"]')?.textContent).toContain("Propreté");
+    expect(view.querySelector('aside a[href="https://www.paris.fr/pages/la-proprete-239/"]')?.textContent).toContain("Propreté");
   });
 
   it("finds REQ by abbreviation and opens its unknown assignment details", () => {
@@ -142,6 +142,33 @@ describe("PublicCleanlinessOrganization behavior", () => {
     act(() => toggle.click());
     expect(view.querySelector("table")?.textContent).toContain("Town hall / mayor");
     expect(view.querySelector("table")?.textContent).toContain("REQ contact");
+  });
+
+  it("changes district and need, exposes conditions and navigates from public results", () => {
+    const view = mount();
+    const panel = view.querySelector('section[aria-labelledby="cleanliness-need-heading"]')!;
+    expect(panel.textContent).toContain("Qui contacter ?");
+    const [district, need] = [...panel.querySelectorAll<HTMLSelectElement>("select")];
+    expect(district.options).toHaveLength(20);
+    expect(need.options).toHaveLength(8);
+    act(() => {
+      district.value = "Paris:20";
+      district.dispatchEvent(new Event("change", { bubbles: true }));
+      need.value = "removal";
+      need.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(panel.textContent).toContain("Collecte municipale en régie");
+    expect(panel.textContent).not.toContain("Prestataires privés de collecte");
+    expect(panel.textContent).toContain("sans consigne explicite");
+    act(() => {
+      need.value = "storage";
+      need.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(panel.textContent).toContain("demande préalable");
+    const link = [...panel.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent === "Déchèteries et Espaces tri municipaux")!;
+    act(() => link.click());
+    expect(view.querySelector("aside h3")?.textContent).toBe("Déchèteries et Espaces tri municipaux");
+    expect(document.activeElement).toBe(view.querySelector("aside"));
   });
 
   it("translates the full interface and renders an injected non-Paris dataset", () => {

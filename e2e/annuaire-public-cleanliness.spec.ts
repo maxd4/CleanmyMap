@@ -83,6 +83,17 @@ test("mobile: filters, progressive navigation, zoom, sources and roving tab focu
   await organization.getByRole("button", { name: "Réinitialiser le zoom" }).click();
   await expect(organization.getByRole("button", { name: "Réinitialiser le zoom" })).toHaveText("100%");
 
+  const needPanel = organization.getByRole("region", { name: "Qui contacter ?" });
+  await needPanel.getByLabel("Arrondissement de l'opération").selectOption("Paris:20");
+  await needPanel.getByLabel("Besoin de l'organisateur").selectOption("equipment");
+  await expect(needPanel).toContainText("Pinces");
+  await expect(needPanel).toContainText("non établis");
+  await needPanel.getByLabel("Besoin de l'organisateur").selectOption("storage");
+  await expect(needPanel).toContainText("demande préalable");
+  await needPanel.getByRole("button", { name: "Déchèteries et Espaces tri municipaux", exact: true }).click();
+  await expect(organization.locator("aside h3")).toHaveText("Déchèteries et Espaces tri municipaux");
+  await expect(organization.locator("aside")).toBeFocused();
+
   const matrixToggle = organization.getByRole("button", { name: "Couverture institutionnelle par arrondissement" });
   await matrixToggle.click();
   const matrix = organization.getByRole("table", { name: "Couverture institutionnelle par arrondissement" });

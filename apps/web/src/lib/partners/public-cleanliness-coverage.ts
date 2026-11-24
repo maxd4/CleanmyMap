@@ -1,4 +1,4 @@
-import type { PublicCleanlinessCityDataset, PublicCleanlinessOrganizationNode as Node } from './public-cleanliness-organization';
+import { getPublicCleanlinessContact, type PublicCleanlinessCityDataset, type PublicCleanlinessOrganizationNode as Node } from './public-cleanliness-organization';
 
 /** The matrix is a projection of the canonical dataset, not another registry. */
 export function getPublicCleanlinessCoverage(dataset: PublicCleanlinessCityDataset) {
@@ -21,7 +21,7 @@ export function getPublicCleanlinessCoverage(dataset: PublicCleanlinessCityDatas
     const hall = group('town-halls');
     const dpe = group('stpp-divisions');
     const dpmp = group('dpmp-divisions');
-    const contacts = [...hall, ...dpe, ...dpmp].flatMap(n => n.publicContact ? [n.publicContact] : []);
+    const contacts = [...hall, ...dpe, ...dpmp].flatMap(n => { const contact = getPublicCleanlinessContact(n, dataset.sources); return contact ? [contact] : []; });
     const localMayor = holders('local_mayor');
     const delegates = holders('local_delegation');
     const dgs = roles('local_dgs');
@@ -40,7 +40,7 @@ export function getPublicCleanlinessCoverage(dataset: PublicCleanlinessCityDatas
       req: !reqHolders.some(h => h.status === 'confirmed'),
       field: !field.some(n => n.assignment === 'confirmed'),
       contacts: !contacts.some(c => c.kind === 'functional_contact'),
-      reqContact: !reqRoles.some(n => n.publicContact?.kind === 'functional_contact'),
+      reqContact: !reqRoles.some(n => getPublicCleanlinessContact(n, dataset.sources)?.kind === 'functional_contact'),
     };
     return { territoryId, hall, dpe, dpmp, localMayor, delegates, dgs, dgaep, reqRoles, reqHolders, field, contacts, gaps };
   });

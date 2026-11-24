@@ -25,7 +25,8 @@ describe("public cleanliness organization contract", () => {
   it("validates sourced Paris data, canonical Annuaire identifiers and unique shared divisions", () => {
     expect(validatePublicCleanlinessOrganization(PARIS_PUBLIC_CLEANLINESS_DATASET)).toEqual([]);
     expect(new Set(PARIS_PUBLIC_CLEANLINESS_NODES.map((node) => node.id)).size).toBe(PARIS_PUBLIC_CLEANLINESS_NODES.length);
-    expect(PUBLIC_CLEANLINESS_SOURCES.every((source) => source.verifiedAt === "2026-11-24")).toBe(true);
+    expect(PUBLIC_CLEANLINESS_SOURCES.every((source) => /^\d{4}-\d{2}-\d{2}$/.test(source.verifiedAt))).toBe(true);
+    expect(PUBLIC_CLEANLINESS_SOURCES.find(source => source.id === "paris-participatory-cleaning")?.verifiedAt).toBe("2026-11-25");
     expect(PARIS_PUBLIC_CLEANLINESS_NODES.find((node) => node.id === "dpe")).toMatchObject({ legalEmployerId: "city-paris", unitId: "city-paris", directoryId: "evt-paris-nettoyages" });
     expect(PARIS_PUBLIC_CLEANLINESS_NODES.find((node) => node.id === "stpp")).toMatchObject({ legalEmployerId: "city-paris", unitId: "dpe" });
     expect(PARIS_PUBLIC_CLEANLINESS_NODES.find((node) => node.id === "syctom")?.directoryId).toBeUndefined();

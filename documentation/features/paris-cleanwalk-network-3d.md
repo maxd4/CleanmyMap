@@ -26,7 +26,7 @@ Dans `/sections/annuaire`, le réseau est présenté dans l'onglet « Réseau 3D
 - **Cleanwalk.org** (`cleanwalk-org`) est typée comme `plateforme_publication` ; ses fonctionnalités V2 indisponibles sont signalées et aucune opération ou bénévole des structures utilisatrices ne lui est attribuée.
 - **CleanMyMap** (`cleanmymap`, 26e nœud) est documentée comme plateforme éditrice du réseau (`plateforme_mise_en_relation`, `plateforme_publication`, projet civic-tech open source initié par Maxence Deroome selon `README.md` et `AUTHORS.md`), sans présumer qu'elle est une association constituée ni que les autres acteurs du graphe sont ses partenaires (`isCleanMyMapMember: false` conservé).
 - Aucun acteur du registre n'est présenté comme membre du réseau CleanMyMap (`isCleanMyMapMember: false`).
-- Aucun prêt de matériel n'est attribué à un tiers sans preuve directe (`fournit_materiel` est réservé aux acteurs disposant d'une source vérifiée, notamment la Ville de Paris / DPE). Les nœuds de prévention/sensibilisation sans relation directe démontrée sont conservés sans arête présumée.
+- Aucun prêt de matériel n'est attribué à un tiers sans preuve directe (`fournit_materiel` est réservé aux acteurs disposant d'une source vérifiée, notamment la Ville de Paris / DPE). Pour la DPE, la source municipale annonce sacs et gants sur demande et cendriers de poche selon disponibilité ; ce statut ne prouve ni stock, ni prêt accordé, ni fourniture de pinces ou chasubles. Les nœuds de prévention/sensibilisation sans relation directe démontrée sont conservés sans arête présumée.
 
 ## 3. Contrat relationnel et calcul d'épaisseur
 
