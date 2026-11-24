@@ -4,11 +4,14 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import frMessages from "@/locales/fr.json";
+import enMessages from "@/locales/en.json";
 import {
   SpogomiInternational,
   SpogomiPublicEvents,
   SpogomiUnderstanding,
 } from "./spogomi-index-sections";
+import { SpogomiUnderstandingTabs } from "./spogomi-understanding-tabs";
 
 const copy: Record<string, string> = {
   "understanding.howItWorksTitle": "Qu’est-ce qu’une compétition SPOGOMI ?",
@@ -270,5 +273,84 @@ describe("SpogomiPublicEvents", () => {
     );
     expect(markup).not.toContain("/spogomi/nouveau");
     expect(markup).not.toContain("Créer un événement");
+  });
+
+  it("renders the 5 interactive pedagogical steps in FR and EN with safe contextual links and removes redundant paragraphs", () => {
+    const createTranslator = (messages: Record<string, unknown>) => (key: string) => {
+      const [ns, prop] = key.split(".");
+      const section = (messages.spogomi as Record<string, Record<string, string>>)?.[ns];
+      return section?.[prop] ?? key;
+    };
+
+    const frAnonMarkup = renderToStaticMarkup(
+      <SpogomiUnderstanding locale="fr" t={createTranslator(frMessages)} isSignedIn={false} />,
+    );
+    expect(frAnonMarkup).toContain("S’inscrire &amp; Se préparer à un événement SPOGOMI");
+    expect(frAnonMarkup).toContain("Avant l’événement");
+    expect(frAnonMarkup).toContain("Briefing &amp; Ramassage des déchets le jour J");
+    expect(frAnonMarkup).toContain("Tri et pesée");
+    expect(frAnonMarkup).toContain("Calcul des points, Classements et Récompenses");
+    expect(frAnonMarkup).toContain("md:grid-cols-2 xl:grid-cols-3");
+    expect(frAnonMarkup).not.toContain("xl:grid-cols-5");
+    expect(frAnonMarkup).toContain('href="/spogomi#spogomi-formats-rules"');
+    expect(frAnonMarkup).toContain('href="/spogomi#spogomi-events"');
+    expect(frAnonMarkup).toContain('href="/sign-in?redirect_url=%2Fspogomi"');
+    expect(frAnonMarkup).toContain('href="/spogomi/mes-evenements?parcours=referees"');
+    expect(frAnonMarkup).toContain('href="/sections/messagerie?tab=discussions&amp;channel=community&amp;topicId=spogomi"');
+    expect(frAnonMarkup).toContain("underline decoration-2");
+    expect(frAnonMarkup).toContain("focus-visible:ring-2");
+    // No redundant description paragraphs under 01 and 02
+    expect(frAnonMarkup).not.toContain("Une édition suit un déroulé commun");
+    expect(frAnonMarkup).not.toContain("Les paramètres variables restent ceux de chaque édition publiée");
+    // No invented private links on /spogomi when no event/authorization is passed
+    expect(frAnonMarkup).not.toContain("/gestion");
+    expect(frAnonMarkup).not.toContain("/actions/");
+
+    const frSignedMarkup = renderToStaticMarkup(
+      <SpogomiUnderstanding locale="fr" t={createTranslator(frMessages)} isSignedIn={true} />,
+    );
+    expect(frSignedMarkup).toContain('href="/spogomi/mes-evenements"');
+
+    const enMarkup = renderToStaticMarkup(
+      <SpogomiUnderstanding locale="en" t={createTranslator(enMessages)} isSignedIn={false} />,
+    );
+    expect(enMarkup).toContain("Register &amp; Prepare for a SPOGOMI Event");
+    expect(enMarkup).toContain("Points Calculation, Rankings &amp; Rewards");
+
+    // Authorized operationsHref and publicActionHref are rendered only when explicitly provided
+    const contextualMarkup = renderToStaticMarkup(
+      <SpogomiUnderstandingTabs
+        copy={{
+          ...((frMessages.spogomi as Record<string, Record<string, string>>).understanding as unknown as Parameters<typeof SpogomiUnderstandingTabs>[0]["copy"]),
+          casualTitle: "Casual",
+          casualDescription: "Casual desc",
+          worldCupTitle: "World Cup",
+          worldCupDescription: "WC desc",
+          examples: [],
+          stepSegments: {
+            step4: { beforeForm: "Remplit ", formLink: "formulaire de collecte", after: "." },
+            step5: { beforeResults: "Voir ", resultsLink: "classement", beforeAction: " puis ", actionLink: "action globale", after: "." },
+          },
+        }}
+        context={{
+          isSignedIn: true,
+          eventSlug: "paris-2026",
+          hasLinkedParticipation: true,
+          operationsHref: "/spogomi/paris-2026/espace?section=operations",
+          publicActionHref: "/actions/action-1",
+        }}
+      />,
+    );
+    expect(contextualMarkup).toContain('href="/spogomi/paris-2026/espace?section=operations"');
+    expect(contextualMarkup).toContain('href="/actions/action-1"');
+    expect(contextualMarkup).toContain('href="/spogomi/paris-2026?focus=results#spogomi-public-results"');
+
+    // Section 03 removes redundant catalog & Cachan paragraphs while preserving unofficial badge without Supabase mention
+    const eventsMarkup = renderToStaticMarkup(
+      <SpogomiPublicEvents events={[]} loadError={false} />,
+    );
+    expect(eventsMarkup).not.toContain("Les éditions publiées sont classées par calendrier");
+    expect(eventsMarkup).not.toContain("rien n’est créé dans Supabase");
+    expect(eventsMarkup).toContain("DEMONSTRATION / NON OFFICIEL");
   });
 });

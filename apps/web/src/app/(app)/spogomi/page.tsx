@@ -45,7 +45,11 @@ export default async function SpogomiIndexPage() {
           title="SPOGOMI"
           subtitle="Comprenez le déroulement, comparez les formats et découvrez les éditions publiées."
         />
-        <SpogomiUnderstanding locale={locale} t={t} />
+        <SpogomiUnderstanding
+          locale={locale}
+          t={t}
+          isSignedIn={activeRole !== "anonymous"}
+        />
         <SpogomiPublicEvents
           events={events}
           loadError={loadError}

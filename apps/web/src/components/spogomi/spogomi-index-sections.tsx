@@ -20,11 +20,10 @@ import {
   type SpogomiInternationalContentProps,
 } from "./spogomi-international-content";
 import {
-  getSpogomiCachanDemoScenario,
   SPOGOMI_CACHAN_DEMO_MARKER,
-  SPOGOMI_CACHAN_DEMO_NOTICE,
   SPOGOMI_CACHAN_DEMO_ROUTE,
   SPOGOMI_CACHAN_DEMO_SCENARIO_NAME,
+  getSpogomiCachanDemoScenario,
 } from "@/lib/spogomi/demo-scenario";
 import {
   SPOGOMI_EXTERNAL_EVENTS,
@@ -214,11 +213,7 @@ function DemoCatalogCard() {
         <DemoStat icon={Users} value={CACHAN_DEMO_STATS.teams} label="Équipes" />
         <DemoStat icon={MapPin} value={CACHAN_DEMO_STATS.places} label="Places" />
       </dl>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="max-w-2xl text-sm leading-6 text-amber-950">
-          {SPOGOMI_CACHAN_DEMO_NOTICE}. Les mesures, compositions et scores
-          attendus restent synthétiques ; rien n’est créé dans Supabase.
-        </p>
+      <div className="flex flex-wrap items-center justify-end gap-4">
         <CmmButton
           href={SPOGOMI_CACHAN_DEMO_ROUTE}
           tone="primary"
@@ -301,20 +296,16 @@ export function SpogomiPublicEvents({
         <span id="spogomi-contributions" />
         <span id="spogomi-attestations" />
       </div>
-      <div>
-        <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-700">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="text-lg font-black uppercase tracking-[0.14em] text-emerald-700 sm:text-xl">
           03
-        </p>
+        </span>
         <h2
           id="spogomi-events-title"
-          className="mt-1 text-2xl font-black text-slate-950"
+          className="min-w-0 flex-1 text-2xl font-black text-slate-950"
         >
           Compétitions disponibles
         </h2>
-        <p className="cmm-text-body mt-1 text-slate-950">
-          Les éditions publiées sont classées par calendrier ; les résultats et
-          leur provenance restent affichés séparément.
-        </p>
       </div>
       <DemoCatalogCard />
       {loadError ? (
@@ -403,6 +394,51 @@ function buildUnderstandingCopy(
     stepSortDescription: t("understanding.stepSortDescription"),
     stepPointsTitle: t("understanding.stepPointsTitle"),
     stepPointsDescription: t("understanding.stepPointsDescription"),
+    stepSegments: {
+      step1: {
+        beforeRules: t("understanding.stepTeamsBeforeRules"),
+        rulesLink: t("understanding.stepTeamsRulesLink"),
+        beforeEvent: t("understanding.stepTeamsBeforeEvent"),
+        eventLink: t("understanding.stepTeamsEventLink"),
+        beforeAccount: t("understanding.stepTeamsBeforeAccount"),
+        accountLink: t("understanding.stepTeamsAccountLink"),
+        beforeQuiz: t("understanding.stepTeamsBeforeQuiz"),
+        quizLink: t("understanding.stepTeamsQuizLink"),
+        beforePath: t("understanding.stepTeamsBeforePath"),
+        refereeLink: t("understanding.stepTeamsRefereeLink"),
+        beforeTeam: t("understanding.stepTeamsBeforeTeam"),
+        teamLink: t("understanding.stepTeamsTeamLink"),
+        after: t("understanding.stepTeamsAfter"),
+      },
+      step2: {
+        beforeTeam: t("understanding.stepCollectBeforeTeam"),
+        teamLink: t("understanding.stepCollectTeamLink"),
+        beforeWhen: t("understanding.stepCollectBeforeWhen"),
+        whenLink: t("understanding.stepCollectWhenLink"),
+        beforeInfo: t("understanding.stepCollectBeforeInfo"),
+        infoLink: t("understanding.stepCollectInfoLink"),
+        beforeForum: t("understanding.stepCollectBeforeForum"),
+        forumLink: t("understanding.stepCollectForumLink"),
+        after: t("understanding.stepCollectAfter"),
+      },
+      step3: {
+        beforeRules: t("understanding.stepReturnBeforeRules"),
+        rulesLink: t("understanding.stepReturnRulesLink"),
+        after: t("understanding.stepReturnAfter"),
+      },
+      step4: {
+        beforeForm: t("understanding.stepSortBeforeForm"),
+        formLink: t("understanding.stepSortFormLink"),
+        after: t("understanding.stepSortAfter"),
+      },
+      step5: {
+        beforeResults: t("understanding.stepPointsBeforeResults"),
+        resultsLink: t("understanding.stepPointsResultsLink"),
+        beforeAction: t("understanding.stepPointsBeforeAction"),
+        actionLink: t("understanding.stepPointsActionLink"),
+        after: t("understanding.stepPointsAfter"),
+      },
+    },
     formatsTitle: t("understanding.formatsTitle"),
     formatsDescription: t("understanding.formatsDescription"),
     compositionLabel: t("understanding.compositionLabel"),
@@ -459,11 +495,18 @@ function buildUnderstandingCopy(
 export function SpogomiUnderstanding({
   locale,
   t,
+  isSignedIn = false,
 }: {
   locale: Locale;
   t: Translate;
+  isSignedIn?: boolean;
 }) {
-  return <SpogomiUnderstandingTabs copy={buildUnderstandingCopy(locale, t)} />;
+  return (
+    <SpogomiUnderstandingTabs
+      copy={buildUnderstandingCopy(locale, t)}
+      context={{ isSignedIn }}
+    />
+  );
 }
 
 export function SpogomiInternational({
@@ -479,11 +522,11 @@ export function SpogomiInternational({
       className="scroll-mt-6 space-y-3"
       data-testid="spogomi-world-section"
     >
-      <div>
-        <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-700">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="text-lg font-black uppercase tracking-[0.14em] text-emerald-700 sm:text-xl">
           04
-        </p>
-        <h2 className="mt-1 text-2xl font-black text-slate-950">
+        </span>
+        <h2 className="min-w-0 flex-1 text-2xl font-black text-slate-950">
           {t("international.worldTitle")}
         </h2>
       </div>

@@ -1,7 +1,11 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
 import { Footprints, Flag, Scale, Timer, Trophy, Users } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmIcon } from "@/components/ui/cmm-icon";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
+import { buildSpogomiEventHref } from "@/lib/spogomi/navigation-intent";
 
 export type SpogomiUnderstandingExample = {
   id: string;
@@ -24,6 +28,51 @@ export type SpogomiUnderstandingCopy = {
   stepSortDescription: string;
   stepPointsTitle: string;
   stepPointsDescription: string;
+  stepSegments?: {
+    step1?: {
+      beforeRules: string;
+      rulesLink: string;
+      beforeEvent: string;
+      eventLink: string;
+      beforeAccount: string;
+      accountLink: string;
+      beforeQuiz: string;
+      quizLink: string;
+      beforePath: string;
+      refereeLink: string;
+      beforeTeam: string;
+      teamLink: string;
+      after: string;
+    };
+    step2?: {
+      beforeTeam: string;
+      teamLink: string;
+      beforeWhen: string;
+      whenLink: string;
+      beforeInfo: string;
+      infoLink: string;
+      beforeForum: string;
+      forumLink: string;
+      after: string;
+    };
+    step3?: {
+      beforeRules: string;
+      rulesLink: string;
+      after: string;
+    };
+    step4?: {
+      beforeForm: string;
+      formLink: string;
+      after: string;
+    };
+    step5?: {
+      beforeResults: string;
+      resultsLink: string;
+      beforeAction: string;
+      actionLink: string;
+      after: string;
+    };
+  };
   formatsTitle: string;
   formatsDescription: string;
   compositionLabel: string;
@@ -73,47 +122,167 @@ const steps = [
   { titleKey: "stepPointsTitle", descriptionKey: "stepPointsDescription", icon: Trophy },
 ] as const;
 
-export function SpogomiUnderstandingTabs({ copy }: { copy: SpogomiUnderstandingCopy }) {
+export type SpogomiUnderstandingContext = {
+  isSignedIn?: boolean;
+  eventSlug?: string | null;
+  hasLinkedParticipation?: boolean;
+  operationsHref?: string | null;
+  publicActionHref?: string | null;
+};
+
+const stepLinkClassName =
+  "font-semibold text-emerald-900 underline decoration-2 underline-offset-2 transition hover:text-emerald-700 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600";
+
+function StepLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link href={href} className={stepLinkClassName}>
+      {children}
+    </Link>
+  );
+}
+
+function renderStepBody(
+  index: number,
+  copy: SpogomiUnderstandingCopy,
+  context: SpogomiUnderstandingContext,
+): ReactNode {
+  const seg = copy.stepSegments;
+  const eventSlug = context.eventSlug ?? null;
+  const accountHref = context.isSignedIn
+    ? "/spogomi/mes-evenements"
+    : buildSignInRedirectHref("/spogomi");
+  const quizHref = eventSlug
+    ? buildSpogomiEventHref(eventSlug, { focus: "quiz" })
+    : "/spogomi#spogomi-events";
+  const teamHref = eventSlug
+    ? buildSpogomiEventHref(eventSlug, { focus: "team" })
+    : "/spogomi#spogomi-events";
+  const practicalHref = eventSlug
+    ? buildSpogomiEventHref(eventSlug, { focus: "practical" })
+    : "/spogomi#spogomi-events";
+  const resultsHref = eventSlug
+    ? buildSpogomiEventHref(eventSlug, { focus: "results" })
+    : "/spogomi#spogomi-events";
+
+  if (index === 0 && seg?.step1) {
+    const s = seg.step1;
+    return (
+      <>
+        {s.beforeRules}
+        <StepLink href="/spogomi#spogomi-formats-rules">{s.rulesLink}</StepLink>
+        {s.beforeEvent}
+        <StepLink href="/spogomi#spogomi-events">{s.eventLink}</StepLink>
+        {s.beforeAccount}
+        <StepLink href={accountHref}>{s.accountLink}</StepLink>
+        {s.beforeQuiz}
+        <StepLink href={quizHref}>{s.quizLink}</StepLink>
+        {s.beforePath}
+        <StepLink href="/spogomi/mes-evenements?parcours=referees">{s.refereeLink}</StepLink>
+        {s.beforeTeam}
+        <StepLink href={teamHref}>{s.teamLink}</StepLink>
+        {s.after}
+      </>
+    );
+  }
+  if (index === 1 && seg?.step2) {
+    const s = seg.step2;
+    return (
+      <>
+        {s.beforeTeam}
+        <StepLink href={teamHref}>{s.teamLink}</StepLink>
+        {s.beforeWhen}
+        <StepLink href={practicalHref}>{s.whenLink}</StepLink>
+        {s.beforeInfo}
+        {context.hasLinkedParticipation ? (
+          <StepLink href="/spogomi/mes-evenements">{s.infoLink}</StepLink>
+        ) : (
+          s.infoLink
+        )}
+        {s.beforeForum}
+        <StepLink href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi">
+          {s.forumLink}
+        </StepLink>
+        {s.after}
+      </>
+    );
+  }
+  if (index === 2 && seg?.step3) {
+    const s = seg.step3;
+    return (
+      <>
+        {s.beforeRules}
+        <StepLink href="/spogomi#spogomi-formats-rules">{s.rulesLink}</StepLink>
+        {s.after}
+      </>
+    );
+  }
+  if (index === 3 && seg?.step4) {
+    const s = seg.step4;
+    return (
+      <>
+        {s.beforeForm}
+        {context.operationsHref ? (
+          <StepLink href={context.operationsHref}>{s.formLink}</StepLink>
+        ) : (
+          s.formLink
+        )}
+        {s.after}
+      </>
+    );
+  }
+  if (index === 4 && seg?.step5) {
+    const s = seg.step5;
+    return (
+      <>
+        {s.beforeResults}
+        <StepLink href={resultsHref}>{s.resultsLink}</StepLink>
+        {s.beforeAction}
+        {context.publicActionHref ? (
+          <StepLink href={context.publicActionHref}>{s.actionLink}</StepLink>
+        ) : (
+          s.actionLink
+        )}
+        {s.after}
+      </>
+    );
+  }
+  return copy[steps[index].descriptionKey];
+}
+
+export function SpogomiUnderstandingTabs({
+  copy,
+  context = {},
+}: {
+  copy: SpogomiUnderstandingCopy;
+  context?: SpogomiUnderstandingContext;
+}) {
   return (
     <div className="space-y-8" data-testid="spogomi-understanding-sections">
       <section id="spogomi-how-it-works" className="scroll-mt-6 space-y-4" aria-labelledby="spogomi-how-it-works-title">
-        <div>
-          <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-700">01</p>
-          <h2 id="spogomi-how-it-works-title" className="mt-1 text-2xl font-black text-slate-950">{copy.howItWorksTitle}</h2>
-          <p className="cmm-text-body mt-1 max-w-3xl text-slate-950">{copy.howItWorksDescription}</p>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-lg font-black uppercase tracking-[0.14em] text-emerald-700 sm:text-xl">01</span>
+          <h2 id="spogomi-how-it-works-title" className="min-w-0 flex-1 text-2xl font-black text-slate-950">{copy.howItWorksTitle}</h2>
         </div>
         <ol
-          className="relative grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
+          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
           aria-label={copy.howItWorksTitle}
           data-testid="spogomi-process-timeline"
         >
-          <span
-            aria-hidden="true"
-            className="absolute left-[10%] right-[10%] top-7 hidden h-px bg-emerald-200 xl:block"
-          />
-          <span
-            aria-hidden="true"
-            className="absolute bottom-5 left-3 top-5 w-px bg-emerald-200 sm:hidden"
-          />
           {steps.map((step, index) => {
             const Icon = step.icon;
             return (
-              <li key={step.titleKey} className="relative min-w-0 pl-8 sm:pl-0" data-testid={`spogomi-process-step-${index + 1}`}>
-                <span
-                  aria-hidden="true"
-                  className="absolute left-0 top-5 size-6 rounded-full border-4 border-white bg-emerald-500 sm:hidden"
-                />
-                <CmmCard tone="emerald" variant="glass" size="sm" className="relative z-10 flex h-full flex-col gap-3 border-emerald-200/80 bg-white/90 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-700 text-white shadow-sm">
-                      <CmmIcon icon={Icon} size="lg" />
+              <li key={step.titleKey} className="min-w-0" data-testid={`spogomi-process-step-${index + 1}`}>
+                <CmmCard tone="emerald" variant="glass" size="sm" className="flex h-full flex-col gap-3 border-emerald-200/80 bg-white/90 p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-700 text-white shadow-sm">
+                      <CmmIcon icon={Icon} size="md" />
                     </span>
-                    <span className="inline-flex size-7 items-center justify-center rounded-full bg-emerald-100 text-sm font-black text-emerald-950">
-                      {index + 1}
-                    </span>
+                    <div className="flex min-w-0 flex-1 items-baseline gap-2.5">
+                      <span className="shrink-0 text-xl font-black leading-none text-emerald-800">{index + 1}.</span>
+                      <h3 className="min-w-0 font-black leading-snug text-slate-950">{copy[step.titleKey]}</h3>
+                    </div>
                   </div>
-                  <h3 className="font-black text-slate-950">{copy[step.titleKey]}</h3>
-                  <p className="text-sm leading-6 text-slate-800">{copy[step.descriptionKey]}</p>
+                  <p className="text-sm leading-6 text-slate-800">{renderStepBody(index, copy, context)}</p>
                 </CmmCard>
               </li>
             );
@@ -122,10 +291,9 @@ export function SpogomiUnderstandingTabs({ copy }: { copy: SpogomiUnderstandingC
       </section>
 
       <section id="spogomi-formats-rules" className="scroll-mt-6 space-y-4" aria-labelledby="spogomi-formats-title">
-        <div>
-          <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-700">02</p>
-          <h2 id="spogomi-formats-title" className="mt-1 text-2xl font-black text-slate-950">{copy.formatsTitle}</h2>
-          <p className="cmm-text-body mt-1 max-w-3xl text-slate-950">{copy.formatsDescription}</p>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-lg font-black uppercase tracking-[0.14em] text-emerald-700 sm:text-xl">02</span>
+          <h2 id="spogomi-formats-title" className="min-w-0 flex-1 text-2xl font-black text-slate-950">{copy.formatsTitle}</h2>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <FormatBlock

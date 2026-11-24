@@ -80,6 +80,15 @@ recalculé en JavaScript.
 primitives n'acceptent pas de variante de largeur, de padding ou d'espacement :
 ces valeurs sont des tokens CSS communs à toutes les pages.
 
+### Titres de section numérotés (`CURRENT`)
+
+Tout titre de section numérotée (`01`, `02`, etc.) doit présenter le numéro et le
+titre dans une composition horizontale cohérente (`flex` avec alignement de ligne
+de base), avec un numéro visible et un texte pouvant se replier naturellement
+sur mobile (`flex-wrap`, `min-w-0`), sans troncature ni débordement horizontal.
+Cette règle s'applique aux en-têtes de section locaux sans modifier `PageHeader`
+ni imposer une migration globale des pages existantes.
+
 ### Composition des rubriques via `SectionShell`
 
 `apps/web/src/components/sections/rubriques/shared.tsx` expose `SectionShell`,
