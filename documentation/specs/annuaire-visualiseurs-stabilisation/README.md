@@ -19,9 +19,13 @@
 
 - `10-megothon-enrichissement.patch` : six acteurs, relations documentées et financement qualifié, chaîne de traitement 2D, raccordement du composant Limites et tests. À intégrer après 08 et 09, dans le même lot de code et de tests. Adapter les hunks 2D à l'état issu de 06/07 (contextes textuels stables, numéros de ligne indicatifs).
 
+- `11-contrats-limites.patch` : modifications candidates des deux contrats spécialisés, à intégrer avec 09/10 après 08. La politique produit est déjà publiée dans l'ambition territoriale.
+
 ## Intégration et validations
 
 Intégrer depuis le checkout courant, vérifier les collisions et utiliser `git apply --check` avant application des patches. Si le contenu actuel a changé, adapter seulement les modifications nécessaires aux owners. Ordre public : 01 puis 05 ; 02 puis 06 ; 07 après les deux chaînes ; 08 après 07. Le lot privé 03/04 peut avancer séparément. Code, tests et contrats documentaires doivent être intégrés ensemble. Le patch 08 contient les modifications des owners documentaires à adapter lors de cette intégration. Préserver les changements étrangers. Vérifier les références, libellés et scénarios de régression au runtime. Ne pas recopier de fichiers entiers issus d'un checkout historique.
+
+Enrichissement mégots : 09, 10 et 11 constituent un même lot. Les candidats 09/10 ont été complétés par les sources directes du rapport WCD France, de MéGO! et des annonces locales. Ne pas créer de relation pour une annonce conditionnelle ou un financement indirect ; vérifier les références croisées et les preuves de chaque source. Les données publiques, le modèle, les deux consommateurs et les tests doivent être intégrés ensemble. Aucun contact nominatif ou adresse électronique supplémentaire n'est publié. Les limites et chiffres restent repliables, sans nouveaux filtres.
 
 Le SQL est un candidat à adapter dans une migration forward-only nommée par la CLI. Les migrations de suivi et d'idempotence ont été observées dans l'historique distant le 25 novembre 2026 ; revérifier les données et la compatibilité avant toute application. Ne jamais supprimer des faits historiques pour faire passer les contraintes. Préserver RLS, grants et audit.
 

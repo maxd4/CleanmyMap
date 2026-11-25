@@ -189,6 +189,18 @@ Les couleurs représentent des familles, les traits des types et états de relat
 
 Les identités communes reposent uniquement sur les références explicites existantes. La navigation entre onglets ouvre la structure correspondante sans modifier les registres ni attribuer une contribution d'une direction à ses unités filles. Les données privées restent exclues. Les contacts, capacités matérielles, financements, accords et compétences non prouvés restent qualifiés comme tels.
 
+#### Limites, financement et qualité des preuves
+
+**Décision produit du 25 novembre 2026, PLAN jusqu'à intégration.** Le réseau et l'organisation institutionnelle doivent permettre de lire les limites documentées d'une structure sans la noter ni la classer. Le même contenu public est réutilisé par identité explicite, jamais par nom, proximité dans un graphe, hiérarchie ou affiliation. Une fiche sans élément sourcé ne reçoit pas un label rassurant ni une suspicion par défaut.
+
+L'interface conserve deux onglets et les filtres existants. Les chiffres, sources et limites sont des détails de la fiche sélectionnée, sans nouveau tableau de bord, score de confiance ou filtre de controverse. Un élément porte une catégorie, sa portée (structure, opération, territoire, période), une source publique datée et un statut : fait documenté, critique attribuée, ou information non établie dans les sources consultées. Les déclarations d'organisateurs, offres commerciales, sources publiques et positions critiques restent distinguées.
+
+Un financement REP, un mécénat financier, une contribution matérielle, un soutien technique et un partenariat sont des relations distinctes. Les montants d'une association, d'une édition nationale, d'une collectivité ou d'une antenne ne se transfèrent pas entre elles. Une critique de greenwashing ou de conflit d'intérêts doit identifier l'auteur, la date, la source et la portée ; elle n'est ni une qualification judiciaire ni une culpabilité par association. Les bénéficiaires d'un financeur controversé ne reçoivent pas automatiquement ses critiques. Aucun contact privé, allégation non sourcée ou conclusion sur l'intention d'une personne.
+
+Pour les mégots, séparer comptage, masse, collecte, admission, transport, recyclage matière, valorisation énergétique et élimination. Une offre commerciale, un taux déclaré ou un certificat de collecte ne vaut pas preuve du traitement d'un lot, d'un impact évité, d'un audit indépendant ou d'un crédit reconnu. Ne pas multiplier un nombre de mégots par un volume d'eau présenté comme impact mesuré. Les chiffres nationaux et régionaux ne permettent pas de reconstituer un total parisien. Les déclarations non confirmées et les résultats partiels restent explicitement qualifiés. Les acteurs et opérateurs hors Paris ne sont présentés dans ce territoire que pour un rôle régional, national lié à Paris ou de traitement aval documenté, sans inventer d'adresse, desserte ou implantation.
+
+La connaissance durable est tenue dans les owners de l'annuaire et leurs contrats spécialisés, sans CRM public ni nouvelle base. Le premier enrichissement porte sur le Mégothon, son collectif, ses financeurs documentés et les filières de mégots. Une proposition utilisateur ou un signalement ouvre une revue éditoriale, pas une publication automatique. En cas de nouvelle preuve contradictoire ou de réponse publique d'une structure, conserver la portée et la provenance, actualiser l'élément ou le retirer s'il n'est plus défendable.
+
 #### Séquencement et extensions
 
 1. Stabiliser le réseau, l'organigramme et le suivi privé déjà engagés.

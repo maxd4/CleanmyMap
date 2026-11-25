@@ -16,7 +16,7 @@ new file mode 100644
 +    publicLeader: null,
 +    officialWebsite: website,
 +    publicContact: { label: "Site officiel", url: website, certainty: "verifie" },
-+    publicChannels: [createVerifiedChannel("site_officiel", "Site officiel", website, seed.name, sourceUrl)],
++    publicChannels: [{ ...createVerifiedChannel("site_officiel", "Site officiel", website, seed.name, sourceUrl), provenance: { sourceLabel: seed.name, sourceUrl, verifiedAt, certainty: "verifie" } }],
 +    equipmentAvailability: { status: "incertain", summary: "Conditions de matériel, collecte et accès à confirmer ; aucun prêt ou traitement de lot acquis.", certainty: "partiel_ou_incertain" },
 +    provenance: { sourceLabel: seed.name + " : présentation et activité publique", sourceUrl, secondarySourceUrl, certainty: "verifie" },
 +    verifiedAt,

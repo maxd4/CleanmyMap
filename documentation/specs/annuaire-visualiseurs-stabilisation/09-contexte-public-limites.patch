@@ -80,7 +80,7 @@ diff --git a/apps/web/src/lib/partners/public-structure-context.megots.ts b/apps
 new file mode 100644
 --- /dev/null
 +++ b/apps/web/src/lib/partners/public-structure-context.megots.ts
-@@ -0,0 +1,864 @@
+@@ -0,0 +1,1068 @@
 +import type { PublicStructureContext, PublicStructureSource } from "./public-structure-context";
 +
 +/** Editorial public evidence only; no private contact or administrative store. */
@@ -281,6 +281,30 @@ new file mode 100644
 +    "label": "Ville de Paris : devenir des déchets non triés",
 +    "url": "https://www.paris.fr/pages/que-deviennent-les-dechets-non-tries-36100",
 +    "evidence": "public_authority",
++    "verifiedAt": "2026-11-25"
++  },
++  "paris-bastille-2026": {
++    "label": "Ville de Paris : annonce de la clôture à Bastille, 30 mai 2026",
++    "url": "https://www.paris.fr/pages/3-questions-a-pierre-ambroise-bosse-et-bryan-cantero-les-sportifs-qui-vont-vous-faire-ramasser-des-megots-35282",
++    "evidence": "public_authority",
++    "verifiedAt": "2026-11-25"
++  },
++  "chatelet-2025": {
++    "label": "PikPik Environnement : annonce du ramassage du 24 mai 2025",
++    "url": "https://pikpik.org/%C3%A9v%C3%A8nement/megothon-2025/",
++    "evidence": "organizer_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "brigade-tchao-2026": {
++    "label": "Fondation de la Mer : annonce Quartier Propre du 21 mars 2026",
++    "url": "https://www.fondationdelamer.org/agenda/operation-quartier-propre-paris-20eme-porte-des-lilas-jardin-serge-gainsbourg/",
++    "evidence": "partner_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "one-waste-2025": {
++    "label": "1 Déchet par Jour : relais Mégothon 2025",
++    "url": "https://www.1dechetparjour.com/evenements/megothon-2025",
++    "evidence": "organizer_statement",
 +    "verifiedAt": "2026-11-25"
 +  }
 +};
@@ -561,6 +585,46 @@ new file mode 100644
 +          "megothon-2026-partner",
 +          "megothon-2025"
 +        ]
++      },
++      {
++        "id": "operators-2025",
++        "basis": "documented",
++        "kind": "treatment",
++        "text": {
++          "fr": "Le bilan 2025 remercie Recyclop, CLOPE, Tree6clope, e.collecte, CKFD, MéGO! et Cy-Clope. Cette liste ne donne ni les tonnages par opérateur, ni les destinations des lots parisiens, ni une preuve d'implantation locale de chaque opérateur.",
++          "en": "The 2025 report acknowledges Recyclop, CLOPE, Tree6clope, e.collecte, CKFD, MéGO! and Cy-Clope. This list establishes neither operator-specific tonnages, Paris batch destinations nor local presence for each operator."
++        },
++        "sourceIds": [
++          "megothon-2025"
++        ]
++      },
++      {
++        "id": "paris-events",
++        "basis": "documented",
++        "kind": "transparency",
++        "text": {
++          "fr": "L'édition inaugurale inclut Paris en juin 2023. Les publications annoncent Châtelet le 24 mai 2025 et Bastille le 30 mai 2026. Elles ne fournissent pas de bilan local annuel complet.",
++          "en": "The inaugural edition included Paris in June 2023. Publications announce Châtelet on 24 May 2025 and Bastille on 30 May 2026. They do not provide a complete annual local report."
++        },
++        "sourceIds": [
++          "megothon-editions",
++          "chatelet-2025",
++          "paris-bastille-2026"
++        ]
++      },
++      {
++        "id": "collective-scope",
++        "basis": "documented",
++        "kind": "governance",
++        "text": {
++          "fr": "La page 2026 cite WCD comme partenaire fondateur et DEA, Clean Walker, Team River Clean, LOPP, The Clean Project, Wings of the Ocean et CLOPE dans le collectif national. 1 Déchet par Jour relaie l'édition 2025. Une affiliation nationale ou un relais ne prouvent pas une action parisienne ni un financement local.",
++          "en": "The 2026 page lists WCD as a founding partner and DEA, Clean Walker, Team River Clean, LOPP, The Clean Project, Wings of the Ocean and CLOPE in the national collective. 1 Déchet par Jour promoted the 2025 edition. National affiliation or promotion does not establish a Paris event or local funding."
++        },
++        "sourceIds": [
++          "megothon-collectif",
++          "one-waste-2025",
++          "wcd-2025"
++        ]
 +      }
 +    ]
 +  },
@@ -583,14 +647,66 @@ new file mode 100644
 +      {
 +        "id": "wcd-patronage",
 +        "label": {
-+          "fr": "Mécénat financier (ordre de grandeur du rapport)",
-+          "en": "Financial patronage (report's approximate share)"
++          "fr": "Part des produits : mécénat financier (graphique)",
++          "en": "Revenue share: financial patronage (chart)"
 +        },
-+        "value": 70,
++        "value": 69,
 +        "unit": "percent",
 +        "period": "2024-2025",
 +        "scope": "organization",
-+        "quality": "approximate",
++        "quality": "reported",
++        "sourceId": "wcd-2025"
++      },
++      {
++        "id": "wcd-dues",
++        "label": {
++          "fr": "Dons et cotisations",
++          "en": "Donations and membership dues"
++        },
++        "value": 9,
++        "unit": "percent",
++        "period": "2024-2025",
++        "scope": "organization",
++        "quality": "reported",
++        "sourceId": "wcd-2025"
++      },
++      {
++        "id": "wcd-public",
++        "label": {
++          "fr": "Subventions",
++          "en": "Grants"
++        },
++        "value": 7,
++        "unit": "percent",
++        "period": "2024-2025",
++        "scope": "organization",
++        "quality": "reported",
++        "sourceId": "wcd-2025"
++      },
++      {
++        "id": "wcd-services",
++        "label": {
++          "fr": "Prestations",
++          "en": "Services"
++        },
++        "value": 7,
++        "unit": "percent",
++        "period": "2024-2025",
++        "scope": "organization",
++        "quality": "reported",
++        "sourceId": "wcd-2025"
++      },
++      {
++        "id": "wcd-other",
++        "label": {
++          "fr": "Autres produits",
++          "en": "Other revenue"
++        },
++        "value": 8,
++        "unit": "percent",
++        "period": "2024-2025",
++        "scope": "organization",
++        "quality": "reported",
 +        "sourceId": "wcd-2025"
 +      }
 +    ],
@@ -615,6 +731,30 @@ new file mode 100644
 +        "text": {
 +          "fr": "Le rapport 2025 indique que WCD France cesse d'être coporteur en 2026 tout en restant partenaire. Ne pas lui attribuer le budget ou la gouvernance du Mégothon 2026.",
 +          "en": "The 2025 report states WCD France ceases to co-lead in 2026 while remaining a partner. Do not attribute the 2026 Mégothon budget or governance to it."
++        },
++        "sourceIds": [
++          "wcd-2025"
++        ]
++      },
++      {
++        "id": "wcd-budget-scope",
++        "basis": "documented",
++        "kind": "funding",
++        "text": {
++          "fr": "Le graphique des produits d'exploitation du 1er avril 2024 au 31 mars 2025 indique 69 % de mécénat financier ; le texte du rapport arrondit à 70 %. Ne pas convertir des pourcentages arrondis en montants comptables exacts. Le budget concerne l'association entière, non le Mégothon.",
++          "en": "The operating revenue chart for 1 April 2024 to 31 March 2025 reports 69% financial patronage; the report's text rounds this to 70%. Do not turn rounded percentages into exact accounting amounts. The budget covers the whole association, not Mégothon."
++        },
++        "sourceIds": [
++          "wcd-2025"
++        ]
++      },
++      {
++        "id": "wcd-patrons-list",
++        "basis": "documented",
++        "kind": "funding",
++        "text": {
++          "fr": "Mécènes financiers cités dans la section consacrée au mécénat du rapport 2025 : Adeo, Adextan, Alcome, AllColibri (Décathlon et autres), Bioviva, Banque Populaire, Citeo, Cofidis, Groupe Isore, Macif (Diffuz), Mobiüs (Common Cents), Fondation Crédit Mutuel, Fondation Natixis, Kiloutou, La Poste, Lesaffre, Perles&Co, Socaps, SPIE ICS, Trash Spotter, Tunzini (groupe Vinci). Aucun montant individuel ni affectation à une action n'est fourni par cette liste.",
++          "en": "Financial patrons listed in the 2025 report's patronage section: Adeo, Adextan, Alcome, AllColibri (Décathlon et autres), Bioviva, Banque Populaire, Citeo, Cofidis, Groupe Isore, Macif (Diffuz), Mobiüs (Common Cents), Fondation Crédit Mutuel, Fondation Natixis, Kiloutou, La Poste, Lesaffre, Perles&Co, Socaps, SPIE ICS, Trash Spotter, Tunzini (groupe Vinci). The list provides no individual amount or event allocation."
 +        },
 +        "sourceIds": [
 +          "wcd-2025"
@@ -766,6 +906,19 @@ new file mode 100644
 +          "gambetta-2025",
 +          "cyclope-treatment"
 +        ]
++      },
++      {
++        "id": "brigade-tchao-conditional",
++        "basis": "not_established",
++        "kind": "treatment",
++        "text": {
++          "fr": "L'annonce Quartier Propre du 21 mars 2026 envisage TchaoMegot sous réserve d'obtenir le financement. Elle ne confirme ni un accord, ni la prise en charge effective, ni une destination des lots Mégothon 2026.",
++          "en": "The 21 March 2026 Quartier Propre announcement considers TchaoMegot subject to funding. It establishes neither an agreement nor actual treatment nor the destination of Mégothon 2026 batches."
++        },
++        "sourceIds": [
++          "brigade-tchao-2026",
++          "tchao-treatment"
++        ]
 +      }
 +    ]
 +  },
@@ -883,13 +1036,28 @@ new file mode 100644
 +        "basis": "documented",
 +        "kind": "treatment",
 +        "text": {
-+          "fr": "MéGO! annonce un recyclage matière. Son offre de produits mentionne aussi des déclassements ; les rendements, résidus, destinations et preuves de traitement doivent être vérifiés pour le lot, sans assimiler collecte et recyclage intégral.",
-+          "en": "MéGO! advertises material recycling. Its product offer also mentions rejected material; verify yields, residues, destinations and treatment evidence for the batch rather than equating collection with complete recycling."
++          "fr": "MéGO! annonce un recyclage matière mais indique qu'environ 30 % des mégots reçus sont déclassés vers la valorisation énergétique, notamment lorsqu'ils sont trop humides ou contaminés. Il s'agit d'une déclaration de l'opérateur, pas du taux du Mégothon. Demander les quantités réellement traitées et les justificatifs de chaque lot.",
++          "en": "MéGO! advertises material recycling but states that about 30% of received butts are downgraded to energy recovery, including overly wet or contaminated material. This is an operator statement, not a Mégothon rate. Request the actual treated quantities and batch evidence."
 +        },
 +        "sourceIds": [
 +          "mego-treatment",
 +          "mego-products"
 +        ]
++      }
++    ],
++    "metrics": [
++      {
++        "id": "mego-downgrade",
++        "label": {
++          "fr": "Mégots reçus déclarés déclassés",
++          "en": "Received butts reported downgraded"
++        },
++        "value": 30,
++        "unit": "percent",
++        "period": "Page consultée 2026",
++        "scope": "organization",
++        "quality": "approximate",
++        "sourceId": "mego-products"
 +      }
 +    ]
 +  },
@@ -940,6 +1108,42 @@ new file mode 100644
 +        },
 +        "sourceIds": [
 +          "paris-residual"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "cleanwalker-paris",
++    "limits": [
++      {
++        "id": "local-affiliation",
++        "basis": "documented",
++        "kind": "governance",
++        "text": {
++          "fr": "La page du collectif Mégothon identifie Clean Walker au niveau national. La page de l'antenne Paris annonce notamment une mission Mégothon à Émerainville-Pontault-Combault (77). Cela ne permet pas d'attribuer le coportage national ni un total de collecte à Paris intra-muros.",
++          "en": "The Mégothon collective page identifies Clean Walker nationally. The Paris branch page announces a Mégothon mission at Émerainville-Pontault-Combault (77). This does not establish national co-leadership by the branch or a collection total in inner Paris."
++        },
++        "sourceIds": [
++          "megothon-collectif",
++          "cleanwalker-paris"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "asso-surfrider-paris",
++    "limits": [
++      {
++        "id": "surfrider-national-scope",
++        "basis": "documented",
++        "kind": "governance",
++        "text": {
++          "fr": "Trash Spotter cite Surfrider dans la coalition de 2023 ; Surfrider Foundation Europe participe aux critiques publiques d'ALCOME. Ces informations concernent le réseau national/européen, pas un financement, un mandat ou une opération démontrés de l'antenne Paris.",
++          "en": "Trash Spotter lists Surfrider in the 2023 coalition; Surfrider Foundation Europe takes part in public criticism of ALCOME. These facts concern national/European organizations, not proven funding, mandate or event for the Paris branch."
++        },
++        "sourceIds": [
++          "trash-2023",
++          "cnct-surfrider"
 +        ]
 +      }
 +    ]
