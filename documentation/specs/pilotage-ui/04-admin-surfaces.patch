@@ -1,0 +1,149 @@
+diff --git a/apps/web/src/components/admin/creator-inbox-panel.tsx b/apps/web/src/components/admin/creator-inbox-panel.tsx
+--- a/apps/web/src/components/admin/creator-inbox-panel.tsx
++++ b/apps/web/src/components/admin/creator-inbox-panel.tsx
+@@ -26,6 +26,7 @@
+ 
+   return (
+     <AdminPanelShell
++      variant="warm"
+       title={inbox.copy.panel.title}
+       subtitle={inbox.copy.panel.description}
+       headerAction={
+@@ -62,7 +63,7 @@
+ 
+         {inbox.errorMessage && (
+           <div className="rounded-2xl border border-rose-500/10 bg-rose-500/5 p-4">
+-            <p className="text-xs font-medium text-rose-400">
++            <p className="text-sm font-medium text-rose-800">
+               {inbox.errorMessage}
+             </p>
+           </div>
+@@ -70,7 +71,7 @@
+ 
+         {inbox.successMessage && (
+           <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-4">
+-            <p className="text-xs font-medium text-emerald-400">
++            <p className="text-sm font-medium text-emerald-800">
+               {inbox.successMessage}
+             </p>
+           </div>
+@@ -140,8 +141,8 @@
+               />
+             ))
+           ) : (
+-            <div className="rounded-[2rem] border border-dashed border-white/10 p-12 text-center">
+-              <p className="text-sm font-black text-white uppercase tracking-widest">
++            <div className="rounded-xl border border-dashed border-stone-300 p-6 text-center">
++              <p className="text-sm font-semibold cmm-text-primary">
+                 {inbox.copy.states.emptyTitle}
+               </p>
+               <p className="mt-2 text-xs font-medium text-slate-500">
+diff --git a/apps/web/src/components/admin/creator-inbox/inbox-filter-bar.tsx b/apps/web/src/components/admin/creator-inbox/inbox-filter-bar.tsx
+--- a/apps/web/src/components/admin/creator-inbox/inbox-filter-bar.tsx
++++ b/apps/web/src/components/admin/creator-inbox/inbox-filter-bar.tsx
+@@ -43,8 +43,8 @@
+ }: InboxFilterBarProps) {
+   return (
+     <>
+-      <div className="mt-4 grid gap-3 md:grid-cols-6">
+-        <label className="space-y-1 md:col-span-2">
++      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
++        <label className="min-w-0 space-y-1 sm:col-span-2">
+           <span className="cmm-text-caption font-semibold cmm-text-secondary">
+             {copy.filters.searchLabel}
+           </span>
+@@ -127,7 +127,7 @@
+             {copy.filters.loadingLabel}: {refreshing ? copy.filters.yesLabel : copy.filters.noLabel}
+           </span>
+         </div>
+-        <div className="flex items-center gap-2">
++        <div className="flex min-w-0 flex-wrap items-end gap-2">
+           <label className="space-y-1">
+             <span className="cmm-text-caption font-semibold cmm-text-secondary">
+               {copy.filters.partnerPhraseLabel}
+@@ -136,7 +136,7 @@
+               value={partnerConfirm}
+               onChange={(event) => onPartnerConfirmChange(event.target.value)}
+               placeholder={copy.filters.partnerPhrasePlaceholder}
+-              className="w-[240px] rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
++              className="w-full max-w-[240px] rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+             />
+           </label>
+           <button
+diff --git a/apps/web/src/components/admin/admin-dashboard-ui.tsx b/apps/web/src/components/admin/admin-dashboard-ui.tsx
+--- a/apps/web/src/components/admin/admin-dashboard-ui.tsx
++++ b/apps/web/src/components/admin/admin-dashboard-ui.tsx
+@@ -72,7 +72,7 @@
+ };
+ 
+ export function AdminOperationalMetricGrid({ items, className }: { items: AdminOperationalMetricItem[]; className?: string }) {
+-  return <section className={cn("grid gap-5 lg:grid-cols-4", className)}>{items.map((item) => { const status = OPERATIONAL_METRIC_STATUS[item.availability]; return <StatCard key={item.id} label={item.label} value={item.value ?? status.label} badge={<SourceBadge tone={status.tone}>{status.label}</SourceBadge>} description={item.description} tone="amber" className="bg-[linear-gradient(145deg,rgba(76,61,48,0.94)_0%,rgba(112,94,78,0.90)_58%,rgba(198,177,154,0.24)_100%)]" />; })}</section>;
++  return <section className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-4", className)}>{items.map((item) => { const status = OPERATIONAL_METRIC_STATUS[item.availability]; return <StatCard key={item.id} label={item.label} value={item.value ?? status.label} badge={<SourceBadge tone={status.tone}>{status.label}</SourceBadge>} description={item.description} tone="amber" />; })}</section>;
+ }
+ 
+ function AdminActionCard({ icon, title, description, badge, href, compact = false, tone = "amber", footerLabel, className, iconClassName, iconWrapClassName, badgeClassName }: AdminActionItem & { compact?: boolean; className?: string }) {
+diff --git a/apps/web/src/lib/admin/admin-dashboard-contract.ts b/apps/web/src/lib/admin/admin-dashboard-contract.ts
+--- a/apps/web/src/lib/admin/admin-dashboard-contract.ts
++++ b/apps/web/src/lib/admin/admin-dashboard-contract.ts
+@@ -284,7 +284,7 @@
+     return {
+       title: `${auditErrors.length} incident${auditErrors.length > 1 ? "s" : ""} récent${auditErrors.length > 1 ? "s" : ""} dans le journal d’audit`,
+       detail: "Une ou plusieurs opérations administratives nécessitent une vérification.",
+-      action: { href: "#workflow-administration", label: "Voir le journal" },
++      action: { href: "/admin?tab=audit", label: "Voir le journal" },
+     };
+   }
+ 
+@@ -305,7 +305,7 @@
+ 
+   return {
+     title: "Aucune urgence de modération détectée",
+-    detail: "Toutes les sources administratives ont répondu et les files sont vides.",
++    detail: "Toutes les sources ont répondu ; aucun élément à traiter parmi les résultats chargés. Les pages suivantes peuvent contenir d’autres dossiers.",
+   };
+ }
+ 
+@@ -437,7 +437,7 @@
+       availability: sources.audit.status,
+       description:
+         "Le journal d’audit et les signaux de supervision restent regroupés ici pour relire les incidents.",
+-      href: "#workflow-administration",
++      href: "/admin?tab=audit",
+       ctaLabel: "Voir le journal",
+       accent: "rose",
+       details: [
+@@ -452,7 +452,7 @@
+               label: String(item.details["entityType"] ?? item.operationType),
+               meta: `${item.operationType} · ${formatModerationDate(item.at)}`,
+             }))
+-          : [{ label: "Aucun incident", meta: "La supervision est stable pour le moment" }]
++          : [{ label: "Aucun incident", meta: "Aucun échec parmi les opérations lues" }]
+         : [],
+     },
+   ];
+diff --git a/apps/web/src/lib/admin/admin-dashboard-contract.test.ts b/apps/web/src/lib/admin/admin-dashboard-contract.test.ts
+--- a/apps/web/src/lib/admin/admin-dashboard-contract.test.ts
++++ b/apps/web/src/lib/admin/admin-dashboard-contract.test.ts
+@@ -265,7 +265,7 @@
+     expect(blocks.find((item) => item.id === "agir")?.href).toBe("/actions/history");
+     expect(blocks.find((item) => item.id === "accueil-pilotage")).toMatchObject({
+       label: "Audit & supervision",
+-      href: "#workflow-administration",
++      href: "/admin?tab=audit",
+       ctaLabel: "Voir le journal",
+     });
+   });
+@@ -305,8 +305,11 @@
+     expect(source).toContain("<AdminMaxTools");
+     expect(source).toContain('role === "max"');
+     expect(source).not.toContain("AdminCreatorConsole");
+-    expect(maxToolsSource).toContain("AdminCreatorConsole");
+-    expect(maxToolsSource).toContain("embedded");
++    expect(maxToolsSource).toContain("RoleManagementPanel");
++    expect(maxToolsSource).toContain("listManagedRoleAccounts");
++    expect(maxToolsSource).not.toContain("AdminCreatorConsole");
++    expect(maxToolsSource).not.toContain("OPÉRATIONNEL");
++    expect(maxToolsSource).not.toContain("Il y a 2 min");
+   });
+ 
+   it("keeps the workflow title singular and uses the warm admin shell", () => {
