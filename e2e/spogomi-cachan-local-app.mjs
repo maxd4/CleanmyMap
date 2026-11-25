@@ -34,6 +34,49 @@ export function classifyLocalAppStartupOutput(output) {
   return null;
 }
 
+export function classifyLocalAppRuntimeOutput(output) {
+  const text = String(output ?? "");
+  const startup = classifyLocalAppStartupOutput(text);
+  if (startup && startup.code !== "APP_STARTUP_ERROR") return startup;
+
+  const pgrstMatch = text.match(/\b(PGRST\d{3})\b/);
+  if (pgrstMatch) {
+    return {
+      code: `APP_PGRST_${pgrstMatch[1]}`,
+      message: `PostgREST reported error ${pgrstMatch[1]}; process output is suppressed.`,
+    };
+  }
+
+  const sqlStateMatch = text.match(/code:\s*['"]([0-9A-Z]{5})['"]/);
+  if (sqlStateMatch) {
+    return {
+      code: `APP_SQLSTATE_${sqlStateMatch[1]}`,
+      message: `Database reported SQLSTATE ${sqlStateMatch[1]}; process output is suppressed.`,
+    };
+  }
+
+  if (/ActionCreationPersistenceError/.test(text)) {
+    return {
+      code: "APP_ACTION_CREATION_ERROR",
+      message: "Action creation persistence failed; process output is suppressed.",
+    };
+  }
+
+  const apiContextMatch = text.match(/\[API Error\]\s+ERR-[A-Z0-9]+\s+in\s+([a-zA-Z0-9._-]+):/);
+  if (apiContextMatch) {
+    const safeContext = apiContextMatch[1].replace(/[^a-zA-Z0-9]+/g, "_").toUpperCase();
+    return {
+      code: `APP_API_ERROR_${safeContext}`,
+      message: `API handler ${apiContextMatch[1]} raised an error; process output is suppressed.`,
+    };
+  }
+
+  if (/\b(?:Error|error):/.test(text)) {
+    return { code: "APP_RUNTIME_ERROR", message: "The local app raised a runtime error; process output is suppressed." };
+  }
+  return null;
+}
+
 export function classifyLocalAppTransportFailure() {
   return { code: "HTTP_TRANSPORT_ERROR", message: APP_TRANSPORT_MESSAGE };
 }

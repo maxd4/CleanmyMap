@@ -4,6 +4,7 @@ import { once } from "node:events";
 import test from "node:test";
 import {
   classifyLocalAppHttpStatus,
+  classifyLocalAppRuntimeOutput,
   classifyLocalAppStartupOutput,
   classifyLocalAppTransportFailure,
   stopLocalApp,
@@ -131,4 +132,18 @@ test("local app teardown terminates the spawned process group", async () => {
   await closed;
 
   assert.ok(child.exitCode !== null || child.signalCode !== null);
+});
+
+test("local app runtime diagnostics classify PostgREST, SQLSTATE, and API handler errors without exposing raw details", () => {
+  const pgrst = classifyLocalAppRuntimeOutput("[API Error] ERR-123 in spogomi.event.create: { code: 'PGRST204', secret: 'sk_test_secret' }");
+  assert.equal(pgrst?.code, "APP_PGRST_PGRST204");
+  assert.equal(pgrst?.message.includes("sk_test_secret"), false);
+
+  const sql = classifyLocalAppRuntimeOutput("[API Error] ERR-456 in spogomi.event.create: { code: '42703', message: 'private detail' }");
+  assert.equal(sql?.code, "APP_SQLSTATE_42703");
+  assert.equal(sql?.message.includes("private detail"), false);
+
+  const apiHandler = classifyLocalAppRuntimeOutput("[API Error] ERR-789 in spogomi.event.create: { message: 'secret detail' }");
+  assert.equal(apiHandler?.code, "APP_API_ERROR_SPOGOMI_EVENT_CREATE");
+  assert.equal(apiHandler?.message.includes("secret detail"), false);
 });

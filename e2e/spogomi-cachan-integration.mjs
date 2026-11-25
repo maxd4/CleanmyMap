@@ -8,6 +8,7 @@ import { chromium } from "playwright";
 import * as XLSX from "xlsx";
 import {
   classifyLocalAppHttpStatus,
+  classifyLocalAppRuntimeOutput,
   classifyLocalAppTransportFailure,
   spawnLocalApp,
   stopLocalApp,
@@ -108,6 +109,8 @@ async function runStep(name, action) {
   }
 }
 
+const runtimeOutputReaders = new Map();
+
 async function api(baseUrl, route, init = {}, expected = [200]) {
   let response;
   try {
@@ -121,7 +124,11 @@ async function api(baseUrl, route, init = {}, expected = [200]) {
     const diagnostic = classifyLocalAppHttpStatus(response.status);
     const diagnosticCode = diagnostic ? ` ${diagnostic.code}` : " HTTP_UNEXPECTED_RESPONSE";
     const diagnosticMessage = diagnostic?.message ?? "The response status was not expected.";
-    throw new Error(`${init.method ?? "GET"} ${route}:${diagnosticCode} HTTP ${response.status}. ${diagnosticMessage}`);
+    const runtimeDiagnostic = response.status >= 500
+      ? classifyLocalAppRuntimeOutput(runtimeOutputReaders.get(baseUrl)?.() ?? "")
+      : null;
+    const runtimeSuffix = runtimeDiagnostic ? ` (${runtimeDiagnostic.code}: ${runtimeDiagnostic.message})` : "";
+    throw new Error(`${init.method ?? "GET"} ${route}:${diagnosticCode} HTTP ${response.status}. ${diagnosticMessage}${runtimeSuffix}`);
   }
   const contentType = response.headers.get("content-type") ?? "";
   const body = contentType.includes("json") ? await response.json() : await response.arrayBuffer();
@@ -200,9 +207,11 @@ async function main() {
 
   try {
     ownerServer = process.env.CMM_SPOGOMI_APP_URL ? null : startApp({ port: 3010, userId: ownerId, role: "admin", database });
+    runtimeOutputReaders.set(appUrl, () => ownerServer?.getStartupOutput?.() ?? "");
     await waitForLocalApp(appUrl, { server: ownerServer, getStartupOutput: () => ownerServer?.getStartupOutput?.() ?? "" });
     if (observerUrl) {
       observerServer = startApp({ port: 3011, userId: observerId, role: "benevole", database });
+      runtimeOutputReaders.set(observerUrl, () => observerServer?.getStartupOutput?.() ?? "");
       await waitForLocalApp(observerUrl, { server: observerServer, getStartupOutput: () => observerServer?.getStartupOutput?.() ?? "" });
     }
 
