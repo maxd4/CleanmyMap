@@ -53,7 +53,7 @@ export function ParisNetwork3DFiltersBar({
       role="region"
       aria-label={fr ? "Filtres du réseau 3D parisien" : "Paris 3D network filters"}
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
             {fr ? "Type d'acteur" : "Actor type"}
@@ -83,6 +83,37 @@ export function ParisNetwork3DFiltersBar({
           </select>
         </label>
 
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
+            {fr ? "Arrondissement" : "District"}
+          </span>
+          <select
+            aria-label={fr ? "Filtrer par arrondissement" : "Filter by district"}
+            className={selectClassName}
+            value={filters.arrondissement === "all" ? "all" : String(filters.arrondissement)}
+            onChange={(e) =>
+              onChange({
+                ...filters,
+                arrondissement:
+                  e.target.value === "all" ? "all" : Number(e.target.value),
+              })
+            }
+          >
+            <option value="all">{fr ? "Tout Paris" : "All Paris"}</option>
+            {ARRONDISSEMENTS.map((arr) => (
+              <option key={arr} value={String(arr)}>
+                {arr === 1 ? "1er" : `${arr}e`} arrondissement
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <details className="mt-3">
+        <summary className="cursor-pointer text-sm font-semibold text-violet-200">
+          {fr ? "Autres filtres" : "More filters"}
+          {filters.ecosystemRole !== undefined && filters.ecosystemRole !== "all" || filters.participation !== "all" || filters.equipment !== "all" || filters.relationType !== "all" ? (fr ? " · actifs" : " · active") : ""}
+        </summary>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="flex flex-col gap-1">
           <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
             {fr ? "Rôle écosystème" : "Ecosystem role"}
@@ -143,31 +174,6 @@ export function ParisNetwork3DFiltersBar({
 
         <label className="flex flex-col gap-1">
           <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
-            {fr ? "Arrondissement" : "District"}
-          </span>
-          <select
-            aria-label={fr ? "Filtrer par arrondissement" : "Filter by district"}
-            className={selectClassName}
-            value={filters.arrondissement === "all" ? "all" : String(filters.arrondissement)}
-            onChange={(e) =>
-              onChange({
-                ...filters,
-                arrondissement:
-                  e.target.value === "all" ? "all" : Number(e.target.value),
-              })
-            }
-          >
-            <option value="all">{fr ? "Tout Paris" : "All Paris"}</option>
-            {ARRONDISSEMENTS.map((arr) => (
-              <option key={arr} value={String(arr)}>
-                {arr === 1 ? "1er" : `${arr}e`} arrondissement
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
             {fr ? "Matériel" : "Equipment"}
           </span>
           <select
@@ -220,7 +226,8 @@ export function ParisNetwork3DFiltersBar({
             ))}
           </select>
         </label>
-      </div>
+        </div>
+      </details>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3 text-xs text-slate-300">
         <span className="font-bold">

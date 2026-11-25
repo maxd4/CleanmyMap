@@ -11,6 +11,7 @@ import {
   DEFAULT_PARIS_NETWORK_3D_FILTERS,
   computeParisNetwork3DLayout,
   filterParisNetwork,
+  projectParisNetwork3DLayout,
 } from "./paris-network-3d.model";
 import { ParisNetwork3DBubble } from "./paris-network-3d-bubble";
 
@@ -47,6 +48,16 @@ describe("paris-network-3d model", () => {
     expect(layoutA.nodes).toHaveLength(PARIS_CLEANWALK_ACTORS.length);
     expect(layoutA.edges).toHaveLength(PARIS_CLEANWALK_RELATIONS.length);
     expect(layoutA.nodes.some((n) => n.position[2] !== 0)).toBe(true);
+  });
+
+  it("preserves full-layout positions and uses uniform node radii under filters", () => {
+    const layout = computeParisNetwork3DLayout(PARIS_CLEANWALK_ACTORS, PARIS_CLEANWALK_RELATIONS);
+    const subset = filterParisNetwork(PARIS_CLEANWALK_ACTORS, PARIS_CLEANWALK_RELATIONS, { ...DEFAULT_PARIS_NETWORK_3D_FILTERS, arrondissement: 5 });
+    const projected = projectParisNetwork3DLayout(layout, subset.actors, subset.relations);
+    expect(projected.nodes).toHaveLength(subset.actors.length);
+    expect(projected.edges).toHaveLength(subset.relations.length);
+    for (const node of projected.nodes) expect(node.position).toEqual(layout.nodes.find(item => item.actor.id === node.actor.id)?.position);
+    expect(new Set(layout.nodes.map(node => node.radius)).size).toBe(1);
   });
 
   it("filters by actor category, participation, arrondissement, equipment and relation type", () => {
@@ -139,6 +150,13 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     expect(container.textContent).toContain("Familles d'acteurs (clusters 3D)");
     expect(container.textContent).toContain("Brigade Verte Paris");
 
+    const publication = PARIS_CLEANWALK_RELATIONS.find(relation => relation.id === "rel-brigade-verte-jagis")!;
+    const sourceName = PARIS_CLEANWALK_ACTORS.find(actor => actor.id === publication.sourceId)!.name;
+    const targetName = PARIS_CLEANWALK_ACTORS.find(actor => actor.id === publication.targetId)!.name;
+    const publicationLabels = [...container.querySelectorAll("button[aria-pressed] span")].filter(span => span.textContent?.includes(`${sourceName} → ${targetName}`));
+    expect(publicationLabels).toHaveLength(2);
+    expect(container.textContent).not.toContain(`${targetName} → ${sourceName}`);
+
     // At rest: no contextual bubble dialog is open
     expect(container.querySelector('[role="dialog"]')).toBeNull();
 
@@ -221,6 +239,20 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     });
     expect(container.querySelector('[role="dialog"]')).toBeNull();
+
+    // Excluding a locked actor clears the selection, without resurrecting it on reset.
+    act(() => cleanwalkOrgBtn?.click());
+    const category = container.querySelector<HTMLSelectElement>('select[aria-label="Filtrer par type d\'acteur"]')!;
+    act(() => {
+      category.value = "collectivite_mairie";
+      category.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(container.querySelector('button[aria-pressed="true"]')).toBeNull();
+    expect([...container.querySelectorAll('button[aria-pressed]')].every(button => !button.classList.contains("opacity-45"))).toBe(true);
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Réinitialiser les filtres 3D"]')?.click());
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(container.querySelector('button[aria-pressed="true"]')).toBeNull();
 
     // Filter by arrondissement 5
     const arrSelect = container.querySelector(

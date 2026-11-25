@@ -161,7 +161,7 @@ function RelationLineEdge({
     <>
     <Line
       points={points}
-      onClick={scheduled && onSelect ? (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(); } : undefined}
+      onClick={onSelect ? (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(); } : undefined}
       color={isHighlighted && !scheduled ? "#f5f3ff" : edge.colorHex}
       lineWidth={isHighlighted ? edge.thickness + 1.1 : edge.thickness}
       dashed={dashed}
@@ -227,13 +227,17 @@ const SceneCameraRig = forwardRef<
     ref,
     () => ({
       zoomIn: () => {
-        camera.position.multiplyScalar(0.84);
-        controlsRef.current?.update();
+        const controls = controlsRef.current;
+        if (!controls) return;
+        camera.position.sub(controls.target).multiplyScalar(0.84).add(controls.target);
+        controls.update();
         invalidate();
       },
       zoomOut: () => {
-        camera.position.multiplyScalar(1.18);
-        controlsRef.current?.update();
+        const controls = controlsRef.current;
+        if (!controls) return;
+        camera.position.sub(controls.target).multiplyScalar(1.18).add(controls.target);
+        controls.update();
         invalidate();
       },
       resetCamera: () => {
@@ -262,6 +266,21 @@ const SceneCameraRig = forwardRef<
   );
 });
 
+function WebGLContextLossListener({ onError }: { onError?: () => void }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    if (!onError) return;
+    const canvas = gl.domElement;
+    const handleLoss = (event: Event) => {
+      event.preventDefault();
+      onError();
+    };
+    canvas.addEventListener("webglcontextlost", handleLoss);
+    return () => canvas.removeEventListener("webglcontextlost", handleLoss);
+  }, [gl, onError]);
+  return null;
+}
+
 export const ParisNetwork3DCanvas = forwardRef<
   ParisNetwork3DCanvasHandle,
   ParisNetwork3DCanvasProps
@@ -283,7 +302,6 @@ export const ParisNetwork3DCanvas = forwardRef<
   },
   ref,
 ) {
-  const isUnmountingRef = useRef(false);
   const activeFocusId = selectedActorId ?? hoveredActorId;
   const connectedIds = useMemo(
     () => getConnectedActorIds(activeFocusId, relations),
@@ -294,24 +312,13 @@ export const ParisNetwork3DCanvas = forwardRef<
     [nodes, activeFocusId],
   );
 
-  useEffect(() => {
-    return () => {
-      isUnmountingRef.current = true;
-      document.body.style.cursor = "auto";
-    };
-  }, []);
+  useEffect(() => () => { document.body.style.cursor = "auto"; }, []);
 
   return (
     <Canvas
       camera={{ position: DEFAULT_CAMERA_POS, fov: 46, near: 0.1, far: 100 }}
       dpr={[1, 1.75]}
       frameloop={isOffscreen || !animateMotion ? "demand" : "always"}
-      onCreated={({ gl }) => {
-        gl.domElement.addEventListener("webglcontextlost", (event) => {
-          event.preventDefault();
-          if (!isUnmountingRef.current) onWebGLError?.();
-        });
-      }}
       className="h-full w-full"
     >
       <color attach="background" args={["#0b091d"]} />
@@ -319,6 +326,7 @@ export const ParisNetwork3DCanvas = forwardRef<
       <directionalLight position={[8, 12, 10]} intensity={1.1} color="#ede9fe" />
       <pointLight position={[-8, -6, 6]} intensity={0.65} color="#818cf8" />
 
+      <WebGLContextLossListener onError={onWebGLError} />
       <SceneCameraRig ref={ref} animateMotion={animateMotion} />
       <ActiveNodeAnchorTracker
         activePosition={activeNodePosition}

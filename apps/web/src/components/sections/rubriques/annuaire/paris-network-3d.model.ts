@@ -168,7 +168,7 @@ export function computeParisNetwork3DLayout(
         actor,
         position,
         colorHex,
-        radius: actor.roles.includes("fournisseur_materiel") ? 0.56 : 0.46,
+        radius: 0.46,
       });
     });
   }
@@ -198,6 +198,24 @@ export function computeParisNetwork3DLayout(
   return { nodes, edges };
 }
 
+/** Keep spatial positions stable while projecting a filtered dataset. */
+export function projectParisNetwork3DLayout(
+  layout: ReturnType<typeof computeParisNetwork3DLayout>,
+  actors: readonly ParisCleanwalkActor[],
+  relations: readonly ParisCleanwalkRelation[],
+): ReturnType<typeof computeParisNetwork3DLayout> {
+  const actorIds = new Set(actors.map(actor => actor.id));
+  const relationIds = new Set(relations.map(relation => relation.id));
+  return {
+    nodes: layout.nodes.filter(node => actorIds.has(node.actor.id)),
+    edges: layout.edges.filter(edge =>
+      relationIds.has(edge.relation.id) &&
+      actorIds.has(edge.relation.sourceId) &&
+      actorIds.has(edge.relation.targetId),
+    ),
+  };
+}
+
 export function getConnectedActorIds(
   actorId: string | null,
   relations: readonly ParisCleanwalkRelation[],
@@ -222,6 +240,9 @@ export function detectWebGLSupport(): boolean {
       canvas.getContext("webgl2") ??
       canvas.getContext("webgl") ??
       canvas.getContext("experimental-webgl");
+    if (gl && "getExtension" in gl) {
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+    }
     return Boolean(gl);
   } catch {
     return false;

@@ -138,8 +138,13 @@ export function ParisNetwork3DFallback({
                         {actorLinks.some(rel => rel.relationType !== "collaboration_programmee") ? (
                           <div className="mt-2 flex flex-wrap gap-1">
                             {actorLinks.filter(rel => rel.relationType !== "collaboration_programmee").map((rel) => {
-                              const peerId =
-                                rel.sourceId === actor.id ? rel.targetId : rel.sourceId;
+                              const sourceName = actorNameById.get(rel.sourceId) ?? rel.sourceId;
+                              const targetName = actorNameById.get(rel.targetId) ?? rel.targetId;
+                              const separator = rel.relationType === "publie_sur"
+                                ? " → "
+                                : rel.relationType === "action_commune" || rel.relationType === "partenariat"
+                                  ? " ↔ "
+                                  : " · ";
                               const { operationsCount12m } =
                                 computeRelationThickness(rel);
                               return (
@@ -147,8 +152,8 @@ export function ParisNetwork3DFallback({
                                   key={rel.id}
                                   className="rounded-md border border-violet-300/20 bg-violet-500/10 px-1.5 py-0.5 text-xs font-semibold text-violet-200"
                                 >
-                                  {PARIS_RELATION_TYPE_META[rel.relationType].label} →{" "}
-                                  {actorNameById.get(peerId) ?? peerId}
+                                  {PARIS_RELATION_TYPE_META[rel.relationType].label}:{" "}
+                                  {sourceName}{separator}{targetName}
                                   {operationsCount12m !== null
                                     ? ` (${operationsCount12m} op.)`
                                     : ""}

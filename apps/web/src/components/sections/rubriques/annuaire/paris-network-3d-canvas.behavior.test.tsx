@@ -11,14 +11,18 @@ import {
 import { computeParisNetwork3DLayout } from "./paris-network-3d.model";
 
 const invalidateMock = vi.hoisted(() => vi.fn());
-const multiplyScalarMock = vi.hoisted(() => vi.fn());
+const cameraState = vi.hoisted(() => ({ position: null as THREE.Vector3 | null, canvas: null as HTMLCanvasElement | null }));
 const cameraSetMock = vi.hoisted(() => vi.fn());
 const frameCallbacks = vi.hoisted(() => [] as Array<(state: unknown, delta: number) => void>);
 
 vi.mock("@react-three/fiber", () => {
   const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 100);
-  camera.position.multiplyScalar = multiplyScalarMock;
-  camera.position.set = cameraSetMock;
+  camera.position.set(2, 1, 10);
+  cameraState.position = camera.position;
+  const gl = { domElement: document.createElement("canvas") };
+  cameraState.canvas = gl.domElement;
+  const setPosition = camera.position.set.bind(camera.position);
+  camera.position.set = (...args: Parameters<typeof setPosition>) => { cameraSetMock(...args); return setPosition(...args); };
   return {
     Canvas: ({
       children,
@@ -33,7 +37,7 @@ vi.mock("@react-three/fiber", () => {
       }, [onCreated]);
       return React.createElement("div", { "data-testid": "r3f-canvas" }, children);
     },
-    useThree: () => ({ camera, invalidate: invalidateMock }),
+    useThree: () => ({ camera, gl, invalidate: invalidateMock }),
     useFrame: (cb: (state: unknown, delta: number) => void) => {
       frameCallbacks.push(cb);
     },
@@ -50,7 +54,7 @@ vi.mock("@react-three/drei", () => ({
     }),
   OrbitControls: React.forwardRef((_props: Record<string, unknown>, ref) => {
     React.useImperativeHandle(ref, () => ({
-      target: { set: vi.fn() },
+      target: new THREE.Vector3(2, 1, 0),
       update: vi.fn(),
     }));
     return React.createElement("div", { "data-testid": "drei-orbit-controls" });
@@ -138,13 +142,18 @@ describe("ParisNetwork3DCanvas R3F behavior", () => {
     expect(onHoverActor).toHaveBeenCalledWith(null);
 
     // Camera controls via imperative ref
-    act(() => {
-      handleRef.current?.zoomIn();
-      handleRef.current?.zoomOut();
-      handleRef.current?.resetCamera();
-    });
-    expect(multiplyScalarMock).toHaveBeenCalledWith(0.84);
-    expect(multiplyScalarMock).toHaveBeenCalledWith(1.18);
+    cameraState.position!.set(2, 1, 10);
+    act(() => handleRef.current?.zoomIn());
+    expect(cameraState.position!.toArray()).toEqual([2, 1, 8.4]);
+    act(() => handleRef.current?.zoomOut());
+    expect(cameraState.position!.x).toBe(2);
+    expect(cameraState.position!.y).toBe(1);
+    expect(cameraState.position!.z).toBeCloseTo(9.912);
+    act(() => handleRef.current?.resetCamera());
+    const lost = new Event("webglcontextlost", { cancelable: true });
+    act(() => cameraState.canvas!.dispatchEvent(lost));
+    expect(lost.defaultPrevented).toBe(true);
+    expect(onWebGLError).toHaveBeenCalledTimes(1);
     expect(cameraSetMock).toHaveBeenCalled();
     expect(invalidateMock).toHaveBeenCalled();
 
@@ -160,5 +169,7 @@ describe("ParisNetwork3DCanvas R3F behavior", () => {
     act(() => {
       root.unmount();
     });
+    cameraState.canvas!.dispatchEvent(new Event("webglcontextlost"));
+    expect(onWebGLError).toHaveBeenCalledTimes(1);
   });
 });

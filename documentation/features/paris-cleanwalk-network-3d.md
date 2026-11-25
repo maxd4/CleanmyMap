@@ -45,9 +45,12 @@ Pour `action_commune` :
 ## 4. Chargement, sobriété et repli WebGL
 
 - La scène 3D est chargée dynamiquement côté client (`next/dynamic` avec `{ ssr: false }`) uniquement lorsque la section entre dans le viewport (ou sur action explicite).
-- Aucune simulation physique permanente n'est exécutée ; les positions 3D sont déterministes par famille.
+- Aucune simulation physique permanente n'est exécutée. La disposition déterministe est calculée sur le dataset complet, puis projetée sur les résultats filtrés ; les nœuds conservés ne changent pas de position. Le rayon nominal est uniforme et ne signifie ni influence ni importance. La position indique une famille, pas une adresse ou une distance relationnelle.
 - `frameloop="demand"` suspend le rendu continu lorsque la section est hors écran, lorsque `prefers-reduced-motion` est actif ou lorsque le mode d'affichage est `sobre`.
-- Si WebGL est indisponible (ou échoue à l'exécution), un repli HTML interactif complet (`ParisNetwork3DFallback`) permet d'explorer les clusters, les relations, les filtres, la légende et les fiches détaillées.
+- Si WebGL est indisponible (ou échoue à l'exécution), un repli HTML interactif complet (`ParisNetwork3DFallback`) donne accès aux mêmes acteurs, liens et fiches. La capacité WebGL est mémorisée pour l'instance active ; le contexte de sonde est libéré si l'extension le permet. Le listener de perte de contexte est nettoyé au démontage. Le zoom suit la cible des contrôles de caméra.
+- `ParisNetworkActorSearch` recherche un nom dans le territoire documenté sans supprimer les voisins. Une sélection explicite d'un acteur hors filtres réinitialise les filtres incompatibles. Type d'acteur et arrondissement restent visibles ; les autres filtres existants sont regroupés dans un détail secondaire. Aucune nouvelle facette temporelle ou de classement.
+- Le survol met en évidence l'acteur et ses voisins et affiche un aperçu court non interactif. La sélection explicite ouvre la fiche complète et les liens documentés dans `ParisNetworkSelectionPanel`, à côté de la scène sur grand écran et à sa suite sur petit écran. Une relation ouvre son type, ses deux extrémités, son résumé, sa source et son niveau de preuve ; une opération déclarée réutilise sa fiche programmée. Le parcours par fiche fournit aussi un accès clavier aux liens historiques.
+- La légende résume les encodages puis permet d'ouvrir les définitions détaillées. Un lien absent n'est pas une absence démontrée de collaboration.
 
 ## 5. Contributions citoyennes, modération et mise à jour du registre
 

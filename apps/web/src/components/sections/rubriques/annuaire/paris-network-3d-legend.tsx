@@ -14,7 +14,10 @@ export function ParisNetwork3DLegend({ fr }: { fr: boolean }) {
       aria-label={fr ? "Légende du réseau 3D" : "3D network legend"}
       className="rounded-2xl border border-violet-300/15 bg-slate-950/60 p-4 text-xs text-slate-200"
     >
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <p className="text-sm text-slate-300">{fr ? "Couleur : famille · trait : relation · épaisseur : fréquence connue. Un lien absent n'exclut pas une collaboration." : "Color: family · line: relationship · width: known frequency. Missing links do not rule out collaboration."}</p>
+      <details className="mt-2">
+      <summary className="cursor-pointer font-semibold text-violet-200">{fr ? "Légende détaillée" : "Detailed legend"}</summary>
+      <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
           <p className="mb-2 text-xs font-black uppercase tracking-wider text-violet-300">
             {fr ? "Familles d'acteurs (clusters 3D)" : "Actor families (3D clusters)"}
@@ -80,6 +83,7 @@ export function ParisNetwork3DLegend({ fr }: { fr: boolean }) {
           </p>
         </div>
       </div>
+      </details>
     </aside>
   );
 }

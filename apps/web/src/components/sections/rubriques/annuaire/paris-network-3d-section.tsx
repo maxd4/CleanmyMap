@@ -29,8 +29,8 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { cn } from "@/lib/utils";
 import { ParisNetwork3DBubble } from "./paris-network-3d-bubble";
-import { getScheduledOperation } from "@/lib/partners/paris-cleanwalk-network.scheduled";
-import { ScheduledOperationPanel } from "./paris-network-scheduled-operation";
+import { ParisNetworkActorSearch } from "./paris-network-actor-search";
+import { ParisNetworkSelectionPanel } from "./paris-network-selection-panel";
 import type { ParisNetwork3DCanvasHandle } from "./paris-network-3d-canvas";
 import { ParisNetwork3DFallback } from "./paris-network-3d-fallback";
 import { ParisNetwork3DFiltersBar } from "./paris-network-3d-filters";
@@ -41,6 +41,7 @@ import {
   computeParisNetwork3DLayout,
   detectWebGLSupport,
   filterParisNetwork,
+  projectParisNetwork3DLayout,
   type ParisNetwork3DFilters,
 } from "./paris-network-3d.model";
 
@@ -123,13 +124,21 @@ export function ParisNetwork3DSection({
   const [hasEnteredViewport, setHasEnteredViewport] = useState<boolean>(false);
   const [isOffscreen, setIsOffscreen] = useState<boolean>(false);
 
+  const [getClientWebglSupport] = useState(() => {
+    let supported: boolean | undefined;
+    return () => {
+      supported ??= detectWebGLSupport();
+      return supported;
+    };
+  });
   const clientWebglSupported = useSyncExternalStore(
     () => () => {},
-    detectWebGLSupport,
+    active ? getClientWebglSupport : () => false,
     () => true,
   );
   const webglAvailable = clientWebglSupported && !webglRuntimeError;
 
+  const handleWebGLError = useCallback(() => setWebglRuntimeError(true), []);
   const sectionRef = useRef<HTMLElement | null>(null);
   const canvasHandleRef = useRef<ParisNetwork3DCanvasHandle | null>(null);
   const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -158,6 +167,7 @@ export function ParisNetwork3DSection({
   const handleSelectActor = useCallback((actorId: string) => {
     cancelHoverClose();
     setSelectedRelationId(null);
+    setHoveredActorId(null);
     setSelectedActorId(actorId);
   }, [cancelHoverClose]);
 
@@ -327,10 +337,45 @@ export function ParisNetwork3DSection({
     );
   }, [filters, territoryDataset]);
 
-  const layout = useMemo(
-    () => computeParisNetwork3DLayout(filtered.actors, filtered.relations),
-    [filtered.actors, filtered.relations],
+  const handleFiltersChange = (next: ParisNetwork3DFilters) => {
+    const nextFiltered = territoryDataset
+      ? filterParisNetwork(territoryDataset.actors, territoryDataset.relations, next)
+      : { actors: [], relations: [] };
+    const visibleActorIds = new Set(nextFiltered.actors.map(actor => actor.id));
+    const visibleRelationIds = new Set(nextFiltered.relations.map(relation => relation.id));
+    cancelHoverClose();
+    setHoveredActorId(null);
+    if (selectedActorId && !visibleActorIds.has(selectedActorId)) {
+      setSelectedActorId(null);
+    }
+    if (!selectedActorId || !visibleActorIds.has(selectedActorId)) {
+      setBubbleAnchor(null);
+    }
+    if (selectedRelationId && !visibleRelationIds.has(selectedRelationId)) {
+      setSelectedRelationId(null);
+    }
+    setFilters(next);
+  };
+
+  const fullLayout = useMemo(
+    () => computeParisNetwork3DLayout(territoryDataset?.actors ?? [], territoryDataset?.relations ?? []),
+    [territoryDataset],
   );
+  const layout = useMemo(
+    () => projectParisNetwork3DLayout(fullLayout, filtered.actors, filtered.relations),
+    [fullLayout, filtered.actors, filtered.relations],
+  );
+
+  const revealActor = (id: string) => {
+    if (!territoryDataset?.actors.some(actor => actor.id === id)) return;
+    if (!filtered.actors.some(actor => actor.id === id)) setFilters(DEFAULT_PARIS_NETWORK_3D_FILTERS);
+    handleSelectActor(id);
+  };
+  const revealRelation = (id: string) => {
+    if (!territoryDataset?.relations.some(relation => relation.id === id)) return;
+    if (!filtered.relations.some(relation => relation.id === id)) setFilters(DEFAULT_PARIS_NETWORK_3D_FILTERS);
+    handleSelectRelation(id);
+  };
 
   const activeActorId = selectedActorId ?? hoveredActorId;
   const activeActor = useMemo(
@@ -340,7 +385,7 @@ export function ParisNetwork3DSection({
   );
 
   const selectedRelation = filtered.relations.find(r => r.id === selectedRelationId);
-  const selectedOperation = selectedRelation?.relationType === "collaboration_programmee" ? getScheduledOperation(selectedRelation.operationId) : undefined;
+  const selectedActor = filtered.actors.find(actor => actor.id === selectedActorId) ?? null;
   const show3DCanvas = sceneActive && webglAvailable && viewMode === "3d";
   const surfaceClassName = cn(
     "relative overflow-hidden rounded-[var(--radius-lg)] border border-violet-300/18 p-6 md:p-8",
@@ -384,8 +429,8 @@ export function ParisNetwork3DSection({
             <p className="text-sm font-medium leading-relaxed text-slate-300">
               {territoryDataset
                 ? fr
-                  ? "Survolez, cliquez ou naviguez au clavier sur un nom d'acteur pour afficher ses canaux publics et ses liens vérifiés."
-                  : "Hover, click or navigate by keyboard on an actor name to display its public channels and verified links."
+                  ? "Recherchez ou sélectionnez un acteur pour consulter sa fiche et ses relations documentées."
+                  : "Find or select an actor to explore its profile and documented relationships."
                 : fr
                   ? "Sélectionnez un territoire pour consulter son réseau d'acteurs sourcé lorsqu'il est disponible."
                   : "Select a territory to explore its sourced actor network when available."}
@@ -484,19 +529,21 @@ export function ParisNetwork3DSection({
 
         {territoryDataset ? (
           <>
+            <ParisNetworkActorSearch actors={territoryDataset.actors} fr={fr} onSelectActor={revealActor} />
             <ParisNetwork3DFiltersBar
               filters={filters}
-              onChange={next => { setSelectedRelationId(null); setFilters(next); }}
+              onChange={handleFiltersChange}
               actorCount={filtered.actors.length}
               relationCount={filtered.relations.length}
               fr={fr}
             />
 
-            <div className="relative h-[500px] w-full min-w-0 overflow-hidden rounded-2xl border border-violet-300/20 bg-slate-950/90 sm:h-[580px]">
+            <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,21rem)]">
+            <div className="relative h-[440px] w-full min-w-0 overflow-hidden rounded-2xl border border-violet-300/20 bg-slate-950/90 sm:h-[580px]">
           {sceneActive && (show3DCanvas ? (
             hasEnteredViewport ? (
               <WebGLErrorBoundary
-                onError={() => setWebglRuntimeError(true)}
+                onError={handleWebGLError}
                 fallback={
                   <ParisNetwork3DFallback
                     actors={filtered.actors}
@@ -525,7 +572,7 @@ export function ParisNetwork3DSection({
                   onAnchorChange={setBubbleAnchor}
                   animateMotion={animateMotion}
                   isOffscreen={isOffscreen}
-                  onWebGLError={() => setWebglRuntimeError(true)}
+                  onWebGLError={handleWebGLError}
                 />
               </WebGLErrorBoundary>
             ) : (
@@ -560,8 +607,7 @@ export function ParisNetwork3DSection({
             />
           ))}
 
-          {selectedOperation ? <ScheduledOperationPanel operation={selectedOperation} onClose={handleCloseBubble} fr={fr}/> : null}
-          {activeActor && !selectedOperation ? (
+          {activeActor && !selectedActorId && !selectedRelation ? (
             <ParisNetwork3DBubble
               actor={activeActor}
               isLocked={selectedActorId === activeActor.id}
@@ -581,7 +627,19 @@ export function ParisNetwork3DSection({
             />
           ) : null}
         </div>
-
+            <aside className="min-w-0 xl:max-h-[580px] xl:overflow-y-auto" aria-label={fr ? "Fiche et relations" : "Profile and relationships"}>
+              <ParisNetworkSelectionPanel
+                actor={selectedActor}
+                relation={selectedRelation}
+                actors={territoryDataset.actors}
+                relations={territoryDataset.relations}
+                fr={fr}
+                onSelectActor={revealActor}
+                onSelectRelation={revealRelation}
+                onClose={handleCloseBubble}
+              />
+            </aside>
+            </div>
             <ParisNetwork3DLegend fr={fr} />
           </>
         ) : (
