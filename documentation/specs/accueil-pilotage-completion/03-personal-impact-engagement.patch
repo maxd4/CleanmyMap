@@ -1,0 +1,739 @@
+diff --git a/apps/web/src/app/(app)/profil/impact/page.tsx b/apps/web/src/app/(app)/profil/impact/page.tsx
+--- a/apps/web/src/app/(app)/profil/impact/page.tsx
++++ b/apps/web/src/app/(app)/profil/impact/page.tsx
+@@ -1,1 +1,14 @@
+-export { default } from "@/components/profil/impact-profile-page";
++import ImpactProfilePage from "@/components/profil/impact-profile-page";
++import { getSafeAuthSession } from "@/lib/auth/safe-session";
++import { getCurrentUserIdentity } from "@/lib/authz";
++
++export default async function ImpactPage() {
++  const session = await getSafeAuthSession();
++  const identity = session.userId ? await getCurrentUserIdentity({ userId: session.userId }).catch(() => null) : null;
++  const cardIdentity = identity ? {
++    userId: identity.userId, displayName: identity.displayName, firstName: identity.firstName,
++    handle: identity.handle, username: identity.username, activeRole: identity.activeRole,
++  } : null;
++  return <ImpactProfilePage key={cardIdentity?.userId ?? "anonymous"} identity={cardIdentity}
++    authUnavailable={session.state === "unavailable" || Boolean(session.userId && !identity)} />;
++}
+diff --git a/apps/web/src/components/profil/impact-profile-page.tsx b/apps/web/src/components/profil/impact-profile-page.tsx
+--- a/apps/web/src/components/profil/impact-profile-page.tsx
++++ b/apps/web/src/components/profil/impact-profile-page.tsx
+@@ -1,11 +1,13 @@
+ "use client";
+ 
+-import { useEffect, useState } from "react";
+ import useSWR from "swr";
+ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+-import { cn } from "@/lib/utils";
+-import { getBlockClasses } from "@/lib/ui/block-accents";
+-import { fetchCurrentAccountIdentity, type CurrentAccountIdentity } from "@/lib/account/current-account-identity";
++import type { CurrentAccountIdentity } from "@/lib/account/current-account-identity";
++import { CmmPageLayout } from "@/components/ui/cmm-section";
++import { PageHeader } from "@/components/ui/page-header";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmButton } from "@/components/ui/cmm-button";
++import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+ import { useImpactProfileActions } from "@/components/profil/use-impact-profile-actions";
+ import { ImpactProfileAuthenticatedView } from "@/components/profil/impact-profile-authenticated-view";
+ import type { GamificationBadgeDefinition } from "@/lib/gamification/progression/progression-types";
+@@ -46,37 +48,26 @@
+ }
+ 
+ async function fetchJson<T>(url: string, guard: (value: unknown) => value is T): Promise<T> {
+-  const response = await fetch(url);
++  const response = await fetch(url, { cache: "no-store" });
+   if (!response.ok) throw new Error("API Error");
+   const body: unknown = await response.json();
+   if (!guard(body)) throw new Error("Réponse API invalide.");
+   return body;
+ }
+ 
+-export default function ImpactProfilePage() {
+-  const [currentAccountIdentity, setCurrentAccountIdentity] = useState<CurrentAccountIdentity | null>(null);
+-  const classes = getBlockClasses("impact");
+-  const { data: meData, isLoading } = useSWR<GamificationMeResponse, Error>("gamification-me", () => fetchJson("/api/gamification/me", isGamificationMeResponse));
+-
+-  useEffect(() => {
+-    let cancelled = false;
+-    fetchCurrentAccountIdentity().then((identity) => {
+-      if (!cancelled) setCurrentAccountIdentity(identity);
+-    }).catch(() => {
+-      if (!cancelled) setCurrentAccountIdentity(null);
+-    });
+-    return () => { cancelled = true; };
+-  }, []);
+-
+-  const displayName = currentAccountIdentity?.displayName || currentAccountIdentity?.firstName || "Contributeur";
+-  const actions = useImpactProfileActions(displayName);
+-  if (isLoading) return <div className="flex min-h-[400px] flex-col items-center justify-center gap-4"><div className="h-8 w-8 animate-spin rounded-full border-2 border-red-500 border-t-transparent" /><span className="animate-pulse text-xs font-black uppercase tracking-widest text-red-400/60">Chargement de votre impact...</span></div>;
+-  const prog = meData?.progression ?? undefined;
+-  const validatedRoleHistory = prog?.history?.timeline.filter((item) => item.validatedRoleCodes.length > 0) ?? [];
+-  if (!currentAccountIdentity) return <ImpactProfileLockedView classes={classes} />;
+-  return <ImpactProfileAuthenticatedView classes={classes} identity={currentAccountIdentity} prog={prog} validatedRoleHistory={validatedRoleHistory} actions={actions} />;
+-}
++export type ImpactCardIdentity = Pick<CurrentAccountIdentity, "userId" | "displayName" | "firstName" | "handle" | "username" | "activeRole">;
+ 
+-function ImpactProfileLockedView({ classes }: { classes: ReturnType<typeof getBlockClasses> }) {
+-  return <ClerkRequiredGate isAuthenticated={false} mode="blur" title="Carte d’impact personnelle" description="Connectez-vous pour consulter, télécharger et partager votre carte d’impact." lockedPreview={<div className="grid gap-8 md:grid-cols-2"><div className={cn("rounded-[2rem] border p-6", classes.surface)}><p className="text-xs font-black uppercase tracking-[0.2em] text-red-400/60">Aperçu verrouillé</p><div className="mt-4 rounded-2xl border border-white/5 bg-red-400/5 p-5"><p className="cmm-text-body cmm-text-inverse">La carte d&apos;impact montre tes actions validées, ton niveau et tes badges après connexion.</p></div></div><div className={cn("rounded-[2rem] border p-6", classes.surface)}><p className="text-xs font-black uppercase tracking-[0.2em] text-red-400/60">Actions disponibles</p><div className="mt-4 space-y-3">{["Télécharger le certificat", "Partager l’image de la carte", "Consulter la méthodologie"].map((act) => <div key={act} className="rounded-xl border border-white/5 bg-white/5 p-4 text-xs font-bold text-red-100/30">{act}</div>)}</div></div></div>}><div /></ClerkRequiredGate>;
++export default function ImpactProfilePage({ identity, authUnavailable = false }: { identity: ImpactCardIdentity | null; authUnavailable?: boolean }) {
++  const { data: meData, isLoading, error, mutate } = useSWR<GamificationMeResponse, Error>(
++    identity ? ["/api/gamification/me", identity.userId] : null,
++    () => fetchJson("/api/gamification/me", isGamificationMeResponse),
++    { keepPreviousData: false },
++  );
++  const actions = useImpactProfileActions(identity?.displayName || identity?.firstName || "Contributeur");
++  if (!identity) return <ClerkRequiredGate isAuthenticated={false} authUnavailable={authUnavailable} mode="blur" title="Carte d’impact personnelle" description="Connectez-vous pour consulter et exporter votre carte personnelle." lockedPreview={<CmmCard><p className="cmm-text-secondary">Votre progression et vos missions validées après connexion.</p></CmmCard>}><div /></ClerkRequiredGate>;
++  if (isLoading) return <CmmPageLayout><PageHeader title="Mon impact" /><CmmSkeleton className="h-64" /></CmmPageLayout>;
++  if (error || !meData?.progression) return <CmmPageLayout><PageHeader title="Mon impact" /><CmmCard className="space-y-3"><p role="status" className="cmm-text-secondary">{error ? "La progression n'a pas pu être chargée." : "Aucune progression disponible pour le moment."}</p><div className="flex flex-wrap gap-2"><CmmButton tone="secondary" onClick={() => { void mutate(); }}>Réessayer</CmmButton><CmmButton href="/profil/engagement" tone="primary">Mon dossier d'engagement</CmmButton></div></CmmCard></CmmPageLayout>;
++  const prog = meData.progression;
++  const history = prog.history?.timeline.filter(item => item.validatedRoleCodes.length > 0);
++  return <ImpactProfileAuthenticatedView identity={identity} prog={prog} validatedRoleHistory={history} actions={actions} />;
+ }
+diff --git a/apps/web/src/components/profil/impact-profile-authenticated-view.tsx b/apps/web/src/components/profil/impact-profile-authenticated-view.tsx
+--- a/apps/web/src/components/profil/impact-profile-authenticated-view.tsx
++++ b/apps/web/src/components/profil/impact-profile-authenticated-view.tsx
+@@ -1,80 +1,65 @@
+ "use client";
+ 
+-import Link from "next/link";
+-import { Download, Share2, ArrowLeft, ShieldCheck } from "lucide-react";
++import { Download, Share2, ArrowLeft } from "lucide-react";
+ import { ImpactCard } from "@/components/profil/impact-card";
+ import { CmmButton } from "@/components/ui/cmm-button";
+-import { cn } from "@/lib/utils";
+-import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmPageLayout } from "@/components/ui/cmm-section";
++import { PageHeader } from "@/components/ui/page-header";
++import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
+ import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
+ import { ACTION_FIELD_ROLE_OPTIONS } from "@/lib/actions/field-roles";
+-import type { CurrentAccountIdentity } from "@/lib/account/current-account-identity";
+-import type { ImpactPageProgression } from "./impact-profile-page";
+-
+-const FIELD_ROLE_LABELS = new Map<string, string>(ACTION_FIELD_ROLE_OPTIONS.map((role) => [role.code, role.label]));
++import type { ImpactPageProgression, ImpactCardIdentity } from "./impact-profile-page";
+ 
+-type ImpactActions = {
+-  activeCardAction: "export" | "share" | null;
+-  cardActionMessage: string | null;
+-  cardActionError: string | null;
+-  handleDownload: () => Promise<void>;
+-  handleShare: () => Promise<void>;
+-};
++const FIELD_ROLE_LABELS = new Map<string,string>(ACTION_FIELD_ROLE_OPTIONS.map(role => [role.code, role.label]));
++type ImpactActions = { activeCardAction: "export" | "share" | null; cardActionMessage: string | null; cardActionError: string | null; handleDownload: () => Promise<void>; handleShare: () => Promise<void> };
++type History = NonNullable<NonNullable<ImpactPageProgression["history"]>["timeline"]>;
+ 
+-export function ImpactProfileAuthenticatedView({ classes, identity, prog, validatedRoleHistory, actions }: {
+-  classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses>;
+-  identity: CurrentAccountIdentity;
+-  prog: ImpactPageProgression | undefined;
+-  validatedRoleHistory: NonNullable<NonNullable<ImpactPageProgression["history"]>["timeline"]>;
+-  actions: ImpactActions;
+-}) {
+-  return <div className="w-full space-y-10 pb-20">
+-    <ImpactProfileHeader />
+-    <div className="grid grid-cols-1 items-start gap-12 xl:grid-cols-[minmax(340px,420px)_minmax(0,1fr)]">
+-      <div className="sticky top-24 flex justify-center"><ImpactCardPreview identity={identity} prog={prog} /></div>
+-      <div className="space-y-10">
+-        <ImpactProfileIntro classes={classes} actions={actions} />
+-        <ImpactEngagementDossierCard classes={classes} />
+-        <ImpactMethodology classes={classes} />
+-        <ImpactRoleHistory classes={classes} history={validatedRoleHistory} />
+-        <ImpactCollectiveSection classes={classes} />
+-      </div>
++function ImpactExportControls({ actions }: { actions: ImpactActions }) {
++  return <div className="space-y-2">
++    <div className="flex flex-wrap gap-2">
++      <CmmButton tone="primary" disabled={Boolean(actions.activeCardAction)} onClick={() => { void actions.handleDownload(); }}><Download size={18} aria-hidden="true" />{actions.activeCardAction === "export" ? "Génération..." : "Télécharger le PNG"}</CmmButton>
++      <CmmButton tone="secondary" disabled={Boolean(actions.activeCardAction)} onClick={() => { void actions.handleShare(); }}><Share2 size={18} aria-hidden="true" />{actions.activeCardAction === "share" ? "Préparation..." : "Partager le PNG"}</CmmButton>
+     </div>
++    {actions.cardActionMessage && <p role="status" className="text-sm cmm-text-success">{actions.cardActionMessage}</p>}
++    {actions.cardActionError && <p role="alert" className="text-sm cmm-text-danger">{actions.cardActionError}</p>}
+   </div>;
+ }
+ 
+-function ImpactProfileHeader() {
+-  return <header className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+-    <Link href={DASHBOARD_ROUTE} className="group flex items-center gap-3 text-xs font-black uppercase tracking-[0.2em] text-red-400/40 transition-colors hover:text-red-400"><ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />Retour au cockpit</Link>
+-    <div className="flex items-center gap-3 rounded-full border border-red-400/20 bg-red-400/5 px-6 py-2"><ShieldCheck size={14} className="text-red-400" /><h1 className="text-xs font-black uppercase tracking-[0.3em] text-red-400/80">Carte d&apos;impact personnelle</h1></div>
+-  </header>;
+-}
+-
+-function ImpactCardPreview({ identity, prog }: { identity: CurrentAccountIdentity; prog: ImpactPageProgression | undefined }) {
+-  return <ImpactCard userName={identity.displayName || identity.handle || identity.username || "Contributeur anonyme"} level={prog?.currentLevel || 1} rank={prog?.dynamicRanking?.rank ?? null} totalKg={prog?.impact?.wasteKg || 0} totalButts={prog?.impact?.totalButts || 0} waterSaved={prog?.impact?.waterSavedLiters || 0} topBadges={prog?.badges || []} />;
+-}
+-
+-function ImpactProfileIntro({ classes, actions }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses>; actions: ImpactActions }) {
+-  const { activeCardAction, cardActionMessage, cardActionError, handleDownload, handleShare } = actions;
+-  return <>
+-    <div className="space-y-5"><div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-slate-600"><span className="rounded-full border border-red-500/15 bg-red-500/8 px-3 py-1 text-red-700">Carte d&apos;impact personnelle</span><span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-slate-500">Exportable et partageable</span></div><div className="space-y-3"><h2 className="max-w-3xl text-4xl font-black tracking-tighter text-slate-950 sm:text-5xl xl:text-[3.5rem] xl:leading-[0.95]">Votre impact en temps réel<span className="block text-red-600">sans perdre la lisibilité.</span></h2><p className="cmm-text-body max-w-2xl">Générez une carte haute fidélité qui résume vos actions validées sur le terrain, votre niveau d&apos;expertise et vos distinctions, avec une lecture plus directe sur desktop et mobile.</p></div></div>
+-    <div className="flex flex-col gap-4 sm:flex-row"><CmmButton type="button" onClick={() => { void /* fire-and-forget -- the impact card action owns export state and errors. */ handleDownload(); }} disabled={Boolean(activeCardAction)} tone="destructive" className={cn("flex-1 flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-8 py-5 text-sm font-black uppercase tracking-widest text-white shadow-2xl shadow-red-600/20 hover:bg-red-500 disabled:opacity-50", classes.shadow)}><Download size={18} />{activeCardAction === "export" ? "Génération de la carte..." : "Exporter la carte"}</CmmButton><CmmButton type="button" onClick={() => { void /* fire-and-forget -- the impact card action owns share state and errors. */ handleShare(); }} disabled={Boolean(activeCardAction)} tone="secondary" className="flex-1 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-sm font-black uppercase tracking-widest text-red-100/60 transition-[background-color,color] hover:bg-white/10 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-50"><Share2 size={18} />{activeCardAction === "share" ? "Préparation du partage..." : "Partager la carte"}</CmmButton></div>
+-    <div className="min-h-6" aria-live="polite" aria-atomic="true">{cardActionMessage ? <p className="text-center text-xs font-bold text-red-100/80">{cardActionMessage}</p> : null}{cardActionError ? <p role="alert" className="text-center text-xs font-bold text-rose-200">{cardActionError}</p> : null}</div>
+-  </>;
+-}
+-
+-function ImpactEngagementDossierCard({ classes }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses> }) {
+-  return <section aria-labelledby="engagement-dossier-entry-title" className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}><div className="space-y-2"><p className="text-xs font-black uppercase tracking-widest text-red-400/60">Éco-citoyenneté &amp; insertion</p><h3 id="engagement-dossier-entry-title" className="text-lg font-black tracking-tight text-slate-950">Valoriser mon engagement</h3><p className="cmm-text-body">Sélectionnez vos participations confirmées et vos missions attestées pour télécharger un dossier Markdown privé.</p></div><CmmButton href="/profil/engagement" tone="primary" size="md">Ouvrir mon dossier d&apos;engagement</CmmButton></section>;
+-}
+-
+-function ImpactMethodology({ classes }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses> }) {
+-  return <div className={cn("relative space-y-6 overflow-hidden rounded-[2rem] border p-8", classes.surface)}><div className="pointer-events-none absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-red-500/10 blur-2xl" /><div className="space-y-2"><p className="text-xs font-black uppercase tracking-widest text-red-400/40">Méthodologie</p><p className="cmm-text-body cmm-text-inverse">Les données d&apos;impact sont consolidées à partir de vos actions validées. L&apos;eau préservée est un proxy calculé avec {IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt} L par mégot extrait ; elle ne constitue pas une mesure directe de la qualité de l&apos;eau.</p></div><Link href="/methodologie" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-red-400 transition-colors hover:text-red-300">Consulter le protocole scientifique <span className="text-lg">→</span></Link></div>;
+-}
+-
+-function ImpactRoleHistory({ classes, history }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses>; history: NonNullable<NonNullable<ImpactPageProgression["history"]>["timeline"]> }) {
+-  return <section aria-labelledby="validated-role-history-title" className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}><div className="space-y-2"><p className="text-xs font-black uppercase tracking-widest text-red-400/40">Historique personnel</p><h3 id="validated-role-history-title" className="text-lg font-black tracking-tight text-slate-950">Missions validées</h3><p className="cmm-text-body">Les rôles affichés ici correspondent uniquement aux attestations confirmées pour vos actions.</p></div>{history.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4 text-sm text-slate-600">Aucune mission validée dans votre historique.</p> : <ul className="space-y-3">{history.map((item) => <li key={item.id} className="rounded-2xl border border-slate-200 bg-white/80 p-4"><div className="flex flex-wrap items-baseline justify-between gap-2"><span className="font-bold text-slate-950">{item.locationLabel || "Action terrain"}</span><time className="text-xs font-semibold text-slate-500" dateTime={item.actionDate}>{item.actionDate}</time></div><ul className="mt-2 flex flex-wrap gap-2">{item.validatedRoleCodes.map((roleCode) => <li key={roleCode} className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-800">{FIELD_ROLE_LABELS.get(roleCode) ?? roleCode}</li>)}</ul></li>)}</ul>}</section>;
++function ImpactRoleHistory({ history }: { history: History | undefined }) {
++  return <CmmCard as="section" className="space-y-3">
++    <h2 className="text-lg font-bold cmm-text-primary">Missions validées</h2>
++    <p className="text-sm cmm-text-secondary">Uniquement les missions attestées et confirmées.</p>
++    {!history ? <p role="status" className="cmm-text-secondary">Historique indisponible.</p> : history.length === 0 ? <p className="cmm-text-secondary">Aucune mission validée dans votre historique.</p> : <ul className="divide-y divide-current/10">{history.map(item => <li key={item.id} className="space-y-2 py-3">
++      <div className="flex flex-wrap items-baseline justify-between gap-2"><span className="font-semibold cmm-text-primary">{item.locationLabel || "Action terrain"}</span><time className="text-sm cmm-text-secondary" dateTime={item.actionDate}>{item.actionDate}</time></div>
++      <ul className="flex flex-wrap gap-2">{item.validatedRoleCodes.map(code => <li key={code} className="rounded-full border border-current/20 px-3 py-1 text-sm cmm-text-primary">{FIELD_ROLE_LABELS.get(code) ?? code}</li>)}</ul>
++    </li>)}</ul>}
++  </CmmCard>;
+ }
+ 
+-function ImpactCollectiveSection({ classes }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses> }) {
+-  return <section className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}><div className="space-y-2"><p className="text-xs font-black uppercase tracking-widest text-red-400/40">Impact collectif</p><h3 className="text-lg font-black tracking-tight text-slate-950">Les comparaisons globales restent dans les rapports</h3><p className="cmm-text-body">Cette page reste centrée sur votre progression, vos badges et vos actions validées. Les indicateurs territoriaux, les méthodes et les exports collectifs sont regroupés dans la surface de rapports.</p></div><Link href="/reports" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-red-600 transition-colors hover:text-red-500">Consulter les rapports collectifs <span className="text-lg">→</span></Link></section>;
++export function ImpactProfileAuthenticatedView({ identity, prog, validatedRoleHistory, actions }: { identity: ImpactCardIdentity; prog: ImpactPageProgression; validatedRoleHistory: History | undefined; actions: ImpactActions }) {
++  const { wasteKg, totalButts, waterSavedLiters } = prog.impact ?? {};
++  const cardReady = typeof wasteKg === "number" && Number.isFinite(wasteKg) && typeof totalButts === "number" && Number.isFinite(totalButts) && typeof waterSavedLiters === "number" && Number.isFinite(waterSavedLiters);
++  return <CmmPageLayout>
++    <PageHeader title="Mon impact" subtitle="Vos résultats validés et vos preuves d'engagement." action={<CmmButton href={buildProfileRoute(identity.activeRole)} tone="secondary"><ArrowLeft size={16} aria-hidden="true" />Mon profil</CmmButton>} />
++    <div className="grid items-start gap-5 lg:grid-cols-[minmax(280px,400px)_minmax(0,1fr)]">
++      <CmmCard className="space-y-4">
++        <h2 className="text-lg font-bold cmm-text-primary">Carte d'impact personnelle</h2>
++        {cardReady ? <><div className="flex justify-center"><ImpactCard userName={identity.displayName || identity.handle || identity.username || "Contributeur"} level={prog.currentLevel} rank={prog.dynamicRanking?.rank ?? null} totalKg={wasteKg} totalButts={totalButts} waterSaved={waterSavedLiters} topBadges={prog.badges ?? []} /></div><ImpactExportControls actions={actions} /><p className="text-sm cmm-text-secondary">Seule l'image PNG est partagée, jamais l'accès à votre compte.</p></> : <p role="status" className="cmm-text-secondary">Les données nécessaires à la carte ne sont pas toutes disponibles. Aucun résultat fictif n'est exporté.</p>}
++      </CmmCard>
++      <div className="space-y-4">
++        <CmmCard as="section" className="space-y-3">
++          <h2 className="text-lg font-bold cmm-text-primary">Valoriser mon engagement</h2>
++          <p className="text-sm cmm-text-secondary">Participations confirmées, missions attestées, dossier Markdown privé et modèle d'attestation à faire signer.</p>
++          <CmmButton href="/profil/engagement" tone="primary">Ouvrir mon dossier</CmmButton>
++        </CmmCard>
++        <ImpactRoleHistory history={validatedRoleHistory} />
++        <CmmCard className="space-y-3">
++          <h2 className="text-lg font-bold cmm-text-primary">Méthodologie</h2>
++          <p className="text-sm cmm-text-secondary">Les données proviennent des actions validées. L'eau préservée est un proxy de {IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt} L par mégot extrait, pas une mesure directe de qualité de l'eau.</p>
++          <div className="flex flex-wrap gap-2"><CmmButton href="/methodologie" tone="secondary">Protocole scientifique</CmmButton><CmmButton href="/reports" tone="secondary">Rapports collectifs</CmmButton></div>
++        </CmmCard>
++      </div>
++    </div>
++  </CmmPageLayout>;
+ }
+diff --git a/apps/web/src/components/profil/impact-card.tsx b/apps/web/src/components/profil/impact-card.tsx
+--- a/apps/web/src/components/profil/impact-card.tsx
++++ b/apps/web/src/components/profil/impact-card.tsx
+@@ -27,18 +27,18 @@
+  topBadges 
+ }: ImpactCardProps) {
+  return (
+- <div id="impact-card" className="relative w-full max-w-[400px] aspect-[4/5] bg-gradient-to-br from-emerald-600 to-emerald-900 text-white rounded-3xl p-8 shadow-2xl overflow-hidden">
++ <div id="impact-card" className="relative w-full max-w-[400px] min-w-0 flex flex-col gap-5 bg-gradient-to-br from-emerald-600 to-emerald-900 text-white rounded-3xl p-4 sm:p-6 shadow-xl overflow-hidden">
+  {/* Background patterns */}
+  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+  <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/20 rounded-full -ml-20 -mb-20 blur-3xl"></div>
+  
+  {/* Header */}
+  <header className="relative z-10 flex flex-col items-center gap-4 text-center">
+- <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/40 flex items-center justify-center shadow-lg">
+- <User size={48} className="text-white" />
++ <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/40 flex items-center justify-center shadow-lg">
++ <User size={32} className="text-white" />
+  </div>
+  <div>
+- <h2 className="text-2xl font-bold tracking-tight">{userName}</h2>
++ <h2 className="break-words text-xl font-bold tracking-tight">{userName}</h2>
+  <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full cmm-text-caption font-bold uppercase tracking-wider mt-2 border border-white/20">
+  <Shield size={12} /> Niveau {level} • {rank ? `#${rank} Global` :"Nouvel Impact"}
+  </div>
+@@ -46,27 +46,27 @@
+  </header>
+ 
+  {/* Main Stats */}
+- <section className="relative z-10 mt-10 grid grid-cols-2 gap-4">
+- <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+- <p className="cmm-text-caption uppercase font-bold text-emerald-200 tracking-widest">Poids collecté</p>
+- <p className="text-2xl font-bold mt-1">{totalKg.toFixed(1)}<span className="cmm-text-small ml-1 opacity-60">kg</span></p>
++ <section className="relative z-10 grid grid-cols-2 gap-2">
++ <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
++ <p className="text-xs font-semibold text-emerald-100">Poids collecté</p>
++ <p className="text-lg font-bold break-words mt-1">{totalKg.toFixed(1)}<span className="cmm-text-small ml-1 opacity-60">kg</span></p>
+  </div>
+- <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+- <p className="cmm-text-caption uppercase font-bold text-emerald-200 tracking-widest">Eau préservée</p>
+- <p className="text-2xl font-bold mt-1">{waterSaved.toLocaleString()}<span className="cmm-text-small ml-1 opacity-60">L</span></p>
++ <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
++ <p className="text-xs font-semibold text-emerald-100">Eau préservée (estim.)</p>
++ <p className="text-lg font-bold break-words mt-1">{waterSaved.toLocaleString()}<span className="cmm-text-small ml-1 opacity-60">L</span></p>
+  </div>
+- <div className="col-span-2 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 flex items-center justify-between">
++ <div className="col-span-2 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10 flex items-center justify-between">
+  <div>
+- <p className="cmm-text-caption uppercase font-bold text-emerald-200 tracking-widest">Mégots extraits</p>
+- <p className="text-2xl font-bold mt-1">{totalButts.toLocaleString()}</p>
++ <p className="text-xs font-semibold text-emerald-100">Mégots extraits</p>
++ <p className="text-lg font-bold break-words mt-1">{totalButts.toLocaleString()}</p>
+  </div>
+- <Droplets className="text-emerald-300 opacity-40" size={32} />
++ <Droplets className="text-emerald-300 opacity-80" size={32} />
+  </div>
+  </section>
+ 
+  {/* Badges Preview */}
+- <footer className="relative z-10 mt-8">
+- <p className="cmm-text-caption uppercase font-bold text-emerald-200 tracking-widest mb-3 text-center">Badges principaux</p>
++ <footer className="relative z-10">
++ <p className="text-xs font-semibold text-emerald-100 mb-3 text-center">Badges principaux</p>
+  <div className="flex justify-center gap-3">
+  {topBadges.slice(0, 3).map((badge, i) => (
+  <div key={i} className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner" title={badge} aria-label={badge}>
+@@ -77,21 +77,21 @@
+  />
+  </div>
+  ))}
+- {topBadges.length === 0 && <p className="cmm-text-caption italic opacity-40">En cours d&apos;obtention...</p>}
++ {topBadges.length === 0 && <p className="cmm-text-caption italic opacity-80">En cours d&apos;obtention...</p>}
+  </div>
+  </footer>
+ 
+  {/* Logo footer */}
+- <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center space-y-1">
++ <div className="relative z-10 flex flex-col items-center space-y-1">
+  <BrandLogo
+  variant="compact"
+  alt="Logo CleanMyMap"
+- className="h-6 w-auto opacity-55"
++ className="h-6 w-auto opacity-90"
+  sizes="1.5rem"
+  priority
+  />
+- <p className="text-[8px] font-bold tracking-widest uppercase opacity-40">Méthodologie CMM-v1 Scientifique</p>
+- <p className="cmm-text-caption font-bold tracking-[0.2em] uppercase opacity-40">CleanMyMap</p>
++ <p className="text-[8px] font-bold tracking-widest uppercase opacity-80">Méthodologie CMM-v1 Scientifique</p>
++ <p className="cmm-text-caption font-bold tracking-[0.2em] uppercase opacity-80">CleanMyMap</p>
+  </div>
+  </div>
+  );
+diff --git a/apps/web/src/components/profil/engagement/engagement-dossier-page.tsx b/apps/web/src/components/profil/engagement/engagement-dossier-page.tsx
+--- a/apps/web/src/components/profil/engagement/engagement-dossier-page.tsx
++++ b/apps/web/src/components/profil/engagement/engagement-dossier-page.tsx
+@@ -11,6 +11,7 @@
+ import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
+ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+ import { PageHeader } from "@/components/ui/page-header";
++import { CmmCard } from "@/components/ui/cmm-card";
+ import { EngagementAttestationPdfSection } from "./engagement-attestation-pdf-section";
+ import {
+   EngagementParticipationSelector,
+@@ -47,6 +48,7 @@
+   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+   const [form, setForm] = useState<EngagementDossierFormState>(INITIAL_FORM_STATE);
+   const [exporting, setExporting] = useState(false);
++  const invalidPeriod = Boolean(periodStart && periodEnd && periodStart > periodEnd);
+   const [exportMessage, setExportMessage] = useState<string | null>(null);
+   const [exportError, setExportError] = useState<string | null>(null);
+ 
+@@ -149,6 +151,7 @@
+   }, []);
+ 
+   const handleExport = useCallback(async () => {
++    if (invalidPeriod) return;
+     setExporting(true);
+     setExportError(null);
+     setExportMessage(null);
+@@ -203,7 +206,7 @@
+     } finally {
+       setExporting(false);
+     }
+-  }, [form, periodStart, periodEnd, selectedFilteredItems]);
++  }, [form, periodStart, periodEnd, selectedFilteredItems, invalidPeriod]);
+ 
+   return (
+     <CmmGrid contentClassName="gap-6 pb-16">
+@@ -211,21 +214,21 @@
+         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+           <Link
+             href="/profil/impact"
+-            className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-600 hover:text-red-600 dark:text-slate-300"
++            className="inline-flex items-center gap-2 text-sm font-semibold cmm-text-secondary hover:underline"
+           >
+             <ArrowLeft size={14} />
+             Retour à mon impact
+           </Link>
+           <Link
+             href="/reports"
+-            className="text-xs font-bold text-slate-600 underline-offset-4 hover:underline dark:text-slate-300"
++            className="text-sm font-semibold cmm-text-secondary underline-offset-4 hover:underline"
+           >
+             Consulter les rapports collectifs
+           </Link>
+         </div>
+         <PageHeader
+-          title="Valoriser mon engagement"
+-          subtitle="Exportez un dossier Markdown privé fondé sur vos présences confirmées et missions attestées."
++          title="Mon dossier d’engagement"
++          subtitle="Constituez votre dossier privé et retrouvez les attestations à faire signer."
+           align="left"
+         />
+       </CmmGridItem>
+@@ -261,10 +264,11 @@
+             </CmmButton>
+           </div>
+         ) : (
+-          <div className="space-y-6">
+-            <section
++          <div className="space-y-5">
++            <nav aria-label="Étapes du dossier" className="flex flex-wrap gap-2"><CmmButton href="#engagement-selection" tone="secondary" size="sm">1. Participations</CmmButton><CmmButton href="#engagement-personal" tone="secondary" size="sm">2. Présentation facultative</CmmButton><CmmButton href="#engagement-attestations" tone="secondary" size="sm">3. Attestations</CmmButton></nav>
++            <section id="engagement-selection"
+               aria-label="Filtre de période"
+-              className="flex flex-wrap items-end gap-4 rounded-[2rem] border border-slate-200 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/80"
++              className="cmm-card flex scroll-mt-28 flex-wrap items-end gap-4 rounded-xl border p-4"
+             >
+               <div>
+                 <label
+@@ -313,7 +317,7 @@
+                 <CmmButton
+                   type="button"
+                   tone="primary"
+-                  disabled={exporting}
++                  disabled={exporting || invalidPeriod}
+                   onClick={() => void handleExport()}
+                 >
+                   <Download size={16} />
+@@ -322,7 +326,8 @@
+               </div>
+             </section>
+ 
+-            <div aria-live="polite" aria-atomic="true" className="min-h-6">
++            {invalidPeriod && <p role="alert" className="text-sm cmm-text-danger">La date de fin doit être postérieure ou égale à la date de début.</p>}
++            <div aria-live="polite" aria-atomic="true">
+               {exportMessage ? (
+                 <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-200">
+                   {exportMessage}
+@@ -348,12 +353,12 @@
+               onClearAll={handleClearAll}
+             />
+ 
+-            <EngagementPersonalFieldsForm
+-              form={form}
+-              onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+-            />
+-
+-            <EngagementAttestationPdfSection selectedItems={selectedFilteredItems} />
++            <div id="engagement-personal" className="scroll-mt-28">
++              <CmmCard className="space-y-3"><details className="space-y-3"><summary className="cursor-pointer font-semibold cmm-text-primary">Compléter ma présentation (facultatif)</summary>
++                <EngagementPersonalFieldsForm form={form} onChange={(patch) => setForm(prev => ({ ...prev, ...patch }))} />
++              </details></CmmCard>
++            </div>
++            <div id="engagement-attestations" className="scroll-mt-28"><EngagementAttestationPdfSection selectedItems={selectedFilteredItems} /></div>
+           </div>
+         )}
+       </CmmGridItem>
+diff --git a/apps/web/src/components/profil/engagement/engagement-dossier-sections.tsx b/apps/web/src/components/profil/engagement/engagement-dossier-sections.tsx
+--- a/apps/web/src/components/profil/engagement/engagement-dossier-sections.tsx
++++ b/apps/web/src/components/profil/engagement/engagement-dossier-sections.tsx
+@@ -33,35 +33,35 @@
+       aria-label="Synthèse de la sélection"
+       className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+     >
+-      <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-900/80">
+-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
++      <div className="cmm-card rounded-xl border p-4">
++        <p className="text-xs font-bold uppercase tracking-wider cmm-text-secondary">
+           Actions confirmées
+         </p>
+-        <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
++        <p className="mt-1 text-2xl font-black cmm-text-primary">
+           {selectedItems.length}
+         </p>
+       </div>
+-      <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-900/80">
+-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
++      <div className="cmm-card rounded-xl border p-4">
++        <p className="text-xs font-bold uppercase tracking-wider cmm-text-secondary">
+           Missions attestées
+         </p>
+-        <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
++        <p className="mt-1 text-2xl font-black cmm-text-primary">
+           {attestedMissionCount}
+         </p>
+       </div>
+-      <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-900/80">
+-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
++      <div className="cmm-card rounded-xl border p-4">
++        <p className="text-xs font-bold uppercase tracking-wider cmm-text-secondary">
+           Structures identifiées
+         </p>
+-        <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
++        <p className="mt-1 text-2xl font-black cmm-text-primary">
+           {organizationCount}
+         </p>
+       </div>
+-      <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-900/80">
+-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
++      <div className="cmm-card rounded-xl border p-4">
++        <p className="text-xs font-bold uppercase tracking-wider cmm-text-secondary">
+           Heures vérifiées
+         </p>
+-        <p className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-300">
++        <p className="mt-1 text-sm font-bold cmm-text-secondary">
+           Non documentées
+         </p>
+       </div>
+@@ -85,17 +85,17 @@
+   return (
+     <section
+       aria-labelledby="engagement-participations-heading"
+-      className="space-y-4 rounded-[2rem] border border-slate-200 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/80"
++      className="space-y-4 cmm-card rounded-xl border p-4"
+     >
+       <div className="flex flex-wrap items-center justify-between gap-3">
+         <div>
+           <h2
+             id="engagement-participations-heading"
+-            className="text-lg font-black tracking-tight text-slate-950 dark:text-white"
++            className="text-lg font-black tracking-tight cmm-text-primary"
+           >
+             Participations documentées ({items.length})
+           </h2>
+-          <p className="text-sm text-slate-600 dark:text-slate-300">
++          <p className="text-sm cmm-text-secondary">
+             Seules les présences finales confirmées sur actions communicables apparaissent ici.
+           </p>
+         </div>
+@@ -132,21 +132,21 @@
+                     type="checkbox"
+                     checked={checked}
+                     onChange={() => onToggle(item.actionId)}
+-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-2 focus:ring-red-500"
++                    className="mt-1 h-4 w-4 rounded border-slate-300 text-amber-700 focus:ring-2 focus:ring-amber-600"
+                   />
+                   <div className="min-w-0 flex-1 space-y-2">
+                     <div className="flex flex-wrap items-baseline justify-between gap-2">
+-                      <span className="font-bold text-slate-950 dark:text-white">
++                      <span className="font-bold cmm-text-primary">
+                         {item.actionTitle || item.locationLabel}
+                       </span>
+                       <time
+                         dateTime={item.actionDate}
+-                        className="text-xs font-semibold text-slate-500 dark:text-slate-400"
++                        className="text-xs font-semibold cmm-text-secondary"
+                       >
+                         {item.actionDate.slice(0, 10)}
+                       </time>
+                     </div>
+-                    <p className="text-xs text-slate-600 dark:text-slate-300">
++                    <p className="text-xs cmm-text-secondary">
+                       Lieu : {item.locationLabel} • Structure :{" "}
+                       {item.organization.value
+                         ? `${item.organization.value.name} (${item.organization.value.organizerTypeLabel})`
+@@ -195,16 +195,16 @@
+   return (
+     <section
+       aria-labelledby="engagement-personal-fields-heading"
+-      className="space-y-4 rounded-[2rem] border border-slate-200 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/80"
++      className="space-y-4 cmm-card rounded-xl border p-4"
+     >
+       <div className="space-y-1">
+         <h2
+           id="engagement-personal-fields-heading"
+-          className="text-lg font-black tracking-tight text-slate-950 dark:text-white"
++          className="text-lg font-black tracking-tight cmm-text-primary"
+         >
+           Informations facultatives du dossier
+         </h2>
+-        <p className="text-sm text-slate-600 dark:text-slate-300">
++        <p className="text-sm cmm-text-secondary">
+           Ces champs libres ne sont ni vérifiés ni enregistrés sur les serveurs CleanMyMap : ils
+           figurent uniquement dans le fichier Markdown téléchargé comme déclaration du titulaire.
+         </p>
+@@ -214,7 +214,7 @@
+         <div>
+           <label
+             htmlFor="dossier-holder-name"
+-            className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
++            className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
+           >
+             Nom figurant sur le dossier (facultatif)
+           </label>
+@@ -225,14 +225,14 @@
+             value={form.holderName}
+             onChange={(event) => onChange({ holderName: event.target.value })}
+             placeholder="Ex. Camille Martin"
+-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
++            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+           />
+         </div>
+ 
+         <div>
+           <label
+             htmlFor="dossier-motivations"
+-            className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
++            className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
+           >
+             Motivations ou expériences vécues (facultatif)
+           </label>
+@@ -242,14 +242,14 @@
+             maxLength={2000}
+             value={form.motivations}
+             onChange={(event) => onChange({ motivations: event.target.value })}
+-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
++            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+           />
+         </div>
+ 
+         <div>
+           <label
+             htmlFor="dossier-skills"
+-            className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
++            className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
+           >
+             Savoir-faire perçus ou développés (facultatif)
+           </label>
+@@ -259,14 +259,14 @@
+             maxLength={2000}
+             value={form.perceivedSkills}
+             onChange={(event) => onChange({ perceivedSkills: event.target.value })}
+-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
++            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+           />
+         </div>
+ 
+         <div>
+           <label
+             htmlFor="dossier-observations"
+-            className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
++            className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
+           >
+             Autres observations personnelles (facultatif)
+           </label>
+@@ -276,7 +276,7 @@
+             maxLength={2000}
+             value={form.observations}
+             onChange={(event) => onChange({ observations: event.target.value })}
+-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
++            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+           />
+         </div>
+ 
+@@ -284,7 +284,7 @@
+           <div>
+             <label
+               htmlFor="dossier-attestations"
+-              className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
++              className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
+             >
+               Attestation(s) signée(s) (références)
+             </label>
+@@ -294,13 +294,13 @@
+               maxLength={1000}
+               value={form.attestationReferences}
+               onChange={(event) => onChange({ attestationReferences: event.target.value })}
+-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
++              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+             />
+           </div>
+           <div>
+             <label
+               htmlFor="dossier-links"
+-              className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
++              className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
+             >
+               Justificatifs / liens publics
+             </label>
+@@ -310,13 +310,13 @@
+               maxLength={1000}
+               value={form.publicLinks}
+               onChange={(event) => onChange({ publicLinks: event.target.value })}
+-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
++              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+             />
+           </div>
+           <div>
+             <label
+               htmlFor="dossier-other-docs"
+-              className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
++              className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
+             >
+               Autres documents
+             </label>
+@@ -326,7 +326,7 @@
+               maxLength={1000}
+               value={form.otherDocuments}
+               onChange={(event) => onChange({ otherDocuments: event.target.value })}
+-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
++              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+             />
+           </div>
+         </div>
+diff --git a/apps/web/src/components/profil/engagement/engagement-attestation-pdf-section.tsx b/apps/web/src/components/profil/engagement/engagement-attestation-pdf-section.tsx
+--- a/apps/web/src/components/profil/engagement/engagement-attestation-pdf-section.tsx
++++ b/apps/web/src/components/profil/engagement/engagement-attestation-pdf-section.tsx
+@@ -58,18 +58,18 @@
+   return (
+     <section
+       aria-labelledby="engagement-attestation-pdf-heading"
+-      className="space-y-5 rounded-[2rem] border border-slate-200 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/80"
++      className="space-y-5 cmm-card rounded-xl border p-4"
+     >
+       <div className="flex flex-wrap items-start justify-between gap-4">
+         <div className="max-w-2xl space-y-1.5">
+           <h2
+             id="engagement-attestation-pdf-heading"
+-            className="text-lg font-black tracking-tight text-slate-950 dark:text-white"
++            className="text-lg font-black tracking-tight cmm-text-primary"
+           >
+             Attestation associative vierge (PDF à faire signer)
+           </h2>
+-          <p className="text-sm text-slate-600 dark:text-slate-300">
+-            Ce modèle officiel vierge CleanMyMap (formulaire A4 remplissable à 27 champs) doit
++          <p className="text-sm cmm-text-secondary">
++            Ce modèle vierge CleanMyMap (formulaire A4 remplissable à 27 champs) doit
+             être vérifié, complété et signé séparément par chaque structure organisatrice.
+             CleanMyMap n’émet aucune signature électronique ni validation à la place de l’organisme.
+           </p>
+@@ -101,7 +101,7 @@
+       </div>
+ 
+       <div className="space-y-3">
+-        <h3 className="text-sm font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
++        <h3 className="text-sm font-black uppercase tracking-wider cmm-text-secondary">
+           Regroupement par structure pour vos démarches
+         </h3>
+ 
+@@ -117,17 +117,17 @@
+                 className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60"
+               >
+                 <div className="flex flex-wrap items-baseline justify-between gap-2">
+-                  <p className="font-bold text-slate-950 dark:text-white">{group.name}</p>
+-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
++                  <p className="font-bold cmm-text-primary">{group.name}</p>
++                  <span className="text-xs font-semibold cmm-text-secondary">
+                     {group.organizerTypeLabel}
+                   </span>
+                 </div>
+-                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
++                <p className="mt-1 text-xs cmm-text-secondary">
+                   {group.items.length} action{group.items.length > 1 ? "s" : ""} confirmée
+                   {group.items.length > 1 ? "s" : ""} — une attestation distincte doit être
+                   complétée et signée par cet organisme.
+                 </p>
+-                <ul className="mt-2 space-y-1 text-xs text-slate-700 dark:text-slate-300">
++                <ul className="mt-2 space-y-1 text-xs cmm-text-secondary">
+                   {group.items.map((item) => (
+                     <li key={item.actionId}>
+                       {item.actionDate.slice(0, 10)} — {item.actionTitle || item.locationLabel} (
+@@ -143,7 +143,7 @@
+                 <p className="font-bold text-slate-900 dark:text-slate-100">
+                   Structure organisatrice non documentée ({undocumented.length})
+                 </p>
+-                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
++                <p className="mt-1 text-xs cmm-text-secondary">
+                   Aucune structure signataire n’est identifiée pour ces participations : elles ne
+                   peuvent pas être attribuées à un organisme signataire sans justificatif externe.
+                 </p>
