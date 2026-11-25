@@ -185,3 +185,112 @@ export function getRealizedParisSchoolOperations(): readonly ParisSchoolOperatio
     (record) => record.status === "realisee_attestee" || record.status === "participation_attestee",
   );
 }
+
+export interface ParisInterschoolParticipant {
+  readonly schoolId: string;
+  readonly schoolName: string;
+  readonly establishmentType: "lycee" | "college" | "etablissement";
+  readonly role: "organisateur_initiative" | "participant_personnel_educatif" | "participant_eco_collegiens";
+  readonly classesAttested: boolean;
+}
+
+export interface ParisInterschoolOperation {
+  readonly id: string;
+  readonly networkId: "saint-placide-6e" | "mon-college-zero-dechet-11e";
+  readonly title: string;
+  readonly arrondissement: number;
+  readonly date: string;
+  readonly status: "realisee_attestee";
+  readonly locationLabel: string;
+  readonly leadSummary: string;
+  readonly resultNote?: string;
+  readonly participants: readonly ParisInterschoolParticipant[];
+  readonly publicSupports: readonly {
+    readonly label: string;
+    readonly role: string;
+    readonly isCoOrganizer: boolean;
+  }[];
+  readonly sources: readonly { readonly label: string; readonly url: string }[];
+}
+
+export const PARIS_INTERSCHOOL_NETWORK_OPERATIONS: readonly ParisInterschoolOperation[] = [
+  {
+    id: "op-saint-placide-2022-04-04",
+    networkId: "saint-placide-6e",
+    title: "Collecte de mégots — Quartier Saint-Placide (1re opération)",
+    arrondissement: 6,
+    date: "2022-04-04",
+    status: "realisee_attestee",
+    locationLabel: "Rues proches du lycée Saint-Nicolas, quartier Saint-Placide (Paris 6e)",
+    leadSummary: "Club Développement durable du lycée Saint-Nicolas (responsable : Ludivine Talon).",
+    resultNote: "Environ 8 000 mégots collectés en une heure rapportés dans le compte rendu du groupe de travail (attribution exacte entre 2022 et 2023 à vérifier).",
+    participants: [
+      { schoolId: "lycee-saint-nicolas", schoolName: "Lycée Saint-Nicolas", establishmentType: "lycee", role: "organisateur_initiative", classesAttested: true },
+      { schoolId: "etablissement-sainte-genevieve", schoolName: "Sainte-Geneviève", establishmentType: "etablissement", role: "participant_personnel_educatif", classesAttested: false },
+      { schoolId: "etablissement-stanislas", schoolName: "Stanislas", establishmentType: "etablissement", role: "participant_personnel_educatif", classesAttested: false },
+      { schoolId: "lycee-carcado-saisseval", schoolName: "Carcado-Saisseval", establishmentType: "lycee", role: "participant_personnel_educatif", classesAttested: false },
+    ],
+    publicSupports: [
+      { label: "Mairie du 6e", role: "Autorisation des marquages de sensibilisation sur les trottoirs", isCoOrganizer: false },
+    ],
+    sources: [
+      {
+        label: "Conseil de quartier Saint-Placide — Groupe de travail Quartier sans mégots (section 3.4)",
+        url: "https://cdn.paris.fr/paris/2024/01/09/conseil-de-quartier-saint-placide-groupe-de-travail-quartier-sans-megots-27-novembre-2023-IXtH.pdf",
+      },
+    ],
+  },
+  {
+    id: "op-saint-placide-2023-03-09",
+    networkId: "saint-placide-6e",
+    title: "Collecte de mégots — Quartier Saint-Placide (2e opération)",
+    arrondissement: 6,
+    date: "2023-03-09",
+    status: "realisee_attestee",
+    locationLabel: "Rues proches du lycée Saint-Nicolas, quartier Saint-Placide (Paris 6e)",
+    leadSummary: "Club Développement durable du lycée Saint-Nicolas (responsable : Ludivine Talon).",
+    resultNote: "Environ 8 000 mégots collectés en une heure rapportés dans le compte rendu du groupe de travail (attribution exacte entre 2022 et 2023 à vérifier).",
+    participants: [
+      { schoolId: "lycee-saint-nicolas", schoolName: "Lycée Saint-Nicolas", establishmentType: "lycee", role: "organisateur_initiative", classesAttested: true },
+      { schoolId: "etablissement-sainte-genevieve", schoolName: "Sainte-Geneviève", establishmentType: "etablissement", role: "participant_personnel_educatif", classesAttested: false },
+      { schoolId: "etablissement-stanislas", schoolName: "Stanislas", establishmentType: "etablissement", role: "participant_personnel_educatif", classesAttested: false },
+      { schoolId: "lycee-carcado-saisseval", schoolName: "Carcado-Saisseval", establishmentType: "lycee", role: "participant_personnel_educatif", classesAttested: false },
+    ],
+    publicSupports: [
+      { label: "Mairie du 6e", role: "Autorisation des marquages de sensibilisation sur les trottoirs", isCoOrganizer: false },
+      { label: "Services de propreté de Paris (DPE)", role: "Présence et fourniture de matériel pour la collecte du 09/03/2023", isCoOrganizer: false },
+    ],
+    sources: [
+      {
+        label: "Conseil de quartier Saint-Placide — Groupe de travail Quartier sans mégots (section 3.4)",
+        url: "https://cdn.paris.fr/paris/2024/01/09/conseil-de-quartier-saint-placide-groupe-de-travail-quartier-sans-megots-27-novembre-2023-IXtH.pdf",
+      },
+    ],
+  },
+  {
+    id: "op-mon-college-zero-dechet-2025-02-11",
+    networkId: "mon-college-zero-dechet-11e",
+    title: "Mon Collège Zéro Déchet — Collecte et soirée éco-collégiens",
+    arrondissement: 11,
+    date: "2025-02-11",
+    status: "realisee_attestee",
+    locationLabel: "Parcours des collèges jusqu'au parvis de la mairie du 11e",
+    leadSummary: "Programme porté par la Mairie du 11e.",
+    participants: [
+      { schoolId: "college-lucie-raymond-aubrac", schoolName: "Collège Lucie et Raymond Aubrac", establishmentType: "college", role: "participant_eco_collegiens", classesAttested: false },
+      { schoolId: "college-beaumarchais", schoolName: "Collège Beaumarchais", establishmentType: "college", role: "participant_eco_collegiens", classesAttested: false },
+      { schoolId: "college-alain-fournier", schoolName: "Collège Alain-Fournier", establishmentType: "college", role: "participant_eco_collegiens", classesAttested: false },
+      { schoolId: "college-voltaire", schoolName: "Collège Voltaire", establishmentType: "college", role: "participant_eco_collegiens", classesAttested: false },
+    ],
+    publicSupports: [
+      { label: "Mairie du 11e", role: "Porteur du programme Mon Collège Zéro Déchet", isCoOrganizer: true },
+      { label: "Direction de la Propreté et de l'Eau (DPE)", role: "Présentation de ses engins et métiers de propreté", isCoOrganizer: false },
+      { label: "Association Crok Ciné", role: "Accompagnement vidéo écocitoyen (sans coorganisation du ramassage)", isCoOrganizer: false },
+    ],
+    sources: [
+      { label: "Mairie du 11e — Soirée éco-collégiens 2025", url: "https://mairie11.paris.fr/pages/soiree-eco-collegiens-2025-31119" },
+      { label: "Maison des Métallos — Mon Collège Zéro Déchet", url: "https://www.maisondesmetallos.paris/projection-mon-college-zero-dechet-finale" },
+      { label: "Crok Ciné — LinkedIn (mention @brigadeverte11 et régie de quartier sans attribution par collège)", url: "https://fr.linkedin.com/posts/crok-cin%C3%A9_paris11-activity-7297661172214824961-zEI2" },
+    ],
+  },
+];

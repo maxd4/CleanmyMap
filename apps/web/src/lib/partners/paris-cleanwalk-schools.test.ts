@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getRealizedParisSchoolOperations,
+  PARIS_INTERSCHOOL_NETWORK_OPERATIONS,
   PARIS_SCHOOL_CLEANWALK_RECORDS,
 } from "./paris-cleanwalk-schools";
 
@@ -39,5 +40,18 @@ describe("paris-cleanwalk-schools", () => {
         expect(link.isCoOrganizer).toBe(false);
       }
     }
+  });
+
+  it("models the 8 interschool establishments across 3 distinct historical operations without false cliques", () => {
+    expect(PARIS_INTERSCHOOL_NETWORK_OPERATIONS).toHaveLength(3);
+    const dates = PARIS_INTERSCHOOL_NETWORK_OPERATIONS.map((op) => op.date);
+    expect(dates).toEqual(["2022-04-04", "2023-03-09", "2025-02-11"]);
+
+    const uniqueSchools = new Set(
+      PARIS_INTERSCHOOL_NETWORK_OPERATIONS.flatMap((op) => op.participants.map((p) => p.schoolId)),
+    );
+    expect(uniqueSchools.size).toBe(8);
+    expect(uniqueSchools.has("college-voltaire")).toBe(true);
+    expect(uniqueSchools.has("ecole-elementaire-voltaire")).toBe(false);
   });
 });
