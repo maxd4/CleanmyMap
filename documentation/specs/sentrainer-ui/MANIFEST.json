@@ -1,0 +1,134 @@
+{
+  "status": "CANDIDATE",
+  "source_main": "6a8ad6b4ea059da6ec91e86855a0430b11f4b176",
+  "base_observed": "6a8ad6b4ea059da6ec91e86855a0430b11f4b176",
+  "patch_git_blob_sha": "31c5a79aeac1ce7ac15f9b59bd0f1526d9711156",
+  "overlapProof": [
+    {
+      "path": "apps/web/src/components/learn/learn-deferred-panels.test.ts",
+      "previous_then_current": "PASS_TEXTUAL",
+      "current_then_previous": "PASS_TEXTUAL",
+      "same_result": true
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-deferred-panels.tsx",
+      "previous_then_current": "PASS_TEXTUAL",
+      "current_then_previous": "PASS_TEXTUAL",
+      "same_result": true
+    }
+  ],
+  "targets": [
+    {
+      "path": "apps/web/src/app/learn/sentrainer/client.tsx",
+      "before": "c31ed631415fd8d940992a435bb7a48e02ad7fc3",
+      "after": "9422eefd20cb23f5562dc0a60a283e69c8cd7586",
+      "insertions": 9,
+      "deletions": 68
+    },
+    {
+      "path": "apps/web/src/app/learn/sentrainer/page.test.tsx",
+      "before": "5311abbb008ed0ac5f223634770be353b972a3a0",
+      "after": "f9bc3d107aa37a887c723cf8859818fe83c7c2ca",
+      "insertions": 7,
+      "deletions": 15
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-deferred-panels.test.ts",
+      "before": "366c4d8b07c3ac098957389632d88de490ee6b4f",
+      "after": "726210243bbeda20fad2f4ca69fa0839d4495234",
+      "insertions": 2,
+      "deletions": 0
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-deferred-panels.tsx",
+      "before": "1dfcde0590f9696d9cec875102210c9b58a19637",
+      "after": "6eeaef9577096aed4e06c89f807f8e60a5f48585",
+      "insertions": 3,
+      "deletions": 3
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-practice-visual-intro.test.ts",
+      "before": "5144c3ebd3bdf5ac6078398473e50efdc29d6625",
+      "after": null,
+      "insertions": 0,
+      "deletions": 34
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-practice-visual-intro.tsx",
+      "before": "b57827759af11430b79cf81050849ed137a53d5a",
+      "after": null,
+      "insertions": 0,
+      "deletions": 202
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/environmental-quiz-view.tsx",
+      "before": "48183a09d9f9dc6a34ed27aa3eb5324a9bad696a",
+      "after": "d350d5b085f2cbd87c9e29e01441e5f961c5b402",
+      "insertions": 2,
+      "deletions": 2
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/quiz-access-picker.test.tsx",
+      "before": "18ddb67432add597d3998e55c6a016bef7ccf45d",
+      "after": "c20b4982d6ab272a738d06c210d0969f1c10666b",
+      "insertions": 43,
+      "deletions": 53
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/quiz-access-picker.tsx",
+      "before": "4b286de5c6f1b8ea162d729f307e58dfff6e0058",
+      "after": "42ec05a0c9acb843ba0e939ff7be57b1f5434707",
+      "insertions": 87,
+      "deletions": 269
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/quiz-individual-picker.tsx",
+      "before": null,
+      "after": "4511b5664c956e79aeed4eb70c047a485523b7fd",
+      "insertions": 94,
+      "deletions": 0
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/quiz-reasoning-picker.tsx",
+      "before": "97859f76bd71cfec08e79e66013cbb6ff7771fa3",
+      "after": "56e792b17c721cd76d0c615e019330ce3302cedb",
+      "insertions": 19,
+      "deletions": 14
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/quiz-session-panel.tsx",
+      "before": "b2f31a8c1586f1da7dbe8d9eda6245e7ef9b1ca3",
+      "after": "e4f62a969ea959d298c26103b1baef1bfba1d879",
+      "insertions": 6,
+      "deletions": 41
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/school/quiz-school-picker.tsx",
+      "before": "a11380450dd022d84a6b572bc4d45d7ae47ec81f",
+      "after": "75128c595ccbb92d26f48364c1ec5861519aaefa",
+      "insertions": 41,
+      "deletions": 148
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/use-environmental-quiz-mode.test.tsx",
+      "before": null,
+      "after": "6b3e4a34c4a044b78fcfc5b9769a9e4cce6e0691",
+      "insertions": 30,
+      "deletions": 0
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/use-environmental-quiz-mode.ts",
+      "before": "7fba37ec234797dce7e6efe368e6ab4224a8a355",
+      "after": "bf8e01ecf1c20ec0bd8336d6cdd7c946d262cc5d",
+      "insertions": 1,
+      "deletions": 1
+    },
+    {
+      "path": "documentation/pages_site/routes/05-apprendre/learn-sentrainer/learn-sentrainer-README.md",
+      "before": "db46e06f0f7abd3a0690c919f5557a09aee5b821",
+      "after": "d01fcc5f950adcb59f1fb66f99a5fead9fce71b3",
+      "insertions": 4,
+      "deletions": 4
+    }
+  ]
+}

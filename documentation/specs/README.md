@@ -4,6 +4,8 @@
 
 ## Dossiers réellement présents
 
+- [sentrainer-ui/README_CODEX.md](./sentrainer-ui/README_CODEX.md) : refonte Web de S’entraîner, accès au quiz pleine largeur, quatre onglets, progression réelle et choix de piégeage, PLAN/CANDIDATE.
+
 - [vulgarisation-ui/README_CODEX.md](./vulgarisation-ui/README_CODEX.md) : refonte Web de Vulgarisation, six onglets, palette Apprendre, contenus scientifiques et correction des cartes vides, PLAN/CANDIDATE.
 
 - [design-system-premium/README_CODEX.md](./design-system-premium/README_CODEX.md) : canvas neutre, palettes de famille, primitives et onglets, convergence Web et contrats, PLAN/CANDIDATE.

@@ -1,0 +1,1521 @@
+diff --git a/apps/web/src/app/learn/sentrainer/client.tsx b/apps/web/src/app/learn/sentrainer/client.tsx
+index c31ed631415fd8d940992a435bb7a48e02ad7fc3..9422eefd20cb23f5562dc0a60a283e69c8cd7586 100644
+--- a/apps/web/src/app/learn/sentrainer/client.tsx
++++ b/apps/web/src/app/learn/sentrainer/client.tsx
+@@ -1,91 +1,32 @@
+ "use client";
+ 
+ import { Suspense } from "react";
+-import { LearnPracticeVisualIntro } from "@/components/learn/learn-practice-visual-intro";
+ import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
+ import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
+-import { QuizArchitectureStrip } from "@/components/learn/quiz/quiz-architecture-strip";
+-import { DeferredEnvironmentalQuiz } from "@/components/learn/learn-deferred-panels";
+ import { LearnSentrainerQuizEntry } from "@/components/learn/learn-sentrainer-quiz-entry";
+ import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
+-import { parseQuizSentrainerEntryState } from "@/lib/learning/quiz/quiz-entry-state";
+-import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
+ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+ 
+ export default function LearnSentrainerPage() {
+   const { locale } = useSitePreferences();
+-  const practiceCard = LEARN_OVERVIEW_CARDS[locale][1];
+-  const defaultQuizEntryState = parseQuizSentrainerEntryState(null);
+ 
+   return (
+     <LearnRubricShell
+       title={{ fr: "S'entraîner", en: "Practice" }}
+-      subtitle={{
+-        fr: "Ancrer les repères par la répétition",
+-        en: "Anchor the cues through repetition",
+-      }}
+-      description={{
+-        fr: "Sessions courtes, questions mélangées et retour immédiat.",
+-        en: "Short sessions, mixed questions and immediate feedback.",
+-      }}
++      subtitle={{ fr: "Tester et consolider ses connaissances", en: "Test and consolidate your knowledge" }}
++      description={{ fr: "Choisis une session, réponds aux questions et révise tes erreurs.", en: "Choose a session, answer questions and review your mistakes." }}
+       backHref="/explorer"
+       backLabel={{ fr: "Retour au sommaire", en: "Back to summary" }}
+       accent="yellow"
+-      highlights={[
+-        { fr: "Rappel actif", en: "Active recall" },
+-        { fr: "Rythme court", en: "Short rhythm" },
+-        { fr: "Révision visible", en: "Visible review" },
+-      ]}
+-      cta={{
+-        href: "/learn/bonnes-pratiques",
+-        label: {
+-          fr: "Voir tri, compost, comportements",
+-          en: "See sorting, composting, behaviors",
+-        },
+-      }}
++      showVisualPanel={false}
+     >
+       <LearnPageVisitTracker pageId="sentrainer" />
+-      <div className="space-y-8">
+-        <LearnPracticeVisualIntro
+-          locale={locale}
+-          card={practiceCard}
+-          question={locale === "fr" ? "S'entraîner pour ancrer vite" : "Practice to anchor fast"}
+-          clue={
+-            locale === "fr"
+-              ? "Des sessions courtes, des questions mélangées et un retour immédiat pour garder le rythme."
+-              : "Short sessions, mixed questions, and immediate feedback keep the rhythm going."
+-          }
+-          action={{
+-            href: "#quiz-architecture",
+-            label: locale === "fr" ? "Voir le panneau de session" : "See the session panel",
+-          }}
+-        />
+-        <LearnBlockJourneySection locale={locale} currentPageId="sentrainer" />
+-
+-        <section id="quiz-architecture">
+-          <QuizArchitectureStrip
+-            locale={locale}
+-            summary={{
+-              total: 12,
+-              counts: { new: 3, failed: 2, due: 4, mastered: 3 },
+-              nextReviewAt: "2026-06-01T09:00:00.000Z",
+-            }}
+-          />
+-        </section>
+-
+-        <section className="grid gap-8 lg:grid-cols-2">
+-          <Suspense
+-            fallback={
+-              <DeferredEnvironmentalQuiz
+-                locale={locale}
+-                {...defaultQuizEntryState}
+-              />
+-            }
+-          >
+-            <LearnSentrainerQuizEntry locale={locale} />
+-          </Suspense>
+-        </section>
+-      </div>
++      <section id="quiz-architecture" className="min-w-0 scroll-mt-24" aria-label={locale === "fr" ? "Quiz environnemental" : "Environmental quiz"}>
++        <Suspense fallback={<p role="status" className="cmm-text-secondary p-4">{locale === "fr" ? "Chargement du quiz…" : "Loading quiz…"}</p>}>
++          <LearnSentrainerQuizEntry locale={locale} />
++        </Suspense>
++      </section>
++      <LearnBlockJourneySection locale={locale} currentPageId="sentrainer" compact />
+     </LearnRubricShell>
+   );
+ }
+diff --git a/apps/web/src/app/learn/sentrainer/page.test.tsx b/apps/web/src/app/learn/sentrainer/page.test.tsx
+index 5311abbb008ed0ac5f223634770be353b972a3a0..f9bc3d107aa37a887c723cf8859818fe83c7c2ca 100644
+--- a/apps/web/src/app/learn/sentrainer/page.test.tsx
++++ b/apps/web/src/app/learn/sentrainer/page.test.tsx
+@@ -4,25 +4,14 @@
+ vi.mock("@/components/ui/site-preferences-provider", async () =>
+   (await import("@/app/learn/test-helpers")).createLearnSitePreferencesModule(),
+ );
+-
+ vi.mock("@/components/learn/learn-rubric-shell", async () =>
+   (await import("@/app/learn/test-helpers")).createLearnRubricShellModule(),
+ );
+-
+-vi.mock("@/components/learn/learn-practice-visual-intro", () => ({
+-  LearnPracticeVisualIntro: () => null,
+-}));
+ vi.mock("@/components/learn/learn-block-journey-section", () => ({
+-  LearnBlockJourneySection: () => null,
+-}));
+-vi.mock("@/components/learn/quiz/quiz-architecture-strip", () => ({
+-  QuizArchitectureStrip: () => null,
+-}));
+-vi.mock("@/components/learn/learn-deferred-panels", () => ({
+-  DeferredEnvironmentalQuiz: () => null,
++  LearnBlockJourneySection: () => <div data-testid="journey" />,
+ }));
+ vi.mock("@/components/learn/learn-sentrainer-quiz-entry", () => ({
+-  LearnSentrainerQuizEntry: () => null,
++  LearnSentrainerQuizEntry: () => <div data-testid="quiz" />,
+ }));
+ vi.mock("@/components/learn/learn-page-visit-tracker", () => ({
+   LearnPageVisitTracker: () => null,
+@@ -31,10 +20,13 @@
+ import Page from "./page";
+ 
+ describe("sentrainer page", () => {
+-  it("renders a single canonical heading through LearnRubricShell in the server-rendered document", async () => {
++  it("renders the quiz first at full width, without fictitious progress", () => {
+     const markup = renderToStaticMarkup(Page());
+-
+     expect(markup).toContain("S&#x27;entraîner");
+     expect(markup.match(/<h1\b/g)).toHaveLength(1);
++    expect(markup).toContain('id="quiz-architecture"');
++    expect(markup.indexOf('data-testid="quiz"')).toBeLessThan(markup.indexOf('data-testid="journey"'));
++    expect(markup).not.toContain("lg:grid-cols-2");
++    expect(markup).not.toContain("Architecture du Quiz");
+   });
+ });
+diff --git a/apps/web/src/components/learn/learn-deferred-panels.test.ts b/apps/web/src/components/learn/learn-deferred-panels.test.ts
+index 366c4d8b07c3ac098957389632d88de490ee6b4f..726210243bbeda20fad2f4ca69fa0839d4495234 100644
+--- a/apps/web/src/components/learn/learn-deferred-panels.test.ts
++++ b/apps/web/src/components/learn/learn-deferred-panels.test.ts
+@@ -41,6 +41,8 @@
+     );
+ 
+     expect(markup).toContain("The quiz activates as you approach the section.");
++    expect(markup).not.toContain("min-h-[760px]");
++    expect(markup).not.toContain("h-[760px]");
+     expect(markup).toContain("role=\"status\"");
+     expect(markup).toContain("aria-busy=\"true\"");
+   });
+diff --git a/apps/web/src/components/learn/learn-deferred-panels.tsx b/apps/web/src/components/learn/learn-deferred-panels.tsx
+index 1dfcde0590f9696d9cec875102210c9b58a19637..6eeaef9577096aed4e06c89f807f8e60a5f48585 100644
+--- a/apps/web/src/components/learn/learn-deferred-panels.tsx
++++ b/apps/web/src/components/learn/learn-deferred-panels.tsx
+@@ -88,7 +88,7 @@
+   {
+     ssr: false,
+     loading: () => (
+-      <div className="h-[760px] animate-pulse rounded-[2rem] border border-amber-200/70 bg-white/80" />
++      <p role="status" aria-busy="true" className="rounded-xl border border-[color:var(--border-default)] p-4 cmm-text-secondary">Chargement du quiz…</p>
+     ),
+   },
+ );
+@@ -290,7 +290,7 @@
+   });
+ 
+   return (
+-    <div ref={ref} className="min-h-[760px]">
++    <div ref={ref} className="min-w-0">
+       {isInView ? (
+         <DeferredEnvironmentalQuizComponent
+           initialAccessType={initialAccessType}
+@@ -304,7 +304,7 @@
+         <DeferredLoadingShell
+           accent="amber"
+           message={getQuizDeferredMessage(locale)}
+-          heightClassName="h-[760px]"
++          heightClassName="min-h-20 p-4"
+         />
+       )}
+     </div>
+diff --git a/apps/web/src/components/learn/learn-practice-visual-intro.test.ts b/apps/web/src/components/learn/learn-practice-visual-intro.test.ts
+deleted file mode 100644
+index 5144c3ebd3bdf5ac6078398473e50efdc29d6625..0000000000000000000000000000000000000000
+--- a/apps/web/src/components/learn/learn-practice-visual-intro.test.ts
++++ /dev/null
+@@ -1,34 +0,0 @@
+-import * as React from "react";
+-import { renderToStaticMarkup } from "react-dom/server";
+-import { describe, expect, it } from "vitest";
+-
+-import { LearnPracticeVisualIntro } from "./learn-practice-visual-intro";
+-import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
+-
+-describe("LearnPracticeVisualIntro", () => {
+-  it("renders a visual practice header and session cues", () => {
+-    const card = LEARN_OVERVIEW_CARDS.fr[1];
+-
+-    const markup = renderToStaticMarkup(
+-      React.createElement(LearnPracticeVisualIntro, {
+-        locale: "fr",
+-        card,
+-        question: "S'entraîner pour ancrer vite",
+-        clue: "Des sessions courtes, des questions mélangées et un retour immédiat pour garder le rythme.",
+-        action: {
+-          href: "#quiz-architecture",
+-          label: "Voir le panneau de session",
+-        },
+-      }),
+-    );
+-
+-    expect(markup).toContain("Parcours adaptatif");
+-    expect(markup).toContain("S&#x27;entraîner pour ancrer vite");
+-    expect(markup).toContain("Sessions courtes");
+-    expect(markup).toContain("Questions mélangées");
+-    expect(markup).toContain("Retour immédiat");
+-    expect(markup).toContain("Réactiver");
+-    expect(markup).toContain("Revoir");
+-    expect(markup).toContain("Voir le panneau de session");
+-  });
+-});
+diff --git a/apps/web/src/components/learn/learn-practice-visual-intro.tsx b/apps/web/src/components/learn/learn-practice-visual-intro.tsx
+deleted file mode 100644
+index b57827759af11430b79cf81050849ed137a53d5a..0000000000000000000000000000000000000000
+--- a/apps/web/src/components/learn/learn-practice-visual-intro.tsx
++++ /dev/null
+@@ -1,202 +0,0 @@
+-import {
+-  Brain,
+-  Clock3,
+-  Repeat2,
+-  Shuffle,
+-  Target,
+-  Trophy,
+-} from "lucide-react";
+-import type { LucideIcon } from "lucide-react";
+-import { cn } from "@/lib/utils";
+-import type { LearnLinkCard, LearnLocale } from "@/lib/learning/learn-rubric-data";
+-import { CognitiveSignalChip } from "@/components/learn/cognitive-signal-chip";
+-import {
+-  LEARN_VISUAL_INTRO_TONES,
+-  LearnVisualIntroFrame,
+-  LearnVisualIntroLead,
+-} from "./learn-visual-intro-shared";
+-
+-type LearnPracticeVisualIntroProps = {
+-  locale: LearnLocale;
+-  card: LearnLinkCard;
+-  question: string;
+-  clue: string;
+-  action: {
+-    href: string;
+-    label: string;
+-  };
+-  className?: string;
+-};
+-
+-type StepCard = {
+-  icon: LucideIcon;
+-  title: { fr: string; en: string };
+-  detail: { fr: string; en: string };
+-  tone: "violet" | "cyan" | "emerald";
+-};
+-
+-const STEP_CARDS: StepCard[] = [
+-  {
+-    icon: Brain,
+-    title: { fr: "Réactiver", en: "Reactivate" },
+-    detail: { fr: "Commencer par des rappels courts et simples.", en: "Start with short, simple recall." },
+-    tone: "violet",
+-  },
+-  {
+-    icon: Shuffle,
+-    title: { fr: "Mélanger", en: "Mix" },
+-    detail: {
+-      fr: "Garder les thèmes variés pour éviter l'apprentissage en ligne droite.",
+-      en: "Keep themes mixed to avoid linear learning.",
+-    },
+-    tone: "cyan",
+-  },
+-  {
+-    icon: Repeat2,
+-    title: { fr: "Revenir", en: "Return" },
+-    detail: {
+-      fr: "Revoir au bon moment pour ancrer la réponse.",
+-      en: "Come back at the right time to anchor the answer.",
+-    },
+-    tone: "emerald",
+-  },
+-];
+-
+-function StepTile({
+-  locale,
+-  step,
+-}: {
+-  locale: LearnLocale;
+-  step: StepCard;
+-}) {
+-  const Icon = step.icon;
+-  const tone = LEARN_VISUAL_INTRO_TONES[step.tone];
+-
+-  return (
+-    <div className="rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-sm">
+-      <div className="flex items-center justify-between gap-3">
+-        <div className={cn("inline-flex h-10 w-10 items-center justify-center rounded-2xl", tone.badge)}>
+-          <Icon className="h-4 w-4" aria-hidden="true" />
+-        </div>
+-        <span className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
+-          {step.title[locale]}
+-        </span>
+-      </div>
+-      <p className="mt-3 text-sm font-semibold leading-relaxed text-slate-700">
+-        {step.detail[locale]}
+-      </p>
+-    </div>
+-  );
+-}
+-
+-function QuickCue({
+-  icon,
+-  label,
+-}: {
+-  icon: LucideIcon;
+-  label: string;
+-}) {
+-  const Icon = icon;
+-
+-  return (
+-    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 cmm-text-small font-black uppercase tracking-[0.14em] text-slate-700 shadow-sm">
+-      <Icon className="h-4 w-4 text-slate-400" aria-hidden="true" />
+-      {label}
+-    </div>
+-  );
+-}
+-
+-export function LearnPracticeVisualIntro({
+-  locale,
+-  card,
+-  question,
+-  clue,
+-  action,
+-  className,
+-}: LearnPracticeVisualIntroProps) {
+-  return (
+-    <LearnVisualIntroFrame card={card} className={className}>
+-      <LearnVisualIntroLead
+-        locale={locale}
+-        card={card}
+-        question={question}
+-        clue={clue}
+-        eyebrow={locale === "fr" ? "Parcours adaptatif" : "Adaptive path"}
+-        action={action}
+-        chips={
+-          <div className="flex flex-wrap gap-2">
+-            {card.visual.chips.map((chip) => (
+-              <CognitiveSignalChip
+-                key={`${card.title}-${chip[locale]}`}
+-                label={chip[locale]}
+-                tone="default"
+-                title={chip[locale]}
+-              />
+-            ))}
+-          </div>
+-        }
+-      />
+-
+-      <div className="space-y-3 rounded-[1.6rem] border border-slate-200/80 bg-white/85 p-5 shadow-sm md:p-6">
+-          <div className="flex items-start justify-between gap-3">
+-            <div>
+-              <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
+-                {locale === "fr" ? "Ce qu'on fait ici" : "What happens here"}
+-              </p>
+-              <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
+-                {locale === "fr" ? "Une boucle courte et lisible" : "A short, readable loop"}
+-              </h3>
+-            </div>
+-            <span className={cn("inline-flex h-11 w-11 items-center justify-center rounded-2xl border", LEARN_VISUAL_INTRO_TONES[card.visual.tone].badge)}>
+-              <Trophy className="h-5 w-5" aria-hidden="true" />
+-            </span>
+-          </div>
+-
+-          <div className="grid gap-3 sm:grid-cols-3">
+-            <QuickCue
+-              icon={Clock3}
+-              label={locale === "fr" ? "Sessions courtes" : "Short sessions"}
+-            />
+-            <QuickCue
+-              icon={Shuffle}
+-              label={locale === "fr" ? "Questions mélangées" : "Mixed questions"}
+-            />
+-            <QuickCue
+-              icon={Target}
+-              label={locale === "fr" ? "Retour immédiat" : "Immediate feedback"}
+-            />
+-          </div>
+-
+-          <div className="grid gap-3">
+-            {STEP_CARDS.map((step) => (
+-              <StepTile key={step.title.fr} locale={locale} step={step} />
+-            ))}
+-          </div>
+-
+-          <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
+-            <div className="flex items-center justify-between gap-3">
+-              <div>
+-                <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
+-                  {locale === "fr" ? "Rythme" : "Rhythm"}
+-                </p>
+-                <p className="text-sm font-semibold text-slate-700">
+-                  {locale === "fr"
+-                    ? "Réactiver, vérifier, avancer."
+-                    : "Reactivate, check, move on."}
+-                </p>
+-              </div>
+-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm">
+-                <Repeat2 className="h-5 w-5" aria-hidden="true" />
+-              </span>
+-            </div>
+-
+-            <div className="mt-4 grid grid-cols-3 gap-2">
+-              <span className="h-2 rounded-full bg-amber-200" />
+-              <span className="h-2 rounded-full bg-orange-300" />
+-              <span className="h-2 rounded-full bg-amber-100" />
+-            </div>
+-          </div>
+-        </div>
+-    </LearnVisualIntroFrame>
+-  );
+-}
+diff --git a/apps/web/src/components/learn/quiz/environmental-quiz-view.tsx b/apps/web/src/components/learn/quiz/environmental-quiz-view.tsx
+index 48183a09d9f9dc6a34ed27aa3eb5324a9bad696a..d350d5b085f2cbd87c9e29e01441e5f961c5b402 100644
+--- a/apps/web/src/components/learn/quiz/environmental-quiz-view.tsx
++++ b/apps/web/src/components/learn/quiz/environmental-quiz-view.tsx
+@@ -22,8 +22,8 @@
+   locale: Locale; isDemoMode: boolean; selectedAccessType: QuizAccessTypeId | null; selectedTrapLevel: QuizTrapLevelId | null; selectedReasoningType: QuizReasoningType | null; selectedSchoolLevel: QuizSchoolLevel | null; selectedSchoolFormat: QuizSchoolFormat; isSchoolCollectiveMode: boolean; loading: boolean; demoQuestions: QuizQuestion[]; schoolQuestions: QuizQuestion[]; filteredQuestions: QuizQuestion[]; availableReasoningTypes: QuizReasoningType[]; quizSummary: CognitiveQuizSummary; personalProgress: QuizPersonalProgressSnapshot | null; activeSessionQuestions: QuizQuestion[]; question: QuizQuestion | undefined; currentQuestionIdx: number; currentQuestionState: ComponentProps<typeof QuizSessionPanel>["currentQuestionState"]; currentQuestionReviewDate: string; currentQuestionStreak: number; currentQuestionMasteryLevel: number; selectedOption: string; selectedOptions: string[]; showAnswer: boolean; showQuestionChoices: boolean; lastCheckResult: boolean | null; score: number; shouldOfferMiniChallenge: boolean; nextReasoningType: QuizReasoningType | null; currentQuestionSeenToday: boolean; sessionSummary: QuizSessionSummary | null; onSelectOption: ComponentProps<typeof QuizSessionPanel>["onSelectOption"]; onToggleOption: ComponentProps<typeof QuizSessionPanel>["onToggleOption"]; onCheckAnswer: ComponentProps<typeof QuizSessionPanel>["onCheckAnswer"]; onRevealChoices: ComponentProps<typeof QuizSessionPanel>["onRevealChoices"]; onRevealAnswer: ComponentProps<typeof QuizSessionPanel>["onRevealAnswer"]; onPreviousQuestion: ComponentProps<typeof QuizSessionPanel>["onPreviousQuestion"]; onNextQuestion: ComponentProps<typeof QuizSessionPanel>["onNextQuestion"]; onResetQuiz: () => void; onStartMiniChallenge: () => void; onReplayRecommendedMode: () => void; onHandleSRSUpdate: ComponentProps<typeof QuizSessionPanel>["onHandleSRSUpdate"]; onSelectTrapLevel: (level: QuizTrapLevelId | null) => void; onSelectAccessType: (type: QuizAccessTypeId) => void; onStartDemoMode: () => void; onSelectReasoningType: (type: QuizReasoningType | null) => void; onBackToAccessType: () => void; onToggleCollectiveMode: () => void; onLaunchSchoolSession: (level: QuizSchoolLevel, format: QuizSchoolFormat) => void; onRestartSchoolWorkshop: () => void; onChooseSchoolFormat: () => void;
+ };
+ 
+-function LoadingQuiz({ copy }: { copy: string }) { return <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4"><Zap className="animate-pulse text-emerald-500" size={48} /><p className="cmm-text-secondary font-medium italic">{copy}</p></div>; }
+-function EmptyQuiz({ locale, onChangeReasoning, onChangeType }: { locale: Locale; onChangeReasoning: () => void; onChangeType: () => void }) { return <div className="flex min-h-[400px] flex-col items-center justify-center gap-4"><Zap className="animate-pulse text-emerald-500" size={48} /><p className="font-medium italic cmm-text-secondary">{getQuizUiCopy(locale, "session.noQuestion")}</p><div className="flex flex-wrap items-center justify-center gap-3"><button onClick={onChangeReasoning} className="rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-muted)] px-4 py-2 font-semibold cmm-text-primary">{getQuizUiCopy(locale, "session.changeReasoning")}</button><button onClick={onChangeType} className="rounded-xl border border-[color:var(--border-default)] bg-white px-4 py-2 font-semibold cmm-text-primary">{getQuizUiCopy(locale, "session.changeType")}</button></div></div>; }
++function LoadingQuiz({ copy }: { copy: string }) { return <div role="status" aria-busy="true" className="flex min-h-24 items-center justify-center gap-3 p-4"><Zap className="text-[color:var(--cmm-family-heading)]" size={24} aria-hidden="true" /><p className="cmm-text-secondary font-medium italic">{copy}</p></div>; }
++function EmptyQuiz({ locale, onChangeReasoning, onChangeType }: { locale: Locale; onChangeReasoning: () => void; onChangeType: () => void }) { return <div role="status" className="flex flex-col items-center justify-center gap-3 rounded-xl border border-[color:var(--border-default)] p-5"><Zap className="text-[color:var(--cmm-family-heading)]" size={24} aria-hidden="true" /><p className="font-medium italic cmm-text-secondary">{getQuizUiCopy(locale, "session.noQuestion")}</p><div className="flex flex-wrap items-center justify-center gap-3"><button onClick={onChangeReasoning} className="rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-muted)] px-4 py-2 font-semibold cmm-text-primary">{getQuizUiCopy(locale, "session.changeReasoning")}</button><button onClick={onChangeType} className="rounded-xl border border-[color:var(--border-default)] bg-white px-4 py-2 font-semibold cmm-text-primary">{getQuizUiCopy(locale, "session.changeType")}</button></div></div>; }
+ 
+ function shouldShowInitialLoading(props: ViewProps) {
+   const { isDemoMode, selectedAccessType, selectedSchoolFormat, loading, demoQuestions, schoolQuestions, filteredQuestions } = props;
+diff --git a/apps/web/src/components/learn/quiz/quiz-access-picker.test.tsx b/apps/web/src/components/learn/quiz/quiz-access-picker.test.tsx
+index 18ddb67432add597d3998e55c6a016bef7ccf45d..c20b4982d6ab272a738d06c210d0969f1c10666b 100644
+--- a/apps/web/src/components/learn/quiz/quiz-access-picker.test.tsx
++++ b/apps/web/src/components/learn/quiz/quiz-access-picker.test.tsx
+@@ -1,62 +1,52 @@
+-import * as React from "react";
+ import { renderToStaticMarkup } from "react-dom/server";
+-import { describe, expect, it } from "vitest";
+-
++import { act, create, type ReactTestRenderer } from "react-test-renderer";
++import { describe, expect, it, vi } from "vitest";
+ import { QuizAccessPicker } from "./quiz-access-picker";
+-import { QUIZ_REVIEW_TARGETS } from "@/lib/learning/quiz/quiz-review-targets";
+-import {
+-  buildQuizPersonalProgressSnapshot,
+-  mergeQuizPersonalProgress,
+-  type QuizPersonalProgressQuestion,
+-} from "@/lib/learning/quiz/quiz-personal-progress";
+-
+-function makeQuestion(
+-  id: string,
+-  reasoningType: QuizPersonalProgressQuestion["reasoningType"],
+-  category: QuizPersonalProgressQuestion["category"],
+-): QuizPersonalProgressQuestion {
+-  return {
+-    id,
+-    category,
+-    reasoningType,
+-    reviewTarget: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+-  };
+-}
++import { rendererText } from "@/__tests__/support/action-behavior-test-helpers";
+ 
+-describe("QuizAccessPicker", () => {
+-  it("renders accessible mode cards and trap-level buttons", () => {
+-    const progress = mergeQuizPersonalProgress(null, {
+-      mode: "terrain",
+-      score: 2,
+-      totalQuestions: 3,
+-      questions: [makeQuestion("q1", "terrain", "action-terrain")],
+-      results: { q1: true },
+-      errorCounts: {},
+-      playedAt: "2026-06-24T08:00:00.000Z",
+-    });
+-    const snapshot = buildQuizPersonalProgressSnapshot(progress);
++Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
++vi.mock("next/dynamic", () => ({ default: () => () => <div data-testid="progress-overview" /> }));
+ 
+-    const markup = renderToStaticMarkup(
+-      React.createElement(QuizAccessPicker, {
+-        locale: "fr",
+-        selectedTrapLevel: null,
+-        personalProgress: snapshot,
+-        onSelectTrapLevel: () => undefined,
+-        onSelectAccessType: () => undefined,
+-        onStartDemoMode: () => undefined,
+-      }),
+-    );
++const callbacks = () => ({ onSelectTrapLevel: vi.fn(), onSelectAccessType: vi.fn(), onStartDemoMode: vi.fn() });
+ 
+-    expect(markup).toContain("type=\"button\"");
+-    expect(markup).toContain("Niveau actuel");
++describe("QuizAccessPicker", () => {
++  it("renders the four access tabs and a compact individual quiz on entry", () => {
++    const markup = renderToStaticMarkup(<QuizAccessPicker locale="fr" selectedTrapLevel={null} {...callbacks()} />);
++    expect(markup.match(/role="tab"/g)).toHaveLength(4);
++    expect(markup.match(/aria-selected="true"/g)).toHaveLength(1);
++    expect(markup).toContain("Quiz individuel");
++    expect(markup).toContain("Ma progression");
++    expect(markup).toContain("Mode École");
++    expect(markup).toContain("Démo rapide");
+     expect(markup).toContain("Terrain");
+-    expect(markup).toContain("Mode de piège");
+     expect(markup).toContain("Niveau de piégeage");
+-    expect(markup).toContain("Démo rapide");
+-    expect(markup).toContain("Lancer la démo");
+-    expect(markup).toContain("Mode École");
+-    expect(markup).toContain("Lancer le mode École");
+-    expect(markup).toContain("Voir le kit enseignant");
+-    expect(markup).toContain("sans compte obligatoire");
++    expect(markup).not.toContain("Aucune session terminée sur ce mode");
+   });
++
++  it("switches panels, preserves the selected trap prop and delegates existing actions", () => {
++    const actions = callbacks();
++    let renderer!: ReactTestRenderer;
++    act(() => { renderer = create(<QuizAccessPicker locale="fr" selectedTrapLevel="high" {...actions} />); });
++    const selectTab = (index: number) => act(() => renderer.root.findAllByProps({ role: "tab" })[index].props.onClick());
++    expect(renderer.root.findAllByProps({ "aria-pressed": true })).toHaveLength(1);
++    selectTab(1);
++    expect(rendererText(renderer)).toContain("Aucune session individuelle terminée");
++    selectTab(2);
++    const school = renderer.root.findAllByType("button").find((button) => rendererTextFromButton(button).includes("Lancer le mode École"));
++    expect(school).toBeDefined();
++    act(() => school!.props.onClick({ preventDefault() {}, stopPropagation() {} }));
++    expect(actions.onSelectAccessType).toHaveBeenCalledWith("ecole");
++    selectTab(3);
++    const demo = renderer.root.findAllByType("button").find((button) => rendererTextFromButton(button).includes("Lancer la démo"));
++    expect(demo).toBeDefined();
++    act(() => demo!.props.onClick({ preventDefault() {}, stopPropagation() {} }));
++    expect(actions.onStartDemoMode).toHaveBeenCalledTimes(1);
++    selectTab(0);
++    expect(renderer.root.findAllByProps({ "aria-pressed": true })).toHaveLength(1);
++    act(() => renderer.unmount());
++  });
+ });
++
++function rendererTextFromButton(node: import("react-test-renderer").ReactTestInstance): string {
++  return node.children.map((child) => typeof child === "string" ? child : rendererTextFromButton(child)).join("");
++}
+diff --git a/apps/web/src/components/learn/quiz/quiz-access-picker.tsx b/apps/web/src/components/learn/quiz/quiz-access-picker.tsx
+index 4b286de5c6f1b8ea162d729f307e58dfff6e0058..42ec05a0c9acb843ba0e939ff7be57b1f5434707 100644
+--- a/apps/web/src/components/learn/quiz/quiz-access-picker.tsx
++++ b/apps/web/src/components/learn/quiz/quiz-access-picker.tsx
+@@ -1,40 +1,32 @@
+ "use client";
+ 
+-import type { ReactNode } from "react";
+-import Link from "next/link";
++import { useId, useState, type KeyboardEvent } from "react";
+ import dynamic from "next/dynamic";
+-import {
+-  CheckCircle,
+-  Brain,
+-  Calculator,
+-  GraduationCap,
+-  FlaskConical,
+-  Megaphone,
+-  PlayCircle,
+-  Shuffle,
+-  MapPin,
+-  Repeat2,
+-  ShieldAlert,
+-} from "lucide-react";
+-import { cn } from "@/lib/utils";
++import { ArrowRight, BarChart3, Brain, GraduationCap, PlayCircle } from "lucide-react";
++import { CmmButton } from "@/components/ui/cmm-button";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
+ import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
+-import { QUIZ_ACCESS_TYPES, type QuizAccessTypeId } from "@/lib/learning/quiz/quiz-access-types";
+-import { getDefaultQuizSessionSize } from "@/lib/learning/quiz/quiz-selection-engine";
+-import { QUIZ_TRAP_LEVELS, type QuizTrapLevelId } from "@/lib/learning/quiz/quiz-trap-levels";
++import type { QuizAccessTypeId } from "@/lib/learning/quiz/quiz-access-types";
++import type { QuizTrapLevelId } from "@/lib/learning/quiz/quiz-trap-levels";
+ import type { QuizPersonalProgressSnapshot } from "@/lib/learning/quiz/quiz-personal-progress";
+ import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
++import { QuizIndividualPicker } from "./quiz-individual-picker";
+ 
+ const QuizPersonalProgressOverview = dynamic(
+-  () =>
+-    import("@/components/learn/quiz/quiz-personal-progress-overview").then(
+-      (module) => module.QuizPersonalProgressOverview,
+-    ),
+-  { ssr: false, loading: () => null },
++  () => import("./quiz-personal-progress-overview").then((module) => module.QuizPersonalProgressOverview),
++  { ssr: false, loading: () => <p role="status" className="cmm-text-secondary p-4">Chargement de la progression…</p> },
+ );
+ 
+-const INTERACTIVE_FOCUS_RING =
+-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white";
++const TABS = [
++  { id: "individual", fr: "Quiz individuel", en: "Individual quiz", icon: Brain },
++  { id: "progress", fr: "Ma progression", en: "My progress", icon: BarChart3 },
++  { id: "school", fr: "Mode École", en: "School mode", icon: GraduationCap },
++  { id: "demo", fr: "Démo rapide", en: "Quick demo", icon: PlayCircle },
++] as const;
+ 
++type AccessTab = (typeof TABS)[number]["id"];
++
+ type QuizAccessPickerProps = {
+   locale: SupportedLocale;
+   selectedTrapLevel: QuizTrapLevelId | null;
+@@ -44,257 +36,83 @@
+   onStartDemoMode: () => void;
+ };
+ 
+-const ACCESS_TYPE_DISPLAY: Record<
+-  QuizAccessTypeId,
+-  { tone: string; icon: ReactNode }
+-> = {
+-  mixte: {
+-    tone: "bg-violet-100 text-violet-700",
+-    icon: <Shuffle size={28} aria-hidden="true" />,
+-  },
+-  ecole: {
+-    tone: "bg-amber-100 text-amber-800",
+-    icon: <GraduationCap size={28} aria-hidden="true" />,
+-  },
+-  terrain: {
+-    tone: "bg-emerald-100 text-emerald-700",
+-    icon: <MapPin size={28} aria-hidden="true" />,
+-  },
+-  "donnees-scientifiques": {
+-    tone: "bg-sky-100 text-sky-700",
+-    icon: <FlaskConical size={28} aria-hidden="true" />,
+-  },
+-  sensibilisation: {
+-    tone: "bg-rose-100 text-rose-700",
+-    icon: <Megaphone size={28} aria-hidden="true" />,
+-  },
+-  "habitudes-de-vie": {
+-    tone: "bg-amber-100 text-amber-800",
+-    icon: <Repeat2 size={28} aria-hidden="true" />,
+-  },
+-  "ordres-de-grandeur": {
+-    tone: "bg-blue-100 text-blue-700",
+-    icon: <Calculator size={28} aria-hidden="true" />,
+-  },
+-  "tri-securite": {
+-    tone: "bg-slate-100 text-slate-700",
+-    icon: <ShieldAlert size={28} aria-hidden="true" />,
+-  },
+-};
+-
+-const DISPLAY_ACCESS_TYPES = QUIZ_ACCESS_TYPES.filter((accessType) => accessType.id !== "ecole");
+-
+-export function QuizAccessPicker({
+-  locale,
+-  selectedTrapLevel,
+-  personalProgress,
+-  onSelectTrapLevel,
+-  onSelectAccessType,
+-  onStartDemoMode,
+-}: QuizAccessPickerProps) {
++function QuizSpecialAccess({ locale, kind, onStart }: {
++  locale: SupportedLocale;
++  kind: "school" | "demo";
++  onStart: () => void;
++}) {
++  const school = kind === "school";
++  const Icon = school ? GraduationCap : PlayCircle;
+   return (
+-    <div className="space-y-12 py-10">
+-      <div className="space-y-4 text-center">
+-        <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-emerald-100 bg-emerald-50 px-6 py-2">
+-          <Brain className="text-emerald-600" size={20} aria-hidden="true" />
+-          <span className="text-sm font-black uppercase tracking-widest text-emerald-800">
+-            {getQuizUiCopy(locale, "access.bannerLabel")}
+-          </span>
+-        </div>
+-        <h2 className="text-4xl font-black tracking-tight cmm-text-primary md:text-5xl">
+-          {getQuizUiCopy(locale, "access.title")}
+-        </h2>
+-        <p className="mx-auto max-w-2xl text-lg font-medium cmm-text-secondary">
+-          {getQuizUiCopy(locale, "access.description")}
+-        </p>
+-      </div>
+-
+-      <div className="mx-auto max-w-6xl rounded-[2rem] border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+-          <div className="max-w-3xl">
+-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 md:text-xs">
+-              {getQuizUiCopy(locale, "access.school.bannerLabel")}
+-            </p>
+-            <h3 className="mt-1 text-xl font-black text-slate-950">
+-              {getQuizUiCopy(locale, "access.school.ctaTitle")}
+-            </h3>
+-            <p className="cmm-text-body mt-2">
+-              {getQuizUiCopy(locale, "access.school.ctaText")}
+-            </p>
+-          </div>
+-          <div className="flex flex-wrap gap-3">
+-            <button
+-              type="button"
+-              onClick={() => onSelectAccessType("ecole")}
+-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-amber-600/20 transition hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50"
+-            >
+-              <GraduationCap size={18} aria-hidden="true" />
+-              {getQuizUiCopy(locale, "access.school.ctaLabel")}
+-            </button>
+-            <Link
+-              href="/learn/ecole"
+-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-white px-5 py-3 text-sm font-black uppercase tracking-widest text-amber-900 shadow-sm transition hover:border-amber-300 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50"
+-            >
+-              {getQuizUiCopy(locale, "school.linkTeacherKit")}
+-            </Link>
+-          </div>
+-        </div>
+-      </div>
+-
+-      <div className="mx-auto max-w-6xl rounded-[2rem] border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+-          <div className="max-w-3xl">
+-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 md:text-xs">
+-              {getQuizUiCopy(locale, "access.demo.bannerLabel")}
+-            </p>
+-            <h3 className="mt-1 text-xl font-black text-slate-950">
+-              {getQuizUiCopy(locale, "access.demo.ctaTitle")}
+-            </h3>
+-            <p className="cmm-text-body mt-2">
+-              {getQuizUiCopy(locale, "access.demo.ctaText")}
+-            </p>
+-          </div>
+-          <button
+-            type="button"
+-            onClick={onStartDemoMode}
+-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-amber-600/20 transition hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50"
+-          >
+-            <PlayCircle size={18} aria-hidden="true" />
+-            {getQuizUiCopy(locale, "access.demo.ctaLabel")}
+-          </button>
++    <CmmCard tone="family" className="grid gap-4 p-5 sm:grid-cols-[auto_1fr] sm:items-start md:p-6">
++      <Icon className="h-10 w-10 text-[color:var(--cmm-family-heading)]" aria-hidden="true" />
++      <div className="min-w-0 space-y-3">
++        <h3 className="text-xl font-bold cmm-text-primary">{getQuizUiCopy(locale, school ? "access.school.ctaTitle" : "access.demo.ctaTitle")}</h3>
++        <p className="cmm-text-body">{getQuizUiCopy(locale, school ? "access.school.ctaText" : "access.demo.ctaText")}</p>
++        <div className="flex flex-wrap gap-2">
++          <CmmButton tone="primary" onClick={onStart}>{getQuizUiCopy(locale, school ? "access.school.ctaLabel" : "access.demo.ctaLabel")}<ArrowRight size={16} aria-hidden="true" /></CmmButton>
++          {school ? <CmmButton tone="secondary" href="/learn/ecole">{getQuizUiCopy(locale, "school.linkTeacherKit")}</CmmButton> : null}
+         </div>
+       </div>
++    </CmmCard>
++  );
++}
+ 
+-      {personalProgress ? (
+-        <QuizPersonalProgressOverview locale={locale} snapshot={personalProgress} density="compact" />
+-      ) : null}
++export function QuizAccessPicker({
++  locale, selectedTrapLevel, personalProgress, onSelectTrapLevel, onSelectAccessType, onStartDemoMode,
++}: QuizAccessPickerProps) {
++  const baseId = useId();
++  const [active, setActive] = useState<AccessTab>("individual");
+ 
+-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-2 text-sm font-medium text-slate-600">
+-        <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+-          {getQuizUiCopy(locale, "access.sessionShort")}
+-        </span>
+-        <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+-          {getDefaultQuizSessionSize("terrain")} {getQuizUiCopy(locale, "access.questionsByMode")}
+-        </span>
+-        <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+-          {getDefaultQuizSessionSize("mixte")} {getQuizUiCopy(locale, "access.questionsMixedMode")}
+-        </span>
+-      </div>
++  function navigate(event: KeyboardEvent<HTMLButtonElement>, index: number) {
++    let next: number;
++    switch (event.key) {
++      case "ArrowRight": case "ArrowDown": next = (index + 1) % TABS.length; break;
++      case "ArrowLeft": case "ArrowUp": next = (index + TABS.length - 1) % TABS.length; break;
++      case "Home": next = 0; break;
++      case "End": next = TABS.length - 1; break;
++      default: return;
++    }
++    event.preventDefault();
++    const tab = TABS[next].id;
++    setActive(tab);
++    document.getElementById(baseId + "-tab-" + tab)?.focus();
++  }
+ 
+-      <div className="mx-auto max-w-6xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/40">
+-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+-          <div>
+-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
+-              {getQuizUiCopy(locale, "access.trapModeLabel")}
+-            </p>
+-            <h3 className="mt-1 text-lg font-black cmm-text-primary">{getQuizUiCopy(locale, "access.trapModeTitle")}</h3>
+-            <p className="mt-1 text-sm leading-relaxed cmm-text-secondary">
+-              {getQuizUiCopy(locale, "access.trapModeDescription")}
+-            </p>
+-          </div>
+-          <button
+-            type="button"
+-            onClick={() => onSelectTrapLevel(null)}
+-            className={cn(
+-              `${INTERACTIVE_FOCUS_RING} rounded-full border px-4 py-2 text-sm font-bold transition`,
+-              !selectedTrapLevel
+-                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+-                : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100",
+-            )}
+-          >
+-            {getQuizUiCopy(locale, "access.trapModeAll")}
++  return (
++    <div className="space-y-5">
++      <div role="tablist" aria-label={locale === "fr" ? "Parcours d'entraînement" : "Practice paths"} className={tabStripClassName("family", "grid-cols-2 lg:grid-cols-4")}>
++        {TABS.map((tab, index) => (
++          <button key={tab.id} id={baseId + "-tab-" + tab.id} type="button" role="tab"
++            aria-selected={active === tab.id} aria-controls={baseId + "-panel-" + tab.id}
++            tabIndex={active === tab.id ? 0 : -1} onClick={() => setActive(tab.id)}
++            onKeyDown={(event) => navigate(event, index)}
++            className={tabItemClassName("family", active === tab.id)}>
++            <tab.icon size={18} className="mr-2 shrink-0" aria-hidden="true" />{tab[locale]}
+           </button>
+-        </div>
+-        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+-          {QUIZ_TRAP_LEVELS.map((trapLevel) => (
+-            <button
+-              key={trapLevel.id}
+-              type="button"
+-              onClick={() => onSelectTrapLevel(trapLevel.id)}
+-              className={cn(
+-                `${INTERACTIVE_FOCUS_RING} rounded-2xl border p-4 text-left transition`,
+-                selectedTrapLevel === trapLevel.id
+-                  ? "border-emerald-300 bg-emerald-50"
+-                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+-              )}
+-            >
+-              <p className="text-sm font-black uppercase tracking-widest cmm-text-primary">{trapLevel.label}</p>
+-              <p className="mt-2 text-sm leading-relaxed cmm-text-secondary">{trapLevel.description}</p>
+-            </button>
+-          ))}
+-        </div>
+-      </div>
+-
+-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+-        {DISPLAY_ACCESS_TYPES.map((accessType) => {
+-          const display = ACCESS_TYPE_DISPLAY[accessType.id];
+-          const modeLevel = personalProgress?.modeLevels.find((mode) => mode.id === accessType.id);
+-
+-          return (
+-            <button
+-              key={accessType.id}
+-              type="button"
+-              onClick={() => onSelectAccessType(accessType.id)}
+-              className="group relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 text-left shadow-xl shadow-slate-200/50 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+-            >
+-              <div className="mb-3 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
+-                {accessType.learningLabel[locale]}
+-              </div>
+-              <div
+-                className={cn(
+-                  "mb-6 flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner",
+-                  display.tone,
+-                )}
+-              >
+-                {display.icon}
+-              </div>
+-              <h3 className="mb-2 text-xl font-black cmm-text-primary">
+-                {getQuizUiCopy(locale, accessType.labelKey)}
+-              </h3>
+-              <p className="cmm-text-body font-medium">
+-                {accessType.description[locale]}
+-              </p>
+-              <p className="mt-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
+-                {getDefaultQuizSessionSize(accessType.id)} questions
+-              </p>
+-              {modeLevel ? (
+-                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
+-                    {getQuizUiCopy(locale, "access.currentLevel")}
+-                  </p>
+-                  <p className="mt-1 text-sm font-bold text-slate-950">
+-                    Niveau {modeLevel.level}
+-                    <span className="mx-2 text-slate-300">•</span>
+-                    {modeLevel.levelLabel}
+-                  </p>
+-                  <p className="mt-1 text-xs leading-relaxed text-slate-600">{modeLevel.detail}</p>
+-                </div>
+-              ) : (
+-                <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3">
+-                  <p className="text-xs leading-relaxed text-slate-500">
+-                    {getQuizUiCopy(locale, "access.noSession")}
+-                  </p>
+-                </div>
+-              )}
+-              <ul className="cmm-text-body mt-5 space-y-2 font-medium">
+-                {accessType.focus[locale].map((focus) => (
+-                  <li key={focus} className="flex items-start gap-2">
+-                    <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+-                    <span>{focus}</span>
+-                  </li>
+-                ))}
+-              </ul>
+-              <div className="absolute bottom-0 right-0 p-4 opacity-0 transition-opacity group-hover:opacity-100">
+-                <CheckCircle className="text-emerald-500" size={32} aria-hidden="true" />
+-              </div>
+-            </button>
+-          );
+-        })}
++        ))}
+       </div>
+-
+-      <p className="text-center text-sm cmm-text-secondary">
+-        {getQuizUiCopy(locale, "access.footerNote")}
+-      </p>
++      {TABS.map((tab) => (
++        <section key={tab.id} id={baseId + "-panel-" + tab.id} role="tabpanel"
++          aria-labelledby={baseId + "-tab-" + tab.id} hidden={active !== tab.id} tabIndex={0}>
++          {active === tab.id && tab.id === "individual" ? (
++            <QuizIndividualPicker locale={locale} selectedTrapLevel={selectedTrapLevel} personalProgress={personalProgress}
++              onSelectTrapLevel={onSelectTrapLevel} onSelectAccessType={onSelectAccessType} />
++          ) : null}
++          {active === tab.id && tab.id === "progress" ? (
++            personalProgress ? <QuizPersonalProgressOverview locale={locale} snapshot={personalProgress} density="full" /> : (
++              <CmmCard tone="family" className="space-y-3 p-5">
++                <BarChart3 size={32} aria-hidden="true" className="text-[color:var(--cmm-family-heading)]" />
++                <h3 className="text-xl font-bold cmm-text-primary">{locale === "fr" ? "Aucune session individuelle terminée" : "No completed individual session"}</h3>
++                <p className="cmm-text-body">{locale === "fr" ? "Termine une session pour retrouver ici tes résultats et les notions à revoir." : "Complete a session to see your results and topics to review here."}</p>
++                <CmmButton tone="primary" onClick={() => { setActive("individual"); document.getElementById(baseId + "-tab-individual")?.focus(); }}>{locale === "fr" ? "Choisir un quiz" : "Choose a quiz"}</CmmButton>
++              </CmmCard>
++            )
++          ) : null}
++          {active === tab.id && tab.id === "school" ? <QuizSpecialAccess locale={locale} kind="school" onStart={() => onSelectAccessType("ecole")} /> : null}
++          {active === tab.id && tab.id === "demo" ? <QuizSpecialAccess locale={locale} kind="demo" onStart={onStartDemoMode} /> : null}
++        </section>
++      ))}
+     </div>
+   );
+ }
+diff --git a/apps/web/src/components/learn/quiz/quiz-individual-picker.tsx b/apps/web/src/components/learn/quiz/quiz-individual-picker.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..4511b5664c956e79aeed4eb70c047a485523b7fd
+--- /dev/null
++++ b/apps/web/src/components/learn/quiz/quiz-individual-picker.tsx
+@@ -0,0 +1,94 @@
++"use client";
++
++import { ArrowRight, Calculator, FlaskConical, MapPin, Megaphone, Repeat2, ShieldAlert, Shuffle } from "lucide-react";
++import { CmmButton } from "@/components/ui/cmm-button";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
++import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
++import { QUIZ_ACCESS_TYPES, type QuizAccessTypeDefinition, type QuizAccessTypeId } from "@/lib/learning/quiz/quiz-access-types";
++import { QUIZ_TRAP_LEVELS, type QuizTrapLevelId } from "@/lib/learning/quiz/quiz-trap-levels";
++import { getDefaultQuizSessionSize } from "@/lib/learning/quiz/quiz-selection-engine";
++import type { QuizPersonalProgressSnapshot } from "@/lib/learning/quiz/quiz-personal-progress";
++import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
++
++const MODE_ICONS = {
++  mixte: Shuffle, terrain: MapPin, "donnees-scientifiques": FlaskConical, sensibilisation: Megaphone,
++  "habitudes-de-vie": Repeat2, "ordres-de-grandeur": Calculator, "tri-securite": ShieldAlert,
++};
++const PERSONAL_MODES = QUIZ_ACCESS_TYPES.filter((mode) => mode.id !== "ecole");
++const TRAP_EN = {
++  low: { label: "Low", description: "Direct questions, with few intuitive traps." },
++  medium: { label: "Medium", description: "Questions that need careful reasoning." },
++  high: { label: "High", description: "Questions that challenge intuitive answers." },
++} as const;
++
++type Props = {
++  locale: SupportedLocale;
++  selectedTrapLevel: QuizTrapLevelId | null;
++  personalProgress?: QuizPersonalProgressSnapshot | null;
++  onSelectTrapLevel: (level: QuizTrapLevelId | null) => void;
++  onSelectAccessType: (mode: QuizAccessTypeId) => void;
++};
++
++function TrapSelector({ locale, selectedTrapLevel, onSelectTrapLevel }: Pick<Props, "locale" | "selectedTrapLevel" | "onSelectTrapLevel">) {
++  return (
++    <CmmCard tone="family" className="space-y-3 p-4">
++      <h3 className="font-bold cmm-text-primary">{getQuizUiCopy(locale, "access.trapModeTitle")}</h3>
++      <p className="cmm-text-small cmm-text-secondary">{getQuizUiCopy(locale, "access.trapModeDescription")}</p>
++      <div role="group" aria-label={getQuizUiCopy(locale, "access.trapModeTitle")} className={tabStripClassName("family", "grid-cols-2 sm:grid-cols-4")}>
++        <button type="button" aria-pressed={selectedTrapLevel === null} onClick={() => onSelectTrapLevel(null)}
++          className={tabItemClassName("family", selectedTrapLevel === null)}>{getQuizUiCopy(locale, "access.trapModeAll")}</button>
++        {QUIZ_TRAP_LEVELS.map((level) => {
++          const copy = locale === "fr" ? level : TRAP_EN[level.id];
++          return <button key={level.id} type="button" aria-pressed={selectedTrapLevel === level.id}
++            onClick={() => onSelectTrapLevel(level.id)} className={tabItemClassName("family", selectedTrapLevel === level.id)}>
++            {copy.label}
++          </button>;
++        })}
++      </div>
++      {selectedTrapLevel ? <p className="cmm-text-small cmm-text-secondary">{locale === "fr" ? QUIZ_TRAP_LEVELS.find((level) => level.id === selectedTrapLevel)?.description : TRAP_EN[selectedTrapLevel].description}</p> : null}
++    </CmmCard>
++  );
++}
++
++function ModeCard({ mode, locale, personalProgress, onSelectAccessType }: Pick<Props, "locale" | "personalProgress" | "onSelectAccessType"> & { mode: QuizAccessTypeDefinition }) {
++  if (mode.id === "ecole") return null;
++  const Icon = MODE_ICONS[mode.id];
++  const mixed = mode.id === "mixte";
++  const level = personalProgress?.modeLevels.find((item) => item.id === mode.id);
++  const label = getQuizUiCopy(locale, mode.labelKey);
++  const size = getDefaultQuizSessionSize(mode.id);
++  return (
++    <CmmCard as="article" tone={mixed ? "family" : "slate"} className={mixed ? "space-y-3 p-5 md:p-6 sm:col-span-2 xl:col-span-3" : "flex min-w-0 flex-col gap-3 p-4"}>
++      <div className="flex items-start gap-3">
++        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[color:var(--bg-muted)] text-[color:var(--cmm-family-heading)]"><Icon size={21} aria-hidden="true" /></span>
++        <div className="min-w-0">
++          <h3 className="font-bold cmm-text-primary">{label}</h3>
++          <p className="cmm-text-small cmm-text-secondary">{locale === "fr" ? "Jusqu’à" : "Up to"} {size} questions{mixed ? "" : locale === "fr" ? " · choix du raisonnement" : " · choose reasoning"}</p>
++        </div>
++      </div>
++      <p className="cmm-text-body">{mode.description[locale]}</p>
++      {level ? <p className="cmm-text-small cmm-text-secondary">{getQuizUiCopy(locale, "access.currentLevel")} : {level.level} · {level.levelLabel}</p> : null}
++      <CmmButton className={mixed ? "" : "mt-auto w-full"} tone={mixed ? "primary" : "secondary"}
++        ariaLabel={(locale === "fr" ? "Choisir " : "Choose ") + label} onClick={() => onSelectAccessType(mode.id)}>
++        {mixed ? (locale === "fr" ? "Lancer le quiz mixte" : "Start mixed quiz") : (locale === "fr" ? "Choisir" : "Choose")}<ArrowRight size={16} aria-hidden="true" />
++      </CmmButton>
++    </CmmCard>
++  );
++}
++
++export function QuizIndividualPicker(props: Props) {
++  const { locale, personalProgress, selectedTrapLevel, onSelectTrapLevel, onSelectAccessType } = props;
++  return (
++    <div className="space-y-4">
++      <div>
++        <h2 className="text-2xl font-bold cmm-text-primary">{locale === "fr" ? "Choisir un quiz" : "Choose a quiz"}</h2>
++        <p className="mt-1 cmm-text-body">{locale === "fr" ? "Sélectionne un niveau de piégeage puis un thème. Les questions sont corrigées au fil de la session." : "Select a trap level, then a theme. Get feedback throughout your session."}</p>
++      </div>
++      <TrapSelector locale={locale} selectedTrapLevel={selectedTrapLevel} onSelectTrapLevel={onSelectTrapLevel} />
++      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
++        {PERSONAL_MODES.map((mode) => <ModeCard key={mode.id} mode={mode} locale={locale} personalProgress={personalProgress} onSelectAccessType={onSelectAccessType} />)}
++      </div>
++    </div>
++  );
++}
+diff --git a/apps/web/src/components/learn/quiz/quiz-reasoning-picker.tsx b/apps/web/src/components/learn/quiz/quiz-reasoning-picker.tsx
+index 97859f76bd71cfec08e79e66013cbb6ff7771fa3..56e792b17c721cd76d0c615e019330ce3302cedb 100644
+--- a/apps/web/src/components/learn/quiz/quiz-reasoning-picker.tsx
++++ b/apps/web/src/components/learn/quiz/quiz-reasoning-picker.tsx
+@@ -141,10 +141,10 @@
+     : REASONING_TYPES;
+ 
+   return (
+-    <div className="space-y-12 py-10">
+-      <div className="text-center space-y-4">
++    <div className="space-y-4">
++      <div className="space-y-3">
+         {onBackToAccessType ? (
+-          <div className="flex justify-center">
++          <div className="flex">
+             <button
+               type="button"
+               onClick={onBackToAccessType}
+@@ -155,45 +155,50 @@
+             </button>
+           </div>
+         ) : null}
+-        <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-emerald-100 bg-emerald-50 px-6 py-2">
+-          <Brain className="text-emerald-600" size={20} aria-hidden="true" />
+-          <span className="text-sm font-black text-emerald-800 uppercase tracking-widest">
++        <div className="inline-flex items-center gap-2 cmm-text-secondary">
++          <Brain className="text-[color:var(--cmm-family-heading)]" size={20} aria-hidden="true" />
++          <span className="cmm-text-caption font-semibold cmm-text-secondary">
+             Parcours Adaptatif
+           </span>
+         </div>
+-        <h2 className="text-4xl md:text-5xl font-black cmm-text-primary tracking-tight">
++        <h2 className="text-2xl font-bold cmm-text-primary tracking-tight">
+           Choisissez votre type de raisonnement
+         </h2>
+-        <p className="text-lg cmm-text-secondary max-w-2xl mx-auto font-medium">
++        <p className="cmm-text-body max-w-2xl">
+           Le but n&apos;est pas de mesurer une performance scolaire mais le type de raisonnement mobilisé.
+         </p>
+       </div>
+ 
+-      <QuizArchitectureStrip locale={locale} summary={quizSummary} className="max-w-6xl mx-auto" />
++      <details className="rounded-xl border border-[color:var(--border-default)] p-3">
++        <summary className="cursor-pointer font-semibold cmm-text-primary">{locale === "fr" ? "Comment fonctionne la révision ?" : "How does review work?"}</summary>
++        <QuizArchitectureStrip locale={locale} summary={quizSummary} className="mt-3" />
+ 
+       <CognitivePrimer
+         locale={locale}
+         summary={quizSummary}
+         highlightRubricId="quiz"
+-        className="max-w-6xl mx-auto"
++        className="mt-3"
+       />
++      </details>
+ 
+-      <div className="grid grid-cols-1 gap-6 max-w-6xl mx-auto md:grid-cols-2 lg:grid-cols-3">
++      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+         {visibleReasoningTypes.map((reasoningType) => (
+           <button
+             key={reasoningType.id}
++            type="button"
+             onClick={() => onSelectReasoningType(reasoningType.id)}
+-            className="group relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 text-left shadow-xl shadow-slate-200/50 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/10"
++            data-cmm-card-tone="family" data-cmm-card-variant="default" data-cmm-card-size="md"
++            className="cmm-card group relative min-w-0 p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600"
+           >
+             <div
+               className={cn(
+-                "mb-6 flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner",
++                "mb-3 flex h-10 w-10 items-center justify-center rounded-2xl shadow-inner",
+                 reasoningType.tone,
+               )}
+             >
+               {reasoningType.icon}
+             </div>
+-            <h3 className="mb-2 text-xl font-black capitalize cmm-text-primary">
++            <h3 className="mb-2 text-base font-bold capitalize cmm-text-primary">
+               {reasoningType.label[locale]}
+             </h3>
+             <p className="text-sm font-medium leading-relaxed cmm-text-secondary">
+diff --git a/apps/web/src/components/learn/quiz/quiz-session-panel.tsx b/apps/web/src/components/learn/quiz/quiz-session-panel.tsx
+index b2f31a8c1586f1da7dbe8d9eda6245e7ef9b1ca3..e4f62a969ea959d298c26103b1baef1bfba1d879 100644
+--- a/apps/web/src/components/learn/quiz/quiz-session-panel.tsx
++++ b/apps/web/src/components/learn/quiz/quiz-session-panel.tsx
+@@ -147,7 +147,7 @@
+   }
+ 
+   return (
+-    <div className="space-y-8">
++    <div className="space-y-4">
+       {isSchoolMode ? (
+         <div className="rounded-[2rem] border border-amber-200 bg-amber-50 px-5 py-4 text-left shadow-sm">
+           <div className="flex flex-wrap items-center gap-3">
+@@ -237,9 +237,7 @@
+             ? getQuizUiCopy(locale, "session.progressSchoolLabel")
+             : getQuizUiCopy(locale, "session.progressSessionLabel")}
+         </span>
+-        <span>
+-          {progressValue} / {totalQuestions}
+-        </span>
++        <span className="flex flex-wrap items-center justify-end gap-3"><span>{progressValue} / {totalQuestions}</span><span className="inline-flex items-center gap-1"><Trophy size={14} aria-hidden="true" />{score} {locale === "fr" ? "bonnes réponses" : "correct answers"}</span></span>
+       </div>
+       <div
+         className="w-full overflow-hidden rounded-full bg-slate-200/50 h-1.5"
+@@ -264,14 +262,10 @@
+         animate={{ opacity: 1, scale: 1 }}
+         exit={{ opacity: 0, scale: 1.02 }}
+           className={cn(
+-            "relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white/80 shadow-2xl shadow-slate-200/50 backdrop-blur-xl",
+-            isSchoolMode ? "p-10 md:p-16" : "p-8 md:p-12",
++            "relative overflow-hidden rounded-2xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)]",
++            isSchoolMode ? "p-4 md:p-8" : "p-4 md:p-6",
+           )}
+         >
+-          <div className="pointer-events-none absolute right-0 top-0 p-8 opacity-[0.03]">
+-            <Brain size={200} aria-hidden="true" />
+-          </div>
+-
+           <QuizSessionQuestion
+             locale={locale}
+             isSchoolMode={isSchoolMode}
+@@ -301,7 +295,7 @@
+             <motion.div
+               initial={{ opacity: 1, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+-              className="relative z-10 mt-10 space-y-6"
++              className="relative mt-5 space-y-4"
+               role="status"
+               aria-live="polite"
+               aria-atomic="true"
+@@ -437,36 +431,7 @@
+         </motion.div>
+       </AnimatePresence>
+ 
+-      {score > 0 ? (
+-        <motion.div
+-          initial={{ opacity: 1, y: 20 }}
+-          animate={{ opacity: 1, y: 0 }}
+-          className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-700 p-8 text-white shadow-2xl md:p-10"
+-        >
+-          <div className="absolute -bottom-10 -right-10 rotate-12 opacity-10">
+-            <Trophy size={250} aria-hidden="true" />
+-          </div>
+-          <div className="relative z-10 flex flex-col items-center gap-8 md:flex-row">
+-            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/20 shadow-inner backdrop-blur-md">
+-              <Trophy size={48} aria-hidden="true" />
+-            </div>
+-            <div className="flex-1 text-center md:text-left">
+-              <h3 className="mb-2 text-3xl font-black tracking-tight">Progression de Maîtrise</h3>
+-              <p className="text-lg font-medium text-indigo-100 opacity-90">
+-                Vous avez consolidé {score} concept{score > 1 ? "s" : ""} aujourd&apos;hui.
+-              </p>
+-              <div className="mt-6 flex flex-wrap justify-center gap-4 md:justify-start">
+-                <div className="rounded-xl bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-widest backdrop-blur-sm">
+-                  {Math.round((score / totalQuestions) * 100)}% de réussite
+-                </div>
+-                <div className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold uppercase tracking-widest shadow-lg shadow-emerald-500/20">
+-                  SRS Actif
+-                </div>
+-              </div>
+-            </div>
+-          </div>
+-        </motion.div>
+-      ) : null}
++
+     </div>
+   );
+ }
+diff --git a/apps/web/src/components/learn/quiz/school/quiz-school-picker.tsx b/apps/web/src/components/learn/quiz/school/quiz-school-picker.tsx
+index a11380450dd022d84a6b572bc4d45d7ae47ec81f..75128c595ccbb92d26f48364c1ec5861519aaefa 100644
+--- a/apps/web/src/components/learn/quiz/school/quiz-school-picker.tsx
++++ b/apps/web/src/components/learn/quiz/school/quiz-school-picker.tsx
+@@ -1,22 +1,15 @@
+ "use client";
+ 
+-import { motion } from "framer-motion";
+ import { useState } from "react";
+-import Link from "next/link";
+-import { ArrowLeft, CheckCircle, GraduationCap, School } from "lucide-react";
++import { ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
++import { CmmButton } from "@/components/ui/cmm-button";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
+ import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
+ import { cn } from "@/lib/utils";
+-import {
+-  QUIZ_SCHOOL_FORMAT_ORDER,
+-  QUIZ_SCHOOL_LEVEL_ORDER,
+-  type QuizSchoolFormat,
+-  type QuizSchoolLevel,
+-} from "@/lib/learning/quiz/school/quiz-school-types";
++import { QUIZ_SCHOOL_FORMAT_ORDER, QUIZ_SCHOOL_LEVEL_ORDER, type QuizSchoolFormat, type QuizSchoolLevel } from "@/lib/learning/quiz/school/quiz-school-types";
+ import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
+ 
+-const INTERACTIVE_FOCUS_RING =
+-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white";
+-
+ type QuizSchoolPickerProps = {
+   locale: SupportedLocale;
+   collectiveMode: boolean;
+@@ -25,153 +18,53 @@
+   onBackToAccessType: () => void;
+ };
+ 
+-export function QuizSchoolPicker({
+-  locale,
+-  collectiveMode,
+-  onToggleCollectiveMode,
+-  onLaunchSchoolSession,
+-  onBackToAccessType,
+-}: QuizSchoolPickerProps) {
++export function QuizSchoolPicker({ locale, collectiveMode, onToggleCollectiveMode, onLaunchSchoolSession, onBackToAccessType }: QuizSchoolPickerProps) {
+   const [selectedLevel, setSelectedLevel] = useState<QuizSchoolLevel | null>(null);
+   const [selectedFormat, setSelectedFormat] = useState<QuizSchoolFormat>(QUIZ_SCHOOL_FORMAT_ORDER[0]);
+   return (
+-    <div className="space-y-12 py-10">
+-      <div className="space-y-4 text-center">
+-        <div className="flex justify-center">
+-          <button
+-            type="button"
+-            onClick={onBackToAccessType}
+-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+-          >
+-            <ArrowLeft size={16} />
+-            {getQuizUiCopy(locale, "school.back")}
+-          </button>
+-        </div>
+-        <motion.div
+-          initial={{ scale: 0.95, opacity: 1 }}
+-          animate={{ scale: 1, opacity: 1 }}
+-          className="mx-auto inline-flex items-center gap-3 rounded-full border border-amber-100 bg-amber-50 px-6 py-2"
+-        >
+-          <School className="text-amber-700" size={20} />
+-          <span className="text-sm font-black uppercase tracking-widest text-amber-800">
+-            {getQuizUiCopy(locale, "school.bannerLabel")}
+-          </span>
+-        </motion.div>
+-        <h2 className="text-4xl font-black tracking-tight cmm-text-primary md:text-5xl">
+-          {getQuizUiCopy(locale, "school.title")}
+-        </h2>
+-        <p className="mx-auto max-w-3xl text-lg font-medium cmm-text-secondary">
+-          {getQuizUiCopy(locale, "school.description")}
+-        </p>
++    <div className="space-y-4">
++      <CmmButton tone="secondary" size="sm" onClick={onBackToAccessType}><ArrowLeft size={16} aria-hidden="true" />{getQuizUiCopy(locale, "school.back")}</CmmButton>
++      <div>
++        <p className="flex items-center gap-2 cmm-text-caption font-semibold cmm-text-secondary"><GraduationCap size={18} aria-hidden="true" />{getQuizUiCopy(locale, "school.bannerLabel")}</p>
++        <h2 className="mt-1 text-2xl font-bold cmm-text-primary">{getQuizUiCopy(locale, "school.title")}</h2>
++        <p className="mt-1 cmm-text-body">{getQuizUiCopy(locale, "school.description")}</p>
+       </div>
+-
+-      <div className="mx-auto max-w-6xl rounded-[2rem] border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+-          <div className="max-w-3xl">
+-            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700 md:text-xs">
+-              {getQuizUiCopy(locale, "school.collectiveTitle")}
+-            </p>
+-            <h3 className="mt-1 text-xl font-black text-slate-950">
+-              {getQuizUiCopy(locale, "school.collectiveTitle")}
+-            </h3>
+-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+-              {getQuizUiCopy(locale, "school.collectiveDescription")}
+-            </p>
+-            <Link
+-              href="/learn/ecole"
+-              className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-black text-amber-900 transition hover:border-amber-300 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50"
+-            >
+-              {getQuizUiCopy(locale, "school.linkTeacherKit")}
+-            </Link>
+-          </div>
+-          <button
+-            type="button"
+-            onClick={onToggleCollectiveMode}
+-            className={cn(
+-              `${INTERACTIVE_FOCUS_RING} inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black uppercase tracking-widest transition`,
+-              collectiveMode
+-                ? "border border-amber-300 bg-amber-600 text-white shadow-lg shadow-amber-600/20 hover:bg-amber-700"
+-                : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+-            )}
+-          >
+-            {collectiveMode
+-              ? getQuizUiCopy(locale, "school.collective.enabled")
+-              : getQuizUiCopy(locale, "school.collective.disabled")}
+-          </button>
++      <CmmCard tone="family" className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
++        <div className="min-w-0">
++          <h3 className="font-bold cmm-text-primary">{getQuizUiCopy(locale, "school.collectiveTitle")}</h3>
++          <p className="mt-1 cmm-text-body">{getQuizUiCopy(locale, "school.collectiveDescription")}</p>
+         </div>
+-      </div>
+-
+-      <div className="mx-auto max-w-6xl rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+-        <div className="flex items-start gap-3">
+-          <GraduationCap className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" aria-hidden="true" />
+-          <div>
+-            <h3 className="text-lg font-black text-slate-950">{getQuizUiCopy(locale, "school.levelPrompt")}</h3>
+-            <p className="mt-1 text-sm leading-relaxed text-slate-600">{getQuizUiCopy(locale, "school.levelNote")}</p>
+-          </div>
++        <div className="flex shrink-0 flex-wrap gap-2">
++          <CmmButton tone={collectiveMode ? "primary" : "secondary"} ariaPressed={collectiveMode} onClick={onToggleCollectiveMode}>{getQuizUiCopy(locale, collectiveMode ? "school.collective.enabled" : "school.collective.disabled")}</CmmButton>
++          <CmmButton href="/learn/ecole" tone="secondary">{getQuizUiCopy(locale, "school.linkTeacherKit")}</CmmButton>
+         </div>
+-      </div>
+-
+-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+-        {QUIZ_SCHOOL_LEVEL_ORDER.map((level, index) => (
+-          <motion.button
+-            key={level}
+-            type="button"
+-            initial={{ opacity: 1, y: 20 }}
+-            animate={{ opacity: 1, y: 0 }}
+-            transition={{ delay: index * 0.08 }}
+-            onClick={() => setSelectedLevel(level)}
+-            aria-pressed={selectedLevel === level}
+-            className="group relative overflow-hidden rounded-[2.25rem] border border-slate-100 bg-white p-7 text-left shadow-xl shadow-slate-200/50 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+-          >
+-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-800 shadow-inner">
+-              <GraduationCap size={28} aria-hidden="true" />
+-            </div>
+-            <h3 className="text-xl font-black cmm-text-primary">{getQuizUiCopy(locale, `school.level.${level}.label`)}</h3>
+-            <p className="mt-2 text-sm font-medium leading-relaxed text-slate-700">{getQuizUiCopy(locale, `school.level.${level}.description`)}</p>
+-            <p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-slate-500 md:text-sm">
+-              {getQuizUiCopy(locale, "school.questionsLabel")} · {getQuizUiCopy(locale, "school.durationLabel")}
+-            </p>
+-            <ul className="mt-4 space-y-2 text-sm font-medium text-slate-700">
+-              <li className="flex items-start gap-2">
+-                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+-                <span>{getQuizUiCopy(locale, "school.levelNote")}</span>
+-              </li>
+-            </ul>
+-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+-              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
+-                {getQuizUiCopy(locale, "school.takeawayLabel")}
+-              </p>
+-              <p className="mt-1 text-sm font-medium text-slate-800">{getQuizUiCopy(locale, "school.collectiveDescription")}</p>
+-            </div>
+-            <div className="absolute bottom-0 right-0 p-4 opacity-0 transition-opacity group-hover:opacity-100">
+-              <CheckCircle className="text-amber-500" size={32} />
+-            </div>
+-          </motion.button>
+-        ))}
+-      </div>
+-
++      </CmmCard>
++      <CmmCard tone="slate" className="space-y-3 p-4">
++        <h3 className="font-bold cmm-text-primary">{getQuizUiCopy(locale, "school.levelPrompt")}</h3>
++        <p className="cmm-text-small cmm-text-secondary">{getQuizUiCopy(locale, "school.levelNote")}</p>
++        <div role="group" aria-label={getQuizUiCopy(locale, "school.levelPrompt")} className={tabStripClassName("family", "grid-cols-2 sm:grid-cols-4")}>
++          {QUIZ_SCHOOL_LEVEL_ORDER.map((level) => (
++            <button key={level} type="button" aria-pressed={selectedLevel === level} onClick={() => setSelectedLevel(level)} className={cn(tabItemClassName("family", selectedLevel === level), "flex-col gap-1")}>
++              <span>{getQuizUiCopy(locale, `school.level.${level}.label`)}</span>
++              <span className="text-xs font-normal">{getQuizUiCopy(locale, `school.level.${level}.description`)}</span>
++            </button>
++          ))}
++        </div>
++      </CmmCard>
+       {selectedLevel ? (
+-        <div className="mx-auto max-w-6xl rounded-[2rem] border border-amber-200 bg-amber-50/80 p-5 shadow-sm md:p-6">
+-          <div className="flex flex-wrap items-start justify-between gap-3">
+-            <div>
+-              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">{getQuizUiCopy(locale, "school.format.badge")}</p>
+-              <h3 className="mt-1 text-2xl font-black text-slate-950">{getQuizUiCopy(locale, "school.formatPrompt")} · {selectedLevel}</h3>
+-            </div>
+-            <button type="button" onClick={() => setSelectedLevel(null)} className={`${INTERACTIVE_FOCUS_RING} rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-amber-900`}>{getQuizUiCopy(locale, "school.format.back")}</button>
+-          </div>
+-          <div className="mt-5 grid gap-3 md:grid-cols-2">
++        <CmmCard tone="family" className="space-y-3 p-4">
++          <h3 className="font-bold cmm-text-primary">{getQuizUiCopy(locale, "school.formatPrompt")} · {selectedLevel}</h3>
++          <div role="group" aria-label={getQuizUiCopy(locale, "school.formatPrompt")} className={tabStripClassName("family", "grid-cols-1 sm:grid-cols-2")}>
+             {QUIZ_SCHOOL_FORMAT_ORDER.map((format) => (
+-              <button key={format} type="button" aria-pressed={selectedFormat === format} onClick={() => setSelectedFormat(format)} className={`${INTERACTIVE_FOCUS_RING} rounded-2xl border p-5 text-left transition ${selectedFormat === format ? "border-amber-600 bg-white shadow-md" : "border-amber-200 bg-amber-50 hover:bg-white"}`}>
+-                <p className="text-lg font-black text-slate-950">{getQuizUiCopy(locale, `school.format.${format}.label`)}</p>
+-                <p className="mt-2 text-sm leading-relaxed text-slate-700">{getQuizUiCopy(locale, `school.format.${format}.description`)}</p>
++              <button key={format} type="button" aria-pressed={selectedFormat === format} onClick={() => setSelectedFormat(format)} className={cn(tabItemClassName("family", selectedFormat === format), "flex-col gap-2")}>
++                <span>{getQuizUiCopy(locale, `school.format.${format}.label`)}</span>
++                <span className="text-xs font-normal">{getQuizUiCopy(locale, `school.format.${format}.description`)}</span>
+               </button>
+             ))}
+           </div>
+-          <button type="button" onClick={() => onLaunchSchoolSession(selectedLevel, selectedFormat)} className={`${INTERACTIVE_FOCUS_RING} mt-5 inline-flex min-h-12 items-center gap-2 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white hover:bg-amber-700`}>
+-            {getQuizUiCopy(locale, "school.format.cta")}<ArrowLeft className="rotate-180" size={16} aria-hidden="true" />
+-          </button>
+-        </div>
+-      ) : null}
++          <CmmButton tone="primary" onClick={() => onLaunchSchoolSession(selectedLevel, selectedFormat)}>{getQuizUiCopy(locale, "school.format.cta")}<ArrowRight size={16} aria-hidden="true" /></CmmButton>
++        </CmmCard>
++      ) : <p className="cmm-text-small cmm-text-secondary">{locale === "fr" ? "Choisis une classe pour sélectionner le format de séance." : "Choose a grade to select the session format."}</p>}
+     </div>
+   );
+ }
+diff --git a/apps/web/src/components/learn/quiz/use-environmental-quiz-mode.test.tsx b/apps/web/src/components/learn/quiz/use-environmental-quiz-mode.test.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..6b3e4a34c4a044b78fcfc5b9769a9e4cce6e0691
+--- /dev/null
++++ b/apps/web/src/components/learn/quiz/use-environmental-quiz-mode.test.tsx
+@@ -0,0 +1,30 @@
++import { act, create, type ReactTestRenderer } from "react-test-renderer";
++import { describe, expect, it, vi } from "vitest";
++import { useEnvironmentalQuizMode } from "./use-environmental-quiz-mode";
++
++Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
++
++describe("quiz access mode", () => {
++  it("keeps the trap level for individual sessions and clears it for school and demo", () => {
++    let mode!: ReturnType<typeof useEnvironmentalQuizMode>;
++    function Harness() {
++      mode = useEnvironmentalQuizMode({ initialAccessType: null, initialDemoMode: false, initialSchoolLevel: null, initialSchoolFormat: null, initialCollectiveMode: true });
++      return null;
++    }
++    let renderer!: ReactTestRenderer;
++    const reset = vi.fn();
++    act(() => { renderer = create(<Harness />); });
++    act(() => mode.handleSelectTrapLevel("high", reset));
++    act(() => mode.handleSelectAccessType("terrain", reset));
++    expect(mode.selectedTrapLevel).toBe("high");
++    act(() => mode.handleSelectAccessType("mixte", reset));
++    expect(mode.selectedTrapLevel).toBe("high");
++    act(() => mode.handleSelectAccessType("ecole", reset));
++    expect(mode.selectedTrapLevel).toBeNull();
++    act(() => mode.handleSelectTrapLevel("low", reset));
++    act(() => mode.startDemoSession(reset));
++    expect(mode.selectedTrapLevel).toBeNull();
++    expect(mode.isDemoMode).toBe(true);
++    act(() => renderer.unmount());
++  });
++});
+diff --git a/apps/web/src/components/learn/quiz/use-environmental-quiz-mode.ts b/apps/web/src/components/learn/quiz/use-environmental-quiz-mode.ts
+index 7fba37ec234797dce7e6efe368e6ab4224a8a355..bf8e01ecf1c20ec0bd8336d6cdd7c946d262cc5d 100644
+--- a/apps/web/src/components/learn/quiz/use-environmental-quiz-mode.ts
++++ b/apps/web/src/components/learn/quiz/use-environmental-quiz-mode.ts
+@@ -50,7 +50,7 @@
+     resetSessionState();
+     setIsDemoMode(false);
+     setSelectedAccessType(accessType);
+-    setSelectedTrapLevel(null);
++    if (accessType === "ecole") setSelectedTrapLevel(null);
+     setSelectedReasoningType(null);
+     setSelectedSchoolLevel(null);
+     setSelectedSchoolFormat(DEFAULT_QUIZ_SCHOOL_FORMAT);
+diff --git a/documentation/pages_site/routes/05-apprendre/learn-sentrainer/learn-sentrainer-README.md b/documentation/pages_site/routes/05-apprendre/learn-sentrainer/learn-sentrainer-README.md
+index db46e06f0f7abd3a0690c919f5557a09aee5b821..d01fcc5f950adcb59f1fb66f99a5fead9fce71b3 100644
+--- a/documentation/pages_site/routes/05-apprendre/learn-sentrainer/learn-sentrainer-README.md
++++ b/documentation/pages_site/routes/05-apprendre/learn-sentrainer/learn-sentrainer-README.md
+@@ -11,13 +11,13 @@
+ - **Contexte nécessaire** : Aucun
+ - **Objectif utilisateur principal** : Ancrer les notions par des sessions courtes, des questions mélangées et un retour immédiat.
+ - **Action principale attendue** : Lancer le quiz, répondre aux questions et consulter les explications.
+-- **Palette attendue** : yellow
+-- **Scope** : page d'entraînement avec intro visuelle, rappel du parcours, quiz environnemental différé et entrée école via les paramètres dédiés.
++- **Palette attendue** : famille Apprendre via les tokens canoniques, canvas neutre, surfaces jaune/orange clair après intégration du candidat Vulgarisation.
++- **Scope** : quiz au premier plan, quatre onglets d'accès (Quiz individuel, Ma progression, Mode École, Démo rapide). Le quiz individuel présente les sept parcours du registre, le niveau de piégeage conservé à la sélection et les tailles maximales du moteur. La progression repose sur le snapshot existant, sans données fictives ; le mode École conserve les niveaux 6e à 3e, les deux formats et le mode collectif ; la démo reste sans enregistrement de progression. Les onglets d'accès ne s'affichent pas pendant une session. Les entrées URL et le suivi de visite restent inchangés.
+ - **Terminée** : non
+-- **Couleurs actuellement détectées** : yellow — canvas #fef9c3, halo rgba(234, 179, 8, 0.30)
++- **Contrat de couleurs** : registre de famille et primitives canoniques ; rendu à vérifier après intégration.
+ - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
+ - **Risque de conflit avec les couleurs existantes** : faible à moyen : le jaune doit rester lisible sans devenir pâle sur fond clair.
+-- **Niveau de surcharge textuelle** : fort
++- **Organisation** : un seul titre de page, quiz pleine largeur, navigation secondaire compacte après le quiz. États de chargement et absence de progression explicites.
+ - **Textes à conserver** :
+ - Titre de module
+ - résumés
