@@ -150,7 +150,7 @@ Les plateformes partenaires doivent conserver leurs propres identifiants, donné
 
 ### 5.3. Deux expérimentations complémentaires : plogging et filière citoyenne des mégots
 
-**Statut : PLAN / PROPOSITION.** Le [dossier opérationnel parisien](../plans/plogging-et-filiere-megots-paris.md) porte le cadrage détaillé, les sources, les acteurs à prospecter, la couverture des vingt arrondissements, le dimensionnement, les conditions économiques, les contraintes de stockage et de transport et les critères du pilote.
+**Statut : PLAN / PROPOSITION.** Le cadrage opérationnel parisien détaillé (acteurs à prospecter, couverture des vingt arrondissements, dimensionnement, conditions économiques, contraintes de stockage et de transport et critères du pilote) est suivi dans la documentation de planification interne hors documentation publique.
 
 - **Plogging généraliste :** convaincre les run clubs de tester une sortie facile à intégrer à leur programme, avec évacuation locale autorisée et un bilan valorisable sur leurs propres réseaux. Aucun passage obligatoire par la filière des mégots.
 - **Mégots :** organiser une collecte spécialisée interassociative, rechercher un bac commun autorisé (idéalement municipal), examiner la prise en charge ALCOME via la Ville ou une tournée mutualisée vers CKFD à Gennevilliers, notamment avec Carton Plein Cyclo. Négocier aussi une offre petits volumes accessible aux associations sans attendre un seuil théorique.

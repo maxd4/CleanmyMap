@@ -207,28 +207,22 @@ export function getPublicCleanlinessContact(node: PublicCleanlinessOrganizationN
   }
 }
 
-export function validatePublicCleanlinessOrganization(
-  dataset: PublicCleanlinessCityDataset = PARIS_PUBLIC_CLEANLINESS_DATASET,
-  annuaireIds: ReadonlySet<string> = new Set(INITIAL_ANNUAIRE_ENTRIES.map((entry) => entry.id)),
-): string[] {
-  const errors: string[] = [];
+function validateCityTerritoriesAndSources(
+  dataset: PublicCleanlinessCityDataset,
+  errors: string[],
+) {
   const cityOption = getArrondissementCityOptions().find((option) => option.value === dataset.city);
   const validTerritories = new Set(dataset.territoryIds);
   const sourceIds = new Set<string>();
-  const nodesById = new Map<string, PublicCleanlinessOrganizationNode>();
-  const ids = new Set<string>();
-  const directoryIds = new Set<string>();
-  const networkIds = new Set<string>();
-  const sourceRefs = new Set<string>();
-  const peopleByEvidence = new Set<string>();
   const sourcesById = new Map(dataset.sources.map((item) => [item.id, item]));
   if (!cityOption) errors.push(`unknown-city:${dataset.city}`);
   if (dataset.territoryIds.length === 0) errors.push(`missing-city-territories:${dataset.city}`);
   if (validTerritories.size !== dataset.territoryIds.length) errors.push(`duplicate-city-territory:${dataset.city}`);
   if (dataset.sources.length === 0) errors.push(`missing-city-sources:${dataset.city}`);
+  const maxTerritories = getArrondissementCityCount(dataset.city);
   for (const territory of dataset.territoryIds) {
     const match = territory.match(/^([^:]+):(\d+)$/);
-    if (!match || match[1] !== dataset.city || !cityOption || Number(match[2]) < 1 || Number(match[2]) > getArrondissementCityCount(dataset.city)) {
+    if (!match || match[1] !== dataset.city || !cityOption || Number(match[2]) < 1 || Number(match[2]) > maxTerritories) {
       errors.push(`invalid-dataset-territory:${territory}`);
     }
   }
@@ -241,12 +235,68 @@ export function validatePublicCleanlinessOrganization(
       errors.push(`invalid-source-url:${sourceItem.id}`);
     }
   }
+  return { validTerritories, sourceIds, sourcesById };
+}
+
+function validateNodePublicContact(
+  node: PublicCleanlinessOrganizationNode,
+  sources: PublicCleanlinessCityDataset["sources"],
+  sourcesById: ReadonlyMap<string, PublicCleanlinessCityDataset["sources"][number]>,
+  sourceRefs: Set<string>,
+  errors: string[],
+) {
+  const contact = node.publicContact;
+  if (!contact) return;
+  const contactSources = contact.sourceIds.map((id) => sourcesById.get(id));
+  const hasValidEvidence =
+    contactSources.length > 0 &&
+    contactSources.every(
+      (item) =>
+        item &&
+        (item.evidence === "official_current" ||
+          (item.evidence === "operator_statement" && node.kind === "provider" && contact.kind === "official_portal")),
+    );
+  const forbiddenKind = node.kind === "person" || node.kind === "position" || node.kind === "profession";
+  if (forbiddenKind || !contact.label.trim() || contact.label.includes("@") || !hasValidEvidence) {
+    errors.push(`invalid-public-contact:${node.id}`);
+  }
+  try {
+    const url = new URL(contact.url);
+    if (url.protocol !== "https:" || url.username || url.password || /offres|recrutement/i.test(url.hostname + url.pathname)) {
+      errors.push(`invalid-public-contact-url:${node.id}`);
+    }
+  } catch {
+    errors.push(`invalid-public-contact-url:${node.id}`);
+  }
+  if (contact.kind === "functional_contact" && !contactSources.some((item) => item?.url === contact.url)) {
+    errors.push(`unproven-functional-contact:${node.id}`);
+  }
+  if (!getPublicCleanlinessContact(node, sources)) errors.push(`unsafe-public-contact:${node.id}`);
+  for (const id of contact.sourceIds) sourceRefs.add(id);
+}
+
+function validateOrganizationNodes(
+  dataset: PublicCleanlinessCityDataset,
+  annuaireIds: ReadonlySet<string>,
+  validTerritories: ReadonlySet<string>,
+  sourceIds: ReadonlySet<string>,
+  sourcesById: ReadonlyMap<string, PublicCleanlinessCityDataset["sources"][number]>,
+  sourceRefs: Set<string>,
+  errors: string[],
+) {
+  const nodesById = new Map<string, PublicCleanlinessOrganizationNode>();
+  const ids = new Set<string>();
+  const directoryIds = new Set<string>();
+  const networkIds = new Set<string>();
+  const peopleByEvidence = new Set<string>();
   for (const node of dataset.nodes) {
     if (ids.has(node.id)) errors.push(`duplicate-node:${node.id}`);
     ids.add(node.id);
     nodesById.set(node.id, node);
     if (!node.sourceIds.length || node.sourceIds.some((id) => !sourceIds.has(id))) errors.push(`invalid-source:${node.id}`);
-    for (const territory of node.territoryIds) if (!validTerritories.has(territory)) errors.push(`invalid-territory:${node.id}:${territory}`);
+    for (const territory of node.territoryIds) {
+      if (!validTerritories.has(territory)) errors.push(`invalid-territory:${node.id}:${territory}`);
+    }
     if (new Set(node.territoryIds).size !== node.territoryIds.length) errors.push(`duplicate-node-territory:${node.id}`);
     if (node.kind === "person") {
       // Identical names alone do not prove identical people.
@@ -258,24 +308,7 @@ export function validatePublicCleanlinessOrganization(
       if (networkIds.has(node.networkActorId)) errors.push(`duplicate-network-actor:${node.networkActorId}`);
       networkIds.add(node.networkActorId);
     }
-    if (node.publicContact) {
-      const contact = node.publicContact;
-      const contactSources = contact.sourceIds.map((id) => sourcesById.get(id));
-      if (node.kind === "person" || node.kind === "position" || node.kind === "profession" ||
-          !contact.label.trim() || contact.label.includes("@") ||
-          !contactSources.length || contactSources.some((item) => !item || (item.evidence !== "official_current" && !(item.evidence === "operator_statement" && node.kind === "provider" && contact.kind === "official_portal")))) {
-        errors.push(`invalid-public-contact:${node.id}`);
-      }
-      try {
-        const url = new URL(contact.url);
-        if (url.protocol !== "https:" || url.username || url.password || /offres|recrutement/i.test(url.hostname + url.pathname)) errors.push(`invalid-public-contact-url:${node.id}`);
-      } catch {
-        errors.push(`invalid-public-contact-url:${node.id}`);
-      }
-      if (contact.kind === "functional_contact" && !contactSources.some((item) => item?.url === contact.url)) errors.push(`unproven-functional-contact:${node.id}`);
-      if (!getPublicCleanlinessContact(node, dataset.sources)) errors.push(`unsafe-public-contact:${node.id}`);
-      for (const id of contact.sourceIds) sourceRefs.add(id);
-    }
+    validateNodePublicContact(node, dataset.sources, sourcesById, sourceRefs, errors);
     if (node.directoryId) {
       if (!annuaireIds.has(node.directoryId)) errors.push(`unknown-directory-id:${node.id}:${node.directoryId}`);
       if (directoryIds.has(node.directoryId)) errors.push(`duplicate-directory-id:${node.directoryId}`);
@@ -283,6 +316,21 @@ export function validatePublicCleanlinessOrganization(
     }
     for (const sourceId of node.sourceIds) sourceRefs.add(sourceId);
   }
+  return { ids, nodesById };
+}
+
+function isIsoCalendarDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+}
+
+function validateOrganizationRelations(
+  dataset: PublicCleanlinessCityDataset,
+  ids: ReadonlySet<string>,
+  nodesById: ReadonlyMap<string, PublicCleanlinessOrganizationNode>,
+  sourceIds: ReadonlySet<string>,
+  sourceRefs: Set<string>,
+  errors: string[],
+) {
   const edgeIds = new Set<string>();
   const edgeKeys = new Set<string>();
   const hierarchy = new Map<string, string[]>();
@@ -290,8 +338,11 @@ export function validatePublicCleanlinessOrganization(
   for (const relation of dataset.relations) {
     if (edgeIds.has(relation.id)) errors.push(`duplicate-relation:${relation.id}`);
     edgeIds.add(relation.id);
-    const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
-    if ((relation.validFrom && !isDate(relation.validFrom)) || (relation.validUntil && !isDate(relation.validUntil)) || (relation.validFrom && relation.validUntil && relation.validFrom > relation.validUntil)) errors.push(`invalid-relation-validity:${relation.id}`);
+    const invalidDates =
+      (relation.validFrom && !isIsoCalendarDate(relation.validFrom)) ||
+      (relation.validUntil && !isIsoCalendarDate(relation.validUntil)) ||
+      (relation.validFrom && relation.validUntil && relation.validFrom > relation.validUntil);
+    if (invalidDates) errors.push(`invalid-relation-validity:${relation.id}`);
     const edgeKey = JSON.stringify([relation.kind, relation.from, relation.to]);
     if (edgeKeys.has(edgeKey)) errors.push(`duplicate-relation-endpoints:${relation.id}`);
     edgeKeys.add(edgeKey);
@@ -310,6 +361,18 @@ export function validatePublicCleanlinessOrganization(
       hierarchyParents.set(relation.to, [...(hierarchyParents.get(relation.to) ?? []), relation.from]);
     }
   }
+  return { hierarchy, hierarchyParents };
+}
+
+function validateHierarchyAndCoverage(
+  dataset: PublicCleanlinessCityDataset,
+  ids: ReadonlySet<string>,
+  nodesById: ReadonlyMap<string, PublicCleanlinessOrganizationNode>,
+  hierarchy: ReadonlyMap<string, string[]>,
+  hierarchyParents: ReadonlyMap<string, string[]>,
+  sourceRefs: ReadonlySet<string>,
+  errors: string[],
+) {
   for (const [nodeId, parents] of hierarchyParents) {
     if (parents.length > 1) errors.push(`multiple-hierarchy-parents:${nodeId}`);
   }
@@ -335,7 +398,9 @@ export function validatePublicCleanlinessOrganization(
       if (!(hierarchyParents.get(node.id) ?? []).includes(node.unitId)) errors.push(`unit-hierarchy-mismatch:${node.id}:${node.unitId}`);
     }
   }
-  for (const sourceItem of dataset.sources) if (!sourceRefs.has(sourceItem.id)) errors.push(`unused-source:${sourceItem.id}`);
+  for (const sourceItem of dataset.sources) {
+    if (!sourceRefs.has(sourceItem.id)) errors.push(`unused-source:${sourceItem.id}`);
+  }
   const coverageByGroup = new Map<string, Set<string>>();
   for (const node of dataset.nodes.filter((entry) => entry.territoryCoverageGroup)) {
     const covered = coverageByGroup.get(node.territoryCoverageGroup!) ?? new Set<string>();
@@ -347,8 +412,22 @@ export function validatePublicCleanlinessOrganization(
   }
   for (const group of dataset.requiredCoverageGroups ?? []) {
     const coverage = coverageByGroup.get(group);
-    for (const territory of dataset.territoryIds) if (!coverage?.has(territory)) errors.push(`missing-coverage-territory:${group}:${territory}`);
+    for (const territory of dataset.territoryIds) {
+      if (!coverage?.has(territory)) errors.push(`missing-coverage-territory:${group}:${territory}`);
+    }
   }
+}
+
+export function validatePublicCleanlinessOrganization(
+  dataset: PublicCleanlinessCityDataset = PARIS_PUBLIC_CLEANLINESS_DATASET,
+  annuaireIds: ReadonlySet<string> = new Set(INITIAL_ANNUAIRE_ENTRIES.map((entry) => entry.id)),
+): string[] {
+  const errors: string[] = [];
+  const sourceRefs = new Set<string>();
+  const { validTerritories, sourceIds, sourcesById } = validateCityTerritoriesAndSources(dataset, errors);
+  const { ids, nodesById } = validateOrganizationNodes(dataset, annuaireIds, validTerritories, sourceIds, sourcesById, sourceRefs, errors);
+  const { hierarchy, hierarchyParents } = validateOrganizationRelations(dataset, ids, nodesById, sourceIds, sourceRefs, errors);
+  validateHierarchyAndCoverage(dataset, ids, nodesById, hierarchy, hierarchyParents, sourceRefs, errors);
   return errors;
 }
 

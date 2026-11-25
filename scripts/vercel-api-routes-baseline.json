@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-22T00:00:00.000Z",
-  "apiRouteCount": 250,
+  "generatedAt": "2026-11-25T00:00:00.000Z",
+  "apiRouteCount": 252,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -582,6 +582,13 @@
       "reason": "Affectation et révocation authentifiées de l'arbitre qualifié d'une équipe SPOGOMI, afin de rendre l'état de composition opérationnel.",
       "costContract": "POST/DELETE limités à un événement, une division et une équipe ; AuthN Clerk, contrôle organisateur et rate limit par utilisateur, schémas Zod stricts, appels aux services/RPC canoniques, réponses sans-cache et erreurs de conflit explicites.",
       "reviewedAt": "2026-11-25"
+    },
+    {
+      "route": "apps/web/src/app/api/admin/partners/institutional-relations/route.ts",
+      "introducedBy": "5467901df0e15351bc81def6327c769af462d9bb",
+      "reason": "Gestion privée admin des contacts institutionnels, faits sourcés et revues de vérification liés à l'annuaire des partenaires.",
+      "costContract": "GET/POST/PATCH strictement protégés par requireAdminAccess(), validation Zod bornée (schémas contact/fact/review), persistance et audit admin operation-audit, réponses admin private/no-store sans projection publique.",
+      "reviewedAt": "2026-11-25"
     }
   ],
   "apiRoutes": [
@@ -656,6 +663,7 @@
     "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
     "apps/web/src/app/api/admin/moderation/route.ts",
     "apps/web/src/app/api/admin/operations/route.ts",
+    "apps/web/src/app/api/admin/partners/institutional-relations/route.ts",
     "apps/web/src/app/api/admin/partners/published-directory/route.ts",
     "apps/web/src/app/api/admin/promotion-requests/route.ts",
     "apps/web/src/app/api/admin/referrals.csv/route.ts",

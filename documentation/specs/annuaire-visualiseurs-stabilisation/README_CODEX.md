@@ -1,6 +1,6 @@
 # Raccordement plogging et mégots : complément des visualiseurs
 
-**Statut : CANDIDATE.** Référence factuelle : `cbff380b786c52d3a322168f4c09b26bb222dd79`. EXTEND_EXISTING. Ne pas imposer un checkout historique. Les patches 09/10/11 portent déjà CKFD, MéGO!, Carton Plein Cyclo, Les Runners Laveurs, les limites ALCOME et les relations sourcées. Le [plan parisien](../../plans/plogging-et-filiere-megots-paris.md) reste PLAN ; ni accord ni filière opérationnelle acquis.
+**Statut : CANDIDATE.** Référence factuelle : `cbff380b786c52d3a322168f4c09b26bb222dd79`. EXTEND_EXISTING. Ne pas imposer un checkout historique. Les patches 09/10/11 portent déjà CKFD, MéGO!, Carton Plein Cyclo, Les Runners Laveurs, les limites ALCOME et les relations sourcées. Le cadrage opérationnel parisien plogging et filière mégots reste au statut PLAN ; ni accord ni filière opérationnelle acquis.
 
 ## Contrat
 
