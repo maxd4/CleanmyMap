@@ -355,8 +355,12 @@ async function main() {
     await testConcurrentSuppressionOperationIdCollisionAndIdempotency();
     await testConcurrentExpiredTokenVsTakeover();
     console.log("EXECUTED_DB_CONTRACT: External action sync two-session reservation, lock-order, expiration and suppression idempotency contract passed.");
+  } catch (error) {
+    const safeMsg = String(error?.message ?? error).replaceAll("ERROR:", "PG_ERR:");
+    console.error(`SYNC_CONC_DIAGNOSTIC: ${safeMsg}`);
+    throw error;
   } finally {
-    await run(cleanupSql).catch(() => {});
+    await run(cleanupSql, "cleanup").catch(() => {});
   }
 }
 
