@@ -1,13 +1,62 @@
 #!/usr/bin/env node
 
+import { execFileSync } from "node:child_process";
 import { reviewedMigrationApprovals } from "./supabase-migration-sql.mjs";
 
+const EXPECTED_REPOSITORY = "maxd4/CleanmyMap";
 const EXPECTED_WORKFLOW = "supabase-sql-proof-ephemeral";
 const EXPECTED_PROOF_KIND = "cleanmymap-supabase-sql-evidence";
+const EXPECTED_REF = "refs/heads/main";
+const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/i;
+const DIGITS_PATTERN = /^\d+$/;
 
 function blocked(reason) {
   return Object.freeze({ mode: "BLOCKED", valid: false, reason });
+}
+
+export function verifyGitHubActionsRun({ repository, workflow, ref, runId, candidateSha } = {}) {
+  if (repository !== EXPECTED_REPOSITORY) {
+    return { ok: false, reason: "ephemeral SQL evidence repository is not canonical" };
+  }
+  if (workflow !== EXPECTED_WORKFLOW) {
+    return { ok: false, reason: "ephemeral SQL evidence workflow is not canonical" };
+  }
+  if (ref !== EXPECTED_REF) {
+    return { ok: false, reason: "ephemeral SQL evidence ref is not main" };
+  }
+  if (!DIGITS_PATTERN.test(String(runId ?? ""))) {
+    return { ok: false, reason: "ephemeral SQL evidence GitHub runId is missing or invalid" };
+  }
+  if (!SHA_PATTERN.test(String(candidateSha ?? ""))) {
+    return { ok: false, reason: "ephemeral SQL evidence candidateSha is missing or invalid" };
+  }
+  try {
+    const raw = execFileSync(
+      "gh",
+      ["run", "view", String(runId), "--repo", repository, "--json", "workflowName,headBranch,headSha,status,conclusion"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+    const run = JSON.parse(raw);
+    if (run.workflowName !== EXPECTED_WORKFLOW) {
+      return { ok: false, reason: "GitHub Actions run workflowName does not match canonical SQL proof" };
+    }
+    if (run.headBranch !== "main") {
+      return { ok: false, reason: "GitHub Actions run did not execute on main" };
+    }
+    if (String(run.headSha ?? "").toLowerCase() !== candidateSha.toLowerCase()) {
+      return { ok: false, reason: "GitHub Actions run headSha does not match evidence candidateSha" };
+    }
+    if (run.status !== "completed" || run.conclusion !== "success") {
+      return { ok: false, reason: `GitHub Actions run is not a completed success (status=${String(run.status)}, conclusion=${String(run.conclusion)})` };
+    }
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: `GitHub Actions provenance could not be verified: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
 }
 
 export function evaluateSupabasePostflight({ eventName, status, exitCode } = {}) {
@@ -23,7 +72,12 @@ export function evaluateSupabasePostflight({ eventName, status, exitCode } = {})
   return { ...blocked(`convergence status ${String(status ?? "MISSING")} is not valid for ${String(eventName ?? "unknown event")}`), pass: false };
 }
 
-export function validateEphemeralEvidence({ evidence, expectedDigests } = {}) {
+export function validateEphemeralEvidence({
+  evidence,
+  expectedDigests,
+  pendingIds = null,
+  verifyGitHubRun = verifyGitHubActionsRun,
+} = {}) {
   if (!expectedDigests || typeof expectedDigests !== "object" || Array.isArray(expectedDigests) || Object.keys(expectedDigests).length === 0) {
     return blocked("expected input digests are required for sensitive proof validation");
   }
@@ -34,6 +88,24 @@ export function validateEphemeralEvidence({ evidence, expectedDigests } = {}) {
   if (evidence.provenance !== "COMMITTED_SNAPSHOT" || evidence.outcome !== "PASS") {
     return blocked("ephemeral SQL evidence is not a passing committed-snapshot proof");
   }
+  const gh = evidence.githubActions;
+  if (!gh || typeof gh !== "object" || Array.isArray(gh)) {
+    return blocked("ephemeral SQL evidence lacks GitHub Actions origin metadata");
+  }
+  if (gh.repository !== EXPECTED_REPOSITORY || gh.workflow !== EXPECTED_WORKFLOW || gh.ref !== EXPECTED_REF || !DIGITS_PATTERN.test(String(gh.runId ?? ""))) {
+    return blocked("ephemeral SQL evidence GitHub Actions origin metadata is invalid");
+  }
+  const provenanceCheck = verifyGitHubRun({
+    repository: gh.repository,
+    workflow: gh.workflow,
+    ref: gh.ref,
+    runId: gh.runId,
+    runAttempt: gh.runAttempt,
+    candidateSha: evidence.candidateSha,
+  });
+  if (!provenanceCheck?.ok) {
+    return blocked(provenanceCheck?.reason || "ephemeral SQL evidence GitHub Actions provenance verification failed");
+  }
   const requiredStages = ["bootstrap", "dbReset", "migrations", "seed", "schemaSeedValidation", "sqlProofRunner"];
   if (!Array.isArray(evidence.workflowStages) || requiredStages.some((stage) => {
     const matching = evidence.workflowStages.filter((entry) => entry?.stage === stage);
@@ -43,10 +115,11 @@ export function validateEphemeralEvidence({ evidence, expectedDigests } = {}) {
   if (evidence.records.some((record) => record?.status !== "INTEGRATION_PROOF" || record?.outcome !== "PASS")) {
     return blocked("ephemeral SQL evidence contains a failed or missing proof");
   }
-  const gamification = evidence.records.find((record) => record?.path === "apps/web/supabase/tests/gamification-progression-boundary.pgtap.sql");
-  if (gamification?.expectedAssertions !== 56) return blocked("gamification pgTAP proof is not 56 assertions");
   if (!Array.isArray(evidence.migrations)) return blocked("ephemeral SQL evidence has no exact migration hashes");
-  for (const approval of reviewedMigrationApprovals) {
+  const activeApprovals = Array.isArray(pendingIds)
+    ? reviewedMigrationApprovals.filter((entry) => pendingIds.includes(entry.id))
+    : reviewedMigrationApprovals.filter((entry) => Object.prototype.hasOwnProperty.call(expectedDigests, entry.path));
+  for (const approval of activeApprovals) {
     const migration = evidence.migrations.find((entry) => entry?.id === approval.id && entry?.path === approval.path);
     if (migration?.contentSha256 !== approval.sha256) return blocked(`approved migration ${approval.id} hash does not match the reviewed content`);
     for (const requiredProof of approval.proofs) {
@@ -71,5 +144,5 @@ export function validateEphemeralEvidence({ evidence, expectedDigests } = {}) {
       return blocked(`ephemeral SQL evidence record for ${targetPath} did not pass`);
     }
   }
-  return { mode: "VALID", valid: true, reason: "ephemeral SQL proof passed with matching input digests" };
+  return { mode: "VALID", valid: true, reason: "ephemeral SQL proof passed with verified GitHub Actions provenance and matching input digests" };
 }

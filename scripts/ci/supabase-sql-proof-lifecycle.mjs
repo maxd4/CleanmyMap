@@ -77,7 +77,16 @@ export function createEvidenceReport(candidate, { inventorySqlProofs, prioritize
     ...inventory.multisession.map((path) => baseRecord(path, "MULTISESSION")),
   ];
   for (const path of inventory.unregistered) records.push({ path, category: "UNREGISTERED_SQL_PROOF", status: "DB_SEMANTICS_NOT_EXECUTED", outcome: "NOT_RUN", reason: "No canonical runner protocol is registered for this SQL proof." });
-  return { schemaVersion: 2, kind: "cleanmymap-supabase-sql-evidence", candidateSha: candidate, headSha: candidate, provenance: "COMMITTED_SNAPSHOT", workflow: "supabase-sql-proof-ephemeral", outcome: "NOT_RUN", migrations: migrationEvidence(), records, workflowStages: WORKFLOW_STAGES.map((stage) => stageRecord(stage)) };
+  const githubActions = env.GITHUB_ACTIONS === "true"
+    ? {
+        repository: String(env.GITHUB_REPOSITORY ?? "").trim(),
+        workflow: String(env.GITHUB_WORKFLOW ?? "").trim(),
+        ref: String(env.GITHUB_REF ?? "").trim(),
+        runId: String(env.GITHUB_RUN_ID ?? "").trim(),
+        runAttempt: String(env.GITHUB_RUN_ATTEMPT ?? "").trim(),
+      }
+    : null;
+  return { schemaVersion: 2, kind: "cleanmymap-supabase-sql-evidence", candidateSha: candidate, headSha: candidate, provenance: "COMMITTED_SNAPSHOT", workflow: "supabase-sql-proof-ephemeral", ...(githubActions ? { githubActions } : {}), outcome: "NOT_RUN", migrations: migrationEvidence(), records, workflowStages: WORKFLOW_STAGES.map((stage) => stageRecord(stage)) };
 }
 
 export function initializeWorkflowEvidence({ candidateSha, createEvidenceReport, writeReport }) {

@@ -114,10 +114,18 @@ function extractReferencedObjects(sql) {
 function analyzeMigration(entry, creationIndex) {
   const sql = entry.sql;
   const sqlClassification = classifyMigrationSql(sql, entry);
-  const rlsPolicyChanges = /\b(?:create|alter|drop)\s+policy\b|\benable\s+row\s+level\s+security\b/i.test(sql);
+  const rlsPolicyChanges = /\b(?:create|alter|drop)\s+policy\b|\b(?:enable|disable|force)\s+row\s+level\s+security\b/i.test(sql);
   const grantChanges = /\b(?:grant|revoke)\b/i.test(sql);
+  const triggerChanges = /\b(?:create|drop|alter)\s+(?:constraint\s+)?trigger\b/i.test(sql);
+  const securityDefinerChanges = /\bsecurity\s+definer\b/i.test(sql);
+  const transactionLockChanges = /\block\s+table\b|\bpg_advisory_(?:xact_)?lock\b|\bset\s+(?:local\s+)?transaction\b/i.test(sql);
   const rpcChanges = /\b(?:create|replace|drop)\s+(?:or\s+replace\s+)?(?:function|procedure)\b/i.test(sql);
-  const forwardDependencies = extractReferencedObjects(sql)
+  const createdObjects = extractCreatedObjects(sql);
+  const referencedObjects = extractReferencedObjects(sql);
+  const dependencyMigrations = referencedObjects
+    .filter((objectName) => creationIndex.has(objectName) && creationIndex.get(objectName) < entry.index)
+    .map((objectName) => entry.allIds[creationIndex.get(objectName)]);
+  const forwardDependencies = referencedObjects
     .filter((objectName) => creationIndex.has(objectName) && creationIndex.get(objectName) > entry.index)
     .map((objectName) => ({ objectName, migration: entry.allIds[creationIndex.get(objectName)] }));
   return {
@@ -127,9 +135,27 @@ function analyzeMigration(entry, creationIndex) {
     ...sqlClassification,
     rlsPolicyChanges,
     grantChanges,
+    triggerChanges,
+    securityDefinerChanges,
+    transactionLockChanges,
     rpcChanges,
+    createdObjects,
+    referencedObjects,
+    dependencyMigrations: [...new Set(dependencyMigrations)],
     forwardDependencies,
   };
+}
+
+export function isSensitiveMigration(analysis) {
+  return Boolean(
+    analysis?.reviewedDataMutation
+    || analysis?.approval?.proofs?.length
+    || analysis?.rlsPolicyChanges
+    || analysis?.grantChanges
+    || analysis?.triggerChanges
+    || analysis?.securityDefinerChanges
+    || analysis?.transactionLockChanges,
+  );
 }
 
 export function readLocalMigrations(root = migrationsRoot, { applicationSource = "" } = {}) {
@@ -215,31 +241,84 @@ function normalizedFileSha256(filePath) {
   return createHash("sha256").update(normalized).digest("hex");
 }
 
-export function buildSensitiveExpectedDigests(sensitiveAnalyses = [], root = repoRoot) {
+function findMatchingProofFiles(analysis, root = repoRoot) {
+  const objects = new Set([
+    ...(analysis.createdObjects ?? []),
+    ...(analysis.referencedObjects ?? []),
+  ]);
+  if (objects.size === 0) return [];
+  const matches = [];
+  const candidateDirs = [
+    { rel: "apps/web/supabase/tests", pattern: /\.sql$/ },
+    { rel: "e2e", pattern: /(?:\.sql|-concurrency\.mjs)$/ },
+  ];
+  for (const { rel, pattern } of candidateDirs) {
+    const absDir = path.join(root, rel);
+    if (!fs.existsSync(absDir)) continue;
+    for (const file of fs.readdirSync(absDir).filter((name) => pattern.test(name)).sort()) {
+      const relPath = `${rel}/${file}`;
+      const content = fs.readFileSync(path.join(absDir, file), "utf8").toLowerCase();
+      if ([...objects].some((objectName) => content.includes(objectName))) {
+        matches.push(relPath);
+      }
+    }
+  }
+  return matches;
+}
+
+export function buildSensitiveExpectedDigests(
+  sensitiveAnalyses = [],
+  { allAnalyses = [], pendingIds = [], root = repoRoot, extraProofPaths = [] } = {},
+) {
   const digests = {};
   const missingFiles = [];
+  const missingProofDeclarations = [];
+  const byId = new Map(allAnalyses.map((entry) => [entry.id, entry]));
+
+  const addFileDigest = (relPath) => {
+    const abs = path.join(root, relPath);
+    if (!fs.existsSync(abs)) {
+      missingFiles.push(relPath);
+      return false;
+    }
+    digests[relPath] = normalizedFileSha256(abs);
+    return true;
+  };
+
   for (const analysis of sensitiveAnalyses) {
     const migrationPath = analysis.approval?.path ?? (analysis.file ? `apps/web/supabase/migrations/${analysis.file}` : "");
     if (!migrationPath) {
       missingFiles.push(analysis.id ?? "UNKNOWN_MIGRATION");
-      continue;
-    }
-    const migrationAbs = path.join(root, migrationPath);
-    if (!fs.existsSync(migrationAbs)) {
-      missingFiles.push(migrationPath);
     } else {
-      digests[migrationPath] = normalizedFileSha256(migrationAbs);
+      addFileDigest(migrationPath);
     }
-    for (const proof of analysis.approval?.proofs ?? []) {
-      const proofAbs = path.join(root, proof.path);
-      if (!fs.existsSync(proofAbs)) {
-        missingFiles.push(proof.path);
-      } else {
-        digests[proof.path] = normalizedFileSha256(proofAbs);
+    for (const depId of analysis.dependencyMigrations ?? []) {
+      const depEntry = byId.get(depId);
+      const depPath = depEntry?.approval?.path ?? (depEntry?.file ? `apps/web/supabase/migrations/${depEntry.file}` : "");
+      if (depPath) addFileDigest(depPath);
+    }
+    for (const pendingId of pendingIds) {
+      if (pendingId < analysis.id) {
+        const pendingDep = byId.get(pendingId);
+        const pendingPath = pendingDep?.approval?.path ?? (pendingDep?.file ? `apps/web/supabase/migrations/${pendingDep.file}` : "");
+        if (pendingPath) addFileDigest(pendingPath);
       }
     }
+    const approvalProofs = (analysis.approval?.proofs ?? []).map((proof) => proof.path);
+    const matchedProofs = approvalProofs.length > 0 ? [] : findMatchingProofFiles(analysis, root);
+    const allProofPaths = [...new Set([...approvalProofs, ...matchedProofs, ...extraProofPaths])];
+    if (allProofPaths.length === 0) {
+      missingProofDeclarations.push(analysis.id);
+    }
+    for (const proofPath of allProofPaths) {
+      addFileDigest(proofPath);
+    }
   }
-  return { digests, missingFiles };
+  return {
+    digests,
+    missingFiles: [...new Set(missingFiles)],
+    missingProofDeclarations: [...new Set(missingProofDeclarations)],
+  };
 }
 
 function readEvidencePayload({ argv = [], env = {} } = {}, root = repoRoot) {
@@ -274,6 +353,8 @@ export function evaluatePreflight({
   commandFailures = [],
   evidence = null,
   expectedDigests = null,
+  extraProofPaths = [],
+  verifyGitHubRun,
   root = repoRoot,
 } = {}) {
   const causes = [];
@@ -302,13 +383,20 @@ export function evaluatePreflight({
       causes.push({ code: "SQL_FORWARD_DEPENDENCY", migrationId: analysis.id, dependencies: analysis.forwardDependencies, detail: `${analysis.id} references objects created by a later migration.` });
     }
   }
-  const sensitiveAnalyses = pendingAnalyses.filter((entry) => Boolean(entry.reviewedDataMutation || entry.approval?.proofs?.length));
+  const sensitiveAnalyses = pendingAnalyses.filter(isSensitiveMigration);
   let sensitiveProofStatus = "NOT_REQUIRED";
   if (sensitiveAnalyses.length > 0) {
     const digestSource = expectedDigests
-      ? { digests: expectedDigests, missingFiles: [] }
-      : buildSensitiveExpectedDigests(sensitiveAnalyses, root);
-    if (digestSource.missingFiles.length > 0) {
+      ? { digests: expectedDigests, missingFiles: [], missingProofDeclarations: [] }
+      : buildSensitiveExpectedDigests(sensitiveAnalyses, { allAnalyses: analyses, pendingIds: pending, root, extraProofPaths });
+    if (digestSource.missingProofDeclarations.length > 0) {
+      sensitiveProofStatus = "BLOCKED";
+      causes.push({
+        code: "SENSITIVE_PROOF_INVALID",
+        migrationId: digestSource.missingProofDeclarations[0],
+        detail: `Sensitive migration(s) lack required PostgreSQL/RLS/trigger/concurrency proof declarations: ${digestSource.missingProofDeclarations.join(", ")}`,
+      });
+    } else if (digestSource.missingFiles.length > 0) {
       sensitiveProofStatus = "BLOCKED";
       causes.push({
         code: "SENSITIVE_PROOF_INVALID",
@@ -316,7 +404,12 @@ export function evaluatePreflight({
         detail: `Missing canonical proof input(s): ${digestSource.missingFiles.join(", ")}`,
       });
     } else {
-      const proofResult = validateEphemeralEvidence({ evidence, expectedDigests: digestSource.digests });
+      const proofResult = validateEphemeralEvidence({
+        evidence,
+        expectedDigests: digestSource.digests,
+        pendingIds: pending,
+        verifyGitHubRun,
+      });
       if (!proofResult.valid) {
         sensitiveProofStatus = "BLOCKED";
         causes.push({
@@ -403,6 +496,7 @@ export function runPreflight({ argv = process.argv.slice(2), env = process.env, 
   const commandFailures = [projectsParsed, ...parsed]
     .filter((entry) => entry.result?.status !== 0 || entry.error)
     .map((entry) => entry.label ?? "Supabase projects list");
+  const extraProofPaths = argv.filter((arg) => arg.startsWith("--proof=")).map((arg) => arg.slice("--proof=".length)).filter(Boolean);
   const summary = evaluatePreflight({
     projectRef,
     projectMatched,
@@ -413,6 +507,7 @@ export function runPreflight({ argv = process.argv.slice(2), env = process.env, 
     advisors,
     commandFailures,
     evidence: readEvidencePayload({ argv, env }),
+    extraProofPaths,
   });
   return {
     ...summary,

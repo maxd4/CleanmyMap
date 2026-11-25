@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 
 import { parseSupabaseJson } from "./audit-supabase-release.mjs";
 import { classifyMigrationSql, findSqlContractCompatibilityIssues } from "./supabase-migration-sql.mjs";
-import { buildReadOnlyCommandArgs, buildSensitiveExpectedDigests, evaluatePreflight, preflightExitCode } from "./supabase-migration-preflight.mjs";
+import { buildReadOnlyCommandArgs, buildSensitiveExpectedDigests, evaluatePreflight, isSensitiveMigration, preflightExitCode } from "./supabase-migration-preflight.mjs";
 
 function alignedHistory(localIds = ["20261113000001", "20261114000001"], remoteIds = localIds) {
   return { localIds, remoteIds, pending: localIds.slice(remoteIds.length), aligned: remoteIds.every((id, index) => id === localIds[index]) };
@@ -171,8 +171,9 @@ test("requires valid ephemeral evidence with matching canonical digests for sens
   const file = "20261122000014_private_action_attendance_registry.sql";
   const sql = readFileSync(resolve("apps/web/supabase/migrations", file), "utf8");
   const sensitiveAnalysis = { id: "20261122000014", file, forwardDependencies: [], sqlContractIssues: [], ...classifyMigrationSql(sql, { id: "20261122000014", file }) };
-  const { digests, missingFiles } = buildSensitiveExpectedDigests([sensitiveAnalysis]);
+  const { digests, missingFiles, missingProofDeclarations } = buildSensitiveExpectedDigests([sensitiveAnalysis]);
   assert.deepEqual(missingFiles, []);
+  assert.deepEqual(missingProofDeclarations, []);
   assert.equal(Object.keys(digests).length, 3);
 
   const base = {
@@ -180,6 +181,7 @@ test("requires valid ephemeral evidence with matching canonical digests for sens
     history: alignedHistory(["20261122000013", "20261122000014"], ["20261122000013"]),
     dryRunIds: ["20261122000014"],
     analyses: [sensitiveAnalysis],
+    verifyGitHubRun: () => ({ ok: true }),
   };
 
   const missing = evaluatePreflight(base);
@@ -191,6 +193,13 @@ test("requires valid ephemeral evidence with matching canonical digests for sens
     schemaVersion: 2,
     kind: "cleanmymap-supabase-sql-evidence",
     workflow: "supabase-sql-proof-ephemeral",
+    githubActions: {
+      repository: "maxd4/CleanmyMap",
+      workflow: "supabase-sql-proof-ephemeral",
+      ref: "refs/heads/main",
+      runId: "45578866716",
+      runAttempt: "1",
+    },
     candidateSha: "1".repeat(40),
     headSha: "1".repeat(40),
     provenance: "COMMITTED_SNAPSHOT",
@@ -204,12 +213,9 @@ test("requires valid ephemeral evidence with matching canonical digests for sens
       { stage: "sqlProofRunner", status: "PASS" },
     ],
     migrations: [
-      { id: "20261122000004", path: "apps/web/supabase/migrations/20261122000004_action_accessibility_welcome_contact_role.sql", contentSha256: "852da682aaccb16f639f2c46f162ec7a6ffb1fc5af4840df5be32ec4400e2e11" },
       { id: "20261122000014", path: `apps/web/supabase/migrations/${file}`, contentSha256: digests[`apps/web/supabase/migrations/${file}`] },
     ],
     records: [
-      { path: "apps/web/supabase/tests/gamification-progression-boundary.pgtap.sql", status: "INTEGRATION_PROOF", outcome: "PASS", expectedAssertions: 56, contentSha256: "c".repeat(64) },
-      { path: "apps/web/supabase/tests/action-accessibility-support.pgtap.sql", status: "INTEGRATION_PROOF", outcome: "PASS", contentSha256: "57c02a5f0aa8ba2c27449deb613b3e5b1d10c845b9d06da56b952d452a040013" },
       { path: "apps/web/supabase/tests/action-attendance-registry.pgtap.sql", status: "INTEGRATION_PROOF", outcome: "PASS", contentSha256: digests["apps/web/supabase/tests/action-attendance-registry.pgtap.sql"] },
       { path: "e2e/action-attendance-registry-concurrency.mjs", status: "INTEGRATION_PROOF", outcome: "PASS", contentSha256: digests["e2e/action-attendance-registry-concurrency.mjs"] },
     ],
@@ -219,7 +225,44 @@ test("requires valid ephemeral evidence with matching canonical digests for sens
   assert.equal(passed.status, "READY_TO_APPLY");
   assert.equal(passed.sensitiveProofStatus, "PASS");
 
+  // Declarative COMMITTED_SNAPSHOT without verified GitHub Actions run fails
+  const unverifiedOrigin = evaluatePreflight({ ...base, evidence: validEvidence, verifyGitHubRun: () => ({ ok: false, reason: "gh unavailable" }) });
+  assert.equal(unverifiedOrigin.status, "BLOCKED");
+  assert.ok(unverifiedOrigin.causes.some((cause) => cause.code === "SENSITIVE_PROOF_INVALID"));
+
   const wrongProvenance = evaluatePreflight({ ...base, evidence: { ...validEvidence, provenance: "WORKTREE_LIVE" } });
   assert.equal(wrongProvenance.status, "BLOCKED");
   assert.ok(wrongProvenance.causes.some((cause) => cause.code === "SENSITIVE_PROOF_INVALID"));
+});
+
+test("classifies RLS, grants, triggers, security definer and transaction locks as sensitive and blocks without proof", () => {
+  for (const [label, flag] of [
+    ["rls", { rlsPolicyChanges: true }],
+    ["grant", { grantChanges: true }],
+    ["trigger", { triggerChanges: true }],
+    ["security_definer", { securityDefinerChanges: true }],
+    ["transaction_lock", { transactionLockChanges: true }],
+  ]) {
+    const analysis = {
+      id: "20261125000099",
+      file: "20261125000099_sensitive.sql",
+      dataMutation: false,
+      destructive: false,
+      reviewRequired: false,
+      forwardDependencies: [],
+      sqlContractIssues: [],
+      ...flag,
+    };
+    assert.equal(isSensitiveMigration(analysis), true, label);
+    const blocked = evaluatePreflight({
+      ...readyContext,
+      history: alignedHistory(["20261125000098", "20261125000099"], ["20261125000098"]),
+      dryRunIds: ["20261125000099"],
+      analyses: [analysis],
+      verifyGitHubRun: () => ({ ok: true }),
+    });
+    assert.equal(blocked.status, "BLOCKED", label);
+    assert.equal(blocked.sensitiveProofStatus, "BLOCKED", label);
+    assert.ok(blocked.causes.some((cause) => cause.code === "SENSITIVE_PROOF_INVALID"), label);
+  }
 });

@@ -754,7 +754,7 @@ test("SQL evidence binds migration and proof file hashes to the checked-out cand
   const proof = result.records.find(({ path }) => path === "apps/web/supabase/tests/action-attendance-registry.pgtap.sql");
   assert.equal(report, result);
   assert.equal(migration.contentSha256, "2f4b4ea37497fa05d67b3566a78b57ef927644c70b41a2983b2487958d885234");
-  assert.equal(proof.contentSha256, "c4a1d674aa4a02dd3ba60a455fcdc8d3c098d36f26e397a61f488780058130f6");
+  assert.equal(proof.contentSha256, "cde4d55d936c9bf7ae915ad8c9d2aed4670d7d55ce2b3d375e0edc6f15ffd6c8");
 });
 
 test("SQL completion markers cannot precede a later assertion", () => {

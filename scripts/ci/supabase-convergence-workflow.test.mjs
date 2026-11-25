@@ -17,6 +17,13 @@ function passingEvidence(overrides = {}) {
     schemaVersion: 2,
     kind: "cleanmymap-supabase-sql-evidence",
     workflow: "supabase-sql-proof-ephemeral",
+    githubActions: {
+      repository: "maxd4/CleanmyMap",
+      workflow: "supabase-sql-proof-ephemeral",
+      ref: "refs/heads/main",
+      runId: "45578866716",
+      runAttempt: "1",
+    },
     candidateSha,
     headSha: candidateSha,
     provenance: "COMMITTED_SNAPSHOT",
@@ -178,28 +185,59 @@ test("ephemeral SQL evidence is validated by exact input digests rather than cur
     "apps/web/supabase/tests/action-attendance-registry.pgtap.sql": "cde4d55d936c9bf7ae915ad8c9d2aed4670d7d55ce2b3d375e0edc6f15ffd6c8",
     "e2e/action-attendance-registry-concurrency.mjs": "0b76640cec8f646fe13692775eae136dd3529ff11ad854753b0ce030a56ef161",
   };
-  assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, expectedDigests }).valid, true);
-  assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence }).mode, "BLOCKED");
-  assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, expectedDigests: {} }).mode, "BLOCKED");
+  const verifyOk = () => ({ ok: true });
+  assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, expectedDigests, verifyGitHubRun: verifyOk }).valid, true);
+  assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, verifyGitHubRun: verifyOk }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, expectedDigests: {}, verifyGitHubRun: verifyOk }).mode, "BLOCKED");
+
+  // Declarative COMMITTED_SNAPSHOT without verified GitHub Actions origin is rejected
+  assert.equal(validateEphemeralEvidence({
+    evidence: passingEvidence({ githubActions: undefined }),
+    expectedDigests,
+    verifyGitHubRun: verifyOk,
+  }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({
+    evidence: olderShaEvidence,
+    expectedDigests,
+    verifyGitHubRun: () => ({ ok: false, reason: "GitHub Actions run headSha mismatch" }),
+  }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({
+    evidence: passingEvidence({ githubActions: { repository: "fork/CleanmyMap", workflow: "supabase-sql-proof-ephemeral", ref: "refs/heads/main", runId: "123", runAttempt: "1" } }),
+    expectedDigests,
+    verifyGitHubRun: verifyOk,
+  }).mode, "BLOCKED");
+
+  // Historical approvals not in pendingIds are not required
+  const scopedEvidence = passingEvidence({
+    migrations: [{ id: "20261122000014", path: "apps/web/supabase/migrations/20261122000014_private_action_attendance_registry.sql", contentSha256: "2f4b4ea37497fa05d67b3566a78b57ef927644c70b41a2983b2487958d885234" }],
+    records: passingEvidence().records.filter((r) => r.path !== "apps/web/supabase/tests/action-accessibility-support.pgtap.sql"),
+  });
+  assert.equal(validateEphemeralEvidence({
+    evidence: scopedEvidence,
+    expectedDigests,
+    pendingIds: ["20261122000014"],
+    verifyGitHubRun: verifyOk,
+  }).valid, true);
 
   assert.equal(validateEphemeralEvidence({
     evidence: olderShaEvidence,
     expectedDigests: { ...expectedDigests, "apps/web/supabase/tests/action-attendance-registry.pgtap.sql": "0".repeat(64) },
+    verifyGitHubRun: verifyOk,
   }).mode, "BLOCKED");
 
   const changedBackfillProof = passingEvidence();
   changedBackfillProof.records.find((record) => record.path === "apps/web/supabase/tests/action-attendance-registry.pgtap.sql").contentSha256 = "0".repeat(64);
-  assert.equal(validateEphemeralEvidence({ evidence: changedBackfillProof, expectedDigests }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: changedBackfillProof, expectedDigests, verifyGitHubRun: verifyOk }).mode, "BLOCKED");
 
-  assert.equal(validateEphemeralEvidence({ evidence: null, expectedDigests }).mode, "BLOCKED");
-  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ outcome: "NOT_RUN" }), expectedDigests }).mode, "BLOCKED");
-  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ records: [] }), expectedDigests }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: null, expectedDigests, verifyGitHubRun: verifyOk }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ outcome: "NOT_RUN" }), expectedDigests, verifyGitHubRun: verifyOk }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ records: [] }), expectedDigests, verifyGitHubRun: verifyOk }).mode, "BLOCKED");
 
   const passingStages = passingEvidence().workflowStages;
   for (const stage of ["bootstrap", "dbReset", "migrations", "seed", "schemaSeedValidation", "sqlProofRunner"]) {
     for (const status of ["FAIL", "NOT_RUN", "INCONCLUSIVE"]) {
       const evidence = passingEvidence({ workflowStages: passingStages.map((entry) => entry.stage === stage ? { ...entry, status } : entry) });
-      assert.equal(validateEphemeralEvidence({ evidence, expectedDigests }).mode, "BLOCKED", `${stage}=${status}`);
+      assert.equal(validateEphemeralEvidence({ evidence, expectedDigests, verifyGitHubRun: verifyOk }).mode, "BLOCKED", `${stage}=${status}`);
     }
   }
 });
