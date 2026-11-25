@@ -1,0 +1,8 @@
+{
+  "reference": "d7343fefb685a409d305f6272f61d575421e0c6b",
+  "files": {
+    "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-sections.tsx": "7ac47bb7f7d766dea70274238745f16ecc47c2d9",
+    "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-support-sections.tsx": "2eae2e8b1eff54d860660be555bc6ca5639ca210",
+    "apps/web/src/components/pilotage/community-operations-panel.tsx": "411b467e6a941ef8cc370d8979b33f89499e4b6e"
+  }
+}
