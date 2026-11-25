@@ -54,9 +54,13 @@ export function InstitutionalRelationsAdminClient() {
     setBusyId(factId);
     try {
       const res = await fetch(API_URL, {
-        method: "POST",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "review_fact", factId, reviewStatus }),
+        body: JSON.stringify({
+          factId,
+          reviewStatus,
+          reason: reviewStatus === "verified" ? "Preuve vérifiée" : "Preuve retirée",
+        }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await load();
@@ -127,9 +131,30 @@ export function InstitutionalRelationsAdminClient() {
                   </td>
                   <td className="px-4 py-3 text-xs">
                     <ul className="space-y-1">
-                      <li>Contact direct : {contact.distinctions.directContact ? "Oui" : "Non"}</li>
-                      <li>Soutien explicite : {contact.distinctions.explicitSupport ? "Oui" : "Non"}</li>
-                      <li>Contribution effective : {contact.distinctions.effectiveContribution ? "Oui" : "Non"}</li>
+                      <li>
+                        Contact direct :{" "}
+                        {contact.distinctions.directContact
+                          ? "Établi"
+                          : contact.distinctionsIncomplete
+                            ? "Indéterminé : données incomplètes"
+                            : "Non établi"}
+                      </li>
+                      <li>
+                        Soutien explicite :{" "}
+                        {contact.distinctions.explicitSupport
+                          ? "Établi"
+                          : contact.distinctionsIncomplete
+                            ? "Indéterminé : données incomplètes"
+                            : "Non établi"}
+                      </li>
+                      <li>
+                        Contribution effective :{" "}
+                        {contact.distinctions.effectiveContribution
+                          ? "Établi"
+                          : contact.distinctionsIncomplete
+                            ? "Indéterminé : données incomplètes"
+                            : "Non établi"}
+                      </li>
                     </ul>
                     {contact.distinctionsIncomplete && (
                       <span className="mt-1 inline-block text-xs text-amber-700">
@@ -143,18 +168,24 @@ export function InstitutionalRelationsAdminClient() {
                         <li key={fact.id} className="rounded border border-slate-200 p-2">
                           <div className="font-medium">{fact.summary}</div>
                           <div className="text-slate-500">
-                            {fact.kind} · {fact.reviewStatus}
+                            {fact.kind} · {fact.origin} · {fact.reviewStatus}
                           </div>
-                          {fact.reviewStatus === "pending" && (
+                          <div className="text-slate-500">
+                            Preuve : {fact.evidenceRef}
+                            {fact.occurredAt ? ` (${fact.occurredAt})` : ""}
+                          </div>
+                          {(fact.reviewStatus === "pending" || fact.reviewStatus === "verified") && (
                             <div className="mt-1 flex gap-2">
-                              <button
-                                type="button"
-                                disabled={busyId === fact.id}
-                                onClick={() => void handleReviewFact(fact.id, "verified")}
-                                className="rounded bg-emerald-600 px-2 py-0.5 text-white hover:bg-emerald-700 disabled:opacity-50"
-                              >
-                                Vérifier
-                              </button>
+                              {fact.reviewStatus === "pending" && (
+                                <button
+                                  type="button"
+                                  disabled={busyId === fact.id}
+                                  onClick={() => void handleReviewFact(fact.id, "verified")}
+                                  className="rounded bg-emerald-600 px-2 py-0.5 text-white hover:bg-emerald-700 disabled:opacity-50"
+                                >
+                                  Vérifier
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 disabled={busyId === fact.id}

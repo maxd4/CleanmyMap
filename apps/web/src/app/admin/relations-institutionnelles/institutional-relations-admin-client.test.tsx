@@ -55,8 +55,8 @@ describe("InstitutionalRelationsAdminClient", () => {
 
     expect(container.textContent).toContain("Interlocuteur Privé");
     expect(container.textContent).toContain("Prospect privé uniquement");
-    expect(container.textContent).toContain("Contact direct : Oui");
-    expect(container.textContent).toContain("Soutien explicite : Non");
+    expect(container.textContent).toContain("Contact direct : Établi");
+    expect(container.textContent).toContain("Soutien explicite : Indéterminé : données incomplètes");
     expect(container.textContent).toContain("Historique partiellement tronqué");
 
     await act(async () => {
