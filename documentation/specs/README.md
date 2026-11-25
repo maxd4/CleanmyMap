@@ -4,6 +4,8 @@
 
 ## Dossiers réellement présents
 
+- [reports-ui/README_CODEX.md](./reports-ui/README_CODEX.md) : refonte des surfaces Rapports (génération, analyse et synthèse imprimable), candidats et validations restantes, PLAN/CANDIDATE.
+
 - [ecole-ui/README_CODEX.md](./ecole-ui/README_CODEX.md) : refonte Web du Mode École, quatre onglets, configuration et lancement, fiches, déroulé et banque de support, PLAN/CANDIDATE.
 
 - [bonnes-pratiques-ui/README_CODEX.md](./bonnes-pratiques-ui/README_CODEX.md) : refonte Web de Bonnes pratiques, quatre onglets, guides actionnables, tri contextualisé, ressources dédupliquées et équivalences numériques, PLAN/CANDIDATE.

@@ -1,0 +1,75 @@
+diff --git a/apps/web/src/components/reports/web-document/reports-web-document-preview.test.ts b/apps/web/src/components/reports/web-document/reports-web-document-preview.test.ts
+--- a/apps/web/src/components/reports/web-document/reports-web-document-preview.test.ts
++++ b/apps/web/src/components/reports/web-document/reports-web-document-preview.test.ts
+@@ -64,7 +64,8 @@
+     expect(closedMarkup).toContain("Données &amp; cartographie");
+     expect(closedMarkup).toContain("Données disponibles");
+     expect(closedMarkup).not.toMatch(/6 à 8 pages|12 à 16 pages|20 à 28 pages/);
+-    expect(closedMarkup).not.toContain("Étape 2");
++    expect(closedMarkup).toContain("Étape 2");
++    expect(closedMarkup).toContain('aria-expanded="false"');
+     expect(closedMarkup).not.toContain("synthese-executive");
+ 
+     const openMarkup = renderToStaticMarkup(
+@@ -75,6 +76,7 @@
+     );
+     expect(openMarkup).toContain("Masquer l’aperçu de la première page");
+     expect(openMarkup).toContain("Première page du PDF");
++    expect(openMarkup).toContain('aria-expanded="true"');
+     expect(openMarkup).toContain("Aperçu partiel de la première page uniquement");
+     expect(openMarkup).toContain("ce n&#x27;est pas le PDF complet");
+   });
+@@ -125,4 +127,16 @@
+     expect(markup).toContain("01/01/2026 → 23/08/2026");
+     expect(markup).not.toContain("couverture conforme");
+   });
++
++  it("marks incomplete sources, invalid selection and an empty result separately", () => {
++    const render = (overrides: Partial<ReportsWebDocumentPreviewProps>) => renderToStaticMarkup(React.createElement(ReportsWebDocumentPreview, createProps(overrides)));
++    expect(render({ hasPartialSources: true })).toContain("Couverture partielle");
++    const invalid = render({ isSelectionValid: false });
++    expect(invalid).toContain("Non disponible");
++    expect(invalid).not.toContain("4 actions");
++    const empty = render({ report: { ...report, totals: { ...report.totals, actions: 0 } } });
++    expect(empty).toContain("0 actions");
++    expect(empty).toContain("Sélection vide");
++    expect(empty).not.toContain("Couverture complète");
++  });
+ });
+diff --git a/apps/web/src/components/reports/web-document/reports-web-document-preparation.test.ts b/apps/web/src/components/reports/web-document/reports-web-document-preparation.test.ts
+--- a/apps/web/src/components/reports/web-document/reports-web-document-preparation.test.ts
++++ b/apps/web/src/components/reports/web-document/reports-web-document-preparation.test.ts
+@@ -359,7 +359,7 @@
+     expect(markup).toContain("Habillage éditorial et institutionnel");
+     expect(markup).toContain('id="reports-web-document-theme-description"');
+     expect(markup).toContain('id="reports-web-document-module-dataAndCartography"');
+-    expect(markup).not.toContain("Étape 1");
++    expect(markup).toContain("Étape 1");
+   });
+ 
+   it("keeps advanced filters closed until explicitly opened", () => {
+diff --git a/apps/web/src/components/reports/web-document/reports-web-document-delivery.test.ts b/apps/web/src/components/reports/web-document/reports-web-document-delivery.test.ts
+--- a/apps/web/src/components/reports/web-document/reports-web-document-delivery.test.ts
++++ b/apps/web/src/components/reports/web-document/reports-web-document-delivery.test.ts
+@@ -141,7 +141,8 @@
+           onGenerate,
+         }));
+       });
+-      const button = renderer.root.findAllByType("button")[1];
++      const button = renderer.root.findAllByType("button").find((node) => node.props["data-cmm-button-tone"] === "primary");
++      expect(button).toBeDefined();
+       await act(() => button?.props.onClick());
+       expect(onGenerate).toHaveBeenCalledTimes(1);
+ 
+@@ -158,8 +159,9 @@
+           onGenerate,
+         }));
+       });
+-      expect(renderer.root.findAllByType("button")[1]?.props.disabled).toBe(true);
+-      expect(renderer.root.findAllByType("button")[0]?.props.disabled).toBe(false);
++      const buttons = renderer.root.findAllByType("button");
++      expect(buttons.find((node) => node.props["data-cmm-button-tone"] === "primary")?.props.disabled).toBe(true);
++      expect(buttons.find((node) => node.props["data-cmm-button-tone"] === "secondary")?.props.disabled).toBe(false);
+       expect(JSON.stringify(renderer.toJSON())).toContain("Déjà utilisé aujourd'hui");
+     } finally {
+       renderer?.unmount();

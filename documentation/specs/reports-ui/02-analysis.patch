@@ -1,0 +1,727 @@
+diff --git a/apps/web/src/lib/reports/data-availability.ts b/apps/web/src/lib/reports/data-availability.ts
+--- a/apps/web/src/lib/reports/data-availability.ts
++++ b/apps/web/src/lib/reports/data-availability.ts
+@@ -42,3 +42,14 @@
+ 
+   return notices;
+ }
++
++/** Presentation of sums: zero is valid only when at least one observation supports it. */
++export function formatCoveredReportValue(formattedValue: string, knownActions: number | undefined, totalActions: number): string {
++  return knownActions !== undefined && knownActions > 0 && totalActions > 0 ? formattedValue : "Non renseigné";
++}
++
++export function describeReportMeasurementCoverage(knownActions: number | undefined, totalActions: number): string {
++  if (totalActions <= 0) return "Aucune action dans la période";
++  if (knownActions === undefined) return "Couverture non renseignée";
++  return `${knownActions}/${totalActions} actions renseignées`;
++}
+diff --git a/apps/web/src/lib/reports/data-availability.test.ts b/apps/web/src/lib/reports/data-availability.test.ts
+--- a/apps/web/src/lib/reports/data-availability.test.ts
++++ b/apps/web/src/lib/reports/data-availability.test.ts
+@@ -52,3 +52,16 @@
+     ]);
+   });
+ });
++
++
++describe("report measurement display coverage", () => {
++  it("distinguishes unknown, empty, measured zero and partial sums", async () => {
++    const { formatCoveredReportValue, describeReportMeasurementCoverage } = await import("./data-availability");
++    expect(formatCoveredReportValue("0 kg", 0, 3)).toBe("Non renseigné");
++    expect(formatCoveredReportValue("0 kg", undefined, 3)).toBe("Non renseigné");
++    expect(formatCoveredReportValue("0 kg", 0, 0)).toBe("Non renseigné");
++    expect(formatCoveredReportValue("0 kg", 1, 3)).toBe("0 kg");
++    expect(describeReportMeasurementCoverage(1, 3)).toBe("1/3 actions renseignées");
++    expect(describeReportMeasurementCoverage(0, 0)).toBe("Aucune action dans la période");
++  });
++});
+diff --git a/apps/web/src/components/reports/reports-analysis-dashboard.tsx b/apps/web/src/components/reports/reports-analysis-dashboard.tsx
+--- a/apps/web/src/components/reports/reports-analysis-dashboard.tsx
++++ b/apps/web/src/components/reports/reports-analysis-dashboard.tsx
+@@ -1,22 +1,11 @@
+-import {
+-  Activity,
+-  CalendarDays,
+-  CheckCircle2,
+-  ChevronRight,
+-  CircleHelp,
+-  Download,
+-  Droplets,
+-  FileText,
+-  Leaf,
+-  MapPin,
+-  Recycle,
+-  Users,
+-} from "lucide-react";
+-import { PageHeader } from "@/components/ui/page-header";
++import { CalendarDays, Download, Leaf, Droplets, Recycle, Activity } from "lucide-react";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmButton } from "@/components/ui/cmm-button";
+ import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
+ import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
+ import { ReportsCommunityConversionKpis } from "@/components/reports/reports-community-conversion-kpis";
+ import { formatScorePercent } from "@/lib/formatters/score";
++import { buildReportDataAvailabilityNotices, describeReportMeasurementCoverage, formatCoveredReportValue, type ReportDataAvailability } from "@/lib/reports/data-availability";
+ import type { MethodDefinition } from "@/lib/pilotage/overview.types";
+ import type { MonthlyAnalyticsPoint } from "@/lib/pilotage/analytics-data-utils";
+ import type { ReportsSummaryKpi } from "@/lib/reports/page-data";
+@@ -35,286 +24,124 @@
+   report: ReportModel;
+   periodDays: number;
+   monthlyData: MonthlyAnalyticsPoint[];
+-};
+-
+-type ImpactMetric = {
+-  label: string;
+-  value: string;
+-  unit: string;
+-  tone: string;
+-  icon: typeof Leaf;
+-};
+-
+-type QualityMetric = {
+-  label: string;
+-  value: number;
+-  tone: "emerald" | "sky";
++  availability?: ReportDataAvailability;
+ };
+ 
+-function impactMetrics(report: ReportModel): ImpactMetric[] {
+-  return [
+-    {
+-      label: "Émissions évitées (proxy)",
+-      value: toFrNumber(report.climate.co2AvoidedKg),
+-      unit: "kg CO₂e",
+-      tone: "emerald",
+-      icon: Leaf,
+-    },
+-    {
+-      label: "Eau préservée (proxy)",
+-      value: toFrInt(report.climate.waterProtectedLiters),
+-      unit: "L",
+-      tone: "sky",
+-      icon: Droplets,
+-    },
+-    {
+-      label: "Masse recyclable estimée",
+-      value: toFrNumber(report.recycling.recyclableKg),
+-      unit: "kg",
+-      tone: "violet",
+-      icon: Recycle,
+-    },
+-    {
+-      label: "Indice de tri (proxy)",
+-      value: formatScorePercent(report.recycling.triIndex, 1).replace(" %", ""),
+-      unit: "%",
+-      tone: "amber",
+-      icon: Activity,
+-    },
+-  ];
+-}
+-
+-function qualityMetrics(report: ReportModel): QualityMetric[] {
++function buildImpactMetrics(report: ReportModel) {
++  const { totals, climate, recycling } = report;
++  const count = totals.actions;
++  const waste = totals.knownWasteActions;
++  const butts = totals.buttsKnownActions;
++  const wasteCoverage = describeReportMeasurementCoverage(waste, count);
++  const buttsCoverage = describeReportMeasurementCoverage(butts, count);
++  const triKnown = count > 0 && waste === count && butts === count && totals.kg > 0;
+   return [
+-    { label: "Complétude des données", value: report.quality.completenessScore, tone: "emerald" },
+-    { label: "Cohérence des données", value: report.quality.coherenceScore, tone: "emerald" },
+-    { label: "Couverture géolocalisée", value: report.map.geoCoverage, tone: "sky" },
+-    { label: "Couverture des traces", value: report.map.traceCoverage, tone: "sky" },
++    { label: "Émissions évitées (proxy)", value: formatCoveredReportValue(toFrNumber(climate.co2AvoidedKg) + " kg CO₂e", waste, count), coverage: wasteCoverage, icon: Leaf, tone: "text-emerald-700" },
++    { label: "Eau potentiellement préservée (proxy)", value: formatCoveredReportValue(toFrInt(climate.waterProtectedLiters) + " L", butts, count), coverage: buttsCoverage, icon: Droplets, tone: "text-sky-700" },
++    { label: "Masse recyclable estimée", value: formatCoveredReportValue(toFrNumber(recycling.recyclableKg) + " kg", waste, count), coverage: wasteCoverage, icon: Recycle, tone: "text-violet-700" },
++    { label: "Indice de tri (proxy)", value: triKnown ? formatScorePercent(recycling.triIndex, 1) : "Non comparable", coverage: triKnown ? "Masse et mégots renseignés sur toutes les actions" : "Exige une masse positive et les deux mesures sur le même corpus", icon: Activity, tone: "text-amber-700" },
+   ];
+ }
+ 
+-function formatGeneratedAt(value: string): string {
+-  const date = new Date(value);
+-  if (Number.isNaN(date.getTime())) return "indisponible";
+-  return date.toLocaleDateString("fr-FR", {
+-    day: "numeric",
+-    month: "short",
+-    year: "numeric",
+-  });
+-}
+-
+-function QualityRing({ metric }: { metric: QualityMetric }) {
+-  const safeValue = Math.min(Math.max(metric.value, 0), 100);
+-  const radius = 28;
+-  const circumference = 2 * Math.PI * radius;
+-  const offset = circumference - (safeValue / 100) * circumference;
+-  const stroke = metric.tone === "emerald" ? "#10b981" : "#2499e9";
+-
++function ImpactMetrics({ report }: { report: ReportModel }) {
+   return (
+-    <article className="rounded-2xl border border-slate-200/80 bg-white px-3 py-4 text-center shadow-[0_8px_20px_-18px_rgba(15,23,42,0.25)]">
+-      <h3 className="min-h-10 text-xs font-semibold leading-5 text-slate-700">{metric.label}</h3>
+-      <div className="relative mx-auto mt-2 h-[76px] w-[76px]" aria-label={`${metric.label}: ${formatScorePercent(metric.value, 1)}`} role="img">
+-        <svg viewBox="0 0 76 76" className="h-full w-full -rotate-90" aria-hidden="true">
+-          <circle cx="38" cy="38" r={radius} fill="none" stroke="#e8eef3" strokeWidth="6" />
+-          <circle
+-            cx="38"
+-            cy="38"
+-            r={radius}
+-            fill="none"
+-            stroke={stroke}
+-            strokeWidth="6"
+-            strokeLinecap="round"
+-            strokeDasharray={circumference}
+-            strokeDashoffset={offset}
+-          />
+-        </svg>
+-        <span className="absolute inset-0 flex items-center justify-center text-sm font-black tabular-nums text-slate-900">
+-          {formatScorePercent(metric.value, 1)}
+-        </span>
++    <section aria-labelledby="reports-impact-overview-title" className="space-y-3">
++      <div><h3 id="reports-impact-overview-title" className="text-lg font-bold cmm-text-primary">Équivalences environnementales</h3><p className="cmm-text-small cmm-text-secondary">Proxys calculés sur les données renseignées, pas des mesures d’effets réellement évités.</p></div>
++      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
++        {buildImpactMetrics(report).map(({ label, value, coverage, icon: Icon, tone }) => (
++          <CmmCard key={label} tone="slate" size="sm" className="min-w-0 space-y-2">
++            <div className="flex items-start gap-2"><Icon size={20} className={`shrink-0 ${tone}`} aria-hidden="true" /><h4 className="cmm-text-small font-semibold cmm-text-primary">{label}</h4></div>
++            <p className="text-xl font-bold tabular-nums cmm-text-primary">{value}</p>
++            <p className="cmm-text-small cmm-text-secondary">{coverage}</p>
++          </CmmCard>
++        ))}
+       </div>
+-      <p className="mt-2 text-xs font-semibold text-emerald-600">Score affiché en %</p>
+-    </article>
++    </section>
+   );
+ }
+ 
+-function ImpactMetricCard({ metric, periodDays }: { metric: ImpactMetric; periodDays: number }) {
+-  const Icon = metric.icon;
+-  const iconClasses = {
+-    emerald: "bg-emerald-50 text-emerald-600",
+-    sky: "bg-sky-50 text-sky-600",
+-    violet: "bg-violet-50 text-violet-600",
+-    amber: "bg-amber-50 text-amber-600",
+-  }[metric.tone];
+-
++function QualityMetrics({ report }: { report: ReportModel }) {
++  const { totals, quality, map, terrain } = report;
++  const mapCount = terrain.actionCount + terrain.spotCount + terrain.cleanPlaceCount;
++  const metrics = [
++    { label: "Complétude des données", value: quality.completenessScore, denominator: totals.actions },
++    { label: "Cohérence des données", value: quality.coherenceScore, denominator: totals.actions },
++    { label: "Couverture géolocalisée", value: map.geoCoverage, denominator: mapCount },
++    { label: "Couverture des traces", value: map.traceCoverage, denominator: mapCount },
++  ];
+   return (
+-    <article className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.25)]">
+-      <div className="flex items-start gap-3">
+-        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClasses}`}>
+-          <Icon size={23} strokeWidth={2} aria-hidden="true" />
+-        </span>
+-        <div className="min-w-0">
+-          <p className="text-xs font-semibold leading-5 text-slate-700">{metric.label}</p>
+-          <p className="mt-2 text-xl font-black tracking-tight text-slate-950">
+-            {metric.value} <span className="text-sm font-bold text-slate-700">{metric.unit}</span>
+-          </p>
+-        </div>
+-        <CircleHelp className="ml-auto shrink-0 text-slate-400" size={15} aria-hidden="true" />
+-      </div>
+-      <p className="mt-4 text-xs text-slate-500">Période active • {periodDays} jours glissants • valeur calculée selon la méthode active</p>
+-    </article>
++    <CmmCard as="section" tone="slate" className="space-y-4">
++      <div><h3 className="text-lg font-bold cmm-text-primary">Qualité des données et cartographie</h3><p className="cmm-text-small cmm-text-secondary">Qualité des enregistrements, distincte de l’impact environnemental. Les ratios sans dénominateur sont indisponibles.</p></div>
++      <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
++        {metrics.map(({ label, value, denominator }) => (
++          <div key={label} className="min-w-0 space-y-2">
++            <dt className="font-semibold cmm-text-small cmm-text-primary">{label}</dt>
++            <dd className="font-bold tabular-nums cmm-text-primary">{denominator > 0 && Number.isFinite(value) ? formatScorePercent(value, 1) : "Non disponible"}</dd>
++            {denominator > 0 && Number.isFinite(value) ? <progress aria-label={label} value={Math.max(0, Math.min(100, value))} max={100} className="h-2 w-full accent-rose-700" /> : null}
++          </div>
++        ))}
++      </dl>
++      <p className="cmm-text-caption cmm-text-secondary">Modèle calculé le {report.generatedAt || "date non disponible"}</p>
++    </CmmCard>
+   );
+ }
+ 
+ function ComparisonTable({ kpis, periodDays }: { kpis: readonly ReportsSummaryKpi[]; periodDays: number }) {
+   return (
+-    <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.25)]" aria-labelledby="reports-comparison-title">
+-      <div className="flex items-start justify-between gap-3">
+-        <div>
+-          <h3 id="reports-comparison-title" className="text-sm font-black text-slate-900">Comparaison de périodes</h3>
+-          <p className="mt-1 text-xs text-slate-500">{periodDays} jours actuels vs {periodDays} jours précédents • comparaison fournie par l&apos;overview de pilotage.</p>
+-        </div>
+-        <span className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600">{periodDays} jours précédents</span>
+-      </div>
+-
+-      {kpis.length > 0 ? (
+-        <div className="mt-5 divide-y divide-slate-100">
+-          {kpis.map((kpi) => (
+-            <div key={kpi.label} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-3 first:pt-0 last:pb-0">
+-              <p className="min-w-0 text-xs font-semibold text-slate-700">{kpi.label}</p>
+-              <div className="text-right">
+-                <p className="text-xs text-slate-500">{kpi.previousValue} → <span className="font-bold text-slate-900">{kpi.value}</span></p>
+-                <p className="mt-1 text-xs font-black text-emerald-600">{kpi.deltaPercent || kpi.deltaAbsolute || "Variation indisponible"}</p>
+-              </div>
+-            </div>
+-          ))}
+-        </div>
+-      ) : (
+-        <p className="mt-5 rounded-xl border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500">Aucune comparaison disponible pour cette vue.</p>
+-      )}
+-    </section>
++    <CmmCard as="section" tone="slate" className="min-w-0 space-y-3">
++      <h4 className="font-bold cmm-text-primary">Comparaison de périodes</h4>
++      <p className="cmm-text-small cmm-text-secondary">{periodDays} jours glissants et {periodDays} jours précédents, selon le référentiel de pilotage.</p>
++      {kpis.length ? <dl className="divide-y divide-slate-200">
++        {kpis.map((kpi) => (
++          <div key={kpi.label} className="space-y-1 py-3">
++            <dt className="font-semibold cmm-text-primary">{kpi.label}</dt>
++            <dd className="cmm-text-small cmm-text-secondary">{kpi.previousValue} → <strong className="cmm-text-primary">{kpi.value}</strong></dd>
++            <dd className={`cmm-text-small font-semibold ${kpi.interpretation === "positive" ? "text-emerald-800" : kpi.interpretation === "negative" ? "text-rose-800" : "cmm-text-secondary"}`}>{kpi.deltaPercent || kpi.deltaAbsolute || "Variation indisponible"}</dd>
++          </div>
++        ))}
++      </dl> : <p className="cmm-text-body cmm-text-secondary">Aucune comparaison disponible pour cette vue.</p>}
++    </CmmCard>
+   );
+ }
+ 
+-export function ReportsAnalysisDashboard({
+-  locale,
+-  roleLabel,
+-  primaryAction,
+-  secondaryAction,
+-  summaryKpis,
+-  methods,
+-  report,
+-  periodDays,
+-  monthlyData,
+-}: ReportsAnalysisDashboardProps) {
+-  const metrics = impactMetrics(report);
+-  const quality = qualityMetrics(report);
+-
++export function ReportsAnalysisDashboard({ locale, roleLabel, primaryAction, secondaryAction, summaryKpis, methods, report, periodDays, monthlyData, availability }: ReportsAnalysisDashboardProps) {
++  const notices = buildReportDataAvailabilityNotices(availability);
++  const { totals } = report;
++  const activity = [
++    { label: "Actions approuvées", value: toFrInt(totals.actions), detail: "Périmètre global · corpus chargé" },
++    { label: "Masse de déchets", value: formatCoveredReportValue(toFrNumber(totals.kg) + " kg", totals.knownWasteActions, totals.actions), detail: describeReportMeasurementCoverage(totals.knownWasteActions, totals.actions) },
++    { label: "Mégots", value: formatCoveredReportValue(toFrInt(totals.butts), totals.buttsKnownActions, totals.actions), detail: describeReportMeasurementCoverage(totals.buttsKnownActions, totals.actions) },
++    { label: "Participations", value: formatCoveredReportValue(toFrInt(totals.volunteers), totals.volunteersKnownActions, totals.actions), detail: describeReportMeasurementCoverage(totals.volunteersKnownActions, totals.actions) + " · pas des personnes uniques" },
++  ];
+   return (
+-    <div className="rounded-[2rem] border border-rose-100/80 bg-white/95 p-4 shadow-[0_26px_70px_-42px_rgba(190,24,93,0.35)] sm:p-6 lg:p-7">
+-      <PageHeader
+-        tone="red"
+-        headingLevel="h2"
+-        title="Rapports d&apos;impact"
+-        subtitle="Analysez la qualité de vos données, suivez vos KPI et comparez vos résultats dans le temps."
+-        action={
+-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+-            <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+-              <CalendarDays size={15} className="text-slate-500" aria-hidden="true" />
+-              {periodDays} jours glissants
+-            </div>
+-            <span className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+-              {roleLabel}
+-            </span>
+-            <a
+-              href="#exports"
+-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+-            >
+-              <Download size={15} aria-hidden="true" />
+-              Exporter un aperçu
+-            </a>
+-          </div>
+-        }
+-      />
+-
+-      <div className="mt-5 grid gap-3 rounded-2xl border border-red-100 bg-red-50/60 p-4 text-xs text-slate-600 sm:grid-cols-2">
+-        <p>
+-          <span className="font-black uppercase tracking-[0.14em] text-red-700">Provenance</span>
+-          <span className="mt-1 block leading-5">Actions approuvées, couverture cartographique et méthodes actives sur la période.</span>
+-        </p>
+-        <p>
+-          <span className="font-black uppercase tracking-[0.14em] text-red-700">Limites</span>
+-          <span className="mt-1 block leading-5">Les impacts sont des proxys : les données absentes restent non renseignées.</span>
+-        </p>
+-      </div>
+-
+-      <div className="mt-7 space-y-4">
+-        <section className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5" aria-labelledby="reports-impact-overview-title">
+-          <div className="flex flex-wrap items-center gap-2">
+-            <h2 id="reports-impact-overview-title" className="text-lg font-black text-red-700">Aperçu global</h2>
+-            <span className="text-sm font-semibold text-slate-500">(période sélectionnée)</span>
+-          </div>
+-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+-            {metrics.map((metric) => <ImpactMetricCard key={metric.label} metric={metric} periodDays={periodDays} />)}
+-          </div>
+-        </section>
+-
+-        <ReportsCommunityConversionKpis summary={report.community.conversion} />
+-
+-        <div className="grid gap-4 lg:grid-cols-[1.06fr_0.94fr]">
+-          <section className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5" aria-labelledby="reports-quality-title">
+-            <div className="flex items-center gap-2">
+-              <h2 id="reports-quality-title" className="text-lg font-black text-red-700">Qualité des données &amp; cartographie</h2>
+-              <CircleHelp size={15} className="text-slate-400" aria-hidden="true" />
+-            </div>
+-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+-              {quality.map((metric) => <QualityRing key={metric.label} metric={metric} />)}
+-            </div>
+-            <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+-              <span className="inline-flex items-center gap-2"><MapPin size={14} aria-hidden="true" /> Périmètre : Global • {periodDays} jours glissants</span>
+-              <span className="inline-flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-600" aria-hidden="true" /> Généré le {formatGeneratedAt(report.generatedAt)}</span>
+-            </div>
+-          </section>
+-
+-          <section id="method" className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5" aria-labelledby="reports-method-title">
+-            <h2 id="reports-method-title" className="text-lg font-black text-red-700">Méthodologie &amp; calcul des KPI</h2>
+-            <div className="mt-4">
+-              <KpiMethodBlock methods={methods} title="Référentiel KPI" />
+-            </div>
+-          </section>
++    <section className="space-y-6" aria-labelledby="reports-analysis-title">
++      <header className="flex flex-wrap items-start justify-between gap-4">
++        <div className="space-y-2"><h2 id="reports-analysis-title" className="text-xl font-bold cmm-text-primary">Analyse des résultats</h2><p className="cmm-text-body cmm-text-secondary">Activité, tendances, qualité et limites du corpus approuvé.</p><p className="flex flex-wrap items-center gap-2 cmm-text-small cmm-text-secondary"><CalendarDays size={16} aria-hidden="true" /> Global · {periodDays} jours glissants · {roleLabel}</p></div>
++        <CmmButton href="#exports" tone="secondary"><Download size={16} aria-hidden="true" /> Accéder aux exports</CmmButton>
++      </header>
++      {notices.length ? <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{notices.map((notice) => <p key={notice}>{notice}</p>)}</div> : null}
++      {totals.actions === 0 ? <p role="status" className="rounded-xl border border-slate-200 p-4 cmm-text-body cmm-text-secondary">Aucune action approuvée dans le corpus chargé sur cette période. Aucun résultat physique ne peut en être déduit.</p> : null}
++      <section aria-label="Activité de terrain" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
++        {activity.map(({ label, value, detail }) => <CmmCard key={label} tone="family" size="sm" className="min-w-0 space-y-2"><h3 className="font-semibold cmm-text-small cmm-text-primary">{label}</h3><p className="text-2xl font-bold tabular-nums cmm-text-primary">{value}</p><p className="cmm-text-small cmm-text-secondary">{detail}</p></CmmCard>)}
++      </section>
++      <section id="comparisons" aria-labelledby="reports-trends-title" className="space-y-3">
++        <h3 id="reports-trends-title" className="text-lg font-bold cmm-text-primary">Tendances et comparaisons</h3>
++        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
++          <CmmCard tone="slate" className="min-w-0 space-y-3"><h4 className="font-bold cmm-text-primary">Évolution de la collecte</h4><p className="cmm-text-small cmm-text-secondary">Mois disponibles dans les 12 derniers mois glissants. Les périodes du graphique et du bilan ne sont pas identiques.</p><AnalyticsCockpit data={monthlyData} /></CmmCard>
++          <ComparisonTable kpis={summaryKpis} periodDays={periodDays} />
+         </div>
+-
+-        <p className="flex items-center justify-center gap-2 px-4 text-center text-xs text-slate-500">
+-          <FileText size={14} aria-hidden="true" /> Détails des formules, sources et limites disponibles dans le référentiel ci-dessus.
+-        </p>
+-
+-        <section id="comparisons" className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5" aria-labelledby="reports-trends-title">
+-          <div className="flex items-center gap-2">
+-            <h2 id="reports-trends-title" className="text-lg font-black text-red-700">Tendances &amp; comparaisons</h2>
+-            <Activity size={15} className="text-slate-400" aria-hidden="true" />
+-          </div>
+-          <div className="mt-4 grid gap-4 lg:grid-cols-[1.35fr_0.9fr]">
+-            <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4">
+-              <div className="flex items-center gap-2 px-1">
+-                <h3 className="text-sm font-black text-slate-900">Évolution de la collecte</h3>
+-                <span className="text-xs text-slate-500">(12 derniers mois glissants)</span>
+-              </div>
+-              <div className="mt-2"><AnalyticsCockpit data={monthlyData} /></div>
+-            </div>
+-            <ComparisonTable kpis={summaryKpis} periodDays={periodDays} />
+-          </div>
+-        </section>
+-      </div>
+-
+-      <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
+-        <a href={primaryAction.href} className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-[0_12px_24px_-14px_rgba(220,38,38,0.6)] transition hover:bg-red-700">
+-          <Users size={16} aria-hidden="true" /> {primaryAction.label[locale]}
+-        </a>
+-        {secondaryAction ? (
+-          <a href={secondaryAction.href} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700">
+-            {secondaryAction.label[locale]} <ChevronRight size={16} aria-hidden="true" />
+-          </a>
+-        ) : null}
+-      </div>
+-    </div>
++      </section>
++      <ImpactMetrics report={report} />
++      <QualityMetrics report={report} />
++      {availability?.communityEventsAvailability === "unavailable" || availability?.communityEventsAvailability === "partial"
++        ? <CmmCard tone="slate" as="section"><h3 className="font-bold cmm-text-primary">Engagement des événements communautaires</h3><p className="cmm-text-body cmm-text-secondary">Indicateurs indisponibles : la source ou l’attribution des événements est incomplète.</p></CmmCard>
++        : <ReportsCommunityConversionKpis summary={report.community.conversion} />}
++      <CmmCard as="section" tone="slate" className="space-y-3">
++        <h3 className="text-lg font-bold cmm-text-primary">Méthodes, sources et limites</h3>
++        <details id="method"><summary className="cursor-pointer font-semibold cmm-text-primary">Consulter le référentiel KPI</summary><div className="mt-4"><KpiMethodBlock methods={methods} title="Référentiel KPI" /></div></details>
++        <CmmButton href="/methodologie" tone="tertiary">Lire la méthodologie scientifique</CmmButton>
++      </CmmCard>
++      <div className="flex flex-wrap gap-2"><CmmButton href={primaryAction.href} tone="primary">{primaryAction.label[locale]}</CmmButton>{secondaryAction ? <CmmButton href={secondaryAction.href} tone="secondary">{secondaryAction.label[locale]}</CmmButton> : null}</div>
++    </section>
+   );
+ }
+diff --git a/apps/web/src/app/(app)/reports/page-content.tsx b/apps/web/src/app/(app)/reports/page-content.tsx
+--- a/apps/web/src/app/(app)/reports/page-content.tsx
++++ b/apps/web/src/app/(app)/reports/page-content.tsx
+@@ -10,6 +10,7 @@
+   type ReportsPublicSummary,
+ } from "@/lib/reports/page-data";
+ import type { Locale } from "@/lib/ui/preferences";
++import type { CommunityEventsAvailability } from "@/lib/reports/data-availability";
+ import type { ProfileAction } from "@/lib/profiles";
+ import type { PilotageOverview } from "@/lib/pilotage/overview";
+ import type { ReportModel } from "@/lib/reports/report-model/types";
+@@ -28,7 +29,8 @@
+   primaryAction: ProfileAction;
+   secondaryAction?: ProfileAction | null;
+   summaryKpis: ReturnType<typeof buildReportsSummaryKpis>;
+-  overview: Pick<PilotageOverview, "methods" | "periodDays"> | null;
++  overview: (Pick<PilotageOverview, "methods" | "periodDays"> & Partial<Pick<PilotageOverview, "dataAvailability">>) | null;
++  communityEventsAvailability?: CommunityEventsAvailability;
+   report: ReportModel;
+   monthlyData: ReportsAnalysisData["monthlyData"];
+   dailyExportAvailability: ReportExportAvailability;
+@@ -41,6 +43,7 @@
+   secondaryAction,
+   summaryKpis,
+   overview,
++  communityEventsAvailability,
+   report,
+   monthlyData,
+   dailyExportAvailability,
+@@ -57,6 +60,7 @@
+         report={report}
+         periodDays={overview?.periodDays ?? 90}
+         monthlyData={monthlyData}
++        availability={{ ...overview?.dataAvailability, communityEventsAvailability }}
+       />
+ 
+       <section id="exports">
+@@ -64,7 +68,7 @@
+           <SectionHeader
+             eyebrow="Exports"
+             title="Livrables"
+-            subtitle="Les exports sont regroupés plus bas pour alléger l&apos;ouverture."
++            subtitle="Exporter les données autorisées. Les rapports PDF se configurent dans l’onglet Génération."
+             titleSize="sm"
+             eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted"
+             subtitleClassName="cmm-text-small cmm-text-secondary mt-1"
+diff --git a/apps/web/src/app/(app)/reports/page-orchestration.tsx b/apps/web/src/app/(app)/reports/page-orchestration.tsx
+--- a/apps/web/src/app/(app)/reports/page-orchestration.tsx
++++ b/apps/web/src/app/(app)/reports/page-orchestration.tsx
+@@ -101,6 +101,6 @@
+   const roleLabel = getProfileLabel(profile, params.locale);
+   const analysisContent = analysisResult.availability === "unavailable"
+     ? buildReportsAnalysisUnavailableContent()
+-    : buildReportsAnalysisContent({ locale: params.locale, roleLabel, primaryAction: getProfilePrimaryAction(profile), secondaryAction: getProfileSecondaryAction(profile), summaryKpis: buildReportsSummaryKpis(analysisResult.data.overview), overview: analysisResult.data.overview, report: analysisResult.data.report, monthlyData: analysisResult.data.monthlyData, dailyExportAvailability });
++    : buildReportsAnalysisContent({ locale: params.locale, roleLabel, primaryAction: getProfilePrimaryAction(profile), secondaryAction: getProfileSecondaryAction(profile), summaryKpis: buildReportsSummaryKpis(analysisResult.data.overview), overview: analysisResult.data.overview, communityEventsAvailability: analysisResult.data.communityEventsAvailability, report: analysisResult.data.report, monthlyData: analysisResult.data.monthlyData, dailyExportAvailability });
+   return <AccountCompletionGate state={params.accountCompletion}><ReportsPageV2Layout activeTab="analysis" analysisContent={analysisContent} /></AccountCompletionGate>;
+ }
+diff --git a/apps/web/src/components/reports/reports-analysis-dashboard.test.tsx b/apps/web/src/components/reports/reports-analysis-dashboard.test.tsx
+--- a/apps/web/src/components/reports/reports-analysis-dashboard.test.tsx
++++ b/apps/web/src/components/reports/reports-analysis-dashboard.test.tsx
+@@ -17,7 +17,8 @@
+ 
+ const report = {
+   generatedAt: "2026-08-26T12:00:00.000Z",
+-  totals: { actions: 2, kg: 12.3, butts: 4, volunteers: 3, hours: 4.5 },
++  totals: { actions: 2, kg: 12.3, butts: 4, volunteers: 3, hours: 4.5, knownWasteActions: 2, buttsKnownActions: 2, volunteersKnownActions: 2 },
++  terrain: { actionCount: 2, spotCount: 0, cleanPlaceCount: 0 },
+   map: { points: 2, traces: 1, polylines: 1, polygons: 0, geoCoverage: 81.2, traceCoverage: 63.4 },
+   quality: { completenessScore: 91.3, coherenceScore: 87.6, freshnessDays: 2.5, geolocRate: 81.2 },
+   recycling: { recyclableKg: 6.7, triIndex: 72.4 },
+@@ -58,7 +59,7 @@
+   volunteers: 3,
+ }];
+ 
+-function renderAnalysisDashboard() {
++function renderAnalysisDashboard(model = report) {
+   return renderToStaticMarkup(
+     React.createElement(ReportsAnalysisDashboard, {
+       locale: "fr",
+@@ -67,7 +68,7 @@
+       secondaryAction: null,
+       summaryKpis: [],
+       methods: [method],
+-      report,
++      report: model,
+       periodDays: 90,
+       monthlyData,
+     }),
+@@ -78,7 +79,7 @@
+   it("keeps the report submodule heading secondary", () => {
+     const markup = renderAnalysisDashboard();
+ 
+-    expect(markup).toMatch(/<h2>Rapports d(?:&#x27;|’)impact<\/h2>/);
++    expect(markup).toContain("Analyse des résultats");
+     expect(markup).not.toMatch(/<h1\b/);
+   });
+ 
+@@ -88,15 +89,15 @@
+     expect(markup).toContain("Émissions évitées (proxy)");
+     expect(markup).toContain("14,4");
+     expect(markup).toContain("kg CO₂e");
+-    expect(markup).toContain("Eau préservée (proxy)");
++    expect(markup).toContain("Eau potentiellement préservée (proxy)");
+     expect(markup).toContain("250");
+-    expect(markup).toContain(">L</span>");
++    expect(markup).toContain("250 L");
+     expect(markup).toContain("Masse recyclable estimée");
+     expect(markup).toContain("6,7");
+-    expect(markup).toContain(">kg</span>");
++    expect(markup).toContain("6,7 kg");
+     expect(markup).toContain("Indice de tri (proxy)");
+     expect(markup).toContain("72,4");
+-    expect(markup).toContain("Score affiché en %");
++    expect(markup).toContain("2/2 actions renseignées");
+     expect(markup).toContain("Complétude des données");
+     expect(markup).toContain("Cohérence des données");
+     expect(markup).toContain("Couverture géolocalisée");
+@@ -120,6 +121,17 @@
+     expect(markup).not.toContain("65%");
+   });
+ 
++  it("does not present empty or missing measurements as physical zeros", () => {
++    const empty = renderAnalysisDashboard({ ...report, totals: { ...report.totals, actions: 0, knownWasteActions: 0, buttsKnownActions: 0, volunteersKnownActions: 0 }, terrain: { actionCount: 0, spotCount: 0, cleanPlaceCount: 0 } });
++    expect(empty).toContain("Aucune action approuvée");
++    expect(empty).toContain("Non renseigné");
++    expect(empty).toContain("Non comparable");
++    expect(empty).not.toContain("14,4 kg CO₂e");
++    const partial = renderAnalysisDashboard({ ...report, totals: { ...report.totals, knownWasteActions: 1 } });
++    expect(partial).toContain("1/2 actions renseignées");
++    expect(partial).toContain("Non comparable");
++  });
++
+   it("exposes keyboard-navigable disclosure markup for the methodology", () => {
+     const markup = renderAnalysisDashboard();
+ 
+diff --git a/apps/web/src/lib/pilotage/analytics-data-utils.ts b/apps/web/src/lib/pilotage/analytics-data-utils.ts
+--- a/apps/web/src/lib/pilotage/analytics-data-utils.ts
++++ b/apps/web/src/lib/pilotage/analytics-data-utils.ts
+@@ -8,12 +8,13 @@
+   wasteKnownActions: number;
+   wasteCoverageRate: number;
+   volunteers: number;
++  volunteersKnownActions?: number;
+ };
+ 
+ export function aggregateMonthlyAnalytics(contracts: ActionDataContract[]): MonthlyAnalyticsPoint[] {
+   const months: Record<
+     string,
+-    { kg: number; actionCount: number; wasteKnownActions: number; volunteers: number }
++    { kg: number; actionCount: number; wasteKnownActions: number; volunteers: number; volunteersKnownActions: number }
+   > = {};
+   
+   // Sort by date to ensure chronological order later
+@@ -29,7 +30,7 @@
+     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+     
+     if (!months[key]) {
+-      months[key] = { kg: 0, actionCount: 0, wasteKnownActions: 0, volunteers: 0 };
++      months[key] = { kg: 0, actionCount: 0, wasteKnownActions: 0, volunteers: 0, volunteersKnownActions: 0 };
+     }
+     
+     const impact = computeActionImpactKpis(c);
+@@ -38,7 +39,10 @@
+       months[key].kg += impact.wasteKg;
+       months[key].wasteKnownActions += 1;
+     }
+-    months[key].volunteers += impact.volunteers;
++    if (impact.volunteersKnown) {
++      months[key].volunteers += impact.volunteers;
++      months[key].volunteersKnownActions += 1;
++    }
+   });
+ 
+   return Object.entries(months).map(([key, val]) => ({
+@@ -48,6 +52,7 @@
+     wasteKnownActions: val.wasteKnownActions,
+     wasteCoverageRate:
+       val.actionCount > 0 ? (val.wasteKnownActions / val.actionCount) * 100 : 0,
+-    volunteers: val.volunteers
++    volunteers: val.volunteers,
++    volunteersKnownActions: val.volunteersKnownActions
+   })).slice(-12); // Last 12 months
+ }
+diff --git a/apps/web/src/lib/pilotage/analytics-data-utils.test.ts b/apps/web/src/lib/pilotage/analytics-data-utils.test.ts
+--- a/apps/web/src/lib/pilotage/analytics-data-utils.test.ts
++++ b/apps/web/src/lib/pilotage/analytics-data-utils.test.ts
+@@ -6,7 +6,7 @@
+   id: string,
+   type: "action" | "spot" | "clean_place",
+   wasteKg: number | null,
+-  volunteersCount: number,
++  volunteersCount: number | null,
+ ) {
+   return buildActionDataContract({
+     id,
+@@ -45,6 +45,12 @@
+       actionCount: 2,
+       wasteKnownActions: 1,
+       wasteCoverageRate: 50,
++      volunteersKnownActions: 2,
+     });
+   });
++
++  it("preserves explicitly declared zero and distinguishes missing participation", () => {
++    const [point] = aggregateMonthlyAnalytics([makeContract("zero", "action", 0, 0), makeContract("missing", "action", null, null)]);
++    expect(point).toMatchObject({ kg: 0, volunteers: 0, actionCount: 2, wasteKnownActions: 1, volunteersKnownActions: 1 });
++  });
+ });
+diff --git a/apps/web/src/components/reports/analytics-cockpit.tsx b/apps/web/src/components/reports/analytics-cockpit.tsx
+--- a/apps/web/src/components/reports/analytics-cockpit.tsx
++++ b/apps/web/src/components/reports/analytics-cockpit.tsx
+@@ -27,8 +27,9 @@
+     );
+   }
+ 
++  const plottedData = data.map((point) => ({ ...point, kg: point.wasteKnownActions > 0 ? point.kg : null, volunteers: (point.volunteersKnownActions ?? 0) > 0 ? point.volunteers : null }));
+   return (
+-    <div className="w-full">
++    <div className="w-full min-w-0">
+       <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 px-1">
+         <div className="flex items-center gap-2">
+           <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+@@ -36,13 +37,13 @@
+         </div>
+         <div className="flex items-center gap-2">
+           <span className="h-2 w-2 rounded-full bg-sky-500" aria-hidden="true" />
+-          <span className="text-xs font-semibold text-slate-600">Bénévoles</span>
++          <span className="text-xs font-semibold text-slate-600">Participations</span>
+         </div>
+       </div>
+       
+       <div className="h-[300px] w-full">
+         <ResponsiveContainer width="100%" height="100%">
+-          <LineChart data={data} margin={{ top: 8, right: 12, left: -20, bottom: 8 }}>
++          <LineChart data={plottedData} margin={{ top: 8, right: 12, left: -20, bottom: 8 }}>
+             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8eef3" />
+             <XAxis 
+               dataKey="month" 
+@@ -78,27 +79,33 @@
+             />
+             <Line
+               yAxisId="left" 
+-              type="monotone"
++              type="linear"
+               dataKey="kg"
+               name="Masse collectée (kg)"
+               stroke="#10b981"
+               strokeWidth={2.5}
++              connectNulls={false}
++              isAnimationActive={false}
+               dot={{ r: 3, fill: "#10b981", strokeWidth: 2, stroke: "#ffffff" }}
+               activeDot={{ r: 5, strokeWidth: 2, stroke: "#ffffff" }}
+             />
+             <Line 
+               yAxisId="right" 
+-              type="monotone" 
++              type="linear" 
+               dataKey="volunteers" 
+-              name="Bénévoles" 
++              name="Participations" 
+               stroke="#2499e9"
+               strokeWidth={2.5}
++              connectNulls={false}
++              isAnimationActive={false}
+               dot={{ r: 3, fill: "#2499e9", strokeWidth: 2, stroke: "#ffffff" }}
+               activeDot={{ r: 5, strokeWidth: 2, stroke: "#ffffff" }}
+             />
+           </LineChart>
+         </ResponsiveContainer>
+       </div>
++      <p className="mt-3 cmm-text-caption cmm-text-secondary">Sommes des mesures renseignées. Un point absent signifie une mesure inconnue ; les mois partiels ne représentent pas un total exhaustif. Les participations ne sont pas des personnes uniques.</p>
++      <details className="mt-3"><summary className="cursor-pointer text-sm font-semibold cmm-text-primary">Données mensuelles et couverture</summary><div className="mt-2 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr><th scope="col">Mois</th><th scope="col">Masse connue (kg)</th><th scope="col">Actions avec masse</th><th scope="col">Participations</th><th scope="col">Actions avec effectif</th></tr></thead><tbody>{data.map((point) => <tr key={point.month} className="border-t border-slate-200"><th scope="row" className="py-2">{point.month}</th><td>{point.wasteKnownActions > 0 ? point.kg.toLocaleString("fr-FR") : "Non renseigné"}</td><td>{point.wasteKnownActions}/{point.actionCount}</td><td>{(point.volunteersKnownActions ?? 0) > 0 ? point.volunteers.toLocaleString("fr-FR") : "Non renseigné"}</td><td>{point.volunteersKnownActions === undefined ? "Non renseigné" : `${point.volunteersKnownActions}/${point.actionCount}`}</td></tr>)}</tbody></table></div></details>
+     </div>
+   );
+ }
