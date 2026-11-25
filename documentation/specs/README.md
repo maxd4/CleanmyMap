@@ -2,7 +2,9 @@
 
 **Statut : PLAN / HISTORY.** Une spec ne déclare jamais une fonction existante ni ne vaut autorisation de modifier le code. Les sources CURRENT restent le runtime, ses tests et les contrats spécialisés.
 
-## Dossier réellement présent
+## Dossiers réellement présents
+
+- [annuaire-ui/README_CODEX.md](./annuaire-ui/README_CODEX.md) : refonte ciblée de l'Annuaire Web, PLAN/CANDIDATE, correctif initial des cartes et lots d'intégration.
 
 - [suppression-charte-dark/requirements.md](./suppression-charte-dark/requirements.md) : exigences proposées et non exécutées comme chantier autonome.
 - [suppression-charte-dark/design.md](./suppression-charte-dark/design.md) : conception historique.
