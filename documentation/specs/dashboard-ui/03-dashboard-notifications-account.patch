@@ -1,0 +1,397 @@
+diff --git a/apps/web/src/components/dashboard/dashboard-notifications-section.tsx b/apps/web/src/components/dashboard/dashboard-notifications-section.tsx
+--- a/apps/web/src/components/dashboard/dashboard-notifications-section.tsx
++++ b/apps/web/src/components/dashboard/dashboard-notifications-section.tsx
+@@ -7,6 +7,8 @@
+ 
+ import { NotificationListItem } from "@/components/notifications/notification-list-item";
+ import { CmmButton } from "@/components/ui/cmm-button";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
+ import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+ import { logFailure } from "@/lib/logging/failure-log";
+@@ -273,19 +275,45 @@
+   onLoadMore: () => Promise<void>;
+ }) {
+   return (
+-    <section id="notifications" aria-labelledby="dashboard-notifications-title" className="scroll-mt-28 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.22)_100%)] p-6 shadow-[0_18px_42px_-28px_rgba(124,45,18,0.3)] sm:p-8">
+-      <div className="flex items-center justify-between gap-4 border-b border-amber-200/18 pb-4">
++    <section id="notifications" aria-labelledby="dashboard-notifications-title" className="scroll-mt-28">
++      <CmmCard className="space-y-4">
++      <div className="flex items-center justify-between gap-3">
+         <div>
+-          <p className="cmm-text-caption font-bold uppercase tracking-[0.3em] text-amber-100/80">{locale === "fr" ? "Centre de suivi" : "Activity center"}</p>
+-          <h2 id="dashboard-notifications-title" className="mt-1 text-2xl font-black tracking-tight text-white">Notifications</h2>
++          <h2 id="dashboard-notifications-title" className="text-xl font-bold cmm-text-primary">Notifications</h2>
+         </div>
+         {loading ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-amber-300 border-t-transparent" role="status" aria-label={locale === "fr" ? "Chargement" : "Loading"} /> : null}
+       </div>
+-      <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label={locale === "fr" ? "Vues des notifications" : "Notification views"}>
+-        <button type="button" role="tab" aria-selected={view === "pending"} onClick={() => setView("pending")} className="rounded-xl border border-amber-200/25 px-3 py-2 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80">À traiter{pendingCount > 0 ? ` (${pendingCount})` : ""}</button>
+-        <button type="button" role="tab" aria-selected={view === "information"} onClick={() => setView("information")} className="rounded-xl border border-amber-200/25 px-3 py-2 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80">Informations</button>
++      <div
++        role="tablist"
++        aria-label={locale === "fr" ? "Vues des notifications" : "Notification views"}
++        className={tabStripClassName("family", "grid-cols-2")}
++        onKeyDown={(event) => {
++          const target = event.key === "Home" ? "pending"
++            : event.key === "End" ? "information"
++            : event.key === "ArrowLeft" || event.key === "ArrowRight"
++              ? (view === "pending" ? "information" : "pending") : null;
++          if (!target) return;
++          event.preventDefault();
++          setView(target);
++          event.currentTarget.querySelector<HTMLButtonElement>(`#dashboard-notification-tab-${target}`)?.focus();
++        }}
++      >
++        <button type="button" role="tab" id="dashboard-notification-tab-pending"
++          aria-selected={view === "pending"} aria-controls="dashboard-notification-panel"
++          tabIndex={view === "pending" ? 0 : -1} onClick={() => setView("pending")}
++          className={tabItemClassName("family", view === "pending")}>
++          {locale === "fr" ? "À traiter" : "To review"}{pendingCount > 0 ? ` (${pendingCount})` : ""}
++        </button>
++        <button type="button" role="tab" id="dashboard-notification-tab-information"
++          aria-selected={view === "information"} aria-controls="dashboard-notification-panel"
++          tabIndex={view === "information" ? 0 : -1} onClick={() => setView("information")}
++          className={tabItemClassName("family", view === "information")}>
++          {locale === "fr" ? "Informations" : "Information"}
++        </button>
+       </div>
+-      {missingPendingCount > 0 && view === "pending" ? <p className="pt-3 text-sm text-amber-100/90" role="alert">{missingPendingCount} décision(s) métier sont encore ouvertes, mais leur notification n&apos;est pas accessible dans cette session. Actualisez avant de décider.</p> : null}
++      <div id="dashboard-notification-panel" role="tabpanel"
++        aria-labelledby={`dashboard-notification-tab-${view}`} tabIndex={0}>
++      {missingPendingCount > 0 && view === "pending" ? <p className="pt-3 text-sm cmm-text-secondary" role="alert">{missingPendingCount} décision(s) métier sont encore ouvertes, mais leur notification n&apos;est pas accessible dans cette session. Actualisez avant de décider.</p> : null}
+       <DashboardNotificationContent
+         isLoaded={isLoaded}
+         locale={locale}
+@@ -302,6 +330,8 @@
+         onMuteAction={onMuteAction}
+         onLoadMore={onLoadMore}
+       />
++      </div>
++      </CmmCard>
+     </section>
+   );
+ }
+@@ -338,39 +368,39 @@
+   onLoadMore: () => Promise<void>;
+ }) {
+   if (decisionState.decisionStateError && missingPendingCount === 0) {
+-    return <p className="pt-3 text-sm text-amber-100/75" role="status">Les décisions disponibles n&apos;ont pas pu être actualisées.</p>;
++    return <p className="pt-3 text-sm cmm-text-secondary" role="status">Les décisions disponibles n&apos;ont pas pu être actualisées.</p>;
+   }
+   if (!isLoaded || (loading && visibleNotifications.length === 0)) {
+     return <DashboardNotificationsLoading locale={locale} />;
+   }
+   if (error && visibleNotifications.length === 0) {
+-    return <p className="pt-5 text-sm leading-relaxed text-amber-50/85">{locale === "fr" ? "Les notifications sont momentanément indisponibles." : "Notifications are temporarily unavailable."}</p>;
++    return <p className="pt-5 text-sm leading-relaxed cmm-text-secondary">{locale === "fr" ? "Les notifications sont momentanément indisponibles." : "Notifications are temporarily unavailable."}</p>;
+   }
+   if (view === "pending" && missingPendingCount > 0 && visibleNotifications.length === 0) {
+-    return <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold text-amber-50">Certaines décisions ne peuvent pas être affichées</p></div>;
++    return <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold cmm-text-primary">Certaines décisions ne peuvent pas être affichées</p></div>;
+   }
+   if (visibleNotifications.length === 0) {
+-    return <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold text-amber-50">{view === "pending" ? "Aucune décision à traiter" : "Aucune notification"}</p>{view === "information" && hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : null}</div>;
++    return <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold cmm-text-primary">{view === "pending" ? "Aucune décision à traiter" : "Aucune notification"}</p>{view === "information" && hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : null}</div>;
+   }
+   return (
+     <>
+       <DashboardNotificationList visibleNotifications={visibleNotifications} locale={locale} stateFor={stateFor} decisionState={decisionState} onOpen={onOpen} onMuteAction={onMuteAction} />
+-      {error ? <p className="pt-4 text-sm leading-relaxed text-amber-100/85" role="alert">Le chargement des notifications a échoué.</p> : null}
+-      {view === "information" ? (hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : <p className="pt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/54">Fin de l&apos;historique des notifications</p>) : null}
++      {error ? <p className="pt-4 text-sm leading-relaxed cmm-text-danger" role="alert">Le chargement des notifications a échoué.</p> : null}
++      {view === "information" ? (hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : <p className="pt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] cmm-text-secondary">Fin de l&apos;historique des notifications</p>) : null}
+     </>
+   );
+ }
+ 
+ function DashboardNotificationsLoading({ locale }: { locale: "fr" | "en" }) {
+-  return <div className="space-y-3 pt-5" role="status" aria-live="polite" aria-busy="true" aria-label={locale === "fr" ? "Chargement des notifications" : "Loading notifications"}><CmmSkeleton className="h-14 rounded-2xl bg-amber-950/35" /><CmmSkeleton className="h-14 rounded-2xl bg-amber-950/35" /></div>;
++  return <div className="space-y-3 pt-5" role="status" aria-live="polite" aria-busy="true" aria-label={locale === "fr" ? "Chargement des notifications" : "Loading notifications"}><CmmSkeleton className="h-14" /><CmmSkeleton className="h-14" /></div>;
+ }
+ 
+ function DashboardLoadMoreButton({ loadingMore, onLoadMore }: { loadingMore: boolean; onLoadMore: () => Promise<void> }) {
+-  return <CmmButton type="button" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onLoadMore(); }} loading={loadingMore} tone="tertiary" width="wide" className="mt-5 w-full border-amber-200/24 bg-amber-100/[0.08] text-amber-50 hover:bg-amber-100/[0.14]">{loadingMore ? "Chargement…" : "Afficher plus"}</CmmButton>;
++  return <CmmButton type="button" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onLoadMore(); }} loading={loadingMore} tone="tertiary" width="wide" className="mt-5">{loadingMore ? "Chargement…" : "Afficher plus"}</CmmButton>;
+ }
+ 
+ function CheckMark() {
+-  return <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-200/18 bg-amber-100/[0.08] text-amber-100/75">✓</div>;
++  return <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-current/15 cmm-text-secondary">✓</div>;
+ }
+ 
+ export function appendUniqueNotifications(current: AppNotification[], incoming: AppNotification[]) {
+diff --git a/apps/web/src/components/notifications/notification-list-item.tsx b/apps/web/src/components/notifications/notification-list-item.tsx
+--- a/apps/web/src/components/notifications/notification-list-item.tsx
++++ b/apps/web/src/components/notifications/notification-list-item.tsx
+@@ -118,21 +118,21 @@
+     <article
+       data-notification-state={displayState}
+       className={`relative flex w-full border-b px-3.5 py-3 transition-colors ${
+-        compact ? "border-white/10" : "border-amber-200/14"
++        compact ? "border-white/10" : "border-current/10"
+       } ${
+         compact
+           ? isUnread
+             ? "bg-white/[0.05]"
+             : "bg-white/[0.015]"
+           : isUnread
+-            ? "bg-amber-100/[0.08]"
+-            : "bg-amber-950/[0.12]"
++            ? "bg-amber-500/[0.06]"
++            : "bg-transparent"
+       }`}
+     >
+       {isUnread ? (
+         <span
+           className={`absolute left-1.5 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full ${
+-            compact ? "bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" : "bg-amber-300"
++            compact ? "bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" : "bg-amber-600"
+           }`}
+           aria-label={locale === "fr" ? "Non lue" : "Unread"}
+         />
+@@ -142,7 +142,7 @@
+           className={`rounded-xl border p-2 ${
+             compact
+               ? `border-white/10 ${isUnread ? "bg-white/[0.06]" : "bg-white/[0.03] opacity-70"}`
+-              : `border-amber-200/20 ${isUnread ? "bg-amber-100/[0.12]" : "bg-amber-950/[0.16] opacity-70"}`
++              : `border-current/10 ${isUnread ? "bg-amber-500/[0.08]" : "bg-transparent"}`
+           }`}
+         >
+           {getNotificationIcon(notification.type)}
+@@ -160,7 +160,7 @@
+           displayState={displayState}
+           onClick={onClick}
+         />
+-        <NotificationDecisionActions decision={decision} locale={locale} />
++        <NotificationDecisionActions decision={decision} locale={locale} compact={compact} />
+         <NotificationMuteAction
+           notification={notification}
+           locale={locale}
+@@ -193,7 +193,7 @@
+         event.stopPropagation();
+         onMuteAction(actionId);
+       }}
+-      className={`mt-2 text-xs font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 ${compact ? "text-sky-300 focus-visible:ring-sky-300" : "text-amber-100/80 focus-visible:ring-amber-200"}`}
++      className={`mt-2 text-xs font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 ${compact ? "text-sky-300 focus-visible:ring-sky-300" : "cmm-text-secondary focus-visible:ring-amber-600"}`}
+     >
+       {locale === "fr" ? "Masquer les informations de cette action" : "Hide information for this action"}
+     </button>
+@@ -222,37 +222,33 @@
+   onClick: (notification: AppNotification) => void;
+ }) {
+   const actionEventLabel = getActionEventLabel(notification, locale);
+-  const titleClass = isUnread
+-    ? compact ? "text-white" : "text-amber-50"
+-    : compact ? "text-white/60" : "text-amber-100/62";
+-  const contentClass = isUnread
+-    ? compact ? "text-white/72" : "text-amber-50/82"
+-    : compact ? "text-white/54" : "text-amber-100/62";
++  const titleClass = compact ? (isUnread ? "text-white" : "text-white/60") : "cmm-text-primary";
++  const contentClass = compact ? (isUnread ? "text-white/72" : "text-white/54") : "cmm-text-secondary";
+   const stateClass = displayState === "decision_pending"
+-    ? "border-amber-300/50 text-amber-200"
++    ? (compact ? "border-amber-300/50 text-amber-200" : "border-current/30 cmm-text-warning")
+     : displayState === "unavailable"
+-      ? "border-slate-300/30 text-slate-300/80"
++      ? (compact ? "border-slate-300/30 text-slate-300/80" : "border-current/20 cmm-text-secondary")
+       : displayState === "treated"
+-        ? "border-emerald-300/40 text-emerald-200"
+-        : compact ? "border-white/15 text-white/65" : "border-amber-200/25 text-amber-100/75";
++        ? (compact ? "border-emerald-300/40 text-emerald-200" : "border-current/30 cmm-text-success")
++        : compact ? "border-white/15 text-white/65" : "border-current/20 cmm-text-secondary";
+ 
+   return (
+     <button
+       type="button"
+       onClick={() => onClick(notification)}
+       aria-label={`${locale === "fr" ? "Ouvrir la notification" : "Open notification"} : ${notification.title}`}
+-      className={`block w-full rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${compact ? "hover:bg-white/[0.07] focus-visible:ring-sky-300/70" : "hover:bg-amber-100/[0.08] focus-visible:ring-amber-200/80"}`}
++      className={`block w-full rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${compact ? "hover:bg-white/[0.07] focus-visible:ring-sky-300/70" : "hover:bg-amber-500/[0.06] focus-visible:ring-amber-600"}`}
+     >
+       {actionEventLabel ? (
+-        <span className={`mb-1 block cmm-text-caption font-black uppercase tracking-[0.14em] ${compact ? "text-emerald-300/80" : "text-emerald-200/80"}`}>
++        <span className={`mb-1 block cmm-text-caption font-black uppercase tracking-[0.14em] ${compact ? "text-emerald-300/80" : "cmm-text-success"}`}>
+           {actionEventLabel}
+         </span>
+       ) : null}
+-      <div className="flex items-start justify-between gap-3">
++      <div className={compact ? "flex items-start justify-between gap-3" : "flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3"}>
+         <span className={`min-w-0 flex-1 ${compact ? "line-clamp-1" : "break-words"} font-bold tracking-tight cmm-text-caption ${titleClass}`}>
+           {notification.title}
+         </span>
+-        <time dateTime={notification.created_at} className={`shrink-0 cmm-text-caption ${compact ? "text-white/50" : "text-amber-100/58"}`}>
++        <time dateTime={notification.created_at} className={`shrink-0 cmm-text-caption ${compact ? "text-white/50" : "cmm-text-secondary"}`}>
+           {compact ? relativeDate : `${absoluteDate} · ${relativeDate}`}
+         </time>
+       </div>
+@@ -296,9 +292,11 @@
+ function NotificationDecisionActions({
+   decision,
+   locale,
++  compact,
+ }: {
+   decision: NotificationListItemProps["decision"];
+   locale: "fr" | "en";
++  compact: boolean;
+ }) {
+   if (!decision) return null;
+   return (
+@@ -306,26 +304,26 @@
+       {decision.state === "decision_pending" ? (
+         decision.kind === "action_result" ? (
+           <>
+-            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("claim")} aria-label={locale === "fr" ? "Indiquer que j'ai participé" : "Say I participated"} className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60">
++            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("claim")} aria-label={locale === "fr" ? "Indiquer que j'ai participé" : "Say I participated"} className={compact ? "rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60" : "rounded-lg border border-current/30 px-2.5 py-1.5 text-xs font-bold cmm-text-success transition-colors hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 disabled:cursor-wait disabled:opacity-60"}>
+               ✓ {locale === "fr" ? "J'ai participé" : "I participated"}
+             </button>
+-            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("not_participated")} aria-label={locale === "fr" ? "Indiquer que je n'ai pas participé" : "Say I did not participate"} className="rounded-lg border border-slate-300/40 bg-slate-400/15 px-2.5 py-1.5 text-xs font-bold text-slate-100 transition-colors hover:bg-slate-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 disabled:cursor-wait disabled:opacity-60">
++            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("not_participated")} aria-label={locale === "fr" ? "Indiquer que je n'ai pas participé" : "Say I did not participate"} className={compact ? "rounded-lg border border-slate-300/40 bg-slate-400/15 px-2.5 py-1.5 text-xs font-bold text-slate-100 transition-colors hover:bg-slate-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 disabled:cursor-wait disabled:opacity-60" : "rounded-lg border border-current/30 px-2.5 py-1.5 text-xs font-bold cmm-text-secondary transition-colors hover:bg-slate-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-600 disabled:cursor-wait disabled:opacity-60"}>
+               × {locale === "fr" ? "Je n'ai pas participé" : "I did not participate"}
+             </button>
+           </>
+         ) : (
+           <>
+-            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("accept")} aria-label={locale === "fr" ? "Accepter la demande" : "Accept request"} className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60">
++            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("accept")} aria-label={locale === "fr" ? "Accepter la demande" : "Accept request"} className={compact ? "rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60" : "rounded-lg border border-current/30 px-2.5 py-1.5 text-xs font-bold cmm-text-success transition-colors hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 disabled:cursor-wait disabled:opacity-60"}>
+               ✓ {locale === "fr" ? "Accepter" : "Accept"}
+             </button>
+-            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("reject")} aria-label={locale === "fr" ? "Refuser la demande" : "Reject request"} className="rounded-lg border border-rose-300/40 bg-rose-400/15 px-2.5 py-1.5 text-xs font-bold text-rose-100 transition-colors hover:bg-rose-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 disabled:cursor-wait disabled:opacity-60">
++            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("reject")} aria-label={locale === "fr" ? "Refuser la demande" : "Reject request"} className={compact ? "rounded-lg border border-rose-300/40 bg-rose-400/15 px-2.5 py-1.5 text-xs font-bold text-rose-100 transition-colors hover:bg-rose-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 disabled:cursor-wait disabled:opacity-60" : "rounded-lg border border-current/30 px-2.5 py-1.5 text-xs font-bold cmm-text-danger transition-colors hover:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600 disabled:cursor-wait disabled:opacity-60"}>
+               × {locale === "fr" ? "Refuser" : "Reject"}
+             </button>
+           </>
+         )
+       ) : null}
+       {decision.busy ? <span className="text-xs font-semibold opacity-75" role="status">{locale === "fr" ? "Traitement…" : "Processing…"}</span> : null}
+-      {decision.error ? <span className="text-xs font-semibold text-rose-200" role="alert">{decision.error}</span> : null}
++      {decision.error ? <span className={compact ? "text-xs font-semibold text-rose-200" : "text-xs font-semibold cmm-text-danger"} role="alert">{decision.error}</span> : null}
+     </div>
+   );
+ }
+@@ -341,7 +339,7 @@
+ }) {
+   if (notification.type !== "gamification_reconciliation") return null;
+   return (
+-    <span className={`block pt-1 text-xs font-black ${compact ? "text-sky-300" : "text-amber-200"}`}>
++    <span className={`block pt-1 text-xs font-black ${compact ? "text-sky-300" : "cmm-text-link"}`}>
+       {locale === "fr" ? "Voir les changements" : "View changes"}
+     </span>
+   );
+diff --git a/apps/web/src/components/dashboard/dashboard-account-controls.tsx b/apps/web/src/components/dashboard/dashboard-account-controls.tsx
+--- a/apps/web/src/components/dashboard/dashboard-account-controls.tsx
++++ b/apps/web/src/components/dashboard/dashboard-account-controls.tsx
+@@ -1,37 +1,30 @@
+-import { AccountEvolutionCta } from "@/components/account/account-evolution-cta";
+-import { AccountSettingsSection } from "@/components/account/account-settings-section";
+-import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
++import { AccountEvolutionStatusLink } from "@/components/account/account-evolution-status-link";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmButton } from "@/components/ui/cmm-button";
+ import type { GrantedRole } from "@/lib/domain-language";
++import { getProfileLabel } from "@/lib/profiles";
+ 
+ type DashboardAccountControlsProps = {
+   locale: "fr" | "en";
+   grantedRole: GrantedRole;
+ };
+ 
+-export function DashboardAccountControls({
+-  locale,
+-  grantedRole,
+-}: DashboardAccountControlsProps) {
++export function DashboardAccountControls({ locale, grantedRole }: DashboardAccountControlsProps) {
++  const fr = locale === "fr";
+   return (
+-    <div
+-      data-gsap-reveal
+-      className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]"
+-    >
+-      <FamilyRubriqueCard
+-        withTopBar={true}
+-        topBarContent={locale === "fr" ? "Évolution du compte" : "Account progress"}
+-        className="p-8 sm:p-10"
+-      >
+-        <AccountEvolutionCta currentRole={grantedRole} />
+-      </FamilyRubriqueCard>
+-
+-      <FamilyRubriqueCard
+-        withTopBar={true}
+-        topBarContent={locale === "fr" ? "Configuration" : "Settings"}
+-        className="p-8 sm:p-10"
+-      >
+-        <AccountSettingsSection compact />
+-      </FamilyRubriqueCard>
++    <div className="grid items-start gap-4 md:grid-cols-2">
++      <CmmCard className="space-y-3">
++        <h3 className="text-lg font-bold cmm-text-primary">{fr ? "Évolution du compte" : "Account progress"}</h3>
++        <p className="text-sm cmm-text-secondary">{fr ? "Rôle attribué : " : "Granted role: "}{getProfileLabel(grantedRole, locale)}</p>
++        <AccountEvolutionStatusLink appearance="neutral"
++          label={fr ? "Faire évoluer mon compte" : "Account progress"}
++          pendingLabel={fr ? "Voir ma demande" : "View my request"} />
++      </CmmCard>
++      <CmmCard className="space-y-3">
++        <h3 className="text-lg font-bold cmm-text-primary">{fr ? "Préférences et compte" : "Preferences and account"}</h3>
++        <p className="text-sm cmm-text-secondary">{fr ? "Langue, affichage, confidentialité, localisation et gestion des données." : "Language, display, privacy, location and data management."}</p>
++        <CmmButton href="/reglages" tone="secondary">{fr ? "Ouvrir les réglages" : "Open settings"}</CmmButton>
++      </CmmCard>
+     </div>
+   );
+ }
+diff --git a/apps/web/src/components/account/account-evolution-status-link.tsx b/apps/web/src/components/account/account-evolution-status-link.tsx
+--- a/apps/web/src/components/account/account-evolution-status-link.tsx
++++ b/apps/web/src/components/account/account-evolution-status-link.tsx
+@@ -17,6 +17,7 @@
+   label?: string;
+   pendingLabel?: string;
+   pendingInitially?: boolean;
++  appearance?: "family" | "neutral";
+   className?: string;
+   onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
+ };
+@@ -25,6 +26,7 @@
+   label = "Faire évoluer mon compte",
+   pendingLabel = "Voir ma demande",
+   pendingInitially = false,
++  appearance = "family",
+   className,
+   onClick,
+ }: AccountEvolutionStatusLinkProps) {
+@@ -62,7 +64,9 @@
+       onClick={onClick}
+       className={cn(
+         "inline-flex min-h-11 items-center justify-center rounded-full border px-4 py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70",
+-        "border-amber-200/30 bg-amber-100/12 text-amber-50 hover:border-amber-200/50 hover:bg-amber-100/20",
++        appearance === "neutral"
++          ? "border-current/20 cmm-text-primary hover:bg-amber-500/10"
++          : "border-amber-200/30 bg-amber-100/12 text-amber-50 hover:border-amber-200/50 hover:bg-amber-100/20",
+         className,
+       )}
+     >
+diff --git a/apps/web/src/components/dashboard/dashboard-overview-skeleton.tsx b/apps/web/src/components/dashboard/dashboard-overview-skeleton.tsx
+--- a/apps/web/src/components/dashboard/dashboard-overview-skeleton.tsx
++++ b/apps/web/src/components/dashboard/dashboard-overview-skeleton.tsx
+@@ -1,15 +1,13 @@
++import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
++
+ export function DashboardOverviewSkeleton() {
+   return (
+-    <div className="space-y-5 animate-pulse">
+-      <div className="grid gap-4 md:grid-cols-3">
+-        {[0, 1, 2].map((i) => (
+-          <div
+-            key={i}
+-            className="h-44 rounded-3xl bg-[rgba(44,28,15,0.55)] border border-orange-200/18"
+-          />
+-        ))}
++    <div className="space-y-4" aria-busy="true">
++      <div className="grid gap-4 md:grid-cols-2">
++        <CmmSkeleton className="h-32" />
++        <CmmSkeleton className="h-32" />
+       </div>
+-      <div className="h-36 rounded-3xl bg-[rgba(44,28,15,0.55)] border border-orange-200/18" />
++      <CmmSkeleton className="h-24" />
+     </div>
+   );
+ }

@@ -1,0 +1,10 @@
+{
+  "reference": "e97ffe112300ba9a910e6394c8da9bd9f26b6143",
+  "files": {
+    "apps/web/src/components/dashboard/dashboard-notifications-section.tsx": "139b6dc800b5c8a4671d5a90a5c2f6d02d0eac59",
+    "apps/web/src/components/notifications/notification-list-item.tsx": "8261ac2c02e7bb566632ccb3f7ffbf836f129330",
+    "apps/web/src/components/dashboard/dashboard-account-controls.tsx": "2db9c8e67c8901dbdb6bc3f4e13f28bb8272c704",
+    "apps/web/src/components/account/account-evolution-status-link.tsx": "c73472c5a7054bf00a8c1896a2ea0b3cf66dcdb8",
+    "apps/web/src/components/dashboard/dashboard-overview-skeleton.tsx": "fd5994ffa110b0672ddb19a1e3167e460b7e3e9b"
+  }
+}
