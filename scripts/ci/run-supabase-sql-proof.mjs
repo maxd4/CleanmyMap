@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatTimingMarkdown, summarizeTimings } from "./ci-timing-report.mjs";
 import { gitExecutable, trustedCommandEnvironment } from "./git-executable.mjs";
 import {
   WORKFLOW_STAGES,
@@ -557,16 +558,19 @@ export function attestProofResult(record, result, validate) {
 }
 
 async function runProof(record, command, args, validate, commandRunner = runCommand) {
+  const startedAt = Date.now();
   let result;
   try {
     result = await commandRunner(command, args, { logName: record.path.replaceAll("/", "__").replaceAll(".", "_") });
   } catch (error) {
+    record.durationMs = Date.now() - startedAt;
     record.status = "DB_SEMANTICS_NOT_EXECUTED";
     record.outcome = "FAIL";
     record.failure = { category: "COMMAND_START_FAILED", origin: "PROCESS", sqlstate: null };
     record.reason = `step=${record.category ?? "SQL_PROOF"}; category=COMMAND_START_FAILED; origin=PROCESS; code=${error?.code ?? error?.name ?? "unknown"}`;
     throw new Error(`${record.path}: ${record.reason}`);
   }
+  record.durationMs = Date.now() - startedAt;
   try {
     attestProofResult(record, result, validate);
   } catch (error) {
@@ -579,11 +583,29 @@ function writeReport(report) {
   writeFileSync(evidencePath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 }
 
-export async function runSupabaseSqlProof({ sha, run = true, commandRunner = runCommand, writeReportImpl = writeReport } = {}) {
+export async function runSupabaseSqlProof({ sha, run = true, commandRunner = runCommand, writeReportImpl = writeReport, targets = null } = {}) {
   const candidate = candidateSha(sha);
   const priorStages = readExistingWorkflowStages(candidate, evidencePath);
   const report = createEvidenceReport(candidate, { inventorySqlProofs, prioritizePaths, baseRecord, migrationEvidence });
   if (priorStages.length > 0) report.workflowStages = WORKFLOW_STAGES.map((stage) => priorStages.find((entry) => entry.stage === stage) ?? stageRecord(stage));
+  const requestedTargets = (
+    Array.isArray(targets)
+      ? targets
+      : String(process.env.CMM_SUPABASE_SQL_TARGETS ?? "").split(",")
+  ).map((value) => normalizePath(value.trim())).filter(Boolean);
+  if (requestedTargets.length > 0) {
+    const requestedSet = new Set(requestedTargets);
+    const knownPaths = new Set(report.records.map((record) => record.path));
+    const unknown = requestedTargets.filter((target) => !knownPaths.has(target));
+    if (unknown.length > 0) {
+      throw new Error(`Unknown SQL proof target(s): ${unknown.join(", ")}`);
+    }
+    report.selectionMode = "targeted";
+    report.selectedTargets = requestedTargets;
+    report.records = report.records.filter((record) => requestedSet.has(record.path));
+  } else {
+    report.selectionMode = "full";
+  }
   const records = report.records;
   if (!run) {
     writeReportImpl(report);
@@ -598,10 +620,11 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
     throw new Error(`Unregistered SQL proof files: ${unregistered.join(", ")}`);
   }
 
-  try {
-    const networkArgs = supabaseNetworkArgs();
-    let localDbUrl = null;
-    for (const record of records) {
+  const failures = [];
+  const networkArgs = supabaseNetworkArgs();
+  let localDbUrl = null;
+  for (const record of records) {
+    try {
       if (record.category === "PGTAP") {
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const expectedPlan = extractPlan(sql);
@@ -637,26 +660,45 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
           return { marker: sanitizePublicEvidenceText(expectedOutput.source) };
         }, commandRunner);
       }
+    } catch (error) {
+      failures.push(error);
+      if (!report.firstFailure) {
+        report.firstFailure = {
+          stage: record.category ?? "SQL_PROOF",
+          file: record.path,
+          category: record.failure?.category ?? "PROOF_VALIDATION_FAILED",
+          origin: record.failure?.origin ?? "UNPROVEN",
+          ...(record.failure?.sqlstate ? { sqlstate: record.failure.sqlstate } : {}),
+          ...(record.counts ? { counts: record.counts } : {}),
+        };
+      }
     }
-    report.outcome = "PASS";
-  } catch (error) {
-    report.outcome = "FAIL";
-    const failedPath = error instanceof Error ? error.message.split(": ")[0] : "unknown";
-    const failedRecord = records.find((record) => record.outcome === "FAIL");
-    report.firstFailure = {
-      stage: failedRecord?.category ?? "SQL_PROOF",
-      ...(failedRecord?.path ? { file: failedRecord.path } : {}),
-      category: failedRecord?.failure?.category ?? "PROOF_VALIDATION_FAILED",
-      origin: failedRecord?.failure?.origin ?? "UNPROVEN",
-      ...(failedRecord?.failure?.sqlstate ? { sqlstate: failedRecord.failure.sqlstate } : {}),
-      ...(failedRecord?.counts ? { counts: failedRecord.counts } : {}),
-    };
-    for (const record of records) {
-      if (record.status === "NOT_RUN") record.reason = `not reached after failure in ${failedPath}`;
-    }
-    writeReportImpl(report);
-    throw error;
   }
+
+  const slowThresholdMs = Number(process.env.CMM_SQL_REGRESSION_THRESHOLD_MS ?? 30_000);
+  report.timingSummary = summarizeTimings(
+    records.map((record) => ({
+      name: record.path,
+      category: record.category,
+      outcome: record.outcome,
+      durationMs: record.durationMs ?? 0,
+    })),
+    { slowThresholdMs },
+  );
+  if (commandRunner === runCommand && process.env.GITHUB_STEP_SUMMARY) {
+    appendFileSync(
+      process.env.GITHUB_STEP_SUMMARY,
+      `${formatTimingMarkdown("Supabase SQL & Concurrency Proof Timings", report.timingSummary)}\n`,
+      "utf8",
+    );
+  }
+
+  if (failures.length > 0) {
+    report.outcome = "FAIL";
+    writeReportImpl(report);
+    throw failures[0];
+  }
+  report.outcome = "PASS";
   writeReportImpl(report);
   return report;
 }

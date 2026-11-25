@@ -237,11 +237,6 @@ async function main() {
     ownerServer = process.env.CMM_SPOGOMI_APP_URL ? null : startApp({ port: 3010, userId: ownerId, role: "admin", database });
     if (ownerServer) runtimeServers.set(appUrl, ownerServer);
     await waitForLocalApp(appUrl, { server: ownerServer, getStartupOutput: () => ownerServer?.getStartupOutput?.() ?? "" });
-    if (observerUrl) {
-      observerServer = startApp({ port: 3011, userId: observerId, role: "benevole", database });
-      runtimeServers.set(observerUrl, observerServer);
-      await waitForLocalApp(observerUrl, { server: observerServer, getStartupOutput: () => observerServer?.getStartupOutput?.() ?? "" });
-    }
 
     await runStep("fixture-synthétique-et-partition", async () => {
       assert.equal(fixture.mode, "mixed");
@@ -471,8 +466,16 @@ async function main() {
       assert.equal(noSession.response.status, 401);
       if (observerUrl) {
         await jsonApi(appUrl, `/api/spogomi/events/${createdEventId}/reviewers`, { clerkId: observerId, role: "observer" }, [201]);
-        const response = await api(observerUrl, `/api/spogomi/events/${createdEventId}/field-operations`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "configure", divisionId: casualDivision.id, timezoneName: "Europe/Paris", regulationVersion: regulationFor(casualDivision).regulationVersion, officialStartAt: operationalInstantAt(operationalDate, 9), collectionLimitAt: null, sortingLimitAt: null, weighingStartAt: null, weighingEndAt: null, reason: "negative capability check", provenance: "fixture:negative" }) }, [403]);
-        assert.equal(response.response.status, 403);
+        observerServer = startApp({ port: 3011, userId: observerId, role: "benevole", database });
+        runtimeServers.set(observerUrl, observerServer);
+        try {
+          await waitForLocalApp(observerUrl, { server: observerServer, getStartupOutput: () => observerServer?.getStartupOutput?.() ?? "" });
+          const response = await api(observerUrl, `/api/spogomi/events/${createdEventId}/field-operations`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "configure", divisionId: casualDivision.id, timezoneName: "Europe/Paris", regulationVersion: regulationFor(casualDivision).regulationVersion, officialStartAt: operationalInstantAt(operationalDate, 9), collectionLimitAt: null, sortingLimitAt: null, weighingStartAt: null, weighingEndAt: null, reason: "negative capability check", provenance: "fixture:negative" }) }, [403]);
+          assert.equal(response.response.status, 403);
+        } finally {
+          await stopLocalApp(observerServer);
+          observerServer = null;
+        }
       }
     });
 

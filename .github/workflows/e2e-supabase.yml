@@ -3,72 +3,75 @@ name: e2e-supabase-ephemeral
 permissions: {}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL') || github.event_name == 'schedule' && 'FULL' || 'DEVELOPMENT' }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'schedule' }}
 
 on:
+  schedule:
+    - cron: "0 3 * * 0"
   workflow_dispatch:
+    inputs:
+      validation_mode:
+        description: "DEVELOPMENT (proportionné au diff) ou FULL (campagne complète)"
+        required: true
+        default: DEVELOPMENT
+        type: choice
+        options:
+          - DEVELOPMENT
+          - FULL
   push:
     branches:
       - main
     paths:
-      - "e2e/*.sql"
-      - "e2e/*-concurrency.mjs"
+      - "e2e/*.spec.ts"
+      - "e2e/fixtures/**"
+      - "e2e/global.setup.ts"
+      - "e2e/global.teardown.ts"
+      - "e2e/run-github-actions-persistent.mjs"
       - "e2e/spogomi-cachan-integration.mjs"
+      - "e2e/spogomi-cachan-local-app.mjs"
+      - "e2e/spogomi-cachan-local-app.test.mjs"
       - "documentation/features/spogomi-references/fixtures/**"
-      - "e2e/security-02-two-sessions.mjs"
+      - "apps/web/src/lib/spogomi/**"
+      - "apps/web/src/app/api/spogomi/**"
       - "apps/web/supabase/config.toml"
       - "apps/web/supabase/migrations/**"
       - "apps/web/supabase/seed.sql"
-      - "apps/web/supabase/tests/**"
       - "scripts/ci/start-supabase-ephemeral.sh"
       - "scripts/ci/supabase-config.mjs"
       - "scripts/ci/supabase-config.test.mjs"
       - "scripts/ci/diagnose-supabase-start.mjs"
       - "scripts/ci/diagnose-supabase-start.test.mjs"
+      - "scripts/ci/select-e2e-sql-plan.mjs"
+      - "scripts/ci/ci-timing-report.mjs"
       - ".github/workflows/e2e-supabase.yml"
+      - "playwright.config.ts"
       - "package.json"
       - "package-lock.json"
   pull_request:
     branches:
       - main
     paths:
-      - "e2e/action-sharing.spec.ts"
-      - "e2e/authenticated-campaign.spec.ts"
-      - "e2e/signalement-campaign-2.spec.ts"
+      - "e2e/*.spec.ts"
       - "e2e/fixtures/**"
       - "e2e/global.setup.ts"
       - "e2e/global.teardown.ts"
       - "e2e/run-github-actions-persistent.mjs"
-      - "e2e/spogomi-concurrency.mjs"
-      - "e2e/authenticated-spogomi.spec.ts"
-      - "e2e/profile-security.sql"
-      - "e2e/supabase-advisory-hardening.sql"
-      - "e2e/supabase-admission-requests.sql"
-      - "e2e/security-02-projection-revocation.sql"
-      - "e2e/security-02-two-sessions.mjs"
-      - "e2e/security-03-bug-report.sql"
-      - "e2e/*.sql"
-      - "e2e/*-concurrency.mjs"
       - "e2e/spogomi-cachan-integration.mjs"
+      - "e2e/spogomi-cachan-local-app.mjs"
+      - "e2e/spogomi-cachan-local-app.test.mjs"
       - "documentation/features/spogomi-references/fixtures/**"
       - "scripts/ci/diagnose-supabase-start.mjs"
       - "scripts/ci/diagnose-supabase-start.test.mjs"
       - "scripts/ci/start-supabase-ephemeral.sh"
       - "scripts/ci/supabase-config.mjs"
       - "scripts/ci/supabase-config.test.mjs"
-      - "scripts/checks/spogomi-concurrency-destination.test.mjs"
+      - "scripts/ci/select-e2e-sql-plan.mjs"
+      - "scripts/ci/ci-timing-report.mjs"
       - "apps/web/src/lib/spogomi/**"
       - "apps/web/src/app/api/spogomi/**"
       - "apps/web/supabase/config.toml"
       - "apps/web/supabase/migrations/**"
-      - "apps/web/supabase/tests/**"
-      - "apps/web/supabase/tests/spogomi-mixed-division-smoke.sql"
-      - "apps/web/supabase/tests/spogomi-transactional-contract.sql"
-      - "apps/web/supabase/tests/action-role-attestation-correction.sql"
-      - "apps/web/supabase/tests/reports-persistent-contract.sql"
-      - "e2e/action-role-attestation-concurrency.mjs"
-      - "e2e/reports-postgres-concurrency.mjs"
       - "apps/web/supabase/seed.sql"
       - "playwright.config.ts"
       - "package.json"
@@ -81,11 +84,52 @@ env:
   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
 
 jobs:
+  plan:
+    name: Plan proportionate E2E campaign
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      docs_only: ${{ steps.select.outputs.docs_only }}
+      e2e_should_run: ${{ steps.select.outputs.e2e_should_run }}
+      run_spogomi_integration: ${{ steps.select.outputs.run_spogomi_integration }}
+      run_spogomi_business_tests: ${{ steps.select.outputs.run_spogomi_business_tests }}
+      run_persistent_e2e: ${{ steps.select.outputs.run_persistent_e2e }}
+      playwright_projects: ${{ steps.select.outputs.playwright_projects }}
+      reason: ${{ steps.select.outputs.reason }}
+      inputs_digest: ${{ steps.select.outputs.inputs_digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+
+      - name: Select proportionate E2E plan
+        id: select
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          EVENT_SHA: ${{ github.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          VALIDATION_MODE: ${{ inputs.validation_mode }}
+        run: node scripts/ci/select-e2e-sql-plan.mjs
+
   persistent-e2e:
     name: Persistent E2E on ephemeral Supabase
+    needs: plan
     # Manual runs can execute credential-bearing Clerk steps only from the
-    # current main ref. Other dispatch refs are skipped before runner startup.
-    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    # current main ref. Pure docs or unrelated changes are skipped by policy.
+    if: needs.plan.outputs.e2e_should_run == 'true' && (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main')
     # Hosted runner only. The generated Supabase network was absent in recent
     # failures, so the existing CLI lane receives one run-scoped bridge network.
     runs-on: ubuntu-22.04
@@ -122,7 +166,17 @@ jobs:
       - name: Verify Node runtime contract
         run: node scripts/checks/check-node-version-contract.mjs
 
+      - name: Restore Node modules cache
+        id: node_modules_cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json', 'apps/web/.nvmrc') }}
+
       - name: Install Node dependencies
+        if: steps.node_modules_cache.outputs.cache-hit != 'true'
         run: npm ci --ignore-scripts
 
       - name: Audit canonical Supabase migration tree
@@ -134,7 +188,7 @@ jobs:
         run: |
           set -euo pipefail
           base_sha="${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}"
-          if [[ "$base_sha" =~ ^0+$ ]]; then
+          if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
             mapfile -t changed_sql < <(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" -- 'apps/web/supabase/migrations/**/*.sql' 'apps/web/supabase/tests/**/*.sql' 'e2e/**/*.sql')
           else
             mapfile -t changed_sql < <(git diff --name-only "$base_sha" "$GITHUB_SHA" -- 'apps/web/supabase/migrations/**/*.sql' 'apps/web/supabase/tests/**/*.sql' 'e2e/**/*.sql')
@@ -233,10 +287,24 @@ jobs:
         run: |
           ./node_modules/.bin/supabase db query --workdir apps/web --local "notify pgrst, 'reload schema';"
 
-      - name: Install Playwright browser
+      - name: Restore Playwright Chromium cache
+        if: needs.plan.outputs.run_persistent_e2e == 'true'
+        id: playwright_cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright Chromium browser (cache miss)
+        if: needs.plan.outputs.run_persistent_e2e == 'true' && steps.playwright_cache.outputs.cache-hit != 'true'
         run: ./node_modules/.bin/playwright install --with-deps chromium
 
-      - name: Run SPOGOMI business tests
+      - name: Install Playwright system dependencies (cache hit)
+        if: needs.plan.outputs.run_persistent_e2e == 'true' && steps.playwright_cache.outputs.cache-hit == 'true'
+        run: ./node_modules/.bin/playwright install-deps chromium
+
+      - name: Run SPOGOMI business tests (FULL campaign)
+        if: needs.plan.outputs.run_spogomi_business_tests == 'true'
         run: |
           npm run test -w apps/web -- \
             src/lib/spogomi/preparation/preparation-service.gpx.test.ts \
@@ -245,6 +313,7 @@ jobs:
             src/lib/spogomi/preparation/preparation-service.preview.test.ts
 
       - name: Verify persistent Playwright projects are listable
+        if: needs.plan.outputs.run_persistent_e2e == 'true'
         run: |
           ./node_modules/.bin/playwright test --list \
             --project="action sharing" \
@@ -252,6 +321,9 @@ jobs:
             --project="signalement campaign 2"
 
       - name: Run SPOGOMI Cachan mixed integration on ephemeral Supabase
+        id: spogomi_integration
+        if: needs.plan.outputs.run_spogomi_integration == 'true'
+        continue-on-error: true
         env:
           CMM_SUPABASE_TEST_ENVIRONMENT: ephemeral
           CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: I_UNDERSTAND_EPHEMERAL_ONLY
@@ -267,10 +339,18 @@ jobs:
 
       - name: Run persistent E2E
         id: persistent_e2e
+        if: (!cancelled()) && needs.plan.outputs.run_persistent_e2e == 'true'
         env:
           CMM_E2E_CLERK_DEV_BACKEND_TOKEN: ${{ secrets.CMM_E2E_CLERK_DEV_BACKEND_TOKEN }}
           CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY: ${{ secrets.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY }}
+          PLAYWRIGHT_PROJECTS: ${{ needs.plan.outputs.playwright_projects }}
         run: npm run test:e2e:persistent:ci
+
+      - name: Fail if independent SPOGOMI integration failed
+        if: (!cancelled()) && steps.spogomi_integration.outcome == 'failure'
+        run: |
+          echo "SPOGOMI Cachan mixed integration failed (persistent E2E was still evaluated independently)."
+          exit 1
 
       - name: Stop ephemeral Supabase
         if: always()
@@ -306,6 +386,9 @@ jobs:
         if: always()
         env:
           E2E_OUTCOME: ${{ steps.persistent_e2e.outcome }}
+          SPOGOMI_OUTCOME: ${{ steps.spogomi_integration.outcome }}
+          E2E_SELECTION_REASON: ${{ needs.plan.outputs.reason }}
+          E2E_PLAYWRIGHT_PROJECTS: ${{ needs.plan.outputs.playwright_projects }}
         run: node scripts/checks/stage-public-e2e-artifact.mjs
 
       - name: Validate safe public E2E evidence

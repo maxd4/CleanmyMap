@@ -3,10 +3,12 @@ name: supabase-sql-proof-ephemeral
 permissions: {}
 
 concurrency:
-  group: supabase-sql-proof-${{ github.ref }}
+  group: supabase-sql-proof-${{ github.ref }}-${{ (github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL') || github.event_name == 'schedule' && 'FULL' || 'DEVELOPMENT' }}
   cancel-in-progress: false
 
 on:
+  schedule:
+    - cron: "30 3 * * 0"
   workflow_dispatch:
     inputs:
       mode:
@@ -17,6 +19,14 @@ on:
         options:
           - complete-proof
           - isolate-replay
+      validation_mode:
+        description: "DEVELOPMENT (proportionné au diff) ou FULL (toutes les preuves SQL)"
+        required: true
+        type: choice
+        default: DEVELOPMENT
+        options:
+          - DEVELOPMENT
+          - FULL
   push:
     branches:
       - main
@@ -27,7 +37,6 @@ on:
       - "apps/web/supabase/tests/**"
       - "e2e/*.sql"
       - "e2e/*-concurrency.mjs"
-      - "e2e/spogomi-cachan-integration.mjs"
       - "e2e/security-02-two-sessions.mjs"
       - "scripts/ci/run-supabase-sql-proof.mjs"
       - "scripts/ci/run-supabase-sql-proof.test.mjs"
@@ -38,6 +47,8 @@ on:
       - "scripts/ci/supabase-config.test.mjs"
       - "scripts/ci/isolate-supabase-migration-failure.mjs"
       - "scripts/ci/isolate-supabase-migration-failure.test.mjs"
+      - "scripts/ci/select-e2e-sql-plan.mjs"
+      - "scripts/ci/ci-timing-report.mjs"
       - ".github/workflows/supabase-sql-proof.yml"
       - "package.json"
       - "package-lock.json"
@@ -47,9 +58,46 @@ env:
   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
 
 jobs:
+  plan:
+    name: Plan proportionate SQL proof
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      docs_only: ${{ steps.select.outputs.docs_only }}
+      sql_should_run: ${{ steps.select.outputs.sql_should_run }}
+      sql_proof_targets: ${{ steps.select.outputs.sql_proof_targets }}
+      validate_all_sql: ${{ steps.select.outputs.validate_all_sql }}
+      reason: ${{ steps.select.outputs.reason }}
+      inputs_digest: ${{ steps.select.outputs.inputs_digest }}
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+
+      - name: Select proportionate SQL proof plan
+        id: select
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          EVENT_SHA: ${{ github.sha }}
+          VALIDATION_MODE: ${{ inputs.validation_mode }}
+        run: node scripts/ci/select-e2e-sql-plan.mjs
+
   sql-proof:
-    name: Replay and attest complete ephemeral SQL proof
-    if: (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main') && (github.event_name != 'workflow_dispatch' || inputs.mode != 'isolate-replay')
+    name: Replay and attest ephemeral SQL proof
+    needs: plan
+    if: needs.plan.outputs.sql_should_run == 'true' && (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main') && (github.event_name != 'workflow_dispatch' || inputs.mode != 'isolate-replay')
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     permissions:
@@ -81,7 +129,17 @@ jobs:
       - name: Verify Node runtime contract
         run: node scripts/checks/check-node-version-contract.mjs
 
+      - name: Restore Node modules cache
+        id: node_modules_cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json', 'apps/web/.nvmrc') }}
+
       - name: Install Node dependencies
+        if: steps.node_modules_cache.outputs.cache-hit != 'true'
         run: npm ci --ignore-scripts
 
       - name: Audit canonical migration tree and SQL syntax
@@ -89,9 +147,20 @@ jobs:
         run: |
           set -euo pipefail
           npm run audit:supabase-migration-trees
-          mapfile -t sql_files < <(find apps/web/supabase/migrations apps/web/supabase/tests e2e -type f -name '*.sql' -print | sort)
+          if [[ "${{ needs.plan.outputs.validate_all_sql }}" == "true" ]]; then
+            mapfile -t sql_files < <(find apps/web/supabase/migrations apps/web/supabase/tests e2e -type f -name '*.sql' -print | sort)
+          else
+            base_sha="${{ github.event.before }}"
+            if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
+              mapfile -t sql_files < <(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" -- 'apps/web/supabase/migrations/**/*.sql' 'apps/web/supabase/tests/**/*.sql' 'e2e/**/*.sql')
+            else
+              mapfile -t sql_files < <(git diff --name-only "$base_sha" "$GITHUB_SHA" -- 'apps/web/supabase/migrations/**/*.sql' 'apps/web/supabase/tests/**/*.sql' 'e2e/**/*.sql')
+            fi
+          fi
           args=(scripts/ci/validate-sql-syntax.mjs "--ref=$GITHUB_SHA")
-          for file in "${sql_files[@]}"; do args+=("--changed-file=$file"); done
+          for file in "${sql_files[@]}"; do
+            [[ -n "$file" ]] && args+=("--changed-file=$file")
+          done
           node "${args[@]}"
 
       - name: Verify canonical ephemeral inputs
@@ -134,13 +203,14 @@ jobs:
           CMM_SUPABASE_NETWORK_ID: ${{ steps.supabase_network.outputs.network_name }}
         run: node scripts/ci/run-supabase-sql-proof.mjs --verify-canonical-schema-seed
 
-      - name: Run complete PostgreSQL and concurrency proof
+      - name: Run PostgreSQL and concurrency proof
         id: run_sql_proof
         env:
           CMM_SUPABASE_CANDIDATE_SHA: ${{ github.sha }}
           CMM_SUPABASE_TEST_ENVIRONMENT: ephemeral
           CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: I_UNDERSTAND_EPHEMERAL_ONLY
           CMM_SUPABASE_NETWORK_ID: ${{ steps.supabase_network.outputs.network_name }}
+          CMM_SUPABASE_SQL_TARGETS: ${{ needs.plan.outputs.sql_proof_targets }}
         run: node scripts/ci/run-supabase-sql-proof.mjs
 
       - name: Stop ephemeral Supabase and remove network

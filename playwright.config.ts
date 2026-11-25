@@ -18,11 +18,15 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 1 : 0,
+  retries: process.env.PLAYWRIGHT_CI_RETRIES === "1" ? 1 : 0,
   workers: 1,
   outputDir: "artifacts/playwright/results",
   reporter: process.env.CI
-    ? [["line"], ["html", { open: "never", outputFolder: "artifacts/playwright/report" }]]
+    ? [
+        ["line"],
+        ["html", { open: "never", outputFolder: "artifacts/playwright/report" }],
+        ["json", { outputFile: "artifacts/playwright/results.json" }],
+      ]
     : "list",
   use: {
     baseURL,

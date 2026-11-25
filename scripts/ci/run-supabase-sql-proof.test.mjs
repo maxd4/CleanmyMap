@@ -794,3 +794,35 @@ test("public evidence sanitization strips forbidden authentication/session vocab
   const excerpt = sanitizeProofFailureExcerpt("ERROR: two-session authorization check failed for clerk_session");
   assert.doesNotMatch(excerpt, forbiddenPattern);
 });
+
+test("targeted SQL proof selection runs only requested targets and continues across independent failures with timing", async () => {
+  let report;
+  const targets = [
+    "e2e/profile-security.sql",
+    "e2e/security-03-bug-report.sql",
+  ];
+  let callIndex = 0;
+  await assert.rejects(() => runSupabaseSqlProof({
+    targets,
+    commandRunner: async () => {
+      callIndex += 1;
+      if (callIndex === 1) {
+        return { code: 1, signal: null, timedOut: false, output: "ERROR: forced failure SQLSTATE 42501" };
+      }
+      return {
+        code: 0,
+        signal: null,
+        timedOut: false,
+        output: "EXECUTED_DB_CONTRACT: SECURITY-03 bug-report boundary contract passed",
+      };
+    },
+    writeReportImpl: (nextReport) => { report = nextReport; },
+  }));
+  assert.equal(callIndex, 2);
+  assert.equal(report.selectionMode, "targeted");
+  assert.equal(report.records.length, 2);
+  assert.equal(report.records[0].outcome, "FAIL");
+  assert.equal(report.records[1].outcome, "PASS");
+  assert.equal(typeof report.records[0].durationMs, "number");
+  assert.equal(report.timingSummary.count, 2);
+});

@@ -325,6 +325,35 @@ suite lourde. Les preuves Web sont téléchargées à la racine du checkout pour
 préserver les chemins canoniques consommés par `quality:coverage` ; une
 archive absente, mal placée ou incomplète échoue explicitement.
 
+### Campagnes E2E et SQL éphémères proportionnées
+
+Les workflows `.github/workflows/e2e-supabase.yml` et `.github/workflows/supabase-sql-proof.yml`
+s'appuient sur le planificateur `scripts/ci/select-e2e-sql-plan.mjs` :
+
+- **Documentation pure** (`docs_only=true`) ou aucun chemin pertinent : aucune
+  instance Supabase éphémère ni aucun scénario Playwright ou SQL n'est lancé
+  (`SKIPPED_BY_POLICY`).
+- **Correctif local** : seuls les projets Playwright (`PLAYWRIGHT_PROJECTS`) ou
+  les preuves SQL/concurrence (`CMM_SUPABASE_SQL_TARGETS`) directement
+  concernés sont exécutés, sans rejouer les tests métier Vitest déjà couverts
+  par `ci.yml`.
+- **Contrat partagé ou sensible** (migrations, `seed.sql`, `config.toml`, AuthZ,
+  `proxy.ts`, infra E2E/SQL) : les intégrations et suites concernées sont
+  sélectionnées automatiquement.
+- **Campagne complète** : planification hebdomadaire (`schedule`) ou
+  `workflow_dispatch` avec `validation_mode=FULL`.
+
+Les caches CI portent uniquement sur `node_modules` (clé sur `package-lock.json`
+et `apps/web/.nvmrc`) et `~/.cache/ms-playwright` (clé sur `package-lock.json`) ;
+aucun état de base PostgreSQL/Supabase mutable n'est mis en cache. En CI,
+Playwright fonctionne avec `retries: 0` par défaut (`PLAYWRIGHT_CI_RETRIES=1`
+opt-in uniquement) afin de ne pas masquer les tests instables, et les suites
+indépendantes (intégration SPOGOMI vs E2E persistants ; preuves SQL/pgTAP/concurrence)
+continuent de s'exécuter même si une suite indépendante échoue. Les durées par
+preuve et par scénario sont instrumentées via `scripts/ci/ci-timing-report.mjs`
+et `run-supabase-sql-proof.mjs` dans `GITHUB_STEP_SUMMARY` et les artefacts
+publics expurgés.
+
 ### DEPLOY — validation Web rapide pour une demande Vercel
 
 Le profil DEPLOY est une attestation distincte de FULL :

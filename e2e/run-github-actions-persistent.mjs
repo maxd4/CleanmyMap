@@ -114,8 +114,30 @@ async function writeWebEnvironment() {
   await writeFile(webEnvFile, content, { encoding: "utf8", flag: "wx" });
 }
 
+const DEFAULT_PERSISTENT_PROJECTS = [
+  "action sharing",
+  "authenticated campaign",
+  "signalement campaign 2",
+  "personal AI authenticated",
+];
+
+function resolvePersistentProjects(raw = process.env.PLAYWRIGHT_PROJECTS) {
+  const requested = String(raw ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (requested.length === 0) return DEFAULT_PERSISTENT_PROJECTS;
+  const allowed = new Set(DEFAULT_PERSISTENT_PROJECTS);
+  const invalid = requested.filter((name) => !allowed.has(name));
+  if (invalid.length > 0) {
+    throw new Error(`Unsupported persistent Playwright project(s): ${invalid.join(", ")}`);
+  }
+  return requested;
+}
+
 async function runPersistentE2E() {
   assertClerkDevelopmentSecrets();
+  const projects = resolvePersistentProjects();
   await writeWebEnvironment();
   try {
     const local = await readLocalSupabaseStatus();
@@ -137,13 +159,20 @@ async function runPersistentE2E() {
       [
         "playwright",
         "test",
-        "--project=action sharing",
-        "--project=authenticated campaign",
-        "--project=signalement campaign 2",
-        "--project=personal AI authenticated",
+        ...projects.map((project) => `--project=${project}`),
       ],
       { cwd: root, env, stdio: "inherit" },
     );
+    await runCommand(
+      "node",
+      [
+        "scripts/ci/ci-timing-report.mjs",
+        "--playwright-json=artifacts/playwright/results.json",
+        "--output=artifacts/ci/e2e-timing-summary.json",
+        "--append-step-summary",
+      ],
+      { cwd: root, env, stdio: "inherit" },
+    ).catch(() => undefined);
     return result.code ?? 1;
   } finally {
     await rm(webEnvFile, { force: true });
