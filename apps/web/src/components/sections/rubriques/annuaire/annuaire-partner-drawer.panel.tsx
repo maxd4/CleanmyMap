@@ -1,435 +1,650 @@
 "use client";
 
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { motion } from "framer-motion";
-import { X, MapPin, Globe, Target, Quote, Heart, Zap, ArrowRight, Building2, Sparkles, MessageSquare } from "lucide-react";
+import {
+  X,
+  MapPin,
+  Globe,
+  Building2,
+  Sparkles,
+  MessageSquare,
+  ChevronDown,
+} from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
-import { ENTITY_LABELS, CONTRIBUTION_LABELS, formatAssociationImpactDate, formatAnnuaireCoverage, getAssociationImpactSummary, getAnnuairePublicDestination, hasTraceableImpactHistory, hasTraceablePastActions, isEditorialAnnuaireEntry } from "./annuaire-helpers";
+import {
+  ENTITY_LABELS,
+  CONTRIBUTION_LABELS,
+  formatAssociationImpactDate,
+  formatAnnuaireCoverage,
+  getAssociationImpactSummary,
+  getAnnuairePublicDestination,
+  hasTraceableImpactHistory,
+  hasTraceablePastActions,
+  isEditorialAnnuaireEntry,
+  isPublishedPartnerAnnuaireEntry,
+} from "./annuaire-helpers";
 import type { AssociationProfile } from "@/lib/partners/annuaire-types";
 import { getAssociationProfile, getAssociationStructureBadge } from "./annuaire-association-profile";
 import { normalizePublicWebUrl } from "@/lib/partners/onboarding-types";
 import { cn } from "@/lib/utils";
-import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
+import {
+  PARIS_CLEANWALK_ACTORS,
+  PARIS_CLEANWALK_RELATIONS,
+  PARIS_RELATION_TYPE_META,
+} from "@/lib/partners/paris-cleanwalk-network";
 import { getActorStructureContext } from "@/lib/partners/public-structure-context";
 import { PublicStructureContextPanel } from "./public-structure-context-panel";
 
-type DrawerCommonProps = { entry: EnrichedAnnuaireEntry; fr: boolean; };
+type DrawerCommonProps = { entry: EnrichedAnnuaireEntry; fr: boolean };
 
-function AnnuaireDrawerHeader({ entry, fr, drawerTitleId, structureBadge, closeButtonRef, onClose }: DrawerCommonProps & { drawerTitleId: string; structureBadge: ReturnType<typeof getAssociationStructureBadge>; closeButtonRef: RefObject<HTMLButtonElement | null>; onClose: () => void; }) {
+function DrawerSection({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <>
-            {/* Header with Visual Branding */}
-            <div className="relative h-72 flex-shrink-0 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 via-violet-600/10 to-transparent" />
-              <div className="absolute top-[-20%] right-[-10%] h-[120%] w-[80%] rounded-full bg-violet-500/10 blur-[100px]" />
-
-              <div className="absolute top-8 right-8 z-20">
-                <CmmButton
-                  ref={closeButtonRef}
-                  onClick={onClose}
-                  ariaLabel={fr ? "Fermer la fiche partenaire" : "Close partner profile"}
-                  tone="tertiary"
-                  variant="pill"
-                  className="rounded-2xl p-4 text-white/60 backdrop-blur-xl hover:text-white shadow-2xl"
-                >
-                  <X size={20} />
-                </CmmButton>
-              </div>
-
-              <div className="absolute bottom-10 left-10 right-10 flex items-end gap-8 z-10">
-                <div className="relative group/logo">
-                  <div className="absolute inset-0 bg-violet-400 blur-2xl opacity-20 transition-opacity group-hover/logo:opacity-40" />
-                  <div className="relative flex h-28 w-28 items-center justify-center rounded-[2.5rem] border border-white/10 bg-slate-950/60 text-5xl font-black text-white shadow-2xl backdrop-blur-3xl">
-                    {entry.name.charAt(0)}
-                  </div>
-                </div>
-                <div className="pb-2 space-y-3">
-                  <div className="inline-flex items-center gap-3 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-xs font-black uppercase tracking-[0.3em] text-violet-400">
-                    <Building2 size={12} />
-                    {ENTITY_LABELS[entry.kind] || entry.kind}
-                  </div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-black uppercase tracking-[0.25em] text-slate-300">
-                    {entry.provenance === "editorial_seed"
-                      ? "Ressource éditoriale"
-                      : "Fiche partenaire publiée"}
-                  </div>
-                  <h2 id={drawerTitleId} className="text-4xl font-black leading-tight tracking-tighter text-white">{entry.name}</h2>
-                  {structureBadge && (
-                    <div className={cn(
-                      "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.3em]",
-                      structureBadge.tone === "success"
-                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                        : structureBadge.tone === "info"
-                        ? "border-sky-500/20 bg-sky-500/10 text-sky-300"
-                        : "border-amber-500/20 bg-amber-500/10 text-amber-300",
-                    )}>
-                      <Sparkles size={12} />
-                      {structureBadge.label}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-
-    </>
+    <details
+      open={defaultOpen}
+      className="group rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold cmm-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500">
+        <span>{title}</span>
+        <ChevronDown
+          size={16}
+          aria-hidden="true"
+          className="shrink-0 transition-transform group-open:rotate-180"
+        />
+      </summary>
+      <div className="mt-4 space-y-4">{children}</div>
+    </details>
   );
 }
 
-function AnnuaireDrawerMission({ entry, fr, isEditorial }: DrawerCommonProps & { isEditorial: boolean }) {
+function AnnuaireDrawerHeader({
+  entry,
+  fr,
+  drawerTitleId,
+  structureBadge,
+  closeButtonRef,
+  onClose,
+}: DrawerCommonProps & {
+  drawerTitleId: string;
+  structureBadge: ReturnType<typeof getAssociationStructureBadge>;
+  closeButtonRef: RefObject<HTMLButtonElement | null>;
+  onClose: () => void;
+}) {
   return (
-    <>
-              {/* Mission Overview */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-500">
-                    <Target size={18} />
-                  </div>
-                  <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-                    {isEditorial ? (fr ? "Présentation" : "Overview") : "Mission"}
-                  </h3>
-                </div>
-                <p className="text-lg font-bold leading-relaxed text-slate-300 opacity-90">
-                  {entry.description}
-                </p>
-                {entry.featuredReason && (
-                  <div className="group relative overflow-hidden rounded-[2.5rem] border border-violet-500/20 bg-violet-500/5 p-8 shadow-inner">
-                    <div className="absolute top-0 left-0 h-full w-1.5 bg-violet-500" />
-                    <Quote size={60} className="absolute -top-4 -right-4 text-violet-400 opacity-10 transition-transform group-hover:scale-110" />
-                    <p className="relative z-10 text-base font-black italic leading-relaxed text-violet-100/80">
-                      « {entry.featuredReason} »
-                    </p>
-                  </div>
+    <div className="flex-shrink-0 border-b border-[var(--cmm-surface-border)] bg-gradient-to-br from-violet-600/15 via-violet-500/5 to-transparent p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold cmm-text-primary">
+              <Building2 size={12} aria-hidden="true" />
+              {ENTITY_LABELS[entry.kind] || entry.kind}
+            </span>
+            <span className="inline-flex items-center rounded-full border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] px-3 py-1 text-xs font-semibold cmm-text-secondary">
+              {entry.provenance === "editorial_seed"
+                ? fr
+                  ? "Ressource éditoriale"
+                  : "Editorial resource"
+                : fr
+                  ? "Fiche partenaire publiée"
+                  : "Published partner profile"}
+            </span>
+            {structureBadge ? (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold",
+                  structureBadge.tone === "success"
+                    ? "border-emerald-500/20 bg-emerald-500/10 cmm-text-success"
+                    : structureBadge.tone === "info"
+                      ? "border-sky-500/20 bg-sky-500/10 cmm-text-info"
+                      : "border-amber-500/20 bg-amber-500/10 cmm-text-warning",
                 )}
-              </section>
-
-
-    </>
-  );
-}
-
-function AnnuaireDrawerAssociation({ entry, fr, associationProfile }: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
-  return (
-    <>
-              {associationProfile && (
-                <>
-                  <section className="space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-500">
-                        <Heart size={18} />
-                      </div>
-                      <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Mission associative" : "Association mission"}</h3>
-                    </div>
-                    <div className="space-y-4 rounded-[2.5rem] border border-white/10 bg-slate-950/40 p-8">
-                      <p className="text-lg font-bold leading-relaxed text-slate-200">
-                        {associationProfile.mission}
-                      </p>
-                      <div className="grid gap-4 md:grid-cols-3">
-                        <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                          <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-                            Besoins récurrents
-                          </p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {associationProfile.recurringNeeds.map((need) => (
-                              <span key={need} className="rounded-full border border-violet-500/15 bg-violet-500/10 px-3 py-1 text-xs font-black uppercase tracking-widest text-violet-200">
-                                {need}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                          <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-                            Périmètre déclaré
-                          </p>
-                          <p className="mt-3 text-base font-black text-white">
-                            {entry.coveredArrondissements.length} zones
-                          </p>
-                          <p className="mt-2 text-sm text-slate-300">
-                            {formatAnnuaireCoverage(entry)}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                          <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-                            Impact mesuré
-                          </p>
-                          <p className="mt-3 text-base font-black text-white">
-                            {hasTraceableImpactHistory(entry) ? getAssociationImpactSummary(entry) : "Non renseigné"}
-                          </p>
-                          <p className="mt-2 text-sm text-slate-300">
-                            {hasTraceableImpactHistory(entry) ? formatAssociationImpactDate(associationProfile.impactHistory?.lastActionAt) : "Date non renseignée"}
-                          </p>
-                          {hasTraceableImpactHistory(entry) && <p className="mt-2 text-xs text-slate-400">Source : {associationProfile.impactHistory?.provenance?.source}</p>}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className="space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-500">
-                        <Zap size={18} />
-                      </div>
-                      <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Appels & ressources" : "Calls & resources"}</h3>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-                        <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-                          Appels à contribution
-                        </p>
-                        <div className="mt-4 space-y-3">
-                          {associationProfile.publicCalls.map((call) => (
-                            <div key={`${call.type}-${call.label}`} className="rounded-2xl border border-white/5 bg-slate-950/40 p-4">
-                              <p className="text-sm font-black text-white">{call.label}</p>
-                              {call.detail && (
-                                <p className="mt-1 text-xs leading-relaxed text-slate-300">{call.detail}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-                        <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-                          Ressources utiles
-                        </p>
-                        <div className="mt-4 space-y-3">
-                          {associationProfile.usefulResources.length > 0 ? (
-                            associationProfile.usefulResources.map((resource) => {
-                              const resourceUrl = normalizePublicWebUrl(resource.url);
-                              const resourceContent = (
-                                <>
-                                  <p className="text-sm font-black text-white">{resource.label}</p>
-                                  {resource.description && (
-                                    <p className="mt-1 text-sm leading-relaxed text-slate-300">{resource.description}</p>
-                                  )}
-                                  {!resourceUrl && (
-                                    <p className="cmm-text-caption mt-2 text-xs font-black uppercase tracking-widest text-slate-500">
-                                      Ressource indisponible
-                                    </p>
-                                  )}
-                                </>
-                              );
-
-                              return resourceUrl ? (
-                                <a
-                                  key={resource.label}
-                                  href={resourceUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  aria-label={`${resource.label} — ${entry.name}`}
-                                  className="block rounded-2xl border border-white/5 bg-slate-950/40 p-4 transition-colors hover:border-violet-500/30 hover:bg-slate-950/60"
-                                >
-                                  {resourceContent}
-                                </a>
-                              ) : (
-                                <div
-                                  key={resource.label}
-                                  aria-disabled="true"
-                                  className="block rounded-2xl border border-white/5 bg-slate-950/40 p-4 opacity-80"
-                                >
-                                  {resourceContent}
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 p-4 text-xs text-slate-300">
-                              Ressources publiques à compléter
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className="space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-500">
-                        <ArrowRight size={18} />
-                      </div>
-                      <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Actions passées" : "Past actions"}</h3>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {hasTraceablePastActions(entry) ? associationProfile.pastActions.map((action) => (
-                        <div key={action} className="rounded-[1.75rem] border border-white/10 bg-slate-950/35 p-5 text-sm font-semibold leading-relaxed text-slate-200">
-                          {action}
-                        </div>
-                      )) : <div className="rounded-[1.75rem] border border-dashed border-white/10 bg-slate-950/30 p-5 text-sm font-semibold text-slate-300">Non renseigné</div>}
-                    </div>
-                    {hasTraceablePastActions(entry) && <p className="text-xs font-medium text-slate-400">Source : {associationProfile.pastActionsProvenance?.source}</p>}
-                  </section>
-                </>
-              )}
-
-
-    </>
-  );
-}
-
-function AnnuaireDrawerEngagement({ entry, fr }: DrawerCommonProps) {
-  return (
-    <>
-              {/* Engagement Grid */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-500">
-                    <Zap size={18} />
-                  </div>
-                  <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Champs d'intervention" : "Areas of intervention"}</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {entry.contributionTypes.map((type, idx) => (
-                    <motion.div
-                      key={type}
-                      data-motion-role="overlay"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.1 + idx * 0.05 }}
-                      className="group/item flex flex-col gap-4 rounded-[2rem] border border-white/5 bg-white/5 p-6 shadow-2xl transition-[background-color,border-color] hover:bg-white/10 hover:border-violet-500/30"
-                    >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950/40 text-slate-500 transition-[background-color,color] group-hover/item:bg-violet-500 group-hover/item:text-white">
-                        <Heart size={16} />
-                      </div>
-                      <span className="text-xs font-black uppercase tracking-widest text-white group-hover/item:text-white">
-                        {CONTRIBUTION_LABELS[type] || type}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-              </section>
-
-
-    </>
-  );
-}
-
-function AnnuaireDrawerLocation({ entry, fr }: DrawerCommonProps) {
-  return (
-    <>
-              {/* Base Location & Network */}
-              <section className="space-y-6">
-                <div className="group/loc relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-950/40 p-8 text-white shadow-2xl">
-                  <div className="absolute top-0 right-0 h-40 w-40 bg-violet-600/10 blur-3xl transition-transform duration-1000 group-hover/loc:scale-150" />
-                  <div className="relative z-10 space-y-8">
-                    <div className="flex items-start gap-5">
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-violet-400">
-                        <MapPin size={24} />
-                      </div>
-                      <div>
-                        <h4 className="mb-1 text-xs font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Ancrage Territorial" : "Territorial Base"}</h4>
-                        <p className="text-xl font-black tracking-tight">{formatAnnuaireCoverage(entry)}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {entry.tags?.map(tag => (
-                        <span key={tag} className="rounded-xl border border-white/5 bg-white/5 px-4 py-2 text-xs font-black tracking-widest text-slate-500 transition-colors hover:text-white hover:border-violet-500/20">
-                          {tag.toUpperCase()}
-                        </span>
-                      ))}
-                    </div>
-
-                    {(() => {
-                      const websiteUrl = normalizePublicWebUrl(entry.websiteUrl);
-                      return websiteUrl ? (
-                        <CmmButton
-                          asChild
-                          tone="secondary"
-                          width="wide"
-                          ariaLabel={`${fr ? "Consulter le site" : "Visit website"} — ${entry.name}`}
-                          className="h-16 rounded-2xl text-sm font-black uppercase tracking-[0.2em] shadow-2xl"
-                        >
-                          <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
-                            <Globe size={18} />
-                            <span>{fr ? "Consulter le site" : "Visit website"}</span>
-                          </a>
-                        </CmmButton>
-                      ) : (
-                        <CmmButton
-                          disabled
-                          tone="secondary"
-                          width="wide"
-                          ariaLabel={fr ? "Site indisponible" : "Website unavailable"}
-                          className="h-16 rounded-2xl text-sm font-black uppercase tracking-[0.2em] shadow-2xl"
-                        >
-                          <Globe size={18} />
-                          <span>{fr ? "Site indisponible" : "Website unavailable"}</span>
-                        </CmmButton>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </section>
-
-
-    </>
-  );
-}
-
-function AnnuaireDrawerFooter({ entry, fr, isEditorial, publicDestination, onClose }: DrawerCommonProps & { isEditorial: boolean; publicDestination: ReturnType<typeof getAnnuairePublicDestination>; onClose: () => void; }) {
-  return (
-    <>
-            {/* Footer Navigation */}
-            <div className="flex gap-4 border-t border-white/5 bg-slate-950/40 p-10 backdrop-blur-3xl">
-              <CmmButton
-                onClick={onClose}
-                tone="tertiary"
-                variant="pill"
-                className="h-16 flex-1 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white hover:bg-white/10"
               >
-                {fr ? "Fermer" : "Close"}
-              </CmmButton>
-              {publicDestination ? (
-                <CmmButton
-                  asChild
-                  tone="primary"
-                  variant="default"
-                  ariaLabel={`${isEditorial ? (fr ? "Consulter la ressource" : "View resource") : (fr ? "Engager le contact" : "Get in touch")} — ${entry.name}`}
-                  className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-sm font-black uppercase tracking-[0.2em] text-white hover:bg-violet-500"
-                >
-                  <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
-                    <span>{isEditorial ? (fr ? "Consulter la ressource" : "View resource") : (fr ? "Engager le contact" : "Get in touch")}</span>
-                    <MessageSquare size={18} className="ml-3 group-hover/cta:scale-110 transition-transform" />
-                  </a>
-                </CmmButton>
-              ) : (
-                <CmmButton
-                  disabled
-                  tone="primary"
-                  variant="default"
-                  ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
-                   className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-sm font-black uppercase tracking-[0.2em] text-white"
-                >
-                  <span>{isEditorial ? (fr ? "Ressource indisponible" : "Resource unavailable") : (fr ? "Contact indisponible" : "Contact unavailable")}</span>
-                  <MessageSquare size={18} className="ml-3" />
-                </CmmButton>
-              )}
-            </div>
-    </>
+                <Sparkles size={12} aria-hidden="true" />
+                {structureBadge.label}
+              </span>
+            ) : null}
+          </div>
+          <h2 id={drawerTitleId} className="text-2xl font-bold leading-tight cmm-text-primary">
+            {entry.name}
+          </h2>
+        </div>
+        <CmmButton
+          ref={closeButtonRef}
+          type="button"
+          onClick={onClose}
+          ariaLabel={fr ? "Fermer la fiche partenaire" : "Close partner profile"}
+          tone="tertiary"
+          variant="pill"
+          className="shrink-0"
+        >
+          <X size={18} aria-hidden="true" />
+        </CmmButton>
+      </div>
+    </div>
   );
 }
 
-export function AnnuairePartnerDrawerPanel({ drawerRef, closeButtonRef, drawerTitleId, entry, isOpen, onClose, fr, shouldReduceMotion, }: DrawerCommonProps & { drawerRef: RefObject<HTMLDivElement | null>; closeButtonRef: RefObject<HTMLButtonElement | null>; drawerTitleId: string; isOpen: boolean; onClose: () => void; shouldReduceMotion: boolean | null; }) {
+function AnnuaireDrawerOverviewSection({
+  entry,
+  fr,
+  associationProfile,
+}: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
+  const isPublished = isPublishedPartnerAnnuaireEntry(entry);
+  return (
+    <DrawerSection title={fr ? "Présentation" : "Overview"} defaultOpen>
+      <p className="text-sm leading-relaxed cmm-text-primary">{entry.description}</p>
+      {entry.featuredReason ? (
+        <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
+          <p className="text-sm italic leading-relaxed cmm-text-primary">
+            « {entry.featuredReason} »
+          </p>
+        </div>
+      ) : null}
+      {associationProfile ? (
+        <div className="space-y-1 rounded-xl border border-[var(--cmm-surface-border)] p-3">
+          <p className="text-xs font-semibold cmm-text-secondary">
+            {fr ? "Mission associative" : "Association mission"}
+          </p>
+          <p className="text-sm leading-relaxed cmm-text-primary">{associationProfile.mission}</p>
+        </div>
+      ) : null}
+      <div className="flex items-start gap-3">
+        <MapPin size={16} className="mt-0.5 shrink-0 text-violet-400" aria-hidden="true" />
+        <div>
+          <p className="text-xs font-semibold cmm-text-secondary">
+            {fr ? "Ancrage territorial" : "Territorial base"}
+          </p>
+          <p className="text-sm font-semibold cmm-text-primary">{formatAnnuaireCoverage(entry)}</p>
+        </div>
+      </div>
+      {isPublished && "availability" in entry && entry.availability ? (
+        <div>
+          <p className="text-xs font-semibold cmm-text-secondary">
+            {fr ? "Disponibilité déclarée" : "Declared availability"}
+          </p>
+          <p className="text-sm font-semibold cmm-text-primary">{entry.availability}</p>
+        </div>
+      ) : null}
+      {entry.tags?.length ? (
+        <div className="flex flex-wrap gap-2">
+          {entry.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-md border border-[var(--cmm-surface-border)] px-2.5 py-1 text-xs font-semibold cmm-text-secondary"
+            >
+              {tag.toUpperCase()}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </DrawerSection>
+  );
+}
+
+function AnnuaireDrawerImpactSection({
+  entry,
+  fr,
+  associationProfile,
+}: DrawerCommonProps & { associationProfile: AssociationProfile }) {
+  const hasImpact = hasTraceableImpactHistory(entry);
+  const hasActions = hasTraceablePastActions(entry);
+  return (
+    <DrawerSection title={fr ? "Actions et impact" : "Actions and impact"}>
+      <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
+        <p className="text-xs font-semibold cmm-text-secondary">
+          {fr ? "Impact mesuré" : "Measured impact"}
+        </p>
+        <p className="mt-1 text-sm font-semibold cmm-text-primary">
+          {hasImpact ? getAssociationImpactSummary(entry) : fr ? "Non renseigné" : "Not provided"}
+        </p>
+        <p className="mt-1 text-xs cmm-text-secondary">
+          {hasImpact
+            ? formatAssociationImpactDate(associationProfile.impactHistory?.lastActionAt)
+            : fr
+              ? "Date non renseignée"
+              : "Date not provided"}
+        </p>
+        {hasImpact ? (
+          <p className="mt-1 text-xs cmm-text-secondary">
+            Source : {associationProfile.impactHistory?.provenance?.source}
+          </p>
+        ) : null}
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs font-semibold cmm-text-secondary">
+          {fr ? "Actions passées" : "Past actions"}
+        </p>
+        {hasActions ? (
+          <ul className="m-0 list-none space-y-2 p-0">
+            {associationProfile.pastActions.map((action) => (
+              <li
+                key={action}
+                className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-sm cmm-text-primary"
+              >
+                {action}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm cmm-text-secondary">{fr ? "Non renseigné" : "Not provided"}</p>
+        )}
+        {hasActions && associationProfile.pastActionsProvenance?.source ? (
+          <p className="text-xs cmm-text-secondary">
+            Source : {associationProfile.pastActionsProvenance.source}
+          </p>
+        ) : null}
+      </div>
+    </DrawerSection>
+  );
+}
+
+function AnnuaireDrawerNeedsSection({
+  entry,
+  fr,
+  associationProfile,
+}: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
+  return (
+    <DrawerSection title={fr ? "Besoins et contributions" : "Needs and contributions"}>
+      <div className="space-y-2">
+        <p className="text-xs font-semibold cmm-text-secondary">
+          {fr ? "Champs d'intervention" : "Areas of intervention"}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {entry.contributionTypes.map((type) => (
+            <span
+              key={type}
+              className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold cmm-text-primary"
+            >
+              {CONTRIBUTION_LABELS[type] || type}
+            </span>
+          ))}
+        </div>
+      </div>
+      {associationProfile?.recurringNeeds.length ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold cmm-text-secondary">
+            {fr ? "Besoins récurrents" : "Recurring needs"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {associationProfile.recurringNeeds.map((need) => (
+              <span
+                key={need}
+                className="rounded-full border border-[var(--cmm-surface-border)] px-3 py-1 text-xs font-semibold cmm-text-primary"
+              >
+                {need}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {associationProfile?.publicCalls.length ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold cmm-text-secondary">
+            {fr ? "Appels à contribution" : "Calls for contribution"}
+          </p>
+          {associationProfile.publicCalls.map((call) => (
+            <div
+              key={`${call.type}-${call.label}`}
+              className="rounded-xl border border-[var(--cmm-surface-border)] p-3"
+            >
+              <p className="text-sm font-semibold cmm-text-primary">{call.label}</p>
+              {call.detail ? (
+                <p className="mt-1 text-xs leading-relaxed cmm-text-primary">{call.detail}</p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </DrawerSection>
+  );
+}
+
+function AnnuaireDrawerContactsSection({
+  entry,
+  fr,
+  isEditorial,
+  publicDestination,
+}: DrawerCommonProps & {
+  isEditorial: boolean;
+  publicDestination: ReturnType<typeof getAnnuairePublicDestination>;
+}) {
+  const websiteUrl = normalizePublicWebUrl(entry.websiteUrl);
+  return (
+    <DrawerSection title={fr ? "Contacts publics" : "Public contacts"}>
+      <p className="text-xs cmm-text-secondary">
+        {fr
+          ? "Seuls les canaux publics explicitement validés sont affichés."
+          : "Only explicitly validated public channels are displayed."}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {websiteUrl ? (
+          <CmmButton
+            asChild
+            tone="secondary"
+            variant="default"
+            ariaLabel={`${fr ? "Consulter le site" : "Visit website"} — ${entry.name}`}
+          >
+            <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
+              <Globe size={16} className="mr-2" aria-hidden="true" />
+              {fr ? "Consulter le site" : "Visit website"}
+            </a>
+          </CmmButton>
+        ) : (
+          <CmmButton
+            type="button"
+            disabled
+            tone="secondary"
+            variant="default"
+            ariaLabel={fr ? "Site indisponible" : "Website unavailable"}
+          >
+            <Globe size={16} className="mr-2" aria-hidden="true" />
+            {fr ? "Site indisponible" : "Website unavailable"}
+          </CmmButton>
+        )}
+        {publicDestination ? (
+          <CmmButton
+            asChild
+            tone="primary"
+            variant="default"
+            ariaLabel={`${publicDestination.label} — ${entry.name}`}
+          >
+            <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
+              <MessageSquare size={16} className="mr-2" aria-hidden="true" />
+              {isEditorial
+                ? fr
+                  ? "Consulter la ressource"
+                  : "View resource"
+                : fr
+                  ? "Engager le contact"
+                  : "Get in touch"}
+            </a>
+          </CmmButton>
+        ) : (
+          <CmmButton
+            type="button"
+            disabled
+            tone="primary"
+            variant="default"
+            ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
+          >
+            <MessageSquare size={16} className="mr-2" aria-hidden="true" />
+            {isEditorial
+              ? fr
+                ? "Ressource indisponible"
+                : "Resource unavailable"
+              : fr
+                ? "Contact indisponible"
+                : "Contact unavailable"}
+          </CmmButton>
+        )}
+      </div>
+    </DrawerSection>
+  );
+}
+
+function AnnuaireDrawerSourcesSection({
+  entry,
+  fr,
+  associationProfile,
+  structureContext,
+}: DrawerCommonProps & {
+  associationProfile: AssociationProfile | null;
+  structureContext: ReturnType<typeof getActorStructureContext> | null;
+}) {
+  const resources = associationProfile?.usefulResources ?? [];
+  return (
+    <DrawerSection title={fr ? "Sources et limites" : "Sources and limitations"}>
+      {resources.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold cmm-text-secondary">
+            {fr ? "Ressources utiles" : "Useful resources"}
+          </p>
+          {resources.map((resource) => {
+            const resourceUrl = normalizePublicWebUrl(resource.url);
+            return resourceUrl ? (
+              <a
+                key={resource.label}
+                href={resourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${resource.label} — ${entry.name}`}
+                className="block rounded-xl border border-[var(--cmm-surface-border)] p-3 hover:border-violet-500/40"
+              >
+                <p className="text-sm font-semibold cmm-text-primary">{resource.label}</p>
+                {resource.description ? (
+                  <p className="mt-1 text-xs cmm-text-secondary">{resource.description}</p>
+                ) : null}
+              </a>
+            ) : (
+              <div
+                key={resource.label}
+                aria-disabled="true"
+                className="rounded-xl border border-[var(--cmm-surface-border)] p-3 opacity-75"
+              >
+                <p className="text-sm font-semibold cmm-text-primary">{resource.label}</p>
+                <p className="mt-1 text-xs cmm-text-secondary">
+                  {fr ? "Ressource indisponible" : "Resource unavailable"}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-xs cmm-text-secondary">
+          {fr ? "Ressources publiques à compléter" : "Public resources to be completed"}
+        </p>
+      )}
+      <PublicStructureContextPanel fr={fr} context={structureContext} />
+    </DrawerSection>
+  );
+}
+
+function AnnuaireDrawerRelationsSection({ entryId, fr }: { entryId: string; fr: boolean }) {
+  const linkedActor = PARIS_CLEANWALK_ACTORS.find((actor) => actor.annuaireEntryId === entryId);
+  if (!linkedActor) return null;
+  const relations = PARIS_CLEANWALK_RELATIONS.filter(
+    (rel) => rel.sourceId === linkedActor.id || rel.targetId === linkedActor.id,
+  );
+  if (relations.length === 0) return null;
+
+  return (
+    <DrawerSection title={fr ? `Relations (${relations.length})` : `Relations (${relations.length})`}>
+      <ul className="m-0 list-none space-y-2 p-0">
+        {relations.map((rel) => {
+          const peerId = rel.sourceId === linkedActor.id ? rel.targetId : rel.sourceId;
+          const peer = PARIS_CLEANWALK_ACTORS.find((actor) => actor.id === peerId);
+          return (
+            <li
+              key={rel.id}
+              className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-xs"
+            >
+              <p className="font-semibold cmm-text-primary">
+                {peer?.name ?? peerId} · {PARIS_RELATION_TYPE_META[rel.relationType].label}
+              </p>
+              <p className="mt-1 cmm-text-secondary">{rel.summary}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </DrawerSection>
+  );
+}
+
+function AnnuaireDrawerFooter({
+  entry,
+  fr,
+  isEditorial,
+  publicDestination,
+  onClose,
+}: DrawerCommonProps & {
+  isEditorial: boolean;
+  publicDestination: ReturnType<typeof getAnnuairePublicDestination>;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-3 border-t border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] p-4">
+      <CmmButton type="button" onClick={onClose} tone="tertiary" variant="pill" className="flex-1">
+        {fr ? "Fermer" : "Close"}
+      </CmmButton>
+      {publicDestination ? (
+        <CmmButton
+          asChild
+          tone="primary"
+          variant="default"
+          ariaLabel={`${isEditorial ? (fr ? "Consulter la ressource" : "View resource") : fr ? "Engager le contact" : "Get in touch"} — ${entry.name}`}
+          className="flex-[2]"
+        >
+          <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
+            <span>
+              {isEditorial
+                ? fr
+                  ? "Consulter la ressource"
+                  : "View resource"
+                : fr
+                  ? "Engager le contact"
+                  : "Get in touch"}
+            </span>
+            <MessageSquare size={16} className="ml-2" aria-hidden="true" />
+          </a>
+        </CmmButton>
+      ) : (
+        <CmmButton
+          type="button"
+          disabled
+          tone="primary"
+          variant="default"
+          ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
+          className="flex-[2]"
+        >
+          <span>
+            {isEditorial
+              ? fr
+                ? "Ressource indisponible"
+                : "Resource unavailable"
+              : fr
+                ? "Contact indisponible"
+                : "Contact unavailable"}
+          </span>
+          <MessageSquare size={16} className="ml-2" aria-hidden="true" />
+        </CmmButton>
+      )}
+    </div>
+  );
+}
+
+export function AnnuairePartnerDrawerPanel({
+  drawerRef,
+  closeButtonRef,
+  drawerTitleId,
+  entry,
+  isOpen,
+  onClose,
+  fr,
+  shouldReduceMotion,
+}: DrawerCommonProps & {
+  drawerRef: RefObject<HTMLDivElement | null>;
+  closeButtonRef: RefObject<HTMLButtonElement | null>;
+  drawerTitleId: string;
+  isOpen: boolean;
+  onClose: () => void;
+  shouldReduceMotion: boolean | null;
+}) {
   if (!isOpen) return null;
   const associationProfile = getAssociationProfile(entry);
   const structureBadge = getAssociationStructureBadge(entry);
   const isEditorial = isEditorialAnnuaireEntry(entry);
   const publicDestination = getAnnuairePublicDestination(entry);
+  const structureContext =
+    isEditorial &&
+    PARIS_CLEANWALK_ACTORS.some(
+      (actor) => actor.id === entry.id && actor.annuaireEntryId === entry.id,
+    )
+      ? getActorStructureContext(entry.id)
+      : null;
+
   return (
     <>
-      <motion.div data-motion-role="overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-[12px]" onClick={onClose} />
-      <motion.div ref={drawerRef} data-motion-role="overlay" initial={{ x: "110%", opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: "110%", opacity: 0 }} transition={shouldReduceMotion ? { duration: 0 } : { type: "spring", damping: 30, stiffness: 200 }} role="dialog" aria-modal="true" aria-labelledby={drawerTitleId} tabIndex={-1} className="fixed top-4 bottom-4 right-4 z-[110] flex w-[calc(100%-2rem)] max-w-[550px] flex-col overflow-hidden rounded-[3.5rem] border border-white/10 bg-slate-900/60 backdrop-blur-3xl shadow-[0_0_100px_rgba(0,0,0,0.5)]">
-        <AnnuaireDrawerHeader entry={entry} fr={fr} drawerTitleId={drawerTitleId} structureBadge={structureBadge} closeButtonRef={closeButtonRef} onClose={onClose} />
-        <div className="flex-1 space-y-12 overflow-y-auto p-10 custom-scrollbar">
-          <AnnuaireDrawerMission entry={entry} fr={fr} isEditorial={isEditorial} />
-          <PublicStructureContextPanel
+      <motion.div
+        data-motion-role="overlay"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] bg-slate-950/75"
+        onClick={onClose}
+      />
+      <motion.div
+        ref={drawerRef}
+        data-motion-role="overlay"
+        initial={{ x: "110%", opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: "110%", opacity: 0 }}
+        transition={
+          shouldReduceMotion ? { duration: 0 } : { type: "spring", damping: 30, stiffness: 200 }
+        }
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={drawerTitleId}
+        tabIndex={-1}
+        className="fixed top-2 bottom-2 right-2 z-[110] flex w-[calc(100%-1rem)] max-w-[550px] flex-col overflow-hidden rounded-3xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] shadow-2xl sm:top-4 sm:bottom-4 sm:right-4 sm:w-[calc(100%-2rem)]"
+      >
+        <AnnuaireDrawerHeader
+          entry={entry}
+          fr={fr}
+          drawerTitleId={drawerTitleId}
+          structureBadge={structureBadge}
+          closeButtonRef={closeButtonRef}
+          onClose={onClose}
+        />
+        <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-6">
+          <AnnuaireDrawerOverviewSection
+            entry={entry}
             fr={fr}
-            context={isEditorial && PARIS_CLEANWALK_ACTORS.some(actor => actor.id === entry.id && actor.annuaireEntryId === entry.id) ? getActorStructureContext(entry.id) : null}
+            associationProfile={associationProfile}
           />
-          <AnnuaireDrawerAssociation entry={entry} fr={fr} associationProfile={associationProfile} />
-          <AnnuaireDrawerEngagement entry={entry} fr={fr} />
-          <AnnuaireDrawerLocation entry={entry} fr={fr} />
+          {associationProfile ? (
+            <AnnuaireDrawerImpactSection
+              entry={entry}
+              fr={fr}
+              associationProfile={associationProfile}
+            />
+          ) : null}
+          {entry.contributionTypes.length > 0 || associationProfile ? (
+            <AnnuaireDrawerNeedsSection
+              entry={entry}
+              fr={fr}
+              associationProfile={associationProfile}
+            />
+          ) : null}
+          <AnnuaireDrawerContactsSection
+            entry={entry}
+            fr={fr}
+            isEditorial={isEditorial}
+            publicDestination={publicDestination}
+          />
+          <AnnuaireDrawerSourcesSection
+            entry={entry}
+            fr={fr}
+            associationProfile={associationProfile}
+            structureContext={structureContext}
+          />
+          <AnnuaireDrawerRelationsSection entryId={entry.id} fr={fr} />
         </div>
-        <AnnuaireDrawerFooter entry={entry} fr={fr} isEditorial={isEditorial} publicDestination={publicDestination} onClose={onClose} />
+        <AnnuaireDrawerFooter
+          entry={entry}
+          fr={fr}
+          isEditorial={isEditorial}
+          publicDestination={publicDestination}
+          onClose={onClose}
+        />
       </motion.div>
     </>
   );

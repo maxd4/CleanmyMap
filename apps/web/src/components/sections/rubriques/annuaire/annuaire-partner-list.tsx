@@ -10,6 +10,7 @@ interface AnnuairePartnerListProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   onFocusMap: (id: string) => void;
+  onOpenProfile?: (id: string) => void;
 }
 
 /** Pagination partagée par la liste en grille et par les résultats compacts de la carte. */
@@ -69,13 +70,14 @@ export function AnnuairePartnerList({
   totalPages,
   onPageChange,
   onFocusMap,
+  onOpenProfile,
 }: AnnuairePartnerListProps) {
   return (
     <div className="space-y-6">
       <ul className="grid min-w-0 list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
         {entries.map((actor) => (
           <li key={actor.id} className="min-w-0">
-            <AnnuaireActorCard entry={actor} onFocusMap={() => onFocusMap(actor.id)} />
+            <AnnuaireActorCard entry={actor} onFocusMap={() => onFocusMap(actor.id)} onOpenProfile={onOpenProfile} />
           </li>
         ))}
       </ul>

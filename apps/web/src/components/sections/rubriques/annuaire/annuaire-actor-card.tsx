@@ -26,9 +26,10 @@ import {
 type AnnuaireActorCardProps = {
   entry: EnrichedAnnuaireEntry;
   onFocusMap: (entryId: string) => void;
+  onOpenProfile?: (entryId: string) => void;
 };
 
-export function AnnuaireActorCard({ entry, onFocusMap }: AnnuaireActorCardProps): ReactElement {
+export function AnnuaireActorCard({ entry, onFocusMap, onOpenProfile }: AnnuaireActorCardProps): ReactElement {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   const trustState = getEntryTrustState(entry);
@@ -63,7 +64,7 @@ export function AnnuaireActorCard({ entry, onFocusMap }: AnnuaireActorCardProps)
         <AnnuaireActorMetrics entry={entry} fr={fr} isEditorial={isEditorial} isPublishedPartner={isPublishedPartner} />
         <AnnuaireActorTrustInsight entry={entry} fr={fr} isEditorial={isEditorial} isIncomplete={isIncomplete} isTrusted={isTrusted} />
       </div>
-      <AnnuaireActorActions entry={entry} fr={fr} hasPreciseCoordinates={hasPreciseCoordinates} publicDestination={publicDestination} isEditorial={isEditorial} onFocusMap={onFocusMap} />
+      <AnnuaireActorActions entry={entry} fr={fr} hasPreciseCoordinates={hasPreciseCoordinates} publicDestination={publicDestination} isEditorial={isEditorial} onFocusMap={onFocusMap} onOpenProfile={onOpenProfile} />
       <AnnuaireActorFooter entry={entry} isPublishedPartner={isPublishedPartner} />
     </CmmCard>
   );

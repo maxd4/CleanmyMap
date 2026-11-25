@@ -61,6 +61,7 @@ vi.mock("lucide-react", () => {
   return {
     ArrowRight: Icon,
     Building2: Icon,
+    ChevronDown: Icon,
     Globe: Icon,
     Heart: Icon,
     MapPin: Icon,
@@ -280,5 +281,33 @@ describe("AnnuairePartnerDrawer interactions", () => {
 
     expect(document.body.querySelector('[role="dialog"]')).toBeNull();
     expect(document.activeElement).not.toBe(trigger);
+  });
+
+  it("organizes sections as collapsibles with only Présentation open by default and skips closed-section links in focus trap", () => {
+    mount(<AnnuairePartnerDrawer entry={publishedEntry} isOpen onClose={vi.fn()} fr />);
+    const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]');
+    const summaries = Array.from(dialog?.querySelectorAll("details > summary") ?? []).map(
+      (s) => s.textContent?.trim(),
+    );
+    expect(summaries).toContain("Présentation");
+    expect(summaries).toContain("Actions et impact");
+    expect(summaries).toContain("Besoins et contributions");
+    expect(summaries).toContain("Contacts publics");
+    expect(summaries).toContain("Sources et limites");
+
+    const detailsList = Array.from(dialog?.querySelectorAll("details") ?? []);
+    const overview = detailsList.find((d) => d.querySelector("summary")?.textContent?.includes("Présentation"));
+    const contacts = detailsList.find((d) => d.querySelector("summary")?.textContent?.includes("Contacts publics"));
+    expect(overview?.hasAttribute("open")).toBe(true);
+    expect(contacts?.hasAttribute("open")).toBe(false);
+
+    // Focus trap must not land on links inside closed sections (e.g. Contacts publics)
+    const footerClose = Array.from(dialog?.querySelectorAll("button") ?? []).find((b) =>
+      b.textContent?.includes("Fermer"),
+    );
+    expect(footerClose).toBeTruthy();
+    const contactSiteLink = contacts?.querySelector<HTMLAnchorElement>("a");
+    expect(contactSiteLink).toBeTruthy();
+    expect(document.activeElement).not.toBe(contactSiteLink);
   });
 });

@@ -74,9 +74,13 @@ chevauchement du titre. Aucune information métier n'est retirée. Contrat atten
 contraste WCAG AA (4,5:1 texte courant, 3:1 grand texte) dans les modes `exhaustif`,
 `sobre`, `minimaliste` et les thèmes `mixed` et `dark`.
 
-Une fiche s'ouvre de façon cohérente depuis la sélection mise en avant, la liste, un
-marqueur de carte ou un nœud du graphe. Le drawer expose les informations publiques
-disponibles, la couverture déclarée, les repères de confiance et les ressources
+Une fiche s'ouvre de façon cohérente depuis la sélection mise en avant, la liste (`Consulter la fiche`), un
+marqueur de carte, un résultat compact ou un nœud du graphe, indépendamment de la présence de coordonnées
+ou d'un site web (`Localiser` reste distinct et désactivé sans coordonnées). Le drawer organise
+les informations existantes en sections repliables (`Présentation` ouverte par défaut, `Actions et impact`,
+`Besoins et contributions`, `Contacts publics`, `Sources et limites` et `Relations` uniquement lorsque des
+relations vérifiées sont raccordées), avec focus trap limité aux sections ouvertes, fermeture `Escape`,
+scroll interne et largeur adaptée au mobile. Les données privées ou administratives restent exclues.
 publiables.
 
 Le CTA de contact n'utilise qu'une destination web publique validée (`http` ou

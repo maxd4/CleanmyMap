@@ -21,6 +21,7 @@ vi.mock("lucide-react", () => {
   const Icon = () => React.createElement("span");
   return {
     Clock: Icon,
+    FileText: Icon,
     Info: Icon,
     MapPin: Icon,
     MessageSquare: Icon,
@@ -98,5 +99,31 @@ describe("AnnuaireActorCard provenance", () => {
     expect(markup).toContain("Contacter");
     expect(markup).not.toContain("ACTIF");
     expect(markup).not.toContain("CERTIFIÉ");
+  });
+
+  it("keeps the profile button accessible even without coordinates or a public contact URL", () => {
+    const seed = INITIAL_ANNUAIRE_ENTRIES[0];
+    expect(seed).toBeDefined();
+
+    const markup = renderToStaticMarkup(
+      <AnnuaireActorCard
+        entry={{
+          ...seed,
+          lat: null,
+          lng: null,
+          websiteUrl: undefined,
+          instagramUrl: undefined,
+          facebookUrl: undefined,
+          primaryChannel: undefined,
+          distanceKm: null,
+        }}
+        onFocusMap={vi.fn()}
+        onOpenProfile={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("Consulter la fiche");
+    expect(markup).toContain("Position indisponible");
+    expect(markup).toContain("Indisponible");
   });
 });

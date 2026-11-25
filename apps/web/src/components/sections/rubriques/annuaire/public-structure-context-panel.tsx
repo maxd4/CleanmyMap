@@ -11,17 +11,28 @@ function SourceLink({ id, fr }: { id: string; fr: boolean }) {
   const source = getPublicStructureSource(id);
   const text = fr ? COPY.fr : COPY.en;
   if (!source) return null;
-  return <li className="break-words"><a href={source.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 text-sky-200 focus-visible:ring-2 focus-visible:ring-sky-300">{source.label}</a><span className="block text-slate-400">{text.evidence[source.evidence]} · {text.verified} {source.verifiedAt}</span></li>;
+  return (
+    <li className="break-words">
+      <a href={source.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 cmm-text-info focus-visible:ring-2 focus-visible:ring-violet-500">
+        {source.label}
+      </a>
+      <span className="block cmm-text-secondary">
+        {text.evidence[source.evidence]} · {text.verified} {source.verifiedAt}
+      </span>
+    </li>
+  );
 }
 
 function Metric({ item, fr }: { item: PublicStructureMetric; fr: boolean }) {
   const lang = fr ? "fr" : "en";
   const text = COPY[lang];
-  return <li className="border-b border-white/10 pb-2">
-    <p className="font-semibold text-slate-200">{item.label[lang]} · {item.period} · {text.scope[item.scope]}</p>
-    <p className="font-bold tabular-nums text-white">{item.quality === "approximate" ? "≈ " : ""}{item.value.toLocaleString(fr ? "fr-FR" : "en-US")}{text.unit[item.unit] ? " " + text.unit[item.unit] : ""}</p>
-    <ul className="mt-1 text-xs"><SourceLink id={item.sourceId} fr={fr} /></ul>
-  </li>;
+  return (
+    <li className="border-b border-[var(--cmm-surface-border)] pb-2">
+      <p className="font-semibold cmm-text-primary">{item.label[lang]} · {item.period} · {text.scope[item.scope]}</p>
+      <p className="font-bold tabular-nums cmm-text-primary">{item.quality === "approximate" ? "≈ " : ""}{item.value.toLocaleString(fr ? "fr-FR" : "en-US")}{text.unit[item.unit] ? " " + text.unit[item.unit] : ""}</p>
+      <ul className="mt-1 text-xs"><SourceLink id={item.sourceId} fr={fr} /></ul>
+    </li>
+  );
 }
 
 /** One optional detail in the selected record, never a score, graph decoration or filter. */
@@ -29,18 +40,28 @@ export function PublicStructureContextPanel({ context, fr }: { context: PublicSt
   if (!context) return null;
   const lang = fr ? "fr" : "en";
   const text = COPY[lang];
-  return <section className="mt-4 space-y-3 text-sm text-slate-300">
-    {context.metrics?.length ? <details className="rounded-xl border border-white/10 p-3">
-      <summary className="cursor-pointer font-semibold text-white">{text.figures}</summary>
-      <ul className="mt-3 space-y-2">{context.metrics.map(item => <Metric key={item.id} item={item} fr={fr} />)}</ul>
-    </details> : null}
-    {context.limits.length ? <details className="rounded-xl border border-amber-300/25 p-3">
-      <summary className="cursor-pointer font-semibold text-white">{text.limits} ({context.limits.length})</summary>
-      <ul className="mt-3 space-y-3">{context.limits.map(item => <li key={item.id} className="border-b border-white/10 pb-2">
-        <p className="font-semibold text-amber-100">{text.basis[item.basis]}</p>
-        <p className="mt-1 leading-relaxed">{item.text[lang]}</p>
-        <ul className="mt-2 space-y-1 text-xs">{item.sourceIds.map(id => <SourceLink key={id} id={id} fr={fr} />)}</ul>
-      </li>)}</ul>
-    </details> : null}
-  </section>;
+  return (
+    <section className="space-y-3 text-sm cmm-text-primary">
+      {context.metrics?.length ? (
+        <details className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-3">
+          <summary className="cursor-pointer font-semibold cmm-text-primary">{text.figures}</summary>
+          <ul className="mt-3 space-y-2">{context.metrics.map((item) => <Metric key={item.id} item={item} fr={fr} />)}</ul>
+        </details>
+      ) : null}
+      {context.limits.length ? (
+        <details className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+          <summary className="cursor-pointer font-semibold cmm-text-primary">{text.limits} ({context.limits.length})</summary>
+          <ul className="mt-3 space-y-3">
+            {context.limits.map((item) => (
+              <li key={item.id} className="border-b border-[var(--cmm-surface-border)] pb-2">
+                <p className="font-semibold cmm-text-warning">{text.basis[item.basis]}</p>
+                <p className="mt-1 leading-relaxed cmm-text-primary">{item.text[lang]}</p>
+                <ul className="mt-2 space-y-1 text-xs">{item.sourceIds.map((id) => <SourceLink key={id} id={id} fr={fr} />)}</ul>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </section>
+  );
 }

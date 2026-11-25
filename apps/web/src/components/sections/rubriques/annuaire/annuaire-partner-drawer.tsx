@@ -43,10 +43,16 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
 
       if (event.key !== "Tab") return;
 
-      const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusable?.length) {
+      const focusable = Array.from(
+        drawerRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), summary, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => {
+        const closedDetails = element.closest("details:not([open])");
+        if (!closedDetails) return true;
+        return element.tagName === "SUMMARY" && element.parentElement === closedDetails;
+      });
+      if (!focusable.length) {
         event.preventDefault();
         drawerRef.current?.focus();
         return;

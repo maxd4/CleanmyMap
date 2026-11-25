@@ -193,12 +193,13 @@ describe("AnnuaireSection main tabs", () => {
     expect(container.querySelector('[data-testid="drawer"]')).toBeNull();
   });
 
-  it("opens one sheet only on the map and never keeps an orphan after a filter change", () => {
+  it("opens one sheet across directory and map, hides it outside directory tabs, and never keeps an orphan after a filter change", () => {
     const container = mount();
-    act(() => tab(container, "map").click());
     act(() => container.querySelector<HTMLButtonElement>("[data-select]")?.click());
     expect(container.querySelectorAll('[data-testid="drawer"]').length).toBe(1);
-    act(() => tab(container, "directory").click());
+    act(() => tab(container, "map").click());
+    expect(container.querySelectorAll('[data-testid="drawer"]').length).toBe(1);
+    act(() => tab(container, "network").click());
     expect(container.querySelector('[data-testid="drawer"]')).toBeNull();
 
     logicMock.mockImplementation(() => ({
