@@ -80,6 +80,16 @@ export class InstitutionalValidationError extends Error {
   }
 }
 
+function normalizeOccurredAt(occurredAt?: string | null): string | null {
+  const trimmed = occurredAt?.trim();
+  if (!trimmed) return null;
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new InstitutionalValidationError("Invalid occurredAt timestamp");
+  }
+  return parsed.toISOString();
+}
+
 export function computeInstitutionalFactIdempotencyKey(input: {
   contactId: string;
   kind: RelationshipEvidence["kind"];
@@ -98,7 +108,7 @@ export function computeInstitutionalFactIdempotencyKey(input: {
     input.origin,
     input.evidenceRef.trim(),
     input.summary.trim(),
-    input.occurredAt?.trim() ?? null,
+    normalizeOccurredAt(input.occurredAt),
     input.supportTarget ?? null,
     input.contributionRole ?? null,
     input.activityKind ?? null,
@@ -172,29 +182,31 @@ async function fetchFactsPaginated(
   supabase: ReturnType<typeof getSupabaseServerClient>,
 ): Promise<{ rows: FactRow[]; truncated: boolean }> {
   const rows: FactRow[] = [];
-  let offset = 0;
+  let cursor: FactRow | undefined;
 
   while (rows.length < MAX_INSTITUTIONAL_FACTS_READ) {
     const remaining = MAX_INSTITUTIONAL_FACTS_READ - rows.length;
     const pageLimit = Math.min(INSTITUTIONAL_READ_PAGE_SIZE, remaining);
-    const { data, error } = await supabase
+    let query = supabase
       .from("institutional_relationship_facts")
       .select("*")
       .order("created_at", { ascending: false })
-      .order("id", { ascending: true })
-      .range(offset, offset + pageLimit);
+      .order("id", { ascending: true });
+    if (cursor) {
+      // Both values originate from PostgreSQL; preserve timestamp precision.
+      query = query.or(`created_at.lt."${cursor.created_at}",and(created_at.eq."${cursor.created_at}",id.gt.${cursor.id})`);
+    }
+    const { data, error } = await query.range(0, pageLimit);
     if (error) throw new Error(error.message);
 
     const page = (data ?? []) as FactRow[];
-    if (page.length > pageLimit) {
-      rows.push(...page.slice(0, pageLimit));
-      return { rows, truncated: true };
+    const accepted = page.slice(0, pageLimit);
+    rows.push(...accepted);
+    const hasMore = page.length > pageLimit;
+    if (!hasMore || rows.length === MAX_INSTITUTIONAL_FACTS_READ) {
+      return { rows, truncated: hasMore };
     }
-    rows.push(...page);
-    if (page.length < pageLimit) {
-      return { rows, truncated: false };
-    }
-    offset += pageLimit;
+    cursor = accepted[accepted.length - 1];
   }
 
   return { rows, truncated: true };
@@ -331,10 +343,12 @@ export async function addPrivateInstitutionalFact(input: {
     await verifyContributionReference(supabase, input.activityKind, activityRef);
   }
 
+  const occurredAt = normalizeOccurredAt(input.occurredAt);
   const idempotencyKey = computeInstitutionalFactIdempotencyKey({
     ...input,
     evidenceRef,
     summary,
+    occurredAt,
     activityRef,
   });
 
@@ -347,7 +361,7 @@ export async function addPrivateInstitutionalFact(input: {
       review_status: "pending",
       evidence_ref: evidenceRef,
       summary,
-      occurred_at: input.occurredAt ?? null,
+      occurred_at: occurredAt,
       support_target: input.supportTarget ?? null,
       contribution_role: input.contributionRole ?? null,
       activity_kind: input.activityKind ?? null,

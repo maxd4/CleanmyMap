@@ -15,6 +15,7 @@ import {
   InstitutionalValidationError,
   listPrivateInstitutionalContacts,
   MAX_INSTITUTIONAL_CONTACTS_READ,
+  MAX_INSTITUTIONAL_FACTS_READ,
   reviewPrivateInstitutionalFact,
 } from "./relationship-store";
 
@@ -178,14 +179,14 @@ describe("relationship-store hardening", () => {
     expect(res.fact.reviewStatus).toBe("verified");
   });
 
-  it("paginates facts in bounded pages below max_rows=1000", async () => {
+  it.each([0, 499, 500, 501, 999, 1000, 1999, 2000, 2001])("reads bounded fact pages with an inclusive range for %i rows", async (count) => {
     const contactsChain = {
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
-      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+      range: vi.fn().mockResolvedValue({ data: [{ id: "c1", institutional_node_id: null, display_name: "Test", role_label: null, is_publicly_publishable: false, revalidation_status: "a_revalider", notes: null, created_at: "2026-11-25T10:00:00Z", updated_at: "2026-11-25T10:00:00Z" }], error: null }),
     };
-    const page1 = Array.from({ length: INSTITUTIONAL_READ_PAGE_SIZE }, (_, i) => ({
-      id: `f1-${i}`,
+    const allRows = Array.from({ length: count }, (_, i) => ({
+      id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
       contact_id: "c1",
       kind: "note",
       origin: "direct",
@@ -200,21 +201,30 @@ describe("relationship-store hardening", () => {
       created_by: "admin-1",
       created_at: "2026-11-25T10:00:00Z",
     }));
+    let start = 0;
     const factsChain = {
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
-      range: vi
-        .fn()
-        .mockResolvedValueOnce({ data: page1, error: null })
-        .mockResolvedValueOnce({ data: [], error: null }),
+      or: vi.fn().mockImplementation(function (this: unknown, filter: string) {
+        const lastId = filter.match(/id\.gt\.([^)]*)\)$/)?.[1];
+        start = allRows.findIndex(row => row.id === lastId) + 1;
+        expect(start).toBeGreaterThan(0);
+        return this;
+      }),
+      range: vi.fn().mockImplementation(async (from: number, to: number) => ({
+        data: allRows.slice(start + from, start + to + 1), error: null,
+      })),
     };
     supabaseMocks.getSupabaseServerClient.mockReturnValue({
       from: vi.fn((table: string) => (table === "institutional_relationship_contacts" ? contactsChain : factsChain)),
     });
 
     const result = await listPrivateInstitutionalContacts();
-    expect(factsChain.range).toHaveBeenCalledTimes(2);
-    expect(result.truncated.facts).toBe(false);
+    expect(result.contacts[0]?.facts.map(fact => fact.id)).toEqual(allRows.slice(0, MAX_INSTITUTIONAL_FACTS_READ).map(row => row.id));
+    expect(result.truncated.facts).toBe(count > MAX_INSTITUTIONAL_FACTS_READ);
+    expect(result.contacts[0]?.distinctionsIncomplete).toBe(count > MAX_INSTITUTIONAL_FACTS_READ);
+    expect(factsChain.range).toHaveBeenCalledTimes(Math.max(1, Math.ceil(Math.min(count, MAX_INSTITUTIONAL_FACTS_READ) / INSTITUTIONAL_READ_PAGE_SIZE)));
+    expect(factsChain.range.mock.calls.every(([from, to]) => from === 0 && to < 1000)).toBe(true);
   });
 
   it("verifies cleanmymap_action existence and HTTPS external_event before inserting", async () => {
