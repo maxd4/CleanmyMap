@@ -46,3 +46,14 @@ Chaque information métier publique a un owner, une projection et au moins un em
 - Couverture des logos tiers, portraits, adresses et nouveaux liens : inventaire de chaque ID et recherche des preuves publiques restent nécessaires. Aucune disponibilité ou autorisation de publication n'est inventée.
 
 STOP CONDITION : chaque donnée publiable pertinente est rendue au bon emplacement, les exclusions sont justifiées, les deux visualiseurs et la fiche commune sont réellement raccordés, le public ne reçoit aucune donnée privée, les contrôles runtime et CI du candidat exact réussissent.
+
+### Catalogue unifié (CANDIDATE 15 à 17)
+
+| Données | Destination | Preuve attendue |
+|---|---|---|
+| Entrées éditoriales et partenaires acceptés, acteurs réseau, structures institutionnelles admissibles | Catalogue unique, identifiants explicites et fiche commune | Test de couverture, priorité partenaire sur même ID, absence de fusion par nom |
+| Familles, provenance, territoire, participation, filière, relations documentées | Filtres et tri | Résultats et compteur issus de la même projection ; inconnues conservées |
+| Coordonnées prouvées et canaux publics autorisés | Actions conditionnelles des cartes | Pas de centroïde comme adresse, pas de contact administratif ni URL fictive |
+| Personnes, postes, métiers et équipes internes | Fiches et organigramme | Pas de comptage comme structures autonomes |
+
+Les candidats n'ajoutent pas de nouveaux logos ou preuves géographiques. Tests préparés mais non exécutés ; couverture réelle non prouvée. Les écarts précédents restent ouverts.
