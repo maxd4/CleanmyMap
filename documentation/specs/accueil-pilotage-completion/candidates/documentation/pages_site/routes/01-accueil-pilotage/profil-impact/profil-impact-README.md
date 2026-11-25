@@ -1,0 +1,68 @@
+# Profil impact
+
+> CANDIDATE : mettre à jour la fiche canonique après intégration et vérification runtime. Les observations de capture historiques ne sont pas des preuves du nouveau rendu.
+
+## Fiche canonique
+
+- **Route** : `/profil/impact`
+- **Fichier(s) source(s)** :
+- `apps/web/src/app/(app)/profil/impact/page.tsx`
+- **Type fonctionnel** : page de bloc
+- **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc), exception visuelle Impact
+- **Statut** : protégé
+- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Objectif utilisateur principal** : Consulter sa progression personnelle, ses badges, son rang et sa carte d'impact personnelle.
+- **Action principale attendue** : Télécharger ou partager le PNG de sa carte personnelle, sans exposer l'URL protégée.
+- **Point d’entrée utilisateur** : Mon espace (Aujourd'hui et Engagement), profil détaillé (Progression).
+- **Navigation** : surface secondaire contextualisée, volontairement absente du ruban principal.
+- **Règle de partage** : Le partage porte uniquement sur le fichier image PNG généré depuis la carte personnelle. Il ne crée pas de profil public, ne partage pas l'URL protégée `/profil/impact` et ne produit aucune donnée serveur ou token public.
+- **Palette attendue** : red / rouge impact
+- **Scope** : carte d'impact personnelle, progression et badges issus des actions validées, export PNG et partage fichier uniquement ; expose l'accès principal « Valoriser mon engagement » vers `/profil/engagement`.
+- **Terminée** : oui pour le périmètre actuellement livré
+- **Couleurs actuellement détectées** : red — états de chargement, carte et actions d'impact utilisent l'accent impact.
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle runtime actuelle.
+- **Risque de conflit avec les couleurs existantes** : moyen : attention au chevauchement entre sky cartographique et rouge impact / alerte.
+- **Niveau de surcharge textuelle** : fort
+- **Textes à conserver** :
+- Carte personnelle
+- progression, rang et badges
+- chiffres issus des actions validées
+- lien vers la méthodologie et les rapports collectifs
+- **Textes à réduire ou supprimer** :
+- Commentaires de contexte
+- badges de répétition
+- cartes trop proches visuellement
+- **Bulles / cartes / contextes trop nombreux** : Les indicateurs territoriaux, comparaisons globales et estimateurs de projet restent dans `/reports`; cette page ne duplique que la lecture personnelle.
+- **Composants UI concernés** :
+- Carte
+- cards d'impact
+- filtres
+- legend
+- tableaux / rapports
+- **Captures attendues** : desktop, mobile
+- **Priorité de correction** : moyenne
+
+
+## États à documenter
+
+- **loading** : fond `slate`, skeletons sobres, loader discret, même largeur et mêmes espacements que les autres états.
+- **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
+- **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
+- **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
+- **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
+- **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
+
+
+
+## Références legacy
+
+- Référence legacy non versionnée dans le dépôt actuel ; consulter les documents canoniques de cette page et ne pas recréer l'ancien chemin.
+
+## Notes d'audit
+
+- Cette fiche est la source de vérité canonique pour la page.
+- Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+
+## Contrat cible de la refonte
+
+Accès depuis Mon espace et le profil détaillé. Carte PNG et historique personnel, export/partage de fichier seulement, aucun résultat artificiel si donnée manquante. Le propriétaire reste le compte courant ; cache client par userId. Conserver le proxy eau documenté et la carte verte, harmoniser les surfaces de page avec le bloc. CTA vers le dossier.

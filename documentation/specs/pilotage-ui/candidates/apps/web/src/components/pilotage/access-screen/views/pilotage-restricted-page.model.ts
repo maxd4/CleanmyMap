@@ -17,7 +17,13 @@ export function buildRestrictedPilotageSections(profile: AppProfile, access: Eff
       { href: "/admin/services", label: { fr: "Services et santé", en: "Services and health" }, description: { fr: "Consulter les intégrations, les quotas et les signaux de supervision.", en: "Review integrations, quotas and monitoring signals." } },
     ] });
   }
-  const used = new Set([...COMMON_ACTIONS.map(action => action.href), DASHBOARD_ROUTE, "/pilotage", buildProfileRoute(profile)]);
+  const institutionalActions: ProfileAction[] = access && (profile === "elu" || profile === "max")
+    ? [
+      { href: "/sections/elus", label: { fr: "Gouvernance", en: "Governance" }, description: { fr: "Synthèse des actions publiques et priorités.", en: "Published action summary and priorities." } },
+      { href: "/sponsor-portal", label: { fr: "Portail décideur", en: "Decision portal" }, description: { fr: "Impact consolidé et méthodes de calcul.", en: "Consolidated impact and calculation methods." } },
+    ]
+    : [];
+  const used = new Set([...COMMON_ACTIONS.map(action => action.href), ...institutionalActions.map(action => action.href), DASHBOARD_ROUTE, "/pilotage", buildProfileRoute(profile)]);
   const contextualActions = access && !isAdminLikeProfile(profile)
     ? getProfileActions(profile).filter(action => {
         if (used.has(action.href) || action.href.startsWith("/admin")) return false;
@@ -25,10 +31,10 @@ export function buildRestrictedPilotageSections(profile: AppProfile, access: Eff
         return true;
       })
     : [];
-  sections.push({ id: "analysis", actions: [...COMMON_ACTIONS, ...contextualActions] });
+  sections.push({ id: "analysis", actions: [...institutionalActions, ...COMMON_ACTIONS, ...contextualActions] });
   sections.push({ id: "profile", actions: [
     { href: DASHBOARD_ROUTE, label: { fr: "Mon espace", en: "Dashboard" }, description: { fr: "Vos notifications, raccourcis et compte.", en: "Your notifications, shortcuts and account." } },
-    { href: buildProfileRoute(profile), label: { fr: "Changer de rôle actif", en: "Switch active role" }, description: { fr: "Choisir Coordinateur pour piloter les actions que vous organisez.", en: "Choose Coordinator to manage actions you organize." } },
+    { href: buildProfileRoute(profile), label: { fr: "Changer de rôle actif", en: "Switch active role" }, description: { fr: "Ouvrir le profil puis Compte et rôles.", en: "Open the profile, then Account and roles." } },
   ] });
   return sections;
 }

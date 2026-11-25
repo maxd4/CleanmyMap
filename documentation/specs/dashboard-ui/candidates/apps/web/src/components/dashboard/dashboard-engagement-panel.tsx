@@ -13,7 +13,11 @@ export async function DashboardEngagementPanel({ userId, profile, locale }: { us
     <section className="space-y-4" aria-labelledby="dashboard-engagement-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="dashboard-engagement-title" className="text-xl font-bold cmm-text-primary">{locale === "fr" ? "Mon engagement" : "My engagement"}</h2>
-        <CmmButton href={buildProfileRoute(profile)} tone="secondary">{locale === "fr" ? "Progression et badges" : "Progress and badges"}</CmmButton>
+        <div className="flex flex-wrap gap-2">
+          <CmmButton href="/profil/engagement" tone="primary">{locale === "fr" ? "Mon dossier" : "My record"}</CmmButton>
+          <CmmButton href="/profil/impact" tone="secondary">{locale === "fr" ? "Mon impact" : "My impact"}</CmmButton>
+          <CmmButton href={`${buildProfileRoute(profile)}?tab=badges`} tone="secondary">{locale === "fr" ? "Progression et badges" : "Progress and badges"}</CmmButton>
+        </div>
       </div>
       <div className="grid items-start gap-4 xl:grid-cols-[0.85fr_1.15fr]">
         <DashboardReferralCard locale={locale} summary={referralSummary} profile={profile} />

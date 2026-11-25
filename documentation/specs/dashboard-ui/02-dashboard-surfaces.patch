@@ -352,7 +352,7 @@ diff --git a/apps/web/src/components/dashboard/dashboard-referral-card.tsx b/app
 -        </div>
 -      </div>
 -    </FamilyRubriqueCard>
-+        <CmmButton href={buildProfileRoute(profile)} tone="secondary">
++        <CmmButton href={`${buildProfileRoute(profile)}?tab=referrals#parrainage`} tone="secondary">
 +          <ArrowRight size={14} aria-hidden="true" />
 +          {fr ? "Ouvrir le badge" : "Open badge"}
 +        </CmmButton>

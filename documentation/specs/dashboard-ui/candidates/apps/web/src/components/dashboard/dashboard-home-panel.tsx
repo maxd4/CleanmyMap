@@ -23,6 +23,7 @@ export function DashboardHomePanel({ profile, locale }: { profile: AppProfile; l
           <p className="text-sm cmm-text-secondary">{fr ? "Retrouvez vos participations documentées et les enregistrements accessibles." : "Find your documented participation and accessible records."}</p>
           <div className="flex flex-wrap gap-2">
             <CmmButton href="/profil/engagement" tone="primary">{fr ? "Mon dossier d'engagement" : "My engagement record"}</CmmButton>
+            <CmmButton href="/profil/impact" tone="secondary">{fr ? "Mon impact personnel" : "My personal impact"}</CmmButton>
             <CmmButton href="/actions/history" tone="secondary">{fr ? "Historique terrain" : "Field history"}</CmmButton>
             {!actions.some((action) => action.href === "/actions/new") && <CmmButton href="/actions/new" tone="secondary">{fr ? "Créer une action" : "Create an action"}</CmmButton>}
           </div>
@@ -32,6 +33,7 @@ export function DashboardHomePanel({ profile, locale }: { profile: AppProfile; l
           <p className="text-sm cmm-text-secondary">{fr ? "Consultez votre profil, vos badges et vos demandes." : "Review your profile, badges and requests."}</p>
           <div className="flex flex-wrap gap-2">
             <CmmButton href={buildProfileRoute(profile)} tone="secondary">{fr ? "Mon profil" : "My profile"}</CmmButton>
+            <CmmButton href="/compte/evolution" tone="secondary">{fr ? "Évolution du compte" : "Account progression"}</CmmButton>
             <CmmButton href={dashboardTabHref("notifications")} tone="secondary">{fr ? "Mes notifications" : "My notifications"}</CmmButton>
           </div>
         </CmmCard>

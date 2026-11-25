@@ -1,0 +1,9 @@
+diff --git a/apps/web/src/app/(app)/profil/page.tsx b/apps/web/src/app/(app)/profil/page.tsx
+--- a/apps/web/src/app/(app)/profil/page.tsx
++++ b/apps/web/src/app/(app)/profil/page.tsx
+@@ -14,3 +14,3 @@
+-export default function ProfilRootPage() {
+-  return <DashboardPage />;
++export default function ProfilRootPage({ searchParams }: { searchParams: Promise<{ tab?: string | string[] }> }) {
++  return <DashboardPage searchParams={searchParams} />;
+ }
