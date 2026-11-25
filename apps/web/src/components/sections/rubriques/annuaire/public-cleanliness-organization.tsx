@@ -153,7 +153,7 @@ export function PublicCleanlinessOrganization({
   const standaloneRoots = roots.filter(node => node.kind === "person" || node.kind === "position" || (node.kind === "unit" && mandateNodes.has(node.id)));
   const standaloneRootIds = new Set(standaloneRoots.map(node => node.id));
   const administrativeRoots = roots.filter(node => !standaloneRootIds.has(node.id));
-  const selected = visibleNodes.find((node) => node.id === selectedId) ?? visibleNodes[0] ?? null;
+  const selected = (includedIds.has(selectedId) ? nodeById.get(selectedId) : undefined) ?? visibleNodes[0] ?? null;
   const selectedRelations = selected ? relations.filter((edge) => edge.from === selected.id || edge.to === selected.id) : [];
   const institutionalPeople = selected && dataset ? getPublicInstitutionalPeople(dataset, selected.id) : [];
   const documentedContributions = selected && dataset ? getPublicInstitutionalContributions(dataset, selected.id) : [];

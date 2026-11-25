@@ -189,4 +189,31 @@ describe("PublicCleanlinessOrganization behavior", () => {
     expect(view.textContent).toContain("Street cleaning");
     expect(view.textContent).toContain("Service de propreté");
   });
+
+  it("opens details of an ancestor node under combined filters via tree and breadcrumb navigation", () => {
+    const view = mount(<PublicCleanlinessOrganization fr />);
+    const search = view.querySelector<HTMLInputElement>('input[type="search"]')!;
+    const setSearch = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    act(() => {
+      setSearch.call(search, "Division 17");
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    // Ancestor "Direction de la Propreté et de l'Eau (DPE)" is rendered in the tree even when excluded by search
+    const dpeBtn = [...view.querySelectorAll<HTMLButtonElement>("ul button")].find(
+      (btn) => btn.textContent?.includes("Direction de la Propreté et de l'Eau"),
+    );
+    expect(dpeBtn).toBeDefined();
+    act(() => dpeBtn!.click());
+    expect(view.querySelector("aside h3")?.textContent).toContain("Direction de la Propreté et de l'Eau");
+
+    // Breadcrumb navigation to root ancestor "Ville de Paris"
+    const breadcrumbNav = view.querySelector('nav[aria-label="Navigation par niveau"]');
+    const parisBtn = [...(breadcrumbNav?.querySelectorAll<HTMLButtonElement>("button") ?? [])].find(
+      (btn) => btn.textContent?.includes("Ville de Paris"),
+    );
+    expect(parisBtn).toBeDefined();
+    act(() => parisBtn!.click());
+    expect(view.querySelector("aside h3")?.textContent).toContain("Ville de Paris");
+  });
 });

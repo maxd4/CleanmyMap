@@ -691,4 +691,73 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
       root.unmount();
     });
   });
+
+  it("does not clear 3D selection on Escape when active is false and avoids GPS hydration mismatch", async () => {
+    sitePreferencesMock.mockReturnValue({
+      locale: "fr",
+      displayMode: "complet",
+    });
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(<ParisNetwork3DSection active={true} />);
+    });
+
+    const cleanmymapBtn = Array.from(container.querySelectorAll("button")).find(
+      (btn) => btn.querySelector("span")?.textContent?.trim() === "CleanMyMap",
+    );
+    expect(cleanmymapBtn).toBeDefined();
+
+    act(() => {
+      cleanmymapBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+
+    // Hide 3D tab (active=false) and press Escape: selection must remain intact
+    act(() => {
+      root.render(<ParisNetwork3DSection active={false} />);
+    });
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    });
+    act(() => {
+      root.render(<ParisNetwork3DSection active={true} />);
+    });
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+
+    // Hydration test when navigator.geolocation exists on client but not during SSR
+    const { renderToString } = await import("react-dom/server");
+    const { hydrateRoot } = await import("react-dom/client");
+    const origGeo = navigator.geolocation;
+    Object.defineProperty(navigator, "geolocation", { value: undefined, configurable: true });
+    const ssrHtml = renderToString(<ParisNetwork3DSection active={true} />);
+    Object.defineProperty(navigator, "geolocation", {
+      value: { getCurrentPosition: vi.fn() },
+      configurable: true,
+    });
+
+    const hydrateContainer = document.createElement("div");
+    hydrateContainer.innerHTML = ssrHtml;
+    const errors: unknown[] = [];
+    const origError = console.error;
+    console.error = (...args: unknown[]) => errors.push(args.join(" "));
+    let hydrated: ReturnType<typeof hydrateRoot> | null = null;
+    try {
+      await act(async () => {
+        hydrated = hydrateRoot(hydrateContainer, <ParisNetwork3DSection active={true} />);
+      });
+    } finally {
+      console.error = origError;
+      Object.defineProperty(navigator, "geolocation", { value: origGeo, configurable: true });
+    }
+    expect(errors.some((e) => String(e).includes("Hydration"))).toBe(false);
+    act(() => {
+      hydrated?.unmount();
+    });
+  });
 });

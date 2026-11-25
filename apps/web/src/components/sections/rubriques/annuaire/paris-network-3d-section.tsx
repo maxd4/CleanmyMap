@@ -177,7 +177,7 @@ export function ParisNetwork3DSection({
   }, [cancelHoverClose]);
 
   useEffect(() => {
-    if (!selectedActorId && !hoveredActorId && !selectedRelationId) return;
+    if (!active || (!selectedActorId && !hoveredActorId && !selectedRelationId)) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         handleCloseBubble();
@@ -185,7 +185,7 @@ export function ParisNetwork3DSection({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedActorId, hoveredActorId, selectedRelationId, handleCloseBubble]);
+  }, [active, selectedActorId, hoveredActorId, selectedRelationId, handleCloseBubble]);
 
   useEffect(() => {
     const element = sectionRef.current;
@@ -213,7 +213,11 @@ export function ParisNetwork3DSection({
     return () => observer.disconnect();
   }, []);
 
-  const gpsAvailable = canRequestGeolocation();
+  const gpsAvailable = useSyncExternalStore(
+    () => () => {},
+    () => canRequestGeolocation(),
+    () => false,
+  );
 
   useEffect(() => {
     if (!gpsAvailable || typeof navigator === "undefined" || !navigator.permissions?.query) {
