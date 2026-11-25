@@ -1,0 +1,9 @@
+{
+  "reference": "75603b489223ff7eaaf27ebaa0f21dd75882c817",
+  "files": {
+    "apps/web/src/app/(app)/admin/page.tsx": "7ffa3b9ed51b9d8260c197f5e42e4ccc18b29310",
+    "apps/web/src/app/(app)/admin/admin-page-content.tsx": "f3c15c6f9a9f2c50b404710999d32d3eecb13231",
+    "apps/web/src/components/admin/admin-max-tools.tsx": "69942c02ccc37f9f7671855cd80a5872a28f1ae9",
+    "apps/web/src/lib/admin/admin-dashboard-contract.ts": "e9065ae0a5fa793522d1b366bec425a7a36a5be0"
+  }
+}
