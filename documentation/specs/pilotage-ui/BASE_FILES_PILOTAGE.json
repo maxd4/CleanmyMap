@@ -1,0 +1,10 @@
+{
+  "reference": "d5873259ce4f0d0de6909a59d420bbaf9709b132",
+  "files": {
+    "apps/web/src/app/(app)/pilotage/page.tsx": "27de7d46fbd62a071fead6a552f46e18f999aeb3",
+    "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-page.tsx": "478354beffa169801d5c975504013c9a17cf4e53",
+    "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-content.tsx": "b4073f446543b61037c5b61152d562b7c079ca68",
+    "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-surface-tabs.tsx": "9396d8b8829f78f05de1cbc07aa131a6d84bc6cc",
+    "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-content.test.tsx": "e685e23d551f855a00c801c4b5f82e4abf568180"
+  }
+}
