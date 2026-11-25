@@ -1,0 +1,6 @@
+import Link from "next/link";
+import { tabStripClassName, tabItemClassName } from "@/components/ui/cmm-tab-strip.styles";
+
+export function DecisionPageNavigation({ route, activeTab, tabs }: { route: string; activeTab: string; tabs: readonly { id: string; label: string }[] }) {
+  return <nav aria-label="Vues de décision" className={tabStripClassName("family", "grid-cols-1 sm:grid-cols-3")}>{tabs.map((tab,index) => <Link key={tab.id} href={index === 0 ? route : `${route}?tab=${tab.id}`} prefetch={false} aria-current={activeTab === tab.id ? "page" : undefined} className={tabItemClassName("family",activeTab === tab.id)}>{tab.label}</Link>)}</nav>;
+}

@@ -1,0 +1,410 @@
+diff --git a/apps/web/src/lib/pilotage/overview.types.ts b/apps/web/src/lib/pilotage/overview.types.ts
+--- a/apps/web/src/lib/pilotage/overview.types.ts
++++ b/apps/web/src/lib/pilotage/overview.types.ts
+@@ -60,4 +60,6 @@
+   limit?: number;
+   types?: ActionEntityType[] | null;
+   scope?: PilotageOverviewScope | null;
++  /** Strict public completed action corpus, for published aggregate reads. */
++  publishedCompletedOnly?: boolean;
+ };
+diff --git a/apps/web/src/lib/pilotage/overview.ts b/apps/web/src/lib/pilotage/overview.ts
+--- a/apps/web/src/lib/pilotage/overview.ts
++++ b/apps/web/src/lib/pilotage/overview.ts
+@@ -113,6 +113,7 @@
+   return [
+     `period:${params.periodDays}`,
+     `limit:${params.limit ?? 1500}`,
++    `publishedCompletedOnly:${params.publishedCompletedOnly === true}`,
+     `types:${types}`,
+     `scope:${buildPilotageScopeCacheKey(params.scope, actionIds)}`,
+   ].join("|");
+@@ -121,6 +122,7 @@
+ export async function loadPilotageOverview(
+   params: LoadPilotageOverviewParams,
+ ): Promise<PilotageOverview> {
++  if (params.scope && params.publishedCompletedOnly) throw new Error("Incompatible overview scopes");
+   const actionIds = params.scope
+     ? await loadOrganizedActionIds(params.scope.userId)
+     : null;
+@@ -138,7 +140,8 @@
+         status: "approved",
+         floorDate,
+         requireCoordinates: false,
+-        types: (params.scope ? ["action"] : params.types ?? null) as ActionEntityType[] | null,
++        types: (params.scope || params.publishedCompletedOnly ? ["action"] : params.types ?? null) as ActionEntityType[] | null,
++        ...(params.publishedCompletedOnly ? { requirePublicCompletedActions: true } : {}),
+         actionIds,
+       });
+ 
+diff --git a/apps/web/src/app/(app)/sponsor-portal/page.tsx b/apps/web/src/app/(app)/sponsor-portal/page.tsx
+--- a/apps/web/src/app/(app)/sponsor-portal/page.tsx
++++ b/apps/web/src/app/(app)/sponsor-portal/page.tsx
+@@ -1,254 +1,50 @@
+-import { 
+-  Euro, 
+-  Users, 
+-  Leaf, 
+-  Map as MapIcon,
+-  Download,
+-  Zap,
+-  ArrowRight,
+-  Activity
+-} from "lucide-react";
+ import { loadPilotageOverview } from "@/lib/pilotage/overview";
+ import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
+ import { computeImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
+ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+-import { CmmButton } from "@/components/ui/cmm-button";
+ import { AccountCompletionGate } from "@/components/account/account-completion-gate";
+ import { getSafeAuthSession } from "@/lib/auth/safe-session";
+-import { PageHeader } from "@/components/ui/page-header";
+-import { CmmPageLayout } from "@/components/ui/cmm-section";
+-import {
+-  PilotageInsightCard,
+-  PilotageMetricGrid,
+-} from "@/components/pilotage/pilotage-cluster-panels";
+-import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-section";
+-import { getPageFamilyById } from "@/lib/ui/page-families";
+ import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
++import { CmmPageLayout } from "@/components/ui/cmm-section";
++import { PageHeader } from "@/components/ui/page-header";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmButton } from "@/components/ui/cmm-button";
++import { PublishedDecisionScope, PublishedDecisionZones, PublishedDecisionMethods } from "@/components/pilotage/published-decision-panels";
++import { DecisionPageNavigation } from "@/components/pilotage/decision-page-navigation";
+ 
+ const SPONSOR_WINDOW_DAYS = 730;
+-
+-// Justification Vercel: cette page protégée dépend de la session Clerk et ne doit jamais être pré-rendue avec des données sponsor privilégiées.
++const TABS = [{ id: "summary", label: "Bilan d'impact" }, { id: "zones", label: "Zones observées" }, { id: "methods", label: "Méthodes et rapports" }] as const;
+ export const dynamic = "force-dynamic";
++type SponsorOverview = Awaited<ReturnType<typeof loadPilotageOverview>>;
+ 
+-async function loadSponsorOverview() {
+-  return loadPilotageOverview({
+-    periodDays: SPONSOR_WINDOW_DAYS,
+-    limit: 5000,
+-  });
++function SponsorMetrics({ overview }: { overview: SponsorOverview }) {
++  const current = overview.comparison.current;
++  const mass = current.wasteKnownActions > 0 ? current.impactVolumeKg : null;
++  const co2 = mass === null ? null : Math.round(mass * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg);
++  const savings = mass === null ? null : computeImpactTerrain2026StreetCleaningSavings({ wasteKg: mass, durationMinutes: current.totalDurationMinutes });
++  const format = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
++  const items = [
++    ["Valorisation de voirie estimée", savings ? `${format(savings.lowerBoundEuros)} à ${format(savings.upperBoundEuros)} €` : "Indisponible", "Fourchette méthodologique, pas une économie comptable."],
++    ["CO₂ évité estimé", co2 === null ? "Indisponible" : `${format(co2)} kg`, "Proxy calculé sur la masse renseignée."],
++    ["Participations déclarées", format(current.mobilizationCount), "Somme déclarée, pas un nombre de personnes uniques."],
++    ["Masse renseignée", mass === null ? "Non renseignée" : `${format(mass)} kg`, `${format(current.wasteCoverageRate)} % des actions renseignées.`],
++  ];
++  return <section aria-label="Bilan d'impact" className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">{items.map(([label,value,detail]) => <CmmCard key={label} className="space-y-2"><h2 className="text-sm font-semibold cmm-text-secondary">{label}</h2><p className="text-2xl font-bold tabular-nums break-words cmm-text-primary">{value}</p><p className="text-sm cmm-text-secondary">{detail}</p></CmmCard>)}</section>;
+ }
+-
+-export default async function SponsorPortalPage() {
++export default async function SponsorPortalPage({ searchParams }: { searchParams?: Promise<{ tab?: string | string[] }> } = {}) {
+   const { userId, clerkReachable } = await getSafeAuthSession();
+-
+-  if (!userId) {
+-    return (
+-      <ClerkRequiredGate isAuthenticated={false} mode="disabled">
+-        <AccountCompletionGate state={null}>
+-          <div />
+-        </AccountCompletionGate>
+-      </ClerkRequiredGate>
+-    );
+-  }
+-
+-  const accountCompletion = await loadAccountCompletionGateState({
+-    userId,
+-    clerkReachable,
+-  }).catch(() => null);
+-
+-  const overview = await loadSponsorOverview().catch((error) => {
+-    console.error("[SponsorPortalPage] Failed to load sponsor overview", error);
+-    return null;
+-  });
+-  const factors = IMPACT_PROXY_CONFIG.factors;
+-  const pageFamily = getPageFamilyById("accueil-pilotage");
+-
+-  // Calculs ROI
+-  const totalKg = overview?.comparison.current.impactVolumeKg ?? null;
+-  const streetCleaningSavings = totalKg === null
+-    ? null
+-    : computeImpactTerrain2026StreetCleaningSavings({
+-        wasteKg: totalKg,
+-        durationMinutes: overview?.comparison.current.totalDurationMinutes ?? 0,
+-      });
+-  const totalCo2 = totalKg === null
+-    ? null
+-    : Math.round(totalKg * factors.co2KgPerWasteKg);
+-  const totalVolunteers = overview?.comparison.current.mobilizationCount ?? null;
+-  const observedZones = overview?.zones.slice(0, 3) ?? [];
+-
+-  const page = (
+-    <CmmPageLayout>
+-      {/* Premium Cockpit Header */}
+-      <PageHeader
+-        family={pageFamily}
+-        title="ROI stratégique"
+-        subtitle="Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG."
+-        action={
+-          <CmmButton tone="primary" variant="pill" size="lg">
+-            <Download size={18} aria-hidden="true" />
+-            Exporter le bilan certifié
+-          </CmmButton>
+-        }
+-      />
+-
+-      {/* ROI CARDS - High Impact Tiles */}
+-      <section>
+-        <PilotageMetricGrid
+-          variant="sponsor"
+-          metrics={[
+-            {
+-              id: "economie-voirie",
+-              label: "Économie de voirie",
+-              value: streetCleaningSavings === null
+-                ? "n/a"
+-                : `${streetCleaningSavings.lowerBoundEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}–${streetCleaningSavings.upperBoundEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`,
+-              deltaPercent: "+12%",
+-              icon: <Euro size={16} aria-hidden="true" />,
+-              interpretation: "positive",
+-            },
+-            {
+-              id: "co2-evite",
+-              label: "CO2 évité (estimé)",
+-              value: totalCo2 === null ? "n/a" : `${totalCo2.toLocaleString()} kg`,
+-              deltaPercent: "+8%",
+-              icon: <Leaf size={16} aria-hidden="true" />,
+-              interpretation: "positive",
+-            },
+-            {
+-              id: "mobilisation-citoyenne",
+-              label: "Mobilisation citoyenne",
+-              value: totalVolunteers === null ? "n/a" : totalVolunteers.toLocaleString(),
+-              deltaPercent: "+24%",
+-              icon: <Users size={16} aria-hidden="true" />,
+-              interpretation: "positive",
+-            },
+-            {
+-              id: "masse-extraite",
+-              label: "Masse extraite",
+-              value: totalKg === null ? "n/a" : `${totalKg.toLocaleString()} kg`,
+-              deltaPercent: "+15%",
+-              icon: <MapIcon size={16} aria-hidden="true" />,
+-              interpretation: "positive",
+-            },
+-          ]}
+-          className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
+-        />
+-      </section>
+-
+-      {/* Detailed Insights */}
+-      <section className="grid gap-6 lg:grid-cols-2">
+-        <div className="rounded-[2.5rem] border border-white/10 bg-white/5 p-8 backdrop-blur-2xl space-y-8 sm:p-10">
+-          <div className="flex items-center gap-4">
+-            <div className="w-10 h-10 rounded-full bg-amber-400/10 flex items-center justify-center">
+-              <Activity size={18} className="text-amber-400" />
+-            </div>
+-            <h3 className="cmm-text-small font-black uppercase tracking-[0.16em] text-white">Périmètre d&apos;analyse</h3>
+-          </div>
+-          
+-          <div className="space-y-6">
+-            <p className="text-3xl font-bold text-white tracking-tight leading-tight">
+-              Analyse consolidée des données de mobilisation disponibles sur la période sélectionnée.
+-            </p>
+-            <p className="cmm-text-body cmm-text-inverse font-medium">
+-              Ce portail agrège les données de mobilisation pour offrir une lecture macroscopique de l&apos;impact environnemental et social.
+-            </p>
+-          </div>
+-
+-          <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/5">
+-            {[
+-              { label: "Période", val: `${SPONSOR_WINDOW_DAYS}j` },
+-              { label: "Contrats", val: overview?.contracts.length ?? "n/a" },
+-              { label: "Zones", val: overview?.zones.length ?? "n/a" },
+-            ].map((stat, i) => (
+-              <div key={i} className="space-y-1">
+-                <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-white">{stat.label}</p>
+-                <p className="text-2xl font-black text-white">{stat.val}</p>
+-              </div>
+-            ))}
+-          </div>
+-        </div>
+-
+-        <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/5 p-8 backdrop-blur-2xl space-y-8 sm:p-10">
+-          <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+-
+-          <PilotageInsightCard
+-            variant="sponsor"
+-            className="relative z-10"
+-            insight={{
+-              eyebrow: "Périmètre d'analyse",
+-              title: "Points chauds",
+-              detail:
+-                "Lecture consolidée des actions et zones observées, avec recommandations et priorités directement actionnables.",
+-              actionLabel: "Voir les rapports",
+-              actionHref: "/reports",
+-            }}
+-          />
+-
+-          <div className="space-y-4 relative z-10">
+-            {observedZones.length > 0 ? (
+-              observedZones.map((zone) => (
+-                <div key={zone.area} className="group p-6 rounded-[2rem] border border-white/5 bg-white/5 transition-all hover:bg-white/10">
+-                  <div className="flex justify-between items-center mb-4">
+-                    <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-white">{zone.area}</p>
+-                    <div className="cmm-text-small font-black text-amber-300">
+-                      SCORE {zone.normalizedScore.toFixed(1)}
+-                    </div>
+-                  </div>
+-                  <div className="flex items-center gap-2 mb-2">
+-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+-                    <p className="cmm-text-small font-black uppercase tracking-[0.12em] text-white">
+-                      Priorité : <span className="text-amber-400">{zone.urgency}</span>
+-                    </p>
+-                  </div>
+-                  <p className="text-sm font-semibold text-white transition-colors group-hover:text-white">{zone.recommendedAction}</p>
+-                </div>
+-              ))
+-            ) : (
+-              <div className="p-8 text-center cmm-text-small font-black uppercase tracking-[0.12em] text-white">
+-                Silence Radio • Aucune zone critique
+-              </div>
+-            )}
+-          </div>
+-        </div>
+-      </section>
+-
+-      <DecisionClusterSection locale="fr" surfaceId="sponsor" />
+-
+-      {/* Protocol Transparency */}
+-      <section className="group relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/5 p-8 backdrop-blur-2xl transition-all hover:bg-white/[0.07] sm:p-10">
+-        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-amber-400/5 rounded-full blur-[120px] pointer-events-none transition-all group-hover:bg-amber-400/10" />
+-        
+-        <div className="max-w-4xl space-y-10 relative z-10">
+-          <div className="flex items-center gap-4">
+-            <div className="w-12 h-12 rounded-2xl bg-amber-400/10 flex items-center justify-center">
+-              <Zap size={24} className="text-amber-400" />
+-            </div>
+-            <h3 className="text-3xl font-black text-white tracking-tighter uppercase">Rigueur Scientifique</h3>
+-          </div>
+-          
+-          <div className="space-y-6">
+-            <p className="text-xl leading-relaxed font-medium tracking-tight text-white sm:text-2xl">
+-              La valorisation de voirie est une estimation méthodologique à deux lectures : <strong className="text-white">{streetCleaningSavings === null ? "n/a" : `${streetCleaningSavings.massEstimateEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € par la masse et ${streetCleaningSavings.timeEstimateEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € par le temps`}</strong>. La fourchette affichée ne constitue ni une dépense comptable économisée euro pour euro ni une certification.
+-            </p>
+-            
+-            <CmmButton href="/methodologie" tone="secondary" variant="pill" className="inline-flex items-center gap-4 cmm-text-small font-black uppercase tracking-[0.3em] text-black transition-all group">
+-              Accéder au livre blanc méthodologique
+-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-2" />
+-            </CmmButton>
+-          </div>
+-        </div>
+-      </section>
+-    </CmmPageLayout>
+-  );
+-
+-  return (
+-    <ClerkRequiredGate
+-      isAuthenticated={Boolean(userId)}
+-      mode="disabled"
+-    >
+-      <AccountCompletionGate state={accountCompletion}>
+-        {page}
+-      </AccountCompletionGate>
+-    </ClerkRequiredGate>
+-  );
++  if (!userId) return <ClerkRequiredGate isAuthenticated={false} mode="disabled"><div /></ClerkRequiredGate>;
++  const params = await searchParams;
++  const tab = TABS.find(item => item.id === params?.tab)?.id ?? "summary";
++  const accountCompletion = await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null);
++  const overview = await loadPilotageOverview({ periodDays: SPONSOR_WINDOW_DAYS, limit: 5000, publishedCompletedOnly: true }).catch(() => null);
++  return <AccountCompletionGate state={accountCompletion}><CmmPageLayout>
++    <PageHeader title="Portail décideur" subtitle="Impact consolidé des actions publiques terminées." action={<CmmButton href="/reports" tone="primary">Rapports et exports</CmmButton>} />
++    <DecisionPageNavigation route="/sponsor-portal" activeTab={tab} tabs={TABS} />
++    {overview ? <PublishedDecisionScope overview={overview} /> : <CmmCard><p role="status" className="cmm-text-secondary">Données d'impact momentanément indisponibles.</p></CmmCard>}
++    {tab === "summary" && overview && <SponsorMetrics overview={overview} />}
++    {tab === "zones" && overview && <PublishedDecisionZones zones={overview.zones.slice(0,3)} />}
++    {tab === "methods" && <><CmmCard className="space-y-2"><h2 className="font-bold cmm-text-primary">Valorisation et émissions</h2><p className="cmm-text-secondary">La valorisation croise deux estimations, par masse et par durée. Elle ne constitue ni une économie comptable ni une certification. Le CO₂ est un proxy.</p></CmmCard><PublishedDecisionMethods methods={overview?.methods ?? []} /></>}
++    <div className="flex flex-wrap gap-2"><CmmButton href="/pilotage" tone="secondary">Pilotage</CmmButton><CmmButton href="/sections/elus" tone="secondary">Gouvernance</CmmButton></div>
++  </CmmPageLayout></AccountCompletionGate>;
+ }
+diff --git a/apps/web/src/app/(app)/sections/[sectionId]/page.tsx b/apps/web/src/app/(app)/sections/[sectionId]/page.tsx
+--- a/apps/web/src/app/(app)/sections/[sectionId]/page.tsx
++++ b/apps/web/src/app/(app)/sections/[sectionId]/page.tsx
+@@ -4,6 +4,7 @@
+ import { SectionRenderer } from "@/components/sections/rubriques/section-renderer";
+ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+ import { getSafeAuthSession } from "@/lib/auth/safe-session";
++import { GovernancePage } from "@/components/sections/rubriques/governance-page";
+ import { env } from "@/lib/env";
+ import {
+   getSectionRubriqueById,
+@@ -113,6 +114,8 @@
+     notFound();
+   }
+ 
++  if (section.id === "elus") return <GovernancePage searchParams={await searchParams} />;
++
+   const accessMode = section.anonymousPresentation;
+   const fundingOnParticipeUrl =
+     section.id === "funding" || section.id === "open-data"
+diff --git a/apps/web/src/components/sections/rubriques/elus-section.tsx b/apps/web/src/components/sections/rubriques/elus-section.tsx
+--- a/apps/web/src/components/sections/rubriques/elus-section.tsx
++++ b/apps/web/src/components/sections/rubriques/elus-section.tsx
+@@ -1,49 +1,11 @@
+ "use client";
+ 
+-import { useState } from "react";
+-import { useUser } from "@clerk/nextjs";
+-import { ShieldCheck } from "lucide-react";
+-import { SectionShell } from "@/components/sections/rubriques/shared";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmButton } from "@/components/ui/cmm-button";
+ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+-import { isPromotionEligibleEluAccessDenied } from "./elus-section-access";
+-import { ElusSectionContent } from "./elus-section-content";
+-import type { ElusSectionTab } from "./elus-section-navigation";
+-import { useElusOverview } from "./elus-section-overview";
+-import { ElusSectionErrorState } from "./elus-section-states";
+ 
++/** Registry compatibility: the actual protected route is rendered server-side. */
+ export function ElusSection() {
+   const { locale } = useSitePreferences();
+-  const { isLoaded, user, isSignedIn } = useUser();
+-  const fr = locale === "fr";
+-  const [activeTab, setActiveTab] = useState<ElusSectionTab>("overview");
+-  const { data, isLoading, error } = useElusOverview(activeTab, {
+-    isLoaded,
+-    isSignedIn,
+-    userId: user?.id,
+-  });
+-  const grantedRoleValue =
+-    typeof user?.publicMetadata?.role === "string"
+-      ? user.publicMetadata.role
+-      : undefined;
+-  const showPromotionCta = isPromotionEligibleEluAccessDenied(
+-    error,
+-    Boolean(isSignedIn),
+-    grantedRoleValue,
+-  );
+-
+-  if (error || (isLoaded && isSignedIn !== true)) {
+-    return <ElusSectionErrorState showPromotionCta={showPromotionCta} />;
+-  }
+-
+-  return (
+-    <SectionShell
+-      id="pilotage"
+-      title={fr ? "Pilotage Institutionnel" : "Institutional Pilotage"}
+-      subtitle={fr ? "Intelligence territoriale et aide à la décision pour les élus et gestionnaires publics." : "Territorial intelligence and decision support for elected officials and public managers."}
+-      icon={ShieldCheck}
+-      gradient="from-blue-600/20 via-slate-900/10 to-transparent"
+-    >
+-      <ElusSectionContent fr={fr} locale={locale} activeTab={activeTab} onTabChange={setActiveTab} isLoading={isLoading} data={data} />
+-    </SectionShell>
+-  );
++  return <CmmCard className="space-y-3"><p className="cmm-text-secondary">{locale === "fr" ? "Consultez la gouvernance selon votre rôle actif." : "View governance according to your active role."}</p><CmmButton href="/sections/elus" tone="primary">{locale === "fr" ? "Ouvrir Gouvernance" : "Open governance"}</CmmButton></CmmCard>;
+ }
