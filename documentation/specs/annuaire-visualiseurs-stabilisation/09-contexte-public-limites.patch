@@ -87,7 +87,7 @@ diff --git a/apps/web/src/lib/partners/public-structure-context.megots.ts b/apps
 new file mode 100644
 --- /dev/null
 +++ b/apps/web/src/lib/partners/public-structure-context.megots.ts
-@@ -0,0 +1,1269 @@
+@@ -0,0 +1,1295 @@
 +import type { PublicStructureContext, PublicStructureSource } from "./public-structure-context";
 +
 +/** Editorial public evidence only; no private contact or administrative store. */
@@ -987,6 +987,20 @@ new file mode 100644
 +        "sourceIds": [
 +          "megothon-2026-partner"
 +        ]
++      },
++      {
++        "id": "street-collection-eligibility",
++        "kind": "treatment",
++        "basis": "documented",
++        "text": {
++          "fr": "Le cahier des charges de 2022 visait les mégots issus des cendriers de rue des collectivités et imposait des critères de qualité du flux et des obligations de transport. La FAQ actuelle indique un minimum de 100 kg pour la collecte séparée. Ce seuil ne prouve pas l'éligibilité des mégots ramassés au sol ni une prise en charge d'un dépôt citoyen. Faire confirmer les modalités actuelles et le régime applicable avant stockage ou transport.",
++          "en": "The 2022 specification covered butts from municipal street ashtrays and imposed stream-quality and transport requirements. The current FAQ states a 100 kg minimum for separate collection. This threshold does not establish eligibility of ground-collected butts or acceptance of a citizen drop-off. Confirm current terms and applicable rules before storage or transport."
++        },
++        "sourceIds": [
++          "alcome-spec-2022",
++          "alcome-faq-collection",
++          "waste-transport-r541-50"
++        ]
 +      }
 +    ]
 +  },
@@ -1206,6 +1220,18 @@ new file mode 100644
 +        "sourceIds": [
 +          "ckfd-treatment"
 +        ]
++      },
++      {
++        "id": "direct-dropoff",
++        "kind": "treatment",
++        "basis": "not_established",
++        "text": {
++          "fr": "L'entrepôt de Gennevilliers est présenté par CKFD comme un site de regroupement de ses collectes. Il ne constitue pas un point d'apport public démontré. Obtenir un accord sur les lots, le conditionnement, le prix et la preuve de réception et de traitement avant tout déplacement.",
++          "en": "CKFD describes its Gennevilliers warehouse as a consolidation site for its collections. It is not an established public drop-off site. Obtain agreement on batches, packaging, price and evidence of receipt and treatment before transport."
++        },
++        "sourceIds": [
++          "ckfd-treatment"
++        ]
 +      }
 +    ]
 +  },
@@ -1361,7 +1387,7 @@ diff --git a/apps/web/src/lib/partners/public-structure-context.network.ts b/app
 new file mode 100644
 --- /dev/null
 +++ b/apps/web/src/lib/partners/public-structure-context.network.ts
-@@ -0,0 +1,706 @@
+@@ -0,0 +1,804 @@
 +import type { PublicStructureContext, PublicStructureSource } from "./public-structure-context";
 +
 +/** Additional public context for the existing network; exact identities only. */
@@ -1615,6 +1641,54 @@ new file mode 100644
 +  "voltaire-mairie11": {
 +    "label": "Mairie du 11e : liste des écoles élémentaires",
 +    "url": "https://mairie11.paris.fr/pages/les-ecoles-elementaires-9802",
++    "verifiedAt": "2026-11-25",
++    "evidence": "public_authority"
++  },
++  "carton-plein-cyclo-services": {
++    "label": "Carton Plein : collecte de déchets à vélo, offre professionnelle",
++    "url": "https://cartonplein.org/nos-services-cyclologistique/collecte-de-dechets-a-paris-et-en-proche-banlieue/",
++    "verifiedAt": "2026-11-25",
++    "evidence": "operator_statement"
++  },
++  "carton-plein-2023-report": {
++    "label": "Carton Plein : rapport d'activité 2023, p. 23",
++    "url": "https://cartonplein.org/wp-content/uploads/2025/04/RA-2023-Carton-Plein.pdf",
++    "verifiedAt": "2026-11-25",
++    "evidence": "organizer_report"
++  },
++  "grafie-cyclo-2025": {
++    "label": "GRAFIE : observatoire des SIAE, fiche Carton Plein Cyclo, p. 18",
++    "url": "https://www.grafie.org/system/files/2025-03/20250328%20MAJ%20Observatoire%20SIAE%20Economie%20Circulaire%20IDF%20FINAL.pdf",
++    "verifiedAt": "2026-11-25",
++    "evidence": "partner_statement"
++  },
++  "runners-laveurs-association": {
++    "label": "Les Runners Laveurs : présentation associative",
++    "url": "https://www.helloasso.com/associations/les-runners-laveurs",
++    "verifiedAt": "2026-11-25",
++    "evidence": "organizer_statement"
++  },
++  "runners-laveurs-fondation": {
++    "label": "Fondation de la Mer : fiche Les Runners Laveurs",
++    "url": "https://www.fondationdelamer.org/nos-programmes/un-geste-pour-la-mer/associations/les-runners-laveurs/",
++    "verifiedAt": "2026-11-25",
++    "evidence": "partner_statement"
++  },
++  "alcome-spec-2022": {
++    "label": "ALCOME : consultation 2022 sur les mégots massifiés, p. 3-4",
++    "url": "https://alcome.eco/wp-content/uploads/2022/06/20220525-Alcome-Consultation-collecte-100kg-megots.pdf",
++    "verifiedAt": "2026-11-25",
++    "evidence": "operator_statement"
++  },
++  "alcome-faq-collection": {
++    "label": "ALCOME : FAQ collectivités et collecte séparée",
++    "url": "https://alcome.eco/faq-3/",
++    "verifiedAt": "2026-11-25",
++    "evidence": "operator_statement"
++  },
++  "waste-transport-r541-50": {
++    "label": "Code de l'environnement : article R. 541-50",
++    "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000046669839",
 +    "verifiedAt": "2026-11-25",
 +    "evidence": "public_authority"
 +  }
@@ -2066,13 +2140,63 @@ new file mode 100644
 +        ]
 +      }
 +    ]
++  },
++  {
++    "actorId": "operator-carton-plein-cyclo",
++    "limits": [
++      {
++        "id": "service-scope",
++        "kind": "treatment",
++        "basis": "not_established",
++        "text": {
++          "fr": "Le rapport 2023 de Carton Plein et la fiche GRAFIE 2025 mentionnent les mégots dans les flux de cyclologistique. L'offre professionnelle actuelle concerne la collecte de déchets à vélo ; l'acceptation des mégots ramassés au sol, le conditionnement, la desserte de Gennevilliers, le tarif et le traitement final doivent être confirmés par un devis. Aucun contrat CleanMyMap ou CKFD pour ces lots n'est établi.",
++          "en": "Carton Plein's 2023 report and GRAFIE's 2025 profile include cigarette butts among cycle-logistics streams. The current professional offer covers bicycle waste collection; acceptance of ground-collected butts, packaging, service to Gennevilliers, price and final treatment require confirmation by quotation. No CleanMyMap or CKFD contract for these batches is established."
++        },
++        "sourceIds": [
++          "carton-plein-cyclo-services",
++          "carton-plein-2023-report",
++          "grafie-cyclo-2025"
++        ]
++      },
++      {
++        "id": "insertion-scope",
++        "kind": "governance",
++        "basis": "documented",
++        "text": {
++          "fr": "Carton Plein Cyclo est présentée comme une filiale de l'association Carton Plein et une entreprise d'insertion. Distinguer les comptes de l'association et de la filiale, les prestations payantes et les aides à l'insertion ; ne pas promettre un transport gratuit ni un bénéfice carbone chiffré sans mesure.",
++          "en": "Carton Plein Cyclo is described as a subsidiary of the Carton Plein association and a work-integration enterprise. Distinguish association and subsidiary accounts, paid services and employment support; do not promise free transport or quantified carbon savings without measurement."
++        },
++        "sourceIds": [
++          "grafie-cyclo-2025",
++          "carton-plein-2023-report"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "asso-runners-laveurs",
++    "limits": [
++      {
++        "id": "plogging-scope",
++        "kind": "claims",
++        "basis": "not_established",
++        "text": {
++          "fr": "L'association organise des sorties de plogging en Île-de-France. Les présentations consultées n'établissent ni une fréquence annuelle garantie à Paris, ni les quantités de mégots traitées, ni un budget propre à ces sorties. Confirmer l'organisation et la destination des déchets pour chaque opération.",
++          "en": "The association organizes plogging outings in Île-de-France. The reviewed profiles establish neither guaranteed annual frequency in Paris, treated cigarette-butt quantities, nor a dedicated outing budget. Confirm organization and waste destination for each event."
++        },
++        "sourceIds": [
++          "runners-laveurs-association",
++          "runners-laveurs-fondation"
++        ]
++      }
++    ]
 +  }
 +];
 diff --git a/apps/web/src/lib/partners/public-structure-context.test.ts b/apps/web/src/lib/partners/public-structure-context.test.ts
 new file mode 100644
 --- /dev/null
 +++ b/apps/web/src/lib/partners/public-structure-context.test.ts
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,59 @@
 +import { describe, expect, it } from "vitest";
 +import { PARIS_CLEANWALK_ACTORS } from "./paris-cleanwalk-network";
 +import { PARIS_PUBLIC_CLEANLINESS_DATASET as data } from "./public-cleanliness-organization";
@@ -2116,6 +2240,9 @@ new file mode 100644
 +    for (const actor of PARIS_CLEANWALK_ACTORS) expect(getActorStructureContext(actor.id), actor.id).not.toBeNull();
 +    expect(getActorStructureContext("eco-organisme-citeo")?.limits.find(item => item.id === "packaging-lobby-debate")?.basis).toBe("attributed_critique");
 +    expect(getActorStructureContext("asso-aremacs-idf")?.limits.some(item => item.basis === "attributed_critique")).toBe(false);
++    expect(getActorStructureContext("asso-runners-laveurs")?.limits[0].basis).toBe("not_established");
++    const cyclo = data.nodes.find(node => node.id === "operator-carton-plein-cyclo")!;
++    expect(getInstitutionStructureContext(data, cyclo, PARIS_CLEANWALK_ACTORS)).toBe(getActorStructureContext("operator-carton-plein-cyclo"));
 +    const citeo = data.nodes.find(node => node.id === "eco-organisme-citeo")!;
 +    expect(getInstitutionStructureContext(data, citeo, PARIS_CLEANWALK_ACTORS)).toBe(getActorStructureContext("eco-organisme-citeo"));
 +    const ivry = data.nodes.find(node => node.id === "syctom-uve-ivry")!;

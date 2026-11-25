@@ -148,6 +148,38 @@ La Ville propose déjà un [dispositif de nettoyage participatif](https://ws-par
 
 Les plateformes partenaires doivent conserver leurs propres identifiants, données et conditions d'usage. Une coopération par liens publics ou calendrier partagé est préférable à une synchronisation complexe tant que celle-ci n'a pas de valeur démontrée.
 
+### 5.3. Filière citoyenne des mégots et plogging : expérimentation à instruire
+
+**Statut : PLAN.** Cette piste ne constitue ni une filière en service, ni une convention signée, ni un nouveau parcours applicatif. Elle complète le pilote territorial du 20e ; le 19e et les clubs de course constituent des pistes d'extension.
+
+#### Chaîne cible et conditions
+
+| Maillon | Acteur ou solution à instruire | Preuve indispensable avant engagement |
+|---|---|---|
+| Collecte | Brigade Verte, associations, habitants et run clubs | Organisateur, encadrement, sécurité, matériel, méthode de mesure et destination convenus |
+| Regroupement | Régie, local associatif ou municipal volontaire | Accord écrit du responsable, conditions d'admission, stockage, contenants, responsabilités, durée et enlèvement |
+| Transport | [Carton Plein Cyclo](https://cartonplein.org/nos-services-cyclologistique/) | Acceptation explicite du flux, devis, couverture géographique et conformité du transport |
+| Massification et traitement | [CKFD](https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette) / MéGO! ou autre filière acceptée | Acceptation des mégots au sol, quantité et qualité exigées, prix, preuve de réception et traitement final |
+| Soutien | DPE, [ALCOME](https://alcome.eco/nos-soutiens/), financeurs sportifs à prospecter | Convention et affectation explicites ; aucune aide présumée |
+
+Carton Plein décrit une offre professionnelle de collecte à vélo ; son rapport 2023 (p. 23) et l'observatoire GRAFIE 2025 (p. 18) citent les mégots. Sa filiale d'insertion est une solution à consulter, pas un prestataire acquis. CKFD annonce la massification à Gennevilliers avant transfert en Bretagne ; l'entrepôt n'est pas un point d'apport public attesté. Le cahier des charges ALCOME de 2022 visait les mégots des cendriers de rue et précisait des exigences de qualité et de transport ; le seuil de 100 kg annoncé pour les collectivités sous contrat ne garantit pas l'acceptation des collectes au sol. Vérifier le régime de déchets applicable, notamment les obligations de stockage, conditionnement, traçabilité et transport avec les opérateurs ; le [code de l'environnement, article R. 541-50](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000046669839), ne constitue pas à lui seul une autorisation de transport.
+
+#### Mobilisation sportive
+
+Privilégier une expérimentation courte avec trois clubs volontaires, un organisateur de terrain et un exutoire convenu. Format indicatif : 30 min de footing, puis 30 min de collecte et une restitution de groupe. Les [Runners Laveurs](https://www.fondationdelamer.org/nos-programmes/un-geste-pour-la-mer/associations/les-runners-laveurs/) organisent des ploggings franciliens. Des précédents existent chez Adidas Runners Paris (guide municipal 2021) et dans le [programme Marathon de Paris 2026](https://www.schneiderelectricparismarathon.com/fr/marathon-engage/recyclage) avec Culligan. Adidas Runners, Paname Run Club, LIFA, ASO et les annuaires sportifs constituent des pistes de prospection, sans engagement ni financement démontré. Ne créer aucun lien de partenariat à partir de cette liste.
+
+#### Ordres de grandeur et conditions économiques
+
+Scénario illustratif, non prévisionnel : 20 clubs × 20 participants × 12 sorties × 100 mégots/participant = 480 000 mégots, 240 actions et 4 800 participations (non des personnes uniques). Avec le proxy sec canonique de 0,22 g/mégot dans le moteur d'impact, cela représente 105,6 kg estimés. Trois clubs aux mêmes hypothèses donnent 72 000 mégots et 15,84 kg estimés. Une conversion n'est pas une pesée admissible. Les seuils de filière dépendent de la masse réellement acceptée, du flux et des conditions convenues. Tester les rendements réels et la faisabilité de mutualiser avec des flux existants, plutôt que stocker jusqu'à un objectif théorique. Aucun achat de vélo cargo ni recrutement avant devis, comparaison des options et preuve d'utilité.
+
+Comparer coût total par kg effectivement accepté, coût de stockage, transport et traitement, délai de prise en charge, taux de refus, preuve de destination, temps humain et émissions sur un périmètre explicite (y compris l'aval routier). Ne pas présenter une collecte à vélo comme une filière intégralement décarbonée ou recyclée. Le bénévolat ne doit pas se substituer aux emplois d'insertion ou aux missions municipales.
+
+#### Périmètre numérique
+
+Réutiliser d'abord les actions, la cartographie et la mesure des lots existantes. Conserver les identifiants d'action et de lot, les quantités mesurées/estimées et leurs preuves ; ne pas compter à nouveau un lot à chaque transfert. Les preuves de réception et traitement sont distinctes de la collecte. Aucun moteur de tournées, module de stockage, paiement, crédit plastique ni nouvelle table avant validation du pilote et identification de l'owner métier. Les lieux de regroupement privés restent hors carte publique sans autorisation. Dans les visualiseurs, seuls les acteurs et offres sourcés sont ajoutables ; aucun trajet, point de dépôt ou partenariat prospectif n'est une donnée opérationnelle. Afficher les limites dans les fiches existantes, sans filtre supplémentaire.
+
+Sources complémentaires : [rapport Carton Plein 2023](https://cartonplein.org/wp-content/uploads/2025/04/RA-2023-Carton-Plein.pdf), [observatoire GRAFIE 2025](https://www.grafie.org/system/files/2025-03/20250328%20MAJ%20Observatoire%20SIAE%20Economie%20Circulaire%20IDF%20FINAL.pdf), [consultation ALCOME 2022](https://alcome.eco/wp-content/uploads/2022/06/20220525-Alcome-Consultation-collecte-100kg-megots.pdf), [FAQ ALCOME](https://alcome.eco/faq-3/), [guide municipal 2021](https://cdn.paris.fr/paris/2021/12/01/bb21d28119bd89a6292ee9128cecd983.pdf). Sources consultées le 25/11/2026 ; texte des PDF accessible, captures indisponibles.
+
 ## 6. Données municipales : complémentarité avec DansMaRue
 
 DansMaRue est le service municipal de signalement des anomalies de l'espace public. CleanMyMap n'a pas vocation à le remplacer ni à présenter une action citoyenne comme une intervention municipale validée.
