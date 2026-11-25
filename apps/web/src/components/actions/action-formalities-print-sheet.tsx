@@ -3,6 +3,7 @@
 import type { ActionFormalitiesQualification } from "@/lib/actions/formalities/qualification";
 import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
 import type { ParisCleaningDivisionContact } from "@/lib/actions/formalities/paris-cleaning-contacts";
+import type { ParisFormalitiesSupport } from "@/lib/actions/formalities/paris-support";
 
 function printValue(value: string | null | undefined): string | null {
   return value?.trim() || null;
@@ -20,11 +21,13 @@ export function ActionFormalitiesPrintSheet({
   actionData,
   qualification,
   contacts,
+  support,
 }: {
   summary: string;
   actionData?: FormalitiesEmailActionData;
   qualification: ActionFormalitiesQualification;
   contacts: ParisCleaningDivisionContact[];
+  support?: ParisFormalitiesSupport;
 }) {
   const actionValues: Array<[string, string | null]> = [
     ["Titre", printValue(actionData?.title)],
@@ -53,7 +56,17 @@ export function ActionFormalitiesPrintSheet({
         </section>
         {contacts.length ? <section>
           <h2>Divisions de propreté concernées</h2>
-          <ul>{contacts.map((contact) => <li key={contact.id}>{contact.label} · {contact.phone}{contact.email ? ` · ${contact.email}` : ""}</li>)}</ul>
+          <ul>{contacts.map((contact) => <li key={contact.id}>{contact.label} · {contact.phone} · Adresse administrative (pas un dépôt) : {contact.administrativeAddress}{contact.email ? ` · ${contact.email} (secteur : ${contact.emailArrondissements?.join(", ")})` : " · Pas de courriel vérifié pour ce secteur"}<p>Source : {contact.phoneSource.url} · {contact.phoneSource.verifiedOn}{contact.emailSource ? ` · ${contact.emailSource.url} · ${contact.emailSource.verifiedOn}` : ""}</p></li>)}</ul>
+        </section> : null}
+        {support ? <section>
+          <h2>Contacts facultatifs et reprise des déchets</h2>
+          <p>Secteur : {support.arrondissements.join(", ") || "à confirmer"}</p>
+          <p>Canal municipal : {support.logistics.source.url}</p>
+          <ul>{support.townHalls.map(hall => <li key={hall.id}>{hall.label} · {hall.phone} · {hall.officialChannel} · {hall.source.url}</li>)}</ul>
+          {support.associations.length ? <ul>{support.associations.map(({actor,contact}) => <li key={actor.id}>{actor.name} · {actor.parisZone.label} · {contact.email ?? contact.url} · {contact.source.url} · {contact.source.verifiedOn}</li>)}</ul> : <p>Aucun contact associatif suffisamment documenté.</p>}
+          <p>Matériel sur demande : {support.logistics.offeredOnRequest.join(", ")}. Selon disponibilité : {support.logistics.subjectToAvailability.join(", ")}. Stock et retrait à confirmer.</p>
+          {support.guidance.map(item => <div key={item.label}><p>{item.label} : {item.text}</p><p>Source : {item.source.url} · {item.source.verifiedOn}{item.additionalSource ? ` · ${item.additionalSource.url}` : ""}</p></div>)}
+          <p>Aucun lieu de dépôt ni reprise confirmée par cette fiche. Notes logistiques internes exclues.</p>
         </section> : null}
         <section>
           <h2>Démarches et pièces</h2>

@@ -37,7 +37,7 @@ export function PreparationLogisticsNotesFields({ form, updateField }: BaseSecti
       <CmmField
         id="before-logistics-notes"
         label="Notes logistiques internes"
-        hint={`Accès technique, transport ou lieu de repli. Les horaires, le rendez-vous et les formalités restent portés par leurs champs canoniques. ${characterLimitHint(form.logisticsNotes, PREPARATION_FIELD_LIMITS.logisticsNotes)}`}
+        hint={`Accès technique, transport, lieu de repli ou consigne de reprise des déchets réellement confirmée (date, service, lieu, horaire et flux acceptés). Cette consigne vaut uniquement pour cette action. Les horaires, le rendez-vous et les formalités restent portés par leurs champs canoniques. ${characterLimitHint(form.logisticsNotes, PREPARATION_FIELD_LIMITS.logisticsNotes)}`}
         error={logisticsError}
       >
         <CmmTextarea
@@ -45,7 +45,7 @@ export function PreparationLogisticsNotesFields({ form, updateField }: BaseSecti
           onChange={(event) => updateField("logisticsNotes", event.target.value)}
           rows={2}
           maxLength={PREPARATION_FIELD_LIMITS.logisticsNotes}
-          placeholder="Ex. Accès technique, transport, météo à surveiller, lieu de repli..."
+          placeholder="Ex. Transport, lieu de repli, consigne de reprise confirmée par le service..."
         />
       </CmmField>
     </CmmDisclosure>

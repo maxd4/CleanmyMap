@@ -13,6 +13,8 @@ export type FormalitiesEmailActionData = {
   contactArrondissementCode?: string | null;
 };
 
+export type FormalitiesEmailPurpose = "participatory_cleaning" | "collaboration";
+
 export type ReviewableFormalityEmailDraft = {
   to: string;
   subject: string;
@@ -75,7 +77,8 @@ export function buildFormalitiesEmailActionDataFromForm(
 export function buildReviewableFormalityEmailDraft(params: {
   formality: ActionFormality;
   action: FormalitiesEmailActionData;
-  purpose?: "participatory_cleaning";
+  purpose?: FormalitiesEmailPurpose;
+  contactScope?: string;
   verifiedRecipientEmail?: string;
 }): ReviewableFormalityEmailDraft | null {
   const channel = params.formality.officialChannel;
@@ -91,10 +94,13 @@ export function buildReviewableFormalityEmailDraft(params: {
     "",
     params.purpose === "participatory_cleaning"
       ? "Je vous contacte au sujet du nettoyage participatif suivant :"
-      : "Je souhaite vous soumettre une demande concernant l’action suivante :",
+      : params.purpose === "collaboration"
+        ? "Je vous propose d’échanger au sujet de l’action suivante :"
+        : "Je souhaite vous soumettre une demande concernant l’action suivante :",
     isMeaningful(action.title) ? `Titre : ${action.title.trim()}` : null,
     isMeaningful(action.description) ? `Description : ${action.description.trim()}` : null,
     isMeaningful(action.location) ? `Lieu : ${action.location.trim()}` : null,
+    isMeaningful(params.contactScope) ? `Secteur concerné par ce contact : ${params.contactScope.trim()}` : null,
     isMeaningful(action.date) ? `Date : ${action.date.trim()}` : null,
     isMeaningful(action.startTime) ? `Début : ${action.startTime.trim()}` : null,
     isMeaningful(action.endTime) ? `Fin : ${action.endTime.trim()}` : null,
@@ -106,8 +112,17 @@ export function buildReviewableFormalityEmailDraft(params: {
       : null,
     "",
     params.purpose === "participatory_cleaning"
-      ? "Pourriez-vous nous indiquer si des gants et des sacs peuvent être prêtés, selon disponibilité, et organiser ou préciser les modalités de prise en charge des déchets ramassés en fin d’opération ?"
-      : "Merci de m’indiquer la procédure et les pièces complémentaires éventuellement nécessaires.",
+      ? "Pourriez-vous nous indiquer si des gants et des sacs peuvent être fournis sur demande, ainsi que des cendriers de poche selon disponibilité, et confirmer la prise en charge des déchets ?"
+      : params.purpose === "collaboration"
+        ? "Seriez-vous intéressés par une coorganisation ou un relais de cette action, selon vos possibilités ? Si pertinent, pourriez-vous préciser si vous pouvez fournir du matériel ? Aucun engagement n’est présumé."
+        : "Merci de m’indiquer la procédure et les pièces complémentaires éventuellement nécessaires.",
+    ...(params.purpose === "participatory_cleaning" ? [
+      "Matériel et quantités souhaités : [à préciser]",
+      "Point de reprise souhaité : [à préciser, sous réserve de votre accord]",
+      "Horaire de reprise souhaité : [à préciser, sous réserve de votre accord]",
+      "Flux et volumes prévus : [à préciser]",
+      "Merci de confirmer les flux acceptés, le tri, le conditionnement et le lieu et horaire de reprise autorisés.",
+    ] : []),
     "",
     "Cordialement,",
   ].filter((line): line is string => line !== null);
@@ -118,6 +133,8 @@ export function buildReviewableFormalityEmailDraft(params: {
       ? isMeaningful(action.title)
         ? `Nettoyage participatif — ${action.title.trim()}`
         : "Nettoyage participatif à Paris"
+      : params.purpose === "collaboration"
+        ? isMeaningful(action.title) ? `Proposition de collaboration : ${action.title.trim()}` : "Proposition de collaboration pour un nettoyage participatif"
       : isMeaningful(action.title)
         ? `Demande concernant ${action.title.trim()}`
         : "Demande concernant une action",

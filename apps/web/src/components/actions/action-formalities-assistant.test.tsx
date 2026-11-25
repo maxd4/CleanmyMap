@@ -65,7 +65,12 @@ describe("Action formalities assistant", () => {
     expect(markup).toContain("Ouvrir le formulaire officiel Paris.fr");
     expect(markup).toContain("01 45 61 57 00");
     expect(markup).toContain("DPE-STPP-7/8e-Exploitation7e@paris.fr");
-    expect(markup).toContain("Copier le mail");
+    expect(markup).toContain("Copier le courriel");
+    expect(markup).toContain("Prévenir la division de propreté");
+    expect(markup).toContain("Proposer une collaboration");
+    expect(markup).toContain("Adresse administrative (pas un dépôt)");
+    expect(markup).toContain("Ne laissez aucun sac");
+    expect(markup).toContain("Notes logistiques internes exclues.");
     expect(markup).toContain("Ouvrir la messagerie");
     expect(markup).toContain("Nettoyage participatif — Nettoyage test");
     expect(markup).toContain("Imprimer la fiche d&#x27;action");
@@ -77,5 +82,6 @@ describe("Action formalities assistant", () => {
     expect(markup).toContain("01 45 61 57 00");
     expect(markup).not.toContain("DPE-STPP-7/8e-Exploitation7e@paris.fr");
     expect(markup).not.toContain("01 53 34 11 11");
+    expect(markup).toContain("Pas de courriel vérifié pour 8e");
   });
 });

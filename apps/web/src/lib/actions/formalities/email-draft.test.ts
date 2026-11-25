@@ -44,7 +44,20 @@ describe("reviewable formalities email draft", () => {
     expect(draft?.body).toContain("Participants prévus : 12");
     expect(draft?.body).toContain("gants et des sacs");
     expect(draft?.body).toContain("prise en charge des déchets");
+    expect(draft?.body).toContain("Point de reprise souhaité : [à préciser");
+    expect(draft?.body).toContain("Horaire de reprise souhaité : [à préciser");
+    expect(draft?.body).toContain("flux acceptés");
     expect(draft?.body).not.toContain("Début :");
+  });
+
+  it("builds an invitation without claiming collaboration or sending", () => {
+    const draft = buildReviewableFormalityEmailDraft({ formality, action: {title:"Action",location:"Paris"}, purpose:"collaboration", contactScope:"17e", verifiedRecipientEmail:"association@example.test" });
+    expect(draft).toMatchObject({sent:false,requiresReview:true,to:"association@example.test"});
+    expect(draft?.subject).toContain("Proposition de collaboration");
+    expect(draft?.body).toContain("coorganisation");
+    expect(draft?.body).toContain("17e");
+    expect(draft?.body).not.toContain("Point de reprise souhaité");
+    expect(draft?.body).not.toContain("Date :");
   });
 
   it("keeps the generic official-email draft behavior for other procedures", () => {

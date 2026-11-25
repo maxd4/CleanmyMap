@@ -12,7 +12,8 @@ import type {
 } from "@/lib/actions/formalities/qualification";
 import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
 import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
-import { parseParisArrondissementCode, resolveParisCleaningDivisionContacts } from "@/lib/actions/formalities/paris-cleaning-contacts";
+import { parseParisArrondissementCode } from "@/lib/actions/formalities/paris-cleaning-contacts";
+import { resolveParisFormalitiesSupport } from "@/lib/actions/formalities/paris-support";
 import { ActionFormalitiesParisContactPanel } from "./action-formalities-paris-contact-panel";
 import { ActionFormalitiesPrintSheet } from "./action-formalities-print-sheet";
 
@@ -200,8 +201,8 @@ export function ActionFormalitiesQualificationView({
   const updateSelectedArrondissements = (values: number[]) => {
     setArrondissementSelection({ contextKey: arrondissementContextKey, values });
   };
-  const contacts = useMemo(
-    () => isParisMunicipalCleanwalk ? resolveParisCleaningDivisionContacts(selectedArrondissements) : [],
+  const support = useMemo(
+    () => isParisMunicipalCleanwalk ? resolveParisFormalitiesSupport(selectedArrondissements) : undefined,
     [isParisMunicipalCleanwalk, selectedArrondissements],
   );
 
@@ -215,10 +216,10 @@ export function ActionFormalitiesQualificationView({
             <p className="text-sm text-emerald-950"><span className="font-semibold">Interlocuteur :</span> {primaryFormality.recipient ?? primaryFormality.competentAuthority.label ?? "À confirmer"}</p>
             <p className="text-xs text-emerald-900/70">Source : {primaryFormality.source?.url ? <a className="font-semibold underline" href={primaryFormality.source.url} target="_blank" rel="noreferrer">{primaryFormality.source.title}</a> : primaryFormality.source?.title ?? "Source à confirmer"}{primaryFormality.source?.verifiedOn ? ` · vérifiée le ${primaryFormality.source.verifiedOn}` : ""}</p>
           </> : null}
-          <ActionFormalitiesPrintSheet summary={summary.label} actionData={actionEmailData} qualification={qualification} contacts={contacts} />
+          <ActionFormalitiesPrintSheet summary={summary.label} actionData={actionEmailData} qualification={qualification} contacts={support?.divisions ?? []} support={support} />
         </div>
       </CmmCard>
-      {isParisMunicipalCleanwalk && contactFormality ? <ActionFormalitiesParisContactPanel actionData={actionEmailData} contactFormality={contactFormality} selectedArrondissements={selectedArrondissements} onArrondissementsChange={updateSelectedArrondissements} /> : null}
+      {isParisMunicipalCleanwalk && contactFormality ? <ActionFormalitiesParisContactPanel actionData={actionEmailData} contactFormality={contactFormality} selectedArrondissements={selectedArrondissements} onArrondissementsChange={updateSelectedArrondissements} support={support} /> : null}
       <CmmDisclosure summary="Détail des démarches, sources et pièces" tone="slate" size="sm">
         <div className="space-y-3">
           {qualification.formalities.map((formality) => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />)}
