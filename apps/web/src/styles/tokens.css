@@ -145,9 +145,9 @@
   --cmm-home-map-preview-height: 20rem;
   --cmm-home-map-preview-height-tablet: 24rem;
   --cmm-home-map-preview-height-desktop: 34rem;
-  --cmm-page-gutter-mobile: clamp(1rem, 3vw, 1.5rem);
-  --cmm-page-gutter-tablet: clamp(1.25rem, 2.5vw, 2rem);
-  --cmm-page-gutter-desktop: clamp(1.5rem, 2vw, 3rem);
+  --cmm-page-gutter-mobile: clamp(1.25rem, 3.5vw, 2rem);
+  --cmm-page-gutter-tablet: clamp(1.75rem, 3vw, 3rem);
+  --cmm-page-gutter-desktop: clamp(2rem, 3vw, 4.5rem);
   --cmm-page-padding-block: var(--space-4);
   --cmm-page-header-content-gap: var(--space-4);
   --cmm-section-gap: var(--space-4);
