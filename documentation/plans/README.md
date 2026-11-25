@@ -4,6 +4,7 @@
 
 | Sujet | Source | Nature |
 |---|---|---|
+| Plogging et filière citoyenne des mégots à Paris | [plogging-et-filiere-megots-paris.md](./plogging-et-filiere-megots-paris.md) | PLAN / PROPOSITION : prospection, logistique, dimensionnement et preuves attendues |
 | Propositions et messages DU | [ateliers_DU.md](./ateliers_DU.md) | PLAN/HISTORY à requalifier avant exécution |
 | Journal d'apprentissage et d'impact DU | [journal_impact_DU.md](./journal_impact_DU.md) | HISTORY et provenance |
 | Rapport institutionnel d'impact IA | [rapport_impact/impact_IA.md](./rapport_impact/impact_IA.md) | Étude scientifique et hypothèses |
