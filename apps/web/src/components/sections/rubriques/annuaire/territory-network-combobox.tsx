@@ -163,13 +163,13 @@ export function TerritoryNetworkCombobox({
   return (
     <div
       ref={containerRef}
-      className="relative rounded-2xl border border-white/15 bg-slate-900/75 p-3"
+      className="relative cmm-surface rounded-xl p-3"
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 flex-1">
           <label
             htmlFor={inputId}
-            className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-violet-300"
+            className="flex items-center gap-1.5 text-sm font-semibold cmm-text-primary"
           >
             <MapPin size={13} aria-hidden="true" />
             <span>{fr ? "Choisir un territoire" : "Choose a territory"}</span>
@@ -207,7 +207,7 @@ export function TerritoryNetworkCombobox({
                 setActiveIndex(0);
               }}
               onKeyDown={handleKeyDown}
-              className="w-full rounded-xl border border-white/15 bg-slate-950/85 py-2 pl-9 pr-16 text-xs font-semibold text-white placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400/50"
+              className="w-full rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--bg-elevated)] py-2 pl-9 pr-16 text-sm font-medium cmm-text-primary placeholder:text-[var(--text-muted)] focus-visible:ring-2 focus-visible:ring-violet-500"
             />
             {isOpen && query ? (
               <button
@@ -217,7 +217,7 @@ export function TerritoryNetworkCombobox({
                   setActiveIndex(0);
                 }}
                 aria-label={fr ? "Effacer la recherche" : "Clear search"}
-                className="absolute right-8 rounded p-1 text-slate-400 hover:text-white"
+                className="absolute right-8 rounded p-1 cmm-text-secondary hover:underline"
               >
                 <X size={13} aria-hidden="true" />
               </button>
@@ -234,7 +234,7 @@ export function TerritoryNetworkCombobox({
                     ? "Ouvrir la liste des territoires"
                     : "Open territory list"
               }
-              className="absolute right-2 rounded p-1 text-slate-300 hover:text-white"
+              className="absolute right-2 rounded p-1 cmm-text-secondary hover:underline"
             >
               <ChevronDown
                 size={14}
@@ -250,7 +250,7 @@ export function TerritoryNetworkCombobox({
             type="button"
             onClick={onRequestGps}
             disabled={gpsLoading}
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-violet-400/35 bg-violet-500/15 px-3 py-2 text-xs font-bold text-violet-200 transition-colors hover:bg-violet-500/25 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:opacity-60"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-violet-400/35 bg-violet-500/15 px-3 py-2 text-sm font-semibold cmm-text-primary transition-colors hover:bg-violet-500/25 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:opacity-60"
           >
             <LocateFixed size={13} aria-hidden="true" />
             <span>
@@ -267,14 +267,14 @@ export function TerritoryNetworkCombobox({
       </div>
 
       {ranked.isGeodesicApproximation ? (
-        <p className="mt-1.5 text-xs text-slate-400">
+        <p className="mt-1.5 text-sm cmm-text-secondary">
           {fr
             ? "Proximité calculée par approximation géodésique sur point représentatif."
             : "Proximity ranked by geodesic approximation on representative points."}
         </p>
       ) : null}
       {gpsError ? (
-        <p role="status" className="mt-1.5 text-xs text-amber-300">
+        <p role="status" className="mt-1.5 text-sm cmm-text-warning">
           {gpsError}
         </p>
       ) : null}
@@ -284,7 +284,7 @@ export function TerritoryNetworkCombobox({
           id={listboxId}
           role="listbox"
           aria-label={fr ? "Territoires disponibles" : "Available territories"}
-          className="mt-2 max-h-72 overflow-y-auto rounded-xl border border-white/15 bg-slate-950/95 p-1.5 shadow-2xl"
+          className="mt-2 max-h-72 overflow-y-auto cmm-surface rounded-xl p-1.5"
         >
           {sections.length === 0 ? (
             <p className="px-3 py-2 text-xs text-slate-400">
@@ -312,16 +312,16 @@ export function TerritoryNetworkCombobox({
                       aria-selected={isSelected}
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => commitSelection(entry)}
-                      className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
+                      className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors ${
                         isActive
-                          ? "bg-violet-500/25 text-white"
+                          ? "bg-violet-500/20 cmm-text-primary"
                           : isSelected
-                            ? "bg-white/10 text-violet-200"
-                            : "text-slate-200 hover:bg-white/10"
+                            ? "bg-violet-500/10 cmm-text-primary"
+                            : "cmm-text-primary hover:bg-violet-500/10"
                       }`}
                     >
                       <span className="min-w-0 truncate">
-                        <span className="mr-2 font-mono font-bold text-violet-300">
+                        <span className="mr-2 font-mono font-bold cmm-text-primary">
                           {entry.code}
                         </span>
                         <span className="font-semibold">

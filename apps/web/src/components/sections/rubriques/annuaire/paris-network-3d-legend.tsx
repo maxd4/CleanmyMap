@@ -12,14 +12,14 @@ export function ParisNetwork3DLegend({ fr }: { fr: boolean }) {
   return (
     <aside
       aria-label={fr ? "Légende du réseau 3D" : "3D network legend"}
-      className="rounded-2xl border border-violet-300/15 bg-slate-950/60 p-4 text-xs text-slate-200"
+      className="cmm-surface rounded-xl p-4 text-sm cmm-text-primary"
     >
-      <p className="text-sm text-slate-300">{fr ? "Couleur : famille · trait : relation · épaisseur : fréquence connue. Un lien absent n'exclut pas une collaboration." : "Color: family · line: relationship · width: known frequency. Missing links do not rule out collaboration."}</p>
+      <p className="text-sm cmm-text-secondary">{fr ? "Couleur : famille · trait : relation · épaisseur : fréquence connue. Un lien absent n'exclut pas une collaboration." : "Color: family · line: relationship · width: known frequency. Missing links do not rule out collaboration."}</p>
       <details className="mt-2">
-      <summary className="cursor-pointer font-semibold text-violet-200">{fr ? "Légende détaillée" : "Detailed legend"}</summary>
+      <summary className="cursor-pointer font-semibold cmm-text-primary">{fr ? "Légende détaillée" : "Detailed legend"}</summary>
       <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
-          <p className="mb-2 text-xs font-black uppercase tracking-wider text-violet-300">
+          <p className="mb-2 text-sm font-semibold cmm-text-primary">
             {fr ? "Familles d'acteurs (clusters 3D)" : "Actor families (3D clusters)"}
           </p>
           <ul className="space-y-1.5">
@@ -31,7 +31,7 @@ export function ParisNetwork3DLegend({ fr }: { fr: boolean }) {
             ).map(([key, meta]) => (
               <li key={key} className="flex items-center gap-2">
                 <span
-                  className="inline-block h-3 w-3 shrink-0 rounded-full border border-white/30"
+                  className="inline-block h-3 w-3 shrink-0 rounded-full border border-[var(--text-secondary)]"
                   style={{ backgroundColor: meta.colorHex }}
                   aria-hidden="true"
                 />
@@ -42,7 +42,7 @@ export function ParisNetwork3DLegend({ fr }: { fr: boolean }) {
         </div>
 
         <div>
-          <p className="mb-2 text-xs font-black uppercase tracking-wider text-violet-300">
+          <p className="mb-2 text-sm font-semibold cmm-text-primary">
             {fr ? "Nature des liens" : "Relation types"}
           </p>
           <ul className="space-y-1.5">
@@ -68,15 +68,15 @@ export function ParisNetwork3DLegend({ fr }: { fr: boolean }) {
         </div>
 
         <div className="space-y-1.5">
-          <p className="text-xs font-black uppercase tracking-wider text-violet-300">
+          <p className="text-sm font-semibold cmm-text-primary">
             {fr ? "Échelle d'épaisseur (12 mois glissants)" : "Thickness scale (12m rolling)"}
           </p>
-          <p className="leading-relaxed text-slate-300">
+          <p className="leading-relaxed cmm-text-primary">
             {fr
               ? `Pour les actions communes prouvées, l'épaisseur suit une échelle linéaire bornée (${RELATION_THICKNESS_POLICY.minThickness} à ${RELATION_THICKNESS_POLICY.maxThickness} px pour 1 à ${RELATION_THICKNESS_POLICY.maxOperationsScale}+ opérations distinctes).`
               : `For proven joint actions, thickness follows a bounded linear scale (${RELATION_THICKNESS_POLICY.minThickness} to ${RELATION_THICKNESS_POLICY.maxThickness} px for 1 to ${RELATION_THICKNESS_POLICY.maxOperationsScale}+ distinct operations).`}
           </p>
-          <p className="leading-relaxed text-slate-300">
+          <p className="leading-relaxed cmm-text-primary">
             {fr
               ? "Collaborations programmées (ambre, tirets) exclues des opérations historiques. Fréquence inconnue = épaisseur neutre (jamais 0 inventé). Aucun lien n'implique une appartenance au réseau CleanMyMap."
               : "Scheduled collaborations (amber dashed) are excluded from historical operations. Unknown frequency = neutral thickness (never invented 0). No link implies CleanMyMap network membership."}

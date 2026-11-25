@@ -49,7 +49,7 @@ export function ParisNetwork3DFallback({
 
   return (
     <div
-      className="flex h-full flex-col gap-4 overflow-y-auto rounded-2xl border border-violet-300/20 bg-slate-950/80 p-4"
+      className="flex h-full flex-col gap-4 overflow-y-auto rounded-2xl border border-violet-300/20 bg-slate-950 p-4"
       role="region"
       aria-label={
         fr
@@ -57,14 +57,14 @@ export function ParisNetwork3DFallback({
           : "Interactive HTML fallback of the Paris cleanwalks network"
       }
     >
-      <div className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-3 py-2 text-xs text-indigo-100">
+      <div className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-100">
         {reason === "webgl_unavailable"
           ? fr
             ? "WebGL indisponible sur cet appareil : affichage du repli HTML interactif complet."
             : "WebGL unavailable on this device: displaying the full interactive HTML fallback."
           : fr
-            ? "Vue HTML accessible active : explorez les clusters par famille et leurs relations sourcées."
-            : "Accessible HTML view active: explore family clusters and sourced relations."}
+            ? "Vue guidée : choisissez un acteur par famille pour consulter ses relations et sa fiche."
+            : "Guided view: choose an actor by family to explore its relationships and profile."}
       </div>
 
       {actors.length === 0 ? (
@@ -92,7 +92,7 @@ export function ParisNetwork3DFallback({
                     style={{ backgroundColor: meta.colorHex }}
                     aria-hidden="true"
                   />
-                  <h4 className="text-xs font-black uppercase tracking-wider text-violet-200">
+                  <h4 className="text-sm font-semibold text-violet-200">
                     {meta.label}
                   </h4>
                 </div>
@@ -118,7 +118,7 @@ export function ParisNetwork3DFallback({
                           isSelected
                             ? "border-violet-400 bg-violet-500/20 shadow-lg"
                             : "border-white/10 bg-slate-900/70 hover:border-violet-300/40"
-                        } ${isDimmed ? "opacity-45" : "opacity-100"}`}
+                        } ${isDimmed ? "border-slate-700" : ""}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-black text-white">
@@ -129,10 +129,10 @@ export function ParisNetwork3DFallback({
                             {fr ? "lien(s)" : "link(s)"}
                           </span>
                         </div>
-                        <p className="mt-1 text-xs text-slate-300">
+                        <p className="mt-1 text-sm text-slate-300">
                           {actor.parisZone.label}
                         </p>
-                        <p className="mt-1 text-xs text-slate-300">
+                        <p className="mt-1 text-sm text-slate-300">
                           {EQUIPMENT_STATUS_LABELS[actor.equipmentAvailability.status]}
                         </p>
                         {actorLinks.some(rel => rel.relationType !== "collaboration_programmee") ? (

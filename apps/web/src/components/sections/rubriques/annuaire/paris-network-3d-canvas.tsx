@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useImperativeHandle, useMemo, useRef, forwardRef } from "react";
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, forwardRef } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Html, Line, OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -16,6 +16,7 @@ export interface ParisNetwork3DCanvasHandle {
   zoomIn: () => void;
   zoomOut: () => void;
   resetCamera: () => void;
+  focusSelection: () => void;
 }
 
 interface ParisNetwork3DCanvasProps {
@@ -23,6 +24,7 @@ interface ParisNetwork3DCanvasProps {
   edges: ParisNetwork3DEdge[];
   relations: readonly ParisCleanwalkRelation[];
   selectedActorId: string | null;
+  focusOnly?: boolean;
   hoveredActorId: string | null;
   onSelectActor: (actorId: string) => void;
   onSelectRelation?: (relationId: string) => void;
@@ -97,14 +99,13 @@ function ActorSphereNode({
           roughness={0.35}
           metalness={0.2}
           transparent
-          opacity={isDimmed ? 0.28 : 0.96}
+          opacity={isDimmed ? 0.55 : 1}
         />
       </mesh>
-      <Html
+      {isSelected || isHovered ? <Html
         position={[0, node.radius + 0.36, 0]}
         center
-        distanceFactor={12}
-        zIndexRange={isSelected || isHovered ? [20, 10] : [5, 0]}
+        zIndexRange={[20, 10]}
       >
         <button
           type="button"
@@ -116,19 +117,15 @@ function ActorSphereNode({
           onMouseLeave={() => onHover(false)}
           aria-pressed={isSelected}
           aria-label={node.actor.name}
-          className={`cursor-pointer whitespace-nowrap rounded-lg border px-2 py-0.5 text-xs font-black tracking-tight shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-violet-400 ${
+          className={`cursor-pointer max-w-[16rem] rounded-lg border px-3 py-1.5 text-sm font-semibold leading-snug shadow-lg focus:outline-none focus:ring-2 focus:ring-violet-400 ${
             isSelected
               ? "border-violet-300 bg-violet-950/95 text-white"
-              : isHovered
-                ? "border-violet-300/80 bg-slate-900/95 text-white"
-                : isDimmed
-                  ? "border-white/10 bg-slate-950/60 text-slate-400 opacity-45"
-                  : "border-violet-300/30 bg-slate-950/85 text-slate-100 hover:border-violet-300/70"
+              : "border-violet-300 bg-slate-900 text-white"
           }`}
         >
           {node.actor.name}
         </button>
-      </Html>
+      </Html> : null}
     </group>
   );
 }
@@ -168,9 +165,9 @@ function RelationLineEdge({
       dashSize={dashSize}
       gapSize={gapSize}
       transparent
-      opacity={isDimmed ? 0.14 : isHighlighted ? 0.98 : 0.72}
+      opacity={isDimmed ? 0.22 : isHighlighted ? 1 : 0.65}
     />
-    {scheduled && onSelect ? <Html position={midpoint} center distanceFactor={12} zIndexRange={[4,0]}><button type="button" aria-label={`${fr ? "Voir la collaboration programmée" : "View scheduled collaboration"} ${edge.relation.id}`} className="rounded border border-amber-400/70 bg-slate-950 px-2 py-1 text-xs font-semibold text-amber-300 focus-visible:ring-2 focus-visible:ring-amber-400" onClick={event=>{event.stopPropagation();onSelect();}}>{fr ? "Programmée" : "Scheduled"}</button></Html> : null}
+    {scheduled && isHighlighted && onSelect ? <Html position={midpoint} center zIndexRange={[4,0]}><button type="button" aria-label={`${fr ? "Voir la collaboration programmée" : "View scheduled collaboration"} ${edge.relation.id}`} className="rounded border border-amber-400/70 bg-slate-950 px-2 py-1 text-xs font-semibold text-amber-300 focus-visible:ring-2 focus-visible:ring-amber-400" onClick={event=>{event.stopPropagation();onSelect();}}>{fr ? "Programmée" : "Scheduled"}</button></Html> : null}
     </>
   );
 }
@@ -218,10 +215,43 @@ function ActiveNodeAnchorTracker({
 
 const SceneCameraRig = forwardRef<
   ParisNetwork3DCanvasHandle,
-  { animateMotion: boolean }
->(function SceneCameraRig({ animateMotion }, ref) {
+  { animateMotion: boolean; nodes: ParisNetwork3DNode[]; focusedNodes: ParisNetwork3DNode[] }
+>(function SceneCameraRig({ animateMotion, nodes, focusedNodes }, ref) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const { camera, invalidate } = useThree();
+  const cameraRef = useRef(camera);
+  useEffect(() => {
+    cameraRef.current = camera;
+  }, [camera]);
+
+  const fit = useCallback((targets: ParisNetwork3DNode[]) => {
+    const controls = controlsRef.current;
+    const activeCamera = cameraRef.current;
+    if (!controls || !targets.length || !(activeCamera instanceof THREE.PerspectiveCamera)) return;
+    const bounds = new THREE.Box3();
+    for (const node of targets) {
+      const center = new THREE.Vector3(...node.position);
+      const radius = node.radius * 1.32;
+      const extent = new THREE.Vector3(radius, radius, radius);
+      bounds.expandByPoint(center.clone().sub(extent));
+      bounds.expandByPoint(center.clone().add(extent));
+    }
+    const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+    const verticalHalfFov = THREE.MathUtils.degToRad(activeCamera.fov / 2);
+    const horizontalHalfFov = Math.atan(Math.tan(verticalHalfFov) * Math.max(0.1, activeCamera.aspect));
+    const halfFov = Math.min(verticalHalfFov, horizontalHalfFov);
+    const distance = Math.max(5, sphere.radius * 1.15 / Math.sin(halfFov));
+    controls.maxDistance = Math.max(26, distance * 1.5);
+    const direction = new THREE.Vector3(...DEFAULT_CAMERA_POS).normalize();
+    controls.target.copy(sphere.center);
+    activeCamera.position.copy(sphere.center).addScaledVector(direction, distance);
+    activeCamera.far = Math.max(100, distance * 3);
+    activeCamera.updateProjectionMatrix();
+    controls.update();
+    invalidate();
+  }, [invalidate]);
+
+  useEffect(() => { fit(nodes); }, [fit, nodes]);
 
   useImperativeHandle(
     ref,
@@ -229,27 +259,25 @@ const SceneCameraRig = forwardRef<
       zoomIn: () => {
         const controls = controlsRef.current;
         if (!controls) return;
-        camera.position.sub(controls.target).multiplyScalar(0.84).add(controls.target);
+        const offset = camera.position.clone().sub(controls.target);
+        offset.setLength(Math.max(controls.minDistance || 5, offset.length() * 0.84));
+        camera.position.copy(controls.target).add(offset);
         controls.update();
         invalidate();
       },
       zoomOut: () => {
         const controls = controlsRef.current;
         if (!controls) return;
-        camera.position.sub(controls.target).multiplyScalar(1.18).add(controls.target);
+        const offset = camera.position.clone().sub(controls.target);
+        offset.setLength(Math.min(controls.maxDistance || 26, offset.length() * 1.18));
+        camera.position.copy(controls.target).add(offset);
         controls.update();
         invalidate();
       },
-      resetCamera: () => {
-        camera.position.set(...DEFAULT_CAMERA_POS);
-        if (controlsRef.current) {
-          controlsRef.current.target.set(0, 0, 0);
-          controlsRef.current.update();
-        }
-        invalidate();
-      },
+      resetCamera: () => fit(nodes),
+      focusSelection: () => fit(focusedNodes),
     }),
-    [camera, invalidate],
+    [camera, invalidate, fit, nodes, focusedNodes],
   );
 
   return (
@@ -290,6 +318,7 @@ export const ParisNetwork3DCanvas = forwardRef<
     edges,
     relations,
     selectedActorId,
+    focusOnly = false,
     hoveredActorId,
     onSelectActor,
     onSelectRelation,
@@ -307,6 +336,19 @@ export const ParisNetwork3DCanvas = forwardRef<
     () => getConnectedActorIds(activeFocusId, relations),
     [activeFocusId, relations],
   );
+  const selectedConnectedIds = useMemo(
+    () => getConnectedActorIds(selectedActorId, relations),
+    [selectedActorId, relations],
+  );
+  const focusedNodes = useMemo(
+    () => nodes.filter(node => selectedConnectedIds.has(node.actor.id)),
+    [nodes, selectedConnectedIds],
+  );
+  const isolated = focusOnly && selectedActorId !== null;
+  const visibleNodes = isolated ? focusedNodes : nodes;
+  const visibleEdges = isolated
+    ? edges.filter(edge => selectedConnectedIds.has(edge.relation.sourceId) && selectedConnectedIds.has(edge.relation.targetId))
+    : edges;
   const activeNodePosition = useMemo(
     () => nodes.find((n) => n.actor.id === activeFocusId)?.position ?? null,
     [nodes, activeFocusId],
@@ -322,19 +364,19 @@ export const ParisNetwork3DCanvas = forwardRef<
       className="h-full w-full"
     >
       <color attach="background" args={["#0b091d"]} />
-      <ambientLight intensity={0.72} />
-      <directionalLight position={[8, 12, 10]} intensity={1.1} color="#ede9fe" />
+      <ambientLight intensity={1.1} />
+      <directionalLight position={[8, 12, 10]} intensity={1.4} color="#ffffff" />
       <pointLight position={[-8, -6, 6]} intensity={0.65} color="#818cf8" />
 
       <WebGLContextLossListener onError={onWebGLError} />
-      <SceneCameraRig ref={ref} animateMotion={animateMotion} />
+      <SceneCameraRig ref={ref} animateMotion={animateMotion} nodes={visibleNodes} focusedNodes={focusedNodes} />
       <ActiveNodeAnchorTracker
         activePosition={activeNodePosition}
         onAnchorChange={onAnchorChange}
       />
 
       <group>
-        {edges.map((edge) => {
+        {visibleEdges.map((edge) => {
           const isHighlighted =
             activeFocusId !== null &&
             (edge.relation.sourceId === activeFocusId ||
@@ -353,7 +395,7 @@ export const ParisNetwork3DCanvas = forwardRef<
           );
         })}
 
-        {nodes.map((node) => {
+        {visibleNodes.map((node) => {
           const isSelected = selectedActorId === node.actor.id;
           const isHovered = hoveredActorId === node.actor.id;
           const isDimmed =

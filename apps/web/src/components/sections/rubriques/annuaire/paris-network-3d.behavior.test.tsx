@@ -112,6 +112,7 @@ describe("paris-network-3d model", () => {
       "cleanwalk-org",
       "evt-j-agis-nature",
       "evt-je-veux-aider",
+      "trash-spotter",
     ]);
   });
 });
@@ -279,7 +280,7 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     });
 
     const section = container.querySelector("#paris-cleanwalk-network-3d");
-    expect(section?.className).toContain("bg-slate-950");
+    expect(section?.className).toContain("cmm-surface");
 
     act(() => {
       root.unmount();
@@ -406,8 +407,11 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
       root.render(React.createElement(ParisNetwork3DSection, { fr: true }));
     });
 
-    // Trigger viewport entry via IntersectionObserver
+    // The guided view is the default even when WebGL is available.
+    expect(container.textContent).toContain("Vue guidée");
+    expect(container.querySelector('button[aria-label="Zoomer sur la scène 3D"]')).toBeNull();
     act(() => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Basculer vers la scène 3D WebGL"]')?.click();
       observerCallback?.([{ isIntersecting: true }]);
     });
 
@@ -418,7 +422,7 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
       container.querySelector('button[aria-label="Dézoomer la scène 3D"]'),
     ).not.toBeNull();
     expect(
-      container.querySelector('button[aria-label="Recentrer la caméra 3D"]'),
+      container.querySelector('button[aria-label="Cadrer le réseau 3D"]'),
     ).not.toBeNull();
 
     // Toggle to HTML view and back to 3D
@@ -429,7 +433,7 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     act(() => {
       toggleBtn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(container.textContent).toContain("Vue HTML accessible active");
+    expect(container.textContent).toContain("Vue guidée");
 
     // Hover Brigade Verte in English mode to cover English bubble branches
     act(() => {

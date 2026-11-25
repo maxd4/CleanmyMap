@@ -174,16 +174,16 @@ export function ParisNetwork3DBubble({
       className={`${
         anchorPosition
           ? "absolute z-30 w-[min(21rem,calc(100%-1.5rem))]"
-          : "relative z-30 w-full max-w-md"
-      } overflow-y-auto rounded-2xl border border-violet-300/35 bg-slate-950/95 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur-xl`}
+          : "relative z-30 w-full min-w-0"
+      } overflow-y-auto rounded-2xl border border-violet-300/35 bg-slate-950 p-4 text-sm leading-relaxed text-slate-200`}
     >
       {/* 1. Nom et rôle réel */}
       <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-wider text-violet-300">
+          <p className="text-sm font-semibold text-violet-200">
             {roleLabels ? `${roleLabels} · ` : ""}{PARIS_ACTOR_CATEGORY_META[actor.category].shortLabel}
           </p>
-          <h3 className="mt-0.5 text-base font-black tracking-tight text-white">
+          <h3 className="mt-0.5 text-lg font-semibold leading-snug text-white">
             {actor.name}
           </h3>
         </div>
@@ -258,7 +258,7 @@ export function ParisNetwork3DBubble({
                 })
                 .join(" · ")}
             </p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-sm text-slate-300">
               {[
                 actor.funding.entityName,
                 actor.funding.calculationBase ?? actor.funding.period,

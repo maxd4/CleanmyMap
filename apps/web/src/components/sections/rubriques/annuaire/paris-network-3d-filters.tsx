@@ -30,7 +30,7 @@ interface ParisNetwork3DFiltersBarProps {
 const ARRONDISSEMENTS = Array.from({ length: 20 }, (_, i) => i + 1);
 
 const selectClassName =
-  "h-10 w-full rounded-xl border border-violet-300/20 bg-slate-950/70 px-3 text-xs font-bold text-white transition-colors focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30";
+  "cmm-field-control w-full min-w-0 text-sm";
 
 export function ParisNetwork3DFiltersBar({
   filters,
@@ -49,18 +49,19 @@ export function ParisNetwork3DFiltersBar({
 
   return (
     <div
-      className="rounded-2xl border border-violet-300/15 bg-slate-950/50 p-4"
+      className="cmm-surface rounded-xl p-4"
       role="region"
       aria-label={fr ? "Filtres du réseau 3D parisien" : "Paris 3D network filters"}
     >
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
+          <span className="text-sm font-semibold cmm-text-primary">
             {fr ? "Type d'acteur" : "Actor type"}
           </span>
           <select
             aria-label={fr ? "Filtrer par type d'acteur" : "Filter by actor type"}
             className={selectClassName}
+            data-cmm-field-control="select"
             value={filters.category}
             onChange={(e) =>
               onChange({
@@ -84,12 +85,13 @@ export function ParisNetwork3DFiltersBar({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
+          <span className="text-sm font-semibold cmm-text-primary">
             {fr ? "Arrondissement" : "District"}
           </span>
           <select
             aria-label={fr ? "Filtrer par arrondissement" : "Filter by district"}
             className={selectClassName}
+            data-cmm-field-control="select"
             value={filters.arrondissement === "all" ? "all" : String(filters.arrondissement)}
             onChange={(e) =>
               onChange({
@@ -109,18 +111,19 @@ export function ParisNetwork3DFiltersBar({
         </label>
       </div>
       <details className="mt-3">
-        <summary className="cursor-pointer text-sm font-semibold text-violet-200">
+        <summary className="cursor-pointer text-sm font-semibold cmm-text-primary">
           {fr ? "Autres filtres" : "More filters"}
           {filters.ecosystemRole !== undefined && filters.ecosystemRole !== "all" || filters.participation !== "all" || filters.equipment !== "all" || filters.relationType !== "all" ? (fr ? " · actifs" : " · active") : ""}
         </summary>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
+          <span className="text-sm font-semibold cmm-text-primary">
             {fr ? "Rôle écosystème" : "Ecosystem role"}
           </span>
           <select
             aria-label={fr ? "Filtrer par rôle écosystème" : "Filter by ecosystem role"}
             className={selectClassName}
+            data-cmm-field-control="select"
             value={filters.ecosystemRole ?? "all"}
             onChange={(e) =>
               onChange({
@@ -144,12 +147,13 @@ export function ParisNetwork3DFiltersBar({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
+          <span className="text-sm font-semibold cmm-text-primary">
             {fr ? "Public mobilisé" : "Audience"}
           </span>
           <select
             aria-label={fr ? "Filtrer par public mobilisé" : "Filter by audience"}
             className={selectClassName}
+            data-cmm-field-control="select"
             value={filters.participation}
             onChange={(e) =>
               onChange({
@@ -173,12 +177,13 @@ export function ParisNetwork3DFiltersBar({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
+          <span className="text-sm font-semibold cmm-text-primary">
             {fr ? "Matériel" : "Equipment"}
           </span>
           <select
             aria-label={fr ? "Filtrer par disponibilité de matériel" : "Filter by equipment"}
             className={selectClassName}
+            data-cmm-field-control="select"
             value={filters.equipment}
             onChange={(e) =>
               onChange({
@@ -199,12 +204,13 @@ export function ParisNetwork3DFiltersBar({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-black uppercase tracking-wider text-violet-200/80">
+          <span className="text-sm font-semibold cmm-text-primary">
             {fr ? "Nature du lien" : "Relation type"}
           </span>
           <select
             aria-label={fr ? "Filtrer par nature du lien" : "Filter by relation type"}
             className={selectClassName}
+            data-cmm-field-control="select"
             value={filters.relationType}
             onChange={(e) =>
               onChange({
@@ -229,7 +235,7 @@ export function ParisNetwork3DFiltersBar({
         </div>
       </details>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3 text-xs text-slate-300">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--cmm-surface-border)] pt-3 text-sm cmm-text-secondary">
         <span className="font-bold">
           {actorCount} {fr ? "acteurs affichés" : "actors displayed"} · {relationCount}{" "}
           {fr ? "relations documentées" : "documented relations"}

@@ -11,21 +11,28 @@ test("desktop: unmounts an initialized WebGL scene and restores network selectio
   await page.waitForLoadState("networkidle");
   await dismissCookies(page);
 
-  const networkTab = page.getByRole("tab", { name: "Réseau 3D des cleanwalks" });
-  const organizationTab = page.getByRole("tab", { name: "Organisation des services publics" });
+  const networkTab = page.getByRole("tab", { name: "Réseau 3D" });
+  const organizationTab = page.getByRole("tab", { name: "Services publics" });
   const networkPanel = page.locator("#annuaire-panel-network");
+  await networkTab.click();
   await expect(networkTab).toHaveAttribute("aria-selected", "true");
-  await page.locator("#paris-cleanwalk-network-3d").scrollIntoViewIfNeeded();
   const canvas = networkPanel.locator("canvas");
-  await expect(canvas).toHaveCount(1, { timeout: 20_000 });
+  await expect(canvas).toHaveCount(0);
+  await expect(networkPanel.getByText(/Vue guidée/).first()).toBeVisible();
 
   await networkPanel.getByRole("combobox", { name: "Filtrer par type d'acteur" }).selectOption("collectivite_mairie");
   await networkPanel.getByRole("combobox", { name: "Filtrer par arrondissement" }).selectOption("5");
 
-  const selectedActor = networkPanel.getByRole("button", { name: "Mairie du 5e arrondissement de Paris" });
-  await expect(selectedActor).toBeVisible();
-  await selectedActor.click();
-  await expect(networkPanel.locator('button[aria-pressed="true"]').filter({ hasText: "Mairie du 5e arrondissement de Paris" })).toBeVisible();
+  await networkPanel.getByRole("searchbox", { name: "Rechercher un acteur" }).fill("Mairie du 5e");
+  await networkPanel.getByRole("button", { name: /Mairie du 5e arrondissement de Paris/i }).first().click();
+  await expect(networkPanel.getByRole("dialog")).toContainText("Mairie du 5e arrondissement de Paris");
+  await networkPanel.getByRole("button", { name: "Basculer vers la scène 3D WebGL" }).click();
+  await expect(canvas).toHaveCount(1, { timeout: 20_000 });
+  await networkPanel.getByRole("button", { name: "Cadrer le réseau 3D" }).click();
+  await networkPanel.getByRole("button", { name: "Centrer la sélection" }).click();
+  await networkPanel.getByRole("button", { name: "Isoler les voisins" }).click();
+  await expect(networkPanel.getByText("Scène limitée à la sélection et ses voisins dans les filtres actifs.")).toBeVisible();
+  await networkPanel.getByRole("button", { name: "Réseau complet" }).click();
 
   await organizationTab.click();
   await expect(page.locator("#annuaire-panel-organization")).toBeVisible();
@@ -44,15 +51,16 @@ test("desktop: navigates between explicit shared institutional identities", asyn
   await dismissCookies(page);
   const network = page.locator("#annuaire-panel-network");
   const organization = page.getByTestId("public-cleanliness-organization");
+  await page.getByRole("tab", { name: "Réseau 3D" }).click();
   const lookup = network.getByRole("searchbox", { name: "Rechercher un acteur" });
   await lookup.fill("Syctom");
   await network.getByRole("button", { name: /Syctom/i }).first().click();
   await network.getByRole("button", { name: "Voir dans les services publics" }).click();
-  await expect(page.getByRole("tab", { name: "Organisation des services publics" })).toBeFocused();
+  await expect(page.getByRole("tab", { name: "Services publics" })).toBeFocused();
   await expect(organization.locator("aside h3")).toContainText("Syctom");
   await expect(network.locator("canvas")).toHaveCount(0);
   await organization.getByRole("button", { name: "Voir dans le réseau des acteurs" }).click();
-  await expect(page.getByRole("tab", { name: "Réseau 3D des cleanwalks" })).toBeFocused();
+  await expect(page.getByRole("tab", { name: "Réseau 3D" })).toBeFocused();
   await expect(network.getByRole("dialog")).toContainText("Syctom");
 });
 
@@ -62,11 +70,11 @@ test("mobile: filters, progressive navigation, zoom, sources and roving tab focu
   await page.waitForLoadState("networkidle");
   await dismissCookies(page);
 
-  const networkTab = page.getByRole("tab", { name: "Réseau 3D des cleanwalks" });
-  const organizationTab = page.getByRole("tab", { name: "Organisation des services publics" });
+  const networkTab = page.getByRole("tab", { name: "Réseau 3D" });
+  const organizationTab = page.getByRole("tab", { name: "Services publics" });
+  await networkTab.click();
   await expect(networkTab).toHaveAttribute("tabindex", "0");
   await expect(organizationTab).toHaveAttribute("tabindex", "-1");
-  await networkTab.click();
   await page.keyboard.press("ArrowRight");
   await expect(organizationTab).toBeFocused();
   await expect(organizationTab).toHaveAttribute("aria-selected", "true");

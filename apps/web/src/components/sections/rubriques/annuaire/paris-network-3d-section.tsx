@@ -29,7 +29,6 @@ import { extractLocationPreferencesFromMetadata } from "@/lib/user-location-pref
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
-import { cn } from "@/lib/utils";
 import { ParisNetworkActorSearch } from "./paris-network-actor-search";
 import { ParisNetworkSelectionPanel } from "./paris-network-selection-panel";
 import type { ParisNetwork3DCanvasHandle } from "./paris-network-3d-canvas";
@@ -124,7 +123,8 @@ export function ParisNetwork3DSection({
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [selectedRelationId, setSelectedRelationId] = useState<string | null>(null);
   const [hoveredActorId, setHoveredActorId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"3d" | "html">("3d");
+  const [viewMode, setViewMode] = useState<"3d" | "html">("html");
+  const [focusOnly, setFocusOnly] = useState(false);
   const [webglRuntimeError, setWebglRuntimeError] = useState<boolean>(false);
   const [hasEnteredViewport, setHasEnteredViewport] = useState<boolean>(false);
   const [isOffscreen, setIsOffscreen] = useState<boolean>(false);
@@ -177,7 +177,7 @@ export function ParisNetwork3DSection({
   }, [cancelHoverClose]);
 
   const handleSelectRelation = useCallback((id: string) => {
-    cancelHoverClose(); setSelectedActorId(null); setHoveredActorId(null); setSelectedRelationId(id);
+    cancelHoverClose(); setSelectedActorId(null); setHoveredActorId(null); setSelectedRelationId(id); setFocusOnly(false);
   }, [cancelHoverClose]);
 
   const handleCloseBubble = useCallback(() => {
@@ -185,6 +185,7 @@ export function ParisNetwork3DSection({
     setSelectedRelationId(null);
     setSelectedActorId(null);
     setHoveredActorId(null);
+    setFocusOnly(false);
   }, [cancelHoverClose]);
 
   useEffect(() => {
@@ -300,6 +301,7 @@ export function ParisNetwork3DSection({
       setSelectedRelationId(null);
       setSelectedActorId(null);
       setHoveredActorId(null);
+      setFocusOnly(false);
       onTerritoryChange?.(territory.id);
     },
     [onTerritoryChange],
@@ -352,6 +354,7 @@ export function ParisNetwork3DSection({
     setHoveredActorId(null);
     if (selectedActorId && !visibleActorIds.has(selectedActorId)) {
       setSelectedActorId(null);
+      setFocusOnly(false);
     }
     if (selectedRelationId && !visibleRelationIds.has(selectedRelationId)) {
       setSelectedRelationId(null);
@@ -405,14 +408,7 @@ export function ParisNetwork3DSection({
   const selectedActor = filtered.actors.find(actor => actor.id === selectedActorId) ?? null;
   const linkedInstitutionId = selectedActor ? getInstitutionId?.(selectedActor.id) : null;
   const show3DCanvas = sceneActive && webglAvailable && viewMode === "3d";
-  const surfaceClassName = cn(
-    "relative overflow-hidden rounded-[var(--radius-lg)] border border-violet-300/18 p-6 md:p-8",
-    displayMode === "sobre"
-      ? "bg-slate-950"
-      : displayMode === "minimaliste"
-        ? "bg-slate-900/90 shadow-lg"
-        : "bg-slate-900/50 shadow-[0_0_90px_rgba(99,102,241,0.12)] backdrop-blur-3xl",
-  );
+  const surfaceClassName = "cmm-surface cmm-panel relative min-w-0 p-4 md:p-6";
 
   return (
     <section
@@ -424,7 +420,7 @@ export function ParisNetwork3DSection({
       <CmmSectionGroup>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-4 py-1 text-xs font-black uppercase tracking-[0.25em] text-violet-300">
+            <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-4 py-1 text-sm font-semibold cmm-text-primary">
               <Box size={13} aria-hidden="true" />
               {territoryDataset
                 ? fr
@@ -434,7 +430,7 @@ export function ParisNetwork3DSection({
             </div>
             <h2
               id="paris-network-3d-heading"
-              className="text-3xl font-black tracking-tight text-white md:text-4xl"
+              className="cmm-text-h2 cmm-text-primary"
             >
               {territoryDataset
                 ? fr
@@ -444,7 +440,7 @@ export function ParisNetwork3DSection({
                   ? `Réseau territorial — ${selectedTerritory.nameFr}`
                   : `Territorial network — ${selectedTerritory.nameEn}`}
             </h2>
-            <p className="text-sm font-medium leading-relaxed text-slate-300">
+            <p className="cmm-text-body cmm-text-primary">
               {territoryDataset
                 ? fr
                   ? "Recherchez ou sélectionnez un acteur pour consulter sa fiche et ses relations documentées."
@@ -489,12 +485,20 @@ export function ParisNetwork3DSection({
                     variant="pill"
                     size="sm"
                     onClick={() => canvasHandleRef.current?.resetCamera()}
-                    ariaLabel={fr ? "Recentrer la caméra 3D" : "Recenter 3D camera"}
+                    ariaLabel={fr ? "Cadrer le réseau 3D" : "Fit 3D network"}
                     className="inline-flex items-center gap-1.5"
                   >
                     <Maximize2 size={14} aria-hidden="true" />
-                    <span>{fr ? "Recentrer" : "Recenter"}</span>
+                    <span>{fr ? "Cadrer le réseau" : "Fit network"}</span>
                   </CmmButton>
+                  {selectedActorId ? <>
+                    <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => canvasHandleRef.current?.focusSelection()}>
+                      {fr ? "Centrer la sélection" : "Focus selection"}
+                    </CmmButton>
+                    <button type="button" aria-pressed={focusOnly} onClick={() => setFocusOnly(value => !value)} className="cmm-surface rounded-lg px-3 py-2 text-sm font-semibold cmm-text-primary focus-visible:ring-2 focus-visible:ring-violet-500">
+                      {focusOnly ? (fr ? "Réseau complet" : "Full network") : (fr ? "Isoler les voisins" : "Isolate neighbors")}
+                    </button>
+                  </> : null}
                 </>
               ) : null}
 
@@ -522,11 +526,11 @@ export function ParisNetwork3DSection({
                   <span>
                     {viewMode === "3d"
                       ? fr
-                        ? "Vue HTML"
-                        : "HTML view"
+                        ? "Vue guidée"
+                        : "Guided view"
                       : fr
-                        ? "Vue 3D"
-                        : "3D view"}
+                        ? "Explorer en 3D"
+                        : "Explore in 3D"}
                   </span>
                 </CmmButton>
               ) : null}
@@ -556,8 +560,12 @@ export function ParisNetwork3DSection({
               fr={fr}
             />
 
-            <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,21rem)]">
-            <div className="relative h-[440px] w-full min-w-0 overflow-hidden rounded-2xl border border-violet-300/20 bg-slate-950/90 sm:h-[580px]">
+            {show3DCanvas ? <p className="cmm-text-small cmm-text-secondary">
+              {fr ? "Glisser pour tourner, clic droit ou deux doigts pour déplacer, molette ou pincement pour zoomer. Survolez un acteur pour lire son nom, sélectionnez-le pour ses relations. La vue guidée permet une navigation complète au clavier." : "Drag to rotate, right-drag or two fingers to pan, scroll or pinch to zoom. Hover an actor to read its name, select it for relationships. The guided view supports full keyboard navigation."}
+            </p> : null}
+            {show3DCanvas && focusOnly && selectedActorId ? <p role="status" className="cmm-text-small cmm-text-secondary">{fr ? "Scène limitée à la sélection et ses voisins dans les filtres actifs." : "Scene limited to the selection and its neighbors within active filters."}</p> : null}
+            <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,32%)]">
+            <div className="relative h-[clamp(26rem,65vh,52rem)] w-full min-w-0 overflow-hidden rounded-2xl border border-violet-300/25 bg-slate-950">
           {sceneActive && (show3DCanvas ? (
             hasEnteredViewport ? (
               <WebGLErrorBoundary
@@ -582,6 +590,7 @@ export function ParisNetwork3DSection({
                   edges={layout.edges}
                   relations={filtered.relations}
                   selectedActorId={selectedActorId}
+                  focusOnly={focusOnly}
                   hoveredActorId={hoveredActorId}
                   onSelectActor={handleSelectActor}
                   onSelectRelation={handleSelectRelation}
@@ -631,7 +640,7 @@ export function ParisNetwork3DSection({
             </div>
           ) : null}
         </div>
-            <aside className="min-w-0 xl:max-h-[580px] xl:overflow-y-auto" aria-label={fr ? "Fiche et relations" : "Profile and relationships"}>
+            <aside className="min-w-0 rounded-2xl border border-violet-300/25 bg-slate-950 p-3 xl:max-h-[clamp(26rem,65vh,52rem)] xl:overflow-y-auto" aria-label={fr ? "Fiche et relations" : "Profile and relationships"}>
               <ParisNetworkSelectionPanel
                 actor={selectedActor}
                 relation={selectedRelation}

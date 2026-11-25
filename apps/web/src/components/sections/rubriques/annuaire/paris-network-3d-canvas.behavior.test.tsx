@@ -11,7 +11,7 @@ import {
 import { computeParisNetwork3DLayout } from "./paris-network-3d.model";
 
 const invalidateMock = vi.hoisted(() => vi.fn());
-const cameraState = vi.hoisted(() => ({ position: null as THREE.Vector3 | null, canvas: null as HTMLCanvasElement | null }));
+const cameraState = vi.hoisted(() => ({ position: null as THREE.Vector3 | null, target: null as THREE.Vector3 | null, canvas: null as HTMLCanvasElement | null }));
 const cameraSetMock = vi.hoisted(() => vi.fn());
 const frameCallbacks = vi.hoisted(() => [] as Array<(state: unknown, delta: number) => void>);
 
@@ -54,7 +54,7 @@ vi.mock("@react-three/drei", () => ({
     }),
   OrbitControls: React.forwardRef((_props: Record<string, unknown>, ref) => {
     React.useImperativeHandle(ref, () => ({
-      target: new THREE.Vector3(2, 1, 0),
+      target: (cameraState.target = new THREE.Vector3(2, 1, 0)),
       update: vi.fn(),
     }));
     return React.createElement("div", { "data-testid": "drei-orbit-controls" });
@@ -80,6 +80,30 @@ describe("ParisNetwork3DCanvas R3F behavior", () => {
   afterEach(() => {
     container.remove();
     vi.clearAllMocks();
+  });
+
+  it("keeps labels selective and exposes scheduled edges in a focused neighborhood", () => {
+    const scheduled = PARIS_CLEANWALK_RELATIONS.find(r => r.relationType === "collaboration_programmee")!;
+    const layout = computeParisNetwork3DLayout(PARIS_CLEANWALK_ACTORS, PARIS_CLEANWALK_RELATIONS);
+    const onSelectRelation = vi.fn();
+    const root = createRoot(container);
+    const props = { nodes: layout.nodes, edges: layout.edges, relations: PARIS_CLEANWALK_RELATIONS, selectedActorId: scheduled.sourceId, hoveredActorId: null, onSelectActor: vi.fn(), onSelectRelation, onHoverActor: vi.fn(), animateMotion: false, isOffscreen: false };
+    act(() => root.render(React.createElement(ParisNetwork3DCanvas, { ...props, focusOnly: true })));
+    const neighborIds = new Set([scheduled.sourceId]);
+    for (const edge of PARIS_CLEANWALK_RELATIONS) {
+      if (edge.sourceId === scheduled.sourceId) neighborIds.add(edge.targetId);
+      if (edge.targetId === scheduled.sourceId) neighborIds.add(edge.sourceId);
+    }
+    expect(container.querySelectorAll('[data-testid="drei-line"]')).toHaveLength(layout.edges.filter(edge => neighborIds.has(edge.relation.sourceId) && neighborIds.has(edge.relation.targetId)).length);
+    expect(container.querySelectorAll('button[aria-pressed]')).toHaveLength(1);
+    const operationButton = [...container.querySelectorAll("button")].find(button => button.getAttribute("aria-label")?.endsWith(scheduled.id));
+    expect(operationButton).toBeDefined();
+    act(() => operationButton?.click());
+    expect(onSelectRelation).toHaveBeenCalledWith(scheduled.id);
+    act(() => root.render(React.createElement(ParisNetwork3DCanvas, { ...props, selectedActorId: null, focusOnly: false })));
+    expect(container.querySelectorAll('button[aria-pressed]')).toHaveLength(0);
+    expect(container.querySelectorAll('[data-testid="drei-line"]')).toHaveLength(layout.edges.length);
+    act(() => root.unmount());
   });
 
   it("renders nodes, edges, handles selection/hover, camera controls and frame updates", () => {
@@ -122,9 +146,9 @@ describe("ParisNetwork3DCanvas R3F behavior", () => {
     );
 
     const buttons = Array.from(container.querySelectorAll("button")).filter(b => b.getAttribute("aria-label")?.startsWith("Voir la collaboration programmée"));
-    expect(buttons).toHaveLength(3);
-    act(() => { buttons[0]?.click(); });
-    expect(onSelectRelation).toHaveBeenCalledWith(PARIS_CLEANWALK_RELATIONS.find(r=>r.relationType==="collaboration_programmee")?.id);
+    const incidentScheduled = PARIS_CLEANWALK_RELATIONS.filter(r => r.relationType === "collaboration_programmee" && (r.sourceId === "asso-featured-1" || r.targetId === "asso-featured-1"));
+    expect(buttons).toHaveLength(incidentScheduled.length);
+    expect(container.querySelectorAll('button[aria-pressed]')).toHaveLength(1);
 
     // Click and hover node label button
     const brigadeBtn = Array.from(container.querySelectorAll("button")).find((b) =>
@@ -142,6 +166,7 @@ describe("ParisNetwork3DCanvas R3F behavior", () => {
     expect(onHoverActor).toHaveBeenCalledWith(null);
 
     // Camera controls via imperative ref
+    cameraState.target!.set(2, 1, 0);
     cameraState.position!.set(2, 1, 10);
     act(() => handleRef.current?.zoomIn());
     expect(cameraState.position!.toArray()).toEqual([2, 1, 8.4]);
@@ -149,6 +174,8 @@ describe("ParisNetwork3DCanvas R3F behavior", () => {
     expect(cameraState.position!.x).toBe(2);
     expect(cameraState.position!.y).toBe(1);
     expect(cameraState.position!.z).toBeCloseTo(9.912);
+    act(() => handleRef.current?.focusSelection());
+    expect(cameraState.position!.distanceTo(cameraState.target!)).toBeGreaterThanOrEqual(5);
     act(() => handleRef.current?.resetCamera());
     const lost = new Event("webglcontextlost", { cancelable: true });
     act(() => cameraState.canvas!.dispatchEvent(lost));

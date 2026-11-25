@@ -52,7 +52,7 @@ function RelationDetails({ relation, actors, fr, onClose, onSelectActor }: Pick<
 
 export function ParisNetworkSelectionPanel({ actor, relation, actors, relations, fr, onSelectActor, onSelectRelation, onClose, onOpenInstitution }: Props) {
   if (relation) return <RelationDetails relation={relation} actors={actors} fr={fr} onClose={onClose} onSelectActor={onSelectActor} />;
-  if (!actor) return <p className="rounded-xl border border-white/10 p-4 text-sm text-slate-300">{fr ? "Sélectionnez un acteur pour consulter sa fiche et ses relations." : "Select an actor to explore its details and relationships."}</p>;
+  if (!actor) return <p className="rounded-xl border border-white/10 p-4 text-sm text-slate-200">{fr ? "Sélectionnez un acteur pour consulter sa fiche et ses relations." : "Select an actor to explore its details and relationships."}</p>;
   const names = new Map(actors.map(item => [item.id, item.name]));
   const links = relations.filter(item => item.sourceId === actor.id || item.targetId === actor.id);
   return <div className="min-w-0 space-y-3">
@@ -63,9 +63,9 @@ export function ParisNetworkSelectionPanel({ actor, relation, actors, relations,
       {links.length ? <ul className="mt-2 space-y-2">{links.map(item => <li key={item.id}>
         <button type="button" onClick={() => onSelectRelation(item.id)} className="w-full rounded-lg border border-white/10 p-2 text-left focus-visible:ring-2 focus-visible:ring-violet-400 hover:bg-white/5">
           <span className="block font-semibold text-violet-200">{item.title}</span>
-          <span className="block text-xs">{names.get(item.sourceId) ?? item.sourceId}{item.relationType === "publie_sur" ? " → " : " · "}{names.get(item.targetId) ?? item.targetId}</span>
+          <span className="block break-words text-sm">{names.get(item.sourceId) ?? item.sourceId}{item.relationType === "publie_sur" ? " → " : " · "}{names.get(item.targetId) ?? item.targetId}</span>
         </button>
-      </li>)}</ul> : <p className="mt-2 text-xs">{fr ? "Aucun lien renseigné. Cela ne signifie pas qu'il n'existe pas de collaboration." : "No documented links. This does not establish that collaborations are absent."}</p>}
+      </li>)}</ul> : <p className="mt-2 text-sm">{fr ? "Aucun lien renseigné. Cela ne signifie pas qu'il n'existe pas de collaboration." : "No documented links. This does not establish that collaborations are absent."}</p>}
     </section>
   </div>;
 }
