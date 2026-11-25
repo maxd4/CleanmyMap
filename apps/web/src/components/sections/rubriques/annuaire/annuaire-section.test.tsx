@@ -52,7 +52,12 @@ vi.mock("@/components/ui/cmm-button", () => ({
   }) => React.createElement(href ? "a" : "button", { href, "aria-label": ariaLabel }, children),
 }));
 
+vi.mock("@/components/sections/rubriques/annuaire/annuaire-partner-drawer", () => ({
+  AnnuairePartnerDrawer: () => React.createElement("div", { "data-testid": "partner-drawer" }),
+}));
+
 vi.mock("framer-motion", () => ({
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
   motion: {
     div: ({ children, ...props }: React.ComponentProps<"div">) =>
       React.createElement("div", props, children),
@@ -95,17 +100,27 @@ describe("AnnuaireSection partner onboarding CTA", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
     expect(markup).toContain('data-testid="paris-network-3d-section"');
     expect(markup).toContain('id="annuaire-tab-organization"');
-    expect(markup).toContain("Organisation des services publics");
+    expect(markup).toContain("Services publics");
     expect(markup).toContain('data-testid="paris-network-contribution-card"');
   });
 
-  it("preserves both panels and default-selects the existing 3D network", () => {
+  it("exposes the five main tabs in order with the directory selected by default", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
-    expect(markup).toContain('id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network"');
-    expect(markup).toContain('id="annuaire-tab-network" type="button" role="tab" aria-selected="true"');
-    expect(markup).toContain('id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" tabindex="0" hidden=""');
+    const order = ["Découvrir", "Annuaire<", "Carte", "Réseau 3D", "Services publics"].map((label) => markup.indexOf(`>${label.replace("<", "")}</button>`));
+    expect(order.every((position) => position >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect((markup.match(/role="tablist"/g) ?? []).length).toBe(1);
+    expect((markup.match(/role="tab"/g) ?? []).length).toBe(5);
+    expect(markup).toMatch(/id="annuaire-tab-directory"[^>]*aria-selected="true"[^>]*tabindex="0"/);
+    expect(markup).toMatch(/id="annuaire-tab-network"[^>]*aria-selected="false"[^>]*tabindex="-1"/);
   });
 
+  it("keeps hidden panels out of the tab order and reuses the existing 3D/2D panel ids", () => {
+    const markup = renderToStaticMarkup(<AnnuaireSection />);
+    expect(markup).toContain('id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network" tabindex="0" hidden=""');
+    expect(markup).toContain('id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" tabindex="0" hidden=""');
+    expect(markup).toContain('id="annuaire-panel-directory" role="tabpanel" aria-labelledby="annuaire-tab-directory" tabindex="0"><');
+  });
   it("targets the canonical partner onboarding route", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
 
@@ -122,7 +137,7 @@ describe("AnnuaireSection partner onboarding CTA", () => {
     expect(markup).toContain(
       'data-gradient="from-violet-600/20 via-violet-500/10 to-transparent"',
     );
-    expect(markup).toContain("text-violet-400");
+    expect(markup).toContain("bg-violet-500/10");
     expect(markup).not.toContain("text-indigo-");
   });
 

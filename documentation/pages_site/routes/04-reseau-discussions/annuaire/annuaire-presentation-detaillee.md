@@ -13,16 +13,15 @@ La page est une surface publique de découverte. Elle présente des ressources
 certification, ne mesure pas automatiquement l'impact des acteurs et ne constitue pas un registre
 exhaustif des organisations.
 
-Le parcours visible est le suivant :
+Le parcours visible est organisé en cinq onglets principaux (`Annuaire` par défaut) :
 
-1. une introduction explique l'objet de l'annuaire ;
-2. une sélection d'acteurs mis en avant facilite une première découverte ;
-3. l'exploration permet de rechercher, filtrer et changer de représentation ;
-4. une fiche permet de consulter les informations publiques et le canal de contact ;
-5. le CTA final conduit vers la demande de référencement.
+1. `Découvrir` : sélection éditoriale (6 cartes initiales maximum, action « Afficher toutes » et lien vers `Annuaire`) ;
+2. `Annuaire` : recherche textuelle, compteur, filtres par menus déroulants accessibles et grille responsive (1/2/3 colonnes) paginée ;
+3. `Carte` : mêmes recherche/filtres/compteur, sélecteur `Carte` / `Graphe des acteurs`, résultats compacts et drawer de fiche ;
+4. `Réseau 3D` : réseau 3D des cleanwalks (WebGL suspendu hors onglet) et contribution ;
+5. `Services publics` : organisation institutionnelle 2D, avec navigation croisée vers `Réseau 3D`.
 
-La mise en avant est une sélection éditoriale (`isFeatured`). Elle ne modifie pas la
-provenance ni le niveau de confiance de l'entrée sélectionnée.
+Les onglets utilisent un `tablist` unique avec `roving tabindex` (flèches, Début, Fin) et `hidden` sur les panneaux inactifs. La mise en avant est une sélection éditoriale (`isFeatured`). Elle ne modifie pas la provenance ni le niveau de confiance de l'entrée sélectionnée.
 
 ## 2. Recherche, filtres et résultats
 
@@ -50,8 +49,8 @@ vue compatible avant d'ouvrir cette fiche : une sélection n'est pas perdue parc
 filtre précédent l'excluait.
 
 Le sélecteur de domaine est une classification fiable, distincte de la recherche textuelle.
-Les trois boutons `Environnement`, `Social` et `Humanitaire` appliquent ce filtre structuré ;
-les boutons `Propreté`, `Climat` et `Sensibilisation` restent des mots-clés de recherche.
+Les filtres sont exposés par menus déroulants natifs (`Type de structure`, `Domaine d'engagement`, `Arrondissement` avec `Proches de moi` conditionnel, et dans `Filtres supplémentaires` : `Type d'aide` et `Mot-clé`).
+`Propreté`, `Climat` et `Sensibilisation` restent des mots-clés de recherche.
 `Domaine non renseigné` regroupe notamment les fiches partenaires historiques dont les
 anciens `types` étaient dérivés du type d'organisation sans déclaration explicite.
 Tous les filtres s'appliquent ensemble, réinitialisent la page courante et alimentent la

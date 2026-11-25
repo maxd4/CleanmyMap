@@ -1,10 +1,18 @@
 "use client";
 
-import { ArrowRight, Globe, Building2, Sparkles, Target, RefreshCw } from "lucide-react";
+import { ArrowRight, Globe, Building2, RefreshCw } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { AnnuaireFeaturedSection } from "./annuaire-featured-section";
 import { AnnuaireExplorationView } from "./annuaire-exploration-view";
+import { AnnuairePartnerDrawer } from "./annuaire-partner-drawer";
+import {
+  AnnuaireViewTabs,
+  annuairePanelId,
+  annuaireTabId,
+  type AnnuaireView,
+} from "./annuaire-view-tabs";
 import { ParisNetwork3DSection, type ParisNetworkNavigation } from "./paris-network-3d-section";
 import { PublicCleanlinessOrganization, type PublicCleanlinessNavigation } from "./public-cleanliness-organization";
 import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
@@ -16,22 +24,10 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
-import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
-const containerVariants = {
-  hidden: { opacity: 1 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.2 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 1, y: 40 },
-  visible: { opacity: 1, y: 0 }
-};
-
+/** Nombre maximal de cartes affichées initialement dans Découvrir. */
+const DISCOVER_INITIAL_CARDS = 6;
 function AnnuaireDirectoryFeedback({ fr, logic }: { fr: boolean; logic: ReturnType<typeof useAnnuaireLogic> }) {
   if (logic.isLoading) {
     return <CmmFeedback tone="info" title={fr ? "Chargement des fiches partenaires" : "Loading partner profiles"}>{fr ? "Les ressources éditoriales restent visibles pendant le chargement des fiches partenaires publiées." : "Editorial resources remain visible while published partner profiles load."}</CmmFeedback>;
@@ -51,7 +47,7 @@ function AnnuaireDirectoryFeedback({ fr, logic }: { fr: boolean; logic: ReturnTy
 
 function AnnuaireJoinCta({ fr }: { fr: boolean }) {
   return (
-    <RubriqueCard variants={itemVariants} themeColor="violet" withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row">
+    <RubriqueCard themeColor="violet" withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row">
       <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><Building2 size={160} className="text-violet-400" /></div>
       <div className="space-y-4 max-w-xl text-center md:text-left relative z-10">
         <h3 className="text-3xl font-black text-white tracking-tight">{fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}</h3>
@@ -62,33 +58,38 @@ function AnnuaireJoinCta({ fr }: { fr: boolean }) {
   );
 }
 
+function AnnuaireTabPanel({ view, active, children }: { view: AnnuaireView; active: boolean; children: ReactNode }) {
+  return (
+    <div id={annuairePanelId(view)} role="tabpanel" aria-labelledby={annuaireTabId(view)} tabIndex={0} hidden={!active}>
+      {children}
+    </div>
+  );
+}
+
 export function AnnuaireSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
+  const [view, setView] = useState<AnnuaireView>("directory");
+  const [showAllFeatured, setShowAllFeatured] = useState(false);
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>("FR:REG:11");
-  const [networkTab, setNetworkTab] = useState<"network" | "organization">("network");
   const networkNavigation = useRef<ParisNetworkNavigation>(null);
   const organizationNavigation = useRef<PublicCleanlinessNavigation>(null);
   const getInstitutionId = (actorId: string) => resolveInstitutionId(PARIS_PUBLIC_CLEANLINESS_DATASET, actorId, PARIS_CLEANWALK_ACTORS);
   const getNetworkActorId = (node: PublicCleanlinessOrganizationNode) => resolveInstitutionNetworkActorId(PARIS_PUBLIC_CLEANLINESS_DATASET, node, PARIS_CLEANWALK_ACTORS);
   const openInstitution = (id: string) => {
     if (!organizationNavigation.current?.openNode(id)) return;
-    setNetworkTab("organization");
-    document.getElementById("annuaire-tab-organization")?.focus();
+    setView("organization");
+    document.getElementById(annuaireTabId("organization"))?.focus();
   };
   const openNetworkActor = (id: string) => {
     if (!networkNavigation.current?.openActor(id)) return;
-    setNetworkTab("network");
-    document.getElementById("annuaire-tab-network")?.focus();
+    setView("network");
+    document.getElementById(annuaireTabId("network"))?.focus();
   };
 
   const annuaireLogic = useAnnuaireLogic();
-  const {
-    featuredEntries,
-    filterKey,
-    resetFilters,
-  } = annuaireLogic;
+  const { featuredEntries, filterKey, resetFilters } = annuaireLogic;
   const selectionIntentFilterKeyRef = useRef<string | null>(null);
   const previousFilterKeyRef = useRef(filterKey);
 
@@ -104,6 +105,7 @@ export function AnnuaireSection() {
     setSelectedActorId(null);
   }, [filterKey]);
 
+  /** Localiser : sélectionne l'acteur (en rétablissant les filtres si la cible est exclue) puis ouvre la Carte. */
   const handleFocusMap = (id: string) => {
     const entryIsVisible = annuaireLogic.sortedAndFilteredEntries.some(
       (entry) => entry.id === id,
@@ -113,9 +115,17 @@ export function AnnuaireSection() {
       resetFilters();
     }
     setSelectedActorId(id);
-    const canvasAnchor = document.getElementById("exploration-canvas-anchor");
-    canvasAnchor?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setView("map");
+    document.getElementById(annuaireTabId("map"))?.focus();
   };
+
+  const selectedActor = selectedActorId
+    ? (annuaireLogic.enrichedEntries ?? []).find((entry) => entry.id === selectedActorId) ?? null
+    : null;
+  const discoverEntries = showAllFeatured
+    ? featuredEntries
+    : featuredEntries.slice(0, DISCOVER_INITIAL_CARDS);
+  const showsDirectoryData = view === "discover" || view === "directory" || view === "map";
 
   return (
     <SectionShell
@@ -125,108 +135,60 @@ export function AnnuaireSection() {
       icon={Globe}
       gradient="from-violet-600/20 via-violet-500/10 to-transparent"
     >
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-      >
-        <CmmSectionGroup>
-        <AnnuaireDirectoryFeedback fr={fr} logic={annuaireLogic} />
-        {/* Curated actors - a concise entry point before the full search */}
-        <motion.section variants={itemVariants} className="relative">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent" />
-          <div>
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-8">
-              <div className="space-y-8 max-w-3xl">
-                <div className="inline-flex items-center gap-3 px-5 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-xs font-black uppercase tracking-[0.3em] text-violet-400 shadow-2xl">
-                  <Building2 size={14} className="animate-pulse" />
-                  {fr ? "Sélection éditoriale" : "Editorial selection"}
-                </div>
-                <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter leading-[1.1]">
-                  {fr ? "Quelques acteurs à découvrir" : "A few actors to discover"}
-                </h2>
-              </div>
-              <p className="max-w-md text-xl text-slate-400 font-bold leading-relaxed opacity-80">
-                {fr ? "Une sélection éditoriale avant la recherche complète de l'annuaire." : "An editorial selection before the directory's full search."}
+      <CmmSectionGroup>
+        <AnnuaireViewTabs fr={fr} view={view} onChange={setView} />
+        {showsDirectoryData ? <AnnuaireDirectoryFeedback fr={fr} logic={annuaireLogic} /> : null}
+
+        <AnnuaireTabPanel view="discover" active={view === "discover"}>
+          {view === "discover" ? (
+            <div className="space-y-4">
+              <p className="text-sm cmm-text-primary">
+                {fr ? "Une sélection éditoriale d'acteurs à découvrir. Le catalogue complet reste dans l'annuaire." : "An editorial selection of actors to discover. The full catalog stays in the directory."}
               </p>
+              <AnnuaireFeaturedSection entries={discoverEntries} onFocusMap={handleFocusMap} fr={fr} />
+              <div className="flex flex-wrap gap-2">
+                {featuredEntries.length > DISCOVER_INITIAL_CARDS ? (
+                  <CmmButton type="button" tone="secondary" variant="pill" ariaPressed={showAllFeatured} onClick={() => setShowAllFeatured((value) => !value)}>
+                    {showAllFeatured ? (fr ? "Afficher moins" : "Show fewer") : (fr ? `Afficher toutes (${featuredEntries.length})` : `Show all (${featuredEntries.length})`)}
+                  </CmmButton>
+                ) : null}
+                <CmmButton type="button" tone="tertiary" variant="pill" onClick={() => { setView("directory"); document.getElementById(annuaireTabId("directory"))?.focus(); }}>
+                  {fr ? "Voir tout l'annuaire" : "See the full directory"}
+                </CmmButton>
+              </div>
             </div>
-            <div className="relative">
-               <div className="absolute -left-20 top-1/2 -translate-y-1/2 p-20 opacity-5 pointer-events-none rotate-12">
-                  <Sparkles size={200} className="text-violet-500" />
-               </div>
-               <AnnuaireFeaturedSection entries={featuredEntries} onFocusMap={handleFocusMap} fr={fr} />
-            </div>
-          </div>
-        </motion.section>
+          ) : null}
+        </AnnuaireTabPanel>
 
-        {/* Thematic Exploration - Immersive Glassmorphism */}
-        <motion.section 
-          variants={itemVariants}
-          id="exploration-canvas-anchor"
-          className="relative overflow-hidden rounded-[var(--radius-lg)] border border-white/10 bg-slate-900/40 p-8 shadow-[0_0_100px_rgba(99,102,241,0.1)] backdrop-blur-3xl md:p-10"
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.15),transparent_70%)]" />
-          <div className="absolute -top-24 -right-24 p-24 opacity-5 text-violet-400 pointer-events-none">
-              <Target size={300} />
-          </div>
-          
-          <CmmSectionGroup>
-            <div className="text-center space-y-6 max-w-3xl mx-auto">
-               <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
-                  <Globe size={12} />
-                  {fr ? "Recherche et exploration" : "Search and exploration"}
-               </div>
-               <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">
-                  {fr ? "Trouvez la structure qui vous intéresse" : "Find the structure you need"}
-               </h2>
-               <p className="text-slate-400 font-bold leading-relaxed">
-                  {fr ? "Recherchez, filtrez et comparez les ressources publiques déclarées." : "Search, filter and compare declared public resources."}
-               </p>
-            </div>
+        <AnnuaireTabPanel view="directory" active={view === "directory"}>
+          {view === "directory" ? (
+            <AnnuaireExplorationView logic={annuaireLogic} fr={fr} mode="directory" selectedActorId={selectedActorId} onSelectedActorIdChange={setSelectedActorId} onLocateActor={handleFocusMap} />
+          ) : null}
+        </AnnuaireTabPanel>
 
-            <AnnuaireExplorationView
-              logic={annuaireLogic}
-              fr={fr}
-              selectedActorId={selectedActorId}
-              onSelectedActorIdChange={setSelectedActorId}
-            />
-          </CmmSectionGroup>
-        </motion.section>
+        <AnnuaireTabPanel view="map" active={view === "map"}>
+          {view === "map" ? (
+            <AnnuaireExplorationView logic={annuaireLogic} fr={fr} mode="map" selectedActorId={selectedActorId} onSelectedActorIdChange={setSelectedActorId} />
+          ) : null}
+        </AnnuaireTabPanel>
 
-        <section aria-label={fr ? "Intelligence territoriale" : "Territorial intelligence"}>
-          <h2 className="mb-2 text-2xl font-black text-white">{fr ? "Intelligence territoriale" : "Territorial intelligence"}</h2>
-          <p className="mb-4 text-sm text-slate-300">{fr ? "Comprendre les collaborations et trouver les bons interlocuteurs." : "Understand relationships and find the right contacts."}</p>
-          <div role="tablist" aria-orientation="horizontal" aria-label={fr ? "Choisir une visualisation" : "Choose a visualization"} onKeyDown={(event) => {
-            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-            const currentTab = (event.target as HTMLElement).closest<HTMLElement>('[role="tab"]');
-            if (!currentTab) return;
-            event.preventDefault();
-            const current = currentTab.id === "annuaire-tab-network" ? "network" : "organization";
-            const next = event.key === "Home" ? "network" : event.key === "End" ? "organization" : current === "network" ? "organization" : "network";
-            setNetworkTab(next);
-            document.getElementById(`annuaire-tab-${next}`)?.focus();
-          }} className="mb-4 flex flex-wrap gap-2 border-b border-white/10 pb-3">
-            <button id="annuaire-tab-network" type="button" role="tab" aria-selected={networkTab === "network"} aria-controls="annuaire-panel-network" tabIndex={networkTab === "network" ? 0 : -1} onClick={() => setNetworkTab("network")} className={`rounded-xl border px-4 py-3 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 ${networkTab === "network" ? "border-violet-300/60 bg-violet-400/15 text-white" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>
-              {fr ? "Réseau 3D des cleanwalks" : "3D cleanwalk network"}
-            </button>
-            <button id="annuaire-tab-organization" type="button" role="tab" aria-selected={networkTab === "organization"} aria-controls="annuaire-panel-organization" tabIndex={networkTab === "organization" ? 0 : -1} onClick={() => setNetworkTab("organization")} className={`rounded-xl border px-4 py-3 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 ${networkTab === "organization" ? "border-sky-300/60 bg-sky-400/15 text-white" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>
-              {fr ? "Organisation des services publics" : "Public service organization"}
-            </button>
-          </div>
-          <div id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network" tabIndex={0} hidden={networkTab !== "network"}>
-            <ParisNetwork3DSection fr={fr} onTerritoryChange={setSelectedTerritoryId} active={networkTab === "network"} navigationRef={networkNavigation} getInstitutionId={getInstitutionId} onOpenInstitution={openInstitution} />
-            <ParisNetworkContributionCard fr={fr} territoryId={selectedTerritoryId} />
-          </div>
-          <div id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" tabIndex={0} hidden={networkTab !== "organization"}>
-            <PublicCleanlinessOrganization fr={fr} navigationRef={organizationNavigation} getNetworkActorId={getNetworkActorId} onOpenNetworkActor={openNetworkActor} />
-          </div>
-        </section>
+        <AnnuaireTabPanel view="network" active={view === "network"}>
+          <ParisNetwork3DSection fr={fr} onTerritoryChange={setSelectedTerritoryId} active={view === "network"} navigationRef={networkNavigation} getInstitutionId={getInstitutionId} onOpenInstitution={openInstitution} />
+          <ParisNetworkContributionCard fr={fr} territoryId={selectedTerritoryId} />
+        </AnnuaireTabPanel>
 
-        {/* Final CTA - Institutional Premium */}
+        <AnnuaireTabPanel view="organization" active={view === "organization"}>
+          <PublicCleanlinessOrganization fr={fr} navigationRef={organizationNavigation} getNetworkActorId={getNetworkActorId} onOpenNetworkActor={openNetworkActor} />
+        </AnnuaireTabPanel>
+
         <AnnuaireJoinCta fr={fr} />
-        </CmmSectionGroup>
-      </motion.div>
+      </CmmSectionGroup>
+
+      <AnimatePresence>
+        {view === "map" && selectedActor ? (
+          <AnnuairePartnerDrawer entry={selectedActor} isOpen onClose={() => setSelectedActorId(null)} fr={fr} />
+        ) : null}
+      </AnimatePresence>
     </SectionShell>
   );
 }

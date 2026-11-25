@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { AnnuaireActorCard } from "./annuaire-actor-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
@@ -13,6 +12,56 @@ interface AnnuairePartnerListProps {
   onFocusMap: (id: string) => void;
 }
 
+/** Pagination partagée par la liste en grille et par les résultats compacts de la carte. */
+export function AnnuairePagination({
+  fr,
+  currentPage,
+  totalPages,
+  onPageChange,
+}: Pick<AnnuairePartnerListProps, "fr" | "currentPage" | "totalPages" | "onPageChange">) {
+  if (totalPages <= 1) return null;
+  return (
+    <nav
+      aria-label={fr ? "Pagination des résultats" : "Results pagination"}
+      className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2 border-t border-[var(--cmm-surface-border)] pt-4"
+    >
+      <CmmButton
+        type="button"
+        disabled={currentPage === 1}
+        onClick={() => onPageChange(currentPage - 1)}
+        tone="tertiary"
+        variant="pill"
+      >
+        {fr ? "Précédent" : "Previous"}
+      </CmmButton>
+      <div className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2">
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+          <CmmButton
+            key={page}
+            type="button"
+            onClick={() => onPageChange(page)}
+            tone={currentPage === page ? "primary" : "tertiary"}
+            variant="pill"
+            ariaLabel={fr ? `Page ${page}` : `Page ${page}`}
+            className={cn("h-10 w-10 rounded-xl")}
+          >
+            <span aria-current={currentPage === page ? "page" : undefined}>{page}</span>
+          </CmmButton>
+        ))}
+      </div>
+      <CmmButton
+        type="button"
+        disabled={currentPage === totalPages}
+        onClick={() => onPageChange(currentPage + 1)}
+        tone="tertiary"
+        variant="pill"
+      >
+        {fr ? "Suivant" : "Next"}
+      </CmmButton>
+    </nav>
+  );
+}
+
 export function AnnuairePartnerList({
   fr,
   entries,
@@ -22,80 +71,20 @@ export function AnnuairePartnerList({
   onFocusMap,
 }: AnnuairePartnerListProps) {
   return (
-    <div className="space-y-8">
-      <motion.div 
-        className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1"
-        initial="hidden"
-        animate="visible"
-        variants={{
-          hidden: { opacity: 1 },
-          visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1 }
-          }
-        }}
-      >
+    <div className="space-y-6">
+      <ul className="grid min-w-0 list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
         {entries.map((actor) => (
-          <motion.div 
-            key={actor.id} 
-            variants={{
-              hidden: { opacity: 1, x: -30, filter: "blur(10px)" },
-              visible: { 
-                opacity: 1, 
-                x: 0, 
-                filter: "blur(0px)",
-                transition: { duration: 0.6, ease: [0.23, 1, 0.32, 1] }
-              }
-            }}
-          >
-            <AnnuaireActorCard
-              entry={actor}
-              onFocusMap={() => onFocusMap(actor.id)}
-            />
-          </motion.div>
+          <li key={actor.id} className="min-w-0">
+            <AnnuaireActorCard entry={actor} onFocusMap={() => onFocusMap(actor.id)} />
+          </li>
         ))}
-      </motion.div>
-
-      {totalPages > 1 ? (
-        <div className="mt-12 flex min-w-0 max-w-full flex-wrap items-center justify-center gap-3 border-t border-white/5 pt-8">
-          <CmmButton
-            disabled={currentPage === 1}
-            onClick={() => onPageChange(currentPage - 1)}
-            tone="tertiary"
-            variant="pill"
-            className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-          >
-            {fr ? "Précédent" : "Previous"}
-          </CmmButton>
-          
-          <div className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <CmmButton
-                key={p}
-                onClick={() => onPageChange(p)}
-                tone={currentPage === p ? "primary" : "tertiary"}
-                variant="pill"
-                className={cn(
-                  "w-10 h-10 rounded-xl text-[11px] font-black tracking-tighter transition-all",
-                  currentPage === p ? "shadow-2xl scale-110" : "hover:shadow-md"
-                )}
-              >
-                {p}
-              </CmmButton>
-            ))}
-          </div>
-
-          <CmmButton
-            disabled={currentPage === totalPages}
-            onClick={() => onPageChange(currentPage + 1)}
-            tone="tertiary"
-            variant="pill"
-            className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-          >
-            {fr ? "Suivant" : "Next"}
-          </CmmButton>
-        </div>
-      ) : null}
+      </ul>
+      <AnnuairePagination
+        fr={fr}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 }

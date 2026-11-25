@@ -1,17 +1,17 @@
-import { cn } from "@/lib/utils";
+import { AlertCircle, PlusCircle, RotateCcw } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { 
-  KIND_FILTERS, 
-  CONTRIBUTION_FILTERS, 
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+import { CmmField } from "@/components/ui/cmm-field";
+import {
+  KIND_FILTERS,
+  CONTRIBUTION_FILTERS,
   ENGAGEMENT_DOMAIN_FILTERS,
-  type EntityKind, 
-  type ContributionType, 
+  type EntityKind,
+  type ContributionType,
   type EngagementDomainFilter,
-  type ZoneFilter 
+  type ZoneFilter,
 } from "./annuaire-filters";
 import { PARIS_ARRONDISSEMENTS, type ParisArrondissement } from "@/lib/geo/paris-arrondissements";
-import { Search, MapPin, Building2, Zap, RotateCcw, AlertCircle, PlusCircle, ChevronDown } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface AnnuaireFiltersCardProps {
   fr: boolean;
@@ -31,100 +31,59 @@ interface AnnuaireFiltersCardProps {
   resultsCount: number;
 }
 
-function AnnuaireSearchAndZoneFields({
+/** Mots-clés de recherche (pas des classifications) : ils alimentent la recherche textuelle unique. */
+const KEYWORD_OPTIONS = [
+  { id: "propreté", fr: "Propreté", en: "Cleanliness" },
+  { id: "climat", fr: "Climat", en: "Climate" },
+  { id: "sensibilisation", fr: "Sensibilisation", en: "Awareness" },
+] as const;
+
+function parseZone(raw: string): ZoneFilter {
+  if (raw === "all") return "all";
+  if (raw === "nearby") return "nearby";
+  return Number.parseInt(raw, 10) as ParisArrondissement;
+}
+
+function AnnuaireEmptyState({
   fr,
-  searchTerm,
-  setSearchTerm,
-  zoneFilter,
-  setZoneFilter,
-  setActorCardsPage,
-  targetArrondissement,
-}: Pick<AnnuaireFiltersCardProps, "fr" | "searchTerm" | "setSearchTerm" | "zoneFilter" | "setZoneFilter" | "setActorCardsPage" | "targetArrondissement">) {
+  resetFilters,
+}: Pick<AnnuaireFiltersCardProps, "fr" | "resetFilters">) {
   return (
-    <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-      <div className="space-y-3">
-        <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
-          {fr ? "Recherche textuelle" : "Text search"}
-        </span>
-        <div className="relative group">
-          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
-          <input
-            value={searchTerm}
-            onChange={(event) => {
-              setActorCardsPage(1);
-              setSearchTerm(event.target.value);
-            }}
-            placeholder={fr ? "Nom, mission, mot-clé..." : "Name, mission, keyword..."}
-            className="w-full h-14 rounded-2xl border border-white/5 bg-slate-950/40 pl-14 pr-6 text-sm font-bold text-white shadow-inner transition-all placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 focus:ring-4 focus:ring-violet-500/10"
-          />
+    <div
+      role="status"
+      className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4 md:flex-row md:items-center"
+    >
+      <div className="flex items-start gap-3">
+        <AlertCircle size={20} className="mt-0.5 cmm-text-warning" aria-hidden="true" />
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold cmm-text-primary">
+            {fr ? "Aucun résultat" : "No results"}
+          </h4>
+          <p className="text-sm cmm-text-secondary">
+            {fr
+              ? "Essayez d'élargir le périmètre ou de retirer certains filtres."
+              : "Try widening the radius or removing some filters."}
+          </p>
         </div>
       </div>
-      <div className="space-y-3">
-        <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
-          {fr ? "Rayon d'action" : "Action radius"}
-        </span>
-        <div className="relative group">
-          <MapPin size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
-          <select
-            value={String(zoneFilter)}
-            onChange={(event) => {
-              const raw = event.target.value;
-              setActorCardsPage(1);
-              setZoneFilter(raw === "all" ? "all" : raw === "nearby" ? "nearby" : Number.parseInt(raw, 10) as ParisArrondissement);
-            }}
-            className="w-full h-14 cursor-pointer appearance-none rounded-2xl border border-white/5 bg-slate-950/40 pl-14 pr-12 text-sm font-bold text-white shadow-inner transition-all focus:border-violet-500/40 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
-          >
-            <option value="all">{fr ? "Tout Paris" : "All Paris"}</option>
-            {targetArrondissement ? <option value="nearby">{fr ? "Proches de moi" : "Nearby"}</option> : null}
-            {PARIS_ARRONDISSEMENTS.map((item) => (
-              <option key={item.value} value={item.value}>{item.label}</option>
-            ))}
-          </select>
-          <ChevronDown size={18} className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-600" />
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <CmmButton type="button" tone="secondary" variant="pill" onClick={resetFilters}>
+          <RotateCcw size={14} className="mr-2" aria-hidden="true" />
+          {fr ? "Réinitialiser" : "Reset"}
+        </CmmButton>
+        <CmmButton href="/partners/onboarding" tone="primary" variant="pill">
+          <PlusCircle size={14} className="mr-2" aria-hidden="true" />
+          {fr ? "Proposer" : "Propose"}
+        </CmmButton>
       </div>
     </div>
   );
 }
 
-function AnnuaireContributionFilters({
-  fr,
-  filterContribution,
-  setFilterContribution,
-  setActorCardsPage,
-}: Pick<AnnuaireFiltersCardProps, "fr" | "filterContribution" | "setFilterContribution" | "setActorCardsPage">) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Zap size={14} className="text-slate-500" />
-        <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
-          {fr ? "Leviers & Besoins" : "Levers & Needs"}
-        </span>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {CONTRIBUTION_FILTERS.map((item) => (
-          <CmmButton
-            key={item.value}
-            type="button"
-            tone={filterContribution === item.value ? "primary" : "tertiary"}
-            variant="pill"
-            onClick={() => {
-              setActorCardsPage(1);
-              setFilterContribution(item.value as ContributionType | "all");
-            }}
-            className={cn(
-              "px-5 py-2.5 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
-              filterContribution === item.value ? "shadow-lg scale-105" : "",
-            )}
-          >
-            {item.label}
-          </CmmButton>
-        ))}
-      </div>
-    </div>
-  );
-}
-
+/**
+ * Filtres de l'Annuaire sous forme de menus déroulants natifs (accessibles au
+ * clavier). Owner unique de l'UI de filtrage ; l'état reste dans useAnnuaireLogic.
+ */
 export function AnnuaireFiltersCard({
   fr,
   searchTerm,
@@ -142,136 +101,129 @@ export function AnnuaireFiltersCard({
   targetArrondissement,
   resultsCount,
 }: AnnuaireFiltersCardProps) {
+  const keyword = KEYWORD_OPTIONS.some((option) => option.id === searchTerm) ? searchTerm : "";
+  const hasActiveFilter =
+    searchTerm !== "" ||
+    filterKind !== "all" ||
+    filterContribution !== "all" ||
+    engagementDomain !== "all" ||
+    zoneFilter !== "all";
+  const extraActive = filterContribution !== "all" || keyword !== "";
+
   return (
-    <div className="space-y-10 relative z-10">
-      <AnnuaireSearchAndZoneFields
-        fr={fr}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        zoneFilter={zoneFilter}
-        setZoneFilter={setZoneFilter}
-        setActorCardsPage={setActorCardsPage}
-        targetArrondissement={targetArrondissement}
-      />
-
-      {/* Type Filter */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-           <Building2 size={14} className="text-slate-500" />
-           <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
-              {fr ? "Type de structure" : "Structure type"}
-           </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {KIND_FILTERS.map((item) => (
-            <CmmButton
-              key={item.id}
-              type="button"
-              tone={filterKind === item.value ? "primary" : "tertiary"}
-              variant="pill"
-              onClick={() => {
-                setActorCardsPage(1);
-                setFilterKind(item.value);
-              }}
-              className={cn(
-                "px-5 py-2.5 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
-                filterKind === item.value ? "shadow-lg scale-105" : ""
-              )}
-            >
-              {item.label}
-            </CmmButton>
-          ))}
-        </div>
-      </div>
-
-      {/* Engagement domain filter */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Building2 size={14} className="text-slate-500" />
-          <span className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.2em]">
-            {fr ? "Domaine d'engagement" : "Engagement domain"}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {ENGAGEMENT_DOMAIN_FILTERS.map((item) => (
-            <CmmButton
-              key={item.value}
-              type="button"
-              tone={engagementDomain === item.value ? "primary" : "tertiary"}
-              variant="pill"
-              onClick={() => {
-                setActorCardsPage(1);
-                setEngagementDomain(item.value);
-              }}
-              className={cn(
-                "px-5 py-2.5 cmm-text-caption font-black uppercase tracking-widest transition-all duration-300",
-                engagementDomain === item.value ? "shadow-lg scale-105" : "",
-              )}
-            >
-              {fr ? item.label : item.englishLabel}
-            </CmmButton>
-          ))}
-        </div>
-        <p className="cmm-text-caption cmm-text-muted">
-          {fr
-            ? "Les domaines proviennent du classement éditorial ou des déclarations des structures. Ils ne constituent pas une certification."
-            : "Domains come from editorial classification or structure declarations. They are not a certification."}
-        </p>
-      </div>
-
-      <AnnuaireContributionFilters
-        fr={fr}
-        filterContribution={filterContribution}
-        setFilterContribution={setFilterContribution}
-        setActorCardsPage={setActorCardsPage}
-      />
-
-      {/* Empty State / Reset */}
-      <AnimatePresence>
-        {resultsCount === 0 && (
-          <motion.div 
-            initial={{ opacity: 1, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="p-8 rounded-[2rem] border border-amber-500/20 bg-amber-500/5 backdrop-blur-3xl"
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <CmmField label={fr ? "Type de structure" : "Structure type"}>
+          <select
+            className="cmm-input w-full"
+            value={filterKind}
+            onChange={(event) => {
+              setActorCardsPage(1);
+              setFilterKind(event.target.value as EntityKind | "all");
+            }}
           >
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-               <div className="flex items-start gap-6">
-                  <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400">
-                     <AlertCircle size={24} />
-                  </div>
-                  <div className="space-y-2">
-                     <h4 className="text-sm font-black text-white uppercase tracking-widest">{fr ? "Aucun résultat" : "No results"}</h4>
-                     <p className="text-xs font-bold text-slate-400 leading-relaxed max-w-sm">
-                        {fr ? "Essayez d'élargir le périmètre ou de retirer certains filtres." : "Try widening the radius or removing some filters."}
-                     </p>
-                  </div>
-               </div>
-               <div className="flex items-center gap-4">
-                  <CmmButton
-                    type="button"
-                    tone="secondary"
-                    variant="pill"
-                    onClick={resetFilters}
-                    className="flex items-center gap-3 px-6 py-3 cmm-text-caption font-black uppercase tracking-[0.2em] transition-all"
-                  >
-                    <RotateCcw size={14} />
-                    {fr ? "Réinitialiser" : "Reset"}
-                  </CmmButton>
-                  <CmmButton
-                    href="/partners/onboarding"
-                    tone="primary"
-                    variant="pill"
-                    className="flex items-center gap-3 px-6 py-3 cmm-text-caption font-black uppercase tracking-[0.2em] shadow-2xl transition-all"
-                  >
-                    <PlusCircle size={14} />
-                    {fr ? "Proposer" : "Propose"}
-                  </CmmButton>
-               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {KIND_FILTERS.map((item) => (
+              <option key={item.id} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </CmmField>
+        <CmmField label={fr ? "Domaine d'engagement" : "Engagement domain"}>
+          <select
+            className="cmm-input w-full"
+            value={engagementDomain}
+            onChange={(event) => {
+              setActorCardsPage(1);
+              setEngagementDomain(event.target.value as EngagementDomainFilter);
+            }}
+          >
+            {ENGAGEMENT_DOMAIN_FILTERS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {fr ? item.label : item.englishLabel}
+              </option>
+            ))}
+          </select>
+        </CmmField>
+        <CmmField label={fr ? "Arrondissement" : "Arrondissement"}>
+          <select
+            className="cmm-input w-full"
+            value={String(zoneFilter)}
+            onChange={(event) => {
+              setActorCardsPage(1);
+              setZoneFilter(parseZone(event.target.value));
+            }}
+          >
+            <option value="all">{fr ? "Tout Paris" : "All Paris"}</option>
+            {targetArrondissement ? (
+              <option value="nearby">{fr ? "Proches de moi" : "Nearby"}</option>
+            ) : null}
+            {PARIS_ARRONDISSEMENTS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </CmmField>
+      </div>
+
+      <CmmDisclosure
+        size="sm"
+        defaultOpen={extraActive}
+        summary={fr ? "Filtres supplémentaires" : "More filters"}
+      >
+        <div className="grid grid-cols-1 gap-3 pt-3 sm:grid-cols-2">
+          <CmmField label={fr ? "Type d'aide" : "Type of help"}>
+            <select
+              className="cmm-input w-full"
+              value={filterContribution}
+              onChange={(event) => {
+                setActorCardsPage(1);
+                setFilterContribution(event.target.value as ContributionType | "all");
+              }}
+            >
+              {CONTRIBUTION_FILTERS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </CmmField>
+          <CmmField
+            label={fr ? "Mot-clé" : "Keyword"}
+            hint={
+              fr
+                ? "Recherche par mot-clé, pas une classification ni une certification."
+                : "Keyword search, not a classification or certification."
+            }
+          >
+            <select
+              className="cmm-input w-full"
+              value={keyword}
+              onChange={(event) => {
+                setActorCardsPage(1);
+                setSearchTerm(event.target.value);
+              }}
+            >
+              <option value="">{fr ? "Aucun mot-clé" : "No keyword"}</option>
+              {KEYWORD_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {fr ? option.fr : option.en}
+                </option>
+              ))}
+            </select>
+          </CmmField>
+        </div>
+      </CmmDisclosure>
+
+      {hasActiveFilter && resultsCount > 0 ? (
+        <CmmButton type="button" tone="tertiary" variant="pill" onClick={resetFilters}>
+          <RotateCcw size={14} className="mr-2" aria-hidden="true" />
+          {fr ? "Réinitialiser les filtres" : "Reset filters"}
+        </CmmButton>
+      ) : null}
+
+      {resultsCount === 0 ? <AnnuaireEmptyState fr={fr} resetFilters={resetFilters} /> : null}
     </div>
   );
 }

@@ -58,7 +58,7 @@ Le filtre structuré des domaines d'engagement propose `Environnement`, `Social`
 `engagementTypesSource` (`editorial_seed` ou `partner_declaration`) ; les anciens types
 synthétiques des fiches partenaires sont conservés pour l'affichage mais restent non
 classés. Les domaines sont éditoriaux ou auto-déclarés, jamais une certification. Les
-boutons `Propreté`, `Climat` et `Sensibilisation` restent des recherches par mots-clés.
+options `Propreté`, `Climat` et `Sensibilisation` du menu Mot-clé restent des recherches par mots-clés.
 
 Une fiche partenaire sépare les données déclarées et administratives des preuves
 d'activité. `availability`, les contributions et le périmètre décrivent ce que la
