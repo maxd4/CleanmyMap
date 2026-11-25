@@ -19,7 +19,10 @@ begin
      '10000000-0000-4000-8000-000000000011'::uuid,
      '10000000-0000-4000-8000-000000000012'::uuid,
      '10000000-0000-4000-8000-000000000013'::uuid,
-     '10000000-0000-4000-8000-000000000014'::uuid
+     '10000000-0000-4000-8000-000000000014'::uuid,
+     '10000000-0000-4000-8000-000000000016'::uuid,
+     '10000000-0000-4000-8000-000000000017'::uuid,
+     '10000000-0000-4000-8000-000000000018'::uuid
    );
 end;
 $$;
@@ -249,7 +252,53 @@ begin
     );
     raise exception 'fourth active action media was accepted';
   exception when raise_exception then
-    if sqlerrm not like '%more than three active media%' then raise; end if;
+    if sqlerrm not like '%more active media for this purpose%' then raise; end if;
+  end;
+
+  -- route_reference has an independent active quota of 2 on the same action.
+  insert into public.action_media (
+    id, action_id, created_by_clerk_id, client_upload_id, storage_path,
+    original_name, mime_type, size_bytes, width, height, sort_order, upload_state, purpose
+  ) values
+    ('10000000-0000-4000-8000-000000000016'::uuid,
+     '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid,
+     'reports-media-owner', 'reports-route-ref-1',
+     '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71/10000000-0000-4000-8000-000000000016.jpg',
+     'route-ref-1.jpg', 'image/jpeg', 1024, 100, 100, 0, 'ready', 'route_reference'),
+    ('10000000-0000-4000-8000-000000000017'::uuid,
+     '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid,
+     'reports-media-owner', 'reports-route-ref-2',
+     '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71/10000000-0000-4000-8000-000000000017.jpg',
+     'route-ref-2.jpg', 'image/jpeg', 1024, 100, 100, 1, 'pending', 'route_reference');
+
+  begin
+    insert into public.action_media (
+      id, action_id, created_by_clerk_id, client_upload_id, storage_path,
+      original_name, mime_type, size_bytes, width, height, sort_order, upload_state, purpose
+    ) values (
+      '10000000-0000-4000-8000-000000000018'::uuid,
+      '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid,
+      'reports-media-owner', 'reports-route-ref-3',
+      '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71/10000000-0000-4000-8000-000000000018.jpg',
+      'route-ref-3.jpg', 'image/jpeg', 1024, 100, 100, 2, 'pending', 'route_reference'
+    );
+    raise exception 'third active route_reference media was accepted';
+  exception when raise_exception then
+    if sqlerrm not like '%more active media for this purpose%' then raise; end if;
+  end;
+
+  begin
+    insert into public.action_media (
+      action_id, created_by_clerk_id, client_upload_id, storage_path,
+      original_name, mime_type, size_bytes, upload_state, purpose
+    ) values (
+      '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid,
+      'reports-media-owner', 'reports-invalid-purpose',
+      '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71/invalid-purpose.jpg',
+      'invalid-purpose.jpg', 'image/jpeg', 1024, 'pending', 'unknown_purpose'
+    );
+    raise exception 'unknown action_media purpose was accepted';
+  exception when check_violation then null;
   end;
 end;
 $$;
@@ -266,6 +315,7 @@ begin
   select count(*) into v_count
     from public.action_media
    where action_id = '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid
+     and purpose = 'report_photo'
      and upload_state = 'ready';
   if v_count <> 1 then
     raise exception 'media owner did not read exactly its ready evidence';
