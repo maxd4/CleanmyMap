@@ -47,6 +47,16 @@
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : moyenne
 
+## Variante à accès restreint
+
+Les comptes authentifiés sans accès au pilotage organisé disposent d'un hub
+adapté à leur rôle actif. IMU conserve ses raccourcis administratifs lorsque
+les capacités effectives sont vérifiées. Rapports, carte, méthodologie et CTA
+du profil ouvrent les pages propriétaires. Le changement de rôle passe par
+le profil actif et le sélecteur existant. Une vérification indisponible
+affiche une relance et masque les raccourcis administratifs. Aucun overview
+ni détail des opérations n'est chargé par ce hub. Aucun droit élargi.
+
 ## Opérations communautaires
 
 Lorsque l'overview est disponible, le cockpit réservé aux profils autorisés
