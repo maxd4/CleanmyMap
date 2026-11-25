@@ -1,0 +1,723 @@
+diff --git a/documentation/features/paris-cleanwalk-network-3d.md b/documentation/features/paris-cleanwalk-network-3d.md
+--- a/documentation/features/paris-cleanwalk-network-3d.md
++++ b/documentation/features/paris-cleanwalk-network-3d.md
+@@ -1,91 +1,79 @@
+-# Réseau 3D des cleanwalks à Paris — contrat relationnel et runtime
+-
+-**Statut : `CURRENT`**
+-
+-Ce document décrit le contrat de données, de relations et de rendu de la visualisation 3D de l'écosystème des cleanwalks, de la prévention et de la sensibilisation aux déchets rattaché à Paris et intégré dans `/sections/annuaire`. Les inventaires courants sont portés par les registres TypeScript et leurs tests, non par un compteur documentaire.
+-
+-Dans `/sections/annuaire`, le réseau est présenté dans l'onglet « Réseau 3D », à côté de l'onglet « Services publics ». Ce dernier possède un référentiel et des types de relations institutionnelles distincts ; les deux modèles relationnels restent distincts. La vue guidée est initiale ; le canvas WebGL nécessite le choix de la 3D puis l'entrée dans le viewport ou le chargement explicite. La scène est démontée hors de l'onglet réseau. Le panneau réseau peut rester monté afin de préserver ses filtres et sélections ; au retour en 3D, la scène est rétablie. Les onglets appliquent le patron ARIA à tabulation mobile unique et navigation par flèches, `Home` et `End`. Voir le [contrat des services publics de propreté](organisation-services-publics-proprete.md).
+-
+-## 1. Sources runtime
+-
+-- Registre éditorial typé et politique d'épaisseur : `apps/web/src/lib/partners/paris-cleanwalk-network.ts`, `paris-cleanwalk-network.data.ts`, `paris-cleanwalk-network.prevention.data.ts`, `paris-cleanwalk-network.schools.ts`, `paris-cleanwalk-network.scheduled.ts` et `paris-cleanwalk-network.relations.ts`
+-- Modèle de filtrage et projection 3D déterministe : `apps/web/src/components/sections/rubriques/annuaire/paris-network-3d.model.ts`
+-- Scène WebGL Three.js / React Three Fiber (`ssr: false`) : `apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-canvas.tsx`
+-- Orchestrateur, filtres, légende, bulle contextuelle et repli interactif : `apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-section.tsx` et `paris-network-3d-bubble.tsx`
+-
+-## 2. Identifiants canoniques, périmètres, rôles et canaux publics
+-
+-- Lorsqu'un acteur existe déjà dans les seeds éditoriaux de l'Annuaire (`INITIAL_ANNUAIRE_ENTRIES`), le registre réutilise son identifiant canonique (`asso-featured-1`, `asso-surfrider-paris`, `asso-zerowaste-paris`, `evt-paris-nettoyages`, `evt-j-agis-nature`, `evt-je-veux-aider`, `asso-gestes-propres`, `asso-1`, `asso-megots-alcome`) afin d'éviter toute base d'organisations concurrente.
+-- **Périmètre réel** : le registre distingue explicitement les acteurs parisiens intramuros (`parisZone.isIntramuros: true`, dont les mairies, associations parisiennes, antennes régionales comme AREMACS Île-de-France/Paris et le Syctom) des organismes ou réseaux nationaux de prévention, sensibilisation ou filières REP (`parisZone.isIntramuros: false`, dont Gestes Propres, Zero Waste France, No Plastic In My Sea, ALCOME et Citeo), sans attribuer à ces derniers d'opérations intramuros non prouvées ni d'arrondissements inventés.
+-- Chaque nœud porte explicitement sa catégorie (`association_locale`, `entreprise_rse` — élargie aux « Entreprises, soutiens RSE et éco-organismes » dont ALCOME et Citeo —, `collectivite_mairie`, `reseau_evenement`, `plateforme_mise_en_relation`, `etablissement_enseignement`), ses rôles opérationnels (`organisateur_effectif`, `relais`, `financeur`, `fournisseur_materiel`), ses rôles d'écosystème (`organisateur_direct`, `coordinateur_reseau`, `plateforme_publication`, `sensibilisation_prevention`, cumulables), sa zone parisienne ou nationale, ses modalités de participation, son statut matériel sourcé, son responsable public vérifié (`publicLeader` ou `null`), ses canaux publics dédupliqués (`publicChannels`), sa provenance et sa date de vérification.
+-- Les liens d'invitation privés ou non autorisés (`chat.whatsapp.com`, `wa.me`, `discord.gg`, `discord.com/invite`, `t.me/+`) sont rejetés par `sanitizeAndDeduplicatePublicChannels`.
+-- **Brigade Verte Paris** (`asso-featured-1`) est reliée à sa fiche `J'agis pour la nature` via `publie_sur`, sans confusion avec « Super Brigade Verte » portée par l'association Les Parques sur `JeVeuxAider.gouv.fr`.
+-- **Pik Pik Environnement** (`asso-1`, `organizerDirectoryId: "association-pikpik"`) pointe vers le site associatif `https://pikpik.org/` et sa mission parisienne vérifiée sur `JeVeuxAider.gouv.fr`, sans confusion avec l'entreprise distincte PikPik Services Solidaires.
+-- **ALCOME** (`asso-megots-alcome`, catégorie `entreprise_rse`) pointe vers son site officiel `https://alcome.eco/` tout en conservant la fiche filière REP Tabac de l'ADEME comme preuve institutionnelle distincte.
+-- CKFD (`operator-ckfd`), MéGO! (`operator-mego`), Carton Plein Cyclo (`operator-carton-plein-cyclo`, distinct de l'association `asso-3`) et Les Runners Laveurs (`asso-runners-laveurs`) partagent leur identifiant avec une ressource éditoriale Annuaire ; aucune coordonnée, couverture d'arrondissement, adhésion ou prestation acquise n'est imputée. Les fiches éditoriales réutilisent les limites sourcées du réseau par identifiant canonique. Les clubs simplement prospectés ne sont pas des organisateurs de cleanwalks attestés.
+-- **Zero Waste France** (`asso-zerowaste-france`) et **Zero Waste Paris** (`asso-zerowaste-paris`) restent deux nœuds distincts.
+-- **Cleanwalk.org** (`cleanwalk-org`) est typée comme `plateforme_publication` ; ses fonctionnalités V2 indisponibles sont signalées et aucune opération ou bénévole des structures utilisatrices ne lui est attribuée.
+-- **CleanMyMap** (`cleanmymap`) est documentée comme plateforme éditrice du réseau (`plateforme_mise_en_relation`, `plateforme_publication`, projet civic-tech open source initié par Maxence Deroome selon `README.md` et `AUTHORS.md`), sans présumer qu'elle est une association constituée ni que les autres acteurs du graphe sont ses partenaires (`isCleanMyMapMember: false` conservé).
+-- Les établissements scolaires sont projetés depuis les seeds éditoriaux de l'Annuaire (`seed-schools.ts`), avec identifiant UAI stable, sources d'identité, adresses contradictoires conservées et coordonnées absentes lorsqu'elles ne sont pas établies. L'identification institutionnelle ne constitue pas une preuve d'activité cleanwalk, de rôle opérationnel ou de partenariat.
+-- Aucun acteur du registre n'est présenté comme membre du réseau CleanMyMap (`isCleanMyMapMember: false`).
+-- Aucun prêt de matériel n'est attribué à un tiers sans preuve directe (`fournit_materiel` est réservé aux acteurs disposant d'une source vérifiée, notamment la Ville de Paris / DPE). Pour la DPE, la source municipale annonce sacs et gants sur demande et cendriers de poche selon disponibilité ; ce statut ne prouve ni stock, ni prêt accordé, ni fourniture de pinces ou chasubles. Les nœuds de prévention/sensibilisation sans relation directe démontrée sont conservés sans arête présumée.
+-
+-## 3. Contrat relationnel et calcul d'épaisseur
+-
+-Chaque relation publiée possède un type explicite (`action_commune` / « Coorganise avec », `publie_sur` / « Publie ses actions sur », `partenariat`, `soutien_rse`, `appui_logistique`, `presence_evenement`, `collaboration_programmee`), deux acteurs identifiés et une provenance datée. Les relations historiques ont une source URL ; une collaboration programmée est une déclaration d'organisateur sans URL publique propre à l'opération lorsque celle-ci n'est pas disponible. Un référencement sur plateforme (`publie_sur`), une présence à un événement ou une similarité thématique ne sont jamais confondus avec une coorganisation (`action_commune`).
+-
+-Les collaborations programmées sont dérivées de `PARIS_SCHEDULED_OPERATIONS`, avec un identifiant d'opération commun aux liens concernés. Leur état `programme` et leur provenance `declaration_organisateur` sont distincts d'une action commune réalisée. Une date passée ne déclenche aucune promotion automatique, aucun comptage historique ni aucun partenariat. Le panneau dédié et les fiches des acteurs conservent les informations non renseignées et les identifications probables. Ne publier que les informations opérationnelles autorisées à être rendues publiques ; une déclaration ne prouve pas à elle seule cette autorisation.
+-
+-Pour `action_commune` :
+-- Les opérations prouvées sont dédupliquées par couple `(id, date)` sur une fenêtre glissante de **365 jours** (`countDistinctOperationsLast12Months`).
+-- L'épaisseur suit une échelle linéaire bornée dans `[1.5, 6.0]` pour `1` à `12+` opérations distinctes (`RELATION_THICKNESS_POLICY`).
+-- Si la fréquence n'est pas quantifiée (`frequencyKnown: false`), la fonction retourne une épaisseur neutre (`2.0`) et `operationsCount12m: null`, sans jamais inventer `0`.
+-- Une fréquence connue sans opération dans la fenêtre retourne `operationsCount12m: 0` avec une épaisseur neutre ; elle reste distincte d'une fréquence inconnue.
+-- Les autres types de relations utilisent des styles de ligne distincts (`dashed` / `dotted` et couleurs dédiées) avec une épaisseur fixe (`1.8`). Les collaborations programmées sont affichées en ambre, en tirets, et exclues du comptage historique.
+-
+-## 4. Chargement, sobriété et repli WebGL
+-
+-- La vue HTML guidée est la présentation initiale ; la scène 3D est optionnelle et ne se monte qu’après choix explicite, puis entrée dans le viewport ou demande de chargement. Le bouton de retour à la vue guidée conserve les filtres et la sélection. Le graphe garde son nom de réseau 3D dans les onglets.
+-- Aucune simulation physique permanente n'est exécutée. La disposition déterministe est calculée sur le dataset complet, puis projetée sur les résultats filtrés ; les nœuds conservés ne changent pas de position. Le rayon nominal est uniforme et ne signifie ni influence ni importance. La position indique une famille, pas une adresse ou une distance relationnelle.
+-- `frameloop="demand"` suspend le rendu continu lorsque la section est hors écran, lorsque `prefers-reduced-motion` est actif ou lorsque le mode d'affichage est `sobre`.
+-- Si WebGL est indisponible (ou échoue à l'exécution), un repli HTML interactif complet (`ParisNetwork3DFallback`) donne accès aux mêmes acteurs, liens et fiches. La capacité WebGL est mémorisée pour l'instance active ; le contexte de sonde est libéré si l'extension le permet. Le listener de perte de contexte est nettoyé au démontage. Le zoom suit la cible des contrôles de caméra et respecte leurs limites. Le cadrage initial et le bouton Cadrer le réseau ajustent la caméra aux bornes géométriques des nœuds visibles et au champ de vision horizontal et vertical. Centrer la sélection cadre son voisinage ; Isoler les voisins ne modifie pas les données ou les filtres métier, seulement la projection 3D. La fermeture de la sélection, un changement de territoire ou une exclusion par filtre rend l’isolation inactive. Seuls les acteurs sélectionnés ou survolés affichent leur nom dans la scène, à taille d’écran lisible ; les étiquettes de collaboration programmée apparaissent sur les liens incidents mis en évidence. Tous les noms et relations restent accessibles dans la recherche, la vue guidée et les fiches.
+-- `ParisNetworkActorSearch` recherche un nom dans le territoire documenté sans supprimer les voisins. Une sélection explicite d'un acteur hors filtres réinitialise les filtres incompatibles. Type d'acteur et arrondissement restent visibles ; les autres filtres existants sont regroupés dans un détail secondaire. Aucune nouvelle facette temporelle ou de classement.
+-- Le survol met en évidence l'acteur et ses voisins et affiche un aperçu court non interactif. La sélection explicite ouvre la fiche complète et les liens documentés dans `ParisNetworkSelectionPanel`, à côté de la scène sur grand écran et à sa suite sur petit écran. Une relation ouvre son type, ses deux extrémités, son résumé, sa source et son niveau de preuve ; une opération déclarée réutilise sa fiche programmée. Le parcours par fiche fournit aussi un accès clavier aux liens historiques.
+-- La légende résume les encodages puis permet d'ouvrir les définitions détaillées. Un lien absent n'est pas une absence démontrée de collaboration.
+-- Une identité institutionnelle commune explicitement résolue peut ouvrir l'onglet des services publics, conformément au [contrat institutionnel](organisation-services-publics-proprete.md).
+-- `public-entity-projection.ts` fournit une projection publique canonique réutilisable à partir des identifiants explicites (`annuaireEntryId`, `networkActorId`, `institutionId`), sans rapprochement par nom ni exposition du registre privé.
+-
+-## 5. Contributions citoyennes, modération et mise à jour du registre
+-
+-- Sous la scène 3D, le bloc `« Aidez-nous à compléter ce réseau »` (`paris-network-contribution-card.tsx`) permet à un utilisateur **connecté** (session Clerk requise ; lien visible vers `/sign-in` pour les visiteurs anonymes) de proposer une structure, une collaboration, une action commune, un contact professionnel public ou une disponibilité de matériel.
+-- L'envoi réutilise `POST /api/community/bug-reports` (`community_bug_reports`) avec `reportType: "idea"`, `source: "feedback_section"`, un titre préfixé `Réseau cleanwalks Paris` et `pagePath: "/sections/annuaire#reseau-cleanwalks"`. Les contrôles existants s'appliquent (authentification, validation Zod, taille maximale `3000` caractères, anti-abus honeypot/timing et quota serveur).
+-- **Aucune publication automatique** : une contribution reçue ou acceptée dans la file administrateur ne modifie jamais le graphe public. L'intégration exige une vérification éditoriale :
+-  1. L'administrateur retrouve et qualifie la proposition dans la file créateur existante (`/admin` / `creator-inbox`).
+-  2. Vérification de la preuve (source publique HTTP(S) directe, absence de confusion d'homonymes, absence de lien d'invitation privé ou de donnée personnelle privée).
+-  3. Mise à jour explicite du registre canonique (`apps/web/src/lib/partners/paris-cleanwalk-network.data.ts` et `.relations.ts`) avec provenance et date `verifiedAt`.
+-
+-## 6. Transparence des financements
+-
+-- Chaque nœud peut porter un champ facultatif `funding` (`ParisActorFunding`) directement dans le registre éditorial (sans nouvelle table Supabase).
+-- Ce champ enregistre uniquement les origines de financement documentées par une source publique directe (`sources`, `sharesPublished`, `period`, `entityName`, `calculationBase`, `sourceUrl`, `verifiedAt`, `notes` éventuelles).
+-- **Règles de rigueur** :
+-  - Ne jamais assimiler une part inconnue à `0` : lorsque les sources sont connues sans répartition chiffrée (`sharesPublished: false`), la bulle affiche `« Parts non publiées »`.
+-  - Ne jamais confondre les comptes d'une entité nationale/européenne avec ceux d'une antenne locale (ex. les comptes de Surfrider Europe ne sont pas attribués à Surfrider Paris).
+-  - Les liens non HTTP(S) sont filtrés avant affichage.
+-  - Si aucun financement n'est établi pour l'acteur, aucune ligne `Financement` n'est rendue dans `ParisNetwork3DBubble`.
+-
+-## 7. Sélecteur territorial, classement contextuel et état vide (référentiel vérifié au 2026-11-19)
+-
+-- Catalogue géographique statique (`apps/web/src/lib/partners/territory-network-catalog.ts`, `.data.ts`, `territory-network-ranking.ts`) :
+-  - 18 régions françaises COG (`01` à `94`), 8 collectivités et territoires français d'outre-mer (`975`, `977`, `978`, `984`, `986`, `987`, `988`, `989`, dont `984` et `989` exclus du calcul de proximité car sans population permanente).
+-  - **OIF (92 États et gouvernements au 16 novembre 2026)** : **53 membres de plein droit** (52 entités externes dont Chypre, Ghana, Belgique et Fédération Wallonie-Bruxelles distincts + France représentée par `FR:*` sans doublon ; retraits 2025 du Burkina Faso, du Mali et du Niger pris en compte), **5 membres associés** (dont Nouvelle-Calédonie `FR:COM:988` sans doublon) et **34 observateurs** (dont Polynésie française `FR:COM:987` sans doublon, Angola, Chili, Gambie, Malte, Louisiane, Ontario, Nouvelle-Écosse, Sarre, ainsi que Saint-Christophe-et-Niévès et le Manitoba admis en novembre 2026).
+-  - Les subdivisions francophones sans statut institutionnel propre à l'OIF (`SUB:BE-WAL`, `SUB:BE-BRU` et les 6 cantons francophones suisses) restent accessibles sans statut OIF fictif.
+-- Le combobox accessible `« Choisir un territoire »` (`territory-network-combobox.tsx`) filtre localement sans requête réseau et propose 2 suggestions contextuelles en tête :
+-  1. Position GPS uniquement si déjà autorisée (`permissions.query`) ou après clic explicite sur `« Me localiser »`, classée par approximation géodésique (`haversineDistanceKm`) sur point représentatif, en évitant que deux entités partageant les mêmes coordonnées représentatives monopolisent les deux suggestions.
+-  2. Préférences Clerk canoniques `residence` puis `work` (`user-location-preference.ts`), dédupliquées et complétées si besoin.
+-  3. Repli déterministe par ordre numérique INSEE puis codes/libellés internationaux.
+-  - Une sélection manuelle n'est jamais écrasée par une réponse asynchrone tardive.
+-- Seul `FR:REG:11` dispose actuellement d'un jeu de données (`Pilote : Paris intramuros (Île-de-France non exhaustive)`). Tout autre territoire affiche l'état vide `« Réseau de ce territoire pas encore renseigné »` sans scène WebGL ni données inventées, et le formulaire de contribution reste réservé à `FR:REG:11`.
++# Carte et réseau géographique des cleanwalks à Paris — contrat relationnel et runtime
++
++**Statut : `CURRENT`**
++
++Ce document décrit le contrat de données, de relations et de rendu de la carte relationnelle géographique de l'écosystème des cleanwalks, de la prévention et de la sensibilisation aux déchets rattaché à Paris et intégré dans `/sections/annuaire`. Les inventaires courants sont portés par les registres TypeScript et leurs tests, non par un compteur documentaire.
++
++Dans `/sections/annuaire`, l'onglet « Carte & réseau » utilise une même projection publique pour la perspective 3D géographique MapLibre et le repli 2D Leaflet. Les points sont des implantations géocodées, jamais une disposition abstraite. Le référentiel institutionnel de « Services publics » conserve ses types de relations propres. Les deux onglets partagent les identités explicitement établies.
++
++## 1. Sources runtime
++
++- Registre éditorial typé et politique d'épaisseur : `apps/web/src/lib/partners/paris-cleanwalk-network.ts`, `paris-cleanwalk-network.data.ts`, `paris-cleanwalk-network.prevention.data.ts`, `paris-cleanwalk-network.schools.ts`, `paris-cleanwalk-network.scheduled.ts` et `paris-cleanwalk-network.relations.ts`
++- Projection géographique et relations : `annuaire-geo-network.model.ts`, `annuaire-geo-network.visuals.ts` et `annuaire-network-only-filters.ts` dans `apps/web/src/components/sections/rubriques/annuaire/`.
++- Rendus `annuaire-map-3d-canvas.tsx` et `annuaire-map-canvas.tsx`, chargés dynamiquement par `annuaire-exploration-view.tsx` ; `annuaire-geo-projection.ts` projette l'altitude symbolique selon la caméra.
++- Identités et preuves : `public-entity-projection.ts`, `public-structure-context.ts` et `public-network-identity-media.ts` dans `apps/web/src/lib/partners/`.
++
++## 2. Identifiants canoniques, périmètres, rôles et canaux publics
++
++- Lorsqu'un acteur existe déjà dans les seeds éditoriaux de l'Annuaire (`INITIAL_ANNUAIRE_ENTRIES`), le registre réutilise son identifiant canonique (`asso-featured-1`, `asso-surfrider-paris`, `asso-zerowaste-paris`, `evt-paris-nettoyages`, `evt-j-agis-nature`, `evt-je-veux-aider`, `asso-gestes-propres`, `asso-1`, `asso-megots-alcome`) afin d'éviter toute base d'organisations concurrente.
++- **Périmètre réel** : le registre distingue explicitement les acteurs parisiens intramuros (`parisZone.isIntramuros: true`, dont les mairies, associations parisiennes, antennes régionales comme AREMACS Île-de-France/Paris et le Syctom) des organismes ou réseaux nationaux de prévention, sensibilisation ou filières REP (`parisZone.isIntramuros: false`, dont Gestes Propres, Zero Waste France, No Plastic In My Sea, ALCOME et Citeo), sans attribuer à ces derniers d'opérations intramuros non prouvées ni d'arrondissements inventés.
++- Chaque nœud porte explicitement sa catégorie (`association_locale`, `entreprise_rse` — élargie aux « Entreprises, soutiens RSE et éco-organismes » dont ALCOME et Citeo —, `collectivite_mairie`, `reseau_evenement`, `plateforme_mise_en_relation`, `etablissement_enseignement`), ses rôles opérationnels (`organisateur_effectif`, `relais`, `financeur`, `fournisseur_materiel`), ses rôles d'écosystème (`organisateur_direct`, `coordinateur_reseau`, `plateforme_publication`, `sensibilisation_prevention`, cumulables), sa zone parisienne ou nationale, ses modalités de participation, son statut matériel sourcé, son responsable public vérifié (`publicLeader` ou `null`), ses canaux publics dédupliqués (`publicChannels`), sa provenance et sa date de vérification.
++- Les liens d'invitation privés ou non autorisés (`chat.whatsapp.com`, `wa.me`, `discord.gg`, `discord.com/invite`, `t.me/+`) sont rejetés par `sanitizeAndDeduplicatePublicChannels`.
++- **Brigade Verte Paris** (`asso-featured-1`) est reliée à sa fiche `J'agis pour la nature` via `publie_sur`, sans confusion avec « Super Brigade Verte » portée par l'association Les Parques sur `JeVeuxAider.gouv.fr`.
++- **Pik Pik Environnement** (`asso-1`, `organizerDirectoryId: "association-pikpik"`) pointe vers le site associatif `https://pikpik.org/` et sa mission parisienne vérifiée sur `JeVeuxAider.gouv.fr`, sans confusion avec l'entreprise distincte PikPik Services Solidaires.
++- **ALCOME** (`asso-megots-alcome`, catégorie `entreprise_rse`) pointe vers son site officiel `https://alcome.eco/` tout en conservant la fiche filière REP Tabac de l'ADEME comme preuve institutionnelle distincte.
++- CKFD (`operator-ckfd`), MéGO! (`operator-mego`), Carton Plein Cyclo (`operator-carton-plein-cyclo`, distinct de l'association `asso-3`) et Les Runners Laveurs (`asso-runners-laveurs`) partagent leur identifiant avec une ressource éditoriale Annuaire ; aucune coordonnée, couverture d'arrondissement, adhésion ou prestation acquise n'est imputée. Les fiches éditoriales réutilisent les limites sourcées du réseau par identifiant canonique. Les clubs simplement prospectés ne sont pas des organisateurs de cleanwalks attestés.
++- **Zero Waste France** (`asso-zerowaste-france`) et **Zero Waste Paris** (`asso-zerowaste-paris`) restent deux nœuds distincts.
++- **Cleanwalk.org** (`cleanwalk-org`) est typée comme `plateforme_publication` ; ses fonctionnalités V2 indisponibles sont signalées et aucune opération ou bénévole des structures utilisatrices ne lui est attribuée.
++- **CleanMyMap** (`cleanmymap`) est documentée comme plateforme éditrice du réseau (`plateforme_mise_en_relation`, `plateforme_publication`, projet civic-tech open source initié par Maxence Deroome selon `README.md` et `AUTHORS.md`), sans présumer qu'elle est une association constituée ni que les autres acteurs du graphe sont ses partenaires (`isCleanMyMapMember: false` conservé).
++- Les établissements scolaires sont projetés depuis les seeds éditoriaux de l'Annuaire (`seed-schools.ts`), avec identifiant UAI stable, sources d'identité, adresses contradictoires conservées et coordonnées absentes lorsqu'elles ne sont pas établies. L'identification institutionnelle ne constitue pas une preuve d'activité cleanwalk, de rôle opérationnel ou de partenariat.
++- Aucun acteur du registre n'est présenté comme membre du réseau CleanMyMap (`isCleanMyMapMember: false`).
++- Aucun prêt de matériel n'est attribué à un tiers sans preuve directe (`fournit_materiel` est réservé aux acteurs disposant d'une source vérifiée, notamment la Ville de Paris / DPE). Pour la DPE, la source municipale annonce sacs et gants sur demande et cendriers de poche selon disponibilité ; ce statut ne prouve ni stock, ni prêt accordé, ni fourniture de pinces ou chasubles. Les nœuds de prévention/sensibilisation sans relation directe démontrée sont conservés sans arête présumée.
++
++## 3. Contrat relationnel et calcul d'épaisseur
++
++Chaque relation publiée possède un type explicite (`action_commune` / « Coorganise avec », `publie_sur` / « Publie ses actions sur », `partenariat`, `soutien_rse`, `appui_logistique`, `presence_evenement`, `collaboration_programmee`), deux acteurs identifiés et une provenance datée. Les relations historiques ont une source URL ; une collaboration programmée est une déclaration d'organisateur sans URL publique propre à l'opération lorsque celle-ci n'est pas disponible. Un référencement sur plateforme (`publie_sur`), une présence à un événement ou une similarité thématique ne sont jamais confondus avec une coorganisation (`action_commune`).
++
++Les collaborations programmées sont dérivées de `PARIS_SCHEDULED_OPERATIONS`, avec un identifiant d'opération commun aux liens concernés. Leur état `programme` et leur provenance `declaration_organisateur` sont distincts d'une action commune réalisée. Une date passée ne déclenche aucune promotion automatique, aucun comptage historique ni aucun partenariat. Le panneau dédié et les fiches des acteurs conservent les informations non renseignées et les identifications probables. Ne publier que les informations opérationnelles autorisées à être rendues publiques ; une déclaration ne prouve pas à elle seule cette autorisation.
++
++Pour `action_commune` :
++- Les opérations prouvées sont dédupliquées par couple `(id, date)` sur une fenêtre glissante de **365 jours** (`countDistinctOperationsLast12Months`).
++- L'épaisseur suit une échelle linéaire bornée dans `[1.5, 6.0]` pour `1` à `12+` opérations distinctes (`RELATION_THICKNESS_POLICY`).
++- Si la fréquence n'est pas quantifiée (`frequencyKnown: false`), la fonction retourne une épaisseur neutre (`2.0`) et `operationsCount12m: null`, sans jamais inventer `0`.
++- Une fréquence connue sans opération dans la fenêtre retourne `operationsCount12m: 0` avec une épaisseur neutre ; elle reste distincte d'une fréquence inconnue.
++- Les autres types de relations utilisent des styles de ligne distincts (`dashed` / `dotted` et couleurs dédiées) avec une épaisseur fixe (`1.8`). Les collaborations programmées sont affichées en ambre, en tirets, et exclues du comptage historique.
++
++## 4. Caméra, marqueurs, relations et repli
++
++- La carte utilise le fond CARTO existant. La vue 3D permet translation, rotation, inclinaison et zoom ; le repli 2D reste sélectionnable et prend le relais si WebGL est indisponible. Les deux moteurs sont démontés hors de l'onglet actif.
++- La pointe du pin correspond à une coordonnée établie. Le badge flottant et sa hauteur sont des encodages visuels, pas la hauteur physique du bâtiment. Les logos autorisés sont des fichiers locaux, avec provenance ; les initiales signalent un logo non renseigné, jamais un logo inventé.
++- Une adresse publiée et un géocodage sont deux preuves distinctes. Les acteurs sans coordonnée restent dans les résultats et la fiche ; aucun centroïde ou domicile individuel n'est ajouté. Une structure peut partager une implantation avec une autre sans fusion d'identité.
++- Le diamètre est borné par 32 et 92 pixels, avec surface croissante en fonction du nombre de voisins distincts documentés. Les collaborations programmées ne contribuent pas à ce degré. L'épaisseur des arêtes réutilise la politique d'opérations communes existante, sans inférer d'activité absente.
++- Les relations sont affichables toutes ensemble, pour la sélection ou masquées. Le registre complet reste consultable dans les fiches ; les arêtes dont un endpoint est dépourvu de géocodage ne sont pas tracées. Ni une relation absente ni un badge de taille minimale ne constituent une preuve d'absence de coopération.
++- Les résultats et la recherche de Carte & réseau comprennent les acteurs uniquement réseau, sans inventer leurs champs Annuaire absents. La navigation institutionnelle et les contextes chiffrés communs passent par les références canoniques, sans rapprochement par nom.
++
++## 5. Contributions citoyennes, modération et mise à jour du registre
++
++- Sous la scène 3D, le bloc `« Aidez-nous à compléter ce réseau »` (`paris-network-contribution-card.tsx`) permet à un utilisateur **connecté** (session Clerk requise ; lien visible vers `/sign-in` pour les visiteurs anonymes) de proposer une structure, une collaboration, une action commune, un contact professionnel public ou une disponibilité de matériel.
++- L'envoi réutilise `POST /api/community/bug-reports` (`community_bug_reports`) avec `reportType: "idea"`, `source: "feedback_section"`, un titre préfixé `Réseau cleanwalks Paris` et `pagePath: "/sections/annuaire#reseau-cleanwalks"`. Les contrôles existants s'appliquent (authentification, validation Zod, taille maximale `3000` caractères, anti-abus honeypot/timing et quota serveur).
++- **Aucune publication automatique** : une contribution reçue ou acceptée dans la file administrateur ne modifie jamais le graphe public. L'intégration exige une vérification éditoriale :
++  1. L'administrateur retrouve et qualifie la proposition dans la file créateur existante (`/admin` / `creator-inbox`).
++  2. Vérification de la preuve (source publique HTTP(S) directe, absence de confusion d'homonymes, absence de lien d'invitation privé ou de donnée personnelle privée).
++  3. Mise à jour explicite du registre canonique (`apps/web/src/lib/partners/paris-cleanwalk-network.data.ts` et `.relations.ts`) avec provenance et date `verifiedAt`.
++
++## 6. Transparence des financements
++
++- Chaque nœud peut porter un champ facultatif `funding` (`ParisActorFunding`) directement dans le registre éditorial (sans nouvelle table Supabase).
++- Ce champ enregistre uniquement les origines de financement documentées par une source publique directe (`sources`, `sharesPublished`, `period`, `entityName`, `calculationBase`, `sourceUrl`, `verifiedAt`, `notes` éventuelles).
++- **Règles de rigueur** :
++  - Ne jamais assimiler une part inconnue à `0` : lorsque les sources sont connues sans répartition chiffrée (`sharesPublished: false`), la bulle affiche `« Parts non publiées »`.
++  - Ne jamais confondre les comptes d'une entité nationale/européenne avec ceux d'une antenne locale (ex. les comptes de Surfrider Europe ne sont pas attribués à Surfrider Paris).
++  - Les liens non HTTP(S) sont filtrés avant affichage.
++  - Si aucun financement n'est établi pour l'acteur, aucune ligne `Financement` n'est rendue dans `ParisNetwork3DBubble`.
++
++## 7. Périmètre géographique
++
++Paris intramuros et France métropolitaine sont des périmètres de cadrage du même registre public. Ils ne prouvent ni une couverture exhaustive de Paris ou de la France ni une activité locale pour tous les acteurs nationaux. Les implantations hors Paris et non établies restent consultables. Le catalogue territorial historique n'est pas un nouveau registre d'acteurs.
+ 
+ ## Chiffres, financements et limites des acteurs
+ 
+diff --git a/documentation/features/organisation-services-publics-proprete.md b/documentation/features/organisation-services-publics-proprete.md
+--- a/documentation/features/organisation-services-publics-proprete.md
++++ b/documentation/features/organisation-services-publics-proprete.md
+@@ -4,78 +4,69 @@
+ 
+ ## Périmètre et sources canoniques
+ 
+-La vue « Organisation des services publics » se trouve dans `/sections/annuaire`, à côté du réseau 3D des cleanwalks. Son owner de données est `apps/web/src/lib/partners/public-cleanliness-organization.ts`, enrichi par `public-cleanliness-organization.paris-extension.ts` et `public-cleanliness-chain.paris.ts`. La projection de couverture est calculée par `public-cleanliness-coverage.ts` depuis ce même dataset. Son owner d'interface est `apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx`, avec la matrice `public-cleanliness-coverage-table.tsx`. Elle utilise le référentiel géographique `apps/web/src/lib/geo/paris-arrondissements.ts` et réutilise les identifiants Annuaire réellement présents (`evt-paris-nettoyages` pour la DPE). Le nœud `syctom` conserve son identité 2D et réutilise son identifiant réseau `networkActorId` (`collectivite-syctom`) sans `directoryId` Annuaire inventé.
+-
+-La sélection d'une ville résout une entrée dans `PUBLIC_CLEANLINESS_CITY_DATASETS`. Paris est actuellement la seule ville documentée. Lyon et Marseille restent sélectionnables via le référentiel géographique et affichent explicitement l'absence de données institutionnelles validées. Le validateur reçoit le dataset choisi et contrôle ses territoires contre le référentiel géographique de cette ville, ses propres sources et ses références internes ; l'ajout d'un dataset municipal synthétique ne requiert pas de branche spéciale dans le moteur.
+-
+-## Contrat des entités et relations
+-
+-- Un nœud possède un identifiant stable, un type distinct (`direction`, `service`, `unit`, `team`, `position`, `profession`, `person`, `provider` ou `city`), un employeur juridique (`legalEmployerId`), une unité de rattachement (`unitId`) et un ou plusieurs territoires d'intervention. Ces trois notions ne sont pas interchangeables.
+-- Les types `position` et `profession` ne désignent pas un titulaire. Les métiers de terrain sont représentés collectivement, à l'exception des fonctions nominatives publiquement attestées et pertinentes. Une identité `person` est distincte de ses fonctions et peut être liée à plusieurs mandats ou affectations sans duplication. Aucun nom de titulaire ou effectif n'est déduit d'une offre d'emploi.
+-- Les territoires sont des identifiants géographiques canoniques du dataset de la ville : une division mutualisée est un unique nœud relié à chacun des arrondissements desservis, sans duplication de l'unité.
+-- Les relations distinguent `hierarchy` (rattachement administratif), `mandate` (mandat politique), `assignment` (personne vers fonction), `coordination` (coordination fonctionnelle), `cooperation` (coopération documentée), `programme` et `service`. Seul `hierarchy` construit l'arbre et impose un parent unique, sans cycle. Les autres relations permettent la navigation entre fiches, y compris les mandats multiples.
+-- L'état `confirmed` décrit une organisation, un métier ou une relation étayés par la source citée ; `historical` qualifie une structure/poste décrits à une date donnée sans attester son maintien ni son titulaire ; `unknown` signale une affectation ou un rattachement non établi.
+-- Le validateur vérifie l'unicité des IDs, l'existence des références de sources, les URLs HTTPS, les références Annuaire réelles, les employeurs admissibles, l'unité de rattachement et les relations hiérarchiques (endpoints, parent unique, absence de cycle). Les groupes de couverture explicitement déclarés repèrent les chevauchements ; `requiredCoverageGroups` exige une partition complète du territoire pour les groupes concernés. Le validateur contrôle aussi les doublons relationnels et les identités appuyées par les mêmes preuves, les affectations personne vers fonction et leur statut/territoire. `publicContact` est réservé aux canaux publics justifiés par leurs sources. `getPublicCleanlinessContact` filtre les contacts avant projection, y compris les liens de recrutement et d'invitation privée ; un portail d'orientation n'est pas un contact opérationnel. Une source commerciale `operator_statement` décrit l'offre déclarée d'un opérateur, sans certification indépendante. Les coordonnées de recrutement, les contacts privés et les coordonnées nominatives ne sont pas exposés.
+-- Chaque source et chaque relation citée contient l'URL, le niveau de preuve et la date de vérification. Les dates affichées comme mise à jour publiée ne sont renseignées que pour les pages qui les publient explicitement.
+-
+-## Référentiel Paris
+-
+-La page Propreté de la Ville décrit le STPP au sein de la DPE, les brigades Urgence Propreté, les services spécialisés et les divisions d'accueil, dont la liste par arrondissements forme 14 unités (1er–4e, 5e–6e, 7e–8e, 9e–10e et une unité pour chacun des 11e à 20e). La page sur la collecte distingue les secteurs collectés par la Ville de ceux collectés par des entreprises privées ; les opérateurs privés ne sont pas nommés sans preuve correspondante.
+-
+-Une offre de TSON pour la Division 17 décrit des secteurs territoriaux, ateliers, un secteur fonctionnel, des responsables d'équipe, des éboueurs et des conducteurs. Ces détails restent marqués historiques et limités à cette division ; ils ne sont pas projetés sur les autres divisions. L'offre REQ du 20e décrit un dispositif lancé par la DDCT, un rattachement au DGAEP de mairie d'arrondissement, ainsi que la coordination avec DPE, divisions territoriales et police municipale. Une offre DGAEP du 19e décrit la place du DGAEP dans la direction générale des services de cette mairie. Ces sources de poste ne prouvent pas l'identité des titulaires actuels ni des affectations de quartier.
+-
+-Les fonctions de prévention, sensibilisation et tri restent distinctes de la prévention professionnelle. Le rattachement administratif du nœud générique de sensibilisation n'est pas établi. La relation de traitement avec Syctom n'est pas une hiérarchie municipale ; l'arrêté de 2024 documente également une coopération avec la DPE.
+-
+-### Extension institutionnelle
+-
+-Le dataset distingue les fonctions et leurs titulaires, l'exécutif municipal, le cabinet, le Conseil de Paris, la 8e commission (Transition écologique, Plan Climat, Eau, Énergie, Santé, Espaces verts, Alimentation durable, Axe Seine, Propreté, Assainissement, Végétalisation, Biodiversité), le Secrétariat général (avec ses quatre pôles stratégiques issus de l'organigramme municipal) et les directions DPE, DDCT, DPMP, DVD, DEVE et DTEC. La mandature 2026 est documentée à partir des pages municipales et du communiqué du 30 mars 2026, pas du jeu de données historique des élus 2020-2026. Carine Ekon est une seule identité liée à sa délégation du 20e, à la vice-présidence de la 8e commission et au Conseil de Paris. Les liens administratifs et politiques ne sont pas interchangeables.
+-
+-Les articles 1 à 6 de l'arrêté DPE du 3 avril 2024 documentent la direction adjointe, la SDAG, les subdivisions du STPP (dont les six composantes des moyens mécaniques et la circonscription fonctionnelle), le STEA, le service de réduction des déchets et le service de prévention et des conditions de travail rattaché à la direction adjointe. Les nouvelles unités réglementaires sont marquées historiques à la date de l'arrêté : leur maintien complet et les titulaires ne sont pas démontrés. Les trois circonscriptions territoriales d'exploitation du STEA sont regroupées faute de périmètres individuels établis.
+-
+-Le découpage actuel est représenté par 17 mairies (Paris Centre mutualise les 1er à 4e), 14 divisions DPE et 17 divisions de tranquillité publique de la DPMP, chacune couvrant une partition des 20 arrondissements. La coordination avec les mairies ne constitue pas un rattachement hiérarchique à celles-ci. Les 14 numéros d'accueil propreté publiés par la Ville sont des contacts fonctionnels et les liens vers les 17 sites municipaux sont des portails d'orientation. Les coordonnées individuelles des agents ne sont pas publiées.
+-
+-L'offre officielle de REQ du 20e décrit un dispositif lancé par la DDCT, un rattachement au DGAEP de la mairie d'arrondissement et une coordination avec la DPE, les divisions territoriales et la police municipale. Cette fiche de recrutement ne prouve ni un titulaire actuel, ni les quartiers effectivement couverts ; le coordinateur opérationnel n'est pas identifié. Les conseils de quartier restent des instances de concertation distinctes des REQ.
+-
+-### Lacunes documentaires
+-
+-Le référentiel est une base extensible, pas un annuaire nominatif exhaustif. Restent notamment à documenter : le texte intégral de l'arrêté SG du 23 juillet 2026, les éventuelles révisions de l'arrêté DPE, la chaîne intermédiaire exacte de la DPMP, les autres commissions pertinentes, les délégations, cabinets, DGS et DGAEP des mairies non sourcés, les REQ et référents DPMP en poste, leurs quartiers, les unités locales et équipes de terrain. L'absence d'une fiche ou d'un contact ne démontre pas une absence de service. Les sources et dates de preuve sont portées par le dataset, sans inventer d'affectations par génération de postes locaux.
+-
+-## Chaîne des déchets, mobilisation et orientation par besoin
+-
+-Le module `public-cleanliness-chain.paris.ts` étend les mêmes nœuds, relations et sources. Il représente les dispositifs municipaux de nettoyage participatif, les relais de mobilisation (MVAC, Volontaires de Paris, directions compétentes et service universitaire documenté), les services de collecte et de dépôt, la gouvernance et les installations du Syctom, les éco-organismes REP et les offres spécialisées mégots. Les exploitants ne sont jamais des subordonnés administratifs de la Ville ou du Syctom par le seul fait d'un marché. Les marchés documentés portent des dates lorsqu'elles sont publiées ; une attribution ou une durée contractuelle ne prouve pas une prestation effectivement réalisée. Les installations historiques ou fermées, notamment Paris XVII, ne constituent pas des destinations opérationnelles.
+-
+-La répartition des arrondissements en régie et en collecte privée est celle publiée pour la collecte ménagère (page municipale relue le 25 novembre 2026) : 2e, 5e, 6e, 8e, 9e, 12e, 14e, 16e, 17e et 20e en régie ; les autres en collecte privée. Ce découpage ne démontre ni le titulaire de chaque marché et de chaque flux, ni une autorisation de déposer ou faire enlever les déchets d'une cleanwalk. Les filières résiduelles, recyclables, alimentaires, encombrants et spécifiques ont des modalités distinctes ; la vue renvoie aux consignes officielles et au référentiel Waste, sans substituer une règle générale à leurs conditions d'accès.
+-
+-Le dispositif municipal annonce des sacs et des gants sur demande et des cendriers de poche selon disponibilité. Aucun stock, matériel supplémentaire, réservation, prêt, lieu de remise, enlèvement ni accès aux ateliers n'est présumé. Les Espaces tri sont des installations soumises à conditions ; l'exemple de la Porte des Lilas indique une demande préalable pour les associations, pas un droit automatique. Les sites de traitement industriels ne sont pas présentés comme points de dépôt publics. Les contrats territoriaux de stockage et matériel restent à établir lorsqu'ils ne sont pas documentés ; aucune modalité de terrain non confirmée n'est présentée comme acquise.
+-
+-Pour le besoin mégots, distinguer la reprise ALCOME à partir de 100 kg pour les collectivités sous contrat, le devis petits volumes CKFD, l'éventuel transport par Carton Plein Cyclo et la demande d'autorisation d'un bac commun. Le panneau conserve la division compétente dans les vingt arrondissements, sans transformer une offre non territorialisée en desserte confirmée. Les opérateurs CKFD, MéGO! et Carton Plein Cyclo réutilisent aussi les identifiants des fiches éditoriales. Aucun dépôt, trajet ou financement n'est présumé ; MéGO! demeure l'aval de la chaîne annoncée, non un point de dépôt direct parisien.
+-
+-`public-cleanliness-needs.ts` est la projection dérivée par arrondissement et besoin ; `public-cleanliness-need-panel.tsx` présente huit parcours : organiser, matériel, enlèvement, stockage/dépôt, mégots, coordination municipale, mobilisation et signalement. Chaque parcours présente des interlocuteurs du dataset, leur compétence, les canaux publics admissibles, les sources et les conditions ou informations manquantes. Les références de catégories de déchets utilisent le catalogue Waste existant. Les demandes réelles restent à effectuer auprès des organismes concernés. Le panneau ne réserve aucun équipement, ne crée aucune autorisation, ne conclut aucun partenariat et ne modifie aucun état métier.
+-
+-Les références `networkActorId` et `directoryId` permettent de réutiliser les identités et relations publiques existantes du réseau des cleanwalks, notamment le lien DPE / mairie du 5e. Le panneau de détail affiche ces contributions avec leur type et leur provenance, sans déduire de coorganisation ou de partenariat. Le suivi relationnel administratif, les échanges privés et les coordonnées non publiables restent hors de ce dataset. Le suivi privé persistant est porté par les tables server-only `institutional_relationship_contacts` et `institutional_relationship_facts` (RLS activé, `revoke all` sur `anon`/`authenticated`, accès exclusif `service_role`), l'API `/api/admin/partners/institutional-relations` (enregistrée dans `api-authorization-contract.admin-community.ts` pour `GET`, `POST`, `PATCH`, avec `details.operation` borné à `upsert_institutional_contact`, `add_institutional_fact`, `review_institutional_fact`, déduplication des relances et distinction explicite d'un échec d'audit post-écriture sans exposer d'erreur Supabase brute), le store `relationship-store.ts` (sans inférence de rôle ou d'activité sur champs absents, avec vérification des références de contribution et signalement de troncature) et la dérivation pure `relationship-evidence.ts` (sans jamais accepter un statut `verified` fourni par le client comme autorité, ni persister de badges redondants). La projection publique nominative (`public-cleanliness-people.ts`) conserve `person-carine-ekon` et `person-pierre-lombard`, intègre `person-augustin-hassoux` avec provenance `professional_self_statement`, et maintient `person-wanda-schneider` exclusivement en référence privée à revalider. La projection des contributions réelles sur les actions CleanMyMap et la qualification des rôles par opération restent à compléter depuis leurs owners et leurs preuves publiables ; aucun rattachement à une action réelle n'est inventé.
+-
+-Sources complémentaires : [nettoyages participatifs](https://www.paris.fr/pages/nettoyages-participatifs-ensemble-rendons-paris-plus-propre-15425), [collecte](https://www.paris.fr/pages/la-collecte-44), [déchets professionnels](https://www.paris.fr/pages/gestion-des-dechets-3545), [Syctom](https://www.syctom-paris.fr/), [ALCOME](https://alcome.eco/) et [signalement](https://www.paris.fr/pages/signaler-une-incivilite-du-quotidien-3800). Les sources détaillées par nœud et par relation, avec leurs dates de vérification, restent dans le registre canonique.
+-
+-## Interface, accessibilité et performance
+-
+-L'entrée opérationnelle « Qui contacter ? » précède l'exploration détaillée. Le choix d'arrondissement est partagé avec l'organigramme ; aucun arrondissement n'est présumé lorsque l'utilisateur n'en a pas choisi. Le panneau d'orientation propose un besoin à la fois et conserve les conditions d'accès, canaux publics et informations manquantes. La ville et l'arrondissement constituent le contexte principal ; les filtres service et recherche sont situés dans l'exploration administrative. Le détail sur la lecture des preuves est accessible à la demande.
+-
+-L'organigramme graphique 2D interactif (`PublicCleanlinessOrgChart`) est la vue par défaut
+-de l'onglet « Services publics » ; l'arborescence textuelle reste accessible via le sélecteur
+-`Organigramme` / `Liste`. Les entités sont disposées par niveaux sous forme de cartes reliées
+-exclusivement par les relations `hierarchy`, avec distinction visuelle des états (`confirmed`
+-en trait plein, `historical` en tireté, `unknown` en pointillé), développement progressif des
+-branches, zoom, cadrage (`Cadrer`) et déplacement. Les surfaces réutilisent les tokens
+-canoniques (`--cmm-surface-*`, `cmm-text-*`) et le shell fluide. Les ancêtres contextuels restent
+-sélectionnables sans supprimer les filtres ; une recherche déplie temporairement les branches
+-correspondantes. Une navigation explicite vers une structure déjà visible conserve les filtres,
+-tandis qu'une structure hors résultat peut nécessiter leur adaptation.
+-
+-La navigation croisée repose sur `public-cleanliness-network-links.ts` : `networkActorId` référence l'identifiant du réseau, `directoryId` référence l'identifiant Annuaire explicitement déclaré par l'acteur. Lorsqu'ils coexistent, ils doivent converger ; une absence, une ambiguïté ou un conflit n'ouvre aucun lien. `public-entity-projection.ts` unifie la projection publique canonique de ces identités sans rapprochement par nom ni fuite privée. Les deux visualiseurs conservent leurs modèles et leurs sélections locales. Un lien explicite ouvre l'onglet cible, sélectionne l'entité correspondante et place le focus sur son onglet. Aucun rapprochement par nom, aucune attribution automatique de contribution à une unité fille.
+-
+-Les onglets utilisent le patron ARIA `tablist`/`tab`/`tabpanel`, activables au clavier par flèches, `Home` et `End`, avec un seul onglet dans l'ordre de tabulation (`tabIndex=0`) et un focus mobile entre onglets. L'arborescence repose sur listes HTML imbriquées et boutons natifs repliables/sélectionnables. Les fils d'Ariane et commandes de niveau donnent une navigation progressive ; les structures associées et les relations permettent d'ouvrir les nœuds liés et leurs sources datées. Les états confirmé, historique et inconnu sont visibles sur les nœuds de l'arborescence. Les filtres ville/arrondissement/service/recherche invalident immédiatement une fiche devenue incompatible. Un zoom réglable du texte avec remise à 100 % facilite l'exploration sur petit écran. Les mandats, fonctions et personnes sans rattachement hiérarchique sont regroupés dans une section repliable, accessible par recherche et navigation relationnelle. La matrice repliable des 20 arrondissements est calculée à partir du dataset (mairie/maire, divisions DPE et DPMP, structures et délégations locales, REQ, équipes, canaux publics et lacunes). Elle conserve les 20 lignes indépendamment des filtres de l'arbre. Une sélection dans la matrice ouvre la fiche et place le focus sur celle-ci ; les groupes historiques ou inconnus restent explicitement qualifiés.
+-
+-Le panneau réseau 3D peut rester monté sous son onglet masqué afin de préserver ses filtres et sa sélection, mais la scène et son canvas Three.js sont effectivement démontés dès que l'onglet 2D devient actif. Au retour sur l'onglet 3D, la scène se recharge lorsque nécessaire. La consultation seule de l'organigramme ne monte donc pas le canvas, même après une première initialisation du réseau. Aucun nouveau moteur graphique ou droit applicatif n'est ajouté.
++La vue « Organisation des services publics » se trouve dans `/sections/annuaire`, à côté de Carte & réseau. Son owner de données est `apps/web/src/lib/partners/public-cleanliness-organization.ts`, enrichi par `public-cleanliness-organization.paris-extension.ts` et `public-cleanliness-chain.paris.ts`. La projection de couverture est calculée par `public-cleanliness-coverage.ts` depuis ce même dataset. Son owner d'interface est `apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx`, avec la matrice `public-cleanliness-coverage-table.tsx`. Elle utilise le référentiel géographique `apps/web/src/lib/geo/paris-arrondissements.ts` et réutilise les identifiants Annuaire réellement présents (`evt-paris-nettoyages` pour la DPE). Le nœud `syctom` conserve son identité 2D et réutilise son identifiant réseau `networkActorId` (`collectivite-syctom`) sans `directoryId` Annuaire inventé.
++
++La sélection d'une ville résout une entrée dans `PUBLIC_CLEANLINESS_CITY_DATASETS`. Paris est actuellement la seule ville documentée. Lyon et Marseille restent sélectionnables via le référentiel géographique et affichent explicitement l'absence de données institutionnelles validées. Le validateur reçoit le dataset choisi et contrôle ses territoires contre le référentiel géographique de cette ville, ses propres sources et ses références internes ; l'ajout d'un dataset municipal synthétique ne requiert pas de branche spéciale dans le moteur.
++
++## Contrat des entités et relations
++
++- Un nœud possède un identifiant stable, un type distinct (`direction`, `service`, `unit`, `team`, `position`, `profession`, `person`, `provider` ou `city`), un employeur juridique (`legalEmployerId`), une unité de rattachement (`unitId`) et un ou plusieurs territoires d'intervention. Ces trois notions ne sont pas interchangeables.
++- Les types `position` et `profession` ne désignent pas un titulaire. Les métiers de terrain sont représentés collectivement, à l'exception des fonctions nominatives publiquement attestées et pertinentes. Une identité `person` est distincte de ses fonctions et peut être liée à plusieurs mandats ou affectations sans duplication. Aucun nom de titulaire ou effectif n'est déduit d'une offre d'emploi.
++- Les territoires sont des identifiants géographiques canoniques du dataset de la ville : une division mutualisée est un unique nœud relié à chacun des arrondissements desservis, sans duplication de l'unité.
++- Les relations distinguent `hierarchy` (rattachement administratif), `mandate` (mandat politique), `assignment` (personne vers fonction), `coordination` (coordination fonctionnelle), `cooperation` (coopération documentée), `programme` et `service`. Seul `hierarchy` construit l'arbre et impose un parent unique, sans cycle. Les autres relations permettent la navigation entre fiches, y compris les mandats multiples.
++- L'état `confirmed` décrit une organisation, un métier ou une relation étayés par la source citée ; `historical` qualifie une structure/poste décrits à une date donnée sans attester son maintien ni son titulaire ; `unknown` signale une affectation ou un rattachement non établi.
++- Le validateur vérifie l'unicité des IDs, l'existence des références de sources, les URLs HTTPS, les références Annuaire réelles, les employeurs admissibles, l'unité de rattachement et les relations hiérarchiques (endpoints, parent unique, absence de cycle). Les groupes de couverture explicitement déclarés repèrent les chevauchements ; `requiredCoverageGroups` exige une partition complète du territoire pour les groupes concernés. Le validateur contrôle aussi les doublons relationnels et les identités appuyées par les mêmes preuves, les affectations personne vers fonction et leur statut/territoire. `publicContact` est réservé aux canaux publics justifiés par leurs sources. `getPublicCleanlinessContact` filtre les contacts avant projection, y compris les liens de recrutement et d'invitation privée ; un portail d'orientation n'est pas un contact opérationnel. Une source commerciale `operator_statement` décrit l'offre déclarée d'un opérateur, sans certification indépendante. Les coordonnées de recrutement, les contacts privés et les coordonnées nominatives ne sont pas exposés.
++- Chaque source et chaque relation citée contient l'URL, le niveau de preuve et la date de vérification. Les dates affichées comme mise à jour publiée ne sont renseignées que pour les pages qui les publient explicitement.
++
++## Référentiel Paris
++
++La page Propreté de la Ville décrit le STPP au sein de la DPE, les brigades Urgence Propreté, les services spécialisés et les divisions d'accueil, dont la liste par arrondissements forme 14 unités (1er–4e, 5e–6e, 7e–8e, 9e–10e et une unité pour chacun des 11e à 20e). La page sur la collecte distingue les secteurs collectés par la Ville de ceux collectés par des entreprises privées ; les opérateurs privés ne sont pas nommés sans preuve correspondante.
++
++Une offre de TSON pour la Division 17 décrit des secteurs territoriaux, ateliers, un secteur fonctionnel, des responsables d'équipe, des éboueurs et des conducteurs. Ces détails restent marqués historiques et limités à cette division ; ils ne sont pas projetés sur les autres divisions. L'offre REQ du 20e décrit un dispositif lancé par la DDCT, un rattachement au DGAEP de mairie d'arrondissement, ainsi que la coordination avec DPE, divisions territoriales et police municipale. Une offre DGAEP du 19e décrit la place du DGAEP dans la direction générale des services de cette mairie. Ces sources de poste ne prouvent pas l'identité des titulaires actuels ni des affectations de quartier.
++
++Les fonctions de prévention, sensibilisation et tri restent distinctes de la prévention professionnelle. Le rattachement administratif du nœud générique de sensibilisation n'est pas établi. La relation de traitement avec Syctom n'est pas une hiérarchie municipale ; l'arrêté de 2024 documente également une coopération avec la DPE.
++
++### Extension institutionnelle
++
++Le dataset distingue les fonctions et leurs titulaires, l'exécutif municipal, le cabinet, le Conseil de Paris, la 8e commission (Transition écologique, Plan Climat, Eau, Énergie, Santé, Espaces verts, Alimentation durable, Axe Seine, Propreté, Assainissement, Végétalisation, Biodiversité), le Secrétariat général (avec ses quatre pôles stratégiques issus de l'organigramme municipal) et les directions DPE, DDCT, DPMP, DVD, DEVE et DTEC. La mandature 2026 est documentée à partir des pages municipales et du communiqué du 30 mars 2026, pas du jeu de données historique des élus 2020-2026. Carine Ekon est une seule identité liée à sa délégation du 20e, à la vice-présidence de la 8e commission et au Conseil de Paris. Les liens administratifs et politiques ne sont pas interchangeables.
++
++Les articles 1 à 6 de l'arrêté DPE du 3 avril 2024 documentent la direction adjointe, la SDAG, les subdivisions du STPP (dont les six composantes des moyens mécaniques et la circonscription fonctionnelle), le STEA, le service de réduction des déchets et le service de prévention et des conditions de travail rattaché à la direction adjointe. Les nouvelles unités réglementaires sont marquées historiques à la date de l'arrêté : leur maintien complet et les titulaires ne sont pas démontrés. Les trois circonscriptions territoriales d'exploitation du STEA sont regroupées faute de périmètres individuels établis.
++
++Le découpage actuel est représenté par 17 mairies (Paris Centre mutualise les 1er à 4e), 14 divisions DPE et 17 divisions de tranquillité publique de la DPMP, chacune couvrant une partition des 20 arrondissements. La coordination avec les mairies ne constitue pas un rattachement hiérarchique à celles-ci. Les 14 numéros d'accueil propreté publiés par la Ville sont des contacts fonctionnels et les liens vers les 17 sites municipaux sont des portails d'orientation. Les coordonnées individuelles des agents ne sont pas publiées.
++
++L'offre officielle de REQ du 20e décrit un dispositif lancé par la DDCT, un rattachement au DGAEP de la mairie d'arrondissement et une coordination avec la DPE, les divisions territoriales et la police municipale. Cette fiche de recrutement ne prouve ni un titulaire actuel, ni les quartiers effectivement couverts ; le coordinateur opérationnel n'est pas identifié. Les conseils de quartier restent des instances de concertation distinctes des REQ.
++
++### Lacunes documentaires
++
++Le référentiel est une base extensible, pas un annuaire nominatif exhaustif. Restent notamment à documenter : le texte intégral de l'arrêté SG du 23 juillet 2026, les éventuelles révisions de l'arrêté DPE, la chaîne intermédiaire exacte de la DPMP, les autres commissions pertinentes, les délégations, cabinets, DGS et DGAEP des mairies non sourcés, les REQ et référents DPMP en poste, leurs quartiers, les unités locales et équipes de terrain. L'absence d'une fiche ou d'un contact ne démontre pas une absence de service. Les sources et dates de preuve sont portées par le dataset, sans inventer d'affectations par génération de postes locaux.
++
++## Chaîne des déchets, mobilisation et orientation par besoin
++
++Le module `public-cleanliness-chain.paris.ts` étend les mêmes nœuds, relations et sources. Il représente les dispositifs municipaux de nettoyage participatif, les relais de mobilisation (MVAC, Volontaires de Paris, directions compétentes et service universitaire documenté), les services de collecte et de dépôt, la gouvernance et les installations du Syctom, les éco-organismes REP et les offres spécialisées mégots. Les exploitants ne sont jamais des subordonnés administratifs de la Ville ou du Syctom par le seul fait d'un marché. Les marchés documentés portent des dates lorsqu'elles sont publiées ; une attribution ou une durée contractuelle ne prouve pas une prestation effectivement réalisée. Les installations historiques ou fermées, notamment Paris XVII, ne constituent pas des destinations opérationnelles.
++
++La répartition des arrondissements en régie et en collecte privée est celle publiée pour la collecte ménagère (page municipale relue le 25 novembre 2026) : 2e, 5e, 6e, 8e, 9e, 12e, 14e, 16e, 17e et 20e en régie ; les autres en collecte privée. Ce découpage ne démontre ni le titulaire de chaque marché et de chaque flux, ni une autorisation de déposer ou faire enlever les déchets d'une cleanwalk. Les filières résiduelles, recyclables, alimentaires, encombrants et spécifiques ont des modalités distinctes ; la vue renvoie aux consignes officielles et au référentiel Waste, sans substituer une règle générale à leurs conditions d'accès.
++
++Le dispositif municipal annonce des sacs et des gants sur demande et des cendriers de poche selon disponibilité. Aucun stock, matériel supplémentaire, réservation, prêt, lieu de remise, enlèvement ni accès aux ateliers n'est présumé. Les Espaces tri sont des installations soumises à conditions ; l'exemple de la Porte des Lilas indique une demande préalable pour les associations, pas un droit automatique. Les sites de traitement industriels ne sont pas présentés comme points de dépôt publics. Les contrats territoriaux de stockage et matériel restent à établir lorsqu'ils ne sont pas documentés ; aucune modalité de terrain non confirmée n'est présentée comme acquise.
++
++Pour le besoin mégots, distinguer la reprise ALCOME à partir de 100 kg pour les collectivités sous contrat, le devis petits volumes CKFD, l'éventuel transport par Carton Plein Cyclo et la demande d'autorisation d'un bac commun. Le panneau conserve la division compétente dans les vingt arrondissements, sans transformer une offre non territorialisée en desserte confirmée. Les opérateurs CKFD, MéGO! et Carton Plein Cyclo réutilisent aussi les identifiants des fiches éditoriales. Aucun dépôt, trajet ou financement n'est présumé ; MéGO! demeure l'aval de la chaîne annoncée, non un point de dépôt direct parisien.
++
++`public-cleanliness-needs.ts` est la projection dérivée par arrondissement et besoin ; `public-cleanliness-need-panel.tsx` présente huit parcours : organiser, matériel, enlèvement, stockage/dépôt, mégots, coordination municipale, mobilisation et signalement. Chaque parcours présente des interlocuteurs du dataset, leur compétence, les canaux publics admissibles, les sources et les conditions ou informations manquantes. Les références de catégories de déchets utilisent le catalogue Waste existant. Les demandes réelles restent à effectuer auprès des organismes concernés. Le panneau ne réserve aucun équipement, ne crée aucune autorisation, ne conclut aucun partenariat et ne modifie aucun état métier.
++
++Les références `networkActorId` et `directoryId` permettent de réutiliser les identités et relations publiques existantes du réseau des cleanwalks, notamment le lien DPE / mairie du 5e. Le panneau de détail affiche ces contributions avec leur type et leur provenance, sans déduire de coorganisation ou de partenariat. Le suivi relationnel administratif, les échanges privés et les coordonnées non publiables restent hors de ce dataset. Le suivi privé persistant est porté par les tables server-only `institutional_relationship_contacts` et `institutional_relationship_facts` (RLS activé, `revoke all` sur `anon`/`authenticated`, accès exclusif `service_role`), l'API `/api/admin/partners/institutional-relations` (enregistrée dans `api-authorization-contract.admin-community.ts` pour `GET`, `POST`, `PATCH`, avec `details.operation` borné à `upsert_institutional_contact`, `add_institutional_fact`, `review_institutional_fact`, déduplication des relances et distinction explicite d'un échec d'audit post-écriture sans exposer d'erreur Supabase brute), le store `relationship-store.ts` (sans inférence de rôle ou d'activité sur champs absents, avec vérification des références de contribution et signalement de troncature) et la dérivation pure `relationship-evidence.ts` (sans jamais accepter un statut `verified` fourni par le client comme autorité, ni persister de badges redondants). La projection publique nominative (`public-cleanliness-people.ts`) conserve `person-carine-ekon` et `person-pierre-lombard`, intègre `person-augustin-hassoux` avec provenance `professional_self_statement`, et maintient `person-wanda-schneider` exclusivement en référence privée à revalider. La projection des contributions réelles sur les actions CleanMyMap et la qualification des rôles par opération restent à compléter depuis leurs owners et leurs preuves publiables ; aucun rattachement à une action réelle n'est inventé.
++
++Sources complémentaires : [nettoyages participatifs](https://www.paris.fr/pages/nettoyages-participatifs-ensemble-rendons-paris-plus-propre-15425), [collecte](https://www.paris.fr/pages/la-collecte-44), [déchets professionnels](https://www.paris.fr/pages/gestion-des-dechets-3545), [Syctom](https://www.syctom-paris.fr/), [ALCOME](https://alcome.eco/) et [signalement](https://www.paris.fr/pages/signaler-une-incivilite-du-quotidien-3800). Les sources détaillées par nœud et par relation, avec leurs dates de vérification, restent dans le registre canonique.
++
++## Interface, accessibilité et performance
++
++L'entrée opérationnelle « Qui contacter ? » précède l'exploration détaillée. Le choix d'arrondissement est partagé avec l'organigramme ; aucun arrondissement n'est présumé lorsque l'utilisateur n'en a pas choisi. Le panneau d'orientation propose un besoin à la fois et conserve les conditions d'accès, canaux publics et informations manquantes. La ville et l'arrondissement constituent le contexte principal ; les filtres service et recherche sont situés dans l'exploration administrative. Le détail sur la lecture des preuves est accessible à la demande.
++
++L'organigramme graphique 2D interactif (PublicCleanlinessOrgChart) est la vue par défaut ; la liste textuelle alternative conserve les mêmes données. Le modèle public-cleanliness-org-chart.model.ts dispose les forêts hiérarchiques par niveaux et les racines indépendantes dans une grille séparée, sans inventer de rattachement. Le cadrage mesure les bornes complètes et le viewport ; le zoom est relatif au cadrage. La sélection, le déplacement au pointeur/clavier, le repli des branches, le centrage et la vue d'ensemble facilitent l'exploration. Les relations hiérarchiques conservent les styles de preuve ; les relations de mandat, affectation, coordination, coopération, programme et service peuvent être activées pour la sélection ou pour toutes les entités affichées. Elles ne deviennent jamais des liens de subordination.
++
++La navigation croisée repose sur `public-cleanliness-network-links.ts` : `networkActorId` référence l'identifiant du réseau, `directoryId` référence l'identifiant Annuaire explicitement déclaré par l'acteur. Lorsqu'ils coexistent, ils doivent converger ; une absence, une ambiguïté ou un conflit n'ouvre aucun lien. `public-entity-projection.ts` unifie la projection publique canonique de ces identités sans rapprochement par nom ni fuite privée. Les deux visualiseurs conservent leurs modèles et leurs sélections locales. Un lien explicite ouvre l'onglet cible, sélectionne l'entité correspondante et place le focus sur son onglet. Aucun rapprochement par nom, aucune attribution automatique de contribution à une unité fille.
++
++Les onglets utilisent le patron ARIA `tablist`/`tab`/`tabpanel`, activables au clavier par flèches, `Home` et `End`, avec un seul onglet dans l'ordre de tabulation (`tabIndex=0`) et un focus mobile entre onglets. L'arborescence repose sur listes HTML imbriquées et boutons natifs repliables/sélectionnables. Les fils d'Ariane et commandes de niveau donnent une navigation progressive ; les structures associées et les relations permettent d'ouvrir les nœuds liés et leurs sources datées. Les états confirmé, historique et inconnu sont visibles sur les nœuds de l'arborescence. Les filtres ville/arrondissement/service/recherche invalident immédiatement une fiche devenue incompatible. Un zoom réglable du texte avec remise à 100 % facilite l'exploration sur petit écran. Les mandats, fonctions et personnes sans rattachement hiérarchique restent visibles dans le graphique ; la liste les regroupe dans une section repliable. La matrice repliable des 20 arrondissements est calculée à partir du dataset (mairie/maire, divisions DPE et DPMP, structures et délégations locales, REQ, équipes, canaux publics et lacunes). Elle conserve les 20 lignes indépendamment des filtres de l'arbre. Une sélection dans la matrice ouvre la fiche et place le focus sur celle-ci ; les groupes historiques ou inconnus restent explicitement qualifiés.
++
++L'onglet Carte & réseau charge son moteur géographique seulement quand il est actif. La consultation de Services publics ne monte aucun canvas de carte et n'ajoute aucune permission. Les fiches publiques partagent les contextes résolus par `public-entity-projection.ts`.
+ 
+ ## Sources consultées le 24 novembre 2026
+ 
+diff --git a/documentation/pages_site/routes/04-reseau-discussions/annuaire/annuaire-presentation-detaillee.md b/documentation/pages_site/routes/04-reseau-discussions/annuaire/annuaire-presentation-detaillee.md
+--- a/documentation/pages_site/routes/04-reseau-discussions/annuaire/annuaire-presentation-detaillee.md
++++ b/documentation/pages_site/routes/04-reseau-discussions/annuaire/annuaire-presentation-detaillee.md
+@@ -17,135 +17,127 @@
+ 
+ 1. `Services publics` : organigramme graphique 2D interactif (avec vue `Liste` alternative) et navigation croisée vers `Carte & réseau` ;
+ 2. `Annuaire` : sélection éditoriale (6 cartes initiales maximum et action « Afficher toutes »), recherche textuelle, compteur, filtres par menus déroulants accessibles et grille responsive (1/2/3 colonnes) paginée ;
+-3. `Carte & réseau` : carte géographique relationnelle unifiée sur Leaflet limitée à deux périmètres (`Paris intramuros` par défaut et `National (France métropolitaine)`, Corse comprise), marqueurs nommés et regroupements numérotés, couche activable de relations documentées incidentes à la sélection avec indicateurs factuels (voisins distincts reliés et opérations communes prouvées, sans score d'influence), panneaux `Hors de Paris` et `Localisation non établie`, adresses publiques sourcées (ou statut explicite divergent / non applicable / non établi), résultats compacts, drawer de fiche et contribution citoyenne.
+-
+-Les onglets utilisent un `tablist` unique avec `roving tabindex` (flèches, Début, Fin) et `hidden` sur les panneaux inactifs. La mise en avant est une sélection éditoriale (`isFeatured`). Elle ne modifie pas la provenance ni le niveau de confiance de l'entrée sélectionnée.
+-
+-## 2. Recherche, filtres et résultats
+-
+-`useAnnuaireLogic` est le propriétaire unique de l'état et des résultats de la page.
+-La saisie est normalisée sans distinction de casse ni d'accents, puis découpée en
+-termes séparés par des espaces, une ponctuation ou un tiret. Chaque terme doit être
+-présent comme sous-chaîne dans au moins un champ public du nom, de l'identité légale,
+-de la description, de la localisation, des tags et, lorsqu'ils existent, de la mission,
+-des besoins récurrents, des actions passées ou du libellé et de la description des
+-ressources utiles. Les termes peuvent donc être répartis entre plusieurs champs et
+-saisis dans n'importe quel ordre. Les contacts administratifs, identifiants et
+-métadonnées de modération ne sont pas recherchés.
+-
+-Les filtres actuellement disponibles sont :
+-
+-- le type de structure ;
+-- le domaine d'engagement (`Environnement`, `Social`, `Humanitaire` ou `Domaine non renseigné`) ;
+-- le type de contribution ;
+-- le périmètre géographique (`Tout Paris`, un arrondissement ou `Proches de moi` lorsque la préférence de localisation le permet).
+-
+-Les filtres sont combinables. Ils pilotent la liste, la carte, le graphe et le compteur
+-de résultats ; la liste est paginée. Un état vide propose de réinitialiser les filtres
+-ou de rejoindre le référencement. La sélection d'une fiche mise en avant rétablit une
+-vue compatible avant d'ouvrir cette fiche : une sélection n'est pas perdue parce qu'un
+-filtre précédent l'excluait.
+-
+-Le sélecteur de domaine est une classification fiable, distincte de la recherche textuelle.
+-Les filtres sont exposés par menus déroulants natifs (`Type de structure`, `Domaine d'engagement`, `Arrondissement` avec `Proches de moi` conditionnel, et dans `Filtres supplémentaires` : `Type d'aide` et `Mot-clé`).
+-`Propreté`, `Climat` et `Sensibilisation` restent des mots-clés de recherche.
+-`Domaine non renseigné` regroupe notamment les fiches partenaires historiques dont les
+-anciens `types` étaient dérivés du type d'organisation sans déclaration explicite.
+-Tous les filtres s'appliquent ensemble, réinitialisent la page courante et alimentent la
+-liste, la carte, le graphe et le compteur avec le même résultat. La sélection active est
+-conservée tant que sa fiche reste dans le résultat.
+-
+-## 3. Fiches, contacts et provenance
+-
+-### Surfaces et contrastes des cartes (lot A)
+-
+-Les cartes de résultats (`annuaire-actor-card*.tsx`) et de sélection mise en avant
+-(`annuaire-featured-section.tsx`) reposent sur le shell canonique `CmmCard`, sur les
+-classes sémantiques `cmm-text-primary`, `cmm-text-secondary`, `cmm-text-success`,
+-`cmm-text-info` et sur les variables `--cmm-surface-border` /
+-`--cmm-surface-background-muted`. Aucune classe de texte ou de surface sombre locale
+-(`text-white`, `text-slate-*`, `bg-white/5`), ombre, flou, halo ou animation décorative
+-ne redéfinit ces surfaces ; la famille violet et les CTA `CmmButton` (`Localiser`,
+-`Contacter`/`Consulter`, `Voir sur la carte`) sont conservés. Les badges de provenance
+-et de fraîcheur sont dans le flux (`flex-wrap`), sans positionnement absolu, donc sans
+-chevauchement du titre. Aucune information métier n'est retirée. Contrat attendu :
+-contraste WCAG AA (4,5:1 texte courant, 3:1 grand texte) dans les modes `exhaustif`,
+-`sobre`, `minimaliste` et les thèmes `mixed` et `dark`.
+-
+-Une fiche s'ouvre de façon cohérente depuis la sélection mise en avant, la liste (`Consulter la fiche`), un
+-marqueur de carte, un résultat compact ou un nœud du graphe, indépendamment de la présence de coordonnées
+-ou d'un site web (`Localiser` reste distinct et désactivé sans coordonnées). Le drawer organise
+-les informations existantes en sections repliables (`Présentation` ouverte par défaut, `Actions et impact`,
+-`Besoins et contributions`, `Contacts publics`, `Sources et limites` et `Relations` uniquement lorsque des
+-relations vérifiées sont raccordées), avec focus trap limité aux sections ouvertes, fermeture `Escape`,
+-scroll interne et largeur adaptée au mobile. Les données privées ou administratives restent exclues.
+-publiables.
+-
+-Le CTA de contact n'utilise qu'une destination web publique validée (`http` ou
+-`https`). Une ressource ou un site absent n'est pas remplacé par `#`. S'il n'existe
+-aucun canal public autorisé, le CTA est présenté comme indisponible. Un email, un
+-téléphone ou une autre coordonnée de contact administratif du formulaire ne devient
+-jamais public par le seul fait qu'il est syntaxiquement valide.
+-
+-Les deux provenances ont des contrats différents :
+-
+-La propriété historique `types` reste disponible pour les badges, popups et autres
+-consommateurs d'affichage. Elle n'est une preuve de classement thématique que lorsqu'une
+-source explicite l'accompagne : `engagementTypesSource=editorial_seed` pour une
+-classification éditoriale du dépôt ou `engagementTypesSource=partner_declaration` pour
+-une déclaration de la structure persistée pendant l'onboarding. Ces domaines sont
+-éditoriaux ou auto-déclarés ; ils ne constituent pas une certification.
+-
+-### `editorial_seed`
+-
+-Cette provenance correspond à une ressource éditoriale curatée dans le dépôt. Elle
+-est présentée comme `Ressource éditoriale` et conserve son statut de vérification en
+-cours et de contact non qualifié. Elle ne peut pas fournir, par elle-même, une
+-structure active, un partenaire confirmé, une collaboration, une activité récente ou
+-un historique d'impact mesuré. La fiche éditoriale de l'Académie du Climat reste
+-présente avec ses liens publics ; aucun panneau d'événements statiques ni promesse de
+-synchronisation n'est associé à cette fiche.
+-
+-### `published_partner`
+-
+-Cette provenance correspond à la projection publique d'une demande partenaire
+-persistée. La fiche peut porter les statuts de vérification, de qualification, de
+-disponibilité et de fraîcheur prévus par le contrat. Elle n'est visible par l'API et
+-la lecture publique qu'après une décision administrative `accepted`.
+-
+-Le rapprochement entre les deux sources se fait sur l'identifiant stable canonique.
+-Un nom similaire ou une identité légale textuellement proche ne suffit pas à fusionner
+-ou masquer deux entrées. Si un identifiant stable est partagé, la projection partenaire
+-est prioritaire afin qu'un seed éditorial ne recouvre pas une décision persistée.
+-
+-## 4. Carte et limites géographiques
+-
+-La carte Leaflet ne place un marqueur que lorsque les coordonnées sont précises et
+-éligibles. Les coordonnées nulles, dérivées d'une couverture, les centroïdes connus de
+-la France ou de Paris et les entrées de portée nationale sont exclus des marqueurs
+-précis. La carte peut rester centrée sur Paris comme vue initiale ; ce centre n'est pas
+-présenté comme l'adresse d'une organisation.
+-
+-Les fiches `local` peuvent afficher leur couverture d'arrondissements. Les fiches
+-`national` ou `france` restent visibles dans les listes et sont signalées comme de
+-portée nationale, sans être artificiellement transformées en acteurs locaux. Une
+-distance n'est affichée que si l'entrée possède des coordonnées précises et si une
+-préférence d'arrondissement permet de lui donner un sens ; aucune distance n'est
+-calculée depuis un centroïde ou une couverture abstraite.
+-
+-## 5. Graphe et sémantique des liens
+-
+-Le graphe est une vue d'exploration. Ses nœuds ouvrent les mêmes fiches que la liste
+-et la carte, y compris au clavier. Un lien est déduit uniquement de tags communs et
+-est présenté comme une **similarité thématique**. Il ne constitue pas une preuve de
+-collaboration, de partenariat, de co-organisation ou de relation opérationnelle.
+-Les positions visuelles des nœuds servent à la lisibilité du graphe et ne sont pas des
+-coordonnées géographiques.
+-
+-En complément de la carte Leaflet et du graphe SVG, l'espace **Intelligence territoriale** réunit deux onglets. Le réseau 3D des cleanwalks permet de rechercher et sélectionner un acteur, lire ses relations et leurs sources et consulter les opérations déclarées. Type d'acteur et arrondissement restent visibles, les autres filtres sont secondaires. La fiche complète est ouverte par sélection explicite ; le survol fournit un aperçu court. La liste HTML reste une alternative de consultation et le canvas n'est pas nécessaire pour accéder aux informations. Le [contrat du réseau 3D](../../../../features/paris-cleanwalk-network-3d.md) précise les encodages, niveaux de preuve, limites et contributions modérées.
+-
+-L'onglet **Organisation des services publics** propose une orientation par besoin et arrondissement, puis un organigramme, une navigation par niveaux et une matrice territoriale. Le choix d'arrondissement est partagé ; aucune compétence ou disponibilité n'est supposée en l'absence de preuve. Les détails et canaux publics restent accessibles dans les fiches. Le [contrat institutionnel](../../../../features/organisation-services-publics-proprete.md) décrit les règles de projection et de navigation. Les fiches possédant une identité commune explicitement établie peuvent ouvrir l'autre onglet ; le réseau, l'organigramme et les similarités thématiques restent des représentations distinctes. La consultation institutionnelle ne monte pas le canvas WebGL. Les propositions citoyennes restent modérées, sans publication automatique.
+-
++3. `Carte & réseau` : carte géographique relationnelle en perspective 3D MapLibre avec repli 2D Leaflet limitée à deux périmètres (`Paris intramuros` par défaut et `National (France métropolitaine)`, Corse comprise), pins géographiques précis, badges flottants nommés et logos sourcés lorsqu'ils existent, couche activable de toutes les relations documentées ou de celles de la sélection avec indicateurs factuels (voisins distincts reliés et opérations communes prouvées, sans score d'influence), panneaux `Hors de Paris` et `Localisation non établie`, adresses publiques sourcées (ou statut explicite divergent / non applicable / non établi), résultats compacts, drawer de fiche et contribution citoyenne.
++
++Les onglets utilisent un `tablist` unique avec `roving tabindex` (flèches, Début, Fin) et `hidden` sur les panneaux inactifs. La mise en avant est une sélection éditoriale (`isFeatured`). Elle ne modifie pas la provenance ni le niveau de confiance de l'entrée sélectionnée.
++
++## 2. Recherche, filtres et résultats
++
++`useAnnuaireLogic` est le propriétaire unique de l'état et des résultats de la page.
++La saisie est normalisée sans distinction de casse ni d'accents, puis découpée en
++termes séparés par des espaces, une ponctuation ou un tiret. Chaque terme doit être
++présent comme sous-chaîne dans au moins un champ public du nom, de l'identité légale,
++de la description, de la localisation, des tags et, lorsqu'ils existent, de la mission,
++des besoins récurrents, des actions passées ou du libellé et de la description des
++ressources utiles. Les termes peuvent donc être répartis entre plusieurs champs et
++saisis dans n'importe quel ordre. Les contacts administratifs, identifiants et
++métadonnées de modération ne sont pas recherchés.
++
++Les filtres actuellement disponibles sont :
++
++- le type de structure ;
++- le domaine d'engagement (`Environnement`, `Social`, `Humanitaire` ou `Domaine non renseigné`) ;
++- le type de contribution ;
++- le périmètre géographique (`Tout Paris`, un arrondissement ou `Proches de moi` lorsque la préférence de localisation le permet).
++
++Les filtres sont combinables. Ils pilotent la liste, la carte, le graphe et le compteur
++de résultats ; la liste est paginée. Un état vide propose de réinitialiser les filtres
++ou de rejoindre le référencement. La sélection d'une fiche mise en avant rétablit une
++vue compatible avant d'ouvrir cette fiche : une sélection n'est pas perdue parce qu'un
++filtre précédent l'excluait.
++
++Le sélecteur de domaine est une classification fiable, distincte de la recherche textuelle.
++Les filtres sont exposés par menus déroulants natifs (`Type de structure`, `Domaine d'engagement`, `Arrondissement` avec `Proches de moi` conditionnel, et dans `Filtres supplémentaires` : `Type d'aide` et `Mot-clé`).
++`Propreté`, `Climat` et `Sensibilisation` restent des mots-clés de recherche.
++`Domaine non renseigné` regroupe notamment les fiches partenaires historiques dont les
++anciens `types` étaient dérivés du type d'organisation sans déclaration explicite.
++Tous les filtres s'appliquent ensemble, réinitialisent la page courante et alimentent la
++liste, la carte, le graphe et le compteur avec le même résultat. La sélection active est
++conservée tant que sa fiche reste dans le résultat.
++
++## 3. Fiches, contacts et provenance
++
++### Surfaces et contrastes des cartes (lot A)
++
++Les cartes de résultats (`annuaire-actor-card*.tsx`) et de sélection mise en avant
++(`annuaire-featured-section.tsx`) reposent sur le shell canonique `CmmCard`, sur les
++classes sémantiques `cmm-text-primary`, `cmm-text-secondary`, `cmm-text-success`,
++`cmm-text-info` et sur les variables `--cmm-surface-border` /
++`--cmm-surface-background-muted`. Aucune classe de texte ou de surface sombre locale
++(`text-white`, `text-slate-*`, `bg-white/5`), ombre, flou, halo ou animation décorative
++ne redéfinit ces surfaces ; la famille violet et les CTA `CmmButton` (`Localiser`,
++`Contacter`/`Consulter`, `Voir sur la carte`) sont conservés. Les badges de provenance
++et de fraîcheur sont dans le flux (`flex-wrap`), sans positionnement absolu, donc sans
++chevauchement du titre. Aucune information métier n'est retirée. Contrat attendu :
++contraste WCAG AA (4,5:1 texte courant, 3:1 grand texte) dans les modes `exhaustif`,
++`sobre`, `minimaliste` et les thèmes `mixed` et `dark`.
++
++Une fiche s'ouvre de façon cohérente depuis la sélection mise en avant, la liste (`Consulter la fiche`), un
++marqueur de carte, un résultat compact ou un nœud du graphe, indépendamment de la présence de coordonnées
++ou d'un site web (`Localiser` reste distinct et désactivé sans coordonnées). Le drawer organise
++les informations existantes en sections repliables (`Présentation` ouverte par défaut, `Actions et impact`,
++`Besoins et contributions`, `Contacts publics`, `Sources et limites` et `Relations` uniquement lorsque des
++relations vérifiées sont raccordées), avec focus trap limité aux sections ouvertes, fermeture `Escape`,
++scroll interne et largeur adaptée au mobile. Les données privées ou administratives restent exclues.
++publiables.
++
++Le CTA de contact n'utilise qu'une destination web publique validée (`http` ou
++`https`). Une ressource ou un site absent n'est pas remplacé par `#`. S'il n'existe
++aucun canal public autorisé, le CTA est présenté comme indisponible. Un email, un
++téléphone ou une autre coordonnée de contact administratif du formulaire ne devient
++jamais public par le seul fait qu'il est syntaxiquement valide.
++
++Les deux provenances ont des contrats différents :
++
++La propriété historique `types` reste disponible pour les badges, popups et autres
++consommateurs d'affichage. Elle n'est une preuve de classement thématique que lorsqu'une
++source explicite l'accompagne : `engagementTypesSource=editorial_seed` pour une
++classification éditoriale du dépôt ou `engagementTypesSource=partner_declaration` pour
++une déclaration de la structure persistée pendant l'onboarding. Ces domaines sont
++éditoriaux ou auto-déclarés ; ils ne constituent pas une certification.
++
++### `editorial_seed`
++
++Cette provenance correspond à une ressource éditoriale curatée dans le dépôt. Elle
++est présentée comme `Ressource éditoriale` et conserve son statut de vérification en
++cours et de contact non qualifié. Elle ne peut pas fournir, par elle-même, une
++structure active, un partenaire confirmé, une collaboration, une activité récente ou
++un historique d'impact mesuré. La fiche éditoriale de l'Académie du Climat reste
++présente avec ses liens publics ; aucun panneau d'événements statiques ni promesse de
++synchronisation n'est associé à cette fiche.
++
++### `published_partner`
++
++Cette provenance correspond à la projection publique d'une demande partenaire
++persistée. La fiche peut porter les statuts de vérification, de qualification, de
++disponibilité et de fraîcheur prévus par le contrat. Elle n'est visible par l'API et
++la lecture publique qu'après une décision administrative `accepted`.
++
++Le rapprochement entre les deux sources se fait sur l'identifiant stable canonique.
++Un nom similaire ou une identité légale textuellement proche ne suffit pas à fusionner
++ou masquer deux entrées. Si un identifiant stable est partagé, la projection partenaire
++est prioritaire afin qu'un seed éditorial ne recouvre pas une décision persistée.
++
++## 4. Carte et limites géographiques
++
++La carte Leaflet ne place un marqueur que lorsque les coordonnées sont précises et
++éligibles. Les coordonnées nulles, dérivées d'une couverture, les centroïdes connus de
++la France ou de Paris et les entrées de portée nationale sont exclus des marqueurs
++précis. La carte peut rester centrée sur Paris comme vue initiale ; ce centre n'est pas
++présenté comme l'adresse d'une organisation.
++
++Les fiches `local` peuvent afficher leur couverture d'arrondissements. Les fiches
++`national` ou `france` restent visibles dans les listes et sont signalées comme de
++portée nationale, sans être artificiellement transformées en acteurs locaux. Une
++distance n'est affichée que si l'entrée possède des coordonnées précises et si une
++préférence d'arrondissement permet de lui donner un sens ; aucune distance n'est
++calculée depuis un centroïde ou une couverture abstraite.
++
++## 5. Carte relationnelle et exploration institutionnelle
++
++Carte & réseau utilise les relations documentées du registre, jamais les similarités de tags. Les badges flottants sont dimensionnés selon le nombre de voisins documentés, sans score d'influence. Le pin reste à la coordonnée réelle ; l'orientation et l'inclinaison de caméra ne modifient pas la géographie. Le rendu 2D et le rendu 3D exploitent les mêmes identités et données. Les acteurs sans coordonnées ou sans logo restent consultables, avec un statut explicite.
++
++Services publics conserve l'orientation par besoin, l'organigramme, la liste et la matrice. Le graphique cadre la forêt complète et inclut les racines sans rattachement. Les relations non hiérarchiques restent distinctes. Les fiches d'identité commune peuvent ouvrir l'autre onglet. La consultation institutionnelle ne charge pas le moteur cartographique. Les contributions citoyennes restent modérées.
+ 
+ ## 6. Référencement et publication
+ 
+diff --git a/e2e/annuaire-public-cleanliness.spec.ts b/e2e/annuaire-public-cleanliness.spec.ts
+--- a/e2e/annuaire-public-cleanliness.spec.ts
++++ b/e2e/annuaire-public-cleanliness.spec.ts
+@@ -5,72 +5,65 @@
+   if (await refuseCookies.isVisible().catch(() => false)) await refuseCookies.click();
+ }
+ 
+-test("desktop: unmounts an initialized WebGL scene and restores network selections", async ({ page }) => {
+-  await page.setViewportSize({ width: 1440, height: 900 });
+-  await page.goto("/sections/annuaire");
+-  await page.waitForLoadState("networkidle");
+-  await dismissCookies(page);
+-
+-  const networkTab = page.getByRole("tab", { name: "Réseau 3D" });
+-  const organizationTab = page.getByRole("tab", { name: "Services publics" });
+-  const networkPanel = page.locator("#annuaire-panel-network");
+-  await networkTab.click();
+-  await expect(networkTab).toHaveAttribute("aria-selected", "true");
+-  const canvas = networkPanel.locator("canvas");
+-  await expect(canvas).toHaveCount(0);
+-  await expect(networkPanel.getByText(/Vue guidée/).first()).toBeVisible();
+-
+-  await networkPanel.getByRole("combobox", { name: "Filtrer par type d'acteur" }).selectOption("collectivite_mairie");
+-  await networkPanel.getByRole("combobox", { name: "Filtrer par arrondissement" }).selectOption("5");
+-
+-  await networkPanel.getByRole("searchbox", { name: "Rechercher un acteur" }).fill("Mairie du 5e");
+-  await networkPanel.getByRole("button", { name: /Mairie du 5e arrondissement de Paris/i }).first().click();
+-  await expect(networkPanel.getByRole("dialog")).toContainText("Mairie du 5e arrondissement de Paris");
+-  await networkPanel.getByRole("button", { name: "Basculer vers la scène 3D WebGL" }).click();
+-  await expect(canvas).toHaveCount(1, { timeout: 20_000 });
+-  await networkPanel.getByRole("button", { name: "Cadrer le réseau 3D" }).click();
+-  await networkPanel.getByRole("button", { name: "Centrer la sélection" }).click();
+-  await networkPanel.getByRole("button", { name: "Isoler les voisins" }).click();
+-  await expect(networkPanel.getByText("Scène limitée à la sélection et ses voisins dans les filtres actifs.")).toBeVisible();
+-  await networkPanel.getByRole("button", { name: "Réseau complet" }).click();
+-
+-  await organizationTab.click();
+-  await expect(page.locator("#annuaire-panel-organization")).toBeVisible();
+-  await expect(canvas).toHaveCount(0);
+-
+-  await networkTab.click();
+-  await expect(canvas).toHaveCount(1, { timeout: 20_000 });
+-  await expect(networkPanel.getByRole("combobox", { name: "Filtrer par type d'acteur" })).toHaveValue("collectivite_mairie");
+-  await expect(networkPanel.getByRole("combobox", { name: "Filtrer par arrondissement" })).toHaveValue("5");
+-  await expect(networkPanel.locator('button[aria-pressed="true"]').filter({ hasText: "Mairie du 5e arrondissement de Paris" })).toBeVisible();
+-});
+-
+-test("desktop: navigates between explicit shared institutional identities", async ({ page }) => {
+-  await page.setViewportSize({ width: 1440, height: 900 });
+-  await page.goto("/sections/annuaire");
+-  await dismissCookies(page);
+-  const network = page.locator("#annuaire-panel-network");
+-  const organization = page.getByTestId("public-cleanliness-organization");
+-  await page.getByRole("tab", { name: "Réseau 3D" }).click();
+-  const lookup = network.getByRole("searchbox", { name: "Rechercher un acteur" });
+-  await lookup.fill("Syctom");
+-  await network.getByRole("button", { name: /Syctom/i }).first().click();
+-  await network.getByRole("button", { name: "Voir dans les services publics" }).click();
+-  await expect(page.getByRole("tab", { name: "Services publics" })).toBeFocused();
+-  await expect(organization.locator("aside h3")).toContainText("Syctom");
+-  await expect(network.locator("canvas")).toHaveCount(0);
+-  await organization.getByRole("button", { name: "Voir dans le réseau des acteurs" }).click();
+-  await expect(page.getByRole("tab", { name: "Réseau 3D" })).toBeFocused();
+-  await expect(network.getByRole("dialog")).toContainText("Syctom");
+-});
+-
+-test("mobile: filters, progressive navigation, zoom, sources and roving tab focus work", async ({ page }) => {
+-  await page.setViewportSize({ width: 390, height: 844 });
+-  await page.goto("/sections/annuaire");
+-  await page.waitForLoadState("networkidle");
+-  await dismissCookies(page);
+-
+-  const networkTab = page.getByRole("tab", { name: "Réseau 3D" });
++test("desktop: fits the complete institutional graph and switches to the geographic network", async ({ page }) => {
++  await page.setViewportSize({ width: 1440, height: 900 });
++  await page.goto("/sections/annuaire");
++  await dismissCookies(page);
++  const organization = page.getByTestId("public-cleanliness-organization");
++  await expect(organization.locator('[data-org-node-id="city-paris"]')).toBeVisible();
++  await expect(organization.locator('[data-org-node-id="dpe"]')).toBeVisible();
++  await expect(organization.locator('[data-org-node-id="person-carine-ekon"]')).toBeVisible();
++  await organization.getByRole("button", { name: "Cadrer", exact: true }).click();
++  const nodes = organization.locator("[data-org-node-id]");
++  expect(await nodes.count()).toBeGreaterThan(10);
++  await page.getByRole("tab", { name: "Carte & réseau" }).click();
++  await page.getByRole("button", { name: "2D", exact: true }).click();
++  await expect(page.locator(".leaflet-container")).toBeVisible();
++  await page.getByRole("tab", { name: "Services publics" }).click();
++  await expect(page.locator(".leaflet-container")).toHaveCount(0);
++});
++
++test("desktop: navigates between explicit shared institutional identities", async ({ page }) => {
++  await page.setViewportSize({ width: 1440, height: 900 });
++  await page.goto("/sections/annuaire");
++  await dismissCookies(page);
++  await page.getByRole("tab", { name: "Carte & réseau" }).click();
++  await page.getByRole("button", { name: "2D", exact: true }).click();
++  const network = page.locator("#annuaire-panel-network");
++  await network.getByRole("searchbox").fill("Syctom");
++  await network.getByRole("button", { name: /Syctom/i }).first().click();
++  await network.getByRole("button", { name: "Voir dans les services publics" }).click();
++  await expect(page.getByRole("tab", { name: "Services publics" })).toBeFocused();
++  const organization = page.getByTestId("public-cleanliness-organization");
++  await expect(organization.locator("aside h3")).toContainText("Syctom");
++  await organization.getByRole("button", { name: "Voir dans le réseau des acteurs" }).click();
++  await expect(page.getByRole("tab", { name: "Carte & réseau" })).toBeFocused();
++  await expect(network.getByRole("dialog")).toContainText("Syctom");
++});
++
++test("desktop: geographic WebGL renders and exposes camera controls when available", async ({ page }) => {
++  await page.setViewportSize({ width: 1440, height: 900 });
++  await page.goto("/sections/annuaire");
++  await dismissCookies(page);
++  await page.getByRole("tab", { name: "Carte & réseau" }).click();
++  const network = page.locator("#annuaire-panel-network");
++  // This test requires an actual WebGL-capable harness; a fallback is not a 3D pass.
++  await expect(network.locator("canvas.maplibregl-canvas")).toBeVisible();
++  await expect(network.getByText("Chargement de la carte 3D…")).toHaveCount(0);
++  await network.getByRole("button", { name: "Tourner →" }).click();
++  await network.getByRole("button", { name: "Incliner +" }).click();
++  await expect(network.locator("[data-network-pin]").first()).toBeVisible();
++  await page.getByRole("tab", { name: "Services publics" }).click();
++  await expect(network.locator("canvas")).toHaveCount(0);
++});
++
++test("mobile: filters, progressive navigation, zoom, sources and roving tab focus work", async ({ page }) => {
++  await page.setViewportSize({ width: 390, height: 844 });
++  await page.goto("/sections/annuaire");
++  await page.waitForLoadState("networkidle");
++  await dismissCookies(page);
++
++  const networkTab = page.getByRole("tab", { name: "Carte & réseau" });
+   const organizationTab = page.getByRole("tab", { name: "Services publics" });
+   await networkTab.click();
+   await expect(networkTab).toHaveAttribute("tabindex", "0");
+diff --git a/documentation/security/csp.md b/documentation/security/csp.md
+--- a/documentation/security/csp.md
++++ b/documentation/security/csp.md
+@@ -64,7 +64,7 @@
+   Photon, Nominatim pour les flux historiques hors autocomplétion, et routage
+   OpenStreetMap ;
+ - images et cartes : hôtes configurés dans `next.config.ts`, images de contenu
+-  explicitement utilisées et tuiles OpenStreetMap/CARTO.
++  explicitement utilisées et tuiles OpenStreetMap/CARTO. Le rendu MapLibre de l'Annuaire consomme les mêmes tuiles CARTO par fetch ; leur hôte est aussi autorisé dans connect-src, sans ouverture générale de la policy.
+ 
+ Les URLs externes saisies ou persistées par les utilisateurs ne sont pas
+ ajoutées dynamiquement à la policy. Elles restent soumises à la validation et

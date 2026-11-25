@@ -1,0 +1,1856 @@
+diff --git a/apps/web/src/lib/partners/public-network-identity-media.ts b/apps/web/src/lib/partners/public-network-identity-media.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/partners/public-network-identity-media.ts
+@@ -0,0 +1,18 @@
++/** Source-backed, public identity enrichment keyed exclusively by canonical IDs.
++ * A verified postal address is not a verified geocode. */
++export type NetworkPublicAddress = { label: string; municipality: string; nature: string; sourceUrl: string; checkedAt: string };
++export type NetworkPublicLogo = { localPath: string; sourceUrl: string; checkedAt: string; usage: "own_brand" | "licensed" | "permission" };
++const PUBLIC_NETWORK_ADDRESSES: Readonly<Record<string, NetworkPublicAddress>> = {
++  "collectivite-syctom": { label: "86 rue Regnault, 75013 Paris", municipality: "Paris 13e", nature: "Adresse postale institutionnelle", sourceUrl: "https://www.syctom-paris.fr/contacts.html", checkedAt: "2026-11-25" },
++  "asso-maison-zero-dechet": { label: "1 passage Emma Calvé, 75012 Paris", municipality: "Paris 12e", nature: "Lieu d'activité", sourceUrl: "https://lamaisonduzerodechet.org/acces-horaires/", checkedAt: "2026-11-25" },
++  "asso-1": { label: "7-9 place du Moulin de Cage, 93450 L’Île-Saint-Denis", municipality: "L’Île-Saint-Denis", nature: "Siège social déclaré", sourceUrl: "https://pikpik.org/mentions-legales/", checkedAt: "2026-11-25" },
++};
++const PUBLIC_NETWORK_LOGOS: Readonly<Record<string, NetworkPublicLogo>> = {
++  cleanmymap: { localPath: "/brand/logo-court.png", sourceUrl: "https://github.com/maxd4/CleanmyMap/blob/main/apps/web/public/brand/logo-court.png", checkedAt: "2026-11-25", usage: "own_brand" },
++};
++export function getNetworkPublicLogo(id: string | null | undefined): NetworkPublicLogo | null {
++  return id && Object.hasOwn(PUBLIC_NETWORK_LOGOS, id) ? PUBLIC_NETWORK_LOGOS[id] : null;
++}
++export function getNetworkPublicAddress(id: string | null | undefined): NetworkPublicAddress | null {
++  return id && Object.hasOwn(PUBLIC_NETWORK_ADDRESSES, id) ? PUBLIC_NETWORK_ADDRESSES[id] : null;
++}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network.visuals.ts b/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network.visuals.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network.visuals.ts
+@@ -0,0 +1,19 @@
++import { computeRelationThickness, PARIS_RELATION_TYPE_META, type ParisCleanwalkRelation } from "@/lib/partners/paris-cleanwalk-network";
++
++/** Area grows with the number of documented distinct neighbours, not influence. */
++export function getNetworkLogoDiameter(neighbours: number): number {
++  const count = Number.isFinite(neighbours) ? Math.max(0, neighbours) : 0;
++  return Math.min(92, Math.sqrt(32 * 32 + 220 * count));
++}
++
++export function getNetworkRelationVisual(relation: ParisCleanwalkRelation) {
++  const meta = PARIS_RELATION_TYPE_META[relation.relationType];
++  const uncertain = relation.source.certainty !== "verifie";
++  const dash = meta.dashPattern === "dotted" ? "2 5" : meta.dashPattern === "dashed" || uncertain ? "7 5" : undefined;
++  const colors = {
++    collaboration_programmee: "#b45309", action_commune: "#6d28d9",
++    publie_sur: "#0369a1", partenariat: "#4338ca", soutien_rse: "#a21caf",
++    appui_logistique: "#0f766e", presence_evenement: "#475569",
++  } as const;
++  return { color: colors[relation.relationType], dash, weight: computeRelationThickness(relation).thickness, label: meta.label };
++}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network.model.ts b/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network.model.ts
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network.model.ts
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network.model.ts
+@@ -1,417 +1,434 @@
+ import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+-import {
+-  PARIS_CLEANWALK_ACTORS,
+-  PARIS_CLEANWALK_RELATIONS,
+-  type ParisCleanwalkActor,
+-  type ParisCleanwalkRelation,
+-} from "@/lib/partners/paris-cleanwalk-network";
+-import {
+-  formatAnnuaireCoverage,
+-  hasPreciseAnnuaireCoordinates,
+-  type EnrichedAnnuaireEntry,
+-} from "./annuaire-helpers";
+-
+-export type MapScope = "paris" | "national";
+-
+-/** Limites officielles de Paris intramuros pour le cadrage par défaut. */
+-export const PARIS_INTRAMUROS_BOUNDS: [[number, number], [number, number]] = [
+-  [48.8155, 2.2241],
+-  [48.9021, 2.4699],
+-];
+-
+-/** Limites de la France métropolitaine (Corse comprise, outre-mer exclu). */
+-export const FRANCE_METROPOLITAINE_BOUNDS: [[number, number], [number, number]] = [
+-  [41.33, -5.14],
+-  [51.09, 9.56],
+-];
+-
+-export interface VerifiedPrincipalLocation {
+-  lat: number;
+-  lng: number;
+-  address: string;
+-  commune: string;
+-  nature: string;
+-  sourceUrl: string;
+-  verifiedAt: string;
+-}
+-
+-/**
+- * Implantations principales vérifiées et géocodées via BAN (api-adresse.data.gouv.fr).
+- * Inclut les structures nationales/hors-Paris dont le site physique est sourcé.
+- */
+-export const VERIFIED_PRINCIPAL_LOCATIONS: Record<string, VerifiedPrincipalLocation> = {
+-  "asso-3": {
+-    lat: 48.8959,
+-    lng: 2.353156,
+-    address: "132 rue des Poissonniers, 75018 Paris",
+-    commune: "Paris 18e",
+-    nature: "Atelier-boutique principal",
+-    sourceUrl: "https://cartonplein.org/",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "asso-4": {
+-    lat: 48.856188,
+-    lng: 2.355693,
+-    address: "2 place Baudoyer, 75004 Paris",
+-    commune: "Paris 4e",
+-    nature: "Lieu d'activité municipal",
+-    sourceUrl: "https://www.paris.fr/lieux/academie-du-climat-19507",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "asso-shakirail": {
+-    lat: 48.889965,
+-    lng: 2.364244,
+-    address: "72 rue Riquet, 75018 Paris",
+-    commune: "Paris 18e",
+-    nature: "Lieu d'activité",
+-    sourceUrl: "https://www.paris.fr/lieux/le-shakirail-19291",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "com-1": {
+-    lat: 48.881395,
+-    lng: 2.362914,
+-    address: "22 rue du Château Landon, 75010 Paris",
+-    commune: "Paris 10e",
+-    nature: "Atelier-boutique",
+-    sourceUrl: "https://latextilerie.fr/",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "asso-megots-alcome": {
+-    lat: 48.873504,
+-    lng: 2.309341,
+-    address: "164 rue du Faubourg Saint-Honoré, 75008 Paris",
+-    commune: "Paris 8e",
+-    nature: "Siège social (éco-organisme)",
+-    sourceUrl: "https://alcome.eco/mentions-legales/",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "asso-megots-tchaomegot": {
+-    lat: 49.417315,
+-    lng: 2.253688,
+-    address: "12 rue Benjamin Delessert, 60510 Bresles",
+-    commune: "Bresles (60)",
+-    nature: "Site professionnel (pas un dépôt libre)",
+-    sourceUrl: "https://tchaomegot.com/mentions-legales/",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "operator-ckfd": {
+-    lat: 48.926182,
+-    lng: 2.316068,
+-    address: "86-114 Avenue Louis Roche, 92230 Gennevilliers",
+-    commune: "Gennevilliers (92)",
+-    nature: "Siège / site de massification",
+-    sourceUrl: "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "operator-mego": {
+-    lat: 48.466755,
+-    lng: -4.336828,
+-    address: "11 ZAE Penhoat, 29800 Saint-Divy",
+-    commune: "Saint-Divy (29 · Bretagne)",
+-    nature: "Site industriel (aucun dépôt public parisien)",
+-    sourceUrl: "https://www.me-go.fr/contact/",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "operator-carton-plein-cyclo": {
+-    lat: 48.852473,
+-    lng: 2.380427,
+-    address: "12 Rue Charles Delescluze, 75011 Paris",
+-    commune: "Paris 11e",
+-    nature: "Hub de cyclologistique",
+-    sourceUrl: "https://cartonplein.org/nos-services-cyclologistique/",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "com-2": {
+-    lat: 48.865024,
+-    lng: 2.455023,
+-    address: "18 rue Saint-Antoine, 93100 Montreuil",
+-    commune: "Montreuil (93)",
+-    nature: "Atelier",
+-    sourceUrl: "https://lacollecterie.org/",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "evt-1": {
+-    lat: 48.897647,
+-    lng: 2.344183,
+-    address: "83 boulevard Ornano, 75018 Paris",
+-    commune: "Paris 18e",
+-    nature: "Lieu d'activité",
+-    sourceUrl: "https://www.larecyclerie.com/",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "mairie-paris-5": {
+-    lat: 48.8462,
+-    lng: 2.3447,
+-    address: "21 Place du Panthéon, 75005 Paris",
+-    commune: "Paris 5e",
+-    nature: "Mairie d'arrondissement",
+-    sourceUrl: "https://mairie05.paris.fr/",
+-    verifiedAt: "2026-11-25",
+-  },
+-  "mairie-paris-6": {
+-    lat: 48.8505,
+-    lng: 2.3324,
+-    address: "78 Rue Bonaparte, 75006 Paris",
+-    commune: "Paris 6e",
+-    nature: "Mairie d'arrondissement",
+-    sourceUrl: "https://mairie06.paris.fr/",
+-    verifiedAt: "2026-11-25",
+-  },
+-};
+-
+-export type GeoLocationGroup = "in_paris" | "outside_paris" | "unknown_location";
+-export type PublicAddressStatus = "verified" | "contradictory" | "not_applicable" | "unknown";
+-
+-export interface GeoNetworkFactualIndicators {
+-  /** Nombre de voisins distincts dans les relations prouvées (hors auto-liens, programmé et similarités). */
+-  documentedNeighborsCount: number;
+-  /** Nombre de collaborations programmées (non comptées comme activité actuelle). */
+-  scheduledLinksCount: number;
+-  /** Nombre d'opérations communes prouvées (null si non documenté). */
+-  provenJointOperationsCount: number | null;
+-  /** Périmètre factuel déclaré ou documenté. */
+-  activityScopeLabel: string;
+-}
+-
+-export interface GeoNetworkEntity {
+-  id: string;
+-  annuaireEntryId: string | null;
+-  networkActorId: string | null;
+-  name: string;
+-  shortName: string;
+-  entry: EnrichedAnnuaireEntry | null;
+-  networkActor: ParisCleanwalkActor | null;
+-  coords: { lat: number; lng: number } | null;
+-  locationGroup: GeoLocationGroup;
+-  addressStatus: PublicAddressStatus;
+-  communeLabel: string;
+-  siteNature: string | null;
+-  sourceUrl: string | null;
+-  primaryFamily: string;
+-  indicators: GeoNetworkFactualIndicators;
+-}
+-
+-export interface GeoNetworkIncidentRelation {
+-  relation: ParisCleanwalkRelation;
+-  fromEntity: GeoNetworkEntity;
+-  toEntity: GeoNetworkEntity;
+-  hasPlottableLine: boolean;
+-  direction: "outgoing" | "incoming";
+-}
+-
+-export function isInParisIntramuros(lat: number, lng: number): boolean {
+-  const [[south, west], [north, east]] = PARIS_INTRAMUROS_BOUNDS;
+-  return lat >= south && lat <= north && lng >= west && lng <= east;
+-}
+-
+-export function isInFranceMetropolitaine(lat: number, lng: number): boolean {
+-  const [[south, west], [north, east]] = FRANCE_METROPOLITAINE_BOUNDS;
+-  return lat >= south && lat <= north && lng >= west && lng <= east;
+-}
+-
+-export function formatShortMarkerLabel(name: string): string {
+-  const trimmed = name.trim();
+-  if (trimmed.length <= 18) return trimmed;
+-  const paren = trimmed.match(/\(([A-Z0-9À-ÖØ-Þ][A-Za-z0-9À-ÖØ-öø-ÿ\s-]{1,11})\)/);
+-  if (paren) return paren[1];
+-  const words = trimmed.split(/\s+/);
+-  if (words.length >= 2 && words.slice(0, 2).join(" ").length <= 18) {
+-    return words.slice(0, 2).join(" ");
+-  }
+-  return `${trimmed.slice(0, 16)}…`;
+-}
+-
+-function resolveCoordsForEntity(
+-  id: string,
+-  entry: AnnuaireEntry | null,
+-): { coords: { lat: number; lng: number } | null; verified: VerifiedPrincipalLocation | null } {
+-  const verified = VERIFIED_PRINCIPAL_LOCATIONS[id] ?? null;
+-  if (verified) {
+-    return { coords: { lat: verified.lat, lng: verified.lng }, verified };
+-  }
+-  if (entry && hasPreciseAnnuaireCoordinates(entry) && entry.lat !== null && entry.lng !== null) {
+-    return { coords: { lat: entry.lat, lng: entry.lng }, verified: null };
+-  }
+-  return { coords: null, verified: null };
+-}
+-
+-function resolveAddressStatus(
+-  entry: AnnuaireEntry | null,
+-  verified: VerifiedPrincipalLocation | null,
+-): PublicAddressStatus {
+-  if (verified || (entry?.provenance === "editorial_seed" && entry.publicAddress)) {
+-    return "verified";
+-  }
+-  if (entry?.provenance === "editorial_seed" && entry.schoolProfile?.addresses?.length) {
+-    return entry.schoolProfile.addresses.length > 1 ? "contradictory" : "verified";
+-  }
+-  if (entry?.kind === "evenement") {
+-    return "not_applicable";
+-  }
+-  return "unknown";
+-}
+-
+-function computeFactualIndicators(
+-  actorId: string | null,
+-  activityScopeLabel: string,
+-): GeoNetworkFactualIndicators {
+-  if (!actorId) {
+-    return {
+-      documentedNeighborsCount: 0,
+-      scheduledLinksCount: 0,
+-      provenJointOperationsCount: null,
+-      activityScopeLabel,
+-    };
+-  }
+-  const neighbors = new Set<string>();
+-  let scheduled = 0;
+-  let operationsSum = 0;
+-  let hasOperations = false;
+-
+-  for (const rel of PARIS_CLEANWALK_RELATIONS) {
+-    if (rel.sourceId !== actorId && rel.targetId !== actorId) continue;
+-    if (rel.sourceId === rel.targetId) continue;
+-    if (rel.relationType === "collaboration_programmee") {
+-      scheduled += 1;
+-      continue;
+-    }
+-    const peerId = rel.sourceId === actorId ? rel.targetId : rel.sourceId;
+-    neighbors.add(peerId);
+-    if (rel.operations && rel.operations.length > 0) {
+-      operationsSum += rel.operations.length;
+-      hasOperations = true;
+-    }
+-  }
+-
+-  return {
+-    documentedNeighborsCount: neighbors.size,
+-    scheduledLinksCount: scheduled,
+-    provenJointOperationsCount: hasOperations ? operationsSum : null,
+-    activityScopeLabel,
+-  };
+-}
+-
+-/**
+- * Construit le registre géographique unifié à partir des entrées Annuaire filtrées
+- * et des acteurs du réseau Paris, sans déduplication par nom (IDs explicites uniquement).
+- */
+-export function buildGeoNetworkEntities(
+-  filteredEntries: EnrichedAnnuaireEntry[],
+-  allEntries: EnrichedAnnuaireEntry[],
+-  includeNetworkOnlyActors = true,
+-): GeoNetworkEntity[] {
+-  const actorByAnnuaireId = new Map<string, ParisCleanwalkActor>();
+-  for (const actor of PARIS_CLEANWALK_ACTORS) {
+-    if (actor.annuaireEntryId) {
+-      actorByAnnuaireId.set(actor.annuaireEntryId, actor);
+-    }
+-  }
+-
+-  const entities: GeoNetworkEntity[] = [];
+-  const seenActorIds = new Set<string>();
+-
+-  for (const entry of filteredEntries) {
+-    const networkActor = actorByAnnuaireId.get(entry.id) ?? null;
+-    if (networkActor) seenActorIds.add(networkActor.id);
+-    const { coords, verified } = resolveCoordsForEntity(entry.id, entry);
+-    const locationGroup: GeoLocationGroup = coords
+-      ? isInParisIntramuros(coords.lat, coords.lng)
+-        ? "in_paris"
+-        : "outside_paris"
+-      : "unknown_location";
+-
+-    entities.push({
+-      id: entry.id,
+-      annuaireEntryId: entry.id,
+-      networkActorId: networkActor?.id ?? null,
+-      name: entry.name,
+-      shortName: formatShortMarkerLabel(entry.name),
+-      entry,
+-      networkActor,
+-      coords,
+-      locationGroup,
+-      addressStatus: resolveAddressStatus(entry, verified),
+-      communeLabel: verified?.commune ?? entry.location,
+-      siteNature: verified?.nature ?? null,
+-      sourceUrl: verified?.sourceUrl ?? entry.websiteUrl ?? null,
+-      primaryFamily: entry.types?.[0] ?? "environnemental",
+-      indicators: computeFactualIndicators(
+-        networkActor?.id ?? null,
+-        formatAnnuaireCoverage(entry),
+-      ),
+-    });
+-  }
+-
+-  if (!includeNetworkOnlyActors) return entities;
+-
+-  const allEntryIds = new Set(allEntries.map((e) => e.id));
+-  for (const actor of PARIS_CLEANWALK_ACTORS) {
+-    if (seenActorIds.has(actor.id)) continue;
+-    if (actor.annuaireEntryId && allEntryIds.has(actor.annuaireEntryId)) continue;
+-
+-    const { coords, verified } = resolveCoordsForEntity(actor.id, null);
+-    const locationGroup: GeoLocationGroup = coords
+-      ? isInParisIntramuros(coords.lat, coords.lng)
+-        ? "in_paris"
+-        : "outside_paris"
+-      : "unknown_location";
+-
+-    entities.push({
+-      id: actor.id,
+-      annuaireEntryId: actor.annuaireEntryId ?? null,
+-      networkActorId: actor.id,
+-      name: actor.name,
+-      shortName: formatShortMarkerLabel(actor.name),
+-      entry: null,
+-      networkActor: actor,
+-      coords,
+-      locationGroup,
+-      addressStatus: verified ? "verified" : "unknown",
+-      communeLabel: verified?.commune ?? actor.parisZone.label,
+-      siteNature: verified?.nature ?? null,
+-      sourceUrl:
+-        verified?.sourceUrl ??
+-        actor.publicChannels?.[0]?.url ??
+-        actor.provenance?.sourceUrl ??
+-        null,
+-      primaryFamily: actor.category,
+-      indicators: computeFactualIndicators(actor.id, actor.parisZone.label),
+-    });
+-  }
+-
+-  return entities;
+-}
+-
+-/**
+- * Retourne uniquement les relations documentées incidentes à l'entité sélectionnée.
+- * Au repos (aucune sélection), retourne un tableau vide (aucun spaghetti).
+- */
+-export function getIncidentGeoRelations(
+-  selectedId: string | null,
+-  entities: GeoNetworkEntity[],
+-): GeoNetworkIncidentRelation[] {
+-  if (!selectedId) return [];
+-  const selected = entities.find((e) => e.id === selectedId || e.networkActorId === selectedId);
+-  const actorId = selected?.networkActorId;
+-  if (!selected || !actorId) return [];
+-
+-  const entityByActorId = new Map<string, GeoNetworkEntity>();
+-  for (const entity of entities) {
+-    if (entity.networkActorId) entityByActorId.set(entity.networkActorId, entity);
+-  }
+-
+-  const incident: GeoNetworkIncidentRelation[] = [];
+-  for (const relation of PARIS_CLEANWALK_RELATIONS) {
+-    if (relation.sourceId !== actorId && relation.targetId !== actorId) continue;
+-    const fromEntity = entityByActorId.get(relation.sourceId);
+-    const toEntity = entityByActorId.get(relation.targetId);
+-    if (!fromEntity || !toEntity) continue;
+-    incident.push({
+-      relation,
+-      fromEntity,
+-      toEntity,
+-      hasPlottableLine: Boolean(fromEntity.coords && toEntity.coords),
+-      direction: relation.sourceId === actorId ? "outgoing" : "incoming",
++import { getNetworkPublicAddress, getNetworkPublicLogo, type NetworkPublicLogo } from "@/lib/partners/public-network-identity-media";
++import {
++  PARIS_CLEANWALK_ACTORS,
++  PARIS_CLEANWALK_RELATIONS,
++  type ParisCleanwalkActor,
++  type ParisCleanwalkRelation,
++} from "@/lib/partners/paris-cleanwalk-network";
++import {
++  formatAnnuaireCoverage,
++  hasPreciseAnnuaireCoordinates,
++  type EnrichedAnnuaireEntry,
++} from "./annuaire-helpers";
++
++export type MapScope = "paris" | "national";
++
++/** Limites officielles de Paris intramuros pour le cadrage par défaut. */
++export const PARIS_INTRAMUROS_BOUNDS: [[number, number], [number, number]] = [
++  [48.8155, 2.2241],
++  [48.9021, 2.4699],
++];
++
++/** Limites de la France métropolitaine (Corse comprise, outre-mer exclu). */
++export const FRANCE_METROPOLITAINE_BOUNDS: [[number, number], [number, number]] = [
++  [41.33, -5.14],
++  [51.09, 9.56],
++];
++
++export interface VerifiedPrincipalLocation {
++  lat: number;
++  lng: number;
++  address: string;
++  commune: string;
++  nature: string;
++  sourceUrl: string;
++  verifiedAt: string;
++}
++
++/**
++ * Implantations principales vérifiées et géocodées via BAN (api-adresse.data.gouv.fr).
++ * Inclut les structures nationales/hors-Paris dont le site physique est sourcé.
++ */
++export const VERIFIED_PRINCIPAL_LOCATIONS: Record<string, VerifiedPrincipalLocation> = {
++  "asso-3": {
++    lat: 48.8959,
++    lng: 2.353156,
++    address: "132 rue des Poissonniers, 75018 Paris",
++    commune: "Paris 18e",
++    nature: "Atelier-boutique principal",
++    sourceUrl: "https://cartonplein.org/",
++    verifiedAt: "2026-11-25",
++  },
++  "asso-4": {
++    lat: 48.856188,
++    lng: 2.355693,
++    address: "2 place Baudoyer, 75004 Paris",
++    commune: "Paris 4e",
++    nature: "Lieu d'activité municipal",
++    sourceUrl: "https://www.paris.fr/lieux/academie-du-climat-19507",
++    verifiedAt: "2026-11-25",
++  },
++  "asso-shakirail": {
++    lat: 48.889965,
++    lng: 2.364244,
++    address: "72 rue Riquet, 75018 Paris",
++    commune: "Paris 18e",
++    nature: "Lieu d'activité",
++    sourceUrl: "https://www.paris.fr/lieux/le-shakirail-19291",
++    verifiedAt: "2026-11-25",
++  },
++  "com-1": {
++    lat: 48.881395,
++    lng: 2.362914,
++    address: "22 rue du Château Landon, 75010 Paris",
++    commune: "Paris 10e",
++    nature: "Atelier-boutique",
++    sourceUrl: "https://latextilerie.fr/",
++    verifiedAt: "2026-11-25",
++  },
++  "asso-megots-alcome": {
++    lat: 48.873504,
++    lng: 2.309341,
++    address: "164 rue du Faubourg Saint-Honoré, 75008 Paris",
++    commune: "Paris 8e",
++    nature: "Siège social (éco-organisme)",
++    sourceUrl: "https://alcome.eco/mentions-legales/",
++    verifiedAt: "2026-11-25",
++  },
++  "asso-megots-tchaomegot": {
++    lat: 49.417315,
++    lng: 2.253688,
++    address: "12 rue Benjamin Delessert, 60510 Bresles",
++    commune: "Bresles (60)",
++    nature: "Site professionnel (pas un dépôt libre)",
++    sourceUrl: "https://tchaomegot.com/mentions-legales/",
++    verifiedAt: "2026-11-25",
++  },
++  "operator-ckfd": {
++    lat: 48.926182,
++    lng: 2.316068,
++    address: "86-114 Avenue Louis Roche, 92230 Gennevilliers",
++    commune: "Gennevilliers (92)",
++    nature: "Siège / site de massification",
++    sourceUrl: "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette",
++    verifiedAt: "2026-11-25",
++  },
++  "operator-mego": {
++    lat: 48.466755,
++    lng: -4.336828,
++    address: "11 ZAE Penhoat, 29800 Saint-Divy",
++    commune: "Saint-Divy (29 · Bretagne)",
++    nature: "Site industriel (aucun dépôt public parisien)",
++    sourceUrl: "https://www.me-go.fr/contact/",
++    verifiedAt: "2026-11-25",
++  },
++  "operator-carton-plein-cyclo": {
++    lat: 48.852473,
++    lng: 2.380427,
++    address: "12 Rue Charles Delescluze, 75011 Paris",
++    commune: "Paris 11e",
++    nature: "Hub de cyclologistique",
++    sourceUrl: "https://cartonplein.org/nos-services-cyclologistique/",
++    verifiedAt: "2026-11-25",
++  },
++  "com-2": {
++    lat: 48.865024,
++    lng: 2.455023,
++    address: "18 rue Saint-Antoine, 93100 Montreuil",
++    commune: "Montreuil (93)",
++    nature: "Atelier",
++    sourceUrl: "https://lacollecterie.org/",
++    verifiedAt: "2026-11-25",
++  },
++  "evt-1": {
++    lat: 48.897647,
++    lng: 2.344183,
++    address: "83 boulevard Ornano, 75018 Paris",
++    commune: "Paris 18e",
++    nature: "Lieu d'activité",
++    sourceUrl: "https://www.larecyclerie.com/",
++    verifiedAt: "2026-11-25",
++  },
++  "mairie-paris-5": {
++    lat: 48.8462,
++    lng: 2.3447,
++    address: "21 Place du Panthéon, 75005 Paris",
++    commune: "Paris 5e",
++    nature: "Mairie d'arrondissement",
++    sourceUrl: "https://mairie05.paris.fr/",
++    verifiedAt: "2026-11-25",
++  },
++  "mairie-paris-6": {
++    lat: 48.8505,
++    lng: 2.3324,
++    address: "78 Rue Bonaparte, 75006 Paris",
++    commune: "Paris 6e",
++    nature: "Mairie d'arrondissement",
++    sourceUrl: "https://mairie06.paris.fr/",
++    verifiedAt: "2026-11-25",
++  },
++};
++
++export type GeoLocationGroup = "in_paris" | "outside_paris" | "unknown_location";
++export type PublicAddressStatus = "verified" | "contradictory" | "not_applicable" | "unknown";
++
++export interface GeoNetworkFactualIndicators {
++  /** Nombre de voisins distincts dans les relations prouvées (hors auto-liens, programmé et similarités). */
++  documentedNeighborsCount: number;
++  /** Nombre de collaborations programmées (non comptées comme activité actuelle). */
++  scheduledLinksCount: number;
++  /** Nombre d'opérations communes prouvées (null si non documenté). */
++  provenJointOperationsCount: number | null;
++  /** Périmètre factuel déclaré ou documenté. */
++  activityScopeLabel: string;
++}
++
++export interface GeoNetworkEntity {
++  id: string;
++  annuaireEntryId: string | null;
++  networkActorId: string | null;
++  name: string;
++  shortName: string;
++  entry: EnrichedAnnuaireEntry | null;
++  networkActor: ParisCleanwalkActor | null;
++  coords: { lat: number; lng: number } | null;
++  locationGroup: GeoLocationGroup;
++  addressStatus: PublicAddressStatus;
++  communeLabel: string;
++  siteNature: string | null;
++  sourceUrl: string | null;
++  publicAddressLabel?: string | null;
++  publicAddressSource?: string | null;
++  logo?: NetworkPublicLogo | null;
++  primaryFamily: string;
++  indicators: GeoNetworkFactualIndicators;
++}
++
++export interface GeoNetworkIncidentRelation {
++  relation: ParisCleanwalkRelation;
++  fromEntity: GeoNetworkEntity;
++  toEntity: GeoNetworkEntity;
++  hasPlottableLine: boolean;
++  direction: "outgoing" | "incoming";
++}
++
++export function isInParisIntramuros(lat: number, lng: number): boolean {
++  const [[south, west], [north, east]] = PARIS_INTRAMUROS_BOUNDS;
++  return lat >= south && lat <= north && lng >= west && lng <= east;
++}
++
++export function isInFranceMetropolitaine(lat: number, lng: number): boolean {
++  const [[south, west], [north, east]] = FRANCE_METROPOLITAINE_BOUNDS;
++  return lat >= south && lat <= north && lng >= west && lng <= east;
++}
++
++export function formatShortMarkerLabel(name: string): string {
++  const trimmed = name.trim();
++  if (trimmed.length <= 18) return trimmed;
++  const paren = trimmed.match(/\(([A-Z0-9À-ÖØ-Þ][A-Za-z0-9À-ÖØ-öø-ÿ\s-]{1,11})\)/);
++  if (paren) return paren[1];
++  const words = trimmed.split(/\s+/);
++  if (words.length >= 2 && words.slice(0, 2).join(" ").length <= 18) {
++    return words.slice(0, 2).join(" ");
++  }
++  return `${trimmed.slice(0, 16)}…`;
++}
++
++function resolveCoordsForEntity(
++  id: string,
++  entry: AnnuaireEntry | null,
++): { coords: { lat: number; lng: number } | null; verified: VerifiedPrincipalLocation | null } {
++  const verified = VERIFIED_PRINCIPAL_LOCATIONS[id] ?? null;
++  if (verified) {
++    return { coords: { lat: verified.lat, lng: verified.lng }, verified };
++  }
++  if (entry && hasPreciseAnnuaireCoordinates(entry) && entry.lat !== null && entry.lng !== null) {
++    return { coords: { lat: entry.lat, lng: entry.lng }, verified: null };
++  }
++  return { coords: null, verified: null };
++}
++
++function resolveAddressStatus(
++  entry: AnnuaireEntry | null,
++  verified: VerifiedPrincipalLocation | null,
++): PublicAddressStatus {
++  if (verified || (entry?.provenance === "editorial_seed" && entry.publicAddress)) {
++    return "verified";
++  }
++  if (entry?.provenance === "editorial_seed" && entry.schoolProfile?.addresses?.length) {
++    return entry.schoolProfile.addresses.length > 1 ? "contradictory" : "verified";
++  }
++  if (entry?.kind === "evenement") {
++    return "not_applicable";
++  }
++  return "unknown";
++}
++
++function computeFactualIndicators(
++  actorId: string | null,
++  activityScopeLabel: string,
++): GeoNetworkFactualIndicators {
++  if (!actorId) {
++    return {
++      documentedNeighborsCount: 0,
++      scheduledLinksCount: 0,
++      provenJointOperationsCount: null,
++      activityScopeLabel,
++    };
++  }
++  const neighbors = new Set<string>();
++  let scheduled = 0;
++  const operations = new Set<string>();
++  let hasOperations = false;
++
++  for (const rel of PARIS_CLEANWALK_RELATIONS) {
++    if (rel.sourceId !== actorId && rel.targetId !== actorId) continue;
++    if (rel.sourceId === rel.targetId) continue;
++    if (rel.relationType === "collaboration_programmee") {
++      scheduled += 1;
++      continue;
++    }
++    const peerId = rel.sourceId === actorId ? rel.targetId : rel.sourceId;
++    neighbors.add(peerId);
++    if (rel.relationType === "action_commune" && rel.frequencyKnown && rel.source.certainty === "verifie" && rel.operations) {
++      hasOperations = true;
++      for (const op of rel.operations) operations.add(op.id.trim().toLowerCase() + "::" + op.date);
++    }
++  }
++
++  return {
++    documentedNeighborsCount: neighbors.size,
++    scheduledLinksCount: scheduled,
++    provenJointOperationsCount: hasOperations ? operations.size : null,
++    activityScopeLabel,
++  };
++}
++
++/**
++ * Construit le registre géographique unifié à partir des entrées Annuaire filtrées
++ * et des acteurs du réseau Paris, sans déduplication par nom (IDs explicites uniquement).
++ */
++export function buildGeoNetworkEntities(
++  filteredEntries: EnrichedAnnuaireEntry[],
++  allEntries: EnrichedAnnuaireEntry[],
++  includeNetworkOnlyActors = true,
++): GeoNetworkEntity[] {
++  const actorByAnnuaireId = new Map<string, ParisCleanwalkActor>();
++  for (const actor of PARIS_CLEANWALK_ACTORS) {
++    if (actor.annuaireEntryId) {
++      actorByAnnuaireId.set(actor.annuaireEntryId, actor);
++    }
++  }
++
++  const entities: GeoNetworkEntity[] = [];
++  const seenActorIds = new Set<string>();
++
++  for (const entry of filteredEntries) {
++    const networkActor = actorByAnnuaireId.get(entry.id) ?? null;
++    if (networkActor) seenActorIds.add(networkActor.id);
++    const { coords, verified } = resolveCoordsForEntity(entry.id, entry);
++    const address = getNetworkPublicAddress(networkActor?.id ?? entry.id);
++    const editorialAddress = entry.provenance === "editorial_seed" ? entry.publicAddress : undefined;
++    const locationGroup: GeoLocationGroup = coords
++      ? isInParisIntramuros(coords.lat, coords.lng)
++        ? "in_paris"
++        : "outside_paris"
++      : "unknown_location";
++
++    entities.push({
++      id: entry.id,
++      annuaireEntryId: entry.id,
++      networkActorId: networkActor?.id ?? null,
++      name: entry.name,
++      shortName: formatShortMarkerLabel(entry.name),
++      entry,
++      networkActor,
++      coords,
++      locationGroup,
++      addressStatus: address ? "verified" : resolveAddressStatus(entry, verified),
++      communeLabel: verified?.commune ?? address?.municipality ?? editorialAddress?.municipality ?? entry.location,
++      siteNature: verified?.nature ?? address?.nature ?? editorialAddress?.kind ?? null,
++      sourceUrl: verified?.sourceUrl ?? address?.sourceUrl ?? editorialAddress?.sourceUrl ?? entry.websiteUrl ?? null,
++      publicAddressLabel: verified?.address ?? address?.label ?? editorialAddress?.label ?? null,
++      publicAddressSource: verified?.sourceUrl ?? address?.sourceUrl ?? editorialAddress?.sourceUrl ?? null,
++      logo: getNetworkPublicLogo(networkActor?.id ?? entry.id),
++      primaryFamily: entry.types?.[0] ?? "environnemental",
++      indicators: computeFactualIndicators(
++        networkActor?.id ?? null,
++        formatAnnuaireCoverage(entry),
++      ),
++    });
++  }
++
++  if (!includeNetworkOnlyActors) return entities;
++
++  const allEntryIds = new Set(allEntries.map((e) => e.id));
++  for (const actor of PARIS_CLEANWALK_ACTORS) {
++    if (seenActorIds.has(actor.id)) continue;
++    if (actor.annuaireEntryId && allEntryIds.has(actor.annuaireEntryId)) continue;
++
++    const { coords, verified } = resolveCoordsForEntity(actor.id, null);
++    const address = getNetworkPublicAddress(actor.id);
++    const locationGroup: GeoLocationGroup = coords
++      ? isInParisIntramuros(coords.lat, coords.lng)
++        ? "in_paris"
++        : "outside_paris"
++      : "unknown_location";
++
++    entities.push({
++      id: actor.id,
++      annuaireEntryId: actor.annuaireEntryId ?? null,
++      networkActorId: actor.id,
++      name: actor.name,
++      shortName: formatShortMarkerLabel(actor.name),
++      entry: null,
++      networkActor: actor,
++      coords,
++      locationGroup,
++      addressStatus: verified || address ? "verified" : "unknown",
++      communeLabel: verified?.commune ?? address?.municipality ?? actor.parisZone.label,
++      siteNature: verified?.nature ?? address?.nature ?? null,
++      publicAddressLabel: verified?.address ?? address?.label ?? null,
++      publicAddressSource: verified?.sourceUrl ?? address?.sourceUrl ?? null,
++      logo: getNetworkPublicLogo(actor.id),
++      sourceUrl:
++        verified?.sourceUrl ??
++        actor.publicChannels?.[0]?.url ??
++        actor.provenance?.sourceUrl ??
++        null,
++      primaryFamily: actor.category,
++      indicators: computeFactualIndicators(actor.id, actor.parisZone.label),
++    });
++  }
++
++  return entities;
++}
++
++/**
++ * Retourne uniquement les relations documentées incidentes à l'entité sélectionnée.
++ * Au repos (aucune sélection), retourne un tableau vide (aucun spaghetti).
++ */
++export function getIncidentGeoRelations(
++  selectedId: string | null,
++  entities: GeoNetworkEntity[],
++): GeoNetworkIncidentRelation[] {
++  if (!selectedId) return [];
++  const selected = entities.find((e) => e.id === selectedId || e.networkActorId === selectedId);
++  const actorId = selected?.networkActorId;
++  if (!selected || !actorId) return [];
++
++  return getAllGeoRelations(entities).filter(item => item.relation.sourceId === actorId || item.relation.targetId === actorId).map(item => ({ ...item, direction: item.relation.sourceId === actorId ? "outgoing" : "incoming" }));
++}
++
++/** All documented relationships between entities in the active projection. */
++export function getAllGeoRelations(entities: GeoNetworkEntity[]): GeoNetworkIncidentRelation[] {
++  const entityByActorId = new Map<string, GeoNetworkEntity>();
++  for (const entity of entities) {
++    if (entity.networkActorId) entityByActorId.set(entity.networkActorId, entity);
++  }
++
++  const incident: GeoNetworkIncidentRelation[] = [];
++  for (const relation of PARIS_CLEANWALK_RELATIONS) {
++    const fromEntity = entityByActorId.get(relation.sourceId);
++    const toEntity = entityByActorId.get(relation.targetId);
++    if (!fromEntity || !toEntity) continue;
++    incident.push({
++      relation,
++      fromEntity,
++      toEntity,
++      hasPlottableLine: Boolean(fromEntity.coords && toEntity.coords),
++      direction: "outgoing",
+     });
+   }
+   return incident;
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-map-icon.ts b/apps/web/src/components/sections/rubriques/annuaire/annuaire-map-icon.ts
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-map-icon.ts
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-map-icon.ts
+@@ -1,48 +1,53 @@
+ import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+ import { escapeHtml } from "@/lib/security/html-escape";
+ import { formatShortMarkerLabel } from "./annuaire-geo-network.model";
+-
+-const FAMILY_ACCENT: Record<string, string> = {
+-  environnemental: "#6d28d9",
+-  social: "#5b21b6",
+-  humanitaire: "#4c1d95",
+-  association_locale: "#6d28d9",
+-  collectivite: "#0369a1",
+-  entreprise_rse: "#047857",
+-  plateforme_mise_en_relation: "#4338ca",
+-};
+-
+-/**
+- * Marqueur nommé compact lisible en permanence (jamais une sphère anonyme).
+- * Tout texte injecté dans le HTML du marqueur est échappé via `escapeHtml`.
+- */
+-export function buildNamedMarkerIconHtml(params: {
+-  name: string;
+-  shortName?: string;
+-  family?: string;
+-  highlighted?: boolean;
+-  outsideCity?: boolean;
+-}): string {
+-  const { name, shortName, family = "environnemental", highlighted = false, outsideCity = false } = params;
+-  const label = shortName ?? formatShortMarkerLabel(name);
+-  const initials = name
+-    .split(/\s+/)
+-    .filter(Boolean)
+-    .map((part) => part[0])
+-    .join("")
+-    .slice(0, 2)
+-    .toUpperCase();
+-  const bg = highlighted ? "#4c1d95" : FAMILY_ACCENT[family] ?? "#5b21b6";
+-  const border = highlighted ? "#f59e0b" : outsideCity ? "#38bdf8" : "#ffffff";
+-
+-  return `<div title="${escapeHtml(name)}" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-2 px-2 py-1 shadow-md transition-transform ${
+-    highlighted ? "scale-105 z-[1000]" : ""
+-  }" style="background-color: ${bg}; border-color: ${border}; color: #ffffff;">
+-    <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-black">${escapeHtml(
+-      initials,
+-    )}</span>
+-    <span class="text-xs font-semibold leading-none">${escapeHtml(label)}</span>
+-  </div>`;
++import { getNetworkLogoDiameter } from "./annuaire-geo-network.visuals";
++
++const FAMILY_ACCENT: Record<string, string> = {
++  environnemental: "#6d28d9",
++  social: "#5b21b6",
++  humanitaire: "#4c1d95",
++  association_locale: "#6d28d9",
++  collectivite: "#0369a1",
++  entreprise_rse: "#047857",
++  plateforme_mise_en_relation: "#4338ca",
++};
++
++/**
++ * Marqueur nommé compact lisible en permanence (jamais une sphère anonyme).
++ * Tout texte injecté dans le HTML du marqueur est échappé via `escapeHtml`.
++ */
++export function buildNamedMarkerIconHtml(params: {
++  name: string;
++  shortName?: string;
++  family?: string;
++  highlighted?: boolean;
++  outsideCity?: boolean;
++  logoPath?: string | null;
++  neighbours?: number;
++}): string {
++  const { name, shortName, family = "environnemental", highlighted = false, outsideCity = false } = params;
++  const label = shortName ?? formatShortMarkerLabel(name);
++  const initials = name
++    .split(/\s+/)
++    .filter(Boolean)
++    .map((part) => part[0])
++    .join("")
++    .slice(0, 2)
++    .toUpperCase();
++  const diameter = getNetworkLogoDiameter(params.neighbours ?? 0);
++  const logoPath = params.logoPath && /^\/(?:brand|images\/partners)\/[a-zA-Z0-9._/-]+$/.test(params.logoPath) && !params.logoPath.includes("..") ? params.logoPath : null;
++  const bg = highlighted ? "#4c1d95" : FAMILY_ACCENT[family] ?? "#5b21b6";
++  const border = highlighted ? "#f59e0b" : outsideCity ? "#38bdf8" : "#ffffff";
++
++  const badge = logoPath
++    ? '<img alt="" src="' + escapeHtml(logoPath) + '" class="h-full w-full rounded-full object-contain" />'
++    : '<span title="Logo non renseigné" class="text-xs font-black">' + escapeHtml(initials) + '</span>';
++  return '<div title="' + escapeHtml(name) + '" style="position:relative;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);white-space:nowrap;color:' + bg + ';">'
++    + '<span style="background:white;width:' + diameter + 'px;height:' + diameter + 'px;border:2px solid ' + border + ';box-shadow:0 2px 8px #0003;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;">' + badge + '</span>'
++    + '<span class="rounded bg-white/95 px-1 text-xs font-bold shadow-sm">' + escapeHtml(label) + '</span>'
++    + '<span style="height:12px;width:2px;background:' + bg + '"></span>'
++    + '<svg width="18" height="24" viewBox="0 0 18 24" aria-hidden="true"><path d="M9 24C7 20 0 13 0 9a9 9 0 1 1 18 0c0 4-7 11-9 15Z" fill="' + bg + '"/><circle cx="9" cy="9" r="3" fill="white"/></svg></div>';
+ }
+ 
+ /** Marqueur de regroupement numéroté en cas de superposition à faible zoom. */
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-map-canvas.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-map-canvas.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-map-canvas.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-map-canvas.tsx
+@@ -29,259 +29,251 @@
+ } from "./annuaire-geo-network.model";
+ import { hasPreciseAnnuaireCoordinates } from "./annuaire-helpers";
+ import { buildClusterMarkerIconHtml, buildNamedMarkerIconHtml } from "./annuaire-map-icon";
+-
+-type MarkerCluster = {
+-  key: string;
+-  lat: number;
+-  lng: number;
+-  members: GeoNetworkEntity[];
+-};
+-
+-function clusterEntitiesByZoom(entities: GeoNetworkEntity[], zoom: number): MarkerCluster[] {
+-  const plottable = entities.filter((e) => e.coords !== null);
+-  if (zoom >= 14) {
+-    return plottable.map((entity) => ({
+-      key: entity.id,
+-      lat: entity.coords!.lat,
+-      lng: entity.coords!.lng,
+-      members: [entity],
+-    }));
+-  }
+-  const threshold = zoom <= 10 ? 0.03 : zoom <= 12 ? 0.008 : 0.003;
+-  const clusters: MarkerCluster[] = [];
+-  for (const entity of plottable) {
+-    const { lat, lng } = entity.coords!;
+-    const existing = clusters.find(
+-      (c) => Math.abs(c.lat - lat) < threshold && Math.abs(c.lng - lng) < threshold,
+-    );
+-    if (existing) {
+-      existing.members.push(entity);
+-    } else {
+-      clusters.push({ key: entity.id, lat, lng, members: [entity] });
+-    }
+-  }
+-  return clusters;
+-}
+-
+-function MapController({
+-  entities,
+-  mapScope,
+-  highlightedItemId,
+-  onZoomChange,
+-  cameraCommand,
+-}: {
+-  entities: GeoNetworkEntity[];
+-  mapScope: MapScope;
+-  highlightedItemId?: string | null;
+-  onZoomChange: (zoom: number) => void;
+-  cameraCommand: { seq: number };
+-}) {
+-  const map = useMap();
+-  const lastScopeRef = useRef<MapScope | null>(null);
+-  const lastSeqRef = useRef(0);
+-
+-  useMapEvents({
+-    zoomend: () => onZoomChange(map.getZoom()),
+-  });
+-
+-  // Cadrage sur le périmètre choisi (Paris intramuros par défaut, ou National France métropolitaine)
+-  useEffect(() => {
+-    if (lastScopeRef.current === mapScope) return;
+-    lastScopeRef.current = mapScope;
+-    const bounds = mapScope === "national" ? FRANCE_METROPOLITAINE_BOUNDS : PARIS_INTRAMUROS_BOUNDS;
+-    map.fitBounds(bounds, { padding: [24, 24] });
+-    onZoomChange(map.getZoom());
+-  }, [map, mapScope, onZoomChange]);
+-
+-  // Déplacement explicite sur sélection (sans changer le zoom local)
+-  useEffect(() => {
+-    if (!highlightedItemId) return;
+-    const target = entities.find((e) => e.id === highlightedItemId);
+-    if (!target?.coords) return;
+-    map.panTo([target.coords.lat, target.coords.lng], { animate: true, duration: 0.4 });
+-  }, [highlightedItemId, entities, map]);
+-
+-  // Recentrer explicitement sur le périmètre actif
+-  useEffect(() => {
+-    if (cameraCommand.seq === lastSeqRef.current) return;
+-    lastSeqRef.current = cameraCommand.seq;
+-    const bounds = mapScope === "national" ? FRANCE_METROPOLITAINE_BOUNDS : PARIS_INTRAMUROS_BOUNDS;
+-    map.fitBounds(bounds, { padding: [24, 24] });
+-  }, [cameraCommand, mapScope, map]);
+-
+-  return null;
+-}
+-
+-export interface AnnuaireMapCanvasProps {
+-  items?: AnnuaireEntry[];
+-  entities?: GeoNetworkEntity[];
+-  incidentRelations?: GeoNetworkIncidentRelation[];
+-  showRelationsLayer?: boolean;
+-  mapScope?: MapScope;
+-  highlightedItemId?: string | null;
+-  onItemClick?: (id: string) => void;
+-  variant?: "standard" | "exploration";
+-  fr?: boolean;
+-}
+-
+-export function AnnuaireMapCanvas({
+-  items = [],
+-  entities: externalEntities,
+-  incidentRelations = [],
+-  showRelationsLayer = true,
+-  mapScope = "paris",
+-  highlightedItemId,
+-  onItemClick,
+-  variant = "standard",
+-  fr = true,
+-}: AnnuaireMapCanvasProps) {
+-  const [zoom, setZoom] = useState(12);
+-  const [cameraCommand, setCameraCommand] = useState<{ seq: number }>({ seq: 0 });
+-
+-  const entities = useMemo<GeoNetworkEntity[]>(() => {
+-    const base: GeoNetworkEntity[] = externalEntities
+-      ? externalEntities
+-      : items
+-          .filter(hasPreciseAnnuaireCoordinates)
+-          .map((entry) => ({
+-            id: entry.id,
+-            annuaireEntryId: entry.id,
+-            networkActorId: null,
+-            name: entry.name,
+-            shortName: entry.name.slice(0, 18),
+-            entry: { ...entry, distanceKm: null },
+-            networkActor: null,
+-            coords: { lat: entry.lat!, lng: entry.lng! },
+-            locationGroup: "in_paris",
+-            addressStatus: "verified",
+-            communeLabel: entry.location,
+-            siteNature: null,
+-            sourceUrl: entry.websiteUrl ?? null,
+-            primaryFamily: entry.types[0] ?? "environnemental",
+-            indicators: {
+-              documentedNeighborsCount: 0,
+-              scheduledLinksCount: 0,
+-              provenJointOperationsCount: null,
+-              activityScopeLabel: entry.location,
+-            },
+-          }));
+-    return base.filter(
+-      (e) => !e.coords || (mapScope === "national" ? isInFranceMetropolitaine(e.coords.lat, e.coords.lng) : e.locationGroup === "in_paris"),
+-    );
+-  }, [externalEntities, items, mapScope]);
+-
+-  const clusters = useMemo(() => clusterEntitiesByZoom(entities, zoom), [entities, zoom]);
+-  const plottableRelations = useMemo(
+-    () => (showRelationsLayer ? incidentRelations.filter((r) => r.hasPlottableLine) : []),
+-    [incidentRelations, showRelationsLayer],
+-  );
+-  const isExploration = variant === "exploration";
+-
+-  return (
+-    <div
+-      className={cn(
+-        "relative w-full overflow-hidden border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)]",
+-        isExploration ? "h-[62vh] min-h-[420px] rounded-2xl" : "h-[500px] rounded-xl",
+-      )}
+-    >
+-      <div className="absolute bottom-3 left-3 z-[400] flex flex-wrap gap-2">
+-        <CmmButton
+-          type="button"
+-          size="sm"
+-          tone="secondary"
+-          variant="pill"
+-          onClick={() => setCameraCommand((c) => ({ seq: c.seq + 1 }))}
+-        >
+-          {mapScope === "national"
+-            ? fr
+-              ? "Recentrer sur la France"
+-              : "Recenter France"
+-            : fr
+-              ? "Recentrer sur Paris"
+-              : "Recenter Paris"}
+-        </CmmButton>
+-      </div>
+-
+-      <MapContainer
+-        center={[48.8566, 2.3522]}
+-        zoom={12}
+-        scrollWheelZoom
+-        className="relative z-0 h-full w-full"
+-      >
+-        <MapController
+-          entities={entities}
+-          mapScope={mapScope}
+-          highlightedItemId={highlightedItemId}
+-          onZoomChange={setZoom}
+-          cameraCommand={cameraCommand}
+-        />
+-        <LayersControl position="topright">
+-          <LayersControl.BaseLayer checked name="Mode Épuré">
+-            <TileLayer
+-              attribution={CARTO_BASEMAPS.light.attribution}
+-              url={CARTO_BASEMAPS.light.url}
+-            />
+-          </LayersControl.BaseLayer>
+-          <LayersControl.BaseLayer name="Voyager">
+-            <TileLayer
+-              attribution={CARTO_BASEMAPS.voyager.attribution}
+-              url={CARTO_BASEMAPS.voyager.url}
+-            />
+-          </LayersControl.BaseLayer>
+-        </LayersControl>
+-
+-        {plottableRelations.map(({ relation, fromEntity, toEntity }) => {
+-          const isScheduled = relation.relationType === "collaboration_programmee";
+-          const isUncertain = relation.source.certainty === "partiel_ou_incertain";
+-          const color = isScheduled
+-            ? "#0284c7"
+-            : isUncertain
+-              ? "#d97706"
+-              : "#6d28d9";
+-          const dashArray = isScheduled
+-            ? "4 6"
+-            : isUncertain || !relation.frequencyKnown
+-              ? "8 6"
+-              : undefined;
+-          return (
+-            <Polyline
+-              key={relation.id}
+-              positions={[
+-                [fromEntity.coords!.lat, fromEntity.coords!.lng],
+-                [toEntity.coords!.lat, toEntity.coords!.lng],
+-              ]}
+-              pathOptions={{
+-                color,
+-                weight: relation.frequencyKnown ? 3.5 : 2.5,
+-                opacity: 0.85,
+-                dashArray,
+-              }}
+-            >
+-              <Tooltip sticky>
+-                <span className="text-xs font-semibold">
+-                  {fromEntity.name} → {toEntity.name} ·{" "}
+-                  {PARIS_RELATION_TYPE_META[relation.relationType].label}
+-                </span>
+-              </Tooltip>
+-            </Polyline>
+-          );
+-        })}
+-
+-        {clusters.map((cluster) => {
+-          if (cluster.members.length === 1) {
+-            const entity = cluster.members[0];
+-            const isHighlighted = highlightedItemId === entity.id;
+-            const icon = L.divIcon({
+-              className: "cmm-named-marker",
+-              html: buildNamedMarkerIconHtml({
+-                name: entity.name,
+-                shortName: entity.shortName,
+-                family: entity.primaryFamily,
+-                highlighted: isHighlighted,
+-                outsideCity: entity.locationGroup === "outside_paris",
+-              }),
+-              iconSize: undefined,
+-              iconAnchor: [16, 16],
++import { getNetworkRelationVisual } from "./annuaire-geo-network.visuals";
++
++type MarkerCluster = {
++  key: string;
++  lat: number;
++  lng: number;
++  members: GeoNetworkEntity[];
++};
++
++function clusterEntitiesByZoom(entities: GeoNetworkEntity[], zoom: number): MarkerCluster[] {
++  const plottable = entities.filter((e) => e.coords !== null);
++  if (zoom >= 14) {
++    return plottable.map((entity) => ({
++      key: entity.id,
++      lat: entity.coords!.lat,
++      lng: entity.coords!.lng,
++      members: [entity],
++    }));
++  }
++  const threshold = zoom <= 10 ? 0.03 : zoom <= 12 ? 0.008 : 0.003;
++  const clusters: MarkerCluster[] = [];
++  for (const entity of plottable) {
++    const { lat, lng } = entity.coords!;
++    const existing = clusters.find(
++      (c) => Math.abs(c.lat - lat) < threshold && Math.abs(c.lng - lng) < threshold,
++    );
++    if (existing) {
++      existing.members.push(entity);
++    } else {
++      clusters.push({ key: entity.id, lat, lng, members: [entity] });
++    }
++  }
++  return clusters;
++}
++
++function MapController({
++  entities,
++  mapScope,
++  highlightedItemId,
++  onZoomChange,
++  cameraCommand,
++}: {
++  entities: GeoNetworkEntity[];
++  mapScope: MapScope;
++  highlightedItemId?: string | null;
++  onZoomChange: (zoom: number) => void;
++  cameraCommand: { seq: number };
++}) {
++  const map = useMap();
++  const lastScopeRef = useRef<MapScope | null>(null);
++  const lastSeqRef = useRef(0);
++
++  useMapEvents({
++    zoomend: () => onZoomChange(map.getZoom()),
++  });
++
++  // Cadrage sur le périmètre choisi (Paris intramuros par défaut, ou National France métropolitaine)
++  useEffect(() => {
++    if (lastScopeRef.current === mapScope) return;
++    lastScopeRef.current = mapScope;
++    const bounds = mapScope === "national" ? FRANCE_METROPOLITAINE_BOUNDS : PARIS_INTRAMUROS_BOUNDS;
++    map.fitBounds(bounds, { padding: [24, 24] });
++    onZoomChange(map.getZoom());
++  }, [map, mapScope, onZoomChange]);
++
++  // Déplacement explicite sur sélection (sans changer le zoom local)
++  useEffect(() => {
++    if (!highlightedItemId) return;
++    const target = entities.find((e) => e.id === highlightedItemId);
++    if (!target?.coords) return;
++    map.panTo([target.coords.lat, target.coords.lng], { animate: true, duration: 0.4 });
++  }, [highlightedItemId, entities, map]);
++
++  // Recentrer explicitement sur le périmètre actif
++  useEffect(() => {
++    if (cameraCommand.seq === lastSeqRef.current) return;
++    lastSeqRef.current = cameraCommand.seq;
++    const bounds = mapScope === "national" ? FRANCE_METROPOLITAINE_BOUNDS : PARIS_INTRAMUROS_BOUNDS;
++    map.fitBounds(bounds, { padding: [24, 24] });
++  }, [cameraCommand, mapScope, map]);
++
++  return null;
++}
++
++export interface AnnuaireMapCanvasProps {
++  items?: AnnuaireEntry[];
++  entities?: GeoNetworkEntity[];
++  incidentRelations?: GeoNetworkIncidentRelation[];
++  showRelationsLayer?: boolean;
++  mapScope?: MapScope;
++  highlightedItemId?: string | null;
++  onItemClick?: (id: string) => void;
++  variant?: "standard" | "exploration";
++  fr?: boolean;
++}
++
++export function AnnuaireMapCanvas({
++  items = [],
++  entities: externalEntities,
++  incidentRelations = [],
++  showRelationsLayer = true,
++  mapScope = "paris",
++  highlightedItemId,
++  onItemClick,
++  variant = "standard",
++  fr = true,
++}: AnnuaireMapCanvasProps) {
++  const [zoom, setZoom] = useState(12);
++  const [cameraCommand, setCameraCommand] = useState<{ seq: number }>({ seq: 0 });
++
++  const entities = useMemo<GeoNetworkEntity[]>(() => {
++    const base: GeoNetworkEntity[] = externalEntities
++      ? externalEntities
++      : items
++          .filter(hasPreciseAnnuaireCoordinates)
++          .map((entry) => ({
++            id: entry.id,
++            annuaireEntryId: entry.id,
++            networkActorId: null,
++            name: entry.name,
++            shortName: entry.name.slice(0, 18),
++            entry: { ...entry, distanceKm: null },
++            networkActor: null,
++            coords: { lat: entry.lat!, lng: entry.lng! },
++            locationGroup: "in_paris",
++            addressStatus: "verified",
++            communeLabel: entry.location,
++            siteNature: null,
++            sourceUrl: entry.websiteUrl ?? null,
++            primaryFamily: entry.types[0] ?? "environnemental",
++            indicators: {
++              documentedNeighborsCount: 0,
++              scheduledLinksCount: 0,
++              provenJointOperationsCount: null,
++              activityScopeLabel: entry.location,
++            },
++          }));
++    return base.filter(
++      (e) => !e.coords || (mapScope === "national" ? isInFranceMetropolitaine(e.coords.lat, e.coords.lng) : e.locationGroup === "in_paris"),
++    );
++  }, [externalEntities, items, mapScope]);
++
++  const clusters = useMemo(() => clusterEntitiesByZoom(entities, zoom), [entities, zoom]);
++  const plottableRelations = useMemo(
++    () => { const ids = new Set(entities.map(entity => entity.id)); return showRelationsLayer ? incidentRelations.filter(r => r.hasPlottableLine && ids.has(r.fromEntity.id) && ids.has(r.toEntity.id)) : []; },
++    [entities, incidentRelations, showRelationsLayer],
++  );
++  const isExploration = variant === "exploration";
++
++  return (
++    <div
++      className={cn(
++        "relative w-full overflow-hidden border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)]",
++        isExploration ? "h-[62vh] min-h-[420px] rounded-2xl" : "h-[500px] rounded-xl",
++      )}
++    >
++      <div className="absolute bottom-3 left-3 z-[400] flex flex-wrap gap-2">
++        <CmmButton
++          type="button"
++          size="sm"
++          tone="secondary"
++          variant="pill"
++          onClick={() => setCameraCommand((c) => ({ seq: c.seq + 1 }))}
++        >
++          {mapScope === "national"
++            ? fr
++              ? "Recentrer sur la France"
++              : "Recenter France"
++            : fr
++              ? "Recentrer sur Paris"
++              : "Recenter Paris"}
++        </CmmButton>
++      </div>
++
++      <MapContainer
++        center={[48.8566, 2.3522]}
++        zoom={12}
++        scrollWheelZoom
++        className="relative z-0 h-full w-full"
++      >
++        <MapController
++          entities={entities}
++          mapScope={mapScope}
++          highlightedItemId={highlightedItemId}
++          onZoomChange={setZoom}
++          cameraCommand={cameraCommand}
++        />
++        <LayersControl position="topright">
++          <LayersControl.BaseLayer checked name="Mode Épuré">
++            <TileLayer
++              attribution={CARTO_BASEMAPS.light.attribution}
++              url={CARTO_BASEMAPS.light.url}
++            />
++          </LayersControl.BaseLayer>
++          <LayersControl.BaseLayer name="Voyager">
++            <TileLayer
++              attribution={CARTO_BASEMAPS.voyager.attribution}
++              url={CARTO_BASEMAPS.voyager.url}
++            />
++          </LayersControl.BaseLayer>
++        </LayersControl>
++
++        {plottableRelations.map(({ relation, fromEntity, toEntity }) => {
++          const { color, dash: dashArray, weight } = getNetworkRelationVisual(relation);
++          return (
++            <Polyline
++              key={relation.id}
++              positions={[
++                [fromEntity.coords!.lat, fromEntity.coords!.lng],
++                [toEntity.coords!.lat, toEntity.coords!.lng],
++              ]}
++              pathOptions={{
++                color,
++                weight,
++                opacity: 0.85,
++                dashArray,
++              }}
++            >
++              <Tooltip sticky>
++                <span className="text-xs font-semibold">
++                  {fromEntity.name} → {toEntity.name} ·{" "}
++                  {PARIS_RELATION_TYPE_META[relation.relationType].label}
++                </span>
++              </Tooltip>
++            </Polyline>
++          );
++        })}
++
++        {clusters.map((cluster) => {
++          if (cluster.members.length === 1) {
++            const entity = cluster.members[0];
++            const isHighlighted = highlightedItemId === entity.id;
++            const icon = L.divIcon({
++              className: "cmm-named-marker",
++              html: buildNamedMarkerIconHtml({
++                name: entity.name,
++                shortName: entity.shortName,
++                family: entity.primaryFamily,
++                highlighted: isHighlighted,
++                outsideCity: entity.locationGroup === "outside_paris",
++                logoPath: entity.logo?.localPath,
++                neighbours: entity.indicators.documentedNeighborsCount,
++              }),
++              iconSize: undefined,
++              iconAnchor: [0, 0],
+             });
+             return (
+               <Marker
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network-panels.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network-panels.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network-panels.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network-panels.tsx
+@@ -58,157 +58,158 @@
+           ) : null}
+         </div>
+       </div>
+-      {incidentRelations.length === 0 ? (
+-        <p className="text-xs cmm-text-secondary">
+-          {fr
+-            ? "Aucune relation documentée pour cette sélection dans le filtre actif."
+-            : "No documented relationship for this selection in the active filter."}
+-        </p>
+-      ) : (
+-        <ul className="m-0 list-none space-y-2 p-0">
+-          {incidentRelations.map(({ relation, fromEntity, toEntity, hasPlottableLine, direction }) => {
+-            const peer = direction === "outgoing" ? toEntity : fromEntity;
+-            const meta = PARIS_RELATION_TYPE_META[relation.relationType];
+-            return (
+-              <li
+-                key={relation.id}
+-                className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] p-3 text-xs"
+-              >
+-                <div className="flex flex-wrap items-center justify-between gap-2">
+-                  <button
+-                    type="button"
+-                    onClick={() => onSelectEntity(peer.id)}
+-                    className="font-semibold cmm-text-primary underline underline-offset-2 hover:text-violet-400"
+-                  >
+-                    {fromEntity.name} → {toEntity.name}
+-                  </button>
+-                  <span className="rounded-full border border-[var(--cmm-surface-border)] px-2 py-0.5 font-semibold cmm-text-secondary">
+-                    {meta.label}
+-                  </span>
+-                </div>
+-                <p className="mt-1 cmm-text-primary">{relation.summary}</p>
+-                <div className="mt-1.5 flex flex-wrap items-center gap-2 cmm-text-secondary">
+-                  <span>
+-                    {relation.relationType === "collaboration_programmee"
+-                      ? fr
+-                        ? "Collaboration programmée"
+-                        : "Scheduled collaboration"
+-                      : relation.source.certainty === "partiel_ou_incertain"
+-                        ? fr
+-                          ? "Partielle ou incertaine"
+-                          : "Partial or uncertain"
+-                        : fr
+-                          ? "Vérifiée"
+-                          : "Verified"}
+-                  </span>
+-                  <span>·</span>
+-                  <span>
+-                    {relation.frequencyKnown
+-                      ? fr
+-                        ? "Fréquence connue"
+-                        : "Frequency documented"
+-                      : fr
+-                        ? "Fréquence inconnue"
+-                        : "Frequency unknown"}
+-                  </span>
+-                  {!hasPlottableLine ? (
+-                    <>
+-                      <span>·</span>
+-                      <span>{fr ? "Lien sans tracé (position manquante)" : "Unplotted link (missing coordinates)"}</span>
+-                    </>
+-                  ) : null}
+-                </div>
+-              </li>
+-            );
+-          })}
+-        </ul>
+-      )}
+-    </section>
+-  );
+-}
+-
+-export function AnnuaireOutsideAndUnknownPanels({
+-  fr,
+-  entities,
+-  selectedId,
+-  onSelectEntity,
+-}: {
+-  fr: boolean;
+-  entities: GeoNetworkEntity[];
+-  selectedId: string | null;
+-  onSelectEntity: (id: string) => void;
+-}) {
+-  const outsideParis = entities.filter((e) => e.locationGroup === "outside_paris");
+-  const unknownLocation = entities.filter((e) => e.locationGroup === "unknown_location");
+-
+-  return (
+-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+-      <section
+-        aria-label={fr ? "Hors de Paris" : "Outside Paris"}
+-        className="space-y-3 rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4"
+-      >
+-        <div className="flex items-center justify-between gap-2">
+-          <h3 className="text-sm font-semibold cmm-text-primary">
+-            {fr ? "Hors de Paris" : "Outside Paris"}
+-          </h3>
+-          <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold cmm-text-info">
+-            {outsideParis.length}
+-          </span>
+-        </div>
+-        {outsideParis.length === 0 ? (
+-          <p className="text-xs cmm-text-secondary">
+-            {fr ? "Aucun acteur hors de Paris dans ce filtre." : "No outside-Paris actor in this filter."}
+-          </p>
+-        ) : (
+-          <ul className="m-0 list-none space-y-2 p-0">
+-            {outsideParis.map((entity) => (
+-              <li key={entity.id}>
+-                <button
+-                  type="button"
+-                  aria-pressed={selectedId === entity.id}
+-                  onClick={() => onSelectEntity(entity.id)}
+-                  className="w-full rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] px-3 py-2 text-left text-xs hover:border-violet-500/50"
+-                >
+-                  <span className="block font-semibold cmm-text-primary">{entity.name}</span>
+-                  <span className="block cmm-text-secondary">
+-                    {entity.communeLabel}
+-                    {entity.siteNature ? ` · ${entity.siteNature}` : ""}
+-                  </span>
+-                </button>
+-              </li>
+-            ))}
+-          </ul>
+-        )}
+-      </section>
+-
+-      <section
+-        aria-label={fr ? "Localisation non établie" : "Location not established"}
+-        className="space-y-3 rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4"
+-      >
+-        <div className="flex items-center justify-between gap-2">
+-          <h3 className="text-sm font-semibold cmm-text-primary">
+-            {fr ? "Localisation non établie" : "Location not established"}
+-          </h3>
+-          <span className="rounded-full border border-[var(--cmm-surface-border)] px-2.5 py-0.5 text-xs font-semibold cmm-text-secondary">
+-            {unknownLocation.length}
+-          </span>
+-        </div>
+-        {unknownLocation.length === 0 ? (
+-          <p className="text-xs cmm-text-secondary">
+-            {fr ? "Toutes les structures filtrées ont une implantation." : "All filtered structures have a location."}
+-          </p>
+-        ) : (
+-          <ul className="m-0 max-h-56 list-none space-y-2 overflow-y-auto p-0">
+-            {unknownLocation.map((entity) => (
+-              <li key={entity.id}>
+-                <button
+-                  type="button"
+-                  aria-pressed={selectedId === entity.id}
+-                  onClick={() => onSelectEntity(entity.id)}
+-                  className="w-full rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] px-3 py-2 text-left text-xs hover:border-violet-500/50"
+-                >
+-                  <span className="block font-semibold cmm-text-primary">{entity.name}</span>
+-                  <span className="block cmm-text-secondary">{entity.communeLabel}</span>
++      {selectedEntity.publicAddressLabel ? <p className="text-xs cmm-text-primary">{fr ? "Adresse" : "Address"} : {selectedEntity.publicAddressSource ? <a href={selectedEntity.publicAddressSource} target="_blank" rel="noopener noreferrer" className="underline">{selectedEntity.publicAddressLabel}</a> : selectedEntity.publicAddressLabel}{!selectedEntity.coords ? " · " + (fr ? "Géocodage non établi" : "Geocode not established") : ""}</p> : null}
++      {incidentRelations.length === 0 ? (
++        <p className="text-xs cmm-text-secondary">
++          {fr
++            ? "Aucune relation documentée pour cette sélection dans le filtre actif."
++            : "No documented relationship for this selection in the active filter."}
++        </p>
++      ) : (
++        <ul className="m-0 list-none space-y-2 p-0">
++          {incidentRelations.map(({ relation, fromEntity, toEntity, hasPlottableLine, direction }) => {
++            const peer = direction === "outgoing" ? toEntity : fromEntity;
++            const meta = PARIS_RELATION_TYPE_META[relation.relationType];
++            return (
++              <li
++                key={relation.id}
++                className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] p-3 text-xs"
++              >
++                <div className="flex flex-wrap items-center justify-between gap-2">
++                  <button
++                    type="button"
++                    onClick={() => onSelectEntity(peer.id)}
++                    className="font-semibold cmm-text-primary underline underline-offset-2 hover:text-violet-400"
++                  >
++                    {fromEntity.name} → {toEntity.name}
++                  </button>
++                  <span className="rounded-full border border-[var(--cmm-surface-border)] px-2 py-0.5 font-semibold cmm-text-secondary">
++                    {meta.label}
++                  </span>
++                </div>
++                <p className="mt-1 cmm-text-primary">{relation.summary}</p>
++                <div className="mt-1.5 flex flex-wrap items-center gap-2 cmm-text-secondary">
++                  <span>
++                    {relation.relationType === "collaboration_programmee"
++                      ? fr
++                        ? "Collaboration programmée"
++                        : "Scheduled collaboration"
++                      : relation.source.certainty === "partiel_ou_incertain"
++                        ? fr
++                          ? "Partielle ou incertaine"
++                          : "Partial or uncertain"
++                        : fr
++                          ? "Vérifiée"
++                          : "Verified"}
++                  </span>
++                  <span>·</span>
++                  <span>
++                    {relation.frequencyKnown
++                      ? fr
++                        ? "Fréquence connue"
++                        : "Frequency documented"
++                      : fr
++                        ? "Fréquence inconnue"
++                        : "Frequency unknown"}
++                  </span>
++                  {!hasPlottableLine ? (
++                    <>
++                      <span>·</span>
++                      <span>{fr ? "Lien sans tracé (position manquante)" : "Unplotted link (missing coordinates)"}</span>
++                    </>
++                  ) : null}
++                </div>
++              </li>
++            );
++          })}
++        </ul>
++      )}
++    </section>
++  );
++}
++
++export function AnnuaireOutsideAndUnknownPanels({
++  fr,
++  entities,
++  selectedId,
++  onSelectEntity,
++}: {
++  fr: boolean;
++  entities: GeoNetworkEntity[];
++  selectedId: string | null;
++  onSelectEntity: (id: string) => void;
++}) {
++  const outsideParis = entities.filter((e) => e.locationGroup === "outside_paris");
++  const unknownLocation = entities.filter((e) => e.locationGroup === "unknown_location");
++
++  return (
++    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
++      <section
++        aria-label={fr ? "Hors de Paris" : "Outside Paris"}
++        className="space-y-3 rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4"
++      >
++        <div className="flex items-center justify-between gap-2">
++          <h3 className="text-sm font-semibold cmm-text-primary">
++            {fr ? "Hors de Paris" : "Outside Paris"}
++          </h3>
++          <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold cmm-text-info">
++            {outsideParis.length}
++          </span>
++        </div>
++        {outsideParis.length === 0 ? (
++          <p className="text-xs cmm-text-secondary">
++            {fr ? "Aucun acteur hors de Paris dans ce filtre." : "No outside-Paris actor in this filter."}
++          </p>
++        ) : (
++          <ul className="m-0 list-none space-y-2 p-0">
++            {outsideParis.map((entity) => (
++              <li key={entity.id}>
++                <button
++                  type="button"
++                  aria-pressed={selectedId === entity.id}
++                  onClick={() => onSelectEntity(entity.id)}
++                  className="w-full rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] px-3 py-2 text-left text-xs hover:border-violet-500/50"
++                >
++                  <span className="block font-semibold cmm-text-primary">{entity.name}</span>
++                  <span className="block cmm-text-secondary">
++                    {entity.communeLabel}
++                    {entity.siteNature ? ` · ${entity.siteNature}` : ""}
++                  </span>
++                </button>
++              </li>
++            ))}
++          </ul>
++        )}
++      </section>
++
++      <section
++        aria-label={fr ? "Localisation non établie" : "Location not established"}
++        className="space-y-3 rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4"
++      >
++        <div className="flex items-center justify-between gap-2">
++          <h3 className="text-sm font-semibold cmm-text-primary">
++            {fr ? "Localisation non établie" : "Location not established"}
++          </h3>
++          <span className="rounded-full border border-[var(--cmm-surface-border)] px-2.5 py-0.5 text-xs font-semibold cmm-text-secondary">
++            {unknownLocation.length}
++          </span>
++        </div>
++        {unknownLocation.length === 0 ? (
++          <p className="text-xs cmm-text-secondary">
++            {fr ? "Toutes les structures filtrées ont une implantation." : "All filtered structures have a location."}
++          </p>
++        ) : (
++          <ul className="m-0 max-h-56 list-none space-y-2 overflow-y-auto p-0">
++            {unknownLocation.map((entity) => (
++              <li key={entity.id}>
++                <button
++                  type="button"
++                  aria-pressed={selectedId === entity.id}
++                  onClick={() => onSelectEntity(entity.id)}
++                  className="w-full rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] px-3 py-2 text-left text-xs hover:border-violet-500/50"
++                >
++                  <span className="block font-semibold cmm-text-primary">{entity.name}</span>
++                  <span className="block cmm-text-secondary">{entity.publicAddressLabel ?? entity.communeLabel}</span>
+                 </button>
+               </li>
+             ))}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network.visuals.test.ts b/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network.visuals.test.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-geo-network.visuals.test.ts
+@@ -0,0 +1,33 @@
++import { describe, expect, it } from "vitest";
++import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
++import { buildGeoNetworkEntities, getAllGeoRelations, getIncidentGeoRelations } from "./annuaire-geo-network.model";
++import { getNetworkLogoDiameter } from "./annuaire-geo-network.visuals";
++import { buildNamedMarkerIconHtml } from "./annuaire-map-icon";
++
++describe("geographic network visual contract", () => {
++  const entries = INITIAL_ANNUAIRE_ENTRIES.map(entry => ({ ...entry, distanceKm: null }));
++  const entities = buildGeoNetworkEntities(entries, entries);
++  it("exposes all canonical edges exactly once and preserves incident selection", () => {
++    const all = getAllGeoRelations(entities);
++    expect(all.length).toBeGreaterThan(0);
++    expect(new Set(all.map(item => item.relation.id)).size).toBe(all.length);
++    expect(getIncidentGeoRelations("operator-ckfd", entities).map(item => item.relation.id)).toEqual(all.filter(item => item.relation.sourceId === "operator-ckfd" || item.relation.targetId === "operator-ckfd").map(item => item.relation.id));
++    expect(all.some(item => !item.hasPlottableLine)).toBe(true);
++  });
++  it("does not invent a geocode from a verified address", () => {
++    const syctom = entities.find(item => item.id === "collectivite-syctom");
++    expect(syctom?.publicAddressLabel).toBe("86 rue Regnault, 75013 Paris");
++    expect(syctom?.coords).toBeNull();
++    expect(syctom?.addressStatus).toBe("verified");
++  });
++  it("scales the area, bounds marker size and uses an exact pin", () => {
++    expect(getNetworkLogoDiameter(0)).toBe(32);
++    expect(getNetworkLogoDiameter(10)).toBeGreaterThan(getNetworkLogoDiameter(1));
++    expect(getNetworkLogoDiameter(10000)).toBe(92);
++    expect(getNetworkLogoDiameter(NaN)).toBe(32);
++    const marker = buildNamedMarkerIconHtml({ name: "CleanMyMap", logoPath: "/brand/logo-court.png", neighbours: 8 });
++    expect(marker).toContain('src="/brand/logo-court.png"');
++    expect(marker).toContain("M9 24");
++    expect(buildNamedMarkerIconHtml({ name: "X", logoPath: "https://example.org/track.png" })).not.toContain("https://example.org");
++  });
++});
