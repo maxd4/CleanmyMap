@@ -1,0 +1,820 @@
+diff --git a/apps/web/src/components/ui/cmm-tab-strip.styles.ts b/apps/web/src/components/ui/cmm-tab-strip.styles.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/ui/cmm-tab-strip.styles.ts
+@@ -0,0 +1,35 @@
++import { cn } from "@/lib/utils";
++
++type TabStripTone = "emerald" | "pink";
++
++const SURFACE = {
++  emerald: "border-emerald-100 bg-white shadow-sm",
++  pink: "border-pink-200 bg-white shadow-[0_6px_24px_rgba(131,24,67,0.08)]",
++} as const;
++
++const ITEM = {
++  emerald: {
++    focus: "focus-visible:ring-emerald-300",
++    active: "bg-emerald-700 text-white shadow-sm",
++    inactive: "text-slate-600 hover:bg-emerald-50 hover:text-emerald-900",
++  },
++  pink: {
++    focus: "focus-visible:ring-pink-700",
++    active: "bg-gradient-to-br from-pink-800 to-pink-900 text-white shadow-md",
++    inactive: "text-pink-900 hover:bg-pink-100",
++  },
++} as const;
++
++/** Shared presentation only; callers retain their own link/button navigation. */
++export function tabStripClassName(tone: TabStripTone, columns: string) {
++  return cn("grid w-full gap-2 rounded-2xl border p-2", SURFACE[tone], columns);
++}
++
++export function tabItemClassName(tone: TabStripTone, active: boolean) {
++  const item = ITEM[tone];
++  return cn(
++    "inline-flex min-h-11 min-w-0 items-center justify-center rounded-xl px-4 py-2.5 text-center text-sm font-bold tracking-normal transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:text-base",
++    item.focus,
++    active ? item.active : item.inactive,
++  );
++}
+diff --git a/apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs.tsx b/apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs.tsx
+--- a/apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs.tsx
++++ b/apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs.tsx
+@@ -1,100 +1,101 @@
+ "use client";
+ 
+ import Link from "next/link";
+-import { buildJoinActionTabHref } from "@/lib/sections/join-action-routes";
+-import type { JoinActionTab } from "./rejoindre-une-action.model";
+-
+-export type ActionTabDefinition = {
+-  id: string;
+-  label: string;
+-  panelId?: string;
+-};
+-
+-const DEFAULT_TABS: readonly ActionTabDefinition[] = [
+-  { id: "future", label: "Action future", panelId: "join-action-panel-future" },
+-  { id: "past", label: "Action passée", panelId: "join-action-panel-past" },
+-  { id: "needs", label: "Besoins", panelId: "join-action-panel-needs" },
+-];
+-
+-export function getNextActionTabId(
+-  tabs: readonly ActionTabDefinition[],
+-  currentTab: string,
+-  key: string,
+-): string | null {
+-  const currentIndex = tabs.findIndex((tab) => tab.id === currentTab);
+-  if (currentIndex < 0) return null;
+-
+-  let nextIndex: number | null = null;
+-  if (key === "ArrowRight" || key === "ArrowDown") nextIndex = (currentIndex + 1) % tabs.length;
+-  if (key === "ArrowLeft" || key === "ArrowUp") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+-  if (key === "Home") nextIndex = 0;
+-  if (key === "End") nextIndex = tabs.length - 1;
+-  return nextIndex === null ? null : tabs[nextIndex]?.id ?? null;
+-}
+-
+-export function JoinActionTabs({
+-  activeTab,
+-  focusActionId = null,
+-  fr = true,
+-  tabs = DEFAULT_TABS,
+-  buildHref,
+-  searchParams,
+-  ariaLabel,
+-  idPrefix = "join-action-tab",
+-}: {
+-  activeTab: string;
+-  focusActionId?: string | null;
+-  fr?: boolean;
+-  tabs?: readonly ActionTabDefinition[];
+-  buildHref?: (tab: string) => string;
+-  searchParams?: string | URLSearchParams;
+-  ariaLabel?: string;
+-  idPrefix?: string;
+-}) {
+-  function moveWithKeyboard(currentTab: string, key: string) {
+-    const nextTab = getNextActionTabId(tabs, currentTab, key);
+-    if (!nextTab) return;
+-    const nextLink = document.getElementById(`${idPrefix}-${nextTab}`);
+-    if (!(nextLink instanceof HTMLAnchorElement)) return;
+-
+-    nextLink.focus();
+-    const href = nextLink.getAttribute("href");
+-    if (href) {
+-      window.setTimeout(() => window.location.assign(href), 0);
+-    }
+-  }
+-
+-  return (
+-    <nav
+-      aria-label={ariaLabel ?? (fr ? "Onglets des actions" : "Action tabs")}
+-      role="tablist"
+-      className={`grid w-full gap-2 rounded-2xl border border-emerald-100 bg-white p-2 shadow-sm ${tabs.length > 2 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2"}`}
+-    >
+-      {tabs.map((tab) => {
+-        const isActive = activeTab === tab.id;
+-        const panelId = tab.panelId ?? `${idPrefix.replace(/-tab$/, "-panel")}-${tab.id}`;
+-        const tabId = `${idPrefix}-${tab.id}`;
+-        const label = tab.label;
+-        const href = buildHref
+-          ? buildHref(tab.id)
+-          : buildJoinActionTabHref(tab.id as JoinActionTab, focusActionId, searchParams);
+-
+-        return (
+-          <Link
+-            key={tab.id}
+-            id={tabId}
+-            href={href}
+-            role="tab"
+-            aria-selected={isActive}
+-            aria-controls={panelId}
+-            tabIndex={isActive ? 0 : -1}
+-            onKeyDown={(event) => {
+-              if (getNextActionTabId(tabs, tab.id, event.key)) {
+-                event.preventDefault();
+-                moveWithKeyboard(tab.id, event.key);
+-              }
+-            }}
+-            className={`inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold tracking-normal transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 md:text-base ${isActive ? "bg-emerald-700 text-white shadow-sm" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-900"}`}
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
++import { buildJoinActionTabHref } from "@/lib/sections/join-action-routes";
++import type { JoinActionTab } from "./rejoindre-une-action.model";
++
++export type ActionTabDefinition = {
++  id: string;
++  label: string;
++  panelId?: string;
++};
++
++const DEFAULT_TABS: readonly ActionTabDefinition[] = [
++  { id: "future", label: "Action future", panelId: "join-action-panel-future" },
++  { id: "past", label: "Action passée", panelId: "join-action-panel-past" },
++  { id: "needs", label: "Besoins", panelId: "join-action-panel-needs" },
++];
++
++export function getNextActionTabId(
++  tabs: readonly ActionTabDefinition[],
++  currentTab: string,
++  key: string,
++): string | null {
++  const currentIndex = tabs.findIndex((tab) => tab.id === currentTab);
++  if (currentIndex < 0) return null;
++
++  let nextIndex: number | null = null;
++  if (key === "ArrowRight" || key === "ArrowDown") nextIndex = (currentIndex + 1) % tabs.length;
++  if (key === "ArrowLeft" || key === "ArrowUp") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
++  if (key === "Home") nextIndex = 0;
++  if (key === "End") nextIndex = tabs.length - 1;
++  return nextIndex === null ? null : tabs[nextIndex]?.id ?? null;
++}
++
++export function JoinActionTabs({
++  activeTab,
++  focusActionId = null,
++  fr = true,
++  tabs = DEFAULT_TABS,
++  buildHref,
++  searchParams,
++  ariaLabel,
++  idPrefix = "join-action-tab",
++}: {
++  activeTab: string;
++  focusActionId?: string | null;
++  fr?: boolean;
++  tabs?: readonly ActionTabDefinition[];
++  buildHref?: (tab: string) => string;
++  searchParams?: string | URLSearchParams;
++  ariaLabel?: string;
++  idPrefix?: string;
++}) {
++  function moveWithKeyboard(currentTab: string, key: string) {
++    const nextTab = getNextActionTabId(tabs, currentTab, key);
++    if (!nextTab) return;
++    const nextLink = document.getElementById(`${idPrefix}-${nextTab}`);
++    if (!(nextLink instanceof HTMLAnchorElement)) return;
++
++    nextLink.focus();
++    const href = nextLink.getAttribute("href");
++    if (href) {
++      window.setTimeout(() => window.location.assign(href), 0);
++    }
++  }
++
++  return (
++    <nav
++      aria-label={ariaLabel ?? (fr ? "Onglets des actions" : "Action tabs")}
++      role="tablist"
++      className={tabStripClassName("emerald", tabs.length > 2 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2")}
++    >
++      {tabs.map((tab) => {
++        const isActive = activeTab === tab.id;
++        const panelId = tab.panelId ?? `${idPrefix.replace(/-tab$/, "-panel")}-${tab.id}`;
++        const tabId = `${idPrefix}-${tab.id}`;
++        const label = tab.label;
++        const href = buildHref
++          ? buildHref(tab.id)
++          : buildJoinActionTabHref(tab.id as JoinActionTab, focusActionId, searchParams);
++
++        return (
++          <Link
++            key={tab.id}
++            id={tabId}
++            href={href}
++            role="tab"
++            aria-selected={isActive}
++            aria-controls={panelId}
++            tabIndex={isActive ? 0 : -1}
++            onKeyDown={(event) => {
++              if (getNextActionTabId(tabs, tab.id, event.key)) {
++                event.preventDefault();
++                moveWithKeyboard(tab.id, event.key);
++              }
++            }}
++            className={tabItemClassName("emerald", isActive)}
+           >
+             {label}
+           </Link>
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-view-tabs.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-view-tabs.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-view-tabs.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-view-tabs.tsx
+@@ -1,73 +1,68 @@
+ "use client";
+ 
+ import type { KeyboardEvent } from "react";
+-import { cn } from "@/lib/utils";
+-
+-export const ANNUAIRE_VIEWS = ["organization", "directory", "map", "network"] as const;
+-export type AnnuaireView = (typeof ANNUAIRE_VIEWS)[number];
+-
+-export const annuaireTabId = (view: AnnuaireView) => `annuaire-tab-${view}`;
+-export const annuairePanelId = (view: AnnuaireView) => `annuaire-panel-${view}`;
+-
+-const LABELS: Record<AnnuaireView, { fr: string; en: string }> = {
+-  organization: { fr: "Services publics", en: "Public services" },
+-  directory: { fr: "Annuaire", en: "Directory" },
+-  map: { fr: "Carte", en: "Map" },
+-  network: { fr: "Réseau 3D", en: "3D network" },
+-};
+-
+-/** Navigation principale unique de l'Annuaire (roving tabindex, flèches, Début/Fin). */
+-export function AnnuaireViewTabs({
+-  fr,
+-  view,
+-  onChange,
+-}: {
+-  fr: boolean;
+-  view: AnnuaireView;
+-  onChange: (view: AnnuaireView) => void;
+-}) {
+-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+-    const index = ANNUAIRE_VIEWS.indexOf(view);
+-    const last = ANNUAIRE_VIEWS.length - 1;
+-    const nextIndex =
+-      event.key === "Home"
+-        ? 0
+-        : event.key === "End"
+-          ? last
+-          : event.key === "ArrowRight"
+-            ? (index + 1) % ANNUAIRE_VIEWS.length
+-            : (index - 1 + ANNUAIRE_VIEWS.length) % ANNUAIRE_VIEWS.length;
+-    event.preventDefault();
+-    const next = ANNUAIRE_VIEWS[nextIndex];
+-    onChange(next);
+-    document.getElementById(annuaireTabId(next))?.focus();
+-  };
+-
+-  return (
+-    <div
+-      role="tablist"
+-      aria-orientation="horizontal"
+-      aria-label={fr ? "Vues de l'Annuaire" : "Directory views"}
+-      onKeyDown={onKeyDown}
+-      className="flex flex-wrap gap-2 border-b border-[var(--cmm-surface-border)] pb-3"
+-    >
+-      {ANNUAIRE_VIEWS.map((item) => (
+-        <button
+-          key={item}
+-          id={annuaireTabId(item)}
+-          type="button"
+-          role="tab"
+-          aria-selected={view === item}
+-          aria-controls={annuairePanelId(item)}
+-          tabIndex={view === item ? 0 : -1}
+-          onClick={() => onChange(item)}
+-          className={cn(
+-            "rounded-xl border px-4 py-2.5 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500",
+-            view === item
+-              ? "border-violet-500 bg-violet-500/10 cmm-text-primary"
+-              : "border-[var(--cmm-surface-border)] cmm-text-secondary",
+-          )}
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
++
++export const ANNUAIRE_VIEWS = ["organization", "directory", "map", "network"] as const;
++export type AnnuaireView = (typeof ANNUAIRE_VIEWS)[number];
++
++export const annuaireTabId = (view: AnnuaireView) => `annuaire-tab-${view}`;
++export const annuairePanelId = (view: AnnuaireView) => `annuaire-panel-${view}`;
++
++const LABELS: Record<AnnuaireView, { fr: string; en: string }> = {
++  organization: { fr: "Services publics", en: "Public services" },
++  directory: { fr: "Annuaire", en: "Directory" },
++  map: { fr: "Carte", en: "Map" },
++  network: { fr: "Réseau 3D", en: "3D network" },
++};
++
++/** Navigation principale unique de l'Annuaire (roving tabindex, flèches, Début/Fin). */
++export function AnnuaireViewTabs({
++  fr,
++  view,
++  onChange,
++}: {
++  fr: boolean;
++  view: AnnuaireView;
++  onChange: (view: AnnuaireView) => void;
++}) {
++  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
++    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
++    const index = ANNUAIRE_VIEWS.indexOf(view);
++    const last = ANNUAIRE_VIEWS.length - 1;
++    const nextIndex =
++      event.key === "Home"
++        ? 0
++        : event.key === "End"
++          ? last
++          : event.key === "ArrowRight"
++            ? (index + 1) % ANNUAIRE_VIEWS.length
++            : (index - 1 + ANNUAIRE_VIEWS.length) % ANNUAIRE_VIEWS.length;
++    event.preventDefault();
++    const next = ANNUAIRE_VIEWS[nextIndex];
++    onChange(next);
++    document.getElementById(annuaireTabId(next))?.focus();
++  };
++
++  return (
++    <div
++      role="tablist"
++      aria-orientation="horizontal"
++      aria-label={fr ? "Vues de l'Annuaire" : "Directory views"}
++      onKeyDown={onKeyDown}
++      className={tabStripClassName("pink", (ANNUAIRE_VIEWS.length as number) === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2 lg:grid-cols-4")}
++    >
++      {ANNUAIRE_VIEWS.map((item) => (
++        <button
++          key={item}
++          id={annuaireTabId(item)}
++          type="button"
++          role="tab"
++          aria-selected={view === item}
++          aria-controls={annuairePanelId(item)}
++          tabIndex={view === item ? 0 : -1}
++          onClick={() => onChange(item)}
++          className={tabItemClassName("pink", view === item)}
+         >
+           {fr ? LABELS[item].fr : LABELS[item].en}
+         </button>
+diff --git a/apps/web/src/lib/ui/page-families/types.ts b/apps/web/src/lib/ui/page-families/types.ts
+--- a/apps/web/src/lib/ui/page-families/types.ts
++++ b/apps/web/src/lib/ui/page-families/types.ts
+@@ -37,6 +37,8 @@
+   /** Libellé documentaire (audit / debug). */
+   label: string;
+   backdropToneKey: BackdropToneKey;
++  /** White canvas exception; preserves the family button palette. */
++  canvasMode?: "white";
+   hero: PageFamilyHeroTokens;
+   card: PageFamilyCardTokens;
+ };
+diff --git a/apps/web/src/lib/ui/page-families/resolve-page-family.ts b/apps/web/src/lib/ui/page-families/resolve-page-family.ts
+--- a/apps/web/src/lib/ui/page-families/resolve-page-family.ts
++++ b/apps/web/src/lib/ui/page-families/resolve-page-family.ts
+@@ -131,6 +131,15 @@
+     return { ...STATE_429_FAMILY, exceptionId: "error-429" };
+   }
+ 
++  if (isRoute(pathname, "/sections/annuaire")) {
++    return {
++      ...family,
++      exceptionId: "annuaire-white-canvas",
++      canvasMode: "white",
++      hero: { ...family.hero, sectionGradient: "from-transparent via-transparent to-transparent" },
++    };
++  }
++
+   if (pathname === "/partners" || pathname.startsWith("/partners/")) {
+     return { ...PARTNERS_NETWORK_FAMILY, exceptionId: "partners-indigo" };
+   }
+diff --git a/apps/web/src/components/ui/vibrant-background.tsx b/apps/web/src/components/ui/vibrant-background.tsx
+--- a/apps/web/src/components/ui/vibrant-background.tsx
++++ b/apps/web/src/components/ui/vibrant-background.tsx
+@@ -8,29 +8,34 @@
+   type BackdropToneKey,
+ } from "@/lib/ui/backdrop-tone";
+ import { getButtonThemeCssVariables } from "@/lib/ui/button-theme";
+-
+-export type VibrantBackgroundProps = {
+-  initialToneKey?: BackdropToneKey | null;
+-};
+-
+-export function VibrantBackground({ initialToneKey = null }: VibrantBackgroundProps) {
+-  const pathname = usePathname();
+-  const toneKey = resolveBackdropToneKey(pathname) ?? initialToneKey;
+-
+-  useEffect(() => {
+-    const buttonThemeVariables = getButtonThemeCssVariables(toneKey);
+-    if (!buttonThemeVariables) {
+-      return;
+-    }
+-
+-    const bodyStyle = document.body.style;
+-    for (const [name, value] of Object.entries(buttonThemeVariables)) {
+-      bodyStyle.setProperty(name, value);
+-    }
+-  }, [toneKey]);
+-
+-  if (!toneKey) {
+-    return null;
++import { resolvePageFamily } from "@/lib/ui/page-families";
++
++export type VibrantBackgroundProps = {
++  initialToneKey?: BackdropToneKey | null;
++};
++
++export function VibrantBackground({ initialToneKey = null }: VibrantBackgroundProps) {
++  const pathname = usePathname();
++  const toneKey = resolveBackdropToneKey(pathname) ?? initialToneKey;
++
++  useEffect(() => {
++    const buttonThemeVariables = getButtonThemeCssVariables(toneKey);
++    if (!buttonThemeVariables) {
++      return;
++    }
++
++    const bodyStyle = document.body.style;
++    for (const [name, value] of Object.entries(buttonThemeVariables)) {
++      bodyStyle.setProperty(name, value);
++    }
++  }, [toneKey]);
++
++  if (!toneKey) {
++    return null;
++  }
++
++  if (pathname && resolvePageFamily(pathname).canvasMode === "white") {
++    return <div aria-hidden="true" className="cmm-white-page-canvas pointer-events-none fixed inset-0 -z-10" />;
+   }
+ 
+   const tone = BACKDROP_TONES[toneKey];
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx
+@@ -47,91 +47,91 @@
+ 
+ function AnnuaireJoinCta({ fr }: { fr: boolean }) {
+   return (
+-    <RubriqueCard themeColor="violet" withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row">
+-      <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><Building2 size={160} className="text-violet-400" /></div>
+-      <div className="space-y-4 max-w-xl text-center md:text-left relative z-10">
+-        <h3 className="text-3xl font-black text-white tracking-tight">{fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}</h3>
+-        <p className="text-slate-300 font-bold opacity-80 leading-relaxed">{fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}</p>
+-      </div>
+-      <CmmButton href="/partners/onboarding" tone="primary" variant="default" ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"} className="relative z-10 flex items-center gap-3 bg-white font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl">{fr ? "Référencer ma structure" : "Register my structure"}<ArrowRight size={20} /></CmmButton>
+-    </RubriqueCard>
+-  );
+-}
+-
+-function AnnuaireTabPanel({ view, active, children }: { view: AnnuaireView; active: boolean; children: ReactNode }) {
+-  return (
+-    <div id={annuairePanelId(view)} role="tabpanel" aria-labelledby={annuaireTabId(view)} tabIndex={0} hidden={!active}>
+-      {children}
+-    </div>
+-  );
+-}
+-
+-export function AnnuaireSection() {
+-  const { locale } = useSitePreferences();
+-  const fr = locale === "fr";
+-  const [view, setView] = useState<AnnuaireView>("organization");
+-  const [showAllFeatured, setShowAllFeatured] = useState(false);
+-  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+-  const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>("FR:REG:11");
+-  const networkNavigation = useRef<ParisNetworkNavigation>(null);
+-  const organizationNavigation = useRef<PublicCleanlinessNavigation>(null);
+-  const getInstitutionId = (actorId: string) => resolveInstitutionId(PARIS_PUBLIC_CLEANLINESS_DATASET, actorId, PARIS_CLEANWALK_ACTORS);
+-  const getNetworkActorId = (node: PublicCleanlinessOrganizationNode) => resolveInstitutionNetworkActorId(PARIS_PUBLIC_CLEANLINESS_DATASET, node, PARIS_CLEANWALK_ACTORS);
+-  const openInstitution = (id: string) => {
+-    if (!organizationNavigation.current?.openNode(id)) return;
+-    setView("organization");
+-    document.getElementById(annuaireTabId("organization"))?.focus();
+-  };
+-  const openNetworkActor = (id: string) => {
+-    if (!networkNavigation.current?.openActor(id)) return;
+-    setView("network");
+-    document.getElementById(annuaireTabId("network"))?.focus();
+-  };
+-
+-  const annuaireLogic = useAnnuaireLogic();
+-  const { featuredEntries, filterKey, resetFilters } = annuaireLogic;
+-  const selectionIntentFilterKeyRef = useRef<string | null>(null);
+-  const previousFilterKeyRef = useRef(filterKey);
+-
+-  useEffect(() => {
+-    if (previousFilterKeyRef.current === filterKey) {
+-      return;
+-    }
+-    previousFilterKeyRef.current = filterKey;
+-    if (selectionIntentFilterKeyRef.current === filterKey) {
+-      selectionIntentFilterKeyRef.current = null;
+-      return;
+-    }
+-    setSelectedActorId(null);
+-  }, [filterKey]);
+-
+-  /** Localiser : sélectionne l'acteur (en rétablissant les filtres si la cible est exclue) puis ouvre la Carte. */
+-  const handleFocusMap = (id: string) => {
+-    const entryIsVisible = annuaireLogic.sortedAndFilteredEntries.some(
+-      (entry) => entry.id === id,
+-    );
+-    if (!entryIsVisible) {
+-      selectionIntentFilterKeyRef.current = "|all|all|all|all";
+-      resetFilters();
+-    }
+-    setSelectedActorId(id);
+-    setView("map");
+-    document.getElementById(annuaireTabId("map"))?.focus();
+-  };
+-
+-  const selectedActor = selectedActorId
+-    ? (annuaireLogic.enrichedEntries ?? []).find((entry) => entry.id === selectedActorId) ?? null
+-    : null;
+-  const discoverEntries = showAllFeatured
+-    ? featuredEntries
+-    : featuredEntries.slice(0, DISCOVER_INITIAL_CARDS);
+-  return (
+-    <SectionShell
+-      id="annuaire"
+-      title={fr ? "Annuaire des acteurs" : "Actors directory"}
+-      subtitle={fr ? "Explorez l'écosystème engagé pour un territoire propre et durable." : "Explore the ecosystem committed to a clean and sustainable territory."}
+-      icon={Globe}
+-      gradient="from-violet-600/20 via-violet-500/10 to-transparent"
++    <RubriqueCard themeColor="rose" withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row">
++      <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><Building2 size={160} className="text-violet-400" /></div>
++      <div className="space-y-4 max-w-xl text-center md:text-left relative z-10">
++        <h3 className="text-2xl font-bold text-[var(--cmm-rubrique-text)] tracking-tight">{fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}</h3>
++        <p className="text-[var(--cmm-rubrique-text)] font-medium leading-relaxed">{fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}</p>
++      </div>
++      <CmmButton href="/partners/onboarding" tone="primary" variant="default" ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"} className="relative z-10 flex items-center gap-3">{fr ? "Référencer ma structure" : "Register my structure"}<ArrowRight size={20} /></CmmButton>
++    </RubriqueCard>
++  );
++}
++
++function AnnuaireTabPanel({ view, active, children }: { view: AnnuaireView; active: boolean; children: ReactNode }) {
++  return (
++    <div id={annuairePanelId(view)} role="tabpanel" aria-labelledby={annuaireTabId(view)} tabIndex={0} hidden={!active}>
++      {children}
++    </div>
++  );
++}
++
++export function AnnuaireSection() {
++  const { locale } = useSitePreferences();
++  const fr = locale === "fr";
++  const [view, setView] = useState<AnnuaireView>("organization");
++  const [showAllFeatured, setShowAllFeatured] = useState(false);
++  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
++  const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>("FR:REG:11");
++  const networkNavigation = useRef<ParisNetworkNavigation>(null);
++  const organizationNavigation = useRef<PublicCleanlinessNavigation>(null);
++  const getInstitutionId = (actorId: string) => resolveInstitutionId(PARIS_PUBLIC_CLEANLINESS_DATASET, actorId, PARIS_CLEANWALK_ACTORS);
++  const getNetworkActorId = (node: PublicCleanlinessOrganizationNode) => resolveInstitutionNetworkActorId(PARIS_PUBLIC_CLEANLINESS_DATASET, node, PARIS_CLEANWALK_ACTORS);
++  const openInstitution = (id: string) => {
++    if (!organizationNavigation.current?.openNode(id)) return;
++    setView("organization");
++    document.getElementById(annuaireTabId("organization"))?.focus();
++  };
++  const openNetworkActor = (id: string) => {
++    if (!networkNavigation.current?.openActor(id)) return;
++    setView("network");
++    document.getElementById(annuaireTabId("network"))?.focus();
++  };
++
++  const annuaireLogic = useAnnuaireLogic();
++  const { featuredEntries, filterKey, resetFilters } = annuaireLogic;
++  const selectionIntentFilterKeyRef = useRef<string | null>(null);
++  const previousFilterKeyRef = useRef(filterKey);
++
++  useEffect(() => {
++    if (previousFilterKeyRef.current === filterKey) {
++      return;
++    }
++    previousFilterKeyRef.current = filterKey;
++    if (selectionIntentFilterKeyRef.current === filterKey) {
++      selectionIntentFilterKeyRef.current = null;
++      return;
++    }
++    setSelectedActorId(null);
++  }, [filterKey]);
++
++  /** Localiser : sélectionne l'acteur (en rétablissant les filtres si la cible est exclue) puis ouvre la Carte. */
++  const handleFocusMap = (id: string) => {
++    const entryIsVisible = annuaireLogic.sortedAndFilteredEntries.some(
++      (entry) => entry.id === id,
++    );
++    if (!entryIsVisible) {
++      selectionIntentFilterKeyRef.current = "|all|all|all|all";
++      resetFilters();
++    }
++    setSelectedActorId(id);
++    setView("map");
++    document.getElementById(annuaireTabId("map"))?.focus();
++  };
++
++  const selectedActor = selectedActorId
++    ? (annuaireLogic.enrichedEntries ?? []).find((entry) => entry.id === selectedActorId) ?? null
++    : null;
++  const discoverEntries = showAllFeatured
++    ? featuredEntries
++    : featuredEntries.slice(0, DISCOVER_INITIAL_CARDS);
++  return (
++    <SectionShell
++      id="annuaire"
++      title={fr ? "Annuaire des acteurs" : "Actors directory"}
++      subtitle={fr ? "Explorez l'écosystème engagé pour un territoire propre et durable." : "Explore the ecosystem committed to a clean and sustainable territory."}
++      icon={Globe}
++      gradient="from-transparent via-transparent to-transparent"
+     >
+       <CmmSectionGroup>
+         <AnnuaireViewTabs fr={fr} view={view} onChange={setView} />
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx
+@@ -47,7 +47,7 @@
+   return (
+     <CmmCard
+       variant="default"
+-      tone={isFeatured ? "violet" : "slate"}
++      tone={isFeatured ? "violet" : "pink"}
+       className="group flex min-w-0 flex-col gap-4"
+     >
+       <AnnuaireActorBadges entry={entry} fr={fr} isFeatured={Boolean(isFeatured)} isEditorial={isEditorial} isTrusted={isTrusted} hasRecentUpdate={hasRecentUpdate} structureBadge={structureBadge} />
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-featured-section.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-featured-section.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-featured-section.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-featured-section.tsx
+@@ -30,7 +30,7 @@
+           >
+             <CmmCard 
+               variant="default"
+-              tone="violet"
++              tone="pink"
+               className="group flex h-full min-w-0 flex-col gap-4"
+             >
+               {/* Premium Glass Badge */}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx
+@@ -129,7 +129,7 @@
+ 
+   return (
+     <div className="flex min-w-0 w-full flex-col gap-4">
+-      <CmmCard variant="default" className="min-w-0 space-y-4">
++      <CmmCard tone="pink" variant="default" className="min-w-0 space-y-4">
+         <div className="flex flex-wrap items-end gap-3">
+           <CmmField label={fr ? "Rechercher" : "Search"} className="min-w-0 flex-1 basis-64">
+             <input
+diff --git a/apps/web/src/styles/surfaces.css b/apps/web/src/styles/surfaces.css
+--- a/apps/web/src/styles/surfaces.css
++++ b/apps/web/src/styles/surfaces.css
+@@ -461,6 +461,83 @@
+     backdrop-filter: none;
+   }
+ 
++  /* Annuaire: white canvas, opaque colored surfaces. No other route changes. */
++  .cmm-white-page-canvas {
++    background: #ffffff;
++  }
++
++  #annuaire {
++    --cmm-surface-background: #fff1f6;
++    --cmm-surface-background-muted: #fce7f3;
++    --cmm-surface-border: #e7b5ce;
++    --cmm-surface-border-strong: #a83b72;
++  }
++
++  #annuaire .cmm-card[data-cmm-card-tone="pink"] {
++    --cmm-card-background: linear-gradient(145deg, #fff5fa, #fce7f3 65%, #f9d5e9);
++    --cmm-card-border: #e7b5ce;
++    --cmm-card-shadow: 0 8px 24px rgb(131 24 67 / 0.09);
++  }
++
++  #annuaire .cmm-card[data-cmm-card-tone="violet"] {
++    --cmm-card-background: linear-gradient(145deg, #fdf2f8, #f3e8ff);
++    --cmm-card-border: #d8b4fe;
++    --cmm-card-shadow: 0 8px 24px rgb(109 40 217 / 0.09);
++  }
++
++  #annuaire .cmm-rubrique-card[data-rubrique-theme="rose"] {
++    --cmm-rubrique-background: linear-gradient(125deg, #9d174d, #831843 60%, #581c87);
++    --cmm-rubrique-border: #b88628;
++    --cmm-rubrique-text: #ffffff;
++    --cmm-rubrique-shadow: 0 12px 30px rgb(131 24 67 / 0.18);
++  }
++
++  [data-display-mode="minimaliste"] #annuaire .cmm-card[data-cmm-card-tone="pink"],
++  [data-display-mode="minimaliste"] #annuaire .cmm-card[data-cmm-card-tone="violet"] {
++    --cmm-card-background: #fff1f6;
++    --cmm-card-shadow: none;
++  }
++
++  [data-display-mode="minimaliste"] #annuaire .cmm-rubrique-card[data-rubrique-theme="rose"] {
++    --cmm-rubrique-background: #9d174d;
++    --cmm-rubrique-shadow: none;
++  }
++
++  [data-display-mode="sobre"] #annuaire .cmm-card[data-cmm-card-tone="pink"],
++  [data-display-mode="sobre"] #annuaire .cmm-card[data-cmm-card-tone="violet"],
++  [data-display-mode="sobre"] #annuaire .cmm-rubrique-card[data-rubrique-theme="rose"] {
++    --cmm-card-background: var(--cmm-surface-background);
++    --cmm-rubrique-background: var(--cmm-surface-background);
++    --cmm-rubrique-text: var(--text-primary);
++    --cmm-card-shadow: none;
++    --cmm-rubrique-shadow: none;
++  }
++
++  html[data-theme="dark"] .cmm-white-page-canvas {
++    background: #020617;
++  }
++
++  html[data-theme="dark"] #annuaire {
++    --cmm-surface-background: #321b31;
++    --cmm-surface-background-muted: #41213a;
++    --cmm-surface-border: #845475;
++    --cmm-surface-border-strong: #e9a5c9;
++  }
++
++  html[data-theme="dark"] #annuaire .cmm-page-header-title {
++    color: #fbcfe8;
++  }
++
++  html[data-theme="dark"] #annuaire .cmm-page-header-subtitle {
++    color: #fce7f3;
++  }
++
++  html[data-theme="dark"] #annuaire .cmm-card[data-cmm-card-tone="pink"],
++  html[data-theme="dark"] #annuaire .cmm-card[data-cmm-card-tone="violet"] {
++    --cmm-card-background: #321b31;
++    --cmm-card-border: #845475;
++  }
++
+   /* Canonical radius aliases for inline usage */
+   .rounded-card  { border-radius: var(--radius-md); }  /* 16px cards */
+   .rounded-panel { border-radius: var(--radius-lg); }  /* 24px sections */
+diff --git a/apps/web/src/lib/ui/page-families/resolve-page-family.test.ts b/apps/web/src/lib/ui/page-families/resolve-page-family.test.ts
+--- a/apps/web/src/lib/ui/page-families/resolve-page-family.test.ts
++++ b/apps/web/src/lib/ui/page-families/resolve-page-family.test.ts
+@@ -95,6 +95,18 @@
+     expect(resolveBasePageFamilyId("/unknown-route")).toBe("secours");
+   });
+ 
++  it("isolates the white canvas to the annuaire while retaining pink button tokens", () => {
++    expect(resolvePageFamily("/sections/annuaire")).toMatchObject({
++      id: "reseau-discussions",
++      backdropToneKey: "pink",
++      canvasMode: "white",
++      exceptionId: "annuaire-white-canvas",
++      hero: { sectionGradient: "from-transparent via-transparent to-transparent" },
++    });
++    expect(resolvePageFamily("/sections/messagerie").canvasMode).toBeUndefined();
++    expect(resolvePageFamily("/sections/rejoindre-un-formulaire").canvasMode).toBeUndefined();
++  });
++
+   it("keeps documented exceptions explicit", () => {
+     expect(resolvePageFamily(EXPLORER_ROUTE)).toMatchObject({
+       id: "apprendre",
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.test.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.test.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.test.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.test.tsx
+@@ -135,14 +135,13 @@
+     );
+   });
+ 
+-  it("uses the existing violet family", () => {
+-    const markup = renderToStaticMarkup(<AnnuaireSection />);
+-
+-    expect(markup).toContain(
+-      'data-gradient="from-violet-600/20 via-violet-500/10 to-transparent"',
+-    );
+-    expect(markup).toContain("bg-violet-500/10");
+-    expect(markup).not.toContain("text-indigo-");
++  it("uses the white canvas contract and the rose variation of the form tab strip", () => {
++    const markup = renderToStaticMarkup(<AnnuaireSection />);
++
++    expect(markup).toContain('data-gradient="from-transparent via-transparent to-transparent"');
++    expect(markup).toContain("grid w-full gap-2 rounded-2xl border p-2");
++    expect(markup).toContain("from-pink-800 to-pink-900 text-white");
++    expect(markup).toContain("text-pink-900 hover:bg-pink-100");
+   });
+ 
+   it("does not compose the obsolete static workshops panel", () => {
