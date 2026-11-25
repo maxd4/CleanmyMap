@@ -7,7 +7,7 @@
 - **Accès** : consultation publique ; le référencement d'une structure ouvre un parcours authentifié séparé.
 - **Objectif actuel** : permettre de comprendre l'annuaire, rechercher des ressources et fiches partenaires acceptées, consulter une fiche et rejoindre le parcours de référencement.
 - **Action principale** : `Référencer ma structure` vers [`/partners/onboarding`](../partners-onboarding/partners-onboarding-README.md).
-- **Palette** : famille violet/blanc de la section Annuaire.
+- **Palette** : fond blanc opaque en thème clair (`annuaire-white-canvas`), onglets et cartes roses (`pink`), accents violets et dorés ; fond sombre opaque préservé en thème sombre.
 
 Cette fiche est l'index contractuel de la page. Elle ne duplique pas les détails de comportement :
 

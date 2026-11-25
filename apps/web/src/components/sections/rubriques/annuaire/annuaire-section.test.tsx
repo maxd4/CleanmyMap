@@ -130,14 +130,13 @@ describe("AnnuaireSection partner onboarding CTA", () => {
     );
   });
 
-  it("uses the existing violet family", () => {
+  it("uses the white canvas contract and the rose variation of the form tab strip", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
 
-    expect(markup).toContain(
-      'data-gradient="from-violet-600/20 via-violet-500/10 to-transparent"',
-    );
-    expect(markup).toContain("bg-violet-500/10");
-    expect(markup).not.toContain("text-indigo-");
+    expect(markup).toContain('data-gradient="from-transparent via-transparent to-transparent"');
+    expect(markup).toContain("grid w-full gap-2 rounded-2xl border p-2");
+    expect(markup).toContain("from-pink-800 to-pink-900 text-white");
+    expect(markup).toContain("text-pink-900 hover:bg-pink-100");
   });
 
   it("does not compose the obsolete static workshops panel", () => {

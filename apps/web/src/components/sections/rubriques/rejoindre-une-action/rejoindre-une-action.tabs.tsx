@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
 import { buildJoinActionTabHref } from "@/lib/sections/join-action-routes";
 import type { JoinActionTab } from "./rejoindre-une-action.model";
 
@@ -68,7 +69,7 @@ export function JoinActionTabs({
     <nav
       aria-label={ariaLabel ?? (fr ? "Onglets des actions" : "Action tabs")}
       role="tablist"
-      className={`grid w-full gap-2 rounded-2xl border border-emerald-100 bg-white p-2 shadow-sm ${tabs.length > 2 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2"}`}
+      className={tabStripClassName("emerald", tabs.length > 2 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2")}
     >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
@@ -94,7 +95,7 @@ export function JoinActionTabs({
                 moveWithKeyboard(tab.id, event.key);
               }
             }}
-            className={`inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold tracking-normal transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 md:text-base ${isActive ? "bg-emerald-700 text-white shadow-sm" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-900"}`}
+            className={tabItemClassName("emerald", isActive)}
           >
             {label}
           </Link>

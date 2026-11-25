@@ -47,13 +47,13 @@ function AnnuaireDirectoryFeedback({ fr, logic }: { fr: boolean; logic: ReturnTy
 
 function AnnuaireJoinCta({ fr }: { fr: boolean }) {
   return (
-    <RubriqueCard themeColor="violet" withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row">
-      <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><Building2 size={160} className="text-violet-400" /></div>
-      <div className="space-y-4 max-w-xl text-center md:text-left relative z-10">
-        <h3 className="text-3xl font-black text-white tracking-tight">{fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}</h3>
-        <p className="text-slate-300 font-bold opacity-80 leading-relaxed">{fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}</p>
+    <RubriqueCard themeColor="rose" withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden border-amber-500/40 md:flex-row">
+      <div className="pointer-events-none absolute top-0 right-0 p-12 opacity-10"><Building2 size={160} className="text-pink-700" /></div>
+      <div className="relative z-10 max-w-xl space-y-4 text-center md:text-left">
+        <h3 className="text-3xl font-black tracking-tight cmm-text-primary">{fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}</h3>
+        <p className="font-semibold leading-relaxed cmm-text-primary">{fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}</p>
       </div>
-      <CmmButton href="/partners/onboarding" tone="primary" variant="default" ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"} className="relative z-10 flex items-center gap-3 bg-white font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl">{fr ? "Référencer ma structure" : "Register my structure"}<ArrowRight size={20} /></CmmButton>
+      <CmmButton href="/partners/onboarding" tone="primary" variant="default" ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"} className="relative z-10 flex items-center gap-3">{fr ? "Référencer ma structure" : "Register my structure"}<ArrowRight size={20} /></CmmButton>
     </RubriqueCard>
   );
 }
@@ -125,7 +125,7 @@ export function AnnuaireSection() {
       title={fr ? "Annuaire des acteurs" : "Actors directory"}
       subtitle={fr ? "Explorez l'écosystème engagé pour un territoire propre et durable." : "Explore the ecosystem committed to a clean and sustainable territory."}
       icon={Globe}
-      gradient="from-violet-600/20 via-violet-500/10 to-transparent"
+      gradient="from-transparent via-transparent to-transparent"
     >
       <CmmSectionGroup>
         <AnnuaireViewTabs fr={fr} view={view} onChange={setView} />

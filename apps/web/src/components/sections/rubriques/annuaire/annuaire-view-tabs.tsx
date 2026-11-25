@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
-import { cn } from "@/lib/utils";
+import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
 
 export const ANNUAIRE_VIEWS = ["organization", "directory", "map"] as const;
 export type AnnuaireView = (typeof ANNUAIRE_VIEWS)[number];
@@ -49,7 +49,7 @@ export function AnnuaireViewTabs({
       aria-orientation="horizontal"
       aria-label={fr ? "Vues de l'Annuaire" : "Directory views"}
       onKeyDown={onKeyDown}
-      className="flex flex-wrap gap-2 border-b border-[var(--cmm-surface-border)] pb-3"
+      className={tabStripClassName("pink", "grid-cols-1 sm:grid-cols-3")}
     >
       {ANNUAIRE_VIEWS.map((item) => (
         <button
@@ -61,12 +61,7 @@ export function AnnuaireViewTabs({
           aria-controls={annuairePanelId(item)}
           tabIndex={view === item ? 0 : -1}
           onClick={() => onChange(item)}
-          className={cn(
-            "rounded-xl border px-4 py-2.5 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500",
-            view === item
-              ? "border-violet-500 bg-violet-500/10 cmm-text-primary"
-              : "border-[var(--cmm-surface-border)] cmm-text-secondary",
-          )}
+          className={tabItemClassName("pink", view === item)}
         >
           {fr ? LABELS[item].fr : LABELS[item].en}
         </button>

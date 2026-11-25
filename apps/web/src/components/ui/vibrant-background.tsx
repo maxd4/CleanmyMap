@@ -8,6 +8,7 @@ import {
   type BackdropToneKey,
 } from "@/lib/ui/backdrop-tone";
 import { getButtonThemeCssVariables } from "@/lib/ui/button-theme";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export type VibrantBackgroundProps = {
   initialToneKey?: BackdropToneKey | null;
@@ -31,6 +32,10 @@ export function VibrantBackground({ initialToneKey = null }: VibrantBackgroundPr
 
   if (!toneKey) {
     return null;
+  }
+
+  if (pathname && resolvePageFamily(pathname).canvasMode === "white") {
+    return <div aria-hidden="true" className="cmm-white-page-canvas pointer-events-none fixed inset-0 -z-10" />;
   }
 
   const tone = BACKDROP_TONES[toneKey];

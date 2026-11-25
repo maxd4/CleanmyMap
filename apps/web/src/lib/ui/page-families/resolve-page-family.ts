@@ -131,6 +131,15 @@ function applyImplicitRouteOverrides(
     return { ...STATE_429_FAMILY, exceptionId: "error-429" };
   }
 
+  if (isRoute(pathname, "/sections/annuaire")) {
+    return {
+      ...family,
+      exceptionId: "annuaire-white-canvas",
+      canvasMode: "white",
+      hero: { ...family.hero, sectionGradient: "from-transparent via-transparent to-transparent" },
+    };
+  }
+
   if (pathname === "/partners" || pathname.startsWith("/partners/")) {
     return { ...PARTNERS_NETWORK_FAMILY, exceptionId: "partners-indigo" };
   }

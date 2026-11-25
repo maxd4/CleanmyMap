@@ -37,6 +37,8 @@ export type PageFamilyDefinition = {
   /** Libellé documentaire (audit / debug). */
   label: string;
   backdropToneKey: BackdropToneKey;
+  /** White canvas exception; preserves the family button palette. */
+  canvasMode?: "white";
   hero: PageFamilyHeroTokens;
   card: PageFamilyCardTokens;
 };

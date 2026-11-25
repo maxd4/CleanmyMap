@@ -95,6 +95,18 @@ describe("page-families resolver", () => {
     expect(resolveBasePageFamilyId("/unknown-route")).toBe("secours");
   });
 
+  it("isolates the white canvas to the annuaire while retaining pink button tokens", () => {
+    expect(resolvePageFamily("/sections/annuaire")).toMatchObject({
+      id: "reseau-discussions",
+      backdropToneKey: "pink",
+      canvasMode: "white",
+      exceptionId: "annuaire-white-canvas",
+      hero: { sectionGradient: "from-transparent via-transparent to-transparent" },
+    });
+    expect(resolvePageFamily("/sections/messagerie").canvasMode).toBeUndefined();
+    expect(resolvePageFamily("/sections/rejoindre-un-formulaire").canvasMode).toBeUndefined();
+  });
+
   it("keeps documented exceptions explicit", () => {
     expect(resolvePageFamily(EXPLORER_ROUTE)).toMatchObject({
       id: "apprendre",
