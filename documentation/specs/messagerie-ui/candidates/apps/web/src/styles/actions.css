@@ -1,0 +1,308 @@
+@layer utilities {
+  /* Base: Éléments interactifs natifs */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  a[href],
+  label[for],
+  select,
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"],
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  summary {
+    cursor: pointer;
+  }
+
+  /* Éléments de texte */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea {
+    cursor: text;
+  }
+
+  /* Éléments désactivés */
+  :disabled,
+  [aria-disabled="true"],
+  .disabled {
+    cursor: not-allowed !important;
+  }
+
+  /* Éléments draggables */
+  [draggable="true"],
+  .cursor-grab {
+    cursor: grab;
+  }
+
+  .cursor-grab:active,
+  .cursor-grabbing,
+  [draggable="true"]:active {
+    cursor: grabbing;
+  }
+
+  /* Classes utilitaires cursor explicites */
+  .cursor-pointer { cursor: pointer; }
+  .cursor-text { cursor: text; }
+  .cursor-not-allowed { cursor: not-allowed; }
+  .cursor-default { cursor: default; }
+  .cursor-help { cursor: help; }
+  .cursor-wait { cursor: wait; }
+  .cursor-move { cursor: move; }
+  .cursor-crosshair { cursor: crosshair; }
+  .cursor-zoom-in { cursor: zoom-in; }
+  .cursor-zoom-out { cursor: zoom-out; }
+
+  /* Comportement par défaut pour éléments non-interactifs */
+  .cursor-inherit { cursor: inherit; }
+
+  /* ============================================================
+     COLOR POP-OUT — 60/30/10 rule
+     60% neutral canvas, 30% secondary (slate/muted), 10% CTA accent
+     ============================================================ */
+
+  /* Primary CTA pop-out: high-chroma emerald with warm contrast */
+  .cmm-cta-pop {
+    background: var(--action-primary-bg);
+    color: var(--action-primary-text);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    transition: background 0.18s ease, box-shadow 0.22s ease, transform 0.15s ease;
+  }
+  .cmm-cta-pop:hover {
+    background: var(--action-primary-hover);
+    box-shadow: 0 4px 14px -4px rgba(16, 185, 129, 0.45);
+    transform: translateY(-1px);
+  }
+  .cmm-cta-pop:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px -2px rgba(16, 185, 129, 0.35);
+  }
+
+  /* Neutral 30%: secondary surfaces – subtle hover tint */
+  .cmm-surface-action {
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .cmm-surface-action:hover {
+    background: var(--action-secondary-hover);
+    border-color: rgba(16, 185, 129, 0.25);
+  }
+
+  /* Primitive bouton : géométrie, états et surfaces sont exclusivement tokenisés. */
+  .cmm-button {
+    --cmm-button-height: var(--cmm-button-height-md);
+    --cmm-button-padding-x: var(--cmm-button-padding-x-md);
+    --cmm-button-font-size: 0.875rem;
+    --cmm-button-background: var(--action-secondary-bg);
+    --cmm-button-background-hover: var(--action-secondary-hover);
+    --cmm-button-background-image: none;
+    --cmm-button-background-image-hover: none;
+    --cmm-button-border: var(--border-default);
+    --cmm-button-border-hover: var(--border-strong);
+    --cmm-button-color: var(--action-secondary-text);
+    --cmm-button-radius: var(--radius-sm);
+    box-sizing: border-box;
+    display: inline-flex;
+    height: var(--cmm-button-height);
+    min-width: max-content;
+    align-items: center;
+    justify-content: center;
+    gap: var(--cmm-button-gap);
+    padding-inline: var(--cmm-button-padding-x);
+    border: 1px solid var(--cmm-button-border);
+    border-radius: var(--cmm-button-radius);
+    background-color: var(--cmm-button-background);
+    background-image: var(--cmm-button-background-image);
+    color: var(--cmm-button-color);
+    font: 600 var(--cmm-button-font-size) / 1.25 var(--font-base);
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: var(--cmm-button-shadow);
+    cursor: pointer;
+    transition: var(--cmm-button-transition);
+  }
+
+  /* Tab selection is a navigation state, not an action priority. */
+  .cmm-family-tab-strip {
+    background: var(--bg-elevated);
+    border-color: var(--cmm-family-card-border, var(--border-strong));
+    box-shadow: var(--cmm-surface-shadow);
+  }
+
+  .cmm-family-tab-item {
+    color: var(--cmm-family-heading, var(--text-primary));
+  }
+
+  .cmm-family-tab-item:hover {
+    background: var(--cmm-family-card-flat, var(--bg-muted));
+  }
+
+  .cmm-family-tab-item--active,
+  .cmm-family-tab-item--active:hover {
+    background-color: var(--cmm-tab-primary, var(--cmm-family-primary, #475569)) !important;
+    background-image: linear-gradient(135deg, var(--cmm-tab-primary, var(--cmm-family-primary, #475569)), var(--cmm-tab-deep, var(--cmm-family-deep, #334155)));
+    color: #ffffff !important;
+  }
+
+  .cmm-family-tab-item:focus-visible {
+    outline: 2px solid var(--cmm-family-heading, var(--text-primary));
+    outline-offset: 2px;
+  }
+
+  [data-display-mode="minimaliste"] .cmm-family-tab-item--active,
+  [data-display-mode="sobre"] .cmm-family-tab-item--active {
+    background-color: var(--cmm-tab-deep, var(--cmm-family-deep, #334155)) !important;
+    background-image: none;
+    color: #ffffff !important;
+  }
+
+  [data-display-mode="sobre"] .cmm-family-tab-strip {
+    box-shadow: none;
+  }
+
+  .cmm-button[data-cmm-button-tone="primary"] {
+    --cmm-button-background: var(--action-primary-bg);
+    --cmm-button-background-hover: var(--action-primary-hover);
+    --cmm-button-background-image: linear-gradient(135deg, color-mix(in srgb, var(--action-primary-bg) 86%, white), var(--action-primary-bg));
+    --cmm-button-background-image-hover: linear-gradient(135deg, color-mix(in srgb, var(--action-primary-hover) 86%, white), var(--action-primary-hover));
+    --cmm-button-border: var(--action-primary-bg);
+    --cmm-button-border-hover: var(--action-primary-hover);
+    --cmm-button-color: var(--action-primary-text);
+  }
+
+  .cmm-button[data-cmm-button-tone="important"] {
+    --cmm-button-background: var(--action-important-bg);
+    --cmm-button-background-hover: var(--action-important-hover);
+    --cmm-button-background-image: linear-gradient(135deg, color-mix(in srgb, var(--action-important-bg) 86%, white), var(--action-important-bg));
+    --cmm-button-background-image-hover: linear-gradient(135deg, color-mix(in srgb, var(--action-important-hover) 86%, white), var(--action-important-hover));
+    --cmm-button-border: var(--action-important-bg);
+    --cmm-button-border-hover: var(--action-important-hover);
+    --cmm-button-color: var(--action-important-text);
+  }
+
+  .cmm-button[data-cmm-button-tone="critical"] {
+    --cmm-button-background: var(--action-critical-bg);
+    --cmm-button-background-hover: var(--action-critical-hover);
+    --cmm-button-background-image: linear-gradient(135deg, color-mix(in srgb, var(--action-critical-bg) 86%, white), var(--action-critical-bg));
+    --cmm-button-background-image-hover: linear-gradient(135deg, color-mix(in srgb, var(--action-critical-hover) 86%, white), var(--action-critical-hover));
+    --cmm-button-border: var(--action-critical-bg);
+    --cmm-button-border-hover: var(--action-critical-hover);
+    --cmm-button-color: var(--action-critical-text);
+  }
+
+  .cmm-button[data-cmm-button-tone="secondary"] {
+    --cmm-button-border: var(--border-strong);
+    --cmm-button-border-hover: var(--action-primary-bg);
+  }
+
+  .cmm-button[data-cmm-button-tone="tertiary"] {
+    --cmm-button-background: transparent;
+    --cmm-button-background-hover: var(--bg-muted);
+    --cmm-button-border: var(--border-default);
+    --cmm-button-border-hover: var(--border-strong);
+    --cmm-button-color: var(--text-primary);
+    --cmm-button-shadow: none;
+    --cmm-button-shadow-hover: none;
+  }
+
+  .cmm-button[data-cmm-button-tone="destructive"] {
+    --cmm-button-background: var(--action-destructive-bg);
+    --cmm-button-background-hover: var(--action-destructive-hover);
+    --cmm-button-background-image: linear-gradient(135deg, color-mix(in srgb, var(--action-destructive-bg) 86%, white), var(--action-destructive-bg));
+    --cmm-button-background-image-hover: linear-gradient(135deg, color-mix(in srgb, var(--action-destructive-hover) 86%, white), var(--action-destructive-hover));
+    --cmm-button-border: var(--action-destructive-bg);
+    --cmm-button-border-hover: var(--action-destructive-hover);
+    --cmm-button-color: var(--action-destructive-text);
+  }
+
+  .cmm-button[data-cmm-button-size="sm"] {
+    --cmm-button-height: var(--cmm-button-height-sm);
+    --cmm-button-padding-x: var(--cmm-button-padding-x-sm);
+    --cmm-button-font-size: 0.75rem;
+  }
+
+  .cmm-button[data-cmm-button-size="lg"] {
+    --cmm-button-height: var(--cmm-button-height-lg);
+    --cmm-button-padding-x: var(--cmm-button-padding-x-lg);
+    --cmm-button-font-size: 1rem;
+  }
+
+  .cmm-button[data-cmm-button-variant="pill"] {
+    --cmm-button-radius: var(--radius-full);
+  }
+
+  .cmm-button[data-cmm-button-variant="ghost"] {
+    --cmm-button-background: transparent;
+    --cmm-button-background-hover: var(--bg-muted);
+    --cmm-button-background-image: none;
+    --cmm-button-background-image-hover: none;
+    --cmm-button-border: transparent;
+    --cmm-button-border-hover: transparent;
+    --cmm-button-shadow: none;
+    --cmm-button-shadow-hover: none;
+  }
+
+  .cmm-button[data-cmm-button-width="wide"] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cmm-button-group[data-cmm-button-group-layout="two-column"] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cmm-button-group[data-cmm-button-group-layout="two-column"] > .cmm-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cmm-button-group[data-cmm-button-group-layout="two-column"] > .cmm-button[data-cmm-button-width="wide"] {
+    grid-column: span 2;
+  }
+
+  @media (max-width: 639px) {
+    .cmm-button-group[data-cmm-button-group-layout="two-column"] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cmm-button-group[data-cmm-button-group-layout="two-column"] > .cmm-button[data-cmm-button-width="wide"] {
+      grid-column: auto;
+    }
+  }
+
+  .cmm-button:not([data-cmm-button-disabled="true"]):not([data-cmm-button-loading="true"]):hover {
+    border-color: var(--cmm-button-border-hover);
+    background-color: var(--cmm-button-background-hover);
+    background-image: var(--cmm-button-background-image-hover);
+    box-shadow: var(--cmm-button-shadow-hover);
+  }
+
+  .cmm-button:not([data-cmm-button-disabled="true"]):not([data-cmm-button-loading="true"]):active {
+    box-shadow: var(--cmm-button-shadow);
+  }
+
+  .cmm-button:focus-visible {
+    outline: 2px solid var(--cmm-button-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .cmm-button[data-cmm-button-disabled="true"],
+  .cmm-button[data-cmm-button-loading="true"] {
+    cursor: not-allowed;
+    opacity: var(--cmm-button-disabled-opacity);
+    pointer-events: none;
+  }
+
+
+
+}
+
+/* Les liens CmmButton doivent garder leur couleur de ton malgré le reset global des liens. */
+a.cmm-button {
+  color: var(--cmm-button-color);
+}

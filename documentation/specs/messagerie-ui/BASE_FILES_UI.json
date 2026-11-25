@@ -1,0 +1,37 @@
+{
+  "base": "a7fb3775a08fe853b6a77af1967c8af2d4e26e2e",
+  "files": [
+    {
+      "path": "apps/web/src/styles/actions.css",
+      "baseBlob": "79198b92513ca38369f649b502cddf6b135982a4"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/connect-components.tsx",
+      "baseBlob": "55797e22afcea85860f997db56640a8f4e55c091"
+    },
+    {
+      "path": "apps/web/src/components/chat/chat-composer-input.tsx",
+      "baseBlob": "a0b66e4083182912c4fc80d02f4eb0a81c03445e"
+    },
+    {
+      "path": "apps/web/src/components/chat/dm-inbox.tsx",
+      "baseBlob": "831ba94d5efd5ebdc94926e7011cb1f4b957147d"
+    },
+    {
+      "path": "apps/web/src/components/chat/chat-sidebar.tsx",
+      "baseBlob": "fba8477a7b1d3dab62867264c487e782b63efdd3"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-runtime-context.ts",
+      "baseBlob": "8439c5e9071a5f0e68800c7507cf60afafc73e89"
+    },
+    {
+      "path": "apps/web/src/lib/chat/topic-presentation.ts",
+      "baseBlob": "054ecc5b27ba46f7c1203591cd29bdfb8a1f6fb1"
+    },
+    {
+      "path": "apps/web/src/app/api/chat/route.post-validation.ts",
+      "baseBlob": "f129bbd0941c3686ea3e661f5a93c0edc9cf59bb"
+    }
+  ]
+}

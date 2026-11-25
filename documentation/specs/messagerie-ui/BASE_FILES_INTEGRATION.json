@@ -1,0 +1,8 @@
+{
+  "apps/web/src/components/chat/chat-shell.layout.tsx": "928149e8c1df4bcda89ef80aae3b2e602b7873f7",
+  "apps/web/src/components/chat/hooks/use-chat-shell-sidebar.ts": "e4fdc458fedc7cb86779f3ea590eabde68ddfb8c",
+  "apps/web/src/components/sections/rubriques/connect-section-view.tsx": "2f65520c5c0e2adb623bb9678a8a9746bbcdf5e1",
+  "apps/web/src/components/chat/hooks/use-chat-action-discussions.ts": "c4e363d441733a6baad535f16b6900b917907a37",
+  "apps/web/src/components/chat/hooks/use-chat-shell-data.ts": "b7ce987ab10ea88a3794a1f1bfd9c63edd98ddc5",
+  "apps/web/src/lib/auth/api-authorization-contract.chat.ts": "d3b923be5b532d49c92fd46061efa30cbc755c6b"
+}

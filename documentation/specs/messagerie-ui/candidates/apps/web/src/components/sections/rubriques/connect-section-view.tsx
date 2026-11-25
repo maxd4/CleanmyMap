@@ -1,0 +1,37 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { MessageSquare } from "lucide-react";
+import { DeferredChatShell } from "@/components/chat/deferred-chat-shell";
+import { PageHeader } from "@/components/ui/page-header";
+import type { ChatShellNavigationState } from "@/components/chat/chat-navigation";
+import { ConnectTabs } from "./connect-components";
+import type { ConnectTab } from "./connect-types";
+import { useConnectData } from "./use-connect-data";
+import { getConnectShellNavigationStates } from "./connect-section-navigation";
+
+type ShellProps = ReturnType<typeof useConnectData>;
+
+export function ConnectSectionView({
+  fr,
+  activeTab,
+  setActiveTab,
+  isStaticMotion,
+  discussion,
+  dmNavigation,
+  shell,
+  onNavigationChange,
+}: {
+  fr: boolean;
+  activeTab: ConnectTab;
+  setActiveTab: (tab: ConnectTab) => void;
+  isStaticMotion: boolean;
+  discussion: ShellProps & { navigationState: ChatShellNavigationState; recipient: ShellProps["initialRecipient"]; messageId: ShellProps["initialMessageId"] };
+  dmNavigation: ChatShellNavigationState;
+  shell: ShellProps;
+  onNavigationChange: (tab: ConnectTab, state: ChatShellNavigationState) => void;
+}) {
+  const navigationByShell = getConnectShellNavigationStates(activeTab, discussion.navigationState, dmNavigation);
+  const panel = (tab: ConnectTab, props: React.ComponentProps<typeof DeferredChatShell>) => <div id={`connect-panel-${tab}`} hidden={activeTab !== tab} aria-hidden={activeTab !== tab} aria-labelledby={`connect-tab-${tab}`} role="tabpanel" data-connect-panel={tab} className="h-full min-h-0"><motion.div initial={false} animate={{ opacity: activeTab === tab ? 1 : 0 }} transition={{ duration: isStaticMotion ? 0 : 0.15 }} className="h-full min-h-0"><DeferredChatShell {...props} onNavigationChange={(state) => onNavigationChange(tab, state)} /></motion.div></div>;
+  return <section id="connect" className="relative flex min-h-0 flex-1 flex-col gap-3"><div className="shrink-0 rounded-xl border border-[var(--cmm-family-card-border,var(--border-default))] bg-[var(--bg-elevated)] px-3 sm:px-6"><PageHeader title={<span className="inline-flex items-center gap-3"><span className="rounded-xl bg-[var(--cmm-family-soft,#fce7f3)] p-2.5 text-[var(--cmm-family-primary,#9d174d)]" aria-hidden="true"><MessageSquare size={20} /></span><span>{fr ? "Messagerie" : "Messaging"}</span></span>} subtitle={fr ? "Échangez et coordonnez vos actions." : "Exchange and coordinate your actions."} /></div><div className="shrink-0 rounded-xl border border-[var(--cmm-family-card-border,var(--border-default))] bg-[var(--bg-elevated)] px-3 pb-3 pt-3 sm:px-6"><ConnectTabs activeTab={activeTab} setActiveTab={setActiveTab} fr={fr} /></div><div className="min-h-0 h-[clamp(480px,calc(100dvh-13rem),950px)] flex-none">{panel("discussions", { ...shell, initialChannelType: discussion.initialChannelType, initialTopicId: discussion.initialTopicId, initialActionId: discussion.initialActionId, initialRecipient: discussion.recipient, initialMessageId: discussion.messageId, navigationState: navigationByShell.discussions, tone: "light", fullHeight: true, messagerieMode: true, surfaceActive: activeTab === "discussions" })}{panel("dm", { ...shell, initialChannelType: "dm", initialRecipient: shell.initialRecipient, initialMessageId: shell.initialMessageId, initialFeedbackId: shell.initialFeedbackId, initialContactRequestId: shell.initialContactRequestId, initialBuddyRequestId: shell.initialBuddyRequestId, navigationState: navigationByShell.dm, tone: "light", fullHeight: true, messagerieMode: true, surfaceActive: activeTab === "dm" })}</div></section>;
+}
