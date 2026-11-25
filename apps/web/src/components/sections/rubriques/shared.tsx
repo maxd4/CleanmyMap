@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { LucideIcon, Sparkles } from "lucide-react";
 import { DASHBOARD_ROUTE, EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { resolvePageSurfacePalette } from "@/lib/ui/page-families/surface-palette";
 
 export type L10n = { fr: string; en: string } | string;
 
@@ -57,6 +58,7 @@ export function SectionShell({
   const pathname = usePathname();
   const pageFamily = resolvePageFamily(pathname);
   const hero = pageFamily.hero;
+  const usesWhiteCanvas = resolvePageSurfacePalette(pathname) !== null;
   const fr = locale === "fr";
 
   return (
@@ -66,11 +68,13 @@ export function SectionShell({
       className="relative min-h-screen"
     >
       {/* Dynamic Background Gradient */}
-      <div
-        className={`absolute inset-x-0 top-0 h-[24rem] bg-gradient-to-b ${
-          gradient || hero.sectionGradient
-        } pointer-events-none -z-10`}
-      />
+      {!usesWhiteCanvas ? (
+        <div
+          className={`absolute inset-x-0 top-0 h-[24rem] bg-gradient-to-b ${
+            gradient || hero.sectionGradient
+          } pointer-events-none -z-10`}
+        />
+      ) : null}
 
       <CmmPageLayout>
         {!hideHeader && title ? (
@@ -84,14 +88,14 @@ export function SectionShell({
 
         <CmmSectionGroup>
           {summary && (
-            <div className="rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 backdrop-blur-xl">
-              <h3 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-500">{fr ? "Synthèse" : "Summary"}</h3>
-              <div className="font-medium leading-relaxed text-slate-300">{summary}</div>
+            <div className="cmm-surface cmm-panel p-6">
+              <h3 className="mb-4 text-sm font-semibold cmm-text-primary">{fr ? "Synthèse" : "Summary"}</h3>
+              <div className="font-medium leading-relaxed cmm-text-primary">{summary}</div>
             </div>
           )}
 
           {(summary || links || traceNote) ? (
-            <div className="rounded-[3rem] border border-white/10 bg-slate-950/20 p-4">
+            <div className="cmm-surface cmm-panel p-4">
               {children}
             </div>
           ) : (
@@ -117,7 +121,7 @@ export function SectionShell({
           )}
 
           {traceNote && (
-            <div className="rounded-2xl border border-amber-500/10 bg-amber-500/5 p-6 text-xs font-medium italic text-amber-500/60">
+            <div className="cmm-surface cmm-panel p-6 text-sm cmm-text-secondary">
               {traceNote}
             </div>
           )}

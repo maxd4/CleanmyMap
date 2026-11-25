@@ -2,8 +2,10 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+let mockPathname = "/sections/rejoindre-une-action";
+
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/sections/rejoindre-une-action",
+  usePathname: () => mockPathname,
 }));
 
 vi.mock("@/components/ui/site-preferences-provider", () => ({
@@ -66,6 +68,7 @@ describe("SectionShell page composition", () => {
   });
 
   it("keeps hideHeader available for consumers that own their page header", () => {
+    mockPathname = "/sections/rejoindre-une-action";
     const markup = renderToStaticMarkup(
       <SectionShell id="rejoindre-une-action" hideHeader>
         <header>Header enfant</header>
@@ -75,5 +78,25 @@ describe("SectionShell page composition", () => {
     expect(markup).toContain('class="cmm-page-layout"');
     expect(markup).toContain("Header enfant");
     expect(markup).not.toContain("cmm-page-header");
+    expect(markup).not.toContain("bg-gradient-to-b");
+  });
+
+  it("suppresses SectionShell top gradient on white-canvas routes while keeping it on standalone routes", () => {
+    mockPathname = "/sections/rejoindre-une-action";
+    const whiteCanvasMarkup = renderToStaticMarkup(
+      <SectionShell id="rejoindre-une-action" summary={<p>Résumé</p>}>
+        <article>Contenu</article>
+      </SectionShell>,
+    );
+    expect(whiteCanvasMarkup).not.toContain("bg-gradient-to-b");
+    expect(whiteCanvasMarkup).toContain("cmm-surface cmm-panel");
+
+    mockPathname = "/explorer";
+    const standaloneMarkup = renderToStaticMarkup(
+      <SectionShell id="explorer">
+        <article>Sommaire</article>
+      </SectionShell>,
+    );
+    expect(standaloneMarkup).toContain("bg-gradient-to-b");
   });
 });

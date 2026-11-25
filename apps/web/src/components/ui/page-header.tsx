@@ -147,13 +147,19 @@ export function PageHeader({
   actionClassName,
 }: PageHeaderProps) {
   const pathname = usePathname();
-  const family = familyProp ?? (tone ? undefined : resolvePageFamily(pathname));
+  const resolvedFamily = resolvePageFamily(pathname);
+  const family = familyProp ?? (tone ? undefined : resolvedFamily);
   const tokens = resolveTokens({ family, tone, contrast });
   const isCenter = align === "center";
   const Heading = headingLevel;
+  const matchesRouteFamily =
+    Boolean(family) &&
+    contrast === "default" &&
+    family?.backdropToneKey === resolvedFamily.backdropToneKey;
 
   return (
     <header
+      data-cmm-family-header={matchesRouteFamily ? family?.backdropToneKey : undefined}
       className={cn(
         "cmm-page-header",
         isCenter ? "cmm-page-header--center" : "cmm-page-header--left",

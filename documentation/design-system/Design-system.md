@@ -14,7 +14,7 @@ Une expérience cohérente entre pages et familles de contenus, lisible sur mobi
 
 | Responsabilité | Contrat actuel | Application attendue |
 |---|---|---|
-| Couleur par bloc | `BLOC_COLOR_SYSTEM_PREMIUM.md` | Fond clair de famille, cartes contrastées, hiérarchie des CTA |
+| Couleur par bloc | `BLOC_COLOR_SYSTEM_PREMIUM.md` | Canvas neutre, cartes de famille contrastées, hiérarchie des CTA |
 | En-tête de page | `PAGE_HEADER.md` | `PageHeader` et un seul système titre/sous-titre |
 | Grille globale | `LAYOUT_SPACING.md` | `CmmPageLayout`, chrome global et niveaux de largeur |
 | Actions | `ACTIONS_BUTTONS.md` | `CmmButton` et `CmmButtonGroup` |
@@ -46,15 +46,12 @@ Le chrome global subsiste y compris sur les pages d'authentification et d'onboar
 
 ## 4. Couleurs et hiérarchie
 
-La documentation actuelle définit notamment :
-
-- **Accueil et Pilotage :** orange et brun combinés.
-- **Agir :** famille verte/émeraude.
-- **Cartographie :** famille ciel.
-- **Impact :** famille rouge.
-- **Réseau et Discussions :** rose/indigo selon sous-famille.
-- **Apprendre :** jaune/ambre.
-- **Partenaires et données :** indigo/violet selon la rubrique.
+Le fond des pages Web classiques est blanc en thème clair, sombre en thème sombre.
+Les familles s'expriment dans les encadrés, cartes, titres et onglets, selon
+le registre et [BLOC_COLOR_SYSTEM_PREMIUM.md](./BLOC_COLOR_SYSTEM_PREMIUM.md).
+La homepage, le sommaire, les surfaces autonomes de connexion/inscription
+et d'impression gardent leurs compositions documentées. Les données,
+les surfaces fonctionnelles et les états gardent leur propre sémantique.
 
 La hiérarchie canonique des actions est décrite comme **doré/brun > violet > vert > blanc**, indépendamment du `tone` sémantique choisi sur `CmmButton`. Ne jamais traduire cela en palette arbitraire page par page.
 

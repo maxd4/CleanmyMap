@@ -7,6 +7,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 
+import { getPageFamilyById } from "@/lib/ui/page-families";
 import { PageHeader } from "./page-header";
 
 function renderHeader(props: Partial<ComponentProps<typeof PageHeader>> = {}) {
@@ -97,5 +98,17 @@ describe("PageHeader", () => {
     expect(subtitleBlock).not.toContain("text-overflow");
     expect(subtitleBlock).not.toContain("-webkit-line-clamp");
     expect(subtitleBlock).toContain("text-wrap: balance");
+  });
+
+  it("marks data-cmm-family-header only when family matches the route and contrast is default", () => {
+    const matchingRouteMarkup = renderHeader({ family: getPageFamilyById("homepage") });
+    const distinctFamilyMarkup = renderHeader({ family: getPageFamilyById("agir") });
+    const explicitToneMarkup = renderHeader({ tone: "emerald" });
+    const inverseMarkup = renderHeader({ family: getPageFamilyById("homepage"), contrast: "inverse" });
+
+    expect(matchingRouteMarkup).toContain('data-cmm-family-header="home"');
+    expect(distinctFamilyMarkup).not.toContain("data-cmm-family-header=");
+    expect(explicitToneMarkup).not.toContain("data-cmm-family-header=");
+    expect(inverseMarkup).not.toContain("data-cmm-family-header=");
   });
 });

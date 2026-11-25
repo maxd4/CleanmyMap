@@ -8,7 +8,7 @@ import {
   type BackdropToneKey,
 } from "@/lib/ui/backdrop-tone";
 import { getButtonThemeCssVariables } from "@/lib/ui/button-theme";
-import { resolvePageFamily } from "@/lib/ui/page-families";
+import { getSurfacePaletteCssVariables, resolvePageSurfacePalette } from "@/lib/ui/page-families/surface-palette";
 
 export type VibrantBackgroundProps = {
   initialToneKey?: BackdropToneKey | null;
@@ -17,6 +17,7 @@ export type VibrantBackgroundProps = {
 export function VibrantBackground({ initialToneKey = null }: VibrantBackgroundProps) {
   const pathname = usePathname();
   const toneKey = resolveBackdropToneKey(pathname) ?? initialToneKey;
+  const paletteId = resolvePageSurfacePalette(pathname);
 
   useEffect(() => {
     const buttonThemeVariables = getButtonThemeCssVariables(toneKey);
@@ -30,12 +31,26 @@ export function VibrantBackground({ initialToneKey = null }: VibrantBackgroundPr
     }
   }, [toneKey]);
 
-  if (!toneKey) {
-    return null;
+  useEffect(() => {
+    if (!paletteId) return;
+    const body = document.body;
+    const variables = getSurfacePaletteCssVariables(paletteId);
+    body.dataset.cmmPagePalette = paletteId;
+    for (const [name, value] of Object.entries(variables)) {
+      body.style.setProperty(name, value);
+    }
+    return () => {
+      delete body.dataset.cmmPagePalette;
+      for (const name of Object.keys(variables)) body.style.removeProperty(name);
+    };
+  }, [paletteId]);
+
+  if (paletteId) {
+    return <div aria-hidden="true" className="cmm-page-canvas pointer-events-none fixed inset-0 -z-10" />;
   }
 
-  if (pathname && resolvePageFamily(pathname).canvasMode === "white") {
-    return <div aria-hidden="true" className="cmm-white-page-canvas pointer-events-none fixed inset-0 -z-10" />;
+  if (!toneKey) {
+    return null;
   }
 
   const tone = BACKDROP_TONES[toneKey];

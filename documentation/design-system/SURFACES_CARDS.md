@@ -8,8 +8,8 @@ variante de composant par mode.
 ## Architecture
 
 ```text
-data-display-mode
-  → tokens CSS --cmm-surface-*
+data-display-mode + famille de page
+  → tokens CSS --cmm-surface-* et --cmm-family-*
   → primitives CmmCard / CmmBlockCard / RubriqueCard
   → consommateurs de page
 ```
@@ -55,7 +55,7 @@ retirent aucune donnée, route, permission ou fonctionnalité.
 
 Les variantes métier conservées sont :
 
-- `default` : surface standard ;
+- `default` : surface standard ; le tone `family` active la surface de famille, les cartes neutres restent le défaut ;
 - `elevated` : surface élevée ;
 - `muted` : surface secondaire ;
 - `outlined` : surface transparente bordée ;
@@ -85,8 +85,14 @@ source de couleur. La barre supérieure reste disponible dans les trois modes,
 le watermark est réservé à `exhaustif`, et l'icône ne reçoit aucun effet
 décoratif en `minimaliste` ou `sobre`.
 
-Les presets de famille exposent uniquement `rubriqueTheme` et `surfaceKind`.
-Ils ne portent ni gradients, ni ombres, ni blur, ni hover local.
+Les presets de famille exposent `rubriqueTheme` et `surfaceKind`.
+Les valeurs de couleur sont centralisées dans `surface-palette.ts`, exposées
+par les tokens `--cmm-family-*` et consommées par les primitives. Les
+encadrés `FamilyRubriqueCard` thématiques du contexte courant ont un gradient
+opaque primaire/profond en exhaustif, une surface unie en minimaliste et
+une surface neutre en sobre. Aucune recette de gradient, ombre, blur ou hover
+locale ne doit concurrencer les primitives. Les surfaces neutres, rôles
+sémantiques et variantes métier ne deviennent pas thématiques par défaut.
 
 ## Contrat de composition des consommateurs
 

@@ -27,6 +27,7 @@ export function FamilyRubriqueCard({
     <RubriqueCard
       themeColor={card.rubriqueTheme}
       surfaceKind={card.surfaceKind}
+      data-cmm-family-surface={family.backdropToneKey === resolvedFamily.backdropToneKey ? "true" : undefined}
       className={className}
       {...props}
     />

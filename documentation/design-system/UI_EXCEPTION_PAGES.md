@@ -3,7 +3,8 @@
 Ce document sert de matrice de référence pour les agents.
 
 Règle générale :
-- une page suit la teinte de sa famille visuelle ou de son bloc fonctionnel;
+- une page classique suit le canvas neutre et les surfaces colorées de sa famille visuelle, conformément à `BLOC_COLOR_SYSTEM_PREMIUM.md`;
+- homepage, sommaire, connexion/inscription et impression conservent leur composition autonome documentée ; les palettes indiquées ci-dessous décrivent l'identité de famille et non un fond de page coloré;
 - la homepage (`/` et `/accueil`) constitue une famille autonome avec sa propre palette, ce n'est pas une exception de bloc;
 - une exception UI doit être explicitement documentée avant tout changement de palette;
 - une exception validée reste stable tant qu'elle sert de référence UX.
@@ -54,7 +55,7 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | Homepage autonome | `/`, `/accueil` | `home` | Identité de page indépendante |
 | Auth & Onboarding | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | `auth` | `/sign-in` et `/sign-up` utilisent le canvas emerald lumineux et les surfaces emerald d'Agir sans changer leur autonomie fonctionnelle ; l'onboarding conserve son contrat propre |
 | Institutionnel & Légal | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*` | `legal` | Pages juridiques et institutionnelles, palette slate / gris clair / blanc, sans esthétique marketing blocks |
-| Système & Utilitaires | `/reglages`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation QA, avec mood layer autonome par usage; les états système suivent une charte commune `SystemStateLayout` |
+| Système & Utilitaires | `/reglages`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation QA, avec identité bleu pétrole/acier sur canvas neutre; les états système suivent une charte commune `SystemStateLayout` |
 | Admin & Super-admin | `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode` | `admin` | Console et supervision restreinte |
 | Print & Export | `/prints/report` | `print` | Rapport imprimable et export visuel, ambiance documentaire autonome |
 

@@ -110,4 +110,17 @@ describe("canonical surface cards", () => {
     expect(css).toContain("--cmm-surface-transition-duration: 0ms;");
     expect(css).toContain("background-image: none;");
   });
+
+  it("keeps default CmmCard neutral and exposes opt-in family tone without altering muted/outlined/glass", () => {
+    const defaultMarkup = renderToStaticMarkup(<CmmCard>Neutre</CmmCard>);
+    const familyMarkup = renderToStaticMarkup(<CmmCard tone="family">Famille</CmmCard>);
+
+    expect(defaultMarkup).toContain('data-cmm-card-tone="slate"');
+    expect(familyMarkup).toContain('data-cmm-card-tone="family"');
+    expect(css).toContain('body[data-cmm-page-palette] .cmm-card[data-cmm-card-tone="family"][data-cmm-card-variant="default"]');
+    expect(css).toContain('body[data-cmm-page-palette] .cmm-card[data-cmm-card-tone="family"][data-cmm-card-variant="elevated"]');
+    expect(css).not.toContain('[data-cmm-card-tone="family"][data-cmm-card-variant="muted"]');
+    expect(css).not.toContain('[data-cmm-card-tone="family"][data-cmm-card-variant="outlined"]');
+    expect(css).not.toContain('[data-cmm-card-tone="family"][data-cmm-card-variant="glass"]');
+  });
 });
