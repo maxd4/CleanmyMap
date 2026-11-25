@@ -5,12 +5,24 @@ import {
   type ParisCleanwalkActor,
   type ParisCleanwalkRelation,
 } from "@/lib/partners/paris-cleanwalk-network";
-import { hasPreciseAnnuaireCoordinates, type EnrichedAnnuaireEntry } from "./annuaire-helpers";
+import {
+  formatAnnuaireCoverage,
+  hasPreciseAnnuaireCoordinates,
+  type EnrichedAnnuaireEntry,
+} from "./annuaire-helpers";
 
-/** Limites officielles de Paris intramuros pour le cadrage initial de la carte. */
+export type MapScope = "paris" | "national";
+
+/** Limites officielles de Paris intramuros pour le cadrage par défaut. */
 export const PARIS_INTRAMUROS_BOUNDS: [[number, number], [number, number]] = [
   [48.8155, 2.2241],
   [48.9021, 2.4699],
+];
+
+/** Limites de la France métropolitaine (Corse comprise, outre-mer exclu). */
+export const FRANCE_METROPOLITAINE_BOUNDS: [[number, number], [number, number]] = [
+  [41.33, -5.14],
+  [51.09, 9.56],
 ];
 
 export interface VerifiedPrincipalLocation {
@@ -24,10 +36,64 @@ export interface VerifiedPrincipalLocation {
 }
 
 /**
- * Implantations principales vérifiées pour des acteurs du réseau (y compris hors
- * Paris ou nationaux dont l'adresse physique est publiquement sourcée).
+ * Implantations principales vérifiées et géocodées via BAN (api-adresse.data.gouv.fr).
+ * Inclut les structures nationales/hors-Paris dont le site physique est sourcé.
  */
 export const VERIFIED_PRINCIPAL_LOCATIONS: Record<string, VerifiedPrincipalLocation> = {
+  "asso-3": {
+    lat: 48.8959,
+    lng: 2.353156,
+    address: "132 rue des Poissonniers, 75018 Paris",
+    commune: "Paris 18e",
+    nature: "Atelier-boutique principal",
+    sourceUrl: "https://cartonplein.org/",
+    verifiedAt: "2026-11-25",
+  },
+  "asso-4": {
+    lat: 48.856188,
+    lng: 2.355693,
+    address: "2 place Baudoyer, 75004 Paris",
+    commune: "Paris 4e",
+    nature: "Lieu d'activité municipal",
+    sourceUrl: "https://www.paris.fr/lieux/academie-du-climat-19507",
+    verifiedAt: "2026-11-25",
+  },
+  "asso-shakirail": {
+    lat: 48.889965,
+    lng: 2.364244,
+    address: "72 rue Riquet, 75018 Paris",
+    commune: "Paris 18e",
+    nature: "Lieu d'activité",
+    sourceUrl: "https://www.paris.fr/lieux/le-shakirail-19291",
+    verifiedAt: "2026-11-25",
+  },
+  "com-1": {
+    lat: 48.881395,
+    lng: 2.362914,
+    address: "22 rue du Château Landon, 75010 Paris",
+    commune: "Paris 10e",
+    nature: "Atelier-boutique",
+    sourceUrl: "https://latextilerie.fr/",
+    verifiedAt: "2026-11-25",
+  },
+  "asso-megots-alcome": {
+    lat: 48.873504,
+    lng: 2.309341,
+    address: "164 rue du Faubourg Saint-Honoré, 75008 Paris",
+    commune: "Paris 8e",
+    nature: "Siège social (éco-organisme)",
+    sourceUrl: "https://alcome.eco/mentions-legales/",
+    verifiedAt: "2026-11-25",
+  },
+  "asso-megots-tchaomegot": {
+    lat: 49.417315,
+    lng: 2.253688,
+    address: "12 rue Benjamin Delessert, 60510 Bresles",
+    commune: "Bresles (60)",
+    nature: "Site professionnel (pas un dépôt libre)",
+    sourceUrl: "https://tchaomegot.com/mentions-legales/",
+    verifiedAt: "2026-11-25",
+  },
   "operator-ckfd": {
     lat: 48.926182,
     lng: 2.316068,
@@ -55,6 +121,24 @@ export const VERIFIED_PRINCIPAL_LOCATIONS: Record<string, VerifiedPrincipalLocat
     sourceUrl: "https://cartonplein.org/nos-services-cyclologistique/",
     verifiedAt: "2026-11-25",
   },
+  "com-2": {
+    lat: 48.865024,
+    lng: 2.455023,
+    address: "18 rue Saint-Antoine, 93100 Montreuil",
+    commune: "Montreuil (93)",
+    nature: "Atelier",
+    sourceUrl: "https://lacollecterie.org/",
+    verifiedAt: "2026-11-25",
+  },
+  "evt-1": {
+    lat: 48.897647,
+    lng: 2.344183,
+    address: "83 boulevard Ornano, 75018 Paris",
+    commune: "Paris 18e",
+    nature: "Lieu d'activité",
+    sourceUrl: "https://www.larecyclerie.com/",
+    verifiedAt: "2026-11-25",
+  },
   "mairie-paris-5": {
     lat: 48.8462,
     lng: 2.3447,
@@ -76,6 +160,18 @@ export const VERIFIED_PRINCIPAL_LOCATIONS: Record<string, VerifiedPrincipalLocat
 };
 
 export type GeoLocationGroup = "in_paris" | "outside_paris" | "unknown_location";
+export type PublicAddressStatus = "verified" | "contradictory" | "not_applicable" | "unknown";
+
+export interface GeoNetworkFactualIndicators {
+  /** Nombre de voisins distincts dans les relations prouvées (hors auto-liens, programmé et similarités). */
+  documentedNeighborsCount: number;
+  /** Nombre de collaborations programmées (non comptées comme activité actuelle). */
+  scheduledLinksCount: number;
+  /** Nombre d'opérations communes prouvées (null si non documenté). */
+  provenJointOperationsCount: number | null;
+  /** Périmètre factuel déclaré ou documenté. */
+  activityScopeLabel: string;
+}
 
 export interface GeoNetworkEntity {
   id: string;
@@ -87,10 +183,12 @@ export interface GeoNetworkEntity {
   networkActor: ParisCleanwalkActor | null;
   coords: { lat: number; lng: number } | null;
   locationGroup: GeoLocationGroup;
+  addressStatus: PublicAddressStatus;
   communeLabel: string;
   siteNature: string | null;
   sourceUrl: string | null;
   primaryFamily: string;
+  indicators: GeoNetworkFactualIndicators;
 }
 
 export interface GeoNetworkIncidentRelation {
@@ -103,6 +201,11 @@ export interface GeoNetworkIncidentRelation {
 
 export function isInParisIntramuros(lat: number, lng: number): boolean {
   const [[south, west], [north, east]] = PARIS_INTRAMUROS_BOUNDS;
+  return lat >= south && lat <= north && lng >= west && lng <= east;
+}
+
+export function isInFranceMetropolitaine(lat: number, lng: number): boolean {
+  const [[south, west], [north, east]] = FRANCE_METROPOLITAINE_BOUNDS;
   return lat >= south && lat <= north && lng >= west && lng <= east;
 }
 
@@ -130,6 +233,62 @@ function resolveCoordsForEntity(
     return { coords: { lat: entry.lat, lng: entry.lng }, verified: null };
   }
   return { coords: null, verified: null };
+}
+
+function resolveAddressStatus(
+  entry: AnnuaireEntry | null,
+  verified: VerifiedPrincipalLocation | null,
+): PublicAddressStatus {
+  if (verified || (entry?.provenance === "editorial_seed" && entry.publicAddress)) {
+    return "verified";
+  }
+  if (entry?.provenance === "editorial_seed" && entry.schoolProfile?.addresses?.length) {
+    return entry.schoolProfile.addresses.length > 1 ? "contradictory" : "verified";
+  }
+  if (entry?.kind === "evenement") {
+    return "not_applicable";
+  }
+  return "unknown";
+}
+
+function computeFactualIndicators(
+  actorId: string | null,
+  activityScopeLabel: string,
+): GeoNetworkFactualIndicators {
+  if (!actorId) {
+    return {
+      documentedNeighborsCount: 0,
+      scheduledLinksCount: 0,
+      provenJointOperationsCount: null,
+      activityScopeLabel,
+    };
+  }
+  const neighbors = new Set<string>();
+  let scheduled = 0;
+  let operationsSum = 0;
+  let hasOperations = false;
+
+  for (const rel of PARIS_CLEANWALK_RELATIONS) {
+    if (rel.sourceId !== actorId && rel.targetId !== actorId) continue;
+    if (rel.sourceId === rel.targetId) continue;
+    if (rel.relationType === "collaboration_programmee") {
+      scheduled += 1;
+      continue;
+    }
+    const peerId = rel.sourceId === actorId ? rel.targetId : rel.sourceId;
+    neighbors.add(peerId);
+    if (rel.operations && rel.operations.length > 0) {
+      operationsSum += rel.operations.length;
+      hasOperations = true;
+    }
+  }
+
+  return {
+    documentedNeighborsCount: neighbors.size,
+    scheduledLinksCount: scheduled,
+    provenJointOperationsCount: hasOperations ? operationsSum : null,
+    activityScopeLabel,
+  };
 }
 
 /**
@@ -171,10 +330,15 @@ export function buildGeoNetworkEntities(
       networkActor,
       coords,
       locationGroup,
+      addressStatus: resolveAddressStatus(entry, verified),
       communeLabel: verified?.commune ?? entry.location,
       siteNature: verified?.nature ?? null,
       sourceUrl: verified?.sourceUrl ?? entry.websiteUrl ?? null,
       primaryFamily: entry.types?.[0] ?? "environnemental",
+      indicators: computeFactualIndicators(
+        networkActor?.id ?? null,
+        formatAnnuaireCoverage(entry),
+      ),
     });
   }
 
@@ -183,7 +347,6 @@ export function buildGeoNetworkEntities(
   const allEntryIds = new Set(allEntries.map((e) => e.id));
   for (const actor of PARIS_CLEANWALK_ACTORS) {
     if (seenActorIds.has(actor.id)) continue;
-    // Skip actors whose linked Annuaire entry exists in the catalog but was filtered out
     if (actor.annuaireEntryId && allEntryIds.has(actor.annuaireEntryId)) continue;
 
     const { coords, verified } = resolveCoordsForEntity(actor.id, null);
@@ -203,10 +366,16 @@ export function buildGeoNetworkEntities(
       networkActor: actor,
       coords,
       locationGroup,
+      addressStatus: verified ? "verified" : "unknown",
       communeLabel: verified?.commune ?? actor.parisZone.label,
       siteNature: verified?.nature ?? null,
-      sourceUrl: verified?.sourceUrl ?? actor.publicChannels?.[0]?.url ?? actor.provenance?.sourceUrl ?? null,
+      sourceUrl:
+        verified?.sourceUrl ??
+        actor.publicChannels?.[0]?.url ??
+        actor.provenance?.sourceUrl ??
+        null,
       primaryFamily: actor.category,
+      indicators: computeFactualIndicators(actor.id, actor.parisZone.label),
     });
   }
 

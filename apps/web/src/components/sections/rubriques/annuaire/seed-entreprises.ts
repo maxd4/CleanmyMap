@@ -3,6 +3,15 @@ import type { AnnuaireEntrySeedInput } from "@/lib/partners/annuaire-types";
 export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
   {
     id: "com-1",
+    publicAddress: {
+      label: "22 rue du Château Landon, 75010 Paris",
+      municipality: "Paris",
+      postalCode: "75010",
+      country: "FR",
+      kind: "siege",
+      sourceUrl: "https://www.latextilerie.fr/infos-pratiques/",
+      checkedAt: "2026-11-25",
+    },
     name: "La Textilerie",
     legalIdentity: "SAS La Textilerie (SIREN 824 531 417)",
     kind: "commerce",
@@ -24,6 +33,15 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
   },
   {
     id: "asso-megots-alcome",
+    publicAddress: {
+      label: "164 rue du Faubourg Saint-Honoré, 75008 Paris",
+      municipality: "Paris",
+      postalCode: "75008",
+      country: "FR",
+      kind: "siege",
+      sourceUrl: "https://alcome.eco/mentions-legales/",
+      checkedAt: "2026-11-25",
+    },
     name: "ALCOME",
     legalIdentity: "Éco-organisme ALCOME",
     kind: "entreprise",
@@ -73,6 +91,15 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
   },
   {
     id: "asso-megots-tchaomegot",
+    publicAddress: {
+      label: "12 rue Benjamin Delessert, 60510 Bresles",
+      municipality: "Bresles",
+      postalCode: "60510",
+      country: "FR",
+      kind: "site_professionnel",
+      sourceUrl: "https://tchaomegot.com/produit/kit-recyclage-5l-3-500-megots/",
+      checkedAt: "2026-11-25",
+    },
     name: "TchaoMegot",
     legalIdentity: "Tchao Megot SAS (Économie Circulaire)",
     kind: "entreprise",
@@ -89,6 +116,15 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
   },
   {
     id: "operator-ckfd",
+    publicAddress: {
+      label: "86-114 avenue Louis Roche, bâtiment D, hall 5, 92230 Gennevilliers",
+      municipality: "Gennevilliers",
+      postalCode: "92230",
+      country: "FR",
+      kind: "site_professionnel",
+      sourceUrl: "https://www.ckfd.fr/contact",
+      checkedAt: "2026-11-25",
+    },
     name: "CKFD",
     legalIdentity: "CKFD ENVIRONNEMENT (SIREN 498 485 416)",
     kind: "entreprise",
@@ -107,6 +143,15 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
   },
   {
     id: "operator-mego",
+    publicAddress: {
+      label: "11 ZI de Penhoat, 29800 Saint-Divy",
+      municipality: "Saint-Divy",
+      postalCode: "29800",
+      country: "FR",
+      kind: "site_professionnel",
+      sourceUrl: "https://www.me-go.fr/contact/",
+      checkedAt: "2026-11-25",
+    },
     name: "MéGO!",
     legalIdentity: "MéGO! (SIREN 828 153 718)",
     kind: "entreprise",
@@ -125,6 +170,15 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
   },
   {
     id: "operator-carton-plein-cyclo",
+    publicAddress: {
+      label: "12 rue Charles Delescluze, 75011 Paris",
+      municipality: "Paris",
+      postalCode: "75011",
+      country: "FR",
+      kind: "site_professionnel",
+      sourceUrl: "https://cartonplein.org/nos-services-cyclologistique/",
+      checkedAt: "2026-11-25",
+    },
     name: "Carton Plein Cyclo",
     legalIdentity: "CARTON PLEIN CYCLO (SIREN 978 296 325)",
     kind: "entreprise",
@@ -143,6 +197,15 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
   },
   {
     id: "com-2",
+    publicAddress: {
+      label: "18 rue Saint-Antoine, 93100 Montreuil",
+      municipality: "Montreuil",
+      postalCode: "93100",
+      country: "FR",
+      kind: "atelier",
+      sourceUrl: "https://lacollecterie.org/",
+      checkedAt: "2026-11-25",
+    },
     name: "La Collecterie Paris",
     legalIdentity: "Association La Collecterie (RNA W931014584)",
     kind: "commerce",

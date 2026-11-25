@@ -3,6 +3,15 @@ import type { AnnuaireEntrySeedInput } from "@/lib/partners/annuaire-types";
 export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
   {
     id: "evt-1",
+    publicAddress: {
+      label: "83 boulevard Ornano, 75018 Paris",
+      municipality: "Paris",
+      postalCode: "75018",
+      country: "FR",
+      kind: "lieu_activite",
+      sourceUrl: "https://www.larecyclerie.com/infos-pratiques/",
+      checkedAt: "2026-11-25",
+    },
     name: "La REcyclerie - Ateliers",
     legalIdentity: "SAS Sinny&Ooko - site La REcyclerie (SIREN 801 782 744)",
     kind: "evenement",

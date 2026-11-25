@@ -142,6 +142,28 @@ function AnnuaireDrawerOverviewSection({
   return (
     <DrawerSection title={fr ? "Présentation" : "Overview"} defaultOpen>
       <p className="text-sm leading-relaxed cmm-text-primary">{entry.description}</p>
+      {entry.provenance === "editorial_seed" && entry.publicAddress ? (
+        <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
+          <p className="text-xs font-semibold cmm-text-secondary">{fr ? "Adresse publique documentée" : "Documented public address"}</p>
+          <p className="text-sm font-semibold cmm-text-primary">{entry.publicAddress.label}</p>
+          <p className="mt-1 text-xs cmm-text-secondary">{fr ? "Adresse d'établissement ; ne vaut pas autorisation d'accès ou de dépôt." : "Establishment address; not permission to enter or drop off waste."}</p>
+          {normalizePublicWebUrl(entry.publicAddress.sourceUrl) ? <a href={normalizePublicWebUrl(entry.publicAddress.sourceUrl)!} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs cmm-text-primary underline">{fr ? "Source consultée le" : "Source checked on"} {entry.publicAddress.checkedAt}</a> : null}
+        </div>
+      ) : entry.provenance === "editorial_seed" ? (
+        <div className="rounded-xl border border-dashed border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-secondary">
+          {entry.schoolProfile?.addresses && entry.schoolProfile.addresses.length > 1
+            ? fr
+              ? "Plusieurs adresses sources divergentes (à vérifier dans les sources scolaires)."
+              : "Multiple conflicting source addresses (check school sources)."
+            : entry.kind === "evenement"
+              ? fr
+                ? "Plateforme ou programme sans adresse physique dédiée."
+                : "Platform or programme without a dedicated physical address."
+              : fr
+                ? "Adresse publique d'établissement non établie."
+                : "Public establishment address not established."}
+        </div>
+      ) : null}
       {entry.featuredReason ? (
         <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
           <p className="text-sm italic leading-relaxed cmm-text-primary">

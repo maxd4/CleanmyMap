@@ -131,11 +131,24 @@ type InternalAdminContact = {
   phone: string;
 };
 
+/** Public institutional/operating address, not a coverage area or verified geocode. */
+export type PublicEditorialAddress = {
+  label: string;
+  municipality: string;
+  postalCode: string;
+  country: "FR";
+  kind: "siege" | "atelier" | "lieu_activite" | "site_professionnel";
+  sourceUrl: string;
+  checkedAt: string;
+};
+
 export type AnnuaireEntrySeedInput = Omit<AnnuaireEntryShared, "availability"> & {
+  publicAddress?: PublicEditorialAddress;
   associationProfile?: EditorialAssociationProfile;
 };
 
 export type EditorialAnnuaireEntry = AnnuaireEntryShared & {
+  publicAddress?: PublicEditorialAddress;
   provenance: "editorial_seed";
   verificationStatus: "en_cours";
   qualificationStatus: "contact_non_qualifie";

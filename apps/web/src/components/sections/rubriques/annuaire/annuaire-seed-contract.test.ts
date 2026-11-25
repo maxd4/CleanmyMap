@@ -13,6 +13,17 @@ const forbiddenSeedKeys =
   /\b(?:verificationStatus|qualificationStatus|recentActivityAt|impactHistory|structureStatus|availability|lastUpdatedAt|internalAdminContact)\s*:/;
 
 describe("annuaire editorial seed contract", () => {
+  it("preserves sourced public establishment addresses separately from coverage and geocoding", () => {
+    const expected = [["asso-3","Paris","75018"],["asso-4","Paris","75004"],["asso-shakirail","Paris","75018"],["com-1","Paris","75010"],["asso-megots-alcome","Paris","75008"],["operator-ckfd","Gennevilliers","92230"],["operator-mego","Saint-Divy","29800"],["operator-carton-plein-cyclo","Paris","75011"],["com-2","Montreuil","93100"],["asso-megots-tchaomegot","Bresles","60510"],["evt-1","Paris","75018"]] as const;
+    for (const [id, municipality, postalCode] of expected) {
+      const entry = INITIAL_ANNUAIRE_ENTRIES.find(item => item.id === id)!;
+      expect(entry.publicAddress).toMatchObject({ municipality, postalCode, country: "FR", checkedAt: "2026-11-25" });
+      expect(entry.publicAddress?.sourceUrl).toMatch(/^https:\/\//);
+      expect(entry.publicAddress?.label).toContain(postalCode);
+    }
+    expect(INITIAL_ANNUAIRE_ENTRIES.find(item => item.id === "operator-mego")).toMatchObject({ lat: null, lng: null, coordinatesSource: "unknown", scope: "national" });
+  });
+
   it("references documented waste-chain and plogging resources once, without asserting partner or drop-off status", () => {
     for (const id of ["operator-ckfd", "operator-mego", "operator-carton-plein-cyclo", "asso-runners-laveurs"]) {
       const entries = INITIAL_ANNUAIRE_ENTRIES.filter(entry => entry.id === id);

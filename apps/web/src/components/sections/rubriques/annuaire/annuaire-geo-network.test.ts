@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
 import {
   buildGeoNetworkEntities,
+  FRANCE_METROPOLITAINE_BOUNDS,
   getIncidentGeoRelations,
+  isInFranceMetropolitaine,
   isInParisIntramuros,
   PARIS_INTRAMUROS_BOUNDS,
 } from "./annuaire-geo-network.model";
@@ -25,11 +27,30 @@ describe("annuaire-geo-network unified geographical model", () => {
 
     expect(ckfd?.locationGroup).toBe("outside_paris");
     expect(ckfd?.communeLabel).toContain("Gennevilliers");
+    expect(ckfd?.addressStatus).toBe("verified");
     expect(mego?.locationGroup).toBe("outside_paris");
     expect(mego?.communeLabel).toContain("Saint-Divy");
+    expect(mego?.addressStatus).toBe("verified");
     expect(cartonPlein?.locationGroup).toBe("in_paris");
+    expect(cartonPlein?.addressStatus).toBe("verified");
     expect(gestesPropres?.locationGroup).toBe("unknown_location");
     expect(gestesPropres?.coords).toBeNull();
+    expect(gestesPropres?.addressStatus).toBe("unknown");
+
+    // Corsica is included in Mainland France; overseas territories are excluded
+    expect(isInFranceMetropolitaine(41.919, 8.738)).toBe(true);
+    expect(isInFranceMetropolitaine(-21.115, 55.536)).toBe(false);
+    expect(FRANCE_METROPOLITAINE_BOUNDS[0][0]).toBeLessThan(FRANCE_METROPOLITAINE_BOUNDS[1][0]);
+
+    // Conflicting school addresses vs online platforms vs verified addresses
+    const schoolVoltaire = entities.find((e) => e.id === "school-uai-0751241s");
+    const jeVeuxAider = entities.find((e) => e.id === "evt-je-veux-aider");
+    expect(schoolVoltaire?.addressStatus).toBe("contradictory");
+    expect(jeVeuxAider?.addressStatus).toBe("not_applicable");
+
+    // Factual indicators: deduplicated neighbors, no arbitrary score
+    expect(ckfd?.indicators.documentedNeighborsCount).toBeGreaterThan(0);
+    expect(jeVeuxAider?.indicators.provenJointOperationsCount).toBeNull();
   });
 
   it("renders named HTML-escaped markers instead of anonymous spheres", () => {

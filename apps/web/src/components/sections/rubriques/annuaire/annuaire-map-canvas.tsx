@@ -20,9 +20,12 @@ import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { PARIS_RELATION_TYPE_META } from "@/lib/partners/paris-cleanwalk-network";
 import {
+  FRANCE_METROPOLITAINE_BOUNDS,
+  isInFranceMetropolitaine,
   PARIS_INTRAMUROS_BOUNDS,
   type GeoNetworkEntity,
   type GeoNetworkIncidentRelation,
+  type MapScope,
 } from "./annuaire-geo-network.model";
 import { hasPreciseAnnuaireCoordinates } from "./annuaire-helpers";
 import { buildClusterMarkerIconHtml, buildNamedMarkerIconHtml } from "./annuaire-map-icon";
@@ -62,30 +65,33 @@ function clusterEntitiesByZoom(entities: GeoNetworkEntity[], zoom: number): Mark
 
 function MapController({
   entities,
+  mapScope,
   highlightedItemId,
   onZoomChange,
   cameraCommand,
 }: {
   entities: GeoNetworkEntity[];
+  mapScope: MapScope;
   highlightedItemId?: string | null;
   onZoomChange: (zoom: number) => void;
-  cameraCommand: { type: "paris" | "all" | null; seq: number };
+  cameraCommand: { seq: number };
 }) {
   const map = useMap();
-  const initializedRef = useRef(false);
+  const lastScopeRef = useRef<MapScope | null>(null);
   const lastSeqRef = useRef(0);
 
   useMapEvents({
     zoomend: () => onZoomChange(map.getZoom()),
   });
 
-  // Cadrage initial sur Paris intramuros uniquement (jamais réinitialisé au survol ou filtre)
+  // Cadrage sur le périmètre choisi (Paris intramuros par défaut, ou National France métropolitaine)
   useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-    map.fitBounds(PARIS_INTRAMUROS_BOUNDS, { padding: [24, 24] });
+    if (lastScopeRef.current === mapScope) return;
+    lastScopeRef.current = mapScope;
+    const bounds = mapScope === "national" ? FRANCE_METROPOLITAINE_BOUNDS : PARIS_INTRAMUROS_BOUNDS;
+    map.fitBounds(bounds, { padding: [24, 24] });
     onZoomChange(map.getZoom());
-  }, [map, onZoomChange]);
+  }, [map, mapScope, onZoomChange]);
 
   // Déplacement explicite sur sélection (sans changer le zoom local)
   useEffect(() => {
@@ -95,21 +101,13 @@ function MapController({
     map.panTo([target.coords.lat, target.coords.lng], { animate: true, duration: 0.4 });
   }, [highlightedItemId, entities, map]);
 
-  // Actions explicites de cadrage (Recentrer Paris / Voir tout le réseau)
+  // Recentrer explicitement sur le périmètre actif
   useEffect(() => {
-    if (cameraCommand.seq === lastSeqRef.current || !cameraCommand.type) return;
+    if (cameraCommand.seq === lastSeqRef.current) return;
     lastSeqRef.current = cameraCommand.seq;
-    if (cameraCommand.type === "paris") {
-      map.fitBounds(PARIS_INTRAMUROS_BOUNDS, { padding: [24, 24] });
-    } else {
-      const pts = entities
-        .filter((e) => e.coords !== null)
-        .map((e) => [e.coords!.lat, e.coords!.lng] as [number, number]);
-      if (pts.length > 0) {
-        map.fitBounds(L.latLngBounds(pts), { padding: [32, 32], maxZoom: 13 });
-      }
-    }
-  }, [cameraCommand, entities, map]);
+    const bounds = mapScope === "national" ? FRANCE_METROPOLITAINE_BOUNDS : PARIS_INTRAMUROS_BOUNDS;
+    map.fitBounds(bounds, { padding: [24, 24] });
+  }, [cameraCommand, mapScope, map]);
 
   return null;
 }
@@ -119,6 +117,7 @@ export interface AnnuaireMapCanvasProps {
   entities?: GeoNetworkEntity[];
   incidentRelations?: GeoNetworkIncidentRelation[];
   showRelationsLayer?: boolean;
+  mapScope?: MapScope;
   highlightedItemId?: string | null;
   onItemClick?: (id: string) => void;
   variant?: "standard" | "exploration";
@@ -130,44 +129,52 @@ export function AnnuaireMapCanvas({
   entities: externalEntities,
   incidentRelations = [],
   showRelationsLayer = true,
+  mapScope = "paris",
   highlightedItemId,
   onItemClick,
   variant = "standard",
   fr = true,
 }: AnnuaireMapCanvasProps) {
   const [zoom, setZoom] = useState(12);
-  const [cameraCommand, setCameraCommand] = useState<{ type: "paris" | "all" | null; seq: number }>({
-    type: null,
-    seq: 0,
-  });
+  const [cameraCommand, setCameraCommand] = useState<{ seq: number }>({ seq: 0 });
 
   const entities = useMemo<GeoNetworkEntity[]>(() => {
-    if (externalEntities) return externalEntities;
-    return items
-      .filter(hasPreciseAnnuaireCoordinates)
-      .map((entry) => ({
-        id: entry.id,
-        annuaireEntryId: entry.id,
-        networkActorId: null,
-        name: entry.name,
-        shortName: entry.name.slice(0, 18),
-        entry: { ...entry, distanceKm: null },
-        networkActor: null,
-        coords: { lat: entry.lat!, lng: entry.lng! },
-        locationGroup: "in_paris",
-        communeLabel: entry.location,
-        siteNature: null,
-        sourceUrl: entry.websiteUrl ?? null,
-        primaryFamily: entry.types[0] ?? "environnemental",
-      }));
-  }, [externalEntities, items]);
+    const base: GeoNetworkEntity[] = externalEntities
+      ? externalEntities
+      : items
+          .filter(hasPreciseAnnuaireCoordinates)
+          .map((entry) => ({
+            id: entry.id,
+            annuaireEntryId: entry.id,
+            networkActorId: null,
+            name: entry.name,
+            shortName: entry.name.slice(0, 18),
+            entry: { ...entry, distanceKm: null },
+            networkActor: null,
+            coords: { lat: entry.lat!, lng: entry.lng! },
+            locationGroup: "in_paris",
+            addressStatus: "verified",
+            communeLabel: entry.location,
+            siteNature: null,
+            sourceUrl: entry.websiteUrl ?? null,
+            primaryFamily: entry.types[0] ?? "environnemental",
+            indicators: {
+              documentedNeighborsCount: 0,
+              scheduledLinksCount: 0,
+              provenJointOperationsCount: null,
+              activityScopeLabel: entry.location,
+            },
+          }));
+    return base.filter(
+      (e) => !e.coords || (mapScope === "national" ? isInFranceMetropolitaine(e.coords.lat, e.coords.lng) : e.locationGroup === "in_paris"),
+    );
+  }, [externalEntities, items, mapScope]);
 
   const clusters = useMemo(() => clusterEntitiesByZoom(entities, zoom), [entities, zoom]);
   const plottableRelations = useMemo(
     () => (showRelationsLayer ? incidentRelations.filter((r) => r.hasPlottableLine) : []),
     [incidentRelations, showRelationsLayer],
   );
-  const hasOutsideCity = entities.some((e) => e.locationGroup === "outside_paris");
   const isExploration = variant === "exploration";
 
   return (
@@ -183,21 +190,16 @@ export function AnnuaireMapCanvas({
           size="sm"
           tone="secondary"
           variant="pill"
-          onClick={() => setCameraCommand((c) => ({ type: "paris", seq: c.seq + 1 }))}
+          onClick={() => setCameraCommand((c) => ({ seq: c.seq + 1 }))}
         >
-          {fr ? "Recentrer sur Paris" : "Recenter Paris"}
+          {mapScope === "national"
+            ? fr
+              ? "Recentrer sur la France"
+              : "Recenter France"
+            : fr
+              ? "Recentrer sur Paris"
+              : "Recenter Paris"}
         </CmmButton>
-        {hasOutsideCity ? (
-          <CmmButton
-            type="button"
-            size="sm"
-            tone="secondary"
-            variant="pill"
-            onClick={() => setCameraCommand((c) => ({ type: "all", seq: c.seq + 1 }))}
-          >
-            {fr ? "Voir tout le réseau" : "View full network"}
-          </CmmButton>
-        ) : null}
       </div>
 
       <MapContainer
@@ -208,6 +210,7 @@ export function AnnuaireMapCanvas({
       >
         <MapController
           entities={entities}
+          mapScope={mapScope}
           highlightedItemId={highlightedItemId}
           onZoomChange={setZoom}
           cameraCommand={cameraCommand}

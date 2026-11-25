@@ -47,6 +47,15 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
   },
   {
     id: "asso-3",
+    publicAddress: {
+      label: "132 rue des Poissonniers, 75018 Paris",
+      municipality: "Paris",
+      postalCode: "75018",
+      country: "FR",
+      kind: "atelier",
+      sourceUrl: "https://cartonplein.org/association/nos-ateliers/",
+      checkedAt: "2026-11-25",
+    },
     name: "Carton Plein",
     legalIdentity: "Association Carton Plein (RNA W751216999)",
     kind: "association",
@@ -86,6 +95,15 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
   },
   {
     id: "asso-4",
+    publicAddress: {
+      label: "2 place Baudoyer, 75004 Paris",
+      municipality: "Paris",
+      postalCode: "75004",
+      country: "FR",
+      kind: "lieu_activite",
+      sourceUrl: "https://www.academieduclimat.paris/informations-pratiques/",
+      checkedAt: "2026-11-25",
+    },
     name: "Académie du Climat",
     legalIdentity: "Ville de Paris - Académie du Climat (équipement municipal)",
     kind: "association",
@@ -110,6 +128,15 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
   },
   {
     id: "asso-shakirail",
+    publicAddress: {
+      label: "72 rue Riquet, 75018 Paris",
+      municipality: "Paris",
+      postalCode: "75018",
+      country: "FR",
+      kind: "lieu_activite",
+      sourceUrl: "https://shakirail.curry-vavart.com/",
+      checkedAt: "2026-11-25",
+    },
     name: "Le Shakirail",
     legalIdentity: "Collectif Curry Vavart / AGETA",
     kind: "association",

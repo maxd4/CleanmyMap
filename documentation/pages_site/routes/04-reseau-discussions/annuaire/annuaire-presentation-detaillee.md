@@ -17,7 +17,7 @@ Le parcours visible est organisé en trois onglets principaux (`Services publics
 
 1. `Services publics` : organigramme graphique 2D interactif (avec vue `Liste` alternative) et navigation croisée vers `Carte & réseau` ;
 2. `Annuaire` : sélection éditoriale (6 cartes initiales maximum et action « Afficher toutes »), recherche textuelle, compteur, filtres par menus déroulants accessibles et grille responsive (1/2/3 colonnes) paginée ;
-3. `Carte & réseau` : carte géographique relationnelle unifiée sur Leaflet (cadrage initial Paris intramuros, marqueurs nommés et regroupements numérotés, couche activable de relations documentées incidentes à la sélection, panneaux `Hors de Paris` et `Localisation non établie`, résultats compacts, drawer de fiche et contribution citoyenne).
+3. `Carte & réseau` : carte géographique relationnelle unifiée sur Leaflet limitée à deux périmètres (`Paris intramuros` par défaut et `National (France métropolitaine)`, Corse comprise), marqueurs nommés et regroupements numérotés, couche activable de relations documentées incidentes à la sélection avec indicateurs factuels (voisins distincts reliés et opérations communes prouvées, sans score d'influence), panneaux `Hors de Paris` et `Localisation non établie`, adresses publiques sourcées (ou statut explicite divergent / non applicable / non établi), résultats compacts, drawer de fiche et contribution citoyenne.
 
 Les onglets utilisent un `tablist` unique avec `roving tabindex` (flèches, Début, Fin) et `hidden` sur les panneaux inactifs. La mise en avant est une sélection éditoriale (`isFeatured`). Elle ne modifie pas la provenance ni le niveau de confiance de l'entrée sélectionnée.
 

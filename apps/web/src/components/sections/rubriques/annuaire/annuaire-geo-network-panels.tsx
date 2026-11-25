@@ -26,11 +26,37 @@ export function AnnuaireIncidentRelationsPanel({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold cmm-text-primary">
-          {fr ? `Relations documentées — ${selectedEntity.name}` : `Documented relationships — ${selectedEntity.name}`}
+          {fr
+            ? `Relations documentées dans le registre — ${selectedEntity.name}`
+            : `Documented relationships in registry — ${selectedEntity.name}`}
         </h3>
-        <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-xs font-semibold cmm-text-primary">
-          {incidentRelations.length}
-        </span>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 font-semibold cmm-text-primary">
+            {selectedEntity.indicators.documentedNeighborsCount}{" "}
+            {fr ? "structures reliées" : "linked structures"}
+          </span>
+          {selectedEntity.indicators.provenJointOperationsCount !== null ? (
+            <span className="rounded-full border border-[var(--cmm-surface-border)] px-2.5 py-0.5 font-semibold cmm-text-secondary">
+              {selectedEntity.indicators.provenJointOperationsCount}{" "}
+              {fr ? "opérations communes prouvées" : "proven joint operations"}
+            </span>
+          ) : null}
+          {selectedEntity.addressStatus !== "verified" ? (
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 font-semibold cmm-text-warning">
+              {selectedEntity.addressStatus === "contradictory"
+                ? fr
+                  ? "Adresses divergentes"
+                  : "Conflicting addresses"
+                : selectedEntity.addressStatus === "not_applicable"
+                  ? fr
+                    ? "Sans lieu physique propre"
+                    : "No dedicated physical site"
+                  : fr
+                    ? "Adresse non établie"
+                    : "Address not established"}
+            </span>
+          ) : null}
+        </div>
       </div>
       {incidentRelations.length === 0 ? (
         <p className="text-xs cmm-text-secondary">

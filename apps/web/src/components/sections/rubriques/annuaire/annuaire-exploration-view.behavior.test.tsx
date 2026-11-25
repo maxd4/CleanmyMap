@@ -311,6 +311,17 @@ describe("Annuaire exploration modes", () => {
     expect(container.querySelector('section[aria-label="Hors de Paris"]')).toBeTruthy();
     expect(container.querySelector('section[aria-label="Localisation non établie"]')).toBeTruthy();
 
+    const parisScope = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.trim() === "Paris intramuros",
+    );
+    const nationalScope = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.trim() === "National (France métropolitaine)",
+    );
+    expect(parisScope?.getAttribute("aria-pressed")).toBe("true");
+    expect(nationalScope?.getAttribute("aria-pressed")).toBe("false");
+    act(() => nationalScope?.click());
+    expect(nationalScope?.getAttribute("aria-pressed")).toBe("true");
+
     const relButton = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent?.includes("Relations documentées"),
     );

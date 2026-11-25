@@ -11,6 +11,7 @@ import {
 import {
   buildGeoNetworkEntities,
   getIncidentGeoRelations,
+  type MapScope,
 } from "./annuaire-geo-network.model";
 import type { AnnuaireLogic } from "./use-annuaire-logic";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -51,6 +52,7 @@ export function AnnuaireExplorationView({
   onLocateActor,
 }: AnnuaireExplorationViewProps) {
   const [showRelationsLayer, setShowRelationsLayer] = useState(true);
+  const [mapScope, setMapScope] = useState<MapScope>("paris");
 
   const {
     searchTerm,
@@ -160,16 +162,44 @@ export function AnnuaireExplorationView({
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CmmButton
-              type="button"
-              onClick={() => setShowRelationsLayer((value) => !value)}
-              tone={showRelationsLayer ? "primary" : "tertiary"}
-              variant="pill"
-              ariaPressed={showRelationsLayer}
-            >
-              <Share2 size={16} className="mr-2" aria-hidden="true" />
-              {fr ? "Relations documentées" : "Documented relationships"}
-            </CmmButton>
+            <div className="flex flex-wrap items-center gap-2">
+              <div
+                role="group"
+                aria-label={fr ? "Périmètre de la carte" : "Map scope"}
+                className="flex items-center gap-1 rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-1"
+              >
+                <CmmButton
+                  type="button"
+                  size="sm"
+                  onClick={() => setMapScope("paris")}
+                  tone={mapScope === "paris" ? "primary" : "tertiary"}
+                  variant="pill"
+                  ariaPressed={mapScope === "paris"}
+                >
+                  {fr ? "Paris intramuros" : "Paris intramuros"}
+                </CmmButton>
+                <CmmButton
+                  type="button"
+                  size="sm"
+                  onClick={() => setMapScope("national")}
+                  tone={mapScope === "national" ? "primary" : "tertiary"}
+                  variant="pill"
+                  ariaPressed={mapScope === "national"}
+                >
+                  {fr ? "National (France métropolitaine)" : "National (Mainland France)"}
+                </CmmButton>
+              </div>
+              <CmmButton
+                type="button"
+                onClick={() => setShowRelationsLayer((value) => !value)}
+                tone={showRelationsLayer ? "primary" : "tertiary"}
+                variant="pill"
+                ariaPressed={showRelationsLayer}
+              >
+                <Share2 size={16} className="mr-2" aria-hidden="true" />
+                {fr ? "Relations documentées" : "Documented relationships"}
+              </CmmButton>
+            </div>
             <p className="text-xs cmm-text-secondary">
               {fr
                 ? "Sélectionnez une structure pour afficher ses relations documentées (jamais une similarité par tags)."
@@ -182,6 +212,7 @@ export function AnnuaireExplorationView({
               entities={geoEntities}
               incidentRelations={incidentRelations}
               showRelationsLayer={showRelationsLayer}
+              mapScope={mapScope}
               variant="exploration"
               onItemClick={onSelectedActorIdChange}
               highlightedItemId={selectedEntity?.id ?? selectedActorId}
