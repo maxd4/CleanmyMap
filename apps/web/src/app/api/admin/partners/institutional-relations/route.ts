@@ -66,13 +66,14 @@ export async function GET() {
   const operationId = newOperationId();
   try {
     const contacts = await listPrivateInstitutionalContacts();
-    return adminSuccessResponse({ operationId, contacts });
+    return adminSuccessResponse({ operationId, payload: { contacts } });
   } catch (error) {
     return adminErrorResponse({
       status: 500,
       operationId,
-      code: "INSTITUTIONAL_RELATIONS_READ_FAILED",
+      code: "server_error",
       message: error instanceof Error ? error.message : "Failed to load institutional relations",
+      hint: "Vérifier la configuration Supabase serveur.",
     });
   }
 }
@@ -89,8 +90,9 @@ export async function POST(request: Request) {
     return adminErrorResponse({
       status: 400,
       operationId,
-      code: "INVALID_PAYLOAD",
+      code: "invalid_payload",
       message: "Invalid institutional relation payload",
+      hint: "Vérifier les champs requis du contact ou du fait.",
     });
   }
 
@@ -98,15 +100,15 @@ export async function POST(request: Request) {
     if (parsed.data.type === "contact") {
       const contact = await upsertPrivateInstitutionalContact(parsed.data);
       await appendAdminOperationAudit({
+        at: new Date().toISOString(),
         operationId,
+        operationType: "admin_operation",
+        outcome: "success",
         actorUserId: access.userId,
-        operation: "upsert_institutional_contact",
-        targetType: "institutional_relationship_contact",
         targetId: contact.id,
-        status: "succeeded",
-        details: { revalidationStatus: contact.revalidationStatus },
+        details: { targetType: "institutional_relationship_contact", revalidationStatus: contact.revalidationStatus },
       });
-      return adminSuccessResponse({ operationId, contact }, 201);
+      return adminSuccessResponse({ operationId, status: 201, payload: { contact } });
     }
 
     const fact = await addPrivateInstitutionalFact({
@@ -114,21 +116,22 @@ export async function POST(request: Request) {
       createdBy: access.userId,
     });
     await appendAdminOperationAudit({
+      at: new Date().toISOString(),
       operationId,
+      operationType: "admin_operation",
+      outcome: "success",
       actorUserId: access.userId,
-      operation: "add_institutional_fact",
-      targetType: "institutional_relationship_fact",
       targetId: fact.id,
-      status: "succeeded",
-      details: { contactId: fact.contactId, kind: fact.kind, origin: fact.origin, reviewStatus: fact.reviewStatus },
+      details: { targetType: "institutional_relationship_fact", contactId: fact.contactId, kind: fact.kind, origin: fact.origin, reviewStatus: fact.reviewStatus },
     });
-    return adminSuccessResponse({ operationId, fact }, 201);
+    return adminSuccessResponse({ operationId, status: 201, payload: { fact } });
   } catch (error) {
     return adminErrorResponse({
       status: 500,
       operationId,
-      code: "INSTITUTIONAL_RELATIONS_WRITE_FAILED",
+      code: "server_error",
       message: error instanceof Error ? error.message : "Failed to persist institutional relation",
+      hint: "Vérifier la persistance Supabase serveur.",
     });
   }
 }
@@ -145,8 +148,9 @@ export async function PATCH(request: Request) {
     return adminErrorResponse({
       status: 400,
       operationId,
-      code: "INVALID_PAYLOAD",
+      code: "invalid_payload",
       message: "Invalid institutional fact review payload",
+      hint: "Vérifier factId, reviewStatus et reason.",
     });
   }
 
@@ -156,21 +160,22 @@ export async function PATCH(request: Request) {
       reviewStatus: parsed.data.reviewStatus,
     });
     await appendAdminOperationAudit({
+      at: new Date().toISOString(),
       operationId,
+      operationType: "admin_operation",
+      outcome: "success",
       actorUserId: access.userId,
-      operation: "review_institutional_fact",
-      targetType: "institutional_relationship_fact",
       targetId: fact.id,
-      status: "succeeded",
-      details: { reviewStatus: fact.reviewStatus, reason: parsed.data.reason },
+      details: { targetType: "institutional_relationship_fact", reviewStatus: fact.reviewStatus, reason: parsed.data.reason },
     });
-    return adminSuccessResponse({ operationId, fact });
+    return adminSuccessResponse({ operationId, payload: { fact } });
   } catch (error) {
     return adminErrorResponse({
       status: 500,
       operationId,
-      code: "INSTITUTIONAL_RELATIONS_REVIEW_FAILED",
+      code: "server_error",
       message: error instanceof Error ? error.message : "Failed to review institutional fact",
+      hint: "Vérifier la persistance Supabase serveur.",
     });
   }
 }

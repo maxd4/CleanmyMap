@@ -78,7 +78,7 @@ describe("admin institutional-relations API", () => {
       }),
     }));
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     expect(mocks.addPrivateInstitutionalFact).toHaveBeenCalledWith(
       expect.objectContaining({
         contactId: "person-wanda-schneider",
@@ -87,7 +87,7 @@ describe("admin institutional-relations API", () => {
     );
     expect(mocks.appendAdminOperationAudit).toHaveBeenCalledWith(
       expect.objectContaining({
-        operation: "add_institutional_fact",
+        targetId: "fact-1",
         actorUserId: "admin-1",
       }),
     );
@@ -120,7 +120,7 @@ describe("admin institutional-relations API", () => {
     expect(res.status).toBe(200);
     expect(mocks.appendAdminOperationAudit).toHaveBeenCalledWith(
       expect.objectContaining({
-        operation: "review_institutional_fact",
+        targetId: "11111111-1111-4111-8111-111111111111",
         actorUserId: "admin-1",
       }),
     );
