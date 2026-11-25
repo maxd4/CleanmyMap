@@ -16,6 +16,7 @@ const additionalSources: readonly OrganizationSource[] = [
   { id: 'paris-elus-2026', label: 'Élus d’arrondissement, mandature 2026', url: 'https://www.paris.fr/pages/elus-d-arrondissements-2365', sourceContentDate: '2026-03-31', verifiedAt: checked, evidence: 'official_current' },
   { id: 'paris-conseil-2026', label: 'Fonctionnement du Conseil de Paris', url: 'https://www.paris.fr/pages/fonctionnement-du-conseil-de-paris-216', sourceContentDate: '2026-04-07', verifiedAt: checked, evidence: 'official_current' },
   { id: 'pierre-lombard-2026', label: 'Fiche municipale Pierre Lombard', url: 'https://www.paris.fr/pages/pierre-lombard-34351', sourceContentDate: '2026-04-09', verifiedAt: checked, evidence: 'official_current' },
+  { id: 'augustin-hassoux-cabinet-2026', label: 'Annonce professionnelle publique d’Augustin Hassoux', url: 'https://fr.linkedin.com/posts/augustin-hassoux-a70a50160_apr%C3%A8s-3-ann%C3%A9es-au-sein-du-service-de-presse-activity-7453697391813230592-O45r', verifiedAt: '2026-11-25', evidence: 'professional_self_statement' },
   { id: 'carine-ekon-ville-2026', label: 'Fiche municipale Carine Ekon', url: 'https://www.paris.fr/pages/carine-ekon-34379', sourceContentDate: '2026-04-09', verifiedAt: checked, evidence: 'official_current' },
   { id: 'carine-ekon-20-2026', label: 'Délégation de Carine Ekon, mairie du 20e', url: 'https://mairie20.paris.fr/pages/carine-ekon-13923', sourceContentDate: '2026-04-07', verifiedAt: checked, evidence: 'official_current' },
   { id: 'commission-8-election-2026', label: 'Conseil de Paris : élection du bureau de la 8e commission', url: 'https://a06-v7.apps.paris.fr/a06/jsp/site/Portal.jsp?id_document=186231&items_per_page=20&page=ods-solr.display_document&query=Belliard&sort_name=score&sort_order=asc&terms=Belliard', verifiedAt: checked, evidence: 'official_current' },
@@ -114,8 +115,8 @@ export function extendParisPublicCleanlinessDataset(base: Pick<PublicCleanliness
   const add = (id: string, name: string, kind: Node['kind'], service: Node['service'], sourceIds: readonly string[], description: string, territoryIds: readonly string[] = all, assignment: Node['assignment'] = 'confirmed', extras: Partial<Pick<Node, 'unitId' | 'legalEmployerId' | 'territoryCoverageGroup' | 'publicContact' | 'coverageRole'>> = {}) => {
     nodes.push({ id, name, kind, service, sourceIds, description, territoryIds, assignment, ...extras });
   };
-  const link = (from: string, to: string, kind: Edge['kind'], sourceIds: readonly string[], status: Edge['status'] = 'confirmed') => {
-    relations.push({ id: `${kind}:${from}:${to}`, from, to, kind, sourceIds, status });
+  const link = (from: string, to: string, kind: Edge['kind'], sourceIds: readonly string[], status: Edge['status'] = 'confirmed', validFrom?: string) => {
+    relations.push({ id: `${kind}:${from}:${to}`, from, to, kind, sourceIds, status, ...(validFrom ? { validFrom } : {}) });
   };
   const unit = (id: string, name: string, parent: string, kind: Node['kind'], service: Node['service'], sourceIds: readonly string[], description: string, territoryIds: readonly string[] = all, assignment: Node['assignment'] = 'confirmed', extras: Partial<Pick<Node, 'territoryCoverageGroup' | 'publicContact' | 'coverageRole'>> = {}) => {
     add(id, name, kind, service, sourceIds, description, territoryIds, assignment, { unitId: parent, legalEmployerId: 'city-paris', ...extras });
@@ -167,10 +168,16 @@ export function extendParisPublicCleanlinessDataset(base: Pick<PublicCleanliness
   const lombard = refs('pierre-lombard-2026');
   role('deputy-waste', 'Adjoint chargé de la propreté, de l’assainissement et des déchets', 'governance', lombard, 'Mandat comprenant la réduction des déchets et l’économie circulaire.');
   person('person-pierre-lombard', 'Pierre Lombard', 'governance', lombard, 'Adjoint élu le 29 mars 2026 et membre de la 8e commission.');
-  link('person-pierre-lombard', 'deputy-waste', 'mandate', lombard);
+  link('person-pierre-lombard', 'deputy-waste', 'mandate', lombard, 'confirmed', '2026-03-29');
+  link('person-pierre-lombard', 'council-paris', 'mandate', lombard, 'confirmed', '2026-03-22');
   link('person-pierre-lombard', 'commission-8', 'mandate', lombard);
   link('deputy-waste', 'mayor-paris-role', 'mandate', lombard);
   link('deputy-waste', 'dpe', 'coordination', lombard);
+  const hassoux = refs('augustin-hassoux-cabinet-2026');
+  role('deputy-waste-cabinet-chief', 'Chef de cabinet de l’adjoint chargé de la propreté', 'governance', hassoux, 'Fonction de cabinet politique déclarée publiquement par son titulaire ; distincte de la direction administrative de la DPE.', []);
+  person('person-augustin-hassoux', 'Augustin Hassoux', 'governance', hassoux, 'Annonce professionnelle publique de sa prise de fonction auprès de Pierre Lombard ; date exacte de prise de poste non établie.', []);
+  link('person-augustin-hassoux', 'deputy-waste-cabinet-chief', 'assignment', hassoux);
+  link('deputy-waste-cabinet-chief', 'deputy-waste', 'coordination', hassoux);
   const adj = refs('paris-adjoints-2026');
   role('deputy-territorial', 'Première adjointe : coordination avec les arrondissements', 'governance', adj, 'Mandat comprenant notamment la coordination territoriale.');
   person('person-lamia-el-aaraje', 'Lamia El Aaraje', 'governance', adj, 'Première adjointe selon la composition municipale publiée.');
@@ -258,7 +265,7 @@ export function extendParisPublicCleanlinessDataset(base: Pick<PublicCleanliness
   person('person-carine-ekon', 'Carine Ekon', 'governance', ekon, 'Conseillère déléguée du 20e et vice-présidente de la 8e commission.');
   link('person-carine-ekon', 'local-delegation-20-waste', 'mandate', ekon);
   link('person-carine-ekon', 'commission-8-vice-chair', 'mandate', ekon);
-  link('person-carine-ekon', 'council-paris', 'mandate', ekon);
+  link('person-carine-ekon', 'council-paris', 'mandate', ekon, 'confirmed', '2026-03-22');
   link('local-delegation-20-waste', 'town-hall-20', 'mandate', ekon);
   for (const [district, sourceId] of [[11, 'req-11-offer'], [18, 'req-18-offer']] as const) {
     add(`req-recruitment-${district}`, `Recrutement REQ du ${district}e`, 'position', 'coordination', refs(sourceId), 'Offre documentée dans le dossier REQ ; aucun titulaire ni périmètre précis établi.', territories(district), 'unknown', { coverageRole: 'req' });

@@ -14,7 +14,7 @@ export type OrganizationSource = {
   url: string;
   sourceContentDate?: string;
   verifiedAt: string;
-  evidence: "official_current" | "official_historical" | "official_job_profile" | "operator_statement";
+  evidence: "official_current" | "official_historical" | "official_job_profile" | "operator_statement" | "professional_self_statement";
 };
 
 export type OrganizationPublicContact = {

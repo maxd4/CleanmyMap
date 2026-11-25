@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import { PublicCleanlinessCoverageTable } from "./public-cleanliness-coverage-table";
 import { PublicCleanlinessNeedPanel } from "./public-cleanliness-need-panel";
 import { getPublicInstitutionalContributions } from "@/lib/partners/public-cleanliness-needs";
+import { getPublicInstitutionalPeople } from "@/lib/partners/public-cleanliness-people";
 import { getArrondissementCityOptions, getArrondissementMunicipalLabel, type ArrondissementCity } from "@/lib/geo/paris-arrondissements";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { cn } from "@/lib/utils";
@@ -37,7 +38,7 @@ const COPY = {
     assignment: { confirmed: "Documenté par la source", historical: "Historique à la date de la source", unknown: "Affectation inconnue" },
     relationKinds: { hierarchy: "Rattachement hiérarchique", mandate: "Mandat politique", assignment: "Affectation", coordination: "Coordination fonctionnelle", cooperation: "Coopération documentée", programme: "Programme", service: "Prestation ou service" },
     relationStatus: { confirmed: "confirmé par la source", historical: "historique à la date de la source", unknown: "inconnu" },
-    evidenceLabels: { official_current: "source institutionnelle actuelle", official_historical: "source institutionnelle historique", official_job_profile: "fiche de poste officielle", operator_statement: "offre déclarée par l’opérateur" },
+    evidenceLabels: { official_current: "source institutionnelle actuelle", official_historical: "source institutionnelle historique", official_job_profile: "fiche de poste officielle", operator_statement: "offre déclarée par l’opérateur", professional_self_statement: "déclaration professionnelle publique de l’intéressé" },
     kindLegend: "Légende des états", cityName: "Ville", arrSuffix: "arrondissement", standalone: "Mandats, fonctions et personnes", contact: "Canal institutionnel public",
   },
   en: {
@@ -58,7 +59,7 @@ const COPY = {
     assignment: { confirmed: "Documented by source", historical: "Historical at source date", unknown: "Assignment unknown" },
     relationKinds: { hierarchy: "Hierarchical reporting", mandate: "Political mandate", assignment: "Assignment", coordination: "Functional coordination", cooperation: "Documented cooperation", programme: "Programme", service: "Service provision" },
     relationStatus: { confirmed: "confirmed by source", historical: "historical at source date", unknown: "unknown" },
-    evidenceLabels: { official_current: "current institutional source", official_historical: "historical institutional source", official_job_profile: "official job profile", operator_statement: "provider-reported offer" },
+    evidenceLabels: { official_current: "current institutional source", official_historical: "historical institutional source", official_job_profile: "official job profile", operator_statement: "provider-reported offer", professional_self_statement: "public professional self-statement" },
     kindLegend: "Evidence status", cityName: "City", arrSuffix: "district", standalone: "Mandates, roles and people", contact: "Public institutional channel",
   },
 } as const;
@@ -102,7 +103,7 @@ const STATUS_STYLE = {
 
 const EMPTY_NODES: readonly PublicCleanlinessOrganizationNode[] = [];
 const EMPTY_RELATIONS: readonly PublicCleanlinessOrganizationRelation[] = [];
-const EMPTY_SOURCES: readonly { id: string; label: string; url: string; sourceContentDate?: string; verifiedAt: string; evidence: "official_current" | "official_historical" | "official_job_profile" | "operator_statement" }[] = [];
+const EMPTY_SOURCES: readonly { id: string; label: string; url: string; sourceContentDate?: string; verifiedAt: string; evidence: "official_current" | "official_historical" | "official_job_profile" | "operator_statement" | "professional_self_statement" }[] = [];
 
 export function PublicCleanlinessOrganization({
   fr = true,
@@ -154,6 +155,7 @@ export function PublicCleanlinessOrganization({
   const administrativeRoots = roots.filter(node => !standaloneRootIds.has(node.id));
   const selected = visibleNodes.find((node) => node.id === selectedId) ?? visibleNodes[0] ?? null;
   const selectedRelations = selected ? relations.filter((edge) => edge.from === selected.id || edge.to === selected.id) : [];
+  const institutionalPeople = selected && dataset ? getPublicInstitutionalPeople(dataset, selected.id) : [];
   const documentedContributions = selected && dataset ? getPublicInstitutionalContributions(dataset, selected.id) : [];
   const selectedContact = selected ? getPublicCleanlinessContact(selected, sources) : null;
 
@@ -298,6 +300,7 @@ export function PublicCleanlinessOrganization({
             {selected.unitId ? <p className="mt-2 text-xs text-slate-300">{text.unit}: {nodeById.has(selected.unitId) ? displayName(nodeById.get(selected.unitId)!) : selected.unitId}</p> : null}
             {selectedContact ? <p className="mt-2 text-xs text-slate-300">{text.contact}: <a href={selectedContact.url} target="_blank" rel="noreferrer" className="text-sky-200 underline underline-offset-2">{selectedContact.label}</a></p> : null}
             {selected.directoryId ? <p className="mt-2 text-xs text-slate-300">{text.annuaireId}: <code>{selected.directoryId}</code></p> : null}
+            {institutionalPeople.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider text-slate-200">{fr ? "Personnes et affectations documentées" : "Documented people and assignments"}</h4><ul className="mt-2 space-y-2">{institutionalPeople.map(({ person, assignments }) => <li key={person.id} className="rounded-xl border border-white/10 p-3 text-xs text-slate-300"><button type="button" onClick={() => selectRelatedNode(person.id)} className="font-bold text-sky-200 underline">{displayName(person)}</button><ul className="mt-1 space-y-1">{assignments.map(({ role, relation, status }) => <li key={relation.id}>{displayName(role)} · {relationStatusLabel(status)}</li>)}</ul></li>)}</ul></section> : null}
             {selectedRelations.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider text-slate-200">{text.relationsTitle}</h4><ul className="mt-2 space-y-3">{selectedRelations.map((edge) => {
               const relatedId = edge.from === selected.id ? edge.to : edge.from;
               const related = nodeById.get(relatedId);
