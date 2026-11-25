@@ -1,0 +1,190 @@
+diff --git a/apps/web/src/components/sections/rubriques/methodologie-page-client.test.tsx b/apps/web/src/components/sections/rubriques/methodologie-page-client.test.tsx
+--- a/apps/web/src/components/sections/rubriques/methodologie-page-client.test.tsx
++++ b/apps/web/src/components/sections/rubriques/methodologie-page-client.test.tsx
+@@ -12,6 +12,7 @@
+   ActionMapMethodologySection,
+ } from "./methodologie-page-client";
+ import { MethodologiePageClient } from "./methodologie-page-composition";
++import { setMethodologySpaceOpen } from "./methodologie-page-navigation";
+ 
+ import { RouteMethodologySection } from "./route-methodology-section";
+ 
+@@ -217,11 +218,11 @@
+     const markup = renderMethodologyPage();
+ 
+     expect(markup).toContain('class="methodology-page relative');
+-    expect(markup).toContain('class="methodology-page__ambient');
+-    expect(markup).toContain("Calcul de l&#x27;impact");
+-    expect(markup).toContain(
+-      "Des métriques courtes, lisibles et fondées sur des sources documentées.",
+-    );
++    expect(markup).not.toContain('class="methodology-page__ambient');
++    expect(markup).toContain("Données, méthodes de calcul, sources et limites des rubriques CleanMyMap.");
++    expect(markup).toContain('role="tablist"');
++    expect(markup).toContain('role="tabpanel"');
++    for (const command of ["Tout ouvrir", "Tout fermer", "Aller en haut", "Aller en bas"]) expect(markup).toContain(command);
+     expect(markup).toContain('class="cmm-disclosure methodology-page__disclosure"');
+   });
+ 
+@@ -266,12 +267,17 @@
+     expect(routeIds).not.toContain("reglages");
+   });
+ 
+-  it("rend un disclosure réellement vide pour une page sans méthodologie", () => {
++  it("documente chaque rubrique actuelle au lieu de rendre des disclosures vides", () => {
+     const markup = renderMethodologyPage();
+ 
+-    expect(markup).toContain(
+-      'data-methodology-route-id="dashboard" data-methodology-content="empty"',
+-    );
++    expect(markup).not.toContain('data-methodology-content="empty"');
++    for (const id of methodologyRouteIds(markup)) expect(methodologyDisclosureSegment(markup, id)).toContain('data-methodology-content="present"');
++    const dashboard = methodologyDisclosureSegment(markup, "dashboard");
++    expect(dashboard).toContain("Données utilisées");
++    expect(dashboard).toContain("Méthode de lecture");
++    expect(dashboard).toContain("Limites et précautions");
++    expect(dashboard).toContain("dashboard-README.md");
++    expect(markup.match(/id="ai-footprint-methodology-title"/g)).toHaveLength(1);
+     expect(markup).toContain(
+       'data-methodology-route-id="methodologie" data-methodology-content="present"',
+     );
+@@ -282,6 +288,19 @@
+     expect(markup).not.toContain("Coming soon");
+   });
+ 
++  it("preserves independent open states across families", () => {
++    const spaces = getNavigationSpacesForProfile("benevole", "exhaustif", "fr");
++    const home = spaces.find((space) => space.id === "home")!;
++    const impact = spaces.find((space) => space.id === "visualize")!;
++    const openedHome = setMethodologySpaceOpen({}, home, true);
++    const openedBoth = setMethodologySpaceOpen(openedHome, impact, true);
++    const closedImpact = setMethodologySpaceOpen(openedBoth, impact, false);
++    for (const item of home.items) expect(closedImpact[item.routeId]).toBe(true);
++    for (const item of impact.items) expect(closedImpact[item.routeId]).toBe(false);
++    expect(openedHome.map).toBeUndefined();
++    expect(spaces).toHaveLength(5);
++  });
++
+   it("rattache les contenus existants au bon disclosure sans recopier les formules", () => {
+     const markup = renderMethodologyPage();
+     const map = methodologyDisclosureSegment(markup, "map");
+diff --git a/e2e/public-interactions-campaign-3a.spec.ts b/e2e/public-interactions-campaign-3a.spec.ts
+--- a/e2e/public-interactions-campaign-3a.spec.ts
++++ b/e2e/public-interactions-campaign-3a.spec.ts
+@@ -393,6 +393,49 @@
+     });
+   });
+ 
++  test("methodology tabs, bulk controls and deep links remain usable", async ({ page }) => {
++    await resetBrowserPersistence(page);
++    await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
++    await dismissCookies(page);
++    const nav = page.getByTestId("methodology-navigation-documentation");
++    const tabs = nav.getByRole("tab");
++    await expect(tabs).toHaveCount(5);
++    const impact = nav.getByRole("tab", { name: "Cartographie & Impact" });
++    const home = nav.getByRole("tab", { name: "Accueil & Pilotage" });
++    await expect(impact).toHaveAttribute("aria-selected", "true");
++    const controls = nav.getByRole("group", { name: "Commandes de l’onglet actif" });
++    const activePanel = () => nav.getByRole("tabpanel");
++    const details = () => activePanel().locator("[data-methodology-route-id] > details");
++    await home.click();
++    await expect(home).toHaveAttribute("aria-selected", "true");
++    await controls.getByRole("button", { name: "Tout ouvrir" }).click();
++    const homeCount = await details().count();
++    await expect(activePanel().locator("[data-methodology-route-id] > details[open]")).toHaveCount(homeCount);
++    await expect(activePanel().getByText("Données utilisées").first()).toBeVisible();
++    await impact.click();
++    await expect(activePanel().locator("[data-methodology-route-id] > details[open]")).toHaveCount(0);
++    await controls.getByRole("button", { name: "Tout ouvrir" }).click();
++    await expect(activePanel().locator("[data-methodology-route-id] > details[open]")).toHaveCount(await details().count());
++    await controls.getByRole("button", { name: "Aller en bas" }).click();
++    await expect(controls).toBeInViewport();
++    await controls.getByRole("button", { name: "Aller en haut" }).click();
++    await expect(impact).toBeInViewport();
++    await controls.getByRole("button", { name: "Tout fermer" }).click();
++    await expect(activePanel().locator("[data-methodology-route-id] > details[open]")).toHaveCount(0);
++    await home.click();
++    await expect(activePanel().locator("[data-methodology-route-id] > details[open]")).toHaveCount(homeCount);
++    await home.focus();
++    await page.keyboard.press("ArrowRight");
++    await expect(nav.getByRole("tab", { name: "Agir", exact: true })).toHaveAttribute("aria-selected", "true");
++
++    await page.goto("/methodologie#methodologie-itineraire", { waitUntil: "domcontentloaded" });
++    await expect(nav.getByRole("tab", { name: "Agir", exact: true })).toHaveAttribute("aria-selected", "true");
++    await expect(page.locator("#methodologie-itineraire")).toBeVisible();
++    await page.goto("/methodologie#indicateurs-impact-terrain", { waitUntil: "domcontentloaded" });
++    await expect(impact).toHaveAttribute("aria-selected", "true");
++    await expect(page.locator("#indicateurs-impact-terrain")).toBeVisible();
++  });
++
+   test("methodology and open-data anchors and internal links reach their targets", async ({ page }) => {
+     await resetBrowserPersistence(page);
+     await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
+diff --git a/documentation/pages_site/routes/03-cartographie-impact/methodologie/methodologie-README.md b/documentation/pages_site/routes/03-cartographie-impact/methodologie/methodologie-README.md
+--- a/documentation/pages_site/routes/03-cartographie-impact/methodologie/methodologie-README.md
++++ b/documentation/pages_site/routes/03-cartographie-impact/methodologie/methodologie-README.md
+@@ -30,35 +30,44 @@
+ 
+ ## Structure runtime par navigation
+ 
+-La page rend une bulle par bloc effectivement retourné par
+-`getNavigationSpacesForProfile`, dans son ordre runtime, puis un disclosure par
+-page dans l’ordre fourni par ce même contrat. La page demande explicitement le
+-mode `exhaustif` afin que son corpus documentaire ne varie pas selon le mode
+-d’affichage choisi par l’utilisateur ; le profil courant reste appliqué et le
+-profil anonyme conserve le parcours `benevole`.
++La page rend un onglet par bloc effectivement retourné par
++`getNavigationSpacesForProfile`, dans l’ordre runtime (cinq familles courantes).
++Seul l’onglet actif est visible ; Cartographie & Impact est sélectionné par défaut.
++Le corpus reste exhaustif indépendamment du mode d’affichage et respecte le
++profil courant, avec fallback anonyme `benevole`. Aucun bloc ou route hors
++navigation primaire n’est ajouté artificiellement.
+ 
+-Les contenus existants sont associés uniquement à leur `routeId` :
++Un accordéon par rubrique reste fermé par défaut. La barre de commandes
++persistante de l’onglet actif permet de tout ouvrir, tout fermer, revenir au
++début de l’onglet ou atteindre sa fin. Les opérations groupées ne changent
++que les accordéons principaux de la famille sélectionnée ; les divulgations
++internes conservent leur fonctionnement propre. Les ouvertures individuelles
++sont conservées au changement d’onglet. Les ancres historiques sélectionnent
++automatiquement la famille et ouvrent la rubrique cible, puis la font défiler
++à l’écran. Les onglets et commandes sont utilisables au clavier.
+ 
+-- `map` porte la lecture de la carte d’actions, ses scores, couleurs,
+-  géométries, sources et limites ;
+-- `new` porte le parcours d’itinéraire, dont l’entrée de compatibilité
+-  `/sections/route` ;
+-- `reports` porte les KPI Impact terrain, les proxys et l’historique ;
+-- `methodologie` porte les règles transversales, le versionnement, les modes
+-  d’affichage et la transparence méthodologique.
++Les contenus existants restent associés à leur `routeId` :
+ 
+-Les autres pages exposées par la navigation reçoivent leur disclosure sans
+-contenu tant qu’aucune méthodologie existante ne leur est attribuée. Les routes
+-d’authentification, légales, système, administratives et les routes hors
+-navigation primaire ne sont pas ajoutées artificiellement à cette page.
++- `map` : lecture cartographique, scores, couleurs, géométries et limites ;
++- `new` : préparation, mesures et itinéraire, avec lien vers le contrat de création ;
++- `reports` : KPI Impact terrain, proxys et historique ;
++- `methodologie` : règles transversales, modes, versionnement, transparence
++  et scénarios Mon empreinte IA (une seule instance).
+ 
++Les rubriques qui n’avaient pas de contenu reçoivent une introduction
++documentaire localisée (FR/EN) distinguant données utilisées, méthode et
++limites, avec lien vers l’owner documentaire et la rubrique. Il ne s’agit pas
++de nouveaux calculateurs, coefficients ni d’une certification. Toute méthode
++spécifique non documentée est explicitement signalée. Les autorisations des
++rubriques restent contrôlées par leurs propres contrats.
++
+ La documentation de la page doit également orienter vers la méthodologie spécifique de la carte d'actions :
+ 
+ `documentation/product/methodologie-carte-actions.md`
+ 
+ ## Section canonique — Indicateurs Impact terrain 2026
+ 
+-La page expose en tête l’ancre `/methodologie#indicateurs-impact-terrain`.
++La page conserve l’ancre `/methodologie#indicateurs-impact-terrain` dans l’accordéon Rapports d’impact.
+ Cette section documente les six KPI présents sur la surface Impact terrain :
+ 
+ - Déchets récoltés ;

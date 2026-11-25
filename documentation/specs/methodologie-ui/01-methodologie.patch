@@ -1,0 +1,383 @@
+diff --git a/apps/web/src/components/sections/rubriques/methodologie-page-navigation.tsx b/apps/web/src/components/sections/rubriques/methodologie-page-navigation.tsx
+--- a/apps/web/src/components/sections/rubriques/methodologie-page-navigation.tsx
++++ b/apps/web/src/components/sections/rubriques/methodologie-page-navigation.tsx
+@@ -1,58 +1,153 @@
+ "use client";
+ 
+-import type { ReactNode } from "react";
++import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
++import { ArrowDownToLine, ArrowUpToLine, ChevronsDown, ChevronsUp } from "lucide-react";
++import { CmmButton } from "@/components/ui/cmm-button";
+ import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+-import type { NavigationSpace } from "@/lib/navigation";
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
++import type { NavigationBlockId, NavigationSpace } from "@/lib/navigation";
++import { MethodologyRouteFoundation } from "./methodologie-route-foundations";
+ 
+ export type MethodologyContentRegistry = Partial<Record<string, ReactNode>>;
++type Locale = "fr" | "en";
++type OpenRoutes = Record<string, boolean>;
+ 
+-export function MethodologyNavigationDocumentation({
+-  spaces,
+-  locale,
+-  contentByRouteId,
+-}: {
++export function setMethodologySpaceOpen(previous: OpenRoutes, space: NavigationSpace, open: boolean): OpenRoutes {
++  return { ...previous, ...Object.fromEntries(space.items.map((item) => [item.routeId, open])) };
++}
++
++function MethodologyCommands({ space, locale, count, onExpand, onCollapse, onTop, onBottom }: {
++  space: NavigationSpace; locale: Locale; count: number;
++  onExpand: () => void; onCollapse: () => void; onTop: () => void; onBottom: () => void;
++}) {
++  const fr = locale === "fr";
++  return (
++    <div className="methodology-page__commands sticky bottom-0 z-30" role="group" aria-label={fr ? "Commandes de l’onglet actif" : "Active tab controls"}>
++      <div className="flex flex-wrap items-center justify-between gap-2">
++        <p className="cmm-text-small font-semibold cmm-text-primary">{space.label[locale]}</p>
++        <p className="cmm-text-caption cmm-text-secondary" aria-live="polite">{count}/{space.items.length} {fr ? "rubriques ouvertes" : "sections open"}</p>
++      </div>
++      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
++        <CmmButton tone="secondary" size="sm" onClick={onExpand} className="min-h-11 justify-center"><ChevronsDown size={16} aria-hidden="true" />{fr ? "Tout ouvrir" : "Open all"}</CmmButton>
++        <CmmButton tone="secondary" size="sm" onClick={onCollapse} className="min-h-11 justify-center"><ChevronsUp size={16} aria-hidden="true" />{fr ? "Tout fermer" : "Close all"}</CmmButton>
++        <CmmButton tone="secondary" size="sm" onClick={onTop} className="min-h-11 justify-center"><ArrowUpToLine size={16} aria-hidden="true" />{fr ? "Aller en haut" : "Go to top"}</CmmButton>
++        <CmmButton tone="secondary" size="sm" onClick={onBottom} className="min-h-11 justify-center"><ArrowDownToLine size={16} aria-hidden="true" />{fr ? "Aller en bas" : "Go to bottom"}</CmmButton>
++      </div>
++    </div>
++  );
++}
++
++function decodeHash(): string | null {
++  try { return decodeURIComponent(window.location.hash.slice(1)) || null; }
++  catch { return null; }
++}
++
++export function MethodologyNavigationDocumentation({ spaces, locale, contentByRouteId }: {
+   spaces: NavigationSpace[];
+-  locale: "fr" | "en";
++  locale: Locale;
+   contentByRouteId: MethodologyContentRegistry;
+ }) {
++  const [activeId, setActiveId] = useState<NavigationBlockId>("visualize");
++  const [openRoutes, setOpenRoutes] = useState<OpenRoutes>({});
++  const [pendingAnchor, setPendingAnchor] = useState<string | null>(null);
++  const rootRef = useRef<HTMLDivElement>(null);
++  const topRef = useRef<HTMLDivElement>(null);
++  const bottomRef = useRef<HTMLDivElement>(null);
++  const active = spaces.find((space) => space.id === activeId) ?? spaces[0];
++  const fr = locale === "fr";
++
++  useEffect(() => {
++    function revealHash() {
++      const id = decodeHash();
++      const target = id ? document.getElementById(id) : null;
++      if (!id || !target || !rootRef.current?.contains(target)) return;
++      const route = target.closest<HTMLElement>("[data-methodology-route-id]");
++      const spaceId = target.closest<HTMLElement>("[data-methodology-space-id]")?.dataset.methodologySpaceId;
++      const space = spaces.find((item) => item.id === spaceId);
++      if (!space) return;
++      setActiveId(space.id);
++      const routeId = route?.dataset.methodologyRouteId;
++      if (routeId) setOpenRoutes((previous) => ({ ...previous, [routeId]: true }));
++      setPendingAnchor(id);
++    }
++    revealHash();
++    window.addEventListener("hashchange", revealHash);
++    return () => window.removeEventListener("hashchange", revealHash);
++  }, [spaces]);
++
++  useEffect(() => {
++    if (!pendingAnchor) return;
++    const frame = window.requestAnimationFrame(() => {
++      const target = document.getElementById(pendingAnchor);
++      if (target && rootRef.current?.contains(target)) {
++        // Existing nested disclosures may contain the linked heading.
++        let parent = target.parentElement;
++        while (parent && parent !== rootRef.current) {
++          if (parent instanceof HTMLDetailsElement) parent.open = true;
++          parent = parent.parentElement;
++        }
++        target.scrollIntoView({ block: "start", behavior: "auto" });
++      }
++      setPendingAnchor(null);
++    });
++    return () => window.cancelAnimationFrame(frame);
++  }, [pendingAnchor, active?.id]);
++
++  if (!active) return null;
++
++  function selectTab(id: NavigationBlockId) {
++    setActiveId(id);
++    setPendingAnchor(null);
++    if (window.location.hash) {
++      window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
++    }
++  }
++
++  function handleTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
++    let next: number;
++    if (event.key === "ArrowRight") next = (index + 1) % spaces.length;
++    else if (event.key === "ArrowLeft") next = (index + spaces.length - 1) % spaces.length;
++    else if (event.key === "Home") next = 0;
++    else if (event.key === "End") next = spaces.length - 1;
++    else return;
++    event.preventDefault();
++    const id = spaces[next].id;
++    selectTab(id);
++    document.getElementById(`methodology-tab-${id}`)?.focus();
++  }
++
+   return (
+-    <div
+-      data-testid="methodology-navigation-documentation"
+-      data-methodology-display-mode="exhaustif"
+-      className="methodology-page__navigation space-y-8"
+-    >
++    <div ref={rootRef} data-testid="methodology-navigation-documentation" data-methodology-display-mode="exhaustif" className="methodology-page__navigation space-y-4">
++      <div ref={topRef} className="scroll-mt-28 space-y-3">
++        <div role="tablist" aria-label={fr ? "Familles méthodologiques" : "Methodology families"} className={tabStripClassName("family", "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5")}>
++          {spaces.map((space, index) => (
++            <button type="button" role="tab" key={space.id}
++              id={`methodology-tab-${space.id}`} aria-controls={`methodology-panel-${space.id}`}
++              aria-selected={active.id === space.id} tabIndex={active.id === space.id ? 0 : -1}
++              onClick={() => selectTab(space.id)} onKeyDown={(event) => handleTabKey(event, index)}
++              className={tabItemClassName("family", active.id === space.id)}>
++              <span className="min-w-0 break-words">{space.label[locale]}</span>
++            </button>
++          ))}
++        </div>
++        <p className="cmm-text-small cmm-text-secondary">{fr ? "Ouvrez une rubrique pour consulter ses données, ses méthodes, ses sources et ses limites." : "Open a section to explore its data, methods, sources and limitations."}</p>
++      </div>
+       {spaces.map((space) => (
+-        <section
+-          key={space.id}
+-          data-methodology-space-id={space.id}
+-          className="methodology-page__space space-y-6 rounded-[2.5rem] p-6 sm:p-8 lg:p-10"
+-        >
+-          <div className="methodology-page__space-heading flex items-center gap-4">
+-            <span aria-hidden="true" className="methodology-page__space-icon text-2xl">
+-              {space.icon}
+-            </span>
+-            <h2 className="methodology-page__space-title text-2xl font-black tracking-tight sm:text-3xl">
+-              Méthodologie — {space.label[locale]}
+-            </h2>
++        <section key={space.id} id={`methodology-panel-${space.id}`} role="tabpanel" aria-labelledby={`methodology-tab-${space.id}`} hidden={active.id !== space.id} data-methodology-space-id={space.id} className="methodology-page__space space-y-4 rounded-2xl p-4 sm:p-6 lg:p-8">
++          <div className="flex flex-wrap items-center justify-between gap-2">
++            <h2 className="text-xl font-bold cmm-text-primary">{space.label[locale]}</h2>
++            <p className="cmm-text-small cmm-text-secondary">{space.items.length} {fr ? "rubriques" : "sections"}</p>
+           </div>
+-
+           <div className="space-y-3">
+             {space.items.map((item) => {
+               const content = contentByRouteId[item.routeId];
+               return (
+-                <div
+-                  key={item.routeId}
+-                  data-methodology-route-id={item.routeId}
+-                  data-methodology-content={content ? "present" : "empty"}
+-                >
+-                  <CmmDisclosure
+-                    summary={item.label[locale]}
+-                    defaultOpen={false}
+-                    tone="rose"
+-                    size="lg"
+-                    className="methodology-page__disclosure"
+-                  >
+-                    {content ?? null}
++                <div key={item.routeId} id={`methodology-route-${item.routeId}`} data-methodology-route-id={item.routeId} data-methodology-content="present">
++                  <CmmDisclosure summary={item.label[locale]} open={Boolean(openRoutes[item.routeId])}
++                    onToggle={(open) => setOpenRoutes((previous) => Boolean(previous[item.routeId]) === open ? previous : { ...previous, [item.routeId]: open })}
++                    tone="rose" size="lg" className="methodology-page__disclosure">
++                    {(!content || item.routeId === "new") ? <MethodologyRouteFoundation item={item} locale={locale} /> : null}
++                    {content}
+                   </CmmDisclosure>
+                 </div>
+               );
+@@ -60,6 +155,12 @@
+           </div>
+         </section>
+       ))}
++      <div ref={bottomRef} aria-hidden="true" className="methodology-page__bottom-anchor" />
++      <MethodologyCommands space={active} locale={locale} count={active.items.filter((item) => openRoutes[item.routeId]).length}
++        onExpand={() => setOpenRoutes((previous) => setMethodologySpaceOpen(previous, active, true))}
++        onCollapse={() => setOpenRoutes((previous) => setMethodologySpaceOpen(previous, active, false))}
++        onTop={() => topRef.current?.scrollIntoView({ block: "start", behavior: "auto" })}
++        onBottom={() => bottomRef.current?.scrollIntoView({ block: "end", behavior: "auto" })} />
+     </div>
+   );
+ }
+diff --git a/apps/web/src/components/sections/rubriques/methodologie-page-composition.tsx b/apps/web/src/components/sections/rubriques/methodologie-page-composition.tsx
+--- a/apps/web/src/components/sections/rubriques/methodologie-page-composition.tsx
++++ b/apps/web/src/components/sections/rubriques/methodologie-page-composition.tsx
+@@ -2,8 +2,8 @@
+ 
+ import { useUser } from "@clerk/nextjs";
+ import { PageHeader } from "@/components/ui/page-header";
++import { resolvePageFamily } from "@/lib/ui/page-families";
+ import { getNavigationSpacesForProfile } from "@/lib/navigation";
+-import { useTranslation } from "@/lib/i18n/use-translation";
+ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+ import { resolveActiveProfileFromMetadata } from "@/lib/profiles";
+ import {
+@@ -19,7 +19,6 @@
+ 
+ export function MethodologiePageClient(props: MethodologiePageClientProps) {
+   const { locale } = useSitePreferences();
+-  const { t } = useTranslation("methodologie");
+   const { user } = useUser();
+   const currentProfile = resolveActiveProfileFromMetadata(
+     user?.publicMetadata as Record<string, unknown> | undefined,
+@@ -53,17 +52,12 @@
+   };
+ 
+   return (
+-    <div className="methodology-page relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip pb-20 pt-6">
+-      <div
+-        aria-hidden="true"
+-        className="methodology-page__ambient pointer-events-none absolute inset-x-0 top-0 -z-10 h-[44rem]"
+-      />
+-
+-      <div className="methodology-page__shell cmm-page-width flex flex-col space-y-10 px-4 pt-2 sm:px-6 lg:px-8">
++    <div className="methodology-page relative w-full pb-6 pt-6">
++      <div className="methodology-page__shell cmm-page-width mx-auto flex flex-col space-y-6 px-4 pt-2 sm:px-6 lg:px-8">
+         <PageHeader
+-          tone="red"
+-          title={t("header_title")}
+-          subtitle={t("header_desc")}
++          family={resolvePageFamily("/methodologie")}
++          title={isFrench ? "Méthodologie" : "Methodology"}
++          subtitle={isFrench ? "Données, méthodes de calcul, sources et limites des rubriques CleanMyMap." : "Data, calculations, sources and limitations across CleanMyMap."}
+         />
+ 
+         <MethodologyNavigationDocumentation
+diff --git a/apps/web/src/components/sections/rubriques/methodologie-page-client.tsx b/apps/web/src/components/sections/rubriques/methodologie-page-client.tsx
+--- a/apps/web/src/components/sections/rubriques/methodologie-page-client.tsx
++++ b/apps/web/src/components/sections/rubriques/methodologie-page-client.tsx
+@@ -127,7 +127,7 @@
+         {!contentOnly ? <PageHeader tone="red" title={t("header_title")} subtitle={t("header_desc")} /> : null}
+         <MethodologieNavigationSections actionMapSection={<ActionMapMethodologySection isFrench={isFrench} />} includeMapAndRouteContent={includeMapAndRouteContent} includeReportsContent={includeReportsContent} impactTerrainResults={impactTerrainResults} impactTerrainGeneratedAt={impactTerrainGeneratedAt} impactTerrainMethodologyVersion={impactTerrainMethodologyVersion} isFrench={isFrench} />
+         <MethodologieTransverseSections freePlanServices={freePlanServices} githubStats={githubStats} impactTotals={impactTotals} includeTransverseContent={includeTransverseContent} isFrench={isFrench} locale={locale} methodology={methodology} quotaServicesDoc={QUOTA_SERVICES_DOC} />
+-        <AiFootprintMethodologySection isFrench={isFrench} />
++        {includeTransverseContent ? <AiFootprintMethodologySection isFrench={isFrench} /> : null}
+         <MethodologieReportSections electricity={electricity} freePlanServices={freePlanServices} githubStats={githubStats} impactDoc={IMPACT_DOC} impactGeneratedAt={impactGeneratedAt} impactLaunchedAt={impactLaunchedAt} impactSnapshots={impactSnapshots} impactTotals={impactTotals} includeReportsContent={includeReportsContent} isFrench={isFrench} methodology={methodology} sources={sources} t={t} water={water} />
+         <footer className="flex flex-col items-center justify-between gap-10 border-t border-rose-100 pt-10 sm:flex-row"><div className="space-y-3 text-center sm:text-left"><p className="cmm-text-caption font-black uppercase tracking-[0.4em] text-rose-700">CleanMyMap Engine v{version}</p><p className="max-w-md text-xs font-bold leading-relaxed text-rose-800">Les formules, sources et limites sont documentées dans les références associées à cette page.</p></div></footer>
+       </div>
+diff --git a/apps/web/src/styles/methodologie.css b/apps/web/src/styles/methodologie.css
+--- a/apps/web/src/styles/methodologie.css
++++ b/apps/web/src/styles/methodologie.css
+@@ -1,18 +1,8 @@
+ @layer components {
+   .methodology-page {
+     min-height: 100%;
+-    color: #172033;
+-    background:
+-      linear-gradient(180deg, #fff5f6 0%, #fffafb 48%, #fff7f8 100%);
+   }
+ 
+-  .methodology-page__ambient {
+-    background:
+-      radial-gradient(circle at 13% 13%, rgba(244, 63, 94, 0.14) 0 9.5rem, transparent 9.8rem),
+-      radial-gradient(circle at 91% 16%, rgba(244, 63, 94, 0.1) 0 11rem, transparent 11.3rem),
+-      radial-gradient(ellipse at 50% 0%, rgba(251, 113, 133, 0.2) 0%, rgba(255, 255, 255, 0.72) 48%, transparent 78%);
+-  }
+-
+   .methodology-page__shell {
+     width: min(100%, 88rem);
+     max-width: 88rem;
+@@ -20,70 +10,52 @@
+ 
+   .methodology-page__navigation {
+     width: 100%;
++    min-width: 0;
+   }
+ 
+   .methodology-page__space {
+-    border: 1px solid rgba(244, 63, 94, 0.13);
+-    color: #172033;
+-    background: rgba(255, 255, 255, 0.82);
+-    box-shadow: 0 24px 55px -38px rgba(136, 19, 55, 0.28);
+-    backdrop-filter: blur(12px);
+-  }
+-
+-  .methodology-page__space-heading {
+-    min-height: 2.75rem;
+-  }
+-
+-  .methodology-page__space-icon {
+-    line-height: 1;
++    border: 1px solid var(--cmm-disclosure-border, rgba(148, 163, 184, 0.25));
+   }
+ 
+-  .methodology-page__space-title {
+-    color: #172033;
++  .methodology-page__space[hidden] {
++    display: none !important;
+   }
+ 
+   .methodology-page__disclosure {
+-    --cmm-disclosure-background: rgba(255, 249, 250, 0.9);
+-    --cmm-disclosure-border: rgba(244, 63, 94, 0.24);
+-    --cmm-disclosure-border-open: rgba(225, 29, 72, 0.42);
+-    --cmm-disclosure-content-background: rgba(255, 255, 255, 0.78);
+-    --cmm-disclosure-shadow: 0 7px 18px -16px rgba(136, 19, 55, 0.45);
+-    --cmm-disclosure-radius: 0.9rem;
++    --cmm-disclosure-radius: 0.75rem;
+   }
+ 
+   .methodology-page__disclosure .cmm-disclosure__summary {
+     min-height: 3.25rem;
+-    color: #172033;
+   }
+ 
+-  .methodology-page__disclosure .cmm-disclosure__icon {
+-    color: #e11d48;
++  .methodology-page__commands {
++    display: grid;
++    gap: 0.5rem;
++    padding: 0.75rem;
++    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
++    border: 1px solid rgba(148, 163, 184, 0.35);
++    border-radius: 1rem;
++    background: var(--cmm-methodology-command-surface, #fff);
++    box-shadow: 0 -8px 28px -20px rgba(15, 23, 42, 0.45);
+   }
+ 
+-  @media (max-width: 640px) {
+-    .methodology-page__shell {
+-      padding-inline: 1rem;
+-    }
+-
+-    .methodology-page__space {
+-      border-radius: 1.5rem;
+-      padding: 1.25rem;
+-    }
++  .methodology-page__bottom-anchor {
++    scroll-margin-bottom: 10rem;
++  }
+ 
+-    .methodology-page__space-heading {
+-      align-items: flex-start;
+-    }
++  .methodology-page__space [id] {
++    scroll-margin-top: 7rem;
++    scroll-margin-bottom: 10rem;
++  }
+ 
+-    .methodology-page__space-title {
+-      font-size: 1.45rem;
+-      line-height: 1.15;
+-    }
++  @media (max-width: 640px) {
++    .methodology-page__shell { padding-inline: 1rem; }
++    .methodology-page__commands { border-radius: 0.75rem; }
+   }
+ 
+   @media (prefers-reduced-motion: reduce) {
+     .methodology-page__space,
+-    .methodology-page__disclosure {
+-      transition: none;
+-    }
++    .methodology-page__disclosure { transition: none; }
+   }
+ }

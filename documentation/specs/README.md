@@ -4,6 +4,8 @@
 
 ## Dossiers réellement présents
 
+- [methodologie-ui/README_CODEX.md](./methodologie-ui/README_CODEX.md) : refonte de la page Méthodologie en cinq onglets, commandes persistantes et fondations documentaires localisées, PLAN/CANDIDATE.
+
 - [reports-ui/README_CODEX.md](./reports-ui/README_CODEX.md) : refonte des surfaces Rapports (génération, analyse et synthèse imprimable), candidats et validations restantes, PLAN/CANDIDATE.
 
 - [ecole-ui/README_CODEX.md](./ecole-ui/README_CODEX.md) : refonte Web du Mode École, quatre onglets, configuration et lancement, fiches, déroulé et banque de support, PLAN/CANDIDATE.
