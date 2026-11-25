@@ -121,16 +121,20 @@ const DEFAULT_PERSISTENT_PROJECTS = [
   "personal AI authenticated",
 ];
 
+const ALLOWED_CI_PROJECTS = new Set([
+  ...DEFAULT_PERSISTENT_PROJECTS,
+  "local public",
+]);
+
 function resolvePersistentProjects(raw = process.env.PLAYWRIGHT_PROJECTS) {
   const requested = String(raw ?? "")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
   if (requested.length === 0) return DEFAULT_PERSISTENT_PROJECTS;
-  const allowed = new Set(DEFAULT_PERSISTENT_PROJECTS);
-  const invalid = requested.filter((name) => !allowed.has(name));
+  const invalid = requested.filter((name) => !ALLOWED_CI_PROJECTS.has(name));
   if (invalid.length > 0) {
-    throw new Error(`Unsupported persistent Playwright project(s): ${invalid.join(", ")}`);
+    throw new Error(`Unsupported Playwright project(s): ${invalid.join(", ")}`);
   }
   return requested;
 }

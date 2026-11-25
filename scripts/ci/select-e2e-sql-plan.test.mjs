@@ -111,4 +111,16 @@ test("signalements API, route-reference-action-sharing spec, bootstrap infra, an
   assert.equal(uncertainPlan.e2e_should_run, true);
   assert.equal(uncertainPlan.sql_should_run, true);
   assert.equal(uncertainPlan.reason, "uncertain-scope-conservative");
+
+  const annuairePlan = planE2eAndSql({
+    changedFiles: ["e2e/annuaire-public-cleanliness.spec.ts"],
+  });
+  assert.equal(annuairePlan.e2e_should_run, true);
+  assert.equal(annuairePlan.playwright_projects, "local public");
+
+  const authPlan = planE2eAndSql({
+    changedFiles: ["apps/web/src/lib/auth/session.ts"],
+  });
+  assert.equal(authPlan.e2e_should_run, true);
+  assert.equal(authPlan.run_spogomi_integration, true);
 });

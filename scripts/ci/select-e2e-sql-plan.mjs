@@ -82,6 +82,10 @@ function isSharedAuthOrRuntimeFile(filePath) {
   return (
     file === "apps/web/src/proxy.ts" ||
     file.startsWith("apps/web/src/lib/authz") ||
+    file.startsWith("apps/web/src/lib/auth/") ||
+    file.startsWith("apps/web/src/components/auth/") ||
+    file.startsWith("apps/web/src/app/(auth)/") ||
+    file.startsWith("apps/web/src/lib/profiles") ||
     file.startsWith("apps/web/src/lib/supabase/") ||
     file.startsWith("apps/web/src/lib/http/api-errors")
   );
@@ -226,6 +230,19 @@ export function planE2eAndSql({
     ) {
       projects.add("personal AI authenticated");
     }
+
+    if (
+      file === "e2e/annuaire-public-cleanliness.spec.ts" ||
+      file.startsWith("apps/web/src/lib/partners/") ||
+      file.startsWith("apps/web/src/components/sections/rubriques/annuaire/")
+    ) {
+      projects.add("local public");
+    }
+
+    if (/^e2e\/.*\.(?:spec|test)\.ts$/.test(file) && projects.size === 0) {
+      projects.add("local public");
+      for (const project of ALL_PERSISTENT_PROJECTS) projects.add(project);
+    }
   }
 
   const runPersistentE2e = projects.size > 0;
@@ -282,11 +299,18 @@ function readChangedFilesFromGit({ eventName, eventBefore, eventSha, prBaseSha, 
 function computeContentDigest(candidateSha) {
   if (!candidateSha) return "UNAVAILABLE";
   const trackedRoots = [
+    "apps/web/src",
+    "apps/web/next.config.ts",
+    "apps/web/package.json",
     "apps/web/supabase/migrations",
     "apps/web/supabase/seed.sql",
     "apps/web/supabase/config.toml",
     "apps/web/supabase/tests",
     "e2e",
+    "scripts/ci",
+    "scripts/checks",
+    ".github/workflows/e2e-supabase.yml",
+    ".github/workflows/supabase-sql-proof.yml",
     "playwright.config.ts",
     "package-lock.json",
   ];

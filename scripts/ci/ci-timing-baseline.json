@@ -10,8 +10,5 @@
     "sqlProofTotalMs": 346000,
     "sqlProofRunnerMs": 98000
   },
-  "baselineDurationsMs": {
-    "spogomi-cachan-integration": 66000,
-    "sql-proof-runner-total": 98000
-  }
+  "baselineDurationsMs": {}
 }

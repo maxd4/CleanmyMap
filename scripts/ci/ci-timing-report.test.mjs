@@ -74,5 +74,5 @@ test("parsePlaywrightJsonReport extracts durations and formats markdown", () => 
   });
   assert.equal(testLevelProject[0].project, "action sharing");
   assert.equal(testLevelProject[0].name, "[action sharing] shares action");
-  assert.equal(typeof loadTimingBaseline()["spogomi-cachan-integration"], "number");
+  assert.deepEqual(loadTimingBaseline(), {});
 });
