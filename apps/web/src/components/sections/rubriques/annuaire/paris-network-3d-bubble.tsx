@@ -416,7 +416,11 @@ export function ParisNetwork3DBubble({
             <p className="mt-1.5 text-slate-300">
               {fr ? "Adresse administrative :" : "Administrative address:"} {PARIS_DPE_CONTACT.administrativeAddress}
             </p>
-            <p className="mt-1 text-slate-300">{PARIS_DPE_CONTACT.logistics.note}</p>
+            <p className="mt-1 text-slate-300">
+              {fr ? "Matériel :" : "Equipment:"}{" "}
+              {PARIS_DPE_CONTACT.logistics.offeredOnRequest.join(", ")} ({fr ? "sur demande" : "on request"}) ·{" "}
+              {PARIS_DPE_CONTACT.logistics.subjectToAvailability.join(", ")} ({fr ? "sous réserve" : "subject to availability"})
+            </p>
           </div>
         ) : null}
 
