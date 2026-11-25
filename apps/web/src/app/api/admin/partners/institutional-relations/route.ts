@@ -86,10 +86,16 @@ function buildAuditEntry(params: {
   };
 }
 
+// Justification Vercel: données admin privées de prospection institutionnelle, toute mise en cache partagée est interdite.
+function withPrivateNoStore<T extends Response>(response: T): T {
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
+
 export async function GET() {
   const access = await requireAdminAccess();
   if (!access.ok) {
-    return adminAccessErrorJsonResponse(access);
+    return withPrivateNoStore(adminAccessErrorJsonResponse(access));
   }
   const operationId = newOperationId();
   try {
@@ -112,7 +118,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const access = await requireAdminAccess();
   if (!access.ok) {
-    return adminAccessErrorJsonResponse(access);
+    return withPrivateNoStore(adminAccessErrorJsonResponse(access));
   }
   const operationId = newOperationId();
   const body = await request.json().catch(() => null);
@@ -229,7 +235,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const access = await requireAdminAccess();
   if (!access.ok) {
-    return adminAccessErrorJsonResponse(access);
+    return withPrivateNoStore(adminAccessErrorJsonResponse(access));
   }
   const operationId = newOperationId();
   const body = await request.json().catch(() => null);

@@ -585,7 +585,7 @@
     },
     {
       "route": "apps/web/src/app/api/admin/partners/institutional-relations/route.ts",
-      "introducedBy": "5467901df0e15351bc81def6327c769af462d9bb",
+      "introducedBy": "d8539b61770c04a3943bf1ed688cef863d2f067a",
       "reason": "Gestion privée admin des contacts institutionnels, faits sourcés et revues de vérification liés à l'annuaire des partenaires.",
       "costContract": "GET/POST/PATCH strictement protégés par requireAdminAccess(), validation Zod bornée (schémas contact/fact/review), persistance et audit admin operation-audit, réponses admin private/no-store sans projection publique.",
       "reviewedAt": "2026-11-25"

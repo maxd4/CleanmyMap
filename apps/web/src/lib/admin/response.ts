@@ -38,7 +38,10 @@ export function adminErrorResponse(params: {
       operationId: params.operationId,
       details: params.details,
     },
-    { status: params.status },
+    {
+      status: params.status,
+      headers: { "Cache-Control": "private, no-store" },
+    },
   );
 }
 
@@ -50,6 +53,9 @@ export function adminSuccessResponse<
       ...params.payload,
       operationId: params.operationId,
     },
-    { status: params.status ?? 200 },
+    {
+      status: params.status ?? 200,
+      headers: { "Cache-Control": "private, no-store" },
+    },
   );
 }

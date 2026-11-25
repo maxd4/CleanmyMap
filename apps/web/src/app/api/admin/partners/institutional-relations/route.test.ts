@@ -43,22 +43,26 @@ describe("admin institutional-relations API", () => {
     mocks.requireAdminAccess.mockResolvedValue({ ok: false, status: 401, code: "UNAUTHORIZED", message: "Unauthorized" });
     const unauthGet = await GET();
     expect(unauthGet.status).toBe(401);
+    expect(unauthGet.headers.get("Cache-Control")).toBe("private, no-store");
 
     mocks.requireAdminAccess.mockResolvedValue({ ok: false, status: 403, code: "FORBIDDEN", message: "Forbidden" });
     const getRes = await GET();
     expect(getRes.status).toBe(403);
+    expect(getRes.headers.get("Cache-Control")).toBe("private, no-store");
 
     const postRes = await POST(new Request("http://localhost/api/admin/partners/institutional-relations", {
       method: "POST",
       body: JSON.stringify({ type: "contact", id: "person-wanda-schneider", displayName: "Wanda Schneider" }),
     }));
     expect(postRes.status).toBe(403);
+    expect(postRes.headers.get("Cache-Control")).toBe("private, no-store");
 
     const patchRes = await PATCH(new Request("http://localhost/api/admin/partners/institutional-relations", {
       method: "PATCH",
       body: JSON.stringify({ factId: "11111111-1111-4111-8111-111111111111", reviewStatus: "verified", reason: "Validé" }),
     }));
     expect(patchRes.status).toBe(403);
+    expect(patchRes.headers.get("Cache-Control")).toBe("private, no-store");
 
     expect(mocks.listPrivateInstitutionalContacts).not.toHaveBeenCalled();
     expect(mocks.upsertPrivateInstitutionalContact).not.toHaveBeenCalled();
@@ -76,6 +80,7 @@ describe("admin institutional-relations API", () => {
 
     const res = await GET();
     expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
     const json = await res.json();
     expect(json.contacts).toHaveLength(1);
     expect(json.truncated).toEqual({ contacts: false, facts: false });
@@ -83,6 +88,7 @@ describe("admin institutional-relations API", () => {
     mocks.listPrivateInstitutionalContacts.mockRejectedValueOnce(new Error("relation institutional_relationship_contacts does not exist"));
     const errRes = await GET();
     expect(errRes.status).toBe(500);
+    expect(errRes.headers.get("Cache-Control")).toBe("private, no-store");
     const errJson = await errRes.json();
     expect(errJson.message).not.toContain("institutional_relationship_contacts");
   });
