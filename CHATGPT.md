@@ -67,6 +67,19 @@ implémenter, corriger ou mettre à jour le dépôt autorise ces opérations dan
 le périmètre de cette demande. Une consigne explicite « sans commit », « sans
 push », « brouillon », « branche » ou « PR » reste prioritaire.
 
+Cette contribution est une **obligation d'exécution**, et non une simple
+permission : ChatGPT écrit réellement le maximum du code, des tests et de la
+documentation du lot que ses outils permettent de produire avec fiabilité.
+L'absence de checkout local ou d'une preuve d'intégration ne dispense pas de
+concevoir et produire les fichiers complets réalisables indépendamment.
+ChatGPT publie lui-même les changements validables sur les chemins définitifs
+et, lorsque la validation runtime manque, les candidats publiables selon la
+section 9. Il ne s'arrête pas à une liste de corrections, à un prompt ou à une
+archive à transférer manuellement lorsque GitHub permet la publication sûre.
+Codex n'intervient que sur le reliquat réellement nécessaire ; aucune cible
+artificielle de lignes, de fichiers ou de pourcentage ne remplace la qualité,
+la complétude et les preuves du lot.
+
 Pour les **contributions documentaires** (documentation, spécifications, plans
 et candidats d'intégration explicitement identifiés `CANDIDATE` sans être
 présentés comme du runtime validé), lorsque les hooks Git locaux ne sont pas
@@ -413,6 +426,20 @@ la page change durablement, sans restructurer leur zone protégée. Préserver
 aussi `documentation/pepite/` sauf demande explicite. Ne pas créer de nouveau
 document pour une règle déjà couverte, ni transformer un audit en état courant.
 
+Pour une fonctionnalité ajoutée ou modifiée, ChatGPT rédige lui-même la
+**documentation canonique spécialisée** au chemin pertinent : architecture,
+fonctionnalité, données, sécurité, exploitation ou fiche fonctionnelle de page.
+Étendre l'owner existant ; créer un document complet dans le domaine pertinent
+seulement si aucun owner ne couvre la responsabilité. Décrire, selon le besoin,
+l'objectif utilisateur, le comportement, les états et transitions, les
+contrats et invariants, les frontières Web/mobile, les données et leur
+provenance, la sécurité, les erreurs, les limites et les preuves. Publier ces
+connaissances avec le code et les tests qu'elles décrivent. Si le runtime
+reste candidat, préparer aussi le changement documentaire exact dans la zone
+de pré-intégration, avec le statut `CANDIDATE` ou `PLAN` ; ne pas déclarer
+`CURRENT` une fonctionnalité non intégrée. Les corrections factuelles de
+contrats déjà consommés peuvent être publiées indépendamment après contrôle.
+
 Pour les services externes, vérifier coûts, quotas et limites **actuels** lorsque
 la décision en dépend ; préférer solution déjà intégrée, chargement à la demande,
 cache ou pagination lorsque le contrat le permet. Ne pas présenter une mesure
@@ -435,9 +462,16 @@ défini. Faire les recherches et arbitrages possibles ici, plutôt que de les
 transférer à Codex.
 
 La préparation commence par les owners, leurs consommateurs et les conventions
-du `main` actuel. Préférer l'extension de code existant aux modules parallèles,
-et un fichier complet directement intégrable à une abstraction de démonstration.
-Ne générer que les artefacts dont l'utilité est établie. Vérifier leur contenu,
+du `main` actuel. Préférer l'extension de code existant aux modules parallèles.
+Pour chaque fichier nouveau dont le contrat est établi, écrire directement
+son implémentation complète, ses types, imports, cas limites et tests utiles,
+ainsi que les raccordements fiables aux consommateurs. Pour un fichier existant,
+préparer le changement complet et ciblé, préserver les modifications étrangères
+et préférer un diff applicable à une réécriture spéculative. Un squelette, un
+TODO ou un extrait ne remplace pas une implémentation réalisable. Les tâches
+complexes peuvent être découpées pour maximiser le code livré et les preuves,
+sans transférer à Codex une fonction, un test ou un document que ChatGPT sait
+produire. Ne générer que les artefacts dont l'utilité est établie. Vérifier leur contenu,
 exécuter les contrôles accessibles et distinguer preuve statique, test isolé,
 test du workspace, intégration et production. Tout candidat non exécuté dans
 le runtime reste `CANDIDATE`, jamais `CURRENT` ou « testé par Codex ».
@@ -454,18 +488,33 @@ intégrées. Ne jamais copier directement le SQL candidat dans les migrations ni
 publier les fichiers temporaires de passation.
 
 Pour plusieurs fichiers liés ou plusieurs lots séquencés, lorsque le gain est
-réel, fournir un **dossier unique** de pré-intégration dans une zone de spec
-temporaire appropriée, avec chemins cibles préservés, manifeste bref, ordre des
-sources/errata, fichiers candidats, tests, preuves et limites. Le manifeste doit
-permettre de repérer les versions obsolètes, les dépendances et les collisions.
-Éviter les archives doublonnées et les copies dans les chemins runtime avant
-intégration. Un prompt Codex doit pointer explicitement vers les candidats à
-examiner, réutiliser ou adapter ; leur découverte par recherche agentique ne
-suffit pas comme garantie d'intégration. ChatGPT prend en charge le checkout
-GitHub, les consommateurs, les tests accessibles et la publication directe.
-Codex complète les validations qui nécessitent l'environnement local, les
-secrets ou un runtime non disponible à ChatGPT ; les migrations suivent toujours
-leurs autorisations spécifiques.
+réel, créer un **dossier unique** de pré-intégration dans une zone de spec
+temporaire appropriée, par exemple `documentation/specs/<chantier>/`, et le
+publier directement sur GitHub conformément à la section 3, sauf règle
+spécifique interdisant cette publication ou blocage avéré. Préserver les chemins
+cibles, les candidats complets des nouveaux fichiers, les diffs ciblés pour les
+fichiers existants, les tests, les changements documentaires candidats et les
+SQL non applicables directement. Ne pas copier un candidat non validé dans un
+chemin runtime ou un arbre de migrations actif.
+
+Le manifeste de passation, généralement `README_CODEX.md` ou le README existant
+du chantier, doit être suffisamment détaillé pour que Codex n'ait pas à refaire
+l'analyse. Y préciser les objectifs et jalons, la référence factuelle lue, les
+owners et consommateurs, les décisions et alternatives rejetées utiles, les
+invariants et contrats, la correspondance exacte source/destination, les
+candidats à intégrer ou adapter, les changements déjà publiés, les risques et
+collisions, les tests et résultats effectivement obtenus, les preuves manquantes,
+les tâches restantes par ordre et leur `STOP CONDITION`. Éviter les répétitions
+avec les contrats canoniques et les messages de commit ; documenter précisément
+le reste à faire, pas le nombre de lignes du document. Le prompt Codex reste
+court : il pointe explicitement vers ce manifeste et les candidats publiés.
+
+ChatGPT vérifie le SHA et les fichiers de passation publiés ; Codex les consomme
+depuis son checkout courant sans imposer un checkout historique. Codex complète
+les validations qui nécessitent l'environnement local, les secrets ou un
+runtime non disponible à ChatGPT ; les migrations suivent toujours leurs
+autorisations spécifiques. Après réception, transférer la connaissance durable
+vers les owners `CURRENT` et retirer les candidats temporaires devenus inutiles.
 
 Cette proactivité reste **proportionnée** : pas de pack artificiel pour une
 question, une étude exploratoire ou un défaut local simple ; pas de code
@@ -475,10 +524,15 @@ les commits » conserve exclusivement le contrat de sortie de
 
 Quand l'utilisateur demande de créer ou remplacer un fichier précis et que le
 contexte suffit, produire son **contenu final complet**, conserver exactement
-son nom cible et indiquer son emplacement dans le dépôt. Pour plusieurs
-fichiers, livrer séparément ou en ZIP si utile, en préservant les chemins ;
-le ZIP n'est qu'un transport, jamais une source de vérité. Ne jamais fournir
-un extrait présenté comme remplacement complet. Ne pas créer de clone ou
+son nom cible et son emplacement dans le dépôt ; publier directement le fichier
+quand la demande et les contrôles applicables l'autorisent. Pour plusieurs
+fichiers, utiliser la publication directe du lot ou de ses candidats selon
+les dispositions précédentes. Une archive ou un fichier à télécharger est un
+repli exceptionnel si la publication GitHub est réellement bloquée, si une
+règle spécifique interdit cette publication ou si l'utilisateur demande ce
+format ; jamais une étape manuelle imposée par défaut. Expliquer le blocage
+observé et préserver les chemins. Ne jamais fournir un extrait présenté comme
+remplacement complet. Ne pas créer de clone ou
 worktree Git. La modification du dépôt GitHub, le commit et le push direct
 restent autorisés pour une contribution attribuée, validée et publiée selon la
 section 3 et `AGENTS.md` ; ne pas contourner les protections ni intégrer les
