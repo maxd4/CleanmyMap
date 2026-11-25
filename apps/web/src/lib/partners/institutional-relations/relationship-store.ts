@@ -1,9 +1,11 @@
+import { createHash } from "node:crypto";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   derivePrivateInstitutionalDistinctions,
   type RelationshipEvidence,
 } from "./relationship-evidence";
 
+export const INSTITUTIONAL_READ_PAGE_SIZE = 500;
 export const MAX_INSTITUTIONAL_CONTACTS_READ = 500;
 export const MAX_INSTITUTIONAL_FACTS_READ = 2000;
 
@@ -31,6 +33,7 @@ export type InstitutionalFactRecord = RelationshipEvidence & {
 export type InstitutionalContactWithDistinctions = InstitutionalContactRecord & {
   facts: InstitutionalFactRecord[];
   distinctions: ReturnType<typeof derivePrivateInstitutionalDistinctions>;
+  distinctionsIncomplete: boolean;
 };
 
 export type InstitutionalContactsListResult = {
@@ -75,6 +78,33 @@ export class InstitutionalValidationError extends Error {
     super(message);
     this.name = "InstitutionalValidationError";
   }
+}
+
+export function computeInstitutionalFactIdempotencyKey(input: {
+  contactId: string;
+  kind: RelationshipEvidence["kind"];
+  origin: RelationshipEvidence["origin"];
+  evidenceRef: string;
+  summary: string;
+  occurredAt?: string | null;
+  supportTarget?: "cleanmymap" | "third_party" | null;
+  contributionRole?: "participation" | "organization" | "logistics" | "coordination" | null;
+  activityKind?: "cleanmymap_action" | "external_event" | null;
+  activityRef?: string | null;
+}): string {
+  const canonical = JSON.stringify([
+    input.contactId,
+    input.kind,
+    input.origin,
+    input.evidenceRef.trim(),
+    input.summary.trim(),
+    input.occurredAt?.trim() ?? null,
+    input.supportTarget ?? null,
+    input.contributionRole ?? null,
+    input.activityKind ?? null,
+    input.activityRef?.trim() ?? null,
+  ]);
+  return createHash("sha256").update(canonical).digest("hex");
 }
 
 function mapFactRow(row: FactRow): InstitutionalFactRecord {
@@ -138,33 +168,55 @@ function mapContactRow(row: ContactRow): InstitutionalContactRecord {
   };
 }
 
+async function fetchFactsPaginated(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+): Promise<{ rows: FactRow[]; truncated: boolean }> {
+  const rows: FactRow[] = [];
+  let offset = 0;
+
+  while (rows.length < MAX_INSTITUTIONAL_FACTS_READ) {
+    const remaining = MAX_INSTITUTIONAL_FACTS_READ - rows.length;
+    const pageLimit = Math.min(INSTITUTIONAL_READ_PAGE_SIZE, remaining);
+    const { data, error } = await supabase
+      .from("institutional_relationship_facts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(offset, offset + pageLimit);
+    if (error) throw new Error(error.message);
+
+    const page = (data ?? []) as FactRow[];
+    if (page.length > pageLimit) {
+      rows.push(...page.slice(0, pageLimit));
+      return { rows, truncated: true };
+    }
+    rows.push(...page);
+    if (page.length < pageLimit) {
+      return { rows, truncated: false };
+    }
+    offset += pageLimit;
+  }
+
+  return { rows, truncated: true };
+}
+
 export async function listPrivateInstitutionalContacts(): Promise<InstitutionalContactsListResult> {
   const supabase = getSupabaseServerClient(true);
   const { data: contacts, error: contactsError } = await supabase
     .from("institutional_relationship_contacts")
     .select("*")
     .order("updated_at", { ascending: false })
+    .order("id", { ascending: true })
     .range(0, MAX_INSTITUTIONAL_CONTACTS_READ);
   if (contactsError) throw new Error(contactsError.message);
 
-  const { data: facts, error: factsError } = await supabase
-    .from("institutional_relationship_facts")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .range(0, MAX_INSTITUTIONAL_FACTS_READ);
-  if (factsError) throw new Error(factsError.message);
-
   const rawContacts = (contacts ?? []) as ContactRow[];
-  const rawFacts = (facts ?? []) as FactRow[];
   const truncatedContacts = rawContacts.length > MAX_INSTITUTIONAL_CONTACTS_READ;
-  const truncatedFacts = rawFacts.length > MAX_INSTITUTIONAL_FACTS_READ;
-
   const boundedContacts = truncatedContacts
     ? rawContacts.slice(0, MAX_INSTITUTIONAL_CONTACTS_READ)
     : rawContacts;
-  const boundedFacts = truncatedFacts
-    ? rawFacts.slice(0, MAX_INSTITUTIONAL_FACTS_READ)
-    : rawFacts;
+
+  const { rows: boundedFacts, truncated: truncatedFacts } = await fetchFactsPaginated(supabase);
 
   const factsByContact = new Map<string, InstitutionalFactRecord[]>();
   for (const row of boundedFacts) {
@@ -180,6 +232,7 @@ export async function listPrivateInstitutionalContacts(): Promise<InstitutionalC
         ...mapContactRow(row),
         facts: contactFacts,
         distinctions: derivePrivateInstitutionalDistinctions(contactFacts),
+        distinctionsIncomplete: truncatedFacts || truncatedContacts,
       };
     }),
     truncated: {
@@ -244,7 +297,7 @@ async function verifyContributionReference(
   }
 }
 
-/** Always persists new facts as 'pending'; never trusts client-supplied verified status. */
+/** Always persists new facts as 'pending'; atomic idempotency via PostgreSQL unique index on idempotency_key. */
 export async function addPrivateInstitutionalFact(input: {
   contactId: string;
   kind: RelationshipEvidence["kind"];
@@ -278,21 +331,12 @@ export async function addPrivateInstitutionalFact(input: {
     await verifyContributionReference(supabase, input.activityKind, activityRef);
   }
 
-  // Prevent duplicate insertion on retries (e.g. after transient audit or network failure).
-  const { data: existing, error: existingError } = await supabase
-    .from("institutional_relationship_facts")
-    .select("*")
-    .eq("contact_id", input.contactId)
-    .eq("kind", input.kind)
-    .eq("origin", input.origin)
-    .eq("evidence_ref", evidenceRef)
-    .eq("summary", summary)
-    .limit(1)
-    .maybeSingle();
-  if (existingError) throw new Error(existingError.message);
-  if (existing) {
-    return { fact: mapFactRow(existing as FactRow), deduplicated: true };
-  }
+  const idempotencyKey = computeInstitutionalFactIdempotencyKey({
+    ...input,
+    evidenceRef,
+    summary,
+    activityRef,
+  });
 
   const { data, error } = await supabase
     .from("institutional_relationship_facts")
@@ -309,9 +353,23 @@ export async function addPrivateInstitutionalFact(input: {
       activity_kind: input.activityKind ?? null,
       activity_ref: activityRef,
       created_by: input.createdBy,
+      idempotency_key: idempotencyKey,
     })
     .select("*")
     .single();
+
+  if (error?.code === "23505") {
+    const { data: existing, error: fetchError } = await supabase
+      .from("institutional_relationship_facts")
+      .select("*")
+      .eq("idempotency_key", idempotencyKey)
+      .single();
+    if (fetchError || !existing) {
+      throw new Error(fetchError?.message ?? "Failed to fetch deduplicated institutional fact");
+    }
+    return { fact: mapFactRow(existing as FactRow), deduplicated: true };
+  }
+
   if (error || !data) throw new Error(error?.message ?? "Failed to insert institutional fact");
   return { fact: mapFactRow(data as FactRow), deduplicated: false };
 }

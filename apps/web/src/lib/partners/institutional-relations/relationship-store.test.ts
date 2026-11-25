@@ -10,6 +10,8 @@ vi.mock("@/lib/supabase/server", () => ({
 
 import {
   addPrivateInstitutionalFact,
+  computeInstitutionalFactIdempotencyKey,
+  INSTITUTIONAL_READ_PAGE_SIZE,
   InstitutionalValidationError,
   listPrivateInstitutionalContacts,
   MAX_INSTITUTIONAL_CONTACTS_READ,
@@ -103,6 +105,115 @@ describe("relationship-store hardening", () => {
     const result = await listPrivateInstitutionalContacts();
     expect(result.contacts).toHaveLength(MAX_INSTITUTIONAL_CONTACTS_READ);
     expect(result.truncated.contacts).toBe(true);
+    expect(result.truncated.facts).toBe(false);
+    expect(result.contacts[0]?.distinctionsIncomplete).toBe(true);
+  });
+
+  it("distinguishes facts sharing an evidenceRef when business attributes differ and deduplicates 23505 concurrent writes", async () => {
+    const k1 = computeInstitutionalFactIdempotencyKey({
+      contactId: "person-wanda-schneider",
+      kind: "completed_contribution",
+      origin: "direct",
+      evidenceRef: "pv-2026",
+      summary: "Action",
+      contributionRole: "participation",
+      activityKind: "external_event",
+      activityRef: "https://example.org/event-1",
+      occurredAt: "2026-11-01",
+    });
+    const k2 = computeInstitutionalFactIdempotencyKey({
+      contactId: "person-wanda-schneider",
+      kind: "completed_contribution",
+      origin: "direct",
+      evidenceRef: "pv-2026",
+      summary: "Action",
+      contributionRole: "coordination",
+      activityKind: "external_event",
+      activityRef: "https://example.org/event-1",
+      occurredAt: "2026-11-01",
+    });
+    expect(k1).not.toBe(k2);
+
+    const existingRow = {
+      id: "fact-existing",
+      contact_id: "person-wanda-schneider",
+      kind: "note",
+      origin: "direct",
+      review_status: "verified",
+      evidence_ref: "note-1",
+      summary: "Note",
+      occurred_at: null,
+      support_target: null,
+      contribution_role: null,
+      activity_kind: null,
+      activity_ref: null,
+      created_by: "admin-1",
+      created_at: "2026-11-25T10:00:00Z",
+    };
+    const insertChain = {
+      insert: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: { code: "23505", message: "duplicate key" } }),
+    };
+    const selectChain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: existingRow, error: null }),
+    };
+    let callCount = 0;
+    supabaseMocks.getSupabaseServerClient.mockReturnValue({
+      from: vi.fn(() => (callCount++ === 0 ? insertChain : selectChain)),
+    });
+
+    const res = await addPrivateInstitutionalFact({
+      contactId: "person-wanda-schneider",
+      kind: "note",
+      origin: "direct",
+      evidenceRef: "note-1",
+      summary: "Note",
+      createdBy: "admin-1",
+    });
+    expect(res.deduplicated).toBe(true);
+    expect(res.fact.id).toBe("fact-existing");
+    expect(res.fact.reviewStatus).toBe("verified");
+  });
+
+  it("paginates facts in bounded pages below max_rows=1000", async () => {
+    const contactsChain = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const page1 = Array.from({ length: INSTITUTIONAL_READ_PAGE_SIZE }, (_, i) => ({
+      id: `f1-${i}`,
+      contact_id: "c1",
+      kind: "note",
+      origin: "direct",
+      review_status: "pending",
+      evidence_ref: "ref",
+      summary: "s",
+      occurred_at: null,
+      support_target: null,
+      contribution_role: null,
+      activity_kind: null,
+      activity_ref: null,
+      created_by: "admin-1",
+      created_at: "2026-11-25T10:00:00Z",
+    }));
+    const factsChain = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi
+        .fn()
+        .mockResolvedValueOnce({ data: page1, error: null })
+        .mockResolvedValueOnce({ data: [], error: null }),
+    };
+    supabaseMocks.getSupabaseServerClient.mockReturnValue({
+      from: vi.fn((table: string) => (table === "institutional_relationship_contacts" ? contactsChain : factsChain)),
+    });
+
+    const result = await listPrivateInstitutionalContacts();
+    expect(factsChain.range).toHaveBeenCalledTimes(2);
     expect(result.truncated.facts).toBe(false);
   });
 
