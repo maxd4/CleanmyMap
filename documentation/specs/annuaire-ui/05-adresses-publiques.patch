@@ -1,0 +1,607 @@
+diff --git a/apps/web/src/lib/partners/annuaire-types.ts b/apps/web/src/lib/partners/annuaire-types.ts
+--- a/apps/web/src/lib/partners/annuaire-types.ts
++++ b/apps/web/src/lib/partners/annuaire-types.ts
+@@ -131,11 +131,24 @@
+   phone: string;
+ };
+ 
+-export type AnnuaireEntrySeedInput = Omit<AnnuaireEntryShared, "availability"> & {
+-  associationProfile?: EditorialAssociationProfile;
+-};
+-
+-export type EditorialAnnuaireEntry = AnnuaireEntryShared & {
++/** Public institutional/operating address, not a coverage area or verified geocode. */
++export type PublicEditorialAddress = {
++  label: string;
++  municipality: string;
++  postalCode: string;
++  country: "FR";
++  kind: "siege" | "atelier" | "lieu_activite" | "site_professionnel";
++  sourceUrl: string;
++  checkedAt: string;
++};
++
++export type AnnuaireEntrySeedInput = Omit<AnnuaireEntryShared, "availability"> & {
++  publicAddress?: PublicEditorialAddress;
++  associationProfile?: EditorialAssociationProfile;
++};
++
++export type EditorialAnnuaireEntry = AnnuaireEntryShared & {
++  publicAddress?: PublicEditorialAddress;
+   provenance: "editorial_seed";
+   verificationStatus: "en_cours";
+   qualificationStatus: "contact_non_qualifie";
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/seed-associations.ts b/apps/web/src/components/sections/rubriques/annuaire/seed-associations.ts
+--- a/apps/web/src/components/sections/rubriques/annuaire/seed-associations.ts
++++ b/apps/web/src/components/sections/rubriques/annuaire/seed-associations.ts
+@@ -47,69 +47,96 @@
+   },
+   {
+     id: "asso-3",
+-    name: "Carton Plein",
+-    legalIdentity: "Association Carton Plein (RNA W751216999)",
+-    kind: "association",
+-    types: ["social", "environnemental"],
+-    description:
+-      "Inclusion sociale et réemploi via déménagements à vélo et logistique locale.",
+-    location: "Paris 11e / 18e",
+-    lat: 48.89,
+-    lng: 2.355,
+-    websiteUrl: "https://www.cartonplein.org/",
+-    instagramUrl: "https://www.instagram.com/cartonplein_org/",
+-    coveredArrondissements: [11, 18, 19, 20],
+-    contributionTypes: ["logistique", "materiel", "accueil"],
+-    primaryChannel: {
+-      platform: "site web",
+-      label: "Site officiel",
+-      url: "https://www.cartonplein.org/",
+-    },
+-  },
+-  {
+-    id: "asso-runners-laveurs",
+-    name: "Les Runners Laveurs",
+-    legalIdentity: "Association Les Runners Laveurs (SIREN 923 727 572)",
+-    kind: "association",
+-    scope: "local",
+-    types: ["environnemental"],
+-    description: "Association francilienne de plogging : ramassage de déchets en courant ou en marchant et sensibilisation. Un plogging avec les 20 km de Paris est documenté ; fréquence actuelle, matériel et évacuation à confirmer pour chaque sortie.",
+-    location: "Saint-Gratien / Île-de-France",
+-    lat: null,
+-    lng: null,
+-    coordinatesSource: "unknown",
+-    websiteUrl: "https://www.helloasso.com/associations/les-runners-laveurs",
+-    coveredArrondissements: [],
+-    contributionTypes: ["communication"],
+-    tags: ["Plogging","Course à pied","Sensibilisation","Collecte citoyenne"],
+-    primaryChannel: { platform: "site web", label: "Site et contact publics", url: "https://www.helloasso.com/associations/les-runners-laveurs" },
+-  },
+-  {
+-    id: "asso-4",
+-    name: "Académie du Climat",
+-    legalIdentity: "Ville de Paris - Académie du Climat (équipement municipal)",
+-    kind: "association",
+-    types: ["environnemental", "social"],
+-    isFeatured: true,
+-    featuredReason: "Le hub de l'engagement citoyen et du climat au cœur de Paris.",
+-    description:
+-      "Lieu d'engagement climat ouvert au public: ateliers, débats, formations, programmation régulière et réseau citoyen.",
+-    location: "Paris 4e",
+-    lat: 48.8569,
+-    lng: 2.3564,
+-    websiteUrl: "https://www.academieduclimat.paris/",
+-    instagramUrl: "https://www.instagram.com/academieduclimat/",
+-    coveredArrondissements: [1, 2, 3, 4, 11, 12],
+-    contributionTypes: ["accueil", "logistique", "communication"],
+-    tags: ["Climat", "Sensibilisation", "Quartier"],
+-    primaryChannel: {
+-      platform: "site web",
+-      label: "Site officiel",
+-      url: "https://www.academieduclimat.paris/",
+-    },
+-  },
+-  {
+-    id: "asso-shakirail",
++    publicAddress: {
++      label: "132 rue des Poissonniers, 75018 Paris",
++      municipality: "Paris",
++      postalCode: "75018",
++      country: "FR",
++      kind: "atelier",
++      sourceUrl: "https://cartonplein.org/association/nos-ateliers/",
++      checkedAt: "2026-11-25",
++    },
++    name: "Carton Plein",
++    legalIdentity: "Association Carton Plein (RNA W751216999)",
++    kind: "association",
++    types: ["social", "environnemental"],
++    description:
++      "Inclusion sociale et réemploi via déménagements à vélo et logistique locale.",
++    location: "Paris 11e / 18e",
++    lat: 48.89,
++    lng: 2.355,
++    websiteUrl: "https://www.cartonplein.org/",
++    instagramUrl: "https://www.instagram.com/cartonplein_org/",
++    coveredArrondissements: [11, 18, 19, 20],
++    contributionTypes: ["logistique", "materiel", "accueil"],
++    primaryChannel: {
++      platform: "site web",
++      label: "Site officiel",
++      url: "https://www.cartonplein.org/",
++    },
++  },
++  {
++    id: "asso-runners-laveurs",
++    name: "Les Runners Laveurs",
++    legalIdentity: "Association Les Runners Laveurs (SIREN 923 727 572)",
++    kind: "association",
++    scope: "local",
++    types: ["environnemental"],
++    description: "Association francilienne de plogging : ramassage de déchets en courant ou en marchant et sensibilisation. Un plogging avec les 20 km de Paris est documenté ; fréquence actuelle, matériel et évacuation à confirmer pour chaque sortie.",
++    location: "Saint-Gratien / Île-de-France",
++    lat: null,
++    lng: null,
++    coordinatesSource: "unknown",
++    websiteUrl: "https://www.helloasso.com/associations/les-runners-laveurs",
++    coveredArrondissements: [],
++    contributionTypes: ["communication"],
++    tags: ["Plogging","Course à pied","Sensibilisation","Collecte citoyenne"],
++    primaryChannel: { platform: "site web", label: "Site et contact publics", url: "https://www.helloasso.com/associations/les-runners-laveurs" },
++  },
++  {
++    id: "asso-4",
++    publicAddress: {
++      label: "2 place Baudoyer, 75004 Paris",
++      municipality: "Paris",
++      postalCode: "75004",
++      country: "FR",
++      kind: "lieu_activite",
++      sourceUrl: "https://www.academieduclimat.paris/informations-pratiques/",
++      checkedAt: "2026-11-25",
++    },
++    name: "Académie du Climat",
++    legalIdentity: "Ville de Paris - Académie du Climat (équipement municipal)",
++    kind: "association",
++    types: ["environnemental", "social"],
++    isFeatured: true,
++    featuredReason: "Le hub de l'engagement citoyen et du climat au cœur de Paris.",
++    description:
++      "Lieu d'engagement climat ouvert au public: ateliers, débats, formations, programmation régulière et réseau citoyen.",
++    location: "Paris 4e",
++    lat: 48.8569,
++    lng: 2.3564,
++    websiteUrl: "https://www.academieduclimat.paris/",
++    instagramUrl: "https://www.instagram.com/academieduclimat/",
++    coveredArrondissements: [1, 2, 3, 4, 11, 12],
++    contributionTypes: ["accueil", "logistique", "communication"],
++    tags: ["Climat", "Sensibilisation", "Quartier"],
++    primaryChannel: {
++      platform: "site web",
++      label: "Site officiel",
++      url: "https://www.academieduclimat.paris/",
++    },
++  },
++  {
++    id: "asso-shakirail",
++    publicAddress: {
++      label: "72 rue Riquet, 75018 Paris",
++      municipality: "Paris",
++      postalCode: "75018",
++      country: "FR",
++      kind: "lieu_activite",
++      sourceUrl: "https://shakirail.curry-vavart.com/",
++      checkedAt: "2026-11-25",
++    },
+     name: "Le Shakirail",
+     legalIdentity: "Collectif Curry Vavart / AGETA",
+     kind: "association",
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/seed-entreprises.ts b/apps/web/src/components/sections/rubriques/annuaire/seed-entreprises.ts
+--- a/apps/web/src/components/sections/rubriques/annuaire/seed-entreprises.ts
++++ b/apps/web/src/components/sections/rubriques/annuaire/seed-entreprises.ts
+@@ -3,146 +3,209 @@
+ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
+   {
+     id: "com-1",
+-    name: "La Textilerie",
+-    legalIdentity: "SAS La Textilerie (SIREN 824 531 417)",
+-    kind: "commerce",
+-    types: ["environnemental", "social"],
+-    description:
+-      "Tiers-lieu mode responsable : friperie, couture, ateliers de sensibilisation.",
+-    location: "Paris 10e",
+-    lat: 48.875,
+-    lng: 2.36,
+-    websiteUrl: "https://latextilerie.fr/",
+-    instagramUrl: "https://www.instagram.com/latextilerieparis/",
+-    coveredArrondissements: [9, 10, 11],
+-    contributionTypes: ["accueil", "materiel", "communication"],
+-    primaryChannel: {
+-      platform: "instagram",
+-      label: "Compte Instagram",
+-      url: "https://www.instagram.com/latextilerieparis/",
+-    },
+-  },
+-  {
+-    id: "asso-megots-alcome",
+-    name: "ALCOME",
+-    legalIdentity: "Éco-organisme ALCOME",
+-    kind: "entreprise",
+-    scope: "national",
+-    types: ["environnemental"],
+-    isFeatured: true,
+-    featuredReason: "Éco-organisme de la filière REP des produits du tabac.",
+-    description: "Éco-organisme agréé de la filière REP des produits du tabac. Accompagnement des collectivités sous contrat, dont reprise à partir de 100 kg de mégots massifiés selon conditions. Éligibilité des mégots ramassés au sol et financement associatif à confirmer ; pas un collecteur direct.",
+-    location: "France",
+-    lat: 48.87,
+-    lng: 2.32,
+-    websiteUrl: "https://www.alcome.eco",
+-    coveredArrondissements: [],
+-    contributionTypes: ["financement", "materiel", "communication"],
+-    tags: ["Mégots", "Eco-organisme", "Collectivités", "Sensibilisation"],
+-  },
+-  {
+-    id: "asso-megots-ecomegot",
+-    name: "Écomégot",
+-    legalIdentity: "Écomégot SAS (Économie circulaire)",
+-    kind: "entreprise",
+-    scope: "national",
+-    types: ["environnemental"],
+-    description: "Service de collecte et recyclage de mégots spécialisé pour les événements et cleanups spécialisés. Orientation utile pour les collectes ciblées.",
+-    location: "France / Paris",
+-    lat: 48.85,
+-    lng: 2.35,
+-    websiteUrl: "https://www.ecomegot.com",
+-    coveredArrondissements: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+-    contributionTypes: ["materiel", "logistique"],
+-    tags: ["Mégots", "Recyclage", "Événements", "Collecte spécialisée"],
+-  },
+-  {
+-    id: "asso-megots-cyclope",
+-    name: "Cy-Clope",
+-    legalIdentity: "Cy-Clope SAS",
+-    kind: "entreprise",
+-    types: ["environnemental"],
+-    description: "Solution de gestion des zones fumeurs, de collecte et de valorisation des mégots pour les entreprises et les lieux publics.",
+-    location: "Saint-Ouen / Paris",
+-    lat: 48.91,
+-    lng: 2.33,
+-    websiteUrl: "https://www.cy-clope.fr",
+-    coveredArrondissements: [],
+-    contributionTypes: ["materiel", "logistique"],
+-    tags: ["Mégots", "Entreprise", "Cendriers connectés", "Propreté urbaine"],
+-  },
+-  {
+-    id: "asso-megots-tchaomegot",
+-    name: "TchaoMegot",
+-    legalIdentity: "Tchao Megot SAS (Économie Circulaire)",
+-    kind: "entreprise",
+-    scope: "national",
+-    types: ["environnemental"],
+-    description: "Collecte, dépollution et recyclage de mégots, avec un procédé breveté sans eau ni solvant toxique.",
+-    location: "National / Paris",
+-    lat: 48.85,
+-    lng: 2.33,
+-    websiteUrl: "https://tchaomegot.com",
+-    coveredArrondissements: [],
+-    contributionTypes: ["materiel", "logistique"],
+-    tags: ["Mégots", "B2B", "Collectivités", "Innovation"],
+-  },
+-  {
+-    id: "operator-ckfd",
+-    name: "CKFD",
+-    legalIdentity: "CKFD ENVIRONNEMENT (SIREN 498 485 416)",
+-    kind: "entreprise",
+-    scope: "local",
+-    types: ["environnemental"],
+-    description: "Collecte de mégots en Île-de-France et massification à Gennevilliers avant traitement en Bretagne selon CKFD. Dépôt direct, mégots ramassés au sol, petits volumes et tarif à confirmer ; aucun point d'apport public établi.",
+-    location: "Gennevilliers / Île-de-France",
+-    lat: null,
+-    lng: null,
+-    coordinatesSource: "unknown",
+-    websiteUrl: "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette",
+-    coveredArrondissements: [],
+-    contributionTypes: ["logistique"],
+-    tags: ["Mégots","Massification","Gennevilliers","Collecte spécialisée"],
+-    primaryChannel: { platform: "site web", label: "Site et contact publics", url: "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette" },
+-  },
+-  {
+-    id: "operator-mego",
+-    name: "MéGO!",
+-    legalIdentity: "MéGO! (SIREN 828 153 718)",
+-    kind: "entreprise",
+-    scope: "national",
+-    types: ["environnemental"],
+-    description: "Filière de recyclage matière de mégots annoncée en Bretagne ; admission des petits lots associatifs, conditions de reprise, tarifs et traitement effectif à confirmer. Aucun dépôt public parisien.",
+-    location: "Saint-Divy / réseau national",
+-    lat: null,
+-    lng: null,
+-    coordinatesSource: "unknown",
+-    websiteUrl: "https://www.me-go.fr/contact/",
+-    coveredArrondissements: [],
+-    contributionTypes: ["logistique"],
+-    tags: ["Mégots","Recyclage matière","Conditionnement","Petits volumes"],
+-    primaryChannel: { platform: "site web", label: "Site et contact publics", url: "https://www.me-go.fr/contact/" },
+-  },
+-  {
+-    id: "operator-carton-plein-cyclo",
+-    name: "Carton Plein Cyclo",
+-    legalIdentity: "CARTON PLEIN CYCLO (SIREN 978 296 325)",
+-    kind: "entreprise",
+-    scope: "local",
+-    types: ["social","environnemental"],
+-    description: "Filiale de Carton Plein : insertion et collecte professionnelle de déchets à vélo à Paris et en proche banlieue. Acceptation des mégots citoyens, trajet vers Gennevilliers et prix à confirmer. Aucun contrat de transport acquis.",
+-    location: "Paris / proche banlieue",
+-    lat: null,
+-    lng: null,
+-    coordinatesSource: "unknown",
+-    websiteUrl: "https://cartonplein.org/nos-services-cyclologistique/",
+-    coveredArrondissements: [],
+-    contributionTypes: ["logistique"],
+-    tags: ["Cyclologistique","Insertion","Vélo cargo","Mégots"],
+-    primaryChannel: { platform: "site web", label: "Site et contact publics", url: "https://cartonplein.org/nos-services-cyclologistique/" },
+-  },
+-  {
+-    id: "com-2",
++    publicAddress: {
++      label: "22 rue du Château Landon, 75010 Paris",
++      municipality: "Paris",
++      postalCode: "75010",
++      country: "FR",
++      kind: "siege",
++      sourceUrl: "https://www.latextilerie.fr/infos-pratiques/",
++      checkedAt: "2026-11-25",
++    },
++    name: "La Textilerie",
++    legalIdentity: "SAS La Textilerie (SIREN 824 531 417)",
++    kind: "commerce",
++    types: ["environnemental", "social"],
++    description:
++      "Tiers-lieu mode responsable : friperie, couture, ateliers de sensibilisation.",
++    location: "Paris 10e",
++    lat: 48.875,
++    lng: 2.36,
++    websiteUrl: "https://latextilerie.fr/",
++    instagramUrl: "https://www.instagram.com/latextilerieparis/",
++    coveredArrondissements: [9, 10, 11],
++    contributionTypes: ["accueil", "materiel", "communication"],
++    primaryChannel: {
++      platform: "instagram",
++      label: "Compte Instagram",
++      url: "https://www.instagram.com/latextilerieparis/",
++    },
++  },
++  {
++    id: "asso-megots-alcome",
++    publicAddress: {
++      label: "164 rue du Faubourg Saint-Honoré, 75008 Paris",
++      municipality: "Paris",
++      postalCode: "75008",
++      country: "FR",
++      kind: "siege",
++      sourceUrl: "https://alcome.eco/mentions-legales/",
++      checkedAt: "2026-11-25",
++    },
++    name: "ALCOME",
++    legalIdentity: "Éco-organisme ALCOME",
++    kind: "entreprise",
++    scope: "national",
++    types: ["environnemental"],
++    isFeatured: true,
++    featuredReason: "Éco-organisme de la filière REP des produits du tabac.",
++    description: "Éco-organisme agréé de la filière REP des produits du tabac. Accompagnement des collectivités sous contrat, dont reprise à partir de 100 kg de mégots massifiés selon conditions. Éligibilité des mégots ramassés au sol et financement associatif à confirmer ; pas un collecteur direct.",
++    location: "France",
++    lat: 48.87,
++    lng: 2.32,
++    websiteUrl: "https://www.alcome.eco",
++    coveredArrondissements: [],
++    contributionTypes: ["financement", "materiel", "communication"],
++    tags: ["Mégots", "Eco-organisme", "Collectivités", "Sensibilisation"],
++  },
++  {
++    id: "asso-megots-ecomegot",
++    name: "Écomégot",
++    legalIdentity: "Écomégot SAS (Économie circulaire)",
++    kind: "entreprise",
++    scope: "national",
++    types: ["environnemental"],
++    description: "Service de collecte et recyclage de mégots spécialisé pour les événements et cleanups spécialisés. Orientation utile pour les collectes ciblées.",
++    location: "France / Paris",
++    lat: 48.85,
++    lng: 2.35,
++    websiteUrl: "https://www.ecomegot.com",
++    coveredArrondissements: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
++    contributionTypes: ["materiel", "logistique"],
++    tags: ["Mégots", "Recyclage", "Événements", "Collecte spécialisée"],
++  },
++  {
++    id: "asso-megots-cyclope",
++    name: "Cy-Clope",
++    legalIdentity: "Cy-Clope SAS",
++    kind: "entreprise",
++    types: ["environnemental"],
++    description: "Solution de gestion des zones fumeurs, de collecte et de valorisation des mégots pour les entreprises et les lieux publics.",
++    location: "Saint-Ouen / Paris",
++    lat: 48.91,
++    lng: 2.33,
++    websiteUrl: "https://www.cy-clope.fr",
++    coveredArrondissements: [],
++    contributionTypes: ["materiel", "logistique"],
++    tags: ["Mégots", "Entreprise", "Cendriers connectés", "Propreté urbaine"],
++  },
++  {
++    id: "asso-megots-tchaomegot",
++    publicAddress: {
++      label: "12 rue Benjamin Delessert, 60510 Bresles",
++      municipality: "Bresles",
++      postalCode: "60510",
++      country: "FR",
++      kind: "site_professionnel",
++      sourceUrl: "https://tchaomegot.com/produit/kit-recyclage-5l-3-500-megots/",
++      checkedAt: "2026-11-25",
++    },
++    name: "TchaoMegot",
++    legalIdentity: "Tchao Megot SAS (Économie Circulaire)",
++    kind: "entreprise",
++    scope: "national",
++    types: ["environnemental"],
++    description: "Collecte, dépollution et recyclage de mégots, avec un procédé breveté sans eau ni solvant toxique.",
++    location: "National / Paris",
++    lat: 48.85,
++    lng: 2.33,
++    websiteUrl: "https://tchaomegot.com",
++    coveredArrondissements: [],
++    contributionTypes: ["materiel", "logistique"],
++    tags: ["Mégots", "B2B", "Collectivités", "Innovation"],
++  },
++  {
++    id: "operator-ckfd",
++    publicAddress: {
++      label: "86-114 avenue Louis Roche, bâtiment D, hall 5, 92230 Gennevilliers",
++      municipality: "Gennevilliers",
++      postalCode: "92230",
++      country: "FR",
++      kind: "site_professionnel",
++      sourceUrl: "https://www.ckfd.fr/contact",
++      checkedAt: "2026-11-25",
++    },
++    name: "CKFD",
++    legalIdentity: "CKFD ENVIRONNEMENT (SIREN 498 485 416)",
++    kind: "entreprise",
++    scope: "local",
++    types: ["environnemental"],
++    description: "Collecte de mégots en Île-de-France et massification à Gennevilliers avant traitement en Bretagne selon CKFD. Dépôt direct, mégots ramassés au sol, petits volumes et tarif à confirmer ; aucun point d'apport public établi.",
++    location: "Gennevilliers / Île-de-France",
++    lat: null,
++    lng: null,
++    coordinatesSource: "unknown",
++    websiteUrl: "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette",
++    coveredArrondissements: [],
++    contributionTypes: ["logistique"],
++    tags: ["Mégots","Massification","Gennevilliers","Collecte spécialisée"],
++    primaryChannel: { platform: "site web", label: "Site et contact publics", url: "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette" },
++  },
++  {
++    id: "operator-mego",
++    publicAddress: {
++      label: "11 ZI de Penhoat, 29800 Saint-Divy",
++      municipality: "Saint-Divy",
++      postalCode: "29800",
++      country: "FR",
++      kind: "site_professionnel",
++      sourceUrl: "https://www.me-go.fr/contact/",
++      checkedAt: "2026-11-25",
++    },
++    name: "MéGO!",
++    legalIdentity: "MéGO! (SIREN 828 153 718)",
++    kind: "entreprise",
++    scope: "national",
++    types: ["environnemental"],
++    description: "Filière de recyclage matière de mégots annoncée en Bretagne ; admission des petits lots associatifs, conditions de reprise, tarifs et traitement effectif à confirmer. Aucun dépôt public parisien.",
++    location: "Saint-Divy / réseau national",
++    lat: null,
++    lng: null,
++    coordinatesSource: "unknown",
++    websiteUrl: "https://www.me-go.fr/contact/",
++    coveredArrondissements: [],
++    contributionTypes: ["logistique"],
++    tags: ["Mégots","Recyclage matière","Conditionnement","Petits volumes"],
++    primaryChannel: { platform: "site web", label: "Site et contact publics", url: "https://www.me-go.fr/contact/" },
++  },
++  {
++    id: "operator-carton-plein-cyclo",
++    publicAddress: {
++      label: "12 rue Charles Delescluze, 75011 Paris",
++      municipality: "Paris",
++      postalCode: "75011",
++      country: "FR",
++      kind: "site_professionnel",
++      sourceUrl: "https://cartonplein.org/nos-services-cyclologistique/",
++      checkedAt: "2026-11-25",
++    },
++    name: "Carton Plein Cyclo",
++    legalIdentity: "CARTON PLEIN CYCLO (SIREN 978 296 325)",
++    kind: "entreprise",
++    scope: "local",
++    types: ["social","environnemental"],
++    description: "Filiale de Carton Plein : insertion et collecte professionnelle de déchets à vélo à Paris et en proche banlieue. Acceptation des mégots citoyens, trajet vers Gennevilliers et prix à confirmer. Aucun contrat de transport acquis.",
++    location: "Paris / proche banlieue",
++    lat: null,
++    lng: null,
++    coordinatesSource: "unknown",
++    websiteUrl: "https://cartonplein.org/nos-services-cyclologistique/",
++    coveredArrondissements: [],
++    contributionTypes: ["logistique"],
++    tags: ["Cyclologistique","Insertion","Vélo cargo","Mégots"],
++    primaryChannel: { platform: "site web", label: "Site et contact publics", url: "https://cartonplein.org/nos-services-cyclologistique/" },
++  },
++  {
++    id: "com-2",
++    publicAddress: {
++      label: "18 rue Saint-Antoine, 93100 Montreuil",
++      municipality: "Montreuil",
++      postalCode: "93100",
++      country: "FR",
++      kind: "atelier",
++      sourceUrl: "https://lacollecterie.org/",
++      checkedAt: "2026-11-25",
++    },
+     name: "La Collecterie Paris",
+     legalIdentity: "Association La Collecterie (RNA W931014584)",
+     kind: "commerce",
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/seed-evenements.ts b/apps/web/src/components/sections/rubriques/annuaire/seed-evenements.ts
+--- a/apps/web/src/components/sections/rubriques/annuaire/seed-evenements.ts
++++ b/apps/web/src/components/sections/rubriques/annuaire/seed-evenements.ts
+@@ -3,6 +3,15 @@
+ export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
+   {
+     id: "evt-1",
++    publicAddress: {
++      label: "83 boulevard Ornano, 75018 Paris",
++      municipality: "Paris",
++      postalCode: "75018",
++      country: "FR",
++      kind: "lieu_activite",
++      sourceUrl: "https://www.larecyclerie.com/infos-pratiques/",
++      checkedAt: "2026-11-25",
++    },
+     name: "La REcyclerie - Ateliers",
+     legalIdentity: "SAS Sinny&Ooko - site La REcyclerie (SIREN 801 782 744)",
+     kind: "evenement",
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-drawer.panel.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-drawer.panel.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-drawer.panel.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-drawer.panel.tsx
+@@ -142,6 +142,14 @@
+   return (
+     <DrawerSection title={fr ? "Présentation" : "Overview"} defaultOpen>
+       <p className="text-sm leading-relaxed cmm-text-primary">{entry.description}</p>
++      {entry.provenance === "editorial_seed" && entry.publicAddress ? (
++        <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
++          <p className="text-xs font-semibold cmm-text-secondary">{fr ? "Adresse publique documentée" : "Documented public address"}</p>
++          <p className="text-sm font-semibold cmm-text-primary">{entry.publicAddress.label}</p>
++          <p className="mt-1 text-xs cmm-text-secondary">{fr ? "Adresse d'établissement ; ne vaut pas autorisation d'accès ou de dépôt." : "Establishment address; not permission to enter or drop off waste."}</p>
++          {normalizePublicWebUrl(entry.publicAddress.sourceUrl) ? <a href={normalizePublicWebUrl(entry.publicAddress.sourceUrl)!} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs cmm-text-primary underline">{fr ? "Source consultée le" : "Source checked on"} {entry.publicAddress.checkedAt}</a> : null}
++        </div>
++      ) : null}
+       {entry.featuredReason ? (
+         <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
+           <p className="text-sm italic leading-relaxed cmm-text-primary">
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-seed-contract.test.ts b/apps/web/src/components/sections/rubriques/annuaire/annuaire-seed-contract.test.ts
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-seed-contract.test.ts
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-seed-contract.test.ts
+@@ -13,6 +13,17 @@
+   /\b(?:verificationStatus|qualificationStatus|recentActivityAt|impactHistory|structureStatus|availability|lastUpdatedAt|internalAdminContact)\s*:/;
+ 
+ describe("annuaire editorial seed contract", () => {
++  it("preserves sourced public establishment addresses separately from coverage and geocoding", () => {
++    const expected = [["asso-3","Paris","75018"],["asso-4","Paris","75004"],["asso-shakirail","Paris","75018"],["com-1","Paris","75010"],["asso-megots-alcome","Paris","75008"],["operator-ckfd","Gennevilliers","92230"],["operator-mego","Saint-Divy","29800"],["operator-carton-plein-cyclo","Paris","75011"],["com-2","Montreuil","93100"],["asso-megots-tchaomegot","Bresles","60510"],["evt-1","Paris","75018"]] as const;
++    for (const [id, municipality, postalCode] of expected) {
++      const entry = INITIAL_ANNUAIRE_ENTRIES.find(item => item.id === id)!;
++      expect(entry.publicAddress).toMatchObject({ municipality, postalCode, country: "FR", checkedAt: "2026-11-25" });
++      expect(entry.publicAddress?.sourceUrl).toMatch(/^https:\/\//);
++      expect(entry.publicAddress?.label).toContain(postalCode);
++    }
++    expect(INITIAL_ANNUAIRE_ENTRIES.find(item => item.id === "operator-mego")).toMatchObject({ lat: null, lng: null, coordinatesSource: "unknown", scope: "national" });
++  });
++
+   it("references documented waste-chain and plogging resources once, without asserting partner or drop-off status", () => {
+     for (const id of ["operator-ckfd", "operator-mego", "operator-carton-plein-cyclo", "asso-runners-laveurs"]) {
+       const entries = INITIAL_ANNUAIRE_ENTRIES.filter(entry => entry.id === id);
