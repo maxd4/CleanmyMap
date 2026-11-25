@@ -36,6 +36,12 @@ export function classifyLocalAppStartupOutput(output) {
 
 export function classifyLocalAppRuntimeOutput(output) {
   const text = String(output ?? "");
+  if (/heap out of memory|Allocation failed|ERR_WORKER_OUT_OF_MEMORY|ENOMEM/i.test(text)) {
+    return {
+      code: "APP_OUT_OF_MEMORY",
+      message: "The local app ran out of memory; process output is suppressed.",
+    };
+  }
   const startup = classifyLocalAppStartupOutput(text);
   if (startup && startup.code !== "APP_STARTUP_ERROR") return startup;
 

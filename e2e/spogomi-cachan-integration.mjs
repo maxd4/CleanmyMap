@@ -109,15 +109,30 @@ async function runStep(name, action) {
   }
 }
 
-const runtimeOutputReaders = new Map();
+const runtimeServers = new Map();
 
 async function api(baseUrl, route, init = {}, expected = [200]) {
   let response;
   try {
     response = await fetch(`${baseUrl}${route}`, { redirect: "manual", ...init });
-  } catch {
+  } catch (error) {
     const diagnostic = classifyLocalAppTransportFailure();
-    throw new Error(`${init.method ?? "GET"} ${route}: ${diagnostic.code}: ${diagnostic.message}`);
+    const server = runtimeServers.get(baseUrl);
+    const runtimeDiagnostic = classifyLocalAppRuntimeOutput(server?.getStartupOutput?.() ?? "");
+    const exitInfo = server && (server.exitCode != null || server.signalCode != null)
+      ? ` exit=${server.exitCode ?? "null"} signal=${server.signalCode ?? "null"}`
+      : "";
+    const causeCode = error && typeof error === "object" && "cause" in error && error.cause && typeof error.cause === "object" && "code" in error.cause
+      ? String(error.cause.code)
+      : error && typeof error === "object" && "code" in error
+        ? String(error.code)
+        : null;
+    const detail = [
+      causeCode ? `cause=${causeCode}` : null,
+      exitInfo ? exitInfo.trim() : null,
+      runtimeDiagnostic ? `${runtimeDiagnostic.code}: ${runtimeDiagnostic.message}` : null,
+    ].filter(Boolean).join("; ");
+    throw new Error(`${init.method ?? "GET"} ${route}: ${diagnostic.code}: ${diagnostic.message}${detail ? ` (${detail})` : ""}`);
   }
   if (!expected.includes(response.status)) {
     await response.body?.cancel().catch(() => undefined);
@@ -125,7 +140,7 @@ async function api(baseUrl, route, init = {}, expected = [200]) {
     const diagnosticCode = diagnostic ? ` ${diagnostic.code}` : " HTTP_UNEXPECTED_RESPONSE";
     const diagnosticMessage = diagnostic?.message ?? "The response status was not expected.";
     const runtimeDiagnostic = response.status >= 500
-      ? classifyLocalAppRuntimeOutput(runtimeOutputReaders.get(baseUrl)?.() ?? "")
+      ? classifyLocalAppRuntimeOutput(runtimeServers.get(baseUrl)?.getStartupOutput?.() ?? "")
       : null;
     const runtimeSuffix = runtimeDiagnostic ? ` (${runtimeDiagnostic.code}: ${runtimeDiagnostic.message})` : "";
     throw new Error(`${init.method ?? "GET"} ${route}:${diagnosticCode} HTTP ${response.status}. ${diagnosticMessage}${runtimeSuffix}`);
@@ -207,11 +222,11 @@ async function main() {
 
   try {
     ownerServer = process.env.CMM_SPOGOMI_APP_URL ? null : startApp({ port: 3010, userId: ownerId, role: "admin", database });
-    runtimeOutputReaders.set(appUrl, () => ownerServer?.getStartupOutput?.() ?? "");
+    if (ownerServer) runtimeServers.set(appUrl, ownerServer);
     await waitForLocalApp(appUrl, { server: ownerServer, getStartupOutput: () => ownerServer?.getStartupOutput?.() ?? "" });
     if (observerUrl) {
       observerServer = startApp({ port: 3011, userId: observerId, role: "benevole", database });
-      runtimeOutputReaders.set(observerUrl, () => observerServer?.getStartupOutput?.() ?? "");
+      runtimeServers.set(observerUrl, observerServer);
       await waitForLocalApp(observerUrl, { server: observerServer, getStartupOutput: () => observerServer?.getStartupOutput?.() ?? "" });
     }
 
