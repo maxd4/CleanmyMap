@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(new URL("../../../supabase/migrations/20261110000004_spogomi_division_routes.sql", import.meta.url), "utf8");
+const repairMigration = readFileSync(new URL("../../../supabase/migrations/20261126000001_spogomi_referee_division_and_route_media.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI planned route migration STATIC_CONTRACT", () => {
   it("keeps legacy shared routes and adds division-scoped uniqueness", () => {
@@ -21,5 +22,13 @@ describe("SPOGOMI planned route migration STATIC_CONTRACT", () => {
     expect(migration).toContain("composition_locked");
     expect(migration).toContain("never an observed field trace");
     expect(migration).toContain("spogomi_route_coverage_complete");
+  });
+
+  it("enforces route_reference media purpose under lock and division-scoped referee qualification in additive migration", () => {
+    expect(repairMigration).toContain("v_media.purpose <> 'route_reference'");
+    expect(repairMigration).toContain("for update");
+    expect(repairMigration).toContain("v_division.regulation_version");
+    expect(repairMigration).toContain("v_current_quiz_version");
+    expect(repairMigration).toContain("serialization_failure");
   });
 });

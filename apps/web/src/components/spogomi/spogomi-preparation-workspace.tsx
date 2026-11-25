@@ -142,10 +142,21 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     setError(null);
     setMessage(null);
     return runWorkspaceRequest(request, () => requestWorkspaceAction(activeDivisionIdRef.current, url, init), async (body) => {
-      await refresh(request);
-      if (!isCurrentRequest(request)) return null;
-      setCanRetryRefresh(false);
-      setMessage("Opération enregistrée.");
+      try {
+        await refresh(request);
+        if (!isCurrentRequest(request)) return body;
+        setCanRetryRefresh(false);
+        setMessage("Opération enregistrée.");
+      } catch (refreshError) {
+        if (isCurrentRequest(request)) {
+          setCanRetryRefresh(true);
+          setError(
+            refreshError instanceof Error
+              ? refreshError.message
+              : "Opération enregistrée, mais l’actualisation du parcours a échoué.",
+          );
+        }
+      }
       return body;
     }, "Opération refusée.", (reason) => {
       if (reason instanceof WorkspaceActionError && reason.status === 409) {

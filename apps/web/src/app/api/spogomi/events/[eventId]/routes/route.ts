@@ -36,6 +36,19 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
       return NextResponse.json({ error: "Le parcours a été modifié entre-temps. Rechargez l’édition avant de réessayer." }, { status: 409 });
     }
     const { coordinates, ...input } = parsed.data;
+    if (input.referenceMediaId) {
+      const media = await supabase
+        .from("action_media")
+        .select("id, upload_state")
+        .eq("id", input.referenceMediaId)
+        .eq("action_id", authorized.event.action_id)
+        .eq("purpose", "route_reference")
+        .maybeSingle();
+      if (media.error) throw media.error;
+      if (!media.data || media.data.upload_state !== "ready") {
+        return NextResponse.json({ error: "Cette image n’est pas prête ou n’appartient pas à l’édition." }, { status: 422 });
+      }
+    }
     const result = await upsertPlannedRoute({
       supabase,
       event: authorized.event,

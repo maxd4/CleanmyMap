@@ -77,23 +77,16 @@ export async function loadSpogomiManagementProjection(params: {
   if (environmentMappings.error) throw environmentMappings.error;
 
   const teamRows = (teams.data ?? []) as Array<{ id: string; division_id: string; public_name: string }>;
-  const participantRows = (participants.data ?? []) as Array<Record<string, unknown>>;
-  const registeredParticipantClerkIds = new Set(
-    participantRows
-      .filter((p) => p.registration_status === "registered" && typeof p.clerk_id === "string" && p.clerk_id.length > 0)
-      .map((p) => String(p.clerk_id)),
-  );
-  const eventRegulationVersion =
-    "regulation_version" in event && typeof event.regulation_version === "string"
-      ? event.regulation_version
-      : null;
   const { teamReferees, refereeCandidates } = await loadSpogomiTeamRefereeState({
     supabase,
     eventId: event.id,
-    eventRegulationVersion,
+    divisions: (divisions.data ?? []).map((division) => ({
+      id: String(division.id),
+      regulation_version:
+        typeof division.regulation_version === "string" ? division.regulation_version : null,
+    })),
     teams: teamRows,
     includeIdentityNames: true,
-    registeredParticipantClerkIds,
   });
   const teamRefereeReadiness = computeSpogomiTeamRefereeReadiness({
     teams: teamRows,

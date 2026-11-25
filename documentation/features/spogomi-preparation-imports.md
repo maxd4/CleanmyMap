@@ -261,8 +261,13 @@ L'attachement du GPX officiel et la sauvegarde des parcours par division passent
 `spogomiOfficialReference` de l'Action sont écrites dans la même transaction,
 après verrouillage de l'événement puis de l'Action. La mise à jour utilise
 `jsonb_set` et ne remplace donc pas les autres métadonnées de préparation ; une
-révision concurrente obsolète est rejetée. Le changement reste limité au
-parcours officiel et ne touche ni la certification publiée dans la migration
+révision concurrente obsolète est rejetée avec `SQLSTATE 40001`, traduit en HTTP
+`409` par `api-errors.ts` sur `/routes`, `/route-gpx` et
+`/routes/reference-media`. Lorsque `referenceMediaId` est fourni, la route
+`/routes` et `spogomi_upsert_planned_route` (sous verrou `FOR UPDATE`) imposent
+`purpose = 'route_reference'` et `upload_state = 'ready'`, refusant tout média
+de bilan. Le changement reste limité au parcours officiel et ne touche ni la
+certification publiée dans la migration
 `20261012000021_spogomi_certificate_reissue_concurrency.sql`, ni les
 projections de compétition.
 
@@ -274,10 +279,12 @@ asynchrone et réconcilie atomiquement `baseRevision`, `syncedRevision` et le
 dessin confirmé quel que soit l'ordre entre le renouvellement des props serveur
 et la résolution de la promesse. Si une mise à jour distante survient entre la
 mutation et l'actualisation, l'éditeur conserve le dessin local en état dirty
-et exige un chargement explicite de la version serveur ; en cas d'échec de
-l'actualisation déclenchée par un conflit HTTP 409, `SpogomiPreparationWorkspace`
-expose une relance explicite (« Réessayer l’actualisation ») sans perte du
-brouillon local.
+et exige un chargement explicite de la version serveur ; si la mutation réussit
+(`201`) mais que le rechargement qui suit échoue, `SpogomiPreparationWorkspace`
+conserve la confirmation de l'opération, réconcilie la révision retournée et
+expose une relance explicite (« Réessayer l’actualisation »), distinctement d'un
+échec de mutation ; en cas d'échec de l'actualisation déclenchée par un conflit
+HTTP 409, la même relance explicite préserve le brouillon local.
 
 La migration `20261013000009_spogomi_preparation_concurrency.sql` est
 forward-only. La CI Supabase éphémère exécute les tests métier ciblés puis un

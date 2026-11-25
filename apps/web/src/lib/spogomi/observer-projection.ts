@@ -68,7 +68,7 @@ export async function loadSpogomiObserverProjection(params: {
   const [divisionsResult, teams, submissions, registeredResult, presentResult] = await Promise.all([
     params.supabase
       .from("spogomi_divisions")
-      .select("id, division_type, division_key")
+      .select("id, division_type, division_key, regulation_version")
       .eq("event_id", params.eventId)
       .order("division_type", { ascending: true }),
     readAllSpogomiPages("SPOGOMI observer teams", (from, to) =>
@@ -115,10 +115,11 @@ export async function loadSpogomiObserverProjection(params: {
     ? await loadSpogomiPublicTeamRefereeStatuses({
         supabase: params.supabase,
         eventId: params.eventId,
-        eventRegulationVersion:
-          "regulation_version" in access.event && typeof access.event.regulation_version === "string"
-            ? access.event.regulation_version
-            : null,
+        divisions: (divisionsResult.data ?? []).map((division) => ({
+          id: String(division.id),
+          regulation_version:
+            typeof division.regulation_version === "string" ? division.regulation_version : null,
+        })),
         teams: teamRows,
       })
     : new Map<string, SpogomiTeamRefereeStatus>();

@@ -26,7 +26,7 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
   const [isOpen, setIsOpen] = useState(false);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const [referencedValue, setReferencedValue] = useState<string | null>(null);
+  const [referencedKey, setReferencedKey] = useState<string | null>(null);
   const blurTimerRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
@@ -35,10 +35,11 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
   const hasVisibleSuggestions = isOpen && trimmedValue.length > 0;
   const parsedCoordinates = parseActionCoordinateInput(trimmedValue);
   const currentQueryKey = `${countryCode}:${trimmedValue}`;
+  const isReferenced = referencedKey === currentQueryKey;
   const shouldFetchRemote =
     hasVisibleSuggestions &&
     trimmedValue.length >= 3 &&
-    referencedValue !== trimmedValue &&
+    !isReferenced &&
     parsedCoordinates === null;
   const isLoading = shouldFetchRemote && loadingKey === currentQueryKey;
   const suggestions =
@@ -54,8 +55,16 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
       abortRef.current?.abort();
       return;
     }
-    if (remoteCacheRef.current.has(currentQueryKey)) {
+    const cached = remoteCacheRef.current.get(currentQueryKey);
+    if (cached !== undefined) {
       abortRef.current?.abort();
+      setLoadingKey((current) => (current === currentQueryKey ? null : current));
+      setSuggestionsState((current) =>
+        current.key === currentQueryKey && current.items === cached
+          ? current
+          : { key: currentQueryKey, items: cached },
+      );
+      setHighlightedIndex(0);
       return;
     }
     abortRef.current?.abort();
@@ -116,12 +125,12 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
     setHighlightedIndex(0);
   };
   const selectSuggestion = (suggestion: GeoAddressSuggestion) => {
-    setReferencedValue(suggestion.label);
+    setReferencedKey(`${countryCode}:${suggestion.label.trim()}`);
     onChange(suggestion.label, { latitude: suggestion.latitude, longitude: suggestion.longitude });
     closeSuggestions();
   };
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setReferencedValue(null);
+    setReferencedKey(null);
     const nextValue = event.target.value;
     const nextTrimmed = nextValue.trim();
     const parsedCoords = parseActionCoordinateInput(nextValue);
@@ -143,7 +152,7 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
   };
   const handleFocus = () => {
     setIsOpen(true);
-    if (trimmedValue.length < 3 || parsedCoordinates !== null || referencedValue === trimmedValue) {
+    if (trimmedValue.length < 3 || parsedCoordinates !== null || isReferenced) {
       setLoadingKey(null);
       setSuggestionsState({ key: "", items: [] });
       setHighlightedIndex(0);
@@ -176,7 +185,7 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
         event.preventDefault();
         const address = trimmedValue;
         if (address) {
-          setReferencedValue(null);
+          setReferencedKey(null);
           onChange(address, null);
           closeSuggestions();
         }
@@ -208,11 +217,11 @@ export function useActionAddressAutocomplete({ value, onChange, countryCode = DE
     selectFreeAddress: () => {
       const address = trimmedValue;
       if (!address) return;
-      setReferencedValue(null);
+      setReferencedKey(null);
       onChange(address, null);
       closeSuggestions();
     },
-    isReferenced: referencedValue === trimmedValue,
+    isReferenced,
     setHighlightedIndex,
   };
 }

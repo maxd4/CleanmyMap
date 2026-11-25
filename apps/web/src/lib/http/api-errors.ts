@@ -79,7 +79,10 @@ function extractErrorDetails(error: unknown): { message: string; code: string | 
  * Determine error category based on error type/message
  */
 function categorizeError(error: unknown): ErrorCategory {
-  const { message } = extractErrorDetails(error);
+  const { message, code } = extractErrorDetails(error);
+  if (code === "40001") {
+    return "conflict";
+  }
   const normalized = message.toLowerCase();
 
   for (const rule of ERROR_CATEGORY_RULES) {

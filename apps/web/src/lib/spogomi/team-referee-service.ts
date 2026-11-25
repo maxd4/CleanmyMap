@@ -2,6 +2,7 @@ import "server-only";
 
 import { clerkClient } from "@clerk/nextjs/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { readAllSpogomiPages } from "./pagination";
 import {
   deriveSpogomiTeamRefereeStatus,
   type SpogomiTeamRefereeCandidate,
@@ -62,17 +63,25 @@ function mapTeamRefereeRpcError(error: unknown): SpogomiTeamRefereeError {
   );
 }
 
+const CLERK_USER_LIST_BATCH_SIZE = 100;
+
 async function resolvePrivateDisplayNames(clerkIds: string[]): Promise<Map<string, string>> {
   const uniqueIds = Array.from(new Set(clerkIds.map((id) => id.trim()).filter(Boolean)));
   const names = new Map<string, string>();
   if (!uniqueIds.length) return names;
   try {
     const client = await clerkClient();
-    const result = await client.users.getUserList({ userId: uniqueIds, limit: 100 });
-    for (const user of result.data) {
-      const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-      const displayName = fullName || user.username?.trim() || user.id;
-      names.set(user.id, displayName);
+    for (let index = 0; index < uniqueIds.length; index += CLERK_USER_LIST_BATCH_SIZE) {
+      const batch = uniqueIds.slice(index, index + CLERK_USER_LIST_BATCH_SIZE);
+      const result = await client.users.getUserList({
+        userId: batch,
+        limit: CLERK_USER_LIST_BATCH_SIZE,
+      });
+      for (const user of result.data) {
+        const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+        const displayName = fullName || user.username?.trim() || user.id;
+        names.set(user.id, displayName);
+      }
     }
   } catch {
     // Fallback to Clerk IDs in private organizer views if Clerk lookup is unavailable.
@@ -81,6 +90,7 @@ async function resolvePrivateDisplayNames(clerkIds: string[]): Promise<Map<strin
 }
 
 type RawTeamRow = { id: string; division_id: string; public_name: string };
+type RawDivisionRow = { id: string; regulation_version: string | null };
 type RawAssignmentRow = { team_id: string; division_id: string; referee_clerk_id: string; assigned_at: string };
 type RawReviewerRow = { clerk_id: string; role: string; revoked_at: string | null };
 type RawApplicationRow = {
@@ -88,15 +98,51 @@ type RawApplicationRow = {
   division_id: string;
   status: string;
   regulation_version: string | null;
+  quiz_version?: string | null;
   theory_proof_id: string | null;
   practical_confirmed_at: string | null;
 };
 type RawParticipantRow = { clerk_id: string | null; registration_status: string };
 
+async function loadDivisionQuizVersions(params: {
+  supabase: SupabaseClient;
+  eventId: string;
+  divisionIds: string[];
+}): Promise<Map<string, string | null>> {
+  const quizVersions = new Map<string, string | null>();
+  if (!params.divisionIds.length || typeof params.supabase.rpc !== "function") {
+    return quizVersions;
+  }
+  const results = await Promise.all(
+    params.divisionIds.map(async (divisionId) => {
+      try {
+        const res = await params.supabase.rpc("spogomi_referee_quiz_definition_internal", {
+          p_event_id: params.eventId,
+          p_division_id: divisionId,
+        });
+        if (res?.error || !res?.data || typeof res.data !== "object") {
+          return [divisionId, undefined] as const;
+        }
+        const quizVersion = (res.data as { quizVersion?: unknown }).quizVersion;
+        return [divisionId, typeof quizVersion === "string" ? quizVersion : null] as const;
+      } catch {
+        return [divisionId, undefined] as const;
+      }
+    }),
+  );
+  for (const [divisionId, quizVersion] of results) {
+    if (quizVersion !== undefined) {
+      quizVersions.set(divisionId, quizVersion);
+    }
+  }
+  return quizVersions;
+}
+
 export async function loadSpogomiTeamRefereeState(params: {
   supabase: SupabaseClient;
   eventId: string;
-  eventRegulationVersion: string | null;
+  eventRegulationVersion?: string | null;
+  divisions?: RawDivisionRow[];
   teams: RawTeamRow[];
   includeIdentityNames?: boolean;
   registeredParticipantClerkIds?: Set<string>;
@@ -104,42 +150,75 @@ export async function loadSpogomiTeamRefereeState(params: {
   teamReferees: SpogomiTeamRefereePrivateProjection[];
   refereeCandidates: SpogomiTeamRefereeCandidate[];
 }> {
-  const [assignmentsRes, reviewersRes, applicationsRes, participantsRes] = await Promise.all([
-    params.supabase
-      .from("spogomi_team_referee_assignments")
-      .select("team_id, division_id, referee_clerk_id, assigned_at, revoked_at")
-      .eq("event_id", params.eventId),
-    params.supabase
-      .from("spogomi_event_reviewers")
-      .select("clerk_id, role, revoked_at")
-      .eq("event_id", params.eventId),
-    params.supabase
-      .from("spogomi_referee_applications")
-      .select("clerk_id, division_id, status, regulation_version, theory_proof_id, practical_confirmed_at")
-      .eq("event_id", params.eventId),
+  const [assignments, reviewers, applications, participants, divisions] = await Promise.all([
+    readAllSpogomiPages<RawAssignmentRow & { revoked_at?: string | null }>(
+      "team referee assignments",
+      (from, to) =>
+        params.supabase
+          .from("spogomi_team_referee_assignments")
+          .select("team_id, division_id, referee_clerk_id, assigned_at, revoked_at")
+          .eq("event_id", params.eventId)
+          .is("revoked_at", null)
+          .order("team_id", { ascending: true })
+          .range(from, to),
+    ),
+    readAllSpogomiPages<RawReviewerRow>(
+      "event referee reviewers",
+      (from, to) =>
+        params.supabase
+          .from("spogomi_event_reviewers")
+          .select("clerk_id, role, revoked_at")
+          .eq("event_id", params.eventId)
+          .eq("role", "referee")
+          .is("revoked_at", null)
+          .order("clerk_id", { ascending: true })
+          .range(from, to),
+    ),
+    readAllSpogomiPages<RawApplicationRow>(
+      "referee applications",
+      (from, to) =>
+        params.supabase
+          .from("spogomi_referee_applications")
+          .select(
+            "clerk_id, division_id, status, regulation_version, quiz_version, theory_proof_id, practical_confirmed_at",
+          )
+          .eq("event_id", params.eventId)
+          .order("division_id", { ascending: true })
+          .order("clerk_id", { ascending: true })
+          .range(from, to),
+    ),
     params.registeredParticipantClerkIds
-      ? Promise.resolve({ data: [], error: null })
-      : params.supabase
-          .from("spogomi_participants")
-          .select("clerk_id, registration_status")
-          .eq("event_id", params.eventId),
+      ? Promise.resolve([] as RawParticipantRow[])
+      : readAllSpogomiPages<RawParticipantRow>(
+          "registered event participants",
+          (from, to) =>
+            params.supabase
+              .from("spogomi_participants")
+              .select("clerk_id, registration_status")
+              .eq("event_id", params.eventId)
+              .eq("registration_status", "registered")
+              .order("id", { ascending: true })
+              .range(from, to),
+        ),
+    params.divisions
+      ? Promise.resolve(params.divisions)
+      : readAllSpogomiPages<RawDivisionRow>(
+          "event divisions",
+          (from, to) =>
+            params.supabase
+              .from("spogomi_divisions")
+              .select("id, regulation_version")
+              .eq("event_id", params.eventId)
+              .order("id", { ascending: true })
+              .range(from, to),
+        ),
   ]);
 
-  if (assignmentsRes.error) throw assignmentsRes.error;
-  if (reviewersRes.error) throw reviewersRes.error;
-  if (applicationsRes.error) throw applicationsRes.error;
-  if (participantsRes.error) throw participantsRes.error;
-
-  const assignments = ((assignmentsRes.data ?? []) as Array<RawAssignmentRow & { revoked_at?: string | null }>).filter(
-    (row) => !row.revoked_at,
-  );
-  const reviewers = ((reviewersRes.data ?? []) as RawReviewerRow[]).filter(
+  const activeAssignments = assignments.filter((row) => !row.revoked_at);
+  const activeReviewers = reviewers.filter(
     (row) => row.role === "referee" && !row.revoked_at,
   );
-  const applications = (applicationsRes.data ?? []) as RawApplicationRow[];
-  const participants = (participantsRes.data ?? []) as RawParticipantRow[];
-
-  const activeReviewerIds = new Set(reviewers.map((r) => r.clerk_id));
+  const activeReviewerIds = new Set(activeReviewers.map((r) => r.clerk_id));
   const participantIds =
     params.registeredParticipantClerkIds ??
     new Set(
@@ -148,15 +227,31 @@ export async function loadSpogomiTeamRefereeState(params: {
         .map((p) => p.clerk_id)
         .filter((id): id is string => Boolean(id)),
     );
+  const divisionRegulationById = new Map(
+    divisions.map((division) => [division.id, division.regulation_version]),
+  );
+  const relevantDivisionIds = Array.from(
+    new Set([
+      ...divisions.map((d) => d.id),
+      ...params.teams.map((t) => t.division_id),
+      ...applications.map((a) => a.division_id),
+    ].filter(Boolean)),
+  );
+  const divisionQuizVersionById = await loadDivisionQuizVersions({
+    supabase: params.supabase,
+    eventId: params.eventId,
+    divisionIds: relevantDivisionIds,
+  });
+
   const appByKey = new Map(
     applications.map((app) => [`${app.division_id}:${app.clerk_id}`, app]),
   );
-  const assignmentByTeamId = new Map(assignments.map((a) => [a.team_id, a]));
-  const assignmentByRefereeId = new Map(assignments.map((a) => [a.referee_clerk_id, a]));
+  const assignmentByTeamId = new Map(activeAssignments.map((a) => [a.team_id, a]));
+  const assignmentByRefereeId = new Map(activeAssignments.map((a) => [a.referee_clerk_id, a]));
   const teamById = new Map(params.teams.map((t) => [t.id, t]));
 
   const allRefereeIds = [
-    ...assignments.map((a) => a.referee_clerk_id),
+    ...activeAssignments.map((a) => a.referee_clerk_id),
     ...applications.map((a) => a.clerk_id),
   ];
   const displayNames = params.includeIdentityNames
@@ -177,13 +272,21 @@ export async function loadSpogomiTeamRefereeState(params: {
       };
     }
     const app = appByKey.get(`${team.division_id}:${active.referee_clerk_id}`);
+    const divisionRegulationVersion = divisionRegulationById.has(team.division_id)
+      ? (divisionRegulationById.get(team.division_id) ?? null)
+      : (params.eventRegulationVersion ?? null);
+    const divisionQuizVersion = divisionQuizVersionById.has(team.division_id)
+      ? divisionQuizVersionById.get(team.division_id)
+      : undefined;
     const derived = deriveSpogomiTeamRefereeStatus({
       hasActiveAssignment: true,
       isParticipantInEvent: participantIds.has(active.referee_clerk_id),
       hasActiveReviewerRole: activeReviewerIds.has(active.referee_clerk_id),
       applicationStatus: app?.status ?? null,
       applicationRegulationVersion: app?.regulation_version ?? null,
-      eventRegulationVersion: params.eventRegulationVersion,
+      divisionRegulationVersion,
+      applicationQuizVersion: app?.quiz_version ?? null,
+      divisionQuizVersion,
       hasQuizProof: Boolean(app?.theory_proof_id),
       hasPracticalConfirmation: Boolean(app?.practical_confirmed_at),
     });
@@ -202,15 +305,27 @@ export async function loadSpogomiTeamRefereeState(params: {
 
   const refereeCandidates: SpogomiTeamRefereeCandidate[] = params.includeIdentityNames
     ? applications
-        .filter(
-          (app) =>
+        .filter((app) => {
+          const divisionRegulationVersion = divisionRegulationById.has(app.division_id)
+            ? (divisionRegulationById.get(app.division_id) ?? null)
+            : (params.eventRegulationVersion ?? null);
+          const divisionQuizVersion = divisionQuizVersionById.has(app.division_id)
+            ? divisionQuizVersionById.get(app.division_id)
+            : undefined;
+          const quizMatches =
+            divisionQuizVersion === undefined ||
+            divisionQuizVersion === null ||
+            app.quiz_version === divisionQuizVersion;
+          return (
             app.status === "habilitated" &&
-            app.regulation_version === params.eventRegulationVersion &&
+            app.regulation_version === divisionRegulationVersion &&
+            quizMatches &&
             Boolean(app.theory_proof_id) &&
             Boolean(app.practical_confirmed_at) &&
             activeReviewerIds.has(app.clerk_id) &&
-            !participantIds.has(app.clerk_id),
-        )
+            !participantIds.has(app.clerk_id)
+          );
+        })
         .map((app) => {
           const activeAssignment = assignmentByRefereeId.get(app.clerk_id);
           const assignedTeam = activeAssignment ? teamById.get(activeAssignment.team_id) : undefined;
@@ -230,13 +345,15 @@ export async function loadSpogomiTeamRefereeState(params: {
 export async function loadSpogomiPublicTeamRefereeStatuses(params: {
   supabase: SupabaseClient;
   eventId: string;
-  eventRegulationVersion: string | null;
+  eventRegulationVersion?: string | null;
+  divisions?: RawDivisionRow[];
   teams: Array<{ id: string; division_id: string }>;
 }): Promise<Map<string, SpogomiTeamRefereeStatus>> {
   const { teamReferees } = await loadSpogomiTeamRefereeState({
     supabase: params.supabase,
     eventId: params.eventId,
     eventRegulationVersion: params.eventRegulationVersion,
+    divisions: params.divisions,
     teams: params.teams.map((t) => ({ ...t, public_name: "" })),
     includeIdentityNames: false,
   });

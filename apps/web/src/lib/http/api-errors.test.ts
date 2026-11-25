@@ -45,4 +45,22 @@ describe("handleApiError with validated Supabase errors", () => {
       spy.mockRestore();
     }
   });
+
+  it("maps PostgreSQL serialization_failure (SQLSTATE 40001) to HTTP 409 conflict without leaking SQL details", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const response = handleApiError(
+        { code: "40001", message: "SPOGOMI event changed since the route preview" },
+        "spogomi.route.manual",
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(409);
+      expect(body.error).toBe("La donnée a changé entre-temps. Rafraîchissez la page puis réessayez.");
+      expect(JSON.stringify(body)).not.toContain("40001");
+      expect(JSON.stringify(body)).not.toContain("SPOGOMI event changed");
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });

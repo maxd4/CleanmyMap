@@ -10,12 +10,18 @@ const mocks = vi.hoisted(() => ({
   loadSpogomiRouteByDivision: vi.fn(),
 }));
 
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
+vi.mock("@/lib/observability/sentry", () => ({ isSentryEnabled: () => false }));
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
 vi.mock("@/lib/http/auth-responses", () => ({ unauthorizedJsonResponse: () => new Response("unauthorized", { status: 401 }) }));
-vi.mock("@/lib/http/api-errors", () => ({
-  handleApiError: vi.fn(() => new Response("error", { status: 500 })),
-  validationErrorResponse: vi.fn(() => new Response("invalid", { status: 422 })),
-}));
+vi.mock("@/lib/http/api-errors", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/http/api-errors")>();
+  return {
+    ...actual,
+    handleApiError: vi.fn(actual.handleApiError),
+    validationErrorResponse: vi.fn(actual.validationErrorResponse),
+  };
+});
 vi.mock("@/lib/spogomi/route-auth", () => ({ loadAuthorizedSpogomiEvent: mocks.loadAuthorizedSpogomiEvent }));
 vi.mock("@/lib/spogomi/preparation/preparation-route-service", () => ({
   buildManualRouteInput: mocks.buildManualRouteInput,
@@ -160,5 +166,89 @@ describe("SPOGOMI planned route API", () => {
     );
     expect(foreignOrWrongPurpose.status).toBe(422);
     expect(mocks.upsertPlannedRoute).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects non-route_reference media on /routes and maps SQL 40001 conflicts to HTTP 409 across all 3 route endpoints", async () => {
+    const eqCalls: Array<[string, unknown]> = [];
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const builder = {
+      select: () => builder,
+      eq: (column: string, value: unknown) => {
+        eqCalls.push([column, value]);
+        return builder;
+      },
+      maybeSingle,
+    };
+    mocks.loadAuthorizedSpogomiEvent.mockResolvedValue({
+      supabase: { from: () => builder },
+      authorized: { event },
+    });
+
+    const rejectedBilanMedia = await postManualRoute(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({
+          divisionId: null,
+          expectedRevision: 4,
+          referenceMediaId: "33333333-3333-4333-8333-333333333333",
+          coordinates: [[48, 2], [48.1, 2.1]],
+        }),
+        headers: { "content-type": "application/json" },
+      }),
+      context,
+    );
+    expect(rejectedBilanMedia.status).toBe(422);
+    expect(eqCalls).toContainEqual(["purpose", "route_reference"]);
+    expect(mocks.upsertPlannedRoute).not.toHaveBeenCalled();
+
+    const serializationError = { code: "40001", message: "SPOGOMI event changed since the route preview" };
+    mocks.upsertPlannedRoute.mockRejectedValue(serializationError);
+    mocks.attachOfficialGpx.mockRejectedValue(serializationError);
+    maybeSingle.mockResolvedValue({
+      data: { id: "11111111-1111-4111-8111-111111111111", upload_state: "ready" },
+      error: null,
+    });
+    mocks.loadSpogomiRouteByDivision.mockResolvedValue({
+      id: "route-1",
+      division_id: null,
+      source: "manual_reference",
+      file_name: "Parcours",
+      geometry_geojson: { type: "LineString", coordinates: [[2, 48], [2.1, 48.1]] },
+      reference_distance_km: 1,
+      inferred_topology: "point_to_point",
+    });
+
+    const manualConflict = await postManualRoute(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({ divisionId: null, expectedRevision: 4, coordinates: [[48, 2], [48.1, 2.1]] }),
+        headers: { "content-type": "application/json" },
+      }),
+      context,
+    );
+    expect(manualConflict.status).toBe(409);
+
+    const gpxConflict = await postRouteGpx(
+      makeGpxFormRequest({
+        file: new File(["<gpx />"], "route.gpx", { type: "application/gpx+xml" }),
+        expectedRevision: "4",
+      }),
+      context,
+    );
+    expect(gpxConflict.status).toBe(409);
+
+    const mediaConflict = await postReferenceMedia(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({
+          divisionId: null,
+          expectedRevision: 4,
+          mediaId: "11111111-1111-4111-8111-111111111111",
+        }),
+        headers: { "content-type": "application/json" },
+      }),
+      context,
+    );
+    expect(mediaConflict.status).toBe(409);
   });
 });

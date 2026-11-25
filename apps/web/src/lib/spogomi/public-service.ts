@@ -501,10 +501,13 @@ export async function loadPublishedSpogomiEventBySlug(
     ? await loadSpogomiPublicTeamRefereeStatuses({
         supabase,
         eventId: row.id,
-        eventRegulationVersion:
-          "regulation_version" in row && typeof row.regulation_version === "string"
-            ? row.regulation_version
-            : null,
+        divisions: (divisionsResult.data ?? []).map((division) => ({
+          id: String(division.id),
+          regulation_version:
+            "regulation_version" in division && typeof division.regulation_version === "string"
+              ? division.regulation_version
+              : null,
+        })),
         teams: publicTeamsRaw,
       })
     : new Map<string, SpogomiTeamRefereeStatus>();

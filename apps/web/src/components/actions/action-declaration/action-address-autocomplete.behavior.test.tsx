@@ -252,6 +252,25 @@ describe("ActionAddressAutocomplete free address behavior", () => {
     expect(remoteMock.loadRemoteAddressSuggestionsWithStatus).toHaveBeenCalledTimes(3);
     expect(renderer.root.findAll((node) => node.type === "span" && node.children.includes("Rue Neuve, 75002 Paris")).length).toBe(1);
 
+    // External countryCode change FR -> BE (already in cache) restores BE suggestions without refetching
+    await act(async () => {
+      renderer.update(<ActionAddressAutocomplete id="address" label="Adresse" placeholder="Adresse" value="Rue Neuve" countryCode="BE" onChange={onChange} helperText="Suggestions" />);
+    });
+    await act(async () => { vi.advanceTimersByTime(250); await Promise.resolve(); });
+    expect(remoteMock.loadRemoteAddressSuggestionsWithStatus).toHaveBeenCalledTimes(3);
+    expect(renderer.root.findAll((node) => node.type === "span" && node.children.includes("Rue Neuve, 1000 Bruxelles")).length).toBe(1);
+
+    // External value change to a different query and back to cached "Rue Neuve" restores BE suggestions without refetching
+    await act(async () => {
+      renderer.update(<ActionAddressAutocomplete id="address" label="Adresse" placeholder="Adresse" value="X" countryCode="BE" onChange={onChange} helperText="Suggestions" />);
+    });
+    await act(async () => {
+      renderer.update(<ActionAddressAutocomplete id="address" label="Adresse" placeholder="Adresse" value="Rue Neuve" countryCode="BE" onChange={onChange} helperText="Suggestions" />);
+    });
+    await act(async () => { vi.advanceTimersByTime(250); await Promise.resolve(); });
+    expect(remoteMock.loadRemoteAddressSuggestionsWithStatus).toHaveBeenCalledTimes(3);
+    expect(renderer.root.findAll((node) => node.type === "span" && node.children.includes("Rue Neuve, 1000 Bruxelles")).length).toBe(1);
+
     renderer.unmount();
   });
 });
