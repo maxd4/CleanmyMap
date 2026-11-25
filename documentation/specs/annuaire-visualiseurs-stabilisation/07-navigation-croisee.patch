@@ -1,0 +1,316 @@
+diff --git a/apps/web/src/lib/partners/public-cleanliness-network-links.ts b/apps/web/src/lib/partners/public-cleanliness-network-links.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/partners/public-cleanliness-network-links.ts
+@@ -0,0 +1,27 @@
++import type { ParisCleanwalkActor } from "./paris-cleanwalk-network";
++import type { PublicCleanlinessCityDataset, PublicCleanlinessOrganizationNode } from "./public-cleanliness-organization";
++
++type ActorIdentity = Pick<ParisCleanwalkActor, "id" | "annuaireEntryId">;
++type InstitutionalIdentity = Pick<PublicCleanlinessOrganizationNode, "networkActorId" | "directoryId">;
++
++/** Explicit identity references only. Conflicting or ambiguous references fail closed. */
++export function resolveNetworkActorId(node: InstitutionalIdentity, actors: readonly ActorIdentity[]): string | null {
++  if (!node.networkActorId && !node.directoryId) return null;
++  const matches = actors.filter(actor =>
++    (!node.networkActorId || actor.id === node.networkActorId) &&
++    (!node.directoryId || actor.annuaireEntryId === node.directoryId),
++  );
++  return matches.length === 1 ? matches[0].id : null;
++}
++
++export function resolveInstitutionId(dataset: Pick<PublicCleanlinessCityDataset, "city" | "nodes">, actorId: string, actors: readonly ActorIdentity[]): string | null {
++  if (dataset.city !== "Paris") return null;
++  const matches = dataset.nodes.filter(node => resolveNetworkActorId(node, actors) === actorId);
++  return matches.length === 1 ? matches[0].id : null;
++}
++
++export function resolveInstitutionNetworkActorId(dataset: Pick<PublicCleanlinessCityDataset, "city" | "nodes">, node: PublicCleanlinessOrganizationNode, actors: readonly ActorIdentity[]): string | null {
++  if (dataset.city !== "Paris") return null;
++  const actorId = resolveNetworkActorId(node, actors);
++  return actorId && resolveInstitutionId(dataset, actorId, actors) === node.id ? actorId : null;
++}
+diff --git a/apps/web/src/lib/partners/public-cleanliness-network-links.test.ts b/apps/web/src/lib/partners/public-cleanliness-network-links.test.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/partners/public-cleanliness-network-links.test.ts
+@@ -0,0 +1,27 @@
++import { describe, expect, it } from "vitest";
++import { PARIS_CLEANWALK_ACTORS } from "./paris-cleanwalk-network";
++import { PARIS_PUBLIC_CLEANLINESS_DATASET } from "./public-cleanliness-organization";
++import { resolveInstitutionId, resolveInstitutionNetworkActorId, resolveNetworkActorId } from "./public-cleanliness-network-links";
++
++describe("explicit identities between the public network and organization", () => {
++  it("resolves both reference types without duplicating organizations", () => {
++    const dataset = PARIS_PUBLIC_CLEANLINESS_DATASET;
++    for (const [nodeId, actorId] of [["dpe", "evt-paris-nettoyages"], ["syctom", "collectivite-syctom"]]) {
++      const node = dataset.nodes.find(item => item.id === nodeId)!;
++      expect(resolveInstitutionId(dataset, actorId, PARIS_CLEANWALK_ACTORS)).toBe(nodeId);
++      expect(resolveInstitutionNetworkActorId(dataset, node, PARIS_CLEANWALK_ACTORS)).toBe(actorId);
++    }
++    expect(resolveInstitutionId(dataset, "asso-featured-1", PARIS_CLEANWALK_ACTORS)).toBeNull();
++  });
++
++  it("rejects absent, conflicting or ambiguous references", () => {
++    const actors = [{ id: "actor-a", annuaireEntryId: "directory-a" }, { id: "actor-b", annuaireEntryId: "directory-b" }];
++    expect(resolveNetworkActorId({}, actors)).toBeNull();
++    expect(resolveNetworkActorId({ networkActorId: "actor-a", directoryId: "directory-b" }, actors)).toBeNull();
++    expect(resolveNetworkActorId({ directoryId: "directory-a" }, [...actors, { id: "actor-c", annuaireEntryId: "directory-a" }])).toBeNull();
++    const dataset = PARIS_PUBLIC_CLEANLINESS_DATASET;
++    const dpe = dataset.nodes.find(node => node.id === "dpe")!;
++    const duplicate = { ...dataset, nodes: [...dataset.nodes, { ...dpe, id: "duplicate-dpe" }] };
++    expect(resolveInstitutionId(duplicate, "evt-paris-nettoyages", PARIS_CLEANWALK_ACTORS)).toBeNull();
++  });
++});
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/paris-network-selection-panel.tsx b/apps/web/src/components/sections/rubriques/annuaire/paris-network-selection-panel.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/paris-network-selection-panel.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/paris-network-selection-panel.tsx
+@@ -21,6 +21,7 @@
+   onSelectActor: (id: string) => void;
+   onSelectRelation: (id: string) => void;
+   onClose: () => void;
++  onOpenInstitution?: () => void;
+ };
+ 
+ function RelationDetails({ relation, actors, fr, onClose, onSelectActor }: Pick<Props, "actors" | "fr" | "onClose" | "onSelectActor"> & { relation: ParisCleanwalkRelation }) {
+@@ -49,12 +50,13 @@
+   </section>;
+ }
+ 
+-export function ParisNetworkSelectionPanel({ actor, relation, actors, relations, fr, onSelectActor, onSelectRelation, onClose }: Props) {
++export function ParisNetworkSelectionPanel({ actor, relation, actors, relations, fr, onSelectActor, onSelectRelation, onClose, onOpenInstitution }: Props) {
+   if (relation) return <RelationDetails relation={relation} actors={actors} fr={fr} onClose={onClose} onSelectActor={onSelectActor} />;
+   if (!actor) return <p className="rounded-xl border border-white/10 p-4 text-sm text-slate-300">{fr ? "Sélectionnez un acteur pour consulter sa fiche et ses relations." : "Select an actor to explore its details and relationships."}</p>;
+   const names = new Map(actors.map(item => [item.id, item.name]));
+   const links = relations.filter(item => item.sourceId === actor.id || item.targetId === actor.id);
+   return <div className="min-w-0 space-y-3">
++    {onOpenInstitution ? <button type="button" onClick={onOpenInstitution} className="w-full rounded-xl border border-sky-300/30 px-3 py-2 text-left text-sm font-semibold text-sky-200 hover:bg-sky-300/10 focus-visible:ring-2 focus-visible:ring-sky-400">{fr ? "Voir dans les services publics" : "View in public services"}</button> : null}
+     <ParisNetwork3DBubble actor={actor} isLocked onClose={onClose} fr={fr} />
+     <section aria-label={fr ? "Relations de l'acteur" : "Actor relationships"} className="rounded-xl border border-white/10 p-3 text-sm text-slate-300">
+       <h3 className="font-bold text-white">{fr ? "Relations documentées" : "Documented relationships"}</h3>
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-section.tsx b/apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-section.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-section.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-section.tsx
+@@ -4,6 +4,8 @@
+ import {
+   Component,
+   type ReactNode,
++  type Ref,
++  useImperativeHandle,
+   useCallback,
+   useEffect,
+   useMemo,
+@@ -82,14 +84,22 @@
+   }
+ }
+ 
++export type ParisNetworkNavigation = { openActor: (id: string) => boolean };
++
+ export function ParisNetwork3DSection({
+   fr: externalFr,
+   onTerritoryChange,
+   active = true,
++  navigationRef,
++  getInstitutionId,
++  onOpenInstitution,
+ }: {
+   fr?: boolean;
+   onTerritoryChange?: (territoryId: string) => void;
+   active?: boolean;
++  navigationRef?: Ref<ParisNetworkNavigation>;
++  getInstitutionId?: (actorId: string) => string | null;
++  onOpenInstitution?: (institutionId: string) => void;
+ }) {
+   const { locale, displayMode } = useSitePreferences();
+   const fr = externalFr ?? locale === "fr";
+@@ -377,6 +387,21 @@
+     handleSelectRelation(id);
+   };
+ 
++  useImperativeHandle(navigationRef, () => ({
++    openActor(id) {
++      const parisDataset = getTerritoryNetworkDataset(DEFAULT_TERRITORY_ID);
++      if (!parisDataset?.actors.some(actor => actor.id === id)) return false;
++      if (selectedTerritoryId !== DEFAULT_TERRITORY_ID) {
++        handleSelectTerritory(TERRITORY_NETWORK_CATALOG.find(item => item.id === DEFAULT_TERRITORY_ID)!);
++        setFilters(DEFAULT_PARIS_NETWORK_3D_FILTERS);
++        handleSelectActor(id);
++      } else {
++        revealActor(id);
++      }
++      return true;
++    },
++  }));
++
+   const activeActorId = selectedActorId ?? hoveredActorId;
+   const activeActor = useMemo(
+     () =>
+@@ -386,6 +411,7 @@
+ 
+   const selectedRelation = filtered.relations.find(r => r.id === selectedRelationId);
+   const selectedActor = filtered.actors.find(actor => actor.id === selectedActorId) ?? null;
++  const linkedInstitutionId = selectedActor ? getInstitutionId?.(selectedActor.id) : null;
+   const show3DCanvas = sceneActive && webglAvailable && viewMode === "3d";
+   const surfaceClassName = cn(
+     "relative overflow-hidden rounded-[var(--radius-lg)] border border-violet-300/18 p-6 md:p-8",
+@@ -637,6 +663,7 @@
+                 onSelectActor={revealActor}
+                 onSelectRelation={revealRelation}
+                 onClose={handleCloseBubble}
++                onOpenInstitution={linkedInstitutionId && onOpenInstitution ? () => onOpenInstitution(linkedInstitutionId) : undefined}
+               />
+             </aside>
+             </div>
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import { useMemo, useRef, useState, type ReactNode } from "react";
++import { useImperativeHandle, useMemo, useRef, useState, type ReactNode, type Ref } from "react";
+ import { PublicCleanlinessCoverageTable } from "./public-cleanliness-coverage-table";
+ import { PublicCleanlinessNeedPanel } from "./public-cleanliness-need-panel";
+ import { getPublicInstitutionalContributions } from "@/lib/partners/public-cleanliness-needs";
+@@ -105,12 +105,20 @@
+ const EMPTY_RELATIONS: readonly PublicCleanlinessOrganizationRelation[] = [];
+ const EMPTY_SOURCES: readonly { id: string; label: string; url: string; sourceContentDate?: string; verifiedAt: string; evidence: "official_current" | "official_historical" | "official_job_profile" | "operator_statement" | "professional_self_statement" }[] = [];
+ 
++export type PublicCleanlinessNavigation = { openNode: (id: string) => boolean };
++
+ export function PublicCleanlinessOrganization({
+   fr = true,
+   datasets = PUBLIC_CLEANLINESS_CITY_DATASETS,
++  navigationRef,
++  getNetworkActorId,
++  onOpenNetworkActor,
+ }: {
+   fr?: boolean;
+   datasets?: PublicCleanlinessCityDatasets;
++  navigationRef?: Ref<PublicCleanlinessNavigation>;
++  getNetworkActorId?: (node: PublicCleanlinessOrganizationNode) => string | null;
++  onOpenNetworkActor?: (actorId: string) => void;
+ }) {
+   const text = fr ? COPY.fr : COPY.en;
+   const cityOptions = getArrondissementCityOptions();
+@@ -220,6 +228,21 @@
+       return next;
+     });
+   };
++  useImperativeHandle(navigationRef, () => ({
++    openNode(id) {
++      const paris = getPublicCleanlinessCityDataset("Paris", datasets);
++      if (!paris?.nodes.some(node => node.id === id)) return false;
++      if (filters.city === "Paris") {
++        selectRelatedNode(id);
++      } else {
++        setFilters({ city: "Paris", arrondissement: null, service: "all", query: "" });
++        setSelectedId(id);
++        setCollapsed({});
++      }
++      return true;
++    },
++  }));
++  const linkedActorId = selected && dataset?.city === "Paris" ? getNetworkActorId?.(selected) : null;
+   const selectTreeNode = (nodeId: string) => includedIds.has(nodeId) ? setSelectedId(nodeId) : selectRelatedNode(nodeId);
+   const isSearching = filters.query.trim().length > 0;
+ 
+@@ -310,6 +333,7 @@
+             <p className="text-xs font-black uppercase tracking-widest text-sky-200">{text.selected} · {kindLabel(selected.kind)}</p>
+             <h3 className="mt-2 text-xl font-black text-white">{displayName(selected)}</h3>
+             <p className="mt-3 text-sm leading-6 text-slate-300">{displayDescription(selected)}</p>
++            {linkedActorId && onOpenNetworkActor ? <button type="button" onClick={() => onOpenNetworkActor(linkedActorId)} className="mt-3 rounded-xl border border-violet-300/30 px-3 py-2 text-left text-sm font-semibold text-violet-200 hover:bg-violet-300/10 focus-visible:ring-2 focus-visible:ring-violet-400">{fr ? "Voir dans le réseau des acteurs" : "View in the actor network"}</button> : null}
+             <p data-assignment={selected.assignment} className={cn("mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold", STATUS_STYLE[selected.assignment])}>{text.status}: {statusLabel(selected.assignment)}</p>
+             {selected.territoryIds.length ? <p className="mt-2 text-xs text-slate-300">{text.territory}: {selected.territoryIds.map((id) => id.replace(`${filters.city}:`, `${filters.city} `)).join(", ")}</p> : <p className="mt-2 text-xs text-slate-300">{text.assignmentUnknown}</p>}
+             {selected.legalEmployerId ? <p className="mt-2 text-xs text-slate-300">{text.legalEmployer}: {nodeById.has(selected.legalEmployerId) ? displayName(nodeById.get(selected.legalEmployerId)!) : selected.legalEmployerId}</p> : null}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx
+@@ -5,8 +5,11 @@
+ import { CmmFeedback } from "@/components/ui/cmm-feedback";
+ import { AnnuaireFeaturedSection } from "./annuaire-featured-section";
+ import { AnnuaireExplorationView } from "./annuaire-exploration-view";
+-import { ParisNetwork3DSection } from "./paris-network-3d-section";
+-import { PublicCleanlinessOrganization } from "./public-cleanliness-organization";
++import { ParisNetwork3DSection, type ParisNetworkNavigation } from "./paris-network-3d-section";
++import { PublicCleanlinessOrganization, type PublicCleanlinessNavigation } from "./public-cleanliness-organization";
++import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
++import { PARIS_PUBLIC_CLEANLINESS_DATASET, type PublicCleanlinessOrganizationNode } from "@/lib/partners/public-cleanliness-organization";
++import { resolveInstitutionId, resolveInstitutionNetworkActorId } from "@/lib/partners/public-cleanliness-network-links";
+ import { ParisNetworkContributionCard } from "./paris-network-contribution-card";
+ import { useAnnuaireLogic } from "./use-annuaire-logic";
+ import { CmmButton } from "@/components/ui/cmm-button";
+@@ -65,6 +68,20 @@
+   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>("FR:REG:11");
+   const [networkTab, setNetworkTab] = useState<"network" | "organization">("network");
++  const networkNavigation = useRef<ParisNetworkNavigation>(null);
++  const organizationNavigation = useRef<PublicCleanlinessNavigation>(null);
++  const getInstitutionId = (actorId: string) => resolveInstitutionId(PARIS_PUBLIC_CLEANLINESS_DATASET, actorId, PARIS_CLEANWALK_ACTORS);
++  const getNetworkActorId = (node: PublicCleanlinessOrganizationNode) => resolveInstitutionNetworkActorId(PARIS_PUBLIC_CLEANLINESS_DATASET, node, PARIS_CLEANWALK_ACTORS);
++  const openInstitution = (id: string) => {
++    if (!organizationNavigation.current?.openNode(id)) return;
++    setNetworkTab("organization");
++    document.getElementById("annuaire-tab-organization")?.focus();
++  };
++  const openNetworkActor = (id: string) => {
++    if (!networkNavigation.current?.openActor(id)) return;
++    setNetworkTab("network");
++    document.getElementById("annuaire-tab-network")?.focus();
++  };
+ 
+   const annuaireLogic = useAnnuaireLogic();
+   const {
+@@ -177,7 +194,9 @@
+           </CmmSectionGroup>
+         </motion.section>
+ 
+-        <section aria-label={fr ? "Vues des réseaux de l'annuaire" : "Directory network views"}>
++        <section aria-label={fr ? "Intelligence territoriale" : "Territorial intelligence"}>
++          <h2 className="mb-2 text-2xl font-black text-white">{fr ? "Intelligence territoriale" : "Territorial intelligence"}</h2>
++          <p className="mb-4 text-sm text-slate-300">{fr ? "Comprendre les collaborations et trouver les bons interlocuteurs." : "Understand relationships and find the right contacts."}</p>
+           <div role="tablist" aria-orientation="horizontal" aria-label={fr ? "Choisir une visualisation" : "Choose a visualization"} onKeyDown={(event) => {
+             if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+             const currentTab = (event.target as HTMLElement).closest<HTMLElement>('[role="tab"]');
+@@ -196,11 +215,11 @@
+             </button>
+           </div>
+           <div id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network" tabIndex={0} hidden={networkTab !== "network"}>
+-            <ParisNetwork3DSection fr={fr} onTerritoryChange={setSelectedTerritoryId} active={networkTab === "network"} />
++            <ParisNetwork3DSection fr={fr} onTerritoryChange={setSelectedTerritoryId} active={networkTab === "network"} navigationRef={networkNavigation} getInstitutionId={getInstitutionId} onOpenInstitution={openInstitution} />
+             <ParisNetworkContributionCard fr={fr} territoryId={selectedTerritoryId} />
+           </div>
+           <div id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" tabIndex={0} hidden={networkTab !== "organization"}>
+-            <PublicCleanlinessOrganization fr={fr} />
++            <PublicCleanlinessOrganization fr={fr} navigationRef={organizationNavigation} getNetworkActorId={getNetworkActorId} onOpenNetworkActor={openNetworkActor} />
+           </div>
+         </section>
+ 
+diff --git a/e2e/annuaire-public-cleanliness.spec.ts b/e2e/annuaire-public-cleanliness.spec.ts
+--- a/e2e/annuaire-public-cleanliness.spec.ts
++++ b/e2e/annuaire-public-cleanliness.spec.ts
+@@ -38,6 +38,24 @@
+   await expect(networkPanel.locator('button[aria-pressed="true"]').filter({ hasText: "Mairie du 5e arrondissement de Paris" })).toBeVisible();
+ });
+ 
++test("desktop: navigates between explicit shared institutional identities", async ({ page }) => {
++  await page.setViewportSize({ width: 1440, height: 900 });
++  await page.goto("/sections/annuaire");
++  await dismissCookies(page);
++  const network = page.locator("#annuaire-panel-network");
++  const organization = page.getByTestId("public-cleanliness-organization");
++  const lookup = network.getByRole("searchbox", { name: "Rechercher un acteur" });
++  await lookup.fill("Syctom");
++  await network.getByRole("button", { name: /Syctom/i }).first().click();
++  await network.getByRole("button", { name: "Voir dans les services publics" }).click();
++  await expect(page.getByRole("tab", { name: "Organisation des services publics" })).toBeFocused();
++  await expect(organization.locator("aside h3")).toContainText("Syctom");
++  await expect(network.locator("canvas")).toHaveCount(0);
++  await organization.getByRole("button", { name: "Voir dans le réseau des acteurs" }).click();
++  await expect(page.getByRole("tab", { name: "Réseau 3D des cleanwalks" })).toBeFocused();
++  await expect(network.getByRole("dialog")).toContainText("Syctom");
++});
++
+ test("mobile: filters, progressive navigation, zoom, sources and roving tab focus work", async ({ page }) => {
+   await page.setViewportSize({ width: 390, height: 844 });
+   await page.goto("/sections/annuaire");

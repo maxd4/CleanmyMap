@@ -167,6 +167,38 @@ Avant toute intégration :
 
 L'option initiale recommandée est une analyse historique ponctuelle. Un calque ou un flux automatisé ne devient pertinent qu'après preuve d'utilité et de conformité. Aucun accès à un flux municipal privé ou temps réel n'est présumé.
 
+### Intelligence territoriale dans l'Annuaire : orientation produit
+
+**Statut : PLAN / TARGET.** Direction produit retenue le 25 novembre 2026. Les comportements disponibles restent décrits par les [contrats du réseau des cleanwalks](../features/paris-cleanwalk-network-3d.md) et des [services publics](../features/organisation-services-publics-proprete.md). Cette orientation ne modifie pas les priorités globales de la roadmap.
+
+#### Finalité et frontières
+
+L'Annuaire aide à comprendre les collaborations, identifier les responsabilités et trouver un interlocuteur compétent. Le réseau répond à « qui agit avec qui ? », l'organisation institutionnelle à « qui est responsable de quoi ? ». L'orientation « Qui contacter ? » répond à un besoin concret à partir du référentiel institutionnel. Les similarités thématiques du graphe SVG ne représentent ni collaborations ni mandats. Ne pas fusionner les modèles relationnels, les propriétaires des données, les rôles applicatifs ou les identités par ressemblance de nom.
+
+#### Expérience cible : simplicité avant exhaustivité
+
+- Conserver deux onglets dans l'Annuaire ; aucune page, navigation principale, base graphique ou service dédié supplémentaire.
+- Réseau : recherche directe par nom, deux filtres visibles (type d'acteur et arrondissement), autres filtres existants dans un seul détail secondaire. La recherche sélectionne un acteur sans supprimer ses voisins. Le territoire documenté reste explicite. Ne pas ajouter de facettes temporelles, de comparaison d'acteurs ni de modes de lecture supplémentaires par défaut.
+- Séparer aperçu court et fiche persistante. Donner priorité au nom, à la compétence, au contact public et aux relations utiles, puis aux sources et détails. L'interface sur téléphone doit rester lisible sans manipuler la caméra. Le repli HTML donne accès aux mêmes informations.
+- Organisation : choisir la ville, l'arrondissement et un besoin à la fois. Réutiliser les huit parcours existants, sans choix d'arrondissement concurrent. Présenter les interlocuteurs, les conditions et les actions possibles avant l'arbre complet. Les filtres de recherche administrative restent dans l'exploration. L'arbre et la navigation par niveaux réutilisent le même état ; pas de quatre visualiseurs spécialisés.
+- Réutiliser les composants et préférences de présentation. Ne pas remplacer les textes longs par une multiplication de badges, panneaux, réglages ou conditions.
+
+#### Vérité des représentations
+
+Les couleurs représentent des familles, les traits des types et états de relations ; l'épaisseur n'indique une fréquence que lorsqu'elle est documentée. Un rayon uniforme évite le classement implicite ; les positions par famille restent stables pendant le filtrage et ne sont pas géographiques. Aucun score d'influence, classement des partenaires, relation prédite ni présomption d'absence de collaboration à partir d'un lien absent. Les opérations programmées et réalisées restent distinctes. Une opération collective est une entité identifiable avec participants et rôles ; ne pas multiplier des partenariats bilatéraux par inférence.
+
+Les identités communes reposent uniquement sur les références explicites existantes. La navigation entre onglets ouvre la structure correspondante sans modifier les registres ni attribuer une contribution d'une direction à ses unités filles. Les données privées restent exclues. Les contacts, capacités matérielles, financements, accords et compétences non prouvés restent qualifiés comme tels.
+
+#### Séquencement et extensions
+
+1. Stabiliser le réseau, l'organigramme et le suivi privé déjà engagés.
+2. Livrer recherche, filtres resserrés, repères stables, fiches sourcées, orientation partagée, navigation entre identités établies et validations responsive.
+3. Après réception, étudier les liens partageables et une projection par opération depuis les identifiants existants, si leur utilité est démontrée.
+4. Relier ensuite l'orientation au parcours existant de préparation d'une cleanwalk, en convergeant avec les formalités et contacts déjà maintenus ; ne pas créer de second assistant, CRM public ou workflow de réservation.
+5. Historique territorial, export de fiches et extension hors Paris restent des pistes ultérieures. Chaque ville exige son référentiel sourcé ; pas de réplication des structures parisiennes.
+
+Mesurer le temps pour trouver un interlocuteur, la réussite de tâches de recherche, la compréhension des preuves, la lisibilité mobile, la fraîcheur des sources et la charge de rendu. Les seuils restent à établir à partir d'une baseline, sans objectifs chiffrés inventés. Aucun nouveau suivi nominatif ni collecte de données privées n'est requis.
+
 ## 7. Évolutions fonctionnelles conditionnelles
 
 Ce tableau présente des hypothèses de besoins, pas des tâches Codex autorisées ni un nouvel ordre de priorité global. La [roadmap canonique](./roadmap-priorisee.md) conserve l'autorité : validation du parcours et des rapports P0 avant extension des programmes territoriaux P1.

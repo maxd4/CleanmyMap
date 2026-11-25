@@ -6,6 +6,10 @@ Ce document ne décrit pas des fonctionnalités disponibles. Une proposition ne 
 passer dans `CURRENT` qu'après implémentation, tests et mise à jour de la fiche
 présentation détaillée.
 
+## Orientation des visualiseurs territoriaux
+
+La direction produit et son ordre de réalisation sont définis dans [Ambition territoriale de Paris](../../../../product/ambition-territoriale-paris.md), section Intelligence territoriale. Les candidats du chantier ne constituent pas des fonctionnalités disponibles ; conserver la frontière entre cette direction et les deux contrats CURRENT spécialisés.
+
 ## Propositions conditionnelles
 
 ### Rafraîchissement d'événements par une source officielle
