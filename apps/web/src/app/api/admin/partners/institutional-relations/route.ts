@@ -9,12 +9,18 @@ import {
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import {
   addPrivateInstitutionalFact,
+  InstitutionalValidationError,
   listPrivateInstitutionalContacts,
   reviewPrivateInstitutionalFact,
   upsertPrivateInstitutionalContact,
 } from "@/lib/partners/institutional-relations/relationship-store";
 
 export const runtime = "nodejs";
+
+type InstitutionalAuditOperation =
+  | "upsert_institutional_contact"
+  | "add_institutional_fact"
+  | "review_institutional_fact";
 
 const contactSchema = z.object({
   type: z.literal("contact"),
@@ -58,6 +64,28 @@ const patchSchema = z.object({
   reason: z.string().trim().min(3).max(500),
 });
 
+function buildAuditEntry(params: {
+  operationId: string;
+  operation: InstitutionalAuditOperation;
+  outcome: "success" | "error";
+  actorUserId: string;
+  targetId?: string;
+  details: Record<string, unknown>;
+}) {
+  return {
+    at: new Date().toISOString(),
+    operationId: params.operationId,
+    operationType: "admin_operation" as const,
+    outcome: params.outcome,
+    actorUserId: params.actorUserId,
+    ...(params.targetId ? { targetId: params.targetId } : {}),
+    details: {
+      operation: params.operation,
+      ...params.details,
+    },
+  };
+}
+
 export async function GET() {
   const access = await requireAdminAccess();
   if (!access.ok) {
@@ -65,14 +93,17 @@ export async function GET() {
   }
   const operationId = newOperationId();
   try {
-    const contacts = await listPrivateInstitutionalContacts();
-    return adminSuccessResponse({ operationId, payload: { contacts } });
-  } catch (error) {
+    const result = await listPrivateInstitutionalContacts();
+    return adminSuccessResponse({
+      operationId,
+      payload: { contacts: result.contacts, truncated: result.truncated },
+    });
+  } catch {
     return adminErrorResponse({
       status: 500,
       operationId,
       code: "server_error",
-      message: error instanceof Error ? error.message : "Failed to load institutional relations",
+      message: "Impossible de charger les relations institutionnelles.",
       hint: "Vérifier la configuration Supabase serveur.",
     });
   }
@@ -96,41 +127,100 @@ export async function POST(request: Request) {
     });
   }
 
+  const operation: InstitutionalAuditOperation =
+    parsed.data.type === "contact" ? "upsert_institutional_contact" : "add_institutional_fact";
+
   try {
     if (parsed.data.type === "contact") {
       const contact = await upsertPrivateInstitutionalContact(parsed.data);
-      await appendAdminOperationAudit({
-        at: new Date().toISOString(),
+      const auditRecorded = await appendAdminOperationAudit(
+        buildAuditEntry({
+          operationId,
+          operation,
+          outcome: "success",
+          actorUserId: access.userId,
+          targetId: contact.id,
+          details: {
+            targetType: "institutional_relationship_contact",
+            revalidationStatus: contact.revalidationStatus,
+          },
+        }),
+      ).then(() => true, () => false);
+      return adminSuccessResponse({
         operationId,
-        operationType: "admin_operation",
-        outcome: "success",
-        actorUserId: access.userId,
-        targetId: contact.id,
-        details: { targetType: "institutional_relationship_contact", revalidationStatus: contact.revalidationStatus },
+        status: 201,
+        payload: {
+          contact,
+          auditRecorded,
+          ...(auditRecorded ? {} : { auditWarning: "Contact persisté mais échec de journalisation d'audit." }),
+        },
       });
-      return adminSuccessResponse({ operationId, status: 201, payload: { contact } });
     }
 
-    const fact = await addPrivateInstitutionalFact({
+    const { fact, deduplicated } = await addPrivateInstitutionalFact({
       ...parsed.data,
       createdBy: access.userId,
     });
-    await appendAdminOperationAudit({
-      at: new Date().toISOString(),
+    const auditRecorded = await appendAdminOperationAudit(
+      buildAuditEntry({
+        operationId,
+        operation,
+        outcome: "success",
+        actorUserId: access.userId,
+        targetId: fact.id,
+        details: {
+          targetType: "institutional_relationship_fact",
+          contactId: fact.contactId,
+          kind: fact.kind,
+          origin: fact.origin,
+          reviewStatus: fact.reviewStatus,
+          deduplicated,
+        },
+      }),
+    ).then(() => true, () => false);
+    return adminSuccessResponse({
       operationId,
-      operationType: "admin_operation",
-      outcome: "success",
-      actorUserId: access.userId,
-      targetId: fact.id,
-      details: { targetType: "institutional_relationship_fact", contactId: fact.contactId, kind: fact.kind, origin: fact.origin, reviewStatus: fact.reviewStatus },
+      status: deduplicated ? 200 : 201,
+      payload: {
+        fact,
+        deduplicated,
+        auditRecorded,
+        ...(auditRecorded ? {} : { auditWarning: "Fait persisté mais échec de journalisation d'audit." }),
+      },
     });
-    return adminSuccessResponse({ operationId, status: 201, payload: { fact } });
   } catch (error) {
+    if (error instanceof InstitutionalValidationError) {
+      await appendAdminOperationAudit(
+        buildAuditEntry({
+          operationId,
+          operation,
+          outcome: "error",
+          actorUserId: access.userId,
+          details: { stage: "validation" },
+        }),
+      ).then(() => true, () => false);
+      return adminErrorResponse({
+        status: 400,
+        operationId,
+        code: "invalid_payload",
+        message: error.message,
+        hint: "Vérifier la cohérence et les références de la preuve.",
+      });
+    }
+    await appendAdminOperationAudit(
+      buildAuditEntry({
+        operationId,
+        operation,
+        outcome: "error",
+        actorUserId: access.userId,
+        details: { stage: "persistence" },
+      }),
+    ).then(() => true, () => false);
     return adminErrorResponse({
       status: 500,
       operationId,
       code: "server_error",
-      message: error instanceof Error ? error.message : "Failed to persist institutional relation",
+      message: "Impossible d'enregistrer la relation institutionnelle.",
       hint: "Vérifier la persistance Supabase serveur.",
     });
   }
@@ -159,22 +249,44 @@ export async function PATCH(request: Request) {
       factId: parsed.data.factId,
       reviewStatus: parsed.data.reviewStatus,
     });
-    await appendAdminOperationAudit({
-      at: new Date().toISOString(),
+    const auditRecorded = await appendAdminOperationAudit(
+      buildAuditEntry({
+        operationId,
+        operation: "review_institutional_fact",
+        outcome: "success",
+        actorUserId: access.userId,
+        targetId: fact.id,
+        details: {
+          targetType: "institutional_relationship_fact",
+          reviewStatus: fact.reviewStatus,
+          reason: parsed.data.reason,
+        },
+      }),
+    ).then(() => true, () => false);
+    return adminSuccessResponse({
       operationId,
-      operationType: "admin_operation",
-      outcome: "success",
-      actorUserId: access.userId,
-      targetId: fact.id,
-      details: { targetType: "institutional_relationship_fact", reviewStatus: fact.reviewStatus, reason: parsed.data.reason },
+      payload: {
+        fact,
+        auditRecorded,
+        ...(auditRecorded ? {} : { auditWarning: "Révision persistée mais échec de journalisation d'audit." }),
+      },
     });
-    return adminSuccessResponse({ operationId, payload: { fact } });
-  } catch (error) {
+  } catch {
+    await appendAdminOperationAudit(
+      buildAuditEntry({
+        operationId,
+        operation: "review_institutional_fact",
+        outcome: "error",
+        actorUserId: access.userId,
+        targetId: parsed.data.factId,
+        details: { stage: "persistence" },
+      }),
+    ).then(() => true, () => false);
     return adminErrorResponse({
       status: 500,
       operationId,
       code: "server_error",
-      message: error instanceof Error ? error.message : "Failed to review institutional fact",
+      message: "Impossible de réviser le fait institutionnel.",
       hint: "Vérifier la persistance Supabase serveur.",
     });
   }

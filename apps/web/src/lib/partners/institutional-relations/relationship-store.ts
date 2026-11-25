@@ -4,6 +4,9 @@ import {
   type RelationshipEvidence,
 } from "./relationship-evidence";
 
+export const MAX_INSTITUTIONAL_CONTACTS_READ = 500;
+export const MAX_INSTITUTIONAL_FACTS_READ = 2000;
+
 export type InstitutionalContactRecord = {
   id: string;
   institutionalNodeId: string | null;
@@ -28,6 +31,14 @@ export type InstitutionalFactRecord = RelationshipEvidence & {
 export type InstitutionalContactWithDistinctions = InstitutionalContactRecord & {
   facts: InstitutionalFactRecord[];
   distinctions: ReturnType<typeof derivePrivateInstitutionalDistinctions>;
+};
+
+export type InstitutionalContactsListResult = {
+  contacts: InstitutionalContactWithDistinctions[];
+  truncated: {
+    contacts: boolean;
+    facts: boolean;
+  };
 };
 
 type ContactRow = {
@@ -59,6 +70,13 @@ type FactRow = {
   created_at: string;
 };
 
+export class InstitutionalValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InstitutionalValidationError";
+  }
+}
+
 function mapFactRow(row: FactRow): InstitutionalFactRecord {
   const base = {
     id: row.id,
@@ -72,19 +90,36 @@ function mapFactRow(row: FactRow): InstitutionalFactRecord {
     createdAt: row.created_at,
   };
   if (row.kind === "explicit_support") {
-    return { ...base, kind: "explicit_support", target: row.support_target ?? "third_party" };
+    if (row.support_target !== "cleanmymap" && row.support_target !== "third_party") {
+      throw new InstitutionalValidationError("Invalid explicit_support row: missing support_target");
+    }
+    return { ...base, kind: "explicit_support", target: row.support_target };
   }
   if (row.kind === "completed_contribution") {
-    const activity =
-      row.activity_kind === "cleanmymap_action"
-        ? { kind: "cleanmymap_action" as const, actionId: row.activity_ref ?? "" }
-        : { kind: "external_event" as const, sourceId: row.activity_ref ?? "" };
-    return {
-      ...base,
-      kind: "completed_contribution",
-      activity,
-      role: row.contribution_role ?? "participation",
-    };
+    if (!row.contribution_role) {
+      throw new InstitutionalValidationError("Invalid completed_contribution row: missing contribution_role");
+    }
+    const ref = row.activity_ref?.trim() ?? "";
+    if (!ref) {
+      throw new InstitutionalValidationError("Invalid completed_contribution row: missing activity_ref");
+    }
+    if (row.activity_kind === "cleanmymap_action") {
+      return {
+        ...base,
+        kind: "completed_contribution",
+        activity: { kind: "cleanmymap_action", actionId: ref },
+        role: row.contribution_role,
+      };
+    }
+    if (row.activity_kind === "external_event") {
+      return {
+        ...base,
+        kind: "completed_contribution",
+        activity: { kind: "external_event", sourceId: ref },
+        role: row.contribution_role,
+      };
+    }
+    throw new InstitutionalValidationError("Invalid completed_contribution row: missing or unknown activity_kind");
   }
   return { ...base, kind: row.kind };
 }
@@ -103,35 +138,55 @@ function mapContactRow(row: ContactRow): InstitutionalContactRecord {
   };
 }
 
-export async function listPrivateInstitutionalContacts(): Promise<InstitutionalContactWithDistinctions[]> {
+export async function listPrivateInstitutionalContacts(): Promise<InstitutionalContactsListResult> {
   const supabase = getSupabaseServerClient(true);
   const { data: contacts, error: contactsError } = await supabase
     .from("institutional_relationship_contacts")
     .select("*")
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .range(0, MAX_INSTITUTIONAL_CONTACTS_READ);
   if (contactsError) throw new Error(contactsError.message);
 
   const { data: facts, error: factsError } = await supabase
     .from("institutional_relationship_facts")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(0, MAX_INSTITUTIONAL_FACTS_READ);
   if (factsError) throw new Error(factsError.message);
 
+  const rawContacts = (contacts ?? []) as ContactRow[];
+  const rawFacts = (facts ?? []) as FactRow[];
+  const truncatedContacts = rawContacts.length > MAX_INSTITUTIONAL_CONTACTS_READ;
+  const truncatedFacts = rawFacts.length > MAX_INSTITUTIONAL_FACTS_READ;
+
+  const boundedContacts = truncatedContacts
+    ? rawContacts.slice(0, MAX_INSTITUTIONAL_CONTACTS_READ)
+    : rawContacts;
+  const boundedFacts = truncatedFacts
+    ? rawFacts.slice(0, MAX_INSTITUTIONAL_FACTS_READ)
+    : rawFacts;
+
   const factsByContact = new Map<string, InstitutionalFactRecord[]>();
-  for (const row of (facts ?? []) as FactRow[]) {
+  for (const row of boundedFacts) {
     const list = factsByContact.get(row.contact_id) ?? [];
     list.push(mapFactRow(row));
     factsByContact.set(row.contact_id, list);
   }
 
-  return ((contacts ?? []) as ContactRow[]).map((row) => {
-    const contactFacts = factsByContact.get(row.id) ?? [];
-    return {
-      ...mapContactRow(row),
-      facts: contactFacts,
-      distinctions: derivePrivateInstitutionalDistinctions(contactFacts),
-    };
-  });
+  return {
+    contacts: boundedContacts.map((row) => {
+      const contactFacts = factsByContact.get(row.id) ?? [];
+      return {
+        ...mapContactRow(row),
+        facts: contactFacts,
+        distinctions: derivePrivateInstitutionalDistinctions(contactFacts),
+      };
+    }),
+    truncated: {
+      contacts: truncatedContacts,
+      facts: truncatedFacts,
+    },
+  };
 }
 
 export async function upsertPrivateInstitutionalContact(input: {
@@ -162,6 +217,33 @@ export async function upsertPrivateInstitutionalContact(input: {
   return mapContactRow(data as ContactRow);
 }
 
+async function verifyContributionReference(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  activityKind: "cleanmymap_action" | "external_event",
+  activityRef: string,
+): Promise<void> {
+  if (activityKind === "cleanmymap_action") {
+    const { data, error } = await supabase
+      .from("actions")
+      .select("id")
+      .eq("id", activityRef)
+      .maybeSingle();
+    if (error || !data) {
+      throw new InstitutionalValidationError("Referenced CleanMyMap action does not exist");
+    }
+    return;
+  }
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(activityRef);
+  } catch {
+    throw new InstitutionalValidationError("External event reference must be a valid HTTPS URL");
+  }
+  if (parsedUrl.protocol !== "https:") {
+    throw new InstitutionalValidationError("External event reference must use HTTPS");
+  }
+}
+
 /** Always persists new facts as 'pending'; never trusts client-supplied verified status. */
 export async function addPrivateInstitutionalFact(input: {
   contactId: string;
@@ -175,8 +257,43 @@ export async function addPrivateInstitutionalFact(input: {
   activityKind?: "cleanmymap_action" | "external_event" | null;
   activityRef?: string | null;
   createdBy: string;
-}): Promise<InstitutionalFactRecord> {
+}): Promise<{ fact: InstitutionalFactRecord; deduplicated: boolean }> {
+  const evidenceRef = input.evidenceRef.trim();
+  const summary = input.summary.trim();
+  if (!evidenceRef || !summary) {
+    throw new InstitutionalValidationError("evidenceRef and summary are required");
+  }
+  if (input.kind === "explicit_support" && input.supportTarget !== "cleanmymap" && input.supportTarget !== "third_party") {
+    throw new InstitutionalValidationError("supportTarget is required for explicit_support");
+  }
+  const activityRef = input.activityRef?.trim() ?? null;
+  if (input.kind === "completed_contribution") {
+    if (!input.contributionRole || !input.activityKind || !activityRef) {
+      throw new InstitutionalValidationError("contributionRole, activityKind and activityRef are required for completed_contribution");
+    }
+  }
+
   const supabase = getSupabaseServerClient(true);
+  if (input.kind === "completed_contribution" && input.activityKind && activityRef) {
+    await verifyContributionReference(supabase, input.activityKind, activityRef);
+  }
+
+  // Prevent duplicate insertion on retries (e.g. after transient audit or network failure).
+  const { data: existing, error: existingError } = await supabase
+    .from("institutional_relationship_facts")
+    .select("*")
+    .eq("contact_id", input.contactId)
+    .eq("kind", input.kind)
+    .eq("origin", input.origin)
+    .eq("evidence_ref", evidenceRef)
+    .eq("summary", summary)
+    .limit(1)
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+  if (existing) {
+    return { fact: mapFactRow(existing as FactRow), deduplicated: true };
+  }
+
   const { data, error } = await supabase
     .from("institutional_relationship_facts")
     .insert({
@@ -184,19 +301,19 @@ export async function addPrivateInstitutionalFact(input: {
       kind: input.kind,
       origin: input.origin,
       review_status: "pending",
-      evidence_ref: input.evidenceRef,
-      summary: input.summary,
+      evidence_ref: evidenceRef,
+      summary,
       occurred_at: input.occurredAt ?? null,
       support_target: input.supportTarget ?? null,
       contribution_role: input.contributionRole ?? null,
       activity_kind: input.activityKind ?? null,
-      activity_ref: input.activityRef ?? null,
+      activity_ref: activityRef,
       created_by: input.createdBy,
     })
     .select("*")
     .single();
   if (error || !data) throw new Error(error?.message ?? "Failed to insert institutional fact");
-  return mapFactRow(data as FactRow);
+  return { fact: mapFactRow(data as FactRow), deduplicated: false };
 }
 
 export async function reviewPrivateInstitutionalFact(input: {

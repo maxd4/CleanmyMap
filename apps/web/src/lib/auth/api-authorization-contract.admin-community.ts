@@ -95,6 +95,26 @@ export const adminCommunityAuthorizationContract = {
       evidence: ["requireAdminAccess", "listAdminOperationAuditPage"],
     },
   },
+  "admin/partners/institutional-relations": {
+    GET: {
+      expected: "Admin-like role for private institutional relations read",
+      dimensions: ["admin/creator role"],
+      actual: "requireAdminAccess",
+      evidence: ["requireAdminAccess"],
+    },
+    POST: {
+      expected: "Admin-like role plus operation audit for institutional relation write",
+      dimensions: ["admin/creator role", "audit"],
+      actual: "requireAdminAccess + appendAdminOperationAudit",
+      evidence: ["requireAdminAccess", "appendAdminOperationAudit"],
+    },
+    PATCH: {
+      expected: "Admin-like role plus reason and operation audit for fact review",
+      dimensions: ["admin/creator role", "audit"],
+      actual: "requireAdminAccess + appendAdminOperationAudit",
+      evidence: ["requireAdminAccess", "appendAdminOperationAudit"],
+    },
+  },
   "admin/partners/published-directory": {
     POST: {
       expected: "Admin-like role plus confirmation/reason and operation audit",
