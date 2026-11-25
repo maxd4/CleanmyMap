@@ -2,21 +2,41 @@ import { describe, expect, it } from "vitest";
 import { projectPublicEntity } from "./public-entity-projection";
 
 describe("projectPublicEntity", () => {
-  it("projects unified public identity, limits, and sources for an explicit canonical actor", () => {
-    const projection = projectPublicEntity({ networkActorId: "asso-megots-alcome" });
+  it("projects unified public identity, limits, sources, and exact relations for World Cleanup Day France", () => {
+    const projection = projectPublicEntity({ networkActorId: "world-cleanup-day-france" });
     expect(projection).not.toBeNull();
-    expect(projection?.identity.networkActorId).toBe("asso-megots-alcome");
+    expect(projection?.identity.networkActorId).toBe("world-cleanup-day-france");
     expect(projection?.limits.length).toBeGreaterThan(0);
     expect(projection?.sources.length).toBeGreaterThan(0);
-    expect(Array.isArray(projection?.relations)).toBe(true);
+    expect(projection?.relations.length).toBeGreaterThan(0);
+    expect(
+      projection?.relations.some(
+        (r) => r.sourceId === "megothon" || r.targetId === "megothon",
+      ),
+    ).toBe(true);
   });
 
-  it("fails closed on conflicting canonical IDs", () => {
-    const projection = projectPublicEntity({
-      annuaireEntryId: "asso-1",
-      networkActorId: "asso-megots-alcome",
-    });
-    expect(projection).toBeNull();
+  it("projects institution-only nodes with their own territories, relations, and sources", () => {
+    const projection = projectPublicEntity({ institutionId: "town-hall-05" });
+    expect(projection).not.toBeNull();
+    expect(projection?.identity.institutionId).toBe("town-hall-05");
+    expect(projection?.institutionRelations.length).toBeGreaterThan(0);
+    expect(projection?.institutionSources.length).toBeGreaterThan(0);
+  });
+
+  it("fails closed on conflicting canonical IDs including institutionId without network link", () => {
+    expect(
+      projectPublicEntity({
+        annuaireEntryId: "asso-1",
+        networkActorId: "asso-megots-alcome",
+      }),
+    ).toBeNull();
+    expect(
+      projectPublicEntity({
+        institutionId: "division-17",
+        annuaireEntryId: "asso-3",
+      }),
+    ).toBeNull();
   });
 
   it("returns null for unknown identities without name-based fallback", () => {

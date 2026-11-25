@@ -6,7 +6,11 @@ import {
 } from "./paris-cleanwalk-network";
 import {
   PARIS_PUBLIC_CLEANLINESS_DATASET,
+  PARIS_PUBLIC_CLEANLINESS_RELATIONS,
+  PUBLIC_CLEANLINESS_SOURCES,
+  type OrganizationSource,
   type PublicCleanlinessOrganizationNode,
+  type PublicCleanlinessOrganizationRelation,
 } from "./public-cleanliness-organization";
 import {
   resolveInstitutionId,
@@ -40,9 +44,11 @@ export type CanonicalPublicEntityProjection = {
   territories: readonly string[];
   publicReferents: readonly string[];
   relations: readonly ParisCleanwalkRelation[];
+  institutionRelations: readonly PublicCleanlinessOrganizationRelation[];
   metrics: readonly PublicStructureMetric[];
   limits: readonly PublicStructureLimit[];
   sources: readonly PublicStructureSource[];
+  institutionSources: readonly OrganizationSource[];
   scopeNotes: {
     hasAnnuaireEntry: boolean;
     hasNetworkActor: boolean;
@@ -97,6 +103,14 @@ export function projectPublicEntity(
 
   const networkActor = resolveExplicitNetworkActor(ref, institutionNode);
   if (ref.networkActorId && !networkActor) return null;
+
+  if (ref.annuaireEntryId && institutionNode) {
+    const expectedDirectoryId = institutionNode.directoryId ?? networkActor?.annuaireEntryId ?? null;
+    if (expectedDirectoryId !== ref.annuaireEntryId) {
+      return null;
+    }
+  }
+
   const resolvedAnnuaireId =
     ref.annuaireEntryId ??
     networkActor?.annuaireEntryId ??
@@ -142,15 +156,25 @@ export function projectPublicEntity(
 
   const relations = networkActor
     ? PARIS_CLEANWALK_RELATIONS.filter(
-        (rel) =>
-          "from" in rel &&
-          "to" in rel &&
-          (rel.from === networkActor.id || rel.to === networkActor.id),
+        (rel) => rel.sourceId === networkActor.id || rel.targetId === networkActor.id,
       )
     : [];
 
+  const institutionRelations = institutionNode
+    ? PARIS_PUBLIC_CLEANLINESS_RELATIONS.filter(
+        (rel) => rel.from === institutionNode.id || rel.to === institutionNode.id,
+      )
+    : [];
+
+  const institutionSources = institutionNode
+    ? PUBLIC_CLEANLINESS_SOURCES.filter((src) => institutionNode.sourceIds.includes(src.id))
+    : [];
+
   const territories = Array.from(
-    new Set([...(networkActor ? [networkActor.parisZone.label] : [])]),
+    new Set([
+      ...(networkActor ? [networkActor.parisZone.label] : []),
+      ...(institutionNode?.territoryIds ?? []),
+    ]),
   );
 
   const publicReferents = networkActor?.publicLeader ? [networkActor.publicLeader.name] : [];
@@ -166,9 +190,11 @@ export function projectPublicEntity(
     territories,
     publicReferents,
     relations,
+    institutionRelations,
     metrics: context?.metrics ?? [],
     limits: context?.limits ?? [],
     sources,
+    institutionSources,
     scopeNotes: {
       hasAnnuaireEntry: annuaireEntry !== null,
       hasNetworkActor: networkActor !== null,
