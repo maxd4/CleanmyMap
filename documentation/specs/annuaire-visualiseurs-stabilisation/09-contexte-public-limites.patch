@@ -17,7 +17,7 @@ new file mode 100644
 +export type PublicStructureMetric = {
 +  id: string; label: Localized; value: number;
 +  unit: "count" | "percent" | "eur" | "eur_per_kg" | "eur_per_person_year" | "kg" | "tonnes";
-+  period: string; scope: "national" | "ile_de_france" | "paris" | "organization" | "offer";
++  period: string; scope: "edition" | "national" | "ile_de_france" | "paris" | "organization" | "offer";
 +  quality: "reported" | "approximate"; sourceId: string;
 +};
 +export type PublicStructureLimit = {
@@ -80,7 +80,7 @@ diff --git a/apps/web/src/lib/partners/public-structure-context.megots.ts b/apps
 new file mode 100644
 --- /dev/null
 +++ b/apps/web/src/lib/partners/public-structure-context.megots.ts
-@@ -0,0 +1,1068 @@
+@@ -0,0 +1,1216 @@
 +import type { PublicStructureContext, PublicStructureSource } from "./public-structure-context";
 +
 +/** Editorial public evidence only; no private contact or administrative store. */
@@ -104,7 +104,7 @@ new file mode 100644
 +    "verifiedAt": "2026-11-25"
 +  },
 +  "megothon-2026-partner": {
-+    "label": "Mon Mégot Où Il Faut : actualité du 30 mai 2026",
++    "label": "Mon Mégot Où Il Faut (marque ALCOME) : annonce du 30 mai 2026",
 +    "url": "https://monmegotouilfaut.fr/actualites.php",
 +    "evidence": "partner_statement",
 +    "verifiedAt": "2026-11-25"
@@ -306,6 +306,12 @@ new file mode 100644
 +    "url": "https://www.1dechetparjour.com/evenements/megothon-2025",
 +    "evidence": "organizer_statement",
 +    "verifiedAt": "2026-11-25"
++  },
++  "wcd-butts-results": {
++    "label": "World Cleanup Day France : bilans des collectes de mégots",
++    "url": "https://www.worldcleanupday.fr/megots/",
++    "verifiedAt": "2026-11-25",
++    "evidence": "organizer_report"
 +  }
 +};
 +
@@ -322,7 +328,7 @@ new file mode 100644
 +        "value": 1000000,
 +        "unit": "count",
 +        "period": "2023",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "approximate",
 +        "sourceId": "megothon-editions"
 +      },
@@ -335,7 +341,7 @@ new file mode 100644
 +        "value": 1200,
 +        "unit": "count",
 +        "period": "2023",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "approximate",
 +        "sourceId": "megothon-editions"
 +      },
@@ -348,7 +354,7 @@ new file mode 100644
 +        "value": 971028,
 +        "unit": "count",
 +        "period": "2024",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "reported",
 +        "sourceId": "megothon-2024"
 +      },
@@ -361,7 +367,7 @@ new file mode 100644
 +        "value": 2166,
 +        "unit": "count",
 +        "period": "2024",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "reported",
 +        "sourceId": "megothon-2024"
 +      },
@@ -379,6 +385,45 @@ new file mode 100644
 +        "sourceId": "megothon-2025"
 +      },
 +      {
++        "id": "2024-paris-events",
++        "label": {
++          "fr": "Ramassages recensés (département 75)",
++          "en": "Listed cleanups (department 75)"
++        },
++        "value": 6,
++        "unit": "count",
++        "period": "2024",
++        "scope": "paris",
++        "quality": "reported",
++        "sourceId": "megothon-2024"
++      },
++      {
++        "id": "2024-events",
++        "label": {
++          "fr": "Ramassages recensés",
++          "en": "Listed cleanups"
++        },
++        "value": 130,
++        "unit": "count",
++        "period": "2024",
++        "scope": "edition",
++        "quality": "reported",
++        "sourceId": "megothon-2024"
++      },
++      {
++        "id": "2024-reports",
++        "label": {
++          "fr": "Ramassages avec bilan",
++          "en": "Cleanups reporting results"
++        },
++        "value": 118,
++        "unit": "count",
++        "period": "2024",
++        "scope": "edition",
++        "quality": "reported",
++        "sourceId": "megothon-2024"
++      },
++      {
 +        "id": "2025-butts",
 +        "label": {
 +          "fr": "Mégots collectés",
@@ -387,7 +432,7 @@ new file mode 100644
 +        "value": 1916538,
 +        "unit": "count",
 +        "period": "2025",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "reported",
 +        "sourceId": "megothon-2025"
 +      },
@@ -400,7 +445,7 @@ new file mode 100644
 +        "value": 5204,
 +        "unit": "count",
 +        "period": "2025",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "reported",
 +        "sourceId": "megothon-2025"
 +      },
@@ -413,7 +458,7 @@ new file mode 100644
 +        "value": 283,
 +        "unit": "count",
 +        "period": "2025",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "reported",
 +        "sourceId": "megothon-2025"
 +      },
@@ -426,7 +471,7 @@ new file mode 100644
 +        "value": 238,
 +        "unit": "count",
 +        "period": "2025",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "reported",
 +        "sourceId": "megothon-2025"
 +      },
@@ -452,7 +497,7 @@ new file mode 100644
 +        "value": 10,
 +        "unit": "percent",
 +        "period": "2025",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "approximate",
 +        "sourceId": "megothon-2025"
 +      },
@@ -465,7 +510,7 @@ new file mode 100644
 +        "value": 1120000,
 +        "unit": "count",
 +        "period": "2026",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "approximate",
 +        "sourceId": "megothon-2026-partner"
 +      },
@@ -478,7 +523,7 @@ new file mode 100644
 +        "value": 169,
 +        "unit": "count",
 +        "period": "2026",
-+        "scope": "national",
++        "scope": "edition",
 +        "quality": "reported",
 +        "sourceId": "megothon-2026-partner"
 +      },
@@ -539,8 +584,8 @@ new file mode 100644
 +        "basis": "not_established",
 +        "kind": "transparency",
 +        "text": {
-+          "fr": "Le total annuel de mégots à Paris intra-muros et leur destination finale ne sont pas établis par les bilans consultés. Les chiffres nationaux et franciliens ne sont pas des résultats parisiens.",
-+          "en": "Annual inner-Paris counts and final treatment destinations are not established by the reviewed reports. National and regional figures are not Paris results."
++          "fr": "Le bilan 2024 recense six ramassages dans le département 75, sans total parisien de mégots. Les résultats annuels locaux et le traitement final ne sont pas établis ; ne pas les déduire des bilans globaux ou franciliens.",
++          "en": "The 2024 report lists six cleanups in department 75 but no Paris butt count. Annual local totals and final treatment are not established; do not infer them from edition-wide or regional totals."
 +        },
 +        "sourceIds": [
 +          "megothon-2025",
@@ -578,8 +623,8 @@ new file mode 100644
 +        "basis": "not_established",
 +        "kind": "transparency",
 +        "text": {
-+          "fr": "Les résultats 2026 proviennent d'une annonce d'un partenaire ; bilan final complet, participants et comparabilité du périmètre des événements avec 2025 restent à confirmer.",
-+          "en": "The 2026 results come from a partner announcement; the full final report, volunteers and comparability of event scope with 2025 remain unconfirmed."
++          "fr": "Les résultats 2026 proviennent de Mon Mégot Où Il Faut, marque d'ALCOME et partenaire de l'événement. Ce n'est pas une vérification indépendante ; bilan final complet, participants et comparabilité avec 2025 restent à confirmer.",
++          "en": "The 2026 figures come from Mon Mégot Où Il Faut, an ALCOME-owned brand and event partner. This is not independent verification; the full report, participants and comparability with 2025 remain unconfirmed."
 +        },
 +        "sourceIds": [
 +          "megothon-2026-partner",
@@ -624,6 +669,46 @@ new file mode 100644
 +          "megothon-collectif",
 +          "one-waste-2025",
 +          "wcd-2025"
++        ]
++      },
++      {
++        "id": "edition-geography",
++        "basis": "documented",
++        "kind": "claims",
++        "text": {
++          "fr": "Les tableaux des bilans 2024 et 2025 incluent des opérations hors de France (Montréal en 2024 ; Genève et Montréal en 2025). Les totaux publiés sont ceux des éditions, pas des totaux strictement français recalculés.",
++          "en": "The 2024 and 2025 tables include events outside France (Montreal in 2024; Geneva and Montreal in 2025). Published totals are edition-wide, not recalculated France-only totals."
++        },
++        "sourceIds": [
++          "megothon-2024",
++          "megothon-2025"
++        ]
++      },
++      {
++        "id": "water-equivalence",
++        "basis": "documented",
++        "kind": "claims",
++        "text": {
++          "fr": "Le bilan 2025 communique environ 958 millions de litres d'eau épargnés pour 1,92 million de mégots ; l'offre CPM associe 10 kg à 5 000 litres. Les conventions ne sont pas démontrées compatibles. Ces équivalences ne mesurent pas une pollution réellement évitée ; ne pas les reprendre comme indicateurs d'impact CleanMyMap.",
++          "en": "The 2025 report claims roughly 958 million litres spared for 1.92 million butts; the CPM offer associates 10 kg with 5,000 litres. The conventions are not shown to be compatible. These equivalents do not measure pollution actually avoided and must not become CleanMyMap impact metrics."
++        },
++        "sourceIds": [
++          "megothon-2025",
++          "megothon-cpm"
++        ]
++      },
++      {
++        "id": "cpm-accounting-proof",
++        "basis": "not_established",
++        "kind": "claims",
++        "text": {
++          "fr": "L'offre CPM revendique une traçabilité par blockchain et un usage dans le reporting d'entreprise. L'annonce ne démontre ni l'exécution du contrôle, ni l'intégrité des données d'entrée, ni une assurance indépendante, ni l'éligibilité de chaque acheteur à un traitement fiscal ou comptable. Ne pas présenter ces certificats comme une compensation ou un impact net vérifié.",
++          "en": "The CPM offer advertises blockchain traceability and corporate reporting use. The offer does not establish completed controls, input data integrity, independent assurance or each buyer's tax/accounting eligibility. Do not present these certificates as verified offsets or net impact."
++        },
++        "sourceIds": [
++          "megothon-cpm",
++          "megothon-faq",
++          "megothon-cgu"
 +        ]
 +      }
 +    ]
@@ -708,6 +793,45 @@ new file mode 100644
 +        "scope": "organization",
 +        "quality": "reported",
 +        "sourceId": "wcd-2025"
++      },
++      {
++        "id": "wcd-2024-butts",
++        "label": {
++          "fr": "Mégots collectés lors du World Cleanup Day",
++          "en": "Butts collected during World Cleanup Day"
++        },
++        "value": 8000000,
++        "unit": "count",
++        "period": "2024",
++        "scope": "edition",
++        "quality": "reported",
++        "sourceId": "wcd-butts-results"
++      },
++      {
++        "id": "wcd-2024-recovery",
++        "label": {
++          "fr": "Mégots déclarés valorisés lors du World Cleanup Day",
++          "en": "Butts reported recovered during World Cleanup Day"
++        },
++        "value": 750000,
++        "unit": "count",
++        "period": "2024",
++        "scope": "edition",
++        "quality": "reported",
++        "sourceId": "wcd-butts-results"
++      },
++      {
++        "id": "wcd-2025-butts",
++        "label": {
++          "fr": "Mégots collectés lors du World Cleanup Day",
++          "en": "Butts collected during World Cleanup Day"
++        },
++        "value": 6000000,
++        "unit": "count",
++        "period": "2025",
++        "scope": "edition",
++        "quality": "reported",
++        "sourceId": "wcd-butts-results"
 +      }
 +    ],
 +    "limits": [
@@ -758,6 +882,18 @@ new file mode 100644
 +        },
 +        "sourceIds": [
 +          "wcd-2025"
++        ]
++      },
++      {
++        "id": "wcd-event-recovery",
++        "basis": "documented",
++        "kind": "treatment",
++        "text": {
++          "fr": "Le bilan de l'association pour le World Cleanup Day 2024 déclare 750 000 mégots valorisés sur 8 millions ramassés, sans ventilation matière/énergie. Pour 2025, la page donne 6 millions collectés mais pas de quantité valorisée. Ces résultats ne sont pas ceux du Mégothon ; ne pas les additionner sans preuve de périmètres disjoints.",
++          "en": "The association's 2024 World Cleanup Day report lists 750,000 recovered out of 8 million collected, with no material/energy breakdown. For 2025 the page lists 6 million collected but no recovered quantity. These are not Mégothon results; do not add them without proof of disjoint scopes."
++        },
++        "sourceIds": [
++          "wcd-butts-results"
 +        ]
 +      }
 +    ]
@@ -831,6 +967,18 @@ new file mode 100644
 +        "sourceIds": [
 +          "alcome-support",
 +          "alcome-rep"
++        ]
++      },
++      {
++        "id": "campaign-source",
++        "basis": "documented",
++        "kind": "transparency",
++        "text": {
++          "fr": "Mon Mégot Où Il Faut se présente comme une marque d'ALCOME ; sa publication du 30 mai 2026 annonce les résultats de l'événement dont elle est partenaire. Ne pas compter la marque comme financeur indépendant ni son annonce comme audit externe.",
++          "en": "Mon Mégot Où Il Faut identifies itself as an ALCOME-owned brand; its 30 May 2026 publication announces results for an event it partners with. Do not count the brand as an independent funder or its announcement as an external audit."
++        },
++        "sourceIds": [
++          "megothon-2026-partner"
 +        ]
 +      }
 +    ]
@@ -1153,7 +1301,7 @@ diff --git a/apps/web/src/lib/partners/public-structure-context.test.ts b/apps/w
 new file mode 100644
 --- /dev/null
 +++ b/apps/web/src/lib/partners/public-structure-context.test.ts
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,45 @@
 +import { describe, expect, it } from "vitest";
 +import { PARIS_CLEANWALK_ACTORS } from "./paris-cleanwalk-network";
 +import { PARIS_PUBLIC_CLEANLINESS_DATASET as data } from "./public-cleanliness-organization";
@@ -1167,10 +1315,20 @@ new file mode 100644
 +  });
 +  it("preserves national vs regional scope and reported recovery without a made-up Paris result", () => {
 +    const context = getActorStructureContext("megothon")!;
-+    expect(context.metrics?.find(item => item.id === "2025-valorisation")).toMatchObject({ value: 10, unit: "percent", scope: "national", quality: "approximate" });
++    expect(context.metrics?.find(item => item.id === "2025-valorisation")).toMatchObject({ value: 10, unit: "percent", scope: "edition", quality: "approximate" });
 +    expect(context.metrics?.find(item => item.id === "2024-people")?.value).toBe(2166);
-+    expect(context.metrics?.some(item => item.scope === "paris")).toBe(false);
++    expect(context.metrics?.filter(item => item.scope === "paris")).toEqual([expect.objectContaining({ id: "2024-paris-events", value: 6, unit: "count" })]);
++    expect(context.metrics?.some(item => item.scope === "national")).toBe(false);
++    expect(context.limits.find(item => item.id === "water-equivalence")?.basis).toBe("documented");
++    expect(context.limits.find(item => item.id === "cpm-accounting-proof")?.basis).toBe("not_established");
++    expect(getPublicStructureSource("megothon-2026-partner")?.label).toContain("ALCOME");
 +    expect(context.limits.find(item => item.id === "cpm-proof")?.basis).toBe("not_established");
++  });
++  it("keeps World Cleanup Day results separate from Mégothon", () => {
++    const context = getActorStructureContext("world-cleanup-day-france")!;
++    expect(context.metrics?.find(item => item.id === "wcd-2024-recovery")).toMatchObject({ value: 750000, scope: "edition", unit: "count" });
++    expect(context.metrics?.some(item => item.id === "2025-valorisation")).toBe(false);
++    expect(context.metrics?.some(item => item.id === "wcd-2025-recovery")).toBe(false);
 +  });
 +  it("reuses the same evidence for explicit common identities, not their subsidiaries or lookalikes", () => {
 +    const get = (id: string) => getInstitutionStructureContext(data, data.nodes.find(node => node.id === id)!, PARIS_CLEANWALK_ACTORS);
@@ -1199,8 +1357,8 @@ new file mode 100644
 +import { getPublicStructureSource, type PublicStructureContext, type PublicStructureMetric } from "@/lib/partners/public-structure-context";
 +
 +const COPY = {
-+  fr: { limits: "Limites", figures: "Chiffres et périmètres", basis: { documented: "Documenté", attributed_critique: "Critique publique attribuée", not_established: "Non établi" }, scope: { national: "France", ile_de_france: "Île-de-France", paris: "Paris", organization: "Structure entière", offer: "Offre annoncée" }, unit: { count: "", percent: "%", eur: "€", eur_per_kg: "€/kg", eur_per_person_year: "€/hab./an", kg: "kg", tonnes: "t" }, evidence: { organizer_report: "Bilan déclaré", organizer_statement: "Déclaration de l'organisateur", partner_statement: "Annonce d'un partenaire", operator_statement: "Déclaration de l'opérateur", public_authority: "Source publique", attributed_critique: "Position publique" }, verified: "source consultée le" },
-+  en: { limits: "Limitations", figures: "Figures and scope", basis: { documented: "Documented", attributed_critique: "Attributed public criticism", not_established: "Not established" }, scope: { national: "France", ile_de_france: "Île-de-France", paris: "Paris", organization: "Entire organization", offer: "Advertised offer" }, unit: { count: "", percent: "%", eur: "€", eur_per_kg: "€/kg", eur_per_person_year: "€/person/year", kg: "kg", tonnes: "t" }, evidence: { organizer_report: "Self-reported results", organizer_statement: "Organizer statement", partner_statement: "Partner announcement", operator_statement: "Operator statement", public_authority: "Public authority", attributed_critique: "Public position" }, verified: "source reviewed on" },
++  fr: { limits: "Limites", figures: "Chiffres et périmètres", basis: { documented: "Documenté", attributed_critique: "Critique publique attribuée", not_established: "Non établi" }, scope: { edition: "Bilan de l’édition", national: "France", ile_de_france: "Île-de-France", paris: "Paris", organization: "Structure entière", offer: "Offre annoncée" }, unit: { count: "", percent: "%", eur: "€", eur_per_kg: "€/kg", eur_per_person_year: "€/hab./an", kg: "kg", tonnes: "t" }, evidence: { organizer_report: "Bilan déclaré", organizer_statement: "Déclaration de l'organisateur", partner_statement: "Annonce d'un partenaire", operator_statement: "Déclaration de l'opérateur", public_authority: "Source publique", attributed_critique: "Position publique" }, verified: "source consultée le" },
++  en: { limits: "Limitations", figures: "Figures and scope", basis: { documented: "Documented", attributed_critique: "Attributed public criticism", not_established: "Not established" }, scope: { edition: "Edition-wide results", national: "France", ile_de_france: "Île-de-France", paris: "Paris", organization: "Entire organization", offer: "Advertised offer" }, unit: { count: "", percent: "%", eur: "€", eur_per_kg: "€/kg", eur_per_person_year: "€/person/year", kg: "kg", tonnes: "t" }, evidence: { organizer_report: "Self-reported results", organizer_statement: "Organizer statement", partner_statement: "Partner announcement", operator_statement: "Operator statement", public_authority: "Public authority", attributed_critique: "Public position" }, verified: "source reviewed on" },
 +} as const;
 +
 +function SourceLink({ id, fr }: { id: string; fr: boolean }) {
@@ -1244,7 +1402,7 @@ diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-structur
 new file mode 100644
 --- /dev/null
 +++ b/apps/web/src/components/sections/rubriques/annuaire/public-structure-context-panel.test.tsx
-@@ -0,0 +1,24 @@
+@@ -0,0 +1,25 @@
 +import { renderToStaticMarkup } from "react-dom/server";
 +import { describe, expect, it } from "vitest";
 +import { getActorStructureContext } from "@/lib/partners/public-structure-context";
@@ -1267,5 +1425,6 @@ new file mode 100644
 +    expect(markup).toContain("Not established");
 +    expect(markup).toContain("Île-de-France");
 +    expect(markup).toContain("Partner announcement");
++    expect(markup).toContain("Edition-wide results");
 +  });
 +});
