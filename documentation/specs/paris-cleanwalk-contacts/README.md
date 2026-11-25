@@ -19,3 +19,7 @@ L'annexe DPE (pages 2/3) fournit 14 courriels. Le 7e seul peut utiliser le courr
 ## Preuves
 
 77 assertions isolées JavaScript exécutées dans l'environnement de préparation sur les mêmes lignes de données et algorithmes du résolveur, PASS. Ce n'est pas Vitest ni un test d'intégration du workspace. Les tests Vitest sont fournis mais non exécutés. Le site Brigade Verte était inaccessible à l'ouverture directe ; le courriel est recoupé par sa fiche Fondation de la Mer, qui le publie explicitement. Les autres courriels associatifs sont sourcés directement par les pages officielles. L'adresse de la DPE est administrative uniquement. `HOOK_NOT_AVAILABLE` ; TypeScript workspace, tests UI et intégration : NOT_RUN ; couverture NOT_MEASURED. Aucun runtime ou migration publié dans ce lot.
+
+## Extension Formalités locales Web
+
+Voir [FORMALITES_LOCALES.md](./FORMALITES_LOCALES.md) et les fichiers candidats complémentaires dans ce même dossier. Intégrer les deux lots ensemble sans recopier le référentiel.
