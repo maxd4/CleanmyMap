@@ -1,6 +1,6 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
 
 vi.mock("@/components/ui/site-preferences-provider", () => ({
@@ -61,6 +61,11 @@ describe("AnnuaireActorCard provenance", () => {
   });
 
   it("keeps published availability, freshness and contact labels distinct", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-30T10:00:00.000Z"));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const seed = INITIAL_ANNUAIRE_ENTRIES[0];
     expect(seed).toBeDefined();
 

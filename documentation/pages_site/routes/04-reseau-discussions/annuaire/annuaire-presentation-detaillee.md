@@ -60,6 +60,21 @@ conservée tant que sa fiche reste dans le résultat.
 
 ## 3. Fiches, contacts et provenance
 
+### Surfaces et contrastes des cartes (lot A)
+
+Les cartes de résultats (`annuaire-actor-card*.tsx`) et de sélection mise en avant
+(`annuaire-featured-section.tsx`) reposent sur le shell canonique `CmmCard`, sur les
+classes sémantiques `cmm-text-primary`, `cmm-text-secondary`, `cmm-text-success`,
+`cmm-text-info` et sur les variables `--cmm-surface-border` /
+`--cmm-surface-background-muted`. Aucune classe de texte ou de surface sombre locale
+(`text-white`, `text-slate-*`, `bg-white/5`), ombre, flou, halo ou animation décorative
+ne redéfinit ces surfaces ; la famille violet et les CTA `CmmButton` (`Localiser`,
+`Contacter`/`Consulter`, `Voir sur la carte`) sont conservés. Les badges de provenance
+et de fraîcheur sont dans le flux (`flex-wrap`), sans positionnement absolu, donc sans
+chevauchement du titre. Aucune information métier n'est retirée. Contrat attendu :
+contraste WCAG AA (4,5:1 texte courant, 3:1 grand texte) dans les modes `exhaustif`,
+`sobre`, `minimaliste` et les thèmes `mixed` et `dark`.
+
 Une fiche s'ouvre de façon cohérente depuis la sélection mise en avant, la liste, un
 marqueur de carte ou un nœud du graphe. Le drawer expose les informations publiques
 disponibles, la couverture déclarée, les repères de confiance et les ressources
