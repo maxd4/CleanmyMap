@@ -84,7 +84,7 @@ test("mobile: filters, progressive navigation, zoom, sources and roving tab focu
   await expect(organization.getByRole("button", { name: "Réinitialiser le zoom" })).toHaveText("100%");
 
   const needPanel = organization.getByRole("region", { name: "Qui contacter ?" });
-  await needPanel.getByLabel("Arrondissement de l'opération").selectOption("Paris:20");
+  await organization.getByRole("combobox", { name: "Filtrer par arrondissement" }).selectOption("20");
   await needPanel.getByLabel("Besoin de l'organisateur").selectOption("equipment");
   await expect(needPanel).toContainText("Pinces");
   await expect(needPanel).toContainText("non établis");

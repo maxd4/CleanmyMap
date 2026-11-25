@@ -148,11 +148,14 @@ describe("PublicCleanlinessOrganization behavior", () => {
     const view = mount();
     const panel = view.querySelector('section[aria-labelledby="cleanliness-need-heading"]')!;
     expect(panel.textContent).toContain("Qui contacter ?");
-    const [district, need] = [...panel.querySelectorAll<HTMLSelectElement>("select")];
-    expect(district.options).toHaveLength(20);
+    const district = view.querySelector<HTMLSelectElement>('select[aria-label="Filtrer par arrondissement"]')!;
+    const need = panel.querySelector<HTMLSelectElement>("select")!;
+    expect(district.options).toHaveLength(21);
     expect(need.options).toHaveLength(8);
+    expect(panel.querySelectorAll("select")).toHaveLength(1);
+    expect(panel.textContent).toContain("Sélectionnez un arrondissement");
     act(() => {
-      district.value = "Paris:20";
+      district.value = "20";
       district.dispatchEvent(new Event("change", { bubbles: true }));
       need.value = "removal";
       need.dispatchEvent(new Event("change", { bubbles: true }));
@@ -194,11 +197,16 @@ describe("PublicCleanlinessOrganization behavior", () => {
     const view = mount(<PublicCleanlinessOrganization fr />);
     const search = view.querySelector<HTMLInputElement>('input[type="search"]')!;
     const setSearch = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    const rootToggle = view.querySelector<HTMLButtonElement>('button[aria-label="Replier Ville de Paris"]')!;
+    act(() => rootToggle.click());
+    expect(view.querySelector("#org-children-city-paris")).toBeNull();
     act(() => {
       setSearch.call(search, "Division 17");
       search.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
+    expect(view.querySelector("#org-children-city-paris")).not.toBeNull();
+    expect(search.value).toBe("Division 17");
     // Ancestor "Direction de la Propreté et de l'Eau (DPE)" is rendered in the tree even when excluded by search
     const dpeBtn = [...view.querySelectorAll<HTMLButtonElement>("ul button")].find(
       (btn) => btn.textContent?.includes("Direction de la Propreté et de l'Eau"),
@@ -206,6 +214,8 @@ describe("PublicCleanlinessOrganization behavior", () => {
     expect(dpeBtn).toBeDefined();
     act(() => dpeBtn!.click());
     expect(view.querySelector("aside h3")?.textContent).toContain("Direction de la Propreté et de l'Eau");
+
+    expect(search.value).toBe("Division 17");
 
     // Breadcrumb navigation to root ancestor "Ville de Paris"
     const breadcrumbNav = view.querySelector('nav[aria-label="Navigation par niveau"]');
@@ -215,5 +225,11 @@ describe("PublicCleanlinessOrganization behavior", () => {
     expect(parisBtn).toBeDefined();
     act(() => parisBtn!.click());
     expect(view.querySelector("aside h3")?.textContent).toContain("Ville de Paris");
+    expect(search.value).toBe("Division 17");
+    act(() => {
+      setSearch.call(search, "");
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(view.querySelector("#org-children-city-paris")).toBeNull();
   });
 });
