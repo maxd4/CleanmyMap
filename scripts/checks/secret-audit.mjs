@@ -68,7 +68,6 @@ const PUBLIC_EMAIL_DOMAINS = new Set([
   "example.org",
   "example.net",
   "github.com",
-  "gmail.com",
   "lacloche.org",
   "latextilerie.fr",
   "mail.cleanmymap.fr",
@@ -196,9 +195,7 @@ function matchesContext(context, line) {
 
 function parseArgs(argv) {
   const options = {
-    allowlistPath: existsSync(resolve(ROOT, DEFAULT_ALLOWLIST))
-      ? DEFAULT_ALLOWLIST
-      : null,
+    allowlistPath: DEFAULT_ALLOWLIST,
     scope: "worktree",
     ref: null,
     candidateRefs: [],
@@ -379,7 +376,10 @@ function loadAllowlist(relativePath, gitRef = null, { explicit = false } = {}) {
   } else {
     const absolutePath = resolve(ROOT, relativePath);
     if (!existsSync(absolutePath)) {
-      throw new Error(`Allowlist not found: ${relativePath}`);
+      if (explicit) {
+        throw new Error(`Allowlist not found: ${relativePath}`);
+      }
+      return [];
     }
     rawContent = readFileSync(absolutePath, "utf8");
   }
@@ -454,8 +454,14 @@ function isAllowed(finding, allowlist) {
     if (entry.line && entry.line !== finding.line) {
       return false;
     }
-    if (entry.contains && !finding.raw.includes(entry.contains)) {
-      return false;
+    if (entry.contains) {
+      if (finding.category === "Email address") {
+        if (finding.raw.trim().toLowerCase() !== entry.contains.trim().toLowerCase()) {
+          return false;
+        }
+      } else if (finding.raw !== entry.contains) {
+        return false;
+      }
     }
     return Boolean(entry.reason);
   });

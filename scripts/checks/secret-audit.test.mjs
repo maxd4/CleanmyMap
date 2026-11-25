@@ -340,3 +340,135 @@ test("structured public email allowlist allows exact address and blocks same-dom
     rmSync(repo, { recursive: true, force: true });
   }
 });
+
+test("gmail addresses are not globally exempted", () => {
+  const result = runAudit({
+    candidateContent: `Contact: ${"private.person"}@${"gmail.com"}\n`,
+    foreignContent: "no secret here\n",
+  });
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /Email address/);
+});
+
+test("legacy contains allowlist entries require exact match and reject substrings", () => {
+  const repo = mkdtempSync(join(tmpdir(), "cleanmymap-secret-exact-"));
+  const signedUrl = ["https://supabase.test/storage/v1/object/sign/reports/cache.csv?to", "ken=abc123"].join("");
+  const fixtureEmail = ["fixture", "private-domain.test"].join("@");
+  try {
+    runGit(repo, ["init", "-q"]);
+    runGit(repo, ["config", "user.email", "codex@example.com"]);
+    runGit(repo, ["config", "user.name", "Codex"]);
+    writeFixture(
+      repo,
+      "scripts/checks/secret-audit.allowlist.json",
+      JSON.stringify({
+        allow: [
+          {
+            path: "apps/web/src/test.ts",
+            category: "Sensitive URL",
+            contains: signedUrl,
+            reason: "Exact signed URL fixture.",
+          },
+          {
+            path: "apps/web/src/test.ts",
+            category: "Email address",
+            contains: fixtureEmail,
+            reason: "Exact email fixture.",
+          },
+        ],
+      }),
+    );
+    writeFixture(
+      repo,
+      "apps/web/src/test.ts",
+      [
+        `const a = "${signedUrl}";`,
+        `const b = "${fixtureEmail}";`,
+      ].join("\n"),
+    );
+    runGit(repo, ["add", "."]);
+    runGit(repo, ["commit", "-m", "exact allowlist"]);
+    const run = (args) =>
+      spawnSync(process.execPath, [resolve("scripts/checks/secret-audit.mjs"), ...args], {
+        cwd: repo,
+        encoding: "utf8",
+      });
+    assert.equal(run(["--ref=HEAD"]).status, 0);
+
+    // Substring match must NOT bypass
+    writeFixture(
+      repo,
+      "apps/web/src/test.ts",
+      `const bad = "${signedUrl}456";\n`,
+    );
+    runGit(repo, ["add", "apps/web/src/test.ts"]);
+    runGit(repo, ["commit", "-m", "substring url"]);
+    assert.equal(run(["--ref=HEAD"]).status, 1);
+
+    writeFixture(
+      repo,
+      "apps/web/src/test.ts",
+      `const badEmail = "prefix-${fixtureEmail}";\n`,
+    );
+    runGit(repo, ["add", "apps/web/src/test.ts"]);
+    runGit(repo, ["commit", "-m", "substring email"]);
+    assert.equal(run(["--ref=HEAD"]).status, 1);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test("allowlist resolution follows staged index and committed refs even when worktree diverges or deletes allowlist", () => {
+  const repo = mkdtempSync(join(tmpdir(), "cleanmymap-secret-divergence-"));
+  const fixtureEmail = ["fixture", "private-domain.test"].join("@");
+  try {
+    runGit(repo, ["init", "-q"]);
+    runGit(repo, ["config", "user.email", "codex@example.com"]);
+    runGit(repo, ["config", "user.name", "Codex"]);
+    writeFixture(repo, "candidate.md", "baseline\n");
+    runGit(repo, ["add", "candidate.md"]);
+    runGit(repo, ["commit", "-m", "baseline"]);
+    const base = runGit(repo, ["rev-parse", "HEAD"]);
+
+    writeFixture(
+      repo,
+      "scripts/checks/secret-audit.allowlist.json",
+      JSON.stringify({
+        allow: [
+          {
+            path: "candidate.md",
+            category: "Email address",
+            contains: fixtureEmail,
+            reason: "Committed fixture.",
+          },
+        ],
+      }),
+    );
+    writeFixture(repo, "candidate.md", `Contact: ${fixtureEmail}\n`);
+    runGit(repo, ["add", "scripts/checks/secret-audit.allowlist.json", "candidate.md"]);
+
+    const run = (args) =>
+      spawnSync(process.execPath, [resolve("scripts/checks/secret-audit.mjs"), ...args], {
+        cwd: repo,
+        encoding: "utf8",
+      });
+
+    // Staged index has allowlist even if worktree deletes it
+    rmSync(join(repo, "scripts/checks/secret-audit.allowlist.json"));
+    assert.equal(run(["--staged-only"]).status, 0);
+
+    // Commit with allowlist, keep allowlist deleted in worktree
+    runGit(repo, ["commit", "-m", "committed allowlist"]);
+    const commitSha = runGit(repo, ["rev-parse", "HEAD"]);
+    assert.equal(run([`--ref=${commitSha}`]).status, 0);
+    assert.equal(run([`--candidate-ref=${commitSha}`, `--candidate-range=${base}..${commitSha}`]).status, 0);
+
+    // Worktree empties allowlist without staging; committed ref and staged index still pass
+    writeFixture(repo, "scripts/checks/secret-audit.allowlist.json", JSON.stringify({ allow: [] }));
+    assert.equal(run([`--ref=${commitSha}`]).status, 0);
+    // Worktree scan itself uses worktree allowlist and blocks
+    assert.equal(run([]).status, 1);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
