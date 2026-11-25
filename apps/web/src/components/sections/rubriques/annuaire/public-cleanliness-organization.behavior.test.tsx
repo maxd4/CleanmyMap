@@ -3,10 +3,9 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import type { PublicCleanlinessCityDataset } from "@/lib/partners/public-cleanliness-organization";
 
-vi.mock("./paris-network-3d-section", () => ({ ParisNetwork3DSection: () => null }));
 import { PublicCleanlinessOrganization } from "./public-cleanliness-organization";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });

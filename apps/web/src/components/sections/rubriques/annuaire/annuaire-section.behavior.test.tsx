@@ -65,11 +65,8 @@ vi.mock("./annuaire-partner-drawer", () => ({
   AnnuairePartnerDrawer: ({ entry, onClose }: { entry: { id: string }; onClose: () => void }) =>
     React.createElement("div", { "data-testid": "drawer" }, entry.id, React.createElement("button", { type: "button", "data-close": "", onClick: onClose }, "close")),
 }));
-vi.mock("./paris-network-3d-section", () => ({
-  ParisNetwork3DSection: ({ active }: { active: boolean }) => React.createElement("div", { "data-testid": "network-3d", "data-active": String(active) }),
-}));
 vi.mock("./paris-network-contribution-card", () => ({
-  ParisNetworkContributionCard: () => React.createElement("div"),
+  ParisNetworkContributionCard: () => React.createElement("div", { "data-testid": "contribution" }),
 }));
 vi.mock("./public-cleanliness-organization", () => ({
   PublicCleanlinessOrganization: () => React.createElement("div", { "data-testid": "organization" }),
@@ -133,7 +130,7 @@ describe("AnnuaireSection main tabs", () => {
     expect(container.querySelectorAll('[role="tabpanel"]:not([hidden])').length).toBe(1);
   });
 
-  it("supports roving tabindex with arrows, Home and End across the four tabs", () => {
+  it("supports roving tabindex with arrows, Home and End across the three tabs", () => {
     const container = mount();
     press(tab(container, "organization"), "ArrowRight");
     expect(selectedTabs(container)).toEqual(["annuaire-tab-directory"]);
@@ -142,22 +139,22 @@ describe("AnnuaireSection main tabs", () => {
     expect(tab(container, "organization").tabIndex).toBe(-1);
 
     press(tab(container, "directory"), "End");
-    expect(selectedTabs(container)).toEqual(["annuaire-tab-network"]);
-    press(tab(container, "network"), "ArrowRight");
+    expect(selectedTabs(container)).toEqual(["annuaire-tab-map"]);
+    press(tab(container, "map"), "ArrowRight");
     expect(selectedTabs(container)).toEqual(["annuaire-tab-organization"]);
     press(tab(container, "organization"), "ArrowLeft");
-    expect(selectedTabs(container)).toEqual(["annuaire-tab-network"]);
-    press(tab(container, "network"), "Home");
+    expect(selectedTabs(container)).toEqual(["annuaire-tab-map"]);
+    press(tab(container, "map"), "Home");
     expect(selectedTabs(container)).toEqual(["annuaire-tab-organization"]);
   });
 
-  it("only unhides the active panel and keeps the 3D scene inactive outside its tab", () => {
+  it("only unhides the active panel and mounts the unified map lazily", () => {
     const container = mount();
-    expect(container.querySelector('[data-testid="network-3d"]')?.getAttribute("data-active")).toBe("false");
-    expect(panel(container, "network").hidden).toBe(true);
-    act(() => tab(container, "network").click());
-    expect(container.querySelector('[data-testid="network-3d"]')?.getAttribute("data-active")).toBe("true");
-    expect(panel(container, "network").hidden).toBe(false);
+    expect(container.querySelector('[data-testid="exploration-map"]')).toBeNull();
+    expect(panel(container, "map").hidden).toBe(true);
+    act(() => tab(container, "map").click());
+    expect(container.querySelector('[data-testid="exploration-map"]')).toBeTruthy();
+    expect(panel(container, "map").hidden).toBe(false);
     expect(panel(container, "organization").hidden).toBe(true);
     expect(container.querySelector('[data-testid="exploration-directory"]')).toBeNull();
   });
@@ -201,7 +198,7 @@ describe("AnnuaireSection main tabs", () => {
     expect(container.querySelectorAll('[data-testid="drawer"]').length).toBe(1);
     act(() => tab(container, "map").click());
     expect(container.querySelectorAll('[data-testid="drawer"]').length).toBe(1);
-    act(() => tab(container, "network").click());
+    act(() => tab(container, "organization").click());
     expect(container.querySelector('[data-testid="drawer"]')).toBeNull();
 
     logicMock.mockImplementation(() => ({

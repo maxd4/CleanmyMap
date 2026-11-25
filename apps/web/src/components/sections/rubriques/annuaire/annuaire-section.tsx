@@ -13,11 +13,10 @@ import {
   annuaireTabId,
   type AnnuaireView,
 } from "./annuaire-view-tabs";
-import { ParisNetwork3DSection, type ParisNetworkNavigation } from "./paris-network-3d-section";
 import { PublicCleanlinessOrganization, type PublicCleanlinessNavigation } from "./public-cleanliness-organization";
 import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
 import { PARIS_PUBLIC_CLEANLINESS_DATASET, type PublicCleanlinessOrganizationNode } from "@/lib/partners/public-cleanliness-organization";
-import { resolveInstitutionId, resolveInstitutionNetworkActorId } from "@/lib/partners/public-cleanliness-network-links";
+import { resolveInstitutionNetworkActorId } from "@/lib/partners/public-cleanliness-network-links";
 import { ParisNetworkContributionCard } from "./paris-network-contribution-card";
 import { useAnnuaireLogic } from "./use-annuaire-logic";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -26,8 +25,9 @@ import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-/** Nombre maximal de cartes affichées initialement dans Découvrir. */
+/** Nombre maximal de cartes affichées initialement dans la sélection éditoriale de l'Annuaire. */
 const DISCOVER_INITIAL_CARDS = 6;
+
 function AnnuaireDirectoryFeedback({ fr, logic }: { fr: boolean; logic: ReturnType<typeof useAnnuaireLogic> }) {
   if (logic.isLoading) {
     return <CmmFeedback tone="info" title={fr ? "Chargement des fiches partenaires" : "Loading partner profiles"}>{fr ? "Les ressources éditoriales restent visibles pendant le chargement des fiches partenaires publiées." : "Editorial resources remain visible while published partner profiles load."}</CmmFeedback>;
@@ -72,20 +72,13 @@ export function AnnuaireSection() {
   const [view, setView] = useState<AnnuaireView>("organization");
   const [showAllFeatured, setShowAllFeatured] = useState(false);
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
-  const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>("FR:REG:11");
-  const networkNavigation = useRef<ParisNetworkNavigation>(null);
   const organizationNavigation = useRef<PublicCleanlinessNavigation>(null);
-  const getInstitutionId = (actorId: string) => resolveInstitutionId(PARIS_PUBLIC_CLEANLINESS_DATASET, actorId, PARIS_CLEANWALK_ACTORS);
   const getNetworkActorId = (node: PublicCleanlinessOrganizationNode) => resolveInstitutionNetworkActorId(PARIS_PUBLIC_CLEANLINESS_DATASET, node, PARIS_CLEANWALK_ACTORS);
-  const openInstitution = (id: string) => {
-    if (!organizationNavigation.current?.openNode(id)) return;
-    setView("organization");
-    document.getElementById(annuaireTabId("organization"))?.focus();
-  };
-  const openNetworkActor = (id: string) => {
-    if (!networkNavigation.current?.openActor(id)) return;
-    setView("network");
-    document.getElementById(annuaireTabId("network"))?.focus();
+  const openNetworkActor = (actorId: string) => {
+    const actor = PARIS_CLEANWALK_ACTORS.find((item) => item.id === actorId);
+    setSelectedActorId(actor?.annuaireEntryId ?? actorId);
+    setView("map");
+    document.getElementById(annuaireTabId("map"))?.focus();
   };
 
   const annuaireLogic = useAnnuaireLogic();
@@ -105,7 +98,7 @@ export function AnnuaireSection() {
     setSelectedActorId(null);
   }, [filterKey]);
 
-  /** Localiser : sélectionne l'acteur (en rétablissant les filtres si la cible est exclue) puis ouvre la Carte. */
+  /** Localiser : sélectionne l'acteur (en rétablissant les filtres si la cible est exclue) puis ouvre Carte & réseau. */
   const handleFocusMap = (id: string) => {
     const entryIsVisible = annuaireLogic.sortedAndFilteredEntries.some(
       (entry) => entry.id === id,
@@ -125,6 +118,7 @@ export function AnnuaireSection() {
   const discoverEntries = showAllFeatured
     ? featuredEntries
     : featuredEntries.slice(0, DISCOVER_INITIAL_CARDS);
+
   return (
     <SectionShell
       id="annuaire"
@@ -166,13 +160,11 @@ export function AnnuaireSection() {
 
         <AnnuaireTabPanel view="map" active={view === "map"}>
           {view === "map" ? (
-            <AnnuaireExplorationView logic={annuaireLogic} fr={fr} mode="map" selectedActorId={selectedActorId} onSelectedActorIdChange={setSelectedActorId} />
+            <div id="annuaire-panel-network" className="space-y-6">
+              <AnnuaireExplorationView logic={annuaireLogic} fr={fr} mode="map" selectedActorId={selectedActorId} onSelectedActorIdChange={setSelectedActorId} />
+              <ParisNetworkContributionCard fr={fr} territoryId="FR:REG:11" />
+            </div>
           ) : null}
-        </AnnuaireTabPanel>
-
-        <AnnuaireTabPanel view="network" active={view === "network"}>
-          <ParisNetwork3DSection fr={fr} onTerritoryChange={setSelectedTerritoryId} active={view === "network"} navigationRef={networkNavigation} getInstitutionId={getInstitutionId} onOpenInstitution={openInstitution} />
-          <ParisNetworkContributionCard fr={fr} territoryId={selectedTerritoryId} />
         </AnnuaireTabPanel>
 
         <AnnuaireJoinCta fr={fr} />

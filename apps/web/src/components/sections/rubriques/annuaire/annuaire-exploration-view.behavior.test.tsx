@@ -42,16 +42,11 @@ vi.mock("lucide-react", () => {
   return {
     AlertCircle: Icon,
     ChevronDown: Icon,
-    Map: Icon,
     PlusCircle: Icon,
     RotateCcw: Icon,
     Share2: Icon,
   };
 });
-
-vi.mock("./annuaire-network-graph", () => ({
-  AnnuaireNetworkGraph: () => React.createElement("div", { "data-testid": "graph" }),
-}));
 
 vi.mock("./annuaire-partner-list", () => ({
   AnnuairePartnerList: ({
@@ -308,19 +303,20 @@ describe("Annuaire exploration modes", () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it("map mode shows the map by default, switches to the actors graph and keeps compact selectable results", () => {
+  it("map mode shows the unified map, toggles documented relations, and exposes outside/unknown panels", () => {
     const onSelect = vi.fn();
     const container = mount(<Harness fr domain="all" mode="map" onSelect={onSelect} />);
     expect(container.querySelector('[data-testid="map"]')).toBeTruthy();
     expect(container.querySelector('[data-testid="partner-list"]')).toBeNull();
+    expect(container.querySelector('section[aria-label="Hors de Paris"]')).toBeTruthy();
+    expect(container.querySelector('section[aria-label="Localisation non établie"]')).toBeTruthy();
 
-    const graphButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Graphe des acteurs",
+    const relButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Relations documentées"),
     );
-    act(() => graphButton?.click());
-    expect(container.querySelector('[data-testid="graph"]')).toBeTruthy();
-    expect(container.querySelector('[data-testid="map"]')).toBeNull();
-    expect(graphButton?.getAttribute("aria-pressed")).toBe("true");
+    expect(relButton?.getAttribute("aria-pressed")).toBe("true");
+    act(() => relButton?.click());
+    expect(relButton?.getAttribute("aria-pressed")).toBe("false");
 
     const compact = container.querySelector('ul[aria-label="Résultats de l\'annuaire"] button');
     expect(compact?.textContent).toContain("Structure restaurée");

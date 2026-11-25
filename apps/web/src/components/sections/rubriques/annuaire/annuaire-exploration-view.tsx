@@ -1,10 +1,17 @@
 import dynamic from "next/dynamic";
-import { useState } from "react";
-import { Map as MapIcon, Share2 } from "lucide-react";
-import { AnnuaireNetworkGraph } from "./annuaire-network-graph";
+import { useMemo, useState } from "react";
+import { Share2 } from "lucide-react";
 import { AnnuaireFiltersCard } from "./annuaire-filters-card";
 import { AnnuaireCompactResults } from "./annuaire-compact-results";
 import { AnnuairePartnerList } from "./annuaire-partner-list";
+import {
+  AnnuaireIncidentRelationsPanel,
+  AnnuaireOutsideAndUnknownPanels,
+} from "./annuaire-geo-network-panels";
+import {
+  buildGeoNetworkEntities,
+  getIncidentGeoRelations,
+} from "./annuaire-geo-network.model";
 import type { AnnuaireLogic } from "./use-annuaire-logic";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -15,7 +22,7 @@ const AnnuaireMapCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center rounded-2xl border border-[var(--cmm-surface-border)] text-sm cmm-text-secondary">
+      <div className="flex h-[62vh] min-h-[420px] w-full items-center justify-center rounded-2xl border border-[var(--cmm-surface-border)] text-sm cmm-text-secondary">
         Chargement de la carte...
       </div>
     ),
@@ -27,72 +34,13 @@ export type AnnuaireExplorationMode = "directory" | "map";
 type AnnuaireExplorationViewProps = {
   logic: AnnuaireLogic;
   fr?: boolean;
-  /** `directory` : recherche + grille ; `map` : recherche + carte/graphe + résultats compacts. */
+  /** `directory` : recherche + grille ; `map` : carte relationnelle unifiée + résultats compacts + hors Paris. */
   mode?: AnnuaireExplorationMode;
   selectedActorId: string | null;
   onSelectedActorIdChange: (id: string | null) => void;
-  /** Localiser depuis la liste : bascule vers la vue Carte avec la sélection. */
+  /** Localiser depuis la liste : bascule vers la vue Carte & réseau avec la sélection. */
   onLocateActor?: (id: string) => void;
 };
-
-function AnnuaireVisualization({
-  fr,
-  entries,
-  selectedActorId,
-  onSelect,
-}: {
-  fr: boolean;
-  entries: AnnuaireLogic["sortedAndFilteredEntries"];
-  selectedActorId: string | null;
-  onSelect: (id: string) => void;
-}) {
-  const [viewMode, setViewMode] = useState<"map" | "network">("map");
-  return (
-    <div className="min-w-0 space-y-3">
-      <div
-        role="group"
-        aria-label={fr ? "Choisir la visualisation" : "Choose the visualization"}
-        className="flex flex-wrap gap-2"
-      >
-        <CmmButton
-          type="button"
-          onClick={() => setViewMode("map")}
-          tone={viewMode === "map" ? "primary" : "tertiary"}
-          variant="pill"
-          ariaPressed={viewMode === "map"}
-        >
-          <MapIcon size={16} className="mr-2" aria-hidden="true" />
-          {fr ? "Carte" : "Map"}
-        </CmmButton>
-        <CmmButton
-          type="button"
-          onClick={() => setViewMode("network")}
-          tone={viewMode === "network" ? "primary" : "tertiary"}
-          variant="pill"
-          ariaPressed={viewMode === "network"}
-        >
-          <Share2 size={16} className="mr-2" aria-hidden="true" />
-          {fr ? "Graphe des acteurs" : "Actors graph"}
-        </CmmButton>
-      </div>
-      <div className="relative h-[60vh] min-h-[360px] w-full min-w-0 overflow-hidden rounded-2xl border border-[var(--cmm-surface-border)]">
-        {viewMode === "map" ? (
-          <AnnuaireMapCanvas
-            items={entries}
-            variant="exploration"
-            onItemClick={onSelect}
-            highlightedItemId={selectedActorId}
-          />
-        ) : (
-          <AnnuaireNetworkGraph
-            entries={entries}
-            onSelectPartner={(entry) => onSelect(entry.id)}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
 
 export function AnnuaireExplorationView({
   logic,
@@ -102,6 +50,8 @@ export function AnnuaireExplorationView({
   onSelectedActorIdChange,
   onLocateActor,
 }: AnnuaireExplorationViewProps) {
+  const [showRelationsLayer, setShowRelationsLayer] = useState(true);
+
   const {
     searchTerm,
     setSearchTerm,
@@ -117,6 +67,7 @@ export function AnnuaireExplorationView({
     setActorCardsPage,
     resetFilters,
     targetArrondissement,
+    enrichedEntries,
     sortedAndFilteredEntries,
     totalPages,
     paginatedEntries,
@@ -126,6 +77,37 @@ export function AnnuaireExplorationView({
   const fr = externalFr ?? locale === "fr";
   const count = sortedAndFilteredEntries.length;
   const locate = onLocateActor ?? onSelectedActorIdChange;
+  const hasActiveFilter =
+    searchTerm !== "" ||
+    filterKind !== "all" ||
+    filterContribution !== "all" ||
+    engagementDomain !== "all" ||
+    zoneFilter !== "all";
+
+  const geoEntities = useMemo(
+    () =>
+      mode === "map"
+        ? buildGeoNetworkEntities(
+            sortedAndFilteredEntries,
+            enrichedEntries ?? sortedAndFilteredEntries,
+            !hasActiveFilter,
+          )
+        : [],
+    [mode, sortedAndFilteredEntries, enrichedEntries, hasActiveFilter],
+  );
+
+  const incidentRelations = useMemo(
+    () => (mode === "map" ? getIncidentGeoRelations(selectedActorId, geoEntities) : []),
+    [mode, selectedActorId, geoEntities],
+  );
+
+  const selectedEntity = useMemo(
+    () =>
+      geoEntities.find(
+        (entity) => entity.id === selectedActorId || entity.networkActorId === selectedActorId,
+      ) ?? null,
+    [geoEntities, selectedActorId],
+  );
 
   return (
     <div className="flex min-w-0 w-full flex-col gap-4">
@@ -176,21 +158,58 @@ export function AnnuaireExplorationView({
           onOpenProfile={onSelectedActorIdChange}
         />
       ) : (
-        <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <AnnuaireVisualization
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CmmButton
+              type="button"
+              onClick={() => setShowRelationsLayer((value) => !value)}
+              tone={showRelationsLayer ? "primary" : "tertiary"}
+              variant="pill"
+              ariaPressed={showRelationsLayer}
+            >
+              <Share2 size={16} className="mr-2" aria-hidden="true" />
+              {fr ? "Relations documentées" : "Documented relationships"}
+            </CmmButton>
+            <p className="text-xs cmm-text-secondary">
+              {fr
+                ? "Sélectionnez une structure pour afficher ses relations documentées (jamais une similarité par tags)."
+                : "Select a structure to display its documented relationships."}
+            </p>
+          </div>
+
+          <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <AnnuaireMapCanvas
+              entities={geoEntities}
+              incidentRelations={incidentRelations}
+              showRelationsLayer={showRelationsLayer}
+              variant="exploration"
+              onItemClick={onSelectedActorIdChange}
+              highlightedItemId={selectedEntity?.id ?? selectedActorId}
+              fr={fr}
+            />
+            <AnnuaireCompactResults
+              fr={fr}
+              entries={paginatedEntries}
+              selectedActorId={selectedActorId}
+              currentPage={actorCardsPage}
+              totalPages={totalPages}
+              onPageChange={setActorCardsPage}
+              onSelect={onSelectedActorIdChange}
+            />
+          </div>
+
+          <AnnuaireIncidentRelationsPanel
             fr={fr}
-            entries={sortedAndFilteredEntries}
-            selectedActorId={selectedActorId}
-            onSelect={onSelectedActorIdChange}
+            selectedEntity={selectedEntity}
+            incidentRelations={incidentRelations}
+            onSelectEntity={onSelectedActorIdChange}
           />
-          <AnnuaireCompactResults
+
+          <AnnuaireOutsideAndUnknownPanels
             fr={fr}
-            entries={paginatedEntries}
-            selectedActorId={selectedActorId}
-            currentPage={actorCardsPage}
-            totalPages={totalPages}
-            onPageChange={setActorCardsPage}
-            onSelect={onSelectedActorIdChange}
+            entities={geoEntities}
+            selectedId={selectedEntity?.id ?? selectedActorId}
+            onSelectEntity={onSelectedActorIdChange}
           />
         </div>
       )}

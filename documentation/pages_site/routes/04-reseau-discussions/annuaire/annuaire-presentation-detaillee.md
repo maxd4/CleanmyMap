@@ -13,12 +13,11 @@ La page est une surface publique de découverte. Elle présente des ressources
 certification, ne mesure pas automatiquement l'impact des acteurs et ne constitue pas un registre
 exhaustif des organisations.
 
-Le parcours visible est organisé en quatre onglets principaux (`Services publics` par défaut) :
+Le parcours visible est organisé en trois onglets principaux (`Services publics` par défaut) :
 
-1. `Services publics` : organisation institutionnelle 2D, avec navigation croisée vers `Réseau 3D` ;
+1. `Services publics` : organigramme graphique 2D interactif (avec vue `Liste` alternative) et navigation croisée vers `Carte & réseau` ;
 2. `Annuaire` : sélection éditoriale (6 cartes initiales maximum et action « Afficher toutes »), recherche textuelle, compteur, filtres par menus déroulants accessibles et grille responsive (1/2/3 colonnes) paginée ;
-3. `Carte` : mêmes recherche/filtres/compteur, sélecteur `Carte` / `Graphe des acteurs`, résultats compacts et drawer de fiche ;
-4. `Réseau 3D` : réseau 3D des cleanwalks (WebGL suspendu hors onglet) et contribution.
+3. `Carte & réseau` : carte géographique relationnelle unifiée sur Leaflet (cadrage initial Paris intramuros, marqueurs nommés et regroupements numérotés, couche activable de relations documentées incidentes à la sélection, panneaux `Hors de Paris` et `Localisation non établie`, résultats compacts, drawer de fiche et contribution citoyenne).
 
 Les onglets utilisent un `tablist` unique avec `roving tabindex` (flèches, Début, Fin) et `hidden` sur les panneaux inactifs. La mise en avant est une sélection éditoriale (`isFeatured`). Elle ne modifie pas la provenance ni le niveau de confiance de l'entrée sélectionnée.
 
