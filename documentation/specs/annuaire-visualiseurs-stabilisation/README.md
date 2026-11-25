@@ -21,6 +21,8 @@
 
 - `11-contrats-limites.patch` : modifications candidates des deux contrats spécialisés, à intégrer avec 09/10 après 08. La politique produit est déjà publiée dans l'ambition territoriale.
 
+- [12-plogging-megots-fiches-orientation.patch](12-plogging-megots-fiches-orientation.patch) : complément de 09/10/11, quatre ressources éditoriales Annuaire, identifiants 3D/2D, panneau Limites dans les fiches, orientation petits volumes/transport/bac commun, tests et contrats. Aucun lien prospectif. Voir [README_CODEX.md](README_CODEX.md) pour le complément.
+
 ## Intégration et validations
 
 Intégrer depuis le checkout courant, vérifier les collisions et utiliser `git apply --check` avant application des patches. Si le contenu actuel a changé, adapter seulement les modifications nécessaires aux owners. Ordre public : 01 puis 05 ; 02 puis 06 ; 07 après les deux chaînes ; 08 après 07. Le lot privé 03/04 peut avancer séparément. Code, tests et contrats documentaires doivent être intégrés ensemble. Le patch 08 contient les modifications des owners documentaires à adapter lors de cette intégration. Préserver les changements étrangers. Vérifier les références, libellés et scénarios de régression au runtime. Ne pas recopier de fichiers entiers issus d'un checkout historique.
