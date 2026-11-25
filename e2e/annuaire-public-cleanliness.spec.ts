@@ -38,6 +38,24 @@ test("desktop: unmounts an initialized WebGL scene and restores network selectio
   await expect(networkPanel.locator('button[aria-pressed="true"]').filter({ hasText: "Mairie du 5e arrondissement de Paris" })).toBeVisible();
 });
 
+test("desktop: navigates between explicit shared institutional identities", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/sections/annuaire");
+  await dismissCookies(page);
+  const network = page.locator("#annuaire-panel-network");
+  const organization = page.getByTestId("public-cleanliness-organization");
+  const lookup = network.getByRole("searchbox", { name: "Rechercher un acteur" });
+  await lookup.fill("Syctom");
+  await network.getByRole("button", { name: /Syctom/i }).first().click();
+  await network.getByRole("button", { name: "Voir dans les services publics" }).click();
+  await expect(page.getByRole("tab", { name: "Organisation des services publics" })).toBeFocused();
+  await expect(organization.locator("aside h3")).toContainText("Syctom");
+  await expect(network.locator("canvas")).toHaveCount(0);
+  await organization.getByRole("button", { name: "Voir dans le réseau des acteurs" }).click();
+  await expect(page.getByRole("tab", { name: "Réseau 3D des cleanwalks" })).toBeFocused();
+  await expect(network.getByRole("dialog")).toContainText("Syctom");
+});
+
 test("mobile: filters, progressive navigation, zoom, sources and roving tab focus work", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/sections/annuaire");

@@ -5,8 +5,11 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { AnnuaireFeaturedSection } from "./annuaire-featured-section";
 import { AnnuaireExplorationView } from "./annuaire-exploration-view";
-import { ParisNetwork3DSection } from "./paris-network-3d-section";
-import { PublicCleanlinessOrganization } from "./public-cleanliness-organization";
+import { ParisNetwork3DSection, type ParisNetworkNavigation } from "./paris-network-3d-section";
+import { PublicCleanlinessOrganization, type PublicCleanlinessNavigation } from "./public-cleanliness-organization";
+import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
+import { PARIS_PUBLIC_CLEANLINESS_DATASET, type PublicCleanlinessOrganizationNode } from "@/lib/partners/public-cleanliness-organization";
+import { resolveInstitutionId, resolveInstitutionNetworkActorId } from "@/lib/partners/public-cleanliness-network-links";
 import { ParisNetworkContributionCard } from "./paris-network-contribution-card";
 import { useAnnuaireLogic } from "./use-annuaire-logic";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -65,6 +68,20 @@ export function AnnuaireSection() {
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>("FR:REG:11");
   const [networkTab, setNetworkTab] = useState<"network" | "organization">("network");
+  const networkNavigation = useRef<ParisNetworkNavigation>(null);
+  const organizationNavigation = useRef<PublicCleanlinessNavigation>(null);
+  const getInstitutionId = (actorId: string) => resolveInstitutionId(PARIS_PUBLIC_CLEANLINESS_DATASET, actorId, PARIS_CLEANWALK_ACTORS);
+  const getNetworkActorId = (node: PublicCleanlinessOrganizationNode) => resolveInstitutionNetworkActorId(PARIS_PUBLIC_CLEANLINESS_DATASET, node, PARIS_CLEANWALK_ACTORS);
+  const openInstitution = (id: string) => {
+    if (!organizationNavigation.current?.openNode(id)) return;
+    setNetworkTab("organization");
+    document.getElementById("annuaire-tab-organization")?.focus();
+  };
+  const openNetworkActor = (id: string) => {
+    if (!networkNavigation.current?.openActor(id)) return;
+    setNetworkTab("network");
+    document.getElementById("annuaire-tab-network")?.focus();
+  };
 
   const annuaireLogic = useAnnuaireLogic();
   const {
@@ -177,7 +194,9 @@ export function AnnuaireSection() {
           </CmmSectionGroup>
         </motion.section>
 
-        <section aria-label={fr ? "Vues des réseaux de l'annuaire" : "Directory network views"}>
+        <section aria-label={fr ? "Intelligence territoriale" : "Territorial intelligence"}>
+          <h2 className="mb-2 text-2xl font-black text-white">{fr ? "Intelligence territoriale" : "Territorial intelligence"}</h2>
+          <p className="mb-4 text-sm text-slate-300">{fr ? "Comprendre les collaborations et trouver les bons interlocuteurs." : "Understand relationships and find the right contacts."}</p>
           <div role="tablist" aria-orientation="horizontal" aria-label={fr ? "Choisir une visualisation" : "Choose a visualization"} onKeyDown={(event) => {
             if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
             const currentTab = (event.target as HTMLElement).closest<HTMLElement>('[role="tab"]');
@@ -196,11 +215,11 @@ export function AnnuaireSection() {
             </button>
           </div>
           <div id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network" tabIndex={0} hidden={networkTab !== "network"}>
-            <ParisNetwork3DSection fr={fr} onTerritoryChange={setSelectedTerritoryId} active={networkTab === "network"} />
+            <ParisNetwork3DSection fr={fr} onTerritoryChange={setSelectedTerritoryId} active={networkTab === "network"} navigationRef={networkNavigation} getInstitutionId={getInstitutionId} onOpenInstitution={openInstitution} />
             <ParisNetworkContributionCard fr={fr} territoryId={selectedTerritoryId} />
           </div>
           <div id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" tabIndex={0} hidden={networkTab !== "organization"}>
-            <PublicCleanlinessOrganization fr={fr} />
+            <PublicCleanlinessOrganization fr={fr} navigationRef={organizationNavigation} getNetworkActorId={getNetworkActorId} onOpenNetworkActor={openNetworkActor} />
           </div>
         </section>
 

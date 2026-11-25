@@ -21,6 +21,7 @@ type Props = {
   onSelectActor: (id: string) => void;
   onSelectRelation: (id: string) => void;
   onClose: () => void;
+  onOpenInstitution?: () => void;
 };
 
 function RelationDetails({ relation, actors, fr, onClose, onSelectActor }: Pick<Props, "actors" | "fr" | "onClose" | "onSelectActor"> & { relation: ParisCleanwalkRelation }) {
@@ -49,12 +50,13 @@ function RelationDetails({ relation, actors, fr, onClose, onSelectActor }: Pick<
   </section>;
 }
 
-export function ParisNetworkSelectionPanel({ actor, relation, actors, relations, fr, onSelectActor, onSelectRelation, onClose }: Props) {
+export function ParisNetworkSelectionPanel({ actor, relation, actors, relations, fr, onSelectActor, onSelectRelation, onClose, onOpenInstitution }: Props) {
   if (relation) return <RelationDetails relation={relation} actors={actors} fr={fr} onClose={onClose} onSelectActor={onSelectActor} />;
   if (!actor) return <p className="rounded-xl border border-white/10 p-4 text-sm text-slate-300">{fr ? "Sélectionnez un acteur pour consulter sa fiche et ses relations." : "Select an actor to explore its details and relationships."}</p>;
   const names = new Map(actors.map(item => [item.id, item.name]));
   const links = relations.filter(item => item.sourceId === actor.id || item.targetId === actor.id);
   return <div className="min-w-0 space-y-3">
+    {onOpenInstitution ? <button type="button" onClick={onOpenInstitution} className="w-full rounded-xl border border-sky-300/30 px-3 py-2 text-left text-sm font-semibold text-sky-200 hover:bg-sky-300/10 focus-visible:ring-2 focus-visible:ring-sky-400">{fr ? "Voir dans les services publics" : "View in public services"}</button> : null}
     <ParisNetwork3DBubble actor={actor} isLocked onClose={onClose} fr={fr} />
     <section aria-label={fr ? "Relations de l'acteur" : "Actor relationships"} className="rounded-xl border border-white/10 p-3 text-sm text-slate-300">
       <h3 className="font-bold text-white">{fr ? "Relations documentées" : "Documented relationships"}</h3>

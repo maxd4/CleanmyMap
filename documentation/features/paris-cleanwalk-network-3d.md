@@ -51,6 +51,7 @@ Pour `action_commune` :
 - `ParisNetworkActorSearch` recherche un nom dans le territoire documenté sans supprimer les voisins. Une sélection explicite d'un acteur hors filtres réinitialise les filtres incompatibles. Type d'acteur et arrondissement restent visibles ; les autres filtres existants sont regroupés dans un détail secondaire. Aucune nouvelle facette temporelle ou de classement.
 - Le survol met en évidence l'acteur et ses voisins et affiche un aperçu court non interactif. La sélection explicite ouvre la fiche complète et les liens documentés dans `ParisNetworkSelectionPanel`, à côté de la scène sur grand écran et à sa suite sur petit écran. Une relation ouvre son type, ses deux extrémités, son résumé, sa source et son niveau de preuve ; une opération déclarée réutilise sa fiche programmée. Le parcours par fiche fournit aussi un accès clavier aux liens historiques.
 - La légende résume les encodages puis permet d'ouvrir les définitions détaillées. Un lien absent n'est pas une absence démontrée de collaboration.
+- Une identité institutionnelle commune explicitement résolue peut ouvrir l'onglet des services publics, conformément au [contrat institutionnel](organisation-services-publics-proprete.md).
 
 ## 5. Contributions citoyennes, modération et mise à jour du registre
 

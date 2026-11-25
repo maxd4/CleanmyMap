@@ -135,7 +135,7 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     vi.clearAllMocks();
   });
 
-  it("renders only names at rest and opens an interactive contextual bubble on hover, click and Escape", () => {
+  it("previews actors on hover and opens a persistent record only on explicit selection", () => {
     vi.useFakeTimers();
     const root = createRoot(container);
 
@@ -160,7 +160,7 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
     // At rest: no contextual bubble dialog is open
     expect(container.querySelector('[role="dialog"]')).toBeNull();
 
-    // Hovering Brigade Verte Paris opens the bubble
+    // Hovering previews the actor without opening the full record
     const allButtons = Array.from(container.querySelectorAll("button"));
     const brigadeBtn = allButtons.find((btn) =>
       btn.textContent?.includes("Brigade Verte Paris"),
@@ -171,26 +171,13 @@ describe("ParisNetwork3DSection UI & WebGL fallback", () => {
       brigadeBtn?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
     });
 
-    const hoverDialog = container.querySelector('[role="dialog"]');
-    expect(hoverDialog).not.toBeNull();
-    expect(hoverDialog?.textContent).toContain("Thomas Saint-Aubin");
-    expect(hoverDialog?.textContent).toContain("Participer aux actions");
-    expect(hoverDialog?.textContent).toContain("Rejoindre la communauté");
-
-    // Moving pointer from node into the bubble keeps it open
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(container.querySelector('[data-testid="paris-network-hover-preview"]')?.textContent).toContain("Brigade Verte Paris");
     act(() => {
       brigadeBtn?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
-      hoverDialog?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
       vi.advanceTimersByTime(250);
     });
-    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
-
-    // Leaving the bubble closes it after grace delay
-    act(() => {
-      hoverDialog?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
-      vi.advanceTimersByTime(250);
-    });
-    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(container.querySelector('[data-testid="paris-network-hover-preview"]')).toBeNull();
 
     // Clicking Cleanwalk.org locks the bubble and omits missing public leader
     const cleanwalkOrgName = PARIS_CLEANWALK_ACTORS.find(

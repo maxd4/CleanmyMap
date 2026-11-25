@@ -4,6 +4,8 @@ import dynamic from "next/dynamic";
 import {
   Component,
   type ReactNode,
+  type Ref,
+  useImperativeHandle,
   useCallback,
   useEffect,
   useMemo,
@@ -28,7 +30,6 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { cn } from "@/lib/utils";
-import { ParisNetwork3DBubble } from "./paris-network-3d-bubble";
 import { ParisNetworkActorSearch } from "./paris-network-actor-search";
 import { ParisNetworkSelectionPanel } from "./paris-network-selection-panel";
 import type { ParisNetwork3DCanvasHandle } from "./paris-network-3d-canvas";
@@ -82,14 +83,22 @@ class WebGLErrorBoundary extends Component<
   }
 }
 
+export type ParisNetworkNavigation = { openActor: (id: string) => boolean };
+
 export function ParisNetwork3DSection({
   fr: externalFr,
   onTerritoryChange,
   active = true,
+  navigationRef,
+  getInstitutionId,
+  onOpenInstitution,
 }: {
   fr?: boolean;
   onTerritoryChange?: (territoryId: string) => void;
   active?: boolean;
+  navigationRef?: Ref<ParisNetworkNavigation>;
+  getInstitutionId?: (actorId: string) => string | null;
+  onOpenInstitution?: (institutionId: string) => void;
 }) {
   const { locale, displayMode } = useSitePreferences();
   const fr = externalFr ?? locale === "fr";
@@ -115,10 +124,6 @@ export function ParisNetwork3DSection({
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [selectedRelationId, setSelectedRelationId] = useState<string | null>(null);
   const [hoveredActorId, setHoveredActorId] = useState<string | null>(null);
-  const [bubbleAnchor, setBubbleAnchor] = useState<{
-    leftPercent: number;
-    topPercent: number;
-  } | null>(null);
   const [viewMode, setViewMode] = useState<"3d" | "html">("3d");
   const [webglRuntimeError, setWebglRuntimeError] = useState<boolean>(false);
   const [hasEnteredViewport, setHasEnteredViewport] = useState<boolean>(false);
@@ -348,9 +353,6 @@ export function ParisNetwork3DSection({
     if (selectedActorId && !visibleActorIds.has(selectedActorId)) {
       setSelectedActorId(null);
     }
-    if (!selectedActorId || !visibleActorIds.has(selectedActorId)) {
-      setBubbleAnchor(null);
-    }
     if (selectedRelationId && !visibleRelationIds.has(selectedRelationId)) {
       setSelectedRelationId(null);
     }
@@ -377,6 +379,21 @@ export function ParisNetwork3DSection({
     handleSelectRelation(id);
   };
 
+  useImperativeHandle(navigationRef, () => ({
+    openActor(id) {
+      const parisDataset = getTerritoryNetworkDataset(DEFAULT_TERRITORY_ID);
+      if (!parisDataset?.actors.some(actor => actor.id === id)) return false;
+      if (selectedTerritoryId !== DEFAULT_TERRITORY_ID) {
+        handleSelectTerritory(TERRITORY_NETWORK_CATALOG.find(item => item.id === DEFAULT_TERRITORY_ID)!);
+        setFilters(DEFAULT_PARIS_NETWORK_3D_FILTERS);
+        handleSelectActor(id);
+      } else {
+        revealActor(id);
+      }
+      return true;
+    },
+  }));
+
   const activeActorId = selectedActorId ?? hoveredActorId;
   const activeActor = useMemo(
     () =>
@@ -386,6 +403,7 @@ export function ParisNetwork3DSection({
 
   const selectedRelation = filtered.relations.find(r => r.id === selectedRelationId);
   const selectedActor = filtered.actors.find(actor => actor.id === selectedActorId) ?? null;
+  const linkedInstitutionId = selectedActor ? getInstitutionId?.(selectedActor.id) : null;
   const show3DCanvas = sceneActive && webglAvailable && viewMode === "3d";
   const surfaceClassName = cn(
     "relative overflow-hidden rounded-[var(--radius-lg)] border border-violet-300/18 p-6 md:p-8",
@@ -569,7 +587,6 @@ export function ParisNetwork3DSection({
                   onSelectRelation={handleSelectRelation}
                   onHoverActor={handleHoverActor}
                   fr={fr}
-                  onAnchorChange={setBubbleAnchor}
                   animateMotion={animateMotion}
                   isOffscreen={isOffscreen}
                   onWebGLError={handleWebGLError}
@@ -608,23 +625,10 @@ export function ParisNetwork3DSection({
           ))}
 
           {activeActor && !selectedActorId && !selectedRelation ? (
-            <ParisNetwork3DBubble
-              actor={activeActor}
-              isLocked={selectedActorId === activeActor.id}
-              anchorPosition={
-                show3DCanvas && bubbleAnchor
-                  ? bubbleAnchor
-                  : { leftPercent: 52, topPercent: 10 }
-              }
-              onClose={handleCloseBubble}
-              onMouseEnter={cancelHoverClose}
-              onMouseLeave={() => {
-                if (!selectedActorId) {
-                  handleHoverActor(null);
-                }
-              }}
-              fr={fr}
-            />
+            <div data-testid="paris-network-hover-preview" aria-hidden="true" className="pointer-events-none absolute inset-x-3 bottom-3 z-20 rounded-lg border border-violet-300/30 bg-slate-950/95 p-2 text-xs text-slate-200">
+              <strong className="block text-white">{activeActor.name}</strong>
+              {activeActor.parisZone.label}
+            </div>
           ) : null}
         </div>
             <aside className="min-w-0 xl:max-h-[580px] xl:overflow-y-auto" aria-label={fr ? "Fiche et relations" : "Profile and relationships"}>
@@ -637,6 +641,7 @@ export function ParisNetwork3DSection({
                 onSelectActor={revealActor}
                 onSelectRelation={revealRelation}
                 onClose={handleCloseBubble}
+                onOpenInstitution={linkedInstitutionId && onOpenInstitution ? () => onOpenInstitution(linkedInstitutionId) : undefined}
               />
             </aside>
             </div>

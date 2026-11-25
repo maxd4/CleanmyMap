@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useImperativeHandle, useMemo, useRef, useState, type ReactNode, type Ref } from "react";
 import { PublicCleanlinessCoverageTable } from "./public-cleanliness-coverage-table";
 import { PublicCleanlinessNeedPanel } from "./public-cleanliness-need-panel";
 import { getPublicInstitutionalContributions } from "@/lib/partners/public-cleanliness-needs";
@@ -105,12 +105,20 @@ const EMPTY_NODES: readonly PublicCleanlinessOrganizationNode[] = [];
 const EMPTY_RELATIONS: readonly PublicCleanlinessOrganizationRelation[] = [];
 const EMPTY_SOURCES: readonly { id: string; label: string; url: string; sourceContentDate?: string; verifiedAt: string; evidence: "official_current" | "official_historical" | "official_job_profile" | "operator_statement" | "professional_self_statement" }[] = [];
 
+export type PublicCleanlinessNavigation = { openNode: (id: string) => boolean };
+
 export function PublicCleanlinessOrganization({
   fr = true,
   datasets = PUBLIC_CLEANLINESS_CITY_DATASETS,
+  navigationRef,
+  getNetworkActorId,
+  onOpenNetworkActor,
 }: {
   fr?: boolean;
   datasets?: PublicCleanlinessCityDatasets;
+  navigationRef?: Ref<PublicCleanlinessNavigation>;
+  getNetworkActorId?: (node: PublicCleanlinessOrganizationNode) => string | null;
+  onOpenNetworkActor?: (actorId: string) => void;
 }) {
   const text = fr ? COPY.fr : COPY.en;
   const cityOptions = getArrondissementCityOptions();
@@ -220,6 +228,21 @@ export function PublicCleanlinessOrganization({
       return next;
     });
   };
+  useImperativeHandle(navigationRef, () => ({
+    openNode(id) {
+      const paris = getPublicCleanlinessCityDataset("Paris", datasets);
+      if (!paris?.nodes.some(node => node.id === id)) return false;
+      if (filters.city === "Paris") {
+        selectRelatedNode(id);
+      } else {
+        setFilters({ city: "Paris", arrondissement: null, service: "all", query: "" });
+        setSelectedId(id);
+        setCollapsed({});
+      }
+      return true;
+    },
+  }));
+  const linkedActorId = selected && dataset?.city === "Paris" ? getNetworkActorId?.(selected) : null;
   const selectTreeNode = (nodeId: string) => includedIds.has(nodeId) ? setSelectedId(nodeId) : selectRelatedNode(nodeId);
   const isSearching = filters.query.trim().length > 0;
 
@@ -310,6 +333,7 @@ export function PublicCleanlinessOrganization({
             <p className="text-xs font-black uppercase tracking-widest text-sky-200">{text.selected} · {kindLabel(selected.kind)}</p>
             <h3 className="mt-2 text-xl font-black text-white">{displayName(selected)}</h3>
             <p className="mt-3 text-sm leading-6 text-slate-300">{displayDescription(selected)}</p>
+            {linkedActorId && onOpenNetworkActor ? <button type="button" onClick={() => onOpenNetworkActor(linkedActorId)} className="mt-3 rounded-xl border border-violet-300/30 px-3 py-2 text-left text-sm font-semibold text-violet-200 hover:bg-violet-300/10 focus-visible:ring-2 focus-visible:ring-violet-400">{fr ? "Voir dans le réseau des acteurs" : "View in the actor network"}</button> : null}
             <p data-assignment={selected.assignment} className={cn("mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold", STATUS_STYLE[selected.assignment])}>{text.status}: {statusLabel(selected.assignment)}</p>
             {selected.territoryIds.length ? <p className="mt-2 text-xs text-slate-300">{text.territory}: {selected.territoryIds.map((id) => id.replace(`${filters.city}:`, `${filters.city} `)).join(", ")}</p> : <p className="mt-2 text-xs text-slate-300">{text.assignmentUnknown}</p>}
             {selected.legalEmployerId ? <p className="mt-2 text-xs text-slate-300">{text.legalEmployer}: {nodeById.has(selected.legalEmployerId) ? displayName(nodeById.get(selected.legalEmployerId)!) : selected.legalEmployerId}</p> : null}
