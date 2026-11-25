@@ -6,6 +6,7 @@ const seedFiles = [
   "./seed-associations.ts",
   "./seed-entreprises.ts",
   "./seed-evenements.ts",
+  "./seed-schools.ts",
 ];
 
 const forbiddenSeedKeys =

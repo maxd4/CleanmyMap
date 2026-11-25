@@ -5,6 +5,7 @@ import {
 } from "./paris-cleanwalk-network.channels";
 import type { ParisCleanwalkActor } from "./paris-cleanwalk-network";
 import { PARIS_PREVENTION_ACTORS_RAW } from "./paris-cleanwalk-network.prevention.data";
+import { PARIS_SCHOOL_ACTORS } from "./paris-cleanwalk-network.schools";
 
 const ANNUAIRE_IDS = new Set(INITIAL_ANNUAIRE_ENTRIES.map((entry) => entry.id));
 const ALL_PARIS_ARRONDISSEMENTS = Array.from({ length: 20 }, (_, i) => i + 1);
@@ -741,4 +742,5 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
     isCleanMyMapMember: false,
   },
   ...PARIS_PREVENTION_ACTORS_RAW,
+  ...PARIS_SCHOOL_ACTORS,
 ] as const;

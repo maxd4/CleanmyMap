@@ -9,7 +9,8 @@ type EntityKind =
   | "groupe_parole"
   | "evenement"
   | "commerce"
-  | "entreprise";
+  | "entreprise"
+  | "etablissement_enseignement";
 
 type ContributionType =
   | "materiel"
@@ -75,11 +76,21 @@ type EditorialAssociationProfile = Omit<
   structureStatus?: never;
 };
 
+export type SchoolIdentityProfile = {
+  uai: string;
+  level: "lycee_general" | "elementaire";
+  sector: "public" | "prive_hors_contrat";
+  addresses: readonly { label: string; sourceUrl: string }[];
+  sources: readonly { label: string; url: string }[];
+  verifiedAt: string;
+};
+
 type AnnuaireEntryShared = {
   id: string;
   name: string;
   legalIdentity: string;
   kind: EntityKind;
+  schoolProfile?: SchoolIdentityProfile;
   scope?: "local" | "national" | "france";
   types: EngagementType[];
   /**
@@ -134,7 +145,7 @@ export type EditorialAnnuaireEntry = AnnuaireEntryShared & {
   associationProfile?: EditorialAssociationProfile;
 };
 
-export type PublishedAnnuaireEntry = AnnuaireEntryShared & {
+export type PublishedAnnuaireEntry = Omit<AnnuaireEntryShared, "schoolProfile"> & {
   provenance: "published_partner";
   verificationStatus: VerificationStatus;
   qualificationStatus: QualificationStatus;

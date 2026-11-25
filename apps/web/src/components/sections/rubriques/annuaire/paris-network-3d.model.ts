@@ -54,6 +54,7 @@ const CLUSTER_CENTERS: Record<ParisActorCategory, [number, number, number]> = {
   collectivite_mairie: [0.0, -2.6, 2.2],
   entreprise_rse: [3.4, -2.0, -2.4],
   plateforme_mise_en_relation: [-3.8, -2.4, -1.8],
+  etablissement_enseignement: [0, 3.2, -2.8],
 };
 
 function matchesActorFilters(

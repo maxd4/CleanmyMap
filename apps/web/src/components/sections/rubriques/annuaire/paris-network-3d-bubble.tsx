@@ -2,6 +2,8 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { AlertTriangle, ExternalLink, X } from "lucide-react";
+import { getScheduledOperationsForActor } from "@/lib/partners/paris-cleanwalk-network.scheduled";
+import { ScheduledOperationDetails } from "./paris-network-scheduled-operation";
 import {
   PARIS_ACTOR_CATEGORY_META,
   PARIS_ECOSYSTEM_ROLE_LABELS,
@@ -10,12 +12,6 @@ import {
   type ParisCleanwalkActor,
   type PublicChannelType,
 } from "@/lib/partners/paris-cleanwalk-network";
-import {
-  getParisAssociationContact,
-  PARIS_DPE_CONTACT,
-  PARIS_MUNICIPAL_TOWN_HALLS,
-  resolveParisCleaningDivisionContacts,
-} from "@/lib/partners/paris-cleanwalk-network.contacts";
 
 const ACTION_PARTICIPATION_TYPES = new Set<PublicChannelType>([
   "inscription_evenement",
@@ -80,14 +76,6 @@ export function ParisNetwork3DBubble({
     topPx: number;
     maxHeightPx: number;
   } | null>(null);
-
-  const [selectedArrondissement, setSelectedArrondissement] = useState<number>(1);
-  const associationContact = getParisAssociationContact(actor.id);
-  const dpeDivisionContacts =
-    actor.id === "evt-paris-nettoyages"
-      ? resolveParisCleaningDivisionContacts([selectedArrondissement])
-      : [];
-  const isTownHallActor = actor.id === "mairie-paris-5" || actor.id === "mairie-paris-6";
 
   useLayoutEffect(() => {
     const bubbleEl = bubbleRef.current;
@@ -191,7 +179,7 @@ export function ParisNetwork3DBubble({
       <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-wider text-violet-300">
-            {roleLabels} · {PARIS_ACTOR_CATEGORY_META[actor.category].shortLabel}
+            {roleLabels ? `${roleLabels} · ` : ""}{PARIS_ACTOR_CATEGORY_META[actor.category].shortLabel}
           </p>
           <h3 className="mt-0.5 text-base font-black tracking-tight text-white">
             {actor.name}
@@ -226,6 +214,12 @@ export function ParisNetwork3DBubble({
           <p className="leading-relaxed text-slate-300">{actor.activities[0]}</p>
         ) : null}
 
+        {actor.schoolProfile ? <section className="space-y-1">
+          <p>UAI : {actor.schoolProfile.uai} · {actor.schoolProfile.level === "lycee_general" ? "Lycée général" : "École élémentaire"} · {actor.schoolProfile.sector === "public" ? "Public" : "Privé hors contrat"}</p>
+          {new Set(actor.schoolProfile.addresses.map(a => a.label)).size > 1 ? <p className="text-amber-300">{fr ? "Adresses divergentes, à confirmer." : "Conflicting addresses, to confirm."}</p> : null}
+          <ul>{actor.schoolProfile.addresses.map(a => <li key={a.sourceUrl}><a href={a.sourceUrl} target="_blank" rel="noreferrer" className="underline">{a.label} (source)</a></li>)}</ul>
+        </section> : null}
+        {getScheduledOperationsForActor(actor.id).map(op => <details key={op.id} className="rounded-lg border border-amber-400/30 p-2"><summary className="cursor-pointer font-semibold text-amber-300">{op.label} · {fr ? "programmée" : "scheduled"}</summary><div className="mt-2"><ScheduledOperationDetails operation={op} fr={fr}/></div></details>)}
         {/* 3b. Financement (uniquement si documenté) */}
         {actor.funding && actor.funding.sources.length > 0 ? (
           <div className="rounded-lg border border-emerald-400/25 bg-emerald-500/5 p-2">
@@ -369,82 +363,6 @@ export function ParisNetwork3DBubble({
               ))}
             </ul>
           </div>
-        ) : null}
-
-        {associationContact ? (
-          <div className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-xs text-slate-200">
-            <p className="font-semibold text-white">
-              {fr ? "Contact associatif sourcé" : "Sourced association contact"}
-            </p>
-            {associationContact.email ? (
-              <p className="mt-1">
-                {fr ? "Courriel :" : "Email:"} {associationContact.email}
-              </p>
-            ) : null}
-            <p className="mt-1 text-slate-300">
-              {associationContact.source.title} · {associationContact.source.verifiedOn}
-            </p>
-          </div>
-        ) : null}
-
-        {actor.id === "evt-paris-nettoyages" ? (
-          <div className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-xs text-slate-200">
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-semibold text-white">
-                {fr ? "Divisions DPE (14 secteurs)" : "DPE divisions (14 sectors)"}
-              </p>
-              <select
-                aria-label={fr ? "Arrondissement DPE" : "DPE district"}
-                value={selectedArrondissement}
-                onChange={(e) => setSelectedArrondissement(Number(e.target.value))}
-                className="rounded border border-white/20 bg-slate-900 px-1.5 py-0.5 text-xs text-white"
-              >
-                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n}e
-                  </option>
-                ))}
-              </select>
-            </div>
-            {dpeDivisionContacts.map((div) => (
-              <div key={div.id} className="mt-1.5 space-y-0.5 text-slate-200">
-                <p className="font-medium text-white">{div.label}</p>
-                {div.phone ? <p>{fr ? "Tél. :" : "Phone:"} {div.phone}</p> : null}
-                {div.email ? <p>{fr ? "Courriel :" : "Email:"} {div.email}</p> : null}
-              </div>
-            ))}
-            <p className="mt-1.5 text-slate-300">
-              {fr ? "Adresse administrative :" : "Administrative address:"} {PARIS_DPE_CONTACT.administrativeAddress}
-            </p>
-            <p className="mt-1 text-slate-300">
-              {fr ? "Matériel :" : "Equipment:"}{" "}
-              {PARIS_DPE_CONTACT.logistics.offeredOnRequest.join(", ")} ({fr ? "sur demande" : "on request"}) ·{" "}
-              {PARIS_DPE_CONTACT.logistics.subjectToAvailability.join(", ")} ({fr ? "sous réserve" : "subject to availability"})
-            </p>
-          </div>
-        ) : null}
-
-        {isTownHallActor ? (
-          <details className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-xs text-slate-200">
-            <summary className="cursor-pointer font-semibold text-white">
-              {fr ? "17 mairies d'arrondissement" : "17 district town halls"}
-            </summary>
-            <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto pr-1">
-              {PARIS_MUNICIPAL_TOWN_HALLS.map((th) => (
-                <li key={th.id} className="flex items-center justify-between gap-2">
-                  <span>{th.label}</span>
-                  <a
-                    href={th.officialChannel}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:text-white"
-                  >
-                    {fr ? "Portail" : "Portal"}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </details>
         ) : null}
 
         {/* 7. Source et fraîcheur */}

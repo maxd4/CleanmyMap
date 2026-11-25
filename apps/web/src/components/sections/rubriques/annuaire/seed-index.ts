@@ -5,6 +5,7 @@ import type {
 import { ASSOCIATIONS_ENTRIES } from "./seed-associations";
 import { ENTREPRISES_ENTRIES } from "./seed-entreprises";
 import { EVENEMENTS_ENTRIES } from "./seed-evenements";
+import { SCHOOL_ENTRIES } from "./seed-schools";
 
 function validateUniqueIds(entries: AnnuaireEntrySeedInput[]): void {
   const ids = new Set<string>();
@@ -28,6 +29,7 @@ const allEntries: AnnuaireEntrySeedInput[] = [
   ...ASSOCIATIONS_ENTRIES,
   ...ENTREPRISES_ENTRIES,
   ...EVENEMENTS_ENTRIES,
+  ...SCHOOL_ENTRIES,
 ];
 
 validateUniqueIds(allEntries);

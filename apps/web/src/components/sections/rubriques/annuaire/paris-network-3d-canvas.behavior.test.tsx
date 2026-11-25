@@ -85,6 +85,7 @@ describe("ParisNetwork3DCanvas R3F behavior", () => {
       "2026-11-19",
     );
     const onSelectActor = vi.fn();
+    const onSelectRelation = vi.fn();
     const onHoverActor = vi.fn();
     const onAnchorChange = vi.fn();
     const onWebGLError = vi.fn();
@@ -101,6 +102,7 @@ describe("ParisNetwork3DCanvas R3F behavior", () => {
           selectedActorId: "asso-featured-1",
           hoveredActorId: null,
           onSelectActor,
+          onSelectRelation,
           onHoverActor,
           onAnchorChange,
           animateMotion: true,
@@ -114,6 +116,11 @@ describe("ParisNetwork3DCanvas R3F behavior", () => {
     expect(container.querySelectorAll('[data-testid="drei-line"]')).toHaveLength(
       layout.edges.length,
     );
+
+    const buttons = Array.from(container.querySelectorAll("button")).filter(b => b.getAttribute("aria-label")?.startsWith("Voir la collaboration programmée"));
+    expect(buttons).toHaveLength(3);
+    act(() => { buttons[0]?.click(); });
+    expect(onSelectRelation).toHaveBeenCalledWith(PARIS_CLEANWALK_RELATIONS.find(r=>r.relationType==="collaboration_programmee")?.id);
 
     // Click and hover node label button
     const brigadeBtn = Array.from(container.querySelectorAll("button")).find((b) =>

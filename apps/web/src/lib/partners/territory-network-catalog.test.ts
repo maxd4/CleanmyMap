@@ -199,7 +199,7 @@ describe("territory-network-catalog & ranking", () => {
   it("returns dataset only for Paris pilot FR:REG:11 and null for empty territories", () => {
     const paris = getTerritoryNetworkDataset(DEFAULT_TERRITORY_ID);
     expect(paris?.isPilot).toBe(true);
-    expect(paris?.actors.length).toBe(26);
+    expect(paris?.actors.length).toBe(28);
     expect(getTerritoryNetworkDataset("FR:REG:53")).toBeNull();
     expect(getTerritoryNetworkDataset("OIF:CA-QC")).toBeNull();
   });

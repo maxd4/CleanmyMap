@@ -112,6 +112,7 @@ export const ENTITY_LABELS: Record<AnnuaireEntry["kind"], string> = {
  evenement:"Collectif",
  commerce:"Commerçant·e",
  entreprise:"Entreprise",
+ etablissement_enseignement:"Établissement scolaire",
 };
 
 export const CONTRIBUTION_LABELS: Record<

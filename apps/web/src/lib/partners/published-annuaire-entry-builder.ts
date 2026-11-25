@@ -19,7 +19,7 @@ function organizationTypesToLegacyTypes(organizationType: PartnerOnboardingReque
   return ["social", "environnemental"];
 }
 
-function organizationTypeToKind(organizationType: PartnerOnboardingRequestInput["organizationType"]): AnnuaireEntry["kind"] {
+function organizationTypeToKind(organizationType: PartnerOnboardingRequestInput["organizationType"]): PublishedPartnerAnnuaireEntry["kind"] {
   if (organizationType === "association") return "association";
   if (organizationType === "commerce") return "commerce";
   if (organizationType === "entreprise") return "entreprise";

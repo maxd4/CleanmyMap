@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import React, { act } from "react";
+import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 import { PARIS_CLEANWALK_ACTORS, PARIS_CLEANWALK_RELATIONS } from "@/lib/partners/paris-cleanwalk-network";

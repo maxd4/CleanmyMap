@@ -29,6 +29,8 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { cn } from "@/lib/utils";
 import { ParisNetwork3DBubble } from "./paris-network-3d-bubble";
+import { getScheduledOperation } from "@/lib/partners/paris-cleanwalk-network.scheduled";
+import { ScheduledOperationPanel } from "./paris-network-scheduled-operation";
 import type { ParisNetwork3DCanvasHandle } from "./paris-network-3d-canvas";
 import { ParisNetwork3DFallback } from "./paris-network-3d-fallback";
 import { ParisNetwork3DFiltersBar } from "./paris-network-3d-filters";
@@ -110,6 +112,7 @@ export function ParisNetwork3DSection({
     DEFAULT_PARIS_NETWORK_3D_FILTERS,
   );
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+  const [selectedRelationId, setSelectedRelationId] = useState<string | null>(null);
   const [hoveredActorId, setHoveredActorId] = useState<string | null>(null);
   const [bubbleAnchor, setBubbleAnchor] = useState<{
     leftPercent: number;
@@ -154,11 +157,17 @@ export function ParisNetwork3DSection({
 
   const handleSelectActor = useCallback((actorId: string) => {
     cancelHoverClose();
+    setSelectedRelationId(null);
     setSelectedActorId(actorId);
+  }, [cancelHoverClose]);
+
+  const handleSelectRelation = useCallback((id: string) => {
+    cancelHoverClose(); setSelectedActorId(null); setHoveredActorId(null); setSelectedRelationId(id);
   }, [cancelHoverClose]);
 
   const handleCloseBubble = useCallback(() => {
     cancelHoverClose();
+    setSelectedRelationId(null);
     setSelectedActorId(null);
     setHoveredActorId(null);
   }, [cancelHoverClose]);
@@ -168,7 +177,7 @@ export function ParisNetwork3DSection({
   }, [cancelHoverClose]);
 
   useEffect(() => {
-    if (!selectedActorId && !hoveredActorId) return;
+    if (!selectedActorId && !hoveredActorId && !selectedRelationId) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         handleCloseBubble();
@@ -176,7 +185,7 @@ export function ParisNetwork3DSection({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedActorId, hoveredActorId, handleCloseBubble]);
+  }, [selectedActorId, hoveredActorId, selectedRelationId, handleCloseBubble]);
 
   useEffect(() => {
     const element = sectionRef.current;
@@ -269,6 +278,7 @@ export function ParisNetwork3DSection({
     (territory: TerritoryEntry) => {
       manualSelectionRef.current = true;
       setSelectedTerritoryId(territory.id);
+      setSelectedRelationId(null);
       setSelectedActorId(null);
       setHoveredActorId(null);
       onTerritoryChange?.(territory.id);
@@ -325,6 +335,8 @@ export function ParisNetwork3DSection({
     [filtered.actors, activeActorId],
   );
 
+  const selectedRelation = filtered.relations.find(r => r.id === selectedRelationId);
+  const selectedOperation = selectedRelation?.relationType === "collaboration_programmee" ? getScheduledOperation(selectedRelation.operationId) : undefined;
   const show3DCanvas = sceneActive && webglAvailable && viewMode === "3d";
   const surfaceClassName = cn(
     "relative overflow-hidden rounded-[var(--radius-lg)] border border-violet-300/18 p-6 md:p-8",
@@ -470,7 +482,7 @@ export function ParisNetwork3DSection({
           <>
             <ParisNetwork3DFiltersBar
               filters={filters}
-              onChange={setFilters}
+              onChange={next => { setSelectedRelationId(null); setFilters(next); }}
               actorCount={filtered.actors.length}
               relationCount={filtered.relations.length}
               fr={fr}
@@ -488,6 +500,7 @@ export function ParisNetwork3DSection({
                     selectedActorId={selectedActorId}
                     hoveredActorId={hoveredActorId}
                     onSelectActor={handleSelectActor}
+                  onSelectRelation={handleSelectRelation}
                     onHoverActor={handleHoverActor}
                     reason="webgl_unavailable"
                     fr={fr}
@@ -502,7 +515,9 @@ export function ParisNetwork3DSection({
                   selectedActorId={selectedActorId}
                   hoveredActorId={hoveredActorId}
                   onSelectActor={handleSelectActor}
+                  onSelectRelation={handleSelectRelation}
                   onHoverActor={handleHoverActor}
+                  fr={fr}
                   onAnchorChange={setBubbleAnchor}
                   animateMotion={animateMotion}
                   isOffscreen={isOffscreen}
@@ -534,13 +549,15 @@ export function ParisNetwork3DSection({
               selectedActorId={selectedActorId}
               hoveredActorId={hoveredActorId}
               onSelectActor={handleSelectActor}
+                  onSelectRelation={handleSelectRelation}
               onHoverActor={handleHoverActor}
               reason={webglAvailable ? "user_selected" : "webgl_unavailable"}
               fr={fr}
             />
           ))}
 
-          {activeActor ? (
+          {selectedOperation ? <ScheduledOperationPanel operation={selectedOperation} onClose={handleCloseBubble} fr={fr}/> : null}
+          {activeActor && !selectedOperation ? (
             <ParisNetwork3DBubble
               actor={activeActor}
               isLocked={selectedActorId === activeActor.id}

@@ -1,9 +1,12 @@
+import type { SchoolIdentityProfile } from "./annuaire-types";
+
 export type ParisActorCategory =
   | "association_locale"
   | "entreprise_rse"
   | "collectivite_mairie"
   | "reseau_evenement"
-  | "plateforme_mise_en_relation";
+  | "plateforme_mise_en_relation"
+  | "etablissement_enseignement";
 
 export type ParisActorOperationalRole =
   | "organisateur_effectif"
@@ -36,7 +39,8 @@ export type ParisRelationType =
   | "partenariat"
   | "soutien_rse"
   | "appui_logistique"
-  | "presence_evenement";
+  | "presence_evenement"
+  | "collaboration_programmee";
 
 export type PublicChannelType =
   | "site_officiel"
@@ -125,6 +129,7 @@ export interface ParisCleanwalkActor {
   roles: ParisActorOperationalRole[];
   ecosystemRoles: ParisEcosystemRole[];
   publicLeader: ParisActorPublicLeader | null;
+  schoolProfile?: SchoolIdentityProfile;
   officialWebsite: string;
   publicContact: ParisActorPublicContact | null;
   publicChannels: ParisActorPublicChannel[];
@@ -155,11 +160,10 @@ export interface ProvenJointOperation {
   sourceUrl: string;
 }
 
-export interface ParisCleanwalkRelation {
+interface ParisCleanwalkRelationBase {
   id: string;
   sourceId: string;
   targetId: string;
-  relationType: ParisRelationType;
   title: string;
   summary: string;
   /**
@@ -169,13 +173,23 @@ export interface ParisCleanwalkRelation {
    */
   operations?: ProvenJointOperation[];
   frequencyKnown: boolean;
-  source: {
-    label: string;
-    url: string;
-    verifiedAt: string;
-    certainty: VerificationCertainty;
-  };
 }
+
+export interface HistoricalParisCleanwalkRelation extends ParisCleanwalkRelationBase {
+  relationType: Exclude<ParisRelationType, "collaboration_programmee">;
+  operationId?: never;
+  source: { label: string; url: string; verifiedAt: string; certainty: VerificationCertainty };
+}
+
+export interface ScheduledParisCleanwalkRelation extends ParisCleanwalkRelationBase {
+  relationType: "collaboration_programmee";
+  operationId: string;
+  operations?: never;
+  frequencyKnown: false;
+  source: { label: string; url: null; declaredOn: string; certainty: "partiel_ou_incertain"; provenance: "declaration_organisateur" };
+}
+
+export type ParisCleanwalkRelation = HistoricalParisCleanwalkRelation | ScheduledParisCleanwalkRelation;
 
 export const RELATION_THICKNESS_POLICY = {
   minThickness: 1.5,
@@ -279,6 +293,7 @@ export const PARIS_ACTOR_CATEGORY_META: Record<
   ParisActorCategory,
   { label: string; shortLabel: string; colorHex: string }
 > = {
+  etablissement_enseignement: { label: "Établissements scolaires", shortLabel: "Écoles et lycées", colorHex: "#34d399" },
   association_locale: {
     label: "Associations et collectifs locaux",
     shortLabel: "Associations",
@@ -339,6 +354,7 @@ export const PARIS_RELATION_TYPE_META: Record<
   ParisRelationType,
   { label: string; colorHex: string; dashPattern: "solid" | "dashed" | "dotted" }
 > = {
+  collaboration_programmee: { label: "Collaboration programmée (déclarée)", colorHex: "#fbbf24", dashPattern: "dashed" },
   action_commune: {
     label: "Coorganise avec / action commune prouvée",
     colorHex: "#c4b5fd",

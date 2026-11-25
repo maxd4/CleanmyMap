@@ -25,6 +25,8 @@ interface ParisNetwork3DCanvasProps {
   selectedActorId: string | null;
   hoveredActorId: string | null;
   onSelectActor: (actorId: string) => void;
+  onSelectRelation?: (relationId: string) => void;
+  fr?: boolean;
   onHoverActor: (actorId: string | null) => void;
   onAnchorChange?: (anchor: { leftPercent: number; topPercent: number } | null) => void;
   animateMotion: boolean;
@@ -135,10 +137,14 @@ function RelationLineEdge({
   edge,
   isHighlighted,
   isDimmed,
+  onSelect,
+  fr,
 }: {
   edge: ParisNetwork3DEdge;
   isHighlighted: boolean;
   isDimmed: boolean;
+  onSelect?: () => void;
+  fr: boolean;
 }) {
   const points = useMemo<[number, number, number][]>(
     () => [edge.sourcePosition, edge.targetPosition],
@@ -149,10 +155,14 @@ function RelationLineEdge({
   const dashSize = edge.dashPattern === "dotted" ? 0.14 : 0.32;
   const gapSize = edge.dashPattern === "dotted" ? 0.16 : 0.2;
 
+  const scheduled = edge.relation.relationType === "collaboration_programmee";
+  const midpoint: [number, number, number] = [0,1,2].map(i => (edge.sourcePosition[i] + edge.targetPosition[i]) / 2) as [number, number, number];
   return (
+    <>
     <Line
       points={points}
-      color={isHighlighted ? "#f5f3ff" : edge.colorHex}
+      onClick={scheduled && onSelect ? (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(); } : undefined}
+      color={isHighlighted && !scheduled ? "#f5f3ff" : edge.colorHex}
       lineWidth={isHighlighted ? edge.thickness + 1.1 : edge.thickness}
       dashed={dashed}
       dashSize={dashSize}
@@ -160,6 +170,8 @@ function RelationLineEdge({
       transparent
       opacity={isDimmed ? 0.14 : isHighlighted ? 0.98 : 0.72}
     />
+    {scheduled && onSelect ? <Html position={midpoint} center distanceFactor={12} zIndexRange={[4,0]}><button type="button" aria-label={`${fr ? "Voir la collaboration programmée" : "View scheduled collaboration"} ${edge.relation.id}`} className="rounded border border-amber-400/70 bg-slate-950 px-2 py-1 text-xs font-semibold text-amber-300 focus-visible:ring-2 focus-visible:ring-amber-400" onClick={event=>{event.stopPropagation();onSelect();}}>{fr ? "Programmée" : "Scheduled"}</button></Html> : null}
+    </>
   );
 }
 
@@ -261,6 +273,8 @@ export const ParisNetwork3DCanvas = forwardRef<
     selectedActorId,
     hoveredActorId,
     onSelectActor,
+    onSelectRelation,
+    fr = true,
     onHoverActor,
     onAnchorChange,
     animateMotion,
@@ -325,6 +339,8 @@ export const ParisNetwork3DCanvas = forwardRef<
               edge={edge}
               isHighlighted={isHighlighted}
               isDimmed={isDimmed}
+              fr={fr}
+              onSelect={onSelectRelation ? () => onSelectRelation(edge.relation.id) : undefined}
             />
           );
         })}

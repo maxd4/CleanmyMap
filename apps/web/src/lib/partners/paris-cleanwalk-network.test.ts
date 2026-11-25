@@ -12,10 +12,10 @@ import {
 } from "./paris-cleanwalk-network";
 
 describe("paris-cleanwalk-network registry contract", () => {
-  it("includes all 26 required Paris ecosystem actors and platforms with unique IDs", () => {
+  it("includes all 28 required Paris ecosystem actors and platforms with unique IDs", () => {
     const ids = PARIS_CLEANWALK_ACTORS.map((actor) => actor.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(PARIS_CLEANWALK_ACTORS).toHaveLength(26);
+    expect(PARIS_CLEANWALK_ACTORS).toHaveLength(28);
 
     const names = PARIS_CLEANWALK_ACTORS.map((actor) => actor.name);
     for (const required of [
@@ -226,7 +226,9 @@ describe("paris-cleanwalk-network registry contract", () => {
     for (const relation of PARIS_CLEANWALK_RELATIONS) {
       expect(actorIds.has(relation.sourceId)).toBe(true);
       expect(actorIds.has(relation.targetId)).toBe(true);
-      expect(isSafeHttpUrl(relation.source.url)).toBe(true);
+      if (relation.relationType === "collaboration_programmee") {
+        expect(relation.source.url).toBeNull(); expect(relation.source.provenance).toBe("declaration_organisateur"); expect(relation.operations).toBeUndefined();
+      } else expect(isSafeHttpUrl(relation.source.url)).toBe(true);
     }
 
     const relationIds = new Set(PARIS_CLEANWALK_RELATIONS.map((rel) => rel.id));

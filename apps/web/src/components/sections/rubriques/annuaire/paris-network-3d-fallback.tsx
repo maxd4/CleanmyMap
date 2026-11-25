@@ -17,6 +17,7 @@ interface ParisNetwork3DFallbackProps {
   selectedActorId: string | null;
   hoveredActorId: string | null;
   onSelectActor: (actorId: string) => void;
+  onSelectRelation?: (relationId: string) => void;
   onHoverActor: (actorId: string | null) => void;
   reason: "webgl_unavailable" | "user_selected";
   fr: boolean;
@@ -28,6 +29,7 @@ const CATEGORY_ORDER: ParisActorCategory[] = [
   "collectivite_mairie",
   "entreprise_rse",
   "plateforme_mise_en_relation",
+  "etablissement_enseignement",
 ];
 
 export function ParisNetwork3DFallback({
@@ -36,6 +38,7 @@ export function ParisNetwork3DFallback({
   selectedActorId,
   hoveredActorId,
   onSelectActor,
+  onSelectRelation,
   onHoverActor,
   reason,
   fr,
@@ -104,8 +107,8 @@ export function ParisNetwork3DFallback({
                     );
 
                     return (
+                      <div key={actor.id} className="space-y-1">
                       <button
-                        key={actor.id}
                         type="button"
                         onClick={() => onSelectActor(actor.id)}
                         onMouseEnter={() => onHoverActor(actor.id)}
@@ -132,9 +135,9 @@ export function ParisNetwork3DFallback({
                         <p className="mt-1 text-xs text-slate-300">
                           {EQUIPMENT_STATUS_LABELS[actor.equipmentAvailability.status]}
                         </p>
-                        {actorLinks.length > 0 ? (
+                        {actorLinks.some(rel => rel.relationType !== "collaboration_programmee") ? (
                           <div className="mt-2 flex flex-wrap gap-1">
-                            {actorLinks.map((rel) => {
+                            {actorLinks.filter(rel => rel.relationType !== "collaboration_programmee").map((rel) => {
                               const peerId =
                                 rel.sourceId === actor.id ? rel.targetId : rel.sourceId;
                               const { operationsCount12m } =
@@ -155,6 +158,8 @@ export function ParisNetwork3DFallback({
                           </div>
                         ) : null}
                       </button>
+                      {actorLinks.filter(rel=>rel.relationType==="collaboration_programmee").map(rel => <button key={rel.id} type="button" onClick={()=>onSelectRelation?.(rel.id)} disabled={!onSelectRelation} className="rounded-md border border-dashed border-amber-400/60 bg-amber-500/10 px-2 py-1 text-left text-xs font-semibold text-amber-300 focus-visible:ring-2 focus-visible:ring-amber-400">{fr ? PARIS_RELATION_TYPE_META[rel.relationType].label : "Scheduled collaboration (declared)"} : {actorNameById.get(rel.sourceId===actor.id?rel.targetId:rel.sourceId)}</button>)}
+                      </div>
                     );
                   })}
                 </div>

@@ -75,8 +75,8 @@ export function ParisNetwork3DLegend({ fr }: { fr: boolean }) {
           </p>
           <p className="leading-relaxed text-slate-300">
             {fr
-              ? "Fréquence inconnue = épaisseur neutre (jamais 0 inventé). Aucun lien n'implique une appartenance au réseau CleanMyMap."
-              : "Unknown frequency = neutral thickness (never invented 0). No link implies CleanMyMap network membership."}
+              ? "Collaborations programmées (ambre, tirets) exclues des opérations historiques. Fréquence inconnue = épaisseur neutre (jamais 0 inventé). Aucun lien n'implique une appartenance au réseau CleanMyMap."
+              : "Scheduled collaborations (amber dashed) are excluded from historical operations. Unknown frequency = neutral thickness (never invented 0). No link implies CleanMyMap network membership."}
           </p>
         </div>
       </div>

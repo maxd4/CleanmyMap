@@ -14,6 +14,7 @@ export const KIND_FILTERS: Array<{ id: string; value: EntityKind | "all"; label:
   { id: "entreprise", value: "entreprise", label: "Entreprises" },
   { id: "groupe_parole", value: "groupe_parole", label: "Collectifs" },
   { id: "evenement", value: "evenement", label: "Collectifs événementiels" },
+  { id: "etablissement_enseignement", value: "etablissement_enseignement", label: "Établissements scolaires" },
 ];
 
 export const CONTRIBUTION_FILTERS: Array<{
