@@ -4,6 +4,8 @@
 
 ## Dossiers réellement présents
 
+- [vulgarisation-ui/README_CODEX.md](./vulgarisation-ui/README_CODEX.md) : refonte Web de Vulgarisation, six onglets, palette Apprendre, contenus scientifiques et correction des cartes vides, PLAN/CANDIDATE.
+
 - [design-system-premium/README_CODEX.md](./design-system-premium/README_CODEX.md) : canvas neutre, palettes de famille, primitives et onglets, convergence Web et contrats, PLAN/CANDIDATE.
 
 - [annuaire-ui/README_CODEX.md](./annuaire-ui/README_CODEX.md) : refonte ciblée de l'Annuaire Web, PLAN/CANDIDATE, correctif initial des cartes et lots d'intégration.

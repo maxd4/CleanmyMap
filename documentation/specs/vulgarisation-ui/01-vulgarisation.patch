@@ -1,0 +1,3325 @@
+diff --git a/apps/web/src/app/learn/comprendre/client.tsx b/apps/web/src/app/learn/comprendre/client.tsx
+index 1a7538de1a517939638a196a24e6c5fc1bf6af0a..0f021c9468fd5b0939a02c4791399082eefac1cd 100644
+--- a/apps/web/src/app/learn/comprendre/client.tsx
++++ b/apps/web/src/app/learn/comprendre/client.tsx
+@@ -1,20 +1,12 @@
+ "use client";
+ 
+-import { LearnComprendreVisualIntro } from "@/components/learn/learn-comprendre-visual-intro";
+ import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
+ import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
+-import { EnvironmentalPolicyExplorer } from "@/components/learn/environmental-policy-explorer";
+-import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
++import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
+ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+ import type { EnvironmentalPolicyRecord } from "@/lib/learning/policies/environmental-policy-registry";
+ import type { PresidentialPublicArchive } from "@/lib/learning/policies/presidential-environmental-corpus";
+-import {
+-  LearnDeepDiveSection,
+-  LearnDirectPathSection,
+-  LearnReadingFlowSection,
+-  LearnReferenceSystemsSection,
+-  LearnScaleSection,
+-} from "./learn-comprendre-sections";
++import { LearnComprendreTabs } from "./learn-comprendre-tabs";
+ 
+ type LearnComprendrePageContentProps = {
+   publishedPolicies: EnvironmentalPolicyRecord[];
+@@ -23,56 +15,24 @@
+ 
+ export default function LearnComprendrePageContent({ publishedPolicies, presidentialArchive }: LearnComprendrePageContentProps) {
+   const { locale } = useSitePreferences();
+-  const understandCard = LEARN_OVERVIEW_CARDS[locale][0];
+ 
+   return (
+     <LearnRubricShell
+-      title={{ fr: "Vulgarisation", en: "Explanation" }}
+-      subtitle={{
+-        fr: "Rendre le contexte lisible sans perdre l'échelle",
+-        en: "Make the context readable without losing scale",
+-      }}
++      title={{ fr: "Vulgarisation", en: "Environmental science" }}
++      subtitle={{ fr: "Comprendre les enjeux environnementaux", en: "Understand environmental challenges" }}
+       description={{
+-        fr: "Cette page rend les repères scientifiques plus lisibles, garde les ordres de grandeur et relie les calculs à la méthodologie.",
+-        en: "This page makes scientific cues easier to read, keeps orders of magnitude and links the calculations to methodology.",
++        fr: "Des notions essentielles aux données scientifiques : explorez les impacts, les grands enjeux planétaires et les réponses collectives.",
++        en: "From essential concepts to scientific evidence: explore impacts, planetary challenges and collective responses.",
+       }}
+       backHref="/explorer"
+       backLabel={{ fr: "Retour au sommaire", en: "Back to summary" }}
+       accent="yellow"
+-      highlights={[
+-        { fr: "Vulgarisation", en: "Explanation" },
+-        { fr: "Ordres de grandeur", en: "Orders of magnitude" },
+-        { fr: "Méthodologie", en: "Methodology" },
+-      ]}
+-      cta={{
+-        href: "/learn/sentrainer",
+-        label: { fr: "Passer au quiz", en: "Go to quiz" },
+-      }}
++      showVisualPanel={false}
++      cta={{ href: "/learn/sentrainer", label: { fr: "S'entraîner", en: "Practise" }, tone: "primary" }}
+     >
+       <LearnPageVisitTracker pageId="comprendre" />
+-      <div className="space-y-8">
+-        <LearnComprendreVisualIntro
+-          locale={locale}
+-          card={understandCard}
+-          question={locale === "fr" ? "Vulgariser avant d'agir" : "Explain it clearly before acting"}
+-          clue={
+-            locale === "fr"
+-              ? "Repères, ordres de grandeur et méthode se lisent ensemble avant de passer au geste."
+-              : "Cues, orders of magnitude and method are read together before moving to action."
+-          }
+-          action={{
+-            href: "/learn/sentrainer",
+-            label: locale === "fr" ? "Passer au quiz" : "Go to quiz",
+-          }}
+-          className="border-amber-200 bg-white/88"
+-        />
+-        <EnvironmentalPolicyExplorer publishedPolicies={publishedPolicies} presidentialArchive={presidentialArchive} />
+-        <LearnDirectPathSection locale={locale} />
+-        <LearnReadingFlowSection locale={locale} />
+-        <LearnScaleSection locale={locale} />
+-        <LearnReferenceSystemsSection locale={locale} />
+-        <LearnDeepDiveSection locale={locale} />
+-      </div>
++      <LearnComprendreTabs locale={locale} publishedPolicies={publishedPolicies} presidentialArchive={presidentialArchive} />
++      <LearnBlockJourneySection locale={locale} currentPageId="comprendre" compact />
+     </LearnRubricShell>
+   );
+ }
+diff --git a/apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx b/apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx
+index 78c55068600941b90e2b8be108122e13f8ed527c..854225ca937efe30e04b5eb83e2ea05c9762b811 100644
+--- a/apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx
++++ b/apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx
+@@ -1,5 +1,6 @@
++import { ArrowRight, Calculator, Droplets, Globe, Palette, Target, Zap } from "lucide-react";
+ import { CmmButton } from "@/components/ui/cmm-button";
+-
++import { CmmCard } from "@/components/ui/cmm-card";
+ import {
+   DeferredGIECContent,
+   DeferredImpactOrderOfMagnitudeSection,
+@@ -8,161 +9,90 @@
+   DeferredPlanetaryBoundariesInteractive,
+   DeferredSustainableGoalsInteractive,
+ } from "@/components/learn/learn-deferred-panels";
+-import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
+ import { LearnComprendreSsrContent } from "@/components/learn/learn-comprendre-ssr-content";
++import { LearnComprendreVisualIntro } from "@/components/learn/learn-comprendre-visual-intro";
+ import { LearnVulgarisationPathSection } from "@/components/learn/learn-vulgarisation-path-section";
++import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
+ import type { Locale } from "@/lib/ui/preferences";
++import type { LucideIcon } from "lucide-react";
+ 
+-type ProgressCueProps = {
+-  eyebrow: string;
+-  title: string;
+-  detail: string;
+-};
++type Localized = { fr: string; en: string };
+ 
+-function ProgressCue({ eyebrow, title, detail }: ProgressCueProps) {
++function ThemeIntroduction({ locale, icon: Icon, title, description }: {
++  locale: Locale; icon: LucideIcon; title: Localized; description: Localized;
++}) {
+   return (
+-    <section className="rounded-[1.4rem] border border-amber-200 bg-amber-50/80 p-4 shadow-sm md:p-5">
+-      <div className="max-w-3xl space-y-2">
+-        <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">
+-          {eyebrow}
+-        </p>
+-        <h4 className="text-lg font-black tracking-tight text-slate-900 md:text-xl">{title}</h4>
+-        <p className="cmm-text-body">{detail}</p>
++    <CmmCard tone="family" as="section" className="flex items-start gap-4 md:items-center">
++      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-amber-800 shadow-sm">
++        <Icon className="h-6 w-6" aria-hidden="true" />
++      </span>
++      <div className="min-w-0 space-y-1">
++        <h2 className="text-2xl font-bold tracking-tight cmm-text-primary">{title[locale]}</h2>
++        <p className="cmm-text-body">{description[locale]}</p>
+       </div>
+-    </section>
++    </CmmCard>
+   );
+ }
+ 
+-export function LearnDirectPathSection({ locale }: { locale: Locale }) {
++export function LearnReadingFlowSection({ locale }: { locale: Locale }) {
+   return (
+-    <section className="rounded-[1.6rem] border border-amber-200 bg-white p-5 shadow-sm md:p-6">
+-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+-        <div className="max-w-3xl space-y-2">
+-          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">
+-            {locale === "fr" ? "Chemin direct" : "Direct path"}
+-          </p>
+-          <h3 className="text-2xl font-black tracking-tight text-slate-900">
+-            {locale === "fr"
+-              ? "Aller au quiz, garder la méthodologie sous la main"
+-              : "Go to the quiz, keep methodology close"}
+-          </h3>
+-          <p className="cmm-text-body">
+-            {locale === "fr"
+-              ? "Le quiz reste le prochain geste. La méthodologie sert de repère secondaire quand il faut creuser un point."
+-              : "The quiz is the next step. Methodology stays as a secondary reference when you need to dig deeper."}
+-          </p>
+-        </div>
+-        <div className="flex flex-wrap gap-3">
+-          <CmmButton href="/learn/sentrainer" tone="critical" variant="pill" size="md" className="w-full sm:w-auto">
+-            {locale === "fr" ? "Passer au quiz" : "Go to the quiz"}
+-          </CmmButton>
+-          <CmmButton href="/methodologie" tone="secondary" variant="pill" size="md" className="w-full sm:w-auto">
+-            {locale === "fr" ? "Voir la méthodologie" : "See the methodology"}
+-          </CmmButton>
+-        </div>
+-      </div>
+-    </section>
++    <>
++      <LearnComprendreVisualIntro locale={locale} card={LEARN_OVERVIEW_CARDS[locale][0]}
++        question={locale === "fr" ? "Comment lire un chiffre environnemental ?" : "How should we read an environmental figure?"}
++        clue={locale === "fr" ? "Vérifier ce qui est mesuré, la méthode du calcul et les limites avant de tirer une conclusion." : "Check what is measured, the calculation method and its limitations before drawing a conclusion."}
++        action={{ href: "/methodologie", label: locale === "fr" ? "Voir la méthodologie" : "Read the methodology" }} />
++      <LearnComprendreSsrContent locale={locale} />
++      <LearnVulgarisationPathSection locale={locale} />
++    </>
+   );
+ }
+ 
+-export function LearnReadingFlowSection({ locale }: { locale: Locale }) {
++export function LearnScaleSection({ locale }: { locale: Locale }) {
++  const fr = locale === "fr";
+   return (
+-    <section className="space-y-6">
+-      <div className="max-w-3xl space-y-2">
+-        <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">
+-          {locale === "fr" ? "Fil de lecture" : "Reading flow"}
+-        </p>
+-        <h3 className="text-2xl font-black tracking-tight text-slate-900">
+-          {locale === "fr" ? "Contexte, repères, méthode, puis systèmes" : "Context, cues, method, then systems"}
+-        </h3>
+-        <p className="cmm-text-body">
+-          {locale === "fr"
+-            ? "Chaque bloc tient une seule idée. La page avance du cadrage vers l'échelle, puis vers les cadres de référence."
+-            : "Each block carries a single idea. The page moves from framing to scale, then to reference systems."}
+-        </p>
++    <>
++      <ThemeIntroduction locale={locale} icon={Calculator}
++        title={{ fr: "Comparer des ordres de grandeur", en: "Compare orders of magnitude" }}
++        description={{ fr: "Manipulez les deux outils existants pour relier une quantité à une échelle compréhensible, sans confondre un proxy et une mesure.", en: "Use the two existing tools to connect a quantity to an understandable scale without confusing a proxy with a measurement." }} />
++      <DeferredLearnVulgarisationMagnitudeComparator locale={locale} />
++      <DeferredImpactOrderOfMagnitudeSection locale={locale} />
++      <div className="grid gap-3 md:grid-cols-2">
++        <CmmCard tone="family" className="space-y-3">
++          <Droplets className="h-6 w-6 text-sky-700" aria-hidden="true" />
++          <h3 className="text-lg font-bold cmm-text-primary">{fr ? "Pollution de l'eau ≠ consommation d'eau" : "Water pollution ≠ water consumption"}</h3>
++          <p className="cmm-text-body">{fr ? "Un volume d'eau potentiellement exposé à la pollution d'un mégot ne constitue pas un volume réellement économisé ou dépollué." : "A volume potentially exposed to cigarette-butt pollution is not a measured volume saved or cleaned."}</p>
++          <CmmButton href="/methodologie" tone="secondary" size="sm">{fr ? "Facteurs et limites" : "Factors and limitations"} <ArrowRight className="h-4 w-4" aria-hidden="true" /></CmmButton>
++        </CmmCard>
++        <CmmCard tone="family" className="space-y-3">
++          <Zap className="h-6 w-6 text-amber-800" aria-hidden="true" />
++          <h3 className="text-lg font-bold cmm-text-primary">{fr ? "Énergie, carbone et IA" : "Energy, carbon and AI"}</h3>
++          <p className="cmm-text-body">{fr ? "Une consommation électrique et les émissions associées dépendent d'unités et d'hypothèses distinctes. Explorez le calculateur d'empreinte IA et ses incertitudes." : "Electricity use and associated emissions depend on different units and assumptions. Explore the AI footprint calculator and its uncertainties."}</p>
++          <CmmButton href="/learn/empreinte-ia" tone="secondary" size="sm">{fr ? "Mon empreinte IA" : "My AI footprint"} <ArrowRight className="h-4 w-4" aria-hidden="true" /></CmmButton>
++        </CmmCard>
+       </div>
+-      <LearnVulgarisationPathSection locale={locale} />
+-      <LearnComprendreSsrContent locale={locale} />
+-      <ProgressCue
+-        eyebrow={locale === "fr" ? "À retenir" : "Keep in mind"}
+-        title={locale === "fr" ? "Lire le contexte avant de comparer" : "Read the context before comparing"}
+-        detail={
+-          locale === "fr"
+-            ? "Le cadrage et la méthode évitent de surinterpréter le chiffre brut."
+-            : "Framing and method prevent overreading the raw number."
+-        }
+-      />
+-    </section>
++    </>
+   );
+ }
+ 
+-export function LearnScaleSection({ locale }: { locale: Locale }) {
++export function LearnClimateSection({ locale }: { locale: Locale }) {
+   return (
+     <>
+-      <div className="space-y-4">
+-        <div className="max-w-3xl space-y-2">
+-          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">
+-            {locale === "fr" ? "Repères d'échelle" : "Scale cues"}
+-          </p>
+-          <h3 className="text-2xl font-black tracking-tight text-slate-900">
+-            {locale === "fr" ? "Comparer avant d'interpréter" : "Compare before interpreting"}
+-          </h3>
+-          <p className="cmm-text-body">
+-            {locale === "fr"
+-              ? "Le comparateur et le calcul d'impact servent de pont entre le chiffre brut et la lecture utile."
+-              : "The comparator and impact calculator bridge the raw number and a useful reading."}
+-          </p>
+-        </div>
+-        <DeferredLearnVulgarisationMagnitudeComparator locale={locale} />
+-        <DeferredImpactOrderOfMagnitudeSection locale={locale} />
+-      </div>
+-      <ProgressCue
+-        eyebrow={locale === "fr" ? "Pour aller plus loin" : "Go deeper"}
+-        title={
+-          locale === "fr"
+-            ? "Passer des ordres de grandeur aux cadres de référence"
+-            : "Move from orders of magnitude to reference frameworks"
+-        }
+-        detail={
+-          locale === "fr"
+-            ? "Le comparateur prépare la lecture du GIEC, des limites planétaires et des objectifs durables."
+-            : "The comparator prepares the reading of the IPCC, planetary boundaries and sustainable goals."
+-        }
+-      />
++      <ThemeIntroduction locale={locale} icon={Globe}
++        title={{ fr: "Climat et limites planétaires", en: "Climate and planetary boundaries" }}
++        description={{ fr: "Les rapports du GIEC synthétisent la recherche climatique ; les limites planétaires décrivent des processus distincts du système Terre. Ces cadres ne mesurent pas l'impact individuel.", en: "IPCC reports synthesize climate research; planetary boundaries describe distinct Earth-system processes. Neither framework measures individual impact." }} />
++      <DeferredGIECContent locale={locale} />
++      <DeferredPlanetaryBoundariesInteractive locale={locale} />
+     </>
+   );
+ }
+ 
+-export function LearnReferenceSystemsSection({ locale }: { locale: Locale }) {
++export function LearnGoalsSection({ locale }: { locale: Locale }) {
+   return (
+     <>
+-      <div className="space-y-4">
+-        <div className="max-w-3xl space-y-2">
+-          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">
+-            {locale === "fr" ? "Systèmes de référence" : "Reference systems"}
+-          </p>
+-          <h3 className="text-2xl font-black tracking-tight text-slate-900">
+-            {locale === "fr" ? "Les cadres plus larges viennent ensuite" : "Broader frameworks come next"}
+-          </h3>
+-          <p className="cmm-text-body">
+-            {locale === "fr"
+-              ? "On quitte le cas individuel pour les grands repères scientifiques et les cadres qui aident à situer l'action."
+-              : "We move from the individual case to the larger scientific references and the frames that help situate action."}
+-          </p>
+-        </div>
+-        <DeferredGIECContent locale={locale} />
+-        <DeferredPlanetaryBoundariesInteractive locale={locale} />
+-        <DeferredSustainableGoalsInteractive locale={locale} />
+-      </div>
+-      <ProgressCue
+-        eyebrow={locale === "fr" ? "En synthèse" : "In summary"}
+-        title={locale === "fr" ? "Relier les cadres pour situer l'action" : "Connect the frameworks to situate action"}
+-        detail={
+-          locale === "fr"
+-            ? "GIEC, limites planétaires et objectifs durables donnent un même langage pour décider."
+-            : "IPCC, planetary boundaries and sustainable goals provide a shared language for decisions."
+-        }
+-      />
++      <ThemeIntroduction locale={locale} icon={Target}
++        title={{ fr: "Les objectifs de développement durable", en: "The Sustainable Development Goals" }}
++        description={{ fr: "Explorez les 17 objectifs de l'ONU, adoptés en 2015 à l'horizon 2030. Les cibles et indicateurs sont un cadre collectif, pas une preuve automatique des résultats d'une cleanwalk.", en: "Explore the UN's 17 goals adopted in 2015 for 2030. Targets and indicators are a collective framework, not automatic evidence of a clean-up's results." }} />
++      <DeferredSustainableGoalsInteractive locale={locale} />
+     </>
+   );
+ }
+@@ -170,23 +100,10 @@
+ export function LearnDeepDiveSection({ locale }: { locale: Locale }) {
+   return (
+     <>
+-      <div className="space-y-4">
+-        <div className="max-w-3xl space-y-2">
+-          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">
+-            {locale === "fr" ? "Approfondissements" : "Deep dives"}
+-          </p>
+-          <h3 className="text-2xl font-black tracking-tight text-slate-900">
+-            {locale === "fr" ? "À ouvrir si l'on veut voir plus large" : "Open if you want the wider picture"}
+-          </h3>
+-          <p className="cmm-text-body">
+-            {locale === "fr"
+-              ? "Ces blocs prolongent la lecture après le repère principal. Ils n'ouvrent pas la page, ils l'étendent."
+-              : "These blocks extend the reading after the main cue. They do not define the page; they extend it."}
+-          </p>
+-        </div>
+-        <DeferredLearnArtworkAccordion locale={locale} />
+-      </div>
+-      <LearnBlockJourneySection locale={locale} currentPageId="comprendre" compact />
++      <ThemeIntroduction locale={locale} icon={Palette}
++        title={{ fr: "Art et environnement", en: "Art and environment" }}
++        description={{ fr: "Des œuvres et démarches artistiques questionnent la consommation, les déchets et notre rapport aux milieux naturels. L'art sensibilise ; il ne remplace pas une preuve scientifique.", en: "Artworks and artistic practices question consumption, waste and our relationship with nature. Art raises awareness; it does not replace scientific evidence." }} />
++      <DeferredLearnArtworkAccordion locale={locale} />
+     </>
+   );
+ }
+diff --git a/apps/web/src/app/learn/comprendre/learn-comprendre-tabs.tsx b/apps/web/src/app/learn/comprendre/learn-comprendre-tabs.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..86d2d6fc82318fb5e843518f1ca30341f6c73414
+--- /dev/null
++++ b/apps/web/src/app/learn/comprendre/learn-comprendre-tabs.tsx
+@@ -0,0 +1,102 @@
++"use client";
++
++import { useId, useState, type KeyboardEvent } from "react";
++import { BookOpen, Calculator, Globe, Landmark, Palette, Target } from "lucide-react";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { EnvironmentalPolicyExplorer } from "@/components/learn/environmental-policy-explorer";
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
++import type { EnvironmentalPolicyRecord } from "@/lib/learning/policies/environmental-policy-registry";
++import type { PresidentialPublicArchive } from "@/lib/learning/policies/presidential-environmental-corpus";
++import type { Locale } from "@/lib/ui/preferences";
++import {
++  LearnDeepDiveSection,
++  LearnReadingFlowSection,
++  LearnClimateSection,
++  LearnGoalsSection,
++  LearnScaleSection,
++} from "./learn-comprendre-sections";
++
++const THEMES = [
++  { id: "reperes", icon: BookOpen, label: { fr: "Repères", en: "Essentials" } },
++  { id: "ordres-de-grandeur", icon: Calculator, label: { fr: "Ordres de grandeur", en: "Orders of magnitude" } },
++  { id: "climat-planete", icon: Globe, label: { fr: "Climat et planète", en: "Climate and planet" } },
++  { id: "odd", icon: Target, label: { fr: "Objectifs mondiaux", en: "Global goals" } },
++  { id: "politiques", icon: Landmark, label: { fr: "Politiques publiques", en: "Public policies" } },
++  { id: "art", icon: Palette, label: { fr: "Art et environnement", en: "Art and environment" } },
++] as const;
++
++type ThemeId = (typeof THEMES)[number]["id"];
++type Props = {
++  locale: Locale;
++  publishedPolicies: EnvironmentalPolicyRecord[];
++  presidentialArchive: PresidentialPublicArchive;
++};
++
++export function LearnComprendreTabs({ locale, publishedPolicies, presidentialArchive }: Props) {
++  const baseId = useId();
++  const [active, setActive] = useState<ThemeId>("reperes");
++
++  function selectFromKeyboard(event: KeyboardEvent<HTMLButtonElement>, index: number) {
++    let next: number;
++    switch (event.key) {
++      case "ArrowRight":
++      case "ArrowDown": next = (index + 1) % THEMES.length; break;
++      case "ArrowLeft":
++      case "ArrowUp": next = (index + THEMES.length - 1) % THEMES.length; break;
++      case "Home": next = 0; break;
++      case "End": next = THEMES.length - 1; break;
++      default: return;
++    }
++    event.preventDefault();
++    const theme = THEMES[next];
++    if (!theme) return;
++    setActive(theme.id);
++    document.getElementById(`${baseId}-tab-${theme.id}`)?.focus();
++  }
++
++  function renderPanel(theme: ThemeId) {
++    switch (theme) {
++      case "reperes": return <LearnReadingFlowSection locale={locale} />;
++      case "ordres-de-grandeur": return <LearnScaleSection locale={locale} />;
++      case "climat-planete": return <LearnClimateSection locale={locale} />;
++      case "odd": return <LearnGoalsSection locale={locale} />;
++      case "politiques": return <>
++        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label={locale === "fr" ? "Couverture documentaire" : "Documentary coverage"}>
++          {[
++            [publishedPolicies.length, locale === "fr" ? "Fiches publiques" : "Published records"],
++            [presidentialArchive.candidates.length, locale === "fr" ? "Candidatures répertoriées" : "Listed candidacies"],
++            [presidentialArchive.validatedCommitments.length, locale === "fr" ? "Engagements publics validés" : "Validated public commitments"],
++          ].map(([count, label]) => <CmmCard key={label} tone="family"><p className="text-3xl font-bold tabular-nums cmm-text-primary">{count}</p><p className="cmm-text-body">{label}</p></CmmCard>)}
++        </div>
++        <EnvironmentalPolicyExplorer publishedPolicies={publishedPolicies} presidentialArchive={presidentialArchive} />
++      </>;
++      case "art": return <LearnDeepDiveSection locale={locale} />;
++    }
++  }
++
++  return (
++    <div className="space-y-5 md:space-y-6" data-testid="learn-comprendre-themes">
++      <div role="tablist" aria-label={locale === "fr" ? "Thèmes de vulgarisation" : "Environmental science themes"}
++        className={tabStripClassName("family", "grid-cols-2 md:grid-cols-3 xl:grid-cols-6")}>
++        {THEMES.map(({ id, icon: Icon, label }, index) => (
++          <button key={id} type="button" id={`${baseId}-tab-${id}`} role="tab"
++            aria-controls={`${baseId}-panel-${id}`} aria-selected={active === id}
++            tabIndex={active === id ? 0 : -1} onClick={() => setActive(id)}
++            onKeyDown={(event) => selectFromKeyboard(event, index)}
++            className={tabItemClassName("family", active === id)}>
++            <Icon className="mr-2 h-5 w-5 shrink-0" aria-hidden="true" />
++            <span>{label[locale]}</span>
++          </button>
++        ))}
++      </div>
++      {/* Keep panels mounted so inputs and filters survive tab switches. Hidden
++          panels leave the accessibility tree; deferred modules load near the viewport. */}
++      {THEMES.map(({ id }) => (
++        <div key={id} role="tabpanel" id={`${baseId}-panel-${id}`} aria-labelledby={`${baseId}-tab-${id}`}
++          hidden={active !== id} tabIndex={0} className="space-y-5 md:space-y-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">
++          {renderPanel(id)}
++        </div>
++      ))}
++    </div>
++  );
++}
+diff --git a/apps/web/src/app/learn/comprendre/page.test.ts b/apps/web/src/app/learn/comprendre/page.test.ts
+index e9b846d277f656aa42049f8e279ad665206579aa..f04958b9faf81e4230fddb4b7dfb6c7311f63df6 100644
+--- a/apps/web/src/app/learn/comprendre/page.test.ts
++++ b/apps/web/src/app/learn/comprendre/page.test.ts
+@@ -1,150 +1,47 @@
+ import * as React from "react";
+ import { renderToStaticMarkup } from "react-dom/server";
+-import { beforeEach, describe, expect, it, vi } from "vitest";
++import { describe, expect, it, vi } from "vitest";
+ 
+ vi.mock("server-only", () => ({}));
+-
+-type IntroProps = {
+-  question: string;
+-  clue: string;
+-  action: {
+-    href: string;
+-    label: string;
+-  };
+-};
+-
+-type JourneyProps = {
+-  currentPageId: string;
+-  compact?: boolean;
+-};
+-
+-const introCalls: IntroProps[] = [];
+-const journeyCalls: JourneyProps[] = [];
+-const explorerCalls: Array<{ publishedPolicies: unknown[]; presidentialArchive: { candidates: unknown[]; validatedCommitments: unknown[] } }> = [];
+-
+-vi.mock("@/components/ui/site-preferences-provider", async () => {
+-  const helpers = await import("@/app/learn/test-helpers");
+-  return helpers.createLearnSitePreferencesModule();
+-});
+-
+-vi.mock("@/components/learn/learn-rubric-shell", async () => {
+-  const helpers = await import("@/app/learn/test-helpers");
+-  return helpers.createLearnRubricShellModule();
+-});
+-
+-vi.mock("@/components/learn/learn-comprendre-visual-intro", () => ({
+-  LearnComprendreVisualIntro: (props: IntroProps) => {
+-    introCalls.push(props);
+-    return React.createElement("div", { "data-testid": "intro" });
+-  },
+-}));
+-
+-vi.mock("@/components/learn/learn-vulgarisation-path-section", () => ({
+-  LearnVulgarisationPathSection: () => React.createElement("section", { "data-testid": "path" }),
+-}));
+-
+-vi.mock("@/components/learn/learn-deferred-panels", () => ({
+-  DeferredLearnVulgarisationMagnitudeComparator: () =>
+-    React.createElement("section", { "data-testid": "comparator" }),
+-  DeferredImpactOrderOfMagnitudeSection: () =>
+-    React.createElement("section", { "data-testid": "impact" }),
+-  DeferredGIECContent: () => React.createElement("section", { "data-testid": "giec" }),
+-  DeferredPlanetaryBoundariesInteractive: () =>
+-    React.createElement("section", { "data-testid": "planetary" }),
+-  DeferredSustainableGoalsInteractive: () =>
+-    React.createElement("section", { "data-testid": "goals" }),
+-  DeferredLearnArtworkAccordion: () =>
+-    React.createElement("section", { "data-testid": "artwork" }),
+-}));
+-
+-vi.mock("@/components/learn/learn-block-journey-section", () => ({
+-  LearnBlockJourneySection: (props: JourneyProps) => {
+-    journeyCalls.push(props);
+-    return React.createElement("section", {
+-      "data-testid": "journey",
+-      "data-compact": String(Boolean(props.compact)),
+-    });
+-  },
+-}));
+-
+-vi.mock("@/components/learn/learn-page-visit-tracker", () => ({
+-  LearnPageVisitTracker: () => null,
++vi.mock("@/components/ui/site-preferences-provider", async () => (await import("@/app/learn/test-helpers")).createLearnSitePreferencesModule());
++vi.mock("@/components/learn/learn-rubric-shell", async () => (await import("@/app/learn/test-helpers")).createLearnRubricShellModule());
++vi.mock("@/components/learn/learn-page-visit-tracker", () => ({ LearnPageVisitTracker: () => null }));
++vi.mock("@/components/learn/learn-block-journey-section", () => ({ LearnBlockJourneySection: () => React.createElement("div", { "data-testid": "journey" }) }));
++vi.mock("./learn-comprendre-sections", () => ({
++  LearnReadingFlowSection: () => React.createElement("div", { "data-testid": "reperes" }),
++  LearnScaleSection: () => React.createElement("div", { "data-testid": "scale" }),
++  LearnClimateSection: () => React.createElement("div", { "data-testid": "climate" }),
++  LearnGoalsSection: () => React.createElement("div", { "data-testid": "goals" }),
++  LearnDeepDiveSection: () => React.createElement("div", { "data-testid": "art" }),
+ }));
+-
++const explorerCalls: Array<{ publishedPolicies: unknown[]; presidentialArchive: { candidates: unknown[]; validatedCommitments: unknown[] } }> = [];
+ vi.mock("@/components/learn/environmental-policy-explorer", () => ({
+-  EnvironmentalPolicyExplorer: (props: { publishedPolicies: unknown[]; presidentialArchive: { candidates: unknown[]; validatedCommitments: unknown[] } }) => {
++  EnvironmentalPolicyExplorer: (props: (typeof explorerCalls)[number]) => {
+     explorerCalls.push(props);
+-    return React.createElement("section", { "data-testid": "environmental-policies" });
++    return React.createElement("div", { "data-testid": "policies" });
+   },
+ }));
+-
+ import Page from "./page";
+ 
+ describe("LearnVulgarisationPage", () => {
+-  beforeEach(() => {
+-    introCalls.length = 0;
+-    journeyCalls.length = 0;
+-    explorerCalls.length = 0;
+-  });
+-
+-  it("publishes stable metadata and an ISR window for the public guide", async () => {
++  it("preserves the public metadata and ISR", async () => {
+     const page = await import("./page");
+-
+     expect(page.revalidate).toBe(86400);
+-    expect(page.metadata).toMatchObject({
+-      title: "Vulgarisation",
+-      description:
+-        "Repères scientifiques, ordres de grandeur et méthodologie pour comprendre l'impact environnemental avant d'agir.",
+-      robots: { index: true, follow: true },
+-    });
++    expect(page.metadata).toMatchObject({ title: "Vulgarisation", robots: { index: true, follow: true } });
+   });
+-
+-  it("keeps the reading flow in the expected order", () => {
++  it("renders six ordered accessible themes and keeps unpublished records private", () => {
++    explorerCalls.length = 0;
+     const markup = renderToStaticMarkup(React.createElement(Page));
+-
+-    expect(markup).toContain("data-testid=\"intro\"");
+-    expect(markup).toContain("data-testid=\"environmental-policies\"");
+-    expect(markup).toContain("Chemin direct");
+-    expect(markup).toContain("Passer au quiz");
+-    expect(markup).toContain("Voir la méthodologie");
+-    expect(markup).toContain("data-testid=\"path\"");
+-    expect(markup).toContain("À retenir");
+-    expect(markup).toContain("Lire le contexte avant de comparer");
+-    expect(markup).toContain("data-testid=\"comparator\"");
+-    expect(markup).toContain("data-testid=\"impact\"");
+-    expect(markup).toContain("Pour aller plus loin");
+-    expect(markup).toContain("Passer des ordres de grandeur aux cadres de référence");
+-    expect(markup).toContain("data-testid=\"giec\"");
+-    expect(markup).toContain("data-testid=\"planetary\"");
+-    expect(markup).toContain("data-testid=\"goals\"");
+-    expect(markup).toContain("En synthèse");
+-    expect(markup).toContain("Relier les cadres pour situer");
+-    expect(markup).toContain("data-testid=\"artwork\"");
+-    expect(markup).toContain("data-testid=\"journey\"");
+-
+-    expect(markup.indexOf("data-testid=\"path\"")).toBeLessThan(markup.indexOf("data-testid=\"comparator\""));
+-    expect(markup.indexOf("data-testid=\"intro\"")).toBeLessThan(markup.indexOf("data-testid=\"environmental-policies\""));
+-    expect(markup.indexOf("data-testid=\"environmental-policies\"")).toBeLessThan(markup.indexOf("data-testid=\"path\""));
+-    expect(markup.indexOf("Chemin direct")).toBeLessThan(markup.indexOf("data-testid=\"path\""));
+-    expect(markup.indexOf("data-testid=\"path\"")).toBeLessThan(markup.indexOf("À retenir"));
+-    expect(markup.indexOf("À retenir")).toBeLessThan(markup.indexOf("data-testid=\"comparator\""));
+-    expect(markup.indexOf("data-testid=\"comparator\"")).toBeLessThan(markup.indexOf("data-testid=\"impact\""));
+-    expect(markup.indexOf("data-testid=\"impact\"")).toBeLessThan(markup.indexOf("Pour aller plus loin"));
+-    expect(markup.indexOf("Pour aller plus loin")).toBeLessThan(markup.indexOf("data-testid=\"giec\""));
+-    expect(markup.indexOf("data-testid=\"impact\"")).toBeLessThan(markup.indexOf("data-testid=\"giec\""));
+-    expect(markup.indexOf("data-testid=\"giec\"")).toBeLessThan(markup.indexOf("data-testid=\"planetary\""));
+-    expect(markup.indexOf("data-testid=\"planetary\"")).toBeLessThan(markup.indexOf("data-testid=\"goals\""));
+-    expect(markup.indexOf("data-testid=\"goals\"")).toBeLessThan(markup.indexOf("En synthèse"));
+-    expect(markup.indexOf("En synthèse")).toBeLessThan(markup.indexOf("data-testid=\"artwork\""));
+-    expect(markup.indexOf("data-testid=\"goals\"")).toBeLessThan(markup.indexOf("data-testid=\"artwork\""));
+-    expect(markup.indexOf("data-testid=\"artwork\"")).toBeLessThan(markup.indexOf("data-testid=\"journey\""));
+-
+-    expect(introCalls).toHaveLength(1);
+-    expect(introCalls[0].action.href).toBe("/learn/sentrainer");
+-    expect(introCalls[0].action.label).toBe("Passer au quiz");
+-    expect(journeyCalls).toHaveLength(1);
+-    expect(journeyCalls[0].currentPageId).toBe("comprendre");
+-    expect(journeyCalls[0].compact).toBe(true);
++    const tabs = [...markup.matchAll(/<button\b[^>]*\brole="tab"[^>]*>/g)].map((match) => match[0]);
++    expect(tabs).toHaveLength(6);
++    for (const [index, id] of ["reperes", "ordres-de-grandeur", "climat-planete", "odd", "politiques", "art"].entries()) {
++      expect(tabs[index]).toContain(`-tab-${id}`);
++      expect(tabs[index]).toContain(`aria-selected="${index === 0}"`);
++    }
++    const panels = [...markup.matchAll(/<div\b[^>]*\brole="tabpanel"[^>]*>/g)].map((match) => match[0]);
++    expect(panels).toHaveLength(6);
++    expect(panels.filter((panel) => /\bhidden=""/.test(panel))).toHaveLength(5);
++    for (const id of ["reperes", "scale", "climate", "goals", "policies", "art", "journey"]) expect(markup).toContain(`data-testid="${id}"`);
+     expect(explorerCalls).toHaveLength(1);
+     expect(explorerCalls[0].publishedPolicies).toEqual([]);
+     expect(explorerCalls[0].presidentialArchive.candidates).toHaveLength(33);
+diff --git a/apps/web/src/app/learn/ressources/learn-ressources-artwork.tsx b/apps/web/src/app/learn/ressources/learn-ressources-artwork.tsx
+index 52a95e23b59c76237889e98b618818cf7d3a4477..5c4816c4ada52a947f9f68ae7fb84c44268dd03c 100644
+--- a/apps/web/src/app/learn/ressources/learn-ressources-artwork.tsx
++++ b/apps/web/src/app/learn/ressources/learn-ressources-artwork.tsx
+@@ -1,128 +1,31 @@
+ "use client";
+ 
+ import Image from "next/image";
+-import { ChevronDown, Palette } from "lucide-react";
+-
++import { ChevronDown, ExternalLink, Palette } from "lucide-react";
+ import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
+-
+ import { ARTWORK_REFERENCES } from "./learn-ressources-client.data";
+ import { useDisclosureState } from "./learn-ressources-client.state";
+ 
+-export function LearnArtworkAccordion({
+-  locale,
+-  defaultOpen = false,
+-}: {
+-  locale: LearnLocale;
+-  defaultOpen?: boolean;
+-}) {
++export function LearnArtworkAccordion({ locale, defaultOpen = false }: { locale: LearnLocale; defaultOpen?: boolean }) {
+   const { isOpen, handleToggle } = useDisclosureState(defaultOpen);
+-
++  const fr = locale === "fr";
+   return (
+-    <details
+-      className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6"
+-      open={isOpen}
+-      onToggle={handleToggle}
+-    >
+-      <summary className="flex min-h-12 cursor-pointer list-none items-start justify-between gap-4 rounded-[1.35rem] px-3 py-2 outline-none transition hover:bg-slate-50/70 focus-visible:bg-slate-50/80 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300/70 md:min-h-14">
+-        <div>
+-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+-            {locale === "fr" ? "Culture visuelle" : "Visual culture"}
+-          </p>
+-          <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+-            {locale === "fr" ? "Références artistiques à ouvrir si besoin" : "Art references to open when needed"}
+-          </h3>
+-          <p className="cmm-text-body mt-2 max-w-3xl">
+-            {locale === "fr"
+-              ? "Les fiches restent fermées au départ pour alléger le chargement. Ouvre la section pour voir une référence à la fois."
+-              : "The fiches stay closed at first to lighten loading. Open the section to view one reference at a time."}
+-          </p>
+-        </div>
+-        <div className="flex items-center gap-3">
+-          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+-            {ARTWORK_REFERENCES.length}
+-          </span>
+-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700">
+-            <Palette className="h-5 w-5" aria-hidden="true" />
+-          </span>
+-        </div>
++    <details className="group rounded-2xl border border-amber-200 bg-white p-4 dark:bg-slate-900 md:p-5" open={isOpen} onToggle={handleToggle}>
++      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-2 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70">
++        <div className="flex items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-900"><Palette className="h-5 w-5" aria-hidden="true" /></span><div><p className="cmm-text-caption font-bold">{fr ? "Culture visuelle" : "Visual culture"}</p><h3 className="text-xl font-bold cmm-text-primary">{fr ? (defaultOpen ? "Références artistiques" : "Références artistiques à ouvrir si besoin") : "Art references"}</h3><p className="cmm-text-small">{fr && !defaultOpen ? "Les fiches restent fermées au départ. " : ""}{ARTWORK_REFERENCES.length} {fr ? "fiches à découvrir" : "cards to discover"}</p></div></div>
++        <ChevronDown className="h-5 w-5 shrink-0 text-amber-800 group-open:rotate-180" aria-hidden="true" />
+       </summary>
+-
+-      <div className="mt-5">
+-        {isOpen ? (
+-          <div className="space-y-4">
+-            {ARTWORK_REFERENCES.map((artwork, index) => (
+-              <details
+-                key={artwork.key}
+-                className="group overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-50 shadow-sm"
+-              >
+-                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 outline-none transition hover:bg-slate-100/70 focus-visible:bg-slate-100/80 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300/70 md:min-h-14 md:px-5">
+-                  <div className="min-w-0">
+-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+-                      {String(index + 1).padStart(2, "0")}
+-                    </p>
+-                    <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900 md:text-xl">
+-                      {artwork.title[locale]}
+-                    </h4>
+-                    <p className="cmm-text-body mt-1">
+-                      {artwork.artist[locale]} · {artwork.material[locale]}
+-                    </p>
+-                  </div>
+-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition duration-150 group-open:rotate-180">
+-                    <ChevronDown className="h-4 w-4" aria-hidden="true" />
+-                  </span>
+-                </summary>
+-
+-                <div className="border-t border-slate-200 px-4 pb-4 pt-4 md:px-5 md:pb-5">
+-                  <div className="grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
+-                    <figure className="relative h-64 overflow-hidden rounded-[1.4rem] border border-slate-200 bg-slate-50 md:h-[22rem]">
+-                      <Image
+-                        src={artwork.image.src}
+-                        alt={artwork.image.alt[locale]}
+-                        fill
+-                        sizes="(min-width: 1024px) 50vw, 100vw"
+-                        unoptimized
+-                        className="object-cover"
+-                      />
+-                      <figcaption className="border-t border-slate-200 px-3 py-2 text-[11px] leading-relaxed text-slate-600">
+-                        {artwork.image.caption[locale]}{" "}
+-                        <a
+-                          href={artwork.source.href}
+-                          target="_blank"
+-                          rel="noreferrer"
+-                          className="font-bold text-amber-700 transition hover:text-amber-800 hover:underline"
+-                        >
+-                          {artwork.source.label[locale]}
+-                        </a>
+-                      </figcaption>
+-                    </figure>
+-
+-                    <div className="space-y-3">
+-                      {artwork.context.map((paragraph) => (
+-                        <p key={paragraph[locale]} className="cmm-text-body">
+-                          {paragraph[locale]}
+-                        </p>
+-                      ))}
+-
+-                      <div className="rounded-[1.35rem] border border-slate-200 bg-white p-3.5">
+-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+-                          {locale === "fr" ? "Intérêt pour CleanMyMap" : "Why it matters for CleanMyMap"}
+-                        </p>
+-                        <p className="cmm-text-body mt-2">{artwork.interest[locale]}</p>
+-                      </div>
+-                    </div>
+-                  </div>
+-                </div>
+-              </details>
+-            ))}
+-          </div>
+-        ) : (
+-          <p className="cmm-text-body rounded-[1.35rem] border border-slate-200 bg-slate-50 px-4 py-3">
+-            {locale === "fr"
+-              ? "Les fiches restent fermées au départ pour alléger le chargement. Ouvre la section pour voir une référence à la fois."
+-              : "The fiches stay closed at first to lighten loading. Open the section to view one reference at a time."}
+-          </p>
+-        )}
+-      </div>
++      {isOpen && <div className="mt-4 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
++        {ARTWORK_REFERENCES.map((artwork) => (
++          <article key={artwork.key} className="min-w-0 overflow-hidden rounded-xl border border-amber-200 bg-white dark:bg-slate-900">
++            <figure><div className="relative aspect-[4/3] overflow-hidden bg-amber-50 dark:bg-slate-800"><Image src={artwork.image.src} alt={artwork.image.alt[locale]} fill sizes="(min-width: 1280px) 30vw, (min-width: 768px) 50vw, 100vw" unoptimized className="object-contain" /></div><figcaption className="px-3 pt-2 cmm-text-small">{artwork.image.caption[locale]}</figcaption></figure>
++            <div className="space-y-3 p-4"><h4 className="text-lg font-bold cmm-text-primary">{artwork.title[locale]}</h4><p className="cmm-text-small">{artwork.artist[locale]} · {artwork.material[locale]}</p>
++              <details className="group/artwork rounded-lg border border-amber-200 p-3"><summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-2 font-semibold cmm-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70">{fr ? "Contexte et démarche" : "Context and approach"}<ChevronDown className="h-4 w-4 shrink-0 group-open/artwork:rotate-180" aria-hidden="true" /></summary><div className="space-y-3 border-t border-amber-100 pt-3">{artwork.context.map((paragraph) => <p key={paragraph[locale]} className="cmm-text-body">{paragraph[locale]}</p>)}<div className="rounded-lg bg-amber-50 p-3 text-slate-900 dark:bg-amber-950 dark:text-white"><p className="text-sm font-bold">{fr ? "Lecture pédagogique" : "Educational interpretation"}</p><p className="mt-1 text-sm">{artwork.interest[locale]}</p></div></div></details>
++              <a href={artwork.source.href} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-amber-900 underline dark:text-amber-200">{artwork.source.label[locale]}<ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" /></a>
++            </div>
++          </article>
++        ))}
++      </div>}
+     </details>
+   );
+ }
+diff --git a/apps/web/src/components/learn/environmental-policy-explorer.test.tsx b/apps/web/src/components/learn/environmental-policy-explorer.test.tsx
+index 51f871cd48e5ed71a253d71aacd23bafab2c5fd4..e77e5260796addcb01ccf6023af71c295901d019 100644
+--- a/apps/web/src/components/learn/environmental-policy-explorer.test.tsx
++++ b/apps/web/src/components/learn/environmental-policy-explorer.test.tsx
+@@ -23,14 +23,14 @@
+ });
+ 
+ describe("EnvironmentalPolicyExplorer", () => {
+-  it("renders the priority world view, filters and the honest empty state", () => {
++  it("renders the priority world view and honest empty state without unusable filters", () => {
+     const markup = renderToStaticMarkup(<EnvironmentalPolicyExplorer publishedPolicies={[]} presidentialArchive={presidentialArchive} />);
+ 
+     expect(markup).toContain("Politiques environnementales");
+     expect(markup).toContain("Monde");
+     expect(markup).toContain("France");
+-    expect(markup).toContain("Rechercher");
+-    expect(markup).toContain("État juridique");
++    expect(markup).not.toContain("Rechercher dans les fiches");
++    expect(markup).not.toContain("Filtrer par état juridique");
+     expect(markup).toContain("couverture est initiale et non exhaustive");
+     expect(markup).toContain("Sources consultées le 13 novembre 2026");
+     expect(markup).toContain("Aucune fiche publiée pour le moment.");
+@@ -43,6 +43,7 @@
+     const markup = renderToStaticMarkup(<EnvironmentalPolicyExplorer publishedPolicies={publishedPolicies} presidentialArchive={presidentialArchive} />);
+ 
+     expect(markup).toContain(record.title.fr);
++    expect(markup).toContain("Rechercher dans les fiches");
+     expect(markup).toContain(record.measure.fr);
+     expect(markup).not.toContain("Aucune fiche publiée pour le moment.");
+   });
+diff --git a/apps/web/src/components/learn/environmental-policy-explorer.tsx b/apps/web/src/components/learn/environmental-policy-explorer.tsx
+index 634ee153d44537ce46132a73261f74988094a6ac..b5baa9b37635e44a76db20797386b269e41ec206 100644
+--- a/apps/web/src/components/learn/environmental-policy-explorer.tsx
++++ b/apps/web/src/components/learn/environmental-policy-explorer.tsx
+@@ -77,20 +77,20 @@
+         </div>
+         <div className="flex rounded-full border border-amber-200 bg-amber-50 p-1" role="tablist" aria-label={text("Périmètre", "Scope")}>
+           {["world", "france"].map((view) => (
+-            <button key={view} type="button" role="tab" aria-selected={filters.view === view} aria-controls="environmental-policy-results" className={`rounded-full px-4 py-2 text-sm font-black transition ${filters.view === view ? "bg-amber-500 text-white" : "text-amber-900 hover:bg-amber-100"}`} onClick={() => updateFilters({ view: view as EnvironmentalPolicyFilters["view"] })}>
++            <button key={view} type="button" role="tab" aria-selected={filters.view === view} aria-controls="environmental-policy-results" className={`rounded-full px-4 py-2 text-sm font-black transition ${filters.view === view ? "bg-amber-500 text-white" : "text-amber-900 hover:bg-amber-100"}`} onClick={() => setFilters({ ...initialFilters, view: view as EnvironmentalPolicyFilters["view"] })}>
+               {view === "world" ? text("Monde", "World") : "France"}
+             </button>
+           ))}
+         </div>
+       </div>
+ 
+-      <div className="grid gap-3 rounded-2xl border border-amber-100 bg-amber-50/60 p-4 md:grid-cols-2 xl:grid-cols-5">
++      {visiblePublished.length > 0 && <div className="grid gap-3 rounded-2xl border border-amber-100 bg-amber-50/60 p-4 md:grid-cols-2 xl:grid-cols-5">
+         <label className="space-y-1 text-sm font-bold text-slate-800 md:col-span-2 xl:col-span-1"><span>{text("Rechercher", "Search")}</span><input aria-label={text("Rechercher dans les fiches", "Search records")} value={filters.query} onChange={(event) => updateFilters({ query: event.target.value })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2" placeholder={text("Titre, institution, territoire…", "Title, institution, territory…")} /></label>
+         <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("Territoire", "Territory")}</span><select aria-label={text("Filtrer par territoire", "Filter by territory")} value={filters.territory} onChange={(event) => updateFilters({ territory: event.target.value as EnvironmentalPolicyFilters["territory"] })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Tous les niveaux", "All levels")}</option>{(Object.keys(scopeLabels) as PolicyTerritoryScope[]).map((scope) => <option key={scope} value={scope}>{scopeLabels[scope][locale]}</option>)}</select></label>
+         <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("Thème", "Theme")}</span><select aria-label={text("Filtrer par thème", "Filter by theme")} value={filters.theme} onChange={(event) => updateFilters({ theme: event.target.value })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Tous les thèmes", "All themes")}</option>{themes.map((theme) => <option key={theme.value} value={theme.value}>{theme.label}</option>)}</select></label>
+         <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("Année du jalon", "Milestone year")}</span><select aria-label={text("Filtrer par année", "Filter by year")} value={filters.year} onChange={(event) => updateFilters({ year: event.target.value })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Toutes les années", "All years")}</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
+         <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("État juridique", "Legal status")}</span><select aria-label={text("Filtrer par état juridique", "Filter by legal status")} value={filters.legalStatus} onChange={(event) => updateFilters({ legalStatus: event.target.value as PolicyLegalStatus | "all" })} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Tous les états", "All statuses")}</option>{(Object.keys(legalStatusLabels) as PolicyLegalStatus[]).map((status) => <option key={status} value={status}>{legalStatusLabels[status][locale]}</option>)}</select></label>
+-      </div>
++      </div>}
+ 
+       <div id="environmental-policy-results">
+         {records.length === 0 ? <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 p-6 text-center" role="status"><p className="font-black text-slate-900">{visiblePublished.length === 0 ? text("Aucune fiche publiée pour le moment.", "No published record yet.") : text("Aucune décision ne correspond à ces filtres.", "No decision matches these filters.")}</p><p className="mt-1 text-sm text-slate-600">{visiblePublished.length === 0 ? text("Les fiches documentaires restent masquées tant qu’une revue humaine effective n’a pas été enregistrée.", "Document records remain hidden until an effective human review has been recorded.") : text("Essayez une autre combinaison de filtres.", "Try another filter combination.")}</p></div> : <ol className="space-y-4" aria-label={text("Chronologie des décisions", "Decision timeline")}>{records.map((record) => <li key={record.id} className="rounded-2xl border border-amber-100 bg-amber-50/30 p-4 md:p-5"><div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"><div className="space-y-2"><div className="flex flex-wrap gap-2 text-xs font-black uppercase tracking-wide text-amber-800"><span>{record.territories.map((territory) => territory.label[locale]).join(" · ")}</span><span aria-hidden="true">·</span><span>{record.themes.map((theme) => theme[locale]).join(", ")}</span></div><h4 className="text-lg font-black text-slate-950">{record.title[locale]}</h4><p className="cmm-text-body">{record.measure[locale]}</p></div><div className="flex flex-wrap gap-2"><span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-900">{legalStatusLabels[record.legalStatus][locale]}</span><span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-black text-amber-900">{lifecycleStatusLabels[record.lifecycleStatus][locale]}</span></div></div><dl className="mt-4 grid gap-3 text-sm text-slate-700 sm:grid-cols-2 lg:grid-cols-4">{getPolicyTimeline(record).map((milestone) => <div key={milestone.id}><dt className="font-black">{milestone.label[locale]}</dt><dd>{formatPolicyDate(milestone.date, locale)}</dd></div>)}<div><dt className="font-black">{text("Exécution", "Execution")}</dt><dd>{implementationStatusLabels[record.implementationStatus][locale]}</dd></div><div><dt className="font-black">{text("Institution", "Institution")}</dt><dd>{record.institution[locale]}</dd></div></dl><details className="mt-4 rounded-xl border border-amber-200 bg-white p-3"><summary className="cursor-pointer font-black text-amber-900">{text("Ouvrir la fiche détaillée", "Open detailed record")}</summary><p className="mt-3 cmm-text-body">{record.detail[locale]}</p><ul className="mt-3 space-y-2 text-sm text-slate-700">{record.limitations.map((limitation, index) => <li key={`${record.id}-limitation-${index}`}>{limitation[locale]}</li>)}</ul><p className="mt-3 text-xs text-slate-600">{text("Dernière vérification", "Last verification")}: {record.lastVerifiedAt ?? text("non précisée", "not specified")} · {text("Ancienne vérification", "Previous verification")}: {record.previousLastVerifiedAt ?? text("non précisée", "not specified")} · {text("consultation des sources", "source consultation")}: {record.lastConsultedAt ?? text("non précisée", "not specified")}</p><div className="mt-3 flex flex-wrap gap-2">{record.officialSources.map((source) => <a key={source.id} href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-800 hover:bg-slate-50">{source.name[locale]}</a>)}</div><div className="mt-4 border-t border-amber-100 pt-3"><p className="text-sm font-black text-slate-800">{text("Versions et sources liées", "Versions and linked sources")}</p><ul className="mt-2 space-y-2 text-sm text-slate-700">{record.versions.map((version) => <li key={version.id}><span className="font-black">{formatPolicyDate(version.recordedAt, locale)}</span> — {version.note[locale]} <span className="inline-flex flex-wrap gap-2">{version.sourceIds.map((sourceId) => { const linkedSource = record.officialSources.find((source) => source.id === sourceId); return linkedSource ? <a key={sourceId} href={linkedSource.url} target="_blank" rel="noreferrer" className="font-black text-amber-800 underline">{linkedSource.name[locale]}</a> : null; })}</span></li>)}</ul></div></details></li>)}</ol>}
+diff --git a/apps/web/src/components/learn/giac-content.tsx b/apps/web/src/components/learn/giac-content.tsx
+index ad816aa3dc2c2b21c6682867e705552eb52535da..08a0acab2acb284590c348c33a5601b8b1ac7f62 100644
+--- a/apps/web/src/components/learn/giac-content.tsx
++++ b/apps/web/src/components/learn/giac-content.tsx
+@@ -1,222 +1,43 @@
+ "use client";
+ 
+-import { useState } from"react";
+-import { motion } from"framer-motion";
+-import { FileText } from "lucide-react";
+-import { GIECReport, GIEC_REPORTS } from "@/data/content/giec-reports";
+-import { ModalFrame } from "@/components/ui/modal-frame";
+-
+-const getImpactColor = (impact: GIECReport['keyFindings'][0]['impact']) => {
+- switch (impact) {
+- case 'critical': return 'bg-red-500';
+- case 'high': return 'bg-orange-500';
+- case 'medium': return 'bg-amber-500';
+- case 'low': return 'bg-green-500';
+- default: return 'bg-slate-500';
+- }
+-};
+-
+-const getImpactLabel = (impact: GIECReport['keyFindings'][0]['impact']) => {
+- switch (impact) {
+- case 'critical': return 'Critique';
+- case 'high': return 'Élevé';
+- case 'medium': return 'Moyen';
+- case 'low': return 'Faible';
+- default: return 'Inconnu';
+- }
+-};
++import { ChevronDown, ExternalLink, FileText } from "lucide-react";
++import { GIEC_REPORTS } from "@/data/content/giec-reports";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+ 
+ export function GIECContent() {
+- const [selectedReport, setSelectedReport] = useState<GIECReport | null>(null);
+-
+- return (
+- <div className="space-y-8">
+- {/* Header */}
+- <div className="text-center space-y-4">
+- <div className="flex items-center justify-center gap-3">
+- <FileText className="text-blue-600" size={32} />
+- <h2 className="text-3xl font-bold cmm-text-primary">Rapports du GIEC</h2>
+- </div>
+- <p className="text-lg cmm-text-secondary max-w-3xl mx-auto">
+- Le Groupe d&apos;experts intergouvernemental sur l&apos;évolution du climat (GIEC) produit des rapports
+- scientifiques qui font référence sur le changement climatique. Voici les conclusions clés
+- vulgarisées pour une meilleure compréhension.
+- </p>
+- </div>
+-
+- {/* Reports Grid */}
+- <div className="grid md:grid-cols-2 gap-6">
+- {GIEC_REPORTS.map((report, index) => (
+- <motion.button
+- key={report.id}
+- initial={{ opacity: 1, y: 20 }}
+- animate={{ opacity: 1, y: 0 }}
+- transition={{ delay: index * 0.1 }}
+- onClick={() => setSelectedReport(report)}
+- className={`
+- p-6 rounded-3xl backdrop-blur-sm border transition-all duration-300 text-left
+- ${selectedReport?.id === report.id
+- ? 'bg-white/90 border-blue-300 shadow-xl scale-105'
+- : 'bg-white/60 border-slate-200 hover:bg-white/80 hover:border-slate-300 hover:shadow-lg'
+- }
+- `}
+- >
+- {/* Header */}
+- <div className="flex items-start justify-between mb-4">
+- <div className="flex-1">
+- <div className="cmm-text-small font-bold text-blue-600 uppercase tracking-wider mb-1">
+- GIEC {report.year}
+- </div>
+- <h3 className="text-lg font-bold cmm-text-primary leading-tight">
+- {report.title}
+- </h3>
+- </div>
+- <div className="text-2xl font-bold text-slate-300 ml-4">
+- {report.year}
+- </div>
+- </div>
+-
+- {/* Focus */}
+- <p className="cmm-text-secondary cmm-text-small mb-4 leading-relaxed">
+- {report.focus}
+- </p>
+-
+- {/* Key Findings Preview */}
+- <div className="space-y-2">
+- <p className="cmm-text-caption font-bold cmm-text-muted uppercase tracking-wider">
+- Points clés ({report.keyFindings.length})
+- </p>
+- <div className="flex flex-wrap gap-2">
+- {report.keyFindings.slice(0, 2).map((finding, idx) => (
+- <div key={idx} className="flex items-center gap-1">
+- <div className={`w-2 h-2 rounded-full ${getImpactColor(finding.impact)}`} />
+- <span className="cmm-text-caption cmm-text-secondary">{getImpactLabel(finding.impact)}</span>
+- </div>
+- ))}
+- {report.keyFindings.length > 2 && (
+- <span className="cmm-text-caption cmm-text-muted">+{report.keyFindings.length - 2} autres</span>
+- )}
+- </div>
+- </div>
+- </motion.button>
+- ))}
+- </div>
+-
+- {/* Detail Modal */}
+- <ModalFrame
+- isOpen={Boolean(selectedReport)}
+- onClose={() => setSelectedReport(null)}
+- overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+- panelClassName="pointer-events-auto bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto"
+- panelInitial={{ scale: 0.9, opacity: 1 }}
+- panelAnimate={{ scale: 1, opacity: 1 }}
+- panelExit={{ scale: 0.9, opacity: 0 }}
+- >
+- {selectedReport && (
+- <div className="p-8 space-y-8">
+- {/* Header */}
+- <div className="flex items-center justify-between">
+- <div className="flex items-center gap-4">
+- <div className="p-3 rounded-xl bg-blue-100">
+- <FileText size={32} className="text-blue-600" />
+- </div>
+- <div>
+- <div className="cmm-text-small font-bold text-blue-600 uppercase tracking-wider mb-1">
+- Rapport GIEC {selectedReport.year}
+- </div>
+- <h3 className="text-2xl font-bold cmm-text-primary">
+- {selectedReport.title}
+- </h3>
+- </div>
+- </div>
+- <button
+- onClick={() => setSelectedReport(null)}
+- className="p-2 rounded-xl hover:bg-slate-100 transition-colors"
+- >
+- ✕
+- </button>
+- </div>
+-
+- {/* Focus */}
+- <div className="p-6 bg-blue-50 rounded-2xl">
+- <h4 className="text-lg font-bold text-blue-900 mb-2">Focus du rapport</h4>
+- <p className="text-blue-800">{selectedReport.focus}</p>
+- </div>
+-
+- {/* Key Findings */}
+- <div>
+- <h4 className="text-xl font-bold cmm-text-primary mb-6">Conclusions principales</h4>
+- <div className="grid gap-4">
+- {selectedReport.keyFindings.map((finding, index) => {
+- const Icon = finding.icon;
+- return (
+- <motion.div
+- key={index}
+- initial={{ opacity: 1, x: -20 }}
+- animate={{ opacity: 1, x: 0 }}
+- transition={{ delay: index * 0.1 }}
+- className="p-6 rounded-2xl bg-slate-50 border border-slate-200"
+- >
+- <div className="flex items-start gap-4">
+- <div className={`p-3 rounded-xl ${getImpactColor(finding.impact)}`}>
+- <Icon size={24} className="text-white" />
+- </div>
+- <div className="flex-1">
+- <div className="flex items-center gap-2 mb-2">
+- <h5 className="font-bold cmm-text-primary">{finding.title}</h5>
+- <span className={`px-2 py-1 rounded-full cmm-text-caption font-bold text-white ${getImpactColor(finding.impact)}`}>
+- {getImpactLabel(finding.impact)}
+- </span>
+- </div>
+- <p className="cmm-text-secondary leading-relaxed">{finding.description}</p>
+- </div>
+- </div>
+- </motion.div>
+- );
+- })}
+- </div>
+- </div>
+-
+- {/* Implications */}
+- <div>
+- <h4 className="text-xl font-bold text-red-900 mb-4">Implications pour l&apos;humanité</h4>
+- <div className="grid gap-3">
+- {selectedReport.implications.map((implication, index) => (
+- <div key={index} className="flex items-start gap-3 p-3 bg-red-50 rounded-xl">
+- <div className="w-2 h-2 rounded-full bg-red-500 mt-2 flex-shrink-0" />
+- <span className="text-red-800">{implication}</span>
+- </div>
+- ))}
+- </div>
+- </div>
+-
+- {/* Solutions */}
+- <div>
+- <h4 className="text-xl font-bold text-emerald-900 mb-4">Solutions et actions possibles</h4>
+- <div className="grid gap-3">
+- {selectedReport.solutions.map((solution, index) => (
+- <div key={index} className="flex items-start gap-3 p-3 bg-emerald-50 rounded-xl">
+- <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0" />
+- <span className="text-emerald-800">{solution}</span>
+- </div>
+- ))}
+- </div>
+- </div>
+-
+- {/* Call to Action */}
+- <div className="p-6 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl text-white text-center">
+- <h4 className="text-xl font-bold mb-2">Chaque action compte</h4>
+- <p className="text-blue-100 mb-4">
+- CleanMyMap vous aide à contribuer concrètement à la lutte contre le changement climatique
+- en cartographiant et réduisant la pollution plastique.
+- </p>
+- <button className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-colors">
+- Commencer à agir
+- </button>
+- </div>
+- </div>
+- )}
+- </ModalFrame>
+- </div>
+- );
++  const { locale } = useSitePreferences();
++  const fr = locale === "fr";
++  return (
++    <section aria-labelledby="giec-reports-title" className="space-y-4">
++      <div className="flex items-center gap-3">
++        <FileText className="h-7 w-7 text-amber-800 dark:text-amber-300" aria-hidden="true" />
++        <div><h2 id="giec-reports-title" className="text-2xl font-bold cmm-text-primary">{fr ? "Rapports du GIEC" : "IPCC reports"}</h2><p className="cmm-text-body">{fr ? "Sixième cycle, synthèses datées de 2021 à 2023. Ouvrez une fiche pour lire les résultats et leur source." : "Sixth assessment cycle, 2021 to 2023. Open a card for the findings (French) and the original English source."}</p></div>
++      </div>
++      <div className="grid items-start gap-3 lg:grid-cols-2">
++        {GIEC_REPORTS.map((report) => (
++          <CmmCard key={report.id} tone="family" as="article" className="space-y-3">
++            <div className="flex items-start justify-between gap-3">
++              <div><p className="cmm-text-caption font-bold text-amber-800 dark:text-amber-300">AR6 · {report.year}</p><h3 className="mt-1 text-xl font-bold cmm-text-primary" lang="fr">{report.title}</h3></div>
++              <span className="text-2xl font-bold tabular-nums text-amber-800 dark:text-amber-300">{report.year}</span>
++            </div>
++            <p className="cmm-text-body" lang="fr">{report.focus}</p>
++            <ul className="grid gap-2 sm:grid-cols-3" lang="fr">
++              {report.keyFindings.map((finding) => <li key={finding.title} className="flex min-w-0 flex-col gap-2 rounded-xl bg-white p-3 text-slate-900 dark:bg-slate-900 dark:text-white"><finding.icon size={22} className="text-amber-800 dark:text-amber-300" /><span className="text-sm font-semibold">{finding.title}</span></li>)}
++            </ul>
++            <details className="group rounded-xl border border-amber-200 bg-white p-3 dark:bg-slate-900">
++              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 font-bold cmm-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">{fr ? "Résultats, limites et leviers" : "Findings, limitations and options (FR)"}<ChevronDown className="h-5 w-5 shrink-0 group-open:rotate-180" aria-hidden="true" /></summary>
++              <div className="space-y-4 border-t border-amber-100 pt-3" lang="fr">
++                <dl className="space-y-3">{report.keyFindings.map((finding) => <div key={finding.title}><dt className="font-bold cmm-text-primary">{finding.title}</dt><dd className="cmm-text-body mt-1">{finding.description}</dd></div>)}</dl>
++                <div><h4 className="font-bold cmm-text-primary">Interprétation</h4><ul className="mt-1 list-disc space-y-1 pl-5 cmm-text-body">{report.implications.map((item) => <li key={item}>{item}</li>)}</ul></div>
++                <div><h4 className="font-bold cmm-text-primary">Leviers étudiés</h4><ul className="mt-1 list-disc space-y-1 pl-5 cmm-text-body">{report.solutions.map((item) => <li key={item}>{item}</li>)}</ul></div>
++              </div>
++            </details>
++            <a href={report.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 font-semibold text-amber-900 underline underline-offset-4 dark:text-amber-200">{fr ? "Résumé officiel pour les décideurs" : "Official summary for policymakers"}<ExternalLink className="h-4 w-4" aria-hidden="true" /></a>
++          </CmmCard>
++        ))}
++      </div>
++      <p className="cmm-text-small">{fr ? "Les chiffres sont des résultats des rapports cités, pas des valeurs actualisées en temps réel. Les fiches ne constituent pas le rapport intégral." : "Figures are from the cited assessments, not live measurements. These cards are not the full reports."}</p>
++    </section>
++  );
+ }
+diff --git a/apps/web/src/components/learn/learn-comprendre-ssr-content.test.tsx b/apps/web/src/components/learn/learn-comprendre-ssr-content.test.tsx
+index 6f628f0f85d897bc10116cf2753d386d859d72d8..9b8102f697de1b8bbd5b3ac0d08d5ec5c35bd04e 100644
+--- a/apps/web/src/components/learn/learn-comprendre-ssr-content.test.tsx
++++ b/apps/web/src/components/learn/learn-comprendre-ssr-content.test.tsx
+@@ -4,25 +4,11 @@
+ import { LearnComprendreSsrContent } from "./learn-comprendre-ssr-content";
+ 
+ describe("learn comprendre SSR content", () => {
+-  it("renders the essential reference answers before deferred interactions", () => {
++  it("renders actual reference summaries and distinguishes proxy from saved water", () => {
+     const markup = renderToStaticMarkup(<LearnComprendreSsrContent locale="fr" />);
+-
+-    expect(markup).toContain("Les repères essentiels avant les graphiques");
+-    expect(markup).toContain("GIEC");
+-    expect(markup).toContain("Limites planétaires");
+-    expect(markup).toContain("Objectifs de développement durable");
+-    expect(markup).toContain("Ordre de grandeur");
+-    expect(markup).toContain("Source visible");
+-    expect(markup).toContain(IMPACT_PROXY_CONFIG.version);
++    for (const text of ["GIEC", "Limites planétaires", "Objectifs de développement durable", "Ordre de grandeur", "Ni eau économisée ni eau mesurée", IMPACT_PROXY_CONFIG.version, "7/9"]) expect(markup).toContain(text);
++    expect(markup).toContain("https://www.ipcc.ch/");
++    expect(markup).toContain("https://sdgs.un.org/fr/goals");
+     expect(markup).not.toContain("Chargement de l'approfondissement");
+   });
+-
+-  it("states the boundaries of the source and the proxy model instead of overstating certainty", () => {
+-    const markup = renderToStaticMarkup(<LearnComprendreSsrContent locale="fr" />);
+-
+-    expect(markup).toContain("aucune URL ni date de référence");
+-    expect(markup).toContain("proxies de pilotage");
+-    expect(markup).toContain("pas des mesures individualisées");
+-    expect(markup).toContain("pas le rapport complet");
+-  });
+ });
+diff --git a/apps/web/src/components/learn/learn-comprendre-ssr-content.tsx b/apps/web/src/components/learn/learn-comprendre-ssr-content.tsx
+index d9f464ca2a7fd302cbfc0443013c695cb31cc24a..26d0af1e376363b5f2415dd7afc39f44a5e35629 100644
+--- a/apps/web/src/components/learn/learn-comprendre-ssr-content.tsx
++++ b/apps/web/src/components/learn/learn-comprendre-ssr-content.tsx
+@@ -1,165 +1,54 @@
++import { BookOpen, Droplets, Globe, Target } from "lucide-react";
++import { CmmCard } from "@/components/ui/cmm-card";
+ import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
+ import { GIEC_REPORTS } from "@/data/content/giec-reports";
+ import { SUSTAINABLE_GOALS } from "@/data/content/sustainable-goals";
+-import { PLANETARY_BOUNDARIES } from "./planetary-boundaries-data";
+-import {
+-  buildImpactMagnitudeSnapshot,
+-  type ImpactMagnitudeInputs,
+-} from "@/lib/learning/impact-magnitude";
++import { PLANETARY_BOUNDARIES, PLANETARY_BOUNDARIES_REFERENCE } from "./planetary-boundaries-data";
++import { buildImpactMagnitudeSnapshot, type ImpactMagnitudeInputs } from "@/lib/learning/impact-magnitude";
+ import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
+ import { formatLearnNumber } from "@/lib/learning/format-learn-number";
+ 
+-const COMPARATOR_INPUTS: ImpactMagnitudeInputs = {
+-  cigaretteButts: 10,
+-  wasteKg: 20,
+-  volunteerMinutes: 30,
+-};
+-
+-function getBoundaryStatusLabel(
+-  locale: LearnLocale,
+-  status: (typeof PLANETARY_BOUNDARIES)[number]["status"],
+-): string {
+-  if (locale === "en") {
+-    return {
+-      safe: "safe",
+-      "increasing-risk": "increasing risk",
+-      "high-risk": "high risk",
+-      transgressed: "transgressed",
+-    }[status];
+-  }
+-  return {
+-    safe: "sûre",
+-    "increasing-risk": "risque croissant",
+-    "high-risk": "risque élevé",
+-    transgressed: "dépassée",
+-  }[status];
+-}
++const COMPARATOR_INPUTS: ImpactMagnitudeInputs = { cigaretteButts: 10, wasteKg: 20, volunteerMinutes: 30 };
+ 
+ export function LearnComprendreSsrContent({ locale }: { locale: LearnLocale }) {
+   const fr = locale === "fr";
+-  const comparator = buildImpactMagnitudeSnapshot(
+-    COMPARATOR_INPUTS,
+-    IMPACT_PROXY_CONFIG.factors,
+-  );
+-  const highlightedReports = GIEC_REPORTS.slice(0, 3);
+-  const highlightedBoundaries = PLANETARY_BOUNDARIES.slice(0, 3);
+-  const highlightedGoals = SUSTAINABLE_GOALS.filter((goal) =>
+-    [6, 12, 14].includes(goal.id),
+-  );
+-
++  const comparator = buildImpactMagnitudeSnapshot(COMPARATOR_INPUTS, IMPACT_PROXY_CONFIG.factors);
++  const crossed = PLANETARY_BOUNDARIES.filter((boundary) => boundary.status === "transgressed").length;
+   return (
+-    <section
+-      aria-labelledby="learn-comprendre-ssr-title"
+-      className="space-y-6 rounded-[2rem] border border-amber-200/80 bg-white p-5 shadow-sm md:p-6"
+-    >
+-      <div className="max-w-3xl space-y-2">
+-          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">
+-          {fr ? "Réponse courte" : "Short answer"}
+-        </p>
+-        <h2 id="learn-comprendre-ssr-title" className="text-2xl font-black tracking-tight text-slate-900">
+-          {fr
+-            ? "Les repères essentiels avant les graphiques"
+-            : "The essential cues before the charts"}
+-        </h2>
+-        <p className="cmm-text-body">
+-          {fr
+-            ? "Cette synthèse reste lisible sans attendre le chargement des interactions. Les graphiques, filtres et calculateurs ci-dessous approfondissent ces mêmes données éditoriales."
+-            : "This summary stays readable before the interactive layer loads. The charts, filters and calculators below expand on the same editorial data."}
+-        </p>
+-      </div>
+-
+-      <div className="grid gap-5 xl:grid-cols-2">
+-        <article className="rounded-[1.5rem] border border-blue-200 bg-blue-50/60 p-5">
+-          <h3 className="text-xl font-black tracking-tight text-slate-900">
+-            {fr ? "GIEC" : "IPCC"}
+-          </h3>
+-          <p className="cmm-text-body mt-2">
+-            {fr
+-              ? "Les rapports du GIEC synthétisent l’état des connaissances sur le changement climatique, ses risques et les leviers d’action."
+-              : "IPCC reports synthesize knowledge about climate change, its risks and response options."}
+-          </p>
+-          <ul className="mt-4 space-y-3 text-sm text-slate-700">
+-            {highlightedReports.map((report) => (
+-              <li key={report.id}>
+-                <strong>{report.title}</strong> ({report.year}) : {report.focus} {report.keyFindings[0]?.description}
+-              </li>
+-            ))}
+-          </ul>
+-          <p className="mt-4 border-t border-blue-200 pt-3 text-xs text-slate-600">
+-            {fr
+-              ? "Source visible : GIEC, années des rapports enregistrées dans la fiche. Limite : résumé de vulgarisation, pas le rapport complet."
+-              : "Visible source: IPCC, report years recorded in the content. Limit: an educational summary, not the full report."}
+-          </p>
+-        </article>
+-
+-        <article className="rounded-[1.5rem] border border-violet-200 bg-violet-50/60 p-5">
+-          <h3 className="text-xl font-black tracking-tight text-slate-900">
+-            {fr ? "Limites planétaires" : "Planetary boundaries"}
+-          </h3>
+-          <p className="cmm-text-body mt-2">
+-            {fr
+-              ? "Le cadre décrit neuf limites et distingue une valeur présentée, une limite sûre et un niveau de risque."
+-              : "The framework describes nine boundaries and distinguishes a displayed value, a safe limit and a risk level."}
+-          </p>
+-          <ul className="mt-4 space-y-3 text-sm text-slate-700">
+-            {highlightedBoundaries.map((boundary) => (
+-              <li key={boundary.id}>
+-                <strong>{boundary.name}</strong> — {boundary.currentValue} ; {fr ? "limite" : "limit"} {boundary.safeLimit} ; {getBoundaryStatusLabel(locale, boundary.status)}.
+-              </li>
+-            ))}
+-          </ul>
+-          <p className="mt-4 border-t border-violet-200 pt-3 text-xs text-slate-600">
+-            {fr
+-              ? "Limite de la fiche actuelle : aucune URL ni date de référence n’est renseignée dans le contrat éditorial de ces valeurs ; l’interactif ne remplace donc pas une vérification primaire."
+-              : "Current content limit: the editorial contract records no reference URL or date for these values; the interactive view is not a substitute for primary verification."}
+-          </p>
+-        </article>
+-
+-        <article className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/60 p-5">
+-          <h3 className="text-xl font-black tracking-tight text-slate-900">
+-            {fr ? "Objectifs de développement durable" : "Sustainable Development Goals"}
+-          </h3>
+-          <p className="cmm-text-body mt-2">
+-            {fr
+-              ? "Les ODD sont les 17 objectifs adoptés par l’ONU en 2015, avec un horizon 2030. Ils forment un cadre de lecture, pas une mesure automatique de l’impact d’une action."
+-              : "The SDGs are the 17 goals adopted by the UN in 2015, with a 2030 horizon. They are a framing system, not an automatic measure of an action’s impact."}
+-          </p>
+-          <ul className="mt-4 space-y-2 text-sm text-slate-700">
+-            {highlightedGoals.map((goal) => (
+-              <li key={goal.id}>
+-                <strong>ODD {goal.number} — {goal.title}</strong> : {goal.description}
+-              </li>
+-            ))}
+-          </ul>
+-          <p className="mt-4 border-t border-emerald-200 pt-3 text-xs text-slate-600">
+-            {fr
+-              ? "Source visible : ONU, adoption 2015, telle qu’indiquée par le module. Limite : les liens entre une action locale et un ODD restent une mise en contexte, pas une attribution causale."
+-              : "Visible source: UN, adopted in 2015, as stated by the module. Limit: links between a local action and an SDG are context, not causal attribution."}
+-          </p>
+-        </article>
+-
+-        <article className="rounded-[1.5rem] border border-amber-200 bg-amber-50/60 p-5">
+-          <h3 className="text-xl font-black tracking-tight text-slate-900">
+-            {fr ? "Ordre de grandeur" : "Order of magnitude"}
+-          </h3>
+-          <p className="cmm-text-body mt-2">
+-            {fr
+-              ? "Pour un exemple de 10 mégots, 20 kg de déchets et 30 minutes de bénévolat, le modèle traduit les entrées en repères d’eau, de CO₂, de surface et de valorisation."
+-              : "For an example of 10 cigarette butts, 20 kg of waste and 30 minutes of volunteering, the model translates inputs into water, CO₂, area and value cues."}
+-          </p>
+-          <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+-            <div className="rounded-xl bg-white/80 p-3"><dt>Eau</dt><dd className="font-black">{formatLearnNumber(locale, comparator.waterLiters)} L</dd></div>
+-            <div className="rounded-xl bg-white/80 p-3"><dt>CO₂eq</dt><dd className="font-black">{formatLearnNumber(locale, comparator.co2Kg)} kg</dd></div>
+-            <div className="rounded-xl bg-white/80 p-3"><dt>{fr ? "Surface" : "Area"}</dt><dd className="font-black">{formatLearnNumber(locale, comparator.surfaceM2FromWaste)} m²</dd></div>
+-            <div className="rounded-xl bg-white/80 p-3"><dt>{fr ? "Valorisation" : "Value"}</dt><dd className="font-black">{formatLearnNumber(locale, comparator.streetCleaningSavings.lowerBoundEuros)}–{formatLearnNumber(locale, comparator.streetCleaningSavings.upperBoundEuros)} €</dd></div>
+-          </dl>
+-          <p className="mt-4 border-t border-amber-200 pt-3 text-xs text-slate-600">
+-            {fr
+-              ? `Version ${IMPACT_PROXY_CONFIG.version}. Sources des facteurs : ${IMPACT_PROXY_CONFIG.sources.water} ; ${IMPACT_PROXY_CONFIG.sources.co2}. Limite : ce sont des proxies de pilotage, pas des mesures individualisées ni un bilan carbone complet.`
+-              : `Version ${IMPACT_PROXY_CONFIG.version}. Factor sources: ${IMPACT_PROXY_CONFIG.sources.water}; ${IMPACT_PROXY_CONFIG.sources.co2}. Limit: these are steering proxies, not individualized measurements or a full carbon footprint.`}
+-          </p>
+-        </article>
++    <section aria-labelledby="learn-comprendre-ssr-title" className="space-y-4">
++      <h2 id="learn-comprendre-ssr-title" className="text-xl font-bold cmm-text-primary">{fr ? "Les repères essentiels avant les graphiques" : "Essential cues before the charts"}</h2>
++      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
++        <CmmCard as="article" tone="family" className="space-y-3">
++          <BookOpen className="h-6 w-6 text-amber-800 dark:text-amber-300" aria-hidden="true" />
++          <h3 className="font-bold cmm-text-primary">{fr ? "GIEC" : "IPCC"}</h3>
++          <p className="text-3xl font-bold tabular-nums cmm-text-primary">{GIEC_REPORTS.length}</p>
++          <p className="cmm-text-body">{fr ? "Contributions et synthèse du sixième cycle, 2021–2023." : "Contributions and synthesis of the sixth cycle, 2021–2023."}</p>
++          <a className="text-sm font-semibold underline text-amber-900 dark:text-amber-200" href={GIEC_REPORTS[GIEC_REPORTS.length - 1]?.sourceUrl} target="_blank" rel="noreferrer">{fr ? "Source : GIEC" : "Source: IPCC"}</a>
++        </CmmCard>
++        <CmmCard as="article" tone="family" className="space-y-3">
++          <Globe className="h-6 w-6 text-amber-800 dark:text-amber-300" aria-hidden="true" />
++          <h3 className="font-bold cmm-text-primary">{fr ? "Limites planétaires" : "Planetary boundaries"}</h3>
++          <p className="text-3xl font-bold tabular-nums cmm-text-primary">{crossed}/{PLANETARY_BOUNDARIES.length}</p>
++          <div className="grid grid-cols-9 gap-1" aria-hidden="true">{PLANETARY_BOUNDARIES.map((boundary) => <span key={boundary.id} className={`h-3 rounded ${boundary.status === "transgressed" ? "bg-rose-600" : "bg-emerald-600"}`} />)}</div>
++          <p className="cmm-text-body">{fr ? "Limites franchies, évaluation 2026. Les processus ne sont pas commensurables." : "Boundaries transgressed in the 2026 assessment. Processes are not commensurable."}</p>
++          <a className="text-sm font-semibold underline text-amber-900 dark:text-amber-200" href={PLANETARY_BOUNDARIES_REFERENCE.url} target="_blank" rel="noreferrer">{PLANETARY_BOUNDARIES_REFERENCE.label}</a>
++        </CmmCard>
++        <CmmCard as="article" tone="family" className="space-y-3">
++          <Target className="h-6 w-6 text-amber-800 dark:text-amber-300" aria-hidden="true" />
++          <h3 className="font-bold cmm-text-primary">{fr ? "Objectifs de développement durable" : "Sustainable Development Goals"}</h3>
++          <p className="text-3xl font-bold tabular-nums cmm-text-primary">{SUSTAINABLE_GOALS.length}</p>
++          <p className="cmm-text-body">{fr ? "Objectifs de l'ONU adoptés en 2015, horizon 2030." : "UN goals adopted in 2015 for 2030."}</p>
++          <a className="text-sm font-semibold underline text-amber-900 dark:text-amber-200" href={fr ? "https://sdgs.un.org/fr/goals" : "https://sdgs.un.org/goals"} target="_blank" rel="noreferrer">{fr ? "Source : ONU" : "Source: UN"}</a>
++        </CmmCard>
++        <CmmCard as="article" tone="family" className="space-y-3">
++          <Droplets className="h-6 w-6 text-sky-700 dark:text-sky-300" aria-hidden="true" />
++          <h3 className="font-bold cmm-text-primary">{fr ? "Ordre de grandeur" : "Order of magnitude"}</h3>
++          <p className="text-3xl font-bold tabular-nums cmm-text-primary">{formatLearnNumber(locale, comparator.waterLiters)} L</p>
++          <p className="cmm-text-body">{fr ? "Volume potentiellement exposé à la pollution de 10 mégots, selon le proxy CleanMyMap. Ni eau économisée ni eau mesurée." : "Volume potentially exposed to pollution from 10 cigarette butts under the CleanMyMap proxy. Neither water saved nor measured."}</p>
++          <a className="text-sm font-semibold underline text-amber-900 dark:text-amber-200" href="/methodologie">{IMPACT_PROXY_CONFIG.version}</a>
++        </CmmCard>
+       </div>
++      <p className="cmm-text-small">{fr ? "Ces résumés orientent la lecture. Les onglets donnent accès aux sources, hypothèses et outils correspondants." : "These summaries guide reading. The tabs open the corresponding sources, assumptions and tools."}</p>
+     </section>
+   );
+ }
+diff --git a/apps/web/src/components/learn/learn-comprendre-visual-intro.tsx b/apps/web/src/components/learn/learn-comprendre-visual-intro.tsx
+index 84be497f5256da13c932665e832f66b1d41beb16..8dc547dbafc4a9d716377dbb2f56fb005b95f168 100644
+--- a/apps/web/src/components/learn/learn-comprendre-visual-intro.tsx
++++ b/apps/web/src/components/learn/learn-comprendre-visual-intro.tsx
+@@ -1,290 +1,47 @@
+-import {
+-  ArrowRight,
+-  BarChart3,
+-  Compass,
+-  Layers3,
+-  Map,
+-  Route,
+-  Sparkles,
+-} from "lucide-react";
+-import type { LucideIcon } from "lucide-react";
+-import type { ReactNode } from "react";
+-import { cn } from "@/lib/utils";
++import { ArrowRight, ClipboardCheck, FlaskConical, Scale } from "lucide-react";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmButton } from "@/components/ui/cmm-button";
+ import type { LearnLinkCard, LearnLocale } from "@/lib/learning/learn-rubric-data";
+-import {
+-  LearnVisualIntroFrame,
+-  LearnVisualIntroLead,
+-  LEARN_VISUAL_INTRO_TONES,
+-} from "./learn-visual-intro-shared";
+ 
+ type LearnComprendreVisualIntroProps = {
+   locale: LearnLocale;
+   card: LearnLinkCard;
+   question: string;
+   clue: string;
+-  action: {
+-    href: string;
+-    label: string;
+-  };
++  action: { href: string; label: string };
+   className?: string;
+ };
+ 
+-const MOTIF_ICONS: Record<LearnLinkCard["visual"]["motif"], LucideIcon> = {
+-  layers: Layers3,
+-  path: Compass,
+-  quiz: BarChart3,
+-  calendar: Map,
+-  guides: Route,
+-  resources: Sparkles,
+-};
+-
+-function getLocaleText(locale: LearnLocale, text: { fr: string; en: string }) {
+-  return text[locale];
+-}
+-
+-function StatBadge({
+-  locale,
+-  value,
+-  label,
+-  accent,
+-}: {
+-  locale: LearnLocale;
+-  value: string;
+-  label: { fr: string; en: string };
+-  accent: string;
+-}) {
+-  return (
+-    <div className="rounded-[1.3rem] border border-slate-200 bg-white px-4 py-3 shadow-sm">
+-      <p className={cn("text-2xl font-black tracking-tight", accent)}>{value}</p>
+-      <p className="mt-1 cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
+-        {getLocaleText(locale, label)}
+-      </p>
+-    </div>
+-  );
+-}
+-
+-function RightCard({
+-  title,
+-  subtitle,
+-  children,
+-  icon,
+-  accent,
+-}: {
+-  title: string;
+-  subtitle: string;
+-  children: ReactNode;
+-  icon: LucideIcon;
+-  accent: string;
+-}) {
+-  const Icon = icon;
++const STEPS = [
++  { icon: ClipboardCheck, label: { fr: "Contexte", en: "Context" }, title: { fr: "Observer ou déclarer", en: "Observe or report" }, example: { fr: "Masse pesée, mégots comptés, durée déclarée.", en: "Weighed mass, counted butts, reported duration." } },
++  { icon: Scale, label: { fr: "Ordres de grandeur", en: "Orders of magnitude" }, title: { fr: "Calculer", en: "Calculate" }, example: { fr: "Convertir les unités et expliciter les hypothèses.", en: "Convert units and state the assumptions." } },
++  { icon: FlaskConical, label: { fr: "Méthode", en: "Method" }, title: { fr: "Interpréter", en: "Interpret" }, example: { fr: "Distinguer mesure, estimation, proxy et valeur inconnue.", en: "Distinguish measurements, estimates, proxies and unknown values." } },
++] as const;
+ 
++export function LearnComprendreVisualIntro({ locale, card, question, clue, action, className }: LearnComprendreVisualIntroProps) {
+   return (
+-    <div className="rounded-[1.4rem] border border-slate-200 bg-white p-4 shadow-sm">
+-      <div className="flex items-start justify-between gap-3">
+-        <div className="space-y-1">
+-          <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
+-            {title}
+-          </p>
+-          <p className="text-sm font-bold text-slate-800">{subtitle}</p>
+-        </div>
+-        <span className={cn("inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-50", accent)}>
+-          <Icon className="h-4 w-4" aria-hidden="true" />
+-        </span>
++    <CmmCard tone="family" as="section" className={className}>
++      <div className="space-y-2">
++        <p className="cmm-text-caption font-bold uppercase tracking-wide text-amber-800">{locale === "fr" ? "Aperçu visuel" : "Visual overview"} · {card.title}</p>
++        <h2 className="text-2xl font-bold tracking-tight cmm-text-primary">{question}</h2>
++        <p className="cmm-text-body">{clue}</p>
+       </div>
+-      <div className="mt-4">{children}</div>
+-    </div>
+-  );
+-}
+-
+-function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
+-  const tone = LEARN_VISUAL_INTRO_TONES[card.visual.tone];
+-  const Icon = MOTIF_ICONS[card.visual.motif];
+-
+-  if (card.visual.motif === "layers") {
+-    return (
+-      <div className="space-y-3">
+-        <div className="rounded-[1.4rem] border border-slate-200 bg-white/90 p-4 shadow-sm">
+-          <div className="flex items-center justify-between gap-3">
+-        <div className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.16em]", tone.badge)}>
+-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+-              {card.visual.badge[locale]}
+-            </div>
+-          <span className="cmm-text-caption font-black uppercase tracking-[0.16em] text-slate-600">
+-              01
+-            </span>
+-          </div>
+-
+-          <div className="mt-4 grid gap-3">
+-            <div className="relative overflow-hidden rounded-[1.2rem] border border-slate-200 bg-white p-3">
+-        <div className="absolute inset-0 bg-gradient-to-r from-amber-50 via-transparent to-transparent" />
+-        <div className="relative flex items-center gap-3">
+-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+-                  <Map className="h-4 w-4" aria-hidden="true" />
+-                </span>
+-                <div className="flex-1">
+-                  <div className="h-2.5 w-24 rounded-full bg-slate-200" />
+-                  <div className="mt-2 h-2 w-32 rounded-full bg-slate-100" />
+-                </div>
+-              </div>
+-              <div className="mt-4 grid grid-cols-3 gap-2">
+-                <span className="h-12 rounded-2xl bg-amber-50" />
+-                <span className="h-16 rounded-2xl bg-orange-100" />
+-                <span className="h-10 rounded-2xl bg-amber-50" />
+-              </div>
+-            </div>
+-
+-            <div className="grid gap-3 sm:grid-cols-2">
+-              <RightCard
+-                title={card.visual.chips[0] ? getLocaleText(locale, card.visual.chips[0]) : (locale === "fr" ? "Repères" : "Cues")}
+-                subtitle={locale === "fr" ? "Lire les écarts et les seuils" : "Read gaps and thresholds"}
+-                icon={BarChart3}
+-                accent="text-amber-700"
+-              >
+-                <div className="space-y-2">
+-                  <div className="h-2 w-full rounded-full bg-amber-100" />
+-                  <div className="h-2 w-4/5 rounded-full bg-orange-200" />
+-                  <div className="h-2 w-2/3 rounded-full bg-amber-300" />
+-                </div>
+-              </RightCard>
+-
+-              <RightCard
+-                title={card.visual.chips[1] ? getLocaleText(locale, card.visual.chips[1]) : (locale === "fr" ? "Méthode" : "Method")}
+-                subtitle={locale === "fr" ? "Suivre la logique avant l'action" : "Follow the logic before action"}
+-                icon={Route}
+-                accent="text-orange-700"
+-              >
+-                <div className="flex items-center justify-between gap-2">
+-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+-                    <Compass className="h-4 w-4" aria-hidden="true" />
+-                  </span>
+-                  <div className="h-0.5 flex-1 rounded-full bg-amber-200" />
+-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-100 text-orange-700">
+-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+-                  </span>
+-                </div>
+-              </RightCard>
++      <ol className="mt-5 grid gap-3 md:grid-cols-3" aria-label={locale === "fr" ? "De la donnée à l'interprétation" : "From data to interpretation"}>
++        {STEPS.map(({ icon: Icon, label, title, example }, index) => (
++          <li key={label.fr} className="flex flex-col gap-3 rounded-xl bg-white p-4 text-slate-900 dark:bg-slate-900 dark:text-white">
++            <div className="flex items-center justify-between gap-2">
++              <span className="grid h-11 w-11 place-items-center rounded-xl bg-amber-100 text-amber-900"><Icon className="h-6 w-6" aria-hidden="true" /></span>
++              <span className="text-sm font-bold text-amber-800 dark:text-amber-300">0{index + 1}</span>
+             </div>
+-          </div>
+-        </div>
+-
+-        <div className="grid gap-3 sm:grid-cols-3">
+-          {card.visual.stats?.map((stat) => (
+-            <StatBadge
+-              key={`${card.title}-${stat.value}-${stat.label.fr}`}
+-              locale={locale}
+-              value={stat.value}
+-              label={stat.label}
+-              accent={tone.accent}
+-            />
+-          ))}
+-        </div>
+-      </div>
+-    );
+-  }
+-
+-  return (
+-    <div className="grid gap-3">
+-      <div className="rounded-[1.4rem] border border-slate-200 bg-white p-4 shadow-sm">
+-        <div className="flex items-center gap-3">
+-          <span className={cn("inline-flex h-11 w-11 items-center justify-center rounded-2xl", tone.badge)}>
+-            <Icon className="h-5 w-5" aria-hidden="true" />
+-          </span>
+-          <div>
+-            <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
+-              {card.title}
+-            </p>
+-            <p className="text-sm font-bold text-slate-800">{card.detail}</p>
+-          </div>
+-        </div>
++            <div><p className="text-xs font-semibold text-amber-800 dark:text-amber-300">{label[locale]}</p><h3 className="mt-1 text-lg font-bold">{title[locale]}</h3></div>
++            <p className="text-sm leading-relaxed">{example[locale]}</p>
++          </li>
++        ))}
++      </ol>
++      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
++        <p className="cmm-text-body font-semibold">{locale === "fr" ? "Une estimation ne devient jamais une observation." : "An estimate never becomes an observation."}</p>
++        <CmmButton href={action.href} tone="secondary" size="sm">{action.label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></CmmButton>
+       </div>
+-    </div>
+-  );
+-}
+-
+-export function LearnComprendreVisualIntro({
+-  locale,
+-  card,
+-  question,
+-  clue,
+-  action,
+-  className,
+-}: LearnComprendreVisualIntroProps) {
+-  return (
+-    <LearnVisualIntroFrame card={card} className={className}>
+-      <LearnVisualIntroLead
+-        locale={locale}
+-        card={card}
+-        question={question}
+-        clue={clue}
+-        eyebrow={locale === "fr" ? "Aperçu visuel" : "Visual overview"}
+-        action={action}
+-        chips={
+-          <div className="flex flex-wrap gap-2">
+-            {card.visual.chips.map((chip) => (
+-              <span
+-                key={`${card.title}-${chip[locale]}`}
+-                className={cn(
+-                  "cmm-text-small inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 font-bold uppercase tracking-[0.16em]",
+-                  LEARN_VISUAL_INTRO_TONES[card.visual.tone].chip,
+-                )}
+-              >
+-                {chip[locale]}
+-              </span>
+-            ))}
+-          </div>
+-        }
+-      />
+-
+-      <div className="space-y-3 rounded-[1.6rem] border border-slate-200/80 bg-white/85 p-5 shadow-sm md:p-6">
+-          <div className="flex items-start justify-between gap-3">
+-            <div>
+-              <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
+-                {locale === "fr" ? "Lecture en 3 couches" : "Three-layer reading"}
+-              </p>
+-              <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
+-                {card.title}
+-              </h3>
+-            </div>
+-            <span className={cn("inline-flex h-11 w-11 items-center justify-center rounded-2xl border", LEARN_VISUAL_INTRO_TONES[card.visual.tone].badge)}>
+-              <Layers3 className="h-5 w-5" aria-hidden="true" />
+-            </span>
+-          </div>
+-
+-          {renderArtwork(card, locale)}
+-
+-          <div className="grid gap-3 sm:grid-cols-3">
+-            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3">
+-              <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
+-                {locale === "fr" ? "Contexte" : "Context"}
+-              </p>
+-              <p className="mt-1 text-sm font-semibold text-slate-700">
+-                {locale === "fr"
+-                  ? "Commencer par les repères avant le détail."
+-                  : "Start with cues before the detail."}
+-              </p>
+-            </div>
+-            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3">
+-              <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-slate-600">
+-                {locale === "fr" ? "Amplitude" : "Magnitude"}
+-              </p>
+-              <p className="mt-1 text-sm font-semibold text-slate-700">
+-                {locale === "fr"
+-                  ? "Comparer les ordres de grandeur."
+-                  : "Compare orders of magnitude."}
+-              </p>
+-            </div>
+-            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3">
+-              <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-slate-600">
+-                {locale === "fr" ? "Méthode" : "Method"}
+-              </p>
+-              <p className="mt-1 text-sm font-semibold text-slate-700">
+-                {locale === "fr"
+-                  ? "Relier les chiffres à la lecture terrain."
+-                  : "Link numbers back to field reading."}
+-              </p>
+-            </div>
+-          </div>
+-        </div>
+-    </LearnVisualIntroFrame>
++    </CmmCard>
+   );
+ }
+diff --git a/apps/web/src/components/learn/learn-deferred-panels.test.ts b/apps/web/src/components/learn/learn-deferred-panels.test.ts
+index 366c4d8b07c3ac098957389632d88de490ee6b4f..c67578579add80519e1eee147c65cb88655b34b3 100644
+--- a/apps/web/src/components/learn/learn-deferred-panels.test.ts
++++ b/apps/web/src/components/learn/learn-deferred-panels.test.ts
+@@ -23,6 +23,8 @@
+     );
+ 
+     expect(markup).toContain("Loading the deep dive");
++    expect(markup).not.toContain("min-h-[520px]");
++    expect(markup).not.toContain("h-[520px]");
+     expect(markup).toContain("role=\"status\"");
+     expect(markup).toContain("aria-live=\"polite\"");
+   });
+diff --git a/apps/web/src/components/learn/learn-deferred-panels.tsx b/apps/web/src/components/learn/learn-deferred-panels.tsx
+index 1dfcde0590f9696d9cec875102210c9b58a19637..e741ebabae630806f644ad4a4be05df079ee86c4 100644
+--- a/apps/web/src/components/learn/learn-deferred-panels.tsx
++++ b/apps/web/src/components/learn/learn-deferred-panels.tsx
+@@ -16,7 +16,7 @@
+   {
+     ssr: false,
+     loading: () => (
+-      <div className="h-[860px] animate-pulse rounded-[2rem] border border-amber-200/70 bg-white/80" />
++      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
+     ),
+   },
+ );
+@@ -29,7 +29,7 @@
+   {
+     ssr: false,
+     loading: () => (
+-      <div className="h-[520px] animate-pulse rounded-[2rem] border border-amber-200/70 bg-white/80" />
++      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
+     ),
+   },
+ );
+@@ -42,7 +42,7 @@
+   {
+     ssr: false,
+     loading: () => (
+-      <div className="h-[420px] animate-pulse rounded-[2rem] border border-amber-200/70 bg-white/80" />
++      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
+     ),
+   },
+ );
+@@ -52,7 +52,7 @@
+   {
+     ssr: false,
+     loading: () => (
+-      <div className="h-[540px] animate-pulse rounded-[2rem] border border-amber-200/70 bg-white/80" />
++      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
+     ),
+   },
+ );
+@@ -65,7 +65,7 @@
+   {
+     ssr: false,
+     loading: () => (
+-      <div className="h-[760px] animate-pulse rounded-[2rem] border border-violet-200/70 bg-white/80" />
++      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
+     ),
+   },
+ );
+@@ -78,7 +78,7 @@
+   {
+     ssr: false,
+     loading: () => (
+-      <div className="h-[520px] animate-pulse rounded-[2rem] border border-violet-200/70 bg-white/80" />
++      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
+     ),
+   },
+ );
+@@ -161,17 +161,16 @@
+ 
+   return (
+     <DeferredSection
+-      className="min-h-[860px]"
+       rootMargin="300px 0px"
+       fallback={
+         <DeferredLoadingShell
+           accent="amber"
+           message={message}
+-          heightClassName="h-[860px]"
++          heightClassName="min-h-20 p-4"
+         />
+       }
+     >
+-      <DeferredLearnArtworkAccordionComponent locale={locale} />
++      <DeferredLearnArtworkAccordionComponent locale={locale} defaultOpen />
+     </DeferredSection>
+   );
+ }
+@@ -185,13 +184,13 @@
+ }) {
+   return (
+     <DeferredSection
+-      className={cn("min-h-[520px]", className)}
++      className={className}
+       rootMargin="300px 0px"
+       fallback={
+         <DeferredLoadingShell
+           accent="amber"
+           message={getDeferredMessage(locale)}
+-          heightClassName="h-[520px]"
++          heightClassName="min-h-20 p-4"
+         />
+       }
+     >
+@@ -203,13 +202,12 @@
+ export function DeferredImpactOrderOfMagnitudeSection({ locale }: { locale?: LearnLocale }) {
+   return (
+     <DeferredSection
+-      className="min-h-[420px]"
+       rootMargin="300px 0px"
+       fallback={
+         <DeferredLoadingShell
+           accent="amber"
+           message={getDeferredMessage(locale)}
+-          heightClassName="h-[420px]"
++          heightClassName="min-h-20 p-4"
+         />
+       }
+     >
+@@ -221,13 +219,12 @@
+ export function DeferredGIECContent({ locale }: { locale?: LearnLocale }) {
+   return (
+     <DeferredSection
+-      className="min-h-[540px]"
+       rootMargin="300px 0px"
+       fallback={
+         <DeferredLoadingShell
+           accent="amber"
+           message={getDeferredMessage(locale)}
+-          heightClassName="h-[540px]"
++          heightClassName="min-h-20 p-4"
+         />
+       }
+     >
+@@ -239,13 +236,12 @@
+ export function DeferredPlanetaryBoundariesInteractive({ locale }: { locale?: LearnLocale }) {
+   return (
+     <DeferredSection
+-      className="min-h-[760px]"
+       rootMargin="320px 0px"
+       fallback={
+         <DeferredLoadingShell
+           accent="violet"
+           message={getDeferredMessage(locale)}
+-          heightClassName="h-[760px]"
++          heightClassName="min-h-20 p-4"
+         />
+       }
+     >
+@@ -257,13 +253,12 @@
+ export function DeferredSustainableGoalsInteractive({ locale }: { locale?: LearnLocale }) {
+   return (
+     <DeferredSection
+-      className="min-h-[520px]"
+       rootMargin="320px 0px"
+       fallback={
+         <DeferredLoadingShell
+           accent="violet"
+           message={getDeferredMessage(locale)}
+-          heightClassName="h-[520px]"
++          heightClassName="min-h-20 p-4"
+         />
+       }
+     >
+diff --git a/apps/web/src/components/learn/learn-rubric-shell.tsx b/apps/web/src/components/learn/learn-rubric-shell.tsx
+index a25864d3d858267ba3c557746dd9390c093b123e..af2765c127e3b55c0a4c14715e6361d8028ab26c 100644
+--- a/apps/web/src/components/learn/learn-rubric-shell.tsx
++++ b/apps/web/src/components/learn/learn-rubric-shell.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { ArrowLeft, ArrowRight, Compass, Layers3, Sparkles } from "lucide-react";
+ import type { ReactNode } from "react";
+-import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
++import { CmmButton, CmmButtonGroup, type ButtonTone } from "@/components/ui/cmm-button";
+ import { PageHeader } from "@/components/ui/page-header";
+ import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
+ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+@@ -19,6 +19,7 @@
+   cta?: {
+     href: string;
+     label: { fr: string; en: string };
++    tone?: ButtonTone;
+   };
+   showVisualPanel?: boolean;
+   children: ReactNode;
+@@ -100,7 +101,7 @@
+       <section
+         className={
+         isLightOrange
+-            ? "rounded-[2rem] border border-amber-200/70 bg-[linear-gradient(180deg,rgba(255,249,217,0.98),rgba(255,255,250,0.98))] p-6 text-slate-900 shadow-[0_24px_56px_-32px_rgba(249,115,22,0.16)] md:p-8"
++            ? "rounded-[2rem] border border-amber-200/70 bg-[linear-gradient(135deg,var(--cmm-family-card-flat,var(--cmm-family-soft)),var(--cmm-family-card-end,var(--cmm-family-tint)))] p-6 cmm-text-primary shadow-[0_24px_56px_-32px_rgba(249,115,22,0.16)] md:p-8"
+             : `rounded-[2rem] bg-gradient-to-br ${ACCENT_CLASSES[accent]} p-6 text-white md:p-8`
+         }
+       >
+@@ -124,7 +125,7 @@
+                 {cta ? (
+                   <CmmButton
+                     href={cta.href}
+-                    tone="critical"
++                    tone={cta.tone ?? "critical"}
+                     size="sm"
+                     variant="pill"
+                     className="shrink-0"
+diff --git a/apps/web/src/components/learn/learn-vulgarisation-path-section.test.ts b/apps/web/src/components/learn/learn-vulgarisation-path-section.test.ts
+index cccaa8da93ac141d226ed3384a96d0816bfb052e..5421629c717e736adf1958423284bbade8151a54 100644
+--- a/apps/web/src/components/learn/learn-vulgarisation-path-section.test.ts
++++ b/apps/web/src/components/learn/learn-vulgarisation-path-section.test.ts
+@@ -1,25 +1,13 @@
+ import * as React from "react";
+ import { renderToStaticMarkup } from "react-dom/server";
+ import { describe, expect, it } from "vitest";
+-
+ import { LearnVulgarisationPathSection } from "./learn-vulgarisation-path-section";
+ 
+ describe("LearnVulgarisationPathSection", () => {
+-  it("renders the four-step reading path and the CleanMyMap cues", () => {
+-    const markup = renderToStaticMarkup(
+-      React.createElement(LearnVulgarisationPathSection, {
+-        locale: "fr",
+-      }),
+-    );
+-
+-    expect(markup).toContain("Lecture en 4 temps");
+-    expect(markup).toContain("1 idée = 1 carte");
+-    expect(markup).toContain("Contexte");
+-    expect(markup).toContain("Ordres de grandeur");
+-    expect(markup).toContain("Méthodologie");
+-    expect(markup).toContain("Exemples CleanMyMap");
+-    expect(markup).toContain("Dans CleanMyMap");
+-    expect(markup).toContain("Lire un rapport sans surinterpréter");
+-    expect(markup).toContain("Préparer une action avec le bon niveau de détail");
++  it("preserves the four useful destinations without fabricated progress", () => {
++    const markup = renderToStaticMarkup(React.createElement(LearnVulgarisationPathSection, { locale: "fr" }));
++    for (const href of ["/methodologie", "/reports", "/actions/new", "/actions/map"]) expect(markup).toContain(`href="${href}"`);
++    expect(markup).not.toContain("Progression de lecture");
++    expect(markup).not.toContain("width:25%");
+   });
+ });
+diff --git a/apps/web/src/components/learn/learn-vulgarisation-path-section.tsx b/apps/web/src/components/learn/learn-vulgarisation-path-section.tsx
+index 56ba4269566b818a8c0eaa981b879da296cd4c54..7f5f031228724864a35c98fe94d01757e80215e2 100644
+--- a/apps/web/src/components/learn/learn-vulgarisation-path-section.tsx
++++ b/apps/web/src/components/learn/learn-vulgarisation-path-section.tsx
+@@ -1,226 +1,32 @@
+ import Link from "next/link";
+-import {
+-  ArrowRight,
+-  BarChart3,
+-  BookOpenText,
+-  MapPinned,
+-  Route,
+-  Sparkles,
+-} from "lucide-react";
+-import type { LucideIcon } from "lucide-react";
+-import { cn } from "@/lib/utils";
++import { ArrowRight, BarChart3, BookOpenText, MapPinned, Route } from "lucide-react";
++import { CmmCard } from "@/components/ui/cmm-card";
+ import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
+ 
+-type LearnVulgarisationPathSectionProps = {
+-  locale: LearnLocale;
+-};
+-
+-type LearnVulgarisationStep = {
+-  number: string;
+-  title: { fr: string; en: string };
+-  detail: { fr: string; en: string };
+-  href: string;
+-  linkLabel: { fr: string; en: string };
+-  icon: LucideIcon;
+-};
+-
+-const STEPS: LearnVulgarisationStep[] = [
+-  {
+-    number: "01",
+-    title: { fr: "Contexte", en: "Context" },
+-    detail: {
+-      fr: "Commencer par ce que l'on mesure et pourquoi le sujet compte avant de lire un chiffre.",
+-      en: "Start with what is being measured and why the topic matters before reading a number.",
+-    },
+-    href: "/methodologie",
+-    linkLabel: { fr: "Voir la méthode", en: "See the method" },
+-    icon: BookOpenText,
+-  },
+-  {
+-    number: "02",
+-    title: { fr: "Ordres de grandeur", en: "Orders of magnitude" },
+-    detail: {
+-      fr: "Comparer un petit geste, un sac, une zone ou un mois complet sur la même échelle.",
+-      en: "Compare a small gesture, a bag, a zone or a full month on the same scale.",
+-    },
+-    href: "/reports",
+-    linkLabel: { fr: "Lire un rapport", en: "Read a report" },
+-    icon: BarChart3,
+-  },
+-  {
+-    number: "03",
+-    title: { fr: "Méthodologie", en: "Methodology" },
+-    detail: {
+-      fr: "Relier la donnée au calcul, au proxy et à la façon dont CleanMyMap transforme l'action.",
+-      en: "Link the data to the calculation, the proxy and the way CleanMyMap turns action into insight.",
+-    },
+-    href: "/actions/new",
+-    linkLabel: { fr: "Déclarer une action", en: "Declare an action" },
+-    icon: Route,
+-  },
+-  {
+-    number: "04",
+-    title: { fr: "Exemples CleanMyMap", en: "CleanMyMap examples" },
+-    detail: {
+-      fr: "Passer du concept au terrain: carte, rapport et décision utilitaire.",
+-      en: "Move from concept to field use: map, report and useful decision.",
+-    },
+-    href: "/actions/map",
+-    linkLabel: { fr: "Ouvrir la carte", en: "Open the map" },
+-    icon: MapPinned,
+-  },
+-];
+-
+-const USEFUL_CUES = {
+-  fr: [
+-    "Lire un rapport sans surinterpréter",
+-    "Préparer une action avec le bon niveau de détail",
+-    "Expliquer simplement au collectif",
+-  ],
+-  en: [
+-    "Read a report without over-interpreting it",
+-    "Prepare an action with the right level of detail",
+-    "Explain things simply to the group",
+-  ],
+-} as const;
+-
+-export function LearnVulgarisationPathSection({
+-  locale,
+-}: LearnVulgarisationPathSectionProps) {
+-  const currentStep = 1;
+-  const progressPercent = (currentStep / STEPS.length) * 100;
++const STEPS = [
++  { icon: BookOpenText, title: { fr: "Contexte", en: "Context" }, detail: { fr: "Identifier la source, la période et le périmètre.", en: "Identify the source, period and scope." }, href: "/methodologie", link: { fr: "Voir la méthode", en: "See the method" } },
++  { icon: BarChart3, title: { fr: "Ordres de grandeur", en: "Orders of magnitude" }, detail: { fr: "Comparer des indicateurs définis sur la même base.", en: "Compare indicators defined on the same basis." }, href: "/reports", link: { fr: "Lire un rapport", en: "Read a report" } },
++  { icon: Route, title: { fr: "Méthodologie", en: "Methodology" }, detail: { fr: "Documenter les mesures et les données manquantes.", en: "Document measurements and missing data." }, href: "/actions/new", link: { fr: "Déclarer une action", en: "Report an action" } },
++  { icon: MapPinned, title: { fr: "Exemples CleanMyMap", en: "CleanMyMap examples" }, detail: { fr: "Observer la couverture territoriale des interventions.", en: "Explore territorial coverage of interventions." }, href: "/actions/map", link: { fr: "Ouvrir la carte", en: "Open the map" } },
++] as const;
+ 
++export function LearnVulgarisationPathSection({ locale }: { locale: LearnLocale }) {
++  const fr = locale === "fr";
+   return (
+-    <section className="rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-5 shadow-sm md:p-6">
+-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+-        <div className="max-w-3xl space-y-3">
+-          <div className="flex items-center gap-2">
+-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-800">
+-              <Sparkles className="h-4 w-4" aria-hidden="true" />
+-            </span>
+-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+-              {locale === "fr" ? "Lecture en 4 temps" : "Four-step reading"}
+-            </p>
+-          </div>
+-
+-          <div className="space-y-2">
+-            <h3 className="text-2xl font-black tracking-tight text-slate-900">
+-              {locale === "fr"
+-                ? "1 idée = 1 carte, puis on monte en échelle"
+-                : "1 idea = 1 card, then we scale up"}
+-            </h3>
+-            <p className="cmm-text-body">
+-              {locale === "fr"
+-                ? "La vulgarisation doit d'abord faire comprendre, ensuite comparer, puis seulement ouvrir la porte à l'action."
+-                : "Explanation should first make things understandable, then comparable, and only then open the door to action."}
+-            </p>
+-          </div>
+-
+-          <div className="flex items-center gap-3 rounded-[1.4rem] border border-amber-200 bg-white px-4 py-3">
+-            <div className="min-w-0 flex-1">
+-              <div className="flex items-center justify-between gap-3">
+-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+-                  {locale === "fr" ? "Progression de lecture" : "Reading progress"}
+-                </p>
+-                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+-                  {String(currentStep).padStart(2, "0")} / {String(STEPS.length).padStart(2, "0")}
+-                </span>
+-              </div>
+-              <div className="mt-2 h-2 rounded-full bg-amber-100">
+-                <div
+-                  className="h-full rounded-full bg-amber-500"
+-                  style={{ width: `${progressPercent}%` }}
+-                  aria-hidden="true"
+-                />
+-              </div>
+-            </div>
+-          </div>
+-        </div>
+-
+-        <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-200 bg-white text-amber-800">
+-          <Route className="h-5 w-5" aria-hidden="true" />
+-        </span>
+-      </div>
+-
+-      <div className="mt-5 grid gap-4 xl:grid-cols-4">
+-        {STEPS.map((step, index) => {
+-          const Icon = step.icon;
+-          const isActive = index === currentStep - 1;
+-
+-          return (
+-            <article
+-              key={step.number}
+-              className={cn(
+-                "flex h-full flex-col justify-between rounded-[1.45rem] border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
+-                isActive
+-                  ? "border-amber-300 bg-amber-50/80"
+-                  : "border-slate-200 bg-white",
+-              )}
+-            >
+-              <div className="space-y-4">
+-                <div className="flex items-start justify-between gap-3">
+-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-amber-200 bg-white text-sm font-black text-amber-700">
+-                    {step.number}
+-                  </span>
+-                  {isActive ? (
+-                    <span className="rounded-full border border-amber-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+-                      {locale === "fr" ? "Point de départ" : "Starting point"}
+-                    </span>
+-                  ) : null}
+-                </div>
+-
+-                <div className="flex items-start gap-3">
+-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-white text-amber-700">
+-                    <Icon className="h-4 w-4" aria-hidden="true" />
+-                  </span>
+-                  <div className="min-w-0">
+-                    <h4 className="text-lg font-black tracking-tight text-slate-900">
+-                      {step.title[locale]}
+-                    </h4>
+-                    <p className="cmm-text-body mt-2">
+-                      {step.detail[locale]}
+-                    </p>
+-                  </div>
+-                </div>
+-              </div>
+-
+-              <Link
+-                href={step.href}
+-                className={cn(
+-                  "mt-4 inline-flex min-h-10 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-black uppercase tracking-[0.18em] transition",
+-                  isActive
+-                    ? "border-amber-200 bg-white text-amber-900 hover:bg-amber-50"
+-                    : "border-slate-200 bg-slate-50 text-slate-900 hover:bg-slate-100",
+-                )}
+-              >
+-                {step.linkLabel[locale]}
+-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+-              </Link>
+-            </article>
+-          );
+-        })}
+-      </div>
+-
+-      <div className="mt-5 rounded-[1.5rem] border border-amber-200 bg-white p-4">
+-        <div className="flex flex-wrap items-center gap-2">
+-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+-            {locale === "fr" ? "Dans CleanMyMap" : "In CleanMyMap"}
+-          </p>
+-          {USEFUL_CUES[locale].map((cue) => (
+-            <span
+-              key={cue}
+-              className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-900"
+-            >
+-              {cue}
+-            </span>
+-          ))}
+-        </div>
+-        <p className="cmm-text-body mt-3 max-w-3xl">
+-          {locale === "fr"
+-            ? "Cette séquence sert à passer du contexte à l'usage sans perdre l'échelle ni la rigueur de lecture."
+-            : "This sequence moves from context to use without losing scale or reading rigor."}
+-        </p>
+-      </div>
++    <section className="space-y-3" aria-labelledby="learn-vulgarisation-path-title">
++      <h2 id="learn-vulgarisation-path-title" className="text-xl font-bold cmm-text-primary">{fr ? "Lire et utiliser les données CleanMyMap" : "Read and use CleanMyMap data"}</h2>
++      <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
++        {STEPS.map(({ icon: Icon, title, detail, href, link }, index) => (
++          <li key={href} className="flex">
++            <CmmCard tone="family" className="flex w-full flex-col gap-3">
++              <div className="flex items-center justify-between"><Icon className="h-6 w-6 text-amber-800 dark:text-amber-300" aria-hidden="true" /><span className="cmm-text-caption font-bold">0{index + 1}</span></div>
++              <h3 className="text-base font-bold cmm-text-primary">{title[locale]}</h3>
++              <p className="cmm-text-body flex-1">{detail[locale]}</p>
++              <Link href={href} className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-amber-900 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-amber-200">{link[locale]}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
++            </CmmCard>
++          </li>
++        ))}
++      </ol>
+     </section>
+   );
+ }
+diff --git a/apps/web/src/components/learn/planetary-boundaries-data.test.ts b/apps/web/src/components/learn/planetary-boundaries-data.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f44044b37553d0de84a2eb05ab3bd5ef0407e673
+--- /dev/null
++++ b/apps/web/src/components/learn/planetary-boundaries-data.test.ts
+@@ -0,0 +1,11 @@
++import { describe, expect, it } from "vitest";
++import { PLANETARY_BOUNDARIES, PLANETARY_BOUNDARIES_REFERENCE } from "./planetary-boundaries-data";
++
++describe("dated planetary assessment", () => {
++  it("contains nine unique boundaries and seven classified as transgressed", () => {
++    expect(new Set(PLANETARY_BOUNDARIES.map((boundary) => boundary.id)).size).toBe(9);
++    expect(PLANETARY_BOUNDARIES.filter((boundary) => boundary.status === "transgressed")).toHaveLength(7);
++    expect(PLANETARY_BOUNDARIES.filter((boundary) => boundary.status === "safe").map((boundary) => boundary.id)).toEqual(["atmospheric-aerosols", "ozone-depletion"]);
++    expect(PLANETARY_BOUNDARIES_REFERENCE.year).toBe(2026);
++  });
++});
+diff --git a/apps/web/src/components/learn/planetary-boundaries-data.ts b/apps/web/src/components/learn/planetary-boundaries-data.ts
+index d7c01c30f433a97082fd4d5e7e1b65c5e3d5c1e8..ec17f5ae29d05243f93f6956e47dcbc801466143 100644
+--- a/apps/web/src/components/learn/planetary-boundaries-data.ts
++++ b/apps/web/src/components/learn/planetary-boundaries-data.ts
+@@ -1,126 +1,64 @@
+-import {
+-  Cloud,
+-  Droplets,
+-  Factory,
+-  Leaf,
+-  Mountain,
+-  Thermometer,
+-  Users,
+-  Waves,
+-} from "lucide-react";
++import { Cloud, Droplets, Factory, Leaf, Mountain, Thermometer, Users, Waves } from "lucide-react";
+ import type { LucideIcon } from "lucide-react";
+ 
++export const PLANETARY_BOUNDARIES_REFERENCE = {
++  year: 2026,
++  checkedAt: "2026-11-25",
++  label: "Planetary Health Check 2026",
++  url: "https://www.planetaryhealthcheck.org/2026-planetary-health-check-launched-at-new-york-climate-week/",
++  frameworkUrl: "https://www.planetaryhealthcheck.org/planetary-boundaries/",
++} as const;
++
++type Localized = { fr: string; en: string };
+ export type PlanetaryBoundary = {
+   id: string;
+   name: string;
++  nameEn: string;
+   icon: LucideIcon;
+-  status: "safe" | "increasing-risk" | "high-risk" | "transgressed";
+-  currentValue: string;
+-  safeLimit: string;
+-  description: string;
+-  impacts: string[];
+-  solutions: string[];
++  status: "safe" | "transgressed";
++  controlVariable: Localized;
++  description: Localized;
++  impacts: Localized[];
++  solutions: Localized[];
+ };
+ 
++// Categorical projection of the dated assessment: no fabricated comparable radii,
++// current physical measurements, or numeric thresholds across unlike variables.
+ export const PLANETARY_BOUNDARIES: PlanetaryBoundary[] = [
+-  {
+-    id: "climate-change",
+-    name: "Climat",
+-    icon: Thermometer,
+-    status: "high-risk",
+-    currentValue: "+1.1°C",
+-    safeLimit: "+1.5°C",
+-    description: "Le réchauffement climatique menace tous les écosystèmes.",
+-    impacts: ["Fonte des glaciers", "Météo extrême", "Perte de biodiversité"],
+-    solutions: ["100% renouvelable", "Capture CO2"],
+-  },
+-  {
+-    id: "biodiversity-loss",
+-    name: "Biodiversité",
+-    icon: Leaf,
+-    status: "transgressed",
+-    currentValue: "Extinction",
+-    safeLimit: "< 10/an",
+-    description: "La 6ème extinction de masse est en cours.",
+-    impacts: ["Effondrement chaînes alimentaires", "Perte résilience"],
+-    solutions: ["Protection 30% terres/océans", "Agri régénératrice"],
+-  },
+-  {
+-    id: "biogeochemical-flows",
+-    name: "Azote/Phosphore",
+-    icon: Factory,
+-    status: "transgressed",
+-    currentValue: "250% Azote",
+-    safeLimit: "Niveau 1900",
+-    description: "Les cycles naturels sont perturbés par l'agriculture.",
+-    impacts: ["Zones mortes", "Eutrophisation"],
+-    solutions: ["Agriculture précision", "Baisse engrais"],
+-  },
+-  {
+-    id: "land-system-change",
+-    name: "Sols",
+-    icon: Mountain,
+-    status: "high-risk",
+-    currentValue: "75% dégradés",
+-    safeLimit: "< 15% artif.",
+-    description: "La déforestation détruit la séquestration carbone.",
+-    impacts: ["Perte fertilité", "Baisse stockage CO2"],
+-    solutions: ["Zéro déforestation", "Régénération"],
+-  },
+-  {
+-    id: "freshwater-change",
+-    name: "Eau douce",
+-    icon: Droplets,
+-    status: "increasing-risk",
+-    currentValue: "Limite dépassée — bleu et vert",
+-    safeLimit: "Dans la zone sûre",
+-    description:
+-      "Le Stockholm Resilience Centre indique une transgression des composantes blue water et green water de la limite Freshwater Change.",
+-    impacts: ["Stress hydrique", "Conflits d'accès"],
+-    solutions: ["Gestion intégrée", "Baisse gaspillages"],
+-  },
+-  {
+-    id: "ocean-acidification",
+-    name: "Océans (pH)",
+-    icon: Waves,
+-    status: "high-risk",
+-    currentValue: "pH -0.1",
+-    safeLimit: "Stable",
+-    description: "L'absorption du CO2 acidifie l'eau.",
+-    impacts: ["Dissolution coraux", "Perturbation marine"],
+-    solutions: ["Baisse CO2", "Protection côtière"],
+-  },
+-  {
+-    id: "atmospheric-aerosols",
+-    name: "Aérosols",
+-    icon: Cloud,
+-    status: "safe",
+-    currentValue: "Contrôlé",
+-    safeLimit: "Équilibre",
+-    description: "Particules affectant le climat et la santé.",
+-    impacts: ["Troubles respiratoires", "Pluies acides"],
+-    solutions: ["Filtres industriels", "Contrôle air"],
+-  },
+-  {
+-    id: "ozone-depletion",
+-    name: "Couche d'Ozone",
+-    icon: Cloud,
+-    status: "safe",
+-    currentValue: "Récupération",
+-    safeLimit: "Intacte",
+-    description: "La couche se reconstitue grâce au protocole de Montréal.",
+-    impacts: ["Rayons UV", "Dommages écosystèmes"],
+-    solutions: ["Maintien protocoles", "Alternatives CFC"],
+-  },
+-  {
+-    id: "novel-entities",
+-    name: "Polluants",
+-    icon: Users,
+-    status: "increasing-risk",
+-    currentValue: "Émergents",
+-    safeLimit: "Contrôlé",
+-    description: "Microplastiques, nanoparticules, chimie de synthèse.",
+-    impacts: ["Accumulation vivante", "Résistances"],
+-    solutions: ["Filtration avancée", "Précaution"],
+-  },
++  { id: "climate-change", name: "Climat", nameEn: "Climate", icon: Thermometer, status: "transgressed",
++    controlVariable: { fr: "CO₂ atmosphérique et forçage radiatif", en: "Atmospheric CO₂ and radiative forcing" },
++    description: { fr: "Le bilan énergétique du système Terre est modifié par les gaz à effet de serre. La limite planétaire n'est pas l'objectif de température de l'Accord de Paris.", en: "Greenhouse gases change Earth's energy balance. The planetary boundary is not the Paris Agreement temperature goal." },
++    impacts: [{ fr: "Risques climatiques croissants", en: "Increasing climate risks" }], solutions: [{ fr: "Réduire les émissions de gaz à effet de serre", en: "Reduce greenhouse gas emissions" }] },
++  { id: "biodiversity-loss", name: "Intégrité de la biosphère", nameEn: "Biosphere integrity", icon: Leaf, status: "transgressed",
++    controlVariable: { fr: "Diversité génétique et fonctionnement de la biosphère", en: "Genetic diversity and biosphere functioning" },
++    description: { fr: "La diversité et le fonctionnement du vivant contribuent à la stabilité des écosystèmes.", en: "Biodiversity and biosphere functioning contribute to ecosystem stability." },
++    impacts: [{ fr: "Perte de résilience", en: "Loss of resilience" }], solutions: [{ fr: "Préserver et restaurer les habitats", en: "Protect and restore habitats" }] },
++  { id: "biogeochemical-flows", name: "Azote et phosphore", nameEn: "Nitrogen and phosphorus", icon: Factory, status: "transgressed",
++    controlVariable: { fr: "Flux d'azote et de phosphore", en: "Nitrogen and phosphorus flows" },
++    description: { fr: "Les apports anthropiques de nutriments modifient les cycles biogéochimiques.", en: "Human nutrient inputs alter biogeochemical cycles." },
++    impacts: [{ fr: "Eutrophisation des milieux aquatiques", en: "Eutrophication of aquatic systems" }], solutions: [{ fr: "Limiter les excès d'apports nutritifs", en: "Limit excess nutrient inputs" }] },
++  { id: "land-system-change", name: "Occupation des sols", nameEn: "Land system change", icon: Mountain, status: "transgressed",
++    controlVariable: { fr: "Couverture forestière par rapport à son état de référence", en: "Forest cover relative to its reference state" },
++    description: { fr: "Les transformations d'usage des terres affectent les habitats, les cycles de l'eau et le climat.", en: "Land-use changes affect habitats, water cycles and climate." },
++    impacts: [{ fr: "Fragmentation des habitats", en: "Habitat fragmentation" }], solutions: [{ fr: "Préserver les forêts et restaurer les milieux dégradés", en: "Protect forests and restore degraded ecosystems" }] },
++  { id: "freshwater-change", name: "Eau douce", nameEn: "Freshwater change", icon: Droplets, status: "transgressed",
++    controlVariable: { fr: "Débits des cours d'eau et humidité des sols (eau bleue et verte)", en: "Streamflow and soil moisture (blue and green water)" },
++    description: { fr: "Le cadre distingue les modifications de l'eau de surface et de l'humidité des sols.", en: "The framework distinguishes changes in surface water and soil moisture." },
++    impacts: [{ fr: "Perturbations des systèmes hydriques", en: "Disruption of water systems" }], solutions: [{ fr: "Gérer l'eau à l'échelle des bassins", en: "Manage water at basin scale" }] },
++  { id: "ocean-acidification", name: "Acidification des océans", nameEn: "Ocean acidification", icon: Waves, status: "transgressed",
++    controlVariable: { fr: "Saturation en aragonite des eaux de surface", en: "Surface-water aragonite saturation" },
++    description: { fr: "Le CO₂ dissous modifie la chimie océanique. Cette limite a été évaluée comme franchie en 2025.", en: "Dissolved CO₂ alters ocean chemistry. This boundary was assessed as transgressed in 2025." },
++    impacts: [{ fr: "Pressions sur certains organismes calcifiants", en: "Pressure on some calcifying organisms" }], solutions: [{ fr: "Réduire les émissions de CO₂", en: "Reduce CO₂ emissions" }] },
++  { id: "atmospheric-aerosols", name: "Aérosols atmosphériques", nameEn: "Atmospheric aerosol loading", icon: Cloud, status: "safe",
++    controlVariable: { fr: "Charge et distribution des aérosols atmosphériques", en: "Atmospheric aerosol loading and distribution" },
++    description: { fr: "La limite globale n'est pas classée comme franchie ; cela n'exclut pas les risques sanitaires et dépassements régionaux.", en: "The global boundary is not classified as transgressed; regional exceedances and health risks remain possible." },
++    impacts: [{ fr: "Perturbations climatiques et sanitaires régionales", en: "Regional climate and health impacts" }], solutions: [{ fr: "Réduire les émissions de particules et de leurs précurseurs", en: "Reduce particle and precursor emissions" }] },
++  { id: "ozone-depletion", name: "Ozone stratosphérique", nameEn: "Stratospheric ozone", icon: Cloud, status: "safe",
++    controlVariable: { fr: "Concentration d'ozone stratosphérique", en: "Stratospheric ozone concentration" },
++    description: { fr: "L'ozone stratosphérique protège contre une partie du rayonnement ultraviolet. Le protocole de Montréal soutient sa restauration.", en: "Stratospheric ozone shields Earth from part of ultraviolet radiation. The Montreal Protocol supports its recovery." },
++    impacts: [{ fr: "Exposition aux UV en cas d'appauvrissement", en: "UV exposure when depleted" }], solutions: [{ fr: "Maintenir les restrictions des substances appauvrissant l'ozone", en: "Maintain restrictions on ozone-depleting substances" }] },
++  { id: "novel-entities", name: "Entités nouvelles", nameEn: "Novel entities", icon: Users, status: "transgressed",
++    controlVariable: { fr: "Introduction d'entités nouvelles et évaluation de leur sécurité", en: "Introduction of novel entities and safety assessment" },
++    description: { fr: "Les substances et matériaux introduits par l'activité humaine peuvent créer des pressions difficiles à caractériser ou à inverser.", en: "Human-introduced substances and materials can create pressures that are difficult to characterize or reverse." },
++    impacts: [{ fr: "Accumulation de polluants persistants", en: "Accumulation of persistent pollutants" }], solutions: [{ fr: "Prévenir les émissions et évaluer la sécurité des substances", en: "Prevent releases and assess substance safety" }] },
+ ];
+diff --git a/apps/web/src/components/learn/planetary-boundaries.tsx b/apps/web/src/components/learn/planetary-boundaries.tsx
+index 6bd2402d99b9e890b91c488ff609d066250ffe5d..c430360da8b9b7054b64d1bf92fd36ea5f36455f 100644
+--- a/apps/web/src/components/learn/planetary-boundaries.tsx
++++ b/apps/web/src/components/learn/planetary-boundaries.tsx
+@@ -1,195 +1,40 @@
+ "use client";
+ 
+ import { useState } from "react";
+-import { motion, AnimatePresence } from "framer-motion";
+-import {
+-  AlertTriangle,
+-  Info,
+-  Sparkles,
+-} from "lucide-react";
++import { ExternalLink } from "lucide-react";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+ import { PlanetaryRadarChart } from "./planetary-radar-chart";
+-import {
+-  PLANETARY_BOUNDARIES,
+-  type PlanetaryBoundary,
+-} from "./planetary-boundaries-data";
+-
+-const getStatusColor = (status: PlanetaryBoundary['status']) => {
+-  switch (status) {
+-    case 'safe': return '#10b981'; // emerald
+-    case 'increasing-risk': return '#f59e0b'; // amber
+-    case 'high-risk': return '#f97316'; // orange
+-    case 'transgressed': return '#ef4444'; // red
+-    default: return '#64748b';
+-  }
+-};
+-
+-const getStatusRadius = (status: PlanetaryBoundary['status']) => {
+-  switch (status) {
+-    case 'safe': return 0.4;
+-    case 'increasing-risk': return 0.6;
+-    case 'high-risk': return 0.8;
+-    case 'transgressed': return 1.0;
+-    default: return 0.5;
+-  }
+-};
++import { PLANETARY_BOUNDARIES, PLANETARY_BOUNDARIES_REFERENCE } from "./planetary-boundaries-data";
+ 
+ export function PlanetaryBoundariesInteractive() {
+-  const [selectedId, setSelectedId] = useState<string | null>(PLANETARY_BOUNDARIES[0]?.id ?? null);
+-  if (!selectedId) {
+-    return null;
+-  }
+-
+-  const selectedBoundary = PLANETARY_BOUNDARIES.find((b) => b.id === selectedId);
+-  if (!selectedBoundary) {
+-    return null;
+-  }
+-
+-  const radarBoundaries = PLANETARY_BOUNDARIES.map(b => ({
+-    id: b.id,
+-    name: b.name,
+-    icon: b.icon,
+-    status: b.status,
+-    color: getStatusColor(b.status),
+-    radiusRatio: getStatusRadius(b.status)
+-  }));
+-
++  const { locale } = useSitePreferences();
++  const fr = locale === "fr";
++  const [selectedId, setSelectedId] = useState(PLANETARY_BOUNDARIES[0]?.id ?? "");
++  const selected = PLANETARY_BOUNDARIES.find((boundary) => boundary.id === selectedId);
++  if (!selected) return null;
++  const crossed = PLANETARY_BOUNDARIES.filter((boundary) => boundary.status === "transgressed").length;
++  const statusLabel = (status: "safe" | "transgressed") => status === "transgressed" ? (fr ? "Limite franchie" : "Boundary transgressed") : (fr ? "Non franchie à l'échelle mondiale" : "Not globally transgressed");
+   return (
+-    <div className="cmm-page-width space-y-12 px-4">
+-      <div className="text-center space-y-4">
+-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900 shadow-sm mb-2">
+-          <Sparkles size={14} className="text-violet-500" />
+-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-700 dark:text-violet-400">Science & Données</span>
+-        </div>
+-        <h2 className="text-4xl md:text-5xl font-black cmm-text-primary tracking-tight">Les 9 Limites Planétaires</h2>
+-        <p className="text-lg cmm-text-secondary max-w-3xl mx-auto font-medium">
+-          Découvrez l&apos;état de santé de notre planète à travers ce radar interactif. Le dépassement de ces limites menace la résilience de la Terre.
+-        </p>
+-      </div>
+-
+-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 items-center">
+-        
+-        {/* Visualisation Radar Premium */}
+-        <div className="relative order-2 xl:order-1">
+-          <PlanetaryRadarChart 
+-            boundaries={radarBoundaries}
+-            selectedId={selectedId}
+-            onSelect={setSelectedId}
+-          />
+-          
+-          {/* Légende flottante */}
+-          <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-4 py-4 md:py-0">
+-            {[
+-              { label: 'Sûr', color: '#10b981' },
+-              { label: 'Risque', color: '#f97316' },
+-              { label: 'Dépassé', color: '#ef4444' }
+-            ].map((item) => (
+-              <div key={item.label} className="flex items-center gap-2">
+-                <div className="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.1)]" style={{ backgroundColor: item.color }} />
+-                <span className="text-[10px] font-bold uppercase tracking-wider cmm-text-muted">{item.label}</span>
+-              </div>
+-            ))}
++    <section aria-labelledby="planetary-boundaries-title" className="space-y-4">
++      <div><h2 id="planetary-boundaries-title" className="text-2xl font-bold cmm-text-primary">{fr ? "Les 9 limites planétaires" : "The 9 planetary boundaries"}</h2><p className="cmm-text-body mt-1">{fr ? `Évaluation ${PLANETARY_BOUNDARIES_REFERENCE.year} : ${crossed} limites franchies. Une limite franchie signifie une hausse du risque, pas une catastrophe instantanée.` : `${PLANETARY_BOUNDARIES_REFERENCE.year} assessment: ${crossed} boundaries transgressed. Crossing a boundary signals increased risk, not an instantaneous catastrophe.`}</p></div>
++      <div className="grid items-start gap-4 xl:grid-cols-2">
++        <CmmCard tone="family" as="article" className="space-y-3">
++          <PlanetaryRadarChart boundaries={PLANETARY_BOUNDARIES} selectedId={selected.id} onSelect={setSelectedId} locale={locale} />
++          <p className="cmm-text-small text-center">{fr ? "Secteurs de même taille : couleur = statut, pas distance au seuil." : "Equal sectors: colour shows status, not distance to threshold."}</p>
++          <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label={fr ? "Sélectionner une limite" : "Select a boundary"}>
++            {PLANETARY_BOUNDARIES.map((boundary) => <button key={boundary.id} type="button" aria-pressed={selected.id === boundary.id} onClick={() => setSelectedId(boundary.id)} className={`flex min-h-12 items-center gap-2 rounded-lg border p-2.5 text-left text-sm font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-white ${selected.id === boundary.id ? "border-amber-600 bg-amber-100 dark:bg-amber-950" : "border-amber-100 bg-white dark:bg-slate-900"}`}><span className={`h-3 w-3 shrink-0 rounded-full ${boundary.status === "transgressed" ? "bg-rose-700" : "bg-emerald-700"}`} aria-hidden="true" /><span>{fr ? boundary.name : boundary.nameEn}<span className="block text-xs font-normal">{statusLabel(boundary.status)}</span></span></button>)}
+           </div>
+-        </div>
+-
+-        {/* Panneau de détails dynamique (Style Neumorphic/Glass) */}
+-        <div className="relative min-h-[550px] order-1 xl:order-2">
+-          <AnimatePresence mode="wait">
+-            <motion.div
+-              key={selectedBoundary.id}
+-              initial={{ opacity: 1, y: 20 }}
+-              animate={{ opacity: 1, y: 0 }}
+-              exit={{ opacity: 0, y: -20 }}
+-              transition={{ duration: 0.4, ease: "easeOut" }}
+-              className="bg-white dark:bg-slate-900/50 p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 backdrop-blur-xl relative overflow-hidden"
+-            >
+-              {/* Filigrane d'icône en arrière-plan */}
+-              <div className="absolute -top-10 -right-10 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+-                <selectedBoundary.icon size={280} />
+-              </div>
+-
+-              <div className="relative z-10 space-y-8">
+-                <div className="flex items-center gap-6">
+-                  <motion.div 
+-                    initial={{ scale: 0.8 }}
+-                    animate={{ scale: 1 }}
+-                    className="w-20 h-20 rounded-3xl flex items-center justify-center text-white shadow-lg relative"
+-                    style={{ backgroundColor: getStatusColor(selectedBoundary.status) }}
+-                  >
+-                    <div className="absolute inset-0 bg-white/20 rounded-3xl animate-pulse" />
+-                    <selectedBoundary.icon size={40} className="relative z-10" />
+-                  </motion.div>
+-                  <div>
+-                    <h3 className="text-3xl font-black cmm-text-primary tracking-tight mb-2">{selectedBoundary.name}</h3>
+-                    <div className="flex items-center gap-2">
+-                      <div className={cn(
+-                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow-sm",
+-                        selectedBoundary.status === 'safe' ? 'bg-emerald-500' : 
+-                        selectedBoundary.status === 'increasing-risk' ? 'bg-amber-500' :
+-                        selectedBoundary.status === 'high-risk' ? 'bg-orange-500' : 'bg-red-500'
+-                      )}>
+-                        {selectedBoundary.status === 'safe' ? 'SÉCURISÉ' : 
+-                         selectedBoundary.status === 'increasing-risk' ? 'RISQUE CROISSANT' :
+-                         selectedBoundary.status === 'high-risk' ? 'RISQUE ÉLEVÉ' : 'DÉPASSÉ'}
+-                      </div>
+-                    </div>
+-                  </div>
+-                </div>
+-
+-                <p className="text-xl cmm-text-secondary leading-relaxed font-medium">
+-                  {selectedBoundary.description}
+-                </p>
+-
+-                <div className="grid grid-cols-2 gap-6">
+-                  <div className="bg-slate-50 dark:bg-slate-900/80 p-6 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-inner">
+-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] cmm-text-muted mb-2 block">Mesure Actuelle</span>
+-                    <div className="text-2xl font-black cmm-text-primary">{selectedBoundary.currentValue}</div>
+-                  </div>
+-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 p-6 rounded-[1.5rem] border border-emerald-100 dark:border-emerald-800/50 shadow-inner">
+-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-emerald-600 dark:text-emerald-400 mb-2 block">Limite Sûre</span>
+-                    <div className="text-2xl font-black text-emerald-700 dark:text-emerald-300">{selectedBoundary.safeLimit}</div>
+-                  </div>
+-                </div>
+-
+-                <div className="space-y-6 pt-4">
+-                  <div>
+-                    <h4 className="flex items-center gap-2 text-xs font-black cmm-text-primary uppercase tracking-[0.2em] mb-4">
+-                      <AlertTriangle size={16} className="text-orange-500" />
+-                      Impacts Majeurs
+-                    </h4>
+-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+-                      {selectedBoundary.impacts.map((impact, idx) => (
+-                        <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm group/item hover:border-orange-200 transition-colors">
+-                          <div className="w-1.5 h-1.5 rounded-full bg-orange-400 group-hover/item:scale-125 transition-transform" />
+-                          <span className="text-sm font-bold cmm-text-secondary">{impact}</span>
+-                        </div>
+-                      ))}
+-                    </div>
+-                  </div>
+-                  
+-                  <div>
+-                    <h4 className="flex items-center gap-2 text-xs font-black cmm-text-primary uppercase tracking-[0.2em] mb-4">
+-                      <Info size={16} className="text-emerald-500" />
+-                      Leviers d&apos;Action
+-                    </h4>
+-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+-                      {selectedBoundary.solutions.map((solution, idx) => (
+-                        <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/50 group/sol hover:border-emerald-300 transition-colors">
+-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-sol/item:scale-125 transition-transform" />
+-                          <span className="text-sm font-bold text-emerald-900 dark:text-emerald-200">{solution}</span>
+-                        </div>
+-                      ))}
+-                    </div>
+-                  </div>
+-                </div>
+-              </div>
+-            </motion.div>
+-          </AnimatePresence>
+-        </div>
++        </CmmCard>
++        <CmmCard as="article" className="space-y-4">
++          <div className="flex items-center gap-3"><span className={`grid h-14 w-14 shrink-0 place-items-center rounded-xl text-white ${selected.status === "transgressed" ? "bg-rose-700" : "bg-emerald-700"}`}><selected.icon size={28} aria-hidden="true" /></span><div><h3 className="text-xl font-bold cmm-text-primary">{fr ? selected.name : selected.nameEn}</h3><p className="cmm-text-body font-semibold">{statusLabel(selected.status)}</p></div></div>
++          <p className="cmm-text-body">{selected.description[locale]}</p>
++          <div className="rounded-xl bg-amber-50 p-4 text-slate-900 dark:bg-amber-950 dark:text-white"><h4 className="font-bold">{fr ? "Variable(s) de contrôle" : "Control variable(s)"}</h4><p className="mt-1 text-sm">{selected.controlVariable[locale]}</p></div>
++          <div><h4 className="font-bold cmm-text-primary">{fr ? "Pressions et risques" : "Pressures and risks"}</h4><ul className="mt-1 list-disc space-y-1 pl-5 cmm-text-body">{selected.impacts.map((item) => <li key={item.fr}>{item[locale]}</li>)}</ul></div>
++          <div><h4 className="font-bold cmm-text-primary">{fr ? "Leviers possibles" : "Possible responses"}</h4><ul className="mt-1 list-disc space-y-1 pl-5 cmm-text-body">{selected.solutions.map((item) => <li key={item.fr}>{item[locale]}</li>)}</ul></div>
++          <div className="space-y-2 border-t border-slate-200 pt-3"><a href={PLANETARY_BOUNDARIES_REFERENCE.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 font-semibold text-amber-900 underline dark:text-amber-200">{PLANETARY_BOUNDARIES_REFERENCE.label}<ExternalLink className="h-4 w-4" aria-hidden="true" /></a><p className="cmm-text-small">{fr ? "Source vérifiée le" : "Source checked on"} {PLANETARY_BOUNDARIES_REFERENCE.checkedAt}. {fr ? "Pour les valeurs et seuils chiffrés, consulter l'évaluation scientifique." : "For numeric measurements and thresholds, consult the scientific assessment."}</p><a href={PLANETARY_BOUNDARIES_REFERENCE.frameworkUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold underline text-amber-900 dark:text-amber-200">{fr ? "Méthode et variables par limite" : "Framework and variables by boundary"}</a></div>
++        </CmmCard>
+       </div>
+-    </div>
++    </section>
+   );
+ }
+-
+-function cn(...classes: Array<string | false | null | undefined>) {
+-  return classes.filter((value): value is string => Boolean(value)).join(" ");
+-}
+diff --git a/apps/web/src/components/learn/planetary-radar-chart.tsx b/apps/web/src/components/learn/planetary-radar-chart.tsx
+index f0372d1bf03562de04f9d4eb1ea88af6f663292c..578bc6fb80058b2d7587b2bbe2bafcdf08536e10 100644
+--- a/apps/web/src/components/learn/planetary-radar-chart.tsx
++++ b/apps/web/src/components/learn/planetary-radar-chart.tsx
+@@ -1,188 +1,43 @@
+ "use client";
+ 
+-import { motion } from "framer-motion";
+-import { LucideIcon } from "lucide-react";
+-
+-interface Boundary {
+-  id: string;
+-  name: string;
+-  icon: LucideIcon;
+-  status: 'safe' | 'increasing-risk' | 'high-risk' | 'transgressed';
+-  color: string;
+-  radiusRatio: number;
+-}
+-
+-interface PlanetaryRadarChartProps {
+-  boundaries: Boundary[];
+-  selectedId: string | null;
+-  onSelect: (id: string) => void;
+-}
++import { useId } from "react";
++import type { PlanetaryBoundary } from "./planetary-boundaries-data";
++import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
+ 
+-export function PlanetaryRadarChart({ boundaries, selectedId, onSelect }: PlanetaryRadarChartProps) {
+-  const centerX = 200;
+-  const centerY = 200;
+-  const maxRadius = 150;
+-  const total = boundaries.length;
+-  const angleStep = (Math.PI * 2) / total;
++type Props = { boundaries: PlanetaryBoundary[]; selectedId: string | null; onSelect: (id: string) => void; locale: LearnLocale };
+ 
++// All wedges have equal area. This is a categorical wheel, not a comparison
++// of numeric distances from boundaries with different control variables.
++export function PlanetaryRadarChart({ boundaries, selectedId, onSelect, locale }: Props) {
++  const titleId = useId();
++  const fr = locale === "fr";
++  const center = 160;
++  const radius = 125;
++  const crossed = boundaries.filter((boundary) => boundary.status === "transgressed").length;
+   return (
+-    <div className="relative aspect-square w-full max-w-[500px] mx-auto group/radar">
+-      <svg viewBox="0 0 400 400" className="w-full h-full overflow-visible drop-shadow-2xl">
+-        <defs>
+-          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+-            <feGaussianBlur stdDeviation="4" result="blur" />
+-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+-          </filter>
+-          <radialGradient id="centerGradient" cx="50%" cy="50%" r="50%">
+-            <stop offset="0%" stopColor="white" stopOpacity="0.2" />
+-            <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+-          </radialGradient>
+-        </defs>
+-
+-        {/* Fond décoratif */}
+-        <circle cx={centerX} cy={centerY} r={maxRadius + 40} fill="url(#centerGradient)" className="animate-pulse" />
+-
+-        {/* Cercles de référence (Radar Grid) */}
+-        {[0.2, 0.4, 0.6, 0.8, 1.0].map((ratio, i) => (
+-          <circle
+-            key={`grid-${i}`}
+-            cx={centerX}
+-            cy={centerY}
+-            r={maxRadius * ratio}
+-            fill="none"
+-            stroke="currentColor"
+-            strokeWidth="0.5"
+-            className="text-slate-200 dark:text-slate-800"
+-            strokeDasharray={i === 4 ? "0" : "4 4"}
+-          />
+-        ))}
+-
+-        {/* Rayons de séparation */}
+-        {boundaries.map((_, i) => {
+-          const angle = i * angleStep - Math.PI / 2;
+-          const x = centerX + Math.cos(angle) * maxRadius;
+-          const y = centerY + Math.sin(angle) * maxRadius;
+-          return (
+-            <line
+-              key={`ray-${i}`}
+-              x1={centerX}
+-              y1={centerY}
+-              x2={x}
+-              y2={y}
+-              stroke="currentColor"
+-              strokeWidth="0.5"
+-              className="text-slate-200 dark:text-slate-800"
+-            />
+-          );
+-        })}
+-
+-        {/* Segments de données */}
+-        {boundaries.map((boundary, i) => {
+-          const startAngle = i * angleStep - Math.PI / 2 - 0.05; // Petit overlap
+-          const endAngle = (i + 1) * angleStep - Math.PI / 2 + 0.05;
+-          
+-          const radius = maxRadius * boundary.radiusRatio;
+-          const isSelected = selectedId === boundary.id;
+-          
+-          const x1 = centerX + Math.cos(startAngle) * radius;
+-          const y1 = centerY + Math.sin(startAngle) * radius;
+-          const x2 = centerX + Math.cos(endAngle) * radius;
+-          const y2 = centerY + Math.sin(endAngle) * radius;
+-
+-          const pathData = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`;
+-
+-          // Position de l'icône
+-          const midAngle = startAngle + (endAngle - startAngle) / 2;
+-          const iconRadius = maxRadius + 35;
+-          const iconX = centerX + Math.cos(midAngle) * iconRadius;
+-          const iconY = centerY + Math.sin(midAngle) * iconRadius;
+-
+-          return (
+-            <g 
+-              key={boundary.id} 
+-              onClick={() => onSelect(boundary.id)} 
+-              className="cursor-pointer"
+-            >
+-              {/* Segment principal */}
+-              <motion.path
+-                d={pathData}
+-                fill={boundary.color}
+-                data-motion-role="decorative"
+-                initial={{ scale: 0, opacity: 0 }}
+-                animate={{ 
+-                  scale: 1, 
+-                  opacity: isSelected ? 0.9 : 0.4,
+-                  filter: isSelected ? "url(#glow)" : "none"
+-                }}
+-                whileHover={{ opacity: 0.7 }}
+-                transition={{ delay: i * 0.05, type: 'spring', stiffness: 100 }}
+-                className="transition-all duration-500"
+-                style={{ transformOrigin: `${centerX}px ${centerY}px` }}
+-              />
+-
+-              {/* Cercle indicateur d'icône */}
+-              <motion.foreignObject
+-                x={iconX - 22}
+-                y={iconY - 22}
+-                width="44"
+-                height="44"
+-                initial={{ opacity: 1 }}
+-                animate={{ opacity: 1 }}
+-                transition={{ delay: 0.5 + i * 0.05 }}
+-              >
+-                <div 
+-                  className={cn(
+-                    "w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-500 border backdrop-blur-xl",
+-                    isSelected 
+-                      ? "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 shadow-2xl scale-110 z-20" 
+-                      : "bg-white/40 dark:bg-slate-900/40 border-white/20 hover:bg-white/60 dark:hover:bg-slate-800/60"
+-                  )}
+-                >
+-                  <boundary.icon 
+-                    size={20} 
+-                    className={cn(
+-                      "transition-colors duration-500",
+-                      isSelected ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"
+-                    )}
+-                    style={isSelected ? { color: boundary.color } : {}}
+-                  />
+-                </div>
+-              </motion.foreignObject>
+-
+-              {/* Lueur de sélection */}
+-              {isSelected && (
+-                <motion.circle
+-                  cx={iconX}
+-                  cy={iconY}
+-                  r={2}
+-                  fill={boundary.color}
+-                  initial={{ scale: 0 }}
+-                  animate={{ scale: [1, 15], opacity: [1, 0] }}
+-                  transition={{ repeat: Infinity, duration: 1.5 }}
+-                  className="pointer-events-none"
+-                />
+-              )}
+-            </g>
+-          );
+-        })}
+-        
+-        {/* Noyau central */}
+-        <g className="pointer-events-none">
+-          <circle cx={centerX} cy={centerY} r={18} fill="#0f172a" className="dark:fill-white" />
+-          <circle cx={centerX} cy={centerY} r={14} fill="white" className="dark:fill-slate-950 shadow-inner" />
+-          <motion.circle 
+-            cx={centerX} cy={centerY} r={6} 
+-            fill="currentColor" 
+-            className="text-emerald-500"
+-            animate={{ scale: [1, 1.2, 1] }}
+-            transition={{ repeat: Infinity, duration: 2 }}
+-          />
+-        </g>
+-      </svg>
+-    </div>
++    <svg viewBox="0 0 320 320" className="mx-auto w-full max-w-[360px]" role="group" aria-labelledby={titleId}>
++      <title id={titleId}>{fr ? "Roue des limites planétaires, statuts catégoriels" : "Planetary boundary wheel, categorical status"}</title>
++      {boundaries.map((boundary, index) => {
++        const step = 2 * Math.PI / boundaries.length;
++        const start = index * step - Math.PI / 2 + 0.025;
++        const end = (index + 1) * step - Math.PI / 2 - 0.025;
++        const point = (angle: number, distance: number) => `${center + Math.cos(angle) * distance} ${center + Math.sin(angle) * distance}`;
++        const middle = (start + end) / 2;
++        const selected = selectedId === boundary.id;
++        return (
++          <g key={boundary.id} role="button" tabIndex={0} aria-pressed={selected}
++            aria-label={`${fr ? boundary.name : boundary.nameEn}: ${boundary.status === "transgressed" ? (fr ? "franchie" : "transgressed") : (fr ? "non franchie globalement" : "not globally transgressed")}`}
++            onClick={() => onSelect(boundary.id)}
++            onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(boundary.id); } }}
++            className="cursor-pointer outline-none focus-visible:[&>path]:stroke-slate-950 dark:focus-visible:[&>path]:stroke-white">
++            <path d={`M ${center} ${center} L ${point(start, radius)} A ${radius} ${radius} 0 0 1 ${point(end, radius)} Z`} fill={boundary.status === "transgressed" ? "#BE123C" : "#047857"} stroke={selected ? "#D97706" : "transparent"} strokeWidth={selected ? 4 : 2} />
++            <g transform={`translate(${center + Math.cos(middle) * 94 - 12},${center + Math.sin(middle) * 94 - 12})`} aria-hidden="true"><boundary.icon size={24} className="text-white" /></g>
++          </g>
++        );
++      })}
++      <circle cx={center} cy={center} r="45" fill="white" stroke="#FCD34D" strokeWidth="3" pointerEvents="none" />
++      <text x={center} y={center - 1} fill="#0F172A" fontSize="25" fontWeight="700" textAnchor="middle" pointerEvents="none">{crossed}/{boundaries.length}</text>
++      <text x={center} y={center + 18} fill="#475569" fontSize="10" textAnchor="middle" pointerEvents="none">{fr ? "franchies" : "transgressed"}</text>
++    </svg>
+   );
+ }
+-
+-function cn(...classes: Array<string | false | null | undefined>) {
+-  return classes.filter(Boolean).join(" ");
+-}
+diff --git a/apps/web/src/components/learn/sustainable-goals.tsx b/apps/web/src/components/learn/sustainable-goals.tsx
+index 9ffbd13be9305c926089bcda698050e81b28ac6e..f5cf375cfa875cbec0bc7999433d1629ad5d29bd 100644
+--- a/apps/web/src/components/learn/sustainable-goals.tsx
++++ b/apps/web/src/components/learn/sustainable-goals.tsx
+@@ -1,169 +1,42 @@
+ "use client";
+ 
+-import { useState } from"react";
+-import { motion, AnimatePresence } from"framer-motion";
+-import { SustainableGoal, SUSTAINABLE_GOALS } from "@/data/content/sustainable-goals";
+-import { ModalFrame } from "@/components/ui/modal-frame";
++import { useState } from "react";
++import { ExternalLink } from "lucide-react";
++import { SUSTAINABLE_GOALS } from "@/data/content/sustainable-goals";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+ 
+ export function SustainableGoalsInteractive() {
+- const [selectedGoal, setSelectedGoal] = useState<SustainableGoal | null>(null);
+- const [hoveredGoal, setHoveredGoal] = useState<SustainableGoal | null>(null);
+-
+- return (
+- <div className="space-y-8">
+- <div className="text-center space-y-4">
+- <h2 className="text-3xl font-bold cmm-text-primary">Les 17 Objectifs de Développement Durable</h2>
+- <p className="text-lg cmm-text-secondary max-w-2xl mx-auto">
+- Adoptés par l&apos;ONU en 2015, les ODD constituent un plan d&apos;action universel pour éradiquer la pauvreté,
+- protéger la planète et assurer la prospérité pour tous d&apos;ici 2030.
+- </p>
+- </div>
+-
+- {/* Interactive Grid */}
+- <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+- {SUSTAINABLE_GOALS.map((goal, index) => {
+- const Icon = goal.icon;
+- return (
+- <motion.button
+- key={goal.id}
+- initial={{ opacity: 1, scale: 0.8 }}
+- animate={{ opacity: 1, scale: 1 }}
+- transition={{ delay: index * 0.05 }}
+- onClick={() => setSelectedGoal(goal)}
+- onMouseEnter={() => setHoveredGoal(goal)}
+- onMouseLeave={() => setHoveredGoal(null)}
+- className={`
+- relative aspect-square rounded-2xl backdrop-blur-sm border transition-[box-shadow,border-color,background-color] duration-300 overflow-hidden
+- ${selectedGoal?.id === goal.id
+- ? 'shadow-2xl z-10'
+- : hoveredGoal?.id === goal.id
+- ? 'shadow-lg'
+- : 'hover:shadow-lg'
+- }
+- `}
+- style={{
+- background: `linear-gradient(135deg, ${goal.color}20 0%, ${goal.color}10 100%)`,
+- borderColor: selectedGoal?.id === goal.id ? goal.color : 'rgb(226 232 240)'
+- }}
+- >
+- {/* Background Pattern */}
+- <div className="absolute inset-0 opacity-5">
+- <div className="absolute top-2 right-2 text-4xl font-bold cmm-text-primary">
+- {goal.number}
+- </div>
+- </div>
+-
+- {/* Content */}
+- <div className="relative h-full flex flex-col items-center justify-center p-4 text-center">
+- <div className={`
+- p-3 rounded-xl mb-3 transition-[background-color,box-shadow]
+- ${selectedGoal?.id === goal.id ? goal.color : 'bg-white/80'}
+- `}>
+- <Icon
+- size={24}
+- className={selectedGoal?.id === goal.id ? 'text-white' : 'cmm-text-secondary'}
+- />
+- </div>
+- <h3 className="cmm-text-caption font-bold cmm-text-primary leading-tight">
+- {goal.title}
+- </h3>
+- </div>
+-
+- {/* Hover Tooltip */}
+- <AnimatePresence>
+- {hoveredGoal?.id === goal.id && selectedGoal?.id !== goal.id && (
+- <motion.div
+- initial={{ opacity: 1, y: 10 }}
+- animate={{ opacity: 1, y: 0 }}
+- exit={{ opacity: 0, y: 10 }}
+- className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-900 text-white cmm-text-caption px-3 py-2 rounded-lg whitespace-nowrap z-20"
+- >
+- {goal.title}
+- <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+- </motion.div>
+- )}
+- </AnimatePresence>
+- </motion.button>
+- );
+- })}
+- </div>
+-
+- {/* Detail Modal */}
+- <ModalFrame
+- isOpen={Boolean(selectedGoal)}
+- onClose={() => setSelectedGoal(null)}
+- overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+- panelClassName="pointer-events-auto bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+- panelInitial={{ scale: 0.9, opacity: 1 }}
+- panelAnimate={{ scale: 1, opacity: 1 }}
+- panelExit={{ scale: 0.9, opacity: 0 }}
+- >
+- {selectedGoal && (
+- <div className="p-8 space-y-6">
+- {/* Header */}
+- <div className="flex items-center justify-between">
+- <div className="flex items-center gap-4">
+- <div className={`p-4 rounded-2xl ${selectedGoal.color}`}>
+- <selectedGoal.icon size={40} className="text-white" />
+- </div>
+- <div>
+- <div className="flex items-center gap-2 mb-1">
+- <span className="text-2xl font-bold cmm-text-muted">#{selectedGoal.number}</span>
+- </div>
+- <h3 className="text-3xl font-bold cmm-text-primary">
+- {selectedGoal.title}
+- </h3>
+- </div>
+- </div>
+- <button
+- onClick={() => setSelectedGoal(null)}
+- className="p-2 rounded-xl hover:bg-slate-100 transition-colors"
+- >
+- ✕
+- </button>
+- </div>
+-
+- {/* Description */}
+- <p className="text-lg cmm-text-secondary leading-relaxed">
+- {selectedGoal.description}
+- </p>
+-
+- {/* Targets */}
+- <div>
+- <h4 className="text-xl font-bold cmm-text-primary mb-4">Objectifs principaux</h4>
+- <div className="grid gap-3">
+- {selectedGoal.targets.map((target, index) => (
+- <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+- <div className={`w-2 h-2 rounded-full ${selectedGoal.color} mt-2 flex-shrink-0`} />
+- <span className="cmm-text-secondary">{target}</span>
+- </div>
+- ))}
+- </div>
+- </div>
+-
+- {/* Indicators */}
+- <div>
+- <h4 className="text-xl font-bold cmm-text-primary mb-4">Indicateurs de suivi</h4>
+- <div className="grid gap-3">
+- {selectedGoal.indicators.map((indicator, index) => (
+- <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl">
+- <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+- <span className="cmm-text-secondary">{indicator}</span>
+- </div>
+- ))}
+- </div>
+- </div>
+-
+- {/* CleanMap Relevance */}
+- <div className="p-6 bg-emerald-50 rounded-2xl border border-emerald-200">
+- <h4 className="text-xl font-bold text-emerald-900 mb-3">Lien avec CleanMyMap</h4>
+- <p className="text-emerald-800 leading-relaxed">
+- {selectedGoal.cleanMapRelevance}
+- </p>
+- </div>
+- </div>
+- )}
+- </ModalFrame>
+- </div>
+- );
++  const { locale } = useSitePreferences();
++  const fr = locale === "fr";
++  const [selectedId, setSelectedId] = useState<number | null>(null);
++  const selected = SUSTAINABLE_GOALS.find((goal) => goal.id === selectedId);
++  return (
++    <section aria-labelledby="sdg-title" className="space-y-4">
++      <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 id="sdg-title" className="text-2xl font-bold cmm-text-primary">{fr ? "Explorer les 17 ODD" : "Explore the 17 SDGs"}</h2><p className="cmm-text-body mt-1">{fr ? "Sélectionnez un objectif pour découvrir ses cibles, exemples d'indicateurs et liens pédagogiques." : "Select a goal to explore its targets, illustrative indicators and educational links (French content)."}</p></div><a href={fr ? "https://sdgs.un.org/fr/goals" : "https://sdgs.un.org/goals"} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 font-semibold text-amber-900 underline dark:text-amber-200">{fr ? "Référence ONU" : "UN reference"}<ExternalLink className="h-4 w-4" aria-hidden="true" /></a></div>
++      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6" role="group" aria-label={fr ? "Objectifs" : "Goals"}>
++        {SUSTAINABLE_GOALS.map((goal) => (
++          <button key={goal.id} type="button" aria-pressed={selectedId === goal.id} aria-controls="sdg-detail"
++            onClick={() => setSelectedId(goal.id)}
++            className={`relative flex min-h-32 flex-col items-start gap-2 overflow-hidden rounded-xl border bg-white p-3 text-left text-slate-900 dark:bg-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${selectedId === goal.id ? "border-amber-600 ring-2 ring-amber-300" : "border-slate-200 hover:border-amber-400 dark:border-slate-700"}`}>
++            <span className={`absolute inset-x-0 top-0 h-2 ${goal.color}`} aria-hidden="true" />
++            <div className="mt-2 flex w-full items-center justify-between gap-2"><goal.icon size={27} className="text-slate-800 dark:text-slate-100" /><span className="text-xl font-bold tabular-nums">{goal.number}</span></div>
++            <span className="text-sm font-bold leading-snug" lang="fr">{goal.title}</span>
++          </button>
++        ))}
++      </div>
++      <div id="sdg-detail" aria-live="polite">
++        {selected ? <CmmCard tone="family" as="article" className="space-y-4">
++          <div className="flex items-start gap-3"><span className={`h-10 w-2 shrink-0 rounded ${selected.color}`} aria-hidden="true" /><div><p className="cmm-text-caption font-bold">{fr ? "Objectif" : "Goal"} {selected.number}</p><h3 className="text-xl font-bold cmm-text-primary" lang="fr">{selected.title}</h3></div></div>
++          <p className="cmm-text-body" lang="fr">{selected.description}</p>
++          <div className="grid gap-3 md:grid-cols-2">
++            <div className="rounded-xl bg-white p-4 text-slate-900 dark:bg-slate-900 dark:text-white"><h4 className="font-bold">{fr ? "Exemples de cibles" : "Illustrative targets"}</h4><ul className="mt-2 list-disc space-y-2 pl-5 text-sm" lang="fr">{selected.targets.map((target) => <li key={target}>{target}</li>)}</ul></div>
++            <div className="rounded-xl bg-white p-4 text-slate-900 dark:bg-slate-900 dark:text-white"><h4 className="font-bold">{fr ? "Exemples d'indicateurs" : "Illustrative indicators"}</h4><ul className="mt-2 list-disc space-y-2 pl-5 text-sm" lang="fr">{selected.indicators.map((indicator) => <li key={indicator}>{indicator}</li>)}</ul></div>
++          </div>
++          <div className="rounded-xl border border-amber-200 p-4"><h4 className="font-bold cmm-text-primary">{fr ? "Lien pédagogique avec CleanMyMap" : "Educational link with CleanMyMap"}</h4><p className="cmm-text-body mt-1" lang="fr">{selected.cleanMapRelevance}</p><p className="cmm-text-small mt-2">{fr ? "Ce rapprochement ne démontre pas la contribution mesurée d'une action à cet objectif." : "This association does not establish a measured contribution of an action to this goal."}</p></div>
++          <p className="cmm-text-small">{fr ? "Exemples de vulgarisation, non exhaustifs. Les définitions et séries statistiques à jour sont à vérifier auprès de l'ONU." : "Non-exhaustive educational examples. Consult the UN for current definitions and statistics."}</p>
++        </CmmCard> : <CmmCard tone="family"><p className="cmm-text-body">{fr ? "Choisissez un objectif ci-dessus. Les 17 fiches restent disponibles sans compte." : "Choose a goal above. All 17 cards are available without an account."}</p></CmmCard>}
++      </div>
++    </section>
++  );
+ }
+diff --git a/apps/web/src/data/content/giec-reports.ts b/apps/web/src/data/content/giec-reports.ts
+index 77221c8a3f9c7e6bff46f3c44fed75fe22bd2152..6f26de545fcd63f84492110a61a2712476abb568 100644
+--- a/apps/web/src/data/content/giec-reports.ts
++++ b/apps/web/src/data/content/giec-reports.ts
+@@ -1,182 +1,69 @@
+-import {
+-  Thermometer,
+-  TrendingUp,
+-  AlertTriangle,
+-  Globe,
+-  BarChart3,
+-  Droplets,
+-  Target,
+-  Wind,
+-  Clock,
+-  Scale
+-} from "lucide-react";
++import { Thermometer, TrendingUp, AlertTriangle, Globe, BarChart3, Droplets, Target, Wind, Clock, Scale } from "lucide-react";
+ 
+ export interface GIECReport {
+   id: string;
+   title: string;
+   year: number;
+   focus: string;
++  sourceUrl: string;
+   keyFindings: {
+     title: string;
+     description: string;
+-    impact: 'critical' | 'high' | 'medium' | 'low';
++    impact: "critical" | "high" | "medium" | "low";
+     icon: React.ComponentType<{ size?: number; className?: string }>;
+   }[];
+   implications: string[];
+   solutions: string[];
+ }
+ 
++// Dated summaries of AR6, not a current thermometer or a new IPCC assessment.
+ export const GIEC_REPORTS: GIECReport[] = [
+   {
+-    id: "ar6-wg1",
+-    title: "Changements Climatiques 2021 - Les Bases Scientifiques",
+-    year: 2021,
+-    focus: "État des connaissances scientifiques sur le changement climatique",
++    id: "ar6-wg1", title: "Les bases scientifiques", year: 2021,
++    focus: "Observations, attribution et scénarios du changement climatique.",
++    sourceUrl: "https://www.ipcc.ch/report/ar6/wg1/chapter/summary-for-policymakers/",
+     keyFindings: [
+-      {
+-        title: "Échauffement déjà de +1,1°C",
+-        description: "L'humanité a déjà causé un réchauffement de 1,1°C depuis l'ère pré-industrielle. Chaque dixième de degré compte.",
+-        impact: "critical",
+-        icon: Thermometer
+-      },
+-      {
+-        title: "Attribution humaine indéniable",
+-        description: "Il est indéniable que l'influence humaine a réchauffé l'atmosphère, l'océan et les terres.",
+-        impact: "critical",
+-        icon: TrendingUp
+-      },
+-      {
+-        title: "Accélération des phénomènes extrêmes",
+-        description: "Les vagues de chaleur, sécheresses et précipitations intenses sont déjà plus fréquentes et intenses.",
+-        impact: "high",
+-        icon: AlertTriangle
+-      }
+-    ],
+-    implications: [
+-      "Risque de franchissement de seuils critiques (points de basculement)",
+-      "Impact disproportionné sur les populations vulnérables",
+-      "Coûts économiques croissants pour l'adaptation",
+-      "Menace pour la sécurité alimentaire mondiale"
++      { title: "+1,09 °C", description: "Température moyenne mondiale de surface en 2011 à 2020 par rapport à 1850 à 1900 : +1,09 °C, intervalle évalué de +0,95 à +1,20 °C (SPM A.1.2).", impact: "critical", icon: Thermometer },
++      { title: "Influence humaine établie", description: "L'influence humaine a réchauffé l'atmosphère, l'océan et les terres (SPM A.1).", impact: "critical", icon: TrendingUp },
++      { title: "Extrêmes et attribution", description: "Le changement climatique d'origine humaine affecte déjà de nombreux extrêmes météorologiques et climatiques (SPM A.3).", impact: "high", icon: AlertTriangle },
+     ],
+-    solutions: [
+-      "Réduction drastique des émissions de GES d'ici 2030",
+-      "Transition énergétique 100% renouvelable",
+-      "Technologies de capture du carbone à grande échelle",
+-      "Adaptation et résilience des infrastructures"
+-    ]
++    implications: ["Distinguer moyenne mondiale, variations locales et événements individuels.", "Les projections dépendent des trajectoires d'émissions."],
++    solutions: ["Limiter les émissions cumulées de CO₂ et réduire fortement les autres gaz à effet de serre (SPM D.1)."],
+   },
+   {
+-    id: "ar6-wg2",
+-    title: "Impacts, Adaptation et Vulnérabilité",
+-    year: 2022,
+-    focus: "Conséquences du changement climatique sur les sociétés et écosystèmes",
++    id: "ar6-wg2", title: "Impacts, adaptation et vulnérabilité", year: 2022,
++    focus: "Risques pour les écosystèmes, les sociétés et capacités d'adaptation.",
++    sourceUrl: "https://www.ipcc.ch/report/ar6/wg2/chapter/summary-for-policymakers/",
+     keyFindings: [
+-      {
+-        title: "Risques croissants pour la biodiversité",
+-        description: "20-30% des espèces terrestres risquent l'extinction si le réchauffement dépasse 2°C.",
+-        impact: "critical",
+-        icon: Globe
+-      },
+-      {
+-        title: "Menaces pour la sécurité alimentaire",
+-        description: "Le changement climatique affecte déjà la production agricole dans de nombreuses régions.",
+-        impact: "high",
+-        icon: BarChart3
+-      },
+-      {
+-        title: "Vulnérabilité des populations côtières",
+-        description: "Plus de 600 millions de personnes vivent dans des zones côtières basses menacées par l'élévation du niveau de la mer.",
+-        impact: "high",
+-        icon: Droplets
+-      }
+-    ],
+-    implications: [
+-      "Migrations climatiques forcées",
+-      "Conflits pour les ressources naturelles",
+-      "Détérioration de la santé publique",
+-      "Perte de biodiversité irréversible"
++      { title: "3 à 18 % à +2 °C", description: "Dans les écosystèmes terrestres, 3 à 18 % des espèces évaluées feraient probablement face à un risque très élevé d'extinction à +2 °C (SPM B.4.1). Ce n'est pas une proportion d'extinctions certaines.", impact: "critical", icon: Globe },
++      { title: "Alimentation et eau", description: "Le réchauffement a déjà affecté la sécurité alimentaire et hydrique ; les risques dépendent notamment de l'exposition et de la vulnérabilité (SPM B.1).", impact: "high", icon: BarChart3 },
++      { title: "Risques côtiers", description: "La poursuite de la hausse du niveau marin menace les installations humaines et les écosystèmes côtiers bas (SPM B.4).", impact: "high", icon: Droplets },
+     ],
+-    solutions: [
+-      "Stratégies d'adaptation locales et globales",
+-      "Protection des écosystèmes naturels",
+-      "Sécurité sociale climatique",
+-      "Agriculture régénératrice et résiliente"
+-    ]
++    implications: ["Les risques augmentent avec le niveau de réchauffement et la vulnérabilité.", "L'adaptation réduit certains risques, mais rencontre des limites."],
++    solutions: ["Préserver les écosystèmes et mettre en œuvre des adaptations contextualisées.", "Prioriser la réduction des risques et l'équité (SPM D.2)."],
+   },
+   {
+-    id: "ar6-wg3",
+-    title: "Atténuation du Changement Climatique",
+-    year: 2022,
+-    focus: "Solutions pour réduire les émissions de gaz à effet de serre",
++    id: "ar6-wg3", title: "Atténuation du changement climatique", year: 2022,
++    focus: "Options et trajectoires de réduction des émissions de gaz à effet de serre.",
++    sourceUrl: "https://www.ipcc.ch/report/ar6/wg3/chapter/summary-for-policymakers/",
+     keyFindings: [
+-      {
+-        title: "Scénarios 1,5°C encore possibles",
+-        description: "Il est encore possible de limiter le réchauffement à 1,5°C, mais cela nécessite des actions immédiates et massives.",
+-        impact: "medium",
+-        icon: Target
+-      },
+-      {
+-        title: "Émissions en baisse dans certains secteurs",
+-        description: "Les coûts des énergies renouvelables ont chuté de 85% en 10 ans, rendant la transition économiquement viable.",
+-        impact: "low",
+-        icon: TrendingUp
+-      },
+-      {
+-        title: "Rôle crucial des forêts",
+-        description: "Les forêts stockent 25% du carbone anthropique et peuvent en absorber davantage si elles sont préservées.",
+-        impact: "high",
+-        icon: Wind
+-      }
+-    ],
+-    implications: [
+-      "Fenêtre d'opportunité se refermant rapidement",
+-      "Inégalités dans l'accès aux technologies propres",
+-      "Dépendances aux combustibles fossiles persistantes",
+-      "Coûts de la transition à court terme"
++      { title: "Trajectoires conditionnelles", description: "Les trajectoires modélisées limitant le réchauffement à 1,5 °C avec dépassement nul ou limité nécessitent des réductions rapides et profondes des émissions (SPM C.1).", impact: "medium", icon: Target },
++      { title: "Coûts technologiques : 2010 à 2019", description: "Le GIEC évalue des baisses de coûts unitaires de 85 % pour le solaire, 55 % pour l'éolien et 85 % pour les batteries lithium-ion sur cette période (SPM B.4.1).", impact: "low", icon: TrendingUp },
++      { title: "Plusieurs leviers", description: "L'efficacité énergétique, les systèmes énergétiques à faibles émissions, la gestion des terres et les changements de demande font partie des leviers étudiés (SPM C).", impact: "high", icon: Wind },
+     ],
+-    solutions: [
+-      "Accélération de la décarbonation de tous les secteurs",
+-      "Financement climatique équitable",
+-      "Innovation technologique accélérée",
+-      "Politiques publiques ambitieuses et cohérentes"
+-    ]
++    implications: ["Les options présentent des coûts, potentiels et contraintes différents selon les contextes.", "Une baisse de coût technologique ne suffit pas à mesurer une baisse réelle des émissions."],
++    solutions: ["Combiner les leviers de réduction de la demande, d'efficacité et de décarbonation adaptés aux secteurs (SPM C)."],
+   },
+   {
+-    id: "synthesis",
+-    title: "Rapport de Synthèse 2023",
+-    year: 2023,
+-    focus: "Vue d'ensemble intégrée des trois groupes de travail",
++    id: "synthesis", title: "Rapport de synthèse", year: 2023,
++    focus: "Synthèse des connaissances, risques et options des trois groupes de travail.",
++    sourceUrl: "https://www.ipcc.ch/report/ar6/syr/summary-for-policymakers/",
+     keyFindings: [
+-      {
+-        title: "Limite de 1,5°C en danger",
+-        description: "Les engagements actuels des pays mènent à un réchauffement de 2,4-2,6°C, bien au-delà de l'objectif de 1,5°C.",
+-        impact: "critical",
+-        icon: AlertTriangle
+-      },
+-      {
+-        title: "Actions insuffisantes",
+-        description: "Les réductions d'émissions promises ne représentent que 1% des réductions nécessaires d'ici 2030.",
+-        impact: "critical",
+-        icon: Clock
+-      },
+-      {
+-        title: "Justice climatique essentielle",
+-        description: "Les pays développés doivent réduire leurs émissions de 60-70% d'ici 2030 pour respecter l'équité.",
+-        impact: "high",
+-        icon: Scale
+-      }
+-    ],
+-    implications: [
+-      "Risques systémiques globaux",
+-      "Inefficacité des politiques actuelles",
+-      "Urgence d'une transformation profonde",
+-      "Responsabilité historique des pays riches"
++      { title: "Chaque fraction de degré compte", description: "Les risques et pertes augmentent avec chaque incrément de réchauffement (SPM B.2).", impact: "critical", icon: AlertTriangle },
++      { title: "Engagements et mise en œuvre", description: "Les contributions nationales annoncées en octobre 2021 rendaient probable un dépassement de 1,5 °C au XXIe siècle. Ce constat historique n'est pas une prévision mise à jour en temps réel (SPM A.4).", impact: "critical", icon: Clock },
++      { title: "Adaptation et atténuation", description: "Les choix de cette décennie affectent les risques et les possibilités de développement résilient au climat (SPM C.1).", impact: "high", icon: Scale },
+     ],
+-    solutions: [
+-      "Ambition climatique multipliée par 5-10",
+-      "Justice et équité dans la transition",
+-      "Mobilisation de toutes les structures",
+-      "Accélération technologique et sociale"
+-    ]
+-  }
++    implications: ["Distinguer les engagements annoncés, leur mise en œuvre et les émissions mesurées.", "Une action locale ne constitue pas à elle seule une mesure d'atténuation climatique."],
++    solutions: ["Accélérer les réductions d'émissions et l'adaptation, avec des politiques et financements adaptés (SPM C)."],
++  },
+ ];
+diff --git a/apps/web/src/lib/ui/page-families/surface-palette.ts b/apps/web/src/lib/ui/page-families/surface-palette.ts
+index a057b301003f3ba2d91cf5f9001dd8b9e9df2843..fba0e42153e5e3ed9ae779e3553242f772d2ab73 100644
+--- a/apps/web/src/lib/ui/page-families/surface-palette.ts
++++ b/apps/web/src/lib/ui/page-families/surface-palette.ts
+@@ -17,7 +17,7 @@
+   cartographie: { primary: "#075985", deep: "#1E3A8A", soft: "#F0F9FF", tint: "#DBEAFE", accent: "#0E7490", dark: "#142843" },
+   impact: { primary: "#9F1239", deep: "#701A75", soft: "#FFF1F2", tint: "#FFE4E6", accent: "#B45309", dark: "#371D2D" },
+   reseau: { primary: "#9D174D", deep: "#581C87", soft: "#FCE7F3", tint: "#F9D5E9", accent: "#B88628", dark: "#321B31" },
+-  apprendre: { primary: "#92400E", deep: "#713F12", soft: "#FFFBEB", tint: "#FEF3C7", accent: "#0F766E", dark: "#35291C" },
++  apprendre: { primary: "#A64B08", deep: "#92400E", soft: "#FFF9D6", tint: "#FFE5B6", accent: "#9A3412", dark: "#3D2A16" },
+   auth: { primary: "#4338CA", deep: "#312E81", soft: "#EEF2FF", tint: "#E0E7FF", accent: "#B88628", dark: "#222342" },
+   legal: { primary: "#334155", deep: "#1E293B", soft: "#F8FAFC", tint: "#E2E8F0", accent: "#475569", dark: "#1E293B" },
+   systeme: { primary: "#155E75", deep: "#334155", soft: "#F0F9FF", tint: "#E0F2FE", accent: "#0369A1", dark: "#1E293B" },
+diff --git a/documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md b/documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
+index e446d157367cea358ec37e4dda78b6dbd3a2a325..60c8781fec9dd7b1aa5c63e86b2b52a88300b487 100644
+--- a/documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
++++ b/documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
+@@ -38,7 +38,7 @@
+ | Cartographie | #075985 | #1E3A8A | #F0F9FF | #DBEAFE | #0E7490 | #142843 |
+ | Impact & Rapports | #9F1239 | #701A75 | #FFF1F2 | #FFE4E6 | #B45309 | #371D2D |
+ | Réseau & Discussions | #9D174D | #581C87 | #FCE7F3 | #F9D5E9 | #B88628 | #321B31 |
+-| Apprendre | #92400E | #713F12 | #FFFBEB | #FEF3C7 | #0F766E | #35291C |
++| Apprendre | #A64B08 | #92400E | #FFF9D6 | #FFE5B6 | #9A3412 | #3D2A16 |
+ | Auth & Onboarding | #4338CA | #312E81 | #EEF2FF | #E0E7FF | #B88628 | #222342 |
+ | Institutionnel & Légal | #334155 | #1E293B | #F8FAFC | #E2E8F0 | #475569 | #1E293B |
+ | Système & Utilitaires | #155E75 | #334155 | #F0F9FF | #E0F2FE | #0369A1 | #1E293B |
+diff --git a/documentation/pages_site/routes/05-apprendre/learn-comprendre/learn-comprendre-README.md b/documentation/pages_site/routes/05-apprendre/learn-comprendre/learn-comprendre-README.md
+index 2315e5f29699cba2888a50d1ea5557de3e7e89cb..3f709aedcc56fba846dedc80caab522d7825c8b7 100644
+--- a/documentation/pages_site/routes/05-apprendre/learn-comprendre/learn-comprendre-README.md
++++ b/documentation/pages_site/routes/05-apprendre/learn-comprendre/learn-comprendre-README.md
+@@ -18,14 +18,14 @@
+ - **Contexte nécessaire** : Aucun
+ - **Objectif utilisateur principal** : Comprendre les notions environnementales et la méthodologie avant de passer à l'entraînement.
+ - **Action principale attendue** : Lire les cartes de vulgarisation, consulter la méthodologie et ouvrir le quiz.
+-- **Palette attendue** : yellow
+-- **Scope** : page de vulgarisation avec introduction visuelle, chronologie des politiques environnementales Monde prioritaire, vue France secondaire, filtres communs, archive présidentielle 2012/2017/2022 par thème prioritaire et candidat secondaire, cartes pédagogiques, ressources différées, lien vers `/learn/sentrainer` et méthodologie.
++- **Palette attendue** : famille Apprendre, surfaces jaune clair / orange doux, canvas neutre
++- **Scope** : six onglets dans cet ordre : Repères, Ordres de grandeur, Climat et planète, Objectifs mondiaux, Politiques publiques, Art et environnement. Repères est initialement actif. Les panneaux restent montés pour conserver les saisies et filtres ; les panneaux masqués ne sont pas accessibles au clavier. Navigation par flèches, Home et End. Les calculateurs existants sont conservés ; les ressources restent différées. Les fiches politiques non validées restent privées, Monde prioritaire puis France, archives présidentielles inchangées. Les filtres ne sont proposés que si le périmètre contient des fiches publiques.
+ - **Performance** : wrapper serveur avec metadata de route et ISR à 24 h ; la sélection éditoriale des politiques est effectuée côté serveur et seules les fiches publiées sérialisables sont transmises au composant client ; les interactions lourdes restent chargées à l'approche de leur section via `next/dynamic` et `use-in-view-once`.
+ - **Terminée** : partielle : le corpus initial non exhaustif est intégré en `in_review` ; aucune fiche n’est publiée avant revue humaine effective.
+-- **Couleurs actuellement détectées** : yellow — canvas #fef9c3, halo rgba(234, 179, 8, 0.30)
++- **Contrat de couleurs** : registre canonique `surface-palette.ts`, surfaces claires #FFF9D6 et #FFE5B6. Le rendu réel doit être vérifié après intégration.
+ - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
+ - **Risque de conflit avec les couleurs existantes** : faible à moyen : le jaune doit rester lisible sans devenir pâle sur fond clair.
+-- **Niveau de surcharge textuelle** : fort
++- **Organisation pédagogique** : schéma observation/calcul/interprétation ; chiffres dérivés des sources existantes, sans progression fictive ; distinction pollution potentielle / eau consommée ; rapports AR6 datés et sourcés ; neuf limites planétaires selon Planetary Health Check 2026 avec statuts catégoriels, non amplitudes physiques ; 17 ODD avec cibles et indicateurs ; galerie artistique avec sources. Les espaces de chargement ne conservent pas de hauteur minimale après chargement. Aucune nouvelle donnée métier, nouvelle règle de progression ou publication éditoriale automatique.
+ - **Textes à conserver** :
+ - Titre de module
+ - résumés
