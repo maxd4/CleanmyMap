@@ -214,6 +214,10 @@ delete from public.actions where id in ('${action1}'::uuid, '${action2}'::uuid);
 insert into public.actions(id, created_by_clerk_id, action_date, location_label, status, action_phase, organizer_type, organizer_id, organizer_name)
 values ('${action1}'::uuid, 'sync-conc', current_date + 7, 'Lieu Sup 1', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A'),
        ('${action2}'::uuid, 'sync-conc', current_date + 8, 'Lieu Sup 2', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A');
+commit;
+`, "sup_setup_actions");
+  await run(`
+begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-sup-setup2"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
@@ -228,7 +232,7 @@ select * from public.reserve_external_action_sync_reference(
 );
 select public.complete_external_action_sync_identity('${hashSuppressB}', '${tokenB}'::uuid, '${action2}'::uuid);
 commit;
-`);
+`, "sup_setup_sync");
 
   // Two sessions race with the SAME operation_id on DIFFERENT actions
   const s1 = run(`
@@ -300,12 +304,16 @@ select * from public.reserve_external_action_sync_reference(
   '${hashExpired}', '${orgA}', 'sync-conc', '${expiredToken}'::uuid,
   'jagis_pour_la_nature', 'conc-event-expired', 'https://example.test/exp', 'r1', '{"exp":1}'::jsonb, '${"9".repeat(64)}'
 );
+commit;
+`, "exp_setup_reserve");
+  await run(`
+begin;
 set local role postgres;
 update private.external_action_sync_identities
    set claim_expires_at = now() - interval '2 minutes'
  where identity_hash = '${hashExpired}';
 commit;
-`);
+`, "exp_setup_expire");
 
   const sExpired = run(`
 begin;
