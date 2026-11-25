@@ -47,6 +47,14 @@ export function classifyLocalAppRuntimeOutput(output) {
     };
   }
 
+  const ambiguousColumnMatch = text.match(/column reference \\?"([a-zA-Z0-9_]+)\\?" is ambiguous/);
+  if (ambiguousColumnMatch) {
+    return {
+      code: `APP_SQLSTATE_42702_${ambiguousColumnMatch[1].toUpperCase()}`,
+      message: `Database reported ambiguous column "${ambiguousColumnMatch[1]}" (SQLSTATE 42702); process output is suppressed.`,
+    };
+  }
+
   const sqlStateMatch = text.match(/code:\s*['"]([0-9A-Z]{5})['"]/);
   if (sqlStateMatch) {
     return {

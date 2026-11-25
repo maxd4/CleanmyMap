@@ -143,6 +143,9 @@ test("local app runtime diagnostics classify PostgREST, SQLSTATE, and API handle
   assert.equal(sql?.code, "APP_SQLSTATE_42703");
   assert.equal(sql?.message.includes("private detail"), false);
 
+  const ambiguous = classifyLocalAppRuntimeOutput("[API Error] ERR-457 in spogomi.event.create: { code: '42702', message: 'column reference \"action_id\" is ambiguous' }");
+  assert.equal(ambiguous?.code, "APP_SQLSTATE_42702_ACTION_ID");
+
   const apiHandler = classifyLocalAppRuntimeOutput("[API Error] ERR-789 in spogomi.event.create: { message: 'secret detail' }");
   assert.equal(apiHandler?.code, "APP_API_ERROR_SPOGOMI_EVENT_CREATE");
   assert.equal(apiHandler?.message.includes("secret detail"), false);
