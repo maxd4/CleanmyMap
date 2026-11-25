@@ -57,7 +57,7 @@ export const PARIS_MEGOTS_ACTORS: readonly ParisCleanwalkActor[] = [
     participationModalities: [], activities: ["Collecte spécialisée et valorisation énergétique annoncée ; dispositif Récolte Citadine cité avec Brigade Verte en mars 2025."],
   }),
   createActor({
-    id: "operator-ckfd", name: "CKFD", category: "entreprise_rse",
+    id: "operator-ckfd", annuaireEntryId: "operator-ckfd", name: "CKFD", category: "entreprise_rse",
     roles: [], ecosystemRoles: [],
     website: "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette",
     sourceUrl: "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette",
@@ -66,7 +66,7 @@ export const PARIS_MEGOTS_ACTORS: readonly ParisCleanwalkActor[] = [
     participationModalities: [], activities: ["Collecte, massification et acheminement vers une filière de recyclage en Bretagne selon l'opérateur."],
   }),
   createActor({
-    id: "operator-mego", name: "MéGO!", category: "entreprise_rse",
+    id: "operator-mego", annuaireEntryId: "operator-mego", name: "MéGO!", category: "entreprise_rse",
     roles: [], ecosystemRoles: [],
     website: "https://www.me-go.fr/",
     sourceUrl: "https://www.me-go.fr/a-propos/",
@@ -75,7 +75,7 @@ export const PARIS_MEGOTS_ACTORS: readonly ParisCleanwalkActor[] = [
     participationModalities: [], activities: ["Recyclage matière annoncé par l'entreprise ; ne constitue pas un dépôt public en région parisienne."],
   }),
   createActor({
-    id: "operator-carton-plein-cyclo", name: "Carton Plein Cyclo", category: "entreprise_rse",
+    id: "operator-carton-plein-cyclo", annuaireEntryId: "operator-carton-plein-cyclo", name: "Carton Plein Cyclo", category: "entreprise_rse",
     roles: [], ecosystemRoles: [],
     website: "https://cartonplein.org/nos-services-cyclologistique/",
     sourceUrl: "https://cartonplein.org/nos-services-cyclologistique/collecte-de-dechets-a-paris-et-en-proche-banlieue/",
@@ -84,7 +84,7 @@ export const PARIS_MEGOTS_ACTORS: readonly ParisCleanwalkActor[] = [
     participationModalities: [], activities: ["Collecte de déchets à vélo cargo et insertion professionnelle ; mégots cités dans le rapport 2023. Aucun accord de transport CleanMyMap établi."],
   }),
   createActor({
-    id: "asso-runners-laveurs", name: "Les Runners Laveurs", category: "association_locale",
+    id: "asso-runners-laveurs", annuaireEntryId: "asso-runners-laveurs", name: "Les Runners Laveurs", category: "association_locale",
     roles: ["organisateur_effectif"], ecosystemRoles: ["organisateur_direct", "sensibilisation_prevention"],
     website: "https://www.helloasso.com/associations/les-runners-laveurs",
     sourceUrl: "https://www.fondationdelamer.org/nos-programmes/un-geste-pour-la-mer/associations/les-runners-laveurs/",

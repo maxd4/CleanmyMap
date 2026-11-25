@@ -130,6 +130,16 @@ function mount(element: React.ReactElement) {
 }
 
 describe("AnnuairePartnerDrawer interactions", () => {
+  it("shows sourced limitations in a canonical editorial waste operator card", () => {
+    const ckfd = INITIAL_ANNUAIRE_ENTRIES.find(entry => entry.id === "operator-ckfd")!;
+    mount(<AnnuairePartnerDrawer entry={{ ...ckfd, distanceKm: null }} isOpen onClose={vi.fn()} fr />);
+    const dialog = document.body.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain("Ressource éditoriale");
+    expect(dialog?.textContent).toContain("Gennevilliers");
+    const limitations = Array.from(dialog?.querySelectorAll("details") ?? []).find(detail => detail.querySelector("summary")?.textContent?.includes("Limites"));
+    expect(limitations).toBeDefined();
+    expect(limitations?.querySelector('a[href="https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette"]')).toBeTruthy();
+  });
   it("exposes only the public CTA destination and never a placeholder or private contact", () => {
     mount(
       <AnnuairePartnerDrawer

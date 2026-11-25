@@ -70,6 +70,13 @@ describe("paris-cleanwalk-network registry contract", () => {
     }
   });
 
+  it("links documented plogging and waste operators to canonical editorial cards", () => {
+    for (const id of ["operator-ckfd", "operator-mego", "operator-carton-plein-cyclo", "asso-runners-laveurs"]) {
+      expect(PARIS_CLEANWALK_ACTORS.find(actor => actor.id === id)).toMatchObject({ annuaireEntryId: id, isCleanMyMapMember: false, parisZone: { arrondissements: [] } });
+      expect(INITIAL_ANNUAIRE_ENTRIES.find(entry => entry.id === id)?.provenance).toBe("editorial_seed");
+    }
+  });
+
   it("distinguishes direct organizers, network coordinators and publication platforms", () => {
     const byId = new Map(PARIS_CLEANWALK_ACTORS.map((actor) => [actor.id, actor]));
 

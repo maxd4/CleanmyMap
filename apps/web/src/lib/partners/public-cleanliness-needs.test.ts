@@ -91,6 +91,19 @@ describe("Paris waste chain and public contact routes", () => {
     expect(route.targets.find(target => target.id === "asso-megots-ecomegot")?.territoryKnown).toBe(false);
     expect(route.targets.find(target => target.id === "asso-megots-alcome")?.rationale.fr).toContain("pas collecteur direct");
     expect(route.targets.find(target => target.id === "operator-ckfd")?.territoryKnown).toBe(false);
+    for (const territory of data.territoryIds) {
+      const cigarette = getPublicCleanlinessNeedRoute(data, territory, "cigarette")!;
+      expect(cigarette.guidance.fr).toContain("100 kg");
+      expect(cigarette.guidance.fr).toContain("petits volumes");
+      expect(cigarette.gaps.fr).toContain("Aucun bac commun");
+      expect(cigarette.targets.find(target => target.id === "operator-carton-plein-cyclo")).toMatchObject({ territoryKnown: false });
+      expect(cigarette.targets.find(target => target.id === "municipal-tri-sites")?.rationale.fr).toContain("aucun dépôt établi");
+      expect(cigarette.targets.some(target => target.id === "operator-mego")).toBe(false);
+    }
+    for (const id of ["operator-ckfd", "operator-mego", "operator-carton-plein-cyclo"]) {
+      expect(data.nodes.find(node => node.id === id)).toMatchObject({ networkActorId: id, directoryId: id, territoryIds: [] });
+    }
+    expect(data.relations.some(edge => (edge.from === "operator-carton-plein-cyclo" || edge.to === "operator-carton-plein-cyclo"))).toBe(false);
     expect(route.targets.find(target => target.id === "asso-megots-cyclope")?.rationale.fr).toContain("énergétique");
     expect(route.targets.some(target => target.id === "operator-mego")).toBe(false);
     expect(data.relations.find(edge => edge.from === "operator-ckfd" && edge.to === "operator-mego")?.kind).toBe("service");

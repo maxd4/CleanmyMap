@@ -10,6 +10,9 @@ import type { AssociationProfile } from "@/lib/partners/annuaire-types";
 import { getAssociationProfile, getAssociationStructureBadge } from "./annuaire-association-profile";
 import { normalizePublicWebUrl } from "@/lib/partners/onboarding-types";
 import { cn } from "@/lib/utils";
+import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
+import { getActorStructureContext } from "@/lib/partners/public-structure-context";
+import { PublicStructureContextPanel } from "./public-structure-context-panel";
 
 type DrawerCommonProps = { entry: EnrichedAnnuaireEntry; fr: boolean; };
 
@@ -418,6 +421,10 @@ export function AnnuairePartnerDrawerPanel({ drawerRef, closeButtonRef, drawerTi
         <AnnuaireDrawerHeader entry={entry} fr={fr} drawerTitleId={drawerTitleId} structureBadge={structureBadge} closeButtonRef={closeButtonRef} onClose={onClose} />
         <div className="flex-1 space-y-12 overflow-y-auto p-10 custom-scrollbar">
           <AnnuaireDrawerMission entry={entry} fr={fr} isEditorial={isEditorial} />
+          <PublicStructureContextPanel
+            fr={fr}
+            context={isEditorial && PARIS_CLEANWALK_ACTORS.some(actor => actor.id === entry.id && actor.annuaireEntryId === entry.id) ? getActorStructureContext(entry.id) : null}
+          />
           <AnnuaireDrawerAssociation entry={entry} fr={fr} associationProfile={associationProfile} />
           <AnnuaireDrawerEngagement entry={entry} fr={fr} />
           <AnnuaireDrawerLocation entry={entry} fr={fr} />

@@ -73,6 +73,8 @@ un événement historique en acteur, partenaire ou preuve d'activité. La dispar
 de la page Communauté ne modifie donc ni la provenance `editorial_seed` /
 `published_partner`, ni la publication administrative des fiches.
 
+Les ressources éditoriales CKFD, MéGO!, Carton Plein Cyclo et Les Runners Laveurs sont accessibles avec les mêmes identifiants que le réseau 3D. Les fiches éditoriales dont l’identifiant correspond explicitement à un acteur réutilisent ses limites et sources repliables ; aucune correspondance par nom ni extension aux fiches partenaires publiées sans preuve. Le parcours institutionnel mégots indique les modalités à confirmer pour le dépôt commun, le transport mutualisé et les petits volumes. Aucun droit de dépôt ou traitement n’est acquis.
+
 ## Preuves et limites documentaires
 
 La présente fiche décrit le contrat du code versionné. Les tests locaux et les

@@ -13,6 +13,14 @@ const forbiddenSeedKeys =
   /\b(?:verificationStatus|qualificationStatus|recentActivityAt|impactHistory|structureStatus|availability|lastUpdatedAt|internalAdminContact)\s*:/;
 
 describe("annuaire editorial seed contract", () => {
+  it("references documented waste-chain and plogging resources once, without asserting partner or drop-off status", () => {
+    for (const id of ["operator-ckfd", "operator-mego", "operator-carton-plein-cyclo", "asso-runners-laveurs"]) {
+      const entries = INITIAL_ANNUAIRE_ENTRIES.filter(entry => entry.id === id);
+      expect(entries).toHaveLength(1);
+      expect(entries[0]).toMatchObject({ provenance: "editorial_seed", qualificationStatus: "contact_non_qualifie", lat: null, lng: null, coveredArrondissements: [] });
+    }
+    expect(INITIAL_ANNUAIRE_ENTRIES.find(entry => entry.id === "asso-3")?.name).toBe("Carton Plein");
+  });
   it("keeps validation, activity and measured-impact keys out of seed sources", () => {
     for (const relativePath of seedFiles) {
       const source = readFileSync(new URL(relativePath, import.meta.url), "utf8");
