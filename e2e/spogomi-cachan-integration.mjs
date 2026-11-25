@@ -112,27 +112,40 @@ async function runStep(name, action) {
 const runtimeServers = new Map();
 
 async function api(baseUrl, route, init = {}, expected = [200]) {
+  const method = (init.method ?? "GET").toUpperCase();
+  const maxAttempts = method === "GET" ? 2 : 1;
   let response;
-  try {
-    response = await fetch(`${baseUrl}${route}`, { redirect: "manual", ...init });
-  } catch (error) {
-    const diagnostic = classifyLocalAppTransportFailure();
-    const server = runtimeServers.get(baseUrl);
-    const runtimeDiagnostic = classifyLocalAppRuntimeOutput(server?.getStartupOutput?.() ?? "");
-    const exitInfo = server && (server.exitCode != null || server.signalCode != null)
-      ? ` exit=${server.exitCode ?? "null"} signal=${server.signalCode ?? "null"}`
-      : "";
-    const causeCode = error && typeof error === "object" && "cause" in error && error.cause && typeof error.cause === "object" && "code" in error.cause
-      ? String(error.cause.code)
-      : error && typeof error === "object" && "code" in error
-        ? String(error.code)
-        : null;
-    const detail = [
-      causeCode ? `cause=${causeCode}` : null,
-      exitInfo ? exitInfo.trim() : null,
-      runtimeDiagnostic ? `${runtimeDiagnostic.code}: ${runtimeDiagnostic.message}` : null,
-    ].filter(Boolean).join("; ");
-    throw new Error(`${init.method ?? "GET"} ${route}: ${diagnostic.code}: ${diagnostic.message}${detail ? ` (${detail})` : ""}`);
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      response = await fetch(`${baseUrl}${route}`, {
+        redirect: "manual",
+        ...init,
+        headers: { connection: "close", ...(init.headers ?? {}) },
+      });
+      break;
+    } catch (error) {
+      const causeCode = error && typeof error === "object" && "cause" in error && error.cause && typeof error.cause === "object" && "code" in error.cause
+        ? String(error.cause.code)
+        : error && typeof error === "object" && "code" in error
+          ? String(error.code)
+          : null;
+      if (attempt < maxAttempts && causeCode === "UND_ERR_SOCKET") {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        continue;
+      }
+      const diagnostic = classifyLocalAppTransportFailure();
+      const server = runtimeServers.get(baseUrl);
+      const runtimeDiagnostic = classifyLocalAppRuntimeOutput(server?.getStartupOutput?.() ?? "");
+      const exitInfo = server && (server.exitCode != null || server.signalCode != null)
+        ? ` exit=${server.exitCode ?? "null"} signal=${server.signalCode ?? "null"}`
+        : "";
+      const detail = [
+        causeCode ? `cause=${causeCode}` : null,
+        exitInfo ? exitInfo.trim() : null,
+        runtimeDiagnostic ? `${runtimeDiagnostic.code}: ${runtimeDiagnostic.message}` : null,
+      ].filter(Boolean).join("; ");
+      throw new Error(`${method} ${route}: ${diagnostic.code}: ${diagnostic.message}${detail ? ` (${detail})` : ""}`);
+    }
   }
   if (!expected.includes(response.status)) {
     await response.body?.cancel().catch(() => undefined);
