@@ -20,7 +20,7 @@ export default async function InstitutionalRelationsAdminPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
+    <div className="cmm-page-width py-8">
       <PageHeader title="Relations institutionnelles" />
       <InstitutionalRelationsAdminClient />
     </div>

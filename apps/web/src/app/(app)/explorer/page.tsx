@@ -155,6 +155,7 @@ export default async function ExplorerPage() {
 
   return (
     <div
+      data-cmm-page-width-exception="sommaire"
       className="relative min-h-screen overflow-hidden font-sans text-white"
     >
       <div className="cmm-page-width relative z-10 px-6 pb-16 pt-10 sm:px-10 sm:pb-24 sm:pt-12 lg:px-12">

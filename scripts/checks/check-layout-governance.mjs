@@ -214,8 +214,14 @@ export function auditLayoutRepository(root = repositoryRoot) {
   if (!/--cmm-grid-max-width:\s*90rem\s*;/.test(tokensSource)) {
     violations.push("styles/tokens.css: canonical internal grid max width must remain 90rem");
   }
-  if (!/--cmm-page-max-width:\s*112rem\s*;/.test(tokensSource)) {
-    violations.push("styles/tokens.css: canonical page max width must be 112rem");
+  if (!/--cmm-page-max-width:\s*100%\s*;/.test(tokensSource)) {
+    violations.push("styles/tokens.css: standard page width must use all available space");
+  }
+  if (!/--cmm-page-special-max-width:\s*112rem\s*;/.test(tokensSource)) {
+    violations.push("styles/tokens.css: homepage and summary must retain their historical width cap");
+  }
+  if (!/\[data-homepage-canvas\],\s*\[data-cmm-page-width-exception="sommaire"\]\s*\{\s*--cmm-page-max-width:\s*var\(--cmm-page-special-max-width\)\s*;\s*\}/.test(layoutSource)) {
+    violations.push("styles/layout.css: the two autonomous compositions must scope the historical page width");
   }
   if (/--cmm-page-max-width:\s*var\(--cmm-grid-max-width\)\s*;/.test(tokensSource)) {
     violations.push("styles/tokens.css: page and internal grid max widths must remain decoupled");

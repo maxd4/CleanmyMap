@@ -27,7 +27,7 @@ export default async function ActionDetailPage({
   const isCurrentlyActive = qualification?.status === "active";
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="cmm-page-width py-8">
       <div className="mb-4">
         <Link href="/admin/brigade-verte" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
           ← Retour à la recherche

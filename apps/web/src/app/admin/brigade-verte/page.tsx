@@ -36,7 +36,7 @@ export default async function Page({
   const { actions, total, hasMore, error } = searchResult;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
+    <div className="cmm-page-width py-8">
       <PageHeader
         title="Administration Brigade Verte Paris"
         subtitle="Gestion et qualification des opérations Quartier Propre éligibles au Parcours Éco-Citoyen. Réservé IMU max."

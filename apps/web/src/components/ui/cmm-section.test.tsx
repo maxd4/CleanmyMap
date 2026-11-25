@@ -68,7 +68,10 @@ describe("canonical page layout primitives", () => {
     expect(displayModeBlocks.join("\n")).not.toContain("--cmm-page-");
 
     expect(tokensCss).toMatch(/--cmm-grid-max-width:\s*90rem\s*;/);
-    expect(tokensCss).toMatch(/--cmm-page-max-width:\s*112rem\s*;/);
+    expect(tokensCss).toMatch(/--cmm-page-max-width:\s*100%\s*;/);
+    expect(tokensCss).toMatch(/--cmm-page-special-max-width:\s*112rem\s*;/);
+    expect(layoutCss).toContain("[data-homepage-canvas]");
+    expect(layoutCss).toContain('[data-cmm-page-width-exception="sommaire"]');
     expect(tokensCss).not.toMatch(
       /--cmm-page-max-width:\s*var\(--cmm-grid-max-width\)\s*;/,
     );

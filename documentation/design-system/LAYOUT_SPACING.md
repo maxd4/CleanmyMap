@@ -57,9 +57,12 @@ import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 
 `CmmPageLayout` est l'unique shell de contenu pour les pages classiques. Il
 centralise la largeur maximale, les gutters responsive, le padding vertical et
-le rythme entre le `PageHeader` et le premier contenu. Sa largeur maximale
-canonique est `112rem` (`1792px`) : elle permet aux pages classiques d'exploiter
-les grands écrans tout en conservant les gutters du shell.
+le rythme entre le `PageHeader` et le premier contenu. Le shell classique utilise toute la largeur disponible (`100%`) avec des
+gutters fluides et bornés. Seules les compositions autonomes homepage
+(`/`) et sommaire (`/explorer`) conservent le plafond historique `112rem`
+(`1792px`), via `--cmm-page-special-max-width` et leurs racines dédiées.
+Le chrome global, les mesures de lecture et les composants fonctionnels
+(formulaires, dialogues, impressions) restent inchangés.
 
 Les composants racines qui portent une composition dédiée sans pouvoir rendre
 `CmmPageLayout` (par exemple l'explorateur, la carte, l'onboarding et les flux
@@ -143,10 +146,10 @@ Les tokens vivent dans `apps/web/src/styles/tokens.css`, importé par
 | padding icône carte rubrique desktop | `--cmm-rubrique-card-icon-padding` |
 
 `--cmm-page-max-width` et `--cmm-grid-max-width` sont découplés. Le premier
-contrôle le shell des pages classiques (`112rem`), tandis que le second reste
+contrôle le shell des pages classiques (`100%`), tandis que le second reste
 la limite historique des grilles internes (`90rem`). Les tokens de page
 réutilisent les gutters et l'échelle d'espacement existants
-(`--cmm-grid-margin-*`, `--space-*`), sans hériter de la largeur maximale de la
+(`--cmm-grid-margin-*`, `--space-*`) comme bornes des gutters fluides, sans hériter de la largeur maximale de la
 grille. Les modes `exhaustif`, `minimaliste` et `sobre`, ainsi que les familles
 de couleur, ne redéfinissent aucun de ces tokens : ils ne changent donc pas la
 géométrie fondamentale.
@@ -155,8 +158,8 @@ Les trois niveaux de largeur sont explicites :
 
 - `viewport ribbon surface` : surface globale pleine largeur, sans plafond de
   page ou de grille ;
-- `page content shell` : `CmmPageLayout` ou `.cmm-page-width`, plafonné à
-  `--cmm-page-max-width` (`112rem`) ; le premier gère aussi ses gutters et
+- `page content shell` : `CmmPageLayout` ou `.cmm-page-width`, fluide via
+  `--cmm-page-max-width` (`100%`, `112rem` dans les deux exceptions) ; le premier gère aussi ses gutters et
   son rythme, le second nécessite une composition dédiée ;
 - `reading measure` : `cmm-prose`, `cmm-prose-wide`, `cmm-prose-narrow` ou une
   primitive sémantique équivalente pour conserver une mesure de lecture

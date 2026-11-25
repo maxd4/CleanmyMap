@@ -133,7 +133,8 @@
   /* ============================================================
      PAGE LAYOUT & SPACING - contrat canonique des pages classiques
      ============================================================ */
-  --cmm-page-max-width: 112rem;      /* 1792px - shell des pages classiques */
+  --cmm-page-max-width: 100%;       /* pages classiques : toute la largeur utile */
+  --cmm-page-special-max-width: 112rem; /* composition historique homepage et sommaire */
   --cmm-ribbon-text-size: var(--text-caption);      /* 12px - texte des rubans */
   --cmm-page-header-title-size: clamp(2.5rem, 4.2vw, 3.85rem);
   --cmm-page-header-max-width: 56rem;
@@ -144,9 +145,9 @@
   --cmm-home-map-preview-height: 20rem;
   --cmm-home-map-preview-height-tablet: 24rem;
   --cmm-home-map-preview-height-desktop: 34rem;
-  --cmm-page-gutter-mobile: var(--cmm-grid-margin-mobile);
-  --cmm-page-gutter-tablet: var(--cmm-grid-margin-tablet);
-  --cmm-page-gutter-desktop: var(--cmm-grid-margin-desktop);
+  --cmm-page-gutter-mobile: clamp(1rem, 3vw, 1.5rem);
+  --cmm-page-gutter-tablet: clamp(1.25rem, 2.5vw, 2rem);
+  --cmm-page-gutter-desktop: clamp(1.5rem, 2vw, 3rem);
   --cmm-page-padding-block: var(--space-4);
   --cmm-page-header-content-gap: var(--space-4);
   --cmm-section-gap: var(--space-4);

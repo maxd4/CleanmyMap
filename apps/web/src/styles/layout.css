@@ -479,17 +479,27 @@
   }
 }
 
+/* The two autonomous compositions keep their historic content cap. */
+[data-homepage-canvas],
+[data-cmm-page-width-exception="sommaire"] {
+  --cmm-page-max-width: var(--cmm-page-special-max-width);
+}
+
 @layer utilities {
   /* Shared structural width for page-root components that are not the
      CmmPageLayout component itself (maps, action flows, and landing sections). */
   .cmm-page-width {
     width: min(100%, var(--cmm-page-max-width));
+    min-width: 0;
+    box-sizing: border-box;
     margin-inline: auto;
   }
 
   .cmm-page-layout {
     display: flex;
     width: min(100%, var(--cmm-page-max-width));
+    min-width: 0;
+    box-sizing: border-box;
     margin-inline: auto;
     padding-block: var(--cmm-page-padding-block);
     padding-inline: var(--cmm-page-gutter-mobile);

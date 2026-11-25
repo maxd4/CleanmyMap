@@ -24,8 +24,8 @@ export default async function PrintBrigadeVertePage() {
 
   if (!userId) {
     return (
-      <main className="container mx-auto px-4 py-12 max-w-2xl">
-        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center space-y-4">
+      <main className="cmm-page-width py-12">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center space-y-4">
           <h1 className="text-xl font-bold">Connexion requise</h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             Vous devez être connecté à votre compte CleanMyMap pour accéder à votre relevé personnel.
@@ -44,8 +44,8 @@ export default async function PrintBrigadeVertePage() {
   // Si moins de 2 preuves vérifiées ou si erreur de calcul / base de données
   if (!eligible || count < 2) {
     return (
-      <main className="container mx-auto px-4 py-12 max-w-2xl">
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/50 p-8 space-y-4">
+      <main className="cmm-page-width py-12">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/50 p-8 space-y-4">
           <h1 className="text-lg font-bold text-amber-900 dark:text-amber-200">
             Justificatif non disponible (2 participations requises)
           </h1>
