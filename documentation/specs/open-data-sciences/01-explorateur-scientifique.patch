@@ -1,0 +1,701 @@
+diff --git a/apps/web/src/components/sections/rubriques/open-data-section.tsx b/apps/web/src/components/sections/rubriques/open-data-section.tsx
+--- a/apps/web/src/components/sections/rubriques/open-data-section.tsx
++++ b/apps/web/src/components/sections/rubriques/open-data-section.tsx
+@@ -1,312 +1,84 @@
+-"use client";
+-
+-import Link from "next/link";
+-import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+-import { CmmButton } from "@/components/ui/cmm-button";
+-import { CmmCard } from "@/components/ui/cmm-card";
+-import { SectionShell } from "@/components/sections/rubriques/shared";
+-import { PageHeader } from "@/components/ui/page-header";
+-import {
+-  ArrowRight,
+-  Code,
+-  FileJson,
+-  GraduationCap,
+-  Landmark,
+-  Sparkles,
+-  ShieldCheck,
+-  Database,
+-  Leaf,
+-  Handshake,
+-} from "lucide-react";
+-
+-type Locale = "fr" | "en";
+-
+-type FeatureCard = {
+-  icon: typeof FileJson;
+-  title: { fr: string; en: string };
+-  items: { fr: string; en: string }[];
+-  anchor: string;
+-};
+-
+-type EconomyCard = {
+-  icon: typeof Leaf;
+-  title: { fr: string; en: string };
+-  description: { fr: string; en: string };
+-};
+-
+-const FEATURE_CARDS: FeatureCard[] = [
+-  {
+-    icon: FileJson,
+-    anchor: "formats",
+-    title: { fr: "Formats d'échange", en: "Exchange formats" },
+-    items: [
+-      { fr: "Projection publique en JSON", en: "Public JSON projection" },
+-      { fr: "Actions approuvées", en: "Approved actions" },
+-      { fr: "Filtres publics documentés", en: "Documented public filters" },
+-    ],
+-  },
+-  {
+-    icon: GraduationCap,
+-    anchor: "acces-chercheurs",
+-    title: { fr: "Accès chercheurs", en: "Research access" },
+-    items: [
+-      { fr: "API JSON publique", en: "Public JSON API" },
+-      { fr: "Actions approuvées et cartographiées", en: "Approved mapped actions" },
+-      { fr: "Réutilisation des données publiques", en: "Public data reuse" },
+-    ],
+-  },
+-  {
+-    icon: Landmark,
+-    anchor: "villes-territoires",
+-    title: { fr: "Villes & territoires", en: "Cities & territories" },
+-    items: [
+-      { fr: "Interopérabilité municipale", en: "Municipal interoperability" },
+-      { fr: "Observatoires locaux", en: "Local observatories" },
+-      { fr: "Gouvernance de données", en: "Data governance" },
+-    ],
+-  },
+-];
+-
+-const ECONOMY_CARDS: EconomyCard[] = [
+-  {
+-    icon: Leaf,
+-    title: { fr: "Sponsoring de zones", en: "Zone sponsorship" },
+-    description: {
+-      fr: "Soutenez des territoires prioritaires et financez des actions locales mesurables.",
+-      en: "Support priority territories and fund measurable local actions.",
+-    },
+-  },
+-  {
+-    icon: Handshake,
+-    title: { fr: "Mécénat & partenariats", en: "Patronage & partnerships" },
+-    description: {
+-      fr: "Accompagnez CleanMyMap dans l'innovation et la préservation des écosystèmes.",
+-      en: "Support CleanMyMap's innovation and ecosystem preservation.",
+-    },
+-  },
+-  {
+-    icon: ShieldCheck,
+-    title: { fr: "Action indépendante", en: "Independent action" },
+-    description: {
+-      fr: "Zéro influence sur la modération. Intégrité et impartialité garanties.",
+-      en: "No influence on moderation. Integrity and impartiality guaranteed.",
+-    },
+-  },
+-  {
+-    icon: Database,
+-    title: { fr: "Transparence", en: "Transparency" },
+-    description: {
+-      fr: "Gouvernance claire, traçabilité des financements et des usages.",
+-      en: "Clear governance, traceability of funding and usage.",
+-    },
+-  },
+-];
+-
+-function localize(locale: Locale, value: { fr: string; en: string }): string {
+-  return value[locale];
+-}
+-
+-function FeatureList({ locale, items }: { locale: Locale; items: FeatureCard["items"] }) {
+-  return (
+-    <ul className="mt-4 space-y-3">
+-      {items.map((item) => (
+-        <li key={item.fr} className="flex items-start gap-3">
+-          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500/70" />
+-          <span className="text-[0.92rem] leading-[1.55] text-slate-600">
+-            {localize(locale, item)}
+-          </span>
+-        </li>
+-      ))}
+-    </ul>
+-  );
+-}
+-
+-export function OpenDataSection() {
+-  const { locale } = useSitePreferences();
+-  const fr = locale === "fr";
+-
+-  return (
+-    <SectionShell
+-      id="open-data"
+-      hideHeader
+-      gradient="from-white via-violet-50/50 to-white"
+-    >
+-      <div className="space-y-8">
+-        <PageHeader
+-          title="Open Data & API"
+-          subtitle={
+-            fr
+-              ? "Consultez la projection publique des actions approuvées et cartographiées via l’API JSON."
+-              : "Consult the public projection of approved mapped actions through the JSON API."
+-          }
+-        />
+-
+-        <div className="relative overflow-hidden rounded-[2.25rem] border border-violet-100 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(216,180,254,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(252,250,255,0.98)_100%)] p-5 text-slate-950 shadow-[0_30px_100px_-70px_rgba(79,70,229,0.45)] sm:p-8 lg:p-10">
+-          <section className="relative">
+-            <CmmCard tone="family" variant="default" className="relative">
+-            <div className="absolute right-0 top-0 hidden h-full w-32 overflow-hidden rounded-r-[2rem] lg:block">
+-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.12),transparent_68%)]" />
+-              <div className="absolute inset-y-0 right-4 w-px bg-violet-100/70" />
+-            </div>
+-            <div className="absolute right-6 top-6 hidden h-32 w-32 rounded-full border border-violet-100/70 lg:block" />
+-
+-            <div className="relative z-10 space-y-4">
+-              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
+-                <ShieldCheck size={28} />
+-              </div>
+-              <h2 className="max-w-lg text-[1.6rem] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
+-                {fr ? "Projection publique" : "Public projection"}
+-              </h2>
+-              <p className="max-w-xl text-[0.98rem] leading-[1.7] text-slate-600">
+-                {fr
+-                  ? "L’API JSON publique expose une projection des actions approuvées et cartographiées pour consultation et réutilisation."
+-                  : "The public JSON API exposes a projection of approved mapped actions for consultation and reuse."}
+-              </p>
+-            </div>
+-          </CmmCard>
+-        </section>
+-
+-        <section className="mt-8 grid gap-4 md:grid-cols-3">
+-          {FEATURE_CARDS.map((card) => {
+-            const Icon = card.icon;
+-            return (
+-              <article key={card.title.fr} id={card.anchor}>
+-                <CmmCard as="div" tone="family" variant="default" size="sm" className="h-full">
+-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_14px_30px_-18px_rgba(79,70,229,0.85)]">
+-                  <Icon size={22} />
+-                </div>
+-                <h3 className="mt-5 text-[1.25rem] font-black leading-tight tracking-[-0.03em] cmm-text-primary">
+-                  {localize(locale, card.title)}
+-                </h3>
+-                <FeatureList locale={locale} items={card.items} />
+-                <div className="mt-6">
+-                  <Link
+-                    href={`#${card.anchor}`}
+-                    className="inline-flex items-center gap-2 rounded-full border border-violet-200 px-4 py-2 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700 transition hover:border-violet-300 hover:bg-violet-50"
+-                  >
+-                    {fr ? "En savoir plus" : "Learn more"}
+-                    <ArrowRight size={14} />
+-                  </Link>
+-                </div>
+-                </CmmCard>
+-              </article>
+-            );
+-          })}
+-        </section>
+-
+-        <section id="api" className="mt-6">
+-          <CmmCard as="div" tone="family" variant="default" className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+-          <div className="flex items-center gap-4">
+-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
+-              <Code size={28} />
+-            </div>
+-            <div className="space-y-2">
+-              <div className="cmm-text-caption font-black uppercase tracking-[0.2em] text-[var(--cmm-family-heading,var(--text-primary))]">
+-                {fr ? "Documentation technique" : "Technical documentation"}
+-              </div>
+-              <h3 className="text-[clamp(1.6rem,3vw,2.5rem)] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
+-                {fr ? "Connectez vos outils" : "Connect your tools"}
+-              </h3>
+-              <p className="max-w-2xl text-[0.96rem] leading-[1.7] text-slate-600">
+-                {fr
+-                  ? "L’API JSON publique expose une projection des actions approuvées et cartographiées. Elle est destinée à la consultation et à la réutilisation des données publiques."
+-                  : "The public JSON API exposes a projection of approved mapped actions for public consultation and reuse."}
+-              </p>
+-            </div>
+-          </div>
+-
+-          <div className="flex flex-col items-start gap-3 border-t border-violet-100 pt-5 lg:border-l lg:border-t-0 lg:pt-0 lg:pl-6">
+-            <CmmButton
+-              href="/api/actions/map?limit=1&floorDate=all&types=action&status=approved"
+-              prefetch={false}
+-              tone="primary"
+-              variant="pill"
+-              className="inline-flex h-14 items-center gap-3 rounded-full bg-[#4a2c8f] px-7 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-26px_rgba(74,44,143,0.8)]"
+-            >
+-              {fr ? "Ouvrir l'API publique" : "Open public API"}
+-              <ArrowRight size={16} />
+-            </CmmButton>
+-            <p className="text-sm text-slate-500">
+-              {fr ? "Réponse JSON de l’API publique" : "Public API JSON response"}
+-            </p>
+-          </div>
+-          </CmmCard>
+-        </section>
+-
+-        <section id="economy" className="mt-6">
+-          <CmmCard as="div" tone="family" variant="default" className="space-y-5">
+-          <div className="flex flex-col gap-2">
+-            <div className="inline-flex items-center gap-2 text-[var(--cmm-family-heading,var(--text-primary))]">
+-              <Sparkles size={18} />
+-              <span className="cmm-text-caption font-black uppercase tracking-[0.2em]">
+-                {fr ? "Modèle Économique" : "Economic model"}
+-              </span>
+-            </div>
+-            <h2 className="text-[1.8rem] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
+-              {fr ? "Modèle Économique" : "Economic Model"}
+-            </h2>
+-            <p className="max-w-3xl text-[0.96rem] leading-[1.7] text-slate-600">
+-              {fr
+-                ? "Transparence, sponsoring de zones et mécénat pour une action environnementale pérenne."
+-                : "Transparency, zone sponsorship and patronage for sustainable environmental action."}
+-            </p>
+-          </div>
+-
+-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+-            {ECONOMY_CARDS.map((card) => {
+-              const Icon = card.icon;
+-              return (
+-                <article key={card.title.fr}>
+-                  <CmmCard as="div" tone="violet" variant="muted" size="sm" className="h-full">
+-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-50 text-violet-600">
+-                    <Icon size={24} />
+-                  </div>
+-                  <h3 className="mt-4 text-[1rem] font-black leading-tight cmm-text-primary">
+-                    {localize(locale, card.title)}
+-                  </h3>
+-                  <p className="mt-3 text-[0.92rem] leading-[1.65] text-slate-600">
+-                    {localize(locale, card.description)}
+-                  </p>
+-                  </CmmCard>
+-                </article>
+-              );
+-            })}
+-          </div>
+-          </CmmCard>
+-        </section>
+-
+-        <section id="partenaire" className="mt-6 overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#9f1f81_0%,#7f1d8c_52%,#d61f6b_100%)] p-6 text-white shadow-[0_28px_90px_-54px_rgba(168,85,247,0.55)]">
+-          <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+-            <div className="flex items-center gap-5">
+-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/95 text-fuchsia-600 shadow-2xl">
+-                <Handshake size={34} />
+-              </div>
+-              <div className="max-w-2xl space-y-2">
+-                <h2 className="text-[1.25rem] font-black leading-tight tracking-[-0.03em] sm:text-[1.45rem]">
+-                  {fr ? "Devenez partenaire" : "Become a partner"}
+-                </h2>
+-                <p className="max-w-xl text-[0.96rem] leading-[1.7] text-white">
+-                  {fr
+-                    ? "Engagez votre organisation dans une démarche de propreté urbaine et de préservation environnementale mesurable."
+-                    : "Commit your organization to a measurable urban cleanliness and environmental preservation approach."}
+-                </p>
+-              </div>
+-            </div>
+-
+-            <CmmButton
+-              href="/partners/onboarding"
+-              prefetch={false}
+-              tone="secondary"
+-              variant="pill"
+-              className="inline-flex h-14 rounded-full bg-white px-6 cmm-text-small font-black uppercase tracking-[0.18em] text-[#8f226f] shadow-2xl"
+-            >
+-              {fr ? "Ouvrir le dossier" : "Open the file"}
+-              <ArrowRight size={16} />
+-            </CmmButton>
+-          </div>
+-        </section>
+-        </div>
+-      </div>
+-    </SectionShell>
+-  );
+-}
++"use client";
++import { useSitePreferences } from "@/components/ui/site-preferences-provider";
++import { CmmButton } from "@/components/ui/cmm-button";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
++import { SectionShell } from "@/components/sections/rubriques/shared";
++import { PageHeader } from "@/components/ui/page-header";
++import { OpenDataExplorer } from "./open-data-explorer";
++
++const DATASETS=[
++  {title:["Collectes de déchets","Waste cleanups"],unit:["Action cartographiée","Mapped action"],content:["Masse, mégots, participation, durée, méthodes et qualité lorsque renseignées.","Mass, cigarette butts, participation, duration, methods and quality where available."],limit:["Séparer préparation et bilan terminé ; masse mesurée ou estimée.","Separate planned and completed work; measured or estimated mass."]},
++  {title:["Signalements de pollution","Litter reports"],unit:["Observation ponctuelle","Individual observation"],content:["Date, position publique, catégories et qualité selon les champs disponibles.","Date, public location, categories and quality where available."],limit:["Un signalement ne représente ni une collecte ni une mesure de densité.","A report is not a cleanup or density measurement."]},
++  {title:["Lieux propres","Clean places"],unit:["Lieu observé","Observed location"],content:["Date et position publique ; provenance géométrique lorsqu’elle est disponible.","Date and public location; geometry provenance where available."],limit:["Observation locale à une date donnée, pas une garantie de propreté permanente.","Local observation at a given date, not a guarantee of permanent cleanliness."]},
++] as const;
++const FIELDS=[
++  ["contract.id / type","Identité d’enregistrement / type","Record identity / type","Identifiant de donnée, pas de personne ; action, spot, clean_place.","Record identifier, not a person; action, spot, clean_place."],
++  ["contract.dates.observedAt","Date (ISO)","Date (ISO)","Date portée par le contrat ; ne prouve pas une mesure instrumentale.","Contract date; not proof of instrumental observation."],
++  ["contract.metadata.actionPhase","Phase","Phase","post_action_complete pour le bilan terminé ; approved seul ne suffit pas.","post_action_complete for a completed report; approved alone is insufficient."],
++  ["contract.location / geometry","Géographie","Geography","Coordonnées et géométrie publiques ; préciser source, nature et confiance.","Public coordinates and geometry; check source, kind and confidence."],
++  ["metadata.wasteKg / wasteMeasurementMethod","Masse (kg)","Mass (kg)","Conserver la méthode déclarée et les valeurs manquantes ; ne pas assimiler estimation et pesée.","Retain declared method and missing values; estimates differ from weighing."],
++  ["metadata.cigaretteButts / cigaretteButtsMeasurements","Mégots (nombre, kg, L)","Butts (count, kg, L)","Conserver les lots et versions lorsqu’ils existent ; ne pas additionner les équivalents d’un même lot.","Keep lots and versions where present; never sum equivalents of one lot."],
++  ["metadata.volunteersCount / collectorsCount / durationMinutes","Personnes / min","People / min","Population participante distincte des collecteurs ; zéro de durée historique potentiellement ambigu.","Participants differ from collectors; historical zero duration can be ambiguous."],
++  ["contract.dataQuality / quality_score","Qualité / score","Quality / score","Indicateur de cohérence et provenance ; pas une validation scientifique indépendante.","Consistency and provenance indicator, not independent scientific validation."],
++  ["count / isTruncated / partialSource / sourceHealth","État de la réponse","Response state","Count est le nombre de lignes renvoyées, pas l’effectif total.","Count is returned rows, not total population."],
++] as const;
++const PYTHON=[
++  'import json, urllib.request',
++  'from datetime import datetime, timezone',
++  'url = ("https://cleanmymap.fr/api/actions/map?"',
++  '       "types=action&status=approved&floorDate=all&limit=80")',
++  'with urllib.request.urlopen(url, timeout=30) as response:',
++  '    data = json.load(response)',
++  'assert data["status"] == "ok"',
++  'today = datetime.now(timezone.utc).date().isoformat()',
++  'rows = [i["contract"] for i in data["items"]',
++  '        if i.get("status") == "approved"',
++  '        and i.get("contract", {}).get("type") == "action"',
++  '        and i["contract"].get("status") == "approved"',
++  '        and i["contract"]["metadata"].get("actionPhase") == "post_action_complete"',
++  '        and (i["contract"]["dates"].get("observedAt") or "9999") <= today]',
++  'print("received", data["count"], "retained", len(rows))',
++  'print("truncated", data.get("isTruncated"), "partial", data.get("partialSource"))',
++].join("\n");
++const DOC_ROOT="https://github.com/maxd4/CleanmyMap/blob/main/documentation/";
++
++export function OpenDataSection(){
++  const {locale}=useSitePreferences();const fr=locale==="fr",i=fr?0:1;
++  return <SectionShell id="open-data" hideHeader gradient="from-transparent via-transparent to-transparent">
++    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6">
++      <PageHeader title={fr?"Données publiques & sciences participatives":"Public data & citizen science"} subtitle={fr?"Documenter la pollution et les collectes citoyennes, comprendre les méthodes et consulter les données disponibles.":"Document litter and citizen cleanups, understand the methods and access available data."}/>
++      <CmmCard tone="slate" variant="outlined" className="space-y-4">
++        <h2 className="text-xl font-bold cmm-text-primary">{fr?"De la collecte de terrain à la recherche":"From field observations to research"}</h2>
++        <p className="max-w-3xl text-sm leading-relaxed cmm-text-secondary">{fr?"Les contributions renseignées par les participants alimentent une projection cartographique publique. L’objectif est de documenter les observations et l’effort de collecte, pas de certifier l’état environnemental d’un territoire.":"Participant submissions feed a public map projection. The goal is to document observations and collection effort, not certify a territory’s environmental state."}</p>
++        <div className="flex flex-wrap gap-2"><CmmButton href="#api" tone="primary">{fr?"Explorer les données":"Explore data"}</CmmButton><CmmButton href="#methodologie" tone="secondary">{fr?"Comprendre le protocole":"Understand the protocol"}</CmmButton><CmmButton href="/actions/map" tone="tertiary">{fr?"Voir la carte":"View map"}</CmmButton></div>
++        <nav aria-label={fr?"Sommaire":"Contents"} className="flex flex-wrap gap-x-4 gap-y-2 text-sm"><a className="underline cmm-text-info" href="#formats">{fr?"Catalogue":"Catalogue"}</a><a className="underline cmm-text-info" href="#dictionnaire">{fr?"Dictionnaire":"Dictionary"}</a><a className="underline cmm-text-info" href="#acces-chercheurs">{fr?"Réutilisation":"Reuse"}</a><a className="underline cmm-text-info" href="#villes-territoires">{fr?"Collaborer":"Collaborate"}</a></nav>
++      </CmmCard>
++      <section id="formats" className="space-y-3"><h2 className="text-xl font-bold cmm-text-primary">{fr?"Catalogue des données consultables":"Available data catalogue"}</h2>
++        <p className="text-sm cmm-text-secondary">{fr?"Trois types d’enregistrements dans la même API JSON publique, pas trois bases indépendantes.":"Three record types in the same public JSON API, not three independent databases."}</p>
++        <div className="grid gap-3 md:grid-cols-3">{DATASETS.map(dataset=><CmmCard key={dataset.title[0]} tone="slate" variant="outlined" size="sm" className="space-y-2"><h3 className="font-bold cmm-text-primary">{dataset.title[i]}</h3><p className="text-xs font-semibold cmm-text-secondary">{dataset.unit[i]}</p><p className="text-sm cmm-text-primary">{dataset.content[i]}</p><p className="text-xs cmm-text-secondary">{dataset.limit[i]}</p></CmmCard>)}</div>
++      </section>
++      <OpenDataExplorer fr={fr}/>
++      <section id="dictionnaire" className="space-y-3"><h2 className="text-xl font-bold cmm-text-primary">{fr?"Dictionnaire des données":"Data dictionary"}</h2>
++        <CmmCard tone="slate" variant="outlined" className="space-y-3"><p className="text-sm cmm-text-secondary">{fr?"Champs principaux de la projection publique. Les chemins metadata sont relatifs à contract. La présence varie selon le type et l’historique.":"Key public projection fields. Metadata paths are relative to contract. Availability varies by type and history."}</p>
++        <div className="overflow-x-auto"><table className="w-full text-left text-sm cmm-text-primary"><thead><tr className="border-b border-[var(--cmm-surface-border)]"><th scope="col" className="p-2">{fr?"Champ":"Field"}</th><th scope="col" className="p-2">{fr?"Unité / sens":"Unit / meaning"}</th><th scope="col" className="p-2">{fr?"Précaution d’analyse":"Interpretation"}</th></tr></thead><tbody>{FIELDS.map(field=><tr key={field[0]} className="border-b border-[var(--cmm-surface-border)]"><td className="break-words p-2 font-mono text-xs">{field[0]}</td><td className="p-2">{field[fr?1:2]}</td><td className="p-2">{field[fr?3:4]}</td></tr>)}</tbody></table></div></CmmCard>
++      </section>
++      <section id="methodologie" className="space-y-3"><h2 className="text-xl font-bold cmm-text-primary">{fr?"Méthodes, qualité et limites":"Methods, quality and limitations"}</h2>
++        <div className="grid gap-3 md:grid-cols-2"><CmmCard tone="slate" variant="outlined" className="space-y-2"><h3 className="font-bold">{fr?"Protocole de terrain":"Field protocol"}</h3><ol className="list-decimal space-y-1 pl-5 text-sm cmm-text-secondary"><li>{fr?"Définir le lieu, la date et l’effort de collecte.":"Record location, date and collection effort."}</li><li>{fr?"Distinguer pesées, comptages et estimations ; renseigner la méthode.":"Distinguish weights, counts and estimates; record the method."}</li><li>{fr?"Compléter le bilan et laisser les contrôles de publication s’appliquer.":"Complete the report and allow publication checks to apply."}</li><li>{fr?"Conserver les données sources et les versions de calcul.":"Retain source data and calculation versions."}</li></ol><CmmButton href="/methodologie" tone="secondary" size="sm">{fr?"Méthodologie CleanMyMap":"CleanMyMap methodology"}</CmmButton></CmmCard>
++        <CmmCard tone="slate" variant="outlined" className="space-y-2"><h3 className="font-bold">{fr?"Interpréter avec prudence":"Interpret carefully"}</h3><ul className="list-disc space-y-1 pl-5 text-sm cmm-text-secondary"><li>{fr?"Biais de participation, de sélection spatiale et de saison ; absence de signalement ≠ absence de pollution.":"Participation, spatial selection and season biases; no report does not mean no pollution."}</li><li>{fr?"Une collecte renseigne des déchets retirés, pas le stock total présent.":"A cleanup records removed litter, not total litter present."}</li><li>{fr?"Les proxys eau, CO₂e et surface ne sont pas des mesures directes ni une preuve causale.":"Water, CO₂e and area proxies are not direct measurements or causal evidence."}</li><li>{fr?"Données manquantes distinctes de zéro ; ne comparer que des unités et méthodes compatibles.":"Missing data differ from zero; compare compatible units and methods only."}</li></ul></CmmCard></div>
++        <CmmCard tone="slate" variant="outlined" className="flex flex-wrap gap-3"><CmmButton href={DOC_ROOT+"product/SCIENTIFIC_PROTOCOL.md"} tone="secondary" size="sm">{fr?"Protocole scientifique versionné":"Versioned scientific protocol"}</CmmButton><CmmButton href={DOC_ROOT+"product/methodologie-carte-actions.md"} tone="secondary" size="sm">{fr?"Méthode cartographique":"Map methodology"}</CmmButton><CmmButton href={DOC_ROOT+"architecture/data-governance.md"} tone="secondary" size="sm">{fr?"Gouvernance des données":"Data governance"}</CmmButton></CmmCard>
++      </section>
++      <section id="acces-chercheurs" className="space-y-3"><h2 className="text-xl font-bold cmm-text-primary">{fr?"Réutilisation scientifique et API":"Scientific reuse and API"}</h2>
++        <CmmCard tone="slate" variant="outlined" className="space-y-3"><p className="font-mono text-sm cmm-text-primary">GET /api/actions/map</p><p className="text-sm cmm-text-secondary">{fr?"JSON public. Limite de 1 à 300 enregistrements, filtre de type, date basse (floorDate ou days) et contexte. Le paramètre status ne permet pas d’accéder à des données privées. Pas de pagination exhaustive garantie par cette route ; un filtre peut être appliqué après une lecture source bornée.":"Public JSON. Limit 1 to 300 records, type, lower date (floorDate or days) and context filters. Status cannot access private data. This route has no guaranteed exhaustive pagination; filters may run after a bounded source read."}</p>
++          <CmmDisclosure summary={fr?"Exemple Python : consulter un échantillon de bilans":"Python example: inspect a sample of completed reports"}><pre className="overflow-x-auto rounded-lg border border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-primary"><code>{PYTHON}</code></pre><p className="mt-2 text-xs cmm-text-secondary">{fr?"Exemple de consultation, sans téléchargement massif ni calcul d’indicateur. Vérifier les champs et conserver l’URL, la date UTC, les avertissements et les versions pertinentes avec chaque analyse.":"Consultation example, not bulk download or indicator computation. Check fields and keep URL, UTC time, warnings and relevant versions with each analysis."}</p></CmmDisclosure>
++          <h3 className="font-bold cmm-text-primary">{fr?"Citation et droits":"Citation and rights"}</h3><p className="text-sm cmm-text-secondary">{fr?"Citer CleanMyMap, le type de données, l’URL de requête, la date de consultation et la méthode utilisée. La licence AGPL concerne le code ; aucune licence ouverte générale des données n’est annoncée ici. Les données tierces gardent leurs conditions d’origine. Demander les conditions applicables avant redistribution ou constitution d’un corpus publié.":"Cite CleanMyMap, data type, query URL, access date and method. AGPL applies to code; no general open data license is announced here. Third-party data retain their original terms. Ask about applicable terms before redistribution or publishing a corpus."}</p><CmmButton href="/conditions-generales-utilisation" tone="secondary" size="sm">{fr?"Conditions d’utilisation":"Terms of use"}</CmmButton>
++        </CmmCard>
++      </section>
++      <section id="villes-territoires" className="space-y-3"><h2 className="text-xl font-bold cmm-text-primary">{fr?"Participer et collaborer":"Participate and collaborate"}</h2><div className="grid gap-3 md:grid-cols-2">
++        <CmmCard tone="slate" variant="outlined" className="space-y-3"><h3 className="font-bold">{fr?"Citoyens et associations":"Citizens and associations"}</h3><p className="text-sm cmm-text-secondary">{fr?"Contribuer par une collecte documentée ou signaler une observation. Renseigner les méthodes et préciser les inconnues améliore la réutilisabilité des observations.":"Contribute through documented cleanups or observations. Recording methods and unknowns improves reusability."}</p><div className="flex flex-wrap gap-2"><CmmButton href="/actions/new" tone="primary" size="sm">{fr?"Renseigner une action":"Record an action"}</CmmButton><CmmButton href="/actions/map" tone="secondary" size="sm">{fr?"Observer la carte":"Explore map"}</CmmButton></div></CmmCard>
++        <CmmCard tone="slate" variant="outlined" className="space-y-3"><h3 className="font-bold">{fr?"Laboratoires, écoles et collectivités":"Labs, schools and local authorities"}</h3><p className="text-sm cmm-text-secondary">{fr?"Proposer une question de recherche, un protocole commun, une validation indépendante ou une demande de données minimisées. Préciser territoire, période, variables, usages et restitution aux participants.":"Propose a research question, shared protocol, independent validation or minimized data request. Specify area, period, variables, use and feedback to participants."}</p><CmmButton href="/contact" tone="primary" size="sm">{fr?"Proposer une collaboration":"Propose a collaboration"}</CmmButton></CmmCard></div>
++        <CmmCard tone="slate" variant="outlined" size="sm"><p className="text-sm cmm-text-secondary">{fr?"Cadres de référence : principes FAIR et dix principes de sciences participatives. Ils guident les améliorations ; aucune conformité complète n’est revendiquée.":"Reference frameworks: FAIR principles and the ten citizen science principles. They guide improvements; full compliance is not claimed."}</p><div className="mt-2 flex flex-wrap gap-3 text-sm"><a className="underline cmm-text-info" href="https://www.go-fair.org/fair-principles/">FAIR</a><a className="underline cmm-text-info" href="https://www.sei.org/publications/ten-principles-citizen-science/">ECSA</a></div></CmmCard>
++      </section>
++    </div>
++  </SectionShell>;
++}
+diff --git a/apps/web/src/components/sections/rubriques/open-data-research.model.ts b/apps/web/src/components/sections/rubriques/open-data-research.model.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/open-data-research.model.ts
+@@ -0,0 +1,79 @@
++import { ACTION_ENTITY_TYPES } from "@/lib/actions/types";
++import { ACTION_CONTEXT_FILTER_VALUES } from "@/lib/actions/action-context";
++
++export type ResearchEntity = (typeof ACTION_ENTITY_TYPES)[number];
++export type ResearchContext = (typeof ACTION_CONTEXT_FILTER_VALUES)[number];
++export type ResearchQuery = { type:ResearchEntity; from:string; context:ResearchContext; limit:number };
++export const DEFAULT_RESEARCH_QUERY:ResearchQuery={type:"action",from:"",context:"all",limit:80};
++export function researchQueryUrl(query:ResearchQuery):string {
++  if(!ACTION_ENTITY_TYPES.includes(query.type)||!ACTION_CONTEXT_FILTER_VALUES.includes(query.context)||!Number.isInteger(query.limit)||query.limit<1||query.limit>300)throw new Error("Invalid research query");
++  if(query.from&&(!/^\d{4}-\d{2}-\d{2}$/.test(query.from)||Number.isNaN(Date.parse(query.from))||new Date(query.from).toISOString().slice(0,10)!==query.from))throw new Error("Invalid date");
++  const params=new URLSearchParams({types:query.type,status:"approved",floorDate:query.from||"all",limit:String(query.limit)});
++  if(query.type==="action"&&query.context!=="all")params.set("context",query.context);
++  return "/api/actions/map?"+params.toString();
++}
++
++type RecordValue=Record<string,unknown>;
++function record(value:unknown):RecordValue|null{return value!==null&&typeof value==="object"&&!Array.isArray(value)?value as RecordValue:null;}
++function number(value:unknown):number|null{return typeof value==="number"&&Number.isFinite(value)&&value>=0?value:null;}
++function enumValue<T extends string>(value:unknown,allowed:readonly T[]):T|null{return typeof value==="string"&&allowed.includes(value as T)?value as T:null;}
++function date(value:unknown):string|null{return typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value?value:null;}
++function dept(value:unknown):string|null{return typeof value==="string"&&/^(\d{2,3}|2[AB])$/.test(value)?value:null;}
++
++export type ResearchRow={
++  date:string|null; department:string|null;
++  wasteKg:number|null; butts:number|null; volunteers:number|null; collectors:number|null;
++  durationMinutes:number|null; massMethod:string|null; buttsProvenance:string|null;
++  measuresProvenance:string|null; geometryProvenance:string|null; qualityStatus:string|null;
++};
++export type ResearchSample={
++  received:number; excluded:number; rows:ResearchRow[];
++  isTruncated:boolean|null; partialSource:boolean|null;
++};
++function provided(metadata:RecordValue,key:string):boolean{
++  return !Array.isArray(metadata.provided)||metadata.provided.includes(key);
++}
++function projectRow(item:unknown,query:ResearchQuery,today:string):ResearchRow|null {
++  const row=record(item),contract=record(row?.contract),metadata=record(contract?.metadata),dates=record(contract?.dates),location=record(contract?.location);
++  if(!row||!contract||!metadata||contract.type!==query.type||row.status!=="approved"||contract.status!=="approved")return null;
++  const observed=date(dates?.observedAt);
++  // Public map status is not proof that fieldwork happened. Unknown phases/dates
++  // are excluded from the research sample rather than inferred from legacy fields.
++  if(query.type==="action"&&(metadata.actionPhase!=="post_action_complete"||!observed||observed>today))return null;
++  if(query.from&&(!observed||observed<query.from))return null;
++  if(query.type==="action"&&query.context!=="all"&&(query.context==="unknown"?metadata.actionContext!=null:metadata.actionContext!==query.context))return null;
++  const quality=record(contract.dataQuality),provenance=record(quality?.provenance);
++  const butts=record(metadata.cigaretteButtsMeasurements),isAction=query.type==="action";
++  const duration=isAction?number(metadata.durationMinutes):null;
++  return {
++    date:observed,department:dept(location?.departmentCode),
++    wasteKg:isAction&&provided(metadata,"waste_kg")?number(metadata.wasteKg):null,
++    butts:isAction&&provided(metadata,"cigarette_butts")?number(metadata.cigaretteButts):null,
++    volunteers:isAction?number(metadata.volunteersCount):null,
++    collectors:isAction?number(metadata.collectorsCount):null,
++    // Legacy normalization can turn omitted duration into zero; do not claim it was measured.
++    durationMinutes:duration!==null&&duration>0?duration:null,
++    massMethod:isAction?enumValue(metadata.wasteMeasurementMethod,["balance_suspendue","balance_au_sol","estimation_visuelle","autre","inconnue"]):null,
++    buttsProvenance:isAction?enumValue(butts?.cigaretteButtsCountProvenance,["counted","weight_converted","volume_converted"]):null,
++    measuresProvenance:enumValue(provenance?.measures,["measured","derived","estimated","missing"]),
++    geometryProvenance:enumValue(provenance?.geometry,["observed","declared","reference","reconstructed","estimated","fallback","missing","unknown"]),
++    qualityStatus:enumValue(quality?.status,["ok","warning","blocking"]),
++  };
++}
++export function projectResearchSample(value:unknown,query:ResearchQuery,today:string):ResearchSample {
++  const body=record(value);
++  if(!body||body.status!=="ok"||!Array.isArray(body.items)||body.count!==body.items.length||body.items.length>query.limit)throw new Error("Unexpected public response");
++  const rows:ResearchRow[]=[];
++  const seen=new Set<string>();
++  for(const item of body.items){
++    const raw=record(item),id=raw?.id;
++    if(typeof id!=="string"||!id||seen.has(id))continue;
++    const row=projectRow(item,query,today);
++    if(!row)continue;
++    seen.add(id);rows.push(row);
++  }
++  const health=record(body.sourceHealth);
++  return {received:body.items.length,excluded:body.items.length-rows.length,rows,
++    isTruncated:typeof body.isTruncated==="boolean"?body.isTruncated:null,
++    partialSource:body.partialSource===true||health?.partial===true?true:body.partialSource===false&&health?.partial!==true?false:null};
++}
+diff --git a/apps/web/src/components/sections/rubriques/open-data-explorer.tsx b/apps/web/src/components/sections/rubriques/open-data-explorer.tsx
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/open-data-explorer.tsx
+@@ -0,0 +1,80 @@
++"use client";
++import { useEffect,useRef,useState } from "react";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmField } from "@/components/ui/cmm-field";
++import { CmmButton } from "@/components/ui/cmm-button";
++import { DEFAULT_RESEARCH_QUERY,projectResearchSample,researchQueryUrl,type ResearchQuery,type ResearchSample } from "./open-data-research.model";
++
++export function OpenDataExplorer({fr}:{fr:boolean}){
++  const [query,setQuery]=useState(DEFAULT_RESEARCH_QUERY);
++  const [result,setResult]=useState<{sample:ResearchSample;url:string;retrievedAt:string;type:ResearchQuery["type"]}|null>(null);
++  const [busy,setBusy]=useState(false);
++  const [error,setError]=useState(false);
++  const [copyStatus,setCopyStatus]=useState<"idle"|"ok"|"error">("idle");
++  const request=useRef<AbortController|null>(null);
++  useEffect(()=>()=>request.current?.abort(),[]);
++  const url=researchQueryUrl(query);
++  function change<K extends keyof ResearchQuery>(key:K,value:ResearchQuery[K]){
++    setQuery(current=>({...current,[key]:value}));setCopyStatus("idle");
++  }
++  async function load(){
++    request.current?.abort();
++    const controller=new AbortController();request.current=controller;
++    setBusy(true);setError(false);setResult(null);
++    const retrievedAt=new Date().toISOString();
++    try{
++      const response=await fetch(url,{signal:controller.signal,cache:"no-store"});
++      if(!response.ok)throw new Error("Public API unavailable");
++      const sample=projectResearchSample(await response.json(),query,retrievedAt.slice(0,10));
++      if(!controller.signal.aborted)setResult({sample,url,retrievedAt,type:query.type});
++    }catch{
++      if(!controller.signal.aborted)setError(true);
++    }finally{
++      if(!controller.signal.aborted)setBusy(false);
++    }
++  }
++  async function copy(){
++    try{await navigator.clipboard.writeText(new URL(url,window.location.origin).href);setCopyStatus("ok");}
++    catch{setCopyStatus("error");}
++  }
++  return <section id="api" className="space-y-4" aria-labelledby="research-explorer-title">
++    <CmmCard tone="slate" variant="outlined" className="space-y-4">
++      <h2 id="research-explorer-title" className="text-xl font-bold cmm-text-primary">{fr?"Explorer les données":"Explore data"}</h2>
++      <p className="text-sm cmm-text-secondary">{fr?"Requête à la demande sur l’API publique existante. L’aperçu des collectes retient uniquement les bilans terminés dont la date n’est pas future.":"On-demand query of the existing public API. The collection preview retains completed reports with non-future dates only."}</p>
++      <form className="space-y-4" onSubmit={e=>{e.preventDefault();void load();}}>
++        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
++          <CmmField label={fr?"Jeu consulté":"Dataset"}><select className="cmm-input w-full" value={query.type} onChange={e=>change("type",e.target.value as ResearchQuery["type"])}><option value="action">{fr?"Collectes":"Cleanups"}</option><option value="spot">{fr?"Signalements":"Litter reports"}</option><option value="clean_place">{fr?"Lieux propres":"Clean places"}</option></select></CmmField>
++          <CmmField label={fr?"À partir du":"From date"} hint={fr?"Vide : toute période":"Blank: all dates"}><input type="date" className="cmm-input w-full" value={query.from} onChange={e=>change("from",e.target.value)}/></CmmField>
++          <CmmField label={fr?"Contexte":"Context"}><select className="cmm-input w-full" value={query.context} disabled={query.type!=="action"} onChange={e=>change("context",e.target.value as ResearchQuery["context"])}><option value="all">{fr?"Tous":"All"}</option><option value="citizen">{fr?"Citoyen":"Citizen"}</option><option value="company">{fr?"Entreprise":"Company"}</option><option value="school">{fr?"Scolaire":"School"}</option><option value="unknown">{fr?"Non classé":"Unknown"}</option></select></CmmField>
++          <CmmField label={fr?"Taille maximale":"Maximum size"}><select className="cmm-input w-full" value={query.limit} onChange={e=>change("limit",Number(e.target.value))}>{[20,80,150,300].map(n=><option key={n} value={n}>{n}</option>)}</select></CmmField>
++        </div>
++        <p className="break-all rounded-lg border border-[var(--cmm-surface-border)] p-3 font-mono text-xs cmm-text-primary">{url}</p>
++        <div className="flex flex-wrap gap-2">
++          <CmmButton type="submit" tone="primary" loading={busy}>{fr?"Afficher un aperçu":"Preview data"}</CmmButton>
++          <CmmButton href={url} prefetch={false} tone="secondary">{fr?"Ouvrir le JSON brut":"Open raw JSON"}</CmmButton>
++          <CmmButton type="button" tone="tertiary" onClick={()=>void copy()}>{fr?"Copier l’URL":"Copy URL"}</CmmButton>
++        </div>
++        {copyStatus!=="idle"?<p role="status" className="text-sm cmm-text-secondary">{copyStatus==="ok"?(fr?"URL copiée":"URL copied"):(fr?"Copie impossible ; sélectionnez l’URL affichée.":"Copy failed; select the displayed URL.")}</p>:null}
++      </form>
++    </CmmCard>
++    {error?<CmmCard tone="slate" variant="outlined"><p role="alert" className="text-sm cmm-text-primary">{fr?"Impossible de lire la réponse publique. Aucun résultat n’est déduit de cet échec.":"Unable to read the public response. No result is inferred from this failure."}</p><CmmButton type="button" tone="secondary" onClick={()=>void load()}>{fr?"Réessayer":"Retry"}</CmmButton></CmmCard>:null}
++    {result?<ResearchResults fr={fr} result={result}/>:null}
++  </section>;
++}
++function ResearchResults({fr,result}:{fr:boolean;result:{sample:ResearchSample;url:string;retrievedAt:string;type:ResearchQuery["type"]}}){
++  const {sample}=result;
++  const show=(value:string|number|null)=>value??(fr?"Non renseigné":"Not provided");
++  const actions=result.type==="action";
++  return <CmmCard tone="slate" variant="outlined" className="space-y-3">
++    <h3 className="font-bold cmm-text-primary">{fr?"Résultat de la requête":"Query result"}</h3>
++    <p role="status" className="text-sm cmm-text-primary">{sample.rows.length} {fr?"retenus sur":"retained out of"} {sample.received} {fr?"reçus":"received"} · {sample.excluded} {fr?"écartés":"excluded"}</p>
++    <p className="break-all text-xs cmm-text-secondary">{result.retrievedAt} · {result.url}</p>
++    {sample.isTruncated!==false||sample.partialSource!==false?<p role="status" className="rounded-lg border border-[var(--cmm-surface-border)] p-3 text-sm cmm-text-warning">{fr?"Lecture tronquée, partielle ou état non établi. Ne pas extrapoler cet échantillon.":"Truncated, partial or unconfirmed read. Do not extrapolate this sample."}</p>:null}
++    <p className="text-xs cmm-text-secondary">{fr?"Même sans avertissement, ce résultat borné n’est pas un recensement exhaustif du territoire. Les coordonnées exactes et les textes libres ne sont pas reproduits dans cet aperçu.":"Even without a warning, this bounded result is not a complete territorial census. Exact coordinates and free text are not reproduced in this preview."}</p>
++    {sample.rows.length===0?<p className="text-sm cmm-text-primary">{fr?"Aucune ligne admissible dans la réponse reçue. Modifiez la requête pour explorer un autre échantillon.":"No eligible rows in the response. Change the query to explore another sample."}</p>:<div className="overflow-x-auto"><table className="w-full text-left text-xs cmm-text-primary">
++      <caption className="sr-only">{fr?"Échantillon de données publiques":"Public data sample"}</caption>
++      <thead><tr className="border-b border-[var(--cmm-surface-border)]">{(actions?[fr?"Date":"Date",fr?"Département":"Department",fr?"Déchets (kg)":"Waste (kg)",fr?"Mégots (nombre)":"Butts (count)",fr?"Méthode masse":"Mass method",fr?"Origine mégots":"Butt count provenance",fr?"Qualité":"Quality"]:[fr?"Date":"Date",fr?"Département":"Department",fr?"Provenance géométrique":"Geometry provenance",fr?"Qualité":"Quality"]).map(label=><th key={label} scope="col" className="p-2">{label}</th>)}</tr></thead>
++      <tbody>{sample.rows.map((row,index)=><tr key={index} className="border-b border-[var(--cmm-surface-border)]">{(actions?[row.date,row.department,row.wasteKg,row.butts,row.massMethod,row.buttsProvenance,row.qualityStatus]:[row.date,row.department,row.geometryProvenance,row.qualityStatus]).map((v,i)=><td key={i} className="p-2">{show(v)}</td>)}</tr>)}</tbody>
++    </table></div>}
++  </CmmCard>;
++}
+diff --git a/apps/web/src/components/sections/rubriques/open-data-research.model.test.ts b/apps/web/src/components/sections/rubriques/open-data-research.model.test.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/open-data-research.model.test.ts
+@@ -0,0 +1,34 @@
++import {describe,expect,it} from "vitest";
++import {DEFAULT_RESEARCH_QUERY,projectResearchSample,researchQueryUrl} from "./open-data-research.model";
++const q=DEFAULT_RESEARCH_QUERY;
++const item=(id:string,phase="post_action_complete",extra:Record<string,unknown>={})=>({id,status:"approved",contract:{type:"action",status:"approved",dates:{observedAt:"2026-11-01"},location:{departmentCode:"75",latitude:48.85,longitude:2.35},metadata:{actionPhase:phase,wasteKg:0,cigaretteButts:null,durationMinutes:0,actorName:"PRIVATE_SENTINEL",...extra}}});
++const body=(items:unknown[],extra:Record<string,unknown>={})=>({status:"ok",count:items.length,items,isTruncated:false,partialSource:false,...extra});
++describe("public research sample",()=>{
++  it("uses real public query parameters and bounds",()=>{
++    const url=new URL(researchQueryUrl({...q,context:"school",from:"2026-01-01",limit:300}),"https://example.test");
++    expect(url.pathname).toBe("/api/actions/map");
++    expect(Object.fromEntries(url.searchParams)).toEqual({types:"action",status:"approved",floorDate:"2026-01-01",limit:"300",context:"school"});
++    expect(()=>researchQueryUrl({...q,limit:301})).toThrow();
++    expect(()=>researchQueryUrl({...q,from:"2026-02-31"})).toThrow();
++    expect(researchQueryUrl({...q,type:"spot",context:"school"})).not.toContain("context");
++  });
++  it("excludes planned, draft, duplicate and future records even with approved status",()=>{
++    const future=item("f");future.contract.dates.observedAt="2027-01-01";
++    const result=projectResearchSample(body([item("a"),item("b","pre_action"),item("c","post_action_draft"),item("a"),future]),q,"2026-11-25");
++    expect(result.received).toBe(5);expect(result.excluded).toBe(4);expect(result.rows).toHaveLength(1);
++    expect(result.rows[0]).toMatchObject({wasteKg:0,butts:null,durationMinutes:null,department:"75"});
++    expect(JSON.stringify(result)).not.toMatch(/PRIVATE_SENTINEL|48\.85|2\.35/);
++  });
++  it("preserves provenance and omitted measurements, distinguishes partial and truncated",()=>{
++    const result=projectResearchSample(body([item("a","post_action_complete",{wasteKg:25,provided:[],wasteMeasurementMethod:"estimation_visuelle"})],{isTruncated:true,partialSource:false}),q,"2026-11-25");
++    expect(result.rows[0]).toMatchObject({wasteKg:null,massMethod:"estimation_visuelle"});
++    expect(result).toMatchObject({isTruncated:true,partialSource:false});
++    expect(projectResearchSample(body([],{partialSource:false,sourceHealth:{partial:true}}),q,"2026-11-25").partialSource).toBe(true);
++    expect(()=>projectResearchSample({status:"ok",count:1,items:[]},q,"2026-11-25")).toThrow();
++  });
++  it("never converts a spot to a cleanup",()=>{
++    const spot=item("spot");spot.contract.type="spot";
++    expect(projectResearchSample(body([spot]),q,"2026-11-25").rows).toHaveLength(0);
++    expect(projectResearchSample(body([spot]),{...q,type:"spot"},"2026-11-25").rows[0]).toMatchObject({wasteKg:null,butts:null});
++  });
++});
+diff --git a/apps/web/src/components/sections/rubriques/open-data-section.contract.test.ts b/apps/web/src/components/sections/rubriques/open-data-section.contract.test.ts
+--- a/apps/web/src/components/sections/rubriques/open-data-section.contract.test.ts
++++ b/apps/web/src/components/sections/rubriques/open-data-section.contract.test.ts
+@@ -1,49 +1,20 @@
+-import { readFileSync } from "node:fs";
+-import { describe, expect, it } from "vitest";
+-
+-const sectionSource = readFileSync(new URL("./open-data-section.tsx", import.meta.url), "utf8");
+-const pageDocumentation = readFileSync(
+-  new URL(
+-    "../../../../../../documentation/pages_site/routes/04-reseau-discussions/open-data/open-data-README.md",
+-    import.meta.url,
+-  ),
+-  "utf8",
+-);
+-const detailedPageDocumentation = readFileSync(
+-  new URL(
+-    "../../../../../../documentation/pages_site/routes/04-reseau-discussions/open-data/open-data-presentation-detaillee.md",
+-    import.meta.url,
+-  ),
+-  "utf8",
+-);
+-
+-describe("Open Data public contract", () => {
+-  it("describes the public approved-action projection without private data promises", () => {
+-    expect(sectionSource).toContain("projection des actions approuvées et cartographiées");
+-    expect(sectionSource).toContain("Réponse JSON de l’API publique");
+-    expect(sectionSource).not.toMatch(/CSV|historique utilisateur|user history/i);
+-    expect(sectionSource).not.toMatch(/Swagger\s*\/\s*OpenAPI/i);
+-    expect(pageDocumentation).toContain("projection publique des actions approuvées");
+-    expect(pageDocumentation).not.toMatch(/CSV|historique utilisateur/i);
+-    expect(pageDocumentation).not.toMatch(/documentation API\/OpenAPI/i);
+-  });
+-
+-  it("keeps the detailed presentation aligned with the public runtime", () => {
+-    expect(detailedPageDocumentation).toContain("page publique de présentation");
+-    expect(detailedPageDocumentation).toContain("`GET /api/actions/map`");
+-    expect(detailedPageDocumentation).toContain("actions approuvées et cartographiées");
+-    expect(detailedPageDocumentation).not.toMatch(/CSV|historique utilisateur/i);
+-    expect(detailedPageDocumentation).toContain("violet / blanc");
+-    expect(detailedPageDocumentation).toContain(
+-      "n’expose actuellement aucun Swagger ni document OpenAPI public",
+-    );
+-    expect(detailedPageDocumentation).not.toMatch(
+-      /(?:Swagger|OpenAPI).{0,30}(?:disponible|exposé|consultable|proposé)/i,
+-    );
+-    expect(detailedPageDocumentation).not.toMatch(
+-      /CTA\s+clairs?\s+pour\s+exporter/i,
+-    );
+-    expect(detailedPageDocumentation).not.toMatch(/export direct(?:ement)?/i);
+-    expect(detailedPageDocumentation).not.toMatch(/\bpink\b/i);
+-  });
+-});
++import {readFileSync} from "node:fs";
++import {describe,expect,it} from "vitest";
++const read=(path:string)=>readFileSync(new URL(path,import.meta.url),"utf8");
++describe("Open Data public contract",()=>{
++  it("uses the existing bounded API and distinguishes licence and scientific evidence",()=>{
++    const section=read("./open-data-section.tsx"),explorer=read("./open-data-explorer.tsx"),model=read("./open-data-research.model.ts");
++    expect(section).toContain("<OpenDataExplorer fr={fr}");
++    expect(model).toContain("post_action_complete");
++    expect(explorer).toContain("sample.isTruncated");
++    expect(section).toContain("licence AGPL concerne le code");
++    expect(section).not.toMatch(/Swagger|OpenAPI|Télécharger toutes les données/);
++  });
++  it("keeps canonical route documentation aligned",()=>{
++    const doc=read("../../../../../../documentation/pages_site/routes/04-reseau-discussions/open-data/open-data-presentation-detaillee.md");
++    expect(doc).toContain("GET /api/actions/map");
++    expect(doc).toContain("post_action_complete");
++    expect(doc).toContain("licence");
++    expect(doc).toContain("isTruncated");
++  });
++});
+diff --git a/e2e/open-data-science.spec.ts b/e2e/open-data-science.spec.ts
+new file mode 100644
+--- /dev/null
++++ b/e2e/open-data-science.spec.ts
+@@ -0,0 +1,15 @@
++import {expect,test} from "@playwright/test";
++test("public science explorer exposes bounded results and warns on truncation",async({page})=>{
++  await page.setViewportSize({width:390,height:844});
++  await page.route("**/api/actions/map?**",route=>route.fulfill({json:{status:"ok",count:2,isTruncated:true,partialSource:false,items:[
++    {id:"complete",status:"approved",contract:{type:"action",status:"approved",dates:{observedAt:"2026-01-01"},location:{departmentCode:"75"},metadata:{actionPhase:"post_action_complete",wasteKg:0}}},
++    {id:"future",status:"approved",contract:{type:"action",status:"approved",dates:{observedAt:"2027-01-01"},metadata:{actionPhase:"pre_action"}}}
++  ]}}));
++  await page.goto("/sections/open-data");
++  const cookies=page.getByRole("button",{name:"Tout refuser"});if(await cookies.isVisible().catch(()=>false))await cookies.click();
++  await page.getByRole("button",{name:"Afficher un aperçu"}).click();
++  await expect(page.getByText("1 retenus sur 2 reçus")).toBeVisible();
++  await expect(page.getByText(/Lecture tronquée/)).toBeVisible();
++  await expect(page.getByRole("table",{name:"Échantillon de données publiques"}).locator("tbody tr")).toHaveCount(1);
++  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
++});
