@@ -4,8 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
-import { evaluateAutomaticPreflight, evaluateSupabaseConvergenceGate, evaluateSupabasePostflight, validateEphemeralEvidence } from "./supabase-convergence-gate.mjs";
-import { validatePublicE2EArtifact } from "../checks/check-public-e2e-artifact.mjs";
+import { evaluateSupabasePostflight, validateEphemeralEvidence } from "./supabase-convergence-gate.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const workflowPath = path.join(repositoryRoot, ".github", "workflows", "supabase-convergence.yml");
@@ -49,7 +48,7 @@ function passingEvidence(overrides = {}) {
       path: "apps/web/supabase/tests/action-attendance-registry.pgtap.sql",
       status: "INTEGRATION_PROOF",
       outcome: "PASS",
-      contentSha256: "4da5e23312d7d76d649997f61c29771f470ef4cb0bea2f1b5f09a9f92a75653e",
+      contentSha256: "cde4d55d936c9bf7ae915ad8c9d2aed4670d7d55ce2b3d375e0edc6f15ffd6c8",
     }, {
       path: "e2e/action-attendance-registry-concurrency.mjs",
       status: "INTEGRATION_PROOF",
@@ -60,27 +59,19 @@ function passingEvidence(overrides = {}) {
   };
 }
 
-test("Supabase convergence is proof-triggered, scheduled, manual, and serialized", () => {
+test("Supabase convergence workflow is read-only monitoring without remote writes", () => {
   assert.doesNotMatch(workflow, /^\s+push:/m);
-  assert.match(workflow, /workflow_run:/);
-  assert.match(workflow, /workflows:\s*\n\s+- supabase-sql-proof-ephemeral/);
-  assert.match(workflow, /types:\s*\n\s+- completed/);
+  assert.doesNotMatch(workflow, /workflow_run:/);
+  assert.doesNotMatch(workflow, /pull_request:/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /schedule:/);
-  assert.doesNotMatch(workflow, /pull_request:/);
   assert.match(workflow, /permissions:\s*\{\}/);
   assert.match(workflow, /group:\s*supabase-production-migrations/);
   assert.match(workflow, /cancel-in-progress:\s*false/);
   assert.match(workflow, /environment:\s*supabase-production/);
-  assert.match(workflow, /actions\/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333/);
   assert.match(workflow, /Checkout trusted main control source[\s\S]*?ref: \$\{\{ github\.sha \}\}/);
-  assert.doesNotMatch(workflow, /Checkout tested candidate[\s\S]*?github\.event\.workflow_run\.head_sha/);
-  assert.doesNotMatch(workflow.slice(0, workflow.indexOf("Download sanitized ephemeral proof")), /github\.event\.workflow_run\.head_sha/);
-  assert.match(workflow, /CMM_SUPABASE_SOURCE_HEAD_REPOSITORY:\s*\$\{\{ github\.event\.workflow_run\.head_repository\.full_name \}\}/);
-  assert.match(workflow, /git ls-remote origin refs\/heads\/main/);
-  assert.match(workflow, /Recheck exact remote main before application[\s\S]*?current_main_sha.*CMM_SUPABASE_CANDIDATE_SHA/);
-  assert.match(workflow, /supabase-convergence-gate\.mjs/);
-  assert.match(workflow, /github\.event_name == 'workflow_run'/);
+  assert.doesNotMatch(workflow, /db push --linked --yes/);
+  assert.doesNotMatch(workflow, /migration repair|db reset|CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION/i);
 });
 
 test("manual ephemeral E2E is restricted to the current main SHA before any credentials run", () => {
@@ -141,92 +132,13 @@ test("manual migration isolation is read-only and cannot attest convergence", ()
   assert.ok(sqlWorkflow.jobs["isolate-replay"].steps.some(({ name }) => name === "Upload sanitized isolation evidence"));
 });
 
-test("SQL evidence keeps its relative path from upload through extraction, validation, and gate read", (context) => {
-  const sqlWorkflow = yaml.load(fs.readFileSync(path.join(repositoryRoot, ".github", "workflows", "supabase-sql-proof.yml"), "utf8"));
-  const convergenceWorkflow = yaml.load(workflow);
-  const upload = sqlWorkflow.jobs["sql-proof"].steps.find(({ name }) => name === "Upload complete SQL proof evidence");
-  const download = convergenceWorkflow.jobs.gate.steps.find(({ name }) => name === "Download sanitized ephemeral proof");
-  const validation = convergenceWorkflow.jobs.gate.steps.find(({ name }) => name === "Validate sanitized ephemeral proof envelope");
-  const gate = convergenceWorkflow.jobs.gate.steps.find(({ name }) => name === "Validate trigger, remote HEAD, and exact proof");
-
-  assert.equal(upload.with.name, download.with.name);
-  assert.equal(upload.with.path, "artifacts/ci-public-evidence");
-  assert.equal(download.with.path, "artifacts/ci-public-evidence");
-  assert.match(validation.run, /check-public-e2e-artifact\.mjs artifacts\/ci-public-evidence/);
-  assert.equal(gate.env.CMM_SUPABASE_EVIDENCE_PATH, "artifacts/ci-public-evidence/evidence/supabase-sql.json");
-
-  const allowedRoot = path.resolve(repositoryRoot, "artifacts/ci-public-evidence");
-  const createdAllowedRoot = !fs.existsSync(allowedRoot);
-  fs.mkdirSync(allowedRoot, { recursive: true });
-  const stagingRoot = fs.mkdtempSync(path.join(allowedRoot, "upload-contract-"));
-  const extractedRoot = fs.mkdtempSync(path.join(allowedRoot, "download-contract-"));
-  context.after(() => {
-    fs.rmSync(stagingRoot, { recursive: true, force: true });
-    fs.rmSync(extractedRoot, { recursive: true, force: true });
-    if (createdAllowedRoot && fs.readdirSync(allowedRoot).length === 0) fs.rmSync(allowedRoot, { recursive: true });
-    const artifactsRoot = path.dirname(allowedRoot);
-    if (createdAllowedRoot && fs.existsSync(artifactsRoot) && fs.readdirSync(artifactsRoot).length === 0) fs.rmdirSync(artifactsRoot);
-  });
-
-  const stagedEvidence = path.resolve(stagingRoot, path.relative(path.resolve(repositoryRoot, upload.with.path), path.resolve(repositoryRoot, gate.env.CMM_SUPABASE_EVIDENCE_PATH)));
-  fs.mkdirSync(path.dirname(stagedEvidence), { recursive: true });
-  fs.writeFileSync(stagedEvidence, JSON.stringify(passingEvidence()));
-  const archiveRelativePath = path.relative(stagingRoot, stagedEvidence);
-  fs.mkdirSync(path.dirname(path.resolve(extractedRoot, archiveRelativePath)), { recursive: true });
-  fs.copyFileSync(stagedEvidence, path.resolve(extractedRoot, archiveRelativePath));
-
-  assert.equal(archiveRelativePath.replace(/\\/g, "/"), "evidence/supabase-sql.json");
-  assert.deepEqual(validatePublicE2EArtifact(extractedRoot), []);
-  const extractedEvidencePath = path.resolve(extractedRoot, path.relative(path.resolve(repositoryRoot, download.with.path), path.resolve(repositoryRoot, gate.env.CMM_SUPABASE_EVIDENCE_PATH)));
-  const extractedEvidence = JSON.parse(fs.readFileSync(extractedEvidencePath, "utf8"));
-  assert.equal(evaluateSupabaseConvergenceGate({
-    eventName: "workflow_run",
-    repository: "maxd4/CleanmyMap",
-    sourceRepository: "maxd4/CleanmyMap",
-    sourceHeadRepository: "maxd4/CleanmyMap",
-    workflowName: "supabase-sql-proof-ephemeral",
-    headBranch: "main",
-    conclusion: "success",
-    candidateSha,
-    remoteHeadSha: candidateSha,
-    evidence: extractedEvidence,
-  }).apply, true);
-
-  const changedBackfillProof = passingEvidence();
-  changedBackfillProof.records.find((record) => record.path === "apps/web/supabase/tests/action-attendance-registry.pgtap.sql").contentSha256 = "0".repeat(64);
-  assert.equal(validateEphemeralEvidence({ evidence: changedBackfillProof, candidateSha }).mode, "BLOCKED");
-
-  fs.writeFileSync(path.join(extractedRoot, "secrets.log"), "private diagnostic");
-  assert.ok(validatePublicE2EArtifact(extractedRoot).some((issue) => issue.includes("outside the public evidence allowlist")));
-  fs.rmSync(path.join(extractedRoot, "secrets.log"));
-  fs.rmSync(extractedEvidencePath);
-  assert.equal(fs.existsSync(extractedEvidencePath), false);
-  assert.equal(evaluateSupabaseConvergenceGate({
-    eventName: "workflow_run",
-    repository: "maxd4/CleanmyMap",
-    sourceRepository: "maxd4/CleanmyMap",
-    sourceHeadRepository: "maxd4/CleanmyMap",
-    workflowName: "supabase-sql-proof-ephemeral",
-    headBranch: "main",
-    conclusion: "success",
-    candidateSha,
-    remoteHeadSha: candidateSha,
-    evidence: null,
-  }).mode, "BLOCKED");
-});
-
-test("production secrets are scoped to the protected non-PR job and the canonical CLI gate", () => {
+test("production secrets are scoped to the protected non-PR read-only monitoring job", () => {
   assert.match(workflow, /SUPABASE_ACCESS_TOKEN:\s*\$\{\{ secrets\.SUPABASE_ACCESS_TOKEN \}\}/);
   assert.match(workflow, /SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
   assert.match(workflow, /SUPABASE_DB_PASSWORD is required for the linked PostgreSQL read-only checks/);
   assert.doesNotMatch(workflow, /VERCEL_TOKEN|resolve-vercel-runtime-proof|--runtime-proof=/);
   assert.match(workflow, /supabase:migration:preflight -- --dry-run/);
-  assert.match(workflow, /Run read-only preflight and gate the queue[\s\S]*?SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
-  assert.match(workflow, /Verify history, Advisors, and critical SQL contracts[\s\S]*?SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
-  assert.match(workflow, /supabase-convergence-gate\.mjs --preflight/);
-  assert.match(workflow, /github\.event_name == 'workflow_run' && steps\.preflight\.outputs\.apply == 'true'/);
-  assert.match(workflow, /npx supabase db push --linked --yes/);
-  assert.doesNotMatch(workflow, /migration repair|db reset|CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION/i);
+  assert.match(workflow, /Run read-only convergence preflight[\s\S]*?SUPABASE_DB_PASSWORD:\s*\$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
 });
 
 test("read-only convergence summary reports pending count and age of the oldest pending migration", () => {
@@ -237,130 +149,57 @@ test("read-only convergence summary reports pending count and age of the oldest 
   assert.match(workflow, /Pending migrations:.*pending_count:-UNKNOWN/s);
 });
 
-test("complete SQL success is independent of app E2E; automatic apply still requires READY_TO_APPLY", () => {
-  const source = {
-    eventName: "workflow_run",
-    repository: "maxd4/CleanmyMap",
-    sourceRepository: "maxd4/CleanmyMap",
-    sourceHeadRepository: "maxd4/CleanmyMap",
-    workflowName: "supabase-sql-proof-ephemeral",
-    headBranch: "main",
-    conclusion: "success",
-    candidateSha,
-    remoteHeadSha: candidateSha,
-    evidence: passingEvidence(),
-  };
-  assert.equal(evaluateSupabaseConvergenceGate(source).apply, true);
-  assert.equal(evaluateSupabaseConvergenceGate({ ...source, workflowName: "e2e-supabase-ephemeral", conclusion: "failure" }).mode, "BLOCKED");
-  assert.equal(evaluateAutomaticPreflight({ eventName: "workflow_run", status: "READY_TO_APPLY", exitCode: 0 }).apply, true);
-  assert.equal(evaluateAutomaticPreflight({ eventName: "workflow_run", status: "ALIGNED", exitCode: 0 }).apply, false);
-  for (const status of ["BLOCKED", "DIVERGED", "MISSING"]) {
-    assert.equal(evaluateAutomaticPreflight({ eventName: "workflow_run", status, exitCode: 0 }).pass, false, status);
-  }
-  assert.equal(evaluateAutomaticPreflight({ eventName: "workflow_run", status: "READY_TO_APPLY", exitCode: 1 }).pass, false);
-  assert.equal(evaluateAutomaticPreflight({ eventName: "workflow_dispatch", status: "READY_TO_APPLY", exitCode: 0 }).apply, false);
-});
-
-test("the workflow verifies an empty queue and critical static contracts without pretending to run pgTAP remotely", () => {
-  assert.match(workflow, /supabase-convergence-postflight\.mjs "\$GITHUB_EVENT_NAME" "\$postflight_status" "\$postflight_exit"/);
+test("the workflow verifies migration trees and critical static contracts without running pgTAP remotely", () => {
+  assert.match(workflow, /supabase-convergence-postflight\.mjs "\$GITHUB_EVENT_NAME" "\$status" "\$preflight_exit"/);
   assert.match(workflow, /audit:supabase-migration-trees/);
   assert.match(workflow, /action-rides-transactions-migration\.test\.ts/);
   assert.match(workflow, /public-action-map-reconstruction-projection\.test\.ts/);
   assert.doesNotMatch(workflow, /run-supabase-sql-proof\.mjs/);
 });
 
-test("only a successful exact main run with complete SQL evidence can apply", () => {
-  assert.deepEqual(evaluateSupabaseConvergenceGate({
-    eventName: "workflow_run",
-    repository: "maxd4/CleanmyMap",
-    sourceRepository: "maxd4/CleanmyMap",
-    sourceHeadRepository: "maxd4/CleanmyMap",
-    workflowName: "supabase-sql-proof-ephemeral",
-    headBranch: "main",
-    conclusion: "success",
-    candidateSha,
-    remoteHeadSha: candidateSha,
-    evidence: passingEvidence(),
-  }), { mode: "APPLY", apply: true, reason: "ephemeral SQL proof passed for the exact main SHA" });
-});
-
-test("manual and scheduled controls are read-only", () => {
-  for (const eventName of ["workflow_dispatch", "schedule"]) {
-    assert.deepEqual(evaluateSupabaseConvergenceGate({ eventName }), {
-      mode: "READ_ONLY",
-      apply: false,
-      reason: `${eventName} is read-only and cannot apply migrations`,
-    });
-  }
-});
-
-test("read-only events accept pending queues while real convergence requires ALIGNED", () => {
+test("read-only convergence monitoring accepts ALIGNED and READY_TO_APPLY while blocking BLOCKED and DIVERGED", () => {
   for (const eventName of ["schedule", "workflow_dispatch"]) {
     assert.equal(evaluateSupabasePostflight({ eventName, status: "ALIGNED", exitCode: 0 }).pass, true);
     assert.equal(evaluateSupabasePostflight({ eventName, status: "READY_TO_APPLY", exitCode: 0 }).mode, "READ_ONLY_PENDING");
     for (const status of ["BLOCKED", "DIVERGED"]) {
       assert.equal(evaluateSupabasePostflight({ eventName, status, exitCode: 0 }).pass, false, `${eventName} ${status}`);
     }
+    assert.equal(evaluateSupabasePostflight({ eventName, status: "READY_TO_APPLY", exitCode: 2 }).pass, false);
   }
-
-  assert.equal(evaluateSupabasePostflight({ eventName: "workflow_run", status: "ALIGNED", exitCode: 0 }).pass, true);
-  for (const status of ["READY_TO_APPLY", "BLOCKED", "DIVERGED"]) {
-    assert.equal(evaluateSupabasePostflight({ eventName: "workflow_run", status, exitCode: 0 }).pass, false, `workflow_run ${status}`);
-  }
-  assert.equal(evaluateSupabasePostflight({ eventName: "workflow_dispatch", status: "READY_TO_APPLY", exitCode: 1 }).pass, false);
 });
 
-test("wrong source, failed run, stale main, missing proof, and incomplete proof are refused", () => {
-  const base = {
-    eventName: "workflow_run",
-    repository: "maxd4/CleanmyMap",
-    sourceRepository: "maxd4/CleanmyMap",
-    sourceHeadRepository: "maxd4/CleanmyMap",
-    workflowName: "supabase-sql-proof-ephemeral",
-    headBranch: "main",
-    conclusion: "success",
-    candidateSha,
-    remoteHeadSha: candidateSha,
-    evidence: passingEvidence(),
+test("ephemeral SQL evidence is validated by exact input digests rather than current main SHA equality", () => {
+  const olderShaEvidence = passingEvidence({
+    candidateSha: "a".repeat(40),
+    headSha: "a".repeat(40),
+  });
+  const expectedDigests = {
+    "apps/web/supabase/migrations/20261122000014_private_action_attendance_registry.sql": "2f4b4ea37497fa05d67b3566a78b57ef927644c70b41a2983b2487958d885234",
+    "apps/web/supabase/tests/action-attendance-registry.pgtap.sql": "cde4d55d936c9bf7ae915ad8c9d2aed4670d7d55ce2b3d375e0edc6f15ffd6c8",
+    "e2e/action-attendance-registry-concurrency.mjs": "a77eee7ffaa7c37ebcbb8e1aafbbcf889d77f9ce58ebf69ff0b85098f23bf5ff",
   };
-  for (const [field, value] of [
-    ["workflowName", "other-workflow"],
-    ["workflowName", "e2e-supabase-ephemeral"],
-    ["sourceRepository", "fork/CleanmyMap"],
-    ["sourceHeadRepository", "fork/CleanmyMap"],
-    ["headBranch", "feature"],
-    ["conclusion", "failure"],
-    ["remoteHeadSha", "a".repeat(40)],
-    ["evidence", null],
-    ["evidence", passingEvidence({ outcome: "NOT_RUN" })],
-    ["evidence", passingEvidence({ records: [] })],
-  ]) {
-    assert.equal(evaluateSupabaseConvergenceGate({ ...base, [field]: value }).mode, "BLOCKED", field);
-  }
-  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ candidateSha: "a".repeat(40) }), candidateSha }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, expectedDigests }).valid, true);
+
+  assert.equal(validateEphemeralEvidence({
+    evidence: olderShaEvidence,
+    expectedDigests: { ...expectedDigests, "apps/web/supabase/tests/action-attendance-registry.pgtap.sql": "0".repeat(64) },
+  }).mode, "BLOCKED");
+
+  const changedBackfillProof = passingEvidence();
+  changedBackfillProof.records.find((record) => record.path === "apps/web/supabase/tests/action-attendance-registry.pgtap.sql").contentSha256 = "0".repeat(64);
+  assert.equal(validateEphemeralEvidence({ evidence: changedBackfillProof }).mode, "BLOCKED");
+
+  assert.equal(validateEphemeralEvidence({ evidence: null }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ outcome: "NOT_RUN" }) }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ records: [] }) }).mode, "BLOCKED");
+
   const passingStages = passingEvidence().workflowStages;
   for (const stage of ["bootstrap", "dbReset", "migrations", "seed", "schemaSeedValidation", "sqlProofRunner"]) {
     for (const status of ["FAIL", "NOT_RUN", "INCONCLUSIVE"]) {
       const evidence = passingEvidence({ workflowStages: passingStages.map((entry) => entry.stage === stage ? { ...entry, status } : entry) });
-      assert.equal(validateEphemeralEvidence({ evidence, candidateSha }).mode, "BLOCKED", `${stage}=${status}`);
+      assert.equal(validateEphemeralEvidence({ evidence }).mode, "BLOCKED", `${stage}=${status}`);
     }
   }
-  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ workflowStages: undefined }), candidateSha }).mode, "BLOCKED");
-});
-
-test("a workflow_run produced by a pull request is blocked before any production convergence", () => {
-  assert.equal(evaluateSupabaseConvergenceGate({
-    eventName: "workflow_run",
-    repository: "maxd4/CleanmyMap",
-    sourceRepository: "maxd4/CleanmyMap",
-    sourceHeadRepository: "attacker/CleanmyMap",
-    workflowName: "supabase-sql-proof-ephemeral",
-    headBranch: "feature/untrusted-change",
-    conclusion: "success",
-    candidateSha,
-    remoteHeadSha: candidateSha,
-    evidence: passingEvidence(),
-  }).mode, "BLOCKED");
 });
 
 test("all third-party actions in the workflow are pinned to full commit SHAs", () => {

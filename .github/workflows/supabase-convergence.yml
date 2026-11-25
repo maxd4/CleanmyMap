@@ -7,11 +7,6 @@ concurrency:
   cancel-in-progress: false
 
 on:
-  workflow_run:
-    workflows:
-      - supabase-sql-proof-ephemeral
-    types:
-      - completed
   workflow_dispatch:
   schedule:
     - cron: "15 3 * * *"
@@ -21,16 +16,14 @@ env:
   SUPABASE_PROJECT_REF: trktzkgujgpgsgkoyndn
 
 jobs:
-  gate:
-    name: Gate Supabase convergence on exact ephemeral proof
-    if: >-
-      github.event_name == 'workflow_run' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'schedule'
+  monitor:
+    name: Monitor read-only Supabase convergence
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: supabase-production
     permissions:
       contents: read
-      actions: read
 
     steps:
       - name: Checkout trusted main control source
@@ -39,76 +32,6 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Download sanitized ephemeral proof
-        if: github.event_name == 'workflow_run'
-        id: proof_download
-        continue-on-error: true
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        with:
-          name: cleanmymap-supabase-sql-evidence
-          path: artifacts/ci-public-evidence
-          repository: ${{ github.repository }}
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ github.token }}
-
-      - name: Validate sanitized ephemeral proof envelope
-        if: always() && github.event_name == 'workflow_run'
-        continue-on-error: true
-        run: node scripts/checks/check-public-e2e-artifact.mjs artifacts/ci-public-evidence
-
-      - name: Validate trigger, remote HEAD, and exact proof
-        id: gate
-        if: always()
-        env:
-          CMM_SUPABASE_SOURCE_REPOSITORY: ${{ github.event.workflow_run.repository.full_name }}
-          CMM_SUPABASE_SOURCE_HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
-          CMM_SUPABASE_SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
-          CMM_SUPABASE_SOURCE_BRANCH: ${{ github.event.workflow_run.head_branch }}
-          CMM_SUPABASE_SOURCE_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-          CMM_SUPABASE_REMOTE_HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-          CMM_SUPABASE_EVIDENCE_PATH: artifacts/ci-public-evidence/evidence/supabase-sql.json
-        run: |
-          set -euo pipefail
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_run" ]; then
-            test "${CMM_SUPABASE_SOURCE_REPOSITORY}" = "${GITHUB_REPOSITORY}"
-            CMM_SUPABASE_REMOTE_HEAD_SHA="$(git ls-remote origin refs/heads/main | cut -f1)"
-            export CMM_SUPABASE_REMOTE_HEAD_SHA
-          fi
-          node scripts/ci/supabase-convergence-gate.mjs
-
-      - name: Record read-only control mode
-        if: github.event_name != 'workflow_run'
-        run: echo "Manual and scheduled convergence controls are read-only; no migration can be applied."
-
-  converge:
-    name: Preflight and converge Supabase migrations
-    needs: gate
-    if: needs.gate.result == 'success'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    environment: supabase-production
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout verified main candidate
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Recheck exact remote main before application
-        if: github.event_name == 'workflow_run'
-        env:
-          CMM_SUPABASE_CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          set -euo pipefail
-          current_main_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
-          test -n "$current_main_sha"
-          test "$current_main_sha" = "$CMM_SUPABASE_CANDIDATE_SHA"
 
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
@@ -131,7 +54,7 @@ jobs:
           fi
           npx supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
 
-      - name: Run read-only preflight and gate the queue
+      - name: Run read-only convergence preflight
         id: preflight
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -159,40 +82,19 @@ jobs:
               oldest_age_days=UNKNOWN
             fi
           fi
-          echo "status=$status" >> "$GITHUB_OUTPUT"
           {
-            echo "## Supabase migration convergence"
+            echo "## Supabase migration convergence (read-only)"
             echo "- Status: \`$status\`"
             echo "- Pending migrations: \`${pending_count:-UNKNOWN}\`"
             echo "- Oldest pending migration: \`$oldest_pending\` (\`${oldest_age_days}\` days)"
             echo "- First blocking migration: \`${first:-NONE}\`"
             echo "- Required action: ${action:-not reported}"
-            echo "- Remote writes during preflight: \`NONE\`"
+            echo "- Remote writes: \`NONE\` (canonical application via linked Supabase CLI)"
           } >> "$GITHUB_STEP_SUMMARY"
-          CMM_SUPABASE_PREFLIGHT_STATUS="$status" \
-          CMM_SUPABASE_PREFLIGHT_EXIT_CODE="$preflight_exit" \
-          node scripts/ci/supabase-convergence-gate.mjs --preflight
+          node scripts/ci/supabase-convergence-postflight.mjs "$GITHUB_EVENT_NAME" "$status" "$preflight_exit"
 
-      - name: Apply the complete canonical queue after exact ephemeral proof
-        if: github.event_name == 'workflow_run' && steps.preflight.outputs.apply == 'true'
-        working-directory: apps/web
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: npx supabase db push --linked --yes
-
-      - name: Verify history, Advisors, and critical SQL contracts
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      - name: Verify migration trees and critical SQL contracts
         run: |
-          set +e
-          npm run supabase:migration:preflight -- --dry-run > "$RUNNER_TEMP/supabase-postflight.log" 2>&1
-          postflight_exit=$?
-          set -e
-          cat "$RUNNER_TEMP/supabase-postflight.log"
-          postflight_status=$(sed -n 's/^PREFLIGHT_STATUS: //p' "$RUNNER_TEMP/supabase-postflight.log" | tail -n 1)
-          node scripts/ci/supabase-convergence-postflight.mjs "$GITHUB_EVENT_NAME" "$postflight_status" "$postflight_exit"
           npm run audit:supabase-migration-trees
           node --test scripts/ci/supabase-migration-preflight.test.mjs scripts/audits/audit-supabase-migration-trees.test.mjs
           npm run test -w apps/web -- src/lib/supabase/migration-contracts/action-rides-transactions-migration.test.ts src/lib/supabase/migration-contracts/public-action-map-reconstruction-projection.test.ts

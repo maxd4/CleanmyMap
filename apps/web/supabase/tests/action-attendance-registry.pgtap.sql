@@ -21,7 +21,7 @@ declare
   v_action_id uuid := gen_random_uuid();
 begin
   insert into public.actions(id, created_by_clerk_id, action_date, location_label, status, action_phase)
-  values (v_action_id, 'attendance-registry-test', current_date + 1, 'Fixture', 'pending', 'pre_action');
+  values (v_action_id, 'attendance-registry-test', current_date + 2, 'Fixture', 'pending', 'pre_action');
   insert into attendance_fixture values (v_action_id);
   insert into public.action_registrations(action_id, user_id, registration_status)
   values (v_action_id, 'clerk_registry_fixture', 'confirmed');

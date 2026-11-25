@@ -203,17 +203,19 @@ du préflight sont exécutables par :
 node --test scripts/ci/supabase-migration-preflight.test.mjs
 ```
 
-La convergence publiée est orchestrée par
-`.github/workflows/supabase-convergence.yml` après le succès exact du workflow
-`e2e-supabase-ephemeral`, via `workflow_run`. Elle vérifie le dépôt, `main`, le
-SHA testé et le `HEAD` distant courant avant de considérer `READY_TO_APPLY`.
-Les déclenchements manuel et quotidien sont read-only. Le job est sérialisé,
-n'expose aucun secret à une PR et utilise `main` et l'historique Supabase lié.
-Il applique alors toute la file avec l'unique commande
-`npx supabase db push --linked --yes`, puis exige un préflight `ALIGNED`, des
-Advisors relus et les contrats statiques critiques. `BLOCKED`, `DIVERGED`, une
-preuve absente ou un SHA obsolète publie un diagnostic assaini et n'applique
-rien ; la file reste en attente. Une publication Git reste indépendante de
+La surveillance distante publiée est portée par
+`.github/workflows/supabase-convergence.yml` en mode **strictement read-only**
+(`workflow_dispatch` et `schedule`) : elle exécute le préflight canonique,
+rapporte l'état de la file et les contrats critiques, et n'applique jamais de
+migration sur la base distante. L'application canonique unique s'effectue par
+Codex via la CLI Supabase liée (`npx supabase db push --linked --yes`), après
+vérification de l'identité CLI et du projet cible, réconciliation des
+historiques, préflight `READY_TO_APPLY`, analyse des risques et des preuves
+(ordinaires proportionnées, ou preuves PostgreSQL/RLS/concurrence par
+empreintes exactes pour les migrations sensibles) et backup vérifié selon le
+risque, suivi du postflight `ALIGNED`, de la relecture d'historique et des
+Advisors. Une file contenant une erreur SQL connue non résolue ou un risque
+critique n'est jamais appliquée. Une publication Git reste indépendante de
 l'application Production ; aucune reprise aveugle, réparation d'historique ou DDL
 manuelle n'est autorisée. La procédure opérationnelle canonique est
 `documentation/operations/runbook-supabase-convergence.md`.

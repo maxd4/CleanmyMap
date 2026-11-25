@@ -124,14 +124,21 @@ Un résultat `PASS` est donc un `STATIC_CONTRACT` de syntaxe/structure, pas un
 `EXECUTED_DB_CONTRACT`. La suite pgTAP complète reste exécutée par la lane
 PostgreSQL éphémère après replay des migrations ; ce garde ne la remplace pas.
 
-La preuve PostgreSQL des contrats SQL existants est produite uniquement par la
-lane Supabase éphémère hébergée `.github/workflows/e2e-supabase.yml`, après
-rejeu des migrations canoniques et du seed. Le runner
+La preuve PostgreSQL des contrats SQL existants est produite par la lane
+Supabase éphémère hébergée `.github/workflows/supabase-sql-proof.yml`, après
+rejeu des migrations canoniques et du seed (indépendamment de `.github/workflows/e2e-supabase.yml`
+et du backup/restore). Le runner
 `scripts/ci/run-supabase-sql-proof.mjs` inventorie et trace séparément les
 fichiers pgTAP, les scripts SQL contractuels et les scénarios multi-sessions
 existants. Il exige un plan pgTAP complet ou un marqueur de fin contractuel ;
-un fichier présent, une commande interrompue, une sortie incomplète ou une
-preuve d'un autre SHA ne produit jamais `INTEGRATION_PROOF`.
+un fichier présent, une commande interrompue ou une sortie incomplète ne
+produit jamais `INTEGRATION_PROOF`. Pour les preuves nécessaires à une
+application sensible, la validité repose sur les empreintes exactes (SHA-256)
+des migrations, tests, dépendances et contrats SQL pertinents : un commit
+indépendant sur `main` n'invalide pas une preuve dont toutes les entrées
+restent identiques. Les migrations ordinaires compatibles appliquées par la
+CLI Supabase liée ne sont pas bloquées par le succès préalable d'un replay
+intégral.
 
 Pour pgTAP, le runner accepte deux formats réellement produits par la commande
 `supabase test db` : le flux TAP détaillé lorsqu'il est disponible, et le
@@ -160,12 +167,13 @@ convertis en pgTAP : chacun conserve son protocole, et les scénarios de
 concurrence restent exécutés par leurs scripts multi-sessions existants.
 Le même artefact consigne aussi les étapes `bootstrap`, `dbReset`, `migrations`,
 `seed`, `schemaSeedValidation` et `sqlProofRunner` avec les statuts `PASS`, `FAIL`, `NOT_RUN` ou
-`INCONCLUSIVE`. L'absence d'une étape réussie bloque la convergence, même si
-les enregistrements pgTAP ou SQL restants paraissent valides. Les sorties CLI
+`INCONCLUSIVE`. L'absence d'une étape réussie invalide cette attestation
+éphémère pour les migrations sensibles qui en dépendent, même si les
+enregistrements pgTAP ou SQL restants paraissent valides. Les sorties CLI
 complètes restent dans des journaux privés bornés ; seuls une catégorie, un
 SQLSTATE observé et une provenance démontrée peuvent être publiés. Un numéro
 de plan/assertion TAP n'est jamais traité comme une ligne SQL. Le runbook de
-convergence décrit les diagnostics et les reprises autorisées par étape.
+convergence décrit la procédure CLI liée et les diagnostics par étape.
 
 ## Gouvernance des preuves pour les changements sensibles
 

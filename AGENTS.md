@@ -514,34 +514,37 @@ déjà appliquée se corrige par une migration forward-only.
 
 **Mode Supabase lié uniquement — Docker local en pause** : le poste utilisateur
 n'utilise ni Docker, ni WSL, ni conteneur, ni `supabase start`, `supabase status`
-ou `supabase db reset`. Une demande explicite d'application autorise Codex à
-utiliser exclusivement la CLI Supabase contre le projet lié : vérifier la cible,
-l'identité CLI, `migration list --linked`, le dry-run exact, les advisors et les
-préconditions de sécurité, puis exécuter `npx supabase db push --linked --yes`.
-Après l'application, relire l'historique lié et les contrôles read-only ; une
-preuve de migration appliquée ne devient pas une preuve pgTAP, RLS ou de
-concurrence. Si la CLI liée ou ses permissions sont indisponibles, ne pas
-installer ni démarrer Docker en repli : classer le blocage précisément.
+ou `supabase db reset`. La CLI Supabase liée est la **voie canonique unique
+d'application** des migrations après publication, selon la procédure suivante :
 
-La convergence automatique publiée est portée par
-`.github/workflows/supabase-convergence.yml` : elle attend le succès du
-workflow `e2e-supabase-ephemeral` via `workflow_run`, puis vérifie le dépôt,
-la branche `main`, le SHA testé et le `HEAD` distant courant. Les déclenchements
-manuel et quotidien restent read-only. L'environnement protégé
-`supabase-production`, la concurrence sérialisée et l'absence de déclencheur PR
-sont conservés. Le workflow réutilise le préflight canonique et n'applique la
-file complète que pour `READY_TO_APPLY`, sur la référence `main` et l'historique
-Supabase lié. Pour une file en attente, il exige en plus une vérification de la
-rétrocompatibilité des contrats SQL consommés par les applications existantes ;
-cette vérification est indépendante de l'état d'un déploiement Web externe.
-Une publication Git reste indépendante de cette application automatique.
-Les WARN/INFO Advisors historiques restent rapportés ; un risque critique ou
-une régression explicitement attribuée reste bloquant. Après application, il vérifie un préflight
-`ALIGNED`, les Advisors et les contrats statiques critiques. Il ne réalise
-jamais de `migration repair`, reset, DDL manuelle, correction SQL automatique
-ou retry aveugle. En cas de preuve absente, de SHA obsolète, de contrôle
-bloquant, de `BLOCKED` ou de `DIVERGED`, il n'applique rien et conserve toute la
-file ; voir `documentation/operations/runbook-supabase-convergence.md`.
+1. vérification de l'identité CLI et du projet cible lié (`trktzkgujgpgsgkoyndn`) ;
+2. lecture et réconciliation des historiques (`npx supabase migration list --linked`) ;
+3. préflight canonique de toute la file (`npm run supabase:migration:preflight -- --dry-run`) ;
+4. analyse des risques et des preuves nécessaires : les migrations ordinaires
+   compatibles peuvent être appliquées après leurs contrôles proportionnés ;
+   les migrations sensibles nécessitent préalablement leurs preuves
+   PostgreSQL, RLS, transactionnelles ou de concurrence pertinentes (vérifiées
+   par les empreintes exactes de leurs entrées, sans invalidation par un commit
+   indépendant) ;
+5. backup vérifié selon le risque ;
+6. application sérialisée de la file complète via `npx supabase db push --linked --yes` ;
+7. postflight (`ALIGNED`), relecture de l'historique et des Advisors.
+
+Ne jamais appliquer une file contenant une erreur SQL connue non résolue ou un
+risque critique. Cette délégation **n'autorise pas** `migration repair`, DDL
+manuelle, reset/seed destructif, suppression de données, modification de secrets
+ou autre mutation distante. Si la CLI liée ou ses permissions sont
+indisponibles, ne pas installer ni démarrer Docker en repli : classer le
+blocage précisément.
+
+La surveillance GitHub Actions publiée est portée par
+`.github/workflows/supabase-convergence.yml` en mode **strictement read-only**
+(`workflow_dispatch` et `schedule` quotidien) : elle exécute le préflight
+canonique sans jamais écrire ni appliquer de migration sur la base distante.
+L'environnement protégé `supabase-production`, la concurrence sérialisée et
+l'absence de déclencheur PR sont conservés. Une publication Git reste
+indépendante de l'application distante ; voir
+`documentation/operations/runbook-supabase-convergence.md`.
 
 Les dispositifs de *security deception* ou leurres actifs ne sont pas du
 dead-code gratuit : exiger owner, aucune permission/secret réel, absence
@@ -713,20 +716,17 @@ validation importante seulement si elle éclaire la décision.
 
 ### Preuve SQL et convergence Supabase
 
-La preuve SQL éphémère complète est portée par
-`.github/workflows/supabase-sql-proof.yml` et
-`scripts/ci/run-supabase-sql-proof.mjs`. Elle rejoue l'arbre canonique, le
-seed, tout l'inventaire pgTAP/SQL/concurrence, puis produit une attestation
-publique assainie sur le SHA commité exact. Sa concurrence ne doit pas annuler
-une preuve utile lors de pushes parallèles. E2E applicatif et backup/restore
-restent des preuves séparées et leurs échecs ne modifient pas l'attestation SQL.
+Les workflows `.github/workflows/supabase-sql-proof.yml`
+(`scripts/ci/run-supabase-sql-proof.mjs`), `.github/workflows/e2e-supabase.yml`
+et `.github/workflows/supabase-backup-restore-proof.yml` restent des mécanismes
+**indépendants** de validation (replay PostgreSQL éphémère, pgTAP, E2E et
+backup/restore). Ils ne bloquent pas artificiellement l'application CLI des
+migrations ordinaires compatibles et ne dépendent pas d'une égalité entre le
+SHA testé et le `HEAD` courant de `main`.
 
-La convergence Production automatique exige la provenance du workflow SQL,
-le dépôt canonique, la branche `main`, le SHA exact toujours présent en HEAD
-distant et un préflight complet `READY_TO_APPLY`. L'environnement
-`supabase-production`, les secrets minimaux, la revue de toute la file, le
-backup vérifié, le fast-forward et le postflight `ALIGNED` restent obligatoires.
-Ne pas déclencher une application accélérée exceptionnelle sans accord humain
-explicite donné pour cette exécution; ses conditions sont définies dans le
-runbook canonique. Une preuve échouée, absente ou obsolète laisse toute la file
-en attente.
+Pour les preuves nécessaires à une application sensible, la validation vérifie
+les empreintes exactes (SHA-256) des migrations, tests, dépendances et contrats
+SQL pertinents : un commit indépendant qui laisse toutes ces entrées identiques
+n'invalide pas une preuve acquise. L'application distante reste exclusivement
+portée par la CLI Supabase liée selon le runbook canonique, sans second chemin
+concurrent d'écriture dans GitHub Actions.

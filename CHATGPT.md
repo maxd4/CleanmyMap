@@ -222,23 +222,23 @@ désactivation RLS, garde d'accès uniquement côté UI ou permissions implicite
 Le mode CURRENT demandé pour les migrations est **Supabase lié uniquement** :
 les prompts ne demandent pas à Codex d'installer, démarrer ou sonder Docker,
 WSL ou Supabase local. La publication Git reste indépendante de l'application
-Production. Pour une application autorisée, le prompt demande d'abord le
-préflight read-only de toute la file canonique en attente
-(`npm run supabase:migration:preflight -- --dry-run`) : cible, identité CLI,
-historiques et ordre, sorties CLI non ambiguës, dry-run, dépendances SQL,
-mutations réellement exécutées, RLS, grants, compatibilité des contrats SQL
-consommés et Advisors. Pour une file non vide, il exige aussi une observation
-de la rétrocompatibilité des contrats SQL consommés par les applications
-existantes, sans dépendre d'un SHA ou d'un manifeste de déploiement Web. Le préflight produit
-`ALIGNED`, `READY_TO_APPLY`, `BLOCKED` ou `DIVERGED` et ne traite jamais la
-seule migration du dernier commit. Après le succès exact de la preuve SQL
-éphémère et du préflight de la file complète, l'application automatique utilise
-la CLI Supabase liée, avec vérification post-application et distinction entre
-migration appliquée et preuve PostgreSQL/pgTAP ; elle ne demande pas de
-confirmation manuelle répétitive. Si l'accès, la preuve ou la CLI manque, la
-file reste en attente et `DB_SEMANTICS_NOT_EXECUTED` est conservé au lieu de
-proposer Docker comme repli. Ce blocage Supabase ne retient jamais un commit ou
-un push Git autrement publiable.
+Production. La CLI Supabase liée est la **voie canonique unique d'application** :
+Codex vérifie l'identité CLI et le projet cible, réconcilie les historiques,
+exécute le préflight read-only de toute la file canonique en attente
+(`npm run supabase:migration:preflight -- --dry-run`), analyse les risques et
+les preuves nécessaires, vérifie le backup selon le risque, puis applique via
+`npx supabase db push --linked --yes` avant de vérifier le postflight `ALIGNED`,
+l'historique et les Advisors. Les migrations ordinaires compatibles peuvent être
+appliquées après leurs contrôles proportionnés ; les migrations sensibles
+exigent préalablement leurs preuves PostgreSQL, RLS, transactionnelles ou de
+concurrence vérifiées par leurs empreintes exactes (sans invalidation par un
+commit indépendant). GitHub Actions reste découplé de l'application et conserve
+uniquement une surveillance read-only dans `supabase-convergence.yml` ainsi que
+les lanes indépendantes de validation éphémère, E2E et backup/restore. Si
+l'accès, une preuve sensible requise ou la CLI manque, la file reste en attente
+et `DB_SEMANTICS_NOT_EXECUTED` est conservé au lieu de proposer Docker comme
+repli. Ce blocage Supabase ne retient jamais un commit ou un push Git autrement
+publiable.
 Le propriétaire, l'organisateur, le modérateur et l'administrateur ne sont pas
 interchangeables. Voir `documentation/security/` et les scoped applicables.
 

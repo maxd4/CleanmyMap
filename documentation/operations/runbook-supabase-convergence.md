@@ -1,286 +1,107 @@
-# Runbook CURRENT — convergence Supabase publiée
+# Runbook CURRENT — convergence Supabase par CLI liée
 
-Le workflow `.github/workflows/supabase-convergence.yml` maintient le projet
-lié avec toute la file canonique de migrations de `main`. Son mode automatique
-attend `supabase-sql-proof-ephemeral` via `workflow_run` : ce workflow rejoue
-la file complète sur une instance éphémère, le seed, pgTAP, les contrats SQL et
-la concurrence PostgreSQL. La convergence vérifie ensuite le dépôt, la branche
-`main`, le SHA attesté toujours égal au HEAD distant et le préflight complet
-`READY_TO_APPLY` avant toute écriture. Les déclenchements manuel et quotidien
-restent read-only. Le workflow n'a pas de déclencheur `pull_request` et utilise
-l'environnement GitHub protégé `supabase-production`.
+La **CLI Supabase liée** (`npx supabase db push --linked --yes`) est l'unique
+voie canonique d'application des migrations de `apps/web/supabase/migrations/`
+vers le projet cible `trktzkgujgpgsgkoyndn`.
 
-Le workflow SQL accepte aussi `workflow_dispatch` pour relancer la preuve; il
-ne peut démarrer que depuis `main` et vérifie que le SHA du run est encore le
-`HEAD` distant. Le workflow applicatif `e2e-supabase-ephemeral` conserve ses
-contrôles de provenance et ses secrets Clerk Development. Ses résultats et
-ceux du backup/restore sont indépendants de l'attestation SQL : leurs échecs
-ne sont ni cachés ni utilisés comme preuve SQL positive ou négative. Le runner
-SQL canonique n'est pas dupliqué dans ces workflows.
+Le workflow `.github/workflows/supabase-convergence.yml` est un mécanisme de
+**surveillance strictement read-only** (`workflow_dispatch` et `schedule`
+quotidien). Il n'applique jamais de migration sur la base distante et ne dépend
+d'aucun `workflow_run` ni d'aucune égalité entre un SHA testé et le `HEAD`
+courant de `main`.
 
-## Préconditions et références
+Les workflows `.github/workflows/supabase-sql-proof.yml`
+(`supabase-sql-proof-ephemeral`), `.github/workflows/e2e-supabase.yml`
+(`e2e-supabase-ephemeral`) et
+`.github/workflows/supabase-backup-restore-proof.yml` restent des lanes
+indépendantes de validation (replay PostgreSQL éphémère, pgTAP, E2E applicatif
+et backup/restore).
 
-L'environnement fournit uniquement `SUPABASE_ACCESS_TOKEN` et
-`SUPABASE_DB_PASSWORD`, sans les écrire dans le dépôt. Le job est limité à
-`main`, ses permissions GitHub sont `contents: read`, et sa concurrence est
-sérialisée par `supabase-production-migrations`.
+## 1. Procédure canonique d'application par CLI liée
 
-La publication Git et l'application Production sont deux étapes indépendantes :
-un défaut Supabase, un préflight bloqué ou une preuve manquante ne retient pas
-un commit/push autrement publiable. Les protections Git, secrets, intégrité,
-concurrence et fast-forward restent obligatoires. Pour une file non vide,
-`READY_TO_APPLY` exige que la rétrocompatibilité des consommateurs existants
-soit établie lorsqu'une migration modifie ou supprime un contrat SQL. Avant le
-préflight, le garde vérifie strictement la source `e2e-supabase-ephemeral`, le
-dépôt, la branche `main`, la conclusion `success`, le SHA testé et le `HEAD`
-distant courant. Cette décision ne dépend ni d'un déploiement Web externe, ni
-d'un manifeste de déploiement.
+Après publication des migrations sur `main`, Codex applique la file selon cette
+séquence sérialisée :
 
-## Décision et application
+1. **Identité et projet cible** : vérifier `CLI_AUTH` (`npx supabase projects list`)
+   et la visibilité du projet cible `trktzkgujgpgsgkoyndn` ainsi que la cible liée.
+   Rapporter `CLI_AUTH_SOURCE`. En cas d'échec d'accès ou d'organisation,
+   classer `CLI_AUTH_BLOCKED` sans contourner ni basculer sur Docker/WSL.
+2. **Lecture et réconciliation des historiques** : exécuter
+   `npx supabase migration list --linked` et vérifier que l'historique distant
+   forme un préfixe exact de l'arbre canonique `apps/web/supabase/migrations/`.
+3. **Préflight canonique de toute la file** : exécuter
+   `npm run supabase:migration:preflight -- --dry-run`. Vérifier le statut
+   (`ALIGNED`, `READY_TO_APPLY`, `BLOCKED`, `DIVERGED`), les dépendances SQL,
+   les mutations exécutées vs DML dans les corps de fonctions, RLS, grants,
+   contrats SQL consommés et Advisors `BEFORE`.
+4. **Analyse des risques et des preuves nécessaires** :
+   - Les **migrations ordinaires compatibles** (additives, sans mutation de
+     données non approuvée ni risque critique) peuvent être appliquées après
+     leurs contrôles proportionnés (`audit:supabase-migration-trees`,
+     validation syntaxique, tests de contrats statiques/applicatifs) et un
+     préflight `READY_TO_APPLY`. Elles ne sont pas bloquées par l'attente d'un
+     replay intégral ni par des commits indépendants sur `main`.
+   - Les **migrations sensibles** (DML/backfill approuvé dans
+     `scripts/ci/supabase-migration-approvals.json`, RLS critique,
+     concurrence, triggers/transitions sensibles) exigent préalablement leurs
+     preuves PostgreSQL, pgTAP, RLS, transactionnelles ou de concurrence
+     pertinentes. Leur validité est vérifiée par les **empreintes exactes
+     (SHA-256)** des migrations, tests, dépendances et contrats SQL concernés
+     (`validateEphemeralEvidence` dans `scripts/ci/supabase-convergence-gate.mjs`) :
+     un commit indépendant qui laisse toutes ces entrées identiques n'invalide
+     pas une preuve acquise.
+   - Ne jamais appliquer une file contenant une erreur SQL connue non résolue
+     ou un risque critique.
+5. **Backup vérifié selon le risque** : avant toute file sensible ou comportant
+   une évolution structurelle notable, vérifier la disponibilité d'une
+   sauvegarde récente récupérable selon le runbook backup/restore.
+6. **Application sérialisée** : depuis `apps/web`, exécuter :
 
-Le préflight canonique est exécuté avec :
+   ```text
+   npx supabase db push --linked --yes
+   ```
 
-```text
-npm run supabase:migration:preflight -- --dry-run
-```
+7. **Postflight, historique et Advisors** : relancer
+   `npm run supabase:migration:preflight -- --dry-run` et exiger `ALIGNED`
+   (`PENDING_MIGRATIONS: 0`), relire `npx supabase migration list --linked` et
+   comparer les Advisors security/performance `BEFORE`/`AFTER`.
 
-Il réutilise `audit-supabase-release.mjs`, vérifie l'identité CLI, le projet
-lié, l'ordre des historiques et la file complète, puis parse strictement les
-sorties réelles de `migration list --linked` et `db push --dry-run`. Une sortie
-sans payload JSON unique est bloquante. Il distingue le DML exécuté pendant la
-migration du DML contenu dans les fonctions ; les cas indécidables sont
-`REVIEW_REQUIRED`. Il examine aussi les dépendances SQL, RLS, grants, contrats
-consommés et Advisors. Les WARN/INFO historiques restent dans le rapport ;
-seuls un risque critique ou une régression explicitement attribuée à la file
-bloque l'application.
+## 2. Surveillance GitHub Actions (read-only)
 
-Le résumé du job expose le nombre de migrations en attente, leur premier
-identifiant chronologique et son ancienneté en jours. Ces valeurs viennent de
-la sortie de la file canonique du préflight ; elles n'ajoutent aucun inventaire
-ni aucune autorisation d'application.
+`.github/workflows/supabase-convergence.yml` conserve :
 
-Les backfills DML ne sont admissibles que par une entrée du manifeste versionné
-`scripts/ci/supabase-migration-approvals.json`, qui lie version, identifiant,
-chemin, SHA-256 du SQL, justification et chemins/hash des preuves obligatoires. Le
-contenu doit rester identique et classé non destructif. La preuve éphémère
-enregistre le SHA-256 des migrations et tests exécutés ; la garde refuse une
-approbation dont l'empreinte ou une preuve requise manque. Ce manifeste ne peut
-pas autoriser un SQL destructif ou indécidable. La preuve actuelle reste une
-preuve complète de la file : aucun préfixe partiel n'est appliqué.
+- `permissions: {}` au niveau workflow et `contents: read` au niveau job ;
+- `concurrency: group: supabase-production-migrations, cancel-in-progress: false` ;
+- `environment: supabase-production` avec uniquement `SUPABASE_ACCESS_TOKEN`
+  et `SUPABASE_DB_PASSWORD` ;
+- aucun déclencheur `pull_request`, `push` ou `workflow_run` ;
+- exécution read-only de `npm run supabase:migration:preflight -- --dry-run`,
+  résumé du nombre de migrations en attente et de l'ancienneté de la plus
+  ancienne, contrôle `supabase-convergence-postflight.mjs` (acceptant `ALIGNED`
+  et `READY_TO_APPLY` en mode read-only, bloquant `BLOCKED` et `DIVERGED`),
+  `audit:supabase-migration-trees` et tests statiques critiques.
 
-`ALIGNED` signifie que l'historique est convergent et qu'il n'y a aucune
-migration en attente ; ce statut ne dépend pas de contrôles d'application, mais
-les alertes de sécurité restent visibles. `READY_TO_APPLY`, après preuve SQL
-complète et provenance exacte, autorise le workflow automatique à exécuter
-l'unique commande mutative :
+## 3. Interdictions permanentes
 
-```text
-npx supabase db push --linked --yes
-```
+- Aucun `supabase migration repair`, `supabase db reset` distant, DDL manuelle
+  en production ou réécriture d'une migration déjà appliquée.
+- Aucun Docker, WSL ou runtime Supabase local sur le poste utilisateur.
+- Le plugin/MCP Supabase reste en lecture seule (`list_migrations`,
+  `get_advisors`, etc.) et ne remplace jamais la CLI pour appliquer une
+  migration.
+- La publication Git reste indépendante de l'application Production.
 
-`BLOCKED` et `DIVERGED`, une preuve absente, un contrôle bloquant ou un SHA
-obsolète n'appliquent rien. Le diagnostic reste assaini et publie le statut, la
-première migration réellement attribuée ; `GLOBAL` indique un contrôle bloquant
-qui ne désigne pas une migration. Les dépendances et contrats incompatibles
-restent associés à leur migration. Toute la file reste en attente. Le contrôle
-préalable ne retient pas le push Git. Après correction
-validée, la reprise est automatique au prochain succès de la preuve SQL ;
-aucune confirmation manuelle répétitive n'est requise. Après application, le workflow rejoue le
-préflight et exige `ALIGNED`, puis relit les Advisors, les arbres de migration
-et les contrats statiques critiques Web. La lane SQL éphémère reste le seul
-endroit autorisé pour exécuter les pgTAP mutatifs ; ce workflow ne lance jamais
-pgTAP contre la base liée.
+## 4. Diagnostic de la lane SQL éphémère (`supabase-sql-proof-ephemeral`)
 
-Au démarrage éphémère, le script prépare une configuration temporaire issue de
-la configuration canonique où migrations applicatives et seed sont désactivés.
-`supabase start` ne fait que démarrer les services ; le workflow lance ensuite
-un seul `supabase db reset` avec la configuration canonique pour appliquer les
-migrations et charger le seed. Le diagnostic conserve les états périodiques des
-services et les événements Docker observés pendant l'exécution de la CLI. Tant
-que le conteneur `db` est actif, les observations distinguent la santé Docker,
-`pg_isready` exécuté dans PostgreSQL et une connexion TCP du runner vers le port
-configuré. Une disponibilité interne ne prouve donc pas la joignabilité du
-runner. Les attributions de service sont séparées en confirmée, suspectée ou
-inconnue ; une simple mention dans le journal ne confirme pas une cause. Pour
-Supabase CLI 2.117.0, le diagnostic tient compte de l'ordre de bootstrap : santé
-de PostgreSQL, initialisation du schéma, jobs temporaires Realtime, Storage et
-Auth, puis services persistants. Les migrations et le seed sont traités
-séparément par le reset canonique après ce bootstrap. Les jobs temporaires ne
-sont reconnus que par le label exact `com.supabase.cli.project` du projet
-configuré, une image de service autorisée et un nom qui ne correspond pas à un
-conteneur persistant. Le rapport expose le dernier job démarré, le premier job
-échoué et son code de sortie, sans exposer son nom Docker ou son image.
+La lane `.github/workflows/supabase-sql-proof.yml` reste disponible pour le
+replay complet PostgreSQL + seed + pgTAP + concurrence sur runner éphémère,
+ainsi que son mode `workflow_dispatch` `isolate-replay` (read-only) pour
+isoler une migration défaillante par dichotomie sans exposer de journaux
+privés.
 
-Les lignes de progression comme `Waiting for health checks` et l'appel normal
-`Realtime.Tenants.health_check` ne sont pas des erreurs. La classification
-repose sur des signaux terminaux précis ou un job temporaire explicitement
-échoué ; une erreur de debug non reconnue reste `UNCLASSIFIED`. Le diagnostic
-expurgé peut classer les SQLSTATE PostgreSQL connus (syntaxe, dépendance,
-données, permissions/RLS, concurrence ou connexion) et ne publie que le code,
-la catégorie et un identifiant de migration validé. Pour `22P02`, il peut aussi
-indiquer le type PostgreSQL attendu sans conserver la valeur rejetée ; les
-messages structurés imbriqués sont analysés mais jamais recopiés dans l’artefact.
-`start_phase` indique une
-phase observée et ne prouve pas à lui seul qu'elle a échoué ;
-`first_failed_step` distingue une cause établie d'une phase de migration dont la
-cause reste inconnue. Un arrêt Docker normal ou le nettoyage ne devient jamais
-la cause de l'échec.
-Journaux bruts, événements complets et détails structurés de la CLI restent dans
-des fichiers privés temporaires du runner puis sont supprimés. Seuls services,
-phases, états et codes explicitement autorisés paraissent dans les preuves. Un
-`die` à code zéro et un `destroy` de nettoyage sont rapportés comme arrêt normal
-et nettoyage ; aucun des deux n'est présenté seul comme cause racine.
-
-## Blocages et reprise
-
-### Diagnostic de la preuve SQL éphémère
-
-`supabase-sql-proof-ephemeral` initialise l'artefact dès que le checkout et Node
-est prêt, avant le bootstrap. L'objet `workflowStages` lie le SHA candidat et
-les états `bootstrap`, `dbReset`, `migrations`, `seed`,
-`schemaSeedValidation` et `sqlProofRunner` à l'artefact de pgTAP, contrats et concurrence. Chaque
-étape porte `PASS`, `FAIL`,
-`NOT_RUN` ou `INCONCLUSIVE`. `firstFailure` désigne la première cause
-attribuable ; `file`, `migrationId` et `sqlstate` ne sont renseignés que si la
-source les établit. Une preuve absente, un statut non réussi, un SHA différent,
-un manifeste incomplet ou un runner jamais atteint bloque le gate de
-convergence.
-Le gate exige le schéma d'artefact version 2, qui porte ces états par étape.
-
-Le reset canonique reste une seule commande `supabase db reset --local` avec
-la configuration de l'application : il applique l'arbre complet puis le seed.
-Le runner la capture dans un journal privé borné, avec délai maximal, puis
-classe seulement les marqueurs explicites. Un SQLSTATE après un marqueur de
-replay, avant le marqueur de seed et accompagné d'une erreur SQL permet la
-catégorie `MIGRATION_FAILURE` ; l'identifiant et le fichier de migration ne
-sont publiés que si la sortie en établit un seul sans ambiguïté. Un SQLSTATE
-après le marqueur explicite de seed permet `SEED_FAILURE`. Un problème de
-Docker, réseau ou connexion explicitement reconnu est `INFRASTRUCTURE_FAILURE`.
-Toute origine de phase ambiguë reste `RESET_FAILURE_UNCLASSIFIED` avec origine
-`UNPROVEN` ; aucun identifiant de migration ou fichier n'est déduit d'un simple
-voisinage de lignes. Dans ce cas, le résumé public n'expose
-pas les journaux privés et l'opérateur doit consulter la sortie privée
-corrélée au SHA et au run GitHub exact avant toute nouvelle attribution.
-
-| Étape | Diagnostic utile | Reprise autorisée |
-| --- | --- | --- |
-| Bootstrap | Lire l'artefact `supabase-start-diagnostic` expurgé ; comparer les états Docker, PostgreSQL et réseau observés. Une phase ou un message isolé ne prouve pas la cause ; une annulation est `INCONCLUSIVE/PROCESS_INTERRUPTED`. | Corriger la cause démontrée puis relancer le workflow SQL éphémère sur le SHA courant. `isolate-replay` est read-only et ne prouve pas seed, pgTAP ni convergence. |
-| dbReset | Examiner `firstFailure` et `workflowStages.dbReset` ; le runner conserve la commande reset canonique et journalise sa sortie en privé. | Corriger l'origine prouvée, ou conserver `INCONCLUSIVE` et obtenir le diagnostic privé corrélé avant toute reprise. |
-| Migrations | Vérifier le SQLSTATE et `migrationId` seulement s'ils sont prouvés. Sinon utiliser la sortie privée corrélée ; aucun SQL distant manuel. | Après correction append-only validée, relancer la preuve complète. `isolate-replay` peut confirmer une frontière sur l'instance éphémère, jamais autoriser l'application. |
-| Seed | Distinguer le marqueur explicite de phase du simple échec du processus ; sans cause prouvée, garder `INCONCLUSIVE`. | Corriger la fixture ou le seed dans son owner, puis relancer reset et preuve éphémère complète. Pas de commande seed contre la base liée. |
-| Validation schéma/seed | Vérifier l'étape de contrôle read-only immédiatement après reset. Son échec ne se requalifie pas en échec de migration. | Corriger le contrat propriétaire, puis relancer le workflow complet. |
-| pgTAP | `failure.category` distingue assertion, plan incomplet, erreur SQL/SQLSTATE, privilège, fixture explicitement invalide et interruption. `counts` rapporte plan/exécuté/échecs ; le numéro TAP n'est jamais une ligne SQL. La sortie `--debug` reste privée hors champs allowlistés. | Corriger la cause dans le test ou son owner et exécuter la lane canonique entière sur PostgreSQL éphémère. Une preuve partielle n'est pas positive. |
-| Contrats SQL | Examiner le fichier et son marqueur de fin ; le marqueur ne remplace pas l'observation PostgreSQL réelle. | Rejouer la lane éphémère après correction ; un test statique ne remplace pas l'exécution SQL. |
-| Concurrence | Vérifier exit code et marqueur multi-session ; un résultat d'une session seule ne vaut pas preuve complète. | Corriger le contrat de concurrence puis rejouer la lane éphémère. Aucun test sur Supabase lié. |
-| Runner SQL | Vérifier `sqlProofRunner` et chaque enregistrement pgTAP, contrat SQL ou scénario multi-session. Un runner non démarré reste `NOT_RUN`. | Réexécuter seulement après correction identifiée, par le workflow canonique complet sur PostgreSQL éphémère. |
-| Convergence | Vérifier le workflow source, branche, SHA distant exact, tous les enregistrements `INTEGRATION_PROOF: PASS`, les six étapes et le préflight complet. | Seul le workflow canonique protégé applique la file si toutes ses conditions passent. Les déclenchements manuels et quotidiens restent read-only. |
-
-### À faire / À éviter
-
-- **À faire** : utiliser des fixtures déterministes et isolées, faire correspondre le plan pgTAP aux assertions exécutées, attribuer explicitement les rôles et vérifier les SQLSTATE/messages contractuels des erreurs attendues.
-- **À faire** : ajouter les migrations en append-only, conserver les journaux détaillés dans l'environnement privé temporaire et vérifier le SHA exact ainsi que le statut explicite de chaque étape.
-- **À faire** : séparer tests statiques, comportements exécutés et preuves d'intégration PostgreSQL ; garder `NOT_RUN` ou `INCONCLUSIVE` lorsqu'une étape n'est pas atteinte ou que l'origine n'est pas prouvée.
-- **À éviter** : relancer aveuglément un run en échec, transformer une preuve partielle en succès, ou attribuer une migration, ligne SQL ou fixture à partir d'un indice ambigu.
-- **À éviter** : réécrire une migration publiée, utiliser `migration repair`, exécuter SQL/DDL manuel sur le projet lié ou contourner le gate. Les migrations appliquées se corrigent par une nouvelle migration validée.
-
-Un blocage doit être traité à sa cause : authentification/cible, divergence
-d'historique, sortie CLI ambiguë, mutation réelle, incompatibilité SQL, risque
-Advisor critique ou revue obligatoire. Il est interdit de réparer l'historique,
-de modifier une migration déjà appliquée, d'exécuter une DDL manuelle, de reset
-la base ou de relancer aveuglément. Après une correction forward-only validée,
-la publication de la migration reste possible indépendamment de son application ;
-la convergence reprend automatiquement après une nouvelle preuve éphémère
-réussie, ou peut être inspectée manuellement sans contourner les preuves.
-
-### Isolation contrôlée d'un échec de replay
-
-Le dispatch du workflow unique `supabase-sql-proof-ephemeral` accepte aussi le
-mode `isolate-replay`. Ce mode garde les permissions `contents: read`, vérifie
-que le SHA est le `HEAD` de `main`, et n'utilise aucune identité ni cible
-Supabase distante. Il démarre la version CLI du workflow avec une configuration
-éphémère minimale où migrations et seed applicatifs sont désactivés. Si ce
-bootstrap échoue, le replay applicatif n'est pas lancé. S'il réussit, le mode
-active l'arbre canonique en lecture seule par symlink et teste les préfixes
-chronologiques par dichotomie, sans seed. Chaque tentative conserve un journal
-privé distinct avec son numéro de préfixe, sa version et son code de sortie. La
-dichotomie commence par tester le préfixe complet. Elle est suivie d'un rejeu
-explicite du préfixe immédiatement précédent, qui doit réussir, puis du
-préfixe fautif, qui doit échouer avec le même contexte `supabase db reset`.
-Une migration n'est attribuée que si cette frontière PASS/FAIL est reproductible ;
-une erreur CLI, un résultat discordant ou un prédécesseur en échec produit
-`INCONCLUSIVE` sans version causale.
-
-Pour la migration `20261121000002`, le diagnostic reconstruit aussi le préfixe
-confirmé `20261121000001` deux fois et compare le rejeu du préfixe Supabase CLI
-à l'exécution du même SQL par `psql`. Le champ public `migrationComparison`
-rapporte `MATCH`, `DIVERGED` ou `INCONCLUSIVE`, avec états CLI/psql séparés et
-champs d'erreur allowlistés. Cette comparaison ciblée s'exécute même lorsque le
-préfixe canonique complet réussit ; elle vérifie ainsi une migration corrigée
-sans réintroduire l'échec historique.
-
-Après une frontière confirmée, un rejeu `psql` de la migration depuis son
-prédécesseur peut aussi être exécuté comme diagnostic complémentaire. Son SQLSTATE,
-son type, sa position et sa catégorie PostgreSQL allowlistée restent dans un
-champ distinct `isolatedPsqlDiagnostic` (`POSTGRES_CHECK_CONSTRAINT_SUBQUERY`
-pour le message PostgreSQL exact correspondant, ou
-`POSTGRES_FEATURE_NOT_SUPPORTED` pour un `0A000` non précisé).
-Ils ne remplacent jamais le diagnostic du replay Supabase canonique : un
-`42501` de `psql` ne démontre pas la cause d'un `22P02` du replay. `psql` demande
-la verbosité avec `-v VERBOSITY=verbose`, sans ajouter de `SET` privilégié au
-SQL rejoué. Les journaux PostgreSQL privés sont analysés pour le type, la position
-et la ligne source uniquement lorsqu'une instruction complète correspond à un
-unique emplacement du SQL de migration ; aucun SQL ou message brut n'est publié.
-
-Les sorties brutes du CLI, des journaux Docker et des journaux JSON privés de
-PostgreSQL restent dans `$RUNNER_TEMP` et sont supprimées avec le runner. Le
-seul artefact publié contient le SHA candidat, les hashes des migrations
-canoniques, le résultat séparé du bootstrap/replay, le statut de reproductibilité
-de la frontière, la version seulement si elle est confirmée, et le SQLSTATE, le
-type PostgreSQL allowlisté ou la position numérique quand ils proviennent du
-replay canonique. Le diagnostic `psql` est explicitement séparé. L'artefact ne
-contient ni instruction SQL complète, ni valeur rejetée, ni message brut. Cette preuve diagnostique ne vaut
-pas `REPLAY_FROM_ZERO`, ne lance ni seed ni pgTAP/concurrence, et ne permet
-jamais la convergence Production. Le workflow complet reste le seul à produire
-l'attestation consommée par `supabase-convergence.yml`.
-
-Les validations locales du contrat de workflow sont :
+Validations locales du contrat de convergence :
 
 ```text
 node --test scripts/ci/supabase-convergence-workflow.test.mjs scripts/ci/supabase-migration-preflight.test.mjs
 npm run check:github-actions
 ```
-
-Une exécution locale du préflight et de `db push --dry-run` reste read-only et
-ne constitue pas une preuve d'application, de RLS, de triggers, de concurrence
-ou de pgTAP. Sans lane PostgreSQL éphémère autorisée, conserver le statut
-`DB_SEMANTICS_NOT_EXECUTED`.
-
-## Application accélérée exceptionnelle
-
-Cette voie ne s'exécute pas via un dispatch read-only et n'est pas autorisée
-implicitement par la disponibilité du projet ou un simple préflight favorable.
-Elle exige un accord humain explicite pour l'exécution concernée. Avant de la
-demander, l'opérateur doit :
-
-1. examiner toutes les migrations en attente et leurs dépendances dans l'ordre
-   canonique, sans en exclure aucune;
-2. produire et vérifier une sauvegarde récente récupérable (manifeste,
-   intégrité et restauration de contrôle selon le runbook backup/restore);
-3. obtenir `READY_TO_APPLY` du préflight canonique read-only sur la cible liée,
-   sans `BLOCKED`, `DIVERGED`, migration ambiguë ni régression bloquante;
-4. obtenir l'accord explicite d'un humain habilité pour le SHA courant de
-   `main`, en consignant la revue de file, le résultat du backup et du
-   préflight;
-5. déclencher manuellement `supabase-sql-proof-ephemeral` sur `main` pour ce
-   SHA. Le garde de provenance exige à nouveau le HEAD courant, l'attestation
-   SQL complète et `READY_TO_APPLY` avant l'application automatique.
-
-Le dispatch direct de `supabase-convergence.yml` reste read-only. L'accélération
-ne lance jamais `db push` depuis un poste local ni ne contourne la preuve ou le
-workflow canonique; elle consiste à lancer immédiatement la preuve exacte après
-la revue et l'accord explicite.
-
-Si un contrôle manque, la voie accélérée reste bloquée. Elle n'autorise ni SQL
-manuel, ni `migration repair`, ni exclusion de migration, ni contournement de
-l'environnement protégé. Elle doit utiliser le workflow canonique approuvé;
-aucune exception n'est exécutée dans le cadre de ce changement.
