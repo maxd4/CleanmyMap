@@ -1,0 +1,15 @@
+{
+  "reference": "f9d4bcb22bcd7bf56a90fdda5873e9c9ae065042",
+  "files": {
+    "apps/web/src/app/(app)/profil/[profile]/profile-page-data.ts": "4f0cd9865747a3abae09814371f5a97b468b7d37",
+    "apps/web/src/app/(app)/profil/[profile]/page.tsx": "697090c31171ca33fd8f2bd07263bbc5ac487719",
+    "apps/web/src/components/gamification/profile-gamification-summary.tsx": "aff863cdf0ded27e1b86e6ec905f81df4675d814",
+    "apps/web/src/components/gamification/milestones-panel.tsx": "e0418e7ecd5dbd9ad30e2e09cb32eb7eda5a7fa7",
+    "apps/web/src/components/account/account-evolution-panel.tsx": "da87592fa77329103f18555eaf2eb401f93b1e23",
+    "apps/web/src/lib/navigation.ts": "9c4921a0da709f6ca4578ba6923d873680cd7583",
+    "apps/web/src/lib/profiles-cta.ts": "bcc261d24dbb2e03ea77904235c4c49dcf124525",
+    "apps/web/src/app/api/account/active-profile/route.ts": "efd9c67c966c6e49d8dc744e5ef2dae761366fae",
+    "apps/web/src/app/api/account/active-profile/route.test.ts": "2c4fc4cfd8734caaf0a55eb355c2f20c9f6f042e",
+    "apps/web/src/components/account/use-active-role-mutation.ts": "12796e7615e4853b9597d686231ef4b6ae0be8d8"
+  }
+}

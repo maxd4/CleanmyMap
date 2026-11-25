@@ -1,0 +1,793 @@
+diff --git a/apps/web/src/app/(app)/profil/[profile]/profile-page-data.ts b/apps/web/src/app/(app)/profil/[profile]/profile-page-data.ts
+--- a/apps/web/src/app/(app)/profil/[profile]/profile-page-data.ts
++++ b/apps/web/src/app/(app)/profil/[profile]/profile-page-data.ts
+@@ -1,94 +1,28 @@
+-import { computeMonthlyRegularitySummary } from "@/lib/gamification/progression/monthly-regularity";
+-import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification/progression/sensitive-zone-badge";
+ import { fetchCachedReferralSummary } from "@/lib/gamification/referrals/referrals-cache";
+ import { loadCachedReferralLineageView } from "@/lib/gamification/referrals/referral-lineage";
+-import {
+-  createFallbackActionBalanceSummary,
+-  getInfiniteBadgeTotals,
+-} from "@/lib/gamification/progression/infinite-badges-server";
+-import { buildCurrentMilestones } from "@/lib/gamification/progression/milestones";
+-import { buildTerrainProgressions } from "@/lib/gamification/progression/terrain-progressions";
++import { getInfiniteBadgeTotals } from "@/lib/gamification/progression/infinite-badges-server";
+ import { getUserProgression } from "@/lib/gamification/progression";
+ import { getSupabaseServerClient } from "@/lib/supabase/server";
+ import { loadSpogomiCollectionForUser } from "@/lib/spogomi/recognition-service";
+ import { loadSpogomiVolunteerSummaryForUser } from "@/lib/spogomi/volunteer";
+ 
+-export type ProfilePageData = {
+-  gamification: Awaited<ReturnType<typeof getUserProgression>> | null;
+-  infiniteTotals: Awaited<ReturnType<typeof getInfiniteBadgeTotals>>;
+-  referralSummary: Awaited<ReturnType<typeof fetchCachedReferralSummary>>;
+-  referralLineageView: Awaited<ReturnType<typeof loadCachedReferralLineageView>> | null;
+-  referralLineageError: string | null;
+-  spogomiCollection: Awaited<ReturnType<typeof loadSpogomiCollectionForUser>> | null;
+-  spogomiVolunteerSummary: Awaited<ReturnType<typeof loadSpogomiVolunteerSummaryForUser>> | null;
+-};
+-
+-export async function loadProfilePageData(userId: string): Promise<ProfilePageData> {
+-  const gamification = await getUserProgression(
+-    getSupabaseServerClient(true),
+-    userId,
+-  ).catch(() => null);
+-  const spogomiCollection = await loadSpogomiCollectionForUser(
+-    getSupabaseServerClient(true),
+-    userId,
+-  ).catch(() => null);
+-  const spogomiVolunteerSummary = await loadSpogomiVolunteerSummaryForUser(
+-    getSupabaseServerClient(true),
+-    userId,
+-  ).catch(() => null);
+-  const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => buildProfileTotalsFallback());
+-  const referralSummary = await fetchCachedReferralSummary(userId).catch(() => ({
+-    referralCode: null,
+-    inviteUrl: null,
+-    invitedUsersCount: 0,
+-    invitedBy: null,
+-    badgeUnlocked: false,
+-    referralAwardedXp: 0,
+-  }));
+-
+-  let referralLineageView = null;
+-  let referralLineageError: string | null = null;
+-  try {
+-    referralLineageView = await loadCachedReferralLineageView(userId);
+-  } catch (error) {
+-    referralLineageError = error instanceof Error
+-      ? error.message
+-      : "Impossible de charger l'arborescence de parrainage.";
+-  }
++export async function loadProfileProgression(userId: string) {
++  return Promise.resolve().then(() => getUserProgression(getSupabaseServerClient(true), userId)).catch(() => null);
++}
+ 
+-  return {
+-    gamification,
+-    infiniteTotals,
+-    referralSummary,
+-    referralLineageView,
+-    referralLineageError,
+-    spogomiCollection,
+-    spogomiVolunteerSummary,
+-  };
++export async function loadProfileBadges(userId: string) {
++  const [infiniteTotals, spogomiCollection, spogomiVolunteerSummary] = await Promise.all([
++    getInfiniteBadgeTotals(userId).catch(() => null),
++    Promise.resolve().then(() => loadSpogomiCollectionForUser(getSupabaseServerClient(true), userId)).catch(() => null),
++    Promise.resolve().then(() => loadSpogomiVolunteerSummaryForUser(getSupabaseServerClient(true), userId)).catch(() => null),
++  ]);
++  return { infiniteTotals, spogomiCollection, spogomiVolunteerSummary };
+ }
+ 
+-function buildProfileTotalsFallback(): Awaited<ReturnType<typeof getInfiniteBadgeTotals>> {
+-  return {
+-    wasteKg: 0,
+-    butts: 0,
+-    newPlaces: 0,
+-    wasteRawKg: 0,
+-    wasteEquivalentSecKg: 0,
+-    wasteUnknownConditionCount: 0,
+-    participationCount: 0,
+-    organisationCount: 0,
+-    cleanZonesCount: 0,
+-    terrainProgressions: buildTerrainProgressions({
+-      participationCount: 0,
+-      organisationCount: 0,
+-      explorationCount: 0,
+-      cleanZonesCount: 0,
+-      events: [],
+-    }),
+-    actionBalance: createFallbackActionBalanceSummary(),
+-    monthlyRegularity: computeMonthlyRegularitySummary([]),
+-    sensitiveZoneApaisement: createFallbackSensitiveZoneApaisementSummary(),
+-    milestones: buildCurrentMilestones({ completeActionsCount: 0, events: [] }),
+-    moderationProgression: null,
+-  };
++export async function loadProfileReferrals(userId: string) {
++  const [referralSummary, lineage] = await Promise.all([
++    fetchCachedReferralSummary(userId).catch(() => null),
++    loadCachedReferralLineageView(userId).then(view => ({ view, error: null })).catch(() => ({ view: null, error: "Impossible de charger l'arborescence de parrainage." })),
++  ]);
++  return { referralSummary, referralLineageView: lineage.view, referralLineageError: lineage.error };
+ }
+diff --git a/apps/web/src/app/(app)/profil/[profile]/page.tsx b/apps/web/src/app/(app)/profil/[profile]/page.tsx
+--- a/apps/web/src/app/(app)/profil/[profile]/page.tsx
++++ b/apps/web/src/app/(app)/profil/[profile]/page.tsx
+@@ -1,18 +1,15 @@
+ import { notFound, redirect } from "next/navigation";
+ import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
+ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+-import { AccountEvolutionCta } from "@/components/account/account-evolution-cta";
+-import { AccountSettingsSection } from "@/components/account/account-settings-section";
+ import { RoleProfileSwitcher } from "@/components/account/role-profile-switcher";
++import { ProfileDetailNavigation } from "@/components/account/profile-detail-navigation";
+ import { getCurrentUserIdentity } from "@/lib/authz";
+ import { getSafeAuthSession } from "@/lib/auth/safe-session";
+-import {
+-  getProfileLabel,
+-  getProfileSubtitle,
+-  isAppProfile,
+-  type AppProfile,
+-} from "@/lib/profiles";
+-import { SectionShell } from "@/components/sections/rubriques/shared";
++import { getProfileLabel, getProfileSubtitle, isAppProfile, type AppProfile } from "@/lib/profiles";
++import { PageHeader } from "@/components/ui/page-header";
++import { CmmPageLayout } from "@/components/ui/cmm-section";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmButton } from "@/components/ui/cmm-button";
+ import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
+ import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
+ import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/InfiniteBadgesPanel";
+@@ -22,138 +19,62 @@
+ import { ProfileSpogomiSummary } from "@/components/gamification/profile-spogomi-summary";
+ import { TerritorialLegendsPanel } from "@/components/sections/rubriques/gamification/territorial-legends-panel";
+ import type { UserIdentity } from "@/lib/authz-identity";
+-import { loadProfilePageData, type ProfilePageData } from "./profile-page-data";
+-
+-type ProfilPageProps = {
+-  params: Promise<{ profile: string }>;
+-};
+-
+-type ProfilePageContentProps = ProfilePageData & {
+-  normalized: AppProfile;
+-  profileLabel: string;
+-  profileSubtitle: string;
+-  grantedRole: UserIdentity["role"];
+-  activeProfile: UserIdentity["activeRole"];
+-  referralInviteHref: string;
+-};
+-
+-function ProfilePageContent({
+-  normalized,
+-  profileLabel,
+-  profileSubtitle,
+-  grantedRole,
+-  activeProfile,
+-  gamification,
+-  infiniteTotals,
+-  referralSummary,
+-  referralLineageView,
+-  referralLineageError,
+-  referralInviteHref,
+-  spogomiCollection,
+-  spogomiVolunteerSummary,
+-}: ProfilePageContentProps) {
+-  return (
+-    <SectionShell
+-      id="profile"
+-      title={profileLabel}
+-      subtitle={`${profileSubtitle}. Gérez votre compte et accédez à vos outils privilégiés.`}
+-    >
+-      <div className="space-y-12 pt-8">
+-        <AccountEvolutionCta currentRole={grantedRole} />
+-
+-        <FamilyRubriqueCard withTopBar={true} topBarContent="Accès Prioritaires" className="p-12">
+-          <div className="relative z-10">
+-            <RolePrimaryActions profile={normalized} title="" tone="warm" />
+-          </div>
+-        </FamilyRubriqueCard>
+-
+-        <FamilyRubriqueCard withTopBar={true} topBarContent="Progression & badges" className="p-12">
+-          <ProfileGamificationSummary summary={gamification?.summary} />
+-          <TerritorialLegendsPanel />
+-          <ProfileSpogomiSummary collection={spogomiCollection} volunteerSummary={spogomiVolunteerSummary} />
+-          <InfiniteBadgesPanel totals={infiniteTotals} />
+-          <MilestonesPanel milestones={infiniteTotals.milestones} />
+-        </FamilyRubriqueCard>
+-
+-        <FamilyRubriqueCard
+-          id="parrainage"
+-          withTopBar={true}
+-          topBarContent="Parrainage"
+-          className="p-12 scroll-mt-28"
+-        >
+-          <ReferralProfileTabs
+-            summary={referralSummary}
+-            lineageView={referralLineageView}
+-            lineageError={referralLineageError}
+-            emptyCtaHref={referralInviteHref}
+-          />
+-        </FamilyRubriqueCard>
++import { resolveProfileDetailTab, profileDetailTabHref } from "@/lib/account/profile-tabs";
++import { loadProfileProgression, loadProfileBadges, loadProfileReferrals } from "./profile-page-data";
+ 
+-        <RoleProfileSwitcher
+-          locale="fr"
+-          grantedRole={grantedRole}
+-          activeRole={activeProfile}
+-          title="Rôles actifs autorisés"
+-          className="p-12"
+-        />
++type ProfilPageProps = { params: Promise<{ profile: string }>; searchParams?: Promise<{ tab?: string | string[] }> };
+ 
+-        <FamilyRubriqueCard withTopBar={true} topBarContent="Configuration" className="p-12">
+-          <AccountSettingsSection compact />
+-        </FamilyRubriqueCard>
+-      </div>
+-    </SectionShell>
+-  );
++function Unavailable({ message }: { message: string }) {
++  return <CmmCard><p role="status" className="cmm-text-secondary">{message}</p></CmmCard>;
+ }
+-
+-export default async function ProfilPage({ params }: ProfilPageProps) {
++async function Progression({ userId, profile }: { userId: string; profile: AppProfile }) {
++  const gamification = await loadProfileProgression(userId);
++  return <div className="space-y-4">
++    {gamification ? <ProfileGamificationSummary summary={gamification.summary} /> : <Unavailable message="Progression momentanément indisponible." />}
++    <div className="grid gap-3 md:grid-cols-2">
++      <CmmCard className="space-y-3"><h2 className="font-bold cmm-text-primary">Mon impact personnel</h2><p className="text-sm cmm-text-secondary">Carte exportable et missions validées.</p><CmmButton href="/profil/impact" tone="primary">Voir ma carte</CmmButton></CmmCard>
++      <CmmCard className="space-y-3"><h2 className="font-bold cmm-text-primary">Mon dossier d'engagement</h2><p className="text-sm cmm-text-secondary">Participations confirmées, dossier et attestations.</p><CmmButton href="/profil/engagement" tone="secondary">Ouvrir le dossier</CmmButton></CmmCard>
++    </div>
++    <RolePrimaryActions profile={profile} title="Accès prioritaires" tone="light" />
++  </div>;
++}
++async function Badges({ userId }: { userId: string }) {
++  const { infiniteTotals, spogomiCollection, spogomiVolunteerSummary } = await loadProfileBadges(userId);
++  return <div className="space-y-4">
++    <CmmCard className="space-y-3"><h2 className="text-lg font-bold cmm-text-primary">Légendes territoriales</h2><TerritorialLegendsPanel /></CmmCard>
++    {spogomiCollection && spogomiVolunteerSummary ? <FamilyRubriqueCard className="p-4 sm:p-5"><ProfileSpogomiSummary collection={spogomiCollection} volunteerSummary={spogomiVolunteerSummary} /></FamilyRubriqueCard> : <Unavailable message="Distinctions SPOGOMI momentanément indisponibles." />}
++    {infiniteTotals ? <><FamilyRubriqueCard className="p-4 sm:p-5"><InfiniteBadgesPanel totals={infiniteTotals} /></FamilyRubriqueCard><MilestonesPanel milestones={infiniteTotals.milestones} /></> : <Unavailable message="Badges et jalons momentanément indisponibles." />}
++  </div>;
++}
++async function Referrals({ userId, profile }: { userId: string; profile: AppProfile }) {
++  const { referralSummary, referralLineageView, referralLineageError } = await loadProfileReferrals(userId);
++  return <section id="parrainage" className="scroll-mt-28 space-y-3">
++    <h2 className="text-xl font-bold cmm-text-primary">Parrainage</h2>
++    {referralSummary ? <FamilyRubriqueCard className="p-4 sm:p-5"><ReferralProfileTabs summary={referralSummary} lineageView={referralLineageView} lineageError={referralLineageError} emptyCtaHref={profileDetailTabHref(profile,"referrals")} /></FamilyRubriqueCard> : <Unavailable message="Parrainage momentanément indisponible." />}
++  </section>;
++}
++function Account({ identity }: { identity: UserIdentity }) {
++  return <div className="space-y-4">
++    <CmmCard className="space-y-3"><h2 className="text-lg font-bold cmm-text-primary">Niveau et rôle actif</h2><p className="cmm-text-secondary">Niveau obtenu : {getProfileLabel(identity.role,"fr")}. Rôle utilisé : {getProfileLabel(identity.activeRole,"fr")}.</p><div className="flex flex-wrap gap-2"><CmmButton href="/compte/evolution" tone="primary">Évolution du compte</CmmButton><CmmButton href="/reglages" tone="secondary">Préférences et compte</CmmButton></div></CmmCard>
++    <RoleProfileSwitcher locale="fr" grantedRole={identity.role} activeRole={identity.activeRole} title="Rôles actifs autorisés" />
++  </div>;
++}
++export default async function ProfilPage({ params, searchParams }: ProfilPageProps) {
+   const { profile } = await params;
+   const normalized = profile.trim().toLowerCase();
+-
+   if (!isAppProfile(normalized)) notFound();
+-
+-  const { userId } = await getSafeAuthSession();
+-  if (!userId) {
+-    return (
+-      <ClerkRequiredGate
+-        isAuthenticated={false}
+-        mode="blur"
+-        lockedPreview={
+-          <div className="rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] p-6 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)]">
+-            <p className="cmm-text-caption font-bold uppercase tracking-wide text-amber-100">
+-              Profil {normalized}
+-            </p>
+-            <p className="cmm-text-body cmm-text-inverse mt-2">
+-              Les recommandations et raccourcis apparaissent après connexion.
+-            </p>
+-          </div>
+-        }
+-      >
+-        <div />
+-      </ClerkRequiredGate>
+-    );
+-  }
+-
+-  const identity = await getCurrentUserIdentity().catch(() => null);
+-  const grantedRole = identity?.role ?? "benevole";
+-  const activeProfile = identity?.activeRole ?? "benevole";
+-
+-  if (normalized !== activeProfile)
+-    redirect(buildProfileRoute(activeProfile));
+-
+-  const profileLabel = getProfileLabel(normalized, "fr");
+-  const profileSubtitle = getProfileSubtitle(normalized, "fr");
+-  const profileData = await loadProfilePageData(userId);
+-  const referralInviteHref = `${buildProfileRoute(normalized)}#parrainage`;
+-
+-  return (
+-    <ProfilePageContent
+-      normalized={normalized}
+-      profileLabel={profileLabel}
+-      profileSubtitle={profileSubtitle}
+-      grantedRole={grantedRole}
+-      activeProfile={activeProfile}
+-      {...profileData}
+-      referralInviteHref={referralInviteHref}
+-    />
+-  );
++  const session = await getSafeAuthSession();
++  if (!session.userId) return <ClerkRequiredGate isAuthenticated={false} mode="blur" authUnavailable={session.state === "unavailable"} lockedPreview={<CmmCard><p className="cmm-text-primary">Votre profil et votre progression après connexion.</p></CmmCard>}><div /></ClerkRequiredGate>;
++  const identity = await getCurrentUserIdentity({ userId: session.userId }).catch(() => null);
++  if (!identity) return <ClerkRequiredGate isAuthenticated={false} authUnavailable><div /></ClerkRequiredGate>;
++  if (normalized !== identity.activeRole) redirect(buildProfileRoute(identity.activeRole));
++  const tab = resolveProfileDetailTab((await searchParams)?.tab);
++  return <CmmPageLayout>
++    <PageHeader title={`Mon profil · ${getProfileLabel(normalized,"fr")}`} subtitle={getProfileSubtitle(normalized,"fr")} action={<CmmButton href="/dashboard" tone="secondary">Mon espace</CmmButton>} />
++    <ProfileDetailNavigation profile={normalized} activeTab={tab} />
++    {tab === "summary" && <Progression userId={session.userId} profile={normalized} />}
++    {tab === "badges" && <Badges userId={session.userId} />}
++    {tab === "referrals" && <Referrals userId={session.userId} profile={normalized} />}
++    {tab === "account" && <Account identity={identity} />}
++  </CmmPageLayout>;
+ }
+diff --git a/apps/web/src/components/gamification/profile-gamification-summary.tsx b/apps/web/src/components/gamification/profile-gamification-summary.tsx
+--- a/apps/web/src/components/gamification/profile-gamification-summary.tsx
++++ b/apps/web/src/components/gamification/profile-gamification-summary.tsx
+@@ -1,5 +1,6 @@
+ import { ArrowRight } from "lucide-react";
+ import { CmmButton } from "@/components/ui/cmm-button";
++import { CmmCard } from "@/components/ui/cmm-card";
+ import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
+ 
+ export type ProfileGamificationSummaryProps = {
+@@ -13,55 +14,55 @@
+     <section
+       aria-labelledby="profile-gamification-summary-title"
+       data-testid="profile-gamification-summary"
+-      className="rounded-2xl border border-amber-200/20 bg-[rgba(69,26,3,0.34)] p-5 shadow-[0_18px_36px_-28px_rgba(120,53,15,0.8)]"
++      className="space-y-3"
+     >
+-      <div className="flex flex-col gap-5">
++      <CmmCard className="flex flex-col gap-4">
+         <div>
+-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200/80">
++          <p className="text-[10px] font-black uppercase tracking-[0.2em] cmm-text-secondary">
+             Résumé de progression
+           </p>
+           <h2
+             id="profile-gamification-summary-title"
+-            className="mt-1 text-lg font-black tracking-tight text-white"
++            className="mt-1 text-lg font-black tracking-tight cmm-text-primary"
+           >
+             Votre progression actuelle
+           </h2>
+         </div>
+ 
+         <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+-          <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
+-            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
++          <div className="rounded-xl border border-current/10 px-4 py-3">
++            <dt className="text-xs font-bold uppercase tracking-[0.16em] cmm-text-secondary">
+               Niveau actuel
+             </dt>
+-            <dd className="mt-1 text-xl font-black text-white">
++            <dd className="mt-1 text-xl font-black cmm-text-primary">
+               {summary?.currentLevel ?? "—"}
+             </dd>
+           </div>
+-          <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
+-            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
++          <div className="rounded-xl border border-current/10 px-4 py-3">
++            <dt className="text-xs font-bold uppercase tracking-[0.16em] cmm-text-secondary">
+               XP totale
+             </dt>
+-            <dd className="mt-1 text-xl font-black text-white">{summary?.xpTotal ?? "—"}</dd>
++            <dd className="mt-1 text-xl font-black cmm-text-primary">{summary?.xpTotal ?? "—"}</dd>
+           </div>
+-          <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
+-            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
++          <div className="rounded-xl border border-current/10 px-4 py-3">
++            <dt className="text-xs font-bold uppercase tracking-[0.16em] cmm-text-secondary">
+               Niveau potentiel
+             </dt>
+-            <dd className="mt-1 truncate text-base font-black text-amber-100">
++            <dd className="mt-1 truncate text-base font-black cmm-text-primary">
+               {summary?.potentialLevel ?? "—"}
+             </dd>
+           </div>
+-          <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
+-            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
++          <div className="rounded-xl border border-current/10 px-4 py-3">
++            <dt className="text-xs font-bold uppercase tracking-[0.16em] cmm-text-secondary">
+               Progressions actives
+             </dt>
+-            <dd className="mt-1 truncate text-base font-black text-amber-100">
++            <dd className="mt-1 truncate text-base font-black cmm-text-primary">
+               {summary?.progressions.filter((progression) => progression.state === "in_progress").length ?? "—"}
+             </dd>
+           </div>
+         </dl>
+ 
+-        <div className="flex flex-col gap-3 border-t border-amber-200/14 pt-4 sm:flex-row sm:flex-wrap">
++        <div className="flex flex-col gap-3 border-t border-current/10 pt-4 sm:flex-row sm:flex-wrap">
+           <CmmButton
+             href="/profil/impact"
+             tone="secondary"
+@@ -73,7 +74,7 @@
+           </CmmButton>
+           <CmmButton
+             href="/sections/gamification"
+-            tone="critical"
++            tone="secondary"
+             variant="pill"
+             className="w-full justify-center gap-2 px-5 text-sm font-black sm:w-auto"
+           >
+@@ -81,7 +82,7 @@
+             <ArrowRight className="h-4 w-4" aria-hidden="true" />
+           </CmmButton>
+         </div>
+-      </div>
++      </CmmCard>
+     </section>
+   );
+ }
+diff --git a/apps/web/src/components/gamification/milestones-panel.tsx b/apps/web/src/components/gamification/milestones-panel.tsx
+--- a/apps/web/src/components/gamification/milestones-panel.tsx
++++ b/apps/web/src/components/gamification/milestones-panel.tsx
+@@ -11,14 +11,14 @@
+   return (
+     <section
+       aria-labelledby="gamification-milestones-title"
+-      className="mt-8 rounded-[2rem] border border-amber-500/15 bg-amber-500/[0.04] p-6"
++      className="rounded-2xl border border-current/10 p-4 sm:p-5"
+     >
+       <div className="flex items-start justify-between gap-4">
+         <div>
+-          <p className="text-sm font-black uppercase tracking-[0.3em] text-amber-300/80">
++          <p className="text-sm font-black uppercase tracking-[0.3em] cmm-text-secondary">
+             Distinctions ponctuelles
+           </p>
+-          <h3 id="gamification-milestones-title" className="mt-2 text-xl font-black text-white">
++          <h3 id="gamification-milestones-title" className="mt-2 text-xl font-black cmm-text-primary">
+             Jalons
+           </h3>
+           <p className="mt-2 max-w-2xl text-sm cmm-text-body leading-relaxed">
+@@ -35,7 +35,7 @@
+             className={`rounded-2xl border p-4 ${
+               milestone.unlocked
+                 ? "border-amber-300/25 bg-amber-300/[0.08]"
+-                : "border-white/8 bg-slate-950/30"
++                : "border-current/10"
+             }`}
+           >
+             <div className="flex items-center justify-between gap-3">
+@@ -43,7 +43,7 @@
+                 className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${
+                   milestone.unlocked
+                     ? "bg-amber-300 text-amber-950"
+-                    : "bg-white/8 text-slate-500"
++                    : "bg-current/5 cmm-text-secondary"
+                 }`}
+               >
+                 {milestone.unlocked ? (
+@@ -52,13 +52,13 @@
+                   <LockKeyhole aria-hidden="true" size={15} />
+                 )}
+               </span>
+-              <span className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">
++              <span className="text-sm font-black uppercase tracking-[0.18em] cmm-text-secondary">
+                 {milestone.unlocked ? "Acquis" : "À débloquer"}
+               </span>
+             </div>
+-            <h4 className="mt-4 text-sm font-black text-white">{milestone.label}</h4>
++            <h4 className="mt-4 text-sm font-black cmm-text-primary">{milestone.label}</h4>
+             <p className="mt-2 text-sm cmm-text-body leading-relaxed">{milestone.description}</p>
+-            <p className="mt-4 text-sm font-black uppercase tracking-[0.16em] text-amber-200/80">
++            <p className="mt-4 text-sm font-black uppercase tracking-[0.16em] cmm-text-secondary">
+               {milestone.xpAwarded > 0
+                 ? `+${milestone.xpAwarded} XP ponctuels`
+                 : "Aucun XP supplémentaire"}
+diff --git a/apps/web/src/components/account/account-evolution-panel.tsx b/apps/web/src/components/account/account-evolution-panel.tsx
+--- a/apps/web/src/components/account/account-evolution-panel.tsx
++++ b/apps/web/src/components/account/account-evolution-panel.tsx
+@@ -3,14 +3,14 @@
+ import { useCallback, useEffect, useState } from "react";
+ import { CheckCircle2, Clock3, FileClock, ShieldCheck, XCircle } from "lucide-react";
+ import { CmmButton } from "@/components/ui/cmm-button";
+-import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
+ import { PromotionRequestForm } from "@/components/sections/rubriques/promotion-request-form";
+ import {
+   getRequestablePromotionRoles,
+   type PromotionRequestTargetRole,
+ } from "@/lib/account/promotion-request-contract";
+ import { getProfileLabel, type AppProfile } from "@/lib/profiles";
+-import { ACCOUNT_EVOLUTION_ROUTE } from "@/lib/accueil-pilotage-routes";
+ 
+ export type AccountEvolutionRequest = {
+   createdAt: string;
+@@ -38,17 +38,17 @@
+   pending_owner_review: {
+     label: "Demande en cours d’examen",
+     description: "L’équipe IMU examine votre demande. Une nouvelle demande n’est pas possible pendant cet examen.",
+-    className: "border-amber-300/30 bg-amber-300/10 text-amber-50",
++    className: "border-amber-300/30 bg-amber-300/10 cmm-text-warning",
+   },
+   accepted: {
+     label: "Demande acceptée",
+     description: "Votre niveau est mis à jour après synchronisation du compte.",
+-    className: "border-emerald-300/30 bg-emerald-300/10 text-emerald-50",
++    className: "border-emerald-300/30 bg-emerald-300/10 cmm-text-success",
+   },
+   rejected: {
+     label: "Demande refusée",
+     description: "Vous pouvez déposer une nouvelle demande si votre niveau actuel l’autorise.",
+-    className: "border-rose-300/30 bg-rose-300/10 text-rose-50",
++    className: "border-rose-300/30 bg-rose-300/10 cmm-text-danger",
+   },
+ };
+ 
+@@ -114,73 +114,65 @@
+   return (
+     <div className="space-y-6">
+       <div className="grid gap-6 md:grid-cols-2">
+-        <FamilyRubriqueCard withTopBar={true} topBarContent="Mon niveau de compte" className="p-6">
++        <CmmCard className="space-y-3">
+           <div className="flex items-center gap-3">
+             <ShieldCheck className="h-6 w-6 text-amber-400" aria-hidden="true" />
+             <div>
+-              <p className="cmm-text-small font-bold uppercase tracking-[0.14em] text-amber-100/90">Niveau obtenu</p>
+-              <p className="mt-1 text-2xl font-black text-white">{getProfileLabel(currentRole, "fr")}</p>
++              <p className="cmm-text-small font-bold uppercase tracking-[0.14em] cmm-text-secondary">Niveau obtenu</p>
++              <p className="mt-1 text-2xl font-black cmm-text-primary">{getProfileLabel(currentRole, "fr")}</p>
+             </div>
+           </div>
+-          <p className="mt-4 text-sm leading-relaxed text-amber-50/90">
++          <p className="mt-4 text-sm leading-relaxed cmm-text-secondary">
+             Ce niveau correspond au rôle accordé au compte. Il détermine les autorisations disponibles.
+           </p>
+-        </FamilyRubriqueCard>
++        </CmmCard>
+ 
+-        <FamilyRubriqueCard withTopBar={true} topBarContent="Rôle actuellement utilisé" className="p-6">
++        <CmmCard className="space-y-3">
+           <div className="flex items-center gap-3">
+             <FileClock className="h-6 w-6 text-orange-300" aria-hidden="true" />
+             <div>
+-              <p className="cmm-text-small font-bold uppercase tracking-[0.14em] text-amber-100/90">Identité active</p>
+-              <p className="mt-1 text-2xl font-black text-white">{getProfileLabel(activeRole, "fr")}</p>
++              <p className="cmm-text-small font-bold uppercase tracking-[0.14em] cmm-text-secondary">Identité active</p>
++              <p className="mt-1 text-2xl font-black cmm-text-primary">{getProfileLabel(activeRole, "fr")}</p>
+             </div>
+           </div>
+-          <p className="mt-4 text-sm leading-relaxed text-amber-50/90">
++          <p className="mt-4 text-sm leading-relaxed cmm-text-secondary">
+             Le rôle utilisé pour votre navigation peut être différent du niveau obtenu ; il ne donne aucun droit supplémentaire.
+           </p>
+-        </FamilyRubriqueCard>
++        </CmmCard>
+       </div>
+ 
+-      <FamilyRubriqueCard withTopBar={true} topBarContent="Faire évoluer mon compte" className="p-6 sm:p-8">
++      <CmmCard className="space-y-3">
++        <h2 className="text-xl font-bold cmm-text-primary">Demande de niveau</h2>
+         <div className="space-y-3">
+-          <p className="text-sm leading-relaxed text-amber-50/90">
++          <p className="text-sm leading-relaxed cmm-text-secondary">
+             Les personas ouverts sont Bénévole, Coordinateur, Scientifique et Entreprise. Les rôles obtenus sont Élu·e et Administrateur, après examen par IMU. IMU reste hors de ce parcours.
+           </p>
+-          <p className="text-sm leading-relaxed text-amber-50/90">
++          <p className="text-sm leading-relaxed cmm-text-secondary">
+             Une demande ne modifie jamais votre niveau obtenu. Seule l’acceptation par IMU déclenche la synchronisation du compte.
+           </p>
+         </div>
+-        <div className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Guide des niveaux obtenus">
++        {canRequest && <div className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Guide des niveaux obtenus">
+           {(["elu", "admin"] as const).map((role) => {
+             const canRequest = getRequestablePromotionRoles(currentRole).includes(role);
+             return (
+-              <div key={role} className="rounded-2xl border border-amber-200/16 bg-white/[0.05] p-4">
+-                <p className="text-sm font-bold text-white">{getProfileLabel(role, "fr")}</p>
+-                <p className="mt-1 text-sm leading-relaxed text-amber-50/90">
++              <div key={role} className="rounded-2xl border border-current/10 p-4">
++                <p className="text-sm font-bold cmm-text-primary">{getProfileLabel(role, "fr")}</p>
++                <p className="mt-1 text-sm leading-relaxed cmm-text-secondary">
+                   {role === "elu"
+                     ? "Niveau obtenu après examen pour les besoins de gouvernance territoriale."
+                     : "Niveau obtenu après examen pour les besoins de supervision et de modération."}
+                 </p>
+-                {canRequest ? (
+-                  <CmmButton
+-                    href={ACCOUNT_EVOLUTION_ROUTE}
+-                    tone={role === "elu" ? "secondary" : "tertiary"}
+-                    variant="pill"
+-                    className="mt-3 min-h-10 px-3 cmm-text-small"
+-                  >
+-                    Demander ce niveau
+-                  </CmmButton>
+-                ) : null}
++                {canRequest && <p className="mt-2 text-sm font-semibold cmm-text-primary">Demande possible dans le formulaire ci-dessous.</p>}
+               </div>
+             );
+           })}
+-        </div>
++        </div>}
+         {isRefreshing ? (
+-          <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-amber-50/90" role="status">
++          <p className="mt-6 rounded-2xl border border-current/10 p-5 text-sm cmm-text-secondary" role="status">
+             Vérification de votre demande…
+           </p>
+         ) : !statusAvailable ? (
+-          <div className="mt-6 rounded-2xl border border-rose-300/25 bg-rose-300/10 p-5 text-sm text-rose-50">
++          <div className="mt-6 rounded-2xl border border-rose-300/25 bg-rose-300/10 p-5 text-sm cmm-text-danger">
+             <p>Le statut de votre demande est indisponible. Le formulaire reste fermé par sécurité.</p>
+             <CmmButton type="button" tone="secondary" variant="pill" className="mt-4" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refreshStatus(); }}>
+               Réessayer
+@@ -195,7 +187,7 @@
+             </div>
+           </div>
+         ) : isAcceptedAwaitingSynchronization ? (
+-          <div className="mt-6 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-5 text-sm text-amber-50">
++          <div className="mt-6 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-5 text-sm cmm-text-warning">
+             Demande acceptée. La synchronisation de votre niveau est encore en cours ; le formulaire reste fermé.
+           </div>
+         ) : showForm ? (
+@@ -203,20 +195,21 @@
+             <PromotionRequestForm currentRole={currentRole} onSubmitted={refreshStatus} />
+           </div>
+         ) : latestRequest?.status === "accepted" ? (
+-          <div className="mt-6 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-5 text-sm text-emerald-50">
++          <div className="mt-6 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-5 text-sm cmm-text-success">
+             Le niveau affiché ci-dessus est la source d’autorité du compte après synchronisation.
+           </div>
+         ) : (
+-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-amber-50/90">
++          <div className="mt-6 rounded-2xl border border-current/10 p-5 text-sm cmm-text-secondary">
+             {canRequest
+               ? "Le formulaire est momentanément indisponible."
+               : "Votre niveau ne nécessite pas de demande de promotion supplémentaire."}
+           </div>
+         )}
+-      </FamilyRubriqueCard>
++      </CmmCard>
+ 
++      <CmmCard className="space-y-3"><h2 className="font-bold cmm-text-primary">Changer de rôle actif</h2><p className="text-sm cmm-text-secondary">Le changement de rôle ne modifie pas le niveau obtenu.</p><div className="flex flex-wrap gap-2"><CmmButton href={`${buildProfileRoute(activeRole)}?tab=account`} tone="primary">Rôles disponibles</CmmButton><CmmButton href="/dashboard" tone="secondary">Mon espace</CmmButton></div></CmmCard>
+       {latestRequest ? (
+-        <FamilyRubriqueCard withTopBar={true} topBarContent="Ma demande" className="p-6 sm:p-8">
++        <CmmCard className="space-y-3">
+           <div className={`flex items-start gap-3 rounded-2xl border p-5 ${statusCopy?.className ?? ""}`}>
+             <StatusIcon status={latestRequest.status} />
+             <div className="min-w-0 space-y-3">
+@@ -229,7 +222,7 @@
+               <p className="text-sm text-current/90">{statusCopy?.description}</p>
+             </div>
+           </div>
+-        </FamilyRubriqueCard>
++        </CmmCard>
+       ) : null}
+     </div>
+   );
+diff --git a/apps/web/src/lib/navigation.ts b/apps/web/src/lib/navigation.ts
+--- a/apps/web/src/lib/navigation.ts
++++ b/apps/web/src/lib/navigation.ts
+@@ -138,6 +138,8 @@
+   "reports",
+   "admin",
+   "pilotage",
++  "sponsor",
++  "elus",
+   "learn-comprendre",
+   "learn-sentrainer",
+   "learn-bonnes-pratiques",
+@@ -157,6 +159,8 @@
+   "funding",
+   "admin",
+   "pilotage",
++  "sponsor",
++  "elus",
+   "learn-comprendre",
+   "learn-sentrainer",
+   "learn-bonnes-pratiques",
+@@ -198,9 +202,9 @@
+   coordinateur: buildProfileSpacePages(["dashboard", "explorer", "pilotage"]),
+   scientifique: buildProfileSpacePages(["dashboard", "explorer", "pilotage"]),
+   entreprise: buildProfileSpacePages(["dashboard", "explorer", "sponsor"]),
+-  elu: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "sponsor"]),
++  elu: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "sponsor", "elus"]),
+   admin: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "admin"]),
+-  max: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "admin"]),
++  max: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "sponsor", "elus", "admin"]),
+ };
+ 
+ const RUBRIQUE_BY_ID = new Map<RouteId, Rubrique>(
+diff --git a/apps/web/src/lib/profiles-cta.ts b/apps/web/src/lib/profiles-cta.ts
+--- a/apps/web/src/lib/profiles-cta.ts
++++ b/apps/web/src/lib/profiles-cta.ts
+@@ -169,10 +169,10 @@
+   },
+   elu: {
+     primaryCTA: {
+-      href: SPONSOR_PORTAL_ROUTE,
++      href: "/sections/elus",
+       label: {
+-        fr: "Voir la synthèse d'impact",
+-        en: "View impact summary",
++        fr: "Ouvrir la gouvernance",
++        en: "Open governance",
+       },
+       description: {
+         fr: "Lire les indicateurs publics et consolidés",
+diff --git a/apps/web/src/app/api/account/active-profile/route.ts b/apps/web/src/app/api/account/active-profile/route.ts
+--- a/apps/web/src/app/api/account/active-profile/route.ts
++++ b/apps/web/src/app/api/account/active-profile/route.ts
+@@ -80,15 +80,13 @@
+ 
+   const devBypass = await getDevAuthBypassSession();
+   if (devBypass) {
+-    return NextResponse.json(
+-      {
+-        role,
+-        activeRole: targetRole,
+-        activeProfile: targetRole,
+-        profilePath: getProfileEntryPath(targetRole),
+-      },
+-      { headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS },
+-    );
++    if (targetRole !== identity.activeRole) {
++      return NextResponse.json(
++        { error: "Le rôle simulé est fixé au démarrage. Utilisez une session Clerk Development pour changer réellement de rôle.", code: "DEV_ROLE_FIXED" },
++        { status: 409, headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS },
++      );
++    }
++    return NextResponse.json({ role, activeRole: targetRole, activeProfile: targetRole, profilePath: getProfileEntryPath(targetRole) }, { headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS });
+   }
+ 
+   const client = await clerkClient();
+diff --git a/apps/web/src/app/api/account/active-profile/route.test.ts b/apps/web/src/app/api/account/active-profile/route.test.ts
+--- a/apps/web/src/app/api/account/active-profile/route.test.ts
++++ b/apps/web/src/app/api/account/active-profile/route.test.ts
+@@ -174,6 +174,7 @@
+     ["elu", "elu"],
+     ["admin", "admin"],
+     ["max", "admin"],
++    ["max", "elu"],
+   ] as const)("allows granted %s to activate %s without changing GRANTED_ROLE", async (role, activeRole) => {
+     identityMock.mockResolvedValue({ role, activeRole: role });
+     const { updateUserMetadata } = setupClerk({ role, profile: role });
+@@ -217,8 +218,8 @@
+     identityMock.mockResolvedValue({ role: "max", activeRole: "max" });
+     devBypassMock.mockResolvedValue({ role: "max", userId: "dev-max" });
+     const response = await post({ activeRole: "benevole" });
+-    expect(response.status).toBe(200);
+-    expect(await response.json()).toMatchObject({ role: "max", activeRole: "benevole" });
++    expect(response.status).toBe(409);
++    expect(await response.json()).toMatchObject({ code: "DEV_ROLE_FIXED" });
+     expect(clerkClientMock).not.toHaveBeenCalled();
+     expect(syncMock).not.toHaveBeenCalled();
+   });
+diff --git a/apps/web/src/components/account/use-active-role-mutation.ts b/apps/web/src/components/account/use-active-role-mutation.ts
+--- a/apps/web/src/components/account/use-active-role-mutation.ts
++++ b/apps/web/src/components/account/use-active-role-mutation.ts
+@@ -8,6 +8,7 @@
+ 
+ type ActiveRoleMutationResponse = {
+   profilePath?: string;
++  status?: string;
+   error?: string;
+ };
+ 
+@@ -37,6 +38,11 @@
+         | null;
+ 
+       if (!response.ok) {
++        if (payload?.status === "clerk_updated_supabase_sync_pending") {
++          // Clerk already persisted the selection; reload and re-read the server identity without claiming convergence.
++          await user?.reload().catch(() => undefined);
++          router.refresh();
++        }
+         throw new Error(payload?.error ?? "Mutation de profil refusée.");
+       }
+ 
