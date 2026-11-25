@@ -4,6 +4,8 @@
 
 ## Dossiers réellement présents
 
+- [gamification-ui/README_CODEX.md](./gamification-ui/README_CODEX.md) : refonte Web de Progression & badges, cinq onglets, panneaux de progression et album de récompenses, PLAN/CANDIDATE.
+
 - [methodologie-ui/README_CODEX.md](./methodologie-ui/README_CODEX.md) : refonte de la page Méthodologie en cinq onglets, commandes persistantes et fondations documentaires localisées, PLAN/CANDIDATE.
 
 - [reports-ui/README_CODEX.md](./reports-ui/README_CODEX.md) : refonte des surfaces Rapports (génération, analyse et synthèse imprimable), candidats et validations restantes, PLAN/CANDIDATE.

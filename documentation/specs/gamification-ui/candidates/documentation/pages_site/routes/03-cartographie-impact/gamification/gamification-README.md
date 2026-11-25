@@ -1,0 +1,100 @@
+# Gamification - Progression & badges
+
+Point d entrée de la rubrique gamification, désormais canonique sur `/sections/gamification`.
+
+## Références principales
+
+- [Présentation détaillée](./gamification-presentation-detaillee.md)
+- [Spécification canonique](./gamification-SPEC_CANONIQUE.md)
+- [Notes de scopes et d interface](./gamification-scope-ui-notes.md)
+- [Objectifs non pertinents](./gamification-objectifs-non-pertinents.md)
+
+La présentation détaillée décrit la section `/sections/gamification`. L URL `/gamification` reste un alias de compatibilité. La spec canonique centralise les règles métier des badges, des paliers, des XP et des garde-fous.
+
+La surface authentifiée présente un panneau de niveau compact : niveau acquis,
+niveau potentiel, XP validée et en attente, progression et prérequis du niveau
+suivant. Les cinq onglets sont Mes acquis, En cours, À débloquer, Communauté et
+Badges. Les conditions détaillées sont repliées ; seuls les panneaux du bloc
+actif sont montés. La reconnaissance et les collections spécialisées restent
+accessibles sans exposer de nouveaux indicateurs. L'historique des reçus demeure
+accessible sous les onglets, sans réinitialisation à chaque changement de vue.
+Les notifications et avis de réconciliation restent visibles indépendamment
+de l'onglet. L'impact personnel est présenté dans Mes acquis, distinct de l'XP. Les indicateurs d'eau, de CO₂e et de surface
+sont affichés comme des proxys, à partir des valeurs fournies par
+`GET /api/gamification/me`, avec un lien vers la méthodologie documentée.
+
+Les collections CURRENT sont dérivées de `progression.summary` et distinguent
+les éléments acquis, en progression et à découvrir, sans recopier de catalogue
+dans l UI. La reconnaissance personnelle affiche d abord les cartes lifetime
+et année en cours issues de `progression.recognition` et
+`progression.annualRecognition`.
+
+La page affiche aussi un historique secondaire des reçus de réconciliation,
+du plus récent au plus ancien. Il est limité aux 50 derniers reçus du compte
+courant ; les reçus acquittés restent consultables et seul le pending exclut
+les reçus acquittés. Chaque ligne expose la date, la version CURRENT, le delta
+XP, le niveau avant/après et les compteurs de progressions, badges et jalons
+modifiés. Une notification de la boîte `app_notifications` ouvre un reçu ciblé
+avec `/sections/gamification?receipt=<UUID opaque de notification>` sans
+acquittement automatique. Le serveur résout cette identité dans le scope du
+compte authentifié, y compris lorsque le reçu est hors de la fenêtre des 50
+derniers ; une cible malformée, inexistante ou étrangère est ignorée. Les
+réconciliations sans changement visible ne créent ni reçu ni notification.
+`seen_at` correspond à la consultation de la notification depuis la cloche ou
+le tableau de bord ; le compteur associé désigne les mises à jour non encore
+consultées.
+
+Le catalogue distingue explicitement les huit axes généraux `Participation`,
+`Organisation`, `Exploration`, `Zones propres`, `Régularité`, `Polyvalence`,
+`Apprentissage` et `Amélioration du produit`. `Modération` n'est ajoutée que pour le compte courant lorsque
+l'AuthZ autorise réellement cette capacité. Chaque entrée d'API porte
+`awardCategory`, `grantsXp` et `xpContribution` ; les jalons avec XP et les
+jalons de reconnaissance sont présentés dans deux groupes distincts. Les
+indicateurs d'impact restent dans leur panneau dédié et ne forment pas une
+jauge XP.
+
+La section privée conserve la reconnaissance personnelle et propose uniquement
+le CTA « Voir le classement public » vers `/sections/leaderboard`. Elle ne
+monte pas `LeaderboardPanel`, ne lance pas la lecture du classement et désactive
+le prefetch de ce lien. Le panneau public est monté et chargé uniquement sur la
+page canonique, avec les deux scopes `user` et
+`structure` et les trois métriques `level`, `xp` et `badges`. Pour un utilisateur,
+le niveau est le niveau utilisateur ; pour une structure, il s'agit du niveau
+collectif. Le compteur de badges suit `total = gradeCount + oneShotCount` et
+est affiché au format `(X grades + Y one-shot)`, sans exposer le détail des
+badges. La préférence d'opt-in est gérée dans `/reglages`, désactivée par
+défaut. Le leaderboard est l'unique exception à la règle de non-publication de la gamification.
+
+La page `/sections/gamification` reste privée et protégée par authentification.
+La page `/sections/leaderboard` est publique, sans indexation ni URL canonique,
+et sa projection n'expose que le label public, le niveau, l'XP validée et les
+compteurs de badges autorisés.
+
+La section privée contient également la collection « Événements & distinctions ».
+Elle lit `GET /api/gamification/spogomi/collection`, conserve chaque occurrence
+avec sa clé `(user_id, event_id, badge_type_id)`, et propose des filtres par
+année, type et événement. Les progressions « Terrain SPOGOMI » et « Arbitrage
+SPOGOMI » comptent respectivement les événements actifs de collecte et
+d’arbitrage certifié, avec les paliers `1, 3, 5, 10, 25, 50, 75, 100`, puis
+`+25` indéfiniment ; elles ne produisent aucune XP. Le profil affiche un
+résumé distinct, sans modifier `badgeTotal`.
+
+Les Légendes territoriales sont affichées dans `/sections/gamification` et sur
+les profils Web dynamiques (`/profil/[profile]`) à partir de la projection
+serveur `GET /api/gamification/territorial-leaderboard/overview`. La surface
+présente les cinq grades, les territoires concernés, le titre courant confirmé
+le cas échéant, le rang, les cleanwalks admissibles, la fenêtre de 90 jours,
+la détention actuelle, le meilleur historique, le classement autorisé et les
+égalités. Elle distingue les états `Acquis`, `En cours` et `Non acquis` pour
+les cinq défis de première conquête et les six marqueurs de récompense de la
+campagne courante. La progression privée reste disponible sans consentement
+public ; l'activation et la révocation du consentement utilisent le réglage
+territorial existant dans `/reglages`.
+
+**Contrat SEO** : `ACCESS=PRIVATE`, `SEARCH=NOINDEX`,
+`DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Le soft-gate décrit la
+présentation anonyme ; il ne rend pas la progression personnelle indexable.
+
+## Documents complémentaires propriétaires
+
+La [présentation détaillée](./gamification-presentation-detaillee.md) explique les parcours et états. Le [registre des refus](./gamification-objectifs-non-pertinents.md) conserve les décisions distinctes et motivées. Les règles métier restent dans [la spécification canonique](./gamification-SPEC_CANONIQUE.md) et leurs notes de scopes. Aucun backlog vide n'est créé ni exigé.

@@ -1,0 +1,60 @@
+{
+  "baseCommit": "709121f970d1beee386229339d5cb6a942f09788",
+  "files": [
+    {
+      "path": "apps/web/src/components/sections/rubriques/gamification/index.tsx",
+      "baseBlob": "d6d506615133f495a77087486fd8e23f18f575c8",
+      "candidateBlob": "923f687603cc09ed47f30dc35605ca8914f049b9"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/gamification/gamification-tabs.tsx",
+      "baseBlob": null,
+      "candidateBlob": "0a9625d7816ef5b354059f14fd569924d8b01ce4"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/gamification/gamification-catalog-panel.tsx",
+      "baseBlob": "45137d267dd332141fdfabd0515e6f71512139b4",
+      "candidateBlob": "10ab4b4e74bb37c10e97fc4a413531383b2fd1b0"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/gamification/gamification-level-progress-panel.tsx",
+      "baseBlob": "ba0eb84d7cd5606b5217fd2f15573924e212e277",
+      "candidateBlob": "c0cafb384c492548610f67c8547426c7a28fe4a9"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/gamification/gamification-engagement.tsx",
+      "baseBlob": "6f6250c12f6a9a2186cb6aeaf91da75d06b30879",
+      "candidateBlob": "add40435e5b4a79880503e17dbcde0a79465ecc6"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/gamification/gamification-catalog-panel.test.ts",
+      "baseBlob": "58031d4d63e04a1d736ae1188595bd453250900f",
+      "candidateBlob": "5d5714cf6356c10495b7e02a2bce4b4a12d583e4"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/gamification/gamification-section.integration.test.tsx",
+      "baseBlob": "f648a50bae7f9934a1e1e44e209ad13e56b8ba29",
+      "candidateBlob": "d50316d595c2c81ecb8dd861d33a4b34c43bfe62"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/gamification/gamification-tabs.test.ts",
+      "baseBlob": null,
+      "candidateBlob": "d8cf9c533b5f81141e23eb88207f3b6de23c1101"
+    },
+    {
+      "path": "documentation/pages_site/routes/03-cartographie-impact/gamification/gamification-README.md",
+      "baseBlob": "da12885c7220320f7393e682f430ed18a62bfd5c",
+      "candidateBlob": "f60899fbd80a997ccffa07f93aa7fb538b7f6153"
+    },
+    {
+      "path": "documentation/pages_site/routes/03-cartographie-impact/gamification/gamification-presentation-detaillee.md",
+      "baseBlob": "9ca671b186d20edbcf76d4cd713b13158ce3219c",
+      "candidateBlob": "034cc21d1050c3e9f0f3b06086d181712b1ff037"
+    },
+    {
+      "path": "documentation/pages_site/routes/03-cartographie-impact/gamification/gamification-scope-ui-notes.md",
+      "baseBlob": "5dd4af043afcc4605d14b1204dd30a4eaa715c2c",
+      "candidateBlob": "1ac8725f0324d839fc08a222f76eae95009016b1"
+    }
+  ]
+}
