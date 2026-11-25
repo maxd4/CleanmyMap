@@ -4,6 +4,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { AlertTriangle, ExternalLink, X } from "lucide-react";
 import { getScheduledOperationsForActor } from "@/lib/partners/paris-cleanwalk-network.scheduled";
 import { ScheduledOperationDetails } from "./paris-network-scheduled-operation";
+import { getActorStructureContext } from "@/lib/partners/public-structure-context";
+import { PublicStructureContextPanel } from "./public-structure-context-panel";
 import {
   PARIS_ACTOR_CATEGORY_META,
   PARIS_ECOSYSTEM_ROLE_LABELS,
@@ -364,6 +366,8 @@ export function ParisNetwork3DBubble({
             </ul>
           </div>
         ) : null}
+
+        {isLocked ? <PublicStructureContextPanel key={actor.id} context={getActorStructureContext(actor.id)} fr={fr} /> : null}
 
         {/* 7. Source et fraîcheur */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2 text-xs text-slate-300">

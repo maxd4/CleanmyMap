@@ -84,3 +84,11 @@ Pour `action_commune` :
   3. Repli déterministe par ordre numérique INSEE puis codes/libellés internationaux.
   - Une sélection manuelle n'est jamais écrasée par une réponse asynchrone tardive.
 - Seul `FR:REG:11` dispose actuellement d'un jeu de données (`Pilote : Paris intramuros (Île-de-France non exhaustive)`). Tout autre territoire affiche l'état vide `« Réseau de ce territoire pas encore renseigné »` sans scène WebGL ni données inventées, et le formulaire de contribution reste réservé à `FR:REG:11`.
+
+## Chiffres, financements et limites des acteurs
+
+Le contexte public d'une structure est porté par `apps/web/src/lib/partners/public-structure-context.ts` et ses données éditoriales. Le composant `PublicStructureContextPanel` est commun au réseau et à l'organisation institutionnelle. Les fiches sélectionnées affichent des détails repliables de chiffres et limites seulement lorsqu'un élément sourcé existe. Aucun score, classement, filtre de controverse ni changement de taille, couleur ou position des nœuds ne dérive de ces éléments.
+
+Les chiffres portent une période, une unité, une portée et une source qualifiée. Une déclaration de l'organisateur ou d'un opérateur n'est pas un audit indépendant. Un fait documenté, une critique publique attribuée et une information non établie sont distingués ; les critiques restent attachées à l'identité concernée et ne sont pas propagées aux partenaires ou bénéficiaires. La section Limites est distincte d'une mesure d'impact, d'une décision administrative et d'une qualification judiciaire.
+
+L'enrichissement Mégothon conserve les identités existantes, sépare les opérations nationales, régionales et parisiennes, les mécénats déclarés, la participation, l'appui numérique et les offres aval. Les nouveaux acteurs et liens sont dans les modules `paris-cleanwalk-network.megots.data.ts` et `paris-cleanwalk-network.megots.relations.ts`. Un partenariat ou une offre ne vaut pas un transfert financier chiffré, une opération commune réalisée ni une fréquence connue. Les données de contexte et leurs sources sont contrôlées par `public-structure-context.test.ts` ; aucun lien n'est créé par simple affiliation nationale d'une antenne. Les données et rapports d'origine publique ne sont jamais agrégés aux actions CleanMyMap sans contrat métier et preuve spécifique.

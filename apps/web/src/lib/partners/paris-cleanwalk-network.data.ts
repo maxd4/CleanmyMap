@@ -6,6 +6,7 @@ import {
 import type { ParisCleanwalkActor } from "./paris-cleanwalk-network";
 import { PARIS_PREVENTION_ACTORS_RAW } from "./paris-cleanwalk-network.prevention.data";
 import { PARIS_SCHOOL_ACTORS } from "./paris-cleanwalk-network.schools";
+import { PARIS_MEGOTS_ACTORS } from "./paris-cleanwalk-network.megots.data";
 
 const ANNUAIRE_IDS = new Set(INITIAL_ANNUAIRE_ENTRIES.map((entry) => entry.id));
 const ALL_PARIS_ARRONDISSEMENTS = Array.from({ length: 20 }, (_, i) => i + 1);
@@ -341,7 +342,7 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
     },
     activities: [
       "Coordination annuelle du World Cleanup Day en septembre",
-      "Co-portage de la semaine nationale du Mégothon",
+      "Partenaire historique du Mégothon, plus coporteur à partir de 2026 selon son rapport d’activité 2025",
     ],
     provenance: {
       sourceLabel: "worldcleanupday.fr",
@@ -385,6 +386,8 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
     activities: [
       "Semaine nationale de collecte et sensibilisation sur les mégots",
       "Cartographie des missions de ramassage citoyen",
+      "Collectif national : édition inaugurale le 3 juin 2023 ; campagnes annuelles ensuite",
+      "L’offre CPM 2026 finance des collectes ; elle ne prouve ni recyclage ni audit indépendant réalisé",
     ],
     provenance: {
       sourceLabel: "lemegothon.fr/qui-sommes-nous",
@@ -743,4 +746,5 @@ export const PARIS_CLEANWALK_ACTORS: readonly ParisCleanwalkActor[] = [
   },
   ...PARIS_PREVENTION_ACTORS_RAW,
   ...PARIS_SCHOOL_ACTORS,
+  ...PARIS_MEGOTS_ACTORS,
 ] as const;

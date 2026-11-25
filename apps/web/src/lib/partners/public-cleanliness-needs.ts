@@ -44,11 +44,11 @@ const rules = {
     sourceIds: ["paris-tri-sites", "paris-tri-lilas", "paris-professional-waste"],
   },
   cigarette: {
-    label: copy("Recycler des mégots", "Find a cigarette-butt treatment route"),
-    targets: [dpe, node("asso-megots-alcome", "REP et orientation, pas collecteur direct", "Producer responsibility and guidance, not direct collection"), node("asso-megots-cyclope", "Offre commerciale à vérifier", "Commercial offer to verify", false), node("asso-megots-ecomegot", "Offre déclarée, zone à confirmer", "Provider offer, coverage unconfirmed", false), node("asso-megots-tchaomegot", "Offre déclarée, zone à confirmer", "Provider offer, coverage unconfirmed", false)],
+    label: copy("Faire traiter des mégots", "Find a cigarette-butt treatment route"),
+    targets: [dpe, node("asso-megots-alcome", "REP et orientation, pas collecteur direct", "Producer responsibility and guidance, not direct collection"), node("asso-megots-cyclope", "Valorisation énergétique annoncée ; offre à vérifier", "Advertised energy recovery; confirm offer", false), node("operator-ckfd", "Collecte spécialisée et filière matière annoncées ; offre à vérifier", "Advertised specialist collection and material recovery; confirm offer", false), node("asso-megots-ecomegot", "Offre déclarée, zone à confirmer", "Provider offer, coverage unconfirmed", false), node("asso-megots-tchaomegot", "Offre déclarée, zone à confirmer", "Provider offer, coverage unconfirmed", false)],
     guidance: copy("Demander l'acceptation de mégots ramassés au sol, le conditionnement, les volumes, le tarif et la filière réelle. La REP tabac ne garantit ni enlèvement, ni financement, ni recyclage matière de chaque lot.", "Confirm acceptance of littered butts, packaging, volume, price and actual treatment route. Producer responsibility does not guarantee collection, funding or material recycling of every batch."),
     gaps: copy("Contrat, acceptation, transport, justificatif de traitement et financement de l'opération : non confirmés.", "Contract, acceptance, transport, treatment evidence and event funding remain unconfirmed."),
-    sourceIds: ["alcome-rep", "cyclope-service", "ecomegot-service", "tchaomegot-service"],
+    sourceIds: ["alcome-rep", "cyclope-service", "ckfd-megots-service", "ecomegot-service", "tchaomegot-service"],
     wasteCategories: ["cigarette_butt"],
   },
   coordinated: {

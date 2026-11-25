@@ -1,0 +1,30 @@
+import type { HistoricalParisCleanwalkRelation } from "./paris-cleanwalk-network";
+
+const verifiedAt = "2026-11-25";
+const bilan = "https://trash-spotter.green/wp-content/Megothon/Megothon_2025_Bilan_complet.pdf";
+const wcd = "https://www.worldcleanupday.fr/wp-content/uploads/2026/04/Rapport-activite-2025-1.pdf";
+const collectif = "https://lemegothon.fr/qui-sommes-nous/";
+const alcome = "https://alcome.eco/nos-associations-partenaires/";
+
+function link(id: string, sourceId: string, targetId: string, relationType: HistoricalParisCleanwalkRelation["relationType"], title: string, summary: string, url: string, label: string): HistoricalParisCleanwalkRelation {
+  return { id, sourceId, targetId, relationType, title, summary, frequencyKnown: false, source: { label, url, verifiedAt, certainty: "verifie" } };
+}
+
+/** Each link proves only the explicitly described historical fact or public statement. */
+export const PARIS_MEGOTS_RELATIONS: readonly HistoricalParisCleanwalkRelation[] = [
+  link("rel-alcome-megothon-2025", "asso-megots-alcome", "megothon", "partenariat", "Partenaire cité au bilan 2025", "ALCOME figure dans les remerciements du bilan national 2025 ; montant et modalités financières propres à l'événement non établis.", bilan, "Bilan Mégothon 2025"),
+  link("rel-trash-spotter-megothon-2023", "trash-spotter", "megothon", "appui_logistique", "Appui numérique documenté en 2023", "Suivi des participants et quantités en 2023. Ne prouve pas un rôle technique identique en 2026.", "https://trash-spotter.green/record-du-monde-de-ramassage-de-megots-2023-trash-spotter/", "Trash Spotter : retour 2023"),
+  link("rel-alcome-wcd-mecenat", "asso-megots-alcome", "world-cleanup-day-france", "partenariat", "Mécénat financier déclaré", "ALCOME est cité comme mécène financier de WCD France dans son rapport 2025. Montant individuel et affectation au Mégothon non établis.", wcd, "Rapport d'activité WCD France 2025"),
+  link("rel-trash-spotter-wcd-mecenat", "trash-spotter", "world-cleanup-day-france", "partenariat", "Mécénat financier déclaré", "Trash Spotter est cité comme mécène financier de WCD France ; montant et affectation non établis.", wcd, "Rapport d'activité WCD France 2025"),
+  link("rel-citeo-wcd-mecenat", "eco-organisme-citeo", "world-cleanup-day-france", "partenariat", "Mécénat financier déclaré", "Citeo est cité parmi les mécènes financiers de WCD France ; aucun financement direct du Mégothon n'est déduit.", wcd, "Rapport d'activité WCD France 2025"),
+  link("rel-alcome-gestes-propres", "asso-megots-alcome", "asso-gestes-propres", "partenariat", "Partenariat déclaré", "Les deux structures publient leur relation ; aucun montant individuel ni affectation à une collecte n'est déduit.", "https://www.gestespropres.com/nos-membres-et-partenaires", "Gestes Propres : membres et partenaires"),
+  link("rel-alcome-lopp", "asso-megots-alcome", "lopp", "partenariat", "Association partenaire citée", "ALCOME présente LOPP parmi ses partenaires associatifs. Le montant et les modalités ne sont pas établis.", alcome, "ALCOME : associations partenaires"),
+  link("rel-alcome-dpe-2025", "asso-megots-alcome", "evt-paris-nettoyages", "partenariat", "Prévention municipale des mégots en 2025", "La Ville décrit la distribution de cendriers de poche avec ALCOME et les buralistes. Aucun versement à une cleanwalk n'est déduit.", "https://www.paris.fr/pages/paris-lance-son-plan-megots-30931", "Ville de Paris : plan mégots 2025"),
+  link("rel-wings-megothon", "wings-of-the-ocean", "megothon", "partenariat", "Membre du collectif national en 2026", "Le Mégothon présente l'association nationale comme membre de son collectif. Cela ne prouve pas une opération particulière de son antenne parisienne.", collectif, "Mégothon : collectif"),
+  link("rel-lopp-megothon", "lopp", "megothon", "partenariat", "Éditeur de la plateforme 2026", "Les CGU de mars 2026 désignent LOPP comme éditeur de la plateforme. Les droits et responsabilités financières propres à chaque membre restent distincts.", "https://lemegothon.fr/cgu/", "Mégothon : CGU 2026"),
+  link("rel-brigade-verte-megothon-2024", "asso-featured-1", "megothon", "presence_evenement", "Participation locale documentée en 2024", "Le compte rendu Gambetta de juin 2024 rapporte une opération Mégothon à Saint-Blaise avec 12 personnes ; aucun nombre de mégots attribué.", "https://cdn.paris.fr/paris/2024/10/11/0624-compte-rendu-conseil-de-quartier-gambetta-juin-2024-eN4F.pdf", "Conseil de quartier Gambetta : juin 2024"),
+  link("rel-brigade-verte-cyclope-2025", "asso-megots-cyclope", "asso-featured-1", "partenariat", "Filière Récolte Citadine citée en mars 2025", "Le compte rendu Gambetta décrit la valorisation de mégots collectés via Récolte Citadine avec Cy-Clope. Aucun traitement de lot Mégothon 2026 n'est déduit.", "https://cdn.paris.fr/paris/2025/04/16/032025-compte-rendu-conseil-de-quartier-gambetta-mars-25-wftw.pdf", "Conseil de quartier Gambetta : mars 2025"),
+  link("rel-brigade-verte-cleanwalk-org-2024", "asso-featured-1", "cleanwalk-org", "publie_sur", "Référencement documenté en 2024", "Le compte rendu Gambetta cite le référencement de Brigade Verte sur Cleanwalk. Aucun partenariat opérationnel n'en est déduit.", "https://cdn.paris.fr/paris/2024/10/11/0624-compte-rendu-conseil-de-quartier-gambetta-juin-2024-eN4F.pdf", "Conseil de quartier Gambetta : juin 2024"),
+  ...["asso-megots-cyclope", "operator-ckfd", "operator-mego"].map(id => link("rel-" + id + "-megothon-2025", id, "megothon", "partenariat", "Opérateur cité dans le bilan 2025", "Opérateur de valorisation remercié dans le bilan national. Aucun tonnage, transport ou traitement parisien individuel n'est démontré.", bilan, "Bilan Mégothon 2025")),
+  link("rel-ckfd-mego-filiere", "operator-ckfd", "operator-mego", "appui_logistique", "Chaîne de traitement annoncée", "CKFD présente le regroupement de ses collectes en Île-de-France et leur acheminement vers sa filière de recyclage bretonne. Aucun bordereau de lot Mégothon n'est établi.", "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette", "CKFD : offre mégots"),
+];

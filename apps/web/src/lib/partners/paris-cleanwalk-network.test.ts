@@ -12,10 +12,9 @@ import {
 } from "./paris-cleanwalk-network";
 
 describe("paris-cleanwalk-network registry contract", () => {
-  it("includes all 28 required Paris ecosystem actors and platforms with unique IDs", () => {
+  it("includes required Paris ecosystem actors and platforms with unique IDs", () => {
     const ids = PARIS_CLEANWALK_ACTORS.map((actor) => actor.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(PARIS_CLEANWALK_ACTORS).toHaveLength(28);
 
     const names = PARIS_CLEANWALK_ACTORS.map((actor) => actor.name);
     for (const required of [
@@ -34,6 +33,14 @@ describe("paris-cleanwalk-network registry contract", () => {
       "J'agis pour la nature",
       "JeVeuxAider.gouv.fr",
       "Cleanwalk.org",
+      "Wings of the Ocean",
+      "Ludovic Objectif Planète Propre (LOPP)",
+      "Trash Spotter",
+      "Cy-Clope",
+      "CKFD",
+      "MéGO!",
+      "Carton Plein Cyclo",
+      "Les Runners Laveurs",
     ]) {
       expect(names).toContain(required);
     }
@@ -236,6 +243,13 @@ describe("paris-cleanwalk-network registry contract", () => {
     expect(relationIds.has("rel-brigade-verte-mylegitech")).toBe(true);
     expect(relationIds.has("rel-the-clean-project-megothon")).toBe(true);
     expect(relationIds.has("rel-brigade-verte-jagis")).toBe(true);
+    expect(relationIds.size).toBe(PARIS_CLEANWALK_RELATIONS.length);
+    expect(PARIS_CLEANWALK_RELATIONS.find(relation => relation.id === "rel-brigade-verte-megothon-2024")).toMatchObject({ relationType: "presence_evenement", frequencyKnown: false });
+    expect(PARIS_CLEANWALK_RELATIONS.find(relation => relation.id === "rel-alcome-wcd-mecenat")).toMatchObject({ relationType: "partenariat", frequencyKnown: false });
+    expect(PARIS_CLEANWALK_RELATIONS.some(relation => relation.sourceId === "cleanwalker-paris" && relation.targetId === "megothon" && relation.relationType === "action_commune")).toBe(false);
+    // Prospects must not become fictional relationships in the public graph.
+    const prospectiveIds = new Set(["operator-carton-plein-cyclo", "asso-runners-laveurs"]);
+    expect(PARIS_CLEANWALK_RELATIONS.some(relation => prospectiveIds.has(relation.sourceId) || prospectiveIds.has(relation.targetId))).toBe(false);
   });
 });
 

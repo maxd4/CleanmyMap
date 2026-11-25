@@ -5,6 +5,9 @@ import { PublicCleanlinessCoverageTable } from "./public-cleanliness-coverage-ta
 import { PublicCleanlinessNeedPanel } from "./public-cleanliness-need-panel";
 import { getPublicInstitutionalContributions } from "@/lib/partners/public-cleanliness-needs";
 import { getPublicInstitutionalPeople } from "@/lib/partners/public-cleanliness-people";
+import { getInstitutionStructureContext } from "@/lib/partners/public-structure-context";
+import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
+import { PublicStructureContextPanel } from "./public-structure-context-panel";
 import { getArrondissementCityOptions, getArrondissementMunicipalLabel, type ArrondissementCity } from "@/lib/geo/paris-arrondissements";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { cn } from "@/lib/utils";
@@ -354,6 +357,7 @@ export function PublicCleanlinessOrganization({
             {documentedContributions.length ? <section className="mt-4 text-xs text-slate-300"><h4 className="font-black uppercase tracking-wider text-slate-200">{fr ? "Contributions publiques documentées" : "Documented public contributions"}</h4><p className="mt-1">{fr ? "Relations reprises du réseau public, pas un partenariat CleanMyMap ni un engagement actuel." : "Relations from the public network; not a CleanMyMap partnership or current commitment."}</p><ul className="mt-2 space-y-2">{documentedContributions.map(item => <li key={item.id} className="rounded-xl border border-white/10 p-3">
               <p className="font-semibold text-white">{item.title}</p><button type="button" onClick={() => selectRelatedNode(item.otherId)} className="text-sky-200 underline">{item.otherName}</button><p className="mt-1">{item.summary}</p><p><a href={item.source.url} target="_blank" rel="noreferrer" className="text-sky-200 underline">{item.source.label}</a> · {item.source.verifiedAt}</p>
             </li>)}</ul></section> : null}
+            {dataset ? <PublicStructureContextPanel key={selected.id} context={getInstitutionStructureContext(dataset, selected, PARIS_CLEANWALK_ACTORS)} fr={fr} /> : null}
             <div className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider text-slate-200">{text.sources}</h4><ul className="mt-2 space-y-2">{selected.sourceIds.map((id) => sources.find((item) => item.id === id)).filter((item): item is (typeof sources)[number] => Boolean(item)).map((item) => <li key={item.id}><a href={item.url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-sky-200 underline underline-offset-2">{item.label}</a><p className="mt-0.5 text-xs text-slate-400">{item.sourceContentDate ? `${text.sourceUpdated} ${item.sourceContentDate} · ` : ""}{text.verified} {item.verifiedAt} · {text.proof}: {text.evidenceLabels[item.evidence]}</p></li>)}</ul></div>
           </> : <p role="status" className="text-sm text-slate-300">{text.noResults}</p>}
         </aside>

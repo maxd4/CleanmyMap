@@ -90,5 +90,9 @@ describe("Paris waste chain and public contact routes", () => {
     expect(route.wasteCategories).toEqual(["cigarette_butt"]);
     expect(route.targets.find(target => target.id === "asso-megots-ecomegot")?.territoryKnown).toBe(false);
     expect(route.targets.find(target => target.id === "asso-megots-alcome")?.rationale.fr).toContain("pas collecteur direct");
+    expect(route.targets.find(target => target.id === "operator-ckfd")?.territoryKnown).toBe(false);
+    expect(route.targets.find(target => target.id === "asso-megots-cyclope")?.rationale.fr).toContain("énergétique");
+    expect(route.targets.some(target => target.id === "operator-mego")).toBe(false);
+    expect(data.relations.find(edge => edge.from === "operator-ckfd" && edge.to === "operator-mego")?.kind).toBe("service");
   });
 });

@@ -1,4 +1,5 @@
 import type { ParisCleanwalkRelation } from "./paris-cleanwalk-network";
+import { PARIS_MEGOTS_RELATIONS } from "./paris-cleanwalk-network.megots.relations";
 import { PARIS_SCHEDULED_OPERATIONS, projectScheduledRelations } from "./paris-cleanwalk-network.scheduled";
 
 export const PARIS_CLEANWALK_RELATIONS: readonly ParisCleanwalkRelation[] = [
@@ -98,5 +99,6 @@ export const PARIS_CLEANWALK_RELATIONS: readonly ParisCleanwalkRelation[] = [
       certainty: "verifie",
     },
   },
+  ...PARIS_MEGOTS_RELATIONS,
   ...projectScheduledRelations(PARIS_SCHEDULED_OPERATIONS),
 ] as const;

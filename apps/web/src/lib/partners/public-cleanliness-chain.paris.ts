@@ -23,6 +23,9 @@ const sources: readonly OrganizationSource[] = [
   { id: "citeo-territories", label: "Citeo : accompagnement des collectivités pour les emballages et papiers", url: "https://www.citeo.com/territoires/", verifiedAt: "2026-11-25", evidence: "official_current" },
   { id: "cyclope-service", label: "Cy-Clope : offre déclarée de collecte sur devis en Île-de-France", url: "https://www.cy-clope.com/prix-collecte-recyclage-megot/", verifiedAt: "2026-11-25", evidence: "operator_statement" },
   { id: "ecomegot-service", label: "Écomégot : offre déclarée de collecte des mégots", url: "https://ecomegot.com/collecte-megots/", verifiedAt: "2026-11-25", evidence: "operator_statement" },
+  { id: "ckfd-megots-service", label: "CKFD : collecte francilienne et massification annoncées", url: "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette", verifiedAt: "2026-11-25", evidence: "operator_statement" },
+  { id: "mego-megots-service", label: "MéGO! : recyclage matière annoncé", url: "https://www.me-go.fr/a-propos/", verifiedAt: "2026-11-25", evidence: "operator_statement" },
+  { id: "carton-plein-cyclo-service", label: "Carton Plein : collecte professionnelle de déchets à vélo", url: "https://cartonplein.org/nos-services-cyclologistique/collecte-de-dechets-a-paris-et-en-proche-banlieue/", verifiedAt: "2026-11-25", evidence: "operator_statement" },
   { id: "tchaomegot-service", label: "TchaoMegot : offre déclarée de collecte et traitement", url: "https://tchaomegot.com/contactez-nous/", verifiedAt: "2026-11-25", evidence: "operator_statement" },
 ];
 
@@ -141,10 +144,14 @@ export function extendParisWasteChain(base: Pick<PublicCleanlinessCityDataset, "
   add("asso-megots-alcome", "ALCOME", "provider", "prevention", ["alcome-rep", "alcome-contact"], "Éco-organisme REP tabac : accompagnement de la réduction des mégots abandonnés, notamment auprès des collectivités. Ni collecteur direct ni financement acquis.", { directoryId: "asso-megots-alcome", publicContact: contact("alcome-contact", "Portail ALCOME") });
   add("eco-organisme-citeo", "Citeo", "provider", "prevention", ["citeo-territories"], "Éco-organisme REP emballages ménagers et papiers ; accompagnement des collectivités. Pas un opérateur de collecte de sacs de cleanwalk.", { networkActorId: "eco-organisme-citeo", publicContact: contact("citeo-territories", "Accompagnement des territoires") });
   for (const [id, name, src, desc] of [
-    ["asso-megots-cyclope", "Cy-Clope", "cyclope-service", "Collecte sur devis en Île-de-France et valorisation annoncée par l'opérateur."],
+    ["asso-megots-cyclope", "Cy-Clope", "cyclope-service", "Collecte sur devis en Île-de-France et valorisation énergétique annoncée par l’opérateur ; pas un recyclage matière."],
     ["asso-megots-ecomegot", "Écomégot", "ecomegot-service", "Offre de collecte et de traitement déclarée par l'opérateur ; desserte précise à confirmer."],
     ["asso-megots-tchaomegot", "TchaoMegot", "tchaomegot-service", "Offre de collecte, dépollution et recyclage déclarée par l'opérateur ; desserte précise à confirmer."],
   ] as const) add(id, name, "provider", "provider", [src], desc + " Acceptation des mégots ramassés au sol, conditionnement, volume, tarif et traçabilité à vérifier avant toute remise.", { directoryId: id, territoryIds: [], publicContact: contact(src, "Offre de service (à confirmer)") });
+  add("operator-ckfd", "CKFD", "provider", "provider", ["ckfd-megots-service"], "Collecte et massification annoncées à Gennevilliers ; acheminement vers une filière bretonne. Admission des mégots ramassés au sol et tarif à confirmer.", { networkActorId: "operator-ckfd", territoryIds: [], publicContact: contact("ckfd-megots-service", "Offre de collecte (à confirmer)") });
+  add("operator-mego", "MéGO!", "provider", "provider", ["mego-megots-service"], "Filière de recyclage matière annoncée en Bretagne ; ni dépôt public parisien ni preuve de traitement de lot.", { networkActorId: "operator-mego", territoryIds: [], publicContact: contact("mego-megots-service", "Offre de recyclage (à confirmer)") });
+  link("operator-ckfd", "operator-mego", "service", ["ckfd-megots-service", "mego-megots-service"]);
+  add("operator-carton-plein-cyclo", "Carton Plein Cyclo", "provider", "provider", ["carton-plein-cyclo-service"], "Collecte professionnelle de déchets à vélo cargo ; transport de lots citoyens de mégots, conditions, tarif et destination à confirmer. Aucun point de dépôt ni contrat de transport acquis.", { networkActorId: "operator-carton-plein-cyclo", territoryIds: [], publicContact: contact("carton-plein-cyclo-service", "Offre professionnelle (sur devis)") });
   patch("town-hall-05", { networkActorId: "mairie-paris-5" });
   patch("town-hall-06", { networkActorId: "mairie-paris-6" });
   return { nodes, relations, sources: [...base.sources, ...sources] };
