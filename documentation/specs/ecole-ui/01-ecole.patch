@@ -1,0 +1,1001 @@
+diff --git a/apps/web/src/components/learn/quiz/quiz-school-kit-page.test.ts b/apps/web/src/components/learn/quiz/quiz-school-kit-page.test.ts
+index e5b9fbdce9114e7512c59eb5d09bebf95b8ebbdd..db16cc349a06bc1316049e9937ea3e70ef183df6 100644
+--- a/apps/web/src/components/learn/quiz/quiz-school-kit-page.test.ts
++++ b/apps/web/src/components/learn/quiz/quiz-school-kit-page.test.ts
+@@ -30,43 +30,33 @@
+     expect(getQuizSchoolLaunchHref("3e", "atelier-60")).not.toContain("answer");
+   });
+ 
+-  it("renders the teacher kit content for school mode", () => {
+-    const markup = renderToStaticMarkup(
+-      React.createElement(
+-        SitePreferencesProvider,
+-        null,
+-        React.createElement(QuizSchoolKitPage),
+-      ),
+-    );
+-
++  it("renders four accessible panels, with launch first and no duplicate launch actions", () => {
++    const markup = renderToStaticMarkup(React.createElement(SitePreferencesProvider, null, React.createElement(QuizSchoolKitPage)));
+     expect(markup).toContain("Mode École");
+     expect(markup).toContain("Séance publique de la 6e à la 3e");
+-    expect(markup).toContain("Lancement immédiat");
+-    expect(markup).toContain("Choisir le niveau, puis le format");
+-    expect(markup).toContain("Choisissez un quiz de 30 minutes ou un atelier de 60 minutes.");
+-    expect(markup).toContain("Formats : quiz 30 min · atelier 60 min");
+-    expect(markup).toContain("Repères de séance");
+-    expect(markup).toContain("Les aides à garder visibles");
+-    expect(markup).toContain("Fiche enseignant");
+-    expect(markup).toContain("Fiche élève");
+-    expect(markup).toContain("Aucun compte, nom d’élève ou donnée personnelle.");
+-    expect(markup).toContain("Une banque partagée, sélectionnée selon le niveau");
+-    expect(markup).toContain("Banque en réserve");
+-    expect(markup).toContain("Sous-modes disponibles si besoin");
+-    expect(markup).toContain("Ouvrir les questions détaillées");
+-    expect(markup).not.toContain("20 questions");
+-    expect(markup).not.toContain("Lancer ce format");
+-    expect(markup).toContain("focus-visible:ring-amber-300/70");
+-    expect(markup).toContain('href="#choisir-niveau"');
+-    expect(markup).toContain("Formats : quiz 30 min · atelier 60 min");
+-    expect(markup).not.toContain("Élèves de 4e et 3e.");
+-    expect(markup).toContain('href="/learn/sentrainer?mode=demo"');
++    expect(markup.match(/role="tab"/g)).toHaveLength(4);
++    expect(markup.match(/role="tabpanel"/g)).toHaveLength(4);
++    expect(markup.match(/aria-selected="true"/g)).toHaveLength(1);
++    expect(markup).toContain('id="choisir-niveau"');
++    expect(markup).toContain('id="fiche-enseignant"');
++    expect(markup).toContain('id="fiche-eleve"');
++    expect(markup).toContain('id="banque-questions"');
++    expect(markup).toContain("Configurer la séance");
++    expect(markup).toContain("Quiz 30 min");
++    expect(markup).toContain("Atelier 60 min");
++    expect(markup).toContain("Sélectionnez d’abord une classe.");
++    expect(markup).toContain("Lancer la séance");
++    expect(markup).not.toContain('href="/learn/sentrainer?mode=ecole');
++    expect(markup.match(/href="\/learn\/sentrainer\?mode=demo"/g)).toHaveLength(1);
+     expect(markup).toContain('href="/learn/bonnes-pratiques"');
+-    expect(markup).toContain("Retour aux bonnes pratiques");
++    expect(markup).not.toContain("3 repères rapides");
++    expect(markup).toContain("20 questions de support");
++    expect(markup).toContain("Ce support est distinct des questions sélectionnées automatiquement");
++    expect(markup).toContain("À vérifier · hors séance publique");
++    expect(markup).toContain("Réponse attendue");
++    expect(markup).toContain("sans nom ni saisie sur le site");
++    expect(markup).toContain("Fiche enseignant");
+     expect(markup).not.toContain("/learn/ressources");
+-    expect(markup.indexOf("Lancement immédiat")).toBeLessThan(markup.indexOf("Fiche enseignant"));
+-    expect(markup.indexOf("Repères de séance")).toBeLessThan(markup.indexOf("Public visé"));
+-    expect(markup.indexOf("Fiche enseignant")).toBeLessThan(markup.indexOf("Public visé"));
+-    expect(markup.indexOf("Passage au quiz")).toBeLessThan(markup.indexOf("Banque en réserve"));
++    expect(markup.indexOf("Configurer la séance")).toBeLessThan(markup.indexOf("Fiche enseignant"));
+   });
+ });
+diff --git a/apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx b/apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx
+index eb1563366bf67a5eb53cb0002c69439591e6307d..58975292e8b75fd521402b6c70be0102db68db69 100644
+--- a/apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx
++++ b/apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx
+@@ -1,99 +1,98 @@
+ "use client";
+ 
+-import { ArrowRight, Compass, GraduationCap, School, Users } from "lucide-react";
+-import { CmmButton } from "@/components/ui/cmm-button";
++import { useEffect, useState, type KeyboardEvent } from "react";
++import { BookOpen, ClipboardList, GraduationCap, Library, ShieldCheck, Users } from "lucide-react";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
+ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+ import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
+ import { QuizSchoolBankSection } from "@/components/learn/quiz/school/quiz-school-bank-section";
+ import { QuizSchoolLevelLauncher } from "@/components/learn/quiz/school/quiz-school-level-launcher";
+ import { QuizSchoolSessionGuide } from "@/components/learn/quiz/school/quiz-school-session-guide";
+ 
+-const INTRO_CARDS = [
+-  {
+-    icon: School,
+-    title: { fr: "Public visé", en: "Target audience" },
+-    text: { fr: "Élèves de 6e, 5e, 4e et 3e.", en: "Students from grades 6 to 9." },
+-  },
+-  {
+-    icon: GraduationCap,
+-    title: { fr: "Durée conseillée", en: "Recommended duration" },
+-    text: { fr: "Quiz 30 min ou atelier 60 min.", en: "30-minute quiz or 60-minute workshop." },
+-  },
+-  {
+-    icon: Users,
+-    title: { fr: "Sans compte", en: "No account" },
+-    text: { fr: "Aucun compte, nom d’élève ou donnée personnelle.", en: "No account, student name or personal data." },
+-  },
+-  {
+-    icon: Compass,
+-    title: { fr: "Classe entière", en: "Whole class" },
+-    text: { fr: "Lecture au vidéoprojecteur et vote collectif.", en: "Projector reading and collective voting." },
+-  },
++const TABS = [
++  { id: "launch", anchor: "choisir-niveau", fr: "Lancer une séance", en: "Launch a session", icon: GraduationCap },
++  { id: "teacher", anchor: "fiche-enseignant", fr: "Préparer la séance", en: "Prepare the session", icon: BookOpen },
++  { id: "student", anchor: "fiche-eleve", fr: "Fiche élève", en: "Student sheet", icon: ClipboardList },
++  { id: "bank", anchor: "banque-questions", fr: "Banque de questions", en: "Question bank", icon: Library },
+ ] as const;
+ 
++type SchoolTab = (typeof TABS)[number]["id"];
++
++function getTabFromHash(hash: string): SchoolTab {
++  return TABS.find((tab) => "#" + tab.anchor === hash)?.id ?? "launch";
++}
++
+ export function QuizSchoolKitPage() {
+   const { locale } = useSitePreferences();
+-  const isFrench = locale === "fr";
++  const fr = locale === "fr";
++  const [active, setActive] = useState<SchoolTab>("launch");
+ 
++  useEffect(() => {
++    function syncHash() { setActive(getTabFromHash(window.location.hash)); }
++    syncHash();
++    window.addEventListener("hashchange", syncHash);
++    return () => window.removeEventListener("hashchange", syncHash);
++  }, []);
++
++  function activate(index: number) {
++    const tab = TABS[index];
++    setActive(tab.id);
++    window.history.replaceState(window.history.state, "", "#" + tab.anchor);
++  }
++
++  function navigate(event: KeyboardEvent<HTMLButtonElement>, index: number) {
++    let next: number;
++    switch (event.key) {
++      case "ArrowRight": case "ArrowDown": next = (index + 1) % TABS.length; break;
++      case "ArrowLeft": case "ArrowUp": next = (index + TABS.length - 1) % TABS.length; break;
++      case "Home": next = 0; break;
++      case "End": next = TABS.length - 1; break;
++      default: return;
++    }
++    event.preventDefault();
++    activate(next);
++    document.getElementById(TABS[next].anchor)?.focus();
++  }
++
+   return (
+     <LearnRubricShell
+       title={{ fr: "Mode École", en: "School mode" }}
+       subtitle={{ fr: "Séance publique de la 6e à la 3e", en: "Public session for grades 6 to 9" }}
+-      description={{ fr: "Une page pour préparer une séance collective, faire voter la classe et garder un cadre simple, lisible et sérieux.", en: "A page to prepare a collective session, get the class voting and keep the frame simple, readable and serious." }}
++      description={{ fr: "Préparer et animer un quiz collectif sur les déchets et l’environnement.", en: "Prepare and lead a collective quiz on waste and the environment." }}
+       backHref="/learn/bonnes-pratiques"
+       backLabel={{ fr: "Retour aux bonnes pratiques", en: "Back to good practices" }}
+       accent="yellow"
+-      highlights={[{ fr: "Vidéoprojecteur", en: "Projector" }, { fr: "Débat", en: "Debate" }, { fr: "Sans compte élève", en: "No student account" }]}
+-      cta={{ href: "#choisir-niveau", label: { fr: "Choisir le niveau", en: "Choose the grade" } }}
++      showVisualPanel={false}
+     >
+-      <div className="space-y-8">
+-        <section className="rounded-[2rem] border border-amber-200 bg-white p-5 shadow-sm md:p-6">
+-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+-            <div className="max-w-3xl space-y-2">
+-              <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-amber-700">{isFrench ? "Lancement immédiat" : "Immediate launch"}</p>
+-              <h3 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{isFrench ? "Choisir le niveau, puis le format" : "Choose the grade, then the format"}</h3>
+-              <p className="text-sm leading-relaxed text-slate-700 md:text-base">{isFrench ? "Choisissez un quiz de 30 minutes ou un atelier de 60 minutes. La démo reste disponible pour tester le déroulé." : "Choose a 30-minute quiz or a 60-minute workshop. The demo stays available for a quick rehearsal."}</p>
+-              <p className="cmm-text-small font-black uppercase tracking-[0.14em] text-amber-800">{isFrench ? "Formats : quiz 30 min · atelier 60 min" : "Formats: 30-minute quiz · 60-minute workshop"}</p>
+-            </div>
+-            <div className="flex flex-wrap gap-3">
+-              <CmmButton href="#choisir-niveau" tone="critical" variant="pill">{isFrench ? "Choisir le niveau" : "Choose the grade"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></CmmButton>
+-              <CmmButton href="/learn/sentrainer?mode=demo" tone="secondary" variant="pill">{isFrench ? "Lancer la démo" : "Launch the demo"}</CmmButton>
+-            </div>
+-          </div>
+-        </section>
+-
+-        <QuizSchoolLevelLauncher locale={locale} />
+-        <QuizSchoolSessionGuide locale={locale} />
+-
+-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+-          {INTRO_CARDS.map((card, index) => {
+-            const Icon = card.icon;
+-            return (
+-              <article key={card.title.fr} className="rounded-[1.8rem] border border-amber-200 bg-white p-5 shadow-sm">
+-                <div className="flex items-center justify-between gap-3"><div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700"><Icon className="h-5 w-5" aria-hidden="true" /></div><span className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-600">{String(index + 1).padStart(2, "0")}</span></div>
+-                <h3 className="mt-4 text-lg font-black tracking-tight text-slate-900">{card.title[locale]}</h3>
+-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.text[locale]}</p>
+-              </article>
+-            );
+-          })}
+-        </section>
+-
+-        <section className="rounded-[2rem] border border-amber-200 bg-amber-50/80 p-5 shadow-sm md:p-6">
+-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+-            <div>
+-              <p className="cmm-text-small font-black uppercase tracking-[0.16em] text-amber-700">{isFrench ? "Passage au quiz" : "Move to the quiz"}</p>
+-              <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">{isFrench ? "Le kit reste lisible, le quiz reste simple" : "The kit stays readable, the quiz stays simple"}</h3>
+-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">{isFrench ? "Quand la classe est prête, on passe sur le mode École depuis le quiz et on garde ce document comme support d’animation." : "When the class is ready, switch to school mode from the quiz and keep this document as the animation support."}</p>
+-            </div>
+-            <div className="flex flex-wrap gap-3">
+-              <CmmButton href="#choisir-niveau" tone="critical" variant="pill">{isFrench ? "Choisir le niveau" : "Choose the grade"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></CmmButton>
+-              <CmmButton href="/learn/sentrainer?mode=demo" tone="secondary" variant="pill">{isFrench ? "Lancer la démo" : "Launch the demo"}</CmmButton>
+-              <CmmButton href="/learn/bonnes-pratiques" tone="secondary" variant="pill">{isFrench ? "Retour aux bonnes pratiques" : "Back to good practices"}</CmmButton>
+-            </div>
+-          </div>
+-        </section>
+-
+-        <QuizSchoolBankSection locale={locale} />
++      <div className="space-y-4">
++        <div role="tablist" aria-label={fr ? "Mode École" : "School mode"} className={tabStripClassName("family", "grid-cols-2 lg:grid-cols-4")}>
++          {TABS.map((tab, index) => (
++            <button key={tab.id} id={tab.anchor} type="button" role="tab"
++              aria-selected={active === tab.id} aria-controls={"school-panel-" + tab.id}
++              tabIndex={active === tab.id ? 0 : -1} onClick={() => activate(index)}
++              onKeyDown={(event) => navigate(event, index)} className={tabItemClassName("family", active === tab.id) + " scroll-mt-24 gap-2"}>
++              <tab.icon size={18} className="shrink-0" aria-hidden="true" />
++              <span>{tab[locale]}</span>
++            </button>
++          ))}
++        </div>
++        {TABS.map((tab) => (
++          <section key={tab.id} id={"school-panel-" + tab.id} role="tabpanel" aria-labelledby={tab.anchor}
++            hidden={active !== tab.id} tabIndex={0} className="space-y-4">
++            {tab.id === "launch" ? <>
++              <QuizSchoolLevelLauncher locale={locale} />
++              <CmmCard tone="slate" className="grid gap-3 p-4 sm:grid-cols-2">
++                <div className="flex items-start gap-3"><Users size={22} className="shrink-0" aria-hidden="true" /><div><h3 className="font-bold cmm-text-primary">{fr ? "Classe entière" : "Whole class"}</h3><p className="cmm-text-small cmm-text-secondary">{fr ? "Vidéoprojecteur, vote collectif et discussion." : "Projector, collective vote and discussion."}</p></div></div>
++                <div className="flex items-start gap-3"><ShieldCheck size={22} className="shrink-0" aria-hidden="true" /><div><h3 className="font-bold cmm-text-primary">{fr ? "Sans compte élève" : "No student account"}</h3><p className="cmm-text-small cmm-text-secondary">{fr ? "Aucun nom d’élève demandé. Les réponses et résultats collectifs restent en mémoire pendant la séance." : "No student names requested. Collective answers and results stay in memory during the session."}</p></div></div>
++              </CmmCard>
++              <p className="cmm-text-small cmm-text-secondary">{fr ? "Les niveaux sont des profils pédagogiques internes, pas un alignement officiel aux programmes scolaires." : "Grades are internal teaching profiles, not official curriculum alignment."}</p>
++            </> : null}
++            {tab.id === "teacher" ? <QuizSchoolSessionGuide locale={locale} view="teacher" /> : null}
++            {tab.id === "student" ? <QuizSchoolSessionGuide locale={locale} view="student" /> : null}
++            {tab.id === "bank" ? <QuizSchoolBankSection locale={locale} /> : null}
++          </section>
++        ))}
+       </div>
+     </LearnRubricShell>
+   );
+diff --git a/apps/web/src/components/learn/quiz/school/quiz-school-bank-section.tsx b/apps/web/src/components/learn/quiz/school/quiz-school-bank-section.tsx
+index 1c57de45be3db679cf815e2f8df38a97555b1e95..f452494c60b47d2c62cd2f89154613813179593a 100644
+--- a/apps/web/src/components/learn/quiz/school/quiz-school-bank-section.tsx
++++ b/apps/web/src/components/learn/quiz/school/quiz-school-bank-section.tsx
+@@ -1,180 +1,71 @@
+-import { ArrowRight } from "lucide-react";
++import { ArrowRight, ChevronDown, ShieldAlert } from "lucide-react";
++import { CmmCard } from "@/components/ui/cmm-card";
+ import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
+ import { cn } from "@/lib/utils";
+ import { getQuizSchoolTrackLabel, QUIZ_SCHOOL_TRACKS } from "@/components/learn/quiz/school/quiz-school-modes";
+ import {
+   QUIZ_SCHOOL_KIT_BANK,
+   groupQuizSchoolKitQuestionsByTrack,
++  type QuizSchoolKitQuestion,
+ } from "@/lib/learning/quiz/school/quiz-school-kit";
+ 
+ const bankByTrack = groupQuizSchoolKitQuestionsByTrack(QUIZ_SCHOOL_KIT_BANK);
+ 
+-const BANK_SUMMARY = [
+-  { value: "1", label: { fr: "banque partagée", en: "shared bank" } },
+-  { value: "4", label: { fr: "tracks internes", en: "internal tracks" } },
+-  { value: "Auto", label: { fr: "sélection par niveau", en: "level-based selection" } },
+-  { value: "30/60", label: { fr: "formats publics", en: "public formats" } },
+-] as const;
+-
+-function QuestionStatusBadge({
+-  kind,
+-  label,
+-  href,
+-  note,
+-}: {
+-  kind?: "source" | "needsReview";
+-  label?: string;
+-  href?: string;
+-  note?: string;
+-}) {
+-  if (!kind) return null;
+-
+-  if (kind === "source" && label && href) {
+-    return (
+-      <a
+-        href={href}
+-        target="_blank"
+-        rel="noreferrer"
+-        className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 cmm-text-small font-black uppercase tracking-[0.18em] text-sky-800 transition hover:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70"
+-      >
+-        {label}
+-        <ArrowRight className="h-3 w-3" aria-hidden="true" />
+-      </a>
+-    );
+-  }
+-
++function SupportQuestion({ question, locale, index }: { question: QuizSchoolKitQuestion; locale: SupportedLocale; index: number }) {
++  const fr = locale === "fr";
++  const status = question.status;
+   return (
+-    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-800">
+-      À vérifier
+-      {note ? <span className="ml-2 hidden font-medium normal-case tracking-normal text-amber-700 md:inline">{note}</span> : null}
+-    </span>
++    <CmmCard as="article" tone="slate" className="space-y-3 p-4">
++      <div>
++        <p lang="fr" className="cmm-text-caption cmm-text-secondary">{index + 1} · {question.typeLabel}</p>
++        <h4 lang="fr" className="mt-1 font-bold cmm-text-primary">{question.question}</h4>
++      </div>
++      {status?.kind === "needsReview" ? <div className="rounded-xl border border-amber-300 bg-[color:var(--bg-muted)] p-3 cmm-text-small cmm-text-primary">
++        <p className="flex gap-2 font-bold"><ShieldAlert size={18} className="shrink-0" aria-hidden="true" />{fr ? "À vérifier · hors séance publique" : "Needs review · excluded from public sessions"}</p>
++        <p lang="fr" className="mt-1">{status.note}</p>
++      </div> : null}
++      <dl className="space-y-2">
++        <div><dt className="font-semibold cmm-text-primary">{fr ? "Réponse attendue" : "Expected answer"}</dt><dd lang="fr" className="cmm-text-body">{question.answer}</dd></div>
++        <div><dt className="font-semibold cmm-text-primary">{fr ? "Explication courte" : "Short explanation"}</dt><dd lang="fr" className="cmm-text-body">{question.explanation}</dd></div>
++        <div className="rounded-xl bg-[color:var(--bg-muted)] p-3"><dt className="font-semibold cmm-text-primary">{fr ? "À retenir" : "Takeaway"}</dt><dd lang="fr" className="cmm-text-body">{question.takeaway}</dd></div>
++      </dl>
++      {status?.kind === "source" ? <a href={status.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-semibold underline underline-offset-2 cmm-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600"><span lang="fr">{status.label}</span><ArrowRight size={14} aria-hidden="true" /></a> : null}
++    </CmmCard>
+   );
+ }
+ 
+ export function QuizSchoolBankSection({ locale }: { locale: SupportedLocale }) {
+-  const isFrench = locale === "fr";
+-
++  const fr = locale === "fr";
+   return (
+-    <section className="space-y-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+-        <div className="max-w-3xl">
+-          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">
+-            {isFrench ? "Banque en réserve" : "Bank in reserve"}
+-          </p>
+-          <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+-            {isFrench ? "Sous-modes disponibles si besoin" : "Sub-modes available if needed"}
+-          </h3>
+-          <p className="mt-2 text-sm font-bold text-slate-800 md:text-base">
+-            {isFrench ? "Une banque partagée, sélectionnée selon le niveau" : "One shared bank, selected by level"}
+-          </p>
+-          <p className="cmm-text-body mt-2">
+-            {isFrench
+-              ? "La banque reste derrière le déroulé principal. Elle sert à ajuster un sous-mode, prolonger le débat ou préparer une séance sans prendre la place du lancement."
+-              : "The bank sits behind the main flow. It helps adjust a sub-mode, extend the debate or prepare a session without taking over the launch."}
+-          </p>
+-        </div>
+-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+-          {BANK_SUMMARY.map((item) => (
+-            <div key={item.label.fr} className="rounded-[1.3rem] border border-amber-200 bg-amber-50 px-4 py-3 text-center shadow-sm">
+-              <p className="text-2xl font-black tracking-tight text-amber-900">{item.value}</p>
+-              <p className="mt-1 cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">{item.label[locale]}</p>
+-            </div>
+-          ))}
+-        </div>
+-      </div>
+-
+-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
++    <div className="space-y-4">
++      <CmmCard tone="family" className="space-y-2 p-4 md:p-5">
++        <h2 className="text-2xl font-bold cmm-text-primary">{fr ? "Banque de questions du kit" : "Teaching kit question bank"}</h2>
++        <p className="font-semibold cmm-text-primary">{QUIZ_SCHOOL_KIT_BANK.length} {fr ? "questions de support" : "support questions"} · {QUIZ_SCHOOL_TRACKS.length} {fr ? "thèmes" : "themes"}</p>
++        <p className="cmm-text-body">{fr ? "Exemples pour préparer ou prolonger le débat. Ce support est distinct des questions sélectionnées automatiquement par le moteur pour la séance." : "Examples for preparing or extending discussion. This support is separate from the questions automatically selected by the session engine."}</p>
++        <p className="cmm-text-small cmm-text-secondary">{fr ? "Les corrigés sont visibles à l’ouverture d’un thème : ne pas projeter cet onglet pendant le vote." : "Answers are visible when a theme is opened: do not project this tab during voting. The original support questions and answers are in French."}</p>
++      </CmmCard>
++      <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
+         {QUIZ_SCHOOL_TRACKS.map((track) => {
+           const questions = bankByTrack[track.id];
++          const reviewCount = questions.filter((question) => question.status?.kind === "needsReview").length;
+           return (
+-            <article key={track.id} className="rounded-[1.6rem] border border-amber-100 bg-amber-50/60 p-4 shadow-sm">
+-              <div className="flex items-start gap-3">
+-                <span className={cn("inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-inner", track.tone)}>
+-                  {track.icon}
+-                </span>
+-                <div className="min-w-0">
+-                  <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">{getQuizSchoolTrackLabel(track.id, locale)}</p>
+-                  <h4 className="mt-1 text-base font-black tracking-tight text-slate-900">{getQuizSchoolTrackLabel(track.id, locale)}</h4>
+-                  <p className="cmm-text-body mt-1">{track.description[locale]}</p>
++            <details key={track.id} className="group rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)]">
++              <summary className="flex cursor-pointer list-none items-start gap-3 rounded-xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600">
++                <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl", track.tone)} aria-hidden="true">{track.icon}</span>
++                <div className="min-w-0 flex-1">
++                  <h3 className="font-bold cmm-text-primary">{getQuizSchoolTrackLabel(track.id, locale)}</h3>
++                  <p className="mt-1 cmm-text-small cmm-text-secondary">{track.description[locale]}</p>
++                  <p className="mt-2 cmm-text-small font-semibold cmm-text-primary">{questions.length} questions{reviewCount ? " · " + reviewCount + (fr ? " à vérifier" : " need review") : ""}</p>
+                 </div>
+-              </div>
+-              <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-white bg-white px-3 py-2">
+-                <span className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">{isFrench ? "Temps collectif" : "Collective step"}</span>
+-                <span className="text-sm font-black text-amber-900">{questions.length} questions</span>
++                <ChevronDown size={18} className="shrink-0 transition group-open:rotate-180" aria-hidden="true" />
++              </summary>
++              <div className="space-y-3 border-t border-[color:var(--border-default)] p-3">
++                {questions.map((question, index) => <SupportQuestion key={question.id} question={question} locale={locale} index={index} />)}
+               </div>
+-            </article>
++            </details>
+           );
+         })}
+       </div>
+-
+-      <details className="group overflow-hidden rounded-[1.8rem] border border-amber-200 bg-white shadow-sm">
+-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 outline-none transition hover:bg-amber-50/60 focus-visible:bg-amber-50/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300/70 md:px-6">
+-          <div className="min-w-0">
+-            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">{isFrench ? "Détails de la banque" : "Bank details"}</p>
+-            <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900">{isFrench ? "Ouvrir les questions détaillées" : "Open the detailed questions"}</h4>
+-          </div>
+-          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-800">Support</span>
+-        </summary>
+-        <div className="border-t border-amber-100 p-5 md:p-6">
+-          <div className="space-y-4">
+-            {QUIZ_SCHOOL_TRACKS.map((track) => {
+-              const questions = bankByTrack[track.id];
+-              return (
+-                <details key={track.id} className="group overflow-hidden rounded-[2rem] border border-amber-200 bg-white shadow-sm">
+-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 outline-none transition hover:bg-amber-50/60 focus-visible:bg-amber-50/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300/70 md:px-6">
+-                    <div className="flex items-center gap-3">
+-                      <span className={cn("inline-flex h-12 w-12 items-center justify-center rounded-2xl shadow-inner", track.tone)}>{track.icon}</span>
+-                      <div>
+-                        <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">{getQuizSchoolTrackLabel(track.id, locale)}</p>
+-                        <h5 className="mt-1 text-xl font-black tracking-tight text-slate-900">{getQuizSchoolTrackLabel(track.id, locale)}</h5>
+-                        <p className="cmm-text-body mt-1">{track.description[locale]}</p>
+-                      </div>
+-                    </div>
+-                        <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-800">{questions.length} questions</span>
+-                  </summary>
+-                  <div className="border-t border-amber-100 p-5 md:p-6">
+-                    <div className="grid gap-4 lg:grid-cols-2">
+-                      {questions.map((question, index) => (
+-                        <article key={question.id} className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+-                          <div className="flex items-start justify-between gap-3">
+-                            <div>
+-                              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">{String(index + 1).padStart(2, "0")} · {question.typeLabel}</p>
+-                              <h6 className="mt-1 text-base font-black leading-snug text-slate-900">{question.question}</h6>
+-                            </div>
+-                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-white text-xs font-black text-amber-900 shadow-sm">{index + 1}</span>
+-                          </div>
+-                          <div className="mt-4 space-y-3">
+-                            <div className="rounded-2xl border border-white bg-white p-3">
+-                              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">{isFrench ? "Réponse attendue" : "Expected answer"}</p>
+-                              <p className="mt-1 text-sm font-bold text-slate-900 md:text-base">{question.answer}</p>
+-                            </div>
+-                            <div className="rounded-2xl border border-white bg-white p-3">
+-                              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">{isFrench ? "Explication courte" : "Short explanation"}</p>
+-                              <p className="cmm-text-body mt-1">{question.explanation}</p>
+-                            </div>
+-                            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3">
+-                              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">À retenir</p>
+-                              <p className="mt-1 text-sm font-medium text-amber-950 md:text-base">{question.takeaway}</p>
+-                            </div>
+-                            <div className="flex flex-wrap items-center gap-2">
+-                              <QuestionStatusBadge
+-                                kind={question.status?.kind}
+-                                label={question.status?.kind === "source" ? question.status.label : undefined}
+-                                href={question.status?.kind === "source" ? question.status.href : undefined}
+-                                note={question.status?.kind === "needsReview" ? question.status.note : undefined}
+-                              />
+-                            </div>
+-                          </div>
+-                        </article>
+-                      ))}
+-                    </div>
+-                  </div>
+-                </details>
+-              );
+-            })}
+-          </div>
+-        </div>
+-      </details>
+-    </section>
++    </div>
+   );
+ }
+diff --git a/apps/web/src/components/learn/quiz/school/quiz-school-level-launcher.tsx b/apps/web/src/components/learn/quiz/school/quiz-school-level-launcher.tsx
+index 3f25a818560a5681f498282c8c379434c3ce7075..92f17ce517741f6af3a06e3c537aeb6bd08cb23c 100644
+--- a/apps/web/src/components/learn/quiz/school/quiz-school-level-launcher.tsx
++++ b/apps/web/src/components/learn/quiz/school/quiz-school-level-launcher.tsx
+@@ -1,22 +1,20 @@
+ import { useState } from "react";
+-import { ArrowRight, GraduationCap } from "lucide-react";
++import { ArrowRight, Check, PlayCircle } from "lucide-react";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { cn } from "@/lib/utils";
++import { QUIZ_SCHOOL_WORKSHOP_PRE_ASSESSMENT_SIZE, QUIZ_SCHOOL_WORKSHOP_POST_ASSESSMENT_SIZE } from "@/lib/learning/quiz/school/quiz-school-workshop-assessment";
+ import { CmmButton } from "@/components/ui/cmm-button";
+ import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
+ import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
+ import {
+   QUIZ_SCHOOL_FORMAT_ORDER,
++  QUIZ_SCHOOL_SESSION_SIZE,
++  DEFAULT_QUIZ_SCHOOL_FORMAT,
+   QUIZ_SCHOOL_LEVEL_ORDER,
+   type QuizSchoolFormat,
+   type QuizSchoolLevel,
+ } from "@/lib/learning/quiz/school/quiz-school-types";
+ 
+-const LEVEL_TONES: Record<QuizSchoolLevel, string> = {
+-  "6e": "border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100",
+-  "5e": "border-sky-200 bg-sky-50 text-sky-900 hover:bg-sky-100",
+-  "4e": "border-amber-200 bg-amber-50 text-amber-950 hover:bg-amber-100",
+-  "3e": "border-violet-200 bg-violet-50 text-violet-950 hover:bg-violet-100",
+-};
+-
+ export function getQuizSchoolLaunchHref(level: QuizSchoolLevel, format: QuizSchoolFormat): string {
+   return `/learn/sentrainer?mode=ecole&level=${level}&format=${format}`;
+ }
+@@ -55,73 +53,53 @@
+ }
+ 
+ export function QuizSchoolLevelLauncher({ locale }: { locale: SupportedLocale }) {
++  const fr = locale === "fr";
+   const [selectedLevel, setSelectedLevel] = useState<QuizSchoolLevel | null>(null);
+-  const [selectedFormat, setSelectedFormat] = useState<QuizSchoolFormat>("quiz-30");
++  const [selectedFormat, setSelectedFormat] = useState<QuizSchoolFormat>(DEFAULT_QUIZ_SCHOOL_FORMAT);
++  const facts = getQuizSchoolLaunchFormatFacts(selectedFormat, locale);
+   return (
+-    <section id="choisir-niveau" className="scroll-mt-24 rounded-[2rem] border border-amber-200 bg-amber-50/70 p-5 shadow-sm md:p-6">
+-      <div className="flex items-start gap-3">
+-        <GraduationCap className="mt-0.5 h-7 w-7 shrink-0 text-amber-700" aria-hidden="true" />
++    <div className="space-y-4">
++      <CmmCard tone="family" className="space-y-4 p-4 md:p-5">
+         <div>
+-          <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-amber-700">
+-            {getQuizUiCopy(locale, "school.levelPrompt")}
+-          </p>
+-          <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+-            {getQuizUiCopy(locale, "school.title")}
+-          </h3>
+-          <p className="cmm-text-body mt-2 max-w-3xl">
+-            {getQuizUiCopy(locale, "school.levelNote")}
+-          </p>
++          <h2 className="text-2xl font-bold cmm-text-primary">{fr ? "Configurer la séance" : "Configure the session"}</h2>
++          <p className="mt-1 cmm-text-body">{getQuizUiCopy(locale, "school.levelNote")}</p>
+         </div>
+-      </div>
+-
+-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+-        {QUIZ_SCHOOL_LEVEL_ORDER.map((level) => (
+-          <button
+-            key={level}
+-            type="button"
+-            onClick={() => setSelectedLevel(level)}
+-            aria-pressed={selectedLevel === level}
+-            className={`group rounded-2xl border p-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50 ${LEVEL_TONES[level]}`}
+-          >
+-            <div className="flex items-center justify-between gap-3">
+-              <span className="text-lg font-black">{getQuizUiCopy(locale, `school.level.${level}.label`)}</span>
+-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+-            </div>
+-            <p className="mt-2 text-sm leading-relaxed opacity-80">
+-              {getQuizUiCopy(locale, `school.level.${level}.description`)}
+-            </p>
+-            <p className="cmm-text-small mt-3 font-black uppercase tracking-[0.18em] opacity-80">
+-              {getQuizUiCopy(locale, "school.questionsLabel")} · {getQuizUiCopy(locale, "school.durationLabel")}
+-            </p>
+-          </button>
+-        ))}
+-      </div>
+-
+-      {selectedLevel ? (
+-        <div className="mt-5 rounded-2xl border border-amber-200 bg-white p-5">
+-          <div className="flex flex-wrap items-center justify-between gap-3">
+-            <h4 className="text-xl font-black text-slate-950">{getQuizUiCopy(locale, "school.formatPrompt")} · {selectedLevel}</h4>
+-            <button type="button" onClick={() => setSelectedLevel(null)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600">{getQuizUiCopy(locale, "school.format.back")}</button>
+-          </div>
+-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4" aria-live="polite">
+-            <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-amber-700">{getQuizUiCopy(locale, "school.sessionCuesLabel")}</p>
+-            <p className="mt-1 text-lg font-black text-slate-950">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).duration}</p>
+-            <p className="cmm-text-body mt-2">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).materials}</p>
+-            <p className="cmm-text-body mt-1">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).flow}</p>
++        <div role="group" aria-label={getQuizUiCopy(locale, "school.levelPrompt")}>
++          <h3 className="mb-2 font-bold cmm-text-primary">1. {getQuizUiCopy(locale, "school.levelPrompt")}</h3>
++          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
++            {QUIZ_SCHOOL_LEVEL_ORDER.map((level) => (
++              <button key={level} type="button" aria-pressed={selectedLevel === level} onClick={() => setSelectedLevel(level)}
++                className={cn("min-w-0 rounded-xl border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600", selectedLevel === level ? "border-[color:var(--cmm-family-primary)] bg-[color:var(--cmm-family-tint)]" : "border-[color:var(--border-default)] bg-[color:var(--bg-elevated)]")}>
++                <span className="flex items-center justify-between gap-1 text-lg font-bold cmm-text-primary">{getQuizUiCopy(locale, `school.level.${level}.label`)}{selectedLevel === level ? <Check size={18} aria-hidden="true" /> : null}</span>
++                <p className="mt-1 cmm-text-small cmm-text-secondary">{getQuizUiCopy(locale, `school.level.${level}.description`)}</p>
++              </button>
++            ))}
+           </div>
+-          <div className="mt-4 grid gap-3 md:grid-cols-2">
++        </div>
++        <div role="group" aria-label={getQuizUiCopy(locale, "school.formatPrompt")}>
++          <h3 className="mb-2 font-bold cmm-text-primary">2. {getQuizUiCopy(locale, "school.formatPrompt")}</h3>
++          <div className="grid gap-2 sm:grid-cols-2">
+             {QUIZ_SCHOOL_FORMAT_ORDER.map((format) => (
+-              <button key={format} type="button" aria-pressed={selectedFormat === format} onClick={() => setSelectedFormat(format)} className={`rounded-2xl border p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 ${selectedFormat === format ? "border-amber-600 bg-amber-50" : "border-slate-200 bg-white"}`}>
+-                <span className="text-base font-black text-slate-950">{getQuizUiCopy(locale, `school.format.${format}.label`)}</span>
+-                <p className="cmm-text-body mt-2">{getQuizUiCopy(locale, `school.format.${format}.description`)}</p>
++              <button key={format} type="button" aria-pressed={selectedFormat === format} onClick={() => setSelectedFormat(format)}
++                className={cn("rounded-xl border p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600", selectedFormat === format ? "border-[color:var(--cmm-family-primary)] bg-[color:var(--cmm-family-tint)]" : "border-[color:var(--border-default)] bg-[color:var(--bg-elevated)]")}>
++                <span className="flex items-center justify-between gap-2 font-bold cmm-text-primary">{getQuizUiCopy(locale, `school.format.${format}.label`)}{selectedFormat === format ? <Check size={18} aria-hidden="true" /> : null}</span>
++                <p className="mt-1 cmm-text-small font-semibold cmm-text-primary">{format === "quiz-30" ? (fr ? "Jusqu’à " : "Up to ") + QUIZ_SCHOOL_SESSION_SIZE + " questions" : (fr ? "Avant : " : "Before: ") + QUIZ_SCHOOL_WORKSHOP_PRE_ASSESSMENT_SIZE + " · " + (fr ? "Après : " : "After: ") + QUIZ_SCHOOL_WORKSHOP_POST_ASSESSMENT_SIZE}</p>
++                <p className="mt-1 cmm-text-small cmm-text-secondary">{getQuizUiCopy(locale, `school.format.${format}.description`)}</p>
+               </button>
+             ))}
+           </div>
+-          <CmmButton href={getQuizSchoolLaunchHref(selectedLevel, selectedFormat)} tone="critical" variant="pill" size="md" className="mt-4">
+-            {getQuizUiCopy(locale, "school.format.cta")}<ArrowRight className="h-4 w-4" aria-hidden="true" />
+-          </CmmButton>
+         </div>
+-      ) : null}
+-    </section>
++        <div aria-live="polite" className="rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4">
++          <h3 className="font-bold cmm-text-primary">{facts.duration}{selectedLevel ? " · " + getQuizUiCopy(locale, `school.level.${selectedLevel}.label`) : ""}</h3>
++          <p className="mt-1 cmm-text-small cmm-text-secondary">{facts.materials}</p>
++          <p className="mt-1 cmm-text-small cmm-text-secondary">{facts.flow}</p>
++        </div>
++        <div className="flex flex-wrap items-center gap-2">
++          {selectedLevel ? <CmmButton href={getQuizSchoolLaunchHref(selectedLevel, selectedFormat)} tone="primary">{getQuizUiCopy(locale, "school.format.cta")}<ArrowRight size={16} aria-hidden="true" /></CmmButton> : <CmmButton tone="primary" disabled>{getQuizUiCopy(locale, "school.format.cta")}</CmmButton>}
++          <CmmButton href="/learn/sentrainer?mode=demo" tone="secondary"><PlayCircle size={16} aria-hidden="true" />{fr ? "Lancer la démo" : "Launch the demo"}</CmmButton>
++          {!selectedLevel ? <span className="cmm-text-small cmm-text-secondary">{fr ? "Sélectionnez d’abord une classe." : "Select a grade first."}</span> : null}
++        </div>
++      </CmmCard>
++    </div>
+   );
+ }
+diff --git a/apps/web/src/components/learn/quiz/school/quiz-school-session-guide.tsx b/apps/web/src/components/learn/quiz/school/quiz-school-session-guide.tsx
+index 7d3803d6a98278ac151130bb1ed77d1c071fcc0f..93254a3601198e45755e7b9c927c61766f9716cb 100644
+--- a/apps/web/src/components/learn/quiz/school/quiz-school-session-guide.tsx
++++ b/apps/web/src/components/learn/quiz/school/quiz-school-session-guide.tsx
+@@ -1,150 +1,72 @@
+-import { BookOpen, CheckCircle, ShieldAlert } from "lucide-react";
++import { BookOpen, CheckCircle, ClipboardList, Clock } from "lucide-react";
++import { CmmCard } from "@/components/ui/cmm-card";
+ import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
++import { getQuizSchoolKitSupport } from "@/lib/learning/quiz/school/quiz-school-kit";
+ import {
+-  QUIZ_SCHOOL_KIT_STEPS,
+-  QUIZ_SCHOOL_STUDENT_SHEET,
+-  QUIZ_SCHOOL_TEACHER_GUIDE,
+-} from "@/lib/learning/quiz/school/quiz-school-kit";
+-
+-const WORKSHOP_SUMMARY = [
+-  { value: "30 min", label: { fr: "quiz collectif", en: "collective quiz" } },
+-  { value: "60 min", label: { fr: "atelier complet", en: "full workshop" } },
+-] as const;
+-
+-export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) {
+-  const isFrench = locale === "fr";
++  QUIZ_SCHOOL_SESSION_DURATION_MINUTES,
++  QUIZ_SCHOOL_WORKSHOP_DURATION_MINUTES,
++  QUIZ_SCHOOL_WORKSHOP_QUIZ_DURATION_MINUTES,
++  QUIZ_SCHOOL_WORKSHOP_ACTIVITY_DURATION_MINUTES,
++} from "@/lib/learning/quiz/school/quiz-school-types";
+ 
+-  return (
+-    <section className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+-      <div className="flex items-start justify-between gap-3">
+-        <div>
+-          <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-slate-600">
+-            {isFrench ? "Repères de séance" : "Session cues"}
+-          </p>
+-          <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
+-            {isFrench ? "Les aides à garder visibles" : "Keep the aids visible"}
+-          </h3>
+-          <p className="cmm-text-body mt-2 max-w-3xl">
+-            {isFrench
+-              ? "Les fiches restent juste après le lancement pour préparer la classe sans chercher longtemps."
+-              : "The sheets sit just after the launch block so you can prepare the class without searching."}
+-          </p>
+-        </div>
+-        <BookOpen className="h-10 w-10 text-amber-600" aria-hidden="true" />
++export function QuizSchoolSessionGuide({ locale, view }: { locale: SupportedLocale; view: "teacher" | "student" }) {
++  const fr = locale === "fr";
++  const { teacher, student, steps } = getQuizSchoolKitSupport(locale);
++  if (view === "student") return (
++    <CmmCard tone="slate" className="space-y-4 p-4 md:p-6">
++      <div className="flex items-start gap-3">
++        <ClipboardList size={28} className="shrink-0 text-[color:var(--cmm-family-heading)]" aria-hidden="true" />
++        <div><h2 className="text-2xl font-bold cmm-text-primary">{fr ? "Fiche élève" : "Student sheet"}</h2>
++          <p className="mt-1 cmm-text-body">{fr ? "À compléter sur papier en fin de séance, sans nom ni saisie sur le site." : "Complete on paper at the end of the session, without names or online entry."}</p></div>
+       </div>
++      <ol className="grid gap-3 sm:grid-cols-2">
++        {student.map((prompt, index) => (
++          <li key={prompt} className="rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4">
++            <div className="flex items-start gap-3"><span className="font-bold text-[color:var(--cmm-family-heading)]">{index + 1}</span><h3 className="font-bold cmm-text-primary">{prompt}</h3></div>
++            <p className="mt-2 cmm-text-small cmm-text-secondary">{fr ? "Formule une réponse courte avec tes propres mots." : "Write a short response in your own words."}</p>
++          </li>
++        ))}
++      </ol>
++    </CmmCard>
++  );
+ 
+-      <div className="grid gap-4 lg:grid-cols-2">
+-        <article
+-          id="fiche-enseignant"
+-          className="scroll-mt-24 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 shadow-sm md:p-6"
+-        >
+-          <div className="flex items-start justify-between gap-3">
+-            <div>
+-              <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-slate-600">
+-                {isFrench ? "Fiche enseignant" : "Teacher sheet"}
+-              </p>
+-              <h4 className="mt-1 text-xl font-black tracking-tight text-slate-900 md:text-2xl">
+-                {isFrench ? "Les repères à garder sous la main" : "Keep these cues close at hand"}
+-              </h4>
+-            </div>
+-            <ShieldAlert className="h-10 w-10 text-amber-600" aria-hidden="true" />
++  return (
++    <div className="space-y-4">
++      <CmmCard tone="family" className="space-y-3 p-4 md:p-5">
++        <h2 className="flex items-center gap-2 text-xl font-bold cmm-text-primary"><Clock size={22} aria-hidden="true" />{fr ? "Déroulé de la séance" : "Session flow"}</h2>
++        <div className="grid gap-3 lg:grid-cols-2">
++          <div className="rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4 space-y-2">
++            <h3 className="font-bold cmm-text-primary">{QUIZ_SCHOOL_SESSION_DURATION_MINUTES} min · {fr ? "Quiz collectif" : "Collective quiz"}</h3>
++            <p className="cmm-text-small cmm-text-secondary">{fr ? "Question, vote, justification, révélation et explication." : "Question, vote, justification, reveal and explanation."}</p>
++            <p className="font-semibold cmm-text-primary">{fr ? "Faire argumenter avant de révéler." : "Ask for reasoning before revealing."}</p>
+           </div>
+-
+-          <ul className="mt-4 space-y-3">
+-            {QUIZ_SCHOOL_TEACHER_GUIDE.map((item) => (
+-              <li
+-                key={item}
+-                className="cmm-text-body flex items-start gap-3 rounded-2xl border border-amber-100 bg-amber-50/70 p-4"
+-              >
+-                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+-                <span>{item}</span>
+-              </li>
+-            ))}
+-          </ul>
+-        </article>
+-
+-        <article
+-          id="fiche-eleve"
+-          className="scroll-mt-24 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6"
+-        >
+-          <div className="flex items-start justify-between gap-3">
+-            <div>
+-              <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-slate-600">
+-                {isFrench ? "Fiche élève" : "Student sheet"}
+-              </p>
+-              <h4 className="mt-1 text-xl font-black tracking-tight text-slate-900 md:text-2xl">
+-                {isFrench ? "Une trace simple et utile" : "A simple and useful reflection sheet"}
+-              </h4>
++          <div className="rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4 space-y-2">
++            <h3 className="font-bold cmm-text-primary">{QUIZ_SCHOOL_WORKSHOP_DURATION_MINUTES} min · {fr ? "Atelier complet" : "Full workshop"}</h3>
++            <div className="grid grid-cols-[1fr_2fr_1fr] gap-1 text-center" aria-label={fr ? "Répartition de la durée de l’atelier" : "Workshop duration breakdown"}>
++              {[
++                { min: QUIZ_SCHOOL_WORKSHOP_QUIZ_DURATION_MINUTES, label: fr ? "Pré-quiz" : "Pre-quiz" },
++                { min: QUIZ_SCHOOL_WORKSHOP_ACTIVITY_DURATION_MINUTES, label: fr ? "Atelier" : "Workshop" },
++                { min: QUIZ_SCHOOL_WORKSHOP_QUIZ_DURATION_MINUTES, label: fr ? "Post-quiz" : "Post-quiz" },
++              ].map((part, index) => <div key={part.label} className={"min-w-0 rounded-lg px-1 py-2 cmm-text-primary " + (index === 1 ? "bg-[color:var(--cmm-family-tint)]" : "bg-[color:var(--bg-muted)]")}><p className="font-bold">{part.min} min</p><p className="text-xs break-words">{part.label}</p></div>)}
+             </div>
+-            <BookOpen className="h-10 w-10 text-amber-600" aria-hidden="true" />
+           </div>
+-
+-          <div className="mt-4 grid gap-3">
+-            {QUIZ_SCHOOL_STUDENT_SHEET.map((item, index) => (
+-              <div key={item} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-xs font-black text-white">
+-                  {index + 1}
+-                </span>
+-                <div>
+-                  <p className="text-sm font-bold text-slate-900">{item}</p>
+-                  <p className="cmm-text-body mt-1">
+-                    {index === 0
+-                      ? "Ce que j'ai compris et ce que je retiens."
+-                      : index === 1
+-                        ? "Une idée reçue à ne plus répéter."
+-                        : index === 2
+-                          ? "Un geste concret à changer dès maintenant."
+-                          : "Une question encore ouverte à garder pour la suite."}
+-                  </p>
+-                </div>
+-              </div>
+-            ))}
+-          </div>
+-        </article>
+-      </div>
+-
+-      <div className="rounded-[2rem] border border-amber-200 bg-amber-50/70 p-5 shadow-sm md:p-6">
+-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+-          <div className="max-w-3xl">
+-            <p className="cmm-text-small font-black uppercase tracking-[0.18em] text-amber-800">
+-              {isFrench ? "Déroulé de l'atelier" : "Workshop flow"}
+-            </p>
+-            <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+-              {isFrench ? "Deux formats, un lancement collectif" : "Two formats, one collective launch"}
+-            </h3>
+-            <p className="cmm-text-body mt-2">
+-              {isFrench
+-                ? "Le quiz-30 reste direct ; l'atelier-60 ajoute une séquence pédagogique entre le pré-quiz et le post-quiz."
+-                : "The quiz-30 stays direct; atelier-60 adds a teaching sequence between the pre-quiz and post-quiz."}
+-            </p>
+-          </div>
+-          <div className="grid grid-cols-2 gap-2 cmm-text-small font-black uppercase tracking-[0.18em] text-amber-800">
+-            {WORKSHOP_SUMMARY.map((item) => (
+-              <span key={item.label.fr} className="rounded-full border border-amber-200 bg-white px-3 py-2 text-center shadow-sm">
+-                {item.value} {item.label[locale]}
+-              </span>
+-            ))}
+-          </div>
+         </div>
++      </CmmCard>
+ 
+-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+-          {QUIZ_SCHOOL_KIT_STEPS.map((step, index) => (
+-            <article key={step.title} className="rounded-[1.6rem] border border-amber-200 bg-white p-5 shadow-sm">
+-              <div className="flex items-center justify-between gap-3">
+-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-600 text-sm font-black text-white">
+-                  {String(index + 1).padStart(2, "0")}
+-                </span>
+-                <span className="cmm-text-small font-black uppercase tracking-[0.18em] text-amber-800">
+-                  {index === 0 ? "Intro" : index === 1 ? "Quiz" : index === 2 ? "Discussion" : "Conclusion"}
+-                </span>
+-              </div>
+-              <h4 className="mt-4 text-lg font-black tracking-tight text-slate-900">{step.title}</h4>
+-              <p className="mt-2 text-sm font-bold text-slate-700">{step.lead}</p>
+-              <p className="cmm-text-body mt-2">{step.detail}</p>
+-            </article>
+-          ))}
+-        </div>
+-      </div>
+-    </section>
++      <CmmCard tone="slate" className="space-y-3 p-4 md:p-5">
++        <h2 className="flex items-center gap-2 text-xl font-bold cmm-text-primary"><BookOpen size={22} aria-hidden="true" />{fr ? "Fiche enseignant" : "Teacher sheet"}</h2>
++        <ul className="grid gap-3 md:grid-cols-2">
++          {teacher.map((item) => <li key={item} className="flex items-start gap-2 cmm-text-body"><CheckCircle size={18} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" /><span>{item}</span></li>)}
++        </ul>
++      </CmmCard>
++
++      <CmmCard tone="slate" className="space-y-3 p-4 md:p-5">
++        <h2 className="text-xl font-bold cmm-text-primary">{fr ? "Conseils d’animation" : "Facilitation tips"}</h2>
++        <p className="cmm-text-small cmm-text-secondary">{fr ? "Repères pédagogiques pour accompagner les deux formats, sans imposer un minutage supplémentaire." : "Teaching cues for both formats, without imposing additional timing."}</p>
++        <ol className="grid gap-3 md:grid-cols-2">
++          {steps.map((step, index) => <li key={step.title} className="rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-3"><div className="flex items-start gap-2"><span className="font-bold text-[color:var(--cmm-family-heading)]">{index + 1}</span><h3 className="font-bold cmm-text-primary">{step.title}</h3></div><p className="mt-1 font-semibold cmm-text-small cmm-text-primary">{step.lead}</p><p className="mt-1 cmm-text-small cmm-text-secondary">{step.detail}</p></li>)}
++        </ol>
++      </CmmCard>
++    </div>
+   );
+ }
+diff --git a/apps/web/src/lib/learning/quiz/school/quiz-school-kit.test.ts b/apps/web/src/lib/learning/quiz/school/quiz-school-kit.test.ts
+index 93e37715846ece31ec484318b7ef83bf9df626b3..521f54758e50587e3ac614a1a4a7f31a74ee3769 100644
+--- a/apps/web/src/lib/learning/quiz/school/quiz-school-kit.test.ts
++++ b/apps/web/src/lib/learning/quiz/school/quiz-school-kit.test.ts
+@@ -6,6 +6,7 @@
+   QUIZ_SCHOOL_STUDENT_SHEET,
+   QUIZ_SCHOOL_TEACHER_GUIDE,
+   groupQuizSchoolKitQuestionsByTrack,
++  getQuizSchoolKitSupport,
+ } from "./quiz-school-kit";
+ import { getWastePedagogicalProjection } from "@/lib/waste";
+ 
+@@ -28,6 +29,18 @@
+     ).toBe(true);
+   });
+ 
++  it("provides equivalent teacher, student and facilitation support in both locales", () => {
++    const fr = getQuizSchoolKitSupport("fr");
++    const en = getQuizSchoolKitSupport("en");
++    expect(fr.teacher).toBe(QUIZ_SCHOOL_TEACHER_GUIDE);
++    expect(fr.student).toBe(QUIZ_SCHOOL_STUDENT_SHEET);
++    expect(fr.steps).toBe(QUIZ_SCHOOL_KIT_STEPS);
++    expect(en.teacher).toHaveLength(fr.teacher.length);
++    expect(en.student).toHaveLength(fr.student.length);
++    expect(en.steps).toHaveLength(fr.steps.length);
++    expect(en.student[0]).toBe("What I learned today.");
++  });
++
+   it("derives the syringe safety explanation from the canonical Waste projection", () => {
+     const syringeQuestion = QUIZ_SCHOOL_KIT_BANK.find((question) => question.id === "ter-1");
+     const sharps = getWastePedagogicalProjection("sharps", "fr");
+diff --git a/apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts b/apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
+index b98a434faa4b29a30dc9554eb9f22ac826f71227..19ab41e3982db003d393592db2cbd3dd9b3eddf5 100644
+--- a/apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
++++ b/apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
+@@ -75,6 +75,33 @@
+   "Une question que je me pose encore.",
+ ];
+ 
++/** Localized projection of the existing teaching support, not a second question bank. */
++export function getQuizSchoolKitSupport(locale: "fr" | "en") {
++  if (locale === "fr") return { teacher: QUIZ_SCHOOL_TEACHER_GUIDE, student: QUIZ_SCHOOL_STUDENT_SHEET, steps: QUIZ_SCHOOL_KIT_STEPS };
++  return {
++    teacher: [
++      "Goal: reason, explain and distinguish intuition from a reliable rule.",
++      "Formats: 30-minute collective quiz or 60-minute workshop (15-minute pre-quiz, 30-minute activity, 15-minute post-quiz).",
++      "Equipment: projector, board, voting sheets or a show of hands, and a timer if needed.",
++      "Facilitation: show a question, collect votes, ask for a short justification, then reveal the answer.",
++      "Discussion: ask students to restate another student's idea before sharing their own to explore nuances.",
++      "Privacy: no student account, no name and no unnecessary personal data collection.",
++    ],
++    student: [
++      "What I learned today.",
++      "A misconception I corrected.",
++      "One habit I can change.",
++      "One question I still have.",
++    ],
++    steps: [
++      { title: "Introduction", lead: "Why discuss waste and sustainable development?", detail: "Use concrete examples to connect daily habits with environmental quality, sorting and collective practices." },
++      { title: "Collective quiz", lead: "Vote, discuss, reveal", detail: "Students take a position, justify their choices and discuss the teacher's correction to understand the reasoning." },
++      { title: "Discussion", lead: "Why are some answers tricky?", detail: "Take time to unpack misleading wording, misconceptions and quick intuitive answers." },
++      { title: "Conclusion", lead: "Three practical habits to remember", detail: "Finish with three simple actions, one safety rule and a corrected misconception." },
++    ],
++  };
++}
++
+ export const QUIZ_SCHOOL_KIT_BANK: QuizSchoolKitQuestion[] = [
+   {
+     id: "deb-1",
+diff --git a/documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-presentation-detaillee.md b/documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-presentation-detaillee.md
+index 56e00b7d63f3d4e0e361f0e25bd7f0cfbc0c0775..185f7ea1d08563d0cf074420ec71be2b607167e0 100644
+--- a/documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-presentation-detaillee.md
++++ b/documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-presentation-detaillee.md
+@@ -19,43 +19,21 @@
+ 
+ ## Contenu actuel
+ 
+-### Introduction
+-
+-Quatre repères :
+-
+-- public visé ;
+-- durée ;
+-- absence de compte élève ;
+-- fonctionnement classe entière.
+-
+-### Lancement
+-
+-Le lancement est prioritaire et propose d'abord le niveau (`6e`, `5e`, `4e` ou
+-`3e`), puis le format :
+-
+-- ouvrir le mode École ;
+-- lancer la démo.
++### Navigation et lancement
+ 
+-Après le niveau choisi, un encart rappelle la durée, le matériel minimal et le
+-fonctionnement collectif du format sélectionné avant le CTA `Lancer la séance`.
++L'onglet initial permet de choisir une classe et un format, d'en lire la durée, le matériel et le déroulé, puis de lancer la séance ou la démo. Le choix est conservé entre les onglets. Aucun visuel de progression fictif. Les profils scolaires et les deux formats restent ceux du moteur existant.
+ 
+ ### Aides de séance
+ 
+-- fiche enseignant ;
+-- fiche élève.
+-
+-Ces aides viennent après le bloc de lancement. La banque détaillée reste
+-repliée et placée en dernier : elle sert à préparer ou prolonger une séance,
+-mais n'est pas une étape préalable au choix du niveau et au lancement.
++- Préparer la séance : déroulé 30 minutes et séquence 15/30/15 minutes, fiche enseignant, conseils d'animation.
++- Fiche élève : quatre invites à compléter sur papier sans nom ni collecte de réponses.
+ 
+ ### Banque
+ 
+-Le code expose une banque partagée, répartie en quatre tracks internes. Le
+-professeur ne choisit pas un track : le moteur compose le lot selon le niveau.
+-Le format `quiz-30` lance la séance courte. Le format `atelier-60` enchaîne un
+-pré-quiz de 15 minutes, une séquence pédagogique de 30 minutes, un post-quiz de
+-15 minutes et un bilan collectif.
++Le support du kit est distinct de la banque de questions du moteur. Il est consultable dans un onglet dédié, par thème, avec corrigés, sources et statuts de revue. Les thèmes internes du moteur ne sont pas un choix de lancement. Le support original est en français ; les commandes et fiches de préparation sont localisées.
+ 
++Le format `quiz-30` lance la séance courte. Le format `atelier-60` enchaîne un pré-quiz de 15 minutes, une séquence pédagogique de 30 minutes, un post-quiz de 15 minutes et un bilan collectif.
++
+ Dans `atelier-60`, le pré-quiz contient huit items couvrant les connaissances,
+ idées reçues, ordres de grandeur et décisions. Le post-quiz reprend les mêmes
+ huit concepts avec des formulations différentes et ajoute deux situations de
+diff --git a/documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-README.md b/documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-README.md
+index 73528b5dc1e9c76d7b1908c141d1c450c82a5210..1e50e62db5f6d7f2effee7973eb7480d3a8f6d87 100644
+--- a/documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-README.md
++++ b/documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-README.md
+@@ -12,7 +12,7 @@
+ 
+ - accès : public ;
+ - famille : Apprendre ;
+-- palette : yellow / amber ;
++- palette : famille Apprendre, surfaces jaune/orange clair via le registre partagé, canvas neutre ;
+ - type : page éducative ;
+ - source principale : `apps/web/src/app/learn/ecole/page.tsx`.
+ 
+@@ -41,6 +41,12 @@
+ - ouvrir ensuite, si nécessaire, les détails de la banque de questions ;
+ - conserver un fonctionnement sans compte professeur, sans compte élève, sans nom d’élève et sans donnée personnelle.
+ 
++## Organisation de la page
++
++Quatre onglets : Lancer une séance (par défaut), Préparer la séance, Fiche élève, Banque de questions. Les ancres historiques `#choisir-niveau`, `#fiche-enseignant`, `#fiche-eleve` sélectionnent le panneau correspondant ; `#banque-questions` ouvre le support. Le clavier utilise flèches, Home et End. Le choix de classe et de format reste en mémoire lors du changement d'onglet. Le lancement exige une classe et conserve les URL existantes. Le format et les repères matériels sont visibles avant lancement. La fiche élève est à compléter sur papier, sans saisie nominative sur le site.
++
++Le support enseignant `QUIZ_SCHOOL_KIT_BANK` est distinct de la banque du moteur : ses questions et corrigés sont regroupés en quatre thèmes, sans sélection de track pour la séance. Le total et les statuts de revue sont dérivés du support. Les questions à vérifier sont explicitement identifiées et ne sont pas proposées par le moteur public. Le texte original de ce support est en français ; les commandes et fiches de préparation sont localisées en FR/EN. Les corrigés sont réservés à la consultation du support, à ne pas projeter pendant le vote.
++
+ ## Repères actuels
+ 
+ ```txt
+@@ -159,9 +165,7 @@
+ - Les catégories `debat-classe`, `mission-terrain`, `ordres-de-grandeur` et
+   `gestes-du-quotidien` servent à équilibrer la séance en interne ; elles ne
+   sont pas proposées comme choix principal.
+-- La banque et ses détails restent en aval du lancement et des fiches : le
+-  professeur choisit d’abord le niveau, puis lance la séance sans parcourir la
+-  banque complète.
++- La banque du kit et ses corrigés restent dans un onglet secondaire, avec des groupes fermés par défaut. Le professeur peut lancer la séance sans consulter ce support.
+ - Une question peut être éligible à plusieurs niveaux sans être recopiée : le
+   contrat porte les profils de difficulté et de compétences par niveau, tandis
+   que le texte de la question reste unique.

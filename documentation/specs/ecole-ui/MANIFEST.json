@@ -1,0 +1,72 @@
+{
+  "status": "CANDIDATE",
+  "source_main": "9bfa52af3474bf0e2b45b89a4868a1933390b622",
+  "base_observed": "f542b7d448855dfae320b3d679a7f587e2c89061",
+  "patch_git_blob_sha": "0bf21259ced3dfa0e22a6b9a897e140c2ded35ef",
+  "overlap_with_previous_learn_candidates": [],
+  "targets": [
+    {
+      "path": "apps/web/src/components/learn/quiz/quiz-school-kit-page.test.ts",
+      "before": "e5b9fbdce9114e7512c59eb5d09bebf95b8ebbdd",
+      "after": "db16cc349a06bc1316049e9937ea3e70ef183df6",
+      "insertions": 24,
+      "deletions": 34
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx",
+      "before": "eb1563366bf67a5eb53cb0002c69439591e6307d",
+      "after": "58975292e8b75fd521402b6c70be0102db68db69",
+      "insertions": 74,
+      "deletions": 75
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/school/quiz-school-bank-section.tsx",
+      "before": "1c57de45be3db679cf815e2f8df38a97555b1e95",
+      "after": "f452494c60b47d2c62cd2f89154613813179593a",
+      "insertions": 45,
+      "deletions": 154
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/school/quiz-school-level-launcher.tsx",
+      "before": "3f25a818560a5681f498282c8c379434c3ce7075",
+      "after": "92f17ce517741f6af3a06e3c537aeb6bd08cb23c",
+      "insertions": 44,
+      "deletions": 66
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/school/quiz-school-session-guide.tsx",
+      "before": "7d3803d6a98278ac151130bb1ed77d1c071fcc0f",
+      "after": "93254a3601198e45755e7b9c927c61766f9716cb",
+      "insertions": 60,
+      "deletions": 138
+    },
+    {
+      "path": "apps/web/src/lib/learning/quiz/school/quiz-school-kit.test.ts",
+      "before": "93e37715846ece31ec484318b7ef83bf9df626b3",
+      "after": "521f54758e50587e3ac614a1a4a7f31a74ee3769",
+      "insertions": 13,
+      "deletions": 0
+    },
+    {
+      "path": "apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts",
+      "before": "b98a434faa4b29a30dc9554eb9f22ac826f71227",
+      "after": "19ab41e3982db003d393592db2cbd3dd9b3eddf5",
+      "insertions": 27,
+      "deletions": 0
+    },
+    {
+      "path": "documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-presentation-detaillee.md",
+      "before": "56e00b7d63f3d4e0e361f0e25bd7f0cfbc0c0775",
+      "after": "185f7ea1d08563d0cf074420ec71be2b607167e0",
+      "insertions": 7,
+      "deletions": 29
+    },
+    {
+      "path": "documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-README.md",
+      "before": "73528b5dc1e9c76d7b1908c141d1c450c82a5210",
+      "after": "1e50e62db5f6d7f2effee7973eb7480d3a8f6d87",
+      "insertions": 8,
+      "deletions": 4
+    }
+  ]
+}
