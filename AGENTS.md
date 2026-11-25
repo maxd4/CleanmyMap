@@ -205,9 +205,12 @@ commit en attente contient des changements d'un autre writer ou un périmètre
 plus large. Les changements dirty/untracked ne sont pas ajoutés au commit ni au
 push. Contrôler la branche cible, le fast-forward, les hooks, les permissions et
 la convergence. Une évolution externe sans conflit ne déclenche pas une
-nouvelle campagne de validation. En cas de conflit réel ou de push non
-fast-forward, arrêter avec le diagnostic exact ; ne pas resynchroniser le
-contenu fonctionnel ni relancer les validations. Aucun force-push ou
+nouvelle campagne de validation : lorsque `origin/main` a avancé sans conflit
+sur les chemins attribués, exécuter `git fetch origin main` puis
+`git rebase origin/main` (en préservant les fichiers dirty/untracked étrangers),
+laisser le garde `pre-push` valider le `PUSH_CANDIDATE` rebasé, puis pousser
+en fast-forward. En cas de conflit réel lors du rebase, exécuter
+`git rebase --abort` et arrêter avec le diagnostic exact. Aucun force-push ou
 contournement de garde n'est permis.
 
 **Autorisation permanente d'écriture directe pour ChatGPT (`DIRECT_GITHUB_PUBLICATION`)** :

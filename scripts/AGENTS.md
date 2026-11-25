@@ -130,12 +130,16 @@ Mode de développement rapide explicitement activé :
 commit local selon son protocole, sans push tant que le mode reste actif
 ```
 
-Lorsqu’un push échoue parce que `main` a avancé, ne pas refetcher pour relancer
-la campagne, rebaser, merger ou synchroniser fonctionnellement. Rapporter le
-refus fast-forward et arrêter la publication avec les changements locaux
-préservés. Après un push accepté, le fetch sert uniquement à prouver la
-convergence `HEAD = origin/main` et ahead/behind `0/0`. Aucun force-push ni
-contournement des protections GitHub n’est permis.
+Lorsqu’un push échoue parce que `main` a avancé sans conflit sur les chemins
+attribués, la resynchronisation automatique par `git fetch origin main` puis
+`git rebase origin/main` est autorisée et exécutée (en préservant les éventuels
+fichiers dirty/untracked étrangers), avant de relancer `git push origin main`
+avec les gardes `pre-push` sur le `PUSH_CANDIDATE` rebasé. En cas de conflit
+réel lors du rebase, exécuter `git rebase --abort`, préserver les commits et le
+worktree locaux, puis arrêter la publication avec le diagnostic exact. Après un
+push accepté, le fetch prouve la convergence `HEAD = origin/main` et
+ahead/behind `0/0`. Aucun force-push ni contournement des protections GitHub
+n’est permis.
 
 ### LEGACY / COMPATIBILITY
 

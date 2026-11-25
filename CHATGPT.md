@@ -358,9 +358,10 @@ commit → push fast-forward `main` → fetch et vérification de convergence. S
 lot est confié à Codex pour ses besoins de checkout ou de runtime local, son
 prompt prescrit cette même séquence. Au moment de publier, contrôler uniquement
 l'attribution des commits transmis, le fast-forward, les hooks, permissions et
-convergence ; une évolution externe sans conflit ne relance pas les validations.
-Un conflit réel arrête la publication avec son diagnostic exact, sans boucle
-de synchronisation. Le mode de développement rapide ne supprime pas cette
+convergence ; une évolution externe sans conflit ne relance pas les validations
+et autorise la resynchronisation par `git fetch origin main` puis
+`git rebase origin/main` avant le push fast-forward. Un conflit réel arrête la
+publication avec son diagnostic exact (`git rebase --abort`). Le mode de développement rapide ne supprime pas cette
 publication ; une interdiction explicite de l'utilisateur reste la seule raison
 de clôturer un lot sans push.
 
