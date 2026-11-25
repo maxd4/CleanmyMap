@@ -1,0 +1,92 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Suspense } from "react";
+import { loadLandingSummary } from "@/lib/accueil/data";
+import {
+  buildPublicImpactMetrics,
+  type PublicImpactCounters,
+} from "@/lib/impact/public-impact-kpis";
+import { resolvePageFamily } from "@/lib/ui/page-families";
+import { buildPageMetadata } from "@/lib/metadata";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { ActionsMapPageClient } from "./page-client";
+import { PageHeader } from "@/components/ui/page-header";
+
+export const metadata: Metadata = buildPageMetadata("/actions/map", {
+  title: "Carte des actions",
+  description:
+    "Explorer les actions de dépollution et les signalements citoyens sur la carte CleanMyMap.",
+  robots: { index: true, follow: true },
+});
+
+const EMPTY_PUBLIC_IMPACT_COUNTERS: PublicImpactCounters = {
+  wasteKg: 0,
+  butts: 0,
+  volunteers: 0,
+  co2: 0,
+  water: 0,
+  euro: 0,
+};
+
+export default function ActionsMapPage() {
+  const emptyImpactMetrics = buildPublicImpactMetrics(
+    EMPTY_PUBLIC_IMPACT_COUNTERS,
+    false,
+  );
+
+  return (
+    <>
+      <div className="cmm-page-width px-4 pt-4 sm:px-6 sm:pt-5">
+        <PageHeader
+          family={resolvePageFamily("/actions/map")}
+          title="Cartographie des actions"
+          subtitle={(
+            <>
+              Cette carte expose les actions et les données publiques autorisées par le contrat
+              CleanMyMap. Selon le mode choisi, les couleurs peuvent représenter une observation
+              ou une projection ; une projection n&apos;est pas une mesure actuelle du terrain.
+              Les calculs et leurs limites sont documentés dans la{" "}
+              <Link href="/methodologie" className="font-semibold text-emerald-700 hover:underline">
+                méthodologie
+              </Link>.
+            </>
+          )}
+          action={
+            <CmmButtonGroup>
+              <CmmButton href="/actions/new" tone="primary" variant="pill">
+                Déclarer <ArrowRight size={14} aria-hidden="true" />
+              </CmmButton>
+              <CmmButton href="/methodologie" tone="secondary" variant="pill">
+                Méthodologie <ArrowRight size={14} aria-hidden="true" />
+              </CmmButton>
+            </CmmButtonGroup>
+          }
+        />
+      </div>
+      <Suspense
+        fallback={<ActionsMapPageClient impactMetrics={emptyImpactMetrics} />}
+      >
+        <ActionsMapContent />
+      </Suspense>
+    </>
+  );
+}
+
+async function ActionsMapContent() {
+  let counters = EMPTY_PUBLIC_IMPACT_COUNTERS;
+  let hasData = false;
+
+  try {
+    const summary = await loadLandingSummary();
+    if (summary) {
+      counters = summary.counters;
+      hasData = Boolean(summary.impactSnapshot);
+    }
+  } catch {
+    // Keep the existing public KPI empty state when the server snapshot and
+    // its canonical fallback are both unavailable.
+  }
+
+  return <ActionsMapPageClient impactMetrics={buildPublicImpactMetrics(counters, hasData)} />;
+}

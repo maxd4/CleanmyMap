@@ -1,0 +1,73 @@
+{
+  "base": "1f2fa1f083eb7d5d092f9a8b9846e977d4fc327c",
+  "files": [
+    {
+      "path": "apps/web/src/app/(app)/actions/map/page.tsx",
+      "baseBlob": "585bd639dff5309a6353de0f9f7a560618024666"
+    },
+    {
+      "path": "apps/web/src/app/(app)/actions/map/page-client.tsx",
+      "baseBlob": "6c9872d7a8622f26cffde34980a2f98ca238c709"
+    },
+    {
+      "path": "apps/web/src/app/(app)/actions/map/_components/map-control-tower.tsx",
+      "baseBlob": "c89a709de4f2f17550a98134256272c3cc66a225"
+    },
+    {
+      "path": "apps/web/src/app/(app)/actions/map/_components/map-kpi-ribbon.tsx",
+      "baseBlob": "4f080abc149146e3a42d1d1b029d331764306638"
+    },
+    {
+      "path": "apps/web/src/components/actions/actions-map-table.tsx",
+      "baseBlob": "ffa142696f425fe2f267b98976c611c665e552d8"
+    },
+    {
+      "path": "apps/web/src/components/actions/map-feed/_layouts/map-canvas-view.tsx",
+      "baseBlob": "87abf0f6ba829531cb2e8b4f1eff2f9cb8c6b70f"
+    },
+    {
+      "path": "apps/web/src/components/actions/map-feed/actions-map-feed.tsx",
+      "baseBlob": "eab8304841a9836b70576bb982229fdeab3ec5b5"
+    },
+    {
+      "path": "apps/web/src/components/actions/map-feed/_layouts/immersive-layout.tsx",
+      "baseBlob": "1b24301ba7d7c57b18a7fa58d2fdb428841974ee"
+    },
+    {
+      "path": "apps/web/src/components/actions/map-feed/_layouts/immersive-layout-sections.tsx",
+      "baseBlob": "dad7c5e629099fab019100f28aadd0b52d86d7d5"
+    },
+    {
+      "path": "apps/web/src/components/actions/actions-map-canvas-view.tsx",
+      "baseBlob": "675af6fa6fd779c2c958026786abf48d219fb1ed"
+    },
+    {
+      "path": "apps/web/src/components/actions/actions-map-canvas-model.ts",
+      "baseBlob": "1f867545da6d06a7d416a1253f0fa1011d146e4d"
+    },
+    {
+      "path": "apps/web/src/components/actions/map/controls/map-score-scope-control.tsx",
+      "baseBlob": "c61867e344be2456b34049e165d0842e47fd69c9"
+    },
+    {
+      "path": "apps/web/src/app/(app)/actions/map/page.test.ts",
+      "baseBlob": "7b9d6ecc6f8f9d394ad4868156a70fad0ff24627"
+    },
+    {
+      "path": "apps/web/src/components/actions/map-feed/_layouts/map-loading-state.tsx",
+      "baseBlob": "23895712d59f3d84408afc4751daca4734df6abc"
+    },
+    {
+      "path": "apps/web/src/app/(app)/actions/map/loading.tsx",
+      "baseBlob": "b878b1b96f26d2ac7b4ea010c3b663c85331e2b4"
+    },
+    {
+      "path": "apps/web/src/components/actions/actions-map-table.test.tsx",
+      "baseBlob": "d3a2fb90fd5017a0c50631fc2d6f02af73bea1a6"
+    },
+    {
+      "path": "documentation/pages_site/routes/03-cartographie-impact/actions-map/actions-map-README.md",
+      "baseBlob": "9f71c7c5c4ef570601d6fb6fba79b49e7ba6701e"
+    }
+  ]
+}
