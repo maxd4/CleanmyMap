@@ -17,11 +17,14 @@ describe("projectPublicEntity", () => {
   });
 
   it("projects institution-only nodes with their own territories, relations, and sources", () => {
-    const projection = projectPublicEntity({ institutionId: "town-hall-05" });
-    expect(projection).not.toBeNull();
-    expect(projection?.identity.institutionId).toBe("town-hall-05");
-    expect(projection?.institutionRelations.length).toBeGreaterThan(0);
-    expect(projection?.institutionSources.length).toBeGreaterThan(0);
+    const fromInst = projectPublicEntity({ institutionId: "town-hall-05" });
+    const fromNet = projectPublicEntity({ networkActorId: "mairie-paris-5" });
+    expect(fromInst).not.toBeNull();
+    expect(fromNet).not.toBeNull();
+    expect(fromInst?.identity.institutionId).toBe("town-hall-05");
+    expect(fromNet?.identity.institutionId).toBe("town-hall-05");
+    expect(fromNet?.institutionRelations).toEqual(fromInst?.institutionRelations);
+    expect(fromNet?.institutionSources).toEqual(fromInst?.institutionSources);
   });
 
   it("fails closed on conflicting canonical IDs including institutionId without network link", () => {

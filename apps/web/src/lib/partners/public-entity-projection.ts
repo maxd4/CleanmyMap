@@ -119,8 +119,8 @@ export function projectPublicEntity(
 
   if (
     ref.annuaireEntryId &&
-    networkActor?.annuaireEntryId &&
-    ref.annuaireEntryId !== networkActor.annuaireEntryId
+    networkActor &&
+    networkActor.annuaireEntryId !== ref.annuaireEntryId
   ) {
     return null;
   }
@@ -132,15 +132,20 @@ export function projectPublicEntity(
     (networkActor
       ? resolveInstitutionId(PARIS_PUBLIC_CLEANLINESS_DATASET, networkActor.id, PARIS_CLEANWALK_ACTORS)
       : null);
+  const resolvedInstitutionNode =
+    institutionNode ??
+    (resolvedInstitutionId
+      ? (PARIS_PUBLIC_CLEANLINESS_DATASET.nodes.find((n) => n.id === resolvedInstitutionId) ?? null)
+      : null);
 
-  if (!annuaireEntry && !networkActor && !institutionNode) return null;
+  if (!annuaireEntry && !networkActor && !resolvedInstitutionNode) return null;
 
   const context = networkActor
     ? getActorStructureContext(networkActor.id)
-    : institutionNode
+    : resolvedInstitutionNode
       ? getInstitutionStructureContext(
           PARIS_PUBLIC_CLEANLINESS_DATASET,
-          institutionNode,
+          resolvedInstitutionNode,
           PARIS_CLEANWALK_ACTORS,
         )
       : null;
@@ -160,25 +165,25 @@ export function projectPublicEntity(
       )
     : [];
 
-  const institutionRelations = institutionNode
+  const institutionRelations = resolvedInstitutionNode
     ? PARIS_PUBLIC_CLEANLINESS_RELATIONS.filter(
-        (rel) => rel.from === institutionNode.id || rel.to === institutionNode.id,
+        (rel) => rel.from === resolvedInstitutionNode.id || rel.to === resolvedInstitutionNode.id,
       )
     : [];
 
-  const institutionSources = institutionNode
-    ? PUBLIC_CLEANLINESS_SOURCES.filter((src) => institutionNode.sourceIds.includes(src.id))
+  const institutionSources = resolvedInstitutionNode
+    ? PUBLIC_CLEANLINESS_SOURCES.filter((src) => resolvedInstitutionNode.sourceIds.includes(src.id))
     : [];
 
   const territories = Array.from(
     new Set([
       ...(networkActor ? [networkActor.parisZone.label] : []),
-      ...(institutionNode?.territoryIds ?? []),
+      ...(resolvedInstitutionNode?.territoryIds ?? []),
     ]),
   );
 
   const publicReferents = networkActor?.publicLeader ? [networkActor.publicLeader.name] : [];
-  const name = annuaireEntry?.name ?? networkActor?.name ?? institutionNode?.name ?? "";
+  const name = annuaireEntry?.name ?? networkActor?.name ?? resolvedInstitutionNode?.name ?? "";
 
   return {
     identity: {
@@ -198,7 +203,7 @@ export function projectPublicEntity(
     scopeNotes: {
       hasAnnuaireEntry: annuaireEntry !== null,
       hasNetworkActor: networkActor !== null,
-      hasInstitutionNode: institutionNode !== null || resolvedInstitutionId !== null,
+      hasInstitutionNode: resolvedInstitutionNode !== null,
     },
   };
 }

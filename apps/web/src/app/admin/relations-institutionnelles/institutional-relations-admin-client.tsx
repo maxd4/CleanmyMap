@@ -51,16 +51,19 @@ export function InstitutionalRelationsAdminClient() {
   }, []);
 
   async function handleReviewFact(factId: string, reviewStatus: "verified" | "withdrawn") {
+    const promptLabel =
+      reviewStatus === "verified"
+        ? "Motif de vérification de la preuve :"
+        : "Motif de retrait de la preuve :";
+    const reason = window.prompt(promptLabel)?.trim();
+    if (!reason) return;
+
     setBusyId(factId);
     try {
       const res = await fetch(API_URL, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          factId,
-          reviewStatus,
-          reason: reviewStatus === "verified" ? "Preuve vérifiée" : "Preuve retirée",
-        }),
+        body: JSON.stringify({ factId, reviewStatus, reason }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await load();
