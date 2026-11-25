@@ -10,6 +10,12 @@ import {
   type ParisCleanwalkActor,
   type PublicChannelType,
 } from "@/lib/partners/paris-cleanwalk-network";
+import {
+  getParisAssociationContact,
+  PARIS_DPE_CONTACT,
+  PARIS_MUNICIPAL_TOWN_HALLS,
+  resolveParisCleaningDivisionContacts,
+} from "@/lib/partners/paris-cleanwalk-network.contacts";
 
 const ACTION_PARTICIPATION_TYPES = new Set<PublicChannelType>([
   "inscription_evenement",
@@ -74,6 +80,14 @@ export function ParisNetwork3DBubble({
     topPx: number;
     maxHeightPx: number;
   } | null>(null);
+
+  const [selectedArrondissement, setSelectedArrondissement] = useState<number>(1);
+  const associationContact = getParisAssociationContact(actor.id);
+  const dpeDivisionContacts =
+    actor.id === "evt-paris-nettoyages"
+      ? resolveParisCleaningDivisionContacts([selectedArrondissement])
+      : [];
+  const isTownHallActor = actor.id === "mairie-paris-5" || actor.id === "mairie-paris-6";
 
   useLayoutEffect(() => {
     const bubbleEl = bubbleRef.current;
@@ -355,6 +369,78 @@ export function ParisNetwork3DBubble({
               ))}
             </ul>
           </div>
+        ) : null}
+
+        {associationContact ? (
+          <div className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-xs text-slate-200">
+            <p className="font-semibold text-white">
+              {fr ? "Contact associatif sourcé" : "Sourced association contact"}
+            </p>
+            {associationContact.email ? (
+              <p className="mt-1">
+                {fr ? "Courriel :" : "Email:"} {associationContact.email}
+              </p>
+            ) : null}
+            <p className="mt-1 text-slate-300">
+              {associationContact.source.label} · {associationContact.source.verifiedAt}
+            </p>
+          </div>
+        ) : null}
+
+        {actor.id === "evt-paris-nettoyages" ? (
+          <div className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-xs text-slate-200">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold text-white">
+                {fr ? "Divisions DPE (14 secteurs)" : "DPE divisions (14 sectors)"}
+              </p>
+              <select
+                aria-label={fr ? "Arrondissement DPE" : "DPE district"}
+                value={selectedArrondissement}
+                onChange={(e) => setSelectedArrondissement(Number(e.target.value))}
+                className="rounded border border-white/20 bg-slate-900 px-1.5 py-0.5 text-xs text-white"
+              >
+                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>
+                    {n}e
+                  </option>
+                ))}
+              </select>
+            </div>
+            {dpeDivisionContacts.map((div) => (
+              <div key={div.id} className="mt-1.5 space-y-0.5 text-slate-200">
+                <p className="font-medium text-white">{div.label}</p>
+                {div.phone ? <p>{fr ? "Tél. :" : "Phone:"} {div.phone}</p> : null}
+                {div.email ? <p>{fr ? "Courriel :" : "Email:"} {div.email}</p> : null}
+              </div>
+            ))}
+            <p className="mt-1.5 text-slate-300">
+              {fr ? "Adresse administrative :" : "Administrative address:"} {PARIS_DPE_CONTACT.administrativeAddress}
+            </p>
+            <p className="mt-1 text-slate-300">{PARIS_DPE_CONTACT.materialNote}</p>
+          </div>
+        ) : null}
+
+        {isTownHallActor ? (
+          <details className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-xs text-slate-200">
+            <summary className="cursor-pointer font-semibold text-white">
+              {fr ? "17 mairies d'arrondissement" : "17 district town halls"}
+            </summary>
+            <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto pr-1">
+              {PARIS_MUNICIPAL_TOWN_HALLS.map((th) => (
+                <li key={th.id} className="flex items-center justify-between gap-2">
+                  <span>{th.label}</span>
+                  <a
+                    href={th.portalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-white"
+                  >
+                    {fr ? "Portail" : "Portal"}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
         ) : null}
 
         {/* 7. Source et fraîcheur */}
