@@ -1,0 +1,1226 @@
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-directory-details.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-directory-details.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/public-directory-details.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-directory-details.tsx
+@@ -7,377 +7,386 @@
+ import type { AssociationProfile } from "@/lib/partners/annuaire-types";
+ import { getAssociationProfile } from "./annuaire-association-profile";
+ import { normalizePublicWebUrl } from "@/lib/partners/onboarding-types";
+-
+-type DrawerCommonProps = { entry: EnrichedAnnuaireEntry; fr: boolean };
+-
+-export function DrawerSection({
+-  title,
+-  defaultOpen = false,
+-  children,
+-}: {
+-  title: string;
+-  defaultOpen?: boolean;
+-  children: ReactNode;
+-}) {
+-  return (
+-    <details
+-      open={defaultOpen}
+-      className="group rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4"
+-    >
+-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold cmm-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500">
+-        <span>{title}</span>
+-        <ChevronDown
+-          size={16}
+-          aria-hidden="true"
+-          className="shrink-0 transition-transform group-open:rotate-180"
+-        />
+-      </summary>
+-      <div className="mt-4 space-y-4">{children}</div>
+-    </details>
+-  );
+-}
+-
+-function AnnuaireDrawerOverviewSection({
+-  entry,
+-  fr,
+-  associationProfile,
+-}: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
+-  const isPublished = isPublishedPartnerAnnuaireEntry(entry);
+-  return (
+-    <DrawerSection title={fr ? "Présentation" : "Overview"} defaultOpen>
+-      <p className="text-sm leading-relaxed cmm-text-primary">{entry.description}</p>
+-      {entry.provenance === "editorial_seed" && entry.publicAddress ? (
+-        <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
+-          <p className="text-xs font-semibold cmm-text-secondary">{fr ? "Adresse publique documentée" : "Documented public address"}</p>
+-          <p className="text-sm font-semibold cmm-text-primary">{entry.publicAddress.label}</p>
+-          <p className="mt-1 text-xs cmm-text-secondary">{fr ? "Adresse d'établissement ; ne vaut pas autorisation d'accès ou de dépôt." : "Establishment address; not permission to enter or drop off waste."}</p>
+-          {normalizePublicWebUrl(entry.publicAddress.sourceUrl) ? <a href={normalizePublicWebUrl(entry.publicAddress.sourceUrl)!} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs cmm-text-primary underline">{fr ? "Source consultée le" : "Source checked on"} {entry.publicAddress.checkedAt}</a> : null}
+-        </div>
+-      ) : entry.provenance === "editorial_seed" ? (
+-        <div className="rounded-xl border border-dashed border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-secondary">
+-          {entry.schoolProfile?.addresses && entry.schoolProfile.addresses.length > 1
+-            ? fr
+-              ? "Plusieurs adresses sources divergentes (à vérifier dans les sources scolaires)."
+-              : "Multiple conflicting source addresses (check school sources)."
+-            : entry.kind === "evenement"
+-              ? fr
+-                ? "Plateforme ou programme sans adresse physique dédiée."
+-                : "Platform or programme without a dedicated physical address."
+-              : fr
+-                ? "Adresse publique d'établissement non établie."
+-                : "Public establishment address not established."}
+-        </div>
+-      ) : null}
+-      {entry.featuredReason ? (
+-        <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
+-          <p className="text-sm italic leading-relaxed cmm-text-primary">
+-            « {entry.featuredReason} »
+-          </p>
+-        </div>
+-      ) : null}
+-      {associationProfile ? (
+-        <div className="space-y-1 rounded-xl border border-[var(--cmm-surface-border)] p-3">
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Mission associative" : "Association mission"}
+-          </p>
+-          <p className="text-sm leading-relaxed cmm-text-primary">{associationProfile.mission}</p>
+-        </div>
+-      ) : null}
+-      <div className="flex items-start gap-3">
+-        <MapPin size={16} className="mt-0.5 shrink-0 text-violet-400" aria-hidden="true" />
+-        <div>
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Ancrage territorial" : "Territorial base"}
+-          </p>
+-          <p className="text-sm font-semibold cmm-text-primary">{formatAnnuaireCoverage(entry)}</p>
+-        </div>
+-      </div>
+-      {isPublished && "availability" in entry && entry.availability ? (
+-        <div>
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Disponibilité déclarée" : "Declared availability"}
+-          </p>
+-          <p className="text-sm font-semibold cmm-text-primary">{entry.availability}</p>
+-        </div>
+-      ) : null}
+-      {entry.tags?.length ? (
+-        <div className="flex flex-wrap gap-2">
+-          {entry.tags.map((tag) => (
+-            <span
+-              key={tag}
+-              className="rounded-md border border-[var(--cmm-surface-border)] px-2.5 py-1 text-xs font-semibold cmm-text-secondary"
+-            >
+-              {tag.toUpperCase()}
+-            </span>
+-          ))}
+-        </div>
+-      ) : null}
+-    </DrawerSection>
+-  );
+-}
+-
+-function AnnuaireDrawerImpactSection({
+-  entry,
+-  fr,
+-  associationProfile,
+-}: DrawerCommonProps & { associationProfile: AssociationProfile }) {
+-  const hasImpact = hasTraceableImpactHistory(entry);
+-  const hasActions = hasTraceablePastActions(entry);
+-  return (
+-    <DrawerSection title={fr ? "Actions et impact" : "Actions and impact"}>
+-      <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
+-        <p className="text-xs font-semibold cmm-text-secondary">
+-          {fr ? "Impact mesuré" : "Measured impact"}
+-        </p>
+-        <p className="mt-1 text-sm font-semibold cmm-text-primary">
+-          {hasImpact ? getAssociationImpactSummary(entry) : fr ? "Non renseigné" : "Not provided"}
+-        </p>
+-        <p className="mt-1 text-xs cmm-text-secondary">
+-          {hasImpact
+-            ? formatAssociationImpactDate(associationProfile.impactHistory?.lastActionAt)
+-            : fr
+-              ? "Date non renseignée"
+-              : "Date not provided"}
+-        </p>
+-        {hasImpact ? (
+-          <p className="mt-1 text-xs cmm-text-secondary">
+-            Source : {associationProfile.impactHistory?.provenance?.source}
+-          </p>
+-        ) : null}
+-      </div>
+-      <div className="space-y-2">
+-        <p className="text-xs font-semibold cmm-text-secondary">
+-          {fr ? "Actions passées" : "Past actions"}
+-        </p>
+-        {hasActions ? (
+-          <ul className="m-0 list-none space-y-2 p-0">
+-            {associationProfile.pastActions.map((action) => (
+-              <li
+-                key={action}
+-                className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-sm cmm-text-primary"
+-              >
+-                {action}
+-              </li>
+-            ))}
+-          </ul>
+-        ) : (
+-          <p className="text-sm cmm-text-secondary">{fr ? "Non renseigné" : "Not provided"}</p>
+-        )}
+-        {hasActions && associationProfile.pastActionsProvenance?.source ? (
+-          <p className="text-xs cmm-text-secondary">
+-            Source : {associationProfile.pastActionsProvenance.source}
+-          </p>
+-        ) : null}
+-      </div>
+-    </DrawerSection>
+-  );
+-}
+-
+-function AnnuaireDrawerNeedsSection({
+-  entry,
+-  fr,
+-  associationProfile,
+-}: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
+-  return (
+-    <DrawerSection title={fr ? "Besoins et contributions" : "Needs and contributions"}>
+-      <div className="space-y-2">
+-        <p className="text-xs font-semibold cmm-text-secondary">
+-          {fr ? "Champs d'intervention" : "Areas of intervention"}
+-        </p>
+-        <div className="flex flex-wrap gap-2">
+-          {entry.contributionTypes.map((type) => (
+-            <span
+-              key={type}
+-              className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold cmm-text-primary"
+-            >
+-              {CONTRIBUTION_LABELS[type] || type}
+-            </span>
+-          ))}
+-        </div>
+-      </div>
+-      {associationProfile?.recurringNeeds.length ? (
+-        <div className="space-y-2">
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Besoins récurrents" : "Recurring needs"}
+-          </p>
+-          <div className="flex flex-wrap gap-2">
+-            {associationProfile.recurringNeeds.map((need) => (
+-              <span
+-                key={need}
+-                className="rounded-full border border-[var(--cmm-surface-border)] px-3 py-1 text-xs font-semibold cmm-text-primary"
+-              >
+-                {need}
+-              </span>
+-            ))}
+-          </div>
+-        </div>
+-      ) : null}
+-      {associationProfile?.publicCalls.length ? (
+-        <div className="space-y-2">
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Appels à contribution" : "Calls for contribution"}
+-          </p>
+-          {associationProfile.publicCalls.map((call) => (
+-            <div
+-              key={`${call.type}-${call.label}`}
+-              className="rounded-xl border border-[var(--cmm-surface-border)] p-3"
+-            >
+-              <p className="text-sm font-semibold cmm-text-primary">{call.label}</p>
+-              {call.detail ? (
+-                <p className="mt-1 text-xs leading-relaxed cmm-text-primary">{call.detail}</p>
+-              ) : null}
+-            </div>
+-          ))}
+-        </div>
+-      ) : null}
+-    </DrawerSection>
+-  );
+-}
+-
+-function AnnuaireDrawerContactsSection({
+-  entry,
+-  fr,
+-  isEditorial,
+-  publicDestination,
+-}: DrawerCommonProps & {
+-  isEditorial: boolean;
+-  publicDestination: ReturnType<typeof getAnnuairePublicDestination>;
+-}) {
+-  const websiteUrl = normalizePublicWebUrl(entry.websiteUrl);
+-  return (
+-    <DrawerSection title={fr ? "Contacts publics" : "Public contacts"}>
+-      <p className="text-xs cmm-text-secondary">
+-        {fr
+-          ? "Seuls les canaux publics explicitement validés sont affichés."
+-          : "Only explicitly validated public channels are displayed."}
+-      </p>
+-      <div className="flex flex-wrap gap-2">
+-        {websiteUrl ? (
+-          <CmmButton
+-            asChild
+-            tone="secondary"
+-            variant="default"
+-            ariaLabel={`${fr ? "Consulter le site" : "Visit website"} — ${entry.name}`}
+-          >
+-            <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
+-              <Globe size={16} className="mr-2" aria-hidden="true" />
+-              {fr ? "Consulter le site" : "Visit website"}
+-            </a>
+-          </CmmButton>
+-        ) : (
+-          <CmmButton
+-            type="button"
+-            disabled
+-            tone="secondary"
+-            variant="default"
+-            ariaLabel={fr ? "Site indisponible" : "Website unavailable"}
+-          >
+-            <Globe size={16} className="mr-2" aria-hidden="true" />
+-            {fr ? "Site indisponible" : "Website unavailable"}
+-          </CmmButton>
+-        )}
+-        {publicDestination ? (
+-          <CmmButton
+-            asChild
+-            tone="primary"
+-            variant="default"
+-            ariaLabel={`${publicDestination.label} — ${entry.name}`}
+-          >
+-            <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
+-              <MessageSquare size={16} className="mr-2" aria-hidden="true" />
+-              {isEditorial
+-                ? fr
+-                  ? "Consulter la ressource"
+-                  : "View resource"
+-                : fr
+-                  ? "Engager le contact"
+-                  : "Get in touch"}
+-            </a>
+-          </CmmButton>
+-        ) : (
+-          <CmmButton
+-            type="button"
+-            disabled
+-            tone="primary"
+-            variant="default"
+-            ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
+-          >
+-            <MessageSquare size={16} className="mr-2" aria-hidden="true" />
+-            {isEditorial
+-              ? fr
+-                ? "Ressource indisponible"
+-                : "Resource unavailable"
+-              : fr
+-                ? "Contact indisponible"
+-                : "Contact unavailable"}
+-          </CmmButton>
+-        )}
+-      </div>
+-    </DrawerSection>
+-  );
+-}
+-
+-function AnnuaireDrawerSourcesSection({
+-  entry,
+-  fr,
+-  associationProfile,
+-}: DrawerCommonProps & {
+-  associationProfile: AssociationProfile | null;
+-}) {
+-  const resources = associationProfile?.usefulResources ?? [];
+-  return (
+-    <DrawerSection title={fr ? "Sources et limites" : "Sources and limitations"}>
+-      {resources.length > 0 ? (
+-        <div className="space-y-2">
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Ressources utiles" : "Useful resources"}
+-          </p>
+-          {resources.map((resource) => {
+-            const resourceUrl = normalizePublicWebUrl(resource.url);
+-            return resourceUrl ? (
+-              <a
+-                key={resource.label}
+-                href={resourceUrl}
+-                target="_blank"
+-                rel="noopener noreferrer"
+-                aria-label={`${resource.label} — ${entry.name}`}
+-                className="block rounded-xl border border-[var(--cmm-surface-border)] p-3 hover:border-violet-500/40"
+-              >
+-                <p className="text-sm font-semibold cmm-text-primary">{resource.label}</p>
+-                {resource.description ? (
+-                  <p className="mt-1 text-xs cmm-text-secondary">{resource.description}</p>
+-                ) : null}
+-              </a>
+-            ) : (
+-              <div
+-                key={resource.label}
+-                aria-disabled="true"
+-                className="rounded-xl border border-[var(--cmm-surface-border)] p-3 opacity-75"
+-              >
+-                <p className="text-sm font-semibold cmm-text-primary">{resource.label}</p>
+-                <p className="mt-1 text-xs cmm-text-secondary">
+-                  {fr ? "Ressource indisponible" : "Resource unavailable"}
+-                </p>
+-              </div>
+-            );
+-          })}
+-        </div>
+-      ) : (
+-        <p className="text-xs cmm-text-secondary">
+-          {fr ? "Ressources publiques à compléter" : "Public resources to be completed"}
+-        </p>
+-      )}
+-    </DrawerSection>
+-  );
+-}
+-
+-export function PublicDirectoryDetails({ entry, fr }: DrawerCommonProps) {
+-  const associationProfile = getAssociationProfile(entry);
+-  return <>
+-    <AnnuaireDrawerOverviewSection entry={entry} fr={fr} associationProfile={associationProfile} />
+-    {associationProfile ? <AnnuaireDrawerImpactSection entry={entry} fr={fr} associationProfile={associationProfile} /> : null}
+-    {entry.contributionTypes.length > 0 || associationProfile ? <AnnuaireDrawerNeedsSection entry={entry} fr={fr} associationProfile={associationProfile} /> : null}
+-    <AnnuaireDrawerContactsSection entry={entry} fr={fr} isEditorial={isEditorialAnnuaireEntry(entry)} publicDestination={getAnnuairePublicDestination(entry)} />
+-    <AnnuaireDrawerSourcesSection entry={entry} fr={fr} associationProfile={associationProfile} />
++import { isPrivateOrUnauthorizedInviteUrl } from "@/lib/partners/paris-cleanwalk-network.channels";
++import type { PublicStructureContext } from "@/lib/partners/public-structure-context";
++import { PublicStructureContextPanel } from "./public-structure-context-panel";
++
++type DrawerCommonProps = { entry: EnrichedAnnuaireEntry; fr: boolean };
++
++export function DrawerSection({
++  title,
++  defaultOpen = false,
++  children,
++}: {
++  title: string;
++  defaultOpen?: boolean;
++  children: ReactNode;
++}) {
++  return (
++    <details
++      open={defaultOpen}
++      className="group rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4"
++    >
++      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold cmm-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500">
++        <span>{title}</span>
++        <ChevronDown
++          size={16}
++          aria-hidden="true"
++          className="shrink-0 transition-transform group-open:rotate-180"
++        />
++      </summary>
++      <div className="mt-4 space-y-4">{children}</div>
++    </details>
++  );
++}
++
++function AnnuaireDrawerOverviewSection({
++  entry,
++  fr,
++  associationProfile,
++}: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
++  const isPublished = isPublishedPartnerAnnuaireEntry(entry);
++  return (
++    <DrawerSection title={fr ? "Présentation" : "Overview"} defaultOpen>
++      <p className="text-xs cmm-text-secondary">{entry.legalIdentity}</p>
++      <p className="text-sm leading-relaxed cmm-text-primary">{entry.description}</p>
++      {entry.provenance === "editorial_seed" && entry.publicAddress ? (
++        <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
++          <p className="text-xs font-semibold cmm-text-secondary">{fr ? "Adresse publique documentée" : "Documented public address"}</p>
++          <p className="text-sm font-semibold cmm-text-primary">{entry.publicAddress.label}</p>
++          <p className="mt-1 text-xs cmm-text-secondary">{fr ? "Adresse d'établissement ; ne vaut pas autorisation d'accès ou de dépôt." : "Establishment address; not permission to enter or drop off waste."}</p>
++          {normalizePublicWebUrl(entry.publicAddress.sourceUrl) ? <a href={normalizePublicWebUrl(entry.publicAddress.sourceUrl)!} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs cmm-text-primary underline">{fr ? "Source consultée le" : "Source checked on"} {entry.publicAddress.checkedAt}</a> : null}
++        </div>
++      ) : entry.provenance === "editorial_seed" ? (
++        <div className="rounded-xl border border-dashed border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-secondary">
++          {entry.schoolProfile?.addresses && entry.schoolProfile.addresses.length > 1
++            ? fr
++              ? "Plusieurs adresses sources divergentes (à vérifier dans les sources scolaires)."
++              : "Multiple conflicting source addresses (check school sources)."
++            : entry.kind === "evenement"
++              ? fr
++                ? "Plateforme ou programme sans adresse physique dédiée."
++                : "Platform or programme without a dedicated physical address."
++              : fr
++                ? "Adresse publique d'établissement non établie."
++                : "Public establishment address not established."}
++        </div>
++      ) : null}
++      {entry.featuredReason ? (
++        <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
++          <p className="text-sm italic leading-relaxed cmm-text-primary">
++            « {entry.featuredReason} »
++          </p>
++        </div>
++      ) : null}
++      {associationProfile ? (
++        <div className="space-y-1 rounded-xl border border-[var(--cmm-surface-border)] p-3">
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Mission associative" : "Association mission"}
++          </p>
++          <p className="text-sm leading-relaxed cmm-text-primary">{associationProfile.mission}</p>
++        </div>
++      ) : null}
++      <div className="flex items-start gap-3">
++        <MapPin size={16} className="mt-0.5 shrink-0 text-violet-400" aria-hidden="true" />
++        <div>
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Ancrage territorial" : "Territorial base"}
++          </p>
++          <p className="text-sm font-semibold cmm-text-primary">{formatAnnuaireCoverage(entry)}</p>
++        </div>
++      </div>
++      {isPublished && "availability" in entry && entry.availability ? (
++        <div>
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Disponibilité déclarée" : "Declared availability"}
++          </p>
++          <p className="text-sm font-semibold cmm-text-primary">{entry.availability}</p>
++        </div>
++      ) : null}
++      {entry.tags?.length ? (
++        <div className="flex flex-wrap gap-2">
++          {entry.tags.map((tag) => (
++            <span
++              key={tag}
++              className="rounded-md border border-[var(--cmm-surface-border)] px-2.5 py-1 text-xs font-semibold cmm-text-secondary"
++            >
++              {tag.toUpperCase()}
++            </span>
++          ))}
++        </div>
++      ) : null}
++    </DrawerSection>
++  );
++}
++
++function AnnuaireDrawerImpactSection({
++  entry,
++  fr,
++  associationProfile,
++}: DrawerCommonProps & { associationProfile: AssociationProfile }) {
++  const hasImpact = hasTraceableImpactHistory(entry);
++  const hasActions = hasTraceablePastActions(entry);
++  return (
++    <DrawerSection title={fr ? "Actions et impact" : "Actions and impact"}>
++      <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
++        <p className="text-xs font-semibold cmm-text-secondary">
++          {fr ? "Impact mesuré" : "Measured impact"}
++        </p>
++        <p className="mt-1 text-sm font-semibold cmm-text-primary">
++          {hasImpact ? getAssociationImpactSummary(entry) : fr ? "Non renseigné" : "Not provided"}
++        </p>
++        <p className="mt-1 text-xs cmm-text-secondary">
++          {hasImpact
++            ? formatAssociationImpactDate(associationProfile.impactHistory?.lastActionAt)
++            : fr
++              ? "Date non renseignée"
++              : "Date not provided"}
++        </p>
++        {hasImpact ? (
++          <p className="mt-1 text-xs cmm-text-secondary">
++            Source : {associationProfile.impactHistory?.provenance?.source}
++          </p>
++        ) : null}
++      </div>
++      <div className="space-y-2">
++        <p className="text-xs font-semibold cmm-text-secondary">
++          {fr ? "Actions passées" : "Past actions"}
++        </p>
++        {hasActions ? (
++          <ul className="m-0 list-none space-y-2 p-0">
++            {associationProfile.pastActions.map((action) => (
++              <li
++                key={action}
++                className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-sm cmm-text-primary"
++              >
++                {action}
++              </li>
++            ))}
++          </ul>
++        ) : (
++          <p className="text-sm cmm-text-secondary">{fr ? "Non renseigné" : "Not provided"}</p>
++        )}
++        {hasActions && associationProfile.pastActionsProvenance?.source ? (
++          <p className="text-xs cmm-text-secondary">
++            Source : {associationProfile.pastActionsProvenance.source}
++          </p>
++        ) : null}
++      </div>
++    </DrawerSection>
++  );
++}
++
++function AnnuaireDrawerNeedsSection({
++  entry,
++  fr,
++  associationProfile,
++}: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
++  return (
++    <DrawerSection title={fr ? "Besoins et contributions" : "Needs and contributions"}>
++      <div className="space-y-2">
++        <p className="text-xs font-semibold cmm-text-secondary">
++          {fr ? "Champs d'intervention" : "Areas of intervention"}
++        </p>
++        <div className="flex flex-wrap gap-2">
++          {entry.contributionTypes.map((type) => (
++            <span
++              key={type}
++              className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold cmm-text-primary"
++            >
++              {CONTRIBUTION_LABELS[type] || type}
++            </span>
++          ))}
++        </div>
++      </div>
++      {associationProfile?.recurringNeeds.length ? (
++        <div className="space-y-2">
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Besoins récurrents" : "Recurring needs"}
++          </p>
++          <div className="flex flex-wrap gap-2">
++            {associationProfile.recurringNeeds.map((need) => (
++              <span
++                key={need}
++                className="rounded-full border border-[var(--cmm-surface-border)] px-3 py-1 text-xs font-semibold cmm-text-primary"
++              >
++                {need}
++              </span>
++            ))}
++          </div>
++        </div>
++      ) : null}
++      {associationProfile?.publicCalls.length ? (
++        <div className="space-y-2">
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Appels à contribution" : "Calls for contribution"}
++          </p>
++          {associationProfile.publicCalls.map((call) => (
++            <div
++              key={`${call.type}-${call.label}`}
++              className="rounded-xl border border-[var(--cmm-surface-border)] p-3"
++            >
++              <p className="text-sm font-semibold cmm-text-primary">{call.label}</p>
++              {call.detail ? (
++                <p className="mt-1 text-xs leading-relaxed cmm-text-primary">{call.detail}</p>
++              ) : null}
++            </div>
++          ))}
++        </div>
++      ) : null}
++    </DrawerSection>
++  );
++}
++
++function AnnuaireDrawerContactsSection({
++  entry,
++  fr,
++  isEditorial,
++  publicDestination,
++}: DrawerCommonProps & {
++  isEditorial: boolean;
++  publicDestination: ReturnType<typeof getAnnuairePublicDestination>;
++}) {
++  const websiteUrl = normalizePublicWebUrl(entry.websiteUrl);
++  const extraChannels = [{label:"Instagram",url:entry.instagramUrl},{label:"Facebook",url:entry.facebookUrl}].flatMap(item=>{const url=normalizePublicWebUrl(item.url);return url&&!isPrivateOrUnauthorizedInviteUrl(url)&&url!==websiteUrl&&url!==publicDestination?.url?[{label:item.label,url}]:[];});
++  return (
++    <DrawerSection title={fr ? "Contacts publics" : "Public contacts"}>
++      <p className="text-xs cmm-text-secondary">
++        {fr
++          ? "Seuls les canaux publics explicitement validés sont affichés."
++          : "Only explicitly validated public channels are displayed."}
++      </p>
++      <div className="flex flex-wrap gap-2">
++        {websiteUrl ? (
++          <CmmButton
++            asChild
++            tone="secondary"
++            variant="default"
++            ariaLabel={`${fr ? "Consulter le site" : "Visit website"} — ${entry.name}`}
++          >
++            <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
++              <Globe size={16} className="mr-2" aria-hidden="true" />
++              {fr ? "Consulter le site" : "Visit website"}
++            </a>
++          </CmmButton>
++        ) : (
++          <CmmButton
++            type="button"
++            disabled
++            tone="secondary"
++            variant="default"
++            ariaLabel={fr ? "Site indisponible" : "Website unavailable"}
++          >
++            <Globe size={16} className="mr-2" aria-hidden="true" />
++            {fr ? "Site indisponible" : "Website unavailable"}
++          </CmmButton>
++        )}
++        {extraChannels.map(channel=><a key={channel.url} href={channel.url} target="_blank" rel="noopener noreferrer" className="underline cmm-text-info">{channel.label}</a>)}
++        {publicDestination ? (
++          <CmmButton
++            asChild
++            tone="primary"
++            variant="default"
++            ariaLabel={`${publicDestination.label} — ${entry.name}`}
++          >
++            <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
++              <MessageSquare size={16} className="mr-2" aria-hidden="true" />
++              {isEditorial
++                ? fr
++                  ? "Consulter la ressource"
++                  : "View resource"
++                : fr
++                  ? "Engager le contact"
++                  : "Get in touch"}
++            </a>
++          </CmmButton>
++        ) : (
++          <CmmButton
++            type="button"
++            disabled
++            tone="primary"
++            variant="default"
++            ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
++          >
++            <MessageSquare size={16} className="mr-2" aria-hidden="true" />
++            {isEditorial
++              ? fr
++                ? "Ressource indisponible"
++                : "Resource unavailable"
++              : fr
++                ? "Contact indisponible"
++                : "Contact unavailable"}
++          </CmmButton>
++        )}
++      </div>
++    </DrawerSection>
++  );
++}
++
++function AnnuaireDrawerSourcesSection({
++  entry,
++  fr,
++  associationProfile,
++  structureContext,
++}: DrawerCommonProps & {
++  associationProfile: AssociationProfile | null;
++  structureContext?: PublicStructureContext | null;
++}) {
++  const resources = associationProfile?.usefulResources ?? [];
++  return (
++    <DrawerSection title={fr ? "Sources et limites" : "Sources and limitations"}>
++      {resources.length > 0 ? (
++        <div className="space-y-2">
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Ressources utiles" : "Useful resources"}
++          </p>
++          {resources.map((resource) => {
++            const resourceUrl = normalizePublicWebUrl(resource.url);
++            return resourceUrl ? (
++              <a
++                key={resource.label}
++                href={resourceUrl}
++                target="_blank"
++                rel="noopener noreferrer"
++                aria-label={`${resource.label} — ${entry.name}`}
++                className="block rounded-xl border border-[var(--cmm-surface-border)] p-3 hover:border-violet-500/40"
++              >
++                <p className="text-sm font-semibold cmm-text-primary">{resource.label}</p>
++                {resource.description ? (
++                  <p className="mt-1 text-xs cmm-text-secondary">{resource.description}</p>
++                ) : null}
++              </a>
++            ) : (
++              <div
++                key={resource.label}
++                aria-disabled="true"
++                className="rounded-xl border border-[var(--cmm-surface-border)] p-3 opacity-75"
++              >
++                <p className="text-sm font-semibold cmm-text-primary">{resource.label}</p>
++                <p className="mt-1 text-xs cmm-text-secondary">
++                  {fr ? "Ressource indisponible" : "Resource unavailable"}
++                </p>
++              </div>
++            );
++          })}
++        </div>
++      ) : (
++        <p className="text-xs cmm-text-secondary">
++          {fr ? "Ressources publiques à compléter" : "Public resources to be completed"}
++        </p>
++      )}
++      <PublicStructureContextPanel fr={fr} context={structureContext??null}/>
++    </DrawerSection>
++  );
++}
++
++export function PublicDirectoryDetails({ entry, fr, structureContext }: DrawerCommonProps & {structureContext?:PublicStructureContext|null}) {
++  const associationProfile = getAssociationProfile(entry);
++  return <>
++    <AnnuaireDrawerOverviewSection entry={entry} fr={fr} associationProfile={associationProfile} />
++    {associationProfile ? <AnnuaireDrawerImpactSection entry={entry} fr={fr} associationProfile={associationProfile} /> : null}
++    {entry.contributionTypes.length > 0 || associationProfile ? <AnnuaireDrawerNeedsSection entry={entry} fr={fr} associationProfile={associationProfile} /> : null}
++    <AnnuaireDrawerContactsSection entry={entry} fr={fr} isEditorial={isEditorialAnnuaireEntry(entry)} publicDestination={getAnnuairePublicDestination(entry)} />
++    <AnnuaireDrawerSourcesSection entry={entry} fr={fr} associationProfile={associationProfile} structureContext={structureContext}/>
+   </>;
+ }
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-waste-chain.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-waste-chain.tsx
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-waste-chain.tsx
+@@ -0,0 +1,28 @@
++"use client";
++import type { CanonicalPublicEntityProjection } from "@/lib/partners/public-entity-projection";
++import { PARIS_PUBLIC_CLEANLINESS_DATASET } from "@/lib/partners/public-cleanliness-organization";
++import { DrawerSection } from "./public-directory-details";
++import { PublicEvidenceLink, PublicEntityLink, type OpenPublicEntity } from "./public-entity-evidence";
++
++// The stage memberships are presentation metadata for explicit canonical nodes.
++// They are not a claim that one organization sends waste to another.
++const STAGES = [
++  {label:["Préparation et collecte","Preparation and collection"],ids:["participatory-cleaning","municipal-collection-regie","private-collectors","municipal-waste-channels","professional-waste-service"]},
++  {label:["Stockage, dépôt et massification","Storage, drop-off and consolidation"],ids:["municipal-tri-sites","tri-site-lilas","operator-ckfd","syctom-transfer-romainville"]},
++  {label:["Transport","Transport"],ids:["operator-carton-plein-cyclo","operator-ckfd"]},
++  {label:["Traitement et valorisation","Treatment and recovery"],ids:["syctom","operator-mego","operator-trivalo-92","operator-asterya","operator-urbaser","operator-valoest","operator-semotris","operator-generis"]},
++  {label:["Prévention et filières REP","Prevention and EPR schemes"],ids:["asso-megots-alcome","eco-organisme-citeo"]},
++] as const;
++
++export function PublicWasteChain({projection,fr,onOpen}:{projection:CanonicalPublicEntityProjection;fr:boolean;onOpen?:OpenPublicEntity}) {
++  const node=projection.institution;
++  if(!node)return null;
++  const selected=node.id;
++  const ids=new Set([selected,...projection.institutionRelations.filter(edge=>edge.kind==="service"||edge.kind==="programme").flatMap(edge=>[edge.from,edge.to])]);
++  const sections=STAGES.map(stage=>({label:stage.label[fr?0:1],nodes:stage.ids.filter(id=>ids.has(id)).flatMap(id=>PARIS_PUBLIC_CLEANLINESS_DATASET.nodes.filter(item=>item.id===id))})).filter(stage=>stage.nodes.length);
++  if(!sections.length)return null;
++  return <DrawerSection title={fr?"Rôle dans les filières de déchets":"Role in waste streams"}>
++    <p className="text-xs cmm-text-secondary">{fr?"Étapes documentées autour de la structure. Le classement ne prouve ni un transfert de déchets ni un accord de dépôt.":"Documented stages around this entity. Grouping does not establish waste transfers or drop-off agreements."}</p>
++    <ol className="space-y-2">{sections.map(stage=><li key={stage.label} className="rounded-lg border border-[var(--cmm-surface-border)] p-3"><h4 className="font-semibold">{stage.label}</h4><ul>{stage.nodes.map(item=><li key={item.id} className="mt-2"><PublicEntityLink entity={{institutionId:item.id}} onOpen={onOpen}>{item.name}</PublicEntityLink><p>{item.description}</p><ul className="text-xs">{item.sourceIds.map(id=>{const source=PARIS_PUBLIC_CLEANLINESS_DATASET.sources.find(s=>s.id===id);return source?<li key={id}><PublicEvidenceLink url={source.url}>{source.label}</PublicEvidenceLink> · {source.verifiedAt}</li>:null;})}</ul></li>)}</ul></li>)}</ol>
++  </DrawerSection>;
++}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-entity-details.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-entity-details.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/public-entity-details.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-entity-details.tsx
+@@ -7,59 +7,64 @@
+ import { ScheduledOperationDetails } from "./paris-network-scheduled-operation";
+ import { getNetworkPublicAddress, getNetworkPublicLogo } from "@/lib/partners/public-network-identity-media";
+ import Image from "next/image";
+-
+-export function PublicEntityDetails({ projection: p, fr, onOpen, selectedRelationId }: { projection: CanonicalPublicEntityProjection; fr: boolean; onOpen?: OpenPublicEntity; selectedRelationId?: string|null }) {
+-  const actor = p.publicActor, institution = p.institution, entry = p.directoryEntry;
+-  const lang = fr ? 0 : 1;
+-  const logo = getNetworkPublicLogo(p.identity.networkActorId ?? p.identity.annuaireEntryId);
+-  const address = getNetworkPublicAddress(p.identity.networkActorId ?? p.identity.annuaireEntryId);
+-  const school = actor?.schoolProfile ?? (entry?.provenance === "editorial_seed" ? entry.schoolProfile : undefined);
+-  const contacts = sanitizeAndDeduplicatePublicChannels(actor?.publicChannels ?? []);
+-  return <div data-public-entity-details className="space-y-3 text-sm cmm-text-primary">
+-    {logo ? <Image src={logo.localPath} width={56} height={56} className="object-contain" alt={p.identity.name} /> : null}
+-    {entry ? <PublicDirectoryDetails entry={{...entry,distanceKm:null}} fr={fr}/> : null}
+-    {actor || institution || school ? <DrawerSection title={fr ? "Identité et compétences" : "Identity and responsibilities"} defaultOpen={!entry}>
+-      {entry ? <p>{entry.legalIdentity}</p> : null}
+-      {institution ? <><p>{institution.description}</p><p>{fr?"Type et service":"Kind and service"} : {institution.kind} · {institution.service} · {STATUS[institution.assignment][lang]}</p></> : null}
+-      {actor ? <><p>{PARIS_ACTOR_CATEGORY_META[actor.category].label}</p><p>{actor.roles.map(role=>PARIS_ACTOR_ROLE_LABELS[role]).join(" · ")}</p><p>{actor.ecosystemRoles.map(role=>PARIS_ECOSYSTEM_ROLE_LABELS[role]).join(" · ")}</p><ul className="list-disc pl-5">{actor.activities.map((activity,index)=><li key={index}>{activity}</li>)}</ul>{actor.platformStatus?.v2UnavailableFeaturesNote ? <p>{actor.platformStatus.v2UnavailableFeaturesNote}</p>:null}</>:null}
+-      {school ? <><p>UAI : {school.uai} · {school.level} · {school.sector}</p><ul>{school.sources.map(source=><li key={source.url}><PublicEvidenceLink url={source.url}>{source.label}</PublicEvidenceLink> · {school.verifiedAt}</li>)}</ul></>:null}
+-    </DrawerSection>:null}
+-    <DrawerSection title={fr ? "Implantations et territoires" : "Sites and territories"}>
+-      {address ? <p><PublicEvidenceLink url={address.sourceUrl}>{address.label}</PublicEvidenceLink> · {address.nature} · {address.checkedAt}</p> : null}
+-      {school ? <><ul>{school.addresses.map(a=><li key={a.sourceUrl+":"+a.label}><PublicEvidenceLink url={a.sourceUrl}>{a.label}</PublicEvidenceLink></li>)}</ul>{new Set(school.addresses.map(a=>a.label)).size>1?<p>{fr?"Adresses divergentes, à confirmer":"Conflicting addresses, to confirm"}</p>:null}</>:null}
+-      {p.territories.length ? <p>{fr?"Périmètre documenté":"Documented scope"} : {p.territories.join(", ")}</p> : null}
+-      {actor?.parisZone.scopeNote ? <p>{actor.parisZone.scopeNote}</p>:null}
+-      {actor?.parisZone.arrondissements.length ? <p>{fr?"Arrondissements":"Districts"} : {actor.parisZone.arrondissements.join(", ")}</p>:null}
+-      <p className="text-xs cmm-text-secondary">{fr?"Une implantation ne prouve pas la desserte, l'accès au local ni l'autorisation de dépôt.":"A site does not establish coverage, access or drop-off permission."}</p>
+-    </DrawerSection>
+-    {institution || actor?.publicLeader || p.institutionalPeople.length ? <DrawerSection title={fr?"Organisation et responsables":"Organization and office holders"}>
+-      {institution?.legalEmployerId ? <p>{fr?"Employeur juridique":"Legal employer"} : <PublicEntityLink entity={{institutionId:institution.legalEmployerId}} onOpen={onOpen}>{institutionName(institution.legalEmployerId)}</PublicEntityLink></p>:null}
+-      {institution?.unitId ? <p>{fr?"Rattachement":"Reporting unit"} : <PublicEntityLink entity={{institutionId:institution.unitId}} onOpen={onOpen}>{institutionName(institution.unitId)}</PublicEntityLink></p>:null}
+-      {actor?.publicLeader ? <p><PublicEvidenceLink url={actor.publicLeader.sourceUrl}>{actor.publicLeader.name}</PublicEvidenceLink> · {actor.publicLeader.roleTitle} · {actor.publicLeader.verifiedAt}</p>:null}
+-      <ul>{p.institutionalPeople.map(({person,assignments})=><li key={person.id}><PublicEntityLink entity={{institutionId:person.id}} onOpen={onOpen}>{person.name}</PublicEntityLink><ul>{assignments.map(({role,relation,status})=><li key={relation.id}><PublicEntityLink entity={{institutionId:role.id}} onOpen={onOpen}>{role.name}</PublicEntityLink> · {STATUS[status][lang]}</li>)}</ul></li>)}</ul>
+-    </DrawerSection>:null}
+-    {actor || p.institutionalContact ? <DrawerSection title={fr?"Contacts et participation":"Contacts and participation"}>
+-      {p.institutionalContact ? <p><PublicEvidenceLink url={p.institutionalContact.url}>{p.institutionalContact.label}</PublicEvidenceLink> · {p.institutionalContact.kind==="official_portal"?(fr?"Portail d’orientation":"Guidance portal"):(fr?"Contact fonctionnel":"Functional contact")}</p>:null}
+-      {actor?.officialWebsite ? <p><PublicEvidenceLink url={actor.officialWebsite}>{fr?"Site officiel":"Official website"}</PublicEvidenceLink></p>:null}
+-      {actor?.publicContact ? <p><PublicEvidenceLink url={actor.publicContact.url}>{actor.publicContact.label}</PublicEvidenceLink>{actor.publicContact.email?" · "+actor.publicContact.email:""} · {actor.publicContact.certainty}</p>:null}
+-      <ul>{contacts.map(ch=><li key={ch.url}><PublicEvidenceLink url={ch.url}>{ch.label}</PublicEvidenceLink> · <PublicEvidenceLink url={ch.provenance.sourceUrl}>{ch.provenance.sourceLabel}</PublicEvidenceLink> · {ch.provenance.verifiedAt} · {ch.provenance.certainty}</li>)}</ul>
+-      {actor?.participationModalities.length?<p>{fr?"Publics concernés":"Participation"} : {actor.participationModalities.map(mode=>PARTICIPATION_MODALITY_LABELS[mode]).join(" · ")}</p>:null}
+-    </DrawerSection>:null}
+-    {actor?<DrawerSection title={fr?"Services et moyens":"Services and equipment"}>
+-      <p>{EQUIPMENT_STATUS_LABELS[actor.equipmentAvailability.status]} · {actor.equipmentAvailability.certainty}</p><p>{actor.equipmentAvailability.summary}</p>
+-      {actor.equipmentAvailability.items?.length?<ul className="list-disc pl-5">{actor.equipmentAvailability.items.map(item=><li key={item}>{item}</li>)}</ul>:null}
+-      <PublicEvidenceLink url={actor.equipmentAvailability.sourceUrl}>{fr?"Source du matériel":"Equipment source"}</PublicEvidenceLink>
+-    </DrawerSection>:null}
+-    <PublicEntityRelations projection={p} fr={fr} onOpen={onOpen} selectedRelationId={selectedRelationId}/>
+-    {p.scheduledOperations.length?<DrawerSection title={fr?"Opérations programmées":"Scheduled operations"}>{p.scheduledOperations.map(op=><details key={op.id}><summary>{op.label} · {op.date}</summary><ScheduledOperationDetails operation={op} fr={fr}/></details>)}</DrawerSection>:null}
+-    {actor?.funding?.sources.length?<DrawerSection title={fr?"Financement":"Funding"}>
+-      <p>{actor.funding.entityName} · {actor.funding.period??(fr?"Période non établie":"Period not established")}</p>
+-      {actor.funding.calculationBase?<p>{actor.funding.calculationBase}</p>:null}
+-      <ul>{actor.funding.sources.map((source,index)=><li key={index}>{source.label}{source.sharePercent!=null?" · "+source.sharePercent+" %":""}{source.amountEur!=null?" · "+source.amountEur.toLocaleString(fr?"fr-FR":"en-GB")+" €":""}</li>)}</ul>
+-      {!actor.funding.sharesPublished?<p>{fr?"Parts non publiées":"Shares not published"}</p>:null}{actor.funding.notes?<p>{actor.funding.notes}</p>:null}
+-      <PublicEvidenceLink url={actor.funding.sourceUrl}>{fr?"Source consultée le":"Source checked on"} {actor.funding.verifiedAt}</PublicEvidenceLink>
+-    </DrawerSection>:null}
+-    <PublicStructureContextPanel context={p.structureContext} fr={fr}/>
++import { VERIFIED_PRINCIPAL_LOCATIONS } from "./annuaire-geo-network.model";
++import { PublicWasteChain } from "./public-waste-chain";
++
++export function PublicEntityDetails({ projection: p, fr, onOpen, selectedRelationId }: { projection: CanonicalPublicEntityProjection; fr: boolean; onOpen?: OpenPublicEntity; selectedRelationId?: string|null }) {
++  const actor = p.publicActor, institution = p.institution, entry = p.directoryEntry;
++  const lang = fr ? 0 : 1;
++  const logo = getNetworkPublicLogo(p.identity.networkActorId ?? p.identity.annuaireEntryId);
++  const address = getNetworkPublicAddress(p.identity.networkActorId ?? p.identity.annuaireEntryId);
++  const geoKey=p.identity.annuaireEntryId??p.identity.networkActorId;
++  const geo=geoKey&&Object.hasOwn(VERIFIED_PRINCIPAL_LOCATIONS,geoKey)?VERIFIED_PRINCIPAL_LOCATIONS[geoKey]:null;
++  const school = actor?.schoolProfile ?? (entry?.provenance === "editorial_seed" ? entry.schoolProfile : undefined);
++  const contacts = sanitizeAndDeduplicatePublicChannels(actor?.publicChannels ?? []);
++  return <div data-public-entity-details className="space-y-3 text-sm cmm-text-primary">
++    {logo ? <Image src={logo.localPath} width={56} height={56} className="object-contain" alt={p.identity.name} /> : null}
++    {entry ? <PublicDirectoryDetails entry={{...entry,distanceKm:null}} fr={fr} structureContext={p.structureContext}/> : null}
++    {actor || institution || school ? <DrawerSection title={fr ? "Identité et compétences" : "Identity and responsibilities"} defaultOpen={!entry}>
++      {entry ? <p>{entry.legalIdentity}</p> : null}
++      {institution ? <><p>{institution.description}</p><p>{fr?"Type et service":"Kind and service"} : {institution.kind} · {institution.service} · {STATUS[institution.assignment][lang]}</p></> : null}
++      {actor ? <><p>{PARIS_ACTOR_CATEGORY_META[actor.category].label}</p><p>{actor.roles.map(role=>PARIS_ACTOR_ROLE_LABELS[role]).join(" · ")}</p><p>{actor.ecosystemRoles.map(role=>PARIS_ECOSYSTEM_ROLE_LABELS[role]).join(" · ")}</p><ul className="list-disc pl-5">{actor.activities.map((activity,index)=><li key={index}>{activity}</li>)}</ul>{actor.platformStatus?.v2UnavailableFeaturesNote ? <p>{actor.platformStatus.v2UnavailableFeaturesNote}</p>:null}</>:null}
++      {school ? <><p>UAI : {school.uai} · {school.level} · {school.sector}</p><ul>{school.sources.map(source=><li key={source.url}><PublicEvidenceLink url={source.url}>{source.label}</PublicEvidenceLink> · {school.verifiedAt}</li>)}</ul></>:null}
++    </DrawerSection>:null}
++    <DrawerSection title={fr ? "Implantations et territoires" : "Sites and territories"}>
++      {geo ? <p><PublicEvidenceLink url={geo.sourceUrl}>{geo.address}</PublicEvidenceLink> · {geo.nature} · {geo.verifiedAt}<span className="block text-xs cmm-text-secondary">{geo.lat.toFixed(6)}, {geo.lng.toFixed(6)}</span></p> : address ? <p><PublicEvidenceLink url={address.sourceUrl}>{address.label}</PublicEvidenceLink> · {address.nature} · {address.checkedAt} · {fr?"Géocodage non établi":"Geocode not established"}</p> : null}
++      {school ? <><ul>{school.addresses.map(a=><li key={a.sourceUrl+":"+a.label}><PublicEvidenceLink url={a.sourceUrl}>{a.label}</PublicEvidenceLink></li>)}</ul>{new Set(school.addresses.map(a=>a.label)).size>1?<p>{fr?"Adresses divergentes, à confirmer":"Conflicting addresses, to confirm"}</p>:null}</>:null}
++      {p.territories.length ? <p>{fr?"Périmètre documenté":"Documented scope"} : {p.territories.join(", ")}</p> : null}
++      {actor?.parisZone.scopeNote ? <p>{actor.parisZone.scopeNote}</p>:null}
++      {actor?.parisZone.arrondissements.length ? <p>{fr?"Arrondissements":"Districts"} : {actor.parisZone.arrondissements.join(", ")}</p>:null}
++      <p className="text-xs cmm-text-secondary">{fr?"Une implantation ne prouve pas la desserte, l'accès au local ni l'autorisation de dépôt.":"A site does not establish coverage, access or drop-off permission."}</p>
++    </DrawerSection>
++    {institution || actor?.publicLeader || p.institutionalPeople.length ? <DrawerSection title={fr?"Organisation et responsables":"Organization and office holders"}>
++      {institution?.legalEmployerId ? <p>{fr?"Employeur juridique":"Legal employer"} : <PublicEntityLink entity={{institutionId:institution.legalEmployerId}} onOpen={onOpen}>{institutionName(institution.legalEmployerId)}</PublicEntityLink></p>:null}
++      {institution?.unitId ? <p>{fr?"Rattachement":"Reporting unit"} : <PublicEntityLink entity={{institutionId:institution.unitId}} onOpen={onOpen}>{institutionName(institution.unitId)}</PublicEntityLink></p>:null}
++      {actor?.publicLeader ? <p><PublicEvidenceLink url={actor.publicLeader.sourceUrl}>{actor.publicLeader.name}</PublicEvidenceLink> · {actor.publicLeader.roleTitle} · {actor.publicLeader.verifiedAt}</p>:null}
++      <ul>{p.institutionalPeople.map(({person,assignments})=><li key={person.id}><PublicEntityLink entity={{institutionId:person.id}} onOpen={onOpen}>{person.name}</PublicEntityLink><ul>{assignments.map(({role,relation,status})=><li key={relation.id}><PublicEntityLink entity={{institutionId:role.id}} onOpen={onOpen}>{role.name}</PublicEntityLink> · {STATUS[status][lang]}</li>)}</ul></li>)}</ul>
++    </DrawerSection>:null}
++    {actor || p.institutionalContact ? <DrawerSection title={fr?"Contacts et participation":"Contacts and participation"}>
++      {p.institutionalContact ? <p><PublicEvidenceLink url={p.institutionalContact.url}>{p.institutionalContact.label}</PublicEvidenceLink> · {p.institutionalContact.kind==="official_portal"?(fr?"Portail d’orientation":"Guidance portal"):(fr?"Contact fonctionnel":"Functional contact")}</p>:null}
++      {actor?.officialWebsite ? <p><PublicEvidenceLink url={actor.officialWebsite}>{fr?"Site officiel":"Official website"}</PublicEvidenceLink></p>:null}
++      {actor?.publicContact ? <p><PublicEvidenceLink url={actor.publicContact.url}>{actor.publicContact.label}</PublicEvidenceLink>{actor.publicContact.email?" · "+actor.publicContact.email:""} · {actor.publicContact.certainty}</p>:null}
++      <ul>{contacts.map(ch=><li key={ch.url}><PublicEvidenceLink url={ch.url}>{ch.label}</PublicEvidenceLink> · <PublicEvidenceLink url={ch.provenance.sourceUrl}>{ch.provenance.sourceLabel}</PublicEvidenceLink> · {ch.provenance.verifiedAt} · {ch.provenance.certainty}</li>)}</ul>
++      {actor?.participationModalities.length?<p>{fr?"Publics concernés":"Participation"} : {actor.participationModalities.map(mode=>PARTICIPATION_MODALITY_LABELS[mode]).join(" · ")}</p>:null}
++    </DrawerSection>:null}
++    {actor?<DrawerSection title={fr?"Services et moyens":"Services and equipment"}>
++      <p>{EQUIPMENT_STATUS_LABELS[actor.equipmentAvailability.status]} · {actor.equipmentAvailability.certainty}</p><p>{actor.equipmentAvailability.summary}</p>
++      {actor.equipmentAvailability.items?.length?<ul className="list-disc pl-5">{actor.equipmentAvailability.items.map(item=><li key={item}>{item}</li>)}</ul>:null}
++      <PublicEvidenceLink url={actor.equipmentAvailability.sourceUrl}>{fr?"Source du matériel":"Equipment source"}</PublicEvidenceLink>
++    </DrawerSection>:null}
++    <PublicEntityRelations projection={p} fr={fr} onOpen={onOpen} selectedRelationId={selectedRelationId}/>
++    {p.scheduledOperations.length?<DrawerSection title={fr?"Opérations programmées":"Scheduled operations"}>{p.scheduledOperations.map(op=><details key={op.id}><summary>{op.label} · {op.date}</summary><ScheduledOperationDetails operation={op} fr={fr}/></details>)}</DrawerSection>:null}
++    {actor?.funding?.sources.length?<DrawerSection title={fr?"Financement":"Funding"}>
++      <p>{actor.funding.entityName} · {actor.funding.period??(fr?"Période non établie":"Period not established")}</p>
++      {actor.funding.calculationBase?<p>{actor.funding.calculationBase}</p>:null}
++      <ul>{actor.funding.sources.map((source,index)=><li key={index}>{source.label}{source.sharePercent!=null?" · "+source.sharePercent+" %":""}{source.amountEur!=null?" · "+source.amountEur.toLocaleString(fr?"fr-FR":"en-GB")+" €":""}</li>)}</ul>
++      {!actor.funding.sharesPublished?<p>{fr?"Parts non publiées":"Shares not published"}</p>:null}{actor.funding.notes?<p>{actor.funding.notes}</p>:null}
++      <PublicEvidenceLink url={actor.funding.sourceUrl}>{fr?"Source consultée le":"Source checked on"} {actor.funding.verifiedAt}</PublicEvidenceLink>
++    </DrawerSection>:null}
++    {!entry?<PublicStructureContextPanel context={p.structureContext} fr={fr}/>:null}
++    <PublicWasteChain projection={p} fr={fr} onOpen={onOpen}/>
+     <PublicEntityHistory projection={p} fr={fr}/>
+     <DrawerSection title={fr?"Sources et preuve":"Sources and evidence"}>
+       {actor?<p><PublicEvidenceLink url={actor.provenance.sourceUrl}>{actor.provenance.sourceLabel}</PublicEvidenceLink> · {actor.verifiedAt} · {actor.provenance.certainty}{actor.provenance.secondarySourceUrl?<><span> · </span><PublicEvidenceLink url={actor.provenance.secondarySourceUrl}>{fr?"Source secondaire":"Secondary source"}</PublicEvidenceLink></>:null}</p>:null}
+diff --git a/apps/web/src/app/admin/relations-institutionnelles/institutional-relations-admin-client.tsx b/apps/web/src/app/admin/relations-institutionnelles/institutional-relations-admin-client.tsx
+--- a/apps/web/src/app/admin/relations-institutionnelles/institutional-relations-admin-client.tsx
++++ b/apps/web/src/app/admin/relations-institutionnelles/institutional-relations-admin-client.tsx
+@@ -3,130 +3,131 @@
+ import { useCallback, useEffect, useState } from "react";
+ import type { InstitutionalContactsListResult } from "@/lib/partners/institutional-relations/relationship-store";
+ import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
+-
+-const API_URL = "/api/admin/partners/institutional-relations";
+-
+-export function InstitutionalRelationsAdminClient() {
+-  const [data, setData] = useState<InstitutionalContactsListResult | null>(null);
+-  const [error, setError] = useState<string | null>(null);
+-  const [loading, setLoading] = useState<boolean>(true);
+-  const [busyId, setBusyId] = useState<string | null>(null);
+-
+-  const load = useCallback(async () => {
+-    try {
+-      const res = await fetch(API_URL, { cache: "no-store" });
+-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+-      const json = (await res.json()) as InstitutionalContactsListResult;
+-      setData(json);
+-      setError(null);
+-    } catch (err) {
+-      setError(err instanceof Error ? err.message : "Erreur de chargement");
+-    } finally {
+-      setLoading(false);
+-    }
+-  }, []);
+-
+-  useEffect(() => {
+-    let active = true;
+-    void fetch(API_URL, { cache: "no-store" })
+-      .then(async (res) => {
+-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+-        return (await res.json()) as InstitutionalContactsListResult;
+-      })
+-      .then((json) => {
+-        if (!active) return;
+-        setData(json);
+-        setError(null);
+-      })
+-      .catch((err) => {
+-        if (!active) return;
+-        setError(err instanceof Error ? err.message : "Erreur de chargement");
+-      })
+-      .finally(() => {
+-        if (active) setLoading(false);
+-      });
+-    return () => {
+-      active = false;
+-    };
+-  }, []);
+-
+-  async function handleReviewFact(factId: string, reviewStatus: "verified" | "withdrawn") {
+-    const promptLabel =
+-      reviewStatus === "verified"
+-        ? "Motif de vérification de la preuve :"
+-        : "Motif de retrait de la preuve :";
+-    const reason = window.prompt(promptLabel)?.trim();
+-    if (!reason) return;
+-
+-    setBusyId(factId);
+-    try {
+-      const res = await fetch(API_URL, {
+-        method: "PATCH",
+-        headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({ factId, reviewStatus, reason }),
+-      });
+-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+-      await load();
+-    } catch (err) {
+-      setError(err instanceof Error ? err.message : "Erreur de mise à jour");
+-    } finally {
+-      setBusyId(null);
+-    }
+-  }
+-
+-  if (loading && !data) {
+-    return <p className="text-sm text-slate-600">Chargement du suivi institutionnel…</p>;
+-  }
+-
+-  if (error) {
+-    return (
+-      <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+-        {error}
+-      </div>
+-    );
+-  }
+-
+-  const contacts = data?.contacts ?? [];
+-
+-  return (
+-    <section aria-label="Tableau de suivi institutionnel" className="space-y-4">
+-      {(data?.truncated.contacts || data?.truncated.facts) && (
+-        <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+-          Historique partiellement tronqué : une absence de preuve affichée ne vaut pas absence certaine de relation.
+-        </div>
+-      )}
+-
+-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+-        <table className="w-full text-left text-sm">
+-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-600">
+-            <tr>
+-              <th className="px-4 py-3">Interlocuteur</th>
+-              <th className="px-4 py-3">Identité publique</th>
+-              <th className="px-4 py-3">Indicateurs</th>
+-              <th className="px-4 py-3">Faits & preuves</th>
+-            </tr>
+-          </thead>
+-          <tbody className="divide-y divide-slate-100">
+-            {contacts.map((contact) => {
+-              const publicProjection = contact.institutionalNodeId
+-                ? projectPublicEntity({ institutionId: contact.institutionalNodeId })
+-                : null;
+-              return (
+-                <tr key={contact.id} className="align-top">
+-                  <td className="px-4 py-3">
+-                    <div className="font-medium text-slate-900">{contact.displayName}</div>
+-                    {contact.roleLabel && (
+-                      <div className="text-xs text-slate-500">{contact.roleLabel}</div>
+-                    )}
+-                    <div className="mt-1 text-xs text-slate-500">
+-                      Statut : {contact.revalidationStatus}
+-                    </div>
+-                  </td>
+-                  <td className="px-4 py-3 text-xs text-slate-700">
+-                    {publicProjection ? (
+-                      <div>
+-                        <div className="font-medium">{publicProjection.identity.name}</div>
+-                        <div>Limites publiques : {publicProjection.limits.length}</div>
++import { PublicEntityDetails } from "@/components/sections/rubriques/annuaire/public-entity-details";
++
++const API_URL = "/api/admin/partners/institutional-relations";
++
++export function InstitutionalRelationsAdminClient() {
++  const [data, setData] = useState<InstitutionalContactsListResult | null>(null);
++  const [error, setError] = useState<string | null>(null);
++  const [loading, setLoading] = useState<boolean>(true);
++  const [busyId, setBusyId] = useState<string | null>(null);
++
++  const load = useCallback(async () => {
++    try {
++      const res = await fetch(API_URL, { cache: "no-store" });
++      if (!res.ok) throw new Error(`HTTP ${res.status}`);
++      const json = (await res.json()) as InstitutionalContactsListResult;
++      setData(json);
++      setError(null);
++    } catch (err) {
++      setError(err instanceof Error ? err.message : "Erreur de chargement");
++    } finally {
++      setLoading(false);
++    }
++  }, []);
++
++  useEffect(() => {
++    let active = true;
++    void fetch(API_URL, { cache: "no-store" })
++      .then(async (res) => {
++        if (!res.ok) throw new Error(`HTTP ${res.status}`);
++        return (await res.json()) as InstitutionalContactsListResult;
++      })
++      .then((json) => {
++        if (!active) return;
++        setData(json);
++        setError(null);
++      })
++      .catch((err) => {
++        if (!active) return;
++        setError(err instanceof Error ? err.message : "Erreur de chargement");
++      })
++      .finally(() => {
++        if (active) setLoading(false);
++      });
++    return () => {
++      active = false;
++    };
++  }, []);
++
++  async function handleReviewFact(factId: string, reviewStatus: "verified" | "withdrawn") {
++    const promptLabel =
++      reviewStatus === "verified"
++        ? "Motif de vérification de la preuve :"
++        : "Motif de retrait de la preuve :";
++    const reason = window.prompt(promptLabel)?.trim();
++    if (!reason) return;
++
++    setBusyId(factId);
++    try {
++      const res = await fetch(API_URL, {
++        method: "PATCH",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({ factId, reviewStatus, reason }),
++      });
++      if (!res.ok) throw new Error(`HTTP ${res.status}`);
++      await load();
++    } catch (err) {
++      setError(err instanceof Error ? err.message : "Erreur de mise à jour");
++    } finally {
++      setBusyId(null);
++    }
++  }
++
++  if (loading && !data) {
++    return <p className="text-sm text-slate-600">Chargement du suivi institutionnel…</p>;
++  }
++
++  if (error) {
++    return (
++      <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
++        {error}
++      </div>
++    );
++  }
++
++  const contacts = data?.contacts ?? [];
++
++  return (
++    <section aria-label="Tableau de suivi institutionnel" className="space-y-4">
++      {(data?.truncated.contacts || data?.truncated.facts) && (
++        <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
++          Historique partiellement tronqué : une absence de preuve affichée ne vaut pas absence certaine de relation.
++        </div>
++      )}
++
++      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
++        <table className="w-full text-left text-sm">
++          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-600">
++            <tr>
++              <th className="px-4 py-3">Interlocuteur</th>
++              <th className="px-4 py-3">Identité publique</th>
++              <th className="px-4 py-3">Indicateurs</th>
++              <th className="px-4 py-3">Faits & preuves</th>
++            </tr>
++          </thead>
++          <tbody className="divide-y divide-slate-100">
++            {contacts.map((contact) => {
++              const publicProjection = contact.institutionalNodeId
++                ? projectPublicEntity({ institutionId: contact.institutionalNodeId })
++                : null;
++              return (
++                <tr key={contact.id} className="align-top">
++                  <td className="px-4 py-3">
++                    <div className="font-medium text-slate-900">{contact.displayName}</div>
++                    {contact.roleLabel && (
++                      <div className="text-xs text-slate-500">{contact.roleLabel}</div>
++                    )}
++                    <div className="mt-1 text-xs text-slate-500">
++                      Statut : {contact.revalidationStatus}
++                    </div>
++                  </td>
++                  <td className="px-4 py-3 text-xs text-slate-700">
++                    {publicProjection ? (
++                      <div>
++                        <div className="font-medium">{publicProjection.identity.name}</div>
++                        <details className="mt-2"><summary className="cursor-pointer">Consulter la fiche publique complète</summary><PublicEntityDetails projection={publicProjection} fr/></details>
+                       </div>
+                     ) : (
+                       <span className="text-slate-400">Prospect privé uniquement</span>
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-entity-details.test.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-entity-details.test.tsx
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-entity-details.test.tsx
+@@ -0,0 +1,46 @@
++// @vitest-environment jsdom
++import React from "react";
++import { renderToStaticMarkup } from "react-dom/server";
++import { describe, expect, it } from "vitest";
++import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
++import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
++import { PARIS_PUBLIC_CLEANLINESS_DATASET } from "@/lib/partners/public-cleanliness-organization";
++import { PublicEntityDetails } from "./public-entity-details";
++
++function content(ref: Parameters<typeof projectPublicEntity>[0]) {
++  const p=projectPublicEntity(ref);
++  expect(p).not.toBeNull();
++  const el=document.createElement("div");
++  el.innerHTML=renderToStaticMarkup(<PublicEntityDetails projection={p!} fr/>);
++  return el;
++}
++describe("public entity detail coverage",()=>{
++  it("renders every documented activity and equipment summary in each actor record",()=>{
++    for(const actor of PARIS_CLEANWALK_ACTORS){
++      const el=content({networkActorId:actor.id});
++      for(const activity of actor.activities)expect(el.textContent).toContain(activity);
++      expect(el.textContent).toContain(actor.equipmentAvailability.summary);
++      for(const item of actor.equipmentAvailability.items??[])expect(el.textContent).toContain(item);
++    }
++  });
++  it("renders source-backed figures and limitations, not merely their counts",()=>{
++    for(const actor of PARIS_CLEANWALK_ACTORS){
++      const p=projectPublicEntity({networkActorId:actor.id})!;
++      const el=content({networkActorId:actor.id});
++      for(const metric of p.metrics){expect(el.textContent).toContain(metric.label.fr);expect(el.textContent).toContain(metric.period);}
++      for(const limit of p.limits)expect(el.textContent).toContain(limit.text.fr);
++    }
++  });
++  it("renders every institutional description and incident relation",()=>{
++    for(const node of PARIS_PUBLIC_CLEANLINESS_DATASET.nodes){
++      const el=content({institutionId:node.id});
++      expect(el.textContent).toContain(node.description);
++      for(const edge of PARIS_PUBLIC_CLEANLINESS_DATASET.relations.filter(r=>r.from===node.id||r.to===node.id)){
++        expect([...el.querySelectorAll("[data-relation-id]")].some(item=>item.getAttribute("data-relation-id")===edge.id)).toBe(true);
++      }
++    }
++  });
++  it("renders the same record for both explicit aliases of a shared institution",()=>{
++    expect(content({institutionId:"town-hall-05"}).textContent).toBe(content({networkActorId:"mairie-paris-5"}).textContent);
++  });
++});

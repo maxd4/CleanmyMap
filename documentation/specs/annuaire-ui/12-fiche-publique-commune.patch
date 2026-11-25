@@ -1,0 +1,3009 @@
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-directory-details.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-directory-details.tsx
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-directory-details.tsx
+@@ -0,0 +1,383 @@
++"use client";
++import type { ReactNode } from "react";
++import { MapPin, Globe, MessageSquare, ChevronDown } from "lucide-react";
++import { CmmButton } from "@/components/ui/cmm-button";
++import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
++import { CONTRIBUTION_LABELS, formatAssociationImpactDate, formatAnnuaireCoverage, getAssociationImpactSummary, getAnnuairePublicDestination, hasTraceableImpactHistory, hasTraceablePastActions, isEditorialAnnuaireEntry, isPublishedPartnerAnnuaireEntry } from "./annuaire-helpers";
++import type { AssociationProfile } from "@/lib/partners/annuaire-types";
++import { getAssociationProfile } from "./annuaire-association-profile";
++import { normalizePublicWebUrl } from "@/lib/partners/onboarding-types";
++
++type DrawerCommonProps = { entry: EnrichedAnnuaireEntry; fr: boolean };
++
++export function DrawerSection({
++  title,
++  defaultOpen = false,
++  children,
++}: {
++  title: string;
++  defaultOpen?: boolean;
++  children: ReactNode;
++}) {
++  return (
++    <details
++      open={defaultOpen}
++      className="group rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4"
++    >
++      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold cmm-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500">
++        <span>{title}</span>
++        <ChevronDown
++          size={16}
++          aria-hidden="true"
++          className="shrink-0 transition-transform group-open:rotate-180"
++        />
++      </summary>
++      <div className="mt-4 space-y-4">{children}</div>
++    </details>
++  );
++}
++
++function AnnuaireDrawerOverviewSection({
++  entry,
++  fr,
++  associationProfile,
++}: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
++  const isPublished = isPublishedPartnerAnnuaireEntry(entry);
++  return (
++    <DrawerSection title={fr ? "Présentation" : "Overview"} defaultOpen>
++      <p className="text-sm leading-relaxed cmm-text-primary">{entry.description}</p>
++      {entry.provenance === "editorial_seed" && entry.publicAddress ? (
++        <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
++          <p className="text-xs font-semibold cmm-text-secondary">{fr ? "Adresse publique documentée" : "Documented public address"}</p>
++          <p className="text-sm font-semibold cmm-text-primary">{entry.publicAddress.label}</p>
++          <p className="mt-1 text-xs cmm-text-secondary">{fr ? "Adresse d'établissement ; ne vaut pas autorisation d'accès ou de dépôt." : "Establishment address; not permission to enter or drop off waste."}</p>
++          {normalizePublicWebUrl(entry.publicAddress.sourceUrl) ? <a href={normalizePublicWebUrl(entry.publicAddress.sourceUrl)!} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs cmm-text-primary underline">{fr ? "Source consultée le" : "Source checked on"} {entry.publicAddress.checkedAt}</a> : null}
++        </div>
++      ) : entry.provenance === "editorial_seed" ? (
++        <div className="rounded-xl border border-dashed border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-secondary">
++          {entry.schoolProfile?.addresses && entry.schoolProfile.addresses.length > 1
++            ? fr
++              ? "Plusieurs adresses sources divergentes (à vérifier dans les sources scolaires)."
++              : "Multiple conflicting source addresses (check school sources)."
++            : entry.kind === "evenement"
++              ? fr
++                ? "Plateforme ou programme sans adresse physique dédiée."
++                : "Platform or programme without a dedicated physical address."
++              : fr
++                ? "Adresse publique d'établissement non établie."
++                : "Public establishment address not established."}
++        </div>
++      ) : null}
++      {entry.featuredReason ? (
++        <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
++          <p className="text-sm italic leading-relaxed cmm-text-primary">
++            « {entry.featuredReason} »
++          </p>
++        </div>
++      ) : null}
++      {associationProfile ? (
++        <div className="space-y-1 rounded-xl border border-[var(--cmm-surface-border)] p-3">
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Mission associative" : "Association mission"}
++          </p>
++          <p className="text-sm leading-relaxed cmm-text-primary">{associationProfile.mission}</p>
++        </div>
++      ) : null}
++      <div className="flex items-start gap-3">
++        <MapPin size={16} className="mt-0.5 shrink-0 text-violet-400" aria-hidden="true" />
++        <div>
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Ancrage territorial" : "Territorial base"}
++          </p>
++          <p className="text-sm font-semibold cmm-text-primary">{formatAnnuaireCoverage(entry)}</p>
++        </div>
++      </div>
++      {isPublished && "availability" in entry && entry.availability ? (
++        <div>
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Disponibilité déclarée" : "Declared availability"}
++          </p>
++          <p className="text-sm font-semibold cmm-text-primary">{entry.availability}</p>
++        </div>
++      ) : null}
++      {entry.tags?.length ? (
++        <div className="flex flex-wrap gap-2">
++          {entry.tags.map((tag) => (
++            <span
++              key={tag}
++              className="rounded-md border border-[var(--cmm-surface-border)] px-2.5 py-1 text-xs font-semibold cmm-text-secondary"
++            >
++              {tag.toUpperCase()}
++            </span>
++          ))}
++        </div>
++      ) : null}
++    </DrawerSection>
++  );
++}
++
++function AnnuaireDrawerImpactSection({
++  entry,
++  fr,
++  associationProfile,
++}: DrawerCommonProps & { associationProfile: AssociationProfile }) {
++  const hasImpact = hasTraceableImpactHistory(entry);
++  const hasActions = hasTraceablePastActions(entry);
++  return (
++    <DrawerSection title={fr ? "Actions et impact" : "Actions and impact"}>
++      <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
++        <p className="text-xs font-semibold cmm-text-secondary">
++          {fr ? "Impact mesuré" : "Measured impact"}
++        </p>
++        <p className="mt-1 text-sm font-semibold cmm-text-primary">
++          {hasImpact ? getAssociationImpactSummary(entry) : fr ? "Non renseigné" : "Not provided"}
++        </p>
++        <p className="mt-1 text-xs cmm-text-secondary">
++          {hasImpact
++            ? formatAssociationImpactDate(associationProfile.impactHistory?.lastActionAt)
++            : fr
++              ? "Date non renseignée"
++              : "Date not provided"}
++        </p>
++        {hasImpact ? (
++          <p className="mt-1 text-xs cmm-text-secondary">
++            Source : {associationProfile.impactHistory?.provenance?.source}
++          </p>
++        ) : null}
++      </div>
++      <div className="space-y-2">
++        <p className="text-xs font-semibold cmm-text-secondary">
++          {fr ? "Actions passées" : "Past actions"}
++        </p>
++        {hasActions ? (
++          <ul className="m-0 list-none space-y-2 p-0">
++            {associationProfile.pastActions.map((action) => (
++              <li
++                key={action}
++                className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-sm cmm-text-primary"
++              >
++                {action}
++              </li>
++            ))}
++          </ul>
++        ) : (
++          <p className="text-sm cmm-text-secondary">{fr ? "Non renseigné" : "Not provided"}</p>
++        )}
++        {hasActions && associationProfile.pastActionsProvenance?.source ? (
++          <p className="text-xs cmm-text-secondary">
++            Source : {associationProfile.pastActionsProvenance.source}
++          </p>
++        ) : null}
++      </div>
++    </DrawerSection>
++  );
++}
++
++function AnnuaireDrawerNeedsSection({
++  entry,
++  fr,
++  associationProfile,
++}: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
++  return (
++    <DrawerSection title={fr ? "Besoins et contributions" : "Needs and contributions"}>
++      <div className="space-y-2">
++        <p className="text-xs font-semibold cmm-text-secondary">
++          {fr ? "Champs d'intervention" : "Areas of intervention"}
++        </p>
++        <div className="flex flex-wrap gap-2">
++          {entry.contributionTypes.map((type) => (
++            <span
++              key={type}
++              className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold cmm-text-primary"
++            >
++              {CONTRIBUTION_LABELS[type] || type}
++            </span>
++          ))}
++        </div>
++      </div>
++      {associationProfile?.recurringNeeds.length ? (
++        <div className="space-y-2">
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Besoins récurrents" : "Recurring needs"}
++          </p>
++          <div className="flex flex-wrap gap-2">
++            {associationProfile.recurringNeeds.map((need) => (
++              <span
++                key={need}
++                className="rounded-full border border-[var(--cmm-surface-border)] px-3 py-1 text-xs font-semibold cmm-text-primary"
++              >
++                {need}
++              </span>
++            ))}
++          </div>
++        </div>
++      ) : null}
++      {associationProfile?.publicCalls.length ? (
++        <div className="space-y-2">
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Appels à contribution" : "Calls for contribution"}
++          </p>
++          {associationProfile.publicCalls.map((call) => (
++            <div
++              key={`${call.type}-${call.label}`}
++              className="rounded-xl border border-[var(--cmm-surface-border)] p-3"
++            >
++              <p className="text-sm font-semibold cmm-text-primary">{call.label}</p>
++              {call.detail ? (
++                <p className="mt-1 text-xs leading-relaxed cmm-text-primary">{call.detail}</p>
++              ) : null}
++            </div>
++          ))}
++        </div>
++      ) : null}
++    </DrawerSection>
++  );
++}
++
++function AnnuaireDrawerContactsSection({
++  entry,
++  fr,
++  isEditorial,
++  publicDestination,
++}: DrawerCommonProps & {
++  isEditorial: boolean;
++  publicDestination: ReturnType<typeof getAnnuairePublicDestination>;
++}) {
++  const websiteUrl = normalizePublicWebUrl(entry.websiteUrl);
++  return (
++    <DrawerSection title={fr ? "Contacts publics" : "Public contacts"}>
++      <p className="text-xs cmm-text-secondary">
++        {fr
++          ? "Seuls les canaux publics explicitement validés sont affichés."
++          : "Only explicitly validated public channels are displayed."}
++      </p>
++      <div className="flex flex-wrap gap-2">
++        {websiteUrl ? (
++          <CmmButton
++            asChild
++            tone="secondary"
++            variant="default"
++            ariaLabel={`${fr ? "Consulter le site" : "Visit website"} — ${entry.name}`}
++          >
++            <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
++              <Globe size={16} className="mr-2" aria-hidden="true" />
++              {fr ? "Consulter le site" : "Visit website"}
++            </a>
++          </CmmButton>
++        ) : (
++          <CmmButton
++            type="button"
++            disabled
++            tone="secondary"
++            variant="default"
++            ariaLabel={fr ? "Site indisponible" : "Website unavailable"}
++          >
++            <Globe size={16} className="mr-2" aria-hidden="true" />
++            {fr ? "Site indisponible" : "Website unavailable"}
++          </CmmButton>
++        )}
++        {publicDestination ? (
++          <CmmButton
++            asChild
++            tone="primary"
++            variant="default"
++            ariaLabel={`${publicDestination.label} — ${entry.name}`}
++          >
++            <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
++              <MessageSquare size={16} className="mr-2" aria-hidden="true" />
++              {isEditorial
++                ? fr
++                  ? "Consulter la ressource"
++                  : "View resource"
++                : fr
++                  ? "Engager le contact"
++                  : "Get in touch"}
++            </a>
++          </CmmButton>
++        ) : (
++          <CmmButton
++            type="button"
++            disabled
++            tone="primary"
++            variant="default"
++            ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
++          >
++            <MessageSquare size={16} className="mr-2" aria-hidden="true" />
++            {isEditorial
++              ? fr
++                ? "Ressource indisponible"
++                : "Resource unavailable"
++              : fr
++                ? "Contact indisponible"
++                : "Contact unavailable"}
++          </CmmButton>
++        )}
++      </div>
++    </DrawerSection>
++  );
++}
++
++function AnnuaireDrawerSourcesSection({
++  entry,
++  fr,
++  associationProfile,
++}: DrawerCommonProps & {
++  associationProfile: AssociationProfile | null;
++}) {
++  const resources = associationProfile?.usefulResources ?? [];
++  return (
++    <DrawerSection title={fr ? "Sources et limites" : "Sources and limitations"}>
++      {resources.length > 0 ? (
++        <div className="space-y-2">
++          <p className="text-xs font-semibold cmm-text-secondary">
++            {fr ? "Ressources utiles" : "Useful resources"}
++          </p>
++          {resources.map((resource) => {
++            const resourceUrl = normalizePublicWebUrl(resource.url);
++            return resourceUrl ? (
++              <a
++                key={resource.label}
++                href={resourceUrl}
++                target="_blank"
++                rel="noopener noreferrer"
++                aria-label={`${resource.label} — ${entry.name}`}
++                className="block rounded-xl border border-[var(--cmm-surface-border)] p-3 hover:border-violet-500/40"
++              >
++                <p className="text-sm font-semibold cmm-text-primary">{resource.label}</p>
++                {resource.description ? (
++                  <p className="mt-1 text-xs cmm-text-secondary">{resource.description}</p>
++                ) : null}
++              </a>
++            ) : (
++              <div
++                key={resource.label}
++                aria-disabled="true"
++                className="rounded-xl border border-[var(--cmm-surface-border)] p-3 opacity-75"
++              >
++                <p className="text-sm font-semibold cmm-text-primary">{resource.label}</p>
++                <p className="mt-1 text-xs cmm-text-secondary">
++                  {fr ? "Ressource indisponible" : "Resource unavailable"}
++                </p>
++              </div>
++            );
++          })}
++        </div>
++      ) : (
++        <p className="text-xs cmm-text-secondary">
++          {fr ? "Ressources publiques à compléter" : "Public resources to be completed"}
++        </p>
++      )}
++    </DrawerSection>
++  );
++}
++
++export function PublicDirectoryDetails({ entry, fr }: DrawerCommonProps) {
++  const associationProfile = getAssociationProfile(entry);
++  return <>
++    <AnnuaireDrawerOverviewSection entry={entry} fr={fr} associationProfile={associationProfile} />
++    {associationProfile ? <AnnuaireDrawerImpactSection entry={entry} fr={fr} associationProfile={associationProfile} /> : null}
++    {entry.contributionTypes.length > 0 || associationProfile ? <AnnuaireDrawerNeedsSection entry={entry} fr={fr} associationProfile={associationProfile} /> : null}
++    <AnnuaireDrawerContactsSection entry={entry} fr={fr} isEditorial={isEditorialAnnuaireEntry(entry)} publicDestination={getAnnuairePublicDestination(entry)} />
++    <AnnuaireDrawerSourcesSection entry={entry} fr={fr} associationProfile={associationProfile} />
++  </>;
++}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-drawer.panel.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-drawer.panel.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-drawer.panel.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-drawer.panel.tsx
+@@ -1,659 +1,216 @@
+ "use client";
+ 
+-import type { ReactNode, RefObject } from "react";
+-import { motion } from "framer-motion";
+-import {
+-  X,
+-  MapPin,
+-  Globe,
+-  Building2,
+-  Sparkles,
+-  MessageSquare,
+-  ChevronDown,
+-} from "lucide-react";
+-import { CmmButton } from "@/components/ui/cmm-button";
+-import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
+-import {
+-  ENTITY_LABELS,
+-  CONTRIBUTION_LABELS,
+-  formatAssociationImpactDate,
+-  formatAnnuaireCoverage,
+-  getAssociationImpactSummary,
+-  getAnnuairePublicDestination,
+-  hasTraceableImpactHistory,
+-  hasTraceablePastActions,
+-  isEditorialAnnuaireEntry,
+-  isPublishedPartnerAnnuaireEntry,
+-} from "./annuaire-helpers";
+-import type { AssociationProfile } from "@/lib/partners/annuaire-types";
+-import { getAssociationProfile, getAssociationStructureBadge } from "./annuaire-association-profile";
+-import { normalizePublicWebUrl } from "@/lib/partners/onboarding-types";
+-import { cn } from "@/lib/utils";
+-import {
+-  PARIS_CLEANWALK_ACTORS,
+-  PARIS_CLEANWALK_RELATIONS,
+-  PARIS_RELATION_TYPE_META,
+-} from "@/lib/partners/paris-cleanwalk-network";
+-import type { PublicStructureContext } from "@/lib/partners/public-structure-context";
+-import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
+-import { PublicStructureContextPanel } from "./public-structure-context-panel";
+-
+-type DrawerCommonProps = { entry: EnrichedAnnuaireEntry; fr: boolean };
+-
+-function DrawerSection({
+-  title,
+-  defaultOpen = false,
+-  children,
+-}: {
+-  title: string;
+-  defaultOpen?: boolean;
+-  children: ReactNode;
+-}) {
+-  return (
+-    <details
+-      open={defaultOpen}
+-      className="group rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4"
+-    >
+-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold cmm-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500">
+-        <span>{title}</span>
+-        <ChevronDown
+-          size={16}
+-          aria-hidden="true"
+-          className="shrink-0 transition-transform group-open:rotate-180"
+-        />
+-      </summary>
+-      <div className="mt-4 space-y-4">{children}</div>
+-    </details>
+-  );
+-}
+-
+-function AnnuaireDrawerHeader({
+-  entry,
+-  fr,
+-  drawerTitleId,
+-  structureBadge,
+-  closeButtonRef,
+-  onClose,
+-}: DrawerCommonProps & {
+-  drawerTitleId: string;
+-  structureBadge: ReturnType<typeof getAssociationStructureBadge>;
+-  closeButtonRef: RefObject<HTMLButtonElement | null>;
+-  onClose: () => void;
+-}) {
+-  return (
+-    <div className="flex-shrink-0 border-b border-[var(--cmm-surface-border)] bg-gradient-to-br from-violet-600/15 via-violet-500/5 to-transparent p-6">
+-      <div className="flex items-start justify-between gap-4">
+-        <div className="min-w-0 space-y-2">
+-          <div className="flex flex-wrap items-center gap-2">
+-            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold cmm-text-primary">
+-              <Building2 size={12} aria-hidden="true" />
+-              {ENTITY_LABELS[entry.kind] || entry.kind}
+-            </span>
+-            <span className="inline-flex items-center rounded-full border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] px-3 py-1 text-xs font-semibold cmm-text-secondary">
+-              {entry.provenance === "editorial_seed"
+-                ? fr
+-                  ? "Ressource éditoriale"
+-                  : "Editorial resource"
+-                : fr
+-                  ? "Fiche partenaire publiée"
+-                  : "Published partner profile"}
+-            </span>
+-            {structureBadge ? (
+-              <span
+-                className={cn(
+-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold",
+-                  structureBadge.tone === "success"
+-                    ? "border-emerald-500/20 bg-emerald-500/10 cmm-text-success"
+-                    : structureBadge.tone === "info"
+-                      ? "border-sky-500/20 bg-sky-500/10 cmm-text-info"
+-                      : "border-amber-500/20 bg-amber-500/10 cmm-text-warning",
+-                )}
+-              >
+-                <Sparkles size={12} aria-hidden="true" />
+-                {structureBadge.label}
+-              </span>
+-            ) : null}
+-          </div>
+-          <h2 id={drawerTitleId} className="text-2xl font-bold leading-tight cmm-text-primary">
+-            {entry.name}
+-          </h2>
+-        </div>
+-        <CmmButton
+-          ref={closeButtonRef}
+-          type="button"
+-          onClick={onClose}
+-          ariaLabel={fr ? "Fermer la fiche partenaire" : "Close partner profile"}
+-          tone="tertiary"
+-          variant="pill"
+-          className="shrink-0"
+-        >
+-          <X size={18} aria-hidden="true" />
+-        </CmmButton>
+-      </div>
+-    </div>
+-  );
+-}
+-
+-function AnnuaireDrawerOverviewSection({
+-  entry,
+-  fr,
+-  associationProfile,
+-}: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
+-  const isPublished = isPublishedPartnerAnnuaireEntry(entry);
+-  return (
+-    <DrawerSection title={fr ? "Présentation" : "Overview"} defaultOpen>
+-      <p className="text-sm leading-relaxed cmm-text-primary">{entry.description}</p>
+-      {entry.provenance === "editorial_seed" && entry.publicAddress ? (
+-        <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
+-          <p className="text-xs font-semibold cmm-text-secondary">{fr ? "Adresse publique documentée" : "Documented public address"}</p>
+-          <p className="text-sm font-semibold cmm-text-primary">{entry.publicAddress.label}</p>
+-          <p className="mt-1 text-xs cmm-text-secondary">{fr ? "Adresse d'établissement ; ne vaut pas autorisation d'accès ou de dépôt." : "Establishment address; not permission to enter or drop off waste."}</p>
+-          {normalizePublicWebUrl(entry.publicAddress.sourceUrl) ? <a href={normalizePublicWebUrl(entry.publicAddress.sourceUrl)!} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs cmm-text-primary underline">{fr ? "Source consultée le" : "Source checked on"} {entry.publicAddress.checkedAt}</a> : null}
+-        </div>
+-      ) : entry.provenance === "editorial_seed" ? (
+-        <div className="rounded-xl border border-dashed border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-secondary">
+-          {entry.schoolProfile?.addresses && entry.schoolProfile.addresses.length > 1
+-            ? fr
+-              ? "Plusieurs adresses sources divergentes (à vérifier dans les sources scolaires)."
+-              : "Multiple conflicting source addresses (check school sources)."
+-            : entry.kind === "evenement"
+-              ? fr
+-                ? "Plateforme ou programme sans adresse physique dédiée."
+-                : "Platform or programme without a dedicated physical address."
+-              : fr
+-                ? "Adresse publique d'établissement non établie."
+-                : "Public establishment address not established."}
+-        </div>
+-      ) : null}
+-      {entry.featuredReason ? (
+-        <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
+-          <p className="text-sm italic leading-relaxed cmm-text-primary">
+-            « {entry.featuredReason} »
+-          </p>
+-        </div>
+-      ) : null}
+-      {associationProfile ? (
+-        <div className="space-y-1 rounded-xl border border-[var(--cmm-surface-border)] p-3">
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Mission associative" : "Association mission"}
+-          </p>
+-          <p className="text-sm leading-relaxed cmm-text-primary">{associationProfile.mission}</p>
+-        </div>
+-      ) : null}
+-      <div className="flex items-start gap-3">
+-        <MapPin size={16} className="mt-0.5 shrink-0 text-violet-400" aria-hidden="true" />
+-        <div>
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Ancrage territorial" : "Territorial base"}
+-          </p>
+-          <p className="text-sm font-semibold cmm-text-primary">{formatAnnuaireCoverage(entry)}</p>
+-        </div>
+-      </div>
+-      {isPublished && "availability" in entry && entry.availability ? (
+-        <div>
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Disponibilité déclarée" : "Declared availability"}
+-          </p>
+-          <p className="text-sm font-semibold cmm-text-primary">{entry.availability}</p>
+-        </div>
+-      ) : null}
+-      {entry.tags?.length ? (
+-        <div className="flex flex-wrap gap-2">
+-          {entry.tags.map((tag) => (
+-            <span
+-              key={tag}
+-              className="rounded-md border border-[var(--cmm-surface-border)] px-2.5 py-1 text-xs font-semibold cmm-text-secondary"
+-            >
+-              {tag.toUpperCase()}
+-            </span>
+-          ))}
+-        </div>
+-      ) : null}
+-    </DrawerSection>
+-  );
+-}
+-
+-function AnnuaireDrawerImpactSection({
+-  entry,
+-  fr,
+-  associationProfile,
+-}: DrawerCommonProps & { associationProfile: AssociationProfile }) {
+-  const hasImpact = hasTraceableImpactHistory(entry);
+-  const hasActions = hasTraceablePastActions(entry);
+-  return (
+-    <DrawerSection title={fr ? "Actions et impact" : "Actions and impact"}>
+-      <div className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
+-        <p className="text-xs font-semibold cmm-text-secondary">
+-          {fr ? "Impact mesuré" : "Measured impact"}
+-        </p>
+-        <p className="mt-1 text-sm font-semibold cmm-text-primary">
+-          {hasImpact ? getAssociationImpactSummary(entry) : fr ? "Non renseigné" : "Not provided"}
+-        </p>
+-        <p className="mt-1 text-xs cmm-text-secondary">
+-          {hasImpact
+-            ? formatAssociationImpactDate(associationProfile.impactHistory?.lastActionAt)
+-            : fr
+-              ? "Date non renseignée"
+-              : "Date not provided"}
+-        </p>
+-        {hasImpact ? (
+-          <p className="mt-1 text-xs cmm-text-secondary">
+-            Source : {associationProfile.impactHistory?.provenance?.source}
+-          </p>
+-        ) : null}
+-      </div>
+-      <div className="space-y-2">
+-        <p className="text-xs font-semibold cmm-text-secondary">
+-          {fr ? "Actions passées" : "Past actions"}
+-        </p>
+-        {hasActions ? (
+-          <ul className="m-0 list-none space-y-2 p-0">
+-            {associationProfile.pastActions.map((action) => (
+-              <li
+-                key={action}
+-                className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-sm cmm-text-primary"
+-              >
+-                {action}
+-              </li>
+-            ))}
+-          </ul>
+-        ) : (
+-          <p className="text-sm cmm-text-secondary">{fr ? "Non renseigné" : "Not provided"}</p>
+-        )}
+-        {hasActions && associationProfile.pastActionsProvenance?.source ? (
+-          <p className="text-xs cmm-text-secondary">
+-            Source : {associationProfile.pastActionsProvenance.source}
+-          </p>
+-        ) : null}
+-      </div>
+-    </DrawerSection>
+-  );
+-}
+-
+-function AnnuaireDrawerNeedsSection({
+-  entry,
+-  fr,
+-  associationProfile,
+-}: DrawerCommonProps & { associationProfile: AssociationProfile | null }) {
+-  return (
+-    <DrawerSection title={fr ? "Besoins et contributions" : "Needs and contributions"}>
+-      <div className="space-y-2">
+-        <p className="text-xs font-semibold cmm-text-secondary">
+-          {fr ? "Champs d'intervention" : "Areas of intervention"}
+-        </p>
+-        <div className="flex flex-wrap gap-2">
+-          {entry.contributionTypes.map((type) => (
+-            <span
+-              key={type}
+-              className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold cmm-text-primary"
+-            >
+-              {CONTRIBUTION_LABELS[type] || type}
+-            </span>
+-          ))}
+-        </div>
+-      </div>
+-      {associationProfile?.recurringNeeds.length ? (
+-        <div className="space-y-2">
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Besoins récurrents" : "Recurring needs"}
+-          </p>
+-          <div className="flex flex-wrap gap-2">
+-            {associationProfile.recurringNeeds.map((need) => (
+-              <span
+-                key={need}
+-                className="rounded-full border border-[var(--cmm-surface-border)] px-3 py-1 text-xs font-semibold cmm-text-primary"
+-              >
+-                {need}
+-              </span>
+-            ))}
+-          </div>
+-        </div>
+-      ) : null}
+-      {associationProfile?.publicCalls.length ? (
+-        <div className="space-y-2">
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Appels à contribution" : "Calls for contribution"}
+-          </p>
+-          {associationProfile.publicCalls.map((call) => (
+-            <div
+-              key={`${call.type}-${call.label}`}
+-              className="rounded-xl border border-[var(--cmm-surface-border)] p-3"
+-            >
+-              <p className="text-sm font-semibold cmm-text-primary">{call.label}</p>
+-              {call.detail ? (
+-                <p className="mt-1 text-xs leading-relaxed cmm-text-primary">{call.detail}</p>
+-              ) : null}
+-            </div>
+-          ))}
+-        </div>
+-      ) : null}
+-    </DrawerSection>
+-  );
+-}
+-
+-function AnnuaireDrawerContactsSection({
+-  entry,
+-  fr,
+-  isEditorial,
+-  publicDestination,
+-}: DrawerCommonProps & {
+-  isEditorial: boolean;
+-  publicDestination: ReturnType<typeof getAnnuairePublicDestination>;
+-}) {
+-  const websiteUrl = normalizePublicWebUrl(entry.websiteUrl);
+-  return (
+-    <DrawerSection title={fr ? "Contacts publics" : "Public contacts"}>
+-      <p className="text-xs cmm-text-secondary">
+-        {fr
+-          ? "Seuls les canaux publics explicitement validés sont affichés."
+-          : "Only explicitly validated public channels are displayed."}
+-      </p>
+-      <div className="flex flex-wrap gap-2">
+-        {websiteUrl ? (
+-          <CmmButton
+-            asChild
+-            tone="secondary"
+-            variant="default"
+-            ariaLabel={`${fr ? "Consulter le site" : "Visit website"} — ${entry.name}`}
+-          >
+-            <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
+-              <Globe size={16} className="mr-2" aria-hidden="true" />
+-              {fr ? "Consulter le site" : "Visit website"}
+-            </a>
+-          </CmmButton>
+-        ) : (
+-          <CmmButton
+-            type="button"
+-            disabled
+-            tone="secondary"
+-            variant="default"
+-            ariaLabel={fr ? "Site indisponible" : "Website unavailable"}
+-          >
+-            <Globe size={16} className="mr-2" aria-hidden="true" />
+-            {fr ? "Site indisponible" : "Website unavailable"}
+-          </CmmButton>
+-        )}
+-        {publicDestination ? (
+-          <CmmButton
+-            asChild
+-            tone="primary"
+-            variant="default"
+-            ariaLabel={`${publicDestination.label} — ${entry.name}`}
+-          >
+-            <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
+-              <MessageSquare size={16} className="mr-2" aria-hidden="true" />
+-              {isEditorial
+-                ? fr
+-                  ? "Consulter la ressource"
+-                  : "View resource"
+-                : fr
+-                  ? "Engager le contact"
+-                  : "Get in touch"}
+-            </a>
+-          </CmmButton>
+-        ) : (
+-          <CmmButton
+-            type="button"
+-            disabled
+-            tone="primary"
+-            variant="default"
+-            ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
+-          >
+-            <MessageSquare size={16} className="mr-2" aria-hidden="true" />
+-            {isEditorial
+-              ? fr
+-                ? "Ressource indisponible"
+-                : "Resource unavailable"
+-              : fr
+-                ? "Contact indisponible"
+-                : "Contact unavailable"}
+-          </CmmButton>
+-        )}
+-      </div>
+-    </DrawerSection>
+-  );
+-}
+-
+-function AnnuaireDrawerSourcesSection({
+-  entry,
+-  fr,
+-  associationProfile,
+-  structureContext,
+-}: DrawerCommonProps & {
+-  associationProfile: AssociationProfile | null;
+-  structureContext: PublicStructureContext | null;
+-}) {
+-  const resources = associationProfile?.usefulResources ?? [];
+-  return (
+-    <DrawerSection title={fr ? "Sources et limites" : "Sources and limitations"}>
+-      {resources.length > 0 ? (
+-        <div className="space-y-2">
+-          <p className="text-xs font-semibold cmm-text-secondary">
+-            {fr ? "Ressources utiles" : "Useful resources"}
+-          </p>
+-          {resources.map((resource) => {
+-            const resourceUrl = normalizePublicWebUrl(resource.url);
+-            return resourceUrl ? (
+-              <a
+-                key={resource.label}
+-                href={resourceUrl}
+-                target="_blank"
+-                rel="noopener noreferrer"
+-                aria-label={`${resource.label} — ${entry.name}`}
+-                className="block rounded-xl border border-[var(--cmm-surface-border)] p-3 hover:border-violet-500/40"
+-              >
+-                <p className="text-sm font-semibold cmm-text-primary">{resource.label}</p>
+-                {resource.description ? (
+-                  <p className="mt-1 text-xs cmm-text-secondary">{resource.description}</p>
+-                ) : null}
+-              </a>
+-            ) : (
+-              <div
+-                key={resource.label}
+-                aria-disabled="true"
+-                className="rounded-xl border border-[var(--cmm-surface-border)] p-3 opacity-75"
+-              >
+-                <p className="text-sm font-semibold cmm-text-primary">{resource.label}</p>
+-                <p className="mt-1 text-xs cmm-text-secondary">
+-                  {fr ? "Ressource indisponible" : "Resource unavailable"}
+-                </p>
+-              </div>
+-            );
+-          })}
+-        </div>
+-      ) : (
+-        <p className="text-xs cmm-text-secondary">
+-          {fr ? "Ressources publiques à compléter" : "Public resources to be completed"}
+-        </p>
+-      )}
+-      <PublicStructureContextPanel fr={fr} context={structureContext} />
+-    </DrawerSection>
+-  );
+-}
+-
+-function AnnuaireDrawerRelationsSection({ entryId, fr }: { entryId: string; fr: boolean }) {
+-  const linkedActor = PARIS_CLEANWALK_ACTORS.find((actor) => actor.annuaireEntryId === entryId);
+-  if (!linkedActor) return null;
+-  const relations = PARIS_CLEANWALK_RELATIONS.filter(
+-    (rel) => rel.sourceId === linkedActor.id || rel.targetId === linkedActor.id,
+-  );
+-  if (relations.length === 0) return null;
+-
+-  return (
+-    <DrawerSection title={fr ? `Relations (${relations.length})` : `Relations (${relations.length})`}>
+-      <ul className="m-0 list-none space-y-2 p-0">
+-        {relations.map((rel) => {
+-          const peerId = rel.sourceId === linkedActor.id ? rel.targetId : rel.sourceId;
+-          const peer = PARIS_CLEANWALK_ACTORS.find((actor) => actor.id === peerId);
+-          return (
+-            <li
+-              key={rel.id}
+-              className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-xs"
+-            >
+-              <p className="font-semibold cmm-text-primary">
+-                {peer?.name ?? peerId} · {PARIS_RELATION_TYPE_META[rel.relationType].label}
+-              </p>
+-              <p className="mt-1 cmm-text-secondary">{rel.summary}</p>
+-            </li>
+-          );
+-        })}
+-      </ul>
+-    </DrawerSection>
+-  );
+-}
+-
+-function AnnuaireDrawerFooter({
+-  entry,
+-  fr,
+-  isEditorial,
+-  publicDestination,
+-  onClose,
+-}: DrawerCommonProps & {
+-  isEditorial: boolean;
+-  publicDestination: ReturnType<typeof getAnnuairePublicDestination>;
+-  onClose: () => void;
+-}) {
+-  return (
+-    <div className="flex flex-wrap gap-3 border-t border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] p-4">
+-      <CmmButton type="button" onClick={onClose} tone="tertiary" variant="pill" className="flex-1">
+-        {fr ? "Fermer" : "Close"}
+-      </CmmButton>
+-      {publicDestination ? (
+-        <CmmButton
+-          asChild
+-          tone="primary"
+-          variant="default"
+-          ariaLabel={`${isEditorial ? (fr ? "Consulter la ressource" : "View resource") : fr ? "Engager le contact" : "Get in touch"} — ${entry.name}`}
+-          className="flex-[2]"
+-        >
+-          <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
+-            <span>
+-              {isEditorial
+-                ? fr
+-                  ? "Consulter la ressource"
+-                  : "View resource"
+-                : fr
+-                  ? "Engager le contact"
+-                  : "Get in touch"}
+-            </span>
+-            <MessageSquare size={16} className="ml-2" aria-hidden="true" />
+-          </a>
+-        </CmmButton>
+-      ) : (
+-        <CmmButton
+-          type="button"
+-          disabled
+-          tone="primary"
+-          variant="default"
+-          ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
+-          className="flex-[2]"
+-        >
+-          <span>
+-            {isEditorial
+-              ? fr
+-                ? "Ressource indisponible"
+-                : "Resource unavailable"
+-              : fr
+-                ? "Contact indisponible"
+-                : "Contact unavailable"}
+-          </span>
+-          <MessageSquare size={16} className="ml-2" aria-hidden="true" />
+-        </CmmButton>
+-      )}
+-    </div>
+-  );
+-}
+-
+-export function AnnuairePartnerDrawerPanel({
+-  drawerRef,
+-  closeButtonRef,
+-  drawerTitleId,
+-  entry,
+-  isOpen,
+-  onClose,
+-  fr,
+-  shouldReduceMotion,
+-}: DrawerCommonProps & {
+-  drawerRef: RefObject<HTMLDivElement | null>;
+-  closeButtonRef: RefObject<HTMLButtonElement | null>;
+-  drawerTitleId: string;
+-  isOpen: boolean;
+-  onClose: () => void;
+-  shouldReduceMotion: boolean | null;
+-}) {
+-  if (!isOpen) return null;
+-  const associationProfile = getAssociationProfile(entry);
+-  const structureBadge = getAssociationStructureBadge(entry);
+-  const isEditorial = isEditorialAnnuaireEntry(entry);
+-  const publicDestination = getAnnuairePublicDestination(entry);
+-  const structureContext = isEditorial ? projectPublicEntity({ annuaireEntryId: entry.id })?.structureContext ?? null : null;
+-
+-  return (
+-    <>
+-      <motion.div
+-        data-motion-role="overlay"
+-        initial={{ opacity: 0 }}
+-        animate={{ opacity: 1 }}
+-        exit={{ opacity: 0 }}
+-        className="fixed inset-0 z-[100] bg-slate-950/75"
+-        onClick={onClose}
+-      />
+-      <motion.div
+-        ref={drawerRef}
+-        data-motion-role="overlay"
+-        initial={{ x: "110%", opacity: 0 }}
+-        animate={{ x: 0, opacity: 1 }}
+-        exit={{ x: "110%", opacity: 0 }}
+-        transition={
+-          shouldReduceMotion ? { duration: 0 } : { type: "spring", damping: 30, stiffness: 200 }
+-        }
+-        role="dialog"
+-        aria-modal="true"
+-        aria-labelledby={drawerTitleId}
+-        tabIndex={-1}
+-        className="fixed top-2 bottom-2 right-2 z-[110] flex w-[calc(100%-1rem)] max-w-[550px] flex-col overflow-hidden rounded-3xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] shadow-2xl sm:top-4 sm:bottom-4 sm:right-4 sm:w-[calc(100%-2rem)]"
+-      >
+-        <AnnuaireDrawerHeader
+-          entry={entry}
+-          fr={fr}
+-          drawerTitleId={drawerTitleId}
+-          structureBadge={structureBadge}
+-          closeButtonRef={closeButtonRef}
+-          onClose={onClose}
+-        />
+-        <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-6">
+-          <AnnuaireDrawerOverviewSection
+-            entry={entry}
+-            fr={fr}
+-            associationProfile={associationProfile}
+-          />
+-          {associationProfile ? (
+-            <AnnuaireDrawerImpactSection
+-              entry={entry}
+-              fr={fr}
+-              associationProfile={associationProfile}
+-            />
+-          ) : null}
+-          {entry.contributionTypes.length > 0 || associationProfile ? (
+-            <AnnuaireDrawerNeedsSection
+-              entry={entry}
+-              fr={fr}
+-              associationProfile={associationProfile}
+-            />
+-          ) : null}
+-          <AnnuaireDrawerContactsSection
+-            entry={entry}
+-            fr={fr}
+-            isEditorial={isEditorial}
+-            publicDestination={publicDestination}
+-          />
+-          <AnnuaireDrawerSourcesSection
+-            entry={entry}
+-            fr={fr}
+-            associationProfile={associationProfile}
+-            structureContext={structureContext}
+-          />
+-          <AnnuaireDrawerRelationsSection entryId={entry.id} fr={fr} />
++import type { RefObject } from "react";
++import { motion } from "framer-motion";
++import {
++  X,
++  Building2,
++  Sparkles,
++  MessageSquare,
++} from "lucide-react";
++import { CmmButton } from "@/components/ui/cmm-button";
++import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
++import {
++  ENTITY_LABELS,
++  formatAnnuaireCoverage,
++  getAnnuairePublicDestination,
++  isEditorialAnnuaireEntry,
++} from "./annuaire-helpers";
++import { getAssociationStructureBadge } from "./annuaire-association-profile";
++import { cn } from "@/lib/utils";
++import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
++import { PublicEntityDetails } from "./public-entity-details";
++import { PublicDirectoryDetails } from "./public-directory-details";
++
++type DrawerCommonProps = { entry: EnrichedAnnuaireEntry; fr: boolean };
++
++function AnnuaireDrawerHeader({
++  entry,
++  fr,
++  drawerTitleId,
++  structureBadge,
++  closeButtonRef,
++  onClose,
++}: DrawerCommonProps & {
++  drawerTitleId: string;
++  structureBadge: ReturnType<typeof getAssociationStructureBadge>;
++  closeButtonRef: RefObject<HTMLButtonElement | null>;
++  onClose: () => void;
++}) {
++  return (
++    <div className="flex-shrink-0 border-b border-[var(--cmm-surface-border)] bg-gradient-to-br from-violet-600/15 via-violet-500/5 to-transparent p-6">
++      <div className="flex items-start justify-between gap-4">
++        <div className="min-w-0 space-y-2">
++          <div className="flex flex-wrap items-center gap-2">
++            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold cmm-text-primary">
++              <Building2 size={12} aria-hidden="true" />
++              {ENTITY_LABELS[entry.kind] || entry.kind}
++            </span>
++            <span className="inline-flex items-center rounded-full border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] px-3 py-1 text-xs font-semibold cmm-text-secondary">
++              {entry.provenance === "editorial_seed"
++                ? fr
++                  ? "Ressource éditoriale"
++                  : "Editorial resource"
++                : fr
++                  ? "Fiche partenaire publiée"
++                  : "Published partner profile"}
++            </span>
++            {structureBadge ? (
++              <span
++                className={cn(
++                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold",
++                  structureBadge.tone === "success"
++                    ? "border-emerald-500/20 bg-emerald-500/10 cmm-text-success"
++                    : structureBadge.tone === "info"
++                      ? "border-sky-500/20 bg-sky-500/10 cmm-text-info"
++                      : "border-amber-500/20 bg-amber-500/10 cmm-text-warning",
++                )}
++              >
++                <Sparkles size={12} aria-hidden="true" />
++                {structureBadge.label}
++              </span>
++            ) : null}
++          </div>
++          <h2 id={drawerTitleId} className="text-2xl font-bold leading-tight cmm-text-primary">
++            {entry.name}
++          </h2>
++        </div>
++        <CmmButton
++          ref={closeButtonRef}
++          type="button"
++          onClick={onClose}
++          ariaLabel={fr ? "Fermer la fiche partenaire" : "Close partner profile"}
++          tone="tertiary"
++          variant="pill"
++          className="shrink-0"
++        >
++          <X size={18} aria-hidden="true" />
++        </CmmButton>
++      </div>
++    </div>
++  );
++}
++
++function AnnuaireDrawerFooter({
++  entry,
++  fr,
++  isEditorial,
++  publicDestination,
++  onClose,
++}: DrawerCommonProps & {
++  isEditorial: boolean;
++  publicDestination: ReturnType<typeof getAnnuairePublicDestination>;
++  onClose: () => void;
++}) {
++  return (
++    <div className="flex flex-wrap gap-3 border-t border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] p-4">
++      <CmmButton type="button" onClick={onClose} tone="tertiary" variant="pill" className="flex-1">
++        {fr ? "Fermer" : "Close"}
++      </CmmButton>
++      {publicDestination ? (
++        <CmmButton
++          asChild
++          tone="primary"
++          variant="default"
++          ariaLabel={`${isEditorial ? (fr ? "Consulter la ressource" : "View resource") : fr ? "Engager le contact" : "Get in touch"} — ${entry.name}`}
++          className="flex-[2]"
++        >
++          <a href={publicDestination.url} target="_blank" rel="noopener noreferrer">
++            <span>
++              {isEditorial
++                ? fr
++                  ? "Consulter la ressource"
++                  : "View resource"
++                : fr
++                  ? "Engager le contact"
++                  : "Get in touch"}
++            </span>
++            <MessageSquare size={16} className="ml-2" aria-hidden="true" />
++          </a>
++        </CmmButton>
++      ) : (
++        <CmmButton
++          type="button"
++          disabled
++          tone="primary"
++          variant="default"
++          ariaLabel={fr ? "Canal public indisponible" : "Public channel unavailable"}
++          className="flex-[2]"
++        >
++          <span>
++            {isEditorial
++              ? fr
++                ? "Ressource indisponible"
++                : "Resource unavailable"
++              : fr
++                ? "Contact indisponible"
++                : "Contact unavailable"}
++          </span>
++          <MessageSquare size={16} className="ml-2" aria-hidden="true" />
++        </CmmButton>
++      )}
++    </div>
++  );
++}
++
++export function AnnuairePartnerDrawerPanel({
++  drawerRef,
++  closeButtonRef,
++  drawerTitleId,
++  entry,
++  isOpen,
++  onClose,
++  fr,
++  shouldReduceMotion,
++}: DrawerCommonProps & {
++  drawerRef: RefObject<HTMLDivElement | null>;
++  closeButtonRef: RefObject<HTMLButtonElement | null>;
++  drawerTitleId: string;
++  isOpen: boolean;
++  onClose: () => void;
++  shouldReduceMotion: boolean | null;
++}) {
++  if (!isOpen) return null;
++  const structureBadge = getAssociationStructureBadge(entry);
++  const isEditorial = isEditorialAnnuaireEntry(entry);
++  const publicDestination = getAnnuairePublicDestination(entry);
++  const projection = projectPublicEntity({ annuaireEntryId: entry.id }, entry.provenance === "published_partner" ? entry : undefined);
++
++  return (
++    <>
++      <motion.div
++        data-motion-role="overlay"
++        initial={{ opacity: 0 }}
++        animate={{ opacity: 1 }}
++        exit={{ opacity: 0 }}
++        className="fixed inset-0 z-[100] bg-slate-950/75"
++        onClick={onClose}
++      />
++      <motion.div
++        ref={drawerRef}
++        data-motion-role="overlay"
++        initial={{ x: "110%", opacity: 0 }}
++        animate={{ x: 0, opacity: 1 }}
++        exit={{ x: "110%", opacity: 0 }}
++        transition={
++          shouldReduceMotion ? { duration: 0 } : { type: "spring", damping: 30, stiffness: 200 }
++        }
++        role="dialog"
++        aria-modal="true"
++        aria-labelledby={drawerTitleId}
++        tabIndex={-1}
++        className="fixed top-2 bottom-2 right-2 z-[110] flex w-[calc(100%-1rem)] max-w-[550px] flex-col overflow-hidden rounded-3xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] shadow-2xl sm:top-4 sm:bottom-4 sm:right-4 sm:w-[calc(100%-2rem)]"
++      >
++        <AnnuaireDrawerHeader
++          entry={entry}
++          fr={fr}
++          drawerTitleId={drawerTitleId}
++          structureBadge={structureBadge}
++          closeButtonRef={closeButtonRef}
++          onClose={onClose}
++        />
++        <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-6">
++          {projection ? <PublicEntityDetails projection={projection} fr={fr} /> : <PublicDirectoryDetails entry={entry} fr={fr} /> }
+         </div>
+         <AnnuaireDrawerFooter
+           entry={entry}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-entity-evidence.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-entity-evidence.tsx
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-entity-evidence.tsx
+@@ -0,0 +1,71 @@
++"use client";
++import type { ReactNode } from "react";
++import type { CanonicalPublicEntityProjection, CanonicalPublicEntityRef } from "@/lib/partners/public-entity-projection";
++import { PARIS_CLEANWALK_ACTORS, PARIS_RELATION_TYPE_META, computeRelationThickness, isSafeHttpUrl, isPrivateOrUnauthorizedInviteUrl } from "@/lib/partners/paris-cleanwalk-network";
++import { PARIS_PUBLIC_CLEANLINESS_DATASET } from "@/lib/partners/public-cleanliness-organization";
++import { getScheduledOperation } from "@/lib/partners/paris-cleanwalk-network.scheduled";
++import { ScheduledOperationDetails } from "./paris-network-scheduled-operation";
++import { DrawerSection } from "./public-directory-details";
++
++export type OpenPublicEntity = (ref: CanonicalPublicEntityRef) => void;
++export function PublicEvidenceLink({ url, children }: { url?: string | null; children: ReactNode }) {
++  return url && isSafeHttpUrl(url) && !isPrivateOrUnauthorizedInviteUrl(url)
++    ? <a href={url} target="_blank" rel="noopener noreferrer" className="break-words cmm-text-info underline underline-offset-2">{children}</a>
++    : <span>{children}</span>;
++}
++export function PublicEntityLink({ entity, onOpen, children }: { entity: CanonicalPublicEntityRef; onOpen?: OpenPublicEntity; children: ReactNode }) {
++  return onOpen ? <button type="button" className="text-left font-semibold cmm-text-info underline underline-offset-2" onClick={() => onOpen(entity)}>{children}</button> : <span className="font-semibold">{children}</span>;
++}
++const KIND = {
++  hierarchy: ["Rattachement hiérarchique", "Reporting line"], mandate: ["Mandat", "Mandate"],
++  assignment: ["Affectation", "Assignment"], coordination: ["Coordination", "Coordination"],
++  cooperation: ["Coopération", "Cooperation"], programme: ["Programme", "Programme"], service: ["Prestation", "Service"],
++} as const;
++export const STATUS = { confirmed: ["Documenté", "Documented"], historical: ["Historique", "Historical"], unknown: ["Non établi", "Not established"] } as const;
++const actorName = (id: string) => PARIS_CLEANWALK_ACTORS.find(a => a.id === id)?.name ?? id;
++export const institutionName = (id: string) => PARIS_PUBLIC_CLEANLINESS_DATASET.nodes.find(n => n.id === id)?.name ?? id;
++
++export function PublicEntityRelations({ projection, fr, onOpen }: { projection: CanonicalPublicEntityProjection; fr: boolean; onOpen?: OpenPublicEntity }) {
++  const lang = fr ? 0 : 1;
++  const count = projection.relations.length + projection.institutionRelations.length;
++  return <DrawerSection title={(fr ? "Relations (" : "Relationships (") + count + ")"}>
++    {!count ? <p className="text-xs cmm-text-secondary">{fr ? "Aucune relation renseignée dans le registre. Cela ne prouve pas une absence de coopération." : "No relationship recorded. This does not establish that cooperation is absent."}</p> : null}
++    {projection.institutionRelations.map(edge => <details key={"institution:"+edge.id} data-relation-id={edge.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
++      <summary className="cursor-pointer font-semibold">{KIND[edge.kind][lang]} · {STATUS[edge.status][lang]}</summary>
++      <p className="mt-2"><PublicEntityLink entity={{institutionId:edge.from}} onOpen={onOpen}>{institutionName(edge.from)}</PublicEntityLink> → <PublicEntityLink entity={{institutionId:edge.to}} onOpen={onOpen}>{institutionName(edge.to)}</PublicEntityLink></p>
++      {edge.validFrom || edge.validUntil ? <p>{edge.validFrom ?? (fr ? "Début inconnu" : "Start unknown")} / {edge.validUntil ?? (fr ? "Fin non renseignée" : "End not provided")}</p> : null}
++      <ul className="mt-2 text-xs">{edge.sourceIds.map(id => { const src = projection.institutionSources.find(s => s.id === id); return src ? <li key={id}><PublicEvidenceLink url={src.url}>{src.label}</PublicEvidenceLink> · {src.verifiedAt}</li> : null; })}</ul>
++    </details>)}
++    {projection.relations.map(rel => {
++      const scheduled = rel.relationType === "collaboration_programmee";
++      const operation = scheduled ? getScheduledOperation(rel.operationId) : undefined;
++      const count12m = scheduled ? null : computeRelationThickness(rel).operationsCount12m;
++      return <details key={"network:"+rel.id} data-relation-id={rel.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
++        <summary className="cursor-pointer font-semibold">{rel.title} · {PARIS_RELATION_TYPE_META[rel.relationType].label}</summary>
++        <p className="mt-2"><PublicEntityLink entity={{networkActorId:rel.sourceId}} onOpen={onOpen}>{actorName(rel.sourceId)}</PublicEntityLink> → <PublicEntityLink entity={{networkActorId:rel.targetId}} onOpen={onOpen}>{actorName(rel.targetId)}</PublicEntityLink></p>
++        <p>{rel.summary}</p>
++        {scheduled ? <p>{fr ? "Programmée, déclaration de l’organisateur" : "Scheduled, organizer declaration"} · {rel.source.declaredOn}</p> : <p>{rel.source.certainty === "verifie" ? (fr ? "Documentée" : "Documented") : (fr ? "À confirmer" : "To confirm")} · <PublicEvidenceLink url={rel.source.url}>{rel.source.label}</PublicEvidenceLink> · {rel.source.verifiedAt}</p>}
++        {rel.relationType === "action_commune" ? <p>{fr ? "Opérations sur 12 mois : " : "Operations over 12 months: "}{count12m ?? (fr ? "Non renseigné" : "Not provided")}</p> : null}
++        {rel.operations?.length ? <ul>{rel.operations.map(op => <li key={op.id+":"+op.date}>{op.date} · <PublicEvidenceLink url={op.sourceUrl}>{op.label}</PublicEvidenceLink></li>)}</ul> : null}
++        {operation ? <ScheduledOperationDetails operation={operation} fr={fr}/> : null}
++      </details>;
++    })}
++  </DrawerSection>;
++}
++export function PublicEntityHistory({ projection, fr }: { projection: CanonicalPublicEntityProjection; fr: boolean }) {
++  const items = new Map<string, { date:string; label:string; qualification:string; url?:string }>();
++  for (const edge of projection.institutionRelations) {
++    const source = projection.institutionSources.find(s => edge.sourceIds.includes(s.id));
++    for (const [date, label] of [[edge.validFrom, fr ? "Début documenté" : "Documented start"], [edge.validUntil, fr ? "Fin documentée" : "Documented end"]] as const) {
++      if (date) items.set(edge.id+":"+label, {date,label:label+" : "+KIND[edge.kind][fr?0:1],qualification:STATUS[edge.status][fr?0:1],url:source?.url});
++    }
++  }
++  for (const rel of projection.relations) if (rel.relationType === "action_commune" && rel.source.certainty === "verifie") {
++    for (const op of rel.operations ?? []) items.set("operation:"+op.id+":"+op.date,{date:op.date,label:op.label,qualification:fr?"Opération documentée":"Documented operation",url:op.sourceUrl});
++  }
++  for (const op of projection.scheduledOperations) items.set("scheduled:"+op.id,{date:op.date,label:op.label,qualification:fr?"Programmée (déclaration)":"Scheduled (declaration)"});
++  if (!items.size) return null;
++  return <DrawerSection title={fr ? "Chronologie documentée" : "Documented timeline"}>
++    <ol className="space-y-2">{[...items.entries()].sort((a,b)=>b[1].date.localeCompare(a[1].date)).map(([id,item])=><li key={id}><strong>{item.date}</strong> · <PublicEvidenceLink url={item.url}>{item.label}</PublicEvidenceLink><span className="block text-xs cmm-text-secondary">{item.qualification}</span></li>)}</ol>
++  </DrawerSection>;
++}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-entity-details.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-entity-details.tsx
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-entity-details.tsx
+@@ -0,0 +1,70 @@
++"use client";
++import type { CanonicalPublicEntityProjection } from "@/lib/partners/public-entity-projection";
++import { EQUIPMENT_STATUS_LABELS, PARTICIPATION_MODALITY_LABELS, PARIS_ACTOR_CATEGORY_META, PARIS_ACTOR_ROLE_LABELS, PARIS_ECOSYSTEM_ROLE_LABELS, sanitizeAndDeduplicatePublicChannels } from "@/lib/partners/paris-cleanwalk-network";
++import { PublicDirectoryDetails, DrawerSection } from "./public-directory-details";
++import { PublicEntityHistory, PublicEntityRelations, PublicEvidenceLink, PublicEntityLink, institutionName, STATUS, type OpenPublicEntity } from "./public-entity-evidence";
++import { PublicStructureContextPanel } from "./public-structure-context-panel";
++import { ScheduledOperationDetails } from "./paris-network-scheduled-operation";
++import { getNetworkPublicAddress, getNetworkPublicLogo } from "@/lib/partners/public-network-identity-media";
++import Image from "next/image";
++
++export function PublicEntityDetails({ projection: p, fr, onOpen }: { projection: CanonicalPublicEntityProjection; fr: boolean; onOpen?: OpenPublicEntity }) {
++  const actor = p.publicActor, institution = p.institution, entry = p.directoryEntry;
++  const lang = fr ? 0 : 1;
++  const logo = getNetworkPublicLogo(p.identity.networkActorId ?? p.identity.annuaireEntryId);
++  const address = getNetworkPublicAddress(p.identity.networkActorId ?? p.identity.annuaireEntryId);
++  const school = actor?.schoolProfile ?? (entry?.provenance === "editorial_seed" ? entry.schoolProfile : undefined);
++  const contacts = sanitizeAndDeduplicatePublicChannels(actor?.publicChannels ?? []);
++  return <div data-public-entity-details className="space-y-3 text-sm cmm-text-primary">
++    {logo ? <Image src={logo.localPath} width={56} height={56} className="object-contain" alt={p.identity.name} /> : null}
++    {entry ? <PublicDirectoryDetails entry={{...entry,distanceKm:null}} fr={fr}/> : null}
++    {actor || institution || school ? <DrawerSection title={fr ? "Identité et compétences" : "Identity and responsibilities"} defaultOpen={!entry}>
++      {entry ? <p>{entry.legalIdentity}</p> : null}
++      {institution ? <><p>{institution.description}</p><p>{fr?"Type et service":"Kind and service"} : {institution.kind} · {institution.service} · {STATUS[institution.assignment][lang]}</p></> : null}
++      {actor ? <><p>{PARIS_ACTOR_CATEGORY_META[actor.category].label}</p><p>{actor.roles.map(role=>PARIS_ACTOR_ROLE_LABELS[role]).join(" · ")}</p><p>{actor.ecosystemRoles.map(role=>PARIS_ECOSYSTEM_ROLE_LABELS[role]).join(" · ")}</p><ul className="list-disc pl-5">{actor.activities.map((activity,index)=><li key={index}>{activity}</li>)}</ul>{actor.platformStatus?.v2UnavailableFeaturesNote ? <p>{actor.platformStatus.v2UnavailableFeaturesNote}</p>:null}</>:null}
++      {school ? <><p>UAI : {school.uai} · {school.level} · {school.sector}</p><ul>{school.sources.map(source=><li key={source.url}><PublicEvidenceLink url={source.url}>{source.label}</PublicEvidenceLink> · {school.verifiedAt}</li>)}</ul></>:null}
++    </DrawerSection>:null}
++    <DrawerSection title={fr ? "Implantations et territoires" : "Sites and territories"}>
++      {address ? <p><PublicEvidenceLink url={address.sourceUrl}>{address.label}</PublicEvidenceLink> · {address.nature} · {address.checkedAt}</p> : null}
++      {school ? <><ul>{school.addresses.map(a=><li key={a.sourceUrl+":"+a.label}><PublicEvidenceLink url={a.sourceUrl}>{a.label}</PublicEvidenceLink></li>)}</ul>{new Set(school.addresses.map(a=>a.label)).size>1?<p>{fr?"Adresses divergentes, à confirmer":"Conflicting addresses, to confirm"}</p>:null}</>:null}
++      {p.territories.length ? <p>{fr?"Périmètre documenté":"Documented scope"} : {p.territories.join(", ")}</p> : null}
++      {actor?.parisZone.scopeNote ? <p>{actor.parisZone.scopeNote}</p>:null}
++      {actor?.parisZone.arrondissements.length ? <p>{fr?"Arrondissements":"Districts"} : {actor.parisZone.arrondissements.join(", ")}</p>:null}
++      <p className="text-xs cmm-text-secondary">{fr?"Une implantation ne prouve pas la desserte, l'accès au local ni l'autorisation de dépôt.":"A site does not establish coverage, access or drop-off permission."}</p>
++    </DrawerSection>
++    {institution || actor?.publicLeader || p.institutionalPeople.length ? <DrawerSection title={fr?"Organisation et responsables":"Organization and office holders"}>
++      {institution?.legalEmployerId ? <p>{fr?"Employeur juridique":"Legal employer"} : <PublicEntityLink entity={{institutionId:institution.legalEmployerId}} onOpen={onOpen}>{institutionName(institution.legalEmployerId)}</PublicEntityLink></p>:null}
++      {institution?.unitId ? <p>{fr?"Rattachement":"Reporting unit"} : <PublicEntityLink entity={{institutionId:institution.unitId}} onOpen={onOpen}>{institutionName(institution.unitId)}</PublicEntityLink></p>:null}
++      {actor?.publicLeader ? <p><PublicEvidenceLink url={actor.publicLeader.sourceUrl}>{actor.publicLeader.name}</PublicEvidenceLink> · {actor.publicLeader.roleTitle} · {actor.publicLeader.verifiedAt}</p>:null}
++      <ul>{p.institutionalPeople.map(({person,assignments})=><li key={person.id}><PublicEntityLink entity={{institutionId:person.id}} onOpen={onOpen}>{person.name}</PublicEntityLink><ul>{assignments.map(({role,relation,status})=><li key={relation.id}><PublicEntityLink entity={{institutionId:role.id}} onOpen={onOpen}>{role.name}</PublicEntityLink> · {STATUS[status][lang]}</li>)}</ul></li>)}</ul>
++    </DrawerSection>:null}
++    {actor || p.institutionalContact ? <DrawerSection title={fr?"Contacts et participation":"Contacts and participation"}>
++      {p.institutionalContact ? <p><PublicEvidenceLink url={p.institutionalContact.url}>{p.institutionalContact.label}</PublicEvidenceLink> · {p.institutionalContact.kind==="official_portal"?(fr?"Portail d’orientation":"Guidance portal"):(fr?"Contact fonctionnel":"Functional contact")}</p>:null}
++      {actor?.officialWebsite ? <p><PublicEvidenceLink url={actor.officialWebsite}>{fr?"Site officiel":"Official website"}</PublicEvidenceLink></p>:null}
++      {actor?.publicContact ? <p><PublicEvidenceLink url={actor.publicContact.url}>{actor.publicContact.label}</PublicEvidenceLink>{actor.publicContact.email?" · "+actor.publicContact.email:""} · {actor.publicContact.certainty}</p>:null}
++      <ul>{contacts.map(ch=><li key={ch.url}><PublicEvidenceLink url={ch.url}>{ch.label}</PublicEvidenceLink> · <PublicEvidenceLink url={ch.provenance.sourceUrl}>{ch.provenance.sourceLabel}</PublicEvidenceLink> · {ch.provenance.verifiedAt} · {ch.provenance.certainty}</li>)}</ul>
++      {actor?.participationModalities.length?<p>{fr?"Publics concernés":"Participation"} : {actor.participationModalities.map(mode=>PARTICIPATION_MODALITY_LABELS[mode]).join(" · ")}</p>:null}
++    </DrawerSection>:null}
++    {actor?<DrawerSection title={fr?"Services et moyens":"Services and equipment"}>
++      <p>{EQUIPMENT_STATUS_LABELS[actor.equipmentAvailability.status]} · {actor.equipmentAvailability.certainty}</p><p>{actor.equipmentAvailability.summary}</p>
++      {actor.equipmentAvailability.items?.length?<ul className="list-disc pl-5">{actor.equipmentAvailability.items.map(item=><li key={item}>{item}</li>)}</ul>:null}
++      <PublicEvidenceLink url={actor.equipmentAvailability.sourceUrl}>{fr?"Source du matériel":"Equipment source"}</PublicEvidenceLink>
++    </DrawerSection>:null}
++    <PublicEntityRelations projection={p} fr={fr} onOpen={onOpen}/>
++    {p.scheduledOperations.length?<DrawerSection title={fr?"Opérations programmées":"Scheduled operations"}>{p.scheduledOperations.map(op=><details key={op.id}><summary>{op.label} · {op.date}</summary><ScheduledOperationDetails operation={op} fr={fr}/></details>)}</DrawerSection>:null}
++    {actor?.funding?.sources.length?<DrawerSection title={fr?"Financement":"Funding"}>
++      <p>{actor.funding.entityName} · {actor.funding.period??(fr?"Période non établie":"Period not established")}</p>
++      {actor.funding.calculationBase?<p>{actor.funding.calculationBase}</p>:null}
++      <ul>{actor.funding.sources.map((source,index)=><li key={index}>{source.label}{source.sharePercent!=null?" · "+source.sharePercent+" %":""}{source.amountEur!=null?" · "+source.amountEur.toLocaleString(fr?"fr-FR":"en-GB")+" €":""}</li>)}</ul>
++      {!actor.funding.sharesPublished?<p>{fr?"Parts non publiées":"Shares not published"}</p>:null}{actor.funding.notes?<p>{actor.funding.notes}</p>:null}
++      <PublicEvidenceLink url={actor.funding.sourceUrl}>{fr?"Source consultée le":"Source checked on"} {actor.funding.verifiedAt}</PublicEvidenceLink>
++    </DrawerSection>:null}
++    <PublicStructureContextPanel context={p.structureContext} fr={fr}/>
++    <PublicEntityHistory projection={p} fr={fr}/>
++    <DrawerSection title={fr?"Sources et preuve":"Sources and evidence"}>
++      {actor?<p><PublicEvidenceLink url={actor.provenance.sourceUrl}>{actor.provenance.sourceLabel}</PublicEvidenceLink> · {actor.verifiedAt} · {actor.provenance.certainty}{actor.provenance.secondarySourceUrl?<><span> · </span><PublicEvidenceLink url={actor.provenance.secondarySourceUrl}>{fr?"Source secondaire":"Secondary source"}</PublicEvidenceLink></>:null}</p>:null}
++      <ul>{p.institutionSources.map(source=><li key={source.id}><PublicEvidenceLink url={source.url}>{source.label}</PublicEvidenceLink> · {source.evidence} · {source.verifiedAt}{source.sourceContentDate?" · "+source.sourceContentDate:""}</li>)}</ul>
++      <ul>{p.sources.map(source=><li key={source.url+":"+source.label}><PublicEvidenceLink url={source.url}>{source.label}</PublicEvidenceLink> · {source.evidence} · {source.verifiedAt}</li>)}</ul>
++    </DrawerSection>
++  </div>;
++}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx
+@@ -10,406 +10,410 @@
+ import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
+ import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
+ import { PublicStructureContextPanel } from "./public-structure-context-panel";
+-import { getArrondissementCityOptions, getArrondissementMunicipalLabel, type ArrondissementCity } from "@/lib/geo/paris-arrondissements";
+-import { CmmSectionGroup } from "@/components/ui/cmm-section";
+-import { cn } from "@/lib/utils";
+-import {
+-  filterPublicCleanlinessNodes,
+-  getPublicCleanlinessContact,
+-  getPublicCleanlinessCityDataset,
+-  PUBLIC_CLEANLINESS_CITY_DATASETS,
+-  PARIS_PUBLIC_CLEANLINESS_DATASET,
+-  type PublicCleanlinessCityDatasets,
+-  type PublicCleanlinessFilters,
+-  type PublicCleanlinessOrganizationNode,
+-  type PublicCleanlinessOrganizationRelation,
+-} from "@/lib/partners/public-cleanliness-organization";
+-
+-const COPY = {
+-  fr: {
+-    eyebrow: "Référentiel institutionnel sourcé · Paris documenté en premier",
+-    title: "Organisation des services publics",
+-    intro: "Trouvez les interlocuteurs utiles et explorez les responsabilités des services publics.",
+-    types: "Types", typesBody: "Organisation et unité administrative ; poste/fonction, métier, équipe et personne sont des catégories distinctes. Les agents de terrain sont représentés par métier, sauf fonctions nominatives publiquement attestées et pertinentes.",
+-    scope: "Périmètre", scopeBody: "Employeur juridique, unité de rattachement et territoire d’intervention sont distingués. Une unité mutualisée n’apparaît qu’une fois avec plusieurs territoires.",
+-    relations: "Relations", relationsBody: "Seul le rattachement hiérarchique construit l’arbre. Mandat, affectation, coordination, coopération, programme et prestation restent des relations distinctes.",
+-    evidence: "Preuve", evidenceBody: "Organisation documentée, structure historique ou affectation inconnue sont affichées séparément. Une offre d’emploi n’établit jamais qui occupe le poste aujourd’hui.",
+-    city: "Ville", cityAria: "Sélectionner une ville", district: "Arrondissement", districtAria: "Filtrer par arrondissement", all: "Tous", service: "Service", serviceAria: "Filtrer par service", search: "Recherche", searchAria: "Rechercher dans l’organigramme", searchPlaceholder: "DPE, REQ, division…",
+-    noDataset: "Aucun référentiel institutionnel n’a encore été validé pour", noDatasetTail: "Le moteur accepte d’autres villes ; leurs données doivent être documentées avant affichage.",
+-    noResults: "Aucune fiche ne correspond aux filtres. Les affectations non établies restent indiquées comme inconnues.",
+-    tree: "Arborescence des services publics de propreté", zoom: "Zoom de l’arborescence", zoomOut: "Réduire le zoom", zoomIn: "Augmenter le zoom", zoomReset: "Réinitialiser le zoom",
+-    levels: "Navigation par niveau", levelNext: "Unités du niveau suivant", selected: "Fiche détaillée", relationsTitle: "Structures associées et relations", sources: "Sources et preuve", legalEmployer: "Employeur juridique", unit: "Unité de rattachement", territory: "Territoire d’intervention", assignmentUnknown: "Territoire d’affectation inconnu", annuaireId: "Identifiant Annuaire", kind: "Type", status: "État", sourceUpdated: "Mise à jour publiée le", verified: "vérifié le", proof: "preuve", relationSource: "Sources de cette relation", explore: "Explorer", collapse: "Replier", expand: "Déplier", noLevelChildren: "Aucun rattachement hiérarchique supplémentaire à ce niveau.", footer: "Une division mutualisée n’apparaît qu’une fois. Les mandats, affectations et autres relations non hiérarchiques sont accessibles depuis les fiches. Les lacunes ne signifient pas une absence de service.",
+-    serviceLabels: { all: "Tous les services", governance: "Gouvernance", cleaning: "Nettoiement", collection: "Collecte", emergency: "Urgence Propreté", prevention: "Prévention et tri", coordination: "Coordination territoriale", police: "Police municipale et prévention", provider: "Traitement et prestataires" },
+-    kinds: { city: "Ville", direction: "Direction", service: "Service", unit: "Unité", team: "Équipe", position: "Poste / fonction", profession: "Métier", person: "Personne", provider: "Prestataire" },
+-    assignment: { confirmed: "Documenté par la source", historical: "Historique à la date de la source", unknown: "Affectation inconnue" },
+-    relationKinds: { hierarchy: "Rattachement hiérarchique", mandate: "Mandat politique", assignment: "Affectation", coordination: "Coordination fonctionnelle", cooperation: "Coopération documentée", programme: "Programme", service: "Prestation ou service" },
+-    relationStatus: { confirmed: "confirmé par la source", historical: "historique à la date de la source", unknown: "inconnu" },
+-    evidenceLabels: { official_current: "source institutionnelle actuelle", official_historical: "source institutionnelle historique", official_job_profile: "fiche de poste officielle", operator_statement: "offre déclarée par l’opérateur", professional_self_statement: "déclaration professionnelle publique de l’intéressé" },
+-    kindLegend: "Légende des états", cityName: "Ville", arrSuffix: "arrondissement", standalone: "Mandats, fonctions et personnes", contact: "Canal institutionnel public",
+-  },
+-  en: {
+-    eyebrow: "Sourced institutional registry · Paris documented first",
+-    title: "Public services organization",
+-    intro: "Find relevant contacts and explore public service responsibilities.",
+-    types: "Entity types", typesBody: "Organizations and administrative units are distinct from roles, occupations, teams and people. Field occupations are represented collectively unless an individual role is publicly documented and relevant.",
+-    scope: "Scope", scopeBody: "Legal employer, reporting unit and service territory are separate. A shared unit appears once with several territories.",
+-    relations: "Relationships", relationsBody: "Only hierarchical reporting builds the tree. Mandates, assignments, coordination, cooperation, programmes and services remain distinct.",
+-    evidence: "Evidence", evidenceBody: "Documented organization, historical structure and unknown assignment are shown separately. A job listing never proves who currently holds a role.",
+-    city: "City", cityAria: "Select a city", district: "District", districtAria: "Filter by district", all: "All", service: "Service", serviceAria: "Filter by service", search: "Search", searchAria: "Search the organization chart", searchPlaceholder: "DPE, REQ, division…",
+-    noDataset: "No institutional registry has been validated for", noDatasetTail: "The engine supports other cities; their data must be documented before display.",
+-    noResults: "No records match these filters. Unverified assignments remain marked unknown.",
+-    tree: "Public cleanliness services tree", zoom: "Tree zoom", zoomOut: "Zoom out", zoomIn: "Zoom in", zoomReset: "Reset zoom",
+-    levels: "Navigate by level", levelNext: "Units at the next level", selected: "Details", relationsTitle: "Related organizations and relationships", sources: "Sources and evidence", legalEmployer: "Legal employer", unit: "Reporting unit", territory: "Service territory", assignmentUnknown: "Assignment territory unknown", annuaireId: "Directory ID", kind: "Type", status: "Status", sourceUpdated: "Source updated", verified: "verified", proof: "evidence", relationSource: "Sources for this relationship", explore: "Explore", collapse: "Collapse", expand: "Expand", noLevelChildren: "No further hierarchical unit at this level.", footer: "Shared divisions appear once with all territories. Mandates, assignments and other non-hierarchical relationships are accessible from the records. Gaps do not establish absence of service.",
+-    serviceLabels: { all: "All services", governance: "Governance", cleaning: "Street cleaning", collection: "Waste collection", emergency: "Urgent cleanliness", prevention: "Prevention and sorting", coordination: "Territorial coordination", police: "Municipal police and prevention", provider: "Treatment and contractors" },
+-    kinds: { city: "City", direction: "Directorate", service: "Service", unit: "Unit", team: "Team", position: "Role", profession: "Occupation", person: "Person", provider: "Provider" },
+-    assignment: { confirmed: "Documented by source", historical: "Historical at source date", unknown: "Assignment unknown" },
+-    relationKinds: { hierarchy: "Hierarchical reporting", mandate: "Political mandate", assignment: "Assignment", coordination: "Functional coordination", cooperation: "Documented cooperation", programme: "Programme", service: "Service provision" },
+-    relationStatus: { confirmed: "confirmed by source", historical: "historical at source date", unknown: "unknown" },
+-    evidenceLabels: { official_current: "current institutional source", official_historical: "historical institutional source", official_job_profile: "official job profile", operator_statement: "provider-reported offer", professional_self_statement: "public professional self-statement" },
+-    kindLegend: "Evidence status", cityName: "City", arrSuffix: "district", standalone: "Mandates, roles and people", contact: "Public institutional channel",
+-  },
+-} as const;
+-
+-const NAME_EN: Record<string, string> = {
+-  "city-paris": "City of Paris", dpe: "Paris Department of Cleanliness and Water (DPE)", stpp: "Technical Service for Paris Cleanliness (STPP)",
+-  "brigade-urgence-proprete": "Urgent Cleanliness Response Teams", "dpe-field-agents": "Field staff — street cleaning and waste collection", "tson-position": "Operational Street-Cleaning Services Technician (TSON)",
+-  "division-17-sectors": "Territorial sectors and workshops (structure described for Division 17)", "division-17-supervisors": "Division and sector supervisor roles", "specialized-cleaning-services": "Specialist cleanliness services", eboueurs: "Street cleaners", "collection-drivers": "Collection and cleaning vehicle operators",
+-  ddct: "Department of Democracy, Citizens and Territories (DDCT)", "borough-mayors": "Arrondissement town halls", dgaep: "Deputy Directors General for Public Space (DGAEP)", "dgs-19": "Directorate General of Services — 19th arrondissement town hall", "dgaep-19": "DGAEP — 19th arrondissement town hall", req: "Neighborhood Maintenance Representatives (REQ)", "municipal-police": "Municipal Police and Prevention (DPMP)", "prevention-sorting": "Prevention, awareness and sorting", "private-collectors": "Private waste collection providers",
+-};
+-
+-const DESCRIPTION_EN: Record<string, string> = {
+-  "city-paris": "Local authority; overall scope of the Paris registry.",
+-  dpe: "Directorate responsible for street cleaning and municipal collection in the sectors it operates.",
+-  stpp: "DPE service responsible for public-space cleaning and waste collection.",
+-  "brigade-urgence-proprete": "Mobile teams deployed for targeted needs reported by town halls and residents.",
+-  "dpe-field-agents": "Collective representation of field staff; no invented headcount or individual identity is shown.",
+-  "tson-position": "Job profile attached to Division 17; it describes a role and team structure, not a current incumbent.",
+-  "division-17-sectors": "The 2025 job profile describes three territorial sectors and eight workshops, plus one functional sector with two workshops. Incumbents are not listed.",
+-  "division-17-supervisors": "The job profile describes a division head, two deputies and a sector supervisor; no identity or current assignment is inferred.",
+-  "specialized-cleaning-services": "The City documents specialist interventions, including underground roads and riverbanks. Detailed units and reporting lines are not all published here.",
+-  eboueurs: "Occupation represented collectively, without invented people or headcounts.",
+-  "collection-drivers": "Occupation represented collectively; local assignments are unknown.",
+-  ddct: "DDCT launched the REQ rollout; this alone does not describe an operational reporting line.",
+-  "borough-mayors": "Local municipal level; no individual assignment is inferred.",
+-  dgaep: "The 20th arrondissement REQ posting states a reporting link to the borough DGAEP; its incumbent is not identified here.",
+-  "dgs-19": "The DGAEP job profile describes the DGS within the 19th arrondissement town hall's directorate general of services. No incumbent is named.",
+-  "dgaep-19": "Role described in a September 2026 job posting. It does not establish the identity of a current incumbent.",
+-  req: "Job posting for the 20th arrondissement and a programme rollout led by DDCT. Current assignments, neighbourhood coverage and incumbents are not established by this posting.",
+-  "municipal-police": "Directorate cited as a service REQs may contact; no shared chain of command is represented.",
+-  "prevention-sorting": "Public function documented in this ecosystem; the administrative reporting unit is not established by the sources used here.",
+-  syctom: "Waste treatment syndicate; service relationship, not a municipal reporting line.",
+-  "private-collectors": "Private companies collect municipal waste in some arrondissements. Contractors and exact scopes are not named here.",
+-};
+-
+-const STATUS_STYLE = {
+-  confirmed: "border-emerald-500/30 bg-emerald-500/10 cmm-text-success",
+-  historical: "border-amber-500/30 bg-amber-500/10 cmm-text-warning",
+-  unknown: "border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] cmm-text-secondary",
+-} as const;
+-
+-const EMPTY_NODES: readonly PublicCleanlinessOrganizationNode[] = [];
+-const EMPTY_RELATIONS: readonly PublicCleanlinessOrganizationRelation[] = [];
+-const EMPTY_SOURCES: readonly { id: string; label: string; url: string; sourceContentDate?: string; verifiedAt: string; evidence: "official_current" | "official_historical" | "official_job_profile" | "operator_statement" | "professional_self_statement" }[] = [];
+-
+-export type PublicCleanlinessNavigation = { openNode: (id: string) => boolean };
+-
+-export function PublicCleanlinessOrganization({
+-  fr = true,
+-  datasets = PUBLIC_CLEANLINESS_CITY_DATASETS,
+-  navigationRef,
+-  getNetworkActorId,
+-  onOpenNetworkActor,
+-}: {
+-  fr?: boolean;
+-  datasets?: PublicCleanlinessCityDatasets;
+-  navigationRef?: Ref<PublicCleanlinessNavigation>;
+-  getNetworkActorId?: (node: PublicCleanlinessOrganizationNode) => string | null;
+-  onOpenNetworkActor?: (actorId: string) => void;
+-}) {
+-  const text = fr ? COPY.fr : COPY.en;
+-  const cityOptions = getArrondissementCityOptions();
+-  const initialCity = cityOptions.find((city) => getPublicCleanlinessCityDataset(city.value, datasets))?.value ?? cityOptions[0]?.value ?? "Paris";
+-  const [filters, setFilters] = useState<PublicCleanlinessFilters>(() => ({ city: initialCity, arrondissement: null, service: "all", query: "" }));
+-  const [selectedId, setSelectedId] = useState("dpe");
+-  const [viewMode, setViewMode] = useState<"chart" | "list">("chart");
+-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+-  const [zoom, setZoom] = useState(1);
+-  const detailsRef = useRef<HTMLElement>(null);
+-  const dataset = getPublicCleanlinessCityDataset(filters.city, datasets);
+-  const visibleNodes = useMemo(() => filterPublicCleanlinessNodes(filters, datasets), [filters, datasets]);
+-  const visibleIds = useMemo(() => new Set(visibleNodes.map((node) => node.id)), [visibleNodes]);
+-  const nodes = dataset?.nodes ?? EMPTY_NODES;
+-  const relations = dataset?.relations ?? EMPTY_RELATIONS;
+-  const sources = dataset?.sources ?? EMPTY_SOURCES;
+-  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+-  const childrenById = new Map<string, string[]>();
+-  const parentById = new Map<string, string>();
+-  for (const relation of relations) {
+-    if (relation.kind !== "hierarchy") continue;
+-    const childIds = childrenById.get(relation.from) ?? [];
+-    childIds.push(relation.to);
+-    childrenById.set(relation.from, childIds);
+-    parentById.set(relation.to, relation.from);
+-  }
+-  const includedIds = new Set(visibleIds);
+-  for (const id of visibleIds) {
+-    let current = id;
+-    const visited = new Set<string>();
+-    while (!visited.has(current)) {
+-      visited.add(current);
+-      const parent = parentById.get(current);
+-      if (!parent) break;
+-      includedIds.add(parent);
+-      current = parent;
+-    }
+-  }
+-  const roots = nodes.filter((node) => !parentById.has(node.id) && includedIds.has(node.id));
+-  const mandateNodes = new Set(relations.filter(edge => edge.kind === "mandate").flatMap(edge => [edge.from, edge.to]));
+-  const standaloneRoots = roots.filter(node => node.kind === "person" || node.kind === "position" || (node.kind === "unit" && mandateNodes.has(node.id)));
+-  const standaloneRootIds = new Set(standaloneRoots.map(node => node.id));
+-  const administrativeRoots = roots.filter(node => !standaloneRootIds.has(node.id));
+-  const selected = (includedIds.has(selectedId) ? nodeById.get(selectedId) : undefined) ?? visibleNodes[0] ?? null;
+-  const selectedRelations = selected ? relations.filter((edge) => edge.from === selected.id || edge.to === selected.id) : [];
+-  const institutionalPeople = selected && dataset ? getPublicInstitutionalPeople(dataset, selected.id) : [];
+-  const documentedContributions = selected && dataset ? getPublicInstitutionalContributions(dataset, selected.id) : [];
+-  const selectedContact = selected ? getPublicCleanlinessContact(selected, sources) : null;
+-
+-  const getPath = (nodeId: string): PublicCleanlinessOrganizationNode[] => {
+-    const path: PublicCleanlinessOrganizationNode[] = [];
+-    const visited = new Set<string>();
+-    let current: string | undefined = nodeId;
+-    while (current && !visited.has(current)) {
+-      visited.add(current);
+-      const node = nodeById.get(current);
+-      if (node) path.push(node);
+-      current = parentById.get(current);
+-    }
+-    return path.reverse();
+-  };
+-  const selectedPath = selected ? getPath(selected.id) : [];
+-  const nextLevelNodes = selected
+-    ? (childrenById.get(selected.id) ?? []).filter((id) => includedIds.has(id)).map((id) => nodeById.get(id)).filter((node): node is PublicCleanlinessOrganizationNode => Boolean(node))
+-    : [];
+-
+-  const displayName = (node: PublicCleanlinessOrganizationNode) => {
+-    if (fr) return node.name;
+-    if (NAME_EN[node.id]) return NAME_EN[node.id];
+-    if (node.id.startsWith("division-")) return node.name.replace("Division territoriale", "Territorial division");
+-    return node.name;
+-  };
+-  const displayDescription = (node: PublicCleanlinessOrganizationNode) => fr ? node.description : DESCRIPTION_EN[node.id] ?? node.description;
+-  const kindLabel = (kind: PublicCleanlinessOrganizationNode["kind"]) => text.kinds[kind];
+-  const statusLabel = (status: PublicCleanlinessOrganizationNode["assignment"]) => text.assignment[status];
+-  const relationKindLabel = (kind: PublicCleanlinessOrganizationRelation["kind"]) => text.relationKinds[kind];
+-  const relationStatusLabel = (status: PublicCleanlinessOrganizationRelation["status"]) => text.relationStatus[status];
+-
+-  const updateFilters = (nextFilters: PublicCleanlinessFilters) => {
+-    setFilters(nextFilters);
+-    const nextVisible = filterPublicCleanlinessNodes(nextFilters, datasets);
+-    setSelectedId((current) => nextVisible.some((node) => node.id === current) ? current : nextVisible[0]?.id ?? "");
+-  };
+-  const updateFilter = <K extends keyof PublicCleanlinessFilters>(key: K, value: PublicCleanlinessFilters[K]) => updateFilters({ ...filters, [key]: value });
+-  const selectRelatedNode = (nodeId: string) => {
+-    const related = nodeById.get(nodeId);
+-    if (!related) return;
+-    if (includedIds.has(nodeId)) {
+-      setSelectedId(nodeId);
+-      setCollapsed(current => {
+-        const next = { ...current };
+-        for (const node of getPath(nodeId)) next[node.id] = false;
+-        return next;
+-      });
+-      return;
+-    }
+-    const nextFilters = {
+-      ...filters,
+-      arrondissement: filters.arrondissement === null || related.territoryIds.length === 0 || related.territoryIds.includes(`${filters.city}:${filters.arrondissement}`) ? filters.arrondissement : null,
+-      service: "all",
+-      query: "",
+-    } satisfies PublicCleanlinessFilters;
+-    updateFilters(nextFilters);
+-    setSelectedId(nodeId);
+-    setCollapsed((current) => {
+-      const next = { ...current };
+-      for (const node of getPath(nodeId)) next[node.id] = false;
+-      return next;
+-    });
+-  };
+-  useImperativeHandle(navigationRef, () => ({
+-    openNode(id) {
+-      const paris = getPublicCleanlinessCityDataset("Paris", datasets);
+-      if (!paris?.nodes.some(node => node.id === id)) return false;
+-      if (filters.city === "Paris") {
+-        selectRelatedNode(id);
+-      } else {
+-        setFilters({ city: "Paris", arrondissement: null, service: "all", query: "" });
+-        setSelectedId(id);
+-        setCollapsed({});
+-      }
+-      return true;
+-    },
+-  }));
+-  const linkedActorId = selected && dataset?.city === "Paris" ? getNetworkActorId?.(selected) : null;
+-  const selectTreeNode = (nodeId: string) => includedIds.has(nodeId) ? setSelectedId(nodeId) : selectRelatedNode(nodeId);
+-  const isSearching = filters.query.trim().length > 0;
+-
+-  const renderNode = (node: PublicCleanlinessOrganizationNode, depth: number): ReactNode => {
+-    const children = (childrenById.get(node.id) ?? []).filter((id) => includedIds.has(id)).map((id) => nodeById.get(id)).filter((value): value is PublicCleanlinessOrganizationNode => Boolean(value));
+-    const isCollapsed = !isSearching && (collapsed[node.id] ?? false);
+-    const stateLabel = statusLabel(node.assignment);
+-    return <li key={node.id}>
+-      <div className="flex items-start gap-2" style={{ marginInlineStart: `${Math.min(depth, 4) * 0.5}rem` }}>
+-        {children.length > 0 && !isSearching ? <button type="button" aria-label={`${isCollapsed ? text.expand : text.collapse} ${displayName(node)}`} aria-expanded={!isCollapsed} aria-controls={`org-children-${node.id}`} onClick={() => setCollapsed((current) => ({ ...current, [node.id]: !isCollapsed }))} className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--cmm-surface-border)] cmm-text-primary hover:bg-violet-500/10">{isCollapsed ? "+" : "−"}</button> : <span className="mt-1 inline-block h-8 w-8 shrink-0" aria-hidden="true" />}
+-        <button type="button" aria-current={selected?.id === node.id ? "true" : undefined} data-assignment={node.assignment} onClick={() => selectTreeNode(node.id)} className={cn("min-w-0 flex-1 rounded-xl border px-3 py-2 text-left transition", selected?.id === node.id ? "border-violet-500 bg-violet-500/10" : "border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] hover:border-violet-500/40")}>
+-          <span className="flex flex-wrap items-center gap-2"><span className="font-bold cmm-text-primary">{displayName(node)}</span><span className="rounded-full border border-[var(--cmm-surface-border)] px-2 py-0.5 text-xs cmm-text-secondary">{kindLabel(node.kind)}</span><span className={cn("rounded-full border px-2 py-0.5 text-xs", STATUS_STYLE[node.assignment])}>{stateLabel}</span></span>
+-        </button>
+-      </div>
+-      {children.length > 0 && !isCollapsed ? <ul id={`org-children-${node.id}`} className="mt-2 list-none space-y-2">{children.map((child) => renderNode(child, depth + 1))}</ul> : null}
+-    </li>;
+-  };
+-
+-  const districtCount = cityOptions.find((city) => city.value === filters.city)?.arrondissementCount ?? 0;
+-  const districtLabel = (number: number) => fr
+-    ? getArrondissementMunicipalLabel(filters.city as ArrondissementCity, number)
+-    : `${filters.city} ${number}${number === 1 ? "st" : "th"} ${text.arrSuffix}`;
+-
+-  return <CmmSectionGroup>
+-    <section data-testid="public-cleanliness-organization" aria-labelledby="public-cleanliness-heading" className="rounded-3xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] p-4 md:p-6">
+-      <div className="mb-6 max-w-3xl space-y-3">
+-        <p className="text-xs font-black uppercase tracking-[0.22em] cmm-text-info">{text.eyebrow}</p>
+-        <h2 id="public-cleanliness-heading" className="text-3xl font-black cmm-text-primary">{text.title}</h2>
+-        <p className="text-sm leading-6 cmm-text-primary">{text.intro}</p>
+-      </div>
+-      <details className="mb-5 rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-3 text-xs cmm-text-primary">
+-        <summary className="cursor-pointer font-semibold">{fr ? "Comprendre les relations et les sources" : "Understand relationships and sources"}</summary>
+-        <div className="mt-3 grid gap-3 leading-5 md:grid-cols-2">
+-        <p><strong className="cmm-text-primary">{text.types}:</strong> {text.typesBody}</p>
+-        <p><strong className="cmm-text-primary">{text.scope}:</strong> {text.scopeBody}</p>
+-        <p><strong className="cmm-text-primary">{text.relations}:</strong> {text.relationsBody}</p>
+-        <p><strong className="cmm-text-primary">{text.evidence}:</strong> {text.evidenceBody}</p>
+-        </div>
+-      </details>
+-
+-      <div className="mb-5 grid gap-3 sm:grid-cols-2">
+-        <label className="text-xs font-bold cmm-text-secondary">{text.city}<select aria-label={text.cityAria} value={filters.city} onChange={(event) => updateFilters({ ...filters, city: event.target.value, arrondissement: null })} className="cmm-input mt-1 block w-full">{cityOptions.map((city) => <option key={city.value} value={city.value}>{city.label}</option>)}</select></label>
+-        <label className="text-xs font-bold cmm-text-secondary">{text.district}<select aria-label={text.districtAria} value={filters.arrondissement ?? ""} onChange={(event) => updateFilter("arrondissement", event.target.value ? Number(event.target.value) : null)} className="cmm-input mt-1 block w-full"><option value="">{text.all}</option>{Array.from({ length: districtCount }, (_, index) => index + 1).map((number) => <option key={number} value={number}>{districtLabel(number)}</option>)}</select></label>
+-
+-      </div>
+-
+-      {dataset?.city === "Paris" ? <PublicCleanlinessNeedPanel dataset={dataset} district={filters.arrondissement} fr={fr} onSelect={nodeId => {
+-        selectRelatedNode(nodeId);
+-        detailsRef.current?.focus();
+-      }} /> : null}
+-
+-      {!dataset ? <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm cmm-text-warning">{text.noDataset} {filters.city}. {text.noDatasetTail}</p> : <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.75fr)]">
+-        <div className="min-w-0 space-y-5">
+-          <div className="grid gap-3 sm:grid-cols-2">
+-        <label className="text-xs font-bold cmm-text-secondary">{text.service}<select aria-label={text.serviceAria} value={filters.service} onChange={(event) => updateFilter("service", event.target.value as PublicCleanlinessFilters["service"])} className="cmm-input mt-1 block w-full">{Object.entries(text.serviceLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+-        <label className="text-xs font-bold cmm-text-secondary">{text.search}<input type="search" aria-label={text.searchAria} value={filters.query} onChange={(event) => updateFilter("query", event.target.value)} placeholder={text.searchPlaceholder} className="cmm-input mt-1 block w-full" /></label>
+-          </div>
+-          <div className="overflow-hidden rounded-2xl border border-[var(--cmm-surface-border)] p-3 md:p-4">
+-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+-              <h3 className="text-sm font-black cmm-text-primary">{text.tree}</h3>
+-              <div className="flex flex-wrap items-center gap-2">
+-                <div role="group" aria-label={fr ? "Mode d'affichage de l'organigramme" : "Organization chart view mode"} className="flex items-center gap-1 rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-1">
+-                  <button type="button" aria-pressed={viewMode === "chart"} onClick={() => { setViewMode("chart"); setZoom(1); }} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "chart" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
+-                    {fr ? "Organigramme" : "Org chart"}
+-                  </button>
+-                  <button type="button" aria-pressed={viewMode === "list"} onClick={() => { setViewMode("list"); setZoom(1); }} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "list" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
+-                    {fr ? "Liste" : "List"}
+-                  </button>
+-                </div>
+-                <div role="group" aria-label={text.zoom} className="flex items-center gap-2">
+-                  <button type="button" aria-label={text.zoomOut} onClick={() => setZoom((value) => Math.max(viewMode === "chart" ? 0.2 : 0.7, Math.round((value - 0.1) * 10) / 10))} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-sm cmm-text-primary">−</button>
+-                  <button type="button" aria-label={text.zoomReset} onClick={() => setZoom(1)} className="min-w-16 rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-xs font-bold cmm-text-primary">{Math.round(zoom * 100)}%</button>
+-                  <button type="button" aria-label={text.zoomIn} onClick={() => setZoom((value) => Math.min(viewMode === "chart" ? 60 : 1.4, Math.round((value + 0.1) * 10) / 10))} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-sm cmm-text-primary">+</button>
+-                </div>
+-              </div>
+-            </div>
+-            {roots.length ? (
+-              <div className="space-y-3">
+-                {viewMode === "chart" ? (
+-                  <PublicCleanlinessOrgChart
+-                    fr={fr}
+-                    administrativeRoots={roots}
+-                    childrenById={childrenById}
+-                    nodeById={nodeById}
+-                    relations={relations}
+-                    includedIds={includedIds}
+-                    selectedId={selected?.id ?? null}
+-                    collapsed={collapsed}
+-                    isSearching={isSearching}
+-                    zoom={zoom}
+-                    treeLabel={text.tree}
+-                    expandLabel={text.expand}
+-                    collapseLabel={text.collapse}
+-                    fitLabel={fr ? "Cadrer" : "Fit"}
+-                    legendLabels={{
+-                      confirmed: text.assignment.confirmed,
+-                      historical: text.assignment.historical,
+-                      unknown: text.assignment.unknown,
+-                      nonHierarchyNote: fr ? "Les autres relations ne constituent pas des rattachements" : "Other links are not reporting lines",
+-                    }}
+-                    displayName={displayName}
+-                    kindLabel={kindLabel}
+-                    statusLabel={statusLabel}
+-                    statusStyle={STATUS_STYLE}
+-                    onSelect={selectTreeNode}
+-                    onToggleCollapse={(nodeId, next) => setCollapsed((current) => ({ ...current, [nodeId]: next }))}
+-                    onResetView={() => setZoom(1)}
+-                    onZoomChange={setZoom}
+-                  />
+-                ) : (
+-                  <div className="max-h-[38rem] overflow-auto">
+-                    <div className="min-w-0" style={{ fontSize: `${zoom}rem` }}>
+-                      <ul aria-label={text.tree} className="list-none space-y-2">{administrativeRoots.map(rootNode => renderNode(rootNode, 0))}</ul>
+-                    </div>
+-                  </div>
+-                )}
+-                {viewMode === "list" && standaloneRoots.length ? <details className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-2" open={Boolean(filters.query.trim()) || Boolean(selectedPath[0] && standaloneRootIds.has(selectedPath[0].id))}>
+-                  <summary className="cursor-pointer text-sm font-semibold cmm-text-info">{text.standalone} ({standaloneRoots.length})</summary>
+-                  <ul aria-label={text.standalone} className="mt-2 list-none space-y-2">{standaloneRoots.map(rootNode => renderNode(rootNode, 0))}</ul>
+-                </details> : null}
+-              </div>
+-            ) : <p role="status" className="p-5 text-sm cmm-text-primary">{text.noResults}</p>}
+-          </div>
+-
+-          <section aria-label={text.levels} className="rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4">
+-            <h3 className="text-sm font-black cmm-text-primary">{text.levels}</h3>
+-            {selectedPath.length ? <nav aria-label={text.levels} className="mt-3 flex flex-wrap items-center gap-2">{selectedPath.map((node, index) => <span key={node.id} className="flex items-center gap-2">{index > 0 ? <span aria-hidden="true" className="cmm-text-secondary">›</span> : null}<button type="button" aria-current={index === selectedPath.length - 1 ? "location" : undefined} onClick={() => selectTreeNode(node.id)} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-left text-xs font-bold cmm-text-primary hover:bg-violet-500/10">{displayName(node)}</button></span>)}</nav> : <p className="mt-3 text-xs cmm-text-secondary">{text.noResults}</p>}
+-            <h4 className="mt-4 text-xs font-bold uppercase tracking-wide cmm-text-secondary">{text.levelNext}</h4>
+-            {nextLevelNodes.length ? <ul className="mt-2 flex flex-wrap gap-2">{nextLevelNodes.map((node) => <li key={node.id}><button type="button" onClick={() => selectTreeNode(node.id)} className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] px-3 py-2 text-left text-xs font-semibold cmm-text-primary hover:border-violet-500/40">{text.explore}: {displayName(node)} <span className={cn("ml-1 inline-block rounded-full border px-2 py-0.5", STATUS_STYLE[node.assignment])}>{statusLabel(node.assignment)}</span></button></li>)}</ul> : <p className="mt-2 text-xs cmm-text-secondary">{text.noLevelChildren}</p>}
+-          </section>
+-        </div>
+-
+-        <aside ref={detailsRef} tabIndex={-1} aria-live="polite" aria-label={text.selected} className="rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4">
+-          {selected ? <>
+-            <p className="text-xs font-black uppercase tracking-widest cmm-text-info">{text.selected} · {kindLabel(selected.kind)}</p>
+-            <h3 className="mt-2 text-xl font-black cmm-text-primary">{displayName(selected)}</h3>
+-            <p className="mt-3 text-sm leading-6 cmm-text-primary">{displayDescription(selected)}</p>
+-            {linkedActorId && onOpenNetworkActor ? <button type="button" onClick={() => onOpenNetworkActor(linkedActorId)} className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-left text-sm font-semibold cmm-text-primary hover:bg-violet-500/20 focus-visible:ring-2 focus-visible:ring-violet-400">{fr ? "Voir dans le réseau des acteurs" : "View in the actor network"}</button> : null}
+-            <p data-assignment={selected.assignment} className={cn("mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold", STATUS_STYLE[selected.assignment])}>{text.status}: {statusLabel(selected.assignment)}</p>
+-            {selected.territoryIds.length ? <p className="mt-2 text-xs cmm-text-secondary">{text.territory}: {selected.territoryIds.map((id) => id.replace(`${filters.city}:`, `${filters.city} `)).join(", ")}</p> : <p className="mt-2 text-xs cmm-text-secondary">{text.assignmentUnknown}</p>}
+-            {selected.legalEmployerId ? <p className="mt-2 text-xs cmm-text-secondary">{text.legalEmployer}: {nodeById.has(selected.legalEmployerId) ? displayName(nodeById.get(selected.legalEmployerId)!) : selected.legalEmployerId}</p> : null}
+-            {selected.unitId ? <p className="mt-2 text-xs cmm-text-secondary">{text.unit}: {nodeById.has(selected.unitId) ? displayName(nodeById.get(selected.unitId)!) : selected.unitId}</p> : null}
+-            {selectedContact ? <p className="mt-2 text-xs cmm-text-secondary">{text.contact}: <a href={selectedContact.url} target="_blank" rel="noreferrer" className="cmm-text-info underline underline-offset-2">{selectedContact.label}</a></p> : null}
+-            {institutionalPeople.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{fr ? "Personnes et affectations documentées" : "Documented people and assignments"}</h4><ul className="mt-2 space-y-2">{institutionalPeople.map(({ person, assignments }) => <li key={person.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-primary"><button type="button" onClick={() => selectRelatedNode(person.id)} className="font-bold cmm-text-info underline">{displayName(person)}</button><ul className="mt-1 space-y-1">{assignments.map(({ role, relation, status }) => <li key={relation.id}>{displayName(role)} · {relationStatusLabel(status)}</li>)}</ul></li>)}</ul></section> : null}
+-            {selectedRelations.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{text.relationsTitle}</h4><ul className="mt-2 space-y-3">{selectedRelations.map((edge) => {
+-              const relatedId = edge.from === selected.id ? edge.to : edge.from;
+-              const related = nodeById.get(relatedId);
+-              const relationSources = edge.sourceIds.map((id) => sources.find((source) => source.id === id)).filter((source): source is (typeof sources)[number] => Boolean(source));
+-              return <li key={edge.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-primary">
+-                <p>{relationKindLabel(edge.kind)} · <span className={cn("inline-flex rounded-full border px-2 py-0.5", STATUS_STYLE[edge.status])}>{relationStatusLabel(edge.status)}</span></p>
+-                {edge.validFrom || edge.validUntil ? <p className="mt-1 cmm-text-secondary">{fr ? "Période publiée" : "Published period"}: {edge.validFrom ?? "?"} → {edge.validUntil ?? "?"}</p> : null}
+-                {related ? <button type="button" onClick={() => selectRelatedNode(related.id)} className="mt-2 text-left font-bold cmm-text-info underline underline-offset-2">{text.explore}: {displayName(related)}</button> : null}
+-                <div className="mt-2"><span className="font-bold cmm-text-primary">{text.relationSource}:</span><ul className="mt-1 space-y-1">{relationSources.map((source) => <li key={source.id}><a href={source.url} target="_blank" rel="noreferrer" className="cmm-text-info underline underline-offset-2">{source.label}</a><span className="cmm-text-secondary"> · {text.verified} {source.verifiedAt}</span></li>)}</ul></div>
+-              </li>;
+-            })}</ul></section> : null}
+-            {documentedContributions.length ? <section className="mt-4 text-xs cmm-text-primary"><h4 className="font-black uppercase tracking-wider cmm-text-primary">{fr ? "Contributions publiques documentées" : "Documented public contributions"}</h4><p className="mt-1 cmm-text-secondary">{fr ? "Relations reprises du réseau public, pas un partenariat CleanMyMap ni un engagement actuel." : "Relations from the public network; not a CleanMyMap partnership or current commitment."}</p><ul className="mt-2 space-y-2">{documentedContributions.map(item => <li key={item.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
+-              <p className="font-semibold cmm-text-primary">{item.title}</p><button type="button" onClick={() => selectRelatedNode(item.otherId)} className="cmm-text-info underline">{item.otherName}</button><p className="mt-1">{item.summary}</p><p><a href={item.source.url} target="_blank" rel="noreferrer" className="cmm-text-info underline">{item.source.label}</a> · {item.source.verifiedAt}</p>
+-            </li>)}</ul></section> : null}
+-            {dataset ? <PublicStructureContextPanel key={selected.id} context={dataset === PARIS_PUBLIC_CLEANLINESS_DATASET ? projectPublicEntity({ institutionId: selected.id })?.structureContext ?? null : getInstitutionStructureContext(dataset, selected, PARIS_CLEANWALK_ACTORS)} fr={fr} /> : null}
+-            <div className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{text.sources}</h4><ul className="mt-2 space-y-2">{selected.sourceIds.map((id) => sources.find((item) => item.id === id)).filter((item): item is (typeof sources)[number] => Boolean(item)).map((item) => <li key={item.id}><a href={item.url} target="_blank" rel="noreferrer" className="text-xs font-semibold cmm-text-info underline underline-offset-2">{item.label}</a><p className="mt-0.5 text-xs cmm-text-secondary">{item.sourceContentDate ? `${text.sourceUpdated} ${item.sourceContentDate} · ` : ""}{text.verified} {item.verifiedAt} · {text.proof}: {text.evidenceLabels[item.evidence]}</p></li>)}</ul></div>
++import { PublicEntityDetails } from "./public-entity-details";
++import { getArrondissementCityOptions, getArrondissementMunicipalLabel, type ArrondissementCity } from "@/lib/geo/paris-arrondissements";
++import { CmmSectionGroup } from "@/components/ui/cmm-section";
++import { cn } from "@/lib/utils";
++import {
++  filterPublicCleanlinessNodes,
++  getPublicCleanlinessContact,
++  getPublicCleanlinessCityDataset,
++  PUBLIC_CLEANLINESS_CITY_DATASETS,
++  PARIS_PUBLIC_CLEANLINESS_DATASET,
++  type PublicCleanlinessCityDatasets,
++  type PublicCleanlinessFilters,
++  type PublicCleanlinessOrganizationNode,
++  type PublicCleanlinessOrganizationRelation,
++} from "@/lib/partners/public-cleanliness-organization";
++
++const COPY = {
++  fr: {
++    eyebrow: "Référentiel institutionnel sourcé · Paris documenté en premier",
++    title: "Organisation des services publics",
++    intro: "Trouvez les interlocuteurs utiles et explorez les responsabilités des services publics.",
++    types: "Types", typesBody: "Organisation et unité administrative ; poste/fonction, métier, équipe et personne sont des catégories distinctes. Les agents de terrain sont représentés par métier, sauf fonctions nominatives publiquement attestées et pertinentes.",
++    scope: "Périmètre", scopeBody: "Employeur juridique, unité de rattachement et territoire d’intervention sont distingués. Une unité mutualisée n’apparaît qu’une fois avec plusieurs territoires.",
++    relations: "Relations", relationsBody: "Seul le rattachement hiérarchique construit l’arbre. Mandat, affectation, coordination, coopération, programme et prestation restent des relations distinctes.",
++    evidence: "Preuve", evidenceBody: "Organisation documentée, structure historique ou affectation inconnue sont affichées séparément. Une offre d’emploi n’établit jamais qui occupe le poste aujourd’hui.",
++    city: "Ville", cityAria: "Sélectionner une ville", district: "Arrondissement", districtAria: "Filtrer par arrondissement", all: "Tous", service: "Service", serviceAria: "Filtrer par service", search: "Recherche", searchAria: "Rechercher dans l’organigramme", searchPlaceholder: "DPE, REQ, division…",
++    noDataset: "Aucun référentiel institutionnel n’a encore été validé pour", noDatasetTail: "Le moteur accepte d’autres villes ; leurs données doivent être documentées avant affichage.",
++    noResults: "Aucune fiche ne correspond aux filtres. Les affectations non établies restent indiquées comme inconnues.",
++    tree: "Arborescence des services publics de propreté", zoom: "Zoom de l’arborescence", zoomOut: "Réduire le zoom", zoomIn: "Augmenter le zoom", zoomReset: "Réinitialiser le zoom",
++    levels: "Navigation par niveau", levelNext: "Unités du niveau suivant", selected: "Fiche détaillée", relationsTitle: "Structures associées et relations", sources: "Sources et preuve", legalEmployer: "Employeur juridique", unit: "Unité de rattachement", territory: "Territoire d’intervention", assignmentUnknown: "Territoire d’affectation inconnu", annuaireId: "Identifiant Annuaire", kind: "Type", status: "État", sourceUpdated: "Mise à jour publiée le", verified: "vérifié le", proof: "preuve", relationSource: "Sources de cette relation", explore: "Explorer", collapse: "Replier", expand: "Déplier", noLevelChildren: "Aucun rattachement hiérarchique supplémentaire à ce niveau.", footer: "Une division mutualisée n’apparaît qu’une fois. Les mandats, affectations et autres relations non hiérarchiques sont accessibles depuis les fiches. Les lacunes ne signifient pas une absence de service.",
++    serviceLabels: { all: "Tous les services", governance: "Gouvernance", cleaning: "Nettoiement", collection: "Collecte", emergency: "Urgence Propreté", prevention: "Prévention et tri", coordination: "Coordination territoriale", police: "Police municipale et prévention", provider: "Traitement et prestataires" },
++    kinds: { city: "Ville", direction: "Direction", service: "Service", unit: "Unité", team: "Équipe", position: "Poste / fonction", profession: "Métier", person: "Personne", provider: "Prestataire" },
++    assignment: { confirmed: "Documenté par la source", historical: "Historique à la date de la source", unknown: "Affectation inconnue" },
++    relationKinds: { hierarchy: "Rattachement hiérarchique", mandate: "Mandat politique", assignment: "Affectation", coordination: "Coordination fonctionnelle", cooperation: "Coopération documentée", programme: "Programme", service: "Prestation ou service" },
++    relationStatus: { confirmed: "confirmé par la source", historical: "historique à la date de la source", unknown: "inconnu" },
++    evidenceLabels: { official_current: "source institutionnelle actuelle", official_historical: "source institutionnelle historique", official_job_profile: "fiche de poste officielle", operator_statement: "offre déclarée par l’opérateur", professional_self_statement: "déclaration professionnelle publique de l’intéressé" },
++    kindLegend: "Légende des états", cityName: "Ville", arrSuffix: "arrondissement", standalone: "Mandats, fonctions et personnes", contact: "Canal institutionnel public",
++  },
++  en: {
++    eyebrow: "Sourced institutional registry · Paris documented first",
++    title: "Public services organization",
++    intro: "Find relevant contacts and explore public service responsibilities.",
++    types: "Entity types", typesBody: "Organizations and administrative units are distinct from roles, occupations, teams and people. Field occupations are represented collectively unless an individual role is publicly documented and relevant.",
++    scope: "Scope", scopeBody: "Legal employer, reporting unit and service territory are separate. A shared unit appears once with several territories.",
++    relations: "Relationships", relationsBody: "Only hierarchical reporting builds the tree. Mandates, assignments, coordination, cooperation, programmes and services remain distinct.",
++    evidence: "Evidence", evidenceBody: "Documented organization, historical structure and unknown assignment are shown separately. A job listing never proves who currently holds a role.",
++    city: "City", cityAria: "Select a city", district: "District", districtAria: "Filter by district", all: "All", service: "Service", serviceAria: "Filter by service", search: "Search", searchAria: "Search the organization chart", searchPlaceholder: "DPE, REQ, division…",
++    noDataset: "No institutional registry has been validated for", noDatasetTail: "The engine supports other cities; their data must be documented before display.",
++    noResults: "No records match these filters. Unverified assignments remain marked unknown.",
++    tree: "Public cleanliness services tree", zoom: "Tree zoom", zoomOut: "Zoom out", zoomIn: "Zoom in", zoomReset: "Reset zoom",
++    levels: "Navigate by level", levelNext: "Units at the next level", selected: "Details", relationsTitle: "Related organizations and relationships", sources: "Sources and evidence", legalEmployer: "Legal employer", unit: "Reporting unit", territory: "Service territory", assignmentUnknown: "Assignment territory unknown", annuaireId: "Directory ID", kind: "Type", status: "Status", sourceUpdated: "Source updated", verified: "verified", proof: "evidence", relationSource: "Sources for this relationship", explore: "Explore", collapse: "Collapse", expand: "Expand", noLevelChildren: "No further hierarchical unit at this level.", footer: "Shared divisions appear once with all territories. Mandates, assignments and other non-hierarchical relationships are accessible from the records. Gaps do not establish absence of service.",
++    serviceLabels: { all: "All services", governance: "Governance", cleaning: "Street cleaning", collection: "Waste collection", emergency: "Urgent cleanliness", prevention: "Prevention and sorting", coordination: "Territorial coordination", police: "Municipal police and prevention", provider: "Treatment and contractors" },
++    kinds: { city: "City", direction: "Directorate", service: "Service", unit: "Unit", team: "Team", position: "Role", profession: "Occupation", person: "Person", provider: "Provider" },
++    assignment: { confirmed: "Documented by source", historical: "Historical at source date", unknown: "Assignment unknown" },
++    relationKinds: { hierarchy: "Hierarchical reporting", mandate: "Political mandate", assignment: "Assignment", coordination: "Functional coordination", cooperation: "Documented cooperation", programme: "Programme", service: "Service provision" },
++    relationStatus: { confirmed: "confirmed by source", historical: "historical at source date", unknown: "unknown" },
++    evidenceLabels: { official_current: "current institutional source", official_historical: "historical institutional source", official_job_profile: "official job profile", operator_statement: "provider-reported offer", professional_self_statement: "public professional self-statement" },
++    kindLegend: "Evidence status", cityName: "City", arrSuffix: "district", standalone: "Mandates, roles and people", contact: "Public institutional channel",
++  },
++} as const;
++
++const NAME_EN: Record<string, string> = {
++  "city-paris": "City of Paris", dpe: "Paris Department of Cleanliness and Water (DPE)", stpp: "Technical Service for Paris Cleanliness (STPP)",
++  "brigade-urgence-proprete": "Urgent Cleanliness Response Teams", "dpe-field-agents": "Field staff — street cleaning and waste collection", "tson-position": "Operational Street-Cleaning Services Technician (TSON)",
++  "division-17-sectors": "Territorial sectors and workshops (structure described for Division 17)", "division-17-supervisors": "Division and sector supervisor roles", "specialized-cleaning-services": "Specialist cleanliness services", eboueurs: "Street cleaners", "collection-drivers": "Collection and cleaning vehicle operators",
++  ddct: "Department of Democracy, Citizens and Territories (DDCT)", "borough-mayors": "Arrondissement town halls", dgaep: "Deputy Directors General for Public Space (DGAEP)", "dgs-19": "Directorate General of Services — 19th arrondissement town hall", "dgaep-19": "DGAEP — 19th arrondissement town hall", req: "Neighborhood Maintenance Representatives (REQ)", "municipal-police": "Municipal Police and Prevention (DPMP)", "prevention-sorting": "Prevention, awareness and sorting", "private-collectors": "Private waste collection providers",
++};
++
++const DESCRIPTION_EN: Record<string, string> = {
++  "city-paris": "Local authority; overall scope of the Paris registry.",
++  dpe: "Directorate responsible for street cleaning and municipal collection in the sectors it operates.",
++  stpp: "DPE service responsible for public-space cleaning and waste collection.",
++  "brigade-urgence-proprete": "Mobile teams deployed for targeted needs reported by town halls and residents.",
++  "dpe-field-agents": "Collective representation of field staff; no invented headcount or individual identity is shown.",
++  "tson-position": "Job profile attached to Division 17; it describes a role and team structure, not a current incumbent.",
++  "division-17-sectors": "The 2025 job profile describes three territorial sectors and eight workshops, plus one functional sector with two workshops. Incumbents are not listed.",
++  "division-17-supervisors": "The job profile describes a division head, two deputies and a sector supervisor; no identity or current assignment is inferred.",
++  "specialized-cleaning-services": "The City documents specialist interventions, including underground roads and riverbanks. Detailed units and reporting lines are not all published here.",
++  eboueurs: "Occupation represented collectively, without invented people or headcounts.",
++  "collection-drivers": "Occupation represented collectively; local assignments are unknown.",
++  ddct: "DDCT launched the REQ rollout; this alone does not describe an operational reporting line.",
++  "borough-mayors": "Local municipal level; no individual assignment is inferred.",
++  dgaep: "The 20th arrondissement REQ posting states a reporting link to the borough DGAEP; its incumbent is not identified here.",
++  "dgs-19": "The DGAEP job profile describes the DGS within the 19th arrondissement town hall's directorate general of services. No incumbent is named.",
++  "dgaep-19": "Role described in a September 2026 job posting. It does not establish the identity of a current incumbent.",
++  req: "Job posting for the 20th arrondissement and a programme rollout led by DDCT. Current assignments, neighbourhood coverage and incumbents are not established by this posting.",
++  "municipal-police": "Directorate cited as a service REQs may contact; no shared chain of command is represented.",
++  "prevention-sorting": "Public function documented in this ecosystem; the administrative reporting unit is not established by the sources used here.",
++  syctom: "Waste treatment syndicate; service relationship, not a municipal reporting line.",
++  "private-collectors": "Private companies collect municipal waste in some arrondissements. Contractors and exact scopes are not named here.",
++};
++
++const STATUS_STYLE = {
++  confirmed: "border-emerald-500/30 bg-emerald-500/10 cmm-text-success",
++  historical: "border-amber-500/30 bg-amber-500/10 cmm-text-warning",
++  unknown: "border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] cmm-text-secondary",
++} as const;
++
++const EMPTY_NODES: readonly PublicCleanlinessOrganizationNode[] = [];
++const EMPTY_RELATIONS: readonly PublicCleanlinessOrganizationRelation[] = [];
++const EMPTY_SOURCES: readonly { id: string; label: string; url: string; sourceContentDate?: string; verifiedAt: string; evidence: "official_current" | "official_historical" | "official_job_profile" | "operator_statement" | "professional_self_statement" }[] = [];
++
++export type PublicCleanlinessNavigation = { openNode: (id: string) => boolean };
++
++export function PublicCleanlinessOrganization({
++  fr = true,
++  datasets = PUBLIC_CLEANLINESS_CITY_DATASETS,
++  navigationRef,
++  getNetworkActorId,
++  onOpenNetworkActor,
++}: {
++  fr?: boolean;
++  datasets?: PublicCleanlinessCityDatasets;
++  navigationRef?: Ref<PublicCleanlinessNavigation>;
++  getNetworkActorId?: (node: PublicCleanlinessOrganizationNode) => string | null;
++  onOpenNetworkActor?: (actorId: string) => void;
++}) {
++  const text = fr ? COPY.fr : COPY.en;
++  const cityOptions = getArrondissementCityOptions();
++  const initialCity = cityOptions.find((city) => getPublicCleanlinessCityDataset(city.value, datasets))?.value ?? cityOptions[0]?.value ?? "Paris";
++  const [filters, setFilters] = useState<PublicCleanlinessFilters>(() => ({ city: initialCity, arrondissement: null, service: "all", query: "" }));
++  const [selectedId, setSelectedId] = useState("dpe");
++  const [viewMode, setViewMode] = useState<"chart" | "list">("chart");
++  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
++  const [zoom, setZoom] = useState(1);
++  const detailsRef = useRef<HTMLElement>(null);
++  const dataset = getPublicCleanlinessCityDataset(filters.city, datasets);
++  const visibleNodes = useMemo(() => filterPublicCleanlinessNodes(filters, datasets), [filters, datasets]);
++  const visibleIds = useMemo(() => new Set(visibleNodes.map((node) => node.id)), [visibleNodes]);
++  const nodes = dataset?.nodes ?? EMPTY_NODES;
++  const relations = dataset?.relations ?? EMPTY_RELATIONS;
++  const sources = dataset?.sources ?? EMPTY_SOURCES;
++  const nodeById = new Map(nodes.map((node) => [node.id, node]));
++  const childrenById = new Map<string, string[]>();
++  const parentById = new Map<string, string>();
++  for (const relation of relations) {
++    if (relation.kind !== "hierarchy") continue;
++    const childIds = childrenById.get(relation.from) ?? [];
++    childIds.push(relation.to);
++    childrenById.set(relation.from, childIds);
++    parentById.set(relation.to, relation.from);
++  }
++  const includedIds = new Set(visibleIds);
++  for (const id of visibleIds) {
++    let current = id;
++    const visited = new Set<string>();
++    while (!visited.has(current)) {
++      visited.add(current);
++      const parent = parentById.get(current);
++      if (!parent) break;
++      includedIds.add(parent);
++      current = parent;
++    }
++  }
++  const roots = nodes.filter((node) => !parentById.has(node.id) && includedIds.has(node.id));
++  const mandateNodes = new Set(relations.filter(edge => edge.kind === "mandate").flatMap(edge => [edge.from, edge.to]));
++  const standaloneRoots = roots.filter(node => node.kind === "person" || node.kind === "position" || (node.kind === "unit" && mandateNodes.has(node.id)));
++  const standaloneRootIds = new Set(standaloneRoots.map(node => node.id));
++  const administrativeRoots = roots.filter(node => !standaloneRootIds.has(node.id));
++  const selected = (includedIds.has(selectedId) ? nodeById.get(selectedId) : undefined) ?? visibleNodes[0] ?? null;
++  const canonicalDetails = selected && dataset === PARIS_PUBLIC_CLEANLINESS_DATASET ? projectPublicEntity({ institutionId: selected.id }) : null;
++  const selectedRelations = selected ? relations.filter((edge) => edge.from === selected.id || edge.to === selected.id) : [];
++  const institutionalPeople = selected && dataset ? getPublicInstitutionalPeople(dataset, selected.id) : [];
++  const documentedContributions = selected && dataset ? getPublicInstitutionalContributions(dataset, selected.id) : [];
++  const selectedContact = selected ? getPublicCleanlinessContact(selected, sources) : null;
++
++  const getPath = (nodeId: string): PublicCleanlinessOrganizationNode[] => {
++    const path: PublicCleanlinessOrganizationNode[] = [];
++    const visited = new Set<string>();
++    let current: string | undefined = nodeId;
++    while (current && !visited.has(current)) {
++      visited.add(current);
++      const node = nodeById.get(current);
++      if (node) path.push(node);
++      current = parentById.get(current);
++    }
++    return path.reverse();
++  };
++  const selectedPath = selected ? getPath(selected.id) : [];
++  const nextLevelNodes = selected
++    ? (childrenById.get(selected.id) ?? []).filter((id) => includedIds.has(id)).map((id) => nodeById.get(id)).filter((node): node is PublicCleanlinessOrganizationNode => Boolean(node))
++    : [];
++
++  const displayName = (node: PublicCleanlinessOrganizationNode) => {
++    if (fr) return node.name;
++    if (NAME_EN[node.id]) return NAME_EN[node.id];
++    if (node.id.startsWith("division-")) return node.name.replace("Division territoriale", "Territorial division");
++    return node.name;
++  };
++  const displayDescription = (node: PublicCleanlinessOrganizationNode) => fr ? node.description : DESCRIPTION_EN[node.id] ?? node.description;
++  const kindLabel = (kind: PublicCleanlinessOrganizationNode["kind"]) => text.kinds[kind];
++  const statusLabel = (status: PublicCleanlinessOrganizationNode["assignment"]) => text.assignment[status];
++  const relationKindLabel = (kind: PublicCleanlinessOrganizationRelation["kind"]) => text.relationKinds[kind];
++  const relationStatusLabel = (status: PublicCleanlinessOrganizationRelation["status"]) => text.relationStatus[status];
++
++  const updateFilters = (nextFilters: PublicCleanlinessFilters) => {
++    setFilters(nextFilters);
++    const nextVisible = filterPublicCleanlinessNodes(nextFilters, datasets);
++    setSelectedId((current) => nextVisible.some((node) => node.id === current) ? current : nextVisible[0]?.id ?? "");
++  };
++  const updateFilter = <K extends keyof PublicCleanlinessFilters>(key: K, value: PublicCleanlinessFilters[K]) => updateFilters({ ...filters, [key]: value });
++  const selectRelatedNode = (nodeId: string) => {
++    const related = nodeById.get(nodeId);
++    if (!related) return;
++    if (includedIds.has(nodeId)) {
++      setSelectedId(nodeId);
++      setCollapsed(current => {
++        const next = { ...current };
++        for (const node of getPath(nodeId)) next[node.id] = false;
++        return next;
++      });
++      return;
++    }
++    const nextFilters = {
++      ...filters,
++      arrondissement: filters.arrondissement === null || related.territoryIds.length === 0 || related.territoryIds.includes(`${filters.city}:${filters.arrondissement}`) ? filters.arrondissement : null,
++      service: "all",
++      query: "",
++    } satisfies PublicCleanlinessFilters;
++    updateFilters(nextFilters);
++    setSelectedId(nodeId);
++    setCollapsed((current) => {
++      const next = { ...current };
++      for (const node of getPath(nodeId)) next[node.id] = false;
++      return next;
++    });
++  };
++  useImperativeHandle(navigationRef, () => ({
++    openNode(id) {
++      const paris = getPublicCleanlinessCityDataset("Paris", datasets);
++      if (!paris?.nodes.some(node => node.id === id)) return false;
++      if (filters.city === "Paris") {
++        selectRelatedNode(id);
++      } else {
++        setFilters({ city: "Paris", arrondissement: null, service: "all", query: "" });
++        setSelectedId(id);
++        setCollapsed({});
++      }
++      return true;
++    },
++  }));
++  const linkedActorId = selected && dataset?.city === "Paris" ? getNetworkActorId?.(selected) : null;
++  const selectTreeNode = (nodeId: string) => includedIds.has(nodeId) ? setSelectedId(nodeId) : selectRelatedNode(nodeId);
++  const isSearching = filters.query.trim().length > 0;
++
++  const renderNode = (node: PublicCleanlinessOrganizationNode, depth: number): ReactNode => {
++    const children = (childrenById.get(node.id) ?? []).filter((id) => includedIds.has(id)).map((id) => nodeById.get(id)).filter((value): value is PublicCleanlinessOrganizationNode => Boolean(value));
++    const isCollapsed = !isSearching && (collapsed[node.id] ?? false);
++    const stateLabel = statusLabel(node.assignment);
++    return <li key={node.id}>
++      <div className="flex items-start gap-2" style={{ marginInlineStart: `${Math.min(depth, 4) * 0.5}rem` }}>
++        {children.length > 0 && !isSearching ? <button type="button" aria-label={`${isCollapsed ? text.expand : text.collapse} ${displayName(node)}`} aria-expanded={!isCollapsed} aria-controls={`org-children-${node.id}`} onClick={() => setCollapsed((current) => ({ ...current, [node.id]: !isCollapsed }))} className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--cmm-surface-border)] cmm-text-primary hover:bg-violet-500/10">{isCollapsed ? "+" : "−"}</button> : <span className="mt-1 inline-block h-8 w-8 shrink-0" aria-hidden="true" />}
++        <button type="button" aria-current={selected?.id === node.id ? "true" : undefined} data-assignment={node.assignment} onClick={() => selectTreeNode(node.id)} className={cn("min-w-0 flex-1 rounded-xl border px-3 py-2 text-left transition", selected?.id === node.id ? "border-violet-500 bg-violet-500/10" : "border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] hover:border-violet-500/40")}>
++          <span className="flex flex-wrap items-center gap-2"><span className="font-bold cmm-text-primary">{displayName(node)}</span><span className="rounded-full border border-[var(--cmm-surface-border)] px-2 py-0.5 text-xs cmm-text-secondary">{kindLabel(node.kind)}</span><span className={cn("rounded-full border px-2 py-0.5 text-xs", STATUS_STYLE[node.assignment])}>{stateLabel}</span></span>
++        </button>
++      </div>
++      {children.length > 0 && !isCollapsed ? <ul id={`org-children-${node.id}`} className="mt-2 list-none space-y-2">{children.map((child) => renderNode(child, depth + 1))}</ul> : null}
++    </li>;
++  };
++
++  const districtCount = cityOptions.find((city) => city.value === filters.city)?.arrondissementCount ?? 0;
++  const districtLabel = (number: number) => fr
++    ? getArrondissementMunicipalLabel(filters.city as ArrondissementCity, number)
++    : `${filters.city} ${number}${number === 1 ? "st" : "th"} ${text.arrSuffix}`;
++
++  return <CmmSectionGroup>
++    <section data-testid="public-cleanliness-organization" aria-labelledby="public-cleanliness-heading" className="rounded-3xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] p-4 md:p-6">
++      <div className="mb-6 max-w-3xl space-y-3">
++        <p className="text-xs font-black uppercase tracking-[0.22em] cmm-text-info">{text.eyebrow}</p>
++        <h2 id="public-cleanliness-heading" className="text-3xl font-black cmm-text-primary">{text.title}</h2>
++        <p className="text-sm leading-6 cmm-text-primary">{text.intro}</p>
++      </div>
++      <details className="mb-5 rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-3 text-xs cmm-text-primary">
++        <summary className="cursor-pointer font-semibold">{fr ? "Comprendre les relations et les sources" : "Understand relationships and sources"}</summary>
++        <div className="mt-3 grid gap-3 leading-5 md:grid-cols-2">
++        <p><strong className="cmm-text-primary">{text.types}:</strong> {text.typesBody}</p>
++        <p><strong className="cmm-text-primary">{text.scope}:</strong> {text.scopeBody}</p>
++        <p><strong className="cmm-text-primary">{text.relations}:</strong> {text.relationsBody}</p>
++        <p><strong className="cmm-text-primary">{text.evidence}:</strong> {text.evidenceBody}</p>
++        </div>
++      </details>
++
++      <div className="mb-5 grid gap-3 sm:grid-cols-2">
++        <label className="text-xs font-bold cmm-text-secondary">{text.city}<select aria-label={text.cityAria} value={filters.city} onChange={(event) => updateFilters({ ...filters, city: event.target.value, arrondissement: null })} className="cmm-input mt-1 block w-full">{cityOptions.map((city) => <option key={city.value} value={city.value}>{city.label}</option>)}</select></label>
++        <label className="text-xs font-bold cmm-text-secondary">{text.district}<select aria-label={text.districtAria} value={filters.arrondissement ?? ""} onChange={(event) => updateFilter("arrondissement", event.target.value ? Number(event.target.value) : null)} className="cmm-input mt-1 block w-full"><option value="">{text.all}</option>{Array.from({ length: districtCount }, (_, index) => index + 1).map((number) => <option key={number} value={number}>{districtLabel(number)}</option>)}</select></label>
++
++      </div>
++
++      {dataset?.city === "Paris" ? <PublicCleanlinessNeedPanel dataset={dataset} district={filters.arrondissement} fr={fr} onSelect={nodeId => {
++        selectRelatedNode(nodeId);
++        detailsRef.current?.focus();
++      }} /> : null}
++
++      {!dataset ? <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm cmm-text-warning">{text.noDataset} {filters.city}. {text.noDatasetTail}</p> : <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.75fr)]">
++        <div className="min-w-0 space-y-5">
++          <div className="grid gap-3 sm:grid-cols-2">
++        <label className="text-xs font-bold cmm-text-secondary">{text.service}<select aria-label={text.serviceAria} value={filters.service} onChange={(event) => updateFilter("service", event.target.value as PublicCleanlinessFilters["service"])} className="cmm-input mt-1 block w-full">{Object.entries(text.serviceLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
++        <label className="text-xs font-bold cmm-text-secondary">{text.search}<input type="search" aria-label={text.searchAria} value={filters.query} onChange={(event) => updateFilter("query", event.target.value)} placeholder={text.searchPlaceholder} className="cmm-input mt-1 block w-full" /></label>
++          </div>
++          <div className="overflow-hidden rounded-2xl border border-[var(--cmm-surface-border)] p-3 md:p-4">
++            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
++              <h3 className="text-sm font-black cmm-text-primary">{text.tree}</h3>
++              <div className="flex flex-wrap items-center gap-2">
++                <div role="group" aria-label={fr ? "Mode d'affichage de l'organigramme" : "Organization chart view mode"} className="flex items-center gap-1 rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-1">
++                  <button type="button" aria-pressed={viewMode === "chart"} onClick={() => { setViewMode("chart"); setZoom(1); }} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "chart" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
++                    {fr ? "Organigramme" : "Org chart"}
++                  </button>
++                  <button type="button" aria-pressed={viewMode === "list"} onClick={() => { setViewMode("list"); setZoom(1); }} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "list" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
++                    {fr ? "Liste" : "List"}
++                  </button>
++                </div>
++                <div role="group" aria-label={text.zoom} className="flex items-center gap-2">
++                  <button type="button" aria-label={text.zoomOut} onClick={() => setZoom((value) => Math.max(viewMode === "chart" ? 0.2 : 0.7, Math.round((value - 0.1) * 10) / 10))} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-sm cmm-text-primary">−</button>
++                  <button type="button" aria-label={text.zoomReset} onClick={() => setZoom(1)} className="min-w-16 rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-xs font-bold cmm-text-primary">{Math.round(zoom * 100)}%</button>
++                  <button type="button" aria-label={text.zoomIn} onClick={() => setZoom((value) => Math.min(viewMode === "chart" ? 60 : 1.4, Math.round((value + 0.1) * 10) / 10))} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-sm cmm-text-primary">+</button>
++                </div>
++              </div>
++            </div>
++            {roots.length ? (
++              <div className="space-y-3">
++                {viewMode === "chart" ? (
++                  <PublicCleanlinessOrgChart
++                    fr={fr}
++                    administrativeRoots={roots}
++                    childrenById={childrenById}
++                    nodeById={nodeById}
++                    relations={relations}
++                    includedIds={includedIds}
++                    selectedId={selected?.id ?? null}
++                    collapsed={collapsed}
++                    isSearching={isSearching}
++                    zoom={zoom}
++                    treeLabel={text.tree}
++                    expandLabel={text.expand}
++                    collapseLabel={text.collapse}
++                    fitLabel={fr ? "Cadrer" : "Fit"}
++                    legendLabels={{
++                      confirmed: text.assignment.confirmed,
++                      historical: text.assignment.historical,
++                      unknown: text.assignment.unknown,
++                      nonHierarchyNote: fr ? "Les autres relations ne constituent pas des rattachements" : "Other links are not reporting lines",
++                    }}
++                    displayName={displayName}
++                    kindLabel={kindLabel}
++                    statusLabel={statusLabel}
++                    statusStyle={STATUS_STYLE}
++                    onSelect={selectTreeNode}
++                    onToggleCollapse={(nodeId, next) => setCollapsed((current) => ({ ...current, [nodeId]: next }))}
++                    onResetView={() => setZoom(1)}
++                    onZoomChange={setZoom}
++                  />
++                ) : (
++                  <div className="max-h-[38rem] overflow-auto">
++                    <div className="min-w-0" style={{ fontSize: `${zoom}rem` }}>
++                      <ul aria-label={text.tree} className="list-none space-y-2">{administrativeRoots.map(rootNode => renderNode(rootNode, 0))}</ul>
++                    </div>
++                  </div>
++                )}
++                {viewMode === "list" && standaloneRoots.length ? <details className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-2" open={Boolean(filters.query.trim()) || Boolean(selectedPath[0] && standaloneRootIds.has(selectedPath[0].id))}>
++                  <summary className="cursor-pointer text-sm font-semibold cmm-text-info">{text.standalone} ({standaloneRoots.length})</summary>
++                  <ul aria-label={text.standalone} className="mt-2 list-none space-y-2">{standaloneRoots.map(rootNode => renderNode(rootNode, 0))}</ul>
++                </details> : null}
++              </div>
++            ) : <p role="status" className="p-5 text-sm cmm-text-primary">{text.noResults}</p>}
++          </div>
++
++          <section aria-label={text.levels} className="rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4">
++            <h3 className="text-sm font-black cmm-text-primary">{text.levels}</h3>
++            {selectedPath.length ? <nav aria-label={text.levels} className="mt-3 flex flex-wrap items-center gap-2">{selectedPath.map((node, index) => <span key={node.id} className="flex items-center gap-2">{index > 0 ? <span aria-hidden="true" className="cmm-text-secondary">›</span> : null}<button type="button" aria-current={index === selectedPath.length - 1 ? "location" : undefined} onClick={() => selectTreeNode(node.id)} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-left text-xs font-bold cmm-text-primary hover:bg-violet-500/10">{displayName(node)}</button></span>)}</nav> : <p className="mt-3 text-xs cmm-text-secondary">{text.noResults}</p>}
++            <h4 className="mt-4 text-xs font-bold uppercase tracking-wide cmm-text-secondary">{text.levelNext}</h4>
++            {nextLevelNodes.length ? <ul className="mt-2 flex flex-wrap gap-2">{nextLevelNodes.map((node) => <li key={node.id}><button type="button" onClick={() => selectTreeNode(node.id)} className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] px-3 py-2 text-left text-xs font-semibold cmm-text-primary hover:border-violet-500/40">{text.explore}: {displayName(node)} <span className={cn("ml-1 inline-block rounded-full border px-2 py-0.5", STATUS_STYLE[node.assignment])}>{statusLabel(node.assignment)}</span></button></li>)}</ul> : <p className="mt-2 text-xs cmm-text-secondary">{text.noLevelChildren}</p>}
++          </section>
++        </div>
++
++        <aside ref={detailsRef} tabIndex={-1} aria-live="polite" aria-label={text.selected} className="rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4">
++          {selected ? <>
++            <p className="text-xs font-black uppercase tracking-widest cmm-text-info">{text.selected} · {kindLabel(selected.kind)}</p>
++            <h3 className="mt-2 text-xl font-black cmm-text-primary">{displayName(selected)}</h3>
++            <p className="mt-3 text-sm leading-6 cmm-text-primary">{displayDescription(selected)}</p>
++            {linkedActorId && onOpenNetworkActor ? <button type="button" onClick={() => onOpenNetworkActor(linkedActorId)} className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-left text-sm font-semibold cmm-text-primary hover:bg-violet-500/20 focus-visible:ring-2 focus-visible:ring-violet-400">{fr ? "Voir dans le réseau des acteurs" : "View in the actor network"}</button> : null}
++            {canonicalDetails ? <PublicEntityDetails projection={canonicalDetails} fr={fr} onOpen={ref => { if (ref.institutionId) selectRelatedNode(ref.institutionId); else if (ref.networkActorId) onOpenNetworkActor?.(ref.networkActorId); }} /> : <>
++            <p data-assignment={selected.assignment} className={cn("mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold", STATUS_STYLE[selected.assignment])}>{text.status}: {statusLabel(selected.assignment)}</p>
++            {selected.territoryIds.length ? <p className="mt-2 text-xs cmm-text-secondary">{text.territory}: {selected.territoryIds.map((id) => id.replace(`${filters.city}:`, `${filters.city} `)).join(", ")}</p> : <p className="mt-2 text-xs cmm-text-secondary">{text.assignmentUnknown}</p>}
++            {selected.legalEmployerId ? <p className="mt-2 text-xs cmm-text-secondary">{text.legalEmployer}: {nodeById.has(selected.legalEmployerId) ? displayName(nodeById.get(selected.legalEmployerId)!) : selected.legalEmployerId}</p> : null}
++            {selected.unitId ? <p className="mt-2 text-xs cmm-text-secondary">{text.unit}: {nodeById.has(selected.unitId) ? displayName(nodeById.get(selected.unitId)!) : selected.unitId}</p> : null}
++            {selectedContact ? <p className="mt-2 text-xs cmm-text-secondary">{text.contact}: <a href={selectedContact.url} target="_blank" rel="noreferrer" className="cmm-text-info underline underline-offset-2">{selectedContact.label}</a></p> : null}
++            {institutionalPeople.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{fr ? "Personnes et affectations documentées" : "Documented people and assignments"}</h4><ul className="mt-2 space-y-2">{institutionalPeople.map(({ person, assignments }) => <li key={person.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-primary"><button type="button" onClick={() => selectRelatedNode(person.id)} className="font-bold cmm-text-info underline">{displayName(person)}</button><ul className="mt-1 space-y-1">{assignments.map(({ role, relation, status }) => <li key={relation.id}>{displayName(role)} · {relationStatusLabel(status)}</li>)}</ul></li>)}</ul></section> : null}
++            {selectedRelations.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{text.relationsTitle}</h4><ul className="mt-2 space-y-3">{selectedRelations.map((edge) => {
++              const relatedId = edge.from === selected.id ? edge.to : edge.from;
++              const related = nodeById.get(relatedId);
++              const relationSources = edge.sourceIds.map((id) => sources.find((source) => source.id === id)).filter((source): source is (typeof sources)[number] => Boolean(source));
++              return <li key={edge.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-primary">
++                <p>{relationKindLabel(edge.kind)} · <span className={cn("inline-flex rounded-full border px-2 py-0.5", STATUS_STYLE[edge.status])}>{relationStatusLabel(edge.status)}</span></p>
++                {edge.validFrom || edge.validUntil ? <p className="mt-1 cmm-text-secondary">{fr ? "Période publiée" : "Published period"}: {edge.validFrom ?? "?"} → {edge.validUntil ?? "?"}</p> : null}
++                {related ? <button type="button" onClick={() => selectRelatedNode(related.id)} className="mt-2 text-left font-bold cmm-text-info underline underline-offset-2">{text.explore}: {displayName(related)}</button> : null}
++                <div className="mt-2"><span className="font-bold cmm-text-primary">{text.relationSource}:</span><ul className="mt-1 space-y-1">{relationSources.map((source) => <li key={source.id}><a href={source.url} target="_blank" rel="noreferrer" className="cmm-text-info underline underline-offset-2">{source.label}</a><span className="cmm-text-secondary"> · {text.verified} {source.verifiedAt}</span></li>)}</ul></div>
++              </li>;
++            })}</ul></section> : null}
++            {documentedContributions.length ? <section className="mt-4 text-xs cmm-text-primary"><h4 className="font-black uppercase tracking-wider cmm-text-primary">{fr ? "Contributions publiques documentées" : "Documented public contributions"}</h4><p className="mt-1 cmm-text-secondary">{fr ? "Relations reprises du réseau public, pas un partenariat CleanMyMap ni un engagement actuel." : "Relations from the public network; not a CleanMyMap partnership or current commitment."}</p><ul className="mt-2 space-y-2">{documentedContributions.map(item => <li key={item.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
++              <p className="font-semibold cmm-text-primary">{item.title}</p><button type="button" onClick={() => selectRelatedNode(item.otherId)} className="cmm-text-info underline">{item.otherName}</button><p className="mt-1">{item.summary}</p><p><a href={item.source.url} target="_blank" rel="noreferrer" className="cmm-text-info underline">{item.source.label}</a> · {item.source.verifiedAt}</p>
++            </li>)}</ul></section> : null}
++            {dataset ? <PublicStructureContextPanel key={selected.id} context={dataset === PARIS_PUBLIC_CLEANLINESS_DATASET ? projectPublicEntity({ institutionId: selected.id })?.structureContext ?? null : getInstitutionStructureContext(dataset, selected, PARIS_CLEANWALK_ACTORS)} fr={fr} /> : null}
++            <div className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{text.sources}</h4><ul className="mt-2 space-y-2">{selected.sourceIds.map((id) => sources.find((item) => item.id === id)).filter((item): item is (typeof sources)[number] => Boolean(item)).map((item) => <li key={item.id}><a href={item.url} target="_blank" rel="noreferrer" className="text-xs font-semibold cmm-text-info underline underline-offset-2">{item.label}</a><p className="mt-0.5 text-xs cmm-text-secondary">{item.sourceContentDate ? `${text.sourceUpdated} ${item.sourceContentDate} · ` : ""}{text.verified} {item.verifiedAt} · {text.proof}: {text.evidenceLabels[item.evidence]}</p></li>)}</ul></div>
++            </>}
+           </> : <p role="status" className="text-sm cmm-text-primary">{text.noResults}</p>}
+         </aside>
+       </div>}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-bubble.tsx b/apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-bubble.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-bubble.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-bubble.tsx
+@@ -7,391 +7,393 @@
+ import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
+ import { getActorStructureContext } from "@/lib/partners/public-structure-context";
+ import { PublicStructureContextPanel } from "./public-structure-context-panel";
+-import {
+-  PARIS_ACTOR_CATEGORY_META,
+-  PARIS_ECOSYSTEM_ROLE_LABELS,
+-  isSafeHttpUrl,
+-  sanitizeAndDeduplicatePublicChannels,
+-  type ParisCleanwalkActor,
+-  type PublicChannelType,
+-} from "@/lib/partners/paris-cleanwalk-network";
+-
+-const ACTION_PARTICIPATION_TYPES = new Set<PublicChannelType>([
+-  "inscription_evenement",
+-  "plateforme_jagis",
+-  "plateforme_jeveuxaider",
+-  "plateforme_cleanwalk",
+-  "plateforme_helloasso",
+-]);
+-
+-const COMMUNITY_TYPES = new Set<PublicChannelType>([
+-  "groupe_whatsapp",
+-  "groupe_discord",
+-  "reseau_facebook",
+-]);
+-
+-export interface ParisNetwork3DBubbleProps {
+-  actor: ParisCleanwalkActor;
+-  isLocked: boolean;
+-  anchorPosition?: { leftPercent: number; topPercent: number } | null;
+-  onClose: () => void;
+-  onMouseEnter?: () => void;
+-  onMouseLeave?: () => void;
+-  fr: boolean;
+-}
+-
+-export function computeClampedBubblePosition(params: {
+-  anchorPosition: { leftPercent: number; topPercent: number };
+-  containerWidth: number;
+-  containerHeight: number;
+-  bubbleWidth: number;
+-  bubbleHeight: number;
+-  marginPx?: number;
+-}): { leftPx: number; topPx: number; maxHeightPx: number } {
+-  const margin = params.marginPx ?? 12;
+-  const { containerWidth, containerHeight, bubbleWidth, bubbleHeight } = params;
+-
+-  const desiredLeft = (params.anchorPosition.leftPercent / 100) * containerWidth;
+-  const desiredTop = (params.anchorPosition.topPercent / 100) * containerHeight;
+-
+-  const maxLeft = Math.max(margin, containerWidth - bubbleWidth - margin);
+-  const maxTop = Math.max(margin, containerHeight - bubbleHeight - margin);
+-
+-  return {
+-    leftPx: Math.round(Math.min(Math.max(desiredLeft, margin), maxLeft)),
+-    topPx: Math.round(Math.min(Math.max(desiredTop, margin), maxTop)),
+-    maxHeightPx: Math.max(160, Math.round(containerHeight - margin * 2)),
+-  };
+-}
+-
+-export function ParisNetwork3DBubble({
+-  actor,
+-  isLocked,
+-  anchorPosition,
+-  onClose,
+-  onMouseEnter,
+-  onMouseLeave,
+-  fr,
+-}: ParisNetwork3DBubbleProps) {
+-  const bubbleRef = useRef<HTMLDivElement | null>(null);
+-  const [clampedCoords, setClampedCoords] = useState<{
+-    leftPx: number;
+-    topPx: number;
+-    maxHeightPx: number;
+-  } | null>(null);
+-
+-  useLayoutEffect(() => {
+-    const bubbleEl = bubbleRef.current;
+-    const parentEl = bubbleEl?.parentElement;
+-    if (!bubbleEl || !parentEl || !anchorPosition) {
+-      return;
+-    }
+-
+-    const updatePosition = () => {
+-      const containerWidth = parentEl.clientWidth || parentEl.getBoundingClientRect().width;
+-      const containerHeight = parentEl.clientHeight || parentEl.getBoundingClientRect().height;
+-      const bubbleWidth = bubbleEl.offsetWidth || bubbleEl.getBoundingClientRect().width;
+-      const bubbleHeight = bubbleEl.offsetHeight || bubbleEl.getBoundingClientRect().height;
+-
+-      if (containerWidth <= 0 || containerHeight <= 0) {
+-        return;
+-      }
+-
+-      const next = computeClampedBubblePosition({
+-        anchorPosition,
+-        containerWidth,
+-        containerHeight,
+-        bubbleWidth,
+-        bubbleHeight,
+-      });
+-
+-      setClampedCoords((prev) =>
+-        prev &&
+-        prev.leftPx === next.leftPx &&
+-        prev.topPx === next.topPx &&
+-        prev.maxHeightPx === next.maxHeightPx
+-          ? prev
+-          : next,
+-      );
+-    };
+-
+-    updatePosition();
+-
+-    if (typeof ResizeObserver !== "undefined") {
+-      const observer = new ResizeObserver(updatePosition);
+-      observer.observe(parentEl);
+-      observer.observe(bubbleEl);
+-      return () => observer.disconnect();
+-    }
+-
+-    window.addEventListener("resize", updatePosition);
+-    return () => window.removeEventListener("resize", updatePosition);
+-  }, [actor.id, anchorPosition]);
+-
+-  const safeChannels = sanitizeAndDeduplicatePublicChannels(actor.publicChannels);
+-  const participationLinks = safeChannels.filter((ch) =>
+-    ACTION_PARTICIPATION_TYPES.has(ch.type),
+-  );
+-  const communityLinks = safeChannels.filter((ch) =>
+-    COMMUNITY_TYPES.has(ch.type),
+-  );
+-  const safeSiteUrl = isSafeHttpUrl(actor.officialWebsite)
+-    ? actor.officialWebsite
+-    : null;
+-  const otherChannels = safeChannels.filter(
+-    (ch) =>
+-      !ACTION_PARTICIPATION_TYPES.has(ch.type) &&
+-      !COMMUNITY_TYPES.has(ch.type) &&
+-      ch.url !== safeSiteUrl,
+-  );
+-
+-  const roleLabels = actor.ecosystemRoles
+-    .map((role) => PARIS_ECOSYSTEM_ROLE_LABELS[role])
+-    .join(" · ");
+-
+-  const positioningStyle = anchorPosition
+-    ? clampedCoords
+-      ? {
+-          left: `${clampedCoords.leftPx}px`,
+-          top: `${clampedCoords.topPx}px`,
+-          maxHeight: `${clampedCoords.maxHeightPx}px`,
+-        }
+-      : {
+-          left: "12px",
+-          top: "12px",
+-          maxHeight: "calc(100% - 1.5rem)",
+-        }
+-    : undefined;
+-
+-  return (
+-    <div
+-      ref={bubbleRef}
+-      role="dialog"
+-      aria-modal="false"
+-      aria-label={fr ? `Informations sur ${actor.name}` : `Information about ${actor.name}`}
+-      style={positioningStyle}
+-      onMouseEnter={onMouseEnter}
+-      onMouseLeave={onMouseLeave}
+-      className={`${
+-        anchorPosition
+-          ? "absolute z-30 w-[min(21rem,calc(100%-1.5rem))]"
+-          : "relative z-30 w-full min-w-0"
+-      } overflow-y-auto rounded-2xl border border-violet-300/35 bg-slate-950 p-4 text-sm leading-relaxed text-slate-200`}
+-    >
+-      {/* 1. Nom et rôle réel */}
+-      <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
+-        <div className="min-w-0">
+-          <p className="text-sm font-semibold text-violet-200">
+-            {roleLabels ? `${roleLabels} · ` : ""}{PARIS_ACTOR_CATEGORY_META[actor.category].shortLabel}
+-          </p>
+-          <h3 className="mt-0.5 text-lg font-semibold leading-snug text-white">
+-            {actor.name}
+-          </h3>
+-        </div>
+-        <button
+-          type="button"
+-          onClick={onClose}
+-          aria-label={fr ? `Fermer la bulle de ${actor.name}` : `Close ${actor.name} bubble`}
+-          className="rounded-lg border border-white/10 bg-white/5 p-1 text-slate-300 transition-colors hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+-        >
+-          <X size={14} aria-hidden="true" />
+-        </button>
+-      </div>
+-
+-      <div className="mt-2.5 space-y-2.5">
+-        {/* 2. Responsable ou référent public, si connu */}
+-        {actor.publicLeader ? (
+-          <p className="text-slate-200">
+-            <span className="font-bold text-slate-400">
+-              {fr ? "Référent public :" : "Public referent:"}{" "}
+-            </span>
+-            <span className="font-semibold text-white">
+-              {actor.publicLeader.name}
+-            </span>{" "}
+-            ({actor.publicLeader.roleTitle})
+-          </p>
+-        ) : null}
+-
+-        {/* 3. Description très courte de l'activité */}
+-        {actor.activities[0] ? (
+-          <p className="leading-relaxed text-slate-300">{actor.activities[0]}</p>
+-        ) : null}
+-
+-        {actor.schoolProfile ? <section className="space-y-1">
+-          <p>UAI : {actor.schoolProfile.uai} · {actor.schoolProfile.level === "lycee_general" ? "Lycée général" : "École élémentaire"} · {actor.schoolProfile.sector === "public" ? "Public" : "Privé hors contrat"}</p>
+-          {new Set(actor.schoolProfile.addresses.map(a => a.label)).size > 1 ? <p className="text-amber-300">{fr ? "Adresses divergentes, à confirmer." : "Conflicting addresses, to confirm."}</p> : null}
+-          <ul>{actor.schoolProfile.addresses.map(a => <li key={a.sourceUrl}><a href={a.sourceUrl} target="_blank" rel="noreferrer" className="underline">{a.label} (source)</a></li>)}</ul>
+-        </section> : null}
+-        {getScheduledOperationsForActor(actor.id).map(op => <details key={op.id} className="rounded-lg border border-amber-400/30 p-2"><summary className="cursor-pointer font-semibold text-amber-300">{op.label} · {fr ? "programmée" : "scheduled"}</summary><div className="mt-2"><ScheduledOperationDetails operation={op} fr={fr}/></div></details>)}
+-        {/* 3b. Financement (uniquement si documenté) */}
+-        {actor.funding && actor.funding.sources.length > 0 ? (
+-          <div className="rounded-lg border border-emerald-400/25 bg-emerald-500/5 p-2">
+-            <div className="flex items-center justify-between gap-2">
+-              <p className="font-black uppercase tracking-wider text-xs text-emerald-300">
+-                {fr ? "Financement" : "Funding"}
+-              </p>
+-              {isSafeHttpUrl(actor.funding.sourceUrl) ? (
+-                <a
+-                  href={actor.funding.sourceUrl}
+-                  target="_blank"
+-                  rel="noopener noreferrer"
+-                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-200 underline decoration-emerald-400/50 underline-offset-2 hover:text-white"
+-                >
+-                  <span>{fr ? "Source" : "Source"}</span>
+-                  <ExternalLink size={10} aria-hidden="true" />
+-                </a>
+-              ) : null}
+-            </div>
+-            <p className="mt-1 leading-relaxed text-slate-200">
+-              {actor.funding.sources
+-                .map((src) => {
+-                  const parts: string[] = [src.label];
+-                  if (typeof src.sharePercent === "number") {
+-                    const formatted = fr
+-                      ? `${src.sharePercent.toString().replace(".", ",")} %`
+-                      : `${src.sharePercent}%`;
+-                    parts.push(formatted);
+-                  }
+-                  if (typeof src.amountEur === "number") {
+-                    parts.push(`${src.amountEur.toLocaleString(fr ? "fr-FR" : "en-US")} €`);
+-                  }
+-                  return parts.join(" ");
+-                })
+-                .join(" · ")}
+-            </p>
+-            <p className="mt-1 text-sm text-slate-300">
+-              {[
+-                actor.funding.entityName,
+-                actor.funding.calculationBase ?? actor.funding.period,
+-                !actor.funding.sharesPublished
+-                  ? fr
+-                    ? "Parts non publiées"
+-                    : "Shares not published"
+-                  : null,
+-                actor.funding.notes ?? null,
+-              ]
+-                .filter(Boolean)
+-                .join(" · ")}
+-            </p>
+-          </div>
+-        ) : null}
+-
+-        {actor.platformStatus?.v2UnavailableFeaturesNote ? (
+-          <div className="flex items-start gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2 text-xs text-amber-100">
+-            <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-300" aria-hidden="true" />
+-            <span>{actor.platformStatus.v2UnavailableFeaturesNote}</span>
+-          </div>
+-        ) : null}
+-
+-        {/* 4. Participer aux actions */}
+-        {participationLinks.length > 0 ? (
+-          <div>
+-            <p className="font-black uppercase tracking-wider text-xs text-sky-300">
+-              {fr ? "Participer aux actions" : "Join actions"}
+-            </p>
+-            <ul className="mt-1 space-y-1">
+-              {participationLinks.map((ch) => (
+-                <li key={ch.url}>
+-                  <a
+-                    href={ch.url}
+-                    target="_blank"
+-                    rel="noopener noreferrer"
+-                    className="inline-flex items-center gap-1 font-bold text-sky-200 underline decoration-sky-400/50 underline-offset-2 hover:text-white"
+-                  >
+-                    <span>{ch.label}</span>
+-                    <ExternalLink size={11} aria-hidden="true" />
+-                  </a>
+-                </li>
+-              ))}
+-            </ul>
+-          </div>
+-        ) : null}
+-
+-        {/* 5. Rejoindre la communauté */}
+-        {communityLinks.length > 0 ? (
+-          <div>
+-            <p className="font-black uppercase tracking-wider text-xs text-violet-300">
+-              {fr ? "Rejoindre la communauté" : "Join community"}
+-            </p>
+-            <ul className="mt-1 space-y-1">
+-              {communityLinks.map((ch) => (
+-                <li key={ch.url}>
+-                  <a
+-                    href={ch.url}
+-                    target="_blank"
+-                    rel="noopener noreferrer"
+-                    className="inline-flex items-center gap-1 font-bold text-violet-200 underline decoration-violet-400/50 underline-offset-2 hover:text-white"
+-                  >
+-                    <span>{ch.label}</span>
+-                    <ExternalLink size={11} aria-hidden="true" />
+-                  </a>
+-                </li>
+-              ))}
+-            </ul>
+-          </div>
+-        ) : null}
+-
+-        {/* 6. Site web officiel et autres canaux publics pertinents */}
+-        {safeSiteUrl || otherChannels.length > 0 ? (
+-          <div>
+-            <p className="font-black uppercase tracking-wider text-xs text-slate-300">
+-              {fr ? "Site officiel & canaux publics" : "Official site & public channels"}
+-            </p>
+-            <ul className="mt-1 space-y-1">
+-              {safeSiteUrl ? (
+-                <li>
+-                  <a
+-                    href={safeSiteUrl}
+-                    target="_blank"
+-                    rel="noopener noreferrer"
+-                    className="inline-flex items-center gap-1 font-bold text-white underline decoration-violet-400/50 underline-offset-2 hover:text-violet-200"
+-                  >
+-                    <span>{fr ? "Site web officiel" : "Official website"}</span>
+-                    <ExternalLink size={11} aria-hidden="true" />
+-                  </a>
+-                </li>
+-              ) : null}
+-              {otherChannels.map((ch) => (
+-                <li key={ch.url}>
+-                  <a
+-                    href={ch.url}
+-                    target="_blank"
+-                    rel="noopener noreferrer"
+-                    className="inline-flex items-center gap-1 font-semibold text-slate-200 underline decoration-white/30 underline-offset-2 hover:text-white"
+-                  >
+-                    <span>{ch.label}</span>
+-                    <ExternalLink size={11} aria-hidden="true" />
+-                  </a>
+-                </li>
+-              ))}
+-            </ul>
+-          </div>
+-        ) : null}
+-
+-        {isLocked ? <PublicStructureContextPanel key={actor.id} context={projectPublicEntity({ networkActorId: actor.id })?.structureContext ?? getActorStructureContext(actor.id)} fr={fr} /> : null}
+-
+-        {/* 7. Source et fraîcheur */}
+-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2 text-xs text-slate-300">
+-          <span>
+-            {isSafeHttpUrl(actor.provenance.sourceUrl) ? (
+-              <a
+-                href={actor.provenance.sourceUrl}
+-                target="_blank"
+-                rel="noopener noreferrer"
+-                className="underline hover:text-slate-200"
+-              >
+-                Source : {actor.provenance.sourceLabel}
+-              </a>
+-            ) : (
+-              `Source : ${actor.provenance.sourceLabel}`
+-            )}
+-          </span>
+-          <span>
+-            {fr ? "Vérifié :" : "Verified:"} {actor.verifiedAt}
+-            {isLocked ? (fr ? " · Épinglé" : " · Pinned") : ""}
+-          </span>
+-        </div>
+-      </div>
++import { PublicEntityDetails } from "./public-entity-details";
++import {
++  PARIS_ACTOR_CATEGORY_META,
++  PARIS_ECOSYSTEM_ROLE_LABELS,
++  isSafeHttpUrl,
++  sanitizeAndDeduplicatePublicChannels,
++  type ParisCleanwalkActor,
++  type PublicChannelType,
++} from "@/lib/partners/paris-cleanwalk-network";
++
++const ACTION_PARTICIPATION_TYPES = new Set<PublicChannelType>([
++  "inscription_evenement",
++  "plateforme_jagis",
++  "plateforme_jeveuxaider",
++  "plateforme_cleanwalk",
++  "plateforme_helloasso",
++]);
++
++const COMMUNITY_TYPES = new Set<PublicChannelType>([
++  "groupe_whatsapp",
++  "groupe_discord",
++  "reseau_facebook",
++]);
++
++export interface ParisNetwork3DBubbleProps {
++  actor: ParisCleanwalkActor;
++  isLocked: boolean;
++  anchorPosition?: { leftPercent: number; topPercent: number } | null;
++  onClose: () => void;
++  onMouseEnter?: () => void;
++  onMouseLeave?: () => void;
++  fr: boolean;
++}
++
++export function computeClampedBubblePosition(params: {
++  anchorPosition: { leftPercent: number; topPercent: number };
++  containerWidth: number;
++  containerHeight: number;
++  bubbleWidth: number;
++  bubbleHeight: number;
++  marginPx?: number;
++}): { leftPx: number; topPx: number; maxHeightPx: number } {
++  const margin = params.marginPx ?? 12;
++  const { containerWidth, containerHeight, bubbleWidth, bubbleHeight } = params;
++
++  const desiredLeft = (params.anchorPosition.leftPercent / 100) * containerWidth;
++  const desiredTop = (params.anchorPosition.topPercent / 100) * containerHeight;
++
++  const maxLeft = Math.max(margin, containerWidth - bubbleWidth - margin);
++  const maxTop = Math.max(margin, containerHeight - bubbleHeight - margin);
++
++  return {
++    leftPx: Math.round(Math.min(Math.max(desiredLeft, margin), maxLeft)),
++    topPx: Math.round(Math.min(Math.max(desiredTop, margin), maxTop)),
++    maxHeightPx: Math.max(160, Math.round(containerHeight - margin * 2)),
++  };
++}
++
++export function ParisNetwork3DBubble({
++  actor,
++  isLocked,
++  anchorPosition,
++  onClose,
++  onMouseEnter,
++  onMouseLeave,
++  fr,
++}: ParisNetwork3DBubbleProps) {
++  const bubbleRef = useRef<HTMLDivElement | null>(null);
++  const [clampedCoords, setClampedCoords] = useState<{
++    leftPx: number;
++    topPx: number;
++    maxHeightPx: number;
++  } | null>(null);
++
++  useLayoutEffect(() => {
++    const bubbleEl = bubbleRef.current;
++    const parentEl = bubbleEl?.parentElement;
++    if (!bubbleEl || !parentEl || !anchorPosition) {
++      return;
++    }
++
++    const updatePosition = () => {
++      const containerWidth = parentEl.clientWidth || parentEl.getBoundingClientRect().width;
++      const containerHeight = parentEl.clientHeight || parentEl.getBoundingClientRect().height;
++      const bubbleWidth = bubbleEl.offsetWidth || bubbleEl.getBoundingClientRect().width;
++      const bubbleHeight = bubbleEl.offsetHeight || bubbleEl.getBoundingClientRect().height;
++
++      if (containerWidth <= 0 || containerHeight <= 0) {
++        return;
++      }
++
++      const next = computeClampedBubblePosition({
++        anchorPosition,
++        containerWidth,
++        containerHeight,
++        bubbleWidth,
++        bubbleHeight,
++      });
++
++      setClampedCoords((prev) =>
++        prev &&
++        prev.leftPx === next.leftPx &&
++        prev.topPx === next.topPx &&
++        prev.maxHeightPx === next.maxHeightPx
++          ? prev
++          : next,
++      );
++    };
++
++    updatePosition();
++
++    if (typeof ResizeObserver !== "undefined") {
++      const observer = new ResizeObserver(updatePosition);
++      observer.observe(parentEl);
++      observer.observe(bubbleEl);
++      return () => observer.disconnect();
++    }
++
++    window.addEventListener("resize", updatePosition);
++    return () => window.removeEventListener("resize", updatePosition);
++  }, [actor.id, anchorPosition]);
++
++  const canonicalDetails = isLocked ? projectPublicEntity({ networkActorId: actor.id }) : null;
++  const safeChannels = sanitizeAndDeduplicatePublicChannels(actor.publicChannels);
++  const participationLinks = safeChannels.filter((ch) =>
++    ACTION_PARTICIPATION_TYPES.has(ch.type),
++  );
++  const communityLinks = safeChannels.filter((ch) =>
++    COMMUNITY_TYPES.has(ch.type),
++  );
++  const safeSiteUrl = isSafeHttpUrl(actor.officialWebsite)
++    ? actor.officialWebsite
++    : null;
++  const otherChannels = safeChannels.filter(
++    (ch) =>
++      !ACTION_PARTICIPATION_TYPES.has(ch.type) &&
++      !COMMUNITY_TYPES.has(ch.type) &&
++      ch.url !== safeSiteUrl,
++  );
++
++  const roleLabels = actor.ecosystemRoles
++    .map((role) => PARIS_ECOSYSTEM_ROLE_LABELS[role])
++    .join(" · ");
++
++  const positioningStyle = anchorPosition
++    ? clampedCoords
++      ? {
++          left: `${clampedCoords.leftPx}px`,
++          top: `${clampedCoords.topPx}px`,
++          maxHeight: `${clampedCoords.maxHeightPx}px`,
++        }
++      : {
++          left: "12px",
++          top: "12px",
++          maxHeight: "calc(100% - 1.5rem)",
++        }
++    : undefined;
++
++  return (
++    <div
++      ref={bubbleRef}
++      role="dialog"
++      aria-modal="false"
++      aria-label={fr ? `Informations sur ${actor.name}` : `Information about ${actor.name}`}
++      style={positioningStyle}
++      onMouseEnter={onMouseEnter}
++      onMouseLeave={onMouseLeave}
++      className={`${
++        anchorPosition
++          ? "absolute z-30 w-[min(21rem,calc(100%-1.5rem))]"
++          : "relative z-30 w-full min-w-0"
++      } overflow-y-auto rounded-2xl border border-violet-300/35 bg-slate-950 p-4 text-sm leading-relaxed text-slate-200`}
++    >
++      {/* 1. Nom et rôle réel */}
++      <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
++        <div className="min-w-0">
++          <p className="text-sm font-semibold text-violet-200">
++            {roleLabels ? `${roleLabels} · ` : ""}{PARIS_ACTOR_CATEGORY_META[actor.category].shortLabel}
++          </p>
++          <h3 className="mt-0.5 text-lg font-semibold leading-snug text-white">
++            {actor.name}
++          </h3>
++        </div>
++        <button
++          type="button"
++          onClick={onClose}
++          aria-label={fr ? `Fermer la bulle de ${actor.name}` : `Close ${actor.name} bubble`}
++          className="rounded-lg border border-white/10 bg-white/5 p-1 text-slate-300 transition-colors hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-violet-400"
++        >
++          <X size={14} aria-hidden="true" />
++        </button>
++      </div>
++
++      {canonicalDetails ? <PublicEntityDetails projection={canonicalDetails} fr={fr}/> : <div className="mt-2.5 space-y-2.5">
++        {/* 2. Responsable ou référent public, si connu */}
++        {actor.publicLeader ? (
++          <p className="text-slate-200">
++            <span className="font-bold text-slate-400">
++              {fr ? "Référent public :" : "Public referent:"}{" "}
++            </span>
++            <span className="font-semibold text-white">
++              {actor.publicLeader.name}
++            </span>{" "}
++            ({actor.publicLeader.roleTitle})
++          </p>
++        ) : null}
++
++        {/* 3. Description très courte de l'activité */}
++        {actor.activities[0] ? (
++          <p className="leading-relaxed text-slate-300">{actor.activities[0]}</p>
++        ) : null}
++
++        {actor.schoolProfile ? <section className="space-y-1">
++          <p>UAI : {actor.schoolProfile.uai} · {actor.schoolProfile.level === "lycee_general" ? "Lycée général" : "École élémentaire"} · {actor.schoolProfile.sector === "public" ? "Public" : "Privé hors contrat"}</p>
++          {new Set(actor.schoolProfile.addresses.map(a => a.label)).size > 1 ? <p className="text-amber-300">{fr ? "Adresses divergentes, à confirmer." : "Conflicting addresses, to confirm."}</p> : null}
++          <ul>{actor.schoolProfile.addresses.map(a => <li key={a.sourceUrl}><a href={a.sourceUrl} target="_blank" rel="noreferrer" className="underline">{a.label} (source)</a></li>)}</ul>
++        </section> : null}
++        {getScheduledOperationsForActor(actor.id).map(op => <details key={op.id} className="rounded-lg border border-amber-400/30 p-2"><summary className="cursor-pointer font-semibold text-amber-300">{op.label} · {fr ? "programmée" : "scheduled"}</summary><div className="mt-2"><ScheduledOperationDetails operation={op} fr={fr}/></div></details>)}
++        {/* 3b. Financement (uniquement si documenté) */}
++        {actor.funding && actor.funding.sources.length > 0 ? (
++          <div className="rounded-lg border border-emerald-400/25 bg-emerald-500/5 p-2">
++            <div className="flex items-center justify-between gap-2">
++              <p className="font-black uppercase tracking-wider text-xs text-emerald-300">
++                {fr ? "Financement" : "Funding"}
++              </p>
++              {isSafeHttpUrl(actor.funding.sourceUrl) ? (
++                <a
++                  href={actor.funding.sourceUrl}
++                  target="_blank"
++                  rel="noopener noreferrer"
++                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-200 underline decoration-emerald-400/50 underline-offset-2 hover:text-white"
++                >
++                  <span>{fr ? "Source" : "Source"}</span>
++                  <ExternalLink size={10} aria-hidden="true" />
++                </a>
++              ) : null}
++            </div>
++            <p className="mt-1 leading-relaxed text-slate-200">
++              {actor.funding.sources
++                .map((src) => {
++                  const parts: string[] = [src.label];
++                  if (typeof src.sharePercent === "number") {
++                    const formatted = fr
++                      ? `${src.sharePercent.toString().replace(".", ",")} %`
++                      : `${src.sharePercent}%`;
++                    parts.push(formatted);
++                  }
++                  if (typeof src.amountEur === "number") {
++                    parts.push(`${src.amountEur.toLocaleString(fr ? "fr-FR" : "en-US")} €`);
++                  }
++                  return parts.join(" ");
++                })
++                .join(" · ")}
++            </p>
++            <p className="mt-1 text-sm text-slate-300">
++              {[
++                actor.funding.entityName,
++                actor.funding.calculationBase ?? actor.funding.period,
++                !actor.funding.sharesPublished
++                  ? fr
++                    ? "Parts non publiées"
++                    : "Shares not published"
++                  : null,
++                actor.funding.notes ?? null,
++              ]
++                .filter(Boolean)
++                .join(" · ")}
++            </p>
++          </div>
++        ) : null}
++
++        {actor.platformStatus?.v2UnavailableFeaturesNote ? (
++          <div className="flex items-start gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2 text-xs text-amber-100">
++            <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-300" aria-hidden="true" />
++            <span>{actor.platformStatus.v2UnavailableFeaturesNote}</span>
++          </div>
++        ) : null}
++
++        {/* 4. Participer aux actions */}
++        {participationLinks.length > 0 ? (
++          <div>
++            <p className="font-black uppercase tracking-wider text-xs text-sky-300">
++              {fr ? "Participer aux actions" : "Join actions"}
++            </p>
++            <ul className="mt-1 space-y-1">
++              {participationLinks.map((ch) => (
++                <li key={ch.url}>
++                  <a
++                    href={ch.url}
++                    target="_blank"
++                    rel="noopener noreferrer"
++                    className="inline-flex items-center gap-1 font-bold text-sky-200 underline decoration-sky-400/50 underline-offset-2 hover:text-white"
++                  >
++                    <span>{ch.label}</span>
++                    <ExternalLink size={11} aria-hidden="true" />
++                  </a>
++                </li>
++              ))}
++            </ul>
++          </div>
++        ) : null}
++
++        {/* 5. Rejoindre la communauté */}
++        {communityLinks.length > 0 ? (
++          <div>
++            <p className="font-black uppercase tracking-wider text-xs text-violet-300">
++              {fr ? "Rejoindre la communauté" : "Join community"}
++            </p>
++            <ul className="mt-1 space-y-1">
++              {communityLinks.map((ch) => (
++                <li key={ch.url}>
++                  <a
++                    href={ch.url}
++                    target="_blank"
++                    rel="noopener noreferrer"
++                    className="inline-flex items-center gap-1 font-bold text-violet-200 underline decoration-violet-400/50 underline-offset-2 hover:text-white"
++                  >
++                    <span>{ch.label}</span>
++                    <ExternalLink size={11} aria-hidden="true" />
++                  </a>
++                </li>
++              ))}
++            </ul>
++          </div>
++        ) : null}
++
++        {/* 6. Site web officiel et autres canaux publics pertinents */}
++        {safeSiteUrl || otherChannels.length > 0 ? (
++          <div>
++            <p className="font-black uppercase tracking-wider text-xs text-slate-300">
++              {fr ? "Site officiel & canaux publics" : "Official site & public channels"}
++            </p>
++            <ul className="mt-1 space-y-1">
++              {safeSiteUrl ? (
++                <li>
++                  <a
++                    href={safeSiteUrl}
++                    target="_blank"
++                    rel="noopener noreferrer"
++                    className="inline-flex items-center gap-1 font-bold text-white underline decoration-violet-400/50 underline-offset-2 hover:text-violet-200"
++                  >
++                    <span>{fr ? "Site web officiel" : "Official website"}</span>
++                    <ExternalLink size={11} aria-hidden="true" />
++                  </a>
++                </li>
++              ) : null}
++              {otherChannels.map((ch) => (
++                <li key={ch.url}>
++                  <a
++                    href={ch.url}
++                    target="_blank"
++                    rel="noopener noreferrer"
++                    className="inline-flex items-center gap-1 font-semibold text-slate-200 underline decoration-white/30 underline-offset-2 hover:text-white"
++                  >
++                    <span>{ch.label}</span>
++                    <ExternalLink size={11} aria-hidden="true" />
++                  </a>
++                </li>
++              ))}
++            </ul>
++          </div>
++        ) : null}
++
++        {isLocked ? <PublicStructureContextPanel key={actor.id} context={projectPublicEntity({ networkActorId: actor.id })?.structureContext ?? getActorStructureContext(actor.id)} fr={fr} /> : null}
++
++        {/* 7. Source et fraîcheur */}
++        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2 text-xs text-slate-300">
++          <span>
++            {isSafeHttpUrl(actor.provenance.sourceUrl) ? (
++              <a
++                href={actor.provenance.sourceUrl}
++                target="_blank"
++                rel="noopener noreferrer"
++                className="underline hover:text-slate-200"
++              >
++                Source : {actor.provenance.sourceLabel}
++              </a>
++            ) : (
++              `Source : ${actor.provenance.sourceLabel}`
++            )}
++          </span>
++          <span>
++            {fr ? "Vérifié :" : "Verified:"} {actor.verifiedAt}
++            {isLocked ? (fr ? " · Épinglé" : " · Pinned") : ""}
++          </span>
++        </div>
++      </div>}
+     </div>
+   );
+ }
