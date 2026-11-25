@@ -53,7 +53,7 @@ function passingEvidence(overrides = {}) {
       path: "e2e/action-attendance-registry-concurrency.mjs",
       status: "INTEGRATION_PROOF",
       outcome: "PASS",
-      contentSha256: "a77eee7ffaa7c37ebcbb8e1aafbbcf889d77f9ce58ebf69ff0b85098f23bf5ff",
+      contentSha256: "0b76640cec8f646fe13692775eae136dd3529ff11ad854753b0ce030a56ef161",
     }],
     ...overrides,
   };
@@ -176,9 +176,11 @@ test("ephemeral SQL evidence is validated by exact input digests rather than cur
   const expectedDigests = {
     "apps/web/supabase/migrations/20261122000014_private_action_attendance_registry.sql": "2f4b4ea37497fa05d67b3566a78b57ef927644c70b41a2983b2487958d885234",
     "apps/web/supabase/tests/action-attendance-registry.pgtap.sql": "cde4d55d936c9bf7ae915ad8c9d2aed4670d7d55ce2b3d375e0edc6f15ffd6c8",
-    "e2e/action-attendance-registry-concurrency.mjs": "a77eee7ffaa7c37ebcbb8e1aafbbcf889d77f9ce58ebf69ff0b85098f23bf5ff",
+    "e2e/action-attendance-registry-concurrency.mjs": "0b76640cec8f646fe13692775eae136dd3529ff11ad854753b0ce030a56ef161",
   };
   assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, expectedDigests }).valid, true);
+  assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, expectedDigests: {} }).mode, "BLOCKED");
 
   assert.equal(validateEphemeralEvidence({
     evidence: olderShaEvidence,
@@ -187,17 +189,17 @@ test("ephemeral SQL evidence is validated by exact input digests rather than cur
 
   const changedBackfillProof = passingEvidence();
   changedBackfillProof.records.find((record) => record.path === "apps/web/supabase/tests/action-attendance-registry.pgtap.sql").contentSha256 = "0".repeat(64);
-  assert.equal(validateEphemeralEvidence({ evidence: changedBackfillProof }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: changedBackfillProof, expectedDigests }).mode, "BLOCKED");
 
-  assert.equal(validateEphemeralEvidence({ evidence: null }).mode, "BLOCKED");
-  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ outcome: "NOT_RUN" }) }).mode, "BLOCKED");
-  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ records: [] }) }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: null, expectedDigests }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ outcome: "NOT_RUN" }), expectedDigests }).mode, "BLOCKED");
+  assert.equal(validateEphemeralEvidence({ evidence: passingEvidence({ records: [] }), expectedDigests }).mode, "BLOCKED");
 
   const passingStages = passingEvidence().workflowStages;
   for (const stage of ["bootstrap", "dbReset", "migrations", "seed", "schemaSeedValidation", "sqlProofRunner"]) {
     for (const status of ["FAIL", "NOT_RUN", "INCONCLUSIVE"]) {
       const evidence = passingEvidence({ workflowStages: passingStages.map((entry) => entry.stage === stage ? { ...entry, status } : entry) });
-      assert.equal(validateEphemeralEvidence({ evidence }).mode, "BLOCKED", `${stage}=${status}`);
+      assert.equal(validateEphemeralEvidence({ evidence, expectedDigests }).mode, "BLOCKED", `${stage}=${status}`);
     }
   }
 });

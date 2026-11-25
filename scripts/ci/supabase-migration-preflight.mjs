@@ -13,6 +13,7 @@ import {
 } from "./audit-supabase-release.mjs";
 import { findRlsContractFindings } from "../../apps/web/scripts/supabase-security-advisors.mjs";
 import { classifyMigrationSql, findSqlContractCompatibilityIssues } from "./supabase-migration-sql.mjs";
+import { validateEphemeralEvidence } from "./supabase-convergence-gate.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const migrationsRoot = path.join(repoRoot, "apps", "web", "supabase", "migrations");
@@ -185,6 +186,7 @@ const ACTIONS_BY_CAUSE = Object.freeze({
   MIGRATION_REVIEW_REQUIRED: "Revoir la migration SQL indécidable et obtenir une classification explicite avant application.",
   SQL_FORWARD_DEPENDENCY: "Corriger l'ordre ou la dépendance SQL dans une migration forward-only avant application.",
   SQL_CONTRACT_INCOMPATIBLE: "Coordonner la compatibilité du contrat SQL avec les consommateurs existants avant application.",
+  SENSITIVE_PROOF_INVALID: "Fournir une preuve SQL éphémère valide dont les empreintes exactes et la provenance correspondent aux migrations et tests sensibles en attente.",
   SECURITY_ADVISOR_CRITICAL: "Résoudre le risque de sécurité critique avant application.",
   ADVISOR_REGRESSION: "Résoudre la régression Advisor explicitement attribuée à la file avant application.",
 });
@@ -208,6 +210,59 @@ export function actionRequiredForCauses(causes = []) {
   return causes.map((cause) => ACTIONS_BY_CAUSE[cause.code] ?? "Analyser la cause indiquée et obtenir une validation explicite avant mutation.")[0] ?? "Aucune action requise.";
 }
 
+function normalizedFileSha256(filePath) {
+  const normalized = fs.readFileSync(filePath, "utf8").replace(/\r\n/g, "\n");
+  return createHash("sha256").update(normalized).digest("hex");
+}
+
+export function buildSensitiveExpectedDigests(sensitiveAnalyses = [], root = repoRoot) {
+  const digests = {};
+  const missingFiles = [];
+  for (const analysis of sensitiveAnalyses) {
+    const migrationPath = analysis.approval?.path ?? (analysis.file ? `apps/web/supabase/migrations/${analysis.file}` : "");
+    if (!migrationPath) {
+      missingFiles.push(analysis.id ?? "UNKNOWN_MIGRATION");
+      continue;
+    }
+    const migrationAbs = path.join(root, migrationPath);
+    if (!fs.existsSync(migrationAbs)) {
+      missingFiles.push(migrationPath);
+    } else {
+      digests[migrationPath] = normalizedFileSha256(migrationAbs);
+    }
+    for (const proof of analysis.approval?.proofs ?? []) {
+      const proofAbs = path.join(root, proof.path);
+      if (!fs.existsSync(proofAbs)) {
+        missingFiles.push(proof.path);
+      } else {
+        digests[proof.path] = normalizedFileSha256(proofAbs);
+      }
+    }
+  }
+  return { digests, missingFiles };
+}
+
+function readEvidencePayload({ argv = [], env = {} } = {}, root = repoRoot) {
+  const argPath = argv.find((arg) => arg.startsWith("--evidence="))?.slice("--evidence=".length);
+  const candidates = [
+    argPath,
+    env.CMM_SUPABASE_EVIDENCE_PATH,
+    "artifacts/ci/supabase-sql-evidence.json",
+    "artifacts/ci-public-evidence/evidence/supabase-sql.json",
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    const abs = path.isAbsolute(candidate) ? candidate : path.join(root, candidate);
+    if (fs.existsSync(abs)) {
+      try {
+        return JSON.parse(fs.readFileSync(abs, "utf8"));
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
 export function evaluatePreflight({
   projectRef,
   projectMatched = false,
@@ -217,6 +272,9 @@ export function evaluatePreflight({
   analyses = [],
   advisors = { rlsFindings: [], actionableSecurity: [], actionablePerformance: [], criticalSecurity: [], criticalPerformance: [], regressions: [] },
   commandFailures = [],
+  evidence = null,
+  expectedDigests = null,
+  root = repoRoot,
 } = {}) {
   const causes = [];
   const pending = history?.pending ?? [];
@@ -232,7 +290,8 @@ export function evaluatePreflight({
   if (history && dryRunIds.join(",") !== pending.join(",")) {
     causes.push({ code: "DRY_RUN_MISMATCH", detail: "db push --dry-run does not describe exactly the canonical pending queue." });
   }
-  for (const analysis of analyses.filter((entry) => pending.includes(entry.id))) {
+  const pendingAnalyses = analyses.filter((entry) => pending.includes(entry.id));
+  for (const analysis of pendingAnalyses) {
     if (analysis.destructive || analysis.dataMutation) {
       causes.push({ code: "MIGRATION_DATA_RISK", migrationId: analysis.id, detail: `${analysis.id} contains data-mutating or destructive SQL.` });
     }
@@ -243,13 +302,40 @@ export function evaluatePreflight({
       causes.push({ code: "SQL_FORWARD_DEPENDENCY", migrationId: analysis.id, dependencies: analysis.forwardDependencies, detail: `${analysis.id} references objects created by a later migration.` });
     }
   }
+  const sensitiveAnalyses = pendingAnalyses.filter((entry) => Boolean(entry.reviewedDataMutation || entry.approval?.proofs?.length));
+  let sensitiveProofStatus = "NOT_REQUIRED";
+  if (sensitiveAnalyses.length > 0) {
+    const digestSource = expectedDigests
+      ? { digests: expectedDigests, missingFiles: [] }
+      : buildSensitiveExpectedDigests(sensitiveAnalyses, root);
+    if (digestSource.missingFiles.length > 0) {
+      sensitiveProofStatus = "BLOCKED";
+      causes.push({
+        code: "SENSITIVE_PROOF_INVALID",
+        migrationId: sensitiveAnalyses[0].id,
+        detail: `Missing canonical proof input(s): ${digestSource.missingFiles.join(", ")}`,
+      });
+    } else {
+      const proofResult = validateEphemeralEvidence({ evidence, expectedDigests: digestSource.digests });
+      if (!proofResult.valid) {
+        sensitiveProofStatus = "BLOCKED";
+        causes.push({
+          code: "SENSITIVE_PROOF_INVALID",
+          migrationId: sensitiveAnalyses[0].id,
+          detail: proofResult.reason,
+        });
+      } else {
+        sensitiveProofStatus = "PASS";
+      }
+    }
+  }
   if (pending.length > 0 && (advisors.criticalSecurity?.length || advisors.criticalPerformance?.length)) {
     causes.push({ code: "SECURITY_ADVISOR_CRITICAL", detail: `${(advisors.criticalSecurity?.length ?? 0) + (advisors.criticalPerformance?.length ?? 0)} critical Advisor finding(s) require resolution.` });
   }
   if (pending.length > 0 && advisors.regressions?.length) {
     causes.push({ code: "ADVISOR_REGRESSION", detail: `${advisors.regressions.length} Advisor regression(s) are explicitly attributed to the pending lot.` });
   }
-  for (const analysis of analyses.filter((entry) => pending.includes(entry.id))) {
+  for (const analysis of pendingAnalyses) {
     if (analysis.sqlContractIssues?.length) {
       causes.push({ code: "SQL_CONTRACT_INCOMPATIBLE", migrationId: analysis.id, contracts: analysis.sqlContractIssues, detail: `${analysis.id} removes SQL contracts used by existing application consumers.` });
     }
@@ -264,6 +350,8 @@ export function evaluatePreflight({
     pending,
     projectRef,
     pendingCount: pending.length,
+    sensitivePendingCount: sensitiveAnalyses.length,
+    sensitiveProofStatus,
     firstBlockingMigration: firstBlockingMigration(pending, analyses, causes),
     actionRequired: actionRequiredForCauses(causes),
   };
@@ -324,6 +412,7 @@ export function runPreflight({ argv = process.argv.slice(2), env = process.env, 
     analyses: localEntries,
     advisors,
     commandFailures,
+    evidence: readEvidencePayload({ argv, env }),
   });
   return {
     ...summary,
@@ -379,6 +468,8 @@ function printSummary(summary) {
   console.log(`PENDING_REVIEW_REQUIRED: ${summary.pendingReviewRequiredCount ?? 0}`);
   console.log(`PENDING_EMBEDDED_FUNCTION_DML: ${summary.pendingEmbeddedFunctionDmlCount ?? 0}`);
   console.log(`PENDING_SQL_CONTRACT_ISSUES: ${summary.pendingSqlContractIssueCount ?? 0}`);
+  console.log(`SENSITIVE_PENDING_MIGRATIONS: ${summary.sensitivePendingCount ?? 0}`);
+  console.log(`SENSITIVE_PROOF_STATUS: ${summary.sensitiveProofStatus ?? "NOT_REQUIRED"}`);
   console.log(`SECURITY_ADVISOR_FINDINGS: ${summary.advisors.securityCount}`);
   console.log(`RLS_FINDINGS: ${summary.advisors.rlsCount}`);
   console.log(`PERFORMANCE_ADVISOR_FINDINGS: ${summary.advisors.performanceCount}`);

@@ -23,7 +23,10 @@ export function evaluateSupabasePostflight({ eventName, status, exitCode } = {})
   return { ...blocked(`convergence status ${String(status ?? "MISSING")} is not valid for ${String(eventName ?? "unknown event")}`), pass: false };
 }
 
-export function validateEphemeralEvidence({ evidence, expectedDigests = {} } = {}) {
+export function validateEphemeralEvidence({ evidence, expectedDigests } = {}) {
+  if (!expectedDigests || typeof expectedDigests !== "object" || Array.isArray(expectedDigests) || Object.keys(expectedDigests).length === 0) {
+    return blocked("expected input digests are required for sensitive proof validation");
+  }
   if (!evidence || typeof evidence !== "object") return blocked("ephemeral SQL evidence is missing");
   if (evidence.schemaVersion !== 2) return blocked("ephemeral SQL evidence schema version is not current");
   if (evidence.kind !== EXPECTED_PROOF_KIND) return blocked("ephemeral SQL evidence kind is invalid");
