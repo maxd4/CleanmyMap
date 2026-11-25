@@ -24,4 +24,25 @@ describe("handleApiError with validated Supabase errors", () => {
     expect(JSON.stringify(body)).not.toContain("internal SQL detail");
     expect(JSON.stringify(body)).not.toContain("internal SQL hint");
   });
+
+  it("logs code and message for plain Supabase-shaped error objects without leaking them to HTTP clients", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const response = handleApiError(
+        { code: "42703", message: "internal column mismatch" },
+        "spogomi.event.create",
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(JSON.stringify(body)).not.toContain("42703");
+      expect(JSON.stringify(body)).not.toContain("internal column mismatch");
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining("spogomi.event.create"),
+        expect.objectContaining({ code: "42703", message: "internal column mismatch", category: "server" }),
+      );
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });

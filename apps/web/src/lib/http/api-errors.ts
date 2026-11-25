@@ -55,14 +55,35 @@ function matchesAny(message: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(message));
 }
 
+function extractErrorDetails(error: unknown): { message: string; code: string | null } {
+  if (error instanceof Error) {
+    const codeValue = "code" in error && typeof (error as { code?: unknown }).code === "string"
+      ? (error as { code: string }).code
+      : null;
+    return { message: error.message, code: codeValue };
+  }
+  if (typeof error === "object" && error !== null) {
+    const record = error as Record<string, unknown>;
+    const message = typeof record.message === "string" && record.message.trim().length > 0
+      ? record.message
+      : String(error);
+    const code = typeof record.code === "string" && record.code.trim().length > 0
+      ? record.code
+      : null;
+    return { message, code };
+  }
+  return { message: String(error), code: null };
+}
+
 /**
  * Determine error category based on error type/message
  */
 function categorizeError(error: unknown): ErrorCategory {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const { message } = extractErrorDetails(error);
+  const normalized = message.toLowerCase();
 
   for (const rule of ERROR_CATEGORY_RULES) {
-    if (matchesAny(message, rule.patterns)) {
+    if (matchesAny(normalized, rule.patterns)) {
       return rule.category;
     }
   }
@@ -98,7 +119,7 @@ function statusFromCategory(category: string): number {
  * - Includes a reference code for support correlation
  */
 export function handleApiError(error: unknown, context?: string) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
+  const { message: errorMessage, code: errorCode } = extractErrorDetails(error);
   const category = categorizeError(error);
   const referenceCode = `ERR-${Date.now().toString(36).toUpperCase()}`;
   const status = statusFromCategory(category);
@@ -106,6 +127,7 @@ export function handleApiError(error: unknown, context?: string) {
   // Detailed logging for debugging (not exposed to client)
   console.error(`[API Error] ${referenceCode}${context ? ` in ${context}` : ""}:`, {
     message: errorMessage,
+    ...(errorCode ? { code: errorCode } : {}),
     category,
     timestamp: new Date().toISOString(),
   });
