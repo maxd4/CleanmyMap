@@ -1,0 +1,1067 @@
+diff --git a/apps/web/src/lib/partners/public-structure-context.ts b/apps/web/src/lib/partners/public-structure-context.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/partners/public-structure-context.ts
+@@ -0,0 +1,73 @@
++import { PUBLIC_STRUCTURE_CONTEXTS, PUBLIC_STRUCTURE_SOURCES } from "./public-structure-context.megots";
++import { isSafeHttpUrl, isPrivateOrUnauthorizedInviteUrl } from "./paris-cleanwalk-network.channels";
++import type { PublicCleanlinessCityDataset, PublicCleanlinessOrganizationNode } from "./public-cleanliness-organization";
++import type { ParisCleanwalkActor } from "./paris-cleanwalk-network";
++import { resolveInstitutionNetworkActorId } from "./public-cleanliness-network-links";
++
++type Localized = { fr: string; en: string };
++export type PublicStructureSource = {
++  label: string; url: string; verifiedAt: string;
++  evidence: "organizer_report" | "organizer_statement" | "partner_statement" | "operator_statement" | "public_authority" | "attributed_critique";
++};
++export type PublicStructureMetric = {
++  id: string; label: Localized; value: number;
++  unit: "count" | "percent" | "eur" | "eur_per_kg" | "eur_per_person_year" | "kg" | "tonnes";
++  period: string; scope: "national" | "ile_de_france" | "paris" | "organization" | "offer";
++  quality: "reported" | "approximate"; sourceId: string;
++};
++export type PublicStructureLimit = {
++  id: string;
++  basis: "documented" | "attributed_critique" | "not_established";
++  kind: "funding" | "governance" | "treatment" | "transparency" | "claims";
++  text: Localized; sourceIds: readonly string[];
++};
++export type PublicStructureContext = ({ actorId: string; institutionId?: never } | { institutionId: string; actorId?: never }) & {
++  metrics?: readonly PublicStructureMetric[];
++  limits: readonly PublicStructureLimit[];
++};
++const actorContexts = new Map(PUBLIC_STRUCTURE_CONTEXTS.flatMap(context => context.actorId ? [[context.actorId, context] as const] : []));
++const institutionContexts = new Map(PUBLIC_STRUCTURE_CONTEXTS.flatMap(context => context.institutionId ? [[context.institutionId, context] as const] : []));
++
++export function getPublicStructureSource(id: string): PublicStructureSource | null {
++  if (!Object.prototype.hasOwnProperty.call(PUBLIC_STRUCTURE_SOURCES, id)) return null;
++  const source = PUBLIC_STRUCTURE_SOURCES[id];
++  return source.url.startsWith("https://") && isSafeHttpUrl(source.url) && !isPrivateOrUnauthorizedInviteUrl(source.url) ? source : null;
++}
++
++export function getActorStructureContext(actorId: string): PublicStructureContext | null {
++  return actorContexts.get(actorId) ?? null;
++}
++
++export function getInstitutionStructureContext(dataset: PublicCleanlinessCityDataset, node: PublicCleanlinessOrganizationNode, actors: readonly Pick<ParisCleanwalkActor, "id" | "annuaireEntryId">[]): PublicStructureContext | null {
++  if (dataset.city !== "Paris" || !dataset.nodes.some(item => item.id === node.id)) return null;
++  if (node.networkActorId || node.directoryId) {
++    const actorId = resolveInstitutionNetworkActorId(dataset, node, actors);
++    if (actorId) return getActorStructureContext(actorId);
++    // An explicitly referenced but ambiguous network identity must not transfer its limits.
++    if (node.networkActorId || actors.some(actor => actor.annuaireEntryId === node.directoryId)) return null;
++  }
++  return institutionContexts.get(node.id) ?? null;
++}
++
++export function validatePublicStructureContexts(actors: readonly Pick<ParisCleanwalkActor, "id" | "annuaireEntryId">[], dataset: PublicCleanlinessCityDataset): string[] {
++  const errors: string[] = [];
++  const seen = new Set<string>();
++  for (const context of PUBLIC_STRUCTURE_CONTEXTS) {
++    const key = context.actorId ? "actor:" + context.actorId : "institution:" + context.institutionId;
++    if (seen.has(key)) errors.push("duplicate-context:" + key);
++    seen.add(key);
++    if (context.actorId ? !actors.some(actor => actor.id === context.actorId) : !dataset.nodes.some(node => node.id === context.institutionId)) errors.push("unknown-context:" + key);
++    const localIds = new Set<string>();
++    for (const item of [...(context.metrics ?? []), ...context.limits]) {
++      if (localIds.has(item.id)) errors.push("duplicate-evidence:" + key + ":" + item.id);
++      localIds.add(item.id);
++      if ("value" in item) {
++        if (!Number.isFinite(item.value) || item.value < 0 || (item.unit === "percent" && item.value > 100) || !getPublicStructureSource(item.sourceId)) errors.push("invalid-metric:" + item.id);
++      } else {
++        if (!item.text.fr.trim() || !item.text.en.trim() || !item.sourceIds.length || item.sourceIds.some(id => !getPublicStructureSource(id))) errors.push("invalid-limit:" + item.id);
++        if (item.basis === "attributed_critique" && !item.sourceIds.some(id => getPublicStructureSource(id)?.evidence === "attributed_critique")) errors.push("unattributed-critique:" + item.id);
++      }
++    }
++  }
++  return errors;
++}
+diff --git a/apps/web/src/lib/partners/public-structure-context.megots.ts b/apps/web/src/lib/partners/public-structure-context.megots.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/partners/public-structure-context.megots.ts
+@@ -0,0 +1,864 @@
++import type { PublicStructureContext, PublicStructureSource } from "./public-structure-context";
++
++/** Editorial public evidence only; no private contact or administrative store. */
++export const PUBLIC_STRUCTURE_SOURCES: Readonly<Record<string, PublicStructureSource>> = {
++  "megothon-2025": {
++    "label": "Bilan Mégothon 2025",
++    "url": "https://trash-spotter.green/wp-content/Megothon/Megothon_2025_Bilan_complet.pdf",
++    "evidence": "organizer_report",
++    "verifiedAt": "2026-11-25"
++  },
++  "megothon-editions": {
++    "label": "Mégothon : éditions précédentes",
++    "url": "https://lemegothon.fr/editions/",
++    "evidence": "organizer_report",
++    "verifiedAt": "2026-11-25"
++  },
++  "megothon-2024": {
++    "label": "Bilan Mégothon 2024, diffusé par Trash Spotter",
++    "url": "https://trash-spotter.green/wp-content/uploads/2025/02/Megothon-2024-Bilan-France.pdf",
++    "evidence": "organizer_report",
++    "verifiedAt": "2026-11-25"
++  },
++  "megothon-2026-partner": {
++    "label": "Mon Mégot Où Il Faut : actualité du 30 mai 2026",
++    "url": "https://monmegotouilfaut.fr/actualites.php",
++    "evidence": "partner_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "megothon-cpm": {
++    "label": "Mégothon : offre CPM",
++    "url": "https://lemegothon.fr/financer/",
++    "evidence": "organizer_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "megothon-faq": {
++    "label": "Mégothon : FAQ 2026",
++    "url": "https://lemegothon.fr/faq/",
++    "evidence": "organizer_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "megothon-collectif": {
++    "label": "Mégothon : collectif associatif",
++    "url": "https://lemegothon.fr/qui-sommes-nous/",
++    "evidence": "organizer_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "megothon-cgu": {
++    "label": "Mégothon : CGU de mars 2026",
++    "url": "https://lemegothon.fr/cgu/",
++    "evidence": "organizer_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "wcd-2025": {
++    "label": "World Cleanup Day France : rapport d'activité 2025",
++    "url": "https://www.worldcleanupday.fr/wp-content/uploads/2026/04/Rapport-activite-2025-1.pdf",
++    "evidence": "organizer_report",
++    "verifiedAt": "2026-11-25"
++  },
++  "alcome-rep": {
++    "label": "ADEME : filière REP des produits du tabac",
++    "url": "https://filieres-rep.ademe.fr/filieres-REP/filiere-TABAC",
++    "evidence": "public_authority",
++    "verifiedAt": "2026-11-25"
++  },
++  "alcome-governance": {
++    "label": "ALCOME : organisation et actionnaires",
++    "url": "https://alcome.eco/notre-organisation/",
++    "evidence": "operator_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "alcome-support": {
++    "label": "ALCOME : soutiens aux collectivités",
++    "url": "https://alcome.eco/nos-soutiens/",
++    "evidence": "operator_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "alcome-partners": {
++    "label": "ALCOME : associations partenaires",
++    "url": "https://alcome.eco/nos-associations-partenaires/",
++    "evidence": "operator_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "cnct-alcome": {
++    "label": "CNCT : critique de la gouvernance d'ALCOME (2022)",
++    "url": "https://cnct.fr/communiques/eco-organisme-alcome-outil-greenwashing-industrie-tabac-france/",
++    "evidence": "attributed_critique",
++    "verifiedAt": "2026-11-25"
++  },
++  "cnct-surfrider": {
++    "label": "CNCT et Surfrider Foundation Europe : demande de réforme (novembre 2026)",
++    "url": "https://cnct.fr/communiques/filiere-rep-tabac-a-lapproche-du-renouvellement-de-lagrement-dalcome-le-cnct-et-surfrider-foundation-europe-demandent-dexclure-lindustrie-du-tabac-de-leco-organisme/",
++    "evidence": "attributed_critique",
++    "verifiedAt": "2026-11-25"
++  },
++  "paris-megots": {
++    "label": "Ville de Paris : plan mégots 2025",
++    "url": "https://www.paris.fr/pages/paris-lance-son-plan-megots-30931",
++    "evidence": "public_authority",
++    "verifiedAt": "2026-11-25"
++  },
++  "paris-communique": {
++    "label": "Ville de Paris : communiqué du 20 mai 2025",
++    "url": "https://pressev2.paris.fr/communiques/9853",
++    "evidence": "public_authority",
++    "verifiedAt": "2026-11-25"
++  },
++  "paris-contrat": {
++    "label": "Conseil de Paris : délibération 2021 DPE 58",
++    "url": "https://a06-v7.apps.paris.fr/a06/jsp/site/Portal.jsp?fq=seance_string%3ADECEMBRE+2021&id_document=164210&items_per_page=20&page=ods-solr.display_document&query=DRH&sort_name=date&sort_order=asc&terms=DRH",
++    "evidence": "public_authority",
++    "verifiedAt": "2026-11-25"
++  },
++  "gestes-partners": {
++    "label": "Gestes Propres : membres et partenaires",
++    "url": "https://www.gestespropres.com/nos-membres-et-partenaires",
++    "evidence": "organizer_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "trash-2023": {
++    "label": "Trash Spotter : retour sur l'édition 2023",
++    "url": "https://trash-spotter.green/record-du-monde-de-ramassage-de-megots-2023-trash-spotter/",
++    "evidence": "partner_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "gambetta-2024": {
++    "label": "Conseil de quartier Gambetta : compte rendu de juin 2024",
++    "url": "https://cdn.paris.fr/paris/2024/10/11/0624-compte-rendu-conseil-de-quartier-gambetta-juin-2024-eN4F.pdf",
++    "evidence": "public_authority",
++    "verifiedAt": "2026-11-25"
++  },
++  "gambetta-2025": {
++    "label": "Conseil de quartier Gambetta : compte rendu de mars 2025",
++    "url": "https://cdn.paris.fr/paris/2025/04/16/032025-compte-rendu-conseil-de-quartier-gambetta-mars-25-wftw.pdf",
++    "evidence": "public_authority",
++    "verifiedAt": "2026-11-25"
++  },
++  "cyclope-treatment": {
++    "label": "Cy-Clope : valorisation des mégots",
++    "url": "https://www.cy-clope.com/valorisation-des-megots/",
++    "evidence": "operator_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "ckfd-treatment": {
++    "label": "CKFD : collecte en Île-de-France",
++    "url": "https://www.ckfd.fr/recyclage-dechets/megot-de-cigarette",
++    "evidence": "operator_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "mego-treatment": {
++    "label": "MéGO! : présentation de l'entreprise",
++    "url": "https://www.me-go.fr/a-propos/",
++    "evidence": "operator_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "mego-products": {
++    "label": "MéGO! : offre de produits et déclassement",
++    "url": "https://www.me-go.fr/boutique/",
++    "evidence": "operator_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "tchao-treatment": {
++    "label": "TchaoMegot : recyclage des filtres",
++    "url": "https://tchaomegot.com/recyclage/",
++    "evidence": "operator_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "ecomegot-treatment": {
++    "label": "Écomégot : offre de collecte",
++    "url": "https://ecomegot.com/collecte-megots/",
++    "evidence": "operator_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "wings-paris": {
++    "label": "Wings of the Ocean : antennes locales",
++    "url": "https://www.wingsoftheocean.com/nos-missions/nos-antennes/",
++    "evidence": "organizer_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "cleanwalker-paris": {
++    "label": "Cleanwalker : antenne Paris",
++    "url": "https://cleanwalker.fr/antennes/paris/",
++    "evidence": "organizer_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "lopp-actions": {
++    "label": "LOPP : opérations de dépollution",
++    "url": "https://ludovicobjectifplanetepropre.org/nettoyages-environnementaux/",
++    "evidence": "organizer_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "lopp-partners": {
++    "label": "LOPP : partenaires",
++    "url": "https://ludovicobjectifplanetepropre.org/les-partenaires/",
++    "evidence": "organizer_statement",
++    "verifiedAt": "2026-11-25"
++  },
++  "paris-residual": {
++    "label": "Ville de Paris : devenir des déchets non triés",
++    "url": "https://www.paris.fr/pages/que-deviennent-les-dechets-non-tries-36100",
++    "evidence": "public_authority",
++    "verifiedAt": "2026-11-25"
++  }
++};
++
++export const PUBLIC_STRUCTURE_CONTEXTS: readonly PublicStructureContext[] = [
++  {
++    "actorId": "megothon",
++    "metrics": [
++      {
++        "id": "2023-butts",
++        "label": {
++          "fr": "Mégots collectés",
++          "en": "Butts collected"
++        },
++        "value": 1000000,
++        "unit": "count",
++        "period": "2023",
++        "scope": "national",
++        "quality": "approximate",
++        "sourceId": "megothon-editions"
++      },
++      {
++        "id": "2023-people",
++        "label": {
++          "fr": "Bénévoles",
++          "en": "Volunteers"
++        },
++        "value": 1200,
++        "unit": "count",
++        "period": "2023",
++        "scope": "national",
++        "quality": "approximate",
++        "sourceId": "megothon-editions"
++      },
++      {
++        "id": "2024-butts",
++        "label": {
++          "fr": "Mégots collectés",
++          "en": "Butts collected"
++        },
++        "value": 971028,
++        "unit": "count",
++        "period": "2024",
++        "scope": "national",
++        "quality": "reported",
++        "sourceId": "megothon-2024"
++      },
++      {
++        "id": "2024-people",
++        "label": {
++          "fr": "Bénévoles",
++          "en": "Volunteers"
++        },
++        "value": 2166,
++        "unit": "count",
++        "period": "2024",
++        "scope": "national",
++        "quality": "reported",
++        "sourceId": "megothon-2024"
++      },
++      {
++        "id": "2024-idf",
++        "label": {
++          "fr": "Actions",
++          "en": "Events"
++        },
++        "value": 19,
++        "unit": "count",
++        "period": "2024",
++        "scope": "ile_de_france",
++        "quality": "reported",
++        "sourceId": "megothon-2025"
++      },
++      {
++        "id": "2025-butts",
++        "label": {
++          "fr": "Mégots collectés",
++          "en": "Butts collected"
++        },
++        "value": 1916538,
++        "unit": "count",
++        "period": "2025",
++        "scope": "national",
++        "quality": "reported",
++        "sourceId": "megothon-2025"
++      },
++      {
++        "id": "2025-people",
++        "label": {
++          "fr": "Bénévoles",
++          "en": "Volunteers"
++        },
++        "value": 5204,
++        "unit": "count",
++        "period": "2025",
++        "scope": "national",
++        "quality": "reported",
++        "sourceId": "megothon-2025"
++      },
++      {
++        "id": "2025-events",
++        "label": {
++          "fr": "Ramassages recensés",
++          "en": "Listed cleanups"
++        },
++        "value": 283,
++        "unit": "count",
++        "period": "2025",
++        "scope": "national",
++        "quality": "reported",
++        "sourceId": "megothon-2025"
++      },
++      {
++        "id": "2025-reports",
++        "label": {
++          "fr": "Ramassages avec bilan",
++          "en": "Cleanups reporting results"
++        },
++        "value": 238,
++        "unit": "count",
++        "period": "2025",
++        "scope": "national",
++        "quality": "reported",
++        "sourceId": "megothon-2025"
++      },
++      {
++        "id": "2025-idf",
++        "label": {
++          "fr": "Actions",
++          "en": "Events"
++        },
++        "value": 40,
++        "unit": "count",
++        "period": "2025",
++        "scope": "ile_de_france",
++        "quality": "reported",
++        "sourceId": "megothon-2025"
++      },
++      {
++        "id": "2025-valorisation",
++        "label": {
++          "fr": "Mégots déclarés valorisés",
++          "en": "Butts reported recovered"
++        },
++        "value": 10,
++        "unit": "percent",
++        "period": "2025",
++        "scope": "national",
++        "quality": "approximate",
++        "sourceId": "megothon-2025"
++      },
++      {
++        "id": "2026-butts",
++        "label": {
++          "fr": "Mégots collectés (annonce d'un partenaire)",
++          "en": "Butts collected (partner announcement)"
++        },
++        "value": 1120000,
++        "unit": "count",
++        "period": "2026",
++        "scope": "national",
++        "quality": "approximate",
++        "sourceId": "megothon-2026-partner"
++      },
++      {
++        "id": "2026-events",
++        "label": {
++          "fr": "Événements (annonce d'un partenaire)",
++          "en": "Events (partner announcement)"
++        },
++        "value": 169,
++        "unit": "count",
++        "period": "2026",
++        "scope": "national",
++        "quality": "reported",
++        "sourceId": "megothon-2026-partner"
++      },
++      {
++        "id": "cpm-price",
++        "label": {
++          "fr": "Prix affiché du certificat de 1 kg",
++          "en": "Advertised price of 1 kg certificate"
++        },
++        "value": 100,
++        "unit": "eur_per_kg",
++        "period": "2026",
++        "scope": "offer",
++        "quality": "reported",
++        "sourceId": "megothon-cpm"
++      },
++      {
++        "id": "cpm-management",
++        "label": {
++          "fr": "Part annoncée pour la gestion",
++          "en": "Advertised management share"
++        },
++        "value": 20,
++        "unit": "percent",
++        "period": "2026",
++        "scope": "offer",
++        "quality": "reported",
++        "sourceId": "megothon-cpm"
++      }
++    ],
++    "limits": [
++      {
++        "id": "recovery-2025",
++        "basis": "documented",
++        "kind": "treatment",
++        "text": {
++          "fr": "En 2025, le bilan déclare environ 10 % de mégots valorisés au niveau national, sans ventilation matière/énergie propre à l'édition. La destination des autres mégots n'est pas établie par ce taux.",
++          "en": "The 2025 national report states approximately 10% recovery, without an edition-specific material/energy breakdown. This rate does not establish the destination of the remainder."
++        },
++        "sourceIds": [
++          "megothon-2025"
++        ]
++      },
++      {
++        "id": "residual-route",
++        "basis": "documented",
++        "kind": "treatment",
++        "text": {
++          "fr": "La FAQ 2026 prévoit un point d'apport spécialisé ou, à défaut, les ordures ménagères. Une collecte ne prouve donc pas un recyclage matière.",
++          "en": "The 2026 FAQ allows a specialist drop-off or household residual waste if none is available. Collection does not prove material recycling."
++        },
++        "sourceIds": [
++          "megothon-faq"
++        ]
++      },
++      {
++        "id": "paris-results",
++        "basis": "not_established",
++        "kind": "transparency",
++        "text": {
++          "fr": "Le total annuel de mégots à Paris intra-muros et leur destination finale ne sont pas établis par les bilans consultés. Les chiffres nationaux et franciliens ne sont pas des résultats parisiens.",
++          "en": "Annual inner-Paris counts and final treatment destinations are not established by the reviewed reports. National and regional figures are not Paris results."
++        },
++        "sourceIds": [
++          "megothon-2025",
++          "megothon-editions"
++        ]
++      },
++      {
++        "id": "cpm-proof",
++        "basis": "not_established",
++        "kind": "claims",
++        "text": {
++          "fr": "Les CPM sont une offre de financement de collecte. Le site annonce une certification et une traçabilité ; ventes effectives, audit indépendant réalisé, standard externe et prévention du double comptage restent non établis par les pages consultées. Aucun crédit ne prouve à lui seul un recyclage.",
++          "en": "CPM is a collection-financing offer. The site advertises certification and traceability; actual sales, completed independent audit, external standard and double-counting prevention are not established by the reviewed pages. A credit alone does not prove recycling."
++        },
++        "sourceIds": [
++          "megothon-cpm",
++          "megothon-cgu"
++        ]
++      },
++      {
++        "id": "sponsor-budget",
++        "basis": "not_established",
++        "kind": "funding",
++        "text": {
++          "fr": "ALCOME et Trash Spotter sont remerciés dans le bilan 2025. Les montants propres au Mégothon, le budget consolidé et les versements effectifs ne sont pas établis par ce document.",
++          "en": "ALCOME and Trash Spotter are acknowledged in the 2025 report. Event-specific amounts, a consolidated budget and actual transfers are not established by that report."
++        },
++        "sourceIds": [
++          "megothon-2025",
++          "alcome-partners"
++        ]
++      },
++      {
++        "id": "2026-completeness",
++        "basis": "not_established",
++        "kind": "transparency",
++        "text": {
++          "fr": "Les résultats 2026 proviennent d'une annonce d'un partenaire ; bilan final complet, participants et comparabilité du périmètre des événements avec 2025 restent à confirmer.",
++          "en": "The 2026 results come from a partner announcement; the full final report, volunteers and comparability of event scope with 2025 remain unconfirmed."
++        },
++        "sourceIds": [
++          "megothon-2026-partner",
++          "megothon-2025"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "world-cleanup-day-france",
++    "metrics": [
++      {
++        "id": "wcd-budget",
++        "label": {
++          "fr": "Budget global de l'association",
++          "en": "Association-wide budget"
++        },
++        "value": 211500,
++        "unit": "eur",
++        "period": "2024-2025",
++        "scope": "organization",
++        "quality": "reported",
++        "sourceId": "wcd-2025"
++      },
++      {
++        "id": "wcd-patronage",
++        "label": {
++          "fr": "Mécénat financier (ordre de grandeur du rapport)",
++          "en": "Financial patronage (report's approximate share)"
++        },
++        "value": 70,
++        "unit": "percent",
++        "period": "2024-2025",
++        "scope": "organization",
++        "quality": "approximate",
++        "sourceId": "wcd-2025"
++      }
++    ],
++    "limits": [
++      {
++        "id": "wcd-tobacco",
++        "basis": "documented",
++        "kind": "funding",
++        "text": {
++          "fr": "Le rapport 2025 cite ALCOME, Trash Spotter et Citeo parmi les mécènes financiers. ALCOME relève de la REP tabac. Les montants individuels, les conditions des conventions et l'affectation au Mégothon ne sont pas établis par cette liste.",
++          "en": "The 2025 report lists ALCOME, Trash Spotter and Citeo among financial patrons. ALCOME is part of tobacco producer responsibility. Individual amounts, contract conditions and allocation to Mégothon are not established by that list."
++        },
++        "sourceIds": [
++          "wcd-2025",
++          "alcome-rep"
++        ]
++      },
++      {
++        "id": "wcd-role",
++        "basis": "documented",
++        "kind": "governance",
++        "text": {
++          "fr": "Le rapport 2025 indique que WCD France cesse d'être coporteur en 2026 tout en restant partenaire. Ne pas lui attribuer le budget ou la gouvernance du Mégothon 2026.",
++          "en": "The 2025 report states WCD France ceases to co-lead in 2026 while remaining a partner. Do not attribute the 2026 Mégothon budget or governance to it."
++        },
++        "sourceIds": [
++          "wcd-2025"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "asso-megots-alcome",
++    "metrics": [
++      {
++        "id": "support-rate",
++        "label": {
++          "fr": "Barème communes de 50 000 habitants et plus",
++          "en": "Rate for municipalities of at least 50,000 inhabitants"
++        },
++        "value": 2.08,
++        "unit": "eur_per_person_year",
++        "period": "2026",
++        "scope": "offer",
++        "quality": "reported",
++        "sourceId": "alcome-support"
++      },
++      {
++        "id": "pickup-threshold",
++        "label": {
++          "fr": "Seuil d'enlèvement annoncé pour communes sous contrat",
++          "en": "Advertised collection threshold for contracted municipalities"
++        },
++        "value": 100,
++        "unit": "kg",
++        "period": "2026",
++        "scope": "offer",
++        "quality": "reported",
++        "sourceId": "alcome-support"
++      }
++    ],
++    "limits": [
++      {
++        "id": "rep-governance",
++        "basis": "documented",
++        "kind": "governance",
++        "text": {
++          "fr": "Éco-organisme agréé de la REP tabac, financé par les producteurs. Sa page de gouvernance indique que son président nommé en mars 2026 représentait auparavant British American Tobacco France au conseil d'administration.",
++          "en": "Accredited tobacco producer responsibility organization financed by producers. Its governance page states that its president appointed in March 2026 previously represented British American Tobacco France on the board."
++        },
++        "sourceIds": [
++          "alcome-rep",
++          "alcome-governance"
++        ]
++      },
++      {
++        "id": "cnct-critique",
++        "basis": "attributed_critique",
++        "kind": "governance",
++        "text": {
++          "fr": "Le CNCT dénonce un risque de légitimation de l'industrie du tabac et qualifie le dispositif de greenwashing. Avec Surfrider Foundation Europe, il demande une gouvernance indépendante des fabricants. Ce sont des positions publiques attribuées, pas une décision judiciaire ni une qualification des bénéficiaires.",
++          "en": "CNCT criticizes the scheme as greenwashing and a risk of legitimizing the tobacco industry. Together with Surfrider Foundation Europe, it calls for governance independent of manufacturers. These are attributed public positions, not a court decision or a finding against recipients."
++        },
++        "sourceIds": [
++          "cnct-alcome",
++          "cnct-surfrider",
++          "alcome-governance"
++        ]
++      },
++      {
++        "id": "support-conditions",
++        "basis": "documented",
++        "kind": "funding",
++        "text": {
++          "fr": "Le barème et l'enlèvement à partir de 100 kg concernent les collectivités sous contrat, selon les modalités d'ALCOME. Ils ne prouvent ni un versement parisien précis ni une aide directe à une association.",
++          "en": "The rate and collection from 100 kg concern contracted municipalities under ALCOME's terms. They establish neither a specific payment to Paris nor direct assistance to an association."
++        },
++        "sourceIds": [
++          "alcome-support",
++          "alcome-rep"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "asso-gestes-propres",
++    "limits": [
++      {
++        "id": "industrial-partners",
++        "basis": "documented",
++        "kind": "funding",
++        "text": {
++          "fr": "L'association présente des industriels parmi ses membres et Citeo, ALCOME et Ecomaison comme partenaires. La page consultée ne chiffre pas les contributions individuelles ni leur éventuelle affectation au Mégothon.",
++          "en": "The association lists industry members and Citeo, ALCOME and Ecomaison as partners. The reviewed page does not quantify individual contributions or possible Mégothon allocations."
++        },
++        "sourceIds": [
++          "gestes-partners",
++          "alcome-partners"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "trash-spotter",
++    "limits": [
++      {
++        "id": "scope",
++        "basis": "documented",
++        "kind": "transparency",
++        "text": {
++          "fr": "La plateforme a assuré un suivi numérique de l'édition 2023 et figure parmi les partenaires remerciés en 2025 et mécènes financiers de WCD France. Cela ne démontre ni son rôle technique en 2026 ni le montant des financements.",
++          "en": "The platform supported digital reporting in 2023 and is acknowledged in 2025 and listed as a WCD France financial patron. This establishes neither its technical role in 2026 nor funding amounts."
++        },
++        "sourceIds": [
++          "trash-2023",
++          "megothon-2025",
++          "wcd-2025"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "lopp",
++    "limits": [
++      {
++        "id": "platform-owner",
++        "basis": "documented",
++        "kind": "governance",
++        "text": {
++          "fr": "Les CGU de mars 2026 identifient LOPP comme éditeur de la plateforme Mégothon. ALCOME présente aussi LOPP comme partenaire. Ne pas assimiler l'éditeur au bénéficiaire exclusif des fonds ni à un financement chiffré.",
++          "en": "The March 2026 terms identify LOPP as the Mégothon platform publisher. ALCOME also lists LOPP as a partner. This does not establish exclusive receipt of funds or a quantified payment."
++        },
++        "sourceIds": [
++          "megothon-cgu",
++          "alcome-partners",
++          "lopp-partners"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "asso-featured-1",
++    "limits": [
++      {
++        "id": "brigade-filiere",
++        "basis": "documented",
++        "kind": "treatment",
++        "text": {
++          "fr": "Le compte rendu Gambetta de mars 2025 documente la valorisation via Récolte Citadine avec Cy-Clope. Il ne prouve pas le devenir des lots du Mégothon 2026 ni le maintien des modalités.",
++          "en": "The March 2025 Gambetta minutes document recovery via Récolte Citadine with Cy-Clope. They do not establish the destination of Mégothon 2026 batches or that the terms remain current."
++        },
++        "sourceIds": [
++          "gambetta-2025",
++          "cyclope-treatment"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "evt-paris-nettoyages",
++    "metrics": [
++      {
++        "id": "paris-tonnes",
++        "label": {
++          "fr": "Masse annuelle de mégots ramassés (estimation municipale)",
++          "en": "Annual mass of butts collected (municipal estimate)"
++        },
++        "value": 350,
++        "unit": "tonnes",
++        "period": "2025",
++        "scope": "paris",
++        "quality": "approximate",
++        "sourceId": "paris-communique"
++      },
++      {
++        "id": "paris-cost",
++        "label": {
++          "fr": "Coût annuel estimé du jet de mégots",
++          "en": "Estimated annual cost of littered butts"
++        },
++        "value": 10000000,
++        "unit": "eur",
++        "period": "2025",
++        "scope": "paris",
++        "quality": "approximate",
++        "sourceId": "paris-megots"
++      },
++      {
++        "id": "paris-discarded",
++        "label": {
++          "fr": "Mégots jetés au sol par an (estimation)",
++          "en": "Butts littered annually (estimate)"
++        },
++        "value": 2000000000,
++        "unit": "count",
++        "period": "2025",
++        "scope": "paris",
++        "quality": "approximate",
++        "sourceId": "paris-megots"
++      }
++    ],
++    "limits": [
++      {
++        "id": "paris-measure",
++        "basis": "documented",
++        "kind": "transparency",
++        "text": {
++          "fr": "La Ville estime environ 4 à 5 millions de mégots jetés au sol chaque jour. Ce flux estimé n'est pas un comptage des mégots collectés. Le coût annoncé n'est pas le budget du Mégothon.",
++          "en": "The city estimates around 4 to 5 million butts littered per day. This estimated flow is not a collection count. The estimated cost is not the Mégothon budget."
++        },
++        "sourceIds": [
++          "paris-megots",
++          "paris-communique"
++        ]
++      },
++      {
++        "id": "paris-rep",
++        "basis": "documented",
++        "kind": "funding",
++        "text": {
++          "fr": "Un contrat REP mégots avec ALCOME a été approuvé en 2021 (DPE 58). Le plan 2025 mentionne une distribution de cendriers de poche avec ALCOME et les buralistes. Les versements exacts et l'affectation à une action citoyenne nécessitent des pièces comptables distinctes.",
++          "en": "A tobacco-butt producer responsibility contract with ALCOME was approved in 2021 (DPE 58). The 2025 plan mentions pocket ashtray distribution with ALCOME and tobacconists. Exact transfers and allocation to a citizen action require separate accounting evidence."
++        },
++        "sourceIds": [
++          "paris-contrat",
++          "paris-megots"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "asso-megots-cyclope",
++    "limits": [
++      {
++        "id": "energy-not-recycling",
++        "basis": "documented",
++        "kind": "treatment",
++        "text": {
++          "fr": "Cy-Clope décrit une valorisation énergétique des mégots. Ce traitement ne constitue pas un recyclage matière. Demander une preuve de réception, de traitement final et de la quantité réellement valorisée pour chaque lot.",
++          "en": "Cy-Clope describes energy recovery of butts. This is not material recycling. Request evidence of receipt, final treatment and actual recovered quantity for each batch."
++        },
++        "sourceIds": [
++          "cyclope-treatment"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "operator-ckfd",
++    "limits": [
++      {
++        "id": "downstream",
++        "basis": "documented",
++        "kind": "treatment",
++        "text": {
++          "fr": "CKFD annonce un regroupement à Gennevilliers puis un envoi vers une filière bretonne. Cette offre ne prouve ni l'admission de mégots ramassés au sol ni le trajet et le traitement effectifs d'un lot.",
++          "en": "CKFD advertises consolidation in Gennevilliers followed by transport to a Brittany facility. This offer proves neither acceptance of littered butts nor a specific batch's actual transport and treatment."
++        },
++        "sourceIds": [
++          "ckfd-treatment"
++        ]
++      }
++    ]
++  },
++  {
++    "actorId": "operator-mego",
++    "limits": [
++      {
++        "id": "material-route",
++        "basis": "documented",
++        "kind": "treatment",
++        "text": {
++          "fr": "MéGO! annonce un recyclage matière. Son offre de produits mentionne aussi des déclassements ; les rendements, résidus, destinations et preuves de traitement doivent être vérifiés pour le lot, sans assimiler collecte et recyclage intégral.",
++          "en": "MéGO! advertises material recycling. Its product offer also mentions rejected material; verify yields, residues, destinations and treatment evidence for the batch rather than equating collection with complete recycling."
++        },
++        "sourceIds": [
++          "mego-treatment",
++          "mego-products"
++        ]
++      }
++    ]
++  },
++  {
++    "institutionId": "asso-megots-tchaomegot",
++    "limits": [
++      {
++        "id": "tchao-route",
++        "basis": "documented",
++        "kind": "treatment",
++        "text": {
++          "fr": "TchaoMegot annonce une dépollution des filtres et une transformation en fibres isolantes. L'offre ne prouve pas la prise en charge des mégots du Mégothon parisien ni le rendement réel de chaque lot.",
++          "en": "TchaoMegot advertises filter decontamination and conversion to insulating fibers. The offer does not establish treatment of Paris Mégothon butts or actual batch yields."
++        },
++        "sourceIds": [
++          "tchao-treatment"
++        ]
++      }
++    ]
++  },
++  {
++    "institutionId": "asso-megots-ecomegot",
++    "limits": [
++      {
++        "id": "operator-route",
++        "basis": "not_established",
++        "kind": "treatment",
++        "text": {
++          "fr": "L'offre de collecte ne suffit pas à établir le traitement final d'un lot particulier. Demander conditions d'acceptation, filière, justificatif et prix.",
++          "en": "The collection offer does not establish final treatment of a particular batch. Confirm acceptance, route, evidence and price."
++        },
++        "sourceIds": [
++          "ecomegot-treatment"
++        ]
++      }
++    ]
++  },
++  {
++    "institutionId": "syctom",
++    "limits": [
++      {
++        "id": "residual-not-specialized",
++        "basis": "documented",
++        "kind": "treatment",
++        "text": {
++          "fr": "Le circuit des ordures ménagères résiduelles ne prouve pas le recyclage matière des mégots. Les installations industrielles ne sont pas des points de dépôt autorisés pour les bénévoles.",
++          "en": "Residual household waste routing does not prove material recycling of cigarette butts. Industrial facilities are not authorized volunteer drop-off points."
++        },
++        "sourceIds": [
++          "paris-residual"
++        ]
++      }
++    ]
++  }
++];
+diff --git a/apps/web/src/lib/partners/public-structure-context.test.ts b/apps/web/src/lib/partners/public-structure-context.test.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/partners/public-structure-context.test.ts
+@@ -0,0 +1,35 @@
++import { describe, expect, it } from "vitest";
++import { PARIS_CLEANWALK_ACTORS } from "./paris-cleanwalk-network";
++import { PARIS_PUBLIC_CLEANLINESS_DATASET as data } from "./public-cleanliness-organization";
++import { getActorStructureContext, getInstitutionStructureContext, getPublicStructureSource, validatePublicStructureContexts } from "./public-structure-context";
++
++describe("public structure context", () => {
++  it("validates referenced entities, metrics, sources and attributed criticisms", () => {
++    expect(validatePublicStructureContexts(PARIS_CLEANWALK_ACTORS, data)).toEqual([]);
++    expect(getPublicStructureSource("constructor")).toBeNull();
++    expect(getActorStructureContext("unlisted-actor")).toBeNull();
++  });
++  it("preserves national vs regional scope and reported recovery without a made-up Paris result", () => {
++    const context = getActorStructureContext("megothon")!;
++    expect(context.metrics?.find(item => item.id === "2025-valorisation")).toMatchObject({ value: 10, unit: "percent", scope: "national", quality: "approximate" });
++    expect(context.metrics?.find(item => item.id === "2024-people")?.value).toBe(2166);
++    expect(context.metrics?.some(item => item.scope === "paris")).toBe(false);
++    expect(context.limits.find(item => item.id === "cpm-proof")?.basis).toBe("not_established");
++  });
++  it("reuses the same evidence for explicit common identities, not their subsidiaries or lookalikes", () => {
++    const get = (id: string) => getInstitutionStructureContext(data, data.nodes.find(node => node.id === id)!, PARIS_CLEANWALK_ACTORS);
++    expect(get("asso-megots-alcome")).toBe(getActorStructureContext("asso-megots-alcome"));
++    expect(get("dpe")).toBe(getActorStructureContext("evt-paris-nettoyages"));
++    expect(get("asso-megots-cyclope")).toBe(getActorStructureContext("asso-megots-cyclope"));
++    expect(get("division-17")).toBeNull();
++    expect(get("asso-megots-tchaomegot")?.limits[0].id).toBe("tchao-route");
++    const dpe = data.nodes.find(node => node.id === "dpe")!;
++    expect(getInstitutionStructureContext({ ...data, city: "Lyon" }, dpe, PARIS_CLEANWALK_ACTORS)).toBeNull();
++    expect(getInstitutionStructureContext(data, { ...dpe, networkActorId: "asso-megots-alcome" }, PARIS_CLEANWALK_ACTORS)).toBeNull();
++  });
++  it("keeps the criticism attributed to CNCT and does not label recipients as guilty", () => {
++    expect(getActorStructureContext("asso-megots-alcome")?.limits.some(item => item.basis === "attributed_critique")).toBe(true);
++    expect(getActorStructureContext("world-cleanup-day-france")?.limits.some(item => item.basis === "attributed_critique")).toBe(false);
++    expect(getActorStructureContext("asso-gestes-propres")?.limits.some(item => item.basis === "attributed_critique")).toBe(false);
++  });
++});
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-structure-context-panel.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-structure-context-panel.tsx
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-structure-context-panel.tsx
+@@ -0,0 +1,46 @@
++"use client";
++
++import { getPublicStructureSource, type PublicStructureContext, type PublicStructureMetric } from "@/lib/partners/public-structure-context";
++
++const COPY = {
++  fr: { limits: "Limites", figures: "Chiffres et périmètres", basis: { documented: "Documenté", attributed_critique: "Critique publique attribuée", not_established: "Non établi" }, scope: { national: "France", ile_de_france: "Île-de-France", paris: "Paris", organization: "Structure entière", offer: "Offre annoncée" }, unit: { count: "", percent: "%", eur: "€", eur_per_kg: "€/kg", eur_per_person_year: "€/hab./an", kg: "kg", tonnes: "t" }, evidence: { organizer_report: "Bilan déclaré", organizer_statement: "Déclaration de l'organisateur", partner_statement: "Annonce d'un partenaire", operator_statement: "Déclaration de l'opérateur", public_authority: "Source publique", attributed_critique: "Position publique" }, verified: "source consultée le" },
++  en: { limits: "Limitations", figures: "Figures and scope", basis: { documented: "Documented", attributed_critique: "Attributed public criticism", not_established: "Not established" }, scope: { national: "France", ile_de_france: "Île-de-France", paris: "Paris", organization: "Entire organization", offer: "Advertised offer" }, unit: { count: "", percent: "%", eur: "€", eur_per_kg: "€/kg", eur_per_person_year: "€/person/year", kg: "kg", tonnes: "t" }, evidence: { organizer_report: "Self-reported results", organizer_statement: "Organizer statement", partner_statement: "Partner announcement", operator_statement: "Operator statement", public_authority: "Public authority", attributed_critique: "Public position" }, verified: "source reviewed on" },
++} as const;
++
++function SourceLink({ id, fr }: { id: string; fr: boolean }) {
++  const source = getPublicStructureSource(id);
++  const text = fr ? COPY.fr : COPY.en;
++  if (!source) return null;
++  return <li className="break-words"><a href={source.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 text-sky-200 focus-visible:ring-2 focus-visible:ring-sky-300">{source.label}</a><span className="block text-slate-400">{text.evidence[source.evidence]} · {text.verified} {source.verifiedAt}</span></li>;
++}
++
++function Metric({ item, fr }: { item: PublicStructureMetric; fr: boolean }) {
++  const lang = fr ? "fr" : "en";
++  const text = COPY[lang];
++  return <li className="border-b border-white/10 pb-2">
++    <p className="font-semibold text-slate-200">{item.label[lang]} · {item.period} · {text.scope[item.scope]}</p>
++    <p className="font-bold tabular-nums text-white">{item.quality === "approximate" ? "≈ " : ""}{item.value.toLocaleString(fr ? "fr-FR" : "en-US")}{text.unit[item.unit] ? " " + text.unit[item.unit] : ""}</p>
++    <ul className="mt-1 text-xs"><SourceLink id={item.sourceId} fr={fr} /></ul>
++  </li>;
++}
++
++/** One optional detail in the selected record, never a score, graph decoration or filter. */
++export function PublicStructureContextPanel({ context, fr }: { context: PublicStructureContext | null; fr: boolean }) {
++  if (!context) return null;
++  const lang = fr ? "fr" : "en";
++  const text = COPY[lang];
++  return <section className="mt-4 space-y-3 text-sm text-slate-300">
++    {context.metrics?.length ? <details className="rounded-xl border border-white/10 p-3">
++      <summary className="cursor-pointer font-semibold text-white">{text.figures}</summary>
++      <ul className="mt-3 space-y-2">{context.metrics.map(item => <Metric key={item.id} item={item} fr={fr} />)}</ul>
++    </details> : null}
++    {context.limits.length ? <details className="rounded-xl border border-amber-300/25 p-3">
++      <summary className="cursor-pointer font-semibold text-white">{text.limits} ({context.limits.length})</summary>
++      <ul className="mt-3 space-y-3">{context.limits.map(item => <li key={item.id} className="border-b border-white/10 pb-2">
++        <p className="font-semibold text-amber-100">{text.basis[item.basis]}</p>
++        <p className="mt-1 leading-relaxed">{item.text[lang]}</p>
++        <ul className="mt-2 space-y-1 text-xs">{item.sourceIds.map(id => <SourceLink key={id} id={id} fr={fr} />)}</ul>
++      </li>)}</ul>
++    </details> : null}
++  </section>;
++}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/public-structure-context-panel.test.tsx b/apps/web/src/components/sections/rubriques/annuaire/public-structure-context-panel.test.tsx
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/sections/rubriques/annuaire/public-structure-context-panel.test.tsx
+@@ -0,0 +1,24 @@
++import { renderToStaticMarkup } from "react-dom/server";
++import { describe, expect, it } from "vitest";
++import { getActorStructureContext } from "@/lib/partners/public-structure-context";
++import { PublicStructureContextPanel } from "./public-structure-context-panel";
++
++describe("public structure context panel", () => {
++  it("renders no empty or reassuring placeholder for undocumented structures", () => {
++    expect(renderToStaticMarkup(<PublicStructureContextPanel context={null} fr />)).toBe("");
++  });
++  it("renders sources, qualified metrics and attributed criticism in a compact disclosure", () => {
++    const markup = renderToStaticMarkup(<PublicStructureContextPanel context={getActorStructureContext("asso-megots-alcome")} fr />);
++    expect(markup).toContain("Limites");
++    expect(markup).toContain("Critique publique attribuée");
++    expect(markup).toContain("https://cnct.fr/");
++    expect(markup).toContain("<details");
++    expect(markup).not.toContain("role=\"alert\"");
++  });
++  it("renders English qualifications and regional scope", () => {
++    const markup = renderToStaticMarkup(<PublicStructureContextPanel context={getActorStructureContext("megothon")} fr={false} />);
++    expect(markup).toContain("Not established");
++    expect(markup).toContain("Île-de-France");
++    expect(markup).toContain("Partner announcement");
++  });
++});
