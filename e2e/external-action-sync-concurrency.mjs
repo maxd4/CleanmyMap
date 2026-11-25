@@ -100,21 +100,21 @@ begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-org-a"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
+${barrierSql(928173645111n, 928173645112n)}
 select 'RESULT:' || reservation_status
 from public.reserve_external_action_sync_reference(
   '${hashOrgConflict}', '${orgA}', 'sync-conc-a', '${token1}'::uuid,
   'jagis_pour_la_nature', 'conc-event-org', 'https://example.test/org-a', 'ra',
   '{"org":"a"}'::jsonb, '${"2".repeat(64)}'
 );
-select pg_sleep(0.35);
 commit;
-`);
-  await new Promise((r) => setTimeout(r, 75));
+`, "foreign_owner_a");
   const s2 = run(`
 begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-org-b"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
+${barrierSql(928173645112n, 928173645111n)}
 select 'RESULT:' || reservation_status
 from public.reserve_external_action_sync_reference(
   '${hashOrgConflict}', '${orgB}', 'sync-conc-b', '${token2}'::uuid,
@@ -122,10 +122,10 @@ from public.reserve_external_action_sync_reference(
   '{"org":"b"}'::jsonb, '${"3".repeat(64)}'
 );
 commit;
-`);
+`, "foreign_owner_b");
   const [r1, r2] = await Promise.all([s1, s2]);
-  assert.match(r1.stdout, /RESULT:reserved/);
-  assert.match(r2.stdout, /RESULT:identity_conflict/);
+  const statuses = [r1.stdout, r2.stdout].map((out) => out.match(/RESULT:([a-z_]+)/)?.[1]).sort();
+  assert.deepEqual(statuses, ["identity_conflict", "reserved"]);
 }
 
 async function testLockOrderReserveVsCompleteAndSuppress() {
@@ -357,7 +357,7 @@ async function main() {
     console.log("EXECUTED_DB_CONTRACT: External action sync two-session reservation, lock-order, expiration and suppression idempotency contract passed.");
   } catch (error) {
     const safeMsg = String(error?.message ?? error).replaceAll("ERROR:", "PG_ERR:").replace(/\r?\n/g, " | ").slice(0, 400);
-    console.log(`SYNC_CONC_DIAGNOSTIC: ${safeMsg}`);
+    console.log(`not ok 1 - SYNC_CONC_DIAGNOSTIC: ${safeMsg}`);
     process.exitCode = 1;
   } finally {
     await run(cleanupSql, "cleanup").catch(() => {});
