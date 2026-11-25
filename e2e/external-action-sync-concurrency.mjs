@@ -42,11 +42,11 @@ $$;
 
 const cleanupSql = `
 begin;
-set local role service_role;
+set local role postgres;
 delete from private.external_action_sync_suppression_audit where operation_id like 'sync-conc-%';
 delete from private.external_action_sync_references where external_event_id like 'conc-event-%';
 delete from private.external_action_sync_identities where identity_hash in ('${hashCollision}', '${hashOrgConflict}', '${hashLockOrder}', '${hashSuppressA}', '${hashSuppressB}', '${hashExpired}');
-delete from public.actions where id in ('${actionA}'::uuid, '${actionB}'::uuid);
+delete from public.actions where id in ('${actionA}'::uuid, '${actionB}'::uuid, '00000000-0000-4000-8000-000000009011'::uuid, '00000000-0000-4000-8000-000000009012'::uuid);
 delete from public.organizer_directory_entries where id in ('${orgA}', '${orgB}');
 commit;
 `;
@@ -56,9 +56,7 @@ async function setup() {
   await run(cleanupSql);
   await run(`
 begin;
-set local role service_role;
-select set_config('request.jwt.claims', '{"role":"service_role","sub":"external-sync-concurrency-setup"}', true);
-select set_config('request.jwt.claim.role', 'service_role', true);
+set local role postgres;
 insert into public.organizer_directory_entries(id, name, normalized_name, organizer_type, created_by_clerk_id)
 values ('${orgA}', 'Sync Conc Org A', 'sync conc org a', 'association', 'sync-conc'),
        ('${orgB}', 'Sync Conc Org B', 'sync conc org b', 'association', 'sync-conc');
@@ -211,13 +209,14 @@ async function testConcurrentSuppressionOperationIdCollisionAndIdempotency() {
   const action2 = "00000000-0000-4000-8000-000000009012";
   await run(`
 begin;
-set local role service_role;
-select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-sup-setup2"}', true);
-select set_config('request.jwt.claim.role', 'service_role', true);
+set local role postgres;
 delete from public.actions where id in ('${action1}'::uuid, '${action2}'::uuid);
 insert into public.actions(id, created_by_clerk_id, action_date, location_label, status, action_phase, organizer_type, organizer_id, organizer_name)
 values ('${action1}'::uuid, 'sync-conc', current_date + 7, 'Lieu Sup 1', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A'),
        ('${action2}'::uuid, 'sync-conc', current_date + 8, 'Lieu Sup 2', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A');
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-sup-setup2"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 select * from public.reserve_external_action_sync_reference(
   '${hashSuppressA}', '${orgA}', 'sync-conc', '${tokenA}'::uuid,
   'jagis_pour_la_nature', 'conc-event-sup-1', 'https://example.test/s1', 'r1', '{"s":1}'::jsonb, '${"7".repeat(64)}'
@@ -259,10 +258,12 @@ commit;
 
   // Verify exactly one action is suppressed and the loser action remains active
   const state = await run(`
+begin;
 set local role service_role;
 select count(*) filter (where suppressed_at is not null) || ':' || count(*) filter (where suppressed_at is null)
 from private.external_action_sync_identities
 where identity_hash in ('${hashSuppressA}', '${hashSuppressB}');
+commit;
 `);
   assert.match(state.stdout, /1:1/);
 
@@ -278,7 +279,7 @@ where identity_hash in ('${hashSuppressA}', '${hashSuppressB}');
 
   await run(`
 begin;
-set local role service_role;
+set local role postgres;
 delete from private.external_action_sync_suppression_audit where operation_id = 'sync-conc-op-collision';
 delete from private.external_action_sync_references where identity_hash in ('${hashSuppressA}', '${hashSuppressB}');
 delete from private.external_action_sync_identities where identity_hash in ('${hashSuppressA}', '${hashSuppressB}');
@@ -299,6 +300,7 @@ select * from public.reserve_external_action_sync_reference(
   '${hashExpired}', '${orgA}', 'sync-conc', '${expiredToken}'::uuid,
   'jagis_pour_la_nature', 'conc-event-expired', 'https://example.test/exp', 'r1', '{"exp":1}'::jsonb, '${"9".repeat(64)}'
 );
+set local role postgres;
 update private.external_action_sync_identities
    set claim_expires_at = now() - interval '2 minutes'
  where identity_hash = '${hashExpired}';
