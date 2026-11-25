@@ -84,6 +84,21 @@ function conflict(message: string): Error {
   return new Error(`Conflict: ${message}`);
 }
 
+function formatClockTimeInTimeZone(value: string | null, timeZone: string): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return null;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const hour = parts.find((part) => part.type === "hour")?.value;
+  const minute = parts.find((part) => part.type === "minute")?.value;
+  return hour && minute ? `${hour}:${minute}` : null;
+}
+
 function parseCreationDate(value: string, label: "début" | "fin"): Date {
   try {
     const parsed = isDateTimeLocalValue(value)
@@ -390,7 +405,10 @@ async function createSpogomiAction(params: {
       actionPhase: "pre_action",
       preparationData: { interventionMode: createActionInterventionMode("fixed_area"), spogomiCreationKey: input.idempotencyKey, spogomiCreationFingerprint: proof.fingerprint },
       wasteKg: null, cigaretteButts: null, volunteersCount: 0, durationMinutes: 0,
-      eventStartTime: canonical.startsAt, eventEndTime: canonical.endsAt, organizerType: null, organizerName: null,
+      actionTimezone: SPOGOMI_DEFAULT_TIME_ZONE,
+      eventStartTime: formatClockTimeInTimeZone(canonical.startsAt, SPOGOMI_DEFAULT_TIME_ZONE),
+      eventEndTime: formatClockTimeInTimeZone(canonical.endsAt, SPOGOMI_DEFAULT_TIME_ZONE),
+      organizerType: null, organizerName: null,
     },
     organizers: [{ userId, displayName, handle: identity?.handle ?? null, isPrimary: true, sourceToken: null }],
     organizerRequirement: "required",
