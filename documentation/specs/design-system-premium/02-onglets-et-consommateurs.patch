@@ -1,0 +1,942 @@
+diff --git a/apps/web/src/components/ui/cmm-tab-strip.styles.ts b/apps/web/src/components/ui/cmm-tab-strip.styles.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/ui/cmm-tab-strip.styles.ts
+@@ -0,0 +1,14 @@
++import { cn } from "@/lib/utils";
++
++const STRIP = "grid w-full gap-2 rounded-2xl border p-2";
++const ITEM = "inline-flex min-h-11 min-w-0 items-center justify-center rounded-xl px-4 py-2.5 text-center text-sm font-bold tracking-normal transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:text-base";
++
++/** Presentation shared by linked and local tabs; navigation and ARIA stay with callers. */
++export function tabStripClassName(tone: "emerald" | "family", columns: string): string {
++  return cn(STRIP, tone === "emerald" ? "border-emerald-100 bg-white shadow-sm" : "cmm-family-tab-strip", columns);
++}
++
++export function tabItemClassName(tone: "emerald" | "family", active: boolean): string {
++  if (tone === "family") return cn(ITEM, "cmm-family-tab-item", active && "cmm-family-tab-item--active");
++  return cn(ITEM, "focus-visible:ring-emerald-300", active ? "bg-emerald-700 text-white shadow-sm" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-900");
++}
+diff --git a/apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs.tsx b/apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs.tsx
+--- a/apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs.tsx
++++ b/apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs.tsx
+@@ -1,100 +1,101 @@
+ "use client";
+ 
+ import Link from "next/link";
+-import { buildJoinActionTabHref } from "@/lib/sections/join-action-routes";
+-import type { JoinActionTab } from "./rejoindre-une-action.model";
+-
+-export type ActionTabDefinition = {
+-  id: string;
+-  label: string;
+-  panelId?: string;
+-};
+-
+-const DEFAULT_TABS: readonly ActionTabDefinition[] = [
+-  { id: "future", label: "Action future", panelId: "join-action-panel-future" },
+-  { id: "past", label: "Action passée", panelId: "join-action-panel-past" },
+-  { id: "needs", label: "Besoins", panelId: "join-action-panel-needs" },
+-];
+-
+-export function getNextActionTabId(
+-  tabs: readonly ActionTabDefinition[],
+-  currentTab: string,
+-  key: string,
+-): string | null {
+-  const currentIndex = tabs.findIndex((tab) => tab.id === currentTab);
+-  if (currentIndex < 0) return null;
+-
+-  let nextIndex: number | null = null;
+-  if (key === "ArrowRight" || key === "ArrowDown") nextIndex = (currentIndex + 1) % tabs.length;
+-  if (key === "ArrowLeft" || key === "ArrowUp") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+-  if (key === "Home") nextIndex = 0;
+-  if (key === "End") nextIndex = tabs.length - 1;
+-  return nextIndex === null ? null : tabs[nextIndex]?.id ?? null;
+-}
+-
+-export function JoinActionTabs({
+-  activeTab,
+-  focusActionId = null,
+-  fr = true,
+-  tabs = DEFAULT_TABS,
+-  buildHref,
+-  searchParams,
+-  ariaLabel,
+-  idPrefix = "join-action-tab",
+-}: {
+-  activeTab: string;
+-  focusActionId?: string | null;
+-  fr?: boolean;
+-  tabs?: readonly ActionTabDefinition[];
+-  buildHref?: (tab: string) => string;
+-  searchParams?: string | URLSearchParams;
+-  ariaLabel?: string;
+-  idPrefix?: string;
+-}) {
+-  function moveWithKeyboard(currentTab: string, key: string) {
+-    const nextTab = getNextActionTabId(tabs, currentTab, key);
+-    if (!nextTab) return;
+-    const nextLink = document.getElementById(`${idPrefix}-${nextTab}`);
+-    if (!(nextLink instanceof HTMLAnchorElement)) return;
+-
+-    nextLink.focus();
+-    const href = nextLink.getAttribute("href");
+-    if (href) {
+-      window.setTimeout(() => window.location.assign(href), 0);
+-    }
+-  }
+-
+-  return (
+-    <nav
+-      aria-label={ariaLabel ?? (fr ? "Onglets des actions" : "Action tabs")}
+-      role="tablist"
+-      className={`grid w-full gap-2 rounded-2xl border border-emerald-100 bg-white p-2 shadow-sm ${tabs.length > 2 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2"}`}
+-    >
+-      {tabs.map((tab) => {
+-        const isActive = activeTab === tab.id;
+-        const panelId = tab.panelId ?? `${idPrefix.replace(/-tab$/, "-panel")}-${tab.id}`;
+-        const tabId = `${idPrefix}-${tab.id}`;
+-        const label = tab.label;
+-        const href = buildHref
+-          ? buildHref(tab.id)
+-          : buildJoinActionTabHref(tab.id as JoinActionTab, focusActionId, searchParams);
+-
+-        return (
+-          <Link
+-            key={tab.id}
+-            id={tabId}
+-            href={href}
+-            role="tab"
+-            aria-selected={isActive}
+-            aria-controls={panelId}
+-            tabIndex={isActive ? 0 : -1}
+-            onKeyDown={(event) => {
+-              if (getNextActionTabId(tabs, tab.id, event.key)) {
+-                event.preventDefault();
+-                moveWithKeyboard(tab.id, event.key);
+-              }
+-            }}
+-            className={`inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold tracking-normal transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 md:text-base ${isActive ? "bg-emerald-700 text-white shadow-sm" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-900"}`}
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
++import { buildJoinActionTabHref } from "@/lib/sections/join-action-routes";
++import type { JoinActionTab } from "./rejoindre-une-action.model";
++
++export type ActionTabDefinition = {
++  id: string;
++  label: string;
++  panelId?: string;
++};
++
++const DEFAULT_TABS: readonly ActionTabDefinition[] = [
++  { id: "future", label: "Action future", panelId: "join-action-panel-future" },
++  { id: "past", label: "Action passée", panelId: "join-action-panel-past" },
++  { id: "needs", label: "Besoins", panelId: "join-action-panel-needs" },
++];
++
++export function getNextActionTabId(
++  tabs: readonly ActionTabDefinition[],
++  currentTab: string,
++  key: string,
++): string | null {
++  const currentIndex = tabs.findIndex((tab) => tab.id === currentTab);
++  if (currentIndex < 0) return null;
++
++  let nextIndex: number | null = null;
++  if (key === "ArrowRight" || key === "ArrowDown") nextIndex = (currentIndex + 1) % tabs.length;
++  if (key === "ArrowLeft" || key === "ArrowUp") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
++  if (key === "Home") nextIndex = 0;
++  if (key === "End") nextIndex = tabs.length - 1;
++  return nextIndex === null ? null : tabs[nextIndex]?.id ?? null;
++}
++
++export function JoinActionTabs({
++  activeTab,
++  focusActionId = null,
++  fr = true,
++  tabs = DEFAULT_TABS,
++  buildHref,
++  searchParams,
++  ariaLabel,
++  idPrefix = "join-action-tab",
++}: {
++  activeTab: string;
++  focusActionId?: string | null;
++  fr?: boolean;
++  tabs?: readonly ActionTabDefinition[];
++  buildHref?: (tab: string) => string;
++  searchParams?: string | URLSearchParams;
++  ariaLabel?: string;
++  idPrefix?: string;
++}) {
++  function moveWithKeyboard(currentTab: string, key: string) {
++    const nextTab = getNextActionTabId(tabs, currentTab, key);
++    if (!nextTab) return;
++    const nextLink = document.getElementById(`${idPrefix}-${nextTab}`);
++    if (!(nextLink instanceof HTMLAnchorElement)) return;
++
++    nextLink.focus();
++    const href = nextLink.getAttribute("href");
++    if (href) {
++      window.setTimeout(() => window.location.assign(href), 0);
++    }
++  }
++
++  return (
++    <nav
++      aria-label={ariaLabel ?? (fr ? "Onglets des actions" : "Action tabs")}
++      role="tablist"
++      className={tabStripClassName("emerald", tabs.length > 2 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2")}
++    >
++      {tabs.map((tab) => {
++        const isActive = activeTab === tab.id;
++        const panelId = tab.panelId ?? `${idPrefix.replace(/-tab$/, "-panel")}-${tab.id}`;
++        const tabId = `${idPrefix}-${tab.id}`;
++        const label = tab.label;
++        const href = buildHref
++          ? buildHref(tab.id)
++          : buildJoinActionTabHref(tab.id as JoinActionTab, focusActionId, searchParams);
++
++        return (
++          <Link
++            key={tab.id}
++            id={tabId}
++            href={href}
++            role="tab"
++            aria-selected={isActive}
++            aria-controls={panelId}
++            tabIndex={isActive ? 0 : -1}
++            onKeyDown={(event) => {
++              if (getNextActionTabId(tabs, tab.id, event.key)) {
++                event.preventDefault();
++                moveWithKeyboard(tab.id, event.key);
++              }
++            }}
++            className={tabItemClassName("emerald", isActive)}
+           >
+             {label}
+           </Link>
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-view-tabs.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-view-tabs.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-view-tabs.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-view-tabs.tsx
+@@ -1,72 +1,67 @@
+ "use client";
+ 
+ import type { KeyboardEvent } from "react";
+-import { cn } from "@/lib/utils";
+-
+-export const ANNUAIRE_VIEWS = ["organization", "directory", "map"] as const;
+-export type AnnuaireView = (typeof ANNUAIRE_VIEWS)[number];
+-
+-export const annuaireTabId = (view: AnnuaireView) => `annuaire-tab-${view}`;
+-export const annuairePanelId = (view: AnnuaireView) => `annuaire-panel-${view}`;
+-
+-const LABELS: Record<AnnuaireView, { fr: string; en: string }> = {
+-  organization: { fr: "Services publics", en: "Public services" },
+-  directory: { fr: "Annuaire", en: "Directory" },
+-  map: { fr: "Carte & réseau", en: "Map & network" },
+-};
+-
+-/** Navigation principale unique de l'Annuaire (3 onglets, roving tabindex, flèches, Début/Fin). */
+-export function AnnuaireViewTabs({
+-  fr,
+-  view,
+-  onChange,
+-}: {
+-  fr: boolean;
+-  view: AnnuaireView;
+-  onChange: (view: AnnuaireView) => void;
+-}) {
+-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+-    const index = ANNUAIRE_VIEWS.indexOf(view);
+-    const last = ANNUAIRE_VIEWS.length - 1;
+-    const nextIndex =
+-      event.key === "Home"
+-        ? 0
+-        : event.key === "End"
+-          ? last
+-          : event.key === "ArrowRight"
+-            ? (index + 1) % ANNUAIRE_VIEWS.length
+-            : (index - 1 + ANNUAIRE_VIEWS.length) % ANNUAIRE_VIEWS.length;
+-    event.preventDefault();
+-    const next = ANNUAIRE_VIEWS[nextIndex];
+-    onChange(next);
+-    document.getElementById(annuaireTabId(next))?.focus();
+-  };
+-
+-  return (
+-    <div
+-      role="tablist"
+-      aria-orientation="horizontal"
+-      aria-label={fr ? "Vues de l'Annuaire" : "Directory views"}
+-      onKeyDown={onKeyDown}
+-      className="flex flex-wrap gap-2 border-b border-[var(--cmm-surface-border)] pb-3"
+-    >
+-      {ANNUAIRE_VIEWS.map((item) => (
+-        <button
+-          key={item}
+-          id={annuaireTabId(item)}
+-          type="button"
+-          role="tab"
+-          aria-selected={view === item}
+-          aria-controls={annuairePanelId(item)}
+-          tabIndex={view === item ? 0 : -1}
+-          onClick={() => onChange(item)}
+-          className={cn(
+-            "rounded-xl border px-4 py-2.5 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500",
+-            view === item
+-              ? "border-violet-500 bg-violet-500/10 cmm-text-primary"
+-              : "border-[var(--cmm-surface-border)] cmm-text-secondary",
+-          )}
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
++
++export const ANNUAIRE_VIEWS = ["organization", "directory", "map"] as const;
++export type AnnuaireView = (typeof ANNUAIRE_VIEWS)[number];
++
++export const annuaireTabId = (view: AnnuaireView) => `annuaire-tab-${view}`;
++export const annuairePanelId = (view: AnnuaireView) => `annuaire-panel-${view}`;
++
++const LABELS: Record<AnnuaireView, { fr: string; en: string }> = {
++  organization: { fr: "Services publics", en: "Public services" },
++  directory: { fr: "Annuaire", en: "Directory" },
++  map: { fr: "Carte & réseau", en: "Map & network" },
++};
++
++/** Navigation principale unique de l'Annuaire (3 onglets, roving tabindex, flèches, Début/Fin). */
++export function AnnuaireViewTabs({
++  fr,
++  view,
++  onChange,
++}: {
++  fr: boolean;
++  view: AnnuaireView;
++  onChange: (view: AnnuaireView) => void;
++}) {
++  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
++    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
++    const index = ANNUAIRE_VIEWS.indexOf(view);
++    const last = ANNUAIRE_VIEWS.length - 1;
++    const nextIndex =
++      event.key === "Home"
++        ? 0
++        : event.key === "End"
++          ? last
++          : event.key === "ArrowRight"
++            ? (index + 1) % ANNUAIRE_VIEWS.length
++            : (index - 1 + ANNUAIRE_VIEWS.length) % ANNUAIRE_VIEWS.length;
++    event.preventDefault();
++    const next = ANNUAIRE_VIEWS[nextIndex];
++    onChange(next);
++    document.getElementById(annuaireTabId(next))?.focus();
++  };
++
++  return (
++    <div
++      role="tablist"
++      aria-orientation="horizontal"
++      aria-label={fr ? "Vues de l'Annuaire" : "Directory views"}
++      onKeyDown={onKeyDown}
++      className={tabStripClassName("family", "grid-cols-1 sm:grid-cols-3")}
++    >
++      {ANNUAIRE_VIEWS.map((item) => (
++        <button
++          key={item}
++          id={annuaireTabId(item)}
++          type="button"
++          role="tab"
++          aria-selected={view === item}
++          aria-controls={annuairePanelId(item)}
++          tabIndex={view === item ? 0 : -1}
++          onClick={() => onChange(item)}
++          className={tabItemClassName("family", view === item)}
+         >
+           {fr ? LABELS[item].fr : LABELS[item].en}
+         </button>
+diff --git a/apps/web/src/styles/actions.css b/apps/web/src/styles/actions.css
+--- a/apps/web/src/styles/actions.css
++++ b/apps/web/src/styles/actions.css
+@@ -126,6 +126,42 @@
+     transition: var(--cmm-button-transition);
+   }
+ 
++  /* Tab selection is a navigation state, not an action priority. */
++  .cmm-family-tab-strip {
++    background: var(--bg-elevated);
++    border-color: var(--cmm-family-card-border, var(--border-strong));
++    box-shadow: var(--cmm-surface-shadow);
++  }
++
++  .cmm-family-tab-item {
++    color: var(--cmm-family-heading, var(--text-primary));
++  }
++
++  .cmm-family-tab-item:hover {
++    background: var(--cmm-family-card-flat, var(--bg-muted));
++  }
++
++  .cmm-family-tab-item--active,
++  .cmm-family-tab-item--active:hover {
++    background: linear-gradient(135deg, var(--cmm-family-primary, #475569), var(--cmm-family-deep, #334155));
++    color: #ffffff;
++  }
++
++  .cmm-family-tab-item:focus-visible {
++    outline: 2px solid var(--cmm-family-heading, var(--text-primary));
++    outline-offset: 2px;
++  }
++
++  [data-display-mode="minimaliste"] .cmm-family-tab-item--active,
++  [data-display-mode="sobre"] .cmm-family-tab-item--active {
++    background: var(--cmm-family-deep, #334155);
++    color: #ffffff;
++  }
++
++  [data-display-mode="sobre"] .cmm-family-tab-strip {
++    box-shadow: none;
++  }
++
+   .cmm-button[data-cmm-button-tone="primary"] {
+     --cmm-button-background: var(--action-primary-bg);
+     --cmm-button-background-hover: var(--action-primary-hover);
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx
+@@ -21,111 +21,111 @@
+ import { useAnnuaireLogic } from "./use-annuaire-logic";
+ import { CmmButton } from "@/components/ui/cmm-button";
+ import { CmmSectionGroup } from "@/components/ui/cmm-section";
+-import { RubriqueCard } from "@/components/ui/rubrique-card";
+-import { SectionShell } from "@/components/sections/rubriques/shared";
+-import { useEffect, useRef, useState, type ReactNode } from "react";
+-
+-/** Nombre maximal de cartes affichées initialement dans la sélection éditoriale de l'Annuaire. */
+-const DISCOVER_INITIAL_CARDS = 6;
+-
+-function AnnuaireDirectoryFeedback({ fr, logic }: { fr: boolean; logic: ReturnType<typeof useAnnuaireLogic> }) {
+-  if (logic.isLoading) {
+-    return <CmmFeedback tone="info" title={fr ? "Chargement des fiches partenaires" : "Loading partner profiles"}>{fr ? "Les ressources éditoriales restent visibles pendant le chargement des fiches partenaires publiées." : "Editorial resources remain visible while published partner profiles load."}</CmmFeedback>;
+-  }
+-  if (!logic.isPublishedDirectoryUnavailable) return null;
+-  const stale = logic.isPublishedDirectoryStale;
+-  return (
+-    <CmmFeedback
+-      tone={stale ? "warning" : "error"}
+-      title={stale ? fr ? "Fiches partenaires potentiellement périmées" : "Partner profiles may be stale" : fr ? "Fiches partenaires temporairement indisponibles" : "Published partner profiles temporarily unavailable"}
+-      action={<CmmButton type="button" tone="secondary" variant="ghost" size="sm" loading={logic.isValidating} onClick={logic.retryPublishedDirectory} ariaLabel={fr ? "Réessayer de charger les fiches partenaires" : "Retry loading partner profiles"} className="inline-flex items-center gap-2"><RefreshCw size={14} aria-hidden="true" />{logic.isValidating ? fr ? "Actualisation..." : "Refreshing..." : fr ? "Réessayer" : "Retry"}</CmmButton>}
+-    >
+-      {stale ? fr ? "La source des fiches partenaires n'a pas pu être actualisée. Les données affichées peuvent être périmées ; le compteur et les résultats visibles peuvent être partiels." : "The partner profile source could not be refreshed. Displayed data may be stale; the count and visible results may be partial." : fr ? "La source des fiches partenaires n'est pas disponible pour le moment. Les ressources éditoriales restent accessibles, mais le compteur et les résultats visibles peuvent être partiels." : "The partner profile source is temporarily unavailable. Editorial resources remain available, but the count and visible results may be partial."}
+-    </CmmFeedback>
+-  );
+-}
+-
+-function AnnuaireJoinCta({ fr }: { fr: boolean }) {
+-  return (
+-    <RubriqueCard themeColor="violet" withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row">
+-      <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><Building2 size={160} className="text-violet-400" /></div>
+-      <div className="space-y-4 max-w-xl text-center md:text-left relative z-10">
+-        <h3 className="text-3xl font-black text-white tracking-tight">{fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}</h3>
+-        <p className="text-slate-300 font-bold opacity-80 leading-relaxed">{fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}</p>
+-      </div>
+-      <CmmButton href="/partners/onboarding" tone="primary" variant="default" ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"} className="relative z-10 flex items-center gap-3 bg-white font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl">{fr ? "Référencer ma structure" : "Register my structure"}<ArrowRight size={20} /></CmmButton>
+-    </RubriqueCard>
+-  );
+-}
+-
+-function AnnuaireTabPanel({ view, active, children }: { view: AnnuaireView; active: boolean; children: ReactNode }) {
+-  return (
+-    <div id={annuairePanelId(view)} role="tabpanel" aria-labelledby={annuaireTabId(view)} tabIndex={0} hidden={!active}>
+-      {children}
+-    </div>
+-  );
+-}
+-
+-export function AnnuaireSection() {
+-  const { locale } = useSitePreferences();
+-  const fr = locale === "fr";
+-  const [view, setView] = useState<AnnuaireView>("organization");
+-  const [showAllFeatured, setShowAllFeatured] = useState(false);
+-  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+-  const organizationNavigation = useRef<PublicCleanlinessNavigation>(null);
+-  const getNetworkActorId = (node: PublicCleanlinessOrganizationNode) => resolveInstitutionNetworkActorId(PARIS_PUBLIC_CLEANLINESS_DATASET, node, PARIS_CLEANWALK_ACTORS);
+-  const openNetworkActor = (actorId: string) => {
+-    const actor = PARIS_CLEANWALK_ACTORS.find((item) => item.id === actorId);
+-    setSelectedActorId(actor?.annuaireEntryId ?? actorId);
+-    setView("map");
+-    document.getElementById(annuaireTabId("map"))?.focus();
+-  };
+-
+-  const annuaireLogic = useAnnuaireLogic();
+-  const { featuredEntries, filterKey, resetFilters } = annuaireLogic;
+-  const selectionIntentFilterKeyRef = useRef<string | null>(null);
+-  const previousFilterKeyRef = useRef(filterKey);
+-
+-  useEffect(() => {
+-    if (previousFilterKeyRef.current === filterKey) {
+-      return;
+-    }
+-    previousFilterKeyRef.current = filterKey;
+-    if (selectionIntentFilterKeyRef.current === filterKey) {
+-      selectionIntentFilterKeyRef.current = null;
+-      return;
+-    }
+-    setSelectedActorId(null);
+-  }, [filterKey]);
+-
+-  /** Localiser : sélectionne l'acteur (en rétablissant les filtres si la cible est exclue) puis ouvre Carte & réseau. */
+-  const handleFocusMap = (id: string) => {
+-    const entryIsVisible = annuaireLogic.sortedAndFilteredEntries.some(
+-      (entry) => entry.id === id,
+-    );
+-    if (!entryIsVisible) {
+-      selectionIntentFilterKeyRef.current = "|all|all|all|all";
+-      resetFilters();
+-    }
+-    setSelectedActorId(id);
+-    setView("map");
+-    document.getElementById(annuaireTabId("map"))?.focus();
+-  };
+-
+-  const selectedActor = selectedActorId
+-    ? (annuaireLogic.enrichedEntries ?? []).find((entry) => entry.id === selectedActorId) ?? null
+-    : null;
+-  const discoverEntries = showAllFeatured
+-    ? featuredEntries
+-    : featuredEntries.slice(0, DISCOVER_INITIAL_CARDS);
+-
+-  return (
+-    <SectionShell
+-      id="annuaire"
+-      title={fr ? "Annuaire des acteurs" : "Actors directory"}
+-      subtitle={fr ? "Explorez l'écosystème engagé pour un territoire propre et durable." : "Explore the ecosystem committed to a clean and sustainable territory."}
+-      icon={Globe}
+-      gradient="from-violet-600/20 via-violet-500/10 to-transparent"
++import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
++import { SectionShell } from "@/components/sections/rubriques/shared";
++import { useEffect, useRef, useState, type ReactNode } from "react";
++
++/** Nombre maximal de cartes affichées initialement dans la sélection éditoriale de l'Annuaire. */
++const DISCOVER_INITIAL_CARDS = 6;
++
++function AnnuaireDirectoryFeedback({ fr, logic }: { fr: boolean; logic: ReturnType<typeof useAnnuaireLogic> }) {
++  if (logic.isLoading) {
++    return <CmmFeedback tone="info" title={fr ? "Chargement des fiches partenaires" : "Loading partner profiles"}>{fr ? "Les ressources éditoriales restent visibles pendant le chargement des fiches partenaires publiées." : "Editorial resources remain visible while published partner profiles load."}</CmmFeedback>;
++  }
++  if (!logic.isPublishedDirectoryUnavailable) return null;
++  const stale = logic.isPublishedDirectoryStale;
++  return (
++    <CmmFeedback
++      tone={stale ? "warning" : "error"}
++      title={stale ? fr ? "Fiches partenaires potentiellement périmées" : "Partner profiles may be stale" : fr ? "Fiches partenaires temporairement indisponibles" : "Published partner profiles temporarily unavailable"}
++      action={<CmmButton type="button" tone="secondary" variant="ghost" size="sm" loading={logic.isValidating} onClick={logic.retryPublishedDirectory} ariaLabel={fr ? "Réessayer de charger les fiches partenaires" : "Retry loading partner profiles"} className="inline-flex items-center gap-2"><RefreshCw size={14} aria-hidden="true" />{logic.isValidating ? fr ? "Actualisation..." : "Refreshing..." : fr ? "Réessayer" : "Retry"}</CmmButton>}
++    >
++      {stale ? fr ? "La source des fiches partenaires n'a pas pu être actualisée. Les données affichées peuvent être périmées ; le compteur et les résultats visibles peuvent être partiels." : "The partner profile source could not be refreshed. Displayed data may be stale; the count and visible results may be partial." : fr ? "La source des fiches partenaires n'est pas disponible pour le moment. Les ressources éditoriales restent accessibles, mais le compteur et les résultats visibles peuvent être partiels." : "The partner profile source is temporarily unavailable. Editorial resources remain available, but the count and visible results may be partial."}
++    </CmmFeedback>
++  );
++}
++
++function AnnuaireJoinCta({ fr }: { fr: boolean }) {
++  return (
++    <FamilyRubriqueCard withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row">
++      <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><Building2 size={160} className="text-violet-400" /></div>
++      <div className="space-y-4 max-w-xl text-center md:text-left relative z-10">
++        <h3 className="text-2xl font-bold text-[var(--cmm-rubrique-text)] tracking-tight">{fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}</h3>
++        <p className="font-medium text-[var(--cmm-rubrique-text)] leading-relaxed">{fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}</p>
++      </div>
++      <CmmButton href="/partners/onboarding" tone="primary" variant="default" ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"} className="relative z-10 flex items-center gap-3">{fr ? "Référencer ma structure" : "Register my structure"}<ArrowRight size={20} /></CmmButton>
++    </FamilyRubriqueCard>
++  );
++}
++
++function AnnuaireTabPanel({ view, active, children }: { view: AnnuaireView; active: boolean; children: ReactNode }) {
++  return (
++    <div id={annuairePanelId(view)} role="tabpanel" aria-labelledby={annuaireTabId(view)} tabIndex={0} hidden={!active}>
++      {children}
++    </div>
++  );
++}
++
++export function AnnuaireSection() {
++  const { locale } = useSitePreferences();
++  const fr = locale === "fr";
++  const [view, setView] = useState<AnnuaireView>("organization");
++  const [showAllFeatured, setShowAllFeatured] = useState(false);
++  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
++  const organizationNavigation = useRef<PublicCleanlinessNavigation>(null);
++  const getNetworkActorId = (node: PublicCleanlinessOrganizationNode) => resolveInstitutionNetworkActorId(PARIS_PUBLIC_CLEANLINESS_DATASET, node, PARIS_CLEANWALK_ACTORS);
++  const openNetworkActor = (actorId: string) => {
++    const actor = PARIS_CLEANWALK_ACTORS.find((item) => item.id === actorId);
++    setSelectedActorId(actor?.annuaireEntryId ?? actorId);
++    setView("map");
++    document.getElementById(annuaireTabId("map"))?.focus();
++  };
++
++  const annuaireLogic = useAnnuaireLogic();
++  const { featuredEntries, filterKey, resetFilters } = annuaireLogic;
++  const selectionIntentFilterKeyRef = useRef<string | null>(null);
++  const previousFilterKeyRef = useRef(filterKey);
++
++  useEffect(() => {
++    if (previousFilterKeyRef.current === filterKey) {
++      return;
++    }
++    previousFilterKeyRef.current = filterKey;
++    if (selectionIntentFilterKeyRef.current === filterKey) {
++      selectionIntentFilterKeyRef.current = null;
++      return;
++    }
++    setSelectedActorId(null);
++  }, [filterKey]);
++
++  /** Localiser : sélectionne l'acteur (en rétablissant les filtres si la cible est exclue) puis ouvre Carte & réseau. */
++  const handleFocusMap = (id: string) => {
++    const entryIsVisible = annuaireLogic.sortedAndFilteredEntries.some(
++      (entry) => entry.id === id,
++    );
++    if (!entryIsVisible) {
++      selectionIntentFilterKeyRef.current = "|all|all|all|all";
++      resetFilters();
++    }
++    setSelectedActorId(id);
++    setView("map");
++    document.getElementById(annuaireTabId("map"))?.focus();
++  };
++
++  const selectedActor = selectedActorId
++    ? (annuaireLogic.enrichedEntries ?? []).find((entry) => entry.id === selectedActorId) ?? null
++    : null;
++  const discoverEntries = showAllFeatured
++    ? featuredEntries
++    : featuredEntries.slice(0, DISCOVER_INITIAL_CARDS);
++
++  return (
++    <SectionShell
++      id="annuaire"
++      title={fr ? "Annuaire des acteurs" : "Actors directory"}
++      subtitle={fr ? "Explorez l'écosystème engagé pour un territoire propre et durable." : "Explore the ecosystem committed to a clean and sustainable territory."}
++      icon={Globe}
++      gradient="from-transparent via-transparent to-transparent"
+     >
+       <CmmSectionGroup>
+         <AnnuaireViewTabs fr={fr} view={view} onChange={setView} />
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx
+@@ -47,7 +47,7 @@
+   return (
+     <CmmCard
+       variant="default"
+-      tone={isFeatured ? "violet" : "slate"}
++      tone="family"
+       className="group flex min-w-0 flex-col gap-4"
+     >
+       <AnnuaireActorBadges entry={entry} fr={fr} isFeatured={Boolean(isFeatured)} isEditorial={isEditorial} isTrusted={isTrusted} hasRecentUpdate={hasRecentUpdate} structureBadge={structureBadge} />
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-featured-section.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-featured-section.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-featured-section.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-featured-section.tsx
+@@ -30,7 +30,7 @@
+           >
+             <CmmCard 
+               variant="default"
+-              tone="violet"
++              tone="family"
+               className="group flex h-full min-w-0 flex-col gap-4"
+             >
+               {/* Premium Glass Badge */}
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx
+@@ -113,7 +113,7 @@
+ 
+   return (
+     <div className="flex min-w-0 w-full flex-col gap-4">
+-      <CmmCard variant="default" className="min-w-0 space-y-4">
++      <CmmCard tone="family" variant="default" className="min-w-0 space-y-4">
+         <div className="flex flex-wrap items-end gap-3">
+           <CmmField label={fr ? "Rechercher" : "Search"} className="min-w-0 flex-1 basis-64">
+             <input
+diff --git a/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.test.tsx b/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.test.tsx
+--- a/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.test.tsx
++++ b/apps/web/src/components/sections/rubriques/annuaire/annuaire-section.test.tsx
+@@ -130,14 +130,13 @@
+     );
+   });
+ 
+-  it("uses the existing violet family", () => {
+-    const markup = renderToStaticMarkup(<AnnuaireSection />);
+-
+-    expect(markup).toContain(
+-      'data-gradient="from-violet-600/20 via-violet-500/10 to-transparent"',
+-    );
+-    expect(markup).toContain("bg-violet-500/10");
+-    expect(markup).not.toContain("text-indigo-");
++  it("uses a neutral canvas and the shared family tab presentation", () => {
++    const markup = renderToStaticMarkup(<AnnuaireSection />);
++
++    expect(markup).toContain('data-gradient="from-transparent via-transparent to-transparent"');
++    expect(markup).toContain("cmm-family-tab-strip");
++    expect(markup).toContain("cmm-family-tab-item--active");
++    expect(markup).not.toContain("bg-violet-500/10 cmm-text-primary");
+   });
+ 
+   it("does not compose the obsolete static workshops panel", () => {
+diff --git a/apps/web/src/components/sections/rubriques/open-data-section.tsx b/apps/web/src/components/sections/rubriques/open-data-section.tsx
+--- a/apps/web/src/components/sections/rubriques/open-data-section.tsx
++++ b/apps/web/src/components/sections/rubriques/open-data-section.tsx
+@@ -143,125 +143,125 @@
+ 
+         <div className="relative overflow-hidden rounded-[2.25rem] border border-violet-100 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(216,180,254,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(252,250,255,0.98)_100%)] p-5 text-slate-950 shadow-[0_30px_100px_-70px_rgba(79,70,229,0.45)] sm:p-8 lg:p-10">
+           <section className="relative">
+-            <CmmCard tone="violet" variant="glass" className="relative">
+-            <div className="absolute right-0 top-0 hidden h-full w-32 overflow-hidden rounded-r-[2rem] lg:block">
+-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.12),transparent_68%)]" />
+-              <div className="absolute inset-y-0 right-4 w-px bg-violet-100/70" />
+-            </div>
+-            <div className="absolute right-6 top-6 hidden h-32 w-32 rounded-full border border-violet-100/70 lg:block" />
+-
+-            <div className="relative z-10 space-y-4">
+-              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
+-                <ShieldCheck size={28} />
+-              </div>
+-              <h2 className="max-w-lg text-[1.6rem] font-black leading-tight tracking-[-0.04em] text-[#2f1a78]">
+-                {fr ? "Projection publique" : "Public projection"}
+-              </h2>
+-              <p className="max-w-xl text-[0.98rem] leading-[1.7] text-slate-600">
+-                {fr
+-                  ? "L’API JSON publique expose une projection des actions approuvées et cartographiées pour consultation et réutilisation."
+-                  : "The public JSON API exposes a projection of approved mapped actions for consultation and reuse."}
+-              </p>
+-            </div>
+-          </CmmCard>
+-        </section>
+-
+-        <section className="mt-8 grid gap-4 md:grid-cols-3">
+-          {FEATURE_CARDS.map((card) => {
+-            const Icon = card.icon;
+-            return (
+-              <article key={card.title.fr} id={card.anchor}>
+-                <CmmCard as="div" tone="violet" variant="glass" size="sm" className="h-full">
+-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_14px_30px_-18px_rgba(79,70,229,0.85)]">
+-                  <Icon size={22} />
+-                </div>
+-                <h3 className="mt-5 text-[1.25rem] font-black leading-tight tracking-[-0.03em] text-[#2f1a78]">
+-                  {localize(locale, card.title)}
+-                </h3>
+-                <FeatureList locale={locale} items={card.items} />
+-                <div className="mt-6">
+-                  <Link
+-                    href={`#${card.anchor}`}
+-                    className="inline-flex items-center gap-2 rounded-full border border-violet-200 px-4 py-2 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700 transition hover:border-violet-300 hover:bg-violet-50"
+-                  >
+-                    {fr ? "En savoir plus" : "Learn more"}
+-                    <ArrowRight size={14} />
+-                  </Link>
+-                </div>
+-                </CmmCard>
+-              </article>
+-            );
+-          })}
+-        </section>
+-
+-        <section id="api" className="mt-6">
+-          <CmmCard as="div" tone="violet" variant="glass" className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+-          <div className="flex items-center gap-4">
+-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
+-              <Code size={28} />
+-            </div>
+-            <div className="space-y-2">
+-              <div className="cmm-text-caption font-black uppercase tracking-[0.2em] text-violet-500">
+-                {fr ? "Documentation technique" : "Technical documentation"}
+-              </div>
+-              <h3 className="text-[clamp(1.6rem,3vw,2.5rem)] font-black leading-tight tracking-[-0.04em] text-[#2f1a78]">
+-                {fr ? "Connectez vos outils" : "Connect your tools"}
+-              </h3>
+-              <p className="max-w-2xl text-[0.96rem] leading-[1.7] text-slate-600">
+-                {fr
+-                  ? "L’API JSON publique expose une projection des actions approuvées et cartographiées. Elle est destinée à la consultation et à la réutilisation des données publiques."
+-                  : "The public JSON API exposes a projection of approved mapped actions for public consultation and reuse."}
+-              </p>
+-            </div>
+-          </div>
+-
+-          <div className="flex flex-col items-start gap-3 border-t border-violet-100 pt-5 lg:border-l lg:border-t-0 lg:pt-0 lg:pl-6">
+-            <CmmButton
+-              href="/api/actions/map?limit=1&floorDate=all&types=action&status=approved"
+-              prefetch={false}
+-              tone="primary"
+-              variant="pill"
+-              className="inline-flex h-14 items-center gap-3 rounded-full bg-[#4a2c8f] px-7 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-26px_rgba(74,44,143,0.8)]"
+-            >
+-              {fr ? "Ouvrir l'API publique" : "Open public API"}
+-              <ArrowRight size={16} />
+-            </CmmButton>
+-            <p className="text-sm text-slate-500">
+-              {fr ? "Réponse JSON de l’API publique" : "Public API JSON response"}
+-            </p>
+-          </div>
+-          </CmmCard>
+-        </section>
+-
+-        <section id="economy" className="mt-6">
+-          <CmmCard as="div" tone="violet" variant="glass" className="space-y-5">
+-          <div className="flex flex-col gap-2">
+-            <div className="inline-flex items-center gap-2 text-violet-500">
+-              <Sparkles size={18} />
+-              <span className="cmm-text-caption font-black uppercase tracking-[0.2em]">
+-                {fr ? "Modèle Économique" : "Economic model"}
+-              </span>
+-            </div>
+-            <h2 className="text-[1.8rem] font-black leading-tight tracking-[-0.04em] text-[#2f1a78]">
+-              {fr ? "Modèle Économique" : "Economic Model"}
+-            </h2>
+-            <p className="max-w-3xl text-[0.96rem] leading-[1.7] text-slate-600">
+-              {fr
+-                ? "Transparence, sponsoring de zones et mécénat pour une action environnementale pérenne."
+-                : "Transparency, zone sponsorship and patronage for sustainable environmental action."}
+-            </p>
+-          </div>
+-
+-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+-            {ECONOMY_CARDS.map((card) => {
+-              const Icon = card.icon;
+-              return (
+-                <article key={card.title.fr}>
+-                  <CmmCard as="div" tone="violet" variant="muted" size="sm" className="h-full">
+-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-50 text-violet-600">
+-                    <Icon size={24} />
+-                  </div>
+-                  <h3 className="mt-4 text-[1rem] font-black leading-tight text-[#2f1a78]">
++            <CmmCard tone="family" variant="default" className="relative">
++            <div className="absolute right-0 top-0 hidden h-full w-32 overflow-hidden rounded-r-[2rem] lg:block">
++              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.12),transparent_68%)]" />
++              <div className="absolute inset-y-0 right-4 w-px bg-violet-100/70" />
++            </div>
++            <div className="absolute right-6 top-6 hidden h-32 w-32 rounded-full border border-violet-100/70 lg:block" />
++
++            <div className="relative z-10 space-y-4">
++              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
++                <ShieldCheck size={28} />
++              </div>
++              <h2 className="max-w-lg text-[1.6rem] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
++                {fr ? "Projection publique" : "Public projection"}
++              </h2>
++              <p className="max-w-xl text-[0.98rem] leading-[1.7] text-slate-600">
++                {fr
++                  ? "L’API JSON publique expose une projection des actions approuvées et cartographiées pour consultation et réutilisation."
++                  : "The public JSON API exposes a projection of approved mapped actions for consultation and reuse."}
++              </p>
++            </div>
++          </CmmCard>
++        </section>
++
++        <section className="mt-8 grid gap-4 md:grid-cols-3">
++          {FEATURE_CARDS.map((card) => {
++            const Icon = card.icon;
++            return (
++              <article key={card.title.fr} id={card.anchor}>
++                <CmmCard as="div" tone="family" variant="default" size="sm" className="h-full">
++                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_14px_30px_-18px_rgba(79,70,229,0.85)]">
++                  <Icon size={22} />
++                </div>
++                <h3 className="mt-5 text-[1.25rem] font-black leading-tight tracking-[-0.03em] cmm-text-primary">
++                  {localize(locale, card.title)}
++                </h3>
++                <FeatureList locale={locale} items={card.items} />
++                <div className="mt-6">
++                  <Link
++                    href={`#${card.anchor}`}
++                    className="inline-flex items-center gap-2 rounded-full border border-violet-200 px-4 py-2 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700 transition hover:border-violet-300 hover:bg-violet-50"
++                  >
++                    {fr ? "En savoir plus" : "Learn more"}
++                    <ArrowRight size={14} />
++                  </Link>
++                </div>
++                </CmmCard>
++              </article>
++            );
++          })}
++        </section>
++
++        <section id="api" className="mt-6">
++          <CmmCard as="div" tone="family" variant="default" className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
++          <div className="flex items-center gap-4">
++            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
++              <Code size={28} />
++            </div>
++            <div className="space-y-2">
++              <div className="cmm-text-caption font-black uppercase tracking-[0.2em] text-[var(--cmm-family-heading,var(--text-primary))]">
++                {fr ? "Documentation technique" : "Technical documentation"}
++              </div>
++              <h3 className="text-[clamp(1.6rem,3vw,2.5rem)] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
++                {fr ? "Connectez vos outils" : "Connect your tools"}
++              </h3>
++              <p className="max-w-2xl text-[0.96rem] leading-[1.7] text-slate-600">
++                {fr
++                  ? "L’API JSON publique expose une projection des actions approuvées et cartographiées. Elle est destinée à la consultation et à la réutilisation des données publiques."
++                  : "The public JSON API exposes a projection of approved mapped actions for public consultation and reuse."}
++              </p>
++            </div>
++          </div>
++
++          <div className="flex flex-col items-start gap-3 border-t border-violet-100 pt-5 lg:border-l lg:border-t-0 lg:pt-0 lg:pl-6">
++            <CmmButton
++              href="/api/actions/map?limit=1&floorDate=all&types=action&status=approved"
++              prefetch={false}
++              tone="primary"
++              variant="pill"
++              className="inline-flex h-14 items-center gap-3 rounded-full bg-[#4a2c8f] px-7 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-26px_rgba(74,44,143,0.8)]"
++            >
++              {fr ? "Ouvrir l'API publique" : "Open public API"}
++              <ArrowRight size={16} />
++            </CmmButton>
++            <p className="text-sm text-slate-500">
++              {fr ? "Réponse JSON de l’API publique" : "Public API JSON response"}
++            </p>
++          </div>
++          </CmmCard>
++        </section>
++
++        <section id="economy" className="mt-6">
++          <CmmCard as="div" tone="family" variant="default" className="space-y-5">
++          <div className="flex flex-col gap-2">
++            <div className="inline-flex items-center gap-2 text-[var(--cmm-family-heading,var(--text-primary))]">
++              <Sparkles size={18} />
++              <span className="cmm-text-caption font-black uppercase tracking-[0.2em]">
++                {fr ? "Modèle Économique" : "Economic model"}
++              </span>
++            </div>
++            <h2 className="text-[1.8rem] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
++              {fr ? "Modèle Économique" : "Economic Model"}
++            </h2>
++            <p className="max-w-3xl text-[0.96rem] leading-[1.7] text-slate-600">
++              {fr
++                ? "Transparence, sponsoring de zones et mécénat pour une action environnementale pérenne."
++                : "Transparency, zone sponsorship and patronage for sustainable environmental action."}
++            </p>
++          </div>
++
++          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
++            {ECONOMY_CARDS.map((card) => {
++              const Icon = card.icon;
++              return (
++                <article key={card.title.fr}>
++                  <CmmCard as="div" tone="violet" variant="muted" size="sm" className="h-full">
++                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-50 text-violet-600">
++                    <Icon size={24} />
++                  </div>
++                  <h3 className="mt-4 text-[1rem] font-black leading-tight cmm-text-primary">
+                     {localize(locale, card.title)}
+                   </h3>
+                   <p className="mt-3 text-[0.92rem] leading-[1.65] text-slate-600">
+diff --git a/apps/web/src/components/sections/rubriques/funding-section.tsx b/apps/web/src/components/sections/rubriques/funding-section.tsx
+--- a/apps/web/src/components/sections/rubriques/funding-section.tsx
++++ b/apps/web/src/components/sections/rubriques/funding-section.tsx
+@@ -87,7 +87,7 @@
+   return (
+     <CmmCard
+       as="article"
+-      tone={category === "equipment" ? "pink" : "indigo"}
++      tone="family"
+       variant="elevated"
+       size="lg"
+       className="flex h-full flex-col gap-6"

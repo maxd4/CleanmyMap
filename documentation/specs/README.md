@@ -4,6 +4,8 @@
 
 ## Dossiers réellement présents
 
+- [design-system-premium/README_CODEX.md](./design-system-premium/README_CODEX.md) : canvas neutre, palettes de famille, primitives et onglets, convergence Web et contrats, PLAN/CANDIDATE.
+
 - [annuaire-ui/README_CODEX.md](./annuaire-ui/README_CODEX.md) : refonte ciblée de l'Annuaire Web, PLAN/CANDIDATE, correctif initial des cartes et lots d'intégration.
 
 - [suppression-charte-dark/requirements.md](./suppression-charte-dark/requirements.md) : exigences proposées et non exécutées comme chantier autonome.

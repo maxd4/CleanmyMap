@@ -1,0 +1,939 @@
+diff --git a/documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md b/documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
+--- a/documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
++++ b/documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
+@@ -1,392 +1,165 @@
+-# BLOC_COLOR_SYSTEM_PREMIUM — Système de couleurs par bloc
+-
+-> Référence visuelle : page sommaire (`/`) et `apps/web/src/components/accueil/accueil-pillars.tsx`
+-> Référence code : `apps/web/src/lib/accueil/config.ts`
+-> Typographie et géométrie du titre de page : [`PAGE_HEADER.md`](./PAGE_HEADER.md)
+-
+-**Logique générale :**
+-- Fond de page = teinte claire/lumineuse de la couleur du bloc
+-- Cartes et bulles = surfaces à contraste élevé dérivées de la couleur canonique du bloc, pour ressortir nettement sur le fond
+-- Le **titre et le sous-titre de page** conservent toujours la typographie canonique `PageHeader`; ce document ne fait varier que leur couleur par famille
+-- Les titres / chiffres **internes aux cartes sombres** peuvent employer la teinte d'accent adaptée au bloc
+-- Texte réellement conçu comme blanc = blanc exact `#FFFFFF` / `text-white`; une opacité réduite n'est permise que pour une exception sémantique explicite (placeholder, disabled, hiérarchie secondaire réellement voulue)
+-- Texte réellement conçu comme noir = noir exact `#000000` / `text-black`; une teinte `slate` ou `stone` reste autorisée lorsqu'elle constitue intentionnellement une couleur de famille et non un substitut au noir
+-- Bordures cartes = `border-[accent]-200/18`, hover `border-[accent]-200/38`
+-
+-Lorsqu'une cible visuelle est fournie, elle reste la référence de rendu ; pour
+-la palette, les familles et contrastes de ce document restent la contrainte
+-canonique. Si la cible entre en conflit avec cette contrainte, appliquer la
+-variante compatible la plus proche et expliciter l'écart dans la preuve visuelle.
+-
+-## Hiérarchie canonique des boutons
+-
+-La couleur d'un bouton exprime l'importance de l'action, jamais la famille
+-fonctionnelle de la page. La hiérarchie unique, du niveau le plus élevé au
+-niveau le plus faible, est la suivante :
+-
+-| Niveau | Couleur | Usage canonique |
+-| --- | --- | --- |
+-| 1 | Doré / brun | Action critique ou très importante, structurante ou décisive pour le parcours. Usage rare et intentionnel ; par exemple, connexion ou inscription lorsqu'elle constitue le passage nécessaire vers l'usage complet du produit. |
+-| 2 | Violet | Action importante que l'on souhaite distinguer nettement sans lui donner le poids maximal. Peut cohabiter avec un bouton vert ou blanc. |
+-| 3 | Vert | Action standard et majoritaire. C'est le choix par défaut pour les CTA et actions positives ordinaires lorsqu'aucune priorité exceptionnelle ne justifie le doré/brun ou le violet. |
+-| 4 | Blanc | Action d'accompagnement, alternative ou complémentaire. Le blanc ne doit pas concurrencer visuellement le CTA principal. |
+-
+-Cette hiérarchie est indépendante de la palette de la page ou de la famille du
+-bloc. Une zone d'actions doit rendre sa priorité immédiatement compréhensible
+-et éviter plusieurs actions de niveau maximal côte à côte sans justification.
+-Le blanc est normalement un compagnon, pas le CTA dominant.
+-
+-### Contrat runtime actuel
+-
+-`CmmButton` expose les identifiants runtime
+-`tone="primary" | "secondary" | "tertiary" | "important" | "critical" | "destructive"`.
+-
+-- `primary` est le bouton vert publié pour l'action standard/majoritaire ;
+-- `secondary` est le bouton blanc publié pour l'action d'accompagnement et
+-  constitue la valeur par défaut actuelle ;
+-- `tertiary` est une action transparente de faible emphase ou contextuelle ;
+-- `important` est le bouton violet publié pour une action importante, au-dessus
+-  du vert sans atteindre le niveau critique doré/brun ;
+-- `critical` est le bouton doré/brun publié pour une action critique ou très
+-  importante, structurante ou décisive pour le parcours ;
+-- `destructive` conserve son traitement rouge de danger et ne fait pas partie
+-  de la hiérarchie de priorité `doré/brun > violet > vert > blanc`.
+-
+-Le doré/brun est publié sous l'identifiant sémantique `critical`, et non sous
+-un nom de couleur comme `gold` ou `brown`. Le violet est publié sous
+-`important`, pour la même raison.
+-
+-Les états hover, focus, loading, disabled et les exigences d'accessibilité
+-restent obligatoires pour les quatre niveaux. L'importance métier ne doit pas
+-être confondue avec le caractère destructif d'une action.
+-
+-### Exemple de composition homepage
+-
+-La composition de référence applique la hiérarchie ainsi :
+-
+-- **Consulter la carte** → vert ;
+-- **Discuter** → violet ;
+-- **Créer une action** → blanc ;
+-- **Rejoindre une action** → blanc ;
+-- **Se connecter / S'inscrire** → doré/brun.
+-
+-Cet exemple décrit le contrat de priorité visuelle. Utiliser `tone="critical"`
+-pour le doré/brun et `tone="important"` pour le violet.
+-
+-## Surfaces & cards
+-
+-Le contrat runtime unique des cartes, panels, états interactifs, modes
+-d'affichage et exceptions est [`SURFACES_CARDS.md`](./SURFACES_CARDS.md).
+-`CmmCard` porte le shell standard, `CmmBlockCard` y compose un accent issu de
+-`BLOCK_ACCENT_MAP`, et `RubriqueCard` reste la primitive distincte des grands
+-blocs thématiques. Ce document gouverne uniquement la relation entre familles
+-visuelles et couleurs ; il ne duplique pas la matrice des surfaces.
+-
+-Le garde-fou associé est `npm run check:surfaces`.
+-
+-**⚠️ NOUVELLE STRUCTURE (5 blocs homepage) :**
+-- Certains blocs ont **plusieurs teintes directrices** selon le type de page
+-- Exemple : "Cartographie & Impact" = sky (carto) + red/rose (impact)
+-- **Bloc 01 Accueil & Pilotage** : palette **orange + brun combinés** sur chaque page (fond + titre/sous-titre). Ce n'est pas un choix « orange OU brun » par route.
+-
+----
+-
+-## Récapitulatif rapide — 5 Blocs Homepage
+-
+-| # | Bloc Homepage | Teintes directrices | Carte homepage | Usage |
+-|---|---------------|---------------------|----------------|-------|
+-| 01 | Accueil & Pilotage | `amber` / `orange` / `brun` (combinés) | `amber`/`orange` | Fond et titres de page en orange+brun ; cartes du sommaire `/explorer` inchangées |
+-| 02 | Agir | `emerald` | `emerald` | Toutes pages terrain |
+-| 03 | Cartographie & Impact | `sky` + `red` / `rose` | `sky` | Pages carto → sky, Pages impact → red / rose, `/methodologie` → rouge d'impact |
+-| 04 | Réseau & Discussions | `pink` + `indigo/violet` | `pink` | Pages réseau / discussion → pink, surfaces partenaires / données / annuaire → indigo/violet |
+-| 05 | Apprendre | `yellow` | `yellow` / `amber` | Toutes pages éducatives, fond jaune et cartes orange/ambre |
+-
+-**Blocs système (non homepage) :**
+-- Impact (standalone) : `red` — fusionné dans "Cartographie & Impact"
+-- Discussion : `pink` — bloc discussion associé à `connect`
+-- Piloter : `amber`/`brun` — fusionné dans "Accueil & Pilotage"
+-
+-**Familles autonomes hors 5 blocs :**
+-- Homepage autonome : `/`, `/accueil`
+-- Auth & Onboarding : `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`
+-  - `/sign-in` et `/sign-up` restent fonctionnellement autonomes mais
+-    reprennent la grammaire visuelle Agir : canvas emerald clair lumineux,
+-    halos emerald discrets, surfaces structurées et panneau éditorial emerald
+-    sombre
+-  - l'onboarding conserve son contrat de surface propre ; il ne devient pas
+-    une route métier Agir par cette continuité visuelle
+-  - les composants Clerk natifs sont conservés et leur CTA principal reprend
+-    le niveau `critical` doré/brun de la hiérarchie globale
+-- Institutionnel & Légal : `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`
+-  - palette slate / gris clair / blanc
+-  - pas d esthétique marketing blocks
+-  - `LegalSection` comme brique commune possible
+-- Système & Utilitaires : `/reglages`, `/preview/actions/new`, `/error/429`
+-  - mood layer autonome par usage, jamais couleur de bloc
+-- Admin & Super-admin : `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`
+-- Print & Export : `/prints/report`
+-  - ambiance documentaire autonome
+-- États système:
+-  - erreur critique -> `red`
+-  - quota / limite / attention -> `amber`
+-  - loading -> `slate`
+-  - empty state -> `slate` doux
+-  - access refused -> `slate` + léger `red` / `orange`
+-  - architecture commune: `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`
+-
+----
+-
+-## En-tête canonique des pages
+-
+-La source de vérité de la **structure, de la taille, de la graisse, du line-height, du tracking, de la largeur et du comportement responsive** du titre / sous-titre est exclusivement :
+-
+-```txt
+-documentation/design-system/PAGE_HEADER.md
+-```
+-
+-Ce document de couleurs ne doit pas redéfinir ces métriques.
+-
+-**Règle obligatoire :**
+-- tout titre principal de page visible utilise `PageHeader`, sauf shell système explicitement documenté ;
+-- toutes les pages partagent exactement la même typographie titre / sous-titre ;
+-- seules la **couleur** et la **position** peuvent varier ;
+-- couleur → `family`, ou `tone` / `contrast` pour une surface autonome ;
+-- position → `align="left"` ou `align="center"` ;
+-- aucune famille ne peut introduire sa propre taille, graisse, tracking, line-height ou largeur de H1 ;
+-- `PageHeader` est l'unique composant runtime pour les titres principaux de page ;
+-- `eyebrow`, `badge` et `badges` ne font plus partie du contrat runtime.
+-
+-**Tons disponibles dans `PageHeader`**
+-
+-| Tone | Usage canonique |
+-|---|---|
+-| `emerald` | pages Agir |
+-| `sky` | pages Cartographie |
+-| `red` | pages Impact |
+-| `pink` | pages Réseau / discussion |
+-| `indigo` | pages partenaires / surfaces relationnelles |
+-| `yellow` | pages Apprendre |
+-| `slate` | surfaces système, légales ou neutres |
+-| `stone` | fallback neutre par défaut |
+-
+-**Couleurs par bloc**
+-
+-| Bloc / famille | Couleur canonique à lire via `family` | Remarque |
+-|---|---|---|
+-| Accueil & Pilotage | `amber` / `orange` pour l'accueil, `amber` / `brun` pour le pilotage | utiliser `family` plutôt que `tone` |
+-| Agir | `emerald` | blocs terrain |
+-| Cartographie & Impact | `sky` pour la cartographie, `red` / `rose` pour l'impact | `/methodologie` reste rattachée à l'impact |
+-| Réseau & Discussions | `pink` / `indigo` | `pink` pour discussion, `indigo` pour partenaires |
+-| Apprendre | `yellow` / `amber` | fond jaune, cartes soleil/ambre |
+-| Institutionnel & Légal | `slate` | palette juridique neutre |
+-| Familles autonomes | `slate`, `stone` ou palette dédiée | auth, system, admin, print |
+-
+-**Règle de position**
+-- `left` par défaut ;
+-- `center` uniquement si la fiche canonique de page ou `UI_EXCEPTION_PAGES.md` le documente ;
+-- titre et sous-titre se déplacent ensemble ;
+-- aucun positionnement ne modifie leur typographie.
+-
+----
+-
+-## 01 — Bloc Accueil & Pilotage · Orange + brun (combinés)
+-
+-```
+-fond page     : canvas #edd4b0 + dégradés orange (249,115,22) et brun (120,53,15 / 92,45,12)
+-fond cartes   : inchangé hors scope (cartes sommaire / cartes métier conservent leurs surfaces)
+-PageHeader    : couleurs issues de la famille accueil-pilotage, typographie canonique inchangée
+-accents       : halos orange + brun simultanés (pas de bascule exclusive par route)
+-```
+-
+-**Pages concernées (fond + titre/sous-titre unifiés) :**
+-- `/dashboard`, `/profil`, `/profil/[profile]`, `/parcours`, `/parcours/[profile]`
+-- `/pilotage`, `/sponsor-portal`, `/elus`
+-
+-**Exceptions :**
+-- `/explorer` — Sommaire : fond `yellow` ; **cartes du sommaire non modifiées**
+-- `/methodologie` — Rouge d'impact
+-
+----
+-
+-## 02 — Bloc Agir · `emerald`
+-
+-```
+-fond page                 : vert clair lumineux (radial-gradient emerald)
+-fond cartes               : #06261c (sombre teinté vert)
+-bordure                    : border-emerald-200/18  hover: border-emerald-200/38
+-ombre                      : shadow-[0_34px_76px_-34px_rgba(7,44,27,0.72)]
+-PageHeader                 : couleurs `agir`, typographie canonique inchangée
+-titres / chiffres de carte: text-emerald-100
+-texte blanc de carte      : text-white
+-point accent               : bg-emerald-300
+-```
+-
+----
+-
+-## 03 — Bloc Cartographie & Impact · Multi-teintes
+-
+-### Pages type Cartographie · `sky`
+-
+-```
+-fond page                 : bleu clair lumineux (radial-gradient sky)
+-fond cartes               : #071827 (sombre teinté bleu)
+-bordure                    : border-sky-200/18  hover: border-sky-200/38
+-ombre                      : shadow-[0_34px_76px_-34px_rgba(7,27,44,0.72)]
+-PageHeader                 : couleurs cartographie `sky`, typographie canonique inchangée
+-titres / chiffres de carte: text-sky-100
+-texte blanc de carte      : text-white
+-point accent               : bg-sky-300
+-```
+-
+----
+-
+-### Pages type Impact · `red`
+-
+-```
+-fond page                 : rouge clair lumineux (radial-gradient red)
+-fond cartes               : #3b0a0f (sombre teinté rouge)
+-bordure                    : border-red-200/18  hover: border-red-200/38
+-ombre                      : shadow-[0_34px_76px_-34px_rgba(44,7,15,0.72)]
+-PageHeader                 : couleurs impact `red` / `rose`, typographie canonique inchangée
+-titres / chiffres de carte: text-red-100
+-texte blanc de carte      : text-white
+-point accent               : bg-red-300
+-```
+-
+----
+-
+-**Pages concernées :**
+-- `/reports` — Rapports d'impact
+-- `/sections/gamification` — Gamification (badges, progression, alias `/gamification`)
+-
+----
+-
+-## 04 — Bloc Réseau & Discussions · `pink` / `indigo`
+-
+-```
+-fond page                 : rose clair lumineux (radial-gradient pink)
+-fond cartes               : #490b38 (sombre teinté rose)
+-bordure                    : border-pink-200/18  hover: border-pink-200/38
+-ombre                      : shadow-[0_34px_76px_-34px_rgba(44,7,34,0.72)]
+-PageHeader                 : couleurs réseau `pink` ou partenaires `indigo`, typographie canonique inchangée
+-titres / chiffres de carte: text-pink-100
+-texte blanc de carte      : text-white
+-point accent               : bg-pink-300
+-```
+-
+----
+-
+-## 05 — Bloc Apprendre · `yellow` / `amber`
+-
+-```
+-fond page                 : jaune clair lumineux (radial-gradient yellow/amber)
+-fond cartes               : ambre/orange solaire sur blanc cassé
+-bordure                    : border-amber-200/18  hover: border-amber-200/38
+-ombre                      : shadow-[0_34px_76px_-34px_rgba(249,115,22,0.24)]
+-PageHeader                 : couleurs apprendre `yellow` / `amber`, typographie canonique inchangée
+-titres / chiffres de carte: text-amber-100 sur surface sombre appropriée
+-texte blanc de carte      : text-white uniquement lorsque la surface exige un texte blanc
+-point accent               : bg-amber-300
+-```
+-
+----
+-
+-## Blocs système (non homepage)
+-
+-### Pages type Réseau / Discussion · `pink`
+-
+-```
+-fond page                 : rose clair lumineux (radial-gradient pink)
+-fond cartes               : #490b38 (sombre teinté rose)
+-bordure                    : border-pink-200/18  hover: border-pink-200/38
+-ombre                      : shadow-[0_34px_76px_-34px_rgba(44,7,34,0.72)]
+-PageHeader                 : couleurs réseau `pink`, typographie canonique inchangée
+-titres / chiffres de carte: text-pink-100
+-texte blanc de carte      : text-white
+-point accent               : bg-pink-300
+-```
+-
+-**Pages concernées :**
+-- `/sections/community`
+-- `/sections/feedback`
+-- `/sections/messagerie`
+-- écrans de discussion et d'échange associés
+-
+-### Pages type Partenaires / données / annuaire · `indigo/violet`
+-
+-```
+-fond page                 : indigo clair lumineux (radial-gradient indigo/violet)
+-fond cartes               : #04020f (sombre teinté indigo)
+-bordure                    : border-indigo-200/18  hover: border-indigo-200/38
+-ombre                      : shadow-[0_34px_76px_-34px_rgba(4,2,44,0.72)]
+-PageHeader                 : couleurs partenaires `indigo`, typographie canonique inchangée
+-titres / chiffres de carte: text-indigo-100
+-texte blanc de carte      : text-white
+-point accent               : bg-indigo-300
+-```
+-
+-**Pages concernées :**
+-- `/partners/dashboard`
+-- `/partners/onboarding`
+-- `/sections/open-data`
+-- `/sections/annuaire`
+-
+----
+-
+-## Tokens partagés (tous blocs)
+-
+-```css
+-/* Arrondis */
+-rounded-[2rem]       /* hero / grosses cards */
+-rounded-2xl          /* cards standard */
+-rounded-full         /* pills / dots */
+-
+-/* Backdrop */
+-backdrop-blur-xl     /* cartes sur fond lumineux */
+-
+-/* Barre de couleur top */
+-bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
+-```
+-
+----
+-
+-## Règles pour agents IA
+-
+-1. **En-tête canonique** : utiliser `PageHeader`; sa typographie et sa géométrie sont gouvernées uniquement par `PAGE_HEADER.md`.
+-2. **Variation du header** : seules la couleur (`family` / `tone` / `contrast`) et la position (`align`) peuvent varier entre pages.
+-3. **Fond de page** : teinte claire/lumineuse de la couleur du bloc, sauf famille autonome documentée.
+-4. **Cartes** : utiliser la surface canonique du bloc et éviter les styles isolés.
+-5. **Titres / chiffres internes** : les accents `text-[accent]-100` concernent les titres/chiffres de cartes ou de surfaces sombres, jamais une nouvelle variante de H1 de page.
+-6. **Texte blanc** : lorsqu'un texte est sémantiquement blanc, utiliser `text-white` à 100 %. Toute opacité réduite doit correspondre à un état ou niveau de hiérarchie explicitement voulu.
+-7. **Texte noir** : lorsqu'un texte est sémantiquement noir, utiliser `text-black` à 100 %. Les `slate` / `stone` restent des couleurs intentionnelles de design et ne doivent pas être converties arbitrairement en noir.
+-8. **Hiérarchie CTA** : appliquer le contrat `doré/brun > violet > vert > blanc` selon l'importance de l'action, indépendamment de la famille de la page.
+-9. **Variantes runtime** : utiliser uniquement les `tone` réellement exposés par `CmmButton` ; le doré/brun correspond à `critical`, le violet à `important` ; ne pas inventer d'identifiant `gold`, `brown` ou `violet`.
+-10. **Destructive** : conserver le traitement rouge dédié aux actions dangereuses ; il est séparé de la hiérarchie de priorité des boutons.
+-11. **Multi-teintes** : certains blocs ont plusieurs teintes selon le type de page ; vérifier le mapping rubrique → teinte.
+-12. **Référence** : vérifier `PAGE_HEADER.md`, `accueil-pillars.tsx`, `navigation.ts`, `documentation/product/matrice-rubriques.md` et `documentation/architecture/traceability-matrix.md` avant d'implémenter une évolution de palette ou de header.
+-
+----
+-
+-## Mapping Rubrique → Teinte
+-
+-### Bloc "Accueil & Pilotage"
+-- `/dashboard`, `/profil` → `amber`/`orange`
+-- `/pilotage`, `/sponsor-portal`, `/elus` → `amber`/`brun`
+-- `/explorer` → exception validée, palette Sommaire conservée
+-- `/methodologie` → exception validée, palette rouge d'impact conservée
+-
+-### Familles autonomes
+-- Auth & Onboarding (`/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`) → `auth`
+-- Institutionnel & Légal (`/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`) → `legal`
+-- Système & Utilitaires (`/reglages`, `/preview/actions/new`, `/error/429`) → `system` avec mood layer autonome par usage
+-- Admin & Super-admin (`/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`) → `admin`
+-- Print & Export (`/prints/report`) → `print` documentaire autonome
+-
+-### Bloc "Cartographie & Impact"
+-- `/actions/map` → `sky`
+-- `/reports`, `/sections/gamification` → `red` / `rose`
+-
+-### Autres blocs (teinte unique)
+-- Agir → `emerald`
+-- Réseau & Discussions → `pink` / `indigo` (réseau/discussion vs partenaires)
+-- Apprendre → `yellow` / `amber` (`/learn/bonnes-pratiques`, `/learn/comprendre`, `/learn/sentrainer`, `/learn/ecole`)
++# BLOC_COLOR_SYSTEM_PREMIUM : système de couleurs par bloc
++
++**Statut : CURRENT après intégration du runtime associé.**
++
++Sources de vérité : registre `page-families` (résolution des routes),
++`surface-palette.ts` (valeurs chromatiques), `surfaces.css` et `actions.css`
++(consommation). Les règles de dimensions et de typographie restent dans
++[PAGE_HEADER.md](./PAGE_HEADER.md) et [LAYOUT_SPACING.md](./LAYOUT_SPACING.md).
++Les valeurs hexadécimales ci-dessous sont la lecture documentaire du registre
++runtime ; ne pas créer un second registre de palettes.
++
++## Principe général
++
++Le fond des pages Web classiques est blanc opaque en thème clair et sombre
++opaque en thème sombre. Les anciennes nappes, halos et gradients colorés du
++canvas ne sont plus utilisés sur ces pages. La couleur de famille identifie
++les encadrés, cartes thématiques, titres, sélections et onglets, non la totalité
++du fond. Les surfaces neutres (formulaires, tables, textes longs, données et
++cartes géographiques) restent lisibles, sans coloration décorative forcée.
++La couleur du contenu métier (légendes, indicateurs, erreurs, statuts, séries)
++ne change jamais simplement parce que la route change de famille.
++
++Les grands encadrés thématiques peuvent utiliser un dégradé opaque primaire
++vers profond, avec texte blanc exact ; les cartes courantes de famille
++utilisent un dégradé clair soft vers tint, avec texte sémantique sombre.
++Le mode exhaustif autorise une profondeur mesurée, sans glassmorphism
++qui mélange un fond imprévisible au texte. Un accent cuivre, doré, violet ou
++turquoise est un détail, pas une couleur de petit texte par défaut. Le thème
++sombre utilise la surface dark de la palette, sans blanchir les préférences de
++l'utilisateur. Voir [SURFACES_CARDS.md](./SURFACES_CARDS.md).
++
++## Palette des cinq blocs et familles autonomes
++
++| Identité | Primaire | Profond | Soft | Tint | Accent décoratif | Dark |
++| --- | --- | --- | --- | --- | --- | --- |
++| Accueil & Pilotage | #9A3412 | #431407 | #FFF1E6 | #FED7AA | #B88736 | #382016 |
++| Agir | #047857 | #115E59 | #ECFDF5 | #D1FAE5 | #0E7490 | #102D29 |
++| Cartographie | #075985 | #1E3A8A | #F0F9FF | #DBEAFE | #0E7490 | #142843 |
++| Impact & Rapports | #9F1239 | #701A75 | #FFF1F2 | #FFE4E6 | #B45309 | #371D2D |
++| Réseau & Discussions | #9D174D | #581C87 | #FCE7F3 | #F9D5E9 | #B88628 | #321B31 |
++| Apprendre | #92400E | #713F12 | #FFFBEB | #FEF3C7 | #0F766E | #35291C |
++| Auth & Onboarding | #4338CA | #312E81 | #EEF2FF | #E0E7FF | #B88628 | #222342 |
++| Institutionnel & Légal | #334155 | #1E293B | #F8FAFC | #E2E8F0 | #475569 | #1E293B |
++| Système & Utilitaires | #155E75 | #334155 | #F0F9FF | #E0F2FE | #0369A1 | #1E293B |
++| Administration | #1E3A5F | #172033 | #F1F5F9 | #DCE6F0 | #B88736 | #182436 |
++
++Les associations blanc sur primaire/profond, #0F172A sur soft/tint, primaire
++sur soft/tint/blanc, #F8FAFC sur dark ont un contraste calculé au moins 4,5:1.
++Ce contrôle des couleurs opaques ne remplace pas les mesures du rendu
++réel (transparences, gradients, texte secondaire, états et contrôles).
++WCAG AA : texte courant 4,5:1, grand texte et éléments non textuels pertinents
++3:1. L'accent décoratif seul n'est ni un indicateur d'état ni une couleur de
++texte garantie. Les textes secondaires ne doivent pas être atténués par
++une opacité arbitraire.
++
++## Correspondances et exceptions
++
++Le registre `resolvePageFamily` reste l'unique propriétaire de la résolution
++par route ; `resolvePageSurfacePalette` dérive le preset depuis la tonalité
++existante. Les exceptions sont documentées dans [UI_EXCEPTION_PAGES.md](./UI_EXCEPTION_PAGES.md).
++Les cinq blocs conservent leur identité dans le ruban, sans recolorer les
++assets de marque. Le bloc 03 conserve deux variantes, cartographie bleue et
++impact grenat (dont rapports, gamification et méthodologie). Le bloc 04
++partage le rose profond et le violet pour annuaire, messagerie, partenaires,
++open data, financement et discussions ; les nuances violettes peuvent
++distinguer les sous-surfaces. Accueil/pilotage cuivre et Agir vert gardent
++leur rattachement. Apprendre est ocre/miel ; les couleurs propres aux
++illustrations scientifiques restent libres selon leur sens.
++
++Exceptions de canvas : homepage `/` et alias `/accueil`, sommaire
++`/explorer` (palette et composition autonomes conservées), connexion et
++inscription (composition dédiée Clerk, continuité emerald documentée et CTA
++critical), impression/export (surface documentaire). L'onboarding courant
++utilise la famille indigo ; les états techniques conservent leurs couleurs
++sémantiques. Les pages inconnues gardent le secours neutre : pas de
++reclassification de produit implicite. Les pages et composants immersifs
++peuvent conserver leur surface spécialisée documentée, non une exception
++générale de famille.
++
++## Hiérarchie canonique des boutons
++
++La couleur d'un bouton exprime l'importance de l'action, jamais la famille
++fonctionnelle de la page. La hiérarchie unique, du niveau le plus élevé au
++niveau le plus faible, est la suivante :
++
++| Niveau | Couleur | Usage canonique |
++| --- | --- | --- |
++| 1 | Doré / brun | Action critique ou très importante, structurante ou décisive pour le parcours. Usage rare et intentionnel ; par exemple, connexion ou inscription lorsqu'elle constitue le passage nécessaire vers l'usage complet du produit. |
++| 2 | Violet | Action importante que l'on souhaite distinguer nettement sans lui donner le poids maximal. Peut cohabiter avec un bouton vert ou blanc. |
++| 3 | Vert | Action standard et majoritaire. C'est le choix par défaut pour les CTA et actions positives ordinaires lorsqu'aucune priorité exceptionnelle ne justifie le doré/brun ou le violet. |
++| 4 | Blanc | Action d'accompagnement, alternative ou complémentaire. Le blanc ne doit pas concurrencer visuellement le CTA principal. |
++
++Cette hiérarchie est indépendante de la palette de la page ou de la famille du
++bloc. Une zone d'actions doit rendre sa priorité immédiatement compréhensible
++et éviter plusieurs actions de niveau maximal côte à côte sans justification.
++Le blanc est normalement un compagnon, pas le CTA dominant.
++
++### Contrat runtime actuel
++
++`CmmButton` expose les identifiants runtime
++`tone="primary" | "secondary" | "tertiary" | "important" | "critical" | "destructive"`.
++
++- `primary` est le bouton vert publié pour l'action standard/majoritaire ;
++- `secondary` est le bouton blanc publié pour l'action d'accompagnement et
++  constitue la valeur par défaut actuelle ;
++- `tertiary` est une action transparente de faible emphase ou contextuelle ;
++- `important` est le bouton violet publié pour une action importante, au-dessus
++  du vert sans atteindre le niveau critique doré/brun ;
++- `critical` est le bouton doré/brun publié pour une action critique ou très
++  importante, structurante ou décisive pour le parcours ;
++- `destructive` conserve son traitement rouge de danger et ne fait pas partie
++  de la hiérarchie de priorité `doré/brun > violet > vert > blanc`.
++
++Le doré/brun est publié sous l'identifiant sémantique `critical`, et non sous
++un nom de couleur comme `gold` ou `brown`. Le violet est publié sous
++`important`, pour la même raison.
++
++Les états hover, focus, loading, disabled et les exigences d'accessibilité
++restent obligatoires pour les quatre niveaux. L'importance métier ne doit pas
++être confondue avec le caractère destructif d'une action.
++
++### Exemple de composition homepage
++
++La composition de référence applique la hiérarchie ainsi :
++
++- **Consulter la carte** → vert ;
++- **Discuter** → violet ;
++- **Créer une action** → blanc ;
++- **Rejoindre une action** → blanc ;
++- **Se connecter / S'inscrire** → doré/brun.
++
++Cet exemple décrit le contrat de priorité visuelle. Utiliser `tone="critical"`
++pour le doré/brun et `tone="important"` pour le violet.
++
++## En-têtes, surfaces et navigation
++
++- Utiliser `PageHeader` ; aucune variation de typographie ni de géométrie
++  par famille. `family` choisit la couleur de titre, `tone` et `contrast`
++  restent pour les surfaces autonomes explicites. Sous-titre neutre lisible.
++  Position `left` ou `center` selon le contrat de la route.
++- `CmmCard` reste neutre par défaut. Le tone `family` sélectionne le
++  fond thématique pour les variantes default/elevated ; les tons sémantiques
++  explicites et variantes muted/outlined/glass gardent leur contrat.
++- `FamilyRubriqueCard` utilise le grand encadré thématique de sa famille
++  si le contexte de route correspond. `RubriqueCard` spécialisé peut porter
++  une surface distincte selon son rôle ; converger les overrides inutiles
++  vers les primitives sans changer le contenu.
++- La présentation de tablist et de ses boutons est partagée par les
++  formulaires et les vues locales via `cmm-tab-strip.styles.ts`. Un onglet
++  actif est un état de navigation dans la palette de famille, pas un CTA
++  classé dans la hiérarchie des actions. Préserver ARIA, focus et clavier.
++- Exhaustif : dégradés opaques, accents et ombres modérés. Minimaliste :
++  teintes unies sans ombre décorative. Sobre : surfaces neutres plates,
++  sélection identifiable, aucun gradient décoratif. Aucun mode ne change
++  les fonctionnalités. Les préférences de mouvement restent prioritaires.
++- Ne pas forcer une couleur de famille sur les alertes, axes, graphiques,
++  statuts, cartes géographiques, badges métier ou boutons d'action. Les
++  repères doivent aussi être textuels ou géométriques.
++- Garde de surface, tests de famille et mesures navigateur obligatoires
++  selon le lot. Mettre à jour le board généré via son générateur existant,
++  sans édition manuelle des artefacts. Conserver les exceptions et les
++  règles de marque, ne pas dupliquer la matrice UI/UX gelée.
++
++Les anciens fonds colorés sont historiques pour les pages classiques ;
++ils restent utiles uniquement aux compositions explicitement conservées.
+diff --git a/documentation/design-system/Design-system.md b/documentation/design-system/Design-system.md
+--- a/documentation/design-system/Design-system.md
++++ b/documentation/design-system/Design-system.md
+@@ -14,47 +14,44 @@
+ 
+ | Responsabilité | Contrat actuel | Application attendue |
+ |---|---|---|
+-| Couleur par bloc | `BLOC_COLOR_SYSTEM_PREMIUM.md` | Fond clair de famille, cartes contrastées, hiérarchie des CTA |
+-| En-tête de page | `PAGE_HEADER.md` | `PageHeader` et un seul système titre/sous-titre |
+-| Grille globale | `LAYOUT_SPACING.md` | `CmmPageLayout`, chrome global et niveaux de largeur |
+-| Actions | `ACTIONS_BUTTONS.md` | `CmmButton` et `CmmButtonGroup` |
+-| Formulaires | `FORMS_CONTROLS.md` | Champs, labels, erreurs, états et contrôles accessibles |
+-| Surfaces | `SURFACES_CARDS.md` | Card/surface selon leur rôle sémantique |
+-| États | `STATES_FEEDBACK.md` | Chargement, vide, succès, erreur et feedback |
+-| Motion | `MOTION_TRANSITIONS.md` | Transitions et respect reduced motion |
+-| Icônes | `ICONS.md` | `CmmIcon`, sans glyphes indépendants arbitraires |
+-| Marque | `BRAND.md` | `BrandLogo` et registre `brand-assets.ts` |
+-| Modes | `DISPLAY_MODES_CANONICAL.md` | `exhaustif`, `minimaliste`, `sobre` |
+-| Thème/contraste | `theme-visibility-rules.md` | Lisibilité selon mode/surface |
+-| Indicateurs | `DATA_DISPLAY_TABLES_KPI.md` | Valeurs, unités, couverture et provenance |
+-
+-## 3. Composition d'une page web
+-
+-```text
+-Chrome global (navigation supérieure)
+-  └── Contenu dans le shell / largeur canonique
+-      ├── PageHeader (h1, sous-titre, couleur par famille)
+-      ├── Action principale + actions secondaires
+-      ├── Contenu : surface, liste, carte, formulaire ou indicateurs
+-      └── États et feedback contextuels
+-Chrome global (ruban inférieur)
+-```
+-
+-Le chrome global subsiste y compris sur les pages d'authentification et d'onboarding. Une page ne doit pas placer une surface plein viewport au-dessus du header/footer pour imiter une maquette.
+-
+-**Composants :** préférer les primitives `Cmm*` plutôt que des classes Tailwind locales réinventant couleurs, espacements, boutons ou états. Les pages gardent la responsabilité du contenu, pas d'un design system parallèle.
+-
+-## 4. Couleurs et hiérarchie
+-
+-La documentation actuelle définit notamment :
+-
+-- **Accueil et Pilotage :** orange et brun combinés.
+-- **Agir :** famille verte/émeraude.
+-- **Cartographie :** famille ciel.
+-- **Impact :** famille rouge.
+-- **Réseau et Discussions :** rose/indigo selon sous-famille.
+-- **Apprendre :** jaune/ambre.
+-- **Partenaires et données :** indigo/violet selon la rubrique.
++| Couleur par bloc | `BLOC_COLOR_SYSTEM_PREMIUM.md` | Canvas neutre, cartes de famille contrastées, hiérarchie des CTA |
++| En-tête de page | `PAGE_HEADER.md` | `PageHeader` et un seul système titre/sous-titre |
++| Grille globale | `LAYOUT_SPACING.md` | `CmmPageLayout`, chrome global et niveaux de largeur |
++| Actions | `ACTIONS_BUTTONS.md` | `CmmButton` et `CmmButtonGroup` |
++| Formulaires | `FORMS_CONTROLS.md` | Champs, labels, erreurs, états et contrôles accessibles |
++| Surfaces | `SURFACES_CARDS.md` | Card/surface selon leur rôle sémantique |
++| États | `STATES_FEEDBACK.md` | Chargement, vide, succès, erreur et feedback |
++| Motion | `MOTION_TRANSITIONS.md` | Transitions et respect reduced motion |
++| Icônes | `ICONS.md` | `CmmIcon`, sans glyphes indépendants arbitraires |
++| Marque | `BRAND.md` | `BrandLogo` et registre `brand-assets.ts` |
++| Modes | `DISPLAY_MODES_CANONICAL.md` | `exhaustif`, `minimaliste`, `sobre` |
++| Thème/contraste | `theme-visibility-rules.md` | Lisibilité selon mode/surface |
++| Indicateurs | `DATA_DISPLAY_TABLES_KPI.md` | Valeurs, unités, couverture et provenance |
++
++## 3. Composition d'une page web
++
++```text
++Chrome global (navigation supérieure)
++  └── Contenu dans le shell / largeur canonique
++      ├── PageHeader (h1, sous-titre, couleur par famille)
++      ├── Action principale + actions secondaires
++      ├── Contenu : surface, liste, carte, formulaire ou indicateurs
++      └── États et feedback contextuels
++Chrome global (ruban inférieur)
++```
++
++Le chrome global subsiste y compris sur les pages d'authentification et d'onboarding. Une page ne doit pas placer une surface plein viewport au-dessus du header/footer pour imiter une maquette.
++
++**Composants :** préférer les primitives `Cmm*` plutôt que des classes Tailwind locales réinventant couleurs, espacements, boutons ou états. Les pages gardent la responsabilité du contenu, pas d'un design system parallèle.
++
++## 4. Couleurs et hiérarchie
++
++Le fond des pages Web classiques est blanc en thème clair, sombre en thème sombre.
++Les familles s'expriment dans les encadrés, cartes, titres et onglets, selon
++le registre et [BLOC_COLOR_SYSTEM_PREMIUM.md](./BLOC_COLOR_SYSTEM_PREMIUM.md).
++La homepage, le sommaire, les surfaces autonomes de connexion/inscription
++et d'impression gardent leurs compositions documentées. Les données,
++les surfaces fonctionnelles et les états gardent leur propre sémantique.
+ 
+ La hiérarchie canonique des actions est décrite comme **doré/brun > violet > vert > blanc**, indépendamment du `tone` sémantique choisi sur `CmmButton`. Ne jamais traduire cela en palette arbitraire page par page.
+ 
+diff --git a/documentation/design-system/SURFACES_CARDS.md b/documentation/design-system/SURFACES_CARDS.md
+--- a/documentation/design-system/SURFACES_CARDS.md
++++ b/documentation/design-system/SURFACES_CARDS.md
+@@ -8,85 +8,91 @@
+ ## Architecture
+ 
+ ```text
+-data-display-mode
+-  → tokens CSS --cmm-surface-*
+-  → primitives CmmCard / CmmBlockCard / RubriqueCard
+-  → consommateurs de page
+-```
+-
+-Les tokens sont définis dans `apps/web/src/styles/tokens.css`, importé par
+-`apps/web/src/app/globals.css`. Les composants sélectionnent une sémantique
+-(`tone`, `variant`, `size`, `surfaceKind` ou un accent de bloc) ; ils ne
+-redéfinissent pas le shell avec des couleurs, ombres, blur, radius ou
+-transforms locaux.
+-
+-## Matrice des trois modes
+-
+-| Propriété | `exhaustif` | `minimaliste` | `sobre` | Responsable |
+-| --- | --- | --- | --- | --- |
+-| Fond standard | surface premium thématique | surface unie de même identité | surface plate | `--cmm-surface-background` |
+-| Fond muted | `--bg-muted` | `--bg-muted` | fond de base | `--cmm-surface-background-muted` |
+-| Bordure | bordure standard | bordure renforcée | bordure renforcée, contraste élevé | `--cmm-surface-border` / `--cmm-surface-border-strong` |
+-| Ombre standard | `var(--shadow-soft)` | aucune | aucune | `--cmm-surface-shadow` |
+-| Ombre elevated | `var(--shadow-elevated)` | au maximum `var(--shadow-soft)` | aucune | `--cmm-surface-shadow-elevated` |
+-| Blur | `blur(10px)` | aucun | aucun | `--cmm-surface-blur` |
+-| Texture / gradients | autorisés sur les surfaces premium | désactivés | désactivés | `--cmm-surface-texture-opacity` + classes texture |
+-| Hover translate | `-2px` | `0` | `0` | `--cmm-surface-hover-translate` |
+-| Hover scale | aucun | aucun | aucun | interdit sur une surface textuelle |
+-| Active scale | aucun | aucun | aucun | interdit sur une surface textuelle |
+-| Transition | `180ms ease` | `150ms ease`, uniquement feedback utile | `0ms` | `--cmm-surface-transition-*` |
+-| Focus | global, visible et conservé | global, visible et conservé | renforcé, sans dépendre d'une ombre | classes focus canoniques |
+-
+-Le thème et la famille peuvent modifier la lecture des couleurs, mais jamais
+-la géométrie ni les métriques de contenu. Les surfaces textuelles standard ne
+-scalent ni au survol ni à l'activation et n'appliquent pas de `filter` à leur
+-contenu complet. Le rendu premium vient de la teinte, de la bordure et de
+-l'ombre/glow ; `backdrop-filter` reste autorisé. Les scales restent réservés
+-aux éléments décoratifs ou aux icônes lorsqu'ils sont nécessaires. Les modes ne
+-retirent aucune donnée, route, permission ou fonctionnalité.
+-
+-## Primitives
+-
+-### `CmmCard`
+-
+-`CmmCard` est la primitive standard des cartes et panneaux. Ses props publiques
+-`tone`, `variant`, `size`, `clickable`, `disabled`, `prose`, `lineClamp` et
+-`header` restent sémantiques. Le shell est porté par `.cmm-card` et ses tokens.
+-
+-Les variantes métier conservées sont :
+-
+-- `default` : surface standard ;
+-- `elevated` : surface élevée ;
+-- `muted` : surface secondaire ;
+-- `outlined` : surface transparente bordée ;
+-- `glass` : surface premium qui suit le blur du mode.
+-
+-Les états `hover`, `active`, `disabled` et `focus-visible` sont centralisés.
+-Le hover peut conserver une translation verticale tokenisée, mais aucun état
+-de la carte ne scale le conteneur textuel.
+-`prefers-reduced-motion: reduce` est prioritaire et supprime transforms,
+-animations et transitions de la carte.
+-
+-### `CmmBlockCard` et `CmmBlockAccent`
+-
+-`CmmBlockCard` compose `CmmCard` avec `BLOCK_ACCENT_MAP`. Les barres, dots et
+-rings restent visibles dans les trois modes comme repères de famille. Le
+-pulse, les gradients et les glows sont décoratifs et ne sont visibles qu'en
+-`exhaustif` ; ils sont supprimés en `minimaliste`, `sobre` et avec
+-`prefers-reduced-motion`.
+-
+-### `RubriqueCard` et familles
+-
+-`RubriqueCard` est une surface thématique spécialisée pour les grands blocs de
+-rubrique, mais suit les mêmes tokens de mode pour son fond, sa bordure, ses
+-états et sa motion. Comme `CmmCard`, elle ne scale pas son conteneur textuel.
+-`surfaceKind="themed"|"neutral"` distingue seulement la
+-source de couleur. La barre supérieure reste disponible dans les trois modes,
+-le watermark est réservé à `exhaustif`, et l'icône ne reçoit aucun effet
+-décoratif en `minimaliste` ou `sobre`.
+-
+-Les presets de famille exposent uniquement `rubriqueTheme` et `surfaceKind`.
+-Ils ne portent ni gradients, ni ombres, ni blur, ni hover local.
++data-display-mode + famille de page
++  → tokens CSS --cmm-surface-* et --cmm-family-*
++  → primitives CmmCard / CmmBlockCard / RubriqueCard
++  → consommateurs de page
++```
++
++Les tokens sont définis dans `apps/web/src/styles/tokens.css`, importé par
++`apps/web/src/app/globals.css`. Les composants sélectionnent une sémantique
++(`tone`, `variant`, `size`, `surfaceKind` ou un accent de bloc) ; ils ne
++redéfinissent pas le shell avec des couleurs, ombres, blur, radius ou
++transforms locaux.
++
++## Matrice des trois modes
++
++| Propriété | `exhaustif` | `minimaliste` | `sobre` | Responsable |
++| --- | --- | --- | --- | --- |
++| Fond standard | surface premium thématique | surface unie de même identité | surface plate | `--cmm-surface-background` |
++| Fond muted | `--bg-muted` | `--bg-muted` | fond de base | `--cmm-surface-background-muted` |
++| Bordure | bordure standard | bordure renforcée | bordure renforcée, contraste élevé | `--cmm-surface-border` / `--cmm-surface-border-strong` |
++| Ombre standard | `var(--shadow-soft)` | aucune | aucune | `--cmm-surface-shadow` |
++| Ombre elevated | `var(--shadow-elevated)` | au maximum `var(--shadow-soft)` | aucune | `--cmm-surface-shadow-elevated` |
++| Blur | `blur(10px)` | aucun | aucun | `--cmm-surface-blur` |
++| Texture / gradients | autorisés sur les surfaces premium | désactivés | désactivés | `--cmm-surface-texture-opacity` + classes texture |
++| Hover translate | `-2px` | `0` | `0` | `--cmm-surface-hover-translate` |
++| Hover scale | aucun | aucun | aucun | interdit sur une surface textuelle |
++| Active scale | aucun | aucun | aucun | interdit sur une surface textuelle |
++| Transition | `180ms ease` | `150ms ease`, uniquement feedback utile | `0ms` | `--cmm-surface-transition-*` |
++| Focus | global, visible et conservé | global, visible et conservé | renforcé, sans dépendre d'une ombre | classes focus canoniques |
++
++Le thème et la famille peuvent modifier la lecture des couleurs, mais jamais
++la géométrie ni les métriques de contenu. Les surfaces textuelles standard ne
++scalent ni au survol ni à l'activation et n'appliquent pas de `filter` à leur
++contenu complet. Le rendu premium vient de la teinte, de la bordure et de
++l'ombre/glow ; `backdrop-filter` reste autorisé. Les scales restent réservés
++aux éléments décoratifs ou aux icônes lorsqu'ils sont nécessaires. Les modes ne
++retirent aucune donnée, route, permission ou fonctionnalité.
++
++## Primitives
++
++### `CmmCard`
++
++`CmmCard` est la primitive standard des cartes et panneaux. Ses props publiques
++`tone`, `variant`, `size`, `clickable`, `disabled`, `prose`, `lineClamp` et
++`header` restent sémantiques. Le shell est porté par `.cmm-card` et ses tokens.
++
++Les variantes métier conservées sont :
++
++- `default` : surface standard ; le tone `family` active la surface de famille, les cartes neutres restent le défaut ;
++- `elevated` : surface élevée ;
++- `muted` : surface secondaire ;
++- `outlined` : surface transparente bordée ;
++- `glass` : surface premium qui suit le blur du mode.
++
++Les états `hover`, `active`, `disabled` et `focus-visible` sont centralisés.
++Le hover peut conserver une translation verticale tokenisée, mais aucun état
++de la carte ne scale le conteneur textuel.
++`prefers-reduced-motion: reduce` est prioritaire et supprime transforms,
++animations et transitions de la carte.
++
++### `CmmBlockCard` et `CmmBlockAccent`
++
++`CmmBlockCard` compose `CmmCard` avec `BLOCK_ACCENT_MAP`. Les barres, dots et
++rings restent visibles dans les trois modes comme repères de famille. Le
++pulse, les gradients et les glows sont décoratifs et ne sont visibles qu'en
++`exhaustif` ; ils sont supprimés en `minimaliste`, `sobre` et avec
++`prefers-reduced-motion`.
++
++### `RubriqueCard` et familles
++
++`RubriqueCard` est une surface thématique spécialisée pour les grands blocs de
++rubrique, mais suit les mêmes tokens de mode pour son fond, sa bordure, ses
++états et sa motion. Comme `CmmCard`, elle ne scale pas son conteneur textuel.
++`surfaceKind="themed"|"neutral"` distingue seulement la
++source de couleur. La barre supérieure reste disponible dans les trois modes,
++le watermark est réservé à `exhaustif`, et l'icône ne reçoit aucun effet
++décoratif en `minimaliste` ou `sobre`.
++
++Les presets de famille exposent `rubriqueTheme` et `surfaceKind`.
++Les valeurs de couleur sont centralisées dans `surface-palette.ts`, exposées
++par les tokens `--cmm-family-*` et consommées par les primitives. Les
++encadrés `FamilyRubriqueCard` thématiques du contexte courant ont un gradient
++opaque primaire/profond en exhaustif, une surface unie en minimaliste et
++une surface neutre en sobre. Aucune recette de gradient, ombre, blur ou hover
++locale ne doit concurrencer les primitives. Les surfaces neutres, rôles
++sémantiques et variantes métier ne deviennent pas thématiques par défaut.
+ 
+ ## Contrat de composition des consommateurs
+ 
+diff --git a/documentation/design-system/UI_EXCEPTION_PAGES.md b/documentation/design-system/UI_EXCEPTION_PAGES.md
+--- a/documentation/design-system/UI_EXCEPTION_PAGES.md
++++ b/documentation/design-system/UI_EXCEPTION_PAGES.md
+@@ -3,58 +3,59 @@
+ Ce document sert de matrice de référence pour les agents.
+ 
+ Règle générale :
+-- une page suit la teinte de sa famille visuelle ou de son bloc fonctionnel;
+-- la homepage (`/` et `/accueil`) constitue une famille autonome avec sa propre palette, ce n'est pas une exception de bloc;
+-- une exception UI doit être explicitement documentée avant tout changement de palette;
+-- une exception validée reste stable tant qu'elle sert de référence UX.
+-
+-Lecture de la colonne `Exception UI ?` :
+-- `oui` = la route déroge à la palette standard de sa famille;
+-- `non` = la route suit la règle standard;
+-- `n/a` = route technique, alias ou redirection qui ne porte pas de UI propre.
+-
+-## Exceptions validées
+-
+-| Route | Raison | Palette conservée |
+-|---|---|---|
+-| `/explorer` | Sommaire du site déjà abouti, utilisé comme référence de navigation et de structure visuelle | Palette dédiée du Sommaire |
+-| `/methodologie` | Exception rouge alignée sur les pages d'impact, exposée comme rubrique cliquable du bloc Cartographie & Impact | Rouge d'impact |
+-
+-## Exceptions rouges d'impact
+-
+-| Route | Raison | Palette conservée |
+-|---|---|---|
+-| `/reports` | Page d'impact rouge conservée comme exception visuelle du bloc Cartographie & Impact | Rouge d'impact |
+-| `/gamification` | Variante d'impact rouge, même logique visuelle que les pages d'impact | Rouge d'impact |
+-
+-## Routes avec rappel de complétion non bloquant
+-
+-Ces routes utilisent le rappel de complétion de compte en plus de leur UI
+-canonique. Elles ne sont pas des exceptions de palette et leur contenu ne
+-dépend pas d'un compte entièrement renseigné. L'AuthN/AuthZ de la page et les
+-validations propres à chaque opération restent séparées.
+-
+-| Route | Statut | Note |
+-|---|---|---|
+-| `/dashboard` | `completion reminder` | Mon espace, contenu personnel et réglages liés au compte |
+-| `/sponsor-portal` | `completion reminder` | Portail décideur, après AuthN/AuthZ propre à la surface |
+-| `/signalement` | `completion reminder` | Entrée terrain ; identité demandée au moment de transmettre ou consulter ses données |
+-| `/actions/history` | `completion reminder` | Historique terrain authentifié |
+-| `/partners/dashboard` | `completion reminder` | Pilotage réseau et gestion des fiches, selon les permissions métier |
+-| `/partners/onboarding` | `completion reminder` | Parcours partenaire ; son formulaire porte ses champs obligatoires |
+-| `/reports` | `completion reminder` | Rapports d'impact ; identité demandée pour les fonctions personnelles et l'export |
+-| `/admin` | `completion reminder` | Back-office central après contrôle du rôle administratif |
+-
+-## Familles UI autonomes
+-
+-Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visuel propre, stable et indépendant.
+-
+-| Famille | Routes principales | Tonalité de base | Note |
+-|---|---|---|---|
+-| Homepage autonome | `/`, `/accueil` | `home` | Identité de page indépendante |
+-| Auth & Onboarding | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | `auth` | `/sign-in` et `/sign-up` utilisent le canvas emerald lumineux et les surfaces emerald d'Agir sans changer leur autonomie fonctionnelle ; l'onboarding conserve son contrat propre |
+-| Institutionnel & Légal | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*` | `legal` | Pages juridiques et institutionnelles, palette slate / gris clair / blanc, sans esthétique marketing blocks |
+-| Système & Utilitaires | `/reglages`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation QA, avec mood layer autonome par usage; les états système suivent une charte commune `SystemStateLayout` |
++- une page classique suit le canvas neutre et les surfaces colorées de sa famille visuelle, conformément à `BLOC_COLOR_SYSTEM_PREMIUM.md`;
++- homepage, sommaire, connexion/inscription et impression conservent leur composition autonome documentée ; les palettes indiquées ci-dessous décrivent l'identité de famille et non un fond de page coloré;
++- la homepage (`/` et `/accueil`) constitue une famille autonome avec sa propre palette, ce n'est pas une exception de bloc;
++- une exception UI doit être explicitement documentée avant tout changement de palette;
++- une exception validée reste stable tant qu'elle sert de référence UX.
++
++Lecture de la colonne `Exception UI ?` :
++- `oui` = la route déroge à la palette standard de sa famille;
++- `non` = la route suit la règle standard;
++- `n/a` = route technique, alias ou redirection qui ne porte pas de UI propre.
++
++## Exceptions validées
++
++| Route | Raison | Palette conservée |
++|---|---|---|
++| `/explorer` | Sommaire du site déjà abouti, utilisé comme référence de navigation et de structure visuelle | Palette dédiée du Sommaire |
++| `/methodologie` | Exception rouge alignée sur les pages d'impact, exposée comme rubrique cliquable du bloc Cartographie & Impact | Rouge d'impact |
++
++## Exceptions rouges d'impact
++
++| Route | Raison | Palette conservée |
++|---|---|---|
++| `/reports` | Page d'impact rouge conservée comme exception visuelle du bloc Cartographie & Impact | Rouge d'impact |
++| `/gamification` | Variante d'impact rouge, même logique visuelle que les pages d'impact | Rouge d'impact |
++
++## Routes avec rappel de complétion non bloquant
++
++Ces routes utilisent le rappel de complétion de compte en plus de leur UI
++canonique. Elles ne sont pas des exceptions de palette et leur contenu ne
++dépend pas d'un compte entièrement renseigné. L'AuthN/AuthZ de la page et les
++validations propres à chaque opération restent séparées.
++
++| Route | Statut | Note |
++|---|---|---|
++| `/dashboard` | `completion reminder` | Mon espace, contenu personnel et réglages liés au compte |
++| `/sponsor-portal` | `completion reminder` | Portail décideur, après AuthN/AuthZ propre à la surface |
++| `/signalement` | `completion reminder` | Entrée terrain ; identité demandée au moment de transmettre ou consulter ses données |
++| `/actions/history` | `completion reminder` | Historique terrain authentifié |
++| `/partners/dashboard` | `completion reminder` | Pilotage réseau et gestion des fiches, selon les permissions métier |
++| `/partners/onboarding` | `completion reminder` | Parcours partenaire ; son formulaire porte ses champs obligatoires |
++| `/reports` | `completion reminder` | Rapports d'impact ; identité demandée pour les fonctions personnelles et l'export |
++| `/admin` | `completion reminder` | Back-office central après contrôle du rôle administratif |
++
++## Familles UI autonomes
++
++Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visuel propre, stable et indépendant.
++
++| Famille | Routes principales | Tonalité de base | Note |
++|---|---|---|---|
++| Homepage autonome | `/`, `/accueil` | `home` | Identité de page indépendante |
++| Auth & Onboarding | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | `auth` | `/sign-in` et `/sign-up` utilisent le canvas emerald lumineux et les surfaces emerald d'Agir sans changer leur autonomie fonctionnelle ; l'onboarding conserve son contrat propre |
++| Institutionnel & Légal | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*` | `legal` | Pages juridiques et institutionnelles, palette slate / gris clair / blanc, sans esthétique marketing blocks |
++| Système & Utilitaires | `/reglages`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation QA, avec identité bleu pétrole/acier sur canvas neutre; les états système suivent une charte commune `SystemStateLayout` |
+ | Admin & Super-admin | `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode` | `admin` | Console et supervision restreinte |
+ | Print & Export | `/prints/report` | `print` | Rapport imprimable et export visuel, ambiance documentaire autonome |
+ 
