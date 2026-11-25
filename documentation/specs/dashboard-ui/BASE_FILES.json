@@ -1,0 +1,10 @@
+{
+  "reference": "bf806e4010742ab0717b88c63c9bf3f000900a70",
+  "files": {
+    "apps/web/src/app/(app)/dashboard/page.tsx": "82af60f15456b708d49aa39335ca8e3c596fbd7b",
+    "apps/web/src/lib/dashboard/page-data.ts": "308d3931b345a75ba68ab23a2de600932de05944",
+    "apps/web/src/components/navigation/role-primary-actions.tsx": "c5d7a9073da4b78abebf6dc0913b56bd58e16145",
+    "apps/web/src/app/(app)/dashboard/page.test.ts": "a95e708559c6e908f5a90115d8e59d5a4c2c9961",
+    "documentation/pages_site/routes/01-accueil-pilotage/dashboard/dashboard-README.md": "5b069054a5abb36aae0507aee67d50c31c1e6a27"
+  }
+}

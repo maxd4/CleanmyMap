@@ -1,0 +1,459 @@
+diff --git a/apps/web/src/app/(app)/dashboard/page.tsx b/apps/web/src/app/(app)/dashboard/page.tsx
+--- a/apps/web/src/app/(app)/dashboard/page.tsx
++++ b/apps/web/src/app/(app)/dashboard/page.tsx
+@@ -1,26 +1,20 @@
+ import { Suspense } from "react";
+-import { DashboardOverviewSection } from "@/components/dashboard/dashboard-overview-section";
++import type { Metadata } from "next";
+ import { DashboardNotificationsSection } from "@/components/dashboard/dashboard-notifications-section";
+ import { DashboardEntrance } from "@/components/dashboard/dashboard-entrance";
+-import { AccountEvolutionStatusLink } from "@/components/account/account-evolution-status-link";
+-import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
+-import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
++import { DashboardHomePanel } from "@/components/dashboard/dashboard-home-panel";
++import { DashboardCollectivePanel } from "@/components/dashboard/dashboard-collective-panel";
++import { DashboardEngagementPanel } from "@/components/dashboard/dashboard-engagement-panel";
++import { DashboardPageTabs } from "@/components/dashboard/dashboard-page-tabs";
++import { DashboardLegacyAnchor } from "@/components/dashboard/dashboard-legacy-anchor";
+ import { AccountCompletionGate } from "@/components/account/account-completion-gate";
+ import { getSafeAuthSession } from "@/lib/auth/safe-session";
+ import { getCurrentUserIdentity } from "@/lib/authz";
+-import {
+-  getProfileLabel,
+-  getProfilePrimaryAction,
+-} from "@/lib/profiles";
+-import {
+-  getServerLocale,
+-} from "@/lib/server-preferences";
++import { getProfileLabel } from "@/lib/profiles";
++import { getServerLocale } from "@/lib/server-preferences";
+ import { getTranslation } from "@/lib/i18n/server-translation";
+-import {
+-  loadDashboardPageData,
+-} from "@/lib/dashboard/page-data";
+-import { Shield } from "lucide-react";
+-import type { Metadata } from "next";
++import { loadDashboardPageData } from "@/lib/dashboard/page-data";
++import { resolveDashboardTab } from "@/lib/dashboard/tabs";
+ import { PageHeader } from "@/components/ui/page-header";
+ import { CmmPageLayout } from "@/components/ui/cmm-section";
+ import { resolvePageFamily } from "@/lib/ui/page-families";
+@@ -28,142 +22,58 @@
+ import { DashboardAccountControls } from "@/components/dashboard/dashboard-account-controls";
+ import { DashboardAuthRequiredPreview } from "@/components/dashboard/dashboard-auth-required-preview";
+ import { DashboardOverviewSkeleton } from "@/components/dashboard/dashboard-overview-skeleton";
+-import { DashboardPriorityAction } from "@/components/dashboard/dashboard-priority-action";
+ import { DashboardProfileSwitcher } from "@/components/dashboard/dashboard-profile-switcher";
+-import { DashboardReferralCard } from "@/components/dashboard/dashboard-referral-card";
+-import { DashboardUserLevelRanking } from "@/components/dashboard/dashboard-user-level-ranking";
+ 
+ export const metadata: Metadata = {
+   title: "Mon espace",
+-  description:
+-    "Suivez votre impact, consultez vos statistiques et gérez votre compte depuis un espace centralisé.",
++  description: "Retrouvez vos accès prioritaires, notifications, engagement et réglages.",
+ };
+ 
+-export default async function DashboardPage() {
+-  const { userId, clerkReachable } = await getSafeAuthSession();
+-  const locale = await getServerLocale();
++type DashboardPageProps = { searchParams: Promise<{ tab?: string | string[] }> };
+ 
+-  if (!userId) {
+-    return <DashboardAuthRequiredPreview />;
+-  }
++export default async function DashboardPage({ searchParams }: DashboardPageProps) {
++  const [{ userId, clerkReachable }, locale, params] = await Promise.all([
++    getSafeAuthSession(), getServerLocale(), searchParams,
++  ]);
++  if (!userId) return <DashboardAuthRequiredPreview />;
+ 
+-  const {
+-    accountCompletion,
+-    displayMode,
+-    profile,
+-    userLevelRanking,
+-    referralSummary,
+-    overviewPromise,
+-  } = await loadDashboardPageData({ userId, clerkReachable, locale });
++  const { accountCompletion, displayMode, profile } = await loadDashboardPageData({ userId, clerkReachable });
+   const identity = await getCurrentUserIdentity({ userId }).catch(() => null);
+   const grantedRole = identity?.role ?? profile;
+   const activeRole = identity?.activeRole ?? profile;
+   const roleLabel = getProfileLabel(activeRole, locale);
+-  const primaryAction = getProfilePrimaryAction(profile);
++  const activeTab = resolveDashboardTab(params.tab);
+   const { t } = getTranslation("dashboard", locale);
+-  const pageFamily = resolvePageFamily(DASHBOARD_ROUTE);
+ 
+   return (
+     <AccountCompletionGate state={accountCompletion}>
+-      <main
+-        className="relative min-h-screen overflow-hidden"
+-        data-display-mode={displayMode}
+-      >
++      <main className="relative min-h-screen" data-display-mode={displayMode}>
+         <DashboardEntrance className="relative z-10">
+           <CmmPageLayout>
+-          {/* ── Configuration active ── */}
+-          <div data-gsap-reveal className="space-y-3">
+-            <IdentityProfileBanner profile={profile} />
+-            <div className="flex justify-end">
+-              <AccountEvolutionStatusLink
+-                label="Faire évoluer mon compte"
+-                pendingLabel="Voir ma demande"
+-                className="border-amber-900/20 bg-amber-950/10 text-amber-950 hover:bg-amber-950/16"
+-              />
+-            </div>
+-          </div>
+-
+-          {/* ── Header ── */}
+-          <div data-gsap-reveal>
+-            <PageHeader
+-              family={pageFamily}
+-              title={t("title_v1")}
+-              action={
+-                <div className="flex flex-wrap items-center justify-center gap-2.5">
+-                  <span className="h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.55)]" />
+-                  <span className="text-sm font-semibold text-amber-900">
+-                    {roleLabel}
+-                  </span>
+-                  <span className="rounded-lg border border-amber-200/18 bg-[rgba(69,26,3,0.72)] px-3 py-1 cmm-text-caption font-mono font-bold text-amber-50 shadow-sm">
+-                    <Shield size={10} className="mr-1.5 inline text-amber-300" />
+-                    {userId.slice(-8).toUpperCase()}
+-                  </span>
+-                </div>
+-              }
+-            />
+-          </div>
+-
+-          {/* ── Résumé décisionnel + Plan de journée ── */}
+-          <div data-gsap-reveal>
+-            <Suspense fallback={<DashboardOverviewSkeleton />}>
+-              <DashboardOverviewSection
+-                overviewPromise={overviewPromise}
+-                locale={locale}
+-                profile={profile}
+-                primaryAction={primaryAction}
+-              />
+-            </Suspense>
+-          </div>
+-
+-          <div data-gsap-reveal>
+-            <DashboardNotificationsSection />
+-          </div>
+-
+-          {/* ── Séparateur ── */}
+-          <div className="h-px bg-amber-200/24" />
+-
+-          {/* ── Action prioritaire ── */}
+-          <DashboardPriorityAction locale={locale} />
+-
+-          {/* ── Séparateur ── */}
+-          <div className="h-px bg-amber-200/24" />
+-
+-          {/* ── Accès rapides ── */}
+-          <div data-gsap-reveal>
+-            <p className="mb-6 cmm-text-caption font-bold uppercase tracking-[0.3em] text-amber-100/78">
+-              {locale === "fr" ? "Accès rapides" : "Quick access"}
+-            </p>
+-            <RolePrimaryActions profile={profile} title="" tone="warm" />
+-          </div>
+-
+-          <div className="h-px bg-amber-200/24" />
+-
+-          {/* ── Parrainages + Classement global des niveaux utilisateur ── */}
+-          <div
+-            data-gsap-reveal
+-            className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]"
+-          >
+-            <DashboardReferralCard
+-              locale={locale}
+-              summary={referralSummary}
+-              profile={profile}
+-            />
+-            <DashboardUserLevelRanking
+-              locale={locale}
+-              userId={userId}
+-              userLevelRanking={userLevelRanking}
+-            />
+-          </div>
+-
+-          <div className="mt-14 h-px bg-amber-200/24" />
+-
+-          <DashboardAccountControls locale={locale} grantedRole={grantedRole} />
+-
+-          <DashboardProfileSwitcher
+-            locale={locale}
+-            activeRole={activeRole}
+-            grantedRole={grantedRole}
+-          />
++            <PageHeader family={resolvePageFamily(DASHBOARD_ROUTE)} title={t("title_v1")}
++              subtitle={locale === "fr" ? "Vos actions, votre engagement et votre compte" : "Your actions, engagement and account"}
++              action={<span className="text-sm font-semibold cmm-text-secondary">{locale === "fr" ? "Rôle actif : " : "Active role: "}{roleLabel}</span>} />
++            <DashboardPageTabs activeTab={activeTab} locale={locale} />
++            <DashboardLegacyAnchor activeTab={activeTab} />
++            {activeTab === "today" && <DashboardHomePanel profile={activeRole} locale={locale} />}
++            {activeTab === "notifications" && <DashboardNotificationsSection />}
++            {activeTab === "collective" && (
++              <Suspense fallback={<DashboardOverviewSkeleton />}>
++                <DashboardCollectivePanel locale={locale} profile={activeRole} />
++              </Suspense>
++            )}
++            {activeTab === "engagement" && (
++              <Suspense fallback={<DashboardOverviewSkeleton />}>
++                <DashboardEngagementPanel userId={userId} profile={activeRole} locale={locale} />
++              </Suspense>
++            )}
++            {activeTab === "account" && (
++              <section className="space-y-4" aria-labelledby="dashboard-account-title">
++                <h2 id="dashboard-account-title" className="text-xl font-bold cmm-text-primary">{locale === "fr" ? "Gestion du compte" : "Account management"}</h2>
++                <DashboardAccountControls locale={locale} grantedRole={grantedRole} />
++                <DashboardProfileSwitcher locale={locale} activeRole={activeRole} grantedRole={grantedRole} />
++              </section>
++            )}
+           </CmmPageLayout>
+         </DashboardEntrance>
+       </main>
+diff --git a/apps/web/src/lib/dashboard/page-data.ts b/apps/web/src/lib/dashboard/page-data.ts
+--- a/apps/web/src/lib/dashboard/page-data.ts
++++ b/apps/web/src/lib/dashboard/page-data.ts
+@@ -16,7 +16,7 @@
+       message: string;
+     };
+ 
+-async function loadDashboardOverviewResult(
++export async function loadDashboardOverviewResult(
+   locale: "fr" | "en",
+ ): Promise<DashboardOverviewResult> {
+   try {
+@@ -39,11 +39,9 @@
+ export async function loadDashboardPageData({
+   userId,
+   clerkReachable,
+-  locale,
+ }: {
+   userId: string;
+   clerkReachable: boolean;
+-  locale: "fr" | "en";
+ }) {
+   const accountCompletion = await loadAccountCompletionGateState({
+     userId,
+@@ -56,21 +54,23 @@
+       : getCurrentUserActiveRole().catch(() => "benevole" as const),
+     getServerDisplayMode(),
+   ]);
+-  const [userLevelRanking, referralSummary] = await Promise.all([
+-    loadUserLevelRankingSummary(userId),
+-    fetchCachedReferralSummary(userId).catch(() => null),
+-  ]);
+-
+   return {
+     accountCompletion,
+     displayMode,
+     profile: accountCompletion?.currentProfile ?? toProfile(role),
+-    userLevelRanking,
+-    referralSummary,
+-    overviewPromise: loadDashboardOverviewResult(locale),
+   };
+ }
+ 
+-export type DashboardPageData = Awaited<
+-  ReturnType<typeof loadDashboardPageData>
+->;
++export async function loadDashboardEngagementData(userId: string) {
++  const [userLevelRanking, referralSummary] = await Promise.all([
++    loadUserLevelRankingSummary(userId).catch(() => null),
++    fetchCachedReferralSummary(userId).catch(() => null),
++  ]);
++  return { userLevelRanking, referralSummary };
++}
++
++/** Existing display components consume the available engagement projections. */
++export type DashboardPageData = {
++  userLevelRanking: Awaited<ReturnType<typeof loadUserLevelRankingSummary>>;
++  referralSummary: Awaited<ReturnType<typeof fetchCachedReferralSummary>> | null;
++};
+diff --git a/apps/web/src/components/navigation/role-primary-actions.tsx b/apps/web/src/components/navigation/role-primary-actions.tsx
+--- a/apps/web/src/components/navigation/role-primary-actions.tsx
++++ b/apps/web/src/components/navigation/role-primary-actions.tsx
+@@ -3,7 +3,7 @@
+ import Link from "next/link";
+ import { trackRoleCtaClick } from "@/lib/analytics/navigation-client";
+ import type { CtaSlot } from "@/lib/domain-language";
+-import { getProfileActions, type AppProfile } from "@/lib/profiles";
++import { getProfileActions, type AppProfile, type ProfileAction } from "@/lib/profiles";
+ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+ import { cn } from "@/lib/utils";
+ 
+@@ -18,6 +18,8 @@
+   profile: AppProfile;
+   title?: string;
+   tone?: "light" | "dark" | "warm";
++  actionsOverride?: ProfileAction[];
++  preserveAll?: boolean;
+ };
+ 
+ function resolveCtaSlot(index: number): CtaSlot {
+@@ -95,15 +97,18 @@
+   profile,
+   title = "Actions principales",
+   tone = "light",
++  actionsOverride,
++  preserveAll = false,
+ }: RolePrimaryActionsProps) {
+   const { locale, displayMode } = useSitePreferences();
+-  const allActions = getProfileActions(profile);
++  const allActions = actionsOverride ?? getProfileActions(profile);
++  const compact = displayMode === "minimaliste" && !preserveAll;
+   const primaryAction = allActions[0];
+   const actions =
+-    displayMode === "minimaliste" ? (primaryAction ? [primaryAction] : []) : allActions;
++    compact ? (primaryAction ? [primaryAction] : []) : allActions;
+ 
+   const gridClassName =
+-    displayMode === "minimaliste"
++    compact
+       ? "grid-cols-1"
+       : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4";
+ 
+@@ -113,16 +118,16 @@
+     <section
+       className={cn("rounded-3xl border p-5 transition-all duration-500", theme.section)}
+     >
+-      <h2
++      {title && <h2
+         className={cn(
+           "text-base font-semibold underline decoration-4 underline-offset-4 [data-display-mode='minimaliste']_&:text-2xl [data-display-mode='minimaliste']_&:font-bold",
+           theme.heading,
+         )}
+       >
+         {title}
+-      </h2>
++      </h2>}
+ 
+-      <div className={cn("mt-4 grid gap-4", gridClassName)}>
++      <div className={cn("grid gap-4", title && "mt-4", gridClassName)}>
+         {actions.map((action, index) => {
+           const isPrimary = index === 0;
+           const slotLabel =
+@@ -143,7 +148,7 @@
+               className={cn(
+                 "group flex h-full flex-col justify-between rounded-2xl border px-5 py-4 transition-all duration-200",
+                 isPrimary ? theme.primaryCard : theme.secondaryCard,
+-                displayMode === "minimaliste" ? "scale-105 shadow-xl" : "",
++                compact ? "scale-105 shadow-xl" : "",
+               )}
+             >
+               <div className="flex items-start justify-between gap-3">
+@@ -175,7 +180,7 @@
+                 <p
+                   className={cn(
+                     "font-bold",
+-                    displayMode === "minimaliste" ? "text-xl" : "text-lg",
++                    compact ? "text-xl" : "text-lg",
+                     isPrimary ? theme.titlePrimary : theme.titleSecondary,
+                   )}
+                 >
+diff --git a/apps/web/src/app/(app)/dashboard/page.test.ts b/apps/web/src/app/(app)/dashboard/page.test.ts
+--- a/apps/web/src/app/(app)/dashboard/page.test.ts
++++ b/apps/web/src/app/(app)/dashboard/page.test.ts
+@@ -155,6 +155,7 @@
+ vi.mock("@/lib/profiles", () => ({
+   getProfileLabel: vi.fn((profile: string) => profile),
+   getProfilePrimaryAction: vi.fn(() => profileAction),
++  getProfileActions: vi.fn(() => [profileAction]),
+   getSwitchableProfiles: vi.fn(() => ["admin", "benevole"]),
+   isAdminLikeProfile: mocks.isAdminLikeProfile,
+   toProfile: vi.fn((role: string) => role),
+@@ -164,8 +165,16 @@
+   resolvePageFamily: vi.fn(() => ({ id: "accueil-pilotage" })),
+ }));
+ 
++vi.mock("@/components/dashboard/dashboard-legacy-anchor", () => ({
++  DashboardLegacyAnchor: () => null,
++}));
++
+ import DashboardPage from "./page";
+ 
++function renderPage(tab?: string) {
++  return DashboardPage({ searchParams: Promise.resolve({ tab }) });
++}
++
+ describe("/dashboard page contract", () => {
+   beforeEach(() => {
+     vi.clearAllMocks();
+@@ -193,7 +202,7 @@
+   it("covers the non-connected state without loading account data", async () => {
+     mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: false });
+ 
+-    const markup = renderToStaticMarkup(await DashboardPage());
++    const markup = renderToStaticMarkup(await renderPage());
+ 
+     expect(markup).toContain('data-testid="signin-gate"');
+     expect(markup).not.toContain('data-testid="dashboard-overview"');
+@@ -207,7 +216,7 @@
+       requirement: { requiresSetup: true, reason: "missing_profile" },
+     });
+ 
+-    const markup = renderToStaticMarkup(await DashboardPage());
++    const markup = renderToStaticMarkup(await renderPage());
+ 
+     expect(markup).toContain('data-testid="dashboard-entrance"');
+     expect(markup).not.toContain('data-testid="profile-completion-required"');
+@@ -216,20 +225,26 @@
+   it("keeps declaration, history and reports navigation visible", async () => {
+     mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
+ 
+-    const markup = renderToStaticMarkup(await DashboardPage());
++    const markup = renderToStaticMarkup(await renderPage());
+ 
+     expect(markup).toContain('href="/actions/new"');
+     expect(markup).toContain('href="/actions/history"');
+     expect(markup).toContain('href="/reports"');
++    expect(markup).not.toContain('id="notifications"');
++    expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
++    expect(mocks.fetchCachedReferralSummary).not.toHaveBeenCalled();
++    expect(mocks.loadUserLevelRankingSummary).not.toHaveBeenCalled();
+   });
+ 
+   it("exposes the functional notifications destination section", async () => {
+     mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
+ 
+-    const markup = renderToStaticMarkup(await DashboardPage());
++    const markup = renderToStaticMarkup(await renderPage("notifications"));
+ 
+     expect(markup).toContain('id="notifications"');
+     expect(markup).toContain('data-testid="dashboard-notifications"');
++    expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
++    expect(mocks.fetchCachedReferralSummary).not.toHaveBeenCalled();
+   });
+ 
+   it("keeps reporting and moderation workflows out of the dashboard", async () => {
+@@ -241,7 +256,7 @@
+     });
+     mocks.getCurrentUserRoleLabel.mockResolvedValue("admin");
+ 
+-    const markup = renderToStaticMarkup(await DashboardPage());
++    const markup = renderToStaticMarkup(await renderPage());
+ 
+     expect(markup).not.toContain("admin-export-workflow");
+     expect(markup).not.toContain("/api/reports/actions.csv");
+@@ -252,7 +267,7 @@
+   it("points account configuration to the canonical settings surface", async () => {
+     mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
+ 
+-    const markup = renderToStaticMarkup(await DashboardPage());
++    const markup = renderToStaticMarkup(await renderPage("account"));
+ 
+     expect(markup).toContain('href="/reglages"');
+     expect(markup).toContain("Ouvrir les réglages");
+@@ -268,7 +283,7 @@
+       role: "max",
+     });
+ 
+-    const markup = renderToStaticMarkup(await DashboardPage());
++    const markup = renderToStaticMarkup(await renderPage("account"));
+ 
+     expect(markup).toContain('data-testid="profile-switcher"');
+     expect(markup).toContain('data-granted-role="max"');
