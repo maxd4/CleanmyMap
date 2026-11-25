@@ -108,6 +108,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "e2e/action-media-route-reference-concurrency.mjs",
     "e2e/action-role-attestation-concurrency.mjs",
     "e2e/community-helper-skills-concurrency.mjs",
+    "e2e/external-action-sync-concurrency.mjs",
     "e2e/gamification-reconciliation-concurrency.mjs",
     "e2e/quiz-progression-concurrency.mjs",
     "e2e/reports-postgres-concurrency.mjs",
