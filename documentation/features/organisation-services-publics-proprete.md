@@ -60,7 +60,16 @@ Sources complémentaires : [nettoyages participatifs](https://www.paris.fr/pages
 
 L'entrée opérationnelle « Qui contacter ? » précède l'exploration détaillée. Le choix d'arrondissement est partagé avec l'organigramme ; aucun arrondissement n'est présumé lorsque l'utilisateur n'en a pas choisi. Le panneau d'orientation propose un besoin à la fois et conserve les conditions d'accès, canaux publics et informations manquantes. La ville et l'arrondissement constituent le contexte principal ; les filtres service et recherche sont situés dans l'exploration administrative. Le détail sur la lecture des preuves est accessible à la demande.
 
-L'arborescence ne repose plus sur une largeur minimale fixe ; les indentations sont bornées et le zoom règle la taille du texte. Les ancêtres contextuels restent sélectionnables sans supprimer les filtres ; une recherche déplie temporairement les branches correspondantes. Une navigation explicite vers une structure déjà visible conserve les filtres, tandis qu'une structure hors résultat peut nécessiter leur adaptation.
+L'organigramme graphique 2D interactif (`PublicCleanlinessOrgChart`) est la vue par défaut
+de l'onglet « Services publics » ; l'arborescence textuelle reste accessible via le sélecteur
+`Organigramme` / `Liste`. Les entités sont disposées par niveaux sous forme de cartes reliées
+exclusivement par les relations `hierarchy`, avec distinction visuelle des états (`confirmed`
+en trait plein, `historical` en tireté, `unknown` en pointillé), développement progressif des
+branches, zoom, cadrage (`Cadrer`) et déplacement. Les surfaces réutilisent les tokens
+canoniques (`--cmm-surface-*`, `cmm-text-*`) et le shell fluide. Les ancêtres contextuels restent
+sélectionnables sans supprimer les filtres ; une recherche déplie temporairement les branches
+correspondantes. Une navigation explicite vers une structure déjà visible conserve les filtres,
+tandis qu'une structure hors résultat peut nécessiter leur adaptation.
 
 La navigation croisée repose sur `public-cleanliness-network-links.ts` : `networkActorId` référence l'identifiant du réseau, `directoryId` référence l'identifiant Annuaire explicitement déclaré par l'acteur. Lorsqu'ils coexistent, ils doivent converger ; une absence, une ambiguïté ou un conflit n'ouvre aucun lien. `public-entity-projection.ts` unifie la projection publique canonique de ces identités sans rapprochement par nom ni fuite privée. Les deux visualiseurs conservent leurs modèles et leurs sélections locales. Un lien explicite ouvre l'onglet cible, sélectionne l'entité correspondante et place le focus sur son onglet. Aucun rapprochement par nom, aucune attribution automatique de contribution à une unité fille.
 

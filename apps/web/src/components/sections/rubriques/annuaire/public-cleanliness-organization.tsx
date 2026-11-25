@@ -3,6 +3,7 @@
 import { useImperativeHandle, useMemo, useRef, useState, type ReactNode, type Ref } from "react";
 import { PublicCleanlinessCoverageTable } from "./public-cleanliness-coverage-table";
 import { PublicCleanlinessNeedPanel } from "./public-cleanliness-need-panel";
+import { PublicCleanlinessOrgChart } from "./public-cleanliness-org-chart";
 import { getPublicInstitutionalContributions } from "@/lib/partners/public-cleanliness-needs";
 import { getPublicInstitutionalPeople } from "@/lib/partners/public-cleanliness-people";
 import { getInstitutionStructureContext } from "@/lib/partners/public-structure-context";
@@ -99,9 +100,9 @@ const DESCRIPTION_EN: Record<string, string> = {
 };
 
 const STATUS_STYLE = {
-  confirmed: "border-emerald-300/30 bg-emerald-400/10 text-emerald-100",
-  historical: "border-amber-300/30 bg-amber-400/10 text-amber-100",
-  unknown: "border-slate-300/25 bg-slate-400/10 text-slate-200",
+  confirmed: "border-emerald-500/30 bg-emerald-500/10 cmm-text-success",
+  historical: "border-amber-500/30 bg-amber-500/10 cmm-text-warning",
+  unknown: "border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] cmm-text-secondary",
 } as const;
 
 const EMPTY_NODES: readonly PublicCleanlinessOrganizationNode[] = [];
@@ -128,6 +129,7 @@ export function PublicCleanlinessOrganization({
   const initialCity = cityOptions.find((city) => getPublicCleanlinessCityDataset(city.value, datasets))?.value ?? cityOptions[0]?.value ?? "Paris";
   const [filters, setFilters] = useState<PublicCleanlinessFilters>(() => ({ city: initialCity, arrondissement: null, service: "all", query: "" }));
   const [selectedId, setSelectedId] = useState("dpe");
+  const [viewMode, setViewMode] = useState<"chart" | "list">("chart");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [zoom, setZoom] = useState(1);
   const detailsRef = useRef<HTMLElement>(null);
@@ -255,9 +257,9 @@ export function PublicCleanlinessOrganization({
     const stateLabel = statusLabel(node.assignment);
     return <li key={node.id}>
       <div className="flex items-start gap-2" style={{ marginInlineStart: `${Math.min(depth, 4) * 0.5}rem` }}>
-        {children.length > 0 && !isSearching ? <button type="button" aria-label={`${isCollapsed ? text.expand : text.collapse} ${displayName(node)}`} aria-expanded={!isCollapsed} aria-controls={`org-children-${node.id}`} onClick={() => setCollapsed((current) => ({ ...current, [node.id]: !isCollapsed }))} className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/15 text-slate-200 hover:bg-white/10">{isCollapsed ? "+" : "−"}</button> : <span className="mt-1 inline-block h-8 w-8 shrink-0" aria-hidden="true" />}
-        <button type="button" aria-current={selected?.id === node.id ? "true" : undefined} data-assignment={node.assignment} onClick={() => selectTreeNode(node.id)} className={cn("min-w-0 flex-1 rounded-xl border px-3 py-2 text-left transition", selected?.id === node.id ? "border-violet-300/60 bg-violet-400/15" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.08]")}>
-          <span className="flex flex-wrap items-center gap-2"><span className="font-bold text-white">{displayName(node)}</span><span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-slate-300">{kindLabel(node.kind)}</span><span className={cn("rounded-full border px-2 py-0.5 text-xs", STATUS_STYLE[node.assignment])}>{stateLabel}</span></span>
+        {children.length > 0 && !isSearching ? <button type="button" aria-label={`${isCollapsed ? text.expand : text.collapse} ${displayName(node)}`} aria-expanded={!isCollapsed} aria-controls={`org-children-${node.id}`} onClick={() => setCollapsed((current) => ({ ...current, [node.id]: !isCollapsed }))} className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--cmm-surface-border)] cmm-text-primary hover:bg-violet-500/10">{isCollapsed ? "+" : "−"}</button> : <span className="mt-1 inline-block h-8 w-8 shrink-0" aria-hidden="true" />}
+        <button type="button" aria-current={selected?.id === node.id ? "true" : undefined} data-assignment={node.assignment} onClick={() => selectTreeNode(node.id)} className={cn("min-w-0 flex-1 rounded-xl border px-3 py-2 text-left transition", selected?.id === node.id ? "border-violet-500 bg-violet-500/10" : "border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] hover:border-violet-500/40")}>
+          <span className="flex flex-wrap items-center gap-2"><span className="font-bold cmm-text-primary">{displayName(node)}</span><span className="rounded-full border border-[var(--cmm-surface-border)] px-2 py-0.5 text-xs cmm-text-secondary">{kindLabel(node.kind)}</span><span className={cn("rounded-full border px-2 py-0.5 text-xs", STATUS_STYLE[node.assignment])}>{stateLabel}</span></span>
         </button>
       </div>
       {children.length > 0 && !isCollapsed ? <ul id={`org-children-${node.id}`} className="mt-2 list-none space-y-2">{children.map((child) => renderNode(child, depth + 1))}</ul> : null}
@@ -270,25 +272,25 @@ export function PublicCleanlinessOrganization({
     : `${filters.city} ${number}${number === 1 ? "st" : "th"} ${text.arrSuffix}`;
 
   return <CmmSectionGroup>
-    <section data-testid="public-cleanliness-organization" aria-labelledby="public-cleanliness-heading" className="rounded-3xl border border-sky-300/15 bg-slate-950/50 p-5 md:p-8">
+    <section data-testid="public-cleanliness-organization" aria-labelledby="public-cleanliness-heading" className="rounded-3xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] p-4 md:p-6">
       <div className="mb-6 max-w-3xl space-y-3">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-200">{text.eyebrow}</p>
-        <h2 id="public-cleanliness-heading" className="text-3xl font-black text-white">{text.title}</h2>
-        <p className="text-sm leading-6 text-slate-300">{text.intro}</p>
+        <p className="text-xs font-black uppercase tracking-[0.22em] cmm-text-info">{text.eyebrow}</p>
+        <h2 id="public-cleanliness-heading" className="text-3xl font-black cmm-text-primary">{text.title}</h2>
+        <p className="text-sm leading-6 cmm-text-primary">{text.intro}</p>
       </div>
-      <details className="mb-5 rounded-xl border border-white/10 p-3 text-xs text-slate-300">
+      <details className="mb-5 rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-3 text-xs cmm-text-primary">
         <summary className="cursor-pointer font-semibold">{fr ? "Comprendre les relations et les sources" : "Understand relationships and sources"}</summary>
         <div className="mt-3 grid gap-3 leading-5 md:grid-cols-2">
-        <p><strong className="text-white">{text.types}:</strong> {text.typesBody}</p>
-        <p><strong className="text-white">{text.scope}:</strong> {text.scopeBody}</p>
-        <p><strong className="text-white">{text.relations}:</strong> {text.relationsBody}</p>
-        <p><strong className="text-white">{text.evidence}:</strong> {text.evidenceBody}</p>
+        <p><strong className="cmm-text-primary">{text.types}:</strong> {text.typesBody}</p>
+        <p><strong className="cmm-text-primary">{text.scope}:</strong> {text.scopeBody}</p>
+        <p><strong className="cmm-text-primary">{text.relations}:</strong> {text.relationsBody}</p>
+        <p><strong className="cmm-text-primary">{text.evidence}:</strong> {text.evidenceBody}</p>
         </div>
       </details>
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2">
-        <label className="text-xs font-bold text-slate-300">{text.city}<select aria-label={text.cityAria} value={filters.city} onChange={(event) => updateFilters({ ...filters, city: event.target.value, arrondissement: null })} className="mt-1 block w-full rounded-xl border border-white/15 bg-slate-900 px-3 py-2 text-sm text-white">{cityOptions.map((city) => <option key={city.value} value={city.value}>{city.label}</option>)}</select></label>
-        <label className="text-xs font-bold text-slate-300">{text.district}<select aria-label={text.districtAria} value={filters.arrondissement ?? ""} onChange={(event) => updateFilter("arrondissement", event.target.value ? Number(event.target.value) : null)} className="mt-1 block w-full rounded-xl border border-white/15 bg-slate-900 px-3 py-2 text-sm text-white"><option value="">{text.all}</option>{Array.from({ length: districtCount }, (_, index) => index + 1).map((number) => <option key={number} value={number}>{districtLabel(number)}</option>)}</select></label>
+        <label className="text-xs font-bold cmm-text-secondary">{text.city}<select aria-label={text.cityAria} value={filters.city} onChange={(event) => updateFilters({ ...filters, city: event.target.value, arrondissement: null })} className="cmm-input mt-1 block w-full">{cityOptions.map((city) => <option key={city.value} value={city.value}>{city.label}</option>)}</select></label>
+        <label className="text-xs font-bold cmm-text-secondary">{text.district}<select aria-label={text.districtAria} value={filters.arrondissement ?? ""} onChange={(event) => updateFilter("arrondissement", event.target.value ? Number(event.target.value) : null)} className="cmm-input mt-1 block w-full"><option value="">{text.all}</option>{Array.from({ length: districtCount }, (_, index) => index + 1).map((number) => <option key={number} value={number}>{districtLabel(number)}</option>)}</select></label>
 
       </div>
 
@@ -297,76 +299,121 @@ export function PublicCleanlinessOrganization({
         detailsRef.current?.focus();
       }} /> : null}
 
-      {!dataset ? <p role="status" className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm text-amber-100">{text.noDataset} {filters.city}. {text.noDatasetTail}</p> : <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
+      {!dataset ? <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm cmm-text-warning">{text.noDataset} {filters.city}. {text.noDatasetTail}</p> : <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.75fr)]">
         <div className="min-w-0 space-y-5">
           <div className="grid gap-3 sm:grid-cols-2">
-        <label className="text-xs font-bold text-slate-300">{text.service}<select aria-label={text.serviceAria} value={filters.service} onChange={(event) => updateFilter("service", event.target.value as PublicCleanlinessFilters["service"])} className="mt-1 block w-full rounded-xl border border-white/15 bg-slate-900 px-3 py-2 text-sm text-white">{Object.entries(text.serviceLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-        <label className="text-xs font-bold text-slate-300">{text.search}<input type="search" aria-label={text.searchAria} value={filters.query} onChange={(event) => updateFilter("query", event.target.value)} placeholder={text.searchPlaceholder} className="mt-1 block w-full rounded-xl border border-white/15 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500" /></label>
+        <label className="text-xs font-bold cmm-text-secondary">{text.service}<select aria-label={text.serviceAria} value={filters.service} onChange={(event) => updateFilter("service", event.target.value as PublicCleanlinessFilters["service"])} className="cmm-input mt-1 block w-full">{Object.entries(text.serviceLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <label className="text-xs font-bold cmm-text-secondary">{text.search}<input type="search" aria-label={text.searchAria} value={filters.query} onChange={(event) => updateFilter("query", event.target.value)} placeholder={text.searchPlaceholder} className="cmm-input mt-1 block w-full" /></label>
           </div>
-          <div className="overflow-hidden rounded-2xl border border-white/10 p-3 md:p-4">
+          <div className="overflow-hidden rounded-2xl border border-[var(--cmm-surface-border)] p-3 md:p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-sm font-black text-white">{text.tree}</h3>
-              <div role="group" aria-label={text.zoom} className="flex items-center gap-2">
-                <button type="button" aria-label={text.zoomOut} onClick={() => setZoom((value) => Math.max(0.7, Math.round((value - 0.1) * 10) / 10))} className="rounded-lg border border-white/15 px-3 py-2 text-sm text-white">−</button>
-                <button type="button" aria-label={text.zoomReset} onClick={() => setZoom(1)} className="min-w-16 rounded-lg border border-white/15 px-3 py-2 text-xs font-bold text-white">{Math.round(zoom * 100)}%</button>
-                <button type="button" aria-label={text.zoomIn} onClick={() => setZoom((value) => Math.min(1.4, Math.round((value + 0.1) * 10) / 10))} className="rounded-lg border border-white/15 px-3 py-2 text-sm text-white">+</button>
+              <h3 className="text-sm font-black cmm-text-primary">{text.tree}</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <div role="group" aria-label={fr ? "Mode d'affichage de l'organigramme" : "Organization chart view mode"} className="flex items-center gap-1 rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-1">
+                  <button type="button" aria-pressed={viewMode === "chart"} onClick={() => setViewMode("chart")} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "chart" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
+                    {fr ? "Organigramme" : "Org chart"}
+                  </button>
+                  <button type="button" aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "list" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
+                    {fr ? "Liste" : "List"}
+                  </button>
+                </div>
+                <div role="group" aria-label={text.zoom} className="flex items-center gap-2">
+                  <button type="button" aria-label={text.zoomOut} onClick={() => setZoom((value) => Math.max(0.7, Math.round((value - 0.1) * 10) / 10))} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-sm cmm-text-primary">−</button>
+                  <button type="button" aria-label={text.zoomReset} onClick={() => setZoom(1)} className="min-w-16 rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-xs font-bold cmm-text-primary">{Math.round(zoom * 100)}%</button>
+                  <button type="button" aria-label={text.zoomIn} onClick={() => setZoom((value) => Math.min(1.4, Math.round((value + 0.1) * 10) / 10))} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-sm cmm-text-primary">+</button>
+                </div>
               </div>
             </div>
-            <div className="max-h-[38rem] overflow-auto">
-              {roots.length ? <div className="min-w-0" style={{ fontSize: `${zoom}rem` }}>
-                <ul aria-label={text.tree} className="list-none space-y-2">{administrativeRoots.map(rootNode => renderNode(rootNode, 0))}</ul>
-                {standaloneRoots.length ? <details className="mt-3 rounded-xl border border-white/10 p-2" open={Boolean(filters.query.trim()) || Boolean(selectedPath[0] && standaloneRootIds.has(selectedPath[0].id))}>
-                  <summary className="cursor-pointer text-sm font-semibold text-sky-200">{text.standalone} ({standaloneRoots.length})</summary>
+            {roots.length ? (
+              <div className="space-y-3">
+                {viewMode === "chart" ? (
+                  <PublicCleanlinessOrgChart
+                    administrativeRoots={administrativeRoots}
+                    childrenById={childrenById}
+                    nodeById={nodeById}
+                    relations={relations}
+                    includedIds={includedIds}
+                    selectedId={selected?.id ?? null}
+                    collapsed={collapsed}
+                    isSearching={isSearching}
+                    zoom={zoom}
+                    treeLabel={text.tree}
+                    expandLabel={text.expand}
+                    collapseLabel={text.collapse}
+                    fitLabel={fr ? "Cadrer" : "Fit"}
+                    legendLabels={{
+                      confirmed: text.assignment.confirmed,
+                      historical: text.assignment.historical,
+                      unknown: text.assignment.unknown,
+                      nonHierarchyNote: fr ? "Connecteurs = hierarchy uniquement" : "Connectors = hierarchy only",
+                    }}
+                    displayName={displayName}
+                    kindLabel={kindLabel}
+                    statusLabel={statusLabel}
+                    statusStyle={STATUS_STYLE}
+                    onSelect={selectTreeNode}
+                    onToggleCollapse={(nodeId, next) => setCollapsed((current) => ({ ...current, [nodeId]: next }))}
+                    onResetView={() => setZoom(1)}
+                  />
+                ) : (
+                  <div className="max-h-[38rem] overflow-auto">
+                    <div className="min-w-0" style={{ fontSize: `${zoom}rem` }}>
+                      <ul aria-label={text.tree} className="list-none space-y-2">{administrativeRoots.map(rootNode => renderNode(rootNode, 0))}</ul>
+                    </div>
+                  </div>
+                )}
+                {standaloneRoots.length ? <details className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-2" open={Boolean(filters.query.trim()) || Boolean(selectedPath[0] && standaloneRootIds.has(selectedPath[0].id))}>
+                  <summary className="cursor-pointer text-sm font-semibold cmm-text-info">{text.standalone} ({standaloneRoots.length})</summary>
                   <ul aria-label={text.standalone} className="mt-2 list-none space-y-2">{standaloneRoots.map(rootNode => renderNode(rootNode, 0))}</ul>
                 </details> : null}
-              </div> : <p role="status" className="p-5 text-sm text-slate-300">{text.noResults}</p>}
-            </div>
+              </div>
+            ) : <p role="status" className="p-5 text-sm cmm-text-primary">{text.noResults}</p>}
           </div>
 
-          <section aria-label={text.levels} className="rounded-2xl border border-sky-300/20 bg-sky-300/[0.04] p-4">
-            <h3 className="text-sm font-black text-white">{text.levels}</h3>
-            {selectedPath.length ? <nav aria-label={text.levels} className="mt-3 flex flex-wrap items-center gap-2">{selectedPath.map((node, index) => <span key={node.id} className="flex items-center gap-2">{index > 0 ? <span aria-hidden="true" className="text-slate-500">›</span> : null}<button type="button" aria-current={index === selectedPath.length - 1 ? "location" : undefined} onClick={() => selectTreeNode(node.id)} className="rounded-lg border border-white/15 px-3 py-2 text-left text-xs font-bold text-sky-100 hover:bg-white/10">{displayName(node)}</button></span>)}</nav> : <p className="mt-3 text-xs text-slate-300">{text.noResults}</p>}
-            <h4 className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-300">{text.levelNext}</h4>
-            {nextLevelNodes.length ? <ul className="mt-2 flex flex-wrap gap-2">{nextLevelNodes.map((node) => <li key={node.id}><button type="button" onClick={() => selectTreeNode(node.id)} className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/10">{text.explore}: {displayName(node)} <span className={cn("ml-1 inline-block rounded-full border px-2 py-0.5", STATUS_STYLE[node.assignment])}>{statusLabel(node.assignment)}</span></button></li>)}</ul> : <p className="mt-2 text-xs text-slate-400">{text.noLevelChildren}</p>}
+          <section aria-label={text.levels} className="rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4">
+            <h3 className="text-sm font-black cmm-text-primary">{text.levels}</h3>
+            {selectedPath.length ? <nav aria-label={text.levels} className="mt-3 flex flex-wrap items-center gap-2">{selectedPath.map((node, index) => <span key={node.id} className="flex items-center gap-2">{index > 0 ? <span aria-hidden="true" className="cmm-text-secondary">›</span> : null}<button type="button" aria-current={index === selectedPath.length - 1 ? "location" : undefined} onClick={() => selectTreeNode(node.id)} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-left text-xs font-bold cmm-text-primary hover:bg-violet-500/10">{displayName(node)}</button></span>)}</nav> : <p className="mt-3 text-xs cmm-text-secondary">{text.noResults}</p>}
+            <h4 className="mt-4 text-xs font-bold uppercase tracking-wide cmm-text-secondary">{text.levelNext}</h4>
+            {nextLevelNodes.length ? <ul className="mt-2 flex flex-wrap gap-2">{nextLevelNodes.map((node) => <li key={node.id}><button type="button" onClick={() => selectTreeNode(node.id)} className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] px-3 py-2 text-left text-xs font-semibold cmm-text-primary hover:border-violet-500/40">{text.explore}: {displayName(node)} <span className={cn("ml-1 inline-block rounded-full border px-2 py-0.5", STATUS_STYLE[node.assignment])}>{statusLabel(node.assignment)}</span></button></li>)}</ul> : <p className="mt-2 text-xs cmm-text-secondary">{text.noLevelChildren}</p>}
           </section>
         </div>
 
-        <aside ref={detailsRef} tabIndex={-1} aria-live="polite" aria-label={text.selected} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <aside ref={detailsRef} tabIndex={-1} aria-live="polite" aria-label={text.selected} className="rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-4">
           {selected ? <>
-            <p className="text-xs font-black uppercase tracking-widest text-sky-200">{text.selected} · {kindLabel(selected.kind)}</p>
-            <h3 className="mt-2 text-xl font-black text-white">{displayName(selected)}</h3>
-            <p className="mt-3 text-sm leading-6 text-slate-300">{displayDescription(selected)}</p>
-            {linkedActorId && onOpenNetworkActor ? <button type="button" onClick={() => onOpenNetworkActor(linkedActorId)} className="mt-3 rounded-xl border border-violet-300/30 px-3 py-2 text-left text-sm font-semibold text-violet-200 hover:bg-violet-300/10 focus-visible:ring-2 focus-visible:ring-violet-400">{fr ? "Voir dans le réseau des acteurs" : "View in the actor network"}</button> : null}
+            <p className="text-xs font-black uppercase tracking-widest cmm-text-info">{text.selected} · {kindLabel(selected.kind)}</p>
+            <h3 className="mt-2 text-xl font-black cmm-text-primary">{displayName(selected)}</h3>
+            <p className="mt-3 text-sm leading-6 cmm-text-primary">{displayDescription(selected)}</p>
+            {linkedActorId && onOpenNetworkActor ? <button type="button" onClick={() => onOpenNetworkActor(linkedActorId)} className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-left text-sm font-semibold cmm-text-primary hover:bg-violet-500/20 focus-visible:ring-2 focus-visible:ring-violet-400">{fr ? "Voir dans le réseau des acteurs" : "View in the actor network"}</button> : null}
             <p data-assignment={selected.assignment} className={cn("mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold", STATUS_STYLE[selected.assignment])}>{text.status}: {statusLabel(selected.assignment)}</p>
-            {selected.territoryIds.length ? <p className="mt-2 text-xs text-slate-300">{text.territory}: {selected.territoryIds.map((id) => id.replace(`${filters.city}:`, `${filters.city} `)).join(", ")}</p> : <p className="mt-2 text-xs text-slate-300">{text.assignmentUnknown}</p>}
-            {selected.legalEmployerId ? <p className="mt-2 text-xs text-slate-300">{text.legalEmployer}: {nodeById.has(selected.legalEmployerId) ? displayName(nodeById.get(selected.legalEmployerId)!) : selected.legalEmployerId}</p> : null}
-            {selected.unitId ? <p className="mt-2 text-xs text-slate-300">{text.unit}: {nodeById.has(selected.unitId) ? displayName(nodeById.get(selected.unitId)!) : selected.unitId}</p> : null}
-            {selectedContact ? <p className="mt-2 text-xs text-slate-300">{text.contact}: <a href={selectedContact.url} target="_blank" rel="noreferrer" className="text-sky-200 underline underline-offset-2">{selectedContact.label}</a></p> : null}
-            {institutionalPeople.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider text-slate-200">{fr ? "Personnes et affectations documentées" : "Documented people and assignments"}</h4><ul className="mt-2 space-y-2">{institutionalPeople.map(({ person, assignments }) => <li key={person.id} className="rounded-xl border border-white/10 p-3 text-xs text-slate-300"><button type="button" onClick={() => selectRelatedNode(person.id)} className="font-bold text-sky-200 underline">{displayName(person)}</button><ul className="mt-1 space-y-1">{assignments.map(({ role, relation, status }) => <li key={relation.id}>{displayName(role)} · {relationStatusLabel(status)}</li>)}</ul></li>)}</ul></section> : null}
-            {selectedRelations.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider text-slate-200">{text.relationsTitle}</h4><ul className="mt-2 space-y-3">{selectedRelations.map((edge) => {
+            {selected.territoryIds.length ? <p className="mt-2 text-xs cmm-text-secondary">{text.territory}: {selected.territoryIds.map((id) => id.replace(`${filters.city}:`, `${filters.city} `)).join(", ")}</p> : <p className="mt-2 text-xs cmm-text-secondary">{text.assignmentUnknown}</p>}
+            {selected.legalEmployerId ? <p className="mt-2 text-xs cmm-text-secondary">{text.legalEmployer}: {nodeById.has(selected.legalEmployerId) ? displayName(nodeById.get(selected.legalEmployerId)!) : selected.legalEmployerId}</p> : null}
+            {selected.unitId ? <p className="mt-2 text-xs cmm-text-secondary">{text.unit}: {nodeById.has(selected.unitId) ? displayName(nodeById.get(selected.unitId)!) : selected.unitId}</p> : null}
+            {selectedContact ? <p className="mt-2 text-xs cmm-text-secondary">{text.contact}: <a href={selectedContact.url} target="_blank" rel="noreferrer" className="cmm-text-info underline underline-offset-2">{selectedContact.label}</a></p> : null}
+            {institutionalPeople.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{fr ? "Personnes et affectations documentées" : "Documented people and assignments"}</h4><ul className="mt-2 space-y-2">{institutionalPeople.map(({ person, assignments }) => <li key={person.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-primary"><button type="button" onClick={() => selectRelatedNode(person.id)} className="font-bold cmm-text-info underline">{displayName(person)}</button><ul className="mt-1 space-y-1">{assignments.map(({ role, relation, status }) => <li key={relation.id}>{displayName(role)} · {relationStatusLabel(status)}</li>)}</ul></li>)}</ul></section> : null}
+            {selectedRelations.length ? <section className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{text.relationsTitle}</h4><ul className="mt-2 space-y-3">{selectedRelations.map((edge) => {
               const relatedId = edge.from === selected.id ? edge.to : edge.from;
               const related = nodeById.get(relatedId);
               const relationSources = edge.sourceIds.map((id) => sources.find((source) => source.id === id)).filter((source): source is (typeof sources)[number] => Boolean(source));
-              return <li key={edge.id} className="rounded-xl border border-white/10 p-3 text-xs text-slate-300">
+              return <li key={edge.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-primary">
                 <p>{relationKindLabel(edge.kind)} · <span className={cn("inline-flex rounded-full border px-2 py-0.5", STATUS_STYLE[edge.status])}>{relationStatusLabel(edge.status)}</span></p>
-                {edge.validFrom || edge.validUntil ? <p className="mt-1 text-slate-400">{fr ? "Période publiée" : "Published period"}: {edge.validFrom ?? "?"} → {edge.validUntil ?? "?"}</p> : null}
-                {related ? <button type="button" onClick={() => selectRelatedNode(related.id)} className="mt-2 text-left font-bold text-sky-200 underline underline-offset-2">{text.explore}: {displayName(related)}</button> : null}
-                <div className="mt-2"><span className="font-bold text-slate-200">{text.relationSource}:</span><ul className="mt-1 space-y-1">{relationSources.map((source) => <li key={source.id}><a href={source.url} target="_blank" rel="noreferrer" className="text-sky-200 underline underline-offset-2">{source.label}</a><span className="text-slate-400"> · {text.verified} {source.verifiedAt}</span></li>)}</ul></div>
+                {edge.validFrom || edge.validUntil ? <p className="mt-1 cmm-text-secondary">{fr ? "Période publiée" : "Published period"}: {edge.validFrom ?? "?"} → {edge.validUntil ?? "?"}</p> : null}
+                {related ? <button type="button" onClick={() => selectRelatedNode(related.id)} className="mt-2 text-left font-bold cmm-text-info underline underline-offset-2">{text.explore}: {displayName(related)}</button> : null}
+                <div className="mt-2"><span className="font-bold cmm-text-primary">{text.relationSource}:</span><ul className="mt-1 space-y-1">{relationSources.map((source) => <li key={source.id}><a href={source.url} target="_blank" rel="noreferrer" className="cmm-text-info underline underline-offset-2">{source.label}</a><span className="cmm-text-secondary"> · {text.verified} {source.verifiedAt}</span></li>)}</ul></div>
               </li>;
             })}</ul></section> : null}
-            {documentedContributions.length ? <section className="mt-4 text-xs text-slate-300"><h4 className="font-black uppercase tracking-wider text-slate-200">{fr ? "Contributions publiques documentées" : "Documented public contributions"}</h4><p className="mt-1">{fr ? "Relations reprises du réseau public, pas un partenariat CleanMyMap ni un engagement actuel." : "Relations from the public network; not a CleanMyMap partnership or current commitment."}</p><ul className="mt-2 space-y-2">{documentedContributions.map(item => <li key={item.id} className="rounded-xl border border-white/10 p-3">
-              <p className="font-semibold text-white">{item.title}</p><button type="button" onClick={() => selectRelatedNode(item.otherId)} className="text-sky-200 underline">{item.otherName}</button><p className="mt-1">{item.summary}</p><p><a href={item.source.url} target="_blank" rel="noreferrer" className="text-sky-200 underline">{item.source.label}</a> · {item.source.verifiedAt}</p>
+            {documentedContributions.length ? <section className="mt-4 text-xs cmm-text-primary"><h4 className="font-black uppercase tracking-wider cmm-text-primary">{fr ? "Contributions publiques documentées" : "Documented public contributions"}</h4><p className="mt-1 cmm-text-secondary">{fr ? "Relations reprises du réseau public, pas un partenariat CleanMyMap ni un engagement actuel." : "Relations from the public network; not a CleanMyMap partnership or current commitment."}</p><ul className="mt-2 space-y-2">{documentedContributions.map(item => <li key={item.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
+              <p className="font-semibold cmm-text-primary">{item.title}</p><button type="button" onClick={() => selectRelatedNode(item.otherId)} className="cmm-text-info underline">{item.otherName}</button><p className="mt-1">{item.summary}</p><p><a href={item.source.url} target="_blank" rel="noreferrer" className="cmm-text-info underline">{item.source.label}</a> · {item.source.verifiedAt}</p>
             </li>)}</ul></section> : null}
             {dataset ? <PublicStructureContextPanel key={selected.id} context={getInstitutionStructureContext(dataset, selected, PARIS_CLEANWALK_ACTORS)} fr={fr} /> : null}
-            <div className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider text-slate-200">{text.sources}</h4><ul className="mt-2 space-y-2">{selected.sourceIds.map((id) => sources.find((item) => item.id === id)).filter((item): item is (typeof sources)[number] => Boolean(item)).map((item) => <li key={item.id}><a href={item.url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-sky-200 underline underline-offset-2">{item.label}</a><p className="mt-0.5 text-xs text-slate-400">{item.sourceContentDate ? `${text.sourceUpdated} ${item.sourceContentDate} · ` : ""}{text.verified} {item.verifiedAt} · {text.proof}: {text.evidenceLabels[item.evidence]}</p></li>)}</ul></div>
-          </> : <p role="status" className="text-sm text-slate-300">{text.noResults}</p>}
+            <div className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{text.sources}</h4><ul className="mt-2 space-y-2">{selected.sourceIds.map((id) => sources.find((item) => item.id === id)).filter((item): item is (typeof sources)[number] => Boolean(item)).map((item) => <li key={item.id}><a href={item.url} target="_blank" rel="noreferrer" className="text-xs font-semibold cmm-text-info underline underline-offset-2">{item.label}</a><p className="mt-0.5 text-xs cmm-text-secondary">{item.sourceContentDate ? `${text.sourceUpdated} ${item.sourceContentDate} · ` : ""}{text.verified} {item.verifiedAt} · {text.proof}: {text.evidenceLabels[item.evidence]}</p></li>)}</ul></div>
+          </> : <p role="status" className="text-sm cmm-text-primary">{text.noResults}</p>}
         </aside>
       </div>}
       {dataset ? <PublicCleanlinessCoverageTable dataset={dataset} fr={fr} onSelect={nodeId => {
         selectRelatedNode(nodeId);
         detailsRef.current?.focus();
       }} /> : null}
-      <p className="mt-5 text-xs leading-5 text-slate-400">{text.footer}</p>
+      <p className="mt-5 text-xs leading-5 cmm-text-secondary">{text.footer}</p>
     </section>
   </CmmSectionGroup>;
 }

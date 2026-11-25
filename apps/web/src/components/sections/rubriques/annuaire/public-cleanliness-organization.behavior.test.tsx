@@ -232,4 +232,36 @@ describe("PublicCleanlinessOrganization behavior", () => {
     });
     expect(view.querySelector("#org-children-city-paris")).toBeNull();
   });
+
+  it("defaults to the graphical 2D org chart, distinguishes hierarchy connector statuses, and switches to the alternative list view", () => {
+    const view = mount(<PublicCleanlinessOrganization fr />);
+    const chartBtn = [...view.querySelectorAll<HTMLButtonElement>("button")].find(
+      (btn) => btn.textContent?.trim() === "Organigramme",
+    );
+    const listBtn = [...view.querySelectorAll<HTMLButtonElement>("button")].find(
+      (btn) => btn.textContent?.trim() === "Liste",
+    );
+    expect(chartBtn?.getAttribute("aria-pressed")).toBe("true");
+    expect(listBtn?.getAttribute("aria-pressed")).toBe("false");
+
+    // Hierarchy connectors distinguish confirmed and historical statuses
+    expect(view.querySelector('[data-connector-status="confirmed"]')).not.toBeNull();
+    expect(view.querySelector('[data-connector-status="historical"]')).not.toBeNull();
+
+    // Zoom and Cadrer reset
+    const zoomIn = view.querySelector<HTMLButtonElement>('button[aria-label="Augmenter le zoom"]')!;
+    act(() => zoomIn.click());
+    expect(view.querySelector<HTMLButtonElement>('button[aria-label="Réinitialiser le zoom"]')?.textContent).toBe("110%");
+    const fitBtn = [...view.querySelectorAll<HTMLButtonElement>("button")].find(
+      (btn) => btn.textContent?.trim() === "Cadrer",
+    )!;
+    act(() => fitBtn.click());
+    expect(view.querySelector<HTMLButtonElement>('button[aria-label="Réinitialiser le zoom"]')?.textContent).toBe("100%");
+
+    // Switch to alternative List view while preserving selection
+    act(() => listBtn!.click());
+    expect(listBtn?.getAttribute("aria-pressed")).toBe("true");
+    expect(chartBtn?.getAttribute("aria-pressed")).toBe("false");
+    expect(view.querySelector("aside h3")?.textContent).toContain("Direction de la Propreté et de l'Eau");
+  });
 });
