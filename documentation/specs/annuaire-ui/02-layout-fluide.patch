@@ -1,0 +1,362 @@
+diff --git a/apps/web/src/styles/tokens.css b/apps/web/src/styles/tokens.css
+--- a/apps/web/src/styles/tokens.css
++++ b/apps/web/src/styles/tokens.css
+@@ -133,20 +133,21 @@
+   /* ============================================================
+      PAGE LAYOUT & SPACING - contrat canonique des pages classiques
+      ============================================================ */
+-  --cmm-page-max-width: 112rem;      /* 1792px - shell des pages classiques */
+-  --cmm-ribbon-text-size: var(--text-caption);      /* 12px - texte des rubans */
+-  --cmm-page-header-title-size: clamp(2.5rem, 4.2vw, 3.85rem);
+-  --cmm-page-header-max-width: 56rem;
+-  --cmm-page-header-subtitle-max-width: 42rem;
+-  --cmm-page-header-padding-block: clamp(1rem, 2.5vw, 2rem) clamp(0.75rem, 2vw, 1.5rem);
+-  --cmm-home-hero-title-size: clamp(3.5rem, 5.8vw, 4.8rem);
+-  --cmm-home-impact-title-size: clamp(1.9rem, 3.8vw, 2.7rem);
+-  --cmm-home-map-preview-height: 20rem;
+-  --cmm-home-map-preview-height-tablet: 24rem;
+-  --cmm-home-map-preview-height-desktop: 34rem;
+-  --cmm-page-gutter-mobile: var(--cmm-grid-margin-mobile);
+-  --cmm-page-gutter-tablet: var(--cmm-grid-margin-tablet);
+-  --cmm-page-gutter-desktop: var(--cmm-grid-margin-desktop);
++  --cmm-page-max-width: 100%;       /* pages classiques : toute la largeur utile */
++  --cmm-page-special-max-width: 112rem; /* composition historique homepage et sommaire */
++  --cmm-ribbon-text-size: var(--text-caption);      /* 12px - texte des rubans */
++  --cmm-page-header-title-size: clamp(2.5rem, 4.2vw, 3.85rem);
++  --cmm-page-header-max-width: 56rem;
++  --cmm-page-header-subtitle-max-width: 42rem;
++  --cmm-page-header-padding-block: clamp(1rem, 2.5vw, 2rem) clamp(0.75rem, 2vw, 1.5rem);
++  --cmm-home-hero-title-size: clamp(3.5rem, 5.8vw, 4.8rem);
++  --cmm-home-impact-title-size: clamp(1.9rem, 3.8vw, 2.7rem);
++  --cmm-home-map-preview-height: 20rem;
++  --cmm-home-map-preview-height-tablet: 24rem;
++  --cmm-home-map-preview-height-desktop: 34rem;
++  --cmm-page-gutter-mobile: clamp(0.625rem, 2vw, var(--cmm-grid-margin-mobile));
++  --cmm-page-gutter-tablet: clamp(0.75rem, 1.5vw, var(--cmm-grid-margin-tablet));
++  --cmm-page-gutter-desktop: clamp(0.875rem, 1.2vw, var(--cmm-grid-margin-desktop));
+   --cmm-page-padding-block: var(--space-4);
+   --cmm-page-header-content-gap: var(--space-4);
+   --cmm-section-gap: var(--space-4);
+diff --git a/apps/web/src/styles/layout.css b/apps/web/src/styles/layout.css
+--- a/apps/web/src/styles/layout.css
++++ b/apps/web/src/styles/layout.css
+@@ -479,17 +479,27 @@
+   }
+ }
+ 
+-@layer utilities {
+-  /* Shared structural width for page-root components that are not the
+-     CmmPageLayout component itself (maps, action flows, and landing sections). */
+-  .cmm-page-width {
+-    width: min(100%, var(--cmm-page-max-width));
+-    margin-inline: auto;
+-  }
+-
+-  .cmm-page-layout {
+-    display: flex;
+-    width: min(100%, var(--cmm-page-max-width));
++/* The two autonomous compositions keep their historic content cap. */
++[data-homepage-canvas],
++[data-cmm-page-width-exception="sommaire"] {
++  --cmm-page-max-width: var(--cmm-page-special-max-width);
++}
++
++@layer utilities {
++  /* Shared structural width for page-root components that are not the
++     CmmPageLayout component itself (maps, action flows, and landing sections). */
++  .cmm-page-width {
++    width: min(100%, var(--cmm-page-max-width));
++    min-width: 0;
++    box-sizing: border-box;
++    margin-inline: auto;
++  }
++
++  .cmm-page-layout {
++    display: flex;
++    width: min(100%, var(--cmm-page-max-width));
++    min-width: 0;
++    box-sizing: border-box;
+     margin-inline: auto;
+     padding-block: var(--cmm-page-padding-block);
+     padding-inline: var(--cmm-page-gutter-mobile);
+diff --git a/apps/web/src/app/(app)/explorer/page.tsx b/apps/web/src/app/(app)/explorer/page.tsx
+--- a/apps/web/src/app/(app)/explorer/page.tsx
++++ b/apps/web/src/app/(app)/explorer/page.tsx
+@@ -155,6 +155,7 @@
+ 
+   return (
+     <div
++      data-cmm-page-width-exception="sommaire"
+       className="relative min-h-screen overflow-hidden font-sans text-white"
+     >
+       <div className="cmm-page-width relative z-10 px-6 pb-16 pt-10 sm:px-10 sm:pb-24 sm:pt-12 lg:px-12">
+diff --git a/scripts/checks/check-layout-governance.mjs b/scripts/checks/check-layout-governance.mjs
+--- a/scripts/checks/check-layout-governance.mjs
++++ b/scripts/checks/check-layout-governance.mjs
+@@ -214,8 +214,14 @@
+   if (!/--cmm-grid-max-width:\s*90rem\s*;/.test(tokensSource)) {
+     violations.push("styles/tokens.css: canonical internal grid max width must remain 90rem");
+   }
+-  if (!/--cmm-page-max-width:\s*112rem\s*;/.test(tokensSource)) {
+-    violations.push("styles/tokens.css: canonical page max width must be 112rem");
++  if (!/--cmm-page-max-width:\s*100%\s*;/.test(tokensSource)) {
++    violations.push("styles/tokens.css: standard page width must use all available space");
++  }
++  if (!/--cmm-page-special-max-width:\s*112rem\s*;/.test(tokensSource)) {
++    violations.push("styles/tokens.css: homepage and summary must retain their historical width cap");
++  }
++  if (!/\[data-homepage-canvas\],\s*\[data-cmm-page-width-exception="sommaire"\]\s*\{\s*--cmm-page-max-width:\s*var\(--cmm-page-special-max-width\)\s*;\s*\}/.test(layoutSource)) {
++    violations.push("styles/layout.css: the two autonomous compositions must scope the historical page width");
+   }
+   if (/--cmm-page-max-width:\s*var\(--cmm-grid-max-width\)\s*;/.test(tokensSource)) {
+     violations.push("styles/tokens.css: page and internal grid max widths must remain decoupled");
+diff --git a/documentation/design-system/LAYOUT_SPACING.md b/documentation/design-system/LAYOUT_SPACING.md
+--- a/documentation/design-system/LAYOUT_SPACING.md
++++ b/documentation/design-system/LAYOUT_SPACING.md
+@@ -57,106 +57,109 @@
+ 
+ `CmmPageLayout` est l'unique shell de contenu pour les pages classiques. Il
+ centralise la largeur maximale, les gutters responsive, le padding vertical et
+-le rythme entre le `PageHeader` et le premier contenu. Sa largeur maximale
+-canonique est `112rem` (`1792px`) : elle permet aux pages classiques d'exploiter
+-les grands écrans tout en conservant les gutters du shell.
+-
+-Les composants racines qui portent une composition dédiée sans pouvoir rendre
+-`CmmPageLayout` (par exemple l'explorateur, la carte, l'onboarding et les flux
+-d'action) utilisent la classe partagée `.cmm-page-width`. Elle ne porte aucune
+-largeur locale : elle applique le même `--cmm-page-max-width` et le même
+-centrage que le shell canonique. **Contrairement à `CmmPageLayout`, elle ne
+-fournit pas à elle seule les gutters ni le rythme de page.** Ces responsabilités
+-restent à la composition spécialisée, sans recréer un système de largeur.
+-Les mesures de lecture et les formulaires courts conservent leurs contraintes
+-sémantiques.
+-
+-Le site n'applique aucun zoom CSS global et aucun fallback `font-size: 80%` sur
+-`html`. Le layout répond directement à la largeur CSS disponible ; le zoom du
+-navigateur reste entièrement géré par le navigateur et n'est ni détecté ni
+-recalculé en JavaScript.
+-
+-`CmmSectionGroup` est l'unique primitive du rythme entre sections. Les deux
+-primitives n'acceptent pas de variante de largeur, de padding ou d'espacement :
+-ces valeurs sont des tokens CSS communs à toutes les pages.
+-
+-### Titres de section numérotés (`CURRENT`)
+-
+-Tout titre de section numérotée (`01`, `02`, etc.) doit présenter le numéro et le
+-titre dans une composition horizontale cohérente (`flex` avec alignement de ligne
+-de base), avec un numéro visible et un texte pouvant se replier naturellement
+-sur mobile (`flex-wrap`, `min-w-0`), sans troncature ni débordement horizontal.
+-Cette règle s'applique aux en-têtes de section locaux sans modifier `PageHeader`
+-ni imposer une migration globale des pages existantes.
+-
+-### Composition des rubriques via `SectionShell`
+-
+-`apps/web/src/components/sections/rubriques/shared.tsx` expose `SectionShell`,
+-qui porte aujourd'hui l'identité et la composition de nombreuses rubriques.
+-Ce composant **n'est pas un shell géométrique alternatif** à `CmmPageLayout`.
+-Son contrat cible de convergence est le suivant :
+-
+-1. Le `SectionShell` d'une rubrique classique réutilise **un seul** shell de
+-   contenu canonique, directement ou depuis son ancêtre ; il ne recrée pas un
+-   second plafond de largeur ou des gutters indépendants.
+-2. Le `PageHeader` de la rubrique et le premier bloc métier partagent le même
+-   axe de lecture. Si `hideHeader` est utilisé parce qu'un enfant porte
+-   l'en-tête, cet enfant reprend le même axe et le même espacement canonique.
+-3. Le rythme entre grandes sections dépend de `CmmSectionGroup` ou des tokens
+-   partagés. Les `space-y-*`, `mt-*`, `mb-*`, `py-*` propres aux composants
+-   peuvent organiser **leur contenu**, pas créer une nouvelle échelle de
+-   rythme entre sections de page.
+-4. Un fond de famille, un décor immersif ou un panneau pleine largeur peut
+-   déborder visuellement du shell **sans déplacer les contenus de lecture et
+-   leurs CTA** hors de l'axe canonique.
+-5. `summary`, `traceNote`, `links`, `headingLevel`, `hideHeader` et les états
+-   métier existants restent fonctionnels lors d'une convergence du shell.
+-
+-**État observé avant harmonisation :** `SectionShell` ne compose pas
+-systématiquement `CmmPageLayout`/`CmmSectionGroup` ; des consommateurs
+-conservent des paddings et espacements locaux. La règle ci-dessus est une
+-**exigence de migration**, pas la preuve que toutes les rubriques y satisfont
+-déjà. La migration doit adapter les consommateurs et leurs tests ensemble,
+-sans double wrapper ni régression d'alignement.
+-
+-## Tokens canoniques
+-
+-Les tokens vivent dans `apps/web/src/styles/tokens.css`, importé par
+-`apps/web/src/app/globals.css`, et les classes de layout dans
+-`apps/web/src/styles/layout.css` :
+-
+-| Contrat | Token |
+-| --- | --- |
+-| largeur maximale | `--cmm-page-max-width` |
+-| gutter mobile | `--cmm-page-gutter-mobile` |
+-| gutter tablette | `--cmm-page-gutter-tablet` |
+-| gutter desktop | `--cmm-page-gutter-desktop` |
+-| padding vertical de page | `--cmm-page-padding-block` |
+-| `PageHeader` → premier contenu | `--cmm-page-header-content-gap` |
+-| espacement entre sections | `--cmm-section-gap` |
+-| espacement interne d'un groupe | `--cmm-content-group-gap` |
+-| titre de page desktop | `--cmm-page-header-title-size` |
+-| titre hero desktop | `--cmm-home-hero-title-size` |
+-| titre impact desktop | `--cmm-home-impact-title-size` |
+-| hauteur d'aperçu carte homepage | `--cmm-home-map-preview-height*` |
+-| padding carte rubrique desktop | `--cmm-rubrique-card-padding` |
+-| padding icône carte rubrique desktop | `--cmm-rubrique-card-icon-padding` |
+-
+-`--cmm-page-max-width` et `--cmm-grid-max-width` sont découplés. Le premier
+-contrôle le shell des pages classiques (`112rem`), tandis que le second reste
+-la limite historique des grilles internes (`90rem`). Les tokens de page
+-réutilisent les gutters et l'échelle d'espacement existants
+-(`--cmm-grid-margin-*`, `--space-*`), sans hériter de la largeur maximale de la
+-grille. Les modes `exhaustif`, `minimaliste` et `sobre`, ainsi que les familles
+-de couleur, ne redéfinissent aucun de ces tokens : ils ne changent donc pas la
+-géométrie fondamentale.
+-
+-Les trois niveaux de largeur sont explicites :
+-
+-- `viewport ribbon surface` : surface globale pleine largeur, sans plafond de
+-  page ou de grille ;
+-- `page content shell` : `CmmPageLayout` ou `.cmm-page-width`, plafonné à
+-  `--cmm-page-max-width` (`112rem`) ; le premier gère aussi ses gutters et
++le rythme entre le `PageHeader` et le premier contenu. Le shell classique utilise toute la largeur disponible (`100%`) avec des
++gutters fluides et bornés. Seules les compositions autonomes homepage
++(`/`) et sommaire (`/explorer`) conservent le plafond historique `112rem`
++(`1792px`), via `--cmm-page-special-max-width` et leurs racines dédiées.
++Le chrome global, les mesures de lecture et les composants fonctionnels
++(formulaires, dialogues, impressions) restent inchangés.
++
++Les composants racines qui portent une composition dédiée sans pouvoir rendre
++`CmmPageLayout` (par exemple l'explorateur, la carte, l'onboarding et les flux
++d'action) utilisent la classe partagée `.cmm-page-width`. Elle ne porte aucune
++largeur locale : elle applique le même `--cmm-page-max-width` et le même
++centrage que le shell canonique. **Contrairement à `CmmPageLayout`, elle ne
++fournit pas à elle seule les gutters ni le rythme de page.** Ces responsabilités
++restent à la composition spécialisée, sans recréer un système de largeur.
++Les mesures de lecture et les formulaires courts conservent leurs contraintes
++sémantiques.
++
++Le site n'applique aucun zoom CSS global et aucun fallback `font-size: 80%` sur
++`html`. Le layout répond directement à la largeur CSS disponible ; le zoom du
++navigateur reste entièrement géré par le navigateur et n'est ni détecté ni
++recalculé en JavaScript.
++
++`CmmSectionGroup` est l'unique primitive du rythme entre sections. Les deux
++primitives n'acceptent pas de variante de largeur, de padding ou d'espacement :
++ces valeurs sont des tokens CSS communs à toutes les pages.
++
++### Titres de section numérotés (`CURRENT`)
++
++Tout titre de section numérotée (`01`, `02`, etc.) doit présenter le numéro et le
++titre dans une composition horizontale cohérente (`flex` avec alignement de ligne
++de base), avec un numéro visible et un texte pouvant se replier naturellement
++sur mobile (`flex-wrap`, `min-w-0`), sans troncature ni débordement horizontal.
++Cette règle s'applique aux en-têtes de section locaux sans modifier `PageHeader`
++ni imposer une migration globale des pages existantes.
++
++### Composition des rubriques via `SectionShell`
++
++`apps/web/src/components/sections/rubriques/shared.tsx` expose `SectionShell`,
++qui porte aujourd'hui l'identité et la composition de nombreuses rubriques.
++Ce composant **n'est pas un shell géométrique alternatif** à `CmmPageLayout`.
++Son contrat cible de convergence est le suivant :
++
++1. Le `SectionShell` d'une rubrique classique réutilise **un seul** shell de
++   contenu canonique, directement ou depuis son ancêtre ; il ne recrée pas un
++   second plafond de largeur ou des gutters indépendants.
++2. Le `PageHeader` de la rubrique et le premier bloc métier partagent le même
++   axe de lecture. Si `hideHeader` est utilisé parce qu'un enfant porte
++   l'en-tête, cet enfant reprend le même axe et le même espacement canonique.
++3. Le rythme entre grandes sections dépend de `CmmSectionGroup` ou des tokens
++   partagés. Les `space-y-*`, `mt-*`, `mb-*`, `py-*` propres aux composants
++   peuvent organiser **leur contenu**, pas créer une nouvelle échelle de
++   rythme entre sections de page.
++4. Un fond de famille, un décor immersif ou un panneau pleine largeur peut
++   déborder visuellement du shell **sans déplacer les contenus de lecture et
++   leurs CTA** hors de l'axe canonique.
++5. `summary`, `traceNote`, `links`, `headingLevel`, `hideHeader` et les états
++   métier existants restent fonctionnels lors d'une convergence du shell.
++
++**État observé avant harmonisation :** `SectionShell` ne compose pas
++systématiquement `CmmPageLayout`/`CmmSectionGroup` ; des consommateurs
++conservent des paddings et espacements locaux. La règle ci-dessus est une
++**exigence de migration**, pas la preuve que toutes les rubriques y satisfont
++déjà. La migration doit adapter les consommateurs et leurs tests ensemble,
++sans double wrapper ni régression d'alignement.
++
++## Tokens canoniques
++
++Les tokens vivent dans `apps/web/src/styles/tokens.css`, importé par
++`apps/web/src/app/globals.css`, et les classes de layout dans
++`apps/web/src/styles/layout.css` :
++
++| Contrat | Token |
++| --- | --- |
++| largeur maximale | `--cmm-page-max-width` |
++| gutter mobile | `--cmm-page-gutter-mobile` |
++| gutter tablette | `--cmm-page-gutter-tablet` |
++| gutter desktop | `--cmm-page-gutter-desktop` |
++| padding vertical de page | `--cmm-page-padding-block` |
++| `PageHeader` → premier contenu | `--cmm-page-header-content-gap` |
++| espacement entre sections | `--cmm-section-gap` |
++| espacement interne d'un groupe | `--cmm-content-group-gap` |
++| titre de page desktop | `--cmm-page-header-title-size` |
++| titre hero desktop | `--cmm-home-hero-title-size` |
++| titre impact desktop | `--cmm-home-impact-title-size` |
++| hauteur d'aperçu carte homepage | `--cmm-home-map-preview-height*` |
++| padding carte rubrique desktop | `--cmm-rubrique-card-padding` |
++| padding icône carte rubrique desktop | `--cmm-rubrique-card-icon-padding` |
++
++`--cmm-page-max-width` et `--cmm-grid-max-width` sont découplés. Le premier
++contrôle le shell des pages classiques (`100%`), tandis que le second reste
++la limite historique des grilles internes (`90rem`). Les tokens de page
++réutilisent les gutters et l'échelle d'espacement existants
++(`--cmm-grid-margin-*`, `--space-*`) comme bornes des gutters fluides, sans hériter de la largeur maximale de la
++grille. Les modes `exhaustif`, `minimaliste` et `sobre`, ainsi que les familles
++de couleur, ne redéfinissent aucun de ces tokens : ils ne changent donc pas la
++géométrie fondamentale.
++
++Les trois niveaux de largeur sont explicites :
++
++- `viewport ribbon surface` : surface globale pleine largeur, sans plafond de
++  page ou de grille ;
++- `page content shell` : `CmmPageLayout` ou `.cmm-page-width`, fluide via
++  `--cmm-page-max-width` (`100%`, `112rem` dans les deux exceptions) ; le premier gère aussi ses gutters et
+   son rythme, le second nécessite une composition dédiée ;
+ - `reading measure` : `cmm-prose`, `cmm-prose-wide`, `cmm-prose-narrow` ou une
+   primitive sémantique équivalente pour conserver une mesure de lecture
+diff --git a/e2e/page-layout-fluid.spec.ts b/e2e/page-layout-fluid.spec.ts
+new file mode 100644
+--- /dev/null
++++ b/e2e/page-layout-fluid.spec.ts
+@@ -0,0 +1,32 @@
++import { expect, test } from "@playwright/test";
++
++test("classic pages use available width while homepage and summary retain their dedicated cap", async ({ page }) => {
++  await page.setViewportSize({ width: 2560, height: 1080 });
++  await page.goto("/sections/annuaire");
++  const layout = page.locator("#annuaire .cmm-page-layout").first();
++  await expect(layout).toBeVisible();
++  const classic = await layout.evaluate(el => ({
++    width: el.getBoundingClientRect().width,
++    parent: el.parentElement!.clientWidth,
++    cap: getComputedStyle(el).getPropertyValue("--cmm-page-max-width").trim(),
++  }));
++  expect(classic.cap).toBe("100%");
++  expect(classic.width).toBeGreaterThan(1792);
++  expect(Math.abs(classic.parent - classic.width)).toBeLessThanOrEqual(2);
++
++  for (const width of [390, 768, 1440, 1920, 2560]) {
++    await page.setViewportSize({ width, height: 900 });
++    expect(await layout.evaluate(el => el.scrollWidth <= el.clientWidth + 2)).toBe(true);
++    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2)).toBe(true);
++  }
++
++  for (const [route, selector] of [
++    ["/", "[data-homepage-canvas] .cmm-page-width"],
++    ["/explorer", '[data-cmm-page-width-exception="sommaire"] .cmm-page-width'],
++  ]) {
++    await page.goto(route);
++    const special = page.locator(selector).first();
++    await expect(special).toBeVisible();
++    expect(await special.evaluate(el => el.getBoundingClientRect().width)).toBeLessThanOrEqual(1794);
++  }
++});
