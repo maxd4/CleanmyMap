@@ -382,7 +382,7 @@ export function ParisNetwork3DBubble({
               </p>
             ) : null}
             <p className="mt-1 text-slate-300">
-              {associationContact.source.label} · {associationContact.source.verifiedAt}
+              {associationContact.source.title} · {associationContact.source.verifiedOn}
             </p>
           </div>
         ) : null}
@@ -416,7 +416,7 @@ export function ParisNetwork3DBubble({
             <p className="mt-1.5 text-slate-300">
               {fr ? "Adresse administrative :" : "Administrative address:"} {PARIS_DPE_CONTACT.administrativeAddress}
             </p>
-            <p className="mt-1 text-slate-300">{PARIS_DPE_CONTACT.materialNote}</p>
+            <p className="mt-1 text-slate-300">{PARIS_DPE_CONTACT.logistics.note}</p>
           </div>
         ) : null}
 
@@ -430,7 +430,7 @@ export function ParisNetwork3DBubble({
                 <li key={th.id} className="flex items-center justify-between gap-2">
                   <span>{th.label}</span>
                   <a
-                    href={th.portalUrl}
+                    href={th.officialChannel}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-white"
