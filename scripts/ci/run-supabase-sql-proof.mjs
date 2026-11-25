@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { formatTimingMarkdown, summarizeTimings } from "./ci-timing-report.mjs";
+import { formatTimingMarkdown, loadTimingBaseline, summarizeTimings } from "./ci-timing-report.mjs";
 import { gitExecutable, trustedCommandEnvironment } from "./git-executable.mjs";
 import {
   WORKFLOW_STAGES,
@@ -676,6 +676,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
   }
 
   const slowThresholdMs = Number(process.env.CMM_SQL_REGRESSION_THRESHOLD_MS ?? 30_000);
+  const baselineDurationsMs = loadTimingBaseline();
   report.timingSummary = summarizeTimings(
     records.map((record) => ({
       name: record.path,
@@ -683,7 +684,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
       outcome: record.outcome,
       durationMs: record.durationMs ?? 0,
     })),
-    { slowThresholdMs },
+    { slowThresholdMs, baselineDurationsMs },
   );
   if (commandRunner === runCommand && process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(

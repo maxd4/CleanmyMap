@@ -64,13 +64,13 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   const seed = read("apps/web/supabase/seed.sql");
   assert.match(seed, /set_config\('request\.jwt\.claim\.role',\s*'service_role'/);
   assert.match(workflow, /push:\s*\n\s+branches:\s*\n\s+- main/);
-  assert.match(workflow, /apps\/web\/supabase\/tests\/\*\*/);
-  assert.match(workflow, /e2e\/\*\.sql/);
+  const sqlWorkflow = read(".github/workflows/supabase-sql-proof.yml");
+  assert.match(sqlWorkflow, /apps\/web\/supabase\/tests\/\*\*/);
+  assert.match(sqlWorkflow, /e2e\/\*\.sql/);
   assert.doesNotMatch(workflow, /node scripts\/ci\/run-supabase-sql-proof\.mjs/);
   assert.match(workflow, /select case/);
   assert.match(workflow, /then 'Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present'/);
   assert.match(workflow, /grep -q "Preflight passed:/);
-  const sqlWorkflow = read(".github/workflows/supabase-sql-proof.yml");
   assert.match(sqlWorkflow, /CMM_SUPABASE_CANDIDATE_SHA:/);
   assert.match(sqlWorkflow, /node scripts\/ci\/run-supabase-sql-proof\.mjs/);
   assert.doesNotMatch(workflow, /mgvmuambbxmmkrjjlryo\.supabase\.co/);
@@ -79,7 +79,7 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.doesNotMatch(workflow, /(?:set -x|printenv|export\s+[^\n]*(?:TOKEN|KEY))/i);
 
   const preflightPosition = workflow.indexOf("Preflight canonical ephemeral PostgreSQL schema");
-  const browserPosition = workflow.indexOf("Install Playwright browser");
+  const browserPosition = workflow.indexOf("Install Playwright Chromium browser");
   assert.ok(preflightPosition >= 0 && browserPosition > preflightPosition, "browser installation must follow the PostgreSQL preflight");
 });
 

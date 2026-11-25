@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "sourceRuns": {
+    "e2eSupabase": 45606135948,
+    "supabaseSqlProof": 45606094573
+  },
+  "workflowDurationsMs": {
+    "e2eSupabaseTotalMs": 330000,
+    "e2ePreparationMs": 235000,
+    "sqlProofTotalMs": 346000,
+    "sqlProofRunnerMs": 98000
+  },
+  "baselineDurationsMs": {
+    "spogomi-cachan-integration": 66000,
+    "sql-proof-runner-total": 98000
+  }
+}

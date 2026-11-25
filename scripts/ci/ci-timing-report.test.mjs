@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   formatTimingMarkdown,
+  loadTimingBaseline,
   parsePlaywrightJsonReport,
   sanitizeTimingLabel,
   summarizeTimings,
@@ -57,4 +58,21 @@ test("parsePlaywrightJsonReport extracts durations and formats markdown", () => 
   assert.equal(entries[0].durationMs, 1234);
   const md = formatTimingMarkdown("E2E", summarizeTimings(entries));
   assert.match(md, /\[action sharing\] creates and shares action/);
+
+  const testLevelProject = parsePlaywrightJsonReport({
+    suites: [
+      {
+        title: "e2e/action-sharing.spec.ts",
+        specs: [
+          {
+            title: "shares action",
+            tests: [{ projectName: "action sharing", results: [{ status: "passed", duration: 500 }] }],
+          },
+        ],
+      },
+    ],
+  });
+  assert.equal(testLevelProject[0].project, "action sharing");
+  assert.equal(testLevelProject[0].name, "[action sharing] shares action");
+  assert.equal(typeof loadTimingBaseline()["spogomi-cachan-integration"], "number");
 });

@@ -34,6 +34,18 @@ on:
       - "documentation/features/spogomi-references/fixtures/**"
       - "apps/web/src/lib/spogomi/**"
       - "apps/web/src/app/api/spogomi/**"
+      - "apps/web/src/lib/actions/**"
+      - "apps/web/src/app/api/actions/**"
+      - "apps/web/src/lib/reports/**"
+      - "apps/web/src/app/api/reports/**"
+      - "apps/web/src/lib/signalements/**"
+      - "apps/web/src/app/api/signalements/**"
+      - "apps/web/src/lib/personal-ai/**"
+      - "apps/web/src/app/api/personal-ai/**"
+      - "apps/web/src/proxy.ts"
+      - "apps/web/src/lib/authz*"
+      - "apps/web/src/lib/supabase/**"
+      - "apps/web/src/lib/http/api-errors*"
       - "apps/web/supabase/config.toml"
       - "apps/web/supabase/migrations/**"
       - "apps/web/supabase/seed.sql"
@@ -70,6 +82,18 @@ on:
       - "scripts/ci/ci-timing-report.mjs"
       - "apps/web/src/lib/spogomi/**"
       - "apps/web/src/app/api/spogomi/**"
+      - "apps/web/src/lib/actions/**"
+      - "apps/web/src/app/api/actions/**"
+      - "apps/web/src/lib/reports/**"
+      - "apps/web/src/app/api/reports/**"
+      - "apps/web/src/lib/signalements/**"
+      - "apps/web/src/app/api/signalements/**"
+      - "apps/web/src/lib/personal-ai/**"
+      - "apps/web/src/app/api/personal-ai/**"
+      - "apps/web/src/proxy.ts"
+      - "apps/web/src/lib/authz*"
+      - "apps/web/src/lib/supabase/**"
+      - "apps/web/src/lib/http/api-errors*"
       - "apps/web/supabase/config.toml"
       - "apps/web/supabase/migrations/**"
       - "apps/web/supabase/seed.sql"
@@ -288,7 +312,7 @@ jobs:
           ./node_modules/.bin/supabase db query --workdir apps/web --local "notify pgrst, 'reload schema';"
 
       - name: Restore Playwright Chromium cache
-        if: needs.plan.outputs.run_persistent_e2e == 'true'
+        if: needs.plan.outputs.run_persistent_e2e == 'true' || needs.plan.outputs.run_spogomi_integration == 'true'
         id: playwright_cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
@@ -296,11 +320,11 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright Chromium browser (cache miss)
-        if: needs.plan.outputs.run_persistent_e2e == 'true' && steps.playwright_cache.outputs.cache-hit != 'true'
+        if: (needs.plan.outputs.run_persistent_e2e == 'true' || needs.plan.outputs.run_spogomi_integration == 'true') && steps.playwright_cache.outputs.cache-hit != 'true'
         run: ./node_modules/.bin/playwright install --with-deps chromium
 
       - name: Install Playwright system dependencies (cache hit)
-        if: needs.plan.outputs.run_persistent_e2e == 'true' && steps.playwright_cache.outputs.cache-hit == 'true'
+        if: (needs.plan.outputs.run_persistent_e2e == 'true' || needs.plan.outputs.run_spogomi_integration == 'true') && steps.playwright_cache.outputs.cache-hit == 'true'
         run: ./node_modules/.bin/playwright install-deps chromium
 
       - name: Run SPOGOMI business tests (FULL campaign)
@@ -339,7 +363,7 @@ jobs:
 
       - name: Run persistent E2E
         id: persistent_e2e
-        if: (!cancelled()) && needs.plan.outputs.run_persistent_e2e == 'true'
+        if: success() && needs.plan.outputs.run_persistent_e2e == 'true'
         env:
           CMM_E2E_CLERK_DEV_BACKEND_TOKEN: ${{ secrets.CMM_E2E_CLERK_DEV_BACKEND_TOKEN }}
           CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY: ${{ secrets.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY }}

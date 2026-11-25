@@ -81,3 +81,34 @@ test("FULL validation mode or schedule runs the complete campaign", () => {
     assert.equal(plan.validate_all_sql, true);
   }
 });
+
+test("signalements API, route-reference-action-sharing spec, bootstrap infra, and uncertain scope select safely", () => {
+  const signalementPlan = planE2eAndSql({
+    changedFiles: ["apps/web/src/app/api/signalements/me/route.ts"],
+  });
+  assert.equal(signalementPlan.e2e_should_run, true);
+  assert.equal(signalementPlan.playwright_projects, "signalement campaign 2");
+
+  const routeRefPlan = planE2eAndSql({
+    changedFiles: ["e2e/route-reference-action-sharing.spec.ts"],
+  });
+  assert.equal(routeRefPlan.e2e_should_run, true);
+  assert.equal(routeRefPlan.playwright_projects, "action sharing");
+
+  const bootstrapPlan = planE2eAndSql({
+    changedFiles: ["scripts/ci/start-supabase-ephemeral.sh"],
+  });
+  assert.equal(bootstrapPlan.e2e_should_run, true);
+  assert.equal(bootstrapPlan.run_spogomi_integration, true);
+  assert.equal(bootstrapPlan.run_persistent_e2e, true);
+  assert.equal(bootstrapPlan.sql_should_run, true);
+
+  const uncertainPlan = planE2eAndSql({
+    eventName: "push",
+    changedFiles: [],
+    scopeUncertain: true,
+  });
+  assert.equal(uncertainPlan.e2e_should_run, true);
+  assert.equal(uncertainPlan.sql_should_run, true);
+  assert.equal(uncertainPlan.reason, "uncertain-scope-conservative");
+});

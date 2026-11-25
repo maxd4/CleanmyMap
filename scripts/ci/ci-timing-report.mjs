@@ -2,7 +2,21 @@
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const DEFAULT_BASELINE_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "ci-timing-baseline.json");
+
+export function loadTimingBaseline(baselinePath = DEFAULT_BASELINE_PATH) {
+  try {
+    if (!existsSync(baselinePath)) return {};
+    const parsed = JSON.parse(readFileSync(baselinePath, "utf8"));
+    return parsed?.baselineDurationsMs && typeof parsed.baselineDurationsMs === "object"
+      ? parsed.baselineDurationsMs
+      : {};
+  } catch {
+    return {};
+  }
+}
 
 const FORBIDDEN_PUBLIC_TERMS = /\b(?:authorization|cookie|set-cookie|bearer|storageState|access_token|refresh_token|session(?:_?id|_?token)?|clerk(?:_?session)?|supabase(?:_?service)?_?role)\b/gi;
 
@@ -60,22 +74,23 @@ export function summarizeTimings(entries, {
 }
 
 function collectSuiteTests(suite, projectName, out) {
-  const currentProject = suite.projectName || projectName || "";
+  const suiteProject = suite.projectName || projectName || "";
   for (const spec of suite.specs ?? []) {
     for (const test of spec.tests ?? []) {
+      const effectiveProject = test.projectName || spec.projectName || suiteProject;
       const results = test.results ?? [];
       const durationMs = results.reduce((sum, r) => sum + (Number(r.duration) || 0), 0);
       const lastStatus = results.at(-1)?.status ?? test.status ?? "unknown";
       out.push({
-        name: `${currentProject ? `[${currentProject}] ` : ""}${spec.title ?? "unnamed"}`,
-        project: currentProject,
+        name: `${effectiveProject ? `[${effectiveProject}] ` : ""}${spec.title ?? "unnamed"}`,
+        project: effectiveProject,
         outcome: lastStatus,
         durationMs,
       });
     }
   }
   for (const child of suite.suites ?? []) {
-    collectSuiteTests(child, currentProject, out);
+    collectSuiteTests(child, suiteProject, out);
   }
 }
 
@@ -128,7 +143,8 @@ function main() {
 
   const raw = JSON.parse(readFileSync(resolve(playwrightJsonPath), "utf8"));
   const entries = parsePlaywrightJsonReport(raw);
-  const summary = summarizeTimings(entries, { slowThresholdMs });
+  const baselineDurationsMs = loadTimingBaseline(args.get("--baseline") ? resolve(args.get("--baseline")) : DEFAULT_BASELINE_PATH);
+  const summary = summarizeTimings(entries, { slowThresholdMs, baselineDurationsMs });
   const payload = {
     schemaVersion: 1,
     kind: "cleanmymap-e2e-timing-summary",

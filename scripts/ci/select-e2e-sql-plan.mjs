@@ -14,30 +14,37 @@ const ALL_PERSISTENT_PROJECTS = [
   "personal AI authenticated",
 ];
 
+const SHARED_BOOTSTRAP_INFRA_FILES = [
+  "scripts/ci/start-supabase-ephemeral.sh",
+  "scripts/ci/supabase-config.mjs",
+  "scripts/ci/supabase-config.test.mjs",
+  "scripts/ci/diagnose-supabase-start.mjs",
+  "scripts/ci/diagnose-supabase-start.test.mjs",
+  "scripts/ci/select-e2e-sql-plan.mjs",
+  "package.json",
+  "package-lock.json",
+];
+
 const SHARED_E2E_INFRA_FILES = new Set([
+  ...SHARED_BOOTSTRAP_INFRA_FILES,
   "playwright.config.ts",
   "e2e/global.setup.ts",
   "e2e/global.teardown.ts",
   "e2e/run-github-actions-persistent.mjs",
   "e2e/spogomi-cachan-local-app.mjs",
   ".github/workflows/e2e-supabase.yml",
-  "package.json",
-  "package-lock.json",
-  "scripts/ci/select-e2e-sql-plan.mjs",
 ]);
 
 const SHARED_SQL_INFRA_FILES = new Set([
+  ...SHARED_BOOTSTRAP_INFRA_FILES,
   "apps/web/supabase/config.toml",
   "apps/web/supabase/seed.sql",
   ".github/workflows/supabase-sql-proof.yml",
   "scripts/ci/run-supabase-sql-proof.mjs",
-  "scripts/ci/supabase-sql-proof-lifecycle.mjs",
-  "scripts/ci/start-supabase-ephemeral.sh",
-  "scripts/ci/supabase-config.mjs",
+  "scripts/ci/run-supabase-sql-proof.test.mjs",
+  "scripts/ci/isolate-supabase-migration-failure.mjs",
+  "scripts/ci/isolate-supabase-migration-failure.test.mjs",
   "scripts/ci/validate-sql-syntax.mjs",
-  "scripts/ci/select-e2e-sql-plan.mjs",
-  "package.json",
-  "package-lock.json",
 ]);
 
 function normalizePath(filePath) {
@@ -80,28 +87,40 @@ function isSharedAuthOrRuntimeFile(filePath) {
   );
 }
 
+function fullConservativePlan(reason, { runSpogomiBusinessTests = false } = {}) {
+  return {
+    docs_only: false,
+    e2e_should_run: true,
+    run_spogomi_integration: true,
+    run_spogomi_business_tests: runSpogomiBusinessTests,
+    run_persistent_e2e: true,
+    playwright_projects: ALL_PERSISTENT_PROJECTS.join(","),
+    sql_should_run: true,
+    sql_proof_targets: "",
+    validate_all_sql: true,
+    reason,
+  };
+}
+
 export function planE2eAndSql({
   changedFiles = [],
   eventName = "push",
   validationMode = "DEVELOPMENT",
+  scopeUncertain = false,
 } = {}) {
   const files = [...new Set(changedFiles.map(normalizePath).filter(Boolean))].sort();
   const mode = String(validationMode ?? "DEVELOPMENT").trim().toUpperCase() || "DEVELOPMENT";
   const event = String(eventName ?? "push").trim();
 
   if (event === "schedule" || mode === "FULL") {
-    return {
-      docs_only: false,
-      e2e_should_run: true,
-      run_spogomi_integration: true,
-      run_spogomi_business_tests: true,
-      run_persistent_e2e: true,
-      playwright_projects: ALL_PERSISTENT_PROJECTS.join(","),
-      sql_should_run: true,
-      sql_proof_targets: "",
-      validate_all_sql: true,
-      reason: event === "schedule" ? "scheduled-full-campaign" : "full-validation-mode",
-    };
+    return fullConservativePlan(
+      event === "schedule" ? "scheduled-full-campaign" : "full-validation-mode",
+      { runSpogomiBusinessTests: true },
+    );
+  }
+
+  if (scopeUncertain) {
+    return fullConservativePlan("uncertain-scope-conservative");
   }
 
   if (files.length === 0) {
@@ -173,6 +192,7 @@ export function planE2eAndSql({
       file === "e2e/action-sharing.spec.ts" ||
       file === "e2e/action-finalization.spec.ts" ||
       file === "e2e/action-route-reference-images.spec.ts" ||
+      file === "e2e/route-reference-action-sharing.spec.ts" ||
       file.startsWith("apps/web/src/lib/actions/") ||
       file.startsWith("apps/web/src/app/api/actions/")
     ) {
@@ -192,14 +212,17 @@ export function planE2eAndSql({
     if (
       file === "e2e/signalement-campaign-2.spec.ts" ||
       file.startsWith("apps/web/src/lib/reports/") ||
-      file.startsWith("apps/web/src/app/api/reports/")
+      file.startsWith("apps/web/src/app/api/reports/") ||
+      file.startsWith("apps/web/src/lib/signalements/") ||
+      file.startsWith("apps/web/src/app/api/signalements/")
     ) {
       projects.add("signalement campaign 2");
     }
 
     if (
       file === "e2e/personal-ai-authenticated.spec.ts" ||
-      file.startsWith("apps/web/src/lib/personal-ai/")
+      file.startsWith("apps/web/src/lib/personal-ai/") ||
+      file.startsWith("apps/web/src/app/api/personal-ai/")
     ) {
       projects.add("personal AI authenticated");
     }
@@ -227,23 +250,56 @@ export function planE2eAndSql({
 function readChangedFilesFromGit({ eventName, eventBefore, eventSha, prBaseSha, prHeadSha }) {
   const head = eventName === "pull_request" ? prHeadSha : eventSha;
   const base = eventName === "pull_request" ? prBaseSha : eventBefore;
-  if (!head) return [];
-  if (!base || /^0+$/.test(base)) {
-    const out = execFileSync(gitExecutable(), ["diff-tree", "--no-commit-id", "--name-only", "-r", head], {
+  if (!head) {
+    return { changedFiles: [], scopeUncertain: true };
+  }
+  try {
+    if (!base || /^0+$/.test(base)) {
+      if (eventName === "workflow_dispatch") {
+        // Explicit manual DEVELOPMENT dispatch without a diff defaults conservatively.
+        return { changedFiles: [], scopeUncertain: true };
+      }
+      const out = execFileSync(gitExecutable(), ["diff-tree", "--no-commit-id", "--name-only", "-r", head], {
+        encoding: "utf8",
+      });
+      return {
+        changedFiles: out.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean),
+        scopeUncertain: false,
+      };
+    }
+    const out = execFileSync(gitExecutable(), ["diff", "--name-only", base, head], {
       encoding: "utf8",
     });
-    return out.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
+    return {
+      changedFiles: out.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean),
+      scopeUncertain: false,
+    };
+  } catch {
+    return { changedFiles: [], scopeUncertain: true };
   }
-  const out = execFileSync(gitExecutable(), ["diff", "--name-only", base, head], {
-    encoding: "utf8",
-  });
-  return out.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
 }
 
-function computeInputsDigest({ changedFiles, plan }) {
+function computeContentDigest(candidateSha) {
+  if (!candidateSha) return "UNAVAILABLE";
+  const trackedRoots = [
+    "apps/web/supabase/migrations",
+    "apps/web/supabase/seed.sql",
+    "apps/web/supabase/config.toml",
+    "apps/web/supabase/tests",
+    "e2e",
+    "playwright.config.ts",
+    "package-lock.json",
+  ];
   const hash = createHash("sha256");
-  hash.update(JSON.stringify({ changedFiles: [...changedFiles].sort(), plan }));
-  return hash.digest("hex");
+  try {
+    const out = execFileSync(gitExecutable(), ["ls-tree", candidateSha, "--", ...trackedRoots], {
+      encoding: "utf8",
+    });
+    hash.update(out);
+    return hash.digest("hex");
+  } catch {
+    return "UNAVAILABLE";
+  }
 }
 
 function writeGithubOutputs(outputs) {
@@ -257,18 +313,19 @@ function writeGithubOutputs(outputs) {
 function main() {
   const eventName = process.env.EVENT_NAME || "push";
   const validationMode = process.env.VALIDATION_MODE || "DEVELOPMENT";
-  const changedFiles =
+  const candidateSha = process.env.EVENT_SHA || process.env.GITHUB_SHA || "";
+  const { changedFiles, scopeUncertain } =
     eventName === "schedule" || validationMode.toUpperCase() === "FULL"
-      ? []
+      ? { changedFiles: [], scopeUncertain: false }
       : readChangedFilesFromGit({
           eventName,
           eventBefore: process.env.EVENT_BEFORE || "",
-          eventSha: process.env.EVENT_SHA || process.env.GITHUB_SHA || "",
+          eventSha: candidateSha,
           prBaseSha: process.env.PR_BASE_SHA || "",
           prHeadSha: process.env.PR_HEAD_SHA || "",
         });
-  const plan = planE2eAndSql({ changedFiles, eventName, validationMode });
-  const inputsDigest = computeInputsDigest({ changedFiles, plan });
+  const plan = planE2eAndSql({ changedFiles, eventName, validationMode, scopeUncertain });
+  const inputsDigest = computeContentDigest(candidateSha);
   const outputs = {
     ...plan,
     inputs_digest: inputsDigest,

@@ -130,7 +130,7 @@ export default defineConfig({
     },
     {
       name: "action sharing",
-      testMatch: /(?:action-sharing|action-finalization|action-route-reference-images)\.spec\.ts/,
+      testMatch: /(?:action-sharing|action-finalization|action-route-reference-images|route-reference-action-sharing)\.spec\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },
