@@ -107,12 +107,18 @@ Hors mode de développement rapide :
 validation du candidat final exact → commit validé → push main → vérification de convergence
 ```
 
-Cette clôture est obligatoire par défaut pour tout lot qui produit un changement
-validé, sauf exception déjà explicitement gouvernée dans `AGENTS.md` ou refus
-explicite de l'utilisateur. Un blocage seulement supposé — ruleset présent,
-identité supposée non autorisée ou refus anticipé — ne permet pas d'arrêter avant
-d'avoir vérifié l'identité et ses droits effectifs, puis tenté le push normal du
-candidat sûr.
+Cette clôture est obligatoire par défaut pour tout lot exécuté depuis le
+checkout local qui produit un changement validé, sauf exception déjà
+explicitement gouvernée dans `AGENTS.md` ou refus explicite de l'utilisateur.
+Les hooks `.githooks/pre-commit` et `.githooks/pre-push` restent obligatoires
+pour toute contribution effectuée depuis le checkout local. Le mode
+`DIRECT_GITHUB_PUBLICATION` de ChatGPT via les API GitHub (contributions
+documentaires et artefacts `CANDIDATE`) suit `CHATGPT.md` avec
+`HOOK_NOT_AVAILABLE`, des contrôles équivalents accessibles et la CI pertinente,
+sans jamais assimiler un hook indisponible à `PASS`. Un blocage seulement
+supposé — ruleset présent, identité supposée non autorisée ou refus anticipé —
+ne permet pas d'arrêter avant d'avoir vérifié l'identité et ses droits
+effectifs, puis tenté le push normal du candidat sûr.
 Une publication n'est réussie qu'après un push accepté, un fetch et la preuve
 `HEAD = origin/main` avec ahead/behind `0/0`. Si le push échoue réellement,
 rapporter sa cause observée sans donnée sensible et l'action nécessaire ; ne

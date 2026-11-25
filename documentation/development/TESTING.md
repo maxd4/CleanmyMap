@@ -187,9 +187,20 @@ transaction, de concurrence ou de service externe exécuté.
 
 Le résultat doit séparer explicitement :
 
-- l'absence de preuve (`NOT_RUN`, `NOT_MEASURED` ou un `BLOCKED_*` explicite) ;
+- l'absence de preuve (`HOOK_NOT_AVAILABLE`, `NOT_RUN`, `NOT_MEASURED` ou un `BLOCKED_*` explicite) ;
 - l'échec d'une preuve (`FAIL`) ;
 - le comportement effectivement validé (`PASS` avec sa provenance).
+
+Un contrôle absent ou indisponible (`HOOK_NOT_AVAILABLE`, `NOT_RUN`,
+`NOT_MEASURED`) n'est jamais assimilé à un `PASS`. En particulier, pour une
+contribution documentaire ou un candidat d'intégration (`CANDIDATE`) publié par
+ChatGPT en mode `DIRECT_GITHUB_PUBLICATION` via les API GitHub (`CHATGPT.md`),
+l'indisponibilité technique des hooks Git locaux est déclarée
+`HOOK_NOT_AVAILABLE` et compensée par les contrôles équivalents accessibles
+(secrets, intégrité, changements concurrents, fast-forward et relecture du SHA
+publié) ainsi que les validations CI pertinentes. Les contributions effectuées
+depuis le checkout local conservent les hooks locaux obligatoires, et tout code
+runtime ou migration conserve ses exigences complètes de validation.
 
 Une preuve d'un autre SHA, une validation périmée ou une erreur qualifiée
 `PREEXISTING_PARALLEL_FAILURE` reste visible et ne peut jamais produire un

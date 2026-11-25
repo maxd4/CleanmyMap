@@ -58,38 +58,52 @@ outils le permettent. Il ne délègue pas à Codex l'analyse ou l'arbitrage qu'i
 peut établir lui-même. En cas de preuve insuffisante, distinguer explicitement
 ce qui reste à vérifier.
 
-**ChatGPT contribue directement par défaut** lorsque les outils GitHub
-authentifiés disponibles permettent de lire, modifier, valider et publier le lot. Il peut
-adapter le code, les tests et la documentation du dépôt, puis créer le commit et
-le pousser sur `main` sans demander une confirmation séparée pour chaque lot.
-Toute demande de l'utilisateur visant à implémenter, corriger ou mettre à jour le
-dépôt autorise ces opérations dans le périmètre de cette demande. Une consigne
-explicite « sans commit », « sans push », « brouillon », « branche » ou « PR »
-reste prioritaire.
+**ChatGPT contribue directement par défaut (`DIRECT_GITHUB_PUBLICATION`)**
+lorsque les outils GitHub authentifiés disponibles permettent de lire,
+modifier, valider et publier le lot via les API GitHub (création de fichiers,
+blobs, arbres, commits et mise à jour fast-forward de `main`), sans dépendance
+obligatoire au checkout local de Codex. Toute demande de l'utilisateur visant à
+implémenter, corriger ou mettre à jour le dépôt autorise ces opérations dans
+le périmètre de cette demande. Une consigne explicite « sans commit », « sans
+push », « brouillon », « branche » ou « PR » reste prioritaire.
+
+Pour les **contributions documentaires** (documentation, spécifications, plans
+et candidats d'intégration explicitement identifiés `CANDIDATE` sans être
+présentés comme du runtime validé), lorsque les hooks Git locaux ne sont pas
+techniquement disponibles dans l'environnement ChatGPT, leur exécution locale
+est remplacée par les contrôles équivalents accessibles (contrôle des secrets,
+intégrité des fichiers et de l'encodage, vérification des changements
+concurrents sur `main`, mise à jour fast-forward et relecture du SHA publié)
+ainsi que par les validations CI pertinentes. Rapporter explicitement
+`HOOK_NOT_AVAILABLE`, `NOT_RUN`, `PASS` ou `FAIL` sans jamais assimiler un
+contrôle absent ou indisponible à un contrôle réussi.
 
 Avant une écriture directe, ChatGPT lit l'état publié courant, les consignes
 applicables et les fichiers réellement concernés ; il vérifie les changements
 concurrents, ne modifie que les chemins attribués au lot, exécute les contrôles
 qu'il peut réellement lancer et vérifie le SHA et la référence distante après
 publication. Il distingue les vérifications locales des checks GitHub et ne
-présente jamais un test non exécuté comme passé. Il n'inclut pas les changements
-dirty étrangers et ne confond pas une demande de modification ciblée avec
-l'autorisation de publier tout le worktree dirty.
+présente jamais un test non exécuté ou un artefact `CANDIDATE` comme validé.
+Il n'inclut pas les changements dirty étrangers et ne confond pas une demande
+de modification ciblée avec l'autorisation de publier tout le worktree dirty.
 
-Les protections de branche, permissions, hooks et contrôles requis restent
-actifs : aucune écriture directe ne justifie un force-push, une réécriture
-d'historique, un contournement de garde ou une modification des protections. Si
-les outils ChatGPT ne permettent pas une validation ou une publication sûre,
-ChatGPT prépare le changement et transmet à Codex uniquement les étapes locales
-ou les preuves runtime qui nécessitent le checkout ; le recours à Codex ne
-remplace pas par défaut la contribution directe que ChatGPT peut réaliser.
+Les protections GitHub, permissions, contrôles des secrets, intégrité des
+données et règles de fast-forward restent obligatoires : aucune écriture directe
+ne justifie un force-push, une réécriture d'historique, un contournement de
+garde ou une modification des protections. Les exigences de validation
+applicables au **code runtime et aux migrations** restent intégralement
+maintenues : si les outils ChatGPT ne permettent pas une validation requise,
+ChatGPT publie uniquement le candidat identifié `CANDIDATE` lorsque pertinent
+ou transmet à Codex seulement l'étape locale ou la preuve runtime manquante,
+sans remplacer par défaut la contribution directe que ChatGPT peut réaliser.
 
-Codex reste le chemin d'exécution pour les contrôles exigeant le runtime local,
-les secrets ou l'environnement poste. ChatGPT et Codex peuvent contribuer en
-parallèle selon `MAIN-ONLY / MULTI-WRITER COORDONNÉ` dans `AGENTS.md` ; ils
-coordonnent explicitement toute collision de fichier, d'index ou de référence.
-La création d'une branche, d'une PR, d'un clone ou d'un worktree suit la demande
-du lot et les règles du dépôt.
+Codex reste le chemin d'exécution pour les contrôles exigeant le checkout
+local (où les hooks Git locaux restent obligatoires), les secrets locaux ou
+l'environnement poste. ChatGPT et Codex peuvent contribuer en parallèle selon
+`MAIN-ONLY / MULTI-WRITER COORDONNÉ` dans `AGENTS.md` ; ils coordonnent
+explicitement toute collision de fichier, d'index ou de référence. La création
+d'une branche, d'une PR, d'un clone ou d'un worktree suit la demande du lot et
+les règles du dépôt.
 
 ## 4. Conversation et prompts Codex
 

@@ -210,26 +210,29 @@ fast-forward, arrêter avec le diagnostic exact ; ne pas resynchroniser le
 contenu fonctionnel ni relancer les validations. Aucun force-push ou
 contournement de garde n'est permis.
 
-**Autorisation permanente d'écriture directe pour ChatGPT** : conformément à
-`CHATGPT.md`, toute demande utilisateur d'implémentation, de correction ou de
-mise à jour de ce dépôt autorise ChatGPT à modifier les fichiers attribués,
-committer les changements validés et pousser directement sur `main`, sans
-confirmation supplémentaire. ChatGPT est encouragé à réaliser lui-même le
-travail de code, tests et documentation lorsque ses outils permettent les
-vérifications requises. Cette autorisation est limitée au lot et ne remplace
-pas l'autorisation distincte exigée pour publier tout le worktree dirty. Les
-interdictions explicites de commit/push prévalent ; protections, hooks,
-permissions, vérifications du candidat, fast-forward, préservation des autres
-writers et contrôle de convergence restent obligatoires. Si un contrôle local
-requis n'est pas accessible à ChatGPT, il doit l'indiquer précisément et
-transmettre à Codex seulement cette étape ou la preuve runtime manquante, sans
-présenter le résultat comme validé.
+**Autorisation permanente d'écriture directe pour ChatGPT (`DIRECT_GITHUB_PUBLICATION`)** :
+conformément à `CHATGPT.md`, toute demande utilisateur d'implémentation, de
+correction ou de mise à jour de ce dépôt autorise ChatGPT à publier
+directement sur `main` via les API GitHub (création de fichiers, blobs,
+arbres, commits et mise à jour fast-forward), sans dépendance obligatoire au
+checkout local de Codex ni confirmation supplémentaire. Pour les contributions
+documentaires et les candidats d'intégration explicitement identifiés
+`CANDIDATE` (jamais présentés comme du runtime validé), lorsque les hooks Git
+locaux sont techniquement indisponibles, ChatGPT rapporte `HOOK_NOT_AVAILABLE`
+et les remplace par les contrôles équivalents accessibles (secrets, intégrité,
+changements concurrents, fast-forward et relecture du SHA publié) et les
+validations CI pertinentes. Ne jamais assimiler `HOOK_NOT_AVAILABLE` ou
+`NOT_RUN` à `PASS`. Les exigences de validation du code runtime et des
+migrations restent maintenues, et les hooks locaux restent obligatoires pour
+toute contribution effectuée depuis le checkout local. Les interdictions
+explicites de commit/push prévalent ; cette autorisation reste limitée au lot
+et ne couvre pas la publication de tout le worktree dirty.
 
 Un défaut, un préflight Supabase `BLOCKED`/`DIVERGED` ou une validation Supabase
 manquante ne retient jamais un commit ou un push Git autrement publiable. Les
 protections Git, secrets, intégrité, concurrence et fast-forward restent
 obligatoires. Une migration peut donc être publiée indépendamment de son
-application ; la convergence Production automatique attend ensuite les preuves
+application ; l'application via la CLI Supabase liée attend ensuite les preuves
 et contrôles requis. Si un contrôle bloquant échoue ou manque, la file reste
 entièrement en attente et le défaut est corrigé avant toute application.
 
