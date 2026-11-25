@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ALL_CI_E2E_PROJECTS } from "../scripts/ci/e2e-project-catalog.mjs";
 
 export const CLERK_DEV_BACKEND_ENV = "CMM_E2E_CLERK_DEV_BACKEND_TOKEN";
 export const CLERK_DEV_PUBLISHABLE_ENV = "CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY";
@@ -114,24 +115,14 @@ async function writeWebEnvironment() {
   await writeFile(webEnvFile, content, { encoding: "utf8", flag: "wx" });
 }
 
-const DEFAULT_PERSISTENT_PROJECTS = [
-  "action sharing",
-  "authenticated campaign",
-  "signalement campaign 2",
-  "personal AI authenticated",
-];
-
-const ALLOWED_CI_PROJECTS = new Set([
-  ...DEFAULT_PERSISTENT_PROJECTS,
-  "local public",
-]);
+const ALLOWED_CI_PROJECTS = new Set(ALL_CI_E2E_PROJECTS);
 
 function resolvePersistentProjects(raw = process.env.PLAYWRIGHT_PROJECTS) {
   const requested = String(raw ?? "")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
-  if (requested.length === 0) return DEFAULT_PERSISTENT_PROJECTS;
+  if (requested.length === 0) return [...ALL_CI_E2E_PROJECTS];
   const invalid = requested.filter((name) => !ALLOWED_CI_PROJECTS.has(name));
   if (invalid.length > 0) {
     throw new Error(`Unsupported Playwright project(s): ${invalid.join(", ")}`);

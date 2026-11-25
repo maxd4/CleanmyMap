@@ -5,6 +5,11 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import {
+  ALL_CI_E2E_PROJECTS,
+  isLocalOnlyE2eSpec,
+  matchCiProjectsForFile,
+} from "./e2e-project-catalog.mjs";
 import { gitExecutable } from "./git-executable.mjs";
 
 const ALL_PERSISTENT_PROJECTS = [
@@ -21,6 +26,7 @@ const SHARED_BOOTSTRAP_INFRA_FILES = [
   "scripts/ci/diagnose-supabase-start.mjs",
   "scripts/ci/diagnose-supabase-start.test.mjs",
   "scripts/ci/select-e2e-sql-plan.mjs",
+  "scripts/ci/e2e-project-catalog.mjs",
   "package.json",
   "package-lock.json",
 ];
@@ -98,7 +104,7 @@ function fullConservativePlan(reason, { runSpogomiBusinessTests = false } = {}) 
     run_spogomi_integration: true,
     run_spogomi_business_tests: runSpogomiBusinessTests,
     run_persistent_e2e: true,
-    playwright_projects: ALL_PERSISTENT_PROJECTS.join(","),
+    playwright_projects: ALL_CI_E2E_PROJECTS.join(","),
     sql_should_run: true,
     sql_proof_targets: "",
     validate_all_sql: true,
@@ -169,7 +175,7 @@ export function planE2eAndSql({
   const hasSharedSqlInfra = files.some((file) => SHARED_SQL_INFRA_FILES.has(file));
 
   if (hasSharedSchema || hasSharedAuth || hasSharedE2eInfra) {
-    for (const project of ALL_PERSISTENT_PROJECTS) projects.add(project);
+    for (const project of ALL_CI_E2E_PROJECTS) projects.add(project);
     runSpogomiIntegration = true;
   }
 
@@ -192,56 +198,16 @@ export function planE2eAndSql({
       runSpogomiIntegration = true;
     }
 
-    if (
-      file === "e2e/action-sharing.spec.ts" ||
-      file === "e2e/action-finalization.spec.ts" ||
-      file === "e2e/action-route-reference-images.spec.ts" ||
-      file === "e2e/route-reference-action-sharing.spec.ts" ||
-      file.startsWith("apps/web/src/lib/actions/") ||
-      file.startsWith("apps/web/src/app/api/actions/")
-    ) {
-      projects.add("action sharing");
+    const matchedProjects = matchCiProjectsForFile(file);
+    for (const projectName of matchedProjects) {
+      projects.add(projectName);
     }
-
-    if (
-      file === "e2e/authenticated-campaign.spec.ts" ||
-      file === "e2e/authenticated-spogomi.spec.ts" ||
-      file.startsWith("apps/web/src/lib/spogomi/") ||
-      file.startsWith("apps/web/src/app/api/spogomi/")
-    ) {
-      projects.add("authenticated campaign");
+    if (matchedProjects.includes("authenticated campaign")) {
       runSpogomiIntegration = true;
     }
 
-    if (
-      file === "e2e/signalement-campaign-2.spec.ts" ||
-      file.startsWith("apps/web/src/lib/reports/") ||
-      file.startsWith("apps/web/src/app/api/reports/") ||
-      file.startsWith("apps/web/src/lib/signalements/") ||
-      file.startsWith("apps/web/src/app/api/signalements/")
-    ) {
-      projects.add("signalement campaign 2");
-    }
-
-    if (
-      file === "e2e/personal-ai-authenticated.spec.ts" ||
-      file.startsWith("apps/web/src/lib/personal-ai/") ||
-      file.startsWith("apps/web/src/app/api/personal-ai/")
-    ) {
-      projects.add("personal AI authenticated");
-    }
-
-    if (
-      file === "e2e/annuaire-public-cleanliness.spec.ts" ||
-      file.startsWith("apps/web/src/lib/partners/") ||
-      file.startsWith("apps/web/src/components/sections/rubriques/annuaire/")
-    ) {
-      projects.add("local public");
-    }
-
-    if (/^e2e\/.*\.(?:spec|test)\.ts$/.test(file) && projects.size === 0) {
-      projects.add("local public");
-      for (const project of ALL_PERSISTENT_PROJECTS) projects.add(project);
+    if (/^e2e\/.*\.(?:spec|test)\.ts$/.test(file) && matchedProjects.length === 0 && !isLocalOnlyE2eSpec(file)) {
+      for (const project of ALL_CI_E2E_PROJECTS) projects.add(project);
     }
   }
 
