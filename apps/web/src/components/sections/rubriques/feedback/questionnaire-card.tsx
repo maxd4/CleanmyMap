@@ -38,28 +38,28 @@ type SubmitState = "idle" | "submitting" | "success" | "error";
 
 const ACCENT_CLASSES = {
   rose: {
-    border: "border-rose-300/30",
-    bg: "bg-rose-500/10",
-    title: "text-rose-100",
-    icon: "text-rose-300",
+    border: "border-rose-200 dark:border-rose-500/30",
+    bg: "bg-rose-100 dark:bg-rose-500/15",
+    title: "cmm-text-secondary",
+    icon: "text-rose-700 dark:text-rose-300",
     button:
-      "border-rose-300/30 bg-rose-400/15 text-rose-50 hover:bg-rose-400/25 focus-visible:ring-rose-300/40",
+      "border-rose-300 bg-rose-50 text-rose-900 hover:bg-rose-100 focus-visible:ring-rose-400",
   },
   amber: {
-    border: "border-amber-300/30",
-    bg: "bg-amber-500/10",
-    title: "text-amber-50",
-    icon: "text-amber-300",
+    border: "border-amber-200 dark:border-amber-500/30",
+    bg: "bg-amber-100 dark:bg-amber-500/15",
+    title: "cmm-text-secondary",
+    icon: "text-amber-800 dark:text-amber-300",
     button:
-      "border-amber-300/30 bg-amber-400/15 text-amber-50 hover:bg-amber-400/25 focus-visible:ring-amber-300/40",
+      "border-amber-300 bg-amber-50 text-amber-950 hover:bg-amber-100 focus-visible:ring-amber-400",
   },
   emerald: {
-    border: "border-emerald-300/30",
-    bg: "bg-emerald-500/10",
-    title: "text-emerald-50",
-    icon: "text-emerald-300",
+    border: "border-emerald-200 dark:border-emerald-500/30",
+    bg: "bg-emerald-100 dark:bg-emerald-500/15",
+    title: "cmm-text-secondary",
+    icon: "text-emerald-700 dark:text-emerald-300",
     button:
-      "border-emerald-300/30 bg-emerald-400/15 text-emerald-50 hover:bg-emerald-400/25 focus-visible:ring-emerald-300/40",
+      "border-emerald-300 bg-emerald-50 text-emerald-950 hover:bg-emerald-100 focus-visible:ring-emerald-400",
   },
 } as const;
 
@@ -293,7 +293,7 @@ function QuestionnaireCardView({ questionnaire, locale, accentClasses, Icon, isL
   handleScreenshotChange: (event: ChangeEvent<HTMLInputElement>) => void;
   removeScreenshot: () => void;
 }) {
-  return <CmmCard tone="slate" variant="glass" size="lg" className={cn("scroll-mt-28 rounded-[1.75rem]", accentClasses.border)} header={<div className="flex items-center gap-3"><div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl border", accentClasses.border, accentClasses.bg)}><Icon className={cn("h-5 w-5", accentClasses.icon)} aria-hidden="true" /></div><div><p className="cmm-text-small font-semibold uppercase tracking-[0.2em] text-slate-100">{questionnaire.title[locale]}</p><p className={cn("mt-1 text-sm leading-relaxed", accentClasses.title)}>{questionnaire.intro[locale]}</p></div></div>}>
+  return <CmmCard tone="family" variant="default" size="lg" className={cn("scroll-mt-28", accentClasses.border)} header={<div className="flex items-center gap-3"><div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl border", accentClasses.border, accentClasses.bg)}><Icon className={cn("h-5 w-5", accentClasses.icon)} aria-hidden="true" /></div><div><p className="cmm-text-small font-semibold uppercase tracking-[0.2em] cmm-text-primary">{questionnaire.title[locale]}</p><p className={cn("mt-1 text-sm leading-relaxed", accentClasses.title)}>{questionnaire.intro[locale]}</p></div></div>}>
     <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden opacity-0" aria-hidden="true"><label htmlFor={`feedback-website-${questionnaire.id}`}>Website</label><input id={`feedback-website-${questionnaire.id}`} name="website" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(event) => setHoneypot(event.target.value)} /></div>
     {isLoaded && !isSignedIn ? <QuestionnaireSignInPrompt locale={locale} returnPath={returnPath} buttonClassName={accentClasses.button} /> : null}
     {isLoaded && isSignedIn ? <QuestionnaireCardForm questionnaire={questionnaire} locale={locale} values={values} submitState={submitState} speech={speech} similarFeedback={similarFeedback} screenshotFile={screenshotFile} screenshotPreview={screenshotPreview} screenshotError={screenshotError} serializedDescription={serializedDescription} descriptionTooLong={descriptionTooLong} requestId={requestId} errorMessage={errorMessage} accentButtonClassName={accentClasses.button} onSubmit={(event) => { void /* fire-and-forget -- the questionnaire form owns submission state and errors. */ handleSubmit(event); }} onUpdateField={updateField} onScreenshotChange={handleScreenshotChange} onRemoveScreenshot={removeScreenshot} /> : null}
@@ -301,10 +301,10 @@ function QuestionnaireCardView({ questionnaire, locale, accentClasses, Icon, isL
 }
 
 function QuestionnaireSignInPrompt({ locale, returnPath, buttonClassName }: { locale: "fr" | "en"; returnPath: string; buttonClassName: string }) {
-  return <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-    <p className="text-sm font-medium text-slate-100">{locale === "fr" ? "Connecte-toi pour envoyer ce questionnaire." : "Sign in to submit this questionnaire."}</p>
-    <p className="mt-1 text-sm leading-relaxed text-slate-300">{locale === "fr" ? "Après envoi, le retour est transmis à CleanMyMap pour examen." : "After submission, your feedback is sent to CleanMyMap for review."}</p>
-    <CmmButton href={buildSignInRedirectHref(returnPath)} tone="secondary" variant="pill" className={cn("mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2", buttonClassName)}>
+  return <div className="cmm-surface cmm-panel p-4">
+    <p className="text-sm font-medium cmm-text-primary">{locale === "fr" ? "Connecte-toi pour envoyer ce questionnaire." : "Sign in to submit this questionnaire."}</p>
+    <p className="mt-1 text-sm leading-relaxed cmm-text-primary">{locale === "fr" ? "Après envoi, le retour est transmis à CleanMyMap pour examen." : "After submission, your feedback is sent to CleanMyMap for review."}</p>
+    <CmmButton href={buildSignInRedirectHref(returnPath)} tone="critical" variant="pill" className={cn("mt-4 inline-flex min-h-11 items-center justify-center px-4 py-2.5 text-sm font-semibold", buttonClassName)}>
       {locale === "fr" ? "Se connecter" : "Sign in"}
     </CmmButton>
   </div>;

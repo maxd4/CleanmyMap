@@ -47,7 +47,7 @@ export function AnnuaireActorCard({ entry, onFocusMap, onOpenProfile }: Annuaire
   return (
     <CmmCard
       variant="default"
-      tone={isFeatured ? "violet" : "pink"}
+      tone="family"
       className="group flex min-w-0 flex-col gap-4"
     >
       <AnnuaireActorBadges entry={entry} fr={fr} isFeatured={Boolean(isFeatured)} isEditorial={isEditorial} isTrusted={isTrusted} hasRecentUpdate={hasRecentUpdate} structureBadge={structureBadge} />

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BarChart3, FileText, FolderOpen, LibraryBig } from "lucide-react";
-import { CmmCard } from "@/components/ui/cmm-card";
+import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
 
 export type ReportsPageTabId = "generation" | "analysis" | "files" | "library";
 
@@ -56,9 +56,8 @@ export function ReportsPageTabs({ activeTab }: ReportsPageTabsProps) {
     <nav
       aria-label="Onglets des rapports"
       data-testid="reports-page-tabs"
-      className="w-fit max-w-full"
+      className={tabStripClassName("family", "grid-cols-2 sm:grid-cols-4")}
     >
-      <CmmCard tone="red" variant="outlined" size="sm" className="inline-flex max-w-full flex-wrap gap-1">
       {TAB_DEFINITIONS.map((tab) => {
         const Icon = tab.icon;
         const active = activeTab === tab.id;
@@ -69,18 +68,13 @@ export function ReportsPageTabs({ activeTab }: ReportsPageTabsProps) {
             key={tab.id}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${
-              active
-                ? "border-red-600 bg-red-600 text-white shadow-[0_10px_22px_-16px_rgba(220,38,38,0.65)]"
-                : "border-transparent bg-white text-slate-700 hover:border-rose-200 hover:bg-rose-50"
-            }`}
+            className={tabItemClassName("family", active)}
           >
-            <Icon size={17} aria-hidden="true" />
+            <Icon size={17} aria-hidden="true" className="mr-2 shrink-0" />
             <span>{tab.label}</span>
           </Link>
         );
       })}
-      </CmmCard>
     </nav>
   );
 }

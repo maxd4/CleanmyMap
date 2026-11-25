@@ -11,7 +11,6 @@ export function FeedbackHeader() {
   return (
     <div className="space-y-6">
       <PageHeader
-        contrast="inverse"
         title={
           locale === "fr"
             ? "Un canal unique pour corriger, améliorer et collaborer."
@@ -38,15 +37,14 @@ export function FeedbackHeader() {
       />
 
       <CmmCard
-        tone="sky"
-        variant="glass"
+        tone="family"
+        variant="default"
         size="lg"
-        className="rounded-[2rem] border-cyan-300/20 bg-slate-950/35"
       >
         <div className="grid gap-3 sm:grid-cols-3">
           {[
             {
-                label: "Bugs",
+              label: "Bugs",
               value: locale === "fr" ? "Réparation priorisée" : "Priority fix",
             },
             {
@@ -54,18 +52,18 @@ export function FeedbackHeader() {
               value: locale === "fr" ? "Itérations utiles" : "Useful iterations",
             },
             {
-                label: "Collaborations",
+              label: "Collaborations",
               value: locale === "fr" ? "Mise en lien" : "Warm introduction",
             },
           ].map((item) => (
             <div
               key={item.label}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+              className="cmm-surface cmm-panel p-4"
             >
-              <p className="cmm-text-caption font-semibold uppercase tracking-[0.18em] text-cyan-200/80">
+              <p className="cmm-text-caption font-semibold uppercase tracking-[0.18em] text-[var(--cmm-family-heading,var(--text-primary))]">
                 {item.label}
               </p>
-              <p className="mt-2 text-sm font-medium text-white">{item.value}</p>
+              <p className="mt-2 text-sm font-medium cmm-text-primary">{item.value}</p>
             </div>
           ))}
         </div>

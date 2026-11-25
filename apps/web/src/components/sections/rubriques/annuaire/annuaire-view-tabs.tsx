@@ -49,7 +49,7 @@ export function AnnuaireViewTabs({
       aria-orientation="horizontal"
       aria-label={fr ? "Vues de l'Annuaire" : "Directory views"}
       onKeyDown={onKeyDown}
-      className={tabStripClassName("pink", "grid-cols-1 sm:grid-cols-3")}
+      className={tabStripClassName("family", "grid-cols-1 sm:grid-cols-3")}
     >
       {ANNUAIRE_VIEWS.map((item) => (
         <button
@@ -61,7 +61,7 @@ export function AnnuaireViewTabs({
           aria-controls={annuairePanelId(item)}
           tabIndex={view === item ? 0 : -1}
           onClick={() => onChange(item)}
-          className={tabItemClassName("pink", view === item)}
+          className={tabItemClassName("family", view === item)}
         >
           {fr ? LABELS[item].fr : LABELS[item].en}
         </button>

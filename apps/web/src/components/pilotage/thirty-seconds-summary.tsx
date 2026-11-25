@@ -210,12 +210,24 @@ export function getSummaryInterpretationStyles(
   interpretation: SummaryKpi["interpretation"],
 ): { color: string; background: string; icon: LucideIcon } {
   if (interpretation === "positive") {
-    return { color: "text-emerald-300", background: "bg-emerald-500/10", icon: TrendingUp };
+    return {
+      color: "text-emerald-700 dark:text-emerald-300",
+      background: "bg-emerald-100 dark:bg-emerald-500/15",
+      icon: TrendingUp,
+    };
   }
   if (interpretation === "negative") {
-    return { color: "text-rose-300", background: "bg-rose-500/10", icon: TrendingDown };
+    return {
+      color: "text-rose-700 dark:text-rose-300",
+      background: "bg-rose-100 dark:bg-rose-500/15",
+      icon: TrendingDown,
+    };
   }
-  return { color: "text-slate-200", background: "bg-slate-500/15", icon: Minus };
+  return {
+    color: "text-slate-700 dark:text-slate-200",
+    background: "bg-slate-200/80 dark:bg-slate-500/20",
+    icon: Minus,
+  };
 }
 
 type NormalizedThirtySecondsSummary = {

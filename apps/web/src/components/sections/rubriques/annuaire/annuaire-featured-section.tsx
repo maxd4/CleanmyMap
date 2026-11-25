@@ -30,7 +30,7 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
           >
             <CmmCard 
               variant="default"
-              tone="pink"
+              tone="family"
               className="group flex h-full min-w-0 flex-col gap-4"
             >
               {/* Premium Glass Badge */}

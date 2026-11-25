@@ -143,7 +143,7 @@ export function OpenDataSection() {
 
         <div className="relative overflow-hidden rounded-[2.25rem] border border-violet-100 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(216,180,254,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(252,250,255,0.98)_100%)] p-5 text-slate-950 shadow-[0_30px_100px_-70px_rgba(79,70,229,0.45)] sm:p-8 lg:p-10">
           <section className="relative">
-            <CmmCard tone="violet" variant="glass" className="relative">
+            <CmmCard tone="family" variant="default" className="relative">
             <div className="absolute right-0 top-0 hidden h-full w-32 overflow-hidden rounded-r-[2rem] lg:block">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.12),transparent_68%)]" />
               <div className="absolute inset-y-0 right-4 w-px bg-violet-100/70" />
@@ -154,7 +154,7 @@ export function OpenDataSection() {
               <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
                 <ShieldCheck size={28} />
               </div>
-              <h2 className="max-w-lg text-[1.6rem] font-black leading-tight tracking-[-0.04em] text-[#2f1a78]">
+              <h2 className="max-w-lg text-[1.6rem] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
                 {fr ? "Projection publique" : "Public projection"}
               </h2>
               <p className="max-w-xl text-[0.98rem] leading-[1.7] text-slate-600">
@@ -171,11 +171,11 @@ export function OpenDataSection() {
             const Icon = card.icon;
             return (
               <article key={card.title.fr} id={card.anchor}>
-                <CmmCard as="div" tone="violet" variant="glass" size="sm" className="h-full">
+                <CmmCard as="div" tone="family" variant="default" size="sm" className="h-full">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_14px_30px_-18px_rgba(79,70,229,0.85)]">
                   <Icon size={22} />
                 </div>
-                <h3 className="mt-5 text-[1.25rem] font-black leading-tight tracking-[-0.03em] text-[#2f1a78]">
+                <h3 className="mt-5 text-[1.25rem] font-black leading-tight tracking-[-0.03em] cmm-text-primary">
                   {localize(locale, card.title)}
                 </h3>
                 <FeatureList locale={locale} items={card.items} />
@@ -195,16 +195,16 @@ export function OpenDataSection() {
         </section>
 
         <section id="api" className="mt-6">
-          <CmmCard as="div" tone="violet" variant="glass" className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+          <CmmCard as="div" tone="family" variant="default" className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
               <Code size={28} />
             </div>
             <div className="space-y-2">
-              <div className="cmm-text-caption font-black uppercase tracking-[0.2em] text-violet-500">
+              <div className="cmm-text-caption font-black uppercase tracking-[0.2em] text-[var(--cmm-family-heading,var(--text-primary))]">
                 {fr ? "Documentation technique" : "Technical documentation"}
               </div>
-              <h3 className="text-[clamp(1.6rem,3vw,2.5rem)] font-black leading-tight tracking-[-0.04em] text-[#2f1a78]">
+              <h3 className="text-[clamp(1.6rem,3vw,2.5rem)] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
                 {fr ? "Connectez vos outils" : "Connect your tools"}
               </h3>
               <p className="max-w-2xl text-[0.96rem] leading-[1.7] text-slate-600">
@@ -234,15 +234,15 @@ export function OpenDataSection() {
         </section>
 
         <section id="economy" className="mt-6">
-          <CmmCard as="div" tone="violet" variant="glass" className="space-y-5">
+          <CmmCard as="div" tone="family" variant="default" className="space-y-5">
           <div className="flex flex-col gap-2">
-            <div className="inline-flex items-center gap-2 text-violet-500">
+            <div className="inline-flex items-center gap-2 text-[var(--cmm-family-heading,var(--text-primary))]">
               <Sparkles size={18} />
               <span className="cmm-text-caption font-black uppercase tracking-[0.2em]">
                 {fr ? "Modèle Économique" : "Economic model"}
               </span>
             </div>
-            <h2 className="text-[1.8rem] font-black leading-tight tracking-[-0.04em] text-[#2f1a78]">
+            <h2 className="text-[1.8rem] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
               {fr ? "Modèle Économique" : "Economic Model"}
             </h2>
             <p className="max-w-3xl text-[0.96rem] leading-[1.7] text-slate-600">
@@ -261,7 +261,7 @@ export function OpenDataSection() {
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-50 text-violet-600">
                     <Icon size={24} />
                   </div>
-                  <h3 className="mt-4 text-[1rem] font-black leading-tight text-[#2f1a78]">
+                  <h3 className="mt-4 text-[1rem] font-black leading-tight cmm-text-primary">
                     {localize(locale, card.title)}
                   </h3>
                   <p className="mt-3 text-[0.92rem] leading-[1.65] text-slate-600">

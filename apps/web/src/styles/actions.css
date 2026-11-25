@@ -126,6 +126,42 @@
     transition: var(--cmm-button-transition);
   }
 
+  /* Tab selection is a navigation state, not an action priority. */
+  .cmm-family-tab-strip {
+    background: var(--bg-elevated);
+    border-color: var(--cmm-family-card-border, var(--border-strong));
+    box-shadow: var(--cmm-surface-shadow);
+  }
+
+  .cmm-family-tab-item {
+    color: var(--cmm-family-heading, var(--text-primary));
+  }
+
+  .cmm-family-tab-item:hover {
+    background: var(--cmm-family-card-flat, var(--bg-muted));
+  }
+
+  .cmm-family-tab-item--active,
+  .cmm-family-tab-item--active:hover {
+    background: linear-gradient(135deg, var(--cmm-family-primary, #475569), var(--cmm-family-deep, #334155));
+    color: #ffffff !important;
+  }
+
+  .cmm-family-tab-item:focus-visible {
+    outline: 2px solid var(--cmm-family-heading, var(--text-primary));
+    outline-offset: 2px;
+  }
+
+  [data-display-mode="minimaliste"] .cmm-family-tab-item--active,
+  [data-display-mode="sobre"] .cmm-family-tab-item--active {
+    background: var(--cmm-family-deep, #334155);
+    color: #ffffff !important;
+  }
+
+  [data-display-mode="sobre"] .cmm-family-tab-strip {
+    box-shadow: none;
+  }
+
   .cmm-button[data-cmm-button-tone="primary"] {
     --cmm-button-background: var(--action-primary-bg);
     --cmm-button-background-hover: var(--action-primary-hover);

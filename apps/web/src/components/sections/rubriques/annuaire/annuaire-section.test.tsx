@@ -130,13 +130,13 @@ describe("AnnuaireSection partner onboarding CTA", () => {
     );
   });
 
-  it("uses the white canvas contract and the rose variation of the form tab strip", () => {
+  it("uses a neutral canvas and the shared family tab presentation", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
 
     expect(markup).toContain('data-gradient="from-transparent via-transparent to-transparent"');
-    expect(markup).toContain("grid w-full gap-2 rounded-2xl border p-2");
-    expect(markup).toContain("from-pink-800 to-pink-900 text-white");
-    expect(markup).toContain("text-pink-900 hover:bg-pink-100");
+    expect(markup).toContain("cmm-family-tab-strip");
+    expect(markup).toContain("cmm-family-tab-item--active");
+    expect(markup).not.toContain("bg-violet-500/10 cmm-text-primary");
   });
 
   it("does not compose the obsolete static workshops panel", () => {

@@ -149,9 +149,9 @@ describe("normalizeThirtySecondsSummaryProps", () => {
 
 describe("ThirtySecondsSummary rendering", () => {
   it.each([
-    ["positive", "text-emerald-300", "bg-emerald-500/10"],
-    ["negative", "text-rose-300", "bg-rose-500/10"],
-    ["neutral", "text-slate-200", "bg-slate-500/15"],
+    ["positive", "text-emerald-700", "bg-emerald-100"],
+    ["negative", "text-rose-700", "bg-rose-100"],
+    ["neutral", "text-slate-700", "bg-slate-200/80"],
   ] as const)("renders the %s interpretation with a distinct presentation", (interpretation, color, background) => {
     const markup = renderToStaticMarkup(
       React.createElement(ThirtySecondsSummary, {

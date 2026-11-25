@@ -164,7 +164,8 @@ describe("Messagerie navigation shell", () => {
         ),
       );
 
-      expect(markup).toContain('aria-hidden="true" class="absolute inset-0');
+      expect(markup).toContain("cmm-family-tab-strip");
+      expect(markup).toContain("cmm-family-tab-item--active");
     }
   });
 
@@ -211,7 +212,7 @@ describe("Messagerie navigation shell", () => {
     expect(connectSectionSource).toContain("useReducedMotion");
     expect(connectComponentsSource).toContain('role="tablist"');
     expect(connectComponentsSource).toContain('role="tab"');
-    expect(connectComponentsSource).toContain("ariaSelected={isActive}");
+    expect(connectComponentsSource).toContain("aria-selected={isActive}");
     expect(connectComponentsSource).toContain("ArrowRight");
   });
 

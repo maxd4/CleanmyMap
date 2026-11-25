@@ -17,9 +17,13 @@ type KpiComparisonCardProps = {
 };
 
 function toneClass(interpretation: KpiComparisonCardProps["interpretation"]): string {
-  if (interpretation === "positive") return "text-emerald-400 bg-emerald-400/10 border-emerald-400/20";
-  if (interpretation === "negative") return "text-rose-400 bg-rose-400/10 border-rose-400/20";
-  return "text-slate-400 bg-slate-400/10 border-slate-400/20";
+  if (interpretation === "positive") {
+    return "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/15 dark:border-emerald-400/30";
+  }
+  if (interpretation === "negative") {
+    return "text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-500/15 dark:border-rose-400/30";
+  }
+  return "text-slate-700 bg-slate-100 border-slate-300 dark:text-slate-200 dark:bg-slate-800/60 dark:border-slate-600";
 }
 
 function TrendIcon({ interpretation }: { interpretation: KpiComparisonCardProps["interpretation"] }) {

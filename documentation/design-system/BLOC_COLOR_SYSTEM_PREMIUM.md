@@ -1,6 +1,6 @@
 # BLOC_COLOR_SYSTEM_PREMIUM : système de couleurs par bloc
 
-**Statut : CURRENT pour le socle I1 (registre de palettes, canvas neutre et primitives communes).** Les consommateurs I2 sont traités dans le lot suivant.
+**Statut : CURRENT (socle I1 et adoption I2 intégrés).** Les preuves navigateur multi-largeurs et la régénération du board design-system complètent la clôture I3.
 
 Sources de vérité : registre `page-families` (résolution des routes),
 `surface-palette.ts` (valeurs chromatiques), `surfaces.css` et `actions.css`
@@ -145,7 +145,9 @@ pour le doré/brun et `tone="important"` pour le violet.
   si le contexte de route correspond. `RubriqueCard` spécialisé peut porter
   une surface distincte selon son rôle ; converger les overrides inutiles
   vers les primitives sans changer le contenu.
-- Un onglet actif est un état de navigation dans la palette de famille, pas un CTA
+- La présentation de tablist et de ses boutons est partagée par les
+  formulaires et les vues locales via `cmm-tab-strip.styles.ts`. Un onglet
+  actif est un état de navigation dans la palette de famille, pas un CTA
   classé dans la hiérarchie des actions. Préserver ARIA, focus et clavier.
 - Exhaustif : dégradés opaques, accents et ombres modérés. Minimaliste :
   teintes unies sans ombre décorative. Sobre : surfaces neutres plates,

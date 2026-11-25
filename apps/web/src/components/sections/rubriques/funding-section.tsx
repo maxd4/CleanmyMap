@@ -87,7 +87,7 @@ function FundingCategoryCard({
   return (
     <CmmCard
       as="article"
-      tone={category === "equipment" ? "pink" : "indigo"}
+      tone="family"
       variant="elevated"
       size="lg"
       className="flex h-full flex-col gap-6"

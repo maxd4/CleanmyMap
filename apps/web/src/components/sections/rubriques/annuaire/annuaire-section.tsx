@@ -21,7 +21,7 @@ import { ParisNetworkContributionCard } from "./paris-network-contribution-card"
 import { useAnnuaireLogic } from "./use-annuaire-logic";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
-import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -47,14 +47,14 @@ function AnnuaireDirectoryFeedback({ fr, logic }: { fr: boolean; logic: ReturnTy
 
 function AnnuaireJoinCta({ fr }: { fr: boolean }) {
   return (
-    <RubriqueCard themeColor="rose" withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden border-amber-500/40 md:flex-row">
-      <div className="pointer-events-none absolute top-0 right-0 p-12 opacity-10"><Building2 size={160} className="text-pink-700" /></div>
+    <FamilyRubriqueCard withTopBar={false} withHover={false} className="relative flex flex-col items-center justify-between gap-8 overflow-hidden md:flex-row">
+      <div className="pointer-events-none absolute top-0 right-0 p-12 opacity-10"><Building2 size={160} className="text-violet-400" /></div>
       <div className="relative z-10 max-w-xl space-y-4 text-center md:text-left">
-        <h3 className="text-3xl font-black tracking-tight cmm-text-primary">{fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}</h3>
-        <p className="font-semibold leading-relaxed cmm-text-primary">{fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}</p>
+        <h3 className="text-2xl font-bold tracking-tight text-[var(--cmm-rubrique-text)]">{fr ? "Vous agissez sur le terrain ?" : "Are you acting on the field?"}</h3>
+        <p className="font-medium leading-relaxed text-[var(--cmm-rubrique-text)]">{fr ? "Rejoignez l'annuaire pour présenter votre structure, partager vos besoins et rendre vos canaux publics visibles." : "Join the directory to present your structure, share your needs and make your public channels visible."}</p>
       </div>
       <CmmButton href="/partners/onboarding" tone="primary" variant="default" ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"} className="relative z-10 flex items-center gap-3">{fr ? "Référencer ma structure" : "Register my structure"}<ArrowRight size={20} /></CmmButton>
-    </RubriqueCard>
+    </FamilyRubriqueCard>
   );
 }
 

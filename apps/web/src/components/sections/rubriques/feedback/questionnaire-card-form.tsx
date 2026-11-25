@@ -79,8 +79,8 @@ export function QuestionnaireCardForm({
         />
       ) : null}
       {descriptionTooLong ? <DescriptionTooLongNotice locale={locale} length={serializedDescription.length} /> : null}
-      <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="cmm-text-caption text-slate-300">
+      <div className="flex flex-col gap-3 border-t border-[var(--cmm-surface-border)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="cmm-text-caption cmm-text-secondary">
           {locale === "fr" ? "Le retour est transmis à CleanMyMap pour examen." : "Your feedback is sent to CleanMyMap for review."}
         </p>
         <CmmButton

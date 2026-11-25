@@ -1,39 +1,10 @@
 "use client";
 
 import { memo, useRef, type KeyboardEvent } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { Hash, Mail } from "lucide-react";
-import { CmmButton } from "@/components/ui/cmm-button";
-import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
 import { cn } from "@/lib/utils";
 import type { ConnectTab, ConnectTabItem } from "./connect-types";
-
-type TabTone = {
-  active: string;
-  icon: string;
-  hoverText: string;
-};
-
-const TAB_TONES: Record<ConnectTab, TabTone> = {
-  discussions: {
-    active: "bg-rose-500",
-    icon: "text-rose-600",
-    hoverText: "hover:text-rose-700",
-  },
-  dm: {
-    active: "bg-indigo-600",
-    icon: "text-indigo-600",
-    hoverText: "hover:text-indigo-700",
-  },
-};
-
-const CONNECT_TAB_ACTIVE_TRANSITION = {
-  type: "spring",
-  bounce: 0.2,
-  duration: 0.35,
-} as const;
-
-const CONNECT_TAB_STATIC_TRANSITION = { duration: 0 } as const;
 
 export const CONNECT_TABS: ConnectTabItem[] = [
   {
@@ -65,10 +36,7 @@ export const ConnectTabs = memo(function ConnectTabs({
   setActiveTab: (tab: ConnectTab) => void;
   fr: boolean;
 }) {
-  const { displayMode } = useSitePreferences();
-  const reducedMotion = useReducedMotion();
   const tabRefs = useRef<Partial<Record<ConnectTab, HTMLButtonElement | null>>>({});
-  const isStaticMotion = reducedMotion === true || displayMode === "sobre";
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
@@ -90,60 +58,34 @@ export const ConnectTabs = memo(function ConnectTabs({
 
   return (
     <div
-      className="flex w-full gap-1.5 rounded-[2rem] border border-rose-100 bg-white p-1.5 shadow-sm sm:w-auto"
+      className={cn(tabStripClassName("family", "grid-cols-2"), "sm:w-auto")}
       role="tablist"
       aria-label={fr ? "Sections de la messagerie" : "Messaging sections"}
     >
       {CONNECT_TABS.map((tab) => {
         const isActive = activeTab === tab.id;
-        const tone = TAB_TONES[tab.id];
 
         return (
-          <CmmButton
+          <button
             key={tab.id}
             id={`connect-tab-${tab.id}`}
-            tone="tertiary"
-            variant="pill"
+            type="button"
             role="tab"
             tabIndex={isActive ? 0 : -1}
-            ariaControls={`connect-panel-${tab.id}`}
-            ariaSelected={isActive}
+            aria-controls={`connect-panel-${tab.id}`}
+            aria-selected={isActive}
             ref={(element) => {
               tabRefs.current[tab.id] = element;
             }}
             onClick={() => setActiveTab(tab.id)}
             onKeyDown={handleTabKeyDown}
-            className={cn(
-              "group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-[1.5rem] px-3 py-3 transition-colors sm:flex-none sm:justify-start sm:gap-3 sm:px-6",
-              isActive
-                ? cn(tone.active, "border-transparent text-white hover:border-transparent")
-                : cn("text-slate-700", tone.hoverText),
-            )}
+            className={cn(tabItemClassName("family", isActive), "gap-2.5")}
           >
-            {isActive ? (
-              <motion.span
-                layoutId="connect-tab-active"
-                aria-hidden="true"
-                className="absolute inset-0 -z-10 rounded-[1.5rem]"
-                transition={
-                  isStaticMotion
-                    ? CONNECT_TAB_STATIC_TRANSITION
-                    : CONNECT_TAB_ACTIVE_TRANSITION
-                }
-              />
-            ) : null}
-            <tab.icon
-              size={18}
-              aria-hidden="true"
-              className={cn(
-                "transition-colors",
-                isActive ? "text-white" : cn("text-slate-500", tone.icon),
-              )}
-            />
-            <span className="relative z-10 text-left text-sm font-semibold leading-tight">
+            <tab.icon size={18} aria-hidden="true" className="shrink-0" />
+            <span className="text-left text-sm font-semibold leading-tight">
               {fr ? tab.label.fr : tab.label.en}
             </span>
-          </CmmButton>
+          </button>
         );
       })}
     </div>
