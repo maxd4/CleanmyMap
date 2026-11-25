@@ -156,9 +156,13 @@ export function extendParisPublicCleanlinessDataset(base: Pick<PublicCleanliness
   person('person-marie-daude', 'Marie Daudé', 'governance', org, 'Secrétaire générale selon l’organigramme de septembre 2026.');
   unit('secretariat-general-role', 'Fonction de secrétaire générale', 'secretariat-general', 'position', 'governance', org, 'Fonction de direction administrative.');
   link('person-marie-daude', 'secretariat-general-role', 'assignment', org);
+  unit('sg-pole-proximite', 'Pôle de la qualité des services de proximité et de l’attractivité', 'secretariat-general', 'unit', 'governance', org, 'Pôle stratégique du Secrétariat général selon l’organigramme municipal.');
+  unit('sg-pole-cadre-vie', 'Pôle de la qualité du cadre de vie', 'secretariat-general', 'unit', 'governance', org, 'Pôle stratégique du Secrétariat général selon l’organigramme municipal.');
+  unit('sg-pole-services-parisiens', 'Pôle de la qualité des services aux Parisiens', 'secretariat-general', 'unit', 'governance', org, 'Pôle stratégique du Secrétariat général selon l’organigramme municipal.');
+  unit('sg-pole-action-publique', 'Pôle de la qualité de l’action publique', 'secretariat-general', 'unit', 'governance', org, 'Pôle stratégique du Secrétariat général selon l’organigramme municipal.');
   add('council-paris', 'Conseil de Paris', 'unit', 'governance', council, 'Assemblée délibérante de la collectivité.');
   link('council-paris', 'city-paris', 'coordination', council);
-  add('commission-8', '8e commission : environnement, climat, biodiversité et propreté', 'unit', 'governance', refs('pierre-lombard-2026', 'commission-8-election-2026'), 'Commission thématique du Conseil de Paris ; n’est pas la hiérarchie administrative des services.');
+  add('commission-8', '8e commission : environnement, climat, biodiversité et propreté', 'unit', 'governance', refs('pierre-lombard-2026', 'commission-8-election-2026'), 'Commission thématique du Conseil de Paris (Transition écologique, Plan Climat, Eau, Énergie, Santé, Espaces verts, Alimentation durable, Axe Seine, Propreté, Assainissement, Végétalisation, Biodiversité) ; n’est pas la hiérarchie administrative des services.');
   link('commission-8', 'council-paris', 'coordination', council);
   const lombard = refs('pierre-lombard-2026');
   role('deputy-waste', 'Adjoint chargé de la propreté, de l’assainissement et des déchets', 'governance', lombard, 'Mandat comprenant la réduction des déchets et l’économie circulaire.');
