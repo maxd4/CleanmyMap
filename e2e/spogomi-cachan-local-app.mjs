@@ -16,8 +16,14 @@ export function classifyLocalAppStartupOutput(output) {
   if (/Failed to compile|Module not found|Cannot find module/i.test(text)) {
     return { code: "APP_COMPILE_ERROR", message: "The local app could not compile; process output is suppressed." };
   }
+  if (/Failed to proxy\b|socket hang up|\bECONNRESET\b/i.test(text)) {
+    return { code: "APP_PROXY_SOCKET_ERROR", message: "The local app proxy reset the connection (ECONNRESET); process output is suppressed." };
+  }
   if (/fetch failed|ECONNREFUSED|ETIMEDOUT|connection refused/i.test(text)) {
     return { code: "APP_BACKEND_CONNECTION", message: "The local app could not reach a backend; process output is suppressed." };
+  }
+  if (/Missing required environment variable|ENV_MISSING/i.test(text)) {
+    return { code: "APP_ENV_CONFIG_ERROR", message: "A required local environment variable is missing; process output is suppressed." };
   }
   if (/\b(?:TypeError|ReferenceError|SyntaxError):/.test(text)) {
     return { code: "APP_RUNTIME_ERROR", message: "The local app raised a runtime error; process output is suppressed." };

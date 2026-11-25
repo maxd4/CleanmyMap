@@ -296,6 +296,10 @@ export async function proxy(req: NextRequest, evt: NextFetchEvent) {
     return seoRedirect;
   }
 
+  if (isDevAuthBypassEnabled(req.headers.get("host"))) {
+    return nextWithSeoHeaders(req);
+  }
+
   if (shouldSkipClerkForAnonymousPublicRequest(req)) {
     return nextWithSeoHeaders(req);
   }

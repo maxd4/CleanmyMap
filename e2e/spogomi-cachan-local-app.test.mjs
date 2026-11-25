@@ -29,11 +29,17 @@ test("Cachan integration entry point resolves its local server helpers", async (
 test("local app startup diagnostics classify compile and backend failures without exposing output", () => {
   const compileFailure = classifyLocalAppStartupOutput("Module not found: secret-path/private-module");
   const backendFailure = classifyLocalAppStartupOutput("TypeError: fetch failed ECONNREFUSED 127.0.0.1:54321");
+  const proxySocketFailure = classifyLocalAppStartupOutput("Failed to proxy http://localhost:3010/spogomi Error: socket hang up { code: 'ECONNRESET' }");
+  const envFailure = classifyLocalAppStartupOutput("Missing required environment variable SUPABASE_SERVICE_ROLE_KEY=secret");
 
   assert.equal(compileFailure.code, "APP_COMPILE_ERROR");
   assert.equal(JSON.stringify(compileFailure).includes("private-module"), false);
   assert.equal(backendFailure.code, "APP_BACKEND_CONNECTION");
   assert.equal(JSON.stringify(backendFailure).includes("54321"), false);
+  assert.equal(proxySocketFailure.code, "APP_PROXY_SOCKET_ERROR");
+  assert.equal(JSON.stringify(proxySocketFailure).includes("3010"), false);
+  assert.equal(envFailure.code, "APP_ENV_CONFIG_ERROR");
+  assert.equal(JSON.stringify(envFailure).includes("SUPABASE_SERVICE_ROLE_KEY"), false);
 });
 
 test("HTTP diagnostics distinguish authentication, authorization, validation and server failures", () => {
