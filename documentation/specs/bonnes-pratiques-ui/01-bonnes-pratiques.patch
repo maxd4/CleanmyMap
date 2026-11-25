@@ -1,0 +1,1329 @@
+diff --git a/apps/web/src/app/learn/bonnes-pratiques/client.tsx b/apps/web/src/app/learn/bonnes-pratiques/client.tsx
+index e4df36cc3795d1f9cba53d77713e28d119387e3c..e86c249819493bc97978a5a123f99369e0adaeab 100644
+--- a/apps/web/src/app/learn/bonnes-pratiques/client.tsx
++++ b/apps/web/src/app/learn/bonnes-pratiques/client.tsx
+@@ -3,12 +3,8 @@
+ import { Suspense } from "react";
+ import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
+ import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
+-import { LearnBehaviorAwarenessSection } from "@/components/learn/learn-behavior-awareness-section";
+-import { LearnTriContextSection } from "@/components/learn/learn-tri-context-section";
+ import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
+-import { LearnPracticeThemeTabs } from "@/components/learn/learn-practice-theme-tabs";
+ import { LearnPracticeThemeSelection } from "@/components/learn/learn-practice-theme-selection";
+-import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
+ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+ 
+ export default function LearnBonnesPratiquesPage() {
+@@ -18,12 +14,12 @@
+     <LearnRubricShell
+       title={{ fr: "Bonnes pratiques", en: "Good practices" }}
+       subtitle={{
+-        fr: "Lecture progressive",
+-        en: "Progressive reading",
++        fr: "Les bons gestes, au quotidien et sur le terrain",
++        en: "Good habits at home and in the field",
+       }}
+       description={{
+-        fr: "L’essentiel d’abord, puis les détails utiles à la demande.",
+-        en: "The essentials first, then useful details on demand.",
++        fr: "Choisis une situation et trouve une solution concrète.",
++        en: "Choose a situation and find a practical solution.",
+       }}
+       backHref="/explorer"
+       backLabel={{ fr: "Retour au sommaire", en: "Back to summary" }}
+@@ -33,26 +29,16 @@
+       <LearnPageVisitTracker pageId="bonnes-pratiques" />
+       <div className="space-y-6">
+         <Suspense
+-          fallback={
+-            <LearnPracticeThemeTabs
+-              locale={locale}
+-              activeTheme="tri"
+-              onThemeChange={() => undefined}
+-            />
+-          }
++          fallback={<p role="status" className="p-4 cmm-text-secondary">{locale === "fr" ? "Chargement des guides…" : "Loading guides…"}</p>}
+         >
+           <LearnPracticeThemeSelection locale={locale} />
+         </Suspense>
+ 
+-        <span id="guides-courts" className="sr-only" aria-hidden="true" />
+-        <LearnTriContextSection locale={locale} />
+-        <LearnBehaviorAwarenessSection locale={locale} id="ressources-utiles" />
+         <LearnBlockJourneySection
+           locale={locale}
+           currentPageId="bonnes-pratiques"
+           compact
+         />
+-        <LearnGestesPropresInsightsSection locale={locale} scope="overview" />
+       </div>
+     </LearnRubricShell>
+   );
+diff --git a/apps/web/src/app/learn/bonnes-pratiques/page.test.ts b/apps/web/src/app/learn/bonnes-pratiques/page.test.ts
+index 785c7c47a02d399e61dc72980888165828685ca5..01f2973d8e8ae6abacddc564292c37f473e76d43 100644
+--- a/apps/web/src/app/learn/bonnes-pratiques/page.test.ts
++++ b/apps/web/src/app/learn/bonnes-pratiques/page.test.ts
+@@ -97,19 +97,18 @@
+     const markup = renderToStaticMarkup(await Page());
+ 
+     expect(markup).toContain("data-testid=\"theme-tabs\"");
+-    expect(markup).toContain("data-testid=\"tri-context\"");
++    expect(markup).not.toContain("data-testid=\"tri-context\"");
+     expect(markup).toContain("data-testid=\"awareness\"");
+     expect(markup).toContain("data-testid=\"journey\"");
+     expect(markup).toContain("data-testid=\"gestes-propres-insights\"");
+-    expect(markup.indexOf("data-testid=\"theme-tabs\"")).toBeLessThan(markup.indexOf("data-testid=\"tri-context\""));
+-    expect(markup.indexOf("data-testid=\"tri-context\"")).toBeLessThan(markup.indexOf("data-testid=\"awareness\""));
++    expect(markup.indexOf("data-testid=\"theme-tabs\"")).toBeLessThan(markup.indexOf("data-testid=\"awareness\""));
+     expect(markup.indexOf("data-testid=\"awareness\"")).toBeLessThan(markup.indexOf("data-testid=\"journey\""));
+-    expect(markup.indexOf("data-testid=\"journey\"")).toBeLessThan(markup.indexOf("data-testid=\"gestes-propres-insights\""));
++    expect(markup.indexOf("data-testid=\"gestes-propres-insights\"")).toBeLessThan(markup.indexOf("data-testid=\"journey\""));
+ 
+     expect(tabsCalls).toHaveLength(1);
+     expect(tabsCalls[0].activeTheme).toBe("compost");
+     expect(behaviorCalls).toHaveLength(1);
+-    expect(behaviorCalls[0].id).toBe("ressources-utiles");
++    expect(markup).toContain('id="ressources-utiles"');
+     expect(markup).toContain("data-scope=\"overview\"");
+ 
+     tabsCalls[0].onThemeChange("reduire");
+diff --git a/apps/web/src/components/learn/learn-gestes-propres-campaign-section.tsx b/apps/web/src/components/learn/learn-gestes-propres-campaign-section.tsx
+index 787bc45f9a55f88c8f748f108f9e0b1699d81fd1..f6c73490a099f198693c5a0245d283ba624ff332 100644
+--- a/apps/web/src/components/learn/learn-gestes-propres-campaign-section.tsx
++++ b/apps/web/src/components/learn/learn-gestes-propres-campaign-section.tsx
+@@ -26,7 +26,7 @@
+   const Icon = SITUATION_ICON_BY_ID[situation.id] ?? Recycle;
+ 
+   return (
+-    <CmmCard tone="amber" variant="outlined" className="flex h-full flex-col gap-4 p-4">
++    <CmmCard tone="slate" variant="outlined" className="flex h-full flex-col gap-3 p-4">
+       <div className="flex items-start justify-between gap-3">
+         <div>
+           <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+@@ -93,7 +93,7 @@
+   return (
+     <section
+       className={cn(
+-        "rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-4 shadow-sm md:p-5",
++        "rounded-2xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4",
+         className,
+       )}
+     >
+@@ -119,16 +119,7 @@
+           </span>
+         </div>
+ 
+-        <div className="flex flex-wrap gap-2">
+-          <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-900">
+-            4 situations
+-          </span>
+-          <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-900">
+-            {locale === "fr" ? "Mégot, canette, bouteille, encombrant" : "Butt, can, bottle, bulky item"}
+-          </span>
+-        </div>
+-
+-        <div className="grid gap-3 lg:grid-cols-2">
++        <div className="grid gap-3 sm:grid-cols-2">
+           {campaign.situations.map((situation) => (
+             <SituationCard key={situation.id} locale={locale} situation={situation} />
+           ))}
+diff --git a/apps/web/src/components/learn/learn-gestes-propres-insights-section.test.ts b/apps/web/src/components/learn/learn-gestes-propres-insights-section.test.ts
+index a0441fd77360d4a229ea4f7f5c1f54e7a70b9151..8f1d2634f54f7ca46eec31457a69c211eba5339e 100644
+--- a/apps/web/src/components/learn/learn-gestes-propres-insights-section.test.ts
++++ b/apps/web/src/components/learn/learn-gestes-propres-insights-section.test.ts
+@@ -40,6 +40,13 @@
+     expect(markup).toContain("Ouvrir la campagne");
+   });
+ 
++  it("does not repeat the two sorting articles when the overview follows tri", () => {
++    const markup = renderToStaticMarkup(React.createElement(LearnGestesPropresInsightsSection, { locale: "fr", scope: "overview", theme: "tri" }));
++    expect(markup).not.toContain("Que Faire de Mes Objets");
++    expect(markup).not.toContain("pollution des lingettes");
++    expect(markup).toContain("Pourquoi les automobilistes sont-ils susceptibles de plus jeter ?");
++  });
++
+   it("renders the overview with compact access to all six entries", () => {
+     const markup = renderToStaticMarkup(
+       React.createElement(LearnGestesPropresInsightsSection, {
+diff --git a/apps/web/src/components/learn/learn-gestes-propres-insights-section.tsx b/apps/web/src/components/learn/learn-gestes-propres-insights-section.tsx
+index d502f480b9a2586c229cec13283b93f37080bcd4..1ca803f1eb5a27aab45b554ecf37bbc6d6b692e9 100644
+--- a/apps/web/src/components/learn/learn-gestes-propres-insights-section.tsx
++++ b/apps/web/src/components/learn/learn-gestes-propres-insights-section.tsx
+@@ -116,12 +116,14 @@
+   }
+ 
+   const visibleFeatured = "featured" in config.visible ? config.visible.featured : undefined;
+-  const visibleCompact = config.visible.compact;
++  const exclude = scope === "overview" && theme === "tri" ? [SECTION_CONFIG.tri.visible.featured, ...SECTION_CONFIG.tri.visible.compact] : [];
++  const visibleCompact = config.visible.compact.filter((id) => !exclude.includes(id));
++  const hidden = config.hidden.filter((id) => !exclude.includes(id));
+ 
+   return (
+     <section
+       className={cn(
+-        "rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-4 shadow-sm md:p-5",
++        "rounded-2xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4",
+         className,
+       )}
+     >
+@@ -133,19 +135,19 @@
+           <h4 className="text-xl font-black tracking-tight cmm-text-primary md:text-2xl">
+             {config.title[locale]}
+           </h4>
+-          <p className="cmm-text-small leading-relaxed cmm-text-secondary">{config.lead[locale]}</p>
++          <p className="cmm-text-small leading-relaxed cmm-text-secondary">{scope === "overview" && theme === "tri" ? (locale === "fr" ? "Autres éclairages, en complément du tri." : "Further insights alongside sorting.") : config.lead[locale]}</p>
+         </div>
+         <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">
+           <ExternalLink className="h-5 w-5" aria-hidden="true" />
+         </span>
+       </div>
+ 
+-      <div className={cn("mt-4 grid gap-3", scope === "overview" ? "md:grid-cols-3" : "md:grid-cols-2")}>
++      <div className={cn("mt-4 grid gap-3", scope === "overview" ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2 md:items-start")}>
+         {visibleFeatured ? renderInsightCard(locale, visibleFeatured, "featured") : null}
+-        {visibleCompact.map((id) => renderInsightCard(locale, id, "compact"))}
++        {visibleCompact.map((id) => renderInsightCard(locale, id, scope === "theme" ? "featured" : "compact"))}
+       </div>
+ 
+-      {config.hidden.length > 0 ? (
++      {hidden.length > 0 ? (
+         <details className="group mt-4 rounded-[1.35rem] border border-amber-200 bg-white px-4 py-3 shadow-sm">
+           <summary className="flex cursor-pointer list-none items-start justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white">
+             <div className="space-y-1 pr-4">
+@@ -154,7 +156,7 @@
+               </p>
+               <p className="cmm-text-small leading-relaxed cmm-text-secondary">
+                 {scope === "overview"
+-                  ? "Les trois contenus restants restent accessibles sans répéter les résumés visibles."
++                  ? "Autres articles et recommandations."
+                   : "Les contenus complémentaires restent fermés par défaut pour garder le bloc lisible."}
+               </p>
+             </div>
+@@ -164,7 +166,7 @@
+           </summary>
+ 
+           <div className="mt-4 grid gap-3 md:grid-cols-2">
+-            {config.hidden.map((id) => renderInsightCard(locale, id, "compact"))}
++            {hidden.map((id) => renderInsightCard(locale, id, "compact"))}
+           </div>
+         </details>
+       ) : null}
+diff --git a/apps/web/src/components/learn/learn-numerique-theme-panel.tsx b/apps/web/src/components/learn/learn-numerique-theme-panel.tsx
+index 43bfc1ec9aa0d4d7e0deb78877408a5dea5bd667..4f26180bb7241c1418b2677b8a1e75a9deb35c19 100644
+--- a/apps/web/src/components/learn/learn-numerique-theme-panel.tsx
++++ b/apps/web/src/components/learn/learn-numerique-theme-panel.tsx
+@@ -39,7 +39,7 @@
+       href={source.url}
+       target="_blank"
+       rel="noreferrer"
+-      className="inline-flex items-center gap-1 font-semibold text-amber-800 underline decoration-amber-300 underline-offset-2 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
++      className="inline-flex items-center gap-1 font-semibold cmm-text-primary underline decoration-amber-300 underline-offset-2 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+     >
+       {source.label[locale]}
+       <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+@@ -65,11 +65,64 @@
+       id={panelId}
+       aria-labelledby={tabId}
+       className="space-y-4"
++      tabIndex={0}
+     >
+-      <CmmCard tone="amber" variant="elevated" className="space-y-5 p-5 md:p-6">
++      <CmmCard tone="slate" variant="outlined" className="space-y-4 p-5 md:p-6">
++        <div className="flex items-start gap-3">
++          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 cmm-text-secondary">
++            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
++          </span>
++          <div>
++            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] cmm-text-secondary">
++              {locale === "fr" ? "Recommandation · tutoriel Gmail" : "Recommendation · Gmail tutorial"}
++            </p>
++            <h4 className="mt-1 text-xl font-black tracking-tight cmm-text-primary">
++              {locale === "fr" ? "Quatre gestes courts" : "Four short actions"}
++            </h4>
++          </div>
++        </div>
++
++        <ol className="grid gap-3 md:grid-cols-2">
++          {NUMERIQUE_TUTORIAL.map((step, index) => (
++            <li key={step.id} className="rounded-[1.2rem] border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4 shadow-sm">
++              <div className="flex items-start gap-3">
++                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 cmm-text-caption font-black cmm-text-primary">
++                  {String(index + 1).padStart(2, "0")}
++                </span>
++                <div className="min-w-0">
++                  <h5 className="text-base font-black tracking-tight cmm-text-primary">{step.title[locale]}</h5>
++                  <p className="mt-2 cmm-text-small font-semibold leading-relaxed cmm-text-primary">{step.instruction[locale]}</p>
++                  <p className="mt-2 cmm-text-small leading-relaxed cmm-text-secondary">{step.detail[locale]}</p>
++                  {step.id === "unsubscribe" ? (
++                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 cmm-text-caption">
++                      <a
++                        href={NUMERIQUE_GMAIL_SUBSCRIPTIONS_SHORTCUT}
++                        target="_blank"
++                        rel="noreferrer"
++                        className="inline-flex items-center gap-1 font-black cmm-text-primary underline decoration-amber-300 underline-offset-2 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
++                      >
++                        {locale === "fr" ? "Essayer le raccourci /#sub" : "Try the /#sub shortcut"}
++                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
++                      </a>
++                      <ExternalSourceLink locale={locale} sourceId="gmail-unsubscribe" />
++                    </div>
++                  ) : null}
++                </div>
++              </div>
++            </li>
++          ))}
++        </ol>
++
++        <div className="flex flex-wrap gap-2 border-t border-amber-100 pt-4 cmm-text-caption cmm-text-primary">
++          <ExternalSourceLink locale={locale} sourceId="gmail-subscriptions" />
++          <ExternalSourceLink locale={locale} sourceId="gmail-cleanup" />
++        </div>
++      </CmmCard>
++
++      <CmmCard tone="family" className="space-y-5 p-5 md:p-6">
+         <div className="flex flex-wrap items-start justify-between gap-3">
+           <div className="max-w-3xl space-y-2">
+-            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
++            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] cmm-text-secondary">
+               {locale === "fr" ? "Sobriété numérique" : "Digital sobriety"}
+             </p>
+             <h3 className="text-2xl font-black tracking-tight cmm-text-primary md:text-3xl">
+@@ -79,19 +132,19 @@
+               {NUMERIQUE_CONTENT.summary[locale]}
+             </p>
+           </div>
+-          <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-900">
++          <span className="inline-flex items-center rounded-full border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.18em] cmm-text-primary">
+             {locale === "fr" ? "Faits + estimations" : "Facts + estimates"}
+           </span>
+         </div>
+ 
+         <div className="grid gap-3 md:grid-cols-2">
+-          <article className="rounded-[1.2rem] border border-amber-200 bg-white p-4 shadow-sm">
++          <article className="rounded-[1.2rem] border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4 shadow-sm">
+             <div className="flex items-start gap-3">
+-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
++              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 cmm-text-secondary">
+                 <HardDrive className="h-4 w-4" aria-hidden="true" />
+               </span>
+               <div>
+-                <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
++                <p className="cmm-text-caption font-black uppercase tracking-[0.18em] cmm-text-secondary">
+                   {locale === "fr" ? "Fait" : "Fact"}
+                 </p>
+                 <p className="mt-2 cmm-text-small leading-relaxed cmm-text-primary">
+@@ -100,13 +153,13 @@
+               </div>
+             </div>
+           </article>
+-          <article className="rounded-[1.2rem] border border-amber-200 bg-white p-4 shadow-sm">
++          <article className="rounded-[1.2rem] border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4 shadow-sm">
+             <div className="flex items-start gap-3">
+-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
++              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 cmm-text-secondary">
+                 <Mail className="h-4 w-4" aria-hidden="true" />
+               </span>
+               <div>
+-                <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
++                <p className="cmm-text-caption font-black uppercase tracking-[0.18em] cmm-text-secondary">
+                   {locale === "fr" ? "Fait à garder en tête" : "Fact to keep in mind"}
+                 </p>
+                 <p className="mt-2 cmm-text-small leading-relaxed cmm-text-primary">
+@@ -120,24 +173,24 @@
+         <section className="rounded-[1.4rem] border border-amber-200 bg-amber-50/70 p-4 md:p-5">
+           <div className="flex flex-wrap items-start justify-between gap-3">
+             <div>
+-              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
++              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] cmm-text-secondary">
+                 {locale === "fr" ? "Estimations / équivalences" : "Estimates / equivalences"}
+               </p>
+               <h4 className="mt-1 text-xl font-black tracking-tight cmm-text-primary">
+                 {locale === "fr" ? "Deux ordres de grandeur, sans promesse excessive" : "Two orders of magnitude, without overclaiming"}
+               </h4>
+             </div>
+-            <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.15em] text-amber-800">
++            <span className="inline-flex items-center rounded-full border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.15em] cmm-text-primary">
+               {locale === "fr" ? "Calcul dérivé" : "Derived calculation"}
+             </span>
+           </div>
+ 
+           <div className="mt-4 grid gap-3 md:grid-cols-2">
+-            <div className="rounded-[1.2rem] border border-amber-200 bg-white p-4">
+-              <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-700">
++            <div className="rounded-[1.2rem] border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4">
++              <p className="cmm-text-caption font-black uppercase tracking-[0.16em] cmm-text-secondary">
+                 {locale === "fr" ? "Futurs spams évités" : "Future spam avoided"}
+               </p>
+-              <p className="mt-2 text-2xl font-black tracking-tight text-amber-900">
++              <p className="mt-2 text-2xl font-black tracking-tight cmm-text-primary">
+                 {formatNumber(locale, futureSpam.equivalentCarKm)} km
+               </p>
+               <p className="mt-1 cmm-text-small leading-relaxed cmm-text-secondary">
+@@ -145,15 +198,15 @@
+                   ? "1 000 futurs spams évités ≈ 22 km en voiture thermique moyenne essence."
+                   : "1,000 future spam messages avoided ≈ 22 km in an average petrol car."}
+               </p>
+-              <p className="mt-2 cmm-text-caption text-amber-800">
+-                {formatNumber(locale, futureSpam.co2eGrams)} gCO₂e = {formatNumber(locale, futureSpam.count)} × {formatNumber(locale, NUMERIQUE_CO2_FACTORS.unreadSpamGramsPerEmail)} g ÷ {formatNumber(locale, NUMERIQUE_CO2_FACTORS.averagePetrolCarGramsPerKm)} g/km
++              <p className="mt-2 cmm-text-caption cmm-text-primary">
++                {formatNumber(locale, futureSpam.count)} × {formatNumber(locale, NUMERIQUE_CO2_FACTORS.unreadSpamGramsPerEmail)} gCO₂e = {formatNumber(locale, futureSpam.co2eGrams)} gCO₂e ; {formatNumber(locale, futureSpam.co2eGrams)} gCO₂e ÷ {formatNumber(locale, NUMERIQUE_CO2_FACTORS.averagePetrolCarGramsPerKm)} gCO₂e/km ≈ {formatNumber(locale, futureSpam.equivalentCarKm)} km
+               </p>
+             </div>
+-            <div className="rounded-[1.2rem] border border-amber-200 bg-white p-4">
+-              <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-700">
++            <div className="rounded-[1.2rem] border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4">
++              <p className="cmm-text-caption font-black uppercase tracking-[0.16em] cmm-text-secondary">
+                 {locale === "fr" ? "Stockage conservé" : "Storage kept"}
+               </p>
+-              <p className="mt-2 text-2xl font-black tracking-tight text-amber-900">
++              <p className="mt-2 text-2xl font-black tracking-tight cmm-text-primary">
+                 {formatNumber(locale, cloudStorage.equivalentCarKm)} km
+               </p>
+               <p className="mt-1 cmm-text-small leading-relaxed cmm-text-secondary">
+@@ -161,8 +214,8 @@
+                   ? "100 Go stockés pendant un an ≈ 0,14 km en voiture thermique moyenne essence."
+                   : "100 GB stored for one year ≈ 0.14 km in an average petrol car."}
+               </p>
+-              <p className="mt-2 cmm-text-caption text-amber-800">
+-                {formatNumber(locale, cloudStorage.co2eGrams)} gCO₂e = {formatNumber(locale, cloudStorage.gigabytes)} Go × {formatNumber(locale, NUMERIQUE_CO2_FACTORS.cloudStorageGramsPerGbYear)} g/Go/an ÷ {formatNumber(locale, NUMERIQUE_CO2_FACTORS.averagePetrolCarGramsPerKm)} g/km
++              <p className="mt-2 cmm-text-caption cmm-text-primary">
++                {formatNumber(locale, cloudStorage.gigabytes)} Go × 1 {locale === "fr" ? "an" : "year"} × {formatNumber(locale, NUMERIQUE_CO2_FACTORS.cloudStorageGramsPerGbYear)} gCO₂e/Go/an = {formatNumber(locale, cloudStorage.co2eGrams)} gCO₂e ; {formatNumber(locale, cloudStorage.co2eGrams)} gCO₂e ÷ {formatNumber(locale, NUMERIQUE_CO2_FACTORS.averagePetrolCarGramsPerKm)} gCO₂e/km ≈ {formatNumber(locale, cloudStorage.equivalentCarKm)} km
+               </p>
+             </div>
+           </div>
+@@ -174,59 +227,7 @@
+         </section>
+       </CmmCard>
+ 
+-      <CmmCard tone="amber" variant="outlined" className="space-y-4 p-5 md:p-6">
+-        <div className="flex items-start gap-3">
+-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
+-            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+-          </span>
+-          <div>
+-            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-              {locale === "fr" ? "Recommandation · tutoriel Gmail" : "Recommendation · Gmail tutorial"}
+-            </p>
+-            <h4 className="mt-1 text-xl font-black tracking-tight cmm-text-primary">
+-              {locale === "fr" ? "Quatre gestes courts" : "Four short actions"}
+-            </h4>
+-          </div>
+-        </div>
+-
+-        <ol className="grid gap-3 md:grid-cols-2">
+-          {NUMERIQUE_TUTORIAL.map((step, index) => (
+-            <li key={step.id} className="rounded-[1.2rem] border border-amber-200 bg-white p-4 shadow-sm">
+-              <div className="flex items-start gap-3">
+-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 cmm-text-caption font-black text-amber-900">
+-                  {String(index + 1).padStart(2, "0")}
+-                </span>
+-                <div className="min-w-0">
+-                  <h5 className="text-base font-black tracking-tight cmm-text-primary">{step.title[locale]}</h5>
+-                  <p className="mt-2 cmm-text-small font-semibold leading-relaxed cmm-text-primary">{step.instruction[locale]}</p>
+-                  <p className="mt-2 cmm-text-small leading-relaxed cmm-text-secondary">{step.detail[locale]}</p>
+-                  {step.id === "unsubscribe" ? (
+-                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 cmm-text-caption">
+-                      <a
+-                        href={NUMERIQUE_GMAIL_SUBSCRIPTIONS_SHORTCUT}
+-                        target="_blank"
+-                        rel="noreferrer"
+-                        className="inline-flex items-center gap-1 font-black text-amber-800 underline decoration-amber-300 underline-offset-2 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+-                      >
+-                        {locale === "fr" ? "Essayer le raccourci /#sub" : "Try the /#sub shortcut"}
+-                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+-                      </a>
+-                      <ExternalSourceLink locale={locale} sourceId="gmail-unsubscribe" />
+-                    </div>
+-                  ) : null}
+-                </div>
+-              </div>
+-            </li>
+-          ))}
+-        </ol>
+-
+-        <div className="flex flex-wrap gap-2 border-t border-amber-100 pt-4 cmm-text-caption text-amber-900">
+-          <ExternalSourceLink locale={locale} sourceId="gmail-subscriptions" />
+-          <ExternalSourceLink locale={locale} sourceId="gmail-cleanup" />
+-        </div>
+-      </CmmCard>
+-
+-      <details className="group rounded-[1.35rem] border border-amber-200 bg-white px-4 py-3 shadow-sm">
++      <details className="group rounded-[1.35rem] border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] px-4 py-3 shadow-sm">
+         <summary className="flex cursor-pointer list-none items-start justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+           <div className="space-y-1 pr-4">
+             <p className="text-base font-black tracking-tight cmm-text-primary">
+@@ -238,7 +239,7 @@
+                 : "Sources stay collapsed to keep the tutorial readable. Factors are used as stated, then equivalences are calculated by dividing by 170 gCO₂e/km."}
+             </p>
+           </div>
+-          <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700 transition group-open:rotate-90">
++          <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 cmm-text-secondary transition group-open:rotate-90">
+             <ArrowRight className="h-4 w-4" aria-hidden="true" />
+           </span>
+         </summary>
+diff --git a/apps/web/src/components/learn/learn-practice-theme-selection.tsx b/apps/web/src/components/learn/learn-practice-theme-selection.tsx
+index 6217a7f414946e2e2f09346fa043258ea9e6712c..ffe3c4997f8730d039efe53b7c10542ea040300b 100644
+--- a/apps/web/src/components/learn/learn-practice-theme-selection.tsx
++++ b/apps/web/src/components/learn/learn-practice-theme-selection.tsx
+@@ -3,12 +3,13 @@
+ import { usePathname, useRouter, useSearchParams } from "next/navigation";
+ import { LearnPracticeThemeTabs } from "@/components/learn/learn-practice-theme-tabs";
+ import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
+-import type { LearnPracticeThemeId } from "@/lib/learning/practice/themes";
+-
+-const VALID_THEMES: LearnPracticeThemeId[] = ["tri", "compost", "reduire", "numerique"];
++import { LEARN_PRACTICE_THEME_ORDER, type LearnPracticeThemeId } from "@/lib/learning/practice/themes";
++import { LearnBehaviorAwarenessSection } from "@/components/learn/learn-behavior-awareness-section";
++import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
++import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+ 
+ function normalizeTheme(theme: string | null): LearnPracticeThemeId {
+-  return VALID_THEMES.includes(theme as LearnPracticeThemeId)
++  return LEARN_PRACTICE_THEME_ORDER.includes(theme as LearnPracticeThemeId)
+     ? (theme as LearnPracticeThemeId)
+     : "tri";
+ }
+@@ -26,10 +27,14 @@
+   };
+ 
+   return (
+-    <LearnPracticeThemeTabs
+-      locale={locale}
+-      activeTheme={activeTheme}
+-      onThemeChange={handleThemeChange}
+-    />
++    <>
++      <LearnPracticeThemeTabs locale={locale} activeTheme={activeTheme} onThemeChange={handleThemeChange} />
++      <CmmDisclosure id="ressources-utiles" summary={locale === "fr" ? "Ressources et sensibilisation" : "Resources and awareness"} tone="slate" className="scroll-mt-24">
++        <div className="space-y-4">
++          <LearnBehaviorAwarenessSection locale={locale} />
++          <LearnGestesPropresInsightsSection locale={locale} scope="overview" theme={activeTheme === "compost" ? undefined : activeTheme} />
++        </div>
++      </CmmDisclosure>
++    </>
+   );
+ }
+diff --git a/apps/web/src/components/learn/learn-practice-theme-tabs.content.tsx b/apps/web/src/components/learn/learn-practice-theme-tabs.content.tsx
+index 8001f18527fd2dcc447baae2fe5c69a94d71c46e..06a898cf2efad071614d857ac15f0ec6c9141a0e 100644
+--- a/apps/web/src/components/learn/learn-practice-theme-tabs.content.tsx
++++ b/apps/web/src/components/learn/learn-practice-theme-tabs.content.tsx
+@@ -15,18 +15,15 @@
+   const Icon = guide.icon;
+ 
+   return (
+-    <CmmCard tone="amber" variant="outlined" className="flex h-full flex-col justify-between p-4">
++    <CmmCard tone="slate" variant="outlined" className="flex h-full flex-col justify-between gap-3 p-4">
+       <div className="space-y-3">
+         <div className="flex items-start justify-between gap-3">
+           <div>
+-            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-              Guide
+-            </p>
+-            <h4 className="mt-1 text-lg font-black tracking-tight cmm-text-primary">
++            <h4 className="text-base font-bold tracking-tight cmm-text-primary">
+               {guide.title[locale]}
+             </h4>
+           </div>
+-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
++          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--bg-muted)] text-[color:var(--cmm-family-heading)]">
+             <Icon className="h-4 w-4" aria-hidden="true" />
+           </span>
+         </div>
+@@ -37,7 +34,7 @@
+         href={guide.href}
+         tone="secondary"
+         variant="pill"
+-        className="mt-4 w-full justify-between px-4 py-3 cmm-text-caption font-black uppercase tracking-[0.18em]"
++        className="mt-auto w-full justify-between"
+       >
+         {guide.cta[locale]}
+         <ArrowRight className="h-4 w-4" aria-hidden="true" />
+diff --git a/apps/web/src/components/learn/learn-practice-theme-tabs.data.ts b/apps/web/src/components/learn/learn-practice-theme-tabs.data.ts
+index 760201b94ba48a2528dced36fa8fba08052d59b7..aba6dde2a6ab66f876d9a6f1c58da27ccab2e637 100644
+--- a/apps/web/src/components/learn/learn-practice-theme-tabs.data.ts
++++ b/apps/web/src/components/learn/learn-practice-theme-tabs.data.ts
+@@ -72,16 +72,16 @@
+     },
+     rules: [
+       {
+-        fr: "Lire la consigne locale avant tout geste.",
+-        en: "Read the local rule before acting.",
++        fr: "Lire l’Info-tri et les consignes locales.",
++        en: "Read sorting labels and local instructions.",
+       },
+       {
+         fr: "Séparer les objets douteux au lieu de deviner.",
+         en: "Set doubtful items aside instead of guessing.",
+       },
+       {
+-        fr: "Choisir le flux le plus sûr si l’information manque.",
+-        en: "Choose the safest stream when information is missing.",
++        fr: "En cas de doute, vérifier la filière avant de déposer.",
++        en: "When unsure, check the stream before disposal.",
+       },
+     ],
+     guides: [
+@@ -97,12 +97,12 @@
+       },
+       {
+         href: "/actions/map",
+-        title: { fr: "Carte d’entraînement", en: "Training map" },
++        title: { fr: "Carte des actions", en: "Action map" },
+         detail: {
+-          fr: "Lire la carte pour trouver vite le bon point de tri.",
+-          en: "Read the map to find the right sorting point quickly.",
++          fr: "Repérer les actions de nettoyage et les signalements.",
++          en: "Explore cleanups and reports.",
+         },
+-        cta: { fr: "Lire la carte", en: "Read map" },
++        cta: { fr: "Ouvrir la carte", en: "Open map" },
+         icon: MapPinned,
+       },
+     ],
+@@ -111,8 +111,8 @@
+         href: "/signalement",
+         title: { fr: "Signaler un déchet", en: "Report waste" },
+         detail: {
+-          fr: "Utiliser le signalement quand le cas reste flou.",
+-          en: "Use reporting when the case remains unclear.",
++          fr: "Signaler un déchet abandonné, pas un doute sur le tri.",
++          en: "Report abandoned waste, not sorting uncertainty.",
+         },
+         cta: { fr: "Voir le signalement", en: "Open reporting" },
+         icon: Trash2,
+@@ -121,8 +121,8 @@
+     accordion: {
+       title: { fr: "À éviter", en: "Avoid" },
+       lead: {
+-        fr: "Le bloc reste fermé par défaut pour ne pas alourdir la lecture.",
+-        en: "This block stays closed by default to keep the read light.",
++        fr: "Les erreurs de tri à éviter.",
++        en: "Sorting mistakes to avoid.",
+       },
+       bullets: [
+         {
+@@ -155,8 +155,8 @@
+         en: "Keep wet and dry materials in balance.",
+       },
+       {
+-        fr: "Éviter de contaminer le flux avec du trop souillé.",
+-        en: "Avoid contaminating the stream with overly soiled waste.",
++        fr: "Brasser, surveiller l’humidité et respecter les apports acceptés.",
++        en: "Mix, monitor moisture and follow accepted inputs.",
+       },
+     ],
+     guides: [
+@@ -171,13 +171,13 @@
+         icon: Sprout,
+       },
+       {
+-        href: "/actions/new",
+-        title: { fr: "Réduire à la source", en: "Reduce at source" },
++        href: "https://quefairedemesdechets.ademe.fr/categories/biodechets/dechets-alimentaires/",
++        title: { fr: "Trier ses biodéchets", en: "Sort food waste" },
+         detail: {
+-          fr: "Réduire à la source pour alléger le compost.",
+-          en: "Reduce at source to lighten compost.",
++          fr: "Identifier les déchets alimentaires et les solutions adaptées.",
++          en: "Identify food waste and suitable collection options.",
+         },
+-        cta: { fr: "Ouvrir l’action", en: "Open action" },
++        cta: { fr: "Voir les consignes ADEME", en: "Read ADEME guidance" },
+         icon: Target,
+       },
+     ],
+@@ -196,8 +196,8 @@
+     accordion: {
+       title: { fr: "Quand ça coince", en: "When it gets stuck" },
+       lead: {
+-        fr: "Le détail utile reste caché tant qu’il ne sert pas.",
+-        en: "Useful detail stays hidden until it helps.",
++        fr: "Reconnaître les conditions qui freinent le compostage.",
++        en: "Recognize conditions that slow composting.",
+       },
+       bullets: [
+         {
+@@ -230,8 +230,8 @@
+         en: "Choose the right stream or drop-off point.",
+       },
+       {
+-        fr: "Signaler quand aucun bon point n’apparaît.",
+-        en: "Report it when no clear point is available.",
++        fr: "Signaler un déchet déjà abandonné.",
++        en: "Report waste already abandoned.",
+       },
+     ],
+     guides: [
+@@ -239,28 +239,28 @@
+         href: "/signalement",
+         title: { fr: "Signaler un dépôt", en: "Report litter" },
+         detail: {
+-          fr: "Utiliser le signalement quand un déchet reste bloqué.",
+-          en: "Use reporting when waste remains stuck.",
++          fr: "Signaler un déchet abandonné à traiter.",
++          en: "Report abandoned waste that needs attention.",
+         },
+         cta: { fr: "Signaler", en: "Report" },
+         icon: Trash2,
+       },
+       {
+         href: "/actions/map",
+-        title: { fr: "Trouver la bonne filière", en: "Find the right stream" },
++        title: { fr: "Carte des actions", en: "Action map" },
+         detail: {
+-          fr: "Chercher la solution locale avant d’abandonner le déchet.",
+-          en: "Find the local solution before leaving waste behind.",
++          fr: "Repérer les actions de nettoyage et les signalements.",
++          en: "Explore cleanups and reports.",
+         },
+         cta: { fr: "Ouvrir la carte", en: "Open map" },
+         icon: MapPinned,
+       },
+       {
+         href: "/actions/new",
+-        title: { fr: "Réduire à la source", en: "Reduce at source" },
++        title: { fr: "Organiser une collecte", en: "Organize a cleanup" },
+         detail: {
+-          fr: "Éviter de créer le déchet avant qu’il devienne un problème.",
+-          en: "Avoid creating waste before it becomes a problem.",
++          fr: "Organiser une action collective pour les déchets déjà présents.",
++          en: "Organize a collective action for waste already present.",
+         },
+         cta: { fr: "Ouvrir l’action", en: "Open action" },
+         icon: Target,
+@@ -270,8 +270,8 @@
+     accordion: {
+       title: { fr: "À garder en tête", en: "Keep in mind" },
+       lead: {
+-        fr: "La campagne rappelle quatre cas concrets, puis les détails restent repliés.",
+-        en: "The campaign highlights four concrete cases, then the details stay collapsed.",
++        fr: "Que faire des déchets courants ?",
++        en: "What to do with common waste?",
+       },
+       bullets: [
+         {
+diff --git a/apps/web/src/components/learn/learn-practice-theme-tabs.test.ts b/apps/web/src/components/learn/learn-practice-theme-tabs.test.ts
+index 118d6e05809928aa6485d56e2fcf5cb946fd8ec0..70b0ec25982168f530d64dad0ca7a11b51c0e473 100644
+--- a/apps/web/src/components/learn/learn-practice-theme-tabs.test.ts
++++ b/apps/web/src/components/learn/learn-practice-theme-tabs.test.ts
+@@ -53,16 +53,26 @@
+     expect(triMarkup).toContain("aria-labelledby=");
+     expect(triMarkup).toContain("Bien trier");
+     expect(triMarkup).toContain("Catégories utiles");
++    expect(triMarkup).toContain('id="guides-courts"');
++    expect(triMarkup).toContain("Emballages en verre");
++    expect(triMarkup).toContain("Déchets dangereux");
++    expect(triMarkup).toContain("Contexte de tri");
++    expect(triMarkup).not.toContain("Pictogramme");
++    expect(triMarkup.match(/role="tabpanel"/g)).toHaveLength(4);
++    expect(triMarkup.match(/aria-selected="true"/g)).toHaveLength(1);
+     expect(triMarkup).toContain("À éviter");
+     expect(triMarkup).toContain("Éclairages Gestes Propres");
+     expect(triMarkup).toContain("Que Faire de Mes Objets");
+ 
+-    expect(compostMarkup).toContain("Humide + sec = compost stable");
++    expect(compostMarkup).toContain("Équilibrer les apports");
+     expect(compostMarkup).toContain("Matières humides");
+     expect(compostMarkup).toContain("Matières sèches");
+-    expect(compostMarkup).toContain("Humidité");
++    expect(compostMarkup).toContain("humidité");
+     expect(compostMarkup).toContain("Aération");
+-    expect(compostMarkup).toContain("Réduire à la source");
++    expect(compostMarkup).toContain("Trier ses biodéchets");
++    expect(compostMarkup).not.toContain("Organiser une collecte");
++    expect(compostMarkup).toContain("Trop sec");
++    expect(compostMarkup).not.toContain("Contexte de tri");
+     expect(compostMarkup).not.toContain("Éclairages Gestes Propres");
+ 
+     expect(reduireMarkup).toContain("Campagne à la une");
+@@ -79,8 +89,9 @@
+     expect(reduireMarkup).toContain("Bouteille");
+     expect(reduireMarkup).toContain("Armoire / encombrant");
+     expect(reduireMarkup).toContain("Signaler un dépôt");
+-    expect(reduireMarkup).toContain("Trouver la bonne filière");
+-    expect(reduireMarkup).toContain("Réduire à la source");
++    expect(reduireMarkup).toContain("Carte des actions");
++    expect(reduireMarkup).toContain("Organiser une collecte");
++    expect(reduireMarkup).not.toContain("Contexte de tri");
+     expect(reduireMarkup).toContain("Consulter le baromètre complet");
+     expect(reduireMarkup.indexOf("Guides essentiels")).toBeLessThan(
+       reduireMarkup.indexOf("Campagne à la une"),
+@@ -106,6 +117,10 @@
+     expect(numeriqueMarkup).toContain("n’économise donc pas 22 km");
+     expect(numeriqueMarkup).not.toContain("1 000 spams déjà reçus économise 22 km");
+     expect(numeriqueMarkup).toContain("Sources et méthode");
++    expect(numeriqueMarkup.indexOf("Quatre gestes courts")).toBeLessThan(numeriqueMarkup.indexOf("Futurs spams évités"));
++    expect(numeriqueMarkup).not.toContain("Contexte de tri");
++    expect(numeriqueMarkup).toMatch(/3[\s\u202f]740 gCO₂e ; 3[\s\u202f]740 gCO₂e ÷ 170 gCO₂e\/km/);
++    expect(numeriqueMarkup).toContain("24 gCO₂e ; 24 gCO₂e ÷ 170 gCO₂e/km");
+     expect(numeriqueEnglishMarkup).toContain("Digital sobriety");
+     expect(numeriqueEnglishMarkup).toContain("Manage subscriptions");
+     expect(numeriqueEnglishMarkup).toContain("Empty Spam");
+diff --git a/apps/web/src/components/learn/learn-practice-theme-tabs.tsx b/apps/web/src/components/learn/learn-practice-theme-tabs.tsx
+index d9b4da30f255b3ee5fdfdfd4e70f8882f9d1c983..a0dabf39b5603831b47a6af17d27f5dc7a3830d2 100644
+--- a/apps/web/src/components/learn/learn-practice-theme-tabs.tsx
++++ b/apps/web/src/components/learn/learn-practice-theme-tabs.tsx
+@@ -1,11 +1,12 @@
+ "use client";
+ 
+ import { useId } from "react";
+-import { ArrowRight } from "lucide-react";
++import { ArrowRight, Laptop, Recycle, Sprout, Trash2 } from "lucide-react";
+ 
+ import { CmmButton } from "@/components/ui/cmm-button";
+ import { CmmCard } from "@/components/ui/cmm-card";
+-import { cn } from "@/lib/utils";
++import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
++import { LearnTriContextSection } from "./learn-tri-context-section";
+ import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
+ import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
+ import { LearnNationalContextSection } from "@/components/learn/learn-national-context-section";
+@@ -21,6 +22,8 @@
+ 
+ export type { LearnPracticeThemeId } from "@/lib/learning/practice/themes";
+ 
++const THEME_ICONS = { tri: Recycle, compost: Sprout, reduire: Trash2, numerique: Laptop };
++
+ export function LearnPracticeThemeTabs({
+   locale,
+   activeTheme,
+@@ -33,19 +36,17 @@
+   const baseId = useId();
+ 
+   return (
+-    <section className="space-y-4 rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-4 shadow-sm md:p-5">
++    <section id="guides-courts" className="space-y-4 scroll-mt-24">
+       <div className="space-y-3">
+-        <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-amber-700">
+-          {locale === "fr" ? "Quatre thèmes" : "Four themes"}
+-        </p>
+         <div
+           role="tablist"
+           aria-label={locale === "fr" ? "Thèmes des bonnes pratiques" : "Good practices themes"}
+-          className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
++          className={tabStripClassName("family", "grid-cols-2 lg:grid-cols-4")}
+         >
+           {LEARN_PRACTICE_THEME_ORDER.map((theme, index) => {
+             const isActive = activeTheme === theme;
+             const meta = THEME_LABELS[theme];
++            const Icon = THEME_ICONS[theme];
+             const tabId = `${baseId}-tab-${theme}`;
+             const panelId = `${baseId}-panel-${theme}`;
+ 
+@@ -86,22 +87,10 @@
+                     nextButton.focus();
+                   }
+                 }}
+-                className={cn(
+-                  "flex w-full flex-col rounded-[1.45rem] border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+-                  isActive
+-                    ? "border-amber-300 bg-white shadow-[0_10px_24px_-18px_rgba(245,158,11,0.35)]"
+-                    : "border-amber-200 bg-amber-50/70 hover:border-amber-300 hover:bg-amber-100/60",
+-                )}
++                className={tabItemClassName("family", isActive)}
+               >
+-                <span className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-                  {String(index + 1).padStart(2, "0")}
+-                </span>
+-                <span className="mt-1 text-base font-black tracking-tight cmm-text-primary">
+-                  {meta.label[locale]}
+-                </span>
+-                <span className="mt-1 cmm-text-small leading-relaxed cmm-text-secondary">
+-                  {meta.hint[locale]}
+-                </span>
++                <Icon size={18} className="mr-2 shrink-0" aria-hidden="true" />
++                <span>{meta.label[locale]}</span>
+               </button>
+             );
+           })}
+@@ -115,7 +104,7 @@
+         const panelId = `${baseId}-panel-${theme}`;
+ 
+         if (!isActive) {
+-          return null;
++          return <section key={theme} id={panelId} role="tabpanel" aria-labelledby={tabId} hidden />;
+         }
+ 
+         if (theme === "numerique") {
+@@ -138,37 +127,28 @@
+             id={panelId}
+             aria-labelledby={tabId}
+             className="space-y-4"
++            tabIndex={0}
+           >
+-            <CmmCard tone="amber" variant="elevated" className="space-y-4 p-5 md:p-6">
++            <CmmCard tone="family" className="space-y-3 p-4 md:p-5">
+               <div className="flex flex-wrap items-start justify-between gap-3">
+                 <div className="max-w-3xl space-y-2">
+-                  <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-                    {meta.label[locale]}
+-                  </p>
+-                  <h3 className="text-2xl font-black tracking-tight cmm-text-primary md:text-3xl">
+-                    {locale === "fr" ? "L’essentiel avant les détails" : "The essentials before details"}
+-                  </h3>
++                  <h2 className="text-2xl font-bold tracking-tight cmm-text-primary">{meta.label[locale]}</h2>
+                   <p className="cmm-text-small leading-relaxed cmm-text-secondary">
+                     {panel.summary[locale]}
+                   </p>
+                 </div>
+-                <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-900">
+-                  {locale === "fr" ? "1 thème actif" : "1 active theme"}
+-                </span>
+               </div>
+ 
+-              <ThemeVisualBlock locale={locale} theme={theme} />
+-
+               <ol className="grid gap-3 md:grid-cols-3">
+                 {panel.rules.map((rule, ruleIndex) => (
+                   <li
+                     key={rule.fr}
+-                    className="rounded-[1.2rem] border border-amber-200 bg-white p-4 shadow-sm"
++                    className="flex items-start gap-3 rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-3"
+                   >
+-                    <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-                      {String(ruleIndex + 1).padStart(2, "0")}
++                    <p className="shrink-0 font-bold text-[color:var(--cmm-family-heading)]">
++                      {ruleIndex + 1}
+                     </p>
+-                    <p className="mt-2 cmm-text-small font-semibold leading-relaxed cmm-text-primary">
++                    <p className="cmm-text-small font-semibold leading-relaxed cmm-text-primary">
+                       {rule[locale]}
+                     </p>
+                   </li>
+@@ -179,26 +159,18 @@
+             <div className="space-y-3">
+               <div className="flex items-end justify-between gap-3">
+                 <div>
+-                  <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-                    {locale === "fr" ? "Guides essentiels" : "Essential guides"}
+-                  </p>
+-                  <h4 className="mt-1 text-xl font-black tracking-tight cmm-text-primary">
+-                    {locale === "fr" ? "Action d’abord, texte ensuite" : "Action first, text later"}
+-                  </h4>
++                  <h3 className="text-lg font-bold cmm-text-primary">{locale === "fr" ? "Guides essentiels" : "Essential guides"}</h3>
+                 </div>
+               </div>
+ 
+-              <div className="grid gap-3 md:grid-cols-2">
++              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                 {panel.guides.map((guide) => (
+                   <GuideCard key={guide.href} locale={locale} guide={guide} />
+                 ))}
+               </div>
+ 
+               {panel.shortcuts.length > 0 ? (
+-                <div className="flex flex-wrap gap-2 rounded-[1.4rem] border border-amber-200 bg-white p-4">
+-                  <p className="mr-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-                    {locale === "fr" ? "Accès rapide" : "Quick access"}
+-                  </p>
++                <div className="flex flex-wrap items-center gap-2">
+                   {panel.shortcuts.map((shortcut) => (
+                     <CmmButton
+                       key={shortcut.href}
+@@ -215,6 +187,9 @@
+               ) : null}
+             </div>
+ 
++            {theme !== "reduire" ? <ThemeVisualBlock locale={locale} theme={theme} /> : null}
++            {theme === "tri" ? <LearnTriContextSection locale={locale} /> : null}
++
+             {theme === "reduire" ? (
+               <LearnGestesPropresInsightsSection locale={locale} theme={theme} scope="theme" />
+             ) : null}
+@@ -225,8 +200,8 @@
+               <LearnGestesPropresInsightsSection locale={locale} theme={theme} scope="theme" />
+             ) : null}
+ 
+-            <details className="group rounded-[1.35rem] border border-amber-200 bg-white px-4 py-3 shadow-sm">
+-              <summary className="flex cursor-pointer list-none items-start justify-between gap-3 focus-visible:outline-none">
++            <details className="group rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] px-4 py-3">
++              <summary className="flex cursor-pointer list-none items-start justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600">
+                 <div className="space-y-1 pr-4">
+                   <p className="text-base font-black tracking-tight cmm-text-primary">
+                     {panel.accordion.title[locale]}
+diff --git a/apps/web/src/components/learn/learn-practice-theme-tabs.visuals.tsx b/apps/web/src/components/learn/learn-practice-theme-tabs.visuals.tsx
+index 573a4fd3858fcdb394e7028549ac671755338922..a4e56e913db43fc671935e91424d25e24fe1397f 100644
+--- a/apps/web/src/components/learn/learn-practice-theme-tabs.visuals.tsx
++++ b/apps/web/src/components/learn/learn-practice-theme-tabs.visuals.tsx
+@@ -1,217 +1,46 @@
+-import {
+-  ArrowRight,
+-  Droplets,
+-  Leaf,
+-  Package,
+-  Recycle,
+-  ShieldAlert,
+-  Sprout,
+-  Trash2,
+-} from "lucide-react";
+-
++import { Battery, Droplets, GlassWater, Leaf, Package, Recycle, ShieldAlert, Sprout } from "lucide-react";
+ import { CmmCard } from "@/components/ui/cmm-card";
+ import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
+-import { GESTES_PROPRES_CAMPAIGN } from "@/lib/learning/gestes-propres/gestes-propres-campaign";
+ import type { LearnPracticeThemeId } from "@/lib/learning/practice/themes";
+ 
+-export function ThemeVisualBlock({
+-  locale,
+-  theme,
+-}: {
+-  locale: LearnLocale;
+-  theme: LearnPracticeThemeId;
+-}) {
+-  if (theme === "tri") {
+-    return (
+-      <CmmCard tone="amber" variant="outlined" className="space-y-4 p-4 md:p-5">
+-        <div className="flex items-start justify-between gap-3">
+-          <div>
+-            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-              {locale === "fr" ? "Lecture visuelle" : "Visual read"}
+-            </p>
+-            <h4 className="mt-1 text-xl font-black tracking-tight cmm-text-primary">
+-              {locale === "fr" ? "Catégories utiles" : "Useful categories"}
+-            </h4>
+-          </div>
+-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
+-            <Recycle className="h-5 w-5" aria-hidden="true" />
+-          </span>
+-        </div>
+-
+-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+-          {[
+-            { icon: Package, label: { fr: "Emballages", en: "Packaging" } },
+-            { icon: Droplets, label: { fr: "Humides", en: "Wet" } },
+-            { icon: Sprout, label: { fr: "Organiques", en: "Organics" } },
+-            { icon: Trash2, label: { fr: "Résiduels", en: "Residual" } },
+-          ].map((item) => {
+-            const Icon = item.icon;
+-
+-            return (
+-              <div key={item.label.fr} className="rounded-[1.1rem] border border-amber-200 bg-white p-3">
+-                <div className="flex items-center gap-3">
+-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
+-                    <Icon className="h-4 w-4" aria-hidden="true" />
+-                  </span>
+-                  <div>
+-                    <p className="text-sm font-black tracking-tight cmm-text-primary">{item.label[locale]}</p>
+-                    <p className="cmm-text-caption text-amber-700">
+-                      {locale === "fr" ? "Pictogramme" : "Pictogram"}
+-                    </p>
+-                  </div>
+-                </div>
+-              </div>
+-            );
+-          })}
+-        </div>
+-
+-        <div className="rounded-[1.1rem] border border-amber-200 bg-amber-50/70 p-4">
+-          <div className="flex items-start gap-3">
+-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200 bg-white text-amber-700">
+-              <ShieldAlert className="h-4 w-4" aria-hidden="true" />
+-            </span>
+-            <div className="min-w-0">
+-              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-                {locale === "fr" ? "À éviter" : "Avoid"}
+-              </p>
+-              <p className="mt-1 cmm-text-small leading-relaxed cmm-text-secondary">
+-                {locale === "fr"
+-                  ? "Deviner, mélanger ou forcer le mauvais bac."
+-                  : "Guessing, mixing or forcing the wrong bin."}
+-              </p>
+-            </div>
+-          </div>
+-        </div>
+-      </CmmCard>
+-    );
+-  }
+-
+-  if (theme === "compost") {
+-    return (
+-      <CmmCard tone="amber" variant="outlined" className="space-y-4 p-4 md:p-5">
+-        <div className="flex items-start justify-between gap-3">
+-          <div>
+-            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-              {locale === "fr" ? "Schéma simple" : "Simple schema"}
+-            </p>
+-            <h4 className="mt-1 text-xl font-black tracking-tight cmm-text-primary">
+-              {locale === "fr" ? "Humide + sec = compost stable" : "Wet + dry = stable compost"}
+-            </h4>
+-          </div>
+-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
+-            <Sprout className="h-5 w-5" aria-hidden="true" />
+-          </span>
+-        </div>
+-
+-        <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr] md:items-center">
+-          <div className="rounded-[1.1rem] border border-amber-200 bg-white p-4">
+-            <div className="flex items-center gap-3">
+-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
+-                <Droplets className="h-4 w-4" aria-hidden="true" />
+-              </span>
+-              <div>
+-                <p className="text-sm font-black tracking-tight cmm-text-primary">
+-                  {locale === "fr" ? "Matières humides" : "Wet materials"}
+-                </p>
+-                <p className="cmm-text-small cmm-text-secondary">
+-                  {locale === "fr" ? "Épluchures, restes végétaux, marc." : "Peels, plant leftovers, grounds."}
+-                </p>
+-              </div>
+-            </div>
+-          </div>
+-
+-          <div className="flex justify-center">
+-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+-              <ArrowRight className="h-4 w-4 rotate-90 md:rotate-0" aria-hidden="true" />
+-            </span>
+-          </div>
++const SORTING_EXAMPLES = [
++  { icon: Package, title: { fr: "Emballages et papiers", en: "Packaging and paper" }, detail: { fr: "Vides, non imbriqués. Bac de tri selon la consigne locale.", en: "Empty, not nested. Follow local recycling instructions." } },
++  { icon: GlassWater, title: { fr: "Emballages en verre", en: "Glass packaging" }, detail: { fr: "Bouteilles, pots et bocaux : conteneur à verre.", en: "Bottles and jars: glass collection container." } },
++  { icon: Sprout, title: { fr: "Biodéchets", en: "Food waste" }, detail: { fr: "Épluchures et restes alimentaires : collecte ou compost selon les consignes.", en: "Food scraps: collection or compost according to local rules." } },
++  { icon: Battery, title: { fr: "Déchets dangereux", en: "Hazardous waste" }, detail: { fr: "Piles et produits chimiques : filière dédiée, jamais dans le bac emballages.", en: "Batteries and chemicals: dedicated collection, never packaging bins." } },
++];
+ 
+-          <div className="rounded-[1.1rem] border border-amber-200 bg-white p-4">
+-            <div className="flex items-center gap-3">
+-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
+-                <Leaf className="h-4 w-4" aria-hidden="true" />
+-              </span>
+-              <div>
+-                <p className="text-sm font-black tracking-tight cmm-text-primary">
+-                  {locale === "fr" ? "Matières sèches" : "Dry materials"}
+-                </p>
+-                <p className="cmm-text-small cmm-text-secondary">
+-                  {locale === "fr" ? "Feuilles, carton, broyat." : "Leaves, cardboard, chips."}
+-                </p>
+-              </div>
+-            </div>
++export function ThemeVisualBlock({ locale, theme }: { locale: LearnLocale; theme: LearnPracticeThemeId }) {
++  if (theme === "tri") return (
++    <CmmCard tone="slate" className="space-y-3 p-4">
++      <h3 className="text-lg font-bold cmm-text-primary">{locale === "fr" ? "Catégories utiles" : "Useful categories"}</h3>
++      <div className="grid gap-3 sm:grid-cols-2">
++        {SORTING_EXAMPLES.map(({ icon: Icon, title, detail }) => (
++          <div key={title.fr} className="flex items-start gap-3 rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-3">
++            <Icon size={24} className="shrink-0 text-[color:var(--cmm-family-heading)]" aria-hidden="true" />
++            <div className="min-w-0"><h4 className="font-bold cmm-text-primary">{title[locale]}</h4><p className="mt-1 cmm-text-small cmm-text-secondary">{detail[locale]}</p></div>
+           </div>
+-        </div>
+-
+-        <div className="grid gap-3 sm:grid-cols-2">
+-          {[
+-            {
+-              label: { fr: "Humidité", en: "Moisture" },
+-              value: locale === "fr" ? "Moyenne" : "Medium",
+-              detail: locale === "fr" ? "Assez humide pour vivre, pas assez pour coller." : "Enough moisture to live, not enough to stick.",
+-            },
+-            {
+-              label: { fr: "Aération", en: "Airflow" },
+-              value: locale === "fr" ? "Régulière" : "Regular",
+-              detail: locale === "fr" ? "L’air circule pour garder le tas vivant." : "Air circulates to keep the pile active.",
+-            },
+-          ].map((item) => (
+-            <div key={item.label.fr} className="rounded-[1.1rem] border border-amber-200 bg-amber-50/60 p-4">
+-              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-                {item.label[locale]}
+-              </p>
+-              <p className="mt-2 text-lg font-black tracking-tight cmm-text-primary">{item.value}</p>
+-              <p className="mt-1 cmm-text-small leading-relaxed cmm-text-secondary">{item.detail}</p>
+-            </div>
+-          ))}
+-        </div>
+-      </CmmCard>
+-    );
+-  }
+-
++        ))}
++      </div>
++      <p className="flex items-start gap-2 cmm-text-small cmm-text-primary"><ShieldAlert size={18} className="shrink-0" aria-hidden="true" />{locale === "fr" ? "Ne pas manipuler un déchet inconnu ou dangereux lors d’une collecte. Le signaler." : "Do not handle unknown or hazardous waste during a cleanup. Report it."}</p>
++      <a href="https://quefairedemesdechets.ademe.fr/categories/emballages/" className="cmm-text-small font-semibold underline cmm-text-primary" target="_blank" rel="noopener noreferrer">{locale === "fr" ? "Consignes de tri · ADEME" : "Sorting guidance · ADEME"}</a>
++    </CmmCard>
++  );
++  if (theme !== "compost") return null;
+   return (
+-    <CmmCard tone="amber" variant="outlined" className="space-y-4 p-4 md:p-5">
+-      <div className="flex items-start justify-between gap-3">
+-        <div>
+-          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+-            {locale === "fr" ? "Séquence visuelle" : "Visual sequence"}
+-          </p>
+-          <h4 className="mt-1 text-xl font-black tracking-tight cmm-text-primary">
+-            {locale === "fr"
+-              ? "Mégot → canette → bouteille → encombrant"
+-              : "Butt → can → bottle → bulky item"}
+-          </h4>
+-          <p className="mt-1 cmm-text-small leading-relaxed cmm-text-secondary">
+-            {locale === "fr"
+-              ? "Lire l’issue utile avant de laisser le déchet."
+-              : "Read the useful outcome before leaving waste behind."}
+-          </p>
+-        </div>
+-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
+-          <Trash2 className="h-5 w-5" aria-hidden="true" />
+-        </span>
++    <CmmCard tone="family" className="space-y-4 p-4">
++      <h3 className="text-lg font-bold cmm-text-primary">{locale === "fr" ? "Équilibrer les apports" : "Balance compost inputs"}</h3>
++      <div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
++        <div className="flex items-start gap-3 rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-3"><Droplets size={24} className="shrink-0" aria-hidden="true" /><div><h4 className="font-bold cmm-text-primary">{locale === "fr" ? "Matières humides" : "Wet materials"}</h4><p className="cmm-text-small cmm-text-secondary">{locale === "fr" ? "Épluchures, restes végétaux, marc." : "Peels, plant leftovers, coffee grounds."}</p></div></div>
++        <span className="text-center text-xl font-bold cmm-text-primary" aria-label={locale === "fr" ? "Mélanger avec" : "Mix with"}>+</span>
++        <div className="flex items-start gap-3 rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-3"><Leaf size={24} className="shrink-0" aria-hidden="true" /><div><h4 className="font-bold cmm-text-primary">{locale === "fr" ? "Matières sèches" : "Dry materials"}</h4><p className="cmm-text-small cmm-text-secondary">{locale === "fr" ? "Feuilles mortes, broyat, carton non plastifié." : "Dry leaves, wood chips, uncoated cardboard."}</p></div></div>
+       </div>
+-
+-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+-        {GESTES_PROPRES_CAMPAIGN.situations.map((situation, index) => (
+-          <div
+-            key={situation.id}
+-            className="rounded-[1.1rem] border border-amber-200 bg-white px-3 py-3 shadow-sm"
+-          >
+-            <div className="flex items-start justify-between gap-2">
+-              <p className="text-sm font-black tracking-tight cmm-text-primary">
+-                {situation.object[locale]}
+-              </p>
+-              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 cmm-text-caption font-black text-amber-900">
+-                {String(index + 1)}
+-              </span>
+-            </div>
+-            <p className="mt-2 cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-700">
+-              {locale === "fr" ? "À orienter" : "To orient"}
+-            </p>
+-          </div>
+-        ))}
++      <p className="flex items-center gap-2 font-semibold cmm-text-primary"><Recycle size={18} aria-hidden="true" />{locale === "fr" ? "Aération et humidité : brasser et surveiller" : "Airflow and moisture: mix and monitor"}</p>
++      <div className="grid gap-2 sm:grid-cols-2">
++        <div className="rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-3"><h4 className="font-bold cmm-text-primary">{locale === "fr" ? "Trop humide / mauvaises odeurs" : "Too wet / unpleasant smells"}</h4><p className="cmm-text-small cmm-text-secondary">{locale === "fr" ? "Ajouter des matières sèches et aérer." : "Add dry materials and aerate."}</p></div>
++        <div className="rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-3"><h4 className="font-bold cmm-text-primary">{locale === "fr" ? "Trop sec" : "Too dry"}</h4><p className="cmm-text-small cmm-text-secondary">{locale === "fr" ? "Humidifier progressivement et mélanger." : "Moisten gradually and mix."}</p></div>
+       </div>
++      <a href="https://agirpourlatransition.ademe.fr/particuliers/reduire-dechets/composter-pailler/regles-pour-reussir-compost" className="cmm-text-small font-semibold underline cmm-text-primary" target="_blank" rel="noopener noreferrer">{locale === "fr" ? "Réussir son compost · ADEME" : "Composting guidance · ADEME"}</a>
+     </CmmCard>
+   );
+ }
+diff --git a/apps/web/src/components/learn/learn-tri-context-section.tsx b/apps/web/src/components/learn/learn-tri-context-section.tsx
+index 319dd06173b7eacc0b2ab3ef786da188bb1f464c..b9680dab4db7eb0af663597bd9409ae1a1db77e3 100644
+--- a/apps/web/src/components/learn/learn-tri-context-section.tsx
++++ b/apps/web/src/components/learn/learn-tri-context-section.tsx
+@@ -57,8 +57,8 @@
+       en: "Sand mixes waste quickly, so the rules must stay highly legible.",
+     },
+     decision: {
+-      fr: "Faire une lecture rapide, séparer les objets douteux et garder un sac pour les cas ambigus.",
+-      en: "Do a quick scan, separate doubtful items and keep a bag for ambiguous cases.",
++      fr: "Séparer les déchets identifiés. Ne pas manipuler les objets dangereux ou inconnus.",
++      en: "Separate identified waste. Do not handle hazardous or unknown items.",
+     },
+     fallback: {
+       fr: "Quand l’objet est trop dégradé, passer par le signalement local.",
+@@ -80,8 +80,8 @@
+       en: "Read the signs first, then apply the most precise local rule.",
+     },
+     fallback: {
+-      fr: "Si rien n’est visible, choisir le flux le moins risqué.",
+-      en: "If nothing is visible, choose the least risky stream.",
++      fr: "Si rien n’est visible, conserver le déchet et vérifier la consigne locale.",
++      en: "If nothing is visible, keep the waste and check local guidance.",
+     },
+     href: "/sections/recycling",
+     hrefLabel: { fr: "Voir le tri urbain", en: "Open urban sorting" },
+@@ -171,24 +171,24 @@
+   const Icon = selectedContext.icon;
+ 
+   return (
+-    <section className="rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-5 shadow-sm md:p-6">
++    <section className="rounded-2xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] p-4">
+       <div className="max-w-3xl space-y-2">
+         <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+           {locale === "fr" ? "Contexte de tri" : "Sorting context"}
+         </p>
+         <h3 className="text-2xl font-black tracking-tight cmm-text-primary">
+           {locale === "fr"
+-            ? "Un seul contexte affiché à la fois"
+-            : "Only one context shown at a time"}
++            ? "Quel est ton contexte ?"
++            : "What is your situation?"}
+         </h3>
+         <p className="cmm-text-small leading-relaxed cmm-text-secondary">
+           {locale === "fr"
+-            ? "Le sélecteur remplace les cinq cartes visibles d’un bloc: on choisit un contexte, puis on lit le détail utile."
+-            : "The selector replaces the five visible cards: choose one context, then read only the useful detail."}
++            ? "Choisis le lieu pour adapter le geste."
++            : "Choose a place to adapt your action."}
+         </p>
+       </div>
+ 
+-      <div className="mt-5 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
++      <div className="mt-3 grid gap-3">
+         <div className="space-y-3">
+           <label
+             htmlFor="learn-tri-context-select"
+@@ -233,7 +233,7 @@
+           </div>
+         </div>
+ 
+-        <CmmCard tone="amber" variant="elevated" className="p-5 md:p-6">
++        <CmmCard tone="family" className="p-5 md:p-6">
+           <div className="flex items-start justify-between gap-3">
+             <div>
+               <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+diff --git a/apps/web/src/lib/learning/gestes-propres/gestes-propres-campaign.ts b/apps/web/src/lib/learning/gestes-propres/gestes-propres-campaign.ts
+index b38843c54f488f13df17367731321f990d873aa2..d1a9c231f571d581be001cea80e4d662657a65fa 100644
+--- a/apps/web/src/lib/learning/gestes-propres/gestes-propres-campaign.ts
++++ b/apps/web/src/lib/learning/gestes-propres/gestes-propres-campaign.ts
+@@ -129,7 +129,7 @@
+         fr: "Trouver la filière",
+         en: "Find the stream",
+       },
+-      solutionHref: "/actions/map",
++      solutionHref: "https://quefairedemesdechets.ademe.fr/categories/emballages/",
+     },
+     {
+       id: "armoire",
+@@ -153,7 +153,7 @@
+         fr: "Chercher une solution",
+         en: "Find a solution",
+       },
+-      solutionHref: "/actions/map",
++      solutionHref: "https://quefairedemesdechets.ademe.fr/categories/meubles/",
+     },
+   ],
+   validation: createPublishedLearningValidation({
+diff --git a/documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/learn-bonnes-pratiques-README.md b/documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/learn-bonnes-pratiques-README.md
+index cc1bf01be66040bd7309561c631b1ce0723b28c4..b40fb32d07232a954bbcd22029af2e5a79c6c614 100644
+--- a/documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/learn-bonnes-pratiques-README.md
++++ b/documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/learn-bonnes-pratiques-README.md
+@@ -17,13 +17,13 @@
+   - `apps/web/src/components/learn/learn-gestes-propres-insights-section.tsx`
+ - **Type fonctionnel** : page éducative
+ - **Famille / bloc fonctionnel** : Apprendre
+-- **Palette attendue** : yellow / amber
++- **Palette attendue** : famille Apprendre, canvas neutre, surfaces jaune/orange clair depuis le registre partagé ; couleurs sémantiques inchangées.
+ - **Structure visible actuelle** :
+   - chapeau court dans `PageHeader`
+   - 4 onglets accessibles
+   - `Bien trier`, `Composter`, `Éviter les déchets abandonnés`
+   - `Sobriété numérique`, avec un tutoriel Gmail court et actionnable
+-  - schéma visuel par thème
++  - guides et actions en premier ; exemples de filières réelles pour le tri, équilibre et diagnostic de compost, situations de campagne uniques pour les déchets abandonnés
+   - 3 règles essentielles maximum
+   - guides essentiels avant les contenus éditoriaux
+   - bloc `Campagne à la une` dans le troisième thème
+@@ -32,8 +32,9 @@
+   - méthodologies et indicateurs détaillés conservés dans un accordéon replié, sans duplication des sources canoniques
+   - bloc `Action collective` avec trois CTA vers les actions disponibles
+   - accordéon unique pour les détails complémentaires
+-  - pour la sobriété numérique : faits, estimations/équivalences et recommandations sont séparés ; les sources et la méthode sont secondaires et repliées
+-  - bloc secondaire `Pour aller plus loin avec Gestes Propres`
++  - pour la sobriété numérique : tutoriel en premier ; faits et estimations/équivalences séparés, calculs dimensionnellement cohérents ; sources et méthode secondaires et repliées
++  - contexte de tri uniquement dans `tri` ; ressources transversales repliées après le panneau actif, sans doublon des deux éclairages du tri
++  - ancres `guides-courts` et `ressources-utiles` et paramètres `theme` conservés
+ - **Hiérarchie UX** : l'essentiel reste visible en premier, les compléments passent en accordéons fermés par défaut.
+ - **Sources secondaires** : ADEME, Gestes Propres, ministère
+ - **Baromètre IFOP × Gestes Propres** : données déclaratives, 2 001 répondants, septembre 2025 ; le PDF de référence versionné et servi par l'application se trouve uniquement dans `apps/web/public/learn/bonnes-pratiques/gestespropres-Barometre_2025.pdf`.
+@@ -44,7 +45,7 @@
+ - **Sobriété numérique** : les procédures Gmail s’appuient sur l’aide Google. Le chemin principal est `Plus > Gérer les abonnements`; le raccourci `/#sub` est seulement proposé comme possibilité, car la fonctionnalité est déployée progressivement, avec le fallback `ouvrir un e-mail > Se désabonner`.
+ - **Facteurs d’impact** : `3,74 gCO₂e` par spam non lu, `0,24 gCO₂e` pour `1 Go` stocké pendant un an et `170 gCO₂e/km` pour une voiture thermique moyenne essence sont repris des pages Impact CO₂ citant la Base Empreinte ADEME. Les équivalences sont dérivées par calcul : `1 000 futurs spams évités ≈ 22 km` et `100 Go stockés pendant un an ≈ 0,14 km`.
+ - **Limite d’interprétation** : supprimer un mail déjà reçu n’annule pas les émissions de sa transmission ; le levier prioritaire est d’éviter les futurs envois. L’équivalence de 22 km ne doit jamais être présentée comme une économie obtenue en supprimant 1 000 spams déjà reçus.
+-- **Navigation** : les routes existantes sont conservées, sans changement de destination.
++- **Navigation** : accès aux routes existantes maintenu ; libellés conformes à leur fonction (carte des actions et signalements, création de collecte). Le guide des biodéchets et les solutions bouteille/meuble pointent vers les ressources ADEME adaptées plutôt que vers une carte de nettoyage. Les sources ADEME du tri et du compost sont accessibles depuis les exemples.
+ - **Surfaces intégrées** : le parcours commun `LearnBlockJourneySection` et
+   les ressources différées de `learn-ressources-client.tsx` sont des blocs
+   consommés par les pages Apprendre ; le parcours commun est rendu sur

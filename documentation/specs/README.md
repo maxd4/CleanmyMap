@@ -4,6 +4,8 @@
 
 ## Dossiers réellement présents
 
+- [bonnes-pratiques-ui/README_CODEX.md](./bonnes-pratiques-ui/README_CODEX.md) : refonte Web de Bonnes pratiques, quatre onglets, guides actionnables, tri contextualisé, ressources dédupliquées et équivalences numériques, PLAN/CANDIDATE.
+
 - [sentrainer-ui/README_CODEX.md](./sentrainer-ui/README_CODEX.md) : refonte Web de S’entraîner, accès au quiz pleine largeur, quatre onglets, progression réelle et choix de piégeage, PLAN/CANDIDATE.
 
 - [vulgarisation-ui/README_CODEX.md](./vulgarisation-ui/README_CODEX.md) : refonte Web de Vulgarisation, six onglets, palette Apprendre, contenus scientifiques et correction des cartes vides, PLAN/CANDIDATE.

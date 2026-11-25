@@ -1,0 +1,114 @@
+{
+  "status": "CANDIDATE",
+  "source_main": "75603b489223ff7eaaf27ebaa0f21dd75882c817",
+  "base_observed": "e8c9e76609e7cdc3c3de4d59d7e12106658adbbc",
+  "patch_git_blob_sha": "4c624a6b9b47ec02652db7fc5358ae1799856d55",
+  "overlap_with_vulgarisation_or_sentrainer": [],
+  "targets": [
+    {
+      "path": "apps/web/src/app/learn/bonnes-pratiques/client.tsx",
+      "before": "e4df36cc3795d1f9cba53d77713e28d119387e3c",
+      "after": "e86c249819493bc97978a5a123f99369e0adaeab",
+      "insertions": 5,
+      "deletions": 19
+    },
+    {
+      "path": "apps/web/src/app/learn/bonnes-pratiques/page.test.ts",
+      "before": "785c7c47a02d399e61dc72980888165828685ca5",
+      "after": "01f2973d8e8ae6abacddc564292c37f473e76d43",
+      "insertions": 4,
+      "deletions": 5
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-gestes-propres-campaign-section.tsx",
+      "before": "787bc45f9a55f88c8f748f108f9e0b1699d81fd1",
+      "after": "f6c73490a099f198693c5a0245d283ba624ff332",
+      "insertions": 3,
+      "deletions": 12
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-gestes-propres-insights-section.test.ts",
+      "before": "a0441fd77360d4a229ea4f7f5c1f54e7a70b9151",
+      "after": "8f1d2634f54f7ca46eec31457a69c211eba5339e",
+      "insertions": 7,
+      "deletions": 0
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-gestes-propres-insights-section.tsx",
+      "before": "d502f480b9a2586c229cec13283b93f37080bcd4",
+      "after": "1ca803f1eb5a27aab45b554ecf37bbc6d6b692e9",
+      "insertions": 10,
+      "deletions": 8
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-numerique-theme-panel.tsx",
+      "before": "43bfc1ec9aa0d4d7e0deb78877408a5dea5bd667",
+      "after": "4f26180bb7241c1418b2677b8a1e75a9deb35c19",
+      "insertions": 77,
+      "deletions": 76
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-practice-theme-selection.tsx",
+      "before": "6217a7f414946e2e2f09346fa043258ea9e6712c",
+      "after": "ffe3c4997f8730d039efe53b7c10542ea040300b",
+      "insertions": 14,
+      "deletions": 9
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-practice-theme-tabs.content.tsx",
+      "before": "8001f18527fd2dcc447baae2fe5c69a94d71c46e",
+      "after": "06a898cf2efad071614d857ac15f0ec6c9141a0e",
+      "insertions": 4,
+      "deletions": 7
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-practice-theme-tabs.data.ts",
+      "before": "760201b94ba48a2528dced36fa8fba08052d59b7",
+      "after": "aba6dde2a6ab66f876d9a6f1c58da27ccab2e637",
+      "insertions": 33,
+      "deletions": 33
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-practice-theme-tabs.test.ts",
+      "before": "118d6e05809928aa6485d56e2fcf5cb946fd8ec0",
+      "after": "70b0ec25982168f530d64dad0ca7a11b51c0e473",
+      "insertions": 20,
+      "deletions": 5
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-practice-theme-tabs.tsx",
+      "before": "d9b4da30f255b3ee5fdfdfd4e70f8882f9d1c983",
+      "after": "a0dabf39b5603831b47a6af17d27f5dc7a3830d2",
+      "insertions": 27,
+      "deletions": 52
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-practice-theme-tabs.visuals.tsx",
+      "before": "573a4fd3858fcdb394e7028549ac671755338922",
+      "after": "a4e56e913db43fc671935e91424d25e24fe1397f",
+      "insertions": 34,
+      "deletions": 205
+    },
+    {
+      "path": "apps/web/src/components/learn/learn-tri-context-section.tsx",
+      "before": "319dd06173b7eacc0b2ab3ef786da188bb1f464c",
+      "after": "b9680dab4db7eb0af663597bd9409ae1a1db77e3",
+      "insertions": 11,
+      "deletions": 11
+    },
+    {
+      "path": "apps/web/src/lib/learning/gestes-propres/gestes-propres-campaign.ts",
+      "before": "b38843c54f488f13df17367731321f990d873aa2",
+      "after": "d1a9c231f571d581be001cea80e4d662657a65fa",
+      "insertions": 2,
+      "deletions": 2
+    },
+    {
+      "path": "documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/learn-bonnes-pratiques-README.md",
+      "before": "cc1bf01be66040bd7309561c631b1ce0723b28c4",
+      "after": "b40fb32d07232a954bbcd22029af2e5a79c6c614",
+      "insertions": 6,
+      "deletions": 5
+    }
+  ]
+}
