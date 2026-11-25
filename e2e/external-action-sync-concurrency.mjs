@@ -356,9 +356,9 @@ async function main() {
     await testConcurrentExpiredTokenVsTakeover();
     console.log("EXECUTED_DB_CONTRACT: External action sync two-session reservation, lock-order, expiration and suppression idempotency contract passed.");
   } catch (error) {
-    const safeMsg = String(error?.message ?? error).replaceAll("ERROR:", "PG_ERR:");
-    console.error(`SYNC_CONC_DIAGNOSTIC: ${safeMsg}`);
-    throw error;
+    const safeMsg = String(error?.message ?? error).replaceAll("ERROR:", "PG_ERR:").replace(/\r?\n/g, " | ").slice(0, 400);
+    console.log(`SYNC_CONC_DIAGNOSTIC: ${safeMsg}`);
+    process.exitCode = 1;
   } finally {
     await run(cleanupSql, "cleanup").catch(() => {});
   }
