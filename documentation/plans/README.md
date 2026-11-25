@@ -17,4 +17,9 @@
 | Pondération socio-démographique heatmap | [ponderation-socio-demographique-heatmap.md](./ponderation-socio-demographique-heatmap.md) | PLAN : hypothèses non calibrées, non activées |
 | Annotations communautaires heatmap | [heatmap-annotations-communautaires.md](./heatmap-annotations-communautaires.md) | PLAN : hors périmètre du pilote |
 
+| Réception navigateur des parcours Web | [audit-parcours-web.md](./audit-parcours-web.md) | PLAN : audit route-first après stabilisation des specs |
+| Calibration scientifique du planner | [calibration-scientifique-planner.md](./calibration-scientifique-planner.md) | PLAN / RECHERCHE : collecte, benchmark, activation conditionnelle et GPS futur |
+| Calques explicables de la carte itinéraire | [calques-carte-itineraire.md](./calques-carte-itineraire.md) | PLAN : projection et restitution, sans deuxième modèle |
+| Sources externes déchets et infrastructures | [donnees-externes-cartographie-dechets.md](./donnees-externes-cartographie-dechets.md) | PLAN / INVENTAIRE CANDIDAT : qualification des droits et pilotes bornés |
+
 Ne pas supprimer, restructurer ni renommer le dossier `rapport_impact/impact_IA/` ou ses annexes dans une opération de classement. Ne pas confondre un message DU historique, une demande de subvention ou un chapitre académique avec un lot Codex autorisé. Toute nouvelle information chiffrée nécessite sa source, son unité, son périmètre, sa date et ses limites.
