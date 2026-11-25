@@ -928,7 +928,7 @@ new file mode 100644
 +    ]
 +  },
 +  {
-+    "institutionId": "syctom",
++    "actorId": "collectivite-syctom",
 +    "limits": [
 +      {
 +        "id": "residual-not-specialized",
