@@ -12,9 +12,9 @@ const hashSuppressA = "d".repeat(64);
 const hashSuppressB = "e".repeat(64);
 const hashExpired = "f".repeat(64);
 
-const run = (sql, timeoutMs = 20_000) => runLocalPsqlQuery(sql, {
+const run = (sql, step = "query", timeoutMs = 20_000) => runLocalPsqlQuery(sql, {
   timeoutMs,
-  errorLabel: "External action sync PostgreSQL concurrency query failed",
+  errorLabel: `External action sync PostgreSQL concurrency failed at step=${step}`,
 });
 
 function barrierSql(ownKey, otherKey) {
@@ -53,7 +53,7 @@ commit;
 
 async function setup() {
   await resolveLocalEphemeralDbUrl();
-  await run(cleanupSql);
+  await run(cleanupSql, "setup_cleanup");
   await run(`
 begin;
 set local role postgres;
@@ -271,8 +271,8 @@ commit;
   const winnerAction = r1.stdout.includes("SUP1:suppressed") ? action1 : action2;
   const winnerReason = r1.stdout.includes("SUP1:suppressed") ? "collision test 1" : "collision test 2";
   const [rep1, rep2] = await Promise.all([
-    run(`begin; set local role service_role; select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-rep-1"}', true); select 'REP:' || public.suppress_external_action_sync_action('${winnerAction}'::uuid, 'admin-1', 'sync-conc-op-collision', '${winnerReason}'); commit;`),
-    run(`begin; set local role service_role; select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-rep-2"}', true); select 'REP:' || public.suppress_external_action_sync_action('${winnerAction}'::uuid, 'admin-1', 'sync-conc-op-collision', '${winnerReason}'); commit;`),
+    run(`begin; set local role service_role; select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-rep-1"}', true); select set_config('request.jwt.claim.role', 'service_role', true); select 'REP:' || public.suppress_external_action_sync_action('${winnerAction}'::uuid, 'admin-1', 'sync-conc-op-collision', '${winnerReason}'); commit;`, "rep1"),
+    run(`begin; set local role service_role; select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-rep-2"}', true); select set_config('request.jwt.claim.role', 'service_role', true); select 'REP:' || public.suppress_external_action_sync_action('${winnerAction}'::uuid, 'admin-1', 'sync-conc-op-collision', '${winnerReason}'); commit;`, "rep2"),
   ]);
   assert.match(rep1.stdout, /REP:suppressed/);
   assert.match(rep2.stdout, /REP:suppressed/);
@@ -285,7 +285,7 @@ delete from private.external_action_sync_references where identity_hash in ('${h
 delete from private.external_action_sync_identities where identity_hash in ('${hashSuppressA}', '${hashSuppressB}');
 delete from public.actions where id in ('${action1}'::uuid, '${action2}'::uuid);
 commit;
-`);
+`, "sup_cleanup");
 }
 
 async function testConcurrentExpiredTokenVsTakeover() {
