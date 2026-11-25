@@ -123,31 +123,32 @@ const press = (element: HTMLElement, key: string) => act(() => { element.dispatc
 const selectedTabs = (container: HTMLElement) => Array.from(container.querySelectorAll('[role="tab"][aria-selected="true"]')).map((node) => node.id);
 
 describe("AnnuaireSection main tabs", () => {
-  it("opens on the directory and mounts only the directory view with the shared hook", () => {
+  it("opens on public services by default and mounts only that panel", () => {
     const container = mount();
-    expect(selectedTabs(container)).toEqual(["annuaire-tab-directory"]);
-    expect(container.querySelector('[data-testid="exploration-directory"]')).toBeTruthy();
+    expect(selectedTabs(container)).toEqual(["annuaire-tab-organization"]);
+    expect(container.querySelector('[data-testid="organization"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="exploration-directory"]')).toBeNull();
     expect(container.querySelector('[data-testid="exploration-map"]')).toBeNull();
     expect(container.querySelector('[data-testid="featured"]')).toBeNull();
     expect(container.querySelectorAll('[role="tabpanel"]:not([hidden])').length).toBe(1);
   });
 
-  it("supports roving tabindex with arrows, Home and End, moving focus with selection", () => {
+  it("supports roving tabindex with arrows, Home and End across the four tabs", () => {
     const container = mount();
-    press(tab(container, "directory"), "ArrowRight");
-    expect(selectedTabs(container)).toEqual(["annuaire-tab-map"]);
-    expect(document.activeElement).toBe(tab(container, "map"));
-    expect(tab(container, "map").tabIndex).toBe(0);
-    expect(tab(container, "directory").tabIndex).toBe(-1);
-
-    press(tab(container, "map"), "End");
-    expect(selectedTabs(container)).toEqual(["annuaire-tab-organization"]);
     press(tab(container, "organization"), "ArrowRight");
-    expect(selectedTabs(container)).toEqual(["annuaire-tab-discover"]);
-    press(tab(container, "discover"), "ArrowLeft");
+    expect(selectedTabs(container)).toEqual(["annuaire-tab-directory"]);
+    expect(document.activeElement).toBe(tab(container, "directory"));
+    expect(tab(container, "directory").tabIndex).toBe(0);
+    expect(tab(container, "organization").tabIndex).toBe(-1);
+
+    press(tab(container, "directory"), "End");
+    expect(selectedTabs(container)).toEqual(["annuaire-tab-network"]);
+    press(tab(container, "network"), "ArrowRight");
     expect(selectedTabs(container)).toEqual(["annuaire-tab-organization"]);
-    press(tab(container, "organization"), "Home");
-    expect(selectedTabs(container)).toEqual(["annuaire-tab-discover"]);
+    press(tab(container, "organization"), "ArrowLeft");
+    expect(selectedTabs(container)).toEqual(["annuaire-tab-network"]);
+    press(tab(container, "network"), "Home");
+    expect(selectedTabs(container)).toEqual(["annuaire-tab-organization"]);
   });
 
   it("only unhides the active panel and keeps the 3D scene inactive outside its tab", () => {
@@ -157,24 +158,23 @@ describe("AnnuaireSection main tabs", () => {
     act(() => tab(container, "network").click());
     expect(container.querySelector('[data-testid="network-3d"]')?.getAttribute("data-active")).toBe("true");
     expect(panel(container, "network").hidden).toBe(false);
-    expect(panel(container, "directory").hidden).toBe(true);
+    expect(panel(container, "organization").hidden).toBe(true);
     expect(container.querySelector('[data-testid="exploration-directory"]')).toBeNull();
   });
 
-  it("shows 6 featured cards first, reveals all, and links back to the directory", () => {
+  it("centralizes featured cards (6 initial, reveal all) inside the directory tab", () => {
     const container = mount();
-    act(() => tab(container, "discover").click());
+    act(() => tab(container, "directory").click());
     expect(container.querySelectorAll("[data-featured]").length).toBe(6);
     const showAll = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Afficher toutes (8)");
     act(() => showAll?.click());
     expect(container.querySelectorAll("[data-featured]").length).toBe(8);
-    const toDirectory = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Voir tout l'annuaire");
-    act(() => toDirectory?.click());
-    expect(selectedTabs(container)).toEqual(["annuaire-tab-directory"]);
+    expect(container.querySelector('[data-testid="exploration-directory"]')).toBeTruthy();
   });
 
   it("keeps the filter state across directory and map through one hook instance per render", () => {
     const container = mount();
+    act(() => tab(container, "directory").click());
     expect(container.querySelector('[data-testid="exploration-directory"]')?.getAttribute("data-search")).toBe("climat");
     act(() => tab(container, "map").click());
     expect(container.querySelector('[data-testid="exploration-map"]')?.getAttribute("data-search")).toBe("climat");
@@ -184,6 +184,7 @@ describe("AnnuaireSection main tabs", () => {
 
   it("Localiser opens the map with the selection, restoring filters when the target is excluded", () => {
     const container = mount();
+    act(() => tab(container, "directory").click());
     act(() => container.querySelector<HTMLButtonElement>("[data-locate]")?.click());
     expect(resetFilters).toHaveBeenCalledTimes(1);
     expect(selectedTabs(container)).toEqual(["annuaire-tab-map"]);
@@ -195,6 +196,7 @@ describe("AnnuaireSection main tabs", () => {
 
   it("opens one sheet across directory and map, hides it outside directory tabs, and never keeps an orphan after a filter change", () => {
     const container = mount();
+    act(() => tab(container, "directory").click());
     act(() => container.querySelector<HTMLButtonElement>("[data-select]")?.click());
     expect(container.querySelectorAll('[data-testid="drawer"]').length).toBe(1);
     act(() => tab(container, "map").click());

@@ -3,18 +3,17 @@
 import type { KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 
-export const ANNUAIRE_VIEWS = ["discover", "directory", "map", "network", "organization"] as const;
+export const ANNUAIRE_VIEWS = ["organization", "directory", "map", "network"] as const;
 export type AnnuaireView = (typeof ANNUAIRE_VIEWS)[number];
 
 export const annuaireTabId = (view: AnnuaireView) => `annuaire-tab-${view}`;
 export const annuairePanelId = (view: AnnuaireView) => `annuaire-panel-${view}`;
 
 const LABELS: Record<AnnuaireView, { fr: string; en: string }> = {
-  discover: { fr: "Découvrir", en: "Discover" },
+  organization: { fr: "Services publics", en: "Public services" },
   directory: { fr: "Annuaire", en: "Directory" },
   map: { fr: "Carte", en: "Map" },
   network: { fr: "Réseau 3D", en: "3D network" },
-  organization: { fr: "Services publics", en: "Public services" },
 };
 
 /** Navigation principale unique de l'Annuaire (roving tabindex, flèches, Début/Fin). */

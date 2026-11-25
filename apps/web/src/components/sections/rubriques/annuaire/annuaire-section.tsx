@@ -69,7 +69,7 @@ function AnnuaireTabPanel({ view, active, children }: { view: AnnuaireView; acti
 export function AnnuaireSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
-  const [view, setView] = useState<AnnuaireView>("directory");
+  const [view, setView] = useState<AnnuaireView>("organization");
   const [showAllFeatured, setShowAllFeatured] = useState(false);
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>("FR:REG:11");
@@ -125,8 +125,6 @@ export function AnnuaireSection() {
   const discoverEntries = showAllFeatured
     ? featuredEntries
     : featuredEntries.slice(0, DISCOVER_INITIAL_CARDS);
-  const showsDirectoryData = view === "discover" || view === "directory" || view === "map";
-
   return (
     <SectionShell
       id="annuaire"
@@ -137,32 +135,32 @@ export function AnnuaireSection() {
     >
       <CmmSectionGroup>
         <AnnuaireViewTabs fr={fr} view={view} onChange={setView} />
-        {showsDirectoryData ? <AnnuaireDirectoryFeedback fr={fr} logic={annuaireLogic} /> : null}
+        <AnnuaireDirectoryFeedback fr={fr} logic={annuaireLogic} />
 
-        <AnnuaireTabPanel view="discover" active={view === "discover"}>
-          {view === "discover" ? (
-            <div className="space-y-4">
-              <p className="text-sm cmm-text-primary">
-                {fr ? "Une sélection éditoriale d'acteurs à découvrir. Le catalogue complet reste dans l'annuaire." : "An editorial selection of actors to discover. The full catalog stays in the directory."}
-              </p>
-              <AnnuaireFeaturedSection entries={discoverEntries} onFocusMap={handleFocusMap} fr={fr} />
-              <div className="flex flex-wrap gap-2">
-                {featuredEntries.length > DISCOVER_INITIAL_CARDS ? (
-                  <CmmButton type="button" tone="secondary" variant="pill" ariaPressed={showAllFeatured} onClick={() => setShowAllFeatured((value) => !value)}>
-                    {showAllFeatured ? (fr ? "Afficher moins" : "Show fewer") : (fr ? `Afficher toutes (${featuredEntries.length})` : `Show all (${featuredEntries.length})`)}
-                  </CmmButton>
-                ) : null}
-                <CmmButton type="button" tone="tertiary" variant="pill" onClick={() => { setView("directory"); document.getElementById(annuaireTabId("directory"))?.focus(); }}>
-                  {fr ? "Voir tout l'annuaire" : "See the full directory"}
-                </CmmButton>
-              </div>
-            </div>
-          ) : null}
+        <AnnuaireTabPanel view="organization" active={view === "organization"}>
+          <PublicCleanlinessOrganization fr={fr} navigationRef={organizationNavigation} getNetworkActorId={getNetworkActorId} onOpenNetworkActor={openNetworkActor} />
         </AnnuaireTabPanel>
 
         <AnnuaireTabPanel view="directory" active={view === "directory"}>
           {view === "directory" ? (
-            <AnnuaireExplorationView logic={annuaireLogic} fr={fr} mode="directory" selectedActorId={selectedActorId} onSelectedActorIdChange={setSelectedActorId} onLocateActor={handleFocusMap} />
+            <div className="space-y-6">
+              {discoverEntries.length > 0 ? (
+                <div className="space-y-4">
+                  <p className="text-sm cmm-text-primary">
+                    {fr ? "Une sélection éditoriale d'acteurs à découvrir avant la recherche complète de l'annuaire." : "An editorial selection of actors to discover before the directory's full search."}
+                  </p>
+                  <AnnuaireFeaturedSection entries={discoverEntries} onFocusMap={handleFocusMap} fr={fr} />
+                  {featuredEntries.length > DISCOVER_INITIAL_CARDS ? (
+                    <div className="flex flex-wrap gap-2">
+                      <CmmButton type="button" tone="secondary" variant="pill" ariaPressed={showAllFeatured} onClick={() => setShowAllFeatured((value) => !value)}>
+                        {showAllFeatured ? (fr ? "Afficher moins" : "Show fewer") : (fr ? `Afficher toutes (${featuredEntries.length})` : `Show all (${featuredEntries.length})`)}
+                      </CmmButton>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              <AnnuaireExplorationView logic={annuaireLogic} fr={fr} mode="directory" selectedActorId={selectedActorId} onSelectedActorIdChange={setSelectedActorId} onLocateActor={handleFocusMap} />
+            </div>
           ) : null}
         </AnnuaireTabPanel>
 
@@ -177,15 +175,11 @@ export function AnnuaireSection() {
           <ParisNetworkContributionCard fr={fr} territoryId={selectedTerritoryId} />
         </AnnuaireTabPanel>
 
-        <AnnuaireTabPanel view="organization" active={view === "organization"}>
-          <PublicCleanlinessOrganization fr={fr} navigationRef={organizationNavigation} getNetworkActorId={getNetworkActorId} onOpenNetworkActor={openNetworkActor} />
-        </AnnuaireTabPanel>
-
         <AnnuaireJoinCta fr={fr} />
       </CmmSectionGroup>
 
       <AnimatePresence>
-        {showsDirectoryData && selectedActor ? (
+        {(view === "directory" || view === "map") && selectedActor ? (
           <AnnuairePartnerDrawer entry={selectedActor} isOpen onClose={() => setSelectedActorId(null)} fr={fr} />
         ) : null}
       </AnimatePresence>

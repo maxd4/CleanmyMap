@@ -104,22 +104,26 @@ describe("AnnuaireSection partner onboarding CTA", () => {
     expect(markup).toContain('data-testid="paris-network-contribution-card"');
   });
 
-  it("exposes the five main tabs in order with the directory selected by default", () => {
+  it("exposes the four main tabs in order with public services selected by default", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
-    const order = ["Découvrir", "Annuaire<", "Carte", "Réseau 3D", "Services publics"].map((label) => markup.indexOf(`>${label.replace("<", "")}</button>`));
+    const order = ["Services publics", "Annuaire", "Carte", "Réseau 3D"].map((label) =>
+      markup.indexOf(`>${label}</button>`),
+    );
     expect(order.every((position) => position >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(markup).not.toContain(">Découvrir</button>");
     expect((markup.match(/role="tablist"/g) ?? []).length).toBe(1);
-    expect((markup.match(/role="tab"/g) ?? []).length).toBe(5);
-    expect(markup).toMatch(/id="annuaire-tab-directory"[^>]*aria-selected="true"[^>]*tabindex="0"/);
+    expect((markup.match(/role="tab"/g) ?? []).length).toBe(4);
+    expect(markup).toMatch(/id="annuaire-tab-organization"[^>]*aria-selected="true"[^>]*tabindex="0"/);
+    expect(markup).toMatch(/id="annuaire-tab-directory"[^>]*aria-selected="false"[^>]*tabindex="-1"/);
     expect(markup).toMatch(/id="annuaire-tab-network"[^>]*aria-selected="false"[^>]*tabindex="-1"/);
   });
 
   it("keeps hidden panels out of the tab order and reuses the existing 3D/2D panel ids", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
     expect(markup).toContain('id="annuaire-panel-network" role="tabpanel" aria-labelledby="annuaire-tab-network" tabindex="0" hidden=""');
-    expect(markup).toContain('id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" tabindex="0" hidden=""');
-    expect(markup).toContain('id="annuaire-panel-directory" role="tabpanel" aria-labelledby="annuaire-tab-directory" tabindex="0"><');
+    expect(markup).toContain('id="annuaire-panel-directory" role="tabpanel" aria-labelledby="annuaire-tab-directory" tabindex="0" hidden=""');
+    expect(markup).toContain('id="annuaire-panel-organization" role="tabpanel" aria-labelledby="annuaire-tab-organization" tabindex="0"><');
   });
   it("targets the canonical partner onboarding route", () => {
     const markup = renderToStaticMarkup(<AnnuaireSection />);
