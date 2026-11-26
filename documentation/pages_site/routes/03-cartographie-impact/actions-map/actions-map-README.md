@@ -1,4 +1,4 @@
-# Carte des actions
+﻿# Carte des actions
 
 ## Fiche canonique
 
@@ -71,6 +71,26 @@ valeur absente affichée comme `Non classée`. Une cleanwalk familiale reste
 marqueur n'est recalculé par la carte. La carte affiche un pictogramme distinct
 (`👥`, `🏢`, `🎓` ou `?`) dans les tooltips de marqueur, les popups, la sélection
 et le journal. Cette information ne remplace jamais la couleur de pollution.
+
+## Présentation de la page cartographique
+
+La page conserve son en-tête serveur et une carte immersive pleine hauteur.
+La largeur et les gouttières sont communes aux blocs de la page, sans double
+conteneur centré. Sous la carte, les données de la vue (compteurs, mode,
+fraîcheur, limites de source et export) précèdent les six indicateurs globaux,
+puis le journal repliable. Le journal a un seul titre, une seule surface
+principale et un accès aux rapports. Les indicateurs restent indépendants des
+filtres et leurs proxys sont explicitement identifiés.
+
+Les panneaux Filtrer, Affichage et Légende utilisent un état actif bleu
+contrasté et un défilement interne borné. Les contrôles restent sur la carte,
+avec le même contrat de filtre de contexte, de période, de zone et de catégorie.
+Le chargement initial ne constitue pas une vue vide; une source indisponible
+ne constitue pas une preuve d'absence. Le chargement de route reprend la
+composition réelle; les compteurs et le journal ne montrent pas un zéro
+fictif pendant le premier chargement. L'export reste borné à la vue disponible.
+Les surfaces textuelles réutilisent les primitives du design system; aucune
+couleur de pollution, géométrie, règle scientifique ou donnée ne change.
 
 ## Feed public partagé avec la homepage
 

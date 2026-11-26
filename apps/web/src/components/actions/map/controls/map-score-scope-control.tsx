@@ -27,7 +27,7 @@ export function MapScoreScopeControl({
           className={[
             "min-h-11 rounded-xl px-3 py-2 text-sm font-semibold transition motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-1 sm:px-3",
             value === option
-              ? "bg-slate-900 text-white dark:bg-sky-400 dark:text-slate-950"
+              ? "bg-sky-800 text-white dark:bg-sky-400 dark:text-slate-950"
               : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
           ].join(" ")}
           aria-pressed={value === option}

@@ -31,6 +31,7 @@ export function MapCanvasView({ layoutProps, fullViewport }: MapCanvasViewProps)
     onZoneQueryChange,
     onDateScopeChange,
     onCategoryToggle,
+    onContextFilterChange,
     onResetFilters,
   } = layoutProps;
 
@@ -62,6 +63,7 @@ export function MapCanvasView({ layoutProps, fullViewport }: MapCanvasViewProps)
       onZoneQueryChange={onZoneQueryChange}
       onDateScopeChange={onDateScopeChange}
       onCategoryToggle={onCategoryToggle}
+      onContextFilterChange={onContextFilterChange}
       onResetFilters={onResetFilters}
     />
   );

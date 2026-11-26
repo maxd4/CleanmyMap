@@ -37,7 +37,7 @@ export default function ActionsMapPage() {
 
   return (
     <>
-      <div className="cmm-page-width px-6 pt-6">
+      <div className="cmm-page-width px-4 pt-4 sm:px-6 sm:pt-5">
         <PageHeader
           family={resolvePageFamily("/actions/map")}
           title="Cartographie des actions"

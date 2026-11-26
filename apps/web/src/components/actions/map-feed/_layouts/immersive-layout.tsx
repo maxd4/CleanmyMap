@@ -58,8 +58,8 @@ export function ImmersiveLayout(props: ImmersiveLayoutProps) {
 
   return (
     <>
-      <div className={`pointer-events-none absolute inset-0 ${isEmerald ? "bg-[radial-gradient(circle_at_top_left,rgba(134,239,172,0.24),transparent_28%),radial-gradient(circle_at_top_right,rgba(187,247,208,0.22),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]" : "bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.26),transparent_28%),radial-gradient(circle_at_top_right,rgba(191,219,254,0.24),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]"}`} />
-      <div className="relative z-10 flex flex-col gap-6">
+      {!fullViewport ? <div className={`pointer-events-none absolute inset-0 ${isEmerald ? "bg-[radial-gradient(circle_at_top_left,rgba(134,239,172,0.24),transparent_28%),radial-gradient(circle_at_top_right,rgba(187,247,208,0.22),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]" : "bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.26),transparent_28%),radial-gradient(circle_at_top_right,rgba(191,219,254,0.24),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]"}`} /> : null}
+      <div className="relative z-10 flex flex-col gap-3">
         <ImmersiveLayoutIntro
           hasPartialSource={hasPartialSource}
           partialSourcesLabel={partialSourcesLabel}

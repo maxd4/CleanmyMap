@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { Target } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { getBlockClasses } from "@/lib/ui/block-accents";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { MapTruncationNotice } from "@/components/actions/map-feed/_layouts/map-data-status";
 import { ActionsMapExportButton } from "@/components/actions/map/export/actions-map-export-button";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type { ActionsMapFilters } from "@/components/actions/map/filters/actions-map-filters.utils";
@@ -15,6 +15,11 @@ type MapControlTowerProps = {
   freshnessLabel?: string | null;
   modeStatusLabel?: string | null;
   viewport?: MapViewportState | null;
+  hasPartialSource?: boolean;
+  partialSourcesLabel?: string;
+  isTruncated?: boolean;
+  isLoading?: boolean;
+  isUnavailable?: boolean;
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
 };
 
@@ -27,31 +32,31 @@ export function MapControlTower({
   modeStatusLabel,
   viewport,
   mapExportTargetRef,
+  hasPartialSource = false,
+  partialSourcesLabel,
+  isTruncated = false,
+  isLoading = false,
+  isUnavailable = false,
 }: MapControlTowerProps) {
-  const classes = getBlockClasses("visualize");
-  const surfaceCard = cn(
-    "rounded-[2rem] border border-sky-200/80 bg-sky-50/90 backdrop-blur-3xl",
-    classes.shadow,
-  );
 
   return (
-    <section className={cn(surfaceCard, "space-y-4 p-5 sm:p-6")} aria-label="Données de la vue">
+    <CmmCard as="section" tone="family" size="sm" className="space-y-3" ariaLabel="Données de la vue">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Target size={18} className="text-sky-700" aria-hidden="true" />
+          <Target size={18} className="shrink-0 text-[var(--cmm-family-heading,var(--text-primary))]" aria-hidden="true" />
           <div>
-            <h3 className="text-base font-semibold text-slate-950">Données de la vue</h3>
-            <p className="text-sm font-medium text-slate-600">
-              {visibleCount} élément{visibleCount === 1 ? "" : "s"} visible{visibleCount === 1 ? "" : "s"} sur {loadedCount} chargé{loadedCount === 1 ? "" : "s"}.
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">Données de la vue</h2>
+            <p className="text-sm font-medium text-[var(--text-secondary)]" role="status">
+              {isUnavailable ? "Données indisponibles." : isLoading ? "Chargement de la vue…" : <>{visibleCount} élément{visibleCount === 1 ? "" : "s"} visible{visibleCount === 1 ? "" : "s"} sur {loadedCount} chargé{loadedCount === 1 ? "" : "s"}.</>}
             </p>
             {modeStatusLabel ? (
-              <p role="status" className="mt-0.5 cmm-text-caption font-semibold text-sky-900">
+              <p role="status" className="mt-0.5 cmm-text-caption font-semibold text-[var(--cmm-family-heading,var(--text-primary))]">
                 {modeStatusLabel}
               </p>
             ) : null}
           </div>
         </div>
-        <ActionsMapExportButton
+        {!isUnavailable && !isLoading ? <ActionsMapExportButton
           items={filteredMapItems}
           mapCaptureTargetRef={mapExportTargetRef}
           exportContext={{
@@ -62,8 +67,13 @@ export function MapControlTower({
             viewport,
           }}
           className="w-full sm:w-auto"
-        />
+        /> : null}
       </div>
-    </section>
+      {freshnessLabel && !isUnavailable && !isLoading ? <p className="cmm-text-caption text-[var(--text-secondary)]">{freshnessLabel}</p> : null}
+      {hasPartialSource || isTruncated ? <div className="flex flex-wrap items-center gap-2" role="status">
+        {hasPartialSource ? <span className="rounded-lg bg-amber-100 px-2.5 py-1 cmm-text-caption font-semibold text-amber-950">Sources partielles : {partialSourcesLabel || "inconnues"}</span> : null}
+        <MapTruncationNotice isTruncated={isTruncated} />
+      </div> : null}
+    </CmmCard>
   );
 }

@@ -11,6 +11,7 @@ import { ACTIONS_MAP_PUBLIC_FEED_DEFAULTS } from "@/components/actions/map/filte
 import { useMapFeedData, type MapFeedDataState } from "./use-map-feed-data";
 import { ImmersiveLayout } from "./_layouts/immersive-layout";
 import { DefaultLayout } from "./_layouts/default-layout";
+import { MapLoadingState } from "./_layouts/map-loading-state";
 import { logFailure } from "@/lib/logging/failure-log";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -94,7 +95,8 @@ function ActionsMapHomepagePreview({
   </section>;
 }
 
-function getActionsMapShellClass(isImmersive: boolean, isEmerald: boolean): string {
+function getActionsMapShellClass(isImmersive: boolean, isEmerald: boolean, fullViewport: boolean): string {
+  if (isImmersive && fullViewport && !isEmerald) return "relative min-w-0 overflow-hidden rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--bg-elevated)] p-1.5 sm:p-2";
   if (isImmersive && isEmerald) return "relative overflow-hidden rounded-[2.25rem] border border-emerald-200/70 bg-[linear-gradient(180deg,rgba(244,250,241,0.98),rgba(250,253,247,1))] p-4 shadow-[0_28px_80px_-36px_rgba(34,197,94,0.16)] sm:p-6";
   if (isImmersive) return "relative overflow-hidden rounded-[2.25rem] border border-sky-200/80 bg-[linear-gradient(180deg,rgba(233,244,252,0.96),rgba(248,253,255,0.98))] p-4 shadow-[0_28px_80px_-36px_rgba(14,165,233,0.18)] sm:p-6";
   if (isEmerald) return "rounded-2xl border border-emerald-200/70 bg-[rgba(245,251,244,0.96)] p-6 shadow-[0_24px_56px_-32px_rgba(34,197,94,0.14)]";
@@ -143,7 +145,10 @@ function ActionsMapFeedFrameView({
   layoutProps: ActionsMapFrameLayoutProps;
   feedData: MapFeedDataState;
   compact: boolean;
-}) {  return (
+}) {
+  const singleCanvas = isImmersive && layoutProps.fullViewport;
+  const waitingForFirstFeed = singleCanvas && feedData.isLoading && layoutProps.items.length === 0;
+  return (
     <section ref={mapShellRef} className={shellClass}>
       {initialViewportError ? (
         <CmmFeedback
@@ -159,13 +164,15 @@ function ActionsMapFeedFrameView({
         >
           Impossible de résoudre une zone cartographique stable. Réessaie le chargement de la carte.
         </CmmFeedback>
+      ) : waitingForFirstFeed ? (
+        <MapLoadingState fullViewport />
       ) : isImmersive ? (
         <ImmersiveLayout {...layoutProps} />
       ) : (
         <DefaultLayout {...layoutProps} />
       )}
 
-      {feedData.isLoading && !compact ? <ActionsMapLoadingSkeleton /> : null}
+      {feedData.isLoading && !compact && !singleCanvas ? <ActionsMapLoadingSkeleton /> : null}
 
       {feedData.error ? (
         <CmmFeedback tone="error" className={compact ? "absolute bottom-3 left-5 right-5 z-[1200]" : "mt-5"}>
@@ -217,7 +224,7 @@ function ActionsMapFeedFrame({
   isImmersive,
 }: ActionsMapFeedContentProps & { mapShellRef: RefObject<HTMLElement | null>; MapCanvas: ActionsMapCanvasComponent | null; mapCanvasError: string | null; isImmersive: boolean }) {
   const isEmerald = tone === "emerald";
-  const shellClass = getActionsMapShellClass(isImmersive, isEmerald);
+  const shellClass = getActionsMapShellClass(isImmersive, isEmerald, fullViewport);
 
   const layoutProps = {
     items: feedData.items,

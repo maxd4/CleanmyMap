@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { List } from "lucide-react";
 import type { ActionMapItem } from"@/lib/actions/types";
 import {
  mapItemDrawing,
@@ -32,6 +35,10 @@ type ActionsMapTableProps = {
   onSelectAction?: (actionId: string) => void;
   scoreScope?: PollutionScoreScope;
   displayMode?: CurrentPlaceStateMode;
+  headerAction?: ReactNode;
+  description?: string;
+  dataLoading?: boolean;
+  dataUnavailable?: boolean;
 };
 
 const ACTIONS_BATCH_SIZE = 4;
@@ -103,10 +110,10 @@ function ActionsMapTableBody({
 
 function HiddenActionsJournal({ onOpen }: { onOpen: () => void }) {
   return (
-    <div className="rounded-2xl border border-dashed border-sky-200/80 bg-white px-5 py-6">
+    <div className="cmm-surface-muted rounded-xl px-4 py-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div><p className="cmm-text-small font-semibold text-slate-950">Journal caché</p><p className="mt-1 cmm-text-small text-slate-700">Affiche les 4 plus récentes.</p></div>
-        <button type="button" onClick={onOpen} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2.5 cmm-text-small font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200"><span aria-hidden="true">🗂️</span>Ouvrir le journal</button>
+        <div><p className="cmm-text-small font-semibold text-slate-950">Historique replié</p><p className="mt-1 cmm-text-small text-slate-700">Ouvrez les quatre éléments les plus récents.</p></div>
+        <CmmButton type="button" tone="secondary" onClick={onOpen} className="gap-2"><List size={16} aria-hidden="true" />Ouvrir le journal</CmmButton>
       </div>
     </div>
   );
@@ -145,6 +152,10 @@ export function ActionsMapTable({
   onSelectAction,
   scoreScope = "global",
   displayMode = "projected_today",
+  headerAction,
+  description,
+  dataLoading = false,
+  dataUnavailable = false,
 }: ActionsMapTableProps) {
   const [isManuallyVisible, setIsManuallyVisible] = useState(false);
   const [visibleCount, setVisibleCount] = useState(ACTIONS_BATCH_SIZE);
@@ -185,44 +196,28 @@ export function ActionsMapTable({
     });
   }, [effectiveVisibleCount, isVisible, selectedActionId]);
 
-  if (items.length === 0) {
-    return (
-      <section
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className={`rounded-2xl border border-sky-200/80 bg-sky-50/95 shadow-[0_18px_44px_-30px_rgba(14,165,233,0.16)] ${compact ? "p-4" : "p-6"}`}
-      >
-        <p className={compact ? "cmm-text-caption text-slate-700" : "cmm-text-small text-slate-700"}>
-          Aucun point géolocalisé n&apos;a été enregistré sur cette période.
-        </p>
-      </section>
-   );
-  }
+  const hasData = items.length > 0 && !dataLoading && !dataUnavailable;
 
- return (
-    <section
-      className={`rounded-2xl border border-sky-200/80 bg-sky-50/95 shadow-[0_18px_44px_-30px_rgba(14,165,233,0.18)] ${compact ? "p-4" : "p-6"}`}
-      aria-labelledby="actions-map-table-title"
-    >
-      <div className={`flex items-center justify-between ${compact ? "mb-3" : "mb-4"}`}>
-        <h2
-          id="actions-map-table-title"
-          className={compact ? "text-lg font-semibold text-slate-950" : "text-xl font-semibold text-slate-950"}
-        >
-          Journal des actions
-        </h2>
-        <span
-          className="rounded-full border border-sky-200/80 bg-white px-2.5 py-1 cmm-text-caption font-medium text-slate-700"
-          aria-label={`${items.length} points dans le journal`}
-        >
-          {items.length} points
-        </span>
+  return (
+    <CmmCard as="section" ariaLabel="Journal des actions" size={compact ? "sm" : "md"} className="min-w-0 space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <h2 id="actions-map-table-title" className="text-lg font-semibold text-[var(--text-primary)]">Journal des actions</h2>
+          {description ? <p className="cmm-text-small text-[var(--text-secondary)]">{description}</p> : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!dataLoading && !dataUnavailable ? <span className="cmm-surface-muted rounded-full px-2.5 py-1 cmm-text-caption font-medium" aria-label={`${items.length} points dans le journal`}>{items.length} points</span> : null}
+          {headerAction}
+        </div>
       </div>
+      {!hasData ? (
+        <p role="status" className="cmm-text-small text-[var(--text-secondary)]">
+          {dataUnavailable ? "Journal indisponible." : dataLoading ? "Chargement du journal…" : "Aucun élément dans cette vue."}
+        </p>
+      ) : null}
+ {hasData && !isVisible ? <HiddenActionsJournal onOpen={() => { setIsManuallyVisible(true); setVisibleCount(ACTIONS_BATCH_SIZE); }} /> : null}
 
- {!isVisible ? <HiddenActionsJournal onOpen={() => { setIsManuallyVisible(true); setVisibleCount(ACTIONS_BATCH_SIZE); }} /> : null}
-
-{isVisible ? (
+{hasData && isVisible ? (
  <div className={compact ?"cmm-data-table-wrap max-h-[30rem] overflow-auto" :"cmm-data-table-wrap"}>
  <table className="cmm-data-table cmm-text-small" data-density={compact ? "compact" : undefined}>
  <caption className="sr-only">Journal des actions filtrées. Utilise le bouton d&apos;action de chaque ligne pour ouvrir la carte sur cette action.</caption>
@@ -243,7 +238,7 @@ export function ActionsMapTable({
  </div>
  ) : null}
 
-  {isVisible ? <ActionsMapTableFooter visibleCount={visibleItems.length} totalCount={orderedItems.length} hasMore={hasMore} isSelectionPinned={isSelectionPinned} onShowMore={() => setVisibleCount((current) => Math.min(current + ACTIONS_BATCH_SIZE, orderedItems.length))} onHide={() => { setIsManuallyVisible(false); setVisibleCount(ACTIONS_BATCH_SIZE); }} /> : null}
- </section>
+  {hasData && isVisible ? <ActionsMapTableFooter visibleCount={visibleItems.length} totalCount={orderedItems.length} hasMore={hasMore} isSelectionPinned={isSelectionPinned} onShowMore={() => setVisibleCount((current) => Math.min(current + ACTIONS_BATCH_SIZE, orderedItems.length))} onHide={() => { setIsManuallyVisible(false); setVisibleCount(ACTIONS_BATCH_SIZE); }} /> : null}
+ </CmmCard>
  );
 }

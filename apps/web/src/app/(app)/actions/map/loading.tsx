@@ -1,16 +1,17 @@
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { MapLoadingState } from "@/components/actions/map-feed/_layouts/map-loading-state";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export default function Loading() {
   return (
-    <div className="min-h-screen pb-24 text-slate-950">
-      <div className="cmm-page-width space-y-10 px-6 py-8">
+    <>
+      <div className="cmm-page-width px-4 pt-4 sm:px-6 sm:pt-5">
         <PageHeader
           family={resolvePageFamily("/actions/map")}
           title="Cartographie des actions"
-          subtitle={<CmmSkeleton variant="text" className="mx-auto max-w-full w-[32rem]" />}
+          subtitle={<span className="inline-block h-4 w-[32rem] max-w-full animate-pulse rounded bg-slate-200/70 align-middle" aria-hidden="true" />}
           action={
             <div className="flex flex-wrap justify-center gap-3">
               <CmmSkeleton variant="rectangular" className="h-11 w-32 rounded-full" />
@@ -18,50 +19,26 @@ export default function Loading() {
             </div>
           }
         />
-
-        <section className="relative left-1/2 right-1/2 mx-auto w-[calc(100vw-1rem)] -translate-x-1/2 lg:w-[calc(100vw-1.5rem)]">
-          <MapLoadingState fullViewport />
-        </section>
-
-        <div className="cmm-page-width space-y-10 px-6">
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.88fr)]">
-            <div className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <CmmSkeleton variant="stat" />
-                <CmmSkeleton variant="stat" />
-                <CmmSkeleton variant="stat" />
-                <CmmSkeleton variant="stat" />
-              </div>
-
-              <section className="rounded-[3rem] border border-sky-200/70 bg-sky-50/90 p-8 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-2">
-                    <CmmSkeleton variant="text" className="w-32" />
-                    <CmmSkeleton variant="text" className="w-56" />
-                  </div>
-                  <CmmSkeleton variant="rectangular" className="h-12 w-44 rounded-[2rem]" />
-                </div>
-                <div className="mt-8 min-h-[20rem] rounded-[2.25rem] border border-sky-200/80 bg-white/80 p-4">
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <CmmSkeleton variant="card" className="h-64" />
-                    <CmmSkeleton variant="card" className="h-64" />
-                  </div>
-                </div>
-              </section>
-            </div>
-
-            <aside className="space-y-4 self-start xl:sticky xl:top-8">
-              <section className="rounded-[3rem] border border-sky-200/70 bg-sky-50/90 p-6 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]">
-                <CmmSkeleton variant="card" className="h-[28rem]" />
-              </section>
-
-              <section className="rounded-[3rem] border border-sky-200/70 bg-sky-50/90 p-6 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]">
-                <CmmSkeleton variant="card" className="h-44" />
-              </section>
-            </aside>
-          </div>
-        </div>
       </div>
-    </div>
+      <div className="cmm-page-width space-y-4 px-3 py-4 pb-12 sm:space-y-5 sm:px-6 sm:pb-16">
+        <div className="overflow-hidden rounded-2xl border border-[var(--cmm-surface-border)] bg-[var(--bg-elevated)] p-1.5 sm:p-2">
+          <MapLoadingState fullViewport />
+        </div>
+        <CmmCard tone="family" size="sm">
+          <CmmSkeleton variant="text" className="w-32" />
+          <CmmSkeleton variant="text" className="mt-2 max-w-full w-56" />
+        </CmmCard>
+        <section className="space-y-3" aria-label="Chargement du bilan global">
+          <CmmSkeleton variant="title" className="max-w-full w-64" />
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+            {Array.from({ length: 6 }, (_, index) => <CmmSkeleton key={index} variant="stat" />)}
+          </div>
+        </section>
+        <CmmCard size="sm" className="space-y-3">
+          <CmmSkeleton variant="title" className="w-40" />
+          <CmmSkeleton variant="card" className="h-20" />
+        </CmmCard>
+      </div>
+    </>
   );
 }

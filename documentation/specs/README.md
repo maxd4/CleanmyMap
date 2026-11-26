@@ -90,7 +90,7 @@ L'arbre de référence contient 18 dossiers et 224 fichiers en incluant ce READM
 | [accueil-pilotage-completion](./accueil-pilotage-completion/README_CODEX.md) | 4 | 18 | 12 ACC : PENDING |
 | [annuaire-ui](./annuaire-ui/README_CODEX.md) | 12 | 2 | 04 ANN-1 / 05 ANN-2 / 06 ANN-3 : CLOSED (06–17 intégrés, validés et retirés) |
 | [bonnes-pratiques-ui](./bonnes-pratiques-ui/README_CODEX.md) | 1 | 2 | 17 LEARN-3 : suivi des patches |
-| [cartographie-ui](./cartographie-ui/README_CODEX.md) | 0 | 20 | 13 MAP : PENDING |
+| `cartographie-ui` | 0 | 20 | 13 MAP : VALIDATED (candidats retirés après intégration) |
 | [dashboard-ui](./dashboard-ui/README_CODEX.md) | 4 | 15 | 11 DASH : PENDING |
 | [design-system-premium](./design-system-premium/README_CODEX.md) | 3 | 1 | 03 DS-BASE : I1/I2 VALIDATED, 03 ADAPTED (doc) ; clôture I3 réservée à 23 DS-FINAL |
 | [ecole-ui](./ecole-ui/README_CODEX.md) | 1 | 2 | 18 LEARN-4 : suivi des patches |

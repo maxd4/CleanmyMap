@@ -34,10 +34,10 @@ export function resolveActionsMapCanvasTheme(isEmerald: boolean) {
     layerButtonClasses: {
       active: isEmerald
         ? "border-emerald-300/35 bg-emerald-400/18 text-emerald-950"
-        : "border-sky-300/35 bg-sky-400/18 text-sky-50",
+        : "border-sky-800 bg-sky-800 text-white",
       inactive: isEmerald
         ? "border-emerald-300/16 bg-white/78 text-emerald-900/58 hover:border-emerald-300/28 hover:text-emerald-950"
-        : "border-sky-300/12 bg-[rgba(16,40,64,0.9)] text-sky-100/56 hover:border-sky-300/24 hover:text-sky-50",
+        : "border-sky-200 bg-white text-sky-900 hover:bg-sky-50",
     },
   };
 }

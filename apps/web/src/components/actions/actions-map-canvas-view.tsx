@@ -79,7 +79,7 @@ function ActionsMapCanvasDisplayPanel({
     { key: "predictiveHeatmap" as const, label: "Heatmap prédictive Paris 5e/6e" },
   ];
   return (
-    <div id="actions-map-display-panel" className="absolute left-3 right-3 top-28 z-[1000] max-h-[calc(100%-5rem)] overflow-y-auto rounded-2xl border border-sky-200/90 bg-white/95 p-4 text-slate-900 shadow-xl backdrop-blur-xl sm:left-auto sm:right-3 sm:top-16 sm:max-w-md" role="region" aria-label="Options d’affichage">
+    <div id="actions-map-display-panel" className="absolute left-3 right-3 top-28 z-[1000] max-h-[calc(100%-8rem)] overflow-y-auto sm:max-h-[calc(100%-5rem)] rounded-2xl border border-sky-200/90 bg-white/95 p-4 text-slate-900 shadow-xl backdrop-blur-xl sm:left-auto sm:right-3 sm:top-16 sm:max-w-md" role="region" aria-label="Options d’affichage">
       <div className="space-y-4">
         <div className="space-y-2">
           <p className="text-sm font-semibold text-slate-900">Référence du score</p>
@@ -107,7 +107,7 @@ function ActionsMapCanvasDisplayPanel({
             <p className="text-sm font-semibold text-slate-900">Période du score</p>
             <div className="grid gap-2 sm:grid-cols-2">
               {ACTIONS_MAP_DISPLAY_MODE_OPTIONS.map((option) => (
-                <button key={option.value} type="button" className={["min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50", displayMode === option.value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"].join(" ")} aria-pressed={displayMode === option.value} onClick={() => onDisplayModeChange(option.value)}>
+                <button key={option.value} type="button" className={["min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50", displayMode === option.value ? "border-sky-800 bg-sky-800 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"].join(" ")} aria-pressed={displayMode === option.value} onClick={() => onDisplayModeChange(option.value)}>
                   {option.label}
                 </button>
               ))}
@@ -123,7 +123,7 @@ function ActionsMapCanvasDisplayPanel({
                 ["cigaretteButts", "Mégots"],
                 ["waste", "Déchets"],
               ] as const).map(([value, label]) => (
-                <button key={value} type="button" onClick={() => setPredictiveHeatmapMode(value)} aria-pressed={predictiveHeatmapMode === value} className={["min-h-11 rounded-xl border px-2 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50", predictiveHeatmapMode === value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"].join(" ")}>
+                <button key={value} type="button" onClick={() => setPredictiveHeatmapMode(value)} aria-pressed={predictiveHeatmapMode === value} className={["min-h-11 rounded-xl border px-2 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50", predictiveHeatmapMode === value ? "border-sky-800 bg-sky-800 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"].join(" ")}>
                   {label}
                 </button>
               ))}
@@ -145,7 +145,7 @@ function ActionsMapCanvasDisplayPanel({
           <p className="text-sm font-semibold text-slate-900">Fond de carte</p>
           <div className="grid grid-cols-2 gap-2">
             {[{ value: "light" as const, label: "Fond clair" }, { value: "dark" as const, label: "Fond contrasté" }].map((option) => (
-              <button key={option.value} type="button" onClick={() => setBasemapMode(option.value)} aria-pressed={basemapMode === option.value} className={["min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50", basemapMode === option.value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"].join(" ")}>
+              <button key={option.value} type="button" onClick={() => setBasemapMode(option.value)} aria-pressed={basemapMode === option.value} className={["min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50", basemapMode === option.value ? "border-sky-800 bg-sky-800 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"].join(" ")}>
                 {option.label}
               </button>
             ))}
@@ -162,30 +162,30 @@ function ActionsMapCanvasControls(props: ActionsMapCanvasControlsProps) {
   return (
     <>
       {!isMinimalPreview ? (
-        <div className="absolute left-14 right-3 top-16 z-[1000] flex flex-wrap items-start justify-between gap-2 sm:top-3">
-          <div className="flex max-w-full flex-wrap gap-2" role="toolbar" aria-label="Contrôles de la carte">
+        <div className="absolute left-14 right-3 top-16 z-[1000] sm:right-40 sm:top-3">
+          <div className="grid w-full grid-cols-3 gap-1 sm:flex sm:flex-wrap sm:gap-2" role="toolbar" aria-label="Contrôles de la carte">
             {hasFilters ? (
-              <button type="button" onClick={() => setActivePanel((current) => current === "filter" ? null : "filter")} aria-expanded={activePanel === "filter"} aria-controls="actions-map-filter-panel" className="min-h-11 rounded-xl border border-sky-200/90 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg backdrop-blur-xl transition hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50">
+              <button type="button" onClick={() => setActivePanel((current) => current === "filter" ? null : "filter")} aria-expanded={activePanel === "filter"} aria-controls="actions-map-filter-panel" className="min-h-11 min-w-0 rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900 shadow-sm hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 aria-expanded:border-sky-800 aria-expanded:bg-sky-800 aria-expanded:text-white aria-expanded:hover:bg-sky-900 sm:px-4 sm:text-sm">
                 Filtrer
               </button>
             ) : null}
-            <button type="button" onClick={() => setActivePanel((current) => current === "display" ? null : "display")} aria-expanded={activePanel === "display"} aria-controls="actions-map-display-panel" className="min-h-11 rounded-xl border border-sky-200/90 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg backdrop-blur-xl transition hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50">
+            <button type="button" onClick={() => setActivePanel((current) => current === "display" ? null : "display")} aria-expanded={activePanel === "display"} aria-controls="actions-map-display-panel" className="min-h-11 min-w-0 rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900 shadow-sm hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 aria-expanded:border-sky-800 aria-expanded:bg-sky-800 aria-expanded:text-white aria-expanded:hover:bg-sky-900 sm:px-4 sm:text-sm">
               Affichage
             </button>
-            <button type="button" onClick={() => setActivePanel((current) => current === "legend" ? null : "legend")} aria-expanded={activePanel === "legend"} aria-controls="actions-map-legend-panel" className="min-h-11 rounded-xl border border-sky-200/90 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg backdrop-blur-xl transition hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50">
+            <button type="button" onClick={() => setActivePanel((current) => current === "legend" ? null : "legend")} aria-expanded={activePanel === "legend"} aria-controls="actions-map-legend-panel" className="min-h-11 min-w-0 rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900 shadow-sm hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 aria-expanded:border-sky-800 aria-expanded:bg-sky-800 aria-expanded:text-white aria-expanded:hover:bg-sky-900 sm:px-4 sm:text-sm">
               Légende
             </button>
           </div>
         </div>
       ) : null}
       {!isMinimalPreview && activePanel === "filter" && hasFilters ? (
-        <div id="actions-map-filter-panel" className="absolute left-3 right-3 top-28 z-[1000] max-h-[calc(100%-5rem)] overflow-y-auto rounded-2xl border border-sky-200/90 bg-white/95 p-4 shadow-xl backdrop-blur-xl sm:left-3 sm:top-16 sm:max-w-2xl" role="region" aria-label="Filtres de la carte">
+        <div id="actions-map-filter-panel" className="absolute left-3 right-3 top-28 z-[1000] max-h-[calc(100%-8rem)] overflow-y-auto sm:max-h-[calc(100%-5rem)] rounded-2xl border border-sky-200/90 bg-white/95 p-4 shadow-xl backdrop-blur-xl sm:left-3 sm:top-16 sm:max-w-2xl" role="region" aria-label="Filtres de la carte">
           <ActionsMapFilterControls filters={filters!} categoryCounts={categoryCounts} onZoneQueryChange={onZoneQueryChange!} onDateScopeChange={onDateScopeChange!} onCategoryToggle={onCategoryToggle!} onContextFilterChange={onContextFilterChange!} onReset={onResetFilters!} />
         </div>
       ) : null}
       {!isMinimalPreview && activePanel === "display" ? <ActionsMapCanvasDisplayPanel {...displayPanelProps} /> : null}
       {!isMinimalPreview && activePanel === "legend" ? (
-        <div id="actions-map-legend-panel" className="absolute left-3 right-3 top-28 z-[1000] sm:left-auto sm:right-3 sm:top-16" role="region" aria-label="Légende de la carte">
+        <div id="actions-map-legend-panel" className="absolute left-3 right-3 top-28 z-[1000] max-h-[calc(100%-8rem)] overflow-y-auto sm:left-auto sm:right-3 sm:top-16 sm:max-h-[calc(100%-5rem)]" role="region" aria-label="Légende de la carte">
           <MapGeometryLegend scoreScope={displayPanelProps.scoreScope} displayMode={displayPanelProps.displayMode} />
         </div>
       ) : null}

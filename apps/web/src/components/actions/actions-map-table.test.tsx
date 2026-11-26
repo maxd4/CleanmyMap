@@ -39,6 +39,19 @@ describe("ActionsMapTable public semantics", () => {
     expect(markup).toContain("Ouvrir");
   });
 
+  it("distinguishes pending, unavailable and empty journal states", () => {
+    const loading = renderToStaticMarkup(<ActionsMapTable items={[]} dataLoading />);
+    const unavailable = renderToStaticMarkup(<ActionsMapTable items={[]} dataUnavailable />);
+    const empty = renderToStaticMarkup(<ActionsMapTable items={[]} headerAction={<a href="/reports">Voir les rapports</a>} />);
+    expect(loading).toContain("Chargement du journal");
+    expect(loading).not.toContain("Aucun élément");
+    expect(unavailable).toContain("Journal indisponible");
+    expect(unavailable).not.toContain("Aucun élément");
+    expect(empty).toContain("Aucun élément dans cette vue");
+    expect(empty).toContain('href="/reports"');
+    expect(empty.match(/<h2\b/g)).toHaveLength(1);
+  });
+
   it("keeps technical coordinates and status out of the compact public columns", () => {
     const markup = renderToStaticMarkup(
       <ActionsMapTable items={[item]} compact selectedActionId={item.id} />,

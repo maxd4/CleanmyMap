@@ -48,7 +48,10 @@ describe("actions map public semantics", () => {
   it("keeps the methodology CTA and removes secondary technical surfaces", () => {
     expect(serverSource).toContain('href="/methodologie"');
     expect(source).not.toContain("MapSidebarAid");
-    expect(source).toContain("Journal des actions");
+    expect(source).toContain("<ActionsMapTable");
+    expect(source).toContain("headerAction={");
+    expect(source).toContain("isViewLoading");
+    expect(source).toContain("isViewUnavailable");
     expect(source).toContain('href="/reports"');
     expect(source).not.toContain("ActionStoriesCarousel");
     expect(source).not.toContain("ActionsVisualizationPanel");

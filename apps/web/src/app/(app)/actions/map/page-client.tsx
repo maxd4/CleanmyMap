@@ -13,7 +13,6 @@ import { useActionsMapFilters } from "@/components/actions/map/filters/use-actio
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import type { ActionContextFilter } from "@/lib/actions/action-context";
 import type { ActionsMapDateScope } from "@/components/actions/map/filters/actions-map-filters.utils";
-import { cn } from "@/lib/utils";
 import { MapKpiRibbon } from "./_components/map-kpi-ribbon";
 import { MapControlTower } from "./_components/map-control-tower";
 import { useMapFeedData } from "@/components/actions/map-feed/use-map-feed-data";
@@ -110,7 +109,8 @@ function ActionsMapPageContent({
 
   const { mapFeedDataForView, selectedActionLoad, knownSelectedAction, filteredMapItems, visibleCount, loadedCount } = useActionsMapPageData({ filters, requestedActionId, mapViewport, isInitialViewportResolved, hasInitialPublicActions, initialViewportError, scoreScope, displayMode });
 
-  const surfaceCard = "rounded-[3rem] border border-sky-200/70 bg-sky-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]";
+  const isViewUnavailable = Boolean(initialViewportError || (mapFeedDataForView.error && loadedCount === 0));
+  const isViewLoading = !isViewUnavailable && (!isInitialViewportResolved || (mapFeedDataForView.isLoading && loadedCount === 0));
   const modeStatusLabel =
     scoreScope === "department"
       ? "Comparaison départementale active."
@@ -119,9 +119,9 @@ function ActionsMapPageContent({
         : "Mode projection actif.";
 
   return (
-    <div className="min-h-screen text-slate-950 pb-24">
-      <div className="cmm-page-width px-6 py-6 space-y-6">
-        <section className="relative mx-auto w-full lg:left-1/2 lg:right-1/2 lg:w-[calc(100vw-1.5rem)] lg:-translate-x-1/2">
+    <div className="pb-12 text-[var(--text-primary)] sm:pb-16">
+      <div className="cmm-page-width space-y-4 px-3 py-4 sm:space-y-5 sm:px-6">
+        <section className="relative min-w-0 w-full" aria-label="Carte des actions">
           <ActionsMapFeedContent
             feedData={mapFeedDataForView}
             presentation="immersive"
@@ -162,47 +162,41 @@ function ActionsMapPageContent({
           />
         </section>
 
-        <div className="cmm-page-width px-6 space-y-10">
-          <div className="min-w-0 space-y-6">
-            <MapKpiRibbon metrics={impactMetrics} />
+        <div className="min-w-0 space-y-4 sm:space-y-5">
+          <MapControlTower
+            filters={filters}
+            visibleCount={visibleCount}
+            loadedCount={loadedCount}
+            filteredMapItems={filteredMapItems}
+            freshnessLabel={mapFeedDataForView.freshnessLabel}
+            modeStatusLabel={modeStatusLabel}
+            hasPartialSource={mapFeedDataForView.hasPartialSource}
+            partialSourcesLabel={mapFeedDataForView.partialSourcesLabel}
+            isTruncated={mapFeedDataForView.isTruncated}
+            isLoading={isViewLoading}
+            isUnavailable={isViewUnavailable}
+            mapExportTargetRef={mapExportTargetRef}
+            viewport={mapViewport}
+          />
 
-            <MapControlTower
-              filters={filters}
-              visibleCount={visibleCount}
-              loadedCount={loadedCount}
-              filteredMapItems={filteredMapItems}
-              freshnessLabel={mapFeedDataForView.freshnessLabel}
-              modeStatusLabel={modeStatusLabel}
-              mapExportTargetRef={mapExportTargetRef}
-              viewport={mapViewport}
-            />
+          <MapKpiRibbon metrics={impactMetrics} />
 
-            <section className={cn(surfaceCard, "space-y-6 p-6 sm:p-8")}>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                  <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
-                    <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
-                    Journal des actions
-                  </p>
-                  <p className="cmm-text-body font-medium">
-                    Les éléments visibles et leurs données utiles, dans le contexte de cette vue.
-                  </p>
-                </div>
-                <CmmButton href="/reports" tone="tertiary" variant="pill" className="w-full justify-center gap-2 sm:w-auto">
-                  Voir les rapports <ArrowRight size={14} />
-                </CmmButton>
-              </div>
-
-              <ActionsMapTable
-                items={filteredMapItems}
-                compact
-                selectedActionId={selectedActionId}
-                onSelectAction={handleSelectAction}
-                scoreScope={scoreScope}
-                displayMode={displayMode}
-              />
-            </section>
-          </div>
+          <ActionsMapTable
+            items={filteredMapItems}
+            compact
+            selectedActionId={selectedActionId}
+            onSelectAction={handleSelectAction}
+            scoreScope={scoreScope}
+            displayMode={displayMode}
+            description="Les éléments visibles dans cette vue."
+            headerAction={
+              <CmmButton href="/reports" tone="tertiary" variant="pill" className="w-full justify-center gap-2 sm:w-auto">
+                Voir les rapports <ArrowRight size={14} aria-hidden="true" />
+              </CmmButton>
+            }
+            dataUnavailable={isViewUnavailable}
+            dataLoading={isViewLoading}
+          />
         </div>
       </div>
     </div>

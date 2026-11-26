@@ -12,6 +12,21 @@ export function MapLoadingState({
   tone = "sky",
 }: MapLoadingStateProps) {
   const isEmerald = tone === "emerald";
+  if (fullViewport && !compact) {
+    return (
+      <div className="relative flex h-[100dvh] w-full items-center justify-center rounded-xl bg-[var(--bg-muted)] px-4" role="status" aria-busy="true" aria-label="Chargement de la carte des actions">
+        <div className="absolute left-12 right-4 top-4 flex flex-wrap gap-2" aria-hidden="true">
+          <CmmSkeleton variant="rectangular" className="h-11 w-20 rounded-lg" />
+          <CmmSkeleton variant="rectangular" className="h-11 w-24 rounded-lg" />
+          <CmmSkeleton variant="rectangular" className="h-11 w-20 rounded-lg" />
+        </div>
+        <div className="space-y-3 text-center">
+          <span aria-hidden="true" className="mx-auto block h-6 w-6 animate-spin rounded-full border-2 border-[var(--border-default)] border-t-sky-700 motion-reduce:animate-none" />
+          <p className="text-sm font-semibold text-[var(--text-primary)]">Préparation de la carte</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       className={[

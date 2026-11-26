@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { CmmCard } from "@/components/ui/cmm-card";
 import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
 
 type MapKpiRibbonProps = {
@@ -8,51 +9,45 @@ type MapKpiRibbonProps = {
 const metricAccentStyles = {
   blue: {
     bar: "bg-sky-500",
-    value: "text-slate-950",
   },
   emerald: {
     bar: "bg-emerald-500",
-    value: "text-slate-950",
   },
   amber: {
     bar: "bg-amber-400",
-    value: "text-slate-950",
   },
 } as const;
 
 export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
   return (
     <section
-      className="rounded-2xl border border-sky-200/80 bg-sky-50/80 p-4 shadow-[0_14px_32px_-24px_rgba(14,165,233,0.2)]"
+      className="space-y-3"
       aria-labelledby="actions-map-global-kpis-title"
     >
-      <div className="mb-3 space-y-1">
-        <p id="actions-map-global-kpis-title" className="cmm-text-small font-semibold text-slate-800">
+      <div className="space-y-1">
+        <h2 id="actions-map-global-kpis-title" className="text-base font-semibold text-[var(--text-primary)]">
           Bilan global CleanMyMap — indépendant des filtres de cette carte
-        </p>
-        <p className="cmm-text-caption text-slate-600">
+        </h2>
+        <p className="cmm-text-caption text-[var(--text-secondary)]">
           Six indicateurs consolidés, distincts du viewport courant.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
         {metrics.map((metric) => {
           const accent = metricAccentStyles[metric.accent];
 
           return (
-            <div
-              key={metric.key}
-              className="min-w-0 rounded-xl border border-sky-100 bg-white/90 px-3 py-3"
-            >
+            <CmmCard key={metric.key} size="sm" variant="outlined" className="min-w-0 flex flex-col justify-between gap-2">
               <div className={cn("mb-2 h-1 w-8 rounded-full", accent.bar)} />
-              <p className="cmm-text-caption font-medium leading-snug text-slate-600">
+              <p className="cmm-text-caption font-medium leading-snug text-[var(--text-secondary)]">
                 {metric.label}
                 {metric.classification === "proxy" ? " (proxy)" : null}
               </p>
-              <div className={cn("mt-2 text-lg font-bold leading-tight tracking-tight sm:text-xl", accent.value)}>
+              <div className="break-words tabular-nums text-lg font-bold leading-tight tracking-tight text-[var(--text-primary)] sm:text-xl">
                 {metric.value}
               </div>
-            </div>
+            </CmmCard>
           );
         })}
       </div>
