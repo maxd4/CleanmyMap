@@ -121,11 +121,16 @@ begin
   end loop;
 
   foreach v_ref_unhab in array array[v_ref_1, v_ref_2, v_ref_3] loop
+    v_step := 'Q_CREATE';
     v_res := public.spogomi_create_referee_application(v_event_id, v_world_cup_id, v_ref_unhab);
     v_app_id := (v_res->>'applicationId')::uuid;
+    v_step := 'Q_QUIZ';
     v_res := public.spogomi_submit_referee_quiz(v_event_id, v_world_cup_id, v_ref_unhab, v_private_def->>'quizVersion', v_answers);
+    v_step := 'Q_PRACTICAL';
     perform public.spogomi_confirm_referee_practical(v_app_id, v_org_clerk, 'practical-v1', '{"verified":true}'::jsonb);
+    v_step := 'Q_DECIDE';
     perform public.spogomi_decide_referee_application(v_app_id, v_org_clerk, 'approve', 'habilitated');
+    v_step := 'Q_REVIEWER';
     insert into public.spogomi_event_reviewers (event_id, clerk_id, role, assigned_by_clerk_id)
     values (v_event_id, v_ref_unhab, 'referee', v_org_clerk)
     on conflict do nothing;
@@ -365,6 +370,11 @@ exception when others then
     if v_step = 'INIT' then raise exception using errcode = '22001', message = 'SQLSTATE=22001';
     elsif v_step = 'SETUP' then raise exception using errcode = '22002', message = 'SQLSTATE=22002';
     elsif v_step = 'QUALIFY_WC' then raise exception using errcode = '22003', message = 'SQLSTATE=22003';
+    elsif v_step = 'Q_CREATE' then raise exception using errcode = '22031', message = 'SQLSTATE=22031';
+    elsif v_step = 'Q_QUIZ' then raise exception using errcode = '22032', message = 'SQLSTATE=22032';
+    elsif v_step = 'Q_PRACTICAL' then raise exception using errcode = '22033', message = 'SQLSTATE=22033';
+    elsif v_step = 'Q_DECIDE' then raise exception using errcode = '22034', message = 'SQLSTATE=22034';
+    elsif v_step = 'Q_REVIEWER' then raise exception using errcode = '22035', message = 'SQLSTATE=22035';
     elsif v_step = 'CASUAL_QUALIFY' then raise exception using errcode = '22004', message = 'SQLSTATE=22004';
     elsif v_step = 'PARTICIPANTS' then raise exception using errcode = '22005', message = 'SQLSTATE=22005';
     elsif v_step = 'REJECTS' then raise exception using errcode = '22007', message = 'SQLSTATE=22007';
