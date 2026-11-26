@@ -18,7 +18,6 @@ Les rôles principaux sont :
 | `AUDIT_BLOCS_RUBRIQUES.md` | `AUDIT` |
 | `AUDIT_PAGES_SITE_CODE.md` | `AUDIT` |
 | `rubriques_utilite_impact_.md` | `HISTORY` — photographie historique de l'organisation produit |
-| `rubriques_cleanmymap.xlsx` | `HISTORY` — classeur historique, non source CURRENT |
 | `generate-canonical-pages.mjs` | `TOOLING` — registre et audit non destructifs |
 | `screen/` | `TOOLING` — scripts de capture ; les sorties sont des `SNAPSHOT` |
 | `routes/` | `CURRENT` — documentation fonctionnelle canonique page par page |

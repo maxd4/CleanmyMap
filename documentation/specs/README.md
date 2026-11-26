@@ -6,7 +6,7 @@
 
 | Ordre | Lot | Travail | Dépendance |
 |---|---|---|---|
-| 01 | SEC | Secret Audit, faux positifs, garde-fous | CLOSED (7546e0c, 55b1c0f + Hash digest) |
+| 01 | SEC | Secret Audit, faux positifs, garde-fous | CLOSED (7546e0c, 55b1c0f, f3f567b) |
 | 02 | SYNC-A | Moteur de synchronisation externe, commandes et cron | lot A durci ; preuve DB éphémère à compléter |
 | 03 | DS-BASE | I1/I2 déjà intégrés ; vérifier socle et delta I3 | avant refontes |
 | 04 | ANN-1 | Annuaire 06, 07, 08, 09, 10 | 03 |
@@ -107,7 +107,7 @@ L'arbre de référence contient 18 dossiers et 224 fichiers en incluant ce READM
 | [vulgarisation-ui](./vulgarisation-ui/README_CODEX.md) | 1 | 2 | 15 LEARN-1 : suivi des patches |
 | [Transfert des explications du formulaire](./methodologie-formulaire-actions-transfert.md) | 0 | 1 | 19 METHOD : PENDING |
 
-- SEC : CLOSED — faux positifs `Hash digest` résolus avec régressions dédiées (`secret-audit.mjs` et `secret-audit.test.mjs`) après durcissement de l'allowlist (`7546e0c`, `55b1c0f`).
+- SEC : CLOSED — faux positifs `Hash digest` résolus avec régressions dédiées (`f3f567b`) après durcissement de l'allowlist (`7546e0c`, `55b1c0f`) ; `secret-audit.test.mjs` 29/29 PASS et `secret-audit.mjs` 0 finding / 7144 fichiers.
 - SYNC-A : Lot A durci (moteur `external-sync`, migration `20261126000006`, publication canonique mutualisée, mandats/consentement vérifiés à l'écriture, séparation observation/application, cron `external-action-sync`, route admin `/api/admin/external-sync` et baseline Vercel) avec connecteurs réels désactivés ; plan propriétaire `synchronisation-actions-externes.md`. Preuve SQL éphémère locale `DB_SEMANTICS_NOT_EXECUTED` (reprise dédiée sans bloquer les lots Web indépendants). Lots B/C conditionnés à autorisation réelle.
 - REPORTS-HUB : PENDING ; les quatre onglets et deux sections de fichiers constituent la décision retenue du programme, pas un état CURRENT.
 - Empreinte IA : consulter les [arbitrages](./empreinte-ia/SPECIFICATIONS_PLAN/24_ARBITRAGES_PREUVES_ET_PRIORITES.md) et les passations, préserver les preuves et conditions.
