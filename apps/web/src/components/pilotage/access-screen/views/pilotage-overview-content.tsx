@@ -38,9 +38,11 @@ function PilotageScopeNotice({ copy, isEmpty }: { copy: PilotageOverviewCopy; is
 function PilotageOperationsDisclosure({
   state,
   retryHref,
+  overviewAvailable,
 }: {
   state: PilotageCommunityOperationsState;
   retryHref: string;
+  overviewAvailable: boolean;
 }) {
   if (state === "UNAVAILABLE") {
     return (
@@ -51,7 +53,11 @@ function PilotageOperationsDisclosure({
       >
         <div>
           <p className="font-black text-rose-950">Opérations détaillées indisponibles</p>
-          <p>Les KPI de l’overview restent disponibles. Le détail n’a pas pu être calculé.</p>
+          <p>
+            {overviewAvailable
+              ? "Les KPI de l’overview restent disponibles. Le détail des opérations n’a pas pu être calculé."
+              : "Le détail des opérations et les KPI de l’overview sont actuellement indisponibles."}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <CmmButton href={retryHref} tone="important" variant="pill">
@@ -109,7 +115,7 @@ export function PilotageOverviewContent(props: PilotageOverviewContentProps) {
       {notices.length > 0 && <p role="status" aria-live="polite" className="text-sm cmm-text-warning">{notices.join(" ")}</p>}
       {activeTab === "operations" ? (
         <section className="space-y-4" aria-label={fr ? "Opérations communautaires" : "Community operations"}>
-          <PilotageOperationsDisclosure state={communityOperationsState} retryHref={communityOperationsRetryHref} />
+          <PilotageOperationsDisclosure state={communityOperationsState} retryHref={communityOperationsRetryHref} overviewAvailable={Boolean(overview)} />
           {(communityOperationsState === "AVAILABLE" || communityOperationsState === "PARTIAL") && communityOperations && <PilotageCommunityOperationsPanel operations={communityOperations} canExportFunnel={canExportCommunityFunnel} />}
         </section>
       ) : activeTab === "tools" ? (
@@ -123,7 +129,7 @@ export function PilotageOverviewContent(props: PilotageOverviewContentProps) {
       ) : activeTab === "summary" ? (
         <>
           <PilotageOverviewSummary locale={locale} copy={copy} overview={overview} lastUpdatedAt={lastUpdatedAt} />
-          <PilotageOperationsDisclosure state="NOT_REQUESTED" retryHref={communityOperationsRetryHref} />
+          <PilotageOperationsDisclosure state="NOT_REQUESTED" retryHref={communityOperationsRetryHref} overviewAvailable />
         </>
       ) : activeTab === "priorities" ? (
         <PilotageOverviewPriorities locale={locale} copy={copy} topPriorities={overview.priorities} topZones={overview.zones.slice(0, 3)} />

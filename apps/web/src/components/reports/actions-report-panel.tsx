@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { StepConfirm } from "@/components/reports/admin-workflow/step-confirm";
 import { StepFilter } from "@/components/reports/admin-workflow/step-filter";
 import { StepJournal } from "@/components/reports/admin-workflow/step-journal";
@@ -34,6 +35,20 @@ export function ActionsReportPanel({
     initialRecordTypeFilter,
     initialStatus,
   });
+  const hasPendingMutation =
+    workflow.importState === "pending" || workflow.moderationState === "pending";
+
+  useEffect(() => {
+    if (!hasPendingMutation) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasPendingMutation]);
 
   return (
     <AdminPanelShell
@@ -41,7 +56,10 @@ export function ActionsReportPanel({
       subtitle="Parcours guidé : filtrage, prévisualisation, confirmation et journalisation."
       variant="warm"
     >
-      <div className="space-y-8">
+      <div
+        className="space-y-8"
+        data-admin-pending-mutation={hasPendingMutation ? "true" : "false"}
+      >
         <div className="grid gap-6">
           <StepFilter workflow={workflow} />
           <StepPreview workflow={workflow} />

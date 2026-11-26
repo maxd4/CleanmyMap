@@ -113,4 +113,25 @@ describe("Pilotage overview community operations states", () => {
     expect(markup).toContain("Les indicateurs détaillés ne sont pas des totaux exhaustifs");
     expect(markup).toContain("operations-panel");
   });
+
+  it("does not claim overview KPIs are available when overview is null and operations are unavailable", () => {
+    const markup = renderToStaticMarkup(
+      <PilotageOverviewContent
+        locale="fr"
+        copy={copy}
+        overview={null}
+        overviewLinks={[]}
+        accessAllowed
+        lastUpdatedAt={null}
+        communityOperations={null}
+        communityOperationsState="UNAVAILABLE"
+        communityOperationsRetryHref="/pilotage?operations=1&retry=2"
+        canExportCommunityFunnel={false}
+      />,
+    );
+
+    expect(markup).toContain("Opérations détaillées indisponibles");
+    expect(markup).toContain("Le détail des opérations et les KPI de l’overview sont actuellement indisponibles.");
+    expect(markup).not.toContain("Les KPI de l’overview restent disponibles");
+  });
 });

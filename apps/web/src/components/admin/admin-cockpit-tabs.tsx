@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { LayoutDashboard, ListChecks, Inbox, History, Settings, Shield } from "lucide-react";
 import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
@@ -13,16 +16,43 @@ const COPY = {
 } as const;
 
 export function AdminCockpitTabs({ activeTab, isMax, locale }: { activeTab: AdminCockpitTab; isMax: boolean; locale: "fr" | "en" }) {
+  const [blockedWarning, setBlockedWarning] = useState(false);
+
+  const handleTabClick = (event: MouseEvent<HTMLAnchorElement>, tab: AdminCockpitTab) => {
+    if (tab === activeTab) return;
+    const hasPendingMutation =
+      typeof document !== "undefined" &&
+      Boolean(document.querySelector('[data-admin-pending-mutation="true"]'));
+    if (hasPendingMutation) {
+      event.preventDefault();
+      setBlockedWarning(true);
+      return;
+    }
+    if (blockedWarning) {
+      setBlockedWarning(false);
+    }
+  };
+
   return (
-    <nav aria-label={locale === "fr" ? "Navigation administrative" : "Administration navigation"}
-      className={tabStripClassName("family", isMax ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-6" : "grid-cols-2 sm:grid-cols-3 xl:grid-cols-5")}>
-      {ADMIN_COCKPIT_TABS.filter((tab) => tab !== "advanced" || isMax).map((tab) => {
-        const Icon = COPY[tab].icon;
-        return <Link key={tab} href={adminCockpitHref(tab)} prefetch={false}
-          aria-current={activeTab === tab ? "page" : undefined} className={tabItemClassName("family", activeTab === tab)}>
-          <Icon size={18} aria-hidden="true" className="mr-2 shrink-0" /><span>{COPY[tab][locale]}</span>
-        </Link>;
-      })}
-    </nav>
+    <div className="space-y-2">
+      <nav aria-label={locale === "fr" ? "Navigation administrative" : "Administration navigation"}
+        className={tabStripClassName("family", isMax ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-6" : "grid-cols-2 sm:grid-cols-3 xl:grid-cols-5")}>
+        {ADMIN_COCKPIT_TABS.filter((tab) => tab !== "advanced" || isMax).map((tab) => {
+          const Icon = COPY[tab].icon;
+          return <Link key={tab} href={adminCockpitHref(tab)} prefetch={false}
+            onClick={(event) => handleTabClick(event, tab)}
+            aria-current={activeTab === tab ? "page" : undefined} className={tabItemClassName("family", activeTab === tab)}>
+            <Icon size={18} aria-hidden="true" className="mr-2 shrink-0" /><span>{COPY[tab][locale]}</span>
+          </Link>;
+        })}
+      </nav>
+      {blockedWarning ? (
+        <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-950">
+          {locale === "fr"
+            ? "Une mutation de modération ou d’import est en cours. Attendez sa fin avant de changer d’onglet."
+            : "A moderation or import mutation is in progress. Wait for completion before switching tabs."}
+        </p>
+      ) : null}
+    </div>
   );
 }
