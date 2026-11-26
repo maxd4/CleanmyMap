@@ -8,12 +8,13 @@ export type MonthlyAnalyticsPoint = {
   wasteKnownActions: number;
   wasteCoverageRate: number;
   volunteers: number;
+  volunteersKnownActions?: number;
 };
 
 export function aggregateMonthlyAnalytics(contracts: ActionDataContract[]): MonthlyAnalyticsPoint[] {
   const months: Record<
     string,
-    { kg: number; actionCount: number; wasteKnownActions: number; volunteers: number }
+    { kg: number; actionCount: number; wasteKnownActions: number; volunteers: number; volunteersKnownActions: number }
   > = {};
   
   // Sort by date to ensure chronological order later
@@ -29,7 +30,7 @@ export function aggregateMonthlyAnalytics(contracts: ActionDataContract[]): Mont
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     
     if (!months[key]) {
-      months[key] = { kg: 0, actionCount: 0, wasteKnownActions: 0, volunteers: 0 };
+      months[key] = { kg: 0, actionCount: 0, wasteKnownActions: 0, volunteers: 0, volunteersKnownActions: 0 };
     }
     
     const impact = computeActionImpactKpis(c);
@@ -38,7 +39,10 @@ export function aggregateMonthlyAnalytics(contracts: ActionDataContract[]): Mont
       months[key].kg += impact.wasteKg;
       months[key].wasteKnownActions += 1;
     }
-    months[key].volunteers += impact.volunteers;
+    if (impact.volunteersKnown) {
+      months[key].volunteers += impact.volunteers;
+      months[key].volunteersKnownActions += 1;
+    }
   });
 
   return Object.entries(months).map(([key, val]) => ({
@@ -48,6 +52,7 @@ export function aggregateMonthlyAnalytics(contracts: ActionDataContract[]): Mont
     wasteKnownActions: val.wasteKnownActions,
     wasteCoverageRate:
       val.actionCount > 0 ? (val.wasteKnownActions / val.actionCount) * 100 : 0,
-    volunteers: val.volunteers
+    volunteers: val.volunteers,
+    volunteersKnownActions: val.volunteersKnownActions
   })).slice(-12); // Last 12 months
 }

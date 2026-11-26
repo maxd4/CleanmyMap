@@ -52,3 +52,16 @@ describe("report data availability notices", () => {
     ]);
   });
 });
+
+
+describe("report measurement display coverage", () => {
+  it("distinguishes unknown, empty, measured zero and partial sums", async () => {
+    const { formatCoveredReportValue, describeReportMeasurementCoverage } = await import("./data-availability");
+    expect(formatCoveredReportValue("0 kg", 0, 3)).toBe("Non renseigné");
+    expect(formatCoveredReportValue("0 kg", undefined, 3)).toBe("Non renseigné");
+    expect(formatCoveredReportValue("0 kg", 0, 0)).toBe("Non renseigné");
+    expect(formatCoveredReportValue("0 kg", 1, 3)).toBe("0 kg");
+    expect(describeReportMeasurementCoverage(1, 3)).toBe("1/3 actions renseignées");
+    expect(describeReportMeasurementCoverage(0, 0)).toBe("Aucune action dans la période");
+  });
+});

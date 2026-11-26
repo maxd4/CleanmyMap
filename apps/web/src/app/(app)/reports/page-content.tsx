@@ -10,6 +10,7 @@ import {
   type ReportsPublicSummary,
 } from "@/lib/reports/page-data";
 import type { Locale } from "@/lib/ui/preferences";
+import type { CommunityEventsAvailability } from "@/lib/reports/data-availability";
 import type { ProfileAction } from "@/lib/profiles";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { ReportModel } from "@/lib/reports/report-model/types";
@@ -28,7 +29,8 @@ type ReportsAnalysisContentParams = {
   primaryAction: ProfileAction;
   secondaryAction?: ProfileAction | null;
   summaryKpis: ReturnType<typeof buildReportsSummaryKpis>;
-  overview: Pick<PilotageOverview, "methods" | "periodDays"> | null;
+  overview: (Pick<PilotageOverview, "methods" | "periodDays"> & Partial<Pick<PilotageOverview, "dataAvailability">>) | null;
+  communityEventsAvailability?: CommunityEventsAvailability;
   report: ReportModel;
   monthlyData: ReportsAnalysisData["monthlyData"];
   dailyExportAvailability: ReportExportAvailability;
@@ -41,6 +43,7 @@ export function buildReportsAnalysisContent({
   secondaryAction,
   summaryKpis,
   overview,
+  communityEventsAvailability,
   report,
   monthlyData,
   dailyExportAvailability,
@@ -57,6 +60,7 @@ export function buildReportsAnalysisContent({
         report={report}
         periodDays={overview?.periodDays ?? 90}
         monthlyData={monthlyData}
+        availability={{ ...overview?.dataAvailability, communityEventsAvailability }}
       />
 
       <section id="exports">
@@ -64,7 +68,7 @@ export function buildReportsAnalysisContent({
           <SectionHeader
             eyebrow="Exports"
             title="Livrables"
-            subtitle="Les exports sont regroupés plus bas pour alléger l&apos;ouverture."
+            subtitle="Exporter les données autorisées. Les rapports PDF se configurent dans l’onglet Génération."
             titleSize="sm"
             eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted"
             subtitleClassName="cmm-text-small cmm-text-secondary mt-1"

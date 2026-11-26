@@ -29,6 +29,7 @@ export function ReportsPageV2Layout({
         <PageHeader
           family={pageFamily}
           title="Rapports d’impact"
+          subtitle="Mesurer les actions, comprendre les résultats et produire des documents vérifiables."
           action={
             <CmmButton href="/profil/engagement" tone="secondary" size="sm">
               Valoriser mon engagement

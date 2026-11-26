@@ -1,5 +1,7 @@
 "use client";
 
+import { CmmCard } from "@/components/ui/cmm-card";
+
 import type { ModuleState, DetailLevelId, ReportPdfTheme, SelectedPeriodId, ReportAdvancedFilters } from "./reports-web-document.shared";
 import {
   ReportsAdvancedFilterControls,
@@ -56,16 +58,23 @@ export function ReportsWebDocumentPreparation({
   onAdvancedFiltersToggle = () => undefined,
 }: ReportsWebDocumentPreparationProps) {
   return (
-    <section aria-labelledby="reports-configuration-title" className="rounded-2xl border border-red-100 bg-white p-5 shadow-[0_12px_30px_-24px_rgba(220,38,38,0.28)] sm:p-6">
-      <div><p className="text-xs font-semibold text-red-600">Rapport d&apos;impact</p><h3 id="reports-configuration-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950">Configuration</h3><p className="mt-1 text-sm leading-5 text-slate-600">Période, périmètre et modules du rapport.</p></div>
+    <section aria-labelledby="reports-configuration-title" className="min-w-0">
+      <CmmCard tone="family" className="space-y-5">
+      <div><p className="cmm-text-caption font-semibold text-rose-700">Étape 1 · Sélection</p><h3 id="reports-configuration-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950">Configuration</h3><p className="mt-1 text-sm leading-5 text-slate-600">Période, périmètre et modules du rapport.</p></div>
       <div className="mt-5 space-y-5">
         {resumeNotice && resumeNotice.length > 0 ? <div data-testid="reports-resume-notice" role="status" className="space-y-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950"><p className="font-black">Configuration reprise</p>{resumeNotice.map((line) => <p key={line}>{line}</p>)}</div> : null}
-        <ReportsPeriodControls period={period} onPeriodChange={onPeriodChange} customRange={customRange} onCustomRangeChange={onCustomRangeChange} singleAction={singleAction} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ReportsScopeControls selectedScopeValue={selectedScopeValue} scopeOptions={scopeOptions} onScopeChange={onScopeChange} singleAction={singleAction} />
+          <ReportsPeriodControls period={period} onPeriodChange={onPeriodChange} customRange={customRange} onCustomRangeChange={onCustomRangeChange} singleAction={singleAction} />
+        </div>
         {!singleAction ? <ReportsAdvancedFilterControls filters={advancedFilters} onChange={onAdvancedFiltersChange} availability={actionMediaAvailability} open={advancedFiltersOpen} onToggle={onAdvancedFiltersToggle} /> : null}
-        <ReportsOptionControls detailLevel={detailLevel} onDetailLevelChange={onDetailLevelChange} theme={theme} onThemeChange={onThemeChange} />
-        <ReportsScopeControls selectedScopeValue={selectedScopeValue} scopeOptions={scopeOptions} onScopeChange={onScopeChange} singleAction={singleAction} />
-        <ReportsModuleControls modules={modules} onModuleToggle={onModuleToggle} />
+        <div className="space-y-4 border-t border-slate-200 pt-4">
+          <div><h4 className="font-bold cmm-text-primary">Composition du document</h4><p className="cmm-text-small cmm-text-secondary">Le niveau et le thème modifient la restitution, pas les actions retenues.</p></div>
+          <div className="grid gap-4 sm:grid-cols-2"><ReportsOptionControls detailLevel={detailLevel} onDetailLevelChange={onDetailLevelChange} theme={theme} onThemeChange={onThemeChange} /></div>
+          <ReportsModuleControls modules={modules} onModuleToggle={onModuleToggle} />
+        </div>
       </div>
+      </CmmCard>
     </section>
   );
 }

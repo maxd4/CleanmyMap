@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { TriangleAlert } from "lucide-react";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { ReportsWebDocumentDelivery } from "@/components/reports/web-document/reports-web-document-delivery";
 import { ReportsWebDocumentPreparation } from "@/components/reports/web-document/reports-web-document-preparation";
 import { ReportsWebDocumentPreview } from "@/components/reports/web-document/reports-web-document-preview";
@@ -52,8 +53,9 @@ export function ReportsWebDocument(props: ReportsWebDocumentProps) {
 
   return (
     <section data-testid="reports-generation" className="space-y-5">
-      <header>
-        <h2 className="text-xl font-bold tracking-tight text-slate-950">Générer un rapport d&apos;impact</h2>
+      <header className="space-y-1">
+        <h2 className="cmm-text-primary text-xl font-bold tracking-tight">Générer un rapport d&apos;impact</h2>
+        <p className="cmm-text-body cmm-text-primary">Choisissez les actions, vérifiez les données retenues, puis générez le document ou son brief Markdown.</p>
       </header>
 
       {dataAvailabilityNotices.length > 0 ? (
@@ -63,7 +65,7 @@ export function ReportsWebDocument(props: ReportsWebDocumentProps) {
         </div>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
         <ReportsWebDocumentPreparation
           period={period}
           onPeriodChange={setPeriod}
@@ -87,7 +89,8 @@ export function ReportsWebDocument(props: ReportsWebDocumentProps) {
           singleAction={singleAction}
         />
 
-        <section aria-labelledby="reports-summary-title" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.24)] sm:p-6">
+        <section aria-labelledby="reports-summary-title" className="min-w-0">
+          <CmmCard tone="family" className="space-y-5">
           <ReportsWebDocumentPreview
             report={report}
             activeScopeLabel={activeScopeLabel}
@@ -97,6 +100,8 @@ export function ReportsWebDocument(props: ReportsWebDocumentProps) {
             periodDisplayLabel={reportPeriodLabel(period, false)}
             coverageRangeLabel={coverageRangeLabel}
             isTruncated={Boolean(model.dataAvailability.isTruncated)}
+            hasPartialSources={Boolean(model.dataAvailability.sourceHealth?.partial || model.dataAvailability.sourceHealth?.failedSources.length)}
+            isSelectionValid={config.periodSelectionValid && !config.scopeNeedsNewSelection && !model.isLoading && !model.hasError}
             modulesLabel={buildModuleSelectionLabel(modules)}
             dataStatusLabel={exportController.dataStatusLabel}
             chapterCount={config.pdfData.chapters.length}
@@ -115,6 +120,7 @@ export function ReportsWebDocument(props: ReportsWebDocumentProps) {
             isAiExportDisabled={config.model.isLoading || config.model.hasError || !config.periodSelectionValid || config.scopeNeedsNewSelection}
             onGenerate={exportController.handleGenerate}
           />
+          </CmmCard>
         </section>
       </div>
     </section>

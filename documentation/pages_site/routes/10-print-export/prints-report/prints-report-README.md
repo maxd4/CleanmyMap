@@ -12,7 +12,7 @@
 - **Objectif utilisateur principal** : Préparer un export propre et imprimable.
 - **Action principale attendue** : Relire la synthèse puis l'imprimer ou l'exporter depuis le rendu documentaire.
 - **Palette attendue** : papier / slate / accents documentaires discrets
-- **Scope** : rapport d'impact imprimable authentifié, alimenté par l'overview et les actions approuvées, avec aperçu verrouillé pour les visiteurs.
+- **Scope** : synthèse documentaire authentifiée du modèle d’analyse des rapports (périmètre global, bilan sur la fenêtre courante, tendances sur 365 jours), avec aperçu verrouillé pour les visiteurs. Distincte du PDF officiel et des artefacts historiques.
 - **Terminée** : oui pour le périmètre actuellement livré
 - **Couleurs actuellement détectées** : papier / slate — canvas clair et états documentaires neutres.
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.
@@ -48,9 +48,4 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
-- Structure imprimable réorganisée autour d'une grille canonique CleanMyMap:
-  - en-tête documentaire sur deux colonnes;
-  - bande KPI en quatre blocs alignés;
-  - comparaison cartographique et analyse mensuelle disposées côte à côte quand l'espace le permet;
-  - bloc méthodologique et notes de lecture regroupés en section dédiée;
-  - sections protégées contre les ruptures de page inutiles et les débordements horizontaux.
+- Structure imprimable : en-tête non certifié, date calculée du modèle, périmètre et période, couverture des sources, résultats renseignés, tableau des secteurs, tendances mensuelles avec couverture, méthode et limites. Les tableaux s’impriment sans dépendre du rendu d’un graphique navigateur. Le bouton d’impression réutilise le composant existant ; le PDF officiel reste accessible depuis /reports?tab=generation. La comparaison de styles cartographiques centrée sur Paris est une illustration facultative à l’écran, jamais une preuve de collecte ni imprimée. Les mentions fixes de certification, score AA et statistiques causales non prouvées sont retirées. AuthN, noindex et refus de charger le corpus sans session préservés.

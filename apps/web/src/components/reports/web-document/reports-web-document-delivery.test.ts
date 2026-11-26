@@ -141,7 +141,8 @@ describe("ReportsWebDocumentDelivery", () => {
           onGenerate,
         }));
       });
-      const button = renderer.root.findAllByType("button")[1];
+      const button = renderer.root.findAllByType("button").find((node) => node.props["data-cmm-button-tone"] === "primary");
+      expect(button).toBeDefined();
       await act(() => button?.props.onClick());
       expect(onGenerate).toHaveBeenCalledTimes(1);
 
@@ -158,8 +159,9 @@ describe("ReportsWebDocumentDelivery", () => {
           onGenerate,
         }));
       });
-      expect(renderer.root.findAllByType("button")[1]?.props.disabled).toBe(true);
-      expect(renderer.root.findAllByType("button")[0]?.props.disabled).toBe(false);
+      const buttons = renderer.root.findAllByType("button");
+      expect(buttons.find((node) => node.props["data-cmm-button-tone"] === "primary")?.props.disabled).toBe(true);
+      expect(buttons.find((node) => node.props["data-cmm-button-tone"] === "secondary")?.props.disabled).toBe(false);
       expect(JSON.stringify(renderer.toJSON())).toContain("Déjà utilisé aujourd'hui");
     } finally {
       renderer?.unmount();

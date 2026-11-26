@@ -246,10 +246,13 @@ describe("ReportsWebDocumentPreparation", () => {
       (element) => element.type === "input" && element.props.type === "checkbox",
     );
 
-    selects[0]?.props.onChange?.({ target: { value: "current_year" } });
-    selects[1]?.props.onChange?.({ target: { value: "exhaustif" } });
-    selects[2]?.props.onChange?.({ target: { value: "scientific" } });
-    selects[3]?.props.onChange?.({ target: { value: "account:account-1" } });
+    const selectById = (id: string) =>
+      selects.find((element) => (element.props as { id?: string }).id === id);
+
+    selectById("reports-web-document-period")?.props.onChange?.({ target: { value: "current_year" } });
+    selectById("reports-web-document-detail-level")?.props.onChange?.({ target: { value: "exhaustif" } });
+    selectById("reports-web-document-theme")?.props.onChange?.({ target: { value: "scientific" } });
+    selectById("reports-web-document-scope")?.props.onChange?.({ target: { value: "account:account-1" } });
     moduleInputs.forEach((input) => input.props.onChange?.());
 
     expect(props.onPeriodChange).toHaveBeenCalledWith("current_year");
@@ -359,7 +362,7 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).toContain("Habillage éditorial et institutionnel");
     expect(markup).toContain('id="reports-web-document-theme-description"');
     expect(markup).toContain('id="reports-web-document-module-dataAndCartography"');
-    expect(markup).not.toContain("Étape 1");
+    expect(markup).toContain("Étape 1");
   });
 
   it("keeps advanced filters closed until explicitly opened", () => {

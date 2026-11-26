@@ -101,6 +101,6 @@ export async function renderReportsAuthenticatedTab(params: {
   const roleLabel = getProfileLabel(profile, params.locale);
   const analysisContent = analysisResult.availability === "unavailable"
     ? buildReportsAnalysisUnavailableContent()
-    : buildReportsAnalysisContent({ locale: params.locale, roleLabel, primaryAction: getProfilePrimaryAction(profile), secondaryAction: getProfileSecondaryAction(profile), summaryKpis: buildReportsSummaryKpis(analysisResult.data.overview), overview: analysisResult.data.overview, report: analysisResult.data.report, monthlyData: analysisResult.data.monthlyData, dailyExportAvailability });
+    : buildReportsAnalysisContent({ locale: params.locale, roleLabel, primaryAction: getProfilePrimaryAction(profile), secondaryAction: getProfileSecondaryAction(profile), summaryKpis: buildReportsSummaryKpis(analysisResult.data.overview), overview: analysisResult.data.overview, communityEventsAvailability: analysisResult.data.communityEventsAvailability, report: analysisResult.data.report, monthlyData: analysisResult.data.monthlyData, dailyExportAvailability });
   return <AccountCompletionGate state={params.accountCompletion}><ReportsPageV2Layout activeTab="analysis" analysisContent={analysisContent} /></AccountCompletionGate>;
 }

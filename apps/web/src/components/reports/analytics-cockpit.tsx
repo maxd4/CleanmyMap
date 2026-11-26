@@ -27,8 +27,9 @@ export function AnalyticsCockpit({ data }: AnalyticsCockpitProps) {
     );
   }
 
+  const plottedData = data.map((point) => ({ ...point, kg: point.wasteKnownActions > 0 ? point.kg : null, volunteers: (point.volunteersKnownActions ?? 0) > 0 ? point.volunteers : null }));
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0">
       <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 px-1">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
@@ -36,13 +37,13 @@ export function AnalyticsCockpit({ data }: AnalyticsCockpitProps) {
         </div>
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-sky-500" aria-hidden="true" />
-          <span className="text-xs font-semibold text-slate-600">Bénévoles</span>
+          <span className="text-xs font-semibold text-slate-600">Participations</span>
         </div>
       </div>
       
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 12, left: -20, bottom: 8 }}>
+          <LineChart data={plottedData} margin={{ top: 8, right: 12, left: -20, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8eef3" />
             <XAxis 
               dataKey="month" 
@@ -78,27 +79,33 @@ export function AnalyticsCockpit({ data }: AnalyticsCockpitProps) {
             />
             <Line
               yAxisId="left" 
-              type="monotone"
+              type="linear"
               dataKey="kg"
               name="Masse collectée (kg)"
               stroke="#10b981"
               strokeWidth={2.5}
+              connectNulls={false}
+              isAnimationActive={false}
               dot={{ r: 3, fill: "#10b981", strokeWidth: 2, stroke: "#ffffff" }}
               activeDot={{ r: 5, strokeWidth: 2, stroke: "#ffffff" }}
             />
-            <Line 
-              yAxisId="right" 
-              type="monotone" 
-              dataKey="volunteers" 
-              name="Bénévoles" 
+            <Line
+              yAxisId="right"
+              type="linear"
+              dataKey="volunteers"
+              name="Participations"
               stroke="#2499e9"
               strokeWidth={2.5}
+              connectNulls={false}
+              isAnimationActive={false}
               dot={{ r: 3, fill: "#2499e9", strokeWidth: 2, stroke: "#ffffff" }}
               activeDot={{ r: 5, strokeWidth: 2, stroke: "#ffffff" }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <p className="mt-3 cmm-text-caption cmm-text-secondary">Sommes des mesures renseignées. Un point absent signifie une mesure inconnue ; les mois partiels ne représentent pas un total exhaustif. Les participations ne sont pas des personnes uniques.</p>
+      <details className="mt-3"><summary className="cursor-pointer text-sm font-semibold cmm-text-primary">Données mensuelles et couverture</summary><div className="mt-2 overflow-x-auto"><table className="cmm-data-table w-full text-left text-sm"><thead><tr><th scope="col">Mois</th><th scope="col">Masse connue (kg)</th><th scope="col">Actions avec masse</th><th scope="col">Participations</th><th scope="col">Actions avec effectif</th></tr></thead><tbody>{data.map((point) => <tr key={point.month} className="border-t border-slate-200"><th scope="row" className="py-2">{point.month}</th><td>{point.wasteKnownActions > 0 ? point.kg.toLocaleString("fr-FR") : "Non renseigné"}</td><td>{point.wasteKnownActions}/{point.actionCount}</td><td>{(point.volunteersKnownActions ?? 0) > 0 ? point.volunteers.toLocaleString("fr-FR") : "Non renseigné"}</td><td>{point.volunteersKnownActions === undefined ? "Non renseigné" : `${point.volunteersKnownActions}/${point.actionCount}`}</td></tr>)}</tbody></table></div></details>
     </div>
   );
 }

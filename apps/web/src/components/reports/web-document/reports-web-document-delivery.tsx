@@ -62,9 +62,8 @@ export function ReportsWebDocumentDelivery({
     <div className="space-y-4 border-t border-slate-200 pt-5">
       <div className="flex min-w-0 flex-col gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-slate-500">
-            État du PDF
-          </p>
+          <h4 className="font-bold cmm-text-primary">Étape 3 · Générer et exporter</h4>
+          <p className="mt-1 cmm-text-small cmm-text-secondary">Le PDF natif et le brief Markdown sont deux livrables différents.</p>
           <CmmFeedback
             tone={feedbackTone}
             title={exportStatus.label}
@@ -77,26 +76,26 @@ export function ReportsWebDocumentDelivery({
           </CmmFeedback>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <AiMarkdownExportConfirmation
-            request={aiExportRequest}
-            fallbackFilename={aiExportFallbackFilename}
-            triggerLabel="Exporter pour une IA"
-            disabled={isAiExportDisabled}
-            tone="primary"
-            className="min-h-11 w-full sm:w-auto"
-          />
           <CmmButton
             onClick={onGenerate}
             disabled={isDisabled}
             loading={state === "pending"}
-            tone="secondary"
+            tone="primary"
             size="lg"
-            width="wide"
+            width="auto"
             className="shrink-0"
           >
             <FileText size={18} aria-hidden="true" />
             {state === "pending" ? pendingLabel : "Générer le PDF"}
           </CmmButton>
+          <AiMarkdownExportConfirmation
+            request={aiExportRequest}
+            fallbackFilename={aiExportFallbackFilename}
+            triggerLabel="Exporter pour une IA"
+            disabled={isAiExportDisabled}
+            tone="secondary"
+            className="min-h-11"
+          />
         </div>
       </div>
       <p

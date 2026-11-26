@@ -6,7 +6,7 @@ function makeContract(
   id: string,
   type: "action" | "spot" | "clean_place",
   wasteKg: number | null,
-  volunteersCount: number,
+  volunteersCount: number | null,
 ) {
   return buildActionDataContract({
     id,
@@ -45,6 +45,12 @@ describe("aggregateMonthlyAnalytics", () => {
       actionCount: 2,
       wasteKnownActions: 1,
       wasteCoverageRate: 50,
+      volunteersKnownActions: 2,
     });
+  });
+
+  it("preserves explicitly declared zero and distinguishes missing participation", () => {
+    const [point] = aggregateMonthlyAnalytics([makeContract("zero", "action", 0, 0), makeContract("missing", "action", null, null)]);
+    expect(point).toMatchObject({ kg: 0, volunteers: 0, actionCount: 2, wasteKnownActions: 1, volunteersKnownActions: 1 });
   });
 });

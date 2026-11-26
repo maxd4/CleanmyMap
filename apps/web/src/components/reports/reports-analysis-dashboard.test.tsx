@@ -17,7 +17,8 @@ vi.mock("@/components/reports/analytics-cockpit", () => ({
 
 const report = {
   generatedAt: "2026-08-26T12:00:00.000Z",
-  totals: { actions: 2, kg: 12.3, butts: 4, volunteers: 3, hours: 4.5 },
+  totals: { actions: 2, kg: 12.3, butts: 4, volunteers: 3, hours: 4.5, knownWasteActions: 2, buttsKnownActions: 2, volunteersKnownActions: 2 },
+  terrain: { actionCount: 2, spotCount: 0, cleanPlaceCount: 0 },
   map: { points: 2, traces: 1, polylines: 1, polygons: 0, geoCoverage: 81.2, traceCoverage: 63.4 },
   quality: { completenessScore: 91.3, coherenceScore: 87.6, freshnessDays: 2.5, geolocRate: 81.2 },
   recycling: { recyclableKg: 6.7, triIndex: 72.4 },
@@ -58,7 +59,7 @@ const monthlyData: MonthlyAnalyticsPoint[] = [{
   volunteers: 3,
 }];
 
-function renderAnalysisDashboard() {
+function renderAnalysisDashboard(model = report) {
   return renderToStaticMarkup(
     React.createElement(ReportsAnalysisDashboard, {
       locale: "fr",
@@ -67,7 +68,7 @@ function renderAnalysisDashboard() {
       secondaryAction: null,
       summaryKpis: [],
       methods: [method],
-      report,
+      report: model,
       periodDays: 90,
       monthlyData,
     }),
@@ -78,7 +79,7 @@ describe("ReportsAnalysisDashboard contract", () => {
   it("keeps the report submodule heading secondary", () => {
     const markup = renderAnalysisDashboard();
 
-    expect(markup).toMatch(/<h2>Rapports d(?:&#x27;|’)impact<\/h2>/);
+    expect(markup).toContain("Analyse des résultats");
     expect(markup).not.toMatch(/<h1\b/);
   });
 
@@ -88,15 +89,15 @@ describe("ReportsAnalysisDashboard contract", () => {
     expect(markup).toContain("Émissions évitées (proxy)");
     expect(markup).toContain("14,4");
     expect(markup).toContain("kg CO₂e");
-    expect(markup).toContain("Eau préservée (proxy)");
+    expect(markup).toContain("Eau potentiellement préservée (proxy)");
     expect(markup).toContain("250");
-    expect(markup).toContain(">L</span>");
+    expect(markup).toContain("250 L");
     expect(markup).toContain("Masse recyclable estimée");
     expect(markup).toContain("6,7");
-    expect(markup).toContain(">kg</span>");
+    expect(markup).toContain("6,7 kg");
     expect(markup).toContain("Indice de tri (proxy)");
     expect(markup).toContain("72,4");
-    expect(markup).toContain("Score affiché en %");
+    expect(markup).toContain("2/2 actions renseignées");
     expect(markup).toContain("Complétude des données");
     expect(markup).toContain("Cohérence des données");
     expect(markup).toContain("Couverture géolocalisée");
@@ -118,6 +119,17 @@ describe("ReportsAnalysisDashboard contract", () => {
     expect(markup).not.toContain("45%");
     expect(markup).not.toContain("92%");
     expect(markup).not.toContain("65%");
+  });
+
+  it("does not present empty or missing measurements as physical zeros", () => {
+    const empty = renderAnalysisDashboard({ ...report, totals: { ...report.totals, actions: 0, knownWasteActions: 0, buttsKnownActions: 0, volunteersKnownActions: 0 }, terrain: { actionCount: 0, spotCount: 0, cleanPlaceCount: 0 } });
+    expect(empty).toContain("Aucune action approuvée");
+    expect(empty).toContain("Non renseigné");
+    expect(empty).toContain("Non comparable");
+    expect(empty).not.toContain("14,4 kg CO₂e");
+    const partial = renderAnalysisDashboard({ ...report, totals: { ...report.totals, knownWasteActions: 1 } });
+    expect(partial).toContain("1/2 actions renseignées");
+    expect(partial).toContain("Non comparable");
   });
 
   it("exposes keyboard-navigable disclosure markup for the methodology", () => {

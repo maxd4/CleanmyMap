@@ -64,7 +64,8 @@ describe("ReportsWebDocumentPreview", () => {
     expect(closedMarkup).toContain("Données &amp; cartographie");
     expect(closedMarkup).toContain("Données disponibles");
     expect(closedMarkup).not.toMatch(/6 à 8 pages|12 à 16 pages|20 à 28 pages/);
-    expect(closedMarkup).not.toContain("Étape 2");
+    expect(closedMarkup).toContain("Étape 2");
+    expect(closedMarkup).toContain('aria-expanded="false"');
     expect(closedMarkup).not.toContain("synthese-executive");
 
     const openMarkup = renderToStaticMarkup(
@@ -75,6 +76,7 @@ describe("ReportsWebDocumentPreview", () => {
     );
     expect(openMarkup).toContain("Masquer l’aperçu de la première page");
     expect(openMarkup).toContain("Première page du PDF");
+    expect(openMarkup).toContain('aria-expanded="true"');
     expect(openMarkup).toContain("Aperçu partiel de la première page uniquement");
     expect(openMarkup).toContain("ce n&#x27;est pas le PDF complet");
   });
@@ -124,5 +126,17 @@ describe("ReportsWebDocumentPreview", () => {
     expect(markup).toContain("Couverture partielle");
     expect(markup).toContain("01/01/2026 → 23/08/2026");
     expect(markup).not.toContain("couverture conforme");
+  });
+
+  it("marks incomplete sources, invalid selection and an empty result separately", () => {
+    const render = (overrides: Partial<ReportsWebDocumentPreviewProps>) => renderToStaticMarkup(React.createElement(ReportsWebDocumentPreview, createProps(overrides)));
+    expect(render({ hasPartialSources: true })).toContain("Couverture partielle");
+    const invalid = render({ isSelectionValid: false });
+    expect(invalid).toContain("Non disponible");
+    expect(invalid).not.toContain("4 actions");
+    const empty = render({ report: { ...report, totals: { ...report.totals, actions: 0 } } });
+    expect(empty).toContain("0 actions");
+    expect(empty).toContain("Sélection vide");
+    expect(empty).not.toContain("Couverture complète");
   });
 });

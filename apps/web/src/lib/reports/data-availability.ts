@@ -42,3 +42,14 @@ export function buildReportDataAvailabilityNotices(
 
   return notices;
 }
+
+/** Presentation of sums: zero is valid only when at least one observation supports it. */
+export function formatCoveredReportValue(formattedValue: string, knownActions: number | undefined, totalActions: number): string {
+  return knownActions !== undefined && knownActions > 0 && totalActions > 0 ? formattedValue : "Non renseigné";
+}
+
+export function describeReportMeasurementCoverage(knownActions: number | undefined, totalActions: number): string {
+  if (totalActions <= 0) return "Aucune action dans la période";
+  if (knownActions === undefined) return "Couverture non renseignée";
+  return `${knownActions}/${totalActions} actions renseignées`;
+}
