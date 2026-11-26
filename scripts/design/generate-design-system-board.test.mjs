@@ -339,9 +339,22 @@ test("resolves @import tokens.css, TS union ButtonVariant types, and P0 graph co
     await writeFile(sourceFiles.globalsCss, `@import "tailwindcss";\n@import "../styles/tokens.css";\n`);
     sourceFiles.tokensCss = tokensPath;
 
-    const data = await buildData({ sourceFiles, now: () => "2026-01-01T00:00:00.000Z" });
+    const data = await buildData({
+      sourceFiles,
+      now: () => "2026-01-01T00:00:00.000Z",
+      graph: {
+        gitSha: "b".repeat(40),
+        provenance: { verified: false, measuredSource: "filesystem" },
+        edges: [],
+      },
+    });
     assert.equal(data.stats.tokens, 8);
     assert.ok(data.sources.list.includes("tokens.css"));
+    assert.equal(data.sources.provenance.verified, false);
+    assert.equal(data.sources.provenance.measuredContent, "worktree");
+    assert.equal(data.sources.provenance.referenceGitSha, "b".repeat(40));
+    assert.equal(data.sources.provenance.consumerGraph.verified, false);
+    assert.equal(data.sources.provenance.consumerGraph.gitSha, null);
 
     const uiDir = path.join(dir, "apps/web/src/components/ui");
     await mkdir(uiDir, { recursive: true });

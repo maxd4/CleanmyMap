@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-26T16:52:25.823Z",
+  "generatedAt": "2026-11-26T17:02:12.559Z",
   "stats": {
     "tokens": 8,
     "blocks": 5,
@@ -120,9 +120,16 @@
     ],
     "profile": "benevole",
     "provenance": {
-      "consumerGraph": "architecture-import-graph",
-      "gitSha": "5ee3c966ba7b29dae820d3571b1a7e2ad35d8916",
-      "measuredSource": "filesystem"
+      "verified": false,
+      "measuredContent": "worktree",
+      "referenceGitSha": "fa25c7f634995497aa5f43281b72c83249f8f43c",
+      "consumerGraph": {
+        "report": "architecture-import-graph",
+        "verified": false,
+        "measuredSource": "filesystem",
+        "gitSha": null,
+        "referenceGitSha": "fa25c7f634995497aa5f43281b72c83249f8f43c"
+      }
     }
   },
   "palette": [

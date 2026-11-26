@@ -778,11 +778,26 @@ export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listCo
       navigationFiles,
       coreHighlightFiles,
       profile: profileKey,
-      provenance: {
-        consumerGraph: importGraph ? "architecture-import-graph" : "none",
-        gitSha: importGraph?.gitSha ?? null,
-        measuredSource: importGraph?.provenance?.measuredSource ?? "worktree",
-      },
+      provenance: (() => {
+        const graphVerified = Boolean(
+          importGraph?.provenance?.verified === true &&
+          importGraph?.provenance?.measuredSource === "git",
+        );
+        return {
+          verified: graphVerified,
+          measuredContent: "worktree",
+          referenceGitSha: importGraph?.gitSha ?? null,
+          consumerGraph: importGraph
+            ? {
+                report: "architecture-import-graph",
+                verified: graphVerified,
+                measuredSource: importGraph.provenance?.measuredSource ?? "filesystem",
+                gitSha: graphVerified ? importGraph.gitSha : null,
+                referenceGitSha: importGraph.gitSha ?? null,
+              }
+            : null,
+        };
+      })(),
     },
     palette,
     blocks,
