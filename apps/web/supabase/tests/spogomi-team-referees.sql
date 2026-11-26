@@ -41,6 +41,7 @@ declare
   v_private_casual jsonb;
   v_res jsonb;
   v_idx integer;
+  v_step text := 'INIT';
 begin
   -- 1. Privilege boundaries
   if has_table_privilege('anon', 'public.spogomi_team_referee_assignments', 'SELECT')
@@ -75,6 +76,7 @@ begin
   end if;
 
   -- 2. Setup published mixed event (distinct division regulation versions) + teams + participants
+  v_step := 'SETUP';
   insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count, notes)
   values
     (v_action_id, v_org_clerk, current_date, 'SPOGOMI team referee contract', 0, 0, 1, 'team referee fixture'),
@@ -112,6 +114,7 @@ begin
 
   -- Qualify and habilitate referees BEFORE registering v_participant_clerk and v_casual_participant_clerk as competitors,
   -- so spogomi_assign_team_referee's SQLSTATE 23514 participant exclusion is exercised directly.
+  v_step := 'QUALIFY_WC';
   v_private_def := public.spogomi_referee_quiz_definition_private(v_event_id, v_world_cup_id);
   v_answers := '{}'::jsonb;
   for v_question in select value from jsonb_array_elements(v_private_def->'questions') loop
@@ -166,6 +169,7 @@ begin
   v_ref_unhab := 'spogomi-tr-unhab-' || substr(gen_random_uuid()::text, 1, 8);
 
   -- 3. Reject non-organizer, non-habilitated, same-division participant, cross-division participant, and cross-division referee
+  v_step := 'REJECTS';
   begin
     perform public.spogomi_assign_team_referee(v_event_id, v_world_cup_id, v_team_wc_1, v_ref_1, v_non_org_clerk, 'unauthorized');
     raise exception 'non-organizer was allowed to assign team referee';
@@ -246,6 +250,7 @@ begin
   end if;
 
   -- 5. Operational readiness & field launch gate
+  v_step := 'READINESS';
   if not public.spogomi_division_referee_coverage_ready(v_event_id, v_world_cup_id) then
     raise exception 'world_cup division should be referee-coverage ready';
   end if;
@@ -266,6 +271,7 @@ begin
   perform public.spogomi_launch_field_phase(v_event_id, v_world_cup_id, 'collection', now(), v_org_clerk, 'start', 'contract');
 
   -- 6. Division-scoped regulation/quiz change & requalification
+  v_step := 'REQUALIFY';
   -- Updating world_cup division regulation invalidates world_cup assignments without affecting casual
   update public.spogomi_divisions
      set regulation_version = 'reg-wc-v2'
@@ -283,6 +289,7 @@ begin
 
   -- Requalify v_ref_2 on world_cup reg-wc-v2 -> status returns to assigned
   perform public.spogomi_create_referee_application(v_event_id, v_world_cup_id, v_ref_2);
+  v_step := 'QUALIFY_WC';
   v_private_def := public.spogomi_referee_quiz_definition_private(v_event_id, v_world_cup_id);
   v_answers := '{}'::jsonb;
   for v_question in select value from jsonb_array_elements(v_private_def->'questions') loop
@@ -332,6 +339,7 @@ begin
   end if;
 
   -- 8. Planned route rejects report_photo media at the SQL boundary
+  v_step := 'ROUTE_MEDIA';
   insert into public.action_media (
     id, action_id, created_by_clerk_id, client_upload_id, purpose,
     storage_path, original_name, mime_type, size_bytes, sort_order, upload_state
@@ -349,6 +357,9 @@ begin
     raise exception 'spogomi_upsert_planned_route accepted a report_photo media';
   exception when sqlstate '23514' then null;
   end;
+exception when others then
+  raise notice 'TERRITORIAL_PHASE=% SQLSTATE=%', v_step, sqlstate;
+  raise;
 end;
 $$;
 
