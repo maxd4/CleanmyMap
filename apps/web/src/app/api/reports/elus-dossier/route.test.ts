@@ -226,6 +226,7 @@ describe("GET /api/reports/elus-dossier", () => {
       items: [
         {
           ...contract,
+          type: "action",
           dates: { ...contract.dates, observedAt: new Date().toISOString().slice(0, 10) },
           metadata: { wasteKg: "12.5kg", volunteersCount: "4" },
           location: { label: "Paris", latitude: null, longitude: null },

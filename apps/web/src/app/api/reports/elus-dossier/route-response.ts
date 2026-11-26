@@ -24,11 +24,16 @@ function buildMarkdownPack(payload: ElusDossierPayload): string {
     )
     .join("\n");
 
+  const actionsFailed = payload.sourceHealth.failedSources.includes("actions");
+  const corpusIncomplete =
+    payload.isTruncated ||
+    payload.sourceHealth.partial ||
+    payload.sourceHealth.failedSources.length > 0;
   const territorial = payload.territorialPriorities
     .slice(0, 8)
     .map(
       (row) =>
-        `- ${row.area}: ${row.normalizedScore.toFixed(1)} | ${row.actionsPerKm2.toFixed(1)} act/km2 | ${row.kgPerKm2.toFixed(1)} kg/km2 | ${row.decisionLabel}`,
+        `- ${row.area}: ${row.normalizedScore === null ? "non evaluable" : row.normalizedScore.toFixed(1)} | ${row.actionsPerKm2.toFixed(1)} act/km2 | ${row.kgPerKm2.toFixed(1)} kg/km2 | ${row.decisionLabel}`,
     )
     .join("\n");
 
@@ -67,19 +72,39 @@ function buildMarkdownPack(payload: ElusDossierPayload): string {
     ...availability,
     "",
     "## Resume executif",
-    `- Actions validees: ${payload.summary.totalActions}`,
-    `- Volume collecte: ${payload.summary.knownWasteActions === 0 && payload.summary.totalActions > 0 ? "Non renseigné" : `${payload.summary.totalKg.toFixed(1)} kg`}${payload.summary.knownWasteActions !== undefined ? ` (${payload.summary.knownWasteActions}/${payload.summary.totalActions} actions renseignées)` : ""}`,
-    `- Mobilisation: ${payload.summary.volunteersKnownActions === 0 && payload.summary.totalActions > 0 ? "Non renseignée" : `${payload.summary.totalVolunteers} benevoles`}${payload.summary.volunteersKnownActions !== undefined ? ` (${payload.summary.volunteersKnownActions}/${payload.summary.totalActions} actions renseignées)` : ""}`,
-    `- Geocouverture: ${payload.summary.geocoverageRate}%`,
+    ...(actionsFailed || payload.summary.totalActions === null
+      ? [
+          "- Actions validees: Indisponible (source actions en echec)",
+          "- Volume collecte: Indisponible (source actions en echec)",
+          "- Mobilisation: Indisponible (source actions en echec)",
+          "- Geocouverture: Indisponible (source actions en echec)",
+        ]
+      : [
+          `- Actions validees: ${payload.summary.totalActions}`,
+          `- Volume collecte: ${payload.summary.knownWasteActions === 0 && payload.summary.totalActions > 0 ? "Non renseigné" : `${(payload.summary.totalKg ?? 0).toFixed(1)} kg`}${payload.summary.knownWasteActions !== undefined && payload.summary.knownWasteActions !== null ? ` (${payload.summary.knownWasteActions}/${payload.summary.totalActions} actions renseignées)` : ""}`,
+          `- Mobilisation: ${payload.summary.volunteersKnownActions === 0 && payload.summary.totalActions > 0 ? "Non renseignée" : `${payload.summary.totalVolunteers ?? 0} benevoles`}${payload.summary.volunteersKnownActions !== undefined && payload.summary.volunteersKnownActions !== null ? ` (${payload.summary.volunteersKnownActions}/${payload.summary.totalActions} actions renseignées)` : ""}`,
+          `- Geocouverture: ${payload.summary.geocoverageRate ?? 0}%`,
+        ]),
     "",
     "## Top priorites territoriales",
-    priorities || "- Aucune priorite detectee.",
+    priorities ||
+      (actionsFailed
+        ? "- Non evaluable (source actions indisponible)."
+        : corpusIncomplete
+          ? "- Non evaluable (corpus partiel ou tronque)."
+          : "- Aucune priorite detectee."),
     "",
     "## Benchmark territorial (normalise)",
-    territorial || "- Donnees insuffisantes.",
+    territorial ||
+      (actionsFailed
+        ? "- Non evaluable (source actions indisponible)."
+        : "- Donnees insuffisantes."),
     "",
     "## Comparatif zone par zone (courant vs precedent)",
-    zoneComparisons || "- Donnees zonales insuffisantes.",
+    zoneComparisons ||
+      (actionsFailed
+        ? "- Non evaluable (source actions indisponible)."
+        : "- Donnees zonales insuffisantes."),
     "",
     "## Comparatif N vs N-1 (trace JSON)",
     "```json",

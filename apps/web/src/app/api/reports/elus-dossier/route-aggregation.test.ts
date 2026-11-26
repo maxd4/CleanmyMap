@@ -105,6 +105,8 @@ describe("elus-dossier aggregation scientific contracts", () => {
     expect(payload.summary.knownWasteActions).toBe(0);
     expect(payload.summary.volunteersKnownActions).toBe(0);
     expect(payload.decisionPriorities).toEqual([]);
+    expect(payload.territorialPriorities[0]?.normalizedScore).toBeNull();
+    expect(payload.territorialPriorities[0]?.decisionLabel).toBe("Non evaluable (corpus partiel)");
     expect(payload.comparison.deltas.actionsCount.absolute).toBeNull();
     expect(payload.zoneComparisons[0]?.deltaActionsAbsolute).toBeNull();
     expect(payload.zoneComparisons[0]?.deltaActionsPercent).toBeNull();
@@ -115,8 +117,83 @@ describe("elus-dossier aggregation scientific contracts", () => {
     const md = await mdResponse.text();
     expect(md).toContain("Non renseigné (0/1 actions renseignées)");
     expect(md).toContain("Non renseignée (0/1 actions renseignées)");
+    expect(md).toContain("Non evaluable (corpus partiel ou tronque).");
+    expect(md).toContain("non evaluable");
     expect(md).toContain("kg non renseigné/");
     expect(md).toContain("indisponible");
+  });
+
+  it("excludes spot and clean_place from action metrics while preserving observed zero", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    fetchUnifiedMock.mockResolvedValueOnce({
+      items: [
+        buildActionDataContract({
+          id: "real-action",
+          type: "action",
+          status: "approved",
+          source: "test",
+          observedAt: today,
+          createdAt: `${today}T10:00:00.000Z`,
+          locationLabel: "Paris 10e",
+          latitude: 48.87,
+          longitude: 2.35,
+          wasteKg: 0,
+          volunteersCount: 0,
+        }),
+        buildActionDataContract({
+          id: "ignored-spot",
+          type: "spot",
+          status: "approved",
+          source: "test",
+          observedAt: today,
+          createdAt: `${today}T10:00:00.000Z`,
+          locationLabel: "Paris 10e",
+          latitude: 48.87,
+          longitude: 2.35,
+          wasteKg: 999,
+          volunteersCount: 99,
+        }),
+        buildActionDataContract({
+          id: "ignored-clean-place",
+          type: "clean_place",
+          status: "approved",
+          source: "test",
+          observedAt: today,
+          createdAt: `${today}T10:00:00.000Z`,
+          locationLabel: "Paris 10e",
+          latitude: 48.87,
+          longitude: 2.35,
+          wasteKg: 888,
+          volunteersCount: 88,
+        }),
+      ],
+      isTruncated: false,
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions"],
+        warnings: [],
+      },
+    });
+
+    const payload = await buildElusDossierPayload({
+      supabase: {} as never,
+      days: 30,
+      limit: 500,
+      floorDate: "2026-01-01",
+      scope: { kind: "global", value: null },
+    });
+
+    expect(payload.summary.totalActions).toBe(1);
+    expect(payload.summary.totalKg).toBe(0);
+    expect(payload.summary.totalVolunteers).toBe(0);
+    expect(payload.summary.knownWasteActions).toBe(1);
+    expect(payload.summary.volunteersKnownActions).toBe(1);
+    expect(payload.comparison.current.actionsCount).toBe(1);
+
+    const md = await buildDossierResponse(payload, "md").text();
+    expect(md).toContain("0.0 kg (1/1 actions renseignées)");
+    expect(md).toContain("0 benevoles (1/1 actions renseignées)");
   });
 
   it("handles failed actions source and previous-only actions across summary, priorities, and exports", async () => {
@@ -179,11 +256,22 @@ describe("elus-dossier aggregation scientific contracts", () => {
       scope: { kind: "global", value: null },
     });
 
+    expect(failedPayload.summary.totalActions).toBeNull();
+    expect(failedPayload.summary.totalKg).toBeNull();
+    expect(failedPayload.summary.totalVolunteers).toBeNull();
+    expect(failedPayload.summary.geocoverageRate).toBeNull();
     expect(failedPayload.territorialPriorities).toEqual([]);
     expect(failedPayload.decisionPriorities).toEqual([]);
     expect(failedPayload.zoneComparisons).toEqual([]);
     expect(failedPayload.comparison.deltas.actionsCount.absolute).toBeNull();
     const jsonResponse = buildDossierResponse(failedPayload, "json");
     expect(jsonResponse.headers.get("X-Export-Warning")).toContain("actions_failed");
+    const jsonBody = (await jsonResponse.json()) as { summary: { totalActions: number | null } };
+    expect(jsonBody.summary.totalActions).toBeNull();
+
+    const failedMd = await buildDossierResponse(failedPayload, "md").text();
+    expect(failedMd).toContain("Indisponible (source actions en echec)");
+    expect(failedMd).toContain("Non evaluable (source actions indisponible).");
+    expect(failedMd).not.toContain("Aucune priorite detectee.");
   });
 });

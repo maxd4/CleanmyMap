@@ -109,12 +109,12 @@ type ScopedDossierData = {
 };
 
 type DossierSummary = {
-  totalActions: number;
-  totalKg: number;
-  knownWasteActions: number;
-  totalVolunteers: number;
-  volunteersKnownActions: number;
-  geocoverageRate: number;
+  totalActions: number | null;
+  totalKg: number | null;
+  knownWasteActions: number | null;
+  totalVolunteers: number | null;
+  volunteersKnownActions: number | null;
+  geocoverageRate: number | null;
 };
 
 async function loadScopedDossierData(params: {
@@ -151,6 +151,17 @@ async function loadScopedDossierData(params: {
   };
 }
 
+function buildUnavailableDossierSummary(): DossierSummary {
+  return {
+    totalActions: null,
+    totalKg: null,
+    knownWasteActions: null,
+    totalVolunteers: null,
+    volunteersKnownActions: null,
+    geocoverageRate: null,
+  };
+}
+
 function buildDossierSummary(approved: ElusDossierContract[]): DossierSummary {
   const totalKg = sumApprovedMetric(approved, (contract) => contract.metadata.wasteKg);
   const knownWasteActions = countKnownMetric(approved, (contract) => contract.metadata.wasteKg);
@@ -183,8 +194,13 @@ function buildDossierComparisons(
   dataAvailability: { isTruncated: boolean; sourceHealth: UnifiedSourceHealth },
 ) {
   const actionsFailed = dataAvailability.sourceHealth.failedSources.includes("actions");
+  const corpusIncomplete =
+    dataAvailability.isTruncated ||
+    dataAvailability.sourceHealth.partial ||
+    dataAvailability.sourceHealth.failedSources.length > 0;
+  const actionScopeContracts = scopeContracts.filter((contract) => contract.type === "action");
   const comparison = computePeriodComparison(
-    scopeContracts.map((contract) => ({
+    actionScopeContracts.map((contract) => ({
       status: contract.status,
       observedAt: contract.dates.observedAt,
       createdAt: contract.dates.createdAt ?? contract.dates.importedAt,
@@ -196,7 +212,7 @@ function buildDossierComparisons(
     now,
     dataAvailability,
   );
-  const benchmark = actionsFailed
+  const rawBenchmark = actionsFailed
     ? []
     : buildTerritorialBenchmark(
         currentPeriodContracts.map((contract) => ({
@@ -207,6 +223,13 @@ function buildDossierComparisons(
           volunteersCount: contract.metadata.volunteersCount,
         })),
       );
+  const benchmark = corpusIncomplete
+    ? rawBenchmark.map((row) => ({
+        ...row,
+        normalizedScore: null as number | null,
+        decisionLabel: "Non evaluable (corpus partiel)" as const,
+      }))
+    : rawBenchmark;
   const overview = buildPilotageOverviewFromContracts({
     contracts: scopeContracts,
     periodDays: days,
@@ -249,7 +272,9 @@ function assembleElusDossierPayload(params: {
     summary,
     comparison,
     territorialPriorities: benchmark,
-    decisionPriorities: corpusIncomplete ? [] : buildDecisionPriorities(benchmark),
+    decisionPriorities: corpusIncomplete
+      ? []
+      : buildDecisionPriorities(benchmark as TerritorialBenchmarkRow[]),
     zoneComparisons: overview.zones,
     isTruncated,
     sourceHealth,
@@ -278,9 +303,12 @@ export async function buildElusDossierPayload(params: {
     now,
   );
   const currentApproved = currentPeriodContracts.filter(
-    (contract) => contract.status === "approved",
+    (contract) => contract.type === "action" && contract.status === "approved",
   );
-  const summary = buildDossierSummary(currentApproved);
+  const actionsFailed = scopedData.sourceHealth.failedSources.includes("actions");
+  const summary = actionsFailed
+    ? buildUnavailableDossierSummary()
+    : buildDossierSummary(currentApproved);
   const comparisons = buildDossierComparisons(
     scopedData.scopeContracts,
     currentPeriodContracts,
