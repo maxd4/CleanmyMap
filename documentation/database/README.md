@@ -140,3 +140,22 @@ inchangés. Les contrats pgTAP et les tests statiques sont versionnés ; leur
 présence ne prouve pas une exécution PostgreSQL distante et doit rester
 qualifiée `DB_SEMANTICS_NOT_EXECUTED` tant qu'une instance isolée ou staging
 n'a pas exécuté ces scénarios.
+
+## Découvrir un objet SQL sans lire toutes les migrations
+
+- Identifier l'objet avec son schéma et, pour une fonction surchargée, sa
+  signature d'identité. Rechercher son nom littéral sous
+  `apps/web/supabase/migrations/` ; vérifier les créations, modifications,
+  renommages et suppressions. Une occurrence n'est pas une provenance prouvée.
+- Distinguer le schéma Git attendu (replay de la lane éphémère autorisée),
+  le schéma distant observé en lecture seule et les types générés.
+- Pour un inventaire reproductible, lire les métadonnées PostgreSQL :
+  relations, colonnes, contraintes, index, RLS, policies, ACL, signatures
+  de fonctions et triggers. Ne pas exporter les lignes métier ni les secrets.
+  Les sorties locales restent sous `artifacts/`, non versionnées.
+- Associer à chaque inventaire sa cible, son environnement, le SHA Git de
+  référence, l'historique de migrations observé et la date de lecture.
+  L'introspection distante ne démontre pas à elle seule l'alignement avec Git.
+- Rechercher tables, RPC et routes dans les workspaces pertinents ; vérifier
+  les services, contrats et tests propriétaires. La preuve de comportement
+  PostgreSQL, de concurrence et de RLS reste distincte du catalogue.

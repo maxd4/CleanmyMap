@@ -130,3 +130,65 @@ Pour une tâche donnée :
 Les scripts Python de maintenance vivent sous `maintenance/python/` et restent
 hors du runtime web. Toute modification de cette zone doit rester explicitement
 dans son propre périmètre.
+
+## 7. Découverte technique ciblée
+
+Cet index oriente vers les sources réelles ; il ne définit pas leurs contrats
+et ne prouve pas l'exhaustivité des consommateurs.
+
+1. Identifier le workspace, le contrat, le parcours et les risques. Lire
+   intégralement les règles racine et scoped applicables. Partir de
+   [l'index lib Web](../../apps/web/src/lib/README.md) ou du
+   [README Mobile](../../apps/mobile/README.md).
+2. Ouvrir le README du domaine lorsqu'il existe, puis rechercher les symboles
+   propriétaires, leurs dépendances, callers et consommateurs.
+3. Réutiliser le graphe d'imports existant :
+   `npm run audit:architecture-import-graph -- --ref <SHA> --source git --output artifacts/architecture-import-graph.json`.
+   Vérifier sa provenance et consulter seulement le sous-graphe pertinent.
+4. Compléter les imports statiques par la recherche des routes HTTP, RPC,
+   tables, clés de stockage, jobs, imports dynamiques et références littérales.
+   QMD et GitNexus restent des aides facultatives selon TESTING.md.
+5. Lire les tests pertinents et les contrats CURRENT propriétaires. La
+   découverte ciblée ne dispense ni des lectures intégrales exigées en revue
+   de commits, ni des validations de frontières sensibles.
+
+### Carte de découverte Web
+
+| Domaine (nom de dossier) | Point d'entrée | Orientation existante |
+|---|---|---|
+| actions | [Dossier](../../apps/web/src/lib/actions/) | [README local](../../apps/web/src/lib/actions/README.md) |
+| community | [Dossier](../../apps/web/src/lib/community/) | [README local](../../apps/web/src/lib/community/README.md) |
+| gamification | [Dossier](../../apps/web/src/lib/gamification/) | [README local](../../apps/web/src/lib/gamification/README.md) |
+| spogomi | [Dossier](../../apps/web/src/lib/spogomi/) | [README local](../../apps/web/src/lib/spogomi/README.md) |
+| reports | [Dossier](../../apps/web/src/lib/reports/) | Rechercher le propriétaire dans le dossier |
+| route | [Dossier](../../apps/web/src/lib/route/) | [README local](../../apps/web/src/lib/route/README.md) |
+| learning | [Dossier](../../apps/web/src/lib/learning/) | [README local](../../apps/web/src/lib/learning/README.md) |
+| chat | [Dossier](../../apps/web/src/lib/chat/) | Rechercher le propriétaire dans le dossier |
+| auth | [Dossier](../../apps/web/src/lib/auth/) | [README local](../../apps/web/src/lib/auth/README.md) |
+| supabase | [Dossier](../../apps/web/src/lib/supabase/) | [README local](../../apps/web/src/lib/supabase/README.md) |
+| geo | [Dossier](../../apps/web/src/lib/geo/) | [README local](../../apps/web/src/lib/geo/README.md) |
+| partners | [Dossier](../../apps/web/src/lib/partners/) | Rechercher le propriétaire dans le dossier |
+| environmental-impact-estimator | [Dossier](../../apps/web/src/lib/environmental-impact-estimator/) | Rechercher le propriétaire dans le dossier |
+| impact | [Dossier](../../apps/web/src/lib/impact/) | Rechercher le propriétaire dans le dossier |
+| missions | [Dossier](../../apps/web/src/lib/missions/) | Rechercher le propriétaire dans le dossier |
+| notifications | [Dossier](../../apps/web/src/lib/notifications/) | Rechercher le propriétaire dans le dossier |
+| pilotage | [Dossier](../../apps/web/src/lib/pilotage/) | Rechercher le propriétaire dans le dossier |
+| funding | [Dossier](../../apps/web/src/lib/funding/) | Rechercher le propriétaire dans le dossier |
+| services | [Dossier](../../apps/web/src/lib/services/) | Rechercher le propriétaire dans le dossier |
+| validation | [Dossier](../../apps/web/src/lib/validation/) | Rechercher le propriétaire dans le dossier |
+| http | [Dossier](../../apps/web/src/lib/http/) | Rechercher le propriétaire dans le dossier |
+| persistence | [Dossier](../../apps/web/src/lib/persistence/) | Rechercher le propriétaire dans le dossier |
+| storage | [Dossier](../../apps/web/src/lib/storage/) | Rechercher le propriétaire dans le dossier |
+| time | [Dossier](../../apps/web/src/lib/time/) | Rechercher le propriétaire dans le dossier |
+| waste | [Dossier](../../apps/web/src/lib/waste/) | Rechercher le propriétaire dans le dossier |
+| maps | [Dossier](../../apps/web/src/lib/maps/) | Rechercher le propriétaire dans le dossier |
+| pdf-export | [Dossier](../../apps/web/src/lib/pdf-export/) | Rechercher le propriétaire dans le dossier |
+| admin | [Dossier](../../apps/web/src/lib/admin/) | [README local](../../apps/web/src/lib/admin/README.md) |
+| account | [Dossier](../../apps/web/src/lib/account/) | Rechercher le propriétaire dans le dossier |
+| data | [Dossier](../../apps/web/src/lib/data/) | Rechercher le propriétaire dans le dossier |
+
+Les autres domaines restent accessibles depuis l'index lib Web. Un README
+absent ne justifie pas automatiquement une nouvelle fiche. Enrichir l'owner
+documentaire si une ambiguïté réelle ne peut être levée par l'inventaire
+généré. Pour les données, partir de [Database](../database/README.md) ; pour
+les chaînes d'usage, de [la matrice de traçabilité](../architecture/traceability-matrix.md).

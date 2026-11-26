@@ -1,0 +1,135 @@
+# Découverte technique IA : lots P0
+
+**Statut : PLAN / CANDIDATE.** Référence source vérifiée : 6dc8b1a52ffd1de7e27bc42555e52ac80ffab867.
+Chantier indépendant du programme UI/fonctionnel. Aucun changement runtime
+Web/Mobile ou Supabase. Deux enrichissements CURRENT déjà publiables dans
+les index existants : `documentation/development/AI_DEVELOPER_GUIDE.md` et `documentation/database/README.md`.
+Ne pas reproduire ces ajouts.
+
+## DOC-01 : contexte obligatoire et mesure
+
+Constat statique : AGENTS.md 738 lignes, CHATGPT.md 561 lignes,
+project_context.md 100 lignes (trimEnd, convention du garde).
+scripts/dev/context-budget-check.mjs limite AGENTS.md à 240 lignes.
+Ne pas simplement relever le seuil. Les règles actuelles restent applicables.
+Conserver au niveau racine autorité, sécurité, lecture scoped, multi-writer,
+interdictions, publication et distinctions de preuve. Déplacer seulement les
+procédures spécialisées et répétées vers les owners existants :
+scripts/AGENTS.md et host-environment.md (Git/hooks), TESTING.md et sources
+spécialisées (validation/ratchets), documentation/AGENTS.md (documentation),
+runbook-supabase-convergence.md et apps/web/supabase/AGENTS.md (SQL).
+Une règle déplacée reste obligatoire pour les cas concernés ; conserver une
+référence explicite et vérifier les tests, loaders et références littérales.
+Si 240 lignes sont incompatibles avec la conservation des protections,
+signaler le conflit au lieu d'affaiblir la gouvernance.
+Mesurer la baseline avant réorganisation sans modifier le checkout pour
+reconstruire un ancien état. Ne pas convertir les lignes en tokens fictifs.
+
+## DOC-02 : requête du graphe
+
+Réutiliser scripts/reports/generate-architecture-import-graph.mjs et son
+schéma v1. Les deux candidats complets sous candidates/scripts/reports/
+ciblent les mêmes chemins relatifs à la racine. Aucune dépendance nouvelle.
+Le CLI lit un JSON existant, exige SHA complet et provenance Git vérifiée,
+distingue appelants runtime/type, tests et dépendances directes, borne
+les listes et indique les omissions. Pour un dossier, les arêtes internes
+sont exclues des dépendances/appelants. Un graphe worktree ne prouve pas un SHA.
+Exécuter les tests Node, le CLI sur un graphe réel produit par l'owner
+(fichier Actions, dossier, chemin absent, mauvais SHA, limite) ; ajouter
+le point d'entrée npm et compléter le guide après validation.
+Ne pas changer le schéma v1 ni le CLI actuel par défaut. Comparer GitNexus
+sur les mêmes tâches sans créer d'indexation concurrente ou automatique.
+
+## DOC-03 : owners
+
+Le guide CURRENT contient une carte de 30 dossiers Web avec leurs README
+locaux lorsqu'ils existent. Compléter seulement les responsabilités encore
+ambiguës dans les README propriétaires : capacité, entrée publique, owner,
+consommateurs représentatifs, tests, source CURRENT. Générer les listes
+mécaniquement dérivables ; ne pas recopier toutes les fonctions.
+Priorité Actions, Gamification, Supabase, SPOGOMI, itinéraires, Rapports,
+empreinte IA, Apprendre, Communauté, Auth, géographie, partenaires,
+messagerie, puis autres domaines et consommateurs Mobile pertinents.
+Un nom de dossier ne démontre pas l'ownership.
+
+## DOC-04 : catalogue SQL
+
+candidates/schema-catalog.READ_ONLY.sql est un SELECT de métadonnées, non
+une migration. Couvre relations, colonnes, contraintes, index, policies, ACL
+relation/fonction, signatures et triggers utilisateur pour public/private.
+Compléter après vérification des schémas applicatifs réels, types/enums,
+ACL de colonnes/schémas, héritage, vues et dépendances pertinentes. Les ACL
+déclarées ne prouvent pas les droits effectifs. Valider sur la lane
+éphémère autorisée ; aucune exécution SQL ici. Réutiliser les mécanismes
+existants de collecte de preuve et historique. Catalogue Git rejoué et
+catalogue lié observé restent distincts. Ne pas démarrer Docker/WSL local,
+ne pas modifier Supabase. Ne publier ni données, corps de fonctions,
+expressions sensibles. Sorties sous artifacts/ avec SHA, cible, date et
+historique. L'index de provenance par objet distingue occurrences textuelles
+et DDL effectivement établi (renames, suppressions, surcharges, SQL dynamique).
+
+## DOC-05 : cycles métier
+
+Points d'entrée et observations de source, non preuve d'intégration :
+
+- Actions : action-workflow.ts distingue itineraire, paris, preparation,
+  preformulaire et statuts UI todo/in_progress/done/review ; localStorage
+  n'est qu'une aide d'orchestration, la persistance serveur fait autorité.
+  publication.ts vérifie pre_action sans publishedAt, pas l'autorisation.
+  Lire publish-pre-action.ts, association-action-review.ts, permissions.ts,
+  cancellation.ts, cancellation-contract.ts, participation/, persistence/,
+  formalities/ et external-sync/ avec API/RPC/tests associés.
+  Le contrat d'annulation expose cancelled, alreadyCancelled, cancelledAt,
+  cancelledBy et previousStatus pending/approved ; il ne prouve pas seul
+  l'atomicité.
+- SPOGOMI : lifecycle.ts sépare calendrier, inscription et résultat ; une
+  date écoulée ne certifie pas un événement. registration-lifecycle.ts
+  autorise pending vers approved/rejected/cancelled et le même état ;
+  spogomi_admission_transition_allowed est l'owner SQL déclaré.
+  Quiz pour une nouvelle admission registration sans demande active ni
+  participant inscrit ; réouverture withdrawn seulement en direct_registration
+  de même division. Tests : lifecycle.test.ts, registration-lifecycle.test.ts,
+  registration-lifecycle-migration.contract.test.ts. Confronter acteurs,
+  RPC, RLS et mutations aux sources réelles.
+
+Documenter dans les owners CURRENT : Actions, SPOGOMI, gamification,
+messagerie, rapports, annuaire, signalements, mission GPS mobile.
+Pour chaque transition : état source/cible, acteur, préconditions, mutations,
+atomicité, effets, refus, reprise et tests. Séparer projections UI et statuts
+persistés. Aucun nouveau contrat métier décidé ici.
+
+## DOC-11 : fraîcheur et mesure
+
+Artefacts hors Git, identifiés par SHA et entrées. Le candidat rejette
+provenance non vérifiée et SHA différent. Étendre les gardes documentaires
+existants pour vérifier liens/chemins des index ; tester suppression/rename,
+troncature et catalogue périmé. Éviter la régénération globale à chaque lot.
+Comparer avant/après à modèle, effort, contexte initial, accès et tâche
+constants, sessions indépendantes : A) retrouver publication/annulation
+Actions ; B) retrouver une transition d'admission SPOGOMI et tests SQL ;
+C) retrouver consommateurs d'une RPC et migrations. Au moins trois répétitions
+par scénario si possible, relever SHA, exactitude (owners, frontières,
+tests, limites), appels, fichiers ouverts, volume de texte injecté,
+tokens entrée/sortie si télémétrie disponible, durée et validation.
+Comparer médianes et écarts. NOT_MEASURED en l'absence de télémétrie ;
+ne pas assimiler tokens à quota commercial ni revendiquer un gain si
+l'exactitude diminue. Preuves sous artifacts/. Contrôles de fraîcheur
+intégrés à chaque catalogue.
+
+## Réception
+
+1. Baseline et gouvernance.
+2. Graphe + catalogue SQL et gardes.
+3. Owners et cycles CURRENT, mesure finale.
+
+STOP CONDITION : règles préservées et budget réconcilié, découverte bornée
+testée sur graphe réel, catalogue SQL reproductible avec provenance et
+limites, domaines/cycles prioritaires couverts sans duplication, fraîcheur,
+mesures comparables ou absence motivée, commit et publication vérifiés.
+Retirer les candidats temporaires seulement après réception.
+Aucun FULL, déploiement ou db push demandé.
+
+Preuves ChatGPT : arborescence non tronquée, chemins vérifiés, lecture des
+modules cités, 7 assertions JS isolées sur le sélecteur.
+Tests Node/CLI complet, SQL, gardes documentaires, hooks locaux et benchmark :
+NOT_RUN. Les candidats ne sont pas intégrés ; gains de quotas non prouvés.
