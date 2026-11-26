@@ -9,6 +9,12 @@ Sources privées complémentaires : `documentation/development/DOCUMENTATION_POL
 - **Source versionnée** : `maxd4/CleanmyMap`, branche `main` (identifiée par racine Git et remote, jamais par le nom du dossier). Distinguer le `main` publié, le checkout local et toute candidate fournie.
 - **Priorité** : demande explicite de l'utilisateur ; sécurité, données et intégrité ; candidate fournie pour le lot ; checkout et contrats réellement consommés ; `AGENTS.md` racine et fichiers scoped ; documentation canonique ; simplicité, maintenabilité, performance et coûts.
 - **Ambition et cause racine** : viser le meilleur résultat démontrable et sa fiabilité réelle, jamais une exécution minimale. Pour un changement substantiel, vérifier objectif, hypothèses, méthodes du domaine, coûts, risques et critères mesurables ; corriger la cause racine et ses conséquences directes dans **un lot cohérent complet**, proportionnellement au risque. Si l'objectif est irréalisable ou contredit par le checkout, signaler et proposer une alternative étayée sans abaisser l'acceptation.
+- **Ordre de priorité des chantiers** (lorsque plusieurs objectifs ou lots sont en concurrence) :
+  1. **Fiabiliser les preuves et les contrôles de publication** : éviter qu'un agent puisse déclarer à tort un chantier terminé.
+  2. **Simplifier la découverte technique pour les agents** : achever et maintenir les lots documentaires et index engagés.
+  3. **Réduire la dette technique réellement démontrée** : traiter les causes racines, duplications métier et dépendances inutiles.
+  4. **Améliorer l'accessibilité du projet aux humains** : documentation d'entrée, contribution et compréhension de l'architecture.
+  5. **Poursuivre les développements fonctionnels** : sur des fondations dont la fiabilité est démontrée.
 
 ## 2. Catégories de lots et conduite avant écriture
 
