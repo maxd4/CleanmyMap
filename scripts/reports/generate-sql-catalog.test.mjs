@@ -119,3 +119,46 @@ test("computes deterministic migration digest and compares git vs remote", () =>
   assert.equal(cmp.migrations.aligned, false);
   assert.deepEqual(cmp.migrations.onlyInRemote, ["2"]);
 });
+
+test("includes recreated and renamed objects in compareGitAndRemoteCatalogs and rejects unknown report types", () => {
+  const sha = "a".repeat(40);
+  const migrations = [
+    {
+      name: "20261126000005_init.sql",
+      version: "20261126000005",
+      sql: `
+        CREATE TABLE public.old_tbl (id uuid);
+        CREATE FUNCTION public.list_external_action_sync_subscriptions() RETURNS void LANGUAGE sql AS $$ SELECT 1; $$;
+      `,
+    },
+    {
+      name: "20261126000006_recreate.sql",
+      version: "20261126000006",
+      sql: `
+        ALTER TABLE public.old_tbl RENAME TO new_tbl;
+        DROP FUNCTION public.list_external_action_sync_subscriptions();
+        CREATE FUNCTION public.list_external_action_sync_subscriptions() RETURNS void LANGUAGE sql AS $$ SELECT 2; $$;
+      `,
+    },
+  ];
+  const extracted = extractSqlCatalogFromMigrations(migrations);
+  const cmp = compareGitAndRemoteCatalogs(
+    { gitSha: sha, migrations: migrations.map((m) => ({ version: m.version })), objects: extracted },
+    {
+      gitSha: sha,
+      migrations: ["20261126000005", "20261126000006"],
+      relations: [{ identity: "public.new_tbl" }],
+      functions: [{ identity: "public.list_external_action_sync_subscriptions()" }],
+    },
+  );
+  assert.equal(cmp.migrations.aligned, true);
+  assert.deepEqual(cmp.relations.inRemoteNotGitAst, []);
+  assert.deepEqual(cmp.functions.inRemoteNotGitAst, []);
+
+  const unknownReport = checkCatalogFreshness(
+    { schemaVersion: 1, report: "unknown-catalog-type", gitSha: sha, provenance: { verified: true, measuredSource: "git" } },
+    { expectedSha: sha },
+  );
+  assert.equal(unknownReport.fresh, false);
+  assert.ok(unknownReport.errors.some((e) => e.includes("unsupported catalog report type")));
+});

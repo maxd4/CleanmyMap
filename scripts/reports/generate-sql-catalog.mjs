@@ -392,10 +392,19 @@ export function buildGitSqlCatalog({ root = repoRoot, ref = null, source = "git"
   };
 }
 
+const SUPPORTED_CATALOG_REPORTS = new Set([
+  "sql-catalog-git-static-ddl",
+  "sql-catalog-git-replayed",
+  "sql-catalog-remote-observed",
+]);
+
 export function checkCatalogFreshness(catalog, { root = repoRoot, expectedSha = null, view: suppliedView = null } = {}) {
   const headSha = expectedSha ?? resolveGitCommitSha(root, "HEAD");
   const errors = [];
   if (!catalog || catalog.schemaVersion !== 1) errors.push("invalid catalog schemaVersion");
+  if (!SUPPORTED_CATALOG_REPORTS.has(catalog?.report)) {
+    errors.push(`unsupported catalog report type: ${catalog?.report ?? "none"}`);
+  }
   if (catalog?.provenance?.verified !== true || catalog?.provenance?.measuredSource !== "git") {
     errors.push("catalog provenance mismatch or unverified source (worktree catalogs cannot prove a SHA)");
   }
@@ -422,7 +431,7 @@ export function compareGitAndRemoteCatalogs(gitCatalog, remoteCatalog) {
   const onlyInGit = [...gitVersions].filter((v) => !remoteVersions.has(v)).sort();
   const onlyInRemote = [...remoteVersions].filter((v) => !gitVersions.has(v)).sort();
 
-  const isActive = (entry) => entry.active !== false && (entry.droppedIn ?? []).length === 0;
+  const isActive = (entry) => (typeof entry.active === "boolean" ? entry.active : (entry.droppedIn ?? []).length === 0);
   const activeGitRelations = new Set((gitCatalog.objects?.relations ?? []).filter(isActive).map((r) => r.identity));
   const remoteRelations = new Set((remoteCatalog.relations ?? []).map((r) => r.identity));
   const activeGitFuncNames = new Set((gitCatalog.objects?.functions ?? []).filter(isActive).map((f) => (f.baseName ?? f.identity.split("(")[0]).toLowerCase()));

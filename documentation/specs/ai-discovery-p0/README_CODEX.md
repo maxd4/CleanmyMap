@@ -184,3 +184,17 @@ Statut : lots P0 intégrés ; les candidats `candidates/` ont été retirés apr
 - **DOC-03/05** : README Chat, Rapports, Partenaires (annuaire), Signalements, Missions, Empreinte environnementale ; la carte du guide pointe désormais ces owners.
 - **Mesure** (`artifacts/ai-discovery-p0/`) : résultats locaux indicatifs uniquement (non vérifiés indépendamment, pas de télémétrie tokens/durée, A-2 post-optimisation en quota 429, n ≤ 3, sous-agents flash ; B sans gain 29 → 31 appels). Aucun gain de quota n'est revendiqué comme démontré.
 - **Écarts relevés (non corrigés, hors périmètre)** : `/publish` admin vs RPC `submit_association_action_review` (Forbidden si ni créateur ni organisateur) ; `suppress_external_action_sync_action` pose `status='cancelled'` sans métadonnées tombstone (contrainte `actions_cancellation_state_check`) ; transitions d'admission SPOGOMI sans preuve SQL exécutée dans `apps/web/supabase/tests/` ; `registration-lifecycle.ts` non branché au runtime.
+
+## Audit de conservation DOC-01 (référence historique `4074f835`)
+
+| Zone / Obligation | Statut | Owner courant |
+|---|---|---|
+| Portée, priorité, ambition, cause racine, catégories de lots, conduite avant écriture | `PRESERVED` | `AGENTS.md` (sections 1–2) |
+| Garde-fous de construction Codex (`EXTEND_EXISTING`/`CREATE_MODULE`/`RESTRUCTURE_FIRST`, flux, `quality:complexity`) | `REINTEGRATED` | `AGENTS.md` (section 2) + `conventions-modularisation.md` |
+| Invariants 1–7 (`f4f426b`), preuves typées, matrice UI/UX gelée 01–11, dead code/duplication | `PRESERVED` / `MIGRATED` | `AGENTS.md` (section 3) + `TESTING.md` + `scripts/AGENTS.md` |
+| `MAIN-ONLY / MULTI-WRITER COORDONNÉ`, scopes, commits, publication, exceptions | `PRESERVED` / `ALREADY_COVERED` | `AGENTS.md` (section 4) + `scripts/AGENTS.md` |
+| Protection et vérification exacte des fichiers fournis | `REINTEGRATED` | `AGENTS.md` (section 4) + `documentation/AGENTS.md` |
+| Sécurité, Supabase lié uniquement, `artifacts/`, contexte Web, validation proportionnée | `PRESERVED` / `MIGRATED` | `AGENTS.md` (section 5) + `apps/web/supabase/AGENTS.md` + `runbook-supabase-convergence.md` + `TESTING.md` |
+| Préparation/séquencement des prompts, Commit Review (`COMMIT_REVIEW_PROTOCOL.md`) | `REINTEGRATED` | `CHATGPT.md` (section 3) |
+| Pré-intégration proactive, livrables complets, publication candidats, manifestes `README_CODEX.md`, proportionnalité, routage `empreinte-ia` | `REINTEGRATED` | `CHATGPT.md` (section 6) |
+| Contexte projet, exclusions, doctrine de lecture progressive, protocole de session | `PRESERVED` | `documentation/sessions/project_context.md` |
