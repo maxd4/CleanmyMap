@@ -475,3 +475,46 @@ test("scope outputs preserve the workflow's snake_case contract", () => {
   assert.match(output, /python_coverage_relevant=true/);
   assert.doesNotMatch(output, /docsOnly|webCodeRelevant/);
 });
+
+test("governance_relevant triggers web-governance for mixed docs and non-web changes and GitHub config changes", () => {
+  const { baseSha, candidateSha } = currentRepositoryShas();
+
+  const mixedMobile = resolveCiScope({
+    repositoryRoot: REPOSITORY_ROOT,
+    eventName: "push",
+    eventBefore: baseSha,
+    eventSha: candidateSha,
+    changedFiles: ["documentation/README.md", "apps/mobile/src/App.tsx"],
+  });
+  assert.equal(mixedMobile.scope.docsOnly, false);
+  assert.equal(mixedMobile.scope.webCodeRelevant, false);
+  assert.equal(mixedMobile.scope.mobileCodeRelevant, true);
+  assert.equal(mixedMobile.scope.governanceRelevant, true);
+
+  const mixedPython = resolveCiScope({
+    repositoryRoot: REPOSITORY_ROOT,
+    eventName: "push",
+    eventBefore: baseSha,
+    eventSha: candidateSha,
+    changedFiles: ["documentation/README.md", "maintenance/python/src/tool.py"],
+  });
+  assert.equal(mixedPython.scope.docsOnly, false);
+  assert.equal(mixedPython.scope.webCodeRelevant, false);
+  assert.equal(mixedPython.scope.pythonCoverageRelevant, true);
+  assert.equal(mixedPython.scope.governanceRelevant, true);
+
+  const dependabotOnly = resolveCiScope({
+    repositoryRoot: REPOSITORY_ROOT,
+    eventName: "push",
+    eventBefore: baseSha,
+    eventSha: candidateSha,
+    changedFiles: [".github/dependabot.yml"],
+  });
+  assert.equal(dependabotOnly.scope.docsOnly, false);
+  assert.equal(dependabotOnly.scope.webCodeRelevant, false);
+  assert.equal(dependabotOnly.scope.governanceRelevant, true);
+
+  const workflow = fs.readFileSync(join(REPOSITORY_ROOT, ".github", "workflows", "ci.yml"), "utf8");
+  assert.match(workflow, /governance_relevant:\s*\$\{\{\s*steps\.detect-scope\.outputs\.governance_relevant\s*\}\}/);
+  assert.match(workflow, /web-governance:[\s\S]*?governance_relevant == 'true'/);
+});

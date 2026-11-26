@@ -35,6 +35,7 @@ jobs:
       contents: read
     outputs:
       docs_only: ${{ steps.detect-scope.outputs.docs_only }}
+      governance_relevant: ${{ steps.detect-scope.outputs.governance_relevant }}
       web_code_relevant: ${{ steps.detect-scope.outputs.web_code_relevant }}
       mobile_code_relevant: ${{ steps.detect-scope.outputs.mobile_code_relevant }}
       web_only: ${{ steps.detect-scope.outputs.web_only }}
@@ -178,7 +179,7 @@ jobs:
 
   web-governance:
     needs: scope
-    if: needs.scope.outputs.docs_only == 'true' || needs.scope.outputs.web_code_relevant == 'true'
+    if: needs.scope.outputs.docs_only == 'true' || needs.scope.outputs.governance_relevant == 'true' || needs.scope.outputs.web_code_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

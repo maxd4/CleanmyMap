@@ -54,3 +54,10 @@ STOP CONDITION : plus de faux PASS du contrôle GitHub, transport vérifié,
 preuves manquantes explicites, gouvernance CI sélectionnée sur les cas
 réels concernés, tests de régression ciblés et check:github-actions réussis,
 documentation propriétaire alignée et publication vérifiée.
+
+## État de réception
+
+Intégré dans `scripts/ci/audit-github-release.mjs`,
+`scripts/ci/audit-full-release.test.mjs`, `scripts/ci/detect-scope.mjs`,
+`scripts/ci/detect-scope.test.mjs` et `.github/workflows/ci.yml`
+(`governance_relevant`) ; dossier `candidates/` supprimé après intégration.

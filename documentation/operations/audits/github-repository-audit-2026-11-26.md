@@ -58,6 +58,39 @@ Les accès aux détails des règles classiques, permissions Actions,
 environments, secrets, variables, collaborateurs et alertes ont été refusés
 ou non pris en charge. L'absence de visibilité n'est pas un défaut de réglage.
 
+## Suivi technique (2026-11-26)
+
+- **Preuves GitHub & gouvernance CI** : `scripts/ci/audit-github-release.mjs`
+  utilise désormais l'évaluateur strict (`defaultBranch`, `protectionVerified`,
+  `rulesets/{id}`, pagination vérifiée, règle `superseded`, aucun faux PASS) ;
+  `scripts/ci/detect-scope.mjs` et `.github/workflows/ci.yml` exposent
+  `governance_relevant` pour déclencher `web-governance` sur les diffs mixtes
+  docs+Mobile/Python et les changements `.github/**`. Scorecard (`93e772d4`)
+  et zizmor (`4b4be2cf`) sont `success`.
+- **Preuve SQL (`45818202674`)** : échec isolé sur
+  `apps/web/supabase/tests/external-action-sync-engine-state.pgtap.sql` (ligne 97)
+  lors de `public.suppress_external_action_sync_action`, qui passait `status = 'cancelled'`
+  sans renseigner `cancelled_at`, `cancelled_by_clerk_id` et `cancelled_from_status`
+  (`actions_cancellation_state_check`). Correctif forward-only ajouté dans
+  `apps/web/supabase/migrations/20261126000008_fix_external_action_sync_suppress_tombstone.sql`
+  (avec garde `status <> 'cancelled'` pour respecter `trg_prevent_cancelled_action_mutation`).
+- **Alertes CodeQL** : 0 alerte Dependabot/Secret Scanning ouverte ; sur 9 alertes
+  Code Scanning ouvertes avant correctif, les 3 alertes `high` actionnables
+  (`accessibility-support.ts`, `architecture-audit.mjs`, `diagnose-supabase-start.test.mjs`)
+  sont corrigées ; `#1088` est un faux positif déjà annoté (`sha256` non mot de passe) ;
+  les 5 alertes `warning`/`note` (`#1093`, `#1096`, `#1098`, `#1099`, `#1100`) restent à trier.
+- **Qualification des 9 PR Dependabot ouvertes** : `#199` (pip maintenance), `#198`
+  (npm-tooling), `#197` (github-actions), `#196` (npm-web-runtime), `#186`
+  (npm-shared-runtime, vérifier compatibilité React 19 Web+Mobile) et `#169`
+  (`python-dateutil` 4.0.0) relèvent des validations CI usuelles ; `#179`
+  (`react-native` `0.86.3 -> 0.88.1`), `#171` (`@clerk/expo` `4.14.0 -> 4.17.1`)
+  et `#180` (`npm-mobile-native-libraries`) doivent rester alignées sur la matrice
+  Expo SDK `~57.0.27` (`apps/mobile/package.json`).
+- **Ressource `.agents/skills/brag`** : 289 fichiers suivis en Git (~16,5 Mo) et
+  `.venv` local non suivi (~326 Mo), sans consommateur applicatif ni CI (hors
+  `skills-lock.json` et `documentation/security/dependency-advisory-governance.md`).
+  Conservée comme skill média optionnel ; externalisable ultérieurement si besoin.
+
 Sources : [gouvernance GitHub](../github-governance.md),
 [hardening Actions](../../security/github-actions-hardening.md),
 [CI](../../../.github/workflows/ci.yml),

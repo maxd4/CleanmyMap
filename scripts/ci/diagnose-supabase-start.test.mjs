@@ -575,7 +575,7 @@ test("extracts an allowlisted failure step from structured debug errors without 
   assert.equal(evidence.firstFailedStep, "MIGRATIONS");
   assert.equal(category, SUPABASE_START_CATEGORIES.UNCLASSIFIED);
   assert.match(diagnostic, /first_failed_step=MIGRATIONS/);
-  assert.doesNotMatch(diagnostic, new RegExp(`${secretMigrationName}|private-token|Realtime\.Tenants`));
+  assert.doesNotMatch(diagnostic, new RegExp(`${secretMigrationName}|private-token|Realtime\\.Tenants`));
 });
 
 test("captures allowlisted health and lifecycle transitions without private Docker fields", () => {

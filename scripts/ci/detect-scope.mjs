@@ -18,6 +18,7 @@ const PYTHON_DEPENDENCY_MANIFESTS = new Set([
 
 const EMPTY_SCOPE = Object.freeze({
   docsOnly: false,
+  governanceRelevant: false,
   webCodeRelevant: false,
   mobileCodeRelevant: false,
   webOnly: false,
@@ -33,6 +34,7 @@ const EMPTY_SCOPE = Object.freeze({
 
 const FULL_SCOPE = Object.freeze({
   docsOnly: false,
+  governanceRelevant: true,
   webCodeRelevant: true,
   mobileCodeRelevant: true,
   webOnly: false,
@@ -48,6 +50,7 @@ const FULL_SCOPE = Object.freeze({
 
 const OUTPUT_KEYS = Object.freeze({
   docsOnly: "docs_only",
+  governanceRelevant: "governance_relevant",
   webCodeRelevant: "web_code_relevant",
   mobileCodeRelevant: "mobile_code_relevant",
   webOnly: "web_only",
@@ -175,6 +178,7 @@ function getChangedFiles(repositoryRoot, baseSha, candidateSha) {
 function deriveChangedScope(repositoryRoot, changedFiles) {
   const files = [...new Set(changedFiles.map((file) => String(file).replaceAll("\\", "/")))];
   let docsOnly = true;
+  let governanceRelevant = false;
   let webCodeRelevant = false;
   let mobileCodeRelevant = false;
   let webCoverageRelevant = false;
@@ -186,6 +190,16 @@ function deriveChangedScope(repositoryRoot, changedFiles) {
     policyArgs.push("--changed-file", file);
     if (!isDocumentationFile(file)) {
       docsOnly = false;
+    }
+    if (
+      isDocumentationFile(file) ||
+      file.startsWith(".github/") ||
+      file === "AGENTS.md" ||
+      file === "CHATGPT.md" ||
+      file.startsWith(".agents/") ||
+      file.startsWith("scripts/checks/")
+    ) {
+      governanceRelevant = true;
     }
     if (
       (file.startsWith("apps/mobile/") && !/^apps\/mobile\/[^/]+\.md$/.test(file)) ||
@@ -223,6 +237,7 @@ function deriveChangedScope(repositoryRoot, changedFiles) {
   }));
   return {
     docsOnly,
+    governanceRelevant: governanceRelevant || webCodeRelevant,
     webCodeRelevant,
     mobileCodeRelevant,
     webOnly: webCodeRelevant && !mobileCodeRelevant,

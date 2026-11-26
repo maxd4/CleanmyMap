@@ -322,7 +322,10 @@ function aliasImportBases(view, importer, specifier, scope, configCache) {
     if (wildcardIndex < 0 && target !== pattern) continue;
     const matched = target.slice(prefix.length, target.length - suffix.length || undefined);
     for (const replacement of replacements) {
-      const replaced = replacement.replace("*", matched);
+      const starIndex = replacement.indexOf("*");
+      const replaced = starIndex === -1
+        ? replacement
+        : `${replacement.slice(0, starIndex)}${matched}${replacement.slice(starIndex + 1)}`;
       values.push(path.posix.normalize(path.posix.isAbsolute(replaced) ? replaced : path.posix.join(baseUrl, replaced)));
     }
   }

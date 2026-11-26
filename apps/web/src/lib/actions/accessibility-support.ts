@@ -137,9 +137,20 @@ export async function updateActionAccessibilityCheckIn(
     status: ActionAccessibilityCheckInUpdate;
   },
 ): Promise<ActionAccessibilitySupportRequest> {
+  const updatePayload = (() => {
+    switch (params.field) {
+      case "arrival_status":
+        return { arrival_status: params.status };
+      case "contact_status":
+        return { contact_status: params.status };
+      case "departure_status":
+        return { departure_status: params.status };
+    }
+  })();
+
   const result = await supabase
     .from("action_accessibility_support_requests")
-    .update({ [params.field]: params.status })
+    .update(updatePayload)
     .eq("id", params.requestId)
     .eq("action_id", params.actionId)
     .eq("day_tracking_consent", true)
