@@ -413,28 +413,63 @@ function isSuspiciousSupabaseUrl(value) {
   return !PUBLIC_SUPABASE_URLS.has(value.toLowerCase());
 }
 
-function isStructuredEmailAllowlistEntry(entry) {
+function isSyntheticOrPlaceholderEmail(value) {
+  const normalized = value.trim().toLowerCase();
+  const atIndex = normalized.lastIndexOf("@");
+  if (atIndex === -1) {
+    return false;
+  }
+  const domain = normalized.slice(atIndex + 1);
   return (
-    entry.exact !== undefined ||
-    entry.sourceUrl !== undefined ||
-    entry.verifiedAt !== undefined ||
-    entry.justification !== undefined
+    PUBLIC_EMAIL_DOMAINS.has(domain) ||
+    domain === "email.com" ||
+    domain.endsWith(".test") ||
+    domain.endsWith(".invalid") ||
+    domain.endsWith(".local") ||
+    domain.endsWith(".example")
   );
 }
 
+function isVendorPath(relativePath) {
+  return /(^|\/)vendor\//.test(relativePath.replace(/\\/g, "/"));
+}
+
 function isValidStructuredEmailEntry(entry) {
+  if (
+    entry.category !== "Email address" ||
+    typeof entry.path !== "string" ||
+    entry.path.trim().length === 0 ||
+    typeof entry.exact !== "string" ||
+    entry.exact.trim().length === 0 ||
+    typeof entry.justification !== "string" ||
+    entry.justification.trim().length === 0
+  ) {
+    return false;
+  }
+
+  if (entry.kind === "synthetic_fixture") {
+    return isSyntheticOrPlaceholderEmail(entry.exact);
+  }
+
+  if (entry.kind === "upstream_vendor_metadata") {
+    return (
+      isVendorPath(entry.path) &&
+      typeof entry.sourceUrl === "string" &&
+      /^https?:\/\/\S+$/i.test(entry.sourceUrl.trim()) &&
+      typeof entry.verifiedAt === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(entry.verifiedAt.trim())
+    );
+  }
+
+  if (entry.kind !== undefined) {
+    return false;
+  }
+
   return (
-    entry.category === "Email address" &&
-    typeof entry.path === "string" &&
-    entry.path.trim().length > 0 &&
-    typeof entry.exact === "string" &&
-    entry.exact.trim().length > 0 &&
     typeof entry.sourceUrl === "string" &&
     /^https?:\/\/\S+$/i.test(entry.sourceUrl.trim()) &&
     typeof entry.verifiedAt === "string" &&
-    /^\d{4}-\d{2}-\d{2}$/.test(entry.verifiedAt.trim()) &&
-    typeof entry.justification === "string" &&
-    entry.justification.trim().length > 0
+    /^\d{4}-\d{2}-\d{2}$/.test(entry.verifiedAt.trim())
   );
 }
 
@@ -443,26 +478,17 @@ function isAllowed(finding, allowlist) {
     if (typeof entry.path !== "string" || entry.path.trim().length === 0 || entry.path !== finding.file) {
       return false;
     }
-    if (entry.category && entry.category !== finding.category) {
+    if (typeof entry.category !== "string" || entry.category.trim().length === 0 || entry.category !== finding.category) {
       return false;
     }
-    if (entry.category === "Email address" && isStructuredEmailAllowlistEntry(entry)) {
-      if (finding.category !== "Email address" || !isValidStructuredEmailEntry(entry)) {
-        return false;
-      }
-      return finding.raw.trim().toLowerCase() === entry.exact.trim().toLowerCase();
-    }
     if (finding.category === "Email address") {
-      if (typeof entry.contains !== "string" || entry.contains.trim().length === 0) {
+      if (!isValidStructuredEmailEntry(entry)) {
         return false;
       }
       if (entry.line && entry.line !== finding.line) {
         return false;
       }
-      if (finding.raw.trim().toLowerCase() !== entry.contains.trim().toLowerCase()) {
-        return false;
-      }
-      return typeof entry.reason === "string" && entry.reason.trim().length > 0;
+      return finding.raw.trim().toLowerCase() === entry.exact.trim().toLowerCase();
     }
     if (entry.line && entry.line !== finding.line) {
       return false;
@@ -486,8 +512,13 @@ function maskSecret(value) {
   return `${compact.slice(0, 6)}...${compact.slice(-6)}`;
 }
 
-function maskLine(line, value) {
-  return line.replace(value, maskSecret(value)).trim();
+function maskLine(line, values) {
+  const uniqueSorted = [...new Set(values)].sort((a, b) => b.length - a.length);
+  let masked = line;
+  for (const value of uniqueSorted) {
+    masked = masked.replaceAll(value, maskSecret(value));
+  }
+  return masked.trim();
 }
 
 function shannonEntropy(value) {
@@ -514,7 +545,7 @@ function isSuspiciousBase64(value, line) {
 }
 
 function scanLine(file, line, lineNumber) {
-  const findings = [];
+  const rawFindings = [];
 
   for (const pattern of SECRET_PATTERNS) {
     if (pattern.context && !matchesContext(pattern.context, line)) {
@@ -526,18 +557,28 @@ function scanLine(file, line, lineNumber) {
       if (pattern.validator && !pattern.validator(raw, line)) {
         continue;
       }
-      findings.push({
+      rawFindings.push({
         file,
         line: lineNumber,
         category: pattern.category,
         severity: pattern.severity,
         raw,
-        excerpt: maskLine(line, raw),
       });
     }
   }
 
-  return findings;
+  if (rawFindings.length === 0) {
+    return [];
+  }
+
+  const excerpt = maskLine(
+    line,
+    rawFindings.map((finding) => finding.raw),
+  );
+  return rawFindings.map((finding) => ({
+    ...finding,
+    excerpt,
+  }));
 }
 
 function scanFile(relativePath) {

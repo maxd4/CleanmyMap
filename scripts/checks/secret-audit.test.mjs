@@ -372,8 +372,9 @@ test("legacy contains allowlist entries require exact match and reject substring
           {
             path: "apps/web/src/test.ts",
             category: "Email address",
-            contains: fixtureEmail,
-            reason: "Exact email fixture.",
+            kind: "synthetic_fixture",
+            exact: fixtureEmail,
+            justification: "Exact email fixture.",
           },
         ],
       }),
@@ -438,8 +439,9 @@ test("allowlist resolution follows staged index and committed refs even when wor
           {
             path: "candidate.md",
             category: "Email address",
-            contains: fixtureEmail,
-            reason: "Committed fixture.",
+            kind: "synthetic_fixture",
+            exact: fixtureEmail,
+            justification: "Committed fixture.",
           },
         ],
       }),
@@ -480,8 +482,9 @@ test("allowlist resolution follows staged index and committed refs even when wor
           {
             path: "candidate.md",
             category: "Email address",
-            contains: unapprovedEmail,
-            reason: "Worktree-only allowlist must not leak into staged/ref/candidate.",
+            kind: "synthetic_fixture",
+            exact: unapprovedEmail,
+            justification: "Worktree-only allowlist must not leak into staged/ref/candidate.",
           },
         ],
       }),
@@ -633,5 +636,119 @@ test("rejects generic/pathless entries, missing source/justification, same-line 
     }
   } finally {
     rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test("rejects legacy contains-only email entries, category-less entries, and invalid kind usage", () => {
+  const repo = mkdtempSync(join(tmpdir(), "cmm-secret-schema-strict-"));
+  const legacyEmail = ["legacy", "paris.fr"].join("@");
+  const noCatEmail = ["nocat", "paris.fr"].join("@");
+  const realFakeEmail = ["real", "gmail.com"].join("@");
+  const vendorEmail = ["author", "upstream.org"].join("@");
+
+  try {
+    runGit(repo, ["init", "-q"]);
+    runGit(repo, ["config", "user.email", "codex@example.com"]);
+    runGit(repo, ["config", "user.name", "Codex"]);
+    writeFixture(
+      repo,
+      "scripts/checks/secret-audit.allowlist.json",
+      JSON.stringify({
+        allow: [
+          {
+            path: "documentation/legacy.md",
+            category: "Email address",
+            contains: legacyEmail,
+            reason: "Legacy contains-only must be rejected.",
+          },
+          {
+            path: "documentation/nocat.md",
+            exact: noCatEmail,
+            sourceUrl: "https://www.paris.fr/",
+            verifiedAt: "2026-11-26",
+            justification: "Category-less entry must be rejected.",
+          },
+          {
+            path: "documentation/realfake.md",
+            category: "Email address",
+            kind: "synthetic_fixture",
+            exact: realFakeEmail,
+            justification: "Real domain cannot use synthetic_fixture.",
+          },
+          {
+            path: "documentation/not-vendor.md",
+            category: "Email address",
+            kind: "upstream_vendor_metadata",
+            exact: vendorEmail,
+            sourceUrl: "https://github.com/example/repo",
+            verifiedAt: "2026-11-26",
+            justification: "Non-vendor path cannot use upstream_vendor_metadata.",
+          },
+          {
+            path: "apps/mobile/vendor/pkg/index.js",
+            category: "Email address",
+            kind: "upstream_vendor_metadata",
+            exact: vendorEmail,
+            sourceUrl: "https://github.com/example/repo",
+            verifiedAt: "2026-11-26",
+            justification: "Valid vendor metadata.",
+          },
+        ],
+      }),
+    );
+    runGit(repo, ["add", "scripts/checks/secret-audit.allowlist.json"]);
+    runGit(repo, ["commit", "-m", "strict schema fixture"]);
+
+    const run = (args) =>
+      spawnSync(process.execPath, [resolve("scripts/checks/secret-audit.mjs"), ...args], {
+        cwd: repo,
+        encoding: "utf8",
+      });
+
+    for (const [file, content] of [
+      ["documentation/legacy.md", `Contact: ${legacyEmail}\n`],
+      ["documentation/nocat.md", `Contact: ${noCatEmail}\n`],
+      ["documentation/realfake.md", `Contact: ${realFakeEmail}\n`],
+      ["documentation/not-vendor.md", `Contact: ${vendorEmail}\n`],
+    ]) {
+      writeFixture(repo, file, content);
+      runGit(repo, ["add", file]);
+      assert.equal(run(["--staged-only"]).status, 1, `Expected rejection for ${file}`);
+      runGit(repo, ["reset", "-q", "HEAD", file]);
+    }
+
+    writeFixture(repo, "apps/mobile/vendor/pkg/index.js", `// ${vendorEmail}\n`);
+    runGit(repo, ["add", "apps/mobile/vendor/pkg/index.js"]);
+    assert.equal(run(["--staged-only"]).status, 0);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test("masks all sensitive values on the same line without disclosing adjacent emails, JWTs, or API keys", () => {
+  const emailA = ["first.secret", "private-org.fr"].join("@");
+  const emailB = ["second.secret", "private-org.fr"].join("@");
+  const awsKey = ["AKIA", "9988776655443322"].join("");
+  const jwt = ["eyJ1111111111", "eyJ2222222222", "eyJ3333333333"].join(".");
+  const resendKey = ["re_", "99887766554433221100AA"].join("");
+
+  const result = runAudit({
+    candidatePath: "documentation/multi-secrets.md",
+    candidateContent: [
+      `Emails: ${emailA}, ${emailB}`,
+      `Tokens: AWS=${awsKey} JWT=${jwt} RESEND=${resendKey}`,
+      `Mixed: ${emailA} JWT=${jwt} AWS=${awsKey}`,
+    ].join("\n") + "\n",
+    foreignContent: "no secret here\n",
+  });
+
+  assert.equal(result.status, 1);
+  const combinedLogs = `${result.stdout}\n${result.stderr}`;
+  for (const secretValue of [emailA, emailB, awsKey, jwt, resendKey]) {
+    assert.equal(
+      combinedLogs.includes(secretValue),
+      false,
+      `Sensitive value leaked unmasked in logs: ${secretValue}`,
+    );
   }
 });
