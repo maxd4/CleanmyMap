@@ -26,6 +26,7 @@ describe("FundingSection", () => {
     expect(markup).not.toContain("checkout.stripe.com");
     expect(markup).not.toContain("/api/funding/checkout");
     expect(markup).toContain("Aucun montant OnParticipe n’est importé");
+    expect(markup).toContain("Montants cumulés depuis le suivi Stripe");
     expect(markup).toContain("n’est pas un reçu fiscal");
     expect(markup).toContain("n’annonce ni réduction fiscale ni mécénat fiscal");
   });

@@ -6,13 +6,17 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
     name: "local public",
     requiresAuth: false,
     specPatterns: [
-      /^e2e\/(?:smoke-public|reports-public|spogomi-navigation|ui-consistency-geometry|footer-responsive-public|navigation-ribbon-variants|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls|personal-ai-public|annuaire-public-cleanliness|page-layout-fluid)\.(?:spec|test)\.ts$/,
+      /^e2e\/(?:smoke-public|reports-public|spogomi-navigation|ui-consistency-geometry|footer-responsive-public|navigation-ribbon-variants|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls|personal-ai-public|annuaire-public-cleanliness|annuaire-catalog|open-data-science|funding-transparency|page-layout-fluid)\.(?:spec|test)\.ts$/,
     ],
     dependencyPrefixes: [
       "apps/web/src/lib/partners/",
       "apps/web/src/components/sections/rubriques/annuaire/",
       "apps/web/src/components/spogomi/",
       "apps/web/src/app/(app)/spogomi/",
+      "apps/web/src/lib/funding/",
+      "apps/web/src/app/api/funding/",
+      "apps/web/src/components/sections/rubriques/funding-section",
+      "apps/web/src/components/sections/rubriques/use-funding-public-summary",
     ],
   },
   {

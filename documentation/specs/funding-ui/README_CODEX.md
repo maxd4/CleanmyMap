@@ -1,11 +1,14 @@
 # Page de soutien : contribution et transparence
 
-**CANDIDATE**. Sources lues sur `b51460d6ff5ffdb82a6c6783a3a2aaa03744c17b`. Aucun changement runtime actif.
+**VALIDATED / RÉCEPTIONNÉ (lot `08/23 | FUND`)**. Intégré sur `main` (`b5080efbf7f186ecad32a5fdf24b5e7ef113e2c4` et correctif final de réception). Les deux fichiers patches candidats (`01-financement-transparence.patch`, `02-contrats-documentaires.patch`) ont été intégrés et retirés.
 
-## Fichiers
+## Fichiers livrés et sources runtime
 
-- [01-financement-transparence.patch](01-financement-transparence.patch) : refonte de FundingSection, CTA unique de cagnotte, besoins séparés du suivi financier, alternatives non financières, intégrité des agrégats et états de retours historiques Stripe, tests de modèle, de rendu, de route et E2E.
-- [02-contrats-documentaires.patch](02-contrats-documentaires.patch) : adaptation des deux fiches de route existantes ; intégrer seulement avec le runtime validé.
+- `apps/web/src/components/sections/rubriques/funding-section.tsx` : refonte sobre préservant `CmmCard tone="family"`, CTA unique OnParticipe conditionné à `FUNDING_ONPARTICIPE_URL` avec repli `/contact`, séparation des besoins et des agrégats Stripe cumulés (`updatedAt`), alternatives non financières et mentions d'indépendance.
+- `apps/web/src/components/sections/rubriques/use-funding-public-summary.ts` et `apps/web/src/lib/funding/public-aggregate.ts` : parsing strict (`0,00 €` distinct de l'absence, horodatage `updatedAt` depuis `updated_at` sans date inventée) et vérification des retours historiques Stripe.
+- `apps/web/src/app/api/funding/aggregate/route.ts` : sélection de `category, net_amount_cents, currency, updated_at` avec échec fermé `503` sur données manquantes ou invalides.
+- `e2e/funding-transparency.spec.ts`, `playwright.config.ts`, `scripts/ci/e2e-project-catalog.mjs` : test E2E rattaché au projet `"local public"` avec sélection automatique pour le domaine financement.
+- `documentation/pages_site/routes/04-reseau-discussions/funding/funding-README.md` et `funding-presentation-detaillee.md` : contrats route `CURRENT` alignés.
 
 ## Décisions et périmètre
 
@@ -23,6 +26,10 @@ Reprendre le checkout courant en préservant les autres writers, appliquer les p
 
 Une transparence comptable complète nécessite des données vérifiées supplémentaires : recettes encaissées par canal, remboursements, frais, dépenses avec justificatifs anonymisés, période et date d'arrêté, apports en nature et bénévolat séparés. Ne pas introduire un registre fictif, copier les scénarios internes de business-model.md comme budget établi ni créer une nouvelle collecte. Proposer ultérieurement un registre financier public minimisé dérivé des sources comptables réelles et des règles de publication, après preuve du besoin. Le portage juridique et les options HelloAsso/Stripe restent régis par la stratégie canonique.
 
-Contrôle effectué : dix hunks, comptages et anciennes versions exactes comparées aux fichiers GitHub. Nouvelle tentative git ls-remote : échec DNS `Could not resolve host: github.com`. HOOK_NOT_AVAILABLE ; typecheck, lint, tests, navigateur et build NOT_RUN ; couverture NOT_MEASURED. Pas d'intégration runtime ni d'état de production vérifié.
+**Preuves de réception :**
+- Vitest ciblé (`public-aggregate.test.ts`, `funding-section.test.tsx`, `aggregate/route.test.ts`, `config.test.ts`, `french-copy-accents.test.ts`) : PASS.
+- `select-e2e-sql-plan.test.mjs` + sélection automatique domaine financement (`e2e-project-catalog.mjs`) : PASS.
+- `typecheck`, `eslint` ciblé, `check:surfaces`, `check:doc-governance` : PASS.
+- Playwright `e2e/funding-transparency.spec.ts` (avec et sans `FUNDING_ONPARTICIPE_URL`) + requête GET réelle sur `/api/funding/aggregate` : vérifiés sur le candidat corrigé.
 
-**STOP CONDITION :** page sobre et opérationnelle, besoins et recettes distincts, CTA OnParticipe unique conditionné à la configuration, recours au contact si absent, agrégats validés et états de confirmation exacts, aucune donnée privée, aucun nouveau paiement, validations obligatoires et documentation CURRENT alignées, publication sûre.
+**STOP CONDITION :** page sobre et opérationnelle, besoins et recettes distincts, transparence temporelle exacte (`updatedAt` et caractère cumulatif sans période comptable inventée), CTA OnParticipe unique conditionné à la configuration, recours au contact si absent, sélection E2E rattachée, validations obligatoires et documentation `CURRENT` alignées, publication sûre.

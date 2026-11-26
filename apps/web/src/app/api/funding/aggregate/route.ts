@@ -10,7 +10,7 @@ async function getAggregate() {
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
     .from("funding_public_aggregates")
-    .select("category, net_amount_cents, currency")
+    .select("category, net_amount_cents, currency, updated_at")
     .in("category", FUNDING_CATEGORIES);
 
   const payload = error ? null : fundingAggregateFromRows(data);

@@ -19,7 +19,7 @@
 - **Objectif utilisateur principal** : Comprendre les deux familles de besoins soutenues, la stratégie de financement et la séparation entre contributions, transparence et indépendance de la modération.
 - **Action principale attendue** : Consulter les besoins et les agrégats Stripe nets ; si la configuration est présente, accéder à la cagnotte commune hébergée par OnParticipe.
 - **Palette attendue** : surfaces neutres du design system, accents de famille
-- **Scope réel** : présentation publique des deux catégories et des agrégats nets Stripe confirmés, avec garanties d'indépendance. OnParticipe est un lien direct vers une collecte hébergée séparée ; ses montants ne sont ni importés ni fusionnés avec les agrégats Stripe.
+- **Scope réel** : présentation publique des deux catégories et des agrégats nets Stripe confirmés (montants cumulés depuis le suivi Stripe, avec horodatage technique `updatedAt` issu de `funding_public_aggregates.updated_at` lorsqu'il est présent, sans période comptable découpée ni date d'arrêté), avec garanties d'indépendance. OnParticipe est un lien direct vers une collecte hébergée séparée ; ses montants ne sont ni importés ni fusionnés avec les agrégats Stripe.
 - **Terminée** : oui
 - **Captures attendues** : desktop, mobile
 - **État du backend Stripe** : `IMPLEMENTED / NOT CURRENTLY EXPOSED` — Checkout, les routes, le webhook, les tables/RPC, les agrégats et les tests backend sont conservés ; la page ne l'appelle pas pour initier un paiement. Le statut et les limites des fournisseurs sont détaillés dans [la stratégie de financement](./funding-presentation-detaillee.md).

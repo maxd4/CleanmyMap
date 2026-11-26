@@ -19,8 +19,8 @@ describe("GET /api/funding/aggregate", () => {
   it("returns only public category totals and no payment identity", async () => {
     queryMock.in.mockResolvedValueOnce({
       data: [
-        { category: "equipment", net_amount_cents: 12500, currency: "eur" },
-        { category: "development", net_amount_cents: 0, currency: "eur" },
+        { category: "equipment", net_amount_cents: 12500, currency: "eur", updated_at: "2026-11-25T09:00:00Z" },
+        { category: "development", net_amount_cents: 0, currency: "eur", updated_at: "2026-11-26T14:15:00Z" },
       ],
       error: null,
     });
@@ -31,6 +31,7 @@ describe("GET /api/funding/aggregate", () => {
     expect(payload).toEqual({
       currency: "eur",
       goal: null,
+      updatedAt: "2026-11-26T14:15:00.000Z",
       categories: {
         equipment: { netAmountCents: 12500, currency: "eur" },
         development: { netAmountCents: 0, currency: "eur" },

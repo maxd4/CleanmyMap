@@ -43,6 +43,9 @@ export function FundingSection({ onParticipeUrl, headingLevel = "h1" }: FundingS
   const summary = useFundingPublicSummary(status, searchParams.get("session_id"));
   const aggregate = summary.aggregate;
   const total = aggregate ? FUNDING_CATEGORIES.reduce((sum, category) => sum + aggregate.categories[category].netAmountCents, 0) : null;
+  const formattedUpdatedAt = aggregate?.updatedAt
+    ? new Intl.DateTimeFormat(fr ? "fr-FR" : "en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(aggregate.updatedAt)) + " UTC"
+    : null;
 
   return (
     <SectionShell id="funding" title={fr ? "Soutenir CleanMyMap" : "Support CleanMyMap"}
@@ -94,7 +97,8 @@ export function FundingSection({ onParticipeUrl, headingLevel = "h1" }: FundingS
             <div className="space-y-1 rounded-lg border border-[var(--cmm-surface-border)] p-3">
               <h3 className="text-sm font-semibold cmm-text-primary">{fr ? "Total net confirmé par Stripe" : "Net total confirmed by Stripe"}</h3>
               {total !== null ? <p className="text-2xl font-bold tabular-nums cmm-text-primary" data-funding-stripe-total>{formatFundingAmount(total, locale)}</p> : <p role="status" className="text-sm cmm-text-primary">{summary.aggregateState === "loading" ? (fr ? "Chargement…" : "Loading…") : (fr ? "Indisponible" : "Unavailable")}</p>}
-              <p className="text-sm cmm-text-primary">{fr ? "Paiements confirmés moins remboursements enregistrés. Hors frais de paiement et dépenses : ce montant n’est pas un solde disponible." : "Confirmed payments less recorded refunds. Payment fees and expenses are not deducted: this is not an available balance."}</p>
+              <p className="text-sm cmm-text-primary">{fr ? "Montants cumulés depuis le suivi Stripe (pas de période comptable distincte ni de date d’arrêté). Paiements confirmés moins remboursements enregistrés, hors frais de paiement et dépenses : ce montant n’est pas un solde disponible." : "Cumulative totals since Stripe tracking began (no separate accounting period or closing date). Confirmed payments less recorded refunds, excluding payment fees and expenses: this is not an available balance."}</p>
+              {aggregate ? <p className="text-sm cmm-text-primary" data-funding-updated-at>{formattedUpdatedAt ? (fr ? `Dernière mise à jour des totaux Stripe : ${formattedUpdatedAt}` : `Stripe totals last updated: ${formattedUpdatedAt}`) : (fr ? "Date de dernière mise à jour des totaux Stripe non renseignée." : "Stripe totals last update timestamp not provided.")}</p> : null}
               {summary.aggregateState === "error" ? <CmmButton type="button" tone="secondary" size="sm" onClick={summary.retry}>{fr ? "Réessayer le chargement" : "Retry loading"}</CmmButton> : null}
             </div>
             <div className="space-y-1 rounded-lg border border-[var(--cmm-surface-border)] p-3">
