@@ -63,6 +63,24 @@ export const adminCommunityAuthorizationContract = {
       evidence: ["requireAdminAccess"],
     },
   },
+  "admin/external-sync": {
+    GET: {
+      expected: "Admin-like role for external action sync state inspection",
+      dimensions: ["admin/creator role"],
+      actual: "requireAdminAccess",
+      evidence: ["requireAdminAccess"],
+    },
+    POST: {
+      expected: "Admin-like role with rate limit and operation audit for external sync commands",
+      dimensions: ["admin/creator role", "audit"],
+      actual: "requireAdminAccess + enforceServerRateLimitForAuthenticatedUser + appendAdminOperationAudit",
+      evidence: [
+        "requireAdminAccess",
+        "enforceServerRateLimitForAuthenticatedUser",
+        "appendAdminOperationAudit",
+      ],
+    },
+  },
   "admin/free-plan-services": {
     GET: {
       expected: "Admin-like role",

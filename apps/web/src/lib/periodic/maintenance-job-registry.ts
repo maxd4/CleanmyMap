@@ -35,11 +35,13 @@ import {
   normalizeActionCollectionContextReferenceSnapshotPayload,
 } from "@/lib/actions/action-collection-reference-averages";
 import { runActionCollectionContextReferenceJob } from "./action-collection-context-reference-job";
+import { runExternalActionSyncMaintenanceJob } from "./external-action-sync-job";
 
 export const MAINTENANCE_JOB_IDS = [
   "territorial-legends",
   "action-reminders",
   "action-retention",
+  "external-action-sync",
   "impact-terrain",
   "platform-usage",
   "map-pollution-references",
@@ -205,6 +207,15 @@ export const MAINTENANCE_JOB_REGISTRY: readonly MaintenanceJobDefinition[] = [
     // candidate list before each physical deletion. Retry is intentional.
     isProduced: async () => false,
     run: async (now) => runActionRetentionJob({ now }),
+  },
+  {
+    id: "external-action-sync",
+    cadence: "daily",
+    getPeriod: getUtcDayStart,
+    // Cron only prepares unpublished pre-actions (never auto-publishes);
+    // each daily run checks active mandates and records per-source checkpoints.
+    isProduced: async () => false,
+    run: async (now) => runExternalActionSyncMaintenanceJob({ now }),
   },
   {
     id: "impact-terrain",

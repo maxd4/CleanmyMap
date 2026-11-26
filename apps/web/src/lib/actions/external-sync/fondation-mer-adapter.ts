@@ -1,5 +1,6 @@
 import { normalizeExternalActionEvent } from "./normalization";
-import type { ExternalActionConnectorResult } from "./types";
+import { assertSafeExternalSyncUrl } from "./url-guard";
+import type { ExternalActionConnectorResult, ExternalActionEvent } from "./types";
 
 export const FONDATION_MER_SOURCE_ID = "fondation_de_la_mer" as const;
 
@@ -24,8 +25,11 @@ export type FondationMerEventRecord = {
   state?: unknown;
 };
 
-export function normalizeFondationMerEvent(record: FondationMerEventRecord, observedAt: string) {
-  return normalizeExternalActionEvent({
+export function normalizeFondationMerEvent(
+  record: FondationMerEventRecord,
+  observedAt: string,
+): ExternalActionEvent | null {
+  const normalized = normalizeExternalActionEvent({
     source: FONDATION_MER_SOURCE_ID,
     externalId: record.reference,
     externalUrl: record.canonical_url,
@@ -47,6 +51,39 @@ export function normalizeFondationMerEvent(record: FondationMerEventRecord, obse
     observedAt,
     externalStatus: record.state,
   });
+  if (!normalized) return null;
+  try {
+    assertSafeExternalSyncUrl(normalized.externalUrl);
+    if (normalized.registrationUrl) {
+      assertSafeExternalSyncUrl(normalized.registrationUrl);
+    }
+  } catch {
+    return null;
+  }
+  return normalized;
+}
+
+/**
+ * Synthetic fixture reader for Lot A end-to-end verification without any live network call.
+ */
+export function readSyntheticFondationMerEvents(
+  records: readonly FondationMerEventRecord[],
+  observedAt: string,
+  options: { complete?: boolean } = {},
+): ExternalActionConnectorResult {
+  const events: ExternalActionEvent[] = [];
+  for (const record of records.slice(0, 100)) {
+    const normalized = normalizeFondationMerEvent(record, observedAt);
+    if (normalized) {
+      events.push(normalized);
+    }
+  }
+  return {
+    status: "available",
+    source: FONDATION_MER_SOURCE_ID,
+    events,
+    complete: options.complete ?? true,
+  };
 }
 
 /** No production reader is enabled until the operator authorizes an official source. */

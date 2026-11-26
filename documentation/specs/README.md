@@ -7,7 +7,7 @@
 | Ordre | Lot | Travail | Dépendance |
 |---|---|---|---|
 | 01 | SEC | Secret Audit, faux positifs, garde-fous | prioritaire |
-| 02 | SYNC-A | Moteur de synchronisation externe, commandes et cron | socle SQL publié ; preuves à compléter |
+| 02 | SYNC-A | Moteur de synchronisation externe, commandes et cron | lot A livré ; preuve DB éphémère à compléter |
 | 03 | DS-BASE | I1/I2 déjà intégrés ; vérifier socle et delta I3 | avant refontes |
 | 04 | ANN-1 | Annuaire 06, 07, 08, 09, 10 | 03 |
 | 05 | ANN-2 | Annuaire 11, 12, 13, 14 | 04 |
@@ -108,7 +108,7 @@ L'arbre de référence contient 18 dossiers et 224 fichiers en incluant ce READM
 | [Transfert des explications du formulaire](./methodologie-formulaire-actions-transfert.md) | 0 | 1 | 19 METHOD : PENDING |
 
 - SEC : PENDING, échec Hash digest démontré sur la CI 45719132948 ; requalifier sur le candidat courant.
-- SYNC-A : SQL correctif et tests publiés (7a194401 et suites), moteur/admin/cron et preuve à clôturer ; [plan propriétaire](../plans/synchronisation-actions-externes.md). Lots B/C conditionnés à autorisation réelle.
+- SYNC-A : Lot A fonctionnel livré (moteur `external-sync`, migration `20261126000005`, cron `external-action-sync`, route admin `/api/admin/external-sync` et tests comportementaux/AuthZ) avec connecteurs réels désactivés ; [plan propriétaire](../plans/synchronisation-actions-externes.md). Preuve SQL éphémère locale `DB_SEMANTICS_NOT_EXECUTED` (reprise dédiée sans bloquer les lots Web indépendants). Lots B/C conditionnés à autorisation réelle.
 - REPORTS-HUB : PENDING ; les quatre onglets et deux sections de fichiers constituent la décision retenue du programme, pas un état CURRENT.
 - Empreinte IA : consulter les [arbitrages](./empreinte-ia/SPECIFICATIONS_PLAN/24_ARBITRAGES_PREUVES_ET_PRIORITES.md) et les passations, préserver les preuves et conditions.
 - Dark : [exigences](./suppression-charte-dark/requirements.md), [conception](./suppression-charte-dark/design.md), [tâches](./suppression-charte-dark/tasks.md), HISTORY/PLAN non autorisé. Relire le [contrat des modes](../design-system/DISPLAY_MODES_CANONICAL.md) avant toute nouvelle décision ; ne pas réactiver un ancien chantier.

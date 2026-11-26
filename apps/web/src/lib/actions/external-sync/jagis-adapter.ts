@@ -1,5 +1,6 @@
 import { normalizeExternalActionEvent } from "./normalization";
-import type { ExternalActionConnectorResult } from "./types";
+import { assertSafeExternalSyncUrl } from "./url-guard";
+import type { ExternalActionConnectorResult, ExternalActionEvent } from "./types";
 
 export const JAGIS_SOURCE_ID = "jagis_pour_la_nature" as const;
 
@@ -24,8 +25,8 @@ export type JagisEventRecord = {
   status?: unknown;
 };
 
-export function normalizeJagisEvent(record: JagisEventRecord, observedAt: string) {
-  return normalizeExternalActionEvent({
+export function normalizeJagisEvent(record: JagisEventRecord, observedAt: string): ExternalActionEvent | null {
+  const normalized = normalizeExternalActionEvent({
     source: JAGIS_SOURCE_ID,
     externalId: record.id,
     externalUrl: record.url,
@@ -47,6 +48,39 @@ export function normalizeJagisEvent(record: JagisEventRecord, observedAt: string
     observedAt,
     externalStatus: record.status,
   });
+  if (!normalized) return null;
+  try {
+    assertSafeExternalSyncUrl(normalized.externalUrl);
+    if (normalized.registrationUrl) {
+      assertSafeExternalSyncUrl(normalized.registrationUrl);
+    }
+  } catch {
+    return null;
+  }
+  return normalized;
+}
+
+/**
+ * Synthetic fixture reader for Lot A end-to-end verification without any live network call.
+ */
+export function readSyntheticJagisEvents(
+  records: readonly JagisEventRecord[],
+  observedAt: string,
+  options: { complete?: boolean } = {},
+): ExternalActionConnectorResult {
+  const events: ExternalActionEvent[] = [];
+  for (const record of records.slice(0, 100)) {
+    const normalized = normalizeJagisEvent(record, observedAt);
+    if (normalized) {
+      events.push(normalized);
+    }
+  }
+  return {
+    status: "available",
+    source: JAGIS_SOURCE_ID,
+    events,
+    complete: options.complete ?? true,
+  };
 }
 
 /** No production reader is enabled until the operator authorizes an official source. */

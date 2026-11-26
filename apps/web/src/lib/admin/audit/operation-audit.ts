@@ -63,7 +63,8 @@ export type AdminOperationAuditEntry = {
     | "role_management"
     | "admin_operation"
     | "spogomi_team_name_rename"
-    | "brigade_verte_qualification";
+    | "brigade_verte_qualification"
+    | "external_action_sync";
   outcome: "success" | "error";
   targetId?: string;
   targetUserId?: string;
@@ -97,6 +98,7 @@ const AUDIT_OPERATION_TYPES = [
   "admin_operation",
   "spogomi_team_name_rename",
   "brigade_verte_qualification",
+  "external_action_sync",
 ] as const;
 
 function isAuditOperationType(
