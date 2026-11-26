@@ -112,8 +112,7 @@ begin
     (v_team_wc_2, v_event_id, v_world_cup_id, 2, 'WC Beta', 'draft'),
     (v_team_casual_1, v_event_id, v_casual_id, 1, 'Casual One', 'draft');
 
-  -- Qualify and habilitate referees BEFORE registering v_participant_clerk and v_casual_participant_clerk as competitors,
-  -- so spogomi_assign_team_referee's SQLSTATE 23514 participant exclusion is exercised directly.
+  -- Qualify and habilitate referees for World Cup division
   v_step := 'QUALIFY_WC';
   v_private_def := public.spogomi_referee_quiz_definition_private(v_event_id, v_world_cup_id);
   v_answers := '{}'::jsonb;
@@ -121,7 +120,7 @@ begin
     v_answers := v_answers || jsonb_build_object(v_question->>'id', v_question->>'correctOptionId');
   end loop;
 
-  foreach v_ref_unhab in array array[v_ref_1, v_ref_2, v_ref_3, v_participant_clerk, v_casual_participant_clerk] loop
+  foreach v_ref_unhab in array array[v_ref_1, v_ref_2, v_ref_3] loop
     v_res := public.spogomi_create_referee_application(v_event_id, v_world_cup_id, v_ref_unhab);
     v_app_id := (v_res->>'applicationId')::uuid;
     v_res := public.spogomi_submit_referee_quiz(v_event_id, v_world_cup_id, v_ref_unhab, v_private_def->>'quizVersion', v_answers);
