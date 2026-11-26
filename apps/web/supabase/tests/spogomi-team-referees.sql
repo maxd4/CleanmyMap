@@ -352,9 +352,18 @@ begin
 
   begin
     perform public.spogomi_upsert_planned_route(
-      v_event_id, v_world_cup_id, 0, 'manual_reference', 'route.geojson', 2, 1.5, 'loop',
+      v_event_id,
+      v_world_cup_id,
+      (select composition_revision from public.spogomi_events where id = v_event_id),
+      'manual_reference',
+      'route.geojson',
+      2,
+      1.5,
+      'loop',
       '{"type":"LineString","coordinates":[[2.35,48.85],[2.36,48.86]]}'::jsonb,
-      'test report_photo rejection', v_report_media_id, v_org_clerk
+      'test report_photo rejection',
+      v_report_media_id,
+      v_org_clerk
     );
     raise exception 'spogomi_upsert_planned_route accepted a report_photo media';
   exception when sqlstate '23514' then null;
