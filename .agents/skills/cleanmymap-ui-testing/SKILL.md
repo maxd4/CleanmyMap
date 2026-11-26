@@ -76,11 +76,20 @@ PERSISTENCE: NONE | REMOTE_READONLY | CI_EPHEMERAL
 - Pour une cible UI fournie, comparer réellement le rendu aux largeurs pertinentes ; ne pas substituer une interprétation libre à la référence visuelle.
 - Une capture est une preuve visuelle, pas une preuve d'AuthZ ou de persistence.
 
-Le harness Clerk dérive son cycle de vie de `E2E_CLERK_USER_EMAIL` : absence =
-`TEMPORARY` supprimable seulement après vérification du marqueur distant et de
-l'adresse de test ; présence = `PERSISTENT_DEVELOPMENT` réutilisé et jamais
-supprimé automatiquement. Aucun rôle privilégié n'est ajouté implicitement.
-Les sessions humaines restent un repli manuel sans secret copié ou journalisé.
+Le harness Clerk (`e2e/global.setup.ts`) charge `apps/web/.env.local`, utilise
+`clerkSetup` puis `clerk.signIn({ page, emailAddress })` sans mot de passe
+(`E2E_CLERK_USER_PASSWORD` n'est jamais requis) et dérive son cycle de vie de
+`E2E_CLERK_USER_EMAIL` : absence = `TEMPORARY` supprimable seulement après
+vérification du marqueur distant et de l'adresse de test ; présence =
+`PERSISTENT_DEVELOPMENT` réutilisé et jamais supprimé automatiquement. Aucun
+rôle privilégié n'est ajouté implicitement. Les sessions humaines restent un
+repli manuel sans secret copié ou journalisé.
+
+Il est interdit de déclarer `AUTH_SESSION / BLOCKED` sur l'absence de mot de
+passe, sur l'absence de `E2E_CLERK_USER_EMAIL` pour un scénario compatible
+`TEMPORARY`, ou sur la simple inspection des variables du terminal avant
+chargement effectif de `apps/web/.env.local` et exécution réelle du harness
+(`npx playwright test --project=...`, jamais `--list` seul).
 
 ## Validation finale
 

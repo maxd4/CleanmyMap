@@ -11,10 +11,17 @@ la source de vérité des procédures, commandes et contrats E2E.
   prévue ; les campagnes persistantes utilisent uniquement cette lane.
 - Ne jamais publier de `storageState`, cookies, tokens, traces/HAR ou vidéos
   contenant des données sensibles.
-- Le global setup déduit `TEMPORARY` de l'absence de `E2E_CLERK_USER_EMAIL` et
+- Le global setup (`e2e/global.setup.ts`) charge `apps/web/.env.local`,
+  exécute `clerkSetup({ dotenv: false })` puis `clerk.signIn({ page, emailAddress })`
+  sans mot de passe (`E2E_CLERK_USER_PASSWORD` n'est jamais requis). Il déduit
+  `TEMPORARY` de l'absence de `E2E_CLERK_USER_EMAIL` et
   `PERSISTENT_DEVELOPMENT` de sa présence. Seul un utilisateur temporaire dont
   le marqueur distant et l'adresse de test concordent peut être supprimé ; le
   compte persistent ne l'est jamais automatiquement.
+- Interdiction de déclarer `AUTH_SESSION / BLOCKED` sur l'absence de mot de
+  passe, sur l'absence de `E2E_CLERK_USER_EMAIL` pour un scénario compatible
+  `TEMPORARY`, ou sur la simple inspection du terminal avant chargement effectif
+  de `apps/web/.env.local` et exécution réelle du harness (`npx playwright test --project=...`, jamais `--list` seul).
 - Les scénarios admin utilisent uniquement un compte déjà autorisé ou une
   session humaine préautorisée ; le setup n'élève aucun compte.
 - Respecter les projets Playwright et les fixtures existants ; ne pas créer une
