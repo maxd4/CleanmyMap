@@ -346,18 +346,26 @@ commit;
   assert.match(takeRes.stdout, /TAKEOVER:reserved/);
 }
 
+let currentPhase = "INIT";
+
 async function main() {
   try {
+    currentPhase = "SETUP";
     await setup();
+    currentPhase = "RESERVE_COLLISION";
     await testConcurrentReservationCollision();
+    currentPhase = "FOREIGN_OWNER";
     await testConcurrentForeignOwnerCollision();
+    currentPhase = "LOCK_ORDER";
     await testLockOrderReserveVsCompleteAndSuppress();
+    currentPhase = "SUPPRESS_COLLISION";
     await testConcurrentSuppressionOperationIdCollisionAndIdempotency();
+    currentPhase = "EXPIRED_TAKEOVER";
     await testConcurrentExpiredTokenVsTakeover();
     console.log("EXECUTED_DB_CONTRACT: External action sync two-session reservation, lock-order, expiration and suppression idempotency contract passed.");
   } catch (error) {
-    const safeMsg = String(error?.message ?? error).replaceAll("ERROR:", "PG_ERR:").replace(/\r?\n/g, " | ").slice(0, 400);
-    console.log(`not ok 1 - SYNC_CONC_DIAGNOSTIC: ${safeMsg}`);
+    const isAssertion = error?.code === "ERR_ASSERTION" || error?.name === "AssertionError";
+    console.log(`TERRITORIAL_PHASE=${currentPhase}_${isAssertion ? "ASSERT" : "SQL"}`);
     process.exitCode = 1;
   } finally {
     await run(cleanupSql, "cleanup").catch(() => {});
