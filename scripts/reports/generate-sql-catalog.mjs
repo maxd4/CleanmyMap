@@ -7,37 +7,59 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { gitExecutable } from "../ci/git-executable.mjs";
+import { createRepositoryView, parseRepositoryRef } from "../checks/repository-view.mjs";
 import { splitSqlStatements } from "../ci/supabase-migration-sql.mjs";
 
 const repoRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const migrationsDirRelative = "apps/web/supabase/migrations";
-const migrationPattern = /^(\d{14})_(.+)\.sql$/;
+const migrationFilePattern = /^apps\/web\/supabase\/migrations\/(\d{14})_(.+)\.sql$/;
+const consumerRoots = ["apps/web/src", "apps/mobile"];
+const consumerExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts"]);
 
 function sha256(content) {
   return createHash("sha256").update(content).digest("hex");
 }
 
-function readGitHead(root = repoRoot) {
-  return execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+function resolveGitCommitSha(root, ref = "HEAD") {
+  return execFileSync(gitExecutable(), ["rev-parse", "--verify", `${ref}^{commit}`], {
+    cwd: root,
+    encoding: "utf8",
+  }).trim();
 }
 
-function listMigrations(root = repoRoot) {
-  const dir = path.join(root, migrationsDirRelative);
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir)
-    .filter((name) => migrationPattern.test(name))
+function listMigrationsFromView(view) {
+  return view
+    .listFiles(migrationsDirRelative)
+    .filter((relPath) => migrationFilePattern.test(relPath))
     .sort((a, b) => a.localeCompare(b, "en"))
-    .map((name) => {
-      const relPath = `${migrationsDirRelative}/${name}`;
-      const sql = fs.readFileSync(path.join(dir, name), "utf8");
-      const match = migrationPattern.exec(name);
+    .map((relPath) => {
+      const name = path.posix.basename(relPath);
+      const match = migrationFilePattern.exec(relPath);
+      const sql = view.readText(relPath);
       return { name, version: match[1], path: relPath, sql, hash: sha256(sql) };
     });
 }
 
+function listConsumerFilesFromView(view) {
+  const files = [];
+  for (const prefix of consumerRoots) {
+    for (const relPath of view.listFiles(prefix)) {
+      if (consumerExtensions.has(path.posix.extname(relPath))) {
+        files.push(relPath);
+      }
+    }
+  }
+  return files.sort((a, b) => a.localeCompare(b, "en"));
+}
+
 export function computeMigrationsDigest(migrations) {
-  const manifest = migrations.map((m) => `${m.name}:${m.hash}`).join("\n");
-  return sha256(manifest);
+  return sha256(migrations.map((m) => `${m.name}:${m.hash}`).join("\n"));
+}
+
+export function computeConsumersDigest(view) {
+  const files = listConsumerFilesFromView(view);
+  const manifest = files.map((relPath) => `${relPath}:${sha256(view.readText(relPath))}`).join("\n");
+  return { count: files.length, hash: sha256(manifest) };
 }
 
 function normalizeObjectName(rawName, defaultSchema = "public") {
@@ -48,29 +70,6 @@ function normalizeObjectName(rawName, defaultSchema = "public") {
     return `${schema.toLowerCase()}.${rest.join(".").toLowerCase()}`;
   }
   return `${defaultSchema}.${cleaned.toLowerCase()}`;
-}
-
-function ensureEntry(map, key, base) {
-  if (!map.has(key)) {
-    map.set(key, {
-      ...base,
-      definedIn: null,
-      modifiedIn: [],
-      droppedIn: [],
-      renamedFrom: [],
-      dynamicSqlMentions: [],
-      textualOccurrences: [],
-    });
-  }
-  return map.get(key);
-}
-
-function recordDdlEvent(entry, migrationName, isCreate) {
-  if (isCreate && !entry.definedIn) {
-    entry.definedIn = migrationName;
-  } else if (entry.definedIn !== migrationName && !entry.modifiedIn.includes(migrationName)) {
-    entry.modifiedIn.push(migrationName);
-  }
 }
 
 function stripLeadingSqlComments(stmt) {
@@ -85,6 +84,116 @@ function stripLeadingSqlComments(stmt) {
     }
   }
   return s;
+}
+
+function splitTopLevelArgs(argList) {
+  const args = [];
+  let current = "";
+  let depth = 0;
+  for (const ch of argList) {
+    if (ch === "(") depth += 1;
+    else if (ch === ")") depth = Math.max(0, depth - 1);
+    if (ch === "," && depth === 0) {
+      if (current.trim()) args.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  if (current.trim()) args.push(current.trim());
+  return args;
+}
+
+function normalizeSingleArgType(rawArg) {
+  let s = rawArg.replace(/\s+/g, " ").trim();
+  s = s.replace(/\s+(?:default|=)\s+[\s\S]*$/i, "").trim();
+  s = s.replace(/^(?:in|out|inout|variadic)\s+/i, "").trim();
+  const tokens = s.split(" ");
+  if (tokens.length >= 2) {
+    const first = tokens[0].toLowerCase();
+    const knownMultiWordStarts = new Set(["double", "character", "time", "timestamp", "bit"]);
+    if (!knownMultiWordStarts.has(first)) {
+      s = tokens.slice(1).join(" ");
+    }
+  }
+  return s.toLowerCase();
+}
+
+export function normalizeFunctionSignature(rawName, rawArgs = "") {
+  const baseName = normalizeObjectName(rawName);
+  if (!baseName) return null;
+  const trimmedArgs = String(rawArgs ?? "").trim();
+  if (!trimmedArgs) return { identity: `${baseName}()`, baseName };
+  const normalizedArgs = splitTopLevelArgs(trimmedArgs).map(normalizeSingleArgType).join(", ");
+  return { identity: `${baseName}(${normalizedArgs})`, baseName };
+}
+
+function extractBalancedParens(text, openIdx) {
+  let depth = 0;
+  for (let i = openIdx; i < text.length; i += 1) {
+    if (text[i] === "(") depth += 1;
+    else if (text[i] === ")") {
+      depth -= 1;
+      if (depth === 0) return text.slice(openIdx + 1, i);
+    }
+  }
+  return null;
+}
+
+function ensureEntry(map, key, base) {
+  if (!map.has(key)) {
+    map.set(key, {
+      ...base,
+      active: true,
+      definedIn: null,
+      recreatedIn: [],
+      modifiedIn: [],
+      droppedIn: [],
+      renamedFrom: [],
+      renamedTo: null,
+      dynamicSqlMentions: [],
+      textualOccurrences: [],
+    });
+  }
+  return map.get(key);
+}
+
+function recordCreate(entry, migrationName) {
+  if (!entry.definedIn) {
+    entry.definedIn = migrationName;
+    entry.active = true;
+  } else if (!entry.active) {
+    entry.active = true;
+    if (!entry.recreatedIn.includes(migrationName)) entry.recreatedIn.push(migrationName);
+  } else if (entry.definedIn !== migrationName && !entry.modifiedIn.includes(migrationName)) {
+    entry.modifiedIn.push(migrationName);
+  }
+}
+
+function recordAlter(entry, migrationName) {
+  if (entry.definedIn !== migrationName && !entry.modifiedIn.includes(migrationName)) {
+    entry.modifiedIn.push(migrationName);
+  }
+}
+
+function recordDrop(entry, migrationName) {
+  entry.active = false;
+  if (!entry.droppedIn.includes(migrationName)) entry.droppedIn.push(migrationName);
+}
+
+function recordRename(map, oldId, newId, migrationName, fallbackBase) {
+  const prev = map.get(oldId);
+  const next = ensureEntry(map, newId, { ...(prev ?? fallbackBase), identity: newId });
+  next.active = true;
+  if (!next.definedIn) next.definedIn = prev?.definedIn ?? migrationName;
+  if (prev) {
+    next.modifiedIn = [...new Set([...prev.modifiedIn, migrationName])];
+    next.renamedFrom = [...prev.renamedFrom, { from: oldId, migration: migrationName }];
+    prev.active = false;
+    prev.renamedTo = newId;
+  } else {
+    next.renamedFrom.push({ from: oldId, migration: migrationName });
+  }
 }
 
 export function extractSqlCatalogFromMigrations(migrations) {
@@ -109,63 +218,84 @@ export function extractSqlCatalogFromMigrations(migrations) {
           : match[1].toLowerCase().startsWith("view") ? "v"
           : match[1].toLowerCase().startsWith("foreign") ? "f" : "r";
         const id = normalizeObjectName(match[2]);
-        if (id) recordDdlEvent(ensureEntry(relations, id, { identity: id, kind }), migration.name, true);
+        if (id) recordCreate(ensureEntry(relations, id, { identity: id, kind }), migration.name);
       } else if ((match = /^\s*create\s+sequence\s+(?:if\s+not\s+exists\s+)?([a-z0-9_."]+)/i.exec(trimmed))) {
         const id = normalizeObjectName(match[1]);
         if (id) {
-          recordDdlEvent(ensureEntry(sequences, id, { identity: id }), migration.name, true);
-          recordDdlEvent(ensureEntry(relations, id, { identity: id, kind: "S" }), migration.name, true);
+          recordCreate(ensureEntry(sequences, id, { identity: id }), migration.name);
+          recordCreate(ensureEntry(relations, id, { identity: id, kind: "S" }), migration.name);
         }
-      } else if ((match = /^\s*create\s+type\s+([a-z0-9_."]+)/i.exec(trimmed))) {
+      } else if ((match = /^\s*create\s+(?:type|domain)\s+([a-z0-9_."]+)/i.exec(trimmed))) {
         const id = normalizeObjectName(match[1]);
-        if (id) recordDdlEvent(ensureEntry(types, id, { identity: id }), migration.name, true);
-      } else if ((match = /^\s*create\s+domain\s+([a-z0-9_."]+)/i.exec(trimmed))) {
-        const id = normalizeObjectName(match[1]);
-        if (id) recordDdlEvent(ensureEntry(types, id, { identity: id }), migration.name, true);
+        if (id) recordCreate(ensureEntry(types, id, { identity: id }), migration.name);
       } else if ((match = /^\s*create\s+(?:or\s+replace\s+)?(?:function|procedure)\s+([a-z0-9_."]+)\s*\(/i.exec(trimmed))) {
-        const id = normalizeObjectName(match[1]);
-        if (id) recordDdlEvent(ensureEntry(functions, id, { identity: id }), migration.name, true);
+        const openIdx = trimmed.indexOf("(", match[0].length - 1);
+        const rawArgs = openIdx !== -1 ? extractBalancedParens(trimmed, openIdx) : "";
+        const sig = normalizeFunctionSignature(match[1], rawArgs ?? "");
+        if (sig) recordCreate(ensureEntry(functions, sig.identity, { identity: sig.identity, baseName: sig.baseName }), migration.name);
       } else if ((match = /^\s*create\s+(?:or\s+replace\s+)?(?:constraint\s+)?trigger\s+([a-z0-9_"]+)\s+[\s\S]*?\bon\s+([a-z0-9_."]+)/i.exec(trimmed))) {
         const trigName = match[1].replace(/"/g, "").toLowerCase();
         const tableId = normalizeObjectName(match[2]);
         if (tableId) {
           const id = `${tableId}.${trigName}`;
-          recordDdlEvent(ensureEntry(triggers, id, { identity: id, relation: tableId }), migration.name, true);
+          recordCreate(ensureEntry(triggers, id, { identity: id, relation: tableId }), migration.name);
         }
       } else if ((match = /^\s*create\s+policy\s+("[^"]+"|[a-z0-9_]+)\s+on\s+([a-z0-9_."]+)/i.exec(trimmed))) {
         const polName = match[1].replace(/"/g, "");
         const tableId = normalizeObjectName(match[2]);
         if (tableId) {
           const id = `${tableId}.${polName}`;
-          recordDdlEvent(ensureEntry(policies, id, { identity: id, relation: tableId }), migration.name, true);
+          recordCreate(ensureEntry(policies, id, { identity: id, relation: tableId }), migration.name);
+        }
+      } else if ((match = /^\s*alter\s+(table|view|materialized\s+view|sequence|type)\s+(?:if\s+exists\s+)?(?:only\s+)?([a-z0-9_."]+)\s+rename\s+to\s+([a-z0-9_."]+)/i.exec(trimmed))) {
+        const objKind = match[1].toLowerCase();
+        const oldId = normalizeObjectName(match[2]);
+        const schema = oldId ? oldId.split(".")[0] : "public";
+        const newId = normalizeObjectName(match[3], schema);
+        if (oldId && newId) {
+          if (objKind === "type") recordRename(types, oldId, newId, migration.name, {});
+          else if (objKind === "sequence") {
+            recordRename(sequences, oldId, newId, migration.name, {});
+            recordRename(relations, oldId, newId, migration.name, { kind: "S" });
+          } else {
+            recordRename(relations, oldId, newId, migration.name, { kind: objKind.startsWith("view") ? "v" : objKind.startsWith("materialized") ? "m" : "r" });
+          }
         }
       } else if ((match = /^\s*alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?([a-z0-9_."]+)/i.exec(trimmed))) {
         const id = normalizeObjectName(match[1]);
-        if (id && relations.has(id)) recordDdlEvent(relations.get(id), migration.name, false);
+        if (id && relations.has(id)) recordAlter(relations.get(id), migration.name);
       } else if ((match = /^\s*alter\s+(?:function|procedure)\s+([a-z0-9_."]+)\s*\(/i.exec(trimmed))) {
-        const id = normalizeObjectName(match[1]);
-        if (id && functions.has(id)) recordDdlEvent(functions.get(id), migration.name, false);
+        const openIdx = trimmed.indexOf("(", match[0].length - 1);
+        const rawArgs = openIdx !== -1 ? extractBalancedParens(trimmed, openIdx) : "";
+        const sig = normalizeFunctionSignature(match[1], rawArgs ?? "");
+        if (sig && functions.has(sig.identity)) recordAlter(functions.get(sig.identity), migration.name);
       } else if ((match = /^\s*alter\s+policy\s+("[^"]+"|[a-z0-9_]+)\s+on\s+([a-z0-9_."]+)/i.exec(trimmed))) {
         const polName = match[1].replace(/"/g, "");
         const tableId = normalizeObjectName(match[2]);
         const id = tableId ? `${tableId}.${polName}` : null;
-        if (id && policies.has(id)) recordDdlEvent(policies.get(id), migration.name, false);
-      } else if ((match = /^\s*drop\s+(table|view|materialized\s+view)\s+(?:if\s+exists\s+)?([a-z0-9_."]+)/i.exec(trimmed))) {
+        if (id && policies.has(id)) recordAlter(policies.get(id), migration.name);
+      } else if ((match = /^\s*drop\s+(table|view|materialized\s+view|sequence)\s+(?:if\s+exists\s+)?([a-z0-9_."]+)/i.exec(trimmed))) {
         const id = normalizeObjectName(match[2]);
-        if (id && relations.has(id)) relations.get(id).droppedIn.push(migration.name);
-      } else if ((match = /^\s*drop\s+(?:function|procedure)\s+(?:if\s+exists\s+)?([a-z0-9_."]+)\s*\(/i.exec(trimmed))) {
+        if (id && relations.has(id)) recordDrop(relations.get(id), migration.name);
+        if (id && sequences.has(id)) recordDrop(sequences.get(id), migration.name);
+      } else if ((match = /^\s*drop\s+type\s+(?:if\s+exists\s+)?([a-z0-9_."]+)/i.exec(trimmed))) {
         const id = normalizeObjectName(match[1]);
-        if (id && functions.has(id)) functions.get(id).droppedIn.push(migration.name);
+        if (id && types.has(id)) recordDrop(types.get(id), migration.name);
+      } else if ((match = /^\s*drop\s+(?:function|procedure)\s+(?:if\s+exists\s+)?([a-z0-9_."]+)\s*\(/i.exec(trimmed))) {
+        const openIdx = trimmed.indexOf("(", match[0].length - 1);
+        const rawArgs = openIdx !== -1 ? extractBalancedParens(trimmed, openIdx) : "";
+        const sig = normalizeFunctionSignature(match[1], rawArgs ?? "");
+        if (sig && functions.has(sig.identity)) recordDrop(functions.get(sig.identity), migration.name);
       } else if ((match = /^\s*drop\s+policy\s+(?:if\s+exists\s+)?("[^"]+"|[a-z0-9_]+)\s+on\s+([a-z0-9_."]+)/i.exec(trimmed))) {
         const polName = match[1].replace(/"/g, "");
         const tableId = normalizeObjectName(match[2]);
         const id = tableId ? `${tableId}.${polName}` : null;
-        if (id && policies.has(id)) policies.get(id).droppedIn.push(migration.name);
+        if (id && policies.has(id)) recordDrop(policies.get(id), migration.name);
       } else if ((match = /^\s*drop\s+trigger\s+(?:if\s+exists\s+)?("[^"]+"|[a-z0-9_]+)\s+on\s+([a-z0-9_."]+)/i.exec(trimmed))) {
         const trigName = match[1].replace(/"/g, "").toLowerCase();
         const tableId = normalizeObjectName(match[2]);
         const id = tableId ? `${tableId}.${trigName}` : null;
-        if (id && triggers.has(id)) triggers.get(id).droppedIn.push(migration.name);
+        if (id && triggers.has(id)) recordDrop(triggers.get(id), migration.name);
       }
     }
 
@@ -173,7 +303,7 @@ export function extractSqlCatalogFromMigrations(migrations) {
       const lowerSql = migration.sql.toLowerCase();
       for (const map of [relations, functions]) {
         for (const [id, entry] of map) {
-          const shortName = id.split(".")[1];
+          const shortName = (entry.baseName ?? id).split(".")[1];
           if (shortName && lowerSql.includes(shortName) && entry.definedIn !== migration.name && !entry.modifiedIn.includes(migration.name)) {
             entry.dynamicSqlMentions.push(migration.name);
           }
@@ -193,43 +323,29 @@ export function extractSqlCatalogFromMigrations(migrations) {
   };
 }
 
-export function scanApplicationConsumers(root = repoRoot) {
+export function scanApplicationConsumersFromView(view) {
   const rpcConsumers = new Map();
   const relationConsumers = new Map();
   const storageConsumers = new Map();
-  const scanRoots = ["apps/web/src", "apps/mobile"];
-  const codeExts = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts"]);
 
-  function walkDir(relDir) {
-    const absDir = path.join(root, relDir);
-    if (!fs.existsSync(absDir)) return;
-    for (const entry of fs.readdirSync(absDir, { withFileTypes: true })) {
-      if (entry.name === "node_modules" || entry.name === ".next" || entry.name === ".expo") continue;
-      const rel = `${relDir}/${entry.name}`;
-      if (entry.isDirectory()) {
-        walkDir(rel);
-      } else if (codeExts.has(path.extname(entry.name))) {
-        const content = fs.readFileSync(path.join(root, rel), "utf8");
-        for (const m of content.matchAll(/\.rpc\(\s*["'`]([a-zA-Z0-9_]+)["'`]/g)) {
-          const key = `public.${m[1].toLowerCase()}`;
-          if (!rpcConsumers.has(key)) rpcConsumers.set(key, new Set());
-          rpcConsumers.get(key).add(rel);
-        }
-        for (const m of content.matchAll(/\.storage\s*\.\s*from\(\s*["'`]([a-zA-Z0-9_-]+)["'`]/g)) {
-          const key = m[1];
-          if (!storageConsumers.has(key)) storageConsumers.set(key, new Set());
-          storageConsumers.get(key).add(rel);
-        }
-        for (const m of content.matchAll(/(?<!\.storage\s*)\.from\(\s*["'`]([a-zA-Z0-9_]+)["'`]/g)) {
-          const key = `public.${m[1].toLowerCase()}`;
-          if (!relationConsumers.has(key)) relationConsumers.set(key, new Set());
-          relationConsumers.get(key).add(rel);
-        }
-      }
+  for (const rel of listConsumerFilesFromView(view)) {
+    const content = view.readText(rel);
+    for (const m of content.matchAll(/\.rpc\(\s*["'`]([a-zA-Z0-9_]+)["'`]/g)) {
+      const key = `public.${m[1].toLowerCase()}`;
+      if (!rpcConsumers.has(key)) rpcConsumers.set(key, new Set());
+      rpcConsumers.get(key).add(rel);
+    }
+    for (const m of content.matchAll(/\.storage\s*\.\s*from\(\s*["'`]([a-zA-Z0-9_-]+)["'`]/g)) {
+      const key = m[1];
+      if (!storageConsumers.has(key)) storageConsumers.set(key, new Set());
+      storageConsumers.get(key).add(rel);
+    }
+    for (const m of content.matchAll(/(?<!\.storage\s*)\.from\(\s*["'`]([a-zA-Z0-9_]+)["'`]/g)) {
+      const key = `public.${m[1].toLowerCase()}`;
+      if (!relationConsumers.has(key)) relationConsumers.set(key, new Set());
+      relationConsumers.get(key).add(rel);
     }
   }
-
-  for (const r of scanRoots) walkDir(r);
 
   const mapToObj = (m) => Object.fromEntries(
     [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], "en")).map(([k, v]) => [k, [...v].sort()])
@@ -241,43 +357,60 @@ export function scanApplicationConsumers(root = repoRoot) {
   };
 }
 
-export function buildGitSqlCatalog({ root = repoRoot, ref = null } = {}) {
-  const gitSha = ref ?? readGitHead(root);
-  const migrations = listMigrations(root);
+export function buildGitSqlCatalog({ root = repoRoot, ref = null, source = "git", view: suppliedView = null } = {}) {
+  const useGitSource = source !== "worktree";
+  const resolvedSha = useGitSource ? resolveGitCommitSha(root, ref ?? "HEAD") : null;
+  const view = suppliedView ?? createRepositoryView({ root, ref: resolvedSha ?? undefined });
+  const provenanceVerified = view.mode === "git" && Boolean(resolvedSha);
+
+  const migrations = listMigrationsFromView(view);
   const migrationsHash = computeMigrationsDigest(migrations);
+  const consumersDigest = computeConsumersDigest(view);
   const extracted = extractSqlCatalogFromMigrations(migrations);
-  const consumers = scanApplicationConsumers(root);
+  const consumers = scanApplicationConsumersFromView(view);
 
   return {
     schemaVersion: 1,
-    report: "sql-catalog-git-replayed",
-    source: "git-migrations-ast-replay",
-    gitSha,
+    report: "sql-catalog-git-static-ddl",
+    analysisKind: "STATIC_DDL_ANALYSIS",
+    source: useGitSource ? "git-migrations-static-ddl" : "worktree-migrations-static-ddl",
+    gitSha: resolvedSha,
     provenance: {
-      verified: true,
-      measuredSource: "git-worktree-migrations",
+      verified: provenanceVerified,
+      measuredSource: view.mode === "git" ? "git" : "worktree",
+      gitRef: ref ?? (useGitSource ? "HEAD" : null),
       migrationsCount: migrations.length,
       migrationsHash,
+      consumersCount: consumersDigest.count,
+      consumersHash: consumersDigest.hash,
     },
     generatedAt: new Date().toISOString(),
     migrations: migrations.map((m) => ({ version: m.version, name: m.name, hash: m.hash })),
     objects: extracted,
     consumers,
-    limitations: "DDL replay from apps/web/supabase/migrations/ without live PostgreSQL execution (DB_SEMANTICS_NOT_EXECUTED); dynamic SQL (EXECUTE) and overloaded signatures are tracked as mentions/base names.",
+    limitations: "Static DDL analysis of apps/web/supabase/migrations/ without live PostgreSQL execution (DB_SEMANTICS_NOT_EXECUTED); distinct from remote-observed catalog and from an ephemeral PostgreSQL replay. Dynamic SQL (EXECUTE) and unrecognized DDL constructs are flagged as mentions rather than established provenance.",
   };
 }
 
-export function checkCatalogFreshness(catalog, { root = repoRoot, expectedSha = null } = {}) {
-  const headSha = expectedSha ?? readGitHead(root);
+export function checkCatalogFreshness(catalog, { root = repoRoot, expectedSha = null, view: suppliedView = null } = {}) {
+  const headSha = expectedSha ?? resolveGitCommitSha(root, "HEAD");
   const errors = [];
   if (!catalog || catalog.schemaVersion !== 1) errors.push("invalid catalog schemaVersion");
-  if (!catalog?.provenance?.verified) errors.push("catalog provenance not verified");
+  if (catalog?.provenance?.verified !== true || catalog?.provenance?.measuredSource !== "git") {
+    errors.push("catalog provenance mismatch or unverified source (worktree catalogs cannot prove a SHA)");
+  }
   if (catalog?.gitSha !== headSha) errors.push(`stale gitSha: catalog=${catalog?.gitSha ?? "none"} head=${headSha}`);
-  if (catalog?.report === "sql-catalog-git-replayed") {
-    const migrations = listMigrations(root);
-    const currentHash = computeMigrationsDigest(migrations);
-    if (catalog.provenance?.migrationsHash !== currentHash) {
-      errors.push("stale migrationsHash: migrations directory changed since catalog generation");
+
+  if (catalog?.report === "sql-catalog-git-static-ddl" || catalog?.report === "sql-catalog-git-replayed") {
+    const view = suppliedView ?? createRepositoryView({ root, ref: headSha });
+    const migrations = listMigrationsFromView(view);
+    const currentMigrationsHash = computeMigrationsDigest(migrations);
+    if (catalog.provenance?.migrationsHash !== currentMigrationsHash) {
+      errors.push("stale migrationsHash: migrations tree changed since catalog generation");
+    }
+    const currentConsumers = computeConsumersDigest(view);
+    if (catalog.provenance?.consumersHash !== currentConsumers.hash) {
+      errors.push("stale consumersHash: application consumer files changed since catalog generation");
     }
   }
   return { fresh: errors.length === 0, errors };
@@ -289,9 +422,10 @@ export function compareGitAndRemoteCatalogs(gitCatalog, remoteCatalog) {
   const onlyInGit = [...gitVersions].filter((v) => !remoteVersions.has(v)).sort();
   const onlyInRemote = [...remoteVersions].filter((v) => !gitVersions.has(v)).sort();
 
-  const activeGitRelations = new Set((gitCatalog.objects?.relations ?? []).filter((r) => r.droppedIn.length === 0).map((r) => r.identity));
+  const isActive = (entry) => entry.active !== false && (entry.droppedIn ?? []).length === 0;
+  const activeGitRelations = new Set((gitCatalog.objects?.relations ?? []).filter(isActive).map((r) => r.identity));
   const remoteRelations = new Set((remoteCatalog.relations ?? []).map((r) => r.identity));
-  const activeGitFuncs = new Set((gitCatalog.objects?.functions ?? []).filter((f) => f.droppedIn.length === 0).map((f) => f.identity));
+  const activeGitFuncNames = new Set((gitCatalog.objects?.functions ?? []).filter(isActive).map((f) => (f.baseName ?? f.identity.split("(")[0]).toLowerCase()));
   const remoteFuncBaseNames = new Set((remoteCatalog.functions ?? []).map((f) => f.identity.split("(")[0].toLowerCase()));
 
   return {
@@ -310,43 +444,51 @@ export function compareGitAndRemoteCatalogs(gitCatalog, remoteCatalog) {
       inRemoteNotGitAst: [...remoteRelations].filter((r) => !activeGitRelations.has(r)).sort(),
     },
     functions: {
-      gitAstUniqueNames: activeGitFuncs.size,
+      gitAstUniqueNames: activeGitFuncNames.size,
       remoteUniqueNames: remoteFuncBaseNames.size,
-      inRemoteNotGitAst: [...remoteFuncBaseNames].filter((f) => !activeGitFuncs.has(f)).sort(),
+      inRemoteNotGitAst: [...remoteFuncBaseNames].filter((f) => !activeGitFuncNames.has(f)).sort(),
     },
   };
 }
 
+function parseArgs(args) {
+  const options = { source: "git", ref: parseRepositoryRef(args), output: null, compareRemote: null, checkFreshness: null };
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === "--source") options.source = args[++i];
+    else if (arg === "--ref") options.ref = args[++i];
+    else if (arg === "--output") options.output = args[++i];
+    else if (arg === "--compare-remote") options.compareRemote = args[++i];
+    else if (arg === "--check-freshness") options.checkFreshness = args[++i];
+  }
+  return options;
+}
+
 function main(args) {
-  const checkIdx = args.indexOf("--check-freshness");
-  if (checkIdx !== -1) {
-    const targetPath = args[checkIdx + 1];
-    if (!targetPath) throw new Error("Usage: --check-freshness CATALOG_JSON");
-    const catalog = JSON.parse(fs.readFileSync(targetPath, "utf8"));
-    const result = checkCatalogFreshness(catalog);
+  const options = parseArgs(args);
+  if (options.checkFreshness) {
+    const catalog = JSON.parse(fs.readFileSync(options.checkFreshness, "utf8"));
+    const result = checkCatalogFreshness(catalog, { expectedSha: options.ref ? resolveGitCommitSha(repoRoot, options.ref) : null });
     console.log(JSON.stringify(result, null, 2));
     if (!result.fresh) process.exitCode = 1;
     return;
   }
 
-  const compareIdx = args.indexOf("--compare-remote");
-  const outIdx = args.indexOf("--output");
-  const catalog = buildGitSqlCatalog();
+  const catalog = buildGitSqlCatalog({ ref: options.ref, source: options.source });
 
-  if (outIdx !== -1 && args[outIdx + 1]) {
-    const outPath = args[outIdx + 1];
-    fs.mkdirSync(path.dirname(path.resolve(outPath)), { recursive: true });
-    fs.writeFileSync(outPath, JSON.stringify(catalog, null, 2) + "\n");
+  if (options.output) {
+    fs.mkdirSync(path.dirname(path.resolve(options.output)), { recursive: true });
+    fs.writeFileSync(options.output, JSON.stringify(catalog, null, 2) + "\n");
   }
 
-  if (compareIdx !== -1 && args[compareIdx + 1]) {
-    const remote = JSON.parse(fs.readFileSync(args[compareIdx + 1], "utf8"));
+  if (options.compareRemote) {
+    const remote = JSON.parse(fs.readFileSync(options.compareRemote, "utf8"));
     const comparison = compareGitAndRemoteCatalogs(catalog, remote);
     process.stdout.write(JSON.stringify(comparison, null, 2) + "\n");
     return;
   }
 
-  if (outIdx === -1) {
+  if (!options.output) {
     process.stdout.write(JSON.stringify(catalog, null, 2) + "\n");
   }
 }
