@@ -5,22 +5,26 @@ vi.mock("@/components/ui/site-preferences-provider", () => ({
   useSitePreferences: () => ({ locale: "fr" as const }),
 }));
 
-vi.mock("@/lib/ui/page-families", () => ({
-  usePageFamily: () => ({
-    id: "learn",
-    hero: {
-      titleColor: "text-slate-950",
-      subtitleColor: "text-slate-700",
-    },
-  }),
-  getPageFamilyConfig: () => ({
-    labelFr: "Apprendre",
-    labelEn: "Learn",
-    bgToken: "bg-amber-50/70",
-    accentToken: "text-amber-700",
-    badgeClass: "bg-amber-100 text-amber-800",
-  }),
-}));
+vi.mock("@/lib/ui/page-families", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/ui/page-families")>();
+  return {
+    ...actual,
+    usePageFamily: () => ({
+      id: "learn",
+      hero: {
+        titleColor: "text-slate-950",
+        subtitleColor: "text-slate-700",
+      },
+    }),
+    getPageFamilyConfig: () => ({
+      labelFr: "Apprendre",
+      labelEn: "Learn",
+      bgToken: "bg-amber-50/70",
+      accentToken: "text-amber-700",
+      badgeClass: "bg-amber-100 text-amber-800",
+    }),
+  };
+});
 
 import { LearnRubricShell } from "./learn-rubric-shell";
 

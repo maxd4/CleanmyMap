@@ -78,7 +78,7 @@ describe("SPOGOMI management projection", () => {
 
     const defaultDivisionResult = await loadSpogomiManagementProjection({ supabase: fixture.supabase, event });
     expect(defaultDivisionResult.route).toMatchObject({ file_name: "route.gpx" });
-    expect(fixture.queries.get("spogomi_participants")?.[1].calls.eq).toContainEqual(["division_id", "casual"]);
+    expect(fixture.queries.get("spogomi_participants")?.[2].calls.eq).toContainEqual(["division_id", "casual"]);
   });
 
   it("does not hide database failures behind an empty management projection", async () => {
@@ -116,7 +116,11 @@ describe("SPOGOMI observer projection", () => {
         { team_id: "team-1", status: "certified", version: 2, submitted_at: "new" },
         { team_id: "team-1", status: "submitted", version: 1, submitted_at: "old" },
       ],
-      spogomi_participants: [],
+      spogomi_participants: [
+        { id: "p-1", division_id: "casual", display_name: "Alice", team_id: "team-1", registration_status: "registered", attendance_status: "present" },
+        { id: "p-2", division_id: "casual", display_name: "Bob", team_id: "team-1", registration_status: "registered", attendance_status: "present" },
+        { id: "p-3", division_id: "world", display_name: "Charlie", team_id: "team-2", registration_status: "registered", attendance_status: "present" },
+      ],
     }, {}, { spogomi_participants: 3 });
     const result = await loadSpogomiObserverProjection({ supabase: fixture.supabase, eventId: "event-1", userId: "observer" });
     expect(result).toMatchObject({ participation: { registered: 3, present: 3 }, divisions: [{ divisionType: "casual" }, { divisionType: "world_cup" }] });

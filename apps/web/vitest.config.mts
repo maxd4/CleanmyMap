@@ -9,6 +9,10 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    pool: "threads",
+    maxWorkers: process.env.CI ? undefined : 6,
+    reporters: ["dot"],
+    silent: "passed-only",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     exclude: ["src/**/__codex-*.test.ts"],
     coverage: {

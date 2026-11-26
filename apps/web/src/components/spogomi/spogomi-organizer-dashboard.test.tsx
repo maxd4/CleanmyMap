@@ -12,7 +12,7 @@ const fetchMock = vi.hoisted(() => vi.fn());
 
 const pushMock = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock, push: pushMock }) }));
-vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("a", props, children) }));
+vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => { const anchorProps = { ...props }; delete anchorProps.prefetch; delete anchorProps.loading; return React.createElement("a", anchorProps, children); } }));
 vi.mock("@/components/ui/cmm-button", () => ({ CmmButton: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("button", props, children) }));
 vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("div", props, children) }));
 vi.mock("lucide-react", () => ({ ArrowRight: () => null, CalendarDays: () => null, MapPin: () => null, Plus: () => null, ShieldCheck: () => null }));

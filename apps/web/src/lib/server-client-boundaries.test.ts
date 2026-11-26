@@ -61,16 +61,17 @@ async function readDirectory(directory: string) {
 describe("Server/Client boundaries", () => {
   it("keeps server-only imports out of Client Components", async () => {
     const files = await collectSourceFiles(SRC_ROOT);
+    const contents = await Promise.all(files.map((file) => readFile(file, "utf8")));
     const violations: string[] = [];
 
-    for (const file of files) {
-      const content = await readFile(file, "utf8");
+    for (let index = 0; index < files.length; index += 1) {
+      const content = contents[index] ?? "";
       if (!USE_CLIENT_PATTERN.test(content)) {
         continue;
       }
 
       if (SERVER_ONLY_IMPORT_PATTERN.test(content)) {
-        violations.push(path.relative(process.cwd(), file));
+        violations.push(path.relative(process.cwd(), files[index]!));
       }
     }
 

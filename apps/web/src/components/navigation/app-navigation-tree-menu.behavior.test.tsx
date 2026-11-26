@@ -15,9 +15,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a href={href} {...props}>{children}</a>
-  ),
+  default: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { prefetch?: boolean }) => {
+    const anchorProps = { ...props };
+    delete anchorProps.prefetch;
+    return <a href={href} {...anchorProps}>{children}</a>;
+  },
 }));
 
 vi.mock("framer-motion", () => ({

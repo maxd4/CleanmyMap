@@ -20,7 +20,9 @@ import {
 } from "./api-boundary-evidence-analysis";
 import { resolveRouteMethods } from "./api-boundary-route-analysis";
 
-function readRouteInventory() {
+let cachedRouteInventory: ReturnType<typeof computeRouteInventory> | null = null;
+
+function computeRouteInventory() {
   return walk(apiRoot)
     .filter((path) => path.endsWith("route.ts"))
     .map((path) => {
@@ -33,6 +35,10 @@ function readRouteInventory() {
       return { path, route, ...resolved };
     })
     .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+}
+
+function readRouteInventory() {
+  return (cachedRouteInventory ??= computeRouteInventory());
 }
 
 describe("API security boundaries", { timeout: 30_000 }, () => {

@@ -187,6 +187,15 @@ Ne jamais relancer manuellement un contrôle que les hooks (`pre-commit` /
 diagnostic. Les validations larges non nécessaires à la preuve locale du lot
 sont déléguées à la CI (sans attendre systématiquement leur conclusion pour
 clôturer une correction ordinaire publiée, en signalant leur statut réel).
+Pour la suite Vitest Web (`apps/web/vitest.config.mts`), la configuration par
+défaut utilise `pool: "threads"` (`maxWorkers: 6` hors CI), `reporters: ["dot"]`
+et `silent: "passed-only"` afin de limiter la charge mémoire et le volume de
+sortie tout en conservant erreurs, warnings pertinents, compteurs et codes de
+sortie ; pour un diagnostic détaillé ou un artefact, surcharger ponctuellement
+avec `--reporter=default --silent=false` ou `--reporter=json --outputFile=...`.
+En mode `DEVELOPMENT`, privilégier `npm run test -w apps/web -- <fichier(s)>`
+sur les tests directement concernés et leurs consommateurs plutôt que de
+relancer la suite intégrale.
 Une extraction, une création de module, une
 modification d'import ou un refactor ne déclenche automatiquement aucun
 `quality:cycles`, `quality:duplication`, `quality:complexity`,

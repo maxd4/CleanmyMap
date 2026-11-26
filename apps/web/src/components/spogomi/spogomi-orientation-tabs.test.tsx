@@ -1,6 +1,23 @@
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
-import type { KeyboardEvent, MouseEvent } from "react";
+import { createElement, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    ...props
+  }: {
+    href: string;
+    children: ReactNode;
+    prefetch?: boolean;
+    [key: string]: unknown;
+  }) => {
+    const anchorProps = { ...props };
+    delete anchorProps.prefetch;
+    return createElement("a", { ...anchorProps, href }, children);
+  },
+}));
 
 import { buildSpogomiActionInfo, SpogomiOrientationTabs } from "./spogomi-orientation-tabs";
 

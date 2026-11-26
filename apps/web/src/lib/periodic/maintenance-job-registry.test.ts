@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
 import {
   MAINTENANCE_JOB_IDS,
   MAINTENANCE_JOB_REGISTRY,
@@ -116,11 +118,12 @@ describe("maintenance job registry", () => {
     ).toBe(true);
   });
 
-  it("déclare exactement les huit jobs et leurs cadences", () => {
+  it("déclare exactement les neuf jobs et leurs cadences", () => {
     expect(MAINTENANCE_JOB_REGISTRY.map((job) => job.id)).toEqual([
       ...MAINTENANCE_JOB_IDS,
     ]);
     expect(MAINTENANCE_JOB_REGISTRY.map((job) => job.cadence)).toEqual([
+      "daily",
       "daily",
       "daily",
       "daily",

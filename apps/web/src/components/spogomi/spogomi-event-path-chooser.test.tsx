@@ -19,8 +19,13 @@ vi.mock("next/link", () => ({
   }: {
     href: string;
     children: ReactNode;
+    prefetch?: boolean;
     [key: string]: unknown;
-  }) => createElement("a", { ...props, href }, children),
+  }) => {
+    const anchorProps = { ...props };
+    delete anchorProps.prefetch;
+    return createElement("a", { ...anchorProps, href }, children);
+  },
 }));
 
 (globalThis as unknown as Record<string, boolean>).IS_REACT_ACT_ENVIRONMENT = true;
@@ -79,9 +84,9 @@ describe("SpogomiEventPathChooser", () => {
 
     expect(markup).toContain('role="tablist"');
     expect(markup.match(/role="tab"/g)).toHaveLength(3);
-    expect(markup).toContain("Choisir la division");
-    expect(markup).toContain("division Casual");
-    expect(markup).toContain("division World Cup");
+    expect(markup).toContain("Format consulté");
+    expect(markup).toContain("Afficher le format Casual");
+    expect(markup).toContain("Afficher le format World Cup");
     expect(markup).toContain("/spogomi/paris-2026?division=casual");
     expect(markup).toContain("/spogomi/paris-2026?division=world_cup");
     expect(markup).toContain("#quiz");

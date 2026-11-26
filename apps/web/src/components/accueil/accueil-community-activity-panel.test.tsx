@@ -4,7 +4,13 @@ import { describe, expect, it, vi } from "vitest";
 import type { HomeCommunityActivitySummary } from "@/lib/accueil/data";
 
 vi.mock("next/image", () => ({
-  default: (props: Record<string, unknown>) => createElement("img", props),
+  default: (props: Record<string, unknown>) => {
+    const imgProps = { ...props };
+    delete imgProps.fill;
+    delete imgProps.unoptimized;
+    delete imgProps.priority;
+    return createElement("img", imgProps);
+  },
 }));
 
 import { HomeCommunityActivityPanel } from "./accueil-community-activity-panel";

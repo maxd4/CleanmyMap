@@ -11,9 +11,9 @@ const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
 const intervalMock = vi.hoisted(() => vi.fn(() => 1));
 
 vi.mock("@clerk/nextjs", () => ({ useAuth: () => authState }));
-vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("a", props, children) }));
+vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => { const anchorProps = { ...props }; delete anchorProps.prefetch; return React.createElement("a", anchorProps, children); } }));
 vi.mock("next/navigation", () => ({ useRouter: () => routerState, usePathname: () => "/spogomi/paris-2026", useSearchParams: () => new URLSearchParams() }));
-vi.mock("next/image", () => ({ default: (props: Record<string, unknown>) => React.createElement("img", props) }));
+vi.mock("next/image", () => ({ default: ({ unoptimized: _unoptimized, fill: _fill, ...props }: Record<string, unknown>) => { void _unoptimized; void _fill; return React.createElement("img", props); } }));
 vi.mock("next/dynamic", () => ({ default: () => function DynamicComponent(props: Record<string, unknown>) { return React.createElement("div", props); } }));
 vi.mock("lucide-react", () => ({
   ArrowRight: () => null, Award: () => null, CalendarDays: () => null, ChevronLeft: () => null,

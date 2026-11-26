@@ -56,7 +56,7 @@ describe("ElusSectionOverviewPanel", () => {
     expect(markup).toContain("Analyses détaillées et tendances");
     expect(markup).toContain("Période : 30 derniers jours");
     expect(markup).toContain("Renforcer la géocouverture");
-    expect(markup).toContain("bg-slate-500/15");
+    expect(markup).toContain("bg-slate-200/80 dark:bg-slate-500/20");
     expect(markup).not.toContain("bg-rose-500/10");
     expect(markup).not.toContain("TrendingDown");
   });

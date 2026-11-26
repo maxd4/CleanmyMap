@@ -45,7 +45,7 @@ describe("SPOGOMI registration opening API boundary", () => {
     const { POST } = await import("./route");
     openRegistrationMock.mockRejectedValueOnce(Object.assign(new Error("stale"), { code: "40001" }));
     const response = await POST(new Request("http://localhost", { method: "POST" }), context());
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(409);
     expect(JSON.stringify(await response.json())).not.toContain("stale");
   });
 });

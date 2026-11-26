@@ -8,11 +8,15 @@ import type { RibbonNavigationTracker } from "./app-navigation-ribbon-account";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
 
 vi.mock("next/link", () => ({
-  default: ({ href, children, onClick, ...props }: { href: string; children: React.ReactNode; onClick?: React.MouseEventHandler<HTMLAnchorElement> }) => (
-    <a href={href} {...props} onClick={(event) => { event.preventDefault(); onClick?.(event); }}>
-      {children}
-    </a>
-  ),
+  default: ({ href, children, onClick, ...props }: { href: string; children: React.ReactNode; prefetch?: boolean; onClick?: React.MouseEventHandler<HTMLAnchorElement> }) => {
+    const anchorProps = { ...props };
+    delete anchorProps.prefetch;
+    return (
+      <a href={href} {...anchorProps} onClick={(event) => { event.preventDefault(); onClick?.(event); }}>
+        {children}
+      </a>
+    );
+  },
 }));
 
 vi.mock("@/components/ui/site-preferences-controls", () => ({

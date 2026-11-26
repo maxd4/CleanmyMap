@@ -13,8 +13,11 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("tab=history&filter=water"),
 }));
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) =>
-    React.createElement("a", { href, ...props }, children),
+  default: ({ href, children, ...props }: { href: string; children: React.ReactNode; prefetch?: boolean }) => {
+    const anchorProps = { ...props };
+    delete anchorProps.prefetch;
+    return React.createElement("a", { href, ...anchorProps }, children);
+  },
 }));
 vi.mock("@/components/account/account-identity-chip", () => ({
   AccountIdentityChip: () => React.createElement("div", { "data-testid": "identity-chip" }),

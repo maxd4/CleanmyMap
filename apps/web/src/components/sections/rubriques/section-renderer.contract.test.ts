@@ -35,8 +35,11 @@ vi.mock("next/dynamic", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-    React.createElement("a", props, children),
+  default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
+    const anchorProps = { ...props };
+    delete anchorProps.prefetch;
+    return React.createElement("a", anchorProps, children);
+  },
 }));
 
 import {

@@ -28,7 +28,7 @@ describe("SPOGOMI mixed-division PostgreSQL smoke STATIC_CONTRACT", () => {
   it("runs this exact SQL in the authorized ephemeral PostgreSQL job", () => {
     expect(workflow).toMatch(/^name: supabase-sql-proof-ephemeral$/m);
     expect(workflow).toMatch(/- name: Start ephemeral Supabase\r?\n\s+id: start_supabase\r?\n\s+run: \|[\s\S]*?bash scripts\/ci\/start-supabase-ephemeral\.sh apps\/web/);
-    expect(workflow).toMatch(/- name: Run complete PostgreSQL and concurrency proof\r?\n\s+id: run_sql_proof\r?\n\s+env:\r?\n\s+CMM_SUPABASE_CANDIDATE_SHA: \$\{\{ github\.sha \}\}[\s\S]*?\s+run: node scripts\/ci\/run-supabase-sql-proof\.mjs/);
+    expect(workflow).toMatch(/- name: Run PostgreSQL and concurrency proof\r?\n\s+id: run_sql_proof\r?\n\s+env:\r?\n\s+CMM_SUPABASE_CANDIDATE_SHA: \$\{\{ github\.sha \}\}[\s\S]*?\s+run: node scripts\/ci\/run-supabase-sql-proof\.mjs/);
     expect(proofRunner).toContain('"apps/web/supabase/tests/spogomi-mixed-division-smoke.sql"');
     expect(proofRunner).toContain("EXECUTED_DB_CONTRACT: SPOGOMI mixed-division closure and replay contract passed");
     expect(proofRunner).toContain("runCanonicalReset");

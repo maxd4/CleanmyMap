@@ -6,11 +6,15 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
-  default: ({ href, children, onClick, ...props }: { href: string; children: React.ReactNode; onClick?: React.MouseEventHandler<HTMLAnchorElement> }) => (
-    <a href={href} {...props} onClick={(event) => { event.preventDefault(); onClick?.(event); }}>
-      {children}
-    </a>
-  ),
+  default: ({ href, children, onClick, ...props }: { href: string; children: React.ReactNode; prefetch?: boolean; onClick?: React.MouseEventHandler<HTMLAnchorElement> }) => {
+    const anchorProps = { ...props };
+    delete anchorProps.prefetch;
+    return (
+      <a href={href} {...anchorProps} onClick={(event) => { event.preventDefault(); onClick?.(event); }}>
+        {children}
+      </a>
+    );
+  },
 }));
 
 import { RibbonDropdownItem } from "./ribbon-dropdown-item";
