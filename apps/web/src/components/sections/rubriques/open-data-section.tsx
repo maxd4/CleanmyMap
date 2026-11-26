@@ -1,312 +1,84 @@
 "use client";
-
-import Link from "next/link";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { PageHeader } from "@/components/ui/page-header";
-import {
-  ArrowRight,
-  Code,
-  FileJson,
-  GraduationCap,
-  Landmark,
-  Sparkles,
-  ShieldCheck,
-  Database,
-  Leaf,
-  Handshake,
-} from "lucide-react";
+import { OpenDataExplorer } from "./open-data-explorer";
 
-type Locale = "fr" | "en";
+const DATASETS=[
+  {title:["Collectes de déchets","Waste cleanups"],unit:["Action cartographiée","Mapped action"],content:["Masse, mégots, participation, durée, méthodes et qualité lorsque renseignées.","Mass, cigarette butts, participation, duration, methods and quality where available."],limit:["Séparer préparation et bilan terminé ; masse mesurée ou estimée.","Separate planned and completed work; measured or estimated mass."]},
+  {title:["Signalements de pollution","Litter reports"],unit:["Observation ponctuelle","Individual observation"],content:["Date, position publique, catégories et qualité selon les champs disponibles.","Date, public location, categories and quality where available."],limit:["Un signalement ne représente ni une collecte ni une mesure de densité.","A report is not a cleanup or density measurement."]},
+  {title:["Lieux propres","Clean places"],unit:["Lieu observé","Observed location"],content:["Date et position publique ; provenance géométrique lorsqu’elle est disponible.","Date and public location; geometry provenance where available."],limit:["Observation locale à une date donnée, pas une garantie de propreté permanente.","Local observation at a given date, not a guarantee of permanent cleanliness."]},
+] as const;
+const FIELDS=[
+  ["contract.id / type","Identité d’enregistrement / type","Record identity / type","Identifiant de donnée, pas de personne ; action, spot, clean_place.","Record identifier, not a person; action, spot, clean_place."],
+  ["contract.dates.observedAt","Date (ISO)","Date (ISO)","Date portée par le contrat ; ne prouve pas une mesure instrumentale.","Contract date; not proof of instrumental observation."],
+  ["contract.metadata.actionPhase","Phase","Phase","post_action_complete pour le bilan terminé ; approved seul ne suffit pas.","post_action_complete for a completed report; approved alone is insufficient."],
+  ["contract.location / geometry","Géographie","Geography","Coordonnées et géométrie publiques ; préciser source, nature et confiance.","Public coordinates and geometry; check source, kind and confidence."],
+  ["metadata.wasteKg / wasteMeasurementMethod","Masse (kg)","Mass (kg)","Conserver la méthode déclarée et les valeurs manquantes ; ne pas assimiler estimation et pesée.","Retain declared method and missing values; estimates differ from weighing."],
+  ["metadata.cigaretteButts / cigaretteButtsMeasurements","Mégots (nombre, kg, L)","Butts (count, kg, L)","Conserver les lots et versions lorsqu’ils existent ; ne pas additionner les équivalents d’un même lot.","Keep lots and versions where present; never sum equivalents of one lot."],
+  ["metadata.volunteersCount / collectorsCount / durationMinutes","Personnes / min","People / min","Population participante distincte des collecteurs ; zéro de durée historique potentiellement ambigu.","Participants differ from collectors; historical zero duration can be ambiguous."],
+  ["contract.dataQuality / quality_score","Qualité / score","Quality / score","Indicateur de cohérence et provenance ; pas une validation scientifique indépendante.","Consistency and provenance indicator, not independent scientific validation."],
+  ["count / isTruncated / partialSource / sourceHealth","État de la réponse","Response state","Count est le nombre de lignes renvoyées, pas l’effectif total.","Count is returned rows, not total population."],
+] as const;
+const PYTHON=[
+  'import json, urllib.request',
+  'from datetime import datetime, timezone',
+  'url = ("https://cleanmymap.fr/api/actions/map?"',
+  '       "types=action&status=approved&floorDate=all&limit=80")',
+  'with urllib.request.urlopen(url, timeout=30) as response:',
+  '    data = json.load(response)',
+  'assert data["status"] == "ok"',
+  'today = datetime.now(timezone.utc).date().isoformat()',
+  'rows = [i["contract"] for i in data["items"]',
+  '        if i.get("status") == "approved"',
+  '        and i.get("contract", {}).get("type") == "action"',
+  '        and i["contract"].get("status") == "approved"',
+  '        and i["contract"]["metadata"].get("actionPhase") == "post_action_complete"',
+  '        and (i["contract"]["dates"].get("observedAt") or "9999") <= today]',
+  'print("received", data["count"], "retained", len(rows))',
+  'print("truncated", data.get("isTruncated"), "partial", data.get("partialSource"))',
+].join("\n");
+const DOC_ROOT="https://github.com/maxd4/CleanmyMap/blob/main/documentation/";
 
-type FeatureCard = {
-  icon: typeof FileJson;
-  title: { fr: string; en: string };
-  items: { fr: string; en: string }[];
-  anchor: string;
-};
-
-type EconomyCard = {
-  icon: typeof Leaf;
-  title: { fr: string; en: string };
-  description: { fr: string; en: string };
-};
-
-const FEATURE_CARDS: FeatureCard[] = [
-  {
-    icon: FileJson,
-    anchor: "formats",
-    title: { fr: "Formats d'échange", en: "Exchange formats" },
-    items: [
-      { fr: "Projection publique en JSON", en: "Public JSON projection" },
-      { fr: "Actions approuvées", en: "Approved actions" },
-      { fr: "Filtres publics documentés", en: "Documented public filters" },
-    ],
-  },
-  {
-    icon: GraduationCap,
-    anchor: "acces-chercheurs",
-    title: { fr: "Accès chercheurs", en: "Research access" },
-    items: [
-      { fr: "API JSON publique", en: "Public JSON API" },
-      { fr: "Actions approuvées et cartographiées", en: "Approved mapped actions" },
-      { fr: "Réutilisation des données publiques", en: "Public data reuse" },
-    ],
-  },
-  {
-    icon: Landmark,
-    anchor: "villes-territoires",
-    title: { fr: "Villes & territoires", en: "Cities & territories" },
-    items: [
-      { fr: "Interopérabilité municipale", en: "Municipal interoperability" },
-      { fr: "Observatoires locaux", en: "Local observatories" },
-      { fr: "Gouvernance de données", en: "Data governance" },
-    ],
-  },
-];
-
-const ECONOMY_CARDS: EconomyCard[] = [
-  {
-    icon: Leaf,
-    title: { fr: "Sponsoring de zones", en: "Zone sponsorship" },
-    description: {
-      fr: "Soutenez des territoires prioritaires et financez des actions locales mesurables.",
-      en: "Support priority territories and fund measurable local actions.",
-    },
-  },
-  {
-    icon: Handshake,
-    title: { fr: "Mécénat & partenariats", en: "Patronage & partnerships" },
-    description: {
-      fr: "Accompagnez CleanMyMap dans l'innovation et la préservation des écosystèmes.",
-      en: "Support CleanMyMap's innovation and ecosystem preservation.",
-    },
-  },
-  {
-    icon: ShieldCheck,
-    title: { fr: "Action indépendante", en: "Independent action" },
-    description: {
-      fr: "Zéro influence sur la modération. Intégrité et impartialité garanties.",
-      en: "No influence on moderation. Integrity and impartiality guaranteed.",
-    },
-  },
-  {
-    icon: Database,
-    title: { fr: "Transparence", en: "Transparency" },
-    description: {
-      fr: "Gouvernance claire, traçabilité des financements et des usages.",
-      en: "Clear governance, traceability of funding and usage.",
-    },
-  },
-];
-
-function localize(locale: Locale, value: { fr: string; en: string }): string {
-  return value[locale];
-}
-
-function FeatureList({ locale, items }: { locale: Locale; items: FeatureCard["items"] }) {
-  return (
-    <ul className="mt-4 space-y-3">
-      {items.map((item) => (
-        <li key={item.fr} className="flex items-start gap-3">
-          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500/70" />
-          <span className="text-[0.92rem] leading-[1.55] text-slate-600">
-            {localize(locale, item)}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-export function OpenDataSection() {
-  const { locale } = useSitePreferences();
-  const fr = locale === "fr";
-
-  return (
-    <SectionShell
-      id="open-data"
-      hideHeader
-      gradient="from-white via-violet-50/50 to-white"
-    >
-      <div className="space-y-8">
-        <PageHeader
-          title="Open Data & API"
-          subtitle={
-            fr
-              ? "Consultez la projection publique des actions approuvées et cartographiées via l’API JSON."
-              : "Consult the public projection of approved mapped actions through the JSON API."
-          }
-        />
-
-        <div className="relative overflow-hidden rounded-[2.25rem] border border-violet-100 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(216,180,254,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(252,250,255,0.98)_100%)] p-5 text-slate-950 shadow-[0_30px_100px_-70px_rgba(79,70,229,0.45)] sm:p-8 lg:p-10">
-          <section className="relative">
-            <CmmCard tone="family" variant="default" className="relative">
-            <div className="absolute right-0 top-0 hidden h-full w-32 overflow-hidden rounded-r-[2rem] lg:block">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.12),transparent_68%)]" />
-              <div className="absolute inset-y-0 right-4 w-px bg-violet-100/70" />
-            </div>
-            <div className="absolute right-6 top-6 hidden h-32 w-32 rounded-full border border-violet-100/70 lg:block" />
-
-            <div className="relative z-10 space-y-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
-                <ShieldCheck size={28} />
-              </div>
-              <h2 className="max-w-lg text-[1.6rem] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
-                {fr ? "Projection publique" : "Public projection"}
-              </h2>
-              <p className="max-w-xl text-[0.98rem] leading-[1.7] text-slate-600">
-                {fr
-                  ? "L’API JSON publique expose une projection des actions approuvées et cartographiées pour consultation et réutilisation."
-                  : "The public JSON API exposes a projection of approved mapped actions for consultation and reuse."}
-              </p>
-            </div>
-          </CmmCard>
-        </section>
-
-        <section className="mt-8 grid gap-4 md:grid-cols-3">
-          {FEATURE_CARDS.map((card) => {
-            const Icon = card.icon;
-            return (
-              <article key={card.title.fr} id={card.anchor}>
-                <CmmCard as="div" tone="family" variant="default" size="sm" className="h-full">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_14px_30px_-18px_rgba(79,70,229,0.85)]">
-                  <Icon size={22} />
-                </div>
-                <h3 className="mt-5 text-[1.25rem] font-black leading-tight tracking-[-0.03em] cmm-text-primary">
-                  {localize(locale, card.title)}
-                </h3>
-                <FeatureList locale={locale} items={card.items} />
-                <div className="mt-6">
-                  <Link
-                    href={`#${card.anchor}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-violet-200 px-4 py-2 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700 transition hover:border-violet-300 hover:bg-violet-50"
-                  >
-                    {fr ? "En savoir plus" : "Learn more"}
-                    <ArrowRight size={14} />
-                  </Link>
-                </div>
-                </CmmCard>
-              </article>
-            );
-          })}
-        </section>
-
-        <section id="api" className="mt-6">
-          <CmmCard as="div" tone="family" variant="default" className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-700 to-violet-500 text-white shadow-[0_18px_42px_-28px_rgba(79,70,229,0.8)]">
-              <Code size={28} />
-            </div>
-            <div className="space-y-2">
-              <div className="cmm-text-caption font-black uppercase tracking-[0.2em] text-[var(--cmm-family-heading,var(--text-primary))]">
-                {fr ? "Documentation technique" : "Technical documentation"}
-              </div>
-              <h3 className="text-[clamp(1.6rem,3vw,2.5rem)] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
-                {fr ? "Connectez vos outils" : "Connect your tools"}
-              </h3>
-              <p className="max-w-2xl text-[0.96rem] leading-[1.7] text-slate-600">
-                {fr
-                  ? "L’API JSON publique expose une projection des actions approuvées et cartographiées. Elle est destinée à la consultation et à la réutilisation des données publiques."
-                  : "The public JSON API exposes a projection of approved mapped actions for public consultation and reuse."}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-start gap-3 border-t border-violet-100 pt-5 lg:border-l lg:border-t-0 lg:pt-0 lg:pl-6">
-            <CmmButton
-              href="/api/actions/map?limit=1&floorDate=all&types=action&status=approved"
-              prefetch={false}
-              tone="primary"
-              variant="pill"
-              className="inline-flex h-14 items-center gap-3 rounded-full bg-[#4a2c8f] px-7 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-26px_rgba(74,44,143,0.8)]"
-            >
-              {fr ? "Ouvrir l'API publique" : "Open public API"}
-              <ArrowRight size={16} />
-            </CmmButton>
-            <p className="text-sm text-slate-500">
-              {fr ? "Réponse JSON de l’API publique" : "Public API JSON response"}
-            </p>
-          </div>
-          </CmmCard>
-        </section>
-
-        <section id="economy" className="mt-6">
-          <CmmCard as="div" tone="family" variant="default" className="space-y-5">
-          <div className="flex flex-col gap-2">
-            <div className="inline-flex items-center gap-2 text-[var(--cmm-family-heading,var(--text-primary))]">
-              <Sparkles size={18} />
-              <span className="cmm-text-caption font-black uppercase tracking-[0.2em]">
-                {fr ? "Modèle Économique" : "Economic model"}
-              </span>
-            </div>
-            <h2 className="text-[1.8rem] font-black leading-tight tracking-[-0.04em] cmm-text-primary">
-              {fr ? "Modèle Économique" : "Economic Model"}
-            </h2>
-            <p className="max-w-3xl text-[0.96rem] leading-[1.7] text-slate-600">
-              {fr
-                ? "Transparence, sponsoring de zones et mécénat pour une action environnementale pérenne."
-                : "Transparency, zone sponsorship and patronage for sustainable environmental action."}
-            </p>
-          </div>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {ECONOMY_CARDS.map((card) => {
-              const Icon = card.icon;
-              return (
-                <article key={card.title.fr}>
-                  <CmmCard as="div" tone="violet" variant="muted" size="sm" className="h-full">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-50 text-violet-600">
-                    <Icon size={24} />
-                  </div>
-                  <h3 className="mt-4 text-[1rem] font-black leading-tight cmm-text-primary">
-                    {localize(locale, card.title)}
-                  </h3>
-                  <p className="mt-3 text-[0.92rem] leading-[1.65] text-slate-600">
-                    {localize(locale, card.description)}
-                  </p>
-                  </CmmCard>
-                </article>
-              );
-            })}
-          </div>
-          </CmmCard>
-        </section>
-
-        <section id="partenaire" className="mt-6 overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#9f1f81_0%,#7f1d8c_52%,#d61f6b_100%)] p-6 text-white shadow-[0_28px_90px_-54px_rgba(168,85,247,0.55)]">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-5">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/95 text-fuchsia-600 shadow-2xl">
-                <Handshake size={34} />
-              </div>
-              <div className="max-w-2xl space-y-2">
-                <h2 className="text-[1.25rem] font-black leading-tight tracking-[-0.03em] sm:text-[1.45rem]">
-                  {fr ? "Devenez partenaire" : "Become a partner"}
-                </h2>
-                <p className="max-w-xl text-[0.96rem] leading-[1.7] text-white">
-                  {fr
-                    ? "Engagez votre organisation dans une démarche de propreté urbaine et de préservation environnementale mesurable."
-                    : "Commit your organization to a measurable urban cleanliness and environmental preservation approach."}
-                </p>
-              </div>
-            </div>
-
-            <CmmButton
-              href="/partners/onboarding"
-              prefetch={false}
-              tone="secondary"
-              variant="pill"
-              className="inline-flex h-14 rounded-full bg-white px-6 cmm-text-small font-black uppercase tracking-[0.18em] text-[#8f226f] shadow-2xl"
-            >
-              {fr ? "Ouvrir le dossier" : "Open the file"}
-              <ArrowRight size={16} />
-            </CmmButton>
-          </div>
-        </section>
-        </div>
-      </div>
-    </SectionShell>
-  );
+export function OpenDataSection(){
+  const {locale}=useSitePreferences();const fr=locale==="fr",i=fr?0:1;
+  return <SectionShell id="open-data" hideHeader gradient="from-transparent via-transparent to-transparent">
+    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6">
+      <PageHeader title={fr?"Données publiques & sciences participatives":"Public data & citizen science"} subtitle={fr?"Documenter la pollution et les collectes citoyennes, comprendre les méthodes et consulter les données disponibles.":"Document litter and citizen cleanups, understand the methods and access available data."}/>
+      <CmmCard tone="family" variant="default" className="space-y-4">
+        <h2 className="text-xl font-bold cmm-text-primary">{fr?"De la collecte de terrain à la recherche":"From field observations to research"}</h2>
+        <p className="max-w-3xl text-sm leading-relaxed cmm-text-primary">{fr?"Les contributions renseignées par les participants alimentent une projection cartographique publique. L’objectif est de documenter les observations et l’effort de collecte, pas de certifier l’état environnemental d’un territoire.":"Participant submissions feed a public map projection. The goal is to document observations and collection effort, not certify a territory’s environmental state."}</p>
+        <div className="flex flex-wrap gap-2"><CmmButton href="#api" tone="primary">{fr?"Explorer les données":"Explore data"}</CmmButton><CmmButton href="#methodologie" tone="secondary">{fr?"Comprendre le protocole":"Understand the protocol"}</CmmButton><CmmButton href="/actions/map" tone="tertiary">{fr?"Voir la carte":"View map"}</CmmButton></div>
+        <nav aria-label={fr?"Sommaire":"Contents"} className="flex flex-wrap gap-x-4 gap-y-2 text-sm"><a className="underline cmm-text-info" href="#formats">{fr?"Catalogue":"Catalogue"}</a><a className="underline cmm-text-info" href="#dictionnaire">{fr?"Dictionnaire":"Dictionary"}</a><a className="underline cmm-text-info" href="#acces-chercheurs">{fr?"Réutilisation":"Reuse"}</a><a className="underline cmm-text-info" href="#villes-territoires">{fr?"Collaborer":"Collaborate"}</a></nav>
+      </CmmCard>
+      <section id="formats" className="space-y-3"><h2 className="text-xl font-bold cmm-text-primary">{fr?"Catalogue des données consultables":"Available data catalogue"}</h2>
+        <p className="text-sm cmm-text-primary">{fr?"Trois types d’enregistrements dans la même API JSON publique, pas trois bases indépendantes.":"Three record types in the same public JSON API, not three independent databases."}</p>
+        <div className="grid gap-3 md:grid-cols-3">{DATASETS.map(dataset=><CmmCard key={dataset.title[0]} tone="family" variant="default" size="sm" className="space-y-2"><h3 className="font-bold cmm-text-primary">{dataset.title[i]}</h3><p className="text-sm font-semibold cmm-text-primary">{dataset.unit[i]}</p><p className="text-sm cmm-text-primary">{dataset.content[i]}</p><p className="text-sm cmm-text-primary">{dataset.limit[i]}</p></CmmCard>)}</div>
+      </section>
+      <OpenDataExplorer fr={fr}/>
+      <section id="dictionnaire" className="space-y-3"><h2 className="text-xl font-bold cmm-text-primary">{fr?"Dictionnaire des données":"Data dictionary"}</h2>
+        <CmmCard tone="family" variant="default" className="space-y-3"><p className="text-sm cmm-text-primary">{fr?"Champs principaux de la projection publique. Les chemins metadata sont relatifs à contract. La présence varie selon le type et l’historique.":"Key public projection fields. Metadata paths are relative to contract. Availability varies by type and history."}</p>
+        <div className="overflow-x-auto"><table className="w-full text-left text-sm cmm-text-primary"><thead><tr className="border-b border-[var(--cmm-surface-border)]"><th scope="col" className="p-2">{fr?"Champ":"Field"}</th><th scope="col" className="p-2">{fr?"Unité / sens":"Unit / meaning"}</th><th scope="col" className="p-2">{fr?"Précaution d’analyse":"Interpretation"}</th></tr></thead><tbody>{FIELDS.map(field=><tr key={field[0]} className="border-b border-[var(--cmm-surface-border)]"><td className="break-words p-2 font-mono text-xs">{field[0]}</td><td className="p-2">{field[fr?1:2]}</td><td className="p-2">{field[fr?3:4]}</td></tr>)}</tbody></table></div></CmmCard>
+      </section>
+      <section id="methodologie" className="space-y-3"><h2 className="text-xl font-bold cmm-text-primary">{fr?"Méthodes, qualité et limites":"Methods, quality and limitations"}</h2>
+        <div className="grid gap-3 md:grid-cols-2"><CmmCard tone="family" variant="default" className="space-y-2"><h3 className="font-bold">{fr?"Protocole de terrain":"Field protocol"}</h3><ol className="list-decimal space-y-1 pl-5 text-sm cmm-text-primary"><li>{fr?"Définir le lieu, la date et l’effort de collecte.":"Record location, date and collection effort."}</li><li>{fr?"Distinguer pesées, comptages et estimations ; renseigner la méthode.":"Distinguish weights, counts and estimates; record the method."}</li><li>{fr?"Compléter le bilan et laisser les contrôles de publication s’appliquer.":"Complete the report and allow publication checks to apply."}</li><li>{fr?"Conserver les données sources et les versions de calcul.":"Retain source data and calculation versions."}</li></ol><CmmButton href="/methodologie" tone="secondary" size="sm">{fr?"Méthodologie CleanMyMap":"CleanMyMap methodology"}</CmmButton></CmmCard>
+        <CmmCard tone="family" variant="default" className="space-y-2"><h3 className="font-bold">{fr?"Interpréter avec prudence":"Interpret carefully"}</h3><ul className="list-disc space-y-1 pl-5 text-sm cmm-text-primary"><li>{fr?"Biais de participation, de sélection spatiale et de saison ; absence de signalement ≠ absence de pollution.":"Participation, spatial selection and season biases; no report does not mean no pollution."}</li><li>{fr?"Une collecte renseigne des déchets retirés, pas le stock total présent.":"A cleanup records removed litter, not total litter present."}</li><li>{fr?"Les proxys eau, CO₂e et surface ne sont pas des mesures directes ni une preuve causale.":"Water, CO₂e and area proxies are not direct measurements or causal evidence."}</li><li>{fr?"Données manquantes distinctes de zéro ; ne comparer que des unités et méthodes compatibles.":"Missing data differ from zero; compare compatible units and methods only."}</li></ul></CmmCard></div>
+        <CmmCard tone="family" variant="default" className="flex flex-wrap gap-3"><CmmButton href={DOC_ROOT+"product/SCIENTIFIC_PROTOCOL.md"} tone="secondary" size="sm">{fr?"Protocole scientifique versionné":"Versioned scientific protocol"}</CmmButton><CmmButton href={DOC_ROOT+"product/methodologie-carte-actions.md"} tone="secondary" size="sm">{fr?"Méthode cartographique":"Map methodology"}</CmmButton><CmmButton href={DOC_ROOT+"architecture/data-governance.md"} tone="secondary" size="sm">{fr?"Gouvernance des données":"Data governance"}</CmmButton></CmmCard>
+      </section>
+      <section id="acces-chercheurs" className="space-y-3"><h2 className="text-xl font-bold cmm-text-primary">{fr?"Réutilisation scientifique et API":"Scientific reuse and API"}</h2>
+        <CmmCard tone="family" variant="default" className="space-y-3"><p className="font-mono text-sm cmm-text-primary">GET /api/actions/map</p><p className="text-sm cmm-text-primary">{fr?"JSON public. Limite de 1 à 300 enregistrements, filtre de type, date basse (floorDate ou days) et contexte. Le paramètre status ne permet pas d’accéder à des données privées. Pas de pagination exhaustive garantie par cette route ; un filtre peut être appliqué après une lecture source bornée.":"Public JSON. Limit 1 to 300 records, type, lower date (floorDate or days) and context filters. Status cannot access private data. This route has no guaranteed exhaustive pagination; filters may run after a bounded source read."}</p>
+          <CmmDisclosure summary={fr?"Exemple Python : consulter un échantillon de bilans":"Python example: inspect a sample of completed reports"}><pre className="overflow-x-auto rounded-lg border border-[var(--cmm-surface-border)] p-3 text-xs cmm-text-primary"><code>{PYTHON}</code></pre><p className="mt-2 text-sm cmm-text-primary">{fr?"Exemple de consultation, sans téléchargement massif ni calcul d’indicateur. Vérifier les champs et conserver l’URL, la date UTC, les avertissements et les versions pertinentes avec chaque analyse.":"Consultation example, not bulk download or indicator computation. Check fields and keep URL, UTC time, warnings and relevant versions with each analysis."}</p></CmmDisclosure>
+          <h3 className="font-bold cmm-text-primary">{fr?"Citation et droits":"Citation and rights"}</h3><p className="text-sm cmm-text-primary">{fr?"Citer CleanMyMap, le type de données, l’URL de requête, la date de consultation et la méthode utilisée. La licence AGPL concerne le code ; aucune licence ouverte générale des données n’est annoncée ici. Les données tierces gardent leurs conditions d’origine. Demander les conditions applicables avant redistribution ou constitution d’un corpus publié.":"Cite CleanMyMap, data type, query URL, access date and method. AGPL applies to code; no general open data license is announced here. Third-party data retain their original terms. Ask about applicable terms before redistribution or publishing a corpus."}</p><CmmButton href="/conditions-generales-utilisation" tone="secondary" size="sm">{fr?"Conditions d’utilisation":"Terms of use"}</CmmButton>
+        </CmmCard>
+      </section>
+      <section id="villes-territoires" className="space-y-3"><h2 className="text-xl font-bold cmm-text-primary">{fr?"Participer et collaborer":"Participate and collaborate"}</h2><div className="grid gap-3 md:grid-cols-2">
+        <CmmCard tone="family" variant="default" className="space-y-3"><h3 className="font-bold">{fr?"Citoyens et associations":"Citizens and associations"}</h3><p className="text-sm cmm-text-primary">{fr?"Contribuer par une collecte documentée ou signaler une observation. Renseigner les méthodes et préciser les inconnues améliore la réutilisabilité des observations.":"Contribute through documented cleanups or observations. Recording methods and unknowns improves reusability."}</p><div className="flex flex-wrap gap-2"><CmmButton href="/actions/new" tone="primary" size="sm">{fr?"Renseigner une action":"Record an action"}</CmmButton><CmmButton href="/actions/map" tone="secondary" size="sm">{fr?"Observer la carte":"Explore map"}</CmmButton></div></CmmCard>
+        <CmmCard tone="family" variant="default" className="space-y-3"><h3 className="font-bold">{fr?"Laboratoires, écoles et collectivités":"Labs, schools and local authorities"}</h3><p className="text-sm cmm-text-primary">{fr?"Proposer une question de recherche, un protocole commun, une validation indépendante ou une demande de données minimisées. Préciser territoire, période, variables, usages et restitution aux participants.":"Propose a research question, shared protocol, independent validation or minimized data request. Specify area, period, variables, use and feedback to participants."}</p><CmmButton href="/contact" tone="primary" size="sm">{fr?"Proposer une collaboration":"Propose a collaboration"}</CmmButton></CmmCard></div>
+        <CmmCard tone="family" variant="default" size="sm"><p className="text-sm cmm-text-primary">{fr?"Cadres de référence : principes FAIR et dix principes de sciences participatives. Ils guident les améliorations ; aucune conformité complète n’est revendiquée.":"Reference frameworks: FAIR principles and the ten citizen science principles. They guide improvements; full compliance is not claimed."}</p><div className="mt-2 flex flex-wrap gap-3 text-sm"><a className="underline cmm-text-info" href="https://www.go-fair.org/fair-principles/">FAIR</a><a className="underline cmm-text-info" href="https://www.sei.org/publications/ten-principles-citizen-science/">ECSA</a></div></CmmCard>
+      </section>
+    </div>
+  </SectionShell>;
 }

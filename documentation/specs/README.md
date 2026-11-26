@@ -67,8 +67,8 @@ Le statut initial PENDING signifie **non réceptionné dans ce programme**, pas 
 | `funding-ui/02-contrats-documentaires.patch` | 08 FUND | PENDING | à établir |
 | `methodologie-ui/01-methodologie.patch` | 19 METHOD | PENDING | à établir |
 | `methodologie-ui/02-tests-et-contrats.patch` | 19 METHOD | PENDING | à établir |
-| `open-data-sciences/01-explorateur-scientifique.patch` | 07 DATA | PENDING | à établir |
-| `open-data-sciences/02-contrats-documentaires.patch` | 07 DATA | PENDING | à établir |
+| `open-data-sciences/01-explorateur-scientifique.patch` | 07 DATA | VALIDATED (retiré après intégration) | Vitest modèle/contrat 2/2 (6 tests) + API map 2/2 (49 tests), `typecheck`, `eslint` ciblé, `check:surfaces`, Playwright `open-data-science.spec.ts` 1/1 PASS |
+| `open-data-sciences/02-contrats-documentaires.patch` | 07 DATA | VALIDATED (retiré après intégration) | Fiches `open-data-README.md` et `open-data-presentation-detaillee.md` alignées `CURRENT`, `check:doc-governance` PASS |
 | `pilotage-ui/01-admin-cockpit.patch` | 10 PIL | PENDING | à établir |
 | `pilotage-ui/02-pilotage-navigation.patch` | 10 PIL | PENDING | à établir |
 | `pilotage-ui/03-pilotage-surfaces.patch` | 10 PIL | PENDING | à établir |

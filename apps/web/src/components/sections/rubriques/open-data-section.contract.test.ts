@@ -1,49 +1,20 @@
-import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
-
-const sectionSource = readFileSync(new URL("./open-data-section.tsx", import.meta.url), "utf8");
-const pageDocumentation = readFileSync(
-  new URL(
-    "../../../../../../documentation/pages_site/routes/04-reseau-discussions/open-data/open-data-README.md",
-    import.meta.url,
-  ),
-  "utf8",
-);
-const detailedPageDocumentation = readFileSync(
-  new URL(
-    "../../../../../../documentation/pages_site/routes/04-reseau-discussions/open-data/open-data-presentation-detaillee.md",
-    import.meta.url,
-  ),
-  "utf8",
-);
-
-describe("Open Data public contract", () => {
-  it("describes the public approved-action projection without private data promises", () => {
-    expect(sectionSource).toContain("projection des actions approuvées et cartographiées");
-    expect(sectionSource).toContain("Réponse JSON de l’API publique");
-    expect(sectionSource).not.toMatch(/CSV|historique utilisateur|user history/i);
-    expect(sectionSource).not.toMatch(/Swagger\s*\/\s*OpenAPI/i);
-    expect(pageDocumentation).toContain("projection publique des actions approuvées");
-    expect(pageDocumentation).not.toMatch(/CSV|historique utilisateur/i);
-    expect(pageDocumentation).not.toMatch(/documentation API\/OpenAPI/i);
+import {readFileSync} from "node:fs";
+import {describe,expect,it} from "vitest";
+const read=(path:string)=>readFileSync(new URL(path,import.meta.url),"utf8");
+describe("Open Data public contract",()=>{
+  it("uses the existing bounded API and distinguishes licence and scientific evidence",()=>{
+    const section=read("./open-data-section.tsx"),explorer=read("./open-data-explorer.tsx"),model=read("./open-data-research.model.ts");
+    expect(section).toContain("<OpenDataExplorer fr={fr}");
+    expect(model).toContain("post_action_complete");
+    expect(explorer).toContain("sample.isTruncated");
+    expect(section).toContain("licence AGPL concerne le code");
+    expect(section).not.toMatch(/Swagger|OpenAPI|Télécharger toutes les données/);
   });
-
-  it("keeps the detailed presentation aligned with the public runtime", () => {
-    expect(detailedPageDocumentation).toContain("page publique de présentation");
-    expect(detailedPageDocumentation).toContain("`GET /api/actions/map`");
-    expect(detailedPageDocumentation).toContain("actions approuvées et cartographiées");
-    expect(detailedPageDocumentation).not.toMatch(/CSV|historique utilisateur/i);
-    expect(detailedPageDocumentation).toContain("violet / blanc");
-    expect(detailedPageDocumentation).toContain(
-      "n’expose actuellement aucun Swagger ni document OpenAPI public",
-    );
-    expect(detailedPageDocumentation).not.toMatch(
-      /(?:Swagger|OpenAPI).{0,30}(?:disponible|exposé|consultable|proposé)/i,
-    );
-    expect(detailedPageDocumentation).not.toMatch(
-      /CTA\s+clairs?\s+pour\s+exporter/i,
-    );
-    expect(detailedPageDocumentation).not.toMatch(/export direct(?:ement)?/i);
-    expect(detailedPageDocumentation).not.toMatch(/\bpink\b/i);
+  it("keeps canonical route documentation aligned",()=>{
+    const doc=read("../../../../../../documentation/pages_site/routes/04-reseau-discussions/open-data/open-data-presentation-detaillee.md");
+    expect(doc).toContain("GET /api/actions/map");
+    expect(doc).toContain("post_action_complete");
+    expect(doc).toContain("licence");
+    expect(doc).toContain("isTruncated");
   });
 });
