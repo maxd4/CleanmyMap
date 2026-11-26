@@ -34,17 +34,17 @@ Les prix historiques ne sont pas des devis actuels. Les offres publiques ne prou
 
 ### 2.1. Ordres de grandeur
 
-Pour les conversions, reprendre uniquement les facteurs versionnés du protocole scientifique CleanMyMap : 0,22 g par mégot propre (proxy sec), 0,50 g par mégot humide ou mouillé (proxy), 700 mégots/L (proxy de volume). Une pesée nette effective est préférable pour un seuil contractuel. Le poids du contenant doit être déduit. Les variations d'humidité, de tassement, de papier, de tabac et d'impuretés interdisent d'assimiler ces conversions à une densité mesurée.
+Pour les conversions, reprendre uniquement les facteurs versionnés du protocole scientifique CleanMyMap : 0,22 g par mégot propre (proxy sec), 0,50 g par mégot humide et 0,90 g par mégot mouillé (proxy théorique provisoire), selon la version impact-terrain-2026-butts-mass-v3 ; 600 mégots/L (cleanmymap-butts-volume-v3). Les versions antérieures, dont 700 mégots/L (v2), restent historiques. Une pesée nette effective est préférable pour un seuil contractuel. Le poids du contenant doit être déduit. Les variations d'humidité, de tassement, de papier, de tabac et d'impuretés interdisent d'assimiler ces conversions à une densité mesurée.
 
-| Masse nette | Nombre estimé sec | Volume apparent estimé sec | Nombre estimé humide | Volume apparent estimé humide |
-| ---: | ---: | ---: | ---: | ---: |
-| 10 kg | 45 455 | 65 L | 20 000 | 29 L |
-| 20 kg | 90 909 | 130 L | 40 000 | 57 L |
-| 30 kg | 136 364 | 195 L | 60 000 | 86 L |
-| 50 kg | 227 273 | 325 L | 100 000 | 143 L |
-| 100 kg | 454 545 | 649 L | 200 000 | 286 L |
+| Masse nette | Nombre estimé sec | Volume sec | Nombre estimé humide | Volume humide | Nombre estimé mouillé | Volume mouillé |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 kg | 45 455 | 76 L | 20 000 | 33 L | 11 111 | 19 L |
+| 20 kg | 90 909 | 152 L | 40 000 | 67 L | 22 222 | 37 L |
+| 30 kg | 136 364 | 227 L | 60 000 | 100 L | 33 333 | 56 L |
+| 50 kg | 227 273 | 379 L | 100 000 | 167 L | 55 556 | 93 L |
+| 100 kg | 454 545 | 758 L | 200 000 | 333 L | 111 111 | 185 L |
 
-Formules : N = 1 000 × masse_kg / masse_unitaire_g ; V_L = N / 700. Arrondis à titre de dimensionnement, pas de nouvelle règle runtime. Une consultation ALCOME de 2022 évoquait environ 1 000 L pour 100 kg (50 cendriers de 20 L) : il s'agit d'un autre repère opérationnel, non d'une contradiction à résoudre en choisissant arbitrairement une densité. Mesurer les contenants réels avant toute réservation de véhicule. [S1, S2]
+Formules : N = 1 000 × masse_kg / masse_unitaire_g ; V_L = N / 600. Arrondis à titre de dimensionnement, pas de nouvelle règle runtime. Une consultation ALCOME de 2022 évoquait environ 1 000 L pour 100 kg (50 cendriers de 20 L) : il s'agit d'un autre repère opérationnel, non d'une contradiction à résoudre en choisissant arbitrairement une densité. Mesurer les contenants réels avant toute réservation de véhicule. [S1, S2]
 
 À 30 kg/an, un seul groupe mettrait environ 40 mois à atteindre 100 kg ; quatre groupes à 30 kg/an atteindraient théoriquement le seuil en 10 mois. À 5, 10, 20, 25 et 50 kg/mois mutualisés, le seuil correspond respectivement à 20, 10, 5, 4 et 2 mois. Les délais réels dépendent des volumes admissibles et des capacités de stockage ; ne pas attendre le seuil si le stockage devient inadapté.
 
@@ -158,14 +158,14 @@ Le coût central (milieu arithmétique) pour 100 kg est de 2 190 EUR TTC avec ca
 
 Si, et seulement si, 360 EUR TTC correspond à un forfait renouvelable par volume et si la tarification est linéaire par lots entiers :
 
-| Volume hypothétique compris | 30 kg secs (195 L) | 100 kg secs (649 L) |
+| Volume hypothétique compris | 30 kg secs (227 L) | 100 kg secs (758 L) |
 | ---: | ---: | ---: |
-| 25 L | 8 × 360 = 2 880 EUR | 26 × 360 = 9 360 EUR |
-| 60 L | 4 × 360 = 1 440 EUR | 11 × 360 = 3 960 EUR |
-| 100 L | 2 × 360 = 720 EUR | 7 × 360 = 2 520 EUR |
+| 25 L | 10 × 360 = 3 600 EUR | 31 × 360 = 11 160 EUR |
+| 60 L | 4 × 360 = 1 440 EUR | 13 × 360 = 4 680 EUR |
+| 100 L | 3 × 360 = 1 080 EUR | 8 × 360 = 2 880 EUR |
 | 100 kg (hypothèse alternative) | 360 EUR | 360 EUR |
 
-Les exemples ne décrivent aucune offre confirmée. Demander à TchaoMegot les plafonds annuels, frais d'enlèvement, cadence, durée du contrat, volume utile, tarif associatif et coût additionnel. Comparer sur les mêmes lots pesés et la même destination (matière ou énergie). Si un devis est par contenant, calculer le nombre entier de contenants requis et non un simple prorata.
+Les exemples ne décrivent aucune offre confirmée. Le repère de 0,015 EUR/mégot évoqué lors des recherches précédentes n'a pas été revalidé et n'entre pas dans le comparatif. Demander à TchaoMegot les plafonds annuels, frais d'enlèvement, cadence, durée du contrat, volume utile, tarif associatif et coût additionnel. Comparer sur les mêmes lots pesés et la même destination (matière ou énergie). Si un devis est par contenant, calculer le nombre entier de contenants requis et non un simple prorata.
 
 ### 4.4. Scénarios financés et mutualisés
 
