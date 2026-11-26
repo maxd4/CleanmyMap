@@ -1,4 +1,5 @@
 import {describe,expect,it} from "vitest";
+import {buildActionDataContract,toActionMapItem,toPublicActionMapResponse} from "@/lib/actions/data-contract";
 import {DEFAULT_RESEARCH_QUERY,projectResearchSample,researchQueryUrl} from "./open-data-research.model";
 const q=DEFAULT_RESEARCH_QUERY;
 const item=(id:string,phase="post_action_complete",extra:Record<string,unknown>={})=>({id,status:"approved",contract:{type:"action",status:"approved",dates:{observedAt:"2026-11-01"},location:{departmentCode:"75",latitude:48.85,longitude:2.35},metadata:{actionPhase:phase,wasteKg:0,cigaretteButts:null,durationMinutes:0,actorName:"PRIVATE_SENTINEL",...extra}}});
@@ -30,5 +31,123 @@ describe("public research sample",()=>{
     const spot=item("spot");spot.contract.type="spot";
     expect(projectResearchSample(body([spot]),q,"2026-11-25").rows).toHaveLength(0);
     expect(projectResearchSample(body([spot]),{...q,type:"spot"},"2026-11-25").rows[0]).toMatchObject({wasteKg:null,butts:null});
+  });
+
+  it("projects genuine canonical /api/actions/map responses across action, spot and clean_place",()=>{
+    const completedAction=buildActionDataContract({
+      id:"act-canonical-1",
+      type:"action",
+      status:"approved",
+      source:"actions",
+      createdByClerkId:"user_private_123",
+      observedAt:"2026-10-15",
+      locationLabel:"12 rue de Rivoli, 75004 Paris",
+      latitude:48.8566,
+      longitude:2.3522,
+      actorName:"PRIVATE_ACTOR_NAME",
+      notesPlain:"Private free text note",
+      actionPhase:"post_action_complete",
+      wasteKg:0,
+      cigaretteButts:null,
+      volunteersCount:12,
+      collectorsCount:10,
+      durationMinutes:45,
+      wasteMeasurementMethod:"balance_suspendue",
+    });
+    const missingMeasuresAction=buildActionDataContract({
+      id:"act-canonical-2",
+      type:"action",
+      status:"approved",
+      source:"actions",
+      observedAt:"2026-10-16",
+      locationLabel:"Paris 11e",
+      latitude:null,
+      longitude:null,
+      actionPhase:"post_action_complete",
+      wasteKg:null,
+      cigaretteButts:0,
+      durationMinutes:0,
+    });
+    const plannedAction=buildActionDataContract({
+      id:"act-canonical-planned",
+      type:"action",
+      status:"approved",
+      source:"actions",
+      observedAt:"2027-05-01",
+      locationLabel:"Paris 20e",
+      latitude:null,
+      longitude:null,
+      actionPhase:"pre_action",
+    });
+    const canonicalSpot=buildActionDataContract({
+      id:"spot-canonical-1",
+      type:"spot",
+      status:"approved",
+      source:"spots",
+      observedAt:"2026-10-12",
+      locationLabel:"75018 Paris",
+      latitude:48.89,
+      longitude:2.34,
+    });
+    const canonicalCleanPlace=buildActionDataContract({
+      id:"clean-canonical-1",
+      type:"clean_place",
+      status:"approved",
+      source:"clean_places",
+      observedAt:"2026-10-10",
+      locationLabel:"75019 Paris",
+      latitude:null,
+      longitude:null,
+    });
+
+    const actionResponse=toPublicActionMapResponse({
+      status:"ok",
+      daysWindow:365,
+      count:3,
+      isTruncated:false,
+      partialSource:false,
+      items:[completedAction,missingMeasuresAction,plannedAction].map(c=>toActionMapItem(c)),
+    });
+    // ActionDataMetadata does not include metadata.provided; missing values must still remain null vs explicit 0.
+    expect(completedAction.metadata).not.toHaveProperty("provided");
+    const actionSample=projectResearchSample(actionResponse,q,"2026-11-26");
+    expect(actionSample.received).toBe(3);
+    expect(actionSample.excluded).toBe(1);
+    expect(actionSample.rows).toHaveLength(2);
+    expect(actionSample.rows[0]).toMatchObject({
+      date:"2026-10-15",
+      wasteKg:0,
+      butts:null,
+      volunteers:12,
+      collectors:10,
+      durationMinutes:45,
+      massMethod:"balance_suspendue",
+    });
+    expect(actionSample.rows[1]).toMatchObject({
+      date:"2026-10-16",
+      wasteKg:null,
+      butts:0,
+      durationMinutes:null,
+    });
+    expect(JSON.stringify(actionSample)).not.toMatch(/PRIVATE_ACTOR_NAME|Private free text|user_private_123|48\.8566|2\.3522/);
+
+    const spotResponse=toPublicActionMapResponse({
+      status:"ok",daysWindow:365,count:1,isTruncated:false,partialSource:false,
+      items:[toActionMapItem(canonicalSpot)],
+    });
+    const spotSample=projectResearchSample(spotResponse,{...q,type:"spot"},"2026-11-26");
+    expect(spotSample.rows).toHaveLength(1);
+    expect(spotSample.rows[0]).toMatchObject({date:"2026-10-12",wasteKg:null,butts:null});
+
+    const cleanResponse=toPublicActionMapResponse({
+      status:"ok",daysWindow:365,count:1,isTruncated:false,partialSource:false,
+      items:[toActionMapItem(canonicalCleanPlace)],
+    });
+    const cleanSample=projectResearchSample(cleanResponse,{...q,type:"clean_place"},"2026-11-26");
+    expect(cleanSample.rows).toHaveLength(1);
+    expect(cleanSample.rows[0]).toMatchObject({date:"2026-10-10",wasteKg:null,butts:null});
+
+    const emptyResponse=toPublicActionMapResponse({status:"ok",daysWindow:365,count:0,isTruncated:false,partialSource:false,items:[]});
+    expect(projectResearchSample(emptyResponse,q,"2026-11-26")).toMatchObject({received:0,excluded:0,rows:[],isTruncated:false,partialSource:false});
   });
 });
