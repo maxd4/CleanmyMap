@@ -252,4 +252,62 @@ describe("SPOGOMI team referee division-scoped qualification and pagination", ()
     expect(result.teamReferees[0]?.status).toBe("unavailable");
     expect(result.refereeCandidates).toEqual([]);
   });
+
+  it("never reports assigned or eligible candidates when quiz RPC fails, quiz is unavailable, or division is missing", async () => {
+    const baseTables = {
+      spogomi_divisions: [{ id: "div-1", event_id: "event-1", regulation_version: "reg-1" }],
+      spogomi_team_referee_assignments: [
+        { event_id: "event-1", team_id: "team-1", division_id: "div-1", referee_clerk_id: "ref-1", assigned_at: "2026-11-25T10:00:00Z", revoked_at: null },
+      ],
+      spogomi_event_reviewers: [{ event_id: "event-1", clerk_id: "ref-1", role: "referee", revoked_at: null }],
+      spogomi_referee_applications: [
+        { event_id: "event-1", division_id: "div-1", clerk_id: "ref-1", status: "habilitated", regulation_version: "reg-1", quiz_version: "quiz-1", theory_proof_id: "p1", practical_confirmed_at: "2026-11-25T08:00:00Z" },
+      ],
+      spogomi_participants: [],
+    };
+
+    const mockWithRpc = (rpcImpl: () => Promise<{ data: unknown; error: unknown }>) => {
+      const client = createPagedSupabaseMock({ tables: baseTables }) as unknown as {
+        from: SupabaseClient["from"];
+        rpc: () => Promise<{ data: unknown; error: unknown }>;
+      };
+      client.rpc = rpcImpl;
+      return client as unknown as SupabaseClient;
+    };
+
+    // 1. RPC returns error
+    const rpcErrorResult = await loadSpogomiTeamRefereeState({
+      supabase: mockWithRpc(async () => ({ data: null, error: { message: "rpc unavailable" } })),
+      eventId: "event-1",
+      teams: [{ id: "team-1", division_id: "div-1", public_name: "Team 1" }],
+      includeIdentityNames: true,
+    });
+    expect(rpcErrorResult.teamReferees[0]?.status).toBe("pending_validation");
+    expect(rpcErrorResult.refereeCandidates).toEqual([]);
+
+    // 2. RPC returns available: false even with a quizVersion string
+    const quizUnavailableResult = await loadSpogomiTeamRefereeState({
+      supabase: mockWithRpc(async () => ({ data: { available: false, quizVersion: "quiz-1" }, error: null })),
+      eventId: "event-1",
+      teams: [{ id: "team-1", division_id: "div-1", public_name: "Team 1" }],
+      includeIdentityNames: true,
+    });
+    expect(quizUnavailableResult.teamReferees[0]?.status).toBe("pending_validation");
+    expect(quizUnavailableResult.refereeCandidates).toEqual([]);
+
+    // 3. Missing division must not fall back to eventRegulationVersion
+    const missingDivisionSupabase = createPagedSupabaseMock({
+      quizVersionByDivision: { "div-1": "quiz-1" },
+      tables: { ...baseTables, spogomi_divisions: [] },
+    });
+    const missingDivisionResult = await loadSpogomiTeamRefereeState({
+      supabase: missingDivisionSupabase,
+      eventId: "event-1",
+      eventRegulationVersion: "reg-1",
+      teams: [{ id: "team-1", division_id: "div-1", public_name: "Team 1" }],
+      includeIdentityNames: true,
+    });
+    expect(missingDivisionResult.teamReferees[0]?.status).toBe("pending_validation");
+    expect(missingDivisionResult.refereeCandidates).toEqual([]);
+  });
 });

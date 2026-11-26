@@ -72,6 +72,8 @@ describe("SPOGOMI team referee domain rules", () => {
         applicationStatus: "habilitated",
         applicationRegulationVersion: "reg-v1",
         divisionRegulationVersion: "reg-v1",
+        applicationQuizVersion: "quiz-v1",
+        divisionQuizVersion: "quiz-v1",
         hasQuizProof: true,
         hasPracticalConfirmation: true,
       }).status,
@@ -85,10 +87,42 @@ describe("SPOGOMI team referee domain rules", () => {
         applicationStatus: "habilitated",
         applicationRegulationVersion: "reg-v1",
         divisionRegulationVersion: "reg-v1",
+        applicationQuizVersion: "quiz-v1",
+        divisionQuizVersion: "quiz-v1",
         hasQuizProof: true,
         hasPracticalConfirmation: true,
       }).status,
     ).toBe("unavailable");
+
+    expect(
+      deriveSpogomiTeamRefereeStatus({
+        hasActiveAssignment: true,
+        isParticipantInEvent: false,
+        hasActiveReviewerRole: true,
+        applicationStatus: "habilitated",
+        applicationRegulationVersion: "reg-v1",
+        divisionRegulationVersion: "reg-v1",
+        applicationQuizVersion: "quiz-v1",
+        divisionQuizVersion: null,
+        hasQuizProof: true,
+        hasPracticalConfirmation: true,
+      }).status,
+    ).toBe("pending_validation");
+
+    expect(
+      deriveSpogomiTeamRefereeStatus({
+        hasActiveAssignment: true,
+        isParticipantInEvent: false,
+        hasActiveReviewerRole: true,
+        applicationStatus: "habilitated",
+        applicationRegulationVersion: null,
+        divisionRegulationVersion: null,
+        applicationQuizVersion: "quiz-v1",
+        divisionQuizVersion: "quiz-v1",
+        hasQuizProof: true,
+        hasPracticalConfirmation: true,
+      }).status,
+    ).toBe("pending_validation");
   });
 
   it("maps French labels for all four statuses", () => {

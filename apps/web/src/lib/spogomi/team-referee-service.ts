@@ -121,12 +121,15 @@ async function loadDivisionQuizVersions(params: {
           p_division_id: divisionId,
         });
         if (res?.error || !res?.data || typeof res.data !== "object") {
-          return [divisionId, undefined] as const;
+          return [divisionId, null] as const;
         }
-        const quizVersion = (res.data as { quizVersion?: unknown }).quizVersion;
-        return [divisionId, typeof quizVersion === "string" ? quizVersion : null] as const;
+        const payload = res.data as { quizVersion?: unknown; available?: unknown };
+        if (payload.available === false || typeof payload.quizVersion !== "string" || !payload.quizVersion.trim()) {
+          return [divisionId, null] as const;
+        }
+        return [divisionId, payload.quizVersion] as const;
       } catch {
-        return [divisionId, undefined] as const;
+        return [divisionId, null] as const;
       }
     }),
   );
@@ -272,12 +275,8 @@ export async function loadSpogomiTeamRefereeState(params: {
       };
     }
     const app = appByKey.get(`${team.division_id}:${active.referee_clerk_id}`);
-    const divisionRegulationVersion = divisionRegulationById.has(team.division_id)
-      ? (divisionRegulationById.get(team.division_id) ?? null)
-      : (params.eventRegulationVersion ?? null);
-    const divisionQuizVersion = divisionQuizVersionById.has(team.division_id)
-      ? divisionQuizVersionById.get(team.division_id)
-      : undefined;
+    const divisionRegulationVersion = divisionRegulationById.get(team.division_id) ?? null;
+    const divisionQuizVersion = divisionQuizVersionById.get(team.division_id) ?? null;
     const derived = deriveSpogomiTeamRefereeStatus({
       hasActiveAssignment: true,
       isParticipantInEvent: participantIds.has(active.referee_clerk_id),
@@ -306,18 +305,15 @@ export async function loadSpogomiTeamRefereeState(params: {
   const refereeCandidates: SpogomiTeamRefereeCandidate[] = params.includeIdentityNames
     ? applications
         .filter((app) => {
-          const divisionRegulationVersion = divisionRegulationById.has(app.division_id)
-            ? (divisionRegulationById.get(app.division_id) ?? null)
-            : (params.eventRegulationVersion ?? null);
-          const divisionQuizVersion = divisionQuizVersionById.has(app.division_id)
-            ? divisionQuizVersionById.get(app.division_id)
-            : undefined;
+          const divisionRegulationVersion = divisionRegulationById.get(app.division_id) ?? null;
+          const divisionQuizVersion = divisionQuizVersionById.get(app.division_id) ?? null;
           const quizMatches =
-            divisionQuizVersion === undefined ||
-            divisionQuizVersion === null ||
+            Boolean(divisionQuizVersion) &&
+            Boolean(app.quiz_version) &&
             app.quiz_version === divisionQuizVersion;
           return (
             app.status === "habilitated" &&
+            Boolean(divisionRegulationVersion) &&
             app.regulation_version === divisionRegulationVersion &&
             quizMatches &&
             Boolean(app.theory_proof_id) &&

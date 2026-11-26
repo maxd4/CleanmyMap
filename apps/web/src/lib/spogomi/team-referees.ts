@@ -87,14 +87,16 @@ export function deriveSpogomiTeamRefereeStatus(params: {
       conflictReason: "La qualification arbitre n’est plus valide.",
     };
   }
-  const quizVersionMismatch =
-    params.divisionQuizVersion !== undefined &&
-    params.divisionQuizVersion !== null &&
-    params.applicationQuizVersion !== params.divisionQuizVersion;
+  const hasValidDivisionRegulation = Boolean(params.divisionRegulationVersion);
+  const hasValidQuizVersion =
+    Boolean(params.divisionQuizVersion) &&
+    Boolean(params.applicationQuizVersion) &&
+    params.applicationQuizVersion === params.divisionQuizVersion;
   if (
     params.applicationStatus !== "habilitated" ||
+    !hasValidDivisionRegulation ||
     params.applicationRegulationVersion !== params.divisionRegulationVersion ||
-    quizVersionMismatch ||
+    !hasValidQuizVersion ||
     !params.hasQuizProof ||
     !params.hasPracticalConfirmation
   ) {

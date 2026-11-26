@@ -640,4 +640,73 @@ describe("SPOGOMI preparation workspace", () => {
     expect(JSON.stringify(renderer.toJSON())).not.toContain("Actualisation impossible");
     renderer.unmount();
   });
+
+  it("preserves route mutation reconciliation and surfaces retry when reload fails after a successful route save", async () => {
+    const baseBody = body;
+    let getCount = 0;
+    let failNextRefresh = false;
+
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/routes")) {
+        return Promise.resolve(new Response(JSON.stringify({
+          routeSynchronization: { compositionRevision: 10, routeVersion: 2 },
+        }), { status: 200 }));
+      }
+      getCount += 1;
+      if (failNextRefresh) {
+        return Promise.resolve(new Response(JSON.stringify({ error: "Rechargement parcours indisponible" }), { status: 500 }));
+      }
+      const rev = getCount >= 2 ? 10 : 1;
+      const routeVer = getCount >= 2 ? 2 : 1;
+      return Promise.resolve(new Response(JSON.stringify({
+        ...baseBody,
+        event: { ...baseBody.event, composition_revision: rev },
+        route: {
+          id: "route-1",
+          event_id: "event-1",
+          division_id: null,
+          route_version: routeVer,
+          source: "manual_reference",
+          file_name: "route.geojson",
+          point_count: 2,
+          reference_distance_km: 1.5,
+          inferred_topology: "loop",
+          geometry_geojson: { type: "LineString", coordinates: [[2.35, 48.85], [2.36, 48.86]] },
+          last_change_reason: null,
+          reference_media_id: null,
+        },
+      }), { status: 200 }));
+    });
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="settings" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(getCount).toBe(1);
+
+    failNextRefresh = true;
+    const saveRouteButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Enregistrer le parcours"));
+    expect(saveRouteButton).toBeTruthy();
+    await act(async () => {
+      await propsOf<ButtonProps>(saveRouteButton!).onClick?.();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(JSON.stringify(renderer.toJSON())).toContain("Rechargement parcours indisponible");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Opération enregistrée.");
+
+    const retryRefreshButton = renderer.root.findAllByType("button").find((button) => String(button.props.children).includes("Réessayer l’actualisation"));
+    expect(retryRefreshButton).toBeTruthy();
+    failNextRefresh = false;
+    await act(async () => {
+      await propsOf<ButtonProps>(retryRefreshButton!).onClick?.();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getCount).toBe(3);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Rechargement parcours indisponible");
+    renderer.unmount();
+  });
 });

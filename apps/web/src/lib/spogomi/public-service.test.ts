@@ -51,6 +51,7 @@ function makeSupabase(inputRows?: Array<Record<string, unknown>>, options: { div
         return query;
       }),
       neq: vi.fn((column: string, value: unknown) => { if (table === "spogomi_events" && column === "state") excludedStates.add(String(value)); return query; }),
+      is: vi.fn(() => query),
       not: vi.fn(() => query),
       in: vi.fn(() => query),
       order: vi.fn(() => query),
@@ -239,5 +240,73 @@ describe("SPOGOMI public identity and lifecycle", () => {
     expect(supabase.calls.filter((table) => table === "spogomi_participants")).toHaveLength(1);
     expect(serviceMocks.organizers).toHaveBeenCalledTimes(1);
     expect(serviceMocks.organizers.mock.calls[0]?.[0]).toMatchObject({ actionIds: ["action-1", "action-2"] });
+  });
+
+  it("selects regulation_version on spogomi_divisions in loadPublishedSpogomiEventBySlug so qualified referees appear assigned", async () => {
+    serviceMocks.organizer.mockResolvedValue({ name: "Association Clean" });
+    serviceMocks.gallery.mockResolvedValue([]);
+    serviceMocks.projection.mockResolvedValue({ results: { visibility: "hidden" } });
+
+    const pickSelectedColumns = (row: Record<string, unknown>, selectClause: string) => {
+      const cols = selectClause.split(",").map((c) => c.trim()).filter(Boolean);
+      const out: Record<string, unknown> = {};
+      for (const col of cols) {
+        if (col in row) out[col] = row[col];
+      }
+      return out;
+    };
+
+    const divisionRow = {
+      id: "division-1",
+      event_id: "event-1",
+      division_type: "casual",
+      regulation_version: "reg-v1",
+      regulation_config: {},
+    };
+    const supabase = {
+      from: vi.fn((table: string) => {
+        let selectClause = "*";
+        const query = {
+          select: vi.fn((cols: string) => { selectClause = cols; return query; }),
+          eq: vi.fn(() => query),
+          neq: vi.fn(() => query),
+          is: vi.fn(() => query),
+          not: vi.fn(() => query),
+          in: vi.fn(() => query),
+          order: vi.fn(() => query),
+          range: vi.fn(() => query),
+          maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+          then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => {
+            let data: unknown[] = [];
+            if (table === "spogomi_events") {
+              data = [{ id: "event-1", event_slug: "paris-2026", name: "SPOGOMI Paris", location_label: "Paris", mode: "casual", state: "active", starts_at: "2026-10-10T08:00:00.000Z", ends_at: "2026-10-10T12:00:00.000Z", action_id: "action-1", public_results_visibility: "hidden" }];
+            } else if (table === "actions") {
+              data = [{ id: "action-1", status: "approved", published_at: "2026-09-01", moderation_visibility: "public" }];
+            } else if (table === "spogomi_divisions") {
+              data = [pickSelectedColumns(divisionRow, selectClause)];
+            } else if (table === "spogomi_teams") {
+              data = [{ id: "team-1", division_id: "division-1", team_number: 1, public_name: "Alpha", composition_state: "locked" }];
+            } else if (table === "spogomi_team_referee_assignments") {
+              data = [{ team_id: "team-1", division_id: "division-1", referee_clerk_id: "ref-1", assigned_at: "2026-10-01T08:00:00Z", revoked_at: null }];
+            } else if (table === "spogomi_event_reviewers") {
+              data = [{ clerk_id: "ref-1", role: "referee", revoked_at: null }];
+            } else if (table === "spogomi_referee_applications") {
+              data = [{ clerk_id: "ref-1", division_id: "division-1", status: "habilitated", regulation_version: "reg-v1", quiz_version: "quiz-v1", theory_proof_id: "proof-1", practical_confirmed_at: "2026-10-01T09:00:00Z" }];
+            }
+            return Promise.resolve({ data, error: null }).then(resolve, reject);
+          },
+        };
+        return query;
+      }),
+      rpc: vi.fn(async (fn: string) => {
+        if (fn === "spogomi_referee_quiz_definition_internal") {
+          return { data: { available: true, quizVersion: "quiz-v1" }, error: null };
+        }
+        return { data: null, error: null };
+      }),
+    };
+
+    const event = await loadPublishedSpogomiEventBySlug("paris-2026", supabase as never);
+    expect(event?.teams[0]?.refereeStatus).toBe("assigned");
   });
 });

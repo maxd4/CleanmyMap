@@ -440,7 +440,7 @@ export async function loadPublishedSpogomiEventBySlug(
   if (!row) return null;
   const actionIds = await loadPublicActionHrefs(supabase, [row.action_id]);
   const [divisionsResult, teamsResult, routeResult, projection, actionPreparation, operationsResult] = await Promise.all([
-    supabase.from("spogomi_divisions").select("id, division_type, regulation_config").eq("event_id", row.id).order("division_type"),
+    supabase.from("spogomi_divisions").select("id, division_type, regulation_version, regulation_config").eq("event_id", row.id).order("division_type"),
     row.state === "cancelled" ? Promise.resolve({ data: [], error: null }) : supabase
       .from("spogomi_teams")
       .select("id, division_id, team_number, public_name, composition_state")
