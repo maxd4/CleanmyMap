@@ -11,6 +11,10 @@ const hashLockOrder = "c".repeat(64);
 const hashSuppressA = "d".repeat(64);
 const hashSuppressB = "e".repeat(64);
 const hashExpired = "f".repeat(64);
+const hashDistinctA = "1".repeat(64);
+const hashDistinctB = "2".repeat(64);
+const hashLockExpire = "3".repeat(64);
+const hashLockExpireComplete = "4".repeat(64);
 
 const run = (sql, step = "query", timeoutMs = 20_000) => runLocalPsqlQuery(sql, {
   timeoutMs,
@@ -45,7 +49,7 @@ begin;
 set local role postgres;
 delete from private.external_action_sync_suppression_audit where operation_id like 'sync-conc-%';
 delete from private.external_action_sync_references where external_event_id like 'conc-event-%';
-delete from private.external_action_sync_identities where identity_hash in ('${hashCollision}', '${hashOrgConflict}', '${hashLockOrder}', '${hashSuppressA}', '${hashSuppressB}', '${hashExpired}');
+delete from private.external_action_sync_identities where identity_hash in ('${hashCollision}', '${hashOrgConflict}', '${hashLockOrder}', '${hashSuppressA}', '${hashSuppressB}', '${hashExpired}', '${hashDistinctA}', '${hashDistinctB}', '${hashLockExpire}', '${hashLockExpireComplete}');
 delete from public.actions where id in ('${actionA}'::uuid, '${actionB}'::uuid, '00000000-0000-4000-8000-000000009011'::uuid, '00000000-0000-4000-8000-000000009012'::uuid);
 delete from public.organizer_directory_entries where id in ('${orgA}', '${orgB}');
 commit;
@@ -359,6 +363,166 @@ commit;
   assert.match(takeRes.stdout, /TAKEOVER:reserved/);
 }
 
+async function testDistinctIdentityHashReferenceCollision() {
+  const tokenA = "60000000-0000-4000-8000-000000000001";
+  const tokenB = "60000000-0000-4000-8000-000000000002";
+  const makeSession = (index, hash, token, ownKey, otherKey) => run(`
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-distinct-${index}"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+${barrierSql(ownKey, otherKey)}
+select 'RESULT:' || reservation_status || ':' || identity_hash
+from public.reserve_external_action_sync_reference(
+  '${hash}', '${orgA}', 'sync-conc-distinct-${index}', '${token}'::uuid,
+  'jagis_pour_la_nature', 'conc-event-distinct-hash', 'https://example.test/distinct-${index}', 'rd-${index}',
+  '{"distinct":${index}}'::jsonb, '${"c".repeat(64)}'
+);
+select pg_sleep(0.25);
+commit;
+`, `distinct_${index}`);
+
+  const [r1, r2] = await Promise.all([
+    makeSession(1, hashDistinctA, tokenA, 928173645121n, 928173645122n),
+    makeSession(2, hashDistinctB, tokenB, 928173645122n, 928173645121n),
+  ]);
+  const m1 = r1.stdout.match(/RESULT:([a-z_]+):([0-9a-f]{64})/);
+  const m2 = r2.stdout.match(/RESULT:([a-z_]+):([0-9a-f]{64})/);
+  assert.ok(m1 && m2, `Unexpected distinct-hash collision output: ${r1.stdout} | ${r2.stdout}`);
+  assert.deepEqual([m1[1], m2[1]].sort(), ["busy", "reserved"]);
+  const winnerHash = m1[1] === "reserved" ? hashDistinctA : hashDistinctB;
+  const loserHash = winnerHash === hashDistinctA ? hashDistinctB : hashDistinctA;
+  assert.equal(m1[2], winnerHash);
+  assert.equal(m2[2], winnerHash);
+
+  const residual = await run(`
+begin;
+set local role service_role;
+select 'COUNTS:' ||
+  (select count(*) from private.external_action_sync_identities where identity_hash = '${winnerHash}') || ':' ||
+  (select count(*) from private.external_action_sync_identities where identity_hash = '${loserHash}') || ':' ||
+  (select count(*) from private.external_action_sync_references where source_id = 'jagis_pour_la_nature' and external_event_id = 'conc-event-distinct-hash' and identity_hash = '${winnerHash}');
+commit;
+`, "distinct_residual");
+  assert.match(residual.stdout, /COUNTS:1:0:1/);
+}
+
+async function testExpirationDuringLockWaitAndCompletionRejection() {
+  const tokenReserve = "70000000-0000-4000-8000-000000000001";
+  const tokenComplete = "70000000-0000-4000-8000-000000000002";
+
+  // Setup both identities with short 0.35s leases
+  await run(`
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-lock-exp-setup"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select * from public.reserve_external_action_sync_reference(
+  '${hashLockExpire}', '${orgA}', 'sync-conc', '${tokenReserve}'::uuid,
+  'jagis_pour_la_nature', 'conc-event-lock-exp-1', 'https://example.test/le1', 'r1', '{"le":1}'::jsonb, '${"d".repeat(64)}'
+);
+select * from public.reserve_external_action_sync_reference(
+  '${hashLockExpireComplete}', '${orgA}', 'sync-conc', '${tokenComplete}'::uuid,
+  'jagis_pour_la_nature', 'conc-event-lock-exp-2', 'https://example.test/le2', 'r1', '{"le":2}'::jsonb, '${"e".repeat(64)}'
+);
+commit;
+`, "lock_exp_setup");
+
+  await run(`
+begin;
+set local role postgres;
+update private.external_action_sync_identities
+   set claim_expires_at = clock_timestamp() + interval '0.45 seconds'
+ where identity_hash in ('${hashLockExpire}', '${hashLockExpireComplete}');
+commit;
+`, "lock_exp_arm");
+
+  // Session 1 acquires FOR UPDATE before expiration and holds it past 0.45s.
+  // Session 2 starts its transaction BEFORE expiration (now() < claim_expires_at),
+  // waits on Session 1's lock until after expiration, and must observe claim_expired via clock_timestamp().
+  const holderReserve = run(`
+begin;
+set local role postgres;
+select 1 from private.external_action_sync_identities where identity_hash = '${hashLockExpire}' for update;
+select pg_advisory_lock(928173645131);
+select pg_sleep(0.8);
+commit;
+`, "lock_exp_holder_reserve");
+
+  const waiterReserve = run(`
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-lock-exp-res"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+do $$
+declare v_ok boolean := false;
+begin
+  for i in 1..200 loop
+    if not pg_try_advisory_lock(928173645131) then
+      v_ok := true;
+      exit;
+    end if;
+    perform pg_advisory_unlock(928173645131);
+    perform pg_sleep(0.02);
+  end loop;
+  if not v_ok then raise exception 'Lock-wait barrier timed out'; end if;
+end $$;
+select 'LOCK_WAIT_RESERVE:' || reservation_status
+from public.reserve_external_action_sync_reference(
+  '${hashLockExpire}', '${orgA}', 'sync-conc', '${tokenReserve}'::uuid,
+  'jagis_pour_la_nature', 'conc-event-lock-exp-1', 'https://example.test/le1-new', 'r2', '{"le":2}'::jsonb, '${"f".repeat(64)}'
+);
+commit;
+`, "lock_exp_waiter_reserve");
+
+  const holderComplete = run(`
+begin;
+set local role postgres;
+select 1 from private.external_action_sync_identities where identity_hash = '${hashLockExpireComplete}' for update;
+select pg_advisory_lock(928173645132);
+select pg_sleep(0.8);
+commit;
+`, "lock_exp_holder_complete");
+
+  const waiterComplete = run(`
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-lock-exp-comp"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+do $$
+declare v_ok boolean := false;
+begin
+  for i in 1..200 loop
+    if not pg_try_advisory_lock(928173645132) then
+      v_ok := true;
+      exit;
+    end if;
+    perform pg_advisory_unlock(928173645132);
+    perform pg_sleep(0.02);
+  end loop;
+  if not v_ok then raise exception 'Lock-wait completion barrier timed out'; end if;
+end $$;
+select 'LOCK_WAIT_COMPLETE:' || public.complete_external_action_sync_identity(
+  '${hashLockExpireComplete}', '${tokenComplete}'::uuid, '${actionA}'::uuid
+);
+commit;
+`, "lock_exp_waiter_complete");
+
+  const [, wRes, , wComp] = await Promise.all([holderReserve, waiterReserve, holderComplete, waiterComplete]);
+  assert.match(wRes.stdout, /LOCK_WAIT_RESERVE:claim_expired/);
+  assert.match(wComp.stdout, /LOCK_WAIT_COMPLETE:claim_expired/);
+
+  const unlinked = await run(`
+begin;
+set local role service_role;
+select 'UNLINKED:' || count(*) filter (where action_id is null)
+from private.external_action_sync_identities
+where identity_hash in ('${hashLockExpire}', '${hashLockExpireComplete}');
+commit;
+`, "lock_exp_verify_unlinked");
+  assert.match(unlinked.stdout, /UNLINKED:2/);
+}
+
 let currentPhase = "INIT";
 
 async function main() {
@@ -375,6 +539,10 @@ async function main() {
     await testConcurrentSuppressionOperationIdCollisionAndIdempotency();
     currentPhase = "EXPIRED_TAKEOVER";
     await testConcurrentExpiredTokenVsTakeover();
+    currentPhase = "DISTINCT_HASH_COLLISION";
+    await testDistinctIdentityHashReferenceCollision();
+    currentPhase = "LOCK_WAIT_EXPIRATION";
+    await testExpirationDuringLockWaitAndCompletionRejection();
     console.log("EXECUTED_DB_CONTRACT: External action sync two-session reservation, lock-order, expiration and suppression idempotency contract passed.");
   } catch (error) {
     const isAssertion = error?.code === "ERR_ASSERTION" || error?.name === "AssertionError";

@@ -1,5 +1,5 @@
 begin;
-select plan(24);
+select plan(27);
 
 select ok(has_table_privilege('service_role', 'private.external_action_sync_suppression_audit', 'INSERT'), 'service role can persist suppression audit evidence');
 select ok(not has_table_privilege('authenticated', 'private.external_action_sync_suppression_audit', 'SELECT'), 'authenticated cannot read private suppression audit');
@@ -82,6 +82,28 @@ begin
     '{"date":"2027-02-03","route":"T"}', repeat('6', 64));
   insert into external_sync_test_results values ('reserve_expired_takeover', v_res.reservation_status);
 
+  -- Lease that expires mid-transaction (now() still < claim_expires_at, clock_timestamp() > claim_expires_at)
+  update private.external_action_sync_identities
+     set claim_expires_at = clock_timestamp() + interval '0.1 seconds'
+   where identity_hash = v_unlinked_hash;
+  perform pg_sleep(0.15);
+
+  select * into v_claim from public.claim_external_action_sync_identity(
+    v_unlinked_hash, '11111111-1111-4111-8111-111111111111', 'fixture', v_takeover_token
+  );
+  insert into external_sync_test_results values ('claim_midtx_expired', v_claim.claim_status);
+
+  select * into v_res from public.reserve_external_action_sync_reference(
+    v_unlinked_hash, '11111111-1111-4111-8111-111111111111', 'fixture', v_takeover_token,
+    'jagis_pour_la_nature', 'event-unlinked', 'https://example.test/midtx', 'r4',
+    '{"date":"2027-02-04","route":"M"}', repeat('6', 64));
+  insert into external_sync_test_results values ('reserve_midtx_expired', v_res.reservation_status);
+
+  insert into external_sync_test_results values (
+    'complete_midtx_expired',
+    public.complete_external_action_sync_identity(v_unlinked_hash, v_takeover_token, v_action)
+  );
+
   -- 2. Linked lifecycle, revision survival, suppression idempotency & operation_id collision
   perform * from public.claim_external_action_sync_identity(v_hash, '11111111-1111-4111-8111-111111111111', 'fixture', v_token);
   select * into v_res from public.reserve_external_action_sync_reference(
@@ -129,6 +151,9 @@ select is((select value from external_sync_test_results where key = 'unlinked_sn
 select is((select value from external_sync_test_results where key = 'claim_expired_same_token'), 'claim_expired', 'claim rejects identical expired token');
 select is((select value from external_sync_test_results where key = 'reserve_expired_same_token'), 'claim_expired', 'reserve rejects identical expired token');
 select is((select value from external_sync_test_results where key = 'reserve_expired_takeover'), 'reserved', 'fresh token can take over an expired unlinked lease');
+select is((select value from external_sync_test_results where key = 'claim_midtx_expired'), 'claim_expired', 'claim rejects lease expired after transaction start');
+select is((select value from external_sync_test_results where key = 'reserve_midtx_expired'), 'claim_expired', 'reserve rejects lease expired after transaction start');
+select is((select value from external_sync_test_results where key = 'complete_midtx_expired'), 'claim_expired', 'complete rejects lease expired after transaction start');
 select is((select value from external_sync_test_results where key = 'reservation'), 'reserved', 'external identity is reserved before canonical creation');
 select is((select value from external_sync_test_results where key = 'complete_null'), 'invalid_action', 'completion rejects a null canonical action');
 select is((select value from external_sync_test_results where key = 'complete_wrong_organizer'), 'organizer_mismatch', 'completion rejects an action owned by another organizer');
