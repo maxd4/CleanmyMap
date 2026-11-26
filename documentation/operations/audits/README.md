@@ -87,3 +87,10 @@ gouvernance ou une preuve de production.
 | Parcours et interactions | `validation-transverse-interactions-2026-08-29.md` | Code, tests et fiche route CURRENT concernés |
 
 Toute récupération de preuve doit identifier sa date, son SHA, sa méthode et ses limites avant d'en tirer une recommandation. Ne jamais agréger des chiffres issus de périodes incompatibles en inventaire CURRENT ni réécrire un audit historique uniquement pour moderniser ses chemins.
+
+## Audit transversal du dépôt et des réglages GitHub
+
+[Audit du 26 novembre 2026](./github-repository-audit-2026-11-26.md) :
+observation du dépôt, des rulesets, des workflows et des contrôles de release.
+Il s'agit d'une preuve datée, non d'un registre permanent de tâches. Les
+contrats actuels restent chez leurs propriétaires.

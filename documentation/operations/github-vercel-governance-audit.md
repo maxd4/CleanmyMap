@@ -1,5 +1,10 @@
 # Audit GitHub/Vercel CleanMyMap
 
+**Statut documentaire : HISTORY / SNAPSHOT.** La date et le SHA exacts de
+l'observation initiale ne sont pas renseignés. Les compteurs et recommandations
+ci-dessous ne constituent pas l'état actuel. Pour les règles applicables,
+consulter [github-governance.md](./github-governance.md) et relire GitHub.
+
 Snapshot de gouvernance du dépôt, centré sur l'exploitation de GitHub comme outil de pilotage et sur les réglages Vercel qui impactent les merges et les previews.
 
 ## Tableau de synthèse

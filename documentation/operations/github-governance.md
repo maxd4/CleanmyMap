@@ -8,12 +8,15 @@ Ce mémo résume les garde-fous GitHub à garder en place pour CleanMyMap.
 
 La maintenance suit `MAIN-ONLY / MULTI-WRITER COORDONNÉ` : un checkout local
 canonique sur `main`, plusieurs writers coordonnés, des candidats explicitement
-identifiés et aucune publication implicite. Les branches distantes attendues
-sont `main` uniquement.
+identifiés et aucune publication implicite. La branche de développement canonique est `main`. Les branches techniques
+Dependabot peuvent exister pour leurs PR ; elles ne constituent pas des
+branches de chantier des writers.
 
 - Les mises à jour Dependabot de version sont autorisées dans une veille
-  hebdomadaire bornée, regroupée par familles compatibles et limitée à six PR
-  npm et trois PR GitHub Actions ouvertes simultanément.
+  hebdomadaire bornée, regroupée par familles compatibles. Les limites de PR
+  de version sont déclarées dans `.github/dependabot.yml` par écosystème
+  (npm, GitHub Actions et pip) ; elles ne sont pas un plafond global des PR
+  de sécurité ni des branches encore présentes.
 - Les groupes `patch`/`minor` restent séparés entre runtime mobile, runtime Web,
   runtime partagé et outillage ; les mises à jour majeures restent des PR
   distinctes pour une revue explicite. Les security updates restent actives et
@@ -106,7 +109,11 @@ aucune tentative ne contourne les protections distantes.
 
 Les rulesets n'imposent ni Pull Request, ni approbation, ni required status
 check, ni merge queue. Le ruleset `main — owner-only updates` réserve toutefois
-la mise à jour au rôle propriétaire. Les contrôles CI et CodeQL restent
+la mise à jour aux acteurs explicitement autorisés dans ses bypass (rôle
+administrateur et intégration autorisée selon la configuration distante).
+Ne pas déduire leur identité effective d'un nom de ruleset. Les protections
+de suppression et de non-fast-forward restent dans un ruleset indépendant
+sans bypass. Ne pas ajouter de bypass global pour rétablir un accès. Les contrôles CI et CodeQL restent
 disponibles pour les runs GitHub et les revues, sans remplacer la validation
 locale du candidat.
 
@@ -119,7 +126,7 @@ Checks conservés pour la revue manuelle GitHub :
 - `web-tests`
 - `web-coverage`
 - `web-vercel-audit` et `web-build` lorsque `build_relevant == 'true'`
-- `mobile-validation` sur chaque `push` vers `main` et chaque Pull Request ciblant `main`
+- `mobile-validation` si le planificateur sélectionne le périmètre Mobile ou si le mode FULL est explicitement demandé
 - `sonarqube-manual` : préparation indépendante des quatre couvertures puis
   analyse SonarQube sur le SHA exact uniquement si `SONAR_FULL` valide les
   quatre rapports ; une préparation incomplète conserve ses diagnostics mais
@@ -143,7 +150,10 @@ Supabase. Cette documentation ne contient aucune valeur secrète.
 ## CI et maintenance
 
 - Garder `permissions: {}` au niveau workflow, puis ouvrir uniquement ce qui est nécessaire au niveau job.
-- Éviter les runs concurrents avec `concurrency` et `cancel-in-progress: true`.
+- Adapter `concurrency` et `cancel-in-progress` à la nature du workflow :
+  une campagne obsolète peut être annulée, mais les preuves PostgreSQL, de
+  restauration et les opérations sérialisées doivent garder leurs contrats
+  propres. Une annulation n'est jamais une réussite.
 - Garder un cache npm explicite sur `package-lock.json`.
 - Grouper les mises à jour Dependabot compatibles, y compris les security
   updates, pour limiter le bruit sans mélanger tout le monorepo dans une seule
@@ -166,7 +176,8 @@ Supabase. Cette documentation ne contient aucune valeur secrète.
 
 ## Reproductibilité locale des workflows
 
-Audit réalisé le `2026-08-23` sur les workflows versionnés [`ci.yml`](../../.github/workflows/ci.yml) et [`codeql.yml`](../../.github/workflows/codeql.yml).
+Inventaire historique initial du `2026-08-23`, corrigé sur les points de
+sélection de tests et de périmètre vérifiés le `2026-11-26` sur les workflows versionnés [`ci.yml`](../../.github/workflows/ci.yml) et [`codeql.yml`](../../.github/workflows/codeql.yml).
 
 Le workflow GitHub est une orchestration : les commandes npm sont principalement
 reproductibles localement, tandis que le runner GitHub, les conditions calculées
@@ -180,23 +191,27 @@ reproductibles localement, tandis que le runner GitHub, les conditions calculée
 | `ci.yml` / `web-governance` | `npm run check:root-files`; `npm run check:doc-governance`; `npm run check:stack-doc-drift`; `npm run check:github-actions` | Node.js 24.x lu depuis `apps/web/.nvmrc` et `package-lock.json`. `check:github-actions` produit une evidence du nombre de workflows et d'issues de policy ainsi qu'un résumé propre au job. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-static` | `npm run check:semgrep`; `npm run check:lockfile-policy`; `npm run typecheck`; `npm run check:utf8-fr`; `npm run lint`; conditionnellement `node --test scripts/security/workflow-security-contract.test.mjs scripts/security/zap-baseline-contract.test.mjs` lorsque `securityToolingRelevant == true` | Job indépendant après `scope`, avec son propre checkout, Node et `npm ci`. Il participe aussi lorsque `securityToolingRelevant` sélectionne un outil sous `scripts/security/`, et exécute alors les contrats workflow/ZAP ; `audit-dependencies.test.mjs` reste propriétaire de `dependency-audit`, tandis que les fixtures/règles Semgrep restent couvertes par `npm run check:semgrep`. Aucun build Web n'est déclenché par ce seul signal. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-quality` | `npm run quality:top-heavy`; `npm run quality:dead-code`; `npm run quality:complexity`; `npm run quality:duplication`; installation puis `npm run audit:gitnexus`; `npm run quality:cycles` (`SKIPPED_BY_POLICY`); résumé `node scripts/ci/write-quality-summary.mjs` | Job réservé à `workflow_dispatch` avec `validation_mode=FULL`; l'analyse GitNexus des cycles est suspendue jusqu'à réactivation explicite ; les contrôles globaux restent hors de la CI DEVELOPMENT ordinaire. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
-| `ci.yml` / `web-tests` | En DEVELOPMENT : `npm run test:security` et `npm run test:regression-gates`. En FULL : `node scripts/checks/validation-policy.mjs --assert-full-suite`; `npm run test:coverage`; publication de `apps/web/coverage` | La suite Web couverte et les ratchets qualité sont réservés au workflow explicitement déclenché en FULL ; l'artefact est court terme et lié à `github.sha`. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `web-tests` | Tests ciblés quand `web_code_relevant` ou FULL. `npm run test:coverage` et publication de la preuve quand `web_coverage_relevant` ou FULL ; `--assert-full-suite` en FULL seulement. | Les ratchets qualité globaux restent réservés à FULL ; la couverture Web peut aussi être produite sur un candidat DEVELOPMENT pertinent. L'artefact est de courte durée et lié au SHA candidat exact. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-coverage` | téléchargement de l'artefact Web; `npm run quality:coverage -- --from-existing-summary` | Le job compare les métriques sur l'artefact correspondant. Une régression numérique ou une baseline historique indisponible est informative ; la génération, l'intégrité de la preuve et les rapports obligatoires restent bloquants. Le job ne relance pas Vitest. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `full-coverage-gate` | téléchargement des artefacts Web, mobile, Node et Python; `node scripts/ci/full-coverage-gate.mjs` | Réservé à `workflow_dispatch` avec `validation_mode=FULL`. Les cinq jobs attendus (`web-tests`, `web-coverage`, `mobile-validation`, `node-coverage`, `python-validation`) doivent réussir et les quatre preuves doivent être valides sur le `github.sha` exact ; un domaine `skipped`, annulé, absent ou incohérent fait échouer le gate. | Oui pour le script; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-vercel-audit` | `npm run audit:vercel:ci` lorsque `build_relevant == 'true'` | Job indépendant après `scope`; il est `SKIPPED_SCOPE` sinon. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-build` | `npm run build` lorsque `build_relevant == 'true'` | Job indépendant après `scope`; les variables publiques de build sont injectées uniquement dans ce job. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
-| `ci.yml` / `mobile-validation` | `npm ci`; `npm run check:semgrep` lorsque le Web n'est pas concerné; sécurité mobile; typecheck; tests Vitest; couverture; lint | Node.js 24.x lu depuis `apps/web/.nvmrc`, `package-lock.json`. Le job s'exécute sur chaque `push` vers `main` et chaque Pull Request ciblant `main`; le résumé Semgrep reste séparé lorsque ce contrôle conditionnel est réellement exécuté. | Oui. |
+| `ci.yml` / `mobile-validation` | `npm ci`; `npm run check:semgrep` lorsque le Web n'est pas concerné; sécurité mobile; typecheck; tests Vitest; couverture; lint | Node.js 24.x lu depuis `apps/web/.nvmrc`, `package-lock.json`. Le job dépend de `mobile_code_relevant` ou FULL ; la mesure de couverture suit le périmètre pertinent. Le résumé Semgrep reste séparé lorsque ce contrôle conditionnel est réellement exécuté. | Oui. |
 | `sonarqube-manual` / `coverage-preparation` | Producteurs `npm run test:coverage`, `npm run quality:mobile-coverage`, `npm run test:coverage:node` et `npm run test:coverage:python`, puis `prepare-sonarqube-coverage.mjs --mode=STRICT` par domaine | Matrice `fail-fast: false`, artefacts rattachés au `github.run_id` et au `github.sha`; un producteur ou un validateur en échec reste bloquant pour la préparation et n'autorise pas l'import de son rapport. | Oui pour les producteurs et le validateur; non pour l'orchestration exacte GitHub. |
 | `sonarqube-manual` / `sonarqube` | Téléchargement des artefacts valides; `prepare-sonarqube-coverage.mjs --mode=SONAR_FULL`; SonarSource scan action; publication des statuts indépendants | Job exécuté avec `always() && !cancelled()` après la préparation. Le scanner canonique ne démarre que si les quatre rapports strictement validés du même SHA/run sont importables. `SONAR_PARTIAL` reste un mode de diagnostic non canonique. | Partiellement : la configuration effective et les validations sont locales; le runner, le token et le résultat SonarQube Cloud restent externes. |
 | `codeql.yml` / `analyze` | Aucun script npm équivalent direct : `actions/checkout`, `github/codeql-action/init`, `autobuild` et `analyze` | Runner GitHub, bundle CodeQL et permission `security-events: write` pour publier les résultats. | Non à l'identique; ce contrôle reste GitHub-dépendant. |
 
-Les modes locaux `DEVELOPMENT`/`FULL`/`RELEASE` restent orchestrés
-séquentiellement. La CI ordinaire conserve les gates statiques, de sécurité,
-typecheck/lint et les tests ciblés côté Web ; `mobile-validation` exécute
-cependant systématiquement les contrôles mobiles, y compris tests et couverture.
-Les suites Web complètes, couverture Web globale, ratchets structurels et
-mutation testing sont réservés à une exécution FULL explicitement déclenchée.
-Un job ordinaire ne doit pas présenter un contrôle non exécuté comme `PASS`.
+Les modes locaux `DEVELOPMENT`/`FULL`/`RELEASE` conservent la politique
+canonique de validation. La CI ordinaire sélectionne les gates statiques,
+de sécurité, typecheck/lint, tests ciblés et couvertures selon le périmètre
+réel. Un diff Web instrumentable peut donc produire la suite Web couverte
+sans demander FULL. Les validations globales supplémentaires et ratchets
+restent soumis à leur politique propre. Un job annulé, ignoré ou non
+exécuté ne constitue pas une preuve `PASS`.
+La condition actuelle de `web-governance` est `docs_only || web_code_relevant` :
+le nom du job ne garantit pas que tous les changements documentaires mixtes
+ou toutes les configurations GitHub sont contrôlés. Vérifier le plan et les
+jobs observés, pas uniquement la couleur globale du workflow.
 
 Les contrôles de sécurité ne produisent pas de score global cybersécurité. Les
 evidences et résumés exposent uniquement le statut et les compteurs propres à
@@ -242,7 +257,9 @@ Le contrôle local des workflows lui-même est :
 npm run check:github-actions
 ```
 
-Résultat observé pendant l'audit : `OK: 2 workflow file(s) audited.`
+Le nombre de workflows audités doit être lu dans la sortie de la commande
+sur le candidat courant. L'ancien résultat sur deux workflows ne vaut pas
+preuve sur l'inventaire actuel.
 
 Cette procédure ne remplace pas l'exécution GitHub de CodeQL, la publication des
 résultats de sécurité ou la vérification des conditions propres à l'événement

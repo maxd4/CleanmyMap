@@ -126,11 +126,19 @@ contrats canoniques sans les recopier.
 Pré-requis : Node.js 24.x et npm. Depuis la racine :
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
 Le serveur de développement utilise le port `3000` lorsqu'il est disponible. Les instructions propres à l'application web sont dans [`apps/web/README.md`](./apps/web/README.md) et la documentation complète est indexée par [`documentation/README.md`](./documentation/README.md).
+
+## Contribuer
+
+Pour proposer une correction, un test ou une amélioration, lire le
+[guide de contribution](./.github/CONTRIBUTING.md). La configuration et les
+identifiants de développement sont distincts des services de production.
+Aucune donnée privée ni clé de production n'est nécessaire pour proposer
+une correction documentaire ou un test isolé.
 
 ## Documentation et sécurité
 
