@@ -8,7 +8,6 @@ import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
 import { ACTOR_CARDS_PAGE_SIZE } from "./annuaire-filters";
 import { AnnuaireFiltersCard } from "./annuaire-filters-card";
 import { AnnuaireCompactResults } from "./annuaire-compact-results";
-import { AnnuairePartnerList } from "./annuaire-partner-list";
 import {
   AnnuaireIncidentRelationsPanel,
   AnnuaireOutsideAndUnknownPanels,
@@ -38,7 +37,7 @@ const AnnuaireMapCanvas = dynamic(
 
 const AnnuaireMap3DCanvas = dynamic(() => import("./annuaire-map-3d-canvas").then(module => module.AnnuaireMap3DCanvas), { ssr: false });
 
-export type AnnuaireExplorationMode = "directory" | "map";
+export type AnnuaireExplorationMode = "map";
 
 type AnnuaireExplorationViewProps = {
   logic: AnnuaireLogic;
@@ -55,7 +54,6 @@ type AnnuaireExplorationViewProps = {
 export function AnnuaireExplorationView({
   logic,
   fr: externalFr,
-  mode = "directory",
   selectedActorId,
   onSelectedActorIdChange,
   onLocateActor,
@@ -67,7 +65,12 @@ export function AnnuaireExplorationView({
   const [selectedRelationId,setSelectedRelationId]=useState<string|null>(null);
   const [mapMode, setMapMode] = useState<"3d" | "2d">("3d");
   const [webglUnavailable, setWebglUnavailable] = useState(false);
-  const [mapScope, setMapScope] = useState<MapScope>("paris");
+  const [mapScope, setMapScope] = useState<MapScope>(()=>{
+    if(!selectedActorId)return "paris";
+    const entries=logic.enrichedEntries??logic.sortedAndFilteredEntries;
+    const selected=buildGeoNetworkEntities(entries,entries).find(entity=>entity.id===selectedActorId||entity.networkActorId===selectedActorId);
+    return selected?.coords&&selected.locationGroup==="outside_paris"?"national":"paris";
+  });
 
   const {
     searchTerm,
@@ -86,27 +89,25 @@ export function AnnuaireExplorationView({
     targetArrondissement,
     enrichedEntries,
     sortedAndFilteredEntries,
-    totalPages,
     paginatedEntries,
     locale,
   } = logic;
 
   const fr = externalFr ?? locale === "fr";
   const locate = onLocateActor ?? onSelectedActorIdChange;
-  const allGeoEntities = useMemo(() => mode === "map" ? buildGeoNetworkEntities(enrichedEntries ?? sortedAndFilteredEntries, enrichedEntries ?? sortedAndFilteredEntries, true) : [], [mode, enrichedEntries, sortedAndFilteredEntries]);
+  const allGeoEntities = useMemo(() => buildGeoNetworkEntities(enrichedEntries ?? sortedAndFilteredEntries, enrichedEntries ?? sortedAndFilteredEntries, true), [enrichedEntries, sortedAndFilteredEntries]);
   const geoEntities = useMemo(() => {
-    if (mode !== "map") return [];
     const visible = new Set(sortedAndFilteredEntries.map(entry => entry.id));
     return allGeoEntities.filter(entity => entity.entry ? visible.has(entity.id) : matchesNetworkOnlyFilters(entity, { searchTerm, filterKind, filterContribution, engagementDomain, zoneFilter, targetArrondissement }));
-  }, [mode, allGeoEntities, sortedAndFilteredEntries, searchTerm, filterKind, filterContribution, engagementDomain, zoneFilter, targetArrondissement]);
-  const count = mode === "map" ? geoEntities.length : sortedAndFilteredEntries.length;
+  }, [allGeoEntities, sortedAndFilteredEntries, searchTerm, filterKind, filterContribution, engagementDomain, zoneFilter, targetArrondissement]);
+  const count = geoEntities.length;
   const mapTotalPages = Math.ceil(geoEntities.length / ACTOR_CARDS_PAGE_SIZE);
   const mapPage = Math.min(actorCardsPage, Math.max(1, mapTotalPages));
   const mapPageEntities = geoEntities.slice((mapPage - 1) * ACTOR_CARDS_PAGE_SIZE, mapPage * ACTOR_CARDS_PAGE_SIZE);
 
   const incidentRelations = useMemo(
-    () => (mode === "map" ? getIncidentGeoRelations(selectedActorId, allGeoEntities) : []),
-    [mode, selectedActorId, allGeoEntities],
+    () => getIncidentGeoRelations(selectedActorId, allGeoEntities),
+    [selectedActorId, allGeoEntities],
   );
 
   const displayedRelations = useMemo(() => !showRelationsLayer ? [] : relationMode === "all" ? getAllGeoRelations(geoEntities) : incidentRelations, [showRelationsLayer, relationMode, geoEntities, incidentRelations]);
@@ -120,7 +121,7 @@ export function AnnuaireExplorationView({
   );
 
   const canonicalDetails=selectedEntity ? projectPublicEntity(
-    selectedEntity.networkActorId ? {networkActorId:selectedEntity.networkActorId} : {annuaireEntryId:selectedEntity.annuaireEntryId},
+    {networkActorId:selectedEntity.networkActorId??undefined,annuaireEntryId:selectedEntity.annuaireEntryId??undefined},
     selectedEntity.entry?.provenance==="published_partner"?selectedEntity.entry:undefined,
   ) : null;
   const institutionalId=canonicalDetails?.identity.institutionId;
@@ -166,17 +167,6 @@ export function AnnuaireExplorationView({
         />
       </CmmCard>
 
-      {mode === "directory" ? (
-        <AnnuairePartnerList
-          fr={fr}
-          entries={paginatedEntries}
-          currentPage={actorCardsPage}
-          totalPages={totalPages}
-          onPageChange={setActorCardsPage}
-          onFocusMap={locate}
-          onOpenProfile={onSelectedActorIdChange}
-        />
-      ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -277,7 +267,6 @@ export function AnnuaireExplorationView({
             onSelectEntity={onSelectedActorIdChange}
           />
         </div>
-      )}
     </div>
   );
 }

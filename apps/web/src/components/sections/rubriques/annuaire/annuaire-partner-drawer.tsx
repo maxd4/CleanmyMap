@@ -5,22 +5,25 @@ import { useEffect, useId, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useReducedMotion } from "framer-motion";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
+import type { CanonicalPublicEntityProjection,CanonicalPublicEntityRef } from "@/lib/partners/public-entity-projection";
 import { AnnuairePartnerDrawerPanel } from "./annuaire-partner-drawer.panel";
 
 interface AnnuairePartnerDrawerProps {
   entry: EnrichedAnnuaireEntry | null;
+  projection?:CanonicalPublicEntityProjection;
+  onOpenEntity?:(ref:CanonicalPublicEntityRef)=>void;
   isOpen: boolean;
   onClose: () => void;
   fr: boolean;
 }
 
-export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePartnerDrawerProps) {
+export function AnnuairePartnerDrawer({ entry, projection, onOpenEntity, isOpen, onClose, fr }: AnnuairePartnerDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   const drawerTitleId = useId();
-  const entryId = entry?.id;
+  const entryId = projection?.identity.annuaireEntryId ?? projection?.identity.networkActorId ?? projection?.identity.institutionId ?? entry?.id;
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -79,7 +82,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
     };
   }, [entryId, isOpen]);
 
-  if (!entry) return null;
+  if (!entry && !projection) return null;
 
   if (typeof document === "undefined") return null;
 
@@ -90,6 +93,8 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
         closeButtonRef={closeButtonRef}
         drawerTitleId={drawerTitleId}
         entry={entry}
+        projection={projection}
+        onOpenEntity={onOpenEntity}
         isOpen={isOpen}
         onClose={onClose}
         fr={fr}

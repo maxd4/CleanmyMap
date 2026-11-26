@@ -24,8 +24,8 @@ vi.mock("@/components/sections/rubriques/shared", () => ({
     React.createElement("section", { "data-gradient": gradient }, children),
 }));
 
-vi.mock("@/components/sections/rubriques/annuaire/annuaire-featured-section", () => ({
-  AnnuaireFeaturedSection: () => React.createElement("div"),
+vi.mock("@/components/sections/rubriques/annuaire/annuaire-directory-catalog", () => ({
+  AnnuaireDirectoryCatalog: () => React.createElement("div"),
 }));
 
 vi.mock("@/components/sections/rubriques/annuaire/annuaire-exploration-view", () => ({

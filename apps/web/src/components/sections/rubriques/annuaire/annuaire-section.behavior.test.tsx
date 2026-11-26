@@ -42,21 +42,20 @@ vi.mock("lucide-react", () => {
   const Icon = () => React.createElement("span");
   return { ArrowRight: Icon, Building2: Icon, Globe: Icon, RefreshCw: Icon };
 });
-vi.mock("./annuaire-featured-section", () => ({
-  AnnuaireFeaturedSection: ({ entries, onFocusMap }: { entries: Array<{ id: string }>; onFocusMap: (id: string) => void }) =>
+vi.mock("./annuaire-directory-catalog", () => ({
+  AnnuaireDirectoryCatalog: ({ logic, onMap, onOpenProfile }: { logic: { searchTerm: string }; onMap: (id: string) => void; onOpenProfile: (ref: { annuaireEntryId: string }) => void }) =>
     React.createElement(
       "div",
-      { "data-testid": "featured" },
-      entries.map((entry) =>
-        React.createElement("button", { key: entry.id, type: "button", "data-featured": entry.id, onClick: () => onFocusMap(entry.id) }, entry.id),
-      ),
+      { "data-testid": "catalog", "data-search": logic.searchTerm },
+      React.createElement("button", { type: "button", "data-locate": "", onClick: () => onMap("asso-4") }, "locate"),
+      React.createElement("button", { type: "button", "data-select": "", onClick: () => onOpenProfile({ annuaireEntryId: "asso-4" }) }, "select"),
     ),
 }));
 vi.mock("./annuaire-exploration-view", () => ({
-  AnnuaireExplorationView: ({ logic, mode, onLocateActor, selectedActorId, onSelectedActorIdChange }: { logic: { searchTerm: string }; mode: string; onLocateActor?: (id: string) => void; selectedActorId?: string | null; onSelectedActorIdChange: (id: string) => void }) =>
+  AnnuaireExplorationView: ({ logic, mode, selectedActorId, onLocateActor, onSelectedActorIdChange }: { logic: { searchTerm: string }; mode: string; selectedActorId: string | null; onLocateActor?: (id: string) => void; onSelectedActorIdChange: (id: string) => void }) =>
     React.createElement(
       "div",
-      { "data-testid": `exploration-${mode}`, "data-search": logic.searchTerm, "data-selected-actor": selectedActorId ?? "" },
+      { "data-testid": `exploration-${mode}`, "data-search": logic.searchTerm, "data-selected": selectedActorId ?? "" },
       React.createElement("button", { type: "button", "data-locate": "", onClick: () => onLocateActor?.("target") }, "locate"),
       React.createElement("button", { type: "button", "data-select": "", onClick: () => onSelectedActorIdChange("target") }, "select"),
     ),
@@ -79,7 +78,7 @@ let host: HTMLDivElement | null = null;
 const resetFilters = vi.fn();
 
 const featured = Array.from({ length: 8 }, (_, index) => ({ id: `f${index + 1}` }));
-const targetEntry = { id: "target" };
+const targetEntry = { id: "asso-4" };
 
 beforeEach(() => {
   logicCalls.count = 0;
@@ -124,7 +123,7 @@ describe("AnnuaireSection main tabs", () => {
     const container = mount();
     expect(selectedTabs(container)).toEqual(["annuaire-tab-organization"]);
     expect(container.querySelector('[data-testid="organization"]')).toBeTruthy();
-    expect(container.querySelector('[data-testid="exploration-directory"]')).toBeNull();
+    expect(container.querySelector('[data-testid="catalog"]')).toBeNull();
     expect(container.querySelector('[data-testid="exploration-map"]')).toBeNull();
     expect(container.querySelector('[data-testid="featured"]')).toBeNull();
     expect(container.querySelectorAll('[role="tabpanel"]:not([hidden])').length).toBe(1);
@@ -156,23 +155,21 @@ describe("AnnuaireSection main tabs", () => {
     expect(container.querySelector('[data-testid="exploration-map"]')).toBeTruthy();
     expect(panel(container, "map").hidden).toBe(false);
     expect(panel(container, "organization").hidden).toBe(true);
-    expect(container.querySelector('[data-testid="exploration-directory"]')).toBeNull();
+    expect(container.querySelector('[data-testid="catalog"]')).toBeNull();
   });
 
-  it("centralizes featured cards (6 initial, reveal all) inside the directory tab", () => {
+  it("mounts one catalogue and no independent featured section", () => {
     const container = mount();
     act(() => tab(container, "directory").click());
-    expect(container.querySelectorAll("[data-featured]").length).toBe(6);
-    const showAll = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Afficher toutes (8)");
-    act(() => showAll?.click());
-    expect(container.querySelectorAll("[data-featured]").length).toBe(8);
-    expect(container.querySelector('[data-testid="exploration-directory"]')).toBeTruthy();
+    expect(container.querySelectorAll('[data-testid="catalog"]')).toHaveLength(1);
+    expect(container.querySelector('[data-testid="featured"]')).toBeNull();
+    expect(container.querySelector('[data-testid="exploration-map"]')).toBeNull();
   });
 
   it("keeps the filter state across directory and map through one hook instance per render", () => {
     const container = mount();
     act(() => tab(container, "directory").click());
-    expect(container.querySelector('[data-testid="exploration-directory"]')?.getAttribute("data-search")).toBe("climat");
+    expect(container.querySelector('[data-testid="catalog"]')?.getAttribute("data-search")).toBe("climat");
     act(() => tab(container, "map").click());
     expect(container.querySelector('[data-testid="exploration-map"]')?.getAttribute("data-search")).toBe("climat");
     expect(logicCalls.count).toBeGreaterThan(0);
@@ -185,18 +182,17 @@ describe("AnnuaireSection main tabs", () => {
     act(() => container.querySelector<HTMLButtonElement>("[data-locate]")?.click());
     expect(resetFilters).toHaveBeenCalledTimes(1);
     expect(selectedTabs(container)).toEqual(["annuaire-tab-map"]);
-    expect(container.querySelector('[data-testid="exploration-map"]')?.getAttribute("data-selected-actor")).toBe("target");
+    expect(container.querySelector('[data-testid="exploration-map"]')?.getAttribute("data-selected")).toBe("asso-4");
     expect(container.querySelector('[data-testid="drawer"]')).toBeNull();
   });
 
-  it("opens one sheet across directory and map, hides it outside directory tabs, and never keeps an orphan after a filter change", () => {
+  it("opens one catalogue sheet and closes it when switching tabs or invalidating filters", () => {
     const container = mount();
     act(() => tab(container, "directory").click());
     act(() => container.querySelector<HTMLButtonElement>("[data-select]")?.click());
     expect(container.querySelectorAll('[data-testid="drawer"]').length).toBe(1);
     act(() => tab(container, "map").click());
-    expect(container.querySelector('[data-testid="drawer"]')).toBeNull();
-    expect(container.querySelector('[data-testid="exploration-map"]')?.getAttribute("data-selected-actor")).toBe("target");
+    expect(container.querySelectorAll('[data-testid="drawer"]').length).toBe(0);
     act(() => tab(container, "organization").click());
     expect(container.querySelector('[data-testid="drawer"]')).toBeNull();
 

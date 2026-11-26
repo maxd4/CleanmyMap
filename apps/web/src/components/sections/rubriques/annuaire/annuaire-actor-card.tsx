@@ -1,71 +1,47 @@
 "use client";
-
+import Image from "next/image";
+import { Building2, ExternalLink, MapPin, Network, Landmark } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
-import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import type { ReactElement } from "react";
-import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
-import {
-  ENTITY_LABELS,
-  getAnnuairePublicDestination,
-  getAssociationProfile,
-  getAssociationStructureBadge,
-  getEntryTrustState,
-  hasPreciseAnnuaireCoordinates,
-  hasRecentPartnerUpdate,
-  isPublishedPartnerAnnuaireEntry,
-} from "./annuaire-helpers";
-import {
-  AnnuaireActorActions,
-  AnnuaireActorAssociationSummary,
-  AnnuaireActorBadges,
-  AnnuaireActorFooter,
-  AnnuaireActorMetrics,
-  AnnuaireActorTrustInsight,
-} from "./annuaire-actor-card.parts";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { cn } from "@/lib/utils";
+import { CATALOG_FAMILIES, type CatalogRow } from "./annuaire-catalog.model";
+import { formatFreshness, getEntryTrustState, CONTRIBUTION_LABELS } from "./annuaire-helpers";
+import { PARIS_ACTOR_ROLE_LABELS } from "@/lib/partners/paris-cleanwalk-network";
 
-type AnnuaireActorCardProps = {
-  entry: EnrichedAnnuaireEntry;
-  onFocusMap: (entryId: string) => void;
-  onOpenProfile?: (entryId: string) => void;
-};
+type Props={row:CatalogRow;fr:boolean;compact?:boolean;onOpen:()=>void;onMap:(id:string)=>void;onInstitution:(id:string)=>void};
 
-export function AnnuaireActorCard({ entry, onFocusMap, onOpenProfile }: AnnuaireActorCardProps): ReactElement {
-  const { locale } = useSitePreferences();
-  const fr = locale === "fr";
-  const trustState = getEntryTrustState(entry);
-  const isTrusted = trustState === "trusted";
-  const isIncomplete = trustState === "incomplete";
-  const isEditorial = trustState === "editorial";
-  const isPublishedPartner = isPublishedPartnerAnnuaireEntry(entry);
-  const associationProfile = getAssociationProfile(entry);
-  const structureBadge = getAssociationStructureBadge(entry);
-  const publicDestination = getAnnuairePublicDestination(entry);
-  const hasPreciseCoordinates = hasPreciseAnnuaireCoordinates(entry);
-  const hasRecentUpdate = "lastUpdatedAt" in entry && hasRecentPartnerUpdate(entry);
-  const isFeatured = entry.isFeatured;
-
-  return (
-    <CmmCard
-      variant="default"
-      tone="family"
-      className="group flex min-w-0 flex-col gap-4"
-    >
-      <AnnuaireActorBadges entry={entry} fr={fr} isFeatured={Boolean(isFeatured)} isEditorial={isEditorial} isTrusted={isTrusted} hasRecentUpdate={hasRecentUpdate} structureBadge={structureBadge} />
-      <div className="flex-1 space-y-4">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-md border border-[var(--cmm-surface-border)] px-2.5 py-1 text-xs font-semibold cmm-text-secondary">{ENTITY_LABELS[entry.kind]}</span>
-            {entry.tags?.slice(0, 3).map((tag) => <span key={tag} className="rounded-md border border-violet-500/20 bg-violet-500/5 px-2.5 py-1 text-xs font-medium cmm-text-primary">{tag.toUpperCase()}</span>)}
-          </div>
-          <h3 className="text-lg font-semibold leading-snug cmm-text-primary">{entry.name}</h3>
+export function AnnuaireActorCard({row,fr,compact,onOpen,onMap,onInstitution}:Props){
+  const p=row.projection,entry=p.directoryEntry;
+  const name=p.identity.name;
+  const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(word=>word[0]).join("").toUpperCase();
+  const contributions=entry?.contributionTypes.map(type=>CONTRIBUTION_LABELS[type])??p.publicActor?.roles.map(role=>PARIS_ACTOR_ROLE_LABELS[role])??[];
+  const state=entry?getEntryTrustState(entry):"editorial";
+  const provenance=row.published?(state==="trusted"?(fr?"Fiche confirmée":"Confirmed profile"):(fr?"Fiche publiée":"Published profile")):fr?"Ressource éditoriale":"Editorial resource";
+  return <CmmCard as="article" tone="slate" variant="outlined" size="sm" className={cn("h-full min-w-0 flex gap-3",compact?"flex-col md:flex-row md:items-center":"flex-col")}>
+    <div className="min-w-0 flex flex-1 flex-col gap-2">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] text-sm font-bold cmm-text-secondary">
+          {row.logo?<Image src={row.logo.localPath} alt="" width={48} height={48} className="h-full w-full object-contain"/>:initials||<Building2 aria-hidden="true" size={20}/>}
         </div>
-        <p className="line-clamp-2 text-sm leading-relaxed cmm-text-primary">{entry.description}</p>
-        {associationProfile && <AnnuaireActorAssociationSummary entry={entry} profile={associationProfile} />}
-        <AnnuaireActorMetrics entry={entry} fr={fr} isEditorial={isEditorial} isPublishedPartner={isPublishedPartner} />
-        <AnnuaireActorTrustInsight entry={entry} fr={fr} isEditorial={isEditorial} isIncomplete={isIncomplete} isTrusted={isTrusted} />
+        <div className="min-w-0 flex-1">
+          <h3 className="break-words text-base font-bold cmm-text-primary"><button type="button" onClick={onOpen} className="text-left hover:underline">{name}</button></h3>
+          <p className="text-xs cmm-text-secondary">{CATALOG_FAMILIES[row.family][fr?0:1]} · {provenance}</p>
+          {p.institution?.assignment==="historical"?<p className="text-xs cmm-text-warning">{fr?"Information historique":"Historical information"}</p>:null}
+        </div>
+        {row.featured ? <span className="shrink-0 text-xs font-semibold cmm-text-secondary">{fr ? "À la une" : "Featured"}</span> : null}
       </div>
-      <AnnuaireActorActions entry={entry} fr={fr} hasPreciseCoordinates={hasPreciseCoordinates} publicDestination={publicDestination} isEditorial={isEditorial} onFocusMap={onFocusMap} onOpenProfile={onOpenProfile} />
-      <AnnuaireActorFooter entry={entry} isPublishedPartner={isPublishedPartner} />
-    </CmmCard>
-  );
+      <p className={cn("text-sm leading-relaxed cmm-text-primary",compact?"line-clamp-1":"line-clamp-2 min-h-[2.5rem]")}>{row.summary}</p>
+      <p className="flex min-w-0 items-start gap-1.5 text-xs cmm-text-secondary"><MapPin size={13} className="mt-0.5 shrink-0" aria-hidden="true"/><span className="line-clamp-2">{row.territoryLabel||(fr?"Territoire non renseigné":"Scope not provided")}</span></p>
+      {contributions.length?<p className="line-clamp-2 text-xs cmm-text-secondary">{entry?(row.published?(fr?"Contributions déclarées":"Declared contributions"):(fr?"Contributions repérées":"Listed contributions")):(fr?"Rôles documentés":"Documented roles")} : {contributions.join(", ")}</p>:null}
+      {entry?.provenance==="published_partner"?<p className="text-xs cmm-text-secondary">{fr?"Disponibilité déclarée":"Declared availability"} : {entry.availability} · {formatFreshness(entry.lastUpdatedAt)}</p>:null}
+      {row.neighbourCount!==null?<p className="text-xs cmm-text-secondary">{row.neighbourCount} {fr?"voisins documentés dans le registre":"documented neighbours in the registry"}</p>:null}
+    </div>
+    <div className={cn("flex flex-wrap items-center gap-2",compact?"md:max-w-[46%]":"mt-auto border-t border-[var(--cmm-surface-border)] pt-3")}>
+      <CmmButton type="button" size="sm" tone="secondary" className={compact?"":"flex-1"} onClick={onOpen}>{fr?"Consulter la fiche":"View profile"}</CmmButton>
+      {row.canLocate&&row.mapId?<CmmButton type="button" size="sm" tone="tertiary" variant="ghost" ariaLabel={(fr?"Localiser ":"Locate ")+name} onClick={()=>onMap(row.mapId!)}><MapPin size={16} aria-hidden="true"/></CmmButton>:null}
+      {row.mapId?<CmmButton type="button" size="sm" tone="tertiary" variant="ghost" ariaLabel={(fr?"Explorer le réseau de ":"Explore network of ")+name} onClick={()=>onMap(row.mapId!)}><Network size={16} aria-hidden="true"/></CmmButton>:null}
+      {p.identity.institutionId?<CmmButton type="button" size="sm" tone="tertiary" variant="ghost" ariaLabel={(fr?"Voir dans les services publics : ":"View public services: ")+name} onClick={()=>onInstitution(p.identity.institutionId!)}><Landmark size={16} aria-hidden="true"/></CmmButton>:null}
+      {row.destination?<CmmButton asChild size="sm" tone="tertiary" variant="ghost" ariaLabel={(fr?"Ouvrir le canal public de ":"Open public channel of ")+name}><a href={row.destination} target="_blank" rel="noopener noreferrer"><ExternalLink size={16} aria-hidden="true"/></a></CmmButton>:null}
+    </div>
+  </CmmCard>;
 }

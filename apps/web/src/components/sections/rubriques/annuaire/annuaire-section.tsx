@@ -4,7 +4,9 @@ import { ArrowRight, Globe, Building2, RefreshCw } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
-import { AnnuaireFeaturedSection } from "./annuaire-featured-section";
+import { AnnuaireDirectoryCatalog } from "./annuaire-directory-catalog";
+import { DEFAULT_CATALOG_PREFERENCES, resolveCatalogEntity, type CatalogPreferences } from "./annuaire-catalog.model";
+import type { CanonicalPublicEntityRef } from "@/lib/partners/public-entity-projection";
 import { AnnuaireExplorationView } from "./annuaire-exploration-view";
 import { AnnuairePartnerDrawer } from "./annuaire-partner-drawer";
 import {
@@ -24,9 +26,6 @@ import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-
-/** Nombre maximal de cartes affichées initialement dans la sélection éditoriale de l'Annuaire. */
-const DISCOVER_INITIAL_CARDS = 6;
 
 function AnnuaireDirectoryFeedback({ fr, logic }: { fr: boolean; logic: ReturnType<typeof useAnnuaireLogic> }) {
   if (logic.isLoading) {
@@ -70,7 +69,8 @@ export function AnnuaireSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   const [view, setView] = useState<AnnuaireView>("organization");
-  const [showAllFeatured, setShowAllFeatured] = useState(false);
+  const [catalogPreferences,setCatalogPreferences]=useState<CatalogPreferences>(DEFAULT_CATALOG_PREFERENCES);
+  const [selectedDirectoryRef,setSelectedDirectoryRef]=useState<CanonicalPublicEntityRef|null>(null);
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const organizationNavigation = useRef<PublicCleanlinessNavigation>(null);
   const getNetworkActorId = (node: PublicCleanlinessOrganizationNode) => resolveInstitutionNetworkActorId(PARIS_PUBLIC_CLEANLINESS_DATASET, node, PARIS_CLEANWALK_ACTORS);
@@ -80,7 +80,7 @@ export function AnnuaireSection() {
   };
 
   const annuaireLogic = useAnnuaireLogic();
-  const { featuredEntries, filterKey, resetFilters } = annuaireLogic;
+  const { filterKey, resetFilters } = annuaireLogic;
   const selectionIntentFilterKeyRef = useRef<string | null>(null);
   const previousFilterKeyRef = useRef(filterKey);
 
@@ -94,6 +94,7 @@ export function AnnuaireSection() {
       return;
     }
     setSelectedActorId(null);
+    setSelectedDirectoryRef(null);
   }, [filterKey]);
 
   /** Localiser : sélectionne l'acteur (en rétablissant les filtres si la cible est exclue) puis ouvre Carte & réseau. */
@@ -105,6 +106,7 @@ export function AnnuaireSection() {
       selectionIntentFilterKeyRef.current = "|all|all|all|all";
       resetFilters();
     }
+    setSelectedDirectoryRef(null);
     setSelectedActorId(id);
     setView("map");
     document.getElementById(annuaireTabId("map"))?.focus();
@@ -112,17 +114,14 @@ export function AnnuaireSection() {
 
   const openInstitution = (institutionId: string) => {
     if (organizationNavigation.current?.openNode(institutionId)) {
+      setSelectedDirectoryRef(null);
       setView("organization");
       document.getElementById(annuaireTabId("organization"))?.focus();
     }
   };
 
-  const selectedActor = selectedActorId
-    ? (annuaireLogic.enrichedEntries ?? []).find((entry) => entry.id === selectedActorId) ?? null
-    : null;
-  const discoverEntries = showAllFeatured
-    ? featuredEntries
-    : featuredEntries.slice(0, DISCOVER_INITIAL_CARDS);
+  const selectedProjection=selectedDirectoryRef?resolveCatalogEntity(selectedDirectoryRef,annuaireLogic.enrichedEntries):null;
+  const selectedActor=selectedProjection?.directoryEntry?{...selectedProjection.directoryEntry,distanceKm:null}:null;
 
   return (
     <SectionShell
@@ -133,7 +132,7 @@ export function AnnuaireSection() {
       gradient="from-transparent via-transparent to-transparent"
     >
       <CmmSectionGroup>
-        <AnnuaireViewTabs fr={fr} view={view} onChange={setView} />
+        <AnnuaireViewTabs fr={fr} view={view} onChange={next=>{setSelectedDirectoryRef(null);setView(next);}} />
         <AnnuaireDirectoryFeedback fr={fr} logic={annuaireLogic} />
 
         <AnnuaireTabPanel view="organization" active={view === "organization"}>
@@ -141,26 +140,7 @@ export function AnnuaireSection() {
         </AnnuaireTabPanel>
 
         <AnnuaireTabPanel view="directory" active={view === "directory"}>
-          {view === "directory" ? (
-            <div className="space-y-6">
-              {discoverEntries.length > 0 ? (
-                <div className="space-y-4">
-                  <p className="text-sm cmm-text-primary">
-                    {fr ? "Une sélection éditoriale d'acteurs à découvrir avant la recherche complète de l'annuaire." : "An editorial selection of actors to discover before the directory's full search."}
-                  </p>
-                  <AnnuaireFeaturedSection entries={discoverEntries} onFocusMap={handleFocusMap} fr={fr} />
-                  {featuredEntries.length > DISCOVER_INITIAL_CARDS ? (
-                    <div className="flex flex-wrap gap-2">
-                      <CmmButton type="button" tone="secondary" variant="pill" ariaPressed={showAllFeatured} onClick={() => setShowAllFeatured((value) => !value)}>
-                        {showAllFeatured ? (fr ? "Afficher moins" : "Show fewer") : (fr ? `Afficher toutes (${featuredEntries.length})` : `Show all (${featuredEntries.length})`)}
-                      </CmmButton>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-              <AnnuaireExplorationView logic={annuaireLogic} fr={fr} mode="directory" selectedActorId={selectedActorId} onSelectedActorIdChange={setSelectedActorId} onLocateActor={handleFocusMap} />
-            </div>
-          ) : null}
+          {view === "directory" ? <AnnuaireDirectoryCatalog logic={annuaireLogic} fr={fr} preferences={catalogPreferences} onPreferences={setCatalogPreferences} onOpenProfile={setSelectedDirectoryRef} onMap={handleFocusMap} onInstitution={openInstitution}/> : null}
         </AnnuaireTabPanel>
 
         <AnnuaireTabPanel view="map" active={view === "map"}>
@@ -176,8 +156,8 @@ export function AnnuaireSection() {
       </CmmSectionGroup>
 
       <AnimatePresence>
-        {view === "directory" && selectedActor ? (
-          <AnnuairePartnerDrawer entry={selectedActor} isOpen onClose={() => setSelectedActorId(null)} fr={fr} />
+        {view === "directory" && selectedProjection ? (
+          <AnnuairePartnerDrawer entry={selectedActor} projection={selectedProjection} onOpenEntity={setSelectedDirectoryRef} isOpen onClose={() => setSelectedDirectoryRef(null)} fr={fr} />
         ) : null}
       </AnimatePresence>
     </SectionShell>

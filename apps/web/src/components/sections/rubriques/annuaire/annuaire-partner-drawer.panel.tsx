@@ -17,7 +17,7 @@ import {
 } from "./annuaire-helpers";
 import { getAssociationStructureBadge } from "./annuaire-association-profile";
 import { cn } from "@/lib/utils";
-import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
+import { projectPublicEntity,type CanonicalPublicEntityProjection,type CanonicalPublicEntityRef } from "@/lib/partners/public-entity-projection";
 import { PublicEntityDetails } from "./public-entity-details";
 import { PublicDirectoryDetails } from "./public-directory-details";
 
@@ -157,11 +157,17 @@ export function AnnuairePartnerDrawerPanel({
   closeButtonRef,
   drawerTitleId,
   entry,
+  projection:providedProjection,
+  onOpenEntity,
   isOpen,
   onClose,
   fr,
   shouldReduceMotion,
-}: DrawerCommonProps & {
+}: {
+  fr:boolean;
+  entry:EnrichedAnnuaireEntry|null;
+  projection?:CanonicalPublicEntityProjection;
+  onOpenEntity?:(ref:CanonicalPublicEntityRef)=>void;
   drawerRef: RefObject<HTMLDivElement | null>;
   closeButtonRef: RefObject<HTMLButtonElement | null>;
   drawerTitleId: string;
@@ -170,10 +176,9 @@ export function AnnuairePartnerDrawerPanel({
   shouldReduceMotion: boolean | null;
 }) {
   if (!isOpen) return null;
-  const structureBadge = getAssociationStructureBadge(entry);
-  const isEditorial = isEditorialAnnuaireEntry(entry);
-  const publicDestination = getAnnuairePublicDestination(entry);
-  const projection = projectPublicEntity({ annuaireEntryId: entry.id }, entry.provenance === "published_partner" ? entry : undefined);
+  const isEditorial = entry?isEditorialAnnuaireEntry(entry):true;
+  const publicDestination = entry?getAnnuairePublicDestination(entry):null;
+  const projection = providedProjection??(entry?projectPublicEntity({ annuaireEntryId: entry.id }, entry.provenance === "published_partner" ? entry : undefined):null);
 
   return (
     <>
@@ -200,24 +205,24 @@ export function AnnuairePartnerDrawerPanel({
         tabIndex={-1}
         className="fixed top-2 bottom-2 right-2 z-[110] flex w-[calc(100%-1rem)] max-w-[550px] flex-col overflow-hidden rounded-3xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] shadow-2xl sm:top-4 sm:bottom-4 sm:right-4 sm:w-[calc(100%-2rem)]"
       >
-        <AnnuaireDrawerHeader
+        {entry?<AnnuaireDrawerHeader
           entry={entry}
           fr={fr}
           drawerTitleId={drawerTitleId}
-          structureBadge={structureBadge}
+          structureBadge={getAssociationStructureBadge(entry)}
           closeButtonRef={closeButtonRef}
           onClose={onClose}
-        />
+        />:<div className="flex items-start justify-between gap-3 border-b border-[var(--cmm-surface-border)] p-5"><div><span className="block text-xs font-semibold cmm-text-primary">{fr ? "Ressource éditoriale" : "Editorial resource"}</span><h2 id={drawerTitleId} className="text-xl font-bold cmm-text-primary">{projection?.identity.name}</h2></div><CmmButton ref={closeButtonRef} type="button" tone="tertiary" onClick={onClose} ariaLabel={fr?"Fermer la fiche":"Close profile"}><X size={20} aria-hidden="true"/></CmmButton></div>}
         <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-6">
-          {projection ? <PublicEntityDetails projection={projection} fr={fr} /> : <PublicDirectoryDetails entry={entry} fr={fr} /> }
+          {projection ? <PublicEntityDetails projection={projection} fr={fr} onOpen={onOpenEntity}/> : entry?<PublicDirectoryDetails entry={entry} fr={fr} />:null}
         </div>
-        <AnnuaireDrawerFooter
+        {entry?<AnnuaireDrawerFooter
           entry={entry}
           fr={fr}
           isEditorial={isEditorial}
           publicDestination={publicDestination}
           onClose={onClose}
-        />
+        />:<div className="border-t border-[var(--cmm-surface-border)] p-4"><CmmButton type="button" tone="secondary" onClick={onClose}>{fr?"Fermer":"Close"}</CmmButton></div>}
       </motion.div>
     </>
   );

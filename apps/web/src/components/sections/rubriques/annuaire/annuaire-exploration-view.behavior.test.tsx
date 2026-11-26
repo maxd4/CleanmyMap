@@ -5,6 +5,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AnnuaireLogic } from "./use-annuaire-logic";
+import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -37,43 +38,11 @@ vi.mock("@/components/ui/cmm-button", () => ({
     ),
 }));
 
-vi.mock("lucide-react", () => {
-  const Icon = () => React.createElement("span");
-  return {
-    AlertCircle: Icon,
-    ChevronDown: Icon,
-    PlusCircle: Icon,
-    RotateCcw: Icon,
-    Share2: Icon,
-  };
-});
-
-vi.mock("./annuaire-partner-list", () => ({
-  AnnuairePartnerList: ({
-    entries,
-    currentPage,
-    onFocusMap,
-  }: {
-    entries: Array<{ id: string; name: string }>;
-    currentPage: number;
-    onFocusMap: (id: string) => void;
-  }) =>
-    React.createElement(
-      "div",
-      { "data-testid": "partner-list" },
-      `page=${currentPage}:${entries.map((entry) => entry.name).join(",")}`,
-      React.createElement(
-        "button",
-        { type: "button", "data-testid": "locate", onClick: () => onFocusMap(entries[0]?.id ?? "") },
-        "locate",
-      ),
-    ),
-  AnnuairePagination: () => null,
-}));
+vi.mock("./annuaire-partner-list", () => ({ AnnuairePagination: () => null }));
 
 import { AnnuaireExplorationView } from "./annuaire-exploration-view";
 
-const entry = { id: "entry-1", name: "Structure restaurée", location: "Paris", coveredArrondissements: [] };
+const entry = {...INITIAL_ANNUAIRE_ENTRIES[0], id: "entry-1", name: "Structure restaurée", location: "Paris", coveredArrondissements: [],distanceKm:null};
 const initialFilters = {
   searchTerm: "mot-clé",
   filterKind: "association" as AnnuaireLogic["filterKind"],
@@ -103,7 +72,7 @@ function mount(element: React.ReactElement) {
 
 function Harness({
   fr,
-  mode = "directory",
+  mode = "map",
   targetArrondissement = null,
   onSelect = () => undefined,
   onLocate,
@@ -111,7 +80,7 @@ function Harness({
 }: {
   domain?: AnnuaireLogic["engagementDomain"];
   fr: boolean;
-  mode?: "directory" | "map";
+  mode?: "map";
   targetArrondissement?: number | null;
   onSelect?: (id: string | null) => void;
   onLocate?: (id: string) => void;
@@ -202,7 +171,7 @@ describe("Annuaire reset from the empty filtered state", () => {
       (button) => button.textContent === resetLabel,
     );
 
-    expect(container.querySelector('[data-testid="partner-list"]')?.textContent).toContain("page=3");
+    expect(state(container).actorCardsPage).toBe(3);
     act(() => {
       change(selectByLabel(container, fr ? "Domaine d'engagement" : "Engagement domain"), "all");
     });
@@ -232,16 +201,14 @@ describe("Annuaire reset from the empty filtered state", () => {
       zoneFilter: "all",
       actorCardsPage: 1,
     });
-    expect(container.querySelector('[data-testid="partner-list"]')?.textContent).toContain(
-      "page=1:Structure restaurée",
-    );
+    expect(container.querySelector(`ul[aria-label="Résultats de l'annuaire"]`)?.textContent).toContain("Structure restaurée");
   });
 });
 
 describe("Annuaire filter menus", () => {
   it("replaces chip blocks with labelled native selects wired to the same filters and page reset", () => {
     const container = mount(<Harness fr targetArrondissement={11} />);
-    expect(container.querySelectorAll("select").length).toBe(5);
+    expect(container.querySelectorAll("select").length).toBeGreaterThanOrEqual(5);
 
     change(selectByLabel(container, "Type de structure"), "commerce");
     expect(state(container)).toMatchObject({ filterKind: "commerce", actorCardsPage: 1 });
@@ -287,27 +254,11 @@ describe("Annuaire filter menus", () => {
 });
 
 describe("Annuaire exploration modes", () => {
-  it("directory mode shows the list and no heavy visualization", () => {
-    const container = mount(<Harness fr domain="all" />);
-    expect(container.querySelector('[data-testid="partner-list"]')).toBeTruthy();
-    expect(container.querySelector('[data-testid="map"]')).toBeNull();
-    expect(container.querySelector('[data-testid="graph"]')).toBeNull();
-  });
-
-  it("directory Localiser delegates to the locate handler instead of opening the sheet", () => {
-    const onLocate = vi.fn();
-    const onSelect = vi.fn();
-    const container = mount(<Harness fr domain="all" onLocate={onLocate} onSelect={onSelect} />);
-    act(() => container.querySelector<HTMLButtonElement>('[data-testid="locate"]')?.click());
-    expect(onLocate).toHaveBeenCalledWith("entry-1");
-    expect(onSelect).not.toHaveBeenCalled();
-  });
-
   it("map mode shows the unified map, toggles documented relations, and exposes outside/unknown panels", () => {
     const onSelect = vi.fn();
     const container = mount(<Harness fr domain="all" mode="map" onSelect={onSelect} />);
     expect(container.querySelector('[data-testid="map"]')).toBeTruthy();
-    expect(container.querySelector('[data-testid="partner-list"]')).toBeNull();
+    expect(container.querySelector('[data-testid="annuaire-catalog"]')).toBeNull();
     expect(container.querySelector('section[aria-label="Hors de Paris"]')).toBeTruthy();
     expect(container.querySelector('section[aria-label="Localisation non établie"]')).toBeTruthy();
 

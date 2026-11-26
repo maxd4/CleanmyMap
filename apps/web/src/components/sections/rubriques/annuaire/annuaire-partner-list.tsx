@@ -1,18 +1,15 @@
 import { AnnuaireActorCard } from "./annuaire-actor-card";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
+import type { CanonicalPublicEntityRef } from "@/lib/partners/public-entity-projection";
+import type { CatalogRow } from "./annuaire-catalog.model";
 import { cn } from "@/lib/utils";
 
 interface AnnuairePartnerListProps {
-  fr: boolean;
-  entries: EnrichedAnnuaireEntry[];
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  onFocusMap: (id: string) => void;
-  onOpenProfile?: (id: string) => void;
+  fr:boolean; rows:CatalogRow[]; currentPage:number; totalPages:number;
+  onPageChange:(page:number)=>void; onFocusMap:(id:string)=>void;
+  onOpenProfile:(ref:CanonicalPublicEntityRef)=>void; onOpenInstitution:(id:string)=>void;
+  layout:"grid"|"list";
 }
-
 /** Pagination partagée par la liste en grille et par les résultats compacts de la carte. */
 export function AnnuairePagination({
   fr,
@@ -63,30 +60,11 @@ export function AnnuairePagination({
   );
 }
 
-export function AnnuairePartnerList({
-  fr,
-  entries,
-  currentPage,
-  totalPages,
-  onPageChange,
-  onFocusMap,
-  onOpenProfile,
-}: AnnuairePartnerListProps) {
-  return (
-    <div className="space-y-6">
-      <ul className="grid min-w-0 list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
-        {entries.map((actor) => (
-          <li key={actor.id} className="min-w-0">
-            <AnnuaireActorCard entry={actor} onFocusMap={() => onFocusMap(actor.id)} onOpenProfile={onOpenProfile} />
-          </li>
-        ))}
-      </ul>
-      <AnnuairePagination
-        fr={fr}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={onPageChange}
-      />
-    </div>
-  );
+export function AnnuairePartnerList({fr,rows,currentPage,totalPages,onPageChange,onFocusMap,onOpenProfile,onOpenInstitution,layout}:AnnuairePartnerListProps) {
+  return <div className="space-y-4">
+    <ul className={cn("grid min-w-0 list-none gap-3 p-0",layout==="grid"?"grid-cols-1 sm:grid-cols-2 xl:grid-cols-3":"grid-cols-1")}>
+      {rows.map(row=><li key={row.key} data-catalog-key={row.key} className="min-w-0"><AnnuaireActorCard row={row} fr={fr} compact={layout==="list"} onOpen={()=>onOpenProfile(row.ref)} onMap={onFocusMap} onInstitution={onOpenInstitution}/></li>)}
+    </ul>
+    <AnnuairePagination fr={fr} currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange}/>
+  </div>;
 }

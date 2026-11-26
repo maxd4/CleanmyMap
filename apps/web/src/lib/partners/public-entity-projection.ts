@@ -245,15 +245,17 @@ export function projectPublicEntity(
     institutionNode?.directoryId ??
     null;
   const editorialEntry = resolveExplicitAnnuaireEntry(resolvedAnnuaireId);
-  if (publishedEntry && editorialEntry) return null;
-  const annuaireEntry = publicDirectoryEntry(editorialEntry ?? publishedEntry ?? null);
+  const annuaireEntry = publicDirectoryEntry(publishedEntry ?? editorialEntry ?? null);
   if (ref.annuaireEntryId && !annuaireEntry) return null;
 
+  const directInstitutions = !networkActor && resolvedAnnuaireId && !PARIS_CLEANWALK_ACTORS.some((actor) => actor.annuaireEntryId === resolvedAnnuaireId)
+    ? PARIS_PUBLIC_CLEANLINESS_DATASET.nodes.filter((node) => node.directoryId === resolvedAnnuaireId && !node.networkActorId)
+    : [];
   const resolvedInstitutionId =
     institutionNode?.id ??
     (networkActor
       ? resolveInstitutionId(PARIS_PUBLIC_CLEANLINESS_DATASET, networkActor.id, PARIS_CLEANWALK_ACTORS)
-      : null);
+      : directInstitutions.length === 1 ? directInstitutions[0].id : null);
   const resolvedInstitutionNode =
     institutionNode ?? resolveInstitutionNodeById(resolvedInstitutionId);
 

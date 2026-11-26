@@ -1,129 +1,35 @@
-import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
-
-vi.mock("@/components/ui/site-preferences-provider", () => ({
-  useSitePreferences: () => ({ locale: "fr" }),
-}));
-
-vi.mock("@/components/ui/cmm-card", () => ({
-  CmmCard: ({ children }: { children: React.ReactNode }) =>
-    React.createElement("div", null, children),
-}));
-
-vi.mock("@/components/ui/cmm-button", () => ({
-  CmmButton: ({ children }: { children: React.ReactNode }) =>
-    React.createElement("button", null, children),
-}));
-
-vi.mock("lucide-react", () => {
-  const Icon = () => React.createElement("span");
-  return {
-    Clock: Icon,
-    FileText: Icon,
-    Info: Icon,
-    MapPin: Icon,
-    MessageSquare: Icon,
-    ShieldCheck: Icon,
-    Sparkles: Icon,
-    Star: Icon,
-    Zap: Icon,
-  };
-});
-
+import { buildAnnuaireCatalog, type CatalogRow } from "./annuaire-catalog.model";
 import { AnnuaireActorCard } from "./annuaire-actor-card";
+const entries=INITIAL_ANNUAIRE_ENTRIES.map(entry=>({...entry,distanceKm:null}));
+const render=(row:CatalogRow)=>renderToStaticMarkup(<AnnuaireActorCard row={row} fr onOpen={vi.fn()} onMap={vi.fn()} onInstitution={vi.fn()}/>);
 
-describe("AnnuaireActorCard provenance", () => {
-  it("renders a seed as an editorial resource without trust claims", () => {
-    const seed = INITIAL_ANNUAIRE_ENTRIES[0];
-    expect(seed).toBeDefined();
-
-    const markup = renderToStaticMarkup(
-      <AnnuaireActorCard
-        entry={{ ...seed, distanceKm: null }}
-        onFocusMap={vi.fn()}
-      />,
-    );
-
-    expect(markup).toContain("RESSOURCE ÉDITORIALE");
-    expect(markup).not.toContain("CERTIFIÉ");
-    expect(markup).not.toContain("Vérifiée");
-    expect(markup).not.toContain("Structure active");
-    expect(markup).not.toContain("Structure validée");
-    expect(markup).not.toContain("Partenaire actif");
-    expect(markup).not.toContain("Dernière action");
-    expect(markup).not.toContain("Disponibilité");
-    expect(markup).not.toContain("Mise à jour");
-    expect(markup).not.toContain("Impact");
-    expect(markup).toContain("Zones associées");
-    expect(markup).toContain("Contributions repérées");
-    expect(markup).toContain("Consulter");
-  });
-
-  it("keeps published availability, freshness and contact labels distinct", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-08-30T10:00:00.000Z"));
-    onTestFinished(() => {
-      vi.useRealTimers();
-    });
-    const seed = INITIAL_ANNUAIRE_ENTRIES[0];
-    expect(seed).toBeDefined();
-
-    const markup = renderToStaticMarkup(
-      <AnnuaireActorCard
-        entry={{
-          ...seed,
-          provenance: "published_partner" as const,
-          verificationStatus: "verifie" as const,
-          qualificationStatus: "partenaire_actif" as const,
-          recentActivityAt: "2026-08-26T10:00:00.000Z",
-          availability: "Sur rendez-vous",
-          lastUpdatedAt: "2026-08-26T10:00:00.000Z",
-          primaryChannel: {
-            platform: "site web" as const,
-            label: "Contact direct",
-            url: "https://published.example.test",
-          },
-          distanceKm: null,
-        }}
-        onFocusMap={vi.fn()}
-      />,
-    );
-
-    expect(markup).toContain("FICHE CONFIRMÉE");
-    expect(markup).toContain("MISE À JOUR RÉCENTE");
-    expect(markup).toContain("Périmètre déclaré");
-    expect(markup).toContain("Disponibilité déclarée");
-    expect(markup).toContain("Contributions déclarées");
-    expect(markup).toContain("Contacter");
-    expect(markup).not.toContain("ACTIF");
-    expect(markup).not.toContain("CERTIFIÉ");
-  });
-
-  it("keeps the profile button accessible even without coordinates or a public contact URL", () => {
-    const seed = INITIAL_ANNUAIRE_ENTRIES[0];
-    expect(seed).toBeDefined();
-
-    const markup = renderToStaticMarkup(
-      <AnnuaireActorCard
-        entry={{
-          ...seed,
-          lat: null,
-          lng: null,
-          websiteUrl: undefined,
-          instagramUrl: undefined,
-          facebookUrl: undefined,
-          primaryChannel: undefined,
-          distanceKm: null,
-        }}
-        onFocusMap={vi.fn()}
-        onOpenProfile={vi.fn()}
-      />,
-    );
-
+describe("compact catalogue card",()=>{
+  it("renders a neutral card and source qualification instead of internal identifiers or trust claims",()=>{
+    const {rows}=buildAnnuaireCatalog(entries,null);
+    const row=rows.find(item=>item.projection.identity.annuaireEntryId===entries[0].id)!;
+    const markup=render(row);
+    expect(markup).toContain('data-cmm-card-tone="slate"');
+    expect(markup).toContain('data-cmm-card-variant="outlined"');
+    expect(markup).toContain("Ressource éditoriale");
     expect(markup).toContain("Consulter la fiche");
-    expect(markup).toContain("Position indisponible");
-    expect(markup).toContain("Indisponible");
+    expect(markup).not.toMatch(/CERTIFIÉ|Partenaire actif|Dernière action|ID:|Disponibilité déclarée/);
+  });
+  it("always opens a fiche without offering a fictitious localization",()=>{
+    const {rows}=buildAnnuaireCatalog(entries,null);
+    const row=rows.find(item=>!item.canLocate&&item.mapId!==null)!;
+    const markup=render(row);
+    expect(markup).toContain("Consulter la fiche");
+    expect(markup).toContain("Explorer le réseau de");
+    expect(markup).not.toMatch(/aria-label="Localiser |Position indisponible/);
+  });
+  it("offers the existing institution action to a shared network identity",()=>{
+    const {rows}=buildAnnuaireCatalog(entries,null);
+    const row=rows.find(item=>item.projection.identity.institutionId==="syctom")!;
+    const markup=render(row);
+    expect(markup).toContain("Voir dans les services publics");
+    expect(markup).toContain("Explorer le réseau de");
   });
 });
