@@ -172,3 +172,15 @@ owners restent à compléter. Aucun changement fonctionnel.
 La gouvernance renforcée par f4f426b1385628e7e7b22d9a6fa6768b7896882c reste intégralement applicable :
 la réduction de contexte ne peut réduire ni la portée d'analyse des causes,
 ni les preuves d'intégration, ni l'auto-revue contradictoire.
+
+## Réception du 26 novembre 2026 (AUDIT)
+
+Statut : lots P0 intégrés ; les candidats `candidates/` ont été retirés après intégration.
+
+- **DOC-01** : `AGENTS.md` 758 → 80 lignes (47 141 → 12 364 octets), `CHATGPT.md` 561 → 48, `project_context.md` 100 → 84 ; budget `session:budget` inchangé (240) et conforme. Procédures déplacées vers leurs owners existants par renvoi ; garde `check-agent-governance` et ses 12 tests verts.
+- **DOC-02** : `npm run query:architecture-import-graph` (`scripts/reports/query-architecture-import-graph.mjs`, 3 tests Node). Exécuté sur le graphe réel du SHA `8b212cc6a` (fichier Actions, dossier avec limite, chemin absent, mauvais SHA). Arêtes statiques directes uniquement. Comparaison GitNexus : `NOT_RUN` (index local du 2026-10-23, commit différent).
+- **DOC-04/11** : `apps/web/supabase/schema-catalog.READ_ONLY.sql` (schémas, ACL schéma/colonne, séquences, types, héritage, policies Storage) ; `npm run audit:sql-catalog` produit le catalogue Git (provenance par objet, consommateurs, hash des migrations) et le compare au catalogue distant observé (528/528 versions alignées). Remote observé via MCP lecture seule : 10 407 enregistrements. Garde de fraîcheur `--check-freshness` (SHA et hash migrations). Limites : analyse DDL par regex sans PostgreSQL (`DB_SEMANTICS_NOT_EXECUTED`), surcharges de fonctions par nom de base, SQL dynamique en simple mention ; l'écart de séquences `*_id_seq` vient de colonnes identity/serial non déclarées par `CREATE SEQUENCE`.
+- **Gardes documentaires** : `check-documentation-governance` vérifie les liens des index (guide IA, database) ; cas lien cassé testé.
+- **DOC-03/05** : README Chat, Rapports, Partenaires (annuaire), Signalements, Missions, Empreinte environnementale ; la carte du guide pointe désormais ces owners.
+- **Mesure** (`artifacts/ai-discovery-p0/`) : médiane d'appels A 51 → 36, C 36 → 27, B 29 → 31 (fichiers ouverts 18 → 21). Pas de télémétrie tokens/durée (`NOT_MEASURED`), A-2 post-optimisation absent (quota 429), n ≤ 3, sous-agents flash : gains indicatifs, non prouvés ; pas de régression d'exactitude observée.
+- **Écarts relevés (non corrigés, hors périmètre)** : `/publish` admin vs RPC `submit_association_action_review` (Forbidden si ni créateur ni organisateur) ; `suppress_external_action_sync_action` pose `status='cancelled'` sans métadonnées tombstone (contrainte `actions_cancellation_state_check`) ; transitions d'admission SPOGOMI sans preuve SQL exécutée dans `apps/web/supabase/tests/` ; `registration-lifecycle.ts` non branché au runtime.

@@ -128,8 +128,45 @@ export function findConcurrentActiveRoadmaps(view) {
   }];
 }
 
+const discoveryIndexFiles = [
+  "documentation/development/AI_DEVELOPER_GUIDE.md",
+  "documentation/database/README.md",
+];
+
+export function validateDiscoveryIndexLinks(view) {
+  const issues = [];
+  for (const indexFile of discoveryIndexFiles) {
+    if (!view.exists(indexFile)) continue;
+    const content = view.readText(indexFile);
+    const baseDir = path.posix.dirname(indexFile);
+    const lines = content.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i += 1) {
+      for (const match of lines[i].matchAll(/\[[^\]]+\]\(([^)#?\s]+)(?:#[^)\s]*)?\)/g)) {
+        const rawTarget = match[1];
+        if (/^(?:https?:|mailto:|data:)/i.test(rawTarget)) continue;
+        const resolved = path.posix.normalize(path.posix.join(baseDir, rawTarget));
+        if (resolved.startsWith("..")) continue;
+        const isDirTarget = rawTarget.endsWith("/");
+        const targetPrefix = resolved.replace(/\/$/, "");
+        const exists = isDirTarget
+          ? view.listFiles(targetPrefix).length > 0
+          : view.exists(resolved) || view.listFiles(targetPrefix).length > 0;
+        if (!exists) {
+          issues.push({
+            file: indexFile,
+            line: i + 1,
+            pattern: "broken-discovery-link",
+            snippet: `${rawTarget} -> ${resolved} (missing target)`,
+          });
+        }
+      }
+    }
+  }
+  return issues;
+}
+
 export function validateDocumentationGovernance(view) {
-  const violations = [...findConcurrentActiveRoadmaps(view)];
+  const violations = [...findConcurrentActiveRoadmaps(view), ...validateDiscoveryIndexLinks(view)];
   for (const filePath of view.listFiles("documentation")) {
     if (!scanExtensions.has(path.posix.extname(filePath).toLowerCase()) || shouldSkip(filePath)) {
       continue;

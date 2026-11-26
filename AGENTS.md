@@ -1,720 +1,64 @@
 # AGENTS.md — CleanMyMap
 
-> **Lecture complète obligatoire** : tout agent ou sous-agent (quel que soit le fournisseur ou le modèle) doit lire **explicitement et intégralement** ce fichier `AGENTS.md` ainsi que les `AGENTS.md` scoped applicables à son périmètre avant toute modification, sans supposer un chargement automatique complet. Les règles universelles ci-dessous (y compris le workflow `MAIN-ONLY / MULTI-WRITER COORDONNÉ`) s'appliquent indépendamment de l'outil, du fournisseur ou du modèle utilisé.
+> **Lecture complète obligatoire** : tout agent ou sous-agent doit lire **intégralement** ce fichier `AGENTS.md` et les fichiers scoped applicables avant toute modification, sans supposer un chargement automatique complet. Les procédures détaillées vivent dans leurs owners spécialisés (tableau de routage ci-dessous) et restent obligatoires pour leur périmètre.
 
-Pour les sources privées complémentaires, appliquer la politique canonique dans `documentation/development/DOCUMENTATION_POLICY.md` ; les contrats techniques du dépôt restent autoritaires.
+Sources privées complémentaires : `documentation/development/DOCUMENTATION_POLICY.md` ; les contrats techniques du dépôt restent autoritaires.
 
-## Portée et priorité
+## 1. Portée, autorité et ambition
 
-Ce fichier porte les **invariants universels d'exécution**. Les instructions
-scoped complètent ces règles sans les affaiblir. Ne pas y recopier leurs
-procédures spécialisées.
+- **Source versionnée** : `maxd4/CleanmyMap`, branche `main` (identifiée par racine Git et remote, jamais par le nom du dossier). Distinguer le `main` publié, le checkout local et toute candidate fournie.
+- **Priorité** : demande explicite de l'utilisateur ; sécurité, données et intégrité ; candidate fournie pour le lot ; checkout et contrats réellement consommés ; `AGENTS.md` racine et fichiers scoped ; documentation canonique ; simplicité, maintenabilité, performance et coûts.
+- **Ambition et cause racine** : viser le meilleur résultat démontrable et sa fiabilité réelle, jamais une exécution minimale. Pour un changement substantiel, vérifier objectif, hypothèses, méthodes du domaine, coûts, risques et critères mesurables ; corriger la cause racine et ses conséquences directes dans **un lot cohérent complet**, proportionnellement au risque. Si l'objectif est irréalisable ou contredit par le checkout, signaler et proposer une alternative étayée sans abaisser l'acceptation.
 
-Priorité : demande explicite de l'utilisateur ; sécurité, données et intégrité ;
-fichier explicitement fourni pour le lot ; checkout et contrats réellement
-consommés ; `AGENTS.md` racine et scoped ; documentation canonique ; simplicité,
-maintenabilité, performance et coûts.
+## 2. Catégories de lots et conduite avant écriture
 
-**Source versionnée** : `maxd4/CleanmyMap`, branche `main`. Dans le checkout,
-identifier le dépôt par sa racine Git et son remote, jamais par le nom du dossier.
-Le checkout local effectif, ses changements préexistants et les candidats
-explicitement fournis doivent être distingués du `main` publié.
+Repères indicatifs (jamais des quotas ni des conditions d'arrêt) : **Correction** (cause racine bornée), **Micro-lot** (~5 min), **Macro-lot** (~15-30 min), **Lot XL** (~45-75 min, 2 à 4 jalons internes ordonnés exécutés successivement sans clôture prématurée). La `STOP CONDITION` est définie par les critères fonctionnels, invariants, preuves et validations du lot.
 
-## Ambition et décision avant modification
+Avant d'écrire :
+1. Lire l'état courant de la zone, le `AGENTS.md` scoped, les contrats, callers, consommateurs et tests pertinents ; cartographier voies de mutation (API, jobs, imports, RPC, triggers), acteurs/droits, transitions, persistance, cas normaux/interdits et effets de bord.
+2. Décider entre **`EXTEND_EXISTING`**, **`CREATE_MODULE`** et **`RESTRUCTURE_FIRST`** (`documentation/development/conventions-modularisation.md`) ; décrire responsabilité unique, owner, entrées, sorties, effets et frontières avant de coder.
+3. Définir invariants, `STOP CONDITION` et preuves selon les risques réels (et non selon la facilité).
+4. Pour une tâche ciblée sur un workspace (`apps/web` ou `apps/mobile`), commencer par son `AGENTS.md` scoped, son README et ses contrats ; n'étendre aux autres zones que pour une dépendance, un consommateur ou un impact démontré.
 
-Viser **le meilleur résultat démontrable et sa fiabilité réelle**, jamais une
-exécution plus rapide, une économie de tokens, une satisfaction minimale du
-prompt ni davantage de code. Pour un changement substantiel, vérifier le vrai
-objectif, les hypothèses, les méthodes du domaine, les coûts, les risques et les
-critères mesurables. Un objectif ambitieux reste une cible, jamais un gain acquis.
-Si l'objectif est irréalisable ou contredit par le checkout, le signaler et
-proposer une alternative étayée sans abaisser silencieusement l'acceptation.
-Appliquer cette profondeur proportionnellement au risque ; ne pas transformer
-une correction locale évidente en audit général.
+## 3. Invariants de développement et qualité
 
-## Catégories de lots et conduite d'exécution
+1. **Un seul owner par comportement.** Identifier l'owner canonique avant toute écriture ; réutiliser/étendre plutôt que créer une seconde vérité. Si aucun owner sûr n'existe, `STOP`.
+2. **Aucun changement silencieux de contrat sensible.** AuthN/AuthZ, RLS, ownership, scope, privilèges, PII, SEO, consentement et logique métier exigent une évolution explicitement bornée, testée (positif + négatif) et documentée `CURRENT`.
+3. **Preuves typées et substance.** Distinguer `STATIC_CONTRACT` ≠ `EXECUTED_BEHAVIOR` ≠ `INTEGRATION_PROOF` (`documentation/development/TESTING.md`). Tout lot modifiant un comportement ou contrat exige : consommation réellement exécutée du runtime, tests comportementaux et régressions (nominaux, limites, invalides, adversariaux, erreurs, transitions, concurrence selon le risque), couverture pertinente (Web et Mobile restent indépendants ; sinon `NOT_MEASURED` motivé ; aucun seuil/baseline/exclusion modifié) et mise à jour des documents `CURRENT`. Sans exécution PostgreSQL autorisée, déclarer `DB_SEMANTICS_NOT_EXECUTED`.
+4. **Matrice UI/UX gelée (lots 01 à 11)** : dans `PLAN_MACRO_LOTS_UI_UX_CODEX.md`, ne pas modifier `documentation/design-system/MATRICE_ASTUCES_UI_UX_CLEANMYMAP.md` ni créer de copie avant le lot 12 (`STOP` sinon).
+5. **Documentation canonique dans le même lot** : mettre à jour les sources spécialisées et fiches `CURRENT` concernées ; signaler `DOCUMENTATION_DRIFT` pour une fiche protégée devenue fausse (`documentation/AGENTS.md`).
+6. **Auto-revue contradictoire, STOP CONDITION et publication** : rechercher chemins de contournement, incompatibilités et effets de bord avant clôture. Une possibilité (« pourrait », « éventuellement ») n'est pas une implémentation (`EXISTING_VERIFIED`, `NOT_APPLICABLE`, `PARTIEL` ou `BLOCKED`).
+7. **Modularité, dead code et duplication** : exports privés par défaut ; ne pas déplacer intact un monolithe ni contourner `quality:complexity`, `quality:top-heavy`, Knip ou jscpd par baseline/exclusion/raccourcissement cosmétique. Procédures et registres : `conventions-modularisation.md`, `TESTING.md`, `scripts/AGENTS.md`. Un lot non mobile ne modifie pas `apps/mobile/**` ni ses baselines/justifications.
 
-Les prompts Codex sont classés, à titre indicatif, dans quatre catégories :
+## 4. Modèle d'exécution : MAIN-ONLY / MULTI-WRITER COORDONNÉ
 
-- **Correction** : cause racine bornée et résultat attendu précis ; le volume
-  de changement peut varier selon la cause et les preuves nécessaires.
-- **Micro-lot** : environ 5 minutes, changement local et cohésif.
-- **Macro-lot** : environ 15 à 30 minutes, fonctionnalité ou évolution cohérente
-  avec ses consommateurs directs.
-- **Lot XL** : cible d'environ 45 à 75 minutes, plusieurs fonctionnalités liées
-  intégrées dans une même exécution.
+Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt et travailler sur des chemins distincts ; aucun ne doit jamais écraser silencieusement les changements d'un autre writer. Les modifications sur des fichiers distincts peuvent progresser en parallèle ; un même fichier, l'index, `HEAD` et les opérations Git mutantes sont coordonnés explicitement (`CHATGPT.md`, `scripts/AGENTS.md`).
 
-Les durées et les volumes de lignes sont des repères de cadrage, jamais des
-quotas, des budgets bloquants ou des conditions d'arrêt. La `STOP CONDITION`
-reste définie par les critères fonctionnels, les invariants, les preuves et les
-validations du lot.
+- `main publié = référence versionnée ;` `une candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;` `tout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.`
+- Travail normal sur `main` dans le checkout canonique : **ne jamais créer** branche de chantier, clone, worktree, coordinateur ou claim persistant. Un checkout dirty, des untracked ou `HEAD != origin/main` ne bloquent pas l'analyse ni le travail indépendant.
+- Capturer au démarrage référence (`HEAD`, `origin/main`, index, dirty/untracked) et allowlist du lot. L'allowlist initiale sert à l'attribution et au cadrage : les changements étrangers sont préservés et exclus (ne jamais restaurer, stasher, supprimer ou fusionner). Une écriture concurrente sur un chemin attribué est une collision : préserver les deux états, arrêter la mutation/publication de ce chemin et rapporter le diagnostic.
+- Aucune évolution ultérieure de `HEAD`, `origin/main`, de l'index ou du worktree n'étend le périmètre ni ne relance une validation globale. Corriger uniquement les défauts du lot ; signaler séparément les défauts étrangers.
+- **Scopes et candidats** : distinguer `WORKTREE_LIVE`, `STAGED`, `COMMITTED_SNAPSHOT`, `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE` (`scripts/AGENTS.md`, `TESTING.md`). Staging explicite obligatoire (jamais `git add -A`) ; vérifier `git diff --cached --name-only` et le diff staged avant commit. Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque chacun figure dans l'allowlist attribuée.
+- **Publication** : validation du candidat courant → commit attribué → push de tous les commits locaux en avance → fetch → vérification de convergence (`HEAD = origin/main`, ahead/behind `0/0`). Lorsqu'un push est explicitement demandé, tous les commits locaux en avance sur la branche distante cible sont publiés dans leur ordre d'historique, même s'ils contiennent des chemins étrangers au lot courant ou proviennent d'autres writers (les dirty/untracked restent exclus). Si `origin/main` a avancé sans conflit sur les chemins attribués : `git fetch origin main` → `git rebase origin/main` → laisser `pre-push` valider `PUSH_CANDIDATE` → push fast-forward (`git rebase --abort` si conflit). Aucun force-push ni contournement de `pre-commit` / `pre-push`.
+- **Exceptions gouvernées** : `DIRECT_GITHUB_PUBLICATION` de ChatGPT (`CHATGPT.md`, `HOOK_NOT_AVAILABLE` jamais assimilé à `PASS`) ; autorisation explicite « commit et push tout le worktree dirty » (staging explicite après relecture, sans changements postérieurs au snapshot ni secrets) ; le mode de développement rapide (`documentation/development/rapid-development-mode.md`) ne supprime pas l'exigence de commit et push sauf interdiction explicite de l'utilisateur (« sans push »). Un préflight Supabase `BLOCKED`/`DIVERGED` ne retient jamais un push Git autrement publiable.
+- **Message de commit** : sujet `type(scope): résultat` compréhensible dans GitHub ; pour un changement fonctionnel, corps structuré (`POURQUOI`, `CHANGEMENTS ET CONTRATS`, `TESTS ET PREUVES` avec couverture par workspace ou `NOT_MEASURED`, `DOCUMENTATION`, `LIMITES OU SUITE`).
 
-Un lot XL comporte 2 à 4 jalons internes ordonnés, explicitement listés avant
-l'écriture. Codex les implémente successivement dans la même exécution : la
-réussite d'un jalon ne clôture pas le chantier et n'autorise pas l'arrêt tant
-que les jalons restants, les critères fonctionnels et les validations ne sont
-pas traités. Un blocage réel doit indiquer les jalons terminés, le jalon
-bloqué, les jalons restants et la preuve du blocage ; il ne doit pas être
-déduit d'une durée ou d'un volume atteint.
+## 5. Sécurité, Supabase et environnement d'exécution
 
-Pour tout lot qui modifie un comportement fonctionnel ou un contrat runtime,
-le même lot doit fournir, au niveau approprié au risque :
+- **Secrets et frontières** : jamais de secret, token, cookie, session, PII ou stack trace exposé ; `service_role` uniquement côté serveur ; valider entrées, AuthN/AuthZ, ownership, scope et RLS côté serveur. Ne jamais contourner une sécurité pour réparer un test ni transformer un proxy en mesure. Security deception : `documentation/security/SECURITY.md`.
+- **Supabase lié uniquement — Docker local en pause** : ni Docker, ni WSL, ni conteneur, ni `supabase start`/`status`/`db reset`. Unique arbre éditable : `apps/web/supabase/migrations/` (forward-only). Préflight obligatoire `npm run supabase:migration:preflight -- --dry-run` et application exclusive par CLI liée selon `apps/web/supabase/AGENTS.md` et `documentation/operations/runbook-supabase-convergence.md`. `.github/workflows/supabase-convergence.yml` reste strictement read-only.
+- **Artefacts et commandes Web** : `work/` interdit à la racine ; sorties temporaires/audits sous `artifacts/` (`scripts/AGENTS.md`, `host-environment.md`). Exécuter Vitest/Vite/ESLint Web dans `apps/web` (`npm run test -w apps/web -- ...`, etc.), jamais depuis la racine.
+- **Validation proportionnée** : `DEVELOPMENT` (`npm run checks:fast`, budget 180 s) selon le risque réel sans dupliquer les hooks ; documentation pure = contrôles documentaires, diff, secrets, intégrité Git. `FULL` **uniquement** sur demande explicite ou préparation immédiate d'un déploiement Vercel (`NOT_RUN_POLICY` sinon ; un seul `FULL` sur candidat exact ; `RELEASE` exige `FULL` vert). Détails : `TESTING.md` et `scripts/AGENTS.md`.
+- **Découverte facultative** : QMD max 1 refresh / 24 h (`qmd update -c CleanMyMap`), GitNexus facultatif (`TESTING.md`).
 
-- une consommation réellement exécutée du runtime concerné, et non seulement
-  une lecture du code, un mock ou une assertion statique ;
-- des tests comportementaux et les régressions utiles du périmètre ;
-- une mesure de couverture pertinente, sans seuil, baseline, exclusion ou test
-  artificiel ajouté pour améliorer le résultat ;
-- la mise à jour des documents `CURRENT` qui portent les contrats modifiés.
-
-Les couvertures Web et Mobile restent indépendantes et ne doivent pas être
-fusionnées dans un chiffre unique. Toute mesure absente ou non comparable est
-déclarée explicitement `NOT_MEASURED`, avec sa cause. Un lot purement
-documentaire ne doit pas provoquer de changement runtime ni de test artificiel ;
-il reste soumis aux contrôles documentaires, de liens, de cohérence et de
-références qui lui sont pertinents.
-
-Avant d'écrire : lire l'état courant de la zone, le `AGENTS.md` scoped, les
-contrats, callers, consommateurs et tests pertinents. Examiner les owners,
-chemins alternatifs, contraintes préexistantes, permissions, transitions d'état
-et effets de bord, puis identifier toutes les conséquences directes du
-changement. Pour un contrat métier, cartographier les voies de mutation directes
-et indirectes (API, jobs, imports, RPC, triggers), les acteurs et droits, les
-transitions, la persistance, les scénarios normaux et interdits et les preuves
-nécessaires. Traiter les causes racines et leurs conséquences directes dans **un
-lot cohérent complet**, sans succession de corrections superficielles ni refonte
-voisine. Définir les invariants, la `STOP CONDITION` et les preuves nécessaires
-avant de coder, en choisissant les validations selon les risques réels et non
-selon leur facilité ou leur rapidité d'exécution.
-
-Pour une fonctionnalité nouvelle ou modification substantielle, décider avant
-écriture entre **`EXTEND_EXISTING`**, **`CREATE_MODULE`** et
-**`RESTRUCTURE_FIRST`** : identifier l'owner, ses responsabilités, la taille et
-croissance attendues, les effets, états, dépendances, consommateurs et tests.
-Relire après intégration les modules et fonctions concernés : une extraction
-ne doit pas seulement déplacer un monolithe. Documenter brièvement cette
-décision dans le bilan, sans créer de registre concurrent. Méthode et seuils :
-`documentation/development/conventions-modularisation.md`.
-
-**Preuves distinctes** : source présente ≠ test présent ≠ test exécuté ≠
-comportement d'intégration observé ≠ état distant ≠ production. Les niveaux
-`STATIC_CONTRACT`, `EXECUTED_BEHAVIOR` et `INTEGRATION_PROOF` sont définis dans
-`documentation/development/TESTING.md`. Pour les changements sensibles,
-vérifier le véritable schéma PostgreSQL, les contraintes, triggers, RPC, RLS,
-permissions, transactions, reprises et courses concurrentes : un mock, une
-assertion SQL textuelle, le `typecheck` ou un `db push --dry-run` ne remplacent
-jamais les preuves d'intégration nécessaires. Sans exécution PostgreSQL
-autorisée, indiquer `DB_SEMANTICS_NOT_EXECUTED`. Ne jamais déclarer un chantier
-terminé sur la seule présence du code, de tests ajoutés, de hooks réussis ou
-d'un commit publié : distinguer explicitement les preuves exécutées, réussies,
-manquantes et encore en cours.
-
-**Découverte facultative** : QMD ne remplace jamais les fichiers réels. Par
-défaut, ne pas rafraîchir la collection CleanMyMap plus d'une fois par 24 h ;
-réutiliser l'index plus récent. Passé ce délai, `qmd update -c CleanMyMap`
-seulement si utile ; `qmd embed` seulement après mise à jour autorisée et pour
-un besoin sémantique réel. Vérifier la fraîcheur et lire les sources avant toute
-décision. GitNexus reste facultatif et soumis aux conditions documentées dans
-`TESTING.md`.
-
-## Règle de découverte par workspace
-
-Pour une tâche ciblée sur un workspace, Codex commence par le workspace concerné
-(`apps/web` ou `apps/mobile`), son `AGENTS.md` scoped, son README et les sources
-documentaires canoniques directement rattachées. Le reste du dépôt n'est
-consulté que pour une dépendance, un contrat partagé, un consommateur, un test
-ou un impact transversal effectivement identifié. Les écritures suivent la même
-frontière : un fichier externe n'est modifié que si cette dépendance ou cet
-impact est démontré et nécessaire au lot ; cette règle ne crée pas une
-interdiction artificielle de corriger un owner externe réellement concerné.
-
-## Modèle d’exécution
-
-Le workflow courant est `MAIN-ONLY / MULTI-WRITER COORDONNÉ`.
-
-Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt et travailler
-sur des chemins distincts ; aucun ne doit jamais écraser silencieusement les
-changements d'un autre writer. Les changements GitHub directs par ChatGPT suivent les mêmes règles
-de périmètre, de stabilité de candidat et de coordination que les changements
-locaux Codex. La politique d'autorisation directe est détaillée dans
-`CHATGPT.md`. Les modifications sur des fichiers distincts peuvent progresser
-en parallèle ; un
-même fichier, l’index, `HEAD` et les opérations Git mutantes doivent être
-relus et coordonnés explicitement. Les fichiers scoped restent la source des
-règles spécialisées de chaque sous-arbre.
-
-main publié = référence versionnée ; une candidate locale explicitement
-fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à
-intégration ; tout changement local préexistant doit être préservé et ne doit
-jamais être écrasé par une synchronisation avec Git.
-
-- Travail normal sur `main` dans le checkout canonique. Plusieurs writers
-  peuvent intervenir sur des chemins distincts. **Ne jamais créer** branche de
-  chantier, clone, worktree, coordinateur ou claim persistant pour ce workflow.
-- Un checkout dirty, des untracked, des commits locaux non publiés ou
-  `HEAD != origin/main` **ne bloquent pas** l'analyse ni le travail indépendant.
-  Cette présence ne constitue jamais un motif d'arrêt global.
-  Ces exigences ne deviennent pas des préconditions de diagnostic local.
-  Les exigences de candidat exact s'appliquent au contrôle et à la publication,
-  pas comme préconditions d'un diagnostic.
-- Capturer au démarrage une référence initiale (`HEAD`, `origin/main`, index,
-  chemins tracked dirty et untracked) et établir l'allowlist attribuée au lot.
-  Cette référence et ce périmètre restent gelés pendant toute l'exécution.
-  L'allowlist initiale sert à l'attribution et au cadrage, et fixe les chemins
-  admissibles à ce candidat jusqu'à sa clôture.
-  Les changements préexistants ou apparus ensuite sont présumés étrangers et
-  exclus du candidat ; seules les modifications du writer (ChatGPT ou Codex)
-  attribué aux fichiers du lot sont incluses.
-  **Ne pas** les modifier,
-  restaurer, supprimer, stasher, déplacer, fusionner ou inclure implicitement.
-  Un chemin ciblé dirty et étranger bloque seulement sa propre mutation.
-- Les modifications indépendantes peuvent continuer sur des chemins distincts.
-  Une écriture concurrente du même chemin attribué constitue une collision :
-  préserver les deux états, arrêter la mutation/publication de ce chemin et
-  rapporter le diagnostic exact. Ne jamais absorber, fusionner ni écraser
-  silencieusement le travail de l'autre writer.
-- Aucune évolution ultérieure de `HEAD`, `origin/main`, de l'index ou des
-  fichiers dirty/untracked n'étend le périmètre, ne déclenche une
-  resynchronisation fonctionnelle, une nouvelle validation globale ou un
-  nouveau `FULL`. Un échec observé sur le candidat gelé reste rapporté tel quel.
-  Corriger seulement les défauts attribuables au lot ; signaler séparément les
-  échecs préexistants ou étrangers sans modifier leurs fichiers.
-- Les validations globales utilisent un candidat immuable correspondant au
-  contenu vérifié, via les mécanismes existants de `scripts/ci` (candidat
-  statique par SHA ou `DYNAMIC_CANDIDATE`). Une preuve issue du worktree mutable
-  ne peut pas être attribuée à un SHA. Le publier sans le reconstruire : le
-  candidat immuable publié doit conserver le contenu exact déjà contrôlé.
-  Aucun contrôle ne peut convertir un échec en `PASS` ni imposer la réparation
-  d'un défaut hors périmètre.
-- Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque
-  chacun figure dans le périmètre attribué au démarrage. Cette règle contrôle
-  la création des nouveaux commits, pas la publication des commits déjà créés.
-  Lorsqu'un push est explicitement demandé, tous les commits locaux en avance
-  sur la branche distante cible sont publiés dans leur ordre d'historique,
-  même s'ils contiennent des chemins étrangers au lot courant ou proviennent
-  d'autres writers. Ne jamais bloquer, réécrire, reconstruire ou exclure un
-  commit déjà présent dans cette file en raison de son attribution. Les fichiers
-  dirty ou untracked non commités restent hors du push et sont préservés.
-- Le staging reste explicite : ne jamais utiliser `git add -A` par commodité.
-  Vérifier `git diff --cached --name-only` et le diff staged avant tout nouveau
-  commit. À la publication, vérifier la liste et l'ordre des commits déjà en
-  avance, sans filtrage d'attribution ; seuls les changements non commités
-  restent exclus et préservés.
-- Tous les fichiers modifiés ou créés **par le lot** et nécessaires à son
-  contrat doivent être intégrés au commit validé ; ne laisser aucun changement
-  du lot dirty/untracked. Les chemins étrangers restent intacts et sont signalés.
-- Aucun changement d'un autre writer apparu après le gel ne rejoint le candidat,
-  même si son attribution devient ensuite connue. Ne jamais intégrer un
-  changement staged, dirty ou untracked hors périmètre.
-
-**Workflow de publication** : validation du candidat courant → staging explicite
-des seuls fichiers commités par le lot → commit validé si nécessaire → push de
-tous les commits locaux en avance sur `main` → fetch → vérification
-`HEAD = origin/main`, ahead/behind `0/0`. L'attribution limite les nouveaux
-fichiers stagés et commités par le lot, mais ne filtre pas la file des commits
-déjà créée. Un push explicitement demandé ne s'arrête donc jamais parce qu'un
-commit en attente contient des changements d'un autre writer ou un périmètre
-plus large. Les changements dirty/untracked ne sont pas ajoutés au commit ni au
-push. Contrôler la branche cible, le fast-forward, les hooks, les permissions et
-la convergence. Une évolution externe sans conflit ne déclenche pas une
-nouvelle campagne de validation : lorsque `origin/main` a avancé sans conflit
-sur les chemins attribués, exécuter `git fetch origin main` puis
-`git rebase origin/main` (en préservant les fichiers dirty/untracked étrangers),
-laisser le garde `pre-push` valider le `PUSH_CANDIDATE` rebasé, puis pousser
-en fast-forward. En cas de conflit réel lors du rebase, exécuter
-`git rebase --abort` et arrêter avec le diagnostic exact. Aucun force-push ou
-contournement de garde n'est permis.
-
-**Autorisation permanente d'écriture directe pour ChatGPT (`DIRECT_GITHUB_PUBLICATION`)** :
-conformément à `CHATGPT.md`, toute demande utilisateur d'implémentation, de
-correction ou de mise à jour de ce dépôt autorise ChatGPT à publier
-directement sur `main` via les API GitHub (création de fichiers, blobs,
-arbres, commits et mise à jour fast-forward), sans dépendance obligatoire au
-checkout local de Codex ni confirmation supplémentaire. Pour les contributions
-documentaires et les candidats d'intégration explicitement identifiés
-`CANDIDATE` (jamais présentés comme du runtime validé), lorsque les hooks Git
-locaux sont techniquement indisponibles, ChatGPT rapporte `HOOK_NOT_AVAILABLE`
-et les remplace par les contrôles équivalents accessibles (secrets, intégrité,
-changements concurrents, fast-forward et relecture du SHA publié) et les
-validations CI pertinentes. Ne jamais assimiler `HOOK_NOT_AVAILABLE` ou
-`NOT_RUN` à `PASS`. Les exigences de validation du code runtime et des
-migrations restent maintenues, et les hooks locaux restent obligatoires pour
-toute contribution effectuée depuis le checkout local. Les interdictions
-explicites de commit/push prévalent ; cette autorisation reste limitée au lot
-et ne couvre pas la publication de tout le worktree dirty.
-
-Un défaut, un préflight Supabase `BLOCKED`/`DIVERGED` ou une validation Supabase
-manquante ne retient jamais un commit ou un push Git autrement publiable. Les
-protections Git, secrets, intégrité, concurrence et fast-forward restent
-obligatoires. Une migration peut donc être publiée indépendamment de son
-application ; l'application via la CLI Supabase liée attend ensuite les preuves
-et contrôles requis. Si un contrôle bloquant échoue ou manque, la file reste
-entièrement en attente et le défaut est corrigé avant toute application.
-
-**Autorisation explicite de publier tout le worktree dirty** : lorsque
-l'utilisateur demande explicitement « commit et push tout le worktree dirty »
-(ou formule clairement la même autorisation), cette instruction autorise à
-inclure dans un même commit tous les changements tracked, staged ou unstaged,
-ainsi que tous les fichiers untracked présents dans le snapshot initial du
-worktree, même s'ils sont préexistants, étrangers au lot ou attribués à d'autres
-writers. Cette exception prévaut sur les règles d'exclusion et d'attribution
-des fichiers dirty/untracked, mais n'autorise ni les changements apparus après
-le snapshot initial, ni les fichiers ignorés, ni les secrets, ni le
-contournement des hooks, permissions, protections ou garde-fous de sécurité.
-Inventorier et relire chaque chemin initialement dirty, vérifier le candidat
-complet et ses contrôles, puis stager explicitement la liste complète (sans
-`git add -A` par commodité), relire le diff staged et commit avant de pousser
-tous les commits locaux en avance selon le workflow normal. Si une écriture
-concurrente modifie un de ces chemins après le snapshot, préserver les deux
-états et arrêter pour ce chemin ; ne pas absorber son nouveau contenu.
-
-Une interdiction explicite de committer ou pousser donnée par l'utilisateur
-reste prioritaire et doit être signalée comme exception. Le mode de
-développement rapide ne supprime pas l'exigence de commit et push ; il ne peut
-donc produire un commit local sans push que si cette interdiction est explicite.
-
-### Messages de commit
-
-Chaque nouveau commit ChatGPT ou Codex créé par le lot doit être traçable et
-contenir uniquement les changements attribués au lot au démarrage, relus et
-validés sur le candidat gelé. Plusieurs changements ainsi attribués peuvent
-être regroupés dans un même commit. Une évolution ultérieure du worktree ne permet pas d'ajouter des fichiers
-dirty ou untracked au commit. Lorsqu'un push est explicitement demandé, les
-commits déjà présents en avance sur la branche distante sont tous publiés sans
-filtrage d'auteur ou de périmètre ; cette règle s'applique même si leur contenu
-dépasse le lot courant. Toute correction ultérieure s'ajoute sans réécrire
-l'historique.
-
-Le sujet du commit doit être court, spécifique et compréhensible directement
-dans GitHub, de préférence sous la forme `type(scope): résultat`. Il ne doit pas
-dépendre d'un bilan Codex externe pour expliquer l'intention.
-
-Pour un changement fonctionnel, le corps du message est structuré et
-proportionné au lot, avec les rubriques suivantes dans cet ordre :
-
-```text
-POURQUOI
-
-- Besoin ou anomalie initiale et contrat concerné.
-
-CHANGEMENTS ET CONTRATS
-
-- Comportement avant/après, décisions appliquées, invariants préservés.
-- Owners, API et consommateurs Web/mobile affectés, migrations si pertinentes.
-
-TESTS ET PREUVES
-
-- Scénarios ajoutés et régressions protégées.
-- Commandes réellement exécutées, résultats et périmètre du candidat.
-- Couverture par workspace : lines, branches, functions et statements
-  avant/après si mesurés et comparables ; sinon NOT_MEASURED avec justification.
-- Limites explicites : tests non exécutés, CI en attente,
-  DB_SEMANTICS_NOT_EXECUTED, validation native absente, etc., uniquement si
-  pertinentes.
-
-DOCUMENTATION
-
-- Sources canoniques mises à jour et contrats documentés.
-
-LIMITES OU SUITE
-
-- Blocages et éléments réellement non démontrés.
-```
-
-Ne jamais présenter un test ajouté comme exécuté, un push comme une CI réussie
-ou une migration versionnée comme appliquée en production. Éviter les secrets,
-informations personnelles, logs volumineux et messages artificiellement longs.
-
-**Mode de développement rapide**, uniquement sur activation explicite : commit
-isolé et push par lot selon `documentation/development/rapid-development-mode.md`.
-Une demande explicite de ne pas committer ou pousser prévaut. Les mécanismes Git exacts, candidats `WORKTREE_LIVE`,
-`STAGED`, `COMMITTED_SNAPSHOT`, `PUSH_CANDIDATE`, `DYNAMIC_CANDIDATE`, hooks
-Les hooks `pre-commit` et `pre-push` et cas d'environnement sont définis dans
-`scripts/AGENTS.md`,
-`documentation/development/TESTING.md` et `host-environment.md`.
-
-### Fichiers fournis et protection des modifications préexistantes
-
-Un fichier fourni par l'utilisateur pour créer, remplacer ou adapter un chemin
-est **la candidate autoritative de ce chemin pour le lot**. Conserver sa source
-et la correspondance éventuelle nom joint → chemin cible. Ne jamais remplacer
-cette candidate par `HEAD`, une ancienne conversation ou une autre version ;
-ne jamais employer `restore`, `checkout`, `reset`, `clean`, `stash` ou une
-régénération pour annuler son contenu. Lors d'une adaptation, préserver toute
-partie non concernée ; lors d'un remplacement exact, vérifier l'identité du
-contenu avant staging. Sa seule présence ne justifie pas un commit hors lot.
-
-Avant toute écriture, identifier les changements préexistants du chemin ; en
-cas d'attribution incertaine, arrêter **sa mutation**, sans interrompre les
-analyses indépendantes. Avant commit, vérifier le diff, la préservation du
-contenu fourni et l'absence de perte étrangère. En cas de doute, STOP.
-
-## Qualité du changement et source canonique
-
-Corriger la cause racine au plus petit périmètre **complet**. Chercher les
-owners existants et les collisions sémantiques avant toute formule, statut,
-score, seuil, constante métier, type public, table, RPC ou vocabulaire utilisateur.
-Préférer : contrat actuel → extension cohésive → nouveau module justifié →
-compatibilité bornée → exception locale indispensable. Une règle durable possède
-un seul owner ; une façade de compatibilité ne devient pas une seconde vérité.
-
-### Invariants de développement applicables à tout lot
-
-Ces invariants complètent les sections spécialisées et s'appliquent à tout
-développement, macro-lot, correction, refactorisation ou campagne de qualité :
-
-1. **Un seul owner par comportement.** Avant toute écriture, identifier le
-   propriétaire canonique du comportement, de l'état, du calcul et de la source
-   de données. Réutiliser et étendre les primitives, hooks, services, contrats
-   et documents canoniques existants. Ne pas créer une seconde vérité, un
-   second registre, un second calcul ou un second mécanisme d'état. Si aucun
-   owner sûr n'est identifiable, arrêter la mutation concernée avec `STOP`.
-2. **Aucun changement silencieux de contrat sensible.** Un lot UI, UX,
-   performance, qualité ou refactorisation n'autorise aucune modification
-   implicite d'AuthN/AuthZ, RLS, ownership, scope, privilège, donnée personnelle,
-   SEO, consentement ou logique métier. Une évolution nécessaire doit être
-   explicitement bornée, attribuée à son owner, testée sur ses scénarios
-   positifs et négatifs, documentée dans le même lot et signalée dans le bilan.
-3. **Campagne substantielle et preuves typées.** Chaque lot fonctionnel exige
-   une consommation réellement exécutée du runtime concerné, des tests
-   comportementaux et régressions utiles, une couverture pertinente et la mise
-   à jour des documents `CURRENT` portant les contrats modifiés. Vérifier que
-   les tests exécutent réellement les chemins de production concernés et
-   démontrent aussi l'absence d'effets interdits, en contrôlant les fixtures,
-   assertions, scénarios négatifs et résultats persistants. La campagne
-   couvre l'intégralité de son périmètre autorisé, ses consommateurs directs
-   et, selon le risque, les cas nominaux, limites, invalides, adversariaux,
-   erreurs, transitions, concurrence, reprises et régressions. Le bilan
-   distingue obligatoirement `STATIC_CONTRACT`, `EXECUTED_BEHAVIOR` et
-   `INTEGRATION_PROOF`, ainsi que les preuves exécutées, réussies, manquantes
-   et encore en cours. Web et Mobile conservent des couvertures indépendantes ;
-   une mesure absente ou non comparable est `NOT_MEASURED` avec sa cause.
-   Aucun seuil, baseline, exclusion ou test artificiel ne peut être modifié
-   pour améliorer le résultat.
-4. **Matrice UI/UX gelée pendant les lots 01 à 11.** Dans le plan
-   `PLAN_MACRO_LOTS_UI_UX_CODEX.md`, les lots 01 à 11 ne doivent ni créer,
-   modifier, régénérer ni synchroniser
-   `documentation/design-system/MATRICE_ASTUCES_UI_UX_CLEANMYMAP.md` ou une
-   copie concurrente. Seul le lot 12 peut mettre à jour la matrice, après
-   rapprochement du runtime publié et des preuves finales. Une modification
-   nécessaire avant ce lot impose `STOP` et un classement explicite hors lot.
-5. **Documentation canonique dans le même lot.** Tout comportement, contrat,
-   route, règle ou procédure durablement modifié impose la mise à jour dans le
-   même lot des sources canoniques spécialisées et des fiches `CURRENT`
-   réellement concernées. Une fiche protégée devenue fausse doit être signalée
-   `DOCUMENTATION_DRIFT`; elle ne peut être laissée obsolète ni compensée par
-   une copie ou une note de session.
-6. **Auto-revue contradictoire, STOP CONDITION et publication obligatoires.**
-   Effectuer avant publication une auto-revue contradictoire complète :
-   rechercher les chemins de contournement, incompatibilités avec le code
-   préexistant, effets de bord et scénarios susceptibles d'invalider la
-   livraison. Fixer la `STOP CONDITION` avant l'intégration : ne pas clôturer
-   prématurément sur un commit, des hooks ou des preuves partielles, mais ne
-   pas prolonger non plus un chantier dont les objectifs, invariants et preuves
-   sont démontrés. Le workflow normal reste : validation du candidat courant →
-   commit attribué pour les nouveaux changements → push de tous les commits
-   locaux en avance, même s'ils contiennent des changements d'autres writers →
-   fetch et vérification de convergence (`HEAD = origin/main`, ahead/behind
-   `0/0`). Les fichiers dirty/untracked non commités restent exclus du push.
-   Pour ChatGPT, l'autorisation permanente décrite dans `CHATGPT.md` gouverne
-   le commit et le push directs, sauf instruction contraire de l'utilisateur.
-   Pour les autres writers, un mode sans push ou une exception doit être
-   explicitement demandé ou gouverné ; il ne peut pas être déduit d'une
-   difficulté locale.
-7. **Une possibilité n'est pas une implémentation.** Les formulations
-   « éventuellement », « pourrait » et « à envisager » désignent une cible à
-   examiner, jamais une fonctionnalité livrée. Déclarer une amélioration
-   implémentée exige le code réel, le comportement exécuté et les preuves
-   documentées correspondantes ; à défaut, la classer `EXISTING_VERIFIED`,
-   `NOT_APPLICABLE`, `PARTIEL` ou `BLOCKED` selon le cas.
-
-Exports privés par défaut. Un export, `index.ts`, barrel ou re-export exige un
-consommateur actuel ou un contrat public/legacy vérifié. Migrer les consommateurs
-avant de fermer un alias. Ne pas ajouter de service, dépendance, cache, table,
-helper ou abstraction pour la seule commodité ou pour satisfaire un outil.
-
-La taille seule ne justifie pas une extraction. Examiner responsabilités,
-cohésion, effets et complexité **du module comme de ses fonctions**. Les seuils
-et ratchets sont canoniques dans `conventions-modularisation.md` et `TESTING.md`.
-Si un ratchet bloquant `FULL` ou un contrôle ciblé justifié impose une réparation,
-réaliser une extraction **substantielle**, sans reformater, raccourcir les lignes,
-déplacer intact un monolithe ou assouplir une baseline pour passer le seuil.
-Sans frontière sûre, signaler le blocage.
-
-### Garde-fous de construction pour Codex et les agents
-
-Ces règles s'appliquent **avant** l'écriture de code, pas seulement lors de
-l'audit final. La procédure détaillée et les seuils restent dans
-`documentation/development/conventions-modularisation.md`.
-
-- Décrire la responsabilité unique, l'owner, les entrées, la sortie et les
-  effets de la nouvelle unité avant de l'ajouter. Si deux responsabilités
-  autonomes sont nécessaires, choisir leurs frontières avant d'implémenter.
-- Garder les fonctions d'orchestration lisibles : utiliser des étapes nommées,
-  des prédicats explicites et des garde-fous précoces ; ne pas empiler des
-  ternaires imbriqués, des conditions booléennes indépendantes ou des
-  callbacks qui mélangent parsing, métier et effets.
-- Ne pas écrire dans une même unité une combinaison de validation/AuthN/AuthZ,
-  décision métier, persistance, télémétrie et formatage de réponse lorsqu'une
-  frontière cohésive existe. Extraire la responsabilité réelle, pas un bloc
-  arbitraire de lignes.
-- Si l'implémentation prévue crée une nouvelle violation actionnable de
-  `quality:complexity`, une croissance au-delà d'un ratchet ou un nouveau
-  mélange de responsabilités, arrêter l'écriture et revoir le découpage avant
-  d'ajouter du comportement. Il est interdit de résoudre ce signal par une
-  baseline, une exclusion, un seuil, une désactivation de règle ou un
-  raccourcissement cosmétique.
-- Après écriture, relire chaque fonction touchée au niveau de son flux complet,
-  puis vérifier que la complexité n'a pas été déplacée vers un helper, un
-  wrapper ou une callback et que chaque nouvelle frontière possède un owner,
-  un contrat et des tests adaptés.
-
-### LEGACY / COMPATIBILITY
-
-Les anciens noms, coordinateurs et métadonnées de migration décrivent
-uniquement l’historique ; ils ne gouvernent aucun nouveau lot.
-
-### Dead code, duplication et compatibilité
-
-Avant suppression, inspecter usages statiques et dynamiques, tests, scripts,
-contrats publics, connaissance métier, provenance, migrations et compatibilité.
-Une absence d'import n'est **jamais** une preuve universelle de suppression.
-Qualifier les capacités selon `CURRENT`, `IMPLEMENTED_NOT_EXPOSED`,
-`COMPATIBILITY`, `TARGET`, `LEGACY` ou `DELETE_PROVEN` lorsque pertinent.
-
-Pour les findings Knip, décider par finding : `DELETE_PROVEN`, `INTERNALIZE`,
-`MIGRATE`, `RESTORE_FUNCTIONALITY` ou `KEEP_JUSTIFIED`. Une capacité métier utile
-mais inaccessible ne doit pas être supprimée pour rendre Knip vert. Un
-`KEEP_JUSTIFIED` durable doit être adossé à la baseline CURRENT, à l'ID stable,
-à une preuve et à un SHA dans
-`scripts/checks/dead-code-justifications.json`. Ne jamais masquer un finding
-nouveau ou stale ; la cible d'un lot est zéro finding **non qualifié** dans son
-périmètre, pas zéro finding global.
-
-Pour jscpd, qualifier les familles de clones réelles : `MIGRATE_TO_CANONICAL`,
-`CENTRALIZE_OWNER`, `DELETE_PROVEN`, `KEEP_INTENTIONAL`,
-`TEST_SHARED_HARNESS` ou `NO_ACTION_NOISE`. Une ressemblance textuelle ne
-suffit pas pour extraire. Les décisions durables de conservation/bruit exigent
-les occurrences, la preuve et le SHA CURRENT dans
-`scripts/checks/duplication-justifications.json`. Prioriser les défauts de
-sécurité et de source de vérité avant les clones de tests et le bruit ; ne pas
-truquer seuils, exclusions ou baselines. La procédure détaillée et les
-critères de fraîcheur vivent dans `TESTING.md`.
-
-**Mobile** : un lot dead-code/duplication non mobile ne modifie ni
-`apps/mobile/**` ni les baselines, exclusions, justifications ou seuils pour
-masquer des findings mobiles. Une correction mobile exige une demande explicite
-sur ce périmètre et la lecture de `apps/mobile/AGENTS.md`.
-
-Une dette adjacente n'entre dans le lot que si elle est directement utile,
-sûre et vérifiable ; sinon, la classifier hors périmètre. Ne pas transformer
-une amélioration Kaizen en chantier opportuniste.
-
-## Sécurité, données et services externes
-
-Invariants : ne jamais divulguer secret, token, cookie, session, credential,
-PII ou stack trace sensible ; garder `service_role` côté serveur ; valider les
-entrées et AuthN/AuthZ, ownership, scope et RLS à la frontière privilégiée.
-Ne pas contourner une sécurité pour réparer un test ni transformer une donnée
-calculée/proxy en mesure. Séparer intentions d'architecture, versionnement,
-état distant et runtime observé. Les règles de droits communautaires ouvertes
-sans pouvoir supplémentaire suivent `CHATGPT.md` et
-`documentation/security/`.
-
-**Migrations Supabase versionnées** : le workflow normal ne raisonne jamais sur
-la seule migration du dernier commit. Avant toute application, le préflight
-canonique doit caractériser **toute la file des migrations canoniques en
-attente** :
-`npm run supabase:migration:preflight -- --dry-run`. Il vérifie l'identité CLI,
-la cible liée, les deux historiques et leur ordre, le `db push --dry-run`, les
-parsing strict des sorties CLI, les dépendances SQL, les mutations réellement
-exécutées (en distinguant le DML dans les corps de fonctions), RLS, grants,
-la compatibilité des contrats SQL consommés et les Advisors. Il produit un statut explicite
-`ALIGNED`, `READY_TO_APPLY`, `BLOCKED` ou `DIVERGED`, avec les migrations et
-causes concernées. Seuls `ALIGNED` et `READY_TO_APPLY` constituent une
-précondition de décision ; le préflight lui-même est toujours read-only et ne
-publie rien. Sinon STOP. Cette délégation **n'autorise pas**
-`migration repair`, DDL manuelle, reset/seed destructif, suppression de
-données, modification de secrets ou autre mutation distante. Toute migration
-déjà appliquée se corrige par une migration forward-only.
-
-**Mode Supabase lié uniquement — Docker local en pause** : le poste utilisateur
-n'utilise ni Docker, ni WSL, ni conteneur, ni `supabase start`, `supabase status`
-ou `supabase db reset`. La CLI Supabase liée est la **voie canonique unique
-d'application** des migrations après publication, selon la procédure suivante :
-
-1. vérification de l'identité CLI et du projet cible lié (`trktzkgujgpgsgkoyndn`) ;
-2. lecture et réconciliation des historiques (`npx supabase migration list --linked`) ;
-3. préflight canonique de toute la file (`npm run supabase:migration:preflight -- --dry-run`) ;
-4. analyse des risques et des preuves nécessaires : les migrations ordinaires
-   compatibles peuvent être appliquées après leurs contrôles proportionnés ;
-   les migrations sensibles nécessitent préalablement leurs preuves
-   PostgreSQL, RLS, transactionnelles ou de concurrence pertinentes (vérifiées
-   par les empreintes exactes de leurs entrées, sans invalidation par un commit
-   indépendant) ;
-5. backup vérifié selon le risque ;
-6. application sérialisée de la file complète via `npx supabase db push --linked --yes` ;
-7. postflight (`ALIGNED`), relecture de l'historique et des Advisors.
-
-Ne jamais appliquer une file contenant une erreur SQL connue non résolue ou un
-risque critique. Cette délégation **n'autorise pas** `migration repair`, DDL
-manuelle, reset/seed destructif, suppression de données, modification de secrets
-ou autre mutation distante. Si la CLI liée ou ses permissions sont
-indisponibles, ne pas installer ni démarrer Docker en repli : classer le
-blocage précisément.
-
-La surveillance GitHub Actions publiée est portée par
-`.github/workflows/supabase-convergence.yml` en mode **strictement read-only**
-(`workflow_dispatch` et `schedule` quotidien) : elle exécute le préflight
-canonique sans jamais écrire ni appliquer de migration sur la base distante.
-L'environnement protégé `supabase-production`, la concurrence sérialisée et
-l'absence de déclencheur PR sont conservés. Une publication Git reste
-indépendante de l'application distante ; voir
-`documentation/operations/runbook-supabase-convergence.md`.
-
-Les dispositifs de *security deception* ou leurres actifs ne sont pas du
-dead-code gratuit : exiger owner, aucune permission/secret réel, absence
-d'effet métier, surveillance exploitable, tests positifs/négatifs et
-contrat `CURRENT`. Détails, registre et commande de contrôle :
-`documentation/security/SECURITY.md`.
-
-## Documentation et validation
-
-### Artefacts générés
-
-La racine du dépôt ne doit jamais contenir `work/`, même pour un fichier
-temporaire. Tous les rapports, audits, JSON, ZIP, preuves, exports et fichiers
-temporaires générés utilisent `artifacts/` par défaut, rangés par SHA et
-`runId` lorsque ces identités s'appliquent. Les exceptions sont limitées aux
-sorties natives d'outils, caches techniques, fichiers de production et
-documentation durable lorsqu'un contrat existant impose leur destination ;
-chaque nouvelle exception doit être documentée et vérifiable. Aucun dossier
-racine ad hoc ni exception implicite n'est autorisé.
-
-### Contexte d'exécution des commandes Web
-
-Les commandes Web qui chargent Vitest, Vite, les alias TypeScript (`@/*`) ou
-la configuration ESLint doivent être exécutées dans le workspace `apps/web`.
-Depuis la racine du dépôt, préférer les scripts npm workspace (`npm run test
--w apps/web -- ...`, `npm run test:coverage -w apps/web -- ...`,
-`npm run lint -w apps/web` et `npm run typecheck -w apps/web`) ; pour une
-invocation directe de `vitest`, `vite`, `eslint` ou d'un outil équivalent,
-utiliser explicitement `apps/web` comme répertoire courant.
-
-Avant une mesure de couverture ou un test direct Web, vérifier le contexte avec
-`Get-Location`/`pwd` et confirmer la présence de `apps/web/package.json` et de
-`apps/web/vitest.config.mts`. Les chemins `--coverage.include` sont relatifs à
-`apps/web`. Ne jamais lancer `npx vitest`, `npx vite` ou `npx eslint` pour le
-Web depuis la racine en prétendant que la commande couvre le workspace.
-
-Une erreur telle que `Cannot find package '@/...'`, l'absence de configuration
-ou un résultat de couverture sans les fichiers ciblés indique d'abord un
-contexte de commande invalide : classer cette tentative `BLOCKED`/`NOT_RUN`,
-ne pas la diagnostiquer comme un échec du code, puis relancer la commande dans
-`apps/web` ou via le script npm workspace canonique. Une mesure obtenue depuis
-un mauvais répertoire ne peut jamais être utilisée comme preuve de couverture.
-
-Une règle durable = une source canonique. Mettre à jour uniquement les documents
-`CURRENT` affectés, avec la bonne distinction `CURRENT`, `PLAN`, `AUDIT`,
-`HISTORY`, `SNAPSHOT`, `ADR`, `GENERATED`. Les documents fournis restent
-protégés. Ne pas créer d'archive, fichier racine ou copie parallèle pour une
-information déjà gouvernée. Les règles documentaires scoped, notamment les
-zones protégées, sont dans `documentation/AGENTS.md`.
-
-Prouver le résultat par les contrôles **proportionnés** : test ciblé, contrat
-partagé, sécurité/régression si concernée, `checks:fast` seulement si le rayon
-d'impact le justifie. Ne pas imposer automatiquement `quality:cycles`,
-`quality:duplication`, `quality:complexity`, `quality:dead-code` ou
-`quality:top-heavy` en `DEVELOPMENT`, même pour une extraction ; un contrôle
-ciblé reste possible sur risque concret. Ces contrôles sont obligatoires dans
-`FULL` sur le candidat exact.
-
-Pour tout changement fonctionnel, Codex ajoute ou adapte les tests nécessaires
-avant publication et respecte la politique canonique de couverture de
-`documentation/development/testing-quality-coverage.md`.
-
-### Validation proportionnée au risque et à l'étendue du lot
-
-En `DEVELOPMENT`, sélectionner les contrôles selon les fichiers modifiés, leurs
-consommateurs et le risque réel, sans dupliquer les contrôles que les hooks
-(`pre-commit` / `pre-push`) exécutent déjà avec une couverture équivalente
-(sauf nécessité de diagnostic) :
-
-- **Documentation pure** : contrôles documentaires pertinents, diff, secrets et
-  intégrité Git uniquement (aucun test ou runtime artificiel).
-- **Correctif local non sensible** : tests de régression ciblés et contrôles
-  techniques nécessaires ; pas d'obligation systématique de campagne massive ni
-  de mesure de couverture avant/après.
-- **Lot fonctionnel substantiel** : campagne proportionnée à l'ensemble du
-  périmètre et de ses consommateurs directs, avec couverture pertinente.
-- **Changement sensible** (AuthN/AuthZ, RLS, PostgreSQL, concurrence, secrets,
-  intégrité) : conserver toutes les preuves de sécurité, AuthZ, RLS,
-  PostgreSQL, concurrence et intégrité nécessaires.
-
-Réutiliser les preuves existantes uniquement lorsque leur candidat, leurs
-entrées et leur périmètre correspondent exactement. Déléguer les validations
-larges à la CI lorsqu'elles ne sont pas nécessaires à la preuve locale du lot ;
-ne pas attendre systématiquement leur conclusion pour clôturer une correction
-ordinaire publiée, et signaler leur statut réel.
-
-Cette proportionnalité ne justifie jamais une règle métier modifiée, un seuil
-abaissé, une métrique manipulée, un test artificiel ou une extension hors
-périmètre. Les tests restent déterministes et maintenables ; les propriétés
-importantes non prouvées restent explicitement signalées.
-
-La structure de toute campagne doit limiter la duplication : rechercher d'abord
-les scénarios, fixtures, mocks, builders et helpers du domaine ; paramétrer les
-variantes d'un même oracle ; n'extraire un helper que s'il supprime une
-répétition significative sans masquer les assertions ou les frontières de
-sécurité ; conserver séparés les tests qui prouvent des routes, permissions ou
-frontières d'exécution distinctes. Pour une campagne ajoutant ou étendant des
-tests, contrôler le scope `tests` de jscpd avec `quality:duplication`, qualifier
-les nouveaux clones et distinguer la dette préexistante de celle introduite par
-le lot. La méthode détaillée est dans
-[`documentation/development/testing-quality-structure.md`](documentation/development/testing-quality-structure.md) ; elle n'impose pas `FULL` aux petits correctifs.
-
-`FULL` **uniquement** sur demande explicite dédiée ou
-préparation immédiate, explicitement demandée, d'un déploiement Vercel. Ne
-jamais en faire la STOP CONDITION d'un lot ordinaire ; hors de ces cas, renvoyer
-`NOT_RUN_POLICY`. Les validations globales utilisent un candidat immuable via
-les mécanismes existants de `scripts/ci` ; la voie et ses scopes sont détaillés
-dans [`scripts/AGENTS.md`](scripts/AGENTS.md). Une fois `FULL` explicitement lancé,
-rapporter fidèlement les résultats et corriger uniquement les erreurs
-attribuables au lot. Les défauts préexistants ou étrangers sont signalés
-séparément ; aucun échec hors périmètre n'impose l'extension du lot ou une
-nouvelle campagne. Un candidat instable ne peut pas être attesté `PASS`.
-`RELEASE` exige la preuve FULL du SHA concerné ; ce n'est pas un déploiement.
-
-Une exécution ne lance qu'un seul `FULL`. Le runner capture le candidat avant
-son premier contrôle. Toute dérive pendant l'exécution est signalée comme échec
-de stabilité, sans second `FULL`, sans élargissement du candidat et sans
-réattribution des résultats.
-
-`precommit:guard` échoué bloque commit/push : diagnostiquer et réparer dans le
-même lot si autorisé, puis relancer ; sinon signaler le blocage sans contourner.
-Les hooks s'appliquent au candidat exact selon `scripts/AGENTS.md`.
-
-En cas de correction de régression, erreur de revue ou reprise d'un lot déclaré
-terminé à tort, appliquer dans **le même lot** la prévention proportionnée des
-récidives de `documentation/development/repo-quality-rules.md` ; pas d'audit
-global automatique. Ne pas utiliser tests, baseline ou suppressions de contrôle
-pour masquer une anomalie. Ne jamais déclarer passé un test non exécuté.
-
-Après publication, vérifier l'objectif et classer : régression introduite,
-défaut préexistant critique, amélioration hors périmètre, hypothèse non
-démontrée. Corriger seulement une violation actuelle pertinente ou un risque
-critique prouvé. Regrouper par cause, respecter la `STOP CONDITION`, ne pas
-prolonger un chantier pour une dette périphérique. Une preuve manquante est une
-limite, pas automatiquement un bug.
-
-## Routage scoped
+## 6. Routage scoped (lecture obligatoire selon périmètre)
 
 | Domaine | Source |
 |---|---|
 | Web, Next.js, UI | `apps/web/AGENTS.md` |
-| Concision des textes UI Web et Mobile | `documentation/design-system/UI_COPY_CONCISION.md` |
+| Concision textes UI Web/Mobile | `documentation/design-system/UI_COPY_CONCISION.md` |
 | API | `apps/web/src/app/api/AGENTS.md` |
-| Supabase, migrations | `apps/web/supabase/AGENTS.md` |
+| Supabase, migrations, SQL | `apps/web/supabase/AGENTS.md`, `documentation/operations/runbook-supabase-convergence.md` |
 | Scripts web | `apps/web/scripts/AGENTS.md` |
 | Scripts, Git, hooks, ratchets | `scripts/AGENTS.md` |
 | GitHub Actions | `.github/AGENTS.md` |
@@ -722,37 +66,15 @@ limite, pas automatiquement un bug.
 | Python | `maintenance/python/AGENTS.md` |
 | Documentation | `documentation/AGENTS.md` |
 | E2E | `e2e/AGENTS.md` |
-| Tests et niveaux de preuve | `documentation/development/TESTING.md` |
+| Tests, preuves, couverture | `documentation/development/TESTING.md`, `documentation/development/testing-quality-coverage.md` |
 | Architecture modulaire | `documentation/development/conventions-modularisation.md` |
-| Qualité et prévention | `documentation/development/repo-quality-rules.md` |
-| Environnement et verrous Git | `documentation/development/host-environment.md` |
+| Qualité, prévention, host | `documentation/development/repo-quality-rules.md`, `documentation/development/host-environment.md` |
 | Sécurité | `documentation/security/` |
 
-Ne lire que les sources spécialisées pertinentes. Les anciens noms, worktrees,
-claims et coordinateurs sont `LEGACY` ou `COMPATIBILITY`, jamais un workflow
-`CURRENT`.
+## 7. Clôture et réponse
 
-## Clôture et réponse
+Clôturer lorsque objectif, invariants et preuves suffisantes sont démontrés et qu'aucun changement étranger n'a été écrasé. Réponse finale en français, concise, avec résultat, commit éventuel, statut exact des preuves (`PASS`, `FAIL`, `PENDING`, `BLOCKED`, `NOT_RUN`, `DB_SEMANTICS_NOT_EXECUTED`) et limites matérielles.
 
-Clôturer lorsqu'objectif, invariants et preuves suffisantes sont traités et
-qu'aucun changement étranger n'a été écrasé. Signaler les incertitudes
-matérielles, blocages et écarts, sans rapport encyclopédique. Réponse finale
-en français, avec résultat, commit éventuel et
-validation importante seulement si elle éclaire la décision.
+### LEGACY / COMPATIBILITY
 
-### Preuve SQL et convergence Supabase
-
-Les workflows `.github/workflows/supabase-sql-proof.yml`
-(`scripts/ci/run-supabase-sql-proof.mjs`), `.github/workflows/e2e-supabase.yml`
-et `.github/workflows/supabase-backup-restore-proof.yml` restent des mécanismes
-**indépendants** de validation (replay PostgreSQL éphémère, pgTAP, E2E et
-backup/restore). Ils ne bloquent pas artificiellement l'application CLI des
-migrations ordinaires compatibles et ne dépendent pas d'une égalité entre le
-SHA testé et le `HEAD` courant de `main`.
-
-Pour les preuves nécessaires à une application sensible, la validation vérifie
-les empreintes exactes (SHA-256) des migrations, tests, dépendances et contrats
-SQL pertinents : un commit indépendant qui laisse toutes ces entrées identiques
-n'invalide pas une preuve acquise. L'application distante reste exclusivement
-portée par la CLI Supabase liée selon le runbook canonique, sans second chemin
-concurrent d'écriture dans GitHub Actions.
+Les anciens noms, coordinateurs et métadonnées de migration décrivent uniquement l'historique ; ils ne gouvernent aucun nouveau lot.

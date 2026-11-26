@@ -159,3 +159,6 @@ n'a pas exécuté ces scénarios.
 - Rechercher tables, RPC et routes dans les workspaces pertinents ; vérifier
   les services, contrats et tests propriétaires. La preuve de comportement
   PostgreSQL, de concurrence et de RLS reste distincte du catalogue.
+- Outillage intégré (`CURRENT`) :
+  - Requête SQL read-only canonique : [`apps/web/supabase/schema-catalog.READ_ONLY.sql`](../../apps/web/supabase/schema-catalog.READ_ONLY.sql) (schémas `public`/`private`, ACL schémas/relations/colonnes/fonctions, séquences, types/enums, héritage, contraintes, index, triggers et policies `public`/`private` + `storage.objects`/`storage.buckets`, sans lignes métier, valeurs de séquences ni corps de fonctions).
+  - Générateur Git, provenance par objet, mapping consommateurs et contrôle de fraîcheur : `npm run audit:sql-catalog -- --output artifacts/sql-catalog/git-replayed.json [--compare-remote artifacts/sql-catalog/remote-observed.json] [--check-freshness artifacts/sql-catalog/git-replayed.json]`. Le catalogue `git-replayed` repose sur l'analyse DDL des migrations sans exécution PostgreSQL (`DB_SEMANTICS_NOT_EXECUTED`).

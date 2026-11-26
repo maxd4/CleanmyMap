@@ -6,95 +6,79 @@ restent dans les sources de session ou les documents d'audit appropriés.
 
 ## Applications et stack
 
-- Monorepo CleanMyMap avec deux applications déployables : `apps/web` et
-  `apps/mobile`.
+- Monorepo CleanMyMap : `apps/web` (Next.js App Router, React, TypeScript) et
+  `apps/mobile` (Expo/React Native).
 - `maintenance/python/` reste hors du runtime applicatif.
-- Web/API : Next.js App Router, React et TypeScript.
-- Données et backend : Supabase/PostgreSQL.
-- Identité : Clerk pour le web et le mobile, avec intégration Supabase via le
-  jeton Clerk.
-- Gestion des dépendances : npm workspaces ; le lockfile racine est canonique.
+- Données et backend : Supabase/PostgreSQL (mode lié uniquement ; Docker/WSL
+  local en pause).
+- Identité : Clerk pour Web et Mobile, intégré à Supabase via le jeton Clerk.
+- Dépendances : npm workspaces ; le lockfile racine est canonique.
 
 ## Sources canoniques à relire
 
-- Gouvernance générale et règles de travail : `AGENTS.md` et le `AGENTS.md`
-  scoped du sous-arbre concerné.
+- Gouvernance et exécution : `AGENTS.md` et le `AGENTS.md` scoped concerné.
+- Découverte technique Web/Mobile :
+  `documentation/development/AI_DEVELOPER_GUIDE.md`, `apps/web/src/lib/README.md`,
+  `apps/mobile/README.md`.
 - Architecture et frontières : `documentation/architecture/README.md`,
-  `documentation/architecture/master-architecture.md` et les ADR applicables.
-- Données et Supabase : `documentation/database/README.md` et
-  `documentation/architecture/data-governance.md`.
-- Contrats de sécurité et d'accès : `documentation/security/README.md` et les
-  sources AuthN/AuthZ concernées.
-- Design system et contrats UI : `documentation/design-system/README.md` et le
-  document canonique du composant concerné.
-- Validation et tests : `documentation/development/TESTING.md`.
-- Mémoire de session :
-  `documentation/sessions/history/latest-session.md`.
-- Procédure de session et budget de contexte :
+  `documentation/architecture/master-architecture.md` et ADR applicables.
+- Données, SQL et Supabase : `documentation/database/README.md`,
+  `documentation/architecture/data-governance.md`, `apps/web/supabase/AGENTS.md`,
+  `documentation/operations/runbook-supabase-convergence.md`.
+- Sécurité et accès : `documentation/security/README.md`.
+- Design system : `documentation/design-system/README.md`.
+- Validation, preuves et qualité : `documentation/development/TESTING.md`.
+- Session et budget : `documentation/sessions/history/latest-session.md` et
   `documentation/operations/agent-memory-governance.md`.
 
 ## Exclusions de contexte
 
-- `.codexignore` exclut les sorties locales déjà identifiées comme générées :
-  `artifacts/`, `**/artifacts/`, `.quarto/` et `**/.quarto/`.
-- `artifacts/` est l’espace local ignoré pour les sorties générées et les candidates de validation et
-  les sorties de travail bornées. Les preuves durables relèvent de
-  `documentation/operations/audits/` ou du domaine documentaire concerné ; une
-  nouvelle sortie ne doit pas être versionnée dans `artifacts/`.
-- Les dossiers lourds suivants ne sont pas à scanner par défaut :
-  `node_modules/`, `.next/`, `.vercel/`, `.playwright-mcp/`, `.gitnexus/`,
-  `artifacts/`, `backups/` et les caches Quarto.
+- `.codexignore` exclut les sorties générées (`artifacts/`, `**/artifacts/`,
+  `.quarto/`, `**/.quarto/`).
+- `artifacts/` reçoit les sorties locales générées (audits, preuves,
+  catalogues SQL, graphes) sans être versionné.
+- Ne pas scanner par défaut : `node_modules/`, `.next/`, `.vercel/`,
+  `.playwright-mcp/`, `.gitnexus/`, `artifacts/`, `backups/` et caches Quarto.
 
-## Doctrine de lecture progressive
+## Doctrine de lecture progressive et outillage de découverte
 
 Pour une tâche ordinaire, lire dans cet ordre :
 
-1. les règles racine ;
-2. le `AGENTS.md` scoped applicable ;
-3. le fichier cible ;
-4. ses dépendances directes, callers et consommateurs nécessaires ;
-5. les tests directement liés ;
-6. la documentation canonique du domaine ;
-7. le contexte complémentaire seulement si un doute réel subsiste.
+1. `AGENTS.md` + `AGENTS.md` scoped applicable ;
+2. `AI_DEVELOPER_GUIDE.md` / `documentation/database/README.md` et le README du
+   domaine concerné ;
+3. le sous-graphe statique ciblé via `npm run query:architecture-import-graph`
+   (sur un graphe produit par `npm run audit:architecture-import-graph` avec SHA
+   et provenance vérifiés) ;
+4. le fichier cible, ses dépendances directes, callers, routes/RPC littérales et
+   tests directement liés ;
+5. la documentation canonique du domaine et les contrats `CURRENT` ;
+6. le contexte complémentaire seulement si un doute réel subsiste.
 
-Un audit explicitement global peut élargir ce périmètre. Les historiques de
-session non pertinents, `node_modules/`, `.next/`, `.vercel/`, `artifacts/`,
-`backups/`, `.playwright-mcp/`, `.gitnexus/` et les caches Quarto
-ne sont pas explorés par défaut. Les candidates `artifacts/validation/` ne sont lues que
-lorsqu'un contrôle ou un fichier explicitement concerné l'exige.
+## Frontières et zones sensibles
 
-## Frontières d'architecture
+- `apps/web` : frontières Server/Client et AuthN/AuthZ côté serveur préservées.
+- `apps/mobile` : contrats d'identité Clerk, missions/GPS, RLS et finalisation
+  serveur protégés.
+- Migrations Supabase : unique arbre éditable sous `apps/web/supabase/migrations/`.
+- Zones sensibles : AuthN/AuthZ, rôles, permissions, proxy, ingestion, RPC,
+  migrations, administration, modération, messagerie, PII, secrets et RLS.
 
-- `apps/web` porte l'application web, ses routes API et son intégration
-  Supabase ; les frontières Server/Client et l'autorisation côté serveur sont
-  préservées.
-- `apps/mobile` est une application distincte ; ses contrats d'identité,
-  missions/GPS, RLS et finalisation des métriques restent des zones protégées.
-- Les migrations Supabase canoniques résident sous `apps/web/supabase/migrations/`.
+## Points d'entrée de session et validation
 
-## Zones sensibles
-
-- Authentification, rôles, permissions, routes protégées et proxy.
-- Contrats de données, ingestion, RPC Supabase et migrations.
-- Administration, modération, audit et messagerie.
-- Données personnelles, secrets, RLS et intégrations Clerk/Supabase.
-
-## Points d'entrée de validation
-
-- Démarrage de session : `npm run session:bootstrap` puis
-  `npm run session:budget`.
-- Validation ciblée : `npm run checks:changed`.
-- Gates applicatives : `npm run test:regression-gates` et les tests ciblés du
-  workspace concerné.
-- Validation large : `npm run checks` lorsque le périmètre le justifie.
+- Démarrage : `npm run session:bootstrap` et `npm run session:budget`.
+- Validation ciblée : `npm run checks:fast` (budget 180 s).
+- Gates applicatives : `npm run test:regression-gates` et tests ciblés du
+  workspace concerné (`npm run test -w apps/web -- ...`).
+- Validation globale (`FULL`) : uniquement sur demande explicite ou préparation
+  de déploiement Vercel (`documentation/development/TESTING.md`).
 - Clôture : `npm run session:close -- --done "..." --next "..." --risk "..."`.
 
 ## Protocole de session
 
-1. Lire `AGENTS.md`, le `AGENTS.md` scoped applicable,
-   `project_context.md` et `latest-session.md`.
-2. Identifier les sources canoniques, callers, consommateurs, tests et
-   invariants réellement concernés par la tâche.
+1. Lire `AGENTS.md`, le `AGENTS.md` scoped applicable, `project_context.md` et
+   `latest-session.md`.
+2. Identifier owners, contrats, callers, consommateurs et invariants concernés.
 3. Modifier le périmètre minimal et valider proportionnellement au risque.
-4. Mettre à jour la mémoire volatile à la clôture ; ne pas transformer ce
+4. Mettre à jour `latest-session.md` à la clôture ; ne pas transformer ce
    fichier semi-stable en journal de chantier.

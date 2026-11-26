@@ -81,4 +81,16 @@ describe("documentation roadmap governance", () => {
 
     assert.deepEqual(violations, []);
   });
+
+  it("detects broken or renamed links in AI discovery index files", () => {
+    const view = createView({
+      "documentation/development/AI_DEVELOPER_GUIDE.md": "See [Missing](../features/renamed-missing.md) and [MissingDir](../../apps/web/src/lib/missing-dir/).\n",
+      [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
+    });
+
+    const violations = validateDocumentationGovernance(view);
+
+    assert.equal(violations.length, 2);
+    assert.ok(violations.every((v) => v.pattern === "broken-discovery-link"));
+  });
 });

@@ -142,9 +142,12 @@ et ne prouve pas l'exhaustivité des consommateurs.
    [README Mobile](../../apps/mobile/README.md).
 2. Ouvrir le README du domaine lorsqu'il existe, puis rechercher les symboles
    propriétaires, leurs dépendances, callers et consommateurs.
-3. Réutiliser le graphe d'imports existant :
-   `npm run audit:architecture-import-graph -- --ref <SHA> --source git --output artifacts/architecture-import-graph.json`.
-   Vérifier sa provenance et consulter seulement le sous-graphe pertinent.
+3. Réutiliser le graphe d'imports existant et son sélecteur borné :
+   `npm run audit:architecture-import-graph -- --ref <SHA> --source git --output artifacts/architecture-import-graph.json`
+   puis `npm run query:architecture-import-graph -- artifacts/architecture-import-graph.json <chemin-ou-dossier> <SHA> 20`.
+   Le sélecteur exige un SHA complet (40 hex) et une provenance Git vérifiée,
+   borne les listes et exclut les arêtes internes d'un dossier. Limite : arêtes
+   statiques directes uniquement (hors appels HTTP/RPC par chaîne littérale).
 4. Compléter les imports statiques par la recherche des routes HTTP, RPC,
    tables, clés de stockage, jobs, imports dynamiques et références littérales.
    QMD et GitNexus restent des aides facultatives selon TESTING.md.
@@ -156,36 +159,36 @@ et ne prouve pas l'exhaustivité des consommateurs.
 
 | Domaine (nom de dossier) | Point d'entrée | Orientation existante |
 |---|---|---|
-| actions | [Dossier](../../apps/web/src/lib/actions/) | [README local](../../apps/web/src/lib/actions/README.md) |
+| actions | [Dossier](../../apps/web/src/lib/actions/) | [README local](../../apps/web/src/lib/actions/README.md) (cycle pré-action/post-action, publication, annulation, signalement) |
 | community | [Dossier](../../apps/web/src/lib/community/) | [README local](../../apps/web/src/lib/community/README.md) |
 | gamification | [Dossier](../../apps/web/src/lib/gamification/) | [README local](../../apps/web/src/lib/gamification/README.md) |
-| spogomi | [Dossier](../../apps/web/src/lib/spogomi/) | [README local](../../apps/web/src/lib/spogomi/README.md) |
-| reports | [Dossier](../../apps/web/src/lib/reports/) | Rechercher le propriétaire dans le dossier |
+| spogomi | [Dossier](../../apps/web/src/lib/spogomi/) | [README local](../../apps/web/src/lib/spogomi/README.md) (admissions, équipes, résultats, lifecycle) |
+| reports | [Dossier](../../apps/web/src/lib/reports/) | [README local](../../apps/web/src/lib/reports/README.md) (génération, historique, publication publique) |
 | route | [Dossier](../../apps/web/src/lib/route/) | [README local](../../apps/web/src/lib/route/README.md) |
 | learning | [Dossier](../../apps/web/src/lib/learning/) | [README local](../../apps/web/src/lib/learning/README.md) |
-| chat | [Dossier](../../apps/web/src/lib/chat/) | Rechercher le propriétaire dans le dossier |
+| chat | [Dossier](../../apps/web/src/lib/chat/) | [README local](../../apps/web/src/lib/chat/README.md) (discussions d'action, canaux, sondages, DM) |
 | auth | [Dossier](../../apps/web/src/lib/auth/) | [README local](../../apps/web/src/lib/auth/README.md) |
 | supabase | [Dossier](../../apps/web/src/lib/supabase/) | [README local](../../apps/web/src/lib/supabase/README.md) |
 | geo | [Dossier](../../apps/web/src/lib/geo/) | [README local](../../apps/web/src/lib/geo/README.md) |
-| partners | [Dossier](../../apps/web/src/lib/partners/) | Rechercher le propriétaire dans le dossier |
-| environmental-impact-estimator | [Dossier](../../apps/web/src/lib/environmental-impact-estimator/) | Rechercher le propriétaire dans le dossier |
-| impact | [Dossier](../../apps/web/src/lib/impact/) | Rechercher le propriétaire dans le dossier |
-| missions | [Dossier](../../apps/web/src/lib/missions/) | Rechercher le propriétaire dans le dossier |
-| notifications | [Dossier](../../apps/web/src/lib/notifications/) | Rechercher le propriétaire dans le dossier |
-| pilotage | [Dossier](../../apps/web/src/lib/pilotage/) | Rechercher le propriétaire dans le dossier |
-| funding | [Dossier](../../apps/web/src/lib/funding/) | Rechercher le propriétaire dans le dossier |
-| services | [Dossier](../../apps/web/src/lib/services/) | Rechercher le propriétaire dans le dossier |
-| validation | [Dossier](../../apps/web/src/lib/validation/) | Rechercher le propriétaire dans le dossier |
-| http | [Dossier](../../apps/web/src/lib/http/) | Rechercher le propriétaire dans le dossier |
-| persistence | [Dossier](../../apps/web/src/lib/persistence/) | Rechercher le propriétaire dans le dossier |
-| storage | [Dossier](../../apps/web/src/lib/storage/) | Rechercher le propriétaire dans le dossier |
-| time | [Dossier](../../apps/web/src/lib/time/) | Rechercher le propriétaire dans le dossier |
-| waste | [Dossier](../../apps/web/src/lib/waste/) | Rechercher le propriétaire dans le dossier |
-| maps | [Dossier](../../apps/web/src/lib/maps/) | Rechercher le propriétaire dans le dossier |
-| pdf-export | [Dossier](../../apps/web/src/lib/pdf-export/) | Rechercher le propriétaire dans le dossier |
-| admin | [Dossier](../../apps/web/src/lib/admin/) | [README local](../../apps/web/src/lib/admin/README.md) |
-| account | [Dossier](../../apps/web/src/lib/account/) | Rechercher le propriétaire dans le dossier |
-| data | [Dossier](../../apps/web/src/lib/data/) | Rechercher le propriétaire dans le dossier |
+| partners | [Dossier](../../apps/web/src/lib/partners/) | [README local](../../apps/web/src/lib/partners/README.md) (annuaire partenaires, onboarding) |
+| environmental-impact-estimator | [Dossier](../../apps/web/src/lib/environmental-impact-estimator/) | [README local](../../apps/web/src/lib/environmental-impact-estimator/README.md) |
+| impact | [Dossier](../../apps/web/src/lib/impact/) | Indicateurs d'impact et facteurs scientifiques (`../scientific-indicators/` et `apps/web/src/lib/impact/`) |
+| missions | [Dossier](../../apps/web/src/lib/missions/) | [README local](../../apps/web/src/lib/missions/README.md) (relai web `mission-access.ts`, owner mobile dans `apps/mobile/README.md`) |
+| notifications | [Dossier](../../apps/web/src/lib/notifications/) | Préférences et cibles de notifications in-app (`app_notifications`) |
+| pilotage | [Dossier](../../apps/web/src/lib/pilotage/) | Projections de pilotage et synthèse territoriale |
+| funding | [Dossier](../../apps/web/src/lib/funding/) | Suivi des contributions et transparence financière (`funding_contributions`) |
+| services | [Dossier](../../apps/web/src/lib/services/) | Adaptateurs de services externes (emails, webhooks) |
+| validation | [Dossier](../../apps/web/src/lib/validation/) | Schémas de validation partagés aux frontières HTTP |
+| http | [Dossier](../../apps/web/src/lib/http/) | Helpers HTTP, en-têtes cache/sécurité et réponses API |
+| persistence | [Dossier](../../apps/web/src/lib/persistence/) | Stores serveur/locaux (`runtime-store.ts`, `local-record-store.ts`) |
+| storage | [Dossier](../../apps/web/src/lib/storage/) | Contrats de stockage client/serveur |
+| time | [Dossier](../../apps/web/src/lib/time/) | Conversions UTC / `Europe/Paris` et fuseaux IANA |
+| waste | [Dossier](../../apps/web/src/lib/waste/) | Référentiel des catégories et facteurs de déchets |
+| maps | [Dossier](../../apps/web/src/lib/maps/) | Utilitaires cartographiques Leaflet et tuiles |
+| pdf-export | [Dossier](../../apps/web/src/lib/pdf-export/) | Génération PDF bas niveau (`simple-pdf.ts`) consommée par `reports/` |
+| admin | [Dossier](../../apps/web/src/lib/admin/) | [README local](../../apps/web/src/lib/admin/README.md) (modération, creator-inbox, audit) |
+| account | [Dossier](../../apps/web/src/lib/account/) | Profils, rôles actifs, preuves d'engagement et suppression de compte |
+| data | [Dossier](../../apps/web/src/lib/data/) | Synchronisation locale et reprise de données historiques |
 
 Les autres domaines restent accessibles depuis l'index lib Web. Un README
 absent ne justifie pas automatiquement une nouvelle fiche. Enrichir l'owner
