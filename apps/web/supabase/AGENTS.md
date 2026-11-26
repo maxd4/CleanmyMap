@@ -53,7 +53,9 @@ Toute création ou modification d'une table exposée doit auditer :
 - grants, ownership et rôles appelants ;
 - `search_path` ;
 - `SECURITY DEFINER` / `SECURITY INVOKER` ;
-- contrats RPC, fonctions, triggers et vues concernés.
+- contrats RPC, fonctions, triggers, contraintes, transactions, reprises et
+  courses concurrentes (vérifiés sur le véritable schéma PostgreSQL et non par
+  de simples mocks ou assertions textuelles).
 
 Ne jamais désactiver RLS pour débloquer un flux. Ne jamais introduire
 `service_role` côté client ; ce secret reste réservé aux opérations serveur

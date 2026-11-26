@@ -56,8 +56,16 @@ Toujours distinguer :
 présence textuelle
 ≠ structure statique
 ≠ comportement exécuté
-≠ propriété métier démontrée
+≠ propriété métier ou d'intégration démontrée
 ```
+
+Chaque campagne choisit ses validations selon les risques réels (et non selon
+leur facilité ou rapidité), exécute les chemins de production concernés,
+contrôle la fidélité des fixtures, assertions, scénarios négatifs et résultats
+persistants (y compris l'absence d'effets interdits), et distingue explicitement
+les preuves exécutées, réussies, manquantes et encore en cours. Les tests
+mockés et le `typecheck` ne remplacent jamais les preuves PostgreSQL, RLS,
+transactions, triggers ou concurrence lorsque le risque l'exige.
 
 Un test qui lit une migration SQL et vérifie des chaînes, des noms ou des
 regex est un `STATIC_CONTRACT`. Il peut protéger la présence de RLS, grants,

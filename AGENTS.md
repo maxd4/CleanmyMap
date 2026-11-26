@@ -22,8 +22,9 @@ explicitement fournis doivent être distingués du `main` publié.
 
 ## Ambition et décision avant modification
 
-Viser **le meilleur résultat démontrable**, pas simplement une exécution plus
-rapide ni davantage de code. Pour un changement substantiel, vérifier le vrai
+Viser **le meilleur résultat démontrable et sa fiabilité réelle**, jamais une
+exécution plus rapide, une économie de tokens, une satisfaction minimale du
+prompt ni davantage de code. Pour un changement substantiel, vérifier le vrai
 objectif, les hypothèses, les méthodes du domaine, les coûts, les risques et les
 critères mesurables. Un objectif ambitieux reste une cible, jamais un gain acquis.
 Si l'objectif est irréalisable ou contredit par le checkout, le signaler et
@@ -74,12 +75,17 @@ il reste soumis aux contrôles documentaires, de liens, de cohérence et de
 références qui lui sont pertinents.
 
 Avant d'écrire : lire l'état courant de la zone, le `AGENTS.md` scoped, les
-contrats, callers, consommateurs et tests pertinents. Pour un contrat métier,
-cartographier les voies de mutation directes et indirectes (API, jobs, imports,
-RPC, triggers), les acteurs et droits, les transitions, la persistance, les
-scénarios normaux et interdits et les preuves nécessaires. Regrouper les
-conséquences de même cause dans **un lot cohérent complet**, sans micro-lots ni
-refonte voisine. Fixer sa `STOP CONDITION` avant l'intégration.
+contrats, callers, consommateurs et tests pertinents. Examiner les owners,
+chemins alternatifs, contraintes préexistantes, permissions, transitions d'état
+et effets de bord, puis identifier toutes les conséquences directes du
+changement. Pour un contrat métier, cartographier les voies de mutation directes
+et indirectes (API, jobs, imports, RPC, triggers), les acteurs et droits, les
+transitions, la persistance, les scénarios normaux et interdits et les preuves
+nécessaires. Traiter les causes racines et leurs conséquences directes dans **un
+lot cohérent complet**, sans succession de corrections superficielles ni refonte
+voisine. Définir les invariants, la `STOP CONDITION` et les preuves nécessaires
+avant de coder, en choisissant les validations selon les risques réels et non
+selon leur facilité ou leur rapidité d'exécution.
 
 Pour une fonctionnalité nouvelle ou modification substantielle, décider avant
 écriture entre **`EXTEND_EXISTING`**, **`CREATE_MODULE`** et
@@ -93,9 +99,15 @@ décision dans le bilan, sans créer de registre concurrent. Méthode et seuils 
 **Preuves distinctes** : source présente ≠ test présent ≠ test exécuté ≠
 comportement d'intégration observé ≠ état distant ≠ production. Les niveaux
 `STATIC_CONTRACT`, `EXECUTED_BEHAVIOR` et `INTEGRATION_PROOF` sont définis dans
-`documentation/development/TESTING.md`. Un mock, une assertion SQL textuelle ou
-un `db push --dry-run` ne prouvent pas RLS, transactions, triggers ou concurrence.
-Sans exécution PostgreSQL autorisée, indiquer `DB_SEMANTICS_NOT_EXECUTED`.
+`documentation/development/TESTING.md`. Pour les changements sensibles,
+vérifier le véritable schéma PostgreSQL, les contraintes, triggers, RPC, RLS,
+permissions, transactions, reprises et courses concurrentes : un mock, une
+assertion SQL textuelle, le `typecheck` ou un `db push --dry-run` ne remplacent
+jamais les preuves d'intégration nécessaires. Sans exécution PostgreSQL
+autorisée, indiquer `DB_SEMANTICS_NOT_EXECUTED`. Ne jamais déclarer un chantier
+terminé sur la seule présence du code, de tests ajoutés, de hooks réussis ou
+d'un commit publié : distinguer explicitement les preuves exécutées, réussies,
+manquantes et encore en cours.
 
 **Découverte facultative** : QMD ne remplace jamais les fichiers réels. Par
 défaut, ne pas rafraîchir la collection CleanMyMap plus d'une fois par 24 h ;
@@ -366,12 +378,16 @@ développement, macro-lot, correction, refactorisation ou campagne de qualité :
 3. **Campagne substantielle et preuves typées.** Chaque lot fonctionnel exige
    une consommation réellement exécutée du runtime concerné, des tests
    comportementaux et régressions utiles, une couverture pertinente et la mise
-   à jour des documents `CURRENT` portant les contrats modifiés. La campagne
+   à jour des documents `CURRENT` portant les contrats modifiés. Vérifier que
+   les tests exécutent réellement les chemins de production concernés et
+   démontrent aussi l'absence d'effets interdits, en contrôlant les fixtures,
+   assertions, scénarios négatifs et résultats persistants. La campagne
    couvre l'intégralité de son périmètre autorisé, ses consommateurs directs
    et, selon le risque, les cas nominaux, limites, invalides, adversariaux,
    erreurs, transitions, concurrence, reprises et régressions. Le bilan
    distingue obligatoirement `STATIC_CONTRACT`, `EXECUTED_BEHAVIOR` et
-   `INTEGRATION_PROOF`. Web et Mobile conservent des couvertures indépendantes ;
+   `INTEGRATION_PROOF`, ainsi que les preuves exécutées, réussies, manquantes
+   et encore en cours. Web et Mobile conservent des couvertures indépendantes ;
    une mesure absente ou non comparable est `NOT_MEASURED` avec sa cause.
    Aucun seuil, baseline, exclusion ou test artificiel ne peut être modifié
    pour améliorer le résultat.
@@ -388,14 +404,18 @@ développement, macro-lot, correction, refactorisation ou campagne de qualité :
    réellement concernées. Une fiche protégée devenue fausse doit être signalée
    `DOCUMENTATION_DRIFT`; elle ne peut être laissée obsolète ni compensée par
    une copie ou une note de session.
-6. **STOP CONDITION et publication obligatoires.** Chaque lot fixe sa
-   `STOP CONDITION` avant intégration et ne peut être déclaré terminé tant
-   qu'elle n'est pas satisfaite ou qu'un blocage n'est pas explicitement
-   classé. Le workflow normal reste : validation du candidat courant → commit
-   attribué pour les nouveaux changements → push de tous les commits locaux en
-   avance, même s'ils contiennent des changements d'autres writers → fetch et
-   vérification de convergence (`HEAD = origin/main`, ahead/behind `0/0`). Les
-   fichiers dirty/untracked non commités restent exclus du push.
+6. **Auto-revue contradictoire, STOP CONDITION et publication obligatoires.**
+   Effectuer avant publication une auto-revue contradictoire complète :
+   rechercher les chemins de contournement, incompatibilités avec le code
+   préexistant, effets de bord et scénarios susceptibles d'invalider la
+   livraison. Fixer la `STOP CONDITION` avant l'intégration : ne pas clôturer
+   prématurément sur un commit, des hooks ou des preuves partielles, mais ne
+   pas prolonger non plus un chantier dont les objectifs, invariants et preuves
+   sont démontrés. Le workflow normal reste : validation du candidat courant →
+   commit attribué pour les nouveaux changements → push de tous les commits
+   locaux en avance, même s'ils contiennent des changements d'autres writers →
+   fetch et vérification de convergence (`HEAD = origin/main`, ahead/behind
+   `0/0`). Les fichiers dirty/untracked non commités restent exclus du push.
    Pour ChatGPT, l'autorisation permanente décrite dans `CHATGPT.md` gouverne
    le commit et le push directs, sauf instruction contraire de l'utilisateur.
    Pour les autres writers, un mode sans push ou une exception doit être
