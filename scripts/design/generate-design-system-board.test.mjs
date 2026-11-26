@@ -21,6 +21,7 @@ import {
   parseNavigationProfileSpaceMap,
   renderScript,
   watchAndRegenerate,
+  collectUiAndHooksMetadata,
 } from "./generate-design-system-board.mjs";
 
 async function withTempDir(run) {
@@ -295,4 +296,34 @@ test("renders structured script output and closes debounced watchers determinist
     console.warn = originalWarn;
     console.error = originalError;
   }
+});
+
+test("collects UI exports, props, variants and colocalized hooks without executing TSX", async () => {
+  await withTempDir(async (dir) => {
+    const uiDir = path.join(dir, "apps/web/src/components/ui");
+    const hookDir = path.join(dir, "apps/web/src/components/features");
+    await mkdir(uiDir, { recursive: true });
+    await mkdir(hookDir, { recursive: true });
+    await writeFile(
+      path.join(uiDir, "cmm-pill.tsx"),
+      `export interface CmmPillProps { label: string }\nexport const pillVariants = { soft: "bg-muted", solid: "bg-primary" };\nexport function CmmPill(props: CmmPillProps) { return null; }\n`,
+    );
+    await writeFile(
+      path.join(hookDir, "use-feature-state.ts"),
+      `export function useFeatureState() { return true; }\n`,
+    );
+    const meta = await collectUiAndHooksMetadata({
+      rootDir: dir,
+      uiFiles: ["cmm-pill.tsx"],
+      navigationFiles: [],
+      srcDir: path.join(dir, "apps/web/src"),
+    });
+    assert.equal(meta.uiCatalog.length, 1);
+    assert.deepEqual(meta.uiCatalog[0].exports, ["CmmPill", "CmmPillProps", "pillVariants"]);
+    assert.deepEqual(meta.uiCatalog[0].propsTypes, ["CmmPillProps"]);
+    assert.deepEqual(meta.uiCatalog[0].variants, ["soft", "solid"]);
+    assert.equal(meta.hooks.length, 1);
+    assert.equal(meta.hooks[0].colocalized, true);
+    assert.deepEqual(meta.hooks[0].hooks, ["useFeatureState"]);
+  });
 });

@@ -142,11 +142,13 @@ et ne prouve pas l'exhaustivité des consommateurs.
    [README Mobile](../../apps/mobile/README.md).
 2. Ouvrir le README du domaine lorsqu'il existe, puis rechercher les symboles
    propriétaires, leurs dépendances, callers et consommateurs.
-3. Réutiliser le graphe d'imports existant et son sélecteur borné :
-   `npm run audit:architecture-import-graph -- --ref <SHA> --source git --output artifacts/architecture-import-graph.json`
-   puis `npm run query:architecture-import-graph -- artifacts/architecture-import-graph.json <chemin-ou-dossier> <SHA> 20`.
-   Le sélecteur exige un SHA complet (40 hex) et une provenance Git vérifiée,
-   borne les listes et exclut les arêtes internes d'un dossier. Limite : arêtes
+3. Réutiliser le graphe d'imports existant et ses sélecteurs bornés :
+   `npm run audit:architecture-import-graph -- --ref <SHA> --source git --output artifacts/architecture-import-graph.json`,
+   `npm run query:architecture-import-graph -- artifacts/architecture-import-graph.json <chemin-ou-dossier> <SHA> 20`,
+   `npm run discover:related-tests -- artifacts/architecture-import-graph.json <SHA> <cible...>`,
+   `npm run audit:mobile-api-discovery -- <SHA>` et `npm run audit:operations-discovery -- <SHA>`.
+   Ces sélecteurs exigent un SHA complet (40 hex) et une provenance Git vérifiée,
+   bornent les listes et excluent les arêtes internes d'un dossier. Limite : arêtes
    statiques directes uniquement (hors appels HTTP/RPC par chaîne littérale).
 4. Compléter les imports statiques par la recherche des routes HTTP, RPC,
    tables, clés de stockage, jobs, imports dynamiques et références littérales.

@@ -722,6 +722,7 @@ export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listCo
   ];
 
   const coreHighlightFiles = buildComponentHighlights(uiFiles, navigationFiles);
+  const uiAndHooks = await collectUiAndHooksMetadata({ uiFiles, navigationFiles });
 
   return {
     generatedAt: now(),
@@ -730,6 +731,7 @@ export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listCo
       blocks: blocks.length,
       effects: effects.length,
       ui: coreHighlightFiles.length,
+      hooks: uiAndHooks.hooks.length,
       visibleBlockIds: visibleSpaceIds,
       hiddenBlockIds: hiddenSpaceIds,
     },
@@ -744,7 +746,113 @@ export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listCo
     blocks,
     tokenGroups,
     effects,
+    uiCatalog: uiAndHooks.uiCatalog,
+    hooks: uiAndHooks.hooks,
   };
+}
+
+export async function collectUiAndHooksMetadata({
+  rootDir = ROOT_DIR,
+  uiFiles = [],
+  navigationFiles = [],
+  srcDir = path.join(ROOT_DIR, "apps/web/src"),
+} = {}) {
+  const uiCatalog = [];
+  const hooks = [];
+
+  function inspectTsExports(filePath, content) {
+    const sf = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true);
+    const exports = [];
+    const propsTypes = [];
+    const variants = [];
+    const hookNames = [];
+
+    for (const stmt of sf.statements) {
+      const isExported = Boolean(stmt.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword));
+      if (!isExported) continue;
+      if ((ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt)) && stmt.name) {
+        exports.push(stmt.name.text);
+        if (/^use[A-Z]/.test(stmt.name.text)) hookNames.push(stmt.name.text);
+      } else if ((ts.isInterfaceDeclaration(stmt) || ts.isTypeAliasDeclaration(stmt)) && stmt.name) {
+        exports.push(stmt.name.text);
+        if (stmt.name.text.endsWith("Props")) propsTypes.push(stmt.name.text);
+      } else if (ts.isVariableStatement(stmt)) {
+        for (const decl of stmt.declarationList.declarations) {
+          if (ts.isIdentifier(decl.name)) {
+            exports.push(decl.name.text);
+            if (/^use[A-Z]/.test(decl.name.text)) hookNames.push(decl.name.text);
+            if (/variants?$/i.test(decl.name.text) && decl.initializer && ts.isObjectLiteralExpression(decl.initializer)) {
+              for (const prop of decl.initializer.properties) {
+                if (ts.isPropertyAssignment(prop) && (ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name))) {
+                  variants.push(prop.name.text);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return {
+      exports: [...new Set(exports)].sort(),
+      propsTypes: [...new Set(propsTypes)].sort(),
+      variants: [...new Set(variants)].sort(),
+      hookNames: [...new Set(hookNames)].sort(),
+    };
+  }
+
+  const componentTargets = [
+    ...uiFiles.map((f) => ({ folder: "ui", file: f, abs: path.join(rootDir, "apps/web/src/components/ui", f), rel: `apps/web/src/components/ui/${f}` })),
+    ...navigationFiles.map((f) => ({ folder: "navigation", file: f, abs: path.join(rootDir, "apps/web/src/components/navigation", f), rel: `apps/web/src/components/navigation/${f}` })),
+  ];
+
+  for (const item of componentTargets) {
+    try {
+      const content = await fs.readFile(item.abs, "utf8");
+      const meta = inspectTsExports(item.abs, content);
+      const testRel = item.rel.replace(/\.tsx?$/, ".test.tsx");
+      let hasTest = false;
+      try { await fs.access(path.join(rootDir, testRel)); hasTest = true; } catch { /* no colocated test */ }
+      uiCatalog.push({
+        path: item.rel,
+        folder: item.folder,
+        exports: meta.exports,
+        propsTypes: meta.propsTypes,
+        variants: meta.variants,
+        colocatedTest: hasTest ? testRel : null,
+        surfaceBoundary: "web",
+      });
+    } catch {
+      // Skip unreadable file in synthetic tests
+    }
+  }
+
+  async function scanHooksDir(dir) {
+    let entries = [];
+    try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      if (entry.name === "node_modules" || entry.name === ".next") continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await scanHooksDir(full);
+      } else if (/^use[-a-zA-Z0-9_]*\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
+        const content = await fs.readFile(full, "utf8");
+        const meta = inspectTsExports(full, content);
+        const rel = path.relative(rootDir, full).replaceAll("\\", "/");
+        hooks.push({
+          path: rel,
+          hooks: meta.hookNames.length > 0 ? meta.hookNames : meta.exports,
+          colocalized: !rel.includes("/src/hooks/"),
+          surfaceBoundary: "web",
+        });
+      }
+    }
+  }
+
+  await scanHooksDir(srcDir);
+  hooks.sort((a, b) => a.path.localeCompare(b.path, "en"));
+  uiCatalog.sort((a, b) => a.path.localeCompare(b.path, "en"));
+
+  return { uiCatalog, hooks };
 }
 
 function buildDynamicHtml(templateHtml, data) {

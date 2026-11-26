@@ -721,6 +721,10 @@ Les chemins ci-dessous sont relatifs à `apps/web/src/lib/`.
 | Rapports et export scientifique | `reports/report-generation-snapshot.ts`, `reports/report-generation-derivation.ts`, `reports/report-scientific-export.ts` | métadonnées de provenance et versions, cellules avec unité/statut, distinction absence/zéro ; `report-scientific-export.test.ts` |
 | Empreinte IA personnelle et scénarios | `environmental-impact-estimator/personal-ai-usage-normalization.ts`, `ai-personal-import.ts`, `personal-ai-estimator.ts`, `personal-ai-quick-scenario.ts` dans le même domaine | `estimatePersonalAiFootprint`, `estimateQuickChatScenario`, `scientific-registry.ts` ; tests estimator, registry, scientific-coherence |
 | Comptabilité environnementale du projet | `environmental-impact-estimator/canonical-accounting.ts`, `scientific-registry.ts`, `services/` dans le même domaine | vérifier les scopes séparés, les sources de mesures et proxys ; ne pas assimiler l'activité à un impact physique |
+| Itinéraires, charge et priorité de revisite | `route/route-cleanup-workload.ts`, `route/route-additionality.ts`, `actions/pollution/revisit-priority.ts`, `actions/pollution/local-repollution-projection.ts` | `route-cleanup-workload.test.ts`, `route-additionality.test.ts`, `revisit-priority.test.ts`, `local-repollution-calibration.test.ts` |
+| Missions GPS et finalisation serveur | `apps/mobile/features/tracking/tracking-service.ts`, `apps/web/src/app/api/missions/[id]/reconcile/route.ts` | RPC SQL `finalize_completed_mission_metrics` (`distance_m` serveur autoritaire) ; suite Vitest mobile et contrat RPC |
+
+Le couplage entre versions TypeScript et migrations SQL est contrôlé par `npm run check:scientific-formulas` (`scripts/checks/check-scientific-formula-version.mjs`).
 
 La chaîne scientifique doit conserver une identité de source, la distinction
 mesuré/déclaré/dérivé/proxy/NA, la version effectivement utilisée, le périmètre,

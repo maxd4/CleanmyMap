@@ -199,3 +199,14 @@ Preuves isolées supplémentaires : 10 assertions JS exécutées
 sur la traversée inverse, la provenance, les bornes, les clés npm et
 les déclencheurs de workflow. Les tests Node de ces quatre nouveaux
 fichiers et l'intégration des deux CLI restent NOT_RUN.
+
+## Réception du 26 novembre 2026 (AUDIT)
+
+Statut : lots P1/P2 (DOC-06 à DOC-10) intégrés ; les candidats sous `candidates/` ont été retirés après intégration et validation.
+
+- **DOC-06** : `npm run audit:mobile-api-discovery` (`scripts/reports/mobile-api-discovery.mjs`, 3 tests Node PASS). Exécuté sur le checkout réel au SHA `1fd5e4c16` : 31 références mobiles (21 `CANDIDATE`, 10 `AMBIGUOUS`, 0 `methodMismatch`, 0 `UNRESOLVED_PATH`), avec méthodes serveur extraites et présence dans le contrat AuthZ.
+- **DOC-07** : `npm run discover:related-tests` (`scripts/reports/discover-related-tests.mjs`, 3 tests Node PASS, réutilise `VITEST_GROUPS` de `validation-policy.mjs`). Testé sur le graphe réel `1fd5e4c16` (UI `action-buddy-panel.tsx` → 2 tests ; service `action-buddy.ts` → 10 tests ; contrat partagé `domain-language.ts` → 277 tests bornés à 50).
+- **DOC-08** : `documentation/product/SCIENTIFIC_PROTOCOL.md` complété avec les chaînes itinéraires/revisite et missions GPS/finalisation serveur et le lien vers `npm run check:scientific-formulas`.
+- **DOC-09** : `scripts/design/generate-design-system-board.mjs` étendu via `collectUiAndHooksMetadata` (exports, props, variantes, tests colocaux, hooks colocalisés dans `apps/web/src/`, frontière `web`), testé et régénéré dans `documentation/design-system/generated/board/` sans modifier tokens, composants ni la matrice UI/UX gelée.
+- **DOC-10** : `npm run audit:operations-discovery` (`scripts/reports/generate-operations-discovery.mjs`, 2 tests Node PASS). Exécuté sur le checkout réel `1fd5e4c16` sans exécuter aucun job ni exporter de commandes brutes.
+- **Mesures et limites** : aucune mutation Supabase, aucun job exécuté, aucun `FULL`. Les artefacts générés restent sous `artifacts/ai-discovery-p1-p2/` et ne remplacent ni `validation-policy` ni les preuves runtime/PostgreSQL.
