@@ -1,5 +1,5 @@
 begin;
-select plan(37);
+select plan(38);
 
 select ok(has_table_privilege('service_role', 'private.external_action_sync_subscriptions', 'INSERT'), 'service role can manage external sync subscriptions');
 select ok(not has_table_privilege('authenticated', 'private.external_action_sync_subscriptions', 'SELECT'), 'authenticated cannot read private external sync subscriptions');
@@ -178,6 +178,7 @@ begin
     v_stale_label text;
     v_persisted_label text;
     v_rev_ok jsonb;
+    v_rev_stale jsonb;
     v_persisted_review_state text;
     v_rev_replay jsonb;
     v_rev_decided jsonb;
@@ -194,17 +195,50 @@ begin
     on conflict (id) do nothing;
     insert into public.actions (
       id, created_by_clerk_id, organizer_id, organizer_type, organizer_name, action_date,
-      action_phase, status, published_at, location_label, moderation_visibility
+      action_phase, status, published_at, location_label, moderation_visibility, preparation_data
     ) values (
       v_review_action, 'user-org-a', 'org-a', 'association', 'Org A', '2027-08-01',
-      'pre_action', 'pending', null, 'Place Review', 'visible'
+      'pre_action', 'pending', null, 'Place Review', 'visible',
+      jsonb_build_object(
+        'formalitiesWorkflow', jsonb_build_object(
+          'schemaVersion', 'action-formalities-workflow-v1',
+          'contentVersion', 'qualification-v1',
+          'trace', jsonb_build_object(
+            'qualifiedAt', '2026-10-30T10:00:00Z',
+            'rulesetVersion', 'rules-v1',
+            'officialSourceIds', '[]'::jsonb,
+            'officialSources', '[]'::jsonb,
+            'verifiedOn', '2026-10-30',
+            'actionDependencyFingerprint', 'canonical-v2:fixture',
+            'determiningFacts', jsonb_build_object(
+              'territory', jsonb_build_object('countryCode', 'FR', 'code', 'FR-75', 'label', 'Paris'),
+              'publicSpace', 'unknown',
+              'manager', jsonb_build_object('kind', 'unknown', 'label', null),
+              'isCleanwalk', true,
+              'isPublicRoadwayActivity', 'unknown',
+              'isItinerant', 'unknown',
+              'isClaiming', 'unknown',
+              'hasInstallations', false,
+              'requiresPhysicalOccupation', false,
+              'localCustomaryUse', 'unknown',
+              'largeCrowdOrComplexInstallations', 'unknown'
+            ),
+            'formalities', jsonb_build_array(
+              jsonb_build_object('id', 'optional', 'requirementStatus', 'recommended', 'procedureKind', 'information_only', 'sourceId', null)
+            )
+          ),
+          'progress', jsonb_build_array(
+            jsonb_build_object('formalityId', 'optional', 'userStatus', 'not_started', 'contentVersion', 'qualification-v1', 'statusChangedAt', null, 'proof', null, 'active', true, 'validForQualification', true, 'invalidatedAt', null)
+          )
+        )
+      )
     );
     insert into public.actions (
       id, created_by_clerk_id, organizer_id, organizer_type, organizer_name, action_date,
       action_phase, status, published_at, location_label, moderation_visibility
     ) values (
-      v_non_assoc_action, 'user-org-a', 'org-a', 'individual', 'Org A', '2027-08-02',
-      'pre_action', 'pending', null, 'Place Individual', 'visible'
+      v_non_assoc_action, 'user-org-a', 'org-a', 'spontaneous', 'Org A', '2027-08-02',
+      'pre_action', 'pending', null, 'Place Spontaneous', 'visible'
     );
     insert into public.actions (
       id, created_by_clerk_id, organizer_id, organizer_type, organizer_name, action_date,
@@ -243,6 +277,10 @@ begin
       '{"location_label":"Place Review Updated"}'::jsonb, false
     );
     select location_label into v_persisted_label from public.actions where id = v_review_action;
+
+    v_rev_stale := public.submit_external_action_sync_review(
+      v_review_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-review-1', v_stale_ts
+    );
 
     v_rev_ok := public.submit_external_action_sync_review(
       v_review_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-review-1', null
@@ -295,6 +333,7 @@ begin
     insert into engine_state_results values ('tx_update_stale_not_mutated', v_stale_label);
     insert into engine_state_results values ('tx_update_ok', v_upd_ok);
     insert into engine_state_results values ('tx_update_persisted_label', v_persisted_label);
+    insert into engine_state_results values ('tx_review_stale_conflict', coalesce(v_rev_stale->>'status', 'null'));
     insert into engine_state_results values ('tx_review_ok', coalesce(v_rev_ok->>'status', 'null'));
     insert into engine_state_results values ('tx_review_persisted_state', coalesce(v_persisted_review_state, 'null'));
     insert into engine_state_results values ('tx_review_replay_pending', coalesce(v_rev_replay->>'status', 'null') || ':' || coalesce(v_rev_replay->>'review_status', 'null'));
@@ -328,6 +367,7 @@ select is((select value from engine_state_results where key = 'tx_update_stale_c
 select is((select value from engine_state_results where key = 'tx_update_stale_not_mutated'), 'Place Review', 'stale expected_updated_at leaves canonical row untouched');
 select is((select value from engine_state_results where key = 'tx_update_ok'), 'updated', 'transactional pre-action update succeeds under active mandate');
 select is((select value from engine_state_results where key = 'tx_update_persisted_label'), 'Place Review Updated', 'transactional pre-action update persists new location_label');
+select is((select value from engine_state_results where key = 'tx_review_stale_conflict'), 'conflict', 'stale expected_updated_at on review submission returns optimistic conflict');
 select is((select value from engine_state_results where key = 'tx_review_ok'), 'pending_review', 'transactional review submission routes associative pre-action to pending_review');
 select is((select value from engine_state_results where key = 'tx_review_persisted_state'), 'pending_review', 'transactional review submission persists review_state=pending_review');
 select is((select value from engine_state_results where key = 'tx_review_replay_pending'), 'pending_review:already_submitted', 'transactional review replay preserves pending_review with already_submitted');
