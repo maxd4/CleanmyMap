@@ -59,19 +59,21 @@ const IGNORED_FILENAMES = new Set([
   "pnpm-lock.yaml",
   "routes-manifest-deterministic.json",
 ]);
-const PUBLIC_EMAIL_DOMAINS = new Set([
-  "basbelleville.fr",
-  "cartonplein.org",
-  "cleanmymap.fr",
-  "cleanmymap.local",
+const RESERVED_EXAMPLE_EMAIL_DOMAINS = new Set([
   "example.com",
   "example.org",
   "example.net",
-  "github.com",
-  "lacloche.org",
-  "latextilerie.fr",
-  "mail.cleanmymap.fr",
-  "pikpik.org",
+]);
+const SYNTHETIC_TEST_EMAIL_DOMAINS = new Set([
+  "cleanmymap.local",
+  "example.invalid",
+  "example.local",
+  "example.test",
+  "test.local",
+]);
+const PUBLIC_EMAIL_DOMAINS = new Set([
+  ...RESERVED_EXAMPLE_EMAIL_DOMAINS,
+  ...SYNTHETIC_TEST_EMAIL_DOMAINS,
 ]);
 const PUBLIC_SUPABASE_URLS = new Set(["https://mgvmuambbxmmkrjjlryo.supabase.co"]);
 
@@ -358,9 +360,10 @@ function loadAllowlist(relativePath, gitRef = null, { explicit = false } = {}) {
   if (!relativePath) {
     return [];
   }
+  const normalizedPath = relativePath.replace(/\\/g, "/");
   let rawContent = null;
   if (gitRef) {
-    const objectSpec = gitRef === ":" ? `:${relativePath}` : `${gitRef}:${relativePath}`;
+    const objectSpec = gitRef === ":" ? `:${normalizedPath}` : `${gitRef}:${normalizedPath}`;
     try {
       rawContent = execFileSync(gitExecutable(), ["show", objectSpec], {
         cwd: ROOT,
@@ -437,7 +440,7 @@ function isValidStructuredEmailEntry(entry) {
 
 function isAllowed(finding, allowlist) {
   return allowlist.some((entry) => {
-    if (entry.path && entry.path !== finding.file) {
+    if (typeof entry.path !== "string" || entry.path.trim().length === 0 || entry.path !== finding.file) {
       return false;
     }
     if (entry.category && entry.category !== finding.category) {
@@ -447,23 +450,31 @@ function isAllowed(finding, allowlist) {
       if (finding.category !== "Email address" || !isValidStructuredEmailEntry(entry)) {
         return false;
       }
-      const emails = finding.raw.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? [];
-      const targetEmail = entry.exact.trim().toLowerCase();
-      return emails.some((email) => email.toLowerCase() === targetEmail);
+      return finding.raw.trim().toLowerCase() === entry.exact.trim().toLowerCase();
+    }
+    if (finding.category === "Email address") {
+      if (typeof entry.contains !== "string" || entry.contains.trim().length === 0) {
+        return false;
+      }
+      if (entry.line && entry.line !== finding.line) {
+        return false;
+      }
+      if (finding.raw.trim().toLowerCase() !== entry.contains.trim().toLowerCase()) {
+        return false;
+      }
+      return typeof entry.reason === "string" && entry.reason.trim().length > 0;
     }
     if (entry.line && entry.line !== finding.line) {
       return false;
     }
     if (entry.contains) {
-      if (finding.category === "Email address") {
-        if (finding.raw.trim().toLowerCase() !== entry.contains.trim().toLowerCase()) {
-          return false;
-        }
-      } else if (finding.raw !== entry.contains) {
+      if (finding.raw !== entry.contains) {
         return false;
       }
+    } else if (!entry.line) {
+      return false;
     }
-    return Boolean(entry.reason);
+    return typeof entry.reason === "string" && entry.reason.trim().length > 0;
   });
 }
 

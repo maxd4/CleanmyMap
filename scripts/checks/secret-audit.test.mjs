@@ -468,6 +468,169 @@ test("allowlist resolution follows staged index and committed refs even when wor
     assert.equal(run([`--ref=${commitSha}`]).status, 0);
     // Worktree scan itself uses worktree allowlist and blocks
     assert.equal(run([]).status, 1);
+
+    // Worktree adds permissive entry without staging; staged, ref, and candidate still block
+    const unapprovedEmail = ["other", "private-domain.test"].join("@");
+    writeFixture(repo, "candidate.md", `Contact: ${unapprovedEmail}\n`);
+    writeFixture(
+      repo,
+      "scripts/checks/secret-audit.allowlist.json",
+      JSON.stringify({
+        allow: [
+          {
+            path: "candidate.md",
+            category: "Email address",
+            contains: unapprovedEmail,
+            reason: "Worktree-only allowlist must not leak into staged/ref/candidate.",
+          },
+        ],
+      }),
+    );
+    assert.equal(run([]).status, 0);
+    runGit(repo, ["add", "candidate.md"]);
+    assert.equal(run(["--staged-only"]).status, 1);
+    runGit(repo, ["commit", "-m", "unallowlisted email"]);
+    const unallowlistedSha = runGit(repo, ["rev-parse", "HEAD"]);
+    assert.equal(run([`--ref=${unallowlistedSha}`]).status, 1);
+    assert.equal(run([`--candidate-ref=${unallowlistedSha}`, `--candidate-range=${commitSha}..${unallowlistedSha}`]).status, 1);
+
+    // Explicit missing allowlist in snapshot fails instead of falling back to worktree
+    writeFixture(repo, "scripts/checks/custom-allowlist.json", JSON.stringify({ allow: [] }));
+    const explicitMissing = run([`--ref=${unallowlistedSha}`, "--allowlist=scripts/checks/custom-allowlist.json"]);
+    assert.equal(explicitMissing.status, 2);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test("PUBLIC_EMAIL_DOMAINS allows reserved/synthetic test domains and blocks real domains unless exact-allowlisted", () => {
+  const reservedAndSynthetic = [
+    ["a", "example.com"].join("@"),
+    ["b", "example.org"].join("@"),
+    ["c", "example.net"].join("@"),
+    ["d", "example.test"].join("@"),
+    ["e", "example.invalid"].join("@"),
+    ["f", "example.local"].join("@"),
+    ["g", "test.local"].join("@"),
+    ["h", "cleanmymap.local"].join("@"),
+  ].join("\n");
+  const cleanResult = runAudit({
+    candidateContent: `${reservedAndSynthetic}\n`,
+    foreignContent: "no secret here\n",
+  });
+  assert.equal(cleanResult.status, 0, cleanResult.stderr);
+
+  for (const realDomain of [
+    "cleanmymap.fr",
+    "mail.cleanmymap.fr",
+    "basbelleville.fr",
+    "pikpik.org",
+    "cartonplein.org",
+    "lacloche.org",
+    "latextilerie.fr",
+    "github.com",
+  ]) {
+    const res = runAudit({
+      candidateContent: `Contact: ${"user"}@${realDomain}\n`,
+      foreignContent: "no secret here\n",
+    });
+    assert.equal(res.status, 1, `Expected ${realDomain} to be blocked without allowlist`);
+    assert.match(res.stderr, /Email address/);
+  }
+});
+
+test("rejects generic/pathless entries, missing source/justification, same-line neighbor emails, and same-line technical secrets", () => {
+  const repo = mkdtempSync(join(tmpdir(), "cmm-secret-hardening-"));
+  const allowedEmail = ["proprete", "paris.fr"].join("@");
+  const neighborEmail = ["perso", "paris.fr"].join("@");
+  const genericEmail = ["generic", "paris.fr"].join("@");
+  const pathlessEmail = ["global", "paris.fr"].join("@");
+  const missingSourceEmail = ["nosource", "paris.fr"].join("@");
+  const awsKey = ["AKIA", "1234567890ABCDEF"].join("");
+  const jwt = ["eyJaaaaaaaaaa", "eyJbbbbbbbbbb", "eyJcccccccccc"].join(".");
+  const resendKey = ["re_", "1234567890123456789012"].join("");
+
+  try {
+    runGit(repo, ["init", "-q"]);
+    runGit(repo, ["config", "user.email", "codex@example.com"]);
+    runGit(repo, ["config", "user.name", "Codex"]);
+    writeFixture(
+      repo,
+      "scripts/checks/secret-audit.allowlist.json",
+      JSON.stringify({
+        allow: [
+          {
+            path: "documentation/neighbors.md",
+            category: "Email address",
+            exact: allowedEmail,
+            sourceUrl: "https://www.paris.fr/pages/proprete",
+            verifiedAt: "2026-11-26",
+            justification: "Adresse generique publique officielle.",
+          },
+          {
+            path: "documentation/generic.md",
+            category: "Email address",
+            reason: "Generic entry without exact or contains must be ignored.",
+          },
+          {
+            category: "Email address",
+            contains: pathlessEmail,
+            reason: "Pathless entry must be ignored.",
+          },
+          {
+            path: "documentation/nosource.md",
+            category: "Email address",
+            exact: missingSourceEmail,
+            verifiedAt: "2026-11-26",
+            justification: "Missing sourceUrl must be ignored.",
+          },
+        ],
+      }),
+    );
+    runGit(repo, ["add", "scripts/checks/secret-audit.allowlist.json"]);
+    runGit(repo, ["commit", "-m", "allowlist hardening fixture"]);
+
+    const run = (args) =>
+      spawnSync(process.execPath, [resolve("scripts/checks/secret-audit.mjs"), ...args], {
+        cwd: repo,
+        encoding: "utf8",
+      });
+
+    // 1. Generic entry without exact/contains is rejected
+    writeFixture(repo, "documentation/generic.md", `Contact: ${genericEmail}\n`);
+    runGit(repo, ["add", "documentation/generic.md"]);
+    assert.equal(run(["--staged-only"]).status, 1);
+
+    // 2. Pathless entry is rejected
+    writeFixture(repo, "documentation/generic.md", `Contact: ${pathlessEmail}\n`);
+    runGit(repo, ["add", "documentation/generic.md"]);
+    assert.equal(run(["--staged-only"]).status, 1);
+
+    // 3. Missing sourceUrl is rejected
+    runGit(repo, ["reset", "-q", "HEAD", "documentation/generic.md"]);
+    writeFixture(repo, "documentation/nosource.md", `Contact: ${missingSourceEmail}\n`);
+    runGit(repo, ["add", "documentation/nosource.md"]);
+    assert.equal(run(["--staged-only"]).status, 1);
+
+    // 4. Neighboring email on the same line as an allowlisted email is blocked
+    runGit(repo, ["reset", "-q", "HEAD", "documentation/nosource.md"]);
+    writeFixture(repo, "documentation/neighbors.md", `Contacts: ${allowedEmail}, ${neighborEmail}\n`);
+    runGit(repo, ["add", "documentation/neighbors.md"]);
+    const neighborRes = run(["--staged-only"]);
+    assert.equal(neighborRes.status, 1);
+    assert.match(neighborRes.stderr, /Email address/);
+
+    // 5. Technical secrets on the same line as an allowlisted or public email remain blocked
+    for (const secretLine of [
+      `Contact: ${allowedEmail} AWS=${awsKey}`,
+      `Contact: ${allowedEmail} JWT=${jwt}`,
+      `Contact: ${"dev"}@${"example.com"} RESEND=${resendKey}`,
+    ]) {
+      writeFixture(repo, "documentation/neighbors.md", `${secretLine}\n`);
+      runGit(repo, ["add", "documentation/neighbors.md"]);
+      const secRes = run(["--staged-only"]);
+      assert.equal(secRes.status, 1, `Expected technical secret to be blocked: ${secretLine}`);
+    }
   } finally {
     rmSync(repo, { recursive: true, force: true });
   }
