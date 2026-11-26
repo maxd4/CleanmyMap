@@ -70,8 +70,24 @@ export async function publishPreActionCanonical(params: {
     publishedAt: string;
     preparationData?: ActionRow["preparation_data"];
   }) => Promise<"published" | "conflict" | "mandate_revoked" | "suppressed">;
+  persistReviewSubmission?: (params: {
+    actionId: string;
+    actorUserId: string;
+    expectedUpdatedAt: string | null;
+  }) => Promise<
+    | { status: "pending_review"; reviewState?: string }
+    | { status: "conflict" | "mandate_revoked" | "suppressed" | "terminal_state" }
+  >;
 }): Promise<CanonicalPreActionPublicationResult> {
-  const { supabase, current, actionId, userId, organizerIds, persistPublication } = params;
+  const {
+    supabase,
+    current,
+    actionId,
+    userId,
+    organizerIds,
+    persistPublication,
+    persistReviewSubmission,
+  } = params;
 
   if (current.status === "rejected" || current.status === "cancelled") {
     return { status: "terminal_state" };
@@ -89,6 +105,21 @@ export async function publishPreActionCanonical(params: {
         publishedAt: current.published_at,
         alreadyPublished: true,
         reviewState: current.review_state,
+      };
+    }
+    if (persistReviewSubmission) {
+      const persistedReview = await persistReviewSubmission({
+        actionId,
+        actorUserId: userId,
+        expectedUpdatedAt: current.updated_at ?? null,
+      });
+      if (persistedReview.status !== "pending_review") {
+        return { status: persistedReview.status };
+      }
+      return {
+        status: "pending_review",
+        id: current.id,
+        reviewState: persistedReview.reviewState ?? "pending_review",
       };
     }
     const review = await submitAssociationActionReview({

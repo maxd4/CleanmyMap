@@ -650,4 +650,115 @@ describe("external-sync Lot A engine & SSRF guard", () => {
     expect(unchangedPublish.outcomes.some((o) => o.status === "mandate_revoked")).toBe(true);
     expect([...unchangedStore.actions.values()][0].published_at).toBeNull();
   });
+
+  it("distinguishes pending_review from published, never uses unapplied source_snapshot, and protects cancelled tombstones", async () => {
+    const now = new Date("2026-11-26T10:00:00.000Z");
+    const rec = [
+      {
+        id: "jagis-review-1",
+        url: "https://example.test/jagis/rev-1",
+        title: "Collecte modération associative",
+        start_date: "2027-09-20",
+        start_time: "09:30",
+        meeting_point: "Place Bellecour",
+        city: "Lyon",
+        route_reference: "bellecour-route",
+        status: "published",
+      },
+    ];
+
+    const reviewStore = createInMemorySyncStore({ subscriptions: baseSubs });
+    vi.spyOn(reviewStore.store, "publishPreAction").mockResolvedValueOnce({
+      published: false,
+      pendingReview: true,
+      reason: "pending_review",
+    });
+
+    const reviewSummary = await runExternalActionSync(
+      {
+        store: reviewStore.store,
+        readers: {
+          jagis_pour_la_nature: async () => readSyntheticJagisEvents(rec, now.toISOString()),
+          fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
+        },
+      },
+      { mode: "admin_sync_now", actorUserId: "admin-1", now },
+    );
+
+    expect(reviewSummary.created).toBe(1);
+    expect(reviewSummary.createdAndPublished).toBe(0);
+    expect(reviewSummary.pendingReview).toBe(1);
+    expect(reviewSummary.conflicts).toBe(0);
+    expect(reviewSummary.outcomes.some((o) => o.status === "created_and_pending_review")).toBe(true);
+
+    // Unapplied source_snapshot must NOT be used as appliedSnapshot when applied_snapshot is null
+    const actionId = [...reviewStore.actions.keys()][0]!;
+    vi.spyOn(reviewStore.store, "getReference").mockResolvedValueOnce({
+      identity_hash: "h1",
+      action_id: actionId,
+      external_url: "https://example.test/jagis/rev-1",
+      external_revision: null,
+      source_snapshot: {
+        actionTitle: "Collecte modération associative",
+        actionDate: "2027-09-20",
+        startTime: "09:30",
+        locationLabel: "Lyon — Place Bellecour",
+      },
+      content_hash: "c1",
+      applied_snapshot: null,
+      applied_content_hash: null,
+      applied_revision: null,
+      applied_at: null,
+      suppressed: false,
+    });
+    const unappliedMerge = await runExternalActionSync(
+      {
+        store: reviewStore.store,
+        readers: {
+          jagis_pour_la_nature: async () =>
+            readSyntheticJagisEvents([{ ...rec[0], title: "Titre modifié" }], now.toISOString()),
+          fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
+        },
+      },
+      { mode: "cron_prepare", now },
+    );
+    expect(unappliedMerge.conflicts).toBe(1);
+    expect(reviewStore.actions.get(actionId)!.preparation_data?.actionTitle).toBe("Collecte modération associative");
+
+    // When applied_snapshot is present, updatePreActionFields returning mandate_revoked aborts without creating a proposal
+    reviewStore.proposals.clear();
+    vi.spyOn(reviewStore.store, "updatePreActionFields").mockResolvedValueOnce("mandate_revoked");
+    const revokedUpdate = await runExternalActionSync(
+      {
+        store: reviewStore.store,
+        readers: {
+          jagis_pour_la_nature: async () =>
+            readSyntheticJagisEvents([{ ...rec[0], title: "Titre modifié 2" }], now.toISOString()),
+          fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
+        },
+      },
+      { mode: "cron_prepare", now },
+    );
+    expect(revokedUpdate.outcomes.some((o) => o.status === "mandate_revoked")).toBe(true);
+    expect(reviewStore.proposals.size).toBe(0);
+
+    // External cancellation on an already-cancelled tombstone must not mutate notes
+    const action = reviewStore.actions.get(actionId)!;
+    action.status = "cancelled";
+    const updateSpy = vi.spyOn(reviewStore.store, "updatePreActionFields");
+    updateSpy.mockClear();
+    const cancelledTombstone = await runExternalActionSync(
+      {
+        store: reviewStore.store,
+        readers: {
+          jagis_pour_la_nature: async () =>
+            readSyntheticJagisEvents([{ ...rec[0], status: "cancelled" }], now.toISOString()),
+          fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
+        },
+      },
+      { mode: "cron_prepare", now },
+    );
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect(cancelledTombstone.suppressed).toBe(1);
+  });
 });

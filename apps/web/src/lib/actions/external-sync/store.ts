@@ -129,7 +129,13 @@ export interface ExternalActionSyncStore {
       notes: string | null;
       preparation_data: Record<string, unknown>;
     }>,
-  ): Promise<boolean>;
+    sourceContext?: {
+      organizerDirectoryId: string;
+      sourceId: ExternalActionSourceId;
+      externalEventId: string;
+      allowPublishedNotesOnly?: boolean;
+    },
+  ): Promise<boolean | "mandate_revoked" | "suppressed" | "terminal_state" | "conflict">;
   publishPreAction(
     actionId: string,
     actorUserId: string,
@@ -139,7 +145,7 @@ export interface ExternalActionSyncStore {
       sourceId: ExternalActionSourceId;
       externalEventId: string;
     },
-  ): Promise<{ published: boolean; reason?: string }>;
+  ): Promise<{ published: boolean; pendingReview?: boolean; reason?: string }>;
   upsertProposal(params: {
     organizerDirectoryId: string;
     sourceId: ExternalActionSourceId;
@@ -425,7 +431,26 @@ export function createSupabaseExternalActionSyncStore(
       return { actionId: result.id };
     },
 
-    async updatePreActionFields(actionId, expectedUpdatedAt, updates) {
+    async updatePreActionFields(actionId, expectedUpdatedAt, updates, sourceContext) {
+      if (sourceContext) {
+        const { data, error } = await supabase.rpc("update_external_action_sync_pre_action", {
+          p_action_id: actionId,
+          p_organizer_directory_id: sourceContext.organizerDirectoryId,
+          p_source_id: sourceContext.sourceId,
+          p_external_event_id: sourceContext.externalEventId,
+          p_expected_updated_at: expectedUpdatedAt ?? null,
+          p_updates: updates,
+          p_allow_published_notes_only: Boolean(sourceContext.allowPublishedNotesOnly),
+        });
+        if (error) throw new Error("Échec de mise à jour atomique de la pré-action externe.");
+        const status = String(data ?? "");
+        if (status === "updated") return true;
+        if (status === "mandate_revoked") return "mandate_revoked";
+        if (status === "suppressed") return "suppressed";
+        if (status === "terminal_state") return "terminal_state";
+        if (status === "conflict") return "conflict";
+        return false;
+      }
       let query = supabase
         .from("actions")
         .update(updates)
@@ -481,9 +506,37 @@ export function createSupabaseExternalActionSyncStore(
               return "conflict";
             }
           : undefined,
+        persistReviewSubmission: sourceContext
+          ? async ({ expectedUpdatedAt: expectedAt }) => {
+              const { data, error } = await supabase.rpc(
+                "submit_external_action_sync_review",
+                {
+                  p_action_id: actionId,
+                  p_organizer_directory_id: sourceContext.organizerDirectoryId,
+                  p_source_id: sourceContext.sourceId,
+                  p_external_event_id: sourceContext.externalEventId,
+                  p_expected_updated_at: expectedAt,
+                },
+              );
+              if (error) {
+                throw new Error("Échec de soumission atomique à la modération associative.");
+              }
+              const row = (data ?? {}) as { status?: string; review_state?: string };
+              if (row.status === "pending_review") {
+                return { status: "pending_review", reviewState: row.review_state ?? "pending_review" };
+              }
+              if (row.status === "mandate_revoked") return { status: "mandate_revoked" };
+              if (row.status === "suppressed") return { status: "suppressed" };
+              if (row.status === "terminal_state") return { status: "terminal_state" };
+              return { status: "conflict" };
+            }
+          : undefined,
       });
       if (outcome.status === "published") {
         return { published: true };
+      }
+      if (outcome.status === "pending_review") {
+        return { published: false, pendingReview: true, reason: outcome.reviewState };
       }
       return { published: false, reason: outcome.status };
     },

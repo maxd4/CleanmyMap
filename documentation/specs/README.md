@@ -7,7 +7,7 @@
 | Ordre | Lot | Travail | Dépendance |
 |---|---|---|---|
 | 01 | SEC | Secret Audit, faux positifs, garde-fous | CLOSED (7546e0c, 55b1c0f, f3f567b) |
-| 02 | SYNC-A | Moteur de synchronisation externe, commandes et cron | lot A durci ; preuve DB éphémère à compléter |
+| 02 | SYNC-A | Moteur de synchronisation externe, commandes et cron | lot A durci (20261126000010 + modération associative transactionnelle) ; preuve DB/E2E CI en attente |
 | 03 | DS-BASE | I1/I2 déjà intégrés ; vérifier socle et delta I3 | avant refontes |
 | 04 | ANN-1 | Annuaire 06, 07, 08, 09, 10 | 03 |
 | 05 | ANN-2 | Annuaire 11, 12, 13, 14 | 04 |
@@ -59,9 +59,9 @@ Le statut initial PENDING signifie **non réceptionné dans ce programme**, pas 
 | `dashboard-ui/02-dashboard-surfaces.patch` | 11 DASH | PENDING | à établir |
 | `dashboard-ui/03-dashboard-notifications-account.patch` | 11 DASH | PENDING | à établir |
 | `dashboard-ui/04-dashboard-navigation-account.patch` | 11 DASH | PENDING | à établir |
-| `design-system-premium/01-palettes-et-primitives.patch` | 03 DS-BASE | ALREADY_INTEGRATED / preuve à clôturer | 0ba42a9 |
-| `design-system-premium/02-onglets-et-consommateurs.patch` | 03 DS-BASE | ALREADY_INTEGRATED / preuve à clôturer | e8f5b93 |
-| `design-system-premium/03-contrats-canoniques.patch` | 03 DS-BASE / 23 DS-FINAL | PENDING | à établir |
+| `design-system-premium/01-palettes-et-primitives.patch` | 03 DS-BASE | VALIDATED (socle I1) | `0ba42a9` ; Vitest I1 7/7 (50 tests), `check:surfaces`, `typecheck` PASS |
+| `design-system-premium/02-onglets-et-consommateurs.patch` | 03 DS-BASE | VALIDATED (socle I2) | `e8f5b93` ; Vitest I2 8/8 (60 tests), `check:surfaces`, `typecheck` PASS |
+| `design-system-premium/03-contrats-canoniques.patch` | 03 DS-BASE / 23 DS-FINAL | ADAPTED (doc intégrée ; clôture I3 réservée à DS-FINAL) | `0ba42a9`, `e8f5b93` ; `generate-design-system-board.test.mjs` 11/11 PASS ; reste : preuves navigateur multi-largeurs/thème sombre/FR-EN et régénération finale du board |
 | `ecole-ui/01-ecole.patch` | 18 LEARN-4 | PENDING | à établir |
 | `funding-ui/01-financement-transparence.patch` | 08 FUND | PENDING | à établir |
 | `funding-ui/02-contrats-documentaires.patch` | 08 FUND | PENDING | à établir |
@@ -92,7 +92,7 @@ L'arbre de référence contient 18 dossiers et 224 fichiers en incluant ce READM
 | [bonnes-pratiques-ui](./bonnes-pratiques-ui/README_CODEX.md) | 1 | 2 | 17 LEARN-3 : suivi des patches |
 | [cartographie-ui](./cartographie-ui/README_CODEX.md) | 0 | 20 | 13 MAP : PENDING |
 | [dashboard-ui](./dashboard-ui/README_CODEX.md) | 4 | 15 | 11 DASH : PENDING |
-| [design-system-premium](./design-system-premium/README_CODEX.md) | 3 | 1 | 03 DS-BASE / 03 DS-BASE / 23 DS-FINAL : suivi des patches |
+| [design-system-premium](./design-system-premium/README_CODEX.md) | 3 | 1 | 03 DS-BASE : I1/I2 VALIDATED, 03 ADAPTED (doc) ; clôture I3 réservée à 23 DS-FINAL |
 | [ecole-ui](./ecole-ui/README_CODEX.md) | 1 | 2 | 18 LEARN-4 : suivi des patches |
 | [empreinte-ia](./empreinte-ia/README_CODEX.md) | 0 | 51 | 22 AI-PROOF : 0+08 CURRENT ; 1/2 CODE_PUBLISHED / preuves à vérifier ; reste PLAN / CONDITIONAL |
 | [funding-ui](./funding-ui/README_CODEX.md) | 2 | 1 | 08 FUND : suivi des patches |
@@ -108,7 +108,8 @@ L'arbre de référence contient 18 dossiers et 224 fichiers en incluant ce READM
 | [Transfert des explications du formulaire](./methodologie-formulaire-actions-transfert.md) | 0 | 1 | 19 METHOD : PENDING |
 
 - SEC : CLOSED — faux positifs `Hash digest` résolus avec régressions dédiées (`f3f567b`) après durcissement de l'allowlist (`7546e0c`, `55b1c0f`) ; `secret-audit.test.mjs` 29/29 PASS et `secret-audit.mjs` 0 finding / 7144 fichiers.
-- SYNC-A : Lot A durci (moteur `external-sync`, migration `20261126000006`, publication canonique mutualisée, mandats/consentement vérifiés à l'écriture, séparation observation/application, cron `external-action-sync`, route admin `/api/admin/external-sync` et baseline Vercel) avec connecteurs réels désactivés ; plan propriétaire `synchronisation-actions-externes.md`. Preuve SQL éphémère locale `DB_SEMANTICS_NOT_EXECUTED` (reprise dédiée sans bloquer les lots Web indépendants). Lots B/C conditionnés à autorisation réelle.
+- DS-BASE : socle I1 (`0ba42a9`) et adoption I2 (`e8f5b93`) vérifiés sans régression globale (Vitest I1 7/7 = 50 tests, Vitest I2 8/8 = 60 tests, `check:surfaces` PASS, `generate-design-system-board.test.mjs` 11/11 PASS, `typecheck -w apps/web` PASS). Les 4 contrats de `03-contrats-canoniques.patch` sont déjà alignés dans `documentation/design-system/`. Reste à traiter : convergence des pages candidates dans leurs lots respectifs, puis réception finale I3 réservée à `23 DS-FINAL` (navigateur 390/768/1280/1440/1920, thème sombre, FR/EN, 3 modes, focus, contrastes réels, régénération finale du board et retrait des patches consommés).
+- SYNC-A : Lot A durci (moteur `external-sync`, migrations `20261126000006`–`20261126000010`, modération associative transactionnelle via `submit_external_action_sync_review`, mises à jour atomiques via `update_external_action_sync_pre_action`, base de fusion strictement `applied_snapshot`, publication canonique mutualisée, mandats/consentement vérifiés à l'écriture, cron `external-action-sync`, route admin `/api/admin/external-sync` et baseline Vercel) avec connecteurs réels désactivés ; plan propriétaire `synchronisation-actions-externes.md`. Preuve SQL/E2E éphémère CI et application Supabase `20261126000010` en attente (`DB_SEMANTICS_NOT_EXECUTED` localement). Lots B/C conditionnés à autorisation réelle.
 - REPORTS-HUB : PENDING ; les quatre onglets et deux sections de fichiers constituent la décision retenue du programme, pas un état CURRENT.
 - Empreinte IA : consulter les [arbitrages](./empreinte-ia/SPECIFICATIONS_PLAN/24_ARBITRAGES_PREUVES_ET_PRIORITES.md) et les passations, préserver les preuves et conditions.
 - Dark : [exigences](./suppression-charte-dark/requirements.md), [conception](./suppression-charte-dark/design.md), [tâches](./suppression-charte-dark/tasks.md), HISTORY/PLAN non autorisé. Relire le [contrat des modes](../design-system/DISPLAY_MODES_CANONICAL.md) avant toute nouvelle décision ; ne pas réactiver un ancien chantier.

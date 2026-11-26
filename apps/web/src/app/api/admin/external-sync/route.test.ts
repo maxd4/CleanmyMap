@@ -51,6 +51,7 @@ describe("/api/admin/external-sync", () => {
       createdAndPublished: 1,
       updated: 0,
       published: 0,
+      pendingReview: 0,
       unchanged: 0,
       suppressed: 0,
       proposals: 0,

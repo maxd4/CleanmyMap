@@ -9,6 +9,53 @@ import type {
   ExternalActionSyncOutcome,
 } from "./types";
 
+function mapPublishOutcome(
+  pub: { published: boolean; pendingReview?: boolean; reason?: string },
+  event: ExternalActionEvent,
+  actionId: string,
+  hasChanges: boolean,
+): ExternalActionSyncOutcome {
+  if (pub.published) {
+    return {
+      status: hasChanges ? "updated" : "published",
+      source: event.source,
+      externalId: event.externalId,
+      actionId,
+    };
+  }
+  if (pub.pendingReview) {
+    return {
+      status: "pending_review",
+      source: event.source,
+      externalId: event.externalId,
+      actionId,
+      reason: pub.reason,
+    };
+  }
+  if (pub.reason === "mandate_revoked") {
+    return {
+      status: "mandate_revoked",
+      source: event.source,
+      reason: "mandate_revoked",
+    };
+  }
+  if (pub.reason === "suppressed") {
+    return {
+      status: "suppressed",
+      source: event.source,
+      externalId: event.externalId,
+      actionId,
+    };
+  }
+  return {
+    status: "needs_review",
+    source: event.source,
+    externalId: event.externalId,
+    actionId,
+    reason: pub.reason ?? "publication_blocked",
+  };
+}
+
 export async function handleLinkedActionUpdate(params: {
   store: ExternalActionSyncStore;
   subscription: ExternalActionSubscription;
@@ -52,10 +99,41 @@ export async function handleLinkedActionUpdate(params: {
   }
 
   if (event.externalStatus === "cancelled") {
+    if (action.status === "cancelled" || action.status === "rejected") {
+      return {
+        status: "suppressed",
+        source: event.source,
+        externalId: event.externalId,
+        actionId,
+      };
+    }
     if (action.action_phase === "pre_action") {
-      await store.updatePreActionFields(actionId, action.updated_at, {
-        notes: setActionGroupJoinEnabledInNotes(action.notes, false),
-      });
+      const notesUpdated = await store.updatePreActionFields(
+        actionId,
+        action.updated_at,
+        { notes: setActionGroupJoinEnabledInNotes(action.notes, false) },
+        {
+          organizerDirectoryId: subscription.organizerDirectoryId,
+          sourceId: event.source,
+          externalEventId: event.externalId,
+          allowPublishedNotesOnly: true,
+        },
+      );
+      if (notesUpdated === "mandate_revoked") {
+        return {
+          status: "mandate_revoked",
+          source: event.source,
+          reason: "mandate_revoked",
+        };
+      }
+      if (notesUpdated === "suppressed" || notesUpdated === "terminal_state") {
+        return {
+          status: "suppressed",
+          source: event.source,
+          externalId: event.externalId,
+          actionId,
+        };
+      }
     }
     const proposalId = await store.upsertProposal({
       organizerDirectoryId: subscription.organizerDirectoryId,
@@ -129,21 +207,7 @@ export async function handleLinkedActionUpdate(params: {
           externalEventId: event.externalId,
         },
       );
-      if (pub.published) {
-        return {
-          status: "published",
-          source: event.source,
-          externalId: event.externalId,
-          actionId,
-        };
-      }
-      return {
-        status: "needs_review",
-        source: event.source,
-        externalId: event.externalId,
-        actionId,
-        reason: pub.reason ?? "publication_blocked",
-      };
+      return mapPublishOutcome(pub, event, actionId, false);
     }
     return {
       status: "unchanged",
@@ -227,8 +291,28 @@ export async function handleLinkedActionUpdate(params: {
       actionId,
       action.updated_at,
       merge.actionUpdates,
+      {
+        organizerDirectoryId: subscription.organizerDirectoryId,
+        sourceId: event.source,
+        externalEventId: event.externalId,
+      },
     );
-    if (!updated) {
+    if (updated === "mandate_revoked") {
+      return {
+        status: "mandate_revoked",
+        source: event.source,
+        reason: "mandate_revoked",
+      };
+    }
+    if (updated === "suppressed" || updated === "terminal_state") {
+      return {
+        status: "suppressed",
+        source: event.source,
+        externalId: event.externalId,
+        actionId,
+      };
+    }
+    if (updated !== true) {
       const proposalId = await store.upsertProposal({
         organizerDirectoryId: subscription.organizerDirectoryId,
         sourceId: event.source,
@@ -303,21 +387,7 @@ export async function handleLinkedActionUpdate(params: {
         externalEventId: event.externalId,
       },
     );
-    if (pub.published) {
-      return {
-        status: merge.hasChanges ? "updated" : "published",
-        source: event.source,
-        externalId: event.externalId,
-        actionId,
-      };
-    }
-    return {
-      status: "needs_review",
-      source: event.source,
-      externalId: event.externalId,
-      actionId,
-      reason: pub.reason ?? "publication_blocked",
-    };
+    return mapPublishOutcome(pub, event, actionId, merge.hasChanges);
   }
 
   return {

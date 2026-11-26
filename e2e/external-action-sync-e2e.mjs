@@ -197,7 +197,7 @@ commit;
     assert.match(xpCheck.stdout, /XP:0/);
     assert.match(xpCheck.stdout, /PUB:null/);
 
-    // 2. admin_sync_now publishes admissible pre-action via publishPreActionCanonical + atomic RPC
+    // 2. admin_sync_now submits associative pre-action to canonical moderation via submit_external_action_sync_review
     const adminSummary = await runExternalActionSync(
       {
         store,
@@ -208,7 +208,19 @@ commit;
       },
       { mode: "admin_sync_now", organizerDirectoryId: orgId, actorUserId: ownerUserId, now },
     );
-    assert.equal(adminSummary.published, 1);
+    assert.equal(adminSummary.pendingReview, 1);
+    assert.equal(adminSummary.published, 0);
+
+    const reviewCheck = await run(
+      `
+begin;
+set local role postgres;
+select 'REV:' || coalesce(review_state, 'null') || '|PUB:' || coalesce(published_at::text, 'null') from public.actions where id = '${actionId}';
+commit;
+`,
+      "verify_pending_review",
+    );
+    assert.match(reviewCheck.stdout, /REV:pending_review\|PUB:null/);
 
     // 3. Administrative suppression hides & unpublishes action, sets groupJoinEnabled=false in notes, and blocks recreation
     const supStatus = await store.suppressAction({

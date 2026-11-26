@@ -150,6 +150,7 @@ export async function POST(request: Request): Promise<Response> {
           createdAndPublished: summary.createdAndPublished,
           updated: summary.updated,
           published: summary.published,
+          pendingReview: summary.pendingReview,
           proposals: summary.proposals,
           conflicts: summary.conflicts,
           disabledSources: summary.disabledSources,

@@ -157,7 +157,7 @@ async function processSingleExternalEvent(params: {
       event,
       identityHash: reservation.identity_hash,
       actionId: reservation.action_id,
-      appliedSnapshot: existingRef?.applied_snapshot ?? existingRef?.source_snapshot ?? null,
+      appliedSnapshot: existingRef?.applied_snapshot ?? null,
       appliedContentHash: existingRef?.applied_content_hash ?? null,
       incomingSnapshot: snapshot,
       incomingContentHash: contentHash,
@@ -310,6 +310,30 @@ async function processSingleExternalEvent(params: {
         actionId: created.actionId,
       };
     }
+    if (pub.pendingReview) {
+      return {
+        status: "created_and_pending_review",
+        source: event.source,
+        externalId: event.externalId,
+        actionId: created.actionId,
+        reason: pub.reason,
+      };
+    }
+    if (pub.reason === "mandate_revoked") {
+      return {
+        status: "mandate_revoked",
+        source: event.source,
+        reason: "mandate_revoked",
+      };
+    }
+    if (pub.reason === "suppressed") {
+      return {
+        status: "suppressed",
+        source: event.source,
+        externalId: event.externalId,
+        actionId: created.actionId,
+      };
+    }
     return {
       status: "needs_review",
       source: event.source,
@@ -354,6 +378,7 @@ export async function runExternalActionSync(
     createdAndPublished: 0,
     updated: 0,
     published: 0,
+    pendingReview: 0,
     unchanged: 0,
     suppressed: 0,
     proposals: 0,
@@ -466,6 +491,13 @@ export async function runExternalActionSync(
             break;
           case "published":
             summary.published += 1;
+            break;
+          case "created_and_pending_review":
+            summary.created += 1;
+            summary.pendingReview += 1;
+            break;
+          case "pending_review":
+            summary.pendingReview += 1;
             break;
           case "unchanged":
             summary.unchanged += 1;

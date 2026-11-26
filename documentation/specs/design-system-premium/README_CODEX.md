@@ -35,3 +35,11 @@ STOP I3 : I1/I2 vérifiés, contrats CURRENT/board cohérents avec runtime, preu
 ## Preuves et limites
 
 23 chemins cibles dans trois patches construits et rejoués textuellement ; ratios opaques calculés, intégrité et contrôle de concurrence. Checkout/navigateur indisponibles ici (handoff non accepté). HOOK_NOT_AVAILABLE ; Vitest, TypeScript, ESLint, Playwright NOT_RUN ; couverture NOT_MEASURED. Aucun rendu de production ni contraste réel validé. Code CANDIDATE seulement ; fichiers CURRENT non modifiés. Intégrer depuis checkout courant selon MAIN-ONLY / MULTI-WRITER COORDONNÉ, adapter uniquement les hunks nécessaires. Codex termine raccordements et validations, ne reconçoit pas la palette.
+
+## Suivi d'intégration (lot 03 DS-BASE)
+
+- `01-palettes-et-primitives.patch` : **VALIDATED** (`0ba42a9`, revalidé sur `main` courant) — `surface-palette.ts`, `VibrantBackground`, `SectionShell`, `PageHeader`, `CmmCard` (`tone="family"` opt-in), `FamilyRubriqueCard`, `surfaces.css`.
+- `02-onglets-et-consommateurs.patch` : **VALIDATED** (`e8f5b93`, revalidé sur `main` courant) — `cmm-tab-strip.styles.ts`, `actions.css`, `AnnuaireViewTabs` (3 onglets préservés : `Services publics`, `Annuaire`, `Carte & réseau`), `ReportsPageTabs`, `ConnectTabs`, `RejoindreUneActionTabs`, consommateurs Annuaire / Open Data / Financement / Feedback / Pilotage.
+- `03-contrats-canoniques.patch` : **ADAPTED** (`0ba42a9`, `e8f5b93`) — les quatre documents canoniques (`BLOC_COLOR_SYSTEM_PREMIUM.md`, `Design-system.md`, `SURFACES_CARDS.md`, `UI_EXCEPTION_PAGES.md`) sont alignés ; la clôture I3 et la régénération finale du board restent réservées à `23 DS-FINAL`.
+- **Preuves acquises (socle)** : Vitest I1 (7 fichiers, 50 tests PASS), Vitest I2 (8 fichiers, 60 tests PASS), `npm run check:surfaces` PASS, `node scripts/design/generate-design-system-board.test.mjs` (11/11 PASS), `npm run typecheck -w apps/web` PASS, et contrôle navigateur initial (`e8f5b93`, 1280×800 thème clair).
+- **Reste à traiter** : convergence des pages candidates dans leurs lots respectifs (04 à 21), puis réception finale **I3** dans `23 DS-FINAL` (navigateur 390/768/1280/1440/1920, thème sombre, FR/EN, trois modes, focus, contrastes WCAG AA réels, régénération finale du board `scripts/design/generate-design-system-board.mjs`, et retrait des patches consommés).

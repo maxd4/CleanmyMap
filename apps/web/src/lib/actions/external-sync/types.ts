@@ -94,8 +94,10 @@ export type ExternalActionSyncOutcome =
       status:
         | "created"
         | "created_and_published"
+        | "created_and_pending_review"
         | "updated"
         | "published"
+        | "pending_review"
         | "linked"
         | "unchanged"
         | "suppressed"
@@ -122,6 +124,7 @@ export type ExternalActionSyncRunSummary = {
   createdAndPublished: number;
   updated: number;
   published: number;
+  pendingReview: number;
   unchanged: number;
   suppressed: number;
   proposals: number;
