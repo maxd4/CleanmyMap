@@ -99,7 +99,18 @@ function isSharedAuthOrRuntimeFile(filePath) {
   );
 }
 
-function fullConservativePlan(reason, { runSpogomiBusinessTests = false } = {}) {
+function findUnmappedActiveE2eFiles(activeE2eFiles = []) {
+  return [...new Set(activeE2eFiles.map(normalizePath).filter(Boolean))]
+    .filter(
+      (file) =>
+        /^e2e\/.*\.(?:spec|test)\.ts$/.test(file) &&
+        matchCiProjectsForFile(file).length === 0 &&
+        !isLocalOnlyE2eSpec(file),
+    )
+    .sort();
+}
+
+function fullConservativePlan(reason, { runSpogomiBusinessTests = false, activeE2eFiles = [] } = {}) {
   return {
     docs_only: false,
     e2e_should_run: true,
@@ -107,7 +118,7 @@ function fullConservativePlan(reason, { runSpogomiBusinessTests = false } = {}) 
     run_spogomi_business_tests: runSpogomiBusinessTests,
     run_persistent_e2e: true,
     playwright_projects: ALL_CI_E2E_PROJECTS.join(","),
-    unmapped_e2e_files: "",
+    unmapped_e2e_files: findUnmappedActiveE2eFiles(activeE2eFiles).join(","),
     sql_should_run: true,
     sql_proof_targets: "",
     validate_all_sql: true,
@@ -117,23 +128,32 @@ function fullConservativePlan(reason, { runSpogomiBusinessTests = false } = {}) 
 
 export function planE2eAndSql({
   changedFiles = [],
+  activeE2eFiles = null,
+  deletedFiles = [],
   eventName = "push",
   validationMode = "DEVELOPMENT",
   scopeUncertain = false,
 } = {}) {
   const files = [...new Set(changedFiles.map(normalizePath).filter(Boolean))].sort();
+  const deletedSet = new Set(deletedFiles.map(normalizePath).filter(Boolean));
+  const activeE2eList = Array.isArray(activeE2eFiles)
+    ? activeE2eFiles.map(normalizePath).filter((file) => Boolean(file) && !deletedSet.has(file))
+    : null;
+  const activeE2eSet = activeE2eList ? new Set(activeE2eList) : null;
   const mode = String(validationMode ?? "DEVELOPMENT").trim().toUpperCase() || "DEVELOPMENT";
   const event = String(eventName ?? "push").trim();
 
   if (event === "schedule" || mode === "FULL") {
     return fullConservativePlan(
       event === "schedule" ? "scheduled-full-campaign" : "full-validation-mode",
-      { runSpogomiBusinessTests: true },
+      { runSpogomiBusinessTests: true, activeE2eFiles: activeE2eList ?? [] },
     );
   }
 
   if (scopeUncertain) {
-    return fullConservativePlan("uncertain-scope-conservative");
+    return fullConservativePlan("uncertain-scope-conservative", {
+      activeE2eFiles: activeE2eList ?? [],
+    });
   }
 
   if (files.length === 0) {
@@ -177,12 +197,17 @@ export function planE2eAndSql({
 
   const hasSharedSchema = files.some(isSharedSupabaseSchemaFile);
   const hasSharedAuth = files.some(isSharedAuthOrRuntimeFile);
-  const hasSharedE2eInfra = files.some((file) => SHARED_E2E_INFRA_FILES.has(file) || file.startsWith("e2e/fixtures/"));
+  const hasSharedE2eInfra = files.some(
+    (file) => SHARED_E2E_INFRA_FILES.has(file) || file.startsWith("e2e/fixtures/") || file.startsWith("scripts/dev/"),
+  );
   const hasSharedSqlInfra = files.some((file) => SHARED_SQL_INFRA_FILES.has(file));
 
   if (hasSharedSchema || hasSharedAuth || hasSharedE2eInfra) {
     for (const project of ALL_CI_E2E_PROJECTS) projects.add(project);
     runSpogomiIntegration = true;
+    for (const unmapped of findUnmappedActiveE2eFiles(activeE2eList ?? [])) {
+      unmappedE2eFiles.add(unmapped);
+    }
   }
 
   if (hasSharedSchema || hasSharedSqlInfra) {
@@ -212,7 +237,13 @@ export function planE2eAndSql({
       runSpogomiIntegration = true;
     }
 
-    if (/^e2e\/.*\.(?:spec|test)\.ts$/.test(file) && matchedProjects.length === 0 && !isLocalOnlyE2eSpec(file)) {
+    if (
+      /^e2e\/.*\.(?:spec|test)\.ts$/.test(file) &&
+      !deletedSet.has(file) &&
+      (!activeE2eSet || activeE2eSet.has(file)) &&
+      matchedProjects.length === 0 &&
+      !isLocalOnlyE2eSpec(file)
+    ) {
       unmappedE2eFiles.add(file);
       for (const project of ALL_CI_E2E_PROJECTS) projects.add(project);
     }
@@ -282,6 +313,22 @@ export function resolveCandidateSha({
   return eventSha || githubSha || "";
 }
 
+export function listActiveCandidateE2eFiles(candidateSha) {
+  if (!candidateSha) return [];
+  try {
+    const out = execFileSync(gitExecutable(), ["ls-tree", "-r", "--name-only", "-z", candidateSha, "--", "e2e"], {
+      encoding: "utf8",
+    });
+    return out
+      .split("\0")
+      .map(normalizePath)
+      .filter((file) => /^e2e\/.*\.(?:spec|test)\.ts$/.test(file))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
 export function computeContentDigest(candidateSha) {
   if (!candidateSha) return "UNAVAILABLE";
   const trackedRoots = [
@@ -295,9 +342,11 @@ export function computeContentDigest(candidateSha) {
     "e2e",
     "scripts/ci",
     "scripts/checks",
+    "scripts/dev",
     ".github/workflows/e2e-supabase.yml",
     ".github/workflows/supabase-sql-proof.yml",
     "playwright.config.ts",
+    "package.json",
     "package-lock.json",
   ];
   const hash = createHash("sha256");
@@ -337,7 +386,8 @@ function main() {
           prBaseSha: process.env.PR_BASE_SHA || "",
           prHeadSha,
         });
-  const plan = planE2eAndSql({ changedFiles, eventName, validationMode, scopeUncertain });
+  const activeE2eFiles = listActiveCandidateE2eFiles(candidateSha);
+  const plan = planE2eAndSql({ changedFiles, activeE2eFiles, eventName, validationMode, scopeUncertain });
   const inputsDigest = computeContentDigest(candidateSha);
   const outputs = {
     ...plan,

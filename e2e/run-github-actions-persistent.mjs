@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ALL_CI_E2E_PROJECTS } from "../scripts/ci/e2e-project-catalog.mjs";
@@ -137,7 +137,28 @@ function resolveUnmappedE2eFiles(raw = process.env.UNMAPPED_E2E_FILES) {
     .filter(Boolean);
 }
 
-async function assertUnmappedSpecsExecuted(projects, env) {
+export function collectExecutedSpecFilesFromReport(report) {
+  const executed = new Set();
+  function walkSuite(suite) {
+    if (!suite || typeof suite !== "object") return;
+    if (Array.isArray(suite.specs)) {
+      for (const spec of suite.specs) {
+        if (typeof spec?.file === "string" && spec.file.trim()) {
+          executed.add(spec.file.trim().replaceAll("\\", "/"));
+        }
+      }
+    }
+    if (Array.isArray(suite.suites)) {
+      for (const child of suite.suites) walkSuite(child);
+    }
+  }
+  if (Array.isArray(report?.suites)) {
+    for (const suite of report.suites) walkSuite(suite);
+  }
+  return executed;
+}
+
+export async function assertUnmappedSpecsDiscovered(projects, env) {
   const unmapped = resolveUnmappedE2eFiles(env.UNMAPPED_E2E_FILES);
   if (unmapped.length === 0) return;
 
@@ -167,7 +188,29 @@ async function assertUnmappedSpecsExecuted(projects, env) {
   });
   if (missing.length > 0) {
     throw new Error(
-      `Uncatalogued E2E file(s) not executed by selected Playwright projects (${projects.join(", ")}): ${missing.join(", ")}. Register them in scripts/ci/e2e-project-catalog.mjs and playwright.config.ts.`,
+      `Uncatalogued E2E file(s) not discovered by Playwright --list (${projects.join(", ")}): ${missing.join(", ")}. Register them in scripts/ci/e2e-project-catalog.mjs and playwright.config.ts.`,
+    );
+  }
+}
+
+export async function assertUnmappedSpecsExecutedInReport(
+  unmappedFiles,
+  resultsPath = path.join(root, "artifacts", "playwright", "results.json"),
+) {
+  const unmapped = resolveUnmappedE2eFiles(
+    Array.isArray(unmappedFiles) ? unmappedFiles.join(",") : unmappedFiles,
+  );
+  if (unmapped.length === 0) return;
+  const raw = await readFile(resultsPath, "utf8");
+  const report = JSON.parse(raw);
+  const executed = collectExecutedSpecFilesFromReport(report);
+  const missing = unmapped.filter((filePath) => {
+    const relativeToE2e = filePath.replace(/^e2e\//, "");
+    return !executed.has(filePath) && !executed.has(relativeToE2e);
+  });
+  if (missing.length > 0) {
+    throw new Error(
+      `Uncatalogued E2E file(s) discovered via --list but not executed in Playwright results.json: ${missing.join(", ")}.`,
     );
   }
 }
@@ -175,7 +218,7 @@ async function assertUnmappedSpecsExecuted(projects, env) {
 async function runPersistentE2E() {
   assertClerkDevelopmentSecrets();
   const projects = resolvePersistentProjects();
-  await assertUnmappedSpecsExecuted(projects, process.env);
+  await assertUnmappedSpecsDiscovered(projects, process.env);
   await writeWebEnvironment();
   try {
     const local = await readLocalSupabaseStatus();
@@ -201,6 +244,7 @@ async function runPersistentE2E() {
       ],
       { cwd: root, env, stdio: "inherit" },
     );
+    await assertUnmappedSpecsExecutedInReport(process.env.UNMAPPED_E2E_FILES);
     await runCommand(
       "node",
       [

@@ -9,10 +9,29 @@ import {
   matchCiProjectsForFile,
 } from "./e2e-project-catalog.mjs";
 import {
+  computeContentDigest,
   isPureDocumentationFile,
+  listActiveCandidateE2eFiles,
   planE2eAndSql,
   resolveCandidateSha,
 } from "./select-e2e-sql-plan.mjs";
+import {
+  assertUnmappedSpecsExecutedInReport,
+  collectExecutedSpecFilesFromReport,
+} from "../../e2e/run-github-actions-persistent.mjs";
+
+function listE2eSpecsRecursively(dir, prefix = "e2e") {
+  const results = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = `${prefix}/${entry.name}`;
+    if (entry.isDirectory()) {
+      results.push(...listE2eSpecsRecursively(path.join(dir, entry.name), rel));
+    } else if (entry.isFile() && /\.(?:spec|test)\.ts$/.test(entry.name)) {
+      results.push(rel);
+    }
+  }
+  return results.sort();
+}
 
 test("pure documentation changes skip all E2E and SQL runs", () => {
   assert.equal(isPureDocumentationFile("documentation/features/annuaire.md"), true);
@@ -139,9 +158,7 @@ test("signalements API, route-reference-action-sharing spec, bootstrap infra, an
 
 test("every active E2E spec on disk is classified and mixed commits never skip unmapped specs", () => {
   const root = path.resolve(import.meta.dirname, "../..");
-  const e2eFiles = fs.readdirSync(path.join(root, "e2e"), { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.(?:spec|test)\.ts$/.test(entry.name))
-    .map((entry) => `e2e/${entry.name}`);
+  const e2eFiles = listE2eSpecsRecursively(path.join(root, "e2e"));
 
   for (const file of e2eFiles) {
     const matched = matchCiProjectsForFile(file);
@@ -247,9 +264,7 @@ test("catalog changes, SPOGOMI UI/pages, PR SHA digest, and Playwright project a
     pwProjects.set(name, regex);
   }
 
-  const e2eFiles = fs.readdirSync(path.join(root, "e2e"), { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.(?:spec|test)\.ts$/.test(entry.name))
-    .map((entry) => `e2e/${entry.name}`);
+  const e2eFiles = listE2eSpecsRecursively(path.join(root, "e2e"));
 
   for (const project of CI_EXECUTABLE_PROJECTS) {
     const pwTestMatch = pwProjects.get(project.name);
@@ -278,4 +293,117 @@ test("catalog changes, SPOGOMI UI/pages, PR SHA digest, and Playwright project a
 
   const runnerSource = fs.readFileSync(path.join(root, "e2e/run-github-actions-persistent.mjs"), "utf8");
   assert.ok(runnerSource.includes("UNMAPPED_E2E_FILES"), "persistent runner must enforce UNMAPPED_E2E_FILES coverage");
+});
+
+test("settings authenticated and homepage chromium dependencies trigger catalog, selector, and workflows", () => {
+  const root = path.resolve(import.meta.dirname, "../..");
+  const workflow = fs.readFileSync(path.join(root, ".github/workflows/e2e-supabase.yml"), "utf8");
+  const pushSection = workflow.slice(workflow.indexOf("  push:"), workflow.indexOf("  pull_request:"));
+  const prSection = workflow.slice(workflow.indexOf("  pull_request:"), workflow.indexOf("env:"));
+
+  const settingsPlan = planE2eAndSql({
+    changedFiles: ["apps/web/src/app/reglages/page.tsx"],
+  });
+  assert.equal(settingsPlan.e2e_should_run, true);
+  assert.equal(settingsPlan.playwright_projects, "settings authenticated");
+
+  const accountPlan = planE2eAndSql({
+    changedFiles: ["apps/web/src/components/account/account-settings-editor.tsx"],
+  });
+  assert.equal(accountPlan.e2e_should_run, true);
+  assert.equal(accountPlan.playwright_projects, "settings authenticated");
+
+  for (const homepageFile of [
+    "apps/web/src/app/page.tsx",
+    "apps/web/src/app/api/homepage/activity/route.ts",
+    "apps/web/src/components/accueil/accueil-community-credibility.tsx",
+    "apps/web/src/lib/accueil/data.ts",
+  ]) {
+    const plan = planE2eAndSql({ changedFiles: [homepageFile] });
+    assert.equal(plan.e2e_should_run, true, `Expected homepage E2E for ${homepageFile}`);
+    assert.equal(plan.playwright_projects, "homepage chromium");
+  }
+
+  for (const trigger of [
+    "apps/web/src/app/reglages/**",
+    "apps/web/src/components/account/**",
+    "apps/web/src/app/page.tsx",
+    "apps/web/src/app/api/homepage/**",
+    "apps/web/src/components/accueil/**",
+    "apps/web/src/lib/accueil/**",
+    "scripts/dev/**",
+    "e2e/**/*.spec.ts",
+    "e2e/**/*.test.ts",
+    "package.json",
+  ]) {
+    assert.ok(pushSection.includes(trigger), `push.paths missing ${trigger}`);
+    assert.ok(prSection.includes(trigger), `pull_request.paths missing ${trigger}`);
+  }
+});
+
+test("root package.json and scripts/dev/ trigger shared E2E infra and contribute to content digest", () => {
+  for (const sharedFile of ["package.json", "scripts/dev/dev-with-fallback-port.mjs"]) {
+    const plan = planE2eAndSql({ changedFiles: [sharedFile] });
+    assert.equal(plan.e2e_should_run, true, `Expected E2E for ${sharedFile}`);
+    assert.deepEqual(plan.playwright_projects.split(",").sort(), [...ALL_CI_E2E_PROJECTS].sort());
+  }
+
+  const headDigest = computeContentDigest("HEAD");
+  assert.notEqual(headDigest, "UNAVAILABLE");
+  assert.match(headDigest, /^[0-9a-f]{64}$/);
+  const activeSpecs = listActiveCandidateE2eFiles("HEAD");
+  assert.ok(activeSpecs.includes("e2e/homepage-reveal.spec.ts"));
+});
+
+test("FULL and uncertain plans detect active unmapped E2E specs including subdirs while ignoring deleted specs", async () => {
+  const activeWithSubdir = [
+    "e2e/action-sharing.spec.ts",
+    "e2e/nested/new-uncatalogued.spec.ts",
+  ];
+  const fullPlan = planE2eAndSql({
+    eventName: "workflow_dispatch",
+    validationMode: "FULL",
+    activeE2eFiles: activeWithSubdir,
+    deletedFiles: ["e2e/deleted-unmapped.spec.ts"],
+  });
+  assert.equal(fullPlan.unmapped_e2e_files, "e2e/nested/new-uncatalogued.spec.ts");
+
+  const uncertainPlan = planE2eAndSql({
+    scopeUncertain: true,
+    activeE2eFiles: activeWithSubdir,
+  });
+  assert.equal(uncertainPlan.unmapped_e2e_files, "e2e/nested/new-uncatalogued.spec.ts");
+
+  const deletedOnlyPlan = planE2eAndSql({
+    changedFiles: ["e2e/deleted-unmapped.spec.ts"],
+    activeE2eFiles: ["e2e/action-sharing.spec.ts"],
+    deletedFiles: ["e2e/deleted-unmapped.spec.ts"],
+  });
+  assert.equal(deletedOnlyPlan.unmapped_e2e_files, "");
+
+  // Distinguish --list discovery from actual execution in Playwright JSON report
+  const os = await import("node:os");
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cmm-e2e-report-"));
+  try {
+    const reportPath = path.join(tmpDir, "results.json");
+    fs.writeFileSync(
+      reportPath,
+      JSON.stringify({
+        suites: [
+          {
+            suites: [{ specs: [{ file: "e2e/nested/new-uncatalogued.spec.ts" }] }],
+          },
+        ],
+      }),
+    );
+    const collected = collectExecutedSpecFilesFromReport(JSON.parse(fs.readFileSync(reportPath, "utf8")));
+    assert.ok(collected.has("e2e/nested/new-uncatalogued.spec.ts"));
+    await assertUnmappedSpecsExecutedInReport("e2e/nested/new-uncatalogued.spec.ts", reportPath);
+    await assert.rejects(
+      () => assertUnmappedSpecsExecutedInReport("e2e/missing-from-execution.spec.ts", reportPath),
+      /not executed in Playwright results\.json/,
+    );
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });

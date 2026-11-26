@@ -71,7 +71,10 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
     specPatterns: [
       /^e2e\/settings-canonical\.spec\.ts$/,
     ],
-    dependencyPrefixes: [],
+    dependencyPrefixes: [
+      "apps/web/src/app/reglages/",
+      "apps/web/src/components/account/",
+    ],
   },
   {
     name: "homepage chromium",
@@ -79,7 +82,12 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
     specPatterns: [
       /^e2e\/homepage-reveal\.spec\.ts$/,
     ],
-    dependencyPrefixes: [],
+    dependencyPrefixes: [
+      "apps/web/src/app/page.tsx",
+      "apps/web/src/app/api/homepage/",
+      "apps/web/src/components/accueil/",
+      "apps/web/src/lib/accueil/",
+    ],
   },
 ]);
 
