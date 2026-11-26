@@ -5,6 +5,7 @@ import { toProfile } from "@/lib/profiles";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { getServerLocale } from "@/lib/server-preferences";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
+import { resolvePilotagePageTab } from "@/lib/pilotage/page-tabs";
 import {
   loadPilotageCommunityOperations,
   type PilotageCommunityOperationsState,
@@ -17,7 +18,7 @@ import {
 } from "@/components/pilotage/pilotage-access-screen";
 
 type PilotageAccessPageProps = {
-  searchParams: Promise<{ operations?: string; retry?: string }>;
+  searchParams: Promise<{ tab?: string | string[]; operations?: string; retry?: string }>;
 };
 
 async function loadOverview(userId: string) {
@@ -30,7 +31,8 @@ async function loadOverview(userId: string) {
 
 export default async function PilotageAccessPage({ searchParams }: PilotageAccessPageProps) {
   const params = await searchParams;
-  const requestedOperations = params.operations === "1";
+  const activeTab = resolvePilotagePageTab(params.tab, params.operations);
+  const requestedOperations = activeTab === "operations";
   const retryAttempt = Number.parseInt(params.retry ?? "0", 10);
   const nextRetryAttempt = Number.isFinite(retryAttempt) && retryAttempt >= 0
     ? Math.min(retryAttempt + 1, 999_999)
@@ -60,7 +62,7 @@ export default async function PilotageAccessPage({ searchParams }: PilotageAcces
   }
 
   if (!effectiveAccess?.canAccessPilotage) {
-    return <PilotageRestrictedPage locale={locale} profile={profile} />;
+    return <PilotageRestrictedPage locale={locale} profile={profile} access={effectiveAccess} />;
   }
 
   const overview = await loadOverview(userId).catch(() => null);
@@ -80,6 +82,7 @@ export default async function PilotageAccessPage({ searchParams }: PilotageAcces
       locale={locale}
       profile={profile}
       overview={overview}
+      activeTab={activeTab}
       communityOperations={communityOperations}
       communityOperationsState={communityOperationsState}
       communityOperationsRetryHref={communityOperationsRetryHref}

@@ -10,8 +10,8 @@
 - **Accès proxy** : `clerk-context` ; le proxy prépare le contexte Clerk sans appeler `auth.protect()` pour cette route.
 - **Présentation anonyme** : `auth-disabled-gate` ; un visiteur voit l'écran de verrouillage et aucun overview métier n'est chargé.
 - **Accès métier** : seul `activeRole=coordinateur` peut charger l'overview métier via `getCurrentUserEffectiveAccess().canAccessPilotage`. `admin` reste redirigé vers `/admin`, `max` est refusé sur cette surface et `elu` reste refusé tant que le pilotage territorial canonique n'est pas implémenté.
-- **Objectif utilisateur principal** : Donner aux profils habilités un accès rapide aux vues de synthèse, au pilotage et aux lectures décideurs/gouvernance via trois onglets.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Objectif utilisateur principal** : Permettre au coordinateur de suivre ses actions organisées, ses opérations, ses priorités et la fiabilité des données, sans lecture institutionnelle dupliquée.
+- **Action principale attendue** : Organiser une action, suivre une opération ou examiner une priorité du corpus autorisé.
 - **Palette attendue** : amber / brun
 - **Scope** : corpus serveur des actions dont le coordinateur est créateur ou organisateur/coorganisateur canonique. Overview, KPI, comparaisons, zones, priorités et opérations communautaires restent dans ce corpus ; aucune relation ne donne un fallback global. L'organisation et le territoire restent des cibles distinctes, l'élu étant `TARGET / NOT_IMPLEMENTED`.
 - **Terminée** : non
@@ -35,7 +35,7 @@
 - Rappels redondants
 - badges de contexte répétés
 - blocs d'aide trop verbeux
-- **Bulles / cartes / contextes trop nombreux** : Le bloc mélange des cartes de lecture et des CTA, la densité doit rester maîtrisée. Trois onglets structurent maintenant la lecture: décideurs, pilotage, gouvernance.
+- **Bulles / cartes / contextes trop nombreux** : Le bloc mélange des cartes de lecture et des CTA, la densité doit rester maîtrisée. Cinq vues liées structurent la lecture : Synthèse, Opérations, Priorités et zones, Analyse et méthode, Outils et rapports.
 - **Composants UI concernés** :
 - Titre
 - cards métriques
@@ -44,6 +44,16 @@
 - sidebar / ribbon
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : moyenne
+
+## Variante à accès restreint
+
+Les comptes authentifiés sans accès au pilotage organisé disposent d'un hub
+adapté à leur rôle actif. IMU conserve ses raccourcis administratifs lorsque
+les capacités effectives sont vérifiées. Rapports, carte, méthodologie et CTA
+du profil ouvrent les pages propriétaires. Le changement de rôle passe par
+le profil actif et le sélecteur existant. Une vérification indisponible
+affiche une relance et masque les raccourcis administratifs. Aucun overview
+ni détail des opérations n'est chargé par ce hub. Aucun droit élargi.
 
 ## Opérations communautaires
 
@@ -61,17 +71,20 @@ derrière `/pilotage`.
 
 ## Onglets et fraîcheur
 
-La vue générale et l'onglet Zones consomment le snapshot institutionnel autorisé
-par `/api/pilotage/overview`. L'onglet « Méthodologie » conserve le dernier
-snapshot valide pour afficher ses explications sans relancer la lecture ni son
-rafraîchissement périodique tant qu'il est actif. Le retour à une vue de données
-réutilise le cache SWR récent et la cadence bornée existante.
-
-Cette optimisation ne modifie ni `canAccessPilotage`, ni les scopes serveur,
-ni les contrôles d'autorisation de l'endpoint.
+Les vues sont des liens de navigation avec aria-current, sans préchargement des
+vues inactives. La route serveur conserve le scope organized/userId pour toutes
+les lectures. Les cinq vues réutilisent le même calcul d'overview, sans
+dupliquer des agrégats institutionnels. La synthèse expose la période, la
+date de calcul, les KPI et leurs limites ; l'analyse regroupe les écarts,
+la fiabilité des fenêtres 30/90/365 jours et les méthodes repliables. Les
+anciennes ancres #decideurs et #gouvernance ouvrent les outils, où les
+destinations dédiées conservent leur propre AuthZ. Les ancres #pilotage et
+operations=1 restent compatibles. Aucune promesse de rafraîchissement SWR
+sur cette route serveur ; les autres consommateurs de l'endpoint restent
+inchangés.
 
 Les opérations communautaires détaillées sont séparées de l'overview initiale.
-Le bouton « Explorer les opérations détaillées » navigue vers
+L'onglet Opérations et le bouton « Explorer les opérations détaillées » naviguent vers
 `/pilotage?operations=1` avec le prefetch désactivé ; seul cet état explicite
 appelle `loadPilotageCommunityOperations`. La résolution conserve le scope
 `organized/userId` et réutilise les contrats de l'overview canonique. Une

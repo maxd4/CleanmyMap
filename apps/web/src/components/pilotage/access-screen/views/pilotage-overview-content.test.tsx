@@ -19,6 +19,8 @@ vi.mock("./pilotage-overview-support-sections", () => ({
   PilotageOverviewSupportSections: () => React.createElement("div", null, "support"),
 }));
 
+vi.mock("./pilotage-legacy-anchor", () => ({ PilotageLegacyAnchor: () => null }));
+
 vi.mock("./pilotage-overview-surface-tabs", () => ({
   PilotageOverviewSurfaceTabs: () => React.createElement("div", null, "tabs"),
 }));
@@ -85,6 +87,8 @@ describe("Pilotage overview community operations states", () => {
     const initialMarkup = renderOperations("NOT_REQUESTED");
     expect(initialMarkup).toContain("Explorer les opérations détaillées");
     expect(initialMarkup).toContain('href="/pilotage?operations=1"');
+    expect(initialMarkup).not.toContain("operations-panel");
+    expect(initialMarkup).not.toContain(">metrics<");
 
     const availableMarkup = renderOperations("AVAILABLE", {
       staffingPlan: {},
@@ -93,6 +97,8 @@ describe("Pilotage overview community operations states", () => {
     });
     expect(availableMarkup).toContain("Masquer les opérations détaillées");
     expect(availableMarkup).toContain("operations-panel");
+    expect(availableMarkup).not.toContain(">summary<");
+    expect(availableMarkup).not.toContain(">priorities<");
   });
 
   it("renders partial coverage without presenting exhaustive operations", () => {

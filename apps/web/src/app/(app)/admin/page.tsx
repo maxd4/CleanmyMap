@@ -9,7 +9,8 @@ import {
   toProfile,
 } from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
-import { loadAdminSources } from "@/lib/admin/admin-dashboard-contract";
+import { loadAdminSources, loadAdminInboxSource, loadAdminAuditSource } from "@/lib/admin/admin-dashboard-contract";
+import { resolveAdminCockpitTab } from "@/lib/admin/cockpit-tabs";
 import {
   parseAdminModerationParam,
 } from "@/components/reports/admin-workflow/helpers";
@@ -79,12 +80,18 @@ export default async function AdminPage({
     );
   }
 
-  const adminSources = await loadAdminSources();
+  const activeTab = resolveAdminCockpitTab(resolvedSearchParams?.tab, moderationPreset, role === "max");
+  const adminSources = activeTab === "summary" ? await loadAdminSources() : null;
+  const inboxSource = activeTab === "inbox" ? await loadAdminInboxSource() : null;
+  const auditSource = activeTab === "audit" ? await loadAdminAuditSource() : null;
 
   return (
     <AccountCompletionGate state={accountCompletion}>
       <AdminPageContent
         adminSources={adminSources}
+        inboxSource={inboxSource}
+        auditSource={auditSource}
+        activeTab={activeTab}
         identity={identity}
         profile={profile}
         role={role}

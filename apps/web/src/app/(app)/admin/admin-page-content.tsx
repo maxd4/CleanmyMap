@@ -8,7 +8,13 @@ import {
 } from "@/components/admin/admin-dashboard-ui";
 import type { AdminActionItem } from "@/components/admin/admin-dashboard-ui";
 import { AdminMaxTools } from "@/components/admin/admin-max-tools";
-import { AdminFeedbackAuditTabs } from "@/components/admin/admin-feedback-audit-tabs";
+import { AdminCockpitInbox } from "@/components/admin/admin-cockpit-inbox";
+import { AdminOperationsAuditPanel } from "@/components/admin/admin-operations-audit-panel";
+import { AdminCockpitTabs } from "@/components/admin/admin-cockpit-tabs";
+import { AdminCockpitLegacyAnchor } from "@/components/admin/admin-cockpit-legacy-anchor";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { adminCockpitHref, type AdminCockpitTab } from "@/lib/admin/cockpit-tabs";
 import { ModerationByBlockPanel } from "@/components/admin/moderation-by-block-panel";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
@@ -23,7 +29,10 @@ import { env } from "@/lib/env";
 import type { UserIdentity } from "@/lib/authz-identity";
 
 type AdminPageContentProps = {
-  adminSources: Awaited<ReturnType<typeof loadAdminSources>>;
+  adminSources: Awaited<ReturnType<typeof loadAdminSources>> | null;
+  inboxSource: import("@/lib/admin/admin-dashboard-contract").AdminSources["creatorInbox"] | null;
+  auditSource: import("@/lib/admin/admin-dashboard-contract").AdminSources["audit"] | null;
+  activeTab: AdminCockpitTab;
   identity: UserIdentity;
   profile: AppProfile;
   role: UserIdentity["activeRole"];
@@ -34,6 +43,9 @@ type AdminPageContentProps = {
 
 export function AdminPageContent({
   adminSources,
+  inboxSource,
+  auditSource,
+  activeTab,
   identity,
   profile,
   role,
@@ -41,9 +53,9 @@ export function AdminPageContent({
   locale,
   moderationPreset,
 }: AdminPageContentProps) {
-  const adminAlert = buildAdminAlert(adminSources);
-  const metricItems = buildAdminMetricItems(adminSources);
-  const moderationBlocks = buildModerationBlockSummaries(adminSources);
+  const adminAlert = adminSources ? buildAdminAlert(adminSources) : null;
+  const metricItems = adminSources ? buildAdminMetricItems(adminSources) : [];
+  const moderationBlocks = adminSources ? buildModerationBlockSummaries(adminSources) : [];
   const switchableProfiles = getSwitchableProfiles(grantedRole);
   const profileLink = buildProfileRoute(profile);
   const profileCountLabel = formatProfileCountLabel(switchableProfiles.length);
@@ -83,64 +95,64 @@ export function AdminPageContent({
   ];
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#fffaf5_0%,#f7efe6_52%,#efe4d8_100%)] text-stone-950">
+    <main className="min-h-screen cmm-text-primary">
       <CmmPageLayout className="relative z-10">
         <PageHeader
           family={resolvePageFamily("/admin")}
           title="Cockpit opérationnel"
           subtitle="Supervision des files, du workflow et de l’état des services."
-          action={<AdminPillLink href={profileLink}>Voir profil</AdminPillLink>}
+          action={<div className="flex flex-wrap items-center justify-center gap-3"><span className="text-sm cmm-text-secondary">{getProfileLabel(profile, locale)}</span><AdminPillLink href={profileLink}>Voir profil</AdminPillLink></div>}
         />
+        <AdminCockpitTabs activeTab={activeTab} isMax={role === "max"} locale={locale} />
+        <AdminCockpitLegacyAnchor activeTab={activeTab} />
         <CmmSectionGroup>
-          <AdminInfoBanner
-            eyebrow="Alerte"
-            title={adminAlert.title}
-            description={adminAlert.detail}
-            icon="AlertTriangle"
-            tone="light"
-            compact={adminAlert.title === "Aucune urgence de modération détectée"}
-            action={adminAlert.action ? <AdminPillLink href={adminAlert.action.href}>{adminAlert.action.label}</AdminPillLink> : undefined}
-          />
-          <AdminOperationalMetricGrid items={metricItems} className="gap-4" />
-          <div id="moderation-par-bloc"><ModerationByBlockPanel blocks={moderationBlocks} /></div>
-          <section id="workflow-administration">
-            <ActionsReportPanel
-              initialRecordTypeFilter={moderationFilters.initialRecordTypeFilter}
-              initialStatus={moderationFilters.initialStatus}
-            />
-          </section>
-          {adminSources.creatorInbox.status === "available" && adminSources.audit.status === "available" ? (
-            <AdminFeedbackAuditTabs
-              feedbackItems={adminSources.creatorInbox.data}
-              auditEntries={adminSources.audit.data}
-              canQualify={isImuOwnerIdentity(identity, env.CLERK_IMU_OWNER_USER_ID) && canUseSupabaseServerPersistence()}
-            />
-          ) : (
-            <AdminInfoBanner
-              eyebrow="Retours et journal"
-              title="Surface administrative indisponible"
-              description="Les retours utilisateurs ou le journal administrateurs ne sont pas disponibles pour le moment."
-              icon="AlertTriangle"
-              tone="light"
-            />
+          {activeTab === "summary" && adminAlert && (
+            <>
+              <AdminInfoBanner eyebrow="Alerte" title={adminAlert.title} description={adminAlert.detail}
+                icon="AlertTriangle" tone="light" compact={adminAlert.title === "Aucune urgence de modération détectée"}
+                action={adminAlert.action ? <AdminPillLink href={adminAlert.action.href === "#workflow-administration" ? adminCockpitHref("audit") : adminAlert.action.href}>{adminAlert.action.label}</AdminPillLink> : undefined} />
+              <AdminOperationalMetricGrid items={metricItems} className="gap-4" />
+              <div id="moderation-par-bloc"><ModerationByBlockPanel blocks={moderationBlocks} /></div>
+              <CmmCard className="flex flex-wrap items-center justify-between gap-3">
+                <div><h2 className="font-bold cmm-text-primary">Traitement des dossiers</h2><p className="text-sm cmm-text-secondary">Ouvrez les outils dédiés pour filtrer, vérifier et décider.</p></div>
+                <div className="flex flex-wrap gap-2">
+                  <CmmButton href={adminCockpitHref("moderation")} tone="primary">Modération</CmmButton>
+                  <CmmButton href={adminCockpitHref("inbox")} tone="secondary">Boîte créateur</CmmButton>
+                </div>
+              </CmmCard>
+            </>
           )}
-          <section>
-            <AdminSectionHeader eyebrow="Outils d’administration" description="Accès directs aux fonctions propres à la supervision." />
-            <AdminActionGrid items={adminTools} compact columnsClassName="md:grid-cols-2 xl:grid-cols-3" className="mt-3" />
-          </section>
-          {switchableProfiles.length > 1 ? (
-            <section aria-label="Profils administratifs disponibles">
-              <AdminProfileSwitchStrip
-                profiles={switchableProfiles}
-                activeProfile={profile}
-                getProfileLabel={getProfileLabel}
-                locale={locale}
-                label={`${profileCountLabel} disponibles`}
-                getHref={buildProfileRoute}
-              />
+          {activeTab === "moderation" && (
+            <section id="workflow-administration" className="scroll-mt-28 space-y-3">
+              <p className="text-sm cmm-text-secondary">Les saisies non confirmées ne sont pas conservées si vous quittez cette vue.</p>
+              <ActionsReportPanel key={moderationPreset ?? "default"}
+                initialRecordTypeFilter={moderationFilters.initialRecordTypeFilter}
+                initialStatus={moderationFilters.initialStatus} />
             </section>
-          ) : null}
-          {role === "max" ? <AdminMaxTools displayName={creatorDisplayName} identity={identity} /> : null}
+          )}
+          {activeTab === "inbox" && inboxSource && (
+            <AdminCockpitInbox source={inboxSource} canQualify={isImuOwnerIdentity(identity, env.CLERK_IMU_OWNER_USER_ID) && canUseSupabaseServerPersistence()} />
+          )}
+          {activeTab === "audit" && auditSource && (
+            auditSource.status === "available"
+              ? <AdminOperationsAuditPanel entries={auditSource.data} />
+              : <AdminInfoBanner eyebrow="Journal" title="Journal administrateurs indisponible" description="La lecture du journal a échoué. Les autres files restent indépendantes." icon="AlertTriangle" tone="light" />
+          )}
+          {activeTab === "tools" && (
+            <>
+              <section>
+                <AdminSectionHeader eyebrow="Outils d’administration" description="Accès directs aux fonctions propres à la supervision." />
+                <AdminActionGrid items={adminTools} compact columnsClassName="md:grid-cols-2 xl:grid-cols-3" className="mt-3" />
+              </section>
+              {switchableProfiles.length > 1 && (
+                <section aria-label="Profils administratifs disponibles">
+                  <AdminProfileSwitchStrip profiles={switchableProfiles} activeProfile={profile}
+                    getProfileLabel={getProfileLabel} locale={locale} label={`${profileCountLabel} disponibles`} getHref={buildProfileRoute} />
+                </section>
+              )}
+            </>
+          )}
+          {activeTab === "advanced" && role === "max" && <AdminMaxTools displayName={creatorDisplayName} identity={identity} />}
         </CmmSectionGroup>
       </CmmPageLayout>
     </main>

@@ -265,7 +265,7 @@ describe("/admin data availability contract", () => {
     expect(blocks.find((item) => item.id === "agir")?.href).toBe("/actions/history");
     expect(blocks.find((item) => item.id === "accueil-pilotage")).toMatchObject({
       label: "Audit & supervision",
-      href: "#workflow-administration",
+      href: "/admin?tab=audit",
       ctaLabel: "Voir le journal",
     });
   });
@@ -305,8 +305,11 @@ describe("/admin data availability contract", () => {
     expect(source).toContain("<AdminMaxTools");
     expect(source).toContain('role === "max"');
     expect(source).not.toContain("AdminCreatorConsole");
-    expect(maxToolsSource).toContain("AdminCreatorConsole");
-    expect(maxToolsSource).toContain("embedded");
+    expect(maxToolsSource).toContain("RoleManagementPanel");
+    expect(maxToolsSource).toContain("listManagedRoleAccounts");
+    expect(maxToolsSource).not.toContain("AdminCreatorConsole");
+    expect(maxToolsSource).not.toContain("OPÉRATIONNEL");
+    expect(maxToolsSource).not.toContain("Il y a 2 min");
   });
 
   it("keeps the workflow title singular and uses the warm admin shell", () => {

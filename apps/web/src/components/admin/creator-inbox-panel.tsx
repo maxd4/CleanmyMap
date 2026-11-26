@@ -26,6 +26,7 @@ export function CreatorInboxPanel({
 
   return (
     <AdminPanelShell
+      variant="warm"
       title={inbox.copy.panel.title}
       subtitle={inbox.copy.panel.description}
       headerAction={
@@ -62,7 +63,7 @@ export function CreatorInboxPanel({
 
         {inbox.errorMessage && (
           <div className="rounded-2xl border border-rose-500/10 bg-rose-500/5 p-4">
-            <p className="text-xs font-medium text-rose-400">
+            <p className="text-sm font-medium text-rose-800">
               {inbox.errorMessage}
             </p>
           </div>
@@ -70,7 +71,7 @@ export function CreatorInboxPanel({
 
         {inbox.successMessage && (
           <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-4">
-            <p className="text-xs font-medium text-emerald-400">
+            <p className="text-sm font-medium text-emerald-800">
               {inbox.successMessage}
             </p>
           </div>
@@ -140,8 +141,8 @@ export function CreatorInboxPanel({
               />
             ))
           ) : (
-            <div className="rounded-[2rem] border border-dashed border-white/10 p-12 text-center">
-              <p className="text-sm font-black text-white uppercase tracking-widest">
+            <div className="rounded-xl border border-dashed border-stone-300 p-6 text-center">
+              <p className="text-sm font-semibold cmm-text-primary">
                 {inbox.copy.states.emptyTitle}
               </p>
               <p className="mt-2 text-xs font-medium text-slate-500">

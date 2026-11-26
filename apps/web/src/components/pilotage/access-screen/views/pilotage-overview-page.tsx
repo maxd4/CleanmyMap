@@ -9,6 +9,8 @@ import type {
   PilotageCommunityOperationsState,
 } from "@/lib/pilotage/community-operations";
 import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout } from "@/components/ui/cmm-section";
+import type { PilotagePageTab } from "@/lib/pilotage/page-tabs";
 import { PilotageOverviewContent } from "./pilotage-overview-content";
 import { formatDateTime } from "../access-screen-utils";
 import { getPageFamilyById } from "@/lib/ui/page-families";
@@ -17,6 +19,7 @@ export function PilotageOverviewPage({
   locale,
   profile,
   overview,
+  activeTab,
   communityOperations,
   communityOperationsState,
   communityOperationsRetryHref,
@@ -24,6 +27,7 @@ export function PilotageOverviewPage({
   locale: PilotageLocale;
   profile: AppProfile;
   overview: PilotageOverview | null;
+  activeTab: PilotagePageTab;
   communityOperations: PilotageCommunityOperations | null;
   communityOperationsState: PilotageCommunityOperationsState;
   communityOperationsRetryHref: string;
@@ -34,7 +38,7 @@ export function PilotageOverviewPage({
   const pageFamily = getPageFamilyById("accueil-pilotage");
 
   return (
-    <section className="cmm-pilotage-overview w-full space-y-6 p-4 md:p-8">
+    <CmmPageLayout className="cmm-pilotage-overview">
       <div className="space-y-8">
         <PageHeader
           family={pageFamily}
@@ -52,6 +56,7 @@ export function PilotageOverviewPage({
         locale={locale}
         copy={copy}
         overview={overview}
+        activeTab={activeTab}
         communityOperations={communityOperations}
         communityOperationsState={communityOperationsState}
         communityOperationsRetryHref={communityOperationsRetryHref}
@@ -60,6 +65,6 @@ export function PilotageOverviewPage({
         canExportCommunityFunnel={profile === "max"}
         lastUpdatedAt={overview ? formatDateTime(overview.generatedAt, locale) : null}
       />
-    </section>
+    </CmmPageLayout>
   );
 }

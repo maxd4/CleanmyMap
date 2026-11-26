@@ -72,7 +72,7 @@ const OPERATIONAL_METRIC_STATUS: Record<AdminOperationalMetricAvailability, { la
 };
 
 export function AdminOperationalMetricGrid({ items, className }: { items: AdminOperationalMetricItem[]; className?: string }) {
-  return <section className={cn("grid gap-5 lg:grid-cols-4", className)}>{items.map((item) => { const status = OPERATIONAL_METRIC_STATUS[item.availability]; return <StatCard key={item.id} label={item.label} value={item.value ?? status.label} badge={<SourceBadge tone={status.tone}>{status.label}</SourceBadge>} description={item.description} tone="amber" className="bg-[linear-gradient(145deg,rgba(76,61,48,0.94)_0%,rgba(112,94,78,0.90)_58%,rgba(198,177,154,0.24)_100%)]" />; })}</section>;
+  return <section className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-4", className)}>{items.map((item) => { const status = OPERATIONAL_METRIC_STATUS[item.availability]; return <StatCard key={item.id} label={item.label} value={item.value ?? status.label} badge={<SourceBadge tone={status.tone}>{status.label}</SourceBadge>} description={item.description} tone="amber" />; })}</section>;
 }
 
 function AdminActionCard({ icon, title, description, badge, href, compact = false, tone = "amber", footerLabel, className, iconClassName, iconWrapClassName, badgeClassName }: AdminActionItem & { compact?: boolean; className?: string }) {

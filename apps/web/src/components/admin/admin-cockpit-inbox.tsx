@@ -7,7 +7,7 @@ export function AdminCockpitInbox({ source, canQualify }: { source: AdminSources
   if (source.status === "unavailable") return (
     <CmmCard className="space-y-3">
       <h2 className="text-lg font-bold cmm-text-primary">Boîte créateur indisponible</h2>
-      <p role="status" className="cmm-text-secondary">La file n'a pas pu être chargée. Le journal reste indépendant.</p>
+      <p role="status" className="cmm-text-secondary">La file n’a pas pu être chargée. Le journal reste indépendant.</p>
       <SystemStateRetryButton label="Réessayer le chargement" />
     </CmmCard>
   );

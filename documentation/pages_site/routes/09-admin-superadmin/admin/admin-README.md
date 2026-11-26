@@ -27,12 +27,16 @@
 - Bannières techniques
 - rappels de contexte
 - textes non essentiels
-- Le bloc `max` caché est intégré en fin de page et ne doit pas apparaître comme une surface autonome.
+- Le bloc `max` est accessible dans la vue Administration avancée du cockpit, uniquement sous le rôle actif autorisé. Aucun accès nouveau à God Mode.
 - La page expose un seul `PageHeader`, avec l’état d’accès, le rôle actif et un unique lien vers le profil.
-- L’ordre de lecture est : alerte et quatre KPI, files de modération en grille 2 × 2, workflow complet, outils d’administration, changement de profil si plusieurs profils sont disponibles, puis console `max` conditionnelle.
+- Les cinq vues communes sont Synthèse, Modération, Boîte créateur, Journal, Outils ; Administration avancée est réservée au rôle actif max. Seule la vue sélectionnée est montée. Synthèse : alerte, quatre KPI et files ; Modération : workflow guidé et confirmations existantes ; Outils : accès techniques et profils. Les URLs de preset signalements et les anciennes ancres restent compatibles. Les saisies non confirmées restent volatiles ; aucune persistance locale de payload sensible.
 - Les cartes de file n’affichent plus les numéros de bloc et limitent les exemples visibles à deux éléments par file ; les états `Partiel` et `Indisponible` restent explicites.
 - Le workflow conserve le filtrage, la prévisualisation, la confirmation, la journalisation et les exports. Son enveloppe adopte la variante claire et chaude du shell admin sans modifier le shell sombre de ses autres consommateurs.
-- Le cockpit charge indépendamment les actions pending, les demandes de participation pending, les signalements pending, l’inbox créateur, les publications partenaires et le journal d’audit. Chaque source expose un état disponible ou indisponible ; une erreur n’est jamais convertie en zéro métier.
+- La synthèse charge indépendamment les actions pending, demandes de participation pending, signalements pending, inbox créateur, publications partenaires et journal d’audit. Les vues Boîte créateur et Journal ne chargent que leur source respective, sans dépendance de disponibilité mutuelle. Les autres vues ne chargent pas le snapshot de synthèse. Une erreur n’est jamais convertie en zéro métier ; les résultats bornés ne prouvent pas une file intégralement vide.
+
+### Administration avancée
+
+Le composant embarqué conserve la gestion réelle des comptes et les accès aux outils de supervision existants. Il ne présente plus une santé API, une durée de connexion ou un explorateur de sessions non mesurés. L'état des services est consulté via les surfaces canoniques. `/admin/godmode` autonome n'est pas modifié par ce lot.
 
 ### Boîte créateur unifiée et réponse privée
 

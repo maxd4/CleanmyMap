@@ -43,8 +43,8 @@ export function InboxFilterBar({
 }: InboxFilterBarProps) {
   return (
     <>
-      <div className="mt-4 grid gap-3 md:grid-cols-6">
-        <label className="space-y-1 md:col-span-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <label className="min-w-0 space-y-1 sm:col-span-2">
           <span className="cmm-text-caption font-semibold cmm-text-secondary">
             {copy.filters.searchLabel}
           </span>
@@ -127,7 +127,7 @@ export function InboxFilterBar({
             {copy.filters.loadingLabel}: {refreshing ? copy.filters.yesLabel : copy.filters.noLabel}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-end gap-2">
           <label className="space-y-1">
             <span className="cmm-text-caption font-semibold cmm-text-secondary">
               {copy.filters.partnerPhraseLabel}
@@ -136,7 +136,7 @@ export function InboxFilterBar({
               value={partnerConfirm}
               onChange={(event) => onPartnerConfirmChange(event.target.value)}
               placeholder={copy.filters.partnerPhrasePlaceholder}
-              className="w-[240px] rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+              className="w-full max-w-[240px] rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
             />
           </label>
           <button

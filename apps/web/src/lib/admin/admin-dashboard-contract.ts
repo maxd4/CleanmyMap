@@ -132,15 +132,23 @@ async function loadPendingSignalements(): Promise<{
   return listModeratableSignalements(supabase, { status: "new", limit: 6 });
 }
 
+export function loadAdminInboxSource(): Promise<AdminSources["creatorInbox"]> {
+  return readAdminSource(() => loadCreatorInboxPage());
+}
+
+export function loadAdminAuditSource(): Promise<AdminSources["audit"]> {
+  return readAdminSource(() => listAdminOperationAudit(25));
+}
+
 export async function loadAdminSources(): Promise<AdminSources> {
   const [actions, groupJoin, signalements, creatorInbox, publishedEntries, audit] =
     await Promise.all([
       readAdminSource(loadPendingActions),
       readAdminSource(loadPendingGroupJoinRequests),
       readAdminSource(loadPendingSignalements),
-      readAdminSource(() => loadCreatorInboxPage()),
+      loadAdminInboxSource(),
       readAdminSource(() => listPublishedPartnerAnnuaireEntries()),
-      readAdminSource(() => listAdminOperationAudit(25)),
+      loadAdminAuditSource(),
     ]);
 
   return {
@@ -284,7 +292,7 @@ export function buildAdminAlert(sources: AdminSources): AdminAlert {
     return {
       title: `${auditErrors.length} incident${auditErrors.length > 1 ? "s" : ""} récent${auditErrors.length > 1 ? "s" : ""} dans le journal d’audit`,
       detail: "Une ou plusieurs opérations administratives nécessitent une vérification.",
-      action: { href: "#workflow-administration", label: "Voir le journal" },
+      action: { href: "/admin?tab=audit", label: "Voir le journal" },
     };
   }
 
@@ -305,7 +313,7 @@ export function buildAdminAlert(sources: AdminSources): AdminAlert {
 
   return {
     title: "Aucune urgence de modération détectée",
-    detail: "Toutes les sources administratives ont répondu et les files sont vides.",
+    detail: "Toutes les sources ont répondu ; aucun élément à traiter parmi les résultats chargés. Les pages suivantes peuvent contenir d’autres dossiers.",
   };
 }
 
@@ -437,7 +445,7 @@ export function buildModerationBlockSummaries(
       availability: sources.audit.status,
       description:
         "Le journal d’audit et les signaux de supervision restent regroupés ici pour relire les incidents.",
-      href: "#workflow-administration",
+      href: "/admin?tab=audit",
       ctaLabel: "Voir le journal",
       accent: "rose",
       details: [
@@ -452,7 +460,7 @@ export function buildModerationBlockSummaries(
               label: String(item.details["entityType"] ?? item.operationType),
               meta: `${item.operationType} · ${formatModerationDate(item.at)}`,
             }))
-          : [{ label: "Aucun incident", meta: "La supervision est stable pour le moment" }]
+          : [{ label: "Aucun incident", meta: "Aucun échec parmi les opérations lues" }]
         : [],
     },
   ];

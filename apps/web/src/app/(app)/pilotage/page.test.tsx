@@ -44,7 +44,7 @@ vi.mock("@/lib/pilotage/community-operations", () => ({
 
 vi.mock("@/components/pilotage/pilotage-access-screen", () => ({
   PilotageLockedPage: () => React.createElement("div", null, "locked"),
-  PilotageRestrictedPage: () => React.createElement("div", null, "restricted"),
+  PilotageRestrictedPage: ({ access }: { access: { canAccessAdminPage?: boolean } | null }) => React.createElement("div", { "data-admin-access": access?.canAccessAdminPage ? "allowed" : "not-allowed" }, "restricted"),
   PilotageOverviewPage: ({
     communityOperations,
     communityOperationsState,
@@ -121,6 +121,16 @@ describe("/pilotage detail loading contract", () => {
 
     expect(markup).toContain('data-community-operations-state="UNAVAILABLE"');
     expect(markup).toContain('data-community-operations-retry="/pilotage?operations=1&amp;retry=5"');
+  });
+
+  it("keeps IMU on the restricted hub even with an operations request", async () => {
+    mocks.getCurrentUserActiveRole.mockResolvedValue("max");
+    mocks.toProfile.mockReturnValue("max");
+    mocks.getCurrentUserEffectiveAccess.mockResolvedValue({ canAccessPilotage: false, canAccessAdminPage: true });
+    const markup = renderToStaticMarkup(await PilotageAccessPage({ searchParams: Promise.resolve({ operations: "1" }) }));
+    expect(markup).toContain('data-admin-access="allowed"');
+    expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
+    expect(mocks.loadPilotageCommunityOperations).not.toHaveBeenCalled();
   });
 
   it("does not read overview or operations for an unauthorized visitor", async () => {

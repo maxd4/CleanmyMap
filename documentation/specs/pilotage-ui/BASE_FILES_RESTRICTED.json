@@ -1,8 +1,0 @@
-{
-  "reference": "b71ba86695cbaad70a3b47cda2a688aa955dd2fa",
-  "files": {
-    "apps/web/src/components/pilotage/access-screen/views/pilotage-restricted-page.tsx": "f19dd77c5e1430c43573f4fac766e910ed2a0b23",
-    "apps/web/src/app/(app)/pilotage/page.tsx": "27de7d46fbd62a071fead6a552f46e18f999aeb3",
-    "apps/web/src/app/(app)/pilotage/page.test.tsx": "554883871158254d411f7fab783341fa91c37159"
-  }
-}
