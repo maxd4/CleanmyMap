@@ -1,31 +1,290 @@
-# Specs — propositions et historique de chantier
+# Specs : registre temporaire et programme d'intégration Codex
 
-**Statut : PLAN / HISTORY.** Une spec ne déclare jamais une fonction existante ni ne vaut autorisation de modifier le code. Les sources CURRENT restent le runtime, ses tests et les contrats spécialisés.
+**Statut : PLAN / CANDIDATE / HISTORY selon les entrées.** Relecture du 26 novembre 2026 sur main 1362e707. Ce registre est l'ordre de réalisation du programme autorisé, pas un contrat CURRENT ni une nouvelle roadmap produit. Les README_CODEX, manifestes et sources propriétaires restent les références détaillées ; les anciens SHA sont des constats, jamais des checkouts imposés. Le programme de 23 lots préparé par ChatGPT est reproduit ci-dessous, actualisé pour les acquis et le suivi. Aucun changement runtime n'est livré par ce document.
 
-## Dossiers réellement présents
+## Ordre et dépendances
 
-- [gamification-ui/README_CODEX.md](./gamification-ui/README_CODEX.md) : refonte Web de Progression & badges, cinq onglets, panneaux de progression et album de récompenses, PLAN/CANDIDATE.
+| Ordre | Lot | Travail | Dépendance |
+|---|---|---|---|
+| 01 | SEC | Secret Audit, faux positifs, garde-fous | prioritaire |
+| 02 | SYNC-A | Moteur de synchronisation externe, commandes et cron | socle SQL publié ; preuves à compléter |
+| 03 | DS-BASE | I1/I2 déjà intégrés ; vérifier socle et delta I3 | avant refontes |
+| 04 | ANN-1 | Annuaire 06, 07, 08, 09, 10 | 03 |
+| 05 | ANN-2 | Annuaire 11, 12, 13, 14 | 04 |
+| 06 | ANN-3 | Annuaire 15, 16, 17 | 05 |
+| 07 | DATA | Open Data 01, 02 | 03 |
+| 08 | FUND | Financement 01, 02 | 03 |
+| 09 | REPORTS-BASE | Rapports 01, 04, 02, 03 dans cet ordre | 03 ; avant Pilotage |
+| 10 | PIL | Pilotage 01, 02, 03, 04, 05 | 09 |
+| 11 | DASH | Dashboard 01, 02, 03, 04 | 03 |
+| 12 | ACC | Accueil & Pilotage 01, 02, 03, 04 | 09, 10, 11 |
+| 13 | MAP | Cartographie, fichiers complets | 03 |
+| 14 | GAME | Gamification, fichiers complets | 03 |
+| 15 | LEARN-1 | Vulgarisation et palette Apprendre | 03 |
+| 16 | LEARN-2 | S'entraîner | 15 |
+| 17 | LEARN-3 | Bonnes pratiques | 15 |
+| 18 | LEARN-4 | École | 15, 16 |
+| 19 | METHOD | Méthodologie 01, 02 et transfert du formulaire | 12, 15 à 18 |
+| 20 | REPORTS-HUB | Quatre onglets, fichiers repliables, IA, quotas, six CTA | 07, 09, 11, 12, 15 à 19 |
+| 21 | CHAT | Messagerie, puis isolation SPOGOMI | 03 ; preuve DB distincte |
+| 22 | AI-PROOF | Preuves des acquis IA et liens migrés | 20 |
+| 23 | DS-FINAL | I3, réception et clôture des specs | tous les lots concernés |
 
-- [methodologie-ui/README_CODEX.md](./methodologie-ui/README_CODEX.md) : refonte de la page Méthodologie en cinq onglets, commandes persistantes et fondations documentaires localisées, PLAN/CANDIDATE.
+Une dépendance de séquencement n'est pas un prétexte pour arrêter un chantier indépendant : distinguer les dépendances techniques réellement bloquantes de l'ordre recommandé. En particulier un échec SQL de SYNC-A ou CHAT n'interdit pas les lots Web indépendants. Les corrections concurrentes SPOGOMI restent protégées ; revalider les candidats CHAT sur le schéma courant. Les lots futurs de l'empreinte IA et la suppression du thème sombre restent conditionnels. Les nouveaux plans de réception/calibration/calques/données externes de documentation/plans ne sont pas ajoutés automatiquement à ce programme.
 
-- [reports-ui/README_CODEX.md](./reports-ui/README_CODEX.md) : refonte des surfaces Rapports (génération, analyse et synthèse imprimable), candidats et validations restantes, PLAN/CANDIDATE.
+## Registre des 42 patches initiaux
 
-- [ecole-ui/README_CODEX.md](./ecole-ui/README_CODEX.md) : refonte Web du Mode École, quatre onglets, configuration et lancement, fiches, déroulé et banque de support, PLAN/CANDIDATE.
+Le statut initial PENDING signifie **non réceptionné dans ce programme**, pas absence prouvée de code intégré. Pour chaque patch, comparer les hunks, les manifestes et le runtime avant de l'appliquer ; remplacer le statut par ALREADY_INTEGRATED, INTEGRATED, ADAPTED, SUPERSEDED (décision explicite), BLOCKED, VALIDATED ou CLOSED selon preuve. Renseigner le SHA et la preuve (test/CI/navigateur/SQL) et la cause si bloqué. Garder la ligne même après suppression d'un artefact consommé. Les deux premières lignes Design system sont acquises en code, pas une déclaration de validation complète.
 
-- [bonnes-pratiques-ui/README_CODEX.md](./bonnes-pratiques-ui/README_CODEX.md) : refonte Web de Bonnes pratiques, quatre onglets, guides actionnables, tri contextualisé, ressources dédupliquées et équivalences numériques, PLAN/CANDIDATE.
+| Patch (relatif à documentation/specs) | Lot | Statut initial | Référence / preuve |
+|---|---|---|---|
+| `accueil-pilotage-completion/01-institutional.patch` | 12 ACC | PENDING | à établir |
+| `accueil-pilotage-completion/02-profile-account-navigation.patch` | 12 ACC | PENDING | à établir |
+| `accueil-pilotage-completion/03-personal-impact-engagement.patch` | 12 ACC | PENDING | à établir |
+| `accueil-pilotage-completion/04-dashboard-alias.patch` | 12 ACC | PENDING | à établir |
+| `annuaire-ui/06-organigramme-complet.patch` | 04 ANN-1 | PENDING | à établir |
+| `annuaire-ui/07-projection-geographique-pins.patch` | 04 ANN-1 | PENDING | à établir |
+| `annuaire-ui/08-carte-perspective-3d.patch` | 04 ANN-1 | PENDING | à établir |
+| `annuaire-ui/09-convergence-fiches-navigation.patch` | 04 ANN-1 | PENDING | à établir |
+| `annuaire-ui/10-contrats-et-e2e.patch` | 04 ANN-1 | PENDING | à établir |
+| `annuaire-ui/11-projection-publique-complete.patch` | 05 ANN-2 | PENDING | à établir |
+| `annuaire-ui/12-fiche-publique-commune.patch` | 05 ANN-2 | PENDING | à établir |
+| `annuaire-ui/13-interactions-graphiques.patch` | 05 ANN-2 | PENDING | à établir |
+| `annuaire-ui/14-filieres-et-couverture.patch` | 05 ANN-2 | PENDING | à établir |
+| `annuaire-ui/15-catalogue-canonique.patch` | 06 ANN-3 | PENDING | à établir |
+| `annuaire-ui/16-annuaire-compact.patch` | 06 ANN-3 | PENDING | à établir |
+| `annuaire-ui/17-annuaire-validations.patch` | 06 ANN-3 | PENDING | à établir |
+| `bonnes-pratiques-ui/01-bonnes-pratiques.patch` | 17 LEARN-3 | PENDING | à établir |
+| `dashboard-ui/01-dashboard.patch` | 11 DASH | PENDING | à établir |
+| `dashboard-ui/02-dashboard-surfaces.patch` | 11 DASH | PENDING | à établir |
+| `dashboard-ui/03-dashboard-notifications-account.patch` | 11 DASH | PENDING | à établir |
+| `dashboard-ui/04-dashboard-navigation-account.patch` | 11 DASH | PENDING | à établir |
+| `design-system-premium/01-palettes-et-primitives.patch` | 03 DS-BASE | ALREADY_INTEGRATED / preuve à clôturer | 0ba42a9 |
+| `design-system-premium/02-onglets-et-consommateurs.patch` | 03 DS-BASE | ALREADY_INTEGRATED / preuve à clôturer | e8f5b93 |
+| `design-system-premium/03-contrats-canoniques.patch` | 03 DS-BASE / 23 DS-FINAL | PENDING | à établir |
+| `ecole-ui/01-ecole.patch` | 18 LEARN-4 | PENDING | à établir |
+| `funding-ui/01-financement-transparence.patch` | 08 FUND | PENDING | à établir |
+| `funding-ui/02-contrats-documentaires.patch` | 08 FUND | PENDING | à établir |
+| `methodologie-ui/01-methodologie.patch` | 19 METHOD | PENDING | à établir |
+| `methodologie-ui/02-tests-et-contrats.patch` | 19 METHOD | PENDING | à établir |
+| `open-data-sciences/01-explorateur-scientifique.patch` | 07 DATA | PENDING | à établir |
+| `open-data-sciences/02-contrats-documentaires.patch` | 07 DATA | PENDING | à établir |
+| `pilotage-ui/01-admin-cockpit.patch` | 10 PIL | PENDING | à établir |
+| `pilotage-ui/02-pilotage-navigation.patch` | 10 PIL | PENDING | à établir |
+| `pilotage-ui/03-pilotage-surfaces.patch` | 10 PIL | PENDING | à établir |
+| `pilotage-ui/04-admin-surfaces.patch` | 10 PIL | PENDING | à établir |
+| `pilotage-ui/05-pilotage-restricted-hub.patch` | 10 PIL | PENDING | à établir |
+| `reports-ui/01-generation.patch` | 09 REPORTS-BASE | PENDING | à établir |
+| `reports-ui/02-analysis.patch` | 09 REPORTS-BASE | PENDING | à établir |
+| `reports-ui/03-print-and-contracts.patch` | 09 REPORTS-BASE | PENDING | à établir |
+| `reports-ui/04-generation-tests.patch` | 09 REPORTS-BASE | PENDING | à établir |
+| `sentrainer-ui/01-sentrainer.patch` | 16 LEARN-2 | PENDING | à établir |
+| `vulgarisation-ui/01-vulgarisation.patch` | 15 LEARN-1 | PENDING | à établir |
 
-- [sentrainer-ui/README_CODEX.md](./sentrainer-ui/README_CODEX.md) : refonte Web de S’entraîner, accès au quiz pleine largeur, quatre onglets, progression réelle et choix de piégeage, PLAN/CANDIDATE.
+## Inventaire des autres artefacts et suivi
 
-- [vulgarisation-ui/README_CODEX.md](./vulgarisation-ui/README_CODEX.md) : refonte Web de Vulgarisation, six onglets, palette Apprendre, contenus scientifiques et correction des cartes vides, PLAN/CANDIDATE.
+L'arbre de référence contient 18 dossiers et 224 fichiers en incluant ce README, dont 42 patches. Les manifestes BASE_FILES, fichiers complets, documents de couverture, candidats SQL et passations sont comptés ci-dessous avec leurs dossiers. Le suivi individuel de chaque fichier candidat est tenu dans le README_CODEX propriétaire ou son manifeste ; le registre de synthèse est actualisé avec le statut et la référence de réception. Ne pas supprimer un manifeste ou candidat tant que ses chemins et preuves n'ont pas été comptabilisés. Aucun fichier nouveau découvert durant le programme ne peut être implicitement ignoré.
 
-- [design-system-premium/README_CODEX.md](./design-system-premium/README_CODEX.md) : canvas neutre, palettes de famille, primitives et onglets, convergence Web et contrats, PLAN/CANDIDATE.
+| Dossier propriétaire | Patches | Autres fichiers (base) | Lot / statut |
+|---|---:|---:|---|
+| [accueil-pilotage-completion](./accueil-pilotage-completion/README_CODEX.md) | 4 | 18 | 12 ACC : PENDING |
+| [annuaire-ui](./annuaire-ui/README_CODEX.md) | 12 | 2 | 04 ANN-1 / 05 ANN-2 / 06 ANN-3 : suivi des patches |
+| [bonnes-pratiques-ui](./bonnes-pratiques-ui/README_CODEX.md) | 1 | 2 | 17 LEARN-3 : suivi des patches |
+| [cartographie-ui](./cartographie-ui/README_CODEX.md) | 0 | 20 | 13 MAP : PENDING |
+| [dashboard-ui](./dashboard-ui/README_CODEX.md) | 4 | 15 | 11 DASH : PENDING |
+| [design-system-premium](./design-system-premium/README_CODEX.md) | 3 | 1 | 03 DS-BASE / 03 DS-BASE / 23 DS-FINAL : suivi des patches |
+| [ecole-ui](./ecole-ui/README_CODEX.md) | 1 | 2 | 18 LEARN-4 : suivi des patches |
+| [empreinte-ia](./empreinte-ia/README_CODEX.md) | 0 | 51 | 22 AI-PROOF : 0+08 CURRENT ; 1/2 CODE_PUBLISHED / preuves à vérifier ; reste PLAN / CONDITIONAL |
+| [funding-ui](./funding-ui/README_CODEX.md) | 2 | 1 | 08 FUND : suivi des patches |
+| [gamification-ui](./gamification-ui/README_CODEX.md) | 0 | 13 | 14 GAME : PENDING |
+| [messagerie-ui](./messagerie-ui/README_CODEX.md) | 0 | 26 | 21 CHAT : PENDING (UI et SQL distincts) |
+| [methodologie-ui](./methodologie-ui/README_CODEX.md) | 2 | 2 | 19 METHOD : PENDING |
+| [open-data-sciences](./open-data-sciences/README_CODEX.md) | 2 | 1 | 07 DATA : suivi des patches |
+| [pilotage-ui](./pilotage-ui/README_CODEX.md) | 5 | 18 | 10 PIL : PENDING |
+| [reports-ui](./reports-ui/README_CODEX.md) | 4 | 1 | 09 REPORTS-BASE : suivi des patches |
+| [sentrainer-ui](./sentrainer-ui/README_CODEX.md) | 1 | 2 | 16 LEARN-2 : suivi des patches |
+| [suppression-charte-dark](./suppression-charte-dark/requirements.md) | 0 | 3 | 23 DS-FINAL : HISTORY / non autorisé |
+| [vulgarisation-ui](./vulgarisation-ui/README_CODEX.md) | 1 | 2 | 15 LEARN-1 : suivi des patches |
+| [Transfert des explications du formulaire](./methodologie-formulaire-actions-transfert.md) | 0 | 1 | 19 METHOD : PENDING |
 
-- [annuaire-ui/README_CODEX.md](./annuaire-ui/README_CODEX.md) : refonte ciblée de l'Annuaire Web, PLAN/CANDIDATE, correctif initial des cartes et lots d'intégration.
+- SEC : PENDING, échec Hash digest démontré sur la CI 45719132948 ; requalifier sur le candidat courant.
+- SYNC-A : SQL correctif et tests publiés (7a194401 et suites), moteur/admin/cron et preuve à clôturer ; [plan propriétaire](../plans/synchronisation-actions-externes.md). Lots B/C conditionnés à autorisation réelle.
+- REPORTS-HUB : PENDING ; les quatre onglets et deux sections de fichiers constituent la décision retenue du programme, pas un état CURRENT.
+- Empreinte IA : consulter les [arbitrages](./empreinte-ia/SPECIFICATIONS_PLAN/24_ARBITRAGES_PREUVES_ET_PRIORITES.md) et les passations, préserver les preuves et conditions.
+- Dark : [exigences](./suppression-charte-dark/requirements.md), [conception](./suppression-charte-dark/design.md), [tâches](./suppression-charte-dark/tasks.md), HISTORY/PLAN non autorisé. Relire le [contrat des modes](../design-system/DISPLAY_MODES_CANONICAL.md) avant toute nouvelle décision ; ne pas réactiver un ancien chantier.
 
-- [suppression-charte-dark/requirements.md](./suppression-charte-dark/requirements.md) : exigences proposées et non exécutées comme chantier autonome.
-- [suppression-charte-dark/design.md](./suppression-charte-dark/design.md) : conception historique.
-- [suppression-charte-dark/tasks.md](./suppression-charte-dark/tasks.md) : liste de tâches historique, non preuve d'implémentation.
+Une spec terminée transfère ses invariants durables à l'owner existant ; l'historique reste daté, sans second contrat CURRENT. Ne pas recréer group-action/ ou d'anciens dossiers inexistants. Le registre temporaire reste maintenu jusqu'à la réception du programme.
 
-Avant de relancer la proposition, obtenir une décision produit et relire [DISPLAY_MODES_CANONICAL.md](../design-system/DISPLAY_MODES_CANONICAL.md) et les styles actuels. Ne pas recréer `group-action/` ou d'autres dossiers mentionnés dans un ancien index s'ils n'existent pas.
+## Prompts d'exécution
 
-Une spec terminée transfère ses invariants durables à l'owner existant ; l'historique reste daté, sans second contrat CURRENT.
+```text
+Exécuter les lots de ce programme dans l'ordre indiqué, depuis le checkout courant de CleanMyMap, conformément à AGENTS.md et aux README_CODEX.md concernés. Les références Git sont des constats, pas des checkouts imposés. La référence initiale du programme était 64b4946 ; la relecture du 26 novembre 2026 est 1362e707. Ne pas imposer ces références comme checkout. Adopter les deltas utiles des patches et des fichiers complets en comparant leurs bases, sans écraser les changements préexistants ni refaire les acquis. Pour chaque lot, vérifier les consommateurs et contrats partagés, exécuter les preuves proportionnées, actualiser les sources CURRENT et publier selon la gouvernance. Tenir le registre de suivi ci-dessus dans ce README, avec statut, preuve/SHA et blocage éventuel pour les 42 patches initiaux, candidats complets, SQL et plans ; préserver les entrées encore utiles et retirer seulement les artefacts consommés et validés. Un lot déjà intégré se clôture sur preuves, pas par réapplication. Une preuve manquante est NOT_RUN ou BLOCKED, jamais PASS. En exécution continue, passer aux lots indépendants si un jalon est bloqué, puis reprendre uniquement les jalons restants ; ne jamais lancer simultanément deux writers sur des chemins en conflit. Une difficulté SQL, navigateur ou environnement indépendante ne doit pas empêcher les autres lots, mais interdit de marquer le lot concerné CLOSED. Ne jamais affaiblir les tests, la sécurité, les quotas ou les garde-fous pour obtenir un résultat vert. Les preuves runtime, CI, SQL, publication et production restent distinctes. Conserver les connecteurs externes désactivés, ne pas activer de paiement ni appliquer de migration distante hors procédure autorisée. La cible finale Rapports comporte quatre onglets (Génération, Analyse, Mon empreinte IA, Quotas des services), avec Mes fichiers et Tous les fichiers dans Génération ; cette décision réconcilie les demandes contradictoires. La suppression de la charte dark et les fonctionnalités IA futures conditionnelles ne sont pas des tâches d'intégration automatiquement autorisées.
+```
+
+### 01/23 | SEC | P0 | Correction : fiabiliser secret-audit avant les enrichissements publics
+
+```text
+Corriger uniquement les limites restantes de scripts/checks/secret-audit.mjs, secret-audit.allowlist.json et secret-audit.test.mjs. Au SHA historique 64b4946, gmail.com n'est déjà plus exempté ; les comparaisons contains sont exactes, les exceptions email structurées exigent chemin, catégorie, adresse exacte, URL, date et justification, et l'allowlist est lue depuis l'index/ref/candidat correspondant. Ne pas réimplémenter ces acquis ; les protéger par tests de non-régression.
+Les trois faux positifs Hash digest confirmés dans la CI 45719132948 concernent accueil-pilotage-completion/BASE_FILES_03.json, annuaire-ui/README_CODEX.md et messagerie-ui/BASE_FILES_INTEGRATION.json. Reconnaître les références Git et blobs légitimes dans les contextes strictement bornés, sans ignorer un chemin entier ni un hash de secret réel ; ajouter les trois régressions. Retirer aussi les mentions résiduelles du classeur rubriques_cleanmymap.xlsx supprimé de documentation/pages_site/README.md si elles existent toujours. Auditer PUBLIC_EMAIL_DOMAINS : conserver les domaines d'exemples réservés, traiter explicitement les domaines synthétiques réservés aux tests, remplacer les exemptions globales de domaines professionnels réels par exceptions exactes et sourcées là où elles sont nécessaires. Vérifier les cas d'entrées génériques sans valeur exacte, de source/justification manquante et de plusieurs emails voisins, sans autoriser une adresse différente ni un secret technique sur la même ligne. Préserver les fixtures synthétiques de secrets construites au runtime et la détection AWS/JWT/API, y compris avec email public à proximité. Vérifier les divergences index/worktree/ref/candidat et l'absence de repli silencieux vers une allowlist étrangère au snapshot. Documenter la politique dans l'owner sécurité existant, exécuter les tests du scanner, l'audit complet et les contrôles Git requis. STOP CONDITION : les exemptions nécessaires sont précisément bornées, les faux positifs évitables éliminés sans nouvelles failles de détection, les preuves snapshot et la publication sont vérifiées.
+```
+
+### 02/23 | SYNC-A | P0 | Lot XL : moteur external-sync complet et garanties transactionnelles
+
+```text
+Livrer intégralement le lot A de documentation/plans/synchronisation-actions-externes.md. Le socle SQL et les adaptateurs de normalisation existent ; le commit 7a194401 a ajouté 20261126000002_harden_external_action_sync_invariants.sql et les preuves candidates, suivis de corrections des tests de concurrence. Ne pas recréer les adaptateurs ni les corrections acquises. Le main du 26 novembre contient les deltas SQL et les tests, mais la livraison du moteur complet, les commandes admin, le cron et les preuves intégrées ne sont pas démontrés.
+Jalon 1 : relire les invariants et leurs tests sur le checkout courant. Les cinq défauts historiques de 20261124000004 (reprise de référence avec mandat et claim, course unique_violation, ordre de verrouillage, rattachement d'action native sans preuve d'identité, réutilisation divergente d'operation_id) ont reçu un correctif publié ; vérifier les effets réels de la migration additive et les scénarios multi-sessions, RLS/grants. Ne corriger que les défauts actuels prouvés. Ne pas produire un nouveau socle SQL isolé ; conserver l'identité stable, le mandat révocable, le claim exclusif, le rattachement prouvé et le tombstone avec audit atomique.
+Jalon 2 : réutiliser et compléter les adaptateurs synthétiques J'agis pour la nature et Fondation de la Mer et leur normalisation ; intégrer rapprochement non ambigu, propositions privées incomplètes, pré-actions uniques et récupération durable via create_action_with_relations, create-submission et relations organisateur canoniques. Préserver les champs locaux, traiter révisions, conflits, annulations explicites, réponses partielles et tombstones ; aucune mesure, inscription, publication ou XP inventée. Pas de mise à jour automatique du bilan ni de suppression sur absence de source.
+Jalon 3 : raccorder au cron maintenance existant et à la commande administrative synchroniser maintenant, avec AuthZ, débit, audit, état de reprise et erreurs. Cron = préparation privée uniquement ; commande admin = publication automatique seulement admissible ; suppression administrative avec tombstone empêchant toute recréation. Ne pas inventer de connecteur réseau réel ni activer les lots B/C.
+Jalon 4 : prouver le parcours des deux sources simulées de bout en bout, autorisations négatives, conflits, expiration, doublons, suppression, reprise et non-déclenchement prématuré de gamification. Exécuter la lane SQL éphémère autorisée, E2E et tests comportementaux, vérifier les workflows sur le SHA candidat. Requalifier la convergence Supabase sur le projet réellement relié et la file complète de migrations à partir de preuves fraîches ; ne pas réutiliser comme état actuel les constats antérieurs au 26 novembre. Ne pas attribuer le précédent HTTP 500 SPOGOMI à external-sync sans preuve. Ne jamais appliquer manuellement les migrations en attente. Actualiser les owners Actions, sécurité, exploitation et plan. STOP CONDITION : lot A fonctionnel complet, pas un troisième socle SQL isolé ; preuves de transaction/RLS/concurrence, commandes admin et cron démontrées, publication vérifiée, connecteurs réels désactivés. Si la lane échoue hors périmètre, conserver DB_SEMANTICS_NOT_EXECUTED et reprendre ce jalon sans bloquer les lots Web indépendants.
+```
+
+### 03/23 | DS-BASE | P0 | Macro-lot : vérifier les acquis I1/I2 et préparer la clôture I3
+
+```text
+Traiter documentation/specs/design-system-premium/README_CODEX.md et les patches 01, 02, 03. I1 (0ba42a9) et I2 (e8f5b93) sont publiés et Codex les signale intégrés ; surface-palette.ts, cmm-tab-strip.styles.ts et la documentation premium existent déjà sur main 64b4946. Ne pas réappliquer 01/02 ni l'ancien lot H Annuaire. Vérifier les deltas effectivement livrés, corriger uniquement les incompatibilités globales encore démontrées (canvas, variables par route, premier rendu, exceptions, CmmCard, onglets, focus, modes, contrastes). Préserver trois onglets Annuaire, carte et organigramme, couleurs métier et hiérarchie CTA. Adopter seulement les deltas encore pertinents de 03-contrats-canoniques.patch et des gardes/board existants ; ne pas déclarer I3 terminé si preuves ou consommateurs manquent. La convergence des pages candidates se fera dans leurs lots respectifs ; ne pas dupliquer leurs refontes. Vérifier le socle sur familles représentatives, exceptions et navigation, enregistrer preuves acquises et reste à traiter dans le suivi des specs. STOP CONDITION : socle stable et réutilisable, pas de régression globale, statut de chaque patch renseigné, publication vérifiée pour les corrections ; la réception finale I3 est explicitement réservée au lot DS-FINAL après toutes les refontes.
+```
+
+### 04/23 | ANN-1 | P1 | Lot XL : organigramme et carte géographique 3D
+
+```text
+Intégrer exclusivement les patches 06 → 07 → 08 → 09 → 10 de documentation/specs/annuaire-ui/, selon README_CODEX.md et COUVERTURE_DONNEES.md. Les lots A à H et le complément adresses déjà publiés ne doivent pas être rejoués. Respecter les trois vues actuelles et le design system premium.
+Jalon 1 : organigramme complet déterministe, cadrage et projection géographique publique, pins et relations prouvées (06/07).
+Jalon 2 : carte MapLibre (08), dépendance et lockfile cohérents, CSP minimale et documentée, véritable perspective géographique et repli 2D, pas de modification des autres cartes ; convergence des identités/fiches et navigation croisée (09). Vérifier la projection canonique, les IDs et les coordonnées vérifiées ; aucune localisation inventée pour les acteurs hors ville ou sans adresse.
+Jalon 3 : adopter le patch 10, ses tests et contrats au niveau effectivement livré. Enrichir les adresses, logos autorisés, géocodages et relations sur les référentiels existants avec sources/dates/limites ; distinguer absence et contradiction. Vérifier rotation, inclinaison, zoom, pins au sol, badges flottants proportionnels aux connexions réelles, collisions, relations, cadrage, repli 2D, clavier, mobile, navigation bidirectionnelle et confidentialité. Tests ciblés, typecheck, lint, build, E2E et captures réelles. Ne pas anticiper les patches 11 à 17 ni toucher au CRM. STOP CONDITION : 06 à 10 traités et validés, données et preuves sourcées, publication sûre ; les compléments ultérieurs restent ouverts.
+```
+
+### 05/23 | ANN-2 | P1 | Lot XL : fiches publiques communes et couverture
+
+```text
+Après ANN-1, intégrer uniquement 11 → 12 → 13 → 14 dans documentation/specs/annuaire-ui/ ; ne pas réappliquer 06 à 10. Lire README_CODEX.md et COUVERTURE_DONNEES.md. Préserver les acquis sur public-entity-projection.ts, annuaire-exploration-view.tsx, public-cleanliness-organization.tsx et annuaire-map-3d-canvas.tsx.
+Jalon 1 : projection publique complète autorisée et fiche publique commune (11/12), contacts strictement publics, chronologie, preuves, personnes, relations, opérations programmées ; parité des entrées éditoriales, partenaires et acteurs uniquement réseau.
+Jalon 2 : interactions graphiques (13), ancêtres/descendants dédupliqués, sélection des liens, voisinage un/deux niveaux, séparation des badges sans déplacement des pins, cadrage, fiche carte non modale ; compléter contours officiels des arrondissements, légendes, familles, gestion de densité et mobile à partir de sources vérifiées.
+Jalon 3 : filières, médias, adresses, limites et restitution dans les fiches (14) ; réutilisation admin sans altérer le CRM. Compléter la matrice de couverture pour chaque famille de données, indiquer sources inconnues/non applicables et traiter les écarts réels sans fabriquer de relations ni d'adresses. Tester publication/privé, navigation, sélection, focus, interactions et parité des trois vues ; navigateur desktop/mobile et E2E, contrats CURRENT alignés. STOP CONDITION : objectifs territoriaux et de couverture satisfaits sur les données publiques admissibles, aucune fuite privée, 11 à 14 validés et publiés ; inconnues externes explicitement documentées.
+```
+
+### 06/23 | ANN-3 | P1 | Macro-lot : catalogue unique et compact
+
+```text
+Intégrer 15 → 16 → 17 de documentation/specs/annuaire-ui/ sur le résultat ANN-2. Le patch 14 est déjà traité : reprendre seulement ses éventuels deltas non acquis. Converger vers un catalogue canonique dérivé des référentiels existants, identités explicites et dédupliquées, priorité des fiches partenaires acceptées, inclusion des structures institutionnelles et acteurs réseau admissibles. Finaliser recherche, filtres, tris, pagination, grille/liste, mise en avant comme filtre, cartes compactes, fiche publique commune et navigation carte/organigramme. Ne pas réintroduire Découvrir ni une deuxième carte ou projection, ni les anciens composants de mise en avant sans consumer. Tester identités ambiguës, déduplication, couverture et sources, API/erreurs, sélection, états, focus, persistance des filtres, navigation et confidentialité. Compléter logos publics vérifiables, tests de 17, rendu réel responsive, fiches CURRENT et docs locales. STOP CONDITION : tous les patches 06 à 17 sont comptabilisés sans doublon, trois onglets et catalogue cohérents, données publiques accessibles et données privées protégées, validations et publication vérifiées ; retirer les candidats Annuaire consommés uniquement après cette clôture.
+```
+
+### 07/23 | DATA | P1 | Macro-lot : Open Data et sciences participatives
+
+```text
+Intégrer 01-explorateur-scientifique.patch puis 02-contrats-documentaires.patch de documentation/specs/open-data-sciences/. Préserver les modifications premium de open-data-section.tsx et les API/projections existantes. Le portail présente catalogue, explorateur, échantillon, dictionnaire, exemples et collaboration ; aucun corpus FAIR exhaustif, licence supplémentaire ou certification scientifique n'est acquis. Tester requêtes réelles GET /api/actions/map, borne 300, filtres, exclusion des actions préparatoires/futures de l'échantillon, provenance, troncature, partialSource, erreurs, valeurs manquantes distinctes de zéro et projection minimisée sans données privées ni coordonnées exactes inutiles. Préserver les données tierces et leurs droits. Vérifier FR/EN, clavier, responsive, modes, tests modèle/E2E et documentation CURRENT. Les futurs CTA empreinte/quotas seront ajoutés lors du lot REPORTS-HUB, sans requête ici. STOP CONDITION : portail opérationnel et honnête, confidentialité et limites démontrées, tests et publication vérifiés ; candidats consommés retirés.
+```
+
+### 08/23 | FUND | P1 | Macro-lot : financement et transparence
+
+```text
+Intégrer 01-financement-transparence.patch puis 02-contrats-documentaires.patch de documentation/specs/funding-ui/. Préserver le socle premium de funding-section.tsx ; finaliser CTA OnParticipe unique conditionné à la configuration réelle, contact en repli, besoins/recettes distincts, contributions non financières et agrégats validés. Ne réactiver ni Stripe ni nouveau paiement ; les retours historiques ne prouvent jamais une transaction sans validation canonique. Distinguer montants absents, zéro explicite, période, date et limites de couverture ; aucun budget/recette fictif, aucune donnée privée. Vérifier configuration sans exposer de secret, tests modèle/API/rendu/E2E, états erreur/confirmation, responsive et accessibilité, documents CURRENT. STOP CONDITION : contribution accessible si configurée, transparence exacte, absence de régression financière/juridique, validation et publication vérifiées ; retirer les candidats consommés.
+```
+
+### 09/23 | REPORTS-BASE | P1 | Lot XL : génération, analyse et impression
+
+```text
+Intégrer documentation/specs/reports-ui/ dans l'ordre exact 01-generation → 04-generation-tests → 02-analysis → 03-print-and-contracts. Ne pas migrer encore les onglets Empreinte IA/Quotas ni les fichiers : conserver l'accès fonctionnel actuel jusqu'au lot REPORTS-HUB qui fixe la navigation définitive. Préserver les appels et tests des consommateurs de analytics-data-utils.ts et le contrat commun Pilotage/Rapports.
+Jalon 1 : génération, configuration, aperçu, restitution, hiérarchie des actions et trois tests candidats de génération ; préserver actionId, resumeId, quotas, historiques, publication, exports, erreurs et PDF officiel.
+Jalon 2 : analyse, couverture et disponibilité, série mensuelle, comparaison temporelle, distinction NA/zéro, fenêtres partielles et limites ; aucune nouvelle donnée/métrique inventée.
+Jalon 3 : /prints/report, réutilisation du modèle, noindex, authentification, confidentialité, impression A4 multipages sans chrome ni débordement ; retirer les certifications et scores non prouvés, sans changer le PDF officiel. Valider tests ciblés, consommateurs Pilotage, navigateur public/authentifié, trois modes, responsive et impression réelle ; mettre à jour les deux fiches CURRENT. STOP CONDITION : les quatre patches et les trois surfaces sont intégrés, validations réussies et publication vérifiée ; ne pas retirer une spec tant que son delta n'a pas été consommé, conserver la trace nécessaire au lot REPORTS-HUB.
+```
+
+### 10/23 | PIL | P1 | Lot XL : Pilotage et Administration
+
+```text
+Intégrer 01 → 02 → 03 → 04 → 05 et les fichiers complets de documentation/specs/pilotage-ui/, avec leurs BASE_FILES. Les patches 01/04 partagent admin-dashboard-contract.ts ; 02/05 partagent la page pilotage, conserver leurs deltas successifs. Réutiliser les contrats d'analyse de REPORTS-BASE sans modifier ses comportements.
+Jalon 1 : cockpit /admin, cinq onglets admin et six max, chargements sélectifs, inbox/audit indépendants, workflow modération, preset signalements, liens/ancres historiques, rôle max avancé et /admin/godmode autonome intact. Préserver les confirmations sensibles, dry-run, audit et erreurs ; empêcher la perte silencieuse ou l'abandon d'une mutation en cours sans stocker de données sensibles.
+Jalon 2 : /pilotage coordinateur, cinq vues, scope organized/userId et aucune lecture globale ou hors autorisation, opérations à la demande, retry, partial, ancienne URL et ancres. Variante restreinte 05 adaptée aux droits effectifs et IMU, redirection admin, aucun loader métier pour autres rôles et aucun accès admin en cas de droits inconnus.
+Jalon 3 : preuves de chargement/authZ par rôle, tests sources indépendantes, mutations sans toucher à la production, navigateur Clerk Development autorisé, modes, FR/EN, responsive, contrastes, clavier, absence de fausses mesures. Actualiser les deux fiches CURRENT et les contrats affectés. STOP CONDITION : deux cockpits distincts, hub restreint fonctionnel, aucun élargissement de scope, tests/couverture/rendu et publication vérifiés ; retirer les candidats consommés.
+```
+
+### 11/23 | DASH | P1 | Macro-lot : Mon espace
+
+```text
+Intégrer 01 → 02 → 03 → 04 de documentation/specs/dashboard-ui/ et les fichiers complets correspondants, selon BASE_FILES et README_CODEX.md. Cinq vues Aujourd'hui, Notifications, Indicateurs collectifs, Engagement, Compte ; paramètre tab, aria-current, pont des anciennes ancres, cloche depuis toutes routes. Aujourd'hui sans requête ranking/referral/KPI ; engagement et indicateurs chargés uniquement dans leur vue, absence de données distincte de zéro, aucun chiffre collectif présenté comme personnel. Préserver les autres consommateurs de RolePrimaryActions, RoleProfileSwitcher, NotificationListItem, et la cloche compacte ; ne supprimer un composant devenu inutile qu'après contrôle de tous ses usages. Tester cinq vues authentifiées, rôles, navigation directe/retour/avance, notification/pagination/erreur, absence de requêtes hors vue, profil actif vs attribué, source partielle, modes/FR-EN, clavier et responsive. Mettre à jour la fiche CURRENT. Préparer les points d'entrée IA/quotas sans les activer avant REPORTS-HUB. STOP CONDITION : critères du manifeste satisfaits, données réelles et permissions préservées, couverture et rendu prouvés, publication vérifiée et candidats consommés retirés.
+```
+
+### 12/23 | ACC | P1 | Lot XL : finalisation Accueil & Pilotage
+
+```text
+Après PIL et DASH, intégrer 01-institutional → 02-profile-account-navigation → 03-personal-impact-engagement → 04-dashboard-alias de documentation/specs/accueil-pilotage-completion/ et candidats complets. Les éventuels deltas dashboard/pilotage doivent s'ajouter à leurs owners déjà intégrés, jamais les écraser ; 04 exige le dashboard à searchParams. Reports reste l'owner de ses exports.
+Jalon 1 : Gouvernance et Sponsor, lecture institutionnelle des seules actions publiques terminées selon contrat, élu/max et gates effectifs, filtre strict distinct de organized/cache distinct, aucune attribution territoriale ou mutation implicite, aucune fausse certification ESG, couverture et inconnues visibles ; préserver l'API coordinateur.
+Jalon 2 : profil/compte/navigation, quatre vues, chargements conditionnels et owner-scoped, promotion et rôle actif distinct d'attribué, liens de retour et alias, bascule réelle IMU → Élu → IMU sur compte Clerk Development déjà autorisé ; 409 simulateur explicite, aucun bypass/élévation.
+Jalon 3 : impact personnel et engagement, carte PNG/export sans fuite ni chiffres inventés, sélection de participations confirmées, filtres et exports Markdown/PDF existants, champs facultatifs préservés, intervalle cohérent, absence de confusion durée action/heures individuelles. Valider six pages plus entrées Mon espace/Pilotage, droits, états, données, navigation, exports, FR/EN, clavier, modes, mobile/desktop et couverture. Aligner six fiches CURRENT, retirer candidats consommés. STOP CONDITION : parcours complet et rôle réellement vérifié, ou blocage de preuve explicitement conservé, tests et publication vérifiés sans nouvel élargissement de droits.
+```
+
+### 13/23 | MAP | P1 | Macro-lot : Cartographie
+
+```text
+Intégrer les deltas des fichiers complets de documentation/specs/cartographie-ui/ selon README_CODEX.md et BASE_FILES.json. Conserver les owners cartographiques actuels et les travaux Annuaire distincts. Composition : carte dominante, contexte de vue, bilan global six KPI, journal à titre unique, états loading/partial/error/empty distincts. Raccorder onContextFilterChange dans MapCanvasView aux contrôles existants ; Filtrer doit être visible et réellement fonctionnel. Préserver calques et couleurs métier, attributions Leaflet, recherche, période, modes de score, deep-links, recenter, sélection, export, pagination/limites et aperçu homepage. Tester filtre au niveau UI, partialSource/troncature, échec de rafraîchissement sans perte des résultats acquis, chargement, journal/export, overlays, responsive, thèmes et modes ; vérifier consommateurs partagés et tests. Actualiser fiche CURRENT sans changer backend ni science. STOP CONDITION : carte et filtre opérationnels, six KPI exacts, preuves navigateur et couverture, aucune régression des autres cartes, publication vérifiée et candidats consommés retirés.
+```
+
+### 14/23 | GAME | P1 | Macro-lot : Progression et badges
+
+```text
+Intégrer les onze fichiers complets de documentation/specs/gamification-ui/ selon README_CODEX.md et BASE_FILES.json. Préserver l'owner du registre XP, données, scopes, calculs, projections Web/mobile et capacités de modération. Finaliser cinq onglets, centre de progression visuel, niveaux acquis/verrouillés, album et collections spécialisées, objectifs, communauté, réconciliation/acquittements, historique et liens profonds ; pas de monnaie, récompense ou animation de gain fictive. Charger les données collectives seulement dans leur vue. Vérifier comptes sans contribution, progression réelle, erreurs API, droits autorisés/interdits, absence de fuite, états vides, responsive mobile, trois modes, clavier, tests/couverture et documentation CURRENT. STOP CONDITION : cinq onglets fonctionnels, séparation XP/impact, aucune régression métier, preuves et publication vérifiées ; retirer les candidats consommés. Aucun défi IA futur n'est ajouté par ce lot.
+```
+
+### 15/23 | LEARN-1 | P1 | Macro-lot : Vulgarisation et palette Apprendre
+
+```text
+Intégrer 01-vulgarisation.patch de documentation/specs/vulgarisation-ui/ avec son manifeste. Le socle premium est acquis ; au SHA historique 64b4946 les blobs de surface-palette.ts et BLOC_COLOR_SYSTEM_PREMIUM.md correspondent exactement aux bases du patch. Appliquer la nouvelle palette Apprendre dans l'unique registre et le contrat : primaire #A64B08, profond #92400E, soft #FFF9D6, tint #FFE5B6, accent #9A3412, dark #3D2A16 ; vérifier les contrastes réels et adapter seulement si nécessaire à AA. Ne pas rejouer ensuite les anciennes valeurs I1/I3. Six onglets, Repères par défaut, maintien des états, sources scientifiques, graphiques et cartes auparavant vides. Préserver learn-deferred-panels.tsx et .test.ts pour l'intégration ultérieure de S'entraîner ; ne pas remplacer ces fichiers ensuite. Conserver les liens Empreinte IA fonctionnels en attendant REPORTS-HUB (qui les migrera/retirera). Vérifier contenus, calculs, sources, liens profonds, panneaux masqués, clavier, FR/EN, modes, mobile/desktop et tests. STOP CONDITION : refonte et palette intégrées, preuves et documentation CURRENT alignées, publication vérifiée et candidat consommé retiré.
+```
+
+### 16/23 | LEARN-2 | P1 | Macro-lot : S'entraîner et quiz
+
+```text
+Intégrer 01-sentrainer.patch de documentation/specs/sentrainer-ui/ après LEARN-1. Fusionner les deltas dans learn-deferred-panels.tsx et learn-deferred-panels.test.ts sans perdre la nouvelle Vulgarisation. Quatre onglets, accès quiz pleine largeur, progression individuelle réelle (pas de résumé figé), choix mixte/thème et correction du reset de piégeage ; préserver modes école/démo, quiz, correction, reprise, bilan, ancre #quiz-architecture et consommateurs. Tester accès anonyme et individuel authentifié selon harness, sessions 30/60 min, collectif et absence de persistance école/démo, progression réelle/absente, erreurs, clavier, responsive, FR/EN, trois modes, palette, tests et couverture. Actualiser fiche CURRENT. STOP CONDITION : quiz et quatre vues fonctionnels, aucune régression du moteur ni de Vulgarisation, preuves réelles et publication vérifiées ; retirer candidat consommé.
+```
+
+### 17/23 | LEARN-3 | P1 | Macro-lot : Bonnes pratiques
+
+```text
+Intégrer 01-bonnes-pratiques.patch de documentation/specs/bonnes-pratiques-ui/ après la palette LEARN-1. Quatre onglets, guides actionnables, contexte de tri limité à la bonne vue, ressources communes dédupliquées sans perte des six articles, campagne Gestes Propres, baromètre/IFOP et équivalences numériques. Respecter les sources, facteurs CO2 et dates ; aucune extrapolation ni modification du moteur de quiz. Vérifier ordre éditorial, absence de doublons, onglets/URL/ARIA, navigation, liens, deux équations, sources, FR/EN, modes, responsive, palette et tests. Actualiser la fiche CURRENT. STOP CONDITION : quatre vues lisibles et fonctionnelles, données scientifiques préservées, validations/captures et publication vérifiées ; retirer candidat consommé.
+```
+
+### 18/23 | LEARN-4 | P1 | Macro-lot : Mode École
+
+```text
+Intégrer 01-ecole.patch de documentation/specs/ecole-ui/ après LEARN-1 et LEARN-2. Quatre onglets, choix de classe 6e à 3e conservé, huit combinaisons niveau/format, démo publique, fiches, déroulé, banque de support distincte du moteur de quiz, corrigés et statuts de revue. Aucun lancement sans classe, aucune question non vérifiée dans séance publique, aucune PII/réponse dans URL ou persistance scolaire. Conserver deep-links et retours Bonnes pratiques ; valider parcours collectif complet, sessions publiques, choix et état lors des changements d'onglet, FR/EN, clavier, responsive, modes et tests. Actualiser les deux fiches CURRENT concernées. STOP CONDITION : quatre vues et huit combinaisons vérifiées, moteurs et confidentialité préservés, preuves/captures et publication vérifiées ; retirer candidat consommé.
+```
+
+### 19/23 | METHOD | P1 | Macro-lot : Méthodologie et transfert des explications du formulaire
+
+```text
+Intégrer documentation/specs/methodologie-ui/ : fichier complet methodologie-route-foundations.tsx, puis 01-methodologie.patch et 02-tests-et-contrats.patch. Prendre aussi documentation/specs/methodologie-formulaire-actions-transfert.md : reprendre chacune des dix lignes de sa matrice dans les fondations/accordéons et owners réellement concernés, référencer les sources canoniques sans recopier les formules ni réintroduire du texte long dans le formulaire. Préserver labels, unités, valeurs, statuts, contraintes, alertes de sécurité, contrôles d'accès et confirmations nécessaires ; aucun changement payload/calcul/permission. Cinq familles dérivées de la navigation du profil, Cartographie & Impact par défaut, 16 fondations FR/EN, accordéons persistants, quatre commandes sticky bornées à la vue active, ancres historiques et contenu scientifique préservés. Dédupliquer l'empreinte IA interactive selon le manifeste sans supprimer encore les fonctionnalités à migrer dans REPORTS-HUB. Tester navigation clavier, hash direct/interne, état des panneaux, graphiques, absence d'IDs dupliqués, sticky desktop/mobile sans recouvrement footer/cookies, modes, FR/EN, tests/E2E et fiches CURRENT. STOP CONDITION : toutes les explications transférées sont retrouvables, cinq vues et commandes fonctionnelles, aucune perte scientifique/sécurité, preuves et publication vérifiées ; retirer le plan de transfert seulement après vérification de sa consommation effective.
+```
+
+### 20/23 | REPORTS-HUB | P1 | Lot XL : quatre onglets Rapports, migrations IA/quotas et accès directs
+
+```text
+Après REPORTS-BASE, DASH, ACC, DATA, LEARN-1 à 4 et METHOD, finaliser /reports dans une seule convergence cohérente. Cible retenue : quatre onglets principaux pleine largeur, Génération | Analyse | Mon empreinte IA | Quotas des services ; Mes fichiers et Tous les fichiers deviennent deux sections indépendantes, fermées par défaut, en bas de Génération. Cette cible remplace le projet à six onglets et la proposition à deux onglets qui omettait les deux nouveaux outils. Owners observés : apps/web/src/components/reports/page-sections/reports-page-tabs.tsx (ReportsPageTabId, resolveReportsTab), reports-page-v2-layout.tsx, apps/web/src/app/(app)/reports/page.tsx, page-orchestration.tsx et page-loaders.ts. Ne pas reconstruire un deuxième registre de navigation.
+Jalon 1 : déplacer ReportsFiles et ReportsLibrary dans Génération sous configuration/export, pleine largeur, ouverture indépendante et chargement réellement différé (pas un serveur qui charge le contenu avant de le masquer). Utiliser les owners existants de navigation/chargement : état explicite compatible URL, ouverture directe et retour/avance ; ?tab=files et ?tab=library ouvrent automatiquement la bonne section, alias pilotage→analysis, actionId/resumeId/detail utiles préservés. Aucun chargement privé sans AuthN/AuthZ, bibliothèque publique accessible anonymement et hors AccountCompletionGate, même si configuration/génération privée ou profil incomplet ; conserver filtres, pagination, téléchargements, publication et révocation. Vérifier prefetch/lectures conditionnelles, état fermé et erreurs.
+Jalon 2 : migrer /learn/empreinte-ia dans /reports?tab=empreinte-ia, réutiliser PersonalAiDeclarationClient, PersonalAiImportClient, PersonalAiQuickScenarioClient et moteurs environnementaux, API, normalisation, données, RLS et historique existants. Déplacer seulement les composants de présentation concernés vers l'owner Reports ; conserver calcul anonyme sans gate, sauvegarde/import privés authentifiés, séparation empreinte personnelle/technique CleanMyMap/impact terrain, provenance/NA. Redirection permanente de l'ancienne route, compatibilité des paramètres utiles et aucun doublon. Mettre à jour références dans specs empreinte-ia et autres candidats encore ouverts, tests, sitemap, métadonnées et registre.
+Jalon 3 : migrer Plans et quotas dans /reports?tab=quotas avec FreePlanServicesMethodologyVisualQuotas, buildDisplayedServices, buildServiceQuotaSummary et snapshots existants. Chargement seulement dans la vue demandée ; pas de capture/appel fournisseur déclenché par consultation, respect de la projection publique. Consommé/restant/plafond/période/risque/date/inconnu exacts, sans modifier les quotas d'export. Retirer la fonctionnalité interactive et sa navigation redondante de Méthodologie, conserver explications/sources/ancres et les autres consommateurs de FreePlanServicesMethodologyVisual.
+Jalon 4 : ajouter les deux CTA FR/EN vers les URLs canoniques dans Méthodologie, Aujourd'hui de Mon espace et Open Data (/sections/open-data, alias /open-data). Vérifier le consumer profil réel et éviter duplication : si /profil redirige vers /dashboard, le lien suffit ; sinon ne pas supposer que le premier bloc est partagé, raccorder l'owner pertinent sans double rendu. Centraliser destinations dans les helpers/registre existants. Retirer les anciennes entrées du bloc Apprendre, préserver liens historiques via redirect, aucune duplication de données ou requêtes dans les pages d'entrée. Mettre à jour fiches et contrats SEO/navigation/empreinte IA ; retirer seulement les artefacts devenus consommés. Tester quatre onglets, les six CTA, aliases fichiers/bibliothèque, auth anonyme/connecté/profil incomplet/tiers, loader exclusif par vue et disclosure, retour/avance et deep-links, trois modes, responsive, clavier, exports, quotas, calcul et import. Exécuter validations, captures et couverture ; publication vérifiée. STOP CONDITION : quatre onglets et deux sections de fichiers réelles, calcul anonyme et bibliothèque publique toujours accessibles, confidentialité et science intactes, aucun lien actif obsolète hors redirection, six CTA opérationnels, docs alignées et publication sûre.
+```
+
+### 21/23 | CHAT | P1 | Lot XL : Messagerie et isolation SPOGOMI
+
+```text
+Intégrer documentation/specs/messagerie-ui/ (README_CODEX.md, BASE_FILES_UI/INTEGRATION/TEST, candidats et SQL_CANDIDATE_NOT_APPLIED). Après le design system et les autres refontes, préserver actions.css, connect-components, primitives et rôle actif canoniques. Ne pas écraser de fichier complet concurrent.
+Jalon 1 : deux onglets existants, composer quatre lignes redimensionnable et limite 2000, listes lisibles, sélection colorée solide même sans gradient, sept rôles selon activeRole et ACL existantes, filtres d'actions autorisées, DM/territoires/sondages/pièces jointes préservés. Vérifier bornes de projection et absence de données privées pour invité.
+Jalon 2 : intégrer ensemble migration forward-only, types, API, AuthZ, client et tests pour trois salons par événement SPOGOMI, extension de app_messages sans nouveau stockage concurrent. AuthN réelle, participant Clerk lié/vérifié/inscrit, aucun droit implicite admin/max/organisateur, révocation au retrait, états draft/annulé/archivé/certifié conformes au manifeste. RPC service_role avec acteur issu du serveur, verrou inscription/événement, quota et pagination ; vérifier RLS, grants, contraintes et toutes les voies génériques (RPC, Realtime, recherche, citations, notifications), anciens messages conservés sans réattribution ni fuite. Ne pas ajouter de notification globale ou pièce jointe événementielle fictive.
+Jalon 3 : exécuter tests PostgreSQL éphémères deux événements/trois salons, droits positifs et négatifs, race retrait/envoi, recherche/pagination/lecture seule, changement de compte, erreur réseau et non-contournement indirect ; tests API/UI, navigateur authentifié, modes, clavier, responsive, couverture et documentation Messagerie/AuthZ/SPOGOMI. Si la preuve SQL est bloquée, conserver le statut et ne pas promouvoir la fonctionnalité en production ; l'UI indépendante peut être publiée seulement si sûre et validée. STOP CONDITION : deux onglets fonctionnels, sept rôles, isolation par événement démontrée, aucune voie legacy globale, tests/documentation et publication vérifiés ; retirer uniquement candidats consommés après réception. Aucune application distante hors procédure autorisée.
+```
+
+### 22/23 | AI-PROOF | P0 preuve | Correction : clôturer les acquis Empreinte IA
+
+```text
+Lire documentation/specs/empreinte-ia/README_CODEX.md, SPECIFICATIONS_PLAN/00_LIRE_EN_PREMIER.md, 01_DECISIONS_SCIENTIFIQUES_ET_CALCULS.md, ERRATA_CONTRATS_0_08.md, 24_ARBITRAGES_PREUVES_ET_PRIORITES.md et les deux passations. Le noyau 0+08 et les lots 1/2 avec estimation rapide et imports sont déjà publiés selon la passation du 22 novembre ; ne pas copier les anciens candidats, rejouer le SQL ni refaire la saisie. Requalifier l'état du checkout après REPORTS-HUB et les preuves exactes de la lane PostgreSQL/RLS et E2E authentifiée, dont les anciens runs échouaient au démarrage de Supabase éphémère. Prouver création/modification/suppression et import owner-scoped, non-double comptage, refus tiers, payload strict normalisé côté API, estimation rapide anonyme sans compte, distinction NA/zéro et absence de persistance implicite. Corriger seulement les défauts actuels démontrés et leurs tests ; ne pas contourner la lane ni appliquer du SQL distant manuellement. Actualiser les passations et chemins vers /reports?tab=empreinte-ia ; conserver les pièces PLAN encore utiles. Comptabiliser les lots futurs dans l'ordre technique 3 → 4+09 → 11 → 12 → 10 → 14 → 15 → 16 → 18 → 21, sans les déclarer intégrés ni les implémenter par ce prompt : budget/suivi, pédagogie, XP, comparateur et RSE ont leurs propres décisions et conditions scientifiques ; les exports personnels non qualifiés et les classements d'offres réelles ne sont pas autorisés par une simple intégration UI. STOP CONDITION : acquis 0+08/1/2 qualifiés et preuves manquantes obtenues ou blocage précis conservé, ancienne route et candidats cohérents avec la migration, aucune duplication ou fausse mesure, publication vérifiée pour les corrections éventuelles ; roadmap restante explicitement PLAN/CONDITIONAL.
+```
+
+### 23/23 | DS-FINAL | P1 | Lot XL : réception intégrée, clôture I3 et exhaustivité des specs
+
+```text
+Finaliser I3 de documentation/specs/design-system-premium/README_CODEX.md sur l'état résultant des lots précédents. Ne pas rejouer les anciens patches : préserver notamment la palette Apprendre de LEARN-1, les quatre onglets Rapports et les trois onglets Annuaire. Aucun changement du thème sombre : suppression-charte-dark/ est un plan historique non autorisé comme chantier autonome et contradictoire avec le contrat premium actuel.
+Jalon 1 : convergence des consommateurs résiduels démontrés vers les primitives, palette et canvas actuels, sans refonte fonctionnelle ou altération de la matrice gelée. Vérifier toutes familles, exceptions homepage/explorer/auth/print, pages standard, modes exhaustif/minimaliste/sobre, thèmes exposés, FR/EN, reduced motion, focus, contraste AA réel (4,5:1 texte courant, 3:1 grand texte et contrôles concernés), 390/768/1280/1440/1920, navigation et absence de flash/débordement ; captures réelles représentatives de chaque famille et exceptions, avec preuves propres aux surfaces modifiées. Régénérer le design-system-board existant via son générateur ; aligner BLOC_COLOR_SYSTEM_PREMIUM, SURFACES_CARDS, UI_EXCEPTION_PAGES, Design-system.md et fiches réellement concernées sur le runtime. Aucun double registre.
+Jalon 2 : vérification transversale des nouvelles navigations, liens profonds/anciens aliases, points d'entrée IA/quotas, rôles, gates et loaders, cartes distinctes, public/privé, exports, modes, sécurité et absence de régression inter-pages ; exécuter gardes et validations adaptées au candidat exact, preuves SQL requises sur les seuls lots DB concernés, couverture séparée Web/Mobile (ne pas modifier Mobile hors dépendance démontrée). Contrôler audit:pages-site-drift, contrôles documentaires/SEO et liens ; ne pas simuler un audit sémantique par un seul test statique.
+Jalon 3 : réconcilier documentation/specs/README.md avec l'arbre initial de 18 dossiers + le plan de transfert autonome, les 42 patches et tous les fichiers candidats. Pour chaque artefact, noter intégré/adapté/déjà acquis avec preuve, ou remplacé par décision explicite, ou bloqué/PLAN avec cause et dépendance ; aucun PENDING oublié. Vérifier spécifiquement design-system 01–03, annuaire 06–17, dashboard 01–04, pilotage 01–05, accueil 01–04, reports 01–04, méthode 01–02, open-data 01–02, funding 01–02, les quatre patches Apprendre, cartographie/messagerie/gamification complets, transfert formulaire, empreinte IA et dark historique. Les lots externes SYNC-A et SEC sont également suivis ; ne pas confondre plan futur et oubli. Absorber les connaissances durables dans les owners CURRENT, retirer seulement les candidats réellement validés et garder les plans/blocages encore nécessaires sans doublon. STOP CONDITION : tous les travaux autorisés sont soit validés/publiés et relus, soit explicitement bloqués avec preuve ; I3 n'est CLOSED que si ses validations et celles de ses consommateurs sont satisfaites. Si un écart demeure, fournir le lot précis, la preuve manquante et la prochaine action bornée, sans lancer une nouvelle campagne d'audit. Publier les corrections et docs selon AGENTS.md, relire main et distinguer production de publication Git.
+```
