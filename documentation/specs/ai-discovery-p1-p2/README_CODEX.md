@@ -148,7 +148,54 @@ confondre catalogue généré, test présent, résultat exécuté et production.
 
 Preuves ChatGPT : arborescence Git non tronquée, lecture des owners cités,
 vérification de chemins et du registre des jobs, 9 assertions isolées
-sur la correspondance des motifs de route. Le scanner TypeScript complet,
-les tests Node, le CLI sur checkout réel et les gardes locaux restent à
-valider. HOOK_NOT_AVAILABLE ; aucune mesure de couverture ni économie
+sur la correspondance des motifs de route. Le scanner TypeScript et ses tests Node ont ensuite été exécutés en environnement
+isolé (voir preuve complémentaire). Le CLI sur checkout réel et les gardes
+locaux restent à valider. HOOK_NOT_AVAILABLE ; aucune mesure de couverture ni économie
 de tokens revendiquée, aucune mutation distante.
+
+## Compléments d'implémentation et preuves
+
+### DOC-06 : tests Node isolés
+
+Les deux blobs du premier commit 3c33c136265ae9cf9011e31e840df4ebd6446ed7 ont été reconstruits
+à l'identique, vérifiés par git hash-object (664e44e, ebf5fec) puis exécutés
+avec Node 22.16.0 et TypeScript 5.8.3 : trois tests, trois réussites.
+Les imports repository-view et vercel-audit-core ont été substitués par
+des stubs qui lèvent une erreur s'ils sont invoqués. La preuve concerne
+les fonctions de rapprochement, l'analyse TypeScript et la projection
+sur vue fixture ; pas le vrai CLI, le vrai inventaire ni la version de
+TypeScript installée dans le checkout. L'accès réseau brut au dépôt depuis
+le conteneur était indisponible (résolution DNS). Ne pas refaire ces
+tests isolés comme s'il s'agissait de la preuve d'intégration manquante.
+
+### DOC-07 : sélection statique complémentaire
+
+Deux nouveaux candidats complets sous candidates/scripts/reports/ :
+discover-related-tests.mjs et discover-related-tests.test.mjs.
+Destination scripts/reports/ mêmes noms. Ils projettent le graphe v1
+existant en parcourant ses arêtes inverses (runtime et type), bornent la
+profondeur et les résultats par surface, signalent les chemins absents,
+cycles, troncatures et limites de preuve. Le CLI ne lance aucun test et
+ne modifie pas validation-policy. Exécuter les tests Node puis le CLI sur
+les vrais graphes et compléter les associations non importées ; ne jamais
+utiliser son résultat comme liste restrictive de tests autorisés.
+
+### DOC-10 : catalogue générable
+
+Deux nouveaux candidats sous candidates/scripts/reports/ :
+generate-operations-discovery.mjs et generate-operations-discovery.test.mjs.
+Destination scripts/reports/ mêmes noms. Réutilisent la vue Git existante,
+TypeScript et js-yaml déjà utilisés/déclarés dans le dépôt. Inventorient
+les clés npm, triggers de workflows, registre de jobs et crons Vercel.
+Ne chargent pas le runtime, n'exécutent rien, n'exportent pas les commandes
+ou leurs arguments, et laissent les effets UNCLASSIFIED. Qualifier les
+effets au niveau des owners documentaires, sans second registre de jobs.
+Intégrer après tests Node et exécution sur le checkout actuel. Vérifier
+explicitement l'identité du commit demandé dans les CLI de découverte
+(et non seulement la forme d'un SHA ou la présence d'un objet arbre).
+Ne pas réexécuter les opérations recensées.
+
+Preuves isolées supplémentaires : 10 assertions JS exécutées
+sur la traversée inverse, la provenance, les bornes, les clés npm et
+les déclencheurs de workflow. Les tests Node de ces quatre nouveaux
+fichiers et l'intégration des deux CLI restent NOT_RUN.
