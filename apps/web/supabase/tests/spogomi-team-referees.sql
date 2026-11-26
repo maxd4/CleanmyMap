@@ -259,14 +259,24 @@ begin
     raise exception 'casual division without referee should not be ready';
   end if;
 
+  perform public.spogomi_configure_field_operation(v_event_id, v_world_cup_id, 'Europe/Paris', 'reg-wc-v1', now(), null, null, null, null, v_org_clerk, 'setup', 'contract');
+  perform public.spogomi_configure_field_operation(v_event_id, v_casual_id, 'Europe/Paris', 'reg-casual-v1', now(), null, null, null, null, v_org_clerk, 'setup', 'contract');
+
+  -- Casual collection launch must fail without an assigned referee (SQLSTATE 42501)
+  begin
+    perform public.spogomi_launch_field_phase(v_event_id, v_casual_id, 'collection', now(), v_org_clerk, 'blocked', 'contract');
+    raise exception 'spogomi_launch_field_phase allowed collection launch without team referee';
+  exception when sqlstate '42501' then
+    if sqlerrm not like '%spogomi_team_referee_coverage_incomplete%' then
+      raise exception 'unexpected 42501 reason on incomplete referee coverage launch: %', sqlerrm;
+    end if;
+  end;
+
   -- Assign v_ref_casual (qualified on reg-casual-v1) to v_team_casual_1 -> casual becomes ready too
   perform public.spogomi_assign_team_referee(v_event_id, v_casual_id, v_team_casual_1, v_ref_casual, v_org_clerk, 'casual ref');
   if not public.spogomi_division_referee_coverage_ready(v_event_id, v_casual_id) then
     raise exception 'casual division should be ready after assigning casual-qualified referee';
   end if;
-
-  perform public.spogomi_configure_field_operation(v_event_id, v_world_cup_id, 'Europe/Paris', 'reg-wc-v1', now(), null, null, null, null, v_org_clerk, 'setup', 'contract');
-  perform public.spogomi_configure_field_operation(v_event_id, v_casual_id, 'Europe/Paris', 'reg-casual-v1', now(), null, null, null, null, v_org_clerk, 'setup', 'contract');
 
   -- World Cup launch succeeds when all teams have assigned referees
   perform public.spogomi_launch_field_phase(v_event_id, v_world_cup_id, 'collection', now(), v_org_clerk, 'start', 'contract');
