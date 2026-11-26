@@ -126,14 +126,19 @@ export interface ExternalActionSyncStore {
     updates: Partial<{
       action_date: string;
       location_label: string;
+      notes: string | null;
       preparation_data: Record<string, unknown>;
-      group_join_enabled: boolean;
     }>,
   ): Promise<boolean>;
   publishPreAction(
     actionId: string,
     actorUserId: string,
     expectedUpdatedAt?: string,
+    sourceContext?: {
+      organizerDirectoryId: string;
+      sourceId: ExternalActionSourceId;
+      externalEventId: string;
+    },
   ): Promise<{ published: boolean; reason?: string }>;
   upsertProposal(params: {
     organizerDirectoryId: string;
@@ -434,7 +439,7 @@ export function createSupabaseExternalActionSyncStore(
       return Boolean(data?.id);
     },
 
-    async publishPreAction(actionId, actorUserId, expectedUpdatedAt) {
+    async publishPreAction(actionId, actorUserId, expectedUpdatedAt, sourceContext) {
       const current = await loadActionById(supabase, actionId);
       if (!current) {
         return { published: false, reason: "not_found" };
@@ -452,6 +457,30 @@ export function createSupabaseExternalActionSyncStore(
         actionId,
         userId: actorUserId,
         organizerIds,
+        persistPublication: sourceContext
+          ? async ({ publishedAt, preparationData }) => {
+              const { data, error } = await supabase.rpc(
+                "publish_external_action_sync_pre_action",
+                {
+                  p_action_id: actionId,
+                  p_organizer_directory_id: sourceContext.organizerDirectoryId,
+                  p_source_id: sourceContext.sourceId,
+                  p_external_event_id: sourceContext.externalEventId,
+                  p_expected_updated_at: current.updated_at ?? null,
+                  p_published_at: publishedAt,
+                  p_preparation_data: preparationData ?? null,
+                },
+              );
+              if (error) {
+                throw new Error("Échec de publication atomique de la pré-action externe.");
+              }
+              const status = String(data ?? "");
+              if (status === "published") return "published";
+              if (status === "mandate_revoked") return "mandate_revoked";
+              if (status === "suppressed") return "suppressed";
+              return "conflict";
+            }
+          : undefined,
       });
       if (outcome.status === "published") {
         return { published: true };

@@ -1,5 +1,5 @@
 begin;
-select plan(12);
+select plan(13);
 
 select ok(has_table_privilege('service_role', 'private.external_action_sync_subscriptions', 'INSERT'), 'service role can manage external sync subscriptions');
 select ok(not has_table_privilege('authenticated', 'private.external_action_sync_subscriptions', 'SELECT'), 'authenticated cannot read private external sync subscriptions');
@@ -28,10 +28,10 @@ begin
   set local role postgres;
   insert into public.actions (
     id, created_by_clerk_id, organizer_id, organizer_type, action_date,
-    action_phase, status, published_at, location_label, moderation_visibility, group_join_enabled
+    action_phase, status, published_at, location_label, moderation_visibility
   ) values (
     v_action, 'user-org-a', 'org-a', 'association', '2027-07-10',
-    'pre_action', 'pending', now(), 'Place A', 'visible', true
+    'pre_action', 'pending', now(), 'Place A', 'visible'
   );
 
   set local role service_role;
@@ -93,12 +93,13 @@ begin
     (select status from private.external_action_sync_proposals where id = v_prop_a_replay)
   );
 
-  -- Suppression removes action from public surfaces atomically
+  -- Suppression removes action from public surfaces atomically and closes groupJoinEnabled in notes
   v_suppressed := public.suppress_external_action_sync_action(v_action, 'admin-1', 'pgtap-sup-1', 'Suppression canonique');
-  select moderation_visibility, published_at into v_hidden, v_pub_at from public.actions where id = v_action;
+  select moderation_visibility, published_at, notes into v_hidden, v_pub_at, v_cross_org_err from public.actions where id = v_action;
   insert into engine_state_results values ('suppressed_status', v_suppressed);
   insert into engine_state_results values ('suppressed_visibility', v_hidden);
   insert into engine_state_results values ('suppressed_published_at_is_null', case when v_pub_at is null then 'true' else 'false' end);
+  insert into engine_state_results values ('suppressed_group_join_notes', case when v_cross_org_err like '%[cmm-meta]%' and (v_cross_org_err like '%"groupJoinEnabled": false%' or v_cross_org_err like '%"groupJoinEnabled":false%') then 'true' else 'false' end);
 end $$;
 
 select is((select value from engine_state_results where key = 'applied_without_consent'), 'mandate_revoked', 'mark applied fails closed without consent');
@@ -108,6 +109,7 @@ select is((select value from engine_state_results where key = 'resolve_wrong_org
 select is((select value from engine_state_results where key = 'proposal_stays_resolved'), 'resolved', 'resolved proposal stays resolved for identical content hash');
 select is((select value from engine_state_results where key = 'suppressed_visibility'), 'hidden', 'suppression hides canonical action from public surfaces');
 select is((select value from engine_state_results where key = 'suppressed_published_at_is_null'), 'true', 'suppression unpublishes canonical action');
+select is((select value from engine_state_results where key = 'suppressed_group_join_notes'), 'true', 'suppression sets groupJoinEnabled=false in canonical notes');
 
 select * from finish();
 rollback;

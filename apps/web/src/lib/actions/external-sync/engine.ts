@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { setActionGroupJoinEnabledInNotes } from "@/lib/actions/metadata";
 import {
   buildExternalActionIdentityHash,
   isExternalActionPublishAdmissible,
@@ -102,7 +103,7 @@ async function handleLinkedActionUpdate(params: {
   if (event.externalStatus === "cancelled") {
     if (action.action_phase === "pre_action") {
       await store.updatePreActionFields(actionId, action.updated_at, {
-        group_join_enabled: false,
+        notes: setActionGroupJoinEnabledInNotes(action.notes, false),
       });
     }
     const proposalId = await store.upsertProposal({
@@ -171,6 +172,11 @@ async function handleLinkedActionUpdate(params: {
         actionId,
         actorUserId ?? subscription.ownerUserId,
         action.updated_at,
+        {
+          organizerDirectoryId: subscription.organizerDirectoryId,
+          sourceId: event.source,
+          externalEventId: event.externalId,
+        },
       );
       if (pub.published) {
         return {
@@ -339,6 +345,12 @@ async function handleLinkedActionUpdate(params: {
     const pub = await store.publishPreAction(
       actionId,
       actorUserId ?? subscription.ownerUserId,
+      undefined,
+      {
+        organizerDirectoryId: subscription.organizerDirectoryId,
+        sourceId: event.source,
+        externalEventId: event.externalId,
+      },
     );
     if (pub.published) {
       return {
@@ -603,6 +615,12 @@ async function processSingleExternalEvent(params: {
     const pub = await store.publishPreAction(
       created.actionId,
       actorUserId ?? subscription.ownerUserId,
+      undefined,
+      {
+        organizerDirectoryId: subscription.organizerDirectoryId,
+        sourceId: event.source,
+        externalEventId: event.externalId,
+      },
     );
     if (pub.published) {
       return {

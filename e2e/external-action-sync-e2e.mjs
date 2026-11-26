@@ -8,7 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createJiti } from "jiti";
 import { resolveLocalEphemeralDbUrl, runLocalPsqlQuery } from "./supabase-local-psql.mjs";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const orgId = "association-brigade-verte-paris";
 const ownerUserId = "e2e-sync-owner-1";
 const run = (sql, step = "query", timeoutMs = 20_000) =>
@@ -17,24 +17,56 @@ const run = (sql, step = "query", timeoutMs = 20_000) =>
     errorLabel: `External action sync E2E failed at step=${step}`,
   });
 
-function resolveSupabaseRestTarget() {
-  const url = process.env.SUPABASE_URL?.trim();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (url && key) return { url, key };
-  const raw = execFileSync("npx", ["supabase", "status", "-o", "json"], {
-    cwd: path.join(root, "apps/web"),
-    encoding: "utf8",
-  });
-  const status = JSON.parse(raw);
-  if (!status?.API_URL || !status?.SERVICE_ROLE_KEY) {
-    throw new Error("Missing ephemeral Supabase API_URL / SERVICE_ROLE_KEY.");
+function assertLocalHostname(urlValue, label) {
+  const parsed = new URL(urlValue);
+  if (parsed.hostname !== "127.0.0.1" && parsed.hostname !== "localhost") {
+    throw new Error(`Refus ${label}: destination non-locale interdite (${parsed.hostname}).`);
   }
-  return { url: status.API_URL, key: status.SERVICE_ROLE_KEY };
+  return parsed;
+}
+
+function resolveEphemeralRestTarget(expectedDbUrl) {
+  const raw = execFileSync(
+    process.platform === "win32" ? "npx.cmd" : "npx",
+    ["supabase", "status", "--workdir", "apps/web", "--output", "json"],
+    {
+      cwd: root,
+      encoding: "utf8",
+      shell: process.platform === "win32",
+    },
+  );
+  const start = raw.indexOf("{");
+  if (start < 0) {
+    throw new Error("DB_SEMANTICS_NOT_EXECUTED: ephemeral Supabase status did not return JSON.");
+  }
+  const status = JSON.parse(raw.slice(start));
+  if (!status?.API_URL || !status?.SERVICE_ROLE_KEY || !status?.DB_URL) {
+    throw new Error("DB_SEMANTICS_NOT_EXECUTED: ephemeral Supabase API_URL/SERVICE_ROLE_KEY/DB_URL unavailable.");
+  }
+  const apiUrl = assertLocalHostname(status.API_URL, "API_URL");
+  const statusDbUrl = assertLocalHostname(status.DB_URL, "status.DB_URL");
+  const psqlDbUrl = assertLocalHostname(expectedDbUrl, "expectedDbUrl");
+  assert.equal(
+    statusDbUrl.host,
+    psqlDbUrl.host,
+    "SQL and REST targets must point to the exact same ephemeral local Supabase instance.",
+  );
+
+  const envUrl = process.env.SUPABASE_URL?.trim();
+  if (envUrl) {
+    const parsedEnv = assertLocalHostname(envUrl, "SUPABASE_URL");
+    assert.equal(
+      parsedEnv.origin,
+      apiUrl.origin,
+      "SUPABASE_URL env override does not match ephemeral local Supabase API_URL.",
+    );
+  }
+  return { url: apiUrl.origin, key: status.SERVICE_ROLE_KEY };
 }
 
 async function main() {
-  resolveLocalEphemeralDbUrl();
-  const { url, key } = resolveSupabaseRestTarget();
+  const dbUrl = await resolveLocalEphemeralDbUrl();
+  const { url, key } = resolveEphemeralRestTarget(dbUrl);
   const supabase = createClient(url, key, { auth: { persistSession: false } });
 
   // Stub Next.js server-only / next/cache for Node execution of real TypeScript store + engine.
@@ -151,12 +183,12 @@ commit;
     assert.ok(createdOutcome?.actionId, "Created actionId expected");
     const actionId = createdOutcome.actionId;
 
-    // Verify zero premature XP / progression side effects in PostgreSQL
+    // Verify zero premature XP / progression side effects in canonical public.progression_events
     const xpCheck = await run(
       `
 begin;
 set local role postgres;
-select 'XP:' || coalesce(sum(xp_delta), 0) from public.user_progression_events where user_id = '${ownerUserId}';
+select 'XP:' || coalesce(sum(xp_awarded), 0) from public.progression_events where user_id = '${ownerUserId}';
 select 'PUB:' || coalesce(published_at::text, 'null') from public.actions where id = '${actionId}';
 commit;
 `,
@@ -165,7 +197,7 @@ commit;
     assert.match(xpCheck.stdout, /XP:0/);
     assert.match(xpCheck.stdout, /PUB:null/);
 
-    // 2. admin_sync_now publishes admissible pre-action via publishPreActionCanonical
+    // 2. admin_sync_now publishes admissible pre-action via publishPreActionCanonical + atomic RPC
     const adminSummary = await runExternalActionSync(
       {
         store,
@@ -178,7 +210,7 @@ commit;
     );
     assert.equal(adminSummary.published, 1);
 
-    // 3. Administrative suppression hides & unpublishes action and blocks recreation
+    // 3. Administrative suppression hides & unpublishes action, sets groupJoinEnabled=false in notes, and blocks recreation
     const supStatus = await store.suppressAction({
       actionId,
       actorUserId: "admin-e2e",
@@ -186,6 +218,18 @@ commit;
       reason: "Suppression E2E canonique",
     });
     assert.equal(supStatus, "suppressed");
+
+    const supDbCheck = await run(
+      `
+begin;
+set local role postgres;
+select 'VIS:' || moderation_visibility || '|PUB:' || coalesce(published_at::text, 'null') || '|NOTES_META:' || case when notes like '%"groupJoinEnabled": false%' or notes like '%"groupJoinEnabled":false%' then 'ok' else 'missing' end
+from public.actions where id = '${actionId}';
+commit;
+`,
+      "verify_suppressed_notes_and_visibility",
+    );
+    assert.match(supDbCheck.stdout, /VIS:hidden\|PUB:null\|NOTES_META:ok/);
 
     const afterSup = await runExternalActionSync(
       {

@@ -110,6 +110,8 @@ export async function POST(
           { error: "Sélectionnez un compte utilisateur organisateur avant de publier cette action." },
           { status: 422 },
         );
+      case "mandate_revoked":
+      case "suppressed":
       case "conflict":
         return NextResponse.json(
           { error: "La publication n'a pas pu être confirmée.", code: "state_conflict" },

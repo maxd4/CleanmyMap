@@ -20,6 +20,8 @@ export type CanonicalPreActionPublicationResult =
   | { status: "not_publishable" }
   | { status: "formality_blocked"; blockedFormalityIds: string[] }
   | { status: "spontaneous_organizer_required" }
+  | { status: "mandate_revoked" }
+  | { status: "suppressed" }
   | { status: "conflict" };
 
 function buildPublicationUpdate(params: {
@@ -64,8 +66,12 @@ export async function publishPreActionCanonical(params: {
   actionId: string;
   userId: string;
   organizerIds: string[];
+  persistPublication?: (update: {
+    publishedAt: string;
+    preparationData?: ActionRow["preparation_data"];
+  }) => Promise<"published" | "conflict" | "mandate_revoked" | "suppressed">;
 }): Promise<CanonicalPreActionPublicationResult> {
-  const { supabase, current, actionId, userId, organizerIds } = params;
+  const { supabase, current, actionId, userId, organizerIds, persistPublication } = params;
 
   if (current.status === "rejected" || current.status === "cancelled") {
     return { status: "terminal_state" };
@@ -124,17 +130,34 @@ export async function publishPreActionCanonical(params: {
   }
 
   const publishedAt = new Date().toISOString();
+  const updatePayload = buildPublicationUpdate({
+    currentPreparationData: current.preparation_data,
+    publishedAt,
+    userId,
+    formalitiesContext: validation.formalitiesContext,
+    formalitiesWorkflow: validation.formalitiesWorkflow,
+  });
+
+  if (persistPublication) {
+    const persisted = await persistPublication({
+      publishedAt,
+      preparationData: updatePayload.preparation_data,
+    });
+    if (persisted !== "published") {
+      return { status: persisted };
+    }
+    await emitAdministrativeRequirementNotifications({ supabase, actionId });
+    return {
+      status: "published",
+      id: actionId,
+      publishedAt,
+      alreadyPublished: false,
+    };
+  }
+
   const rawResult: unknown = await supabase
     .from("actions")
-    .update(
-      buildPublicationUpdate({
-        currentPreparationData: current.preparation_data,
-        publishedAt,
-        userId,
-        formalitiesContext: validation.formalitiesContext,
-        formalitiesWorkflow: validation.formalitiesWorkflow,
-      }),
-    )
+    .update(updatePayload)
     .eq("id", actionId)
     .eq("updated_at", current.updated_at)
     .eq("created_by_clerk_id", current.created_by_clerk_id)
