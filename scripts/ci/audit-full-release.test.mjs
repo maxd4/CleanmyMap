@@ -56,7 +56,9 @@ const updateRule = {
   rules: [{ type: "update" }],
   bypass_actors: [{ actor_type: "RepositoryRole", actor_id: 5 }],
 };
+let nextRunId = 1;
 const workflowRun = (workflowPath, extra = {}) => ({
+  id: nextRunId++,
   path: workflowPath,
   head_sha: githubSha,
   head_branch: "main",
@@ -141,8 +143,33 @@ test("GitHub release transport paginates rulesets/runs and fails closed on error
         return okResponses.get(key);
       },
     }),
-    /Incomplete workflow runs pagination/,
+    /Incomplete or inconsistent workflow runs pagination/,
   );
+
+  for (const [label, runPayload, pattern] of [
+    ["empty pages", [], /did not return any page/],
+    ["missing total_count", [{ workflow_runs: [ciRun] }], /missing valid total_count/],
+    ["non-numeric total_count", [{ total_count: "2", workflow_runs: [ciRun] }], /missing valid total_count/],
+    ["inconsistent total_count", [{ total_count: 2, workflow_runs: [ciRun] }, { total_count: 3, workflow_runs: [codeqlRun()] }], /Inconsistent workflow runs total_count/],
+    ["duplicate run id", [{ total_count: 2, workflow_runs: [ciRun, { ...ciRun }] }], /Duplicate GitHub workflow run id/],
+    ["missing run id", [{ total_count: 1, workflow_runs: [{ ...ciRun, id: undefined }] }], /missing valid id/],
+  ]) {
+    assert.throws(
+      () => fetchGithubReleaseEvidence({
+        repo: "maxd4/CleanmyMap",
+        sha: githubSha,
+        runner: (args) => {
+          const key = args.join(" ");
+          if (key.includes("actions/runs")) {
+            return { status: 0, stdout: JSON.stringify(runPayload) };
+          }
+          return okResponses.get(key);
+        },
+      }),
+      pattern,
+      label,
+    );
+  }
 });
 
 test("Supabase release audit requires an explicitly identified project and health/log evidence", () => {

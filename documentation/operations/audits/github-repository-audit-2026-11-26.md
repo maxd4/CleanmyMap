@@ -62,23 +62,34 @@ ou non pris en charge. L'absence de visibilité n'est pas un défaut de réglage
 
 - **Preuves GitHub & gouvernance CI** : `scripts/ci/audit-github-release.mjs`
   utilise désormais l'évaluateur strict (`defaultBranch`, `protectionVerified`,
-  `rulesets/{id}`, pagination vérifiée, règle `superseded`, aucun faux PASS) ;
+  `rulesets/{id}`, pagination vérifiée avec contrôle strict de `total_count` entier,
+  cohérence inter-pages et unicité des `run.id`, règle `superseded`, aucun faux PASS) ;
   `scripts/ci/detect-scope.mjs` et `.github/workflows/ci.yml` exposent
   `governance_relevant` pour déclencher `web-governance` sur les diffs mixtes
-  docs+Mobile/Python et les changements `.github/**`. Scorecard (`93e772d4`)
-  et zizmor (`4b4be2cf`) sont `success`.
-- **Preuve SQL (`45818202674`)** : échec isolé sur
-  `apps/web/supabase/tests/external-action-sync-engine-state.pgtap.sql` (ligne 97)
-  lors de `public.suppress_external_action_sync_action`, qui passait `status = 'cancelled'`
-  sans renseigner `cancelled_at`, `cancelled_by_clerk_id` et `cancelled_from_status`
-  (`actions_cancellation_state_check`). Correctif forward-only ajouté dans
-  `apps/web/supabase/migrations/20261126000008_fix_external_action_sync_suppress_tombstone.sql`
-  (avec garde `status <> 'cancelled'` pour respecter `trg_prevent_cancelled_action_mutation`).
-- **Alertes CodeQL** : 0 alerte Dependabot/Secret Scanning ouverte ; sur 9 alertes
-  Code Scanning ouvertes avant correctif, les 3 alertes `high` actionnables
-  (`accessibility-support.ts`, `architecture-audit.mjs`, `diagnose-supabase-start.test.mjs`)
-  sont corrigées ; `#1088` est un faux positif déjà annoté (`sha256` non mot de passe) ;
-  les 5 alertes `warning`/`note` (`#1093`, `#1096`, `#1098`, `#1099`, `#1100`) restent à trier.
+  docs+Mobile/Python et les changements `.github/**`. Scorecard (`93e772d4`),
+  zizmor (`4b4be2cf`) et `web-governance` (`140056304405` sur `5ee3c966`) sont `success`.
+- **Preuves SQL (`45818202674`, `45862300160`)** : le run `45862300160` (`5ee3c966`)
+  reste `failure` sur `apps/web/supabase/tests/external-action-sync-engine-state.pgtap.sql`
+  (`UNCAUGHT_SQL_ERROR`, `planned: 13, executed: 5`) ainsi que `spogomi-referee-qualification.sql`
+  et 3 scripts `e2e/*concurrency.mjs`. En complément de `20261126000008`, le correctif
+  forward-only `apps/web/supabase/migrations/20261126000009_fix_external_action_sync_rejected_suppression.sql`
+  distingue désormais les transitions `pending`/`approved` → `cancelled` (avec
+  `cancelled_from_status = status`) des actions `rejected` (conservées `rejected`
+  sans fabriquer `cancelled_from_status`), et `external-action-sync-engine-state.pgtap.sql`
+  ajoute les assertions de métadonnées, d'idempotence, de non-réversibilité et de rejet.
+- **Alertes CodeQL** : 0 alerte Dependabot/Secret Scanning ouverte ; le run
+  `45862300188` (`CodeQL Analysis` sur `5ee3c966`) a été `cancelled` (supplanté par
+  `45863099203` sur `89790e8d9`), maintenant les 9 alertes ouvertes jusqu'à complétion
+  d'une analyse non annulée sur `main`. Les 3 alertes `high` actionnables
+  (`#1094` `accessibility-support.ts`, `#1095` `architecture-audit.mjs`, `#1097`
+  `diagnose-supabase-start.test.mjs`) sont corrigées dans le code ; `#1088` reste
+  un faux positif déjà annoté (`sha256` non mot de passe). Qualification des 5 alertes
+  `warning`/`note` restantes : `#1100` (`select-e2e-sql-plan.mjs:15`, variable locale
+  inutilisée), `#1099` (`isolate-supabase-migration-failure.mjs:618`, réassignation
+  inutilisée), `#1098` (`action-creation-shell-completion.tsx:79`) et `#1096`
+  (`action-accessibility-implementation-panel.tsx:87`, conditionnels JSX bénins) et
+  `#1093` (`personal-ai-estimator.ts:730`, point-virgule manquant) — aucune ne relève
+  d'un défaut de sécurité.
 - **Qualification des 9 PR Dependabot ouvertes** : `#199` (pip maintenance), `#198`
   (npm-tooling), `#197` (github-actions), `#196` (npm-web-runtime), `#186`
   (npm-shared-runtime, vérifier compatibilité React 19 Web+Mobile) et `#169`

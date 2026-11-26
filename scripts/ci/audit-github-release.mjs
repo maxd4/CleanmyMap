@@ -197,19 +197,37 @@ export function fetchGithubReleaseEvidence({ repo, sha, runner = defaultRunner }
     runner(["api", "--paginate", "--slurp", `repos/${repo}/actions/runs?head_sha=${sha}&per_page=100`]),
     "GitHub workflow runs",
   );
-  if (!Array.isArray(runPages)) {
-    throw new Error("GitHub workflow runs did not return an array");
+  if (!Array.isArray(runPages) || runPages.length === 0) {
+    throw new Error("GitHub workflow runs did not return any page");
   }
   const runs = [];
+  const seenRunIds = new Set();
+  let expectedTotal = null;
   for (const page of runPages) {
     if (!page || !Array.isArray(page.workflow_runs)) {
       throw new Error("GitHub workflow runs page missing workflow_runs");
     }
-    runs.push(...page.workflow_runs);
+    if (!Number.isInteger(page.total_count) || page.total_count < 0) {
+      throw new Error("GitHub workflow runs page missing valid total_count");
+    }
+    if (expectedTotal === null) {
+      expectedTotal = page.total_count;
+    } else if (page.total_count !== expectedTotal) {
+      throw new Error(`Inconsistent workflow runs total_count: ${page.total_count} !== ${expectedTotal}`);
+    }
+    for (const run of page.workflow_runs) {
+      if (!run || (typeof run.id !== "number" && typeof run.id !== "string")) {
+        throw new Error("GitHub workflow run missing valid id");
+      }
+      if (seenRunIds.has(run.id)) {
+        throw new Error(`Duplicate GitHub workflow run id: ${run.id}`);
+      }
+      seenRunIds.add(run.id);
+      runs.push(run);
+    }
   }
-  const expectedTotal = runPages[0]?.total_count;
-  if (typeof expectedTotal === "number" && runs.length < expectedTotal) {
-    throw new Error(`Incomplete workflow runs pagination: ${runs.length}/${expectedTotal}`);
+  if (runs.length !== expectedTotal) {
+    throw new Error(`Incomplete or inconsistent workflow runs pagination: ${runs.length}/${expectedTotal}`);
   }
 
   return {
