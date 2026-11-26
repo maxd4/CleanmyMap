@@ -63,8 +63,8 @@ Le statut initial PENDING signifie **non réceptionné dans ce programme**, pas 
 | `design-system-premium/02-onglets-et-consommateurs.patch` | 03 DS-BASE | VALIDATED (socle I2) | `e8f5b93` ; Vitest I2 8/8 (60 tests), `check:surfaces`, `typecheck` PASS |
 | `design-system-premium/03-contrats-canoniques.patch` | 03 DS-BASE / 23 DS-FINAL | ADAPTED (doc intégrée ; clôture I3 réservée à DS-FINAL) | `0ba42a9`, `e8f5b93` ; `generate-design-system-board.test.mjs` 11/11 PASS ; reste : preuves navigateur multi-largeurs/thème sombre/FR-EN et régénération finale du board |
 | `ecole-ui/01-ecole.patch` | 18 LEARN-4 | PENDING | à établir |
-| `funding-ui/01-financement-transparence.patch` | 08 FUND | PENDING | à établir |
-| `funding-ui/02-contrats-documentaires.patch` | 08 FUND | PENDING | à établir |
+| `funding-ui/01-financement-transparence.patch` | 08 FUND | VALIDATED (retiré après intégration) | Vitest modèle/UI/API/config/accents 6/6 (36 tests), `typecheck`, `eslint` ciblé, `check:surfaces`, Playwright `funding-transparency.spec.ts` 2/2 PASS |
+| `funding-ui/02-contrats-documentaires.patch` | 08 FUND | VALIDATED (retiré après intégration) | Fiches `funding-README.md` et `funding-presentation-detaillee.md` alignées `CURRENT`, `check:doc-governance` PASS |
 | `methodologie-ui/01-methodologie.patch` | 19 METHOD | PENDING | à établir |
 | `methodologie-ui/02-tests-et-contrats.patch` | 19 METHOD | PENDING | à établir |
 | `open-data-sciences/01-explorateur-scientifique.patch` | 07 DATA | VALIDATED (retiré après intégration) | Vitest modèle/contrat 2/2 (6 tests) + API map 2/2 (49 tests), `typecheck`, `eslint` ciblé, `check:surfaces`, Playwright `open-data-science.spec.ts` 1/1 PASS |

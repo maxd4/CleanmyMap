@@ -8,6 +8,8 @@
   - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
   - `apps/web/src/components/sections/rubriques/funding-section.tsx`
   - `apps/web/src/app/api/funding/checkout/route.ts` (backend conservé, non appelé par l'UI)
+  - `apps/web/src/components/sections/rubriques/use-funding-public-summary.ts`
+  - `apps/web/src/lib/funding/public-aggregate.ts`
   - `apps/web/src/app/api/funding/aggregate/route.ts`
   - `apps/web/src/app/api/funding/checkout-status/route.ts`
   - `apps/web/src/app/api/stripe/webhook/route.ts`
@@ -16,7 +18,7 @@
 - **Accès runtime** : `public-visible` ; la présentation du modèle économique est consultable sans compte. Les éventuels parcours partenaire ou de financement restent séparés et conservent leurs propres contrôles.
 - **Objectif utilisateur principal** : Comprendre les deux familles de besoins soutenues, la stratégie de financement et la séparation entre contributions, transparence et indépendance de la modération.
 - **Action principale attendue** : Consulter les besoins et les agrégats Stripe nets ; si la configuration est présente, accéder à la cagnotte commune hébergée par OnParticipe.
-- **Palette attendue** : rose / pink / fuchsia sur fond réseau sombre
+- **Palette attendue** : surfaces neutres du design system, accents de famille
 - **Scope réel** : présentation publique des deux catégories et des agrégats nets Stripe confirmés, avec garanties d'indépendance. OnParticipe est un lien direct vers une collecte hébergée séparée ; ses montants ne sont ni importés ni fusionnés avec les agrégats Stripe.
 - **Terminée** : oui
 - **Captures attendues** : desktop, mobile
@@ -25,8 +27,8 @@
 ## Stratégie de financement — CURRENT et TARGET
 
 - **CURRENT — portage par une personne physique** : CleanMyMap est actuellement porté par une personne physique. OnParticipe est la voie de collecte externe prévue : [cagnotte CleanMyMap](https://www.onparticipe.fr/c/PUI9aOsy). Le parcours s'active uniquement si `FUNDING_ONPARTICIPE_URL` contient l'URL HTTPS réelle. Aucune intégration API n'est supposée ni à créer.
-- L'URL applicative optionnelle `FUNDING_ONPARTICIPE_URL` active les CTA seulement lorsqu'elle contient l'URL HTTPS réelle de la cagnotte. Absente ou vide, chaque carte conserve un bouton désactivé `Non disponible` / `Unavailable`.
-- Les deux cartes présentent des familles de besoins et utilisent la même cagnotte OnParticipe commune : cliquer sur un bouton ne choisit pas une catégorie. CleanMyMap ne transmet aucun montant, catégorie ou donnée de contributeur, et ne garantit aucune affectation par catégorie. Aucun total OnParticipe n'est affiché.
+- L'URL applicative optionnelle `FUNDING_ONPARTICIPE_URL` active les CTA seulement lorsqu'elle contient l'URL HTTPS réelle de la cagnotte. Absente ou vide, une information d’indisponibilité et un lien de contact remplacent le CTA.
+- Les deux cartes présentent des familles de besoins sans action de paiement. Un CTA unique ouvre la cagnotte OnParticipe commune. CleanMyMap ne transmet aucun montant, catégorie ou donnée de contributeur, et ne garantit aucune affectation par catégorie. Aucun total OnParticipe n'est affiché.
 - **Stripe — `IMPLEMENTED / NOT CURRENTLY EXPOSED`** : conserver Checkout backend, webhook, RPC/tables, agrégats et tests backend. Stripe n'est pas proposé par l'UI funding et le parcours OnParticipe ne bascule jamais vers Stripe. Sa part fixe pèse davantage sur 1 € ; Stripe peut convenir à d'autres paiements ou montants plus élevés. Les tarifs dépendent du fournisseur et doivent être vérifiés au moment d'une décision opérationnelle.
 - **TARGET — HelloAsso via association partenaire** : aucune association porteuse n'est actuellement configurée. L'activation exige une association réelle et consentante, une campagne créée sous son compte, sa vérification par HelloAsso, un RIB au nom de l'association et un accord explicite d'affectation des fonds au projet CleanMyMap. L'association peut ajouter un administrateur de campagne CleanMyMap avec les droits adaptés. Les fonds restent versés à l'association. Aucun runtime HelloAsso ne doit être créé avant réunion des conditions et décision distincte.
 - Les états conceptuels HelloAsso `not_available_no_associative_host` et `available_via_associative_host` restent documentaires tant qu'aucun consommateur runtime ne les exige. Une future intégration séparera le nom public de l'association, l'URL réelle de campagne et le statut d'activation ; aucune de ces valeurs n'est inventée ou configurée maintenant.
@@ -36,13 +38,19 @@
 
 Le lien OnParticipe est direct et uniquement activé par la configuration facultative de son URL réelle. Aucun avantage ou traitement fiscal particulier n'est annoncé. Stripe n'est actuellement pas une voie de contribution proposée aux utilisateurs depuis cette page.
 
+## Transparence financière
+
+Les besoins sont séparés de la collecte et des dépenses. La page affiche le total net Stripe et sa ventilation uniquement si les deux agrégats EUR sont valides ; une lecture manquante, incomplète, incohérente ou hors précision sûre renvoie 503 et n'est jamais convertie en zéro. Un zéro explicitement enregistré reste valable. Les remboursements enregistrés sont déduits ; frais, dépenses et OnParticipe ne le sont pas. Ce total ne constitue ni le financement global ni le solde de trésorerie. Aucun objectif chiffré ni montant de dépense n'est inventé.
+
+Les voies non financières utilisent les parcours existants : rejoindre une action, contact et onboarding partenaire. Aucun nouveau paiement, compte ou registre comptable n'est créé.
+
 ## États à documenter
 
 - **loading** : les totaux affichent `Chargement…` pendant la lecture de l'agrégat public.
 - **error** : les totaux Stripe indiquent leur indisponibilité et proposent une nouvelle tentative ; l'état du lien OnParticipe reste gouverné séparément par sa configuration.
-- **availability** : si l'URL OnParticipe est absente, les deux cartes affichent un bouton désactivé `Non disponible` / `Unavailable`. Si elle est configurée, elles affichent `Soutenir via OnParticipe` / `Support via OnParticipe` et ouvrent la même destination externe sans transmettre montant ou catégorie.
-- **cancelled** : un ancien retour Stripe peut encore être affiché comme paiement annulé, sans montant confirmé.
-- **success** : une session initiée avant le débranchement peut encore afficher `Paiement reçu par Stripe · confirmation en cours` jusqu'à confirmation backend du webhook.
+- **availability** : si l'URL OnParticipe est absente, afficher un état explicite et proposer le contact. Si elle est configurée, un seul CTA ouvre la destination externe sans transmettre montant ou catégorie.
+- **cancelled** : un ancien retour Stripe peut indiquer un parcours annulé, sans inférer un état financier depuis le paramètre.
+- **success** : un ancien retour de session ne constitue pas une preuve de paiement. Le statut est vérifié par le backend ; attente, indisponibilité, paiement et remboursement sont distingués.
 - **access refused** : non applicable à cette présentation publique.
 - **Architecture commune** : `SectionShell`/`PageHeader`, `CmmCard` et `CmmButton` ; famille Réseau & Discussions.
 - **Variantes** : français/anglais, mobile/desktop, deux catégories `equipment` et `development`.

@@ -44,4 +44,13 @@ describe("GET /api/funding/aggregate", () => {
     queryMock.in.mockResolvedValueOnce({ data: null, error: { message: "missing table" } });
     expect((await (GET as unknown as (request: Request) => Promise<Response>)(new Request("http://localhost/api/funding/aggregate"))).status).toBe(503);
   });
+  it.each([[], [{ category: "equipment", net_amount_cents: 0, currency: "eur" }], [
+    { category: "equipment", net_amount_cents: 0, currency: "eur" },
+    { category: "development", net_amount_cents: "invalid", currency: "eur" },
+  ]].map(data => ({ data })))("refuses to turn missing or malformed rows into zero", async ({ data }) => {
+    queryMock.in.mockResolvedValueOnce({ data, error: null });
+    const response = await (GET as unknown as (request: Request) => Promise<Response>)(new Request("http://localhost/api/funding/aggregate"));
+    expect(response.status).toBe(503);
+    expect(await response.json()).not.toHaveProperty("categories");
+  });
 });
