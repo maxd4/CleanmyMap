@@ -53,11 +53,14 @@ describe("ElusSectionOverviewPanel", () => {
       <ElusSectionOverviewPanel data={data} locale="fr" />,
     );
 
+    expect(markup).toContain('aria-labelledby="elus-detailed-analytics-title"');
     expect(markup).toContain("Analyses détaillées et tendances");
     expect(markup).toContain("Période : 30 derniers jours");
+    expect(markup).toContain('href="/reports"');
     expect(markup).toContain("Renforcer la géocouverture");
-    expect(markup).toContain("bg-slate-200/80 dark:bg-slate-500/20");
-    expect(markup).not.toContain("bg-rose-500/10");
+    expect(markup).toContain('data-cmm-card-tone="slate"');
+    expect(markup).toContain("Indisponible");
+    expect(markup).toContain("Non comparable");
     expect(markup).not.toContain("TrendingDown");
   });
 
