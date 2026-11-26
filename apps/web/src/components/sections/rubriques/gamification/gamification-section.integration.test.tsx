@@ -92,6 +92,12 @@ describe("GamificationSection integration", () => {
     expect(markup).toContain("Niveau global");
     expect(markup).toContain("Impact personnel");
     expect(markup).toContain("Eau préservée — proxy");
-    expect(markup).toContain("Parcours Éco-Citoyen | Brigade Verte Paris");
+    expect(markup).toContain("Mes acquis");
+    expect(markup).toContain("En cours");
+    expect(markup).toContain("À débloquer");
+    expect(markup).toContain("Communauté");
+    expect(markup).toContain("Badges");
+    expect(markup).not.toContain("Moteur de progression hors ligne");
+    expect(markup).not.toContain("Parcours Éco-Citoyen | Brigade Verte Paris");
   });
 });

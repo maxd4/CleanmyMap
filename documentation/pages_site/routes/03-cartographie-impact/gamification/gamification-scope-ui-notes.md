@@ -16,10 +16,7 @@ La rubrique gamification doit rester:
 
 ## Contrat leaderboard CURRENT
 
-Le leaderboard est l'unique exception à la règle de non-publication de la gamification. La section privée `/sections/gamification` réutilise le
-`LeaderboardPanel` public et propose le CTA « Voir le classement public » vers
-`/sections/leaderboard`; elle ne crée ni moteur, ni requête, ni mapping, ni tri
-parallèle. Le classement n'est pas ajouté à la navigation primaire.
+Le leaderboard est l'unique exception à la règle de non-publication de la gamification. La section privée `/sections/gamification` propose uniquement le CTA « Voir le classement public » vers `/sections/leaderboard`, sans monter ni précharger le panneau public. Elle ne crée ni moteur, ni requête, ni mapping, ni tri parallèle. Le classement n'est pas ajouté à la navigation primaire.
 
 Il existe deux scopes : `user` (niveau utilisateur) et `structure` (niveau
 collectif). Les trois métriques sont `level`, `xp` et `badges`. Le total de
@@ -102,25 +99,32 @@ Les ajustements récents reposent sur ces points d entrée:
 
 ## État UI actuel
 
-La page gamification a été réalignée sur une direction visuelle rouge et claire, avec:
+Le panneau principal montre le niveau actuel, le potentiel, les XP validées et
+en attente, le prochain seuil et les prérequis réels. Cinq onglets accessibles
+au clavier structurent la lecture :
 
-- un hero éditorial blanc et rouge;
-- un visuel abstrait de paysage rouge;
-- un bloc de parcours d engagement avec statut actuel, statuts suivants et moteur de progression;
-- une carte de reconnaissance personnelle, lifetime puis année en cours, avant la lecture communautaire;
-- une carte de collections alimentée par `progression.summary`, groupée en `Acquis`, `En progression` et `À découvrir`;
-- une carte de célébrations légères avec aperçu;
-- une bannière de méthodologie d impact;
-- un statut opérationnel;
-- un panneau de réglages du profil;
-- un bloc explicatif "Pourquoi cette gamification ?".
+- Mes acquis : paliers obtenus, jalons terminés, impact personnel distinct et
+  parcours d'engagement dépliable.
+- En cours : progressions commencées et jalons partiellement réalisés, avec
+  valeur courante, prochain palier, progression et conditions canoniques.
+- À débloquer : éléments non commencés, sans mesure ni récompense inventée.
+- Communauté : reconnaissance personnelle et annuelle, lien externe au
+  classement dédié, Légendes territoriales et Brigade Verte.
+- Badges : album des paliers effectivement obtenus et prochain palier connu,
+  jalons XP et reconnaissance séparés, spécialisations terrain et collection
+  SPOGOMI. L'aperçu des célébrations est secondaire et dépliable.
 
-Le parti pris est de montrer:
-
-- la progression réelle;
-- la reconnaissance utile;
-- les états vides sans faux signal;
-- la méthode d impact séparée du XP.
+Les onglets n'ajoutent aucun calcul d'XP ni catalogue métier. Une progression
+infinie peut avoir des paliers acquis tout en restant en cours. Les icônes et
+médaillons sont des représentations UI et non des récompenses supplémentaires.
+Les conditions et critères restent consultables. Les lectures spécifiques des
+collections ou de la communauté ne sont déclenchées que lorsque leur onglet
+est monté. Les composants remontrés utilisent leurs contrats SWR existants.
+Les reçus et avis restent accessibles ; les liens de réconciliation vers
+progression/jalon sélectionnent l'onglet correspondant. Les réglages globaux
+restent dans la surface canonique /reglages et les préférences du site.
+Le visuel abstrait, les rappels promotionnels, le faux statut hors ligne et
+le panneau d'apprentissage redondant ne sont plus montés.
 
 ### Contrats CURRENT des collections et de la reconnaissance
 
@@ -137,10 +141,7 @@ Le parti pris est de montrer:
   `progression.annualRecognition.currentContributor`, avec un libellé explicite
   `Lifetime` ou `Année en cours`. Ces périodes restent propres à la
   reconnaissance, pas au classement détaillé.
-- Le panneau leaderboard réutilisé dans la reconnaissance charge uniquement la
-  projection publique via `/api/gamification/leaderboard/public`, avec les
-  dimensions supportées `scope=user|structure` et
-  `metric=level|xp|badges`.
+- Le panneau de classement est monté exclusivement sur sa route publique dédiée ; les dimensions restent `scope=user|structure` et `metric=level|xp|badges`.
 
 ### Légendes territoriales dans les surfaces Web
 

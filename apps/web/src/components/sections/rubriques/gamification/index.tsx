@@ -1,23 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { HeroBlock } from "./gamification-shell";
-import { buildPersonalizationSnapshot } from "./personalization-panel";
-import {
-  CelebrationsPanel,
-  CollectionsPanel,
-  EngagementPanel,
-  MethodologyBanner,
-  OperationalStatusCard,
-  ProfileSettingsCard,
-  QuizProgressionCard,
-  RecognitionPanel,
-  WhyGamification,
-} from "./gamification-panels";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { GamificationTabs } from "./gamification-tabs";
+import { TerrainSpecializationsPanel } from "./terrain-specializations-panel";
+import { CelebrationsPanel, EngagementPanel, RecognitionPanel } from "./gamification-panels";
 import type { MeResponse } from "./gamification-types";
 import type { UserProgressionResponse } from "@/lib/gamification/progression/progression-types";
 import { swrRecentViewOptions } from "@/lib/swr-config";
@@ -90,7 +82,7 @@ async function fetchJson<T>(url: string, guard: (value: unknown) => value is T):
   return body;
 }
 export function GamificationSection() {
-  const { locale, theme, displayMode, setDisplayMode, toggleTheme } = useSitePreferences();
+  const { locale, displayMode } = useSitePreferences();
   const fr = locale === "fr";
   const searchParams = useSearchParams();
   const receiptId = searchParams?.get("receipt") ?? null;
@@ -109,117 +101,44 @@ export function GamificationSection() {
   );
 
   const progression = meData?.progression;
-  const personalization = useMemo(
-    () => buildPersonalizationSnapshot(locale, theme, displayMode),
-    [locale, theme, displayMode],
-  );
+  const panelProps = { progression, loading: meLoading, error: meError, locale };
+  const catalogProps = { summary: progression?.summary, loading: meLoading, error: meError, locale };
 
   return (
-    <SectionShell
-      id="gamification"
-      hideHeader
-      gradient="from-[#fff8f5] via-white to-transparent"
-    >
-      <div className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#fff8f6_48%,#ffffff_100%)] text-[#241311]">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[38rem] bg-[radial-gradient(circle_at_74%_12%,rgba(255,118,108,0.16)_0%,rgba(255,118,108,0.08)_18%,transparent_40%),radial-gradient(circle_at_82%_20%,rgba(197,31,31,0.10)_0%,transparent_24%),radial-gradient(circle_at_0%_0%,rgba(255,255,255,0.95)_0%,transparent_55%)]" />
-        <div className="pb-12 lg:pb-16">
-          <HeroBlock fr={fr} />
+    <SectionShell id="gamification" hideHeader gradient="from-[#fff8f5] via-white to-transparent">
+      <div className="space-y-5 pb-8 pt-5 sm:space-y-6">
+        <PageHeader title={fr ? "Progression & badges" : "Progress & badges"} subtitle={fr ? "Vos contributions. Vos paliers. Vos récompenses." : "Your contributions. Your milestones. Your rewards."} />
+        <GamificationLevelProgressPanel {...panelProps} />
+        <GamificationReconciliationNotice reconciliation={meData?.reconciliation} progression={progression} locale={locale} onAcknowledged={async () => { await mutateMe(); }} />
+        <GamificationRulesMigrationNotice summary={progression?.summary} locale={locale} onAcknowledged={async () => { await mutateMe(); }} />
 
-          <div className="space-y-6">
-            <GamificationReconciliationNotice
-              reconciliation={meData?.reconciliation}
-              progression={progression}
-              locale={locale}
-              onAcknowledged={async () => {
-                await mutateMe();
-              }}
-            />
-            <GamificationLevelProgressPanel
-              progression={progression}
-              loading={meLoading}
-              error={meError}
-              locale={locale}
-            />
-
-            <GamificationCatalogPanel
-              summary={progression?.summary}
-              loading={meLoading}
-              error={meError}
-              locale={locale}
-            />
-
+        <GamificationTabs locale={locale} summary={progression?.summary} receiptId={receiptId} renderPanel={(tab) => {
+          if (tab === "acquired") return <>
+            <GamificationCatalogPanel {...catalogProps} view="acquired" />
+            <GamificationImpactPanel {...panelProps} />
+            <CmmDisclosure summary={fr ? "Parcours d’engagement" : "Engagement journey"} tone="rose"><EngagementPanel {...panelProps} /></CmmDisclosure>
+          </>;
+          if (tab === "active") return <GamificationCatalogPanel {...catalogProps} view="active" />;
+          if (tab === "discover") return <>
+            <GamificationCatalogPanel {...catalogProps} view="discover" />
+            <div className="flex flex-wrap gap-2"><CmmButton href="/sections/rejoindre-une-action" tone="primary" size="sm">{fr ? "Rejoindre une action" : "Join an action"}</CmmButton><CmmButton href="/actions/new" tone="secondary" size="sm">{fr ? "Créer une action" : "Create an action"}</CmmButton><CmmButton href="/learn/sentrainer" tone="secondary" size="sm">{fr ? "S’entraîner" : "Practice"}</CmmButton></div>
+          </>;
+          if (tab === "community") return <>
+            <RecognitionPanel {...panelProps} />
             <TerritorialLegendsPanel locale={locale} />
-
             <GamificationBrigadeVertePanel locale={locale} displayMode={displayMode} />
-
-            <GamificationReconciliationHistory
-              history={meData?.reconciliationHistory}
-              targetedEntry={meData?.reconciliationTarget}
-              progression={progression}
-              loading={meLoading}
-              error={meError}
-              locale={locale}
-            />
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <EngagementPanel
-                progression={progression}
-                loading={meLoading}
-                error={meError}
-                locale={locale}
-              />
-              <RecognitionPanel
-                progression={progression}
-                loading={meLoading}
-                error={meError}
-                locale={locale}
-              />
-            </div>
-
-            <GamificationImpactPanel
-              progression={progression}
-              loading={meLoading}
-              error={meError}
-              locale={locale}
-            />
-
+          </>;
+          return <>
+            <GamificationCatalogPanel {...catalogProps} view="badges" />
+            {!meError && progression?.summary ? <TerrainSpecializationsPanel specializations={progression.summary.terrainSpecializations ?? []} locale={locale} /> : null}
             <GamificationSpogomiCollection locale={locale} />
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <CollectionsPanel
-                summary={progression?.summary}
-                loading={meLoading}
-                error={meError}
-                locale={locale}
-              />
-              <CelebrationsPanel locale={locale} />
-            </div>
-
-            <GamificationRulesMigrationNotice
-              summary={progression?.summary}
-              locale={locale}
-              onAcknowledged={async () => {
-                await mutateMe();
-              }}
-            />
-
-            <QuizProgressionCard locale={locale} />
-
-            <MethodologyBanner locale={locale} />
-
-            <div className="grid gap-6 lg:grid-cols-[1fr_1.05fr]">
-              <OperationalStatusCard locale={locale} />
-              <ProfileSettingsCard
-                locale={locale}
-                displayMode={displayMode}
-                personalization={personalization}
-                setDisplayMode={setDisplayMode}
-                toggleTheme={toggleTheme}
-              />
-            </div>
-
-            <WhyGamification locale={locale} />
-          </div>
+            <CmmDisclosure summary={fr ? "Aperçu des célébrations" : "Celebration preview"} tone="slate"><CelebrationsPanel locale={locale} /></CmmDisclosure>
+          </>;
+        }} />
+        <GamificationReconciliationHistory history={meData?.reconciliationHistory} targetedEntry={meData?.reconciliationTarget} {...panelProps} />
+        <div className="flex flex-wrap items-center justify-center gap-3 border-t border-slate-200 pt-4">
+          <CmmButton href="/methodologie" tone="secondary" size="sm">{fr ? "Comment sont calculés les résultats ?" : "How are results calculated?"}</CmmButton>
+          <CmmButton href="/reglages" tone="secondary" size="sm">{fr ? "Préférences" : "Preferences"}</CmmButton>
         </div>
       </div>
     </SectionShell>

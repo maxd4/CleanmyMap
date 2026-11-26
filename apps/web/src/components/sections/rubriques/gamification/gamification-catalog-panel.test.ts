@@ -1,241 +1,82 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
-import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
-import { buildCatalogGroups, GamificationCatalogPanel } from "./gamification-catalog-panel";
+import type { GamificationSummary, GamificationSummaryMilestone, GamificationSummaryProgression } from "@/lib/gamification/progression/gamification-summary";
+import { getAcquiredTiers, selectCatalogItems, GamificationCatalogPanel, type CatalogView } from "./gamification-catalog-panel";
+
+function progression(overrides: Partial<GamificationSummaryProgression> = {}): GamificationSummaryProgression {
+  return { id: "participation", awardCategory: "XP_PROGRESSION", label: "Participation", description: "Actions validées", currentValue: 2, metricLabel: "actions", grantsXp: true, xpContribution: 1, currentBadge: { id: "tier-1", label: "Premier" }, nextBadge: { id: "tier-2", label: "Suivant" }, currentTier: { id: "tier-1", label: "Premier", threshold: 1, achieved: true }, nextTier: { id: "tier-2", label: "Suivant", threshold: 5, achieved: false }, previousTiers: [], progressPercent: 25, state: "in_progress", introducedInRulesRevision: 17, isNewSinceLastRulesMigration: true, ...overrides };
+}
+
+function milestone(overrides: Partial<GamificationSummaryMilestone> = {}): GamificationSummaryMilestone {
+  return { id: "parcours_documente", awardCategory: "BADGE_ONLY", category: "BADGE_ONLY", label: "Parcours documenté", description: "Preuve documentée", grantsXp: false, xpAmountOrPolicy: { kind: "none", reason: "Recognition" }, state: "completed", xpContribution: 0, achieved: true, achievedAt: "2026-10-01T00:00:00.000Z", introducedInRulesRevision: 17, isNewSinceLastRulesMigration: false, ...overrides };
+}
 
 function summary(overrides: Partial<GamificationSummary> = {}): GamificationSummary {
-  return {
-    xpTotal: 0,
-    currentLevel: 1,
-    potentialLevel: 1,
-    nextLevel: {} as GamificationSummary["nextLevel"],
-    progressions: [],
-    milestones: [],
-    xpReconciliation: { progressionXp: 0, milestoneXp: 0, compatibilityXp: 0, total: 0, isBalanced: true },
-    rulesMigration: { currentAppliedRulesRevision: 12, lastAcknowledgedRulesRevision: 12, latestRulesRevision: 12, hasUnacknowledgedChanges: false },
-    ...overrides,
-  };
+  return { xpTotal: 1, currentLevel: 1, potentialLevel: 1, nextLevel: {} as GamificationSummary["nextLevel"], progressions: [progression(), progression({ id: "exploration", label: "Exploration", currentValue: 0, currentTier: undefined, currentBadge: null, progressPercent: 0, xpContribution: 0, state: "not_started" })], milestones: [milestone(), milestone({ id: "boucle_bouclee", label: "Boucle bouclée", awardCategory: "XP_MILESTONE", category: "XP_MILESTONE", grantsXp: true, xpAmountOrPolicy: { kind: "fixed_one_shot", amount: 1 }, state: "in_progress", achieved: false, achievedAt: null, progressCurrent: 1, progressTarget: 2, progressPercent: 50 })], xpReconciliation: { progressionXp: 1, milestoneXp: 0, compatibilityXp: 0, total: 1, isBalanced: true }, rulesMigration: { currentAppliedRulesRevision: 17, lastAcknowledgedRulesRevision: 17, latestRulesRevision: 17, hasUnacknowledgedChanges: false }, ...overrides };
 }
 
-function progression(id: "participation" | "organisation" | "exploration", state: "in_progress" | "not_started", isNewSinceLastRulesMigration: boolean) {
-  return {
-    id,
-    label: id,
-    description: id,
-    currentValue: state === "in_progress" ? 1 : 0,
-    metricLabel: "actions",
-    awardCategory: "XP_PROGRESSION",
-    grantsXp: true,
-    xpContribution: 0,
-    currentBadge: null,
-    nextBadge: { id: `${id}-1`, label: "Premier" },
-    progressPercent: state === "in_progress" ? 50 : 0,
-    state,
-    introducedInRulesRevision: 12,
-    isNewSinceLastRulesMigration,
-  } as const;
+function render(view: CatalogView, value = summary()) {
+  return renderToStaticMarkup(createElement(GamificationCatalogPanel, { summary: value, loading: false, error: null, locale: "fr", view }));
 }
 
-function productFeedbackProgression() {
-  return {
-    id: "product_feedback",
-    label: "Amélioration du produit",
-    description: "Retours acceptés.",
-    currentValue: 1,
-    metricLabel: "Feedbacks acceptés",
-    awardCategory: "XP_PROGRESSION",
-    grantsXp: true,
-    xpContribution: 1,
-    currentBadge: { id: "product-feedback-1", label: "Premier retour" },
-    nextBadge: { id: "product-feedback-5", label: "Retour engagé" },
-    progressPercent: 0,
-    state: "in_progress",
-    introducedInRulesRevision: 15,
-    isNewSinceLastRulesMigration: false,
-  } as const;
-}
-
-describe("buildCatalogGroups", () => {
-  it("keeps the canonical state while isolating only new untouched mechanics", () => {
-    const groups = buildCatalogGroups(summary({
-      progressions: [
-        progression("participation", "in_progress", true),
-        progression("exploration", "not_started", true),
-        progression("organisation", "not_started", false),
-      ],
-      milestones: [
-        {
-          id: "premiere_trace_utile",
-          awardCategory: "XP_MILESTONE",
-          category: "XP_MILESTONE",
-          label: "Trace",
-          description: "Trace",
-          grantsXp: true,
-          xpAmountOrPolicy: { kind: "fixed_one_shot", amount: 1 },
-          state: "completed",
-          xpContribution: 1,
-          achieved: true,
-          achievedAt: "2026-10-01T00:00:00.000Z",
-          introducedInRulesRevision: 12,
-          isNewSinceLastRulesMigration: true,
-        },
-      ],
-    }));
-
-    expect(groups.progressions.newItems.map((item) => item.id)).toEqual(["exploration"]);
-    expect(groups.progressions.inProgress.map((item) => item.id)).toEqual(["participation"]);
-    expect(groups.progressions.toDiscover.map((item) => item.id)).toEqual(["organisation"]);
-    expect(groups.milestones.newItems).toEqual([]);
-    expect(groups.milestones.completed.map((item) => item.id)).toEqual(["premiere_trace_utile"]);
+describe("Gamification catalog views", () => {
+  it("keeps earned tiers visible even when their infinite progression is still active", () => {
+    const value = summary();
+    expect(selectCatalogItems(value, "acquired").progressions.map((item) => item.id)).toEqual(["participation"]);
+    expect(selectCatalogItems(value, "active").progressions.map((item) => item.id)).toEqual(["participation"]);
+    expect(selectCatalogItems(value, "discover").progressions.map((item) => item.id)).toEqual(["exploration"]);
+    expect(selectCatalogItems(value, "acquired").milestones.map((item) => item.id)).toEqual(["parcours_documente"]);
+    expect(selectCatalogItems(value, "active").milestones.map((item) => item.id)).toEqual(["boucle_bouclee"]);
   });
 
-  it("keeps a newly introduced completed milestone in Terminés with a separate New marker", () => {
-    const summaryValue = summary({
-      milestones: [{
-        id: "parcours_documente",
-        awardCategory: "BADGE_ONLY",
-        category: "BADGE_ONLY",
-        label: "Parcours documenté",
-        description: "Une preuve de parcours documentée.",
-        grantsXp: false,
-        xpAmountOrPolicy: { kind: "fixed_one_shot", amount: 0 },
-        state: "completed",
-        xpContribution: 0,
-        achieved: true,
-        achievedAt: "2026-10-01T00:00:00.000Z",
-        introducedInRulesRevision: 13,
-        isNewSinceLastRulesMigration: true,
-      }],
-    });
-
-    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, {
-      summary: summaryValue,
-      loading: false,
-      error: null,
-      locale: "fr",
-    }));
-
-    expect(markup).toContain(">Nouveau<");
-    expect(markup).toContain("✓ Terminé");
-    expect(markup).toContain("Parcours documenté");
-    expect(markup).toContain("Reconnaissance");
+  it("only displays earned tiers and deduplicates the current tier", () => {
+    const item = progression();
+    expect(getAcquiredTiers(progression({ previousTiers: [item.currentTier!, item.nextTier!] })).map((tier) => tier.id)).toEqual(["tier-1"]);
+    const markup = render("acquired");
+    expect(markup).toContain("Premier");
+    expect(markup).not.toContain("Suivant");
+    expect(markup).not.toContain("Exploration");
+    expect(markup).toContain("Reconnaissance · sans XP");
+    expect(markup).not.toContain("+0 XP");
     expect(markup).toContain('id="milestone-parcours_documente"');
-    expect(markup).toContain("Terminés");
-    expect(markup).not.toContain("Nouveau ·");
-    expect(markup).not.toContain("À découvrir 1");
   });
 
-  it("shows a new progression with activity in En cours and keeps the New marker", () => {
-    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, {
-      summary: summary({
-        progressions: [
-          progression("participation", "in_progress", true),
-          progression("exploration", "not_started", true),
-        ],
-      }),
-      loading: false,
-      error: null,
-      locale: "fr",
-    }));
-
-    expect(markup).toContain("Nouvelles tâches");
-    expect(markup).toContain("En cours");
+  it("displays only canonical progress, conditions and future rewards in active tasks", () => {
+    const markup = render("active");
     expect(markup).toContain('id="progression-participation"');
-    expect(markup).toContain(">Nouveau<");
+    expect(markup).toContain('aria-valuenow="25"');
+    expect(markup).toContain('aria-valuenow="50"');
+    expect(markup).toContain("Nouveau");
+    expect(markup).toContain("+1 XP");
+    expect(markup).not.toContain("Parcours documenté");
+    expect(markup).not.toContain("Exploration");
   });
 
-  it("separates XP milestones from recognition and never renders a zero XP reward", () => {
-    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, {
-      summary: summary({
-        milestones: [
-          {
-            id: "boucle_bouclee",
-            awardCategory: "XP_MILESTONE",
-            category: "XP_MILESTONE",
-            label: "Boucle bouclée",
-            description: "Une boucle validée.",
-            grantsXp: true,
-            xpAmountOrPolicy: { kind: "fixed_one_shot", amount: 1 },
-            state: "completed",
-            xpContribution: 1,
-            achieved: true,
-            achievedAt: "2026-10-01T00:00:00.000Z",
-            introducedInRulesRevision: 1,
-            isNewSinceLastRulesMigration: false,
-          },
-          {
-            id: "parcours_documente",
-            awardCategory: "BADGE_ONLY",
-            category: "BADGE_ONLY",
-            label: "Parcours documenté",
-            description: "Une preuve documentée.",
-            grantsXp: false,
-            xpAmountOrPolicy: { kind: "none", reason: "Reconnaissance" },
-            state: "completed",
-            xpContribution: 0,
-            achieved: true,
-            achievedAt: "2026-10-01T00:00:00.000Z",
-            introducedInRulesRevision: 1,
-            isNewSinceLastRulesMigration: false,
-          },
-        ],
-      }),
-      loading: false,
-      error: null,
-      locale: "fr",
-    }));
+  it("does not manufacture a numeric milestone progress when absent", () => {
+    const markup = render("discover", summary({ progressions: [], milestones: [milestone({ state: "not_started", achieved: false, achievedAt: null })] }));
+    expect(markup).toContain("À débloquer");
+    expect(markup).not.toContain('role="progressbar"');
+  });
 
+  it("renders the album from applicable summary, with acquired and next tiers only", () => {
+    const markup = render("badges");
+    expect(markup).toContain("Premier");
+    expect(markup).toContain("Suivant");
     expect(markup).toContain("Jalons avec XP");
     expect(markup).toContain("Jalons de reconnaissance");
-    expect(markup).toContain("+1 XP");
-    expect(markup).not.toContain("+0 XP");
-    expect(markup).toContain("sans XP supplémentaire");
   });
 
-  it("explains product feedback criteria and links to the canonical feedback form", () => {
-    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, {
-      summary: summary({ progressions: [productFeedbackProgression()] }),
-      loading: false,
-      error: null,
-      locale: "fr",
-    }));
-
-    expect(markup).toContain("Comment contribuer");
-    expect(markup).toContain("La pertinence est validée par le compte autorisé max");
-    expect(markup.replaceAll("&#x27;", "'")).toContain("L'envoi seul ne donne pas d'XP");
+  it("keeps the feedback criteria and canonical action link available in details", () => {
+    const markup = render("active", summary({ progressions: [progression({ id: "product_feedback" })] }));
+    expect(markup).toContain("compte max");
+    expect(markup).toContain("l’envoi seul ne donnent pas d’XP");
     expect(markup).toContain('href="/sections/feedback#bug"');
-    expect(markup).toContain("Envoyer un feedback");
   });
 
-  it("renders terrain specializations as sub-progressions with verified counts and earned XP", () => {
-    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, {
-      summary: summary({
-        terrainSpecializations: [{
-          id: "glass",
-          roleCode: "glass_bag_lead",
-          label: "Responsable verre",
-          description: "Mission attestée.",
-          parentProgressionId: "participation",
-          badgeId: "terrain-specialization-glass",
-          verifiedActionCount: 3,
-          currentTier: 3,
-          nextThreshold: 5,
-          actionsRemaining: 2,
-          xpObtained: 0.25,
-          started: true,
-        }],
-      }),
-      loading: false,
-      error: null,
-      locale: "fr",
-    }));
-
-    expect(markup).toContain("Spécialisations terrain");
-    expect(markup).toContain("Responsable verre");
-    expect(markup).toContain("Actions vérifiées");
-    expect(markup).toContain("XP réellement obtenue :");
-    expect(markup).toContain("0,25 XP");
-    expect(markup).toContain("Un badge ne donne aucune permission");
+  it("does not produce a fake empty catalog during errors", () => {
+    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, { summary: undefined, loading: false, error: new Error("offline"), locale: "fr", view: "acquired" }));
+    expect(markup).toContain("Progressions indisponibles");
+    expect(markup).not.toContain("Aucune réalisation");
   });
 });

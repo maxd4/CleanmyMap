@@ -118,7 +118,7 @@ test("gamification soft-gate returns to the canonical route after Clerk sign-in"
   ).toHaveCount(0);
   await expect(
     page.getByRole("heading", {
-      name: "Écosystème & Gamification",
+      name: "Progression & badges",
       exact: true,
     }),
   ).toBeVisible();

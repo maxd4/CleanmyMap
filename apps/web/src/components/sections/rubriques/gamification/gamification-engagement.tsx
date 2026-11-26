@@ -98,8 +98,8 @@ export function EngagementPanel({
   const progressNote = progression.nextLevel.requirements.missing[0]
     ? formatProgressionRequirement(progression.nextLevel.requirements.missing[0], locale)
     : fr
-      ? "Les règles exactes de progression seront bientôt disponibles."
-      : "The exact progression rules will be available soon.";
+      ? "Tous les prérequis du prochain niveau sont remplis."
+      : "All next-level requirements are met.";
 
   const StatusIcon =
     currentRole.key === "observateur"
@@ -195,7 +195,7 @@ export function EngagementPanel({
                     : "Completed path"}
               </p>
               <p className="mt-1 text-[13px] leading-6 text-[#7d625d]">
-                {fr ? "Réalisez et validez votre première contribution." : "Make and validate your first contribution."}
+                {fr ? "Consultez les prérequis du prochain niveau." : "See the next-level requirements."}
               </p>
             </div>
           </div>
@@ -210,7 +210,7 @@ export function EngagementPanel({
                 {fr ? "Moteur de progression" : "Progression engine"}
               </p>
               <p className="mt-2 text-[14px] font-bold text-[#281614]">
-                {fr ? "En cours d'activation" : "Being activated"}
+                {fr ? "Prérequis du prochain niveau" : "Next-level requirements"}
               </p>
               <p className="mt-1 text-[13px] leading-6 text-[#7d625d]">
                 {progressNote}

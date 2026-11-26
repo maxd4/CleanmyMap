@@ -41,12 +41,14 @@ export function GamificationTabs({ locale, summary, receiptId, renderPanel }: {
   renderPanel: (tab: GamificationTab) => ReactNode;
 }) {
   const [tab, setTab] = useState<GamificationTab>("acquired");
+  const [prevReceiptId, setPrevReceiptId] = useState(receiptId);
   const [target, setTarget] = useState<string | null>(null);
   const fr = locale === "fr";
 
-  useEffect(() => {
+  if (receiptId !== prevReceiptId) {
+    setPrevReceiptId(receiptId);
     if (receiptId) setTab("acquired");
-  }, [receiptId]);
+  }
 
   useEffect(() => {
     const reveal = () => {

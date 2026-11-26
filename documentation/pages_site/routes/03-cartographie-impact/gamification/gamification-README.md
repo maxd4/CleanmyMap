@@ -11,9 +11,15 @@ Point d entrée de la rubrique gamification, désormais canonique sur `/sections
 
 La présentation détaillée décrit la section `/sections/gamification`. L URL `/gamification` reste un alias de compatibilité. La spec canonique centralise les règles métier des badges, des paliers, des XP et des garde-fous.
 
-La surface authentifiée expose désormais séparément le niveau global réel et
-potentiel, sa progression vers le prochain niveau et les prérequis manquants,
-puis un retour d'impact personnel. Les indicateurs d'eau, de CO₂e et de surface
+La surface authentifiée présente un panneau de niveau compact : niveau acquis,
+niveau potentiel, XP validée et en attente, progression et prérequis du niveau
+suivant. Les cinq onglets sont Mes acquis, En cours, À débloquer, Communauté et
+Badges. Les conditions détaillées sont repliées ; seuls les panneaux du bloc
+actif sont montés. La reconnaissance et les collections spécialisées restent
+accessibles sans exposer de nouveaux indicateurs. L'historique des reçus demeure
+accessible sous les onglets, sans réinitialisation à chaque changement de vue.
+Les notifications et avis de réconciliation restent visibles indépendamment
+de l'onglet. L'impact personnel est présenté dans Mes acquis, distinct de l'XP. Les indicateurs d'eau, de CO₂e et de surface
 sont affichés comme des proxys, à partir des valeurs fournies par
 `GET /api/gamification/me`, avec un lien vers la méthodologie documentée.
 

@@ -5,7 +5,7 @@
 **Statut : `CURRENT` pour les parcours effectivement livrés ; les améliorations visuelles non testées ne sont pas des constats runtime.** La source fonctionnelle propriétaire de la page est [gamification-README.md](./gamification-README.md) ; les règles d'XP, badges et progression restent dans [gamification-SPEC_CANONIQUE.md](./gamification-SPEC_CANONIQUE.md) et le moteur web.
 
 - **Route** : `/sections/gamification`, section personnelle accessible après authentification, distincte du classement public `/sections/leaderboard`.
-- **Parcours** : consulter le niveau acquis/potentiel, les prérequis, les collections, les jalons, la reconnaissance personnelle et les reçus de réconciliation ; accéder volontairement au classement sans l'intégrer à la rubrique privée.
+- **Parcours** : niveau et XP toujours visibles ; les cinq onglets séparent les acquis, objectifs en cours, objectifs à débloquer, reconnaissance communautaire et collections. Les conditions sont dépliables ; les reçus restent accessibles sous les onglets. Le classement s'ouvre volontairement sur sa route dédiée.
 - **Vie privée** : le classement est une projection publique opt-in, désactivée par défaut dans les réglages. Aucun historique personnel détaillé ni identifiant privé ne doit y apparaître.
 - **États UI** : chargement, progression non démarrée, collections en cours/terminées, notifications acquittées/non acquittées, absence ou indisponibilité des données. Ne pas remplacer un état inconnu par un zéro ou une valeur supposée.
 - **Présentation** : palette Impact rouge, respect des modes de visibilité et préférences de mouvement. Les anciens jugements de « surcharge » ou de « priorité critique » ne valent pas preuve d'audit visuel actuel.
@@ -44,7 +44,7 @@ l'ouverture effective de `/sections/leaderboard`.
 - badges réguliers;
 - retours d impact;
 - distinctions de confiance;
-- surfaces de lecture calmes, pas un jeu mobile.
+- panneaux visuels inspirés des jeux mobiles, sans monnaie virtuelle, objectifs fictifs ni compétition artificielle.
 
 ## Mécaniques CURRENT à garder visibles
 
