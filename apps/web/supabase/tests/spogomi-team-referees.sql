@@ -362,20 +362,18 @@ begin
   end;
 exception when others then
   if sqlstate = '23514' then
-    raise exception using errcode = case v_step
-      when 'INIT' then 'P0010'
-      when 'SETUP' then 'P0011'
-      when 'QUALIFY_WC' then 'P0012'
-      when 'CASUAL_QUALIFY' then 'P0013'
-      when 'PARTICIPANTS' then 'P0014'
-      when 'REJECTS' then 'P0015'
-      when 'ASSIGN_1_1' then 'P0016'
-      when 'READINESS' then 'P0017'
-      when 'REQUALIFY' then 'P0018'
-      when 'REVOKE' then 'P0019'
-      when 'ROUTE_MEDIA' then 'P0020'
-      else 'P0099'
-    end, message = 'STEP=' || v_step || ' ERR=' || sqlerrm;
+    if v_step = 'INIT' then raise exception using errcode = '22001';
+    elsif v_step = 'SETUP' then raise exception using errcode = '22002';
+    elsif v_step = 'QUALIFY_WC' then raise exception using errcode = '22003';
+    elsif v_step = 'CASUAL_QUALIFY' then raise exception using errcode = '22004';
+    elsif v_step = 'PARTICIPANTS' then raise exception using errcode = '22005';
+    elsif v_step = 'REJECTS' then raise exception using errcode = '22007';
+    elsif v_step = 'ASSIGN_1_1' then raise exception using errcode = '22008';
+    elsif v_step = 'READINESS' then raise exception using errcode = '22012';
+    elsif v_step = 'REQUALIFY' then raise exception using errcode = '22021';
+    elsif v_step = 'REVOKE' then raise exception using errcode = '22023';
+    elsif v_step = 'ROUTE_MEDIA' then raise exception using errcode = '22026';
+    end if;
   end if;
   raise;
 end;
