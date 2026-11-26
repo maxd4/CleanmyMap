@@ -17,8 +17,13 @@ import { gitExecutable } from "../ci/git-executable.mjs";
 import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
 import { createGitRepositoryView } from "../checks/repository-view.mjs";
 import { countPhysicalLines } from "./repository-growth.mjs";
+import {
+  analyzeCampaignCompleteness,
+  analyzeTestProofQuality,
+  buildDomainTestDiagnostics,
+} from "./test-quality-signals.mjs";
 
-export const MODULE_TEST_METRICS_SCHEMA_VERSION = 3;
+export const MODULE_TEST_METRICS_SCHEMA_VERSION = 4;
 export const MODULE_TEST_METRICS_OUTPUT = "documentation/operations/audits/module-test-metrics.json";
 const SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]);
 const COVERAGE_METRICS = ["lines", "functions", "branches", "statements"];
@@ -466,6 +471,14 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
   const totalTests = [...domains.values()].reduce((sum, entry) => sum + entry.testFiles, 0);
   const highPriority = ["auth-authz", "api", "actions", "account", "maps-location", "payments", "import-export", "learning", "spogomi", "mobile/services"]
     .filter((domain) => domains.has(domain));
+  const allTrackedFiles = sourceView.listFiles();
+  const readTrackedText = (file) => sourceView.readText(file);
+  const mutationBaseline = readJson(path.join(root, "scripts/checks/mutation-baseline.json"));
+  const mutationReport = readJson(path.join(root, "artifacts/quality-hardening/mutation/stryker-report.json"));
+  const campaignCompleteness = analyzeCampaignCompleteness(allTrackedFiles, readTrackedText);
+  const proofQuality = analyzeTestProofQuality(allTrackedFiles, readTrackedText, { mutationBaseline, mutationReport });
+  const sortedDomains = Object.fromEntries([...domains.entries()].sort(([left], [right]) => left.localeCompare(right)));
+  const diagnostics = buildDomainTestDiagnostics({ domains: sortedDomains, campaignCompleteness, proofQuality });
 
   return {
     schemaVersion: MODULE_TEST_METRICS_SCHEMA_VERSION,
@@ -559,7 +572,10 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
         }
         : { ...duplication, attestation: duplication.attestationStatus ?? "NOT_ATTESTED" },
     },
-    domains: Object.fromEntries([...domains.entries()].sort(([left], [right]) => left.localeCompare(right))),
+    domains: sortedDomains,
+    campaignCompleteness,
+    proofQuality,
+    diagnostics,
   };
 }
 

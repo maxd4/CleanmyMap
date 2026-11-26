@@ -1484,3 +1484,28 @@ test("offline refuse un verdict agrégé contradictoire avec les manifestes indi
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("triage.testQuality sépare défaut démontré, signal heuristique et mesure indisponible", async () => {
+  const { buildQualityFileIndexTriage } = await import("./quality-index-triage.mjs");
+  const triage = buildQualityFileIndexTriage({
+    files: [
+      {
+        path: "apps/web/src/lib/auth/session.ts",
+        metrics: { topHeavy: { state: "NOT_MEASURED", items: [] }, coverage: { state: "PRESENT", items: [{ uncoveredBranches: 25, branches: { pct: 50 } }] } },
+        findings: {},
+        provenance: { coverage: "coverage-summary.json" },
+      },
+      {
+        path: "apps/web/src/lib/foo.test.ts",
+        metrics: { topHeavy: { state: "PRESENT", items: [{ kind: "test", lines: 50, bytes: 1000, aboveHard: false, aboveReview: false }] }, coverage: { state: "NOT_MEASURED", items: [] } },
+        findings: { duplication: { state: "PRESENT", items: [{}] } },
+        provenance: { duplication: "jscpd" },
+      },
+    ],
+    audits: { documentation: { state: "NOT_MEASURED" }, complexity: { state: "NOT_MEASURED" }, coverage: { state: "PRESENT" }, testability: { state: "NOT_MEASURED" } },
+  });
+  assert.equal(triage.testQuality.state, "PRESENT");
+  assert.equal(triage.testQuality.candidates[0].classification, "DEMONSTRATED_DEFECT");
+  assert.equal(triage.testQuality.candidates[1].classification, "HEURISTIC_SIGNAL");
+  assert.deepEqual(triage.testQuality.unavailableMeasurements, ["testability"]);
+});

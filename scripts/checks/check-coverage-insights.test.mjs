@@ -218,3 +218,36 @@ test("un rapport de couverture scoped ne mélange pas les producteurs Web et Mob
     assert.deepEqual(result.scopes.map((entry) => entry.scope), ["web"]);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
+
+test("differentialCoverage reste NOT_MEASURED sans baseRef et classe les lignes modifiées par famille de risque", () => {
+  const root = tempRoot();
+  try {
+    fixture(root);
+    const withoutBase = buildCoverageInsightsReport({
+      root,
+      auditedSha: sha,
+      reports: [definition],
+      validateSonar: () => [{ status: "VALID" }],
+      validateEvidence: () => ({ gitHead: sha }),
+    });
+    assert.equal(withoutBase.differentialCoverage.status, "NOT_MEASURED");
+    assert.equal(withoutBase.differentialCoverage.reason, "BASE_REF_REQUIRED");
+
+    const withBase = buildCoverageInsightsReport({
+      root,
+      auditedSha: sha,
+      reports: [definition],
+      validateSonar: () => [{ status: "VALID" }],
+      validateEvidence: () => ({ gitHead: sha }),
+      baseRef: "main~1",
+      measureChangedLineCoverageFn: () => ({
+        status: "OBSERVE",
+        files: [{ path: "apps/web/src/lib/auth/session.ts", uncoveredLines: [10, 11] }],
+        lines: { covered: 2, total: 4, pct: 50 },
+        provenance: { baseRef: "main~1", currentRef: sha },
+      }),
+    });
+    assert.equal(withBase.differentialCoverage.files[0].riskFamily, "security");
+    assert.equal(withBase.differentialCoverage.byRiskFamily.security, 2);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});

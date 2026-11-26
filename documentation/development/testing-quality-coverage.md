@@ -661,6 +661,28 @@ comparaison avant/après exige la même méthode, le même SHA candidat, les mê
 fichiers instrumentés, le même périmètre, les mêmes exclusions et les mêmes
 dénominateurs ; sinon elle est `NON_COMPARABLE`.
 
+Les rapports CI Web/Node ont une couverture suivie séparément ; les extensions
+d'observabilité des générateurs existants ajoutent, sans nouveau seuil bloquant
+ni score arbitraire :
+
+- `module-test-metrics` (`schemaVersion: 4`, `scripts/reports/generate-module-test-metrics.mjs` + `scripts/reports/test-quality-signals.mjs`) :
+  réconciliation des campagnes (`campaignCompleteness` : fichiers suivis vs inclus,
+  exclusions `LEGITIMATE_INFRA` / `CONDITIONAL_POLICY` / `UNJUSTIFIED_OR_ORPHAN`,
+  marqueurs `skip`/`todo`/`only`, raccordement CI), qualité des preuves
+  (`proofQuality` : candidats heuristiques `assertionLessCandidates` et
+  `mockHeavyCandidates`, croisement des catalogues API/permissions/transitions/SQL,
+  synthèse Stryker et domaines critiques non évalués) et `diagnostics` par
+  domaine séparant `DEMONSTRATED_DEFECT`, `HEURISTIC_SIGNAL` et `UNAVAILABLE_MEASUREMENT`.
+- `coverage-insights` (`scripts/checks/check-coverage-insights.mjs`) :
+  projection optionnelle `differentialCoverage` via `measureChangedLineCoverage`
+  et classification par famille de risque lorsque `--base-ref` est fourni (`NOT_MEASURED` sinon).
+- `quality-index` (`scripts/reports/quality-index-triage.mjs`) :
+  projection `triage.testQuality` dérivée des mesures existantes avec priorité, preuve, provenance et action recommandée.
+- `cicd-metrics-report` (`scripts/reports/cicd-metrics-report.mjs`) :
+  fiabilité et coût par job (`slowestJobs`, `retriedRuns`, `recurringFailures`,
+  classification `CANCELLED` / `INFRA_OR_TIMEOUT` / `FLAKY_OR_INDETERMINATE` / `REGRESSION_OR_PERSISTENT_FAIL`,
+  et comparabilité conditionnée au workflow, runner OS et périmètre).
+
 ### Rapports de couverture importés par SonarQube Cloud
 
 Le workflow manuel `sonarqube-manual.yml` produit quatre rapports distincts

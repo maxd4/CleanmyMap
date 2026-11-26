@@ -237,15 +237,99 @@ function getGitHubRuns(repoFullName, workflowFile, limit) {
   return Array.isArray(data) ? data : [];
 }
 
-function getGitHubJobCount(repoFullName, runId) {
+function getGitHubRunJobs(repoFullName, runId) {
   const output = runCommand("gh", [
     "api",
     `repos/${repoFullName}/actions/runs/${runId}/jobs`,
     "--jq",
-    ".jobs | length",
-  ]);
+    ".jobs",
+  ], { allowFailure: true });
+  if (!output) return [];
+  try {
+    const parsed = JSON.parse(output);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
-  return Number.parseInt(output.trim(), 10) || 0;
+export function classifyRunFailure(conclusion, attempt = 1, sameShaConclusions = []) {
+  if (!conclusion || conclusion === "success" || conclusion === "skipped" || conclusion === "neutral") return "PASS";
+  if (conclusion === "cancelled") return "CANCELLED";
+  if (conclusion === "timed_out" || conclusion === "startup_failure" || conclusion === "action_required") return "INFRA_OR_TIMEOUT";
+  if (Number(attempt) > 1 || sameShaConclusions.includes("success")) return "FLAKY_OR_INDETERMINATE";
+  return "REGRESSION_OR_PERSISTENT_FAIL";
+}
+
+export function summarizeCicdReliability(runsWithJobs) {
+  const byJob = new Map();
+  const shaConclusions = new Map();
+  let retriedRuns = 0;
+
+  for (const entry of runsWithJobs) {
+    if (Number(entry.attempt ?? 1) > 1) retriedRuns += 1;
+    const sha = entry.headSha ?? "unknown";
+    const list = shaConclusions.get(sha) ?? [];
+    list.push(entry.conclusion ?? "unknown");
+    shaConclusions.set(sha, list);
+  }
+
+  const failureBreakdown = { CANCELLED: 0, INFRA_OR_TIMEOUT: 0, FLAKY_OR_INDETERMINATE: 0, REGRESSION_OR_PERSISTENT_FAIL: 0 };
+  for (const entry of runsWithJobs) {
+    const cls = classifyRunFailure(entry.conclusion, entry.attempt, shaConclusions.get(entry.headSha ?? "unknown") ?? []);
+    if (cls !== "PASS") failureBreakdown[cls] = (failureBreakdown[cls] ?? 0) + 1;
+
+    for (const job of entry.jobs ?? []) {
+      const key = `${entry.workflowName ?? "unknown"} :: ${job.name ?? "unknown"}`;
+      const start = job.started_at ? Date.parse(job.started_at) : NaN;
+      const end = job.completed_at ? Date.parse(job.completed_at) : NaN;
+      const durationMs = Number.isFinite(start) && Number.isFinite(end) && end >= start ? end - start : null;
+      const bucket = byJob.get(key) ?? {
+        workflow: entry.workflowName ?? "unknown",
+        job: job.name ?? "unknown",
+        runnerOs: (job.labels ?? []).join(",") || "unknown",
+        runs: 0,
+        failures: 0,
+        totalDurationMs: 0,
+        measuredDurations: 0,
+        maxDurationMs: 0,
+      };
+      bucket.runs += 1;
+      if (job.conclusion && !["success", "skipped", "neutral"].includes(job.conclusion)) bucket.failures += 1;
+      if (durationMs !== null) {
+        bucket.totalDurationMs += durationMs;
+        bucket.measuredDurations += 1;
+        bucket.maxDurationMs = Math.max(bucket.maxDurationMs, durationMs);
+      }
+      byJob.set(key, bucket);
+    }
+  }
+
+  const slowestJobs = [...byJob.values()]
+    .filter((b) => b.measuredDurations > 0)
+    .map((b) => ({
+      workflow: b.workflow,
+      job: b.job,
+      runnerOs: b.runnerOs,
+      runs: b.runs,
+      avgDurationMs: Math.round(b.totalDurationMs / b.measuredDurations),
+      maxDurationMs: b.maxDurationMs,
+    }))
+    .sort((a, b) => b.avgDurationMs - a.avgDurationMs)
+    .slice(0, 15);
+
+  const recurringFailures = [...byJob.values()]
+    .filter((b) => b.failures > 0)
+    .sort((a, b) => b.failures - a.failures || a.job.localeCompare(b.job))
+    .slice(0, 15);
+
+  return {
+    retriedRuns,
+    failureBreakdown,
+    slowestJobs,
+    recurringFailures,
+    comparabilityNote: "Durations and failure rates are only comparable across identical workflow, runner OS labels, and triggered scope.",
+  };
 }
 
 function analyzeCacheLog(stdout) {
@@ -498,8 +582,13 @@ export async function main() {
 
   const githubRuns = [...ciRuns, ...codeqlRuns];
   const githubSummary = summarizeByWorkflow(githubRuns);
-  const githubRows = githubRuns.map((run) => {
-    const jobsCount = getGitHubJobCount(repo.fullName, run.databaseId);
+  const runsWithJobs = githubRuns.map((run) => ({
+    ...run,
+    jobs: getGitHubRunJobs(repo.fullName, run.databaseId),
+  }));
+  const reliability = summarizeCicdReliability(runsWithJobs);
+  const githubRows = runsWithJobs.map((run) => {
+    const jobsCount = run.jobs.length;
     const durationMs = getDerivedRunDurationMs(run);
     return [
       run.workflowName,
@@ -548,6 +637,7 @@ export async function main() {
       github: {
         summaryByWorkflow: githubSummary,
         runs: githubRows,
+        reliability,
         cache: {
           runs: cacheStats.rows,
           totalHits: cacheStats.totalHits,
@@ -607,6 +697,19 @@ export async function main() {
   );
   lines.push("");
   lines.push(`Cache lines scanned: hits=${cacheStats.totalHits}, misses=${cacheStats.totalMisses}`);
+  lines.push("");
+
+  lines.push(`## Test Reliability & Slowest Jobs`);
+  lines.push(`- Retried runs (attempt > 1): ${reliability.retriedRuns}`);
+  lines.push(`- Failure breakdown: CANCELLED=${reliability.failureBreakdown.CANCELLED}, INFRA_OR_TIMEOUT=${reliability.failureBreakdown.INFRA_OR_TIMEOUT}, FLAKY_OR_INDETERMINATE=${reliability.failureBreakdown.FLAKY_OR_INDETERMINATE}, REGRESSION_OR_PERSISTENT_FAIL=${reliability.failureBreakdown.REGRESSION_OR_PERSISTENT_FAIL}`);
+  lines.push(`- Comparability: ${reliability.comparabilityNote}`);
+  if (reliability.slowestJobs.length > 0) {
+    lines.push("");
+    lines.push(markdownTable(
+      ["workflow", "job", "runner", "runs", "avg duration", "max duration"],
+      reliability.slowestJobs.map((j) => [j.workflow, j.job, j.runnerOs, String(j.runs), formatDurationMs(j.avgDurationMs), formatDurationMs(j.maxDurationMs)]),
+    ));
+  }
   lines.push("");
 
   lines.push(`## Vercel Deployments`);

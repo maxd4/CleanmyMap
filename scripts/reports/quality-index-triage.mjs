@@ -234,6 +234,44 @@ function buildFunctionTriage(files, audits) {
   };
 }
 
+function buildTestQualityTriage(files, audits) {
+  const candidates = [];
+  for (const file of files) {
+    const covMetric = file.metrics?.coverage?.items?.[0];
+    const uncoveredBranches = covMetric?.uncoveredBranches ?? 0;
+    const branchPct = covMetric?.branches?.pct ?? null;
+    if (uncoveredBranches > 0 && branchPct !== null && branchPct < 80) {
+      candidates.push({
+        path: file.path,
+        priority: uncoveredBranches >= 20 ? "P1" : "P2",
+        classification: "DEMONSTRATED_DEFECT",
+        evidence: file.metrics.coverage.state,
+        provenance: file.provenance?.coverage ?? "NOT_MEASURED",
+        detail: `${uncoveredBranches} branche(s) non couverte(s) (${branchPct}%)`,
+        recommendedAction: "Ajouter des tests comportementaux ciblant les branches non couvertes.",
+      });
+    } else if (triageFileKind(file) === "test" && file.findings?.duplication?.state === "PRESENT") {
+      candidates.push({
+        path: file.path,
+        priority: "P3",
+        classification: "HEURISTIC_SIGNAL",
+        evidence: "PRESENT",
+        provenance: file.provenance?.duplication ?? "NOT_MEASURED",
+        detail: "duplication détectée dans un fichier de test",
+        recommendedAction: "Examiner la mutualisation de fixtures sans absorber les assertions métier.",
+      });
+    }
+  }
+  const unavailable = [];
+  if (audits?.coverage?.state === "NOT_MEASURED") unavailable.push("coverage");
+  if (audits?.testability?.state === "NOT_MEASURED") unavailable.push("testability");
+  return {
+    state: candidates.length > 0 ? "PRESENT" : unavailable.length > 0 ? "NOT_MEASURED" : "NONE",
+    candidates: candidates.sort((a, b) => a.priority.localeCompare(b.priority) || a.path.localeCompare(b.path)).slice(0, 20),
+    unavailableMeasurements: unavailable,
+  };
+}
+
 export function buildQualityFileIndexTriage({ files = [], audits = {}, source = {}, candidateGroups = [], comparison = null } = {}) {
   const code = buildCodeTriage(files);
   const tests = buildTestTriage(files);
@@ -241,6 +279,7 @@ export function buildQualityFileIndexTriage({ files = [], audits = {}, source = 
   return {
     code: { state: code.length > 0 ? "PRESENT" : files.length > 0 ? "NONE" : "NOT_MEASURED", candidates: code },
     tests: { state: tests.length > 0 ? "PRESENT" : files.length > 0 ? "NONE" : "NOT_MEASURED", candidates: tests },
+    testQuality: buildTestQualityTriage(files, audits),
     documentation: buildDocumentationTriage(audits, source),
     functions: buildFunctionTriage(files, audits),
     decision,

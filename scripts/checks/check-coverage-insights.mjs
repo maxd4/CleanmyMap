@@ -6,7 +6,12 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { validateCoverageEvidence } from "./coverage-evidence.mjs";
-import { COVERAGE_METRICS } from "./coverage-policy.mjs";
+import {
+  COVERAGE_ENFORCEMENT_POLICY,
+  COVERAGE_METRICS,
+  classifyCoverageFile,
+  measureChangedLineCoverage,
+} from "./coverage-policy.mjs";
 import { validateCoveragePublicationProof } from "../ci/coverage-publication.mjs";
 import { REPORT_DEFINITIONS, validateSonarCoverageReports } from "./prepare-sonarqube-coverage.mjs";
 import { normalizeQualityScope } from "./quality-scope.mjs";
@@ -277,12 +282,38 @@ function duplicationInsights(report) {
   return { scope: activeScope, state: scopes.some((entry) => entry.state === "MEASURED" || entry.state === "FAIL") ? "MEASURED" : "NOT_MEASURED", threshold: DUPLICATION_WARNING_THRESHOLD, scopes, warnings, diagnostics: [], transverse: activeScope === "all" ? null : { state: "PRESENT", source: "GLOBAL_DUPLICATION_RATCHET" } };
 }
 
-export function buildCoverageInsightsReport({ root = process.cwd(), auditedSha = null, fsApi = fs, reports = REPORT_DEFINITIONS, validateEvidence: validateEvidenceFn = validateCoverageEvidence, validatePublicationProof: validatePublicationProofFn = validateCoveragePublicationProof, validateSonar: validateSonarFn = validateSonarCoverageReports, duplicationReport = null, scope = "all" } = {}) {
+function buildDifferentialCoverage({ root, activeScope, baseRef, currentRef, measureChangedLineCoverageFn }) {
+  if (!baseRef) {
+    return { status: "NOT_MEASURED", reason: "BASE_REF_REQUIRED", files: [], byRiskFamily: {}, lines: null, provenance: { baseRef: null, currentRef: currentRef ?? null } };
+  }
+  if (!["all", "web"].includes(activeScope)) {
+    return { status: "NOT_MEASURED", reason: "SCOPE_NOT_WEB", files: [], byRiskFamily: {}, lines: null, provenance: { baseRef, currentRef: currentRef ?? null } };
+  }
+  const result = measureChangedLineCoverageFn({
+    repositoryRoot: root,
+    baseRef,
+    currentRef: currentRef ?? "HEAD",
+    lcovPath: path.join(root, "apps", "web", "coverage", "lcov.info"),
+    scope: "web",
+    policyEntry: COVERAGE_ENFORCEMENT_POLICY.scopes.web.changedLines,
+  });
+  const byRiskFamily = {};
+  const enrichedFiles = (result.files ?? []).map((entry) => {
+    const classification = classifyCoverageFile(entry.path);
+    const family = classification.domain ?? "unclassified";
+    byRiskFamily[family] = (byRiskFamily[family] ?? 0) + (entry.uncoveredLines?.length ?? 0);
+    return { ...entry, riskFamily: family };
+  });
+  return { ...result, files: enrichedFiles, byRiskFamily };
+}
+
+export function buildCoverageInsightsReport({ root = process.cwd(), auditedSha = null, fsApi = fs, reports = REPORT_DEFINITIONS, validateEvidence: validateEvidenceFn = validateCoverageEvidence, validatePublicationProof: validatePublicationProofFn = validateCoveragePublicationProof, validateSonar: validateSonarFn = validateSonarCoverageReports, duplicationReport = null, scope = "all", baseRef = null, currentRef = null, measureChangedLineCoverageFn = measureChangedLineCoverage } = {}) {
   const activeScope = normalizeQualityScope(scope);
   const startedAt = Date.now();
   const selectedReports = activeScope === "all" ? reports : reports.filter((definition) => definition.scope === activeScope);
   const scopes = selectedReports.map((definition) => buildScope({ root, auditedSha, definition, fsApi, validateEvidence: validateEvidenceFn, validatePublicationProof: validatePublicationProofFn, validateSonar: validateSonarFn }));
   const duplication = duplicationInsights(duplicationReport);
+  const differentialCoverage = buildDifferentialCoverage({ root, activeScope, baseRef, currentRef: currentRef ?? auditedSha, measureChangedLineCoverageFn });
   const warnings = [...scopes.flatMap((scope) => scope.warnings), ...duplication.warnings];
   const diagnostics = [...scopes.flatMap((scope) => scope.diagnostics), ...duplication.diagnostics];
   const measured = scopes.filter((scope) => scope.state === "MEASURED").length;
@@ -296,6 +327,7 @@ export function buildCoverageInsightsReport({ root = process.cwd(), auditedSha =
     auditedSha,
     thresholds: { coverageWarningPct: COVERAGE_WARNING_THRESHOLD, duplicationWarningPct: DUPLICATION_WARNING_THRESHOLD },
     scopes,
+    differentialCoverage,
     duplication,
     warnings,
     diagnostics,
