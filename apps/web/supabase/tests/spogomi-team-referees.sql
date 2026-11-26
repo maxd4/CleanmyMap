@@ -121,23 +121,17 @@ begin
   end loop;
 
   foreach v_ref_unhab in array array[v_ref_1, v_ref_2, v_ref_3] loop
-    v_step := 'Q_CREATE';
     v_res := public.spogomi_create_referee_application(v_event_id, v_world_cup_id, v_ref_unhab);
     v_app_id := (v_res->>'applicationId')::uuid;
-    v_step := 'Q_QUIZ';
     v_res := public.spogomi_submit_referee_quiz(v_event_id, v_world_cup_id, v_ref_unhab, v_private_def->>'quizVersion', v_answers);
-    v_step := 'Q_PRACTICAL';
     perform public.spogomi_confirm_referee_practical(v_app_id, v_org_clerk, 'practical-v1', '{"verified":true}'::jsonb);
-    v_step := 'Q_DECIDE';
     perform public.spogomi_decide_referee_application(v_app_id, v_org_clerk, 'approve', 'habilitated');
-    v_step := 'Q_REVIEWER';
-    insert into public.spogomi_event_reviewers (event_id, clerk_id, role, assigned_by_clerk_id)
-    values (v_event_id, v_ref_unhab, 'referee', v_org_clerk)
+    insert into public.spogomi_event_reviewers (event_id, division_id, clerk_id, role, assigned_by_clerk_id)
+    values (v_event_id, v_world_cup_id, v_ref_unhab, 'referee', v_org_clerk)
     on conflict do nothing;
   end loop;
 
   -- Also qualify v_ref_casual on Casual division (distinct reg-casual-v1)
-  v_step := 'CASUAL_QUALIFY';
   v_private_casual := public.spogomi_referee_quiz_definition_private(v_event_id, v_casual_id);
   v_answers := '{}'::jsonb;
   for v_question in select value from jsonb_array_elements(v_private_casual->'questions') loop
@@ -148,8 +142,8 @@ begin
   v_res := public.spogomi_submit_referee_quiz(v_event_id, v_casual_id, v_ref_casual, v_private_casual->>'quizVersion', v_answers);
   perform public.spogomi_confirm_referee_practical(v_app_id, v_org_clerk, 'practical-casual-v1', '{"verified":true}'::jsonb);
   perform public.spogomi_decide_referee_application(v_app_id, v_org_clerk, 'approve', 'habilitated casual');
-  insert into public.spogomi_event_reviewers (event_id, clerk_id, role, assigned_by_clerk_id)
-  values (v_event_id, v_ref_casual, 'referee', v_org_clerk)
+  insert into public.spogomi_event_reviewers (event_id, division_id, clerk_id, role, assigned_by_clerk_id)
+  values (v_event_id, v_casual_id, v_ref_casual, 'referee', v_org_clerk)
   on conflict do nothing;
 
   v_step := 'PARTICIPANTS';
@@ -365,27 +359,6 @@ begin
     raise exception 'spogomi_upsert_planned_route accepted a report_photo media';
   exception when sqlstate '23514' then null;
   end;
-exception when others then
-  if sqlstate = '23514' then
-    if v_step = 'INIT' then raise exception using errcode = '22001', message = 'SQLSTATE=22001';
-    elsif v_step = 'SETUP' then raise exception using errcode = '22002', message = 'SQLSTATE=22002';
-    elsif v_step = 'QUALIFY_WC' then raise exception using errcode = '22003', message = 'SQLSTATE=22003';
-    elsif v_step = 'Q_CREATE' then raise exception using errcode = '22031', message = 'SQLSTATE=22031';
-    elsif v_step = 'Q_QUIZ' then raise exception using errcode = '22032', message = 'SQLSTATE=22032';
-    elsif v_step = 'Q_PRACTICAL' then raise exception using errcode = '22033', message = 'SQLSTATE=22033';
-    elsif v_step = 'Q_DECIDE' then raise exception using errcode = '22034', message = 'SQLSTATE=22034';
-    elsif v_step = 'Q_REVIEWER' then raise exception using errcode = '22035', message = 'SQLSTATE=22035';
-    elsif v_step = 'CASUAL_QUALIFY' then raise exception using errcode = '22004', message = 'SQLSTATE=22004';
-    elsif v_step = 'PARTICIPANTS' then raise exception using errcode = '22005', message = 'SQLSTATE=22005';
-    elsif v_step = 'REJECTS' then raise exception using errcode = '22007', message = 'SQLSTATE=22007';
-    elsif v_step = 'ASSIGN_1_1' then raise exception using errcode = '22008', message = 'SQLSTATE=22008';
-    elsif v_step = 'READINESS' then raise exception using errcode = '22012', message = 'SQLSTATE=22012';
-    elsif v_step = 'REQUALIFY' then raise exception using errcode = '22021', message = 'SQLSTATE=22021';
-    elsif v_step = 'REVOKE' then raise exception using errcode = '22023', message = 'SQLSTATE=22023';
-    elsif v_step = 'ROUTE_MEDIA' then raise exception using errcode = '22026', message = 'SQLSTATE=22026';
-    end if;
-  end if;
-  raise;
 end;
 $$;
 
