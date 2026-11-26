@@ -155,6 +155,7 @@ vi.mock("@/lib/gamification/progression/progression-ranking-data", () => ({
 vi.mock("@/lib/profiles", () => ({
   getProfileLabel: vi.fn((profile: string) => profile),
   getProfilePrimaryAction: vi.fn(() => profileAction),
+  getProfileActions: vi.fn(() => [profileAction]),
   getSwitchableProfiles: vi.fn(() => ["admin", "benevole"]),
   isAdminLikeProfile: mocks.isAdminLikeProfile,
   toProfile: vi.fn((role: string) => role),
@@ -164,7 +165,15 @@ vi.mock("@/lib/ui/page-families", () => ({
   resolvePageFamily: vi.fn(() => ({ id: "accueil-pilotage" })),
 }));
 
+vi.mock("@/components/dashboard/dashboard-legacy-anchor", () => ({
+  DashboardLegacyAnchor: () => null,
+}));
+
 import DashboardPage from "./page";
+
+function renderPage(tab?: string) {
+  return DashboardPage({ searchParams: Promise.resolve({ tab }) });
+}
 
 describe("/dashboard page contract", () => {
   beforeEach(() => {
@@ -193,7 +202,7 @@ describe("/dashboard page contract", () => {
   it("covers the non-connected state without loading account data", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: false });
 
-    const markup = renderToStaticMarkup(await DashboardPage());
+    const markup = renderToStaticMarkup(await renderPage());
 
     expect(markup).toContain('data-testid="signin-gate"');
     expect(markup).not.toContain('data-testid="dashboard-overview"');
@@ -207,7 +216,7 @@ describe("/dashboard page contract", () => {
       requirement: { requiresSetup: true, reason: "missing_profile" },
     });
 
-    const markup = renderToStaticMarkup(await DashboardPage());
+    const markup = renderToStaticMarkup(await renderPage());
 
     expect(markup).toContain('data-testid="dashboard-entrance"');
     expect(markup).not.toContain('data-testid="profile-completion-required"');
@@ -216,20 +225,26 @@ describe("/dashboard page contract", () => {
   it("keeps declaration, history and reports navigation visible", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
 
-    const markup = renderToStaticMarkup(await DashboardPage());
+    const markup = renderToStaticMarkup(await renderPage());
 
     expect(markup).toContain('href="/actions/new"');
     expect(markup).toContain('href="/actions/history"');
     expect(markup).toContain('href="/reports"');
+    expect(markup).not.toContain('id="notifications"');
+    expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
+    expect(mocks.fetchCachedReferralSummary).not.toHaveBeenCalled();
+    expect(mocks.loadUserLevelRankingSummary).not.toHaveBeenCalled();
   });
 
   it("exposes the functional notifications destination section", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
 
-    const markup = renderToStaticMarkup(await DashboardPage());
+    const markup = renderToStaticMarkup(await renderPage("notifications"));
 
     expect(markup).toContain('id="notifications"');
     expect(markup).toContain('data-testid="dashboard-notifications"');
+    expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
+    expect(mocks.fetchCachedReferralSummary).not.toHaveBeenCalled();
   });
 
   it("keeps reporting and moderation workflows out of the dashboard", async () => {
@@ -241,7 +256,7 @@ describe("/dashboard page contract", () => {
     });
     mocks.getCurrentUserRoleLabel.mockResolvedValue("admin");
 
-    const markup = renderToStaticMarkup(await DashboardPage());
+    const markup = renderToStaticMarkup(await renderPage());
 
     expect(markup).not.toContain("admin-export-workflow");
     expect(markup).not.toContain("/api/reports/actions.csv");
@@ -252,7 +267,7 @@ describe("/dashboard page contract", () => {
   it("points account configuration to the canonical settings surface", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
 
-    const markup = renderToStaticMarkup(await DashboardPage());
+    const markup = renderToStaticMarkup(await renderPage("account"));
 
     expect(markup).toContain('href="/reglages"');
     expect(markup).toContain("Ouvrir les réglages");
@@ -268,7 +283,7 @@ describe("/dashboard page contract", () => {
       role: "max",
     });
 
-    const markup = renderToStaticMarkup(await DashboardPage());
+    const markup = renderToStaticMarkup(await renderPage("account"));
 
     expect(markup).toContain('data-testid="profile-switcher"');
     expect(markup).toContain('data-granted-role="max"');

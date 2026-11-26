@@ -118,21 +118,21 @@ export function NotificationListItem({
     <article
       data-notification-state={displayState}
       className={`relative flex w-full border-b px-3.5 py-3 transition-colors ${
-        compact ? "border-white/10" : "border-amber-200/14"
+        compact ? "border-white/10" : "border-current/10"
       } ${
         compact
           ? isUnread
             ? "bg-white/[0.05]"
             : "bg-white/[0.015]"
           : isUnread
-            ? "bg-amber-100/[0.08]"
-            : "bg-amber-950/[0.12]"
+            ? "bg-amber-500/[0.06]"
+            : "bg-transparent"
       }`}
     >
       {isUnread ? (
         <span
           className={`absolute left-1.5 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full ${
-            compact ? "bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" : "bg-amber-300"
+            compact ? "bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" : "bg-amber-600"
           }`}
           aria-label={locale === "fr" ? "Non lue" : "Unread"}
         />
@@ -142,7 +142,7 @@ export function NotificationListItem({
           className={`rounded-xl border p-2 ${
             compact
               ? `border-white/10 ${isUnread ? "bg-white/[0.06]" : "bg-white/[0.03] opacity-70"}`
-              : `border-amber-200/20 ${isUnread ? "bg-amber-100/[0.12]" : "bg-amber-950/[0.16] opacity-70"}`
+              : `border-current/10 ${isUnread ? "bg-amber-500/[0.08]" : "bg-transparent"}`
           }`}
         >
           {getNotificationIcon(notification.type)}
@@ -160,7 +160,7 @@ export function NotificationListItem({
           displayState={displayState}
           onClick={onClick}
         />
-        <NotificationDecisionActions decision={decision} locale={locale} />
+        <NotificationDecisionActions decision={decision} locale={locale} compact={compact} />
         <NotificationMuteAction
           notification={notification}
           locale={locale}
@@ -193,7 +193,7 @@ function NotificationMuteAction({
         event.stopPropagation();
         onMuteAction(actionId);
       }}
-      className={`mt-2 text-xs font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 ${compact ? "text-sky-300 focus-visible:ring-sky-300" : "text-amber-100/80 focus-visible:ring-amber-200"}`}
+      className={`mt-2 text-xs font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 ${compact ? "text-sky-300 focus-visible:ring-sky-300" : "cmm-text-secondary focus-visible:ring-amber-600"}`}
     >
       {locale === "fr" ? "Masquer les informations de cette action" : "Hide information for this action"}
     </button>
@@ -222,37 +222,33 @@ function NotificationOpenButton({
   onClick: (notification: AppNotification) => void;
 }) {
   const actionEventLabel = getActionEventLabel(notification, locale);
-  const titleClass = isUnread
-    ? compact ? "text-white" : "text-amber-50"
-    : compact ? "text-white/60" : "text-amber-100/62";
-  const contentClass = isUnread
-    ? compact ? "text-white/72" : "text-amber-50/82"
-    : compact ? "text-white/54" : "text-amber-100/62";
+  const titleClass = compact ? (isUnread ? "text-white" : "text-white/60") : "cmm-text-primary";
+  const contentClass = compact ? (isUnread ? "text-white/72" : "text-white/54") : "cmm-text-secondary";
   const stateClass = displayState === "decision_pending"
-    ? "border-amber-300/50 text-amber-200"
+    ? (compact ? "border-amber-300/50 text-amber-200" : "border-current/30 cmm-text-warning")
     : displayState === "unavailable"
-      ? "border-slate-300/30 text-slate-300/80"
+      ? (compact ? "border-slate-300/30 text-slate-300/80" : "border-current/20 cmm-text-secondary")
       : displayState === "treated"
-        ? "border-emerald-300/40 text-emerald-200"
-        : compact ? "border-white/15 text-white/65" : "border-amber-200/25 text-amber-100/75";
+        ? (compact ? "border-emerald-300/40 text-emerald-200" : "border-current/30 cmm-text-success")
+        : compact ? "border-white/15 text-white/65" : "border-current/20 cmm-text-secondary";
 
   return (
     <button
       type="button"
       onClick={() => onClick(notification)}
       aria-label={`${locale === "fr" ? "Ouvrir la notification" : "Open notification"} : ${notification.title}`}
-      className={`block w-full rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${compact ? "hover:bg-white/[0.07] focus-visible:ring-sky-300/70" : "hover:bg-amber-100/[0.08] focus-visible:ring-amber-200/80"}`}
+      className={`block w-full rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${compact ? "hover:bg-white/[0.07] focus-visible:ring-sky-300/70" : "hover:bg-amber-500/[0.06] focus-visible:ring-amber-600"}`}
     >
       {actionEventLabel ? (
-        <span className={`mb-1 block cmm-text-caption font-black uppercase tracking-[0.14em] ${compact ? "text-emerald-300/80" : "text-emerald-200/80"}`}>
+        <span className={`mb-1 block cmm-text-caption font-black uppercase tracking-[0.14em] ${compact ? "text-emerald-300/80" : "cmm-text-success"}`}>
           {actionEventLabel}
         </span>
       ) : null}
-      <div className="flex items-start justify-between gap-3">
+      <div className={compact ? "flex items-start justify-between gap-3" : "flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3"}>
         <span className={`min-w-0 flex-1 ${compact ? "line-clamp-1" : "break-words"} font-bold tracking-tight cmm-text-caption ${titleClass}`}>
           {notification.title}
         </span>
-        <time dateTime={notification.created_at} className={`shrink-0 cmm-text-caption ${compact ? "text-white/50" : "text-amber-100/58"}`}>
+        <time dateTime={notification.created_at} className={`shrink-0 cmm-text-caption ${compact ? "text-white/50" : "cmm-text-secondary"}`}>
           {compact ? relativeDate : `${absoluteDate} · ${relativeDate}`}
         </time>
       </div>
@@ -296,9 +292,11 @@ function getActionEventLabel(
 function NotificationDecisionActions({
   decision,
   locale,
+  compact,
 }: {
   decision: NotificationListItemProps["decision"];
   locale: "fr" | "en";
+  compact: boolean;
 }) {
   if (!decision) return null;
   return (
@@ -306,26 +304,26 @@ function NotificationDecisionActions({
       {decision.state === "decision_pending" ? (
         decision.kind === "action_result" ? (
           <>
-            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("claim")} aria-label={locale === "fr" ? "Indiquer que j'ai participé" : "Say I participated"} className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60">
+            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("claim")} aria-label={locale === "fr" ? "Indiquer que j'ai participé" : "Say I participated"} className={compact ? "rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60" : "rounded-lg border border-current/30 px-2.5 py-1.5 text-xs font-bold cmm-text-success transition-colors hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 disabled:cursor-wait disabled:opacity-60"}>
               ✓ {locale === "fr" ? "J'ai participé" : "I participated"}
             </button>
-            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("not_participated")} aria-label={locale === "fr" ? "Indiquer que je n'ai pas participé" : "Say I did not participate"} className="rounded-lg border border-slate-300/40 bg-slate-400/15 px-2.5 py-1.5 text-xs font-bold text-slate-100 transition-colors hover:bg-slate-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 disabled:cursor-wait disabled:opacity-60">
+            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("not_participated")} aria-label={locale === "fr" ? "Indiquer que je n'ai pas participé" : "Say I did not participate"} className={compact ? "rounded-lg border border-slate-300/40 bg-slate-400/15 px-2.5 py-1.5 text-xs font-bold text-slate-100 transition-colors hover:bg-slate-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 disabled:cursor-wait disabled:opacity-60" : "rounded-lg border border-current/30 px-2.5 py-1.5 text-xs font-bold cmm-text-secondary transition-colors hover:bg-slate-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-600 disabled:cursor-wait disabled:opacity-60"}>
               × {locale === "fr" ? "Je n'ai pas participé" : "I did not participate"}
             </button>
           </>
         ) : (
           <>
-            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("accept")} aria-label={locale === "fr" ? "Accepter la demande" : "Accept request"} className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60">
+            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("accept")} aria-label={locale === "fr" ? "Accepter la demande" : "Accept request"} className={compact ? "rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60" : "rounded-lg border border-current/30 px-2.5 py-1.5 text-xs font-bold cmm-text-success transition-colors hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 disabled:cursor-wait disabled:opacity-60"}>
               ✓ {locale === "fr" ? "Accepter" : "Accept"}
             </button>
-            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("reject")} aria-label={locale === "fr" ? "Refuser la demande" : "Reject request"} className="rounded-lg border border-rose-300/40 bg-rose-400/15 px-2.5 py-1.5 text-xs font-bold text-rose-100 transition-colors hover:bg-rose-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 disabled:cursor-wait disabled:opacity-60">
+            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("reject")} aria-label={locale === "fr" ? "Refuser la demande" : "Reject request"} className={compact ? "rounded-lg border border-rose-300/40 bg-rose-400/15 px-2.5 py-1.5 text-xs font-bold text-rose-100 transition-colors hover:bg-rose-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 disabled:cursor-wait disabled:opacity-60" : "rounded-lg border border-current/30 px-2.5 py-1.5 text-xs font-bold cmm-text-danger transition-colors hover:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600 disabled:cursor-wait disabled:opacity-60"}>
               × {locale === "fr" ? "Refuser" : "Reject"}
             </button>
           </>
         )
       ) : null}
       {decision.busy ? <span className="text-xs font-semibold opacity-75" role="status">{locale === "fr" ? "Traitement…" : "Processing…"}</span> : null}
-      {decision.error ? <span className="text-xs font-semibold text-rose-200" role="alert">{decision.error}</span> : null}
+      {decision.error ? <span className={compact ? "text-xs font-semibold text-rose-200" : "text-xs font-semibold cmm-text-danger"} role="alert">{decision.error}</span> : null}
     </div>
   );
 }
@@ -341,7 +339,7 @@ function NotificationActionHint({
 }) {
   if (notification.type !== "gamification_reconciliation") return null;
   return (
-    <span className={`block pt-1 text-xs font-black ${compact ? "text-sky-300" : "text-amber-200"}`}>
+    <span className={`block pt-1 text-xs font-black ${compact ? "text-sky-300" : "cmm-text-link"}`}>
       {locale === "fr" ? "Voir les changements" : "View changes"}
     </span>
   );

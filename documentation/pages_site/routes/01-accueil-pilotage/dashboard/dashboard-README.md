@@ -10,10 +10,10 @@
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; la page reste accessible après le contrôle d'authentification.
-- **Objectif utilisateur principal** : Lire sa situation immédiate, ses alertes et sa prochaine action depuis un cockpit court.
+- **Objectif utilisateur principal** : retrouver ses accès prioritaires, notifications, engagement et gestion du compte ; distinguer la lecture collective de son activité personnelle.
 - **Action principale attendue** : Créer une action ou ouvrir un raccourci utile du quotidien.
 - **Palette attendue** : amber / orange
-- **Scope** : cockpit privé avec résumé décisionnel, notifications paginées, action prioritaire et accès rapides.
+- **Scope** : cockpit privé à cinq vues liées par `?tab=` ; pas de nouveau modèle métier.
 - **Configuration** : le dashboard expose un CTA secondaire vers `/reglages` ; les préférences, la confidentialité et la demande de suppression sont gérées sur cette surface canonique.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : amber — canvas #fff2df, halo rgba(249, 115, 22, 0.26)
@@ -46,9 +46,19 @@
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : moyenne
 
+## Navigation et chargement
+
+- Aujourd'hui (par défaut) : accès prioritaires du rôle actif, suivi des participations via le dossier d'engagement, historique terrain et profil. Aucun KPI collectif n'est présenté comme personnel.
+- Notifications : centre de suivi existant, chargé seulement à l'ouverture.
+- Indicateurs collectifs : agrégat de plateforme approuvé via `loadPilotageOverview`, comparaison sur 30 jours, dernière activité publiée disponible (qui peut être antérieure à la période), limites de source et recommandations ; aucun scope personnel implicite.
+- Engagement : parrainages et classement global par consentement existant, accès au profil détaillé, erreurs de données indépendantes.
+- Compte : rôle attribué, rôle actif, changement de parcours autorisé, lien vers l'évolution du compte et réglages. Aucune nouvelle mutation.
+- Les onglets sont des liens de navigation avec `aria-current`, historique navigateur et préchargement désactivé. Une valeur inconnue ou multiple revient à Aujourd'hui. Aucun accès privé sans session, rappel de complétion conservé. Les modes changent la présentation, jamais les accès prioritaires.
+- Les chargements collectif et engagement ne sont déclenchés que par la vue correspondante. Aucun polling ajouté.
+
 ## Notifications
 
-- La section canonique est disponible à l’ancre `/dashboard#notifications`.
+- La section canonique est disponible à `/dashboard?tab=notifications#notifications`. L'ancienne ancre `/dashboard#notifications` ouvre cette vue par compatibilité.
 - Elle lit exclusivement `public.app_notifications` via le client existant.
   La vue **À traiter** projette séparément, par lots bornés, les notifications
   correspondant aux identifiants métier encore pendants ; elle ne dépend donc

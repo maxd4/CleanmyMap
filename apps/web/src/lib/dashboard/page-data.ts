@@ -16,7 +16,7 @@ type DashboardOverviewResult =
       message: string;
     };
 
-async function loadDashboardOverviewResult(
+export async function loadDashboardOverviewResult(
   locale: "fr" | "en",
 ): Promise<DashboardOverviewResult> {
   try {
@@ -39,11 +39,9 @@ async function loadDashboardOverviewResult(
 export async function loadDashboardPageData({
   userId,
   clerkReachable,
-  locale,
 }: {
   userId: string;
   clerkReachable: boolean;
-  locale: "fr" | "en";
 }) {
   const accountCompletion = await loadAccountCompletionGateState({
     userId,
@@ -56,21 +54,23 @@ export async function loadDashboardPageData({
       : getCurrentUserActiveRole().catch(() => "benevole" as const),
     getServerDisplayMode(),
   ]);
-  const [userLevelRanking, referralSummary] = await Promise.all([
-    loadUserLevelRankingSummary(userId),
-    fetchCachedReferralSummary(userId).catch(() => null),
-  ]);
-
   return {
     accountCompletion,
     displayMode,
     profile: accountCompletion?.currentProfile ?? toProfile(role),
-    userLevelRanking,
-    referralSummary,
-    overviewPromise: loadDashboardOverviewResult(locale),
   };
 }
 
-export type DashboardPageData = Awaited<
-  ReturnType<typeof loadDashboardPageData>
->;
+export async function loadDashboardEngagementData(userId: string) {
+  const [userLevelRanking, referralSummary] = await Promise.all([
+    loadUserLevelRankingSummary(userId).catch(() => null),
+    fetchCachedReferralSummary(userId).catch(() => null),
+  ]);
+  return { userLevelRanking, referralSummary };
+}
+
+/** Existing display components consume the available engagement projections. */
+export type DashboardPageData = {
+  userLevelRanking: Awaited<ReturnType<typeof loadUserLevelRankingSummary>>;
+  referralSummary: Awaited<ReturnType<typeof fetchCachedReferralSummary>> | null;
+};

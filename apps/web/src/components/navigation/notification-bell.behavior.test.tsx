@@ -327,7 +327,7 @@ describe("NotificationBell behavior", () => {
     await flush();
     expect(loadNotificationsMock.mock.calls.length).toBeGreaterThan(initialCalls);
 
-    const openLink = renderer.root.findByProps({ href: "/dashboard#notifications" });
+    const openLink = renderer.root.findByProps({ href: "/dashboard?tab=notifications#notifications" });
     act(() => { void openLink.props.onClick(); });
     act(() => { void propsOf<ClickProps>(trigger).onClick(); });
     const closeButton = renderer.root.findByProps({ children: "Fermer" });

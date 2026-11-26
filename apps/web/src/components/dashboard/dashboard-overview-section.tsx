@@ -58,17 +58,6 @@ export async function DashboardOverviewSection({
   const result = await overviewPromise;
 
   if (result.status === "error") {
-    const errorState = buildDashboardTodayState({
-      overview: null,
-      locale,
-      recommendedAction: {
-        href: primaryAction.href,
-        label: primaryAction.label[locale],
-        reason: primaryAction.description[locale],
-      },
-      errorMessage: result.message,
-    });
-
     return (
       <div data-gsap-reveal className="space-y-4">
         <SystemStateLayout variant="error" className="max-w-none">
@@ -87,12 +76,16 @@ export async function DashboardOverviewSection({
             </CmmButton>
           </SystemStateAction>
         </SystemStateLayout>
-        <DashboardTodayPanel state={errorState} />
-        <DecisionClusterSection
-          locale={locale}
-          surfaceId="dashboard"
-          className="border-amber-200/18 bg-[rgba(44,28,15,0.82)]"
-        />
+        <details className="space-y-3">
+          <summary className="cursor-pointer font-semibold cmm-text-primary">
+            {locale === "fr" ? "Autres outils de pilotage" : "Other decision tools"}
+          </summary>
+          <DecisionClusterSection
+            locale={locale}
+            surfaceId="dashboard"
+            className="border-amber-200/18 bg-[rgba(44,28,15,0.82)]"
+          />
+        </details>
       </div>
     );
   }
@@ -123,12 +116,17 @@ export async function DashboardOverviewSection({
         }}
         recommendedReason={recommendedAction.reason}
       />
-      <DashboardTodayPanel state={todayState} />
-      <DecisionClusterSection
-        locale={locale}
-        surfaceId="dashboard"
-        className="border-amber-200/18 bg-[rgba(44,28,15,0.82)]"
-      />
+      <DashboardTodayPanel state={todayState} locale={locale} />
+      <details className="space-y-3">
+        <summary className="cursor-pointer font-semibold cmm-text-primary">
+          {locale === "fr" ? "Autres outils de pilotage" : "Other decision tools"}
+        </summary>
+        <DecisionClusterSection
+          locale={locale}
+          surfaceId="dashboard"
+          className="border-amber-200/18 bg-[rgba(44,28,15,0.82)]"
+        />
+      </details>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import type { DashboardPageData } from "@/lib/dashboard/page-data";
 import { DashboardReferralStatusGrid } from "./dashboard-referral-status-grid";
@@ -13,64 +13,35 @@ type DashboardReferralCardProps = {
   profile: string;
 };
 
-export function DashboardReferralCard({
-  locale,
-  summary,
-  profile,
-}: DashboardReferralCardProps) {
-  const invitedUsersCount = summary?.invitedUsersCount ?? 0;
-  const hasReferralData = summary !== null;
-  const referralLabel = locale === "fr" ? "parrainage" : "referral";
-  const referralPlural = locale === "fr" ? "parrainages" : "referrals";
-  const referralDescription = hasReferralData
-    ? locale === "fr"
-      ? "Ce compteur suit les comptes créés depuis votre lien de parrainage persistant."
-      : "This counter tracks accounts created from your persistent referral link."
-    : locale === "fr"
-      ? "Les données de parrainage sont momentanément indisponibles."
-      : "Referral data is temporarily unavailable.";
-
+export function DashboardReferralCard({ locale, summary, profile }: DashboardReferralCardProps) {
+  const invitedUsersCount = summary?.invitedUsersCount;
+  const fr = locale === "fr";
+  const referralLabel = fr ? "parrainage" : "referral";
+  const referralPlural = fr ? "parrainages" : "referrals";
   return (
-    <FamilyRubriqueCard
-      id="parrainage"
-      withTopBar={true}
-      topBarContent={locale === "fr" ? "Parrainages" : "Referrals"}
-      className="h-full scroll-mt-28 p-7 sm:p-8"
-    >
-      <div className="flex h-full flex-col justify-between gap-6">
-        <div className="space-y-3">
-          <p className="cmm-text-small font-bold uppercase tracking-[0.18em] text-amber-100/90">
-            {locale === "fr" ? "Compteur persistant" : "Persistent counter"}
-          </p>
-          <div className="flex items-end gap-3">
-            <span className="text-5xl font-black tracking-tight text-white sm:text-6xl">
-              {hasReferralData ? invitedUsersCount : "—"}
-            </span>
-            {hasReferralData ? (
-              <span className="pb-1 text-sm font-bold uppercase tracking-[0.12em] text-amber-100/90">
-                {invitedUsersCount <= 1 ? referralLabel : referralPlural}
-              </span>
-            ) : null}
+    <section id="parrainage" className="scroll-mt-28" aria-labelledby="dashboard-referral-title">
+      <CmmCard className="space-y-4">
+        <h3 id="dashboard-referral-title" className="text-lg font-bold cmm-text-primary">{fr ? "Parrainages" : "Referrals"}</h3>
+        <div className="space-y-2">
+          <p className="text-sm font-semibold cmm-text-secondary">{fr ? "Compteur persistant" : "Persistent counter"}</p>
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="text-4xl font-bold tabular-nums cmm-text-primary">{invitedUsersCount ?? "—"}</span>
+            {invitedUsersCount !== undefined && (
+              <span className="text-sm font-semibold cmm-text-secondary">{invitedUsersCount <= 1 ? referralLabel : referralPlural}</span>
+            )}
           </div>
-          <p className="max-w-sm text-sm leading-relaxed text-amber-50/90">
-            {referralDescription}
+          <p className="text-sm cmm-text-secondary">
+            {summary
+              ? (fr ? "Comptes créés depuis votre lien de parrainage persistant." : "Accounts created from your persistent referral link.")
+              : (fr ? "Les données de parrainage sont momentanément indisponibles." : "Referral data is temporarily unavailable.")}
           </p>
         </div>
-
         <DashboardReferralStatusGrid locale={locale} summary={summary} />
-
-        <div className="flex flex-wrap gap-3">
-          <CmmButton
-            href={buildProfileRoute(profile)}
-            tone="secondary"
-            variant="pill"
-            className="h-11 px-4 cmm-text-small font-black gap-2"
-          >
-            <ArrowRight size={14} />
-            {locale === "fr" ? "Ouvrir le badge" : "Open badge"}
-          </CmmButton>
-        </div>
-      </div>
-    </FamilyRubriqueCard>
+        <CmmButton href={`${buildProfileRoute(profile)}?tab=referrals#parrainage`} tone="secondary">
+          <ArrowRight size={14} aria-hidden="true" />
+          {fr ? "Ouvrir le badge" : "Open badge"}
+        </CmmButton>
+      </CmmCard>
+    </section>
   );
 }

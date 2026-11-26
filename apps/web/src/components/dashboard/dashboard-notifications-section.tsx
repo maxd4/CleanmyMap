@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 
 import { NotificationListItem } from "@/components/notifications/notification-list-item";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { tabItemClassName, tabStripClassName } from "@/components/ui/cmm-tab-strip.styles";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { logFailure } from "@/lib/logging/failure-log";
@@ -273,19 +275,45 @@ function DashboardNotificationsView({
   onLoadMore: () => Promise<void>;
 }) {
   return (
-    <section id="notifications" aria-labelledby="dashboard-notifications-title" className="scroll-mt-28 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.22)_100%)] p-6 shadow-[0_18px_42px_-28px_rgba(124,45,18,0.3)] sm:p-8">
-      <div className="flex items-center justify-between gap-4 border-b border-amber-200/18 pb-4">
+    <section id="notifications" aria-labelledby="dashboard-notifications-title" className="scroll-mt-28">
+      <CmmCard className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="cmm-text-caption font-bold uppercase tracking-[0.3em] text-amber-100/80">{locale === "fr" ? "Centre de suivi" : "Activity center"}</p>
-          <h2 id="dashboard-notifications-title" className="mt-1 text-2xl font-black tracking-tight text-white">Notifications</h2>
+          <h2 id="dashboard-notifications-title" className="text-xl font-bold cmm-text-primary">Notifications</h2>
         </div>
         {loading ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-amber-300 border-t-transparent" role="status" aria-label={locale === "fr" ? "Chargement" : "Loading"} /> : null}
       </div>
-      <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label={locale === "fr" ? "Vues des notifications" : "Notification views"}>
-        <button type="button" role="tab" aria-selected={view === "pending"} onClick={() => setView("pending")} className="rounded-xl border border-amber-200/25 px-3 py-2 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80">À traiter{pendingCount > 0 ? ` (${pendingCount})` : ""}</button>
-        <button type="button" role="tab" aria-selected={view === "information"} onClick={() => setView("information")} className="rounded-xl border border-amber-200/25 px-3 py-2 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80">Informations</button>
+      <div
+        role="tablist"
+        aria-label={locale === "fr" ? "Vues des notifications" : "Notification views"}
+        className={tabStripClassName("family", "grid-cols-2")}
+        onKeyDown={(event) => {
+          const target = event.key === "Home" ? "pending"
+            : event.key === "End" ? "information"
+            : event.key === "ArrowLeft" || event.key === "ArrowRight"
+              ? (view === "pending" ? "information" : "pending") : null;
+          if (!target) return;
+          event.preventDefault();
+          setView(target);
+          event.currentTarget.querySelector<HTMLButtonElement>(`#dashboard-notification-tab-${target}`)?.focus();
+        }}
+      >
+        <button type="button" role="tab" id="dashboard-notification-tab-pending"
+          aria-selected={view === "pending"} aria-controls="dashboard-notification-panel"
+          tabIndex={view === "pending" ? 0 : -1} onClick={() => setView("pending")}
+          className={tabItemClassName("family", view === "pending")}>
+          {locale === "fr" ? "À traiter" : "To review"}{pendingCount > 0 ? ` (${pendingCount})` : ""}
+        </button>
+        <button type="button" role="tab" id="dashboard-notification-tab-information"
+          aria-selected={view === "information"} aria-controls="dashboard-notification-panel"
+          tabIndex={view === "information" ? 0 : -1} onClick={() => setView("information")}
+          className={tabItemClassName("family", view === "information")}>
+          {locale === "fr" ? "Informations" : "Information"}
+        </button>
       </div>
-      {missingPendingCount > 0 && view === "pending" ? <p className="pt-3 text-sm text-amber-100/90" role="alert">{missingPendingCount} décision(s) métier sont encore ouvertes, mais leur notification n&apos;est pas accessible dans cette session. Actualisez avant de décider.</p> : null}
+      <div id="dashboard-notification-panel" role="tabpanel"
+        aria-labelledby={`dashboard-notification-tab-${view}`} tabIndex={0}>
+      {missingPendingCount > 0 && view === "pending" ? <p className="pt-3 text-sm cmm-text-secondary" role="alert">{missingPendingCount} décision(s) métier sont encore ouvertes, mais leur notification n&apos;est pas accessible dans cette session. Actualisez avant de décider.</p> : null}
       <DashboardNotificationContent
         isLoaded={isLoaded}
         locale={locale}
@@ -302,6 +330,8 @@ function DashboardNotificationsView({
         onMuteAction={onMuteAction}
         onLoadMore={onLoadMore}
       />
+      </div>
+      </CmmCard>
     </section>
   );
 }
@@ -338,39 +368,39 @@ function DashboardNotificationContent({
   onLoadMore: () => Promise<void>;
 }) {
   if (decisionState.decisionStateError && missingPendingCount === 0) {
-    return <p className="pt-3 text-sm text-amber-100/75" role="status">Les décisions disponibles n&apos;ont pas pu être actualisées.</p>;
+    return <p className="pt-3 text-sm cmm-text-secondary" role="status">Les décisions disponibles n&apos;ont pas pu être actualisées.</p>;
   }
   if (!isLoaded || (loading && visibleNotifications.length === 0)) {
     return <DashboardNotificationsLoading locale={locale} />;
   }
   if (error && visibleNotifications.length === 0) {
-    return <p className="pt-5 text-sm leading-relaxed text-amber-50/85">{locale === "fr" ? "Les notifications sont momentanément indisponibles." : "Notifications are temporarily unavailable."}</p>;
+    return <p className="pt-5 text-sm leading-relaxed cmm-text-primary">{locale === "fr" ? "Les notifications sont momentanément indisponibles." : "Notifications are temporarily unavailable."}</p>;
   }
   if (view === "pending" && missingPendingCount > 0 && visibleNotifications.length === 0) {
-    return <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold text-amber-50">Certaines décisions ne peuvent pas être affichées</p></div>;
+    return <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold cmm-text-primary">Certaines décisions ne peuvent pas être affichées</p></div>;
   }
   if (visibleNotifications.length === 0) {
-    return <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold text-amber-50">{view === "pending" ? "Aucune décision à traiter" : "Aucune notification"}</p>{view === "information" && hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : null}</div>;
+    return <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold cmm-text-primary">{view === "pending" ? "Aucune décision à traiter" : "Aucune notification"}</p>{view === "information" && hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : null}</div>;
   }
   return (
     <>
       <DashboardNotificationList visibleNotifications={visibleNotifications} locale={locale} stateFor={stateFor} decisionState={decisionState} onOpen={onOpen} onMuteAction={onMuteAction} />
-      {error ? <p className="pt-4 text-sm leading-relaxed text-amber-100/85" role="alert">Le chargement des notifications a échoué.</p> : null}
-      {view === "information" ? (hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : <p className="pt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/54">Fin de l&apos;historique des notifications</p>) : null}
+      {error ? <p className="pt-4 text-sm leading-relaxed cmm-text-danger" role="alert">Le chargement des notifications a échoué.</p> : null}
+      {view === "information" ? (hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : <p className="pt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] cmm-text-secondary">Fin de l&apos;historique des notifications</p>) : null}
     </>
   );
 }
 
 function DashboardNotificationsLoading({ locale }: { locale: "fr" | "en" }) {
-  return <div className="space-y-3 pt-5" role="status" aria-live="polite" aria-busy="true" aria-label={locale === "fr" ? "Chargement des notifications" : "Loading notifications"}><CmmSkeleton className="h-14 rounded-2xl bg-amber-950/35" /><CmmSkeleton className="h-14 rounded-2xl bg-amber-950/35" /></div>;
+  return <div className="space-y-3 pt-5" role="status" aria-live="polite" aria-busy="true" aria-label={locale === "fr" ? "Chargement des notifications" : "Loading notifications"}><CmmSkeleton className="h-14" /><CmmSkeleton className="h-14" /></div>;
 }
 
 function DashboardLoadMoreButton({ loadingMore, onLoadMore }: { loadingMore: boolean; onLoadMore: () => Promise<void> }) {
-  return <CmmButton type="button" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onLoadMore(); }} loading={loadingMore} tone="tertiary" width="wide" className="mt-5 w-full border-amber-200/24 bg-amber-100/[0.08] text-amber-50 hover:bg-amber-100/[0.14]">{loadingMore ? "Chargement…" : "Afficher plus"}</CmmButton>;
+  return <CmmButton type="button" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onLoadMore(); }} loading={loadingMore} tone="tertiary" width="wide" className="mt-5">{loadingMore ? "Chargement…" : "Afficher plus"}</CmmButton>;
 }
 
 function CheckMark() {
-  return <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-200/18 bg-amber-100/[0.08] text-amber-100/75">✓</div>;
+  return <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-current/15 cmm-text-secondary">✓</div>;
 }
 
 export function appendUniqueNotifications(current: AppNotification[], incoming: AppNotification[]) {

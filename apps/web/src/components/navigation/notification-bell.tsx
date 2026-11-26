@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { dashboardTabHref } from "@/lib/dashboard/tabs";
 import { useAuth } from "@clerk/nextjs";
 import { Bell, Check } from "lucide-react";
 
@@ -247,7 +248,7 @@ function NotificationBellPanel({
         )}
       </div>
       <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-4 py-3">
-        <Link href="/dashboard#notifications" onClick={() => setIsOpen(false)} className="text-xs font-semibold text-sky-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">Ouvrir</Link>
+        <Link href={dashboardTabHref("notifications")} onClick={() => setIsOpen(false)} className="text-xs font-semibold text-sky-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">Ouvrir</Link>
         <button type="button" className="text-xs font-semibold text-sky-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300" onClick={() => setIsOpen(false)}>Fermer</button>
       </div>
     </CmmPopover>

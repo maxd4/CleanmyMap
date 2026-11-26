@@ -1,6 +1,7 @@
 "use client";
 
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import type { GrantedRole } from "@/lib/domain-language";
 import { getProfileLabel, getSwitchableProfiles, type AppProfile } from "@/lib/profiles";
@@ -12,6 +13,7 @@ type RoleProfileSwitcherProps = {
   activeRole: AppProfile;
   title: string;
   className?: string;
+  appearance?: "family" | "neutral";
 };
 
 const PROFILE_BUTTON_CLASS =
@@ -25,6 +27,7 @@ export function RoleProfileSwitcher({
   activeRole,
   title,
   className = "p-8 sm:p-10",
+  appearance = "family",
 }: RoleProfileSwitcherProps) {
   const switchableProfiles = getSwitchableProfiles(grantedRole);
   const { handleActiveRoleMutation, isUpdatingProfile, profileError } =
@@ -34,22 +37,23 @@ export function RoleProfileSwitcher({
     return null;
   }
 
-  return (
-    <div data-gsap-reveal className="mt-6">
-      <FamilyRubriqueCard withTopBar={true} topBarContent={title} className={className}>
-        <div className="flex flex-wrap gap-4">
+  const neutral = appearance === "neutral";
+  const controls = (
+    <>
+        <div className="flex flex-wrap gap-3">
           {switchableProfiles.map((profile) => {
             const isActive = profile === activeRole;
 
             return (
               <CmmButton
                 key={profile}
-                tone={isActive ? "primary" : "tertiary"}
+                tone={isActive ? "primary" : neutral ? "secondary" : "tertiary"}
                 variant="pill"
                 disabled={isUpdatingProfile}
                 loading={isUpdatingProfile && !isActive}
                 onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleActiveRoleMutation(profile); }}
-                className={isActive ? ACTIVE_PROFILE_BUTTON_CLASS : PROFILE_BUTTON_CLASS}
+                className={neutral ? undefined : isActive ? ACTIVE_PROFILE_BUTTON_CLASS : PROFILE_BUTTON_CLASS}
+                ariaPressed={neutral ? isActive : undefined}
                 ariaLabel={
                   locale === "fr"
                     ? `Utiliser le profil ${getProfileLabel(profile, locale)}`
@@ -62,10 +66,24 @@ export function RoleProfileSwitcher({
           })}
         </div>
         {profileError ? (
-          <p role="alert" className="mt-4 cmm-text-small text-rose-200">
+          <p role="alert" className={neutral ? "mt-4 cmm-text-small cmm-text-danger" : "mt-4 cmm-text-small text-rose-200"}>
             {profileError}
           </p>
         ) : null}
+    </>
+  );
+
+  if (neutral) return (
+    <CmmCard className="space-y-3">
+      <h3 className="text-lg font-bold cmm-text-primary">{title}</h3>
+      {controls}
+    </CmmCard>
+  );
+
+  return (
+    <div data-gsap-reveal className="mt-6">
+      <FamilyRubriqueCard withTopBar={true} topBarContent={title} className={className}>
+        {controls}
       </FamilyRubriqueCard>
     </div>
   );

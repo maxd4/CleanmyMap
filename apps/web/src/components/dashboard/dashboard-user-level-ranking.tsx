@@ -1,4 +1,4 @@
-import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
+import { CmmCard } from "@/components/ui/cmm-card";
 import type { DashboardPageData } from "@/lib/dashboard/page-data";
 
 type DashboardUserLevelRankingProps = {
@@ -7,71 +7,34 @@ type DashboardUserLevelRankingProps = {
   userLevelRanking: DashboardPageData["userLevelRanking"];
 };
 
-export function DashboardUserLevelRanking({
-  locale,
-  userId,
-  userLevelRanking,
-}: DashboardUserLevelRankingProps) {
+export function DashboardUserLevelRanking({ locale, userId, userLevelRanking }: DashboardUserLevelRankingProps) {
+  const fr = locale === "fr";
+  const current = userLevelRanking.currentUserRow;
+  const showCurrent = current && !userLevelRanking.topRows.some((row) => row.userId === userId);
   return (
-    <FamilyRubriqueCard
-      withTopBar={true}
-      topBarContent={
-        locale === "fr"
-          ? "Classement global - niveau utilisateur"
-          : "Global ranking - user level"
-      }
-      className="p-8 sm:p-10"
-    >
+    <CmmCard className="space-y-3">
+      <h3 className="text-lg font-bold cmm-text-primary">{fr ? "Classement global des niveaux" : "Global level ranking"}</h3>
       {userLevelRanking.topRows.length === 0 ? (
-        <p className="text-sm text-amber-100/85">
-          {locale === "fr"
-            ? "Le classement n'est pas encore disponible."
-            : "Ranking data is not available yet."}
-        </p>
+        <p className="text-sm cmm-text-secondary">{fr ? "Le classement n'est pas encore disponible." : "Ranking data is not available yet."}</p>
       ) : (
-        <div className="space-y-3">
-          {userLevelRanking.topRows.map((row) => {
-            const isCurrentUser = row.userId === userId;
-            return (
-              <div
-                key={row.userId}
-                className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
-                  isCurrentUser
-                    ? "border-amber-300/40 bg-amber-200/15"
-                    : "border-amber-200/18 bg-[rgba(69,26,3,0.38)]"
-                }`}
-              >
-                <div className="min-w-0">
-                  <p className="break-words text-sm font-bold text-white">
-                    #{row.rank} - {row.actorName}
-                  </p>
-                  <p className="text-sm text-amber-100/90">
-                    {locale === "fr" ? "XP valides" : "Validated XP"}: {row.xpValidated}
-                  </p>
-                </div>
-                <span className="rounded-lg border border-amber-200/25 bg-[rgba(69,26,3,0.65)] px-3 py-1 text-sm font-black uppercase tracking-[0.1em] text-amber-50">
-                  {locale === "fr" ? "Niveau" : "Level"} {row.currentLevel}
-                </span>
+        <ol className="divide-y divide-current/10">
+          {userLevelRanking.topRows.map((row) => (
+            <li key={row.userId} className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <div className="min-w-0">
+                <p className="break-words font-semibold cmm-text-primary">#{row.rank} · {row.actorName}{row.userId === userId ? (fr ? " (vous)" : " (you)") : ""}</p>
+                <p className="text-sm cmm-text-secondary">{fr ? "XP valides" : "Validated XP"} : {row.xpValidated}</p>
               </div>
-            );
-          })}
-
-          {userLevelRanking.currentUserRow &&
-          !userLevelRanking.topRows.some(
-            (row) => row.userId === userId,
-          ) ? (
-            <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-200/10 px-4 py-3">
-              <p className="text-sm font-bold text-white">
-                {locale === "fr" ? "Votre position" : "Your position"}:
-                #{userLevelRanking.currentUserRow.rank}
-              </p>
-              <p className="text-sm text-amber-100/90">
-                {locale === "fr" ? "Niveau" : "Level"} {userLevelRanking.currentUserRow.currentLevel} · {locale === "fr" ? "XP valides" : "Validated XP"} {userLevelRanking.currentUserRow.xpValidated}
-              </p>
-            </div>
-          ) : null}
+              <span className="text-sm font-semibold cmm-text-secondary">{fr ? "Niveau" : "Level"} {row.currentLevel}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {showCurrent && (
+        <div className="space-y-1 border-t border-current/10 pt-3">
+          <p className="font-semibold cmm-text-primary">{fr ? "Votre position" : "Your position"} : #{current.rank}</p>
+          <p className="text-sm cmm-text-secondary">{fr ? "Niveau" : "Level"} {current.currentLevel} · {fr ? "XP valides" : "Validated XP"} {current.xpValidated}</p>
         </div>
       )}
-    </FamilyRubriqueCard>
+    </CmmCard>
   );
 }

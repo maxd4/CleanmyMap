@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { trackRoleCtaClick } from "@/lib/analytics/navigation-client";
 import type { CtaSlot } from "@/lib/domain-language";
-import { getProfileActions, type AppProfile } from "@/lib/profiles";
+import { getProfileActions, type AppProfile, type ProfileAction } from "@/lib/profiles";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,8 @@ type RolePrimaryActionsProps = {
   profile: AppProfile;
   title?: string;
   tone?: "light" | "dark" | "warm";
+  actionsOverride?: ProfileAction[];
+  preserveAll?: boolean;
 };
 
 function resolveCtaSlot(index: number): CtaSlot {
@@ -95,15 +97,18 @@ export function RolePrimaryActions({
   profile,
   title = "Actions principales",
   tone = "light",
+  actionsOverride,
+  preserveAll = false,
 }: RolePrimaryActionsProps) {
   const { locale, displayMode } = useSitePreferences();
-  const allActions = getProfileActions(profile);
+  const allActions = actionsOverride ?? getProfileActions(profile);
+  const compact = displayMode === "minimaliste" && !preserveAll;
   const primaryAction = allActions[0];
   const actions =
-    displayMode === "minimaliste" ? (primaryAction ? [primaryAction] : []) : allActions;
+    compact ? (primaryAction ? [primaryAction] : []) : allActions;
 
   const gridClassName =
-    displayMode === "minimaliste"
+    compact
       ? "grid-cols-1"
       : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4";
 
@@ -113,16 +118,16 @@ export function RolePrimaryActions({
     <section
       className={cn("rounded-3xl border p-5 transition-all duration-500", theme.section)}
     >
-      <h2
+      {title && <h2
         className={cn(
           "text-base font-semibold underline decoration-4 underline-offset-4 [data-display-mode='minimaliste']_&:text-2xl [data-display-mode='minimaliste']_&:font-bold",
           theme.heading,
         )}
       >
         {title}
-      </h2>
+      </h2>}
 
-      <div className={cn("mt-4 grid gap-4", gridClassName)}>
+      <div className={cn("grid gap-4", title && "mt-4", gridClassName)}>
         {actions.map((action, index) => {
           const isPrimary = index === 0;
           const slotLabel =
@@ -143,7 +148,7 @@ export function RolePrimaryActions({
               className={cn(
                 "group flex h-full flex-col justify-between rounded-2xl border px-5 py-4 transition-all duration-200",
                 isPrimary ? theme.primaryCard : theme.secondaryCard,
-                displayMode === "minimaliste" ? "scale-105 shadow-xl" : "",
+                compact ? "scale-105 shadow-xl" : "",
               )}
             >
               <div className="flex items-start justify-between gap-3">
@@ -175,7 +180,7 @@ export function RolePrimaryActions({
                 <p
                   className={cn(
                     "font-bold",
-                    displayMode === "minimaliste" ? "text-xl" : "text-lg",
+                    compact ? "text-xl" : "text-lg",
                     isPrimary ? theme.titlePrimary : theme.titleSecondary,
                   )}
                 >

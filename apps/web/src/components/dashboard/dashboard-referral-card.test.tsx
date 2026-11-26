@@ -27,7 +27,7 @@ describe("DashboardReferralCard", () => {
     expect(markup).toContain("parrainages");
     expect(markup).toContain("Débloqué");
     expect(markup).toContain("Prêt à partager");
-    expect(markup).toContain('href="/profil/benevole"');
+    expect(markup).toContain('href="/profil/benevole?tab=referrals#parrainage"');
   });
 
   it("keeps the unavailable state explicit and localized", () => {

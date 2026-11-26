@@ -13,14 +13,7 @@ export function DashboardProfileSwitcher({
   activeRole,
   grantedRole,
 }: DashboardProfileSwitcherProps) {
-  const title =
-    grantedRole === "admin" || grantedRole === "max"
-      ? locale === "fr"
-        ? "Switch de profil (Admin)"
-        : "Profile switch (Admin)"
-      : locale === "fr"
-        ? "Identité active"
-        : "Active identity";
+  const title = locale === "fr" ? "Rôles disponibles" : "Available roles";
 
   return (
     <RoleProfileSwitcher
@@ -28,6 +21,7 @@ export function DashboardProfileSwitcher({
       grantedRole={grantedRole}
       activeRole={activeRole}
       title={title}
+      appearance="neutral"
     />
   );
 }

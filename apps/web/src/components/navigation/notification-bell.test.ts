@@ -36,7 +36,7 @@ describe("notification bell compact preview contract", () => {
   });
 
   it("keeps Open before Close and targets the notifications anchor", () => {
-    expect(source.indexOf('href="/dashboard#notifications"')).toBeGreaterThanOrEqual(0);
+    expect(source.indexOf('href={dashboardTabHref("notifications")}')).toBeGreaterThanOrEqual(0);
     expect(source.indexOf("Ouvrir")).toBeLessThan(source.indexOf("Fermer"));
     expect(source).toContain('onClick={() => setIsOpen(false)}');
   });

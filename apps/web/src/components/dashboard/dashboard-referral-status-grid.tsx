@@ -35,18 +35,18 @@ export function DashboardReferralStatusGrid({
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <div className="rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.34)] px-4 py-3">
-        <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-100/75">
+      <div className="border-t border-current/10 pt-3">
+        <p className="text-sm font-semibold cmm-text-secondary">
           Badge
         </p>
-        <p className="mt-1 text-sm font-bold text-white">{badgeStatus}</p>
+        <p className="mt-1 text-sm font-bold cmm-text-primary">{badgeStatus}</p>
       </div>
 
-      <div className="rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.34)] px-4 py-3">
-        <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-100/75">
+      <div className="border-t border-current/10 pt-3">
+        <p className="text-sm font-semibold cmm-text-secondary">
           {locale === "fr" ? "Lien" : "Link"}
         </p>
-        <p className="mt-1 text-sm font-bold text-white">{linkStatus}</p>
+        <p className="mt-1 text-sm font-bold cmm-text-primary">{linkStatus}</p>
       </div>
     </div>
   );
