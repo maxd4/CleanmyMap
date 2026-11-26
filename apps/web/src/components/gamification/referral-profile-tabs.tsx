@@ -3,16 +3,19 @@
 import { useState } from "react";
 import { GitBranch, Medal } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { SystemStateRetryButton } from "@/components/ui/system-state-retry-button";
 import { ReferralInviteBadge } from "@/components/gamification/referral-invite-badge";
 import { ReferralLineagePanel } from "@/components/gamification/referral-lineage-panel";
 import type { ReferralSummary } from "@/lib/gamification/referrals/referrals";
 import type { ReferralLineageView } from "@/lib/gamification/referrals/referral-lineage";
 
 type ReferralProfileTabsProps = {
-  summary: ReferralSummary;
+  summary: ReferralSummary | null;
   lineageView: ReferralLineageView | null;
   lineageError?: string | null;
   emptyCtaHref: string;
+  locale?: "fr" | "en";
 };
 
 type TabKey = "badge" | "tree";
@@ -22,8 +25,10 @@ export function ReferralProfileTabs({
   lineageView,
   lineageError,
   emptyCtaHref,
+  locale = "fr",
 }: ReferralProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("badge");
+  const isEn = locale === "en";
 
   return (
     <div className="space-y-5">
@@ -46,19 +51,30 @@ export function ReferralProfileTabs({
           className="h-10 gap-2 px-4 text-[11px] font-black uppercase tracking-[0.18em]"
         >
           <GitBranch size={14} />
-          Arbre
+          {isEn ? "Tree" : "Arbre"}
         </CmmButton>
       </div>
 
       <div className="pt-1">
         {activeTab === "badge" ? (
-          <ReferralInviteBadge summary={summary} />
+          summary ? (
+            <ReferralInviteBadge summary={summary} />
+          ) : (
+            <CmmCard className="space-y-3">
+              <p role="status" className="text-sm cmm-text-secondary">
+                {isEn
+                  ? "Referral badge temporarily unavailable."
+                  : "Badge de parrainage momentanément indisponible."}
+              </p>
+              <SystemStateRetryButton label={isEn ? "Retry" : "Réessayer"} />
+            </CmmCard>
+          )
         ) : (
           <ReferralLineagePanel
             view={lineageView}
             errorMessage={lineageError}
             emptyCtaHref={emptyCtaHref}
-            emptyCtaLabel="Créer mon lien de parrainage"
+            emptyCtaLabel={isEn ? "Create my referral link" : "Créer mon lien de parrainage"}
           />
         )}
       </div>

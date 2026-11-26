@@ -10,12 +10,16 @@ export type ReportDataAvailability = {
 
 export function buildReportDataAvailabilityNotices(
   availability: ReportDataAvailability = {},
+  locale: "fr" | "en" = "fr",
 ): string[] {
+  const isEn = locale === "en";
   const notices: string[] = [];
 
   if (availability.isTruncated) {
     notices.push(
-      "Données potentiellement partielles : la limite de chargement a été atteinte.",
+      isEn
+        ? "Potentially partial data: the loading limit was reached."
+        : "Données potentiellement partielles : la limite de chargement a été atteinte.",
     );
   }
 
@@ -24,19 +28,25 @@ export function buildReportDataAvailabilityNotices(
     (availability.sourceHealth?.failedSources.length ?? 0) > 0
   ) {
     notices.push(
-      "Certaines sources sont indisponibles : les indicateurs ne sont pas exhaustifs.",
+      isEn
+        ? "Some sources are unavailable: indicators are not exhaustive."
+        : "Certaines sources sont indisponibles : les indicateurs ne sont pas exhaustifs.",
     );
   }
 
   if (availability.communityEventsAvailability === "unavailable") {
     notices.push(
-      "Les événements communautaires sont indisponibles ; leur absence ne vaut pas zéro.",
+      isEn
+        ? "Community events are unavailable; their absence does not mean zero."
+        : "Les événements communautaires sont indisponibles ; leur absence ne vaut pas zéro.",
     );
   }
 
   if (availability.communityEventsAvailability === "partial") {
     notices.push(
-      "Les événements communautaires ne peuvent pas être attribués entièrement à ce périmètre ; leurs indicateurs sont indisponibles.",
+      isEn
+        ? "Community events cannot be fully attributed to this scope; their indicators are unavailable."
+        : "Les événements communautaires ne peuvent pas être attribués entièrement à ce périmètre ; leurs indicateurs sont indisponibles.",
     );
   }
 
