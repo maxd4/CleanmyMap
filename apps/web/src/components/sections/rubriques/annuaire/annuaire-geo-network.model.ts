@@ -1,4 +1,5 @@
 import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+import { getNetworkPublicAddress, getNetworkPublicLogo, type NetworkPublicLogo } from "@/lib/partners/public-network-identity-media";
 import {
   PARIS_CLEANWALK_ACTORS,
   PARIS_CLEANWALK_RELATIONS,
@@ -187,6 +188,9 @@ export interface GeoNetworkEntity {
   communeLabel: string;
   siteNature: string | null;
   sourceUrl: string | null;
+  publicAddressLabel?: string | null;
+  publicAddressSource?: string | null;
+  logo?: NetworkPublicLogo | null;
   primaryFamily: string;
   indicators: GeoNetworkFactualIndicators;
 }
@@ -265,7 +269,7 @@ function computeFactualIndicators(
   }
   const neighbors = new Set<string>();
   let scheduled = 0;
-  let operationsSum = 0;
+  const operations = new Set<string>();
   let hasOperations = false;
 
   for (const rel of PARIS_CLEANWALK_RELATIONS) {
@@ -277,16 +281,16 @@ function computeFactualIndicators(
     }
     const peerId = rel.sourceId === actorId ? rel.targetId : rel.sourceId;
     neighbors.add(peerId);
-    if (rel.operations && rel.operations.length > 0) {
-      operationsSum += rel.operations.length;
+    if (rel.relationType === "action_commune" && rel.frequencyKnown && rel.source.certainty === "verifie" && rel.operations) {
       hasOperations = true;
+      for (const op of rel.operations) operations.add(op.id.trim().toLowerCase() + "::" + op.date);
     }
   }
 
   return {
     documentedNeighborsCount: neighbors.size,
     scheduledLinksCount: scheduled,
-    provenJointOperationsCount: hasOperations ? operationsSum : null,
+    provenJointOperationsCount: hasOperations ? operations.size : null,
     activityScopeLabel,
   };
 }
@@ -314,6 +318,8 @@ export function buildGeoNetworkEntities(
     const networkActor = actorByAnnuaireId.get(entry.id) ?? null;
     if (networkActor) seenActorIds.add(networkActor.id);
     const { coords, verified } = resolveCoordsForEntity(entry.id, entry);
+    const address = getNetworkPublicAddress(networkActor?.id ?? entry.id);
+    const editorialAddress = entry.provenance === "editorial_seed" ? entry.publicAddress : undefined;
     const locationGroup: GeoLocationGroup = coords
       ? isInParisIntramuros(coords.lat, coords.lng)
         ? "in_paris"
@@ -330,10 +336,13 @@ export function buildGeoNetworkEntities(
       networkActor,
       coords,
       locationGroup,
-      addressStatus: resolveAddressStatus(entry, verified),
-      communeLabel: verified?.commune ?? entry.location,
-      siteNature: verified?.nature ?? null,
-      sourceUrl: verified?.sourceUrl ?? entry.websiteUrl ?? null,
+      addressStatus: address ? "verified" : resolveAddressStatus(entry, verified),
+      communeLabel: verified?.commune ?? address?.municipality ?? editorialAddress?.municipality ?? entry.location,
+      siteNature: verified?.nature ?? address?.nature ?? editorialAddress?.kind ?? null,
+      sourceUrl: verified?.sourceUrl ?? address?.sourceUrl ?? editorialAddress?.sourceUrl ?? entry.websiteUrl ?? null,
+      publicAddressLabel: verified?.address ?? address?.label ?? editorialAddress?.label ?? null,
+      publicAddressSource: verified?.sourceUrl ?? address?.sourceUrl ?? editorialAddress?.sourceUrl ?? null,
+      logo: getNetworkPublicLogo(networkActor?.id ?? entry.id),
       primaryFamily: entry.types?.[0] ?? "environnemental",
       indicators: computeFactualIndicators(
         networkActor?.id ?? null,
@@ -350,6 +359,7 @@ export function buildGeoNetworkEntities(
     if (actor.annuaireEntryId && allEntryIds.has(actor.annuaireEntryId)) continue;
 
     const { coords, verified } = resolveCoordsForEntity(actor.id, null);
+    const address = getNetworkPublicAddress(actor.id);
     const locationGroup: GeoLocationGroup = coords
       ? isInParisIntramuros(coords.lat, coords.lng)
         ? "in_paris"
@@ -366,9 +376,12 @@ export function buildGeoNetworkEntities(
       networkActor: actor,
       coords,
       locationGroup,
-      addressStatus: verified ? "verified" : "unknown",
-      communeLabel: verified?.commune ?? actor.parisZone.label,
-      siteNature: verified?.nature ?? null,
+      addressStatus: verified || address ? "verified" : "unknown",
+      communeLabel: verified?.commune ?? address?.municipality ?? actor.parisZone.label,
+      siteNature: verified?.nature ?? address?.nature ?? null,
+      publicAddressLabel: verified?.address ?? address?.label ?? null,
+      publicAddressSource: verified?.sourceUrl ?? address?.sourceUrl ?? null,
+      logo: getNetworkPublicLogo(actor.id),
       sourceUrl:
         verified?.sourceUrl ??
         actor.publicChannels?.[0]?.url ??
@@ -395,6 +408,11 @@ export function getIncidentGeoRelations(
   const actorId = selected?.networkActorId;
   if (!selected || !actorId) return [];
 
+  return getAllGeoRelations(entities).filter(item => item.relation.sourceId === actorId || item.relation.targetId === actorId).map((item): GeoNetworkIncidentRelation => ({ ...item, direction: item.relation.sourceId === actorId ? "outgoing" : "incoming" }));
+}
+
+/** All documented relationships between entities in the active projection. */
+export function getAllGeoRelations(entities: GeoNetworkEntity[]): GeoNetworkIncidentRelation[] {
   const entityByActorId = new Map<string, GeoNetworkEntity>();
   for (const entity of entities) {
     if (entity.networkActorId) entityByActorId.set(entity.networkActorId, entity);
@@ -402,7 +420,6 @@ export function getIncidentGeoRelations(
 
   const incident: GeoNetworkIncidentRelation[] = [];
   for (const relation of PARIS_CLEANWALK_RELATIONS) {
-    if (relation.sourceId !== actorId && relation.targetId !== actorId) continue;
     const fromEntity = entityByActorId.get(relation.sourceId);
     const toEntity = entityByActorId.get(relation.targetId);
     if (!fromEntity || !toEntity) continue;
@@ -411,7 +428,7 @@ export function getIncidentGeoRelations(
       fromEntity,
       toEntity,
       hasPlottableLine: Boolean(fromEntity.coords && toEntity.coords),
-      direction: relation.sourceId === actorId ? "outgoing" : "incoming",
+      direction: "outgoing",
     });
   }
   return incident;

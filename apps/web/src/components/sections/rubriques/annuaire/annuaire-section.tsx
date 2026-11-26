@@ -76,9 +76,7 @@ export function AnnuaireSection() {
   const getNetworkActorId = (node: PublicCleanlinessOrganizationNode) => resolveInstitutionNetworkActorId(PARIS_PUBLIC_CLEANLINESS_DATASET, node, PARIS_CLEANWALK_ACTORS);
   const openNetworkActor = (actorId: string) => {
     const actor = PARIS_CLEANWALK_ACTORS.find((item) => item.id === actorId);
-    setSelectedActorId(actor?.annuaireEntryId ?? actorId);
-    setView("map");
-    document.getElementById(annuaireTabId("map"))?.focus();
+    handleFocusMap(actor?.annuaireEntryId ?? actorId);
   };
 
   const annuaireLogic = useAnnuaireLogic();
@@ -110,6 +108,13 @@ export function AnnuaireSection() {
     setSelectedActorId(id);
     setView("map");
     document.getElementById(annuaireTabId("map"))?.focus();
+  };
+
+  const openInstitution = (institutionId: string) => {
+    if (organizationNavigation.current?.openNode(institutionId)) {
+      setView("organization");
+      document.getElementById(annuaireTabId("organization"))?.focus();
+    }
   };
 
   const selectedActor = selectedActorId
@@ -161,7 +166,7 @@ export function AnnuaireSection() {
         <AnnuaireTabPanel view="map" active={view === "map"}>
           {view === "map" ? (
             <div id="annuaire-panel-network" className="space-y-6">
-              <AnnuaireExplorationView logic={annuaireLogic} fr={fr} mode="map" selectedActorId={selectedActorId} onSelectedActorIdChange={setSelectedActorId} />
+              <AnnuaireExplorationView logic={annuaireLogic} fr={fr} mode="map" selectedActorId={selectedActorId} onSelectedActorIdChange={setSelectedActorId} onLocateActor={handleFocusMap} onOpenInstitution={openInstitution} />
               <ParisNetworkContributionCard fr={fr} territoryId="FR:REG:11" />
             </div>
           ) : null}

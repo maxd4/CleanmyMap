@@ -1,6 +1,10 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { Share2 } from "lucide-react";
+import { matchesNetworkOnlyFilters } from "./annuaire-network-only-filters";
+import { ParisNetwork3DBubble } from "./paris-network-3d-bubble";
+import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
+import { ACTOR_CARDS_PAGE_SIZE } from "./annuaire-filters";
 import { AnnuaireFiltersCard } from "./annuaire-filters-card";
 import { AnnuaireCompactResults } from "./annuaire-compact-results";
 import { AnnuairePartnerList } from "./annuaire-partner-list";
@@ -11,6 +15,7 @@ import {
 import {
   buildGeoNetworkEntities,
   getIncidentGeoRelations,
+  getAllGeoRelations,
   type MapScope,
 } from "./annuaire-geo-network.model";
 import type { AnnuaireLogic } from "./use-annuaire-logic";
@@ -30,6 +35,8 @@ const AnnuaireMapCanvas = dynamic(
   },
 );
 
+const AnnuaireMap3DCanvas = dynamic(() => import("./annuaire-map-3d-canvas").then(module => module.AnnuaireMap3DCanvas), { ssr: false });
+
 export type AnnuaireExplorationMode = "directory" | "map";
 
 type AnnuaireExplorationViewProps = {
@@ -41,6 +48,7 @@ type AnnuaireExplorationViewProps = {
   onSelectedActorIdChange: (id: string | null) => void;
   /** Localiser depuis la liste : bascule vers la vue Carte & réseau avec la sélection. */
   onLocateActor?: (id: string) => void;
+  onOpenInstitution?: (id: string) => void;
 };
 
 export function AnnuaireExplorationView({
@@ -50,8 +58,12 @@ export function AnnuaireExplorationView({
   selectedActorId,
   onSelectedActorIdChange,
   onLocateActor,
+  onOpenInstitution,
 }: AnnuaireExplorationViewProps) {
   const [showRelationsLayer, setShowRelationsLayer] = useState(true);
+  const [relationMode, setRelationMode] = useState<"all" | "selection">("all");
+  const [mapMode, setMapMode] = useState<"3d" | "2d">("3d");
+  const [webglUnavailable, setWebglUnavailable] = useState(false);
   const [mapScope, setMapScope] = useState<MapScope>("paris");
 
   const {
@@ -77,40 +89,34 @@ export function AnnuaireExplorationView({
   } = logic;
 
   const fr = externalFr ?? locale === "fr";
-  const count = sortedAndFilteredEntries.length;
   const locate = onLocateActor ?? onSelectedActorIdChange;
-  const hasActiveFilter =
-    searchTerm !== "" ||
-    filterKind !== "all" ||
-    filterContribution !== "all" ||
-    engagementDomain !== "all" ||
-    zoneFilter !== "all";
-
-  const geoEntities = useMemo(
-    () =>
-      mode === "map"
-        ? buildGeoNetworkEntities(
-            sortedAndFilteredEntries,
-            enrichedEntries ?? sortedAndFilteredEntries,
-            !hasActiveFilter,
-          )
-        : [],
-    [mode, sortedAndFilteredEntries, enrichedEntries, hasActiveFilter],
-  );
+  const allGeoEntities = useMemo(() => mode === "map" ? buildGeoNetworkEntities(enrichedEntries ?? sortedAndFilteredEntries, enrichedEntries ?? sortedAndFilteredEntries, true) : [], [mode, enrichedEntries, sortedAndFilteredEntries]);
+  const geoEntities = useMemo(() => {
+    if (mode !== "map") return [];
+    const visible = new Set(sortedAndFilteredEntries.map(entry => entry.id));
+    return allGeoEntities.filter(entity => entity.entry ? visible.has(entity.id) : matchesNetworkOnlyFilters(entity, { searchTerm, filterKind, filterContribution, engagementDomain, zoneFilter, targetArrondissement }));
+  }, [mode, allGeoEntities, sortedAndFilteredEntries, searchTerm, filterKind, filterContribution, engagementDomain, zoneFilter, targetArrondissement]);
+  const count = mode === "map" ? geoEntities.length : sortedAndFilteredEntries.length;
+  const mapTotalPages = Math.ceil(geoEntities.length / ACTOR_CARDS_PAGE_SIZE);
+  const mapPage = Math.min(actorCardsPage, Math.max(1, mapTotalPages));
+  const mapPageEntities = geoEntities.slice((mapPage - 1) * ACTOR_CARDS_PAGE_SIZE, mapPage * ACTOR_CARDS_PAGE_SIZE);
 
   const incidentRelations = useMemo(
-    () => (mode === "map" ? getIncidentGeoRelations(selectedActorId, geoEntities) : []),
-    [mode, selectedActorId, geoEntities],
+    () => (mode === "map" ? getIncidentGeoRelations(selectedActorId, allGeoEntities) : []),
+    [mode, selectedActorId, allGeoEntities],
   );
+
+  const displayedRelations = useMemo(() => !showRelationsLayer ? [] : relationMode === "all" ? getAllGeoRelations(geoEntities) : incidentRelations, [showRelationsLayer, relationMode, geoEntities, incidentRelations]);
 
   const selectedEntity = useMemo(
     () =>
-      geoEntities.find(
+      allGeoEntities.find(
         (entity) => entity.id === selectedActorId || entity.networkActorId === selectedActorId,
       ) ?? null,
-    [geoEntities, selectedActorId],
+    [allGeoEntities, selectedActorId],
   );
 
+  const institutionalId = selectedEntity?.networkActorId ? projectPublicEntity({ networkActorId: selectedEntity.networkActorId })?.identity.institutionId : null;
   return (
     <div className="flex min-w-0 w-full flex-col gap-4">
       <CmmCard tone="family" variant="default" className="min-w-0 space-y-4">
@@ -189,6 +195,11 @@ export function AnnuaireExplorationView({
                   {fr ? "National (France métropolitaine)" : "National (Mainland France)"}
                 </CmmButton>
               </div>
+              <div role="group" aria-label={fr ? "Perspective cartographique" : "Map perspective"} className="flex gap-1">
+                <CmmButton type="button" size="sm" tone={mapMode === "3d" && !webglUnavailable ? "primary" : "tertiary"} ariaPressed={mapMode === "3d" && !webglUnavailable} onClick={() => { setWebglUnavailable(false); setMapMode("3d"); }}>3D</CmmButton>
+                <CmmButton type="button" size="sm" tone={mapMode === "2d" || webglUnavailable ? "primary" : "tertiary"} ariaPressed={mapMode === "2d" || webglUnavailable} onClick={() => setMapMode("2d")}>2D</CmmButton>
+              </div>
+              <label className="text-xs cmm-text-primary">{fr ? "Liaisons" : "Links"} <select className="cmm-input" value={relationMode} onChange={event => setRelationMode(event.target.value as typeof relationMode)}><option value="all">{fr ? "Toutes" : "All"}</option><option value="selection">{fr ? "Sélection" : "Selection"}</option></select></label>
               <CmmButton
                 type="button"
                 onClick={() => setShowRelationsLayer((value) => !value)}
@@ -202,38 +213,47 @@ export function AnnuaireExplorationView({
             </div>
             <p className="text-xs cmm-text-secondary">
               {fr
-                ? "Sélectionnez une structure pour afficher ses relations documentées (jamais une similarité par tags)."
-                : "Select a structure to display its documented relationships."}
+                ? "Taille des logos : nombre de voisins documentés, pas un score d’influence. Les pins indiquent des implantations vérifiées."
+                : "Logo size: documented neighbours, not an influence score. Pins indicate verified sites."}
             </p>
           </div>
 
           <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <AnnuaireMapCanvas
+            <div className="min-w-0 space-y-2">
+            {webglUnavailable ? <p role="status" className="text-xs cmm-text-warning">{fr ? "3D indisponible sur cet appareil. Carte 2D conservée." : "3D unavailable on this device. 2D map retained."}</p> : null}
+            {mapMode === "3d" && !webglUnavailable ? <AnnuaireMap3DCanvas entities={geoEntities} relations={displayedRelations} mapScope={mapScope} selectedId={selectedEntity?.id ?? selectedActorId} onSelect={onSelectedActorIdChange} onUnavailable={() => setWebglUnavailable(true)} fr={fr} /> : <AnnuaireMapCanvas
               entities={geoEntities}
-              incidentRelations={incidentRelations}
+              incidentRelations={displayedRelations}
               showRelationsLayer={showRelationsLayer}
               mapScope={mapScope}
               variant="exploration"
               onItemClick={onSelectedActorIdChange}
               highlightedItemId={selectedEntity?.id ?? selectedActorId}
               fr={fr}
-            />
+            />}
+            </div>
             <AnnuaireCompactResults
               fr={fr}
               entries={paginatedEntries}
-              selectedActorId={selectedActorId}
-              currentPage={actorCardsPage}
-              totalPages={totalPages}
+              entities={mapPageEntities}
+              selectedActorId={selectedEntity?.id ?? selectedActorId}
+              currentPage={mapPage}
+              totalPages={mapTotalPages}
               onPageChange={setActorCardsPage}
               onSelect={onSelectedActorIdChange}
             />
           </div>
 
+          {selectedEntity ? <div className="flex flex-wrap gap-2">
+            {institutionalId && onOpenInstitution ? <CmmButton type="button" tone="secondary" onClick={() => onOpenInstitution(institutionalId)}>{fr ? "Voir dans les services publics" : "View in public services"}</CmmButton> : null}
+            {selectedEntity.coords && selectedEntity.locationGroup === "outside_paris" && mapScope === "paris" ? <CmmButton type="button" tone="secondary" onClick={() => setMapScope("national")}>{fr ? "Localiser sur la carte nationale" : "Locate on national map"}</CmmButton> : null}
+          </div> : null}
+          {selectedEntity?.networkActor && !selectedEntity.entry ? <ParisNetwork3DBubble actor={selectedEntity.networkActor} isLocked onClose={() => onSelectedActorIdChange(null)} fr={fr}/> : null}
           <AnnuaireIncidentRelationsPanel
             fr={fr}
             selectedEntity={selectedEntity}
             incidentRelations={incidentRelations}
-            onSelectEntity={onSelectedActorIdChange}
+            onSelectEntity={locate}
           />
 
           <AnnuaireOutsideAndUnknownPanels

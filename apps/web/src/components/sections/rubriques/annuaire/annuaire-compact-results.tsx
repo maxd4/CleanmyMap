@@ -3,10 +3,12 @@
 import { cn } from "@/lib/utils";
 import { AnnuairePagination } from "./annuaire-partner-list";
 import { formatAnnuaireCoverage, type EnrichedAnnuaireEntry } from "./annuaire-helpers";
+import type { GeoNetworkEntity } from "./annuaire-geo-network.model";
 
 interface AnnuaireCompactResultsProps {
   fr: boolean;
   entries: EnrichedAnnuaireEntry[];
+  entities?: GeoNetworkEntity[];
   selectedActorId: string | null;
   currentPage: number;
   totalPages: number;
@@ -18,19 +20,21 @@ interface AnnuaireCompactResultsProps {
 export function AnnuaireCompactResults({
   fr,
   entries,
+  entities,
   selectedActorId,
   currentPage,
   totalPages,
   onPageChange,
   onSelect,
 }: AnnuaireCompactResultsProps) {
+  const rows = entities ? entities.map(entity => ({ id: entity.id, name: entity.name, detail: entity.publicAddressLabel ?? entity.indicators.activityScopeLabel })) : entries.map(entry => ({ id: entry.id, name: entry.name, detail: formatAnnuaireCoverage(entry) }));
   return (
     <div className="min-w-0 space-y-3">
       <ul
         aria-label={fr ? "Résultats de l'annuaire" : "Directory results"}
         className="m-0 flex list-none flex-col gap-2 p-0"
       >
-        {entries.map((entry) => (
+        {rows.map((entry) => (
           <li key={entry.id}>
             <button
               type="button"
@@ -47,7 +51,7 @@ export function AnnuaireCompactResults({
                 {entry.name}
               </span>
               <span className="block truncate text-xs cmm-text-secondary">
-                {formatAnnuaireCoverage(entry)}
+                {entry.detail}
               </span>
             </button>
           </li>

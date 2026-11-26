@@ -20,6 +20,7 @@ import {
   getActorStructureContext,
   getInstitutionStructureContext,
   getPublicStructureSource,
+  type PublicStructureContext,
   type PublicStructureLimit,
   type PublicStructureMetric,
   type PublicStructureSource,
@@ -41,6 +42,10 @@ export type CanonicalPublicEntityProjection = {
     institutionId: string | null;
     name: string;
   };
+  /** Existing public owners, not copies of their data. */
+  publicActor: ParisCleanwalkActor | null;
+  institution: PublicCleanlinessOrganizationNode | null;
+  structureContext: PublicStructureContext | null;
   territories: readonly string[];
   publicReferents: readonly string[];
   relations: readonly ParisCleanwalkRelation[];
@@ -208,6 +213,9 @@ export function projectPublicEntity(
       institutionId: resolvedInstitutionId,
       name,
     },
+    publicActor: networkActor,
+    institution: resolvedInstitutionNode,
+    structureContext: context,
     territories,
     publicReferents,
     relations,

@@ -29,6 +29,7 @@ import {
 } from "./annuaire-geo-network.model";
 import { hasPreciseAnnuaireCoordinates } from "./annuaire-helpers";
 import { buildClusterMarkerIconHtml, buildNamedMarkerIconHtml } from "./annuaire-map-icon";
+import { getNetworkRelationVisual } from "./annuaire-geo-network.visuals";
 
 type MarkerCluster = {
   key: string;
@@ -172,8 +173,8 @@ export function AnnuaireMapCanvas({
 
   const clusters = useMemo(() => clusterEntitiesByZoom(entities, zoom), [entities, zoom]);
   const plottableRelations = useMemo(
-    () => (showRelationsLayer ? incidentRelations.filter((r) => r.hasPlottableLine) : []),
-    [incidentRelations, showRelationsLayer],
+    () => { const ids = new Set(entities.map(entity => entity.id)); return showRelationsLayer ? incidentRelations.filter(r => r.hasPlottableLine && ids.has(r.fromEntity.id) && ids.has(r.toEntity.id)) : []; },
+    [entities, incidentRelations, showRelationsLayer],
   );
   const isExploration = variant === "exploration";
 
@@ -231,18 +232,7 @@ export function AnnuaireMapCanvas({
         </LayersControl>
 
         {plottableRelations.map(({ relation, fromEntity, toEntity }) => {
-          const isScheduled = relation.relationType === "collaboration_programmee";
-          const isUncertain = relation.source.certainty === "partiel_ou_incertain";
-          const color = isScheduled
-            ? "#0284c7"
-            : isUncertain
-              ? "#d97706"
-              : "#6d28d9";
-          const dashArray = isScheduled
-            ? "4 6"
-            : isUncertain || !relation.frequencyKnown
-              ? "8 6"
-              : undefined;
+          const { color, dash: dashArray, weight } = getNetworkRelationVisual(relation);
           return (
             <Polyline
               key={relation.id}
@@ -252,7 +242,7 @@ export function AnnuaireMapCanvas({
               ]}
               pathOptions={{
                 color,
-                weight: relation.frequencyKnown ? 3.5 : 2.5,
+                weight,
                 opacity: 0.85,
                 dashArray,
               }}
@@ -279,9 +269,11 @@ export function AnnuaireMapCanvas({
                 family: entity.primaryFamily,
                 highlighted: isHighlighted,
                 outsideCity: entity.locationGroup === "outside_paris",
+                logoPath: entity.logo?.localPath,
+                neighbours: entity.indicators.documentedNeighborsCount,
               }),
               iconSize: undefined,
-              iconAnchor: [16, 16],
+              iconAnchor: [0, 0],
             });
             return (
               <Marker

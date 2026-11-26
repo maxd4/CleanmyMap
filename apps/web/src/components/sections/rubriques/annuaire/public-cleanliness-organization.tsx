@@ -7,6 +7,7 @@ import { PublicCleanlinessOrgChart } from "./public-cleanliness-org-chart";
 import { getPublicInstitutionalContributions } from "@/lib/partners/public-cleanliness-needs";
 import { getPublicInstitutionalPeople } from "@/lib/partners/public-cleanliness-people";
 import { getInstitutionStructureContext } from "@/lib/partners/public-structure-context";
+import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
 import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
 import { PublicStructureContextPanel } from "./public-structure-context-panel";
 import { getArrondissementCityOptions, getArrondissementMunicipalLabel, type ArrondissementCity } from "@/lib/geo/paris-arrondissements";
@@ -17,6 +18,7 @@ import {
   getPublicCleanlinessContact,
   getPublicCleanlinessCityDataset,
   PUBLIC_CLEANLINESS_CITY_DATASETS,
+  PARIS_PUBLIC_CLEANLINESS_DATASET,
   type PublicCleanlinessCityDatasets,
   type PublicCleanlinessFilters,
   type PublicCleanlinessOrganizationNode,
@@ -310,17 +312,17 @@ export function PublicCleanlinessOrganization({
               <h3 className="text-sm font-black cmm-text-primary">{text.tree}</h3>
               <div className="flex flex-wrap items-center gap-2">
                 <div role="group" aria-label={fr ? "Mode d'affichage de l'organigramme" : "Organization chart view mode"} className="flex items-center gap-1 rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-1">
-                  <button type="button" aria-pressed={viewMode === "chart"} onClick={() => setViewMode("chart")} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "chart" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
+                  <button type="button" aria-pressed={viewMode === "chart"} onClick={() => { setViewMode("chart"); setZoom(1); }} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "chart" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
                     {fr ? "Organigramme" : "Org chart"}
                   </button>
-                  <button type="button" aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "list" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
+                  <button type="button" aria-pressed={viewMode === "list"} onClick={() => { setViewMode("list"); setZoom(1); }} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "list" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
                     {fr ? "Liste" : "List"}
                   </button>
                 </div>
                 <div role="group" aria-label={text.zoom} className="flex items-center gap-2">
-                  <button type="button" aria-label={text.zoomOut} onClick={() => setZoom((value) => Math.max(0.7, Math.round((value - 0.1) * 10) / 10))} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-sm cmm-text-primary">−</button>
+                  <button type="button" aria-label={text.zoomOut} onClick={() => setZoom((value) => Math.max(viewMode === "chart" ? 0.2 : 0.7, Math.round((value - 0.1) * 10) / 10))} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-sm cmm-text-primary">−</button>
                   <button type="button" aria-label={text.zoomReset} onClick={() => setZoom(1)} className="min-w-16 rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-xs font-bold cmm-text-primary">{Math.round(zoom * 100)}%</button>
-                  <button type="button" aria-label={text.zoomIn} onClick={() => setZoom((value) => Math.min(1.4, Math.round((value + 0.1) * 10) / 10))} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-sm cmm-text-primary">+</button>
+                  <button type="button" aria-label={text.zoomIn} onClick={() => setZoom((value) => Math.min(viewMode === "chart" ? 60 : 1.4, Math.round((value + 0.1) * 10) / 10))} className="rounded-lg border border-[var(--cmm-surface-border)] px-3 py-2 text-sm cmm-text-primary">+</button>
                 </div>
               </div>
             </div>
@@ -328,7 +330,8 @@ export function PublicCleanlinessOrganization({
               <div className="space-y-3">
                 {viewMode === "chart" ? (
                   <PublicCleanlinessOrgChart
-                    administrativeRoots={administrativeRoots}
+                    fr={fr}
+                    administrativeRoots={roots}
                     childrenById={childrenById}
                     nodeById={nodeById}
                     relations={relations}
@@ -345,7 +348,7 @@ export function PublicCleanlinessOrganization({
                       confirmed: text.assignment.confirmed,
                       historical: text.assignment.historical,
                       unknown: text.assignment.unknown,
-                      nonHierarchyNote: fr ? "Connecteurs = hierarchy uniquement" : "Connectors = hierarchy only",
+                      nonHierarchyNote: fr ? "Les autres relations ne constituent pas des rattachements" : "Other links are not reporting lines",
                     }}
                     displayName={displayName}
                     kindLabel={kindLabel}
@@ -354,6 +357,7 @@ export function PublicCleanlinessOrganization({
                     onSelect={selectTreeNode}
                     onToggleCollapse={(nodeId, next) => setCollapsed((current) => ({ ...current, [nodeId]: next }))}
                     onResetView={() => setZoom(1)}
+                    onZoomChange={setZoom}
                   />
                 ) : (
                   <div className="max-h-[38rem] overflow-auto">
@@ -362,7 +366,7 @@ export function PublicCleanlinessOrganization({
                     </div>
                   </div>
                 )}
-                {standaloneRoots.length ? <details className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-2" open={Boolean(filters.query.trim()) || Boolean(selectedPath[0] && standaloneRootIds.has(selectedPath[0].id))}>
+                {viewMode === "list" && standaloneRoots.length ? <details className="rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-2" open={Boolean(filters.query.trim()) || Boolean(selectedPath[0] && standaloneRootIds.has(selectedPath[0].id))}>
                   <summary className="cursor-pointer text-sm font-semibold cmm-text-info">{text.standalone} ({standaloneRoots.length})</summary>
                   <ul aria-label={text.standalone} className="mt-2 list-none space-y-2">{standaloneRoots.map(rootNode => renderNode(rootNode, 0))}</ul>
                 </details> : null}
@@ -404,7 +408,7 @@ export function PublicCleanlinessOrganization({
             {documentedContributions.length ? <section className="mt-4 text-xs cmm-text-primary"><h4 className="font-black uppercase tracking-wider cmm-text-primary">{fr ? "Contributions publiques documentées" : "Documented public contributions"}</h4><p className="mt-1 cmm-text-secondary">{fr ? "Relations reprises du réseau public, pas un partenariat CleanMyMap ni un engagement actuel." : "Relations from the public network; not a CleanMyMap partnership or current commitment."}</p><ul className="mt-2 space-y-2">{documentedContributions.map(item => <li key={item.id} className="rounded-xl border border-[var(--cmm-surface-border)] p-3">
               <p className="font-semibold cmm-text-primary">{item.title}</p><button type="button" onClick={() => selectRelatedNode(item.otherId)} className="cmm-text-info underline">{item.otherName}</button><p className="mt-1">{item.summary}</p><p><a href={item.source.url} target="_blank" rel="noreferrer" className="cmm-text-info underline">{item.source.label}</a> · {item.source.verifiedAt}</p>
             </li>)}</ul></section> : null}
-            {dataset ? <PublicStructureContextPanel key={selected.id} context={getInstitutionStructureContext(dataset, selected, PARIS_CLEANWALK_ACTORS)} fr={fr} /> : null}
+            {dataset ? <PublicStructureContextPanel key={selected.id} context={dataset === PARIS_PUBLIC_CLEANLINESS_DATASET ? projectPublicEntity({ institutionId: selected.id })?.structureContext ?? null : getInstitutionStructureContext(dataset, selected, PARIS_CLEANWALK_ACTORS)} fr={fr} /> : null}
             <div className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{text.sources}</h4><ul className="mt-2 space-y-2">{selected.sourceIds.map((id) => sources.find((item) => item.id === id)).filter((item): item is (typeof sources)[number] => Boolean(item)).map((item) => <li key={item.id}><a href={item.url} target="_blank" rel="noreferrer" className="text-xs font-semibold cmm-text-info underline underline-offset-2">{item.label}</a><p className="mt-0.5 text-xs cmm-text-secondary">{item.sourceContentDate ? `${text.sourceUpdated} ${item.sourceContentDate} · ` : ""}{text.verified} {item.verifiedAt} · {text.proof}: {text.evidenceLabels[item.evidence]}</p></li>)}</ul></div>
           </> : <p role="status" className="text-sm cmm-text-primary">{text.noResults}</p>}
         </aside>

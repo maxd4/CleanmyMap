@@ -17,7 +17,7 @@ Le parcours visible est organisé en trois onglets principaux (`Services publics
 
 1. `Services publics` : organigramme graphique 2D interactif (avec vue `Liste` alternative) et navigation croisée vers `Carte & réseau` ;
 2. `Annuaire` : sélection éditoriale (6 cartes initiales maximum et action « Afficher toutes »), recherche textuelle, compteur, filtres par menus déroulants accessibles et grille responsive (1/2/3 colonnes) paginée ;
-3. `Carte & réseau` : carte géographique relationnelle unifiée sur Leaflet limitée à deux périmètres (`Paris intramuros` par défaut et `National (France métropolitaine)`, Corse comprise), marqueurs nommés et regroupements numérotés, couche activable de relations documentées incidentes à la sélection avec indicateurs factuels (voisins distincts reliés et opérations communes prouvées, sans score d'influence), panneaux `Hors de Paris` et `Localisation non établie`, adresses publiques sourcées (ou statut explicite divergent / non applicable / non établi), résultats compacts, drawer de fiche et contribution citoyenne.
+3. `Carte & réseau` : carte géographique relationnelle en perspective 3D MapLibre avec repli 2D Leaflet limitée à deux périmètres (`Paris intramuros` par défaut et `National (France métropolitaine)`, Corse comprise), pins géographiques précis, badges flottants nommés et logos sourcés lorsqu'ils existent, couche activable de toutes les relations documentées ou de celles de la sélection avec indicateurs factuels (voisins distincts reliés et opérations communes prouvées, sans score d'influence), panneaux `Hors de Paris` et `Localisation non établie`, adresses publiques sourcées (ou statut explicite divergent / non applicable / non établi), résultats compacts, drawer de fiche et contribution citoyenne.
 
 Les onglets utilisent un `tablist` unique avec `roving tabindex` (flèches, Début, Fin) et `hidden` sur les panneaux inactifs. La mise en avant est une sélection éditoriale (`isFeatured`). Elle ne modifie pas la provenance ni le niveau de confiance de l'entrée sélectionnée.
 
@@ -133,19 +133,11 @@ distance n'est affichée que si l'entrée possède des coordonnées précises et
 préférence d'arrondissement permet de lui donner un sens ; aucune distance n'est
 calculée depuis un centroïde ou une couverture abstraite.
 
-## 5. Graphe et sémantique des liens
+## 5. Carte relationnelle et exploration institutionnelle
 
-Le graphe est une vue d'exploration. Ses nœuds ouvrent les mêmes fiches que la liste
-et la carte, y compris au clavier. Un lien est déduit uniquement de tags communs et
-est présenté comme une **similarité thématique**. Il ne constitue pas une preuve de
-collaboration, de partenariat, de co-organisation ou de relation opérationnelle.
-Les positions visuelles des nœuds servent à la lisibilité du graphe et ne sont pas des
-coordonnées géographiques.
+Carte & réseau utilise les relations documentées du registre, jamais les similarités de tags. Les badges flottants sont dimensionnés selon le nombre de voisins documentés, sans score d'influence. Le pin reste à la coordonnée réelle ; l'orientation et l'inclinaison de caméra ne modifient pas la géographie. Le rendu 2D et le rendu 3D exploitent les mêmes identités et données. Les acteurs sans coordonnées ou sans logo restent consultables, avec un statut explicite.
 
-En complément de la carte Leaflet et du graphe SVG, l'espace **Intelligence territoriale** réunit deux onglets. Le réseau 3D des cleanwalks permet de rechercher et sélectionner un acteur, lire ses relations et leurs sources et consulter les opérations déclarées. Type d'acteur et arrondissement restent visibles, les autres filtres sont secondaires. La fiche complète est ouverte par sélection explicite ; le survol fournit un aperçu court. La liste HTML reste une alternative de consultation et le canvas n'est pas nécessaire pour accéder aux informations. Le [contrat du réseau 3D](../../../../features/paris-cleanwalk-network-3d.md) précise les encodages, niveaux de preuve, limites et contributions modérées.
-
-L'onglet **Organisation des services publics** propose une orientation par besoin et arrondissement, puis un organigramme, une navigation par niveaux et une matrice territoriale. Le choix d'arrondissement est partagé ; aucune compétence ou disponibilité n'est supposée en l'absence de preuve. Les détails et canaux publics restent accessibles dans les fiches. Le [contrat institutionnel](../../../../features/organisation-services-publics-proprete.md) décrit les règles de projection et de navigation. Les fiches possédant une identité commune explicitement établie peuvent ouvrir l'autre onglet ; le réseau, l'organigramme et les similarités thématiques restent des représentations distinctes. La consultation institutionnelle ne monte pas le canvas WebGL. Les propositions citoyennes restent modérées, sans publication automatique.
-
+Services publics conserve l'orientation par besoin, l'organigramme, la liste et la matrice. Le graphique cadre la forêt complète et inclut les racines sans rattachement. Les relations non hiérarchiques restent distinctes. Les fiches d'identité commune peuvent ouvrir l'autre onglet. La consultation institutionnelle ne charge pas le moteur cartographique. Les contributions citoyennes restent modérées.
 
 ## 6. Référencement et publication
 

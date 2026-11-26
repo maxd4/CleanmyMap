@@ -58,6 +58,7 @@ export function AnnuaireIncidentRelationsPanel({
           ) : null}
         </div>
       </div>
+      {selectedEntity.publicAddressLabel ? <p className="text-xs cmm-text-primary">{fr ? "Adresse" : "Address"} : {selectedEntity.publicAddressSource ? <a href={selectedEntity.publicAddressSource} target="_blank" rel="noopener noreferrer" className="underline">{selectedEntity.publicAddressLabel}</a> : selectedEntity.publicAddressLabel}{!selectedEntity.coords ? " · " + (fr ? "Géocodage non établi" : "Geocode not established") : ""}</p> : null}
       {incidentRelations.length === 0 ? (
         <p className="text-xs cmm-text-secondary">
           {fr
@@ -208,7 +209,7 @@ export function AnnuaireOutsideAndUnknownPanels({
                   className="w-full rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background)] px-3 py-2 text-left text-xs hover:border-violet-500/50"
                 >
                   <span className="block font-semibold cmm-text-primary">{entity.name}</span>
-                  <span className="block cmm-text-secondary">{entity.communeLabel}</span>
+                  <span className="block cmm-text-secondary">{entity.publicAddressLabel ?? entity.communeLabel}</span>
                 </button>
               </li>
             ))}

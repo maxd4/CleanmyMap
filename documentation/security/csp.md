@@ -64,7 +64,7 @@ pas à partir d'une allowlist générique :
   Photon, Nominatim pour les flux historiques hors autocomplétion, et routage
   OpenStreetMap ;
 - images et cartes : hôtes configurés dans `next.config.ts`, images de contenu
-  explicitement utilisées et tuiles OpenStreetMap/CARTO.
+  explicitement utilisées et tuiles OpenStreetMap/CARTO. Le rendu MapLibre de l'Annuaire consomme les mêmes tuiles CARTO par fetch ; leur hôte est aussi autorisé dans connect-src, sans ouverture générale de la policy.
 
 Les URLs externes saisies ou persistées par les utilisateurs ne sont pas
 ajoutées dynamiquement à la policy. Elles restent soumises à la validation et

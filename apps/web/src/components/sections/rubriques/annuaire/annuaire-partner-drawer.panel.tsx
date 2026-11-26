@@ -34,7 +34,8 @@ import {
   PARIS_CLEANWALK_RELATIONS,
   PARIS_RELATION_TYPE_META,
 } from "@/lib/partners/paris-cleanwalk-network";
-import { getActorStructureContext } from "@/lib/partners/public-structure-context";
+import type { PublicStructureContext } from "@/lib/partners/public-structure-context";
+import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
 import { PublicStructureContextPanel } from "./public-structure-context-panel";
 
 type DrawerCommonProps = { entry: EnrichedAnnuaireEntry; fr: boolean };
@@ -420,7 +421,7 @@ function AnnuaireDrawerSourcesSection({
   structureContext,
 }: DrawerCommonProps & {
   associationProfile: AssociationProfile | null;
-  structureContext: ReturnType<typeof getActorStructureContext> | null;
+  structureContext: PublicStructureContext | null;
 }) {
   const resources = associationProfile?.usefulResources ?? [];
   return (
@@ -585,13 +586,7 @@ export function AnnuairePartnerDrawerPanel({
   const structureBadge = getAssociationStructureBadge(entry);
   const isEditorial = isEditorialAnnuaireEntry(entry);
   const publicDestination = getAnnuairePublicDestination(entry);
-  const structureContext =
-    isEditorial &&
-    PARIS_CLEANWALK_ACTORS.some(
-      (actor) => actor.id === entry.id && actor.annuaireEntryId === entry.id,
-    )
-      ? getActorStructureContext(entry.id)
-      : null;
+  const structureContext = isEditorial ? projectPublicEntity({ annuaireEntryId: entry.id })?.structureContext ?? null : null;
 
   return (
     <>

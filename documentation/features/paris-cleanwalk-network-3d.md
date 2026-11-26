@@ -1,17 +1,17 @@
-# Réseau 3D des cleanwalks à Paris — contrat relationnel et runtime
+# Carte et réseau géographique des cleanwalks à Paris — contrat relationnel et runtime
 
 **Statut : `CURRENT`**
 
-Ce document décrit le contrat de données, de relations et de rendu de la visualisation 3D de l'écosystème des cleanwalks, de la prévention et de la sensibilisation aux déchets rattaché à Paris et intégré dans `/sections/annuaire`. Les inventaires courants sont portés par les registres TypeScript et leurs tests, non par un compteur documentaire.
+Ce document décrit le contrat de données, de relations et de rendu de la carte relationnelle géographique de l'écosystème des cleanwalks, de la prévention et de la sensibilisation aux déchets rattaché à Paris et intégré dans `/sections/annuaire`. Les inventaires courants sont portés par les registres TypeScript et leurs tests, non par un compteur documentaire.
 
-Dans `/sections/annuaire`, le réseau est présenté dans l'onglet « Réseau 3D », à côté de l'onglet « Services publics ». Ce dernier possède un référentiel et des types de relations institutionnelles distincts ; les deux modèles relationnels restent distincts. La vue guidée est initiale ; le canvas WebGL nécessite le choix de la 3D puis l'entrée dans le viewport ou le chargement explicite. La scène est démontée hors de l'onglet réseau. Le panneau réseau peut rester monté afin de préserver ses filtres et sélections ; au retour en 3D, la scène est rétablie. Les onglets appliquent le patron ARIA à tabulation mobile unique et navigation par flèches, `Home` et `End`. Voir le [contrat des services publics de propreté](organisation-services-publics-proprete.md).
+Dans `/sections/annuaire`, l'onglet « Carte & réseau » utilise une même projection publique pour la perspective 3D géographique MapLibre et le repli 2D Leaflet. Les points sont des implantations géocodées, jamais une disposition abstraite. Le référentiel institutionnel de « Services publics » conserve ses types de relations propres. Les deux onglets partagent les identités explicitement établies.
 
 ## 1. Sources runtime
 
 - Registre éditorial typé et politique d'épaisseur : `apps/web/src/lib/partners/paris-cleanwalk-network.ts`, `paris-cleanwalk-network.data.ts`, `paris-cleanwalk-network.prevention.data.ts`, `paris-cleanwalk-network.schools.ts`, `paris-cleanwalk-network.scheduled.ts` et `paris-cleanwalk-network.relations.ts`
-- Modèle de filtrage et projection 3D déterministe : `apps/web/src/components/sections/rubriques/annuaire/paris-network-3d.model.ts`
-- Scène WebGL Three.js / React Three Fiber (`ssr: false`) : `apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-canvas.tsx`
-- Orchestrateur, filtres, légende, bulle contextuelle et repli interactif : `apps/web/src/components/sections/rubriques/annuaire/paris-network-3d-section.tsx` et `paris-network-3d-bubble.tsx`
+- Projection géographique et relations : `annuaire-geo-network.model.ts`, `annuaire-geo-network.visuals.ts` et `annuaire-network-only-filters.ts` dans `apps/web/src/components/sections/rubriques/annuaire/`.
+- Rendus `annuaire-map-3d-canvas.tsx` et `annuaire-map-canvas.tsx`, chargés dynamiquement par `annuaire-exploration-view.tsx` ; `annuaire-geo-projection.ts` projette l'altitude symbolique selon la caméra.
+- Identités et preuves : `public-entity-projection.ts`, `public-structure-context.ts` et `public-network-identity-media.ts` dans `apps/web/src/lib/partners/`.
 
 ## 2. Identifiants canoniques, périmètres, rôles et canaux publics
 
@@ -43,17 +43,14 @@ Pour `action_commune` :
 - Une fréquence connue sans opération dans la fenêtre retourne `operationsCount12m: 0` avec une épaisseur neutre ; elle reste distincte d'une fréquence inconnue.
 - Les autres types de relations utilisent des styles de ligne distincts (`dashed` / `dotted` et couleurs dédiées) avec une épaisseur fixe (`1.8`). Les collaborations programmées sont affichées en ambre, en tirets, et exclues du comptage historique.
 
-## 4. Chargement, sobriété et repli WebGL
+## 4. Caméra, marqueurs, relations et repli
 
-- La vue HTML guidée est la présentation initiale ; la scène 3D est optionnelle et ne se monte qu’après choix explicite, puis entrée dans le viewport ou demande de chargement. Le bouton de retour à la vue guidée conserve les filtres et la sélection. Le graphe garde son nom de réseau 3D dans les onglets.
-- Aucune simulation physique permanente n'est exécutée. La disposition déterministe est calculée sur le dataset complet, puis projetée sur les résultats filtrés ; les nœuds conservés ne changent pas de position. Le rayon nominal est uniforme et ne signifie ni influence ni importance. La position indique une famille, pas une adresse ou une distance relationnelle.
-- `frameloop="demand"` suspend le rendu continu lorsque la section est hors écran, lorsque `prefers-reduced-motion` est actif ou lorsque le mode d'affichage est `sobre`.
-- Si WebGL est indisponible (ou échoue à l'exécution), un repli HTML interactif complet (`ParisNetwork3DFallback`) donne accès aux mêmes acteurs, liens et fiches. La capacité WebGL est mémorisée pour l'instance active ; le contexte de sonde est libéré si l'extension le permet. Le listener de perte de contexte est nettoyé au démontage. Le zoom suit la cible des contrôles de caméra et respecte leurs limites. Le cadrage initial et le bouton Cadrer le réseau ajustent la caméra aux bornes géométriques des nœuds visibles et au champ de vision horizontal et vertical. Centrer la sélection cadre son voisinage ; Isoler les voisins ne modifie pas les données ou les filtres métier, seulement la projection 3D. La fermeture de la sélection, un changement de territoire ou une exclusion par filtre rend l’isolation inactive. Seuls les acteurs sélectionnés ou survolés affichent leur nom dans la scène, à taille d’écran lisible ; les étiquettes de collaboration programmée apparaissent sur les liens incidents mis en évidence. Tous les noms et relations restent accessibles dans la recherche, la vue guidée et les fiches.
-- `ParisNetworkActorSearch` recherche un nom dans le territoire documenté sans supprimer les voisins. Une sélection explicite d'un acteur hors filtres réinitialise les filtres incompatibles. Type d'acteur et arrondissement restent visibles ; les autres filtres existants sont regroupés dans un détail secondaire. Aucune nouvelle facette temporelle ou de classement.
-- Le survol met en évidence l'acteur et ses voisins et affiche un aperçu court non interactif. La sélection explicite ouvre la fiche complète et les liens documentés dans `ParisNetworkSelectionPanel`, à côté de la scène sur grand écran et à sa suite sur petit écran. Une relation ouvre son type, ses deux extrémités, son résumé, sa source et son niveau de preuve ; une opération déclarée réutilise sa fiche programmée. Le parcours par fiche fournit aussi un accès clavier aux liens historiques.
-- La légende résume les encodages puis permet d'ouvrir les définitions détaillées. Un lien absent n'est pas une absence démontrée de collaboration.
-- Une identité institutionnelle commune explicitement résolue peut ouvrir l'onglet des services publics, conformément au [contrat institutionnel](organisation-services-publics-proprete.md).
-- `public-entity-projection.ts` fournit une projection publique canonique réutilisable à partir des identifiants explicites (`annuaireEntryId`, `networkActorId`, `institutionId`), sans rapprochement par nom ni exposition du registre privé.
+- La carte utilise le fond CARTO existant. La vue 3D permet translation, rotation, inclinaison et zoom ; le repli 2D reste sélectionnable et prend le relais si WebGL est indisponible. Les deux moteurs sont démontés hors de l'onglet actif.
+- La pointe du pin correspond à une coordonnée établie. Le badge flottant et sa hauteur sont des encodages visuels, pas la hauteur physique du bâtiment. Les logos autorisés sont des fichiers locaux, avec provenance ; les initiales signalent un logo non renseigné, jamais un logo inventé.
+- Une adresse publiée et un géocodage sont deux preuves distinctes. Les acteurs sans coordonnée restent dans les résultats et la fiche ; aucun centroïde ou domicile individuel n'est ajouté. Une structure peut partager une implantation avec une autre sans fusion d'identité.
+- Le diamètre est borné par 32 et 92 pixels, avec surface croissante en fonction du nombre de voisins distincts documentés. Les collaborations programmées ne contribuent pas à ce degré. L'épaisseur des arêtes réutilise la politique d'opérations communes existante, sans inférer d'activité absente.
+- Les relations sont affichables toutes ensemble, pour la sélection ou masquées. Le registre complet reste consultable dans les fiches ; les arêtes dont un endpoint est dépourvu de géocodage ne sont pas tracées. Ni une relation absente ni un badge de taille minimale ne constituent une preuve d'absence de coopération.
+- Les résultats et la recherche de Carte & réseau comprennent les acteurs uniquement réseau, sans inventer leurs champs Annuaire absents. La navigation institutionnelle et les contextes chiffrés communs passent par les références canoniques, sans rapprochement par nom.
 
 ## 5. Contributions citoyennes, modération et mise à jour du registre
 
@@ -74,18 +71,9 @@ Pour `action_commune` :
   - Les liens non HTTP(S) sont filtrés avant affichage.
   - Si aucun financement n'est établi pour l'acteur, aucune ligne `Financement` n'est rendue dans `ParisNetwork3DBubble`.
 
-## 7. Sélecteur territorial, classement contextuel et état vide (référentiel vérifié au 2026-11-19)
+## 7. Périmètre géographique
 
-- Catalogue géographique statique (`apps/web/src/lib/partners/territory-network-catalog.ts`, `.data.ts`, `territory-network-ranking.ts`) :
-  - 18 régions françaises COG (`01` à `94`), 8 collectivités et territoires français d'outre-mer (`975`, `977`, `978`, `984`, `986`, `987`, `988`, `989`, dont `984` et `989` exclus du calcul de proximité car sans population permanente).
-  - **OIF (92 États et gouvernements au 16 novembre 2026)** : **53 membres de plein droit** (52 entités externes dont Chypre, Ghana, Belgique et Fédération Wallonie-Bruxelles distincts + France représentée par `FR:*` sans doublon ; retraits 2025 du Burkina Faso, du Mali et du Niger pris en compte), **5 membres associés** (dont Nouvelle-Calédonie `FR:COM:988` sans doublon) et **34 observateurs** (dont Polynésie française `FR:COM:987` sans doublon, Angola, Chili, Gambie, Malte, Louisiane, Ontario, Nouvelle-Écosse, Sarre, ainsi que Saint-Christophe-et-Niévès et le Manitoba admis en novembre 2026).
-  - Les subdivisions francophones sans statut institutionnel propre à l'OIF (`SUB:BE-WAL`, `SUB:BE-BRU` et les 6 cantons francophones suisses) restent accessibles sans statut OIF fictif.
-- Le combobox accessible `« Choisir un territoire »` (`territory-network-combobox.tsx`) filtre localement sans requête réseau et propose 2 suggestions contextuelles en tête :
-  1. Position GPS uniquement si déjà autorisée (`permissions.query`) ou après clic explicite sur `« Me localiser »`, classée par approximation géodésique (`haversineDistanceKm`) sur point représentatif, en évitant que deux entités partageant les mêmes coordonnées représentatives monopolisent les deux suggestions.
-  2. Préférences Clerk canoniques `residence` puis `work` (`user-location-preference.ts`), dédupliquées et complétées si besoin.
-  3. Repli déterministe par ordre numérique INSEE puis codes/libellés internationaux.
-  - Une sélection manuelle n'est jamais écrasée par une réponse asynchrone tardive.
-- Seul `FR:REG:11` dispose actuellement d'un jeu de données (`Pilote : Paris intramuros (Île-de-France non exhaustive)`). Tout autre territoire affiche l'état vide `« Réseau de ce territoire pas encore renseigné »` sans scène WebGL ni données inventées, et le formulaire de contribution reste réservé à `FR:REG:11`.
+Paris intramuros et France métropolitaine sont des périmètres de cadrage du même registre public. Ils ne prouvent ni une couverture exhaustive de Paris ou de la France ni une activité locale pour tous les acteurs nationaux. Les implantations hors Paris et non établies restent consultables. Le catalogue territorial historique n'est pas un nouveau registre d'acteurs.
 
 ## Chiffres, financements et limites des acteurs
 

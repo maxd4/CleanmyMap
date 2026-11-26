@@ -55,6 +55,7 @@ const STATIC_CONNECT_SOURCES = [
   "https://nominatim.openstreetmap.org",
   "https://photon.komoot.io",
   "https://routing.openstreetmap.de",
+  "https://*.basemaps.cartocdn.com", // Existing raster tiles are fetched by MapLibre.
   ...CLERK_CONNECT_SOURCES,
 ];
 
