@@ -528,6 +528,13 @@
       "reviewedAt": "2026-11-18"
     },
     {
+      "route": "apps/web/src/app/api/admin/external-sync/route.ts",
+      "introducedBy": "722a806fb233eb4c88cd10102233dfcdb7a32858",
+      "reason": "Surface d'administration pour piloter la synchronisation externe des actions, résoudre les propositions privées et appliquer les suppressions avec tombstone.",
+      "costContract": "GET et POST réservés à l'accès admin (requireAdminAccess), rate-limit authentifié (10 req/min), audit systématique dans admin_operations_audit, réponses private/no-store et connecteurs externes désactivés par défaut.",
+      "reviewedAt": "2026-11-26"
+    },
+    {
       "route": "apps/web/src/app/api/parcours/brigade-verte/route.ts",
       "introducedBy": "c577f77bad3972978b9e36047cdfcfa6b33a1015",
       "reason": "Surface authentifiée de projection personnelle des participations vérifiées au Parcours Éco-Citoyen Brigade Verte Paris.",
@@ -659,6 +666,7 @@
     "apps/web/src/app/api/admin/codex-usage/route.ts",
     "apps/web/src/app/api/admin/creator-inbox/route.ts",
     "apps/web/src/app/api/admin/environmental-impact/route.ts",
+    "apps/web/src/app/api/admin/external-sync/route.ts",
     "apps/web/src/app/api/admin/free-plan-services/route.ts",
     "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
     "apps/web/src/app/api/admin/moderation/route.ts",

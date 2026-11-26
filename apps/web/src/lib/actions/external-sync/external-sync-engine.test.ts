@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { readFondationMerEvents, readSyntheticFondationMerEvents } from "./fondation-mer-adapter";
 import { readJagisEvents, readSyntheticJagisEvents } from "./jagis-adapter";
 import { runExternalActionSync } from "./engine";
+import { findMatchingCandidateActions } from "./matching";
 import { assertSafeExternalSyncUrl } from "./url-guard";
 import type { ExternalActionSyncStore, ReserveReferenceResult, StoredReferenceResult } from "./store";
 import type { CandidateActionRow } from "./matching";
@@ -11,6 +12,7 @@ function createInMemorySyncStore(seed: {
   subscriptions: ExternalActionSubscription[];
   actions?: CandidateActionRow[];
   suppressedIdentities?: Set<string>;
+  blockPublicationReason?: string;
 }) {
   const actions = new Map<string, CandidateActionRow>(
     (seed.actions ?? []).map((a) => [a.id, { ...a }]),
@@ -40,6 +42,18 @@ function createInMemorySyncStore(seed: {
   const store: ExternalActionSyncStore = {
     async listSubscriptions() {
       return seed.subscriptions;
+    },
+    async verifyWriteMandate(organizerDirectoryId, sourceId) {
+      const sub = seed.subscriptions.find(
+        (s) => s.organizerDirectoryId === organizerDirectoryId && s.sourceId === sourceId,
+      );
+      if (!sub || !sub.enabled || sub.revokedAt || sub.accessMode === "disabled") {
+        return { ok: false, reason: "mandate_revoked" };
+      }
+      if (!sub.consentGrantedAt) {
+        return { ok: false, reason: "consent_missing" };
+      }
+      return { ok: true, subscription: sub };
     },
     async recordRunResult(params) {
       runResults.push({ sourceId: params.sourceId, status: params.status });
@@ -99,6 +113,10 @@ function createInMemorySyncStore(seed: {
         external_revision: params.externalRevision,
         source_snapshot: params.sourceSnapshot,
         content_hash: params.contentHash,
+        applied_snapshot: null,
+        applied_content_hash: null,
+        applied_revision: null,
+        applied_at: null,
         suppressed: false,
       });
 
@@ -111,6 +129,19 @@ function createInMemorySyncStore(seed: {
     },
     async getReference(sourceId, externalEventId) {
       return references.get(`${sourceId}:${externalEventId}`) ?? null;
+    },
+    async markReferenceApplied(params) {
+      const key = `${params.sourceId}:${params.externalEventId}`;
+      const existing = references.get(key);
+      if (!existing) return "not_found";
+      references.set(key, {
+        ...existing,
+        applied_snapshot: params.appliedSnapshot,
+        applied_content_hash: params.appliedContentHash,
+        applied_revision: params.appliedRevision,
+        applied_at: new Date().toISOString(),
+      });
+      return "applied";
     },
     async completeIdentity(identityHash, _claimToken, actionId) {
       const idState = identities.get(identityHash);
@@ -129,7 +160,10 @@ function createInMemorySyncStore(seed: {
       return { linkStatus: "linked", actionId: null };
     },
     async listCandidateActions(organizerDirectoryId) {
-      return [...actions.values()].filter((a) => a.organizer_id === organizerDirectoryId);
+      return {
+        candidates: [...actions.values()].filter((a) => a.organizer_id === organizerDirectoryId),
+        truncated: false,
+      };
     },
     async getActionById(actionId) {
       return actions.get(actionId) ?? null;
@@ -145,17 +179,21 @@ function createInMemorySyncStore(seed: {
         published_at: null,
         location_label: `${event.meetingPoint} — ${event.commune}`,
         notes: event.description ?? null,
+        updated_at: "2026-11-26T10:00:00.000Z",
         preparation_data: {
           actionTitle: event.title,
-          startTime: event.startTime ?? undefined,
+          meetingTime: event.startTime ?? undefined,
           zoneCiblePrevue: event.routeReference ?? undefined,
         },
       });
       return { actionId: id };
     },
-    async updatePreActionFields(actionId, updates) {
+    async updatePreActionFields(actionId, expectedUpdatedAt, updates) {
       const existing = actions.get(actionId);
-      if (!existing) return;
+      if (!existing) return false;
+      if (expectedUpdatedAt && existing.updated_at !== expectedUpdatedAt) {
+        return false;
+      }
       actions.set(actionId, {
         ...existing,
         ...(updates.action_date !== undefined ? { action_date: updates.action_date } : {}),
@@ -164,14 +202,18 @@ function createInMemorySyncStore(seed: {
           ? { preparation_data: updates.preparation_data }
           : {}),
       });
+      return true;
     },
-    async publishPreAction(actionId, publishedAt) {
+    async publishPreAction(actionId) {
+      if (seed.blockPublicationReason) {
+        return { published: false, reason: seed.blockPublicationReason };
+      }
       const existing = actions.get(actionId);
       if (!existing || existing.published_at || existing.action_phase !== "pre_action") {
-        return false;
+        return { published: false, reason: "not_publishable" };
       }
-      actions.set(actionId, { ...existing, published_at: publishedAt });
-      return true;
+      actions.set(actionId, { ...existing, published_at: new Date().toISOString() });
+      return { published: true };
     },
     async upsertProposal(params) {
       const key = `${params.sourceId}:${params.externalEventId}`;
@@ -191,8 +233,12 @@ function createInMemorySyncStore(seed: {
       });
       return id;
     },
-    async listProposals() {
-      return [...proposals.values()];
+    async listProposals(status = "pending", organizerDirectoryId = null) {
+      return [...proposals.values()].filter(
+        (p) =>
+          (!status || p.status === status) &&
+          (!organizerDirectoryId || p.organizerDirectoryId === organizerDirectoryId),
+      );
     },
     async resolveProposal() {
       return "resolved";
@@ -211,6 +257,10 @@ function createInMemorySyncStore(seed: {
           references.set(k, { ...r, suppressed: true });
         }
       }
+      const existing = actions.get(actionId);
+      if (existing) {
+        actions.set(actionId, { ...existing, published_at: null, status: "cancelled" });
+      }
       return "suppressed";
     },
   };
@@ -227,7 +277,9 @@ const baseSubs: ExternalActionSubscription[] = [
     sourceStructureRef: "brigade-verte-paris",
     accessMode: "synthetic_fixture",
     enabled: true,
+    authorizationRef: "mandat-2026-11",
     syncStartDate: "2026-11-01",
+    consentGrantedAt: "2026-11-01T09:00:00.000Z",
   },
   {
     organizerDirectoryId: "association-brigade-verte-paris",
@@ -237,7 +289,9 @@ const baseSubs: ExternalActionSubscription[] = [
     sourceStructureRef: "birgade-verte",
     accessMode: "synthetic_fixture",
     enabled: true,
+    authorizationRef: "mandat-2026-11",
     syncStartDate: "2026-11-01",
+    consentGrantedAt: "2026-11-01T09:00:00.000Z",
   },
 ];
 
@@ -261,6 +315,56 @@ describe("external-sync Lot A engine & SSRF guard", () => {
     expect(() => assertSafeExternalSyncUrl("https://10.0.0.5/feed")).toThrow();
     expect(() => assertSafeExternalSyncUrl("https://localhost/feed")).toThrow();
     expect(() => assertSafeExternalSyncUrl("https://user:pass@example.test/")).toThrow();
+  });
+
+  it("requires known candidate start time and treats truncated candidate lists as incomplete", () => {
+    const event = readSyntheticJagisEvents(
+      [
+        {
+          id: "j-1",
+          url: "https://example.test/j/1",
+          title: "Collecte",
+          start_date: "2027-05-10",
+          start_time: "10:00",
+          meeting_point: "Mairie du 20e",
+          city: "Paris",
+          route_reference: "boucle-a",
+          status: "published",
+        },
+      ],
+      "2026-11-26T10:00:00.000Z",
+    );
+    const normalized = event.status === "available" ? event.events[0] : null;
+    expect(normalized).not.toBeNull();
+
+    const unknownTimeCandidate: CandidateActionRow = {
+      id: "act-1",
+      organizer_id: "association-brigade-verte-paris",
+      action_date: "2027-05-10",
+      action_phase: "pre_action",
+      status: "pending",
+      published_at: null,
+      location_label: "Mairie du 20e — Paris",
+      notes: null,
+      preparation_data: { zoneCiblePrevue: "boucle-a" },
+    };
+
+    expect(
+      findMatchingCandidateActions(
+        normalized!,
+        "association-brigade-verte-paris",
+        [unknownTimeCandidate],
+      ),
+    ).toEqual({ kind: "ambiguous", candidateIds: ["act-1"] });
+
+    expect(
+      findMatchingCandidateActions(
+        normalized!,
+        "association-brigade-verte-paris",
+        [],
+        { truncated: true },
+      ),
+    ).toEqual({ kind: "ambiguous", candidateIds: [] });
   });
 
   it("prepares unpublished pre-actions in cron_prepare, deduplicates across sources, and publishes only in admin_sync_now", async () => {
@@ -303,7 +407,7 @@ describe("external-sync Lot A engine & SSRF guard", () => {
       {
         reference: "mer-nov-14",
         canonical_url: "https://example.test/mer/nov-14",
-        name: "Un geste pour la Mer — Paris 20e",
+        name: "Collecte Pyrénées — J'agis",
         date: "2027-11-14",
         time_start: "14:00",
         meeting_place: "Mairie du 20e",
@@ -344,14 +448,14 @@ describe("external-sync Lot A engine & SSRF guard", () => {
           fondation_de_la_mer: async () => readSyntheticFondationMerEvents(merRecords, now.toISOString()),
         },
       },
-      { mode: "admin_sync_now", now },
+      { mode: "admin_sync_now", actorUserId: "admin-1", now },
     );
     expect(actions.size).toBe(1);
     expect(adminSummary.published).toBe(1);
     expect([...actions.values()][0].published_at).not.toBeNull();
   });
 
-  it("preserves local edits on conflict, handles explicit cancellation vs partial error, and blocks recreation after tombstone", async () => {
+  it("preserves unresolved conflict across retries with same hash and blocks publication until resolved", async () => {
     const { store, actions, proposals } = createInMemorySyncStore({ subscriptions: baseSubs });
     const now = new Date("2026-11-26T10:00:00.000Z");
 
@@ -382,14 +486,12 @@ describe("external-sync Lot A engine & SSRF guard", () => {
     );
 
     const actionId = [...actions.keys()][0];
-    // Simulate local organizer edit on title
     const current = actions.get(actionId)!;
     actions.set(actionId, {
       ...current,
       preparation_data: { ...(current.preparation_data ?? {}), actionTitle: "Titre modifié localement" },
     });
 
-    // External source updates title -> local value must be preserved + field_conflict proposal
     const v2 = [{ ...v1[0], title: "Titre externe v2", updated_at: "r2" }];
     await runExternalActionSync(
       {
@@ -404,21 +506,22 @@ describe("external-sync Lot A engine & SSRF guard", () => {
     expect(actions.get(actionId)?.preparation_data?.actionTitle).toBe("Titre modifié localement");
     expect(proposals.get("jagis_pour_la_nature:jagis-conflict-1")?.proposalKind).toBe("field_conflict");
 
-    // Explicit cancellation -> cancellation_review proposal, action preserved
-    const v3 = [{ ...v2[0], status: "cancelled", updated_at: "r3" }];
-    await runExternalActionSync(
+    // Re-running admin_sync_now with the same v2 hash must NOT ignore the unresolved conflict or publish!
+    const retryAdmin = await runExternalActionSync(
       {
         store,
         readers: {
-          jagis_pour_la_nature: async () => readSyntheticJagisEvents(v3, now.toISOString()),
+          jagis_pour_la_nature: async () => readSyntheticJagisEvents(v2, now.toISOString()),
           fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
         },
       },
-      { mode: "cron_prepare", now },
+      { mode: "admin_sync_now", actorUserId: "admin-1", now },
     );
-    expect(proposals.get("jagis_pour_la_nature:jagis-conflict-1")?.proposalKind).toBe("cancellation_review");
+    expect(retryAdmin.published).toBe(0);
+    expect(retryAdmin.conflicts).toBe(1);
+    expect(actions.get(actionId)?.published_at).toBeNull();
 
-    // Administrative suppression -> tombstone blocks recreation on subsequent sync
+    // Tombstone blocks recreation
     await store.suppressAction({
       actionId,
       actorUserId: "admin-1",
@@ -433,29 +536,55 @@ describe("external-sync Lot A engine & SSRF guard", () => {
           fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
         },
       },
-      { mode: "admin_sync_now", now },
+      { mode: "admin_sync_now", actorUserId: "admin-1", now },
     );
     expect(afterSuppress.suppressed).toBe(1);
-    expect(actions.size).toBe(1);
+    expect(actions.get(actionId)?.published_at).toBeNull();
   });
 
-  it("refuses writes when mandate is revoked", async () => {
-    const revokedSubs: ExternalActionSubscription[] = [
+  it("respects canonical publication blockers (formality_blocked / pending_review) and revoked/missing-consent mandates", async () => {
+    const blocked = createInMemorySyncStore({
+      subscriptions: baseSubs,
+      blockPublicationReason: "formality_blocked",
+    });
+    const now = new Date("2026-11-26T10:00:00.000Z");
+    const rec = [
       {
-        ...baseSubs[0],
-        revokedAt: "2026-11-25T12:00:00.000Z",
+        id: "jagis-formality-1",
+        url: "https://example.test/jagis/f1",
+        title: "Collecte formalité bloquée",
+        start_date: "2027-09-12",
+        start_time: "10:00",
+        meeting_point: "Place Gambetta",
+        city: "Paris",
+        route_reference: "gambetta-1",
+        status: "published",
       },
     ];
-    const { store, actions } = createInMemorySyncStore({ subscriptions: revokedSubs });
-    const reader = vi.fn(async () =>
-      readSyntheticJagisEvents([], "2026-11-26T10:00:00.000Z"),
+    const res = await runExternalActionSync(
+      {
+        store: blocked.store,
+        readers: {
+          jagis_pour_la_nature: async () => readSyntheticJagisEvents(rec, now.toISOString()),
+          fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
+        },
+      },
+      { mode: "admin_sync_now", actorUserId: "admin-1", now },
     );
-    const summary = await runExternalActionSync(
-      { store, readers: { jagis_pour_la_nature: reader } },
-      { mode: "admin_sync_now" },
+    expect(res.createdAndPublished).toBe(0);
+    expect(res.conflicts).toBe(1);
+    expect([...blocked.actions.values()][0].published_at).toBeNull();
+
+    const noConsentSubs: ExternalActionSubscription[] = [
+      { ...baseSubs[0], consentGrantedAt: null },
+    ];
+    const noConsent = createInMemorySyncStore({ subscriptions: noConsentSubs });
+    const reader = vi.fn(async () => readSyntheticJagisEvents([], now.toISOString()));
+    const noConsentSummary = await runExternalActionSync(
+      { store: noConsent.store, readers: { jagis_pour_la_nature: reader } },
+      { mode: "admin_sync_now", now },
     );
     expect(reader).not.toHaveBeenCalled();
-    expect(summary.disabledSources).toBe(1);
-    expect(actions.size).toBe(0);
+    expect(noConsentSummary.disabledSources).toBe(1);
   });
 });

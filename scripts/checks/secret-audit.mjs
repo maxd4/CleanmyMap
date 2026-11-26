@@ -186,9 +186,17 @@ const SECRET_PATTERNS = [
 
 const HASH_DIGEST_SENSITIVE_WORDS = /password|token|secret|credential/i;
 const HASH_DIGEST_AUTH_CONTEXT = /(?:^|[^a-z0-9_\/])auth(?:entication|orization)?(?:$|[^a-z0-9_\/])|(?:^|[^a-z0-9_\/])auth[A-Z][a-z0-9_]*/i;
+const GIT_BLOB_SHA_JSON_LINE = /"(?:apps|documentation|scripts|e2e|packages|maintenance)\/[^"]+"\s*:\s*"[a-f0-9]{40}"/i;
+const GIT_COMMIT_SHA_DOC_LINE = /(?:Référence factuelle lue|SHA|commit|référence|base)\s*:?\s*`?[a-f0-9]{40}`?/i;
 
 function hasHashDigestSecretContext(line) {
-  return HASH_DIGEST_SENSITIVE_WORDS.test(line) || HASH_DIGEST_AUTH_CONTEXT.test(line);
+  if (HASH_DIGEST_SENSITIVE_WORDS.test(line)) {
+    return true;
+  }
+  if (GIT_BLOB_SHA_JSON_LINE.test(line) || GIT_COMMIT_SHA_DOC_LINE.test(line)) {
+    return false;
+  }
+  return HASH_DIGEST_AUTH_CONTEXT.test(line);
 }
 
 function matchesContext(context, line) {

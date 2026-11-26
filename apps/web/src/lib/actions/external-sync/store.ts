@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createActionSubmission } from "@/lib/actions/create-submission";
+import { invalidateActionSnapshots } from "@/lib/actions/create-submission-effects";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { publishPreActionCanonical } from "@/lib/actions/publish-pre-action";
+import { loadActionById } from "@/lib/actions/store";
 import type { CandidateActionRow } from "./matching";
 import { buildCanonicalLocationLabel } from "./matching";
 import type {
@@ -32,6 +36,10 @@ export type StoredReferenceResult = {
   external_revision: string | null;
   source_snapshot: Record<string, unknown>;
   content_hash: string;
+  applied_snapshot: Record<string, unknown> | null;
+  applied_content_hash: string | null;
+  applied_revision: string | null;
+  applied_at: string | null;
   suppressed: boolean;
 };
 
@@ -45,8 +53,21 @@ export type SyncedActionSummary = {
   suppressed: boolean;
 };
 
+export type CandidateActionListResult = {
+  candidates: CandidateActionRow[];
+  truncated: boolean;
+};
+
+export type MandateVerificationResult =
+  | { ok: true; subscription: ExternalActionSubscription }
+  | { ok: false; reason: "mandate_revoked" | "consent_missing" | "owner_profile_unverified" };
+
 export interface ExternalActionSyncStore {
   listSubscriptions(): Promise<ExternalActionSubscription[]>;
+  verifyWriteMandate(
+    organizerDirectoryId: string,
+    sourceId: ExternalActionSourceId,
+  ): Promise<MandateVerificationResult>;
   recordRunResult(params: {
     organizerDirectoryId: string;
     sourceId: ExternalActionSourceId;
@@ -70,6 +91,13 @@ export interface ExternalActionSyncStore {
     sourceId: ExternalActionSourceId,
     externalEventId: string,
   ): Promise<StoredReferenceResult | null>;
+  markReferenceApplied(params: {
+    sourceId: ExternalActionSourceId;
+    externalEventId: string;
+    appliedSnapshot: Record<string, unknown>;
+    appliedContentHash: string;
+    appliedRevision: string | null;
+  }): Promise<string>;
   completeIdentity(
     identityHash: string,
     claimToken: string,
@@ -84,7 +112,7 @@ export interface ExternalActionSyncStore {
     sourceSnapshot: Record<string, unknown>;
     contentHash: string;
   }): Promise<{ linkStatus: string; actionId: string | null }>;
-  listCandidateActions(organizerDirectoryId: string): Promise<CandidateActionRow[]>;
+  listCandidateActions(organizerDirectoryId: string): Promise<CandidateActionListResult>;
   getActionById(actionId: string): Promise<CandidateActionRow | null>;
   createPreAction(params: {
     subscription: ExternalActionSubscription;
@@ -93,14 +121,18 @@ export interface ExternalActionSyncStore {
   }): Promise<{ actionId: string }>;
   updatePreActionFields(
     actionId: string,
+    expectedUpdatedAt: string | undefined,
     updates: Partial<{
       action_date: string;
       location_label: string;
       preparation_data: Record<string, unknown>;
       group_join_enabled: boolean;
     }>,
-  ): Promise<void>;
-  publishPreAction(actionId: string, publishedAt: string): Promise<boolean>;
+  ): Promise<boolean>;
+  publishPreAction(
+    actionId: string,
+    actorUserId: string,
+  ): Promise<{ published: boolean; reason?: string }>;
   upsertProposal(params: {
     organizerDirectoryId: string;
     sourceId: ExternalActionSourceId;
@@ -111,13 +143,18 @@ export interface ExternalActionSyncStore {
     externalEvent: Record<string, unknown>;
     candidateActionIds: string[];
     conflictFields: ExternalActionFieldConflict[];
+    contentHash?: string | null;
   }): Promise<string>;
-  listProposals(status?: "pending" | "resolved" | "dismissed" | null): Promise<ExternalActionProposal[]>;
+  listProposals(
+    status?: "pending" | "resolved" | "dismissed" | null,
+    organizerDirectoryId?: string | null,
+  ): Promise<ExternalActionProposal[]>;
   resolveProposal(params: {
     proposalId: string;
     status: "resolved" | "dismissed";
     actorUserId: string;
     resolutionNote?: string | null;
+    organizerDirectoryId?: string | null;
   }): Promise<string>;
   listSyncedActions(): Promise<SyncedActionSummary[]>;
   suppressAction(params: {
@@ -128,6 +165,34 @@ export interface ExternalActionSyncStore {
   }): Promise<"suppressed" | "not_synced" | "organizer_mismatch" | "operation_conflict">;
 }
 
+function mapSubscriptionRow(row: Record<string, unknown>): ExternalActionSubscription {
+  return {
+    id: String(row.id),
+    organizerDirectoryId: String(row.organizer_directory_id),
+    sourceId: row.source_id as ExternalActionSourceId,
+    ownerUserId: String(row.owner_user_id),
+    coOrganizerUserIds: Array.isArray(row.co_organizer_user_ids)
+      ? row.co_organizer_user_ids.map(String)
+      : [],
+    sourceStructureRef: String(row.source_structure_ref),
+    sourceUrl: typeof row.source_url === "string" ? row.source_url : null,
+    accessMode: row.access_mode as ExternalActionSubscription["accessMode"],
+    enabled: Boolean(row.enabled),
+    authorizationRef: typeof row.authorization_ref === "string" ? row.authorization_ref : null,
+    syncStartDate: String(row.sync_start_date),
+    consentGrantedAt:
+      typeof row.consent_granted_at === "string" ? row.consent_granted_at : null,
+    revokedAt: typeof row.revoked_at === "string" ? row.revoked_at : null,
+    lastSyncAt: typeof row.last_sync_at === "string" ? row.last_sync_at : null,
+    lastSyncStatus: (row.last_sync_status as ExternalActionSubscription["lastSyncStatus"]) ?? null,
+    lastSyncSummary:
+      row.last_sync_summary && typeof row.last_sync_summary === "object"
+        ? (row.last_sync_summary as Record<string, unknown>)
+        : {},
+    lastError: typeof row.last_error === "string" ? row.last_error : null,
+  };
+}
+
 export function createSupabaseExternalActionSyncStore(
   supabase: SupabaseClient,
 ): ExternalActionSyncStore {
@@ -136,29 +201,30 @@ export function createSupabaseExternalActionSyncStore(
       const { data, error } = await supabase.rpc("list_external_action_sync_subscriptions");
       if (error) throw new Error("Échec de lecture des abonnements de synchronisation externe.");
       const rows = Array.isArray(data) ? data : [];
-      return rows.map((row) => ({
-        id: String(row.id),
-        organizerDirectoryId: String(row.organizer_directory_id),
-        sourceId: row.source_id as ExternalActionSourceId,
-        ownerUserId: String(row.owner_user_id),
-        coOrganizerUserIds: Array.isArray(row.co_organizer_user_ids)
-          ? row.co_organizer_user_ids.map(String)
-          : [],
-        sourceStructureRef: String(row.source_structure_ref),
-        sourceUrl: typeof row.source_url === "string" ? row.source_url : null,
-        accessMode: row.access_mode,
-        enabled: Boolean(row.enabled),
-        authorizationRef: typeof row.authorization_ref === "string" ? row.authorization_ref : null,
-        syncStartDate: String(row.sync_start_date),
-        revokedAt: typeof row.revoked_at === "string" ? row.revoked_at : null,
-        lastSyncAt: typeof row.last_sync_at === "string" ? row.last_sync_at : null,
-        lastSyncStatus: row.last_sync_status ?? null,
-        lastSyncSummary:
-          row.last_sync_summary && typeof row.last_sync_summary === "object"
-            ? (row.last_sync_summary as Record<string, unknown>)
-            : {},
-        lastError: typeof row.last_error === "string" ? row.last_error : null,
-      }));
+      return rows.map((row) => mapSubscriptionRow(row as Record<string, unknown>));
+    },
+
+    async verifyWriteMandate(organizerDirectoryId, sourceId) {
+      const subscriptions = await this.listSubscriptions();
+      const sub = subscriptions.find(
+        (item) =>
+          item.organizerDirectoryId === organizerDirectoryId && item.sourceId === sourceId,
+      );
+      if (!sub || !sub.enabled || sub.revokedAt || sub.accessMode === "disabled") {
+        return { ok: false, reason: "mandate_revoked" };
+      }
+      if (!sub.consentGrantedAt) {
+        return { ok: false, reason: "consent_missing" };
+      }
+      const { data: profile, error } = await supabase
+        .from("public_profiles")
+        .select("id")
+        .eq("id", sub.ownerUserId)
+        .maybeSingle();
+      if (error || !profile?.id) {
+        return { ok: false, reason: "owner_profile_unverified" };
+      }
+      return { ok: true, subscription: sub };
     },
 
     async recordRunResult(params) {
@@ -192,13 +258,25 @@ export function createSupabaseExternalActionSyncStore(
     },
 
     async getReference(sourceId, externalEventId) {
-      const { data, error } = await supabase.rpc("get_external_action_sync_reference", {
+      const { data, error } = await supabase.rpc("get_external_action_sync_reference_state", {
         p_source_id: sourceId,
         p_external_event_id: externalEventId,
       });
       if (error) throw new Error("Échec de lecture de la référence externe.");
       const row = Array.isArray(data) ? data[0] : data;
       return (row as StoredReferenceResult | undefined) ?? null;
+    },
+
+    async markReferenceApplied(params) {
+      const { data, error } = await supabase.rpc("mark_external_action_sync_reference_applied", {
+        p_source_id: params.sourceId,
+        p_external_event_id: params.externalEventId,
+        p_applied_snapshot: params.appliedSnapshot,
+        p_applied_content_hash: params.appliedContentHash,
+        p_applied_revision: params.appliedRevision,
+      });
+      if (error) throw new Error("Échec de confirmation de l'état appliqué.");
+      return String(data ?? "");
     },
 
     async completeIdentity(identityHash, claimToken, actionId) {
@@ -230,15 +308,20 @@ export function createSupabaseExternalActionSyncStore(
     },
 
     async listCandidateActions(organizerDirectoryId) {
+      const PAGE_LIMIT = 200;
       const { data, error } = await supabase
         .from("actions")
         .select(
           "id, organizer_id, action_date, action_phase, status, published_at, location_label, notes, preparation_data, updated_at",
         )
         .eq("organizer_id", organizerDirectoryId)
-        .limit(200);
+        .limit(PAGE_LIMIT + 1);
       if (error) throw new Error("Échec de lecture des actions candidates.");
-      return (Array.isArray(data) ? data : []) as CandidateActionRow[];
+      const rows = (Array.isArray(data) ? data : []) as CandidateActionRow[];
+      return {
+        candidates: rows.slice(0, PAGE_LIMIT),
+        truncated: rows.length > PAGE_LIMIT,
+      };
     },
 
     async getActionById(actionId) {
@@ -254,26 +337,34 @@ export function createSupabaseExternalActionSyncStore(
     },
 
     async createPreAction({ subscription, event, idempotencyKey }) {
+      const mandate = await this.verifyWriteMandate(
+        subscription.organizerDirectoryId,
+        event.source,
+      );
+      if (!mandate.ok) {
+        throw new Error(`Mandat invalide pour la création (${mandate.reason}).`);
+      }
+
       const result = await createActionSubmission({
         supabase,
-        userId: subscription.ownerUserId,
+        userId: mandate.subscription.ownerUserId,
         idempotencyKey,
         creator: {
-          userId: subscription.ownerUserId,
-          displayName: subscription.organizerDirectoryId,
-          handle: subscription.organizerDirectoryId,
+          userId: mandate.subscription.ownerUserId,
+          displayName: mandate.subscription.organizerDirectoryId,
+          handle: mandate.subscription.organizerDirectoryId,
           username: null,
           email: null,
         },
         isCreatorGlobalAdmin: false,
-        consentGranted: true,
+        consentGranted: Boolean(mandate.subscription.consentGrantedAt),
         deferGamification: true,
         payload: {
           organizerType: "association",
-          organizerId: subscription.organizerDirectoryId,
+          organizerId: mandate.subscription.organizerDirectoryId,
           organizerAccounts: [
-            subscription.ownerUserId,
-            ...subscription.coOrganizerUserIds,
+            mandate.subscription.ownerUserId,
+            ...mandate.subscription.coOrganizerUserIds,
           ],
           actionPhase: "pre_action",
           accessMode: "public",
@@ -305,26 +396,40 @@ export function createSupabaseExternalActionSyncStore(
       return { actionId: result.id };
     },
 
-    async updatePreActionFields(actionId, updates) {
-      const { error } = await supabase
+    async updatePreActionFields(actionId, expectedUpdatedAt, updates) {
+      let query = supabase
         .from("actions")
         .update(updates)
         .eq("id", actionId)
         .eq("action_phase", "pre_action");
+      if (expectedUpdatedAt) {
+        query = query.eq("updated_at", expectedUpdatedAt);
+      }
+      const { data, error } = await query.select("id").maybeSingle();
       if (error) throw new Error("Échec de mise à jour des champs externes de la pré-action.");
+      return Boolean(data?.id);
     },
 
-    async publishPreAction(actionId, publishedAt) {
-      const { data, error } = await supabase
-        .from("actions")
-        .update({ published_at: publishedAt })
-        .eq("id", actionId)
-        .eq("action_phase", "pre_action")
-        .is("published_at", null)
-        .select("id")
-        .maybeSingle();
-      if (error) throw new Error("Échec de publication automatique de la pré-action.");
-      return Boolean(data?.id);
+    async publishPreAction(actionId, actorUserId) {
+      const current = await loadActionById(supabase, actionId);
+      if (!current) {
+        return { published: false, reason: "not_found" };
+      }
+      const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
+        supabase,
+        actionId,
+      );
+      const outcome = await publishPreActionCanonical({
+        supabase,
+        current,
+        actionId,
+        userId: actorUserId,
+        organizerIds,
+      });
+      if (outcome.status === "published") {
+        return { published: true };
+      }
+      return { published: false, reason: outcome.status };
     },
 
     async upsertProposal(params) {
@@ -338,14 +443,16 @@ export function createSupabaseExternalActionSyncStore(
         p_external_event: params.externalEvent,
         p_candidate_action_ids: params.candidateActionIds,
         p_conflict_fields: params.conflictFields,
+        p_content_hash: params.contentHash ?? null,
       });
       if (error) throw new Error("Échec d'enregistrement de la proposition privée.");
       return String(data);
     },
 
-    async listProposals(status = "pending") {
+    async listProposals(status = "pending", organizerDirectoryId = null) {
       const { data, error } = await supabase.rpc("list_external_action_sync_proposals", {
         p_status: status,
+        p_organizer_directory_id: organizerDirectoryId,
       });
       if (error) throw new Error("Échec de lecture des propositions externes.");
       const rows = Array.isArray(data) ? data : [];
@@ -375,12 +482,13 @@ export function createSupabaseExternalActionSyncStore(
       }));
     },
 
-    async resolveProposal({ proposalId, status, actorUserId, resolutionNote }) {
+    async resolveProposal({ proposalId, status, actorUserId, resolutionNote, organizerDirectoryId }) {
       const { data, error } = await supabase.rpc("resolve_external_action_sync_proposal", {
         p_proposal_id: proposalId,
         p_status: status,
         p_actor_user_id: actorUserId,
         p_resolution_note: resolutionNote ?? null,
+        p_organizer_directory_id: organizerDirectoryId ?? null,
       });
       if (error) throw new Error("Échec de résolution de la proposition externe.");
       return String(data ?? "");
@@ -411,11 +519,15 @@ export function createSupabaseExternalActionSyncStore(
         p_reason: reason,
       });
       if (error) throw new Error("Échec de suppression de l'action synchronisée.");
-      return String(data) as
+      const status = String(data) as
         | "suppressed"
         | "not_synced"
         | "organizer_mismatch"
         | "operation_conflict";
+      if (status === "suppressed") {
+        await invalidateActionSnapshots(actionId);
+      }
+      return status;
     },
   };
 }

@@ -4,122 +4,15 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageAction } from "@/lib/actions/permissions";
+import { canPublishPreAction } from "@/lib/actions/publication";
 import { loadActionById } from "@/lib/actions/store";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
-import { canPublishPreAction } from "@/lib/actions/publication";
-import { initializeActionRouteVersioning } from "@/lib/actions/route-version-persistence";
-import { emitAdministrativeRequirementNotifications } from "@/lib/actions/administrative-requirement-notifications";
-import type { ActionRow } from "@/types/database";
-import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
-import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
-import { validateActionFormalitiesForPublication } from "@/lib/actions/formalities/publication-validation";
+import { publishPreActionCanonical } from "@/lib/actions/publish-pre-action";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
-import { isPublishedActionRow } from "@/lib/actions/runtime-contracts";
-import { parseActionSingleRow, parseActionSupabaseResult } from "@/lib/actions/query";
-import { isAssociationActionReviewRequired, submitAssociationActionReview } from "@/lib/actions/association-action-review";
 
 export const runtime = "nodejs";
 // Justification Vercel: la publication dépend de l’action et de l’utilisateur courant.
 export const dynamic = "force-dynamic";
-
-function buildPublicationUpdate(params: {
-  currentPreparationData: ActionRow["preparation_data"];
-  publishedAt: string;
-  userId: string;
-  formalitiesContext: ActionFormalitiesFacts;
-  formalitiesWorkflow: ActionFormalitiesWorkflowState;
-}) {
-  const preparationData = initializeActionRouteVersioning({
-    preparationData: params.currentPreparationData,
-    appliedAt: params.publishedAt,
-    appliedByUserId: params.userId,
-  });
-  const nextPreparationData = {
-    ...preparationData,
-    formalitiesContext: params.formalitiesContext,
-    formalitiesWorkflow: params.formalitiesWorkflow,
-  };
-  const shouldPersistPreparationData =
-    !params.currentPreparationData?.routeVersioning ||
-    JSON.stringify(params.currentPreparationData?.formalitiesContext) !==
-      JSON.stringify(params.formalitiesContext) ||
-    JSON.stringify(params.currentPreparationData?.formalitiesWorkflow) !==
-      JSON.stringify(params.formalitiesWorkflow);
-  return {
-    published_at: params.publishedAt,
-    ...(shouldPersistPreparationData
-      ? { preparation_data: nextPreparationData }
-      : {}),
-  };
-}
-
-async function validateFormalitiesBeforePublication(current: ActionRow) {
-  const validation = await validateActionFormalitiesForPublication(current);
-  if (!validation.ok) {
-    return NextResponse.json(
-      {
-        error: "Une formalité démontrée comme requise doit être déclarée envoyée avant la publication.",
-        code: "required_formality_not_ready",
-        formalityIds: validation.blockedFormalityIds,
-      },
-      { status: 422 },
-    );
-  }
-  return validation;
-}
-
-function spontaneousOrganizerPublicationError(
-  action: Pick<ActionRow, "organizer_type">,
-  organizerIds: string[],
-) {
-  if (action.organizer_type !== "spontaneous" || organizerIds.length > 0) {
-    return null;
-  }
-  return NextResponse.json(
-    { error: "Sélectionnez un compte utilisateur organisateur avant de publier cette action." },
-    { status: 422 },
-  );
-}
-
-async function completeActionPublication({
-  supabase,
-  current,
-  actionId,
-  userId,
-}: {
-  supabase: ReturnType<typeof getSupabaseServerClient>;
-  current: ActionRow;
-  actionId: string;
-  userId: string;
-}) {
-  const validation = await validateFormalitiesBeforePublication(current);
-  if (validation instanceof NextResponse) return validation;
-  const { formalitiesContext, formalitiesWorkflow } = validation;
-  const publishedAt = new Date().toISOString();
-  const rawResult: unknown = await supabase
-    .from("actions")
-    .update(buildPublicationUpdate({
-      currentPreparationData: current.preparation_data,
-      publishedAt,
-      userId,
-      formalitiesContext,
-      formalitiesWorkflow,
-    }))
-    .eq("id", actionId)
-    .eq("updated_at", current.updated_at)
-    .eq("created_by_clerk_id", current.created_by_clerk_id)
-    .eq("action_phase", "pre_action")
-    .is("published_at", null)
-    .select("id, published_at")
-    .maybeSingle();
-  const result = parseActionSupabaseResult(rawResult);
-  if (result.error) throw result.error;
-  if (!result.data) return NextResponse.json({ error: "La publication n'a pas pu être confirmée." }, { status: 409 });
-  const row = parseActionSingleRow(result.data, isPublishedActionRow);
-  if (!row) throw new Error("La réponse de publication de l'action est invalide.");
-  await emitAdministrativeRequirementNotifications({ supabase, actionId: row.id });
-  return NextResponse.json({ status: "published", id: row.id, publishedAt: row.published_at, alreadyPublished: false });
-}
 
 export async function POST(
   request: Request,
@@ -163,62 +56,74 @@ export async function POST(
       );
     }
 
-    if (current.status === "rejected" || current.status === "cancelled") {
-      return NextResponse.json(
-        { error: "Cette action est dans un état terminal et ne peut plus être publiée." },
-        { status: 422 },
-      );
-    }
-
-    if (isAssociationActionReviewRequired(current)) {
-      const validation = await validateFormalitiesBeforePublication(current);
-      if (validation instanceof NextResponse) return validation;
-      if (current.published_at && current.review_state === "approved") {
-        return NextResponse.json({
-          status: "published",
-          id: current.id,
-          publishedAt: current.published_at,
-          alreadyPublished: true,
-          reviewState: current.review_state,
-        });
-      }
-      const review = await submitAssociationActionReview({
-        supabase,
-        actionId,
-        actorUserId: access.userId,
-        expectedUpdatedAt: current.updated_at ?? null,
-      });
-      if (review.status === "conflict") {
-        return NextResponse.json({ error: "La préparation a changé ; rechargez puis réessayez.", code: "state_conflict" }, { status: 409 });
-      }
-      return NextResponse.json({
-        status: "pending_review",
-        id: current.id,
-        publishedAt: null,
-        alreadyPublished: false,
-        reviewState: review.review_state ?? "pending_review",
-      }, { status: 202 });
-    }
-
-    if (current.published_at) {
-      return NextResponse.json({
-        status: "published",
-        id: current.id,
-        publishedAt: current.published_at,
-        alreadyPublished: true,
-      });
-    }
-    if (!canPublishPreAction({ actionPhase: current.action_phase, publishedAt: null })) {
+    if (
+      !current.published_at &&
+      !canPublishPreAction({ actionPhase: current.action_phase, publishedAt: null })
+    ) {
       return NextResponse.json(
         { error: "Seule une pré-action peut être publiée depuis ce flux." },
         { status: 422 },
       );
     }
 
-    const spontaneousOrganizerError = spontaneousOrganizerPublicationError(current, organizerIds);
-    if (spontaneousOrganizerError) return spontaneousOrganizerError;
+    const result = await publishPreActionCanonical({
+      supabase,
+      current,
+      actionId,
+      userId: access.userId,
+      organizerIds,
+    });
 
-    return completeActionPublication({ supabase, current, actionId, userId: access.userId });
+    switch (result.status) {
+      case "terminal_state":
+        return NextResponse.json(
+          { error: "Cette action est dans un état terminal et ne peut plus être publiée." },
+          { status: 422 },
+        );
+      case "formality_blocked":
+        return NextResponse.json(
+          {
+            error: "Une formalité démontrée comme requise doit être déclarée envoyée avant la publication.",
+            code: "required_formality_not_ready",
+            formalityIds: result.blockedFormalityIds,
+          },
+          { status: 422 },
+        );
+      case "pending_review":
+        return NextResponse.json(
+          {
+            status: "pending_review",
+            id: result.id,
+            publishedAt: null,
+            alreadyPublished: false,
+            reviewState: result.reviewState,
+          },
+          { status: 202 },
+        );
+      case "not_publishable":
+        return NextResponse.json(
+          { error: "Seule une pré-action peut être publiée depuis ce flux." },
+          { status: 422 },
+        );
+      case "spontaneous_organizer_required":
+        return NextResponse.json(
+          { error: "Sélectionnez un compte utilisateur organisateur avant de publier cette action." },
+          { status: 422 },
+        );
+      case "conflict":
+        return NextResponse.json(
+          { error: "La publication n'a pas pu être confirmée.", code: "state_conflict" },
+          { status: 409 },
+        );
+      case "published":
+        return NextResponse.json({
+          status: "published",
+          id: result.id,
+          publishedAt: result.publishedAt,
+          alreadyPublished: result.alreadyPublished,
+          ...(result.reviewState ? { reviewState: result.reviewState } : {}),
+        });
+    }
   } catch (error) {
     return handleApiError(error, "POST /api/actions/:actionId/publish");
   }

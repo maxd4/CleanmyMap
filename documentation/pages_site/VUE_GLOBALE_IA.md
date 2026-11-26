@@ -18,7 +18,7 @@ Comprendre le produit et ses parcours avant de toucher au code : quelles surface
 | Quelle famille visuelle ? | [PAGE_FAMILIES.md](./PAGE_FAMILIES.md), resolver, manifeste et exceptions ; ne pas déduire de la couleur d'un tableur. |
 | Qui a réellement accès ? | Contrats AuthN/AuthZ spécialisés, proxy, page et API ; un persona ou un lien ne donne jamais de droits. |
 | Quelle exposition SEO ? | INDEX, `apps/web/src/lib/seo/indexability.ts`, sitemap, métadonnées et proxy. |
-| Quels retours ou décisions éditoriales ? | Google Sheets natif **CleanMyMap \| Cartographie du site web**, dossier privé cleanmymap/pilotage ; [plan de cartographie participative](../plans/cartographie-web-participative.md). Ne pas publier de lien Drive privé. |
+| Quels retours ou décisions éditoriales ? | Google Sheets natif **CleanMyMap \| Cartographie du site web**, dossier privé cleanmymap/pilotage et planification interne de cartographie participative. Ne pas publier de lien Drive privé. |
 | Quelle couverture des liens entrants ? | `npm run audit:product-surface -- --ref=HEAD` ; rapport généré [audit de surface](../architecture/product-surface-accessibility-audit.md), uniquement valable au SHA indiqué. |
 | Quels changements sont futurs ? | Plans et specs concernés, avec statut PLAN/CANDIDATE ; aucune déduction de livraison. |
 
@@ -142,7 +142,7 @@ Ces constats ne sont pas un backlog autorisé d'implémentation ; ils orientent 
 | A10 | GAP d'exposition | Trash Spotter : PUBLICATION_RIGHTS_DECISION_REQUIRED dans INDEX ; monitoring secondaire, signalement unique pour création. | Décision de publication préalable à toute ouverture SEO ou nouveau lien exposant des données. |
 | A11 | GAP de couverture | /docs/* est mentionné dans le contrat SEO ; routes concrètes non inventoriées ici. Audit des routes et backlinks non exhaustif, aucun URL_ONLY prouvé. | Inspecter l'arbre et l'owner docs, exécuter audit généré ; ne pas inventer de page ou supprimer un lien. |
 | A12 | GAP de contrat | Matrice INDEX annonce DISCOVERY=SITEMAP/INTERNAL_ONLY/REDIRECT mais ligne équipe SPOGOMI indique PARTNER_SESSION. Le tableau SEO global n'énumère pas tous les chemins SPOGOMI présents dans le registre fonctionnel. | Rapprocher la taxonomie du code SEO et du contrat partenaire ; ne pas déduire une exposition publique. |
-| A13 | PLAN | Sommaire cartographique, notation communautaire et cinq onglets gamification non intégrés dans le runtime constaté. | Suivre plans/specs, aucune annonce de livraison. |
+| A13 | PLAN | Sommaire cartographique, notation communautaire et cinq onglets gamification non intégrés dans le runtime constaté. | Suivre les spécifications dédiées, aucune annonce de livraison. |
 | A14 | GAP ergonomique | Vue humaine : résumé navigation et couleurs sont des valeurs dérivées à régénérer ; formules de présentation et saisies direction coexistent. Masquage des onglets ne constitue pas une permission. | Génération/contrôle par page_id, import brut allowlisté, projection distincte pour partage. |
 
 ### Sources ciblées de l'audit

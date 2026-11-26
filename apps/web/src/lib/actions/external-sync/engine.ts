@@ -47,6 +47,7 @@ function isMandateActive(subscription: ExternalActionSubscription): boolean {
   return (
     subscription.enabled &&
     !subscription.revokedAt &&
+    Boolean(subscription.consentGrantedAt) &&
     Boolean(subscription.ownerUserId.trim()) &&
     subscription.accessMode !== "disabled"
   );
@@ -62,10 +63,13 @@ async function handleLinkedActionUpdate(params: {
   event: ExternalActionEvent;
   identityHash: string;
   actionId: string;
-  previousSnapshot: Record<string, unknown> | null;
-  previousContentHash: string | null;
+  appliedSnapshot: Record<string, unknown> | null;
+  appliedContentHash: string | null;
+  incomingSnapshot: Record<string, unknown>;
   incomingContentHash: string;
+  hasPendingProposal: boolean;
   mode: ExternalActionSyncMode;
+  actorUserId?: string;
   now: Date;
 }): Promise<ExternalActionSyncOutcome> {
   const {
@@ -74,10 +78,13 @@ async function handleLinkedActionUpdate(params: {
     event,
     identityHash,
     actionId,
-    previousSnapshot,
-    previousContentHash,
+    appliedSnapshot,
+    appliedContentHash,
+    incomingSnapshot,
     incomingContentHash,
+    hasPendingProposal,
     mode,
+    actorUserId,
     now,
   } = params;
 
@@ -94,7 +101,9 @@ async function handleLinkedActionUpdate(params: {
 
   if (event.externalStatus === "cancelled") {
     if (action.action_phase === "pre_action") {
-      await store.updatePreActionFields(actionId, { group_join_enabled: false });
+      await store.updatePreActionFields(actionId, action.updated_at, {
+        group_join_enabled: false,
+      });
     }
     const proposalId = await store.upsertProposal({
       organizerDirectoryId: subscription.organizerDirectoryId,
@@ -103,9 +112,10 @@ async function handleLinkedActionUpdate(params: {
       identityHash,
       actionId,
       proposalKind: "cancellation_review",
-      externalEvent: buildSourceSnapshotPayload(event),
+      externalEvent: incomingSnapshot,
       candidateActionIds: [actionId],
       conflictFields: [],
+      contentHash: incomingContentHash,
     });
     return {
       status: "needs_review",
@@ -128,14 +138,28 @@ async function handleLinkedActionUpdate(params: {
     };
   }
 
-  if (previousContentHash && previousContentHash === incomingContentHash) {
+  // If a pending conflict/review already exists, never silently ignore it or auto-publish.
+  if (hasPendingProposal) {
+    return {
+      status: "needs_review",
+      source: event.source,
+      externalId: event.externalId,
+      actionId,
+      reason: "pending_conflict_unresolved",
+    };
+  }
+
+  if (appliedContentHash && appliedContentHash === incomingContentHash) {
     if (
       mode === "admin_sync_now" &&
       !action.published_at &&
       isExternalActionPublishAdmissible(event, now)
     ) {
-      const published = await store.publishPreAction(actionId, now.toISOString());
-      if (published) {
+      const pub = await store.publishPreAction(
+        actionId,
+        actorUserId ?? subscription.ownerUserId,
+      );
+      if (pub.published) {
         return {
           status: "published",
           source: event.source,
@@ -143,6 +167,13 @@ async function handleLinkedActionUpdate(params: {
           actionId,
         };
       }
+      return {
+        status: "needs_review",
+        source: event.source,
+        externalId: event.externalId,
+        actionId,
+        reason: pub.reason ?? "publication_blocked",
+      };
     }
     return {
       status: "unchanged",
@@ -157,7 +188,7 @@ async function handleLinkedActionUpdate(params: {
     const merge = computeExternalActionFieldMerge({
       source: event.source,
       incoming: event,
-      previousSnapshot,
+      previousSnapshot: appliedSnapshot,
       currentAction: action,
     });
     if (merge.hasChanges || merge.conflicts.length > 0) {
@@ -168,9 +199,10 @@ async function handleLinkedActionUpdate(params: {
         identityHash,
         actionId,
         proposalKind: "field_conflict",
-        externalEvent: buildSourceSnapshotPayload(event),
+        externalEvent: incomingSnapshot,
         candidateActionIds: [actionId],
         conflictFields: merge.conflicts,
+        contentHash: incomingContentHash,
       });
       return {
         status: "needs_review",
@@ -181,6 +213,13 @@ async function handleLinkedActionUpdate(params: {
         reason: "published_action_change_review",
       };
     }
+    await store.markReferenceApplied({
+      sourceId: event.source,
+      externalEventId: event.externalId,
+      appliedSnapshot: incomingSnapshot,
+      appliedContentHash: incomingContentHash,
+      appliedRevision: event.sourceRevision ?? null,
+    });
     return {
       status: "unchanged",
       source: event.source,
@@ -192,12 +231,50 @@ async function handleLinkedActionUpdate(params: {
   const merge = computeExternalActionFieldMerge({
     source: event.source,
     incoming: event,
-    previousSnapshot,
+    previousSnapshot: appliedSnapshot,
     currentAction: action,
   });
 
   if (merge.hasChanges) {
-    await store.updatePreActionFields(actionId, merge.actionUpdates);
+    const mandateCheck = await store.verifyWriteMandate(
+      subscription.organizerDirectoryId,
+      event.source,
+    );
+    if (!mandateCheck.ok) {
+      return {
+        status: "mandate_revoked",
+        source: event.source,
+        reason: mandateCheck.reason,
+      };
+    }
+
+    const updated = await store.updatePreActionFields(
+      actionId,
+      action.updated_at,
+      merge.actionUpdates,
+    );
+    if (!updated) {
+      const proposalId = await store.upsertProposal({
+        organizerDirectoryId: subscription.organizerDirectoryId,
+        sourceId: event.source,
+        externalEventId: event.externalId,
+        identityHash,
+        actionId,
+        proposalKind: "field_conflict",
+        externalEvent: incomingSnapshot,
+        candidateActionIds: [actionId],
+        conflictFields: merge.conflicts,
+        contentHash: incomingContentHash,
+      });
+      return {
+        status: "needs_review",
+        source: event.source,
+        externalId: event.externalId,
+        actionId,
+        proposalId,
+        reason: "concurrent_local_edit",
+      };
+    }
   }
 
   if (merge.conflicts.length > 0) {
@@ -208,9 +285,10 @@ async function handleLinkedActionUpdate(params: {
       identityHash,
       actionId,
       proposalKind: "field_conflict",
-      externalEvent: buildSourceSnapshotPayload(event),
+      externalEvent: incomingSnapshot,
       candidateActionIds: [actionId],
       conflictFields: merge.conflicts,
+      contentHash: incomingContentHash,
     });
     return {
       status: "needs_review",
@@ -222,13 +300,24 @@ async function handleLinkedActionUpdate(params: {
     };
   }
 
+  await store.markReferenceApplied({
+    sourceId: event.source,
+    externalEventId: event.externalId,
+    appliedSnapshot: incomingSnapshot,
+    appliedContentHash: incomingContentHash,
+    appliedRevision: event.sourceRevision ?? null,
+  });
+
   if (
     mode === "admin_sync_now" &&
     !action.published_at &&
     isExternalActionPublishAdmissible(event, now)
   ) {
-    const published = await store.publishPreAction(actionId, now.toISOString());
-    if (published) {
+    const pub = await store.publishPreAction(
+      actionId,
+      actorUserId ?? subscription.ownerUserId,
+    );
+    if (pub.published) {
       return {
         status: merge.hasChanges ? "updated" : "published",
         source: event.source,
@@ -236,6 +325,13 @@ async function handleLinkedActionUpdate(params: {
         actionId,
       };
     }
+    return {
+      status: "needs_review",
+      source: event.source,
+      externalId: event.externalId,
+      actionId,
+      reason: pub.reason ?? "publication_blocked",
+    };
   }
 
   return {
@@ -251,9 +347,10 @@ async function processSingleExternalEvent(params: {
   subscription: ExternalActionSubscription;
   event: ExternalActionEvent;
   mode: ExternalActionSyncMode;
+  actorUserId?: string;
   now: Date;
 }): Promise<ExternalActionSyncOutcome> {
-  const { store, subscription, event, mode, now } = params;
+  const { store, subscription, event, mode, actorUserId, now } = params;
   const today = getTodayParis(now);
 
   if (event.actionDate < today || event.actionDate < subscription.syncStartDate) {
@@ -328,6 +425,16 @@ async function processSingleExternalEvent(params: {
     };
   }
 
+  const pendingProposals = await store.listProposals(
+    "pending",
+    subscription.organizerDirectoryId,
+  );
+  const hasPendingProposal = pendingProposals.some(
+    (p) =>
+      (p.sourceId === event.source && p.externalEventId === event.externalId) ||
+      (reservation.action_id !== null && p.actionId === reservation.action_id),
+  );
+
   if (reservation.reservation_status === "linked" && reservation.action_id) {
     return handleLinkedActionUpdate({
       store,
@@ -335,20 +442,26 @@ async function processSingleExternalEvent(params: {
       event,
       identityHash: reservation.identity_hash,
       actionId: reservation.action_id,
-      previousSnapshot: existingRef?.source_snapshot ?? null,
-      previousContentHash: existingRef?.content_hash ?? null,
+      appliedSnapshot: existingRef?.applied_snapshot ?? existingRef?.source_snapshot ?? null,
+      appliedContentHash: existingRef?.applied_content_hash ?? null,
+      incomingSnapshot: snapshot,
       incomingContentHash: contentHash,
+      hasPendingProposal,
       mode,
+      actorUserId,
       now,
     });
   }
 
   // Reservation succeeded for an unlinked identity: check existing actions before creating.
-  const candidates = await store.listCandidateActions(subscription.organizerDirectoryId);
+  const { candidates, truncated } = await store.listCandidateActions(
+    subscription.organizerDirectoryId,
+  );
   const match = findMatchingCandidateActions(
     event,
     subscription.organizerDirectoryId,
     candidates,
+    { truncated },
   );
 
   if (match.kind === "ambiguous") {
@@ -362,13 +475,14 @@ async function processSingleExternalEvent(params: {
       externalEvent: snapshot,
       candidateActionIds: match.candidateIds,
       conflictFields: [],
+      contentHash,
     });
     return {
       status: "needs_review",
       source: event.source,
       externalId: event.externalId,
       proposalId,
-      reason: "ambiguous_existing_action",
+      reason: truncated ? "candidate_list_truncated" : "ambiguous_existing_action",
     };
   }
 
@@ -386,6 +500,13 @@ async function processSingleExternalEvent(params: {
         reason: completeStatus,
       };
     }
+    await store.markReferenceApplied({
+      sourceId: event.source,
+      externalEventId: event.externalId,
+      appliedSnapshot: snapshot,
+      appliedContentHash: contentHash,
+      appliedRevision: event.sourceRevision ?? null,
+    });
     return {
       status: "linked",
       source: event.source,
@@ -405,6 +526,7 @@ async function processSingleExternalEvent(params: {
       externalEvent: snapshot,
       candidateActionIds: [],
       conflictFields: [],
+      contentHash,
     });
     return {
       status: "needs_review",
@@ -436,9 +558,20 @@ async function processSingleExternalEvent(params: {
     };
   }
 
+  await store.markReferenceApplied({
+    sourceId: event.source,
+    externalEventId: event.externalId,
+    appliedSnapshot: snapshot,
+    appliedContentHash: contentHash,
+    appliedRevision: event.sourceRevision ?? null,
+  });
+
   if (mode === "admin_sync_now" && isExternalActionPublishAdmissible(event, now)) {
-    const published = await store.publishPreAction(created.actionId, now.toISOString());
-    if (published) {
+    const pub = await store.publishPreAction(
+      created.actionId,
+      actorUserId ?? subscription.ownerUserId,
+    );
+    if (pub.published) {
       return {
         status: "created_and_published",
         source: event.source,
@@ -446,6 +579,13 @@ async function processSingleExternalEvent(params: {
         actionId: created.actionId,
       };
     }
+    return {
+      status: "needs_review",
+      source: event.source,
+      externalId: event.externalId,
+      actionId: created.actionId,
+      reason: pub.reason ?? "publication_blocked",
+    };
   }
 
   return {
@@ -466,6 +606,7 @@ export async function runExternalActionSync(
   options: {
     mode: ExternalActionSyncMode;
     organizerDirectoryId?: string;
+    actorUserId?: string;
     now?: Date;
   },
 ): Promise<ExternalActionSyncRunSummary> {
@@ -494,7 +635,11 @@ export async function runExternalActionSync(
 
   for (const subscription of targeted) {
     if (!isMandateActive(subscription)) {
-      const reason = subscription.revokedAt ? "mandate_revoked" : "operator_authorization_required";
+      const reason = subscription.revokedAt
+        ? "mandate_revoked"
+        : !subscription.consentGrantedAt
+          ? "consent_missing"
+          : "operator_authorization_required";
       summary.disabledSources += 1;
       summary.outcomes.push({
         status: subscription.revokedAt ? "mandate_revoked" : "source_disabled",
@@ -574,6 +719,7 @@ export async function runExternalActionSync(
           subscription,
           event,
           mode: options.mode,
+          actorUserId: options.actorUserId,
           now,
         });
         summary.outcomes.push(outcome);
@@ -607,6 +753,10 @@ export async function runExternalActionSync(
             break;
           case "error":
             summary.errors += 1;
+            break;
+          case "mandate_revoked":
+          case "source_disabled":
+            summary.disabledSources += 1;
             break;
         }
       } catch (error) {

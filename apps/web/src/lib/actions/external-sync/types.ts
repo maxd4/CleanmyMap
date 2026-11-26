@@ -48,6 +48,7 @@ export type ExternalActionSubscription = {
   enabled: boolean;
   authorizationRef?: string | null;
   syncStartDate: string;
+  consentGrantedAt?: string | null;
   revokedAt?: string | null;
   lastSyncAt?: string | null;
   lastSyncStatus?: "ok" | "partial" | "error" | "disabled" | null;

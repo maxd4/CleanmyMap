@@ -55,6 +55,7 @@ export function findMatchingCandidateActions(
   event: ExternalActionEvent,
   organizerDirectoryId: string,
   candidates: CandidateActionRow[],
+  options: { truncated?: boolean } = {},
 ): MatchResult {
   const sameOrgAndDate = candidates.filter(
     (candidate) =>
@@ -62,7 +63,7 @@ export function findMatchingCandidateActions(
       candidate.action_date === event.actionDate,
   );
   if (sameOrgAndDate.length === 0) {
-    return { kind: "none" };
+    return options.truncated ? { kind: "ambiguous", candidateIds: [] } : { kind: "none" };
   }
 
   // Without startTime or location, never auto-link; flag potential candidates for review.
@@ -82,7 +83,8 @@ export function findMatchingCandidateActions(
     const candidateRoute = normalizeText(readPrepString(prep, "zoneCiblePrevue") ?? readPrepString(prep, "routeReference"));
     const candidateSourceUrl = readPrepString(prep, "externalSourceUrl");
 
-    const sameTime = !candidateStartTime || candidateStartTime === event.startTime;
+    // Candidate local start time must be known and match exactly; unknown time requires human review.
+    const sameTime = Boolean(candidateStartTime && candidateStartTime === event.startTime);
     const sameLocation = locationsCompatible(event, candidate);
 
     if (sameTime && sameLocation) {
@@ -93,16 +95,16 @@ export function findMatchingCandidateActions(
       } else {
         plausible.push(candidate);
       }
-    } else if (candidateStartTime === event.startTime || sameLocation) {
+    } else if (!candidateStartTime || candidateStartTime === event.startTime || sameLocation) {
       plausible.push(candidate);
     }
   }
 
-  if (corroborated.length === 1 && plausible.length === 0) {
+  if (corroborated.length === 1 && plausible.length === 0 && !options.truncated) {
     return { kind: "unambiguous", action: corroborated[0] };
   }
   const allAmbiguous = [...corroborated, ...plausible];
-  if (allAmbiguous.length > 0) {
+  if (allAmbiguous.length > 0 || options.truncated) {
     return { kind: "ambiguous", candidateIds: allAmbiguous.map((c) => c.id) };
   }
   return { kind: "none" };

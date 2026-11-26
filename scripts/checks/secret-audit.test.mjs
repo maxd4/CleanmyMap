@@ -752,3 +752,30 @@ test("masks all sensitive values on the same line without disclosing adjacent em
     );
   }
 });
+
+test("allows legitimate 40-char Git SHA/blob references in specs without masking real secret hashes", () => {
+  const safeBaseFiles = JSON.stringify({
+    "apps/web/src/components/profil/impact-profile-authenticated-view.tsx":
+      "4a298a78a23da0d1486d049d0c636a66d8e1bf3e",
+    "apps/web/src/lib/auth/api-authorization-contract.chat.ts":
+      "d3b923be5b532d49c92fd46061efa30cbc755c6b",
+  }, null, 2);
+  const safeReadme =
+    "**Statut : PLAN / CANDIDATE.** Référence factuelle lue : `1888c67337762e067f371e3fd431e12b662745d1` (25 novembre 2026). Aucun changement authentification.";
+
+  const passResult = runAudit({
+    candidatePath: "documentation/specs/annuaire-ui/README_CODEX.md",
+    candidateContent: `${safeReadme}\n${safeBaseFiles}\n`,
+    foreignContent: "clean\n",
+  });
+  assert.equal(passResult.status, 0);
+
+  const secretHashResult = runAudit({
+    candidatePath: "documentation/specs/secret-hash.md",
+    candidateContent:
+      ["auth_token_hash = ", "4a298a78a23da0d1486d", "049d0c636a66d8e1bf3e\n"].join(""),
+    foreignContent: "clean\n",
+  });
+  assert.equal(secretHashResult.status, 1);
+  assert.match(secretHashResult.stderr, /Hash digest/);
+});

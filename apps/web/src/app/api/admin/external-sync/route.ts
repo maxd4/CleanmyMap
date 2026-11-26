@@ -10,6 +10,7 @@ import { createSupabaseExternalActionSyncStore } from "@/lib/actions/external-sy
 import { runExternalActionSync } from "@/lib/actions/external-sync/engine";
 
 export const runtime = "nodejs";
+// Justification force-dynamic: admin external-sync reads and mutates live private subscriptions, proposals, and actions.
 export const dynamic = "force-dynamic";
 
 const syncNowSchema = z.object({
@@ -53,6 +54,7 @@ export async function GET(): Promise<Response> {
     ]);
     return NextResponse.json(
       { subscriptions, syncedActions, proposals },
+      // Justification no-store: admin external-sync state contains private mandates and moderation proposals.
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch {
@@ -132,6 +134,7 @@ export async function POST(request: Request): Promise<Response> {
         {
           mode: "admin_sync_now",
           organizerDirectoryId: payload.organizerDirectoryId,
+          actorUserId: access.userId,
         },
       );
       await appendAdminOperationAudit({
