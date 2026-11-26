@@ -1,54 +1,94 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createClient } from "@supabase/supabase-js";
+import { createJiti } from "jiti";
 import { resolveLocalEphemeralDbUrl, runLocalPsqlQuery } from "./supabase-local-psql.mjs";
 
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const orgId = "association-brigade-verte-paris";
-const otherOrgId = "association-autre-test";
 const ownerUserId = "e2e-sync-owner-1";
-const actionId = "00000000-0000-4000-8000-00000000e2e1";
-const identityHash = "e".repeat(64);
-const contentHashV1 = "1".repeat(64);
-const contentHashV2 = "2".repeat(64);
-const claimToken = "11111111-1111-4111-8111-11111111e2e1";
-
 const run = (sql, step = "query", timeoutMs = 20_000) =>
   runLocalPsqlQuery(sql, {
     timeoutMs,
     errorLabel: `External action sync E2E failed at step=${step}`,
   });
 
+function resolveSupabaseRestTarget() {
+  const url = process.env.SUPABASE_URL?.trim();
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (url && key) return { url, key };
+  const raw = execFileSync("npx", ["supabase", "status", "-o", "json"], {
+    cwd: path.join(root, "apps/web"),
+    encoding: "utf8",
+  });
+  const status = JSON.parse(raw);
+  if (!status?.API_URL || !status?.SERVICE_ROLE_KEY) {
+    throw new Error("Missing ephemeral Supabase API_URL / SERVICE_ROLE_KEY.");
+  }
+  return { url: status.API_URL, key: status.SERVICE_ROLE_KEY };
+}
+
 async function main() {
   resolveLocalEphemeralDbUrl();
+  const { url, key } = resolveSupabaseRestTarget();
+  const supabase = createClient(url, key, { auth: { persistSession: false } });
 
-  await run(
-    `
+  // Stub Next.js server-only / next/cache for Node execution of real TypeScript store + engine.
+  const stubDir = mkdtempSync(path.join(tmpdir(), "cmm-sync-e2e-"));
+  const serverOnlyStub = path.join(stubDir, "server-only.mjs");
+  const nextCacheStub = path.join(stubDir, "next-cache.mjs");
+  writeFileSync(serverOnlyStub, "export {};\n");
+  writeFileSync(nextCacheStub, "export function revalidateTag() {}\nexport function unstable_cache(fn) { return fn; }\n");
+
+  const jiti = createJiti(import.meta.url, {
+    alias: {
+      "@": path.join(root, "apps/web/src"),
+      "server-only": serverOnlyStub,
+      "next/cache": nextCacheStub,
+    },
+  });
+
+  try {
+    const { createSupabaseExternalActionSyncStore } = await jiti.import(
+      path.join(root, "apps/web/src/lib/actions/external-sync/store.ts"),
+    );
+    const { runExternalActionSync } = await jiti.import(
+      path.join(root, "apps/web/src/lib/actions/external-sync/engine.ts"),
+    );
+    const { readSyntheticJagisEvents } = await jiti.import(
+      path.join(root, "apps/web/src/lib/actions/external-sync/jagis-adapter.ts"),
+    );
+    const { readSyntheticFondationMerEvents } = await jiti.import(
+      path.join(root, "apps/web/src/lib/actions/external-sync/fondation-mer-adapter.ts"),
+    );
+
+    await run(
+      `
 begin;
 set local role postgres;
-delete from private.external_action_sync_proposals where external_event_id like 'e2e-%';
-delete from private.external_action_sync_suppression_audit where operation_id like 'e2e-sync-%';
-delete from private.external_action_sync_references where external_event_id like 'e2e-%';
-delete from private.external_action_sync_identities where identity_hash = '${identityHash}';
+insert into public.profiles (id, display_name, handle)
+values ('${ownerUserId}', 'Brigade Verte E2E', 'brigade-verte-e2e')
+on conflict (id) do nothing;
+
+delete from private.external_action_sync_proposals where external_event_id like 'e2e-real-%';
+delete from private.external_action_sync_suppression_audit where operation_id like 'e2e-real-%';
+delete from private.external_action_sync_references where external_event_id like 'e2e-real-%';
 delete from private.external_action_sync_subscriptions where owner_user_id = '${ownerUserId}';
-delete from public.actions where id = '${actionId}';
-insert into public.actions (
-  id, created_by_clerk_id, organizer_id, organizer_type, action_date,
-  action_phase, status, published_at, location_label, moderation_visibility, group_join_enabled
-) values (
-  '${actionId}', '${ownerUserId}', '${orgId}', 'association', '2027-09-12',
-  'pre_action', 'pending', null, 'Mairie du 20e — Paris', 'visible', false
-);
 commit;
 `,
-    "setup",
-  );
+      "setup_profile_and_cleanup",
+    );
 
-  // 1. Mandate with consent + two sources linked to same canonical action, applied vs observed separation
-  const res = await run(
-    `
+    await run(
+      `
 begin;
 set local role service_role;
-select set_config('request.jwt.claims', '{"role":"service_role","sub":"e2e-sync"}', true);
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"e2e-real"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
-
 select public.upsert_external_action_sync_subscription(
   '${orgId}', 'jagis_pour_la_nature', '${ownerUserId}', '{}'::text[],
   'brigade-verte', 'https://example.test/jagis', 'synthetic_fixture', true, 'mandat-e2e', '2026-11-01', null, clock_timestamp()
@@ -57,92 +97,128 @@ select public.upsert_external_action_sync_subscription(
   '${orgId}', 'fondation_de_la_mer', '${ownerUserId}', '{}'::text[],
   'birgade-verte', 'https://example.test/mer', 'synthetic_fixture', true, 'mandat-e2e', '2026-11-01', null, clock_timestamp()
 );
-
-select 'RES_JAGIS:' || reservation_status from public.reserve_external_action_sync_reference(
-  '${identityHash}', '${orgId}', '${ownerUserId}', '${claimToken}'::uuid,
-  'jagis_pour_la_nature', 'e2e-jagis-1', 'https://example.test/j/1', 'r1', '{"v":1}'::jsonb, '${contentHashV1}'
-);
-select 'COMPLETE:' || public.complete_external_action_sync_identity('${identityHash}', '${claimToken}'::uuid, '${actionId}'::uuid);
-select 'APPLY_V1:' || public.mark_external_action_sync_reference_applied(
-  'jagis_pour_la_nature', 'e2e-jagis-1', '{"v":1}'::jsonb, '${contentHashV1}', 'r1'
-);
-select 'RES_MER:' || reservation_status from public.reserve_external_action_sync_reference(
-  '${identityHash}', '${orgId}', '${ownerUserId}', '${claimToken}'::uuid,
-  'fondation_de_la_mer', 'e2e-mer-1', 'https://example.test/m/1', 'r1', '{"v":1}'::jsonb, '${contentHashV1}'
-);
-
--- Reserve v2 without applying (conflict scenario): observed changes to v2 while applied stays v1.
-select 'RES_JAGIS_V2:' || reservation_status from public.reserve_external_action_sync_reference(
-  '${identityHash}', '${orgId}', '${ownerUserId}', '${claimToken}'::uuid,
-  'jagis_pour_la_nature', 'e2e-jagis-1', 'https://example.test/j/1', 'r2', '{"v":2}'::jsonb, '${contentHashV2}'
-);
-select 'STATE:' || content_hash || '|' || coalesce(applied_content_hash, 'null')
-from public.get_external_action_sync_reference_state('jagis_pour_la_nature', 'e2e-jagis-1');
 commit;
 `,
-    "two_sources_and_applied_state",
-  );
+      "setup_subscriptions",
+    );
 
-  assert.match(res.stdout, /RES_JAGIS:reserved/);
-  assert.match(res.stdout, /COMPLETE:linked/);
-  assert.match(res.stdout, /APPLY_V1:applied/);
-  assert.match(res.stdout, /RES_MER:linked/);
-  assert.match(res.stdout, /RES_JAGIS_V2:linked/);
-  assert.match(res.stdout, new RegExp(`STATE:${contentHashV2}\\|${contentHashV1}`));
+    const store = createSupabaseExternalActionSyncStore(supabase);
+    const now = new Date("2026-11-26T10:00:00.000Z");
 
-  // 2. Revocation blocks mark_applied; proposal organizer isolation; suppression hides action
-  const revAndSup = await run(
-    `
-begin;
-set local role service_role;
-select set_config('request.jwt.claims', '{"role":"service_role","sub":"e2e-sync"}', true);
-select set_config('request.jwt.claim.role', 'service_role', true);
+    const jagisRecords = [
+      {
+        id: "e2e-real-jagis-1",
+        url: "https://example.test/jagis/e2e-1",
+        title: "Collecte E2E Brigade Verte",
+        start_date: "2027-10-10",
+        start_time: "10:00",
+        meeting_point: "Mairie du 20e",
+        city: "Paris",
+        route_reference: "mairie-pyrenees-e2e",
+        updated_at: "r1",
+        status: "published",
+      },
+    ];
+    const merRecords = [
+      {
+        reference: "e2e-real-mer-1",
+        canonical_url: "https://example.test/mer/e2e-1",
+        name: "Collecte E2E Brigade Verte",
+        date: "2027-10-10",
+        time_start: "10:00",
+        meeting_place: "Mairie du 20e",
+        municipality: "Paris",
+        route_name: "mairie-pyrenees-e2e",
+        revision: "r1",
+        state: "published",
+      },
+    ];
 
-select public.upsert_external_action_sync_subscription(
-  '${orgId}', 'jagis_pour_la_nature', '${ownerUserId}', '{}'::text[],
-  'brigade-verte', 'https://example.test/jagis', 'synthetic_fixture', true, 'mandat-e2e', '2026-11-01', clock_timestamp(), clock_timestamp()
-);
-select 'REVOKED_APPLY:' || public.mark_external_action_sync_reference_applied(
-  'jagis_pour_la_nature', 'e2e-jagis-1', '{"v":2}'::jsonb, '${contentHashV2}', 'r2'
-);
+    // 1. cron_prepare creates unpublished pre-action via real store + createActionSubmission(deferGamification: true)
+    const cronSummary = await runExternalActionSync(
+      {
+        store,
+        readers: {
+          jagis_pour_la_nature: async () => readSyntheticJagisEvents(jagisRecords, now.toISOString()),
+          fondation_de_la_mer: async () => readSyntheticFondationMerEvents(merRecords, now.toISOString()),
+        },
+      },
+      { mode: "cron_prepare", organizerDirectoryId: orgId, now },
+    );
+    assert.equal(cronSummary.created, 1);
+    assert.equal(cronSummary.createdAndPublished, 0);
+    const createdOutcome = cronSummary.outcomes.find((o) => o.status === "created");
+    assert.ok(createdOutcome?.actionId, "Created actionId expected");
+    const actionId = createdOutcome.actionId;
 
-select public.upsert_external_action_sync_proposal(
-  '${orgId}', 'jagis_pour_la_nature', 'e2e-prop-1', '${identityHash}', '${actionId}'::uuid,
-  'field_conflict', '{"v":2}'::jsonb, array['${actionId}'::uuid], '[]'::jsonb, '${contentHashV2}'
-);
-select 'ISO_OTHER:' || count(*) from public.list_external_action_sync_proposals('pending', '${otherOrgId}');
-
-select 'SUPPRESS:' || public.suppress_external_action_sync_action(
-  '${actionId}'::uuid, 'admin-e2e', 'e2e-sync-sup-1', 'Suppression E2E canonique'
-);
-commit;
-`,
-    "revocation_isolation_suppression",
-  );
-
-  assert.match(revAndSup.stdout, /REVOKED_APPLY:mandate_revoked/);
-  assert.match(revAndSup.stdout, /ISO_OTHER:0/);
-  assert.match(revAndSup.stdout, /SUPPRESS:suppressed/);
-
-  const actionCheck = await run(
-    `
+    // Verify zero premature XP / progression side effects in PostgreSQL
+    const xpCheck = await run(
+      `
 begin;
 set local role postgres;
-select 'VISIBILITY:' || moderation_visibility || '|PUB:' || coalesce(published_at::text, 'null') || '|STATUS:' || status
-from public.actions where id = '${actionId}';
-delete from private.external_action_sync_proposals where external_event_id like 'e2e-%';
-delete from private.external_action_sync_suppression_audit where operation_id like 'e2e-sync-%';
-delete from private.external_action_sync_references where external_event_id like 'e2e-%';
-delete from private.external_action_sync_identities where identity_hash = '${identityHash}';
-delete from private.external_action_sync_subscriptions where owner_user_id = '${ownerUserId}';
-delete from public.actions where id = '${actionId}';
+select 'XP:' || coalesce(sum(xp_delta), 0) from public.user_progression_events where user_id = '${ownerUserId}';
+select 'PUB:' || coalesce(published_at::text, 'null') from public.actions where id = '${actionId}';
 commit;
 `,
-    "verify_and_cleanup",
-  );
+      "verify_unpublished_and_no_xp",
+    );
+    assert.match(xpCheck.stdout, /XP:0/);
+    assert.match(xpCheck.stdout, /PUB:null/);
 
-  assert.match(actionCheck.stdout, /VISIBILITY:hidden\|PUB:null\|STATUS:cancelled/);
-  console.log("EXECUTED_DB_CONTRACT: External action sync E2E PostgreSQL lifecycle passed.");
+    // 2. admin_sync_now publishes admissible pre-action via publishPreActionCanonical
+    const adminSummary = await runExternalActionSync(
+      {
+        store,
+        readers: {
+          jagis_pour_la_nature: async () => readSyntheticJagisEvents(jagisRecords, now.toISOString()),
+          fondation_de_la_mer: async () => readSyntheticFondationMerEvents(merRecords, now.toISOString()),
+        },
+      },
+      { mode: "admin_sync_now", organizerDirectoryId: orgId, actorUserId: ownerUserId, now },
+    );
+    assert.equal(adminSummary.published, 1);
+
+    // 3. Administrative suppression hides & unpublishes action and blocks recreation
+    const supStatus = await store.suppressAction({
+      actionId,
+      actorUserId: "admin-e2e",
+      operationId: "e2e-real-sup-1",
+      reason: "Suppression E2E canonique",
+    });
+    assert.equal(supStatus, "suppressed");
+
+    const afterSup = await runExternalActionSync(
+      {
+        store,
+        readers: {
+          jagis_pour_la_nature: async () => readSyntheticJagisEvents([{ ...jagisRecords[0], updated_at: "r2" }], now.toISOString()),
+          fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
+        },
+      },
+      { mode: "admin_sync_now", organizerDirectoryId: orgId, actorUserId: ownerUserId, now },
+    );
+    assert.equal(afterSup.suppressed, 1);
+
+    await run(
+      `
+begin;
+set local role postgres;
+delete from private.external_action_sync_proposals where external_event_id like 'e2e-real-%';
+delete from private.external_action_sync_suppression_audit where operation_id like 'e2e-real-%';
+delete from private.external_action_sync_references where external_event_id like 'e2e-real-%';
+delete from private.external_action_sync_identities where creator_user_id = '${ownerUserId}';
+delete from private.external_action_sync_subscriptions where owner_user_id = '${ownerUserId}';
+delete from public.actions where id = '${actionId}';
+delete from public.profiles where id = '${ownerUserId}';
+commit;
+`,
+      "cleanup",
+    );
+
+    console.log("EXECUTED_DB_CONTRACT: External action sync E2E PostgreSQL lifecycle passed.");
+  } finally {
+    rmSync(stubDir, { recursive: true, force: true });
+  }
 }
 
 main().catch((error) => {

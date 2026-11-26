@@ -587,4 +587,67 @@ describe("external-sync Lot A engine & SSRF guard", () => {
     expect(reader).not.toHaveBeenCalled();
     expect(noConsentSummary.disabledSources).toBe(1);
   });
+
+  it("aborts publication when markReferenceApplied or unchanged-hash mandate check returns mandate_revoked", async () => {
+    const now = new Date("2026-11-26T10:00:00.000Z");
+    const rec = [
+      {
+        id: "jagis-revoke-race-1",
+        url: "https://example.test/jagis/rr1",
+        title: "Collecte race révocation",
+        start_date: "2027-09-18",
+        start_time: "10:00",
+        meeting_point: "Place Gambetta",
+        city: "Paris",
+        route_reference: "gambetta-race",
+        status: "published",
+      },
+    ];
+
+    const raceStore = createInMemorySyncStore({ subscriptions: baseSubs });
+    vi.spyOn(raceStore.store, "markReferenceApplied").mockResolvedValueOnce("mandate_revoked");
+    const raceSummary = await runExternalActionSync(
+      {
+        store: raceStore.store,
+        readers: {
+          jagis_pour_la_nature: async () => readSyntheticJagisEvents(rec, now.toISOString()),
+          fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
+        },
+      },
+      { mode: "admin_sync_now", actorUserId: "admin-1", now },
+    );
+    expect(raceSummary.createdAndPublished).toBe(0);
+    expect(raceSummary.outcomes.some((o) => o.status === "mandate_revoked")).toBe(true);
+    expect([...raceStore.actions.values()][0].published_at).toBeNull();
+
+    // Unchanged hash branch must re-verify mandate before publishing
+    const unchangedStore = createInMemorySyncStore({ subscriptions: baseSubs });
+    await runExternalActionSync(
+      {
+        store: unchangedStore.store,
+        readers: {
+          jagis_pour_la_nature: async () => readSyntheticJagisEvents(rec, now.toISOString()),
+          fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
+        },
+      },
+      { mode: "cron_prepare", now },
+    );
+    vi.spyOn(unchangedStore.store, "verifyWriteMandate").mockResolvedValueOnce({
+      ok: false,
+      reason: "mandate_revoked",
+    });
+    const unchangedPublish = await runExternalActionSync(
+      {
+        store: unchangedStore.store,
+        readers: {
+          jagis_pour_la_nature: async () => readSyntheticJagisEvents(rec, now.toISOString()),
+          fondation_de_la_mer: async () => ({ status: "disabled", source: "fondation_de_la_mer", reason: "operator_authorization_required" }),
+        },
+      },
+      { mode: "admin_sync_now", actorUserId: "admin-1", now },
+    );
+    expect(unchangedPublish.published).toBe(0);
+    expect(unchangedPublish.outcomes.some((o) => o.status === "mandate_revoked")).toBe(true);
+    expect([...unchangedStore.actions.values()][0].published_at).toBeNull();
+  });
 });

@@ -19,44 +19,13 @@ alter table private.external_action_sync_references
 alter table private.external_action_sync_proposals
   add column if not exists resolved_content_hash text check (resolved_content_hash is null or resolved_content_hash ~ '^[0-9a-f]{64}$');
 
-create or replace function public.list_external_action_sync_subscriptions()
-returns table (
-  id uuid,
-  organizer_directory_id text,
-  source_id text,
-  owner_user_id text,
-  co_organizer_user_ids text[],
-  source_structure_ref text,
-  source_url text,
-  access_mode text,
-  enabled boolean,
-  authorization_ref text,
-  sync_start_date date,
-  revoked_at timestamptz,
-  last_sync_at timestamptz,
-  last_sync_status text,
-  last_sync_summary jsonb,
-  last_error text,
-  consent_granted_at timestamptz
-)
-language plpgsql
-security definer
-set search_path = pg_catalog, public, private
-as $$
-begin
-  if coalesce(auth.role(), '') <> 'service_role' then raise exception 'Forbidden'; end if;
-  return query
-  select s.id, s.organizer_directory_id, s.source_id, s.owner_user_id,
-         s.co_organizer_user_ids, s.source_structure_ref, s.source_url,
-         s.access_mode, s.enabled, s.authorization_ref, s.sync_start_date,
-         s.revoked_at, s.last_sync_at, s.last_sync_status, s.last_sync_summary,
-         s.last_error, s.consent_granted_at
-  from private.external_action_sync_subscriptions s
-  order by s.organizer_directory_id, s.source_id;
-end;
-$$;
-
+-- Close legacy overloads before creating hardened signatures.
 drop function if exists public.list_external_action_sync_subscriptions();
+drop function if exists public.upsert_external_action_sync_subscription(text, text, text, text[], text, text, text, boolean, text, date, timestamptz);
+drop function if exists public.upsert_external_action_sync_proposal(text, text, text, text, uuid, text, jsonb, uuid[], jsonb);
+drop function if exists public.list_external_action_sync_proposals(text);
+drop function if exists public.resolve_external_action_sync_proposal(uuid, text, text, text);
+
 create function public.list_external_action_sync_subscriptions()
 returns table (
   id uuid,
@@ -94,7 +63,7 @@ begin
 end;
 $$;
 
-create or replace function public.upsert_external_action_sync_subscription(
+create function public.upsert_external_action_sync_subscription(
   p_organizer_directory_id text,
   p_source_id text,
   p_owner_user_id text,
@@ -202,6 +171,7 @@ as $$
 declare
   v_ref private.external_action_sync_references%rowtype;
   v_identity private.external_action_sync_identities%rowtype;
+  v_action public.actions%rowtype;
   v_now timestamptz := clock_timestamp();
 begin
   if coalesce(auth.role(), '') <> 'service_role' then raise exception 'Forbidden'; end if;
@@ -232,11 +202,24 @@ begin
     select 1 from private.external_action_sync_subscriptions s
     where s.organizer_directory_id = v_identity.organizer_directory_id
       and s.source_id = p_source_id
+      and s.owner_user_id = v_identity.creator_user_id
       and s.enabled = true
       and s.revoked_at is null
       and s.consent_granted_at is not null
+      and s.authorization_ref is not null
+      and s.access_mode <> 'disabled'
   ) then
     return 'mandate_revoked';
+  end if;
+
+  if v_identity.action_id is not null then
+    select * into v_action from public.actions a where a.id = v_identity.action_id for update;
+    if not found or v_action.organizer_id is distinct from v_identity.organizer_directory_id then
+      return 'organizer_mismatch';
+    end if;
+    if v_action.status = 'cancelled' or v_action.status = 'rejected' then
+      return 'suppressed';
+    end if;
   end if;
 
   update private.external_action_sync_references
@@ -252,7 +235,7 @@ begin
 end;
 $$;
 
-create or replace function public.upsert_external_action_sync_proposal(
+create function public.upsert_external_action_sync_proposal(
   p_organizer_directory_id text,
   p_source_id text,
   p_external_event_id text,
@@ -272,17 +255,19 @@ as $$
 declare
   v_existing private.external_action_sync_proposals%rowtype;
   v_id uuid;
+  v_org_id text := btrim(p_organizer_directory_id);
+  v_event_id text := btrim(p_external_event_id);
 begin
   if coalesce(auth.role(), '') <> 'service_role' then raise exception 'Forbidden'; end if;
 
   select * into v_existing
   from private.external_action_sync_proposals p
   where p.source_id = p_source_id
-    and p.external_event_id = btrim(p_external_event_id)
+    and p.external_event_id = v_event_id
   for update;
 
   if found then
-    if v_existing.organizer_directory_id <> btrim(p_organizer_directory_id) then
+    if v_existing.organizer_directory_id <> v_org_id then
       raise exception 'proposal_organizer_conflict';
     end if;
     if v_existing.status in ('resolved', 'dismissed')
@@ -298,9 +283,9 @@ begin
     action_id, proposal_kind, status, external_event, candidate_action_ids,
     conflict_fields, resolved_content_hash, resolution_note, resolved_by_user_id, resolved_at
   ) values (
-    btrim(p_organizer_directory_id),
+    v_org_id,
     p_source_id,
-    btrim(p_external_event_id),
+    v_event_id,
     nullif(btrim(p_identity_hash), ''),
     p_action_id,
     p_proposal_kind,
@@ -326,13 +311,31 @@ begin
     resolved_by_user_id = null,
     resolved_at = null,
     updated_at = clock_timestamp()
+  where private.external_action_sync_proposals.organizer_directory_id = excluded.organizer_directory_id
+    and not (
+      private.external_action_sync_proposals.status in ('resolved', 'dismissed')
+      and excluded.resolved_content_hash is not null
+      and private.external_action_sync_proposals.resolved_content_hash = excluded.resolved_content_hash
+      and private.external_action_sync_proposals.proposal_kind = excluded.proposal_kind
+    )
   returning id into v_id;
+
+  if v_id is null then
+    select * into v_existing
+    from private.external_action_sync_proposals p
+    where p.source_id = p_source_id
+      and p.external_event_id = v_event_id;
+    if v_existing.organizer_directory_id <> v_org_id then
+      raise exception 'proposal_organizer_conflict';
+    end if;
+    return v_existing.id;
+  end if;
 
   return v_id;
 end;
 $$;
 
-create or replace function public.list_external_action_sync_proposals(
+create function public.list_external_action_sync_proposals(
   p_status text default 'pending',
   p_organizer_directory_id text default null
 )
@@ -373,7 +376,7 @@ begin
 end;
 $$;
 
-create or replace function public.resolve_external_action_sync_proposal(
+create function public.resolve_external_action_sync_proposal(
   p_proposal_id uuid,
   p_status text,
   p_actor_user_id text,

@@ -67,6 +67,7 @@ export interface ExternalActionSyncStore {
   verifyWriteMandate(
     organizerDirectoryId: string,
     sourceId: ExternalActionSourceId,
+    actionId?: string,
   ): Promise<MandateVerificationResult>;
   recordRunResult(params: {
     organizerDirectoryId: string;
@@ -132,6 +133,7 @@ export interface ExternalActionSyncStore {
   publishPreAction(
     actionId: string,
     actorUserId: string,
+    expectedUpdatedAt?: string,
   ): Promise<{ published: boolean; reason?: string }>;
   upsertProposal(params: {
     organizerDirectoryId: string;
@@ -204,13 +206,19 @@ export function createSupabaseExternalActionSyncStore(
       return rows.map((row) => mapSubscriptionRow(row as Record<string, unknown>));
     },
 
-    async verifyWriteMandate(organizerDirectoryId, sourceId) {
+    async verifyWriteMandate(organizerDirectoryId, sourceId, actionId) {
       const subscriptions = await this.listSubscriptions();
       const sub = subscriptions.find(
         (item) =>
           item.organizerDirectoryId === organizerDirectoryId && item.sourceId === sourceId,
       );
-      if (!sub || !sub.enabled || sub.revokedAt || sub.accessMode === "disabled") {
+      if (
+        !sub ||
+        !sub.enabled ||
+        sub.revokedAt ||
+        sub.accessMode === "disabled" ||
+        !sub.authorizationRef
+      ) {
         return { ok: false, reason: "mandate_revoked" };
       }
       if (!sub.consentGrantedAt) {
@@ -223,6 +231,22 @@ export function createSupabaseExternalActionSyncStore(
         .maybeSingle();
       if (error || !profile?.id) {
         return { ok: false, reason: "owner_profile_unverified" };
+      }
+      if (actionId) {
+        const action = await loadActionById(supabase, actionId);
+        const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
+          supabase,
+          actionId,
+        );
+        const isAuthorizedOrganizer = Boolean(
+          action &&
+            action.organizer_id === organizerDirectoryId &&
+            (action.created_by_clerk_id === sub.ownerUserId ||
+              organizerIds.includes(sub.ownerUserId)),
+        );
+        if (!isAuthorizedOrganizer) {
+          return { ok: false, reason: "mandate_revoked" };
+        }
       }
       return { ok: true, subscription: sub };
     },
@@ -410,10 +434,13 @@ export function createSupabaseExternalActionSyncStore(
       return Boolean(data?.id);
     },
 
-    async publishPreAction(actionId, actorUserId) {
+    async publishPreAction(actionId, actorUserId, expectedUpdatedAt) {
       const current = await loadActionById(supabase, actionId);
       if (!current) {
         return { published: false, reason: "not_found" };
+      }
+      if (expectedUpdatedAt && current.updated_at !== expectedUpdatedAt) {
+        return { published: false, reason: "conflict" };
       }
       const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
         supabase,

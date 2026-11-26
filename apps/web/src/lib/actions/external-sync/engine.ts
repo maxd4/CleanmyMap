@@ -155,9 +155,22 @@ async function handleLinkedActionUpdate(params: {
       !action.published_at &&
       isExternalActionPublishAdmissible(event, now)
     ) {
+      const mandateCheck = await store.verifyWriteMandate(
+        subscription.organizerDirectoryId,
+        event.source,
+        actionId,
+      );
+      if (!mandateCheck.ok) {
+        return {
+          status: "mandate_revoked",
+          source: event.source,
+          reason: mandateCheck.reason,
+        };
+      }
       const pub = await store.publishPreAction(
         actionId,
         actorUserId ?? subscription.ownerUserId,
+        action.updated_at,
       );
       if (pub.published) {
         return {
@@ -213,13 +226,18 @@ async function handleLinkedActionUpdate(params: {
         reason: "published_action_change_review",
       };
     }
-    await store.markReferenceApplied({
+    const appliedStatus = await store.markReferenceApplied({
       sourceId: event.source,
       externalEventId: event.externalId,
       appliedSnapshot: incomingSnapshot,
       appliedContentHash: incomingContentHash,
       appliedRevision: event.sourceRevision ?? null,
     });
+    if (appliedStatus !== "applied") {
+      return appliedStatus === "suppressed"
+        ? { status: "suppressed", source: event.source, externalId: event.externalId, actionId }
+        : { status: "mandate_revoked", source: event.source, reason: appliedStatus };
+    }
     return {
       status: "unchanged",
       source: event.source,
@@ -300,13 +318,18 @@ async function handleLinkedActionUpdate(params: {
     };
   }
 
-  await store.markReferenceApplied({
+  const appliedStatus = await store.markReferenceApplied({
     sourceId: event.source,
     externalEventId: event.externalId,
     appliedSnapshot: incomingSnapshot,
     appliedContentHash: incomingContentHash,
     appliedRevision: event.sourceRevision ?? null,
   });
+  if (appliedStatus !== "applied") {
+    return appliedStatus === "suppressed"
+      ? { status: "suppressed", source: event.source, externalId: event.externalId, actionId }
+      : { status: "mandate_revoked", source: event.source, reason: appliedStatus };
+  }
 
   if (
     mode === "admin_sync_now" &&
@@ -500,13 +523,18 @@ async function processSingleExternalEvent(params: {
         reason: completeStatus,
       };
     }
-    await store.markReferenceApplied({
+    const appliedStatus = await store.markReferenceApplied({
       sourceId: event.source,
       externalEventId: event.externalId,
       appliedSnapshot: snapshot,
       appliedContentHash: contentHash,
       appliedRevision: event.sourceRevision ?? null,
     });
+    if (appliedStatus !== "applied") {
+      return appliedStatus === "suppressed"
+        ? { status: "suppressed", source: event.source, externalId: event.externalId, actionId: match.action.id }
+        : { status: "mandate_revoked", source: event.source, reason: appliedStatus };
+    }
     return {
       status: "linked",
       source: event.source,
@@ -558,13 +586,18 @@ async function processSingleExternalEvent(params: {
     };
   }
 
-  await store.markReferenceApplied({
+  const appliedStatus = await store.markReferenceApplied({
     sourceId: event.source,
     externalEventId: event.externalId,
     appliedSnapshot: snapshot,
     appliedContentHash: contentHash,
     appliedRevision: event.sourceRevision ?? null,
   });
+  if (appliedStatus !== "applied") {
+    return appliedStatus === "suppressed"
+      ? { status: "suppressed", source: event.source, externalId: event.externalId, actionId: created.actionId }
+      : { status: "mandate_revoked", source: event.source, reason: appliedStatus };
+  }
 
   if (mode === "admin_sync_now" && isExternalActionPublishAdmissible(event, now)) {
     const pub = await store.publishPreAction(

@@ -662,6 +662,26 @@ distante implicite.
 20261124000005_AFTER_HASH:  B1B574385B56EEB184C8D9AFFE6A013C2F6AB6AA6141584648369D5129D88E1
 ```
 
+## Exception de replay bornée — `20261126000006`
+
+La migration `20261126000006_harden_external_action_sync_mandates_and_snapshots.sql`
+est corrigée avant sa première application. Sur le projet Supabase lié
+`trktzkgujgpgsgkoyndn`, l'historique distant vérifié compte 526 migrations
+jusqu'à `20261126000005` (`20261126000006` est absente de l'historique distant).
+Sa version initiale contenait un `CREATE OR REPLACE FUNCTION
+public.list_external_action_sync_subscriptions()` modifiant le type de retour
+avant `DROP FUNCTION`, bloquant le replay PostgreSQL, ainsi que les anciennes
+surcharges RPC et une fenêtre concurrente sur `ON CONFLICT DO UPDATE` des
+propositions.
+
+Cette exception pré-application autorise uniquement la réécriture exacte
+ci-dessous et n'autorise ni `migration repair`, ni DDL manuelle, ni application
+distante implicite.
+
+```text
+20261126000006_AFTER_HASH:  7EF08A705EDE9BA2F0FBAAE72E0D02EE245DE156B53B20A6AAC349F5585F34AC
+```
+
 ## Interdiction
 
 Ne pas maintenir indéfiniment deux copies manuelles sans contrôle de synchronisation.
