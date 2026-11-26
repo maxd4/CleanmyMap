@@ -169,6 +169,16 @@ vi.mock("@/components/dashboard/dashboard-legacy-anchor", () => ({
   DashboardLegacyAnchor: () => null,
 }));
 
+vi.mock("@/components/dashboard/dashboard-collective-panel", () => ({
+  DashboardCollectivePanel: () =>
+    React.createElement("div", { "data-testid": "dashboard-collective-panel" }, "Indicateurs collectifs"),
+}));
+
+vi.mock("@/components/dashboard/dashboard-engagement-panel", () => ({
+  DashboardEngagementPanel: () =>
+    React.createElement("div", { "data-testid": "dashboard-engagement-panel" }, "Mon engagement"),
+}));
+
 import DashboardPage from "./page";
 
 function renderPage(tab?: string) {
@@ -288,5 +298,17 @@ describe("/dashboard page contract", () => {
     expect(markup).toContain('data-testid="profile-switcher"');
     expect(markup).toContain('data-granted-role="max"');
     expect(markup).toContain('data-active-role="admin"');
+  });
+
+  it("mounts collective panel only on tab=collective and engagement panel only on tab=engagement", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
+
+    const collectiveMarkup = renderToStaticMarkup(await renderPage("collective"));
+    expect(collectiveMarkup).toContain('data-testid="dashboard-collective-panel"');
+    expect(collectiveMarkup).not.toContain('data-testid="dashboard-engagement-panel"');
+
+    const engagementMarkup = renderToStaticMarkup(await renderPage("engagement"));
+    expect(engagementMarkup).toContain('data-testid="dashboard-engagement-panel"');
+    expect(engagementMarkup).not.toContain('data-testid="dashboard-collective-panel"');
   });
 });

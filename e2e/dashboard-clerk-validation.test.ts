@@ -286,7 +286,123 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
         await page.setViewportSize({ width: zoomProxyWidth, height: 900 });
         await openProtectedRoute(page, "/dashboard");
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-        expect(overflow, `zoom ${zoom}: horizontal overflow`).toBeLessThanOrEqual(1);
+        if (overflow > 1) {
+          expect(overflow, `zoom ${zoom}: horizontal overflow`).toBeLessThanOrEqual(1);
+        }
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("navigates across the 5 dashboard tabs, legacy anchors, /profil alias, history and notification bell", async ({ browser }) => {
+    test.setTimeout(180_000);
+    const context = await browser.newContext({ storageState: authFile });
+    const page = await context.newPage();
+
+    try {
+      await openProtectedRoute(page, "/dashboard");
+      const tabNav = page.locator('nav[aria-label="Navigation de Mon espace"]');
+      await expect(tabNav.locator("a")).toHaveCount(5);
+      await expect(tabNav.locator('a[aria-current="page"]')).toHaveAttribute("href", "/dashboard");
+
+      await tabNav.locator('a[href*="tab=collective"]').click();
+      await expect(page).toHaveURL(/\/dashboard\?tab=collective/);
+      await expect(tabNav.locator('a[aria-current="page"]')).toHaveAttribute("href", /tab=collective/);
+
+      await tabNav.locator('a[href*="tab=engagement"]').click();
+      await expect(page).toHaveURL(/\/dashboard\?tab=engagement/);
+      await expect(tabNav.locator('a[aria-current="page"]')).toHaveAttribute("href", /tab=engagement/);
+
+      await page.goBack();
+      await expect(page).toHaveURL(/\/dashboard\?tab=collective/);
+      await page.goForward();
+      await expect(page).toHaveURL(/\/dashboard\?tab=engagement/);
+
+      // Legacy anchors bridge
+      await openProtectedRoute(page, "/dashboard#notifications");
+      await expect(page).toHaveURL(/\/dashboard\?tab=notifications/);
+      await openProtectedRoute(page, "/dashboard#parrainage");
+      await expect(page).toHaveURL(/\/dashboard\?tab=engagement/);
+
+      // /profil alias
+      await openProtectedRoute(page, "/profil");
+      await expect(page.locator("h1")).toBeVisible();
+
+      // Header notification bell from /reports targets /dashboard?tab=notifications#notifications
+      await openProtectedRoute(page, "/reports");
+      const bell = page.locator('button[aria-label^="Notifications"]').first();
+      await expect(bell).toBeVisible();
+      await bell.click();
+      const openAllLink = page.locator('a[href="/dashboard?tab=notifications#notifications"]').first();
+      await expect(openAllLink).toBeVisible();
+      await openAllLink.click();
+      await expect(page).toHaveURL(/\/dashboard\?tab=notifications#notifications/);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("meets AA contrast (>= 4.5:1) on Dashboard text controls across display modes", async ({ browser }) => {
+    test.setTimeout(120_000);
+    const context = await browser.newContext({ storageState: authFile });
+    const page = await context.newPage();
+
+    try {
+      for (const mode of displayModes) {
+        await openProtectedRoute(page, "/dashboard");
+        await page.evaluate((m) => {
+          window.localStorage.setItem("cleanmymap.display_mode", m);
+          document.documentElement.setAttribute("data-display-mode", m);
+        }, mode);
+        await page.reload({ waitUntil: "domcontentloaded" });
+        await waitForClerkSession(page);
+
+        const contrastFailures = await page.evaluate(() => {
+          const parseRgb = (value: string) => {
+            const match = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+            if (!match) return null;
+            return { r: Number(match[1]), g: Number(match[2]), b: Number(match[3]), a: match[4] ? Number(match[4]) : 1 };
+          };
+          const lum = (c: { r: number; g: number; b: number }) => {
+            const ch = [c.r, c.g, c.b].map((v) => {
+              const s = v / 255;
+              return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+            });
+            return 0.2126 * ch[0]! + 0.7152 * ch[1]! + 0.0722 * ch[2]!;
+          };
+          const ratio = (fg: { r: number; g: number; b: number }, bg: { r: number; g: number; b: number }) => {
+            const l1 = lum(fg);
+            const l2 = lum(bg);
+            return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+          };
+          const effectiveBg = (el: HTMLElement) => {
+            let cur: HTMLElement | null = el;
+            while (cur) {
+              const parsed = parseRgb(getComputedStyle(cur).backgroundColor);
+              if (parsed && parsed.a > 0.85) return parsed;
+              cur = cur.parentElement;
+            }
+            return { r: 255, g: 255, b: 255, a: 1 };
+          };
+          const targets = Array.from(document.querySelectorAll<HTMLElement>("main h1, main h2, main nav a"));
+          return targets
+            .filter((el) => el.getBoundingClientRect().height > 0)
+            .map((el) => {
+              const style = getComputedStyle(el);
+              const fg = parseRgb(style.color);
+              const bg = effectiveBg(el);
+              if (!fg) return null;
+              const cr = ratio(fg, bg);
+              const fontSize = parseFloat(style.fontSize);
+              const isLarge = fontSize >= 24 || (fontSize >= 18.66 && Number(style.fontWeight) >= 700);
+              const min = isLarge ? 3.0 : 4.5;
+              return cr < min ? { text: el.textContent?.trim().slice(0, 40), cr: Number(cr.toFixed(2)), min } : null;
+            })
+            .filter(Boolean);
+        });
+
+        expect(contrastFailures, `Contrast failures in mode ${mode}: ${JSON.stringify(contrastFailures)}`).toEqual([]);
       }
     } finally {
       await context.close();
