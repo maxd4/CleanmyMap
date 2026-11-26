@@ -93,3 +93,31 @@ npm run test -w apps/web -- <test-file-or-pattern>
 npm run typecheck -w apps/web
 npm run lint -w apps/web
 ```
+
+## Découverte des transitions et points d'entrée
+
+Chemins API relatifs à `src/app/api/actions/`. Les tests cités orientent la
+validation ; leur présence ne constitue pas une preuve d'exécution.
+
+| Besoin | Entrée et modules | Tests repères |
+|---|---|---|
+| Étapes du brouillon | `action-workflow.ts` (orchestration locale, non persistance métier) | `action-workflow.test.ts` |
+| Publication | `[actionId]/publish/route.ts`, `publish-pre-action.ts`, `publication.ts` | `[actionId]/publish/route.test.ts` |
+| Revue associative | `association-action-review.ts` ; suivre ses RPC et consommateurs | `association-action-review.test.ts` |
+| Annulation | `[actionId]/cancel/route.ts`, `cancellation.ts`, `cancellation-contract.ts`, `temporal.ts` | `[actionId]/cancel/route.test.ts`, `cancellation.test.ts`, `temporal.test.ts` |
+
+Le handler de publication résout l'accès avec `requireActionRequestAccess`,
+puis `canManageAction` et les organisateurs canoniques. Le prédicat
+`canPublishPreAction` n'est pas un garde d'autorisation.
+`publishPreActionCanonical` est partagé avec la synchronisation externe :
+suivre son callback de persistance, les refus terminaux, les formalités,
+la revue associative, le versionnement de trajet et les notifications.
+Une réponse HTTP 202 `pending_review` n'est pas une publication publique.
+
+L'annulation HTTP exige `requireAdminAccess` et une confirmation explicite.
+`cancelFutureAction` vérifie l'éligibilité temporelle, retourne une
+annulation déjà persistée lors d'un retry ou d'une course convergente,
+et notifie après une nouvelle écriture. Le handler rafraîchit ensuite
+les dépendants impact/progression et écrit l'audit de modération.
+Vérifier les contraintes/triggers/RPC, les autres voies et les reprises :
+ces références ne prouvent pas une transaction globale des effets externes.

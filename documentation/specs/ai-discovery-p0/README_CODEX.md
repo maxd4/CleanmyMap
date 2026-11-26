@@ -60,7 +60,7 @@ relation/fonction, signatures et triggers utilisateur pour public/private.
 Compléter après vérification des schémas applicatifs réels, types/enums,
 ACL de colonnes/schémas, héritage, vues et dépendances pertinentes. Les ACL
 déclarées ne prouvent pas les droits effectifs. Valider sur la lane
-éphémère autorisée ; aucune exécution SQL ici. Réutiliser les mécanismes
+éphémère autorisée ; une introspection distante en lecture seule est documentée ci-dessous. Réutiliser les mécanismes
 existants de collecte de preuve et historique. Catalogue Git rejoué et
 catalogue lié observé restent distincts. Ne pas démarrer Docker/WSL local,
 ne pas modifier Supabase. Ne publier ni données, corps de fonctions,
@@ -131,5 +131,44 @@ Aucun FULL, déploiement ou db push demandé.
 
 Preuves ChatGPT : arborescence non tronquée, chemins vérifiés, lecture des
 modules cités, 7 assertions JS isolées sur le sélecteur.
-Tests Node/CLI complet, SQL, gardes documentaires, hooks locaux et benchmark :
+Tests Node/CLI complet, replay SQL Git, gardes documentaires, hooks locaux et benchmark :
 NOT_RUN. Les candidats ne sont pas intégrés ; gains de quotas non prouvés.
+
+## Preuve complémentaire du 26 novembre 2026 (AUDIT)
+
+Exécution de `candidates/schema-catalog.READ_ONLY.sql` sur le PostgreSQL 17
+du projet lié, avec une enveloppe SELECT groupant par catégorie et
+calculant count(*) et sum(octet_length(metadata::text)). Aucune ligne métier,
+valeur de séquence, définition de fonction ni métadonnée individuelle
+n'a été exportée. Aucune écriture ni modification de privilèges.
+
+| Catégorie | Enregistrements |
+|---|---:|
+| Colonnes | 2257 |
+| Contraintes | 1346 |
+| Fonctions | 437 |
+| ACL fonctions | 1017 |
+| Index | 701 |
+| Policies | 186 |
+| Relations | 202 |
+| ACL relations | 3555 |
+| Triggers | 181 |
+| Total | 9882 |
+
+Comparaison des versions de migrations à 9f18eb3ac3d8209202f0bf520435980f37cb5e52 :
+528 fichiers SQL Git et 528 versions distantes, aucun écart d'ensemble.
+L'égalité des versions ne prouve pas l'identité effective du schéma ni
+l'exécution de pgTAP. Le catalogue couvre public/private et reste candidat ;
+le replay Git, la provenance par objet, les ACL complémentaires et les
+policies de Storage restent à traiter. Les autres schémas de plateforme
+ne doivent pas être importés aveuglément.
+
+Enrichissements CURRENT supplémentaires : README Actions et SPOGOMI
+(points d'entrée, transitions, consommateurs HTTP et tests repères).
+Le README Gamification contient déjà une description de ses propriétaires
+et de ses contrats ; ne pas dupliquer ce contenu. Les autres cycles et
+owners restent à compléter. Aucun changement fonctionnel.
+
+La gouvernance renforcée par f4f426b1385628e7e7b22d9a6fa6768b7896882c reste intégralement applicable :
+la réduction de contexte ne peut réduire ni la portée d'analyse des causes,
+ni les preuves d'intégration, ni l'auto-revue contradictoire.
