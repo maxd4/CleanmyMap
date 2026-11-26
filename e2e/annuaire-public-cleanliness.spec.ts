@@ -64,11 +64,12 @@ test("desktop: geographic WebGL renders and exposes camera controls when availab
 test("mobile: filters, progressive navigation, zoom, sources and roving tab focus work", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/sections/annuaire");
-  await page.waitForLoadState("networkidle");
   await dismissCookies(page);
 
   const networkTab = page.getByRole("tab", { name: "Carte & réseau" });
   const organizationTab = page.getByRole("tab", { name: "Services publics" });
+  await expect(networkTab).toBeVisible();
+  await expect(organizationTab).toBeVisible();
   await networkTab.click();
   await expect(networkTab).toHaveAttribute("tabindex", "0");
   await expect(organizationTab).toHaveAttribute("tabindex", "-1");

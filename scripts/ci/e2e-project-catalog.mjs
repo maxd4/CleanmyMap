@@ -17,6 +17,7 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
       "apps/web/src/app/api/funding/",
       "apps/web/src/components/sections/rubriques/funding-section",
       "apps/web/src/components/sections/rubriques/use-funding-public-summary",
+      "apps/web/src/components/sections/rubriques/open-data-",
     ],
   },
   {
