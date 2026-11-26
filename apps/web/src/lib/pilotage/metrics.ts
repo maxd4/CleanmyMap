@@ -14,6 +14,7 @@ type PilotageWindowMetrics = {
   impactVolumeKg: number;
   wasteKnownActions: number;
   wasteCoverageRate: number;
+  volunteersKnownActions?: number;
   mobilizationCount: number;
   totalDurationMinutes: number;
   qualityScore: number;
@@ -172,6 +173,7 @@ function computeWindowMetrics(
     0,
   );
   const wasteKnownActions = impactKpis.filter((impact) => impact.wasteKnown).length;
+  const volunteersKnownActions = impactKpis.filter((impact) => impact.volunteersKnown).length;
   const mobilizationCount = approvedActionsRecords.reduce(
     (acc, record) => acc + computeActionImpactKpis(record).volunteers,
     0,
@@ -223,6 +225,7 @@ function computeWindowMetrics(
     wasteKnownActions,
     wasteCoverageRate:
       approvedActions > 0 ? round1((wasteKnownActions / approvedActions) * 100) : 0,
+    volunteersKnownActions,
     mobilizationCount,
     totalDurationMinutes,
     qualityScore: round1(qualityScore),

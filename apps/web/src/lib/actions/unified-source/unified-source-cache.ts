@@ -27,6 +27,18 @@ export {
 } from "./cache-contract";
 
 
+class StrictPublicActionsUnavailableError extends Error {
+  constructor(
+    public readonly result: {
+      items: Awaited<ReturnType<typeof fetchUnifiedActionContracts>>["items"];
+      isTruncated: boolean;
+      sourceHealth: UnifiedSourceHealth;
+    },
+  ) {
+    super("Strict public completed actions corpus unavailable");
+  }
+}
+
 export async function fetchCachedUnifiedActionContracts(
   params: CachedUnifiedActionContractsParams,
   options: UnifiedActionContractsCacheOptions = {},
@@ -38,7 +50,14 @@ export async function fetchCachedUnifiedActionContracts(
   const cached = unstable_cache(
     async () => {
       const supabase = getSupabaseServerClient(true);
-      return fetchUnifiedActionContracts(supabase, params);
+      const result = await fetchUnifiedActionContracts(supabase, params);
+      if (
+        params.requirePublicCompletedActions &&
+        result.sourceHealth.failedSources.includes("actions")
+      ) {
+        throw new StrictPublicActionsUnavailableError(result);
+      }
+      return result;
     },
     ["unified-action-contracts", buildUnifiedActionContractsCacheKey(params)],
     {
@@ -48,5 +67,12 @@ export async function fetchCachedUnifiedActionContracts(
     },
   );
 
-  return cached();
+  try {
+    return await cached();
+  } catch (error) {
+    if (error instanceof StrictPublicActionsUnavailableError) {
+      return error.result;
+    }
+    throw error;
+  }
 }

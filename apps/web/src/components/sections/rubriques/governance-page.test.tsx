@@ -50,6 +50,11 @@ vi.mock("@/components/account/role-profile-switcher", () => ({
 vi.mock("@/components/pilotage/thirty-seconds-summary", () => ({
   ThirtySecondsSummary: ({ locale }: { locale: string }) =>
     React.createElement("div", { "data-testid": "thirty-seconds", "data-locale": locale }),
+  localizeSummaryText: (text: string | undefined, locale: string) => {
+    if (locale === "en" && text === "Maintenir la couverture") return "Maintain coverage";
+    if (locale === "en" && text === "Actions régulières") return "Regular actions";
+    return text;
+  },
 }));
 
 import { GovernancePage } from "./governance-page";
@@ -75,15 +80,24 @@ const validOverview = {
     {
       area: "Paris 10e",
       normalizedScore: 7.4,
-      urgency: "medium",
+      urgency: "critique",
       currentActions: 5,
       currentWasteCoverageRate: 80,
       currentKg: 42,
-      justification: "Suivi actif",
-      recommendedAction: "Maintenir",
+      justification: "Zone stable, suivi de fond recommande.",
+      recommendedAction: "Maintenir la surveillance mensuelle et corriger les signaux de qualite faibles.",
     },
   ],
-  methods: [],
+  methods: [
+    {
+      id: "impact-volume",
+      kpi: "Impact terrain (kg)",
+      formula: "Somme fr",
+      source: "Source fr",
+      recalc: "Recalc fr",
+      limits: "Limites fr",
+    },
+  ],
   summary: {
     kpis: [],
     alert: { severity: "low", title: "RAS", detail: "Ras" },
@@ -153,10 +167,23 @@ describe("GovernancePage", () => {
     const enMarkup = renderToStaticMarkup(await GovernancePage({ searchParams: {} }));
     expect(enMarkup).toContain("Governance");
     expect(enMarkup).toContain("Decision support on completed public actions.");
+    expect(enMarkup).toContain("Maintain coverage");
+    expect(enMarkup).toContain("Regular actions");
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({
       periodDays: 30,
       limit: 1500,
       publishedCompletedOnly: true,
     });
+
+    mocks.getServerLocale.mockResolvedValueOnce("en");
+    const enZonesMarkup = renderToStaticMarkup(await GovernancePage({ searchParams: { tab: "zones" } }));
+    expect(enZonesMarkup).toContain("critical");
+    expect(enZonesMarkup).toContain("Stable area, ongoing background monitoring recommended.");
+    expect(enZonesMarkup).toContain("Maintain monthly monitoring and fix low data-quality signals.");
+
+    mocks.getServerLocale.mockResolvedValueOnce("en");
+    const enMethodsMarkup = renderToStaticMarkup(await GovernancePage({ searchParams: { tab: "methods" } }));
+    expect(enMethodsMarkup).toContain("Field impact (kg)");
+    expect(enMethodsMarkup).not.toContain("Somme fr");
   });
 });

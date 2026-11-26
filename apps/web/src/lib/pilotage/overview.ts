@@ -123,6 +123,12 @@ function buildPilotageOverviewCacheKey(
   ].join("|");
 }
 
+class StrictPublicOverviewUnavailableError extends Error {
+  constructor(public readonly overview: PilotageOverview) {
+    super("Strict public completed overview unavailable");
+  }
+}
+
 export async function loadPilotageOverview(
   params: LoadPilotageOverviewParams,
 ): Promise<PilotageOverview> {
@@ -149,7 +155,7 @@ export async function loadPilotageOverview(
         actionIds,
       });
 
-      return buildPilotageOverviewFromContracts({
+      const overview = buildPilotageOverviewFromContracts({
         contracts: contractsResult.items,
         periodDays: params.periodDays,
         moderationAvailability: "unavailable",
@@ -158,6 +164,15 @@ export async function loadPilotageOverview(
           sourceHealth: contractsResult.sourceHealth,
         },
       });
+
+      if (
+        params.publishedCompletedOnly &&
+        contractsResult.sourceHealth.failedSources.includes("actions")
+      ) {
+        throw new StrictPublicOverviewUnavailableError(overview);
+      }
+
+      return overview;
     },
     ["pilotage-overview", buildPilotageOverviewCacheKey(params, actionIds)],
     {
@@ -166,5 +181,12 @@ export async function loadPilotageOverview(
     },
   );
 
-  return cached();
+  try {
+    return await cached();
+  } catch (error) {
+    if (error instanceof StrictPublicOverviewUnavailableError) {
+      return error.overview;
+    }
+    throw error;
+  }
 }

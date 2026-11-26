@@ -35,6 +35,7 @@ const overview = {
     current: {
       approvedActions: 12,
       impactVolumeKg: 120,
+      volunteersKnownActions: 12,
       mobilizationCount: 18,
       totalDurationMinutes: 600,
       wasteKnownActions: 12,
@@ -250,5 +251,64 @@ describe("/sponsor-portal access boundary", () => {
     expect(markup).toContain("Decision portal");
     expect(markup).toContain("Estimated street cleaning value");
     expect(markup).toContain("Declared participations");
+  });
+
+  it("distinguishes unknown volunteers, observed zero, empty corpus, and partial coverage", async () => {
+    mocks.loadPilotageOverview.mockResolvedValueOnce({
+      ...overview,
+      comparison: {
+        current: {
+          ...overview.comparison.current,
+          approvedActions: 5,
+          volunteersKnownActions: 0,
+          mobilizationCount: 0,
+        },
+      },
+    });
+    const unknownMarkup = renderToStaticMarkup(await SponsorPortalPage());
+    expect(unknownMarkup).toContain("Non renseignées");
+    expect(unknownMarkup).toContain("0/5 actions avec effectif renseigné.");
+
+    mocks.loadPilotageOverview.mockResolvedValueOnce({
+      ...overview,
+      comparison: {
+        current: {
+          ...overview.comparison.current,
+          approvedActions: 5,
+          volunteersKnownActions: 5,
+          mobilizationCount: 0,
+        },
+      },
+    });
+    const zeroMarkup = renderToStaticMarkup(await SponsorPortalPage());
+    expect(zeroMarkup).toContain("Somme déclarée (5/5 actions), pas un nombre de personnes uniques.");
+
+    mocks.loadPilotageOverview.mockResolvedValueOnce({
+      ...overview,
+      comparison: {
+        current: {
+          ...overview.comparison.current,
+          approvedActions: 0,
+          volunteersKnownActions: 0,
+          mobilizationCount: 0,
+        },
+      },
+    });
+    const emptyMarkup = renderToStaticMarkup(await SponsorPortalPage());
+    expect(emptyMarkup).toContain("Indisponible (aucune action)");
+
+    mocks.loadPilotageOverview.mockResolvedValueOnce({
+      ...overview,
+      comparison: {
+        current: {
+          ...overview.comparison.current,
+          approvedActions: 5,
+          volunteersKnownActions: 3,
+          mobilizationCount: 14,
+        },
+      },
+    });
+    const partialMarkup = renderToStaticMarkup(await SponsorPortalPage());
+    expect(partialMarkup).toContain("Couverture partielle (3/5 actions)");
   });
 });

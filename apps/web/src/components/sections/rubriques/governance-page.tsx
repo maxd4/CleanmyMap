@@ -12,7 +12,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { SystemStateRetryButton } from "@/components/ui/system-state-retry-button";
 import { RoleProfileSwitcher } from "@/components/account/role-profile-switcher";
-import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
+import { ThirtySecondsSummary, localizeSummaryText } from "@/components/pilotage/thirty-seconds-summary";
 import { PublishedDecisionScope, PublishedDecisionZones, PublishedDecisionMethods } from "@/components/pilotage/published-decision-panels";
 import { DecisionPageNavigation } from "@/components/pilotage/decision-page-navigation";
 
@@ -61,7 +61,7 @@ export async function GovernancePage({ searchParams }: { searchParams: Record<st
       <DecisionPageNavigation route="/sections/elus" activeTab={tab} tabs={tabs} locale={locale} />
       <p className="text-sm cmm-text-secondary">{isEn ? "Platform-wide reading of published data, without assigning an administrative territory to your account." : "Lecture globale des données publiées, sans attribution d’un territoire administratif à votre compte."}</p>
       {actionsUnavailable ? <CmmCard className="space-y-3"><p role="status" className="text-sm cmm-text-secondary">{isEn ? "Governance data temporarily unavailable." : "Données momentanément indisponibles."}</p><SystemStateRetryButton label={isEn ? "Retry" : "Réessayer"} /></CmmCard> : <PublishedDecisionScope overview={overview} locale={locale} />}
-      {tab === "summary" && !actionsUnavailable && <><ThirtySecondsSummary locale={locale} kpis={overview.summary.kpis} alert={overview.summary.alert} /><CmmCard className="space-y-2"><h2 className="font-bold cmm-text-primary">{isEn ? "Recommendation" : "Recommandation"}</h2><p className="cmm-text-primary">{overview.summary.recommendedAction.label}</p><p className="text-sm cmm-text-secondary">{overview.summary.recommendedAction.reason}</p></CmmCard></>}
+      {tab === "summary" && !actionsUnavailable && <><ThirtySecondsSummary locale={locale} kpis={overview.summary.kpis} alert={overview.summary.alert} /><CmmCard className="space-y-2"><h2 className="font-bold cmm-text-primary">{isEn ? "Recommendation" : "Recommandation"}</h2><p className="cmm-text-primary">{localizeSummaryText(overview.summary.recommendedAction.label, locale)}</p><p className="text-sm cmm-text-secondary">{localizeSummaryText(overview.summary.recommendedAction.reason, locale)}</p></CmmCard></>}
       {tab === "zones" && !actionsUnavailable && <PublishedDecisionZones zones={overview.zones} locale={locale} />}
       {tab === "methods" && <PublishedDecisionMethods methods={overview?.methods ?? []} locale={locale} />}
       <div className="flex flex-wrap gap-2"><CmmButton href="/sponsor-portal" tone="secondary">{isEn ? "Decision portal" : "Portail décideur"}</CmmButton><CmmButton href="/reports" tone="secondary">{isEn ? "Reports" : "Rapports"}</CmmButton></div>
