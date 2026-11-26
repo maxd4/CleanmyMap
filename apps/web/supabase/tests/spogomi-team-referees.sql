@@ -122,9 +122,9 @@ begin
   end loop;
 
   foreach v_ref_unhab in array array[v_ref_1, v_ref_2, v_ref_3, v_participant_clerk, v_casual_participant_clerk] loop
-    perform public.spogomi_create_referee_application(v_event_id, v_world_cup_id, v_ref_unhab);
+    v_res := public.spogomi_create_referee_application(v_event_id, v_world_cup_id, v_ref_unhab);
+    v_app_id := (v_res->>'applicationId')::uuid;
     v_res := public.spogomi_submit_referee_quiz(v_event_id, v_world_cup_id, v_ref_unhab, v_private_def->>'quizVersion', v_answers);
-    v_app_id := (v_res->'application'->>'id')::uuid;
     perform public.spogomi_confirm_referee_practical(v_app_id, v_org_clerk, 'practical-v1', '{"verified":true}'::jsonb);
     perform public.spogomi_decide_referee_application(v_app_id, v_org_clerk, 'approve', 'habilitated');
     insert into public.spogomi_event_reviewers (event_id, clerk_id, role, assigned_by_clerk_id)
@@ -138,9 +138,9 @@ begin
   for v_question in select value from jsonb_array_elements(v_private_casual->'questions') loop
     v_answers := v_answers || jsonb_build_object(v_question->>'id', v_question->>'correctOptionId');
   end loop;
-  perform public.spogomi_create_referee_application(v_event_id, v_casual_id, v_ref_casual);
+  v_res := public.spogomi_create_referee_application(v_event_id, v_casual_id, v_ref_casual);
+  v_app_id := (v_res->>'applicationId')::uuid;
   v_res := public.spogomi_submit_referee_quiz(v_event_id, v_casual_id, v_ref_casual, v_private_casual->>'quizVersion', v_answers);
-  v_app_id := (v_res->'application'->>'id')::uuid;
   perform public.spogomi_confirm_referee_practical(v_app_id, v_org_clerk, 'practical-casual-v1', '{"verified":true}'::jsonb);
   perform public.spogomi_decide_referee_application(v_app_id, v_org_clerk, 'approve', 'habilitated casual');
   insert into public.spogomi_event_reviewers (event_id, clerk_id, role, assigned_by_clerk_id)
@@ -288,15 +288,15 @@ begin
   end if;
 
   -- Requalify v_ref_2 on world_cup reg-wc-v2 -> status returns to assigned
-  perform public.spogomi_create_referee_application(v_event_id, v_world_cup_id, v_ref_2);
-  v_step := 'QUALIFY_WC';
+  v_res := public.spogomi_create_referee_application(v_event_id, v_world_cup_id, v_ref_2);
+  v_app_id := (v_res->>'applicationId')::uuid;
+  v_step := 'REQUALIFY';
   v_private_def := public.spogomi_referee_quiz_definition_private(v_event_id, v_world_cup_id);
   v_answers := '{}'::jsonb;
   for v_question in select value from jsonb_array_elements(v_private_def->'questions') loop
     v_answers := v_answers || jsonb_build_object(v_question->>'id', v_question->>'correctOptionId');
   end loop;
   v_res := public.spogomi_submit_referee_quiz(v_event_id, v_world_cup_id, v_ref_2, v_private_def->>'quizVersion', v_answers);
-  v_app_id := (v_res->'application'->>'id')::uuid;
   perform public.spogomi_confirm_referee_practical(v_app_id, v_org_clerk, 'practical-wc-v2', '{"verified":true}'::jsonb);
   perform public.spogomi_decide_referee_application(v_app_id, v_org_clerk, 'approve', 'requalified wc-v2');
   if public.spogomi_team_referee_status(v_event_id, v_world_cup_id, v_team_wc_2) <> 'assigned' then
