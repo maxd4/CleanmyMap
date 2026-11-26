@@ -132,6 +132,7 @@ begin
   end loop;
 
   -- Also qualify v_ref_casual on Casual division (distinct reg-casual-v1)
+  v_step := 'CASUAL_QUALIFY';
   v_private_casual := public.spogomi_referee_quiz_definition_private(v_event_id, v_casual_id);
   v_answers := '{}'::jsonb;
   for v_question in select value from jsonb_array_elements(v_private_casual->'questions') loop
@@ -146,6 +147,7 @@ begin
   values (v_event_id, v_ref_casual, 'referee', v_org_clerk)
   on conflict do nothing;
 
+  v_step := 'PARTICIPANTS';
   for v_idx in 1..3 loop
     insert into public.spogomi_participants (id, event_id, division_id, team_id, display_name, registration_status, account_link_status, clerk_id)
     values (
@@ -201,6 +203,7 @@ begin
   end;
 
   -- 4. Assign 1:1, enforce uniqueness within edition, replace, and revoke
+  v_step := 'ASSIGN_1_1';
   if public.spogomi_team_referee_status(v_event_id, v_world_cup_id, v_team_wc_1) <> 'to_assign' then
     raise exception 'expected initial status to_assign';
   end if;
@@ -320,6 +323,7 @@ begin
    where id = v_world_cup_id;
 
   -- 7. Revocation & reviewer revocation withdraw readiness without altering sporting roster
+  v_step := 'REVOKE';
   perform public.spogomi_revoke_team_referee(v_event_id, v_world_cup_id, v_team_wc_1, v_org_clerk, 'absent');
   if public.spogomi_team_referee_status(v_event_id, v_world_cup_id, v_team_wc_1) <> 'to_assign' then
     raise exception 'expected to_assign after revocation';
@@ -357,7 +361,22 @@ begin
   exception when sqlstate '23514' then null;
   end;
 exception when others then
-  raise notice 'TERRITORIAL_PHASE=% SQLSTATE=%', v_step, sqlstate;
+  if sqlstate = '23514' then
+    raise exception using errcode = case v_step
+      when 'INIT' then 'P0010'
+      when 'SETUP' then 'P0011'
+      when 'QUALIFY_WC' then 'P0012'
+      when 'CASUAL_QUALIFY' then 'P0013'
+      when 'PARTICIPANTS' then 'P0014'
+      when 'REJECTS' then 'P0015'
+      when 'ASSIGN_1_1' then 'P0016'
+      when 'READINESS' then 'P0017'
+      when 'REQUALIFY' then 'P0018'
+      when 'REVOKE' then 'P0019'
+      when 'ROUTE_MEDIA' then 'P0020'
+      else 'P0099'
+    end, message = 'STEP=' || v_step || ' ERR=' || sqlerrm;
+  end if;
   raise;
 end;
 $$;
