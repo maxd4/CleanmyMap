@@ -113,6 +113,7 @@ function buildPilotageOverviewCacheKey(
   return [
     `period:${params.periodDays}`,
     `limit:${params.limit ?? 1500}`,
+    `publishedCompletedOnly:${params.publishedCompletedOnly === true}`,
     `types:${types}`,
     `scope:${buildPilotageScopeCacheKey(params.scope, actionIds)}`,
   ].join("|");
@@ -121,6 +122,7 @@ function buildPilotageOverviewCacheKey(
 export async function loadPilotageOverview(
   params: LoadPilotageOverviewParams,
 ): Promise<PilotageOverview> {
+  if (params.scope && params.publishedCompletedOnly) throw new Error("Incompatible overview scopes");
   const actionIds = params.scope
     ? await loadOrganizedActionIds(params.scope.userId)
     : null;
@@ -138,7 +140,8 @@ export async function loadPilotageOverview(
         status: "approved",
         floorDate,
         requireCoordinates: false,
-        types: (params.scope ? ["action"] : params.types ?? null) as ActionEntityType[] | null,
+        types: (params.scope || params.publishedCompletedOnly ? ["action"] : params.types ?? null) as ActionEntityType[] | null,
+        ...(params.publishedCompletedOnly ? { requirePublicCompletedActions: true } : {}),
         actionIds,
       });
 

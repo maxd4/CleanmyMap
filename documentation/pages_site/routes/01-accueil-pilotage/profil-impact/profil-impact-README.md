@@ -1,4 +1,4 @@
-# Profil impact
+﻿# Profil impact
 
 ## Fiche canonique
 
@@ -11,7 +11,7 @@
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
 - **Objectif utilisateur principal** : Consulter sa progression personnelle, ses badges, son rang et sa carte d'impact personnelle.
 - **Action principale attendue** : Télécharger ou partager le PNG de sa carte personnelle, sans exposer l'URL protégée.
-- **Point d’entrée utilisateur** : `/profil/[profile]` → bloc « Progression & badges » → « Voir ma carte d’impact ».
+- **Point d’entrée utilisateur** : Mon espace (Aujourd'hui et Engagement), profil détaillé (Progression).
 - **Navigation** : surface secondaire contextualisée, volontairement absente du ruban principal.
 - **Règle de partage** : Le partage porte uniquement sur le fichier image PNG généré depuis la carte personnelle. Il ne crée pas de profil public, ne partage pas l'URL protégée `/profil/impact` et ne produit aucune donnée serveur ou token public.
 - **Palette attendue** : red / rouge impact
@@ -60,3 +60,7 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+
+## Contrat cible de la refonte
+
+Accès depuis Mon espace et le profil détaillé. Carte PNG et historique personnel, export/partage de fichier seulement, aucun résultat artificiel si donnée manquante. Le propriétaire reste le compte courant ; cache client par userId. Conserver le proxy eau documenté et la carte verte, harmoniser les surfaces de page avec le bloc. CTA vers le dossier.

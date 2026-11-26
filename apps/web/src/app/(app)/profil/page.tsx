@@ -11,6 +11,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ProfilRootPage() {
-  return <DashboardPage />;
+export default function ProfilRootPage({ searchParams }: { searchParams: Promise<{ tab?: string | string[] }> }) {
+  return <DashboardPage searchParams={searchParams} />;
 }

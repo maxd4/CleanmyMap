@@ -1,18 +1,15 @@
 import { notFound, redirect } from "next/navigation";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { AccountEvolutionCta } from "@/components/account/account-evolution-cta";
-import { AccountSettingsSection } from "@/components/account/account-settings-section";
 import { RoleProfileSwitcher } from "@/components/account/role-profile-switcher";
+import { ProfileDetailNavigation } from "@/components/account/profile-detail-navigation";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import {
-  getProfileLabel,
-  getProfileSubtitle,
-  isAppProfile,
-  type AppProfile,
-} from "@/lib/profiles";
-import { SectionShell } from "@/components/sections/rubriques/shared";
+import { getProfileLabel, getProfileSubtitle, isAppProfile, type AppProfile } from "@/lib/profiles";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout } from "@/components/ui/cmm-section";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/InfiniteBadgesPanel";
@@ -22,138 +19,62 @@ import { MilestonesPanel } from "@/components/gamification/milestones-panel";
 import { ProfileSpogomiSummary } from "@/components/gamification/profile-spogomi-summary";
 import { TerritorialLegendsPanel } from "@/components/sections/rubriques/gamification/territorial-legends-panel";
 import type { UserIdentity } from "@/lib/authz-identity";
-import { loadProfilePageData, type ProfilePageData } from "./profile-page-data";
+import { resolveProfileDetailTab, profileDetailTabHref } from "@/lib/account/profile-tabs";
+import { loadProfileProgression, loadProfileBadges, loadProfileReferrals } from "./profile-page-data";
 
-type ProfilPageProps = {
-  params: Promise<{ profile: string }>;
-};
+type ProfilPageProps = { params: Promise<{ profile: string }>; searchParams?: Promise<{ tab?: string | string[] }> };
 
-type ProfilePageContentProps = ProfilePageData & {
-  normalized: AppProfile;
-  profileLabel: string;
-  profileSubtitle: string;
-  grantedRole: UserIdentity["role"];
-  activeProfile: UserIdentity["activeRole"];
-  referralInviteHref: string;
-};
-
-function ProfilePageContent({
-  normalized,
-  profileLabel,
-  profileSubtitle,
-  grantedRole,
-  activeProfile,
-  gamification,
-  infiniteTotals,
-  referralSummary,
-  referralLineageView,
-  referralLineageError,
-  referralInviteHref,
-  spogomiCollection,
-  spogomiVolunteerSummary,
-}: ProfilePageContentProps) {
-  return (
-    <SectionShell
-      id="profile"
-      title={profileLabel}
-      subtitle={`${profileSubtitle}. Gérez votre compte et accédez à vos outils privilégiés.`}
-    >
-      <div className="space-y-12 pt-8">
-        <AccountEvolutionCta currentRole={grantedRole} />
-
-        <FamilyRubriqueCard withTopBar={true} topBarContent="Accès Prioritaires" className="p-12">
-          <div className="relative z-10">
-            <RolePrimaryActions profile={normalized} title="" tone="warm" />
-          </div>
-        </FamilyRubriqueCard>
-
-        <FamilyRubriqueCard withTopBar={true} topBarContent="Progression & badges" className="p-12">
-          <ProfileGamificationSummary summary={gamification?.summary} />
-          <TerritorialLegendsPanel />
-          <ProfileSpogomiSummary collection={spogomiCollection} volunteerSummary={spogomiVolunteerSummary} />
-          <InfiniteBadgesPanel totals={infiniteTotals} />
-          <MilestonesPanel milestones={infiniteTotals.milestones} />
-        </FamilyRubriqueCard>
-
-        <FamilyRubriqueCard
-          id="parrainage"
-          withTopBar={true}
-          topBarContent="Parrainage"
-          className="p-12 scroll-mt-28"
-        >
-          <ReferralProfileTabs
-            summary={referralSummary}
-            lineageView={referralLineageView}
-            lineageError={referralLineageError}
-            emptyCtaHref={referralInviteHref}
-          />
-        </FamilyRubriqueCard>
-
-        <RoleProfileSwitcher
-          locale="fr"
-          grantedRole={grantedRole}
-          activeRole={activeProfile}
-          title="Rôles actifs autorisés"
-          className="p-12"
-        />
-
-        <FamilyRubriqueCard withTopBar={true} topBarContent="Configuration" className="p-12">
-          <AccountSettingsSection compact />
-        </FamilyRubriqueCard>
-      </div>
-    </SectionShell>
-  );
+function Unavailable({ message }: { message: string }) {
+  return <CmmCard><p role="status" className="cmm-text-secondary">{message}</p></CmmCard>;
 }
-
-export default async function ProfilPage({ params }: ProfilPageProps) {
+async function Progression({ userId, profile }: { userId: string; profile: AppProfile }) {
+  const gamification = await loadProfileProgression(userId);
+  return <div className="space-y-4">
+    {gamification ? <ProfileGamificationSummary summary={gamification.summary} /> : <Unavailable message="Progression momentanément indisponible." />}
+    <div className="grid gap-3 md:grid-cols-2">
+      <CmmCard className="space-y-3"><h2 className="font-bold cmm-text-primary">Mon impact personnel</h2><p className="text-sm cmm-text-secondary">Carte exportable et missions validées.</p><CmmButton href="/profil/impact" tone="primary">Voir ma carte</CmmButton></CmmCard>
+      <CmmCard className="space-y-3"><h2 className="font-bold cmm-text-primary">Mon dossier d’engagement</h2><p className="text-sm cmm-text-secondary">Participations confirmées, dossier et attestations.</p><CmmButton href="/profil/engagement" tone="secondary">Ouvrir le dossier</CmmButton></CmmCard>
+    </div>
+    <RolePrimaryActions profile={profile} title="Accès prioritaires" tone="light" />
+  </div>;
+}
+async function Badges({ userId }: { userId: string }) {
+  const { infiniteTotals, spogomiCollection, spogomiVolunteerSummary } = await loadProfileBadges(userId);
+  return <div className="space-y-4">
+    <CmmCard className="space-y-3"><h2 className="text-lg font-bold cmm-text-primary">Légendes territoriales</h2><TerritorialLegendsPanel /></CmmCard>
+    {spogomiCollection && spogomiVolunteerSummary ? <FamilyRubriqueCard className="p-4 sm:p-5"><ProfileSpogomiSummary collection={spogomiCollection} volunteerSummary={spogomiVolunteerSummary} /></FamilyRubriqueCard> : <Unavailable message="Distinctions SPOGOMI momentanément indisponibles." />}
+    {infiniteTotals ? <><FamilyRubriqueCard className="p-4 sm:p-5"><InfiniteBadgesPanel totals={infiniteTotals} /></FamilyRubriqueCard><MilestonesPanel milestones={infiniteTotals.milestones} /></> : <Unavailable message="Badges et jalons momentanément indisponibles." />}
+  </div>;
+}
+async function Referrals({ userId, profile }: { userId: string; profile: AppProfile }) {
+  const { referralSummary, referralLineageView, referralLineageError } = await loadProfileReferrals(userId);
+  return <section id="parrainage" className="scroll-mt-28 space-y-3">
+    <h2 className="text-xl font-bold cmm-text-primary">Parrainage</h2>
+    {referralSummary ? <FamilyRubriqueCard className="p-4 sm:p-5"><ReferralProfileTabs summary={referralSummary} lineageView={referralLineageView} lineageError={referralLineageError} emptyCtaHref={profileDetailTabHref(profile,"referrals")} /></FamilyRubriqueCard> : <Unavailable message="Parrainage momentanément indisponible." />}
+  </section>;
+}
+function Account({ identity }: { identity: UserIdentity }) {
+  return <div className="space-y-4">
+    <CmmCard className="space-y-3"><h2 className="text-lg font-bold cmm-text-primary">Niveau et rôle actif</h2><p className="cmm-text-primary">Niveau obtenu : {getProfileLabel(identity.role,"fr")}. Rôle utilisé : {getProfileLabel(identity.activeRole,"fr")}.</p><div className="flex flex-wrap gap-2"><CmmButton href="/compte/evolution" tone="primary">Évolution du compte</CmmButton><CmmButton href="/reglages" tone="secondary">Préférences et compte</CmmButton></div></CmmCard>
+    <RoleProfileSwitcher locale="fr" grantedRole={identity.role} activeRole={identity.activeRole} title="Rôles actifs autorisés" />
+  </div>;
+}
+export default async function ProfilPage({ params, searchParams }: ProfilPageProps) {
   const { profile } = await params;
   const normalized = profile.trim().toLowerCase();
-
   if (!isAppProfile(normalized)) notFound();
-
-  const { userId } = await getSafeAuthSession();
-  if (!userId) {
-    return (
-      <ClerkRequiredGate
-        isAuthenticated={false}
-        mode="blur"
-        lockedPreview={
-          <div className="rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] p-6 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)]">
-            <p className="cmm-text-caption font-bold uppercase tracking-wide text-amber-100">
-              Profil {normalized}
-            </p>
-            <p className="cmm-text-body cmm-text-inverse mt-2">
-              Les recommandations et raccourcis apparaissent après connexion.
-            </p>
-          </div>
-        }
-      >
-        <div />
-      </ClerkRequiredGate>
-    );
-  }
-
-  const identity = await getCurrentUserIdentity().catch(() => null);
-  const grantedRole = identity?.role ?? "benevole";
-  const activeProfile = identity?.activeRole ?? "benevole";
-
-  if (normalized !== activeProfile)
-    redirect(buildProfileRoute(activeProfile));
-
-  const profileLabel = getProfileLabel(normalized, "fr");
-  const profileSubtitle = getProfileSubtitle(normalized, "fr");
-  const profileData = await loadProfilePageData(userId);
-  const referralInviteHref = `${buildProfileRoute(normalized)}#parrainage`;
-
-  return (
-    <ProfilePageContent
-      normalized={normalized}
-      profileLabel={profileLabel}
-      profileSubtitle={profileSubtitle}
-      grantedRole={grantedRole}
-      activeProfile={activeProfile}
-      {...profileData}
-      referralInviteHref={referralInviteHref}
-    />
-  );
+  const session = await getSafeAuthSession();
+  if (!session.userId) return <ClerkRequiredGate isAuthenticated={false} mode="blur" authUnavailable={session.state === "unavailable"} lockedPreview={<CmmCard><p className="cmm-text-primary">Votre profil et votre progression après connexion.</p></CmmCard>}><div /></ClerkRequiredGate>;
+  const identity = await getCurrentUserIdentity({ userId: session.userId }).catch(() => null);
+  if (!identity) return <ClerkRequiredGate isAuthenticated={false} authUnavailable><div /></ClerkRequiredGate>;
+  if (normalized !== identity.activeRole) redirect(buildProfileRoute(identity.activeRole));
+  const tab = resolveProfileDetailTab((await searchParams)?.tab);
+  return <CmmPageLayout>
+    <PageHeader title={`Mon profil · ${getProfileLabel(normalized,"fr")}`} subtitle={getProfileSubtitle(normalized,"fr")} action={<CmmButton href="/dashboard" tone="secondary">Mon espace</CmmButton>} />
+    <ProfileDetailNavigation profile={normalized} activeTab={tab} />
+    {tab === "summary" && <Progression userId={session.userId} profile={normalized} />}
+    {tab === "badges" && <Badges userId={session.userId} />}
+    {tab === "referrals" && <Referrals userId={session.userId} profile={normalized} />}
+    {tab === "account" && <Account identity={identity} />}
+  </CmmPageLayout>;
 }

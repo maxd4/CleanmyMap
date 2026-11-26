@@ -1,4 +1,4 @@
-# Gouvernance
+﻿# Gouvernance
 
 ## Fiche canonique
 
@@ -11,8 +11,8 @@
 - **Contrat SEO** : `ACCESS=PRIVATE`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Les données institutionnelles et arbitrages restent protégés.
 - **Objectif utilisateur principal** : Donner un accès direct à la lecture territoriale, aux arbitrages et aux repères de gouvernance.
 - **Action principale attendue** : Consulter les priorités et arbitrages de gouvernance.
-- **Palette attendue** : bleu / slate, variante gouvernance
-- **Scope** : lecture protégée du pilotage institutionnel, avec synthèse, priorités territoriales, référentiel et navigation vers les surfaces décideurs.
+- **Palette attendue** : amber / orange, famille Accueil & Pilotage
+- **Scope** : lecture protégée des agrégats des actions publiques terminées, sans attribution territoriale implicite.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : amber / brun — à vérifier lors d'une capture de référence
 - **Incohérences de couleurs** : aucune incohérence bloquante ; le rendu utilise le socle sombre gouvernance avec accents bleu/sable du pilotage.
@@ -55,4 +55,8 @@
 ## Notes d'audit
 
 - Cette fiche documente la surface secondaire `/sections/elus`, visible depuis le cluster décisionnel du pilotage.
-- La page reste volontairement hors de la navigation principale, mais elle est accessible et doit rester inventoriée.
+- La navigation cible expose cette page aux rôles actifs élu et IMU, sans autorisation supplémentaire implicite.
+
+## Contrat cible de la refonte
+
+Lecture serveur pour les rôles actifs élu et IMU, corpus global strict des actions publiques terminées. Aucun droit sur un territoire ou sur des données privées n'est déduit du rôle. Trois vues : synthèse, zones et priorités, méthodes et rapports. Entrée du bloc pour les rôles concernés et lien depuis Pilotage ; le contrat d'autorisation du pilotage organisé ne change pas. Garder le SEO privé.

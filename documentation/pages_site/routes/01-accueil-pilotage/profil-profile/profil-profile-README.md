@@ -1,4 +1,4 @@
-# Profil détaillé
+﻿# Profil détaillé
 
 ## Fiche canonique
 
@@ -61,3 +61,7 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+
+## Contrat cible de la refonte
+
+Quatre vues (progression, badges, parrainage et compte) selon `profile-tabs.ts`. Chargements par vue, pas de zéros de substitution, accès depuis Mon espace vers profil, impact, dossier et évolution. Lien historique #parrainage préservé. Le rôle actif est contrôlé côté serveur ; aucun changement de niveau obtenu via le sélecteur.

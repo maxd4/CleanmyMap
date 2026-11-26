@@ -1,80 +1,65 @@
 "use client";
 
-import Link from "next/link";
-import { Download, Share2, ArrowLeft, ShieldCheck } from "lucide-react";
+import { Download, Share2, ArrowLeft } from "lucide-react";
 import { ImpactCard } from "@/components/profil/impact-card";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { cn } from "@/lib/utils";
-import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmPageLayout } from "@/components/ui/cmm-section";
+import { PageHeader } from "@/components/ui/page-header";
+import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import { ACTION_FIELD_ROLE_OPTIONS } from "@/lib/actions/field-roles";
-import type { CurrentAccountIdentity } from "@/lib/account/current-account-identity";
-import type { ImpactPageProgression } from "./impact-profile-page";
+import type { ImpactPageProgression, ImpactCardIdentity } from "./impact-profile-page";
 
-const FIELD_ROLE_LABELS = new Map<string, string>(ACTION_FIELD_ROLE_OPTIONS.map((role) => [role.code, role.label]));
+const FIELD_ROLE_LABELS = new Map<string,string>(ACTION_FIELD_ROLE_OPTIONS.map(role => [role.code, role.label]));
+type ImpactActions = { activeCardAction: "export" | "share" | null; cardActionMessage: string | null; cardActionError: string | null; handleDownload: () => Promise<void>; handleShare: () => Promise<void> };
+type History = NonNullable<NonNullable<ImpactPageProgression["history"]>["timeline"]>;
 
-type ImpactActions = {
-  activeCardAction: "export" | "share" | null;
-  cardActionMessage: string | null;
-  cardActionError: string | null;
-  handleDownload: () => Promise<void>;
-  handleShare: () => Promise<void>;
-};
-
-export function ImpactProfileAuthenticatedView({ classes, identity, prog, validatedRoleHistory, actions }: {
-  classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses>;
-  identity: CurrentAccountIdentity;
-  prog: ImpactPageProgression | undefined;
-  validatedRoleHistory: NonNullable<NonNullable<ImpactPageProgression["history"]>["timeline"]>;
-  actions: ImpactActions;
-}) {
-  return <div className="w-full space-y-10 pb-20">
-    <ImpactProfileHeader />
-    <div className="grid grid-cols-1 items-start gap-12 xl:grid-cols-[minmax(340px,420px)_minmax(0,1fr)]">
-      <div className="sticky top-24 flex justify-center"><ImpactCardPreview identity={identity} prog={prog} /></div>
-      <div className="space-y-10">
-        <ImpactProfileIntro classes={classes} actions={actions} />
-        <ImpactEngagementDossierCard classes={classes} />
-        <ImpactMethodology classes={classes} />
-        <ImpactRoleHistory classes={classes} history={validatedRoleHistory} />
-        <ImpactCollectiveSection classes={classes} />
-      </div>
+function ImpactExportControls({ actions }: { actions: ImpactActions }) {
+  return <div className="space-y-2">
+    <div className="flex flex-wrap gap-2">
+      <CmmButton tone="primary" disabled={Boolean(actions.activeCardAction)} onClick={() => { void actions.handleDownload(); }}><Download size={18} aria-hidden="true" />{actions.activeCardAction === "export" ? "Génération..." : "Télécharger le PNG"}</CmmButton>
+      <CmmButton tone="secondary" disabled={Boolean(actions.activeCardAction)} onClick={() => { void actions.handleShare(); }}><Share2 size={18} aria-hidden="true" />{actions.activeCardAction === "share" ? "Préparation..." : "Partager le PNG"}</CmmButton>
     </div>
+    {actions.cardActionMessage && <p role="status" className="text-sm cmm-text-success">{actions.cardActionMessage}</p>}
+    {actions.cardActionError && <p role="alert" className="text-sm cmm-text-danger">{actions.cardActionError}</p>}
   </div>;
 }
 
-function ImpactProfileHeader() {
-  return <header className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-    <Link href={DASHBOARD_ROUTE} className="group flex items-center gap-3 text-xs font-black uppercase tracking-[0.2em] text-red-400/40 transition-colors hover:text-red-400"><ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />Retour au cockpit</Link>
-    <div className="flex items-center gap-3 rounded-full border border-red-400/20 bg-red-400/5 px-6 py-2"><ShieldCheck size={14} className="text-red-400" /><h1 className="text-xs font-black uppercase tracking-[0.3em] text-red-400/80">Carte d&apos;impact personnelle</h1></div>
-  </header>;
+function ImpactRoleHistory({ history }: { history: History | undefined }) {
+  return <CmmCard as="section" className="space-y-3">
+    <h2 className="text-lg font-bold cmm-text-primary">Missions validées</h2>
+    <p className="text-sm cmm-text-secondary">Uniquement les missions attestées et confirmées.</p>
+    {!history ? <p role="status" className="cmm-text-secondary">Historique indisponible.</p> : history.length === 0 ? <p className="cmm-text-secondary">Aucune mission validée dans votre historique.</p> : <ul className="divide-y divide-current/10">{history.map(item => <li key={item.id} className="space-y-2 py-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2"><span className="font-semibold cmm-text-primary">{item.locationLabel || "Action terrain"}</span><time className="text-sm cmm-text-secondary" dateTime={item.actionDate}>{item.actionDate}</time></div>
+      <ul className="flex flex-wrap gap-2">{item.validatedRoleCodes.map(code => <li key={code} className="rounded-full border border-current/20 px-3 py-1 text-sm cmm-text-primary">{FIELD_ROLE_LABELS.get(code) ?? code}</li>)}</ul>
+    </li>)}</ul>}
+  </CmmCard>;
 }
 
-function ImpactCardPreview({ identity, prog }: { identity: CurrentAccountIdentity; prog: ImpactPageProgression | undefined }) {
-  return <ImpactCard userName={identity.displayName || identity.handle || identity.username || "Contributeur anonyme"} level={prog?.currentLevel || 1} rank={prog?.dynamicRanking?.rank ?? null} totalKg={prog?.impact?.wasteKg || 0} totalButts={prog?.impact?.totalButts || 0} waterSaved={prog?.impact?.waterSavedLiters || 0} topBadges={prog?.badges || []} />;
-}
-
-function ImpactProfileIntro({ classes, actions }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses>; actions: ImpactActions }) {
-  const { activeCardAction, cardActionMessage, cardActionError, handleDownload, handleShare } = actions;
-  return <>
-    <div className="space-y-5"><div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-slate-600"><span className="rounded-full border border-red-500/15 bg-red-500/8 px-3 py-1 text-red-700">Carte d&apos;impact personnelle</span><span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-slate-500">Exportable et partageable</span></div><div className="space-y-3"><h2 className="max-w-3xl text-4xl font-black tracking-tighter text-slate-950 sm:text-5xl xl:text-[3.5rem] xl:leading-[0.95]">Votre impact en temps réel<span className="block text-red-600">sans perdre la lisibilité.</span></h2><p className="cmm-text-body max-w-2xl">Générez une carte haute fidélité qui résume vos actions validées sur le terrain, votre niveau d&apos;expertise et vos distinctions, avec une lecture plus directe sur desktop et mobile.</p></div></div>
-    <div className="flex flex-col gap-4 sm:flex-row"><CmmButton type="button" onClick={() => { void /* fire-and-forget -- the impact card action owns export state and errors. */ handleDownload(); }} disabled={Boolean(activeCardAction)} tone="destructive" className={cn("flex-1 flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-8 py-5 text-sm font-black uppercase tracking-widest text-white shadow-2xl shadow-red-600/20 hover:bg-red-500 disabled:opacity-50", classes.shadow)}><Download size={18} />{activeCardAction === "export" ? "Génération de la carte..." : "Exporter la carte"}</CmmButton><CmmButton type="button" onClick={() => { void /* fire-and-forget -- the impact card action owns share state and errors. */ handleShare(); }} disabled={Boolean(activeCardAction)} tone="secondary" className="flex-1 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-sm font-black uppercase tracking-widest text-red-100/60 transition-[background-color,color] hover:bg-white/10 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-50"><Share2 size={18} />{activeCardAction === "share" ? "Préparation du partage..." : "Partager la carte"}</CmmButton></div>
-    <div className="min-h-6" aria-live="polite" aria-atomic="true">{cardActionMessage ? <p className="text-center text-xs font-bold text-red-100/80">{cardActionMessage}</p> : null}{cardActionError ? <p role="alert" className="text-center text-xs font-bold text-rose-200">{cardActionError}</p> : null}</div>
-  </>;
-}
-
-function ImpactEngagementDossierCard({ classes }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses> }) {
-  return <section aria-labelledby="engagement-dossier-entry-title" className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}><div className="space-y-2"><p className="text-xs font-black uppercase tracking-widest text-red-400/60">Éco-citoyenneté &amp; insertion</p><h3 id="engagement-dossier-entry-title" className="text-lg font-black tracking-tight text-slate-950">Valoriser mon engagement</h3><p className="cmm-text-body">Sélectionnez vos participations confirmées et vos missions attestées pour télécharger un dossier Markdown privé.</p></div><CmmButton href="/profil/engagement" tone="primary" size="md">Ouvrir mon dossier d&apos;engagement</CmmButton></section>;
-}
-
-function ImpactMethodology({ classes }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses> }) {
-  return <div className={cn("relative space-y-6 overflow-hidden rounded-[2rem] border p-8", classes.surface)}><div className="pointer-events-none absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-red-500/10 blur-2xl" /><div className="space-y-2"><p className="text-xs font-black uppercase tracking-widest text-red-400/40">Méthodologie</p><p className="cmm-text-body cmm-text-inverse">Les données d&apos;impact sont consolidées à partir de vos actions validées. L&apos;eau préservée est un proxy calculé avec {IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt} L par mégot extrait ; elle ne constitue pas une mesure directe de la qualité de l&apos;eau.</p></div><Link href="/methodologie" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-red-400 transition-colors hover:text-red-300">Consulter le protocole scientifique <span className="text-lg">→</span></Link></div>;
-}
-
-function ImpactRoleHistory({ classes, history }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses>; history: NonNullable<NonNullable<ImpactPageProgression["history"]>["timeline"]> }) {
-  return <section aria-labelledby="validated-role-history-title" className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}><div className="space-y-2"><p className="text-xs font-black uppercase tracking-widest text-red-400/40">Historique personnel</p><h3 id="validated-role-history-title" className="text-lg font-black tracking-tight text-slate-950">Missions validées</h3><p className="cmm-text-body">Les rôles affichés ici correspondent uniquement aux attestations confirmées pour vos actions.</p></div>{history.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4 text-sm text-slate-600">Aucune mission validée dans votre historique.</p> : <ul className="space-y-3">{history.map((item) => <li key={item.id} className="rounded-2xl border border-slate-200 bg-white/80 p-4"><div className="flex flex-wrap items-baseline justify-between gap-2"><span className="font-bold text-slate-950">{item.locationLabel || "Action terrain"}</span><time className="text-xs font-semibold text-slate-500" dateTime={item.actionDate}>{item.actionDate}</time></div><ul className="mt-2 flex flex-wrap gap-2">{item.validatedRoleCodes.map((roleCode) => <li key={roleCode} className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-800">{FIELD_ROLE_LABELS.get(roleCode) ?? roleCode}</li>)}</ul></li>)}</ul>}</section>;
-}
-
-function ImpactCollectiveSection({ classes }: { classes: ReturnType<typeof import("@/lib/ui/block-accents").getBlockClasses> }) {
-  return <section className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}><div className="space-y-2"><p className="text-xs font-black uppercase tracking-widest text-red-400/40">Impact collectif</p><h3 className="text-lg font-black tracking-tight text-slate-950">Les comparaisons globales restent dans les rapports</h3><p className="cmm-text-body">Cette page reste centrée sur votre progression, vos badges et vos actions validées. Les indicateurs territoriaux, les méthodes et les exports collectifs sont regroupés dans la surface de rapports.</p></div><Link href="/reports" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-red-600 transition-colors hover:text-red-500">Consulter les rapports collectifs <span className="text-lg">→</span></Link></section>;
+export function ImpactProfileAuthenticatedView({ identity, prog, validatedRoleHistory, actions }: { identity: ImpactCardIdentity; prog: ImpactPageProgression; validatedRoleHistory: History | undefined; actions: ImpactActions }) {
+  const { wasteKg, totalButts, waterSavedLiters } = prog.impact ?? {};
+  const cardReady = typeof wasteKg === "number" && Number.isFinite(wasteKg) && typeof totalButts === "number" && Number.isFinite(totalButts) && typeof waterSavedLiters === "number" && Number.isFinite(waterSavedLiters);
+  return <CmmPageLayout>
+    <PageHeader title="Mon impact" subtitle="Vos résultats validés et vos preuves d'engagement." action={<CmmButton href={buildProfileRoute(identity.activeRole)} tone="secondary"><ArrowLeft size={16} aria-hidden="true" />Mon profil</CmmButton>} />
+    <div className="grid items-start gap-5 lg:grid-cols-[minmax(280px,400px)_minmax(0,1fr)]">
+      <CmmCard className="space-y-4">
+        <h2 className="text-lg font-bold cmm-text-primary">Carte d’impact personnelle</h2>
+        {cardReady ? <><div className="flex justify-center"><ImpactCard userName={identity.displayName || identity.handle || identity.username || "Contributeur"} level={prog.currentLevel} rank={prog.dynamicRanking?.rank ?? null} totalKg={wasteKg} totalButts={totalButts} waterSaved={waterSavedLiters} topBadges={prog.badges ?? []} /></div><ImpactExportControls actions={actions} /><p className="text-sm cmm-text-secondary">Seule l’image PNG est partagée, jamais l’accès à votre compte.</p></> : <p role="status" className="cmm-text-secondary">Les données nécessaires à la carte ne sont pas toutes disponibles. Aucun résultat fictif n’est exporté.</p>}
+      </CmmCard>
+      <div className="space-y-4">
+        <CmmCard as="section" className="space-y-3">
+          <h2 className="text-lg font-bold cmm-text-primary">Valoriser mon engagement</h2>
+          <p className="text-sm cmm-text-secondary">Participations confirmées, missions attestées, dossier Markdown privé et modèle d’attestation à faire signer.</p>
+          <CmmButton href="/profil/engagement" tone="primary">Ouvrir mon dossier</CmmButton>
+        </CmmCard>
+        <ImpactRoleHistory history={validatedRoleHistory} />
+        <CmmCard className="space-y-3">
+          <h2 className="text-lg font-bold cmm-text-primary">Méthodologie</h2>
+          <p className="text-sm cmm-text-secondary">Les données proviennent des actions validées. L’eau préservée est un proxy de {IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt} L par mégot extrait, pas une mesure directe de qualité de l’eau.</p>
+          <div className="flex flex-wrap gap-2"><CmmButton href="/methodologie" tone="secondary">Protocole scientifique</CmmButton><CmmButton href="/reports" tone="secondary">Rapports collectifs</CmmButton></div>
+        </CmmCard>
+      </div>
+    </div>
+  </CmmPageLayout>;
 }

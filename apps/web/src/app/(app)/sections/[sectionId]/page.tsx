@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { SectionRenderer } from "@/components/sections/rubriques/section-renderer";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { GovernancePage } from "@/components/sections/rubriques/governance-page";
 import { env } from "@/lib/env";
 import {
   getSectionRubriqueById,
@@ -112,6 +113,8 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
   if (!section) {
     notFound();
   }
+
+  if (section.id === "elus") return <GovernancePage searchParams={await searchParams} />;
 
   const accessMode = section.anonymousPresentation;
   const fundingOnParticipeUrl =

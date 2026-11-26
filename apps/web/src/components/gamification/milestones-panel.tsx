@@ -11,14 +11,14 @@ export function MilestonesPanel({
   return (
     <section
       aria-labelledby="gamification-milestones-title"
-      className="mt-8 rounded-[2rem] border border-amber-500/15 bg-amber-500/[0.04] p-6"
+      className="rounded-2xl border border-current/10 p-4 sm:p-5"
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-black uppercase tracking-[0.3em] text-amber-300/80">
+          <p className="text-sm font-black uppercase tracking-[0.3em] cmm-text-secondary">
             Distinctions ponctuelles
           </p>
-          <h3 id="gamification-milestones-title" className="mt-2 text-xl font-black text-white">
+          <h3 id="gamification-milestones-title" className="mt-2 text-xl font-black cmm-text-primary">
             Jalons
           </h3>
           <p className="mt-2 max-w-2xl text-sm cmm-text-body leading-relaxed">
@@ -35,7 +35,7 @@ export function MilestonesPanel({
             className={`rounded-2xl border p-4 ${
               milestone.unlocked
                 ? "border-amber-300/25 bg-amber-300/[0.08]"
-                : "border-white/8 bg-slate-950/30"
+                : "border-current/10"
             }`}
           >
             <div className="flex items-center justify-between gap-3">
@@ -43,7 +43,7 @@ export function MilestonesPanel({
                 className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${
                   milestone.unlocked
                     ? "bg-amber-300 text-amber-950"
-                    : "bg-white/8 text-slate-500"
+                    : "bg-current/5 cmm-text-secondary"
                 }`}
               >
                 {milestone.unlocked ? (
@@ -52,13 +52,13 @@ export function MilestonesPanel({
                   <LockKeyhole aria-hidden="true" size={15} />
                 )}
               </span>
-              <span className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">
+              <span className="text-sm font-black uppercase tracking-[0.18em] cmm-text-secondary">
                 {milestone.unlocked ? "Acquis" : "À débloquer"}
               </span>
             </div>
-            <h4 className="mt-4 text-sm font-black text-white">{milestone.label}</h4>
+            <h4 className="mt-4 text-sm font-black cmm-text-primary">{milestone.label}</h4>
             <p className="mt-2 text-sm cmm-text-body leading-relaxed">{milestone.description}</p>
-            <p className="mt-4 text-sm font-black uppercase tracking-[0.16em] text-amber-200/80">
+            <p className="mt-4 text-sm font-black uppercase tracking-[0.16em] cmm-text-secondary">
               {milestone.xpAwarded > 0
                 ? `+${milestone.xpAwarded} XP ponctuels`
                 : "Aucun XP supplémentaire"}

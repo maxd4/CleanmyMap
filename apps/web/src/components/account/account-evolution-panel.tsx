@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Clock3, FileClock, ShieldCheck, XCircle } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import { PromotionRequestForm } from "@/components/sections/rubriques/promotion-request-form";
 import {
   getRequestablePromotionRoles,
   type PromotionRequestTargetRole,
 } from "@/lib/account/promotion-request-contract";
 import { getProfileLabel, type AppProfile } from "@/lib/profiles";
-import { ACCOUNT_EVOLUTION_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export type AccountEvolutionRequest = {
   createdAt: string;
@@ -38,17 +38,17 @@ const STATUS_COPY: Record<AccountEvolutionRequest["status"], {
   pending_owner_review: {
     label: "Demande en cours d’examen",
     description: "L’équipe IMU examine votre demande. Une nouvelle demande n’est pas possible pendant cet examen.",
-    className: "border-amber-300/30 bg-amber-300/10 text-amber-50",
+    className: "border-amber-300/30 bg-amber-300/10 cmm-text-warning",
   },
   accepted: {
     label: "Demande acceptée",
     description: "Votre niveau est mis à jour après synchronisation du compte.",
-    className: "border-emerald-300/30 bg-emerald-300/10 text-emerald-50",
+    className: "border-emerald-300/30 bg-emerald-300/10 cmm-text-success",
   },
   rejected: {
     label: "Demande refusée",
     description: "Vous pouvez déposer une nouvelle demande si votre niveau actuel l’autorise.",
-    className: "border-rose-300/30 bg-rose-300/10 text-rose-50",
+    className: "border-rose-300/30 bg-rose-300/10 cmm-text-danger",
   },
 };
 
@@ -114,73 +114,65 @@ export function AccountEvolutionPanel({
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
-        <FamilyRubriqueCard withTopBar={true} topBarContent="Mon niveau de compte" className="p-6">
+        <CmmCard className="space-y-3">
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-6 w-6 text-amber-400" aria-hidden="true" />
             <div>
-              <p className="cmm-text-small font-bold uppercase tracking-[0.14em] text-amber-100/90">Niveau obtenu</p>
-              <p className="mt-1 text-2xl font-black text-white">{getProfileLabel(currentRole, "fr")}</p>
+              <p className="cmm-text-small font-bold uppercase tracking-[0.14em] cmm-text-secondary">Niveau obtenu</p>
+              <p className="mt-1 text-2xl font-black cmm-text-primary">{getProfileLabel(currentRole, "fr")}</p>
             </div>
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-amber-50/90">
+          <p className="mt-4 text-sm leading-relaxed cmm-text-primary">
             Ce niveau correspond au rôle accordé au compte. Il détermine les autorisations disponibles.
           </p>
-        </FamilyRubriqueCard>
+        </CmmCard>
 
-        <FamilyRubriqueCard withTopBar={true} topBarContent="Rôle actuellement utilisé" className="p-6">
+        <CmmCard className="space-y-3">
           <div className="flex items-center gap-3">
             <FileClock className="h-6 w-6 text-orange-300" aria-hidden="true" />
             <div>
-              <p className="cmm-text-small font-bold uppercase tracking-[0.14em] text-amber-100/90">Identité active</p>
-              <p className="mt-1 text-2xl font-black text-white">{getProfileLabel(activeRole, "fr")}</p>
+              <p className="cmm-text-small font-bold uppercase tracking-[0.14em] cmm-text-secondary">Identité active</p>
+              <p className="mt-1 text-2xl font-black cmm-text-primary">{getProfileLabel(activeRole, "fr")}</p>
             </div>
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-amber-50/90">
+          <p className="mt-4 text-sm leading-relaxed cmm-text-primary">
             Le rôle utilisé pour votre navigation peut être différent du niveau obtenu ; il ne donne aucun droit supplémentaire.
           </p>
-        </FamilyRubriqueCard>
+        </CmmCard>
       </div>
 
-      <FamilyRubriqueCard withTopBar={true} topBarContent="Faire évoluer mon compte" className="p-6 sm:p-8">
+      <CmmCard className="space-y-3">
+        <h2 className="text-xl font-bold cmm-text-primary">Demande de niveau</h2>
         <div className="space-y-3">
-          <p className="text-sm leading-relaxed text-amber-50/90">
+          <p className="text-sm leading-relaxed cmm-text-primary">
             Les personas ouverts sont Bénévole, Coordinateur, Scientifique et Entreprise. Les rôles obtenus sont Élu·e et Administrateur, après examen par IMU. IMU reste hors de ce parcours.
           </p>
-          <p className="text-sm leading-relaxed text-amber-50/90">
+          <p className="text-sm leading-relaxed cmm-text-primary">
             Une demande ne modifie jamais votre niveau obtenu. Seule l’acceptation par IMU déclenche la synchronisation du compte.
           </p>
         </div>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Guide des niveaux obtenus">
+        {canRequest && <div className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Guide des niveaux obtenus">
           {(["elu", "admin"] as const).map((role) => {
             const canRequest = getRequestablePromotionRoles(currentRole).includes(role);
             return (
-              <div key={role} className="rounded-2xl border border-amber-200/16 bg-white/[0.05] p-4">
-                <p className="text-sm font-bold text-white">{getProfileLabel(role, "fr")}</p>
-                <p className="mt-1 text-sm leading-relaxed text-amber-50/90">
+              <div key={role} className="rounded-2xl border border-current/10 p-4">
+                <p className="text-sm font-bold cmm-text-primary">{getProfileLabel(role, "fr")}</p>
+                <p className="mt-1 text-sm leading-relaxed cmm-text-primary">
                   {role === "elu"
                     ? "Niveau obtenu après examen pour les besoins de gouvernance territoriale."
                     : "Niveau obtenu après examen pour les besoins de supervision et de modération."}
                 </p>
-                {canRequest ? (
-                  <CmmButton
-                    href={ACCOUNT_EVOLUTION_ROUTE}
-                    tone={role === "elu" ? "secondary" : "tertiary"}
-                    variant="pill"
-                    className="mt-3 min-h-10 px-3 cmm-text-small"
-                  >
-                    Demander ce niveau
-                  </CmmButton>
-                ) : null}
+                {canRequest && <p className="mt-2 text-sm font-semibold cmm-text-primary">Demande possible dans le formulaire ci-dessous.</p>}
               </div>
             );
           })}
-        </div>
+        </div>}
         {isRefreshing ? (
-          <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-amber-50/90" role="status">
+          <p className="mt-6 rounded-2xl border border-current/10 p-5 text-sm cmm-text-secondary" role="status">
             Vérification de votre demande…
           </p>
         ) : !statusAvailable ? (
-          <div className="mt-6 rounded-2xl border border-rose-300/25 bg-rose-300/10 p-5 text-sm text-rose-50">
+          <div className="mt-6 rounded-2xl border border-rose-300/25 bg-rose-300/10 p-5 text-sm cmm-text-danger">
             <p>Le statut de votre demande est indisponible. Le formulaire reste fermé par sécurité.</p>
             <CmmButton type="button" tone="secondary" variant="pill" className="mt-4" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refreshStatus(); }}>
               Réessayer
@@ -195,7 +187,7 @@ export function AccountEvolutionPanel({
             </div>
           </div>
         ) : isAcceptedAwaitingSynchronization ? (
-          <div className="mt-6 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-5 text-sm text-amber-50">
+          <div className="mt-6 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-5 text-sm cmm-text-warning">
             Demande acceptée. La synchronisation de votre niveau est encore en cours ; le formulaire reste fermé.
           </div>
         ) : showForm ? (
@@ -203,20 +195,21 @@ export function AccountEvolutionPanel({
             <PromotionRequestForm currentRole={currentRole} onSubmitted={refreshStatus} />
           </div>
         ) : latestRequest?.status === "accepted" ? (
-          <div className="mt-6 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-5 text-sm text-emerald-50">
+          <div className="mt-6 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-5 text-sm cmm-text-success">
             Le niveau affiché ci-dessus est la source d’autorité du compte après synchronisation.
           </div>
         ) : (
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-amber-50/90">
+          <div className="mt-6 rounded-2xl border border-current/10 p-5 text-sm cmm-text-secondary">
             {canRequest
               ? "Le formulaire est momentanément indisponible."
               : "Votre niveau ne nécessite pas de demande de promotion supplémentaire."}
           </div>
         )}
-      </FamilyRubriqueCard>
+      </CmmCard>
 
+      <CmmCard className="space-y-3"><h2 className="font-bold cmm-text-primary">Changer de rôle actif</h2><p className="text-sm cmm-text-secondary">Le changement de rôle ne modifie pas le niveau obtenu.</p><div className="flex flex-wrap gap-2"><CmmButton href={`${buildProfileRoute(activeRole)}?tab=account`} tone="primary">Rôles disponibles</CmmButton><CmmButton href="/dashboard" tone="secondary">Mon espace</CmmButton></div></CmmCard>
       {latestRequest ? (
-        <FamilyRubriqueCard withTopBar={true} topBarContent="Ma demande" className="p-6 sm:p-8">
+        <CmmCard className="space-y-3">
           <div className={`flex items-start gap-3 rounded-2xl border p-5 ${statusCopy?.className ?? ""}`}>
             <StatusIcon status={latestRequest.status} />
             <div className="min-w-0 space-y-3">
@@ -229,7 +222,7 @@ export function AccountEvolutionPanel({
               <p className="text-sm text-current/90">{statusCopy?.description}</p>
             </div>
           </div>
-        </FamilyRubriqueCard>
+        </CmmCard>
       ) : null}
     </div>
   );

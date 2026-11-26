@@ -1,4 +1,4 @@
-# Évolution du compte
+﻿# Évolution du compte
 
 - **Route** : `/compte/evolution`
 - **Fichier source** : `apps/web/src/app/(app)/compte/evolution/page.tsx`
@@ -17,3 +17,7 @@ contenus de gouvernance. L’onboarding peut également y renvoyer via un lien
 secondaire, sans attribuer de rôle automatiquement.
 
 La demande n’altère jamais le niveau obtenu. Une demande en attente remplace le formulaire par son état d’examen ; une demande refusée peut être renouvelée si le niveau courant l’autorise ; une demande acceptée est reflétée après synchronisation du compte.
+
+## Contrat cible de la refonte
+
+Une page courte, distincte de la sélection du rôle actif. Niveau obtenu, rôle utilisé, état de la demande et seuls rôles demandables. Le formulaire existant reste conditionné par les droits et la disponibilité ; aucune demande automatique. Accès depuis Mon espace et l'onglet Compte et rôles du profil.

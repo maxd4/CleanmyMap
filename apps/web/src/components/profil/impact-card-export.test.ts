@@ -189,8 +189,8 @@ describe("impact card export", () => {
     expect(source).not.toContain("toPng");
     expect(source).toContain("generateImpactCardPng");
     expect(source.match(/generateImpactCardPng\(displayName\)/g)).toHaveLength(2);
-    expect(source).toContain('"Partager la carte"');
-    expect(source.match(/disabled=\{Boolean\(activeCardAction\)\}/g)).toHaveLength(2);
+    expect(source).toContain('"Partager le PNG"');
+    expect(source.match(/disabled=\{Boolean\(actions\.activeCardAction\)\}/g)).toHaveLength(2);
     expect(source).toContain('role="alert"');
     expect(source).toContain("Carte téléchargée.");
     expect(source).toContain("Partage non disponible ici : la carte a été téléchargée.");

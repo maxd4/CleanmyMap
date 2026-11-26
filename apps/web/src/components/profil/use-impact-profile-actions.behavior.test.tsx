@@ -1,7 +1,6 @@
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CurrentAccountIdentity } from "@/lib/account/current-account-identity";
-import { getBlockClasses } from "@/lib/ui/block-accents";
 import { ImpactProfileAuthenticatedView } from "./impact-profile-authenticated-view";
 import { useImpactProfileActions } from "./use-impact-profile-actions";
 
@@ -94,9 +93,8 @@ describe("useImpactProfileActions", () => {
     act(() => {
       renderer = create(
         <ImpactProfileAuthenticatedView
-          classes={getBlockClasses("impact")}
           identity={identity}
-          prog={undefined}
+          prog={{ currentLevel: 2, impact: { wasteKg: 12, totalButts: 40, waterSavedLiters: 120 }, badges: [] }}
           validatedRoleHistory={[]}
           actions={{
             activeCardAction: null,

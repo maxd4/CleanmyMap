@@ -7,7 +7,7 @@ const pageDataSource = readFileSync(new URL("./profile-page-data.ts", import.met
 describe("detailed profile gamification contract", () => {
   it("composes the compact summary from the page's existing data", () => {
     expect(pageSource).toContain("ProfileGamificationSummary");
-    expect(pageSource).toContain("summary={gamification?.summary}");
+    expect(pageSource).toContain("summary={gamification.summary}");
     expect(pageSource).not.toContain('href="/gamification"');
     expect(pageSource).toContain("<InfiniteBadgesPanel totals={infiniteTotals} />");
 
@@ -28,9 +28,9 @@ describe("detailed profile gamification contract", () => {
     expect(pageSource).not.toContain('normalized === "impact"');
     expect(pageSource).not.toContain("ImpactProfilePage");
     expect(pageSource).toContain("<RoleProfileSwitcher");
-    expect(pageSource).toContain("grantedRole={grantedRole}");
-    expect(pageSource).toContain("redirect(buildProfileRoute(activeProfile))");
+    expect(pageSource).toContain("grantedRole={identity.role}");
+    expect(pageSource).toContain("redirect(buildProfileRoute(identity.activeRole))");
     expect(pageSource).toContain('id="parrainage"');
-    expect(pageSource).toContain("<AccountSettingsSection compact />");
+    expect(pageSource).toContain('href="/reglages"');
   });
 });

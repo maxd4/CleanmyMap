@@ -33,35 +33,35 @@ export function EngagementSelectionSummary({
       aria-label="Synthèse de la sélection"
       className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-900/80">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      <div className="cmm-card rounded-xl border p-4">
+        <p className="text-xs font-bold uppercase tracking-wider cmm-text-secondary">
           Actions confirmées
         </p>
-        <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
+        <p className="mt-1 text-2xl font-black cmm-text-primary">
           {selectedItems.length}
         </p>
       </div>
-      <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-900/80">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      <div className="cmm-card rounded-xl border p-4">
+        <p className="text-xs font-bold uppercase tracking-wider cmm-text-secondary">
           Missions attestées
         </p>
-        <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
+        <p className="mt-1 text-2xl font-black cmm-text-primary">
           {attestedMissionCount}
         </p>
       </div>
-      <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-900/80">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      <div className="cmm-card rounded-xl border p-4">
+        <p className="text-xs font-bold uppercase tracking-wider cmm-text-secondary">
           Structures identifiées
         </p>
-        <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
+        <p className="mt-1 text-2xl font-black cmm-text-primary">
           {organizationCount}
         </p>
       </div>
-      <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-900/80">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      <div className="cmm-card rounded-xl border p-4">
+        <p className="text-xs font-bold uppercase tracking-wider cmm-text-secondary">
           Heures vérifiées
         </p>
-        <p className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-300">
+        <p className="mt-1 text-sm font-bold cmm-text-secondary">
           Non documentées
         </p>
       </div>
@@ -85,17 +85,17 @@ export function EngagementParticipationSelector({
   return (
     <section
       aria-labelledby="engagement-participations-heading"
-      className="space-y-4 rounded-[2rem] border border-slate-200 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/80"
+      className="space-y-4 cmm-card rounded-xl border p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2
             id="engagement-participations-heading"
-            className="text-lg font-black tracking-tight text-slate-950 dark:text-white"
+            className="text-lg font-black tracking-tight cmm-text-primary"
           >
             Participations documentées ({items.length})
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
+          <p className="text-sm cmm-text-secondary">
             Seules les présences finales confirmées sur actions communicables apparaissent ici.
           </p>
         </div>
@@ -132,21 +132,21 @@ export function EngagementParticipationSelector({
                     type="checkbox"
                     checked={checked}
                     onChange={() => onToggle(item.actionId)}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-2 focus:ring-red-500"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-amber-700 focus:ring-2 focus:ring-amber-600"
                   />
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <span className="font-bold text-slate-950 dark:text-white">
+                      <span className="font-bold cmm-text-primary">
                         {item.actionTitle || item.locationLabel}
                       </span>
                       <time
                         dateTime={item.actionDate}
-                        className="text-xs font-semibold text-slate-500 dark:text-slate-400"
+                        className="text-xs font-semibold cmm-text-secondary"
                       >
                         {item.actionDate.slice(0, 10)}
                       </time>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                    <p className="text-xs cmm-text-secondary">
                       Lieu : {item.locationLabel} • Structure :{" "}
                       {item.organization.value
                         ? `${item.organization.value.name} (${item.organization.value.organizerTypeLabel})`
@@ -195,16 +195,16 @@ export function EngagementPersonalFieldsForm({
   return (
     <section
       aria-labelledby="engagement-personal-fields-heading"
-      className="space-y-4 rounded-[2rem] border border-slate-200 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/80"
+      className="space-y-4 cmm-card rounded-xl border p-4"
     >
       <div className="space-y-1">
         <h2
           id="engagement-personal-fields-heading"
-          className="text-lg font-black tracking-tight text-slate-950 dark:text-white"
+          className="text-lg font-black tracking-tight cmm-text-primary"
         >
           Informations facultatives du dossier
         </h2>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+        <p className="text-sm cmm-text-secondary">
           Ces champs libres ne sont ni vérifiés ni enregistrés sur les serveurs CleanMyMap : ils
           figurent uniquement dans le fichier Markdown téléchargé comme déclaration du titulaire.
         </p>
@@ -214,7 +214,7 @@ export function EngagementPersonalFieldsForm({
         <div>
           <label
             htmlFor="dossier-holder-name"
-            className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+            className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
           >
             Nom figurant sur le dossier (facultatif)
           </label>
@@ -225,14 +225,14 @@ export function EngagementPersonalFieldsForm({
             value={form.holderName}
             onChange={(event) => onChange({ holderName: event.target.value })}
             placeholder="Ex. Camille Martin"
-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
         </div>
 
         <div>
           <label
             htmlFor="dossier-motivations"
-            className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+            className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
           >
             Motivations ou expériences vécues (facultatif)
           </label>
@@ -242,14 +242,14 @@ export function EngagementPersonalFieldsForm({
             maxLength={2000}
             value={form.motivations}
             onChange={(event) => onChange({ motivations: event.target.value })}
-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
         </div>
 
         <div>
           <label
             htmlFor="dossier-skills"
-            className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+            className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
           >
             Savoir-faire perçus ou développés (facultatif)
           </label>
@@ -259,14 +259,14 @@ export function EngagementPersonalFieldsForm({
             maxLength={2000}
             value={form.perceivedSkills}
             onChange={(event) => onChange({ perceivedSkills: event.target.value })}
-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
         </div>
 
         <div>
           <label
             htmlFor="dossier-observations"
-            className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+            className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
           >
             Autres observations personnelles (facultatif)
           </label>
@@ -276,7 +276,7 @@ export function EngagementPersonalFieldsForm({
             maxLength={2000}
             value={form.observations}
             onChange={(event) => onChange({ observations: event.target.value })}
-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
         </div>
 
@@ -284,7 +284,7 @@ export function EngagementPersonalFieldsForm({
           <div>
             <label
               htmlFor="dossier-attestations"
-              className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+              className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
             >
               Attestation(s) signée(s) (références)
             </label>
@@ -294,13 +294,13 @@ export function EngagementPersonalFieldsForm({
               maxLength={1000}
               value={form.attestationReferences}
               onChange={(event) => onChange({ attestationReferences: event.target.value })}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
           </div>
           <div>
             <label
               htmlFor="dossier-links"
-              className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+              className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
             >
               Justificatifs / liens publics
             </label>
@@ -310,13 +310,13 @@ export function EngagementPersonalFieldsForm({
               maxLength={1000}
               value={form.publicLinks}
               onChange={(event) => onChange({ publicLinks: event.target.value })}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
           </div>
           <div>
             <label
               htmlFor="dossier-other-docs"
-              className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+              className="block text-xs font-bold uppercase tracking-wider cmm-text-secondary"
             >
               Autres documents
             </label>
@@ -326,7 +326,7 @@ export function EngagementPersonalFieldsForm({
               maxLength={1000}
               value={form.otherDocuments}
               onChange={(event) => onChange({ otherDocuments: event.target.value })}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600/30 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
           </div>
         </div>

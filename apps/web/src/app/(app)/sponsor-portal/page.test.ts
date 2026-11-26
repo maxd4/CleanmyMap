@@ -24,6 +24,8 @@ const overview = {
       impactVolumeKg: 120,
       mobilizationCount: 18,
       totalDurationMinutes: 600,
+      wasteKnownActions: 12,
+      wasteCoverageRate: 66.7,
     },
   },
   contracts: [{ id: "contract-1" }],
@@ -134,8 +136,8 @@ describe("/sponsor-portal access boundary", () => {
 
     const markup = renderToStaticMarkup(await SponsorPortalPage());
 
-    expect(markup).toContain('data-testid="metrics"');
-    expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 730, limit: 5000 });
+    expect(markup).toContain("Valorisation de voirie estimée");
+    expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 730, limit: 5000, publishedCompletedOnly: true });
     expect(mocks.loadAccountCompletionGateState).toHaveBeenCalledWith({
       userId: "user-1",
       clerkReachable: true,
@@ -146,11 +148,9 @@ describe("/sponsor-portal access boundary", () => {
   it("loads the sponsor overview only after authentication and profile validation", async () => {
     const markup = renderToStaticMarkup(await SponsorPortalPage());
 
-    expect(markup).toContain('data-testid="metrics"');
-    expect(markup).toContain("123,1–180 €");
-    expect(markup).toContain("données de mobilisation disponibles");
-    expect(markup).not.toContain("votre réseau territorial");
-    expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 730, limit: 5000 });
+    expect(markup).toContain("123,1 à 180 €");
+    expect(markup).toContain("66,7 % des actions renseignées.");
+    expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 730, limit: 5000, publishedCompletedOnly: true });
     expect(events).toEqual(["auth", "profile", "overview"]);
   });
 
@@ -159,8 +159,7 @@ describe("/sponsor-portal access boundary", () => {
 
     const markup = renderToStaticMarkup(await SponsorPortalPage());
 
-    expect(markup).toContain('data-testid="metrics"');
-    expect(markup).toContain("n/a");
+    expect(markup).toContain("Données d’impact momentanément indisponibles.");
     expect(events).toEqual(["auth", "profile"]);
   });
 });

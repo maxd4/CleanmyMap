@@ -138,6 +138,8 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<NavigableRouteId>([
   "reports",
   "admin",
   "pilotage",
+  "sponsor",
+  "elus",
   "learn-comprendre",
   "learn-sentrainer",
   "learn-bonnes-pratiques",
@@ -157,6 +159,8 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<NavigableRouteId>([
   "funding",
   "admin",
   "pilotage",
+  "sponsor",
+  "elus",
   "learn-comprendre",
   "learn-sentrainer",
   "learn-bonnes-pratiques",
@@ -198,9 +202,9 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   coordinateur: buildProfileSpacePages(["dashboard", "explorer", "pilotage"]),
   scientifique: buildProfileSpacePages(["dashboard", "explorer", "pilotage"]),
   entreprise: buildProfileSpacePages(["dashboard", "explorer", "sponsor"]),
-  elu: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "sponsor"]),
+  elu: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "sponsor", "elus"]),
   admin: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "admin"]),
-  max: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "admin"]),
+  max: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "sponsor", "elus", "admin"]),
 };
 
 const RUBRIQUE_BY_ID = new Map<RouteId, Rubrique>(

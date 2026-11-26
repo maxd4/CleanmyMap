@@ -1,4 +1,4 @@
-# Portail partenaires et décideurs
+﻿# Portail partenaires et décideurs
 
 ## Fiche canonique
 
@@ -66,3 +66,7 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+
+## Contrat cible de la refonte
+
+Trois vues : Synthèse, Zones et priorités, Méthodes et rapports. Corpus global strict des actions publiques terminées, fenêtre 730 jours, limite 5000 et couverture explicite. Aucun delta fixe, aucun certificat ou promesse ESG. Les estimations restent des proxies et l'export relève de /reports. Accessible depuis le bloc selon le rôle actif (entreprise, élu, IMU).

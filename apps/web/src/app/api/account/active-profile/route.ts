@@ -80,15 +80,13 @@ export async function POST(request: Request) {
 
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return NextResponse.json(
-      {
-        role,
-        activeRole: targetRole,
-        activeProfile: targetRole,
-        profilePath: getProfileEntryPath(targetRole),
-      },
-      { headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS },
-    );
+    if (targetRole !== identity.activeRole) {
+      return NextResponse.json(
+        { error: "Le rôle simulé est fixé au démarrage. Utilisez une session Clerk Development pour changer réellement de rôle.", code: "DEV_ROLE_FIXED" },
+        { status: 409, headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS },
+      );
+    }
+    return NextResponse.json({ role, activeRole: targetRole, activeProfile: targetRole, profilePath: getProfileEntryPath(targetRole) }, { headers: ACCOUNT_PRIVATE_RESPONSE_HEADERS });
   }
 
   const client = await clerkClient();

@@ -11,6 +11,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PageHeader } from "@/components/ui/page-header";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { EngagementAttestationPdfSection } from "./engagement-attestation-pdf-section";
 import {
   EngagementParticipationSelector,
@@ -47,6 +48,7 @@ export function EngagementDossierPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [form, setForm] = useState<EngagementDossierFormState>(INITIAL_FORM_STATE);
   const [exporting, setExporting] = useState(false);
+  const invalidPeriod = Boolean(periodStart && periodEnd && periodStart > periodEnd);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -149,6 +151,7 @@ export function EngagementDossierPage() {
   }, []);
 
   const handleExport = useCallback(async () => {
+    if (invalidPeriod) return;
     setExporting(true);
     setExportError(null);
     setExportMessage(null);
@@ -203,7 +206,7 @@ export function EngagementDossierPage() {
     } finally {
       setExporting(false);
     }
-  }, [form, periodStart, periodEnd, selectedFilteredItems]);
+  }, [form, periodStart, periodEnd, selectedFilteredItems, invalidPeriod]);
 
   return (
     <CmmGrid contentClassName="gap-6 pb-16">
@@ -211,21 +214,21 @@ export function EngagementDossierPage() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/profil/impact"
-            className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-600 hover:text-red-600 dark:text-slate-300"
+            className="inline-flex items-center gap-2 text-sm font-semibold cmm-text-secondary hover:underline"
           >
             <ArrowLeft size={14} />
             Retour à mon impact
           </Link>
           <Link
             href="/reports"
-            className="text-xs font-bold text-slate-600 underline-offset-4 hover:underline dark:text-slate-300"
+            className="text-sm font-semibold cmm-text-secondary underline-offset-4 hover:underline"
           >
             Consulter les rapports collectifs
           </Link>
         </div>
         <PageHeader
-          title="Valoriser mon engagement"
-          subtitle="Exportez un dossier Markdown privé fondé sur vos présences confirmées et missions attestées."
+          title="Mon dossier d’engagement"
+          subtitle="Constituez votre dossier privé et retrouvez les attestations à faire signer."
           align="left"
         />
       </CmmGridItem>
@@ -261,10 +264,11 @@ export function EngagementDossierPage() {
             </CmmButton>
           </div>
         ) : (
-          <div className="space-y-6">
-            <section
+          <div className="space-y-5">
+            <nav aria-label="Étapes du dossier" className="flex flex-wrap gap-2"><CmmButton href="#engagement-selection" tone="secondary" size="sm">1. Participations</CmmButton><CmmButton href="#engagement-personal" tone="secondary" size="sm">2. Présentation facultative</CmmButton><CmmButton href="#engagement-attestations" tone="secondary" size="sm">3. Attestations</CmmButton></nav>
+            <section id="engagement-selection"
               aria-label="Filtre de période"
-              className="flex flex-wrap items-end gap-4 rounded-[2rem] border border-slate-200 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/80"
+              className="cmm-card flex scroll-mt-28 flex-wrap items-end gap-4 rounded-xl border p-4"
             >
               <div>
                 <label
@@ -313,7 +317,7 @@ export function EngagementDossierPage() {
                 <CmmButton
                   type="button"
                   tone="primary"
-                  disabled={exporting}
+                  disabled={exporting || invalidPeriod}
                   onClick={() => void handleExport()}
                 >
                   <Download size={16} />
@@ -322,7 +326,8 @@ export function EngagementDossierPage() {
               </div>
             </section>
 
-            <div aria-live="polite" aria-atomic="true" className="min-h-6">
+            {invalidPeriod && <p role="alert" className="text-sm cmm-text-danger">La date de fin doit être postérieure ou égale à la date de début.</p>}
+            <div aria-live="polite" aria-atomic="true">
               {exportMessage ? (
                 <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-200">
                   {exportMessage}
@@ -348,12 +353,12 @@ export function EngagementDossierPage() {
               onClearAll={handleClearAll}
             />
 
-            <EngagementPersonalFieldsForm
-              form={form}
-              onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
-            />
-
-            <EngagementAttestationPdfSection selectedItems={selectedFilteredItems} />
+            <div id="engagement-personal" className="scroll-mt-28">
+              <CmmCard className="space-y-3"><details className="space-y-3"><summary className="cursor-pointer font-semibold cmm-text-primary">Compléter ma présentation (facultatif)</summary>
+                <EngagementPersonalFieldsForm form={form} onChange={(patch) => setForm(prev => ({ ...prev, ...patch }))} />
+              </details></CmmCard>
+            </div>
+            <div id="engagement-attestations" className="scroll-mt-28"><EngagementAttestationPdfSection selectedItems={selectedFilteredItems} /></div>
           </div>
         )}
       </CmmGridItem>

@@ -174,6 +174,7 @@ describe("POST /api/account/active-profile", () => {
     ["elu", "elu"],
     ["admin", "admin"],
     ["max", "admin"],
+    ["max", "elu"],
   ] as const)("allows granted %s to activate %s without changing GRANTED_ROLE", async (role, activeRole) => {
     identityMock.mockResolvedValue({ role, activeRole: role });
     const { updateUserMetadata } = setupClerk({ role, profile: role });
@@ -217,8 +218,8 @@ describe("POST /api/account/active-profile", () => {
     identityMock.mockResolvedValue({ role: "max", activeRole: "max" });
     devBypassMock.mockResolvedValue({ role: "max", userId: "dev-max" });
     const response = await post({ activeRole: "benevole" });
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ role: "max", activeRole: "benevole" });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "DEV_ROLE_FIXED" });
     expect(clerkClientMock).not.toHaveBeenCalled();
     expect(syncMock).not.toHaveBeenCalled();
   });

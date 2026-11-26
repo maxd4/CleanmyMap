@@ -29,7 +29,7 @@ export async function GovernancePage({ searchParams }: { searchParams: Record<st
       {identity && <RoleProfileSwitcher locale="fr" grantedRole={identity.role} activeRole={identity.activeRole} title="Rôles disponibles" />}
     </> : <>
       <DecisionPageNavigation route="/sections/elus" activeTab={tab} tabs={TABS} />
-      <p className="text-sm cmm-text-secondary">Lecture globale des données publiées, sans attribution d'un territoire administratif à votre compte.</p>
+      <p className="text-sm cmm-text-secondary">Lecture globale des données publiées, sans attribution d’un territoire administratif à votre compte.</p>
       {overview ? <PublishedDecisionScope overview={overview} /> : <CmmCard><p role="status" className="cmm-text-secondary">Données momentanément indisponibles.</p></CmmCard>}
       {tab === "summary" && overview && <><ThirtySecondsSummary locale="fr" kpis={overview.summary.kpis} alert={overview.summary.alert} /><CmmCard className="space-y-2"><h2 className="font-bold cmm-text-primary">Recommandation</h2><p className="cmm-text-primary">{overview.summary.recommendedAction.label}</p><p className="text-sm cmm-text-secondary">{overview.summary.recommendedAction.reason}</p></CmmCard></>}
       {tab === "zones" && overview && <PublishedDecisionZones zones={overview.zones} />}

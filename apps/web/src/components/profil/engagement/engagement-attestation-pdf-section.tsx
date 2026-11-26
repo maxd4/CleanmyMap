@@ -58,18 +58,18 @@ export function EngagementAttestationPdfSection({
   return (
     <section
       aria-labelledby="engagement-attestation-pdf-heading"
-      className="space-y-5 rounded-[2rem] border border-slate-200 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/80"
+      className="space-y-5 cmm-card rounded-xl border p-4"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-2xl space-y-1.5">
           <h2
             id="engagement-attestation-pdf-heading"
-            className="text-lg font-black tracking-tight text-slate-950 dark:text-white"
+            className="text-lg font-black tracking-tight cmm-text-primary"
           >
             Attestation associative vierge (PDF à faire signer)
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
-            Ce modèle officiel vierge CleanMyMap (formulaire A4 remplissable à 27 champs) doit
+          <p className="text-sm cmm-text-secondary">
+            Ce modèle vierge CleanMyMap (formulaire A4 remplissable à 27 champs) doit
             être vérifié, complété et signé séparément par chaque structure organisatrice.
             CleanMyMap n’émet aucune signature électronique ni validation à la place de l’organisme.
           </p>
@@ -101,7 +101,7 @@ export function EngagementAttestationPdfSection({
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+        <h3 className="text-sm font-black uppercase tracking-wider cmm-text-secondary">
           Regroupement par structure pour vos démarches
         </h3>
 
@@ -117,17 +117,17 @@ export function EngagementAttestationPdfSection({
                 className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="font-bold text-slate-950 dark:text-white">{group.name}</p>
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  <p className="font-bold cmm-text-primary">{group.name}</p>
+                  <span className="text-xs font-semibold cmm-text-secondary">
                     {group.organizerTypeLabel}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                <p className="mt-1 text-xs cmm-text-secondary">
                   {group.items.length} action{group.items.length > 1 ? "s" : ""} confirmée
                   {group.items.length > 1 ? "s" : ""} — une attestation distincte doit être
                   complétée et signée par cet organisme.
                 </p>
-                <ul className="mt-2 space-y-1 text-xs text-slate-700 dark:text-slate-300">
+                <ul className="mt-2 space-y-1 text-xs cmm-text-secondary">
                   {group.items.map((item) => (
                     <li key={item.actionId}>
                       {item.actionDate.slice(0, 10)} — {item.actionTitle || item.locationLabel} (
@@ -143,7 +143,7 @@ export function EngagementAttestationPdfSection({
                 <p className="font-bold text-slate-900 dark:text-slate-100">
                   Structure organisatrice non documentée ({undocumented.length})
                 </p>
-                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                <p className="mt-1 text-xs cmm-text-secondary">
                   Aucune structure signataire n’est identifiée pour ces participations : elles ne
                   peuvent pas être attribuées à un organisme signataire sans justificatif externe.
                 </p>

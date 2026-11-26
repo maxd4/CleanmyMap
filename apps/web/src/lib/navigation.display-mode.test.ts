@@ -225,6 +225,7 @@ describe("navigation display modes", () => {
       "explorer",
       "pilotage",
       "sponsor",
+      "elus",
     ]);
   });
 
@@ -278,6 +279,8 @@ describe("navigation display modes", () => {
       "Mon espace",
       "Sommaire",
       "Pilotage",
+      "Portail décideurs",
+      "Gouvernance",
       "Administration",
     ]);
     expect(learnSpace?.items.map((item) => item.label.fr)).toContain("S'entraîner");

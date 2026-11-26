@@ -75,7 +75,7 @@ describe("AccountEvolutionPanel", () => {
   it("keeps role-guide CTAs on the canonical route and omits IMU promotion", () => {
     const markup = renderPanel(null, "benevole");
 
-    expect(markup.match(/href="\/compte\/evolution"/g)).toHaveLength(2);
+    expect(markup).not.toContain('href="/compte/evolution"');
     expect(markup).not.toContain("href=\"/imu");
   });
 });

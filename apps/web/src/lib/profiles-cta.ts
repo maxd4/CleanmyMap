@@ -169,10 +169,10 @@ export const PROFILE_CTA_CONFIG: Record<Parcours, ProfileCtaConfig> = {
   },
   elu: {
     primaryCTA: {
-      href: SPONSOR_PORTAL_ROUTE,
+      href: "/sections/elus",
       label: {
-        fr: "Voir la synthèse d'impact",
-        en: "View impact summary",
+        fr: "Ouvrir la gouvernance",
+        en: "Open governance",
       },
       description: {
         fr: "Lire les indicateurs publics et consolidés",

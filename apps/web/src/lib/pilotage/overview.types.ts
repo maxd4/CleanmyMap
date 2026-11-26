@@ -60,4 +60,6 @@ export type LoadPilotageOverviewParams = {
   limit?: number;
   types?: ActionEntityType[] | null;
   scope?: PilotageOverviewScope | null;
+  /** Strict public completed action corpus, for published aggregate reads. */
+  publishedCompletedOnly?: boolean;
 };

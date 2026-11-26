@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { cn } from "@/lib/utils";
-import { getBlockClasses } from "@/lib/ui/block-accents";
-import { fetchCurrentAccountIdentity, type CurrentAccountIdentity } from "@/lib/account/current-account-identity";
+import type { CurrentAccountIdentity } from "@/lib/account/current-account-identity";
+import { CmmPageLayout } from "@/components/ui/cmm-section";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useImpactProfileActions } from "@/components/profil/use-impact-profile-actions";
 import { ImpactProfileAuthenticatedView } from "@/components/profil/impact-profile-authenticated-view";
 import type { GamificationBadgeDefinition } from "@/lib/gamification/progression/progression-types";
@@ -46,37 +48,26 @@ function isGamificationMeResponse(value: unknown): value is GamificationMeRespon
 }
 
 async function fetchJson<T>(url: string, guard: (value: unknown) => value is T): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error("API Error");
   const body: unknown = await response.json();
   if (!guard(body)) throw new Error("Réponse API invalide.");
   return body;
 }
 
-export default function ImpactProfilePage() {
-  const [currentAccountIdentity, setCurrentAccountIdentity] = useState<CurrentAccountIdentity | null>(null);
-  const classes = getBlockClasses("impact");
-  const { data: meData, isLoading } = useSWR<GamificationMeResponse, Error>("gamification-me", () => fetchJson("/api/gamification/me", isGamificationMeResponse));
+export type ImpactCardIdentity = Pick<CurrentAccountIdentity, "userId" | "displayName" | "firstName" | "handle" | "username" | "activeRole">;
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchCurrentAccountIdentity().then((identity) => {
-      if (!cancelled) setCurrentAccountIdentity(identity);
-    }).catch(() => {
-      if (!cancelled) setCurrentAccountIdentity(null);
-    });
-    return () => { cancelled = true; };
-  }, []);
-
-  const displayName = currentAccountIdentity?.displayName || currentAccountIdentity?.firstName || "Contributeur";
-  const actions = useImpactProfileActions(displayName);
-  if (isLoading) return <div className="flex min-h-[400px] flex-col items-center justify-center gap-4"><div className="h-8 w-8 animate-spin rounded-full border-2 border-red-500 border-t-transparent" /><span className="animate-pulse text-xs font-black uppercase tracking-widest text-red-400/60">Chargement de votre impact...</span></div>;
-  const prog = meData?.progression ?? undefined;
-  const validatedRoleHistory = prog?.history?.timeline.filter((item) => item.validatedRoleCodes.length > 0) ?? [];
-  if (!currentAccountIdentity) return <ImpactProfileLockedView classes={classes} />;
-  return <ImpactProfileAuthenticatedView classes={classes} identity={currentAccountIdentity} prog={prog} validatedRoleHistory={validatedRoleHistory} actions={actions} />;
-}
-
-function ImpactProfileLockedView({ classes }: { classes: ReturnType<typeof getBlockClasses> }) {
-  return <ClerkRequiredGate isAuthenticated={false} mode="blur" title="Carte d’impact personnelle" description="Connectez-vous pour consulter, télécharger et partager votre carte d’impact." lockedPreview={<div className="grid gap-8 md:grid-cols-2"><div className={cn("rounded-[2rem] border p-6", classes.surface)}><p className="text-xs font-black uppercase tracking-[0.2em] text-red-400/60">Aperçu verrouillé</p><div className="mt-4 rounded-2xl border border-white/5 bg-red-400/5 p-5"><p className="cmm-text-body cmm-text-inverse">La carte d&apos;impact montre tes actions validées, ton niveau et tes badges après connexion.</p></div></div><div className={cn("rounded-[2rem] border p-6", classes.surface)}><p className="text-xs font-black uppercase tracking-[0.2em] text-red-400/60">Actions disponibles</p><div className="mt-4 space-y-3">{["Télécharger le certificat", "Partager l’image de la carte", "Consulter la méthodologie"].map((act) => <div key={act} className="rounded-xl border border-white/5 bg-white/5 p-4 text-xs font-bold text-red-100/30">{act}</div>)}</div></div></div>}><div /></ClerkRequiredGate>;
+export default function ImpactProfilePage({ identity, authUnavailable = false }: { identity: ImpactCardIdentity | null; authUnavailable?: boolean }) {
+  const { data: meData, isLoading, error, mutate } = useSWR<GamificationMeResponse, Error>(
+    identity ? ["/api/gamification/me", identity.userId] : null,
+    () => fetchJson("/api/gamification/me", isGamificationMeResponse),
+    { keepPreviousData: false },
+  );
+  const actions = useImpactProfileActions(identity?.displayName || identity?.firstName || "Contributeur");
+  if (!identity) return <ClerkRequiredGate isAuthenticated={false} authUnavailable={authUnavailable} mode="blur" title="Carte d’impact personnelle" description="Connectez-vous pour consulter et exporter votre carte personnelle." lockedPreview={<CmmCard><p className="cmm-text-secondary">Votre progression et vos missions validées après connexion.</p></CmmCard>}><div /></ClerkRequiredGate>;
+  if (isLoading) return <CmmPageLayout><PageHeader title="Mon impact" /><CmmSkeleton className="h-64" /></CmmPageLayout>;
+  if (error || !meData?.progression) return <CmmPageLayout><PageHeader title="Mon impact" /><CmmCard className="space-y-3"><p role="status" className="cmm-text-secondary">{error ? "La progression n'a pas pu être chargée." : "Aucune progression disponible pour le moment."}</p><div className="flex flex-wrap gap-2"><CmmButton tone="secondary" onClick={() => { void mutate(); }}>Réessayer</CmmButton><CmmButton href="/profil/engagement" tone="primary">Mon dossier d’engagement</CmmButton></div></CmmCard></CmmPageLayout>;
+  const prog = meData.progression;
+  const history = prog.history?.timeline.filter(item => item.validatedRoleCodes.length > 0);
+  return <ImpactProfileAuthenticatedView identity={identity} prog={prog} validatedRoleHistory={history} actions={actions} />;
 }

@@ -8,6 +8,7 @@ import { getProfileEntryPath, type AppProfile } from "@/lib/profiles";
 
 type ActiveRoleMutationResponse = {
   profilePath?: string;
+  status?: string;
   error?: string;
 };
 
@@ -37,6 +38,11 @@ export function useActiveRoleMutation() {
         | null;
 
       if (!response.ok) {
+        if (payload?.status === "clerk_updated_supabase_sync_pending") {
+          // Clerk already persisted the selection; reload and re-read the server identity without claiming convergence.
+          await user?.reload().catch(() => undefined);
+          router.refresh();
+        }
         throw new Error(payload?.error ?? "Mutation de profil refusée.");
       }
 
