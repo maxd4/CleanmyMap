@@ -3,6 +3,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
+    reporters: ['dot'],
+    silent: 'passed-only',
     include: ['tests/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',

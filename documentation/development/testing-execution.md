@@ -196,6 +196,28 @@ avec `--reporter=default --silent=false` ou `--reporter=json --outputFile=...`.
 En mode `DEVELOPMENT`, privilégier `npm run test -w apps/web -- <fichier(s)>`
 sur les tests directement concernés et leurs consommateurs plutôt que de
 relancer la suite intégrale.
+
+Extension aux autres familles de validation :
+- **Vitest Mobile** (`apps/mobile/vitest.config.ts`) : `reporters: ['dot']` et
+  `silent: 'passed-only'` pour supprimer le bruit `stderr` des tests réussis.
+- **Couverture Web** (`apps/web/package.json`) : `test:coverage` impose
+  `--pool=forks --maxWorkers=4`. Le pool `threads` avec `@vitest/coverage-v8`
+  sous Node 24/Windows provoque un crash natif `0xC0000005` et augmenter
+  `maxWorkers` au-delà de `4` sature la RAM des workers V8.
+- **Tests Node** (`npm run test:scripts` via `scripts/ci/run-script-tests.mjs`) :
+  exécution avec `--test-reporter=dot`, lot parallélisable à
+  `--test-concurrency=6` puis lot exclusif à `--test-concurrency=1` pour les
+  tests manipulant des preuves de couverture ou gardes Git partagés.
+- **Playwright E2E et SQL/pgTAP** : `playwright.config.ts` utilise le reporter
+  compact `"line"` en local comme en CI tout en conservant `workers: 1` et
+  `fullyParallel: false` (serveur `localhost:3000` unique, `storageState` Clerk
+  partagé et état mutable) ; les preuves SQL/concurrence
+  (`run-supabase-sql-proof.mjs`) restent sérialisées sur la base PostgreSQL
+  éphémère partagée.
+- **Optimisations écartées** : `isolate: false` sur Vitest Web (pollution
+  inter-fichiers des `vi.mock` et `globalThis`), `pool: "threads"` pour la
+  couverture Web V8 (`0xC0000005`), parallélisation des tests Node exclusifs,
+  `workers > 1` sur Playwright et parallélisation des preuves SQL/concurrence.
 Une extraction, une création de module, une
 modification d'import ou un refactor ne déclenche automatiquement aucun
 `quality:cycles`, `quality:duplication`, `quality:complexity`,

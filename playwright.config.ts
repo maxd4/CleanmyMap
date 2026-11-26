@@ -27,7 +27,7 @@ export default defineConfig({
         ["html", { open: "never", outputFolder: "artifacts/playwright/report" }],
         ["json", { outputFile: "artifacts/playwright/results.json" }],
       ]
-    : "list",
+    : "line",
   use: {
     baseURL,
     trace: "retain-on-failure",

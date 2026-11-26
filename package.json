@@ -139,7 +139,7 @@
     "test:coverage:node": "node scripts/ci/run-node-coverage.mjs",
     "test:coverage:python": "node scripts/ci/run-python-coverage.mjs",
     "quality:coverage": "node scripts/checks/run-coverage-quality.mjs",
-    "test:scripts": "node --experimental-strip-types --test --test-concurrency=1 --test-timeout=300000 scripts/**/*.test.mjs scripts/**/*.test.js apps/web/scripts/**/*.test.mjs apps/web/scripts/**/*.test.js",
+    "test:scripts": "node --experimental-strip-types scripts/ci/run-script-tests.mjs",
     "test:security": "npm run test:security -w apps/web",
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
     "test:e2e": "playwright test --project=\"local public\" --project=\"local authenticated\"",

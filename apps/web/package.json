@@ -14,7 +14,7 @@
     "lint": "eslint src --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit --pretty false",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage --maxWorkers=4",
+    "test:coverage": "vitest run --coverage --pool=forks --maxWorkers=4",
     "test:security": "node ../../scripts/checks/validation-policy.mjs --run-vitest --groups security",
     "test:regression-gates": "node ../../scripts/checks/validation-policy.mjs --run-vitest --groups regression",
     "backup:actions": "node scripts/export-actions-backup.mjs",
