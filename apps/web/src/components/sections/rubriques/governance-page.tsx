@@ -12,7 +12,8 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { SystemStateRetryButton } from "@/components/ui/system-state-retry-button";
 import { RoleProfileSwitcher } from "@/components/account/role-profile-switcher";
-import { ThirtySecondsSummary, localizeSummaryText } from "@/components/pilotage/thirty-seconds-summary";
+import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
+import { localizeSummaryText } from "@/lib/pilotage/summary-localization";
 import { PublishedDecisionScope, PublishedDecisionZones, PublishedDecisionMethods } from "@/components/pilotage/published-decision-panels";
 import { DecisionPageNavigation } from "@/components/pilotage/decision-page-navigation";
 

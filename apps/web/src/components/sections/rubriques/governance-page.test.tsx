@@ -50,11 +50,6 @@ vi.mock("@/components/account/role-profile-switcher", () => ({
 vi.mock("@/components/pilotage/thirty-seconds-summary", () => ({
   ThirtySecondsSummary: ({ locale }: { locale: string }) =>
     React.createElement("div", { "data-testid": "thirty-seconds", "data-locale": locale }),
-  localizeSummaryText: (text: string | undefined, locale: string) => {
-    if (locale === "en" && text === "Maintenir la couverture") return "Maintain coverage";
-    if (locale === "en" && text === "Actions régulières") return "Regular actions";
-    return text;
-  },
 }));
 
 import { GovernancePage } from "./governance-page";
@@ -103,8 +98,8 @@ const validOverview = {
     alert: { severity: "low", title: "RAS", detail: "Ras" },
     recommendedAction: {
       href: "/actions/map",
-      label: "Maintenir la couverture",
-      reason: "Actions régulières",
+      label: "Maintenir le pilotage courant",
+      reason: "Le corpus est tronque ou partiel ; les variations entre periodes ne sont pas comparables.",
     },
   },
 };
@@ -167,8 +162,8 @@ describe("GovernancePage", () => {
     const enMarkup = renderToStaticMarkup(await GovernancePage({ searchParams: {} }));
     expect(enMarkup).toContain("Governance");
     expect(enMarkup).toContain("Decision support on completed public actions.");
-    expect(enMarkup).toContain("Maintain coverage");
-    expect(enMarkup).toContain("Regular actions");
+    expect(enMarkup).toContain("Maintain current operations");
+    expect(enMarkup).toContain("The loaded dataset is truncated or partial; period-over-period variations are not comparable.");
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({
       periodDays: 30,
       limit: 1500,
@@ -184,6 +179,7 @@ describe("GovernancePage", () => {
     mocks.getServerLocale.mockResolvedValueOnce("en");
     const enMethodsMarkup = renderToStaticMarkup(await GovernancePage({ searchParams: { tab: "methods" } }));
     expect(enMethodsMarkup).toContain("Field impact (kg)");
+    expect(enMethodsMarkup).toContain("Canonical calculator");
     expect(enMethodsMarkup).not.toContain("Somme fr");
   });
 });

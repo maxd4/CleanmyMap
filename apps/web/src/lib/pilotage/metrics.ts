@@ -14,7 +14,7 @@ type PilotageWindowMetrics = {
   impactVolumeKg: number;
   wasteKnownActions: number;
   wasteCoverageRate: number;
-  volunteersKnownActions?: number;
+  volunteersKnownActions: number;
   mobilizationCount: number;
   totalDurationMinutes: number;
   qualityScore: number;

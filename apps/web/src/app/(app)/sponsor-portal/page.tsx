@@ -1,5 +1,4 @@
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
-import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import { computeImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
@@ -30,11 +29,7 @@ function SponsorMetrics({ overview, locale }: { overview: SponsorOverview; local
   const isEn = locale === "en";
   const current = overview.comparison.current;
   const totalActions = current.approvedActions;
-  const volunteersKnownActions =
-    current.volunteersKnownActions ??
-    overview.contracts.filter(
-      (contract) => contract.status === "approved" && computeActionImpactKpis(contract).volunteersKnown,
-    ).length;
+  const volunteersKnownActions = current.volunteersKnownActions;
   const mass = current.wasteKnownActions > 0 ? current.impactVolumeKg : null;
   const co2 = mass === null ? null : Math.round(mass * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg);
   const savings = mass === null ? null : computeImpactTerrain2026StreetCleaningSavings({ wasteKg: mass, durationMinutes: current.totalDurationMinutes });
