@@ -362,17 +362,17 @@ begin
   end;
 exception when others then
   if sqlstate = '23514' then
-    if v_step = 'INIT' then raise exception using errcode = '22001';
-    elsif v_step = 'SETUP' then raise exception using errcode = '22002';
-    elsif v_step = 'QUALIFY_WC' then raise exception using errcode = '22003';
-    elsif v_step = 'CASUAL_QUALIFY' then raise exception using errcode = '22004';
-    elsif v_step = 'PARTICIPANTS' then raise exception using errcode = '22005';
-    elsif v_step = 'REJECTS' then raise exception using errcode = '22007';
-    elsif v_step = 'ASSIGN_1_1' then raise exception using errcode = '22008';
-    elsif v_step = 'READINESS' then raise exception using errcode = '22012';
-    elsif v_step = 'REQUALIFY' then raise exception using errcode = '22021';
-    elsif v_step = 'REVOKE' then raise exception using errcode = '22023';
-    elsif v_step = 'ROUTE_MEDIA' then raise exception using errcode = '22026';
+    if v_step = 'INIT' then raise exception using errcode = '22001', message = 'SQLSTATE=22001';
+    elsif v_step = 'SETUP' then raise exception using errcode = '22002', message = 'SQLSTATE=22002';
+    elsif v_step = 'QUALIFY_WC' then raise exception using errcode = '22003', message = 'SQLSTATE=22003';
+    elsif v_step = 'CASUAL_QUALIFY' then raise exception using errcode = '22004', message = 'SQLSTATE=22004';
+    elsif v_step = 'PARTICIPANTS' then raise exception using errcode = '22005', message = 'SQLSTATE=22005';
+    elsif v_step = 'REJECTS' then raise exception using errcode = '22007', message = 'SQLSTATE=22007';
+    elsif v_step = 'ASSIGN_1_1' then raise exception using errcode = '22008', message = 'SQLSTATE=22008';
+    elsif v_step = 'READINESS' then raise exception using errcode = '22012', message = 'SQLSTATE=22012';
+    elsif v_step = 'REQUALIFY' then raise exception using errcode = '22021', message = 'SQLSTATE=22021';
+    elsif v_step = 'REVOKE' then raise exception using errcode = '22023', message = 'SQLSTATE=22023';
+    elsif v_step = 'ROUTE_MEDIA' then raise exception using errcode = '22026', message = 'SQLSTATE=22026';
     end if;
   end if;
   raise;
