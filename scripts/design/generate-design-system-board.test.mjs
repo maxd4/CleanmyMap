@@ -327,3 +327,42 @@ test("collects UI exports, props, variants and colocalized hooks without executi
     assert.deepEqual(meta.hooks[0].hooks, ["useFeatureState"]);
   });
 });
+
+test("resolves @import tokens.css, TS union ButtonVariant types, and P0 graph consumers/tests", async () => {
+  await withTempDir(async (dir) => {
+    const sourceFiles = await writeBoardFixtures(path.join(dir, "sources"));
+    const stylesDir = path.join(dir, "styles");
+    await mkdir(stylesDir, { recursive: true });
+    const realCss = await readFile(sourceFiles.globalsCss, "utf8");
+    const tokensPath = path.join(stylesDir, "tokens.css");
+    await writeFile(tokensPath, realCss);
+    await writeFile(sourceFiles.globalsCss, `@import "tailwindcss";\n@import "../styles/tokens.css";\n`);
+    sourceFiles.tokensCss = tokensPath;
+
+    const data = await buildData({ sourceFiles, now: () => "2026-01-01T00:00:00.000Z" });
+    assert.equal(data.stats.tokens, 8);
+    assert.ok(data.sources.list.includes("tokens.css"));
+
+    const uiDir = path.join(dir, "apps/web/src/components/ui");
+    await mkdir(uiDir, { recursive: true });
+    await writeFile(
+      path.join(uiDir, "cmm-button.tsx"),
+      `export type ButtonVariant = "default" | "pill" | "ghost";\nexport interface CmmButtonProps { variant?: ButtonVariant }\nexport function CmmButton() { return null; }\n`,
+    );
+    const meta = await collectUiAndHooksMetadata({
+      rootDir: dir,
+      uiFiles: ["cmm-button.tsx"],
+      navigationFiles: [],
+      srcDir: path.join(dir, "apps/web/src"),
+      graph: {
+        edges: [
+          { from: "apps/web/src/app/page.tsx", to: "apps/web/src/components/ui/cmm-button.tsx", sourceKind: "runtime" },
+          { from: "apps/web/src/app/page.test.tsx", to: "apps/web/src/components/ui/cmm-button.tsx", sourceKind: "test" },
+        ],
+      },
+    });
+    assert.deepEqual(meta.uiCatalog[0].variants, ["default", "ghost", "pill"]);
+    assert.deepEqual(meta.uiCatalog[0].consumers, ["apps/web/src/app/page.tsx"]);
+    assert.deepEqual(meta.uiCatalog[0].tests, ["apps/web/src/app/page.test.tsx"]);
+  });
+});

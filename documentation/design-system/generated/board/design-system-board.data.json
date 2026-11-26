@@ -1,10 +1,11 @@
 {
-  "generatedAt": "2026-08-29T01:55:44.028Z",
+  "generatedAt": "2026-11-26T16:52:25.823Z",
   "stats": {
     "tokens": 8,
     "blocks": 5,
     "effects": 6,
-    "ui": 22,
+    "ui": 18,
+    "hooks": 107,
     "visibleBlockIds": [
       "home",
       "act",
@@ -20,6 +21,7 @@
   "sources": {
     "list": [
       "globals.css",
+      "tokens.css",
       "block-accents.ts",
       "navigation.ts",
       "sections-registry/config.ts",
@@ -28,22 +30,35 @@
     ],
     "uiFiles": [
       "admin-access-state.tsx",
+      "async-panel-controls.tsx",
+      "capture-mode-initializer.tsx",
       "clerk-required-gate.tsx",
+      "cmm-badge.tsx",
       "cmm-block-accent.tsx",
       "cmm-button.tsx",
       "cmm-card.tsx",
+      "cmm-count-badge.tsx",
+      "cmm-dialog.tsx",
+      "cmm-disclosure.tsx",
+      "cmm-dropdown.tsx",
+      "cmm-feedback.tsx",
+      "cmm-field.tsx",
       "cmm-grid.tsx",
+      "cmm-icon.tsx",
       "cmm-pill.tsx",
+      "cmm-popover.tsx",
       "cmm-section.tsx",
       "cmm-skeleton.tsx",
+      "cmm-toast.tsx",
       "conditional-analytics.tsx",
       "cookie-consent-banner.tsx",
-      "decision-page-header.tsx",
+      "deferred-weather-warning-bar.tsx",
+      "display-mode-initializer.tsx",
       "error-message.tsx",
       "family-rubrique-card.tsx",
-      "identity-badge.tsx",
       "identity-profile-banner.tsx",
       "inline-field-error.tsx",
+      "modal-frame.tsx",
       "navigation-grid.tsx",
       "network-toast.tsx",
       "page-header.tsx",
@@ -65,20 +80,22 @@
       "weather-warning-bar.tsx"
     ],
     "navigationFiles": [
-      "app-navigation-block-dropdown-act.tsx",
-      "app-navigation-block-dropdown-home.tsx",
-      "app-navigation-block-dropdown-learn.tsx",
-      "app-navigation-block-dropdown-network.tsx",
       "app-navigation-block-dropdown.tsx",
+      "app-navigation-ribbon-account.tsx",
+      "app-navigation-ribbon-menus.tsx",
+      "app-navigation-ribbon-shell.tsx",
+      "app-navigation-ribbon-tour.tsx",
       "app-navigation-ribbon.tsx",
+      "app-navigation-tree-menu.content.tsx",
       "app-navigation-tree-menu.tsx",
-      "app-navigation.tsx",
-      "app-sidebar.tsx",
-      "block-switcher.tsx",
+      "feedback-discovery-callout.tsx",
       "global-search.tsx",
+      "navigation-dropdown-content.tsx",
       "navigation-dropdown-help-text.tsx",
       "navigation-dropdown-item-card.tsx",
+      "navigation-item-text.tsx",
       "notification-bell.tsx",
+      "ribbon-dropdown-item.tsx",
       "role-primary-actions.tsx"
     ],
     "coreHighlightFiles": [
@@ -94,7 +111,6 @@
       "cookie-consent-banner",
       "error-message",
       "global-search",
-      "identity-badge",
       "identity-profile-banner",
       "network-toast",
       "notification-bell",
@@ -102,7 +118,12 @@
       "site-preferences-controls",
       "vibrant-background"
     ],
-    "profile": "benevole"
+    "profile": "benevole",
+    "provenance": {
+      "consumerGraph": "architecture-import-graph",
+      "gitSha": "5ee3c966ba7b29dae820d3571b1a7e2ad35d8916",
+      "measuredSource": "filesystem"
+    }
   },
   "palette": [
     {
@@ -203,42 +224,28 @@
       "surface": "bg-[rgba(243,251,246,0.94)] backdrop-blur-xl",
       "surfaceMuted": "bg-[rgba(236,248,240,0.84)] backdrop-blur-md",
       "borderStrong": "border-emerald-300/80",
-      "summary": "Déclarer une action, Rejoindre un formulaire, Où agir ?, Organiser une action",
+      "summary": "Rejoindre une action, Créer une action, Signaler un déchet",
       "items": [
         {
-          "label": "Déclarer une action",
+          "label": "Rejoindre une action",
+          "route": "/sections/rejoindre-une-action",
+          "sourceCategory": "Actions Terrain",
+          "exposedBlock": "Agir",
+          "meta": "Actions Terrain / Agir"
+        },
+        {
+          "label": "Créer une action",
           "route": "/actions/new",
           "sourceCategory": "Actions Terrain",
           "exposedBlock": "Agir",
           "meta": "Actions Terrain / Agir"
         },
         {
-          "label": "Rejoindre un formulaire",
-          "route": "/sections/rejoindre-un-formulaire",
-          "sourceCategory": "Actions Terrain",
-          "exposedBlock": "Agir",
-          "meta": "Actions Terrain / Agir"
-        },
-        {
-          "label": "Où agir ?",
-          "route": "/sections/route",
-          "sourceCategory": "Actions Terrain",
-          "exposedBlock": "Agir",
-          "meta": "Actions Terrain / Agir"
-        },
-        {
-          "label": "Organiser une action",
-          "route": "/sections/weather",
-          "sourceCategory": "Actions Terrain",
-          "exposedBlock": "Agir",
-          "meta": "Actions Terrain / Agir"
-        },
-        {
           "label": "Signaler un déchet",
-          "route": "/sections/trash-spotter",
-          "sourceCategory": "Communauté",
+          "route": "/signalement",
+          "sourceCategory": "Actions Terrain",
           "exposedBlock": "Agir",
-          "meta": "Communauté / Agir"
+          "meta": "Actions Terrain / Agir"
         }
       ]
     },
@@ -296,32 +303,18 @@
       "surface": "bg-[rgba(10,4,28,0.78)] backdrop-blur-xl",
       "surfaceMuted": "bg-[rgba(7,2,20,0.55)] backdrop-blur-md",
       "borderStrong": "border-violet-400/38",
-      "summary": "Communauté (alias partenaires), Communauté, Idées et problèmes, Groupes de discussion",
+      "summary": "Groupes de discussion, Annuaire des acteurs, Données publiques, Soutenir CleanMyMap",
       "items": [
-        {
-          "label": "Communauté (alias partenaires)",
-          "route": "/partners/network",
-          "sourceCategory": "Communauté",
-          "exposedBlock": "Réseau & Discussions",
-          "meta": "Communauté / Réseau & Discussions"
-        },
-        {
-          "label": "Communauté",
-          "route": "/sections/community",
-          "sourceCategory": "Communauté",
-          "exposedBlock": "Réseau & Discussions",
-          "meta": "Communauté / Réseau & Discussions"
-        },
-        {
-          "label": "Idées et problèmes",
-          "route": "/sections/feedback",
-          "sourceCategory": "Communauté",
-          "exposedBlock": "Réseau & Discussions",
-          "meta": "Communauté / Réseau & Discussions"
-        },
         {
           "label": "Groupes de discussion",
           "route": "/sections/messagerie",
+          "sourceCategory": "Communauté",
+          "exposedBlock": "Réseau & Discussions",
+          "meta": "Communauté / Réseau & Discussions"
+        },
+        {
+          "label": "Annuaire des acteurs",
+          "route": "/sections/annuaire",
           "sourceCategory": "Communauté",
           "exposedBlock": "Réseau & Discussions",
           "meta": "Communauté / Réseau & Discussions"
@@ -332,6 +325,13 @@
           "sourceCategory": "Analyse & Contexte",
           "exposedBlock": "Réseau & Discussions",
           "meta": "Analyse & Contexte / Réseau & Discussions"
+        },
+        {
+          "label": "Soutenir CleanMyMap",
+          "route": "/sections/funding",
+          "sourceCategory": "Communauté",
+          "exposedBlock": "Réseau & Discussions",
+          "meta": "Communauté / Réseau & Discussions"
         }
       ]
     },
@@ -536,6 +536,3561 @@
       "code": "surface premium",
       "text": "Contours subtils, transparence contrôlée et blur contenu.",
       "style": "background:\n        linear-gradient(135deg, rgba(255,255,255,.82), rgba(255,255,255,.42)),\n        radial-gradient(circle at 24% 18%, rgba(255,255,255,.72), transparent 24%);\n        border: 1px solid rgba(255, 255, 255, 0.4);\n        backdrop-filter: blur(16px);"
+    }
+  ],
+  "uiCatalog": [
+    {
+      "path": "apps/web/src/components/navigation/app-navigation-block-dropdown.tsx",
+      "folder": "navigation",
+      "exports": [
+        "AppNavigationBlockDropdown"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/navigation/app-navigation-block-dropdown.test.tsx",
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-shell.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/app-navigation-block-dropdown.behavior.test.tsx",
+        "apps/web/src/components/navigation/app-navigation-block-dropdown.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/app-navigation-ribbon-account.tsx",
+      "folder": "navigation",
+      "exports": [
+        "AccountUserBubble",
+        "AppNavigationRibbonProps",
+        "ClerkUserLike",
+        "RibbonAccountActions",
+        "RibbonAccountActionsFallback",
+        "RibbonNavigationTracker"
+      ],
+      "propsTypes": [
+        "AppNavigationRibbonProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/navigation/app-navigation-ribbon-account.test.tsx",
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-menus.tsx",
+        "apps/web/src/components/navigation/app-navigation-ribbon-shell.tsx",
+        "apps/web/src/components/navigation/app-navigation-ribbon.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-account.test.tsx",
+        "apps/web/src/components/navigation/app-navigation-ribbon-menus.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/app-navigation-ribbon-menus.tsx",
+      "folder": "navigation",
+      "exports": [
+        "RibbonFeedbackMenu",
+        "RibbonMenuOpenProps",
+        "RibbonPreferencesMenu"
+      ],
+      "propsTypes": [
+        "RibbonMenuOpenProps"
+      ],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-shell.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-menus.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/app-navigation-ribbon-shell.tsx",
+      "folder": "navigation",
+      "exports": [
+        "AppNavigationRibbonShell"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-ribbon.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-shell.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/app-navigation-ribbon-tour.tsx",
+      "folder": "navigation",
+      "exports": [
+        "RibbonTutorial"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/account/account-setup-form.tsx",
+        "apps/web/src/components/accueil/accueil-hero.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-tour.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/app-navigation-ribbon.tsx",
+      "folder": "navigation",
+      "exports": [
+        "AppNavigationRibbon"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/layout/root-layout-chrome.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/app-navigation-ribbon.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/app-navigation-tree-menu.content.tsx",
+      "folder": "navigation",
+      "exports": [
+        "NavigationTreeContent"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-tree-menu.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/app-navigation-tree-menu.tsx",
+      "folder": "navigation",
+      "exports": [
+        "AppNavigationTreeMenu"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-shell.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/app-navigation-tree-menu.behavior.test.tsx",
+        "apps/web/src/components/navigation/navigation-link-behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/feedback-discovery-callout.tsx",
+      "folder": "navigation",
+      "exports": [
+        "FeedbackDiscoveryCallout"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-menus.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/feedback-discovery-callout.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/global-search.tsx",
+      "folder": "navigation",
+      "exports": [
+        "GlobalSearch"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/navigation/global-search.test.tsx",
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-shell.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/global-search.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/navigation-dropdown-content.tsx",
+      "folder": "navigation",
+      "exports": [
+        "NavigationDropdownContent"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-block-dropdown.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/navigation-dropdown-help-text.tsx",
+      "folder": "navigation",
+      "exports": [
+        "NavigationDropdownHelpText"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/navigation-dropdown-item-card.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/app-navigation-tree-menu.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/navigation-dropdown-item-card.tsx",
+      "folder": "navigation",
+      "exports": [
+        "NavigationDropdownItemCard"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/navigation-dropdown-content.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/navigation-link-behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/navigation-item-text.tsx",
+      "folder": "navigation",
+      "exports": [
+        "NavigationItemText"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-tree-menu.content.tsx",
+        "apps/web/src/components/navigation/global-search.tsx",
+        "apps/web/src/components/navigation/navigation-dropdown-item-card.tsx",
+        "apps/web/src/components/navigation/ribbon-dropdown-item.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/notification-bell.tsx",
+      "folder": "navigation",
+      "exports": [
+        "NotificationBell"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-account.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/notification-bell.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/ribbon-dropdown-item.tsx",
+      "folder": "navigation",
+      "exports": [
+        "RibbonDropdownItem"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-ribbon-menus.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/ribbon-dropdown-item.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/navigation/role-primary-actions.tsx",
+      "folder": "navigation",
+      "exports": [
+        "RolePrimaryActions"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/(app)/dashboard/page.tsx",
+        "apps/web/src/app/(app)/profil/[profile]/page.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/navigation/role-primary-actions.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/admin-access-state.tsx",
+      "folder": "ui",
+      "exports": [
+        "AdminAccessState"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/(app)/admin/page.tsx",
+        "apps/web/src/app/(app)/admin/services/page.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/async-panel-controls.tsx",
+      "folder": "ui",
+      "exports": [
+        "AsyncPanelCardLoadingState",
+        "AsyncPanelRefreshButton"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/admin/free-plan-services-panel.async.tsx",
+        "apps/web/src/components/admin/free-plan-services-panel.tsx",
+        "apps/web/src/components/dashboard/storage-usage-panel.async.tsx",
+        "apps/web/src/components/dashboard/storage-usage-panel.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/dashboard/storage-usage-panel.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/capture-mode-initializer.tsx",
+      "folder": "ui",
+      "exports": [
+        "CAPTURE_MODE_INITIALIZER_SCRIPT",
+        "CAPTURE_MODE_QUERY_PARAM",
+        "CAPTURE_MODE_QUERY_VALUE",
+        "CaptureModeInitializer"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/layout.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/capture-mode-initializer.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/clerk-required-gate.tsx",
+      "folder": "ui",
+      "exports": [
+        "ClerkRequiredGate"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/clerk-required-gate.test.tsx",
+      "consumers": [
+        "apps/web/src/app/(app)/actions/history/page.tsx",
+        "apps/web/src/app/(app)/compte/evolution/page.tsx",
+        "apps/web/src/app/(app)/parcours/[profile]/page.tsx",
+        "apps/web/src/app/(app)/parcours/page.tsx",
+        "apps/web/src/app/(app)/partners/dashboard/page.tsx",
+        "apps/web/src/app/(app)/partners/onboarding/page.tsx",
+        "apps/web/src/app/(app)/prints/brigade-verte/page.tsx",
+        "apps/web/src/app/(app)/prints/report/page.tsx",
+        "apps/web/src/app/(app)/profil/[profile]/page.tsx",
+        "apps/web/src/app/(app)/reports/page-content.tsx",
+        "apps/web/src/app/(app)/sections/[sectionId]/page.tsx",
+        "apps/web/src/app/(app)/sponsor-portal/page.tsx",
+        "apps/web/src/components/dashboard/dashboard-auth-required-preview.tsx",
+        "apps/web/src/components/profil/engagement/engagement-dossier-page.tsx",
+        "apps/web/src/components/profil/impact-profile-page.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/clerk-required-gate.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-badge.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmBadge",
+        "CmmBadgeProps",
+        "CmmBadgeTone"
+      ],
+      "propsTypes": [
+        "CmmBadgeProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-badge.test.tsx",
+      "consumers": [
+        "apps/web/src/components/actions/actions-history-list-controls.tsx",
+        "apps/web/src/components/actions/actions-history-list-mobile-card.tsx",
+        "apps/web/src/components/actions/actions-history-list-table-row.tsx",
+        "apps/web/src/components/actions/actions-history-list-view.tsx",
+        "apps/web/src/components/actions/map/layers/map-geometry-tooltip-content.tsx",
+        "apps/web/src/components/admin/admin-dashboard-ui.tsx",
+        "apps/web/src/components/gamification/badge-ui.tsx",
+        "apps/web/src/components/ui/cmm-count-badge.tsx",
+        "apps/web/src/components/ui/page-structure.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-badge.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-block-accent.tsx",
+      "folder": "ui",
+      "exports": [
+        "AccentElement",
+        "CmmBlockCard",
+        "CmmBlockCardProps"
+      ],
+      "propsTypes": [
+        "CmmBlockCardProps"
+      ],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/ui/cmm-section.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-card.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-button.tsx",
+      "folder": "ui",
+      "exports": [
+        "ButtonSize",
+        "ButtonTone",
+        "ButtonVariant",
+        "ButtonWidth",
+        "CmmButton",
+        "CmmButtonGroup",
+        "CmmButtonGroupLayout",
+        "CmmButtonGroupProps",
+        "CmmButtonProps"
+      ],
+      "propsTypes": [
+        "CmmButtonGroupProps",
+        "CmmButtonProps"
+      ],
+      "variants": [
+        "default",
+        "ghost",
+        "pill"
+      ],
+      "colocatedTest": "apps/web/src/components/ui/cmm-button.test.tsx",
+      "consumers": [
+        "apps/web/src/app/(app)/actions/map/page-client.tsx",
+        "apps/web/src/app/(app)/actions/map/page.tsx",
+        "apps/web/src/app/(app)/prints/brigade-verte/print-action-button.tsx",
+        "apps/web/src/app/(app)/reports/page-content.tsx",
+        "apps/web/src/app/(app)/signalement/page.tsx",
+        "apps/web/src/app/(app)/spogomi/[eventSlug]/page.tsx",
+        "apps/web/src/app/(app)/spogomi/assistance/page.tsx",
+        "apps/web/src/app/(app)/spogomi/demonstration/cachan/page.tsx",
+        "apps/web/src/app/(app)/spogomi/mes-evenements/error.tsx",
+        "apps/web/src/app/(app)/sponsor-portal/page.tsx",
+        "apps/web/src/app/admin/brigade-verte/[actionId]/action-decision-form.tsx",
+        "apps/web/src/app/contact/page.tsx",
+        "apps/web/src/app/error/429/page.tsx",
+        "apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx",
+        "apps/web/src/app/not-found.tsx",
+        "apps/web/src/app/reglages/page.tsx",
+        "apps/web/src/components/account/account-evolution-panel.tsx",
+        "apps/web/src/components/account/account-settings-section.tsx",
+        "apps/web/src/components/account/account-setup-form.tsx",
+        "apps/web/src/components/account/community-helper-skills-setting.tsx",
+        "apps/web/src/components/account/community-subscriptions-setting.tsx",
+        "apps/web/src/components/account/role-profile-switcher.tsx",
+        "apps/web/src/components/accueil/accueil-community-activity-panel.tsx",
+        "apps/web/src/components/accueil/accueil-community-credibility-panel.tsx",
+        "apps/web/src/components/accueil/accueil-hero.tsx",
+        "apps/web/src/components/actions/action-attendance-registry-panel.tsx",
+        "apps/web/src/components/actions/action-attendance-teams-editor.tsx",
+        "apps/web/src/components/actions/action-creation-action-bar.tsx",
+        "apps/web/src/components/actions/action-creation-shell-completion.tsx",
+        "apps/web/src/components/actions/action-day-view.tsx",
+        "apps/web/src/components/actions/action-declaration/action-declaration-form-content.tsx",
+        "apps/web/src/components/actions/action-declaration/action-declaration-form-sections.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-before-verification-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-route-refresh-panel.tsx",
+        "apps/web/src/components/actions/action-declaration/before/form-status-views.tsx",
+        "apps/web/src/components/actions/action-declaration/before/planned-action-schedule-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-equipment-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/private-action-access-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/terrain-map-panel.tsx",
+        "apps/web/src/components/actions/action-declaration/steps/ActionStepReview.tsx",
+        "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker-footer.view.tsx",
+        "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker-history.view.tsx",
+        "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker-sharing.view.tsx",
+        "apps/web/src/components/actions/action-drawing-undo-toast.tsx",
+        "apps/web/src/components/actions/action-field-roles-panel.tsx",
+        "apps/web/src/components/actions/action-form-editors-panel.tsx",
+        "apps/web/src/components/actions/action-formalities-qualification-view.tsx",
+        "apps/web/src/components/actions/action-formalities-workflow-panel.tsx",
+        "apps/web/src/components/actions/action-media/action-media-proofs.tsx",
+        "apps/web/src/components/actions/action-participant-impact-editor.tsx",
+        "apps/web/src/components/actions/action-participant-picker-views.tsx",
+        "apps/web/src/components/actions/action-retrospective-panel.tsx",
+        "apps/web/src/components/actions/action-role-attestations-panel.tsx",
+        "apps/web/src/components/actions/actions-history-list-controls.tsx",
+        "apps/web/src/components/actions/actions-history-list-detail-sections.tsx",
+        "apps/web/src/components/actions/actions-history-list-details.tsx",
+        "apps/web/src/components/actions/actions-history-list-mobile-card.tsx",
+        "apps/web/src/components/actions/actions-history-list-table-row.tsx",
+        "apps/web/src/components/actions/actions-history-list-table.tsx",
+        "apps/web/src/components/actions/actions-history-list-view.tsx",
+        "apps/web/src/components/actions/administrative-requirements-status.tsx",
+        "apps/web/src/components/actions/map-feed/_layouts/map-empty-state.tsx",
+        "apps/web/src/components/actions/map-feed/actions-map-feed.tsx",
+        "apps/web/src/components/actions/map/popup/action-popup-content-body.tsx",
+        "apps/web/src/components/actions/my-observations-section.tsx",
+        "apps/web/src/components/actions/organizer-combobox.tsx",
+        "apps/web/src/components/actions/participant-visibility-consent-control.tsx",
+        "apps/web/src/components/actions/private-action-invite-page.tsx",
+        "apps/web/src/components/actions/signalement-media/signalement-media-proofs.tsx",
+        "apps/web/src/components/admin/codex-usage-panel.tsx",
+        "apps/web/src/components/admin/enhanced-admin.tsx",
+        "apps/web/src/components/admin/free-plan-services-panel.async.tsx",
+        "apps/web/src/components/chat/chat-composer-input.tsx",
+        "apps/web/src/components/chat/chat-context-sidebar.tsx",
+        "apps/web/src/components/chat/ui/chat-feed-states.tsx",
+        "apps/web/src/components/dashboard/dashboard-notifications-section.tsx",
+        "apps/web/src/components/dashboard/dashboard-overview-section.tsx",
+        "apps/web/src/components/dashboard/dashboard-priority-action.tsx",
+        "apps/web/src/components/dashboard/dashboard-referral-card.tsx",
+        "apps/web/src/components/dashboard/dashboard-today-panel.tsx",
+        "apps/web/src/components/dashboard/deferred-storage-usage-panel.tsx",
+        "apps/web/src/components/dashboard/storage-usage-panel.async.tsx",
+        "apps/web/src/components/dashboard/system-status-panel.tsx",
+        "apps/web/src/components/gamification/profile-gamification-summary.tsx",
+        "apps/web/src/components/gamification/referral-invite-badge.tsx",
+        "apps/web/src/components/gamification/referral-lineage-panel.tsx",
+        "apps/web/src/components/gamification/referral-profile-tabs.tsx",
+        "apps/web/src/components/learn/learn-behavior-awareness-section.tsx",
+        "apps/web/src/components/learn/learn-block-journey-section.tsx",
+        "apps/web/src/components/learn/learn-gestes-propres-barometer.tsx",
+        "apps/web/src/components/learn/learn-gestes-propres-campaign-section.tsx",
+        "apps/web/src/components/learn/learn-gestes-propres-collective-action-section.tsx",
+        "apps/web/src/components/learn/learn-gestes-propres-insights-section.tsx",
+        "apps/web/src/components/learn/learn-gestes-propres-myths-section.tsx",
+        "apps/web/src/components/learn/learn-ifop-depots-section.tsx",
+        "apps/web/src/components/learn/learn-national-context-section.tsx",
+        "apps/web/src/components/learn/learn-partner-insight-card.tsx",
+        "apps/web/src/components/learn/learn-practice-theme-tabs.content.tsx",
+        "apps/web/src/components/learn/learn-practice-theme-tabs.tsx",
+        "apps/web/src/components/learn/learn-rubric-shell.tsx",
+        "apps/web/src/components/learn/learn-tri-context-section.tsx",
+        "apps/web/src/components/learn/learn-visual-intro-shared.tsx",
+        "apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx",
+        "apps/web/src/components/learn/quiz/school/quiz-school-level-launcher.tsx",
+        "apps/web/src/components/map/ActionStoriesCarousel.tsx",
+        "apps/web/src/components/navigation/app-navigation-ribbon-account.tsx",
+        "apps/web/src/components/navigation/app-navigation-ribbon-menus.tsx",
+        "apps/web/src/components/navigation/app-navigation-ribbon-tour.tsx",
+        "apps/web/src/components/navigation/feedback-discovery-callout.tsx",
+        "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-content.tsx",
+        "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-surface-tabs.tsx",
+        "apps/web/src/components/pilotage/pilotage-cluster-panels.tsx",
+        "apps/web/src/components/pilotage/thirty-seconds-summary.tsx",
+        "apps/web/src/components/profil/engagement/engagement-attestation-pdf-section.tsx",
+        "apps/web/src/components/profil/engagement/engagement-dossier-page.tsx",
+        "apps/web/src/components/profil/engagement/engagement-dossier-sections.tsx",
+        "apps/web/src/components/profil/impact-profile-authenticated-view.tsx",
+        "apps/web/src/components/reports/admin-workflow/action-cancellation-control.tsx",
+        "apps/web/src/components/reports/admin-workflow/step-confirm.tsx",
+        "apps/web/src/components/reports/ai-markdown-export-confirmation.tsx",
+        "apps/web/src/components/reports/page-sections/reports-page-v2-layout.tsx",
+        "apps/web/src/components/reports/reports-web-document-history-sharing-panel.tsx",
+        "apps/web/src/components/reports/reports-web-document-history-sharing.tsx",
+        "apps/web/src/components/reports/web-document/reports-history-action-controls.tsx",
+        "apps/web/src/components/reports/web-document/reports-web-document-delivery.tsx",
+        "apps/web/src/components/reports/web-document/reports-web-document-preview.tsx",
+        "apps/web/src/components/sections/rubriques/action-map-methodology-section.tsx",
+        "apps/web/src/components/sections/rubriques/action-rides-panel.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.parts.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-featured-section.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-filters-card.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-map-canvas.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-drawer.panel.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-partner-list.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/paris-network-contribution-card.tsx",
+        "apps/web/src/components/sections/rubriques/climate/climate-components.tsx",
+        "apps/web/src/components/sections/rubriques/climate/climate-section-view.tsx",
+        "apps/web/src/components/sections/rubriques/community/community-events-components.tsx",
+        "apps/web/src/components/sections/rubriques/community/reminders-card.tsx",
+        "apps/web/src/components/sections/rubriques/compare-section-view.tsx",
+        "apps/web/src/components/sections/rubriques/compost/compost-map-canvas.tsx",
+        "apps/web/src/components/sections/rubriques/compost/compost-section.tsx",
+        "apps/web/src/components/sections/rubriques/elus-section-navigation.tsx",
+        "apps/web/src/components/sections/rubriques/elus-section-states.tsx",
+        "apps/web/src/components/sections/rubriques/elus-section-zones-panel.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/feedback-header.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/feedback-history.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/feedback-section-dashboard-guidance.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/feedback-section-discussion.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/questionnaire-card-fields.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/questionnaire-card-form.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/questionnaire-card-notices.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/questionnaire-card-status.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx",
+        "apps/web/src/components/sections/rubriques/funding-section.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/gamification-brigade-verte-panel.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/gamification-catalog-panel.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/gamification-reconciliation-detail-sections.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/gamification-reconciliation-detail.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/gamification-reconciliation-history.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/gamification-reconciliation-notice.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/gamification-rules-migration-notice.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/territorial-legends-panel.tsx",
+        "apps/web/src/components/sections/rubriques/open-data-section.tsx",
+        "apps/web/src/components/sections/rubriques/promotion-request-form.tsx",
+        "apps/web/src/components/sections/rubriques/recycling-breakdown-details.tsx",
+        "apps/web/src/components/sections/rubriques/recycling-question-assistant.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section-dialog.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section-public-queue.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.card-actions.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.cards.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.explorer.content.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.future-actions.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.sidebar.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.community-events.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.past-actions.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.public-continuity.tsx",
+        "apps/web/src/components/sections/rubriques/rgpd-request-form.parts.tsx",
+        "apps/web/src/components/sections/rubriques/route-methodology-section.tsx",
+        "apps/web/src/components/sections/rubriques/route/components/route-alternative-comparison.tsx",
+        "apps/web/src/components/sections/rubriques/route/components/route-pdf-export.tsx",
+        "apps/web/src/components/sections/rubriques/route/components/route-pollution-relevance-card.tsx",
+        "apps/web/src/components/sections/rubriques/route/route-section.results.tsx",
+        "apps/web/src/components/sections/rubriques/route/route-section.trigger.tsx",
+        "apps/web/src/components/sections/rubriques/shared.tsx",
+        "apps/web/src/components/sections/rubriques/trash-spotter-section.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.preparation.tsx",
+        "apps/web/src/components/spogomi/spogomi-admission-request-card.tsx",
+        "apps/web/src/components/spogomi/spogomi-admission-requests-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-attendance-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-closure-decisions-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-consolidation-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-context-link.tsx",
+        "apps/web/src/components/spogomi/spogomi-division-regulation-settings.tsx",
+        "apps/web/src/components/spogomi/spogomi-event-cockpit.tsx",
+        "apps/web/src/components/spogomi/spogomi-event-journey-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-event-path-chooser.tsx",
+        "apps/web/src/components/spogomi/spogomi-field-operations-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-identity-assistance-invitation.tsx",
+        "apps/web/src/components/spogomi/spogomi-identity-assistance-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-identity-link-card-view.tsx",
+        "apps/web/src/components/spogomi/spogomi-index-sections.tsx",
+        "apps/web/src/components/spogomi/spogomi-manual-team-editor.tsx",
+        "apps/web/src/components/spogomi/spogomi-organizer-dashboard.tsx",
+        "apps/web/src/components/spogomi/spogomi-orientation-tabs.tsx",
+        "apps/web/src/components/spogomi/spogomi-personal-events-list.tsx",
+        "apps/web/src/components/spogomi/spogomi-preparation-workspace-view.tsx",
+        "apps/web/src/components/spogomi/spogomi-private-not-found.tsx",
+        "apps/web/src/components/spogomi/spogomi-public-results.tsx",
+        "apps/web/src/components/spogomi/spogomi-referee-application-card.tsx",
+        "apps/web/src/components/spogomi/spogomi-registration-quiz.tsx",
+        "apps/web/src/components/spogomi/spogomi-registration-readiness-card.tsx",
+        "apps/web/src/components/spogomi/spogomi-result-review-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-reviewer-management.tsx",
+        "apps/web/src/components/spogomi/spogomi-route-editor.tsx",
+        "apps/web/src/components/spogomi/spogomi-team-access-links.tsx",
+        "apps/web/src/components/spogomi/spogomi-team-join-button.tsx",
+        "apps/web/src/components/spogomi/spogomi-team-join-requests-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-team-referee-slot.tsx",
+        "apps/web/src/components/spogomi/spogomi-team-result-form.tsx",
+        "apps/web/src/components/spogomi/spogomi-volunteer-attestation-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-volunteer-contributions-card.tsx",
+        "apps/web/src/components/spogomi/spogomi-volunteer-help-proposal-form.tsx",
+        "apps/web/src/components/spogomi/spogomi-volunteer-help-proposals-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-volunteer-share-button.tsx",
+        "apps/web/src/components/ui/admin-access-state.tsx",
+        "apps/web/src/components/ui/async-panel-controls.tsx",
+        "apps/web/src/components/ui/clerk-required-gate.tsx",
+        "apps/web/src/components/ui/network-toast.tsx",
+        "apps/web/src/components/ui/page-reading-template.tsx",
+        "apps/web/src/components/ui/page-structure.tsx",
+        "apps/web/src/components/ui/permission-error-state.tsx",
+        "apps/web/src/components/ui/rubrique-pdf-export-button.tsx",
+        "apps/web/src/components/ui/server-error-card.tsx",
+        "apps/web/src/components/ui/system-state-retry-button.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-button.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-card.tsx",
+      "folder": "ui",
+      "exports": [
+        "CardTone",
+        "CmmCard",
+        "CmmCardProps"
+      ],
+      "propsTypes": [
+        "CmmCardProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-card.test.tsx",
+      "consumers": [
+        "apps/web/src/app/(app)/reports/page-content.tsx",
+        "apps/web/src/app/(app)/spogomi/[eventSlug]/page.tsx",
+        "apps/web/src/app/(app)/spogomi/assistance/page.tsx",
+        "apps/web/src/app/(app)/spogomi/demonstration/cachan/page.tsx",
+        "apps/web/src/app/(app)/spogomi/mes-evenements/error.tsx",
+        "apps/web/src/app/learn/empreinte-ia/personal-ai-declaration-client.tsx",
+        "apps/web/src/app/learn/empreinte-ia/personal-ai-import-client.tsx",
+        "apps/web/src/app/learn/empreinte-ia/personal-ai-quick-scenario-client.tsx",
+        "apps/web/src/components/account/account-evolution-cta.tsx",
+        "apps/web/src/components/account/account-setup-form.tsx",
+        "apps/web/src/components/account/account-setup-primitives.tsx",
+        "apps/web/src/components/actions/action-attendance-registry-panel.tsx",
+        "apps/web/src/components/actions/action-creation-legal-panel.tsx",
+        "apps/web/src/components/actions/action-creation-shell-completion.tsx",
+        "apps/web/src/components/actions/action-creation-shell-sections.tsx",
+        "apps/web/src/components/actions/action-creation-shell-workflow.tsx",
+        "apps/web/src/components/actions/action-day-view.tsx",
+        "apps/web/src/components/actions/action-declaration/action-declaration-form-content.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-before-form-view.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-before-verification-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-route-refresh-panel.tsx",
+        "apps/web/src/components/actions/action-declaration/before/essential-action-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/form-status-views.tsx",
+        "apps/web/src/components/actions/action-declaration/before/identity-and-sharing-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/planned-action-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-and-safety-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-planning-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/terrain-action-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/terrain-map-panel.tsx",
+        "apps/web/src/components/actions/action-field-roles-panel.tsx",
+        "apps/web/src/components/actions/action-formalities-qualification-view.tsx",
+        "apps/web/src/components/actions/action-retrospective-panel.tsx",
+        "apps/web/src/components/actions/action-role-attestations-panel.tsx",
+        "apps/web/src/components/actions/actions-history-list-mobile-card.tsx",
+        "apps/web/src/components/actions/actions-history-list-view.tsx",
+        "apps/web/src/components/admin/admin-creator-console.tsx",
+        "apps/web/src/components/admin/enhanced-admin.tsx",
+        "apps/web/src/components/gamification/leaderboard-panel.tsx",
+        "apps/web/src/components/learn/ai-footprint-methodology-section.tsx",
+        "apps/web/src/components/learn/learn-behavior-awareness-section.tsx",
+        "apps/web/src/components/learn/learn-gestes-propres-barometer.tsx",
+        "apps/web/src/components/learn/learn-gestes-propres-campaign-section.tsx",
+        "apps/web/src/components/learn/learn-gestes-propres-collective-action-section.tsx",
+        "apps/web/src/components/learn/learn-gestes-propres-myths-section.tsx",
+        "apps/web/src/components/learn/learn-ifop-depots-section.tsx",
+        "apps/web/src/components/learn/learn-national-context-section.tsx",
+        "apps/web/src/components/learn/learn-numerique-theme-panel.tsx",
+        "apps/web/src/components/learn/learn-partner-insight-card.tsx",
+        "apps/web/src/components/learn/learn-practice-theme-tabs.content.tsx",
+        "apps/web/src/components/learn/learn-practice-theme-tabs.tsx",
+        "apps/web/src/components/learn/learn-practice-theme-tabs.visuals.tsx",
+        "apps/web/src/components/learn/learn-tri-context-section.tsx",
+        "apps/web/src/components/learn/quiz/school/quiz-school-workshop-session.tsx",
+        "apps/web/src/components/map/ActionStoriesCarousel.tsx",
+        "apps/web/src/components/pilotage/thirty-seconds-summary.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-featured-section.tsx",
+        "apps/web/src/components/sections/rubriques/elus-section-overview-panel.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/feedback-header.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx",
+        "apps/web/src/components/sections/rubriques/funding-section.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/territorial-legends-panel.tsx",
+        "apps/web/src/components/sections/rubriques/open-data-section.tsx",
+        "apps/web/src/components/sections/rubriques/recycling-breakdown-details.tsx",
+        "apps/web/src/components/sections/rubriques/recycling-components.tsx",
+        "apps/web/src/components/sections/rubriques/route/components/route-assistant.tsx",
+        "apps/web/src/components/sections/rubriques/route/components/route-constraints-form.tsx",
+        "apps/web/src/components/sections/rubriques/route/components/route-event-selector.tsx",
+        "apps/web/src/components/sections/rubriques/route/components/route-summary-cards.tsx",
+        "apps/web/src/components/sections/rubriques/route/route-section.tsx",
+        "apps/web/src/components/sections/rubriques/trash-spotter-section.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.conditions.forecast.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.conditions.guidance.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.preparation.tsx",
+        "apps/web/src/components/spogomi/spogomi-action-state.tsx",
+        "apps/web/src/components/spogomi/spogomi-attendance-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-cachan-closure-summary.tsx",
+        "apps/web/src/components/spogomi/spogomi-closure-decisions-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-closure-summary.tsx",
+        "apps/web/src/components/spogomi/spogomi-day-readiness-checklist.tsx",
+        "apps/web/src/components/spogomi/spogomi-division-regulation-settings.tsx",
+        "apps/web/src/components/spogomi/spogomi-event-cockpit.tsx",
+        "apps/web/src/components/spogomi/spogomi-event-journey-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-event-path-chooser.tsx",
+        "apps/web/src/components/spogomi/spogomi-field-operations-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-identity-assistance-invitation.tsx",
+        "apps/web/src/components/spogomi/spogomi-identity-link-card-view.tsx",
+        "apps/web/src/components/spogomi/spogomi-index-sections.tsx",
+        "apps/web/src/components/spogomi/spogomi-international-content.tsx",
+        "apps/web/src/components/spogomi/spogomi-observer-cockpit-panel.tsx",
+        "apps/web/src/components/spogomi/spogomi-organizer-dashboard.tsx",
+        "apps/web/src/components/spogomi/spogomi-orientation-tabs.tsx",
+        "apps/web/src/components/spogomi/spogomi-personal-events-list.tsx",
+        "apps/web/src/components/spogomi/spogomi-photo-gallery.tsx",
+        "apps/web/src/components/spogomi/spogomi-practical-information.tsx",
+        "apps/web/src/components/spogomi/spogomi-preparation-workspace-view.tsx",
+        "apps/web/src/components/spogomi/spogomi-public-results.tsx",
+        "apps/web/src/components/spogomi/spogomi-referee-application-card.tsx",
+        "apps/web/src/components/spogomi/spogomi-registration-quiz.tsx",
+        "apps/web/src/components/spogomi/spogomi-registration-readiness-card.tsx",
+        "apps/web/src/components/spogomi/spogomi-route-editor.tsx",
+        "apps/web/src/components/spogomi/spogomi-synthetic-demo-notice.tsx",
+        "apps/web/src/components/spogomi/spogomi-team-result-form.tsx",
+        "apps/web/src/components/spogomi/spogomi-understanding-tabs.tsx",
+        "apps/web/src/components/spogomi/spogomi-volunteer-contributions-card.tsx",
+        "apps/web/src/components/ui/clerk-required-gate.tsx",
+        "apps/web/src/components/ui/cmm-block-accent.tsx",
+        "apps/web/src/components/ui/page-structure.tsx",
+        "apps/web/src/components/ui/permission-error-state.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-card.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-count-badge.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmCountBadge",
+        "CmmCountBadgeProps"
+      ],
+      "propsTypes": [
+        "CmmCountBadgeProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-count-badge.test.tsx",
+      "consumers": [
+        "apps/web/src/components/chat/chat-sidebar-sections.tsx",
+        "apps/web/src/components/chat/dm-inbox.tsx",
+        "apps/web/src/components/navigation/notification-bell.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-count-badge.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-dialog.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmDialog",
+        "CmmDialogProps",
+        "CmmDialogSize"
+      ],
+      "propsTypes": [
+        "CmmDialogProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-dialog.test.tsx",
+      "consumers": [
+        "apps/web/src/components/actions/action-creation-action-bar.tsx",
+        "apps/web/src/components/actions/action-declaration/action-declaration-form-content.tsx",
+        "apps/web/src/components/actions/action-declaration/before/form-status-views.tsx",
+        "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker.view.tsx",
+        "apps/web/src/components/actions/action-declaration/ui/action-declaration-form-confirmation.tsx",
+        "apps/web/src/components/actions/actions-history-list-controls.tsx",
+        "apps/web/src/components/actions/actions-history-list-view.tsx",
+        "apps/web/src/components/chat/chat-action-share-dialog.tsx",
+        "apps/web/src/components/reports/admin-workflow/action-cancellation-control.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/gamification-reconciliation-detail.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section-dialog.tsx",
+        "apps/web/src/components/spogomi/spogomi-photo-gallery.tsx",
+        "apps/web/src/components/ui/qrcode-dialog.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-dialog.behavior.test.tsx",
+        "apps/web/src/components/ui/cmm-dialog.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-disclosure.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmDisclosure",
+        "CmmDisclosureProps",
+        "DisclosureSize",
+        "DisclosureTone"
+      ],
+      "propsTypes": [
+        "CmmDisclosureProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-disclosure.test.tsx",
+      "consumers": [
+        "apps/web/src/app/conditions-generales-utilisation/legal-accordion.tsx",
+        "apps/web/src/components/actions/action-creation-legal-panel.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-before-verification-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/identity-and-sharing-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/planned-action-location-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/planned-action-schedule-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/planned-action-volunteer-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/planned-action-waste-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-accessibility-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-and-safety-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/team-logistics-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/terrain-action-section.tsx",
+        "apps/web/src/components/actions/action-formalities-paris-contact-panel.tsx",
+        "apps/web/src/components/actions/action-formalities-qualification-view.tsx",
+        "apps/web/src/components/actions/action-formalities-workflow-panel.tsx",
+        "apps/web/src/components/actions/action-safety-guide.tsx",
+        "apps/web/src/components/actions/map/layers/map-geometry-legend.tsx",
+        "apps/web/src/components/admin/quiz-bank-admin-view.question-card.tsx",
+        "apps/web/src/components/gamification/leaderboard-panel.tsx",
+        "apps/web/src/components/learn/learn-national-context-section.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-filters-card.tsx",
+        "apps/web/src/components/sections/rubriques/community/community-events-components.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/questionnaire-card-notices.tsx",
+        "apps/web/src/components/sections/rubriques/methodologie-page-navigation.tsx",
+        "apps/web/src/components/sections/rubriques/route/components/route-explanation.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.preparation.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.tsx",
+        "apps/web/src/components/spogomi/spogomi-international-content.tsx",
+        "apps/web/src/components/spogomi/spogomi-understanding-tabs.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-disclosure.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-dropdown.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmDropdown",
+        "CmmDropdownPanelRole",
+        "CmmDropdownProps",
+        "CmmDropdownTriggerProps"
+      ],
+      "propsTypes": [
+        "CmmDropdownProps",
+        "CmmDropdownTriggerProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-dropdown.test.tsx",
+      "consumers": [
+        "apps/web/src/components/account/account-identity-chip.tsx",
+        "apps/web/src/components/actions/map/export/actions-map-export-button.tsx",
+        "apps/web/src/components/navigation/app-navigation-block-dropdown.tsx",
+        "apps/web/src/components/navigation/app-navigation-ribbon-menus.tsx",
+        "apps/web/src/components/navigation/app-navigation-tree-menu.tsx",
+        "apps/web/src/components/navigation/global-search.tsx",
+        "apps/web/src/components/ui/cmm-popover.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-dropdown.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-feedback.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmFeedback",
+        "CmmFeedbackProps",
+        "CmmFeedbackTone"
+      ],
+      "propsTypes": [
+        "CmmFeedbackProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-feedback.test.tsx",
+      "consumers": [
+        "apps/web/src/components/actions/action-media/action-media-proofs.tsx",
+        "apps/web/src/components/actions/actions-history-list-table.tsx",
+        "apps/web/src/components/actions/actions-history-list-view.tsx",
+        "apps/web/src/components/actions/map-feed/actions-map-feed.tsx",
+        "apps/web/src/components/actions/signalement-media/signalement-media-proofs.tsx",
+        "apps/web/src/components/admin/free-plan-services-panel.async.tsx",
+        "apps/web/src/components/chat/chat-search-panel.tsx",
+        "apps/web/src/components/dashboard/storage-usage-panel.async.tsx",
+        "apps/web/src/components/dashboard/system-status-panel.tsx",
+        "apps/web/src/components/reports/reports-web-document-history-sharing-panel.tsx",
+        "apps/web/src/components/reports/web-document/reports-history-action-controls.tsx",
+        "apps/web/src/components/reports/web-document/reports-web-document-delivery.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/paris-network-contribution-card.tsx",
+        "apps/web/src/components/sections/rubriques/rgpd-request-form.parts.tsx",
+        "apps/web/src/components/spogomi/spogomi-index-sections.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-feedback.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-field.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmField",
+        "CmmFieldProps",
+        "CmmInput",
+        "CmmSelect",
+        "CmmTextarea"
+      ],
+      "propsTypes": [
+        "CmmFieldProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-field.test.tsx",
+      "consumers": [
+        "apps/web/src/components/account/account-setup-form.tsx",
+        "apps/web/src/components/actions/action-attendance-registry-panel.tsx",
+        "apps/web/src/components/actions/action-attendance-teams-editor.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-search-country-field.tsx",
+        "apps/web/src/components/actions/action-declaration/before/essential-action-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/planned-action-location-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/planned-action-presentation-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/planned-action-schedule-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/planned-action-volunteer-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-accessibility-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-and-safety-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-checklist-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-equipment-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-material-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-planning-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-security-fields.tsx",
+        "apps/web/src/components/actions/action-declaration/before/terrain-action-section.tsx",
+        "apps/web/src/components/actions/action-declaration/operational-route-editor.tsx",
+        "apps/web/src/components/actions/action-form-editors-panel.tsx",
+        "apps/web/src/components/actions/action-participant-impact-editor.tsx",
+        "apps/web/src/components/actions/actions-history-list-controls.tsx",
+        "apps/web/src/components/reports/admin-workflow/action-cancellation-control.tsx",
+        "apps/web/src/components/reports/admin-workflow/step-confirm.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-filters-card.tsx",
+        "apps/web/src/components/sections/rubriques/rgpd-request-form.parts.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.preparation-controls.tsx",
+        "apps/web/src/components/spogomi/spogomi-reviewer-management.tsx",
+        "apps/web/src/components/spogomi/spogomi-team-result-form.tsx",
+        "apps/web/src/components/ui/site-preferences-controls.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-field.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-grid.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmGrid",
+        "CmmGridItem",
+        "CmmGridItemProps",
+        "CmmGridProps",
+        "CmmGridSpan",
+        "createGridSpan"
+      ],
+      "propsTypes": [
+        "CmmGridItemProps",
+        "CmmGridProps"
+      ],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/(app)/prints/report/page.tsx",
+        "apps/web/src/components/profil/engagement/engagement-dossier-page.tsx",
+        "apps/web/src/components/reports/page-sections/reports-page-v2-layout.tsx",
+        "apps/web/src/components/reports/reports-impact-readings-section.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-grid.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-icon.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmIcon",
+        "CmmIconProps"
+      ],
+      "propsTypes": [
+        "CmmIconProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-icon.test.tsx",
+      "consumers": [
+        "apps/web/src/app/error/429/page.tsx",
+        "apps/web/src/app/not-found.tsx",
+        "apps/web/src/components/navigation/app-navigation-block-dropdown.tsx",
+        "apps/web/src/components/spogomi/spogomi-action-info.tsx",
+        "apps/web/src/components/spogomi/spogomi-international-content.tsx",
+        "apps/web/src/components/spogomi/spogomi-orientation-tabs.tsx",
+        "apps/web/src/components/spogomi/spogomi-understanding-tabs.tsx",
+        "apps/web/src/components/ui/cmm-disclosure.tsx",
+        "apps/web/src/components/ui/page-structure.tsx",
+        "apps/web/src/components/ui/server-error-card.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-icon.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-pill.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmPill",
+        "CmmPillGroup",
+        "CmmPillGroupProps",
+        "CmmPillProps",
+        "PillTone"
+      ],
+      "propsTypes": [
+        "CmmPillGroupProps",
+        "CmmPillProps"
+      ],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/actions/action-creation-legal-panel.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-before-verification-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/form-status-views.tsx",
+        "apps/web/src/components/actions/action-declaration/before/persistence-status.tsx",
+        "apps/web/src/components/actions/action-formalities-qualification-view.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-popover.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmPopover",
+        "CmmPopoverProps",
+        "CmmPopoverTriggerProps"
+      ],
+      "propsTypes": [
+        "CmmPopoverProps",
+        "CmmPopoverTriggerProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-popover.test.tsx",
+      "consumers": [
+        "apps/web/src/components/navigation/notification-bell.tsx",
+        "apps/web/src/components/reports/ai-markdown-export-confirmation.tsx",
+        "apps/web/src/components/spogomi/spogomi-action-info.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-popover.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-section.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmPageLayout",
+        "CmmPageLayoutProps",
+        "CmmSection",
+        "CmmSectionGroup",
+        "CmmSectionGroupProps",
+        "CmmSectionProps"
+      ],
+      "propsTypes": [
+        "CmmPageLayoutProps",
+        "CmmSectionGroupProps",
+        "CmmSectionProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-section.test.tsx",
+      "consumers": [
+        "apps/web/src/app/(app)/admin/admin-page-content.tsx",
+        "apps/web/src/app/(app)/admin/forms/page.tsx",
+        "apps/web/src/app/(app)/admin/quiz-bank/page.tsx",
+        "apps/web/src/app/(app)/admin/services/page.tsx",
+        "apps/web/src/app/(app)/dashboard/page.tsx",
+        "apps/web/src/app/(app)/missions/[id]/page.tsx",
+        "apps/web/src/app/(app)/partners/dashboard/page.tsx",
+        "apps/web/src/app/(app)/partners/onboarding/page.tsx",
+        "apps/web/src/app/(app)/spogomi/page.tsx",
+        "apps/web/src/app/(app)/sponsor-portal/page.tsx",
+        "apps/web/src/app/conditions-generales-utilisation/page.tsx",
+        "apps/web/src/app/contact/page.tsx",
+        "apps/web/src/app/mentions-legales/page.tsx",
+        "apps/web/src/app/politique-confidentialite/page.tsx",
+        "apps/web/src/app/politique-cookies/page.tsx",
+        "apps/web/src/app/preview/actions/new/page.tsx",
+        "apps/web/src/app/reglages/page.tsx",
+        "apps/web/src/app/signaler-contenu-illicite/page.tsx",
+        "apps/web/src/components/learn/learn-rubric-shell.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/public-cleanliness-organization.tsx",
+        "apps/web/src/components/sections/rubriques/climate/climate-section-view.tsx",
+        "apps/web/src/components/sections/rubriques/climate/climate-section.tsx",
+        "apps/web/src/components/sections/rubriques/compare-section.tsx",
+        "apps/web/src/components/sections/rubriques/compost/compost-section.tsx",
+        "apps/web/src/components/sections/rubriques/recycling-section.tsx",
+        "apps/web/src/components/sections/rubriques/section-renderer.tsx",
+        "apps/web/src/components/sections/rubriques/shared.tsx",
+        "apps/web/src/components/ui/page-reading-template.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-section.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-skeleton.tsx",
+      "folder": "ui",
+      "exports": [
+        "SkeletonProps"
+      ],
+      "propsTypes": [
+        "SkeletonProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-skeleton.test.tsx",
+      "consumers": [
+        "apps/web/src/app/(app)/actions/map/loading.tsx",
+        "apps/web/src/components/actions/action-media/action-media-proofs.tsx",
+        "apps/web/src/components/actions/actions-history-list-detail-sections.tsx",
+        "apps/web/src/components/actions/actions-history-list-table.tsx",
+        "apps/web/src/components/actions/map-feed/_layouts/map-loading-state.tsx",
+        "apps/web/src/components/actions/map-feed/actions-map-feed.tsx",
+        "apps/web/src/components/actions/signalement-media/signalement-media-proofs.tsx",
+        "apps/web/src/components/chat/chat-search-panel.tsx",
+        "apps/web/src/components/chat/ui/chat-feed-states.tsx",
+        "apps/web/src/components/dashboard/dashboard-notifications-section.tsx",
+        "apps/web/src/components/dashboard/system-status-panel.tsx",
+        "apps/web/src/components/sections/rubriques/actors-section-view.tsx",
+        "apps/web/src/components/sections/rubriques/climate/climate-section-view.tsx",
+        "apps/web/src/components/sections/rubriques/compare-section-view.tsx",
+        "apps/web/src/components/sections/rubriques/elus-section-states.tsx",
+        "apps/web/src/components/sections/rubriques/recycling-section.tsx",
+        "apps/web/src/components/sections/rubriques/route/route-section.tsx",
+        "apps/web/src/components/ui/async-panel-controls.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-skeleton.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cmm-toast.tsx",
+      "folder": "ui",
+      "exports": [
+        "CmmToast",
+        "CmmToastAnnouncement",
+        "CmmToastProps",
+        "CmmToastTone"
+      ],
+      "propsTypes": [
+        "CmmToastProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cmm-toast.test.tsx",
+      "consumers": [
+        "apps/web/src/components/actions/action-drawing-undo-toast.tsx",
+        "apps/web/src/components/gamification/GamificationToast.tsx",
+        "apps/web/src/components/ui/network-toast.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cmm-toast.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/conditional-analytics.tsx",
+      "folder": "ui",
+      "exports": [
+        "ConditionalAnalytics"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/conditional-analytics.test.tsx",
+      "consumers": [
+        "apps/web/src/components/layout/deferred-global-chrome.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/conditional-analytics.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/cookie-consent-banner.tsx",
+      "folder": "ui",
+      "exports": [
+        "COOKIE_CONSENT_ACTION_CLASS_NAME",
+        "CookieConsentBanner"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/cookie-consent-banner.test.tsx",
+      "consumers": [
+        "apps/web/src/components/layout/deferred-global-chrome.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/cookie-consent-banner.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/deferred-weather-warning-bar.tsx",
+      "folder": "ui",
+      "exports": [
+        "DeferredWeatherWarningBar"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/layout/app-shell-surface.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/display-mode-initializer.tsx",
+      "folder": "ui",
+      "exports": [
+        "DisplayModeInitializer"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/layout.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/display-mode-initializer.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/error-message.tsx",
+      "folder": "ui",
+      "exports": [
+        "ErrorMessage"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/account/account-setup-form.tsx",
+        "apps/web/src/components/sections/rubriques/community/community-events-components.tsx",
+        "apps/web/src/components/sections/rubriques/promotion-request-form.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.community-events.tsx",
+        "apps/web/src/components/ui/inline-field-error.tsx",
+        "apps/web/src/components/ui/permission-error-state.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/family-rubrique-card.tsx",
+      "folder": "ui",
+      "exports": [
+        "FamilyRubriqueCard"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/(app)/profil/[profile]/page.tsx",
+        "apps/web/src/app/(app)/signalement/page.tsx",
+        "apps/web/src/components/account/account-evolution-panel.tsx",
+        "apps/web/src/components/account/role-profile-switcher.tsx",
+        "apps/web/src/components/dashboard/dashboard-account-controls.tsx",
+        "apps/web/src/components/dashboard/dashboard-referral-card.tsx",
+        "apps/web/src/components/dashboard/dashboard-user-level-ranking.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/identity-profile-banner.tsx",
+      "folder": "ui",
+      "exports": [
+        "IdentityProfileBanner"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/(app)/dashboard/page.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/inline-field-error.tsx",
+      "folder": "ui",
+      "exports": [
+        "InlineFieldError"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/admin/brigade-verte/[actionId]/action-decision-form.tsx",
+        "apps/web/src/components/sections/rubriques/promotion-request-form.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/modal-frame.tsx",
+      "folder": "ui",
+      "exports": [
+        "ModalFrame"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/gamification/infinite-badges/BadgeModal.tsx",
+        "apps/web/src/components/learn/giac-content.tsx",
+        "apps/web/src/components/learn/sustainable-goals.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/navigation-grid.tsx",
+      "folder": "ui",
+      "exports": [
+        "NavigationGrid",
+        "NavigationGridItem"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/pilotage/access-screen/access-screen-constants.ts",
+        "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-content.tsx",
+        "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-support-sections.tsx",
+        "apps/web/src/components/pilotage/access-screen/views/pilotage-restricted-page.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/network-toast.tsx",
+      "folder": "ui",
+      "exports": [
+        "NetworkToast",
+        "NetworkToastHost"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/network-toast.test.tsx",
+      "consumers": [
+        "apps/web/src/components/layout/deferred-global-chrome.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/network-toast.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/page-header.tsx",
+      "folder": "ui",
+      "exports": [
+        "PageHeader",
+        "PageHeaderContrast",
+        "PageHeaderProps",
+        "PageHeaderTone"
+      ],
+      "propsTypes": [
+        "PageHeaderProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/page-header.test.tsx",
+      "consumers": [
+        "apps/web/src/app/(app)/actions/map/loading.tsx",
+        "apps/web/src/app/(app)/actions/map/page.tsx",
+        "apps/web/src/app/(app)/admin/admin-page-content.tsx",
+        "apps/web/src/app/(app)/admin/forms/page.tsx",
+        "apps/web/src/app/(app)/admin/quiz-bank/page.tsx",
+        "apps/web/src/app/(app)/admin/services/page.tsx",
+        "apps/web/src/app/(app)/dashboard/page.tsx",
+        "apps/web/src/app/(app)/missions/[id]/page.tsx",
+        "apps/web/src/app/(app)/partners/dashboard/page.tsx",
+        "apps/web/src/app/(app)/partners/onboarding/page.tsx",
+        "apps/web/src/app/(app)/prints/report/page.tsx",
+        "apps/web/src/app/(app)/signalement/page.tsx",
+        "apps/web/src/app/(app)/spogomi/assistance/page.tsx",
+        "apps/web/src/app/(app)/spogomi/mes-evenements/error.tsx",
+        "apps/web/src/app/(app)/spogomi/mes-evenements/page.tsx",
+        "apps/web/src/app/(app)/spogomi/nouveau/page.tsx",
+        "apps/web/src/app/(app)/spogomi/page.tsx",
+        "apps/web/src/app/(app)/sponsor-portal/page.tsx",
+        "apps/web/src/app/admin/brigade-verte/[actionId]/page.tsx",
+        "apps/web/src/app/admin/brigade-verte/page.tsx",
+        "apps/web/src/app/admin/gamification/xp-audit/page.tsx",
+        "apps/web/src/app/admin/relations-institutionnelles/page.tsx",
+        "apps/web/src/app/conditions-generales-utilisation/page.tsx",
+        "apps/web/src/app/contact/page.tsx",
+        "apps/web/src/app/mentions-legales/page.tsx",
+        "apps/web/src/app/politique-confidentialite/page.tsx",
+        "apps/web/src/app/politique-cookies/page.tsx",
+        "apps/web/src/app/reglages/page.tsx",
+        "apps/web/src/app/signaler-contenu-illicite/page.tsx",
+        "apps/web/src/components/actions/action-creation-shell-sections.tsx",
+        "apps/web/src/components/actions/action-creation-shell.tsx",
+        "apps/web/src/components/admin/admin-creator-console.tsx",
+        "apps/web/src/components/learn/learn-rubric-shell.tsx",
+        "apps/web/src/components/pilotage/access-screen/views/pilotage-locked-page.tsx",
+        "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-page.tsx",
+        "apps/web/src/components/pilotage/access-screen/views/pilotage-restricted-page.tsx",
+        "apps/web/src/components/profil/engagement/engagement-dossier-page.tsx",
+        "apps/web/src/components/reports/page-sections/reports-page-v2-layout.tsx",
+        "apps/web/src/components/reports/reports-analysis-dashboard.tsx",
+        "apps/web/src/components/sections/rubriques/connect-section-view.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/feedback-header.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/feedback-section-dashboard-header.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/feedback-section-discussion.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/gamification-shell.tsx",
+        "apps/web/src/components/sections/rubriques/methodologie-page-client.tsx",
+        "apps/web/src/components/sections/rubriques/methodologie-page-composition.tsx",
+        "apps/web/src/components/sections/rubriques/open-data-section.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.tsx",
+        "apps/web/src/components/sections/rubriques/shared.tsx",
+        "apps/web/src/components/sections/rubriques/trash-spotter-section.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.tsx",
+        "apps/web/src/components/spogomi/spogomi-event-cockpit.tsx",
+        "apps/web/src/components/spogomi/spogomi-identity-assistance-invitation.tsx",
+        "apps/web/src/components/spogomi/spogomi-preparation-workspace-view.tsx",
+        "apps/web/src/components/spogomi/spogomi-public-event-navigation.tsx",
+        "apps/web/src/components/spogomi/spogomi-team-result-form.tsx",
+        "apps/web/src/components/ui/page-reading-template.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/page-header.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/page-reading-template.tsx",
+      "folder": "ui",
+      "exports": [
+        "PageReadingTemplate"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/(app)/actions/history/page.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/page-structure.tsx",
+      "folder": "ui",
+      "exports": [
+        "ActionCard",
+        "ActionCardProps",
+        "CTAGroup",
+        "CTAGroupProps",
+        "PageStructureIconName",
+        "SectionHeader",
+        "SectionHeaderProps",
+        "SourceBadge",
+        "SourceBadgeProps",
+        "StatCard",
+        "StatCardProps"
+      ],
+      "propsTypes": [
+        "ActionCardProps",
+        "CTAGroupProps",
+        "SectionHeaderProps",
+        "SourceBadgeProps",
+        "StatCardProps"
+      ],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/page-structure.test.tsx",
+      "consumers": [
+        "apps/web/src/app/(app)/reports/page-content.tsx",
+        "apps/web/src/components/admin/admin-dashboard-ui.tsx",
+        "apps/web/src/components/admin/quiz-bank-admin-view.question-card.tsx",
+        "apps/web/src/components/admin/quiz-bank-admin-view.tsx",
+        "apps/web/src/components/admin/quiz-pedagogical-metrics-panel.tsx",
+        "apps/web/src/components/reports/reports-community-conversion-kpis.tsx",
+        "apps/web/src/components/reports/reports-impact-readings-section.tsx",
+        "apps/web/src/components/ui/page-reading-template.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/page-structure.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/permission-error-state.tsx",
+      "folder": "ui",
+      "exports": [
+        "PermissionErrorState"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/account/account-setup-form.tsx",
+        "apps/web/src/components/sections/rubriques/promotion-request-form.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/qrcode-dialog.tsx",
+      "folder": "ui",
+      "exports": [
+        "QRCodeDialog"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/qrcode-dialog.test.tsx",
+      "consumers": [
+        "apps/web/src/components/gamification/referral-invite-badge.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.community-events.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/qrcode-dialog.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/rubrique-card.tsx",
+      "folder": "ui",
+      "exports": [
+        "RubriqueCard",
+        "RubriqueCardProps",
+        "RubriqueTheme",
+        "normalizeRubriqueCardInitial"
+      ],
+      "propsTypes": [
+        "RubriqueCardProps"
+      ],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/actors-section-view.tsx",
+        "apps/web/src/components/sections/rubriques/climate/climate-section-view.tsx",
+        "apps/web/src/components/sections/rubriques/compost/compost-components.tsx",
+        "apps/web/src/components/sections/rubriques/compost/compost-map-canvas.tsx",
+        "apps/web/src/components/sections/rubriques/compost/compost-section.tsx",
+        "apps/web/src/components/sections/rubriques/legal-section.tsx",
+        "apps/web/src/components/sections/rubriques/recycling-section.tsx",
+        "apps/web/src/components/ui/family-rubrique-card.tsx",
+        "apps/web/src/lib/ui/page-families/types.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/rubrique-card.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/rubrique-excel-export-button.tsx",
+      "folder": "ui",
+      "exports": [
+        "RubriqueExcelExportButton"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/(app)/reports/page-content.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/rubrique-excel-export-button.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/rubrique-pdf-export-button.tsx",
+      "folder": "ui",
+      "exports": [
+        "RubriquePdfExportButton"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/actions/actions-history-list-controls.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/rubrique-pdf-export-button.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/server-error-card.tsx",
+      "folder": "ui",
+      "exports": [
+        "ServerErrorCard"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/server-error-card.test.tsx",
+      "consumers": [
+        "apps/web/src/app/error.tsx",
+        "apps/web/src/app/global-error.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/server-error-card.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/site-preferences-controls.tsx",
+      "folder": "ui",
+      "exports": [
+        "SitePreferencesControls"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": "apps/web/src/components/ui/site-preferences-controls.test.tsx",
+      "consumers": [
+        "apps/web/src/components/account/account-settings-editor.view.tsx",
+        "apps/web/src/components/navigation/app-navigation-ribbon-menus.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/site-preferences-controls.test.tsx",
+        "apps/web/src/components/ui/site-preferences.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/site-preferences-provider.tsx",
+      "folder": "ui",
+      "exports": [
+        "SitePreferencesProvider",
+        "useSitePreferences"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/layout.tsx",
+        "apps/web/src/app/learn/bonnes-pratiques/client.tsx",
+        "apps/web/src/app/learn/comprendre/client.tsx",
+        "apps/web/src/app/learn/ressources/learn-ressources-client.tsx",
+        "apps/web/src/app/learn/sentrainer/client.tsx",
+        "apps/web/src/components/account/account-identity-chip.tsx",
+        "apps/web/src/components/account/account-settings-section.tsx",
+        "apps/web/src/components/account/use-account-setup-controller.ts",
+        "apps/web/src/components/accueil/accueil-hero.tsx",
+        "apps/web/src/components/actions/action-creation-shell.tsx",
+        "apps/web/src/components/actions/actions-history-list.tsx",
+        "apps/web/src/components/actions/operation-audit-timeline.tsx",
+        "apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts",
+        "apps/web/src/components/admin/promotion-requests-panel.tsx",
+        "apps/web/src/components/admin/role-management-panel.tsx",
+        "apps/web/src/components/auth/clerk-localization-provider.tsx",
+        "apps/web/src/components/chat/chat-shell.tsx",
+        "apps/web/src/components/chat/topic-network-graph.tsx",
+        "apps/web/src/components/chat/ui/chat-message-item.tsx",
+        "apps/web/src/components/dashboard/dashboard-notifications-section.tsx",
+        "apps/web/src/components/gamification/infinite-badges/BadgeModal.tsx",
+        "apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
+        "apps/web/src/components/layout/app-shell-surface.tsx",
+        "apps/web/src/components/learn/environmental-policy-explorer.tsx",
+        "apps/web/src/components/learn/impact-order-of-magnitude.tsx",
+        "apps/web/src/components/learn/learn-rubric-shell.tsx",
+        "apps/web/src/components/learn/learn-vulgarisation-magnitude-comparator.tsx",
+        "apps/web/src/components/learn/presidential-environmental-archive.tsx",
+        "apps/web/src/components/learn/quiz/environmental-quiz.tsx",
+        "apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx",
+        "apps/web/src/components/navigation/app-navigation-ribbon-shell.tsx",
+        "apps/web/src/components/navigation/global-search.tsx",
+        "apps/web/src/components/navigation/notification-bell.tsx",
+        "apps/web/src/components/navigation/role-primary-actions.tsx",
+        "apps/web/src/components/partners/published-annuaire-review-panel.tsx",
+        "apps/web/src/components/reports/admin-workflow/step-confirm.tsx",
+        "apps/web/src/components/reports/admin-workflow/step-filter.tsx",
+        "apps/web/src/components/reports/admin-workflow/step-journal.tsx",
+        "apps/web/src/components/reports/admin-workflow/step-preview.tsx",
+        "apps/web/src/components/sections/rubriques/actors-section.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx",
+        "apps/web/src/components/sections/rubriques/climate/climate-section.tsx",
+        "apps/web/src/components/sections/rubriques/compost/compost-map-canvas.tsx",
+        "apps/web/src/components/sections/rubriques/compost/compost-section.tsx",
+        "apps/web/src/components/sections/rubriques/connect-section.tsx",
+        "apps/web/src/components/sections/rubriques/elus-section.tsx",
+        "apps/web/src/components/sections/rubriques/feedback-section.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/feedback-header.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx",
+        "apps/web/src/components/sections/rubriques/funding-section.tsx",
+        "apps/web/src/components/sections/rubriques/gamification/index.tsx",
+        "apps/web/src/components/sections/rubriques/methodologie-page-client.tsx",
+        "apps/web/src/components/sections/rubriques/methodologie-page-composition.tsx",
+        "apps/web/src/components/sections/rubriques/open-data-section.tsx",
+        "apps/web/src/components/sections/rubriques/promotion-request-form.tsx",
+        "apps/web/src/components/sections/rubriques/recycling-question-assistant.tsx",
+        "apps/web/src/components/sections/rubriques/recycling-section.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.controller.ts",
+        "apps/web/src/components/sections/rubriques/rgpd-request-form.tsx",
+        "apps/web/src/components/sections/rubriques/route/hooks/use-route-data.ts",
+        "apps/web/src/components/sections/rubriques/section-renderer.tsx",
+        "apps/web/src/components/sections/rubriques/shared.tsx",
+        "apps/web/src/components/sections/rubriques/trash-spotter-section.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.tsx",
+        "apps/web/src/components/ui/identity-profile-banner.tsx",
+        "apps/web/src/components/ui/site-preferences-controls.tsx",
+        "apps/web/src/lib/animations/use-gsap-reveal.ts",
+        "apps/web/src/lib/i18n/use-translation.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/account/account-settings-section.test.tsx",
+        "apps/web/src/components/admin/creator-inbox/use-creator-inbox.test.tsx",
+        "apps/web/src/components/admin/role-management-panel.test.tsx",
+        "apps/web/src/components/learn/learn-vulgarisation-magnitude-comparator.test.ts",
+        "apps/web/src/components/learn/quiz/quiz-school-kit-page.test.ts",
+        "apps/web/src/components/sections/rubriques/connect-section.test.ts",
+        "apps/web/src/components/sections/rubriques/methodologie-page-client.test.tsx",
+        "apps/web/src/components/sections/rubriques/promotion-request-form.behavior.test.tsx",
+        "apps/web/src/components/sections/rubriques/section-renderer.contract.test.ts",
+        "apps/web/src/components/sections/rubriques/shared.pending.test.ts",
+        "apps/web/src/components/sections/rubriques/trash-spotter-section.behavior.test.tsx",
+        "apps/web/src/components/ui/site-preferences-controls.test.tsx",
+        "apps/web/src/components/ui/site-preferences.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/site-tooltips.tsx",
+      "folder": "ui",
+      "exports": [
+        "SiteTooltips"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/layout/deferred-global-chrome.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/site-tooltips.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/system-state-retry-button.tsx",
+      "folder": "ui",
+      "exports": [
+        "SystemStateRetryButton"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/app/error/429/page.tsx",
+        "apps/web/src/components/dashboard/dashboard-overview-section.tsx",
+        "apps/web/src/components/dashboard/dashboard-today-panel.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/system-state.tsx",
+      "folder": "ui",
+      "exports": [
+        "SystemStateAction",
+        "SystemStateDescription",
+        "SystemStateIcon",
+        "SystemStateLayout",
+        "SystemStateMeta",
+        "SystemStateTitle",
+        "SystemStateVariant"
+      ],
+      "propsTypes": [],
+      "variants": [
+        "empty",
+        "error",
+        "forbidden",
+        "loading",
+        "offline",
+        "warning"
+      ],
+      "colocatedTest": "apps/web/src/components/ui/system-state.test.tsx",
+      "consumers": [
+        "apps/web/src/app/error/429/page.tsx",
+        "apps/web/src/app/not-found.tsx",
+        "apps/web/src/components/account/account-setup-form.tsx",
+        "apps/web/src/components/dashboard/dashboard-overview-section.tsx",
+        "apps/web/src/components/dashboard/dashboard-today-panel.tsx",
+        "apps/web/src/components/reports/web-document/reports-web-document-delivery.tsx",
+        "apps/web/src/components/spogomi/spogomi-private-not-found.tsx",
+        "apps/web/src/components/ui/admin-access-state.tsx",
+        "apps/web/src/components/ui/clerk-required-gate.tsx",
+        "apps/web/src/components/ui/server-error-card.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/system-state.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/vibrant-background-no-ssr.tsx",
+      "folder": "ui",
+      "exports": [
+        "VibrantBackgroundNoSSR"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/layout/deferred-global-chrome.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/vibrant-background.tsx",
+      "folder": "ui",
+      "exports": [
+        "VibrantBackground",
+        "VibrantBackgroundProps"
+      ],
+      "propsTypes": [
+        "VibrantBackgroundProps"
+      ],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/ui/vibrant-background-no-ssr.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/vibrant-background.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/weather-warning-bar.tsx",
+      "folder": "ui",
+      "exports": [
+        "WeatherWarningBar",
+        "shouldRequestWeatherGeolocation"
+      ],
+      "propsTypes": [],
+      "variants": [],
+      "colocatedTest": null,
+      "consumers": [
+        "apps/web/src/components/ui/deferred-weather-warning-bar.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/weather-warning-bar.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    }
+  ],
+  "hooks": [
+    {
+      "path": "apps/web/src/components/account/use-account-setup-controller.ts",
+      "hooks": [
+        "useAccountSetupController"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/account/account-completion-page.tsx",
+        "apps/web/src/components/account/account-setup-form.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/account/use-account-setup-controller.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/account/use-active-role-mutation.ts",
+      "hooks": [
+        "useActiveRoleMutation"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/account/account-identity-chip.tsx",
+        "apps/web/src/components/account/role-profile-switcher.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/account/use-greater-paris-suggestions.ts",
+      "hooks": [
+        "useTerritorySuggestions"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/account/greater-paris-select.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/account/use-greater-paris-suggestions.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts",
+      "hooks": [
+        "useBeforeActionForm"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/before/form.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/action-declaration/before/use-before-action-form.persistence.test.ts",
+        "apps/web/src/components/actions/action-declaration/before/use-before-action-form.test.tsx",
+        "apps/web/src/components/actions/action-declaration/before/use-before-action-recovery.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/before/use-before-action-persistence.ts",
+      "hooks": [
+        "useBeforeActionPersistence"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts",
+      "hooks": [
+        "useBeforeActionFieldUpdates",
+        "useBeforeActionHydration",
+        "useBeforeActionPublication",
+        "useBeforeActionSubmission"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/action-declaration/before/preparation-accessibility-fields.behavior.test.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-checklist-fields.behavior.test.tsx",
+        "apps/web/src/components/actions/action-declaration/before/use-before-action-recovery.test.tsx",
+        "apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.behavior.test.tsx",
+        "apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-address-autocomplete.ts",
+      "hooks": [
+        "useActionAddressAutocomplete"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/action-address-autocomplete.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-draft.ts",
+      "hooks": [
+        "useActionDeclarationDraft"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-lifecycle.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-draft.recovery.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-execution.ts",
+      "hooks": [
+        "useActionDeclarationFormExecution"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-result.ts",
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-lifecycle.ts",
+      "hooks": [
+        "useActionDeclarationFormLifecycle"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-result.ts",
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-media.ts",
+      "hooks": [
+        "useActionDeclarationFormMedia"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-result.ts",
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-media.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-presentation.ts",
+      "hooks": [
+        "useActionDeclarationFormPresentation"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-view-model.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/action-declaration/action-declaration-form-content.integration.test.tsx",
+        "apps/web/src/components/actions/action-declaration/sections/harvest-waste-section.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-result.ts",
+      "hooks": [
+        "buildActionDeclarationFormResult"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-updates.ts",
+      "hooks": [
+        "useActionDeclarationFormUpdates"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-execution.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-view-model.ts",
+      "hooks": [
+        "useActionDeclarationFormViewModel"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/action-declaration-form-body.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
+      "hooks": [
+        "useActionDeclarationForm"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/action-declaration-form-body.tsx",
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-view-model.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-hydration.ts",
+      "hooks": [
+        "useActionDeclarationHydration"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-lifecycle.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-smart-assist.ts",
+      "hooks": [
+        "useActionDeclarationSmartAssist"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-execution.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-submission.ts",
+      "hooks": [
+        "useActionDeclarationSubmission"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-execution.ts",
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
+        "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.feedback.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/action-declaration/action-declaration-form-sections.test.tsx",
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-draft.recovery.test.tsx",
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.test.tsx",
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-submission.recovery.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-harvest-logic.ts",
+      "hooks": [
+        "useHarvestLogic"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-declaration/steps/ActionStepHarvest.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/action-declaration/hooks/use-harvest-logic.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/map-feed/use-actions-map-viewport.ts",
+      "hooks": [
+        "useActionsMapViewport"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/app/(app)/actions/map/page-client.tsx",
+        "apps/web/src/components/actions/map-feed/actions-map-feed.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/map-feed/actions-map-initial-viewport.test.ts",
+        "apps/web/src/components/actions/map-feed/use-actions-map-viewport.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/map-feed/use-map-action-by-id.ts",
+      "hooks": [
+        "useMapActionById"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/app/(app)/actions/map/page-client.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/map-feed/use-map-feed-data.ts",
+      "hooks": [
+        "useMapFeedData"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/app/(app)/actions/map/page-client.tsx",
+        "apps/web/src/components/actions/map-feed/actions-map-feed.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/map/filters/use-actions-map-filters.ts",
+      "hooks": [
+        "useActionsMapFilters"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/app/(app)/actions/map/page-client.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/map/popup/use-action-popup-scores.ts",
+      "hooks": [
+        "useActionPopupScores"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/map/popup/action-popup-content-single.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/use-action-attendance-registry.ts",
+      "hooks": [
+        "useActionAttendanceRegistry"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-attendance-registry-panel.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/use-action-creation-preparation-sync.ts",
+      "hooks": [
+        "useActionCreationPreparationSync"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/use-action-creation-shell-controller.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/use-action-creation-shell-controller.ts",
+      "hooks": [
+        "useActionCreationShellController"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-creation-shell.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/use-action-participant-picker-model.ts",
+      "hooks": [
+        "useParticipantPickerModel"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-participant-picker-views.tsx",
+        "apps/web/src/components/actions/action-participant-picker.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/use-action-preparation-weather.ts",
+      "hooks": [
+        "useActionPreparationWeather"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-day-view.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-before-verification-section.tsx",
+        "apps/web/src/components/actions/action-declaration/before/preparation-equipment-fields.tsx",
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.practical-info.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/use-action-preparation-weather.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/use-actions-history-list-group-join-requests.ts",
+      "hooks": [
+        "useActionsHistoryListGroupJoinRequests"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/use-actions-history-list-participation.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/use-actions-history-list-group-join-review.ts",
+      "hooks": [
+        "useActionsHistoryListGroupJoinReview"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/use-actions-history-list-participation.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/use-actions-history-list-participation.ts",
+      "hooks": [
+        "useActionsHistoryListParticipation"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/actions-history-list-view.tsx",
+        "apps/web/src/components/actions/actions-history-list.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/actions/use-actions-history-list-query.ts",
+      "hooks": [
+        "useActionsHistoryListQuery"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/actions-history-list-controls.tsx",
+        "apps/web/src/components/actions/actions-history-list-view.tsx",
+        "apps/web/src/components/actions/actions-history-list.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/actions/actions-history-list-controls.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/admin/creator-inbox/use-creator-inbox-pagination.ts",
+      "hooks": [
+        "useCreatorInboxPagination"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/admin/creator-inbox/use-creator-inbox-pagination.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts",
+      "hooks": [
+        "useCreatorInbox"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/admin/creator-inbox-panel.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/admin/creator-inbox/use-creator-inbox.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/admin/use-codex-usage-panel.ts",
+      "hooks": [
+        "useCodexUsagePanel"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/admin/codex-usage-panel.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/admin/use-environmental-impact-capture.ts",
+      "hooks": [
+        "useEnvironmentalImpactCapture"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/admin/environmental-impact-capture-panel.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-action-share-contact-requests.ts",
+      "hooks": [
+        "useActionShareContactRequests"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-data.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-action-discussions.ts",
+      "hooks": [
+        "useChatActionDiscussions"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-data.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-action-discussions.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-data-refresh.ts",
+      "hooks": [
+        "useChatDataRefresh"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-data.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-data.ts",
+      "hooks": [
+        "useChatData"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/chat-shell.behavior.ts",
+        "apps/web/src/components/chat/hooks/use-chat-shell-data.ts",
+        "apps/web/src/components/chat/hooks/use-chat-submit.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-data.behavior.test.tsx",
+        "apps/web/src/components/chat/hooks/use-chat-data.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-notification-unreads.ts",
+      "hooks": [
+        "useChatNotificationUnreads"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-data.ts",
+        "apps/web/src/components/chat/hooks/use-chat-shell-notification-effects.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-notification-unreads.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-search.ts",
+      "hooks": [
+        "useChatSearch"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-data.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-search.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-composer.ts",
+      "hooks": [
+        "useChatShellComposer"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/chat-shell-view-props.ts",
+        "apps/web/src/components/chat/chat-shell-view.tsx",
+        "apps/web/src/components/chat/hooks/use-chat-shell-controller.ts",
+        "apps/web/src/components/chat/hooks/use-chat-shell-navigation.ts",
+        "apps/web/src/components/chat/hooks/use-chat-shell-view-navigation.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/chat-composer.test.ts",
+        "apps/web/src/components/chat/hooks/use-chat-shell-composer.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-context.ts",
+      "hooks": [
+        "useChatShellContext"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/chat-shell-view-props.ts",
+        "apps/web/src/components/chat/chat-shell-view.tsx",
+        "apps/web/src/components/chat/chat-shell.tsx",
+        "apps/web/src/components/chat/hooks/use-chat-shell-controller.ts",
+        "apps/web/src/components/chat/hooks/use-chat-shell-view-navigation.ts",
+        "apps/web/src/components/chat/hooks/use-chat-shell-view-presentation.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-controller.ts",
+      "hooks": [
+        "useChatShellController"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/chat-shell.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-data.ts",
+      "hooks": [
+        "useChatShellData"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-context.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-dm-navigation.ts",
+      "hooks": [
+        "useChatShellDmNavigation"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-view-navigation.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-feed-effects.ts",
+      "hooks": [
+        "useChatShellFeedEffects"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-view-presentation.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-navigation.ts",
+      "hooks": [
+        "useChatShellNavigation"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/chat-shell.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-navigation.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-notification-effects.ts",
+      "hooks": [
+        "useChatShellNotificationEffects"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-view-navigation.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-notification-effects.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-poll-voting.ts",
+      "hooks": [
+        "useChatShellPollVoting"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/chat-shell-view-props.ts",
+        "apps/web/src/components/chat/chat-shell-view.tsx",
+        "apps/web/src/components/chat/hooks/use-chat-shell-controller.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-poll-voting.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-profile-actions.ts",
+      "hooks": [
+        "useChatShellProfileActions"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-view-presentation.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-profile-actions.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-runtime-context.ts",
+      "hooks": [
+        "useChatShellRuntimeContext"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-context.ts",
+        "apps/web/src/components/chat/hooks/use-chat-shell-data.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-search.ts",
+      "hooks": [
+        "useChatShellSearch"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-data.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-selection.ts",
+      "hooks": [
+        "useChatShellSelection"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-view-navigation.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-sidebar.ts",
+      "hooks": [
+        "useChatShellSidebar"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-view-navigation.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-sidebar.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-view-navigation.ts",
+      "hooks": [
+        "useChatShellViewNavigation"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/chat-shell-view-props.ts",
+        "apps/web/src/components/chat/chat-shell-view.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-shell-view-presentation.ts",
+      "hooks": [
+        "useChatShellViewPresentation"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/chat-shell-view-props.ts",
+        "apps/web/src/components/chat/chat-shell-view.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-state.ts",
+      "hooks": [
+        "useChatState"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-context.ts",
+        "apps/web/src/components/chat/hooks/use-chat-shell-data.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-state.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-submit.ts",
+      "hooks": [
+        "useChatSubmit"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/chat-shell-view-props.ts",
+        "apps/web/src/components/chat/chat-shell-view.tsx",
+        "apps/web/src/components/chat/hooks/use-chat-shell-controller.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-submit.behavior.test.tsx",
+        "apps/web/src/components/chat/hooks/use-chat-submit.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-user-search.ts",
+      "hooks": [
+        "useChatUserSearch",
+        "useDebouncedChatQuery"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-data-refresh.ts",
+        "apps/web/src/components/chat/hooks/use-chat-data.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-chat-user-search.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-dm-inbox.ts",
+      "hooks": [
+        "useDmInbox"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/hooks/use-chat-shell-data.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/chat/hooks/use-dm-inbox.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/environmental-impact-estimator/use-environmental-impact-curve-chart.ts",
+      "hooks": [
+        "useEnvironmentalImpactCurveChart"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/gamification/infinite-badges/useInfiniteBadgeController.ts",
+      "hooks": [
+        "useInfiniteBadgeController"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/gamification/infinite-badges/InfiniteBadge.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/gamification/infinite-badges/useInfiniteBadgeController.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/gamification/use-gamification-badge-celebration.ts",
+      "hooks": [
+        "useGamificationBadgeCelebration",
+        "useStandardGamificationBadgeCelebration"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/gamification/action-balance-badge.tsx",
+        "apps/web/src/components/gamification/monthly-regularity-badge.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/session/use-quiz-session-controller.ts",
+      "hooks": [
+        "useQuizSessionController"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/learn/quiz/use-environmental-quiz-session.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/use-environmental-quiz-data.ts",
+      "hooks": [
+        "useEnvironmentalQuizData"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/learn/quiz/environmental-quiz.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/learn/quiz/environmental-quiz.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/use-environmental-quiz-mode.ts",
+      "hooks": [
+        "useEnvironmentalQuizMode"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/learn/quiz/environmental-quiz.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/use-environmental-quiz-progress.ts",
+      "hooks": [
+        "useEnvironmentalQuizProgress"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/learn/quiz/environmental-quiz.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/use-environmental-quiz-session.ts",
+      "hooks": [
+        "useEnvironmentalQuizSession"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/learn/quiz/environmental-quiz.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/partners/onboarding/use-partner-onboarding-submit.ts",
+      "hooks": [
+        "usePartnerOnboardingSubmit"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/partners/onboarding/use-partner-onboarding.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/partners/onboarding/use-partner-onboarding.ts",
+      "hooks": [
+        "usePartnerOnboarding"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/partners/partner-onboarding-form.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/partners/onboarding/use-partner-onboarding.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/profil/use-impact-profile-actions.ts",
+      "hooks": [
+        "useImpactProfileActions"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/profil/impact-profile-page.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/profil/use-impact-profile-actions.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/reports/admin-workflow/use-admin-workflow.ts",
+      "hooks": [
+        "useAdminWorkflow"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/reports/actions-report-panel.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/reports/admin-workflow/use-admin-workflow.helpers.test.ts",
+        "apps/web/src/components/reports/admin-workflow/use-admin-workflow.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/reports/web-document/use-reports-web-document-config.ts",
+      "hooks": [
+        "useReportsWebDocumentConfig"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/reports/reports-web-document.tsx",
+        "apps/web/src/components/reports/web-document/use-reports-web-document-export.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/reports/web-document/use-reports-web-document-data.ts",
+      "hooks": [
+        "useReportsWebDocumentData"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts",
+        "apps/web/src/components/reports/web-document/use-reports-web-document-scope.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/reports/web-document/use-reports-web-document-export.ts",
+      "hooks": [
+        "useReportsWebDocumentExport"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/reports/reports-web-document.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/reports/web-document/use-reports-web-document-export.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts",
+      "hooks": [
+        "useReportsWebDocumentModel"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/reports/web-document/use-reports-web-document-config.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/reports/web-document/use-reports-web-document-model.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/reports/web-document/use-reports-web-document-scope.ts",
+      "hooks": [
+        "useReportsWebDocumentScope"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/annuaire/use-annuaire-logic.ts",
+      "hooks": [
+        "useAnnuaireLogic"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.behavior.test.tsx",
+        "apps/web/src/components/sections/rubriques/annuaire/use-annuaire-logic.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/community/use-community-actions.ts",
+      "hooks": [
+        "useCommunityActions"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.controller.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/sections/rubriques/community/use-community-actions.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/community/use-community-events.ts",
+      "hooks": [
+        "useCommunityEvents"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.controller.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/sections/rubriques/community/use-community-events.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/feedback/use-feedback-history.ts",
+      "hooks": [
+        "useFeedbackHistory"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/feedback/feedback-history.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/feedback/use-speech-recognition.ts",
+      "hooks": [
+        "useSpeechRecognition"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/feedback/questionnaire-card-fields.tsx",
+        "apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/sections/rubriques/feedback/use-speech-recognition.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/route/hooks/use-route-data.ts",
+      "hooks": [
+        "useRouteData"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/route/route-section.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/sections/rubriques/route/hooks/use-route-data.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/use-connect-data.ts",
+      "hooks": [
+        "useConnectData"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/connect-section-navigation.ts",
+        "apps/web/src/components/sections/rubriques/connect-section-view.tsx",
+        "apps/web/src/components/sections/rubriques/connect-section.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/sections/rubriques/use-connect-data.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/use-trash-spotter.ts",
+      "hooks": [
+        "useTrashSpotter"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/trash-spotter-section.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/weather/use-weather-data.ts",
+      "hooks": [
+        "useWeatherData"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/weather/weather-section.conditions.types.ts",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.preparation.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/sections/rubriques/weather/use-weather-data.behavior.test.tsx",
+        "apps/web/src/components/sections/rubriques/weather/use-weather-data.coordinates.test.tsx",
+        "apps/web/src/components/sections/rubriques/weather/use-weather-data.priority.test.ts",
+        "apps/web/src/components/sections/rubriques/weather/use-weather-data.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/weather/use-weather-location-suggestions.ts",
+      "hooks": [
+        "useWeatherLocationSuggestions"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/sections/rubriques/weather/use-weather-data.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/sections/rubriques/weather/use-weather-location-suggestions.behavior.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/pdf-export/use-pdf-export.ts",
+      "hooks": [
+        "usePdfExport"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/reports/web-document/use-reports-web-document-export.ts",
+        "apps/web/src/components/ui/pdf-export/pdf-export-history.tsx",
+        "apps/web/src/components/ui/rubrique-pdf-export-button.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/pdf-export/use-pdf-export.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/use-dropdown-placement.ts",
+      "hooks": [
+        "useDropdownPlacement"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/navigation/app-navigation-block-dropdown.tsx",
+        "apps/web/src/components/ui/cmm-dropdown.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/ui/use-dropdown-placement.behavior.test.tsx",
+        "apps/web/src/components/ui/use-dropdown-placement.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/components/ui/use-in-view-once.ts",
+      "hooks": [
+        "useInViewOnce"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/accueil/accueil-community-credibility-hook.ts",
+        "apps/web/src/components/accueil/accueil-map-preview.tsx",
+        "apps/web/src/components/actions/action-declaration/action-location-geometry-sections.tsx",
+        "apps/web/src/components/actions/action-declaration/before/terrain-map-panel.tsx",
+        "apps/web/src/components/actions/map-feed/actions-map-feed.tsx",
+        "apps/web/src/components/chat/deferred-chat-shell.tsx",
+        "apps/web/src/components/learn/learn-deferred-panels.tsx",
+        "apps/web/src/components/maps/territory-map-comparison-cards.tsx",
+        "apps/web/src/components/missions/deferred-mission-panels.tsx",
+        "apps/web/src/components/reports/deferred-reports-web-document.tsx",
+        "apps/web/src/components/sections/rubriques/compost/compost-section.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/hooks/use-submission-lock.ts",
+      "hooks": [
+        "useSubmissionLock"
+      ],
+      "colocalized": false,
+      "consumers": [
+        "apps/web/src/components/actions/quick-signalement-form.tsx",
+        "apps/web/src/components/partners/onboarding/use-partner-onboarding-submit.ts",
+        "apps/web/src/components/sections/rubriques/promotion-request-form.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/animations/use-gsap-reveal.ts",
+      "hooks": [
+        "useGsapReveal"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/accueil/accueil-community-credibility-reveal.tsx",
+        "apps/web/src/components/dashboard/dashboard-entrance.tsx",
+        "apps/web/src/components/dashboard/dashboard-today-panel.tsx"
+      ],
+      "tests": [
+        "apps/web/src/lib/animations/use-gsap-reveal.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/auth/use-effective-auth-state.tsx",
+      "hooks": [
+        "useEffectiveAuthState"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/action-creation-shell-sections.tsx",
+        "apps/web/src/components/actions/action-creation-shell-workflow.tsx",
+        "apps/web/src/components/sections/rubriques/route/route-section.tsx"
+      ],
+      "tests": [
+        "apps/web/src/components/sections/rubriques/route/route-section.map.test.tsx",
+        "apps/web/src/components/sections/rubriques/route/route-section.test.tsx",
+        "apps/web/src/lib/auth/use-effective-auth-state.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/auth/use-location-hash.ts",
+      "hooks": [
+        "useLocationHash"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/chat/chat-composer-input.tsx",
+        "apps/web/src/components/navigation/app-navigation-ribbon-account.tsx",
+        "apps/web/src/components/ui/clerk-required-gate.tsx"
+      ],
+      "tests": [
+        "apps/web/src/lib/auth/use-location-hash.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/auth/user-location.ts",
+      "hooks": [
+        "getCurrentUserLocationPreference",
+        "getCurrentUserLocationPreferences"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/app/api/route/recommend/route.ts",
+        "apps/web/src/app/onboarding/page.tsx",
+        "apps/web/src/lib/auth/account-completion-gate.ts"
+      ],
+      "tests": [
+        "apps/web/src/lib/auth/user-location.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/auth/user-territory.ts",
+      "hooks": [
+        "getCurrentUserTerritoryLocationPreference"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/app/(app)/actions/new/page-context.ts",
+        "apps/web/src/app/api/community/needs/suggestions/route.ts",
+        "apps/web/src/app/api/users/map-viewport-fallback/route.ts"
+      ],
+      "tests": [
+        "apps/web/src/lib/auth/user-territory.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/chat/user-search.ts",
+      "hooks": [
+        "ChatUserRow",
+        "fetchCachedChatUsers"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/app/api/chat/users/route.ts"
+      ],
+      "tests": [
+        "apps/web/src/lib/chat/user-search.pagination.test.ts",
+        "apps/web/src/lib/chat/user-search.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/i18n/use-translation.ts",
+      "hooks": [
+        "useTranslation"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/gamification/infinite-badges/BadgeModal.tsx",
+        "apps/web/src/components/gamification/infinite-badges/InfiniteBadgesPanel.tsx",
+        "apps/web/src/components/learn/impact-order-of-magnitude.tsx",
+        "apps/web/src/components/sections/rubriques/methodologie-page-client.tsx",
+        "apps/web/src/components/sections/rubriques/methodologie-page-composition.tsx",
+        "apps/web/src/components/sections/rubriques/route-methodology-section.tsx"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/notifications/use-notification-decision-state.ts",
+      "hooks": [
+        "useNotificationDecisionState"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/dashboard/dashboard-notifications-section.tsx",
+        "apps/web/src/components/navigation/notification-bell.tsx"
+      ],
+      "tests": [
+        "apps/web/src/lib/notifications/use-notification-decision-state.test.tsx"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/notifications/use-notification-request-identity.ts",
+      "hooks": [
+        "useNotificationRequestIdentity"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/dashboard/dashboard-notifications-section.tsx",
+        "apps/web/src/components/navigation/notification-bell.tsx"
+      ],
+      "tests": [
+        "apps/web/src/lib/notifications/use-notification-request-identity.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/plastic-origins/use-plastic-origins-data.ts",
+      "hooks": [
+        "usePlasticOriginsData"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/actions/actions-map-canvas-state.ts",
+        "apps/web/src/components/actions/actions-map-canvas-view.tsx"
+      ],
+      "tests": [
+        "apps/web/src/lib/plastic-origins/use-plastic-origins-data.test.ts"
+      ],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/ui/page-families/use-page-family.ts",
+      "hooks": [
+        "usePageFamily"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/components/ui/family-rubrique-card.tsx",
+        "apps/web/src/lib/ui/page-families/index.ts"
+      ],
+      "tests": [],
+      "surfaceBoundary": "web"
+    },
+    {
+      "path": "apps/web/src/lib/user-location-preference.ts",
+      "hooks": [
+        "CountryCode",
+        "DEFAULT_COUNTRY_CODE",
+        "GreaterParisLocationPreference",
+        "ISO_3166_ALPHA_2_CODES",
+        "TERRITORY_PREFERENCES_METADATA_KEY",
+        "TerritoryLocationLevel",
+        "TerritoryLocationPreference",
+        "TerritoryLocationSelection",
+        "UserLocationPreference",
+        "UserLocationPreferences",
+        "UserLocationType",
+        "clearLocationPreferenceMetadata",
+        "createGreaterParisMetadataFromZoneName",
+        "createLocationPreferencesMetadata",
+        "createTerritoryLocationMetadata",
+        "createTerritoryLocationMetadataFromLabel",
+        "createTerritoryLocationSelectionFromLegacyArrondissement",
+        "extractGreaterParisLocationPreferenceFromMetadata",
+        "extractLocationPreferencesFromMetadata",
+        "extractLocationPreferencesFromMetadataSources",
+        "extractResidenceLocationPreferenceFromMetadata",
+        "extractTerritoryLocationPreferenceFromMetadata",
+        "extractTerritoryLocationPreferenceFromMetadataSources",
+        "extractUserLocationPreferenceFromMetadata",
+        "extractUserLocationPreferenceFromMetadataSources",
+        "hasCanonicalLocationPreferences",
+        "isCountryCode",
+        "parseCountryCode"
+      ],
+      "colocalized": true,
+      "consumers": [
+        "apps/web/src/app/(app)/actions/new/page-context.ts",
+        "apps/web/src/app/api/account/locations/route.ts",
+        "apps/web/src/app/api/geo/address-suggestions/route.ts",
+        "apps/web/src/app/api/mobile/account/route.ts",
+        "apps/web/src/app/reglages/page.tsx",
+        "apps/web/src/components/account/account-settings-editor.tsx",
+        "apps/web/src/components/account/account-settings-editor.view.tsx",
+        "apps/web/src/components/account/account-setup-controller-actions.ts",
+        "apps/web/src/components/account/account-setup-state.ts",
+        "apps/web/src/components/account/greater-paris-select-controls.tsx",
+        "apps/web/src/components/account/greater-paris-select-shell.tsx",
+        "apps/web/src/components/account/greater-paris-select.tsx",
+        "apps/web/src/components/account/use-account-setup-controller.ts",
+        "apps/web/src/components/account/use-greater-paris-suggestions.ts",
+        "apps/web/src/components/actions/action-creation-shell.types.ts",
+        "apps/web/src/components/actions/action-declaration/action-address-autocomplete.model.ts",
+        "apps/web/src/components/actions/action-declaration/action-address-autocomplete.tsx",
+        "apps/web/src/components/actions/action-declaration/action-declaration-form-content.tsx",
+        "apps/web/src/components/actions/action-declaration/action-location.types.ts",
+        "apps/web/src/components/actions/action-declaration/before/action-before-form-view.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-before-sectioned-content.tsx",
+        "apps/web/src/components/actions/action-declaration/before/action-search-country-field.tsx",
+        "apps/web/src/components/actions/action-declaration/before/form.tsx",
+        "apps/web/src/components/actions/action-declaration/before/model.ts",
+        "apps/web/src/components/actions/action-declaration/before/section-contract.tsx",
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-address-autocomplete.ts",
+        "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form-view-model.ts",
+        "apps/web/src/components/sections/rubriques/annuaire/use-annuaire-logic.ts",
+        "apps/web/src/components/sections/rubriques/weather/use-weather-data.ts",
+        "apps/web/src/components/sections/rubriques/weather/use-weather-location-suggestions.ts",
+        "apps/web/src/components/sections/rubriques/weather/weather-location-resolution.ts",
+        "apps/web/src/components/sections/rubriques/weather/weather-section.tsx",
+        "apps/web/src/lib/auth/account-completion-gate.ts",
+        "apps/web/src/lib/auth/sync-profile-metadata.ts",
+        "apps/web/src/lib/auth/user-location.ts",
+        "apps/web/src/lib/auth/user-territory.ts",
+        "apps/web/src/lib/authz-identity.ts",
+        "apps/web/src/lib/environmental-impact-estimator/ai-personal-import.ts",
+        "apps/web/src/lib/environmental-impact-estimator/personal-ai-usage-normalization.ts",
+        "apps/web/src/lib/geo/greater-paris-location.ts",
+        "apps/web/src/lib/geo/map-viewport-fallback.ts",
+        "apps/web/src/lib/partners/territory-network-ranking.ts"
+      ],
+      "tests": [
+        "apps/web/src/components/account/use-account-setup-controller.test.tsx",
+        "apps/web/src/components/account/use-greater-paris-suggestions.behavior.test.tsx",
+        "apps/web/src/components/sections/rubriques/weather/weather-location-resolution.test.ts",
+        "apps/web/src/lib/geo/map-viewport-fallback.test.ts",
+        "apps/web/src/lib/user-location-preference.test.ts"
+      ],
+      "surfaceBoundary": "web"
     }
   ]
 }

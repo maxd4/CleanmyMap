@@ -1308,7 +1308,7 @@
           règles de composition du projet dans un format pensé pour la lecture rapide et l'export PNG.
         </p>
         <div class="chip-row">
-          <div class="chip"><strong>Sources</strong> globals.css / block-accents.ts / navigation.ts / sections-registry/config.ts / components/ui / components/navigation</div>
+          <div class="chip"><strong>Sources</strong> globals.css / tokens.css / block-accents.ts / navigation.ts / sections-registry/config.ts / components/ui / components/navigation</div>
           <div class="chip"><strong>Format</strong> HTML autonome</div>
           <div class="chip"><strong>Usage</strong> charte / export / IA</div>
         </div>
@@ -1332,7 +1332,7 @@
         </article>
         <article class="stat">
           <div class="k">UI</div>
-          <div class="v">22</div>
+          <div class="v">18</div>
           <div class="d">Boutons, champs, navbar, cards et états.</div>
         </article>
         <article class="hero-source">
@@ -1743,42 +1743,28 @@
     "surface": "bg-[rgba(243,251,246,0.94)] backdrop-blur-xl",
     "surfaceMuted": "bg-[rgba(236,248,240,0.84)] backdrop-blur-md",
     "borderStrong": "border-emerald-300/80",
-    "summary": "Déclarer une action, Rejoindre un formulaire, Où agir ?, Organiser une action",
+    "summary": "Rejoindre une action, Créer une action, Signaler un déchet",
     "items": [
       {
-        "label": "Déclarer une action",
+        "label": "Rejoindre une action",
+        "route": "/sections/rejoindre-une-action",
+        "sourceCategory": "Actions Terrain",
+        "exposedBlock": "Agir",
+        "meta": "Actions Terrain / Agir"
+      },
+      {
+        "label": "Créer une action",
         "route": "/actions/new",
         "sourceCategory": "Actions Terrain",
         "exposedBlock": "Agir",
         "meta": "Actions Terrain / Agir"
       },
       {
-        "label": "Rejoindre un formulaire",
-        "route": "/sections/rejoindre-un-formulaire",
-        "sourceCategory": "Actions Terrain",
-        "exposedBlock": "Agir",
-        "meta": "Actions Terrain / Agir"
-      },
-      {
-        "label": "Où agir ?",
-        "route": "/sections/route",
-        "sourceCategory": "Actions Terrain",
-        "exposedBlock": "Agir",
-        "meta": "Actions Terrain / Agir"
-      },
-      {
-        "label": "Organiser une action",
-        "route": "/sections/weather",
-        "sourceCategory": "Actions Terrain",
-        "exposedBlock": "Agir",
-        "meta": "Actions Terrain / Agir"
-      },
-      {
         "label": "Signaler un déchet",
-        "route": "/sections/trash-spotter",
-        "sourceCategory": "Communauté",
+        "route": "/signalement",
+        "sourceCategory": "Actions Terrain",
         "exposedBlock": "Agir",
-        "meta": "Communauté / Agir"
+        "meta": "Actions Terrain / Agir"
       }
     ]
   },
@@ -1836,32 +1822,18 @@
     "surface": "bg-[rgba(10,4,28,0.78)] backdrop-blur-xl",
     "surfaceMuted": "bg-[rgba(7,2,20,0.55)] backdrop-blur-md",
     "borderStrong": "border-violet-400/38",
-    "summary": "Communauté (alias partenaires), Communauté, Idées et problèmes, Groupes de discussion",
+    "summary": "Groupes de discussion, Annuaire des acteurs, Données publiques, Soutenir CleanMyMap",
     "items": [
-      {
-        "label": "Communauté (alias partenaires)",
-        "route": "/partners/network",
-        "sourceCategory": "Communauté",
-        "exposedBlock": "Réseau & Discussions",
-        "meta": "Communauté / Réseau & Discussions"
-      },
-      {
-        "label": "Communauté",
-        "route": "/sections/community",
-        "sourceCategory": "Communauté",
-        "exposedBlock": "Réseau & Discussions",
-        "meta": "Communauté / Réseau & Discussions"
-      },
-      {
-        "label": "Idées et problèmes",
-        "route": "/sections/feedback",
-        "sourceCategory": "Communauté",
-        "exposedBlock": "Réseau & Discussions",
-        "meta": "Communauté / Réseau & Discussions"
-      },
       {
         "label": "Groupes de discussion",
         "route": "/sections/messagerie",
+        "sourceCategory": "Communauté",
+        "exposedBlock": "Réseau & Discussions",
+        "meta": "Communauté / Réseau & Discussions"
+      },
+      {
+        "label": "Annuaire des acteurs",
+        "route": "/sections/annuaire",
         "sourceCategory": "Communauté",
         "exposedBlock": "Réseau & Discussions",
         "meta": "Communauté / Réseau & Discussions"
@@ -1872,6 +1844,13 @@
         "sourceCategory": "Analyse & Contexte",
         "exposedBlock": "Réseau & Discussions",
         "meta": "Analyse & Contexte / Réseau & Discussions"
+      },
+      {
+        "label": "Soutenir CleanMyMap",
+        "route": "/sections/funding",
+        "sourceCategory": "Communauté",
+        "exposedBlock": "Réseau & Discussions",
+        "meta": "Communauté / Réseau & Discussions"
       }
     ]
   },

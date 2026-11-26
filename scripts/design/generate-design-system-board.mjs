@@ -5,6 +5,7 @@ import { watch } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { buildArchitectureImportGraph } from "../reports/generate-architecture-import-graph.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(SCRIPT_DIR, "../..");
@@ -17,6 +18,7 @@ const BOARD_DATA_JSON = path.join(BOARD_DIR, "design-system-board.data.json");
 
 const SOURCE_FILES = {
   globalsCss: path.join(ROOT_DIR, "apps/web/src/app/globals.css"),
+  tokensCss: path.join(ROOT_DIR, "apps/web/src/styles/tokens.css"),
   blockAccents: path.join(ROOT_DIR, "apps/web/src/lib/ui/block-accents.ts"),
   navigation: path.join(ROOT_DIR, "apps/web/src/lib/navigation.ts"),
   accueilPilotageRoutes: path.join(ROOT_DIR, "apps/web/src/lib/accueil-pilotage-routes.ts"),
@@ -430,6 +432,7 @@ function formatItemMeta(sourceCategory, exposedBlock) {
 function buildSourceSummary() {
   return [
     "globals.css",
+    "tokens.css",
     "block-accents.ts",
     "navigation.ts",
     "sections-registry/config.ts",
@@ -438,9 +441,28 @@ function buildSourceSummary() {
   ];
 }
 
-export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listComponentFiles, now = () => new Date().toISOString() } = {}) {
+async function resolveCssBundle(entryPath, entryCss, { readFile = readText, visited = new Set() } = {}) {
+  const resolvedEntry = path.resolve(entryPath);
+  if (visited.has(resolvedEntry)) return "";
+  visited.add(resolvedEntry);
+
+  const chunks = [entryCss];
+  for (const match of entryCss.matchAll(/@import\s+["'](\.[^"']+\.css)["']\s*;/g)) {
+    const importedPath = path.resolve(path.dirname(resolvedEntry), match[1]);
+    try {
+      const importedCss = await readFile(importedPath);
+      chunks.push(await resolveCssBundle(importedPath, importedCss, { readFile, visited }));
+    } catch {
+      // Keep fixture compatibility if an optional imported CSS file is absent
+    }
+  }
+  return chunks.join("\n");
+}
+
+export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listComponentFiles, now = () => new Date().toISOString(), graph = undefined } = {}) {
   const [
     globalsCss,
+    tokensCss,
     blockAccentsSource,
     navigationSource,
     accueilPilotageRoutesSource,
@@ -449,6 +471,7 @@ export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listCo
     navigationFiles,
   ] = await Promise.all([
     readText(sourceFiles.globalsCss),
+    sourceFiles.tokensCss ? readText(sourceFiles.tokensCss) : Promise.resolve(""),
     readText(sourceFiles.blockAccents),
     readText(sourceFiles.navigation),
     readText(sourceFiles.accueilPilotageRoutes),
@@ -457,9 +480,10 @@ export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listCo
     listFiles(sourceFiles.navigationComponentsDir),
   ]);
 
-  const rootVars = extractCssVars(globalsCss, ":root");
-  const darkVars = extractCssVars(globalsCss, 'html[data-theme="dark"]');
-  const themeVars = extractCssVars(globalsCss, "@theme inline");
+  const bundledCss = `${await resolveCssBundle(sourceFiles.globalsCss, globalsCss)}\n${tokensCss}`;
+  const rootVars = extractCssVars(bundledCss, ":root");
+  const darkVars = extractCssVars(bundledCss, 'html[data-theme="dark"]');
+  const themeVars = extractCssVars(bundledCss, "@theme inline");
 
   const blockAccentMap = parseLiteral(blockAccentsSource, "const BLOCK_ACCENT_MAP", "{");
   const accentTokens = parseLiteral(blockAccentsSource, "const ACCENT_TOKENS", "{");
@@ -721,8 +745,21 @@ export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listCo
     },
   ];
 
+  let importGraph = graph ?? null;
+  if (importGraph === null && sourceFiles === SOURCE_FILES) {
+    try {
+      importGraph = buildArchitectureImportGraph({ source: "worktree", root: ROOT_DIR });
+    } catch {
+      importGraph = null;
+    }
+  }
+
   const coreHighlightFiles = buildComponentHighlights(uiFiles, navigationFiles);
-  const uiAndHooks = await collectUiAndHooksMetadata({ uiFiles, navigationFiles });
+  const uiAndHooks = await collectUiAndHooksMetadata({
+    uiFiles,
+    navigationFiles,
+    graph: importGraph,
+  });
 
   return {
     generatedAt: now(),
@@ -741,6 +778,11 @@ export async function buildData({ sourceFiles = SOURCE_FILES, listFiles = listCo
       navigationFiles,
       coreHighlightFiles,
       profile: profileKey,
+      provenance: {
+        consumerGraph: importGraph ? "architecture-import-graph" : "none",
+        gitSha: importGraph?.gitSha ?? null,
+        measuredSource: importGraph?.provenance?.measuredSource ?? "worktree",
+      },
     },
     palette,
     blocks,
@@ -756,9 +798,24 @@ export async function collectUiAndHooksMetadata({
   uiFiles = [],
   navigationFiles = [],
   srcDir = path.join(ROOT_DIR, "apps/web/src"),
+  graph = null,
 } = {}) {
   const uiCatalog = [];
   const hooks = [];
+  const incomingConsumers = new Map();
+  const incomingTests = new Map();
+
+  if (graph && Array.isArray(graph.edges)) {
+    for (const edge of graph.edges) {
+      if (edge.sourceKind === "runtime") {
+        if (!incomingConsumers.has(edge.to)) incomingConsumers.set(edge.to, new Set());
+        incomingConsumers.get(edge.to).add(edge.from);
+      } else if (edge.sourceKind === "test") {
+        if (!incomingTests.has(edge.to)) incomingTests.set(edge.to, new Set());
+        incomingTests.get(edge.to).add(edge.from);
+      }
+    }
+  }
 
   function inspectTsExports(filePath, content) {
     const sf = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true);
@@ -776,6 +833,17 @@ export async function collectUiAndHooksMetadata({
       } else if ((ts.isInterfaceDeclaration(stmt) || ts.isTypeAliasDeclaration(stmt)) && stmt.name) {
         exports.push(stmt.name.text);
         if (stmt.name.text.endsWith("Props")) propsTypes.push(stmt.name.text);
+        if (
+          ts.isTypeAliasDeclaration(stmt) &&
+          /Variants?$/i.test(stmt.name.text) &&
+          ts.isUnionTypeNode(stmt.type)
+        ) {
+          for (const member of stmt.type.types) {
+            if (ts.isLiteralTypeNode(member) && ts.isStringLiteral(member.literal)) {
+              variants.push(member.literal.text);
+            }
+          }
+        }
       } else if (ts.isVariableStatement(stmt)) {
         for (const decl of stmt.declarationList.declarations) {
           if (ts.isIdentifier(decl.name)) {
@@ -812,6 +880,11 @@ export async function collectUiAndHooksMetadata({
       const testRel = item.rel.replace(/\.tsx?$/, ".test.tsx");
       let hasTest = false;
       try { await fs.access(path.join(rootDir, testRel)); hasTest = true; } catch { /* no colocated test */ }
+      const tests = [...new Set([
+        ...(hasTest ? [testRel] : []),
+        ...(incomingTests.get(item.rel) ?? []),
+      ])].sort();
+      const consumers = [...(incomingConsumers.get(item.rel) ?? [])].sort();
       uiCatalog.push({
         path: item.rel,
         folder: item.folder,
@@ -819,6 +892,8 @@ export async function collectUiAndHooksMetadata({
         propsTypes: meta.propsTypes,
         variants: meta.variants,
         colocatedTest: hasTest ? testRel : null,
+        consumers,
+        tests,
         surfaceBoundary: "web",
       });
     } catch {
@@ -838,10 +913,17 @@ export async function collectUiAndHooksMetadata({
         const content = await fs.readFile(full, "utf8");
         const meta = inspectTsExports(full, content);
         const rel = path.relative(rootDir, full).replaceAll("\\", "/");
+        const colocatedCandidates = [rel.replace(/\.tsx?$/, ".test.ts"), rel.replace(/\.tsx?$/, ".test.tsx")];
+        const colocatedTests = [];
+        for (const candidate of colocatedCandidates) {
+          try { await fs.access(path.join(rootDir, candidate)); colocatedTests.push(candidate); } catch { /* absent */ }
+        }
         hooks.push({
           path: rel,
           hooks: meta.hookNames.length > 0 ? meta.hookNames : meta.exports,
           colocalized: !rel.includes("/src/hooks/"),
+          consumers: [...(incomingConsumers.get(rel) ?? [])].sort(),
+          tests: [...new Set([...colocatedTests, ...(incomingTests.get(rel) ?? [])])].sort(),
           surfaceBoundary: "web",
         });
       }
@@ -925,6 +1007,7 @@ export async function generate({ boardDir = BOARD_DIR, sourceFiles = SOURCE_FILE
 
 export async function watchAndRegenerate({ generateImpl = generate, watchImpl = watch, watchedPaths = [
   SOURCE_FILES.globalsCss,
+  SOURCE_FILES.tokensCss,
   SOURCE_FILES.blockAccents,
   SOURCE_FILES.navigation,
   SOURCE_FILES.sectionsConfig,

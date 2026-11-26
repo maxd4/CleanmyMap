@@ -49,14 +49,20 @@ test("discovers aliased imports, methods and unresolved calls without emitting U
   assert.ok(!JSON.stringify(refs).includes("private="));
 });
 
-test("requires Git view, detects method mismatch, and excludes tests and vendor files", () => {
+test("requires Git view, resolves re-exports via shared resolver, distinguishes route/method AuthZ, and preserves ambiguous status", () => {
   const sha = "a".repeat(40);
   const files = {
-    "apps/mobile/features/example.ts": "import { mobileRequest } from './mobile-api-client'; mobileRequest('/api/actions', { method: 'DELETE' })",
+    "apps/mobile/features/example.ts": [
+      "import { mobileRequest } from './mobile-api-client';",
+      "mobileRequest('/api/actions', { method: 'DELETE' });",
+      "mobileRequest('/api/actions', { method: 'POST' });",
+      "mobileRequest('/api/actions/history', { method: 'GET' });",
+    ].join("\n"),
     "apps/mobile/features/example.test.ts": "import { mobileRequest } from './mobile-api-client'; mobileRequest('/api/actions')",
     "apps/mobile/vendor/example.ts": "import { mobileRequest } from './mobile-api-client'; mobileRequest('/api/actions')",
     "apps/web/src/app/api/actions/route.ts": "export async function GET() {} export { POST } from './route.create';",
-    "apps/web/src/lib/auth/api-authorization-contract.actions.ts": 'export const X = { "actions": {} };',
+    "apps/web/src/app/api/actions/route.create.ts": "export async function POST() {}",
+    "apps/web/src/lib/auth/api-authorization-contract.actions.ts": 'export const X = { "actions": { GET: {} } };',
   };
   const view = {
     mode: "git",
@@ -65,9 +71,16 @@ test("requires Git view, detects method mismatch, and excludes tests and vendor 
     readText: (p) => files[p] ?? "",
   };
   const report = buildMobileApiDiscovery(view, sha, routes);
-  assert.equal(report.references.length, 1);
+  assert.equal(report.references.length, 3);
   assert.deepEqual(report.references[0].serverMethods, ["GET", "POST"]);
   assert.equal(report.references[0].methodMismatch, true);
+  assert.equal(report.references[0].authContractDeclared, true);
+  assert.equal(report.references[0].authMethodDeclared, false);
+  assert.equal(report.references[1].methodMismatch, false);
+  assert.equal(report.references[1].authContractDeclared, true);
+  assert.equal(report.references[1].authMethodDeclared, false);
+  assert.equal(report.references[2].status, "AMBIGUOUS");
+  assert.equal(report.references[2].methodMismatch, undefined);
   assert.throws(() => buildMobileApiDiscovery({ ...view, mode: "filesystem" }, sha, routes), /Git SHA/);
   assert.throws(() => buildMobileApiDiscovery(view, "HEAD", routes), /Git SHA/);
 });

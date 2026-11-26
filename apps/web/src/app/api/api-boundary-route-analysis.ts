@@ -1,9 +1,5 @@
-import { readFileSync } from "node:fs";
-import {
-  extractRouteMethods,
-  resolveLocalModulePath,
-  type LocalModuleSources,
-} from "./api-boundary-analysis";
+import { type LocalModuleSources } from "./api-boundary-analysis";
+import { resolveRouteMethodsFromSource } from "./api-boundary-route-methods.mjs";
 import {
   collectLocalModuleSources,
   collectReachableMethodSource,
@@ -11,31 +7,11 @@ import {
 import type { ApiHttpMethod } from "@/lib/auth/api-authorization-contract";
 
 export function resolveRouteMethods(path: string, source: string) {
-  const methods = extractRouteMethods(source);
-  const methodOwners = new Map<ApiHttpMethod, string>(
-    Array.from(methods.keys()).map((method) => [method, path]),
-  );
+  const resolved = resolveRouteMethodsFromSource(path, source);
+  const methods = resolved.methods as Map<ApiHttpMethod, string>;
+  const methodOwners = resolved.methodOwners as Map<ApiHttpMethod, string>;
   const moduleSources: LocalModuleSources = new Map();
   collectLocalModuleSources(path, source, moduleSources, new Set());
-  const reExports = Array.from(
-    source.matchAll(
-      /export\s*\{\s*(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\}\s*from\s*["']([^"']+)["']/g,
-    ),
-  );
-
-  for (const match of reExports) {
-    const method = match[1] as ApiHttpMethod;
-    const specifier = match[2];
-    const targetPath = resolveLocalModulePath(path, specifier);
-    if (!targetPath) continue;
-    const targetSource = readFileSync(targetPath, "utf8");
-    const targetMethods = extractRouteMethods(targetSource);
-    const methodSource = targetMethods.get(method);
-    if (methodSource) {
-      methods.set(method, methodSource);
-      methodOwners.set(method, targetPath);
-    }
-  }
 
   const methodEvidenceSources = new Map<ApiHttpMethod, string>();
   const analysisCache = {

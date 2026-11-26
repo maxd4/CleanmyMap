@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -6,6 +6,10 @@ import {
   type ApiAuthorizationContractEntry,
   type ApiHttpMethod,
 } from "@/lib/auth/api-authorization-contract";
+import {
+  extractRouteMethods as extractRouteMethodsUntyped,
+  resolveLocalModulePath,
+} from "./api-boundary-route-methods.mjs";
 
 // This scope is shared by the inventory test and its focused evidence tests.
 // It describes which API families are subject to the authorization contract;
@@ -43,8 +47,6 @@ export const contractedApiRoutes = new Set([
 ]);
 
 export const apiRoot = dirname(fileURLToPath(import.meta.url));
-const httpMethodPattern =
-  /export\s+(?:async\s+function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\(|const\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*=)/g;
 
 export function walk(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -54,15 +56,7 @@ export function walk(directory: string): string[] {
 }
 
 export function extractRouteMethods(source: string): Map<ApiHttpMethod, string> {
-  const matches = Array.from(source.matchAll(httpMethodPattern));
-  const methods = new Map<ApiHttpMethod, string>();
-  matches.forEach((match, index) => {
-    const method = (match[1] ?? match[2]) as ApiHttpMethod;
-    const start = match.index ?? 0;
-    const end = matches[index + 1]?.index ?? source.length;
-    methods.set(method, source.slice(start, end));
-  });
-  return methods;
+  return extractRouteMethodsUntyped(source) as Map<ApiHttpMethod, string>;
 }
 
 export function withoutComments(source: string): string {
@@ -71,19 +65,7 @@ export function withoutComments(source: string): string {
     .replace(/(^|\s)\/\/.*$/gm, "$1");
 }
 
-export function resolveLocalModulePath(fromPath: string, specifier: string): string | null {
-  const basePath = join(dirname(fromPath), specifier);
-  const candidates = [
-    basePath,
-    `${basePath}.ts`,
-    `${basePath}.tsx`,
-    `${basePath}.mjs`,
-    `${basePath}.js`,
-    join(basePath, "index.ts"),
-    join(basePath, "index.tsx"),
-  ];
-  return candidates.find((candidate) => existsSync(candidate)) ?? null;
-}
+export { resolveLocalModulePath };
 
 export type LocalModuleSources = Map<string, string>;
 
