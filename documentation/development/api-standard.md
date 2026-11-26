@@ -65,3 +65,39 @@ Ce schéma décrit des **frontières logiques**, pas un ordre uniforme d'implém
 ## Preuves de modification
 
 Lire le handler, la validation, le service, les DTO, les clients et les tests couvrant les cas autorisés **et interdits**. Le test d'inventaire statique d'API ne remplace pas des tests d'intégration AuthZ, RLS, Storage et de concurrence. Les commandes et niveaux de preuve appartiennent à [`TESTING.md`](./TESTING.md). Ne pas traiter une CI préexistante rouge comme une régression nouvelle sans comparaison du parent.
+
+## Découverte des consommateurs Web et Mobile
+
+Pour retrouver une route et ses méthodes, utiliser le registre AuthZ par
+méthode et les analyseurs du test de frontière API, puis vérifier le handler.
+Le rapport `npm run audit:vercel:api-routes` inventorie les fichiers route
+mais ne constitue ni un contrat de méthode ni une décision d'autorisation.
+Le graphe d'imports complète la découverte des services et tests directement
+reliés ; les appels HTTP par chaîne ne sont pas des imports TypeScript.
+
+Pour Mobile, partir de [l'architecture du workspace](../../apps/mobile/README.md)
+et de `apps/mobile/shared/lib/mobile-api-client.ts`. Ce client HTTP ajoute
+le Bearer Clerk et délègue aux contrats serveur existants. Examiner aussi les
+appels fetch directs, les RPC et accès Supabase : une absence dans le graphe
+HTTP ne prouve pas une absence de consommation.
+
+| Famille | Client Mobile à examiner | Handler Web / frontière |
+|---|---|---|
+| Actions, participation, invitations, revue | `features/actions/mobile-actions-service.ts` | `api/mobile/actions/`, `api/actions/` |
+| Signalements | même service et consommateurs du domaine | `api/spots/`, `api/signalements/` |
+| Compte, profil actif, préférences | `features/account/mobile-account-service.ts` | `api/mobile/account/`, `api/account/`, `api/users/profile/`, `api/notifications/` |
+| Légendes territoriales | `features/territorial-legends/mobile-territorial-legends-service.ts` | `api/gamification/territorial-leaderboard/overview/`, `api/users/profile/territorial-legend-consent/` |
+| Mission liée et GPS | `features/tracking/linked-mission-service.ts`, `tracking-service.ts` | `api/missions/`, réconciliation, tables missions/gps_points et RLS |
+
+Les chemins clients sont relatifs à `apps/mobile/` et les handlers à
+`apps/web/src/app/`. Ce tableau oriente par famille, sans prétendre recenser
+chaque appel. Par exemple, annuler une participation mobile et annuler une
+action en tant qu'administrateur sont des opérations différentes.
+
+Pour un inventaire généré, rattacher une occurrence au fichier source,
+à la ligne, au motif de chemin et à la méthode déclarée ; conserver les
+correspondances ambiguës ou dynamiques non résolues. Réutiliser le contrat
+AuthZ et ses tests pour les méthodes serveur et les décisions de droits,
+sans les déduire d'un préfixe d'URL, d'un nom de fonction ou d'un Bearer.
+Les preuves de disponibilité, d'AuthZ et de compatibilité restent celles
+des tests comportementaux et d'intégration concernés.

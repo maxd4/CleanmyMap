@@ -90,3 +90,33 @@ et `display-modes.css`; `CmmIcon` reste la primitive canonique pour les glyphes.
 Lire le contrat spécialisé de la responsabilité touchée, puis les composants
 et checks directement concernés. Ne pas traiter une ancienne charte, une
 expérimentation ou une recette comme une obligation runtime.
+
+## Découvrir les primitives et hooks réutilisables
+
+Le catalogue de composants Web dérivé du code est porté par le générateur
+`scripts/design/generate-design-system-board.mjs` et sa planche
+`generated/board/`. Utiliser `npm run design-system:board` uniquement lorsque
+la régénération de cet artefact est justifiée ; la planche ne prouve pas
+l'accessibilité ou le rendu d'une page consommatrice.
+
+| Besoin | Point d'entrée runtime Web (sous src/components/ui) | Contrat |
+|---|---|---|
+| Action, carte | `cmm-button.tsx`, `cmm-card.tsx` | [ACTIONS_BUTTONS](./ACTIONS_BUTTONS.md), [SURFACES_CARDS](./SURFACES_CARDS.md) |
+| Champ, état et feedback | `cmm-field.tsx`, `system-state.tsx`, `cmm-feedback.tsx`, `cmm-skeleton.tsx` | [FORMS_CONTROLS](./FORMS_CONTROLS.md), [STATES_FEEDBACK](./STATES_FEEDBACK.md) |
+| Disclosure et overlay | `cmm-disclosure.tsx`, `cmm-dialog.tsx`, `cmm-popover.tsx`, `cmm-dropdown.tsx` | [DISCLOSURE_ACCORDIONS](./DISCLOSURE_ACCORDIONS.md), [OVERLAYS_DIALOGS](./OVERLAYS_DIALOGS.md) |
+| Structure et titre | `page-header.tsx`, `page-structure.tsx`, `cmm-section.tsx`, `cmm-grid.tsx` | [PAGE_HEADER](./PAGE_HEADER.md), [LAYOUT_SPACING](./LAYOUT_SPACING.md) |
+| Préférences et positionnement | `site-preferences-provider.tsx`, `use-dropdown-placement.ts`, `use-in-view-once.ts` | [DISPLAY_MODES_CANONICAL](./DISPLAY_MODES_CANONICAL.md), [MOTION_TRANSITIONS](./MOTION_TRANSITIONS.md) |
+
+Les hooks Web ne sont pas tous dans `src/hooks/` : rechercher également dans
+les composants et domaines propriétaires (par exemple
+`components/actions/action-declaration/hooks/`). Pour une primitive ou un
+hook, lire les exports, les types de props/options, les consommateurs et
+les tests réels ; le nom de fichier ou le nombre d'importeurs n'est pas
+une preuve de réutilisabilité. Utiliser le graphe d'imports pour les
+consommateurs et compléter les imports indirects et compositions.
+
+Mobile conserve ses primitives natives, par exemple
+`apps/mobile/shared/ui/mobile-form-field.tsx`, et ses controllers de feature ;
+l'index Web n'autorise ni duplication de logique métier, ni import de
+composant DOM dans React Native. Ne pas modifier la matrice UI/UX gelée,
+les tokens ou les composants au seul motif de produire un catalogue.

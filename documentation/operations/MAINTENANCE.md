@@ -2,7 +2,8 @@
 
 ## Résultats différés du dispatcher quotidien
 
-Le registre conserve ses huit jobs et leurs calendriers. Un job qui dépend
+Le registre conserve les jobs et calendriers déclarés dans
+`apps/web/src/lib/periodic/maintenance-job-registry.ts`. Un job qui dépend
 d'une donnée encore absente peut retourner `deferred`; le dispatcher l'expose
 comme `skipped` avec `dependency_unavailable` ou `insufficient_data`. Le
 calendrier ne change pas et l'appel quotidien retente le job tant que son
@@ -114,3 +115,35 @@ Pour les changements web, suivre [TESTING.md](../development/TESTING.md) et le `
 ## Preuves
 
 Chemin existant ≠ commande exécutée ≠ DB modifiée ≠ production validée. Inscrire la commande, le périmètre, l'environnement et les résultats réellement observés ; utiliser les runbooks et les propriétaires spécialisés pour les incidents.
+
+## Découverte des commandes, jobs et automatisations
+
+Les commandes npm viennent des trois manifestes (racine, apps/web, apps/mobile).
+Les points d'entrée sont [scripts/README.md](../../scripts/README.md),
+[apps/web/scripts/README.md](../../apps/web/scripts/README.md) et
+[maintenance/python/README.md](../../maintenance/python/README.md).
+Ne pas déduire le caractère read-only d'un nom de script : vérifier le
+script exécuté, ses options, wrappers, cibles, effets et tests avant invocation.
+Les workflows sous `.github/workflows/` et le registre périodique sont
+des owners distincts des commandes npm.
+
+Pour les jobs applicatifs, suivre le chemin unique :
+`apps/web/vercel.json` → `api/cron/maintenance/route.ts` →
+`lib/periodic/maintenance-cron-contract.ts` et
+`lib/periodic/maintenance-job-registry.ts` (chemins sous src).
+Le cron déclaré est quotidien à 03:20 UTC ; chaque entrée du registre
+porte sa cadence métier, sa période, son prédicat de production et son
+exécuteur. La cadence logique d'un job ne signifie pas un cron séparé.
+La synchronisation externe `external-action-sync` délègue à
+`external-action-sync-job.ts` en mode `cron_prepare` : ne pas assimiler
+cette préparation à une publication automatique d'action.
+La présence d'un cron dans Git ne prouve ni son déploiement ni son dernier succès.
+
+Les contrôles proches sont `maintenance-job-registry.test.ts` et
+`api/cron/maintenance/route.test.ts` ; vérifier aussi les tests des jobs
+et des RPC propriétaires. Une opération de maintenance peut écrire,
+supprimer ou exporter des données. Classifier explicitement diagnostic,
+artefact local, lecture distante ou mutation distante ; en cas de doute
+`UNCLASSIFIED` et aucune exécution automatique. Conserver cible, mode,
+prérequis, reprise et preuve. Les inventaires générés de commandes, jobs
+et workflows restent des artefacts de découverte, jamais une autorisation.

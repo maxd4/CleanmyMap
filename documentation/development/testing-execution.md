@@ -619,3 +619,39 @@ npm run build
 
 npm run typecheck -w apps/mobile
 ```
+
+## Découverte ciblée des tests d'un changement
+
+L'inventaire de fichiers et les métriques de couverture ne sont pas une
+sélection de validation suffisante. Pour localiser les tests, réutiliser le
+graphe d'imports existant et les propriétaires ci-dessous, plutôt qu'un
+nouveau registre manuel de tous les tests.
+
+| Besoin | Point d'entrée technique |
+|---|---|
+| Politique de sélection locale et groupes Web | `scripts/checks/validation-policy.mjs` |
+| Sélection de lanes CI sur diff | `scripts/ci/detect-scope.mjs` |
+| Imports directs, consommateurs et tests | `scripts/reports/generate-architecture-import-graph.mjs` |
+| Métriques par module, couverture attestée ou non | `scripts/reports/generate-module-test-metrics.mjs` |
+| Inventaire de contrôles contextualisé | [quality-check-coverage-matrix.md](./quality-check-coverage-matrix.md) (SNAPSHOT) |
+| Projets navigateur | `e2e/` et catalogue `scripts/ci/e2e-project-catalog.mjs` |
+| Contrats SQL | `apps/web/supabase/tests/`, migration, test de contrat et lane PostgreSQL concernée |
+
+Pour chaque fichier modifié, relever les tests voisins, les importeurs de
+test, les consommateurs de production et leurs tests. Compléter par les
+références indirectes (HTTP, RPC, RLS, jobs, imports dynamiques, fixtures et
+configurations), puis appliquer la politique de validation et le risque réel.
+L'absence d'arête ou de test homonyme n'est pas une preuve d'absence de test.
+Les groupes security/regression du sélecteur ne garantissent pas à eux seuls
+la couverture du changement. Le rapport de métriques par module ne remplace
+pas les fichiers de preuve et leur provenance.
+
+Pour préparer un plan sans lancer les tests, l'owner expose :
+```text
+node scripts/checks/validation-policy.mjs --scope changed --changed-file apps/web/src/lib/actions/publication.ts --json
+```
+Cet exemple produit le plan du sélecteur sur les chemins fournis, pas une
+preuve d'exécution. Compléter le plan par les tests directement pertinents
+avant de lancer les commandes du workspace. Conserver séparément Web,
+Mobile, Node, Python, E2E et PostgreSQL ; ne pas déclencher FULL ni supprimer
+une preuve requise pour satisfaire un budget de temps ou de contexte.

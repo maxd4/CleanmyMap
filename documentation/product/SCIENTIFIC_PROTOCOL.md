@@ -705,3 +705,28 @@ l'énergie à `null`. La période est requise pour sa sauvegarde. Une contrainte
 owner-scoped empêche son double comptage avec une déclaration/import actif
 chevauchant de même fournisseur; la résolution passe par exclusion et
 rapprochement explicites.
+
+## Repères de traçabilité des transformations scientifiques
+
+Ce tableau est un index de découverte du code et des preuves, non un second
+registre de facteurs. Les coefficients, unités, versions, hypothèses et
+limitations restent dans les sections propriétaires et les registres runtime.
+Les chemins ci-dessous sont relatifs à `apps/web/src/lib/`.
+
+| Chaîne | Entrées et propriétaires de transformation | Projection / sortie et points de preuve |
+|---|---|---|
+| Mesures de collecte et mégots | `actions/action-update-measurements.ts`, `waste/cigarette-butts`, `actions/impact-calculators.ts` | `computeActionImpactKpis`, tests de provenance des mesures et `impact-calculators.mass-provenance.test.ts` ; conserver les lots et versions |
+| Impact terrain et agrégats publics | `impact/impact-terrain-2026.ts`, `impact/scientific-projection-versions.ts`, `impact/public-impact-snapshot.ts` | `buildPublicImpactSnapshotPayload`, génération persistée et job périodique ; `public-impact-snapshot.test.ts`, `scientific-formula-change.integration.test.ts` |
+| Références statistiques et pollution | `actions/action-collection-reference-averages.ts`, `actions/pollution/`, `impact/scientific-projection-versions.ts` | jobs de références, projections publiques et tests de contrats SQL ; vérifier période, population éligible et version |
+| Rapports et export scientifique | `reports/report-generation-snapshot.ts`, `reports/report-generation-derivation.ts`, `reports/report-scientific-export.ts` | métadonnées de provenance et versions, cellules avec unité/statut, distinction absence/zéro ; `report-scientific-export.test.ts` |
+| Empreinte IA personnelle et scénarios | `environmental-impact-estimator/personal-ai-usage-normalization.ts`, `ai-personal-import.ts`, `personal-ai-estimator.ts`, `personal-ai-quick-scenario.ts` dans le même domaine | `estimatePersonalAiFootprint`, `estimateQuickChatScenario`, `scientific-registry.ts` ; tests estimator, registry, scientific-coherence |
+| Comptabilité environnementale du projet | `environmental-impact-estimator/canonical-accounting.ts`, `scientific-registry.ts`, `services/` dans le même domaine | vérifier les scopes séparés, les sources de mesures et proxys ; ne pas assimiler l'activité à un impact physique |
+
+La chaîne scientifique doit conserver une identité de source, la distinction
+mesuré/déclaré/dérivé/proxy/NA, la version effectivement utilisée, le périmètre,
+les unités et la politique d'arrondi. Une projection de rapport n'est pas une
+nouvelle mesure. Une projection publique ne doit pas recalculer silencieusement
+une version historique. Pour un changement de formule, suivre les consommateurs
+et les migrations, ainsi que `scripts/checks/check-scientific-formula-version.mjs`
+et les tests de versionnement concernés. Un test nommé integration n'est pas
+à lui seul une preuve de PostgreSQL exécuté.
