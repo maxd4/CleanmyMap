@@ -11,6 +11,7 @@ const skippedPathParts = [
   "documentation/plans-perso/",
   "documentation/sessions/",
   "documentation/plans/",
+  "documentation/specs/",
   "documentation/rapport_IA/",
   "documentation/development/DOCUMENTATION_POLICY.md",
   "documentation/documentation-push-status.md",

@@ -73,6 +73,7 @@ describe("documentation roadmap governance", () => {
     const view = createView({
       "documentation/features/fixture.mdx": "# Public feature\n\nNo internal reference.\n",
       "documentation/plans/fixture.mdx": "See plans/internal-roadmap.md\n",
+      "documentation/specs/README.md": "See AGENTS.md and plans/internal-roadmap.md\n",
       [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
     });
 

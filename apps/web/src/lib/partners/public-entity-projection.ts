@@ -89,6 +89,43 @@ function resolveExplicitNetworkActor(
   return null;
 }
 
+function resolvePublicStructureContext(
+  networkActor: ReturnType<typeof resolveExplicitNetworkActor>,
+  resolvedInstitutionNode: (typeof PARIS_PUBLIC_CLEANLINESS_DATASET.nodes)[number] | null,
+) {
+  if (networkActor) {
+    return getActorStructureContext(networkActor.id);
+  }
+  if (resolvedInstitutionNode) {
+    return getInstitutionStructureContext(
+      PARIS_PUBLIC_CLEANLINESS_DATASET,
+      resolvedInstitutionNode,
+      PARIS_CLEANWALK_ACTORS,
+    );
+  }
+  return null;
+}
+
+function collectPublicSources(
+  context: ReturnType<typeof resolvePublicStructureContext>,
+): PublicStructureSource[] {
+  const sourceIds = new Set<string>();
+  for (const metric of context?.metrics ?? []) sourceIds.add(metric.sourceId);
+  for (const limit of context?.limits ?? []) {
+    for (const sid of limit.sourceIds) sourceIds.add(sid);
+  }
+  return Array.from(sourceIds)
+    .map((id) => getPublicStructureSource(id))
+    .filter((s): s is PublicStructureSource => s !== null);
+}
+
+function resolveInstitutionNodeById(
+  institutionId: string | null | undefined,
+): (typeof PARIS_PUBLIC_CLEANLINESS_DATASET.nodes)[number] | null {
+  if (!institutionId) return null;
+  return PARIS_PUBLIC_CLEANLINESS_DATASET.nodes.find((n) => n.id === institutionId) ?? null;
+}
+
 /**
  * Canonical public projection for an entity across Annuaire, 3D network, and 2D org.
  * Uses explicit canonical IDs only; never matches by name and never exposes private facts.
@@ -96,9 +133,7 @@ function resolveExplicitNetworkActor(
 export function projectPublicEntity(
   ref: CanonicalPublicEntityRef,
 ): CanonicalPublicEntityProjection | null {
-  const institutionNode = ref.institutionId
-    ? (PARIS_PUBLIC_CLEANLINESS_DATASET.nodes.find((n) => n.id === ref.institutionId) ?? null)
-    : null;
+  const institutionNode = resolveInstitutionNodeById(ref.institutionId);
   if (ref.institutionId && !institutionNode) return null;
 
   const networkActor = resolveExplicitNetworkActor(ref, institutionNode);
@@ -111,12 +146,6 @@ export function projectPublicEntity(
     }
   }
 
-  const resolvedAnnuaireId =
-    ref.annuaireEntryId ??
-    networkActor?.annuaireEntryId ??
-    institutionNode?.directoryId ??
-    null;
-
   if (
     ref.annuaireEntryId &&
     networkActor &&
@@ -125,39 +154,26 @@ export function projectPublicEntity(
     return null;
   }
 
+  const resolvedAnnuaireId =
+    ref.annuaireEntryId ??
+    networkActor?.annuaireEntryId ??
+    institutionNode?.directoryId ??
+    null;
   const annuaireEntry = resolveExplicitAnnuaireEntry(resolvedAnnuaireId);
   if (ref.annuaireEntryId && !annuaireEntry) return null;
+
   const resolvedInstitutionId =
     institutionNode?.id ??
     (networkActor
       ? resolveInstitutionId(PARIS_PUBLIC_CLEANLINESS_DATASET, networkActor.id, PARIS_CLEANWALK_ACTORS)
       : null);
   const resolvedInstitutionNode =
-    institutionNode ??
-    (resolvedInstitutionId
-      ? (PARIS_PUBLIC_CLEANLINESS_DATASET.nodes.find((n) => n.id === resolvedInstitutionId) ?? null)
-      : null);
+    institutionNode ?? resolveInstitutionNodeById(resolvedInstitutionId);
 
   if (!annuaireEntry && !networkActor && !resolvedInstitutionNode) return null;
 
-  const context = networkActor
-    ? getActorStructureContext(networkActor.id)
-    : resolvedInstitutionNode
-      ? getInstitutionStructureContext(
-          PARIS_PUBLIC_CLEANLINESS_DATASET,
-          resolvedInstitutionNode,
-          PARIS_CLEANWALK_ACTORS,
-        )
-      : null;
-
-  const sourceIds = new Set<string>();
-  for (const metric of context?.metrics ?? []) sourceIds.add(metric.sourceId);
-  for (const limit of context?.limits ?? []) {
-    for (const sid of limit.sourceIds) sourceIds.add(sid);
-  }
-  const sources = Array.from(sourceIds)
-    .map((id) => getPublicStructureSource(id))
-    .filter((s): s is PublicStructureSource => s !== null);
+  const context = resolvePublicStructureContext(networkActor, resolvedInstitutionNode);
+  const sources = collectPublicSources(context);
 
   const relations = networkActor
     ? PARIS_CLEANWALK_RELATIONS.filter(

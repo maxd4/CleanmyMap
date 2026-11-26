@@ -27,12 +27,12 @@ test("pre-commit uses the changed-surface guard without DEVELOPMENT quality ratc
 
   assert.match(packageJson.scripts["precommit:guard"], /pre_commit_guard\.ps1/);
   assert.match(packageJson.scripts["checks:staged:quick"], /check_changed_quick\.ps1 -StagedOnly/);
-  assert.match(guard, /npm run checks:staged:quick/);
+  assert.match(guard, /check_changed_quick\.ps1 -StagedOnly/);
   for (const qualityGuard of ["check-complexity-policy", "check-top-heavy-files", "quality:complexity", "quality:top-heavy"]) {
     assert.doesNotMatch(guard, new RegExp(qualityGuard.replace(/[.*+?^${}()|[\\]\\]/g, "\\\\$&")));
   }
   assert.doesNotMatch(guard, /workspace-coordination|CMM_WORKSPACE_RUN_ID|check-staged/);
-  assert.match(guard, /npm run security:secrets -- --staged-only/);
+  assert.match(guard, /node scripts\/checks\/secret-audit\.mjs --staged-only/);
   assert.match(guard, /git diff --cached --check/);
   assert.doesNotMatch(guard, /Remove-Item Env:GIT_INDEX_FILE/);
   assert.match(guard, /\$GitIndexFile = \$env:GIT_INDEX_FILE/);
@@ -263,10 +263,11 @@ test("pre-push leaves the complete release validation available separately", asy
   assert.match(guard, /-Full/);
   assert.match(guard, /No changed files detected in manual fallback; validating the HEAD candidate tree only/);
   assert.doesNotMatch(guard, /Invoke-GuardStep "full validation"/);
+  assert.match(guard, /--script=\$script/);
   for (const requiredStep of [
-    "--script=scripts/checks/check-root-file-hygiene.mjs",
-    "--script=scripts/checks/check-gitnexus-hygiene.mjs",
-    "--script=scripts/checks/check-9c-public-facades.mjs",
+    "scripts/checks/check-root-file-hygiene.mjs",
+    "scripts/checks/check-gitnexus-hygiene.mjs",
+    "scripts/checks/check-9c-public-facades.mjs",
   ]) {
     assert.match(guard, new RegExp(requiredStep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
@@ -297,7 +298,7 @@ test("agent identity cannot bypass mandatory candidate guards", async () => {
 
   assert.doesNotMatch(candidateGovernance, /CHATGPT_AUTHORIZED_SKIP/);
   assert.doesNotMatch(candidateGovernance, /Dérogation explicite\s+—\s+push effectué par ChatGPT/i);
-  assert.match(preCommitGuard, /npm run checks:staged:quick/);
+  assert.match(preCommitGuard, /check_changed_quick\.ps1 -StagedOnly/);
   assert.match(prePushGuard, /PUSH_CANDIDATE/);
   assert.match(prePushGuard, /--candidate-ref=/);
 });
@@ -375,7 +376,7 @@ test("governance coordinates parallel dirty work without losing published scope"
   assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);
   assert.match(scriptsPolicy, /Chaque exécution capture au démarrage/);
   assert.match(scriptsPolicy, /Une évolution externe sans conflit ne provoque aucune campagne de\s+validation/);
-  assert.match(scriptsPolicy, /ne pas refetcher pour relancer\s+la campagne/);
+  assert.match(scriptsPolicy, /un rejeu de preuve ou une nouvelle validation\s+globale/);
   assert.match(scriptsPolicy, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/s);
   assert.match(testingGuide, /## Exécution non bloquante du checkout/);
   assert.match(testingGuide, /référence initiale[\s\S]*?allowlist de ses\s+fichiers attribués/);

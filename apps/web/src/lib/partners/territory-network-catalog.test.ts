@@ -3,6 +3,7 @@ import {
   DEFAULT_TERRITORY_ID,
   getTerritoryNetworkDataset,
 } from "./territory-network-catalog";
+import { PARIS_CLEANWALK_ACTORS } from "./paris-cleanwalk-network";
 import {
   FRENCH_COG_REGIONS,
   FRENCH_OVERSEAS_COLLECTIVITIES,
@@ -199,7 +200,7 @@ describe("territory-network-catalog & ranking", () => {
   it("returns dataset only for Paris pilot FR:REG:11 and null for empty territories", () => {
     const paris = getTerritoryNetworkDataset(DEFAULT_TERRITORY_ID);
     expect(paris?.isPilot).toBe(true);
-    expect(paris?.actors.length).toBe(28);
+    expect(paris?.actors.length).toBe(PARIS_CLEANWALK_ACTORS.length);
     expect(getTerritoryNetworkDataset("FR:REG:53")).toBeNull();
     expect(getTerritoryNetworkDataset("OIF:CA-QC")).toBeNull();
   });
