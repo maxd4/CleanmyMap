@@ -1,6 +1,6 @@
 # Rapports Web : génération, analyse et impression
 
-Statut : PLAN / CANDIDATE. Non intégré, non validé en runtime, non déployé.
+Statut : VALIDATED / INTEGRATED (`3303e2bfb` + réception scientifique finale). Artefacts conservés comme trace pour `REPORTS-HUB`.
 Base factuelle inspectée : 10b1e36a432a8d017a4b2084abe88ec44d7a428e. Ne pas imposer de checkout historique.
 Périmètre : Web uniquement, EXTEND_EXISTING, lot cohérent en trois jalons. Les captures utilisateur concernent les trois surfaces de Rapports, non trois rubriques distinctes.
 

@@ -53,4 +53,28 @@ describe("aggregateMonthlyAnalytics", () => {
     const [point] = aggregateMonthlyAnalytics([makeContract("zero", "action", 0, 0), makeContract("missing", "action", null, null)]);
     expect(point).toMatchObject({ kg: 0, volunteers: 0, actionCount: 2, wasteKnownActions: 1, volunteersKnownActions: 1 });
   });
+
+  it("emits explicit empty-month gaps between populated months and returns [] for empty corpus", () => {
+    expect(aggregateMonthlyAnalytics([])).toEqual([]);
+
+    const jan = buildActionDataContract({
+      id: "jan",
+      type: "action",
+      status: "approved",
+      source: "test",
+      observedAt: "2026-01-15",
+      createdAt: "2026-01-15T10:00:00.000Z",
+      locationLabel: "Paris 10e",
+      latitude: 48.87,
+      longitude: 2.35,
+      wasteKg: 12,
+      volunteersCount: 4,
+    });
+    const apr = makeContract("apr", "action", 8, 2);
+
+    const points = aggregateMonthlyAnalytics([jan, apr]);
+    expect(points.map((p) => p.month)).toEqual(["2026-01", "2026-02", "2026-03", "2026-04"]);
+    expect(points[1]).toMatchObject({ month: "2026-02", actionCount: 0, wasteKnownActions: 0, volunteersKnownActions: 0 });
+    expect(points[2]).toMatchObject({ month: "2026-03", actionCount: 0, wasteKnownActions: 0, volunteersKnownActions: 0 });
+  });
 });

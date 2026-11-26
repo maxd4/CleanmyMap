@@ -10,18 +10,20 @@ export function pickDecisionRecommendation(comparison: PilotageComparisonResult)
   label: string;
   reason: string;
 } {
+  const qualityComparable =
+    comparison.current.approvedActions > 0 && comparison.previous.approvedActions > 0;
   const qualityRisk =
-    comparison.metrics.qualityScore.interpretation === "negative"
-      ? Math.abs(comparison.metrics.qualityScore.deltaPercent)
+    qualityComparable && comparison.metrics.qualityScore.interpretation === "negative"
+      ? Math.abs(comparison.metrics.qualityScore.deltaPercent ?? comparison.metrics.qualityScore.deltaAbsolute)
       : 0;
   const coverageRisk =
-    comparison.metrics.coverageRate.interpretation === "negative"
-      ? Math.abs(comparison.metrics.coverageRate.deltaPercent)
+    qualityComparable && comparison.metrics.coverageRate.interpretation === "negative"
+      ? Math.abs(comparison.metrics.coverageRate.deltaPercent ?? comparison.metrics.coverageRate.deltaAbsolute)
       : 0;
   const moderationComparison = comparison.metrics.moderationDelayDays;
   const moderationRisk =
     moderationComparison?.interpretation === "negative"
-      ? Math.abs(moderationComparison.deltaPercent)
+      ? Math.abs(moderationComparison.deltaPercent ?? moderationComparison.deltaAbsolute)
       : 0;
 
   const ranked = [
@@ -68,13 +70,29 @@ export function pickDecisionRecommendation(comparison: PilotageComparisonResult)
   };
 }
 
+function formatWindowMass(window: PilotageComparisonResult["current"]): string {
+  if (window.approvedActions === 0) return "Non renseigné (aucune action)";
+  if (window.wasteKnownActions === 0) return "Non renseigné (0% renseigné)";
+  return `${window.impactVolumeKg.toFixed(1)} kg (${window.wasteCoverageRate.toFixed(0)}% renseigné)`;
+}
+
 export function buildSummary(
   comparison: PilotageComparisonResult,
   priorities: OperationalPriority[],
 ): DecisionSummary {
   const wasteComparable =
-    comparison.current.wasteCoverageRate === 100 && comparison.previous.wasteCoverageRate === 100;
-  const iurAvailable = wasteComparable;
+    comparison.current.approvedActions > 0 &&
+    comparison.previous.approvedActions > 0 &&
+    comparison.current.wasteCoverageRate === 100 &&
+    comparison.previous.wasteCoverageRate === 100;
+  const iurCurrentAvailable =
+    comparison.current.approvedActions > 0 && comparison.current.wasteCoverageRate === 100;
+  const iurPreviousAvailable =
+    comparison.previous.approvedActions > 0 && comparison.previous.wasteCoverageRate === 100;
+  const iurComparable = iurCurrentAvailable && iurPreviousAvailable;
+  const qualityCurrentAvailable = comparison.current.approvedActions > 0;
+  const qualityPreviousAvailable = comparison.previous.approvedActions > 0;
+  const qualityComparable = qualityCurrentAvailable && qualityPreviousAvailable;
   const topPriority = priorities.find(
     (priority) =>
       priority.id !== "admin-backlog" ||
@@ -87,29 +105,38 @@ export function buildSummary(
       {
         id: "impact",
         label: "Impact terrain",
-        value: `${comparison.current.impactVolumeKg.toFixed(1)} kg (${comparison.current.wasteCoverageRate.toFixed(0)}% renseigné)`,
-        previousValue: `${comparison.previous.impactVolumeKg.toFixed(1)} kg (${comparison.previous.wasteCoverageRate.toFixed(0)}% renseigné)`,
+        value: formatWindowMass(comparison.current),
+        previousValue: formatWindowMass(comparison.previous),
         deltaAbsolute: wasteComparable ? `${formatSigned(comparison.metrics.impactVolumeKg.deltaAbsolute)} kg` : "Non comparable",
-        deltaPercent: wasteComparable ? `${formatSigned(comparison.metrics.impactVolumeKg.deltaPercent)}%` : "Non comparable",
+        deltaPercent:
+          wasteComparable && comparison.metrics.impactVolumeKg.deltaPercent !== null
+            ? `${formatSigned(comparison.metrics.impactVolumeKg.deltaPercent)}%`
+            : "Non comparable",
         interpretation: wasteComparable ? comparison.metrics.impactVolumeKg.interpretation : "neutral",
       },
       {
         id: "mobilization",
         label: "IUR (Sobriété)",
-        value: iurAvailable ? `${comparison.current.iurIndex.toFixed(2)}` : "Indisponible",
-        previousValue: iurAvailable ? `${comparison.previous.iurIndex.toFixed(2)}` : "Indisponible",
-        deltaAbsolute: iurAvailable ? formatSigned(comparison.metrics.iurIndex.deltaAbsolute) : "Non comparable",
-        deltaPercent: iurAvailable ? `${formatSigned(comparison.metrics.iurIndex.deltaPercent)}%` : "Non comparable",
-        interpretation: iurAvailable ? comparison.metrics.iurIndex.interpretation : "neutral",
+        value: iurCurrentAvailable ? `${comparison.current.iurIndex.toFixed(2)}` : "Indisponible",
+        previousValue: iurPreviousAvailable ? `${comparison.previous.iurIndex.toFixed(2)}` : "Indisponible",
+        deltaAbsolute: iurComparable ? formatSigned(comparison.metrics.iurIndex.deltaAbsolute) : "Non comparable",
+        deltaPercent:
+          iurComparable && comparison.metrics.iurIndex.deltaPercent !== null
+            ? `${formatSigned(comparison.metrics.iurIndex.deltaPercent)}%`
+            : "Non comparable",
+        interpretation: iurComparable ? comparison.metrics.iurIndex.interpretation : "neutral",
       },
       {
         id: "quality",
         label: "Qualite data",
-        value: formatScorePercent(comparison.current.qualityScore, 1),
-        previousValue: formatScorePercent(comparison.previous.qualityScore, 1),
-        deltaAbsolute: formatSigned(comparison.metrics.qualityScore.deltaAbsolute),
-        deltaPercent: `${formatSigned(comparison.metrics.qualityScore.deltaPercent)}%`,
-        interpretation: comparison.metrics.qualityScore.interpretation,
+        value: qualityCurrentAvailable ? formatScorePercent(comparison.current.qualityScore, 1) : "Indisponible",
+        previousValue: qualityPreviousAvailable ? formatScorePercent(comparison.previous.qualityScore, 1) : "Indisponible",
+        deltaAbsolute: qualityComparable ? formatSigned(comparison.metrics.qualityScore.deltaAbsolute) : "Non comparable",
+        deltaPercent:
+          qualityComparable && comparison.metrics.qualityScore.deltaPercent !== null
+            ? `${formatSigned(comparison.metrics.qualityScore.deltaPercent)}%`
+            : "Non comparable",
+        interpretation: qualityComparable ? comparison.metrics.qualityScore.interpretation : "neutral",
       },
     ],
     alert: {

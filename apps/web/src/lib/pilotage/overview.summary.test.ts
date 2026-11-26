@@ -162,4 +162,58 @@ describe("overview summary", () => {
       }).href,
     ).toBe(DASHBOARD_ROUTE);
   });
+
+  it("distinguishes missing mass, observed zero, empty previous period and partial corpus", () => {
+    const now = new Date("2026-04-10T00:00:00.000Z");
+    const comparison = computePilotageComparison(
+      [
+        buildActionDataContract({
+          id: "unknown-mass",
+          type: "action",
+          status: "approved",
+          source: "test",
+          observedAt: "2026-04-09",
+          createdAt: "2026-04-08T00:00:00.000Z",
+          locationLabel: "Paris 10e",
+          latitude: 48.87,
+          longitude: 2.35,
+          wasteKg: null,
+          volunteersCount: 3,
+        }),
+      ],
+      30,
+      now,
+      { moderationAvailability: "unavailable" },
+    );
+    const summary = buildSummary(comparison, []);
+    expect(summary.kpis[0]?.value).toBe("Non renseigné (0% renseigné)");
+    expect(summary.kpis[0]?.previousValue).toBe("Non renseigné (aucune action)");
+    expect(summary.kpis[0]?.deltaPercent).toBe("Non comparable");
+    expect(summary.kpis[2]?.previousValue).toBe("Indisponible");
+    expect(summary.kpis[2]?.deltaAbsolute).toBe("Non comparable");
+    expect(summary.kpis[2]?.deltaPercent).toBe("Non comparable");
+
+    const observedZero = computePilotageComparison(
+      [
+        buildActionDataContract({
+          id: "zero-mass",
+          type: "action",
+          status: "approved",
+          source: "test",
+          observedAt: "2026-04-09",
+          createdAt: "2026-04-08T00:00:00.000Z",
+          locationLabel: "Paris 10e",
+          latitude: 48.87,
+          longitude: 2.35,
+          wasteKg: 0,
+          volunteersCount: 0,
+        }),
+      ],
+      30,
+      now,
+      { moderationAvailability: "unavailable" },
+    );
+    const zeroSummary = buildSummary(observedZero, []);
+    expect(zeroSummary.kpis[0]?.value).toBe("0.0 kg (100% renseigné)");
+  });
 });

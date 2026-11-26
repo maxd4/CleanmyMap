@@ -37,7 +37,7 @@ export type PilotageMetricComparison = {
   current: number;
   previous: number;
   deltaAbsolute: number;
-  deltaPercent: number;
+  deltaPercent: number | null;
   trend: "up" | "down" | "flat";
   interpretation: "positive" | "negative" | "neutral";
   strength: "stable" | "moderate" | "strong";
@@ -254,19 +254,23 @@ function compareMetric(
     previous === 0
       ? current === 0
         ? 0
-        : 100
+        : null
       : round1(((current - previous) / Math.abs(previous)) * 100);
 
   const trend: "up" | "down" | "flat" =
     deltaAbsolute > 0 ? "up" : deltaAbsolute < 0 ? "down" : "flat";
 
-  const absPercent = Math.abs(deltaPercent);
+  const absPercent = deltaPercent === null ? null : Math.abs(deltaPercent);
   const strength: "stable" | "moderate" | "strong" =
-    absPercent <= PILOTAGE_THRESHOLDS.deltaStablePercent
+    deltaAbsolute === 0
       ? "stable"
-      : absPercent <= PILOTAGE_THRESHOLDS.deltaStrongPercent
-        ? "moderate"
-        : "strong";
+      : absPercent === null
+        ? "strong"
+        : absPercent <= PILOTAGE_THRESHOLDS.deltaStablePercent
+          ? "stable"
+          : absPercent <= PILOTAGE_THRESHOLDS.deltaStrongPercent
+            ? "moderate"
+            : "strong";
 
   const improves = betterWhenLower ? trend === "down" : trend === "up";
   const interpretation: "positive" | "negative" | "neutral" =

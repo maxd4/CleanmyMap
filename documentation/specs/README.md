@@ -74,10 +74,10 @@ Le statut initial PENDING signifie **non réceptionné dans ce programme**, pas 
 | `pilotage-ui/03-pilotage-surfaces.patch` | 10 PIL | PENDING | à établir |
 | `pilotage-ui/04-admin-surfaces.patch` | 10 PIL | PENDING | à établir |
 | `pilotage-ui/05-pilotage-restricted-hub.patch` | 10 PIL | PENDING | à établir |
-| `reports-ui/01-generation.patch` | 09 REPORTS-BASE | PENDING | à établir |
-| `reports-ui/02-analysis.patch` | 09 REPORTS-BASE | PENDING | à établir |
-| `reports-ui/03-print-and-contracts.patch` | 09 REPORTS-BASE | PENDING | à établir |
-| `reports-ui/04-generation-tests.patch` | 09 REPORTS-BASE | PENDING | à établir |
+| `reports-ui/01-generation.patch` | 09 REPORTS-BASE | VALIDATED | `3303e2bfb` ; Vitest `web-document` 53/53, navigateur & modes PASS |
+| `reports-ui/02-analysis.patch` | 09 REPORTS-BASE | VALIDATED (complété) | `3303e2bfb` + réception finale (comparaisons & lacunes mensuelles) ; Vitest `reports`/`pilotage` PASS |
+| `reports-ui/03-print-and-contracts.patch` | 09 REPORTS-BASE | VALIDATED | `3303e2bfb` ; `/prints/report` A4 2 pages Playwright, `noindex`, AuthN & fiches `CURRENT` PASS |
+| `reports-ui/04-generation-tests.patch` | 09 REPORTS-BASE | VALIDATED | `3303e2bfb` ; régressions génération & aperçu PASS |
 | `sentrainer-ui/01-sentrainer.patch` | 16 LEARN-2 | PENDING | à établir |
 | `vulgarisation-ui/01-vulgarisation.patch` | 15 LEARN-1 | PENDING | à établir |
 
@@ -101,7 +101,7 @@ L'arbre de référence contient 18 dossiers et 224 fichiers en incluant ce READM
 | [methodologie-ui](./methodologie-ui/README_CODEX.md) | 2 | 2 | 19 METHOD : PENDING |
 | [open-data-sciences](./open-data-sciences/README_CODEX.md) | 2 | 1 | 07 DATA : suivi des patches |
 | [pilotage-ui](./pilotage-ui/README_CODEX.md) | 5 | 18 | 10 PIL : PENDING |
-| [reports-ui](./reports-ui/README_CODEX.md) | 4 | 1 | 09 REPORTS-BASE : suivi des patches |
+| [reports-ui](./reports-ui/README_CODEX.md) | 4 | 1 | 09 REPORTS-BASE : VALIDATED (conservé pour 20 REPORTS-HUB) |
 | [sentrainer-ui](./sentrainer-ui/README_CODEX.md) | 1 | 2 | 16 LEARN-2 : suivi des patches |
 | [suppression-charte-dark](./suppression-charte-dark/requirements.md) | 0 | 3 | 23 DS-FINAL : HISTORY / non autorisé |
 | [vulgarisation-ui](./vulgarisation-ui/README_CODEX.md) | 1 | 2 | 15 LEARN-1 : suivi des patches |

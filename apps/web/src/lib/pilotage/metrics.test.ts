@@ -128,4 +128,35 @@ describe("computePilotageComparison", () => {
     expect(unavailable.current.moderationDelayDays).toBeNull();
     expect(unavailable.metrics.moderationDelayDays).toBeNull();
   });
+
+  it("returns null deltaPercent instead of +100% when previous is zero and current is positive", () => {
+    const contracts = [
+      buildActionDataContract({
+        id: "current-only",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 10,
+        volunteersCount: 4,
+      }),
+    ];
+
+    const result = computePilotageComparison(
+      contracts,
+      15,
+      new Date("2026-04-10T00:00:00.000Z"),
+    );
+
+    expect(result.previous.approvedActions).toBe(0);
+    expect(result.current.approvedActions).toBe(1);
+    expect(result.metrics.approvedActions.deltaAbsolute).toBe(1);
+    expect(result.metrics.approvedActions.deltaPercent).toBeNull();
+    expect(result.metrics.impactVolumeKg.deltaPercent).toBeNull();
+    expect(result.metrics.mobilizationCount.deltaPercent).toBeNull();
+  });
 });

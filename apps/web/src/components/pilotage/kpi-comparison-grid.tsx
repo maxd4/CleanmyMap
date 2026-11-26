@@ -42,6 +42,16 @@ function signed(value: number, suffix =""): string {
  return `${value >= 0 ?"+" :""}${value.toFixed(1)}${suffix}`;
 }
 
+function signedPercent(value: number | null): string {
+ return value === null ? "Variation indisponible" : signed(value, "%");
+}
+
+function formatVolumeValue(approvedActions: number, wasteKnownActions: number, impactVolumeKg: number, wasteCoverageRate: number): string {
+ if (approvedActions === 0) return "Non renseigné (aucune action)";
+ if (wasteKnownActions === 0) return "Non renseigné (0% renseigné)";
+ return `${impactVolumeKg.toFixed(1)} kg (${wasteCoverageRate.toFixed(0)}% renseigné)`;
+}
+
 export function KpiComparisonGrid({
  comparison,
  labels,
@@ -50,7 +60,13 @@ export function KpiComparisonGrid({
 }: KpiComparisonGridProps) {
  const mergedLabels = { ...DEFAULT_LABELS, ...labels };
  const wasteComparable =
-  comparison.current.wasteCoverageRate === 100 && comparison.previous.wasteCoverageRate === 100;
+  comparison.current.approvedActions > 0 &&
+  comparison.previous.approvedActions > 0 &&
+  comparison.current.wasteCoverageRate === 100 &&
+  comparison.previous.wasteCoverageRate === 100;
+ const qualityCurrentAvailable = comparison.current.approvedActions > 0;
+ const qualityPreviousAvailable = comparison.previous.approvedActions > 0;
+ const qualityComparable = qualityCurrentAvailable && qualityPreviousAvailable;
 
  const cards: Record<KpiCardKey, ReactNode> = {
  actions: (
@@ -59,28 +75,28 @@ export function KpiComparisonGrid({
  value={`${comparison.current.approvedActions}`}
  previousValue={`${comparison.previous.approvedActions}`}
  deltaAbsolute={signed(comparison.metrics.approvedActions.deltaAbsolute)}
- deltaPercent={signed(comparison.metrics.approvedActions.deltaPercent,"%")}
+ deltaPercent={signedPercent(comparison.metrics.approvedActions.deltaPercent)}
  interpretation={comparison.metrics.approvedActions.interpretation}
  />
  ),
  volume: (
  <KpiComparisonCard
  label={mergedLabels.volume}
- value={`${comparison.current.impactVolumeKg.toFixed(1)} kg (${comparison.current.wasteCoverageRate.toFixed(0)}% renseigné)`}
- previousValue={`${comparison.previous.impactVolumeKg.toFixed(1)} kg (${comparison.previous.wasteCoverageRate.toFixed(0)}% renseigné)`}
+ value={formatVolumeValue(comparison.current.approvedActions, comparison.current.wasteKnownActions, comparison.current.impactVolumeKg, comparison.current.wasteCoverageRate)}
+ previousValue={formatVolumeValue(comparison.previous.approvedActions, comparison.previous.wasteKnownActions, comparison.previous.impactVolumeKg, comparison.previous.wasteCoverageRate)}
  deltaAbsolute={wasteComparable ? signed(comparison.metrics.impactVolumeKg.deltaAbsolute," kg") : "Non comparable"}
- deltaPercent={wasteComparable ? signed(comparison.metrics.impactVolumeKg.deltaPercent,"%") : "Non comparable"}
+ deltaPercent={wasteComparable && comparison.metrics.impactVolumeKg.deltaPercent !== null ? signed(comparison.metrics.impactVolumeKg.deltaPercent,"%") : "Non comparable"}
  interpretation={wasteComparable ? comparison.metrics.impactVolumeKg.interpretation : "neutral"}
  />
  ),
  coverage: (
  <KpiComparisonCard
  label={mergedLabels.coverage}
- value={`${comparison.current.coverageRate.toFixed(1)}%`}
- previousValue={`${comparison.previous.coverageRate.toFixed(1)}%`}
- deltaAbsolute={signed(comparison.metrics.coverageRate.deltaAbsolute," pt")}
- deltaPercent={signed(comparison.metrics.coverageRate.deltaPercent,"%")}
- interpretation={comparison.metrics.coverageRate.interpretation}
+ value={qualityCurrentAvailable ? `${comparison.current.coverageRate.toFixed(1)}%` : "Indisponible"}
+ previousValue={qualityPreviousAvailable ? `${comparison.previous.coverageRate.toFixed(1)}%` : "Indisponible"}
+ deltaAbsolute={qualityComparable ? signed(comparison.metrics.coverageRate.deltaAbsolute," pt") : "Non comparable"}
+ deltaPercent={qualityComparable ? signedPercent(comparison.metrics.coverageRate.deltaPercent) : "Non comparable"}
+ interpretation={qualityComparable ? comparison.metrics.coverageRate.interpretation : "neutral"}
  />
  ),
  mobilization: (
@@ -89,18 +105,18 @@ export function KpiComparisonGrid({
  value={`${comparison.current.mobilizationCount}`}
  previousValue={`${comparison.previous.mobilizationCount}`}
  deltaAbsolute={signed(comparison.metrics.mobilizationCount.deltaAbsolute)}
- deltaPercent={signed(comparison.metrics.mobilizationCount.deltaPercent,"%")}
+ deltaPercent={signedPercent(comparison.metrics.mobilizationCount.deltaPercent)}
  interpretation={comparison.metrics.mobilizationCount.interpretation}
  />
  ),
  quality: (
  <KpiComparisonCard
  label={mergedLabels.quality}
- value={formatScorePercent(comparison.current.qualityScore, 1)}
- previousValue={formatScorePercent(comparison.previous.qualityScore, 1)}
- deltaAbsolute={signed(comparison.metrics.qualityScore.deltaAbsolute)}
- deltaPercent={signed(comparison.metrics.qualityScore.deltaPercent,"%")}
- interpretation={comparison.metrics.qualityScore.interpretation}
+ value={qualityCurrentAvailable ? formatScorePercent(comparison.current.qualityScore, 1) : "Indisponible"}
+ previousValue={qualityPreviousAvailable ? formatScorePercent(comparison.previous.qualityScore, 1) : "Indisponible"}
+ deltaAbsolute={qualityComparable ? signed(comparison.metrics.qualityScore.deltaAbsolute) : "Non comparable"}
+ deltaPercent={qualityComparable ? signedPercent(comparison.metrics.qualityScore.deltaPercent) : "Non comparable"}
+ interpretation={qualityComparable ? comparison.metrics.qualityScore.interpretation : "neutral"}
  />
  ),
  moderationDelay: (
@@ -124,7 +140,7 @@ export function KpiComparisonGrid({
  deltaPercent={
  comparison.metrics.moderationDelayDays === null
  ? "Indisponible"
- : signed(comparison.metrics.moderationDelayDays.deltaPercent, "%")
+ : signedPercent(comparison.metrics.moderationDelayDays.deltaPercent)
  }
  interpretation={comparison.metrics.moderationDelayDays?.interpretation ?? "neutral"}
  />
