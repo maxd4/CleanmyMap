@@ -56,7 +56,9 @@ async function setup() {
   await run(cleanupSql, "setup_cleanup");
   await run(`
 begin;
-set local role postgres;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"external-sync-concurrency-setup"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 insert into public.organizer_directory_entries(id, name, normalized_name, organizer_type, created_by_clerk_id)
 values ('${orgA}', 'Sync Conc Org A', 'sync conc org a', 'association', 'sync-conc'),
        ('${orgB}', 'Sync Conc Org B', 'sync conc org b', 'association', 'sync-conc');
@@ -64,7 +66,7 @@ insert into public.actions(id, created_by_clerk_id, action_date, location_label,
 values ('${actionA}'::uuid, 'sync-conc', current_date + 5, 'Lieu Conc A', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A'),
        ('${actionB}'::uuid, 'sync-conc', current_date + 6, 'Lieu Conc B', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A');
 commit;
-`);
+`, "setup_insert");
 }
 
 async function testConcurrentReservationCollision() {
@@ -211,16 +213,16 @@ async function testConcurrentSuppressionOperationIdCollisionAndIdempotency() {
 begin;
 set local role postgres;
 delete from public.actions where id in ('${action1}'::uuid, '${action2}'::uuid);
-insert into public.actions(id, created_by_clerk_id, action_date, location_label, status, action_phase, organizer_type, organizer_id, organizer_name)
-values ('${action1}'::uuid, 'sync-conc', current_date + 7, 'Lieu Sup 1', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A'),
-       ('${action2}'::uuid, 'sync-conc', current_date + 8, 'Lieu Sup 2', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A');
 commit;
-`, "sup_setup_actions");
+`, "sup_cleanup_actions");
   await run(`
 begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-sup-setup2"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
+insert into public.actions(id, created_by_clerk_id, action_date, location_label, status, action_phase, organizer_type, organizer_id, organizer_name)
+values ('${action1}'::uuid, 'sync-conc', current_date + 7, 'Lieu Sup 1', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A'),
+       ('${action2}'::uuid, 'sync-conc', current_date + 8, 'Lieu Sup 2', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A');
 select * from public.reserve_external_action_sync_reference(
   '${hashSuppressA}', '${orgA}', 'sync-conc', '${tokenA}'::uuid,
   'jagis_pour_la_nature', 'conc-event-sup-1', 'https://example.test/s1', 'r1', '{"s":1}'::jsonb, '${"7".repeat(64)}'
