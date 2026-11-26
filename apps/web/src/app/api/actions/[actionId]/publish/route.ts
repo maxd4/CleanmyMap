@@ -113,9 +113,21 @@ export async function POST(
       case "mandate_revoked":
       case "suppressed":
       case "conflict":
+      case "already_decided":
+      case "not_required":
         return NextResponse.json(
           { error: "La publication n'a pas pu être confirmée.", code: "state_conflict" },
           { status: 409 },
+        );
+      case "not_found":
+        return NextResponse.json(
+          { error: "Action introuvable.", code: "not_found" },
+          { status: 404 },
+        );
+      case "review_error":
+        return NextResponse.json(
+          { error: "La soumission à la modération associative a échoué.", code: "review_error" },
+          { status: 422 },
         );
       case "published":
         return NextResponse.json({

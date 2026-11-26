@@ -521,14 +521,20 @@ export function createSupabaseExternalActionSyncStore(
               if (error) {
                 throw new Error("Échec de soumission atomique à la modération associative.");
               }
-              const row = (data ?? {}) as { status?: string; review_state?: string };
-              if (row.status === "pending_review") {
-                return { status: "pending_review", reviewState: row.review_state ?? "pending_review" };
+              const row = (data ?? {}) as { status?: string; review_state?: string; error_message?: string };
+              if (row.status === "pending_review" && row.review_state === "pending_review") {
+                return { status: "pending_review", reviewState: "pending_review" };
               }
+              if (row.status === "already_decided") {
+                return { status: "already_decided", reviewState: row.review_state };
+              }
+              if (row.status === "not_required") return { status: "not_required" };
+              if (row.status === "not_found") return { status: "not_found" };
               if (row.status === "mandate_revoked") return { status: "mandate_revoked" };
               if (row.status === "suppressed") return { status: "suppressed" };
               if (row.status === "terminal_state") return { status: "terminal_state" };
-              return { status: "conflict" };
+              if (row.status === "conflict") return { status: "conflict" };
+              return { status: "review_error", reason: row.error_message ?? row.status ?? "review_error" };
             }
           : undefined,
       });
@@ -537,6 +543,15 @@ export function createSupabaseExternalActionSyncStore(
       }
       if (outcome.status === "pending_review") {
         return { published: false, pendingReview: true, reason: outcome.reviewState };
+      }
+      if (outcome.status === "already_decided") {
+        return {
+          published: false,
+          reason: outcome.reviewState ? `already_decided:${outcome.reviewState}` : "already_decided",
+        };
+      }
+      if (outcome.status === "review_error") {
+        return { published: false, reason: outcome.reason ?? "review_error" };
       }
       return { published: false, reason: outcome.status };
     },

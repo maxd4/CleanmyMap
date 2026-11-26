@@ -16,6 +16,10 @@ import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities/w
 export type CanonicalPreActionPublicationResult =
   | { status: "published"; id: string; publishedAt: string; alreadyPublished: boolean; reviewState?: string }
   | { status: "pending_review"; id: string; reviewState: string }
+  | { status: "already_decided"; reviewState?: string }
+  | { status: "not_required" }
+  | { status: "not_found" }
+  | { status: "review_error"; reason?: string }
   | { status: "terminal_state" }
   | { status: "not_publishable" }
   | { status: "formality_blocked"; blockedFormalityIds: string[] }
@@ -75,8 +79,10 @@ export async function publishPreActionCanonical(params: {
     actorUserId: string;
     expectedUpdatedAt: string | null;
   }) => Promise<
-    | { status: "pending_review"; reviewState?: string }
-    | { status: "conflict" | "mandate_revoked" | "suppressed" | "terminal_state" }
+    | { status: "pending_review"; reviewState: "pending_review" }
+    | { status: "already_decided"; reviewState?: string }
+    | { status: "review_error"; reason?: string }
+    | { status: "not_required" | "not_found" | "conflict" | "mandate_revoked" | "suppressed" | "terminal_state" }
   >;
 }): Promise<CanonicalPreActionPublicationResult> {
   const {
@@ -113,14 +119,32 @@ export async function publishPreActionCanonical(params: {
         actorUserId: userId,
         expectedUpdatedAt: current.updated_at ?? null,
       });
-      if (persistedReview.status !== "pending_review") {
-        return { status: persistedReview.status };
+      if (persistedReview.status === "pending_review") {
+        if (persistedReview.reviewState !== "pending_review") {
+          return { status: "review_error", reason: "review_state_mismatch" };
+        }
+        return {
+          status: "pending_review",
+          id: current.id,
+          reviewState: "pending_review",
+        };
       }
-      return {
-        status: "pending_review",
-        id: current.id,
-        reviewState: persistedReview.reviewState ?? "pending_review",
-      };
+      if (persistedReview.status === "already_decided") {
+        if (persistedReview.reviewState === "approved" && current.published_at) {
+          return {
+            status: "published",
+            id: current.id,
+            publishedAt: current.published_at,
+            alreadyPublished: true,
+            reviewState: "approved",
+          };
+        }
+        return { status: "already_decided", reviewState: persistedReview.reviewState };
+      }
+      if (persistedReview.status === "review_error") {
+        return { status: "review_error", reason: persistedReview.reason };
+      }
+      return { status: persistedReview.status };
     }
     const review = await submitAssociationActionReview({
       supabase,

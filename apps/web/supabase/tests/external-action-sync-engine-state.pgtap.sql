@@ -1,13 +1,16 @@
 begin;
-select plan(25);
+select plan(37);
 
 select ok(has_table_privilege('service_role', 'private.external_action_sync_subscriptions', 'INSERT'), 'service role can manage external sync subscriptions');
 select ok(not has_table_privilege('authenticated', 'private.external_action_sync_subscriptions', 'SELECT'), 'authenticated cannot read private external sync subscriptions');
 select ok(has_table_privilege('service_role', 'private.external_action_sync_proposals', 'INSERT'), 'service role can manage external sync proposals');
 select ok(not has_table_privilege('authenticated', 'private.external_action_sync_proposals', 'SELECT'), 'authenticated cannot read private external sync proposals');
 select ok(not has_function_privilege('authenticated', 'public.mark_external_action_sync_reference_applied(text, text, jsonb, text, text)', 'EXECUTE'), 'authenticated cannot mark external sync reference applied');
+select ok(not has_function_privilege('authenticated', 'public.update_external_action_sync_pre_action(uuid, text, text, text, timestamptz, jsonb, boolean)', 'EXECUTE'), 'authenticated cannot update external sync pre-action');
+select ok(not has_function_privilege('authenticated', 'public.submit_external_action_sync_review(uuid, text, text, text, timestamptz)', 'EXECUTE'), 'authenticated cannot submit external sync review');
 
 create temp table engine_state_results (key text primary key, value text);
+grant all on table engine_state_results to service_role;
 
 do $$
 declare
@@ -163,10 +166,27 @@ begin
     v_review_action uuid := gen_random_uuid();
     v_review_hash text := repeat('4', 64);
     v_review_token uuid := gen_random_uuid();
+    v_non_assoc_action uuid := gen_random_uuid();
+    v_non_assoc_hash text := repeat('2', 64);
+    v_non_assoc_token uuid := gen_random_uuid();
+    v_incomplete_action uuid := gen_random_uuid();
+    v_incomplete_hash text := repeat('1', 64);
+    v_incomplete_token uuid := gen_random_uuid();
+    v_stale_ts timestamptz := '2020-01-01T00:00:00Z'::timestamptz;
     v_upd_ok text;
+    v_upd_stale text;
+    v_stale_label text;
+    v_persisted_label text;
     v_rev_ok jsonb;
+    v_persisted_review_state text;
+    v_rev_replay jsonb;
+    v_rev_decided jsonb;
+    v_rev_not_required jsonb;
+    v_rev_incomplete jsonb;
     v_upd_revoked text;
     v_rev_revoked jsonb;
+    v_tomb_upd text;
+    v_tomb_rev jsonb;
   begin
     set local role postgres;
     insert into public.profiles (id, display_name, handle)
@@ -179,6 +199,20 @@ begin
       v_review_action, 'user-org-a', 'org-a', 'association', 'Org A', '2027-08-01',
       'pre_action', 'pending', null, 'Place Review', 'visible'
     );
+    insert into public.actions (
+      id, created_by_clerk_id, organizer_id, organizer_type, organizer_name, action_date,
+      action_phase, status, published_at, location_label, moderation_visibility
+    ) values (
+      v_non_assoc_action, 'user-org-a', 'org-a', 'individual', 'Org A', '2027-08-02',
+      'pre_action', 'pending', null, 'Place Individual', 'visible'
+    );
+    insert into public.actions (
+      id, created_by_clerk_id, organizer_id, organizer_type, organizer_name, action_date,
+      action_phase, status, published_at, location_label, moderation_visibility
+    ) values (
+      v_incomplete_action, 'user-org-a', 'org-a', 'association', null, '2027-08-03',
+      'pre_action', 'pending', null, 'Place Incomplete', 'visible'
+    );
     set local role service_role;
     perform * from public.reserve_external_action_sync_reference(
       v_review_hash, 'org-a', 'user-org-a', v_review_token, 'jagis_pour_la_nature', 'ext-state-review-1',
@@ -186,12 +220,62 @@ begin
     );
     perform public.complete_external_action_sync_identity(v_review_hash, v_review_token, v_review_action);
 
+    perform * from public.reserve_external_action_sync_reference(
+      v_non_assoc_hash, 'org-a', 'user-org-a', v_non_assoc_token, 'jagis_pour_la_nature', 'ext-state-non-assoc',
+      'https://example.test/rev2', 'r1', '{"v":1}'::jsonb, repeat('3', 64)
+    );
+    perform public.complete_external_action_sync_identity(v_non_assoc_hash, v_non_assoc_token, v_non_assoc_action);
+
+    perform * from public.reserve_external_action_sync_reference(
+      v_incomplete_hash, 'org-a', 'user-org-a', v_incomplete_token, 'jagis_pour_la_nature', 'ext-state-incomplete',
+      'https://example.test/rev3', 'r1', '{"v":1}'::jsonb, repeat('3', 64)
+    );
+    perform public.complete_external_action_sync_identity(v_incomplete_hash, v_incomplete_token, v_incomplete_action);
+
+    v_upd_stale := public.update_external_action_sync_pre_action(
+      v_review_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-review-1', v_stale_ts,
+      '{"location_label":"Should Conflict"}'::jsonb, false
+    );
+    select location_label into v_stale_label from public.actions where id = v_review_action;
+
     v_upd_ok := public.update_external_action_sync_pre_action(
       v_review_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-review-1', null,
       '{"location_label":"Place Review Updated"}'::jsonb, false
     );
+    select location_label into v_persisted_label from public.actions where id = v_review_action;
+
     v_rev_ok := public.submit_external_action_sync_review(
       v_review_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-review-1', null
+    );
+    select review_state into v_persisted_review_state from public.actions where id = v_review_action;
+
+    v_rev_replay := public.submit_external_action_sync_review(
+      v_review_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-review-1', null
+    );
+
+    -- Approve review and verify submit_external_action_sync_review reports already_decided (never pending_review)
+    perform public.decide_association_action_review(
+      v_review_action, 'approve', 'admin-1', 'pgtap-decide-1', 'Validation associative pgtap', 'pending_review', null
+    );
+    v_rev_decided := public.submit_external_action_sync_review(
+      v_review_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-review-1', null
+    );
+
+    -- Non-associative and incomplete actions must never be reported as pending_review
+    v_rev_not_required := public.submit_external_action_sync_review(
+      v_non_assoc_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-non-assoc', null
+    );
+    v_rev_incomplete := public.submit_external_action_sync_review(
+      v_incomplete_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-incomplete', null
+    );
+
+    -- Cancelled tombstone rejects both pre-action update and review submission
+    v_tomb_upd := public.update_external_action_sync_pre_action(
+      v_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-1', null,
+      '{"location_label":"Tombstone Mutated"}'::jsonb, false
+    );
+    v_tomb_rev := public.submit_external_action_sync_review(
+      v_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-1', null
     );
 
     -- Revoke mandate and verify both RPCs fail closed transactionally
@@ -207,8 +291,18 @@ begin
       v_review_action, 'org-a', 'jagis_pour_la_nature', 'ext-state-review-1', null
     );
 
+    insert into engine_state_results values ('tx_update_stale_conflict', v_upd_stale);
+    insert into engine_state_results values ('tx_update_stale_not_mutated', v_stale_label);
     insert into engine_state_results values ('tx_update_ok', v_upd_ok);
+    insert into engine_state_results values ('tx_update_persisted_label', v_persisted_label);
     insert into engine_state_results values ('tx_review_ok', coalesce(v_rev_ok->>'status', 'null'));
+    insert into engine_state_results values ('tx_review_persisted_state', coalesce(v_persisted_review_state, 'null'));
+    insert into engine_state_results values ('tx_review_replay_pending', coalesce(v_rev_replay->>'status', 'null') || ':' || coalesce(v_rev_replay->>'review_status', 'null'));
+    insert into engine_state_results values ('tx_review_already_decided', coalesce(v_rev_decided->>'status', 'null') || ':' || coalesce(v_rev_decided->>'review_state', 'null'));
+    insert into engine_state_results values ('tx_review_not_required', coalesce(v_rev_not_required->>'status', 'null'));
+    insert into engine_state_results values ('tx_review_incomplete_error', coalesce(v_rev_incomplete->>'status', 'null'));
+    insert into engine_state_results values ('tx_tombstone_update_blocked', v_tomb_upd);
+    insert into engine_state_results values ('tx_tombstone_review_blocked', coalesce(v_tomb_rev->>'status', 'null'));
     insert into engine_state_results values ('tx_update_revoked', v_upd_revoked);
     insert into engine_state_results values ('tx_review_revoked', coalesce(v_rev_revoked->>'status', 'null'));
   end;
@@ -230,8 +324,18 @@ select is((select value from engine_state_results where key = 'cancelled_reversa
 select is((select value from engine_state_results where key = 'suppressed_rejected_status'), 'suppressed:rejected', 'suppressing a rejected action keeps status=rejected');
 select is((select value from engine_state_results where key = 'suppressed_rejected_from_null'), 'true', 'suppressing a rejected action does not fabricate cancelled_from_status');
 select is((select value from engine_state_results where key = 'suppressed_rejected_hidden'), 'hidden', 'suppressing a rejected action hides it from public surfaces');
+select is((select value from engine_state_results where key = 'tx_update_stale_conflict'), 'conflict', 'stale expected_updated_at returns optimistic conflict');
+select is((select value from engine_state_results where key = 'tx_update_stale_not_mutated'), 'Place Review', 'stale expected_updated_at leaves canonical row untouched');
 select is((select value from engine_state_results where key = 'tx_update_ok'), 'updated', 'transactional pre-action update succeeds under active mandate');
+select is((select value from engine_state_results where key = 'tx_update_persisted_label'), 'Place Review Updated', 'transactional pre-action update persists new location_label');
 select is((select value from engine_state_results where key = 'tx_review_ok'), 'pending_review', 'transactional review submission routes associative pre-action to pending_review');
+select is((select value from engine_state_results where key = 'tx_review_persisted_state'), 'pending_review', 'transactional review submission persists review_state=pending_review');
+select is((select value from engine_state_results where key = 'tx_review_replay_pending'), 'pending_review:already_submitted', 'transactional review replay preserves pending_review with already_submitted');
+select is((select value from engine_state_results where key = 'tx_review_already_decided'), 'already_decided:approved', 'transactional review returns already_decided when action is already approved');
+select is((select value from engine_state_results where key = 'tx_review_not_required'), 'not_required', 'transactional review returns not_required for non-associative actions');
+select is((select value from engine_state_results where key = 'tx_review_incomplete_error'), 'review_error', 'transactional review returns review_error when content is incomplete');
+select is((select value from engine_state_results where key = 'tx_tombstone_update_blocked'), 'suppressed', 'suppressed tombstone blocks pre-action update');
+select is((select value from engine_state_results where key = 'tx_tombstone_review_blocked'), 'suppressed', 'suppressed tombstone blocks review submission');
 select is((select value from engine_state_results where key = 'tx_update_revoked'), 'mandate_revoked', 'transactional pre-action update fails closed after mandate revocation');
 select is((select value from engine_state_results where key = 'tx_review_revoked'), 'mandate_revoked', 'transactional review submission fails closed after mandate revocation');
 

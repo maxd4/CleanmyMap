@@ -761,4 +761,139 @@ describe("external-sync Lot A engine & SSRF guard", () => {
     expect(updateSpy).not.toHaveBeenCalled();
     expect(cancelledTombstone.suppressed).toBe(1);
   });
+
+  it("aborts external cancellation proposal on registration-close conflict/failure so retry stays explicit, and propagates refreshed updated_at to publishPreAction", async () => {
+    const now = new Date("2026-11-26T12:00:00Z");
+    const rec = [
+      {
+        id: "jagis-cancel-retry-1",
+        url: "https://example.test/jagis/cancel-retry-1",
+        title: "Collecte annulation retry",
+        start_date: "2027-09-21",
+        start_time: "10:00",
+        meeting_point: "Place Carnot",
+        city: "Lyon",
+        route_reference: "carnot-route",
+        status: "published",
+      },
+    ];
+    const cancelStore = createInMemorySyncStore({ subscriptions: baseSubs });
+    const events = readSyntheticJagisEvents(rec, now.toISOString());
+    if (events.status !== "available") throw new Error("expected available");
+    const initial = await runExternalActionSync(
+      {
+        store: cancelStore.store,
+        readers: {
+          jagis_pour_la_nature: async () => events,
+          fondation_de_la_mer: async () => ({
+            status: "disabled",
+            source: "fondation_de_la_mer",
+            reason: "operator_authorization_required",
+          }),
+        },
+      },
+      { mode: "cron_prepare", now },
+    );
+    expect(initial.errors).toBe(0);
+    const linkedActionId = [...cancelStore.actions.keys()][0]!;
+    const linkedAction = cancelStore.actions.get(linkedActionId)!;
+    linkedAction.notes = '[cmm-meta]{"groupJoinEnabled":true}[/cmm-meta]';
+
+    // Force conflict on registration closure during external cancellation
+    const updateSpy = vi.spyOn(cancelStore.store, "updatePreActionFields").mockResolvedValueOnce("conflict");
+    const upsertSpy = vi.spyOn(cancelStore.store, "upsertProposal");
+    const cancelledConflict = await runExternalActionSync(
+      {
+        store: cancelStore.store,
+        readers: {
+          jagis_pour_la_nature: async () =>
+            readSyntheticJagisEvents([{ ...rec[0], status: "cancelled" }], now.toISOString()),
+          fondation_de_la_mer: async () => ({
+            status: "disabled",
+            source: "fondation_de_la_mer",
+            reason: "operator_authorization_required",
+          }),
+        },
+      },
+      { mode: "cron_prepare", now },
+    );
+    expect(updateSpy).toHaveBeenCalled();
+    expect(upsertSpy).not.toHaveBeenCalled();
+    expect(cancelStore.proposals.size).toBe(0);
+    expect(cancelledConflict.errors).toBe(1);
+    expect(cancelledConflict.outcomes[0]).toMatchObject({
+      status: "error",
+      reason: "cancellation_registration_close_conflict",
+    });
+
+    // Next sync retries and succeeds once the conflict clears
+    const retried = await runExternalActionSync(
+      {
+        store: cancelStore.store,
+        readers: {
+          jagis_pour_la_nature: async () =>
+            readSyntheticJagisEvents([{ ...rec[0], status: "cancelled" }], now.toISOString()),
+          fondation_de_la_mer: async () => ({
+            status: "disabled",
+            source: "fondation_de_la_mer",
+            reason: "operator_authorization_required",
+          }),
+        },
+      },
+      { mode: "cron_prepare", now },
+    );
+    expect(retried.errors).toBe(0);
+    expect(retried.outcomes[0]).toMatchObject({
+      status: "needs_review",
+      reason: "external_cancellation",
+    });
+    expect(cancelStore.proposals.size).toBe(1);
+
+    // Verify refreshed updated_at is passed to publishPreAction after pre-action field update
+    const store2 = createInMemorySyncStore({ subscriptions: baseSubs });
+    const rec2 = [{ ...rec[0], id: "jagis-refresh-1", title: "Ancien titre" }];
+    const link2 = await runExternalActionSync(
+      {
+        store: store2.store,
+        readers: {
+          jagis_pour_la_nature: async () => readSyntheticJagisEvents(rec2, now.toISOString()),
+          fondation_de_la_mer: async () => ({
+            status: "disabled",
+            source: "fondation_de_la_mer",
+            reason: "operator_authorization_required",
+          }),
+        },
+      },
+      { mode: "cron_prepare", now },
+    );
+    expect(link2.errors).toBe(0);
+    const act2Id = [...store2.actions.keys()][0]!;
+    vi.spyOn(store2.store, "updatePreActionFields").mockImplementationOnce(async (id) => {
+      const row = store2.actions.get(id)!;
+      store2.actions.set(id, { ...row, updated_at: "2026-11-26T09:05:00Z" });
+      return true;
+    });
+    const publishSpy = vi.spyOn(store2.store, "publishPreAction");
+    await runExternalActionSync(
+      {
+        store: store2.store,
+        readers: {
+          jagis_pour_la_nature: async () =>
+            readSyntheticJagisEvents([{ ...rec2[0], title: "Nouveau titre" }], now.toISOString()),
+          fondation_de_la_mer: async () => ({
+            status: "disabled",
+            source: "fondation_de_la_mer",
+            reason: "operator_authorization_required",
+          }),
+        },
+      },
+      { mode: "admin_sync_now", actorUserId: "admin-1", now },
+    );
+    expect(publishSpy).toHaveBeenCalledWith(
+      act2Id,
+      "admin-1",
+      "2026-11-26T09:05:00Z",
+      expect.objectContaining({ externalEventId: "jagis-refresh-1" }),
+    );
+  });
 });

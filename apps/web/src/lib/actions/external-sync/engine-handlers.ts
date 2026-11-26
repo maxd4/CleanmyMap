@@ -134,6 +134,18 @@ export async function handleLinkedActionUpdate(params: {
           actionId,
         };
       }
+      if (notesUpdated !== true) {
+        return {
+          status: "error",
+          source: event.source,
+          externalId: event.externalId,
+          actionId,
+          reason:
+            notesUpdated === "conflict"
+              ? "cancellation_registration_close_conflict"
+              : "cancellation_registration_close_failed",
+        };
+      }
     }
     const proposalId = await store.upsertProposal({
       organizerDirectoryId: subscription.organizerDirectoryId,
@@ -377,10 +389,24 @@ export async function handleLinkedActionUpdate(params: {
     !action.published_at &&
     isExternalActionPublishAdmissible(event, now)
   ) {
+    let publishExpectedUpdatedAt = action.updated_at;
+    if (merge.hasChanges) {
+      const refreshed = await store.getActionById(actionId);
+      if (!refreshed) {
+        return {
+          status: "needs_review",
+          source: event.source,
+          externalId: event.externalId,
+          actionId,
+          reason: "linked_action_missing",
+        };
+      }
+      publishExpectedUpdatedAt = refreshed.updated_at;
+    }
     const pub = await store.publishPreAction(
       actionId,
       actorUserId ?? subscription.ownerUserId,
-      undefined,
+      publishExpectedUpdatedAt,
       {
         organizerDirectoryId: subscription.organizerDirectoryId,
         sourceId: event.source,
