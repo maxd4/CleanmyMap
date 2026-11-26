@@ -22,10 +22,25 @@ type WindowMetrics = {
 };
 
 type MetricDelta = {
-  absolute: number;
+  absolute: number | null;
   percent: number | null;
   direction: "up" | "down" | "flat";
   strength: "stable" | "moderate" | "strong";
+};
+
+export type PeriodComparisonAvailability = {
+  isTruncated?: boolean;
+  sourceHealth?: {
+    partial?: boolean;
+    failedSources?: readonly string[];
+  };
+};
+
+const NON_COMPARABLE_DELTA: MetricDelta = {
+  absolute: null,
+  percent: null,
+  direction: "flat",
+  strength: "stable",
 };
 
 export type PeriodComparisonResult = {
@@ -126,6 +141,7 @@ export function computePeriodComparison(
   records: PeriodComparisonRecord[],
   periodDays: number,
   now: Date = new Date(),
+  dataAvailability?: PeriodComparisonAvailability,
 ): PeriodComparisonResult {
   const nowMs = now.getTime();
   const currentFloorMs = nowMs - periodDays * DAY_MS;
@@ -149,21 +165,42 @@ export function computePeriodComparison(
 
   const current = computeWindowMetrics(currentRecords, nowMs);
   const previous = computeWindowMetrics(previousRecords, currentFloorMs);
+  const corpusIncomplete = Boolean(
+    dataAvailability?.isTruncated ||
+      dataAvailability?.sourceHealth?.partial ||
+      (dataAvailability?.sourceHealth?.failedSources?.length ?? 0) > 0,
+  );
+  const wasteComparable =
+    !corpusIncomplete &&
+    current.actionsCount > 0 &&
+    previous.actionsCount > 0 &&
+    current.wasteKnownActions === current.actionsCount &&
+    previous.wasteKnownActions === previous.actionsCount;
+  const coverageComparable =
+    !corpusIncomplete && current.actionsCount > 0 && previous.actionsCount > 0;
 
   return {
     periodDays,
     current,
     previous,
     deltas: {
-      actionsCount: toDelta(current.actionsCount, previous.actionsCount, 5, 15),
-      volumeKg: toDelta(current.volumeKg, previous.volumeKg, 5, 15),
-      coverageRate: toDelta(current.coverageRate, previous.coverageRate, 2, 8),
-      moderationDelayDays: toDelta(
-        current.moderationDelayDays,
-        previous.moderationDelayDays,
-        5,
-        15,
-      ),
+      actionsCount: corpusIncomplete
+        ? NON_COMPARABLE_DELTA
+        : toDelta(current.actionsCount, previous.actionsCount, 5, 15),
+      volumeKg: wasteComparable
+        ? toDelta(current.volumeKg, previous.volumeKg, 5, 15)
+        : NON_COMPARABLE_DELTA,
+      coverageRate: coverageComparable
+        ? toDelta(current.coverageRate, previous.coverageRate, 2, 8)
+        : NON_COMPARABLE_DELTA,
+      moderationDelayDays: corpusIncomplete
+        ? NON_COMPARABLE_DELTA
+        : toDelta(
+            current.moderationDelayDays,
+            previous.moderationDelayDays,
+            5,
+            15,
+          ),
     },
   };
 }

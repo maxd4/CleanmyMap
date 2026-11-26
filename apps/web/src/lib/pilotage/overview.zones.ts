@@ -111,12 +111,15 @@ function buildZoneMetrics(
     previousKg: round1(previous.kg),
     currentWasteCoverageRate,
     previousWasteCoverageRate,
-    deltaKgAbsolute: round1(current.kg - previous.kg),
+    deltaKgAbsolute: wasteComparable ? round1(current.kg - previous.kg) : null,
     deltaActionsPercent: deltaActionsPercentRaw === null ? null : round1(deltaActionsPercentRaw),
     deltaKgPercent: deltaKgPercentRaw === null ? null : round1(deltaKgPercentRaw),
     currentCoverageRate,
     previousCoverageRate,
-    deltaCoverageRateAbsolute: round1(currentCoverageRate - previousCoverageRate),
+    deltaCoverageRateAbsolute:
+      current.actions > 0 && previous.actions > 0
+        ? round1(currentCoverageRate - previousCoverageRate)
+        : null,
     deltaCoverageRatePercent:
       deltaCoverageRatePercentRaw === null ? null : round1(deltaCoverageRatePercentRaw),
     currentModerationDelayDays,
@@ -186,9 +189,13 @@ function buildZoneComparisonRow(params: {
   const metrics: ZoneMetrics = params.corpusIncomplete
     ? {
         ...rawMetrics,
+        deltaActionsAbsolute: null,
+        deltaKgAbsolute: null,
+        deltaCoverageRateAbsolute: null,
         deltaActionsPercent: null,
         deltaKgPercent: null,
         deltaCoverageRatePercent: null,
+        deltaModerationDelayDaysAbsolute: null,
         deltaModerationDelayDaysPercent: null,
       }
     : rawMetrics;

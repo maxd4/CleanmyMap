@@ -104,6 +104,9 @@ describe("elus-dossier aggregation scientific contracts", () => {
 
     expect(payload.summary.knownWasteActions).toBe(0);
     expect(payload.summary.volunteersKnownActions).toBe(0);
+    expect(payload.decisionPriorities).toEqual([]);
+    expect(payload.comparison.deltas.actionsCount.absolute).toBeNull();
+    expect(payload.zoneComparisons[0]?.deltaActionsAbsolute).toBeNull();
     expect(payload.zoneComparisons[0]?.deltaActionsPercent).toBeNull();
     expect(payload.zoneComparisons[0]?.deltaKgPercent).toBeNull();
     expect(payload.zoneComparisons[0]?.urgency).toBe("moderee");
@@ -112,6 +115,75 @@ describe("elus-dossier aggregation scientific contracts", () => {
     const md = await mdResponse.text();
     expect(md).toContain("Non renseigné (0/1 actions renseignées)");
     expect(md).toContain("Non renseignée (0/1 actions renseignées)");
+    expect(md).toContain("kg non renseigné/");
     expect(md).toContain("indisponible");
+  });
+
+  it("handles failed actions source and previous-only actions across summary, priorities, and exports", async () => {
+    const prevDate = new Date(Date.now() - 40 * 86400_000).toISOString().slice(0, 10);
+    fetchUnifiedMock.mockResolvedValueOnce({
+      items: [
+        buildActionDataContract({
+          id: "prev-only",
+          type: "action",
+          status: "approved",
+          source: "test",
+          observedAt: prevDate,
+          createdAt: `${prevDate}T10:00:00.000Z`,
+          locationLabel: "Paris 11e",
+          latitude: 48.86,
+          longitude: 2.38,
+          wasteKg: 25,
+          volunteersCount: 5,
+        }),
+      ],
+      isTruncated: false,
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions"],
+        warnings: [],
+      },
+    });
+
+    const prevOnlyPayload = await buildElusDossierPayload({
+      supabase: {} as never,
+      days: 30,
+      limit: 500,
+      floorDate: "2026-01-01",
+      scope: { kind: "global", value: null },
+    });
+
+    expect(prevOnlyPayload.summary.totalActions).toBe(0);
+    expect(prevOnlyPayload.territorialPriorities).toEqual([]);
+    expect(prevOnlyPayload.zoneComparisons[0]?.currentActions).toBe(0);
+    expect(prevOnlyPayload.zoneComparisons[0]?.previousActions).toBe(1);
+    expect(prevOnlyPayload.zoneComparisons[0]?.urgency).toBe("moderee");
+
+    fetchUnifiedMock.mockResolvedValueOnce({
+      items: [],
+      isTruncated: false,
+      sourceHealth: {
+        partial: true,
+        failedSources: ["actions"],
+        availableSources: [],
+        warnings: ["actions_failed"],
+      },
+    });
+
+    const failedPayload = await buildElusDossierPayload({
+      supabase: {} as never,
+      days: 30,
+      limit: 500,
+      floorDate: "2026-01-01",
+      scope: { kind: "global", value: null },
+    });
+
+    expect(failedPayload.territorialPriorities).toEqual([]);
+    expect(failedPayload.decisionPriorities).toEqual([]);
+    expect(failedPayload.zoneComparisons).toEqual([]);
+    expect(failedPayload.comparison.deltas.actionsCount.absolute).toBeNull();
+    const jsonResponse = buildDossierResponse(failedPayload, "json");
+    expect(jsonResponse.headers.get("X-Export-Warning")).toContain("actions_failed");
   });
 });

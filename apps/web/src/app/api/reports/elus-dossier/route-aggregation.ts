@@ -10,6 +10,7 @@ import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import { buildPersonalImpactMethodology } from "@/lib/gamification/progression/progression-impact";
 import type { PersonalImpactMethodology } from "@/lib/gamification/progression/progression-types";
 import { buildPilotageOverviewFromContracts } from "@/lib/pilotage/overview";
+import { filterContractsToWindow } from "@/lib/pilotage/metrics";
 import { buildDateFloor } from "@/lib/reports/csv";
 import { filterActionContractsByScope } from "@/lib/reports/scope";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -176,9 +177,12 @@ function buildDossierSummary(approved: ElusDossierContract[]): DossierSummary {
 
 function buildDossierComparisons(
   scopeContracts: ElusDossierContract[],
+  currentPeriodContracts: ElusDossierContract[],
   days: number,
+  now: Date,
   dataAvailability: { isTruncated: boolean; sourceHealth: UnifiedSourceHealth },
 ) {
+  const actionsFailed = dataAvailability.sourceHealth.failedSources.includes("actions");
   const comparison = computePeriodComparison(
     scopeContracts.map((contract) => ({
       status: contract.status,
@@ -189,19 +193,24 @@ function buildDossierComparisons(
       wasteKg: contract.metadata.wasteKg,
     })),
     days,
+    now,
+    dataAvailability,
   );
-  const benchmark = buildTerritorialBenchmark(
-    scopeContracts.map((contract) => ({
-      type: contract.type,
-      status: contract.status,
-      locationLabel: contract.location.label,
-      wasteKg: contract.metadata.wasteKg,
-      volunteersCount: contract.metadata.volunteersCount,
-    })),
-  );
+  const benchmark = actionsFailed
+    ? []
+    : buildTerritorialBenchmark(
+        currentPeriodContracts.map((contract) => ({
+          type: contract.type,
+          status: contract.status,
+          locationLabel: contract.location.label,
+          wasteKg: contract.metadata.wasteKg,
+          volunteersCount: contract.metadata.volunteersCount,
+        })),
+      );
   const overview = buildPilotageOverviewFromContracts({
     contracts: scopeContracts,
     periodDays: days,
+    now,
     dataAvailability,
   });
 
@@ -229,6 +238,10 @@ function assembleElusDossierPayload(params: {
   const { summary, comparisons, quality, isTruncated, sourceHealth } = params;
   const { benchmark, comparison, overview } = comparisons;
   const { methodology } = quality;
+  const corpusIncomplete =
+    isTruncated ||
+    sourceHealth.partial ||
+    sourceHealth.failedSources.length > 0;
   return {
     generatedAt: overview.generatedAt,
     periodDays: params.days,
@@ -236,7 +249,7 @@ function assembleElusDossierPayload(params: {
     summary,
     comparison,
     territorialPriorities: benchmark,
-    decisionPriorities: buildDecisionPriorities(benchmark),
+    decisionPriorities: corpusIncomplete ? [] : buildDecisionPriorities(benchmark),
     zoneComparisons: overview.zones,
     isTruncated,
     sourceHealth,
@@ -257,13 +270,28 @@ export async function buildElusDossierPayload(params: {
   floorDate: ReturnType<typeof buildDateFloor>;
   scope: ScopeSelection;
 }) {
+  const now = new Date();
   const scopedData = await loadScopedDossierData(params);
-  const summary = buildDossierSummary(scopedData.approved);
-  const comparisons = buildDossierComparisons(scopedData.scopeContracts, params.days, {
-    isTruncated: scopedData.isTruncated,
-    sourceHealth: scopedData.sourceHealth,
-  });
-  const quality = buildDossierQuality(scopedData.approved);
+  const currentPeriodContracts = filterContractsToWindow(
+    scopedData.scopeContracts,
+    params.days,
+    now,
+  );
+  const currentApproved = currentPeriodContracts.filter(
+    (contract) => contract.status === "approved",
+  );
+  const summary = buildDossierSummary(currentApproved);
+  const comparisons = buildDossierComparisons(
+    scopedData.scopeContracts,
+    currentPeriodContracts,
+    params.days,
+    now,
+    {
+      isTruncated: scopedData.isTruncated,
+      sourceHealth: scopedData.sourceHealth,
+    },
+  );
+  const quality = buildDossierQuality(currentApproved);
 
   return assembleElusDossierPayload({
     days: params.days,

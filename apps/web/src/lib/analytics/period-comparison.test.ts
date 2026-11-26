@@ -76,4 +76,36 @@ describe("computePeriodComparison", () => {
     expect(empty.deltas.actionsCount.percent).toBe(0);
     expect(empty.deltas.actionsCount.strength).toBe("stable");
   });
+
+  it("marks volumeKg non-comparable when current mass is null and previous is 10kg, or when truncated", () => {
+    const result = computePeriodComparison(
+      [
+        { status: "approved", observedAt: "2026-04-08", createdAt: null, latitude: 48.85, longitude: 2.35, wasteKg: null },
+        { status: "approved", observedAt: "2026-03-20", createdAt: null, latitude: 48.85, longitude: 2.35, wasteKg: 10 },
+      ],
+      15,
+      new Date("2026-04-10T00:00:00.000Z"),
+    );
+
+    expect(result.deltas.volumeKg).toEqual({
+      absolute: null,
+      percent: null,
+      direction: "flat",
+      strength: "stable",
+    });
+
+    const truncated = computePeriodComparison(
+      [
+        { status: "approved", observedAt: "2026-04-08", createdAt: null, latitude: 48.85, longitude: 2.35, wasteKg: 12 },
+        { status: "approved", observedAt: "2026-03-20", createdAt: null, latitude: 48.85, longitude: 2.35, wasteKg: 10 },
+      ],
+      15,
+      new Date("2026-04-10T00:00:00.000Z"),
+      { isTruncated: true },
+    );
+
+    expect(truncated.deltas.actionsCount.absolute).toBeNull();
+    expect(truncated.deltas.volumeKg.percent).toBeNull();
+    expect(truncated.deltas.coverageRate.absolute).toBeNull();
+  });
 });

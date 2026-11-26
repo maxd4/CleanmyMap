@@ -34,10 +34,17 @@ function buildMarkdownPack(payload: ElusDossierPayload): string {
 
   const zoneComparisons = payload.zoneComparisons
     .slice(0, 12)
-    .map(
-      (zone) =>
-        `- ${zone.area}: actions ${zone.currentActions}/${zone.previousActions} (${zone.deltaActionsAbsolute >= 0 ? "+" : ""}${zone.deltaActionsAbsolute.toFixed(1)} ; ${formatOptionalSigned(zone.deltaActionsPercent, "%")}), kg ${zone.currentKg.toFixed(1)}/${zone.previousKg.toFixed(1)} (${zone.deltaKgAbsolute >= 0 ? "+" : ""}${zone.deltaKgAbsolute.toFixed(1)} ; ${formatOptionalSigned(zone.deltaKgPercent, "%")}), couverture ${zone.currentCoverageRate.toFixed(1)}%/${zone.previousCoverageRate.toFixed(1)}% (${zone.deltaCoverageRateAbsolute >= 0 ? "+" : ""}${zone.deltaCoverageRateAbsolute.toFixed(1)} pt), delai moderation ${formatOptionalNumber(zone.currentModerationDelayDays)}j/${formatOptionalNumber(zone.previousModerationDelayDays)}j (${formatOptionalSigned(zone.deltaModerationDelayDaysAbsolute, "j")}). Action: ${zone.recommendedAction}`,
-    )
+    .map((zone) => {
+      const currentKgLabel =
+        zone.currentWasteKnownActions === 0 && zone.currentActions > 0
+          ? "non renseigné"
+          : zone.currentKg.toFixed(1);
+      const previousKgLabel =
+        zone.previousWasteKnownActions === 0 && zone.previousActions > 0
+          ? "non renseigné"
+          : zone.previousKg.toFixed(1);
+      return `- ${zone.area}: actions ${zone.currentActions}/${zone.previousActions} (${formatOptionalSigned(zone.deltaActionsAbsolute)} ; ${formatOptionalSigned(zone.deltaActionsPercent, "%")}), kg ${currentKgLabel}/${previousKgLabel} (${formatOptionalSigned(zone.deltaKgAbsolute)} ; ${formatOptionalSigned(zone.deltaKgPercent, "%")}), couverture ${zone.currentCoverageRate.toFixed(1)}%/${zone.previousCoverageRate.toFixed(1)}% (${formatOptionalSigned(zone.deltaCoverageRateAbsolute, " pt")}), delai moderation ${formatOptionalNumber(zone.currentModerationDelayDays)}j/${formatOptionalNumber(zone.previousModerationDelayDays)}j (${formatOptionalSigned(zone.deltaModerationDelayDaysAbsolute, "j")}). Action: ${zone.recommendedAction}`;
+    })
     .join("\n");
 
   const availability = [
