@@ -24,6 +24,7 @@ on:
       - main
     paths:
       - "e2e/*.spec.ts"
+      - "e2e/*.test.ts"
       - "e2e/fixtures/**"
       - "e2e/global.setup.ts"
       - "e2e/global.teardown.ts"
@@ -34,6 +35,10 @@ on:
       - "documentation/features/spogomi-references/fixtures/**"
       - "apps/web/src/lib/spogomi/**"
       - "apps/web/src/app/api/spogomi/**"
+      - "apps/web/src/app/api/gamification/spogomi/**"
+      - "apps/web/src/components/spogomi/**"
+      - "apps/web/src/app/(app)/spogomi/**"
+      - "apps/web/src/app/(app)/dashboard/spogomi/**"
       - "apps/web/src/lib/actions/**"
       - "apps/web/src/app/api/actions/**"
       - "apps/web/src/lib/reports/**"
@@ -60,6 +65,7 @@ on:
       - "scripts/ci/supabase-config.test.mjs"
       - "scripts/ci/diagnose-supabase-start.mjs"
       - "scripts/ci/diagnose-supabase-start.test.mjs"
+      - "scripts/ci/e2e-project-catalog.mjs"
       - "scripts/ci/select-e2e-sql-plan.mjs"
       - "scripts/ci/ci-timing-report.mjs"
       - ".github/workflows/e2e-supabase.yml"
@@ -71,6 +77,7 @@ on:
       - main
     paths:
       - "e2e/*.spec.ts"
+      - "e2e/*.test.ts"
       - "e2e/fixtures/**"
       - "e2e/global.setup.ts"
       - "e2e/global.teardown.ts"
@@ -84,10 +91,15 @@ on:
       - "scripts/ci/start-supabase-ephemeral.sh"
       - "scripts/ci/supabase-config.mjs"
       - "scripts/ci/supabase-config.test.mjs"
+      - "scripts/ci/e2e-project-catalog.mjs"
       - "scripts/ci/select-e2e-sql-plan.mjs"
       - "scripts/ci/ci-timing-report.mjs"
       - "apps/web/src/lib/spogomi/**"
       - "apps/web/src/app/api/spogomi/**"
+      - "apps/web/src/app/api/gamification/spogomi/**"
+      - "apps/web/src/components/spogomi/**"
+      - "apps/web/src/app/(app)/spogomi/**"
+      - "apps/web/src/app/(app)/dashboard/spogomi/**"
       - "apps/web/src/lib/actions/**"
       - "apps/web/src/app/api/actions/**"
       - "apps/web/src/lib/reports/**"
@@ -134,6 +146,7 @@ jobs:
       run_spogomi_business_tests: ${{ steps.select.outputs.run_spogomi_business_tests }}
       run_persistent_e2e: ${{ steps.select.outputs.run_persistent_e2e }}
       playwright_projects: ${{ steps.select.outputs.playwright_projects }}
+      unmapped_e2e_files: ${{ steps.select.outputs.unmapped_e2e_files }}
       reason: ${{ steps.select.outputs.reason }}
       inputs_digest: ${{ steps.select.outputs.inputs_digest }}
     steps:
@@ -380,6 +393,7 @@ jobs:
           CMM_E2E_CLERK_DEV_BACKEND_TOKEN: ${{ secrets.CMM_E2E_CLERK_DEV_BACKEND_TOKEN }}
           CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY: ${{ secrets.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY }}
           PLAYWRIGHT_PROJECTS: ${{ needs.plan.outputs.playwright_projects }}
+          UNMAPPED_E2E_FILES: ${{ needs.plan.outputs.unmapped_e2e_files }}
         run: npm run test:e2e:persistent:ci
 
       - name: Fail if independent SPOGOMI integration failed

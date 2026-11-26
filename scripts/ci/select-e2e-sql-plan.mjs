@@ -33,6 +33,7 @@ const SHARED_BOOTSTRAP_INFRA_FILES = [
 
 const SHARED_E2E_INFRA_FILES = new Set([
   ...SHARED_BOOTSTRAP_INFRA_FILES,
+  "scripts/ci/e2e-project-catalog.mjs",
   "playwright.config.ts",
   "e2e/global.setup.ts",
   "e2e/global.teardown.ts",
@@ -43,6 +44,7 @@ const SHARED_E2E_INFRA_FILES = new Set([
 
 const SHARED_SQL_INFRA_FILES = new Set([
   ...SHARED_BOOTSTRAP_INFRA_FILES,
+  "scripts/ci/e2e-project-catalog.mjs",
   "apps/web/supabase/config.toml",
   "apps/web/supabase/seed.sql",
   ".github/workflows/supabase-sql-proof.yml",
@@ -105,6 +107,7 @@ function fullConservativePlan(reason, { runSpogomiBusinessTests = false } = {}) 
     run_spogomi_business_tests: runSpogomiBusinessTests,
     run_persistent_e2e: true,
     playwright_projects: ALL_CI_E2E_PROJECTS.join(","),
+    unmapped_e2e_files: "",
     sql_should_run: true,
     sql_proof_targets: "",
     validate_all_sql: true,
@@ -141,6 +144,7 @@ export function planE2eAndSql({
       run_spogomi_business_tests: false,
       run_persistent_e2e: false,
       playwright_projects: "",
+      unmapped_e2e_files: "",
       sql_should_run: false,
       sql_proof_targets: "",
       validate_all_sql: false,
@@ -156,6 +160,7 @@ export function planE2eAndSql({
       run_spogomi_business_tests: false,
       run_persistent_e2e: false,
       playwright_projects: "",
+      unmapped_e2e_files: "",
       sql_should_run: false,
       sql_proof_targets: "",
       validate_all_sql: false,
@@ -165,6 +170,7 @@ export function planE2eAndSql({
 
   const projects = new Set();
   const sqlTargets = new Set();
+  const unmappedE2eFiles = new Set();
   let runSpogomiIntegration = false;
   let runAllSql = false;
   let validateAllSql = false;
@@ -207,6 +213,7 @@ export function planE2eAndSql({
     }
 
     if (/^e2e\/.*\.(?:spec|test)\.ts$/.test(file) && matchedProjects.length === 0 && !isLocalOnlyE2eSpec(file)) {
+      unmappedE2eFiles.add(file);
       for (const project of ALL_CI_E2E_PROJECTS) projects.add(project);
     }
   }
@@ -223,6 +230,7 @@ export function planE2eAndSql({
     run_spogomi_business_tests: false,
     run_persistent_e2e: runPersistentE2e,
     playwright_projects: [...projects].join(","),
+    unmapped_e2e_files: [...unmappedE2eFiles].sort().join(","),
     sql_should_run: sqlShouldRun,
     sql_proof_targets: runAllSql ? "" : [...sqlTargets].join(","),
     validate_all_sql: validateAllSql,
@@ -262,7 +270,19 @@ function readChangedFilesFromGit({ eventName, eventBefore, eventSha, prBaseSha, 
   }
 }
 
-function computeContentDigest(candidateSha) {
+export function resolveCandidateSha({
+  eventName = "push",
+  eventSha = "",
+  prHeadSha = "",
+  githubSha = "",
+} = {}) {
+  if (String(eventName ?? "").trim() === "pull_request" && prHeadSha) {
+    return prHeadSha;
+  }
+  return eventSha || githubSha || "";
+}
+
+export function computeContentDigest(candidateSha) {
   if (!candidateSha) return "UNAVAILABLE";
   const trackedRoots = [
     "apps/web/src",
@@ -303,16 +323,19 @@ function writeGithubOutputs(outputs) {
 function main() {
   const eventName = process.env.EVENT_NAME || "push";
   const validationMode = process.env.VALIDATION_MODE || "DEVELOPMENT";
-  const candidateSha = process.env.EVENT_SHA || process.env.GITHUB_SHA || "";
+  const eventSha = process.env.EVENT_SHA || "";
+  const prHeadSha = process.env.PR_HEAD_SHA || "";
+  const githubSha = process.env.GITHUB_SHA || "";
+  const candidateSha = resolveCandidateSha({ eventName, eventSha, prHeadSha, githubSha });
   const { changedFiles, scopeUncertain } =
     eventName === "schedule" || validationMode.toUpperCase() === "FULL"
       ? { changedFiles: [], scopeUncertain: false }
       : readChangedFilesFromGit({
           eventName,
           eventBefore: process.env.EVENT_BEFORE || "",
-          eventSha: candidateSha,
+          eventSha,
           prBaseSha: process.env.PR_BASE_SHA || "",
-          prHeadSha: process.env.PR_HEAD_SHA || "",
+          prHeadSha,
         });
   const plan = planE2eAndSql({ changedFiles, eventName, validationMode, scopeUncertain });
   const inputsDigest = computeContentDigest(candidateSha);

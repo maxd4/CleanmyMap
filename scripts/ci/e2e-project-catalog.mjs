@@ -6,11 +6,13 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
     name: "local public",
     requiresAuth: false,
     specPatterns: [
-      /^e2e\/(?:smoke-public|reports-public|spogomi-navigation|ui-consistency-geometry|footer-responsive-public|navigation-ribbon-variants|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls|personal-ai-public|annuaire-public-cleanliness)\.(?:spec|test)\.ts$/,
+      /^e2e\/(?:smoke-public|reports-public|spogomi-navigation|ui-consistency-geometry|footer-responsive-public|navigation-ribbon-variants|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls|personal-ai-public|annuaire-public-cleanliness|page-layout-fluid)\.(?:spec|test)\.ts$/,
     ],
     dependencyPrefixes: [
       "apps/web/src/lib/partners/",
       "apps/web/src/components/sections/rubriques/annuaire/",
+      "apps/web/src/components/spogomi/",
+      "apps/web/src/app/(app)/spogomi/",
     ],
   },
   {
@@ -33,6 +35,10 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
     dependencyPrefixes: [
       "apps/web/src/lib/spogomi/",
       "apps/web/src/app/api/spogomi/",
+      "apps/web/src/app/api/gamification/spogomi/",
+      "apps/web/src/components/spogomi/",
+      "apps/web/src/app/(app)/spogomi/",
+      "apps/web/src/app/(app)/dashboard/spogomi/",
     ],
   },
   {

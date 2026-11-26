@@ -48,6 +48,7 @@ on:
       - "scripts/ci/isolate-supabase-migration-failure.mjs"
       - "scripts/ci/isolate-supabase-migration-failure.test.mjs"
       - "scripts/ci/select-e2e-sql-plan.mjs"
+      - "scripts/ci/e2e-project-catalog.mjs"
       - "scripts/ci/ci-timing-report.mjs"
       - ".github/workflows/supabase-sql-proof.yml"
       - "package.json"

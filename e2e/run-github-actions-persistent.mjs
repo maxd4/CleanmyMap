@@ -130,9 +130,52 @@ function resolvePersistentProjects(raw = process.env.PLAYWRIGHT_PROJECTS) {
   return requested;
 }
 
+function resolveUnmappedE2eFiles(raw = process.env.UNMAPPED_E2E_FILES) {
+  return String(raw ?? "")
+    .split(",")
+    .map((value) => value.trim().replaceAll("\\", "/"))
+    .filter(Boolean);
+}
+
+async function assertUnmappedSpecsExecuted(projects, env) {
+  const unmapped = resolveUnmappedE2eFiles(env.UNMAPPED_E2E_FILES);
+  if (unmapped.length === 0) return;
+
+  const listResult = await runCommand(
+    "npx",
+    [
+      "playwright",
+      "test",
+      "--list",
+      ...projects.map((project) => `--project=${project}`),
+    ],
+    {
+      cwd: root,
+      env: { ...env, PLAYWRIGHT_SKIP_WEBSERVER: "1" },
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  if (listResult.code !== 0) {
+    throw new Error(
+      `Failed to list Playwright tests for uncatalogued spec check: ${listResult.stderr || listResult.stdout}`,
+    );
+  }
+  const normalizedOutput = listResult.stdout.replaceAll("\\", "/");
+  const missing = unmapped.filter((filePath) => {
+    const relativeToE2e = filePath.replace(/^e2e\//, "");
+    return !normalizedOutput.includes(relativeToE2e);
+  });
+  if (missing.length > 0) {
+    throw new Error(
+      `Uncatalogued E2E file(s) not executed by selected Playwright projects (${projects.join(", ")}): ${missing.join(", ")}. Register them in scripts/ci/e2e-project-catalog.mjs and playwright.config.ts.`,
+    );
+  }
+}
+
 async function runPersistentE2E() {
   assertClerkDevelopmentSecrets();
   const projects = resolvePersistentProjects();
+  await assertUnmappedSpecsExecuted(projects, process.env);
   await writeWebEnvironment();
   try {
     const local = await readLocalSupabaseStatus();
