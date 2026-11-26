@@ -4,6 +4,8 @@
 
 **Date :** 24 novembre 2026. **Base de lecture :** `maxd4/CleanmyMap`, `main`, `4dbe9523ce883ea07bfb85503c2475b26093456f`.
 
+**Extension distincte :** le [plan d'interopérabilité API Engagement](./interoperabilite-api-engagement.md) porte la diffusion nationale entrante/sortante, l'accompagnement des plateformes et les agendas associatifs. Il ne modifie pas les invariants ni l'état d'activation du présent pilote.
+
 ## 1. Finalité et périmètre
 
 Une association doit pouvoir publier ses cleanwalks sur ses plateformes habituelles, puis retrouver automatiquement dans CleanMyMap un formulaire de préparation prérempli, sans export/import de fichiers ni double saisie. CleanMyMap devient l'outil de préparation, de coordination, d'émargement et de bilan, sans se substituer aux plateformes de recrutement.

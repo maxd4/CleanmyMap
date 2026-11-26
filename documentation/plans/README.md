@@ -4,6 +4,8 @@
 
 | Sujet | Source | Nature |
 |---|---|---|
+| Synchronisation opérationnelle des actions externes | [synchronisation-actions-externes.md](./synchronisation-actions-externes.md) | PLAN : pilote, moteur d'import et inscriptions privées conditionnelles |
+| Interopérabilité API Engagement et collectes citoyennes | [interoperabilite-api-engagement.md](./interoperabilite-api-engagement.md) | PLAN / PROPOSITION : annonceur, diffuseur, partenaires et agendas locaux |
 | Plogging et filière citoyenne des mégots à Paris | [plogging-et-filiere-megots-paris.md](./plogging-et-filiere-megots-paris.md) | PLAN / PROPOSITION : prospection, logistique, dimensionnement et preuves attendues |
 | Propositions et messages DU | [ateliers_DU.md](./ateliers_DU.md) | PLAN/HISTORY à requalifier avant exécution |
 | Journal d'apprentissage et d'impact DU | [journal_impact_DU.md](./journal_impact_DU.md) | HISTORY et provenance |
