@@ -8,6 +8,7 @@ import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { FRANCE_METROPOLITAINE_BOUNDS, PARIS_INTRAMUROS_BOUNDS, isInFranceMetropolitaine, type GeoNetworkEntity, type GeoNetworkIncidentRelation, type MapScope } from "./annuaire-geo-network.model";
 import { getNetworkLogoDiameter, getNetworkRelationVisual } from "./annuaire-geo-network.visuals";
+import { separateNetworkBadges } from "./annuaire-graph-interactions";
 import { projectNetworkPoint, type ScreenPoint } from "./annuaire-geo-projection";
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
   mapScope: MapScope;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onSelectRelation?: (id: string) => void;
   onUnavailable: () => void;
   fr: boolean;
 };
@@ -29,7 +31,7 @@ function boundsFor(scope: MapScope): [[number, number], [number, number]] {
  * One custom layer projects accessible HTML billboards and SVG edges on the
  * same camera frame. No permanent animation or React updates per frame. */
 export function AnnuaireMap3DCanvas(props: Props) {
-  const { entities, relations, mapScope, selectedId, onSelect, fr } = props;
+  const { entities, relations, mapScope, selectedId, onSelect, onSelectRelation, fr } = props;
   const hostRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LibreMap | null>(null);
   const latest = useRef(props);
@@ -76,28 +78,44 @@ export function AnnuaireMap3DCanvas(props: Props) {
           const width = host.clientWidth, height = host.clientHeight;
           const points = new Map<string, ScreenPoint>();
           const elevation = Math.max(20, Math.min(60000, 45 * 2 ** (14 - map.getZoom())));
+          const candidates: Array<{ id: string; x: number; y: number; diameter: number; selected: boolean }> = [];
+          const groundPoints = new Map<string, ScreenPoint>();
           for (const entity of latest.current.entities) {
             const element = markers.current.get(entity.id);
             if (!element || !entity.coords) continue;
             const ll = { lng: entity.coords.lng, lat: entity.coords.lat };
             const ground = projectNetworkPoint(matrix, MercatorCoordinate.fromLngLat(ll, 0), width, height);
             const top = projectNetworkPoint(matrix, MercatorCoordinate.fromLngLat(ll, elevation), width, height);
-            if (!ground || !top || ground.x < -120 || ground.x > width+120 || ground.y < -160 || ground.y > height+160) {
+            if (!ground || !top || ground.x < -120 || ground.x > width + 120 || ground.y < -160 || ground.y > height + 160) {
               element.style.visibility = "hidden"; continue;
             }
             const dy = Math.min(top.y, ground.y - 28);
+            candidates.push({
+              id: entity.id,
+              x: top.x,
+              y: dy,
+              diameter: getNetworkLogoDiameter(entity.indicators.documentedNeighborsCount),
+              selected: latest.current.selectedId === entity.id || latest.current.selectedId === entity.networkActorId,
+            });
+            groundPoints.set(entity.id, ground);
+          }
+          const separated = separateNetworkBadges(candidates, width, height);
+          for (const [id, point] of separated) {
+            const element = markers.current.get(id);
+            const ground = groundPoints.get(id);
+            if (!element || !ground) continue;
             const badge = element.querySelector<HTMLElement>("[data-network-logo]");
             const stem = element.querySelector<SVGLineElement>("[data-network-stem]");
             const pin = element.querySelector<HTMLElement>("[data-network-pin]");
             element.dataset.projected = "true";
             element.style.visibility = "visible";
-            if (badge) badge.style.transform = "translate("+top.x+"px,"+dy+"px) translate(-50%,-50%)";
-            if (pin) pin.style.transform = "translate("+ground.x+"px,"+ground.y+"px) translate(-50%,-100%)";
+            if (badge) badge.style.transform = "translate(" + point.x + "px," + point.y + "px) translate(-50%,-50%)";
+            if (pin) pin.style.transform = "translate(" + ground.x + "px," + ground.y + "px) translate(-50%,-100%)";
             if (stem) {
               stem.setAttribute("x1", String(ground.x)); stem.setAttribute("y1", String(ground.y));
-              stem.setAttribute("x2", String(top.x)); stem.setAttribute("y2", String(dy));
+              stem.setAttribute("x2", String(point.x)); stem.setAttribute("y2", String(point.y));
             }
-            points.set(entity.id, { x: top.x, y: dy });
+            points.set(id, point);
           }
           for (const item of latest.current.relations) {
             const line = paths.current.get(item.relation.id);
@@ -136,6 +154,15 @@ export function AnnuaireMap3DCanvas(props: Props) {
     mapRef.current?.jumpTo({ center: [entity.coords.lng, entity.coords.lat] });
   }, [ready, entities, selectedId, mapScope]);
 
+  const fitVisible = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const coords = visible.flatMap(entity => entity.coords ? [[entity.coords.lng, entity.coords.lat] as [number, number]] : []);
+    if (!coords.length) return;
+    if (coords.length === 1) { map.jumpTo({ center: coords[0], zoom: 14 }); return; }
+    const xs = coords.map(p => p[0]), ys = coords.map(p => p[1]);
+    map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: 64, maxZoom: 15, duration: 0 });
+  };
   const tilt = (delta: number) => {
     const map = mapRef.current;
     if (map) map.jumpTo({ pitch: Math.max(0, Math.min(60, map.getPitch()+delta)) });
@@ -149,7 +176,7 @@ export function AnnuaireMap3DCanvas(props: Props) {
     {!ready ? <div role="status" className="pointer-events-none absolute left-3 top-3 rounded bg-white px-3 py-2 text-sm text-slate-900">{fr ? "Chargement de la carte 3D…" : "Loading 3D map…"}</div> : null}
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <svg aria-hidden="true" className="absolute inset-0 h-full w-full">
-        {links.map(item => { const v = getNetworkRelationVisual(item.relation); return <line key={item.relation.id} ref={el => { if (el) { paths.current.set(item.relation.id, el); if (el.dataset.projected !== "true") el.style.visibility = "hidden"; } else paths.current.delete(item.relation.id); }} stroke={v.color} strokeWidth={v.weight} strokeDasharray={v.dash} opacity={0.75}/>; })}
+        {links.map(item => { const v = getNetworkRelationVisual(item.relation); return <line key={item.relation.id} ref={el => { if (el) { paths.current.set(item.relation.id, el); if (el.dataset.projected !== "true") el.style.visibility = "hidden"; } else paths.current.delete(item.relation.id); }} onClick={onSelectRelation ? () => onSelectRelation(item.relation.id) : undefined} style={{ pointerEvents: onSelectRelation ? "stroke" : "none", cursor: onSelectRelation ? "pointer" : "default" }} stroke={v.color} strokeWidth={v.weight} strokeDasharray={v.dash} opacity={0.75}/>; })}
       </svg>
       {visible.map(entity => {
         const diameter = getNetworkLogoDiameter(entity.indicators.documentedNeighborsCount);
@@ -166,6 +193,7 @@ export function AnnuaireMap3DCanvas(props: Props) {
       })}
     </div>
     <div className="absolute bottom-9 left-3 z-30 flex flex-wrap gap-2">
+      <CmmButton type="button" size="sm" tone="secondary" onClick={fitVisible}>{fr ? "Cadrer les acteurs" : "Fit actors"}</CmmButton>
       <CmmButton type="button" size="sm" tone="secondary" onClick={() => tilt(-15)}>{fr ? "Incliner −" : "Tilt −"}</CmmButton>
       <CmmButton type="button" size="sm" tone="secondary" onClick={() => tilt(15)}>{fr ? "Incliner +" : "Tilt +"}</CmmButton>
       <CmmButton type="button" size="sm" tone="secondary" onClick={() => rotate(-30)}>{fr ? "Tourner ←" : "Rotate ←"}</CmmButton>

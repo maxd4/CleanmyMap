@@ -5,8 +5,9 @@ import type { PublicCleanlinessCityDataset } from "@/lib/partners/public-cleanli
 import { getPublicCleanlinessNeedRoute, getPublicCleanlinessNeedLabel, PUBLIC_CLEANLINESS_NEEDS, type PublicCleanlinessNeed } from "@/lib/partners/public-cleanliness-needs";
 import { getWasteCategory } from "@/lib/waste/catalog";
 
-export function PublicCleanlinessNeedPanel({ dataset, district, fr, onSelect }: { dataset: PublicCleanlinessCityDataset; district: number | null; fr: boolean; onSelect: (id: string) => void }) {
-  const [need, setNeed] = useState<PublicCleanlinessNeed>("organize");
+export function PublicCleanlinessNeedPanel({ dataset, district, fr, onSelect, selectedNeed, onNeedChange }: { dataset: PublicCleanlinessCityDataset; district: number | null; fr: boolean; onSelect: (id: string) => void; selectedNeed?: PublicCleanlinessNeed; onNeedChange?: (need: PublicCleanlinessNeed) => void }) {
+  const [localNeed, setLocalNeed] = useState<PublicCleanlinessNeed>("organize");
+  const need=selectedNeed??localNeed;
   if (dataset.city !== "Paris") return null;
   const territoryId = district === null ? null : `${dataset.city}:${district}`;
   const territory = territoryId && dataset.territoryIds.includes(territoryId) ? territoryId : null;
@@ -23,7 +24,7 @@ export function PublicCleanlinessNeedPanel({ dataset, district, fr, onSelect }: 
     <h3 id="cleanliness-need-heading" className="font-black text-white">{copy.title}</h3>
     <p className="mt-2 text-sm text-slate-300">{copy.intro}</p>
     <div className="my-4 max-w-md">
-      <label className="text-xs font-bold text-slate-300">{copy.need}<select value={need} onChange={event => setNeed(event.target.value as PublicCleanlinessNeed)} className="mt-1 block w-full rounded-xl border border-white/15 bg-slate-900 px-3 py-2 text-sm text-white">{PUBLIC_CLEANLINESS_NEEDS.map(id => <option key={id} value={id}>{getPublicCleanlinessNeedLabel(id)[lang]}</option>)}</select></label>
+      <label className="text-xs font-bold text-slate-300">{copy.need}<select value={need} onChange={event => { const next=event.target.value as PublicCleanlinessNeed; setLocalNeed(next); onNeedChange?.(next); }} className="mt-1 block w-full rounded-xl border border-white/15 bg-slate-900 px-3 py-2 text-sm text-white">{PUBLIC_CLEANLINESS_NEEDS.map(id => <option key={id} value={id}>{getPublicCleanlinessNeedLabel(id)[lang]}</option>)}</select></label>
     </div>
     {route ? <div aria-live="polite" className="space-y-3">
       <p className="text-sm leading-6 text-slate-200">{route.guidance[lang]}</p>

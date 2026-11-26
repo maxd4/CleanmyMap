@@ -7,6 +7,7 @@ import { ScheduledOperationDetails } from "./paris-network-scheduled-operation";
 import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
 import { getActorStructureContext } from "@/lib/partners/public-structure-context";
 import { PublicStructureContextPanel } from "./public-structure-context-panel";
+import { PublicEntityDetails } from "./public-entity-details";
 import {
   PARIS_ACTOR_CATEGORY_META,
   PARIS_ECOSYSTEM_ROLE_LABELS,
@@ -128,6 +129,7 @@ export function ParisNetwork3DBubble({
     return () => window.removeEventListener("resize", updatePosition);
   }, [actor.id, anchorPosition]);
 
+  const canonicalDetails = isLocked ? projectPublicEntity({ networkActorId: actor.id }) : null;
   const safeChannels = sanitizeAndDeduplicatePublicChannels(actor.publicChannels);
   const participationLinks = safeChannels.filter((ch) =>
     ACTION_PARTICIPATION_TYPES.has(ch.type),
@@ -198,7 +200,7 @@ export function ParisNetwork3DBubble({
         </button>
       </div>
 
-      <div className="mt-2.5 space-y-2.5">
+      {canonicalDetails ? <PublicEntityDetails projection={canonicalDetails} fr={fr}/> : <div className="mt-2.5 space-y-2.5">
         {/* 2. Responsable ou référent public, si connu */}
         {actor.publicLeader ? (
           <p className="text-slate-200">
@@ -391,7 +393,7 @@ export function ParisNetwork3DBubble({
             {isLocked ? (fr ? " · Épinglé" : " · Pinned") : ""}
           </span>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

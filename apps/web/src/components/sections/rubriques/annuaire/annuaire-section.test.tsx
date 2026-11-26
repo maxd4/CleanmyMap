@@ -62,14 +62,10 @@ vi.mock("framer-motion", () => ({
   },
 }));
 
-vi.mock("lucide-react", () => ({
-  ArrowRight: () => React.createElement("span"),
-  Building2: () => React.createElement("span"),
-  Globe: () => React.createElement("span"),
-  Sparkles: () => React.createElement("span"),
-  Target: () => React.createElement("span"),
-  RefreshCw: () => React.createElement("span"),
-}));
+vi.mock("lucide-react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("lucide-react")>();
+  return { ...actual };
+});
 
 import { AnnuaireSection } from "./annuaire-section";
 

@@ -42,7 +42,7 @@ test("desktop: navigates between explicit shared institutional identities", asyn
   await expect(organization.locator("aside h3")).toContainText("Syctom");
   await organization.getByRole("button", { name: "Voir dans le réseau des acteurs" }).click();
   await expect(page.getByRole("tab", { name: "Carte & réseau" })).toBeFocused();
-  await expect(network.getByRole("dialog")).toContainText("Syctom");
+  await expect(network.locator("aside")).toContainText("Syctom");
 });
 
 test("desktop: geographic WebGL renders and exposes camera controls when available", async ({ page }) => {
@@ -88,15 +88,22 @@ test("mobile: filters, progressive navigation, zoom, sources and roving tab focu
   await organization.getByRole("searchbox", { name: "Rechercher dans l’organigramme" }).fill("REQ");
   await organization.getByRole("button", { name: /Référents et référentes de l'entretien du quartier/ }).last().click();
   await expect(organization.locator("aside h3")).toContainText("Référents et référentes");
-  await expect(organization.locator("aside")).toContainText("Affectation inconnue");
+  await expect(organization.locator("aside")).toContainText("Non établi");
 
   await organization.getByRole("combobox", { name: "Filtrer par service" }).selectOption("all");
   await organization.getByRole("searchbox", { name: "Rechercher dans l’organigramme" }).clear();
   await organization.getByRole("combobox", { name: "Filtrer par arrondissement" }).selectOption("");
-  const dpe = organization.getByRole("button", { name: /Direction de la Propreté et de l'Eau/ }).last();
+  await organization.getByRole("button", { name: "Liste", exact: true }).click();
+  const dpe = organization.getByRole("list", { name: "Arborescence des services publics de propreté" }).getByRole("button", { name: /^Direction de la Propreté/ }).first();
   await dpe.click();
-  await expect(organization.getByText("Sources de cette relation:").first()).toBeVisible();
-  const relatedReq = organization.getByRole("button", { name: /Explorer: Référents et référentes/ });
+  await expect(organization.locator("aside h3")).toContainText("Propreté");
+  await organization.getByRole("button", { name: "Organigramme", exact: true }).click();
+  await expect(organization.locator("aside").getByText("Sources et preuve").first()).toBeVisible();
+  const relationsSummary = organization.locator("aside summary", { hasText: "Relations (" }).first();
+  if (await relationsSummary.isVisible().catch(() => false)) await relationsSummary.click();
+  const reqRelationDetails = organization.locator("aside details details").filter({ hasText: /Référents et référentes/ }).first();
+  await reqRelationDetails.locator("summary").click();
+  const relatedReq = reqRelationDetails.getByRole("button", { name: /Référents et référentes/ }).first();
   await relatedReq.click();
   await expect(organization.locator("aside h3")).toContainText("Référents et référentes");
   await expect(organization.locator("aside").getByRole("link", { name: /Offre REQ du 20e/ }).first()).toBeVisible();
@@ -124,7 +131,7 @@ test("mobile: filters, progressive navigation, zoom, sources and roving tab focu
   await expect(matrix.getByText("Accueil propreté : 01 55 34 77 17").first()).toBeVisible();
   await matrix.getByRole("button", { name: "Carine Ekon", exact: true }).click();
   await expect(organization.locator("aside h3")).toHaveText("Carine Ekon");
-  await expect(organization.locator("aside")).toContainText("Mandat politique");
+  await expect(organization.locator("aside")).toContainText("Mandat · Documenté");
   await expect(organization.locator("aside")).toBeFocused();
   await expect(page.locator("#annuaire-panel-network canvas")).toHaveCount(0);
 

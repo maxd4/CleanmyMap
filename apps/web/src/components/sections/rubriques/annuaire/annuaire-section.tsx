@@ -176,7 +176,7 @@ export function AnnuaireSection() {
       </CmmSectionGroup>
 
       <AnimatePresence>
-        {(view === "directory" || view === "map") && selectedActor ? (
+        {view === "directory" && selectedActor ? (
           <AnnuairePartnerDrawer entry={selectedActor} isOpen onClose={() => setSelectedActorId(null)} fr={fr} />
         ) : null}
       </AnimatePresence>

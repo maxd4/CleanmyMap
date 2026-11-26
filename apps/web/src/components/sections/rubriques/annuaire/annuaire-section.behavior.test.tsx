@@ -53,10 +53,10 @@ vi.mock("./annuaire-featured-section", () => ({
     ),
 }));
 vi.mock("./annuaire-exploration-view", () => ({
-  AnnuaireExplorationView: ({ logic, mode, onLocateActor, onSelectedActorIdChange }: { logic: { searchTerm: string }; mode: string; onLocateActor?: (id: string) => void; onSelectedActorIdChange: (id: string) => void }) =>
+  AnnuaireExplorationView: ({ logic, mode, onLocateActor, selectedActorId, onSelectedActorIdChange }: { logic: { searchTerm: string }; mode: string; onLocateActor?: (id: string) => void; selectedActorId?: string | null; onSelectedActorIdChange: (id: string) => void }) =>
     React.createElement(
       "div",
-      { "data-testid": `exploration-${mode}`, "data-search": logic.searchTerm },
+      { "data-testid": `exploration-${mode}`, "data-search": logic.searchTerm, "data-selected-actor": selectedActorId ?? "" },
       React.createElement("button", { type: "button", "data-locate": "", onClick: () => onLocateActor?.("target") }, "locate"),
       React.createElement("button", { type: "button", "data-select": "", onClick: () => onSelectedActorIdChange("target") }, "select"),
     ),
@@ -185,9 +185,7 @@ describe("AnnuaireSection main tabs", () => {
     act(() => container.querySelector<HTMLButtonElement>("[data-locate]")?.click());
     expect(resetFilters).toHaveBeenCalledTimes(1);
     expect(selectedTabs(container)).toEqual(["annuaire-tab-map"]);
-    expect(container.querySelector('[data-testid="drawer"]')?.textContent).toContain("target");
-
-    act(() => container.querySelector<HTMLButtonElement>("[data-close]")?.click());
+    expect(container.querySelector('[data-testid="exploration-map"]')?.getAttribute("data-selected-actor")).toBe("target");
     expect(container.querySelector('[data-testid="drawer"]')).toBeNull();
   });
 
@@ -197,7 +195,8 @@ describe("AnnuaireSection main tabs", () => {
     act(() => container.querySelector<HTMLButtonElement>("[data-select]")?.click());
     expect(container.querySelectorAll('[data-testid="drawer"]').length).toBe(1);
     act(() => tab(container, "map").click());
-    expect(container.querySelectorAll('[data-testid="drawer"]').length).toBe(1);
+    expect(container.querySelector('[data-testid="drawer"]')).toBeNull();
+    expect(container.querySelector('[data-testid="exploration-map"]')?.getAttribute("data-selected-actor")).toBe("target");
     act(() => tab(container, "organization").click());
     expect(container.querySelector('[data-testid="drawer"]')).toBeNull();
 

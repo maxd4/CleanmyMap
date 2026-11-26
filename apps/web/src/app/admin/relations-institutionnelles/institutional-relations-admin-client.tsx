@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { InstitutionalContactsListResult } from "@/lib/partners/institutional-relations/relationship-store";
 import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
+import { PublicEntityDetails } from "@/components/sections/rubriques/annuaire/public-entity-details";
 
 const API_URL = "/api/admin/partners/institutional-relations";
 
@@ -126,7 +127,7 @@ export function InstitutionalRelationsAdminClient() {
                     {publicProjection ? (
                       <div>
                         <div className="font-medium">{publicProjection.identity.name}</div>
-                        <div>Limites publiques : {publicProjection.limits.length}</div>
+                        <details className="mt-2"><summary className="cursor-pointer">Consulter la fiche publique complète</summary><PublicEntityDetails projection={publicProjection} fr/></details>
                       </div>
                     ) : (
                       <span className="text-slate-400">Prospect privé uniquement</span>

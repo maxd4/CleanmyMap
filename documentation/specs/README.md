@@ -47,10 +47,10 @@ Le statut initial PENDING signifie **non réceptionné dans ce programme**, pas 
 | `annuaire-ui/08-carte-perspective-3d.patch` | 04 ANN-1 | ADAPTED | Lot 04 ANN-1 ; `maplibre-gl@6.19.0`, CSP, `setWorkerUrl` + `h-full w-full` pour rendu 3D réel, E2E 4/4 PASS |
 | `annuaire-ui/09-convergence-fiches-navigation.patch` | 04 ANN-1 | ADAPTED | Lot 04 ANN-1 ; fusion `public-entity-projection.ts`, Vitest `annuaire`+`partners` 43/43 (247 tests PASS) |
 | `annuaire-ui/10-contrats-et-e2e.patch` | 04 ANN-1 | ADAPTED | Lot 04 ANN-1 ; contrats `CURRENT`, `dismissCookies` E2E fiable, `typecheck`, `lint`, `build`, `check:doc-governance` PASS |
-| `annuaire-ui/11-projection-publique-complete.patch` | 05 ANN-2 | PENDING | à établir |
-| `annuaire-ui/12-fiche-publique-commune.patch` | 05 ANN-2 | PENDING | à établir |
-| `annuaire-ui/13-interactions-graphiques.patch` | 05 ANN-2 | PENDING | à établir |
-| `annuaire-ui/14-filieres-et-couverture.patch` | 05 ANN-2 | PENDING | à établir |
+| `annuaire-ui/11-projection-publique-complete.patch` | 05 ANN-2 | ADAPTED | Lot 05 ANN-2 ; fusion `public-entity-projection.ts` + `public-entity-completeness.test.ts` (4/4 PASS) |
+| `annuaire-ui/12-fiche-publique-commune.patch` | 05 ANN-2 | VALIDATED | Lot 05 ANN-2 ; `PublicEntityDetails`, `PublicDirectoryDetails`, `PublicEntityEvidence`, parité 3 vues |
+| `annuaire-ui/13-interactions-graphiques.patch` | 05 ANN-2 | ADAPTED | Lot 05 ANN-2 ; ancêtres/descendants, sélection liens, `separateNetworkBadges`, fiche non modale, fusion `org-chart`+`3d-canvas` |
+| `annuaire-ui/14-filieres-et-couverture.patch` | 05 ANN-2 | VALIDATED | Lot 05 ANN-2 ; `PublicWasteChain`, réutilisation admin sans altérer le CRM, `public-entity-details.test.tsx` PASS |
 | `annuaire-ui/15-catalogue-canonique.patch` | 06 ANN-3 | PENDING | à établir |
 | `annuaire-ui/16-annuaire-compact.patch` | 06 ANN-3 | PENDING | à établir |
 | `annuaire-ui/17-annuaire-validations.patch` | 06 ANN-3 | PENDING | à établir |
@@ -88,7 +88,7 @@ L'arbre de référence contient 18 dossiers et 224 fichiers en incluant ce READM
 | Dossier propriétaire | Patches | Autres fichiers (base) | Lot / statut |
 |---|---:|---:|---|
 | [accueil-pilotage-completion](./accueil-pilotage-completion/README_CODEX.md) | 4 | 18 | 12 ACC : PENDING |
-| [annuaire-ui](./annuaire-ui/README_CODEX.md) | 12 | 2 | 04 ANN-1 VALIDATED/ADAPTED (06–10) ; 05 ANN-2 / 06 ANN-3 : PENDING (11–17) |
+| [annuaire-ui](./annuaire-ui/README_CODEX.md) | 12 | 2 | 04 ANN-1 + 05 ANN-2 intégrés (06–14) ; 06 ANN-3 : PENDING (15–17) |
 | [bonnes-pratiques-ui](./bonnes-pratiques-ui/README_CODEX.md) | 1 | 2 | 17 LEARN-3 : suivi des patches |
 | [cartographie-ui](./cartographie-ui/README_CODEX.md) | 0 | 20 | 13 MAP : PENDING |
 | [dashboard-ui](./dashboard-ui/README_CODEX.md) | 4 | 15 | 11 DASH : PENDING |
@@ -109,7 +109,8 @@ L'arbre de référence contient 18 dossiers et 224 fichiers en incluant ce READM
 
 - SEC : CLOSED — faux positifs `Hash digest` résolus avec régressions dédiées (`f3f567b`) après durcissement de l'allowlist (`7546e0c`, `55b1c0f`) ; `secret-audit.test.mjs` 29/29 PASS et `secret-audit.mjs` 0 finding / 7144 fichiers.
 - DS-BASE : socle I1 (`0ba42a9`) et adoption I2 (`e8f5b93`) vérifiés sans régression globale (Vitest I1 7/7 = 50 tests, Vitest I2 8/8 = 60 tests, `check:surfaces` PASS, `generate-design-system-board.test.mjs` 11/11 PASS, `typecheck -w apps/web` PASS). Les 4 contrats de `03-contrats-canoniques.patch` sont déjà alignés dans `documentation/design-system/`. Reste à traiter : convergence des pages candidates dans leurs lots respectifs, puis réception finale I3 réservée à `23 DS-FINAL` (navigateur 390/768/1280/1440/1920, thème sombre, FR/EN, 3 modes, focus, contrastes réels, régénération finale du board et retrait des patches consommés).
-- ANN-1 : patches `06` à `10` intégrés (`06`/`07` `VALIDATED`, `08`/`09`/`10` `ADAPTED` avec `setWorkerUrl` MapLibre v6, `h-full w-full` sur le canvas 3D, fusion `public-entity-projection.ts` et `dismissCookies` E2E). Preuves : Vitest `annuaire`+`partners` 43/43 (247 tests PASS), `security/` 5/5 (24 tests PASS), `typecheck`, `lint` (0 warning), `build`, `check:surfaces`, `check:doc-governance`, Playwright `annuaire-public-cleanliness.spec.ts` 4/4 PASS, captures 1440/390 sous `artifacts/playwright/annuaire-06-10/`. Les patches `11` à `17` restent ouverts pour `05 ANN-2` et `06 ANN-3`.
+- ANN-1 : patches `06` à `10` intégrés (`b5c9610f0` ; `06`/`07` `VALIDATED`, `08`/`09`/`10` `ADAPTED` avec `setWorkerUrl` MapLibre v6, `h-full w-full` sur le canvas 3D, fusion `public-entity-projection.ts` et `dismissCookies` E2E). Preuves : Vitest `annuaire`+`partners` 43/43 (247 tests PASS), `security/` 5/5 (24 tests PASS), `typecheck`, `lint` (0 warning), `build`, `check:surfaces`, `check:doc-governance`, Playwright `annuaire-public-cleanliness.spec.ts` 4/4 PASS, captures 1440/390 sous `artifacts/playwright/annuaire-06-10/`.
+- ANN-2 : patches `11` à `14` intégrés (`12`/`14` `VALIDATED`, `11`/`13` `ADAPTED` avec fusion `public-entity-projection.ts`, `public-cleanliness-org-chart.tsx` et `annuaire-map-3d-canvas.tsx`, complexité `<= 55`). Preuves : Vitest `annuaire`+`partners` 46/46 (259 tests PASS), `eslint` ciblé (0 warning), `check:surfaces` PASS ; les patches `15` à `17` restent ouverts pour `06 ANN-3`, et les compléments externes (GeoJSON officiel des arrondissements, logos tiers) restent explicitement ouverts.
 - SYNC-A : Lot A durci (moteur `external-sync`, migrations `20261126000006`–`20261126000010`, modération associative transactionnelle via `submit_external_action_sync_review`, mises à jour atomiques via `update_external_action_sync_pre_action`, base de fusion strictement `applied_snapshot`, publication canonique mutualisée, mandats/consentement vérifiés à l'écriture, cron `external-action-sync`, route admin `/api/admin/external-sync` et baseline Vercel) avec connecteurs réels désactivés ; plan propriétaire `synchronisation-actions-externes.md`. Preuve SQL/E2E éphémère CI et application Supabase `20261126000010` en attente (`DB_SEMANTICS_NOT_EXECUTED` localement). Lots B/C conditionnés à autorisation réelle.
 - REPORTS-HUB : PENDING ; les quatre onglets et deux sections de fichiers constituent la décision retenue du programme, pas un état CURRENT.
 - Empreinte IA : consulter les [arbitrages](./empreinte-ia/SPECIFICATIONS_PLAN/24_ARBITRAGES_PREUVES_ET_PRIORITES.md) et les passations, préserver les preuves et conditions.

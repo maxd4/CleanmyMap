@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { PublicCleanlinessOrganizationNode, PublicCleanlinessOrganizationRelation } from "@/lib/partners/public-cleanliness-organization";
+import { countInstitutionalDescendants, getInstitutionalAncestors } from "./annuaire-graph-interactions";
 import { getOrgChartFitScale, layoutPublicCleanlinessForest, ORG_NODE_HEIGHT, ORG_NODE_WIDTH } from "./public-cleanliness-org-chart.model";
 
 export interface PublicCleanlinessOrgChartProps {
@@ -34,6 +35,8 @@ export interface PublicCleanlinessOrgChartProps {
   onToggleCollapse: (nodeId: string, nextCollapsed: boolean) => void;
   onResetView: () => void;
   onZoomChange: (zoom: number) => void;
+  highlightedIds?: ReadonlySet<string>;
+  onSelectRelation?: (id: string) => void;
 }
 
 
@@ -45,7 +48,7 @@ export function PublicCleanlinessOrgChart({
   fr = true, administrativeRoots, childrenById, nodeById, relations, includedIds,
   selectedId, collapsed, isSearching, zoom, treeLabel, expandLabel, collapseLabel,
   fitLabel, legendLabels, displayName, kindLabel, statusLabel, statusStyle, onSelect,
-  onToggleCollapse, onResetView, onZoomChange,
+  onToggleCollapse, onResetView, onZoomChange, highlightedIds, onSelectRelation,
 }: PublicCleanlinessOrgChartProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -56,6 +59,8 @@ export function PublicCleanlinessOrgChart({
   const [relationMode, setRelationMode] = useState<"selected" | "all" | "hierarchy">("selected");
   const [fullscreen, setFullscreen] = useState(false); const [fullscreenSupported, setFullscreenSupported] = useState(false);
   const layout = layoutPublicCleanlinessForest(administrativeRoots, childrenById, includedIds, collapsed, isSearching);
+  const ancestors = getInstitutionalAncestors(selectedId, relations);
+  const peers = new Set(relations.filter(edge => edge.kind !== "hierarchy" && (edge.from === selectedId || edge.to === selectedId)).flatMap(edge => [edge.from, edge.to]));
   const fitScale = getOrgChartFitScale(viewport.width, viewport.height, layout.width, layout.height);
   const scale = fitScale * zoom;
   const offset = {
@@ -101,13 +106,13 @@ export function PublicCleanlinessOrgChart({
     const children = (childrenById.get(node.id) ?? []).filter(id => includedIds.has(id)).map(id => nodeById.get(id)).filter((item): item is PublicCleanlinessOrganizationNode => Boolean(item));
     const isCollapsed = !isSearching && (collapsed[node.id] ?? false);
     return <li key={node.id} className="contents">
-      <div data-org-node-id={node.id} className={cn("absolute flex flex-col overflow-hidden rounded-xl border p-2.5 bg-[var(--cmm-surface-background)]", selectedId === node.id ? "border-violet-500 ring-2 ring-violet-500/40" : "border-[var(--cmm-surface-border)]")} style={{ left: position.x, top: position.y, width: ORG_NODE_WIDTH, height: ORG_NODE_HEIGHT }}>
+      <div data-org-node-id={node.id} className={cn("absolute flex flex-col overflow-hidden rounded-xl border p-2.5 bg-[var(--cmm-surface-background)]", selectedId === node.id ? "border-violet-500 ring-2 ring-violet-500/40" : highlightedIds?.has(node.id) ? "border-sky-500 ring-2 ring-sky-500/30" : ancestors.has(node.id) ? "border-violet-400" : peers.has(node.id) ? "border-teal-500" : "border-[var(--cmm-surface-border)]")} style={{ left: position.x, top: position.y, width: ORG_NODE_WIDTH, height: ORG_NODE_HEIGHT }}>
         <button type="button" aria-current={selectedId === node.id ? "true" : undefined} data-assignment={node.assignment} title={displayName(node)} onClick={() => onSelect(node.id)} className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500">
           <span className="block truncate text-xs font-semibold cmm-text-secondary">{kindLabel(node.kind)}</span>
           <span className="line-clamp-2 text-sm font-bold leading-tight cmm-text-primary">{displayName(node)}</span>
           <span className={cn("mt-1 inline-block rounded-full border px-1.5 text-xs font-semibold", statusStyle[node.assignment])}>{statusLabel(node.assignment)}</span>
         </button>
-        {children.length > 0 && !isSearching ? <button type="button" aria-label={(isCollapsed ? expandLabel : collapseLabel) + " " + displayName(node)} aria-expanded={!isCollapsed} aria-controls={"org-children-" + node.id} onClick={() => onToggleCollapse(node.id, !isCollapsed)} className="absolute bottom-2 right-2 rounded border bg-[var(--cmm-surface-background)] px-1.5 text-xs cmm-text-primary">{isCollapsed ? "+ (" + children.length + ")" : "−"}</button> : null}
+        {children.length > 0 && !isSearching ? <button type="button" aria-label={(isCollapsed ? expandLabel : collapseLabel) + " " + displayName(node)} aria-expanded={!isCollapsed} aria-controls={"org-children-" + node.id} onClick={() => onToggleCollapse(node.id, !isCollapsed)} className="absolute bottom-2 right-2 rounded border bg-[var(--cmm-surface-background)] px-1.5 text-xs cmm-text-primary">{isCollapsed ? "+ (" + countInstitutionalDescendants(node.id, childrenById, includedIds) + ")" : "−"}</button> : null}
       </div>
       {children.length > 0 && !isCollapsed ? <ul id={"org-children-" + node.id} className="contents">{children.map(renderBranch)}</ul> : null}
     </li>;
@@ -132,7 +137,7 @@ export function PublicCleanlinessOrgChart({
       const delta = ({ ArrowLeft: [40, 0], ArrowRight: [-40, 0], ArrowUp: [0, 40], ArrowDown: [0, -40] } as Record<string, number[]>)[event.key];
       if (delta) { event.preventDefault(); setPan(current => ({ x: current.x + delta[0], y: current.y + delta[1] })); }
     }} onPointerDown={event => {
-      if (event.button !== 0 || (event.target as Element).closest("button,select")) return;
+      if (event.button !== 0 || (event.target as Element).closest("button,select,[data-relation-id]")) return;
       dragRef.current = { x: event.clientX - pan.x, y: event.clientY - pan.y, id: event.pointerId };
       event.currentTarget.setPointerCapture(event.pointerId);
       setDragging(true);
@@ -149,7 +154,7 @@ export function PublicCleanlinessOrgChart({
             const mid = (y1 + y2) / 2;
             const hierarchy = edge.kind === "hierarchy";
             const d = hierarchy ? "M "+x1+" "+y1+" V "+mid+" H "+x2+" V "+y2 : "M "+x1+" "+(from.y+ORG_NODE_HEIGHT/2)+" Q "+(Math.min(x1,x2)-35)+" "+(mid-40)+" "+x2+" "+(to.y+ORG_NODE_HEIGHT/2);
-            return <path key={edge.id} data-connector-status={edge.status} data-relation-kind={edge.kind} d={d} fill="none" stroke={hierarchy ? STATUS_COLOR[edge.status] : RELATION_COLORS[edge.kind]} strokeDasharray={hierarchy ? STATUS_DASH[edge.status] : "7 5"} strokeWidth={hierarchy ? 2 : 1.5} vectorEffect="non-scaling-stroke" opacity={hierarchy ? 0.9 : 0.7} />;
+            return <path key={edge.id} data-relation-id={edge.id} onClick={onSelectRelation ? () => onSelectRelation(edge.id) : undefined} style={{ pointerEvents: onSelectRelation ? "stroke" : "none", cursor: onSelectRelation ? "pointer" : "default" }} data-connector-status={edge.status} data-relation-kind={edge.kind} d={d} fill="none" stroke={hierarchy ? STATUS_COLOR[edge.status] : RELATION_COLORS[edge.kind]} strokeDasharray={hierarchy ? STATUS_DASH[edge.status] : "7 5"} strokeWidth={hierarchy ? 2 : 1.5} vectorEffect="non-scaling-stroke" opacity={hierarchy ? 0.9 : 0.7} />;
           })}
         </svg>
         <ul aria-label={treeLabel} className="contents">{administrativeRoots.map(renderBranch)}</ul>

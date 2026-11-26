@@ -26,8 +26,33 @@ import {
   type PublicStructureSource,
 } from "./public-structure-context";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
+import type { AnnuaireEntry, PublishedAnnuaireEntry } from "./annuaire-types";
+import { getPublicInstitutionalPeople } from "./public-cleanliness-people";
+import { getScheduledOperationsForActor } from "./paris-cleanwalk-network.scheduled";
+import { getPublicCleanlinessContact } from "./public-cleanliness-organization";
 
-type AnnuaireEntry = (typeof INITIAL_ANNUAIRE_ENTRIES)[number];
+/** Explicit public fields only. Never spread a database/administrative record. */
+function publicDirectoryEntry(entry: AnnuaireEntry | null): AnnuaireEntry | null {
+  if (!entry) return null;
+  const common = {
+    id: entry.id, name: entry.name, legalIdentity: entry.legalIdentity, kind: entry.kind,
+    types: entry.types, engagementTypesSource: entry.engagementTypesSource,
+    scope: entry.scope, description: entry.description, location: entry.location,
+    lat: entry.lat, lng: entry.lng, coordinatesSource: entry.coordinatesSource,
+    websiteUrl: entry.websiteUrl, instagramUrl: entry.instagramUrl, facebookUrl: entry.facebookUrl,
+    coveredArrondissements: entry.coveredArrondissements, contributionTypes: entry.contributionTypes,
+    primaryChannel: entry.primaryChannel ? { platform: entry.primaryChannel.platform, label: entry.primaryChannel.label, url: entry.primaryChannel.url } : undefined,
+    isFeatured: entry.isFeatured, featuredReason: entry.featuredReason, tags: entry.tags,
+  };
+  if (entry.provenance === "editorial_seed") {
+    return { ...common, provenance: entry.provenance, verificationStatus: entry.verificationStatus,
+      qualificationStatus: entry.qualificationStatus, publicAddress: entry.publicAddress,
+      schoolProfile: entry.schoolProfile, associationProfile: entry.associationProfile };
+  }
+  return { ...common, provenance: entry.provenance, verificationStatus: entry.verificationStatus,
+    qualificationStatus: entry.qualificationStatus, availability: entry.availability,
+    lastUpdatedAt: entry.lastUpdatedAt, associationProfile: entry.associationProfile };
+}
 
 export type CanonicalPublicEntityRef = {
   annuaireEntryId?: string | null;
@@ -44,6 +69,10 @@ export type CanonicalPublicEntityProjection = {
   };
   /** Existing public owners, not copies of their data. */
   publicActor: ParisCleanwalkActor | null;
+  directoryEntry: AnnuaireEntry | null;
+  institutionalPeople: ReturnType<typeof getPublicInstitutionalPeople>;
+  institutionalContact: ReturnType<typeof getPublicCleanlinessContact>;
+  scheduledOperations: ReturnType<typeof getScheduledOperationsForActor>;
   institution: PublicCleanlinessOrganizationNode | null;
   structureContext: PublicStructureContext | null;
   territories: readonly string[];
@@ -131,13 +160,64 @@ function resolveInstitutionNodeById(
   return PARIS_PUBLIC_CLEANLINESS_DATASET.nodes.find((n) => n.id === institutionId) ?? null;
 }
 
+function collectInstitutionData(
+  resolvedInstitutionNode: PublicCleanlinessOrganizationNode | null,
+  institutionRelations: readonly PublicCleanlinessOrganizationRelation[],
+) {
+  const institutionalPeople = resolvedInstitutionNode
+    ? getPublicInstitutionalPeople(PARIS_PUBLIC_CLEANLINESS_DATASET, resolvedInstitutionNode.id)
+    : [];
+  const institutionalContact = resolvedInstitutionNode
+    ? getPublicCleanlinessContact(resolvedInstitutionNode, PUBLIC_CLEANLINESS_SOURCES)
+    : null;
+  const institutionSourceIds = new Set([
+    ...(resolvedInstitutionNode?.sourceIds ?? []),
+    ...(institutionalContact?.sourceIds ?? []),
+    ...institutionRelations.flatMap((edge) => edge.sourceIds),
+    ...institutionalPeople.flatMap(({ person, assignments }) => [
+      ...person.sourceIds,
+      ...assignments.flatMap(({ role, relation }) => [...role.sourceIds, ...relation.sourceIds]),
+    ]),
+  ]);
+  const institutionSources = PUBLIC_CLEANLINESS_SOURCES.filter((source) =>
+    institutionSourceIds.has(source.id),
+  );
+  return { institutionalPeople, institutionalContact, institutionSources };
+}
+
+function buildTerritoriesAndReferents(
+  networkActor: ParisCleanwalkActor | null,
+  resolvedInstitutionNode: PublicCleanlinessOrganizationNode | null,
+  institutionalPeople: ReturnType<typeof getPublicInstitutionalPeople>,
+) {
+  const territories = Array.from(
+    new Set([
+      ...(networkActor ? [networkActor.parisZone.label] : []),
+      ...(resolvedInstitutionNode?.territoryIds ?? []),
+    ]),
+  );
+  const publicReferents = [
+    ...new Set([
+      ...(networkActor?.publicLeader ? [networkActor.publicLeader.name] : []),
+      ...institutionalPeople
+        .filter((item) => item.assignments.some((assignment) => assignment.status === "confirmed"))
+        .map((item) => item.person.name),
+    ]),
+  ];
+  return { territories, publicReferents };
+}
+
 /**
  * Canonical public projection for an entity across Annuaire, 3D network, and 2D org.
  * Uses explicit canonical IDs only; never matches by name and never exposes private facts.
  */
 export function projectPublicEntity(
   ref: CanonicalPublicEntityRef,
+  publishedEntry?: PublishedAnnuaireEntry,
 ): CanonicalPublicEntityProjection | null {
+  // The caller must supply the already authorized public-directory projection,
+  // never a pending onboarding record or a private institutional contact.
+  if (publishedEntry && (publishedEntry.provenance !== "published_partner" || publishedEntry.id !== ref.annuaireEntryId)) return null;
   const institutionNode = resolveInstitutionNodeById(ref.institutionId);
   if (ref.institutionId && !institutionNode) return null;
 
@@ -164,7 +244,9 @@ export function projectPublicEntity(
     networkActor?.annuaireEntryId ??
     institutionNode?.directoryId ??
     null;
-  const annuaireEntry = resolveExplicitAnnuaireEntry(resolvedAnnuaireId);
+  const editorialEntry = resolveExplicitAnnuaireEntry(resolvedAnnuaireId);
+  if (publishedEntry && editorialEntry) return null;
+  const annuaireEntry = publicDirectoryEntry(editorialEntry ?? publishedEntry ?? null);
   if (ref.annuaireEntryId && !annuaireEntry) return null;
 
   const resolvedInstitutionId =
@@ -192,18 +274,14 @@ export function projectPublicEntity(
       )
     : [];
 
-  const institutionSources = resolvedInstitutionNode
-    ? PUBLIC_CLEANLINESS_SOURCES.filter((src) => resolvedInstitutionNode.sourceIds.includes(src.id))
-    : [];
+  const { institutionalPeople, institutionalContact, institutionSources } =
+    collectInstitutionData(resolvedInstitutionNode, institutionRelations);
 
-  const territories = Array.from(
-    new Set([
-      ...(networkActor ? [networkActor.parisZone.label] : []),
-      ...(resolvedInstitutionNode?.territoryIds ?? []),
-    ]),
+  const { territories, publicReferents } = buildTerritoriesAndReferents(
+    networkActor,
+    resolvedInstitutionNode,
+    institutionalPeople,
   );
-
-  const publicReferents = networkActor?.publicLeader ? [networkActor.publicLeader.name] : [];
   const name = annuaireEntry?.name ?? networkActor?.name ?? resolvedInstitutionNode?.name ?? "";
 
   return {
@@ -214,6 +292,10 @@ export function projectPublicEntity(
       name,
     },
     publicActor: networkActor,
+    directoryEntry: annuaireEntry,
+    institutionalPeople,
+    institutionalContact,
+    scheduledOperations: networkActor ? getScheduledOperationsForActor(networkActor.id) : [],
     institution: resolvedInstitutionNode,
     structureContext: context,
     territories,

@@ -4,12 +4,13 @@ import { useImperativeHandle, useMemo, useRef, useState, type ReactNode, type Re
 import { PublicCleanlinessCoverageTable } from "./public-cleanliness-coverage-table";
 import { PublicCleanlinessNeedPanel } from "./public-cleanliness-need-panel";
 import { PublicCleanlinessOrgChart } from "./public-cleanliness-org-chart";
-import { getPublicInstitutionalContributions } from "@/lib/partners/public-cleanliness-needs";
+import { getPublicCleanlinessNeedRoute, type PublicCleanlinessNeed, getPublicInstitutionalContributions } from "@/lib/partners/public-cleanliness-needs";
 import { getPublicInstitutionalPeople } from "@/lib/partners/public-cleanliness-people";
 import { getInstitutionStructureContext } from "@/lib/partners/public-structure-context";
 import { projectPublicEntity } from "@/lib/partners/public-entity-projection";
 import { PARIS_CLEANWALK_ACTORS } from "@/lib/partners/paris-cleanwalk-network";
 import { PublicStructureContextPanel } from "./public-structure-context-panel";
+import { PublicEntityDetails } from "./public-entity-details";
 import { getArrondissementCityOptions, getArrondissementMunicipalLabel, type ArrondissementCity } from "@/lib/geo/paris-arrondissements";
 import { CmmSectionGroup } from "@/components/ui/cmm-section";
 import { cn } from "@/lib/utils";
@@ -134,8 +135,13 @@ export function PublicCleanlinessOrganization({
   const [viewMode, setViewMode] = useState<"chart" | "list">("chart");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [zoom, setZoom] = useState(1);
+  const [need, setNeed] = useState<PublicCleanlinessNeed>("organize");
+  const [highlightNeed, setHighlightNeed] = useState(false);
+  const [selectedRelationId, setSelectedRelationId] = useState<string|null>(null);
   const detailsRef = useRef<HTMLElement>(null);
   const dataset = getPublicCleanlinessCityDataset(filters.city, datasets);
+  const needRoute = dataset && filters.arrondissement!==null ? getPublicCleanlinessNeedRoute(dataset,`${dataset.city}:${filters.arrondissement}`,need) : null;
+  const highlightedIds = highlightNeed && needRoute ? new Set(needRoute.targets.map(target=>target.id)) : undefined;
   const visibleNodes = useMemo(() => filterPublicCleanlinessNodes(filters, datasets), [filters, datasets]);
   const visibleIds = useMemo(() => new Set(visibleNodes.map((node) => node.id)), [visibleNodes]);
   const nodes = dataset?.nodes ?? EMPTY_NODES;
@@ -169,6 +175,7 @@ export function PublicCleanlinessOrganization({
   const standaloneRootIds = new Set(standaloneRoots.map(node => node.id));
   const administrativeRoots = roots.filter(node => !standaloneRootIds.has(node.id));
   const selected = (includedIds.has(selectedId) ? nodeById.get(selectedId) : undefined) ?? visibleNodes[0] ?? null;
+  const canonicalDetails = selected && dataset === PARIS_PUBLIC_CLEANLINESS_DATASET ? projectPublicEntity({ institutionId: selected.id }) : null;
   const selectedRelations = selected ? relations.filter((edge) => edge.from === selected.id || edge.to === selected.id) : [];
   const institutionalPeople = selected && dataset ? getPublicInstitutionalPeople(dataset, selected.id) : [];
   const documentedContributions = selected && dataset ? getPublicInstitutionalContributions(dataset, selected.id) : [];
@@ -296,7 +303,7 @@ export function PublicCleanlinessOrganization({
 
       </div>
 
-      {dataset?.city === "Paris" ? <PublicCleanlinessNeedPanel dataset={dataset} district={filters.arrondissement} fr={fr} onSelect={nodeId => {
+      {dataset?.city === "Paris" ? <PublicCleanlinessNeedPanel dataset={dataset} district={filters.arrondissement} fr={fr} selectedNeed={need} onNeedChange={setNeed} onSelect={nodeId => {
         selectRelatedNode(nodeId);
         detailsRef.current?.focus();
       }} /> : null}
@@ -310,6 +317,7 @@ export function PublicCleanlinessOrganization({
           <div className="overflow-hidden rounded-2xl border border-[var(--cmm-surface-border)] p-3 md:p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h3 className="text-sm font-black cmm-text-primary">{text.tree}</h3>
+              {needRoute ? <button type="button" aria-pressed={highlightNeed} className="rounded-lg border px-2 py-1 text-xs cmm-text-primary" onClick={()=>setHighlightNeed(v=>!v)}>{fr?"Mettre en évidence les interlocuteurs du besoin":"Highlight contacts for this need"}</button>:null}
               <div className="flex flex-wrap items-center gap-2">
                 <div role="group" aria-label={fr ? "Mode d'affichage de l'organigramme" : "Organization chart view mode"} className="flex items-center gap-1 rounded-xl border border-[var(--cmm-surface-border)] bg-[var(--cmm-surface-background-muted)] p-1">
                   <button type="button" aria-pressed={viewMode === "chart"} onClick={() => { setViewMode("chart"); setZoom(1); }} className={cn("rounded-lg px-3 py-1.5 text-xs font-semibold", viewMode === "chart" ? "bg-violet-500/20 cmm-text-primary" : "cmm-text-secondary")}>
@@ -358,6 +366,8 @@ export function PublicCleanlinessOrganization({
                     onToggleCollapse={(nodeId, next) => setCollapsed((current) => ({ ...current, [nodeId]: next }))}
                     onResetView={() => setZoom(1)}
                     onZoomChange={setZoom}
+                    highlightedIds={highlightedIds}
+                    onSelectRelation={id => { const edge=relations.find(item=>item.id===id); if (!edge) return; selectRelatedNode(edge.from); setSelectedRelationId(id); }}
                   />
                 ) : (
                   <div className="max-h-[38rem] overflow-auto">
@@ -388,6 +398,7 @@ export function PublicCleanlinessOrganization({
             <h3 className="mt-2 text-xl font-black cmm-text-primary">{displayName(selected)}</h3>
             <p className="mt-3 text-sm leading-6 cmm-text-primary">{displayDescription(selected)}</p>
             {linkedActorId && onOpenNetworkActor ? <button type="button" onClick={() => onOpenNetworkActor(linkedActorId)} className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-left text-sm font-semibold cmm-text-primary hover:bg-violet-500/20 focus-visible:ring-2 focus-visible:ring-violet-400">{fr ? "Voir dans le réseau des acteurs" : "View in the actor network"}</button> : null}
+            {canonicalDetails ? <PublicEntityDetails projection={canonicalDetails} fr={fr} selectedRelationId={selectedRelationId} onOpen={ref => { if (ref.institutionId) selectRelatedNode(ref.institutionId); else if (ref.networkActorId) onOpenNetworkActor?.(ref.networkActorId); }} /> : <>
             <p data-assignment={selected.assignment} className={cn("mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold", STATUS_STYLE[selected.assignment])}>{text.status}: {statusLabel(selected.assignment)}</p>
             {selected.territoryIds.length ? <p className="mt-2 text-xs cmm-text-secondary">{text.territory}: {selected.territoryIds.map((id) => id.replace(`${filters.city}:`, `${filters.city} `)).join(", ")}</p> : <p className="mt-2 text-xs cmm-text-secondary">{text.assignmentUnknown}</p>}
             {selected.legalEmployerId ? <p className="mt-2 text-xs cmm-text-secondary">{text.legalEmployer}: {nodeById.has(selected.legalEmployerId) ? displayName(nodeById.get(selected.legalEmployerId)!) : selected.legalEmployerId}</p> : null}
@@ -410,6 +421,7 @@ export function PublicCleanlinessOrganization({
             </li>)}</ul></section> : null}
             {dataset ? <PublicStructureContextPanel key={selected.id} context={dataset === PARIS_PUBLIC_CLEANLINESS_DATASET ? projectPublicEntity({ institutionId: selected.id })?.structureContext ?? null : getInstitutionStructureContext(dataset, selected, PARIS_CLEANWALK_ACTORS)} fr={fr} /> : null}
             <div className="mt-4"><h4 className="text-xs font-black uppercase tracking-wider cmm-text-primary">{text.sources}</h4><ul className="mt-2 space-y-2">{selected.sourceIds.map((id) => sources.find((item) => item.id === id)).filter((item): item is (typeof sources)[number] => Boolean(item)).map((item) => <li key={item.id}><a href={item.url} target="_blank" rel="noreferrer" className="text-xs font-semibold cmm-text-info underline underline-offset-2">{item.label}</a><p className="mt-0.5 text-xs cmm-text-secondary">{item.sourceContentDate ? `${text.sourceUpdated} ${item.sourceContentDate} · ` : ""}{text.verified} {item.verifiedAt} · {text.proof}: {text.evidenceLabels[item.evidence]}</p></li>)}</ul></div>
+            </>}
           </> : <p role="status" className="text-sm cmm-text-primary">{text.noResults}</p>}
         </aside>
       </div>}

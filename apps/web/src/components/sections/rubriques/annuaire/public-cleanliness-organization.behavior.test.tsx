@@ -87,8 +87,8 @@ describe("PublicCleanlinessOrganization behavior", () => {
   it("progresses through levels, navigates related structures, and exposes relation sources", () => {
     const view = mount();
     expect(view.querySelector('[aria-label="Navigation par niveau"]')).not.toBeNull();
-    expect(view.textContent).toContain("Sources de cette relation");
-    const reqLink = [...view.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.includes("Explorer: Référents et référentes de l'entretien du quartier"));
+    expect(view.textContent).toContain("Sources et preuve");
+    const reqLink = [...view.querySelectorAll<HTMLButtonElement>("aside button")].find((button) => button.textContent?.includes("Référents et référentes de l'entretien du quartier"));
     expect(reqLink).toBeDefined();
     act(() => reqLink?.click());
     expect(view.querySelector("aside h3")?.textContent).toContain("Référents et référentes de l'entretien du quartier");
@@ -126,7 +126,7 @@ describe("PublicCleanlinessOrganization behavior", () => {
     const ekon = [...table.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent === "Carine Ekon")!;
     act(() => ekon.click());
     expect(view.querySelector("aside h3")?.textContent).toBe("Carine Ekon");
-    expect(view.querySelector("aside")?.textContent).toContain("Mandat politique");
+    expect(view.querySelector("aside")?.textContent).toContain("Mandat · Documenté");
     expect(view.querySelector("aside")?.textContent).toContain("Vice-présidence de la 8e commission");
     expect(view.querySelector("aside")?.textContent).toContain("Conseil de Paris");
     expect(document.activeElement).toBe(view.querySelector("aside"));
