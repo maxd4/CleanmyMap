@@ -314,18 +314,23 @@ export function resolveCandidateSha({
 }
 
 export function listActiveCandidateE2eFiles(candidateSha) {
-  if (!candidateSha) return [];
+  if (!candidateSha || typeof candidateSha !== "string" || !candidateSha.trim()) {
+    throw new Error("Cannot list active E2E files: candidateSha is required.");
+  }
   try {
-    const out = execFileSync(gitExecutable(), ["ls-tree", "-r", "--name-only", "-z", candidateSha, "--", "e2e"], {
-      encoding: "utf8",
-    });
+    const out = execFileSync(
+      gitExecutable(),
+      ["ls-tree", "-r", "--name-only", "-z", candidateSha.trim(), "--", "e2e"],
+      { encoding: "utf8" },
+    );
     return out
       .split("\0")
       .map(normalizePath)
       .filter((file) => /^e2e\/.*\.(?:spec|test)\.ts$/.test(file))
       .sort();
-  } catch {
-    return [];
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to list active E2E files for ${candidateSha}: ${detail}`);
   }
 }
 

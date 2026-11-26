@@ -353,6 +353,14 @@ test("root package.json and scripts/dev/ trigger shared E2E infra and contribute
   assert.match(headDigest, /^[0-9a-f]{64}$/);
   const activeSpecs = listActiveCandidateE2eFiles("HEAD");
   assert.ok(activeSpecs.includes("e2e/homepage-reveal.spec.ts"));
+  assert.throws(
+    () => listActiveCandidateE2eFiles(""),
+    /candidateSha is required/,
+  );
+  assert.throws(
+    () => listActiveCandidateE2eFiles("0000000000000000000000000000000000000000"),
+    /Failed to list active E2E files/,
+  );
 });
 
 test("FULL and uncertain plans detect active unmapped E2E specs including subdirs while ignoring deleted specs", async () => {
@@ -391,14 +399,45 @@ test("FULL and uncertain plans detect active unmapped E2E specs including subdir
       JSON.stringify({
         suites: [
           {
-            suites: [{ specs: [{ file: "e2e/nested/new-uncatalogued.spec.ts" }] }],
+            suites: [
+              {
+                specs: [
+                  {
+                    file: "e2e/nested/new-uncatalogued.spec.ts",
+                    tests: [{ results: [{ status: "passed" }] }],
+                  },
+                  {
+                    file: "e2e/skipped-only.spec.ts",
+                    tests: [{ results: [{ status: "skipped" }] }],
+                  },
+                  {
+                    file: "e2e/empty-results.spec.ts",
+                    tests: [{ results: [] }],
+                  },
+                  {
+                    file: "e2e/no-tests.spec.ts",
+                  },
+                ],
+              },
+            ],
           },
         ],
       }),
     );
     const collected = collectExecutedSpecFilesFromReport(JSON.parse(fs.readFileSync(reportPath, "utf8")));
     assert.ok(collected.has("e2e/nested/new-uncatalogued.spec.ts"));
+    assert.ok(!collected.has("e2e/skipped-only.spec.ts"));
+    assert.ok(!collected.has("e2e/empty-results.spec.ts"));
+    assert.ok(!collected.has("e2e/no-tests.spec.ts"));
     await assertUnmappedSpecsExecutedInReport("e2e/nested/new-uncatalogued.spec.ts", reportPath);
+    await assert.rejects(
+      () => assertUnmappedSpecsExecutedInReport("e2e/skipped-only.spec.ts", reportPath),
+      /not executed in Playwright results\.json/,
+    );
+    await assert.rejects(
+      () => assertUnmappedSpecsExecutedInReport("e2e/empty-results.spec.ts", reportPath),
+      /not executed in Playwright results\.json/,
+    );
     await assert.rejects(
       () => assertUnmappedSpecsExecutedInReport("e2e/missing-from-execution.spec.ts", reportPath),
       /not executed in Playwright results\.json/,

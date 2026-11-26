@@ -139,11 +139,29 @@ function resolveUnmappedE2eFiles(raw = process.env.UNMAPPED_E2E_FILES) {
 
 export function collectExecutedSpecFilesFromReport(report) {
   const executed = new Set();
+  function hasExecutedResult(spec) {
+    if (!Array.isArray(spec?.tests)) return false;
+    return spec.tests.some(
+      (test) =>
+        Array.isArray(test?.results) &&
+        test.results.some(
+          (result) =>
+            result &&
+            typeof result === "object" &&
+            typeof result.status === "string" &&
+            result.status !== "skipped",
+        ),
+    );
+  }
   function walkSuite(suite) {
     if (!suite || typeof suite !== "object") return;
     if (Array.isArray(suite.specs)) {
       for (const spec of suite.specs) {
-        if (typeof spec?.file === "string" && spec.file.trim()) {
+        if (
+          typeof spec?.file === "string" &&
+          spec.file.trim() &&
+          hasExecutedResult(spec)
+        ) {
           executed.add(spec.file.trim().replaceAll("\\", "/"));
         }
       }
