@@ -94,3 +94,8 @@ Toute récupération de preuve doit identifier sa date, son SHA, sa méthode et 
 observation du dépôt, des rulesets, des workflows et des contrôles de release.
 Il s'agit d'une preuve datée, non d'un registre permanent de tâches. Les
 contrats actuels restent chez leurs propriétaires.
+
+## Référence de couverture et métriques modules (26 novembre 2026)
+
+- [Audit global de couverture — référence 2026-11-26](./coverage-reference-2026-11-26.md) (matrice JSON : [`coverage-reference-2026-11-26.json`](./coverage-reference-2026-11-26.json)) : photographie descriptive de la couverture Web, Mobile, Node et Python, des déficits, de la typologie des tests et de l'évolution depuis les snapshots précédents (`2026-10-26` et `2026-10-31` conservés).
+- [`module-test-metrics.json`](./module-test-metrics.json) : métriques par domaine métier, ratios tests/runtime, modules sans test direct et duplication `jscpd` sur `54be42e7`.
