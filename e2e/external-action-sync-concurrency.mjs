@@ -84,6 +84,7 @@ from public.reserve_external_action_sync_reference(
   'jagis_pour_la_nature', 'conc-event-collision', 'https://example.test/c-${index}', 'r-${index}',
   '{"session":${index}}'::jsonb, '${"1".repeat(64)}'
 );
+select pg_sleep(0.25);
 commit;
 `);
   const [res1, res2] = await Promise.all([
@@ -109,6 +110,7 @@ from public.reserve_external_action_sync_reference(
   'jagis_pour_la_nature', 'conc-event-org', 'https://example.test/org-a', 'ra',
   '{"org":"a"}'::jsonb, '${"2".repeat(64)}'
 );
+select pg_sleep(0.25);
 commit;
 `, "foreign_owner_a");
   const s2 = run(`
@@ -123,6 +125,7 @@ from public.reserve_external_action_sync_reference(
   'jagis_pour_la_nature', 'conc-event-org', 'https://example.test/org-b', 'rb',
   '{"org":"b"}'::jsonb, '${"3".repeat(64)}'
 );
+select pg_sleep(0.25);
 commit;
 `, "foreign_owner_b");
   const [r1, r2] = await Promise.all([s1, s2]);
@@ -154,6 +157,7 @@ select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc
 select set_config('request.jwt.claim.role', 'service_role', true);
 ${barrierSql(928173645103n, 928173645104n)}
 select 'COMPLETE:' || public.complete_external_action_sync_identity('${hashLockOrder}', '${token}'::uuid, '${actionA}'::uuid);
+select pg_sleep(0.25);
 commit;
 `);
   const sReserve = run(`
@@ -168,6 +172,7 @@ from public.reserve_external_action_sync_reference(
   'fondation_de_la_mer', 'conc-event-lock', 'https://example.test/lock', 'r2',
   '{"lock":2}'::jsonb, '${"5".repeat(64)}'
 );
+select pg_sleep(0.25);
 commit;
 `);
   const [cRes, rRes] = await Promise.all([sComplete, sReserve]);
@@ -182,6 +187,7 @@ select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc
 select set_config('request.jwt.claim.role', 'service_role', true);
 ${barrierSql(928173645105n, 928173645106n)}
 select 'SUPPRESS:' || public.suppress_external_action_sync_action('${actionA}'::uuid, 'admin-conc', 'sync-conc-op-lock', 'test lock order');
+select pg_sleep(0.25);
 commit;
 `);
   const sReserveAfter = run(`
@@ -196,6 +202,7 @@ from public.reserve_external_action_sync_reference(
   'fondation_de_la_mer', 'conc-event-lock', 'https://example.test/lock', 'r3',
   '{"lock":3}'::jsonb, '${"6".repeat(64)}'
 );
+select pg_sleep(0.25);
 commit;
 `);
   const [supRes, resAfter] = await Promise.all([sSuppress, sReserveAfter]);
@@ -244,6 +251,7 @@ select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc
 select set_config('request.jwt.claim.role', 'service_role', true);
 ${barrierSql(928173645107n, 928173645108n)}
 select 'SUP1:' || public.suppress_external_action_sync_action('${action1}'::uuid, 'admin-1', 'sync-conc-op-collision', 'collision test 1');
+select pg_sleep(0.25);
 commit;
 `);
   const s2 = run(`
@@ -253,6 +261,7 @@ select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc
 select set_config('request.jwt.claim.role', 'service_role', true);
 ${barrierSql(928173645108n, 928173645107n)}
 select 'SUP2:' || public.suppress_external_action_sync_action('${action2}'::uuid, 'admin-1', 'sync-conc-op-collision', 'collision test 2');
+select pg_sleep(0.25);
 commit;
 `);
   const [r1, r2] = await Promise.all([s1, s2]);
@@ -328,6 +337,7 @@ from public.reserve_external_action_sync_reference(
   '${hashExpired}', '${orgA}', 'sync-conc', '${expiredToken}'::uuid,
   'jagis_pour_la_nature', 'conc-event-expired', 'https://example.test/exp', 'r2', '{"exp":2}'::jsonb, '${"a".repeat(64)}'
 );
+select pg_sleep(0.25);
 commit;
 `);
   const sTakeover = run(`
@@ -341,6 +351,7 @@ from public.reserve_external_action_sync_reference(
   '${hashExpired}', '${orgA}', 'sync-conc', '${takeoverToken}'::uuid,
   'jagis_pour_la_nature', 'conc-event-expired', 'https://example.test/exp-takeover', 'r3', '{"exp":3}'::jsonb, '${"b".repeat(64)}'
 );
+select pg_sleep(0.25);
 commit;
 `);
   const [expRes, takeRes] = await Promise.all([sExpired, sTakeover]);
