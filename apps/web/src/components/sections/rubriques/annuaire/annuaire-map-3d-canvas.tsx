@@ -5,6 +5,7 @@ import { Map as LibreMap, NavigationControl, MercatorCoordinate, setWorkerUrl, t
 import Image from "next/image";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
+import { PARIS_ARRONDISSEMENTS_GEOJSON, PARIS_ARRONDISSEMENTS_PROVENANCE } from "@/lib/geo/paris-arrondissements-boundaries";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { FRANCE_METROPOLITAINE_BOUNDS, PARIS_INTRAMUROS_BOUNDS, isInFranceMetropolitaine, type GeoNetworkEntity, type GeoNetworkIncidentRelation, type MapScope } from "./annuaire-geo-network.model";
 import { getNetworkLogoDiameter, getNetworkRelationVisual } from "./annuaire-geo-network.visuals";
@@ -130,7 +131,31 @@ export function AnnuaireMap3DCanvas(props: Props) {
           }
         },
       };
-      try { map.addLayer(overlay); setReady(true); map.triggerRepaint(); }
+      try {
+        map.addSource("paris-arrondissements", {
+          type: "geojson",
+          data: PARIS_ARRONDISSEMENTS_GEOJSON,
+          attribution: PARIS_ARRONDISSEMENTS_PROVENANCE.attribution,
+        });
+        const vis = latest.current.mapScope === "paris" ? "visible" : "none";
+        map.addLayer({
+          id: "paris-arrondissements-fill",
+          type: "fill",
+          source: "paris-arrondissements",
+          layout: { visibility: vis },
+          paint: { "fill-color": "#fce7f3", "fill-opacity": 0.16 },
+        });
+        map.addLayer({
+          id: "paris-arrondissements-line",
+          type: "line",
+          source: "paris-arrondissements",
+          layout: { visibility: vis },
+          paint: { "line-color": "#9d174d", "line-width": 1.5, "line-opacity": 0.65 },
+        });
+        map.addLayer(overlay);
+        setReady(true);
+        map.triggerRepaint();
+      }
       catch { fail(); }
     });
     return () => {
@@ -143,8 +168,12 @@ export function AnnuaireMap3DCanvas(props: Props) {
 
   useEffect(() => {
     if (ready) {
-      mapRef.current?.fitBounds(boundsFor(mapScope), { padding: 40, duration: 0 });
-      mapRef.current?.triggerRepaint();
+      const map = mapRef.current;
+      const vis = mapScope === "paris" ? "visible" : "none";
+      if (map?.getLayer("paris-arrondissements-fill")) map.setLayoutProperty("paris-arrondissements-fill", "visibility", vis);
+      if (map?.getLayer("paris-arrondissements-line")) map.setLayoutProperty("paris-arrondissements-line", "visibility", vis);
+      map?.fitBounds(boundsFor(mapScope), { padding: 40, duration: 0 });
+      map?.triggerRepaint();
     }
   }, [ready, mapScope]);
   useEffect(() => {

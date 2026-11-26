@@ -1,4 +1,5 @@
 import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+import { isPointInParisIntramuros } from "@/lib/geo/paris-arrondissements-boundaries";
 import { getNetworkPublicAddress, getNetworkPublicLogo, type NetworkPublicLogo } from "@/lib/partners/public-network-identity-media";
 import {
   PARIS_CLEANWALK_ACTORS,
@@ -204,8 +205,7 @@ export interface GeoNetworkIncidentRelation {
 }
 
 export function isInParisIntramuros(lat: number, lng: number): boolean {
-  const [[south, west], [north, east]] = PARIS_INTRAMUROS_BOUNDS;
-  return lat >= south && lat <= north && lng >= west && lng <= east;
+  return isPointInParisIntramuros(lat, lng);
 }
 
 export function isInFranceMetropolitaine(lat: number, lng: number): boolean {

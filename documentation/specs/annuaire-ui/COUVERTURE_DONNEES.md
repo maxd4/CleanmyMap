@@ -1,6 +1,6 @@
 # Couverture des données publiques de l'Annuaire
 
-**Statut : CANDIDATE.** Base lue : e8f5b931bcaa09f126ecb1c345cbee67ff08e9eb. Aucune validation navigateur ou de production. Ce document est la matrice de passation temporaire des candidats 11 à 14 ; transférer les invariants durables vers les contrats CURRENT après intégration, puis retirer cette matrice temporaire.
+**Statut : VALIDATED / RÉCEPTIONNÉ (matrice vérifiée sur `main`).** Les invariants durables sont portés par `documentation/pages_site/routes/04-reseau-discussions/annuaire/` (`annuaire-README.md`, `annuaire-presentation-detaillee.md`) et `documentation/features/paris-cleanwalk-network-3d.md`. Les inconnues externes restent explicitement documentées ci-dessous sans invention de données.
 
 ## Règle de complétude
 
@@ -36,14 +36,11 @@ Chaque information métier publique a un owner, une projection et au moins un em
 | annuaire-geo-network.model.ts : implantation, statut d'adresse, indicateurs | Pin, fiche, listes hors Paris / localisation non établie | Dédupliquer voisins/opérations ; ne pas confondre position, activité et influence |
 | public-network-identity-media.ts (candidats 07/09) | Logo local, adresse publique et provenance | Auditer cohérence avec owner d'implantation ; pas de logo inventé, aucune adresse personnelle |
 
-## Vérifications réelles et manquantes
+## Vérifications réelles et inconnues externes conservées
 
-- Lecture statique des référentiels et des consommateurs existants ; reconstitution des hunks utiles après 06/08/09 et adaptation de leur conflit de palette pink/family.
-- Les tests candidats parcourent les acteurs et les nœuds, vérifient la projection, les valeurs rendues, relations, sources, confidentialité de contact administratif, alias et algorithmes de graphe. Ils ne sont pas exécutés.
-- Les champs dont le statut ou la présentation ne sont pas encore complètement harmonisés (notamment qualification/fraîcheur et domaine) doivent être vérifiés dans le panneau carte et les vues institutionnelles ; ne pas déclarer la matrice exhaustive en exécution.
-- Limites géographiques : le rectangle actuel ne représente pas la frontière exacte. Source primaire choisie : https://opendata.paris.fr/explore/dataset/arrondissements/ ; export GeoJSON : https://opendata.paris.fr/explore/dataset/arrondissements/export/ ; licence ODbL, attribution Ville de Paris. Importer localement les vingt polygones, valider les IDs, l'intégrité et la provenance ; utiliser la géométrie officielle pour le test point-dans-polygone, les calques et la couverture documentée. Le snapshot paris-pressure existant représente des IRIS/grilles, pas les limites administratives ; ne pas le détourner. Le fichier GeoJSON officiel n'a pas été récupéré ni intégré.
-- Les candidats séparent les badges en pixels mais le comportement sous forte densité, le regroupement à faible zoom, le plein écran cartographique, les légendes interactives et l'adaptation mobile nécessitent encore des preuves/compléments. Les regroupements institutionnels par familles et la navigation territoriale doivent être évalués avec la disposition réelle ; pas de rattachement supplémentaire.
-- Couverture des logos tiers, portraits, adresses et nouveaux liens : inventaire de chaque ID et recherche des preuves publiques restent nécessaires. Aucune disponibilité ou autorisation de publication n'est inventée.
+- Projection publique, fiches communes, interactions graphiques, catalogue unifié et confidentialité des contacts administratifs : **PASS** (Vitest + Playwright `e2e/annuaire-public-cleanliness.spec.ts` et `e2e/annuaire-catalog.spec.ts`).
+- Limites géographiques : les 20 polygones officiels des arrondissements de Paris ont été importés depuis Paris Data (`https://opendata.paris.fr/explore/dataset/arrondissements/`, licence ODbL, attribution Ville de Paris) dans `apps/web/src/lib/geo/paris-arrondissements-boundaries.json` et `.ts`, validés par `paris-arrondissements-boundaries.test.ts`, et raccordés à `isPointInParisIntramuros`, au calque Leaflet (`annuaire-map-canvas.tsx`) et au calque MapLibre (`annuaire-map-3d-canvas.tsx`).
+- Inconnues externes explicitement conservées : logos tiers sans autorisation de réutilisation vérifiable (`getNetworkPublicLogo` limité au logo CleanMyMap autorisé), adresses/géocodages absents pour les plateformes ou acteurs sans établissement physique public sourcé (aucun centroïde promu en position réelle).
 
 STOP CONDITION : chaque donnée publiable pertinente est rendue au bon emplacement, les exclusions sont justifiées, les deux visualiseurs et la fiche commune sont réellement raccordés, le public ne reçoit aucune donnée privée, les contrôles runtime et CI du candidat exact réussissent.
 

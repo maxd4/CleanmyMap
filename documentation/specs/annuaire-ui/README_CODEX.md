@@ -1,6 +1,6 @@
-# Annuaire Web : lisibilité et navigation
+# Annuaire Web : réception et historique des lots
 
-**Statut : PLAN / CANDIDATE.** Référence factuelle lue : `1888c67337762e067f371e3fd431e12b662745d1` (25 novembre 2026). EXTEND_EXISTING. Demande : corriger les couleurs, la lisibilité et l'empilement observés sur la capture de /sections/annuaire ; introduire des onglets et menus déroulants utiles. Ne pas imposer un checkout historique. Ne pas modifier la matrice UI/UX gelée. Aucun changement Mobile, base, API, authentification ou modèle de données dans ce chantier.
+**Statut : VALIDATED / RÉCEPTIONNÉ (`04 ANN-1`, `05 ANN-2`, `06 ANN-3` et réception territoriale finale).** Les lots A à H et les patches `01` à `17` ont été intégrés sur `main` (notamment `b5168d59d` pour `ANN-2`, `945f0e05b` pour `ANN-3`, puis la réception territoriale finale avec les 20 polygones officiels Paris Data ODbL) et les patches consommés ont été retirés. Le présent document conserve l'historique des décisions architecturales et les preuves de réception ; le contrat runtime autoritaire vit dans `documentation/pages_site/routes/04-reseau-discussions/annuaire/` (`annuaire-README.md` et `annuaire-presentation-detaillee.md`).
 
 ## Diagnostic et périmètre
 
@@ -119,16 +119,13 @@ Mettre à jour dans le même lot que le runtime la règle de palette de `BLOC_CO
 
 **Validation supplémentaire.** Tester National incluant structures locales et nationales, Corse, exclusion explicite hors métropole, Paris avec acteurs extérieurs liés, filtrage arrondissement sans géolocalisation fictive, sources manquantes et conflit d'adresse, absence de fuite privée, unification des fiches, comptage dédupliqué des voisins et absence de score fictif. Cadrage réel et noms lisibles, carte unique, détails/sources/contact public, relations sélectionnées, sélection depuis organigramme, états vides et recherche. Comptabiliser les adresses vérifiées / non établies / contradictoires / non applicables et coordonnées géocodées vérifiées ; documenter les inconnues et ne pas déclarer la couverture exhaustive. Intégrer le contrat CURRENT du réseau, de l'Annuaire et de la navigation avec le runtime. STOP G complétée : seulement Paris/National, catalogue d'adresses audité et enrichi avec inconnues explicites, sources et influence factuelle, validations réelles et publication vérifiée. Le patch 05 est une contribution initiale (11 adresses, 6 fichiers cibles) ; géocodage, couverture exhaustive de recherche et implémentation carte restent à terminer. HOOK_NOT_AVAILABLE ; tests NOT_RUN, couverture NOT_MEASURED.
 
-## Lot territorial : organigramme complet et carte géographique 3D (2026-11-25)
+## Lot territorial (patches 06 à 17) : état de réception
 
-**CANDIDATE, non intégré au runtime.** Base examinée : `0ba42a949c10dc0c138b94599932c8c29dfcde63`.
-Appliquer dans cet ordre, en préservant les modifications concurrentes :
-
-1. [06-organigramme-complet.patch](06-organigramme-complet.patch) : disposition déterministe de la forêt institutionnelle, cadrage, navigation, calques de relations, tests.
-2. [07-projection-geographique-pins.patch](07-projection-geographique-pins.patch) : projection publique, pins, taille des badges, relations et carte Leaflet.
-3. [08-carte-perspective-3d.patch](08-carte-perspective-3d.patch) : perspective cartographique MapLibre, caméra, altitude visuelle des badges, repli 2D, dépendance et CSP ciblée.
-4. [09-convergence-fiches-navigation.patch](09-convergence-fiches-navigation.patch) : projection canonique, fiches des acteurs uniquement réseau, recherche, navigation croisée et enrichissement des adresses.
-5. [10-contrats-et-e2e.patch](10-contrats-et-e2e.patch) : contrats documentaires et scénarios E2E adaptés.
+**VALIDATED / RÉCEPTIONNÉ sur `main`.**
+- Lots `04 ANN-1` (06–10), `05 ANN-2` (11–14, `b5168d59d`), `06 ANN-3` (15–17, `945f0e05b`) intégrés, patches retirés.
+- Réception territoriale finale : géométries officielles des 20 arrondissements de Paris importées depuis Paris Data (ODbL, `apps/web/src/lib/geo/paris-arrondissements-boundaries.json` et `.ts`), raccordées au test point-dans-polygone (`isPointInParisIntramuros`), au calque Leaflet (`annuaire-map-canvas.tsx`) et au calque MapLibre (`annuaire-map-3d-canvas.tsx`), sans confondre implantation et couverture opérationnelle.
+- Validations : Vitest Geo/Annuaire (10 fichiers, 43 tests PASS), `typecheck`, `eslint` ciblé, `check:surfaces`, `check:doc-governance`, et E2E Playwright (`e2e/annuaire-public-cleanliness.spec.ts`, `e2e/annuaire-catalog.spec.ts`).
+- Inconnues externes explicitement conservées dans [COUVERTURE_DONNEES.md](COUVERTURE_DONNEES.md) (logos tiers sans autorisation de réutilisation, adresses/géocodages absents pour les plateformes ou acteurs sans établissement physique sourcé).
 
 Contrôles ChatGPT : revue du code et contrôle textuel partiel des contextes de patch. Pas de preuve d'application complète, de compilation ou de comportement navigateur. Le clone échoue sur la résolution DNS de github.com dans l'environnement disponible. HOOK_NOT_AVAILABLE ; tests NOT_RUN ; couverture NOT_MEASURED. Ne pas traiter les documents contenus dans le patch 10 comme CURRENT avant intégration et validation.
 

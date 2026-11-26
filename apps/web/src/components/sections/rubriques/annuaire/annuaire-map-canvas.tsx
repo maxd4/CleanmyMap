@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
+  GeoJSON,
   Marker,
   Popup,
   Polyline,
@@ -12,6 +13,7 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
+import { PARIS_ARRONDISSEMENTS_GEOJSON, PARIS_ARRONDISSEMENTS_PROVENANCE } from "@/lib/geo/paris-arrondissements-boundaries";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { cn } from "@/lib/utils";
@@ -229,6 +231,25 @@ export function AnnuaireMapCanvas({
               url={CARTO_BASEMAPS.voyager.url}
             />
           </LayersControl.BaseLayer>
+          <LayersControl.Overlay checked name={fr ? "Arrondissements de Paris (ODbL)" : "Paris districts (ODbL)"}>
+            <GeoJSON
+              data={PARIS_ARRONDISSEMENTS_GEOJSON}
+              attribution={PARIS_ARRONDISSEMENTS_PROVENANCE.attribution}
+              style={{
+                color: "#9d174d",
+                weight: 1.4,
+                opacity: 0.55,
+                fillColor: "#fce7f3",
+                fillOpacity: 0.12,
+              }}
+              onEachFeature={(feature, layer) => {
+                const label = feature?.properties?.l_ar;
+                if (typeof label === "string" && label) {
+                  layer.bindTooltip(label, { sticky: true });
+                }
+              }}
+            />
+          </LayersControl.Overlay>
         </LayersControl>
 
         {plottableRelations.map(({ relation, fromEntity, toEntity }) => {

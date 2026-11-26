@@ -22,6 +22,7 @@ Cette fiche est l'index contractuel de la page. Elle ne duplique pas les détail
 - `apps/web/src/lib/sections-registry/config.ts`
 - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
 - **Sources runtime** : `annuaire-section.tsx`, `annuaire-view-tabs.tsx`, `annuaire-catalog.model.ts`, `annuaire-directory-catalog.tsx`, `annuaire-exploration-view.tsx`, `annuaire-map-canvas.tsx`, `annuaire-map-3d-canvas.tsx`, `annuaire-geo-network.model.ts`, `public-cleanliness-organization.tsx`, `public-entity-details.tsx`, `public-directory-details.tsx`, `use-annuaire-logic.ts`.
+- `apps/web/src/lib/geo/paris-arrondissements-boundaries.ts` (contours officiels des 20 arrondissements Paris Data, ODbL)
 - `apps/web/src/lib/partners/annuaire-types.ts`
 - `apps/web/src/lib/partners/public-entity-projection.ts`
 - `apps/web/src/lib/partners/paris-cleanwalk-network.ts`
