@@ -207,7 +207,7 @@
     "@playwright/test": "^1.65.1",
     "@stryker-mutator/core": "10.1.1",
     "@stryker-mutator/vitest-runner": "10.1.1",
-    "@supabase/supabase-js": "^2.118.0",
+    "@supabase/supabase-js": "^2.119.2",
     "c8": "12.0.0",
     "eslint-plugin-sonarjs": "4.2.2",
     "espree": "10.4.0",
