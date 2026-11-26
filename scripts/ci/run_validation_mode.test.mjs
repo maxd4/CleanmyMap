@@ -134,14 +134,9 @@ function removeFixture(root) {
   removePathWithRetry(root, { recursive: true });
 }
 
-function initializeGitFixture(root) {
-  execFileSync("git", ["init"], { cwd: root, stdio: "ignore" });
-  execFileSync("git", ["add", "--", "."], { cwd: root, stdio: "ignore" });
-
-  const hooksPath = path.join(root, ".fixture-hooks");
-  fs.mkdirSync(hooksPath, { recursive: true });
+function createFixtureGitEnv(root) {
   const fixtureEmail = ["cleanmymap", "fixture", "invalid"].join("@");
-  const fixtureGitEnv = {
+  return {
     ...process.env,
     GIT_AUTHOR_NAME: "CleanMyMap fixture",
     GIT_AUTHOR_EMAIL: fixtureEmail,
@@ -150,6 +145,15 @@ function initializeGitFixture(root) {
     GIT_CONFIG_GLOBAL: path.join(root, ".fixture-global-config"),
     GIT_CONFIG_NOSYSTEM: "1",
   };
+}
+
+function initializeGitFixture(root) {
+  execFileSync("git", ["init"], { cwd: root, stdio: "ignore" });
+  execFileSync("git", ["add", "--", "."], { cwd: root, stdio: "ignore" });
+
+  const hooksPath = path.join(root, ".fixture-hooks");
+  fs.mkdirSync(hooksPath, { recursive: true });
+  const fixtureGitEnv = createFixtureGitEnv(root);
 
   execFileSync("git", [
     "-c",
@@ -645,11 +649,17 @@ test("a foreign origin/main SHA advance does not trigger a global validation rer
         checkIds.push(check.id);
         if (!advanced) {
           advanced = true;
+          const gitEnv = createFixtureGitEnv(root);
           const remoteAdvance = execFileSync("git", ["commit-tree", `${candidateSha}^{tree}`, "-p", candidateSha, "-m", "parallel remote advance"], {
             cwd: root,
             encoding: "utf8",
+            env: gitEnv,
           }).trim();
-          execFileSync("git", ["update-ref", "refs/remotes/origin/main", remoteAdvance], { cwd: root, stdio: "ignore" });
+          execFileSync("git", ["update-ref", "refs/remotes/origin/main", remoteAdvance], {
+            cwd: root,
+            stdio: "ignore",
+            env: gitEnv,
+          });
         }
         return { status: "PASS", exitCode: 0 };
       },

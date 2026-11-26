@@ -57,7 +57,12 @@ try {
     Invoke-GuardStep "staged canonical workspace sentinels" { node scripts/checks/check-canonical-workspaces.mjs --staged }
 
     if ($hasQuickFiles) {
-        Invoke-GuardStep "staged-surface quick checks" { powershell -NoProfile -ExecutionPolicy Bypass -File scripts/checks/check_changed_quick.ps1 -StagedOnly }
+        $powerShellExe = (Get-Process -Id $PID).Path
+        if (-not $powerShellExe) {
+            $pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
+            $powerShellExe = if ($pwshCmd) { $pwshCmd.Source } else { "powershell" }
+        }
+        Invoke-GuardStep "staged-surface quick checks" { & $powerShellExe -NoProfile -ExecutionPolicy Bypass -File scripts/checks/check_changed_quick.ps1 -StagedOnly }
     } else {
         Write-Host "[skip] staged-surface quick checks: no staged web JS/TS or Python files"
     }

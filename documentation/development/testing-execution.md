@@ -207,7 +207,9 @@ Extension aux autres familles de validation :
 - **Tests Node** (`npm run test:scripts` via `scripts/ci/run-script-tests.mjs`) :
   exécution avec `--test-reporter=dot`, lot parallélisable à
   `--test-concurrency=6` puis lot exclusif à `--test-concurrency=1` pour les
-  tests manipulant des preuves de couverture ou gardes Git partagés.
+  tests manipulant des preuves de couverture ou gardes Git partagés. Ce
+  parallélisme augmente le pic mémoire Node mesuré de `587,4 Mo` à
+  `1 142,6 Mo` (`+94,5 %`) en contrepartie du gain de durée.
 - **Playwright E2E et SQL/pgTAP** : `playwright.config.ts` utilise le reporter
   compact `"line"` en local comme en CI tout en conservant `workers: 1` et
   `fullyParallel: false` (serveur `localhost:3000` unique, `storageState` Clerk

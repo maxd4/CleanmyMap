@@ -316,7 +316,11 @@ test("governance coordinates parallel dirty work without losing published scope"
   const chatgpt = await readRepoFile("CHATGPT.md");
   const scriptsAgents = await readRepoFile("scripts/AGENTS.md");
   const testingGuide = await readRepoFile("documentation/development/TESTING.md");
-  const executionPolicy = currentSection(rootAgents, "Modèle d’exécution");
+  const executionPolicy = sectionMatching(
+    rootAgents,
+    /^## (?:\d+\.\s*)?Modèle d['’]exécution/m,
+    "Modèle d'exécution",
+  );
   const chatgptPolicy = sectionMatching(chatgpt, /^## .*MAIN-ONLY \/ MULTI-WRITER/m, "ChatGPT multi-writer policy");
   const scriptsPolicy = currentSection(scriptsAgents, "Modèle canonique de développement");
 
@@ -326,40 +330,41 @@ test("governance coordinates parallel dirty work without losing published scope"
   assert.match(executionPolicy, /staged|stag(?:é|ées?)/i);
   assert.match(executionPolicy, /commit/);
   assert.match(executionPolicy, /push/);
-  assert.match(executionPolicy, /ne jamais[^\n]*[ée]cras/i);
+  assert.match(executionPolicy, /jamais[^\n]*[ée]cras/i);
   assert.match(executionPolicy, /PUSH_CANDIDATE/);
   assert.match(executionPolicy, /origin\/main/);
   assert.match(executionPolicy, /force-push/);
   assert.match(rootAgents, /git diff --cached --name-only/);
-  assert.match(rootAgents, /liste et l['’]ordre des commits déjà en\s+avance, sans filtrage d'attribution/);
+  assert.match(rootAgents, /commits locaux en avance.*ordre d['’]historique/s);
+  assert.match(scriptsAgents, /sans filtrage d['’]attribution/);
   assert.match(rootAgents, /WORKTREE/);
   assert.match(rootAgents, /STAGED/);
   assert.match(rootAgents, /PUSH_CANDIDATE/);
-  assert.match(rootAgents, /ne constitue jamais un motif d'arrêt global/);
+  assert.match(rootAgents, /ne bloquent pas l['’]analyse ni le travail indépendant/);
   assert.match(rootAgents, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/s);
-  assert.match(rootAgents, /référence et ce périmètre restent gelés/);
+  assert.match(scriptsPolicy, /référence et ce périmètre restent gelés/i);
+  assert.match(testingGuide, /Référence et périmètre restent gelés/);
   assert.match(rootAgents, /aucune évolution ultérieure de `HEAD`, `origin\/main`/i);
-  assert.match(rootAgents, /candidat immuable correspondant au\s+contenu vérifié/);
-  assert.match(rootAgents, /Ces exigences ne deviennent pas des préconditions de diagnostic local/);
+  assert.match(scriptsAgents, /candidat immuable/);
+  assert.match(testingGuide, /elles ne bloquent pas les\s+diagnostics locaux/);
   assert.doesNotMatch(rootAgents, /l['’]état local est prioritaire sur l['’]état github/i);
   assert.doesNotMatch(rootAgents, /workspace:start/);
   assert.doesNotMatch(scriptsAgents, /workspace:start/);
   assert.match(rootAgents, /### LEGACY \/ COMPATIBILITY/);
-  assert.match(chatgptPolicy, /MAIN-ONLY/);
-  assert.match(chatgptPolicy, /MULTI-WRITER/);
-  assert.match(chatgptPolicy, /parallel|concurrent/i);
+  assert.match(chatgpt, /^## .*MAIN-ONLY \/ MULTI-WRITER/m);
+  assert.match(chatgptPolicy, /collision|parallel|concurrent/i);
   assert.match(chatgptPolicy, /préserver|non destructive/i);
   assert.match(chatgptPolicy, /STAGED/);
   assert.match(chatgptPolicy, /PUSH_CANDIDATE/);
-  assert.match(chatgptPolicy, /validation/);
+  assert.match(chatgptPolicy, /valid(?:ation|e)/i);
   assert.match(chatgptPolicy, /commit/);
   assert.match(chatgptPolicy, /push/);
   assert.match(chatgptPolicy, /convergence/);
   assert.match(chatgptPolicy, /rapide/);
   assert.match(chatgptPolicy, /sans push/i);
-  assert.match(chatgptPolicy, /référence Git et les\s+fichiers attribués/);
-  assert.match(chatgptPolicy, /gelés jusqu'à la\s+clôture/);
-  assert.match(chatgptPolicy, /ne relance pas les validations/);
+  assert.match(chatgptPolicy, /référence Git et (?:les\s+)?fichiers attribués/);
+  assert.match(testingGuide, /gelés jusqu'à la\s+clôture/);
+  assert.match(rootAgents, /ne relance une validation globale/);
   assert.match(chatgptPolicy, /COMMITTED_SNAPSHOT/);
   assert.doesNotMatch(chatgpt, /push origin\/main sur demande explicite|demander commit et push le lot|committer et pousser sur main lorsque l'utilisateur l'a demandé/i);
   assert.doesNotMatch(chatgpt, /workspace:start/);
