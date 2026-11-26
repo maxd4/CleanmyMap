@@ -110,27 +110,8 @@ begin
     (v_team_wc_2, v_event_id, v_world_cup_id, 2, 'WC Beta', 'draft'),
     (v_team_casual_1, v_event_id, v_casual_id, 1, 'Casual One', 'draft');
 
-  for v_idx in 1..3 loop
-    insert into public.spogomi_participants (id, event_id, division_id, team_id, display_name, registration_status, account_link_status, clerk_id)
-    values (
-      gen_random_uuid(),
-      v_event_id,
-      v_world_cup_id,
-      v_team_wc_1,
-      format('Competiteur WC1-%s', v_idx),
-      'registered',
-      case when v_idx = 1 then 'verified' else 'unlinked' end,
-      case when v_idx = 1 then v_participant_clerk else null end
-    );
-    insert into public.spogomi_participants (id, event_id, division_id, team_id, display_name, registration_status)
-    values (gen_random_uuid(), v_event_id, v_world_cup_id, v_team_wc_2, format('Competiteur WC2-%s', v_idx), 'registered');
-  end loop;
-
-  insert into public.spogomi_participants (id, event_id, division_id, team_id, display_name, registration_status, account_link_status, clerk_id)
-  values (gen_random_uuid(), v_event_id, v_casual_id, v_team_casual_1, 'Competiteur Casual 1', 'registered', 'verified', v_casual_participant_clerk);
-
-  -- Qualify and habilitate v_ref_1, v_ref_2, v_ref_3 on World Cup division (reg-wc-v1)
-  -- and v_casual_participant_clerk on World Cup too to prove event-wide cross-division competitor exclusion.
+  -- Qualify and habilitate referees BEFORE registering v_participant_clerk and v_casual_participant_clerk as competitors,
+  -- so spogomi_assign_team_referee's SQLSTATE 23514 participant exclusion is exercised directly.
   v_private_def := public.spogomi_referee_quiz_definition_private(v_event_id, v_world_cup_id);
   v_answers := '{}'::jsonb;
   for v_question in select value from jsonb_array_elements(v_private_def->'questions') loop
@@ -162,6 +143,25 @@ begin
   insert into public.spogomi_event_reviewers (event_id, clerk_id, role, assigned_by_clerk_id)
   values (v_event_id, v_ref_casual, 'referee', v_org_clerk)
   on conflict do nothing;
+
+  for v_idx in 1..3 loop
+    insert into public.spogomi_participants (id, event_id, division_id, team_id, display_name, registration_status, account_link_status, clerk_id)
+    values (
+      gen_random_uuid(),
+      v_event_id,
+      v_world_cup_id,
+      v_team_wc_1,
+      format('Competiteur WC1-%s', v_idx),
+      'registered',
+      case when v_idx = 1 then 'verified' else 'unlinked' end,
+      case when v_idx = 1 then v_participant_clerk else null end
+    );
+    insert into public.spogomi_participants (id, event_id, division_id, team_id, display_name, registration_status)
+    values (gen_random_uuid(), v_event_id, v_world_cup_id, v_team_wc_2, format('Competiteur WC2-%s', v_idx), 'registered');
+  end loop;
+
+  insert into public.spogomi_participants (id, event_id, division_id, team_id, display_name, registration_status, account_link_status, clerk_id)
+  values (gen_random_uuid(), v_event_id, v_casual_id, v_team_casual_1, 'Competiteur Casual 1', 'registered', 'verified', v_casual_participant_clerk);
 
   v_ref_unhab := 'spogomi-tr-unhab-' || substr(gen_random_uuid()::text, 1, 8);
 
@@ -282,6 +282,7 @@ begin
   end if;
 
   -- Requalify v_ref_2 on world_cup reg-wc-v2 -> status returns to assigned
+  perform public.spogomi_create_referee_application(v_event_id, v_world_cup_id, v_ref_2);
   v_private_def := public.spogomi_referee_quiz_definition_private(v_event_id, v_world_cup_id);
   v_answers := '{}'::jsonb;
   for v_question in select value from jsonb_array_elements(v_private_def->'questions') loop
@@ -343,7 +344,7 @@ begin
     perform public.spogomi_upsert_planned_route(
       v_event_id, v_world_cup_id, 0, 'manual_reference', 'route.geojson', 2, 1.5, 'loop',
       '{"type":"LineString","coordinates":[[2.35,48.85],[2.36,48.86]]}'::jsonb,
-      null, v_report_media_id, v_org_clerk
+      'test report_photo rejection', v_report_media_id, v_org_clerk
     );
     raise exception 'spogomi_upsert_planned_route accepted a report_photo media';
   exception when sqlstate '23514' then null;
