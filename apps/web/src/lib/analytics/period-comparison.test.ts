@@ -56,4 +56,24 @@ describe("computePeriodComparison", () => {
     expect(result.current.wasteKnownActions).toBe(1);
     expect(result.current.wasteCoverageRate).toBe(50);
   });
+
+  it("returns null percent delta when denominator is zero and numerator is non-zero", () => {
+    const result = computePeriodComparison(
+      [
+        { status: "approved", observedAt: "2026-04-08", createdAt: null, latitude: 48.85, longitude: 2.35, wasteKg: 10 },
+      ],
+      15,
+      new Date("2026-04-10T00:00:00.000Z"),
+    );
+
+    expect(result.previous.actionsCount).toBe(0);
+    expect(result.current.actionsCount).toBe(1);
+    expect(result.deltas.actionsCount.percent).toBeNull();
+    expect(result.deltas.actionsCount.strength).toBe("strong");
+    expect(result.deltas.volumeKg.percent).toBeNull();
+
+    const empty = computePeriodComparison([], 15, new Date("2026-04-10T00:00:00.000Z"));
+    expect(empty.deltas.actionsCount.percent).toBe(0);
+    expect(empty.deltas.actionsCount.strength).toBe("stable");
+  });
 });

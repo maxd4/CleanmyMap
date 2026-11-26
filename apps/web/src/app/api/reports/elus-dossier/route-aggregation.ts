@@ -29,6 +29,9 @@ function sumApprovedMetric<T>(contracts: Array<T>, selector: (contract: T) => un
 function countKnownMetric<T>(contracts: Array<T>, selector: (contract: T) => unknown): number {
   return contracts.reduce((count, contract) => {
     const value = selector(contract);
+    if (value === null || value === undefined || value === "") {
+      return count;
+    }
     const parsed = typeof value === "number" ? value : Number(value);
     return count + (Number.isFinite(parsed) && parsed >= 0 ? 1 : 0);
   }, 0);
@@ -109,6 +112,7 @@ type DossierSummary = {
   totalKg: number;
   knownWasteActions: number;
   totalVolunteers: number;
+  volunteersKnownActions: number;
   geocoverageRate: number;
 };
 
@@ -154,6 +158,10 @@ function buildDossierSummary(approved: ElusDossierContract[]): DossierSummary {
     approved,
     (contract) => contract.metadata.volunteersCount,
   );
+  const volunteersKnownActions = countKnownMetric(
+    approved,
+    (contract) => contract.metadata.volunteersCount,
+  );
   const geolocated = countGeolocatedContracts(approved);
 
   return {
@@ -161,11 +169,16 @@ function buildDossierSummary(approved: ElusDossierContract[]): DossierSummary {
     totalKg: Number(totalKg.toFixed(1)),
     knownWasteActions,
     totalVolunteers,
+    volunteersKnownActions,
     geocoverageRate: totalActions > 0 ? Math.round((geolocated / totalActions) * 100) : 0,
   };
 }
 
-function buildDossierComparisons(scopeContracts: ElusDossierContract[], days: number) {
+function buildDossierComparisons(
+  scopeContracts: ElusDossierContract[],
+  days: number,
+  dataAvailability: { isTruncated: boolean; sourceHealth: UnifiedSourceHealth },
+) {
   const comparison = computePeriodComparison(
     scopeContracts.map((contract) => ({
       status: contract.status,
@@ -189,6 +202,7 @@ function buildDossierComparisons(scopeContracts: ElusDossierContract[], days: nu
   const overview = buildPilotageOverviewFromContracts({
     contracts: scopeContracts,
     periodDays: days,
+    dataAvailability,
   });
 
   return { comparison, benchmark, overview };
@@ -245,7 +259,10 @@ export async function buildElusDossierPayload(params: {
 }) {
   const scopedData = await loadScopedDossierData(params);
   const summary = buildDossierSummary(scopedData.approved);
-  const comparisons = buildDossierComparisons(scopedData.scopeContracts, params.days);
+  const comparisons = buildDossierComparisons(scopedData.scopeContracts, params.days, {
+    isTruncated: scopedData.isTruncated,
+    sourceHealth: scopedData.sourceHealth,
+  });
   const quality = buildDossierQuality(scopedData.approved);
 
   return assembleElusDossierPayload({

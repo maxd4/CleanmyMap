@@ -75,7 +75,7 @@ Le statut initial PENDING signifie **non réceptionné dans ce programme**, pas 
 | `pilotage-ui/04-admin-surfaces.patch` | 10 PIL | PENDING | à établir |
 | `pilotage-ui/05-pilotage-restricted-hub.patch` | 10 PIL | PENDING | à établir |
 | `reports-ui/01-generation.patch` | 09 REPORTS-BASE | VALIDATED | `3303e2bfb` ; Vitest `web-document` 53/53, navigateur & modes PASS |
-| `reports-ui/02-analysis.patch` | 09 REPORTS-BASE | VALIDATED (clôture scientifique) | `3303e2bfb`, `9aeac9dbe` + clôture moteur comparaison (`safePercentDelta` -> `null` sur base nulle, exclusion risques vides, propagation `dataAvailability` et effectifs exacts) ; Vitest 9/9 (43 tests PASS), couverture V8 `src/lib/pilotage/**` 74.75% stmts / 73.8% branches / 76.73% lines, `typecheck` & `eslint` PASS |
+| `reports-ui/02-analysis.patch` | 09 REPORTS-BASE | VALIDATED (clôture scientifique) | `3303e2bfb`, `9aeac9dbe`, `3427423b4` + propagation `period-comparison`, `overview.zones`, `prioritization`, `elus-dossier` (`countKnownMetric`, activité courante vs historique, corpus tronqué/partiel) ; Vitest 10/10 (43 tests PASS), couverture V8 77.69% stmts / 77.08% branches / 79.21% lines, `typecheck` & `eslint` PASS |
 | `reports-ui/03-print-and-contracts.patch` | 09 REPORTS-BASE | VALIDATED | `3303e2bfb` ; `/prints/report` A4 2 pages Playwright, `noindex`, AuthN & fiches `CURRENT` PASS |
 | `reports-ui/04-generation-tests.patch` | 09 REPORTS-BASE | VALIDATED | `3303e2bfb` ; régressions génération & aperçu PASS |
 | `sentrainer-ui/01-sentrainer.patch` | 16 LEARN-2 | PENDING | à établir |

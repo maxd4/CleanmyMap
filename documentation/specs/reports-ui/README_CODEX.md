@@ -1,6 +1,6 @@
 # Rapports Web : génération, analyse et impression
 
-Statut : VALIDATED / INTEGRATED (`3303e2bfb` + `9aeac9dbe` + clôture scientifique comparaison/priorisation/disponibilité ; Vitest 9/9, 43 tests PASS, couverture V8 `src/lib/pilotage/**` 74.75% stmts / 73.8% branches / 76.73% lines). Artefacts conservés comme trace pour `REPORTS-HUB`.
+Statut : VALIDATED / INTEGRATED (`3303e2bfb`, `9aeac9dbe`, `3427423b4` + clôture scientifique complète jusqu'aux consommateurs `period-comparison`, `overview.zones`, `prioritization`, `elus-dossier` ; Vitest 10/10, 43 tests PASS, couverture V8 77.69% stmts / 77.08% branches / 79.21% lines). Artefacts conservés comme trace pour `REPORTS-HUB`.
 Base factuelle inspectée : 10b1e36a432a8d017a4b2084abe88ec44d7a428e. Ne pas imposer de checkout historique.
 Périmètre : Web uniquement, EXTEND_EXISTING, lot cohérent en trois jalons. Les captures utilisateur concernent les trois surfaces de Rapports, non trois rubriques distinctes.
 

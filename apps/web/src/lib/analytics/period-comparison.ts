@@ -23,7 +23,7 @@ type WindowMetrics = {
 
 type MetricDelta = {
   absolute: number;
-  percent: number;
+  percent: number | null;
   direction: "up" | "down" | "flat";
   strength: "stable" | "moderate" | "strong";
 };
@@ -55,16 +55,20 @@ function toDelta(
     previous === 0
       ? current === 0
         ? 0
-        : 100
+        : null
       : round1(((current - previous) / Math.abs(previous)) * 100);
-  const absPercent = Math.abs(rawPercent);
+  const absPercent = rawPercent === null ? null : Math.abs(rawPercent);
   const direction = absolute > 0 ? "up" : absolute < 0 ? "down" : "flat";
   const strength =
-    absPercent <= stableThreshold
+    absolute === 0
       ? "stable"
-      : absPercent <= moderateThreshold
-        ? "moderate"
-        : "strong";
+      : absPercent === null
+        ? "strong"
+        : absPercent <= stableThreshold
+          ? "stable"
+          : absPercent <= moderateThreshold
+            ? "moderate"
+            : "strong";
 
   return { absolute, percent: rawPercent, direction, strength };
 }

@@ -214,4 +214,81 @@ describe("buildZones", () => {
     expect(paris5?.deltaCoverageRatePercent).toBeNull();
     expect(paris5?.urgency).toBe("moderee");
   });
+
+  it("does not mark a zone critical when it was active only in the previous period", () => {
+    const contracts = [
+      buildActionDataContract({
+        id: "historical-heavy",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-03-01",
+        createdAt: "2026-03-01T10:00:00.000Z",
+        locationLabel: "Paris 11e",
+        latitude: 48.86,
+        longitude: 2.38,
+        wasteKg: 500,
+        volunteersCount: 50,
+      }),
+    ];
+
+    const zones = buildZones(contracts, 30, new Date("2026-04-10T00:00:00.000Z"));
+    const paris11 = zones.find((zone) => zone.area === "11e");
+
+    expect(paris11).toBeDefined();
+    expect(paris11?.currentActions).toBe(0);
+    expect(paris11?.previousActions).toBe(1);
+    expect(paris11?.normalizedScore).toBe(0);
+    expect(paris11?.urgency).toBe("moderee");
+    expect(paris11?.justification).toContain("periode precedente");
+  });
+
+  it("qualifies descriptive zone rows and nulls comparative deltas on truncated corpus", () => {
+    const contracts = [
+      buildActionDataContract({
+        id: "c1",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 100,
+        volunteersCount: 10,
+      }),
+      buildActionDataContract({
+        id: "p1",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-03-01",
+        createdAt: "2026-03-01T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 20,
+        volunteersCount: 2,
+      }),
+    ];
+
+    const zones = buildZones(contracts, 30, new Date("2026-04-10T00:00:00.000Z"), "available", {
+      isTruncated: true,
+      sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+    });
+
+    expect(zones).toHaveLength(1);
+    expect(zones[0]?.currentActions).toBe(1);
+    expect(zones[0]?.deltaActionsPercent).toBeNull();
+    expect(zones[0]?.deltaKgPercent).toBeNull();
+    expect(zones[0]?.urgency).toBe("moderee");
+    expect(zones[0]?.justification).toContain("Corpus partiel ou tronque");
+
+    const failedZones = buildZones(contracts, 30, new Date("2026-04-10T00:00:00.000Z"), "available", {
+      isTruncated: false,
+      sourceHealth: { partial: true, failedSources: ["actions"], availableSources: [], warnings: [] },
+    });
+    expect(failedZones).toEqual([]);
+  });
 });

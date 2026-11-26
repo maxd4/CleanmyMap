@@ -140,4 +140,52 @@ describe("buildPilotageOverviewFromContracts", () => {
     expect(overview.summary.kpis[2]?.value).toBe("Indisponible");
     expect(overview.summary.alert.title).toBe("Source des actions indisponible");
   });
+
+  it("propagates truncation to zones and blocks business risks on non-empty truncated corpus", () => {
+    const contracts = [
+      buildActionDataContract({
+        id: "trunc-1",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 50,
+        volunteersCount: 5,
+      }),
+      buildActionDataContract({
+        id: "trunc-0",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-03-01",
+        createdAt: "2026-03-01T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 10,
+        volunteersCount: 2,
+      }),
+    ];
+
+    const overview = buildPilotageOverviewFromContracts({
+      contracts,
+      periodDays: 30,
+      now: new Date("2026-04-10T00:00:00.000Z"),
+      dataAvailability: {
+        isTruncated: true,
+        sourceHealth: { partial: false, failedSources: [], availableSources: ["actions"], warnings: [] },
+      },
+    });
+
+    expect(overview.priorities).toHaveLength(1);
+    expect(overview.priorities[0]?.id).toBe("data-availability");
+    expect(overview.zones[0]?.deltaActionsPercent).toBeNull();
+    expect(overview.zones[0]?.deltaKgPercent).toBeNull();
+    expect(overview.zones[0]?.urgency).toBe("moderee");
+    expect(overview.summary.kpis[0]?.deltaPercent).toBe("Non comparable");
+  });
 });

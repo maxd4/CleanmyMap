@@ -342,8 +342,13 @@ export function buildOperationalPriorities(params: {
   const actionsFailed = Boolean(
     params.dataAvailability?.sourceHealth.failedSources.includes("actions"),
   );
+  const corpusIncomplete = Boolean(
+    params.dataAvailability?.isTruncated ||
+      params.dataAvailability?.sourceHealth.partial ||
+      (params.dataAvailability?.sourceHealth.failedSources.length ?? 0) > 0,
+  );
   const availabilityItem = dataAvailabilityPriority(params.dataAvailability);
-  if (actionsFailed && availabilityItem) {
+  if ((actionsFailed || corpusIncomplete) && availabilityItem) {
     return [availabilityItem];
   }
 

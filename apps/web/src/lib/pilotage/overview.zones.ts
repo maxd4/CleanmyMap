@@ -2,6 +2,7 @@ import { buildTerritorialBenchmark } from "../analytics/territorial-benchmark";
 import type { ActionDataContract } from "../actions/data-contract";
 import { computeActionImpactKpis } from "../actions/impact-calculators";
 import type { PilotageModerationAvailability } from "./metrics";
+import type { PilotageDataAvailability } from "./overview.types";
 import type { ZoneComparisonRow } from "./prioritization";
 import {
   DAY_MS,
@@ -128,11 +129,34 @@ function buildZoneMetrics(
   };
 }
 
-function zoneGuidance(normalizedScore: number, deltaKgPercent: number | null): Pick<ZoneComparisonRow, "urgency" | "justification" | "recommendedAction"> {
+function zoneGuidance(params: {
+  normalizedScore: number;
+  deltaKgPercent: number | null;
+  currentActions: number;
+  corpusIncomplete: boolean;
+}): Pick<ZoneComparisonRow, "urgency" | "justification" | "recommendedAction"> {
+  if (params.corpusIncomplete) {
+    return {
+      urgency: "moderee",
+      justification:
+        "Corpus partiel ou tronque : comparatif territorial non evaluable, suivi descriptif uniquement.",
+      recommendedAction:
+        "Verifier la disponibilite des donnees avant arbitrage territorial.",
+    };
+  }
+  if (params.currentActions === 0) {
+    return {
+      urgency: "moderee",
+      justification:
+        "Aucune action approuvee sur la periode courante (activite uniquement sur la periode precedente).",
+      recommendedAction:
+        "Maintenir la veille territoriale sans declencher d'urgence courante.",
+    };
+  }
   const urgency: ZoneComparisonRow["urgency"] =
-    normalizedScore >= 70 || (deltaKgPercent !== null && deltaKgPercent >= 30)
+    params.normalizedScore >= 70 || (params.deltaKgPercent !== null && params.deltaKgPercent >= 30)
       ? "critique"
-      : normalizedScore >= 50 || (deltaKgPercent !== null && deltaKgPercent >= 15)
+      : params.normalizedScore >= 50 || (params.deltaKgPercent !== null && params.deltaKgPercent >= 15)
         ? "elevee"
         : "moderee";
   return {
@@ -156,17 +180,33 @@ function buildZoneComparisonRow(params: {
   previous: ZoneAccumulator;
   benchmarkRow: { normalizedScore: number } | undefined;
   moderationAvailability: PilotageModerationAvailability;
+  corpusIncomplete: boolean;
 }): ZoneComparisonRow {
-  const metrics = buildZoneMetrics(params.current, params.previous, params.moderationAvailability);
+  const rawMetrics = buildZoneMetrics(params.current, params.previous, params.moderationAvailability);
+  const metrics: ZoneMetrics = params.corpusIncomplete
+    ? {
+        ...rawMetrics,
+        deltaActionsPercent: null,
+        deltaKgPercent: null,
+        deltaCoverageRatePercent: null,
+        deltaModerationDelayDaysPercent: null,
+      }
+    : rawMetrics;
+  const normalizedScore = params.current.actions > 0 ? (params.benchmarkRow?.normalizedScore ?? 0) : 0;
   return {
     area: params.area,
     currentActions: params.current.actions,
     previousActions: params.previous.actions,
     currentWasteKnownActions: params.current.knownWasteActions,
     previousWasteKnownActions: params.previous.knownWasteActions,
-    normalizedScore: params.benchmarkRow?.normalizedScore ?? 0,
+    normalizedScore,
     ...metrics,
-    ...zoneGuidance(params.benchmarkRow?.normalizedScore ?? 0, metrics.deltaKgPercent),
+    ...zoneGuidance({
+      normalizedScore,
+      deltaKgPercent: metrics.deltaKgPercent,
+      currentActions: params.current.actions,
+      corpusIncomplete: params.corpusIncomplete,
+    }),
   };
 }
 
@@ -205,7 +245,16 @@ export function buildZones(
   periodDays: number,
   now: Date,
   moderationAvailability: PilotageModerationAvailability = "available",
+  dataAvailability?: PilotageDataAvailability,
 ): ZoneComparisonRow[] {
+  if (dataAvailability?.sourceHealth.failedSources.includes("actions")) {
+    return [];
+  }
+  const corpusIncomplete = Boolean(
+    dataAvailability?.isTruncated ||
+      dataAvailability?.sourceHealth.partial ||
+      (dataAvailability?.sourceHealth.failedSources.length ?? 0) > 0,
+  );
   const nowMs = now.getTime();
   const currentFloorMs = nowMs - periodDays * DAY_MS;
   const previousFloorMs = currentFloorMs - periodDays * DAY_MS;
@@ -218,8 +267,13 @@ export function buildZones(
     moderationAvailability,
   });
 
+  const currentPeriodContracts = contracts.filter((contract) => {
+    const observedMs = parseDateMs(contract.dates.observedAt);
+    return observedMs !== null && observedMs >= currentFloorMs && observedMs <= nowMs;
+  });
+
   const benchmark = buildTerritorialBenchmark(
-    contracts.map((contract) => ({
+    currentPeriodContracts.map((contract) => ({
       type: contract.type,
       status: contract.status,
       locationLabel: contract.location.label,
@@ -238,6 +292,7 @@ export function buildZones(
       previous: previousByArea.get(area) ?? emptyZoneAccumulator(),
       benchmarkRow: benchmarkByArea.get(area),
       moderationAvailability,
+      corpusIncomplete,
     }))
     .sort((a, b) => b.normalizedScore - a.normalizedScore)
     .slice(0, 12);

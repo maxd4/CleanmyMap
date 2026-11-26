@@ -82,6 +82,7 @@ export function buildPilotageOverviewFromContracts(
     params.periodDays,
     now,
     moderationAvailability,
+    dataAvailability,
   );
   const priorities = buildOperationalPriorities({
     comparison,
