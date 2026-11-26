@@ -212,4 +212,45 @@ describe("buildOperationalPriorities", () => {
 
     expect(sobriety).toBeUndefined();
   });
+
+  it("excludes quality, coverage, sobriety, and integrity risks when approvedActions is 0", () => {
+    const comparison = buildComparisonFixture();
+    comparison.current.approvedActions = 0;
+    comparison.current.qualityScore = 0;
+    comparison.current.coverageRate = 0;
+    comparison.current.wasteKnownActions = 0;
+    comparison.current.wasteCoverageRate = 0;
+    comparison.current.pendingCount = null;
+    comparison.current.moderationDelayDays = null;
+    comparison.current.anomaliesCount = 0;
+
+    const priorities = buildOperationalPriorities({ comparison, zones: [] });
+
+    expect(priorities.some((p) => p.id === "data-quality")).toBe(false);
+    expect(priorities.some((p) => p.id === "coverage")).toBe(false);
+    expect(priorities.some((p) => p.id === "sobriety")).toBe(false);
+    expect(priorities.some((p) => p.id === "data-integrity")).toBe(false);
+    expect(priorities.every((p) => p.severity === "low")).toBe(true);
+  });
+
+  it("returns only data-availability when actions source failed", () => {
+    const comparison = buildComparisonFixture();
+    const priorities = buildOperationalPriorities({
+      comparison,
+      zones: [],
+      dataAvailability: {
+        isTruncated: false,
+        sourceHealth: {
+          partial: true,
+          failedSources: ["actions"],
+          availableSources: [],
+          warnings: ["actions_failed"],
+        },
+      },
+    });
+
+    expect(priorities).toHaveLength(1);
+    expect(priorities[0]?.id).toBe("data-availability");
+    expect(priorities[0]?.title).toBe("Source des actions indisponible");
+  });
 });

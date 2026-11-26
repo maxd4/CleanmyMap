@@ -20,9 +20,9 @@ export function areaFromLabel(label: string): string {
   return `${matched[1]}e`;
 }
 
-export function safePercentDelta(current: number, previous: number): number {
+export function safePercentDelta(current: number, previous: number): number | null {
   if (previous === 0) {
-    return current === 0 ? 0 : 100;
+    return current === 0 ? 0 : null;
   }
   return ((current - previous) / Math.abs(previous)) * 100;
 }

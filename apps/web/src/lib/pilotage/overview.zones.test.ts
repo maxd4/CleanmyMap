@@ -174,4 +174,44 @@ describe("buildZones", () => {
       buildZones(contracts, 30, new Date("2026-04-10T00:00:00.000Z")),
     ).toHaveLength(12);
   });
+
+  it("returns null percent deltas when previous period is empty or waste coverage is partial", () => {
+    const contracts = [
+      buildActionDataContract({
+        id: "dominant-zone",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 500,
+        volunteersCount: 20,
+      }),
+      buildActionDataContract({
+        id: "current-only",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 5e",
+        latitude: 48.84,
+        longitude: 2.35,
+        wasteKg: 5,
+        volunteersCount: 2,
+      }),
+    ];
+
+    const zones = buildZones(contracts, 30, new Date("2026-04-10T00:00:00.000Z"));
+    const paris5 = zones.find((zone) => zone.area === "5e");
+
+    expect(paris5).toBeDefined();
+    expect(paris5?.deltaActionsPercent).toBeNull();
+    expect(paris5?.deltaKgPercent).toBeNull();
+    expect(paris5?.deltaCoverageRatePercent).toBeNull();
+    expect(paris5?.urgency).toBe("moderee");
+  });
 });

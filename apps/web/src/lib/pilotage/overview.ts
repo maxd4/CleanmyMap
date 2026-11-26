@@ -83,7 +83,11 @@ export function buildPilotageOverviewFromContracts(
     now,
     moderationAvailability,
   );
-  const priorities = buildOperationalPriorities({ comparison, zones });
+  const priorities = buildOperationalPriorities({
+    comparison,
+    zones,
+    dataAvailability,
+  });
 
   return {
     generatedAt: now.toISOString(),
@@ -93,7 +97,7 @@ export function buildPilotageOverviewFromContracts(
     priorities,
     methods: buildMethods(),
     zones,
-    summary: buildSummary(comparison, priorities),
+    summary: buildSummary(comparison, priorities, dataAvailability),
     dataAvailability,
     contracts: params.contracts,
   };

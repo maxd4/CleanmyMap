@@ -114,5 +114,30 @@ describe("buildPilotageOverviewFromContracts", () => {
       sourceHealth,
     });
     expect(overview.comparison.current.approvedActions).toBe(0);
+    expect(overview.summary.kpis[0]?.deltaPercent).toBe("Non comparable");
+    expect(overview.priorities.some((p) => p.id === "data-availability")).toBe(true);
+    expect(overview.priorities.some((p) => p.id === "data-quality")).toBe(false);
+  });
+
+  it("marks summary unavailable and prioritizes data-availability when actions source fails", () => {
+    const overview = buildPilotageOverviewFromContracts({
+      contracts: [],
+      periodDays: 30,
+      dataAvailability: {
+        isTruncated: false,
+        sourceHealth: {
+          partial: true,
+          failedSources: ["actions"],
+          availableSources: [],
+          warnings: ["actions_unavailable"],
+        },
+      },
+    });
+
+    expect(overview.priorities).toHaveLength(1);
+    expect(overview.priorities[0]?.id).toBe("data-availability");
+    expect(overview.summary.kpis[0]?.value).toBe("Indisponible");
+    expect(overview.summary.kpis[2]?.value).toBe("Indisponible");
+    expect(overview.summary.alert.title).toBe("Source des actions indisponible");
   });
 });

@@ -87,6 +87,23 @@ function buildZoneMetrics(
   const previousModerationDelayDays = moderationAvailability === "available"
     ? averageZoneDelay(previous.pendingAgesDays)
     : null;
+  const wasteComparable =
+    current.actions > 0 &&
+    previous.actions > 0 &&
+    current.knownWasteActions === current.actions &&
+    previous.knownWasteActions === previous.actions;
+  const deltaActionsPercentRaw = safePercentDelta(current.actions, previous.actions);
+  const deltaKgPercentRaw = wasteComparable
+    ? safePercentDelta(current.kg, previous.kg)
+    : null;
+  const deltaCoverageRatePercentRaw =
+    current.actions > 0 && previous.actions > 0
+      ? safePercentDelta(currentCoverageRate, previousCoverageRate)
+      : null;
+  const deltaModerationDelayDaysPercentRaw =
+    currentModerationDelayDays === null || previousModerationDelayDays === null
+      ? null
+      : safePercentDelta(currentModerationDelayDays, previousModerationDelayDays);
   return {
     deltaActionsAbsolute: round1(current.actions - previous.actions),
     currentKg: round1(current.kg),
@@ -94,29 +111,30 @@ function buildZoneMetrics(
     currentWasteCoverageRate,
     previousWasteCoverageRate,
     deltaKgAbsolute: round1(current.kg - previous.kg),
-    deltaActionsPercent: round1(safePercentDelta(current.actions, previous.actions)),
-    deltaKgPercent: currentWasteCoverageRate === 100 && previousWasteCoverageRate === 100
-      ? round1(safePercentDelta(current.kg, previous.kg))
-      : 0,
+    deltaActionsPercent: deltaActionsPercentRaw === null ? null : round1(deltaActionsPercentRaw),
+    deltaKgPercent: deltaKgPercentRaw === null ? null : round1(deltaKgPercentRaw),
     currentCoverageRate,
     previousCoverageRate,
     deltaCoverageRateAbsolute: round1(currentCoverageRate - previousCoverageRate),
-    deltaCoverageRatePercent: round1(safePercentDelta(currentCoverageRate, previousCoverageRate)),
+    deltaCoverageRatePercent:
+      deltaCoverageRatePercentRaw === null ? null : round1(deltaCoverageRatePercentRaw),
     currentModerationDelayDays,
     previousModerationDelayDays,
     deltaModerationDelayDaysAbsolute: currentModerationDelayDays === null || previousModerationDelayDays === null
       ? null
       : round1(currentModerationDelayDays - previousModerationDelayDays),
-    deltaModerationDelayDaysPercent: currentModerationDelayDays === null || previousModerationDelayDays === null
-      ? null
-      : round1(safePercentDelta(currentModerationDelayDays, previousModerationDelayDays)),
+    deltaModerationDelayDaysPercent:
+      deltaModerationDelayDaysPercentRaw === null ? null : round1(deltaModerationDelayDaysPercentRaw),
   };
 }
 
-function zoneGuidance(normalizedScore: number, deltaKgPercent: number): Pick<ZoneComparisonRow, "urgency" | "justification" | "recommendedAction"> {
-  const urgency: ZoneComparisonRow["urgency"] = normalizedScore >= 70 || deltaKgPercent >= 30
-    ? "critique"
-    : normalizedScore >= 50 || deltaKgPercent >= 15 ? "elevee" : "moderee";
+function zoneGuidance(normalizedScore: number, deltaKgPercent: number | null): Pick<ZoneComparisonRow, "urgency" | "justification" | "recommendedAction"> {
+  const urgency: ZoneComparisonRow["urgency"] =
+    normalizedScore >= 70 || (deltaKgPercent !== null && deltaKgPercent >= 30)
+      ? "critique"
+      : normalizedScore >= 50 || (deltaKgPercent !== null && deltaKgPercent >= 15)
+        ? "elevee"
+        : "moderee";
   return {
     urgency,
     justification: urgency === "critique"

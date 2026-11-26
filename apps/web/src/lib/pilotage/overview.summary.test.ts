@@ -105,12 +105,25 @@ describe("overview summary", () => {
           status: "pending",
           source: "test",
           observedAt: "2026-04-09",
-          createdAt: "2026-04-01T00:00:00.000Z",
+          createdAt: "2026-03-20T00:00:00.000Z",
           locationLabel: "Paris 10e",
           latitude: 48.87,
           longitude: 2.35,
           wasteKg: 999,
           volunteersCount: 99,
+        }),
+        buildActionDataContract({
+          id: "pending-previous",
+          type: "action",
+          status: "pending",
+          source: "test",
+          observedAt: "2026-03-01",
+          createdAt: "2026-03-09T00:00:00.000Z",
+          locationLabel: "Paris 10e",
+          latitude: 48.87,
+          longitude: 2.35,
+          wasteKg: 10,
+          volunteersCount: 2,
         }),
       ],
       30,
@@ -118,6 +131,44 @@ describe("overview summary", () => {
     );
 
     expect(pickDecisionRecommendation(comparison).href).toBe(ADMIN_ROUTE);
+  });
+
+  it("does not substitute deltaAbsolute when deltaPercent is null in risk ranking", () => {
+    const comparison = computePilotageComparison(
+      [
+        buildActionDataContract({
+          id: "approved-only",
+          type: "action",
+          status: "approved",
+          source: "test",
+          observedAt: "2026-04-09",
+          createdAt: "2026-04-08T00:00:00.000Z",
+          locationLabel: "Paris 10e",
+          latitude: 48.87,
+          longitude: 2.35,
+          wasteKg: 10,
+          volunteersCount: 4,
+        }),
+        buildActionDataContract({
+          id: "pending-current",
+          type: "action",
+          status: "pending",
+          source: "test",
+          observedAt: "2026-04-09",
+          createdAt: "2026-04-01T00:00:00.000Z",
+          locationLabel: "Paris 10e",
+          latitude: 48.87,
+          longitude: 2.35,
+          wasteKg: 10,
+          volunteersCount: 4,
+        }),
+      ],
+      30,
+      new Date("2026-04-10T00:00:00.000Z"),
+    );
+
+    expect(comparison.metrics.moderationDelayDays?.deltaPercent).toBeNull();
+    expect(pickDecisionRecommendation(comparison).href).toBe(DASHBOARD_ROUTE);
   });
 
   it("falls back to the dashboard when all decision risks are neutral", () => {
@@ -215,5 +266,79 @@ describe("overview summary", () => {
     );
     const zeroSummary = buildSummary(observedZero, []);
     expect(zeroSummary.kpis[0]?.value).toBe("0.0 kg (100% renseigné)");
+  });
+
+  it("checks exact wasteKnownActions counts and propagates dataAvailability", () => {
+    const now = new Date("2026-04-10T00:00:00.000Z");
+    const comparison = computePilotageComparison(
+      [
+        buildActionDataContract({
+          id: "c1",
+          type: "action",
+          status: "approved",
+          source: "test",
+          observedAt: "2026-04-09",
+          createdAt: "2026-04-08T00:00:00.000Z",
+          locationLabel: "Paris 10e",
+          latitude: 48.87,
+          longitude: 2.35,
+          wasteKg: 10,
+          volunteersCount: 2,
+        }),
+        buildActionDataContract({
+          id: "p1",
+          type: "action",
+          status: "approved",
+          source: "test",
+          observedAt: "2026-03-01",
+          createdAt: "2026-02-28T00:00:00.000Z",
+          locationLabel: "Paris 10e",
+          latitude: 48.87,
+          longitude: 2.35,
+          wasteKg: 5,
+          volunteersCount: 2,
+        }),
+      ],
+      30,
+      now,
+    );
+
+    // Simulate rounded 100.0% coverage where 1 action is still missing mass
+    comparison.current.approvedActions = 2001;
+    comparison.current.wasteKnownActions = 2000;
+    comparison.current.wasteCoverageRate = 100;
+
+    const incompleteExactSummary = buildSummary(comparison, []);
+    expect(incompleteExactSummary.kpis[1]?.value).toBe("Indisponible");
+    expect(incompleteExactSummary.kpis[0]?.deltaPercent).toBe("Non comparable");
+
+    // Truncated corpus must also mark all period comparisons non comparable
+    comparison.current.approvedActions = 1;
+    comparison.current.wasteKnownActions = 1;
+    const truncatedSummary = buildSummary(comparison, [], {
+      isTruncated: true,
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions"],
+        warnings: [],
+      },
+    });
+    expect(truncatedSummary.kpis[2]?.deltaPercent).toBe("Non comparable");
+    expect(truncatedSummary.recommendedAction.label).toBe("Verifier la disponibilite des donnees");
+
+    // Failed actions source must mark values and deltas unavailable
+    const failedSummary = buildSummary(comparison, [], {
+      isTruncated: false,
+      sourceHealth: {
+        partial: true,
+        failedSources: ["actions"],
+        availableSources: [],
+        warnings: ["actions_failed"],
+      },
+    });
+    expect(failedSummary.kpis[0]?.value).toBe("Indisponible");
+    expect(failedSummary.kpis[2]?.value).toBe("Indisponible");
+    expect(failedSummary.kpis[0]?.deltaPercent).toBe("Indisponible");
   });
 });

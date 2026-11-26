@@ -1,4 +1,5 @@
 import type { PilotageComparisonResult } from "./metrics";
+import type { PilotageDataAvailability } from "./overview.types";
 import { PILOTAGE_THRESHOLDS, PRIORITIZATION_RULESET } from "./constants";
 import {
   ADMIN_ROUTE,
@@ -18,12 +19,12 @@ export type ZoneComparisonRow = {
   currentWasteCoverageRate?: number;
   previousWasteCoverageRate?: number;
   deltaKgAbsolute: number;
-  deltaActionsPercent: number;
-  deltaKgPercent: number;
+  deltaActionsPercent: number | null;
+  deltaKgPercent: number | null;
   currentCoverageRate: number;
   previousCoverageRate: number;
   deltaCoverageRateAbsolute: number;
-  deltaCoverageRatePercent: number;
+  deltaCoverageRatePercent: number | null;
   currentModerationDelayDays: number | null;
   previousModerationDelayDays: number | null;
   deltaModerationDelayDaysAbsolute: number | null;
@@ -97,7 +98,10 @@ function backlogPriority(
 
 function qualityPriority(
   comparison: PilotageComparisonResult,
-): OperationalPriority {
+): OperationalPriority | null {
+  if (comparison.current.approvedActions === 0) {
+    return null;
+  }
   const qualityScore = comparison.current.qualityScore;
   const coverageRate = comparison.current.coverageRate;
   const qualityRisk = Math.max(
@@ -152,9 +156,15 @@ function territorialPriority(zones: ZoneComparisonRow[]): OperationalPriority {
   }
 
   const massComparable =
+    top.currentActions > 0 &&
+    top.previousActions > 0 &&
+    (top.currentWasteKnownActions ?? top.currentActions) === top.currentActions &&
+    (top.previousWasteKnownActions ?? top.previousActions) === top.previousActions &&
     (top.currentWasteCoverageRate ?? 100) >= 100 &&
-    (top.previousWasteCoverageRate ?? 100) >= 100;
-  const progression = massComparable ? Math.max(0, top.deltaKgPercent) : 0;
+    (top.previousWasteCoverageRate ?? 100) >= 100 &&
+    top.deltaKgPercent !== null;
+  const progression =
+    massComparable && top.deltaKgPercent !== null ? Math.max(0, top.deltaKgPercent) : 0;
   const score = round1(
     Math.min(100, top.normalizedScore * 0.75 + progression * 0.25),
   );
@@ -175,9 +185,9 @@ function territorialPriority(zones: ZoneComparisonRow[]): OperationalPriority {
     },
     evidence: [
       `Score normalise: ${top.normalizedScore.toFixed(1)}`,
-      massComparable
+      massComparable && top.deltaKgPercent !== null
         ? `Variation kg: ${top.deltaKgPercent.toFixed(1)}%`
-        : "Variation kg: indisponible (couverture partielle)",
+        : "Variation kg: indisponible (couverture partielle ou base nulle)",
     ],
     engineVersion: PRIORITIZATION_RULESET.version,
   };
@@ -185,7 +195,10 @@ function territorialPriority(zones: ZoneComparisonRow[]): OperationalPriority {
 
 function coveragePriority(
   comparison: PilotageComparisonResult,
-): OperationalPriority {
+): OperationalPriority | null {
+  if (comparison.current.approvedActions === 0) {
+    return null;
+  }
   const coverage = comparison.current.coverageRate;
   const risk = Math.max(
     0,
@@ -214,23 +227,26 @@ function coveragePriority(
 
 function sobrietyPriority(
   comparison: PilotageComparisonResult,
-): OperationalPriority {
+): OperationalPriority | null {
+  if (comparison.current.approvedActions === 0) {
+    return null;
+  }
   const iur = comparison.current.iurIndex;
   const wasteCoverageRate = comparison.current.wasteCoverageRate;
-  if (wasteCoverageRate < 100) {
+  if (comparison.current.wasteKnownActions < comparison.current.approvedActions) {
     return {
       id: "sobriety",
       title: "Fiabiliser la mesure des déchets",
       severity: "low",
       score: 0,
-      reason: `L'IUR est indisponible pour une décision métier : seulement ${wasteCoverageRate.toFixed(1)}% des actions ont une masse renseignée.`,
+      reason: `L'IUR est indisponible pour une décision métier : seulement ${comparison.current.wasteKnownActions}/${comparison.current.approvedActions} actions (${wasteCoverageRate.toFixed(1)}%) ont une masse renseignée.`,
       impactEstimate: "Compléter les mesures de masse avant d'interpréter le rendement écologique.",
       suggestedOwner: "Equipe terrain",
       recommendedAction: {
         href: "/actions/history",
         label: "Compléter les mesures",
       },
-      evidence: [`Couverture masse: ${wasteCoverageRate.toFixed(1)}%`, "IUR non exploitable"],
+      evidence: [`Couverture masse: ${comparison.current.wasteKnownActions}/${comparison.current.approvedActions}`, "IUR non exploitable"],
       engineVersion: PRIORITIZATION_RULESET.version,
     };
   }
@@ -257,7 +273,10 @@ function sobrietyPriority(
 
 function dataIntegrityPriority(
   comparison: PilotageComparisonResult,
-): OperationalPriority {
+): OperationalPriority | null {
+  if (comparison.current.approvedActions === 0) {
+    return null;
+  }
   const anomalies = comparison.current.anomaliesCount;
   const risk = Math.min(100, anomalies * 15);
   const score = round1(risk);
@@ -279,11 +298,57 @@ function dataIntegrityPriority(
   };
 }
 
+function dataAvailabilityPriority(
+  dataAvailability: PilotageDataAvailability | undefined,
+): OperationalPriority | null {
+  if (!dataAvailability) {
+    return null;
+  }
+  const failedSources = dataAvailability.sourceHealth.failedSources;
+  const actionsFailed = failedSources.includes("actions");
+  if (!actionsFailed && !dataAvailability.isTruncated && !dataAvailability.sourceHealth.partial && failedSources.length === 0) {
+    return null;
+  }
+  return {
+    id: "data-availability",
+    title: actionsFailed
+      ? "Source des actions indisponible"
+      : "Corpus partiel ou tronque",
+    severity: actionsFailed ? "high" : "medium",
+    score: actionsFailed ? 70 : 45,
+    reason: actionsFailed
+      ? "La source principale des actions a echoue : les indicateurs et comparaisons ne sont pas evaluables."
+      : "Le corpus charge est tronque ou partiel : les comparaisons temporelles sont non comparables.",
+    impactEstimate:
+      "Evite toute decision ou priorisation fondee sur un sous-ensemble incomplet.",
+    suggestedOwner: "Operations / Data",
+    recommendedAction: {
+      href: PILOTAGE_ROUTE,
+      label: "Verifier la disponibilite des sources",
+    },
+    evidence: [
+      `Troncature: ${dataAvailability.isTruncated ? "oui" : "non"}`,
+      `Sources en echec: ${failedSources.length > 0 ? failedSources.join(", ") : "aucune"}`,
+    ],
+    engineVersion: PRIORITIZATION_RULESET.version,
+  };
+}
+
 export function buildOperationalPriorities(params: {
   comparison: PilotageComparisonResult;
   zones: ZoneComparisonRow[];
+  dataAvailability?: PilotageDataAvailability;
 }): OperationalPriority[] {
+  const actionsFailed = Boolean(
+    params.dataAvailability?.sourceHealth.failedSources.includes("actions"),
+  );
+  const availabilityItem = dataAvailabilityPriority(params.dataAvailability);
+  if (actionsFailed && availabilityItem) {
+    return [availabilityItem];
+  }
+
   const all = [
+    availabilityItem,
     backlogPriority(params.comparison),
     qualityPriority(params.comparison),
     territorialPriority(params.zones),

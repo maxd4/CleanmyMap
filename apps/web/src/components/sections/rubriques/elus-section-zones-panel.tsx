@@ -11,7 +11,10 @@ type ElusSectionZonesPanelProps = {
   fr: boolean;
 };
 
-function signedPercent(value: number): string {
+function signedPercent(value: number | null): string {
+  if (value === null) {
+    return "N/A";
+  }
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
@@ -71,8 +74,8 @@ export function ElusSectionZonesPanel({ data, fr }: ElusSectionZonesPanelProps) 
                   <td className="px-10 py-8">
                     <div className="space-y-1">
                       <span className="text-lg font-black text-white block">{zone.currentActions}</span>
-                      <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tight", zone.deltaActionsPercent >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400")}>
-                        {zone.deltaActionsPercent >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                      <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tight", zone.deltaActionsPercent === null ? "bg-slate-500/10 text-slate-300" : zone.deltaActionsPercent >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400")}>
+                        {zone.deltaActionsPercent === null ? null : zone.deltaActionsPercent >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                         {signedPercent(zone.deltaActionsPercent)}
                       </div>
                     </div>
@@ -80,7 +83,7 @@ export function ElusSectionZonesPanel({ data, fr }: ElusSectionZonesPanelProps) 
                   <td className="px-10 py-8">
                     <div className="space-y-1">
                       <span className="text-lg font-black text-white block">{zone.currentKg}kg</span>
-                      <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tight", zone.deltaKgPercent >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400")}>
+                      <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tight", zone.deltaKgPercent === null ? "bg-slate-500/10 text-slate-300" : zone.deltaKgPercent >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400")}>
                         {signedPercent(zone.deltaKgPercent)}
                       </div>
                     </div>
