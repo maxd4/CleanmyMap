@@ -32,6 +32,16 @@ Les prix historiques ne sont pas des devis actuels. Les offres publiques ne prou
 
 ## 2. Quantités, stockage et chaîne de responsabilité
 
+### Contexte parisien et toxicité : limites des chiffres
+
+La Ville de Paris estime en 2025 que 4 à 5 millions de mégots sont jetés chaque jour dans ses rues, pour un coût annuel d'environ 10 millions EUR. Son communiqué de presse évoque également 4 à 5 millions de mégots ramassés quotidiennement par les agents. Ces estimations ne constituent pas un bilan entrée/sortie cohérent : aucun taux de collecte de 50 % ni volume résiduel ne peut en être déduit. Le coût municipal est un coût de propreté, non un prix de recyclage. [S7]
+
+L'ADEME indique que les mégots jetés à la poubelle suivent la filière des ordures ménagères (incinération ou stockage) ; ils ne sont pas destinés au bac de tri conventionnel. Privilégier une filière spécialisée lorsqu'elle est accessible et accepte le flux. La toxicité ne signifie pas une interdiction générale des ordures ménagères ; la classification d'un lot séparé et ses obligations spécifiques doivent être vérifiées. [S34]
+
+Slaughter et al. (2011) ont observé une concentration létale médiane (CL50) proche d'un mégot fumé avec reste de tabac par litre pour deux espèces de poissons, dans leurs conditions expérimentales ; les filtres fumés sans tabac présentaient des CL50 différentes. Roder Green et al. (2014) estiment que la nicotine libérée par un mégot peut porter jusqu'à 1 000 L d'eau au-delà d'une concentration prédite sans effet (PNEC) de 2,4 µg/L. Ce résultat dépend du relargage, du seuil et des hypothèses de dilution ; il ne mesure pas un volume d'eau effectivement pollué dans la nature. [S35, S36]
+
+Le repère de communication de 500 L/mégot relayé par Paris reste un proxy de risque, pas une mesure écologique universelle. Le protocole scientifique CleanMyMap conserve son facteur conventionnel et ses limites ; cette étude ne change ni le facteur runtime ni les rapports d'impact. Ne pas remplacer le proxy par 1 000 L/mégot ni additionner ces deux chiffres. [S1, S7, S36]
+
 ### 2.1. Ordres de grandeur
 
 Pour les conversions, reprendre uniquement les facteurs versionnés du protocole scientifique CleanMyMap : 0,22 g par mégot propre (proxy sec), 0,50 g par mégot humide et 0,90 g par mégot mouillé (proxy théorique provisoire), selon la version impact-terrain-2026-butts-mass-v3 ; 600 mégots/L (cleanmymap-butts-volume-v3). Les versions antérieures, dont 700 mégots/L (v2), restent historiques. Une pesée nette effective est préférable pour un seuil contractuel. Le poids du contenant doit être déduit. Les variations d'humidité, de tassement, de papier, de tabac et d'impuretés interdisent d'assimiler ces conversions à une densité mesurée.
@@ -263,14 +273,23 @@ La plateforme publique du FabLab ne permet pas de présumer la disponibilité de
 
 | Voie | Principe | État de preuve | Points critiques / aptitude au FabLab |
 | --- | --- | --- | --- |
-| Plaques, composites, mobilier | Récupérer la fraction polymère, produire un matériau solide | Filière industrielle annoncée par MéGO!/CKFD ; preuve locale absente | Teneur en contaminants, liant, émissions, résistance, durabilité, fin de vie |
-| Isolants thermiques et acoustiques | Exploiter une fraction fibreuse décontaminée | TchaoMegot annonce une valorisation en isolant ; acoustique à tester | Conductivité, absorption, feu, émissions, humidité, fibres et tenue |
+| Plaques, composites, mobilier | Récupérer la fraction polymère, produire un matériau solide | Filière industrielle annoncée par MéGO!/CKFD et composites époxy renforcés de nanofibres issus de filtres en laboratoire (Fathi et al., 2024) [S38] ; preuve locale absente | Teneur en contaminants, liant, émissions, résistance, durabilité, fin de vie |
+| Isolants thermiques et acoustiques | Exploiter une fraction fibreuse décontaminée | TchaoMegot annonce une valorisation en isolant ; panneaux acoustiques et thermiques étudiés par Ardani et al. (2026) [S39] ; performance locale à mesurer | Conductivité, absorption, feu, émissions, humidité, fibres et tenue |
 | Membranes et adsorbants | Réutiliser l'acétate récupéré comme matériau de filtration | Publications de 2022, 2024 et 2025 à l'échelle laboratoire [S27–S29] | Pureté, relargage, performances et stabilité ; aucune application eau potable sans qualification |
 | Matériaux de construction | Incorporation dans des composites minéraux ou produits industriels | Revue de littérature sur briques, mortiers et composites [S30] | Résistance, porosité, lixiviation, émissions, vieillissement, normes ; traitement thermique réservé à installation autorisée |
 | Récupération de polymère / dépolymérisation | Séparer ou convertir la fraction polymère pour nouveaux usages | Piste scientifique à expertiser | Rendement, sélectivité, énergie, réactifs, effluents, pureté et coût |
 | Valorisation énergétique spécialisée | Récupération énergétique contrôlée par opérateur | Filières existantes documentées [S3, S12] | Ne pas assimiler à un recyclage matière ; pas de combustion expérimentale au FabLab |
 
-Les études sur membranes démontrent des résultats dans leurs conditions expérimentales, pas la sécurité de mégots collectés au sol à Paris ni la rentabilité à petite échelle. Les produits destinés au contact alimentaire, à l'eau potable, aux enfants, aux usages médicaux ou à un contact corporel prolongé sont exclus du premier pilote. Aucun procédé chimique opérationnel ou recette de dépollution n'est prescrit ici.
+Les études sur membranes démontrent des résultats dans leurs conditions expérimentales, pas la sécurité de mégots collectés au sol à Paris ni la rentabilité à petite échelle.
+
+Trois références complémentaires orientent le choix du prototype :
+
+- D'Urso et al. (2024) : récupération d'acétate de cellulose à partir de filtres usagés et étude d'une matière d'alimentation pour impression 3D [S37]. Une preuve de concept ne signifie pas que les imprimantes partagées du FabLab sont compatibles avec des déchets bruts.
+- Fathi et al. (2024) : composites époxy renforcés par des nanofibres de cellulose issues de filtres [S38]. Le liant et les étapes de récupération doivent entrer dans le bilan complet.
+- Ardani et al. (2026) : panneaux composites à fonctions thermique et acoustique à partir de fibres de mégots traitées [S39]. L'étude inclut une estimation économique à l'échelle laboratoire ; ce coût n'est pas un devis français ni une preuve de rentabilité du pilote.
+
+Le premier démonstrateur recommandé est une petite plaque composite expérimentale, comparée à un témoin et à un matériau de référence, puis caractérisée mécaniquement et thermiquement selon les moyens accessibles. L'impression 3D, les membranes et les isolants restent des alternatives, à arbitrer avec l'encadrement scientifique. L'objectif est de réduire la dépendance aux prestations payantes si une alternative sûre, conforme et compétitive est démontrée ; ne pas exclure a priori les opérateurs existants comme partenaires ou comparateurs. 
+Les produits destinés au contact alimentaire, à l'eau potable, aux enfants, aux usages médicaux ou à un contact corporel prolongé sont exclus du premier pilote. Aucun procédé chimique opérationnel ou recette de dépollution n'est prescrit ici.
 
 ### 6.4. Plan scientifique à jalons, quantités maximales indicatives
 
@@ -424,5 +443,11 @@ Liens externes publics, datation de publication lorsque connue. Les informations
 | S31 | [Arrêté du 23 novembre 2022, cahiers des charges REP tabac](https://www.legifrance.gouv.fr/loda/id/JORFTEXT000046690986/) |
 | S32 | [ALCOME, avis du comité des parties prenantes et budget 2026](https://alcome.eco/wp-content/uploads/2025/10/250718-Publication-des-avis-du-comite-des-parties-prenantes.pdf) |
 | S33 | [ALCOME, résultats des consultations R&D](https://alcome.eco/resultats-des-consultations-alcome/) ; [consultations](https://alcome.eco/consultations/) |
+| S34 | [ADEME, Que faire de mon mégot de cigarette ?](https://quefairedemesdechets.ademe.fr/dechet/megot-de-cigarette/) |
+| S35 | [Slaughter et al. (2011), Toxicity of cigarette butts, and their chemical components, to marine and freshwater fish, Tobacco Control](https://doi.org/10.1136/tc.2010.040170) |
+| S36 | [Roder Green, Putschew et Nehls (2014), Littered cigarette butts as a source of nicotine in urban waters, Journal of Hydrology](https://doi.org/10.1016/j.jhydrol.2014.05.046) |
+| S37 | [D'Urso et al. (2024), A preliminary study on 3D printing feedstock derived from cellulose recovered from cigarette butts, Cellulose 31, 5097-5114](https://doi.org/10.1007/s10570-024-05886-w) |
+| S38 | [Fathi et al. (2024), Innovative upcycling cigarette filters into high-performance cellulose nanofiber-epoxy composites, International Journal of Biological Macromolecules 281, 136561](https://doi.org/10.1016/j.ijbiomac.2024.136561) |
+| S39 | [Ardani et al. (2026), Bio-composite Panels from upcycling cigarette butts: Acoustic and thermal characterization, Sustainable Materials and Technologies 47, e01867](https://doi.org/10.1016/j.susmat.2026.e01867) |
 
 Pour le contexte interne : [ambition territoriale](./ambition-territoriale-paris.md), [modèle économique](./business-model.md), [protocole scientifique](./SCIENTIFIC_PROTOCOL.md), [prospects dépollution France](../operations/partnerships/prospects-depollution-france.md). Les données publiques d'annuaire restent sous leurs owners dans `apps/web/src/lib/partners/` (notamment `public-structure-context.megots.sources.ts` et `paris-cleanwalk-network.megots.data.ts`). Ne pas intégrer automatiquement cette étude dans le runtime ou les fiches publiques.
