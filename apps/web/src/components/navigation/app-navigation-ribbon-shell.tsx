@@ -155,24 +155,24 @@ function AppNavigationRibbonFrame({
         )}
         style={ribbonChrome}
       >
-        <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 max-[639px]:gap-1 max-[639px]:px-2 sm:px-5 lg:gap-2 xl:grid-cols-[auto_minmax(15rem,1fr)_auto] xl:px-7 xl:py-2">
+        <div className="flex w-full min-w-0 items-center justify-between gap-1.5 px-2 py-2 sm:px-4 lg:gap-2 xl:grid xl:grid-cols-[auto_minmax(15rem,1fr)_auto] xl:px-7 xl:py-2">
           <p className="sr-only">
             {locale === "fr" ? "Profil actif" : "Active profile"}: {effectiveProfileLabel}
           </p>
 
-          <div className="order-1 col-span-2 flex min-w-0 items-center justify-between gap-2 xl:order-none xl:col-span-1 xl:col-start-1 xl:justify-start">
-            <div data-navigation-group="primary" data-navigation-tutorial-target="primary" role="group" aria-label={locale === "fr" ? "Navigation principale" : "Primary navigation"} className="max-[639px]:shrink-0 cmm-navigation-group cmm-navigation-group--primary flex min-w-0 items-center gap-2">
+          <div className="contents xl:col-start-1 xl:flex xl:min-w-0 xl:items-center xl:justify-start xl:gap-2">
+            <div data-navigation-group="primary" data-navigation-tutorial-target="primary" role="group" aria-label={locale === "fr" ? "Navigation principale" : "Primary navigation"} className="cmm-navigation-group cmm-navigation-group--primary flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
               <Link
                 href="/"
                 prefetch={false}
                 onClick={() => onTrackNavigation("/", "Accueil", null)}
                 data-navigation-tutorial-target="home"
-                className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-[border-color,box-shadow,background-color] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 max-[380px]:min-h-10 max-[380px]:gap-1 max-[380px]:px-2 xl:h-10 xl:min-h-0"
+                className="group inline-flex h-11 min-h-11 w-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-full border border-sky-100/20 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-0 text-white shadow-[0_14px_28px_-18px_rgba(37,99,235,0.85)] transition-[border-color,box-shadow,background-color] hover:border-sky-50/32 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 xl:h-10 xl:min-h-0 xl:w-auto xl:min-w-0 xl:rounded-[1.15rem] xl:px-3.5 xl:pr-4"
                 aria-label="Accueil"
               >
                 <BrandLogo
                   alt=""
-                  className="h-9 w-9 shrink-0 object-contain max-[380px]:h-8 max-[380px]:w-8"
+                  className="h-7 w-7 shrink-0 object-contain xl:h-9 xl:w-9"
                   priority
                   sizes="2.25rem"
                 />
@@ -188,31 +188,33 @@ function AppNavigationRibbonFrame({
               </div>
             </div>
 
-            <RibbonPreferencesMenu
-              locale={locale}
-              ribbonChrome={ribbonChrome}
-              onTrackNavigation={onTrackNavigation}
-              open={openUtilityMenuId === "preferences"}
-              onOpenChange={(open) => handleUtilityMenuChange("preferences", open)}
-            />
+            <div data-navigation-group="product" data-navigation-group-visibility="responsive" data-navigation-tutorial-target="product" role="group" aria-label={locale === "fr" ? "Navigation produit" : "Product navigation"} className="shrink-0 cmm-navigation-group cmm-navigation-group--product xl:hidden">
+              <AppNavigationTreeMenu
+                key={`mobile-tree-${pathname}`}
+                activeSpaceId={activeSpaceId}
+                idBase="mobile-navigation-tree"
+                locale={locale}
+                onTrackNavigation={onTrackNavigation}
+                pathname={pathname}
+                ribbonChrome={ribbonChrome}
+                spaces={spaces}
+              />
+            </div>
+
+            <div className="ml-auto shrink-0 xl:ml-0">
+              <RibbonPreferencesMenu
+                locale={locale}
+                ribbonChrome={ribbonChrome}
+                onTrackNavigation={onTrackNavigation}
+                open={openUtilityMenuId === "preferences"}
+                onOpenChange={(open) => handleUtilityMenuChange("preferences", open)}
+              />
+            </div>
           </div>
 
           <RibbonDesktopSpaceNavigation spaces={spaces} activeSpaceId={activeSpaceId} locale={locale} onTrackNavigation={onTrackNavigation} pathname={pathname} openSpaceId={openSpaceId} onOpenChange={(spaceId, open) => setOpenSpaceId((currentSpaceId) => resolveOpenNavigationSpaceId(currentSpaceId, spaceId, open))} />
 
-          <div data-navigation-group="product" data-navigation-group-visibility="responsive" data-navigation-tutorial-target="product" role="group" aria-label={locale === "fr" ? "Navigation produit" : "Product navigation"} className="order-2 col-start-1 shrink-0 cmm-navigation-group cmm-navigation-group--product xl:order-none xl:hidden">
-            <AppNavigationTreeMenu
-              key={`mobile-tree-${pathname}`}
-              activeSpaceId={activeSpaceId}
-              idBase="mobile-navigation-tree"
-              locale={locale}
-              onTrackNavigation={onTrackNavigation}
-              pathname={pathname}
-              ribbonChrome={ribbonChrome}
-              spaces={spaces}
-            />
-          </div>
-
-          <div className="order-3 col-start-2 ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5 xl:order-none xl:col-start-3 xl:justify-self-end">
+          <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:justify-self-end">
             <RibbonFeedbackMenu
               locale={locale}
               pathname={pathname}

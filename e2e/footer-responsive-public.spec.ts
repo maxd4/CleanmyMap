@@ -169,7 +169,9 @@ test.describe("public global footer responsive layout", () => {
             const rowKey = Math.round(contact.top);
             contactRows.set(rowKey, (contactRows.get(rowKey) ?? 0) + 1);
           }
-          expect([...contactRows.values()].sort(), `mobile contacts are not two rows at ${label}`).toEqual([2, 2]);
+          expect([...contactRows.values()], `mobile contacts are not on a single row at ${label}`).toEqual([4]);
+          const contactWidths = layout.visibleContactLinks.map((contact) => Math.round(contact.width));
+          expect(Math.max(...contactWidths) - Math.min(...contactWidths), `mobile contact buttons must share equal widths at ${label}`).toBeLessThanOrEqual(2);
           expect(layout.visibleLegal, `legal links should be behind Informations at ${label}`).toBe(false);
           expect(layout.visibleInformation, `Informations should be visible at ${label}`).toBe(true);
         }

@@ -37,9 +37,11 @@ Les rubans supérieur et inférieur ont une surface de viewport pleine largeur v
 contenu : elle ne réutilise ni `--cmm-page-max-width`, ni
 `--cmm-grid-max-width`. Les composants de ruban gardent leurs gutters internes
 responsifs ; le footer utilise toujours sa composition exhaustive, sans variante
-compacte rendue par route. Les textes visibles des deux rubans utilisent
-`--cmm-ribbon-text-size` (`12px`) et le logo de marque reste rendu par
-`BrandLogo`.
+compacte rendue par route. Sous `640 px`, le footer s'organise sur trois lignes
+compactes : logo + slogan, les quatre boutons de contact/réseaux sociaux de
+dimensions identiques sur une seule ligne, puis copyright + menu `Informations`.
+Les textes visibles des deux rubans utilisent `--cmm-ribbon-text-size` (`12px`)
+et le logo de marque reste rendu par `BrandLogo`.
 
 ## Primitives runtime
 

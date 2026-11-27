@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import type { UserIdentity } from "@/lib/authz";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -189,6 +189,35 @@ function AccountRoleMenu({
         </button>
       )}
     >
+      <AccountRoleMenuContent
+        identity={identity}
+        locale={locale}
+        profileMenuGroups={profileMenuGroups}
+        hasPendingPromotionRequest={hasPendingPromotionRequest}
+        renderProfileItems={renderProfileItems}
+        onClose={onClose}
+      />
+    </CmmDropdown>
+  );
+}
+
+function AccountRoleMenuContent({
+  identity,
+  locale,
+  profileMenuGroups,
+  hasPendingPromotionRequest,
+  renderProfileItems,
+  onClose,
+}: {
+  identity: UserIdentity;
+  locale: Parameters<typeof getProfileLabel>[1];
+  profileMenuGroups: ReturnType<typeof getRoleMenuGroups>;
+  hasPendingPromotionRequest: boolean;
+  renderProfileItems: (profiles: AppProfile[]) => ReactNode;
+  onClose: () => void;
+}) {
+  return (
+    <>
       <p className="px-2 pb-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-300">
         {locale === "fr" ? "UTILISER LE SITE COMME" : "USE THE SITE AS"}
       </p>
@@ -219,6 +248,136 @@ function AccountRoleMenu({
           className="w-full border-white/18 bg-white/[0.08] text-sm text-white hover:bg-white/[0.14]"
         />
       </div>
+    </>
+  );
+}
+
+export function MobileAccountMenu({
+  identity,
+  activityStatus,
+  accountHeader,
+}: {
+  identity: UserIdentity;
+  activityStatus: "active" | "inactive";
+  accountHeader: ReactNode;
+}) {
+  const { locale } = useSitePreferences();
+  const { handleActiveRoleMutation, isUpdatingProfile, profileError } =
+    useActiveRoleMutation();
+  const [isOpen, setIsOpen] = useState(false);
+  const [hasPendingPromotionRequest, setHasPendingPromotionRequest] = useState(false);
+  const gamificationBadges = identity.badges.filter(
+    (badge) =>
+      badge.id !== "admin" &&
+      !badge.id.startsWith("role_") &&
+      !badge.id.startsWith("profile_"),
+  );
+  const profileMenuGroups = useMemo(
+    () => getRoleMenuGroups(identity.role),
+    [identity.role],
+  );
+  const profileOptions = useMemo(
+    () => [...profileMenuGroups.openProfiles, ...profileMenuGroups.obtainedProfiles],
+    [profileMenuGroups],
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+    void fetch("/api/account/promotion-requests", {
+      headers: { Accept: "application/json" },
+    })
+      .then(async (res) => (res.ok ? ((await res.json()) as { items?: Array<{ status?: unknown }> }) : null))
+      .then((payload) => {
+        if (isMounted && payload) {
+          setHasPendingPromotionRequest(payload.items?.[0]?.status === "pending_owner_review");
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
+
+  const renderProfileItems = (profiles: AppProfile[]) =>
+    profiles.map((profile) => (
+      <AccountProfileMenuItem
+        key={profile}
+        profile={profile}
+        activeRole={identity.activeRole}
+        locale={locale}
+        disabled={isUpdatingProfile}
+        onSelect={handleActiveRoleMutation}
+        onClose={() => setIsOpen(false)}
+      />
+    ));
+
+  return (
+    <CmmDropdown
+      id="mobile-account-menu-panel"
+      ariaLabel={locale === "fr" ? "Menu du compte et du rôle" : "Account and role menu"}
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      wrapperClassName="shrink-0"
+      panelClassName="max-h-[calc(100vh-5.5rem)] w-[min(19rem,calc(100vw-1rem))] overflow-y-auto rounded-2xl border border-slate-600/70 bg-slate-950/98 p-3 text-white shadow-[0_24px_52px_-28px_rgba(2,6,23,0.95)]"
+      renderTrigger={(triggerProps) => (
+        <button
+          {...triggerProps}
+          aria-label={locale === "fr" ? "Menu du compte" : "Account menu"}
+          className="cmm-dropdown-trigger relative inline-flex h-11 min-h-11 w-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/[0.08] text-white transition-colors hover:border-white/25 hover:bg-white/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60"
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-emerald-200">
+            <BadgePictogram
+              name={getAccountBadgeIconName(`role_${identity.activeRole}`)}
+              size={16}
+            />
+          </span>
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full border-2 border-slate-900",
+              activityStatus === "active" ? "bg-emerald-400" : "bg-rose-400",
+            )}
+          />
+        </button>
+      )}
+    >
+      <div className="mb-3 border-b border-white/12 pb-3">{accountHeader}</div>
+      {profileOptions.length > 0 ? (
+        <AccountRoleMenuContent
+          identity={identity}
+          locale={locale}
+          profileMenuGroups={profileMenuGroups}
+          hasPendingPromotionRequest={hasPendingPromotionRequest}
+          renderProfileItems={renderProfileItems}
+          onClose={() => setIsOpen(false)}
+        />
+      ) : null}
+      {profileError ? (
+        <p className="mt-2 cmm-text-caption text-rose-400" aria-live="polite">
+          {profileError}
+        </p>
+      ) : null}
+      {gamificationBadges.length > 0 ? (
+        <div className="mt-3 border-t border-white/12 pt-3">
+          <p className="px-2 pb-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-300">
+            {locale === "fr" ? "BADGES" : "BADGES"}
+          </p>
+          <ul className="flex flex-wrap gap-1.5 px-2">
+            {gamificationBadges.map((badge) => (
+              <li key={badge.id} title={badge.label}>
+                <BadgeSurface
+                  icon={getAccountBadgeIconName(badge.icon)}
+                  label={badge.label}
+                  tone="gamification"
+                  variant="orb"
+                  className="h-7 w-7"
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </CmmDropdown>
   );
 }

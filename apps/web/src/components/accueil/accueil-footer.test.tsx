@@ -53,7 +53,7 @@ describe("HomeFooter", () => {
     expect(layoutCss).toContain(".cmm-footer-information");
     expect(layoutCss).toContain("list-style: none");
     expect(layoutCss).toContain("@media (max-width: 639px)");
-    expect(layoutCss).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
+    expect(layoutCss).toContain("grid-template-columns: repeat(4, minmax(0, 1fr))");
     expect(layoutCss).not.toContain("min-width: max-content");
     expect(layoutCss).not.toContain("overflow-x: auto");
     expect(layoutCss).not.toContain(".cmm-footer-scroll");

@@ -5,7 +5,7 @@ import { LogIn, UserPlus } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 import type { UserIdentity } from "@/lib/authz";
-import { AccountIdentityChip } from "@/components/account/account-identity-chip";
+import { AccountIdentityChip, MobileAccountMenu } from "@/components/account/account-identity-chip";
 import { NotificationBell } from "@/components/navigation/notification-bell";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { ActivityStatus } from "@/lib/account/activity-status";
@@ -45,6 +45,7 @@ export function AccountUserBubble({
   isUpdatingActivityStatus,
   activityStatusError,
   onActivityStatusChange,
+  showDetails = false,
 }: {
   user: ClerkUserLike;
   identity: UserIdentity;
@@ -52,6 +53,7 @@ export function AccountUserBubble({
   isUpdatingActivityStatus: boolean;
   activityStatusError: string | null;
   onActivityStatusChange: () => void;
+  showDetails?: boolean;
 }) {
   const username = user.username?.trim() || identity.handle;
   const fullName = [user.firstName?.trim(), user.lastName?.trim()]
@@ -65,7 +67,10 @@ export function AccountUserBubble({
       role="group"
       aria-label={`${username} · Niv. ${identity.currentLevel}, ${fullName}`}
       data-navigation-account-identity
-      className="relative flex w-fit min-w-[4.125rem] shrink-0 items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.07] px-2 py-1.5 text-white shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] xl:min-w-[3.625rem] xl:h-10 xl:py-0 min-[1440px]:max-w-[18rem]"
+      className={cn(
+        "relative flex w-fit min-w-[4.125rem] shrink-0 items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.07] px-2 py-1.5 text-white shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] xl:min-w-[3.625rem] xl:h-10 xl:py-0 min-[1440px]:max-w-[18rem]",
+        showDetails && "w-full min-w-0",
+      )}
     >
       <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-700/80 xl:h-8 xl:w-8">
         <UserButton
@@ -89,7 +94,7 @@ export function AccountUserBubble({
           )}
         />
       </div>
-      <div className="hidden min-w-0 flex-1 overflow-hidden leading-tight min-[1440px]:block">
+      <div className={cn("min-w-0 flex-1 overflow-hidden leading-tight", showDetails ? "block" : "hidden min-[1440px]:block")}>
         <p className="cmm-ribbon-text overflow-hidden text-ellipsis whitespace-nowrap font-bold text-white">
           {username} · Niv. {identity.currentLevel}
         </p>
@@ -155,7 +160,7 @@ function RibbonAccountActionsView({
                   onClick={() => onTrackNavigation(signInHref, locale === "fr" ? "Se connecter" : "Sign in", null)}
                   tone="critical"
                   variant="pill"
-                  className="cmm-ribbon-text h-11 min-h-11 w-11 shrink-0 whitespace-nowrap px-0 font-bold max-[380px]:h-10 max-[380px]:min-h-10 max-[380px]:w-10 sm:h-10 sm:min-h-0 sm:w-auto sm:px-3"
+                  className="cmm-ribbon-text h-11 min-h-11 w-11 min-w-11 shrink-0 whitespace-nowrap px-0 font-bold sm:h-11 sm:w-auto sm:px-3.5 xl:h-10 xl:min-h-0"
                 >
                   <LogIn className="h-4 w-4 sm:hidden" aria-hidden="true" />
                   <span className="hidden sm:inline">
@@ -169,7 +174,7 @@ function RibbonAccountActionsView({
                   onClick={() => onTrackNavigation(signUpHref, locale === "fr" ? "S'inscrire" : "Sign up", null)}
                   tone="primary"
                   variant="pill"
-                  className="cmm-ribbon-text h-11 min-h-11 w-11 shrink-0 whitespace-nowrap px-0 font-bold max-[380px]:h-10 max-[380px]:min-h-10 max-[380px]:w-10 sm:h-10 sm:min-h-0 sm:w-auto sm:px-4"
+                  className="cmm-ribbon-text h-11 min-h-11 w-11 min-w-11 shrink-0 whitespace-nowrap px-0 font-bold sm:h-11 sm:w-auto sm:px-4 xl:h-10 xl:min-h-0"
                 >
                   <UserPlus className="h-4 w-4 sm:hidden" aria-hidden="true" />
                   <span className="hidden sm:inline">
@@ -180,21 +185,42 @@ function RibbonAccountActionsView({
             ) : null}
 
             {isAuthenticated ? (
-              <div className="flex min-w-0 shrink-0 items-center gap-2 lg:gap-3">
+              <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
                 <NotificationBell ribbonChrome={ribbonChrome} />
-                {effectiveIdentity ? (
-                  <AccountIdentityChip identity={effectiveIdentity} />
-                ) : null}
                 {user && identityForBubble ? (
-                  <AccountUserBubble
-                    user={user}
-                    identity={identityForBubble}
-                    activityStatus={activityStatus}
-                    isUpdatingActivityStatus={isUpdatingActivityStatus}
-                    activityStatusError={activityStatusError}
-                    onActivityStatusChange={() => { void /* fire-and-forget -- the account bubble owns activity update state and errors. */ handleActivityStatusToggle(); }}
-                  />
+                  <div className="flex items-center md:hidden">
+                    <MobileAccountMenu
+                      identity={identityForBubble}
+                      activityStatus={activityStatus}
+                      accountHeader={
+                        <AccountUserBubble
+                          user={user}
+                          identity={identityForBubble}
+                          activityStatus={activityStatus}
+                          isUpdatingActivityStatus={isUpdatingActivityStatus}
+                          activityStatusError={activityStatusError}
+                          onActivityStatusChange={() => { void /* fire-and-forget -- the account bubble owns activity update state and errors. */ handleActivityStatusToggle(); }}
+                          showDetails
+                        />
+                      }
+                    />
+                  </div>
                 ) : null}
+                <div className="hidden md:flex md:items-center md:gap-2 lg:gap-3">
+                  {effectiveIdentity ? (
+                    <AccountIdentityChip identity={effectiveIdentity} />
+                  ) : null}
+                  {user && identityForBubble ? (
+                    <AccountUserBubble
+                      user={user}
+                      identity={identityForBubble}
+                      activityStatus={activityStatus}
+                      isUpdatingActivityStatus={isUpdatingActivityStatus}
+                      activityStatusError={activityStatusError}
+                      onActivityStatusChange={() => { void /* fire-and-forget -- the account bubble owns activity update state and errors. */ handleActivityStatusToggle(); }}
+                    />
+                  ) : null}
+                </div>
               </div>
             ) : null}
     </div>

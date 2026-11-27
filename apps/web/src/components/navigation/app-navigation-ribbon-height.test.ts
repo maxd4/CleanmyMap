@@ -23,7 +23,7 @@ describe("desktop ribbon control geometry", () => {
     expect(source).toContain('className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px');
   });
 
-  it("uses the canonical desktop height for home and search without changing mobile layout", () => {
+  it("uses the canonical desktop height for home and search and a single-line compact mobile layout", () => {
     const ribbonSource = readSource("app-navigation-ribbon-shell.tsx");
     const searchSource = readSource("global-search.tsx");
 
@@ -35,7 +35,7 @@ describe("desktop ribbon control geometry", () => {
     expect(ribbonSource).toContain("xl:w-[9rem] 2xl:w-[10rem]");
     expect(ribbonSource).toContain("w-[15rem] shrink-0 flex-nowrap items-center justify-center");
     expect(ribbonSource).toContain("<AppNavigationTreeMenu");
-    expect(ribbonSource).toContain('cmm-navigation-group--product xl:order-none xl:hidden');
+    expect(ribbonSource).toContain('cmm-navigation-group--product xl:hidden');
   });
 
   it("keeps the five block triggers stable while enlarging reduced-mode icons", () => {
@@ -87,8 +87,8 @@ describe("desktop ribbon control geometry", () => {
 
     expect(accountGroup).toBeDefined();
     expect(accountGroup).toContain("xl:col-start-3");
-    expect(shellSource).toContain("order-3 col-start-2 ml-auto");
-    expect(shellSource).toContain("order-2 col-start-1 shrink-0");
+    expect(shellSource).toContain("flex min-w-0 shrink-0 items-center");
+    expect(shellSource).toContain("cmm-navigation-group--product xl:hidden");
     expect(shellSource).toContain("xl:grid-cols-[auto_minmax(15rem,1fr)_auto]");
     expect(shellSource).toContain("xl:col-start-1");
     expect(shellSource).toContain("xl:col-start-2");
@@ -97,7 +97,7 @@ describe("desktop ribbon control geometry", () => {
     expect(menusSource).toContain("xl:h-10");
     expect(menusSource).not.toContain("lg:w-auto");
     expect(menusSource).not.toContain("lg:px-3");
-    expect(accountSource).toContain("hidden min-w-0 flex-1 overflow-hidden leading-tight min-[1440px]:block");
+    expect(accountSource).toContain('showDetails ? "block" : "hidden min-[1440px]:block"');
     expect(identitySource).toContain("min-[1440px]:w-auto min-[1440px]:min-w-0");
   });
 

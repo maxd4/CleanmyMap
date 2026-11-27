@@ -21,6 +21,7 @@ vi.mock("next/link", () => ({
 }));
 vi.mock("@/components/account/account-identity-chip", () => ({
   AccountIdentityChip: () => React.createElement("div", { "data-testid": "identity-chip" }),
+  MobileAccountMenu: () => React.createElement("button", { "aria-label": "Menu du compte" }),
 }));
 vi.mock("@/components/navigation/notification-bell", () => ({
   NotificationBell: () => React.createElement("button", { "aria-label": "Notifications (0 à traiter)" }),

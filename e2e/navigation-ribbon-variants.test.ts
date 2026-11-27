@@ -64,7 +64,7 @@ test.describe("canonical classic navigation ribbon", () => {
     test.setTimeout(120_000);
     mkdirSync(SCREENSHOT_DIRECTORY, { recursive: true });
 
-    for (const width of [390, 768, 1024, 1279, 1280, 1440, 1600, 1920] as const) {
+    for (const width of [320, 360, 390, 430, 768, 1024, 1279, 1280, 1440, 1600, 1920] as const) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
       await dismissCookies(page);
@@ -88,6 +88,21 @@ test.describe("canonical classic navigation ribbon", () => {
       if (width < 1280) {
         await expect(page.locator('nav[aria-label="Navigation par blocs"]')).toBeHidden();
         await expect(page.getByRole("button", { name: "Sommaire" })).toBeVisible();
+        const ribbonMetrics = await page.evaluate(() => {
+          const nav = document.querySelector<HTMLElement>('nav[aria-label="Barre de navigation principale"]');
+          const controls = [...(nav?.querySelectorAll<HTMLElement>("a, button") ?? [])].filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && r.height > 0;
+          });
+          return {
+            height: nav?.getBoundingClientRect().height ?? 0,
+            minTouchWidth: Math.min(...controls.map((el) => el.getBoundingClientRect().width)),
+            minTouchHeight: Math.min(...controls.map((el) => el.getBoundingClientRect().height)),
+          };
+        });
+        expect(ribbonMetrics.height, `single-line mobile/tablet header height at ${width}px`).toBeLessThanOrEqual(72);
+        expect(ribbonMetrics.minTouchWidth, `touch target width >= 44px at ${width}px`).toBeGreaterThanOrEqual(43.5);
+        expect(ribbonMetrics.minTouchHeight, `touch target height >= 44px at ${width}px`).toBeGreaterThanOrEqual(43.5);
         await testInfo.attach(`classic-ribbon-${width}`, {
           body: await page.screenshot({ path: path.join(SCREENSHOT_DIRECTORY, `classic-${width}.png`) }),
           contentType: "image/png",
@@ -319,7 +334,7 @@ test.describe("canonical classic navigation ribbon", () => {
 
   test("keeps the responsive product entry and utility controls reachable", async ({ page }) => {
     test.setTimeout(120_000);
-    for (const width of [390, 768, 1024, 1279, 1280, 1440, 1600, 1920] as const) {
+    for (const width of [320, 360, 390, 430, 768, 1024, 1279, 1280, 1440, 1600, 1920] as const) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
       await dismissCookies(page);

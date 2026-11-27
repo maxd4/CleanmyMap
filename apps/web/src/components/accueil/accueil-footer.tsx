@@ -43,7 +43,7 @@ export function HomeFooter() {
   return (
     <footer aria-label="Pied de page" className={FOOTER_RIBBON_CLASS}>
       <div className={`${FOOTER_CONTENT_CLASS} cmm-ribbon-text`}>
-        <div className="cmm-footer-row px-3 py-4 sm:px-5 sm:py-5 lg:px-7 lg:py-6">
+        <div className="cmm-footer-row px-3 py-2.5 sm:px-5 sm:py-5 lg:px-7 lg:py-6">
           <div className="cmm-footer-brand flex min-w-0 items-center gap-3 text-center sm:gap-2.5 sm:text-left">
             <BrandLogo
               variant="darkSurface"
@@ -57,9 +57,11 @@ export function HomeFooter() {
             <Link
               href="/contact"
               aria-label="Contacter CleanMyMap"
-              className="cmm-footer-contact-link cmm-footer-contact-link--contact cmm-ribbon-text group rounded-xl border border-transparent bg-transparent transition-all hover:border-slate-700/80 hover:bg-slate-950/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="cmm-footer-contact-link cmm-footer-contact-link--contact cmm-ribbon-text group rounded-xl border border-slate-700/80 bg-slate-950/55 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50 sm:border-transparent sm:bg-transparent sm:hover:border-slate-700/80 sm:hover:bg-slate-950/55"
             >
-              <MessageCircle className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80 sm:h-auto sm:w-auto sm:bg-transparent sm:group-hover:bg-transparent">
+                <MessageCircle className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+              </div>
               <span className="cmm-footer-contact-label text-white transition-colors group-hover:text-white group-hover:underline">
                 Contact
               </span>
@@ -167,8 +169,8 @@ export function HomeFooter() {
           </details>
 
           <div className="cmm-footer-signature cmm-ribbon-text shrink-0 whitespace-nowrap text-center text-white">
-            <p className="font-bold">Cultivons l&apos;entraide</p>
-            <p>© 2026 CleanMyMap</p>
+            <p className="cmm-footer-slogan font-bold">Cultivons l&apos;entraide</p>
+            <p className="cmm-footer-copyright">© 2026 CleanMyMap</p>
           </div>
         </div>
       </div>
