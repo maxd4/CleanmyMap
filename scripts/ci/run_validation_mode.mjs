@@ -476,13 +476,16 @@ export async function runValidationMode(
       : process.env.CMM_DYNAMIC_CANDIDATE_ROOT && options.candidateScope === "WORKTREE"
         ? { ...options, candidateScope: "DYNAMIC_CANDIDATE" }
         : options;
-    const candidateSha = getCandidateSha(repositoryRoot);
+    const provenanceRoot = effectiveOptions.candidateScope === "DYNAMIC_CANDIDATE"
+      ? (process.env.CMM_CANONICAL_REPO_ROOT || repositoryRoot)
+      : repositoryRoot;
+    const candidateSha = getCandidateSha(provenanceRoot);
     const deploymentProof = effectiveOptions.mode === "DEPLOY"
       ? readDeploymentProof(options.deploymentProofPath)
       : null;
     const deployScope = effectiveOptions.mode === "DEPLOY"
       ? await resolveDeployCandidate({
-        repositoryRoot,
+        repositoryRoot: provenanceRoot,
         candidateSha,
         baseRef: options.baseRef,
         deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
@@ -644,10 +647,10 @@ export async function runValidationMode(
     }
 
     const elapsedSeconds = (performance.now() - startedAt) / 1000;
-    const completionSha = getCandidateSha(repositoryRoot);
+    const completionSha = getCandidateSha(provenanceRoot);
     const completionDeployScope = plan.mode === "DEPLOY"
       ? await resolveDeployCandidate({
-        repositoryRoot,
+        repositoryRoot: provenanceRoot,
         candidateSha: completionSha,
         baseRef: options.baseRef,
         deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
@@ -831,11 +834,11 @@ export async function runValidationMode(
       log(`RELEASE_READY: ${verdict === "PASS" && candidateSha !== "NO_GIT_HEAD" && checkoutStable ? "YES" : "NO"}`);
     } else if (plan.mode === "DEPLOY") {
       writeDeployValidationEvidence({
-        repositoryRoot: process.env.CMM_CANONICAL_REPO_ROOT || repositoryRoot,
+        repositoryRoot: provenanceRoot,
         candidateSha,
         completionSha,
-        candidateTreeSha: getCandidateTreeSha(repositoryRoot, candidateSha),
-        completionTreeSha: getCandidateTreeSha(repositoryRoot, completionSha),
+        candidateTreeSha: getCandidateTreeSha(provenanceRoot, candidateSha),
+        completionTreeSha: getCandidateTreeSha(provenanceRoot, completionSha),
         completionFingerprint,
         candidateFingerprint,
         plan,

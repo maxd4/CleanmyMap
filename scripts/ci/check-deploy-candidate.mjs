@@ -20,12 +20,13 @@ if (proofArgument) {
 }
 }
 const result = await resolveDeployCandidate({
-  repositoryRoot: process.cwd(),
+  repositoryRoot: process.env.CMM_CANONICAL_REPO_ROOT || process.cwd(),
   baseRef: baseArgument?.slice("--base-ref=".length) || "",
   deploymentReference: deploymentArgument ? { sha: deploymentArgument.slice("--deployment-ref=".length) } : null,
   deploymentProof,
   candidateSha: shaArgument?.slice("--sha=".length),
   candidateTreeSha: treeArgument?.slice("--candidate-tree=".length) || "",
+  candidateScope: process.env.CMM_VALIDATION_SCOPE === "DYNAMIC_CANDIDATE" ? "DYNAMIC_CANDIDATE" : "WORKTREE",
   allowDirtyCandidate,
   allowedDirtyFiles: proofArgument ? [proofArgument.slice("--deployment-proof=".length)] : [],
 });
