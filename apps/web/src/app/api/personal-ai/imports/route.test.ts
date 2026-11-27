@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  requireAuthenticatedAccess: vi.fn(), requireSupabaseClerkRlsClient: vi.fn(), rpc: vi.fn(),
+  requireAuthenticatedAccess: vi.fn(), getSupabaseAdminClient: vi.fn(), rpc: vi.fn(),
 }));
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
-vi.mock("@/lib/supabase/clerk-rls", () => ({ requireSupabaseClerkRlsClient: mocks.requireSupabaseClerkRlsClient }));
+vi.mock("@/lib/supabase/server", () => ({ getSupabaseAdminClient: mocks.getSupabaseAdminClient }));
 
 import { POST } from "./route";
 import { hashPersonalAiImportValue, personalAiImportIdentityHash } from "@/lib/environmental-impact-estimator/ai-personal-import-hash";
@@ -32,7 +32,7 @@ beforeEach(async () => {
   row.sourceIdentityHash = await personalAiImportIdentityHash("GOOGLE", declaration.sourceVersion, declaration.periodStartUtc, declaration.periodEndUtc,
     declaration.modelCanonical ?? declaration.modelRaw, row.sourceScope);
   mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "owner-a" });
-  mocks.requireSupabaseClerkRlsClient.mockResolvedValue({ rpc: mocks.rpc });
+  mocks.getSupabaseAdminClient.mockReturnValue({ rpc: mocks.rpc });
   mocks.rpc.mockResolvedValue({ data: [{ id: "saved", owner_clerk_id: "owner-a", declaration }], error: null });
 });
 
@@ -42,7 +42,7 @@ describe("POST /api/personal-ai/imports", () => {
     const response = await POST(new Request("https://example.test/api/personal-ai/imports", { method: "POST", body: JSON.stringify({ rows: [row] }) }));
     expect(response.status).toBe(401);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(mocks.requireSupabaseClerkRlsClient).not.toHaveBeenCalled();
+    expect(mocks.getSupabaseAdminClient).not.toHaveBeenCalled();
   });
 
   it("rejects malformed hashes before calling the atomic owner RPC", async () => {
@@ -59,9 +59,10 @@ describe("POST /api/personal-ai/imports", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
-  it("recomputes the normalized content hash before entering the RPC", async () => {
+  it("rejects content changed while retaining the client normalized hash", async () => {
+    const changedDeclaration = { ...declaration, requestCount: 2 };
     const response = await POST(new Request("https://example.test/api/personal-ai/imports", {
-      method: "POST", body: JSON.stringify({ rows: [{ ...row, normalizedContentHash: "c".repeat(64) }] }),
+      method: "POST", body: JSON.stringify({ rows: [{ ...row, declaration: changedDeclaration }] }),
     }));
     expect(response.status).toBe(400);
     expect(mocks.rpc).not.toHaveBeenCalled();
@@ -84,7 +85,9 @@ describe("POST /api/personal-ai/imports", () => {
     }));
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(mocks.rpc).toHaveBeenCalledWith("confirm_personal_ai_import", { p_rows: [expect.objectContaining({
+    expect(mocks.rpc).toHaveBeenCalledWith("confirm_personal_ai_import_for_owner", {
+      p_owner_clerk_id: "owner-a",
+      p_rows: [expect.objectContaining({
       source_identity_hash: row.sourceIdentityHash, normalized_content_hash: row.normalizedContentHash,
       source_scope: row.sourceScope,
       snapshot: expect.objectContaining({ physicalTotals: expect.any(Object) }),
@@ -100,5 +103,12 @@ describe("POST /api/personal-ai/imports", () => {
     const response = await POST(new Request("https://example.test/api/personal-ai/imports", { method: "POST", body: JSON.stringify({ rows: [row] }) }));
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({ error: expect.stringContaining("aucune ligne") });
+  });
+
+  it("maps PostgreSQL overlap conflicts to an explicit HTTP conflict", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "23P01" } });
+    const response = await POST(new Request("https://example.test/api/personal-ai/imports", { method: "POST", body: JSON.stringify({ rows: [row] }) }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toContain("recoupe");
   });
 });

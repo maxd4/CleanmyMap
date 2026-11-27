@@ -128,6 +128,19 @@ export function createInMemorySyncStore(seed: {
       const key = `${params.sourceId}:${params.externalEventId}`;
       const existing = references.get(key);
       if (!existing) return "not_found";
+      if (
+        existing.content_hash !== params.appliedContentHash
+        || (existing.external_revision ?? null) !== (params.appliedRevision ?? null)
+      ) return "stale_revision";
+      const action = existing.action_id ? actions.get(existing.action_id) : null;
+      if (params.expectedActionUpdatedAt && action?.updated_at !== params.expectedActionUpdatedAt) {
+        return "conflict";
+      }
+      if (
+        JSON.stringify(existing.applied_snapshot) === JSON.stringify(params.appliedSnapshot)
+        && existing.applied_content_hash === params.appliedContentHash
+        && (existing.applied_revision ?? null) === (params.appliedRevision ?? null)
+      ) return "applied";
       references.set(key, {
         ...existing,
         applied_snapshot: params.appliedSnapshot,
@@ -182,11 +195,23 @@ export function createInMemorySyncStore(seed: {
       });
       return { actionId: id };
     },
-    async updatePreActionFields(actionId, expectedUpdatedAt, updates) {
+    async updatePreActionFields(actionId, expectedUpdatedAt, updates, sourceContext) {
       const existing = actions.get(actionId);
       if (!existing) return false;
       if (expectedUpdatedAt && existing.updated_at !== expectedUpdatedAt) {
         return false;
+      }
+      if (sourceContext?.appliedSnapshot !== undefined) {
+        const key = `${sourceContext.sourceId}:${sourceContext.externalEventId}`;
+        const reference = references.get(key);
+        if (!reference) return false;
+        references.set(key, {
+          ...reference,
+          applied_snapshot: sourceContext.appliedSnapshot,
+          applied_content_hash: sourceContext.appliedContentHash ?? null,
+          applied_revision: sourceContext.appliedRevision ?? null,
+          applied_at: new Date().toISOString(),
+        });
       }
       actions.set(actionId, {
         ...existing,

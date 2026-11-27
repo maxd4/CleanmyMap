@@ -5,10 +5,10 @@ export const personalAiAuthorizationContract = {
     POST: {
       expected: "Authenticated atomic confirmation of normalized imports under the Clerk owner",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess derives the caller before strict validation, server verification of the normalized hash, recalculation, and owner-derived transactional RPC",
-      evidence: ["requireAuthenticatedAccess", "hashPersonalAiImportValue", "calculatePersonalAiDeclaration", "confirm_personal_ai_import", "noStore"],
+      actual: "requireAuthenticatedAccess derives the Clerk owner before strict validation, server verification of both hashes, recalculation, and a service_role-only owner-explicit transactional RPC",
+      evidence: ["requireAuthenticatedAccess", "hashPersonalAiImportValue", "personalAiImportIdentityHash", "calculatePersonalAiDeclaration", "confirm_personal_ai_import_for_owner", "getSupabaseAdminClient", "noStore"],
       evidenceScope: "module",
-      handlerEvidence: ["requireAuthenticatedAccess", "confirm_personal_ai_import"],
+      handlerEvidence: ["requireAuthenticatedAccess", "confirm_personal_ai_import_for_owner"],
     },
   },
   "personal-ai/declarations": {
@@ -21,10 +21,10 @@ export const personalAiAuthorizationContract = {
       handlerEvidence: ["requireAuthenticatedAccess"],
     },
     POST: {
-      expected: "Authenticated private declaration creation with server-controlled owner and canonical snapshot",
+      expected: "Authenticated private declaration creation/edit with server-controlled owner and canonical snapshot",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess supplies owner_clerk_id; request is strictly normalized before canonical estimate and Clerk RLS insert",
-      evidence: ["requireAuthenticatedAccess", "userId", "owner_clerk_id", "calculatePersonalAiDeclaration"],
+      actual: "requireAuthenticatedAccess supplies the owner; request is strictly normalized before canonical estimate and a service_role-only owner-explicit RPC",
+      evidence: ["requireAuthenticatedAccess", "userId", "save_personal_ai_declaration_for_owner", "getSupabaseAdminClient", "calculatePersonalAiDeclaration"],
       evidenceScope: "module",
       handlerEvidence: ["requireAuthenticatedAccess"],
     },
@@ -33,8 +33,8 @@ export const personalAiAuthorizationContract = {
     PATCH: {
       expected: "Authenticated owner-only declaration edit or status transition with UUID validation",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess plus UUID and owner filters with Clerk RLS",
-      evidence: ["requireAuthenticatedAccess", "isPersonalAiId", "owner_clerk_id", ".eq"],
+      actual: "requireAuthenticatedAccess plus UUID validation and service_role-only RPCs that receive only the verified Clerk owner; read/delete retain Clerk RLS owner filters",
+      evidence: ["requireAuthenticatedAccess", "isPersonalAiId", "owner_clerk_id", "save_personal_ai_declaration_for_owner", "set_personal_ai_declaration_status_for_owner", ".eq"],
       evidenceScope: "module",
       handlerEvidence: ["requireAuthenticatedAccess", "isPersonalAiId"],
     },

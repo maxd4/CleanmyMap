@@ -8,6 +8,7 @@ import { loadOrganizationReport } from "@/lib/organizations/report";
 import { summarizeOrganizationReport } from "@/lib/organizations/report-summary";
 import { escapeCsvCell } from "@/lib/reports/csv";
 
+// Justification: private organization reports depend on the verified session and must never be cached.
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store" };

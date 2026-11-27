@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(),
   requireSupabaseClerkRlsClient: vi.fn(),
+  getSupabaseAdminClient: vi.fn(),
   from: vi.fn(),
   select: vi.fn(),
   eq: vi.fn(),
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
 vi.mock("@/lib/supabase/clerk-rls", () => ({ requireSupabaseClerkRlsClient: mocks.requireSupabaseClerkRlsClient }));
+vi.mock("@/lib/supabase/server", () => ({ getSupabaseAdminClient: mocks.getSupabaseAdminClient }));
 
 import { GET, POST } from "./route";
 
@@ -36,12 +38,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "clerk-owner-a" });
   mocks.requireSupabaseClerkRlsClient.mockResolvedValue({ from: mocks.from, rpc: mocks.rpc });
+  mocks.getSupabaseAdminClient.mockReturnValue({ rpc: mocks.rpc });
   mocks.from.mockReturnValue({
     select: mocks.select.mockReturnThis(), eq: mocks.eq.mockReturnThis(), order: mocks.order.mockReturnThis(), range: mocks.range,
     insert: mocks.insert, update: mocks.update, delete: mocks.delete,
   });
-  mocks.insert.mockReturnValue({ select: mocks.insertSelect });
-  mocks.insertSelect.mockReturnValue({ single: mocks.single });
   mocks.update.mockReturnValue({ eq: mocks.eq.mockReturnThis() });
   mocks.eq.mockReturnValue({ eq: mocks.eq.mockReturnThis(), select: mocks.updateSelect, order: mocks.order.mockReturnThis() });
   mocks.updateSelect.mockReturnValue({ maybeSingle: mocks.maybeSingle });
@@ -73,19 +74,21 @@ describe("personal AI declarations collection API", () => {
     expect(invalid.status).toBe(400);
   });
 
-  it("persists only a normalized declaration under the server authenticated owner", async () => {
+  it("persists a server-calculated declaration through the owner-explicit server RPC", async () => {
     const response = await POST(new Request("https://example.test/api/personal-ai/declarations", {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(validDeclaration),
     }));
     expect(response.status).toBe(201);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({
-      owner_clerk_id: "clerk-owner-a", methodology_version: expect.any(String), factor_version: expect.any(String),
+    expect(mocks.rpc).toHaveBeenCalledWith("save_personal_ai_declaration_for_owner", expect.objectContaining({
+      p_owner_clerk_id: "clerk-owner-a", p_id: null, p_quick_scenario: null,
+      p_methodology_version: expect.any(String), p_factor_version: expect.any(String),
     }));
-    const persisted = mocks.insert.mock.calls.at(-1)?.[0] as Record<string, unknown>;
-    expect(persisted.methodology_version).toBe((persisted.snapshot as { version: string }).version);
-    expect(JSON.parse(persisted.factor_version as string)).toHaveProperty("applied");
-    expect(mocks.insert).toHaveBeenCalledWith(expect.not.objectContaining({ prompt: expect.anything(), conversation: expect.anything() }));
+    const persisted = mocks.rpc.mock.calls.at(-1)?.[1] as Record<string, unknown>;
+    expect(persisted.p_methodology_version).toBe((persisted.p_snapshot as { version: string }).version);
+    expect(JSON.parse(persisted.p_factor_version as string)).toHaveProperty("applied");
+    expect(JSON.stringify(persisted)).not.toMatch(/prompt|conversation/i);
+    expect(mocks.insert).not.toHaveBeenCalled();
   });
 
   it("saves a quick chatbot scenario through the private owner RPC without tokenizing the activity", async () => {
@@ -104,7 +107,8 @@ describe("personal AI declarations collection API", () => {
     }));
     expect(response.status).toBe(201);
     const [rpcName, rpcArgs] = mocks.rpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(rpcName).toBe("save_personal_ai_chat_scenario");
+    expect(rpcName).toBe("save_personal_ai_declaration_for_owner");
+    expect(rpcArgs.p_owner_clerk_id).toBe("clerk-owner-a");
     expect(rpcArgs.p_id).toBeNull();
     expect(rpcArgs.p_declaration).not.toHaveProperty("quickScenario");
     expect(rpcArgs.p_quick_scenario).toMatchObject({ sourceKind: "SELF_REPORTED_CHAT_USAGE", accessMode: "SUBSCRIPTION", exchanges: 3 });
@@ -134,7 +138,7 @@ describe("personal AI declarations collection API", () => {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(withPrompt),
     }));
     expect(invalid.status).toBe(400);
-    expect(mocks.insert).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
     const oversized = await POST(new Request("https://example.test/api/personal-ai/declarations", {
       method: "POST", body: `"${"x".repeat(33_000)}"`,
     }));

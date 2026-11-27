@@ -3,11 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(), requireSupabaseClerkRlsClient: vi.fn(), from: vi.fn(), eq: vi.fn(),
   select: vi.fn(), update: vi.fn(), updateSelect: vi.fn(), maybeSingle: vi.fn(), delete: vi.fn(), deleteSelect: vi.fn(),
-  rpc: vi.fn(),
+  getSupabaseAdminClient: vi.fn(), rpc: vi.fn(),
 }));
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
 vi.mock("@/lib/supabase/clerk-rls", () => ({ requireSupabaseClerkRlsClient: mocks.requireSupabaseClerkRlsClient }));
+vi.mock("@/lib/supabase/server", () => ({ getSupabaseAdminClient: mocks.getSupabaseAdminClient }));
 
 import { DELETE, PATCH } from "./route";
 
@@ -26,6 +27,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "clerk-owner-a" });
   mocks.requireSupabaseClerkRlsClient.mockResolvedValue({ from: mocks.from, rpc: mocks.rpc });
+  mocks.getSupabaseAdminClient.mockReturnValue({ rpc: mocks.rpc });
   mocks.from.mockReturnValue({ select: mocks.select, update: mocks.update, delete: mocks.delete });
   mocks.select.mockReturnValue({ eq: mocks.eq });
   mocks.update.mockReturnValue({ eq: mocks.eq });
@@ -33,6 +35,7 @@ beforeEach(() => {
   mocks.eq.mockReturnValue({ eq: mocks.eq, select: mocks.updateSelect, maybeSingle: mocks.maybeSingle });
   mocks.updateSelect.mockReturnValue({ maybeSingle: mocks.maybeSingle });
   mocks.maybeSingle.mockResolvedValue({ data: null, error: null });
+  mocks.rpc.mockResolvedValue({ data: [{ id, status: "ACTIVE", declaration: manualDeclaration }], error: null });
 });
 
 describe("personal AI declaration item API", () => {
@@ -52,7 +55,7 @@ describe("personal AI declaration item API", () => {
     }), context);
     expect(response.status).toBe(404);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(mocks.rpc).toHaveBeenCalledWith("save_personal_ai_chat_scenario", expect.objectContaining({ p_id: id }));
+    expect(mocks.rpc).toHaveBeenCalledWith("save_personal_ai_declaration_for_owner", expect.objectContaining({ p_id: id, p_owner_clerk_id: "clerk-owner-a" }));
   });
 
   it("refuses generic content updates for an owner-scoped imported row", async () => {
@@ -70,22 +73,25 @@ describe("personal AI declaration item API", () => {
 
   it("keeps generic content updates available for an owner-scoped manual declaration", async () => {
     mocks.maybeSingle
-      .mockResolvedValueOnce({ data: { source_identity_hash: null }, error: null })
-      .mockResolvedValueOnce({ data: { id, status: "ACTIVE", declaration: manualDeclaration }, error: null });
+      .mockResolvedValueOnce({ data: { source_identity_hash: null }, error: null });
     const response = await PATCH(new Request("https://example.test", {
       method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ declaration: manualDeclaration }),
     }), context);
     expect(response.status).toBe(200);
-    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ declaration: expect.any(Object), methodology_version: expect.any(String) }));
-    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.rpc).toHaveBeenCalledWith("save_personal_ai_declaration_for_owner", expect.objectContaining({
+      p_owner_clerk_id: "clerk-owner-a", p_id: id, p_declaration: expect.any(Object), p_snapshot: expect.any(Object),
+    }));
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
   it("hides another owner's UUID behind 404 and applies the server owner predicate", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "42501" } });
     const response = await PATCH(new Request("https://example.test", { method: "PATCH", body: JSON.stringify({ status: "EXCLUDED" }) }), context);
     expect(response.status).toBe(404);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(mocks.eq).toHaveBeenCalledWith("id", id);
-    expect(mocks.eq).toHaveBeenCalledWith("owner_clerk_id", "clerk-owner-a");
+    expect(mocks.rpc).toHaveBeenCalledWith("set_personal_ai_declaration_status_for_owner", {
+      p_owner_clerk_id: "clerk-owner-a", p_id: id, p_status: "EXCLUDED",
+    });
   });
 
   it("rejects malformed IDs before database access", async () => {
@@ -95,12 +101,33 @@ describe("personal AI declaration item API", () => {
   });
 
   it("returns 200 for an owner-scoped status update and hides empty payloads", async () => {
-    mocks.maybeSingle.mockResolvedValue({ data: { id, status: "EXCLUDED" }, error: null });
     const response = await PATCH(new Request("https://example.test", { method: "PATCH", body: JSON.stringify({ status: "EXCLUDED" }) }), context);
     expect(response.status).toBe(200);
-    expect(mocks.update).toHaveBeenCalledWith({ status: "EXCLUDED" });
+    expect(mocks.rpc).toHaveBeenCalledWith("set_personal_ai_declaration_status_for_owner", {
+      p_owner_clerk_id: "clerk-owner-a", p_id: id, p_status: "EXCLUDED",
+    });
     const invalid = await PATCH(new Request("https://example.test", { method: "PATCH", body: "{}" }), context);
     expect(invalid.status).toBe(400);
+  });
+
+  it("applies a scenario edit and status transition in the same RPC", async () => {
+    mocks.maybeSingle.mockResolvedValue({ data: { source_identity_hash: null }, error: null });
+    const quick = {
+      ...manualDeclaration,
+      provider: "OPENAI", access: "UNKNOWN",
+      quickScenario: {
+        version: "personal-ai-chat-usage-v1", sourceKind: "SELF_REPORTED_CHAT_USAGE", chatbot: "CHATGPT", chatbotLabel: null,
+        accessMode: "FREE", frequency: "WEEKLY", exchanges: 3, questionCharacters: 80, answerCharacters: 100,
+        imageUse: false, audioUse: null,
+      },
+    };
+    const response = await PATCH(new Request("https://example.test", {
+      method: "PATCH", body: JSON.stringify({ declaration: quick, status: "EXCLUDED" }),
+    }), context);
+    expect(response.status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith("save_personal_ai_declaration_for_owner", expect.objectContaining({
+      p_id: id, p_status: "EXCLUDED", p_quick_scenario: expect.objectContaining({ chatbot: "CHATGPT" }),
+    }));
   });
 
   it("returns 200 only after a matching owner delete", async () => {

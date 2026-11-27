@@ -339,18 +339,26 @@ et refuse un format incomplet ou sans version.
 L'import personnel IA constitue une frontière distincte, portée par
 `apps/web/src/lib/environmental-impact-estimator/ai-personal-import.ts` et
 `POST /api/personal-ai/imports`. Les fichiers fournisseurs sont analysés dans
-le navigateur; le serveur ne reçoit que des déclarations normalisées et en
-recalcule l'empreinte de contenu puis le snapshot scientifique avant l'appel atomique à
-`public.confirm_personal_ai_import`. La RPC dérive le propriétaire du JWT
-Clerk, sérialise les révisions par `(owner_clerk_id, source_identity_hash)` et
-annule toute la transaction si une ligne est invalide ou chevauche une plage
-active ambiguë. L'identité source et l'empreinte du contenu normalisé sont deux
-hashes distincts; une portée contient les empreintes des dimensions sources
-attestées et jamais leurs identifiants bruts. Seules des portées dont une même
-dimension atteste des valeurs différentes sont disjointes. Les portées égales,
-englobantes, sans dimension commune ou héritées sans portée restent ambiguës et
-sont bloquées, y compris lorsque la période est inconnue. Un import sans clé
-stable prouvée ne peut pas être confirmé. Aucun fichier, nom de fichier, prompt, conversation,
+le navigateur; après AuthN Clerk, le serveur ne reçoit que des déclarations
+normalisées, recalcule les deux hashes puis le snapshot scientifique et appelle
+`public.confirm_personal_ai_import_for_owner` avec l'identité Clerk issue de la
+session. Cette RPC et les RPC de création, édition et transition de statut sont
+exécutables uniquement par `service_role`; ce rôle n'a pas de DML direct sur la
+table. `authenticated` conserve la lecture et la suppression owner-scoped, mais
+ne peut ni insérer, ni éditer le contenu ou le snapshot, ni appeler les RPC
+internes. Les exclusions et réactivations passent par l'API et une RPC qui
+prend le verrou propriétaire avant la mutation. Les calculs scientifiques et
+les formules de hash restent dans leurs owners TypeScript, pas dans SQL.
+La confirmation sérialise les révisions par
+`(owner_clerk_id, source_identity_hash)` et annule toute la transaction si une
+ligne est invalide ou chevauche une plage active ambiguë. L'identité source et
+l'empreinte du contenu normalisé sont deux hashes distincts; une portée
+contient les empreintes des dimensions sources attestées et jamais leurs
+identifiants bruts. Seules des portées dont une même dimension atteste des
+valeurs différentes sont disjointes. Les portées égales, englobantes, sans
+dimension commune ou héritées sans portée restent ambiguës et sont bloquées, y
+compris lorsque la période est inconnue. Un import sans clé stable prouvée ne
+peut pas être confirmé. Aucun fichier, nom de fichier, prompt, conversation,
 identifiant source fournisseur, facture brute ou secret d'accès n'est persisté.
 Les périodes inconnues restent `NULL`; une ligne partielle n'entre pas dans un
 agrégat temporel. Les coûts et devises restent distincts des tokens et des

@@ -265,11 +265,16 @@ export async function handleLinkedActionUpdate(params: {
       appliedSnapshot: incomingSnapshot,
       appliedContentHash: incomingContentHash,
       appliedRevision: event.sourceRevision ?? null,
+      expectedActionUpdatedAt: action.updated_at,
     });
     if (appliedStatus !== "applied") {
-      return appliedStatus === "suppressed"
-        ? { status: "suppressed", source: event.source, externalId: event.externalId, actionId }
-        : { status: "mandate_revoked", source: event.source, reason: appliedStatus };
+      if (appliedStatus === "suppressed") {
+        return { status: "suppressed", source: event.source, externalId: event.externalId, actionId };
+      }
+      if (appliedStatus === "stale_revision" || appliedStatus === "conflict") {
+        return { status: "needs_review", source: event.source, externalId: event.externalId, actionId, reason: appliedStatus };
+      }
+      return { status: "mandate_revoked", source: event.source, reason: appliedStatus };
     }
     return {
       status: "unchanged",
@@ -286,6 +291,7 @@ export async function handleLinkedActionUpdate(params: {
     currentAction: action,
   });
 
+  let referenceAppliedWithActionUpdate = false;
   if (merge.hasChanges) {
     const mandateCheck = await store.verifyWriteMandate(
       subscription.organizerDirectoryId,
@@ -307,6 +313,13 @@ export async function handleLinkedActionUpdate(params: {
         organizerDirectoryId: subscription.organizerDirectoryId,
         sourceId: event.source,
         externalEventId: event.externalId,
+        ...(merge.conflicts.length === 0
+          ? {
+              appliedSnapshot: incomingSnapshot,
+              appliedContentHash: incomingContentHash,
+              appliedRevision: event.sourceRevision ?? null,
+            }
+          : {}),
       },
     );
     if (updated === "mandate_revoked") {
@@ -322,6 +335,15 @@ export async function handleLinkedActionUpdate(params: {
         source: event.source,
         externalId: event.externalId,
         actionId,
+      };
+    }
+    if (updated === "stale_revision" || updated === "conflict") {
+      return {
+        status: "needs_review",
+        source: event.source,
+        externalId: event.externalId,
+        actionId,
+        reason: updated,
       };
     }
     if (updated !== true) {
@@ -346,6 +368,7 @@ export async function handleLinkedActionUpdate(params: {
         reason: "concurrent_local_edit",
       };
     }
+    referenceAppliedWithActionUpdate = merge.conflicts.length === 0;
   }
 
   if (merge.conflicts.length > 0) {
@@ -371,17 +394,24 @@ export async function handleLinkedActionUpdate(params: {
     };
   }
 
-  const appliedStatus = await store.markReferenceApplied({
-    sourceId: event.source,
-    externalEventId: event.externalId,
-    appliedSnapshot: incomingSnapshot,
-    appliedContentHash: incomingContentHash,
-    appliedRevision: event.sourceRevision ?? null,
-  });
-  if (appliedStatus !== "applied") {
-    return appliedStatus === "suppressed"
-      ? { status: "suppressed", source: event.source, externalId: event.externalId, actionId }
-      : { status: "mandate_revoked", source: event.source, reason: appliedStatus };
+  if (!referenceAppliedWithActionUpdate) {
+    const appliedStatus = await store.markReferenceApplied({
+      sourceId: event.source,
+      externalEventId: event.externalId,
+      appliedSnapshot: incomingSnapshot,
+      appliedContentHash: incomingContentHash,
+      appliedRevision: event.sourceRevision ?? null,
+      expectedActionUpdatedAt: action.updated_at,
+    });
+    if (appliedStatus !== "applied") {
+      if (appliedStatus === "suppressed") {
+        return { status: "suppressed", source: event.source, externalId: event.externalId, actionId };
+      }
+      if (appliedStatus === "stale_revision" || appliedStatus === "conflict") {
+        return { status: "needs_review", source: event.source, externalId: event.externalId, actionId, reason: appliedStatus };
+      }
+      return { status: "mandate_revoked", source: event.source, reason: appliedStatus };
+    }
   }
 
   if (

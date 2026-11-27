@@ -6,6 +6,7 @@ import {
   parsePersonalAiDeclaration,
 } from "@/lib/environmental-impact-estimator/personal-ai-declaration-http";
 import { requireSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 // Justification Vercel: private owner-scoped usage declarations must never enter a shared or stale cache.
 export const PERSONAL_AI_NO_STORE = { "Cache-Control": "private, no-store" };
@@ -92,33 +93,22 @@ export async function createPersonalAiDeclaration(userId: string, draft: unknown
   const declaration = parsePersonalAiDeclaration(draft);
   requirePersistableQuickPeriod(declaration);
   const calculated = calculatePersonalAiDeclaration(declaration);
-  const client = await requireSupabaseClerkRlsClient();
-  if (declaration.quickScenario) {
-    const { data, error } = await client.rpc("save_personal_ai_chat_scenario", {
-      p_id: null,
-      p_declaration: declarationForStorage(declaration).declaration,
-      p_quick_scenario: declaration.quickScenario,
-      p_snapshot: calculated.snapshot,
-      p_methodology_version: calculated.methodologyVersion,
-      p_factor_version: calculated.factorVersion,
-    });
-    assertNoPersonalAiOverlap(error);
-    if (error) throw error;
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row) throw new Error("Le scénario n'a pas été retourné par le stockage privé");
-    return projectPersonalAiRow(row as Record<string, unknown>);
-  }
-  const { data, error } = await client.from("personal_ai_declarations").insert({
-    owner_clerk_id: userId,
-    period_start_utc: declaration.periodStartUtc,
-    period_end_utc: declaration.periodEndUtc,
-    declaration: declarationForStorage(declaration).declaration,
-    snapshot: calculated.snapshot,
-    methodology_version: calculated.methodologyVersion,
-    factor_version: calculated.factorVersion,
-  }).select("*").single();
+  const stored = declarationForStorage(declaration);
+  const { data, error } = await getSupabaseAdminClient().rpc("save_personal_ai_declaration_for_owner", {
+    p_owner_clerk_id: userId,
+    p_id: null,
+    p_declaration: stored.declaration,
+    p_quick_scenario: stored.quickScenario,
+    p_snapshot: calculated.snapshot,
+    p_methodology_version: calculated.methodologyVersion,
+    p_factor_version: calculated.factorVersion,
+    p_status: null,
+  });
+  assertNoPersonalAiOverlap(error);
   if (error) throw error;
-  return projectPersonalAiRow(data);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error("La déclaration n'a pas été retournée par le stockage privé");
+  return projectPersonalAiRow(row as Record<string, unknown>);
 }
 
 const updateSchema = z.object({
@@ -129,10 +119,8 @@ const updateSchema = z.object({
 export async function updatePersonalAiDeclaration(params: { userId: string; id: string; payload: unknown }) {
   let update: z.infer<typeof updateSchema>;
   try { update = updateSchema.parse(params.payload); } catch { throw new PersonalAiDeclarationInputError(); }
-  const values: Record<string, unknown> = {};
-  if (update.status !== undefined) values.status = update.status;
-  const client = await requireSupabaseClerkRlsClient();
   if (update.declaration !== undefined) {
+    const client = await requireSupabaseClerkRlsClient();
     const { data: existing, error: lookupError } = await client.from("personal_ai_declarations")
       .select("source_identity_hash")
       .eq("id", params.id)
@@ -145,34 +133,31 @@ export async function updatePersonalAiDeclaration(params: { userId: string; id: 
     const declaration = parsePersonalAiDeclaration(update.declaration);
     requirePersistableQuickPeriod(declaration);
     const calculated = calculatePersonalAiDeclaration(declaration);
-    if (declaration.quickScenario) {
-      const { data, error } = await client.rpc("save_personal_ai_chat_scenario", {
-        p_id: params.id,
-        p_declaration: declarationForStorage(declaration).declaration,
-        p_quick_scenario: declaration.quickScenario,
-        p_snapshot: calculated.snapshot,
-        p_methodology_version: calculated.methodologyVersion,
-        p_factor_version: calculated.factorVersion,
-      });
-      assertNoPersonalAiOverlap(error);
-      if (error) throw error;
-      const row = Array.isArray(data) ? data[0] : data;
-      return row ? projectPersonalAiRow(row as Record<string, unknown>) : null;
-    }
-    values.period_start_utc = declaration.periodStartUtc;
-    values.period_end_utc = declaration.periodEndUtc;
-    values.declaration = declarationForStorage(declaration).declaration;
-    values.snapshot = calculated.snapshot;
-    values.methodology_version = calculated.methodologyVersion;
-    values.factor_version = calculated.factorVersion;
+    const stored = declarationForStorage(declaration);
+    const { data, error } = await getSupabaseAdminClient().rpc("save_personal_ai_declaration_for_owner", {
+      p_owner_clerk_id: params.userId,
+      p_id: params.id,
+      p_declaration: stored.declaration,
+      p_quick_scenario: stored.quickScenario,
+      p_snapshot: calculated.snapshot,
+      p_methodology_version: calculated.methodologyVersion,
+      p_factor_version: calculated.factorVersion,
+      p_status: update.status ?? null,
+    });
+    assertNoPersonalAiOverlap(error);
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? projectPersonalAiRow(row as Record<string, unknown>) : null;
   }
-  const { data, error } = await client.from("personal_ai_declarations").update(values)
-    .eq("id", params.id)
-    .eq("owner_clerk_id", params.userId)
-    .select("*").maybeSingle();
+  const { data, error } = await getSupabaseAdminClient().rpc("set_personal_ai_declaration_status_for_owner", {
+    p_owner_clerk_id: params.userId,
+    p_id: params.id,
+    p_status: update.status,
+  });
   assertNoPersonalAiOverlap(error);
   if (error) throw error;
-  return data ? projectPersonalAiRow(data) : null;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? projectPersonalAiRow(row as Record<string, unknown>) : null;
 }
 
 export async function deletePersonalAiDeclaration(params: { userId: string; id: string }) {

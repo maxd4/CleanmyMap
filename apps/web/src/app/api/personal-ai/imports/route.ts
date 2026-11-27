@@ -1,5 +1,5 @@
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { requireSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { calculatePersonalAiDeclaration, parsePersonalAiNormalizedDeclaration } from "@/lib/environmental-impact-estimator/personal-ai-declaration-http";
@@ -114,8 +114,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const client = await requireSupabaseClerkRlsClient();
-    const { data, error } = await client.rpc("confirm_personal_ai_import", { p_rows: rows });
+    const { data, error } = await getSupabaseAdminClient().rpc("confirm_personal_ai_import_for_owner", {
+      p_owner_clerk_id: access.userId,
+      p_rows: rows,
+    });
+    if (error?.code === "23P01") {
+      return json({ error: "Cet import recoupe une source active. Excluez ou réconciliez une source avant de le confirmer." }, 409);
+    }
     if (error) throw error;
     return json({ items: (data ?? []).map((row: Record<string, unknown>) => {
       const projected = { ...row } as Record<string, unknown>;

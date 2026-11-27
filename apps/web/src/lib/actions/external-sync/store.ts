@@ -98,6 +98,7 @@ export interface ExternalActionSyncStore {
     appliedSnapshot: Record<string, unknown>;
     appliedContentHash: string;
     appliedRevision: string | null;
+    expectedActionUpdatedAt?: string | null;
   }): Promise<string>;
   completeIdentity(
     identityHash: string,
@@ -134,8 +135,11 @@ export interface ExternalActionSyncStore {
       sourceId: ExternalActionSourceId;
       externalEventId: string;
       allowPublishedNotesOnly?: boolean;
+      appliedSnapshot?: Record<string, unknown>;
+      appliedContentHash?: string;
+      appliedRevision?: string | null;
     },
-  ): Promise<boolean | "mandate_revoked" | "suppressed" | "terminal_state" | "conflict">;
+  ): Promise<boolean | "mandate_revoked" | "suppressed" | "terminal_state" | "conflict" | "stale_revision">;
   publishPreAction(
     actionId: string,
     actorUserId: string,
@@ -309,6 +313,7 @@ export function createSupabaseExternalActionSyncStore(
         p_applied_snapshot: params.appliedSnapshot,
         p_applied_content_hash: params.appliedContentHash,
         p_applied_revision: params.appliedRevision,
+        p_expected_action_updated_at: params.expectedActionUpdatedAt ?? null,
       });
       if (error) throw new Error("Échec de confirmation de l'état appliqué.");
       return String(data ?? "");
@@ -433,15 +438,25 @@ export function createSupabaseExternalActionSyncStore(
 
     async updatePreActionFields(actionId, expectedUpdatedAt, updates, sourceContext) {
       if (sourceContext) {
-        const { data, error } = await supabase.rpc("update_external_action_sync_pre_action", {
-          p_action_id: actionId,
-          p_organizer_directory_id: sourceContext.organizerDirectoryId,
-          p_source_id: sourceContext.sourceId,
-          p_external_event_id: sourceContext.externalEventId,
-          p_expected_updated_at: expectedUpdatedAt ?? null,
-          p_updates: updates,
-          p_allow_published_notes_only: Boolean(sourceContext.allowPublishedNotesOnly),
-        });
+        const applySnapshot = sourceContext.appliedSnapshot !== undefined;
+        const { data, error } = await supabase.rpc(
+          applySnapshot ? "apply_external_action_sync_pre_action" : "update_external_action_sync_pre_action",
+          {
+            p_action_id: actionId,
+            p_organizer_directory_id: sourceContext.organizerDirectoryId,
+            p_source_id: sourceContext.sourceId,
+            p_external_event_id: sourceContext.externalEventId,
+            p_expected_updated_at: expectedUpdatedAt ?? null,
+            p_updates: updates,
+            ...(applySnapshot
+              ? {
+                  p_applied_snapshot: sourceContext.appliedSnapshot,
+                  p_applied_content_hash: sourceContext.appliedContentHash,
+                  p_applied_revision: sourceContext.appliedRevision ?? null,
+                }
+              : { p_allow_published_notes_only: Boolean(sourceContext.allowPublishedNotesOnly) }),
+          },
+        );
         if (error) throw new Error("Échec de mise à jour atomique de la pré-action externe.");
         const status = String(data ?? "");
         if (status === "updated") return true;
@@ -449,6 +464,7 @@ export function createSupabaseExternalActionSyncStore(
         if (status === "suppressed") return "suppressed";
         if (status === "terminal_state") return "terminal_state";
         if (status === "conflict") return "conflict";
+        if (status === "stale_revision") return "stale_revision";
         return false;
       }
       let query = supabase

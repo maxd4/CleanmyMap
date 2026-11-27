@@ -30,14 +30,15 @@ mutable ne peut être attribuée à un SHA. Le rapport conserve tout échec obse
 sur le candidat vérifié : corriger uniquement les causes attribuables au lot,
 et signaler séparément les défauts préexistants ou étrangers.
 
-Si l'utilisateur demande explicitement « commit et push tout le worktree dirty »
-(ou formule clairement la même autorisation), les chemins tracked staged ou
-unstaged et untracked du snapshot initial sont autorisés dans le candidat,
-même s'ils préexistent ou sont étrangers au lot. Cette exception ne couvre pas
-les fichiers ignorés, secrets, changements apparus ensuite ou contournements
-de garde-fous. Le candidat doit être relu et contrôlé dans son ensemble, puis
-stagé avec une liste explicite ; ne pas utiliser `git add -A` par commodité.
-Une modification concurrente postérieure au snapshot est préservée et signalée.
+La règle de clôture Git du dépôt demande qu'après chaque
+exécution qui modifie le checkout, le candidat validé commit et pousse `main`
+tous les chemins tracked staged/unstaged et untracked du snapshot initial,
+même s'ils préexistent ou sont étrangers au lot. Relire et contrôler chaque
+chemin, puis stage la liste explicite ; ne jamais utiliser `git add -A`. Cette
+règle exclut les fichiers ignorés, secrets et changements apparus après le
+snapshot. Une modification concurrente postérieure au snapshot est préservée et
+signalée. Aucun hook, contrôle de sécurité, protection de branche ou fast-forward
+ne peut être contourné pour forcer la publication.
 
 Les provenances sont distinctes et doivent être affichées : `WORKTREE_LIVE`
 pour le checkout mouvant, `STAGED` pour l'index exact, `COMMITTED_SNAPSHOT`

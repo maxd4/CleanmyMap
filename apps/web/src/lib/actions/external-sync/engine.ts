@@ -221,11 +221,16 @@ async function processSingleExternalEvent(params: {
       appliedSnapshot: snapshot,
       appliedContentHash: contentHash,
       appliedRevision: event.sourceRevision ?? null,
+      expectedActionUpdatedAt: match.action.updated_at,
     });
     if (appliedStatus !== "applied") {
-      return appliedStatus === "suppressed"
-        ? { status: "suppressed", source: event.source, externalId: event.externalId, actionId: match.action.id }
-        : { status: "mandate_revoked", source: event.source, reason: appliedStatus };
+      if (appliedStatus === "suppressed") {
+        return { status: "suppressed", source: event.source, externalId: event.externalId, actionId: match.action.id };
+      }
+      if (appliedStatus === "stale_revision" || appliedStatus === "conflict") {
+        return { status: "needs_review", source: event.source, externalId: event.externalId, actionId: match.action.id, reason: appliedStatus };
+      }
+      return { status: "mandate_revoked", source: event.source, reason: appliedStatus };
     }
     return {
       status: "linked",
@@ -278,17 +283,33 @@ async function processSingleExternalEvent(params: {
     };
   }
 
+  const createdAction = await store.getActionById(created.actionId);
+  if (!createdAction) {
+    return {
+      status: "needs_review",
+      source: event.source,
+      externalId: event.externalId,
+      actionId: created.actionId,
+      reason: "linked_action_missing",
+    };
+  }
+
   const appliedStatus = await store.markReferenceApplied({
     sourceId: event.source,
     externalEventId: event.externalId,
     appliedSnapshot: snapshot,
     appliedContentHash: contentHash,
     appliedRevision: event.sourceRevision ?? null,
+    expectedActionUpdatedAt: createdAction.updated_at,
   });
   if (appliedStatus !== "applied") {
-    return appliedStatus === "suppressed"
-      ? { status: "suppressed", source: event.source, externalId: event.externalId, actionId: created.actionId }
-      : { status: "mandate_revoked", source: event.source, reason: appliedStatus };
+    if (appliedStatus === "suppressed") {
+      return { status: "suppressed", source: event.source, externalId: event.externalId, actionId: created.actionId };
+    }
+    if (appliedStatus === "stale_revision" || appliedStatus === "conflict") {
+      return { status: "needs_review", source: event.source, externalId: event.externalId, actionId: created.actionId, reason: appliedStatus };
+    }
+    return { status: "mandate_revoked", source: event.source, reason: appliedStatus };
   }
 
   if (mode === "admin_sync_now" && isExternalActionPublishAdmissible(event, now)) {

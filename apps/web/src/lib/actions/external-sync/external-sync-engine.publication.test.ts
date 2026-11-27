@@ -5,6 +5,43 @@ import type { ExternalActionSubscription } from "./types";
 import { baseSubs, createInMemorySyncStore } from "./external-sync-engine.test-helpers";
 
 describe("external-sync Lot A publication, mandates & tombstones", () => {
+  it("commits a linked action update and its applied snapshot through the same store operation", async () => {
+    const now = new Date("2026-11-26T10:00:00.000Z");
+    const sourceEvent = {
+      id: "jagis-atomic-update-1",
+      url: "https://example.test/jagis/atomic-1",
+      title: "Collecte avant",
+      start_date: "2027-09-12",
+      start_time: "10:00",
+      meeting_point: "Place Gambetta",
+      city: "Paris",
+      route_reference: "gambetta-atomic",
+      status: "published",
+    };
+    const state = createInMemorySyncStore({ subscriptions: baseSubs });
+    const readers = (event: typeof sourceEvent) => ({
+      jagis_pour_la_nature: async () => readSyntheticJagisEvents([event], now.toISOString()),
+      fondation_de_la_mer: async () => ({ status: "disabled" as const, source: "fondation_de_la_mer" as const, reason: "operator_authorization_required" as const }),
+    });
+
+    await runExternalActionSync({ store: state.store, readers: readers(sourceEvent) }, { mode: "cron_prepare", now });
+    const actionId = [...state.actions.keys()][0]!;
+    const updateSpy = vi.spyOn(state.store, "updatePreActionFields");
+    const markSpy = vi.spyOn(state.store, "markReferenceApplied");
+    const updatedEvent = { ...sourceEvent, title: "Collecte après" };
+    await runExternalActionSync({ store: state.store, readers: readers(updatedEvent) }, { mode: "cron_prepare", now });
+
+    expect(updateSpy).toHaveBeenCalledWith(
+      actionId,
+      expect.any(String),
+      expect.objectContaining({ preparation_data: expect.objectContaining({ actionTitle: "Collecte après" }) }),
+      expect.objectContaining({ appliedSnapshot: expect.any(Object), appliedContentHash: expect.any(String) }),
+    );
+    expect(state.actions.get(actionId)?.preparation_data?.actionTitle).toBe("Collecte après");
+    expect([...state.references.values()][0]?.applied_snapshot).toEqual(expect.objectContaining({ actionTitle: "Collecte après" }));
+    expect(markSpy).not.toHaveBeenCalled();
+  });
+
   it("respects canonical publication blockers (formality_blocked / pending_review) and revoked/missing-consent mandates", async () => {
     const blocked = createInMemorySyncStore({
       subscriptions: baseSubs,

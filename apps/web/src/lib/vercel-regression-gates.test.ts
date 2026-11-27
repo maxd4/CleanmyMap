@@ -78,7 +78,7 @@ describe("vercel regression gates", () => {
     expect(surface.apiRoutes.length).toBe(baselineRoutes.length);
   });
 
-  it("documents the owners and contracts of the newly ratified media and report routes", () => {
+  it("documents the owners and contracts of the newly ratified media, report, and organization routes", () => {
     const expectedIntroductions = new Map([
       [
         "apps/web/src/app/api/actions/[actionId]/attendance-registry/route.ts",
@@ -109,8 +109,20 @@ describe("vercel regression gates", () => {
         "d035f6ee5337545634d38103109aff42cb6e07af",
       ],
       [
+        "apps/web/src/app/api/admin/organizations/bootstrap/route.ts",
+        "b4c5907cdd1e83de51a99098e9cb512d904e36e6",
+      ],
+      [
+        "apps/web/src/app/api/organizations/route.ts",
+        "b4c5907cdd1e83de51a99098e9cb512d904e36e6",
+      ],
+      [
         "apps/web/src/app/api/reports/ai-export/route.ts",
         "6ce460fbc79a99066a0f00de074a7fd977457808",
+      ],
+      [
+        "apps/web/src/app/api/reports/organization/route.ts",
+        "b4c5907cdd1e83de51a99098e9cb512d904e36e6",
       ],
       [
         "apps/web/src/app/api/reports/generations/[id]/csv/route.ts",

@@ -1,11 +1,12 @@
 begin;
-select plan(38);
+select plan(43);
 
 select ok(has_table_privilege('service_role', 'private.external_action_sync_subscriptions', 'INSERT'), 'service role can manage external sync subscriptions');
 select ok(not has_table_privilege('authenticated', 'private.external_action_sync_subscriptions', 'SELECT'), 'authenticated cannot read private external sync subscriptions');
 select ok(has_table_privilege('service_role', 'private.external_action_sync_proposals', 'INSERT'), 'service role can manage external sync proposals');
 select ok(not has_table_privilege('authenticated', 'private.external_action_sync_proposals', 'SELECT'), 'authenticated cannot read private external sync proposals');
-select ok(not has_function_privilege('authenticated', 'public.mark_external_action_sync_reference_applied(text, text, jsonb, text, text)', 'EXECUTE'), 'authenticated cannot mark external sync reference applied');
+select ok(not has_function_privilege('authenticated', 'public.mark_external_action_sync_reference_applied(text, text, jsonb, text, text, timestamptz)', 'EXECUTE'), 'authenticated cannot mark external sync reference applied');
+select ok(not has_function_privilege('authenticated', 'public.apply_external_action_sync_pre_action(uuid, text, text, text, timestamptz, jsonb, jsonb, text, text)', 'EXECUTE'), 'authenticated cannot atomically apply external sync action changes');
 select ok(not has_function_privilege('authenticated', 'public.update_external_action_sync_pre_action(uuid, text, text, text, timestamptz, jsonb, boolean)', 'EXECUTE'), 'authenticated cannot update external sync pre-action');
 select ok(not has_function_privilege('authenticated', 'public.submit_external_action_sync_review(uuid, text, text, text, timestamptz)', 'EXECUTE'), 'authenticated cannot submit external sync review');
 
@@ -25,6 +26,11 @@ declare
   v_prop_a_replay uuid;
   v_applied_revoked text;
   v_applied_ok text;
+  v_applied_stale text;
+  v_applied_retry text;
+  v_applied_at_first timestamptz;
+  v_applied_at_retry timestamptz;
+  v_applied_snapshot_after_stale jsonb;
   v_suppressed text;
   v_suppressed_replay text;
   v_suppressed_tombstone text;
@@ -43,6 +49,9 @@ declare
   v_resolve_wrong_org text;
 begin
   set local role postgres;
+  insert into public.profiles (id, display_name, handle)
+  values ('user-org-a', 'Org A User', 'org-a-user')
+  on conflict (id) do nothing;
   insert into public.actions (
     id, created_by_clerk_id, organizer_id, organizer_type, action_date,
     action_phase, status, published_at, location_label, moderation_visibility
@@ -81,6 +90,37 @@ begin
     'jagis_pour_la_nature', 'ext-state-1', '{"v":1}'::jsonb, repeat('8', 64), 'r1'
   );
   insert into engine_state_results values ('applied_with_consent', v_applied_ok);
+
+  select applied_at into v_applied_at_first
+    from private.external_action_sync_references
+   where source_id = 'jagis_pour_la_nature' and external_event_id = 'ext-state-1';
+  perform * from public.reserve_external_action_sync_reference(
+    v_hash, 'org-a', 'user-org-a', v_token, 'jagis_pour_la_nature', 'ext-state-1',
+    'https://example.test/e1', 'r2', '{"v":2}'::jsonb, repeat('9', 64)
+  );
+  v_applied_stale := public.mark_external_action_sync_reference_applied(
+    'jagis_pour_la_nature', 'ext-state-1', '{"v":1}'::jsonb, repeat('8', 64), 'r1'
+  );
+  select applied_snapshot into v_applied_snapshot_after_stale
+    from private.external_action_sync_references
+   where source_id = 'jagis_pour_la_nature' and external_event_id = 'ext-state-1';
+  insert into engine_state_results values ('applied_old_revision', v_applied_stale);
+  insert into engine_state_results values ('applied_old_snapshot_preserved', v_applied_snapshot_after_stale::text);
+
+  v_applied_ok := public.mark_external_action_sync_reference_applied(
+    'jagis_pour_la_nature', 'ext-state-1', '{"v":2}'::jsonb, repeat('9', 64), 'r2'
+  );
+  select applied_at into v_applied_at_first
+    from private.external_action_sync_references
+   where source_id = 'jagis_pour_la_nature' and external_event_id = 'ext-state-1';
+  v_applied_retry := public.mark_external_action_sync_reference_applied(
+    'jagis_pour_la_nature', 'ext-state-1', '{"v":2}'::jsonb, repeat('9', 64), 'r2'
+  );
+  select applied_at into v_applied_at_retry
+    from private.external_action_sync_references
+   where source_id = 'jagis_pour_la_nature' and external_event_id = 'ext-state-1';
+  insert into engine_state_results values ('applied_retry', v_applied_retry);
+  insert into engine_state_results values ('applied_retry_timestamp_stable', case when v_applied_at_retry = v_applied_at_first then 'true' else 'false' end);
 
   -- Proposal organizer isolation & durable resolution
   v_prop_a := public.upsert_external_action_sync_proposal(
@@ -349,6 +389,10 @@ end $$;
 
 select is((select value from engine_state_results where key = 'applied_without_consent'), 'mandate_revoked', 'mark applied fails closed without consent');
 select is((select value from engine_state_results where key = 'applied_with_consent'), 'applied', 'mark applied succeeds with active consented mandate');
+select is((select value from engine_state_results where key = 'applied_old_revision'), 'stale_revision', 'older observed source revision cannot replace applied snapshot');
+select is((select value from engine_state_results where key = 'applied_old_snapshot_preserved'), '{"v":1}', 'stale source event leaves prior applied snapshot intact');
+select is((select value from engine_state_results where key = 'applied_retry'), 'applied', 'same applied source revision is accepted idempotently');
+select is((select value from engine_state_results where key = 'applied_retry_timestamp_stable'), 'true', 'idempotent applied retry preserves applied_at');
 select is((select value from engine_state_results where key = 'cross_org_proposal'), 'proposal_organizer_conflict', 'cross-organization proposal overwrite is rejected');
 select is((select value from engine_state_results where key = 'resolve_wrong_org'), 'not_found', 'proposal resolution is isolated by organizer_directory_id');
 select is((select value from engine_state_results where key = 'proposal_stays_resolved'), 'resolved', 'resolved proposal stays resolved for identical content hash');

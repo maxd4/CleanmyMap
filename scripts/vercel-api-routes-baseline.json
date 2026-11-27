@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-25T00:00:00.000Z",
-  "apiRouteCount": 252,
+  "generatedAt": "2026-11-27T00:00:00.000Z",
+  "apiRouteCount": 255,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -596,6 +596,27 @@
       "reason": "Gestion privée admin des contacts institutionnels, faits sourcés et revues de vérification liés à l'annuaire des partenaires.",
       "costContract": "GET/POST/PATCH strictement protégés par requireAdminAccess(), validation Zod bornée (schémas contact/fact/review), persistance et audit admin operation-audit, réponses admin private/no-store sans projection publique.",
       "reviewedAt": "2026-11-25"
+    },
+    {
+      "route": "apps/web/src/app/api/admin/organizations/bootstrap/route.ts",
+      "introducedBy": "b4c5907cdd1e83de51a99098e9cb512d904e36e6",
+      "reason": "Bootstrap organisation privé après authentification admin et vérification du mandat accepté; le propriétaire provient de l’identité exacte du déposant.",
+      "costContract": "POST authentifié et limité en débit, sans annuaire public; une organisation est créée via RPC serveur atomique et les réponses restent private/no-store.",
+      "reviewedAt": "2026-11-27"
+    },
+    {
+      "route": "apps/web/src/app/api/organizations/route.ts",
+      "introducedBy": "b4c5907cdd1e83de51a99098e9cb512d904e36e6",
+      "reason": "Surface privée des opérations organisationnelles fondée sur les appartenances actives et l’identité Clerk vérifiée côté serveur.",
+      "costContract": "Listes bornées, validation stricte, RPC service-only et rate limit; aucun accès navigateur direct à la base et réponses private/no-store.",
+      "reviewedAt": "2026-11-27"
+    },
+    {
+      "route": "apps/web/src/app/api/reports/organization/route.ts",
+      "introducedBy": "b4c5907cdd1e83de51a99098e9cb512d904e36e6",
+      "reason": "Bilan privé agrégé des actions sous le scope organisation, établissement ou campagne résolu depuis l’appartenance serveur.",
+      "costContract": "Fenêtre et volume plafonnés à 500 actions, champs exportables allowlistés, rate limit 10/minute et cache private/no-store.",
+      "reviewedAt": "2026-11-27"
     }
   ],
   "apiRoutes": [
@@ -671,6 +692,7 @@
     "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
     "apps/web/src/app/api/admin/moderation/route.ts",
     "apps/web/src/app/api/admin/operations/route.ts",
+    "apps/web/src/app/api/admin/organizations/bootstrap/route.ts",
     "apps/web/src/app/api/admin/partners/institutional-relations/route.ts",
     "apps/web/src/app/api/admin/partners/published-directory/route.ts",
     "apps/web/src/app/api/admin/promotion-requests/route.ts",
@@ -750,6 +772,7 @@
     "apps/web/src/app/api/mobile/actions/route.ts",
     "apps/web/src/app/api/newsletter/subscribe/route.ts",
     "apps/web/src/app/api/notifications/preferences/route.ts",
+    "apps/web/src/app/api/organizations/route.ts",
     "apps/web/src/app/api/parcours/brigade-verte/route.ts",
     "apps/web/src/app/api/partners/onboarding-requests/route.ts",
     "apps/web/src/app/api/partners/published-directory/route.ts",
@@ -775,6 +798,7 @@
     "apps/web/src/app/api/reports/library/[id]/pdf/route.ts",
     "apps/web/src/app/api/reports/library/[id]/route.ts",
     "apps/web/src/app/api/reports/library/route.ts",
+    "apps/web/src/app/api/reports/organization/route.ts",
     "apps/web/src/app/api/reports/shared/[token]/route.ts",
     "apps/web/src/app/api/route/recommend/route.ts",
     "apps/web/src/app/api/sandbox/runbook-checks/route.ts",

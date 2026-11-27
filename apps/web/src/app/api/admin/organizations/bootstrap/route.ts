@@ -9,6 +9,7 @@ import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/ser
 export const runtime = "nodejs";
 // Explicit administrator verification, separate from ordinary partner publication.
 const schema = z.object({ entryId: z.string().trim().min(1).max(255), organizerRef: z.string().trim().min(1).max(255), mandateVerified: z.literal(true), requestId: z.string().uuid() }).strict();
+// Justification: mandate and applicant identity data must never enter a shared cache.
 function json(body: unknown, status = 200) { return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } }); }
 export async function POST(request: Request) {
   const access = await requireAdminAccess();

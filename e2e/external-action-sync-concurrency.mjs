@@ -15,6 +15,10 @@ const hashDistinctA = "1".repeat(64);
 const hashDistinctB = "2".repeat(64);
 const hashLockExpire = "3".repeat(64);
 const hashLockExpireComplete = "4".repeat(64);
+const hashAppliedRace = "5".repeat(64);
+const hashAppliedOrder = "6".repeat(64);
+const actionAppliedRace = "00000000-0000-4000-8000-000000009013";
+const actionAppliedOrder = "00000000-0000-4000-8000-000000009014";
 
 const run = (sql, step = "query", timeoutMs = 20_000) => runLocalPsqlQuery(sql, {
   timeoutMs,
@@ -48,10 +52,12 @@ const cleanupSql = `
 begin;
 set local role postgres;
 delete from private.external_action_sync_suppression_audit where operation_id like 'sync-conc-%';
+delete from private.external_action_sync_subscriptions where owner_user_id = 'sync-conc-apply' and organizer_directory_id = '${orgA}' and source_id = 'jagis_pour_la_nature';
 delete from private.external_action_sync_references where external_event_id like 'conc-event-%';
-delete from private.external_action_sync_identities where identity_hash in ('${hashCollision}', '${hashOrgConflict}', '${hashLockOrder}', '${hashSuppressA}', '${hashSuppressB}', '${hashExpired}', '${hashDistinctA}', '${hashDistinctB}', '${hashLockExpire}', '${hashLockExpireComplete}');
-delete from public.actions where id in ('${actionA}'::uuid, '${actionB}'::uuid, '00000000-0000-4000-8000-000000009011'::uuid, '00000000-0000-4000-8000-000000009012'::uuid);
+delete from private.external_action_sync_identities where identity_hash in ('${hashCollision}', '${hashOrgConflict}', '${hashLockOrder}', '${hashSuppressA}', '${hashSuppressB}', '${hashExpired}', '${hashDistinctA}', '${hashDistinctB}', '${hashLockExpire}', '${hashLockExpireComplete}', '${hashAppliedRace}', '${hashAppliedOrder}');
+delete from public.actions where id in ('${actionA}'::uuid, '${actionB}'::uuid, '00000000-0000-4000-8000-000000009011'::uuid, '00000000-0000-4000-8000-000000009012'::uuid, '${actionAppliedRace}'::uuid, '${actionAppliedOrder}'::uuid);
 delete from public.organizer_directory_entries where id in ('${orgA}', '${orgB}');
+delete from public.profiles where id = 'sync-conc-apply';
 commit;
 `;
 
@@ -60,6 +66,10 @@ async function setup() {
   await run(cleanupSql, "setup_cleanup");
   await run(`
 begin;
+set local role postgres;
+insert into public.profiles(id, display_name, handle)
+values ('sync-conc-apply', 'Sync Concurrency Apply', 'sync-concurrency-apply')
+on conflict (id) do nothing;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"external-sync-concurrency-setup"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
@@ -71,6 +81,118 @@ values ('${actionA}'::uuid, 'sync-conc', current_date + 5, 'Lieu Conc A', 'pendi
        ('${actionB}'::uuid, 'sync-conc', current_date + 6, 'Lieu Conc B', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A');
 commit;
 `, "setup_insert");
+
+  await run(`
+begin;
+set local role postgres;
+insert into public.actions(id, created_by_clerk_id, action_date, location_label, status, action_phase, organizer_type, organizer_id, organizer_name)
+values ('${actionAppliedRace}'::uuid, 'sync-conc-apply', current_date + 10, 'Race Original', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A'),
+       ('${actionAppliedOrder}'::uuid, 'sync-conc-apply', current_date + 11, 'Order Original', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A');
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"external-sync-concurrency-setup"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select public.upsert_external_action_sync_subscription('${orgA}', 'jagis_pour_la_nature', 'sync-conc-apply', '{}'::text[], 'struct-sync-conc', 'https://example.test/sync-conc', 'synthetic_fixture', true, 'auth-sync-conc', '2026-11-01', null, clock_timestamp());
+select * from public.reserve_external_action_sync_reference('${hashAppliedRace}', '${orgA}', 'sync-conc-apply', '80000000-0000-4000-8000-000000000001'::uuid, 'jagis_pour_la_nature', 'conc-event-apply-race', 'https://example.test/apply-race', 'r1', '{"revision":1}'::jsonb, '${"7".repeat(64)}');
+select public.complete_external_action_sync_identity('${hashAppliedRace}', '80000000-0000-4000-8000-000000000001'::uuid, '${actionAppliedRace}'::uuid);
+select * from public.reserve_external_action_sync_reference('${hashAppliedOrder}', '${orgA}', 'sync-conc-apply', '80000000-0000-4000-8000-000000000002'::uuid, 'jagis_pour_la_nature', 'conc-event-apply-order', 'https://example.test/apply-order', 'r1', '{"revision":1}'::jsonb, '${"8".repeat(64)}');
+select public.complete_external_action_sync_identity('${hashAppliedOrder}', '80000000-0000-4000-8000-000000000002'::uuid, '${actionAppliedOrder}'::uuid);
+commit;
+`, "applied_setup");
+}
+
+async function testAppliedSnapshotConvergence() {
+  // Revocation wins the subscription row lock. The waiting apply must observe the
+  // committed revocation and leave both action and reference untouched.
+  const revoker = run(`
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-revoker"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select public.upsert_external_action_sync_subscription('${orgA}', 'jagis_pour_la_nature', 'sync-conc-apply', '{}'::text[], 'struct-sync-conc', 'https://example.test/sync-conc', 'synthetic_fixture', false, 'auth-sync-conc', '2026-11-01', clock_timestamp(), clock_timestamp());
+select pg_advisory_lock(928173645140);
+select pg_sleep(0.35);
+commit;
+`, "applied_revoke_holder");
+  const applyAfterRevoke = run(`
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-apply-after-revoke"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+do $$ declare v_waiting boolean := false; begin
+  for i in 1..200 loop
+    if not pg_try_advisory_lock(928173645140) then v_waiting := true; exit; end if;
+    perform pg_advisory_unlock(928173645140); perform pg_sleep(0.01);
+  end loop;
+  if not v_waiting then raise exception 'Revocation barrier timed out'; end if;
+end $$;
+select 'APPLY_AFTER_REVOKE:' || public.apply_external_action_sync_pre_action(
+  '${actionAppliedRace}'::uuid, '${orgA}', 'jagis_pour_la_nature', 'conc-event-apply-race', null,
+  '{"location_label":"Must Not Apply"}'::jsonb, '{"revision":1}'::jsonb, '${"7".repeat(64)}', 'r1'
+);
+commit;
+`, "applied_after_revoke");
+  const [revokeResult, applyResult] = await Promise.all([revoker, applyAfterRevoke]);
+  assert.ok(revokeResult.stdout.length > 0, "revocation session must complete");
+  assert.match(applyResult.stdout, /APPLY_AFTER_REVOKE:mandate_revoked/);
+  const revokedState = await run(`
+begin; set local role service_role;
+select 'STATE:' || a.location_label || ':' || coalesce(r.applied_revision, 'null')
+from public.actions a join private.external_action_sync_identities i on i.action_id = a.id
+join private.external_action_sync_references r using (identity_hash)
+where a.id = '${actionAppliedRace}'::uuid and r.external_event_id = 'conc-event-apply-race';
+commit;
+`, "applied_revoke_state");
+  assert.match(revokedState.stdout, /STATE:Race Original:null/);
+
+  // The source has advanced to r2. An old r1 worker cannot mutate the action;
+  // applying r2 succeeds and a repeated mark is a timestamp-preserving no-op.
+  await run(`
+begin; set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-order-advance"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select public.upsert_external_action_sync_subscription('${orgA}', 'jagis_pour_la_nature', 'sync-conc-apply', '{}'::text[], 'struct-sync-conc', 'https://example.test/sync-conc', 'synthetic_fixture', true, 'auth-sync-conc', '2026-11-01', null, clock_timestamp());
+select * from public.reserve_external_action_sync_reference('${hashAppliedOrder}', '${orgA}', 'sync-conc-apply', '80000000-0000-4000-8000-000000000002'::uuid, 'jagis_pour_la_nature', 'conc-event-apply-order', 'https://example.test/apply-order', 'r2', '{"revision":2}'::jsonb, '${"9".repeat(64)}');
+commit;
+`, "applied_order_advance");
+  const stale = await run(`
+begin; set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-order-stale"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select 'OLD:' || public.apply_external_action_sync_pre_action('${actionAppliedOrder}'::uuid, '${orgA}', 'jagis_pour_la_nature', 'conc-event-apply-order', null, '{"location_label":"Old Revision"}'::jsonb, '{"revision":1}'::jsonb, '${"8".repeat(64)}', 'r1');
+commit;
+`, "applied_order_stale");
+  assert.match(stale.stdout, /OLD:stale_revision/);
+  const latest = await run(`
+begin; set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-order-current"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select 'NEW:' || public.apply_external_action_sync_pre_action('${actionAppliedOrder}'::uuid, '${orgA}', 'jagis_pour_la_nature', 'conc-event-apply-order', null, '{"location_label":"Latest Revision"}'::jsonb, '{"revision":2}'::jsonb, '${"9".repeat(64)}', 'r2');
+commit;
+`, "applied_order_latest");
+  assert.match(latest.stdout, /NEW:updated/);
+  const appliedBeforeRetry = await run(`
+begin; set local role service_role;
+select 'BEFORE_RETRY:' || r.applied_at::text
+from private.external_action_sync_references r where r.source_id = 'jagis_pour_la_nature' and r.external_event_id = 'conc-event-apply-order';
+commit;
+`, "applied_order_before_retry");
+  const beforeRetry = appliedBeforeRetry.stdout.match(/BEFORE_RETRY:([^\r\n]+)/)?.[1];
+  assert.ok(beforeRetry, `Missing applied timestamp before retry: ${appliedBeforeRetry.stdout}`);
+  const retry = await run(`
+begin; set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"sync-conc-order-retry"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+select 'RETRY:' || public.mark_external_action_sync_reference_applied('jagis_pour_la_nature', 'conc-event-apply-order', '{"revision":2}'::jsonb, '${"9".repeat(64)}', 'r2');
+select 'RETRY_STATE:' || a.location_label || ':' || r.applied_at::text
+from public.actions a join private.external_action_sync_identities i on i.action_id = a.id
+join private.external_action_sync_references r using (identity_hash)
+where a.id = '${actionAppliedOrder}'::uuid and r.external_event_id = 'conc-event-apply-order';
+commit;
+`, "applied_order_retry");
+  assert.match(retry.stdout, /RETRY:applied/);
+  assert.match(retry.stdout, /RETRY_STATE:Latest Revision:/);
+  const afterRetry = retry.stdout.match(/RETRY_STATE:Latest Revision:([^\r\n]+)/)?.[1];
+  assert.equal(afterRetry, beforeRetry, "idempotent mark retry must preserve applied_at");
 }
 
 async function testConcurrentReservationCollision() {
@@ -529,6 +651,8 @@ async function main() {
   try {
     currentPhase = "SETUP";
     await setup();
+    currentPhase = "APPLIED_CONVERGENCE";
+    await testAppliedSnapshotConvergence();
     currentPhase = "RESERVE_COLLISION";
     await testConcurrentReservationCollision();
     currentPhase = "FOREIGN_OWNER";
@@ -543,7 +667,7 @@ async function main() {
     await testDistinctIdentityHashReferenceCollision();
     currentPhase = "LOCK_WAIT_EXPIRATION";
     await testExpirationDuringLockWaitAndCompletionRejection();
-    console.log("EXECUTED_DB_CONTRACT: External action sync two-session reservation, lock-order, expiration and suppression idempotency contract passed.");
+    console.log("EXECUTED_DB_CONTRACT: External action sync two-session revocation serialization, out-of-order apply, idempotent retry, reservation, lock-order, expiration and suppression idempotency contract passed.");
   } catch (error) {
     const isAssertion = error?.code === "ERR_ASSERTION" || error?.name === "AssertionError";
     console.log(`TERRITORIAL_PHASE=${currentPhase}_${isAssertion ? "ASSERT" : "SQL"}`);
