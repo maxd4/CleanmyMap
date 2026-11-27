@@ -1,0 +1,614 @@
+diff --git a/apps/web/src/lib/actions/formalities/qualification.ts b/apps/web/src/lib/actions/formalities/qualification.ts
+--- a/apps/web/src/lib/actions/formalities/qualification.ts
++++ b/apps/web/src/lib/actions/formalities/qualification.ts
+@@ -43,6 +43,8 @@
+ 
+ export type FormalitiesTerritory = {
+   countryCode: "FR";
++  /** Evidence derived server-side from a resolved metropolitan point, never user-declared. */
++  jurisdictionEvidence?: "metropolitan_point";
+   code: string;
+   label: string;
+   commune?: {
+diff --git a/apps/web/src/lib/actions/formalities/facts.ts b/apps/web/src/lib/actions/formalities/facts.ts
+--- a/apps/web/src/lib/actions/formalities/facts.ts
++++ b/apps/web/src/lib/actions/formalities/facts.ts
+@@ -1,195 +1,202 @@
+ import { z } from "zod";
+-import type { ResolvedActionTerritory } from "@/lib/geo/action-territory-resolver";
+-import type {
+-  ActionFormalitiesFacts,
+-  FormalitiesTerritory,
+-} from "./qualification";
+-
+-export const actionFormalitiesFactsSchema = z
+-  .object({
+-    territory: z
+-      .object({
+-        countryCode: z.literal("FR"),
+-        code: z.string().trim().min(1).max(40),
+-        label: z.string().trim().min(1).max(120),
+-        commune: z
+-          .object({ codeInsee: z.string().trim().min(1).max(20), label: z.string().trim().min(1).max(120) })
+-          .nullable()
+-          .optional(),
+-        department: z
+-          .object({ code: z.string().trim().min(1).max(20), label: z.string().trim().min(1).max(120) })
+-          .nullable()
+-          .optional(),
+-        region: z
+-          .object({ code: z.string().trim().min(1).max(20), label: z.string().trim().min(1).max(120) })
+-          .nullable()
+-          .optional(),
+-        specialTerritory: z
+-          .object({ code: z.string().trim().min(1).max(40), label: z.string().trim().min(1).max(120) })
+-          .nullable()
+-          .optional(),
+-        epci: z.object({ code: z.string().regex(/^\d{9}$/), label: z.string().trim().min(1).max(120) }).nullable().optional(),
+-        arrondissement: z
+-          .object({ code: z.string().trim().min(1).max(20), label: z.string().trim().min(1).max(120) })
+-          .nullable()
+-          .optional(),
+-      })
+-      .strict(),
+-    publicSpace: z.enum(["public_domain", "private_domain", "unknown"]),
+-    manager: z
+-      .object({
+-        kind: z.enum([
+-          "paris_city",
+-          "state",
+-          "sncf",
+-          "haropa",
+-          "other_public",
+-          "private",
+-          "unknown",
+-        ]),
+-        label: z.string().trim().max(200).nullable(),
+-      })
+-      .strict(),
+-    isCleanwalk: z.boolean(),
+-    isPublicRoadwayActivity: z.union([z.boolean(), z.literal("unknown")]),
+-    // Optional only for reading persisted v1 snapshots; new derived facts always provide it.
+-    isCortegeOrGathering: z.union([z.boolean(), z.literal("unknown")]).optional().default("unknown"),
+-    isItinerant: z.union([z.boolean(), z.literal("unknown")]),
+-    isClaiming: z.union([z.boolean(), z.literal("unknown")]),
+-    hasInstallations: z.union([z.boolean(), z.literal("unknown")]),
+-    requiresPhysicalOccupation: z.union([z.boolean(), z.literal("unknown")]),
+-    localCustomaryUse: z.union([z.boolean(), z.literal("unknown")]),
+-    largeCrowdOrComplexInstallations: z.union([
+-      z.boolean(),
+-      z.literal("unknown"),
+-    ]),
+-  })
+-  .strict();
+-
+-export type FormalitiesFactsSnapshot = Pick<
+-  ActionFormalitiesFacts,
+-  | "territory"
+-  | "publicSpace"
+-  | "manager"
+-  | "isCleanwalk"
+-  | "isPublicRoadwayActivity"
+-  | "isCortegeOrGathering"
+-  | "isItinerant"
+-  | "isClaiming"
+-  | "hasInstallations"
+-  | "requiresPhysicalOccupation"
+-  | "localCustomaryUse"
+-  | "largeCrowdOrComplexInstallations"
+->;
+-
+-function buildCommuneTerritoryPart(
+-  resolved: ResolvedActionTerritory | null | undefined,
+-): FormalitiesTerritory["commune"] {
+-  return resolved?.commune
+-    ? { codeInsee: resolved.commune.code, label: resolved.commune.name }
+-    : null;
+-}
+-
+-function buildDepartmentTerritoryPart(
+-  code: string,
+-  name: string,
+-): FormalitiesTerritory["department"] {
+-  return code ? { code, label: name || code } : null;
+-}
+-
+-function buildRegionTerritoryPart(
+-  resolved: ResolvedActionTerritory | null | undefined,
+-): FormalitiesTerritory["region"] {
+-  return resolved?.region
+-    ? { code: resolved.region.code, label: resolved.region.name }
+-    : null;
+-}
+-
+-function buildSpecialTerritoryPart(
+-  resolved: ResolvedActionTerritory | null | undefined,
+-  isParis: boolean,
+-): FormalitiesTerritory["specialTerritory"] {
+-  if (isParis) {
+-    return {
+-      code: resolved?.specialTerritory?.code ?? "FR-PARIS",
+-      label: resolved?.specialTerritory?.name ?? "Paris",
+-    };
+-  }
+-  return resolved?.specialTerritory
+-    ? { code: resolved.specialTerritory.code, label: resolved.specialTerritory.name }
+-    : null;
+-}
+-
+-function buildTerritoryLabel(
+-  resolved: ResolvedActionTerritory | null | undefined,
+-  departmentName: string,
+-  isParis: boolean,
+-): string {
+-  if (isParis) {
+-    return "Paris (75)";
+-  }
+-  return (resolved?.commune?.name ?? departmentName) || "Territoire à préciser";
+-}
+-
+-function resolveDepartment(params: {
+-  departmentCode?: string | null;
+-  departmentName?: string | null;
+-  resolvedTerritory?: ResolvedActionTerritory | null;
+-}): { code: string; name: string } {
+-  return {
+-    code: params.resolvedTerritory?.department?.code ?? params.departmentCode?.trim() ?? "",
+-    name: params.resolvedTerritory?.department?.name ?? params.departmentName?.trim() ?? "",
+-  };
+-}
+-
+-function isParisTerritory(
+-  resolved: ResolvedActionTerritory | null | undefined,
+-  departmentCode: string,
+-): boolean {
+-  return resolved?.specialTerritory?.code === "FR-PARIS" || departmentCode === "75";
+-}
+-
+-function buildTerritoryCode(departmentCode: string, isParis: boolean): string {
+-  if (isParis) {
+-    return "FR-75";
+-  }
+-  return departmentCode ? `FR-${departmentCode}` : "FR-unknown";
+-}
+-
+-function buildFormalitiesTerritory(params: {
+-  departmentCode?: string | null;
+-  departmentName?: string | null;
+-  resolvedTerritory?: ResolvedActionTerritory | null;
+-}): FormalitiesTerritory {
+-  const resolved = params.resolvedTerritory;
+-  const department = resolveDepartment(params);
+-  const isParis = isParisTerritory(resolved, department.code);
+-
+-  return {
+-    countryCode: "FR",
+-    code: buildTerritoryCode(department.code, isParis),
+-    label: buildTerritoryLabel(resolved, department.name, isParis),
+-    commune: buildCommuneTerritoryPart(resolved),
+-    department: buildDepartmentTerritoryPart(department.code, department.name),
+-    region: buildRegionTerritoryPart(resolved),
+-    specialTerritory: buildSpecialTerritoryPart(resolved, isParis),
+-    ...(resolved?.epci ? { epci: { code: resolved.epci.code, label: resolved.epci.name } } : {}),
+-    arrondissement: resolved?.arrondissement
+-      ? { code: resolved.arrondissement.code, label: resolved.arrondissement.name }
+-      : null,
+-  };
+-}
+-
+-export function snapshotFormalitiesFacts(
+-  facts: ActionFormalitiesFacts,
+-): FormalitiesFactsSnapshot {
+-  return structuredClone(facts);
+-}
+-
+-export function deriveActionFormalitiesFacts(params: {
+-  departmentCode?: string | null;
+-  departmentName?: string | null;
+-  resolvedTerritory?: ResolvedActionTerritory | null;
++import { isMetropolitanCommune, isMetropolitanDepartment } from "./metropolitan-contacts-contract";
++import type { ResolvedActionTerritory } from "@/lib/geo/action-territory-resolver";
++import type {
++  ActionFormalitiesFacts,
++  FormalitiesTerritory,
++} from "./qualification";
++
++export const actionFormalitiesFactsSchema = z
++  .object({
++    territory: z
++      .object({
++        countryCode: z.literal("FR"),
++        jurisdictionEvidence: z.literal("metropolitan_point").optional(),
++        code: z.string().trim().min(1).max(40),
++        label: z.string().trim().min(1).max(120),
++        commune: z
++          .object({ codeInsee: z.string().trim().min(1).max(20), label: z.string().trim().min(1).max(120) })
++          .nullable()
++          .optional(),
++        department: z
++          .object({ code: z.string().trim().min(1).max(20), label: z.string().trim().min(1).max(120) })
++          .nullable()
++          .optional(),
++        region: z
++          .object({ code: z.string().trim().min(1).max(20), label: z.string().trim().min(1).max(120) })
++          .nullable()
++          .optional(),
++        specialTerritory: z
++          .object({ code: z.string().trim().min(1).max(40), label: z.string().trim().min(1).max(120) })
++          .nullable()
++          .optional(),
++        epci: z.object({ code: z.string().regex(/^\d{9}$/), label: z.string().trim().min(1).max(120) }).nullable().optional(),
++        arrondissement: z
++          .object({ code: z.string().trim().min(1).max(20), label: z.string().trim().min(1).max(120) })
++          .nullable()
++          .optional(),
++      })
++      .strict(),
++    publicSpace: z.enum(["public_domain", "private_domain", "unknown"]),
++    manager: z
++      .object({
++        kind: z.enum([
++          "paris_city",
++          "state",
++          "sncf",
++          "haropa",
++          "other_public",
++          "private",
++          "unknown",
++        ]),
++        label: z.string().trim().max(200).nullable(),
++      })
++      .strict(),
++    isCleanwalk: z.boolean(),
++    isPublicRoadwayActivity: z.union([z.boolean(), z.literal("unknown")]),
++    // Optional only for reading persisted v1 snapshots; new derived facts always provide it.
++    isCortegeOrGathering: z.union([z.boolean(), z.literal("unknown")]).optional().default("unknown"),
++    isItinerant: z.union([z.boolean(), z.literal("unknown")]),
++    isClaiming: z.union([z.boolean(), z.literal("unknown")]),
++    hasInstallations: z.union([z.boolean(), z.literal("unknown")]),
++    requiresPhysicalOccupation: z.union([z.boolean(), z.literal("unknown")]),
++    localCustomaryUse: z.union([z.boolean(), z.literal("unknown")]),
++    largeCrowdOrComplexInstallations: z.union([
++      z.boolean(),
++      z.literal("unknown"),
++    ]),
++  })
++  .strict();
++
++export type FormalitiesFactsSnapshot = Pick<
++  ActionFormalitiesFacts,
++  | "territory"
++  | "publicSpace"
++  | "manager"
++  | "isCleanwalk"
++  | "isPublicRoadwayActivity"
++  | "isCortegeOrGathering"
++  | "isItinerant"
++  | "isClaiming"
++  | "hasInstallations"
++  | "requiresPhysicalOccupation"
++  | "localCustomaryUse"
++  | "largeCrowdOrComplexInstallations"
++>;
++
++function buildCommuneTerritoryPart(
++  resolved: ResolvedActionTerritory | null | undefined,
++): FormalitiesTerritory["commune"] {
++  return resolved?.commune
++    ? { codeInsee: resolved.commune.code, label: resolved.commune.name }
++    : null;
++}
++
++function buildDepartmentTerritoryPart(
++  code: string,
++  name: string,
++): FormalitiesTerritory["department"] {
++  return code ? { code, label: name || code } : null;
++}
++
++function buildRegionTerritoryPart(
++  resolved: ResolvedActionTerritory | null | undefined,
++): FormalitiesTerritory["region"] {
++  return resolved?.region
++    ? { code: resolved.region.code, label: resolved.region.name }
++    : null;
++}
++
++function buildSpecialTerritoryPart(
++  resolved: ResolvedActionTerritory | null | undefined,
++  isParis: boolean,
++): FormalitiesTerritory["specialTerritory"] {
++  if (isParis) {
++    return {
++      code: resolved?.specialTerritory?.code ?? "FR-PARIS",
++      label: resolved?.specialTerritory?.name ?? "Paris",
++    };
++  }
++  return resolved?.specialTerritory
++    ? { code: resolved.specialTerritory.code, label: resolved.specialTerritory.name }
++    : null;
++}
++
++function buildTerritoryLabel(
++  resolved: ResolvedActionTerritory | null | undefined,
++  departmentName: string,
++  isParis: boolean,
++): string {
++  if (isParis) {
++    return "Paris (75)";
++  }
++  return (resolved?.commune?.name ?? departmentName) || "Territoire à préciser";
++}
++
++function resolveDepartment(params: {
++  departmentCode?: string | null;
++  departmentName?: string | null;
++  resolvedTerritory?: ResolvedActionTerritory | null;
++}): { code: string; name: string } {
++  return {
++    code: params.resolvedTerritory?.department?.code ?? params.departmentCode?.trim() ?? "",
++    name: params.resolvedTerritory?.department?.name ?? params.departmentName?.trim() ?? "",
++  };
++}
++
++function isParisTerritory(
++  resolved: ResolvedActionTerritory | null | undefined,
++  departmentCode: string,
++): boolean {
++  return resolved?.specialTerritory?.code === "FR-PARIS" || departmentCode === "75";
++}
++
++function buildTerritoryCode(departmentCode: string, isParis: boolean): string {
++  if (isParis) {
++    return "FR-75";
++  }
++  return departmentCode ? `FR-${departmentCode}` : "FR-unknown";
++}
++
++function buildFormalitiesTerritory(params: {
++  departmentCode?: string | null;
++  departmentName?: string | null;
++  resolvedTerritory?: ResolvedActionTerritory | null;
++  resolvedPoint?: boolean;
++}): FormalitiesTerritory {
++  const resolved = params.resolvedTerritory;
++  const department = resolveDepartment(params);
++  const isParis = isParisTerritory(resolved, department.code);
++
++  return {
++    countryCode: "FR",
++    ...(params.resolvedPoint && resolved?.source === "geo.api.gouv.fr" &&
++      isMetropolitanCommune(resolved.commune?.code) && isMetropolitanDepartment(resolved.department?.code)
++      ? { jurisdictionEvidence: "metropolitan_point" as const } : {}),
++    code: buildTerritoryCode(department.code, isParis),
++    label: buildTerritoryLabel(resolved, department.name, isParis),
++    commune: buildCommuneTerritoryPart(resolved),
++    department: buildDepartmentTerritoryPart(department.code, department.name),
++    region: buildRegionTerritoryPart(resolved),
++    specialTerritory: buildSpecialTerritoryPart(resolved, isParis),
++    ...(resolved?.epci ? { epci: { code: resolved.epci.code, label: resolved.epci.name } } : {}),
++    arrondissement: resolved?.arrondissement
++      ? { code: resolved.arrondissement.code, label: resolved.arrondissement.name }
++      : null,
++  };
++}
++
++export function snapshotFormalitiesFacts(
++  facts: ActionFormalitiesFacts,
++): FormalitiesFactsSnapshot {
++  return structuredClone(facts);
++}
++
++export function deriveActionFormalitiesFacts(params: {
++  departmentCode?: string | null;
++  departmentName?: string | null;
++  resolvedTerritory?: ResolvedActionTerritory | null;
++  resolvedPoint?: boolean;
+   placeType?: string | null;
+   plannedObjective?: string | null;
+ }): ActionFormalitiesFacts {
+diff --git a/apps/web/src/lib/actions/formalities/national-rule.ts b/apps/web/src/lib/actions/formalities/national-rule.ts
+--- a/apps/web/src/lib/actions/formalities/national-rule.ts
++++ b/apps/web/src/lib/actions/formalities/national-rule.ts
+@@ -71,32 +71,32 @@
+   id: "cg3p-l2122-1",
+   title: "Code général de la propriété des personnes publiques, article L2122-1",
+   authorityLevel: "national",
+-  url: "https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000006070299/LEGISCTA000006180817/",
+-  verifiedOn: "2026-11-27",
+-  scope: "Occupation ou utilisation du domaine public dépassant le droit d'usage appartenant à tous.",
+-};
+-
+-function qualifyNationalObligations(
+-  facts: ActionFormalitiesFacts,
+-  source: FormalitiesOfficialSource,
+-): ActionFormality[] {
+-  // Never infer an obligation from an unlocated action or a simple cleaning walk.
+-  if (!facts.territory.department?.code || facts.territory.code === "FR-unknown") return [];
+-  const result: ActionFormality[] = [];
+-  if (
+-    facts.isPublicRoadwayActivity === true &&
+-    (facts.isCortegeOrGathering === true || facts.isClaiming === true) &&
+-    facts.localCustomaryUse === false
+-  ) {
+-    result.push({
+-      ...buildNationalUnknownFormality(source),
+-      id: "national-public-roadway-declaration",
+-      requirementStatus: "required",
+-      procedureKind: "police_declaration",
+-      competentAuthority: { kind: "unknown", label: "Mairie ou préfecture compétente à identifier" },
+-      scope: "Manifestation caractérisée sur la voie publique, hors exception d'usage local.",
+-      justification: "Le régime général de déclaration préalable s'applique aux manifestations caractérisées sur la voie publique (CSI L211-1 et L211-2).",
+-      deadline: { minimumValue: 3, unit: "days", note: "Cas général : entre 3 et 15 jours francs avant la manifestation ; vérifier le régime territorial particulier." },
++  url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000034448110/",
++  verifiedOn: "2026-11-27",
++  scope: "Occupation ou utilisation du domaine public dépassant le droit d'usage appartenant à tous.",
++};
++
++function qualifyNationalObligations(
++  facts: ActionFormalitiesFacts,
++  source: FormalitiesOfficialSource,
++): ActionFormality[] {
++  // Never infer an obligation from an unlocated action or a simple cleaning walk.
++  if (facts.territory.jurisdictionEvidence !== "metropolitan_point") return [];
++  const result: ActionFormality[] = [];
++  if (
++    facts.isPublicRoadwayActivity === true &&
++    (facts.isCortegeOrGathering === true || facts.isClaiming === true) &&
++    facts.localCustomaryUse === false
++  ) {
++    result.push({
++      ...buildNationalUnknownFormality(source),
++      id: "national-public-roadway-declaration",
++      requirementStatus: "required",
++      procedureKind: "police_declaration",
++      competentAuthority: { kind: "unknown", label: "Mairie ou préfecture compétente à identifier" },
++      scope: "Manifestation caractérisée sur la voie publique, hors exception d'usage local.",
++      justification: "Le régime général de déclaration préalable s’applique aux manifestations caractérisées sur la voie publique (CSI L211-1 et L211-2). Cas général : entre 3 et 15 jours francs ; vérifier les règles territoriales particulières.",
++      deadline: null, // Local exceptions and clear-day computation must be confirmed.
+       officialChannel: { kind: "official_page", label: "Identifier la démarche et l'autorité compétente", url: source.url },
+       requestedInformation: ["organisateurs", "objet, date, lieu et horaires", "itinéraire éventuel", "effectif et sécurité"],
+     });
+diff --git a/apps/web/src/lib/actions/formalities/action-context.ts b/apps/web/src/lib/actions/formalities/action-context.ts
+--- a/apps/web/src/lib/actions/formalities/action-context.ts
++++ b/apps/web/src/lib/actions/formalities/action-context.ts
+@@ -37,20 +37,18 @@
+     departmentCode: action.department_code,
+     departmentName: action.department_name,
+     resolvedTerritory,
+-    plannedObjective: action.preparation_data?.plannedObjective,
+-  });
+-  const parsed = actionFormalitiesFactsSchema.safeParse(
+-    action.preparation_data?.formalitiesContext,
+-  );
+-
+-  if (!parsed.success) return fallback;
+-
+-  return {
+-    ...parsed.data,
+-    isCortegeOrGathering: parsed.data.isCortegeOrGathering ?? "unknown",
+-    territory:
+-      resolvedTerritory || fallback.territory.code !== "FR-unknown"
+-        ? fallback.territory
+-        : parsed.data.territory,
++    resolvedPoint: action.derived_geometry_kind === "point",
++    plannedObjective: action.preparation_data?.plannedObjective,
++  });
++  const parsed = actionFormalitiesFactsSchema.safeParse(
++    action.preparation_data?.formalitiesContext,
++  );
++
++  if (!parsed.success) return fallback;
++
++  return {
++    ...parsed.data,
++    isCortegeOrGathering: parsed.data.isCortegeOrGathering ?? "unknown",
++    territory: fallback.territory,
+   };
+ }
+diff --git a/apps/web/src/lib/actions/create-submission-effects.ts b/apps/web/src/lib/actions/create-submission-effects.ts
+--- a/apps/web/src/lib/actions/create-submission-effects.ts
++++ b/apps/web/src/lib/actions/create-submission-effects.ts
+@@ -30,9 +30,7 @@
+     const facts = providedFacts.success
+       ? {
+         ...providedFacts.data,
+-        territory: resolvedTerritory || fallbackFacts.territory.code !== "FR-unknown"
+-          ? fallbackFacts.territory
+-          : providedFacts.data.territory,
++        territory: fallbackFacts.territory,
+       }
+       : fallbackFacts;
+     const qualification = qualifyActionFormalities(facts);
+diff --git a/apps/web/src/lib/actions/formalities/rules.ts b/apps/web/src/lib/actions/formalities/rules.ts
+--- a/apps/web/src/lib/actions/formalities/rules.ts
++++ b/apps/web/src/lib/actions/formalities/rules.ts
+@@ -140,6 +140,7 @@
+     territory.region?.code ?? "",
+     territory.epci?.code ?? "",
+     territory.arrondissement?.code ?? "",
++    territory.jurisdictionEvidence ?? "",
+   ].join("|");
+ }
+ 
+diff --git a/apps/web/src/lib/actions/formalities/qualification.test.ts b/apps/web/src/lib/actions/formalities/qualification.test.ts
+--- a/apps/web/src/lib/actions/formalities/qualification.test.ts
++++ b/apps/web/src/lib/actions/formalities/qualification.test.ts
+@@ -617,37 +617,46 @@
+   const lyonFacts: ActionFormalitiesFacts = {
+     ...parisFacts,
+     territory: {
+-      countryCode: "FR", code: "FR-69", label: "Lyon",
+-      department: { code: "69", label: "Rhône" },
+-      commune: { codeInsee: "69123", label: "Lyon" },
+-      arrondissement: { code: "69388", label: "Lyon 8e" },
+-    },
+-    manager: { kind: "unknown", label: null },
+-  };
+-
+-  it("accumulates demonstrated national obligations while keeping local uncertainty", () => {
+-    const result = qualifyActionFormalities({
+-      ...lyonFacts, isPublicRoadwayActivity: true, isCortegeOrGathering: true,
+-      localCustomaryUse: false, requiresPhysicalOccupation: true,
+-    });
+-    expect(result.formalities.filter(item => item.requirementStatus === "required").map(item => item.id))
+-      .toEqual(["national-public-roadway-declaration", "national-public-domain-occupation-title"]);
+-    expect(result.formalities.some(item => item.requirementStatus === "unknown")).toBe(true);
+-  });
+-
+-  it("does not infer a manifestation from itinerancy or an unknown customary-use exception", () => {
+-    const result = qualifyActionFormalities({
+-      ...lyonFacts, isItinerant: true, isPublicRoadwayActivity: true,
+-      isCortegeOrGathering: true, localCustomaryUse: "unknown",
+-      requiresPhysicalOccupation: false,
+-    });
+-    expect(result.formalities.some(item => item.requirementStatus === "required")).toBe(false);
+-  });
+-
+-  it("does not require national procedures without a resolved French department", () => {
+-    const result = qualifyActionFormalities({
+-      ...lyonFacts, territory: { countryCode: "FR", code: "FR-unknown", label: "À préciser" },
+-      requiresPhysicalOccupation: true,
++      countryCode: "FR", code: "FR-69", label: "Lyon", jurisdictionEvidence: "metropolitan_point",
++      department: { code: "69", label: "Rhône" },
++      commune: { codeInsee: "69123", label: "Lyon" },
++      arrondissement: { code: "69388", label: "Lyon 8e" },
++    },
++    manager: { kind: "unknown", label: null },
++  };
++
++  it("accumulates demonstrated national obligations while keeping local uncertainty", () => {
++    const result = qualifyActionFormalities({
++      ...lyonFacts, isPublicRoadwayActivity: true, isCortegeOrGathering: true,
++      localCustomaryUse: false, requiresPhysicalOccupation: true,
++    });
++    expect(result.formalities.filter(item => item.requirementStatus === "required").map(item => item.id))
++      .toEqual(["national-public-roadway-declaration", "national-public-domain-occupation-title"]);
++    expect(result.formalities.some(item => item.requirementStatus === "unknown")).toBe(true);
++  });
++
++  it("does not infer a manifestation from itinerancy or an unknown customary-use exception", () => {
++    const result = qualifyActionFormalities({
++      ...lyonFacts, isItinerant: true, isPublicRoadwayActivity: true,
++      isCortegeOrGathering: true, localCustomaryUse: "unknown",
++      requiresPhysicalOccupation: false,
++    });
++    expect(result.formalities.some(item => item.requirementStatus === "required")).toBe(false);
++  });
++
++  it("does not require national procedures without a resolved French department", () => {
++    const result = qualifyActionFormalities({
++      ...lyonFacts, territory: { countryCode: "FR", code: "FR-unknown", label: "À préciser" },
++      requiresPhysicalOccupation: true,
++    });
++    expect(result.formalities.some(item => item.requirementStatus === "required")).toBe(false);
++  });
++
++  it("does not infer a national obligation from a persisted department or route anchor", () => {
++    const result = qualifyActionFormalities({
++      ...lyonFacts, territory: { ...lyonFacts.territory, jurisdictionEvidence: undefined },
++      isPublicRoadwayActivity: true, isCortegeOrGathering: true,
++      localCustomaryUse: false, requiresPhysicalOccupation: true,
+     });
+     expect(result.formalities.some(item => item.requirementStatus === "required")).toBe(false);
+   });

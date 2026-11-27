@@ -1,0 +1,1223 @@
+diff --git a/apps/web/src/app/api/actions/[actionId]/formalities/route.ts b/apps/web/src/app/api/actions/[actionId]/formalities/route.ts
+--- a/apps/web/src/app/api/actions/[actionId]/formalities/route.ts
++++ b/apps/web/src/app/api/actions/[actionId]/formalities/route.ts
+@@ -25,150 +25,154 @@
+ } from "@/lib/actions/formalities/rules";
+ import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
+ import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalities/action-context";
+-import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
+-
+-export const runtime = "nodejs";
+-// Justification : cette route dynamique dépend de l'autorisation, des faits de qualification et de l'état persisté de l'action.
+-export const dynamic = "force-dynamic";
+-
+-const formalitiesTransitionSchema = z
+-  .object({
+-    formalityId: z.string().trim().min(1).max(160),
+-    kind: z.enum(["mark_prepared", "declare_sent"]),
+-    proofReference: z.string().trim().max(500).nullable().optional(),
+-  })
+-  .strict();
+-
+-const formalitiesPatchSchema = z
+-  .object({
+-    facts: actionFormalitiesFactsSchema.optional(),
+-    transition: formalitiesTransitionSchema.optional(),
+-  })
+-  .strict()
+-  .refine((value) => value.facts || value.transition, {
+-    message: "Une qualification ou une mise à jour d'état est requise.",
+-  });
+-
+-function resolveFormalitiesActionId(actionId: string): string | NextResponse {
+-  const normalized = normalizeActionId(actionId);
+-  return normalized ?? validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
+-}
+-
+-async function resolveFormalitiesRequestContext(
+-  ctx: { params: Promise<{ actionId: string }> },
+-) {
+-  const access = await requireAuthenticatedAccess();
+-  if (!access.ok) return unauthorizedJsonResponse();
+-  const actionId = resolveFormalitiesActionId((await ctx.params).actionId);
+-  if (actionId instanceof Response) return actionId;
+-  return { userId: access.userId, actionId };
+-}
+-
+-function resolveAuthorizedFormalitiesAction(
+-  result: Awaited<ReturnType<typeof loadAuthorizedAction>>,
+-  message: string,
+-) {
+-  if (result.kind === "not_found") {
+-    return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
+-  }
+-  if (result.kind === "forbidden") {
+-    return NextResponse.json({ error: message }, { status: 403 });
+-  }
+-  return result;
+-}
+-
+-async function loadAuthorizedAction(actionId: string, userId: string) {
+-  const supabase = getSupabaseServerClient(true);
+-  const current = await loadActionById(supabase, actionId);
+-  if (!current) {
+-    return { kind: "not_found" as const };
+-  }
+-
+-  const identity = await getCurrentUserIdentity();
+-  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
+-    supabase,
+-    actionId,
+-  );
+-  const canManage = canManageAction(
+-    identity
+-      ? { userId, role: identity.role, activeRole: identity.activeRole }
+-      : null,
+-    { createdByClerkId: current.created_by_clerk_id, actionPhase: current.action_phase },
+-    organizerIds,
+-  );
+-  if (!canManage) {
+-    return { kind: "forbidden" as const };
+-  }
+-
+-  return { kind: "ok" as const, current, supabase };
+-}
+-
+-function responseFor(params: {
+-  actionId: string;
+-  action: NonNullable<Awaited<ReturnType<typeof loadActionById>>>;
+-  facts: ActionFormalitiesFacts;
+-  qualification: ReturnType<typeof qualifyActionFormalities>;
+-  workflow: ReturnType<typeof buildFormalitiesWorkflowState>;
+-}) {
+-  return NextResponse.json({
+-    status: "ok",
+-    actionId: params.actionId,
+-    facts: params.facts,
+-    qualification: params.qualification,
+-    workflow: params.workflow,
+-    actionData: buildFormalitiesEmailActionData(params.action, params.facts),
+-  });
+-}
+-
+-function buildFormalitiesEmailActionData(
+-  action: NonNullable<Awaited<ReturnType<typeof loadActionById>>>,
+-  facts: ActionFormalitiesFacts,
+-): FormalitiesEmailActionData {
+-  const preparation = action.preparation_data;
+-  const contactAreaMode = action.derived_geometry_kind === "point"
+-    ? "single_location"
+-    : action.derived_geometry_kind
+-      ? "route_or_area"
+-      : "unknown";
+-
+-  return {
+-    title: preparation.actionTitle ?? null,
+-    description: preparation.shortDescription ?? null,
+-    location: action.location_label,
+-    date: action.action_date,
+-    startTime: action.event_start_time ?? preparation.departureTime ?? preparation.meetingTime ?? null,
+-    endTime: action.event_end_time ?? null,
+-    participantCount: action.volunteers_count,
+-    organizerName: action.organizer_name ?? action.actor_name,
+-    contactAreaMode,
+-    contactArrondissementCode:
+-      contactAreaMode === "single_location" ? facts.territory.arrondissement?.code ?? null : null,
+-  };
+-}
+-
+-export async function GET(
+-  _request: Request,
+-  ctx: { params: Promise<{ actionId: string }> },
+-) {
+-  const requestContext = await resolveFormalitiesRequestContext(ctx);
+-  if (requestContext instanceof Response) return requestContext;
+-  const { userId, actionId: trimmedActionId } = requestContext;
+-
+-  try {
+-    const result = await loadAuthorizedAction(trimmedActionId, userId);
+-    const authorized = resolveAuthorizedFormalitiesAction(
+-      result,
+-      "Vous n'êtes pas autorisé à consulter les formalités de cette action.",
+-    );
+-    if (authorized instanceof Response) return authorized;
+-    const current = authorized.current;
+-    if (current.action_phase !== "pre_action") {
+-      return NextResponse.json(
+-        { error: "Les formalités locales concernent uniquement une pré-action." },
+-        { status: 409 },
+-      );
+-    }
+-
++import { loadMetropolitanContacts } from "@/lib/actions/formalities/metropolitan-coverage.server";
++import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
++
++export const runtime = "nodejs";
++// Justification : cette route dynamique dépend de l'autorisation, des faits de qualification et de l'état persisté de l'action.
++export const dynamic = "force-dynamic";
++
++const formalitiesTransitionSchema = z
++  .object({
++    formalityId: z.string().trim().min(1).max(160),
++    kind: z.enum(["mark_prepared", "declare_sent"]),
++    proofReference: z.string().trim().max(500).nullable().optional(),
++  })
++  .strict();
++
++const formalitiesPatchSchema = z
++  .object({
++    facts: actionFormalitiesFactsSchema.optional(),
++    transition: formalitiesTransitionSchema.optional(),
++  })
++  .strict()
++  .refine((value) => value.facts || value.transition, {
++    message: "Une qualification ou une mise à jour d'état est requise.",
++  });
++
++function resolveFormalitiesActionId(actionId: string): string | NextResponse {
++  const normalized = normalizeActionId(actionId);
++  return normalized ?? validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
++}
++
++async function resolveFormalitiesRequestContext(
++  ctx: { params: Promise<{ actionId: string }> },
++) {
++  const access = await requireAuthenticatedAccess();
++  if (!access.ok) return unauthorizedJsonResponse();
++  const actionId = resolveFormalitiesActionId((await ctx.params).actionId);
++  if (actionId instanceof Response) return actionId;
++  return { userId: access.userId, actionId };
++}
++
++function resolveAuthorizedFormalitiesAction(
++  result: Awaited<ReturnType<typeof loadAuthorizedAction>>,
++  message: string,
++) {
++  if (result.kind === "not_found") {
++    return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
++  }
++  if (result.kind === "forbidden") {
++    return NextResponse.json({ error: message }, { status: 403 });
++  }
++  return result;
++}
++
++async function loadAuthorizedAction(actionId: string, userId: string) {
++  const supabase = getSupabaseServerClient(true);
++  const current = await loadActionById(supabase, actionId);
++  if (!current) {
++    return { kind: "not_found" as const };
++  }
++
++  const identity = await getCurrentUserIdentity();
++  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
++    supabase,
++    actionId,
++  );
++  const canManage = canManageAction(
++    identity
++      ? { userId, role: identity.role, activeRole: identity.activeRole }
++      : null,
++    { createdByClerkId: current.created_by_clerk_id, actionPhase: current.action_phase },
++    organizerIds,
++  );
++  if (!canManage) {
++    return { kind: "forbidden" as const };
++  }
++
++  return { kind: "ok" as const, current, supabase };
++}
++
++function responseFor(params: {
++  actionId: string;
++  action: NonNullable<Awaited<ReturnType<typeof loadActionById>>>;
++  facts: ActionFormalitiesFacts;
++  qualification: ReturnType<typeof qualifyActionFormalities>;
++  workflow: ReturnType<typeof buildFormalitiesWorkflowState>;
++}) {
++  return NextResponse.json({
++    status: "ok",
++    actionId: params.actionId,
++    facts: params.facts,
++    qualification: params.qualification,
++    workflow: params.workflow,
++    actionData: buildFormalitiesEmailActionData(params.action, params.facts),
++  });
++}
++
++function buildFormalitiesEmailActionData(
++  action: NonNullable<Awaited<ReturnType<typeof loadActionById>>>,
++  facts: ActionFormalitiesFacts,
++): FormalitiesEmailActionData {
++  const preparation = action.preparation_data;
++  const contactAreaMode = action.derived_geometry_kind === "point"
++    ? "single_location"
++    : action.derived_geometry_kind
++      ? "route_or_area"
++      : "unknown";
++
++  return {
++    title: preparation.actionTitle ?? null,
++    description: preparation.shortDescription ?? null,
++    location: action.location_label,
++    date: action.action_date,
++    startTime: action.event_start_time ?? preparation.departureTime ?? preparation.meetingTime ?? null,
++    endTime: action.event_end_time ?? null,
++    participantCount: action.volunteers_count,
++    organizerName: action.organizer_name ?? action.actor_name,
++    contactAreaMode,
++    contactArrondissementCode:
++      contactAreaMode === "single_location" ? facts.territory.arrondissement?.code ?? null : null,
++  };
++}
++
++export async function GET(
++  request: Request,
++  ctx: { params: Promise<{ actionId: string }> },
++) {
++  const requestContext = await resolveFormalitiesRequestContext(ctx);
++  if (requestContext instanceof Response) return requestContext;
++  const { userId, actionId: trimmedActionId } = requestContext;
++
++  try {
++    const result = await loadAuthorizedAction(trimmedActionId, userId);
++    const authorized = resolveAuthorizedFormalitiesAction(
++      result,
++      "Vous n'êtes pas autorisé à consulter les formalités de cette action.",
++    );
++    if (authorized instanceof Response) return authorized;
++    const current = authorized.current;
++    if (current.action_phase !== "pre_action") {
++      return NextResponse.json(
++        { error: "Les formalités locales concernent uniquement une pré-action." },
++        { status: 409 },
++      );
++    }
++
++    if (new URL(request.url).searchParams.get("contacts") === "1") {
++      return NextResponse.json(await loadMetropolitanContacts(current), { headers: { "Cache-Control": "private, no-store" } });
++    }
+     const facts = await deriveActionFormalitiesFactsFromAction(current);
+     const qualification = qualifyActionFormalities(facts);
+     const workflow = buildFormalitiesWorkflowState({
+diff --git a/apps/web/src/lib/actions/http-action-formalities.ts b/apps/web/src/lib/actions/http-action-formalities.ts
+--- a/apps/web/src/lib/actions/http-action-formalities.ts
++++ b/apps/web/src/lib/actions/http-action-formalities.ts
+@@ -1,175 +1,188 @@
+-import { AppError } from "@/lib/errors/app-errors";
+-import type {
+-  AdministrativeRequirementsRead,
+-  AdministrativeRequirementsStatus,
+-} from "./administrative-requirements";
+-import type {
+-  ActionFormalitiesFacts,
+-  ActionFormalitiesQualification,
+-} from "./formalities/qualification";
+-import type {
+-  ActionFormalitiesWorkflowState,
+-  FormalitiesWorkflowTransition,
+-} from "./formalities/workflow";
+-import type { FormalitiesEmailActionData } from "./formalities/email-draft";
+-import { createActionError, parseErrorMessage, parseJsonSafely } from "./http-errors";
+-
+-export type ActionAdministrativeRequirementsResponse = AdministrativeRequirementsRead & {
+-  canValidate: boolean;
+-};
+-
+-export type ActionFormalitiesResponse = {
+-  status: "ok";
+-  actionId: string;
+-  facts: ActionFormalitiesFacts;
+-  qualification: ActionFormalitiesQualification;
+-  workflow: ActionFormalitiesWorkflowState;
+-  actionData?: FormalitiesEmailActionData;
+-};
+-
+-function parseActionFormalitiesResponse(
+-  body: unknown,
+-  incompleteMessage: string,
+-): ActionFormalitiesResponse {
+-  if (
+-    !body ||
+-    typeof body !== "object" ||
+-    (body as { status?: unknown }).status !== "ok" ||
+-    typeof (body as { actionId?: unknown }).actionId !== "string" ||
+-    !(body as { facts?: unknown }).facts ||
+-    !(body as { qualification?: unknown }).qualification ||
+-    !(body as { workflow?: unknown }).workflow
+-  ) {
+-    throw new AppError({
+-      kind: "server",
+-      message: incompleteMessage,
+-    });
+-  }
+-  return body as ActionFormalitiesResponse;
+-}
+-
+-export async function fetchActionFormalities(
+-  actionId: string,
+-): Promise<ActionFormalitiesResponse> {
+-  const response = await fetch(
+-    `/api/actions/${encodeURIComponent(actionId)}/formalities`,
+-    { method: "GET", cache: "no-store" },
+-  );
+-  const body = await parseJsonSafely(response);
+-  if (!response.ok) {
+-    throw createActionError(
+-      response,
+-      body,
+-      parseErrorMessage(body, "Impossible de charger les formalités de l'action."),
+-    );
+-  }
+-  return parseActionFormalitiesResponse(
+-    body,
+-    "La réponse du service est incomplète pour les formalités.",
+-  );
+-}
+-
+-export async function updateActionFormalities(
+-  actionId: string,
+-  payload: {
+-    facts?: ActionFormalitiesFacts;
+-    transition?: FormalitiesWorkflowTransition;
+-  },
+-): Promise<ActionFormalitiesResponse> {
+-  const response = await fetch(
+-    `/api/actions/${encodeURIComponent(actionId)}/formalities`,
+-    {
+-      method: "PATCH",
+-      headers: { "Content-Type": "application/json" },
+-      body: JSON.stringify(payload),
+-    },
+-  );
+-  const body = await parseJsonSafely(response);
+-  if (!response.ok) {
+-    throw createActionError(
+-      response,
+-      body,
+-      parseErrorMessage(body, "Impossible d'enregistrer les formalités de l'action."),
+-    );
+-  }
+-  return parseActionFormalitiesResponse(
+-    body,
+-    "La réponse du service est incomplète après la mise à jour des formalités.",
+-  );
+-}
+-
+-export async function fetchActionAdministrativeRequirements(
+-  actionId: string,
+-): Promise<ActionAdministrativeRequirementsResponse> {
+-  const response = await fetch(
+-    `/api/actions/${encodeURIComponent(actionId)}/administrative-requirements`,
+-    { method: "GET", cache: "no-store" },
+-  );
+-  const body = await parseJsonSafely(response);
+-  if (!response.ok) {
+-    throw createActionError(
+-      response,
+-      body,
+-      parseErrorMessage(body, "Impossible de charger l'état des démarches administratives."),
+-    );
+-  }
+-  const candidate = body as {
+-    status?: unknown;
+-    validatedAt?: unknown;
+-    canValidate?: unknown;
+-  } | null;
+-  if (
+-    !candidate ||
+-    !["pending", "validated"].includes(candidate.status as AdministrativeRequirementsStatus) ||
+-    (candidate.validatedAt !== null && typeof candidate.validatedAt !== "string") ||
+-    typeof candidate.canValidate !== "boolean"
+-  ) {
+-    throw new AppError({
+-      kind: "server",
+-      message: "La réponse du service est incomplète pour les démarches administratives.",
+-    });
+-  }
+-  return candidate as ActionAdministrativeRequirementsResponse;
+-}
+-
+-export type ValidateAdministrativeRequirementsResponse = {
+-  status: "ok";
+-  actionId: string;
+-  administrativeRequirements: {
+-    status: "validated";
+-    validatedAt: string;
+-  };
+-};
+-
+-export async function validateActionAdministrativeRequirements(
+-  actionId: string,
+-): Promise<ValidateAdministrativeRequirementsResponse> {
+-  const response = await fetch(
+-    `/api/actions/${encodeURIComponent(actionId)}/administrative-requirements`,
+-    {
+-      method: "POST",
+-      headers: { "Content-Type": "application/json" },
+-      body: JSON.stringify({}),
+-    },
+-  );
+-  const body = await parseJsonSafely(response);
+-  if (!response.ok) {
+-    throw createActionError(
+-      response,
+-      body,
+-      parseErrorMessage(body, "Impossible de valider les démarches administratives."),
+-    );
+-  }
+-  if (
+-    !body ||
+-    typeof body !== "object" ||
+-    typeof (body as { actionId?: unknown }).actionId !== "string" ||
+-    typeof (body as { administrativeRequirements?: unknown }).administrativeRequirements !== "object"
+-  ) {
+-    throw new AppError({
+-      kind: "server",
+-      message: "La réponse du service est incomplète pour les démarches administratives.",
+-    });
+-  }
+-  return body as ValidateAdministrativeRequirementsResponse;
++import type { MetropolitanContacts } from "./formalities/metropolitan-contacts-contract";
++import { AppError } from "@/lib/errors/app-errors";
++import type {
++  AdministrativeRequirementsRead,
++  AdministrativeRequirementsStatus,
++} from "./administrative-requirements";
++import type {
++  ActionFormalitiesFacts,
++  ActionFormalitiesQualification,
++} from "./formalities/qualification";
++import type {
++  ActionFormalitiesWorkflowState,
++  FormalitiesWorkflowTransition,
++} from "./formalities/workflow";
++import type { FormalitiesEmailActionData } from "./formalities/email-draft";
++import { createActionError, parseErrorMessage, parseJsonSafely } from "./http-errors";
++
++export type ActionAdministrativeRequirementsResponse = AdministrativeRequirementsRead & {
++  canValidate: boolean;
++};
++
++export type ActionFormalitiesResponse = {
++  status: "ok";
++  actionId: string;
++  facts: ActionFormalitiesFacts;
++  qualification: ActionFormalitiesQualification;
++  workflow: ActionFormalitiesWorkflowState;
++  actionData?: FormalitiesEmailActionData;
++};
++
++function parseActionFormalitiesResponse(
++  body: unknown,
++  incompleteMessage: string,
++): ActionFormalitiesResponse {
++  if (
++    !body ||
++    typeof body !== "object" ||
++    (body as { status?: unknown }).status !== "ok" ||
++    typeof (body as { actionId?: unknown }).actionId !== "string" ||
++    !(body as { facts?: unknown }).facts ||
++    !(body as { qualification?: unknown }).qualification ||
++    !(body as { workflow?: unknown }).workflow
++  ) {
++    throw new AppError({
++      kind: "server",
++      message: incompleteMessage,
++    });
++  }
++  return body as ActionFormalitiesResponse;
++}
++
++export async function fetchActionFormalities(
++  actionId: string,
++): Promise<ActionFormalitiesResponse> {
++  const response = await fetch(
++    `/api/actions/${encodeURIComponent(actionId)}/formalities`,
++    { method: "GET", cache: "no-store" },
++  );
++  const body = await parseJsonSafely(response);
++  if (!response.ok) {
++    throw createActionError(
++      response,
++      body,
++      parseErrorMessage(body, "Impossible de charger les formalités de l'action."),
++    );
++  }
++  return parseActionFormalitiesResponse(
++    body,
++    "La réponse du service est incomplète pour les formalités.",
++  );
++}
++
++export async function updateActionFormalities(
++  actionId: string,
++  payload: {
++    facts?: ActionFormalitiesFacts;
++    transition?: FormalitiesWorkflowTransition;
++  },
++): Promise<ActionFormalitiesResponse> {
++  const response = await fetch(
++    `/api/actions/${encodeURIComponent(actionId)}/formalities`,
++    {
++      method: "PATCH",
++      headers: { "Content-Type": "application/json" },
++      body: JSON.stringify(payload),
++    },
++  );
++  const body = await parseJsonSafely(response);
++  if (!response.ok) {
++    throw createActionError(
++      response,
++      body,
++      parseErrorMessage(body, "Impossible d'enregistrer les formalités de l'action."),
++    );
++  }
++  return parseActionFormalitiesResponse(
++    body,
++    "La réponse du service est incomplète après la mise à jour des formalités.",
++  );
++}
++
++export async function fetchActionAdministrativeRequirements(
++  actionId: string,
++): Promise<ActionAdministrativeRequirementsResponse> {
++  const response = await fetch(
++    `/api/actions/${encodeURIComponent(actionId)}/administrative-requirements`,
++    { method: "GET", cache: "no-store" },
++  );
++  const body = await parseJsonSafely(response);
++  if (!response.ok) {
++    throw createActionError(
++      response,
++      body,
++      parseErrorMessage(body, "Impossible de charger l'état des démarches administratives."),
++    );
++  }
++  const candidate = body as {
++    status?: unknown;
++    validatedAt?: unknown;
++    canValidate?: unknown;
++  } | null;
++  if (
++    !candidate ||
++    !["pending", "validated"].includes(candidate.status as AdministrativeRequirementsStatus) ||
++    (candidate.validatedAt !== null && typeof candidate.validatedAt !== "string") ||
++    typeof candidate.canValidate !== "boolean"
++  ) {
++    throw new AppError({
++      kind: "server",
++      message: "La réponse du service est incomplète pour les démarches administratives.",
++    });
++  }
++  return candidate as ActionAdministrativeRequirementsResponse;
++}
++
++export type ValidateAdministrativeRequirementsResponse = {
++  status: "ok";
++  actionId: string;
++  administrativeRequirements: {
++    status: "validated";
++    validatedAt: string;
++  };
++};
++
++export async function validateActionAdministrativeRequirements(
++  actionId: string,
++): Promise<ValidateAdministrativeRequirementsResponse> {
++  const response = await fetch(
++    `/api/actions/${encodeURIComponent(actionId)}/administrative-requirements`,
++    {
++      method: "POST",
++      headers: { "Content-Type": "application/json" },
++      body: JSON.stringify({}),
++    },
++  );
++  const body = await parseJsonSafely(response);
++  if (!response.ok) {
++    throw createActionError(
++      response,
++      body,
++      parseErrorMessage(body, "Impossible de valider les démarches administratives."),
++    );
++  }
++  if (
++    !body ||
++    typeof body !== "object" ||
++    typeof (body as { actionId?: unknown }).actionId !== "string" ||
++    typeof (body as { administrativeRequirements?: unknown }).administrativeRequirements !== "object"
++  ) {
++    throw new AppError({
++      kind: "server",
++      message: "La réponse du service est incomplète pour les démarches administratives.",
++    });
++  }
++  return body as ValidateAdministrativeRequirementsResponse;
++}
++
++/** Explicit authenticated lookup on the persisted action, not an arbitrary provider proxy. */
++export async function fetchMetropolitanFormalitiesContacts(actionId: string): Promise<MetropolitanContacts> {
++  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/formalities?contacts=1`, { method: "GET", cache: "no-store" });
++  const body = await parseJsonSafely(response);
++  if (!response.ok) throw createActionError(response, body, parseErrorMessage(body, "Impossible de charger les contacts locaux."));
++  if (!body || typeof body !== "object" || !("coverage" in body) || !("contacts" in body) ||
++    !Array.isArray(body.contacts) || !("unresolvedCommuneCodes" in body) || !Array.isArray(body.unresolvedCommuneCodes)) {
++    throw new AppError({ kind: "server", message: "Réponse annuaire incomplète." });
++  }
++  return body as MetropolitanContacts;
+ }
+diff --git a/apps/web/src/components/actions/action-formalities-qualification-view.tsx b/apps/web/src/components/actions/action-formalities-qualification-view.tsx
+--- a/apps/web/src/components/actions/action-formalities-qualification-view.tsx
++++ b/apps/web/src/components/actions/action-formalities-qualification-view.tsx
+@@ -1,252 +1,256 @@
+ "use client";
+ 
+ import { useMemo, useState } from "react";
+-import { SUPPORT_NEEDS, MUNICIPAL_CLEANING_NEEDS, normalizeSupportNeeds, resolveLocalSupport, type SupportNeed } from "@/lib/actions/formalities/accompaniment";
+-import { CmmButton } from "@/components/ui/cmm-button";
+-import { CmmCard } from "@/components/ui/cmm-card";
+-import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+-import { CmmPill, type PillTone } from "@/components/ui/cmm-pill";
+-import type { ActionFormalitiesResponse } from "@/lib/actions/http";
+-import type {
+-  ActionFormalitiesFacts,
+-  ActionFormalitiesQualification,
+-} from "@/lib/actions/formalities/qualification";
+-import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
+-import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
+-import { parseParisArrondissementCode } from "@/lib/actions/formalities/paris-cleaning-contacts";
+-import { resolveParisFormalitiesSupport } from "@/lib/actions/formalities/paris-support";
+-import { ActionFormalitiesParisContactPanel } from "./action-formalities-paris-contact-panel";
+-import { ActionFormalitiesPrintSheet } from "./action-formalities-print-sheet";
+-
+-type Formality = ActionFormalitiesResponse["qualification"]["formalities"][number];
+-
+-function requirementLabel(status: Formality["requirementStatus"]): string {
+-  switch (status) {
+-    case "required": return "Obligatoire selon la règle";
+-    case "recommended": return "Recommandé";
+-    case "not_required": return "Non requis dans ce cas";
+-    default: return "À confirmer";
+-  }
+-}
+-
+-function requirementTone(status: Formality["requirementStatus"]): PillTone {
+-  switch (status) {
+-    case "required": return "amber";
+-    case "recommended": return "sky";
+-    case "not_required": return "emerald";
+-    default: return "slate";
+-  }
+-}
+-
+-function userStatusLabel(status: "not_started" | "prepared" | "sent"): string {
+-  switch (status) {
+-    case "prepared": return "Préparée";
+-    case "sent": return "Déclarée envoyée";
+-    default: return "À préparer";
+-  }
+-}
+-
+-function deadlineUnitLabel(unit: "days" | "months"): string {
+-  return unit === "months" ? "mois" : "jours";
+-}
+-
+-function procedureLabel(procedureKind: Formality["procedureKind"]): string {
+-  switch (procedureKind) {
+-    case "city_aot": return "Autorisation d’occupation temporaire";
+-    case "police_declaration": return "Déclaration auprès de l’autorité compétente";
+-    case "other_manager": return "Accord du gestionnaire du lieu";
+-    case "information_only": return "Information et vérification";
+-    case "none": return "Aucune procédure identifiée";
+-    default: return "Procédure locale à vérifier";
+-  }
+-}
+-
+-function isNationalFallback(formality: Formality): boolean {
+-  return formality.ruleScope?.kind === "national" && formality.requirementStatus === "unknown";
+-}
+-
+-function NationalFallbackNotice() {
+-  return (
+-    <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2 text-sm text-sky-950" role="status">
+-      <p className="font-semibold">Cadre national disponible</p>
+-      <p className="mt-1 leading-5">
+-        Le cadre national applicable est disponible, mais CleanMyMap ne dispose pas encore d’une règle locale suffisamment vérifiée pour cette action.
+-      </p>
+-    </div>
+-  );
+-}
+-
+-function summaryFor(qualification: ActionFormalitiesQualification): {
+-  label: string;
+-  tone: PillTone;
+-  explanation: string;
+-} {
+-  const statuses = qualification.formalities.map((formality) => formality.requirementStatus);
+-  if (statuses.includes("required")) {
+-    return { label: "Démarche requise", tone: "amber", explanation: "Au moins une formalité est requise selon les faits et la règle indiquée." };
+-  }
+-  if (statuses.includes("unknown")) {
+-    return { label: "À confirmer", tone: "slate", explanation: "Les faits ou les sources disponibles ne permettent pas de conclure sur toutes les formalités." };
+-  }
+-  if (statuses.includes("recommended")) {
+-    return { label: "Contact recommandé", tone: "sky", explanation: "Un contact pratique est recommandé ; il ne constitue pas à lui seul une obligation administrative." };
+-  }
+-  return { label: "Aucune déclaration identifiée", tone: "emerald", explanation: "Aucune déclaration ou autorisation n’est identifiée pour les faits qualifiés." };
+-}
+-
+-function DocumentRequirements({ formality }: { formality: Formality }) {
+-  if (formality.requestedDocuments.length > 0) {
+-    const heading = formality.requirementStatus === "required"
+-      ? "Pièces listées pour la démarche requise"
+-      : formality.requirementStatus === "recommended"
+-        ? "Pièces recommandées"
+-        : "Pièces à confirmer";
+-    return <div className="text-xs text-emerald-900/75"><p className="font-semibold">{heading}</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedDocuments.map((item) => <li key={item}>{item}</li>)}</ul></div>;
+-  }
+-  if (formality.requirementStatus === "unknown") {
+-    return <p className="text-xs font-semibold text-amber-900">Pièces à confirmer auprès de l&apos;interlocuteur compétent.</p>;
+-  }
+-  if (formality.procedureKind === "none") {
+-    return <p className="text-xs text-emerald-900/75">Aucune pièce AOT n&apos;est demandée pour le nettoyage participatif ainsi qualifié.</p>;
+-  }
+-  return <p className="text-xs text-emerald-900/75">Pièces complémentaires non déterminées par les éléments disponibles ; vérifier la source officielle si la démarche est engagée.</p>;
+-}
+-
+-function ActionFormalityDetails({ formality, status }: { formality: Formality; status: "not_started" | "prepared" | "sent" }) {
+-  return <>
+-    <dl className="grid gap-2 text-sm text-emerald-900/75 sm:grid-cols-2"><div><dt className="font-semibold">Procédure</dt><dd>{procedureLabel(formality.procedureKind)}</dd></div><div><dt className="font-semibold">Destinataire</dt><dd>{formality.recipient ?? "À identifier"}</dd></div><div className="sm:col-span-2"><dt className="font-semibold">Pourquoi</dt><dd>{formality.justification}</dd></div>{formality.deadline ? <div><dt className="font-semibold">Délai indicatif</dt><dd>{formality.deadline.minimumValue} {deadlineUnitLabel(formality.deadline.unit)}<br />{formality.deadline.note}</dd></div> : null}<div className="sm:col-span-2"><dt className="font-semibold">Périmètre de la règle</dt><dd>{formality.scope}</dd></div><div><dt className="font-semibold">État de votre démarche</dt><dd>{userStatusLabel(status)}</dd></div></dl>
+-    {formality.officialChannel ? <p className="text-xs text-emerald-900/70">Canal : {formality.officialChannel.url ? <a className="font-semibold underline" href={formality.officialChannel.url} target="_blank" rel="noreferrer">{formality.officialChannel.label}</a> : formality.officialChannel.label}</p> : null}
+-    {formality.requestedInformation.length ? <div className="text-xs text-emerald-900/75"><p className="font-semibold">Informations demandées</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedInformation.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
+-    <DocumentRequirements formality={formality} />
+-    <p className="text-xs text-emerald-900/65">Source : {formality.source?.url ? <a className="font-semibold underline" href={formality.source.url} target="_blank" rel="noreferrer">{formality.source.title}</a> : (formality.source?.title ?? "Aucune source officielle suffisante")}{formality.source?.verifiedOn ? ` · vérifiée le ${formality.source.verifiedOn}` : ""}</p>
+-  </>;
+-}
+-
+-function ActionFormalityActions({ formality, progress, status, isSaving, readOnly, onTransition }: { formality: Formality; progress: ActionFormalitiesWorkflowState["progress"][number] | undefined; status: "not_started" | "prepared" | "sent"; isSaving: boolean; readOnly: boolean; onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void }) {
+-  if (readOnly) return <p className="text-xs font-semibold text-sky-800">Les démarches seront conservées après l&apos;enregistrement.</p>;
+-  return <><div className="flex flex-wrap gap-2">{status === "not_started" || !progress?.validForQualification ? <CmmButton tone="secondary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "mark_prepared")} disabled={isSaving}>{progress?.validForQualification === false ? "Requalifier cette démarche" : "Marquer comme préparée"}</CmmButton> : null}{status === "prepared" ? <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "declare_sent")} disabled={isSaving}>Je déclare l&apos;avoir envoyée</CmmButton> : null}</div>{!progress?.validForQualification ? <p className="text-xs font-semibold text-amber-800">Les faits ont changé : cette démarche doit être revue. La preuve existante est conservée.</p> : null}</>;
+-}
+-
+-function ActionFormalityCard({
+-  formality,
+-  progress,
+-  isSaving,
+-  readOnly,
+-  onTransition,
+-}: {
+-  formality: Formality;
+-  progress: ActionFormalitiesWorkflowState["progress"][number] | undefined;
+-  isSaving: boolean;
+-  readOnly: boolean;
+-  onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
+-}) {
+-  const status = progress?.userStatus ?? "not_started";
+-  return (
+-    <CmmCard key={formality.id} tone="emerald" variant="glass" size="md">
+-      <div className="space-y-3">
+-        <div className="flex flex-wrap items-center justify-between gap-2"><CmmPill tone={requirementTone(formality.requirementStatus)} size="sm">{requirementLabel(formality.requirementStatus)}</CmmPill><CmmPill tone={status === "sent" ? "emerald" : "slate"} size="sm">{userStatusLabel(status)}</CmmPill></div>
+-        <h4 className="text-base font-bold text-emerald-950">{formality.competentAuthority.label}</h4>
+-        {isNationalFallback(formality) ? <NationalFallbackNotice /> : null}
+-        <ActionFormalityDetails formality={formality} status={status} />
+-        <ActionFormalityActions formality={formality} progress={progress} status={status} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />
+-      </div>
+-    </CmmCard>
+-  );
+-}
+-
+-export function ActionFormalitiesQualificationView({
+-  qualification,
+-  workflow,
+-  facts,
+-  actionEmailData,
+-  isSaving,
+-  readOnly = false,
+-  onTransition,
+-  supportNeeds,
+-  onSupportNeedsChange,
+-}: {
+-  qualification: ActionFormalitiesQualification;
+-  workflow: ActionFormalitiesWorkflowState;
+-  facts?: ActionFormalitiesFacts;
+-  actionEmailData?: FormalitiesEmailActionData;
+-  supportNeeds?: readonly SupportNeed[];
+-  onSupportNeedsChange?: (needs: SupportNeed[]) => void;
+-  isSaving: boolean;
+-  readOnly?: boolean;
+-  onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
+-}) {
+-  const [localNeeds, setLocalNeeds] = useState<SupportNeed[]>([]);
+-  const needs = supportNeeds ?? localNeeds;
+-  const updateNeeds = (next: SupportNeed[]) => {
+-    const normalized = normalizeSupportNeeds(next);
+-    if (onSupportNeedsChange) onSupportNeedsChange(normalized);
+-    else setLocalNeeds(normalized);
+-  };
+-  const progressById = new Map(workflow.progress.map((progress) => [progress.formalityId, progress]));
+-  const summary = summaryFor(qualification);
+-  const primaryFormality = qualification.formalities.find((formality) => formality.requirementStatus === "required") ??
+-    qualification.formalities.find((formality) => formality.requirementStatus === "recommended") ??
+-    qualification.formalities[0];
+-  const contactFormality = qualification.formalities.find((formality) => formality.id === "paris-participatory-cleaning-contact-cleanliness-service");
+-  const isParisMunicipalCleanwalk = Boolean(
+-    facts?.isCleanwalk &&
+-    facts.territory.code === "FR-75" &&
+-    facts.manager.kind === "paris_city" &&
+-    contactFormality,
+-  );
+-  const resolvedArrondissementCode = facts?.territory.arrondissement?.code ?? null;
+-  const formArrondissementCode = actionEmailData?.contactArrondissementCode ?? null;
+-  const resolvedContactAreaMode = actionEmailData?.contactAreaMode ?? "unknown";
+-  const initialArrondissements = useMemo(() => {
+-    if (resolvedContactAreaMode === "route_or_area") return [];
+-    const number = parseParisArrondissementCode(formArrondissementCode ?? resolvedArrondissementCode);
+-    return number ? [number] : [];
+-  }, [formArrondissementCode, resolvedArrondissementCode, resolvedContactAreaMode]);
+-  const arrondissementContextKey = `${resolvedContactAreaMode}:${formArrondissementCode ?? resolvedArrondissementCode ?? "unknown"}`;
+-  const [arrondissementSelection, setArrondissementSelection] = useState({
+-    contextKey: arrondissementContextKey,
+-    values: initialArrondissements,
+-  });
+-  const selectedArrondissements = arrondissementSelection.contextKey === arrondissementContextKey
+-    ? arrondissementSelection.values
+-    : initialArrondissements;
+-  const updateSelectedArrondissements = (values: number[]) => {
+-    setArrondissementSelection({ contextKey: arrondissementContextKey, values });
+-  };
+-  const support = useMemo(
+-    () => isParisMunicipalCleanwalk ? resolveParisFormalitiesSupport(selectedArrondissements) : undefined,
+-    [isParisMunicipalCleanwalk, selectedArrondissements],
+-  );
+-
+-  return (
+-    <div className="space-y-3" aria-live="polite" data-testid="action-formalities-qualification">
+-      <CmmCard tone={summary.tone === "amber" ? "amber" : summary.tone === "sky" ? "sky" : summary.tone === "slate" ? "slate" : "emerald"} variant="glass" size="md" data-testid="action-formalities-summary">
+-        <div className="space-y-2">
+-          <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-lg font-black text-emerald-950">Formalités et accompagnement</h3><CmmPill tone={summary.tone} size="sm">{summary.label}</CmmPill></div>
+-          <p className="text-sm leading-5 text-emerald-950/80">{summary.explanation}</p>
+-          {primaryFormality ? <>
+-            <p className="text-sm text-emerald-950"><span className="font-semibold">Interlocuteur :</span> {primaryFormality.recipient ?? primaryFormality.competentAuthority.label ?? "À confirmer"}</p>
+-            <p className="text-xs text-emerald-900/70">Source : {primaryFormality.source?.url ? <a className="font-semibold underline" href={primaryFormality.source.url} target="_blank" rel="noreferrer">{primaryFormality.source.title}</a> : primaryFormality.source?.title ?? "Source à confirmer"}{primaryFormality.source?.verifiedOn ? ` · vérifiée le ${primaryFormality.source.verifiedOn}` : ""}</p>
+-          </> : null}
+-          <ActionFormalitiesPrintSheet summary={summary.label} actionData={actionEmailData} qualification={qualification} contacts={support?.divisions ?? []} support={support} />
+-        </div>
+-      </CmmCard>
+-      <div className="space-y-3">
+-        {qualification.formalities.filter(formality => formality.requirementStatus === "required").map(formality => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />)}
+-      </div>
+-      {facts?.isCleanwalk ? <>
+-        <fieldset className="space-y-2 rounded-xl border border-emerald-200 p-3">
+-          <legend className="font-semibold">De quoi avez-vous besoin ? (facultatif)</legend>
+-          {SUPPORT_NEEDS.map(item => <label key={item.id} className="flex gap-2 text-sm"><input type="checkbox" checked={needs.includes(item.id)} onChange={event => updateNeeds(event.target.checked ? [...needs, item.id] : needs.filter(need => need !== item.id))} />{item.label}</label>)}
+-        </fieldset>
+-        {isParisMunicipalCleanwalk && contactFormality && needs.some(need => MUNICIPAL_CLEANING_NEEDS.includes(need) || need === "association" || need === "communication") ? <ActionFormalitiesParisContactPanel actionData={actionEmailData} contactFormality={contactFormality} selectedArrondissements={selectedArrondissements} onArrondissementsChange={updateSelectedArrondissements} support={support} needs={needs} /> : null}
+-        {!isParisMunicipalCleanwalk ? resolveLocalSupport(qualification.territory, resolvedContactAreaMode, needs).map(channel => <section key={channel.id} className="space-y-2 rounded-xl border p-3 text-sm"><h4 className="font-semibold">{channel.label}</h4><p>{channel.guidance}</p><a className="underline" href={channel.url} target="_blank" rel="noreferrer">Démarche officielle</a>{channel.email ? <p><a className="underline" href={`mailto:${channel.email}`}>{channel.email}</a></p> : null}<p className="text-xs">Source vérifiée le {channel.verifiedOn}.</p></section>) : null}
+-        {needs.length ? <div className="space-y-1 text-sm">
+-          <p>Pour les besoins sans canal local documenté, vérifier l'interlocuteur compétent. Aucun soutien ni prise en charge n'est présumé.</p>
+-          {resolvedContactAreaMode !== "single_location" ? <p>Vérifier tous les territoires traversés : le point de départ ne suffit pas.</p> : null}
+-          <a href="https://lannuaire.service-public.gouv.fr/" target="_blank" rel="noreferrer" className="underline">Consulter l'annuaire officiel des services publics</a>
+-        </div> : null}
+-      </> : null}
++import { ActionFormalitiesMetropolitanContacts } from "./action-formalities-metropolitan-contacts";
++import { SUPPORT_NEEDS, MUNICIPAL_CLEANING_NEEDS, normalizeSupportNeeds, resolveLocalSupport, type SupportNeed } from "@/lib/actions/formalities/accompaniment";
++import { CmmButton } from "@/components/ui/cmm-button";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
++import { CmmPill, type PillTone } from "@/components/ui/cmm-pill";
++import type { ActionFormalitiesResponse } from "@/lib/actions/http";
++import type {
++  ActionFormalitiesFacts,
++  ActionFormalitiesQualification,
++} from "@/lib/actions/formalities/qualification";
++import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
++import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
++import { parseParisArrondissementCode } from "@/lib/actions/formalities/paris-cleaning-contacts";
++import { resolveParisFormalitiesSupport } from "@/lib/actions/formalities/paris-support";
++import { ActionFormalitiesParisContactPanel } from "./action-formalities-paris-contact-panel";
++import { ActionFormalitiesPrintSheet } from "./action-formalities-print-sheet";
++
++type Formality = ActionFormalitiesResponse["qualification"]["formalities"][number];
++
++function requirementLabel(status: Formality["requirementStatus"]): string {
++  switch (status) {
++    case "required": return "Obligatoire selon la règle";
++    case "recommended": return "Recommandé";
++    case "not_required": return "Non requis dans ce cas";
++    default: return "À confirmer";
++  }
++}
++
++function requirementTone(status: Formality["requirementStatus"]): PillTone {
++  switch (status) {
++    case "required": return "amber";
++    case "recommended": return "sky";
++    case "not_required": return "emerald";
++    default: return "slate";
++  }
++}
++
++function userStatusLabel(status: "not_started" | "prepared" | "sent"): string {
++  switch (status) {
++    case "prepared": return "Préparée";
++    case "sent": return "Déclarée envoyée";
++    default: return "À préparer";
++  }
++}
++
++function deadlineUnitLabel(unit: "days" | "months"): string {
++  return unit === "months" ? "mois" : "jours";
++}
++
++function procedureLabel(procedureKind: Formality["procedureKind"]): string {
++  switch (procedureKind) {
++    case "city_aot": return "Autorisation d’occupation temporaire";
++    case "police_declaration": return "Déclaration auprès de l’autorité compétente";
++    case "other_manager": return "Accord du gestionnaire du lieu";
++    case "information_only": return "Information et vérification";
++    case "none": return "Aucune procédure identifiée";
++    default: return "Procédure locale à vérifier";
++  }
++}
++
++function isNationalFallback(formality: Formality): boolean {
++  return formality.ruleScope?.kind === "national" && formality.requirementStatus === "unknown";
++}
++
++function NationalFallbackNotice() {
++  return (
++    <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2 text-sm text-sky-950" role="status">
++      <p className="font-semibold">Cadre national disponible</p>
++      <p className="mt-1 leading-5">
++        Le cadre national applicable est disponible, mais CleanMyMap ne dispose pas encore d’une règle locale suffisamment vérifiée pour cette action.
++      </p>
++    </div>
++  );
++}
++
++function summaryFor(qualification: ActionFormalitiesQualification): {
++  label: string;
++  tone: PillTone;
++  explanation: string;
++} {
++  const statuses = qualification.formalities.map((formality) => formality.requirementStatus);
++  if (statuses.includes("required")) {
++    return { label: "Démarche requise", tone: "amber", explanation: "Au moins une formalité est requise selon les faits et la règle indiquée." };
++  }
++  if (statuses.includes("unknown")) {
++    return { label: "À confirmer", tone: "slate", explanation: "Les faits ou les sources disponibles ne permettent pas de conclure sur toutes les formalités." };
++  }
++  if (statuses.includes("recommended")) {
++    return { label: "Contact recommandé", tone: "sky", explanation: "Un contact pratique est recommandé ; il ne constitue pas à lui seul une obligation administrative." };
++  }
++  return { label: "Aucune déclaration identifiée", tone: "emerald", explanation: "Aucune déclaration ou autorisation n’est identifiée pour les faits qualifiés." };
++}
++
++function DocumentRequirements({ formality }: { formality: Formality }) {
++  if (formality.requestedDocuments.length > 0) {
++    const heading = formality.requirementStatus === "required"
++      ? "Pièces listées pour la démarche requise"
++      : formality.requirementStatus === "recommended"
++        ? "Pièces recommandées"
++        : "Pièces à confirmer";
++    return <div className="text-xs text-emerald-900/75"><p className="font-semibold">{heading}</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedDocuments.map((item) => <li key={item}>{item}</li>)}</ul></div>;
++  }
++  if (formality.requirementStatus === "unknown") {
++    return <p className="text-xs font-semibold text-amber-900">Pièces à confirmer auprès de l&apos;interlocuteur compétent.</p>;
++  }
++  if (formality.procedureKind === "none") {
++    return <p className="text-xs text-emerald-900/75">Aucune pièce AOT n&apos;est demandée pour le nettoyage participatif ainsi qualifié.</p>;
++  }
++  return <p className="text-xs text-emerald-900/75">Pièces complémentaires non déterminées par les éléments disponibles ; vérifier la source officielle si la démarche est engagée.</p>;
++}
++
++function ActionFormalityDetails({ formality, status }: { formality: Formality; status: "not_started" | "prepared" | "sent" }) {
++  return <>
++    <dl className="grid gap-2 text-sm text-emerald-900/75 sm:grid-cols-2"><div><dt className="font-semibold">Procédure</dt><dd>{procedureLabel(formality.procedureKind)}</dd></div><div><dt className="font-semibold">Destinataire</dt><dd>{formality.recipient ?? "À identifier"}</dd></div><div className="sm:col-span-2"><dt className="font-semibold">Pourquoi</dt><dd>{formality.justification}</dd></div>{formality.deadline ? <div><dt className="font-semibold">Délai indicatif</dt><dd>{formality.deadline.minimumValue} {deadlineUnitLabel(formality.deadline.unit)}<br />{formality.deadline.note}</dd></div> : null}<div className="sm:col-span-2"><dt className="font-semibold">Périmètre de la règle</dt><dd>{formality.scope}</dd></div><div><dt className="font-semibold">État de votre démarche</dt><dd>{userStatusLabel(status)}</dd></div></dl>
++    {formality.officialChannel ? <p className="text-xs text-emerald-900/70">Canal : {formality.officialChannel.url ? <a className="font-semibold underline" href={formality.officialChannel.url} target="_blank" rel="noreferrer">{formality.officialChannel.label}</a> : formality.officialChannel.label}</p> : null}
++    {formality.requestedInformation.length ? <div className="text-xs text-emerald-900/75"><p className="font-semibold">Informations demandées</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedInformation.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
++    <DocumentRequirements formality={formality} />
++    <p className="text-xs text-emerald-900/65">Source : {formality.source?.url ? <a className="font-semibold underline" href={formality.source.url} target="_blank" rel="noreferrer">{formality.source.title}</a> : (formality.source?.title ?? "Aucune source officielle suffisante")}{formality.source?.verifiedOn ? ` · vérifiée le ${formality.source.verifiedOn}` : ""}</p>
++  </>;
++}
++
++function ActionFormalityActions({ formality, progress, status, isSaving, readOnly, onTransition }: { formality: Formality; progress: ActionFormalitiesWorkflowState["progress"][number] | undefined; status: "not_started" | "prepared" | "sent"; isSaving: boolean; readOnly: boolean; onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void }) {
++  if (readOnly) return <p className="text-xs font-semibold text-sky-800">Les démarches seront conservées après l&apos;enregistrement.</p>;
++  return <><div className="flex flex-wrap gap-2">{status === "not_started" || !progress?.validForQualification ? <CmmButton tone="secondary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "mark_prepared")} disabled={isSaving}>{progress?.validForQualification === false ? "Requalifier cette démarche" : "Marquer comme préparée"}</CmmButton> : null}{status === "prepared" ? <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "declare_sent")} disabled={isSaving}>Je déclare l&apos;avoir envoyée</CmmButton> : null}</div>{!progress?.validForQualification ? <p className="text-xs font-semibold text-amber-800">Les faits ont changé : cette démarche doit être revue. La preuve existante est conservée.</p> : null}</>;
++}
++
++function ActionFormalityCard({
++  formality,
++  progress,
++  isSaving,
++  readOnly,
++  onTransition,
++}: {
++  formality: Formality;
++  progress: ActionFormalitiesWorkflowState["progress"][number] | undefined;
++  isSaving: boolean;
++  readOnly: boolean;
++  onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
++}) {
++  const status = progress?.userStatus ?? "not_started";
++  return (
++    <CmmCard key={formality.id} tone="emerald" variant="glass" size="md">
++      <div className="space-y-3">
++        <div className="flex flex-wrap items-center justify-between gap-2"><CmmPill tone={requirementTone(formality.requirementStatus)} size="sm">{requirementLabel(formality.requirementStatus)}</CmmPill><CmmPill tone={status === "sent" ? "emerald" : "slate"} size="sm">{userStatusLabel(status)}</CmmPill></div>
++        <h4 className="text-base font-bold text-emerald-950">{formality.competentAuthority.label}</h4>
++        {isNationalFallback(formality) ? <NationalFallbackNotice /> : null}
++        <ActionFormalityDetails formality={formality} status={status} />
++        <ActionFormalityActions formality={formality} progress={progress} status={status} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />
++      </div>
++    </CmmCard>
++  );
++}
++
++export function ActionFormalitiesQualificationView({
++  qualification,
++  workflow,
++  facts,
++  actionEmailData,
++  isSaving,
++  readOnly = false,
++  onTransition,
++  supportNeeds,
++  onSupportNeedsChange,
++  actionId,
++}: {
++  qualification: ActionFormalitiesQualification;
++  workflow: ActionFormalitiesWorkflowState;
++  facts?: ActionFormalitiesFacts;
++  actionEmailData?: FormalitiesEmailActionData;
++  actionId?: string | null;
++  supportNeeds?: readonly SupportNeed[];
++  onSupportNeedsChange?: (needs: SupportNeed[]) => void;
++  isSaving: boolean;
++  readOnly?: boolean;
++  onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
++}) {
++  const [localNeeds, setLocalNeeds] = useState<SupportNeed[]>([]);
++  const needs = supportNeeds ?? localNeeds;
++  const updateNeeds = (next: SupportNeed[]) => {
++    const normalized = normalizeSupportNeeds(next);
++    if (onSupportNeedsChange) onSupportNeedsChange(normalized);
++    else setLocalNeeds(normalized);
++  };
++  const progressById = new Map(workflow.progress.map((progress) => [progress.formalityId, progress]));
++  const summary = summaryFor(qualification);
++  const primaryFormality = qualification.formalities.find((formality) => formality.requirementStatus === "required") ??
++    qualification.formalities.find((formality) => formality.requirementStatus === "recommended") ??
++    qualification.formalities[0];
++  const contactFormality = qualification.formalities.find((formality) => formality.id === "paris-participatory-cleaning-contact-cleanliness-service");
++  const isParisMunicipalCleanwalk = Boolean(
++    facts?.isCleanwalk &&
++    facts.territory.code === "FR-75" &&
++    facts.manager.kind === "paris_city" &&
++    contactFormality,
++  );
++  const resolvedArrondissementCode = facts?.territory.arrondissement?.code ?? null;
++  const formArrondissementCode = actionEmailData?.contactArrondissementCode ?? null;
++  const resolvedContactAreaMode = actionEmailData?.contactAreaMode ?? "unknown";
++  const initialArrondissements = useMemo(() => {
++    if (resolvedContactAreaMode === "route_or_area") return [];
++    const number = parseParisArrondissementCode(formArrondissementCode ?? resolvedArrondissementCode);
++    return number ? [number] : [];
++  }, [formArrondissementCode, resolvedArrondissementCode, resolvedContactAreaMode]);
++  const arrondissementContextKey = `${resolvedContactAreaMode}:${formArrondissementCode ?? resolvedArrondissementCode ?? "unknown"}`;
++  const [arrondissementSelection, setArrondissementSelection] = useState({
++    contextKey: arrondissementContextKey,
++    values: initialArrondissements,
++  });
++  const selectedArrondissements = arrondissementSelection.contextKey === arrondissementContextKey
++    ? arrondissementSelection.values
++    : initialArrondissements;
++  const updateSelectedArrondissements = (values: number[]) => {
++    setArrondissementSelection({ contextKey: arrondissementContextKey, values });
++  };
++  const support = useMemo(
++    () => isParisMunicipalCleanwalk ? resolveParisFormalitiesSupport(selectedArrondissements) : undefined,
++    [isParisMunicipalCleanwalk, selectedArrondissements],
++  );
++
++  return (
++    <div className="space-y-3" aria-live="polite" data-testid="action-formalities-qualification">
++      <CmmCard tone={summary.tone === "amber" ? "amber" : summary.tone === "sky" ? "sky" : summary.tone === "slate" ? "slate" : "emerald"} variant="glass" size="md" data-testid="action-formalities-summary">
++        <div className="space-y-2">
++          <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-lg font-black text-emerald-950">Formalités et accompagnement</h3><CmmPill tone={summary.tone} size="sm">{summary.label}</CmmPill></div>
++          <p className="text-sm leading-5 text-emerald-950/80">{summary.explanation}</p>
++          {primaryFormality ? <>
++            <p className="text-sm text-emerald-950"><span className="font-semibold">Interlocuteur :</span> {primaryFormality.recipient ?? primaryFormality.competentAuthority.label ?? "À confirmer"}</p>
++            <p className="text-xs text-emerald-900/70">Source : {primaryFormality.source?.url ? <a className="font-semibold underline" href={primaryFormality.source.url} target="_blank" rel="noreferrer">{primaryFormality.source.title}</a> : primaryFormality.source?.title ?? "Source à confirmer"}{primaryFormality.source?.verifiedOn ? ` · vérifiée le ${primaryFormality.source.verifiedOn}` : ""}</p>
++          </> : null}
++          <ActionFormalitiesPrintSheet summary={summary.label} actionData={actionEmailData} qualification={qualification} contacts={support?.divisions ?? []} support={support} />
++        </div>
++      </CmmCard>
++      <div className="space-y-3">
++        {qualification.formalities.filter(formality => formality.requirementStatus === "required").map(formality => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />)}
++      </div>
++      {facts?.isCleanwalk ? <>
++        <fieldset className="space-y-2 rounded-xl border border-emerald-200 p-3">
++          <legend className="font-semibold">De quoi avez-vous besoin ? (facultatif)</legend>
++          {SUPPORT_NEEDS.map(item => <label key={item.id} className="flex gap-2 text-sm"><input type="checkbox" checked={needs.includes(item.id)} onChange={event => updateNeeds(event.target.checked ? [...needs, item.id] : needs.filter(need => need !== item.id))} />{item.label}</label>)}
++        </fieldset>
++        {isParisMunicipalCleanwalk && contactFormality && needs.some(need => MUNICIPAL_CLEANING_NEEDS.includes(need) || need === "association" || need === "communication") ? <ActionFormalitiesParisContactPanel actionData={actionEmailData} contactFormality={contactFormality} selectedArrondissements={selectedArrondissements} onArrondissementsChange={updateSelectedArrondissements} support={support} needs={needs} /> : null}
++        {!isParisMunicipalCleanwalk ? resolveLocalSupport(qualification.territory, resolvedContactAreaMode, needs).map(channel => <section key={channel.id} className="space-y-2 rounded-xl border p-3 text-sm"><h4 className="font-semibold">{channel.label}</h4><p>{channel.guidance}</p><a className="underline" href={channel.url} target="_blank" rel="noreferrer">Démarche officielle</a>{channel.email ? <p><a className="underline" href={`mailto:${channel.email}`}>{channel.email}</a></p> : null}<p className="text-xs">Source vérifiée le {channel.verifiedOn}.</p></section>) : null}
++        {needs.length ? <div className="space-y-1 text-sm">
++          <p>Pour les besoins sans canal local documenté, vérifier l'interlocuteur compétent. Aucun soutien ni prise en charge n'est présumé.</p>
++          {resolvedContactAreaMode !== "single_location" ? <p>Vérifier tous les territoires traversés : le point de départ ne suffit pas.</p> : null}
++          <a href="https://lannuaire.service-public.gouv.fr/" target="_blank" rel="noreferrer" className="underline">Consulter l'annuaire officiel des services publics</a>
++        </div> : null}
++      </> : null}
++      <ActionFormalitiesMetropolitanContacts key={actionId ?? "draft"} actionId={actionId} needs={needs} />
+       <p className="text-xs text-slate-700">Une démarche déclarée envoyée ne vaut ni récépissé ni autorisation obtenue.</p>
+       <CmmDisclosure summary="Détail des démarches, sources et pièces" tone="slate" size="sm">
+         <div className="space-y-3">
+diff --git a/apps/web/src/lib/actions/formalities/accompaniment.ts b/apps/web/src/lib/actions/formalities/accompaniment.ts
+--- a/apps/web/src/lib/actions/formalities/accompaniment.ts
++++ b/apps/web/src/lib/actions/formalities/accompaniment.ts
+@@ -41,16 +41,23 @@
+   verifiedOn: "2026-11-27",
+ };
+ 
+-export function resolveLocalSupport(
+-  territory: FormalitiesTerritory,
+-  areaMode: "single_location" | "route_or_area" | "unknown",
+-  needs: readonly SupportNeed[],
+-): LocalSupportChannel[] {
+-  // The anchor of an itinerary does not establish its complete coverage.
+-  if (areaMode !== "single_location") return [];
+-  const channels = [
+-    ...(territory.commune?.codeInsee === "69123" && territory.arrondissement?.code === "69388" ? [LYON] : []),
+-    ...(territory.epci?.code === "244400404" ? [NANTES] : []),
++const RENNES: LocalSupportChannel = {
++  id: "rennes-cleanup", label: "Ville de Rennes, service propreté et directions de quartier",
++  url: "https://dechets.metropole.rennes.fr/les-bons-gestes-pour-une-ville-plus-propre/",
++  needs: ["equipment"], guidance: "Pinces de ramassage auprès des directions de quartier ou du service propreté ; disponibilité à vérifier.", verifiedOn: "2026-11-27",
++};
++
++export function resolveLocalSupport(
++  territory: FormalitiesTerritory,
++  areaMode: "single_location" | "route_or_area" | "unknown",
++  needs: readonly SupportNeed[],
++): LocalSupportChannel[] {
++  // The anchor of an itinerary does not establish its complete coverage.
++  if (areaMode !== "single_location") return [];
++  const channels = [
++    ...(territory.commune?.codeInsee === "69123" && territory.arrondissement?.code === "69388" ? [LYON] : []),
++    ...(territory.epci?.code === "244400404" ? [NANTES] : []),
++    ...(territory.commune?.codeInsee === "35238" ? [RENNES] : []),
+   ];
+   return channels.filter(channel => channel.needs.some(need => needs.includes(need)));
+ }
+diff --git a/apps/web/src/components/actions/action-formalities-workflow-panel.tsx b/apps/web/src/components/actions/action-formalities-workflow-panel.tsx
+--- a/apps/web/src/components/actions/action-formalities-workflow-panel.tsx
++++ b/apps/web/src/components/actions/action-formalities-workflow-panel.tsx
+@@ -330,7 +330,7 @@
+         {hasUnknown ? <span className="text-xs text-amber-800">Certaines données doivent encore être confirmées.</span> : null}
+       </div>
+       {error ? <p className="text-sm text-rose-700" role="alert">{error}</p> : null}
+-      <ActionFormalitiesQualificationView qualification={visibleData.qualification} workflow={visibleData.workflow} facts={visibleFacts} actionEmailData={actionEmailData} supportNeeds={supportNeeds} onSupportNeedsChange={onSupportNeedsChange} isSaving={isSaving} readOnly={!actionId} onTransition={(formalityId, kind) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyTransition(formalityId, kind); }} />
++      <ActionFormalitiesQualificationView actionId={actionId} qualification={visibleData.qualification} workflow={visibleData.workflow} facts={visibleFacts} actionEmailData={actionEmailData} supportNeeds={supportNeeds} onSupportNeedsChange={onSupportNeedsChange} isSaving={isSaving} readOnly={!actionId} onTransition={(formalityId, kind) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyTransition(formalityId, kind); }} />
+     </div>
+   );
+ }
