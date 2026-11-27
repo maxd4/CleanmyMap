@@ -1,7 +1,9 @@
 import type { ActionRow } from "@/types/database";
-import { deriveActionFormalitiesFactsFromAction } from "./action-context";
+import {
+  buildFormalitiesActionDependencies,
+  deriveActionFormalitiesFactsFromAction,
+} from "./action-context";
 import { qualifyActionFormalities } from "./qualification";
-import { buildFormalitiesTerritoryFingerprint } from "./rules";
 import {
   buildFormalitiesWorkflowState,
   getBlockedRequiredFormalityIds,
@@ -29,11 +31,7 @@ export async function validateActionFormalitiesForPublication(
     facts: formalitiesContext,
     qualification,
     previous: normalizeActionFormalitiesWorkflow(current.preparation_data?.formalitiesWorkflow),
-    actionDependencies: {
-      locationLabel: current.location_label,
-      actionDate: current.action_date,
-      territoryFingerprint: buildFormalitiesTerritoryFingerprint(formalitiesContext.territory),
-    },
+    actionDependencies: buildFormalitiesActionDependencies(current, formalitiesContext.territory),
   });
   const blockedFormalityIds = getBlockedRequiredFormalityIds(qualification, formalitiesWorkflow);
   if (blockedFormalityIds.length > 0) {

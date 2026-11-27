@@ -94,6 +94,23 @@ describe("POST /api/actions/:actionId/publish", () => {
     expect(response.status).toBe(403);
   });
 
+  it("does not apply a mismatched Clerk role to the authenticated requester", async () => {
+    getCurrentUserIdentityMock.mockResolvedValue({ userId: "intruder-1", role: "admin", activeRole: "admin" });
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-1",
+      created_by_clerk_id: "creator-1",
+      action_phase: "pre_action",
+      published_at: null,
+    });
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
+
+    expect(response.status).toBe(403);
+    expect(getCurrentUserIdentityMock).toHaveBeenCalledWith({ userId: "owner-1" });
+    expect(getSupabaseServerClientMock).toHaveBeenCalledTimes(1);
+  });
+
   it("is idempotent when the action is already published", async () => {
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-1",

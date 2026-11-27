@@ -259,6 +259,8 @@ export type MobileFormalitiesContact = {
   directoryUrl: string
   formUrl: string | null
   retrievedAt: string
+  territorialRelation: 'official_geographic_competence'
+  taskCompetence: 'not_verified'
 }
 
 export type MobileActionFormalitiesContacts = {
@@ -266,6 +268,7 @@ export type MobileActionFormalitiesContacts = {
   coverage: { status: 'resolved_point' | 'intersections' | 'partial' | 'unknown'; communeCodes: string[]; reason?: string }
   contacts: MobileFormalitiesContact[]
   unresolvedCommuneCodes: string[]
+  lookupBudget: { requestsUsed: number; requestsAllowed: number }
   resources?: Array<{ id: string; label: string; url: string; needs: string[]; guidance: string }>
 }
 

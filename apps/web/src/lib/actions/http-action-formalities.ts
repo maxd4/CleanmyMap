@@ -177,8 +177,10 @@ export async function validateActionAdministrativeRequirements(
 }
 
 /** Explicit authenticated lookup on the persisted action, not an arbitrary provider proxy. */
-export async function fetchMetropolitanFormalitiesContacts(actionId: string): Promise<MetropolitanContacts> {
-  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/formalities?contacts=1`, { method: "GET", cache: "no-store" });
+export async function fetchMetropolitanFormalitiesContacts(actionId: string, needs: readonly string[] = []): Promise<MetropolitanContacts> {
+  const query = new URLSearchParams({ contacts: "1" });
+  for (const need of needs) query.append("need", need);
+  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/formalities?${query}`, { method: "GET", cache: "no-store" });
   const body = await parseJsonSafely(response);
   if (!response.ok) throw createActionError(response, body, parseErrorMessage(body, "Impossible de charger les contacts locaux."));
   if (!body || typeof body !== "object" || !("coverage" in body) || !("contacts" in body) ||

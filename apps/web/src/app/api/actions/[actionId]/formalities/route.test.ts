@@ -8,12 +8,14 @@ import {
 } from "@/lib/actions/formalities/qualification";
 import {
   actionFormalitiesFactsSchema,
+  applyFormalitiesWorkflowTransition,
   buildFormalitiesWorkflowState,
   deriveActionFormalitiesFacts,
   type ActionFormalitiesWorkflowState,
 } from "@/lib/actions/formalities/workflow";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import type { ActionRow } from "@/types/database";
+import { buildFormalitiesActionDependencies } from "@/lib/actions/formalities/action-context";
 import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities/rules";
 import { GET, PATCH } from "./route";
 
@@ -226,6 +228,7 @@ describe("/api/actions/:actionId/formalities", () => {
     loadMetropolitanContactsMock.mockResolvedValue({
       coverage: { status: "resolved_point", communeCodes: ["75056"] },
       contacts: [], unresolvedCommuneCodes: [], status: "complete",
+      lookupBudget: { requestsUsed: 0, requestsAllowed: 48 },
     });
     update = vi.fn<FormalitiesUpdate>().mockReturnValue(createFormalitiesUpdateQuery({ data: { id: "action-42" }, error: null }));
     from = vi.fn().mockReturnValue({ update });
@@ -288,12 +291,20 @@ describe("/api/actions/:actionId/formalities", () => {
     expect(loadOrganizersMock).not.toHaveBeenCalled();
   });
 
+  it("fails closed when the identity used for permissions differs from the authenticated subject", async () => {
+    identityMock.mockResolvedValueOnce(identity("different-cookie-user"));
+    const response = await GET(formalitiesRequest(), { params: Promise.resolve({ actionId: "action-42" }) });
+
+    expect(response.status).toBe(403);
+    expect(identityMock).toHaveBeenCalledWith({ userId: "user-1" });
+  });
+
   it("returns need-matched official resources with the on-demand contact search", async () => {
     const request = new Request("http://localhost/api/actions/action-42/formalities?contacts=1&need=pickup&need=unsupported");
     const response = await GET(request, { params: Promise.resolve({ actionId: "action-42" }) });
 
     expect(response.headers.get("Cache-Control")).toContain("no-store");
-    expect(loadMetropolitanContactsMock).toHaveBeenCalledWith(action());
+    expect(loadMetropolitanContactsMock).toHaveBeenCalledWith(action(), ["pickup"]);
     const body = await response.json() as { resources: Array<{ id: string; needs: string[] }> };
     expect(body.resources.map(resource => resource.id)).toEqual(expect.arrayContaining(["sinoe", "ademe-circular"]));
     expect(body.resources.every(resource => resource.needs.includes("pickup"))).toBe(true);
@@ -559,6 +570,171 @@ describe("/api/actions/:actionId/formalities", () => {
       specialTerritory: null,
       arrondissement: null,
     });
+  });
+
+  it("preserves obligations from the last verified point when geography is temporarily unavailable", async () => {
+    const resolvedFacts = deriveActionFormalitiesFacts({
+      departmentCode: "75",
+      departmentName: "Paris",
+      resolvedPoint: true,
+      resolvedTerritory: {
+        commune: { code: "75056", name: "Paris" },
+        department: { code: "75", name: "Paris" },
+        region: { code: "11", name: "Île-de-France" },
+        epci: { code: "200054781", name: "Métropole du Grand Paris" },
+        arrondissement: { code: "75101", name: "Paris 1er" },
+        specialTerritory: { code: "FR-PARIS", name: "Paris" },
+        source: "geo.api.gouv.fr",
+      },
+      plannedObjective: "nettoyage",
+    });
+    const previousFacts = actionFormalitiesFactsSchema.parse({
+      ...formalitiesFacts(),
+      territory: resolvedFacts.territory,
+    });
+    const previousWorkflow = buildFormalitiesWorkflowState({
+      facts: previousFacts,
+      qualification: qualifyActionFormalities(previousFacts),
+      actionDependencies: buildFormalitiesActionDependencies(action(), previousFacts.territory),
+    });
+    expect(previousFacts.territory.jurisdictionEvidence).toBe("metropolitan_point");
+    expect(previousWorkflow.trace.determiningFacts.territory.jurisdictionEvidence).toBe("metropolitan_point");
+    loadActionMock.mockResolvedValueOnce({
+      ...action(),
+      preparation_data: {
+        plannedObjective: "nettoyage",
+        formalitiesContext: previousFacts,
+        formalitiesWorkflow: previousWorkflow,
+      },
+    });
+    resolveActionTerritoryMock.mockResolvedValueOnce(null);
+
+    const response = await GET(formalitiesRequest(), { params: Promise.resolve({ actionId: "action-42" }) });
+    const body = await readFormalitiesResponse(response);
+
+    expect(response.status).toBe(200);
+    expect(body.facts.territory).toMatchObject({ jurisdictionEvidence: "metropolitan_point", commune: { codeInsee: "75056" } });
+    expect(body.qualification.formalities).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "paris-city-public-domain-aot", requirementStatus: "required" }),
+    ]));
+  });
+
+  it("does not reuse territorial duties after the persisted action location changes during a geography outage", async () => {
+    const previousTerritory = deriveActionFormalitiesFacts({
+      departmentCode: "75",
+      departmentName: "Paris",
+      resolvedPoint: true,
+      resolvedTerritory: {
+        commune: { code: "75056", name: "Paris" },
+        department: { code: "75", name: "Paris" },
+        region: { code: "11", name: "Île-de-France" },
+        epci: { code: "200054781", name: "Métropole du Grand Paris" },
+        arrondissement: { code: "75101", name: "Paris 1er" },
+        specialTerritory: { code: "FR-PARIS", name: "Paris" },
+        source: "geo.api.gouv.fr",
+      },
+      plannedObjective: "nettoyage",
+    }).territory;
+    const priorAction = action();
+    const priorFacts = actionFormalitiesFactsSchema.parse({ ...formalitiesFacts(), territory: previousTerritory });
+    const priorWorkflow = buildFormalitiesWorkflowState({
+      facts: priorFacts,
+      qualification: qualifyActionFormalities(priorFacts),
+      actionDependencies: buildFormalitiesActionDependencies(priorAction, previousTerritory),
+    });
+    loadActionMock.mockResolvedValueOnce({
+      ...priorAction,
+      location_label: "Lyon",
+      latitude: 45.764,
+      longitude: 4.8357,
+      department_code: "69",
+      department_name: "Rhône",
+      preparation_data: { ...priorAction.preparation_data, formalitiesWorkflow: priorWorkflow },
+    });
+    resolveActionTerritoryMock.mockResolvedValueOnce(null);
+
+    const response = await GET(formalitiesRequest(), { params: Promise.resolve({ actionId: "action-42" }) });
+    const body = await readFormalitiesResponse(response);
+
+    expect(response.status).toBe(200);
+    expect(body.facts.territory).toMatchObject({ code: "FR-69" });
+    expect(body.facts.territory).not.toHaveProperty("jurisdictionEvidence");
+    expect(body.qualification.formalities).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "paris-city-public-domain-aot", requirementStatus: "required" }),
+    ]));
+  });
+
+  it("keeps legacy verified obligations during an outage but invalidates proofs without a location fingerprint", async () => {
+    const territory = deriveActionFormalitiesFacts({
+      departmentCode: "75",
+      departmentName: "Paris",
+      resolvedPoint: true,
+      resolvedTerritory: {
+        commune: { code: "75056", name: "Paris" },
+        department: { code: "75", name: "Paris" },
+        region: { code: "11", name: "Île-de-France" },
+        epci: { code: "200054781", name: "Métropole du Grand Paris" },
+        arrondissement: { code: "75101", name: "Paris 1er" },
+        specialTerritory: { code: "FR-PARIS", name: "Paris" },
+        source: "geo.api.gouv.fr",
+      },
+    }).territory;
+    const facts = actionFormalitiesFactsSchema.parse({ ...formalitiesFacts(), territory });
+    const qualification = qualifyActionFormalities(facts);
+    const legacy = buildFormalitiesWorkflowState({ facts, qualification, actionDependencies: buildFormalitiesActionDependencies(action(), territory) });
+    delete legacy.trace.actionLocationFingerprint;
+    legacy.trace.actionDependencyFingerprint = "canonical-v2:legacy-location";
+    legacy.progress = legacy.progress.map((item) => item.formalityId === "paris-city-public-domain-aot"
+      ? { ...item, userStatus: "authorization_obtained", validForQualification: true,
+          proof: { kind: "user_declared", reference: null, recordedAt: "2026-11-27T10:00:00.000Z" } }
+      : item);
+    loadActionMock.mockResolvedValueOnce({
+      ...action(),
+      preparation_data: { plannedObjective: "nettoyage", formalitiesContext: facts, formalitiesWorkflow: legacy },
+    });
+    resolveActionTerritoryMock.mockResolvedValueOnce(null);
+
+    const response = await GET(formalitiesRequest(), { params: Promise.resolve({ actionId: "action-42" }) });
+    const body = await readFormalitiesResponse(response);
+
+    expect(response.status).toBe(200);
+    expect(body.qualification.formalities).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "paris-city-public-domain-aot", requirementStatus: "required" }),
+    ]));
+    expect(body.workflow.progress.find((item) => item.formalityId === "paris-city-public-domain-aot"))
+      .toMatchObject({ userStatus: "authorization_obtained", validForQualification: false });
+  });
+
+  it("rejects a status transition forbidden for the procedure even when sent is current", async () => {
+    const facts = formalitiesFacts({
+      isPublicRoadwayActivity: true,
+      isCortegeOrGathering: true,
+      hasInstallations: false,
+      requiresPhysicalOccupation: false,
+    }) as ActionFormalitiesFacts;
+    const qualification = qualifyActionFormalities(facts);
+    const policeDeclaration = qualification.formalities.find((item) => item.procedureKind === "police_declaration");
+    if (!policeDeclaration) throw new Error("Expected the police declaration fixture");
+    const initial = buildFormalitiesWorkflowState({ facts, qualification });
+    const sent = applyFormalitiesWorkflowTransition({
+      workflow: applyFormalitiesWorkflowTransition({
+        workflow: initial,
+        transition: { formalityId: policeDeclaration.id, kind: "mark_prepared" },
+      }),
+      transition: { formalityId: policeDeclaration.id, kind: "declare_sent" },
+    });
+    loadActionMock.mockResolvedValueOnce({
+      ...action(),
+      preparation_data: { ...action().preparation_data, formalitiesContext: facts, formalitiesWorkflow: sent },
+    });
+
+    const response = await PATCH(formalitiesRequest({
+      method: "PATCH",
+      body: JSON.stringify({ transition: { formalityId: policeDeclaration.id, kind: "record_authorization" } }),
+    }), { params: Promise.resolve({ actionId: "action-42" }) });
+
+    expect(response.status).toBe(422);
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("does not reuse stored territory when current action geography is unresolvable", async () => {

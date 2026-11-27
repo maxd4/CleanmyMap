@@ -3,13 +3,25 @@ import { requireMobileAuthenticatedAccess } from "@/lib/auth/mobile-bearer";
 
 /** Shared Clerk boundary for web cookie and bounded native bearer requests. */
 export async function requireActionRequestAccess(request: Request) {
+  const authorization = request.headers.get("authorization")?.trim() ?? "";
+  const bearerRequest = /^bearer\b/i.test(authorization);
+  let webAccess: Awaited<ReturnType<typeof requireAuthenticatedAccess>> | null = null;
   try {
-    const webAccess = await requireAuthenticatedAccess();
-    if (webAccess.ok) return webAccess;
+    webAccess = await requireAuthenticatedAccess();
   } catch {
-    // A native bearer request may not have the web middleware context needed
-    // by auth(). The bounded Clerk request verifier below is authoritative for
-    // that transport and must still run.
+    // A native bearer request may not have a browser cookie context.
   }
-  return requireMobileAuthenticatedAccess(request);
+
+  if (bearerRequest) {
+    const bearerAccess = await requireMobileAuthenticatedAccess(request);
+    if (!bearerAccess.ok) return bearerAccess;
+    if (webAccess?.ok && webAccess.userId !== bearerAccess.userId) {
+      return { ok: false as const, status: 401 as const, error: "Unauthorized" };
+    }
+    return bearerAccess;
+  }
+
+  return webAccess?.ok
+    ? webAccess
+    : { ok: false as const, status: 401 as const, error: "Unauthorized" };
 }

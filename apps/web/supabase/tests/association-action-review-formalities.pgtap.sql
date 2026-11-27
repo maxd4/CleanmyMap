@@ -1,6 +1,6 @@
 begin;
 
-select plan(35);
+select plan(41);
 
 create temp table formalities_workflow_fixture (
   name text primary key,
@@ -74,7 +74,7 @@ values
       )
     ),
     'progress', jsonb_build_array(
-      jsonb_build_object('formalityId', 'required', 'userStatus', 'sent', 'contentVersion', 'qualification-v1', 'statusChangedAt', '2026-10-30T10:00:00Z', 'proof', jsonb_build_object('kind', 'user_declared', 'reference', null, 'recordedAt', '2026-10-30T10:00:00Z'), 'active', true, 'validForQualification', true, 'invalidatedAt', null)
+      jsonb_build_object('formalityId', 'required', 'userStatus', 'authorization_obtained', 'contentVersion', 'qualification-v1', 'statusChangedAt', '2026-10-30T10:00:00Z', 'proof', jsonb_build_object('kind', 'user_declared', 'reference', null, 'recordedAt', '2026-10-30T10:00:00Z'), 'active', true, 'validForQualification', true, 'invalidatedAt', null)
     )
   )
 );
@@ -225,6 +225,16 @@ select is(
 );
 select is(
   public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set((select workflow from formalities_workflow_fixture where name = 'complete_no_required'), '{progress,0,userStatus}', '"prepared"'::jsonb)
+    )
+  ),
+  true,
+  'the legacy prepared status remains structurally readable when no required evidence is claimed'
+);
+select is(
+  public.is_association_action_formalities_ready(
     '{"formalitiesWorkflow":{"schemaVersion":"action-formalities-workflow-v1","contentVersion":"v1","trace":{"formalities":[{"id":"required","requirementStatus":"required","procedureKind":"city_aot","sourceId":null}]},"progress":[{"formalityId":"required","userStatus":"prepared","contentVersion":"v1","statusChangedAt":null,"proof":null,"active":true,"validForQualification":true,"invalidatedAt":null}]}}'::jsonb
   ),
   false,
@@ -249,7 +259,89 @@ select is(
     jsonb_build_object('formalitiesWorkflow', (select workflow from formalities_workflow_fixture where name = 'complete_required'))
   ),
   true,
-  'a conforming user declaration with an optional reference is ready'
+  'a declared authorization with an optional reference is ready'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set(
+        (select workflow from formalities_workflow_fixture where name = 'complete_required'),
+        '{trace,formalities,0,procedureKind}',
+        '"police_authorization"'::jsonb
+      )
+    )
+  ),
+  true,
+  'a required police authorization uses the same authorization status as TypeScript'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set(
+        jsonb_set(
+          (select workflow from formalities_workflow_fixture where name = 'complete_required'),
+          '{trace,formalities,0,procedureKind}',
+          '"police_declaration"'::jsonb
+        ),
+        '{progress,0,userStatus}',
+        '"receipt_received"'::jsonb
+      )
+    )
+  ),
+  true,
+  'a required police declaration accepts a received receipt'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set(
+        jsonb_set(
+          (select workflow from formalities_workflow_fixture where name = 'complete_required'),
+          '{trace,formalities,0,procedureKind}',
+          '"city_aot"'::jsonb
+        ),
+        '{progress,0,userStatus}',
+        '"receipt_received"'::jsonb
+      )
+    )
+  ),
+  false,
+  'a receipt alone does not satisfy a required city authorization'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set(
+        jsonb_set(
+          (select workflow from formalities_workflow_fixture where name = 'complete_required'),
+          '{trace,formalities,0,procedureKind}',
+          '"police_declaration"'::jsonb
+        ),
+        '{progress,0,userStatus}',
+        '"sent"'::jsonb
+      )
+    )
+  ),
+  false,
+  'the legacy sent status remains readable but is not a received declaration receipt'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set(
+        (select workflow from formalities_workflow_fixture where name = 'complete_required'),
+        '{progress,0,userStatus}',
+        '"refused"'::jsonb
+      )
+    )
+  ),
+  false,
+  'a recorded refusal never satisfies a required authorization'
 );
 select is(
   public.is_association_action_formalities_ready(

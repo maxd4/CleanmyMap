@@ -1,17 +1,42 @@
 import { fetchJsonWithTimeout, type FetchLike } from "@/lib/geo/action-department-resolver";
 import { isMetropolitanCommune, type ServiceType, type DirectoryContact } from "./metropolitan-contacts-contract";
+import type { SupportNeed } from "./accompaniment";
 
 const BASE = "https://api-lannuaire.service-public.gouv.fr/api/explore/v2.1/catalog/datasets/";
 const COMPETENCE = "api-lannuaire-administration-locale-competence-geographique";
 const CONTACTS = "api-lannuaire-administration";
 const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const MAX_IDS = 120;
-const MAX_COMPETENCE_ROWS = 500;
+const MAX_IDS = 30;
+const MAX_COMPETENCE_ROWS = 200;
 const BATCH = 15;
+const MAX_DETAIL_BATCHES = 2;
 const TTL = 6 * 60 * 60 * 1000;
 type Result = { contacts: DirectoryContact[]; complete: boolean };
 const cache = new Map<string, { expires: number; value: Result }>();
 const pending = new Map<string, Promise<Result>>();
+
+export const MAX_DILA_REQUESTS_PER_ACTION = 48;
+export type DilaRequestBudget = { remaining: number; used: number };
+
+export function createDilaRequestBudget(limit = MAX_DILA_REQUESTS_PER_ACTION): DilaRequestBudget {
+  return { remaining: Math.max(0, Math.trunc(limit)), used: 0 };
+}
+
+const NEED_TYPE_SIGNALS: Partial<Record<SupportNeed, RegExp>> = {
+  notify: /(?:mairie|commune|pref|gendarmerie|commissariat|police)/,
+  equipment: /(?:mairie|commune|epci|metropole|intercommunal|dechet|proprete)/,
+  pickup: /(?:dechet|collecte|syndicat|epci|metropole|intercommunal|mairie|commune)/,
+  safety: /(?:police|gendarmerie|pref|sdis|pompier|ddpn|dipn|ofb)/,
+  communication: /(?:mairie|commune|epci|metropole|intercommunal)/,
+};
+
+function relevance(types: readonly ServiceType[], needs: readonly SupportNeed[]): number {
+  if (needs.length === 0) return types.some((type) => /^(?:mairie|commune)$/.test(type)) ? 1 : 0;
+  return needs.reduce((score, need) => {
+    const signal = NEED_TYPE_SIGNALS[need];
+    return score + (signal && types.some((type) => signal.test(type)) ? 1 : 0);
+  }, 0);
+}
 
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
@@ -45,12 +70,18 @@ function values(value: unknown, predicate: (value: string) => boolean): string[]
 function isType(value: unknown): value is ServiceType {
   return typeof value === "string" && /^[a-z0-9_]{1,80}$/.test(value);
 }
-async function records(dataset: string, where: string, select: string, fetchImpl: FetchLike, offset = 0) {
+async function records(dataset: string, where: string, select: string, fetchImpl: FetchLike, offset = 0, budget?: DilaRequestBudget, orderBy = "id") {
+  if (budget) {
+    if (budget.remaining <= 0) return null;
+    budget.remaining -= 1;
+    budget.used += 1;
+  }
   const url = new URL(BASE + dataset + "/records");
   url.searchParams.set("where", where);
   url.searchParams.set("select", select);
   url.searchParams.set("limit", "100");
   url.searchParams.set("offset", String(offset));
+  url.searchParams.set("order_by", orderBy);
   const data = record(await fetchJsonWithTimeout(fetchImpl, url.href));
   if (!data || !Array.isArray(data.results) || typeof data.total_count !== "number" ||
     !Number.isSafeInteger(data.total_count) || data.total_count < data.results.length) {
@@ -70,6 +101,8 @@ function parseContact(raw: unknown, types: ServiceType[], commune: string, retri
     !["lannuaire.service-public.gouv.fr","lannuaire.service-public.fr"].includes(new URL(directoryUrl).hostname)) return null;
   return {
     id, name, types, communeCodes: [commune], retrievedAt, directoryUrl,
+    territorialRelation: "official_geographic_competence" as const,
+    taskCompetence: "not_verified" as const,
     phones: values(row.telephone, v => /^[+0-9(). /-]{5,30}$/.test(v)),
     emails: values(row.adresse_courriel, v => /^[A-Za-z0-9.!#$%&'*+/=_~^+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(v)),
     websites: values(row.site_internet, v => Boolean(https(v))),
@@ -77,17 +110,21 @@ function parseContact(raw: unknown, types: ServiceType[], commune: string, retri
   };
 }
 
-async function lookup(code: string, fetchImpl: FetchLike): Promise<Result> {
+async function lookup(code: string, fetchImpl: FetchLike, needs: readonly SupportNeed[], budget?: DilaRequestBudget): Promise<Result> {
   if (!isMetropolitanCommune(code)) return { contacts: [], complete: false };
   const where = 'code_insee_commune = "' + code + '"';
   const competence = await records(COMPETENCE, where,
-    "code_insee_commune,code_type_service_local,id_service_local", fetchImpl);
+    "code_insee_commune,code_type_service_local,id_service_local", fetchImpl, 0, budget,
+    "code_insee_commune,code_type_service_local,id_service_local");
+  if (!competence) return { contacts: [], complete: false };
   const rows = [...competence.rows];
-  let complete = competence.total_count <= 100 || competence.rows.length === 100;
+  let complete = competence.rows.length >= Math.min(competence.total_count, 100);
   const cappedTotal = Math.min(competence.total_count, MAX_COMPETENCE_ROWS);
   for (let offset = 100; offset < cappedTotal; offset += 100) {
     const page = await records(COMPETENCE, where,
-      "code_insee_commune,code_type_service_local,id_service_local", fetchImpl, offset);
+      "code_insee_commune,code_type_service_local,id_service_local", fetchImpl, offset, budget,
+      "code_insee_commune,code_type_service_local,id_service_local");
+    if (!page) { complete = false; break; }
     rows.push(...page.rows);
     if (page.rows.length < Math.min(100, competence.total_count - offset)) complete = false;
   }
@@ -108,15 +145,19 @@ async function lookup(code: string, fetchImpl: FetchLike): Promise<Result> {
     }
   }
   if (!ids.size) return { contacts: [], complete: false };
-  const selected = [...ids.keys()].sort().slice(0, MAX_IDS);
+  const selected = [...ids.keys()].sort((left, right) =>
+    relevance([...(ids.get(right) ?? [])], needs) - relevance([...(ids.get(left) ?? [])], needs) ||
+    left.localeCompare(right),
+  ).slice(0, MAX_IDS);
   if (selected.length !== ids.size) complete = false;
   const contacts = new Map<string, DirectoryContact>();
   const now = new Date().toISOString();
-  for (let i = 0; i < selected.length; i += BATCH) {
+  for (let i = 0, detailBatches = 0; i < selected.length && detailBatches < MAX_DETAIL_BATCHES; i += BATCH, detailBatches += 1) {
     const batch = selected.slice(i, i + BATCH);
     try {
       const detail = await records(CONTACTS, batch.map(id => 'id = "' + id + '"').join(" OR "),
-        "id,nom,telephone,adresse_courriel,site_internet,formulaire_contact,url_service_public,statut_de_diffusion", fetchImpl);
+        "id,nom,telephone,adresse_courriel,site_internet,formulaire_contact,url_service_public,statut_de_diffusion", fetchImpl, 0, budget);
+      if (!detail) { complete = false; break; }
       if (!detail.complete) complete = false;
       for (const raw of detail.rows) {
         const id = str(record(raw)?.id);
@@ -126,28 +167,35 @@ async function lookup(code: string, fetchImpl: FetchLike): Promise<Result> {
       }
     } catch { complete = false; }
   }
+  if (selected.length > MAX_DETAIL_BATCHES * BATCH) complete = false;
   return { contacts: [...contacts.values()], complete: complete && contacts.size === selected.length };
 }
 
 /** Process-local bounded cache; no private data and no failed-result cache. */
-export async function lookupMetropolitanContacts(code: string, fetchImpl?: FetchLike): Promise<Result> {
+export async function lookupMetropolitanContacts(
+  code: string,
+  fetchImpl?: FetchLike,
+  needs: readonly SupportNeed[] = [],
+  budget?: DilaRequestBudget,
+): Promise<Result> {
   if (!isMetropolitanCommune(code)) return { contacts: [], complete: false };
-  if (fetchImpl) return lookup(code, fetchImpl);
-  const cached = cache.get(code);
+  const cacheKey = `${code}:${[...needs].sort().join(",")}`;
+  if (fetchImpl) return lookup(code, fetchImpl, needs, budget);
+  const cached = cache.get(cacheKey);
   if (cached && cached.expires > Date.now()) return structuredClone(cached.value);
-  const previous = pending.get(code);
+  const previous = pending.get(cacheKey);
   if (previous) return structuredClone(await previous);
   if (pending.size >= 12) return { contacts: [], complete: false };
-  const promise = lookup(code, fetch).then(value => {
+  const promise = lookup(code, fetch, needs, budget).then(value => {
     if (value.complete) {
       if (cache.size >= 500) {
         const first = cache.keys().next().value;
         if (first) cache.delete(first);
       }
-      cache.set(code, { expires: Date.now() + TTL, value });
+      cache.set(cacheKey, { expires: Date.now() + TTL, value });
     }
     return value;
-  }).finally(() => pending.delete(code));
-  pending.set(code, promise);
+  }).finally(() => pending.delete(cacheKey));
+  pending.set(cacheKey, promise);
   return structuredClone(await promise);
 }

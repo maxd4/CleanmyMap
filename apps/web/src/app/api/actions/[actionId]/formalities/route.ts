@@ -22,11 +22,11 @@ import {
   availableFormalitiesTransitions,
   type FormalitiesWorkflowTransition,
 } from "@/lib/actions/formalities/workflow";
-import {
-  buildFormalitiesTerritoryFingerprint,
-} from "@/lib/actions/formalities/rules";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
-import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalities/action-context";
+import {
+  buildFormalitiesActionDependencies,
+  deriveActionFormalitiesFactsFromAction,
+} from "@/lib/actions/formalities/action-context";
 import { loadMetropolitanContacts } from "@/lib/actions/formalities/metropolitan-coverage.server";
 import { normalizeSupportNeeds } from "@/lib/actions/formalities/accompaniment";
 import { nationalSupportResources } from "@/lib/actions/formalities/national-support-directory";
@@ -90,13 +90,13 @@ async function loadAuthorizedAction(actionId: string, userId: string) {
     return { kind: "not_found" as const };
   }
 
-  const identity = await getCurrentUserIdentity();
+  const identity = await getCurrentUserIdentity({ userId });
   const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
     supabase,
     actionId,
   );
   const canManage = canManageAction(
-    identity
+    identity?.userId === userId
       ? { userId, role: identity.role, activeRole: identity.activeRole }
       : null,
     { createdByClerkId: current.created_by_clerk_id, actionPhase: current.action_phase },
@@ -185,8 +185,8 @@ export async function GET(
 
     if (new URL(request.url).searchParams.get("contacts") === "1") {
       // Private action responses and organizer-declared workflow are user-specific; never cache them.
-      const contacts = await loadMetropolitanContacts(current);
       const needs = normalizeSupportNeeds(new URL(request.url).searchParams.getAll("need"));
+      const contacts = await loadMetropolitanContacts(current, needs);
       return NextResponse.json({ ...contacts, resources: nationalSupportResources(needs) }, { headers: { "Cache-Control": "private, no-store" } });
     }
     const facts = await deriveActionFormalitiesFactsFromAction(current);
@@ -195,9 +195,7 @@ export async function GET(
       facts,
       qualification,
       actionDependencies: {
-        locationLabel: current.location_label,
-        actionDate: current.action_date,
-        territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
+        ...buildFormalitiesActionDependencies(current, facts.territory),
       },
       previous: normalizeActionFormalitiesWorkflow(
         current.preparation_data?.formalitiesWorkflow,
@@ -258,9 +256,7 @@ export async function PATCH(
       facts,
       qualification,
       actionDependencies: {
-        locationLabel: current.location_label,
-        actionDate: current.action_date,
-        territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
+        ...buildFormalitiesActionDependencies(current, facts.territory),
       },
       previous,
     });
@@ -271,6 +267,17 @@ export async function PATCH(
       if (!isKnownFormality) {
         return validationErrorResponse({
           transition: ["La formalité sélectionnée n'est plus applicable à ces faits."],
+        });
+      }
+      const formality = qualification.formalities.find(
+        (item) => item.id === parsed.transition?.formalityId,
+      );
+      const currentProgress = workflow.progress.find(
+        (item) => item.formalityId === parsed.transition?.formalityId,
+      );
+      if (!formality || !availableFormalitiesTransitions(formality, currentProgress).includes(parsed.transition.kind)) {
+        return validationErrorResponse({
+          transition: ["Cette transition n'est pas autorisée depuis l'état courant de la formalité."],
         });
       }
       workflow = applyFormalitiesWorkflowTransition({

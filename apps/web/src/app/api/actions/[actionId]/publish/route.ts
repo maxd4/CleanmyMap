@@ -36,7 +36,7 @@ export async function POST(
     }
 
     const identity = await getCurrentUserIdentity({ userId: access.userId });
-    const permissionIdentity = identity
+    const permissionIdentity = identity?.userId === access.userId
       ? { userId: access.userId, role: identity.role, activeRole: identity.activeRole }
       : null;
     const organizerIds = await loadCanonicalActionOrganizerIdsForAction(

@@ -18,7 +18,7 @@ export function ActionFormalitiesMetropolitanContacts({ actionId, needs }: { act
     setVisibleCount(8);
     setResult(null);
     setState("loading");
-    try { setResult(await fetchMetropolitanFormalitiesContacts(actionId)); setState("success"); }
+    try { setResult(await fetchMetropolitanFormalitiesContacts(actionId, needs)); setState("success"); }
     catch { setState("error"); }
   }
   const resources = nationalSupportResources(needs);
@@ -31,20 +31,21 @@ export function ActionFormalitiesMetropolitanContacts({ actionId, needs }: { act
     {result ? <div className="space-y-2">
       <p aria-live="polite">{result.coverage.status === "resolved_point" ? "Commune du point" : result.coverage.status === "intersections" ? "Communes traversées par la géométrie" : result.coverage.status === "partial" ? "Couverture partielle" : "Commune non déterminée"} : {result.coverage.communeCodes.join(", ") || "à préciser"}</p>
       {result.coverage.reason ? <p>{result.coverage.reason}</p> : null}
-      {result.status === "unavailable" ? <p role="alert">L’annuaire n’a pas répondu pour cette recherche.</p> : result.status !== "complete" ? <p>Recherche partielle. {result.unresolvedCommuneCodes.length ? "Communes à compléter : " + result.unresolvedCommuneCodes.join(", ") : ""}</p> : null}
+      <p>Requêtes à l’annuaire : {result.lookupBudget.requestsUsed}/{result.lookupBudget.requestsAllowed} maximum pour cette action.</p>
+      {result.status === "unavailable" ? <p role="alert">L’annuaire n’a pas répondu pour cette recherche.</p> : result.status !== "complete" ? <p>Recherche partielle. {result.unresolvedCommuneCodes.length ? "Communes à compléter : " + result.unresolvedCommuneCodes.join(", ") : "Des résultats peuvent manquer au plafond de requêtes."}</p> : null}
       {result.contacts.length ? <ul className="divide-y divide-emerald-200">{result.contacts.slice(0, visibleCount).map(contact => <li key={contact.id} className="space-y-1 py-3 first:pt-0">
-        <p className="font-semibold">{contact.name}</p><p className="text-xs">Communes de compétence : {contact.communeCodes.join(", ")}</p>
+        <p className="font-semibold">{contact.name}</p><p className="text-xs">Association géographique officielle DILA : {contact.communeCodes.join(", ")}</p><p className="text-xs">Le type de service aide à l’orientation ; sa compétence pour cette demande reste à confirmer.</p>
         {contact.types.length ? <p className="text-xs">Types DILA : {contact.types.join(", ")}</p> : null}
         <a href={contact.directoryUrl} target="_blank" rel="noreferrer" className="underline">Fiche officielle DILA</a>
         {contact.phones.map(phone => <p key={phone}>Téléphone : <a href={`tel:${phone.replace(/[^+0-9]/g, "")}`} className="underline">{phone}</a></p>)}
         {contact.emails.map(email => <p className="break-all" key={email}>Courriel : <a href={`mailto:${email}`} className="underline">{email}</a></p>)}
         {contact.formUrl ? <p><a href={contact.formUrl} target="_blank" rel="noreferrer" className="underline">Formulaire de contact</a></p> : null}
         {contact.websites.map(site => <p className="break-all" key={site}><a href={site} target="_blank" rel="noreferrer" className="underline">{site}</a></p>)}
-        <p className="text-xs">Annuaire consulté le {contact.retrievedAt.slice(0,10)}.</p>
+        <p className="text-xs">Annuaire consulté le {contact.retrievedAt.slice(0,10)}. Aucun accord ou disponibilité n’est déduit.</p>
       </li>)}</ul> : <p aria-live="polite">Aucun service suffisamment documenté pour cette recherche. Consultez l’annuaire officiel.</p>}
       {visibleCount < result.contacts.length ? <CmmButton tone="tertiary" size="sm" onClick={() => setVisibleCount(value => value + 8)}>Afficher d’autres services ({result.contacts.length - visibleCount})</CmmButton> : null}
     </div> : null}
     <a href={DILA_DIRECTORY} target="_blank" rel="noreferrer" className="underline">Annuaire officiel des services publics</a>
-    {resources.length ? <CmmDisclosure summary="Autres ressources selon vos besoins" tone="slate" size="sm"><ul className="space-y-2">{resources.map(resource => <li key={resource.id}><a href={resource.url} target="_blank" rel="noreferrer" className="font-semibold underline">{resource.label}</a><p>{resource.guidance}</p></li>)}</ul></CmmDisclosure> : null}
+    {resources.length ? <CmmDisclosure summary="Ressources d’orientation et documentaires" tone="slate" size="sm"><p>Ces liens ne sont pas des contacts vérifiés compétents pour l’action.</p><ul className="space-y-2">{resources.map(resource => <li key={resource.id}><a href={resource.url} target="_blank" rel="noreferrer" className="font-semibold underline">{resource.label}</a><p>{resource.guidance}</p></li>)}</ul></CmmDisclosure> : null}
   </section>;
 }

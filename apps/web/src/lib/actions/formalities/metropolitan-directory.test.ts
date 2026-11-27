@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { lookupMetropolitanContacts } from "./metropolitan-directory.server";
+import { createDilaRequestBudget, lookupMetropolitanContacts } from "./metropolitan-directory.server";
 import { isMetropolitanCommune } from "./metropolitan-contacts-contract";
 const id = "df8f7f77-ed99-413c-a529-abb5093c7da9";
 const payload = (results: unknown[], total_count = results.length) => new Response(JSON.stringify({results,total_count}));
@@ -54,6 +54,50 @@ describe("metropolitan directory", () => {
     expect(result.contacts[0]?.types).toEqual(["police_municipale"]);
     expect(result.complete).toBe(false);
     expect(new URL(String(fetchImpl.mock.calls[1][0])).searchParams.get("offset")).toBe("100");
+    expect(new URL(String(fetchImpl.mock.calls[0][0])).searchParams.get("order_by")).toBe("code_insee_commune,code_type_service_local,id_service_local");
+  });
+  it("ranks services matching selected needs before the deterministic identifier cap", async () => {
+    const ids = Array.from({ length: 31 }, (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`);
+    const usefulId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+    const rows = [...ids.map((serviceId, index) => ({
+      code_insee_commune: "31496", code_type_service_local: `service_${index}`, id_service_local: JSON.stringify([serviceId]),
+    })), { code_insee_commune: "31496", code_type_service_local: "mairie", id_service_local: JSON.stringify([usefulId]) }];
+    const fetchImpl = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(payload(rows))
+      .mockResolvedValueOnce(payload([{ id: usefulId, nom: "Mairie", statut_de_diffusion: true,
+        url_service_public: `https://lannuaire.service-public.gouv.fr/occitanie/test/${usefulId}` }]));
+    const result = await lookupMetropolitanContacts("31496", fetchImpl, ["notify"]);
+    const detailQuery = new URL(String(fetchImpl.mock.calls[1]?.[0])).searchParams.get("where") ?? "";
+
+    expect(detailQuery).toContain(usefulId);
+    expect(result.contacts[0]).toMatchObject({
+      territorialRelation: "official_geographic_competence",
+      taskCompetence: "not_verified",
+    });
+  });
+  it("stops at the shared DILA request budget and reports a partial result", async () => {
+    const budget = createDilaRequestBudget(2);
+    const fetchImpl = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(payload([{ code_insee_commune: "31496", code_type_service_local: "mairie", id_service_local: JSON.stringify([id]) }], 101))
+      .mockResolvedValueOnce(payload([{ code_insee_commune: "31496", code_type_service_local: "mairie", id_service_local: JSON.stringify([id]) }], 101));
+
+    await expect(lookupMetropolitanContacts("31496", fetchImpl, ["notify"], budget)).resolves.toEqual({
+      contacts: [], complete: false,
+    });
+    expect(budget).toEqual({ remaining: 0, used: 2 });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+  it("marks malformed pages, unsupported service identifiers and provider failures as incomplete", async () => {
+    const malformed = vi.fn<typeof fetch>().mockResolvedValueOnce(new Response(JSON.stringify({ results: [], total_count: -1 })));
+    await expect(lookupMetropolitanContacts("31496", malformed)).rejects.toThrow("Invalid DILA response");
+
+    const unsupported = vi.fn<typeof fetch>().mockResolvedValueOnce(payload([
+      { code_insee_commune: "31496", code_type_service_local: "mairie", id_service_local: ["not-a-uuid"] },
+    ]));
+    expect(await lookupMetropolitanContacts("31496", unsupported)).toMatchObject({ contacts: [], complete: false });
+
+    const failed = vi.fn<typeof fetch>().mockRejectedValueOnce(new Error("offline"));
+    await expect(lookupMetropolitanContacts("31496", failed)).rejects.toThrow("offline");
   });
   it("reports truncation and excludes unpublished services",async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValueOnce(payload([{code_insee_commune:"31496",code_type_service_local:"mairie",id_service_local:[id]}],2))

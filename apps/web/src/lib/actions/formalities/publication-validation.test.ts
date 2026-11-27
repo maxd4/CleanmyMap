@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActionRow } from "@/types/database";
 import { deriveActionFormalitiesFacts } from "./facts";
 import { qualifyActionFormalities } from "./qualification";
-import { buildFormalitiesTerritoryFingerprint } from "./rules";
+import { buildFormalitiesActionDependencies } from "./action-context";
 import { buildFormalitiesWorkflowState } from "./workflow";
 import { validateActionFormalitiesForPublication } from "./publication-validation";
 
@@ -50,11 +50,7 @@ function buildWorkflow(previous?: ReturnType<typeof buildFormalitiesWorkflowStat
     facts: factsWithRequiredFormality,
     qualification,
     previous,
-    actionDependencies: {
-      locationLabel: "Paris",
-      actionDate: "2026-12-01",
-      territoryFingerprint: buildFormalitiesTerritoryFingerprint(factsWithRequiredFormality.territory),
-    },
+    actionDependencies: buildFormalitiesActionDependencies(buildAction(null), factsWithRequiredFormality.territory),
     now: "2026-10-30T10:00:00.000Z",
   });
 }

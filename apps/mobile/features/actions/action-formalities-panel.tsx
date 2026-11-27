@@ -119,7 +119,7 @@ function ContactRow({ contact, onLinkError }: { contact: MobileFormalitiesContac
   return <View style={styles.contact}>
     <Pressable onPress={() => setExpanded(value => !value)} accessibilityRole="button" accessibilityState={{ expanded }} style={styles.contactToggle}>
       <Text style={styles.contactName}>{contact.name}</Text>
-      <Text style={styles.caption}>{contact.communeCodes.join(', ') || 'Compétence territoriale à vérifier'}</Text>
+      <Text style={styles.caption}>Lien territorial officiel : {contact.communeCodes.join(', ') || 'à vérifier'}</Text>
     </Pressable>
     {expanded ? <View style={styles.details}>
       {contact.types.length ? <Text style={styles.caption}>Services : {contact.types.join(', ')}</Text> : null}
@@ -128,7 +128,7 @@ function ContactRow({ contact, onLinkError }: { contact: MobileFormalitiesContac
       {contact.phones.map(phone => <ExternalLink key={phone} label={`Appeler ${phone}`} url={`tel:${phone.replace(/[^+0-9]/g, '')}`} onError={onLinkError} />)}
       {contact.emails.map(email => <ExternalLink key={email} label={`Écrire à ${email}`} url={`mailto:${email}`} onError={onLinkError} />)}
       {contact.websites.map(url => <ExternalLink key={url} label="Site officiel" url={url} onError={onLinkError} />)}
-      <Text style={styles.caption}>Annuaire consulté le {contact.retrievedAt.slice(0, 10)}. Contact publié, compétence et disponibilité à confirmer.</Text>
+      <Text style={styles.caption}>Lien DILA avec la commune vérifié. Rôle pour cette demande, disponibilité et accord à confirmer. Fiche consultée le {contact.retrievedAt.slice(0, 10)}.</Text>
     </View> : null}
   </View>
 }
@@ -224,14 +224,16 @@ export function ActionFormalitiesPanel({ actionId, selectedNeeds = [] }: { actio
       {contactError ? <View accessibilityRole="alert" style={styles.state}><Text style={styles.error}>{contactError}</Text><Pressable onPress={() => void searchContacts()} accessibilityRole="button" style={styles.button}><Text style={styles.buttonText}>Réessayer</Text></Pressable><ExternalLink label="Annuaire officiel des services publics" url="https://lannuaire.service-public.gouv.fr/" onError={setLinkError} /></View> : null}
       {contacts ? <View style={styles.state} accessibilityLiveRegion="polite">
         <Text accessibilityLiveRegion="polite" style={styles.body}>{contacts.coverage.communeCodes.length ? `Communes recherchées : ${contacts.coverage.communeCodes.join(', ')}` : 'Aucune commune déterminée.'}</Text>
+        <Text style={styles.caption}>Requêtes DILA : {contacts.lookupBudget.requestsUsed}/{contacts.lookupBudget.requestsAllowed} maximum.</Text>
         {contacts.coverage.reason ? <Text style={styles.attentionText}>{contacts.coverage.reason}</Text> : null}
-        {contacts.status !== 'complete' ? <Text style={styles.attentionText}>Résultats partiels ou indisponibles : les services manquants restent à rechercher. {contacts.unresolvedCommuneCodes.length ? `Communes non résolues : ${contacts.unresolvedCommuneCodes.join(', ')}.` : ''}</Text> : null}
+        {contacts.status !== 'complete' ? <Text style={styles.attentionText}>Résultats partiels ou indisponibles : des services peuvent manquer au plafond de requêtes. {contacts.unresolvedCommuneCodes.length ? `Communes à compléter : ${contacts.unresolvedCommuneCodes.join(', ')}.` : ''}</Text> : null}
         {contacts.contacts.length ? <>
           {contacts.contacts.slice(0, visibleContacts).map(contact => <ContactRow key={contact.id} contact={contact} onLinkError={setLinkError} />)}
           {visibleContacts < contacts.contacts.length ? <Pressable onPress={() => setVisibleContacts(count => count + 6)} accessibilityRole="button" style={styles.detailToggle}><Text style={styles.link}>Afficher d’autres services ({contacts.contacts.length - visibleContacts})</Text></Pressable> : null}
         </> : <Text style={styles.caption}>Aucun service trouvé pour cette recherche. Essayez l’annuaire officiel.</Text>}
         {contacts.resources?.length ? <View style={styles.resourceList}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>Référentiels utiles à vos demandes</Text>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>Ressources d’orientation et documentaires</Text>
+          <Text style={styles.caption}>Ces liens ne sont pas des contacts vérifiés compétents pour l’action.</Text>
           {contacts.resources.map(resource => <View key={resource.id} style={styles.resource}>
             <Text style={styles.contactName}>{resource.label}</Text>
             <Text style={styles.caption}>{resource.guidance}</Text>

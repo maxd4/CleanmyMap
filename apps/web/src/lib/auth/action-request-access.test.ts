@@ -44,6 +44,22 @@ describe("requireActionRequestAccess", () => {
     expect(mobileAccessMock).toHaveBeenCalledWith(request);
   });
 
+  it("rejects discordant cookie and bearer subjects instead of selecting one identity implicitly", async () => {
+    webAccessMock.mockResolvedValue({ ok: true, userId: "cookie-user" });
+    mobileAccessMock.mockResolvedValue({ ok: true, userId: "bearer-user" });
+    const request = new Request("https://example.test/api/actions", {
+      method: "PATCH",
+      headers: { Authorization: "Bearer clerk-session-token" },
+    });
+
+    await expect(requireActionRequestAccess(request)).resolves.toEqual({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
+    expect(mobileAccessMock).toHaveBeenCalledWith(request);
+  });
+
   it("still reaches the bearer verifier when web auth throws", async () => {
     webAccessMock.mockRejectedValue(new Error("missing clerk middleware context"));
     mobileAccessMock.mockResolvedValue({ ok: false, status: 401, error: "Unauthorized" });

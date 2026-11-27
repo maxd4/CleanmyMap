@@ -1,7 +1,12 @@
 import { type FetchLike, resolveActionDepartmentAnchor } from "@/lib/geo/action-department-resolver";
 import type { ActionRow } from "@/types/database";
 import { isMetropolitanCommune, type CommuneCoverage, type MetropolitanContacts, type DirectoryContact } from "./metropolitan-contacts-contract";
-import { lookupMetropolitanContacts } from "./metropolitan-directory.server";
+import {
+  createDilaRequestBudget,
+  lookupMetropolitanContacts,
+  MAX_DILA_REQUESTS_PER_ACTION,
+} from "./metropolitan-directory.server";
+import type { SupportNeed } from "./accompaniment";
 
 type Location = Pick<ActionRow, "latitude" | "longitude" | "department_code" | "department_name" | "derived_geometry_kind" | "derived_geometry_geojson">;
 const ENDPOINT = "https://apicarto.ign.fr/api/limites-administratives/commune";
@@ -76,16 +81,17 @@ export async function resolveMetropolitanCoverage(location: Location, fetchImpl:
   finally { clearTimeout(timeout); }
 }
 
-export async function loadMetropolitanContacts(location: Location): Promise<MetropolitanContacts> {
+export async function loadMetropolitanContacts(location: Location, needs: readonly SupportNeed[] = []): Promise<MetropolitanContacts> {
+  const requestBudget = createDilaRequestBudget(MAX_DILA_REQUESTS_PER_ACTION);
   const coverage = await resolveMetropolitanCoverage(location);
-  if (!coverage.communeCodes.length) return {coverage,contacts:[],unresolvedCommuneCodes:[],status:"not_applicable"};
+  if (!coverage.communeCodes.length) return {coverage,contacts:[],unresolvedCommuneCodes:[],status:"not_applicable",lookupBudget:{requestsUsed:0,requestsAllowed:MAX_DILA_REQUESTS_PER_ACTION}};
   const contacts = new Map<string,DirectoryContact>();
   const unresolved: string[] = [];
-  // One bounded lookup per commune, four concurrently at most. No failure becomes an empty confirmed result.
+  // Four commune lookups at a time share one deterministic 48-request ceiling for this action.
   for (let i=0;i<coverage.communeCodes.length;i+=4) {
     await Promise.all(coverage.communeCodes.slice(i,i+4).map(async code => {
       try {
-        const result = await lookupMetropolitanContacts(code);
+        const result = await lookupMetropolitanContacts(code, undefined, needs, requestBudget);
         if (!result.complete) unresolved.push(code);
         for (const contact of result.contacts) {
           const previous = contacts.get(contact.id);
@@ -99,5 +105,6 @@ export async function loadMetropolitanContacts(location: Location): Promise<Metr
   return {coverage,contacts:[...contacts.values()].sort((a,b)=>a.name.localeCompare(b.name,"fr") || a.id.localeCompare(b.id)),
     unresolvedCommuneCodes:unresolved.sort(),
     status:unresolved.length===coverage.communeCodes.length && contacts.size===0 ? "unavailable" :
-      unresolved.length || coverage.status==="partial" ? "partial" : "complete"};
+      unresolved.length || coverage.status==="partial" ? "partial" : "complete",
+    lookupBudget:{requestsUsed:requestBudget.used,requestsAllowed:MAX_DILA_REQUESTS_PER_ACTION}};
 }

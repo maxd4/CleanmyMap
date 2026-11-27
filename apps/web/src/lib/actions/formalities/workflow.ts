@@ -50,6 +50,8 @@ type ActionFormalitiesTrace = {
   verifiedOn: string | null;
   /** Versioned canonical representation of dependencies affecting venue/date rules. */
   actionDependencyFingerprint: string;
+  /** Normalized persisted action location; used to retain territorial duties only during provider outages. */
+  actionLocationFingerprint?: string | null;
   determiningFacts: FormalitiesFactsSnapshot;
   formalities: Array<{
     id: string;
@@ -59,7 +61,7 @@ type ActionFormalitiesTrace = {
   }>;
 };
 
-const ACTION_DEPENDENCY_FINGERPRINT_VERSION = "canonical-v2" as const;
+const ACTION_DEPENDENCY_FINGERPRINT_VERSION = "canonical-v3" as const;
 
 export type ActionFormalitiesWorkflowState = {
   schemaVersion: typeof ACTION_FORMALITIES_WORKFLOW_SCHEMA_VERSION;
@@ -168,6 +170,7 @@ function isCanonicalFormalitiesTrace(value: unknown): value is ActionFormalities
     hasCanonicalOfficialSources(value.officialSources),
     isNullableString(value.verifiedOn) && (value.verifiedOn === null || isMeaningful(value.verifiedOn)),
     isMeaningful(value.actionDependencyFingerprint),
+    value.actionLocationFingerprint === undefined || value.actionLocationFingerprint === null || isMeaningful(value.actionLocationFingerprint),
     actionFormalitiesFactsSchema.safeParse(value.determiningFacts).success,
     hasCanonicalFormalities(value.formalities),
   ].every(Boolean);
@@ -244,10 +247,12 @@ function actionDependencyFingerprint(params: {
   locationLabel?: string | null;
   actionDate?: string | null;
   territoryFingerprint?: string | null;
+  locationFingerprint?: string | null;
 }): string {
   const territoryFingerprint = normalizeDependencyValue(params.territoryFingerprint);
   return `${ACTION_DEPENDENCY_FINGERPRINT_VERSION}:${JSON.stringify({
     territoryFingerprint,
+    locationFingerprint: normalizeDependencyValue(params.locationFingerprint),
     locationLabel: territoryFingerprint === null
       ? normalizeDependencyValue(params.locationLabel)
       : null,
@@ -281,6 +286,7 @@ function buildTrace(
     locationLabel?: string | null;
     actionDate?: string | null;
     territoryFingerprint?: string | null;
+    locationFingerprint?: string | null;
   },
   now: string,
 ): ActionFormalitiesTrace {
@@ -309,6 +315,7 @@ function buildTrace(
     ).values()],
     verifiedOn,
     actionDependencyFingerprint: actionDependencyFingerprint(actionDependencies),
+    actionLocationFingerprint: normalizeDependencyValue(actionDependencies.locationFingerprint),
     determiningFacts: snapshotFormalitiesFacts(facts),
     formalities: qualification.formalities.map((formality) => ({
       id: formality.id,
@@ -340,6 +347,7 @@ export function buildFormalitiesWorkflowState(params: {
     locationLabel?: string | null;
     actionDate?: string | null;
     territoryFingerprint?: string | null;
+    locationFingerprint?: string | null;
   };
   now?: string;
 }): ActionFormalitiesWorkflowState {
@@ -348,6 +356,11 @@ export function buildFormalitiesWorkflowState(params: {
   const currentActionDependencyFingerprint = actionDependencyFingerprint(actionDependencies);
   const contentVersion = contentVersionForQualification(params.qualification);
   const previousFacts = params.previous?.trace.determiningFacts ?? null;
+  const previousFormalitiesById = new Map(
+    (params.previous?.trace.formalities ?? []).map((formality) => [formality.id, formality]),
+  );
+  const rulesetChanged = params.previous !== undefined && params.previous !== null &&
+    params.previous.trace.rulesetVersion !== params.qualification.rulesetVersion;
   const actionDependenciesChanged =
     params.previous !== undefined &&
     params.previous !== null &&
@@ -369,12 +382,17 @@ export function buildFormalitiesWorkflowState(params: {
       params.facts,
       actionDependenciesChanged,
     );
+    const previousRule = previousFormalitiesById.get(formality.id);
+    const qualificationChanged = rulesetChanged || !previousRule ||
+      previousRule.requirementStatus !== formality.requirementStatus ||
+      previousRule.procedureKind !== formality.procedureKind ||
+      previousRule.sourceId !== (formality.source?.id ?? null);
     return {
       ...previous,
       contentVersion,
       active: true,
-      validForQualification: previous.validForQualification && !invalidated,
-      invalidatedAt: invalidated ? previous.invalidatedAt ?? now : previous.invalidatedAt,
+      validForQualification: previous.validForQualification && !invalidated && !qualificationChanged,
+      invalidatedAt: invalidated || qualificationChanged ? previous.invalidatedAt ?? now : previous.invalidatedAt,
     };
   });
 
@@ -404,7 +422,7 @@ export function applyFormalitiesWorkflowTransition(params: {
   const now = params.now ?? new Date().toISOString();
   const progress: ActionFormalityProgress[] = params.workflow.progress.map((item): ActionFormalityProgress => {
     if (item.formalityId !== params.transition.formalityId || !item.active) return item;
-    if (item.userStatus === "authorization_obtained") return item;
+    if (item.userStatus === "authorization_obtained" && item.validForQualification) return item;
     if (params.transition.kind === "declare_sent" && item.userStatus !== "prepared") return item;
     if (params.transition.kind === "record_receipt" && item.userStatus !== "sent") return item;
     if (params.transition.kind === "record_authorization" && !["sent", "receipt_received"].includes(item.userStatus)) return item;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { qualifyActionFormalities } from "./qualification";
 import {
+  availableFormalitiesTransitions,
   applyFormalitiesWorkflowTransition,
   buildFormalitiesWorkflowState,
   deriveActionFormalitiesFacts,
@@ -147,6 +148,44 @@ describe("formalities workflow", () => {
     const receipt = applyFormalitiesWorkflowTransition({ workflow: policeSent,
       transition: { formalityId: police!.id, kind: "record_receipt" } });
     expect(isFormalitiesPublicationBlocked(declarationQualification, receipt)).toBe(false);
+  });
+
+  it("allows a previously obtained authorization to be prepared again only after invalidation", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const formality = qualification.formalities.find((item) => item.id === "paris-city-public-domain-aot");
+    if (!formality) throw new Error("Expected the Paris authorization fixture");
+    const initial = buildFormalitiesWorkflowState({ facts, qualification });
+    const authorized = applyFormalitiesWorkflowTransition({
+      workflow: applyFormalitiesWorkflowTransition({
+        workflow: applyFormalitiesWorkflowTransition({
+          workflow: applyFormalitiesWorkflowTransition({ workflow: initial,
+            transition: { formalityId: formality.id, kind: "mark_prepared" } }),
+          transition: { formalityId: formality.id, kind: "declare_sent" },
+        }),
+        transition: { formalityId: formality.id, kind: "record_receipt" },
+      }),
+      transition: { formalityId: formality.id, kind: "record_authorization" },
+    });
+    expect(availableFormalitiesTransitions(formality, authorized.progress[0])).toEqual([]);
+
+    const invalidated = {
+      ...authorized,
+      progress: authorized.progress.map((item) => item.formalityId === formality.id
+        ? { ...item, validForQualification: false, invalidatedAt: "2026-11-27T10:00:00Z" }
+        : item),
+    };
+    expect(availableFormalitiesTransitions(formality, invalidated.progress[0])).toEqual(["mark_prepared"]);
+    const rePrepared = applyFormalitiesWorkflowTransition({
+      workflow: invalidated,
+      transition: { formalityId: formality.id, kind: "mark_prepared" },
+      now: "2026-11-27T10:01:00Z",
+    });
+    expect(rePrepared.progress.find((item) => item.formalityId === formality.id)).toMatchObject({
+      userStatus: "prepared",
+      validForQualification: true,
+      invalidatedAt: null,
+    });
   });
 
   it("invalidates only the affected formality and retains a prior proof", () => {
@@ -297,6 +336,55 @@ describe("formalities workflow", () => {
     );
   });
 
+  it("invalidates proofs when the persisted geometry changes within the same territory", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const dependencies = {
+      locationLabel: "Rue A, Paris",
+      actionDate: "2026-09-20",
+      territoryFingerprint: "FR|FR-PARIS|75056|75|11",
+      locationFingerprint: "sha256:geometry-a",
+    };
+    const initial = buildFormalitiesWorkflowState({ facts, qualification, actionDependencies: dependencies });
+    const sent = applyFormalitiesWorkflowTransition({
+      workflow: applyFormalitiesWorkflowTransition({ workflow: initial,
+        transition: { formalityId: "paris-city-public-domain-aot", kind: "mark_prepared" } }),
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
+    });
+    const movedInsideParis = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      previous: sent,
+      actionDependencies: { ...dependencies, locationFingerprint: "sha256:geometry-b" },
+    });
+
+    expect(movedInsideParis.progress.find((item) => item.formalityId === "paris-city-public-domain-aot")).toMatchObject({
+      active: true,
+      userStatus: "sent",
+      validForQualification: false,
+      proof: expect.objectContaining({ kind: "user_declared" }),
+    });
+  });
+
+  it("invalidates active proof when the applicable ruleset changes", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const initial = buildFormalitiesWorkflowState({ facts, qualification });
+    const sent = applyFormalitiesWorkflowTransition({
+      workflow: applyFormalitiesWorkflowTransition({ workflow: initial,
+        transition: { formalityId: "paris-city-public-domain-aot", kind: "mark_prepared" } }),
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
+    });
+    const updatedRules = { ...qualification, rulesetVersion: "paris-rules-revised" };
+    const requalified = buildFormalitiesWorkflowState({ facts, qualification: updatedRules, previous: sent });
+
+    expect(requalified.progress.find((item) => item.formalityId === "paris-city-public-domain-aot")).toMatchObject({
+      userStatus: "sent",
+      validForQualification: false,
+      proof: expect.objectContaining({ kind: "user_declared" }),
+    });
+  });
+
 });
 
 describe("formalities workflow validation", () => {
@@ -318,7 +406,7 @@ describe("formalities workflow validation", () => {
       now: "2026-09-17T10:02:00.000Z",
     });
 
-    expect(requalified.trace.actionDependencyFingerprint).toMatch(/^canonical-v2:/);
+    expect(requalified.trace.actionDependencyFingerprint).toMatch(/^canonical-v3:/);
     expect(requalified.progress[0]).toMatchObject({
       validForQualification: false,
       invalidatedAt: "2026-09-17T10:02:00.000Z",

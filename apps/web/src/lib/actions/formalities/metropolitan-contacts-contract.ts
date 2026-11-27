@@ -13,6 +13,9 @@ export type DirectoryContact = {
   directoryUrl: string;
   formUrl: string | null;
   retrievedAt: string;
+  /** DILA links this official service to the commune; this does not prove it handles the selected cleanup request. */
+  territorialRelation: "official_geographic_competence";
+  taskCompetence: "not_verified";
 };
 export type CommuneCoverage = {
   status: "resolved_point" | "intersections" | "partial" | "unknown";
@@ -24,6 +27,7 @@ export type MetropolitanContacts = {
   contacts: DirectoryContact[];
   unresolvedCommuneCodes: string[];
   status: "complete" | "partial" | "unavailable" | "not_applicable";
+  lookupBudget: { requestsUsed: number; requestsAllowed: number };
   resources?: Array<{ id: string; label: string; url: string; needs: string[]; guidance: string }>;
 };
 
