@@ -17,7 +17,7 @@ export const SURFACE_PALETTES = {
   cartographie: { primary: "#075985", deep: "#1E3A8A", soft: "#F0F9FF", tint: "#DBEAFE", accent: "#0E7490", dark: "#142843" },
   impact: { primary: "#9F1239", deep: "#701A75", soft: "#FFF1F2", tint: "#FFE4E6", accent: "#B45309", dark: "#371D2D" },
   reseau: { primary: "#9D174D", deep: "#581C87", soft: "#FCE7F3", tint: "#F9D5E9", accent: "#B88628", dark: "#321B31" },
-  apprendre: { primary: "#92400E", deep: "#713F12", soft: "#FFFBEB", tint: "#FEF3C7", accent: "#0F766E", dark: "#35291C" },
+  apprendre: { primary: "#A64B08", deep: "#92400E", soft: "#FFF9D6", tint: "#FFE5B6", accent: "#9A3412", dark: "#3D2A16" },
   auth: { primary: "#4338CA", deep: "#312E81", soft: "#EEF2FF", tint: "#E0E7FF", accent: "#B88628", dark: "#222342" },
   legal: { primary: "#334155", deep: "#1E293B", soft: "#F8FAFC", tint: "#E2E8F0", accent: "#475569", dark: "#1E293B" },
   systeme: { primary: "#155E75", deep: "#334155", soft: "#F0F9FF", tint: "#E0F2FE", accent: "#0369A1", dark: "#1E293B" },

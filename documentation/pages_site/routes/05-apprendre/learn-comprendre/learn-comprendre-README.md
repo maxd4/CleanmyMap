@@ -18,14 +18,14 @@
 - **Contexte nécessaire** : Aucun
 - **Objectif utilisateur principal** : Comprendre les notions environnementales et la méthodologie avant de passer à l'entraînement.
 - **Action principale attendue** : Lire les cartes de vulgarisation, consulter la méthodologie et ouvrir le quiz.
-- **Palette attendue** : yellow
-- **Scope** : page de vulgarisation avec introduction visuelle, chronologie des politiques environnementales Monde prioritaire, vue France secondaire, filtres communs, archive présidentielle 2012/2017/2022 par thème prioritaire et candidat secondaire, cartes pédagogiques, ressources différées, lien vers `/learn/sentrainer` et méthodologie.
+- **Palette attendue** : famille Apprendre, surfaces jaune clair / orange doux, canvas neutre
+- **Scope** : six onglets dans cet ordre : Repères, Ordres de grandeur, Climat et planète, Objectifs mondiaux, Politiques publiques, Art et environnement. Repères est initialement actif. Les panneaux restent montés pour conserver les saisies et filtres ; les panneaux masqués ne sont pas accessibles au clavier. Navigation par flèches, Home et End. Les calculateurs existants sont conservés ; les ressources restent différées. Les fiches politiques non validées restent privées, Monde prioritaire puis France, archives présidentielles inchangées. Les filtres ne sont proposés que si le périmètre contient des fiches publiques.
 - **Performance** : wrapper serveur avec metadata de route et ISR à 24 h ; la sélection éditoriale des politiques est effectuée côté serveur et seules les fiches publiées sérialisables sont transmises au composant client ; les interactions lourdes restent chargées à l'approche de leur section via `next/dynamic` et `use-in-view-once`.
 - **Terminée** : partielle : le corpus initial non exhaustif est intégré en `in_review` ; aucune fiche n’est publiée avant revue humaine effective.
-- **Couleurs actuellement détectées** : yellow — canvas #fef9c3, halo rgba(234, 179, 8, 0.30)
+- **Contrat de couleurs** : registre canonique `surface-palette.ts`, surfaces claires #FFF9D6 et #FFE5B6. Le rendu réel doit être vérifié après intégration.
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : faible à moyen : le jaune doit rester lisible sans devenir pâle sur fond clair.
-- **Niveau de surcharge textuelle** : fort
+- **Organisation pédagogique** : schéma observation/calcul/interprétation ; chiffres dérivés des sources existantes, sans progression fictive ; distinction pollution potentielle / eau consommée ; rapports AR6 datés et sourcés ; neuf limites planétaires selon Planetary Health Check 2026 avec statuts catégoriels, non amplitudes physiques ; 17 ODD avec cibles et indicateurs ; galerie artistique avec sources. Les espaces de chargement ne conservent pas de hauteur minimale après chargement. Aucune nouvelle donnée métier, nouvelle règle de progression ou publication éditoriale automatique.
 - **Textes à conserver** :
 - Titre de module
 - résumés

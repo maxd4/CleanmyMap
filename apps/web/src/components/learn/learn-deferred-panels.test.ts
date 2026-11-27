@@ -23,6 +23,8 @@ describe("learn-deferred-panels", () => {
     );
 
     expect(markup).toContain("Loading the deep dive");
+    expect(markup).not.toContain("min-h-[520px]");
+    expect(markup).not.toContain("h-[520px]");
     expect(markup).toContain("role=\"status\"");
     expect(markup).toContain("aria-live=\"polite\"");
   });

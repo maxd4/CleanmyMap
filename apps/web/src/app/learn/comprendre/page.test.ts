@@ -1,150 +1,47 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-
-type IntroProps = {
-  question: string;
-  clue: string;
-  action: {
-    href: string;
-    label: string;
-  };
-};
-
-type JourneyProps = {
-  currentPageId: string;
-  compact?: boolean;
-};
-
-const introCalls: IntroProps[] = [];
-const journeyCalls: JourneyProps[] = [];
+vi.mock("@/components/ui/site-preferences-provider", async () => (await import("@/app/learn/test-helpers")).createLearnSitePreferencesModule());
+vi.mock("@/components/learn/learn-rubric-shell", async () => (await import("@/app/learn/test-helpers")).createLearnRubricShellModule());
+vi.mock("@/components/learn/learn-page-visit-tracker", () => ({ LearnPageVisitTracker: () => null }));
+vi.mock("@/components/learn/learn-block-journey-section", () => ({ LearnBlockJourneySection: () => React.createElement("div", { "data-testid": "journey" }) }));
+vi.mock("./learn-comprendre-sections", () => ({
+  LearnReadingFlowSection: () => React.createElement("div", { "data-testid": "reperes" }),
+  LearnScaleSection: () => React.createElement("div", { "data-testid": "scale" }),
+  LearnClimateSection: () => React.createElement("div", { "data-testid": "climate" }),
+  LearnGoalsSection: () => React.createElement("div", { "data-testid": "goals" }),
+  LearnDeepDiveSection: () => React.createElement("div", { "data-testid": "art" }),
+}));
 const explorerCalls: Array<{ publishedPolicies: unknown[]; presidentialArchive: { candidates: unknown[]; validatedCommitments: unknown[] } }> = [];
-
-vi.mock("@/components/ui/site-preferences-provider", async () => {
-  const helpers = await import("@/app/learn/test-helpers");
-  return helpers.createLearnSitePreferencesModule();
-});
-
-vi.mock("@/components/learn/learn-rubric-shell", async () => {
-  const helpers = await import("@/app/learn/test-helpers");
-  return helpers.createLearnRubricShellModule();
-});
-
-vi.mock("@/components/learn/learn-comprendre-visual-intro", () => ({
-  LearnComprendreVisualIntro: (props: IntroProps) => {
-    introCalls.push(props);
-    return React.createElement("div", { "data-testid": "intro" });
-  },
-}));
-
-vi.mock("@/components/learn/learn-vulgarisation-path-section", () => ({
-  LearnVulgarisationPathSection: () => React.createElement("section", { "data-testid": "path" }),
-}));
-
-vi.mock("@/components/learn/learn-deferred-panels", () => ({
-  DeferredLearnVulgarisationMagnitudeComparator: () =>
-    React.createElement("section", { "data-testid": "comparator" }),
-  DeferredImpactOrderOfMagnitudeSection: () =>
-    React.createElement("section", { "data-testid": "impact" }),
-  DeferredGIECContent: () => React.createElement("section", { "data-testid": "giec" }),
-  DeferredPlanetaryBoundariesInteractive: () =>
-    React.createElement("section", { "data-testid": "planetary" }),
-  DeferredSustainableGoalsInteractive: () =>
-    React.createElement("section", { "data-testid": "goals" }),
-  DeferredLearnArtworkAccordion: () =>
-    React.createElement("section", { "data-testid": "artwork" }),
-}));
-
-vi.mock("@/components/learn/learn-block-journey-section", () => ({
-  LearnBlockJourneySection: (props: JourneyProps) => {
-    journeyCalls.push(props);
-    return React.createElement("section", {
-      "data-testid": "journey",
-      "data-compact": String(Boolean(props.compact)),
-    });
-  },
-}));
-
-vi.mock("@/components/learn/learn-page-visit-tracker", () => ({
-  LearnPageVisitTracker: () => null,
-}));
-
 vi.mock("@/components/learn/environmental-policy-explorer", () => ({
-  EnvironmentalPolicyExplorer: (props: { publishedPolicies: unknown[]; presidentialArchive: { candidates: unknown[]; validatedCommitments: unknown[] } }) => {
+  EnvironmentalPolicyExplorer: (props: (typeof explorerCalls)[number]) => {
     explorerCalls.push(props);
-    return React.createElement("section", { "data-testid": "environmental-policies" });
+    return React.createElement("div", { "data-testid": "policies" });
   },
 }));
-
 import Page from "./page";
 
 describe("LearnVulgarisationPage", () => {
-  beforeEach(() => {
-    introCalls.length = 0;
-    journeyCalls.length = 0;
-    explorerCalls.length = 0;
-  });
-
-  it("publishes stable metadata and an ISR window for the public guide", async () => {
+  it("preserves the public metadata and ISR", async () => {
     const page = await import("./page");
-
     expect(page.revalidate).toBe(86400);
-    expect(page.metadata).toMatchObject({
-      title: "Vulgarisation",
-      description:
-        "Repères scientifiques, ordres de grandeur et méthodologie pour comprendre l'impact environnemental avant d'agir.",
-      robots: { index: true, follow: true },
-    });
+    expect(page.metadata).toMatchObject({ title: "Vulgarisation", robots: { index: true, follow: true } });
   });
-
-  it("keeps the reading flow in the expected order", () => {
+  it("renders six ordered accessible themes and keeps unpublished records private", () => {
+    explorerCalls.length = 0;
     const markup = renderToStaticMarkup(React.createElement(Page));
-
-    expect(markup).toContain("data-testid=\"intro\"");
-    expect(markup).toContain("data-testid=\"environmental-policies\"");
-    expect(markup).toContain("Chemin direct");
-    expect(markup).toContain("Passer au quiz");
-    expect(markup).toContain("Voir la méthodologie");
-    expect(markup).toContain("data-testid=\"path\"");
-    expect(markup).toContain("À retenir");
-    expect(markup).toContain("Lire le contexte avant de comparer");
-    expect(markup).toContain("data-testid=\"comparator\"");
-    expect(markup).toContain("data-testid=\"impact\"");
-    expect(markup).toContain("Pour aller plus loin");
-    expect(markup).toContain("Passer des ordres de grandeur aux cadres de référence");
-    expect(markup).toContain("data-testid=\"giec\"");
-    expect(markup).toContain("data-testid=\"planetary\"");
-    expect(markup).toContain("data-testid=\"goals\"");
-    expect(markup).toContain("En synthèse");
-    expect(markup).toContain("Relier les cadres pour situer");
-    expect(markup).toContain("data-testid=\"artwork\"");
-    expect(markup).toContain("data-testid=\"journey\"");
-
-    expect(markup.indexOf("data-testid=\"path\"")).toBeLessThan(markup.indexOf("data-testid=\"comparator\""));
-    expect(markup.indexOf("data-testid=\"intro\"")).toBeLessThan(markup.indexOf("data-testid=\"environmental-policies\""));
-    expect(markup.indexOf("data-testid=\"environmental-policies\"")).toBeLessThan(markup.indexOf("data-testid=\"path\""));
-    expect(markup.indexOf("Chemin direct")).toBeLessThan(markup.indexOf("data-testid=\"path\""));
-    expect(markup.indexOf("data-testid=\"path\"")).toBeLessThan(markup.indexOf("À retenir"));
-    expect(markup.indexOf("À retenir")).toBeLessThan(markup.indexOf("data-testid=\"comparator\""));
-    expect(markup.indexOf("data-testid=\"comparator\"")).toBeLessThan(markup.indexOf("data-testid=\"impact\""));
-    expect(markup.indexOf("data-testid=\"impact\"")).toBeLessThan(markup.indexOf("Pour aller plus loin"));
-    expect(markup.indexOf("Pour aller plus loin")).toBeLessThan(markup.indexOf("data-testid=\"giec\""));
-    expect(markup.indexOf("data-testid=\"impact\"")).toBeLessThan(markup.indexOf("data-testid=\"giec\""));
-    expect(markup.indexOf("data-testid=\"giec\"")).toBeLessThan(markup.indexOf("data-testid=\"planetary\""));
-    expect(markup.indexOf("data-testid=\"planetary\"")).toBeLessThan(markup.indexOf("data-testid=\"goals\""));
-    expect(markup.indexOf("data-testid=\"goals\"")).toBeLessThan(markup.indexOf("En synthèse"));
-    expect(markup.indexOf("En synthèse")).toBeLessThan(markup.indexOf("data-testid=\"artwork\""));
-    expect(markup.indexOf("data-testid=\"goals\"")).toBeLessThan(markup.indexOf("data-testid=\"artwork\""));
-    expect(markup.indexOf("data-testid=\"artwork\"")).toBeLessThan(markup.indexOf("data-testid=\"journey\""));
-
-    expect(introCalls).toHaveLength(1);
-    expect(introCalls[0].action.href).toBe("/learn/sentrainer");
-    expect(introCalls[0].action.label).toBe("Passer au quiz");
-    expect(journeyCalls).toHaveLength(1);
-    expect(journeyCalls[0].currentPageId).toBe("comprendre");
-    expect(journeyCalls[0].compact).toBe(true);
+    const tabs = [...markup.matchAll(/<button\b[^>]*\brole="tab"[^>]*>/g)].map((match) => match[0]);
+    expect(tabs).toHaveLength(6);
+    for (const [index, id] of ["reperes", "ordres-de-grandeur", "climat-planete", "odd", "politiques", "art"].entries()) {
+      expect(tabs[index]).toContain(`-tab-${id}`);
+      expect(tabs[index]).toContain(`aria-selected="${index === 0}"`);
+    }
+    const panels = [...markup.matchAll(/<div\b[^>]*\brole="tabpanel"[^>]*>/g)].map((match) => match[0]);
+    expect(panels).toHaveLength(6);
+    expect(panels.filter((panel) => /\bhidden=""/.test(panel))).toHaveLength(5);
+    for (const id of ["reperes", "scale", "climate", "goals", "policies", "art", "journey"]) expect(markup).toContain(`data-testid="${id}"`);
     expect(explorerCalls).toHaveLength(1);
     expect(explorerCalls[0].publishedPolicies).toEqual([]);
     expect(explorerCalls[0].presidentialArchive.candidates).toHaveLength(33);

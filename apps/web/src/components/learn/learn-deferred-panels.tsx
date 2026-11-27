@@ -16,7 +16,7 @@ const DeferredLearnArtworkAccordionComponent = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[860px] animate-pulse rounded-[2rem] border border-amber-200/70 bg-white/80" />
+      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
     ),
   },
 );
@@ -29,7 +29,7 @@ const DeferredLearnVulgarisationMagnitudeComparatorComponent = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[520px] animate-pulse rounded-[2rem] border border-amber-200/70 bg-white/80" />
+      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
     ),
   },
 );
@@ -42,7 +42,7 @@ const DeferredImpactOrderOfMagnitudeSectionComponent = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[420px] animate-pulse rounded-[2rem] border border-amber-200/70 bg-white/80" />
+      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
     ),
   },
 );
@@ -52,7 +52,7 @@ const DeferredGIECContentComponent = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[540px] animate-pulse rounded-[2rem] border border-amber-200/70 bg-white/80" />
+      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
     ),
   },
 );
@@ -65,7 +65,7 @@ const DeferredPlanetaryBoundariesInteractiveComponent = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[760px] animate-pulse rounded-[2rem] border border-violet-200/70 bg-white/80" />
+      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
     ),
   },
 );
@@ -78,7 +78,7 @@ const DeferredSustainableGoalsInteractiveComponent = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[520px] animate-pulse rounded-[2rem] border border-violet-200/70 bg-white/80" />
+      <div role="status" aria-busy="true" className="rounded-xl border border-amber-200 p-4 cmm-text-body">Chargement / Loading…</div>
     ),
   },
 );
@@ -161,17 +161,16 @@ export function DeferredLearnArtworkAccordion({ locale }: { locale: LearnLocale 
 
   return (
     <DeferredSection
-      className="min-h-[860px]"
       rootMargin="300px 0px"
       fallback={
         <DeferredLoadingShell
           accent="amber"
           message={message}
-          heightClassName="h-[860px]"
+          heightClassName="min-h-20 p-4"
         />
       }
     >
-      <DeferredLearnArtworkAccordionComponent locale={locale} />
+      <DeferredLearnArtworkAccordionComponent locale={locale} defaultOpen />
     </DeferredSection>
   );
 }
@@ -185,13 +184,13 @@ export function DeferredLearnVulgarisationMagnitudeComparator({
 }) {
   return (
     <DeferredSection
-      className={cn("min-h-[520px]", className)}
+      className={className}
       rootMargin="300px 0px"
       fallback={
         <DeferredLoadingShell
           accent="amber"
           message={getDeferredMessage(locale)}
-          heightClassName="h-[520px]"
+          heightClassName="min-h-20 p-4"
         />
       }
     >
@@ -203,13 +202,12 @@ export function DeferredLearnVulgarisationMagnitudeComparator({
 export function DeferredImpactOrderOfMagnitudeSection({ locale }: { locale?: LearnLocale }) {
   return (
     <DeferredSection
-      className="min-h-[420px]"
       rootMargin="300px 0px"
       fallback={
         <DeferredLoadingShell
           accent="amber"
           message={getDeferredMessage(locale)}
-          heightClassName="h-[420px]"
+          heightClassName="min-h-20 p-4"
         />
       }
     >
@@ -221,13 +219,12 @@ export function DeferredImpactOrderOfMagnitudeSection({ locale }: { locale?: Lea
 export function DeferredGIECContent({ locale }: { locale?: LearnLocale }) {
   return (
     <DeferredSection
-      className="min-h-[540px]"
       rootMargin="300px 0px"
       fallback={
         <DeferredLoadingShell
           accent="amber"
           message={getDeferredMessage(locale)}
-          heightClassName="h-[540px]"
+          heightClassName="min-h-20 p-4"
         />
       }
     >
@@ -239,13 +236,12 @@ export function DeferredGIECContent({ locale }: { locale?: LearnLocale }) {
 export function DeferredPlanetaryBoundariesInteractive({ locale }: { locale?: LearnLocale }) {
   return (
     <DeferredSection
-      className="min-h-[760px]"
       rootMargin="320px 0px"
       fallback={
         <DeferredLoadingShell
           accent="violet"
           message={getDeferredMessage(locale)}
-          heightClassName="h-[760px]"
+          heightClassName="min-h-20 p-4"
         />
       }
     >
@@ -257,13 +253,12 @@ export function DeferredPlanetaryBoundariesInteractive({ locale }: { locale?: Le
 export function DeferredSustainableGoalsInteractive({ locale }: { locale?: LearnLocale }) {
   return (
     <DeferredSection
-      className="min-h-[520px]"
       rootMargin="320px 0px"
       fallback={
         <DeferredLoadingShell
           accent="violet"
           message={getDeferredMessage(locale)}
-          heightClassName="h-[520px]"
+          heightClassName="min-h-20 p-4"
         />
       }
     >

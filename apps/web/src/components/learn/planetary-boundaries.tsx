@@ -1,195 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  AlertTriangle,
-  Info,
-  Sparkles,
-} from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { PlanetaryRadarChart } from "./planetary-radar-chart";
-import {
-  PLANETARY_BOUNDARIES,
-  type PlanetaryBoundary,
-} from "./planetary-boundaries-data";
-
-const getStatusColor = (status: PlanetaryBoundary['status']) => {
-  switch (status) {
-    case 'safe': return '#10b981'; // emerald
-    case 'increasing-risk': return '#f59e0b'; // amber
-    case 'high-risk': return '#f97316'; // orange
-    case 'transgressed': return '#ef4444'; // red
-    default: return '#64748b';
-  }
-};
-
-const getStatusRadius = (status: PlanetaryBoundary['status']) => {
-  switch (status) {
-    case 'safe': return 0.4;
-    case 'increasing-risk': return 0.6;
-    case 'high-risk': return 0.8;
-    case 'transgressed': return 1.0;
-    default: return 0.5;
-  }
-};
+import { PLANETARY_BOUNDARIES, PLANETARY_BOUNDARIES_REFERENCE } from "./planetary-boundaries-data";
 
 export function PlanetaryBoundariesInteractive() {
-  const [selectedId, setSelectedId] = useState<string | null>(PLANETARY_BOUNDARIES[0]?.id ?? null);
-  if (!selectedId) {
-    return null;
-  }
-
-  const selectedBoundary = PLANETARY_BOUNDARIES.find((b) => b.id === selectedId);
-  if (!selectedBoundary) {
-    return null;
-  }
-
-  const radarBoundaries = PLANETARY_BOUNDARIES.map(b => ({
-    id: b.id,
-    name: b.name,
-    icon: b.icon,
-    status: b.status,
-    color: getStatusColor(b.status),
-    radiusRatio: getStatusRadius(b.status)
-  }));
-
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
+  const [selectedId, setSelectedId] = useState(PLANETARY_BOUNDARIES[0]?.id ?? "");
+  const selected = PLANETARY_BOUNDARIES.find((boundary) => boundary.id === selectedId);
+  if (!selected) return null;
+  const crossed = PLANETARY_BOUNDARIES.filter((boundary) => boundary.status === "transgressed").length;
+  const statusLabel = (status: "safe" | "transgressed") => status === "transgressed" ? (fr ? "Limite franchie" : "Boundary transgressed") : (fr ? "Non franchie à l'échelle mondiale" : "Not globally transgressed");
   return (
-    <div className="cmm-page-width space-y-12 px-4">
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900 shadow-sm mb-2">
-          <Sparkles size={14} className="text-violet-500" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-700 dark:text-violet-400">Science & Données</span>
-        </div>
-        <h2 className="text-4xl md:text-5xl font-black cmm-text-primary tracking-tight">Les 9 Limites Planétaires</h2>
-        <p className="text-lg cmm-text-secondary max-w-3xl mx-auto font-medium">
-          Découvrez l&apos;état de santé de notre planète à travers ce radar interactif. Le dépassement de ces limites menace la résilience de la Terre.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 items-center">
-        
-        {/* Visualisation Radar Premium */}
-        <div className="relative order-2 xl:order-1">
-          <PlanetaryRadarChart 
-            boundaries={radarBoundaries}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-          />
-          
-          {/* Légende flottante */}
-          <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-4 py-4 md:py-0">
-            {[
-              { label: 'Sûr', color: '#10b981' },
-              { label: 'Risque', color: '#f97316' },
-              { label: 'Dépassé', color: '#ef4444' }
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.1)]" style={{ backgroundColor: item.color }} />
-                <span className="text-[10px] font-bold uppercase tracking-wider cmm-text-muted">{item.label}</span>
-              </div>
-            ))}
+    <section aria-labelledby="planetary-boundaries-title" className="space-y-4">
+      <div><h2 id="planetary-boundaries-title" className="text-2xl font-bold cmm-text-primary">{fr ? "Les 9 limites planétaires" : "The 9 planetary boundaries"}</h2><p className="cmm-text-body mt-1">{fr ? `Évaluation ${PLANETARY_BOUNDARIES_REFERENCE.year} : ${crossed} limites franchies. Une limite franchie signifie une hausse du risque, pas une catastrophe instantanée.` : `${PLANETARY_BOUNDARIES_REFERENCE.year} assessment: ${crossed} boundaries transgressed. Crossing a boundary signals increased risk, not an instantaneous catastrophe.`}</p></div>
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        <CmmCard tone="family" as="article" className="space-y-3">
+          <PlanetaryRadarChart boundaries={PLANETARY_BOUNDARIES} selectedId={selected.id} onSelect={setSelectedId} locale={locale} />
+          <p className="cmm-text-small text-center">{fr ? "Secteurs de même taille : couleur = statut, pas distance au seuil." : "Equal sectors: colour shows status, not distance to threshold."}</p>
+          <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label={fr ? "Sélectionner une limite" : "Select a boundary"}>
+            {PLANETARY_BOUNDARIES.map((boundary) => <button key={boundary.id} type="button" aria-pressed={selected.id === boundary.id} onClick={() => setSelectedId(boundary.id)} className={`flex min-h-12 items-center gap-2 rounded-lg border p-2.5 text-left text-sm font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-white ${selected.id === boundary.id ? "border-amber-600 bg-amber-100 dark:bg-amber-950" : "border-amber-100 bg-white dark:bg-slate-900"}`}><span className={`h-3 w-3 shrink-0 rounded-full ${boundary.status === "transgressed" ? "bg-rose-700" : "bg-emerald-700"}`} aria-hidden="true" /><span>{fr ? boundary.name : boundary.nameEn}<span className="block text-xs font-normal">{statusLabel(boundary.status)}</span></span></button>)}
           </div>
-        </div>
-
-        {/* Panneau de détails dynamique (Style Neumorphic/Glass) */}
-        <div className="relative min-h-[550px] order-1 xl:order-2">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedBoundary.id}
-              initial={{ opacity: 1, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="bg-white dark:bg-slate-900/50 p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 backdrop-blur-xl relative overflow-hidden"
-            >
-              {/* Filigrane d'icône en arrière-plan */}
-              <div className="absolute -top-10 -right-10 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
-                <selectedBoundary.icon size={280} />
-              </div>
-
-              <div className="relative z-10 space-y-8">
-                <div className="flex items-center gap-6">
-                  <motion.div 
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    className="w-20 h-20 rounded-3xl flex items-center justify-center text-white shadow-lg relative"
-                    style={{ backgroundColor: getStatusColor(selectedBoundary.status) }}
-                  >
-                    <div className="absolute inset-0 bg-white/20 rounded-3xl animate-pulse" />
-                    <selectedBoundary.icon size={40} className="relative z-10" />
-                  </motion.div>
-                  <div>
-                    <h3 className="text-3xl font-black cmm-text-primary tracking-tight mb-2">{selectedBoundary.name}</h3>
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow-sm",
-                        selectedBoundary.status === 'safe' ? 'bg-emerald-500' : 
-                        selectedBoundary.status === 'increasing-risk' ? 'bg-amber-500' :
-                        selectedBoundary.status === 'high-risk' ? 'bg-orange-500' : 'bg-red-500'
-                      )}>
-                        {selectedBoundary.status === 'safe' ? 'SÉCURISÉ' : 
-                         selectedBoundary.status === 'increasing-risk' ? 'RISQUE CROISSANT' :
-                         selectedBoundary.status === 'high-risk' ? 'RISQUE ÉLEVÉ' : 'DÉPASSÉ'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-xl cmm-text-secondary leading-relaxed font-medium">
-                  {selectedBoundary.description}
-                </p>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-slate-50 dark:bg-slate-900/80 p-6 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-inner">
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] cmm-text-muted mb-2 block">Mesure Actuelle</span>
-                    <div className="text-2xl font-black cmm-text-primary">{selectedBoundary.currentValue}</div>
-                  </div>
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 p-6 rounded-[1.5rem] border border-emerald-100 dark:border-emerald-800/50 shadow-inner">
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-emerald-600 dark:text-emerald-400 mb-2 block">Limite Sûre</span>
-                    <div className="text-2xl font-black text-emerald-700 dark:text-emerald-300">{selectedBoundary.safeLimit}</div>
-                  </div>
-                </div>
-
-                <div className="space-y-6 pt-4">
-                  <div>
-                    <h4 className="flex items-center gap-2 text-xs font-black cmm-text-primary uppercase tracking-[0.2em] mb-4">
-                      <AlertTriangle size={16} className="text-orange-500" />
-                      Impacts Majeurs
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {selectedBoundary.impacts.map((impact, idx) => (
-                        <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm group/item hover:border-orange-200 transition-colors">
-                          <div className="w-1.5 h-1.5 rounded-full bg-orange-400 group-hover/item:scale-125 transition-transform" />
-                          <span className="text-sm font-bold cmm-text-secondary">{impact}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="flex items-center gap-2 text-xs font-black cmm-text-primary uppercase tracking-[0.2em] mb-4">
-                      <Info size={16} className="text-emerald-500" />
-                      Leviers d&apos;Action
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {selectedBoundary.solutions.map((solution, idx) => (
-                        <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/50 group/sol hover:border-emerald-300 transition-colors">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-sol/item:scale-125 transition-transform" />
-                          <span className="text-sm font-bold text-emerald-900 dark:text-emerald-200">{solution}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+        </CmmCard>
+        <CmmCard as="article" className="space-y-4">
+          <div className="flex items-center gap-3"><span className={`grid h-14 w-14 shrink-0 place-items-center rounded-xl text-white ${selected.status === "transgressed" ? "bg-rose-700" : "bg-emerald-700"}`}><selected.icon size={28} aria-hidden="true" /></span><div><h3 className="text-xl font-bold cmm-text-primary">{fr ? selected.name : selected.nameEn}</h3><p className="cmm-text-body font-semibold">{statusLabel(selected.status)}</p></div></div>
+          <p className="cmm-text-body">{selected.description[locale]}</p>
+          <div className="rounded-xl bg-amber-50 p-4 text-slate-900 dark:bg-amber-950 dark:text-white"><h4 className="font-bold">{fr ? "Variable(s) de contrôle" : "Control variable(s)"}</h4><p className="mt-1 text-sm">{selected.controlVariable[locale]}</p></div>
+          <div><h4 className="font-bold cmm-text-primary">{fr ? "Pressions et risques" : "Pressures and risks"}</h4><ul className="mt-1 list-disc space-y-1 pl-5 cmm-text-body">{selected.impacts.map((item) => <li key={item.fr}>{item[locale]}</li>)}</ul></div>
+          <div><h4 className="font-bold cmm-text-primary">{fr ? "Leviers possibles" : "Possible responses"}</h4><ul className="mt-1 list-disc space-y-1 pl-5 cmm-text-body">{selected.solutions.map((item) => <li key={item.fr}>{item[locale]}</li>)}</ul></div>
+          <div className="space-y-2 border-t border-slate-200 pt-3"><a href={PLANETARY_BOUNDARIES_REFERENCE.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 font-semibold text-amber-900 underline dark:text-amber-200">{PLANETARY_BOUNDARIES_REFERENCE.label}<ExternalLink className="h-4 w-4" aria-hidden="true" /></a><p className="cmm-text-small">{fr ? "Source vérifiée le" : "Source checked on"} {PLANETARY_BOUNDARIES_REFERENCE.checkedAt}. {fr ? "Pour les valeurs et seuils chiffrés, consulter l'évaluation scientifique." : "For numeric measurements and thresholds, consult the scientific assessment."}</p><a href={PLANETARY_BOUNDARIES_REFERENCE.frameworkUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold underline text-amber-900 dark:text-amber-200">{fr ? "Méthode et variables par limite" : "Framework and variables by boundary"}</a></div>
+        </CmmCard>
       </div>
-    </div>
+    </section>
   );
-}
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter((value): value is string => Boolean(value)).join(" ");
 }

@@ -38,7 +38,7 @@ l'utilisateur. Voir [SURFACES_CARDS.md](./SURFACES_CARDS.md).
 | Cartographie | #075985 | #1E3A8A | #F0F9FF | #DBEAFE | #0E7490 | #142843 |
 | Impact & Rapports | #9F1239 | #701A75 | #FFF1F2 | #FFE4E6 | #B45309 | #371D2D |
 | Réseau & Discussions | #9D174D | #581C87 | #FCE7F3 | #F9D5E9 | #B88628 | #321B31 |
-| Apprendre | #92400E | #713F12 | #FFFBEB | #FEF3C7 | #0F766E | #35291C |
+| Apprendre | #A64B08 | #92400E | #FFF9D6 | #FFE5B6 | #9A3412 | #3D2A16 |
 | Auth & Onboarding | #4338CA | #312E81 | #EEF2FF | #E0E7FF | #B88628 | #222342 |
 | Institutionnel & Légal | #334155 | #1E293B | #F8FAFC | #E2E8F0 | #475569 | #1E293B |
 | Système & Utilitaires | #155E75 | #334155 | #F0F9FF | #E0F2FE | #0369A1 | #1E293B |

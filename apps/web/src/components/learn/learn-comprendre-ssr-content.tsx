@@ -1,165 +1,54 @@
+import { BookOpen, Droplets, Globe, Target } from "lucide-react";
+import { CmmCard } from "@/components/ui/cmm-card";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
 import { GIEC_REPORTS } from "@/data/content/giec-reports";
 import { SUSTAINABLE_GOALS } from "@/data/content/sustainable-goals";
-import { PLANETARY_BOUNDARIES } from "./planetary-boundaries-data";
-import {
-  buildImpactMagnitudeSnapshot,
-  type ImpactMagnitudeInputs,
-} from "@/lib/learning/impact-magnitude";
+import { PLANETARY_BOUNDARIES, PLANETARY_BOUNDARIES_REFERENCE } from "./planetary-boundaries-data";
+import { buildImpactMagnitudeSnapshot, type ImpactMagnitudeInputs } from "@/lib/learning/impact-magnitude";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import { formatLearnNumber } from "@/lib/learning/format-learn-number";
 
-const COMPARATOR_INPUTS: ImpactMagnitudeInputs = {
-  cigaretteButts: 10,
-  wasteKg: 20,
-  volunteerMinutes: 30,
-};
-
-function getBoundaryStatusLabel(
-  locale: LearnLocale,
-  status: (typeof PLANETARY_BOUNDARIES)[number]["status"],
-): string {
-  if (locale === "en") {
-    return {
-      safe: "safe",
-      "increasing-risk": "increasing risk",
-      "high-risk": "high risk",
-      transgressed: "transgressed",
-    }[status];
-  }
-  return {
-    safe: "sûre",
-    "increasing-risk": "risque croissant",
-    "high-risk": "risque élevé",
-    transgressed: "dépassée",
-  }[status];
-}
+const COMPARATOR_INPUTS: ImpactMagnitudeInputs = { cigaretteButts: 10, wasteKg: 20, volunteerMinutes: 30 };
 
 export function LearnComprendreSsrContent({ locale }: { locale: LearnLocale }) {
   const fr = locale === "fr";
-  const comparator = buildImpactMagnitudeSnapshot(
-    COMPARATOR_INPUTS,
-    IMPACT_PROXY_CONFIG.factors,
-  );
-  const highlightedReports = GIEC_REPORTS.slice(0, 3);
-  const highlightedBoundaries = PLANETARY_BOUNDARIES.slice(0, 3);
-  const highlightedGoals = SUSTAINABLE_GOALS.filter((goal) =>
-    [6, 12, 14].includes(goal.id),
-  );
-
+  const comparator = buildImpactMagnitudeSnapshot(COMPARATOR_INPUTS, IMPACT_PROXY_CONFIG.factors);
+  const crossed = PLANETARY_BOUNDARIES.filter((boundary) => boundary.status === "transgressed").length;
   return (
-    <section
-      aria-labelledby="learn-comprendre-ssr-title"
-      className="space-y-6 rounded-[2rem] border border-amber-200/80 bg-white p-5 shadow-sm md:p-6"
-    >
-      <div className="max-w-3xl space-y-2">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">
-          {fr ? "Réponse courte" : "Short answer"}
-        </p>
-        <h2 id="learn-comprendre-ssr-title" className="text-2xl font-black tracking-tight text-slate-900">
-          {fr
-            ? "Les repères essentiels avant les graphiques"
-            : "The essential cues before the charts"}
-        </h2>
-        <p className="cmm-text-body">
-          {fr
-            ? "Cette synthèse reste lisible sans attendre le chargement des interactions. Les graphiques, filtres et calculateurs ci-dessous approfondissent ces mêmes données éditoriales."
-            : "This summary stays readable before the interactive layer loads. The charts, filters and calculators below expand on the same editorial data."}
-        </p>
+    <section aria-labelledby="learn-comprendre-ssr-title" className="space-y-4">
+      <h2 id="learn-comprendre-ssr-title" className="text-xl font-bold cmm-text-primary">{fr ? "Les repères essentiels avant les graphiques" : "Essential cues before the charts"}</h2>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <CmmCard as="article" tone="family" className="space-y-3">
+          <BookOpen className="h-6 w-6 text-amber-800 dark:text-amber-300" aria-hidden="true" />
+          <h3 className="font-bold cmm-text-primary">{fr ? "GIEC" : "IPCC"}</h3>
+          <p className="text-3xl font-bold tabular-nums cmm-text-primary">{GIEC_REPORTS.length}</p>
+          <p className="cmm-text-body">{fr ? "Contributions et synthèse du sixième cycle, 2021–2023." : "Contributions and synthesis of the sixth cycle, 2021–2023."}</p>
+          <a className="text-sm font-semibold underline text-amber-900 dark:text-amber-200" href={GIEC_REPORTS[GIEC_REPORTS.length - 1]?.sourceUrl} target="_blank" rel="noreferrer">{fr ? "Source : GIEC" : "Source: IPCC"}</a>
+        </CmmCard>
+        <CmmCard as="article" tone="family" className="space-y-3">
+          <Globe className="h-6 w-6 text-amber-800 dark:text-amber-300" aria-hidden="true" />
+          <h3 className="font-bold cmm-text-primary">{fr ? "Limites planétaires" : "Planetary boundaries"}</h3>
+          <p className="text-3xl font-bold tabular-nums cmm-text-primary">{crossed}/{PLANETARY_BOUNDARIES.length}</p>
+          <div className="grid grid-cols-9 gap-1" aria-hidden="true">{PLANETARY_BOUNDARIES.map((boundary) => <span key={boundary.id} className={`h-3 rounded ${boundary.status === "transgressed" ? "bg-rose-600" : "bg-emerald-600"}`} />)}</div>
+          <p className="cmm-text-body">{fr ? "Limites franchies, évaluation 2026. Les processus ne sont pas commensurables." : "Boundaries transgressed in the 2026 assessment. Processes are not commensurable."}</p>
+          <a className="text-sm font-semibold underline text-amber-900 dark:text-amber-200" href={PLANETARY_BOUNDARIES_REFERENCE.url} target="_blank" rel="noreferrer">{PLANETARY_BOUNDARIES_REFERENCE.label}</a>
+        </CmmCard>
+        <CmmCard as="article" tone="family" className="space-y-3">
+          <Target className="h-6 w-6 text-amber-800 dark:text-amber-300" aria-hidden="true" />
+          <h3 className="font-bold cmm-text-primary">{fr ? "Objectifs de développement durable" : "Sustainable Development Goals"}</h3>
+          <p className="text-3xl font-bold tabular-nums cmm-text-primary">{SUSTAINABLE_GOALS.length}</p>
+          <p className="cmm-text-body">{fr ? "Objectifs de l'ONU adoptés en 2015, horizon 2030." : "UN goals adopted in 2015 for 2030."}</p>
+          <a className="text-sm font-semibold underline text-amber-900 dark:text-amber-200" href={fr ? "https://sdgs.un.org/fr/goals" : "https://sdgs.un.org/goals"} target="_blank" rel="noreferrer">{fr ? "Source : ONU" : "Source: UN"}</a>
+        </CmmCard>
+        <CmmCard as="article" tone="family" className="space-y-3">
+          <Droplets className="h-6 w-6 text-sky-700 dark:text-sky-300" aria-hidden="true" />
+          <h3 className="font-bold cmm-text-primary">{fr ? "Ordre de grandeur" : "Order of magnitude"}</h3>
+          <p className="text-3xl font-bold tabular-nums cmm-text-primary">{formatLearnNumber(locale, comparator.waterLiters)} L</p>
+          <p className="cmm-text-body">{fr ? "Volume potentiellement exposé à la pollution de 10 mégots, selon le proxy CleanMyMap. Ni eau économisée ni eau mesurée." : "Volume potentially exposed to pollution from 10 cigarette butts under the CleanMyMap proxy. Neither water saved nor measured."}</p>
+          <a className="text-sm font-semibold underline text-amber-900 dark:text-amber-200" href="/methodologie">{IMPACT_PROXY_CONFIG.version}</a>
+        </CmmCard>
       </div>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        <article className="rounded-[1.5rem] border border-blue-200 bg-blue-50/60 p-5">
-          <h3 className="text-xl font-black tracking-tight text-slate-900">
-            {fr ? "GIEC" : "IPCC"}
-          </h3>
-          <p className="cmm-text-body mt-2">
-            {fr
-              ? "Les rapports du GIEC synthétisent l’état des connaissances sur le changement climatique, ses risques et les leviers d’action."
-              : "IPCC reports synthesize knowledge about climate change, its risks and response options."}
-          </p>
-          <ul className="mt-4 space-y-3 text-sm text-slate-700">
-            {highlightedReports.map((report) => (
-              <li key={report.id}>
-                <strong>{report.title}</strong> ({report.year}) : {report.focus} {report.keyFindings[0]?.description}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 border-t border-blue-200 pt-3 text-xs text-slate-600">
-            {fr
-              ? "Source visible : GIEC, années des rapports enregistrées dans la fiche. Limite : résumé de vulgarisation, pas le rapport complet."
-              : "Visible source: IPCC, report years recorded in the content. Limit: an educational summary, not the full report."}
-          </p>
-        </article>
-
-        <article className="rounded-[1.5rem] border border-violet-200 bg-violet-50/60 p-5">
-          <h3 className="text-xl font-black tracking-tight text-slate-900">
-            {fr ? "Limites planétaires" : "Planetary boundaries"}
-          </h3>
-          <p className="cmm-text-body mt-2">
-            {fr
-              ? "Le cadre décrit neuf limites et distingue une valeur présentée, une limite sûre et un niveau de risque."
-              : "The framework describes nine boundaries and distinguishes a displayed value, a safe limit and a risk level."}
-          </p>
-          <ul className="mt-4 space-y-3 text-sm text-slate-700">
-            {highlightedBoundaries.map((boundary) => (
-              <li key={boundary.id}>
-                <strong>{boundary.name}</strong> — {boundary.currentValue} ; {fr ? "limite" : "limit"} {boundary.safeLimit} ; {getBoundaryStatusLabel(locale, boundary.status)}.
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 border-t border-violet-200 pt-3 text-xs text-slate-600">
-            {fr
-              ? "Limite de la fiche actuelle : aucune URL ni date de référence n’est renseignée dans le contrat éditorial de ces valeurs ; l’interactif ne remplace donc pas une vérification primaire."
-              : "Current content limit: the editorial contract records no reference URL or date for these values; the interactive view is not a substitute for primary verification."}
-          </p>
-        </article>
-
-        <article className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/60 p-5">
-          <h3 className="text-xl font-black tracking-tight text-slate-900">
-            {fr ? "Objectifs de développement durable" : "Sustainable Development Goals"}
-          </h3>
-          <p className="cmm-text-body mt-2">
-            {fr
-              ? "Les ODD sont les 17 objectifs adoptés par l’ONU en 2015, avec un horizon 2030. Ils forment un cadre de lecture, pas une mesure automatique de l’impact d’une action."
-              : "The SDGs are the 17 goals adopted by the UN in 2015, with a 2030 horizon. They are a framing system, not an automatic measure of an action’s impact."}
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-slate-700">
-            {highlightedGoals.map((goal) => (
-              <li key={goal.id}>
-                <strong>ODD {goal.number} — {goal.title}</strong> : {goal.description}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 border-t border-emerald-200 pt-3 text-xs text-slate-600">
-            {fr
-              ? "Source visible : ONU, adoption 2015, telle qu’indiquée par le module. Limite : les liens entre une action locale et un ODD restent une mise en contexte, pas une attribution causale."
-              : "Visible source: UN, adopted in 2015, as stated by the module. Limit: links between a local action and an SDG are context, not causal attribution."}
-          </p>
-        </article>
-
-        <article className="rounded-[1.5rem] border border-amber-200 bg-amber-50/60 p-5">
-          <h3 className="text-xl font-black tracking-tight text-slate-900">
-            {fr ? "Ordre de grandeur" : "Order of magnitude"}
-          </h3>
-          <p className="cmm-text-body mt-2">
-            {fr
-              ? "Pour un exemple de 10 mégots, 20 kg de déchets et 30 minutes de bénévolat, le modèle traduit les entrées en repères d’eau, de CO₂, de surface et de valorisation."
-              : "For an example of 10 cigarette butts, 20 kg of waste and 30 minutes of volunteering, the model translates inputs into water, CO₂, area and value cues."}
-          </p>
-          <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl bg-white/80 p-3"><dt>Eau</dt><dd className="font-black">{formatLearnNumber(locale, comparator.waterLiters)} L</dd></div>
-            <div className="rounded-xl bg-white/80 p-3"><dt>CO₂eq</dt><dd className="font-black">{formatLearnNumber(locale, comparator.co2Kg)} kg</dd></div>
-            <div className="rounded-xl bg-white/80 p-3"><dt>{fr ? "Surface" : "Area"}</dt><dd className="font-black">{formatLearnNumber(locale, comparator.surfaceM2FromWaste)} m²</dd></div>
-            <div className="rounded-xl bg-white/80 p-3"><dt>{fr ? "Valorisation" : "Value"}</dt><dd className="font-black">{formatLearnNumber(locale, comparator.streetCleaningSavings.lowerBoundEuros)}–{formatLearnNumber(locale, comparator.streetCleaningSavings.upperBoundEuros)} €</dd></div>
-          </dl>
-          <p className="mt-4 border-t border-amber-200 pt-3 text-xs text-slate-600">
-            {fr
-              ? `Version ${IMPACT_PROXY_CONFIG.version}. Sources des facteurs : ${IMPACT_PROXY_CONFIG.sources.water} ; ${IMPACT_PROXY_CONFIG.sources.co2}. Limite : ce sont des proxies de pilotage, pas des mesures individualisées ni un bilan carbone complet.`
-              : `Version ${IMPACT_PROXY_CONFIG.version}. Factor sources: ${IMPACT_PROXY_CONFIG.sources.water}; ${IMPACT_PROXY_CONFIG.sources.co2}. Limit: these are steering proxies, not individualized measurements or a full carbon footprint.`}
-          </p>
-        </article>
-      </div>
+      <p className="cmm-text-small">{fr ? "Ces résumés orientent la lecture. Les onglets donnent accès aux sources, hypothèses et outils correspondants." : "These summaries guide reading. The tabs open the corresponding sources, assumptions and tools."}</p>
     </section>
   );
 }

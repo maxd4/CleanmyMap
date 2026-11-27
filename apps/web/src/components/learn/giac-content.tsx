@@ -1,222 +1,43 @@
 "use client";
 
-import { useState } from"react";
-import { motion } from"framer-motion";
-import { FileText } from "lucide-react";
-import { GIECReport, GIEC_REPORTS } from "@/data/content/giec-reports";
-import { ModalFrame } from "@/components/ui/modal-frame";
-
-const getImpactColor = (impact: GIECReport['keyFindings'][0]['impact']) => {
- switch (impact) {
- case 'critical': return 'bg-red-500';
- case 'high': return 'bg-orange-500';
- case 'medium': return 'bg-amber-500';
- case 'low': return 'bg-green-500';
- default: return 'bg-slate-500';
- }
-};
-
-const getImpactLabel = (impact: GIECReport['keyFindings'][0]['impact']) => {
- switch (impact) {
- case 'critical': return 'Critique';
- case 'high': return 'Élevé';
- case 'medium': return 'Moyen';
- case 'low': return 'Faible';
- default: return 'Inconnu';
- }
-};
+import { ChevronDown, ExternalLink, FileText } from "lucide-react";
+import { GIEC_REPORTS } from "@/data/content/giec-reports";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 export function GIECContent() {
- const [selectedReport, setSelectedReport] = useState<GIECReport | null>(null);
-
- return (
- <div className="space-y-8">
- {/* Header */}
- <div className="text-center space-y-4">
- <div className="flex items-center justify-center gap-3">
- <FileText className="text-blue-600" size={32} />
- <h2 className="text-3xl font-bold cmm-text-primary">Rapports du GIEC</h2>
- </div>
- <p className="text-lg cmm-text-secondary max-w-3xl mx-auto">
- Le Groupe d&apos;experts intergouvernemental sur l&apos;évolution du climat (GIEC) produit des rapports
- scientifiques qui font référence sur le changement climatique. Voici les conclusions clés
- vulgarisées pour une meilleure compréhension.
- </p>
- </div>
-
- {/* Reports Grid */}
- <div className="grid md:grid-cols-2 gap-6">
- {GIEC_REPORTS.map((report, index) => (
- <motion.button
- key={report.id}
- initial={{ opacity: 1, y: 20 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ delay: index * 0.1 }}
- onClick={() => setSelectedReport(report)}
- className={`
- p-6 rounded-3xl backdrop-blur-sm border transition-all duration-300 text-left
- ${selectedReport?.id === report.id
- ? 'bg-white/90 border-blue-300 shadow-xl scale-105'
- : 'bg-white/60 border-slate-200 hover:bg-white/80 hover:border-slate-300 hover:shadow-lg'
- }
- `}
- >
- {/* Header */}
- <div className="flex items-start justify-between mb-4">
- <div className="flex-1">
- <div className="cmm-text-small font-bold text-blue-600 uppercase tracking-wider mb-1">
- GIEC {report.year}
- </div>
- <h3 className="text-lg font-bold cmm-text-primary leading-tight">
- {report.title}
- </h3>
- </div>
- <div className="text-2xl font-bold text-slate-300 ml-4">
- {report.year}
- </div>
- </div>
-
- {/* Focus */}
- <p className="cmm-text-secondary cmm-text-small mb-4 leading-relaxed">
- {report.focus}
- </p>
-
- {/* Key Findings Preview */}
- <div className="space-y-2">
- <p className="cmm-text-caption font-bold cmm-text-muted uppercase tracking-wider">
- Points clés ({report.keyFindings.length})
- </p>
- <div className="flex flex-wrap gap-2">
- {report.keyFindings.slice(0, 2).map((finding, idx) => (
- <div key={idx} className="flex items-center gap-1">
- <div className={`w-2 h-2 rounded-full ${getImpactColor(finding.impact)}`} />
- <span className="cmm-text-caption cmm-text-secondary">{getImpactLabel(finding.impact)}</span>
- </div>
- ))}
- {report.keyFindings.length > 2 && (
- <span className="cmm-text-caption cmm-text-muted">+{report.keyFindings.length - 2} autres</span>
- )}
- </div>
- </div>
- </motion.button>
- ))}
- </div>
-
- {/* Detail Modal */}
- <ModalFrame
- isOpen={Boolean(selectedReport)}
- onClose={() => setSelectedReport(null)}
- overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
- panelClassName="pointer-events-auto bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto"
- panelInitial={{ scale: 0.9, opacity: 1 }}
- panelAnimate={{ scale: 1, opacity: 1 }}
- panelExit={{ scale: 0.9, opacity: 0 }}
- >
- {selectedReport && (
- <div className="p-8 space-y-8">
- {/* Header */}
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-4">
- <div className="p-3 rounded-xl bg-blue-100">
- <FileText size={32} className="text-blue-600" />
- </div>
- <div>
- <div className="cmm-text-small font-bold text-blue-600 uppercase tracking-wider mb-1">
- Rapport GIEC {selectedReport.year}
- </div>
- <h3 className="text-2xl font-bold cmm-text-primary">
- {selectedReport.title}
- </h3>
- </div>
- </div>
- <button
- onClick={() => setSelectedReport(null)}
- className="p-2 rounded-xl hover:bg-slate-100 transition-colors"
- >
- ✕
- </button>
- </div>
-
- {/* Focus */}
- <div className="p-6 bg-blue-50 rounded-2xl">
- <h4 className="text-lg font-bold text-blue-900 mb-2">Focus du rapport</h4>
- <p className="text-blue-800">{selectedReport.focus}</p>
- </div>
-
- {/* Key Findings */}
- <div>
- <h4 className="text-xl font-bold cmm-text-primary mb-6">Conclusions principales</h4>
- <div className="grid gap-4">
- {selectedReport.keyFindings.map((finding, index) => {
- const Icon = finding.icon;
- return (
- <motion.div
- key={index}
- initial={{ opacity: 1, x: -20 }}
- animate={{ opacity: 1, x: 0 }}
- transition={{ delay: index * 0.1 }}
- className="p-6 rounded-2xl bg-slate-50 border border-slate-200"
- >
- <div className="flex items-start gap-4">
- <div className={`p-3 rounded-xl ${getImpactColor(finding.impact)}`}>
- <Icon size={24} className="text-white" />
- </div>
- <div className="flex-1">
- <div className="flex items-center gap-2 mb-2">
- <h5 className="font-bold cmm-text-primary">{finding.title}</h5>
- <span className={`px-2 py-1 rounded-full cmm-text-caption font-bold text-white ${getImpactColor(finding.impact)}`}>
- {getImpactLabel(finding.impact)}
- </span>
- </div>
- <p className="cmm-text-secondary leading-relaxed">{finding.description}</p>
- </div>
- </div>
- </motion.div>
- );
- })}
- </div>
- </div>
-
- {/* Implications */}
- <div>
- <h4 className="text-xl font-bold text-red-900 mb-4">Implications pour l&apos;humanité</h4>
- <div className="grid gap-3">
- {selectedReport.implications.map((implication, index) => (
- <div key={index} className="flex items-start gap-3 p-3 bg-red-50 rounded-xl">
- <div className="w-2 h-2 rounded-full bg-red-500 mt-2 flex-shrink-0" />
- <span className="text-red-800">{implication}</span>
- </div>
- ))}
- </div>
- </div>
-
- {/* Solutions */}
- <div>
- <h4 className="text-xl font-bold text-emerald-900 mb-4">Solutions et actions possibles</h4>
- <div className="grid gap-3">
- {selectedReport.solutions.map((solution, index) => (
- <div key={index} className="flex items-start gap-3 p-3 bg-emerald-50 rounded-xl">
- <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0" />
- <span className="text-emerald-800">{solution}</span>
- </div>
- ))}
- </div>
- </div>
-
- {/* Call to Action */}
- <div className="p-6 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl text-white text-center">
- <h4 className="text-xl font-bold mb-2">Chaque action compte</h4>
- <p className="text-blue-100 mb-4">
- CleanMyMap vous aide à contribuer concrètement à la lutte contre le changement climatique
- en cartographiant et réduisant la pollution plastique.
- </p>
- <button className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-colors">
- Commencer à agir
- </button>
- </div>
- </div>
- )}
- </ModalFrame>
- </div>
- );
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
+  return (
+    <section aria-labelledby="giec-reports-title" className="space-y-4">
+      <div className="flex items-center gap-3">
+        <FileText className="h-7 w-7 text-amber-800 dark:text-amber-300" aria-hidden="true" />
+        <div><h2 id="giec-reports-title" className="text-2xl font-bold cmm-text-primary">{fr ? "Rapports du GIEC" : "IPCC reports"}</h2><p className="cmm-text-body">{fr ? "Sixième cycle, synthèses datées de 2021 à 2023. Ouvrez une fiche pour lire les résultats et leur source." : "Sixth assessment cycle, 2021 to 2023. Open a card for the findings (French) and the original English source."}</p></div>
+      </div>
+      <div className="grid items-start gap-3 lg:grid-cols-2">
+        {GIEC_REPORTS.map((report) => (
+          <CmmCard key={report.id} tone="family" as="article" className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div><p className="cmm-text-caption font-bold text-amber-800 dark:text-amber-300">AR6 · {report.year}</p><h3 className="mt-1 text-xl font-bold cmm-text-primary" lang="fr">{report.title}</h3></div>
+              <span className="text-2xl font-bold tabular-nums text-amber-800 dark:text-amber-300">{report.year}</span>
+            </div>
+            <p className="cmm-text-body" lang="fr">{report.focus}</p>
+            <ul className="grid gap-2 sm:grid-cols-3" lang="fr">
+              {report.keyFindings.map((finding) => <li key={finding.title} className="flex min-w-0 flex-col gap-2 rounded-xl bg-white p-3 text-slate-900 dark:bg-slate-900 dark:text-white"><finding.icon size={22} className="text-amber-800 dark:text-amber-300" /><span className="text-sm font-semibold">{finding.title}</span></li>)}
+            </ul>
+            <details className="group rounded-xl border border-amber-200 bg-white p-3 dark:bg-slate-900">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 font-bold cmm-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">{fr ? "Résultats, limites et leviers" : "Findings, limitations and options (FR)"}<ChevronDown className="h-5 w-5 shrink-0 group-open:rotate-180" aria-hidden="true" /></summary>
+              <div className="space-y-4 border-t border-amber-100 pt-3" lang="fr">
+                <dl className="space-y-3">{report.keyFindings.map((finding) => <div key={finding.title}><dt className="font-bold cmm-text-primary">{finding.title}</dt><dd className="cmm-text-body mt-1">{finding.description}</dd></div>)}</dl>
+                <div><h4 className="font-bold cmm-text-primary">Interprétation</h4><ul className="mt-1 list-disc space-y-1 pl-5 cmm-text-body">{report.implications.map((item) => <li key={item}>{item}</li>)}</ul></div>
+                <div><h4 className="font-bold cmm-text-primary">Leviers étudiés</h4><ul className="mt-1 list-disc space-y-1 pl-5 cmm-text-body">{report.solutions.map((item) => <li key={item}>{item}</li>)}</ul></div>
+              </div>
+            </details>
+            <a href={report.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 font-semibold text-amber-900 underline underline-offset-4 dark:text-amber-200">{fr ? "Résumé officiel pour les décideurs" : "Official summary for policymakers"}<ExternalLink className="h-4 w-4" aria-hidden="true" /></a>
+          </CmmCard>
+        ))}
+      </div>
+      <p className="cmm-text-small">{fr ? "Les chiffres sont des résultats des rapports cités, pas des valeurs actualisées en temps réel. Les fiches ne constituent pas le rapport intégral." : "Figures are from the cited assessments, not live measurements. These cards are not the full reports."}</p>
+    </section>
+  );
 }

@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ArrowRight, Compass, Layers3, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
-import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { CmmButton, CmmButtonGroup, type ButtonTone } from "@/components/ui/cmm-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -19,6 +19,7 @@ type LearnRubricShellProps = {
   cta?: {
     href: string;
     label: { fr: string; en: string };
+    tone?: ButtonTone;
   };
   showVisualPanel?: boolean;
   children: ReactNode;
@@ -100,7 +101,7 @@ export function LearnRubricShell({
       <section
         className={
         isLightOrange
-            ? "rounded-[2rem] border border-amber-200/70 bg-[linear-gradient(180deg,rgba(255,249,217,0.98),rgba(255,255,250,0.98))] p-6 text-slate-900 shadow-[0_24px_56px_-32px_rgba(249,115,22,0.16)] md:p-8"
+            ? "rounded-[2rem] border border-amber-200/70 bg-[linear-gradient(135deg,var(--cmm-family-card-flat,var(--cmm-family-soft)),var(--cmm-family-card-end,var(--cmm-family-tint)))] p-6 cmm-text-primary shadow-[0_24px_56px_-32px_rgba(249,115,22,0.16)] md:p-8"
             : `rounded-[2rem] bg-gradient-to-br ${ACCENT_CLASSES[accent]} p-6 text-white md:p-8`
         }
       >
@@ -124,7 +125,7 @@ export function LearnRubricShell({
                 {cta ? (
                   <CmmButton
                     href={cta.href}
-                    tone="critical"
+                    tone={cta.tone ?? "critical"}
                     size="sm"
                     variant="pill"
                     className="shrink-0"

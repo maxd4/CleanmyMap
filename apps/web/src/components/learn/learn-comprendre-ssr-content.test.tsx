@@ -4,25 +4,11 @@ import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy
 import { LearnComprendreSsrContent } from "./learn-comprendre-ssr-content";
 
 describe("learn comprendre SSR content", () => {
-  it("renders the essential reference answers before deferred interactions", () => {
+  it("renders actual reference summaries and distinguishes proxy from saved water", () => {
     const markup = renderToStaticMarkup(<LearnComprendreSsrContent locale="fr" />);
-
-    expect(markup).toContain("Les repères essentiels avant les graphiques");
-    expect(markup).toContain("GIEC");
-    expect(markup).toContain("Limites planétaires");
-    expect(markup).toContain("Objectifs de développement durable");
-    expect(markup).toContain("Ordre de grandeur");
-    expect(markup).toContain("Source visible");
-    expect(markup).toContain(IMPACT_PROXY_CONFIG.version);
+    for (const text of ["GIEC", "Limites planétaires", "Objectifs de développement durable", "Ordre de grandeur", "Ni eau économisée ni eau mesurée", IMPACT_PROXY_CONFIG.version, "7/9"]) expect(markup).toContain(text);
+    expect(markup).toContain("https://www.ipcc.ch/");
+    expect(markup).toContain("https://sdgs.un.org/fr/goals");
     expect(markup).not.toContain("Chargement de l'approfondissement");
-  });
-
-  it("states the boundaries of the source and the proxy model instead of overstating certainty", () => {
-    const markup = renderToStaticMarkup(<LearnComprendreSsrContent locale="fr" />);
-
-    expect(markup).toContain("aucune URL ni date de référence");
-    expect(markup).toContain("proxies de pilotage");
-    expect(markup).toContain("pas des mesures individualisées");
-    expect(markup).toContain("pas le rapport complet");
   });
 });

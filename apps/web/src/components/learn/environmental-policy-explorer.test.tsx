@@ -23,14 +23,14 @@ const reviewed = (record: (typeof ENVIRONMENTAL_POLICY_REGISTRY)[number]) => ({
 });
 
 describe("EnvironmentalPolicyExplorer", () => {
-  it("renders the priority world view, filters and the honest empty state", () => {
+  it("renders the priority world view and honest empty state without unusable filters", () => {
     const markup = renderToStaticMarkup(<EnvironmentalPolicyExplorer publishedPolicies={[]} presidentialArchive={presidentialArchive} />);
 
     expect(markup).toContain("Politiques environnementales");
     expect(markup).toContain("Monde");
     expect(markup).toContain("France");
-    expect(markup).toContain("Rechercher");
-    expect(markup).toContain("État juridique");
+    expect(markup).not.toContain("Rechercher dans les fiches");
+    expect(markup).not.toContain("Filtrer par état juridique");
     expect(markup).toContain("couverture est initiale et non exhaustive");
     expect(markup).toContain("Sources consultées le 13 novembre 2026");
     expect(markup).toContain("Aucune fiche publiée pour le moment.");
@@ -43,6 +43,7 @@ describe("EnvironmentalPolicyExplorer", () => {
     const markup = renderToStaticMarkup(<EnvironmentalPolicyExplorer publishedPolicies={publishedPolicies} presidentialArchive={presidentialArchive} />);
 
     expect(markup).toContain(record.title.fr);
+    expect(markup).toContain("Rechercher dans les fiches");
     expect(markup).toContain(record.measure.fr);
     expect(markup).not.toContain("Aucune fiche publiée pour le moment.");
   });
