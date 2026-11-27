@@ -113,6 +113,16 @@ export const adminCommunityAuthorizationContract = {
       evidence: ["requireAdminAccess", "listAdminOperationAuditPage"],
     },
   },
+  "admin/organizations/bootstrap": {
+    POST: {
+      expected: "Admin verifies an accepted organization mandate and exact organizer identity before creating the private organization; the submitting account receives the initial owner membership",
+      dimensions: ["admin/creator role", "audit"],
+      actual: "requireAdminAccess + authenticated rate limit + accepted partner/source checks + exact organizer resolution + service-only bootstrap_organization RPC",
+      evidence: ["requireAdminAccess", "enforceServerRateLimitForAuthenticatedUser", "bootstrap_organization"],
+      evidenceScope: "method",
+      handlerEvidence: ["requireAdminAccess", "enforceServerRateLimitForAuthenticatedUser", "bootstrap_organization"],
+    },
+  },
   "admin/partners/institutional-relations": {
     GET: {
       expected: "Admin-like role for private institutional relations read",

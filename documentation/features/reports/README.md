@@ -121,3 +121,5 @@ effectivement généré. Pour les fiches de pages et le contexte produit, suivre
 les documents canoniques de `documentation/pages_site/` et `documentation/product/`.
 
 Les informations d'accueil/accessibilité sont présentées comme déclarées, avec leur état de vérification et les limites connues. Une demande individuelle de soutien ou un suivi consenti n'est jamais projeté dans les rapports, exports ou statistiques publiques. Aucun agrégat ne doit permettre d'identifier une personne ou d'être interprété comme certification, résultat de financeur ou partenariat.
+
+Le bilan privé d'organisation est un endpoint d'agrégation distinct du générateur PDF et de son historique : il applique un scope organisation/site/campagne résolu côté serveur, plafonne à 500 actions et propose un CSV minimal. Il ne crée pas de fichier PDF, de snapshot ni d'historique privé. Voir [Organisations entreprise — CURRENT](../enterprise-organizations-CURRENT.md) pour ses limites et preuves.

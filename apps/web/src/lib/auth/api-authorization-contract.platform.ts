@@ -127,6 +127,16 @@ export const platformAuthorizationContract = {
       evidence: ["requireAuthenticatedAccess", "reserveReportExportSlot", "fetchCachedUnifiedActionContracts"],
     },
   },
+  "reports/organization": {
+    POST: {
+      expected: "Authenticated organization member with an active, server-resolved organization/site/campaign scope may receive only a bounded private report projection; no global fallback or individual data",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + authenticated rate limit + strict scope schema + service-only organization_report_action_ids + canonical action projection + private no-store response",
+      evidence: ["requireAuthenticatedAccess", "enforceServerRateLimitForAuthenticatedUser", "loadOrganizationReport"],
+      evidenceScope: "method",
+      handlerEvidence: ["requireAuthenticatedAccess", "enforceServerRateLimitForAuthenticatedUser", "loadOrganizationReport"],
+    },
+  },
   "reports/generations/[id]": {
     GET: {
       expected: "Authenticated user may load an authorized Reports generation snapshot",

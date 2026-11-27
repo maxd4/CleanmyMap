@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, Copy, Link2, RefreshCw, Shield, X } from "lucide-react";
 import type { ActionAccessMode } from "@/lib/actions/types";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { QRCodeDialog } from "@/components/ui/qrcode-dialog";
 import { FieldShell, SectionLabel } from "./ui";
 
 type InviteLinkState = {
@@ -14,7 +15,11 @@ type InviteLinkState = {
   revokedAt?: string | null;
 };
 
-export function PrivateActionAccessSection({
+type AccessProps = { accessMode: ActionAccessMode; actionId?: string | null; onChange: (mode: ActionAccessMode) => void };
+export function PrivateActionAccessSection(props: AccessProps) {
+  return <PrivateActionAccessSectionState key={`${props.actionId ?? ""}:${props.accessMode}`} {...props} />;
+}
+function PrivateActionAccessSectionState({
   accessMode,
   actionId,
   onChange,
@@ -26,6 +31,7 @@ export function PrivateActionAccessSection({
   const [link, setLink] = useState<InviteLinkState | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,6 +47,7 @@ export function PrivateActionAccessSection({
 
   async function generateLink() {
     if (!actionId) return;
+    setQrOpen(false);
     setBusy(true);
     setError(null);
     try {
@@ -60,6 +67,7 @@ export function PrivateActionAccessSection({
 
   async function revokeLink() {
     if (!actionId) return;
+    setQrOpen(false);
     setBusy(true);
     setError(null);
     try {
@@ -96,7 +104,7 @@ export function PrivateActionAccessSection({
         </FieldShell>
         {accessMode === "invite_link" ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-950">
-            <div className="flex items-start gap-2"><Link2 size={17} className="mt-0.5 shrink-0" /><p>Inscription ou demande d’ajout ; présence non confirmée.</p></div>
+            <div className="flex items-start gap-2"><Link2 size={17} className="mt-0.5 shrink-0" /><p>Inscription ou demande d’ajout ; présence non confirmée. Toute personne possédant le lien peut le transmettre. Ce lien ne vérifie pas l’appartenance à une entreprise.</p></div>
             {!actionId ? <p className="mt-3 text-xs text-amber-900/75">Enregistrez pour générer le lien.</p> : (
               <div className="mt-3 space-y-2">
                 <div className="flex flex-wrap gap-2">
@@ -104,8 +112,10 @@ export function PrivateActionAccessSection({
                     {busy ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}{link?.active ? "Renouveler le lien" : "Générer le lien"}
                   </CmmButton>
                   {link?.active && link.url ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ copyLink(); }}><>{copied ? <Check size={14} /> : <Copy size={14} />}{copied ? "Copié" : "Copier"}</></CmmButton> : null}
+                  {link?.active && link.url ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" disabled={busy} onClick={() => setQrOpen(true)}>QR code</CmmButton> : null}
                   {link?.active ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ revokeLink(); }} disabled={busy}><X size={14} />Révoquer</CmmButton> : null}
                 </div>
+                {link?.active && link.url ? <QRCodeDialog isOpen={qrOpen} onClose={() => setQrOpen(false)} value={link.url} title="Invitation à la collecte" description="Ce lien privé est transmissible. Ne le diffusez qu’aux personnes invitées." /> : null}
                 {link?.active && link.url ? <p className="break-all rounded-xl bg-white/70 px-3 py-2 text-xs text-amber-950">{link.url}</p> : null}
                 {link?.active && link.expiresAt ? <p className="text-xs text-amber-900/75">Valable jusqu’au {new Date(link.expiresAt).toLocaleDateString("fr-FR")}.</p> : null}
               </div>

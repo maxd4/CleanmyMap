@@ -70,3 +70,9 @@
 ## Contrat cible de la refonte
 
 Trois vues : Synthèse, Zones et priorités, Méthodes et rapports. Corpus global strict des actions publiques terminées, fenêtre 730 jours, limite 5000 et couverture explicite. Aucun delta fixe, aucun certificat ou promesse ESG. Les estimations restent des proxies et l'export relève de /reports. Accessible depuis le bloc selon le rôle actif (entreprise, élu, IMU).
+
+## Parcours entreprise : ressources opérationnelles
+
+Le rôle actif `entreprise` rend visibles Organiser, Mon organisation et Opportunités sans accorder de droit organisationnel. Le parcours Mon organisation expose les adhésions, invitations, sites, actions rattachées, campagnes et bilan privé via les API dédiées ; chaque lecture et mutation est résolue à partir de la session et d'une adhésion active côté serveur. Le portail n'utilise pas le rôle actif comme preuve de mandat. Le parcours Organiser et Opportunités renvoie aux owners existants des actions, rapports, cartes, annuaires, onboarding partenaire et bonnes pratiques.
+
+Les onglets organisationnels ne chargent pas l'overview global du portail. Les données de bilan restent filtrées par organisation, établissement, campagne et période demandés ; le rapport PDF privé et son historique ne sont pas disponibles. Le bootstrap d'organisation requiert encore une vérification humaine par un administrateur via l'API, sans interface dédiée dans le portail. Voir le contrat courant des [organisations entreprise](../../../../features/enterprise-organizations-CURRENT.md).

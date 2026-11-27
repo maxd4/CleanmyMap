@@ -14,6 +14,9 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { SystemStateRetryButton } from "@/components/ui/system-state-retry-button";
 import { PublishedDecisionScope, PublishedDecisionZones, PublishedDecisionMethods } from "@/components/pilotage/published-decision-panels";
 import { DecisionPageNavigation } from "@/components/pilotage/decision-page-navigation";
+import { EnterpriseOrganizationWorkspace } from "@/components/pilotage/enterprise-organization-workspace";
+import { EnterpriseActionLinks } from "@/components/pilotage/enterprise-action-links";
+import { getCurrentUserActiveRole } from "@/lib/authz";
 
 const SPONSOR_WINDOW_DAYS = 730;
 // Justification: Portail protege par session Clerk et lecture serveur dynamique des donnees sponsor/decideur.
@@ -92,22 +95,30 @@ export default async function SponsorPortalPage({ searchParams }: { searchParams
   }
   const locale = await getServerLocale();
   const isEn = locale === "en";
+  const isEnterprise = await getCurrentUserActiveRole().then((role) => role === "entreprise").catch(() => false);
   const tabs = [
     { id: "summary", label: isEn ? "Impact summary" : "Bilan d'impact" },
     { id: "zones", label: isEn ? "Observed zones" : "Zones observées" },
     { id: "methods", label: isEn ? "Methods and reports" : "Méthodes et rapports" },
+    ...(isEnterprise ? [
+      { id: "actions", label: isEn ? "Organize" : "Organiser" },
+      { id: "organization", label: isEn ? "My organization" : "Mon organisation" },
+      { id: "opportunities", label: isEn ? "Opportunities" : "Opportunités" },
+    ] as const : []),
   ] as const;
-  const tab = tabs.find(item => item.id === params?.tab)?.id ?? "summary";
+  const requestedTab = Array.isArray(params?.tab) ? params.tab[0] : params?.tab;
+  const tab = tabs.find(item => item.id === requestedTab)?.id ?? "summary";
+  const isResourceTab = tab === "actions" || tab === "opportunities" || tab === "organization";
   const accountCompletion = await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null);
-  const overview = await loadPilotageOverview({ periodDays: SPONSOR_WINDOW_DAYS, limit: 5000, publishedCompletedOnly: true }).catch(() => null);
+  const overview = isResourceTab ? null : await loadPilotageOverview({ periodDays: SPONSOR_WINDOW_DAYS, limit: 5000, publishedCompletedOnly: true }).catch(() => null);
   const actionsUnavailable = !overview || Boolean(overview.dataAvailability?.sourceHealth?.failedSources.includes("actions"));
   return <AccountCompletionGate state={accountCompletion}><CmmPageLayout>
-    <PageHeader title={isEn ? "Decision portal" : "Portail décideur"} subtitle={isEn ? "Consolidated impact of completed public actions." : "Impact consolidé des actions publiques terminées."} action={<CmmButton href="/reports" tone="primary">{isEn ? "Reports and exports" : "Rapports et exports"}</CmmButton>} />
+    <PageHeader title={isEnterprise ? (isEn ? "Enterprise workspace" : "Espace entreprise") : (isEn ? "Decision portal" : "Portail décideur")} subtitle={isEn ? "Consolidated impact of completed public actions." : "Impact consolidé des actions publiques terminées."} action={<CmmButton href="/reports" tone="primary">{isEn ? "Reports and exports" : "Rapports et exports"}</CmmButton>} />
     <DecisionPageNavigation route="/sponsor-portal" activeTab={tab} tabs={tabs} locale={locale} />
-    {actionsUnavailable ? <CmmCard className="space-y-3"><p role="status" className="text-sm cmm-text-secondary">{isEn ? "Impact data temporarily unavailable." : "Données d’impact momentanément indisponibles."}</p><SystemStateRetryButton label={isEn ? "Retry" : "Réessayer"} /></CmmCard> : <PublishedDecisionScope overview={overview} locale={locale} />}
+    {tab === "organization" ? <EnterpriseOrganizationWorkspace /> : tab === "actions" || tab === "opportunities" ? <EnterpriseActionLinks locale={locale} view={tab} /> : actionsUnavailable ? <CmmCard className="space-y-3"><p role="status" className="text-sm cmm-text-secondary">{isEn ? "Impact data temporarily unavailable." : "Données d’impact momentanément indisponibles."}</p><SystemStateRetryButton label={isEn ? "Retry" : "Réessayer"} /></CmmCard> : <PublishedDecisionScope overview={overview} locale={locale} />}
     {tab === "summary" && !actionsUnavailable && <SponsorMetrics overview={overview} locale={locale} />}
     {tab === "zones" && !actionsUnavailable && <PublishedDecisionZones zones={overview.zones.slice(0,3)} locale={locale} />}
     {tab === "methods" && <><CmmCard className="space-y-2"><h2 className="font-bold cmm-text-primary">{isEn ? "Valuation and emissions" : "Valorisation et émissions"}</h2><p className="text-sm cmm-text-secondary">{isEn ? "Valuation combines two estimates, by mass and by duration. It is neither an accounting saving nor a certification. CO₂ is a proxy." : "La valorisation croise deux estimations, par masse et par durée. Elle ne constitue ni une économie comptable ni une certification. Le CO₂ est un proxy."}</p></CmmCard><PublishedDecisionMethods methods={overview?.methods ?? []} locale={locale} /></>}
-    <div className="flex flex-wrap gap-2"><CmmButton href="/pilotage" tone="secondary">{isEn ? "Steering" : "Pilotage"}</CmmButton><CmmButton href="/sections/elus" tone="secondary">{isEn ? "Governance" : "Gouvernance"}</CmmButton></div>
+    {!isEnterprise ? <div className="flex flex-wrap gap-2"><CmmButton href="/pilotage" tone="secondary">{isEn ? "Steering" : "Pilotage"}</CmmButton><CmmButton href="/sections/elus" tone="secondary">{isEn ? "Governance" : "Gouvernance"}</CmmButton></div> : null}
   </CmmPageLayout></AccountCompletionGate>;
 }

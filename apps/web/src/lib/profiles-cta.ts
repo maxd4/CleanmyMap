@@ -132,12 +132,12 @@ export const PROFILE_CTA_CONFIG: Record<Parcours, ProfileCtaConfig> = {
     primaryCTA: {
       href: SPONSOR_PORTAL_ROUTE,
       label: {
-        fr: "Accéder au portail partenaires",
-        en: "Open the partner portal",
+        fr: "Ouvrir l’espace entreprise",
+        en: "Open the enterprise workspace",
       },
       description: {
-        fr: "Découvrir les engagements, partenariats et impacts publics",
-        en: "Discover public commitments, partnerships and impact",
+        fr: "Organiser des collectes, découvrir des partenaires et consulter les bilans",
+        en: "Organize cleanups, discover partners and review reports",
       },
     },
     secondaryCTA: {
