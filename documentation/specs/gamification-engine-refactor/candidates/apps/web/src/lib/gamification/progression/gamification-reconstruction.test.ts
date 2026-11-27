@@ -1,0 +1,212 @@
+import { describe, expect, it } from "vitest";
+import type { GamificationRulesV1 } from "./gamification-rules";
+import { computeExpectedGamificationState } from "./gamification-reconstruction";
+import { GAMIFICATION_RULES_V1 } from "./gamification-rules";
+
+const facts = {
+  userId: "user-1",
+  sourceFacts: [{
+    mechanicId: "mechanic-a",
+    eventType: "action_declare_validation",
+    sourceTable: "actions",
+    sourceId: "action-1",
+    occurredOn: "2026-09-28",
+    xpAwarded: 1,
+    metadata: { actionId: "action-1" },
+  }],
+};
+
+function rules(input: {
+  version: string;
+  category: "XP_MILESTONE" | "BADGE_ONLY";
+  amount: number;
+}): GamificationRulesV1 {
+  return {
+    version: input.version,
+    rulesRevision: input.version === "v1" ? 1 : input.version === "v2" ? 2 : input.version === "v3" ? 3 : 4,
+    mechanics: [{
+      mechanicId: "mechanic-a",
+      category: input.category,
+      eventType: "action_declare_validation",
+      progressionId: null,
+      milestoneId: "mechanic-a",
+      badgeId: "badge-a",
+      sourceDomain: "actions",
+      xpPolicy: input.amount > 0
+        ? { kind: "fixed_one_shot", amount: input.amount }
+        : { kind: "none", reason: "badge only" },
+      awardPolicy: input.category === "BADGE_ONLY"
+        ? { kind: "none" }
+        : { kind: "fixed", amount: input.amount },
+      eligibility: { kind: "canonical_fact", factKey: "action" },
+      thresholds: [],
+      introducedInRulesRevision: 1,
+    }],
+  };
+}
+
+describe("computeExpectedGamificationState", () => {
+  it("keeps the canonical fact award policy for progression rules", () => {
+    const progressionRule = GAMIFICATION_RULES_V1.mechanics.find(
+      (rule) => rule.category === "XP_PROGRESSION" && rule.eventType === "action_declare_validation",
+    );
+
+    expect(progressionRule?.awardPolicy).toEqual({ kind: "fact", field: "xpAwarded" });
+  });
+
+  it("replaces XP when a ruleset changes instead of adding a compensation event", () => {
+    const v1 = computeExpectedGamificationState("user-1", facts, rules({
+      version: "v1",
+      category: "XP_MILESTONE",
+      amount: 1,
+    }));
+    const v2 = computeExpectedGamificationState("user-1", facts, rules({
+      version: "v2",
+      category: "XP_MILESTONE",
+      amount: 2,
+    }));
+
+    expect(v1.events).toHaveLength(1);
+    expect(v1.events[0]?.xpAwarded).toBe(1);
+    expect(v2.events[0]?.logicalId).toBe(v1.events[0]?.logicalId);
+    expect(v2.events[0]?.xpAwarded).toBe(2);
+    expect(v2.events[0]?.metadata.rulesVersion).toBe("v2");
+    expect(v2.events[0]?.metadata.rulesRevision).toBe(2);
+    expect(v2.events[0]?.metadata.introducedInRulesRevision).toBe(1);
+  });
+
+  it("keeps the badge proof while removing XP for BADGE_ONLY", () => {
+    const state = computeExpectedGamificationState("user-1", facts, rules({
+      version: "v3",
+      category: "BADGE_ONLY",
+      amount: 0,
+    }));
+
+    expect(state.events).toHaveLength(1);
+    expect(state.events[0]?.xpAwarded).toBe(0);
+    expect(state.expectedBadges).toEqual(["badge-a"]);
+  });
+
+  it("removes both event and badge when a mechanic is no longer gamified", () => {
+    const state = computeExpectedGamificationState("user-1", facts, {
+      version: "v4",
+      rulesRevision: 4,
+      mechanics: [{
+        mechanicId: "mechanic-a",
+        category: "NON_GAMIFIED",
+        eventType: null,
+        progressionId: null,
+        milestoneId: null,
+        badgeId: null,
+        sourceDomain: "actions",
+        xpPolicy: { kind: "none", reason: "business fact only" },
+        awardPolicy: { kind: "none" },
+        eligibility: { kind: "never", reason: "business fact only" },
+        thresholds: [],
+        introducedInRulesRevision: 1,
+      }],
+    });
+
+    expect(state.events).toEqual([]);
+    expect(state.expectedBadges).toEqual([]);
+  });
+
+  it("does not manufacture progress for an ineligible binary fact", () => {
+    const state = computeExpectedGamificationState("user-1", {
+      ...facts,
+      sourceFacts: [{ ...facts.sourceFacts[0]!, eligible: false }],
+    }, rules({ version: "v1", category: "BADGE_ONLY", amount: 0 }));
+
+    expect(state.events).toEqual([]);
+    expect(state.expectedBadges).toEqual([]);
+  });
+
+  it.each(["pending", "rejected"] as const)(
+    "does not project a %s source fact into CURRENT progression",
+    (statusPhase) => {
+      const state = computeExpectedGamificationState("user-1", {
+        ...facts,
+        sourceFacts: [{ ...facts.sourceFacts[0]!, statusPhase }],
+      }, rules({ version: "v1", category: "XP_MILESTONE", amount: 1 }));
+
+      expect(state.events).toEqual([]);
+      expect(state.expectedBadges).toEqual([]);
+    },
+  );
+
+  it("does not project a fact for a mechanic outside the applicable scope", () => {
+    const state = computeExpectedGamificationState("user-1", {
+      ...facts,
+      applicableMechanicIds: [],
+    }, rules({ version: "v1", category: "XP_MILESTONE", amount: 1 }));
+
+    expect(state.applicableMechanicIds).toEqual([]);
+    expect(state.events).toEqual([]);
+    expect(state.expectedBadges).toEqual([]);
+  });
+
+  it("deduplicates a repeated source fact and stays independent of fact import order", () => {
+    const secondFact = {
+      mechanicId: "mechanic-a",
+      eventType: "action_declare_validation" as const,
+      sourceTable: "actions",
+      sourceId: "action-2",
+      occurredOn: "2026-09-29",
+      xpAwarded: 2,
+      metadata: { actionId: "action-2" },
+    };
+    const ruleset = rules({ version: "v1", category: "XP_MILESTONE", amount: 1 });
+    const sourceFacts = [facts.sourceFacts[0]!, secondFact, { ...facts.sourceFacts[0]! }];
+    const first = computeExpectedGamificationState("user-1", { ...facts, sourceFacts }, ruleset);
+    const replayedInAnotherOrder = computeExpectedGamificationState(
+      "user-1",
+      { ...facts, sourceFacts: [secondFact, { ...facts.sourceFacts[0]! }, facts.sourceFacts[0]!] },
+      ruleset,
+    );
+
+    expect(first.events).toHaveLength(2);
+    expect(first).toEqual(replayedInAnotherOrder);
+  });
+
+  it("indexes facts without merging different event types of the same mechanic", () => {
+    const base = rules({ version: "v1", category: "XP_MILESTONE", amount: 1 });
+    const ruleset: GamificationRulesV1 = {
+      ...base,
+      mechanics: [...base.mechanics, { ...base.mechanics[0]!, eventType: "first_trace_utile" }],
+    };
+    const first = facts.sourceFacts[0]!;
+    const state = computeExpectedGamificationState("user-1", {
+      ...facts,
+      sourceFacts: [
+        { ...first, mechanicId: "unknown", sourceId: "ignored" },
+        { ...first, eventType: "first_trace_utile", sourceId: "second" },
+        first,
+        { ...first },
+        { ...first, sourceId: "pending", statusPhase: "pending" },
+      ],
+    }, ruleset);
+    expect(state.events.map((event) => [event.sourceId, event.eventType])).toEqual([
+      ["action-1", "action_declare_validation"], ["second", "first_trace_utile"],
+    ]);
+  });
+
+  it("represents the first certified referee as one CURRENT +1 XP event", () => {
+    const state = computeExpectedGamificationState("user-1", {
+      userId: "user-1",
+      sourceFacts: [{
+        mechanicId: "spogomi_first_referee",
+        eventType: "spogomi_first_referee_certified",
+        sourceTable: "spogomi_recognition_attestations",
+        sourceId: "user-1",
+        occurredOn: "2026-06-01T09:00:00Z",
+        xpAwarded: 1,
+        eligible: true,
+        badgeId: "spogomi_first_referee",
+      }],
+    }, GAMIFICATION_RULES_V1);
+
+    const refereeEvents = state.events.filter((event) => event.milestoneId === "spogomi_first_referee");
+    expect(refereeEvents).toHaveLength(1);
+    expect(refereeEvents[0]).toMatchObject({ xpAwarded: 1, sourceId: "user-1", eventType: "spogomi_first_referee_certified" });
+  });
+});

@@ -1,0 +1,416 @@
+import { randomUUID } from "crypto";
+import { revalidateTag } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { env } from "@/lib/env";
+import { broadcastGamificationAnnouncement } from "@/lib/gamification/reconciliation/announcements";
+import { auditXpAttribution } from "../reconciliation/notifications";
+import { reconcileReferralAward } from "./referral-reconciliation";
+
+export type ReferralSummary = {
+  referralCode: string | null;
+  inviteUrl: string | null;
+  invitedUsersCount: number;
+  invitedBy: {
+    userId: string;
+    displayName: string;
+  } | null;
+  badgeUnlocked: boolean;
+  referralAwardedXp: number;
+};
+
+export type ReferralClaimResult = {
+  claimed: boolean;
+  inviterUserId: string | null;
+  inviterDisplayName: string | null;
+};
+
+const REFERRAL_BADGE_EVENT_TYPE = "community_referral_invite";
+const REFERRAL_CONTRIBUTION_SOURCE_TABLE = "referral_contributions";
+const REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX = "referral-contribution:";
+const REFERRAL_XP = 2;
+const REFERRAL_PATH = "/sign-up";
+const REFERRAL_EXPORT_CACHE_TAG = "admin-referral-lineage-export";
+const REFERRAL_RECONCILIATION_CONFIG = {
+  eventType: REFERRAL_BADGE_EVENT_TYPE,
+  sourceTable: REFERRAL_CONTRIBUTION_SOURCE_TABLE,
+  sourceIdPrefix: REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX,
+  xp: REFERRAL_XP,
+  cacheTag: REFERRAL_EXPORT_CACHE_TAG,
+} as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isReferralAward(value: unknown): value is { xp_awarded: number | null } {
+  return isRecord(value) && (value.xp_awarded === null || typeof value.xp_awarded === "number");
+}
+
+function isInviterProfile(value: unknown): value is { id: string; display_name: string | null } {
+  return isRecord(value) && typeof value.id === "string" && (value.display_name === null || typeof value.display_name === "string");
+}
+
+function normalizeReferralCode(code: string | null | undefined): string {
+  return (code ?? "").trim().toUpperCase();
+}
+
+function buildAppOrigin(): string {
+  return env.NEXT_PUBLIC_APP_URL || "https://cleanmymap.fr";
+}
+
+export function buildReferralInviteUrl(code: string): string {
+  const normalizedCode = normalizeReferralCode(code);
+  const url = new URL(REFERRAL_PATH, buildAppOrigin());
+  url.searchParams.set("ref", normalizedCode);
+  return url.toString();
+}
+
+function createReferralCode(): string {
+  return randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase();
+}
+
+function invalidateReferralCaches(): void {
+  revalidateTag(REFERRAL_EXPORT_CACHE_TAG, "max");
+}
+
+export async function awardReferralForUsefulContribution(
+  supabase: SupabaseClient,
+  params: {
+    inviteeUserId: string;
+    contributionSourceTable: string;
+    contributionSourceId: string;
+    occurredOn?: string;
+  },
+): Promise<{
+  awarded: boolean;
+  inviterUserId: string | null;
+  inviteeUserId: string;
+}> {
+  const invitee = await loadReferralProfile(supabase, params.inviteeUserId);
+  const inviterUserId = invitee?.referred_by_profile_id?.trim() || null;
+
+  if (!inviterUserId || inviterUserId === params.inviteeUserId) {
+    return {
+      awarded: false,
+      inviterUserId,
+      inviteeUserId: params.inviteeUserId,
+    };
+  }
+
+  const { inserted, proof } = await reconcileReferralAward(
+    supabase,
+    inviterUserId,
+    params.inviteeUserId,
+    REFERRAL_RECONCILIATION_CONFIG,
+    invitee?.referred_at,
+  );
+
+  if (inserted) {
+    await auditXpAttribution(
+      supabase,
+      inviterUserId,
+      null,
+      "Parrainage utile : première contribution confirmée de l'invité",
+      REFERRAL_XP,
+      REFERRAL_CONTRIBUTION_SOURCE_TABLE,
+      `${REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX}${params.inviteeUserId}`,
+      {
+        inviteeUserId: params.inviteeUserId,
+        contributionSourceTable: proof?.sourceTable,
+        contributionSourceId: proof?.sourceId,
+      },
+    );
+
+    await broadcastGamificationAnnouncement(supabase, {
+      type: "referral_invite_awarded",
+      userId: inviterUserId,
+      badgeId: REFERRAL_BADGE_EVENT_TYPE,
+      xp: REFERRAL_XP,
+      title: "Parrainage utile",
+      message: "+2 XP : votre invité a réalisé sa première contribution utile confirmée.",
+      icon: "share-2",
+      source: "referrals",
+      dedupeKey: `referral_invite_awarded:${inviterUserId}:${params.inviteeUserId}`,
+    });
+  }
+
+  return {
+    awarded: inserted,
+    inviterUserId,
+    inviteeUserId: params.inviteeUserId,
+  };
+}
+
+export async function removeReferralAwardForRejectedContribution(
+  supabase: SupabaseClient,
+  inviteeUserId: string,
+): Promise<string | null> {
+  const invitee = await loadReferralProfile(supabase, inviteeUserId);
+  const inviterUserId = invitee?.referred_by_profile_id?.trim() || null;
+
+  if (!inviterUserId || inviterUserId === inviteeUserId) {
+    return null;
+  }
+
+  await reconcileReferralAward(
+    supabase,
+    inviterUserId,
+    inviteeUserId,
+    REFERRAL_RECONCILIATION_CONFIG,
+    invitee?.referred_at,
+  );
+  return inviterUserId;
+}
+
+async function loadReferralProfile(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{
+  id: string;
+  display_name: string;
+  referral_code: string | null;
+  referred_by_profile_id: string | null;
+  referred_at: string | null;
+} | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, referral_code, referred_by_profile_id, referred_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as typeof data) ?? null;
+}
+
+async function loadReferralSummaryData(
+  supabase: SupabaseClient,
+  userId: string,
+  profile: Awaited<ReturnType<typeof loadReferralProfile>>,
+) {
+  const invitedUsersPromise = supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("referred_by_profile_id", userId);
+  const inviterPromise = profile?.referred_by_profile_id
+    ? supabase
+        .from("profiles")
+        .select("id, display_name")
+        .eq("id", profile.referred_by_profile_id)
+        .maybeSingle()
+    : Promise.resolve({ data: null, error: null });
+  const referralAwardsPromise = supabase
+    .from("progression_events")
+    .select("xp_awarded")
+    .eq("user_id", userId)
+    .eq("event_type", REFERRAL_BADGE_EVENT_TYPE)
+    .eq("source_table", REFERRAL_CONTRIBUTION_SOURCE_TABLE)
+    .eq("status_phase", "validated")
+    .limit(10000);
+
+  const [invitedUsersResult, inviterResult, referralAwardsResult] = await Promise.all([
+    invitedUsersPromise,
+    inviterPromise,
+    referralAwardsPromise,
+  ]);
+  if (invitedUsersResult.error) throw invitedUsersResult.error;
+  if (inviterResult.error) throw inviterResult.error;
+  if (referralAwardsResult.error) throw referralAwardsResult.error;
+  return { invitedUsersResult, inviterResult, referralAwardsResult };
+}
+
+export async function loadReferralSummary(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ReferralSummary> {
+  const profile = await loadReferralProfile(supabase, userId);
+  const { invitedUsersResult, inviterResult, referralAwardsResult } =
+    await loadReferralSummaryData(supabase, userId, profile);
+
+  const referralCode = normalizeReferralCode(profile?.referral_code);
+  const awards = Array.isArray(referralAwardsResult.data)
+    ? referralAwardsResult.data.filter(isReferralAward)
+    : [];
+  const inviter = isInviterProfile(inviterResult.data) ? inviterResult.data : null;
+  const awardedXp = awards.reduce(
+    (total, row) => total + Math.max(0, Number(row.xp_awarded) || 0),
+    0,
+  );
+
+  return {
+    referralCode: referralCode || null,
+    inviteUrl: referralCode ? buildReferralInviteUrl(referralCode) : null,
+    invitedUsersCount: invitedUsersResult.count ?? 0,
+    invitedBy: inviter
+      ? {
+          userId: inviter.id,
+          displayName: inviter.display_name || inviter.id,
+        }
+      : null,
+    badgeUnlocked: awardedXp > 0,
+    referralAwardedXp: awardedXp,
+  };
+}
+
+export async function ensureReferralInviteForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{
+  summary: ReferralSummary;
+  created: boolean;
+}> {
+  const profile = await loadReferralProfile(supabase, userId);
+  if (!profile) {
+    throw new Error("Profil introuvable pour créer un lien d'invitation.");
+  }
+
+  if (normalizeReferralCode(profile.referral_code)) {
+    return {
+      summary: await loadReferralSummary(supabase, userId),
+      created: false,
+    };
+  }
+
+  let referralCode = "";
+  let updated = false;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    referralCode = createReferralCode();
+
+    const { data: updatedProfile, error } = await supabase
+      .from("profiles")
+      .update({
+        referral_code: referralCode,
+      })
+      .eq("id", userId)
+      .is("referral_code", null)
+      .select("id, referral_code")
+      .maybeSingle();
+
+    if (!error) {
+      if (!updatedProfile?.referral_code) {
+        return {
+          summary: await loadReferralSummary(supabase, userId),
+          created: false,
+        };
+      }
+      updated = true;
+      break;
+    }
+
+    if ((error.code ?? "") !== "23505") {
+      lastError = error;
+      break;
+    }
+  }
+
+  if (!updated) {
+    const currentSummary = await loadReferralSummary(supabase, userId);
+    if (currentSummary.referralCode) {
+      return {
+        summary: currentSummary,
+        created: false,
+      };
+    }
+
+    throw lastError ?? new Error("Impossible de créer le lien d'invitation.");
+  }
+
+  invalidateReferralCaches();
+
+  return {
+    summary: await loadReferralSummary(supabase, userId),
+    created: true,
+  };
+}
+
+export async function claimReferralInviteForUser(
+  supabase: SupabaseClient,
+  params: {
+    userId: string;
+    code: string;
+  },
+): Promise<ReferralClaimResult> {
+  const referralCode = normalizeReferralCode(params.code);
+  if (!referralCode) {
+    return {
+      claimed: false,
+      inviterUserId: null,
+      inviterDisplayName: null,
+    };
+  }
+
+  const { profile, inviter } = await loadReferralClaimProfiles(
+    supabase,
+    params.userId,
+    referralCode,
+  );
+  const parsedInviter = isInviterProfile(inviter) ? inviter : null;
+  if (!parsedInviter || parsedInviter.id === params.userId) {
+    return {
+      claimed: false,
+      inviterUserId: null,
+      inviterDisplayName: null,
+    };
+  }
+
+  if (profile?.referred_by_profile_id) {
+    return {
+      claimed: false,
+      inviterUserId: parsedInviter.id,
+      inviterDisplayName: parsedInviter.display_name || parsedInviter.id,
+    };
+  }
+
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({
+      referred_by_profile_id: parsedInviter.id,
+      referred_at: new Date().toISOString(),
+    })
+    .eq("id", params.userId)
+    .is("referred_by_profile_id", null);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  invalidateReferralCaches();
+
+  return {
+    claimed: true,
+    inviterUserId: parsedInviter.id,
+    inviterDisplayName: parsedInviter.display_name || parsedInviter.id,
+  };
+}
+
+async function loadReferralClaimProfiles(
+  supabase: SupabaseClient,
+  userId: string,
+  referralCode: string,
+): Promise<{
+  profile: { id: string; referred_by_profile_id: string | null } | null;
+  inviter: unknown;
+}> {
+  const [profileResult, inviterResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, referred_by_profile_id")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("id, display_name")
+      .eq("referral_code", referralCode)
+      .maybeSingle(),
+  ]);
+  if (profileResult.error) throw profileResult.error;
+  if (inviterResult.error) throw inviterResult.error;
+  return {
+    profile: profileResult.data,
+    inviter: inviterResult.data,
+  };
+}

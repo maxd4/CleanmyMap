@@ -283,6 +283,14 @@ et les identités de récompense restent inchangés.
   convertis en XP proportionnel à la quantité;
 - les règles détaillées de seuils, familles, scopes et attribution restent dans la spec canonique, pas dans ce document.
 
+### Complétude des preuves et paliers de modération
+
+La reconstruction CURRENT doit échouer lorsqu'une lecture nécessaire signale une erreur. Les chemins stricts de chargement des organisateurs, participations confirmées, filiations, zones propres et dossiers de modération ne convertissent plus cette erreur en une liste de faits vide. Une absence vérifiée est distincte d'une lecture indisponible ; aucune réconciliation de ce ledger ne doit déduire des suppressions de cette dernière. La lecture d'affichage peut conserver ses fallbacks propres.
+
+La progression Modération réutilise l'échelle gem canonique : les paliers atteints après 20 dossiers continuent par pas de 5. Le calcul d'état, l'attribution incrémentale et la reconstruction utilisent `moderationAwardThresholds`. Pour les événements reconstruits, le palier est daté du dossier qui atteint effectivement le seuil. Aucun nouveau badge, seuil économique ni type d'événement n'est introduit.
+
+Le parrainage utilise `referral-contribution-proof.ts` pour sélectionner la première action CURRENT admissible selon l'ordre date civile puis identifiant. Le parcours incrémental préserve une preuve existante encore valide sans recréditer ; une reconstruction complète converge vers la première preuve. L'XP et l'identité de l'événement par filleul sont inchangées.
+
 ## Audit XP administratif
 
 La surface courante est :

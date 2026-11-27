@@ -1,0 +1,164 @@
+import { revalidateTag } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  insertProgressionEvent,
+} from "../progression-data";
+import { CURRENT_GAMIFICATION_RULES_VERSION } from "../progression/progression-types";
+import type { ProgressionEventType } from "../progression/progression-types";
+
+import { loadCurrentReferralContribution, type ReferralContributionProof } from "./referral-contribution-proof";
+export type { ReferralContributionProof } from "./referral-contribution-proof";
+
+type ReferralEventRow = {
+  id?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
+
+export type ReferralReconciliationConfig = {
+  eventType: ProgressionEventType;
+  sourceTable: string;
+  sourceIdPrefix: string;
+  xp: number;
+  cacheTag: string;
+};
+
+async function loadReferralEvents(
+  supabase: SupabaseClient,
+  inviterUserId: string,
+  inviteeUserId: string,
+  config: ReferralReconciliationConfig,
+): Promise<ReferralEventRow[]> {
+  const sourceId = `${config.sourceIdPrefix}${inviteeUserId}`;
+  const { data, error } = await supabase
+    .from("progression_events")
+    .select("id, metadata")
+    .eq("user_id", inviterUserId)
+    .eq("event_type", config.eventType)
+    .eq("source_table", config.sourceTable)
+    .eq("source_id", sourceId)
+    .eq("status_phase", "validated")
+    .limit(10000);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as ReferralEventRow[];
+}
+
+async function deleteReferralEvents(
+  supabase: SupabaseClient,
+  inviterUserId: string,
+  inviteeUserId: string,
+  config: ReferralReconciliationConfig,
+): Promise<void> {
+  const sourceId = `${config.sourceIdPrefix}${inviteeUserId}`;
+  const { error } = await supabase
+    .from("progression_events")
+    .delete()
+    .eq("user_id", inviterUserId)
+    .eq("event_type", config.eventType)
+    .eq("source_table", config.sourceTable)
+    .eq("source_id", sourceId)
+    .eq("status_phase", "validated");
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function refreshInviterProgressionProfile(
+  supabase: SupabaseClient,
+  inviterUserId: string,
+): Promise<void> {
+  const { refreshProgressionProfile } = await import("../reconciliation/progression-tracking");
+  await refreshProgressionProfile(supabase, inviterUserId);
+}
+
+function hasCurrentReferralProof(
+  existingEvent: ReferralEventRow | null,
+  currentContribution: Awaited<ReturnType<typeof loadCurrentReferralContribution>>,
+  inviteeUserId: string,
+): boolean {
+  const existingProof = existingEvent?.metadata ?? null;
+  return (
+    existingEvent !== null &&
+    currentContribution !== null &&
+    existingProof?.inviteeUserId === inviteeUserId &&
+    existingProof?.contributionSourceTable === "actions" &&
+    currentContribution.eligibleSourceIds.has(
+      String(existingProof?.contributionSourceId ?? ""),
+    )
+  );
+}
+
+export async function reconcileReferralAward(
+  supabase: SupabaseClient,
+  inviterUserId: string,
+  inviteeUserId: string,
+  config: ReferralReconciliationConfig,
+  referredAt?: string | null,
+): Promise<{
+  inserted: boolean;
+  proof: ReferralContributionProof | null;
+}> {
+  const [currentContribution, existingEvents] = await Promise.all([
+    loadCurrentReferralContribution(supabase, inviteeUserId, referredAt),
+    loadReferralEvents(supabase, inviterUserId, inviteeUserId, config),
+  ]);
+  const existingEvent = existingEvents.length === 1 ? existingEvents[0] : null;
+
+  if (!currentContribution && existingEvents.length === 0) {
+    return { inserted: false, proof: null };
+  }
+
+  if (
+    currentContribution !== null &&
+    hasCurrentReferralProof(existingEvent, currentContribution, inviteeUserId)
+  ) {
+    return { inserted: false, proof: currentContribution.proof };
+  }
+
+  if (existingEvents.length > 0) {
+    await deleteReferralEvents(supabase, inviterUserId, inviteeUserId, config);
+  }
+
+  if (!currentContribution) {
+    await refreshInviterProgressionProfile(supabase, inviterUserId);
+    revalidateTag(config.cacheTag, "max");
+    return { inserted: false, proof: null };
+  }
+
+  const sourceId = `${config.sourceIdPrefix}${inviteeUserId}`;
+  const inserted = await insertProgressionEvent(supabase, {
+    userId: inviterUserId,
+    eventType: config.eventType,
+    sourceTable: config.sourceTable,
+    sourceId,
+    statusPhase: "validated",
+    weight: 1,
+    xpBase: config.xp,
+    xpAwarded: config.xp,
+    occurredOn: currentContribution.proof.occurredOn,
+      metadata: {
+        gamificationEngine: "CURRENT_RECONCILABLE",
+        rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+        mechanicId: "parrainage_utile",
+        progressionId: null,
+        milestoneId: "parrainage_utile",
+        sourceTable: config.sourceTable,
+        sourceId,
+        awardKind: "XP_MILESTONE",
+        threshold: null,
+        logicalId: `${inviterUserId}:parrainage_utile:${config.sourceTable}:${sourceId}::validated`,
+        inviteeUserId,
+      contributionSourceTable: currentContribution.proof.sourceTable,
+      contributionSourceId: currentContribution.proof.sourceId,
+      referralAwardedXp: config.xp,
+    },
+  });
+
+  await refreshInviterProgressionProfile(supabase, inviterUserId);
+  revalidateTag(config.cacheTag, "max");
+  return { inserted, proof: currentContribution.proof };
+}

@@ -34,8 +34,7 @@ Les frontières du code (catalogue, calcul, lecture des faits et persistance) so
 
 ## Réconciliation et surfaces
 
-`gamification-reconstruction.ts` calcule l’état attendu sans mutation et
-`gamification-reconciliation.ts` applique un plan idempotent aux événements
+`gamification-reconstruction.ts` calcule l’état attendu sans mutation, après chargement des preuves nécessaires. Les erreurs des sources strictes interrompent cette reconstruction. Le [moteur technique](./GAMIFICATION_ENGINE.md) décrit la complétude et les paliers. `gamification-reconciliation.ts` applique un plan idempotent aux événements
 CURRENT qu’il possède. Les réconciliations administratives passent par le
 script serveur dédié et produisent le reçu utilisateur existant lorsqu’un
 changement visible est réel.

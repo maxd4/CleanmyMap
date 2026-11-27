@@ -74,17 +74,17 @@
     {
       "path": "apps/web/src/lib/gamification/README.md",
       "baseBlob": "395e3032916b588043eef623a6a8235b5970c01f",
-      "lines": 213
+      "lines": 219
     },
     {
       "path": "documentation/features/gamification/README.md",
       "baseBlob": "aa5e4d62198c76932a4c200120baa05cf93ba2c8",
-      "lines": 62
+      "lines": 61
     },
     {
       "path": "documentation/features/gamification/GAMIFICATION_ENGINE.md",
       "baseBlob": "4fe24be4279ff2b4b63b536b08b9bec6499ffe81",
-      "lines": 563
+      "lines": 571
     },
     {
       "path": "apps/web/src/lib/gamification/progression/milestones.ts",
@@ -104,7 +104,7 @@
     {
       "path": "apps/web/src/lib/gamification/progression/progression-ranking-batch.ts",
       "baseBlob": "4b867d7372e0913d7628f9ec4dbb3a9f354083c4",
-      "lines": 431
+      "lines": 235
     },
     {
       "path": "apps/web/src/lib/gamification/progression/gamification-registry.test.ts",
@@ -135,6 +135,161 @@
       "path": "documentation/pages_site/routes/03-cartographie-impact/gamification/gamification-taxonomie.md",
       "baseBlob": "3dd0d85aa5eab205642c5a67e9f215564d42d7ae",
       "lines": 204
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-contract-types.ts",
+      "baseBlob": null,
+      "lines": 275
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/progression-source-types.ts",
+      "baseBlob": null,
+      "lines": 94
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/progression-level-types.ts",
+      "baseBlob": null,
+      "lines": 64
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/progression-response-types.ts",
+      "baseBlob": null,
+      "lines": 197
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/progression-types.ts",
+      "baseBlob": "1433ac7c078a27c6eb43000b1045518d037d4bb6",
+      "lines": 61
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-reconstruction.ts",
+      "baseBlob": "b82d0c15d22498d122dd9b52e6f7a4fce0dc9852",
+      "lines": 203
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-reconstruction.test.ts",
+      "baseBlob": "ce18df7412404d6fbc287473c29ea64043f6814c",
+      "lines": 212
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-catalog-progression-facts.ts",
+      "baseBlob": null,
+      "lines": 161
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-catalog-loader.ts",
+      "baseBlob": "69300344d6801ebc71a67fb1cb467ada1e4e449b",
+      "lines": 240
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/leaderboard-badge-projection.ts",
+      "baseBlob": null,
+      "lines": 165
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/progression-ranking-batch.test.ts",
+      "baseBlob": "c78a8f4dafdd3b96faddaad3ed620bb1d01c8883",
+      "lines": 368
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-facts-loader.ts",
+      "baseBlob": "67dbb552c9124727abb65164b14d016011e933fb",
+      "lines": 157
+    },
+    {
+      "path": "apps/web/src/lib/gamification/referrals/referral-contribution-proof.ts",
+      "baseBlob": null,
+      "lines": 43
+    },
+    {
+      "path": "apps/web/src/lib/gamification/referrals/referral-reconciliation.ts",
+      "baseBlob": "153355bd4f30206ba6ba16b8724376bc0609d170",
+      "lines": 164
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-community-facts.ts",
+      "baseBlob": "36135681dda130968dbdf263eb2e38ce6fd13df8",
+      "lines": 64
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-community-facts.behavior.test.ts",
+      "baseBlob": "d22b9e4e64ef3b01915e15f15412598756ac49e7",
+      "lines": 88
+    },
+    {
+      "path": "apps/web/src/lib/gamification/referrals/referral-reconciliation.test.ts",
+      "baseBlob": "f4e9eaa70aa00ef2d9d7c8ecc46de2b75a982d8d",
+      "lines": 116
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-action-facts.ts",
+      "baseBlob": "306cb40be4edfd59430498b66354d7a976c415f9",
+      "lines": 172
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-action-facts.test.ts",
+      "baseBlob": "3e7f843543e1d476e4363e9eead855fd01d1aa34",
+      "lines": 155
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gem-progression.ts",
+      "baseBlob": "a1d86c8a4b51289b80f660fbba14b6873caea627",
+      "lines": 236
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/moderation-progression.model.ts",
+      "baseBlob": "e6f82a51f7595270249c0131e75e9a69e5fdf5e7",
+      "lines": 231
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/moderation-progression.ts",
+      "baseBlob": "1fbdc87aa30374b2008531179a53d53bb6750c4e",
+      "lines": 190
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-moderation-facts.ts",
+      "baseBlob": "05edf1fe456ef9a5a4d972c112c46f4a27039cd4",
+      "lines": 95
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/moderation-progression.test.ts",
+      "baseBlob": "321acc4c5d05930e2fb7dfd9a098da72fae83f71",
+      "lines": 238
+    },
+    {
+      "path": "apps/web/src/lib/gamification/badges/listing.ts",
+      "baseBlob": "c250f64c6ff96de877594ee9e85414fd3dfe4fb2",
+      "lines": 253
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-clean-zone-facts.ts",
+      "baseBlob": "21d86d834fabfa097cfb1d43450cac244fb5248d",
+      "lines": 28
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-clean-zone-facts.test.ts",
+      "baseBlob": null,
+      "lines": 14
+    },
+    {
+      "path": "apps/web/src/lib/gamification/referrals/referrals.ts",
+      "baseBlob": "f5694a56bea6b45a45f5dfdecb79f5ffa08448e3",
+      "lines": 416
+    },
+    {
+      "path": "apps/web/src/lib/gamification/referrals/referral-lineage-model.ts",
+      "baseBlob": null,
+      "lines": 343
+    },
+    {
+      "path": "apps/web/src/lib/gamification/referrals/referral-lineage.ts",
+      "baseBlob": "b80781bd1136c6179a4c6d5524c3c5a6f4d8f2c7",
+      "lines": 35
+    },
+    {
+      "path": "apps/web/src/lib/gamification/reconciliation/gamification-reconciliation-source-failure.test.ts",
+      "baseBlob": null,
+      "lines": 20
     }
   ]
 }

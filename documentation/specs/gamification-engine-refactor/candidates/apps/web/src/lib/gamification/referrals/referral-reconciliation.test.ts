@@ -1,0 +1,116 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { beforeEach, expect, it, vi } from "vitest";
+import { removeReferralAwardForRejectedContribution } from "./referrals";
+import {
+  createProfileLookupSelect,
+  createProgressionEventQueries,
+  resetReferralProgressionMocks,
+  referralProgressionMocks,
+} from "./__tests__/referral-test-helpers";
+
+const { insertProgressionEvent: insertProgressionEventMock, loadActionRowsForUser: loadActionRowsForUserMock, loadCurrentValidatedActionIdsForUser: loadCurrentValidatedActionIdsForUserMock, refreshProgressionProfile: refreshProgressionProfileMock } = referralProgressionMocks;
+vi.mock("../progression-data", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionDataModule());
+vi.mock("../reconciliation/progression-tracking", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionTrackingModule());
+vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
+
+type Profile = {
+  id: string;
+  display_name: string;
+  referral_code: string | null;
+  referred_by_profile_id: string | null;
+  referred_at: string;
+};
+
+function buildProfile(): Profile {
+  return {
+    id: "invitee-1",
+    display_name: "Invité",
+    referral_code: null,
+    referred_by_profile_id: "inviter-1",
+    referred_at: "2026-09-25T10:00:00.000Z",
+  };
+}
+
+function createSupabase(events: Array<Record<string, unknown>>): SupabaseClient {
+  const { createFilterQuery, createDeleteQuery } = createProgressionEventQueries(events);
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "profiles") return createProfileLookupSelect(() => buildProfile());
+      if (table === "progression_events") {
+        return { select: vi.fn(createFilterQuery), delete: vi.fn(createDeleteQuery) };
+      }
+      throw new Error(`Unexpected table ${table}`);
+    }),
+  } as unknown as SupabaseClient;
+}
+
+function buildEvent(sourceId: string): Record<string, unknown> {
+  return {
+    metadata: {
+      inviteeUserId: "invitee-1",
+      contributionSourceTable: "actions",
+      contributionSourceId: sourceId,
+    },
+  };
+}
+
+beforeEach(() => {
+  resetReferralProgressionMocks();
+});
+
+it("supprime le parrainage et rafraîchit le profil quand la contribution unique est rejetée", async () => {
+  const events = [buildEvent("action-1")];
+  const supabase = createSupabase(events);
+  loadActionRowsForUserMock.mockResolvedValue([
+    { id: "action-1", status: "rejected", action_date: "2026-09-25", created_at: "2026-09-25" },
+  ]);
+
+  await removeReferralAwardForRejectedContribution(supabase, "invitee-1");
+
+  expect(events).toHaveLength(0);
+  expect(refreshProgressionProfileMock).toHaveBeenCalledWith(supabase, "inviter-1");
+});
+
+it("reconstruit la preuve sur une autre contribution CURRENT validée après rejet", async () => {
+  const events = [buildEvent("action-1")];
+  const supabase = createSupabase(events);
+  loadActionRowsForUserMock.mockResolvedValue([
+    { id: "action-1", status: "rejected", action_date: "2026-09-25", created_at: "2026-09-25" },
+    { id: "action-2", status: "approved", action_date: "2026-09-26", created_at: "2026-09-26" },
+  ]);
+  loadCurrentValidatedActionIdsForUserMock.mockResolvedValue(new Set(["action-2"]));
+  insertProgressionEventMock.mockImplementation(
+    async (_client: SupabaseClient, params: Record<string, unknown>) => {
+      events.push(params);
+      return true;
+    },
+  );
+
+  await removeReferralAwardForRejectedContribution(supabase, "invitee-1");
+
+  expect(events).toHaveLength(1);
+  expect(events[0]).toMatchObject({
+    sourceTable: "referral_contributions",
+    sourceId: "referral-contribution:invitee-1",
+    statusPhase: "validated",
+    xpAwarded: 2,
+    metadata: expect.objectContaining({ contributionSourceId: "action-2" }),
+  });
+  expect(refreshProgressionProfileMock).toHaveBeenCalledWith(supabase, "inviter-1");
+});
+
+it("uses the same first eligible proof as full reconstruction after a rejection", async () => {
+  const events = [buildEvent("rejected")];
+  const supabase = createSupabase(events);
+  loadActionRowsForUserMock.mockResolvedValue([
+    { id: "later", status: "approved", action_date: "2026-09-28", created_at: "2026-09-28" },
+    { id: "earlier", status: "approved", action_date: "2026-09-26", created_at: "2026-09-26" },
+  ]);
+  loadCurrentValidatedActionIdsForUserMock.mockResolvedValue(new Set(["later", "earlier"]));
+  insertProgressionEventMock.mockResolvedValue(true);
+  await removeReferralAwardForRejectedContribution(supabase, "invitee-1");
+  expect(insertProgressionEventMock).toHaveBeenCalledWith(supabase, expect.objectContaining({
+    occurredOn: "2026-09-26",
+    metadata: expect.objectContaining({ contributionSourceId: "earlier" }),
+  }));
+});

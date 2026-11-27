@@ -12,6 +12,7 @@ gamification/
 ├── badges/             catalogue et lectures de badges spécialisées
 ├── points/             compatibilité analytique des points historiques
 ├── referrals/          invitations et récompenses de parrainage
+├── territorial-legends/ classement territorial, consentements et preuves annuelles
 ├── progression.ts     façade publique historique de progression
 ├── progression-data.ts façade publique historique des données de progression
 └── types.ts            types partagés minimaux
@@ -25,8 +26,7 @@ notifications, refreshs et exécutions de réconciliation. Les deux frontières
 réutilisent les mêmes types et règles ; aucune seconde implémentation n'est
 créée.
 
-`badges/`, `points/` et `referrals/` restent des sous-domaines autonomes et ne
-sont pas réorganisés par ce découpage.
+`badges/`, `points/`, `referrals/` et `territorial-legends/` restent des sous-domaines autonomes. `points/` est une compatibilité analytique, pas une économie XP concurrente.
 
 ## Frontières internes du moteur
 
@@ -34,7 +34,11 @@ sont pas réorganisés par ce découpage.
 - `reconciliation/gamification-reconciliation-receipt.ts` construit le reçu déterministe. `gamification-reconciliation-receipt-types.ts` porte le contrat partagé et `gamification-reconciliation-receipt-store.ts` réalise les lectures, insertions et finalisations conditionnelles de notifications.
 - `territorial-legends/territorial-window.ts` possède la fenêtre civile de 90 jours ; `territorial-ranking.ts` projette les faits en classements et vainqueurs ; `territorial-facts-loader.ts` charge les actions, participations, consentements et profils autorisés. `engine.ts` compose et conserve les exports consommés par les routes et la réconciliation.
 
-La séparation ne change aucune identité d’événement, règle de calcul, projection publique, permission ni transaction SQL.
+- `progression/gamification-contract-types.ts` possède les identités et types du catalogue ; `progression-source-types.ts` les lignes sources et paramètres d'événement ; `progression-level-types.ts` les conditions et statistiques de niveau ; `progression-response-types.ts` les DTO. `progression-types.ts` conserve les exports historiques sans redéfinition.
+- `progression/gamification-catalog-progression-facts.ts` projette les métriques en paliers. `gamification-catalog-loader.ts` charge les dépendances privées ; `leaderboard-badge-projection.ts` agrège les faits publics par utilisateur ; `progression-ranking-batch.ts` possède les lectures paginées du classement. Les deux projections partagent les progressions de base.
+- `referrals/referral-contribution-proof.ts` possède la sélection de la première contribution CURRENT admissible (date civile, puis identifiant). Le fallback temporel stable est la date de filiation, puis l'époque documentée ; aucune date d'exécution n'est injectée. Les anciens événements dont la preuve reste admissible ne sont pas recrédités par le chemin incrémental ; la reconstruction complète converge vers la première preuve.
+
+La séparation préserve les identités et les interfaces existantes. Les corrections de preuve (parrainage, paliers infinis de modération, erreurs de lecture) ne créent ni nouvelle règle économique, ni permission, ni migration SQL.
 
 ## Contrat courant
 
@@ -59,12 +63,14 @@ sources métier → GamificationRulesV1 → computeExpectedGamificationState
 ```
 
 `computeExpectedGamificationState` est pur : il ne lit jamais le ledger et ne
-modifie aucune donnée. Le contrat porte `rulesVersion` pour l'identification
+modifie aucune donnée. Il indexe les faits par mécanique, puis conserve l'ordre des règles et les filtres par type d'événement et scope. Le contrat porte `rulesVersion` pour l'identification
 humaine et `rulesRevision` pour les comparaisons monotones ; chaque mécanique
 CURRENT porte aussi `introducedInRulesRevision`. Chaque événement attendu porte
 une identité logique stable et une provenance (`rulesVersion`, `rulesRevision`,
 `mechanicId`, `introducedInRulesRevision`, source, `awardKind` et palier lorsque
-nécessaire). Le reconciler ne possède que les événements
+nécessaire). Une lecture en échec des organisateurs, participants, filleuls, zones propres (mode strict de reconstruction) ou dossiers de modération interrompt le calcul attendu : une erreur n'est pas une preuve d'absence. La projection destructive du ledger ne doit pas être appelée sur ces faits incomplets. Les lectures d'affichage best-effort restent distinctes.
+
+Le reconciler ne possède que les événements
 CURRENT explicitement identifiés ; les événements LEGACY et les sources métier
 restent préservés. Une évolution de règle met à jour ou retire la projection
 CURRENT, elle n'ajoute jamais une compensation additive.
@@ -89,8 +95,8 @@ et `BADGE_ONLY → NON_GAMIFIED`, avec baisse possible de l'XP et du niveau.
 
 ## Reçu utilisateur de réconciliation
 
-`reconciliation/gamification-reconciliation-receipt.ts` porte le contrat structuré
-`GamificationReconciliationReceipt`. Le reconciler le construit depuis le
+`reconciliation/gamification-reconciliation-receipt-types.ts` porte le contrat structuré
+`GamificationReconciliationReceipt` ; `gamification-reconciliation-receipt.ts` le construit et conserve les exports compatibles. Le reconciler le construit depuis le
 même plan déterministe que les écritures `progression_events`, puis le
 persiste dans `app_notifications` uniquement lorsqu'une conséquence visible
 existe. Le payload contient les versions de règles, les valeurs XP et niveaux
@@ -181,11 +187,11 @@ Le parcours de parrainage possède sa propre capacité sous
 
 - `referrals.ts` porte les invitations, l'identité du parrainage, les caches
   invalidés et la réconciliation des récompenses ;
-- `referral-lineage.ts` porte les graphes, chaînes d'ancêtres, vues et
-  classements de lignage ;
+- `referral-lineage-model.ts` porte les graphes, chaînes d'ancêtres, vues et classements purs ; `referral-lineage.ts` charge les profils via la RPC et conserve les exports historiques ;
+- `referral-contribution-proof.ts` porte la sélection de la première preuve admissible, commune à l'attribution et à la reconstruction ;
 - `referral-reconciliation.ts` porte l'idempotence et la réconciliation des
   contributions utiles ;
-- `referrals-cache.ts` porte la lecture serveur mise en cache du résumé.
+- `referrals-cache.ts` conserve le nom historique du lecteur serveur privé ; il ne crée pas de cache partagé des données privées.
 
 Les tests et leurs helpers vivent avec cette capacité dans `referrals/`.
 Les consommateurs importent directement le module propriétaire, sans barrel
