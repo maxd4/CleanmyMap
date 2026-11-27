@@ -55,6 +55,8 @@ declare
   v_sqlstate text;
   v_constraint_name text;
   v_error_code text;
+  v_error_context text;
+  v_routine_name text;
   v_count integer;
   v_err_item jsonb;
   v_idx integer;
@@ -579,16 +581,17 @@ begin
     raise exception 'spogomi_referee_scope_current remained false after full reg-v2 requalification';
   end if;
 exception when others then
-  get stacked diagnostics v_sqlstate = returned_sqlstate, v_constraint_name = constraint_name, v_sqlerrm = message_text;
+  get stacked diagnostics v_sqlstate = returned_sqlstate, v_constraint_name = constraint_name, v_sqlerrm = message_text, v_error_context = pg_exception_context;
   if nullif(v_constraint_name, '') is null then
     v_constraint_name := (regexp_match(v_sqlerrm, 'constraint "([a-z0-9_]+)"'))[1];
   end if;
+  v_routine_name := (regexp_match(v_error_context, 'PL/pgSQL function public[.]([a-z0-9_]+)[(]'))[1];
   v_error_code := case v_sqlerrm
     when 'SPOGOMI event access is invalid' then 'invalid_event_access_arguments'
     when 'spogomi_competitor_referee_conflict' then 'competitor_referee_conflict'
     else 'unclassified_postgres_error'
   end;
-  raise notice 'PROOF_PHASE=spogomi.% SQLSTATE=% PROOF_CONSTRAINT=% PROOF_ERROR_CODE=%', v_proof_phase, v_sqlstate, coalesce(v_constraint_name, 'none'), v_error_code;
+  raise notice 'PROOF_PHASE=spogomi.% SQLSTATE=% PROOF_CONSTRAINT=% PROOF_ERROR_CODE=% PROOF_ROUTINE=%', v_proof_phase, v_sqlstate, coalesce(v_constraint_name, 'none'), v_error_code, coalesce(v_routine_name, 'unknown');
   raise;
 end;
 $$;

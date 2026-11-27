@@ -137,6 +137,11 @@ function proofErrorCode(value) {
   return errorCode ? { errorCode } : {};
 }
 
+function proofRoutine(value) {
+  const routine = String(value ?? "").match(/\bPROOF_ROUTINE=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
+  return routine ? { routine } : {};
+}
+
 export function sanitizeProofFailureExcerpt(output) {
   const lines = String(output ?? "")
     .split(/\r?\n/u)
@@ -148,7 +153,8 @@ export function sanitizeProofFailureExcerpt(output) {
       ?? line.match(/\b(?:ERROR|FATAL|PANIC):\s*([0-9A-Z]{5}):/i)?.[1]?.toUpperCase();
     const constraint = line.match(/\bPROOF_CONSTRAINT=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
     const errorCode = line.match(/\bPROOF_ERROR_CODE=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
-    if (phase && sqlstate && constraint && errorCode) return `PROOF_PHASE=${phase} SQLSTATE=${sqlstate} PROOF_CONSTRAINT=${constraint} PROOF_ERROR_CODE=${errorCode}`;
+    const routine = line.match(/\bPROOF_ROUTINE=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
+    if (phase && sqlstate && constraint && errorCode && routine) return `PROOF_PHASE=${phase} SQLSTATE=${sqlstate} PROOF_CONSTRAINT=${constraint} PROOF_ERROR_CODE=${errorCode} PROOF_ROUTINE=${routine}`;
     if (phase && sqlstate && constraint) return `PROOF_PHASE=${phase} SQLSTATE=${sqlstate} PROOF_CONSTRAINT=${constraint}`;
     if (phase && sqlstate && errorCode) return `PROOF_PHASE=${phase} SQLSTATE=${sqlstate} PROOF_ERROR_CODE=${errorCode}`;
     if (phase && sqlstate) return `PROOF_PHASE=${phase} SQLSTATE=${sqlstate}`;
@@ -567,7 +573,7 @@ export function attestProofResult(record, result, validate) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
     const failure = classifyProofFailure({ ...result, diagnostic: sanitizeProofFailureExcerpt(result.output) });
-    record.failure = { ...failure, ...proofPhase(result.output), ...proofConstraint(result.output), ...proofErrorCode(result.output) };
+    record.failure = { ...failure, ...proofPhase(result.output), ...proofConstraint(result.output), ...proofErrorCode(result.output), ...proofRoutine(result.output) };
     if (record.category === "PGTAP") record.counts = pgTapCounts(result.output, record.expectedAssertions ?? null);
     const phase = proofPhase(result.output).phase;
     record.reason = `step=${record.category ?? "SQL_PROOF"}; command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}${result.timedOut ? "; timeout=true" : ""}${result.outputTruncated ? "; output_truncated=true" : ""}; category=${failure.category}; origin=${failure.origin}${failure.sqlstate ? `; sqlstate=${failure.sqlstate}` : ""}${phase ? `; phase=${phase}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
@@ -581,7 +587,7 @@ export function attestProofResult(record, result, validate) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
     const diagnostic = error instanceof Error ? error.message : String(error);
-    record.failure = { ...classifyProofFailure({ ...result, diagnostic }), ...proofPhase(`${result.output}\n${diagnostic}`), ...proofConstraint(`${result.output}\n${diagnostic}`), ...proofErrorCode(`${result.output}\n${diagnostic}`) };
+    record.failure = { ...classifyProofFailure({ ...result, diagnostic }), ...proofPhase(`${result.output}\n${diagnostic}`), ...proofConstraint(`${result.output}\n${diagnostic}`), ...proofErrorCode(`${result.output}\n${diagnostic}`), ...proofRoutine(`${result.output}\n${diagnostic}`) };
     if (record.category === "PGTAP") record.counts = pgTapCounts(result.output, record.expectedAssertions ?? null);
     record.reason = `step=${record.category ?? "SQL_PROOF"}; category=${record.failure.category}; origin=${record.failure.origin}${record.failure.sqlstate ? `; sqlstate=${record.failure.sqlstate}` : ""}${record.failure.phase ? `; phase=${record.failure.phase}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(`${result.output}\n${diagnostic}`)}`;
     throw new Error(record.reason);
@@ -703,6 +709,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
           ...(record.failure?.phase ? { phase: record.failure.phase } : {}),
           ...(record.failure?.constraint ? { constraint: record.failure.constraint } : {}),
           ...(record.failure?.errorCode ? { errorCode: record.failure.errorCode } : {}),
+          ...(record.failure?.routine ? { routine: record.failure.routine } : {}),
           ...(record.counts ? { counts: record.counts } : {}),
         };
       }

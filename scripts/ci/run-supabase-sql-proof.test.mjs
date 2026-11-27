@@ -652,6 +652,9 @@ test("proof failure excerpts are bounded and redact sensitive values", () => {
   const errorCode = sanitizeProofFailureExcerpt("PROOF_PHASE=spogomi.grant SQLSTATE=23514 PROOF_ERROR_CODE=invalid_event_access_arguments\nDETAIL: clerk_id=private");
   assert.match(errorCode, /PROOF_PHASE=spogomi\.grant SQLSTATE=23514 PROOF_ERROR_CODE=invalid_event_access_arguments/);
   assert.doesNotMatch(errorCode, /clerk_id|private/);
+  const routine = sanitizeProofFailureExcerpt("PROOF_PHASE=spogomi.grant SQLSTATE=23514 PROOF_CONSTRAINT=none PROOF_ERROR_CODE=unclassified_postgres_error PROOF_ROUTINE=spogomi_set_event_access\nDETAIL: clerk_id=private");
+  assert.match(routine, /PROOF_ROUTINE=spogomi_set_event_access/);
+  assert.doesNotMatch(routine, /clerk_id|private/);
 });
 
 test("local Supabase proofs reuse the workflow's isolated Docker network when provided", () => {
@@ -697,7 +700,7 @@ test("pgTAP uses the detailed local CLI path and records a safe first diagnostic
 test("SQL proof diagnostics retain safe phase, SQLSTATE, and constraint metadata", async () => {
   let report;
   await assert.rejects(() => runSupabaseSqlProof({
-    commandRunner: async () => ({ code: 1, signal: null, timedOut: false, output: "PROOF_PHASE=spogomi.grant\nSQLSTATE=23514 PROOF_CONSTRAINT=spogomi_event_reviewers_role_check PROOF_ERROR_CODE=invalid_event_access_arguments\nERROR: 23514: private fixture detail" }),
+    commandRunner: async () => ({ code: 1, signal: null, timedOut: false, output: "PROOF_PHASE=spogomi.grant\nSQLSTATE=23514 PROOF_CONSTRAINT=spogomi_event_reviewers_role_check PROOF_ERROR_CODE=invalid_event_access_arguments PROOF_ROUTINE=spogomi_set_event_access\nERROR: 23514: private fixture detail" }),
     writeReportImpl: (value) => { report = value; },
     targets: ["apps/web/supabase/tests/spogomi-referee-qualification.sql"],
   }));
@@ -707,6 +710,7 @@ test("SQL proof diagnostics retain safe phase, SQLSTATE, and constraint metadata
   assert.equal(report.firstFailure.sqlstate, "23514");
   assert.equal(report.firstFailure.constraint, "spogomi_event_reviewers_role_check");
   assert.equal(report.firstFailure.errorCode, "invalid_event_access_arguments");
+  assert.equal(report.firstFailure.routine, "spogomi_set_event_access");
   assert.equal(report.records[0].failure.constraint, "spogomi_event_reviewers_role_check");
   assert.doesNotMatch(JSON.stringify(report), /private fixture detail/);
 });
