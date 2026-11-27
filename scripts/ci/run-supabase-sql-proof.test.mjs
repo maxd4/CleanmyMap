@@ -646,6 +646,9 @@ test("proof failure excerpts are bounded and redact sensitive values", () => {
   const structured = sanitizeProofFailureExcerpt("PROOF_PHASE=spogomi.requalification ERROR: 23514: private fixture detail\nDETAIL: clerk_id=private");
   assert.match(structured, /PROOF_PHASE=spogomi\.requalification SQLSTATE=23514/);
   assert.doesNotMatch(structured, /private fixture|clerk_id/);
+  const constraint = sanitizeProofFailureExcerpt("PROOF_PHASE=spogomi.grant SQLSTATE=23514 PROOF_CONSTRAINT=spogomi_event_reviewers_role_check\nDETAIL: clerk_id=private");
+  assert.match(constraint, /PROOF_PHASE=spogomi\.grant SQLSTATE=23514 PROOF_CONSTRAINT=spogomi_event_reviewers_role_check/);
+  assert.doesNotMatch(constraint, /clerk_id|private/);
 });
 
 test("local Supabase proofs reuse the workflow's isolated Docker network when provided", () => {
@@ -688,17 +691,19 @@ test("pgTAP uses the detailed local CLI path and records a safe first diagnostic
   assert.doesNotMatch(JSON.stringify(report), /private fixture/);
 });
 
-test("SQL proof diagnostics retain safe phase and SQLSTATE metadata", async () => {
+test("SQL proof diagnostics retain safe phase, SQLSTATE, and constraint metadata", async () => {
   let report;
   await assert.rejects(() => runSupabaseSqlProof({
-    commandRunner: async () => ({ code: 1, signal: null, timedOut: false, output: "PROOF_PHASE=spogomi.availability\nERROR: 23514: private fixture detail" }),
+    commandRunner: async () => ({ code: 1, signal: null, timedOut: false, output: "PROOF_PHASE=spogomi.grant\nSQLSTATE=23514 PROOF_CONSTRAINT=spogomi_event_reviewers_role_check\nERROR: 23514: private fixture detail" }),
     writeReportImpl: (value) => { report = value; },
     targets: ["apps/web/supabase/tests/spogomi-referee-qualification.sql"],
   }));
   assert.equal(report.firstFailure.file, "apps/web/supabase/tests/spogomi-referee-qualification.sql");
   assert.equal(report.firstFailure.stage, "SQL_CONTRACT");
-  assert.equal(report.firstFailure.phase, "spogomi.availability");
+  assert.equal(report.firstFailure.phase, "spogomi.grant");
   assert.equal(report.firstFailure.sqlstate, "23514");
+  assert.equal(report.firstFailure.constraint, "spogomi_event_reviewers_role_check");
+  assert.equal(report.records[0].failure.constraint, "spogomi_event_reviewers_role_check");
   assert.doesNotMatch(JSON.stringify(report), /private fixture detail/);
 });
 

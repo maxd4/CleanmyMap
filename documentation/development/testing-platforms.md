@@ -217,10 +217,13 @@ L'ajout d'un fichier de preuve sans protocole enregistré fait échouer la lane.
 Le rapport JSON `supabase-sql-evidence.json`, copié dans l'artefact public
 allowlisté `evidence/supabase-sql.json`, contient le SHA exact testé, les
 catégories, le résultat et la raison de toute non-exécution ; il ne contient
-pas les sorties SQL brutes. Les statuts sont `INTEGRATION_PROOF`, `NOT_RUN` ou
-`DB_SEMANTICS_NOT_EXECUTED`. Une CI déclenchée par `push` sur `main` vérifie le
-commit déjà publié : elle fournit une vérification post-publication et ne
-constitue pas une protection serveur préalable à l'admission du push.
+pas les sorties SQL brutes. Une défaillance conserve aussi le chemin de suite,
+la phase, le SQLSTATE et, si le test le fournit, le nom de contrainte sous forme
+de champs structurés, avec un extrait assaini. Les statuts sont
+`INTEGRATION_PROOF`, `NOT_RUN` ou `DB_SEMANTICS_NOT_EXECUTED`. Une CI
+déclenchée par `push` sur `main` vérifie le commit déjà publié : elle fournit
+une vérification post-publication et ne constitue pas une protection serveur
+préalable à l'admission du push.
 La lane d'E2E applicatif et le workflow backup/restore ont leurs propres
 instances et résultats; ils ne réexécutent pas l'inventaire SQL complet et
 leurs échecs ne modifient pas l'attestation de cette preuve.

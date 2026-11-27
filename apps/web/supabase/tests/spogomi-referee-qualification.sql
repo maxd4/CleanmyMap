@@ -52,6 +52,8 @@ declare
   v_app_rate_casual uuid;
   v_app_row public.spogomi_referee_applications%rowtype;
   v_sqlerrm text;
+  v_sqlstate text;
+  v_constraint_name text;
   v_count integer;
   v_err_item jsonb;
   v_idx integer;
@@ -576,7 +578,8 @@ begin
     raise exception 'spogomi_referee_scope_current remained false after full reg-v2 requalification';
   end if;
 exception when others then
-  raise notice 'PROOF_PHASE=spogomi.% SQLSTATE=%', v_proof_phase, sqlstate;
+  get stacked diagnostics v_sqlstate = returned_sqlstate, v_constraint_name = constraint_name;
+  raise notice 'PROOF_PHASE=spogomi.% SQLSTATE=% PROOF_CONSTRAINT=%', v_proof_phase, v_sqlstate, coalesce(v_constraint_name, 'none');
   raise;
 end;
 $$;
