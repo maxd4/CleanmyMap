@@ -51,6 +51,13 @@ afterEach(() => {
 describe("TeamLogisticsSection", () => {
   it("keeps the call-list entry point informational before save and loads the shared registry after an actionId arrives", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes("/form-editors")) {
+        return new Response(JSON.stringify({
+          actionId: "action-after-save",
+          actionPhase: "pre_action",
+          editorIds: [],
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
       if (String(url).includes("attendance-registry")) {
         return new Response(JSON.stringify({
           actionId: "action-after-save",
