@@ -1,0 +1,1242 @@
+diff --git a/apps/web/src/lib/actions/formalities/email-draft.ts b/apps/web/src/lib/actions/formalities/email-draft.ts
+--- a/apps/web/src/lib/actions/formalities/email-draft.ts
++++ b/apps/web/src/lib/actions/formalities/email-draft.ts
+@@ -1,145 +1,163 @@
+ import type { ActionFormality } from "./qualification";
+-
+-export type FormalitiesEmailActionData = {
+-  title?: string | null;
+-  description?: string | null;
+-  location?: string | null;
+-  date?: string | null;
+-  startTime?: string | null;
+-  endTime?: string | null;
+-  participantCount?: number | null;
+-  organizerName?: string | null;
+-  contactAreaMode?: "single_location" | "route_or_area" | "unknown";
+-  contactArrondissementCode?: string | null;
+-};
+-
+-export type FormalitiesEmailPurpose = "participatory_cleaning" | "collaboration";
+-
+-export type ReviewableFormalityEmailDraft = {
+-  to: string;
+-  subject: string;
+-  body: string;
+-  requiresReview: true;
+-  sent: false;
+-};
+-
+-export type FormalitiesEmailActionFormInput = {
+-  actionTitle?: string | null;
+-  shortDescription?: string | null;
+-  locationLabel?: string | null;
+-  departureLocationLabel?: string | null;
+-  actionDate?: string | null;
+-  eventStartTime?: string | null;
+-  eventEndTime?: string | null;
+-  departureTime?: string | null;
+-  meetingTime?: string | null;
+-  volunteersCount?: string | null;
+-  organizerName?: string | null;
+-  associationName?: string | null;
+-  actorName?: string | null;
+-  latitude?: string | null;
+-  longitude?: string | null;
+-  operationalRoute?: unknown;
+-  interventionMode?: { mode?: string } | null;
+-  formalitiesContext?: { territory?: { arrondissement?: { code?: string } | null } } | null;
+-};
+-
+-function isMeaningful(value: unknown): value is string {
+-  return typeof value === "string" && value.trim().length > 0;
+-}
+-
+-function parseOptionalCount(value: string | null | undefined): number | null {
+-  if (!isMeaningful(value)) return null;
+-  const count = Number(value);
+-  return Number.isFinite(count) && count >= 0 ? count : null;
+-}
+-
+-export function buildFormalitiesEmailActionDataFromForm(
+-  form: FormalitiesEmailActionFormInput,
+-): FormalitiesEmailActionData {
+-  const hasCoordinates = isMeaningful(form.latitude) && isMeaningful(form.longitude);
+-  const isRouteOrArea = Boolean(form.operationalRoute) || form.interventionMode?.mode === "itinerary";
+-
+-  return {
+-    title: form.actionTitle ?? null,
+-    description: form.shortDescription ?? null,
+-    location: form.departureLocationLabel || form.locationLabel || null,
+-    date: form.actionDate ?? null,
+-    startTime: form.eventStartTime || form.departureTime || form.meetingTime || null,
+-    endTime: form.eventEndTime ?? null,
+-    participantCount: parseOptionalCount(form.volunteersCount),
+-    organizerName: form.organizerName || form.associationName || form.actorName || null,
+-    contactAreaMode: isRouteOrArea ? "route_or_area" : hasCoordinates ? "single_location" : "unknown",
+-    contactArrondissementCode: form.formalitiesContext?.territory?.arrondissement?.code ?? null,
+-  };
+-}
+-
+-export function buildReviewableFormalityEmailDraft(params: {
+-  formality: ActionFormality;
+-  action: FormalitiesEmailActionData;
+-  purpose?: FormalitiesEmailPurpose;
+-  contactScope?: string;
+-  verifiedRecipientEmail?: string;
+-}): ReviewableFormalityEmailDraft | null {
+-  const channel = params.formality.officialChannel;
+-  const recipientEmail = params.verifiedRecipientEmail ??
+-    (channel?.kind === "official_email" ? channel.emailAddress : null);
+-  if (!isMeaningful(recipientEmail)) {
+-    return null;
+-  }
+-
+-  const action = params.action;
+-  const lines = [
+-    "Bonjour,",
+-    "",
+-    params.purpose === "participatory_cleaning"
+-      ? "Je vous contacte au sujet du nettoyage participatif suivant :"
+-      : params.purpose === "collaboration"
+-        ? "Je vous propose d’échanger au sujet de l’action suivante :"
+-        : "Je souhaite vous soumettre une demande concernant l’action suivante :",
+-    isMeaningful(action.title) ? `Titre : ${action.title.trim()}` : null,
+-    isMeaningful(action.description) ? `Description : ${action.description.trim()}` : null,
+-    isMeaningful(action.location) ? `Lieu : ${action.location.trim()}` : null,
+-    isMeaningful(params.contactScope) ? `Secteur concerné par ce contact : ${params.contactScope.trim()}` : null,
+-    isMeaningful(action.date) ? `Date : ${action.date.trim()}` : null,
+-    isMeaningful(action.startTime) ? `Début : ${action.startTime.trim()}` : null,
+-    isMeaningful(action.endTime) ? `Fin : ${action.endTime.trim()}` : null,
+-    typeof action.participantCount === "number" && Number.isFinite(action.participantCount)
+-      ? `Participants prévus : ${action.participantCount}`
+-      : null,
+-    isMeaningful(action.organizerName)
+-      ? `Organisateur : ${action.organizerName.trim()}`
+-      : null,
+-    "",
+-    params.purpose === "participatory_cleaning"
+-      ? "Pourriez-vous nous indiquer si des gants et des sacs peuvent être fournis sur demande, ainsi que des cendriers de poche selon disponibilité, et confirmer la prise en charge des déchets ?"
+-      : params.purpose === "collaboration"
+-        ? "Seriez-vous intéressés par une coorganisation ou un relais de cette action, selon vos possibilités ? Si pertinent, pourriez-vous préciser si vous pouvez fournir du matériel ? Aucun engagement n’est présumé."
+-        : "Merci de m’indiquer la procédure et les pièces complémentaires éventuellement nécessaires.",
+-    ...(params.purpose === "participatory_cleaning" ? [
+-      "Matériel et quantités souhaités : [à préciser]",
+-      "Point de reprise souhaité : [à préciser, sous réserve de votre accord]",
+-      "Horaire de reprise souhaité : [à préciser, sous réserve de votre accord]",
+-      "Flux et volumes prévus : [à préciser]",
+-      "Merci de confirmer les flux acceptés, le tri, le conditionnement et le lieu et horaire de reprise autorisés.",
+-    ] : []),
+-    "",
+-    "Cordialement,",
+-  ].filter((line): line is string => line !== null);
+-
+-  return {
+-    to: recipientEmail.trim(),
+-    subject: params.purpose === "participatory_cleaning"
+-      ? isMeaningful(action.title)
+-        ? `Nettoyage participatif — ${action.title.trim()}`
+-        : "Nettoyage participatif à Paris"
+-      : params.purpose === "collaboration"
+-        ? isMeaningful(action.title) ? `Proposition de collaboration : ${action.title.trim()}` : "Proposition de collaboration pour un nettoyage participatif"
+-      : isMeaningful(action.title)
+-        ? `Demande concernant ${action.title.trim()}`
+-        : "Demande concernant une action",
+-    body: lines.join("\n"),
+-    requiresReview: true,
+-    sent: false,
+-  };
++import { buildSupportRequestLines, type SupportNeed } from "./accompaniment";
++
++export type FormalitiesEmailActionData = {
++  title?: string | null;
++  description?: string | null;
++  location?: string | null;
++  date?: string | null;
++  startTime?: string | null;
++  endTime?: string | null;
++  participantCount?: number | null;
++  organizerName?: string | null;
++  contactAreaMode?: "single_location" | "route_or_area" | "unknown";
++  contactArrondissementCode?: string | null;
++};
++
++export type FormalitiesEmailPurpose = "participatory_cleaning" | "collaboration" | "complementary";
++
++export type ReviewableFormalityEmailDraft = {
++  to: string;
++  subject: string;
++  body: string;
++  requiresReview: true;
++  sent: false;
++};
++
++export type FormalitiesEmailActionFormInput = {
++  actionTitle?: string | null;
++  shortDescription?: string | null;
++  locationLabel?: string | null;
++  departureLocationLabel?: string | null;
++  actionDate?: string | null;
++  eventStartTime?: string | null;
++  eventEndTime?: string | null;
++  departureTime?: string | null;
++  meetingTime?: string | null;
++  volunteersCount?: string | null;
++  organizerName?: string | null;
++  associationName?: string | null;
++  actorName?: string | null;
++  latitude?: string | null;
++  longitude?: string | null;
++  operationalRoute?: unknown;
++  interventionMode?: { mode?: string } | null;
++  formalitiesContext?: { territory?: { arrondissement?: { code?: string } | null } } | null;
++};
++
++function isMeaningful(value: unknown): value is string {
++  return typeof value === "string" && value.trim().length > 0;
++}
++
++function parseOptionalCount(value: string | null | undefined): number | null {
++  if (!isMeaningful(value)) return null;
++  const count = Number(value);
++  return Number.isFinite(count) && count >= 0 ? count : null;
++}
++
++export function buildFormalitiesEmailActionDataFromForm(
++  form: FormalitiesEmailActionFormInput,
++): FormalitiesEmailActionData {
++  const hasCoordinates = isMeaningful(form.latitude) && isMeaningful(form.longitude);
++  const isRouteOrArea = Boolean(form.operationalRoute) || form.interventionMode?.mode === "itinerary";
++
++  return {
++    title: form.actionTitle ?? null,
++    description: form.shortDescription ?? null,
++    location: form.departureLocationLabel || form.locationLabel || null,
++    date: form.actionDate ?? null,
++    startTime: form.eventStartTime || form.departureTime || form.meetingTime || null,
++    endTime: form.eventEndTime ?? null,
++    participantCount: parseOptionalCount(form.volunteersCount),
++    organizerName: form.organizerName || form.associationName || form.actorName || null,
++    contactAreaMode: isRouteOrArea ? "route_or_area" : hasCoordinates ? "single_location" : "unknown",
++    contactArrondissementCode: form.formalitiesContext?.territory?.arrondissement?.code ?? null,
++  };
++}
++
++export function buildReviewableFormalityEmailDraft(params: {
++  formality: ActionFormality;
++  action: FormalitiesEmailActionData;
++  purpose?: FormalitiesEmailPurpose;
++  contactScope?: string;
++  verifiedRecipientEmail?: string;
++  needs?: readonly SupportNeed[];
++}): ReviewableFormalityEmailDraft | null {
++  const channel = params.formality.officialChannel;
++  const recipientEmail = params.verifiedRecipientEmail ??
++    (channel?.kind === "official_email" ? channel.emailAddress : null);
++  if (!isMeaningful(recipientEmail)) {
++    return null;
++  }
++
++  const action = params.action;
++  const lines = [
++    "Bonjour,",
++    "",
++    params.purpose === "participatory_cleaning"
++      ? "Je vous contacte au sujet du nettoyage participatif suivant :"
++      : params.purpose === "collaboration"
++        ? "Je vous propose d’échanger au sujet de l’action suivante :"
++        : "Je souhaite vous soumettre une demande concernant l’action suivante :",
++    isMeaningful(action.title) ? `Titre : ${action.title.trim()}` : null,
++    isMeaningful(action.description) ? `Description : ${action.description.trim()}` : null,
++    isMeaningful(action.location) ? `Lieu : ${action.location.trim()}` : null,
++    isMeaningful(params.contactScope) ? `Secteur concerné par ce contact : ${params.contactScope.trim()}` : null,
++    isMeaningful(action.date) ? `Date : ${action.date.trim()}` : null,
++    isMeaningful(action.startTime) ? `Début : ${action.startTime.trim()}` : null,
++    isMeaningful(action.endTime) ? `Fin : ${action.endTime.trim()}` : null,
++    typeof action.participantCount === "number" && Number.isFinite(action.participantCount)
++      ? `Participants prévus : ${action.participantCount}`
++      : null,
++    isMeaningful(action.organizerName)
++      ? `Organisateur : ${action.organizerName.trim()}`
++      : null,
++    "",
++    params.purpose === "complementary"
++      ? "Informations ou demande particulière non couverte par le formulaire : [à préciser]"
++      : params.purpose === "participatory_cleaning" && params.needs !== undefined
++        ? null
++        : params.purpose === "participatory_cleaning"
++      ? "Pourriez-vous nous indiquer si des gants et des sacs peuvent être fournis sur demande, ainsi que des cendriers de poche selon disponibilité, et confirmer la prise en charge des déchets ?"
++      : params.purpose === "collaboration"
++        ? "Seriez-vous intéressés par une coorganisation ou un relais de cette action, selon vos possibilités ? Si pertinent, pourriez-vous préciser si vous pouvez fournir du matériel ? Aucun engagement n’est présumé."
++        : "Merci de m’indiquer la procédure et les pièces complémentaires éventuellement nécessaires.",
++    ...(params.purpose === "participatory_cleaning" && params.needs !== undefined ? buildSupportRequestLines(params.needs) : []),
++    ...(params.purpose === "participatory_cleaning" && params.needs === undefined ? [
++      "Matériel et quantités souhaités : [à préciser]",
++      "Point de reprise souhaité : [à préciser, sous réserve de votre accord]",
++      "Horaire de reprise souhaité : [à préciser, sous réserve de votre accord]",
++      "Flux et volumes prévus : [à préciser]",
++      "Merci de confirmer les flux acceptés, le tri, le conditionnement et le lieu et horaire de reprise autorisés.",
++    ] : []),
++    "",
++    "Cordialement,",
++  ].filter((line): line is string => line !== null);
++
++  return {
++    to: recipientEmail.trim(),
++    subject: params.purpose === "participatory_cleaning"
++      ? isMeaningful(action.title)
++        ? `Nettoyage participatif — ${action.title.trim()}`
++        : "Nettoyage participatif"
++      : params.purpose === "collaboration"
++        ? isMeaningful(action.title) ? `Proposition de collaboration : ${action.title.trim()}` : "Proposition de collaboration pour un nettoyage participatif"
++      : isMeaningful(action.title)
++        ? `Demande concernant ${action.title.trim()}`
++        : "Demande concernant une action",
++    body: lines.join("\n"),
++    requiresReview: true,
++    sent: false,
++  };
++}
++
++/** User-reviewed copyable facts, not an assertion about external form fields. */
++export function buildSupportActionSummary(action: FormalitiesEmailActionData): string {
++  const values: [string, string | number | null | undefined][] = [
++    ["Titre", action.title], ["Organisateur", action.organizerName], ["Lieu", action.location],
++    ["Date", action.date], ["Début", action.startTime], ["Fin", action.endTime],
++    ["Participants prévus", action.participantCount], ["Description", action.description],
++  ];
++  return values.filter(([, value]) => typeof value === "number" ? Number.isFinite(value) : isMeaningful(value))
++    .map(([label, value]) => label + " : " + value).join("\n");
+ }
+diff --git a/apps/web/src/components/actions/action-formalities-email-composer.tsx b/apps/web/src/components/actions/action-formalities-email-composer.tsx
+--- a/apps/web/src/components/actions/action-formalities-email-composer.tsx
++++ b/apps/web/src/components/actions/action-formalities-email-composer.tsx
+@@ -1,59 +1,63 @@
+ "use client";
+ 
+ import { useId, useMemo, useState } from "react";
+-import type { ActionFormality } from "@/lib/actions/formalities/qualification";
+-import {
+-  buildReviewableFormalityEmailDraft,
+-  type FormalitiesEmailActionData,
+-  type FormalitiesEmailPurpose,
+-} from "@/lib/actions/formalities/email-draft";
+-
+-export function ActionFormalitiesEmailComposer({
+-  formality,
+-  actionData,
+-  recipientEmail,
+-  purpose = "participatory_cleaning",
+-  contactScope,
+-}: {
+-  formality: ActionFormality;
+-  actionData: FormalitiesEmailActionData;
+-  recipientEmail: string;
+-  purpose?: FormalitiesEmailPurpose;
+-  contactScope?: string;
+-}) {
+-  const titleId = useId();
+-  const draft = useMemo(
+-    () => buildReviewableFormalityEmailDraft({
+-      formality,
+-      action: actionData,
+-      purpose,
+-      contactScope,
+-      verifiedRecipientEmail: recipientEmail,
+-    }),
+-    [actionData, formality, recipientEmail, purpose, contactScope],
+-  );
+-  const [subject, setSubject] = useState(draft?.subject ?? "");
+-  const [body, setBody] = useState(draft?.body ?? "");
+-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+-
+-  if (!draft) return null;
+-  const currentDraft = draft;
+-
+-  const mailto = `mailto:${currentDraft.to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+-
+-  async function copyMail() {
+-    try {
+-      await navigator.clipboard.writeText(`À : ${currentDraft.to}\nObjet : ${subject}\n\n${body}`);
+-      setCopyState("copied");
+-    } catch {
+-      setCopyState("failed");
+-    }
+-  }
+-
+-  return (
+-    <section className="space-y-3 rounded-xl border border-sky-200 bg-sky-50/60 p-3" aria-labelledby={titleId}>
+-      <div>
+-        <h4 id={titleId} className="font-bold text-sky-950">{purpose === "collaboration" ? "Proposer une collaboration" : "Prévenir la division de propreté"}</h4>
++import type { SupportNeed } from "@/lib/actions/formalities/accompaniment";
++import type { ActionFormality } from "@/lib/actions/formalities/qualification";
++import {
++  buildReviewableFormalityEmailDraft,
++  type FormalitiesEmailActionData,
++  type FormalitiesEmailPurpose,
++} from "@/lib/actions/formalities/email-draft";
++
++export function ActionFormalitiesEmailComposer({
++  formality,
++  actionData,
++  recipientEmail,
++  purpose = "participatory_cleaning",
++  contactScope,
++  needs,
++}: {
++  formality: ActionFormality;
++  actionData: FormalitiesEmailActionData;
++  recipientEmail: string;
++  purpose?: FormalitiesEmailPurpose;
++  contactScope?: string;
++  needs?: readonly SupportNeed[];
++}) {
++  const titleId = useId();
++  const draft = useMemo(
++    () => buildReviewableFormalityEmailDraft({
++      formality,
++      action: actionData,
++      purpose,
++      contactScope,
++      needs,
++      verifiedRecipientEmail: recipientEmail,
++    }),
++    [actionData, formality, recipientEmail, purpose, contactScope, needs],
++  );
++  const [subject, setSubject] = useState(draft?.subject ?? "");
++  const [body, setBody] = useState(draft?.body ?? "");
++  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
++
++  if (!draft) return null;
++  const currentDraft = draft;
++
++  const mailto = `mailto:${currentDraft.to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
++
++  async function copyMail() {
++    try {
++      await navigator.clipboard.writeText(`À : ${currentDraft.to}\nObjet : ${subject}\n\n${body}`);
++      setCopyState("copied");
++    } catch {
++      setCopyState("failed");
++    }
++  }
++
++  return (
++    <section className="space-y-3 rounded-xl border border-sky-200 bg-sky-50/60 p-3" aria-labelledby={titleId}>
++      <div>
++        <h4 id={titleId} className="font-bold text-sky-950">{purpose === "complementary" ? "Courriel complémentaire" : purpose === "collaboration" ? "Proposer une collaboration" : "Préparer une demande"}</h4>
+         <p className="mt-1 text-xs leading-5 text-sky-950">Le texte est modifiable. Copier ou ouvrir votre messagerie ne marque pas la démarche comme envoyée.</p>
+       </div>
+       <p className="break-all text-xs text-sky-950"><span className="font-semibold">À :</span> {currentDraft.to}</p>
+diff --git a/apps/web/src/components/actions/action-formalities-paris-contact-panel.tsx b/apps/web/src/components/actions/action-formalities-paris-contact-panel.tsx
+--- a/apps/web/src/components/actions/action-formalities-paris-contact-panel.tsx
++++ b/apps/web/src/components/actions/action-formalities-paris-contact-panel.tsx
+@@ -1,104 +1,121 @@
+ "use client";
+ 
+-import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+-import type { ActionFormality } from "@/lib/actions/formalities/qualification";
+-import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
+-import { PARIS_CLEANING_FORM_URL } from "@/lib/actions/formalities/paris-cleaning-contacts";
+-import { resolveParisFormalitiesSupport, type ParisFormalitiesSupport } from "@/lib/actions/formalities/paris-support";
+-import type { ParisContactSource } from "@/lib/partners/paris-cleanwalk-network.contacts";
+-import { ActionFormalitiesEmailComposer } from "./action-formalities-email-composer";
+-
+-const ARRONDISSEMENTS = Array.from({ length: 20 }, (_, i) => i + 1);
+-
+-function SourceLink({ source }: { source: ParisContactSource }) {
+-  return <p className="break-words text-xs text-emerald-900/75">Source : <a className="underline" href={source.url} target="_blank" rel="noreferrer">{source.title}</a> · vérifiée le {source.verifiedOn}</p>;
+-}
+-
+-function areaLabel(numbers: readonly number[]) {
+-  return numbers.map(n => `${n}e`).join(", ");
+-}
+-
+-export function ActionFormalitiesParisContactPanel({
+-  actionData, contactFormality, selectedArrondissements, onArrondissementsChange,
+-  support = resolveParisFormalitiesSupport(selectedArrondissements),
+-}: {
+-  actionData?: FormalitiesEmailActionData;
+-  contactFormality: ActionFormality | undefined;
+-  selectedArrondissements: number[];
+-  onArrondissementsChange: (arrondissements: number[]) => void;
+-  support?: ParisFormalitiesSupport;
+-}) {
+-  const action = actionData ?? {};
+-  const draftKey = JSON.stringify(action);
+-  const areaUnknown = support.arrondissements.length === 0;
+-  return (
+-    <section className="min-w-0 space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3 sm:p-4" aria-labelledby="paris-cleaning-contact-title">
+-      <div>
+-        <h4 id="paris-cleaning-contact-title" className="font-bold text-emerald-950">Contacts, matériel et reprise des déchets</h4>
+-        <p className="mt-1 text-sm text-emerald-950/80">Coordination recommandée pour un nettoyage participatif municipal. Elle ne remplace pas les démarches éventuellement obligatoires.</p>
+-      </div>
+-      <CmmDisclosure summary={areaUnknown ? "Préciser les arrondissements concernés" : `Arrondissements concernés : ${areaLabel(support.arrondissements)}`} tone="emerald" size="sm" defaultOpen={areaUnknown}>
+-        <fieldset className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+-          <legend className="mb-2 text-sm">Sélectionnez uniquement les territoires de l’action.</legend>
+-          {ARRONDISSEMENTS.map(n => <label key={n} className="flex min-h-10 items-center gap-2 rounded-lg border border-emerald-200 bg-white px-2 text-sm">
+-            <input type="checkbox" checked={selectedArrondissements.includes(n)} onChange={e => onArrondissementsChange((e.target.checked ? [...selectedArrondissements,n] : selectedArrondissements.filter(v => v !== n)).sort((a,b)=>a-b))} className="size-4 accent-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700" />
+-            <span>{n}e</span>
+-          </label>)}
+-        </fieldset>
+-      </CmmDisclosure>
+-      <a href={PARIS_CLEANING_FORM_URL} target="_blank" rel="noreferrer" className="cmm-button max-w-full whitespace-normal" data-cmm-button-tone="primary" data-cmm-button-size="sm" data-cmm-button-variant="pill">Ouvrir le formulaire officiel Paris.fr</a>
+-      {areaUnknown || !support.divisions.length ? <p role="status" className="text-sm text-amber-950">Aucune division identifiée. Précisez le secteur ou utilisez le formulaire officiel.</p> :
+-        <div className="space-y-2" aria-label="Contacts des divisions concernées">
+-          {support.divisions.map(contact => {
+-            const covered = contact.arrondissements.filter(n => support.arrondissements.includes(n));
+-            const emailScope = contact.emailArrondissements ?? [];
+-            const uncovered = covered.filter(n => !emailScope.includes(n));
+-            return <article key={contact.id} className="min-w-0 space-y-1 rounded-xl border border-emerald-200 bg-white p-3">
+-              <h5 className="font-semibold text-emerald-950">{contact.label}</h5>
+-              <p className="text-sm">Téléphone : <a className="underline" href={`tel:${contact.phone.replaceAll(" ","")}`}>{contact.phone}</a></p>
+-              <p className="text-sm break-words">Adresse administrative (pas un dépôt) : {contact.administrativeAddress}</p>
+-              <SourceLink source={contact.phoneSource} />
+-              {contact.addressSource.url !== contact.phoneSource.url ? <SourceLink source={contact.addressSource} /> : null}
+-              {contact.email && contact.emailSource && emailScope.length ? <>
+-                <p className="break-all text-sm">Courriel publié pour {areaLabel(emailScope)} : <a className="underline" href={`mailto:${contact.email}`}>{contact.email}</a></p>
+-                <SourceLink source={contact.emailSource} />
+-                {contactFormality ? <CmmDisclosure summary="Prévenir la division de propreté" tone="sky" size="sm">
+-                  <ActionFormalitiesEmailComposer key={`${draftKey}:${contact.id}:${areaLabel(emailScope)}`} formality={contactFormality} actionData={action} recipientEmail={contact.email} contactScope={areaLabel(emailScope)} />
+-                </CmmDisclosure> : null}
+-              </> : null}
+-              {uncovered.length ? <p className="text-xs">Pas de courriel vérifié pour {areaLabel(uncovered)}. Téléphone ou <a href={contact.officialChannel.url} target="_blank" rel="noreferrer" className="underline">canal officiel</a>.</p> : null}
+-            </article>;
+-          })}
+-        </div>}
+-      <CmmDisclosure summary={`Mairies · relais facultatifs (${support.townHalls.length})`} tone="emerald" size="sm">
+-        {support.townHalls.length ? <ul className="space-y-2">{support.townHalls.map(hall => <li key={hall.id} className="min-w-0 rounded-lg bg-white p-2 text-sm"><p className="font-semibold">{hall.label} · {areaLabel(hall.arrondissements)}</p><p>{hall.administrativeAddress} (administrative)</p><p><a href={`tel:${hall.phone.replaceAll(" ","")}`} className="underline">{hall.phone}</a> · <a href={hall.officialChannel} target="_blank" rel="noreferrer" className="underline">Site officiel</a></p><SourceLink source={hall.source}/></li>)}</ul> : <p role="status" className="text-sm">Aucune mairie identifiée pour la sélection.</p>}
+-      </CmmDisclosure>
+-      <CmmDisclosure summary={`Associations et réseaux pertinents (${support.associations.length})`} tone="emerald" size="sm">
+-        <p className="mb-2 text-xs">Pistes de contact selon le périmètre documenté. Aucun partenariat ni prêt de matériel présumé.</p>
+-        {support.associations.length ? <ul className="space-y-2">{support.associations.map(({actor,contact,matchedArrondissements}) => <li key={actor.id} className="min-w-0 space-y-1 rounded-lg bg-white p-2 text-sm">
+-          <p className="font-semibold">{actor.name}</p>
+-          <p>{actor.parisZone.label} · secteur concerné : {areaLabel(matchedArrondissements)}</p>
+-          <p className="text-xs">{actor.activities.join(" · ")}</p>
+-          <SourceLink source={{title:actor.provenance.sourceLabel,url:actor.provenance.sourceUrl,verifiedOn:actor.verifiedAt}}/>
+-          <a href={contact.url} className="underline" target="_blank" rel="noreferrer">{contact.label}</a>
+-          {contact.email ? <p className="break-all"><a href={`mailto:${contact.email}`} className="underline">{contact.email}</a></p> : <p className="text-xs">Aucun courriel vérifié ; utiliser le canal officiel.</p>}
+-          <SourceLink source={contact.source}/>
+-          {contact.equipmentNote ? <p className="text-xs">{contact.equipmentNote}</p> : null}
+-          {contact.email && contactFormality ? <CmmDisclosure summary="Proposer une collaboration" tone="sky" size="sm"><ActionFormalitiesEmailComposer key={`${draftKey}:${actor.id}:${areaLabel(matchedArrondissements)}`} formality={contactFormality} actionData={action} recipientEmail={contact.email} purpose="collaboration" contactScope={areaLabel(matchedArrondissements)} /></CmmDisclosure> : null}
+-        </li>)}</ul> : <p role="status" className="text-sm">Aucun contact associatif suffisamment documenté pour ce secteur.</p>}
+-      </CmmDisclosure>
+-      <section className="space-y-1 rounded-xl border border-emerald-200 bg-white p-3 text-sm">
+-        <h5 className="font-semibold">Matériel potentiellement disponible</h5>
+-        <p>Sur demande : {support.logistics.offeredOnRequest.join(", ")}. Selon disponibilité : {support.logistics.subjectToAvailability.join(", ")}.</p>
+-        <p>Quantités, stock et retrait à confirmer. Aucun autre matériel ni lieu de retrait confirmé.</p>
+-        <SourceLink source={support.logistics.source}/>
+-      </section>
+-      <section className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm" aria-label="Consignes de reprise des déchets">
+-        <h5 className="font-semibold">Organiser l’enlèvement</h5>
+-        {support.guidance.map(item => <div key={item.label}><p><strong>{item.label} :</strong> {item.text}</p><SourceLink source={item.source}/>{item.additionalSource ? <SourceLink source={item.additionalSource}/> : null}</div>)}
+-        <p className="font-semibold">Une adresse de mairie ou de division n’est jamais un point de dépôt confirmé.</p>
+-        <p>Après confirmation réelle du service, reporter la consigne (date, interlocuteur, lieu, horaire et flux) dans Équipe et logistique, notes logistiques internes. Cette note reste spécifique à l’action.</p>
+-      </section>
++import { useState } from "react";
++import { MUNICIPAL_CLEANING_NEEDS, type SupportNeed } from "@/lib/actions/formalities/accompaniment";
++import { buildSupportActionSummary } from "@/lib/actions/formalities/email-draft";
++import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
++import type { ActionFormality } from "@/lib/actions/formalities/qualification";
++import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
++import { PARIS_CLEANING_FORM_URL } from "@/lib/actions/formalities/paris-cleaning-contacts";
++import { resolveParisFormalitiesSupport, type ParisFormalitiesSupport } from "@/lib/actions/formalities/paris-support";
++import type { ParisContactSource } from "@/lib/partners/paris-cleanwalk-network.contacts";
++import { ActionFormalitiesEmailComposer } from "./action-formalities-email-composer";
++
++const ARRONDISSEMENTS = Array.from({ length: 20 }, (_, i) => i + 1);
++
++function SourceLink({ source }: { source: ParisContactSource }) {
++  return <p className="break-words text-xs text-emerald-900/75">Source : <a className="underline" href={source.url} target="_blank" rel="noreferrer">{source.title}</a> · vérifiée le {source.verifiedOn}</p>;
++}
++
++function areaLabel(numbers: readonly number[]) {
++  return numbers.map(n => `${n}e`).join(", ");
++}
++
++export function ActionFormalitiesParisContactPanel({
++  actionData, contactFormality, selectedArrondissements, onArrondissementsChange,
++  support = resolveParisFormalitiesSupport(selectedArrondissements),
++  needs,
++}: {
++  actionData?: FormalitiesEmailActionData;
++  contactFormality: ActionFormality | undefined;
++  selectedArrondissements: number[];
++  onArrondissementsChange: (arrondissements: number[]) => void;
++  support?: ParisFormalitiesSupport;
++  needs: readonly SupportNeed[];
++}) {
++  const action = actionData ?? {};
++  const draftKey = JSON.stringify(action);
++  const areaUnknown = support.arrondissements.length === 0;
++  const municipalNeeds = MUNICIPAL_CLEANING_NEEDS.filter(need => needs.includes(need));
++  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
++  const summary = buildSupportActionSummary(action);
++  return (
++    <section className="min-w-0 space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3 sm:p-4" aria-labelledby="paris-cleaning-contact-title">
++      <div>
++        <h4 id="paris-cleaning-contact-title" className="font-bold text-emerald-950">Contacts, matériel et reprise des déchets</h4>
++        <p className="mt-1 text-sm text-emerald-950/80">Coordination recommandée pour un nettoyage participatif municipal. Elle ne remplace pas les démarches éventuellement obligatoires.</p>
++      </div>
++      <CmmDisclosure summary={areaUnknown ? "Préciser les arrondissements concernés" : `Arrondissements concernés : ${areaLabel(support.arrondissements)}`} tone="emerald" size="sm" defaultOpen={areaUnknown}>
++        <fieldset className="grid grid-cols-2 gap-2 sm:grid-cols-4">
++          <legend className="mb-2 text-sm">Sélectionnez uniquement les territoires de l’action.</legend>
++          {ARRONDISSEMENTS.map(n => <label key={n} className="flex min-h-10 items-center gap-2 rounded-lg border border-emerald-200 bg-white px-2 text-sm">
++            <input type="checkbox" checked={selectedArrondissements.includes(n)} onChange={e => onArrondissementsChange((e.target.checked ? [...selectedArrondissements,n] : selectedArrondissements.filter(v => v !== n)).sort((a,b)=>a-b))} className="size-4 accent-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700" />
++            <span>{n}e</span>
++          </label>)}
++        </fieldset>
++      </CmmDisclosure>
++      {municipalNeeds.length ? <>
++      <p className="text-sm font-semibold">Canal recommandé : formulaire officiel pour les demandes courantes. Les champs effectivement proposés restent à vérifier lors de la saisie.</p>
++      <a href={PARIS_CLEANING_FORM_URL} target="_blank" rel="noreferrer" className="cmm-button max-w-full whitespace-normal" data-cmm-button-tone="primary" data-cmm-button-size="sm" data-cmm-button-variant="pill">Ouvrir le formulaire officiel Paris.fr</a>
++      {summary ? <div className="space-y-1"><textarea aria-label="Informations à préparer" readOnly value={summary} rows={5} className="w-full rounded-lg border bg-white p-2 text-sm" /><button type="button" className="cmm-button" onClick={async () => { try { await navigator.clipboard.writeText(summary); setCopyState("copied"); } catch { setCopyState("failed"); } }}>Copier les informations</button><p role="status" className="text-xs">{copyState === "copied" ? "Informations copiées." : copyState === "failed" ? "Sélectionnez le texte pour le copier." : ""}</p></div> : null}
++      <CmmDisclosure summary="Contact complémentaire, relance ou formulaire indisponible" tone="sky" size="sm">
++      {areaUnknown || !support.divisions.length ? <p role="status" className="text-sm text-amber-950">Aucune division identifiée. Précisez le secteur ou utilisez le formulaire officiel.</p> :
++        <div className="space-y-2" aria-label="Contacts des divisions concernées">
++          {support.divisions.map(contact => {
++            const covered = contact.arrondissements.filter(n => support.arrondissements.includes(n));
++            const emailScope = (contact.emailArrondissements ?? []).filter(n => covered.includes(n));
++            const uncovered = covered.filter(n => !emailScope.includes(n));
++            return <article key={contact.id} className="min-w-0 space-y-1 rounded-xl border border-emerald-200 bg-white p-3">
++              <h5 className="font-semibold text-emerald-950">{contact.label}</h5>
++              <p className="text-sm">Téléphone : <a className="underline" href={`tel:${contact.phone.replaceAll(" ","")}`}>{contact.phone}</a></p>
++              <p className="text-sm break-words">Adresse administrative (pas un dépôt) : {contact.administrativeAddress}</p>
++              <SourceLink source={contact.phoneSource} />
++              {contact.addressSource.url !== contact.phoneSource.url ? <SourceLink source={contact.addressSource} /> : null}
++              {contact.email && contact.emailSource && emailScope.length ? <>
++                <p className="break-all text-sm">Courriel publié pour {areaLabel(emailScope)} : <a className="underline" href={`mailto:${contact.email}`}>{contact.email}</a></p>
++                <SourceLink source={contact.emailSource} />
++                {contactFormality ? <CmmDisclosure summary="Préparer un courriel complémentaire" tone="sky" size="sm">
++                  <ActionFormalitiesEmailComposer key={`${draftKey}:${contact.id}:${areaLabel(emailScope)}:complement`} formality={contactFormality} actionData={action} recipientEmail={contact.email} contactScope={areaLabel(emailScope)} purpose="complementary" />
++                </CmmDisclosure> : null}
++                {contactFormality ? <CmmDisclosure summary="Formulaire indisponible : préparer les demandes sélectionnées" tone="sky" size="sm">
++                  <ActionFormalitiesEmailComposer key={`${draftKey}:${contact.id}:${areaLabel(emailScope)}:${municipalNeeds.join(",")}`} formality={contactFormality} actionData={action} recipientEmail={contact.email} contactScope={areaLabel(emailScope)} needs={municipalNeeds} />
++                </CmmDisclosure> : null}
++              </> : null}
++              {uncovered.length ? <p className="text-xs">Pas de courriel vérifié pour {areaLabel(uncovered)}. Téléphone ou <a href={contact.officialChannel.url} target="_blank" rel="noreferrer" className="underline">canal officiel</a>.</p> : null}
++            </article>;
++          })}
++        </div>}
++      </CmmDisclosure>
++      </> : null}
++      {needs.includes("communication") ? <CmmDisclosure summary={`Mairies · relais facultatifs (${support.townHalls.length})`} tone="emerald" size="sm">
++        {support.townHalls.length ? <ul className="space-y-2">{support.townHalls.map(hall => <li key={hall.id} className="min-w-0 rounded-lg bg-white p-2 text-sm"><p className="font-semibold">{hall.label} · {areaLabel(hall.arrondissements)}</p><p>{hall.administrativeAddress} (administrative)</p><p><a href={`tel:${hall.phone.replaceAll(" ","")}`} className="underline">{hall.phone}</a> · <a href={hall.officialChannel} target="_blank" rel="noreferrer" className="underline">Site officiel</a></p><SourceLink source={hall.source}/></li>)}</ul> : <p role="status" className="text-sm">Aucune mairie identifiée pour la sélection.</p>}
++      </CmmDisclosure> : null}
++      {needs.includes("association") ? <CmmDisclosure summary={`Associations et réseaux pertinents (${support.associations.length})`} tone="emerald" size="sm">
++        <p className="mb-2 text-xs">Pistes de contact selon le périmètre documenté. Aucun partenariat ni prêt de matériel présumé.</p>
++        {support.associations.length ? <ul className="space-y-2">{support.associations.map(({actor,contact,matchedArrondissements}) => <li key={actor.id} className="min-w-0 space-y-1 rounded-lg bg-white p-2 text-sm">
++          <p className="font-semibold">{actor.name}</p>
++          <p>{actor.parisZone.label} · secteur concerné : {areaLabel(matchedArrondissements)}</p>
++          <p className="text-xs">{actor.activities.join(" · ")}</p>
++          <SourceLink source={{title:actor.provenance.sourceLabel,url:actor.provenance.sourceUrl,verifiedOn:actor.verifiedAt}}/>
++          <a href={contact.url} className="underline" target="_blank" rel="noreferrer">{contact.label}</a>
++          {contact.email ? <p className="break-all"><a href={`mailto:${contact.email}`} className="underline">{contact.email}</a></p> : <p className="text-xs">Aucun courriel vérifié ; utiliser le canal officiel.</p>}
++          <SourceLink source={contact.source}/>
++          {contact.equipmentNote ? <p className="text-xs">{contact.equipmentNote}</p> : null}
++          {contact.email && contactFormality ? <CmmDisclosure summary="Proposer une collaboration" tone="sky" size="sm"><ActionFormalitiesEmailComposer key={`${draftKey}:${actor.id}:${areaLabel(matchedArrondissements)}`} formality={contactFormality} actionData={action} recipientEmail={contact.email} purpose="collaboration" contactScope={areaLabel(matchedArrondissements)} /></CmmDisclosure> : null}
++        </li>)}</ul> : <p role="status" className="text-sm">Aucun contact associatif suffisamment documenté pour ce secteur.</p>}
++      </CmmDisclosure> : null}
++      {needs.includes("equipment") ? <section className="space-y-1 rounded-xl border border-emerald-200 bg-white p-3 text-sm">
++        <h5 className="font-semibold">Matériel potentiellement disponible</h5>
++        <p>Sur demande : {support.logistics.offeredOnRequest.join(", ")}. Selon disponibilité : {support.logistics.subjectToAvailability.join(", ")}.</p>
++        <p>Quantités, stock et retrait à confirmer. Aucun autre matériel ni lieu de retrait confirmé.</p>
++        <SourceLink source={support.logistics.source}/>
++      </section> : null}
++      {needs.includes("pickup") ? <section className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm" aria-label="Consignes de reprise des déchets">
++        <h5 className="font-semibold">Organiser l’enlèvement</h5>
++        {support.guidance.map(item => <div key={item.label}><p><strong>{item.label} :</strong> {item.text}</p><SourceLink source={item.source}/>{item.additionalSource ? <SourceLink source={item.additionalSource}/> : null}</div>)}
++        <p className="font-semibold">Une adresse de mairie ou de division n’est jamais un point de dépôt confirmé.</p>
++        <p>Après confirmation réelle du service, reporter la consigne (date, interlocuteur, lieu, horaire et flux) dans Équipe et logistique, notes logistiques internes. Cette note reste spécifique à l’action.</p>
++      </section> : null}
+     </section>
+   );
+ }
+diff --git a/apps/web/src/components/actions/action-formalities-qualification-view.tsx b/apps/web/src/components/actions/action-formalities-qualification-view.tsx
+--- a/apps/web/src/components/actions/action-formalities-qualification-view.tsx
++++ b/apps/web/src/components/actions/action-formalities-qualification-view.tsx
+@@ -1,228 +1,256 @@
+ "use client";
+ 
+ import { useMemo, useState } from "react";
+-import { CmmButton } from "@/components/ui/cmm-button";
+-import { CmmCard } from "@/components/ui/cmm-card";
+-import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+-import { CmmPill, type PillTone } from "@/components/ui/cmm-pill";
+-import type { ActionFormalitiesResponse } from "@/lib/actions/http";
+-import type {
+-  ActionFormalitiesFacts,
+-  ActionFormalitiesQualification,
+-} from "@/lib/actions/formalities/qualification";
+-import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
+-import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
+-import { parseParisArrondissementCode } from "@/lib/actions/formalities/paris-cleaning-contacts";
+-import { resolveParisFormalitiesSupport } from "@/lib/actions/formalities/paris-support";
+-import { ActionFormalitiesParisContactPanel } from "./action-formalities-paris-contact-panel";
+-import { ActionFormalitiesPrintSheet } from "./action-formalities-print-sheet";
+-
+-type Formality = ActionFormalitiesResponse["qualification"]["formalities"][number];
+-
+-function requirementLabel(status: Formality["requirementStatus"]): string {
+-  switch (status) {
+-    case "required": return "Obligatoire selon la règle";
+-    case "recommended": return "Recommandé";
+-    case "not_required": return "Non requis dans ce cas";
+-    default: return "À confirmer";
+-  }
+-}
+-
+-function requirementTone(status: Formality["requirementStatus"]): PillTone {
+-  switch (status) {
+-    case "required": return "amber";
+-    case "recommended": return "sky";
+-    case "not_required": return "emerald";
+-    default: return "slate";
+-  }
+-}
+-
+-function userStatusLabel(status: "not_started" | "prepared" | "sent"): string {
+-  switch (status) {
+-    case "prepared": return "Préparée";
+-    case "sent": return "Déclarée envoyée";
+-    default: return "À préparer";
+-  }
+-}
+-
+-function deadlineUnitLabel(unit: "days" | "months"): string {
+-  return unit === "months" ? "mois" : "jours";
+-}
+-
+-function procedureLabel(procedureKind: Formality["procedureKind"]): string {
+-  switch (procedureKind) {
+-    case "city_aot": return "Autorisation d’occupation temporaire";
+-    case "police_declaration": return "Déclaration auprès de l’autorité compétente";
+-    case "other_manager": return "Accord du gestionnaire du lieu";
+-    case "information_only": return "Information et vérification";
+-    case "none": return "Aucune procédure identifiée";
+-    default: return "Procédure locale à vérifier";
+-  }
+-}
+-
+-function isNationalFallback(formality: Formality): boolean {
+-  return formality.ruleScope?.kind === "national" && formality.requirementStatus === "unknown";
+-}
+-
+-function NationalFallbackNotice() {
+-  return (
+-    <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2 text-sm text-sky-950" role="status">
+-      <p className="font-semibold">Cadre national disponible</p>
+-      <p className="mt-1 leading-5">
+-        Le cadre national applicable est disponible, mais CleanMyMap ne dispose pas encore d’une règle locale suffisamment vérifiée pour cette action.
+-      </p>
+-    </div>
+-  );
+-}
+-
+-function summaryFor(qualification: ActionFormalitiesQualification): {
+-  label: string;
+-  tone: PillTone;
+-  explanation: string;
+-} {
+-  const statuses = qualification.formalities.map((formality) => formality.requirementStatus);
+-  if (statuses.includes("required")) {
+-    return { label: "Démarche requise", tone: "amber", explanation: "Au moins une formalité est requise selon les faits et la règle indiquée." };
+-  }
+-  if (statuses.includes("unknown")) {
+-    return { label: "À confirmer", tone: "slate", explanation: "Les faits ou les sources disponibles ne permettent pas de conclure sur toutes les formalités." };
+-  }
+-  if (statuses.includes("recommended")) {
+-    return { label: "Contact recommandé", tone: "sky", explanation: "Un contact pratique est recommandé ; il ne constitue pas à lui seul une obligation administrative." };
+-  }
+-  return { label: "Aucune déclaration identifiée", tone: "emerald", explanation: "Aucune déclaration ou autorisation n’est identifiée pour les faits qualifiés." };
+-}
+-
+-function DocumentRequirements({ formality }: { formality: Formality }) {
+-  if (formality.requestedDocuments.length > 0) {
+-    const heading = formality.requirementStatus === "required"
+-      ? "Pièces listées pour la démarche requise"
+-      : formality.requirementStatus === "recommended"
+-        ? "Pièces recommandées"
+-        : "Pièces à confirmer";
+-    return <div className="text-xs text-emerald-900/75"><p className="font-semibold">{heading}</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedDocuments.map((item) => <li key={item}>{item}</li>)}</ul></div>;
+-  }
+-  if (formality.requirementStatus === "unknown") {
+-    return <p className="text-xs font-semibold text-amber-900">Pièces à confirmer auprès de l&apos;interlocuteur compétent.</p>;
+-  }
+-  if (formality.procedureKind === "none") {
+-    return <p className="text-xs text-emerald-900/75">Aucune pièce AOT n&apos;est demandée pour le nettoyage participatif ainsi qualifié.</p>;
+-  }
+-  return <p className="text-xs text-emerald-900/75">Pièces complémentaires non déterminées par les éléments disponibles ; vérifier la source officielle si la démarche est engagée.</p>;
+-}
+-
+-function ActionFormalityDetails({ formality, status }: { formality: Formality; status: "not_started" | "prepared" | "sent" }) {
+-  return <>
+-    <dl className="grid gap-2 text-sm text-emerald-900/75 sm:grid-cols-2"><div><dt className="font-semibold">Procédure</dt><dd>{procedureLabel(formality.procedureKind)}</dd></div><div><dt className="font-semibold">Destinataire</dt><dd>{formality.recipient ?? "À identifier"}</dd></div><div className="sm:col-span-2"><dt className="font-semibold">Pourquoi</dt><dd>{formality.justification}</dd></div>{formality.deadline ? <div><dt className="font-semibold">Délai indicatif</dt><dd>{formality.deadline.minimumValue} {deadlineUnitLabel(formality.deadline.unit)}</dd></div> : null}<div className="sm:col-span-2"><dt className="font-semibold">Périmètre de la règle</dt><dd>{formality.scope}</dd></div><div><dt className="font-semibold">État de votre démarche</dt><dd>{userStatusLabel(status)}</dd></div></dl>
+-    {formality.officialChannel ? <p className="text-xs text-emerald-900/70">Canal : {formality.officialChannel.url ? <a className="font-semibold underline" href={formality.officialChannel.url} target="_blank" rel="noreferrer">{formality.officialChannel.label}</a> : formality.officialChannel.label}</p> : null}
+-    {formality.requestedInformation.length ? <div className="text-xs text-emerald-900/75"><p className="font-semibold">Informations demandées</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedInformation.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
+-    <DocumentRequirements formality={formality} />
+-    <p className="text-xs text-emerald-900/65">Source : {formality.source?.url ? <a className="font-semibold underline" href={formality.source.url} target="_blank" rel="noreferrer">{formality.source.title}</a> : (formality.source?.title ?? "Aucune source officielle suffisante")}{formality.source?.verifiedOn ? ` · vérifiée le ${formality.source.verifiedOn}` : ""}</p>
+-  </>;
+-}
+-
+-function ActionFormalityActions({ formality, progress, status, isSaving, readOnly, onTransition }: { formality: Formality; progress: ActionFormalitiesWorkflowState["progress"][number] | undefined; status: "not_started" | "prepared" | "sent"; isSaving: boolean; readOnly: boolean; onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void }) {
+-  if (readOnly) return <p className="text-xs font-semibold text-sky-800">Les démarches seront conservées après l&apos;enregistrement.</p>;
+-  return <><div className="flex flex-wrap gap-2">{status === "not_started" || !progress?.validForQualification ? <CmmButton tone="secondary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "mark_prepared")} disabled={isSaving}>{progress?.validForQualification === false ? "Requalifier cette démarche" : "Marquer comme préparée"}</CmmButton> : null}{status === "prepared" ? <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "declare_sent")} disabled={isSaving}>Je déclare l&apos;avoir envoyée</CmmButton> : null}</div>{!progress?.validForQualification ? <p className="text-xs font-semibold text-amber-800">Les faits ont changé : cette démarche doit être revue. La preuve existante est conservée.</p> : null}</>;
+-}
+-
+-function ActionFormalityCard({
+-  formality,
+-  progress,
+-  isSaving,
+-  readOnly,
+-  onTransition,
+-}: {
+-  formality: Formality;
+-  progress: ActionFormalitiesWorkflowState["progress"][number] | undefined;
+-  isSaving: boolean;
+-  readOnly: boolean;
+-  onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
+-}) {
+-  const status = progress?.userStatus ?? "not_started";
+-  return (
+-    <CmmCard key={formality.id} tone="emerald" variant="glass" size="md">
+-      <div className="space-y-3">
+-        <div className="flex flex-wrap items-center justify-between gap-2"><CmmPill tone={requirementTone(formality.requirementStatus)} size="sm">{requirementLabel(formality.requirementStatus)}</CmmPill><CmmPill tone={status === "sent" ? "emerald" : "slate"} size="sm">{userStatusLabel(status)}</CmmPill></div>
+-        <h4 className="text-base font-bold text-emerald-950">{formality.competentAuthority.label}</h4>
+-        {isNationalFallback(formality) ? <NationalFallbackNotice /> : null}
+-        <ActionFormalityDetails formality={formality} status={status} />
+-        <ActionFormalityActions formality={formality} progress={progress} status={status} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />
+-      </div>
+-    </CmmCard>
+-  );
+-}
+-
+-export function ActionFormalitiesQualificationView({
+-  qualification,
+-  workflow,
+-  facts,
+-  actionEmailData,
+-  isSaving,
+-  readOnly = false,
+-  onTransition,
+-}: {
+-  qualification: ActionFormalitiesQualification;
+-  workflow: ActionFormalitiesWorkflowState;
+-  facts?: ActionFormalitiesFacts;
+-  actionEmailData?: FormalitiesEmailActionData;
+-  isSaving: boolean;
+-  readOnly?: boolean;
+-  onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
+-}) {
+-  const progressById = new Map(workflow.progress.map((progress) => [progress.formalityId, progress]));
+-  const summary = summaryFor(qualification);
+-  const primaryFormality = qualification.formalities.find((formality) => formality.requirementStatus === "required") ??
+-    qualification.formalities.find((formality) => formality.requirementStatus === "recommended") ??
+-    qualification.formalities[0];
+-  const contactFormality = qualification.formalities.find((formality) => formality.id === "paris-participatory-cleaning-contact-cleanliness-service");
+-  const isParisMunicipalCleanwalk = Boolean(
+-    facts?.isCleanwalk &&
+-    facts.territory.code === "FR-75" &&
+-    facts.manager.kind === "paris_city" &&
+-    contactFormality,
+-  );
+-  const resolvedArrondissementCode = facts?.territory.arrondissement?.code ?? null;
+-  const formArrondissementCode = actionEmailData?.contactArrondissementCode ?? null;
+-  const resolvedContactAreaMode = actionEmailData?.contactAreaMode ?? "unknown";
+-  const initialArrondissements = useMemo(() => {
+-    if (resolvedContactAreaMode === "route_or_area") return [];
+-    const number = parseParisArrondissementCode(formArrondissementCode ?? resolvedArrondissementCode);
+-    return number ? [number] : [];
+-  }, [formArrondissementCode, resolvedArrondissementCode, resolvedContactAreaMode]);
+-  const arrondissementContextKey = `${resolvedContactAreaMode}:${formArrondissementCode ?? resolvedArrondissementCode ?? "unknown"}`;
+-  const [arrondissementSelection, setArrondissementSelection] = useState({
+-    contextKey: arrondissementContextKey,
+-    values: initialArrondissements,
+-  });
+-  const selectedArrondissements = arrondissementSelection.contextKey === arrondissementContextKey
+-    ? arrondissementSelection.values
+-    : initialArrondissements;
+-  const updateSelectedArrondissements = (values: number[]) => {
+-    setArrondissementSelection({ contextKey: arrondissementContextKey, values });
+-  };
+-  const support = useMemo(
+-    () => isParisMunicipalCleanwalk ? resolveParisFormalitiesSupport(selectedArrondissements) : undefined,
+-    [isParisMunicipalCleanwalk, selectedArrondissements],
+-  );
+-
+-  return (
+-    <div className="space-y-3" aria-live="polite" data-testid="action-formalities-qualification">
+-      <CmmCard tone={summary.tone === "amber" ? "amber" : summary.tone === "sky" ? "sky" : summary.tone === "slate" ? "slate" : "emerald"} variant="glass" size="md" data-testid="action-formalities-summary">
+-        <div className="space-y-2">
+-          <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-lg font-black text-emerald-950">Formalités locales</h3><CmmPill tone={summary.tone} size="sm">{summary.label}</CmmPill></div>
+-          <p className="text-sm leading-5 text-emerald-950/80">{summary.explanation}</p>
+-          {primaryFormality ? <>
+-            <p className="text-sm text-emerald-950"><span className="font-semibold">Interlocuteur :</span> {primaryFormality.recipient ?? primaryFormality.competentAuthority.label ?? "À confirmer"}</p>
+-            <p className="text-xs text-emerald-900/70">Source : {primaryFormality.source?.url ? <a className="font-semibold underline" href={primaryFormality.source.url} target="_blank" rel="noreferrer">{primaryFormality.source.title}</a> : primaryFormality.source?.title ?? "Source à confirmer"}{primaryFormality.source?.verifiedOn ? ` · vérifiée le ${primaryFormality.source.verifiedOn}` : ""}</p>
+-          </> : null}
+-          <ActionFormalitiesPrintSheet summary={summary.label} actionData={actionEmailData} qualification={qualification} contacts={support?.divisions ?? []} support={support} />
+-        </div>
+-      </CmmCard>
+-      {isParisMunicipalCleanwalk && contactFormality ? <ActionFormalitiesParisContactPanel actionData={actionEmailData} contactFormality={contactFormality} selectedArrondissements={selectedArrondissements} onArrondissementsChange={updateSelectedArrondissements} support={support} /> : null}
+-      <CmmDisclosure summary="Détail des démarches, sources et pièces" tone="slate" size="sm">
+-        <div className="space-y-3">
+-          {qualification.formalities.map((formality) => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />)}
++import { SUPPORT_NEEDS, MUNICIPAL_CLEANING_NEEDS, normalizeSupportNeeds, resolveLocalSupport, type SupportNeed } from "@/lib/actions/formalities/accompaniment";
++import { CmmButton } from "@/components/ui/cmm-button";
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
++import { CmmPill, type PillTone } from "@/components/ui/cmm-pill";
++import type { ActionFormalitiesResponse } from "@/lib/actions/http";
++import type {
++  ActionFormalitiesFacts,
++  ActionFormalitiesQualification,
++} from "@/lib/actions/formalities/qualification";
++import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
++import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
++import { parseParisArrondissementCode } from "@/lib/actions/formalities/paris-cleaning-contacts";
++import { resolveParisFormalitiesSupport } from "@/lib/actions/formalities/paris-support";
++import { ActionFormalitiesParisContactPanel } from "./action-formalities-paris-contact-panel";
++import { ActionFormalitiesPrintSheet } from "./action-formalities-print-sheet";
++
++type Formality = ActionFormalitiesResponse["qualification"]["formalities"][number];
++
++function requirementLabel(status: Formality["requirementStatus"]): string {
++  switch (status) {
++    case "required": return "Obligatoire selon la règle";
++    case "recommended": return "Recommandé";
++    case "not_required": return "Non requis dans ce cas";
++    default: return "À confirmer";
++  }
++}
++
++function requirementTone(status: Formality["requirementStatus"]): PillTone {
++  switch (status) {
++    case "required": return "amber";
++    case "recommended": return "sky";
++    case "not_required": return "emerald";
++    default: return "slate";
++  }
++}
++
++function userStatusLabel(status: "not_started" | "prepared" | "sent"): string {
++  switch (status) {
++    case "prepared": return "Préparée";
++    case "sent": return "Déclarée envoyée";
++    default: return "À préparer";
++  }
++}
++
++function deadlineUnitLabel(unit: "days" | "months"): string {
++  return unit === "months" ? "mois" : "jours";
++}
++
++function procedureLabel(procedureKind: Formality["procedureKind"]): string {
++  switch (procedureKind) {
++    case "city_aot": return "Autorisation d’occupation temporaire";
++    case "police_declaration": return "Déclaration auprès de l’autorité compétente";
++    case "other_manager": return "Accord du gestionnaire du lieu";
++    case "information_only": return "Information et vérification";
++    case "none": return "Aucune procédure identifiée";
++    default: return "Procédure locale à vérifier";
++  }
++}
++
++function isNationalFallback(formality: Formality): boolean {
++  return formality.ruleScope?.kind === "national" && formality.requirementStatus === "unknown";
++}
++
++function NationalFallbackNotice() {
++  return (
++    <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2 text-sm text-sky-950" role="status">
++      <p className="font-semibold">Cadre national disponible</p>
++      <p className="mt-1 leading-5">
++        Le cadre national applicable est disponible, mais CleanMyMap ne dispose pas encore d’une règle locale suffisamment vérifiée pour cette action.
++      </p>
++    </div>
++  );
++}
++
++function summaryFor(qualification: ActionFormalitiesQualification): {
++  label: string;
++  tone: PillTone;
++  explanation: string;
++} {
++  const statuses = qualification.formalities.map((formality) => formality.requirementStatus);
++  if (statuses.includes("required")) {
++    return { label: "Démarche requise", tone: "amber", explanation: "Au moins une formalité est requise selon les faits et la règle indiquée." };
++  }
++  if (statuses.includes("unknown")) {
++    return { label: "À confirmer", tone: "slate", explanation: "Les faits ou les sources disponibles ne permettent pas de conclure sur toutes les formalités." };
++  }
++  if (statuses.includes("recommended")) {
++    return { label: "Contact recommandé", tone: "sky", explanation: "Un contact pratique est recommandé ; il ne constitue pas à lui seul une obligation administrative." };
++  }
++  return { label: "Aucune déclaration identifiée", tone: "emerald", explanation: "Aucune déclaration ou autorisation n’est identifiée pour les faits qualifiés." };
++}
++
++function DocumentRequirements({ formality }: { formality: Formality }) {
++  if (formality.requestedDocuments.length > 0) {
++    const heading = formality.requirementStatus === "required"
++      ? "Pièces listées pour la démarche requise"
++      : formality.requirementStatus === "recommended"
++        ? "Pièces recommandées"
++        : "Pièces à confirmer";
++    return <div className="text-xs text-emerald-900/75"><p className="font-semibold">{heading}</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedDocuments.map((item) => <li key={item}>{item}</li>)}</ul></div>;
++  }
++  if (formality.requirementStatus === "unknown") {
++    return <p className="text-xs font-semibold text-amber-900">Pièces à confirmer auprès de l&apos;interlocuteur compétent.</p>;
++  }
++  if (formality.procedureKind === "none") {
++    return <p className="text-xs text-emerald-900/75">Aucune pièce AOT n&apos;est demandée pour le nettoyage participatif ainsi qualifié.</p>;
++  }
++  return <p className="text-xs text-emerald-900/75">Pièces complémentaires non déterminées par les éléments disponibles ; vérifier la source officielle si la démarche est engagée.</p>;
++}
++
++function ActionFormalityDetails({ formality, status }: { formality: Formality; status: "not_started" | "prepared" | "sent" }) {
++  return <>
++    <dl className="grid gap-2 text-sm text-emerald-900/75 sm:grid-cols-2"><div><dt className="font-semibold">Procédure</dt><dd>{procedureLabel(formality.procedureKind)}</dd></div><div><dt className="font-semibold">Destinataire</dt><dd>{formality.recipient ?? "À identifier"}</dd></div><div className="sm:col-span-2"><dt className="font-semibold">Pourquoi</dt><dd>{formality.justification}</dd></div>{formality.deadline ? <div><dt className="font-semibold">Délai indicatif</dt><dd>{formality.deadline.minimumValue} {deadlineUnitLabel(formality.deadline.unit)}<br />{formality.deadline.note}</dd></div> : null}<div className="sm:col-span-2"><dt className="font-semibold">Périmètre de la règle</dt><dd>{formality.scope}</dd></div><div><dt className="font-semibold">État de votre démarche</dt><dd>{userStatusLabel(status)}</dd></div></dl>
++    {formality.officialChannel ? <p className="text-xs text-emerald-900/70">Canal : {formality.officialChannel.url ? <a className="font-semibold underline" href={formality.officialChannel.url} target="_blank" rel="noreferrer">{formality.officialChannel.label}</a> : formality.officialChannel.label}</p> : null}
++    {formality.requestedInformation.length ? <div className="text-xs text-emerald-900/75"><p className="font-semibold">Informations demandées</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedInformation.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
++    <DocumentRequirements formality={formality} />
++    <p className="text-xs text-emerald-900/65">Source : {formality.source?.url ? <a className="font-semibold underline" href={formality.source.url} target="_blank" rel="noreferrer">{formality.source.title}</a> : (formality.source?.title ?? "Aucune source officielle suffisante")}{formality.source?.verifiedOn ? ` · vérifiée le ${formality.source.verifiedOn}` : ""}</p>
++  </>;
++}
++
++function ActionFormalityActions({ formality, progress, status, isSaving, readOnly, onTransition }: { formality: Formality; progress: ActionFormalitiesWorkflowState["progress"][number] | undefined; status: "not_started" | "prepared" | "sent"; isSaving: boolean; readOnly: boolean; onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void }) {
++  if (readOnly) return <p className="text-xs font-semibold text-sky-800">Les démarches seront conservées après l&apos;enregistrement.</p>;
++  return <><div className="flex flex-wrap gap-2">{status === "not_started" || !progress?.validForQualification ? <CmmButton tone="secondary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "mark_prepared")} disabled={isSaving}>{progress?.validForQualification === false ? "Requalifier cette démarche" : "Marquer comme préparée"}</CmmButton> : null}{status === "prepared" ? <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "declare_sent")} disabled={isSaving}>Je déclare l&apos;avoir envoyée</CmmButton> : null}</div>{!progress?.validForQualification ? <p className="text-xs font-semibold text-amber-800">Les faits ont changé : cette démarche doit être revue. La preuve existante est conservée.</p> : null}</>;
++}
++
++function ActionFormalityCard({
++  formality,
++  progress,
++  isSaving,
++  readOnly,
++  onTransition,
++}: {
++  formality: Formality;
++  progress: ActionFormalitiesWorkflowState["progress"][number] | undefined;
++  isSaving: boolean;
++  readOnly: boolean;
++  onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
++}) {
++  const status = progress?.userStatus ?? "not_started";
++  return (
++    <CmmCard key={formality.id} tone="emerald" variant="glass" size="md">
++      <div className="space-y-3">
++        <div className="flex flex-wrap items-center justify-between gap-2"><CmmPill tone={requirementTone(formality.requirementStatus)} size="sm">{requirementLabel(formality.requirementStatus)}</CmmPill><CmmPill tone={status === "sent" ? "emerald" : "slate"} size="sm">{userStatusLabel(status)}</CmmPill></div>
++        <h4 className="text-base font-bold text-emerald-950">{formality.competentAuthority.label}</h4>
++        {isNationalFallback(formality) ? <NationalFallbackNotice /> : null}
++        <ActionFormalityDetails formality={formality} status={status} />
++        <ActionFormalityActions formality={formality} progress={progress} status={status} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />
++      </div>
++    </CmmCard>
++  );
++}
++
++export function ActionFormalitiesQualificationView({
++  qualification,
++  workflow,
++  facts,
++  actionEmailData,
++  isSaving,
++  readOnly = false,
++  onTransition,
++  supportNeeds,
++  onSupportNeedsChange,
++}: {
++  qualification: ActionFormalitiesQualification;
++  workflow: ActionFormalitiesWorkflowState;
++  facts?: ActionFormalitiesFacts;
++  actionEmailData?: FormalitiesEmailActionData;
++  supportNeeds?: readonly SupportNeed[];
++  onSupportNeedsChange?: (needs: SupportNeed[]) => void;
++  isSaving: boolean;
++  readOnly?: boolean;
++  onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
++}) {
++  const [localNeeds, setLocalNeeds] = useState<SupportNeed[]>([]);
++  const needs = supportNeeds ?? localNeeds;
++  const updateNeeds = (next: SupportNeed[]) => {
++    const normalized = normalizeSupportNeeds(next);
++    if (onSupportNeedsChange) onSupportNeedsChange(normalized);
++    else setLocalNeeds(normalized);
++  };
++  const progressById = new Map(workflow.progress.map((progress) => [progress.formalityId, progress]));
++  const summary = summaryFor(qualification);
++  const primaryFormality = qualification.formalities.find((formality) => formality.requirementStatus === "required") ??
++    qualification.formalities.find((formality) => formality.requirementStatus === "recommended") ??
++    qualification.formalities[0];
++  const contactFormality = qualification.formalities.find((formality) => formality.id === "paris-participatory-cleaning-contact-cleanliness-service");
++  const isParisMunicipalCleanwalk = Boolean(
++    facts?.isCleanwalk &&
++    facts.territory.code === "FR-75" &&
++    facts.manager.kind === "paris_city" &&
++    contactFormality,
++  );
++  const resolvedArrondissementCode = facts?.territory.arrondissement?.code ?? null;
++  const formArrondissementCode = actionEmailData?.contactArrondissementCode ?? null;
++  const resolvedContactAreaMode = actionEmailData?.contactAreaMode ?? "unknown";
++  const initialArrondissements = useMemo(() => {
++    if (resolvedContactAreaMode === "route_or_area") return [];
++    const number = parseParisArrondissementCode(formArrondissementCode ?? resolvedArrondissementCode);
++    return number ? [number] : [];
++  }, [formArrondissementCode, resolvedArrondissementCode, resolvedContactAreaMode]);
++  const arrondissementContextKey = `${resolvedContactAreaMode}:${formArrondissementCode ?? resolvedArrondissementCode ?? "unknown"}`;
++  const [arrondissementSelection, setArrondissementSelection] = useState({
++    contextKey: arrondissementContextKey,
++    values: initialArrondissements,
++  });
++  const selectedArrondissements = arrondissementSelection.contextKey === arrondissementContextKey
++    ? arrondissementSelection.values
++    : initialArrondissements;
++  const updateSelectedArrondissements = (values: number[]) => {
++    setArrondissementSelection({ contextKey: arrondissementContextKey, values });
++  };
++  const support = useMemo(
++    () => isParisMunicipalCleanwalk ? resolveParisFormalitiesSupport(selectedArrondissements) : undefined,
++    [isParisMunicipalCleanwalk, selectedArrondissements],
++  );
++
++  return (
++    <div className="space-y-3" aria-live="polite" data-testid="action-formalities-qualification">
++      <CmmCard tone={summary.tone === "amber" ? "amber" : summary.tone === "sky" ? "sky" : summary.tone === "slate" ? "slate" : "emerald"} variant="glass" size="md" data-testid="action-formalities-summary">
++        <div className="space-y-2">
++          <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-lg font-black text-emerald-950">Formalités et accompagnement</h3><CmmPill tone={summary.tone} size="sm">{summary.label}</CmmPill></div>
++          <p className="text-sm leading-5 text-emerald-950/80">{summary.explanation}</p>
++          {primaryFormality ? <>
++            <p className="text-sm text-emerald-950"><span className="font-semibold">Interlocuteur :</span> {primaryFormality.recipient ?? primaryFormality.competentAuthority.label ?? "À confirmer"}</p>
++            <p className="text-xs text-emerald-900/70">Source : {primaryFormality.source?.url ? <a className="font-semibold underline" href={primaryFormality.source.url} target="_blank" rel="noreferrer">{primaryFormality.source.title}</a> : primaryFormality.source?.title ?? "Source à confirmer"}{primaryFormality.source?.verifiedOn ? ` · vérifiée le ${primaryFormality.source.verifiedOn}` : ""}</p>
++          </> : null}
++          <ActionFormalitiesPrintSheet summary={summary.label} actionData={actionEmailData} qualification={qualification} contacts={support?.divisions ?? []} support={support} />
++        </div>
++      </CmmCard>
++      <div className="space-y-3">
++        {qualification.formalities.filter(formality => formality.requirementStatus === "required").map(formality => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />)}
++      </div>
++      {facts?.isCleanwalk ? <>
++        <fieldset className="space-y-2 rounded-xl border border-emerald-200 p-3">
++          <legend className="font-semibold">De quoi avez-vous besoin ? (facultatif)</legend>
++          {SUPPORT_NEEDS.map(item => <label key={item.id} className="flex gap-2 text-sm"><input type="checkbox" checked={needs.includes(item.id)} onChange={event => updateNeeds(event.target.checked ? [...needs, item.id] : needs.filter(need => need !== item.id))} />{item.label}</label>)}
++        </fieldset>
++        {isParisMunicipalCleanwalk && contactFormality && needs.some(need => MUNICIPAL_CLEANING_NEEDS.includes(need) || need === "association" || need === "communication") ? <ActionFormalitiesParisContactPanel actionData={actionEmailData} contactFormality={contactFormality} selectedArrondissements={selectedArrondissements} onArrondissementsChange={updateSelectedArrondissements} support={support} needs={needs} /> : null}
++        {!isParisMunicipalCleanwalk ? resolveLocalSupport(qualification.territory, resolvedContactAreaMode, needs).map(channel => <section key={channel.id} className="space-y-2 rounded-xl border p-3 text-sm"><h4 className="font-semibold">{channel.label}</h4><p>{channel.guidance}</p><a className="underline" href={channel.url} target="_blank" rel="noreferrer">Démarche officielle</a>{channel.email ? <p><a className="underline" href={`mailto:${channel.email}`}>{channel.email}</a></p> : null}<p className="text-xs">Source vérifiée le {channel.verifiedOn}.</p></section>) : null}
++        {needs.length ? <div className="space-y-1 text-sm">
++          <p>Pour les besoins sans canal local documenté, vérifier l'interlocuteur compétent. Aucun soutien ni prise en charge n'est présumé.</p>
++          {resolvedContactAreaMode !== "single_location" ? <p>Vérifier tous les territoires traversés : le point de départ ne suffit pas.</p> : null}
++          <a href="https://lannuaire.service-public.gouv.fr/" target="_blank" rel="noreferrer" className="underline">Consulter l'annuaire officiel des services publics</a>
++        </div> : null}
++      </> : null}
++      <p className="text-xs text-slate-700">Une démarche déclarée envoyée ne vaut ni récépissé ni autorisation obtenue.</p>
++      <CmmDisclosure summary="Détail des démarches, sources et pièces" tone="slate" size="sm">
++        <div className="space-y-3">
++          {qualification.formalities.filter(formality => formality.requirementStatus !== "required").map((formality) => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />)}
+         </div>
+       </CmmDisclosure>
+     </div>
+diff --git a/apps/web/src/lib/actions/formalities/accompaniment.ts b/apps/web/src/lib/actions/formalities/accompaniment.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/actions/formalities/accompaniment.ts
+@@ -0,0 +1,65 @@
++import type { FormalitiesTerritory } from "./qualification";
++
++export const SUPPORT_NEEDS = [
++  { id: "notify", label: "Informer la collectivité" },
++  { id: "equipment", label: "Demander du matériel" },
++  { id: "pickup", label: "Organiser la reprise des déchets" },
++  { id: "safety", label: "Demander un accompagnement de sécurité" },
++  { id: "insurance", label: "Obtenir des informations sur les assurances" },
++  { id: "association", label: "Contacter des associations partenaires" },
++  { id: "communication", label: "Demander un relais de communication" },
++] as const;
++export type SupportNeed = (typeof SUPPORT_NEEDS)[number]["id"];
++export const MUNICIPAL_CLEANING_NEEDS: readonly SupportNeed[] = ["notify", "equipment", "pickup"];
++
++export function normalizeSupportNeeds(needs: readonly unknown[]): SupportNeed[] {
++  return SUPPORT_NEEDS.map(item => item.id).filter(id => needs.includes(id));
++}
++
++type LocalSupportChannel = {
++  id: string;
++  label: string;
++  url: string;
++  email?: string;
++  needs: readonly SupportNeed[];
++  guidance: string;
++  verifiedOn: string;
++};
++
++const LYON: LocalSupportChannel = {
++  id: "lyon-8-cleanup", label: "Mairie du 8e arrondissement de Lyon",
++  url: "https://mairie8.lyon.fr/vie-pratique/dechets-et-proprete/organiser-une-operation-de-nettoyage-citoyen",
++  email: "ma8cleanup@mairie-lyon.fr", needs: ["notify", "equipment"],
++  guidance: "Prêt de matériel sur demande. Confirmer la date, les quantités et les modalités directement avec la mairie.",
++  verifiedOn: "2026-11-27",
++};
++const NANTES: LocalSupportChannel = {
++  id: "nantes-metropole-cleanup", label: "Nantes Métropole",
++  url: "https://metropole.nantes.fr/mes-services-mon-quotidien/organiser-un-ramassage-citoyen-des-dechets",
++  needs: ["equipment"],
++  guidance: "Demande de kit via le formulaire officiel, idéalement trois semaines avant. Quantités et retrait à confirmer.",
++  verifiedOn: "2026-11-27",
++};
++
++export function resolveLocalSupport(
++  territory: FormalitiesTerritory,
++  areaMode: "single_location" | "route_or_area" | "unknown",
++  needs: readonly SupportNeed[],
++): LocalSupportChannel[] {
++  // The anchor of an itinerary does not establish its complete coverage.
++  if (areaMode !== "single_location") return [];
++  const channels = [
++    ...(territory.commune?.codeInsee === "69123" && territory.arrondissement?.code === "69388" ? [LYON] : []),
++    ...(territory.epci?.code === "244400404" ? [NANTES] : []),
++  ];
++  return channels.filter(channel => channel.needs.some(need => needs.includes(need)));
++}
++
++export function buildSupportRequestLines(needs: readonly SupportNeed[]): string[] {
++  const selected = normalizeSupportNeeds(needs);
++  return [
++    ...(selected.includes("notify") ? ["Nous souhaitons vous informer de cette action."] : []),
++    ...(selected.includes("equipment") ? ["Matériel et quantités souhaités : [à préciser]", "Merci de confirmer les disponibilités et modalités de retrait."] : []),
++    ...(selected.includes("pickup") ? ["Flux et volumes prévus : [à préciser]", "Point et horaire de reprise souhaités : [à préciser]", "Merci de confirmer les flux acceptés, le tri et les modalités de reprise."] : []),
++  ];
++}
+diff --git a/apps/web/src/lib/actions/formalities/accompaniment.test.ts b/apps/web/src/lib/actions/formalities/accompaniment.test.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/actions/formalities/accompaniment.test.ts
+@@ -0,0 +1,31 @@
++import { describe, expect, it } from "vitest";
++import { buildSupportRequestLines, normalizeSupportNeeds, resolveLocalSupport } from "./accompaniment";
++import { buildSupportActionSummary } from "./email-draft";
++import type { FormalitiesTerritory } from "./qualification";
++
++describe("optional support", () => {
++  it("normalizes without duplicating needs", () => {
++    expect(normalizeSupportNeeds(["pickup", "invalid", "equipment", "pickup"])).toEqual(["equipment", "pickup"]);
++  });
++  it("does not insert unselected requests", () => {
++    const text = buildSupportRequestLines(["equipment"]).join(" ");
++    expect(text).toContain("Matériel");
++    expect(text).not.toContain("reprise");
++    expect(buildSupportRequestLines([])).toEqual([]);
++  });
++  it("only matches the documented arrondissement for a single location", () => {
++    const territory: FormalitiesTerritory = { countryCode: "FR", code: "FR-69", label: "Lyon", commune: { codeInsee: "69123", label: "Lyon" }, arrondissement: { code: "69388", label: "8e" } };
++    expect(resolveLocalSupport(territory, "single_location", ["equipment"])[0]?.id).toBe("lyon-8-cleanup");
++    expect(resolveLocalSupport(territory, "route_or_area", ["equipment"])).toEqual([]);
++    expect(resolveLocalSupport(territory, "single_location", ["safety"])).toEqual([]);
++    expect(resolveLocalSupport({ ...territory, arrondissement: { code: "69387", label: "7e" } }, "single_location", ["equipment"])).toEqual([]);
++  });
++  it("uses EPCI code for Nantes", () => {
++    const territory: FormalitiesTerritory = { countryCode: "FR", code: "FR-44", label: "Nantes", epci: { code: "244400404", label: "Nantes Métropole" } };
++    expect(resolveLocalSupport(territory, "single_location", ["equipment"])[0]?.id).toBe("nantes-metropole-cleanup");
++    expect(resolveLocalSupport(territory, "single_location", ["pickup"])).toEqual([]);
++  });
++  it("copies known facts only", () => {
++    expect(buildSupportActionSummary({ title: "Collecte", participantCount: 0 })).toBe("Titre : Collecte\nParticipants prévus : 0");
++  });
++});
