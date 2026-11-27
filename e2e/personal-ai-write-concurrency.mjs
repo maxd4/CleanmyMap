@@ -55,7 +55,7 @@ function saveSql(id, chatbot, period) {
   const idSql = id ? `'${id}'::uuid` : "null";
   return `select id from public.save_personal_ai_declaration_for_owner(
     '${owner}', ${idSql}, '${declaration(chatbot, period)}'::jsonb,
-    '${scenario(chatbot)}'::jsonb, '{"version":"test"}'::jsonb, 'test-method', 'test-factor', null
+    '${scenario(chatbot)}'::jsonb, '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb, 'test-method', 'test-factor', null
   );`;
 }
 

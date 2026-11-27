@@ -63,7 +63,9 @@ commit;
 
 async function setup() {
   await resolveLocalEphemeralDbUrl();
+  currentPhase = "SETUP_CLEANUP";
   await run(cleanupSql, "setup_cleanup");
+  currentPhase = "SETUP_FIXTURES";
   await run(`
 begin;
 set local role postgres;
@@ -85,6 +87,7 @@ values ('${actionA}'::uuid, 'sync-conc', current_date + 5, 'Lieu Conc A', 'pendi
 commit;
 `, "setup_insert");
 
+  currentPhase = "SETUP_APPLIED_SNAPSHOTS";
   await run(`
 begin;
 set local role postgres;

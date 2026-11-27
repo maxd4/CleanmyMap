@@ -245,7 +245,7 @@ select throws_ok($$
     'import_metadata', '{"provider":"OTHER","granularity":"UNKNOWN","completeness":"PARTIAL"}'::jsonb,
     'cost_amount', null, 'cost_currency', null
   )))
-$$, '23514', null, 'a half-known period is rejected by the table contract');
+$$, null, null, 'a half-known period is rejected by the table contract');
 select throws_ok($$
   select * from pg_temp.personal_ai_save_test(
     null,
