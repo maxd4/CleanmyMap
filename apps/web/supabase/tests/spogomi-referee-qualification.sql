@@ -585,7 +585,7 @@ exception when others then
   if nullif(v_constraint_name, '') is null then
     v_constraint_name := (regexp_match(v_sqlerrm, 'constraint "([a-z0-9_]+)"'))[1];
   end if;
-  v_routine_name := (regexp_match(v_error_context, 'PL/pgSQL function public[.]([a-z0-9_]+)[(]'))[1];
+  v_routine_name := (regexp_match(v_error_context, 'PL/pgSQL function (?:public[.])?([a-z0-9_]+)[(]'))[1];
   v_error_code := case v_sqlerrm
     when 'SPOGOMI event access is invalid' then 'invalid_event_access_arguments'
     when 'spogomi_competitor_referee_conflict' then 'competitor_referee_conflict'

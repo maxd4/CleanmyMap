@@ -28,12 +28,13 @@ language sql security definer set search_path = pg_catalog, public
 as $$ select * from public.confirm_personal_ai_import_for_owner(coalesce(nullif(auth.jwt() ->> 'sub', ''), 'user-a'), p_rows) $$;
 create function pg_temp.personal_ai_save_test(
   p_id uuid, p_declaration jsonb, p_quick_scenario jsonb, p_snapshot jsonb,
-  p_methodology_version text, p_factor_version text, p_status text default null
+  p_methodology_version text, p_factor_version text, p_status text default null,
+  p_owner text default null
 )
 returns setof public.personal_ai_declarations
 language sql security definer set search_path = pg_catalog, public
 as $$ select * from public.save_personal_ai_declaration_for_owner(
-  coalesce(nullif(auth.jwt() ->> 'sub', ''), 'user-a'), p_id, p_declaration,
+  coalesce(p_owner, nullif(auth.jwt() ->> 'sub', ''), 'user-a'), p_id, p_declaration,
   p_quick_scenario, p_snapshot, p_methodology_version, p_factor_version, p_status
 ) $$;
 create function pg_temp.personal_ai_status_test(p_id uuid, p_status text)
@@ -254,7 +255,7 @@ select throws_ok($$
       '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb),
     '{"version":"personal-ai-chat-usage-v1","sourceKind":"SELF_REPORTED_CHAT_USAGE","chatbot":"CHATGPT","chatbotLabel":null,"accessMode":"FREE","frequency":"UNKNOWN","exchanges":null,"questionCharacters":null,"answerCharacters":null,"imageUse":null,"audioUse":null}'::jsonb,
     '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb, 'personal-ai-v1', '{}'
-  )
+  ), null, 'user-a-isolated-period-check'
 $$, '23514', null, 'a quick scenario still requires a complete period');
 select lives_ok($$
   select * from pg_temp.personal_ai_confirm_test(jsonb_build_array(jsonb_build_object(

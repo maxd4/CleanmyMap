@@ -487,14 +487,17 @@ test("proof attestation maps verified and failed executions to explicit statuses
   assert.equal(passingRecord.outcome, "PASS");
   assert.equal(passingRecord.details.verificationMode, "pg-prove-summary");
 
-  const failedRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
+  const failedRecord = { path: "example.pgtap.sql", category: "PGTAP", expectedAssertions: 61, status: "NOT_RUN", outcome: "NOT_RUN" };
   assert.throws(
-    () => attestProofResult(failedRecord, { code: 1, output: "ERROR: permission denied\nResult: FAIL" }, () => ({ unreachable: true })),
-    /command exited with 1; category=PRIVILEGE_ERROR; origin=POSTGRESQL; diagnostic=.*permission denied/,
+    () => attestProofResult(failedRecord, { code: 1, output: "PERSONAL_AI_PHASE=CONCURRENT_OVERLAP_SQL\nnot ok 61 - private test label\nERROR: permission denied\nResult: FAIL" }, () => ({ unreachable: true })),
+    /command exited with 1; category=PRIVILEGE_ERROR; origin=POSTGRESQL; phase=concurrent_overlap_sql; diagnostic=.*permission denied/,
   );
   assert.equal(failedRecord.status, "INTEGRATION_PROOF");
   assert.equal(failedRecord.outcome, "FAIL");
   assert.equal(failedRecord.failure.category, "PRIVILEGE_ERROR");
+  assert.equal(failedRecord.failure.phase, "concurrent_overlap_sql");
+  assert.deepEqual(failedRecord.failure.failedAssertions, [61]);
+  assert.doesNotMatch(JSON.stringify(failedRecord), /private test label/);
   assert.equal("sqlLine" in failedRecord, false);
 
   const incompleteRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };

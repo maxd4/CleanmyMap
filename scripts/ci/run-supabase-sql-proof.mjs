@@ -123,8 +123,15 @@ export function sanitizePublicEvidenceText(value) {
 }
 
 function proofPhase(value) {
-  const phase = String(value ?? "").match(/\bPROOF_PHASE=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
+  const phase = String(value ?? "").match(/\b(?:PROOF_PHASE|PERSONAL_AI_PHASE)=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
   return phase ? { phase } : {};
+}
+
+function pgTapFailureAssertions(value) {
+  const numbers = [...String(value ?? "").matchAll(/^\s*not ok\s+(\d+)\b/gim)]
+    .map((match) => Number(match[1]))
+    .filter((number) => Number.isSafeInteger(number) && number > 0);
+  return numbers.length > 0 ? { failedAssertions: numbers.slice(0, 20) } : {};
 }
 
 function proofConstraint(value) {
@@ -148,7 +155,7 @@ export function sanitizeProofFailureExcerpt(output) {
     .map((line) => line.replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "").replace(/\s+/g, " ").trim())
     .filter(Boolean);
   const safeLines = lines.map((line) => {
-    const phase = line.match(/\bPROOF_PHASE=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
+    const phase = line.match(/\b(?:PROOF_PHASE|PERSONAL_AI_PHASE)=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
     const sqlstate = line.match(/\b(?:SQLSTATE|SQL\s+state)\s*[:=]?\s*([0-9A-Z]{5})\b/i)?.[1]?.toUpperCase()
       ?? line.match(/\b(?:ERROR|FATAL|PANIC):\s*([0-9A-Z]{5}):/i)?.[1]?.toUpperCase();
     const constraint = line.match(/\bPROOF_CONSTRAINT=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
@@ -573,7 +580,7 @@ export function attestProofResult(record, result, validate) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
     const failure = classifyProofFailure({ ...result, diagnostic: sanitizeProofFailureExcerpt(result.output) });
-    record.failure = { ...failure, ...proofPhase(result.output), ...proofConstraint(result.output), ...proofErrorCode(result.output), ...proofRoutine(result.output) };
+    record.failure = { ...failure, ...proofPhase(result.output), ...proofConstraint(result.output), ...proofErrorCode(result.output), ...proofRoutine(result.output), ...(record.category === "PGTAP" ? pgTapFailureAssertions(result.output) : {}) };
     if (record.category === "PGTAP") record.counts = pgTapCounts(result.output, record.expectedAssertions ?? null);
     const phase = proofPhase(result.output).phase;
     record.reason = `step=${record.category ?? "SQL_PROOF"}; command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}${result.timedOut ? "; timeout=true" : ""}${result.outputTruncated ? "; output_truncated=true" : ""}; category=${failure.category}; origin=${failure.origin}${failure.sqlstate ? `; sqlstate=${failure.sqlstate}` : ""}${phase ? `; phase=${phase}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
@@ -587,7 +594,7 @@ export function attestProofResult(record, result, validate) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
     const diagnostic = error instanceof Error ? error.message : String(error);
-    record.failure = { ...classifyProofFailure({ ...result, diagnostic }), ...proofPhase(`${result.output}\n${diagnostic}`), ...proofConstraint(`${result.output}\n${diagnostic}`), ...proofErrorCode(`${result.output}\n${diagnostic}`), ...proofRoutine(`${result.output}\n${diagnostic}`) };
+    record.failure = { ...classifyProofFailure({ ...result, diagnostic }), ...proofPhase(`${result.output}\n${diagnostic}`), ...proofConstraint(`${result.output}\n${diagnostic}`), ...proofErrorCode(`${result.output}\n${diagnostic}`), ...proofRoutine(`${result.output}\n${diagnostic}`), ...(record.category === "PGTAP" ? pgTapFailureAssertions(result.output) : {}) };
     if (record.category === "PGTAP") record.counts = pgTapCounts(result.output, record.expectedAssertions ?? null);
     record.reason = `step=${record.category ?? "SQL_PROOF"}; category=${record.failure.category}; origin=${record.failure.origin}${record.failure.sqlstate ? `; sqlstate=${record.failure.sqlstate}` : ""}${record.failure.phase ? `; phase=${record.failure.phase}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(`${result.output}\n${diagnostic}`)}`;
     throw new Error(record.reason);

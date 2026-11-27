@@ -150,7 +150,9 @@ CLI Supabase liée ne sont pas bloquées par le succès préalable d'un replay
 intégral.
 
 En cas d'échec, l'artefact public conserve le chemin de la suite, sa catégorie,
-la phase `PROOF_PHASE` et le SQLSTATE observé. Un test peut aussi fournir un
+la phase `PROOF_PHASE` (ou `PERSONAL_AI_PHASE`) et le SQLSTATE observé. Pour
+pgTAP, seuls les numéros des assertions `not ok` sont conservés dans
+`failedAssertions` ; les libellés TAP ne sont pas publiés. Un test peut aussi fournir un
 nom de contrainte `PROOF_CONSTRAINT`, un code d'erreur allowlisté
 `PROOF_ERROR_CODE` ou le nom de routine `PROOF_ROUTINE` pour isoler une
 violation. Le runner ne conserve que ces champs structurés et des extraits
