@@ -102,3 +102,28 @@ ou à un outil externe ne constitue pas un contrat du dépôt. Ne pas transposer
 automatiquement dans la gouvernance du dépôt, les scripts ou la documentation
 canonique une configuration locale telle que `config.toml`, un mode Git Review
 ou un réglage de poste.
+
+## Diagnostic réseau et CLI externes (Vercel)
+
+Avant de classer un échec CLI (`TypeError: fetch failed`, timeout) en
+`HOST_ENVIRONMENT`, exécuter un diagnostic borné dans l'ordre suivant :
+
+1. Vérifier l'exécutable et l'environnement : `Get-Command vercel, node`,
+   `node -v`, variables `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`/`NODE_EXTRA_CA_CERTS`
+   (noms uniquement, jamais les valeurs sensibles).
+2. Tester la résolution DNS et HTTPS IPv4/IPv6 :
+   - `Resolve-DnsName api.vercel.com` (`api.vercel.com` répond en IPv4 `A`, sans `AAAA`)
+   - `curl.exe -4 -sSI --max-time 8 https://api.vercel.com/v2/user`
+3. Tester `fetch` Node.js en affichant `err.cause` (`ETIMEDOUT`, `ENETUNREACH`,
+   certificat, proxy).
+4. Tester le CLI en lecture seule avec `--debug` :
+   `vercel whoami --debug` puis `vercel ls --scope maxdperso --debug`.
+
+Ne jamais désactiver TLS (`NODE_TLS_REJECT_UNAUTHORIZED=0`), contourner une
+restriction de sécurité ou modifier globalement le poste. Noter que
+`vercel.ps1` (`Vercel CLI 59.16.0`, Node `24.x`) active `nonInteractive=true`
+sous agent (`antigravity`, `codex`) et émet ses logs `--debug` sur `stderr`
+(pouvant déclencher `NativeCommandError` sous PowerShell si
+`$ErrorActionPreference = 'Stop'`). Distinguer : indisponibilité réseau
+transitoire, authentification (`maxd4` / `maxdperso`), liaison `.vercel/project.json`,
+échec de build et échec de déploiement.

@@ -25,7 +25,7 @@ const EXPECTED_PROFILE_ACTIONS: Record<AppProfile, readonly string[]> = {
   coordinateur: ["/actions/new", DASHBOARD_ROUTE, "/sections/messagerie", "/reports"],
   scientifique: ["/reports", "/sections/open-data", "/methodologie", "/prints/report"],
   entreprise: [SPONSOR_PORTAL_ROUTE, "/sections/annuaire", "/sections/funding", "/reports"],
-  elu: [SPONSOR_PORTAL_ROUTE, "/reports", "/actions/map", "/prints/report"],
+  elu: ["/sections/elus", "/reports", "/actions/map", "/prints/report"],
   admin: [ADMIN_ROUTE, "/reports", ADMIN_GODMODE_ROUTE, DASHBOARD_ROUTE],
   max: [ADMIN_GODMODE_ROUTE, ADMIN_ROUTE, DASHBOARD_ROUTE, "/prints/report"],
 };

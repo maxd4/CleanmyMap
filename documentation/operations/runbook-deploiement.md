@@ -8,13 +8,26 @@ la gouvernance racine du dépôt ; ce runbook ne les duplique pas.
 
 Le projet Vercel utilise `apps/web` comme `rootDirectory`.
 
-Le chemin canonique pour ce monorepo est l'intégration Git Vercel sur `main`.
-Un `vercel deploy` lancé depuis la racine peut tenter d'envoyer tout le
-monorepo et dépasser la limite d'upload des fichiers statiques ; un lancement
-avec `--cwd apps/web` réapplique alors le `rootDirectory` distant et peut
-résoudre `apps/web/apps/web`. Ne pas utiliser ces variantes comme
-contournement. Vérifier l'intégration Git et laisser Vercel construire le
-commit publié.
+Le chemin canonique lorsque l'intégration Git est active est la publication sur
+`main`. Lorsque `git.deploymentEnabled: false` (ou `link: null`) est actif pour
+empêcher les déploiements automatiques non validés, la procédure CLI reproductible
+sur ce monorepo Windows (après `RELEASE_READY: YES`) consiste à exécuter depuis
+**la racine du dépôt** (protégée par `.vercelignore`, avec `.vercel/project.json`
+lié à `maxdperso/web`) :
+
+```powershell
+npm run vercel:deploy:preflight -w apps/web -- --mode=source
+vercel deploy --prod --yes --scope maxdperso
+```
+
+Un `vercel deploy` sans `.vercelignore` depuis la racine peut dépasser la limite
+d'upload ; un lancement avec `--cwd apps/web` réapplique le `rootDirectory`
+distant et peut résoudre `apps/web/apps/web`. Ne pas utiliser `--prebuilt` sur
+Windows (liens symboliques `ENOENT` et limite de fonctions Hobby). En cas
+d'échec `fetch failed` côté CLI, appliquer d'abord le diagnostic réseau/CLI de
+`documentation/development/host-environment.md` ; si `api.vercel.com` reste
+injoignable, le repli autorisé après `RELEASE_READY: YES` est le déploiement
+manuel depuis le dashboard Vercel ou un poste connecté sur le SHA exact validé.
 
 ## Publication Git et deployment Vercel
 

@@ -42,6 +42,12 @@ HOST_ENVIRONMENT
 
 Ne pas corriger une famille avec un contournement appartenant à une autre.
 
+Pour un échec du CLI Vercel (`TypeError: fetch failed`, timeout, `TEAM_ACCESS_REQUIRED`),
+séparer réseau, authentification, liaison `.vercel/project.json`, build et
+déploiement selon `documentation/development/host-environment.md` et
+`documentation/operations/runbook-deploiement.md`, sans désactiver TLS ni
+contourner les contrôles.
+
 ## Contrôles rapides
 
 Selon le périmètre :

@@ -26,7 +26,8 @@ describe("global ribbon capture contract", () => {
 
     expect(source).not.toContain("href={EXPLORER_ROUTE}");
     expect(source).not.toContain("<List");
-    expect(source).toContain('cmm-navigation-group--product xl:order-none xl:hidden');
+    expect(source).toContain('data-navigation-group-visibility="responsive"');
+    expect(source).toContain('cmm-navigation-group--product xl:hidden');
     expect(source).toContain("<AppNavigationTreeMenu");
   });
 
