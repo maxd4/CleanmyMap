@@ -330,22 +330,26 @@ begin
 
   v_proof_phase := 'division_eligibility_and_approval';
   -- 10. Practical confirmation + approval + mixed-mode division isolation
+  v_proof_phase := 'practical_confirmation_casual';
   v_res := public.spogomi_confirm_referee_practical(v_app_a_casual, v_org_clerk, 'practical-v1', '{"verified":true}'::jsonb);
   if (v_res->>'status') is distinct from 'practical_pending' then
     raise exception 'expected practical_pending after confirmation, got %', v_res;
   end if;
 
+  v_proof_phase := 'approval_casual';
   v_res := public.spogomi_decide_referee_application(v_app_a_casual, v_org_clerk, 'approve', 'casual habilitated');
   if (v_res->>'status') is distinct from 'habilitated' then
     raise exception 'expected habilitated after approval, got %', v_res;
   end if;
 
   -- Mixed mode: casual alone does NOT satisfy spogomi_referee_scope_current
+  v_proof_phase := 'mixed_division_scope_after_casual';
   if public.spogomi_referee_scope_current(v_event_id, v_user_a) is distinct from false then
     raise exception 'casual-only habilitation satisfied mixed-mode spogomi_referee_scope_current';
   end if;
 
   -- Granting event referee role fails when world_cup is not habilitated
+  v_proof_phase := 'referee_grant_rejected_for_incomplete_scope';
   begin
     perform public.spogomi_set_event_access(v_event_id, v_user_a, 'referee', 'grant', v_org_clerk);
     raise exception 'referee capability granted in mixed mode with only casual habilitated';
@@ -356,6 +360,7 @@ begin
     end if;
   end;
 
+  v_proof_phase := 'world_cup_quiz';
   -- Build World Cup answers from World Cup private definition (distinct HMAC)
   v_private_wc := public.spogomi_referee_quiz_definition_private(v_event_id, v_world_cup_id);
   v_quiz_version_wc_v1 := v_private_wc->>'quizVersion';
@@ -368,13 +373,17 @@ begin
   if (v_res->>'passed')::boolean is distinct from true then
     raise exception 'expected world_cup quiz pass for user_a, got %', v_res;
   end if;
+  v_proof_phase := 'practical_confirmation_world_cup';
   perform public.spogomi_confirm_referee_practical(v_app_a_wc, v_org_clerk, 'practical-v1', '{"verified":true}'::jsonb);
+  v_proof_phase := 'approval_world_cup';
   perform public.spogomi_decide_referee_application(v_app_a_wc, v_org_clerk, 'approve', 'world_cup habilitated');
 
+  v_proof_phase := 'mixed_division_scope_after_both';
   if public.spogomi_referee_scope_current(v_event_id, v_user_a) is distinct from true then
     raise exception 'mixed-mode spogomi_referee_scope_current remained false after both divisions habilitated';
   end if;
 
+  v_proof_phase := 'referee_grant_after_complete_scope';
   perform public.spogomi_set_event_access(v_event_id, v_user_a, 'referee', 'grant', v_org_clerk);
   if not exists (
     select 1

@@ -136,7 +136,6 @@ exception when sqlstate 'P0001' then
   if sqlerrm <> 'An action cannot have more active media for this purpose' then raise; end if;
   raise notice 'ROUTE_REFERENCE_QUOTA_RESULT=denied participant=${index}';
 end;
-end;
 $$;
 select pg_sleep(0.35);
 select pg_advisory_unlock(${ownKey});
