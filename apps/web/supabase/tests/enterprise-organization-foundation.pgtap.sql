@@ -1,13 +1,13 @@
 -- CANDIDATE pgTAP structural tests, to integrate in apps/web/supabase/tests.
 begin;
-select plan(32);
-select has_table('public','organizations');
-select has_table('public','organization_memberships');
-select has_table('public','action_organizations');
-select has_table('public','organization_campaigns');
-select has_table('public','organization_sites');
-select has_table('public','organization_campaign_actions');
-select has_table('public','organization_audit');
+select plan(33);
+select has_table('public','organizations','organization table exists');
+select has_table('public','organization_memberships','membership table exists');
+select has_table('public','action_organizations','action association table exists');
+select has_table('public','organization_campaigns','campaign table exists');
+select has_table('public','organization_sites','site table exists');
+select has_table('public','organization_campaign_actions','campaign action table exists');
+select has_table('public','organization_audit','audit table exists');
 select ok((select bool_and(relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname in ('organizations','organization_memberships','organization_sites','action_organizations','organization_campaigns','organization_campaign_actions','organization_audit')), 'all seven tables have RLS');
 select ok(not has_table_privilege('anon','public.organizations','SELECT'),'anonymous cannot read organizations');
 select ok(not has_table_privilege('authenticated','public.organization_memberships','SELECT'),'browser cannot read memberships');
@@ -31,9 +31,12 @@ insert into public.partner_annuaire_entries(id,source_request_id,publication_sta
 values
   ('test-enterprise-alpha','00000000-0000-4000-8000-000000000101','accepted',now(),'admin-reviewer','{"name":"Entreprise Alpha"}'),
   ('test-enterprise-beta','00000000-0000-4000-8000-000000000102','accepted',now(),'admin-reviewer','{"name":"Entreprise Beta"}');
+select ok(
+  public.bootstrap_organization('test-enterprise-alpha','alpha-ref','admin-reviewer','00000000-0000-4000-8000-000000000111') is not null,
+  'bootstrap returns the new organization identity');
 select is(
-  public.bootstrap_organization('test-enterprise-alpha','alpha-ref','admin-reviewer','00000000-0000-4000-8000-000000000111'),
-  (select id from public.organizations where partner_entry_id='test-enterprise-alpha'),
+  (select count(*)::integer from public.organizations where partner_entry_id='test-enterprise-alpha'),
+  1,
   'bootstrap creates one stable organization identity');
 select is(
   (select clerk_user_id from public.organization_memberships where organization_id=(select id from public.organizations where partner_entry_id='test-enterprise-alpha') and member_role='owner'),
