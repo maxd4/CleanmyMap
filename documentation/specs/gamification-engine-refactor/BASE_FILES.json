@@ -1,0 +1,140 @@
+{
+  "baseCommit": "2acc756a6e2994ed012965c23fe41bdc10ffda6f",
+  "files": [
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-registry.ts",
+      "baseBlob": null,
+      "lines": 347
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/progression-utils.ts",
+      "baseBlob": "a0052d859bd2891d46cdaec286671b5f10348342",
+      "lines": 122
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-rules.ts",
+      "baseBlob": "a055d0d716086f76dd280cef8eb8c026e3b4fa74",
+      "lines": 200
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-summary.ts",
+      "baseBlob": "c4fbb379e553de959f1fb73270666a1df1994a71",
+      "lines": 304
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-catalog.ts",
+      "baseBlob": "90fe8eb8942475fcc711cf2ea17318ff7d92f36b",
+      "lines": 293
+    },
+    {
+      "path": "apps/web/src/lib/gamification/reconciliation/gamification-reconciliation-receipt-types.ts",
+      "baseBlob": null,
+      "lines": 102
+    },
+    {
+      "path": "apps/web/src/lib/gamification/reconciliation/gamification-reconciliation-receipt.ts",
+      "baseBlob": "5cc6d0c11c5d9c44b31052d9d442ec7bcd228268",
+      "lines": 363
+    },
+    {
+      "path": "apps/web/src/lib/gamification/reconciliation/gamification-reconciliation-receipt-store.ts",
+      "baseBlob": null,
+      "lines": 187
+    },
+    {
+      "path": "apps/web/src/lib/gamification/territorial-legends/territorial-window.ts",
+      "baseBlob": null,
+      "lines": 33
+    },
+    {
+      "path": "apps/web/src/lib/gamification/territorial-legends/territorial-ranking.ts",
+      "baseBlob": null,
+      "lines": 234
+    },
+    {
+      "path": "apps/web/src/lib/gamification/territorial-legends/territorial-facts-loader.ts",
+      "baseBlob": null,
+      "lines": 240
+    },
+    {
+      "path": "apps/web/src/lib/gamification/territorial-legends/engine.ts",
+      "baseBlob": "53cd9a80e8bd99c26403658aa39714cc80e75c0f",
+      "lines": 43
+    },
+    {
+      "path": "apps/web/src/lib/gamification/territorial-legends/engine.test.ts",
+      "baseBlob": "3304a648e034265ac1ae45322c90489bbb63f615",
+      "lines": 261
+    },
+    {
+      "path": "apps/web/src/lib/gamification/territorial-legends/engine.loader.test.ts",
+      "baseBlob": "52a0a0f87fc18c9fd2bff4c8ae3500eaed8a6b74",
+      "lines": 148
+    },
+    {
+      "path": "apps/web/src/lib/gamification/README.md",
+      "baseBlob": "395e3032916b588043eef623a6a8235b5970c01f",
+      "lines": 213
+    },
+    {
+      "path": "documentation/features/gamification/README.md",
+      "baseBlob": "aa5e4d62198c76932a4c200120baa05cf93ba2c8",
+      "lines": 62
+    },
+    {
+      "path": "documentation/features/gamification/GAMIFICATION_ENGINE.md",
+      "baseBlob": "4fe24be4279ff2b4b63b536b08b9bec6499ffe81",
+      "lines": 563
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/milestones.ts",
+      "baseBlob": "6695db9868e3d43c6c0a64cc98b3264aaa0f1c9c",
+      "lines": 93
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/terrain-progressions.ts",
+      "baseBlob": "6bcbe98da56c4b880e3474f0fcd7fdac2c906eb2",
+      "lines": 197
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/progression-user-stats-projection.ts",
+      "baseBlob": "854bc275eadbc84c981f873d37762bcec6b678a1",
+      "lines": 106
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/progression-ranking-batch.ts",
+      "baseBlob": "4b867d7372e0913d7628f9ec4dbb3a9f354083c4",
+      "lines": 431
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/gamification-registry.test.ts",
+      "baseBlob": "e0b42d67fc182ff7192e0af8f2ce3931a715c676",
+      "lines": 188
+    },
+    {
+      "path": "apps/web/src/lib/gamification/reconciliation/progression-event-registry.test.ts",
+      "baseBlob": "e44fe139c32e6d91ba3beb3141179c4f515a3b84",
+      "lines": 367
+    },
+    {
+      "path": "apps/web/src/lib/gamification/reconciliation/gamification-reconciliation-receipt.test.ts",
+      "baseBlob": "1f8459dc9bd72fd55517d753ca7608f1b727432a",
+      "lines": 462
+    },
+    {
+      "path": "documentation/product/gamification-inventory.md",
+      "baseBlob": "8431db9d7e319fe940ef0ac86e167a20600f2b23",
+      "lines": 190
+    },
+    {
+      "path": "documentation/product/objectifs-valides.md",
+      "baseBlob": "e82c0058f41d5963f0e1bbc2c7d1f47055dce2a7",
+      "lines": 107
+    },
+    {
+      "path": "documentation/pages_site/routes/03-cartographie-impact/gamification/gamification-taxonomie.md",
+      "baseBlob": "3dd0d85aa5eab205642c5a67e9f215564d42d7ae",
+      "lines": 204
+    }
+  ]
+}

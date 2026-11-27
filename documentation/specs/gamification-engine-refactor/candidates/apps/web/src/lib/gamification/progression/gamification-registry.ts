@@ -1,0 +1,347 @@
+import { CURRENT_MILESTONES } from "./current-milestones";
+import { CURRENT_INFINITE_PROGRESSIONS } from "./current-progressions";
+import { CURRENT_GAMIFICATION_RULES_REVISION, CURRENT_GAMIFICATION_RULES_VERSION } from "./progression-types";
+import type {
+  GamificationProgressionDefinition,
+  GamificationEventRegistration,
+  GamificationMechanicDefinition,
+  CurrentInfiniteProgressionId,
+  MilestoneDefinition,
+  ProgressionEventType,
+} from "./progression-types";
+import { CURRENT_SPOGOMI_BADGE_DEFINITIONS } from "./badge-catalog";
+import {
+  TERRAIN_SPECIALIZATIONS,
+  TERRAIN_SPECIALIZATION_EVENT_TYPE,
+  TERRAIN_SPECIALIZATION_RULES_VERSION,
+  TERRAIN_SPECIALIZATION_INTRODUCED_REVISION,
+} from "./terrain-specializations";
+import { TERRITORIAL_LEGEND_LEVELS } from "../territorial-legends/types";
+import { territorialLegendFamilyId, TERRITORIAL_LEGEND_REWARD_EVENT_TYPE } from "../territorial-legends/rewards";
+export { CURRENT_MILESTONES } from "./current-milestones";
+export { CURRENT_INFINITE_PROGRESSIONS } from "./current-progressions";
+
+const NON_GAMIFIED_SIGNAL_REASONS = {
+  antiFarming: "Exclu pour éviter le farming et distinguer preuve métier et activité gamifiée.",
+  dataIntegrity: "Exclu pour ne pas créer d’incitation à sur-déclarer ou à embellir une donnée.",
+  sensitiveData: "Exclu pour ne pas récompenser une donnée sensible ou démographique.",
+  freeText: "Exclu car un texte libre est facilement manipulable et ne constitue pas une preuve métier stable.",
+  trustAuthz: "Exclu : la confiance et l’AuthZ restent des garde-fous hors de l’économie XP.",
+  utility: "Exclu : usage utilitaire ou intention future, sans accomplissement métier final.",
+} as const;
+
+function defineNonGamifiedSignal(
+  input: Pick<GamificationMechanicDefinition, "id" | "sourceDomain" | "description">,
+): GamificationMechanicDefinition {
+  return {
+    ...input,
+    category: "NON_GAMIFIED",
+    progressionId: null,
+    xpPolicy: { kind: "none", reason: NON_GAMIFIED_SIGNAL_REASONS.antiFarming },
+    badgeId: null,
+    milestoneId: null,
+    visibility: "not_exposed",
+    rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+    introducedInRulesRevision: 1,
+  };
+}
+
+export const NON_GAMIFIED_SIGNALS = [
+  defineNonGamifiedSignal({ id: "signal:waste-total-direct-xp", sourceDomain: "actions.waste_kg", description: `Poids total de déchets comme conversion directe en XP. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:cigarette-butts-direct-xp", sourceDomain: "actions.cigarette_butts", description: `Nombre de mégots comme conversion directe en XP. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:waste-and-butts-current-progression", sourceDomain: "actions.waste_kg + actions.cigarette_butts", description: `Kg ou mégots comme progression CURRENT. ${NON_GAMIFIED_SIGNAL_REASONS.antiFarming}` }),
+  defineNonGamifiedSignal({ id: "signal:demographic-breakdown", sourceDomain: "action participant demographic fields", description: `Répartition enfants/adultes/retraités. ${NON_GAMIFIED_SIGNAL_REASONS.sensitiveData}` }),
+  defineNonGamifiedSignal({ id: "signal:demographic-fields-reward", sourceDomain: "profil et données démographiques", description: `Champs démographiques comme source de récompense. ${NON_GAMIFIED_SIGNAL_REASONS.sensitiveData}` }),
+  defineNonGamifiedSignal({ id: "signal:action-difficulty", sourceDomain: "action qualification", description: `Difficulté déclarée de l’action. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:action-accessibility", sourceDomain: "action accessibility metadata", description: `Accessibilité d’une action. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:safety-instructions-text", sourceDomain: "actions.safetyInstructions", description: `Contenu libre de safetyInstructions. ${NON_GAMIFIED_SIGNAL_REASONS.freeText}` }),
+  defineNonGamifiedSignal({ id: "signal:recommended-materials-text", sourceDomain: "actions.recommendedMaterials", description: `Contenu libre de recommendedMaterials. ${NON_GAMIFIED_SIGNAL_REASONS.freeText}` }),
+  defineNonGamifiedSignal({ id: "signal:logistics-notes-text", sourceDomain: "actions.logisticsNotes", description: `Contenu libre de logisticsNotes. ${NON_GAMIFIED_SIGNAL_REASONS.freeText}` }),
+  defineNonGamifiedSignal({ id: "signal:departure-checklist-text", sourceDomain: "actions.checklistBeforeDeparture", description: `Contenu libre de checklistBeforeDeparture. ${NON_GAMIFIED_SIGNAL_REASONS.freeText}` }),
+  defineNonGamifiedSignal({ id: "signal:group-join-enabled", sourceDomain: "actions.groupJoinEnabled", description: `Simple activation de groupJoinEnabled. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:future-action-registration", sourceDomain: "action_registrations", description: `Simple inscription future à une action. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:future-registration-acceptance", sourceDomain: "action_registrations.status", description: `Simple acceptation d’une inscription future. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:join-click", sourceDomain: "join action UI", description: `Clic sur rejoindre. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:registration-cancellation-or-queue", sourceDomain: "action_registrations workflow", description: `Annulation d’inscription, ajout à une file ou acceptation préalable. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:referral-link-generation", sourceDomain: "referral link creation", description: `Simple génération d’un lien de parrainage. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:donation-amount", sourceDomain: "donation amount", description: `Montant d’un don : aucune XP, aucun badge de mérite et aucune influence sur un futur tirage. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:user-role", sourceDomain: "AuthZ role", description: `Rôle utilisateur. ${NON_GAMIFIED_SIGNAL_REASONS.trustAuthz}` }),
+  defineNonGamifiedSignal({ id: "signal:trust-level", sourceDomain: "derived trust level", description: `Niveau de confiance comme monnaie ou progression XP. ${NON_GAMIFIED_SIGNAL_REASONS.trustAuthz}` }),
+  defineNonGamifiedSignal({ id: "signal:quality-score", sourceDomain: "action quality score", description: `Score qualité comme progression infinie. La qualité peut conditionner un niveau ou déclencher Donnée exemplaire, mais ne constitue pas une monnaie.` }),
+  defineNonGamifiedSignal({ id: "signal:form-completion", sourceDomain: "Forms completion", description: `Remplissage de formulaire pour lui-même. Forms reste une preuve de workflow, pas une activité gamifiée.` }),
+  defineNonGamifiedSignal({ id: "signal:photos-upload", sourceDomain: "action photos upload", description: `Upload d’une photo en soi. Une photo peut fournir une preuve à une autre règle sans créer une mécanique autonome.` }),
+  defineNonGamifiedSignal({ id: "signal:vision-estimate", sourceDomain: "visionEstimate", description: `Estimation produite par l’IA. C’est une donnée auxiliaire, pas un accomplissement récompensé.` }),
+  defineNonGamifiedSignal({ id: "signal:place-type", sourceDomain: "action placeType", description: `Type de lieu. Il peut alimenter Exploration ou la diversité descriptive, sans coefficient de mérite.` }),
+  defineNonGamifiedSignal({ id: "signal:difficulty-duration-distance", sourceDomain: "estimatedDifficulty + duration + distance", description: `Difficulté, durée ou distance comme multiplicateur XP direct. Une action facile ou accessible n’a pas moins de valeur civique.` }),
+  defineNonGamifiedSignal({ id: "signal:formalities-free-text", sourceDomain: "formalities free-text fields", description: `Remplissage des champs libres de formalités. Seul le milestone déterministe Formalités préparées peut reconnaître le workflow.` }),
+] as const satisfies readonly GamificationMechanicDefinition[];
+
+const CURRENT_SPOGOMI_COLLECTION_MECHANICS = CURRENT_SPOGOMI_BADGE_DEFINITIONS.map((definition) => ({
+  id: definition.id,
+  category: "BADGE_ONLY" as const,
+  progressionId: null,
+  xpPolicy: definition.xpPolicy,
+  sourceDomain: definition.sourceDomain,
+  badgeId: definition.id,
+  milestoneId: null,
+  visibility: definition.visibility,
+  rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+  introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+  description: definition.rule.description,
+})) satisfies readonly GamificationMechanicDefinition[];
+
+const CURRENT_TERRAIN_SPECIALIZATION_MECHANICS = TERRAIN_SPECIALIZATIONS.map((specialization) => ({
+  id: `terrain_specialization:${specialization.id}`,
+  category: "XP_PROGRESSION" as const,
+  progressionId: specialization.parentProgressionId,
+  subProgressionId: specialization.id,
+  xpPolicy: {
+    kind: "specialization_thresholds" as const,
+    version: TERRAIN_SPECIALIZATION_RULES_VERSION,
+    xpPerTier: specialization.xpPerTier,
+  },
+  sourceDomain: specialization.sourceDomain,
+  badgeId: specialization.badgeId,
+  milestoneId: null,
+  visibility: "current_user" as const,
+  rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+  introducedInRulesRevision: TERRAIN_SPECIALIZATION_INTRODUCED_REVISION,
+  description: specialization.description,
+})) satisfies readonly GamificationMechanicDefinition[];
+
+/** Five evolving territorial families; conquest and longevity are tiers of the same family. */
+export const CURRENT_TERRITORIAL_LEGEND_MECHANICS = TERRITORIAL_LEGEND_LEVELS.map((level) => ({
+  id: territorialLegendFamilyId(level),
+  category: "BADGE_ONLY" as const,
+  progressionId: null,
+  xpPolicy: {
+    kind: "none" as const,
+    reason: "Les Légendes territoriales sont des récompenses BADGE_ONLY sans XP.",
+  },
+  sourceDomain: "territorial_legend_hold_periods + territorial_legend_award_proofs",
+  badgeId: territorialLegendFamilyId(level),
+  milestoneId: null,
+  visibility: "current_user" as const,
+  rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+  introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+  description: `Famille annuelle évolutive de conquête, longévité et fin de saison au niveau ${level}.`,
+  eventType: TERRITORIAL_LEGEND_REWARD_EVENT_TYPE,
+})) satisfies readonly (GamificationMechanicDefinition & { eventType: ProgressionEventType })[];
+
+export const GAMIFICATION_REGISTRY = [
+  ...CURRENT_INFINITE_PROGRESSIONS,
+  ...CURRENT_MILESTONES,
+  ...CURRENT_TERRAIN_SPECIALIZATION_MECHANICS,
+  ...CURRENT_TERRITORIAL_LEGEND_MECHANICS,
+  ...CURRENT_SPOGOMI_COLLECTION_MECHANICS,
+  ...NON_GAMIFIED_SIGNALS,
+] as const satisfies readonly GamificationMechanicDefinition[];
+
+const GAMIFICATION_EVENT_REGISTRY: Record<
+  ProgressionEventType,
+  GamificationEventRegistration
+> = {
+  action_declare_pending: {
+    classification: "non_progression",
+    reason: "Une déclaration en attente ne constitue ni une participation confirmée ni une organisation validée.",
+  },
+  action_declare_validation: {
+    classification: "progression",
+    progressionId: "organisation",
+  },
+  first_trace_utile: {
+    classification: "milestone",
+    milestoneId: "premiere_trace_utile",
+  },
+  action_loop_completed: {
+    classification: "milestone",
+    milestoneId: "boucle_bouclee",
+  },
+  action_mobilizer: {
+    classification: "milestone",
+    milestoneId: "mobilisateur",
+  },
+  action_participation_recovered: {
+    classification: "milestone",
+    milestoneId: "participation_retrouvee",
+  },
+  action_exemplary_data: {
+    classification: "milestone",
+    milestoneId: "donnee_exemplaire",
+  },
+  action_documented_route: {
+    classification: "milestone",
+    milestoneId: "parcours_documente",
+  },
+  action_traceable_measurement: {
+    classification: "milestone",
+    milestoneId: "mesure_tracable",
+  },
+  action_documented_sorting: {
+    classification: "milestone",
+    milestoneId: "tri_documente",
+  },
+  action_formalities_prepared: {
+    classification: "milestone",
+    milestoneId: "formalites_preparees",
+  },
+  action_monthly_regularity: {
+    classification: "progression",
+    progressionId: "regularity",
+  },
+  action_balance_cycle: {
+    classification: "progression",
+    progressionId: "versatility",
+  },
+  verified_geometry_contribution: {
+    classification: "progression",
+    progressionId: "cartography",
+  },
+  collective_rsvp_yes_pending: {
+    classification: "non_progression",
+    reason: "Une inscription future ne constitue pas une participation confirmée.",
+  },
+  collective_attendance_confirmed: {
+    classification: "non_progression",
+    reason: "Une présence à un événement communautaire ne compte pas comme participation à une action.",
+  },
+  spot_create_pending: {
+    classification: "non_progression",
+    reason: "Un signalement en attente ne constitue pas une participation confirmée.",
+  },
+  spot_validation_bonus: {
+    classification: "non_progression",
+    reason: "Le bonus historique de validation de signalement n'est pas la source Clean Zones canonique.",
+  },
+  community_ops_update: {
+    classification: "non_progression",
+    reason: "Les opérations communautaires historiques ne sont pas une action organisée validée.",
+  },
+  community_referral_invite: {
+    classification: "milestone",
+    milestoneId: "parrainage_utile",
+  },
+  route_recommend_use: {
+    classification: "non_progression",
+    reason: "Usage utilitaire d'itinéraire, à traiter hors des neuf progressions.",
+  },
+  infinite_waste_milestone: {
+    classification: "impact_badge",
+    impactBadgeId: "mohs_waste",
+  },
+  infinite_butts_milestone: {
+    classification: "impact_badge",
+    impactBadgeId: "mohs_butts",
+  },
+  new_place_discovered: {
+    classification: "progression",
+    progressionId: "exploration",
+  },
+  new_place_milestone: {
+    classification: "progression",
+    progressionId: "exploration",
+  },
+  quiz_question_type_milestone: {
+    classification: "progression",
+    progressionId: "learning",
+  },
+  quiz_question_type_balance_milestone: {
+    classification: "progression",
+    progressionId: "learning",
+  },
+  clean_zone_task: {
+    classification: "progression",
+    progressionId: "clean_zones",
+  },
+  form_tier_unlock: {
+    classification: "non_progression",
+    reason: "Événement Forms historique COMPATIBILITY, hors des progressions CURRENT.",
+  },
+  form_bonus: {
+    classification: "non_progression",
+    reason: "Bonus Forms historique COMPATIBILITY, hors des progressions CURRENT.",
+  },
+  participant_tier_unlock: {
+    classification: "progression",
+    progressionId: "participation",
+  },
+  explorer_tier_unlock: {
+    classification: "progression",
+    progressionId: "exploration",
+  },
+  sensitive_zone_action: {
+    classification: "non_progression",
+    reason:
+      "Preuve historique de qualification de zone, sans balance XP indépendante.",
+  },
+  sensitive_zone_milestone: {
+    classification: "non_progression",
+    reason: "Jalon historique de zone sensible, hors des trois jalons CURRENT.",
+  },
+  moderation_case_resolved: {
+    classification: "non_progression",
+    reason: "Un dossier résolu alimente la métrique Modération; seul un palier peut attribuer de l’XP.",
+  },
+  moderation_tier_unlock: {
+    classification: "progression",
+    progressionId: "moderation",
+  },
+  moderation_first_case: {
+    classification: "milestone",
+    milestoneId: "premiere_moderation",
+  },
+  moderation_first_participation: {
+    classification: "milestone",
+    milestoneId: "premiere_validation_participation",
+  },
+  moderation_first_impact_correction: {
+    classification: "milestone",
+    milestoneId: "premiere_correction_impact_justifiee",
+  },
+  moderation_multi_family: {
+    classification: "milestone",
+    milestoneId: "moderateur_polyvalent",
+  },
+  product_feedback_accepted: {
+    classification: "progression",
+    progressionId: "product_feedback",
+  },
+  spogomi_first_referee_certified: {
+    classification: "milestone",
+    milestoneId: "spogomi_first_referee",
+  },
+  [TERRAIN_SPECIALIZATION_EVENT_TYPE]: {
+    classification: "non_progression",
+    reason: "Les événements de spécialisation sont construits par la policy terrain et rattachés à Organisation ou Participation.",
+  },
+  [TERRITORIAL_LEGEND_REWARD_EVENT_TYPE]: {
+    classification: "non_progression",
+    reason: "Les récompenses territoriales sont BADGE_ONLY et sont reconstruites depuis leurs preuves.",
+  },
+};
+export function currentInfiniteProgressions(): readonly GamificationProgressionDefinition[] {
+  return CURRENT_INFINITE_PROGRESSIONS;
+}
+export function currentMilestones(): readonly MilestoneDefinition[] {
+  return CURRENT_MILESTONES;
+}
+export function gamificationEventRegistry(): Readonly<
+  Record<ProgressionEventType, GamificationEventRegistration>
+> {
+  return GAMIFICATION_EVENT_REGISTRY;
+}
+const EVENT_FAMILY_MAP: Readonly<
+  Record<ProgressionEventType, CurrentInfiniteProgressionId | null>
+> = Object.fromEntries(
+  Object.entries(GAMIFICATION_EVENT_REGISTRY).map(([eventType, registration]) => [
+    eventType,
+    registration.classification === "progression"
+      ? registration.progressionId
+      : null,
+  ]),
+) as Record<ProgressionEventType, CurrentInfiniteProgressionId | null>;
+export function eventFamilyMap(): Readonly<
+  Record<ProgressionEventType, CurrentInfiniteProgressionId | null>
+> {
+  return EVENT_FAMILY_MAP;
+}

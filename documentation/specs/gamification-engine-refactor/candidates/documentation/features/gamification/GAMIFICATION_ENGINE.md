@@ -1,0 +1,563 @@
+# Moteur de gamification
+
+Ce document est le point d'entrée technique de la gamification CleanMyMap.
+Il ne duplique pas les seuils, badges ni règles métier détaillées.
+
+## Sources de vérité
+
+Ordre de confiance :
+
+1. runtime :
+   - `apps/web/src/app/api/gamification/`
+   - `apps/web/src/lib/gamification/`
+   - `apps/web/src/components/gamification/`
+2. spécification fonctionnelle canonique :
+   - `documentation/pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md`
+3. direction produit :
+   - `documentation/product/gamification-non-competitive.md`
+   - `documentation/product/gamification-inventory.md`
+4. sécurité et autorisations :
+   - `documentation/security/authz-authn-regles.md`
+
+Le code et les tests priment si une divergence apparaît.
+
+## Légendes territoriales — contrat annuel intersurface
+
+Le moteur serveur des Légendes territoriales est détenu par
+`apps/web/src/lib/gamification/territorial-legends/` et ses routes
+`/api/gamification/territorial-leaderboard/*`. Il applique le contrat annuel
+décrit dans la [spécification canonique](../../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md) :
+`campaignYear` est l'année civile `Europe/Paris`, la fenêtre de 90 jours est
+bornée par le 1er janvier, et les périodes ne traversent jamais une frontière
+de campagne.
+
+Les cinq familles `BADGE_ONLY` restent des familles de grade, pas des badges
+annuels ajoutés au catalogue. Chaque attribution possède cependant une
+identité millésimée incluant le grade et `campaignYear`; sa preuve conserve le
+territoire, les dates de détention, la provenance et le statut d'audit. Les
+preuves historiques invalidées restent lisibles par le propriétaire avec
+`GET /api/gamification/territorial-leaderboard/history?campaignYear=...`, mais
+ne sont pas rechargées comme faits CURRENT.
+
+La preuve `season_end` n'est jamais remise par le snapshot du 31 décembre :
+elle exige une période dont le dernier jour confirmé est le 31 décembre et une
+réconciliation après la fin de l'année civile Europe/Paris. Le rattrapage du
+1er janvier et ses rejouements sont idempotents ; aucun jour manquant ni
+détenteur provisoire n'est transformé en récompense définitive.
+
+Web et Mobile consomment cette projection serveur identique. Mobile ne doit
+pas implémenter un calcul local de score, de rang, de série, de conquête ou de
+badge ; une future surface native doit utiliser le Bearer Clerk et les mêmes
+routes, en respectant la lecture publique minimisée et la lecture personnelle
+owner-scoped.
+
+La surface Web agrégée utilise
+`GET /api/gamification/territorial-leaderboard/overview`, une projection
+owner-scoped et `no-store` qui regroupe les cinq niveaux, les fiches de
+territoire, le classement public autorisé, les égalités, la détention courante,
+le meilleur historique et les récompenses de la campagne. Elle inclut les
+territoires admissibles issus des participations confirmées du propriétaire,
+de ses périodes et de ses preuves, même avant la première détention ou
+récompense. Les territoires d'actions appartenant à d'autres utilisateurs ne
+peuvent pas consommer cette collection privée avant sa validation ; les
+classements publics de chaque territoire restent paginés et bornés séparément.
+Les faits sont chargés une seule fois par requête, alors que les projections
+publique et personnelle restent séparées. Elle est consommée
+par les profils Web et `/sections/gamification` ; le client ne recalcule ni
+rang, ni score, ni durée, ni titre. Les titres ne sont affichés que lorsqu'une
+éligibilité confirmée est renvoyée par la lecture personnelle.
+
+Le consentement territorial reste une mutation serveur-only : le rôle
+`authenticated` conserve uniquement la lecture RLS owner-scoped et ne peut pas
+falsifier `age_band`, `activated_at` ou `revoked_at`. Le RPC de mutation
+sérialise les activations par utilisateur ; une activation déjà effective garde
+son watermark, tandis qu'une réactivation après révocation reçoit une nouvelle
+borne. Une révocation ferme aussi les détentions actives de ce propriétaire
+dans la même transaction, sans effacer les preuves historiques. Avant chaque
+projection publique, l'éligibilité d'âge Clerk courante est revalidée. Une
+réponse Clerk indisponible est un état non vérifiable : elle exclut l'utilisateur
+de l'affichage et interrompt toute réconciliation, sans produire une liste de
+gagnants réputée complète. Le classement public est `no-store` afin qu'une révocation ou une perte
+d'éligibilité ne reste pas dans un cache partagé. Les statistiques personnelles
+restent séparées : elles ne réinscrivent jamais un propriétaire révoqué dans la
+compétition publique.
+
+Les classements ne géocodent jamais à la lecture. Ils chargent des pages
+déterministes et bornées d'actions, participations, consentements et profils,
+puis utilisent uniquement `actions.territorial_legend_attribution`, une
+projection JSONB server-owned vérifiée par le résolveur officiel et versionnée
+par le COG. Une attribution absente, invalide ou non vérifiable exclut l'action
+sans la remplacer par un libellé. La création et les changements de localisation
+rafraîchissent ou invalident cette projection ; la réconciliation contrôlée ne
+réessaie que les actions admissibles qui n'en possèdent pas. Une erreur de page
+ne produit donc jamais un classement partiel silencieux.
+
+L'attribution manquante est écrite avec la version `actions.updated_at` lue
+avant résolution et une condition atomique sur cette version. Une modification
+concurrente de géométrie perd donc l'écriture et laisse l'attribution à `NULL`
+pour une nouvelle tentative ; une attribution incertaine n'est jamais inventée.
+
+La réconciliation territoriale capture une révision monotone et transactionnelle
+des faits canoniques avant et après le calcul. Des triggers `AFTER INSERT`,
+`UPDATE` et `DELETE` sur les actions, participations, consentements et profils
+font avancer cette révision dans la même transaction que la mutation ; une
+suppression ne peut donc pas rester invisible parce que son ancien
+`updated_at` n’était pas le maximum global. Une perte d'éligibilité Clerk
+confirmée est d'abord répercutée par la mutation serveur-only de
+`territorial_legend_consents`, ce qui avance la même révision et ferme la
+détention active dans sa transaction. La publication exige ensuite cette
+révision et verrouille les tables sources en `SHARE` avant de la comparer à
+leur état courant ; un calcul obsolète ne peut donc pas remplacer un état plus
+récent du même jour. `source_fingerprint` reste une preuve d'origine, jamais
+une chronologie. Le RPC de publication révisé est réservé à `service_role`,
+avec un contrôle de rôle avant verrouillage, et les reprises valides restent
+idempotentes.
+
+La non-rétroactivité compare `action_participants.joined_at` à
+`territorial_legend_consents.activated_at` avec une précision d'horodatage ;
+un timestamp absent ou invalide est exclu. Les routes privées utilisent
+`requireActionRequestAccess`, qui accepte la session Web et le Bearer Clerk
+Mobile tout en transmettant l'identité owner-scoped au serveur.
+
+## Frontières techniques
+
+Les responsabilités et chemins des modules internes sont indexés dans le
+[README runtime](../../../apps/web/src/lib/gamification/README.md).
+Le registre des mécaniques, la construction du reçu et le calcul des rangs
+ne dépendent pas des utilitaires Actions ou des lectures Supabase/Clerk
+pour produire leur décision. Les façades historiques conservent les
+signatures utilisées par les consommateurs. Les opérations SQL, le ledger
+et les identités de récompense restent inchangés.
+
+- `progression_events` est l'unique journal CURRENT de progression XP et
+  `progression_profiles` sa projection persistante. L'XP est une unité de
+  progression non dépensable : aucune fonctionnalité CURRENT ne doit lire ou
+  écrire un sol de points pour attribuer, afficher ou consommer la progression.
+- `progression_events` journalise les événements de progression avec une identité logique stable `(user_id, event_type, source_table, source_id, status_phase)` et une écriture idempotente. `occurred_on` décrit la date métier ; il ne déduplique pas à lui seul des sources distinctes.
+- Le contrat versionné `GAMIFICATION_RULES_V1` est la projection des règles
+  CURRENT. `computeExpectedGamificationState` calcule sans mutation les
+  événements, jalons, badges et compteurs attendus à partir des faits métier ;
+  `reconcileUserGamification` compare ensuite cet état au ledger et INSERT,
+  UPDATE ou retire uniquement les événements CURRENT qu'il possède.
+- Les événements produits par la reconstruction portent dans `metadata` leur
+  `rulesVersion`, `mechanicId`, `progressionId` ou `milestoneId`, source,
+  `awardKind`, palier éventuel et `logicalId`. L'identité logique ne dépend pas
+  de la version de règles afin qu'un changement de montant fasse un UPDATE et
+  non un cumul XP.
+- Une évolution `XP_MILESTONE → BADGE_ONLY` conserve la preuve attendue en
+  ramenant l'XP dérivée à zéro ; `BADGE_ONLY → NON_GAMIFIED` retire la
+  projection CURRENT. Les lignes LEGACY et les faits métier ne sont jamais
+  effacés indistinctement.
+- `points_ledger` et `user_points` sont conservées uniquement comme surfaces
+  COMPATIBILITY/LEGACY pour les données et routes historiques. Elles ne sont
+  plus une source de vérité ni une dépendance des flux CURRENT.
+- La route historique `/api/gamification/analytics/points` et son loader,
+  ainsi que le script `apps/web/scripts/backfill-action-gamification.mjs`,
+  restent les derniers consommateurs explicites de ces tables. Aucun écran
+  CURRENT ne les appelle ; leur retrait relève d'une décision de compatibilité
+  séparée et le script reste un outil de réparation historique.
+- les sources métier restent propriétaires de leurs données ; le journal XP ne remplace jamais la source métier.
+- `action_geometry_contributions` est la source canonique des preuves terrain
+  de `cartography`. La réconciliation déduplique sur `(user, action)` et
+  produit `verified_geometry_contribution` dans `progression_events` ; ni un
+  fichier, ni une distance, ni une reconstruction ne crée directement une
+  unité XP supplémentaire.
+- la métrique `Zone sensible apaisée` reste hors des dix progressions infinies :
+  sa qualification est figée à la validation dans `progression_events`, puis
+  ses seuils gemme canoniques `1, 3, 5, 8, 10, 15, 20, puis +5` sont projetés
+  par des événements idempotents `sensitive_zone_milestone` à `+1 XP` ; l'état
+  courant d'une zone ne révoque jamais la preuve historique. Cette mécanique
+  ne crée ni progression infinie ni solde XP indépendant.
+- les GET, loaders de page et lectures de profil sont read-only ; les
+  attributions de progression sont déclenchées par une mutation métier ou par
+  le rebuild serveur explicite `rebuildUserGamificationBadges`.
+- le rebuild/backfill est idempotent et ne doit jamais être appelé par une
+  lecture publique ou un rendu de page.
+- les écritures d'audit et notifications sont des effets secondaires et ne doivent pas devenir la preuve métier.
+- Le registre CURRENT `GAMIFICATION_REGISTRY` de
+  `apps/web/src/lib/gamification/progression/gamification-registry.ts` est l'unique catalogue
+  de décision des mécaniques métier. Chaque entrée porte un `id`, une
+  `category` parmi `XP_PROGRESSION`, `XP_MILESTONE`, `BADGE_ONLY` et
+  `NON_GAMIFIED`, un `progressionId` éventuel, une `xpPolicy`, une source
+  métier, un badge/jalon éventuel, une `visibility`, une `rulesVersion` et une
+  `introducedInRulesRevision`.
+  Une donnée disponible mais non récompensée est donc une décision
+  `NON_GAMIFIED` explicite, jamais un backlog implicite.
+- Les dix progressions infinies sont `participation`, `organisation`,
+  `exploration`, `clean_zones`, `regularity`, `versatility`, `learning`,
+  `moderation`, `cartography` et `product_feedback` (la modération restant limitée aux comptes
+  autorisés par AuthZ).
+- Les spécialisations terrain (`organizer_primary`, `coorganizer`,
+  `group_lead`, `cigarette_butts`, `recyclables`, `household_waste` et
+  `glass`) sont des sous-progressions rattachées à `organisation` ou
+  `participation`. Leur politique versionnée
+  `terrain-specializations-2026.10-v1` compte les actions distinctes dont la
+  mission est attestée, la présence finale est `confirmed` et l'action est
+  `approved`, publiée, visible et `post_action_complete`. Les seuils sont
+  `1, 3, 5, 10, 20`, puis chaque dizaine ; l'XP n'est émise qu'au
+  franchissement. Si plusieurs rôles franchissent un seuil sur la même action,
+  un seul événement crédite le montant le plus élevé, tandis que les autres
+  événements restent des preuves de badge à `0 XP`.
+- Ces événements utilisent `progression_events` avec une identité stable
+  incluant la spécialisation, la version, le palier et l'action. La
+  réconciliation peut donc déplacer ou retirer une preuve après correction
+  d'attestation sans rejouer la récompense d'organisation de base. Une
+  attestation ne confère aucune permission et aucun grade n'est consommé par
+  AuthZ ; les mesures de poids ou de mégots, les inscriptions et les rôles
+  simplement choisis sont exclus.
+- Les jalons CURRENT avec XP sont `Première trace utile`, `Parrainage utile`,
+  `Boucle bouclée`, `Mobilisateur`, `Donnée exemplaire` et `Modérateur
+  polyvalent`. Les autres jalons CURRENT sont `BADGE_ONLY`.
+- Les événements historiques `impact_badge`, `form_*` et
+  `sensitive_zone_*` restent des compatibilités de journal lorsqu'ils existent
+  déjà ; ils ne constituent pas une nouvelle catégorie CURRENT ni une promesse
+  implicite d'évolution.
+- La section canonique `Données disponibles mais volontairement non gamifiées`
+  de la spécification détaille les exclusions de poids, mégots, démographie,
+  textes libres, inscriptions, preuves auxiliaires, difficulté, qualité,
+  confiance et dons. Une réouverture exige une modification explicite du
+  registre et de sa `rulesVersion`.
+- Chaque progression expose le contrat typé commun
+  `GamificationProgressionState` : valeur courante, badge courant, prochain
+  badge, pourcentage et contribution au total XP. Cette contribution n'est pas
+  un solde séparé.
+- `/api/gamification/me` expose `progression.summary`, la lecture
+  utilisateur canonique consommée par les surfaces Gamification et profil.
+  Elle est construite depuis le registre CURRENT et distingue les dix
+  progressions infinies des jalons one-shot `XP_MILESTONE` ou `BADGE_ONLY` ;
+  les entrées `NON_GAMIFIED` en sont exclues. `summary.xpTotal` est la somme
+  du ledger `progression_events`, et chaque progression/jalon porte sa
+  `awardCategory`, son booléen `grantsXp` et sa contribution `xpContribution`
+  dérivée des mêmes événements. La réconciliation distingue
+  explicitement l'XP de compatibilité historique non rattachée à une mécanique
+  CURRENT ; aucun composant ne recalcule un niveau, un badge ou un prochain
+  palier.
+- La collection SPOGOMI répétable reste une projection distincte de `badgeTotal`
+  et de l'XP. `GET /api/gamification/spogomi/collection` lit les occurrences
+  certifiées du compte et les métadonnées publiques de l'événement ; la section
+  `/sections/gamification` les filtre par année, type et événement. Les
+  progressions Terrain et Arbitrage réutilisent les compteurs d'événements
+  actifs exposés par `loadSpogomiCollectionForUser` et leurs paliers `1, 3, 5,
+  10, 25, 50, 75, 100, puis +25` ne sont jamais convertis en XP.
+- La page Gamification sépare visuellement les progressions XP, les jalons avec
+  XP et les jalons de reconnaissance `BADGE_ONLY`. Les métriques d'impact
+  (poids, mégots, bénévoles, démographie et proxys calculés) restent des
+  données d'impact et ne sont pas converties automatiquement en XP.
+- La surface utilisateur `/api/gamification/me` et ses acquittements
+  (`acknowledge-reconciliation` et `acknowledge-rules-migration`) passent par
+  `requireAuthenticatedAccess()`. Le `userId` utilisé pour les lectures et
+  mutations est exclusivement celui retourné par ce garde ; aucun client
+  Supabase privilégié n'est créé avant la réussite de l'AuthN.
+- Une progression infinie est `not_started` tant qu'aucune contribution
+  éligible n'est démontrée, puis `in_progress` pour toujours. Son palier
+  courant est le dernier palier atteint et son prochain palier est la cible en
+  cours ; le palier initial `Observateur` à zéro ne constitue pas un début.
+- Un jalon n'est `in_progress` que lorsqu'une progression intermédiaire réelle
+  est fournie par sa source canonique. Les jalons binaires ne reçoivent pas de
+  pourcentage artificiel. Les mécaniques `authorized_moderation` sont absentes
+  de l'inventaire d'un utilisateur non habilité.
+- `rulesRevision` est numérique et monotone ; les chaînes `rulesVersion` ne
+  sont jamais comparées lexicalement. Le profil conserve la révision appliquée
+  et la dernière révision acquittée. Une mécanique est `new` uniquement si
+  elle a été introduite dans la dernière révision appliquée applicable au
+  compte, indépendamment de son état (`not_started`, `in_progress` ou
+  `completed`).
+- Les quatre progressions terrain principales sont matérialisées par les
+  métriques canoniques `participation`, `organisation`, `exploration` et
+  `clean_zones`; elles partagent ce contrat sans partager leur compteur ni
+  leur famille de badges.
+- L'XP globale est calculée à partir de la somme des événements actifs des
+  dix progressions, des événements one-shot et des récompenses historiques
+  explicitement conservées en compatibilité, comme `sensitive_zone_milestone`. Aucun
+  `progression_id` SQL supplémentaire n'est requis : la classification est
+  dérivée de manière déterministe du registre des `event_type`.
+- les lectures Clean Zones courantes utilisent `trash_spotter_spots`.
+- les anciennes identités d'événement liées à `spots` peuvent être reconnues uniquement pour préserver l'historique et empêcher une réattribution d'XP ; la table legacy n'est pas une source courante de candidats.
+- les formulaires restent une preuve de validation et une source de complétude;
+  les événements Forms historiques (`form_tier_unlock`, `form_bonus`) sont
+  `COMPATIBILITY` et ne sont plus écrits par le rebuild CURRENT;
+- les métriques de qualité et de confiance restent des faits dérivés. Les
+  seuils `impact_badge` Mohs déjà enregistrés restent lisibles pour
+  compatibilité via les attributions personnelles confirmées ; les kg et
+  mégots ne constituent pas une progression CURRENT et ne doivent jamais être
+  convertis en XP proportionnel à la quantité;
+- les règles détaillées de seuils, familles, scopes et attribution restent dans la spec canonique, pas dans ce document.
+
+## Audit XP administratif
+
+La surface courante est :
+
+`/admin/gamification/xp-audit`
+
+Elle appelle `checkAdminAccess()` avant toute lecture privilégiée et consulte
+`xp_audit` / `xp_audit_daily` côté serveur.
+
+Les règles générales AuthN/AuthZ ne sont pas redéfinies ici :
+consulter `documentation/security/authz-authn-regles.md`.
+
+## Réconciliation administrative des règles
+
+Le changement rétroactif des règles se fait uniquement avec le script serveur
+administratif canonique, jamais depuis une page ou une API publique :
+
+```text
+npm run gamification:reconcile -w apps/web -- --user <id> --dry-run
+npm run gamification:reconcile -w apps/web -- --user <id> --apply
+npm run gamification:reconcile -w apps/web -- --all --dry-run
+npm run gamification:reconcile -w apps/web -- --all --apply --batch-size 50
+```
+
+`--dry-run` est sans écriture : il ne modifie ni Supabase, ni l'audit, ni le
+checkpoint. Pour un utilisateur, il expose la version des règles avant/après,
+l'XP avant/attendue/delta, les événements à ajouter/modifier/retirer, les
+badges et jalons ajoutés/retirés, ainsi que le niveau avant/après. `--all`
+retourne les mêmes éléments sous forme d'agrégats.
+
+`--apply` est obligatoire pour muter. Chaque utilisateur est traité
+idempotemment par le moteur CURRENT, une opération technique est inscrite dans
+`admin_operations_audit`, puis le checkpoint est écrit sous
+`apps/web/artifacts/validation/gamification-reconcile/` (chemin ignoré par
+Git). Une interruption ou une erreur laisse le dernier utilisateur réussi ;
+reprendre avec le même fichier :
+
+```text
+npm run gamification:reconcile -w apps/web -- --all --apply --resume <checkpoint.json>
+```
+
+Le checkpoint est refusé si sa `rulesVersion` ne correspond plus aux règles
+chargées. Une reprise retente l'utilisateur interrompu et ne réécrit pas les
+utilisateurs déjà clôturés. Aucun rebuild global de production n'est exécuté
+par les validations locales.
+
+La réconciliation SPOGOMI suit le même contrat de reprise, avec une frontière
+supplémentaire entre la projection privée des badges et le ledger XP. Les
+lectures paginées des faits gamification de tous les utilisateurs affectés sont
+prévalidées avant l'appel atomique `reconcile_spogomi_collection_awards`, puis
+le même snapshot de faits est réutilisé pour le jalon
+`spogomi_first_referee`. Une erreur de lecture prévisible refuse donc la
+mutation des badges. Si l'XP échoue après la RPC des badges, l'API répond
+explicitement `503` avec `status = partial` et `retryable = true` ; une nouvelle
+exécution rejoue la projection idempotente et la reconstruction XP sans double
+crédit. Il n'existe pas d'atomicité globale entre ces deux opérations distinctes.
+
+Procédure canonique lors d'une évolution :
+
+1. modifier la version et les règles CURRENT ;
+2. ajouter ou adapter les tests de reconstruction/réconciliation ;
+3. exécuter le `--dry-run` ciblé ou global ;
+4. examiner les deltas XP, événements, badges, jalons et niveaux ;
+5. lancer un `--apply` contrôlé par lots ;
+6. vérifier le checkpoint final, l'audit et la réconciliation d'un échantillon.
+
+Le script utilise la clé Supabase de service uniquement côté serveur/CLI. Les
+faits métier, les lignes LEGACY et les tables de sources ne sont jamais
+modifiés pour obtenir le résultat gamification.
+
+## Reçu utilisateur de réconciliation
+
+Toute réconciliation qui modifie réellement l'état CURRENT d'un utilisateur
+produit un `GamificationReconciliationReceipt` structuré depuis le même plan
+que les mutations du ledger. Il contient notamment `xp.before/after/delta`,
+`level.before/after/direction`, les progressions ajoutées/retirées/modifiées,
+les badges et jalons concernés, les compteurs d'événements, les versions de
+règles et une `reasonCategory`. Les entrées utilisent les identifiants
+canoniques du registre, jamais des libellés traduits comme identifiants.
+
+Le reçu est conservé dans la boîte de réception existante
+`public.app_notifications` avec `type = 'gamification_reconciliation'` et un
+payload JSON versionné. Cette table fournit le propriétaire utilisateur,
+l'historique et la lecture protégée par RLS ; la migration ajoute
+`seen_at`/`acknowledged_at` et une clé d'idempotence par réconciliation. Elle
+ne remplace pas `progression_events` et `admin_operations_audit` n'est jamais
+utilisé comme boîte de réception.
+
+La route `POST
+/api/gamification/me/acknowledge-reconciliation` accepte uniquement un objet
+strict contenant `notificationId` sous forme d'UUID. Les propriétés inconnues,
+le JSON malformé et toute valeur qui n'est pas un UUID sont rejetés en `400`
+avant l'accès privilégié. La mutation reste idempotente et est bornée par
+`notificationId`, `user_id`, le type de notification et
+`acknowledged_at IS NULL` ; elle ne révèle donc pas si un UUID appartient à un
+autre compte.
+
+Lors de la lecture de l'historique, le payload est validé comme reçu de
+réconciliation et cohérent avec l'utilisateur demandé (`receipt.userId ===
+userId`), qu'il soit acquitté ou non. Un payload malformé, d'un autre type ou
+portant un propriétaire incohérent est ignoré et n'est jamais transmis à l'UI.
+
+## Reconciliation des contributions d'impact
+
+Les récompenses Mohs dépendent des contributions personnelles attribuées depuis
+les actions confirmées, mais ne constituent pas une progression XP CURRENT et
+ne convertissent jamais les kilogrammes ou les mégots en XP proportionnelle.
+Le propriétaire de cette projection est
+`mohs-impact-reconciliation.ts` ; l'orchestrateur
+`scientific-impact-gamification-reconciliation.ts` l'exécute avant la
+réconciliation du profil et des événements CURRENT.
+
+Une lecture ordinaire conserve l'instantané historique persisté. Une
+réconciliation scientifique relit uniquement les sources dérivées conservées
+(lots, masse source et état) et applique la méthode courante. Les comptages ou
+mesures réellement déclarés restent inchangés ; une paire scalaire historique
+ambiguë reste inchangée et n'est pas recalculée. Les actions non approuvées,
+les participations non confirmées, les dépassements du total collectif et les
+attributions indisponibles ne produisent pas de palier Mohs.
+
+La lecture utilisée par une réconciliation scientifique est fail-closed : une
+erreur Supabase, une réponse non structurée ou une liste tronquée des
+participations/actions confirmées fait échouer la réconciliation et ne peut
+jamais être convertie en liste vide. Les requêtes vérifient leur complétude
+(compte exact et couverture des identifiants attendus) avant de calculer un
+diff ; aucun événement CURRENT, profil ou reçu de succès n'est donc supprimé
+sur la seule base d'une indisponibilité transitoire. Les lectures ordinaires
+peuvent rester dégradées et signaler `unavailable`/`error`, mais ce statut ne
+constitue pas une preuve d'absence scientifique. Une liste vide issue d'une
+lecture complète reste, elle, une absence confirmée et peut entraîner la
+suppression normale des seuls événements CURRENT devenus injustifiés.
+
+Après une mutation de roster, la réconciliation parcourt aussi les lignes
+`action_participants` conservées avec un statut `cancelled` ou rejeté afin
+d'identifier les comptes sortants. Ces lignes servent uniquement à déterminer
+les comptes à recalculer ; le moteur scientifique continue de retenir les
+participations `confirmed` comme seules sources d'attribution.
+
+La réconciliation Mohs appelle la RPC
+`apply_mohs_impact_reconciliation`. Celle-ci verrouille la projection par
+utilisateur, compare un instantané complet, puis applique suppressions,
+modifications et insertions atomiquement. Une révision concurrente retourne un
+conflit et le runner rejoue l'utilisateur ; l'identité logique
+`personal_impact_mohs` + famille + grade reste stable, donc un changement de
+facteur met à jour un événement au lieu de recréditer un palier. Les événements
+LEGACY sans empreinte de méthode et les reçus historiques ne sont pas réécrits.
+
+Le mode administratif scientifique expose un diff sans écriture puis une
+application idempotente et reprenable :
+
+```text
+npm run gamification:reconcile -w apps/web -- --user <id> --scientific-impact --dry-run
+npm run gamification:reconcile -w apps/web -- --all --scientific-impact --apply --batch-size 50
+```
+
+Le plan signale la méthode d'impact, l'empreinte des sources, les paliers
+ajoutés/modifiés/retirés et le nombre de lignes sources éligibles. Les
+conséquences visibles sont persistées dans le reçu utilisateur existant, avec
+une clé d'idempotence dérivée de l'utilisateur, de la méthode et des sources.
+Les changements ordinaires d'une mesure individuelle ou du total d'une action
+passent par le même rafraîchissement avant la projection du profil ; une
+réconciliation ne modifie jamais l'XP indépendante de l'impact ni les XP de
+validation d'action.
+Lorsque des événements Mohs CURRENT sont ajoutés, modifiés ou retirés, l'appel
+RPC écrit une intention scientifique `pending` dans le canal de reçus, dans la
+même transaction. Elle porte la version de méthode, l'empreinte source et les
+compteurs réellement demandés, mais n'est pas présentée comme un reçu final.
+Après convergence du profil et des badges CURRENT, la reprise remplace cette
+intention par un seul reçu final avec la même `reconciliationId`. Un échec
+après la mutation Mohs laisse ainsi un travail rejouable sans recréditer
+d'événement ; un échec de l'écriture de l'intention annule la mutation.
+
+Le pending est chargé par une requête distincte, bornée par
+`app_notifications.user_id = userId`, `type = 'gamification_reconciliation'`
+et son `reconciliationId`; ses compteurs ne sont donc pas calculés sur les 50
+lignes de l'historique. Le filtre SQL et les protections RLS restent
+obligatoires.
+
+Un rebuild dont `hasUserVisibleChanges` vaut `false` ne crée aucune
+notification. Le front-end lit le reçu via le payload structuré et ne
+reconstruit pas un delta à partir de deux états incomplets ou du seul total
+XP. Les écritures sont serveur uniquement et le payload ne contient aucune
+donnée administrative sensible.
+
+Le reçu expose aussi `catalogChanges` avec les IDs canoniques des nouvelles
+progressions, des nouveaux jalons et des mécaniques retirées. Une nouveauté
+applicable sans XP ni badge est donc visible et peut être acquittée par
+`POST /api/gamification/me/acknowledge-rules-migration`. L'acquittement met à
+jour uniquement `last_acknowledged_rules_revision`, bornée à
+`current_applied_rules_revision`, ainsi que les notifications concernées ; la
+révision appliquée reste la propriété du flux de projection/réconciliation. Il
+ne supprime ni mécanique, ni preuve métier, ni reçu historique. Une révision
+ultérieure remplace la nouveauté de la vue principale, tandis que les reçus
+antérieurs restent consultables.
+
+La page `/sections/gamification` propose un historique secondaire, du plus
+récent au plus ancien, limité aux 50 derniers reçus du compte courant. Les
+reçus acquittés restent consultables dans cette fenêtre. Chaque ligne résume
+la date, la version CURRENT, le delta XP, le niveau avant/après et les
+compteurs de changements ; le détail réutilise le dialogue existant. Une
+notification ouvre `/sections/gamification?receipt=<UUID opaque de
+notification>` : cet identifiant borné est résolu côté serveur avec le scope
+de l'utilisateur authentifié et peut cibler un reçu conservé hors des 50
+derniers. Un identifiant malformé, inexistant ou d'un autre compte n'ouvre
+aucun reçu. La lecture utilise `Cache-Control: private, no-store` afin que
+l'état AFTER et le reçu restent cohérents après une réconciliation.
+
+`seen_at` représente la première consultation de la notification depuis la
+cloche ou le tableau de bord ; `unseenCount` désigne donc les mises à jour non
+encore consultées, et non les mises à jour survenues depuis une visite de la
+page Gamification.
+
+La notification globale réutilise `public.app_notifications`. Elle est créée
+uniquement pour une réconciliation avec changement visible, et son CTA ouvre
+le reçu concerné sans acquitter automatiquement la réconciliation. Les reçus
+restent des deltas structurés, sans snapshot exhaustif ; le cleanup explicite
+de rétention supprime les reçus `gamification_reconciliation` de plus de 120
+jours et conserve uniquement un manifeste de comptage.
+
+Un franchissement de niveau issu de cette même réconciliation conserve aussi
+la notification historique `system` produite par le rafraîchissement de profil,
+mais elle porte le même `reconciliationId`. Le centre de suivi présente alors
+le reçu détaillé une seule fois pour éviter une sollicitation redondante ; ni
+le reçu, ni la ligne historique de niveau ne sont supprimés. Un franchissement
+hors réconciliation conserve sa notification autonome. Les gains visibles
+restent dérivés des `progression_events` et des catalogues CURRENT, jamais
+d'un delta de profil isolé.
+
+## Collection SPOGOMI répétable
+
+SPOGOMI utilise les propriétaires CURRENT existants avec une extension bornée.
+`progression_events` reste l'unique ledger XP, `progression_profiles` la
+projection globale, `GAMIFICATION_REGISTRY` le registre des mécaniques et
+`badge-catalog.ts` le propriétaire des identités de badges. Les dix
+progressions infinies restent celles du registre CURRENT, avec
+`product_feedback` pour les retours produit acceptés.
+
+Les dix distinctions répétables (`spogomi_collector`, `spogomi_referee`, les
+six médailles, `spogomi_double_podium` et `spogomi_organizer`) sont des
+exemplaires de collection, pas des jalons one-shot. Les lignes
+`spogomi_collection_awards` sont une projection reconstructible et privée,
+unique par `(user_id, event_id, badge_type_id)`, avec année locale explicite,
+preuve, version de certification, statut et historique. Elles ne sont pas
+comptées dans `badgeTotal`; les compteurs distincts sont
+`spogomiAwardCount`, `spogomiDistinctBadgeTypes` et
+`spogomiEventsParticipated`.
+
+`spogomi_official_rankings` est un contrat d'entrée de projection certifiée,
+non un moteur de classement. Tant qu'une décision officielle certifiée n'est
+pas présente, aucune médaille ni aucun double podium n'est attribué. Une
+disqualification révoque l'éligibilité sportive sans supprimer les faits
+physiques validés. L'absence, l'identité non vérifiée, une égalité non résolue
+ou un résultat provisoire restent non récompensés.
+
+Le ramassage ne crée pas de bonus XP : seule la participation
+`action_participants.confirmed` alimente le moteur `participation` existant.
+Le premier arbitrage effectivement certifié est le seul jalon XP SPOGOMI
+(`spogomi_first_referee`, `+1 XP`), reconstruit une fois depuis les attestations
+certifiées et réconcilié par le même moteur. Les missions d'arbitrage et
+d'organisation sont des preuves d'activité distinctes des permissions AuthZ
+et de la présence de ramasseur.
+
+La réconciliation est une mutation serveur explicite et idempotente. Un GET de
+collection ne reconstruit rien. Les notifications XP réutilisent le reçu
+CURRENT existant uniquement lorsqu'une réconciliation du ledger produit un
+changement réel.
+
+## Évolution
+
+Toute modification du moteur doit vérifier ensemble :
+
+- code métier ;
+- tests concernés ;
+- spec canonique ;
+- éventuelle doctrine produit ;
+- sécurité si une permission ou une surface privilégiée change.
+
+Ne pas introduire une seconde documentation des seuils ou des familles de badges.

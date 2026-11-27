@@ -1,0 +1,190 @@
+# Inventaire des surfaces gamifiables
+
+Ce document recense les surfaces du site qui me paraissent pertinentes a gamifier pour CleanMyMap, avec une classification simple:
+
+- **objectif infini** : progression par paliers ouverts, avec badge ou rang qui evolue;
+- **one-shot** : obtention unique, utile pour la premiere fois ou un jalon definitif;
+- **régulier** : retour recurrent, habitude, cadence, repetition ou streak sobre;
+- **autre** : la surface ne doit pas etre gamifiee directement, ou seulement de maniere indirecte.
+
+Une rubrique peut recevoir **0, 1 ou plusieurs** mecanismes de gamification selon sa pertinence. La colonne `Gamification concrète` doit donc pouvoir enumerer plusieurs mecanismes, ou indiquer explicitement `Aucune gamification directe`.
+
+La regle de fond reste la meme: la gamification doit servir l utilite, la confiance et la retention, pas la comparaison.
+
+Les lignes d inventaire ci-dessous sont des pistes de surface et non une
+seconde liste de progressions CURRENT. Les seuls IDs CURRENT sont ceux de la
+spécification canonique.
+
+La taxonomie CURRENT à utiliser dans cet inventaire est celle du registre
+`GAMIFICATION_REGISTRY` dans `apps/web/src/lib/gamification/progression/gamification-registry.ts`
+et de la [spécification canonique](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md);
+elle contient exactement dix progressions infinies:
+
+- `Participation`;
+- `Organisation`;
+- `Exploration`;
+- `Zones propres`;
+- `Régularité`;
+- `Polyvalence`;
+- `Apprentissage`;
+- `Modération` (réservée aux comptes autorisés par AuthZ);
+- `Amélioration du produit`.
+
+Les jalons one-shot CURRENT sont ceux du registre : `Première trace utile`,
+`Trace fondatrice`, `Boucle bouclée`, `Mobilisateur`, `Donnée exemplaire`,
+`Parcours documenté`, `Mesure traçable`, `Tri documenté`, `Formalités
+préparées`, `Participation retrouvée`, `Parrainage utile`, `Première
+modération`, `Première validation de participation`, `Première correction
+d’impact justifiée` et `Modérateur polyvalent`. Les autres idées de cet
+inventaire restent descriptives et ne sont pas des mécanismes CURRENT.
+
+## Décisions de non-gamification CURRENT
+
+Les signaux suivants sont explicitement `NON_GAMIFIED` dans le registre. Ils ne
+sont pas des propositions à traiter :
+
+- poids total de déchets, nombre de mégots, ou kg/mégots utilisés comme
+  conversion ou progression XP ;
+- répartition enfants/adultes/retraités et champs démographiques ;
+- difficulté, accessibilité et contenu libre de `safetyInstructions`,
+  `recommendedMaterials`, `logisticsNotes` ou `checklistBeforeDeparture` ;
+- simple activation de `groupJoinEnabled`, clic sur rejoindre, inscription ou
+  acceptation future, annulation et mise en file ;
+- génération d’un lien de parrainage et montant d’un don ;
+- rôle utilisateur, niveau de confiance, score qualité ou remplissage d’un
+  formulaire pour eux-mêmes.
+
+Ces informations peuvent rester utiles à la preuve, à la validation, à l'AuthZ
+ou aux rapports. Elles ne créent aucune récompense CURRENT par elles-mêmes.
+
+## Inventaire par bloc
+
+### Bloc Accueil & Pilotage
+
+| Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
+| --- | --- | --- | --- | --- |
+| Accueil perso | objectif infini + régulier | C est le point d entree naturel vers la progression personnelle | Niveau courant, niveau potentiel, prochaine etape, retour d impact | Barre de progression vers le prochain palier, badge de reprise de session, rappel d objectif du jour |
+| Dashboard | objectif infini + régulier | C est la synthese de la vie du compte | Barre de progression, badges, objectif du jour ou du mois | Bloc "prochain palier", carte de badge evolutif, resume d impact, regularite mensuelle et zone sensible apaisée |
+| Profil & impact | objectif infini + régulier | L impact personnel doit rester lisible sans transformer les mesures en score | Progressions CURRENT, jalons et métriques d impact séparées | Les dix progressions CURRENT, les jalons one-shot et les indicateurs d impact conservés à part; pas de rang XP de confiance |
+| Connexion / inscription | one-shot | Le premier passage d activation est un jalon fort | Badge de premiere connexion utile, puis orientation vers la premiere action | Badge de demarrage, message de bienvenue, redirection vers l action suivante |
+| Onboarding localisation | one-shot | C est un jalon de mise en route, pas une habitude | Badge de configuration terminee, puis disparition du rappel | Badge de localisation validee, etat "pret a contribuer" |
+| Parcours | régulier | Le parcours utilisateur sert a maintenir le retour | Etape suivante, objectif de reprise, repere de session | Prochaine etape visible, compteur de progression de parcours, rappel de reprise |
+| Parcours par profil | régulier | Le contenu doit s adapter selon le profil et son rythme | Objectif de reprise personnalise, statuts de progression adaptes | Progression adaptee au profil, objectifs contextuels, hint d action suivante |
+| Portail Decider | autre | Surface de pilotage, pas un espace de gamification classique | Pas de score ludique; seulement des indicateurs de confiance et de lisibilite | Aucune gamification directe; seulement des marqueurs de confiance, de qualite et de suivi |
+| Administration | autre | La modération et la fiabilite ne doivent pas etre ludifiees publiquement | Progression Modération interne réservée à AuthZ | Aucune gamification publique; progression `moderation` uniquement pour les comptes autorisés |
+| God Mode | autre | Surface d exploitation critique | Pas de gamification visible | Aucune gamification |
+| Services admin | autre | Surface operatoire de maintenance | Pas de gamification visible | Aucune gamification |
+
+### Bloc Agir
+
+| Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
+| --- | --- | --- | --- | --- |
+| Declarer une action | one-shot + régulier + objectif infini | C est le coeur de l engagement terrain | Premiere action validee, cadence mensuelle, progression de participation, organisation et polyvalence | Jalons `Première trace utile` et `Trace fondatrice`, puis rattachement aux progressions CURRENT concernées |
+| Itineraire IA | régulier | L usage doit devenir une habitude de preparation | Badge d usage recurrent, rappel de bonne preparation, progression d efficacite | Badge d usage recurrent, compteur de preparation utile, niveau de maitrise d itineraire |
+| Signalement Dechets | one-shot + régulier | Le premier signalement est un jalon, la recurrence montre l utilite | Badge de premier signalement, puis repere de regularite locale | Badge de premier signalement, streak de signalements utiles, palier de couverture locale |
+| Météo | autre | Surface utilitaire, pas un terrain de score | Eventuellement un rappel de preparation, sans badge propre | Aucune gamification directe; au plus un etat de preparation recommande |
+| Guide terrain | régulier | Le savoir-faire se renforce par repetition | Progression de maitrise, checklists completees, rappels de bonnes pratiques | Badge de maitrise, checklist validee, progression de competence |
+| Kit terrain | one-shot + régulier | Le premier kit complet est un jalon, puis c est une habitude | Badge de kit complet, puis objectif de preparation recurrent | Badge de kit complet, rappel recurrent de preparation, taux de completude |
+| Que faire des déchets ? | one-shot + régulier | Le tri et la destination des déchets se consolident par repetition | Jalons de comprehension, puis suivi de bonnes pratiques | Badge de comprehension, rappel de tri, progression de maitrise des filieres |
+
+### Bloc Cartographie & Impact
+
+| Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
+| --- | --- | --- | --- | --- |
+| Carte des actions | objectif infini | La carte doit valoriser la couverture et la progression territoriale | Paliers de zones couvertes et niveaux de couverture | Progression Exploration / Zones propres; les preuves de zone sensible restent un repère historique séparé |
+| Carte d entrainement / sandbox | régulier | C est un espace de pratique, donc la repetition a du sens | Defis de test, objectifs de maitrise, usage recurrent sans pression | Badge de pratique, compteur d usages d entrainement, niveau de maitrise cartographique |
+| Observatoire public | autre | La lecture publique doit rester informative, pas ludifiee | Pas de score; seulement des repères de lecture et de qualite | Aucune gamification directe; seulement des repères de fiabilite et de lecture |
+| Rapports d impact | one-shot + objectif infini | Le rapport partageable est un jalon, mais la maitrise peut progresser | Badge de livrable genere, puis palier de qualite de restitution | Badge de rapport genere, badge de qualite de restitution, progression de niveau d impact |
+| Profil impact | autre | L impact personnel doit rester descriptif et traçable | Métriques d impact, couverture et méthodologie | Kg, mégots et proxies affichés comme mesures ou estimations, jamais comme unités XP |
+| Progression & Badges | objectif infini | C est la colonne vertébrale du systeme | Niveaux, badges evolutifs, contrat commun des dix progressions | Participation, Organisation, Exploration, Zones propres, Régularité, Polyvalence, Apprentissage, Modération autorisée et Amélioration du produit |
+| Historique des actions | régulier | Le retour sur l historique soutient la retention et la relecture | Jalons de regularite, recap de periode, reflexion post-action | Recap mensuel, streak de contributions utiles, badge de regularité mensuelle |
+
+### Bloc Réseau & Discussions
+
+| Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
+| --- | --- | --- | --- | --- |
+| Découvrir le réseau | régulier | Le reseau doit donner envie de revenir et de cooperer | Badges de participation au reseau, progression de presence locale | Badge de presence reseau, compteur de participation, badge de reseau actif, lien d invitation partageable |
+| Annuaire partenaires | one-shot + régulier | L entree dans le reseau est un jalon, la tenue a jour est recurrente | Badge de partenaire actif, rappels de mise a jour | Badge de premier rattachement, badge de mise a jour, statut de partenaire actif |
+| Onboarding partenaire | one-shot | Le franchissement de l onboarding est un vrai jalon | Badge de partenaire onboarde, puis sortie du flux | Badge de validation d onboarding, disparition du checklist une fois complete |
+| Opérations collectives | régulier + objectif infini | La participation collective est un moteur de retention | Rythme d actions collectives, rang de coordination, evolution de role | Badge de participation collective, rang de coordination, palier de contribution d equipe |
+| Messagerie Pro | régulier | La coordination s entretient dans le temps | Usage recurrent, reponse utile, presence de coordination | Badge de coordination utile, streak de reponses pertinentes, statut de presence active |
+| Soutenir le Projet | one-shot + régulier | Un soutien peut etre unique ou recurrent | Badge de soutien initial, puis soutien recurrent si abonnement/don repeté | Badge de premier soutien, badge de soutien recurrent, statut de soutien actif |
+
+### Bloc Apprendre
+
+| Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
+| --- | --- | --- | --- | --- |
+| Point de départ (Apprendre) | régulier | C est une porte d entree, pas un score final | Reprise de lecture, progression de parcours, recommandation suivante | Progression de lecture, reprise de module, repère de parcours continu |
+| Comprendre l enjeu | objectif infini | La comprehension peut monter par niveaux de maitrise | Paliers de comprehension, badges de maitrise, progression de lecture | Badge de comprehension, niveau de maitrise, badge evolutif de savoir |
+| S entrainer | régulier + objectif infini | Le repetition learning se prete tres bien aux paliers de maitrise | Streak sobre, mastery levels, validation de connaissances | Streak de revision sobre, niveau de maitrise, badge evolutif de réussite |
+| Bonnes pratiques | régulier | Les gestes utiles doivent etre reconsultes et appliques | Checklists, rappels, badges de pratique appliquee | Checklist completee, badge de pratique appliquee, rappel de routine utile |
+| Ressources | autre | Catalogue de contenus, pas une boucle ludique centrale | Pas de gamification directe, juste des reperes de consultation | Aucune gamification directe; seulement des repères de lecture et de profondeur |
+
+## Surfaces que je garderais hors gamification directe
+
+| Surface | Type | Raison | Gamification concrète |
+| --- | --- | --- | --- |
+| Observatoire public | autre | Trop public, trop analytique, doit rester credible et lisible | Aucune gamification directe |
+| Météo | autre | Outil de decision, pas un espace de progression | Aucune gamification directe |
+| Méthodologie | autre | La confiance et la preuve priment; pas de score ludique | Aucune gamification directe |
+| Portail Decider | autre | La valeur est institutionnelle, pas ludique | Aucune gamification directe |
+| Administration / God Mode / services admin | autre | Surface d exploitation critique, non destinee a la ludification | Aucune gamification visible |
+
+## Priorites que je recommande
+
+### A faire en premier
+
+- `Déclarer une action`
+- `Profil & impact`
+- `Progression & Badges`
+- `Opérations collectives`
+- `S'entrainer`
+
+### A faire ensuite
+
+- `Carte des actions`
+- `Itineraire IA`
+- `Rapports d impact`
+- `Guide terrain`
+- `Annuaire partenaires`
+
+### A garder sobres ou hors périmètre
+
+- `Météo`
+- `Méthodologie`
+- `Observatoire public`
+- `Administration`
+- `God Mode`
+
+## Regles de conception transverses
+
+- contrainte active: rester sur la progression basée sur les données utilisateur individuelles, avec la seule exception bornée des reconnaissances descriptives `school_first_mission`, `school_documented_sorting` et `school_field_debrief`, attachées à une action scolaire confirmée et validée, sans XP ni classement;
+- un seul objectif visible a la fois suffit dans la plupart des ecrans;
+- un badge doit toujours avoir un sens lisible par un humain;
+- un `objectif infini` doit toujours changer visuellement et verbalement a chaque palier important;
+- seuls les huit axes CURRENT produisent les progressions comportementales
+  infinies;
+- Mohs Déchets et Mohs Mégots restent des badges d'impact historiques secondaires :
+  ils affichent une barre finie de dix grades et produisent `+0,25 XP` par
+  seuil historique, sans devenir un neuvième axe et sans XP proportionnel aux
+  kg ou aux mégots. Forms, confiance et qualité restent hors progression;
+- un `one-shot` doit cesser de s afficher comme action a completer une fois acquis;
+- un `régulier` doit rester sobre, sans surcharge de notifications;
+- un score seul ne suffit jamais a motiver durablement une communaute benevole.
+
+### Reconnaissance collective scolaire
+
+- échelle : `action` / `learning`, une action source et non un profil élève ;
+- source : action scolaire explicitement confirmée, approuvée et finalisée ;
+- preuves : validation de l’action, ventilation réelle pour `Tri documenté`, participation catégorisée et mesure traçable pour `Bilan de terrain` ;
+- effets : attestation et trois jalons lisibles, toujours `0 XP`, sans écriture `progression_events`, sans classement et sans objectif de masse ou de mégots ;
+- retrait : rejet, annulation, dépublication ou reclassification hors scolaire invalide les reconnaissances par réconciliation idempotente.
+
+## Point de liaison avec la doc existante
+
+Cette liste doit etre lue avec:
+
+- [gamification-non-competitive.md](./gamification-non-competitive.md)
+- [dimension-communautaire.md](./dimension-communautaire.md)
+- [vision-et-objectifs.md](./vision-et-objectifs.md)
+- [../pages_site/routes/03-cartographie-impact/gamification/gamification-README.md](../pages_site/routes/03-cartographie-impact/gamification/gamification-README.md)
