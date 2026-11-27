@@ -63,7 +63,7 @@ describe("Action formalities assistant", () => {
     expect(markup).toContain("Contact recommandé");
     expect(markup).toContain("Questions détaillées de qualification");
     expect(markup).toContain("<details");
-    expect(markup).toContain("Aucune pièce AOT n&#x27;est demandée pour le nettoyage participatif ainsi qualifié.");
+    expect(markup).toContain("Aucune pièce particulière n&#x27;est listée pour cette démarche.");
   });
 
   it("shows Paris.fr, the verified 7e/8e phone and the specifically published 7e email when support is requested", () => {

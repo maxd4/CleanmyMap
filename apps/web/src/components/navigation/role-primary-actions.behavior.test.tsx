@@ -155,6 +155,6 @@ describe("RolePrimaryActions behavior", () => {
     expect(host.querySelector("section")?.className).toContain("bg-[linear-gradient");
     expect(host.querySelector("h2")?.textContent).toBe("Partenariats");
     expect(host.querySelectorAll("a")).toHaveLength(4);
-    expect(host.textContent).toContain("Accéder au portail partenaires");
+    expect(host.textContent).toContain("Ouvrir l’espace entreprise");
   });
 });
