@@ -37,11 +37,20 @@ async function waitForClerkSession(page: Page): Promise<void> {
   });
 }
 
+async function dismissCookieConsentIfPresent(page: Page): Promise<void> {
+  const rejectButton = page.getByRole("button", { name: "Tout refuser" });
+  if (await rejectButton.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await rejectButton.click();
+    await expect(rejectButton).toBeHidden();
+  }
+}
+
 async function openProtectedRoute(page: Page, route: string): Promise<void> {
   await page.goto(route, { waitUntil: "domcontentloaded" });
   await waitForClerkSession(page);
   await expect(page).not.toHaveURL(/\/sign-in(?:[/?#]|$)/);
   await expect(page.locator("[data-auth-gate-card]")).toHaveCount(0);
+  await dismissCookieConsentIfPresent(page);
 }
 
 async function measureDashboardOverflow(page: Page, viewportWidth: number): Promise<OverflowObservation> {
@@ -306,6 +315,10 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
       await expect(tabNav.locator("a")).toHaveCount(5);
       await expect(tabNav.locator('a[aria-current="page"]')).toHaveAttribute("href", "/dashboard");
 
+      await tabNav.locator('a[href*="tab=notifications"]').click();
+      await expect(page).toHaveURL(/\/dashboard\?tab=notifications/);
+      await expect(tabNav.locator('a[aria-current="page"]')).toHaveAttribute("href", /tab=notifications/);
+
       await tabNav.locator('a[href*="tab=collective"]').click();
       await expect(page).toHaveURL(/\/dashboard\?tab=collective/);
       await expect(tabNav.locator('a[aria-current="page"]')).toHaveAttribute("href", /tab=collective/);
@@ -314,10 +327,18 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
       await expect(page).toHaveURL(/\/dashboard\?tab=engagement/);
       await expect(tabNav.locator('a[aria-current="page"]')).toHaveAttribute("href", /tab=engagement/);
 
+      await tabNav.locator('a[href*="tab=account"]').click();
+      await expect(page).toHaveURL(/\/dashboard\?tab=account/);
+      await expect(tabNav.locator('a[aria-current="page"]')).toHaveAttribute("href", /tab=account/);
+
+      await tabNav.locator('a[href="/dashboard"]').click();
+      await expect(page).toHaveURL(/\/dashboard(?:[?#]|$)/);
+      await expect(tabNav.locator('a[aria-current="page"]')).toHaveAttribute("href", "/dashboard");
+
       await page.goBack();
-      await expect(page).toHaveURL(/\/dashboard\?tab=collective/);
+      await expect(page).toHaveURL(/\/dashboard\?tab=account/);
       await page.goForward();
-      await expect(page).toHaveURL(/\/dashboard\?tab=engagement/);
+      await expect(page).toHaveURL(/\/dashboard(?:[?#]|$)/);
 
       // Legacy anchors bridge
       await openProtectedRoute(page, "/dashboard#notifications");
@@ -364,6 +385,23 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
             if (!match) return null;
             return { r: Number(match[1]), g: Number(match[2]), b: Number(match[3]), a: match[4] ? Number(match[4]) : 1 };
           };
+          const parseAllRgb = (value: string) => {
+            const matches = value.matchAll(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/g);
+            return Array.from(matches, (match) => ({
+              r: Number(match[1]),
+              g: Number(match[2]),
+              b: Number(match[3]),
+              a: match[4] ? Number(match[4]) : 1,
+            }));
+          };
+          const blend = (
+            fg: { r: number; g: number; b: number; a: number },
+            bg: { r: number; g: number; b: number },
+          ) => ({
+            r: fg.r * fg.a + bg.r * (1 - fg.a),
+            g: fg.g * fg.a + bg.g * (1 - fg.a),
+            b: fg.b * fg.a + bg.b * (1 - fg.a),
+          });
           const lum = (c: { r: number; g: number; b: number }) => {
             const ch = [c.r, c.g, c.b].map((v) => {
               const s = v / 255;
@@ -376,14 +414,31 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
             const l2 = lum(bg);
             return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
           };
-          const effectiveBg = (el: HTMLElement) => {
+          const effectiveBackgroundCandidates = (el: HTMLElement) => {
+            const chain: HTMLElement[] = [];
             let cur: HTMLElement | null = el;
             while (cur) {
-              const parsed = parseRgb(getComputedStyle(cur).backgroundColor);
-              if (parsed && parsed.a > 0.85) return parsed;
+              chain.unshift(cur);
               cur = cur.parentElement;
             }
-            return { r: 255, g: 255, b: 255, a: 1 };
+            let acc: { r: number; g: number; b: number } = { r: 255, g: 255, b: 255 };
+            let gradientCandidates: Array<{ r: number; g: number; b: number }> | null = null;
+            for (const node of chain) {
+              const nodeStyle = getComputedStyle(node);
+              const bgColor = parseRgb(nodeStyle.backgroundColor);
+              if (bgColor && bgColor.a > 0) {
+                acc = blend(bgColor, acc);
+              }
+              if (nodeStyle.backgroundImage && nodeStyle.backgroundImage !== "none") {
+                const stops = parseAllRgb(nodeStyle.backgroundImage);
+                if (stops.length > 0) {
+                  gradientCandidates = stops.map((stop) => blend(stop, acc));
+                }
+              } else if (bgColor && bgColor.a > 0.99) {
+                gradientCandidates = null;
+              }
+            }
+            return gradientCandidates ?? [acc];
           };
           const targets = Array.from(document.querySelectorAll<HTMLElement>("main h1, main h2, main nav a"));
           return targets
@@ -391,19 +446,43 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
             .map((el) => {
               const style = getComputedStyle(el);
               const fg = parseRgb(style.color);
-              const bg = effectiveBg(el);
+              const bgs = effectiveBackgroundCandidates(el);
               if (!fg) return null;
-              const cr = ratio(fg, bg);
+              const fgComposited = fg.a < 1 ? blend(fg, bgs[0]!) : fg;
+              const cr = Math.min(...bgs.map((bg) => ratio(fgComposited, bg)));
               const fontSize = parseFloat(style.fontSize);
               const isLarge = fontSize >= 24 || (fontSize >= 18.66 && Number(style.fontWeight) >= 700);
               const min = isLarge ? 3.0 : 4.5;
-              return cr < min ? { text: el.textContent?.trim().slice(0, 40), cr: Number(cr.toFixed(2)), min } : null;
+              return cr < min ? { text: el.textContent?.trim().slice(0, 40), cr: Number(cr.toFixed(2)), min, fg: style.color, bgImage: style.backgroundImage } : null;
             })
             .filter(Boolean);
         });
 
         expect(contrastFailures, `Contrast failures in mode ${mode}: ${JSON.stringify(contrastFailures)}`).toEqual([]);
       }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("enforces AUTHZ_ROLE (not AUTH_SESSION) on privileged PIL and account-evolution surfaces for standard benevole session", async ({ browser }) => {
+    test.setTimeout(120_000);
+    const context = await browser.newContext({ storageState: authFile });
+    const page = await context.newPage();
+
+    try {
+      await openProtectedRoute(page, "/compte/evolution");
+      await expect(page.locator("h1")).toBeVisible();
+
+      await openProtectedRoute(page, "/parcours");
+      await expect(page.locator("h1")).toBeVisible();
+
+      await openProtectedRoute(page, "/pilotage");
+      await expect(page.locator("h1")).toBeVisible();
+
+      await openProtectedRoute(page, "/admin");
+      await expect(page.locator("main")).not.toContainText(/Cockpit d'administration/i);
+      await expect(page.locator("h1, h2").first()).toBeVisible();
     } finally {
       await context.close();
     }
