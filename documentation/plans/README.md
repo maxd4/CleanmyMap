@@ -4,6 +4,7 @@
 
 | Sujet | Source | Nature |
 |---|---|---|
+| Découverte transversale des 13 chantiers fonctionnels | [index-chantiers-fonctionnels.md](./index-chantiers-fonctionnels.md) | PLAN / INDEX INTERNE : routage vers les propriétaires, sans ordre de priorité concurrent |
 | Synchronisation opérationnelle des actions externes | [synchronisation-actions-externes.md](./synchronisation-actions-externes.md) | PLAN : pilote, moteur d'import et inscriptions privées conditionnelles |
 | Interopérabilité API Engagement et collectes citoyennes | [interoperabilite-api-engagement.md](./interoperabilite-api-engagement.md) | PLAN / PROPOSITION : publication unique, multidiffusion, partenaires et agendas locaux ; annonceur différé |
 | Plogging et filière citoyenne des mégots à Paris | [plogging-et-filiere-megots-paris.md](./plogging-et-filiere-megots-paris.md) | PLAN / PROPOSITION : prospection, logistique, dimensionnement et preuves attendues |

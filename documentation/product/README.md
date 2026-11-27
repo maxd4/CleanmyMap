@@ -24,6 +24,7 @@ Repères transversaux à conserver dans toute la documentation produit :
 |---|---|---|
 | Vision, bénéficiaires, promesses | `vision-et-objectifs.md` | Objectif ≠ mesure |
 | Ordre d'exécution | `roadmap-priorisee.md` (`PLAN`) | La roadmap longue reste `HISTORY` |
+| Découverte des chantiers fonctionnels | [Index interne des 13 chantiers](../plans/index-chantiers-fonctionnels.md) (`PLAN`) | Routage documentaire, pas une seconde roadmap ni un inventaire runtime |
 | Décisions ouvertes | `decisions-en-attente.md` (`PLAN`) | Ne pas présenter comme CURRENT |
 | Comportement des pages | `../pages_site/INDEX.md`, puis fiche de page | Code, droits et protection `routes/` |
 | Interface transversale | `../design-system/README.md` et contrat spécialisé | Composant, CSS, check |
