@@ -59,7 +59,7 @@ begin
     id, created_by_clerk_id, organizer_id, organizer_type, action_date,
     action_phase, status, published_at, location_label, moderation_visibility
   ) values (
-    v_action, 'user-org-a', 'org-a', 'association', '2027-07-10',
+    v_action, 'user-org-a', 'org-a', 'other', '2027-07-10',
     'pre_action', 'pending', now(), 'Place A', 'visible'
   );
 
