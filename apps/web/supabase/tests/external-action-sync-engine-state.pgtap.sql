@@ -393,8 +393,9 @@ begin
     insert into engine_state_results values ('tx_review_revoked', coalesce(v_rev_revoked->>'status', 'null'));
   end;
 exception when others then
-  raise notice 'TERRITORIAL_PHASE=% SQLSTATE=%', v_phase, SQLSTATE;
-  raise;
+  raise exception using
+    errcode = 'P0001',
+    message = format('TERRITORIAL_PHASE=%s ORIGINAL_SQLSTATE=%s', v_phase, SQLSTATE);
 end $$;
 
 select is((select value from engine_state_results where key = 'applied_without_consent'), 'mandate_revoked', 'mark applied fails closed without consent');
