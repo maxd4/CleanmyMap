@@ -21,6 +21,7 @@ import { gitExecutable } from "../ci/git-executable.mjs";
 import {
   addDeficits,
   buildReference,
+  markdown,
   metricDeficit,
   topAbsoluteDeficit,
   topDelta,
@@ -490,6 +491,38 @@ test("refuse un SHA CLI invalide et une racine de couverture redirigée", (t) =>
       return;
     }
     assert.throws(() => buildReference({ args: { ...fixture.args, "web-root": linkedWebRoot } }), /symbolic-link|redirected/);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("sépare observed (OBSERVED_NOT_ATTESTED) de l'attestation, synchronise Markdown/JSON, qualifie les divergences et retire les chemins absolus", () => {
+  const fixture = createFixture({ candidateScope: "WORKTREE", mobile: true });
+  try {
+    // Introduce a summary hash divergence in web evidence
+    const evidencePath = path.join(fixture.webRoot, "apps/web/coverage/coverage-evidence.json");
+    const evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+    evidence.summarySha256 = "0".repeat(64);
+    evidence.gitHead = "1".repeat(40);
+    fs.writeFileSync(evidencePath, JSON.stringify(evidence), "utf8");
+
+    const reference = buildReference({ args: fixture.args, now: new Date("2026-11-27T00:00:00.000Z") });
+    const web = reference.scopes.find((scope) => scope.scope === "web");
+    assert.equal(web.state, "EVIDENCE_UNVERIFIED");
+    assert.equal(web.observed.status, "OBSERVED_NOT_ATTESTED");
+    assert.equal(web.observed.metrics.lines.total, 2);
+    assert.equal(web.observed.metrics.lines.covered, 1);
+    assert.equal(reference.provenance.web.campaignOrigin, "REUSED_PRIOR_SHA");
+    assert.ok(reference.provenance.web.hashDivergences.some((d) => d.artifact === "summary" && d.status === "MISMATCH"));
+    for (const diag of reference.scopes.flatMap((s) => s.diagnostics)) {
+      assert.equal(diag.message.includes(fixture.root), false);
+    }
+
+    const md = markdown(reference);
+    assert.match(md, /coverage-reference-2026-11-27\.json/);
+    assert.doesNotMatch(md, /coverage-reference-2026-10-26\.json/);
+    assert.match(md, /OBSERVED_NOT_ATTESTED/);
+    assert.match(md, /1\/2 — 50\.00 %/);
   } finally {
     fs.rmSync(fixture.root, { recursive: true, force: true });
   }

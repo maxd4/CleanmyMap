@@ -132,8 +132,24 @@ function assertConsumedReportsMatchProof(reportRoot, proof, definition) {
   return consumed;
 }
 
-function classifyProvenanceFailure(error) {
-  const message = error instanceof Error ? error.message : String(error);
+function sanitizeMessage(message, roots = []) {
+  let result = String(message ?? "");
+  for (const root of roots) {
+    if (!root) continue;
+    const resolved = path.resolve(root);
+    for (const variant of [resolved, resolved.replaceAll("\\", "/"), resolved.replaceAll("/", "\\")]) {
+      if (variant) result = result.replaceAll(variant, "<repo>");
+    }
+  }
+  return result.replaceAll("<repo>\\", "<repo>/");
+}
+
+function sanitizeDiagnostics(diagnostics = [], roots = []) {
+  return diagnostics.map((d) => ({ ...d, message: sanitizeMessage(d.message, roots) }));
+}
+
+function classifyProvenanceFailure(error, roots = []) {
+  const message = sanitizeMessage(error instanceof Error ? error.message : String(error), roots);
   const stale = /candidate mismatch|audited SHA|attached to the analyzed|expected .*SHA|candidate SHA/i.test(message);
   return {
     state: stale ? "STALE_EVIDENCE" : "EVIDENCE_UNVERIFIED",
@@ -176,7 +192,7 @@ function validateAttestedProvenance({ repositoryRoot, reportRoot, publicationRoo
     };
   } catch (error) {
     return {
-      ...classifyProvenanceFailure(error),
+      ...classifyProvenanceFailure(error, [repositoryRoot, reportRoot, publicationRoot]),
       proof: null,
       proofRoot: null,
       evidence: null,
@@ -309,14 +325,34 @@ function buildScope({ scope, root, repositoryRoot, summaryFile, lcovFile, defini
       diagnostics: [...provenance.diagnostics, { code: "COVERAGE_REPORT_UNVERIFIED", message: "Coverage report validation failed; metrics are not attested." }],
     };
   const files = source.files.map((file) => ({ ...fileRow(file, scope), proofState: finalState }));
+  let observed;
+  if (reportValidationFailed) {
+    observed = { status: "MEASUREMENT_FAILED", metrics: aggregateFiles(files), files: [] };
+  } else if (finalState === "CI_EXACT_SHA") {
+    observed = { status: "CI_ATTESTED", metrics: aggregateFiles(files), files };
+  } else {
+    const observedReport = buildCoverageInsightsReport({
+      root,
+      auditedSha,
+      reports: [definition],
+      fsApi: validationFsApi,
+      validateEvidence: () => ({ gitHead: auditedSha }),
+      validatePublicationProof: () => ({ candidateSha: auditedSha }),
+      validateSonar: () => [{ status: "VALID" }],
+    });
+    const observedFiles = (observedReport.scopes[0]?.files ?? []).map((file) => ({ ...fileRow(file, scope), proofState: finalState }));
+    observed = { status: "OBSERVED_NOT_ATTESTED", metrics: aggregateFiles(observedFiles), files: observedFiles };
+  }
+  const cleanDiagnostics = sanitizeDiagnostics([...source.diagnostics, ...finalProvenance.diagnostics], [repositoryRoot, root, publicationRoot]);
   return {
     scope,
     state: files.length > 0 ? finalState : (reportValidationFailed ? "EVIDENCE_UNVERIFIED" : finalState),
     proofState: finalState,
     metrics: aggregateFiles(files),
     files,
-    diagnostics: [...source.diagnostics, ...finalProvenance.diagnostics],
-    provenance: finalProvenance,
+    observed,
+    diagnostics: cleanDiagnostics,
+    provenance: { ...finalProvenance, diagnostics: sanitizeDiagnostics(finalProvenance.diagnostics, [repositoryRoot, root, publicationRoot]) },
   };
 }
 
@@ -367,22 +403,51 @@ function familyAggregates(files) {
   }));
 }
 
-function readProvenance(file, scope, reportFiles, validation = null) {
+function readProvenance(file, scope, reportFiles, validation = null, auditedSha = null, repositoryRoot = process.cwd()) {
   const data = readJson(file);
+  const reportHashes = Object.fromEntries(Object.entries(reportFiles).map(([name, value]) => [name, hashFile(value)]));
+  const evidenceSha = data?.gitHead ?? data?.candidateSha ?? null;
+  const campaignOrigin = validation?.state === "CI_EXACT_SHA"
+    ? "CI_EXACT_SHA"
+    : evidenceSha && auditedSha && evidenceSha === auditedSha
+      ? "CURRENT_SHA_RUN"
+      : evidenceSha && auditedSha
+        ? "REUSED_PRIOR_SHA"
+        : "UNATTESTED_WORKTREE";
+
+  const divergences = [];
+  if (data?.summarySha256 && reportHashes.summary && data.summarySha256 !== reportHashes.summary) {
+    divergences.push({ artifact: "summary", expected: data.summarySha256, actual: reportHashes.summary, status: "MISMATCH" });
+  }
+  if (data?.lcovSha256 && reportHashes.lcov && data.lcovSha256 !== reportHashes.lcov) {
+    divergences.push({ artifact: "lcov", expected: data.lcovSha256, actual: reportHashes.lcov, status: "MISMATCH" });
+  }
+  if (Array.isArray(data?.reports)) {
+    for (const r of data.reports) {
+      const key = r.source?.endsWith("coverage-summary.json") ? "summary" : r.source?.endsWith("lcov.info") ? "lcov" : "report";
+      if (reportHashes[key] && r.sha256 && r.sha256 !== reportHashes[key]) {
+        divergences.push({ artifact: key, expected: r.sha256, actual: reportHashes[key], status: "MISMATCH" });
+      }
+    }
+  }
+
   return {
     scope,
-    file: file ? path.relative(process.cwd(), file).replaceAll("\\", "/") : null,
+    file: file ? path.relative(repositoryRoot, file).replaceAll("\\", "/") : null,
     data,
-    reportHashes: Object.fromEntries(Object.entries(reportFiles).map(([name, value]) => [name, hashFile(value)])),
+    reportHashes,
+    campaignOrigin,
+    evidenceSha,
+    hashDivergences: divergences,
     validation: validation ? {
       state: validation.state,
-      diagnostics: validation.diagnostics,
+      diagnostics: sanitizeDiagnostics(validation.diagnostics, [repositoryRoot]),
       consumedReportHashes: validation.consumedReportHashes,
     } : { state: "NOT_MEASURED", diagnostics: [], consumedReportHashes: {} },
   };
 }
 
-function markdown(reference) {
+export function markdown(reference) {
   const scopeByName = new Map(reference.scopes.map((scope) => [scope.scope, scope]));
   const web = scopeByName.get("web");
   const mobile = scopeByName.get("mobile");
@@ -401,19 +466,22 @@ function markdown(reference) {
     "",
     "## Résumé exécutif",
     "",
-    `États de provenance vérifiés par le générateur : ${provenanceSummary || "aucun scope"}. Un scope n'est marqué 'CI_EXACT_SHA' qu'après validation de la preuve de publication CI, de l'identité du candidat, des empreintes des rapports consommés et des validateurs canoniques. Les preuves PostgreSQL, RLS, RPC, concurrence, Clerk réel et device natif ne sont pas exécutées par cette photographie.`,
+    `États de provenance vérifiés par le générateur : ${provenanceSummary || "aucun scope"}. Un scope n'est marqué 'CI_EXACT_SHA' qu'après validation de la preuve de publication CI, de l'identité du candidat, des empreintes des rapports consommés et des validateurs canoniques. Les observations instrumentées locales non attestées restent conservées séparément sous \`observed\` (\`OBSERVED_NOT_ATTESTED\`) sans promouvoir le statut d'attestation. Les preuves PostgreSQL, RLS, RPC, concurrence, Clerk réel et device natif ne sont pas exécutées par cette photographie.`,
     "",
     "Aucun seuil n'est activé : toutes les familles restent `OBSERVE`. Les domaines sans cible canonique restent `NO_TARGET_DEFINED` ou `RISK_CLASSIFICATION_REQUIRED`.",
     "",
     "## Tableau global",
     "",
-    "| Scope | Provenance | Statements | Branches | Functions | Lines | Verdict de mesure |",
-    "| --- | --- | ---: | ---: | ---: | ---: | --- |",
+    "| Scope | Provenance | Statut observation | Origine campagne | Statements | Branches | Functions | Lines |",
+    "| --- | --- | --- | --- | ---: | ---: | ---: | ---: |",
   ];
   for (const scope of reference.scopes) {
-    const m = scope.metrics;
-    const fmt = (value) => value.total === 0 ? "NOT_MEASURED" : `${value.covered}/${value.total} — ${value.pct.toFixed(2)} %`;
-    lines.push(`| ${scope.scope} | ${scope.proofState} | ${fmt(m.statements)} | ${fmt(m.branches)} | ${fmt(m.functions)} | ${fmt(m.lines)} | ${scope.state} |`);
+    const obs = scope.observed ?? { status: scope.state, metrics: scope.metrics };
+    const m = obs.metrics;
+    const prov = reference.provenance?.[scope.scope];
+    const origin = prov?.campaignOrigin ?? "UNKNOWN";
+    const fmt = (value) => !value || value.total === 0 ? "NOT_MEASURED" : `${value.covered}/${value.total} — ${value.pct.toFixed(2)} %`;
+    lines.push(`| ${scope.scope} | ${scope.proofState} | ${obs.status} | ${origin} | ${fmt(m.statements)} | ${fmt(m.branches)} | ${fmt(m.functions)} | ${fmt(m.lines)} |`);
   }
   lines.push(
     "",
@@ -431,8 +499,9 @@ function markdown(reference) {
     "| Famille | Fichiers | Statements | Branches | Functions | Lines | Écart S/B/F/L (pp) | Unités S/B/F/L | Objectif | Verdict |",
     "| --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- |",
   );
+  const webFiles = web?.observed?.files ?? web?.files ?? [];
   for (const [domain, family] of Object.entries(COVERAGE_RISK_FAMILIES)) {
-    const files = web.files.filter((file) => file.family === domain);
+    const files = webFiles.filter((file) => file.family === domain);
     const m = aggregateFiles(files);
     const fmt = (value) => value.total === 0 ? "NOT_MEASURED" : `${value.covered}/${value.total} — ${value.pct.toFixed(2)} %`;
     const hasTarget = Object.values(family.target).some((value) => value !== null);
@@ -445,14 +514,30 @@ function markdown(reference) {
     const additional = METRICS.map((metric) => deficits[metric].additional === null ? "—" : deficits[metric].additional).join(" / ");
     lines.push(`| ${domain} | ${files.length} | ${fmt(m.statements)} | ${fmt(m.branches)} | ${fmt(m.functions)} | ${fmt(m.lines)} | ${deltas} | ${additional} | ${target} | ${verdict} |`);
   }
+  const allObservedFiles = reference.scopes.flatMap((scope) => scope.observed?.files ?? scope.files ?? []);
   lines.push("", "## Top 50 — plus grands deltas", "", "Le détail exhaustif est dans le JSON lié. Les deltas sont calculés sur les compteurs exacts, jamais sur les pourcentages arrondis.", "", "| Rang | Scope | Famille | Fichier | Delta max pp | Unités additionnelles max |", "| ---: | --- | --- | --- | ---: | ---: |");
-  for (const [index, file] of topDelta(reference.scopes.flatMap((scope) => scope.files)).entries()) lines.push(`| ${index + 1} | ${file.scope} | ${file.family ?? "NO_TARGET_DEFINED"} | \`${file.path}\` | ${file.maxDeltaPp.toFixed(2)} | ${file.maxAdditional} |`);
+  for (const [index, file] of topDelta(allObservedFiles).entries()) lines.push(`| ${index + 1} | ${file.scope} | ${file.family ?? "NO_TARGET_DEFINED"} | \`${file.path}\` | ${file.maxDeltaPp.toFixed(2)} | ${file.maxAdditional} |`);
   lines.push("", "## Top 50 — plus grand volume manquant", "", "Lignes et branches sont affichées séparément ; elles ne sont pas additionnées entre métriques.", "", "| Rang | Scope | Famille | Fichier | Lignes à couvrir | Branches à couvrir |", "| ---: | --- | --- | --- | ---: | ---: |");
-  for (const [index, file] of topAbsoluteDeficit(web.files).entries()) lines.push(`| ${index + 1} | ${file.scope} | ${file.family} | \`${file.path}\` | ${file.deficits.lines.additional ?? "—"} | ${file.deficits.branches.additional ?? "—"} |`);
+  for (const [index, file] of topAbsoluteDeficit(webFiles).entries()) lines.push(`| ${index + 1} | ${file.scope} | ${file.family} | \`${file.path}\` | ${file.deficits.lines.additional ?? "—"} | ${file.deficits.branches.additional ?? "—"} |`);
   lines.push("", "## Branches critiques non couvertes", "", "Les lignes ci-dessous sont des points de branchement instrumentés non couverts dans les familles Web classées security, api-persistence ou business. Elles sont des priorités de test, pas une interprétation automatique de l'intention métier.", "");
-  const critical = web.files.filter((file) => ["security", "api-persistence", "business"].includes(file.family) && file.uncoveredBranches > 0).flatMap((file) => file.uncoveredBranchLines.map((line) => ({ path: file.path, family: file.family, line }))).slice(0, 80);
+  const critical = webFiles.filter((file) => ["security", "api-persistence", "business"].includes(file.family) && file.uncoveredBranches > 0).flatMap((file) => file.uncoveredBranchLines.map((line) => ({ path: file.path, family: file.family, line }))).slice(0, 80);
   for (const entry of critical) lines.push(`- \`${entry.family}\` — \`${entry.path}:${entry.line}\``);
   if (critical.length === 0) lines.push("- Aucune branche critique mesurable dans les rapports retenus.");
+  lines.push(
+    "",
+    "## Provenance et divergences d'empreintes",
+    "",
+    "| Scope | Origine campagne | SHA preuve | Divergences d'empreintes |",
+    "| --- | --- | --- | --- |",
+  );
+  for (const scopeName of ["web", "node", "mobile", "python"]) {
+    const prov = reference.provenance?.[scopeName];
+    if (!prov) continue;
+    const div = prov.hashDivergences?.length
+      ? prov.hashDivergences.map((d) => `${d.artifact}: MISMATCH`).join(", ")
+      : "Aucune divergence";
+    lines.push(`| ${scopeName} | ${prov.campaignOrigin ?? "UNKNOWN"} | \`${prov.evidenceSha ?? "N/A"}\` | ${div} |`);
+  }
   lines.push(
     "",
     "## Instrumentation et artefacts",
@@ -467,32 +552,20 @@ function markdown(reference) {
     "",
     "| Producteur | Commande | Résultat | Niveau de preuve | Limite |",
     "| --- | --- | --- | --- | --- |",
-    `| Web | \`npm run test:coverage\` puis \`npm run quality:coverage\` | ${web?.state ?? "NOT_MEASURED"} | EXECUTED_BEHAVIOR / ${web?.proofState ?? "NOT_MEASURED"} | publication et rapports consommés vérifiés lorsque l'état est CI_EXACT_SHA |`,
-    `| Mobile | \`npm run quality:mobile-coverage\` | ${mobile?.state ?? "NOT_MEASURED"} | EXECUTED_BEHAVIOR / ${mobile?.proofState ?? "NOT_MEASURED"} | preuve d'intégration absente si le scope reste non attesté |`,
-    `| Node/scripts | \`npm run test:coverage:node\` | ${node?.state ?? "NOT_MEASURED"} | EXECUTED_BEHAVIOR / ${node?.proofState ?? "NOT_MEASURED"} | pas de cible canonique ; le rapport couvre le périmètre réel du producteur |`,
-    `| Python | \`npm run test:coverage:python\` | ${python?.state ?? "NOT_MEASURED"} | WORKTREE_LIVE / ${python?.proofState ?? "NOT_MEASURED"} | aucune preuve CI exacte si le scope reste non attesté |`,
-    "| PostgreSQL/Supabase | workflow `e2e-supabase-ephemeral` | NOT_EXECUTED | DB_SEMANTICS_NOT_EXECUTED | démarrage éphémère en échec (`SUPABASE_START_START_TIMEOUT`) |",
+    `| Web | \`npm run test:coverage\` puis \`npm run quality:coverage\` | ${web?.state ?? "NOT_MEASURED"} | ${web?.observed?.status ?? "NOT_MEASURED"} / ${web?.proofState ?? "NOT_MEASURED"} | publication et rapports consommés vérifiés lorsque l'état est CI_EXACT_SHA |`,
+    `| Mobile | \`npm run quality:mobile-coverage\` | ${mobile?.state ?? "NOT_MEASURED"} | ${mobile?.observed?.status ?? "NOT_MEASURED"} / ${mobile?.proofState ?? "NOT_MEASURED"} | preuve d'intégration absente si le scope reste non attesté |`,
+    `| Node/scripts | \`npm run test:coverage:node\` | ${node?.state ?? "NOT_MEASURED"} | ${node?.observed?.status ?? "NOT_MEASURED"} / ${node?.proofState ?? "NOT_MEASURED"} | pas de cible canonique ; le rapport couvre le périmètre réel du producteur |`,
+    `| Python | \`npm run test:coverage:python\` | ${python?.state ?? "NOT_MEASURED"} | ${python?.observed?.status ?? "NOT_MEASURED"} / ${python?.proofState ?? "NOT_MEASURED"} | aucune preuve CI exacte si le scope reste non attesté |`,
+    "| PostgreSQL/Supabase | workflow `e2e-supabase-ephemeral` | NOT_EXECUTED | DB_SEMANTICS_NOT_EXECUTED | exécution PostgreSQL non effectuée dans cette photographie |",
     "| E2E/natif/Clerk réel | workflows et appareils | NOT_MEASURED | NOT_MEASURED | non requis pour produire les rapports de couverture code |",
-    "",
-    "## Prochains macro-lots",
-    "",
-    "| Priorité | Owner / périmètre | Motif | Preuve attendue |",
-    "| --- | --- | --- | --- |",
-    "| P0 | PostgreSQL notifications/gamification, RLS, CAS, concurrence | invariants persistants non exécutés | runner Supabase éphémère opérationnel + assertions pgTAP exécutées |",
-    "| P0 | `apps/web/src/lib/auth`, `src/proxy`, routes account | security sous les objectifs et branches critiques manquantes | tests négatifs AuthN/AuthZ + couverture Web comparable |",
-    "| P1 | `apps/web/src/app/api`, persistence et producteurs métier | branches sous 80 % dans API/business | HTTP/integration tests avec effets persistés et erreurs |",
-    "| P1 | `unclassified`, notamment Gamification | volume important sans qualification canonique | classification owner/risk ratifiée ou campagne dédiée sans seuil inventé |",
-    "| P2 | Node/scripts | mesure utile mais cible absente | seuil ratifié séparément et preuve CI stable |",
-    "| P2 | Python | preuve locale non publiée | job CI sélectionné au SHA exact et rapport Cobertura attesté |",
-    "| P3 | UI presentational | pas de seuil uniforme | tests comportementaux/accessibilité ciblés, pas de ratchet visuel uniforme |",
     "",
     "## Méthode, limites et verdict",
     "",
-    "Les rapports CI Web/Node ont été téléchargés depuis le run `40360964042` au SHA exact. Les compteurs par fichier sont conservés dans `coverage-reference-2026-10-26.json`, avec empreintes des rapports sources, classification primaire et déficits calculés. Les comparaisons M0 ne sont pas présentées comme un gain avant/après : SHA, configuration et périmètres diffèrent. La seule comparaison comparable conservée est la comparaison historique `route-calculs` du checker CI, `PASS_WITH_GRACE`.",
+    `Les compteurs par fichier sont conservés dans \`coverage-reference-${reference.date}.json\`, avec empreintes des rapports sources, classification primaire, déficits calculés et séparation stricte entre mesures attestées (\`metrics\` / \`CI_EXACT_SHA\`) et observations locales non attestées (\`observed\` / \`OBSERVED_NOT_ATTESTED\`).`,
     "",
-    "**STOP CONDITION : PARTIELLE.** Les périmètres Web et Node mesurés sont inventoriés ; Mobile et Python ont une preuve limitée ; les preuves PostgreSQL et les intégrations externes restent manquantes. Aucun faux PASS ni changement de baseline, seuil, exclusion ou politique n'a été introduit.",
+    `**STOP CONDITION : ${reference.scopes.every((s) => s.proofState === "CI_EXACT_SHA") ? "COMPLÈTE" : "PARTIELLE (attestation CI absente)"}.** Les données JSON et les tableaux Markdown sont générés à partir de la même structure \`reference\`. Aucun faux PASS ni changement de baseline, seuil, exclusion ou politique n'a été introduit.`,
     "",
-    "Artefact structuré : [`coverage-reference-2026-10-26.json`](coverage-reference-2026-10-26.json).",
+    `Artefact structuré : [\`coverage-reference-${reference.date}.json\`](coverage-reference-${reference.date}.json).`,
   );
   return `${lines.join("\n")}\n`;
 }
@@ -556,6 +629,8 @@ export function buildReference({ args = parseArgs(process.argv), now = new Date(
     definition: { scope: "python", format: "cobertura", coveragePath: "maintenance/python/coverage.xml", sourceRoot: "maintenance/python" },
   }));
   const scopeByName = new Map(scopes.map((scope) => [scope.scope, scope]));
+  const webObservedFiles = scopeByName.get("web")?.observed?.files ?? [];
+  const allObservedFiles = scopes.flatMap((scope) => scope.observed?.files ?? []);
   const reference = {
     schemaVersion: 1,
     kind: "cleanmymap-coverage-reference",
@@ -567,12 +642,17 @@ export function buildReference({ args = parseArgs(process.argv), now = new Date(
       webFamilies: familyAggregates(scopes.find((scope) => scope.scope === "web")?.files ?? []),
       byModule: Object.fromEntries(scopes.map((scope) => [scope.scope, aggregateGroups(scope.files, "module")])),
     },
+    observedAggregates: {
+      webFamilies: familyAggregates(webObservedFiles),
+      byModule: Object.fromEntries(scopes.map((scope) => [scope.scope, aggregateGroups(scope.observed?.files ?? [], "module")])),
+    },
     rankings: { topDelta: topDelta(scopes.flatMap((scope) => scope.files)), topAbsoluteDeficit: topAbsoluteDeficit(scopes.find((scope) => scope.scope === "web")?.files ?? []) },
+    observedRankings: { topDelta: topDelta(allObservedFiles), topAbsoluteDeficit: topAbsoluteDeficit(webObservedFiles) },
     provenance: {
-      web: readProvenance(webEvidenceFile, "web", { summary: webSummary, lcov: webLcov }, scopeByName.get("web")?.provenance),
-      node: readProvenance(nodeProofFile, "node", { summary: nodeSummary, lcov: nodeLcov }, scopeByName.get("node")?.provenance),
-      mobile: readProvenance(args["mobile-evidence"] ? resolveCliPath(args["mobile-evidence"], "mobile-evidence") : null, "mobile", { summary: mobileRoot ? resolvePathWithinRoot(mobileRoot, "apps/mobile/coverage/coverage-summary.json", { label: "mobile coverage summary" }) : null, lcov: mobileRoot ? resolvePathWithinRoot(mobileRoot, "apps/mobile/coverage/lcov.info", { label: "mobile LCOV" }) : null }, scopeByName.get("mobile")?.provenance),
-      python: readProvenance(pythonProofFile, "python", { report: pythonRoot ? resolvePathWithinRoot(pythonRoot, "maintenance/python/coverage.xml", { label: "Python coverage" }) : null }, scopeByName.get("python")?.provenance),
+      web: readProvenance(webEvidenceFile, "web", { summary: webSummary, lcov: webLcov }, scopeByName.get("web")?.provenance, auditedSha, repositoryRoot),
+      node: readProvenance(nodeProofFile, "node", { summary: nodeSummary, lcov: nodeLcov }, scopeByName.get("node")?.provenance, auditedSha, repositoryRoot),
+      mobile: readProvenance(args["mobile-evidence"] ? resolveCliPath(args["mobile-evidence"], "mobile-evidence") : null, "mobile", { summary: mobileRoot ? resolvePathWithinRoot(mobileRoot, "apps/mobile/coverage/coverage-summary.json", { label: "mobile coverage summary" }) : null, lcov: mobileRoot ? resolvePathWithinRoot(mobileRoot, "apps/mobile/coverage/lcov.info", { label: "mobile LCOV" }) : null }, scopeByName.get("mobile")?.provenance, auditedSha, repositoryRoot),
+      python: readProvenance(pythonProofFile, "python", { report: pythonRoot ? resolvePathWithinRoot(pythonRoot, "maintenance/python/coverage.xml", { label: "Python coverage" }) : null }, scopeByName.get("python")?.provenance, auditedSha, repositoryRoot),
     },
     limits: ["DB_SEMANTICS_NOT_EXECUTED", "NO_TARGET_DEFINED for mobile/node/python", "RISK_CLASSIFICATION_REQUIRED for Web unclassified", "no Web new-code-non-critical prefix is currently qualified"],
   };

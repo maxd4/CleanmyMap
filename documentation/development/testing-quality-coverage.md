@@ -101,14 +101,15 @@ explicitement listés. Un fichier n'est jamais exclu pour cause de faible
 couverture.
 
 La photographie exhaustive la plus récente, générée depuis les rapports
-locaux et conservant les limites de provenance (observations non attestées
-`EVIDENCE_UNVERIFIED` / `PRESENT_NOT_ATTESTED`), est publiée dans l'[audit de
-référence de couverture du 26 novembre 2026](../operations/audits/coverage-reference-2026-11-26.md),
-avec sa [matrice structurée par fichier](../operations/audits/coverage-reference-2026-11-26.json)
+locaux disponibles et conservant les limites de provenance (observations non attestées
+`EVIDENCE_UNVERIFIED` / `OBSERVED_NOT_ATTESTED`), est publiée dans l'[audit de
+référence de couverture du 27 novembre 2026](../operations/audits/coverage-reference-2026-11-27.md),
+avec sa [matrice structurée par fichier](../operations/audits/coverage-reference-2026-11-27.json)
 et les métriques par module dans [`module-test-metrics.json`](../operations/audits/module-test-metrics.json).
 Les photographies historiques antérieures restent conservées à titre de
-référence ([26 octobre 2026](../operations/audits/coverage-reference-2026-10-26.md)
-et [matrice 26 octobre 2026](../operations/audits/coverage-reference-2026-10-26.json)).
+référence ([26 octobre 2026](../operations/audits/coverage-reference-2026-10-26.md),
+[matrice 26 octobre 2026](../operations/audits/coverage-reference-2026-10-26.json) et
+[26 novembre 2026](../operations/audits/coverage-reference-2026-11-26.md)).
 Cet audit est un `SNAPSHOT` descriptif : il ne remplace ni cette politique, ni
 les baselines, ni une décision d'activation `ENFORCE`.
 
