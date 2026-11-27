@@ -53,7 +53,7 @@ export default defineConfig({
     },
     {
       name: "local authenticated",
-      testMatch: /(?:route-campaign-3c|personal-ai-authenticated|mobile-header-authenticated)\.spec\.ts/,
+      testMatch: /(?:route-campaign-3c|personal-ai-authenticated)\.spec\.ts|mobile-header-authenticated\.test\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },
